@@ -28,6 +28,7 @@ class CatalogoSeeder extends Seeder
         'configurar' => 'Configurar',
         'desbloquear' => 'Desbloquear',
         'datos_personales' => 'Datos personales',
+        'provisional' => 'Alta provisional',
     ];
 
     private const CRUD = ['ver', 'crear', 'editar', 'eliminar'];
@@ -56,15 +57,28 @@ class CatalogoSeeder extends Seeder
     public static function catalogo(): array
     {
         return [
-            'organizacion' => ['Organización', 'bi-diagram-3', [
+            // Dirección: la estructura de la empresa y su gobierno. Es la base que
+            // toda empresa tiene, contrate o no los demás módulos.
+            'direccion' => ['Dirección', 'bi-building-gear', [
                 'empresas' => ['Empresas', 'bi-building', []],
                 'sedes' => ['Sedes', 'bi-geo-alt', []],
                 'espacios' => ['Zonas y áreas', 'bi-grid-3x3-gap', ['imprimir']],
                 'departamentos' => ['Departamentos', 'bi-diagram-2', []],
                 'puestos' => ['Puestos', 'bi-person-badge', []],
                 'turnos' => ['Turnos', 'bi-clock', []],
-                'colaboradores' => ['Colaboradores', 'bi-people', ['exportar', 'datos_personales']],
+                'usuarios' => ['Usuarios', 'bi-person-gear', ['desbloquear']],
+                'roles' => ['Roles', 'bi-person-rolodex', []],
+                'permisos' => ['Matriz de permisos', 'bi-ui-checks-grid', [], [], ['ver', 'editar']],
+                'configuracion' => ['Configuración', 'bi-sliders', ['configurar'], [], ['ver', 'editar']],
+                'auditoria' => ['Bitácora de auditoría', 'bi-clipboard-data', ['exportar'], [], ['ver']],
+                'identidad' => ['Identidad de la plataforma', 'bi-palette', [], [], ['ver', 'editar'], Modulo::TIPO_PLATAFORMA],
             ]],
+            // Recursos Humanos: el personal. "aprobar" = validar las altas
+            // provisionales que hace la caseta; "provisional" = darlas de alta.
+            'recursos_humanos' => ['Recursos Humanos', 'bi-people-fill', [
+                'colaboradores' => ['Colaboradores', 'bi-people', ['exportar', 'datos_personales', 'aprobar', 'provisional']],
+            ]],
+            // Seguridad: padrones, operación y sus reportes.
             'seguridad' => ['Seguridad', 'bi-shield-lock', [
                 'accesos' => ['Bitácora de accesos', 'bi-door-open', ['aprobar', 'exportar']],
                 'novedades' => ['Bitácora de novedades', 'bi-journal-text', ['reabrir', 'exportar', 'imprimir'], [
@@ -86,20 +100,10 @@ class CatalogoSeeder extends Seeder
                 'rutas' => ['Rutas de transporte', 'bi-signpost-split', ['imprimir']],
                 'transporte' => ['Bitácora de transporte', 'bi-bus-front', ['aprobar', 'firmar', 'exportar']],
                 'procedimientos' => ['Procedimientos', 'bi-book', ['aprobar']],
-            ]],
-            'reportes' => ['Reportes', 'bi-bar-chart', [
                 'dashboard' => ['Tablero', 'bi-speedometer2', [], [], ['ver']],
                 'informe_ejecutivo' => ['Informe ejecutivo', 'bi-file-earmark-bar-graph', ['exportar'], [], ['ver']],
                 'tendencias' => ['Tendencias', 'bi-graph-up', ['exportar'], [], ['ver']],
                 'bitacora_dia' => ['Bitácora general del día', 'bi-calendar-day', ['exportar', 'imprimir'], [], ['ver']],
-            ]],
-            'administracion' => ['Administración', 'bi-gear', [
-                'usuarios' => ['Usuarios', 'bi-person-gear', ['desbloquear']],
-                'roles' => ['Roles', 'bi-person-rolodex', []],
-                'permisos' => ['Matriz de permisos', 'bi-ui-checks-grid', [], [], ['ver', 'editar']],
-                'configuracion' => ['Configuración', 'bi-sliders', ['configurar'], [], ['ver', 'editar']],
-                'auditoria' => ['Bitácora de auditoría', 'bi-clipboard-data', ['exportar'], [], ['ver']],
-                'identidad' => ['Identidad de la plataforma', 'bi-palette', [], [], ['ver', 'editar'], Modulo::TIPO_PLATAFORMA],
             ]],
         ];
     }

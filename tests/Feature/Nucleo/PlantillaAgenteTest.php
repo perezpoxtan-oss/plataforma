@@ -105,12 +105,14 @@ class PlantillaAgenteTest extends TestCase
         $deOtra = $this->crearUsuario($otra, 'Agente');
         $this->assertTrue($deOtra->can('llaves.crear'));
 
-        // El resultado coincide con la plantilla nueva
+        // En los menús de caseta (Operación y Padrones) el resultado coincide con la
+        // plantilla nueva. (Desde que Reportes se unió a Seguridad, la "plantilla
+        // anterior" de esta prueba también lleva los reportes; la migración no los toca.)
         $plantilla = Rol::plantillas()->where('nombre', 'Agente')->firstOrFail();
-        $this->assertEqualsCanonicalizing(
-            RolPermiso::where('rol_id', $plantilla->id)->pluck('modulo_accion_id')->all(),
-            RolPermiso::where('rol_id', $this->agente()->id)->pluck('modulo_accion_id')->all(),
-        );
+        $deCaseta = fn (Rol $rol) => RolPermiso::where('rol_id', $rol->id)->with('moduloAccion.modulo.menu', 'moduloAccion.modulo.padre.menu')->get()
+            ->filter(fn ($p) => in_array(RolesPlantillaSeeder::menuDe($p->moduloAccion->modulo), ['operacion', 'padrones'], true))
+            ->pluck('modulo_accion_id')->all();
+        $this->assertEqualsCanonicalizing($deCaseta($plantilla), $deCaseta($this->agente()));
     }
 
     public function test_la_migracion_no_toca_agentes_con_permisos_de_mas(): void

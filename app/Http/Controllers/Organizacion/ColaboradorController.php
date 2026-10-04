@@ -8,6 +8,7 @@ use App\Models\Departamento;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\Colaboradores\ColaboradorParecido;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
@@ -31,6 +32,7 @@ class ColaboradorController extends Controller
         'colaboradores.puesto_id', 'colaboradores.num_empleado', 'colaboradores.nombre', 'colaboradores.apellido_paterno',
         'colaboradores.apellido_materno', 'colaboradores.telefono', 'colaboradores.activo', 'colaboradores.creado_por',
         'colaboradores.actualizado_por', 'colaboradores.created_at', 'colaboradores.updated_at',
+        'colaboradores.provisional', 'colaboradores.validado_en', 'colaboradores.fusionado_en_id',
     ];
 
     public function __construct(
@@ -51,7 +53,7 @@ class ColaboradorController extends Controller
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor) {
             $lista = $this->colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.ver')
-                ->with(['sede:id,nombre', 'sedesAdicionales:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre'])
+                ->with(['sede:id,nombre', 'sedesAdicionales:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'fusionadoEn:id,num_empleado,nombre,apellido_paterno,apellido_materno'])
                 ->leftJoin('users as uc', 'uc.id', '=', 'colaboradores.creado_por')
                 ->leftJoin('users as ua', 'ua.id', '=', 'colaboradores.actualizado_por')
                 ->select([...self::COLUMNAS_LISTA, 'uc.name as creado_por_nombre', 'ua.name as actualizado_por_nombre'])
@@ -77,8 +79,16 @@ class ColaboradorController extends Controller
                     ($p = $this->colaboradores->sedesPermitidas($actor, 'colaboradores.editar')) !== null,
                     fn ($c) => $c->whereIn('id', $p)->values(),
                 ) : collect(),
+                // Para "Es duplicado de…": colaboradores ya validados y activos
+                'validados' => $actor->can('colaboradores.aprobar')
+                    ? $lista->where('provisional', false)->where('activo', true)->sortBy(fn ($c) => $c->nombreCompleto())->values()
+                    : collect(),
+                'aprobables' => $this->colaboradores->idsEnAlcance($actor, 'colaboradores.aprobar'),
+                'validacion' => $actor->can('colaboradores.aprobar') ? $this->colaboradores->catalogos($actor, 'colaboradores.aprobar') : null,
                 'puede' => [
                     'crear' => $actor->can('colaboradores.crear'),
+                    'provisional' => ! $actor->can('colaboradores.crear') && $actor->can('colaboradores.provisional'),
+                    'aprobar' => $actor->can('colaboradores.aprobar'),
                     'editar' => $puedeEditar,
                     'estado' => $actor->can('colaboradores.eliminar'),
                     'datos' => $actor->can('colaboradores.datos_personales'),
@@ -173,21 +183,70 @@ class ColaboradorController extends Controller
      */
     public function rapido(Request $request): JsonResponse
     {
-        Gate::authorize('colaboradores.crear');
-        $empresaId = $this->empresa->id($request->user());
+        $actor = $request->user();
+        $completo = $actor->can('colaboradores.crear');
+        abort_unless($completo || $actor->can('colaboradores.provisional'), 403);
+
+        $empresaId = $this->empresa->id($actor);
         if ($empresaId === null) {
             return response()->json(['ok' => false, 'mensaje' => 'Elige primero la empresa de trabajo.', 'errores' => []], 422);
         }
 
         try {
-            $resumen = $this->tenant->conEmpresa($empresaId, fn () => $this->colaboradores->resumen(
-                $this->colaboradores->crear($request->user(), $empresaId, $request, rapido: true),
-            ));
+            $resumen = $this->tenant->conEmpresa($empresaId, fn () => $this->colaboradores->resumen($completo
+                ? $this->colaboradores->crear($actor, $empresaId, $request, rapido: true)
+                : $this->colaboradores->crearProvisional($actor, $empresaId, $request)));
         } catch (ValidationException $e) {
             return response()->json(['ok' => false, 'mensaje' => collect($e->errors())->flatten()->first(), 'errores' => $e->errors()], 422);
+        } catch (ColaboradorParecido $e) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'Ya hay alguien registrado con ese nombre. Si es la misma persona, úsala; si no, confirma que es otra.',
+                'parecidos' => $e->parecidos,
+            ], 409);
         }
 
         return response()->json(['ok' => true, 'colaborador' => $resumen], 201);
+    }
+
+    /**
+     * Recursos Humanos valida un alta provisional (le asigna su número de empleado).
+     */
+    public function validar(Request $request, int $colaborador): RedirectResponse
+    {
+        Gate::authorize('colaboradores.aprobar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $empresaId, $colaborador) {
+            $modelo = $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.aprobar');
+
+            return $this->colaboradores->validarProvisional($request->user(), $empresaId, $modelo, $request);
+        });
+
+        return redirect()->route('colaboradores.index')->with('ok', "«{$modelo->nombreCompleto()}» validado con el número {$modelo->num_empleado}.");
+    }
+
+    /**
+     * El alta provisional era alguien que ya existía: se une con su registro.
+     */
+    public function fusionar(Request $request, int $colaborador): RedirectResponse
+    {
+        Gate::authorize('colaboradores.aprobar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $destinoId = (int) $request->validate(['destino_id' => ['required', 'integer']], ['destino_id.required' => 'Elige el colaborador correcto.'])['destino_id'];
+
+        [$provisional, $destino] = $this->tenant->conEmpresa($empresaId, function () use ($request, $colaborador, $destinoId) {
+            $provisional = $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.aprobar');
+            $destino = $this->colaboradores->limitar(Colaborador::query(), $request->user(), 'colaboradores.aprobar')->find($destinoId);
+            if ($destino === null) {
+                throw ValidationException::withMessages(['destino_id' => 'Elige un colaborador activo y ya validado.']);
+            }
+            $this->colaboradores->fusionar($request->user(), $provisional, $destino);
+
+            return [$provisional, $destino];
+        });
+
+        return redirect()->route('colaboradores.index')->with('ok', "«{$provisional->nombreCompleto()}» se unió con «{$destino->nombreCompleto()}» (#{$destino->num_empleado}).");
     }
 
     /**
@@ -198,7 +257,7 @@ class ColaboradorController extends Controller
     public function buscar(Request $request): JsonResponse
     {
         $actor = $request->user();
-        $permisos = array_values(array_filter(['colaboradores.ver', 'usuarios.crear', 'usuarios.editar'], fn ($p) => $actor->can($p)));
+        $permisos = array_values(array_filter(['colaboradores.ver', 'colaboradores.provisional', 'usuarios.crear', 'usuarios.editar'], fn ($p) => $actor->can($p)));
         abort_if($permisos === [], 403);
 
         $empresaId = $this->empresa->id($actor);

@@ -20,8 +20,16 @@
         @php
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
-            $numeros = json_encode($colaboradores->map(fn ($c) => mb_strtolower($c->num_empleado))->values());
+            $numeros = json_encode($colaboradores->pluck('num_empleado')->filter()->map(fn ($n) => mb_strtolower($n))->values());
+            $porValidar = $colaboradores->where('provisional', true)->whereNull('fusionado_en_id')->where('activo', true)->count();
         @endphp
+
+        @if ($porValidar > 0 && $puede['aprobar'])
+            <div class="alert alert-warning d-flex align-items-center gap-2 aviso mb-3" role="status">
+                <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                <span>Hay <strong>{{ $porValidar }}</strong> {{ $porValidar === 1 ? 'alta provisional' : 'altas provisionales' }} de la caseta por validar. Elige «Por validar» en el filtro.</span>
+            </div>
+        @endif
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div class="encabezado-pantalla m-0">
@@ -48,6 +56,12 @@
                         @endforeach
                     </select>
                 @endif
+                @if ($porValidar > 0 || $puede['aprobar'])
+                    <select class="filtro-select" aria-label="Filtrar por registro" data-filtro-colab="registro">
+                        <option value="">Todos los registros</option>
+                        <option value="provisional">Por validar ({{ $porValidar }})</option>
+                    </select>
+                @endif
                 <div class="buscador">
                     <i class="bi bi-search" aria-hidden="true"></i>
                     <input type="search" placeholder="Buscar empleado, número o puesto..." aria-label="Buscar colaborador" data-filtro-colab="texto">
@@ -60,6 +74,14 @@
                 <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevoColaborador">
                     <i class="bi bi-person-plus-fill" aria-hidden="true"></i>
                     <span class="h6 fw-bold m-0 mt-2 titulo-crear">Nuevo Colaborador</span>
+                </button>
+            @endif
+
+            @if ($puede['provisional'])
+                <button type="button" class="ficha-card ficha-create ficha-provisional" data-abrir-dialogo="dialogoRegistroRapidoColaborador">
+                    <i class="bi bi-person-plus" aria-hidden="true"></i>
+                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">Alta provisional</span>
+                    <span class="small text-muted mt-1">Para alguien que aún no aparece. Recursos Humanos lo validará.</span>
                 </button>
             @endif
 
@@ -76,7 +98,11 @@
                         'departamento_id' => $c->departamento_id, 'puesto_id' => $c->puesto_id,
                     ]);
                 @endphp
-                <div class="ficha-card {{ $c->activo ? '' : 'inactiva' }}" id="colaborador-{{ $c->id }}" data-colaborador
+                @php
+                    $pendiente = $c->provisional && $c->fusionado_en_id === null && $c->activo;
+                    $validable = $pendiente && $puede['aprobar'] && ($aprobables === null || in_array($c->id, $aprobables, true));
+                @endphp
+                <div class="ficha-card {{ $c->activo ? '' : 'inactiva' }} {{ $pendiente ? 'ficha-pendiente' : '' }}" id="colaborador-{{ $c->id }}" data-colaborador data-registro="{{ $pendiente ? 'provisional' : 'validado' }}"
                      data-sedes="{{ $todasSusSedes }}" data-depto="{{ $c->departamento_id }}"
                      data-texto="{{ mb_strtolower($nombreCompleto.' #'.$c->num_empleado.' '.$c->num_empleado.' '.($c->puesto?->nombre ?? '').' '.($c->departamento?->nombre ?? '').' '.($c->sede?->nombre ?? '')) }}">
                     <div>
@@ -84,7 +110,12 @@
                             <div class="avatar-colaborador" aria-hidden="true">{{ $c->iniciales() }}</div>
                             <div class="lh-sm text-truncate">
                                 <h2 class="ficha-title m-0" style="font-size: 1.05rem;">{{ $nombreCompleto }}</h2>
-                                <span class="badge-num-empleado">#{{ $c->num_empleado }}</span>
+                                @if ($c->num_empleado)
+                                    <span class="badge-num-empleado">#{{ $c->num_empleado }}</span>
+                                @endif
+                                @if ($pendiente)
+                                    <span class="badge-provisional"><i class="bi bi-hourglass-split" aria-hidden="true"></i> PROVISIONAL</span>
+                                @endif
                             </div>
                         </div>
 
@@ -99,6 +130,13 @@
                                     +{{ $adicionales->count() }} {{ $adicionales->count() === 1 ? 'sede adicional' : 'sedes adicionales' }}: {{ $adicionales->pluck('nombre')->join(', ') }}
                                 </div>
                             @endif
+                            @if ($pendiente)
+                                <div class="small mt-1 texto-provisional"><i class="bi bi-shield-exclamation" aria-hidden="true"></i> Alta provisional de la caseta: Recursos Humanos debe validarla.</div>
+                            @elseif ($c->fusionado_en_id && $c->fusionadoEn)
+                                <div class="small mt-1 text-muted"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Era un duplicado: se unió con #{{ $c->fusionadoEn->num_empleado }} {{ $c->fusionadoEn->nombreCompleto() }}.</div>
+                            @elseif ($c->validado_en)
+                                <div class="texto-traza mt-1"><i class="bi bi-patch-check" aria-hidden="true"></i> Validado por Recursos Humanos · {{ $c->validado_en->format('d/m/Y H:i') }}</div>
+                            @endif
                             @if ($c->creado_por_nombre)
                                 <div class="texto-traza mt-1"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $c->creado_por_nombre }} · {{ $c->created_at?->format('d/m/Y H:i') }}</div>
                             @endif
@@ -106,7 +144,22 @@
                                 <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $c->actualizado_por_nombre }} · {{ $c->updated_at->format('d/m/Y H:i') }}</div>
                             @endif
                         </div>
-                        @if ($puede['sedesAdicionales'] && $editable)
+                        @if ($validable)
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                <button type="button" class="btn-validar-colab"
+                                        data-accion="editar-registro" data-dialogo="dialogoValidarColaborador"
+                                        data-url="{{ route('colaboradores.validar', $c->id) }}" data-id="{{ $c->id }}" data-valores="{{ $valores }}">
+                                    <i class="bi bi-patch-check" aria-hidden="true"></i> Validar
+                                </button>
+                                <button type="button" class="btn-duplicado-colab"
+                                        data-accion="editar-registro" data-dialogo="dialogoFusionarColaborador"
+                                        data-url="{{ route('colaboradores.fusionar', $c->id) }}" data-id="{{ $c->id }}"
+                                        data-valores="{{ json_encode(['destino_id' => '']) }}">
+                                    <i class="bi bi-people" aria-hidden="true"></i> Es un duplicado
+                                </button>
+                            </div>
+                        @endif
+                        @if ($puede['sedesAdicionales'] && $editable && ! $pendiente)
                             <button type="button" class="btn-sedes-colab"
                                     data-accion="editar-registro" data-dialogo="dialogoSedesColaborador"
                                     data-url="{{ route('colaboradores.sedes', $c->id) }}" data-id="{{ $c->id }}"
@@ -117,7 +170,7 @@
                         @endif
                     </div>
                     <div class="ficha-footer">
-                        <span class="etiqueta-estado {{ $c->activo ? 'activo' : 'inactivo' }}">{{ $c->activo ? 'ACTIVO' : 'BAJA' }}</span>
+                        <span class="etiqueta-estado {{ $c->activo ? ($pendiente ? 'pendiente' : 'activo') : 'inactivo' }}">{{ $c->activo ? ($pendiente ? 'POR VALIDAR' : 'ACTIVO') : ($c->fusionado_en_id ? 'UNIDO' : 'BAJA') }}</span>
                         <div class="d-flex gap-2">
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar a {{ $nombreCompleto }}"
@@ -314,6 +367,106 @@
                 </div>
             </dialog>
         @endforeach
+
+        {{-- ===== Altas provisionales: la caseta registra, Recursos Humanos valida ===== --}}
+        @if ($puede['provisional'])
+            @include('organizacion.colaboradores._registro-rapido')
+        @endif
+
+        @if ($validacion)
+            @php
+                $reabrirValidar = is_string($dialogo) && str_starts_with($dialogo, 'validar-');
+                $validarId = $reabrirValidar ? (int) substr($dialogo, 8) : null;
+                $v = fn (string $campo) => $reabrirValidar ? old($campo) : '';
+            @endphp
+            <dialog id="dialogoValidarColaborador" class="dialogo ancho" aria-labelledby="titulo-co-validar" @if ($reabrirValidar) data-abrir-al-cargar @endif>
+                <div class="dialogo-cabecera">
+                    <h2 id="titulo-co-validar"><i class="bi bi-patch-check me-2 text-success" aria-hidden="true"></i>Validar alta provisional</h2>
+                    <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                </div>
+                <div class="dialogo-cuerpo">
+                    <p class="small text-muted">Revisa los datos que capturó la caseta, corrige lo necesario y asígnale su número de empleado. Desde ese momento es un colaborador normal.</p>
+                    <form action="{{ $validarId ? route('colaboradores.validar', $validarId) : '' }}" method="POST" autocomplete="off" data-form-colaborador>
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="_dialogo" value="{{ $validarId ? 'validar-'.$validarId : '' }}" data-campo-dialogo data-prefijo-dialogo="validar-">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="campo-etiqueta" for="validar_co_num">Núm. Empleado</label>
+                                <input type="text" id="validar_co_num" name="num_empleado" class="campo mb-1" maxlength="20" value="{{ $v('num_empleado') }}"
+                                       data-numeros-existentes="{{ $numeros }}" autocapitalize="characters" required>
+                                <p class="small mb-2" data-aviso-numero hidden></p>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="campo-etiqueta" for="validar_co_sede">Sede Física</label>
+                                <select id="validar_co_sede" name="sede_id" class="campo" data-colab-sede>
+                                    <option value="">-- Corporativo (todas las sedes) --</option>
+                                    @foreach ($validacion['sedes']->where('activo', true) as $sede)
+                                        <option value="{{ $sede->id }}" @selected((string) $v('sede_id') === (string) $sede->id)>{{ $sede->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="campo-etiqueta" for="validar_co_depto">Departamento</label>
+                                <select id="validar_co_depto" name="departamento_id" class="campo" data-colab-depto>
+                                    <option value="">-- Sin Departamento --</option>
+                                    @foreach ($validacion['departamentos']->where('activo', true) as $dep)
+                                        <option value="{{ $dep->id }}" data-todas="{{ $dep->todas_las_sedes ? 1 : 0 }}" data-sedes="{{ $dep->sedes->pluck('id')->join(',') }}" @selected((string) $v('departamento_id') === (string) $dep->id)>{{ $dep->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="campo-etiqueta" for="validar_co_puesto">Puesto</label>
+                                <select id="validar_co_puesto" name="puesto_id" class="campo" data-colab-puesto>
+                                    <option value="">-- Sin Puesto --</option>
+                                    @foreach ($validacion['puestos']->where('activo', true) as $pu)
+                                        <option value="{{ $pu->id }}" data-deps="{{ $pu->departamentos->pluck('id')->join(',') }}" @selected((string) $v('puesto_id') === (string) $pu->id)>{{ $pu->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4"><label class="campo-etiqueta" for="validar_co_nombre">Nombre(s)</label><input type="text" id="validar_co_nombre" name="nombre" class="campo" maxlength="60" value="{{ $v('nombre') }}" required></div>
+                            <div class="col-md-4"><label class="campo-etiqueta" for="validar_co_paterno">Apellido Paterno</label><input type="text" id="validar_co_paterno" name="apellido_paterno" class="campo" maxlength="60" value="{{ $v('apellido_paterno') }}" required></div>
+                            <div class="col-md-4"><label class="campo-etiqueta" for="validar_co_materno">Apellido Materno</label><input type="text" id="validar_co_materno" name="apellido_materno" class="campo" maxlength="60" value="{{ $v('apellido_materno') }}"></div>
+                        </div>
+                        <label class="campo-etiqueta" for="validar_co_tel">Teléfono <span class="text-lowercase fw-normal">(opcional)</span></label>
+                        <input type="tel" inputmode="tel" id="validar_co_tel" name="telefono" class="campo" maxlength="20" value="{{ $v('telefono') }}">
+                        <div class="dialogo-acciones">
+                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                            <button type="submit" class="btn-esmeralda">Validar Colaborador</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+
+            <dialog id="dialogoFusionarColaborador" class="dialogo" aria-labelledby="titulo-co-fusionar">
+                <div class="dialogo-cabecera">
+                    <h2 id="titulo-co-fusionar"><i class="bi bi-people me-2 text-warning" aria-hidden="true"></i>Es un duplicado</h2>
+                    <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                </div>
+                <div class="dialogo-cuerpo">
+                    <p class="small text-muted">Si esta persona ya estaba registrada, elige su registro correcto. Todo lo que la caseta registró con el alta provisional pasa a ese colaborador y el provisional queda dado de baja.</p>
+                    <form action="" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <label class="campo-etiqueta" for="fusionar_destino">Colaborador correcto</label>
+                        <select id="fusionar_destino" name="destino_id" class="campo" required>
+                            <option value="">-- Selecciona --</option>
+                            @foreach ($validados as $op)
+                                <option value="{{ $op->id }}">{{ $op->nombreCompleto() }} · #{{ $op->num_empleado }}{{ $op->sede ? ' · '.$op->sede->nombre : '' }}</option>
+                            @endforeach
+                        </select>
+                        <div class="dialogo-acciones">
+                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                            <button type="submit" class="btn-ambar">Unir registros</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        @endif
 
         {{-- ===== Sedes adicionales ===== --}}
         @if ($puede['sedesAdicionales'])

@@ -50,6 +50,29 @@ Si tu rol es de una sede, solo ves tus sedes; las demás sedes adicionales del c
 
 No se borra a nadie, para conservar su historial en bitácoras, pases y responsivas.
 
+## Altas provisionales (caseta)
+
+Si en la caseta necesitas registrar a alguien que **no aparece** al buscarlo:
+
+1. Toca **Alta provisional**. Más adelante también aparecerá dentro de los formularios de accesos, préstamos y pases.
+2. Escribe nombre, apellidos y sede. El número de empleado solo si lo sabes.
+3. Si ya hay alguien con ese nombre, la plataforma te lo muestra: tócalo para usarlo o elige **Es otra persona: registrarla**.
+
+![Alta provisional](img/colaboradores/10-provisional-parecido.png)
+
+La persona queda marcada **PROVISIONAL / POR VALIDAR** y ya puedes usarla.
+
+## Validar altas provisionales (Recursos Humanos)
+
+Al entrar verás el aviso "Hay N altas provisionales de la caseta por validar". Elige **Por validar** en el filtro.
+
+![Por validar](img/colaboradores/11-rh-por-validar.png)
+
+- **Validar:** revisa y corrige los datos, asigna su **número de empleado** y guarda. Desde ese momento es un colaborador normal.
+- **Es un duplicado:** si la persona ya estaba registrada (por ejemplo, "Beto Hernandez" es Roberto Hernández), elige su registro correcto. Todo lo que la caseta registró con el provisional pasa a ese colaborador y el provisional queda dado de baja.
+
+![Validar](img/colaboradores/12-validar.png)
+
 ## Datos personales
 
 CURP, RFC, NSS, fecha y estado de nacimiento, nacionalidad, correo personal y dirección solo los ve y captura quien tiene el permiso **Datos personales** (por omisión, el Administrador). Nunca aparecen en las fichas de la lista y en la bitácora de auditoría quedan ocultos (solo los últimos 4 caracteres).

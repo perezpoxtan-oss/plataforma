@@ -38,7 +38,7 @@ class MenuTest extends TestCase
     {
         $menu = $this->menuDe($this->crearSuperadmin());
 
-        $this->assertSame(['estructura', 'padrones', 'operacion'], array_keys($menu));
+        $this->assertSame(['estructura', 'recursos_humanos', 'padrones', 'operacion'], array_keys($menu));
         $this->assertContains('empresas', $menu['estructura']);
         $this->assertContains('llaves', $menu['padrones']);
         $this->assertContains('accesos', $menu['operacion']);

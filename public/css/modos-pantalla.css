@@ -339,3 +339,15 @@ html.modo-noche .btn-sedes-colab:hover { background: rgba(16, 185, 129, 0.24); }
 html.modo-noche .buscador-colab-resultados { background: var(--superficie); border-color: var(--borde); }
 html.modo-noche .buscador-colab-item { border-bottom-color: var(--borde); color: var(--texto); }
 html.modo-noche button.buscador-colab-item:hover, html.modo-noche button.buscador-colab-item:focus { background: var(--superficie-2); }
+
+/* Colaboradores provisionales */
+html.modo-sol .badge-provisional, html.modo-sol .etiqueta-estado.pendiente { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .ficha-pendiente { border: 3px dashed #000; }
+html.modo-sol .texto-provisional { color: #000; }
+html.modo-sol .caja-parecidos, html.modo-sol .opcion-parecido { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-noche .badge-provisional, html.modo-noche .etiqueta-estado.pendiente { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+html.modo-noche .texto-provisional { color: #fcd34d; }
+html.modo-noche .ficha-provisional { background: rgba(245, 158, 11, 0.06) !important; }
+html.modo-noche .btn-duplicado-colab { background: transparent; color: #fcd34d; border-color: #b45309; }
+html.modo-noche .caja-parecidos { background: rgba(245, 158, 11, 0.1); border-color: #b45309; color: #e2e8f0; }
+html.modo-noche .opcion-parecido { background: #0f172a; border-color: #334155; color: #e2e8f0; }

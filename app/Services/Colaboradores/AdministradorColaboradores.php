@@ -28,6 +28,19 @@ use Illuminate\Validation\ValidationException;
  */
 class AdministradorColaboradores
 {
+    /**
+     * Tablas que guardan un colaborador: al unir un alta provisional con el
+     * registro correcto, aquí se cambia la referencia. Cada módulo nuevo que
+     * guarde colaborador_id (préstamos, accesos, responsivas...) se agrega.
+     *
+     * @var array<string, string> tabla => columna
+     */
+    public const REFERENCIAS = [
+        'users' => 'colaborador_id',
+    ];
+
+    private const SIN_ACENTOS = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u'];
+
     public function __construct(
         private readonly Autorizador $autorizador,
         private readonly AdministradorRoles $auditoria,
@@ -132,6 +145,124 @@ class AdministradorColaboradores
         return $colaborador;
     }
 
+    /**
+     * Alta provisional desde la caseta: la persona aún no está en el directorio
+     * y hay que registrarla para no detener la operación. Queda marcada como
+     * provisional, se puede usar de inmediato en su sede y Recursos Humanos la
+     * valida (completa su número de empleado) o la une con el registro correcto.
+     *
+     * Si ya hay alguien activo con el mismo nombre, se detiene y lo propone
+     * (para no duplicar), salvo que el guardia confirme que es otra persona.
+     */
+    public function crearProvisional(User $actor, int $empresaId, Request $request): Colaborador
+    {
+        $datos = $this->validar($request, $actor, $empresaId, 'colaboradores.provisional', null, false, true, provisional: true);
+
+        if (! $request->boolean('confirmar_nuevo')) {
+            $parecidos = $this->parecidos($datos['nombre'], $datos['apellido_paterno'], $datos['apellido_materno']);
+            if ($parecidos !== []) {
+                throw new ColaboradorParecido($parecidos);
+            }
+        }
+
+        $colaborador = DB::transaction(function () use ($datos, $empresaId) {
+            $nuevo = new Colaborador($datos + ['empresa_id' => $empresaId]);
+            $nuevo->forceFill(['provisional' => true])->save();
+
+            return $nuevo;
+        });
+
+        $this->auditoria->auditar($actor, 'colaboradores.provisional', $colaborador, null, $this->foto($colaborador));
+
+        return $colaborador;
+    }
+
+    /**
+     * Recursos Humanos valida un alta provisional: confirma o corrige sus datos
+     * y le asigna su número de empleado. Desde ese momento es un colaborador normal.
+     */
+    public function validarProvisional(User $actor, int $empresaId, Colaborador $colaborador, Request $request): Colaborador
+    {
+        if (! $colaborador->provisional || $colaborador->fusionado_en_id !== null) {
+            throw ValidationException::withMessages(['num_empleado' => 'Este colaborador ya no está pendiente de validar.']);
+        }
+
+        $antes = $this->foto($colaborador);
+        $datos = $this->validar($request, $actor, $empresaId, 'colaboradores.aprobar', $colaborador, false, false);
+
+        DB::transaction(fn () => $colaborador->fill($datos)->forceFill([
+            'provisional' => false, 'validado_por' => $actor->id, 'validado_en' => now(), 'activo' => true,
+        ])->save());
+
+        $this->auditoria->auditar($actor, 'colaboradores.validado', $colaborador, $antes, $this->foto($colaborador));
+
+        return $colaborador;
+    }
+
+    /**
+     * El alta provisional era alguien que ya existía: todo lo que se registró
+     * con el provisional pasa al colaborador correcto y el provisional queda
+     * dado de baja, apuntando al registro que lo sustituye.
+     *
+     * Cada tabla que guarde un colaborador_id debe agregarse a REFERENCIAS.
+     */
+    public function fusionar(User $actor, Colaborador $provisional, Colaborador $destino): void
+    {
+        if (! $provisional->provisional || $provisional->fusionado_en_id !== null) {
+            throw ValidationException::withMessages(['destino_id' => 'Este colaborador ya no está pendiente de validar.']);
+        }
+        if ($destino->id === $provisional->id || $destino->provisional || ! $destino->activo || $destino->empresa_id !== $provisional->empresa_id) {
+            throw ValidationException::withMessages(['destino_id' => 'Elige un colaborador activo y ya validado.']);
+        }
+
+        $movidos = DB::transaction(function () use ($provisional, $destino) {
+            $movidos = [];
+            foreach (self::REFERENCIAS as $tabla => $columna) {
+                $consulta = DB::table($tabla)->where($columna, $provisional->id);
+                // Una cuenta de usuario por colaborador: si el correcto ya tiene una, la del provisional se desvincula
+                if ($tabla === 'users' && DB::table('users')->where('colaborador_id', $destino->id)->exists()) {
+                    $movidos[$tabla] = (clone $consulta)->update(['colaborador_id' => null]);
+
+                    continue;
+                }
+                $movidos[$tabla] = $consulta->update([$columna => $destino->id]);
+            }
+            $provisional->forceFill(['activo' => false, 'fusionado_en_id' => $destino->id])->save();
+
+            return $movidos;
+        });
+
+        $this->auditoria->auditar($actor, 'colaboradores.fusionado', $provisional,
+            ['provisional' => $provisional->only(['nombre', 'apellido_paterno', 'apellido_materno', 'sede_id'])],
+            ['fusionado_en' => $destino->id, 'num_empleado' => $destino->num_empleado, 'referencias' => $movidos]);
+    }
+
+    /**
+     * Activos con el mismo nombre completo (sin importar mayúsculas ni acentos).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function parecidos(string $nombre, string $paterno, ?string $materno): array
+    {
+        $clave = fn (?string $t) => mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', strtr((string) $t, self::SIN_ACENTOS))));
+        $buscado = $clave($nombre.' '.$paterno);
+
+        return Colaborador::query()->where('activo', true)->whereNull('fusionado_en_id')
+            // Primero acota por la inicial del apellido (con o sin acento) y luego compara en PHP sin acentos
+            ->where(function ($q) use ($paterno, $clave) {
+                $inicial = mb_substr($clave($paterno), 0, 1);
+                foreach (array_unique([$inicial, array_search($inicial, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u'], true) ?: $inicial]) as $letra) {
+                    $q->orWhereRaw('LOWER(apellido_paterno) LIKE ?', [$letra.'%']);
+                }
+            })
+            ->limit(200)->get()
+            ->filter(fn (Colaborador $c) => $clave($c->nombre.' '.$c->apellido_paterno) === $buscado
+                && ($materno === null || $c->apellido_materno === null || $clave($c->apellido_materno) === $clave($materno)))
+            ->take(5)
+            ->map(fn (Colaborador $c) => $this->resumen($c))
+            ->values()->all();
+    }
+
     public function actualizar(User $actor, int $empresaId, Colaborador $colaborador, Request $request): Colaborador
     {
         $conDatos = $actor->can('colaboradores.datos_personales');
@@ -203,14 +334,15 @@ class AdministradorColaboradores
     /**
      * @return array<string, mixed> columnas listas para guardar
      */
-    private function validar(Request $request, User $actor, int $empresaId, string $permiso, ?Colaborador $actual, bool $conDatos, bool $rapido): array
+    private function validar(Request $request, User $actor, int $empresaId, string $permiso, ?Colaborador $actual, bool $conDatos, bool $rapido, bool $provisional = false): array
     {
         $entrada = $this->normalizar($request->all());
 
         $unico = fn (string $campo) => Rule::unique('colaboradores', $campo)->where('empresa_id', $empresaId)->ignore($actual?->id);
 
         $reglas = [
-            'num_empleado' => ['required', 'string', 'max:20', $unico('num_empleado')],
+            // En un alta provisional el guardia puede no conocerlo: lo asigna Recursos Humanos
+            'num_empleado' => [$provisional ? 'nullable' : 'required', 'string', 'max:20', $unico('num_empleado')],
             'nombre' => ['required', 'string', 'max:60'],
             'apellido_paterno' => ['required', 'string', 'max:60'],
             'apellido_materno' => ['nullable', 'string', 'max:60'],
@@ -276,7 +408,7 @@ class AdministradorColaboradores
         $puestoId = $this->puestoValido($validados['puesto_id'] ?? null, $departamentoId, $actual);
 
         $datos = [
-            'num_empleado' => $validados['num_empleado'],
+            'num_empleado' => $validados['num_empleado'] ?? null,
             'nombre' => $validados['nombre'],
             'apellido_paterno' => $validados['apellido_paterno'],
             'apellido_materno' => $validados['apellido_materno'] ?? null,
@@ -442,6 +574,7 @@ class AdministradorColaboradores
             'departamento' => $c->departamento?->nombre,
             'sede_id' => $c->sede_id,
             'sede' => $c->sede?->nombre,
+            'provisional' => (bool) $c->provisional,
         ];
     }
 
