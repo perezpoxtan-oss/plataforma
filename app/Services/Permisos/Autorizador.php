@@ -112,6 +112,27 @@ class Autorizador
         return $this->cache[$usuario->id] = $resultado;
     }
 
+    /**
+     * Sedes en las que el usuario puede usar un permiso: null = todas las de
+     * su empresa; [] = ninguna.
+     *
+     * @return list<int>|null
+     */
+    public function sedesPermitidas(User $usuario, string $permiso): ?array
+    {
+        if ($usuario->es_superadmin) {
+            return null;
+        }
+
+        $efectivo = $this->permisosEfectivos($usuario)[$permiso] ?? null;
+
+        return match (true) {
+            $efectivo === null => [],
+            $efectivo->alcance === Alcance::Empresa, $efectivo->sedes === null => null,
+            default => array_values($efectivo->sedes),
+        };
+    }
+
     public function dentroDeAlcance(User $usuario, PermisoEfectivo $efectivo, Model $registro): bool
     {
         $empresaRegistro = $this->atributo($registro, 'empresa_id');

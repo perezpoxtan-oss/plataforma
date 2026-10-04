@@ -9,6 +9,7 @@ use App\Http\Controllers\Administracion\SedeController;
 use App\Http\Controllers\Administracion\UsuarioController;
 use App\Http\Controllers\Auth\SesionController;
 use App\Http\Controllers\ModuloPendienteController;
+use App\Http\Controllers\Organizacion\EspacioController;
 use App\Http\Controllers\PanelController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +43,18 @@ Route::middleware('auth')->group(function () {
     Route::post('/sedes', [SedeController::class, 'store'])->name('sedes.store');
     Route::put('/sedes/{sede}', [SedeController::class, 'update'])->whereNumber('sede')->name('sedes.update');
     Route::patch('/sedes/{sede}/estado', [SedeController::class, 'estado'])->whereNumber('sede')->name('sedes.estado');
+    // Zonas y áreas (árbol de espacios)
+    Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');
+    Route::post('/espacios', [EspacioController::class, 'store'])->name('espacios.store');
+    Route::post('/espacios/tipos', [EspacioController::class, 'tipo'])->name('espacios.tipo');
+    Route::post('/espacios/secciones', [EspacioController::class, 'seccion'])->name('espacios.seccion');
+    Route::put('/espacios/secciones/{grupo}', [EspacioController::class, 'asignarSeccion'])->whereNumber('grupo')->name('espacios.seccion.asignar');
+    Route::get('/espacios/{espacio}', [EspacioController::class, 'show'])->whereNumber('espacio')->name('espacios.show');
+    Route::put('/espacios/{espacio}', [EspacioController::class, 'update'])->whereNumber('espacio')->name('espacios.update');
+    Route::patch('/espacios/{espacio}/estado', [EspacioController::class, 'estado'])->whereNumber('espacio')->name('espacios.estado');
+    Route::post('/espacios/{espacio}/lote', [EspacioController::class, 'lote'])->whereNumber('espacio')->name('espacios.lote');
+    Route::post('/espacios/{espacio}/copiar-pisos', [EspacioController::class, 'copiarPisos'])->whereNumber('espacio')->name('espacios.copiar');
+
     Route::get('/identidad', [IdentidadController::class, 'edit'])->name('identidad.edit');
     Route::put('/identidad', [IdentidadController::class, 'update'])->name('identidad.update');
     Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');

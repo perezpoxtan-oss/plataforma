@@ -139,7 +139,13 @@
     document.addEventListener('click', function (evento) {
         var abrirEn = evento.target.closest('[data-abrir-dialogo]');
         if (abrirEn) {
-            abrir(document.getElementById(abrirEn.getAttribute('data-abrir-dialogo')));
+            var destino = document.getElementById(abrirEn.getAttribute('data-abrir-dialogo'));
+            // Un mismo diálogo para varios contenedores (p. ej. elementos de cada área)
+            if (destino && abrirEn.hasAttribute('data-padre')) {
+                destino.querySelectorAll('[data-campo-padre]').forEach(function (c) { c.value = abrirEn.getAttribute('data-padre'); });
+                destino.querySelectorAll('[data-padre-nombre]').forEach(function (c) { c.textContent = abrirEn.getAttribute('data-padre-nombre') || ''; });
+            }
+            abrir(destino);
             return;
         }
 
@@ -349,13 +355,16 @@
         var clave = contenedor.dataset.fichas;
         var buscador = document.querySelector('[data-filtro-texto="' + clave + '"]');
         var activo = document.querySelector('[data-filtro-estado="' + clave + '"][aria-pressed="true"]');
+        var selSede = document.querySelector('[data-filtro-sede="' + clave + '"]');
         var texto = buscador ? buscador.value.toLowerCase().trim() : '';
         var estado = activo ? activo.dataset.valor : 'todas';
+        var sede = selSede ? selSede.value : '';
         var visibles = 0;
 
         contenedor.querySelectorAll('[data-ficha]').forEach(function (f) {
             var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1)
-                && (estado === 'todas' || f.dataset.estado === estado);
+                && (estado === 'todas' || f.dataset.estado === estado)
+                && (sede === '' || f.dataset.sede === sede);
             f.style.display = ok ? '' : 'none';
             if (ok) { visibles++; }
         });
@@ -374,12 +383,16 @@
     }
 
     function contenedorDe(el) {
-        var clave = el.dataset.filtroTexto || el.dataset.filtroEstado;
+        var clave = el.dataset.filtroTexto || el.dataset.filtroEstado || el.dataset.filtroSede;
         return document.querySelector('[data-fichas="' + clave + '"]');
     }
 
     document.addEventListener('input', function (e) {
         if (e.target.matches('[data-filtro-texto]')) { var c = contenedorDe(e.target); if (c) { aplicar(c); } }
+    });
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-filtro-sede]')) { var c = contenedorDe(e.target); if (c) { aplicar(c); } }
     });
 
     document.addEventListener('click', function (e) {
@@ -416,3 +429,17 @@
         }
     });
 })();
+
+/* Crear por lote: cambiar entre rango numérico y lista de nombres */
+document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-modo-lote]');
+    if (!b) { return; }
+    var form = b.closest('form');
+    var modo = b.dataset.modoLote;
+    form.querySelector('[data-modo-actual]').value = modo;
+    form.querySelectorAll('[data-modo-lote]').forEach(function (x) {
+        x.classList.toggle('btn-dark', x === b);
+        x.classList.toggle('btn-outline-dark', x !== b);
+    });
+    form.querySelectorAll('[data-panel-lote]').forEach(function (p) { p.hidden = p.dataset.panelLote !== modo; });
+});

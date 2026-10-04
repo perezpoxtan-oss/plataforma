@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RubrosSeeder::class,
             RolesPlantillaSeeder::class,
             MenuSeeder::class,
+            TiposEspacioSeeder::class,
         ]);
     }
 }

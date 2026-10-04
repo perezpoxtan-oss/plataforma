@@ -352,3 +352,48 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .campo-grupo { display: flex; gap: 0.75rem; }
 .campo-grupo > * { min-width: 0; }
 @media (max-width: 575.98px) { .campo-grupo { flex-direction: column; gap: 0; } }
+
+/* ==========================================================================
+   Zonas y áreas (réplica de modules/ubicaciones de SEGCAT)
+   ========================================================================== */
+.tema-ambar .ficha-card:hover { box-shadow: 0 12px 24px -10px rgba(180,83,9,0.2); border-color: rgba(180,83,9,0.4); }
+.tema-ambar .ficha-create { background: rgba(180,83,9,0.03); border-color: rgba(180,83,9,0.3); min-height: 140px; }
+.tema-ambar .ficha-create:hover { background: rgba(180,83,9,0.08); border-color: #b45309; }
+.tema-ambar .ficha-create i, .tema-ambar .ficha-create .titulo-crear { color: #b45309; }
+.tema-ambar .btn-icono.editar { color: #b45309; }
+.tema-ambar .btn-icono.editar:hover { background: #b45309; color: #fff; }
+.tema-ambar .campo:focus, .tema-ambar .buscador input:focus { border-color: #b45309; box-shadow: 0 0 0 3px rgba(180,83,9,0.15); outline: none; }
+.btn-ambar { background: #b45309; color: #fff; }
+.tema-rojo .ficha-title-ubicacion { color: var(--texto); }
+
+.migas { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; font-size: 0.82rem; margin-bottom: 1rem; }
+.migas a { color: var(--texto-suave); text-decoration: none; font-weight: 600; }
+.migas a:hover { color: var(--color-primario); }
+.migas .actual { color: var(--texto); font-weight: 700; }
+.migas i { color: var(--texto-tenue); font-size: 0.7rem; }
+
+.btn-entrar { background: #fef3c7; color: #b45309; border: none; padding: 0.7rem 1rem; min-height: 44px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; width: 100%; margin-top: 0.9rem; text-decoration: none; }
+.btn-entrar:hover { background: #fde68a; color: #92400e; }
+.tema-rojo .btn-entrar { background: #fee2e2; color: #b91c1c; }
+.tema-rojo .btn-entrar:hover { background: #fecaca; color: #991b1b; }
+
+.pestanas { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.pestanas .btn { min-height: 44px; border-radius: 10px; font-weight: 700; }
+.ficha-compacta { padding: 1.1rem; }
+.ficha-compacta .ficha-footer { margin-top: 0.8rem; padding-top: 0.7rem; }
+.etiqueta-inactiva { background: #fee2e2; color: #b91c1c; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; vertical-align: middle; }
+.chip-seccion { display: inline-flex; align-items: center; gap: 0.3rem; background: #f1f5f9; color: #475569; border: 1px solid var(--borde); font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+
+.area-habitacion { background: #fff; border: 1px solid var(--borde); border-radius: 18px; padding: 1.1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+.area-habitacion.inactiva { opacity: 0.6; }
+.area-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+.elemento { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; background: var(--fondo); border: 1px solid var(--borde); border-radius: 10px; padding: 0.45rem 0.7rem; font-size: 0.85rem; }
+.elemento.inactivo { opacity: 0.55; text-decoration: line-through; }
+.elemento .btn-icono { width: 34px; height: 34px; border-radius: 9px; }
+.btn-agregar-elemento { background: transparent; border: 1px dashed #fca5a5; color: #dc2626; border-radius: 10px; padding: 0.55rem; font-weight: 700; font-size: 0.8rem; cursor: pointer; min-height: 40px; }
+.btn-agregar-elemento:hover { background: #fef2f2; }
+.lote-modos { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.lote-modos .btn { flex: 1; min-height: 40px; }
+.lista-asignar { max-height: 45vh; overflow-y: auto; display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
+.opcion-asignar { display: flex; align-items: center; gap: 0.6rem; border: 1px solid var(--borde); border-radius: 10px; padding: 0.55rem 0.75rem; cursor: pointer; min-height: 44px; }
+.opcion-asignar:has(input:checked) { border-color: #fca5a5; background: #fef2f2; }
