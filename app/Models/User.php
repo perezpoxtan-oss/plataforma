@@ -22,7 +22,7 @@ class User extends Authenticatable
     protected $attributes = ['activo' => true, 'es_superadmin' => false, 'intentos_fallidos' => 0];
 
     protected $fillable = [
-        'empresa_id', 'name', 'username', 'email', 'password', 'activo',
+        'empresa_id', 'name', 'username', 'numero_colaborador', 'email', 'password', 'activo',
     ];
 
     protected $hidden = ['password', 'remember_token'];

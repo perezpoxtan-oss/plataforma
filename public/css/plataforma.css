@@ -274,3 +274,32 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .select-alcance:disabled { background: var(--fondo); color: var(--texto-tenue); }
 .aviso-solo-lectura { background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.3); color: #92640a; padding: 0.9rem 1.2rem; border-radius: 12px; font-size: 0.9rem; margin-bottom: 1.5rem; }
 .btn-guardar-permisos { background: linear-gradient(135deg, #eab308, #ca8a04); color: #fff; border: none; padding: 0.9rem 2rem; border-radius: 12px; font-weight: 700; margin-top: 1.5rem; cursor: pointer; font-family: inherit; }
+
+/* ---------- Tema rojo (Usuarios, como en SEGCAT) ---------- */
+.tema-rojo .ficha-card:hover { box-shadow: 0 12px 24px -10px rgba(220,53,69,0.2); border-color: rgba(220,53,69,0.4); }
+.tema-rojo .ficha-create { background: rgba(220,53,69,0.03); border-color: rgba(220,53,69,0.4); min-height: 220px; }
+.tema-rojo .ficha-create:hover { background: rgba(220,53,69,0.08); border-color: #dc3545; }
+.tema-rojo .ficha-create i, .tema-rojo .ficha-create .titulo-crear { color: #dc3545; }
+.tema-rojo .btn-icono.editar { color: #dc3545; }
+.tema-rojo .btn-icono.editar:hover { background: #dc3545; color: #fff; }
+.btn-icono.desactivar { color: #64748b; }
+.btn-icono.desactivar:hover { background: #64748b; color: #fff; }
+.btn-icono.reactivar { color: #16a34a; }
+.btn-icono.reactivar:hover { background: #16a34a; color: #fff; }
+.tema-rojo .campo:focus { border-color: #dc3545; box-shadow: 0 0 0 3px rgba(220,53,69,0.15); }
+.btn-rojo { background: linear-gradient(135deg, #dc3545, #b02a37); color: #fff; }
+.dialogo.ancho { max-width: 700px; }
+.ficha-meta { background: var(--fondo); color: #475569; font-size: 0.8rem; font-weight: 700; padding: 0.5rem; border-radius: 8px; display: flex; flex-direction: column; gap: 0.3rem; margin-top: 1rem; border: 1px solid var(--borde); width: 100%; }
+.avatar-letra { width: 40px; height: 40px; border-radius: 10px; background: var(--color-primario-suave); color: var(--color-primario); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
+.barra-filtros { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; max-width: 760px; }
+@media (min-width: 576px) { .barra-filtros { flex-direction: row; } }
+.filtro-select { background: #fff; border: 1px solid var(--borde); border-radius: 16px; padding: 0.85rem 2.5rem 0.85rem 1rem; font-size: 0.9rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); cursor: pointer; max-width: 220px; font-family: inherit; }
+.buscador { position: relative; width: 100%; max-width: 400px; }
+.buscador input { width: 100%; background: #fff; border: 1px solid var(--borde); border-radius: 16px; padding: 0.85rem 1rem 0.85rem 3rem; font-size: 0.95rem; color: var(--texto); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: all 0.2s; font-family: inherit; }
+.buscador i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--texto-tenue); font-size: 1.1rem; }
+.tema-rojo .buscador input:focus, .tema-rojo .filtro-select:focus { outline: none; border-color: #dc3545; box-shadow: 0 0 0 4px rgba(220,53,69,0.1); }
+.sin-resultados { grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: var(--texto-tenue); }
+.sin-resultados i { font-size: 2.5rem; opacity: 0.5; }
+.etiqueta-estado { border-radius: 999px; padding: 0.5rem 1rem; font-weight: 700; font-size: 0.75rem; }
+.etiqueta-estado.activo { background: #d1e7dd; color: #198754; }
+.etiqueta-estado.inactivo { background: #f8d7da; color: #dc3545; }
