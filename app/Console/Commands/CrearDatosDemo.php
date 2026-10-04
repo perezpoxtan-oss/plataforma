@@ -54,13 +54,17 @@ class CrearDatosDemo extends Command
             ?? $provisionar->crear(Rubro::where('clave', 'hotel')->firstOrFail(), [
                 'nombre_comercial' => self::EMPRESA,
                 'razon_social' => 'Hotel Demo S.A. de C.V.',
+                'rfc' => 'HDE200101AA1',
                 'zona_horaria' => 'America/Cancun',
             ]);
 
         $sedes = $tenant->conEmpresa($empresa->id, fn () => collect([
-            'CEN' => 'Hotel Demo Centro',
-            'PLA' => 'Hotel Demo Playa',
-        ])->map(fn ($nombre, $codigo) => Sede::firstOrCreate(['codigo' => $codigo], ['nombre' => $nombre])));
+            'CEN' => ['Hotel Demo Centro', 'Av. Tulum 200', 'Centro', '77500'],
+            'PLA' => ['Hotel Demo Playa', 'Blvd. Kukulcán km 9', 'Zona Hotelera', '77500'],
+        ])->map(fn ($d, $codigo) => Sede::updateOrCreate(['codigo' => $codigo], [
+            'nombre' => $d[0], 'ciudad' => 'Cancún', 'entidad' => 'Quintana Roo',
+            'direccion' => $d[1], 'colonia' => $d[2], 'codigo_postal' => $d[3],
+        ])));
 
         foreach (self::USUARIOS as $usuario => [$nombre, $rol, $sede]) {
             $cuenta = User::firstOrNew(['username' => $usuario]);

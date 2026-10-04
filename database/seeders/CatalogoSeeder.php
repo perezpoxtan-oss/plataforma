@@ -35,6 +35,8 @@ class CatalogoSeeder extends Seeder
      * los modulos sin ruta muestran el aviso "en migracion".
      */
     public const RUTAS = [
+        'empresas' => 'empresas.index',
+        'sedes' => 'sedes.index',
         'roles' => 'roles.index',
         'permisos' => 'permisos.index',
         'usuarios' => 'usuarios.index',

@@ -324,3 +324,31 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .vp-pie { font-size: 0.7rem; color: var(--texto-suave); margin-top: 0.8rem; }
 /* Con símbolo propio (normalmente blanco) el recuadro del acceso usa el color principal */
 .acceso-simbolo:has(img) { background: linear-gradient(135deg, var(--color-primario), var(--color-primario-hover)); box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primario) 20%, transparent); }
+
+/* ---------- Tema verde (Sedes, como "Hoteles Sede" en SEGCAT) ---------- */
+.tema-verde .ficha-card:hover { box-shadow: 0 12px 24px -10px rgba(22,163,74,0.2); border-color: rgba(22,163,74,0.4); }
+.tema-verde .ficha-create { background: rgba(22,163,74,0.03); border-color: rgba(22,163,74,0.4); }
+.tema-verde .ficha-create:hover { background: rgba(22,163,74,0.08); border-color: #16a34a; }
+.tema-verde .ficha-create i, .tema-verde .ficha-create .titulo-crear, .tema-verde .ficha-title { color: #16a34a; }
+.tema-verde .btn-icono.editar { color: #16a34a; }
+.tema-verde .btn-icono.editar:hover { background: #16a34a; color: #fff; }
+.tema-verde .campo:focus, .tema-verde .buscador input:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.15); outline: none; }
+.btn-verde { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; }
+
+/* ---------- Tema azul (Empresas) ---------- */
+.tema-azul .ficha-card:hover { box-shadow: 0 12px 24px -10px rgba(37,99,235,0.15); border-color: rgba(37,99,235,0.3); }
+.tema-azul .ficha-create { background: rgba(37,99,235,0.03); border-color: rgba(37,99,235,0.4); }
+.tema-azul .ficha-create:hover { background: rgba(37,99,235,0.08); border-color: #2563eb; }
+.tema-azul .ficha-create i, .tema-azul .ficha-create .titulo-crear { color: #2563eb; }
+.tema-azul .btn-icono.editar { color: #2563eb; }
+.tema-azul .btn-icono.editar:hover { background: #2563eb; color: #fff; }
+.tema-azul .campo:focus, .tema-azul .buscador input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); outline: none; }
+.btn-azul { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; }
+
+.ficha-subtitulo { font-size: 0.85rem; color: var(--texto-suave); font-weight: 500; }
+.ficha-dato { background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 700; padding: 0.35rem 0.75rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 1rem; border: 1px solid var(--borde); }
+.ficha-resaltada { box-shadow: 0 0 0 3px #16a34a !important; }
+.filtros-estado { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.campo-grupo { display: flex; gap: 0.75rem; }
+.campo-grupo > * { min-width: 0; }
+@media (max-width: 575.98px) { .campo-grupo { flex-direction: column; gap: 0; } }
