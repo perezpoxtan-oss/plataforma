@@ -22,6 +22,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
+            // MariaDB usa este índice compuesto para la llave foránea de empresa_id:
+            // antes de quitarlo, la llave necesita su propio índice.
+            $table->index('empresa_id');
             $table->dropUnique(['empresa_id', 'numero_colaborador']);
             $table->dropColumn('numero_colaborador');
         });
