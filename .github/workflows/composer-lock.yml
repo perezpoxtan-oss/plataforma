@@ -1,0 +1,35 @@
+name: Actualizar composer.lock
+
+# El entorno de desarrollo de Claude no puede descargar paquetes de Composer.
+# Este flujo genera composer.lock en GitHub y lo sube a la rama.
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop]
+    paths: [composer.json]
+
+permissions:
+  contents: write
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - name: composer update
+        run: composer update --no-interaction --prefer-dist --no-progress --no-scripts
+      - name: Subir composer.lock si cambio
+        run: |
+          if [ -n "$(git status --porcelain composer.lock)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add composer.lock
+            git commit -m "Actualiza composer.lock"
+            git push
+          else
+            echo "composer.lock sin cambios"
+          fi
