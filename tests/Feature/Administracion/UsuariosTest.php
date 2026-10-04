@@ -179,7 +179,7 @@ class UsuariosTest extends TestCase
         $playa = $this->crearSede($this->empresa, 'PLA');
 
         $sa = $this->crearSuperadmin();
-        $gerente = app(AdministradorRoles::class)->crearRol($sa, $this->empresa->id, ['nombre' => 'Gerente de sede', 'nivel_jerarquia' => 40]);
+        $gerente = app(AdministradorRoles::class)->crearRol($sa, $this->empresa->id, ['nombre' => 'Gerente de sede', 'nivel_jerarquia' => 35]);
         app(AdministradorRoles::class)->sincronizarPermisos($sa, $gerente, ['usuarios.ver' => Alcance::Sede]);
 
         $actor = $this->crearUsuario($this->empresa, 'Gerente de sede', $centro);

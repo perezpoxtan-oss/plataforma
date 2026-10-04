@@ -172,8 +172,12 @@ class AdministradorRoles
             throw new AuthorizationException('Solo puedes administrar roles de tu empresa.');
         }
 
-        if ($rol->nivel_jerarquia <= $actor->nivelJerarquia()) {
-            throw new AuthorizationException('No puedes administrar un rol de nivel igual o superior al tuyo.');
+        $nivelPropio = $actor->nivelJerarquia();
+        if ($rol->nivel_jerarquia <= $nivelPropio) {
+            throw new AuthorizationException(sprintf(
+                'Tu nivel es %d: solo puedes crear o administrar roles de nivel %d en adelante (número mayor = menos autoridad). El nivel %d es igual o superior al tuyo.',
+                $nivelPropio, $nivelPropio + 1, $rol->nivel_jerarquia,
+            ));
         }
     }
 

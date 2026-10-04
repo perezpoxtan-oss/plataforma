@@ -169,7 +169,7 @@
                         @foreach ($zonas as $grupo => $opciones)
                             <optgroup label="{{ $grupo }}">
                                 @foreach ($opciones as $zona => $etiqueta)
-                                    <option value="{{ $zona }}" @selected($valor('zona_horaria', 'America/Cancun') === $zona)>{{ $etiqueta }}</option>
+                                    <option value="{{ $zona }}" @selected($valor('zona_horaria', 'America/Cancun') === $zona) @if ($zona === 'America/Cancun') data-por-defecto @endif>{{ $etiqueta }}</option>
                                 @endforeach
                             </optgroup>
                         @endforeach

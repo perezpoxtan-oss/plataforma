@@ -238,6 +238,8 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .campo { width: 100%; background: var(--fondo); border: 1px solid var(--borde); border-radius: 12px; padding: 0.85rem; font-size: 0.95rem; margin-bottom: 1rem; font-family: inherit; color: var(--texto); }
 .campo:focus { background: #fff; border-color: #6366f1; outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
 .campo-ayuda { margin-top: -0.6rem; font-size: 0.875em; color: var(--texto-suave); }
+/* Empresa a la que pertenece el registro (multi-empresa visible en el alta) */
+.linea-empresa { font-size: 0.875em; padding: 0.5rem 0.75rem; border: 1px dashed var(--borde); border-radius: 10px; background: var(--color-primario-suave); }
 .dialogo-acciones { display: flex; gap: 1rem; margin-top: 1rem; position: sticky; bottom: -1px; background: #fff; padding: 0.75rem 0; border-top: 1px solid var(--borde); z-index: 3; }
 .dialogo-acciones button { flex: 1; padding: 0.9rem; border-radius: 12px; font-weight: 600; border: none; cursor: pointer; font-family: inherit; }
 .btn-cancelar { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1 !important; }

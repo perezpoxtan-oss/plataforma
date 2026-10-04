@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Administracion;
 
 use App\Http\Controllers\Controller;
+use App\Models\Empresa;
 use App\Models\Rol;
 use App\Services\Permisos\AdministradorRoles;
 use App\Support\Tenancy\EmpresaDeTrabajo;
@@ -51,6 +52,7 @@ class RolController extends Controller
             'nivelesUsados' => $roles->pluck('nivel_jerarquia')->all(),
             'nivelPropio' => $nivelPropio,
             'esPlantillas' => $this->empresa->esPlantillas($usuario),
+            'empresaNombre' => $empresaId === null ? null : Empresa::whereKey($empresaId)->value('nombre_comercial'),
             'puede' => [
                 'crear' => $usuario->can('roles.crear'),
                 'editar' => $usuario->can('roles.editar'),

@@ -216,7 +216,7 @@ class EspaciosTest extends TestCase
         $playa = $this->crearSede($this->empresa, 'PLA');
         $this->actingAs($this->admin)->post('/espacios', ['nivel' => 'edificio', 'sede_id' => $playa->id, 'nombre' => 'Villas Playa']);
         $sa = $this->crearSuperadmin();
-        $gerente = app(AdministradorRoles::class)->crearRol($sa, $this->empresa->id, ['nombre' => 'Gerente', 'nivel_jerarquia' => 40]);
+        $gerente = app(AdministradorRoles::class)->crearRol($sa, $this->empresa->id, ['nombre' => 'Gerente', 'nivel_jerarquia' => 35]);
         app(AdministradorRoles::class)->sincronizarPermisos($sa, $gerente, ['espacios.ver' => Alcance::Sede]);
         $usuario = $this->crearUsuario($this->empresa, 'Gerente', $this->sede);
         $this->flushSession(); // sin el aviso «Villas Playa agregado» del alta anterior

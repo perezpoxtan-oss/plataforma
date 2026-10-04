@@ -162,7 +162,7 @@ class EmpresasYSedesTest extends TestCase
         $playa = $this->crearSede($this->empresa, 'PLA');
 
         $sa = $this->crearSuperadmin();
-        $gerente = app(AdministradorRoles::class)->crearRol($sa, $this->empresa->id, ['nombre' => 'Gerente', 'nivel_jerarquia' => 40]);
+        $gerente = app(AdministradorRoles::class)->crearRol($sa, $this->empresa->id, ['nombre' => 'Gerente', 'nivel_jerarquia' => 35]);
         app(AdministradorRoles::class)->sincronizarPermisos($sa, $gerente, ['sedes.ver' => Alcance::Sede]);
         $usuario = $this->crearUsuario($this->empresa, 'Gerente', $centro);
 

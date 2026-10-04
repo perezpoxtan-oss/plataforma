@@ -75,12 +75,12 @@ class RolesYPermisosTest extends TestCase
 
     public function test_crea_un_rol_por_debajo_de_su_nivel(): void
     {
-        $this->actingAs($this->admin)->post('/roles', ['nombre' => 'Coordinador', 'descripcion' => 'Turno nocturno', 'nivel_jerarquia' => 40])
+        $this->actingAs($this->admin)->post('/roles', ['nombre' => 'Coordinador', 'descripcion' => 'Turno nocturno', 'nivel_jerarquia' => 35])
             ->assertRedirect('/roles')
             ->assertSessionHas('ok');
 
         $rol = $this->rol('Coordinador');
-        $this->assertSame(40, $rol->nivel_jerarquia);
+        $this->assertSame(35, $rol->nivel_jerarquia);
         $this->assertSame($this->admin->id, (int) $rol->creado_por);
         $this->assertDatabaseHas('auditoria', ['evento' => 'roles.creado', 'auditable_id' => $rol->id]);
     }
@@ -240,8 +240,8 @@ class RolesYPermisosTest extends TestCase
 
     public function test_no_otorga_lo_que_no_tiene_pero_conserva_lo_existente(): void
     {
-        // Coordinador (nivel 40): administra permisos, pero en accesos solo tiene "ver" de su sede
-        $coordinador = app(AdministradorRoles::class)->crearRol($this->crearSuperadmin(), $this->empresa->id, ['nombre' => 'Coordinador', 'nivel_jerarquia' => 40]);
+        // Coordinador (nivel 35): administra permisos, pero en accesos solo tiene "ver" de su sede
+        $coordinador = app(AdministradorRoles::class)->crearRol($this->crearSuperadmin(), $this->empresa->id, ['nombre' => 'Coordinador', 'nivel_jerarquia' => 35]);
         app(AdministradorRoles::class)->sincronizarPermisos($this->crearSuperadmin(), $coordinador, [
             'permisos.ver' => Alcance::Empresa, 'permisos.editar' => Alcance::Empresa, 'accesos.ver' => Alcance::Sede,
         ]);

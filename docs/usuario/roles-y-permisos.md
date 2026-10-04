@@ -7,7 +7,24 @@ Los **roles** son perfiles (Administrador, Supervisor, Agente…). Los **permiso
 ![Roles](img/roles/1-roles.png)
 
 - Cada ficha muestra el **nivel**: menor número = más autoridad. Solo puedes administrar roles con un número **mayor** que el tuyo.
+- Debajo del título se ve de qué empresa son los roles: "Roles de «Hotel Demo»".
 - **Nuevo Rol:** escribe el nombre, una descripción y un nivel que no esté ocupado. Para meterlo entre dos niveles usa un número intermedio, por ejemplo 25 entre 20 y 30.
+- Debajo del nivel la pantalla te dice **tu nivel** y desde qué número puedes crear: "Tu nivel es 10. Solo puedes crear roles de nivel 11 en adelante (número mayor = menos autoridad: 20 Director, 30 Jefe de seguridad, 40 Asistente, 50 Supervisor, 60 Agente)". Si escribes un número menor, el aviso lo explica igual.
+
+![Nivel explicado al crear un rol](img/ajustes2/04-nivel-de-rol-explicado.png)
+
+### Roles que trae cada empresa
+
+| Rol | Nivel | Para qué |
+|---|---|---|
+| Administrador | 10 | Administra toda su empresa |
+| Director | 20 | Consulta y aprueba en toda la empresa |
+| Jefe de seguridad | 30 | Opera y supervisa seguridad en su sede; desbloquea usuarios |
+| Asistente | 40 | Apoyo de gestión de seguridad en su sede: captura, corrige, imprime y exporta en Operación y en Padrones; no elimina, no aprueba ni firma |
+| Supervisor | 50 | Da seguimiento a la operación de su sede |
+| Agente | 60 | Registra la operación de caseta; en Padrones solo consulta |
+
+Son un punto de partida: cada empresa los ajusta en la Matriz de permisos.
 - **Lápiz:** cambia nombre, descripción, nivel, o desactiva el rol. Un rol desactivado deja sin permisos a quienes lo tienen.
 - **Bote de basura:** solo funciona si nadie tiene ese rol. Si está gris, primero reasigna a esas personas.
 

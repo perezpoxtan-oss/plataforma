@@ -32,23 +32,47 @@ class ProvisionarEmpresa
             $empresa->modulos()->syncWithoutDetaching($consulta->pluck('id')->all());
 
             foreach (Rol::plantillas()->with('permisos')->get() as $plantilla) {
-                $rol = Rol::create([
-                    'empresa_id' => $empresa->id,
-                    'nombre' => $plantilla->nombre,
-                    'descripcion' => $plantilla->descripcion,
-                    'nivel_jerarquia' => $plantilla->nivel_jerarquia,
-                ]);
-
-                foreach ($plantilla->permisos as $permiso) {
-                    RolPermiso::create([
-                        'rol_id' => $rol->id,
-                        'modulo_accion_id' => $permiso->modulo_accion_id,
-                        'alcance' => $permiso->alcance,
-                    ]);
-                }
+                $this->copiarPlantilla($plantilla, $empresa->id);
             }
 
             return $empresa;
         });
+    }
+
+    /**
+     * Copia una plantilla de rol (con sus permisos) a una empresa.
+     */
+    public function copiarPlantilla(Rol $plantilla, int $empresaId): Rol
+    {
+        $rol = Rol::create([
+            'empresa_id' => $empresaId,
+            'nombre' => $plantilla->nombre,
+            'descripcion' => $plantilla->descripcion,
+            'nivel_jerarquia' => $plantilla->nivel_jerarquia,
+        ]);
+
+        foreach ($plantilla->permisos as $permiso) {
+            RolPermiso::create([
+                'rol_id' => $rol->id,
+                'modulo_accion_id' => $permiso->modulo_accion_id,
+                'alcance' => $permiso->alcance,
+            ]);
+        }
+
+        return $rol;
+    }
+
+    /**
+     * Copia la plantilla solo si la empresa aún no tiene un rol con ese nombre
+     * ni otro rol en ese nivel (cada nivel es único por empresa). Para agregar
+     * una plantilla nueva a las empresas que ya existían.
+     */
+    public function copiarPlantillaSiFalta(Rol $plantilla, int $empresaId): ?Rol
+    {
+        $ocupado = Rol::where('empresa_id', $empresaId)
+            ->where(fn ($q) => $q->where('nombre', $plantilla->nombre)->orWhere('nivel_jerarquia', $plantilla->nivel_jerarquia))
+            ->exists();
+
+        return $ocupado ? null : DB::transaction(fn () => $this->copiarPlantilla($plantilla, $empresaId));
     }
 }

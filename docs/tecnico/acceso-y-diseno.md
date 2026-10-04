@@ -65,6 +65,21 @@ Todos los grupos (Operación, Padrones, Estructura, Pantalla) inician **cerrados
 
 ![Menú lateral, grupos cerrados](../usuario/img/ajustes/10-celular-menu-normal.png) ![Menú lateral en Noche](../usuario/img/ajustes/11-celular-menu-noche.png)
 
+## Diálogos: se cierran limpios (QA R-01 / U-01)
+
+Todo `<dialog class="dialogo">` con formulario vuelve a su estado inicial al **cerrarse** (Cancelar, X, `Esc` o `dialog.close()`), para que al abrirlo otra vez no aparezca lo capturado. Es genérico: lo hace `public/js/plataforma.js` escuchando el evento `close` en fase de captura; una pantalla nueva no necesita código.
+
+- **Diálogo normal**: cada campo regresa a lo que el servidor pintó al cargar la página (`defaultValue`, `defaultChecked`, `defaultSelected`). Así, en "Asignar habitaciones a una sección" vuelven las casillas tal como están guardadas.
+- **Diálogo reabierto por un error** (`data-abrir-al-cargar`): lo pintado son los datos rechazados (`old()`). La primera vez se ven para corregirlos; al cerrarlo queda **vacío**: textos en blanco, casillas desmarcadas salvo las que traen `data-por-defecto`, y en las listas la opción con `data-por-defecto` (o la primera).
+- **No se tocan** los campos ocultos (`_token`, `_method`, `_dialogo`, `_form`, `nivel`, `padre_id`, `modo`…). Así siguen funcionando el llenado de "editar" (`data-accion="editar-registro"` y `editar-rol`, que ponen `action`, `_dialogo` y los valores al abrir) y el contenedor de Zonas y áreas (`data-padre` / `data-campo-padre`, que se llena al abrir).
+- También se quitan `is-invalid`, `.invalid-feedback`, `[data-error-campo]` y alertas dentro del diálogo; se oculta el aviso de nombre repetido (`[data-aviso-nombre]`); se limpia el mensaje propio de validación; se vuelve al modo "Rango numérico" del alta por lote (`[data-modo-lote][data-por-defecto]`), y se re-dispara `change` en `[data-oculta-si-marcado]` para que los bloques dependientes ("Todas las sedes") se sincronicen.
+- **`data-por-defecto`**: márquelo en la casilla o la `<option>` que debe quedar elegida en un alta vacía cuando no es la primera ni "desmarcada" (p. ej. *Todas las sedes* en Departamentos, *Operativo* en Puestos, *America/Cancun* en Empresas, *Rellenar con ceros* en el lote, *activo* en las ediciones).
+- **`data-conservar-al-cerrar`** en el `<dialog>`: excepción para un diálogo que deba guardar lo capturado al cerrarse (hoy ninguno).
+
+## Mensaje propio al quedar por debajo del mínimo (`data-mensaje-min`)
+
+`<input type="number" min="11" data-mensaje-min="Tu nivel es 10: …">` sustituye el aviso genérico del navegador ("El valor debe ser mayor o igual a 11") por el texto indicado, con `setCustomValidity` al escribir, al cargar y en el evento `invalid`. El `min` se conserva como validación del navegador; la regla real la vuelve a revisar el servidor. Lo usa el nivel jerárquico de Roles (QA R-02).
+
 ## Menú configurable
 
 Tabla `menus` (botones de la barra: Estructura, Padrones, Operación) y, en `modulos`, las columnas `menu_id`, `seccion_menu`, `orden_menu` y `color_icono`.

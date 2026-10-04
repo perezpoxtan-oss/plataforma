@@ -465,6 +465,111 @@ document.addEventListener('click', function (e) {
     });
 })();
 
+/* ==========================================================================
+   Diálogos que se cierran limpios (QA R-01 / U-01)
+   Al cerrar un diálogo (Cancelar, X o Esc) sus formularios vuelven al estado
+   "de fábrica", para que al abrirlo otra vez no aparezca lo capturado antes.
+   - Diálogo normal: cada campo vuelve a lo que el servidor pintó al cargar
+     la página (defaultValue / defaultChecked / defaultSelected).
+   - Diálogo que se reabrió solo tras un error (data-abrir-al-cargar): lo que
+     el servidor pintó son los datos rechazados (old()); la primera vez se ven
+     para corregirlos, pero al cerrarlo queda vacío: textos en blanco, casillas
+     desmarcadas salvo las que traen data-por-defecto, y en las listas la
+     opción con data-por-defecto (o la primera).
+   No se tocan los campos ocultos (_token, _method, _dialogo, nivel, padre_id…).
+   Para conservar lo capturado: <dialog data-conservar-al-cerrar>.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var SIN_TEXTO = ['hidden', 'checkbox', 'radio', 'submit', 'button', 'reset', 'image'];
+
+    function limpiarCampo(campo, trasError) {
+        var tipo = (campo.type || '').toLowerCase();
+        if (tipo === 'hidden') { return; }
+
+        if (typeof campo.setCustomValidity === 'function') { campo.setCustomValidity(''); }
+
+        if (tipo === 'checkbox' || tipo === 'radio') {
+            campo.checked = trasError ? campo.hasAttribute('data-por-defecto') : campo.defaultChecked;
+            return;
+        }
+
+        if (campo.tagName === 'SELECT') {
+            var elegido = -1;
+            Array.prototype.forEach.call(campo.options, function (op, i) {
+                if (elegido === -1 && (trasError ? op.hasAttribute('data-por-defecto') : op.defaultSelected)) { elegido = i; }
+            });
+            if (campo.multiple) {
+                Array.prototype.forEach.call(campo.options, function (op) {
+                    op.selected = trasError ? op.hasAttribute('data-por-defecto') : op.defaultSelected;
+                });
+            } else {
+                campo.selectedIndex = elegido === -1 ? 0 : elegido;
+            }
+            return;
+        }
+
+        if (tipo === 'file') { campo.value = ''; return; }
+
+        if (campo.tagName === 'TEXTAREA' || SIN_TEXTO.indexOf(tipo) === -1) {
+            campo.value = trasError ? '' : campo.defaultValue;
+            if (campo.dataset.original !== undefined) { delete campo.dataset.original; }
+        }
+    }
+
+    function limpiarDialogo(dialogo) {
+        if (dialogo.hasAttribute('data-conservar-al-cerrar')) { return; }
+        var formularios = dialogo.querySelectorAll('form');
+        if (!formularios.length) { return; }
+        var trasError = dialogo.hasAttribute('data-abrir-al-cargar');
+
+        formularios.forEach(function (form) {
+            form.querySelectorAll('input, select, textarea').forEach(function (c) { limpiarCampo(c, trasError); });
+
+            // Crear por lote: vuelve al modo inicial (rango)
+            var modo = form.querySelector('[data-modo-lote][data-por-defecto]');
+            if (modo) { modo.click(); }
+
+            // Casillas que muestran u ocultan bloques: que el bloque se sincronice
+            form.querySelectorAll('[data-oculta-si-marcado]').forEach(function (c) {
+                c.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        });
+
+        // Avisos de validación y de nombre repetido
+        dialogo.querySelectorAll('.is-invalid').forEach(function (n) { n.classList.remove('is-invalid'); });
+        dialogo.querySelectorAll('.invalid-feedback, [data-error-campo], .alert').forEach(function (n) { n.remove(); });
+        dialogo.querySelectorAll('[data-aviso-nombre]').forEach(function (n) { n.hidden = true; n.textContent = ''; });
+    }
+
+    // "close" no burbujea: se escucha en fase de captura para todos los diálogos
+    document.addEventListener('close', function (evento) {
+        if (evento.target instanceof HTMLDialogElement) { limpiarDialogo(evento.target); }
+    }, true);
+})();
+
+/* Mensaje propio, en español, cuando un número queda por debajo del mínimo:
+   <input type="number" min="11" data-mensaje-min="Tu nivel es 10: ..."> */
+(function () {
+    'use strict';
+    function revisar(campo) {
+        var minimo = parseFloat(campo.min);
+        var valor = campo.value === '' ? NaN : parseFloat(campo.value);
+        campo.setCustomValidity(!isNaN(minimo) && !isNaN(valor) && valor < minimo ? campo.getAttribute('data-mensaje-min') : '');
+    }
+    document.addEventListener('input', function (e) {
+        if (e.target.matches('[data-mensaje-min]')) { revisar(e.target); }
+    });
+    // "invalid" tampoco burbujea; también cubre valores puestos por código
+    document.addEventListener('invalid', function (e) {
+        if (e.target.matches && e.target.matches('[data-mensaje-min]')) { revisar(e.target); }
+    }, true);
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-mensaje-min]').forEach(revisar);
+    });
+})();
+
 /* Aviso en vivo de nombre repetido, sin consultar al servidor:
    <input data-nombres-existentes='["recepción", ...]'> + <p data-aviso-nombre> en el mismo formulario */
 (function () {

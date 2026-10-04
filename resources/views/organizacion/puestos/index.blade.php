@@ -133,7 +133,7 @@
                         <label class="campo-etiqueta" for="{{ $modo }}_pu_tipo">Tipo de Puesto</label>
                         <select id="{{ $modo }}_pu_tipo" name="tipo" class="campo" required>
                             @foreach ($tipos as $clave => $etiqueta)
-                                <option value="{{ $clave }}" @selected($tipo === $clave)>{{ $etiqueta }}</option>
+                                <option value="{{ $clave }}" @selected($tipo === $clave) @if ($clave === 'operativo') data-por-defecto @endif>{{ $etiqueta }}</option>
                             @endforeach
                         </select>
 

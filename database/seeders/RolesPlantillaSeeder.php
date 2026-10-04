@@ -7,7 +7,9 @@ use App\Models\ModuloAccion;
 use App\Models\Rol;
 use App\Models\RolPermiso;
 use App\Services\Permisos\Alcance;
+use Closure;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 
 /**
  * Plantillas de rol que se copian a cada empresa nueva. Son un punto de
@@ -21,6 +23,13 @@ class RolesPlantillaSeeder extends Seeder
 
     /** En los Padrones (catálogos: llaves, gafetes, vehículos...) el Agente solo consulta. */
     public const ACCIONES_AGENTE_PADRONES = ['ver'];
+
+    /**
+     * El Asistente de seguridad (SEGCAT: "Apoyo de Gestión Local") captura y
+     * corrige tanto en Operación como en Padrones —mantiene los catálogos de
+     * su sede—, imprime y exporta. No elimina, no aprueba ni firma.
+     */
+    public const ACCIONES_ASISTENTE = ['ver', 'crear', 'editar', 'imprimir', 'exportar'];
 
     /** El Jefe de seguridad ve los usuarios de su sede y los desbloquea. */
     public const USUARIOS_JEFE = ['usuarios.ver', 'usuarios.desbloquear'];
@@ -36,42 +45,88 @@ class RolesPlantillaSeeder extends Seeder
         return $menu?->clave === 'padrones';
     }
 
-    public function run(): void
+    /**
+     * nombre => [nivel, descripción, regla(ModuloAccion): ?Alcance]
+     *
+     * @return array<string, array{0: int, 1: string, 2: Closure}>
+     */
+    public static function definiciones(): array
     {
-        // Los modulos de plataforma (Identidad...) son solo del Super Administrador
-        $todos = ModuloAccion::with('modulo.area', 'modulo.menu', 'modulo.padre.menu', 'accion')->get()
-            ->reject(fn ($ma) => $ma->modulo->tipo === Modulo::TIPO_PLATAFORMA);
+        $deSeguridad = fn ($ma) => in_array($ma->modulo->area->clave, ['seguridad', 'reportes'], true);
 
-        $plantillas = [
+        return [
             'Administrador' => [10, 'Administra toda su empresa', fn ($ma) => Alcance::Empresa],
             'Director' => [20, 'Consulta y aprueba en toda la empresa', fn ($ma) => in_array($ma->accion->clave, ['ver', 'aprobar', 'exportar', 'imprimir'], true) ? Alcance::Empresa : null],
-            'Jefe de seguridad' => [30, 'Opera y supervisa seguridad en su sede', fn ($ma) => in_array($ma->modulo->area->clave, ['seguridad', 'reportes'], true)
+            'Jefe de seguridad' => [30, 'Opera y supervisa seguridad en su sede', fn ($ma) => $deSeguridad($ma)
                 || in_array($ma->clave(), self::USUARIOS_JEFE, true) ? Alcance::Sede : null],
-            'Supervisor' => [50, 'Da seguimiento a la operación de su sede', fn ($ma) => in_array($ma->modulo->area->clave, ['seguridad', 'reportes'], true) && $ma->accion->clave !== 'eliminar' ? Alcance::Sede : null],
+            'Asistente' => [40, 'Apoyo de gestión de seguridad en su sede', fn ($ma) => $deSeguridad($ma)
+                && in_array($ma->accion->clave, self::ACCIONES_ASISTENTE, true) ? Alcance::Sede : null],
+            'Supervisor' => [50, 'Da seguimiento a la operación de su sede', fn ($ma) => $deSeguridad($ma) && $ma->accion->clave !== 'eliminar' ? Alcance::Sede : null],
             'Agente' => [60, 'Registra la operación de caseta', fn ($ma) => $ma->modulo->area->clave === 'seguridad'
                 && in_array($ma->accion->clave, self::esPadron($ma->modulo) ? self::ACCIONES_AGENTE_PADRONES : self::ACCIONES_AGENTE_OPERACION, true) ? Alcance::Sede : null],
         ];
+    }
 
-        foreach ($plantillas as $nombre => [$nivel, $descripcion, $regla]) {
-            $rol = Rol::firstOrCreate(
-                ['empresa_id' => null, 'nombre' => $nombre],
-                ['nivel_jerarquia' => $nivel, 'descripcion' => $descripcion],
-            );
+    public function run(): void
+    {
+        $todos = self::moduloAcciones();
 
-            if (! $rol->wasRecentlyCreated) {
-                continue;
-            }
+        foreach (array_keys(self::definiciones()) as $nombre) {
+            self::asegurarPlantilla($nombre, $todos);
+        }
+    }
 
-            foreach ($todos as $moduloAccion) {
-                $alcance = $regla($moduloAccion);
-                if ($alcance !== null) {
-                    RolPermiso::create([
-                        'rol_id' => $rol->id,
-                        'modulo_accion_id' => $moduloAccion->id,
-                        'alcance' => $alcance,
-                    ]);
-                }
+    /**
+     * Crea la plantilla indicada con sus permisos si todavía no existe.
+     * Devuelve la plantilla (nueva o la que ya existía), o null si no se puede
+     * crear: nombre desconocido, catálogo de módulos aún vacío, o su nivel ya
+     * lo ocupa otra plantilla.
+     *
+     * @param  Collection<int, ModuloAccion>|null  $todos
+     */
+    public static function asegurarPlantilla(string $nombre, ?Collection $todos = null): ?Rol
+    {
+        $definicion = self::definiciones()[$nombre] ?? null;
+        if ($definicion === null) {
+            return null;
+        }
+        [$nivel, $descripcion, $regla] = $definicion;
+
+        $existente = Rol::plantillas()->where('nombre', $nombre)->first();
+        if ($existente !== null) {
+            return $existente;
+        }
+
+        $todos ??= self::moduloAcciones();
+        if ($todos->isEmpty() || Rol::plantillas()->where('nivel_jerarquia', $nivel)->exists()) {
+            return null;
+        }
+
+        $rol = Rol::create(['empresa_id' => null, 'nombre' => $nombre, 'nivel_jerarquia' => $nivel, 'descripcion' => $descripcion]);
+
+        foreach ($todos as $moduloAccion) {
+            $alcance = $regla($moduloAccion);
+            if ($alcance !== null) {
+                RolPermiso::create([
+                    'rol_id' => $rol->id,
+                    'modulo_accion_id' => $moduloAccion->id,
+                    'alcance' => $alcance,
+                ]);
             }
         }
+
+        return $rol;
+    }
+
+    /**
+     * Los módulos de plataforma (Identidad...) son solo del Super Administrador.
+     *
+     * @return Collection<int, ModuloAccion>
+     */
+    private static function moduloAcciones(): Collection
+    {
+        return ModuloAccion::with('modulo.area', 'modulo.menu', 'modulo.padre.menu', 'accion')->get()
+            ->reject(fn ($ma) => $ma->modulo->tipo === Modulo::TIPO_PLATAFORMA)
+            ->values();
     }
 }
