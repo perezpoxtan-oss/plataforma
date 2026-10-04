@@ -38,6 +38,7 @@ class CatalogoSeeder extends Seeder
         'roles' => 'roles.index',
         'permisos' => 'permisos.index',
         'usuarios' => 'usuarios.index',
+        'identidad' => 'identidad.edit',
     ];
 
     /**
@@ -89,6 +90,7 @@ class CatalogoSeeder extends Seeder
                 'permisos' => ['Matriz de permisos', 'bi-ui-checks-grid', [], [], ['ver', 'editar']],
                 'configuracion' => ['Configuración', 'bi-sliders', ['configurar'], [], ['ver', 'editar']],
                 'auditoria' => ['Bitácora de auditoría', 'bi-clipboard-data', ['exportar'], [], ['ver']],
+                'identidad' => ['Identidad de la plataforma', 'bi-palette', [], [], ['ver', 'editar'], Modulo::TIPO_PLATAFORMA],
             ]],
         ];
     }
@@ -131,7 +133,7 @@ class CatalogoSeeder extends Seeder
             'nombre' => $definicion[0],
             'icono' => $definicion[1],
             'orden' => $orden,
-            'tipo' => Modulo::TIPO_SISTEMA,
+            'tipo' => $definicion[5] ?? Modulo::TIPO_SISTEMA,
             'ruta' => self::RUTAS[$clave] ?? null,
         ]);
 

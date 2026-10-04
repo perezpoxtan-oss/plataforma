@@ -29,6 +29,9 @@ class MenuSeeder extends Seeder
                     'roles' => 'indigo', 'configuracion' => 'indigo', 'informe_ejecutivo' => 'indigo',
                     'auditoria' => 'indigo',
                 ],
+                'Plataforma' => [
+                    'identidad' => 'primary',
+                ],
             ]],
             'padrones' => ['Padrones', 'bi-folder2-open', 2, [
                 'Identidad y Personas' => [

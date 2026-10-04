@@ -286,3 +286,52 @@
         filtrar();
     });
 })();
+
+/* ==========================================================================
+   Identidad: vista previa en vivo y selector de color
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var COLOR = /^#[0-9a-fA-F]{6}$/;
+
+    document.addEventListener('input', function (evento) {
+        var el = evento.target;
+        var vista = document.getElementById('vistaPrevia');
+        if (!vista) { return; }
+
+        // El cuadro de color y el campo de texto se mantienen iguales
+        if (el.matches('[data-color-de]')) {
+            var texto = document.getElementById(el.dataset.colorDe);
+            if (texto) { texto.value = el.value; texto.dispatchEvent(new Event('input', { bubbles: true })); }
+            return;
+        }
+
+        var campo = el.dataset.vistaPrevia;
+        if (!campo) { return; }
+
+        if (campo === 'color_primario' || campo === 'color_acento') {
+            if (!COLOR.test(el.value)) { return; }
+            vista.style.setProperty(campo === 'color_primario' ? '--vp-primario' : '--vp-acento', el.value);
+            var cuadro = document.querySelector('[data-color-de="' + campo + '"]');
+            if (cuadro) { cuadro.value = el.value; }
+            return;
+        }
+
+        vista.querySelectorAll('[data-vp="' + campo + '"]').forEach(function (n) { n.textContent = el.value; });
+    });
+
+    // Vista previa del símbolo elegido, sin subirlo todavía
+    document.addEventListener('change', function (evento) {
+        var el = evento.target;
+        if (!el.matches('[data-vista-previa-imagen]') || !el.files || !el.files[0]) { return; }
+        var url = URL.createObjectURL(el.files[0]);
+        document.querySelectorAll('[data-vp-simbolo]').forEach(function (n) {
+            n.textContent = '';
+            var img = document.createElement('img');
+            img.src = url;
+            img.alt = '';
+            n.appendChild(img);
+        });
+    });
+})();

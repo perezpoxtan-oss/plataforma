@@ -24,7 +24,7 @@ class ProvisionarEmpresa
         return DB::transaction(function () use ($rubro, $datos, $modulos): Empresa {
             $empresa = Empresa::create(['rubro_id' => $rubro->id] + $datos);
 
-            $consulta = Modulo::query()->where('activo', true);
+            $consulta = Modulo::query()->where('activo', true)->where('tipo', '!=', Modulo::TIPO_PLATAFORMA);
             if ($modulos !== null) {
                 $consulta->where(fn ($q) => $q->whereIn('clave', $modulos)
                     ->orWhereIn('padre_id', Modulo::whereIn('clave', $modulos)->select('id')));

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Modulo;
 use App\Models\ModuloAccion;
 use App\Models\Rol;
 use App\Models\RolPermiso;
@@ -17,7 +18,9 @@ class RolesPlantillaSeeder extends Seeder
 {
     public function run(): void
     {
-        $todos = ModuloAccion::with('modulo.area', 'accion')->get();
+        // Los modulos de plataforma (Identidad...) son solo del Super Administrador
+        $todos = ModuloAccion::with('modulo.area', 'accion')->get()
+            ->reject(fn ($ma) => $ma->modulo->tipo === Modulo::TIPO_PLATAFORMA);
 
         $plantillas = [
             'Administrador' => [10, 'Administra toda su empresa', fn ($ma) => Alcance::Empresa],
