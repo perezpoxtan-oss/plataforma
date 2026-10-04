@@ -41,7 +41,29 @@ Valores en `config/plataforma.php` (`sesion.*`). La inactividad se puede cambiar
 - `App\Http\Middleware\ControlarInactividad`: cierre por inactividad del lado del servidor.
 - `App\Support\Menu\ConstructorMenu`: arma el menú según configuración y permisos.
 - `resources/views/layouts/app.blade.php`: barra superior (PC), cabecera y barra inferior (celular), menú lateral, pie y aviso de sesión.
-- `public/css/plataforma.css`: única hoja de estilos; colores como variables (`--color-primario`, `--color-acento`) que llegan de *Identidad de la plataforma*.
+- `public/css/plataforma.css`: hoja de estilos central (los modos Sol y Noche van en `modos-pantalla.css`); colores como variables (`--color-primario`, `--color-acento`) que llegan de *Identidad de la plataforma*.
+
+## Modos de pantalla: Normal, Sol y Noche (QA M-03)
+
+El botón junto al nombre del usuario (en celular, junto al avatar y en *Menú → Pantalla*) recorre **Normal → Sol → Noche → Normal**. Ícono, `title` y `aria-label` indican el modo actual (`bi-sun`, `bi-brightness-high-fill`, `bi-moon-stars-fill`), p. ej. "Modo de pantalla: Sol".
+
+- `public/js/modo-pantalla.js` se carga en `<head>` (archivo externo, sin JavaScript en línea) y pone la clase `modo-sol` o `modo-noche` en `<html>` antes de pintar, así no hay destello. También aplica en la pantalla de acceso.
+- Se recuerda por equipo en `localStorage` (`plataforma_modo_pantalla`), siempre dentro de `try/catch`; sin almacenamiento queda Normal. Quien tenía el alto contraste anterior (`plataforma_alto_contraste = 1`) pasa a **Sol** y la clave vieja se borra.
+- `public/css/modos-pantalla.css` (hoja aparte de `plataforma.css`) redefine las variables (`--fondo`, `--texto`, `--texto-suave`, `--borde`…) y ajusta los componentes que tienen colores fijos.
+  - **Sol**: fondo blanco puro, texto `#000`, bordes negros de 2 px, botones y etiquetas de color sólido y oscuro, letra más gruesa, sin vidrio (`backdrop-filter`) ni transparencias.
+  - **Noche**: fondo `#0f172a`, tarjetas `#1e293b`, texto claro, bordes apagados; el color principal se aclara para textos (`--primario-claro`) y la franja de QA pasa a ámbar oscuro. Activa también `data-bs-theme="dark"` de Bootstrap (alertas, ventanas, menú lateral) y `color-scheme: dark`.
+- Para una pantalla nueva: usar las variables y las clases comunes (`.tarjeta`, `.ficha-card`, `.campo`, `.btn-icono`, `.dialogo`…) y no escribir colores fijos en `style="…"`; así hereda los tres modos.
+
+| Normal | Sol | Noche |
+|---|---|---|
+| ![Normal](../usuario/img/ajustes/4-espacios-normal.png) | ![Sol](../usuario/img/ajustes/5-espacios-sol.png) | ![Noche](../usuario/img/ajustes/6-espacios-noche.png) |
+| ![Ventana Normal](../usuario/img/ajustes/7-dialogo-normal.png) | ![Ventana Sol](../usuario/img/ajustes/8-dialogo-sol.png) | ![Ventana Noche](../usuario/img/ajustes/9-dialogo-noche.png) |
+
+## Menú lateral del celular (QA M-04)
+
+Todos los grupos (Operación, Padrones, Estructura, Pantalla) inician **cerrados**: el usuario elige a dónde ir. El grupo que contiene la pantalla actual se resalta (color principal y un punto) pero también inicia cerrado. En PC el menú es distinto (desplegables de la barra superior) y no cambia.
+
+![Menú lateral, grupos cerrados](../usuario/img/ajustes/10-celular-menu-normal.png) ![Menú lateral en Noche](../usuario/img/ajustes/11-celular-menu-noche.png)
 
 ## Menú configurable
 
@@ -57,4 +79,4 @@ Tabla `menus` (botones de la barra: Estructura, Padrones, Operación) y, en `mod
 
 ## Pruebas
 
-`tests/Feature/Acceso/InicioSesionTest.php` y `MenuTest.php`.
+`tests/Feature/Acceso/InicioSesionTest.php`, `MenuTest.php` y `PantallaYMenuLateralTest.php`.

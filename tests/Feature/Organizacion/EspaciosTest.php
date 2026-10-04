@@ -169,6 +169,8 @@ class EspaciosTest extends TestCase
         $this->actingAs($this->admin)->post('/espacios/secciones', ['sede_id' => $this->sede->id, 'nombre' => 'Torre Norte'])->assertSessionHas('ok');
         $this->actingAs($this->admin)->post('/espacios/secciones', ['sede_id' => $this->sede->id, 'nombre' => 'torre norte'])->assertSessionHasErrors('nombre');
         $seccion = GrupoEspacio::withoutGlobalScopes()->where('nombre', 'Torre Norte')->firstOrFail();
+        // Con secciones dadas de alta, la pestaña de zonas sigue abriendo (antes daba error 500)
+        $this->actingAs($this->admin)->get('/espacios')->assertOk()->assertSee('Torre A');
 
         $this->actingAs($this->admin)->put("/espacios/{$hab->id}", ['nombre' => '101', 'grupo_espacio_id' => $seccion->id, 'desde_detalle' => '1'])
             ->assertRedirect("/espacios/{$hab->id}");

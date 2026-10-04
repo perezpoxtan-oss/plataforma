@@ -16,8 +16,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CatalogoSeeder::class,
             RubrosSeeder::class,
-            RolesPlantillaSeeder::class,
+            // El menu va antes de las plantillas: la del Agente distingue Padrones de Operacion
             MenuSeeder::class,
+            RolesPlantillaSeeder::class,
             TiposEspacioSeeder::class,
         ]);
     }

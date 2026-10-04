@@ -26,6 +26,7 @@ class CatalogoSeeder extends Seeder
         'exportar' => 'Exportar',
         'reabrir' => 'Reabrir',
         'configurar' => 'Configurar',
+        'desbloquear' => 'Desbloquear',
     ];
 
     private const CRUD = ['ver', 'crear', 'editar', 'eliminar'];
@@ -88,7 +89,7 @@ class CatalogoSeeder extends Seeder
                 'bitacora_dia' => ['Bitácora general del día', 'bi-calendar-day', ['exportar', 'imprimir'], [], ['ver']],
             ]],
             'administracion' => ['Administración', 'bi-gear', [
-                'usuarios' => ['Usuarios', 'bi-person-gear', []],
+                'usuarios' => ['Usuarios', 'bi-person-gear', ['desbloquear']],
                 'roles' => ['Roles', 'bi-person-rolodex', []],
                 'permisos' => ['Matriz de permisos', 'bi-ui-checks-grid', [], [], ['ver', 'editar']],
                 'configuracion' => ['Configuración', 'bi-sliders', ['configurar'], [], ['ver', 'editar']],

@@ -54,8 +54,8 @@
             </div>
 
             <div class="barra-pc-acciones">
-                <button type="button" class="btn-alto-contraste" data-accion="alto-contraste" title="Alto contraste (para exteriores)" aria-label="Alto contraste" aria-pressed="false">
-                    <i class="bi bi-brightness-high-fill" aria-hidden="true"></i>
+                <button type="button" class="btn-alto-contraste" data-accion="modo-pantalla" title="Modo de pantalla: Normal" aria-label="Modo de pantalla: Normal. Cambiar a Sol">
+                    <i class="bi bi-sun" aria-hidden="true"></i>
                 </button>
 
                 <div class="bloque-usuario">
@@ -84,9 +84,14 @@
                 <span class="marca-texto">{{ $identidad->get('nombre_corto') }}</span>
             </a>
         </div>
-        <div class="tarjeta-usuario-movil" title="{{ $usuario->name }} · {{ $rolNombre }}">
-            <div class="avatar" aria-hidden="true">{{ $usuario->iniciales() }}</div>
-            <span class="visually-hidden">{{ $usuario->name }}, {{ $rolNombre }}</span>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn-alto-contraste" data-accion="modo-pantalla" title="Modo de pantalla: Normal" aria-label="Modo de pantalla: Normal. Cambiar a Sol">
+                <i class="bi bi-sun" aria-hidden="true"></i>
+            </button>
+            <div class="tarjeta-usuario-movil" title="{{ $usuario->name }} · {{ $rolNombre }}">
+                <div class="avatar" aria-hidden="true">{{ $usuario->iniciales() }}</div>
+                <span class="visually-hidden">{{ $usuario->name }}, {{ $rolNombre }}</span>
+            </div>
         </div>
     </header>
 
@@ -124,11 +129,11 @@
         </div>
         <div class="offcanvas-body p-3">
             @foreach ($menusMovil as $menu)
-                @php $abierto = $loop->first || $menu['activo']; @endphp
-                <div class="menu-lateral-grupo contraible {{ $loop->first ? '' : 'mt-3' }}" data-bs-toggle="collapse" data-bs-target="#grupo-{{ $menu['clave'] }}" aria-expanded="{{ $abierto ? 'true' : 'false' }}" role="button">
-                    <span>{{ $menu['nombre'] }}</span><i class="bi bi-chevron-down" aria-hidden="true"></i>
+                {{-- Todos los grupos inician cerrados; el de la pantalla actual se resalta --}}
+                <div class="menu-lateral-grupo contraible {{ $loop->first ? '' : 'mt-3' }} {{ $menu['activo'] ? 'actual' : '' }}" data-bs-toggle="collapse" data-bs-target="#grupo-{{ $menu['clave'] }}" aria-expanded="false" aria-controls="grupo-{{ $menu['clave'] }}" role="button">
+                    <span>{{ $menu['nombre'] }}@if ($menu['activo'])<span class="visually-hidden"> (pantalla actual)</span>@endif</span><i class="bi bi-chevron-down" aria-hidden="true"></i>
                 </div>
-                <div class="collapse {{ $abierto ? 'show' : '' }}" id="grupo-{{ $menu['clave'] }}">
+                <div class="collapse" id="grupo-{{ $menu['clave'] }}">
                     @foreach ($menu['secciones'] as $items)
                         @foreach ($items as $item)
                             <a href="{{ $item['url'] }}" class="menu-lateral-item {{ $item['activo'] ? 'activo' : '' }}"><i class="bi {{ $item['icono'] }} text-{{ $item['color'] }}" aria-hidden="true"></i> {{ $item['nombre'] }}</a>
@@ -141,7 +146,9 @@
                 <span>Pantalla</span><i class="bi bi-chevron-down" aria-hidden="true"></i>
             </div>
             <div class="collapse" id="grupo-pantalla">
-                <a href="#" class="menu-lateral-item" data-accion="alto-contraste"><i class="bi bi-brightness-high-fill" style="color:#f59e0b;" aria-hidden="true"></i> Alto contraste (exteriores)</a>
+                <button type="button" class="menu-lateral-item menu-lateral-modo" data-accion="modo-pantalla" title="Modo de pantalla: Normal" aria-label="Modo de pantalla: Normal. Cambiar a Sol">
+                    <i class="bi bi-sun" aria-hidden="true"></i> <span data-modo-etiqueta>Modo de pantalla: Normal</span>
+                </button>
             </div>
 
             <div class="menu-lateral-grupo mt-4">Sesión</div>

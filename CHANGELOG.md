@@ -3,6 +3,12 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Ajustes de pruebas QA (ronda 1):
+  - Usuarios: desbloqueo manual de cuentas bloqueadas por intentos fallidos (permiso `usuarios.desbloquear`, para Administrador y Jefe de seguridad), con etiqueta "BLOQUEADO hasta HH:MM" y auditoría `usuarios.desbloqueado` (A-03).
+  - Plantilla Agente: en Padrones solo consulta (`ver`); en Operación conserva ver, crear, editar, imprimir y firmar. Los Agentes de empresas que seguían igual a la plantilla anterior se ajustan; los personalizados no se tocan (M-01).
+  - Modos de pantalla Normal → Sol → Noche → Normal: Sol es alto contraste real para exteriores y Noche un tema oscuro para turnos nocturnos; se recuerda por equipo y el alto contraste anterior pasa a Sol (M-03).
+  - Menú lateral del celular: todos los grupos inician cerrados y se resalta el de la pantalla actual (M-04).
+  - Corrección: Zonas y áreas daba error 500 al abrir la pestaña de zonas cuando la empresa ya tenía secciones.
 - Zonas y áreas: Zonas/Edificios → Pisos → Habitaciones → Detalle (áreas y elementos) y Secciones, con las mismas pantallas de SEGCAT. Una sola estructura en árbol, alta por lote, copia de pisos, asignación masiva a secciones, tipos propios por empresa y desactivación en cascada.
 - Empresas (alta por el Super Administrador con módulos y roles base; "Mi Empresa" para el cliente) y Sedes con terminología del rubro, código único por empresa, dirección completa y zona horaria propia.
 - Identidad de la plataforma (solo Super Administrador): nombre, eslogan, titular, colores, símbolo e ícono, con vista previa en vivo; módulos de tipo plataforma.

@@ -32,6 +32,19 @@ En SEGCAT ambas pantallas usaban los permisos del módulo `permisos`. Ahora **Ro
 
 Un selector "Empresa de trabajo" (`EmpresaDeTrabajo`, sesión `empresa_activa_id`) define sobre qué empresa opera. Sin elegir, trabaja sobre las **plantillas de la plataforma**: los roles que se copian a cada empresa nueva.
 
+## Plantillas de rol (`RolesPlantillaSeeder`)
+
+| Plantilla | Nivel | Permisos por omisión |
+|---|---|---|
+| Administrador | 10 | Todo, toda la empresa (incluye `usuarios.desbloquear`) |
+| Director | 20 | Ver, aprobar, exportar e imprimir, toda la empresa |
+| Jefe de seguridad | 30 | Seguridad y Reportes completos, más `usuarios.ver` y `usuarios.desbloquear`; su sede |
+| Supervisor | 50 | Seguridad y Reportes sin eliminar; su sede |
+| Agente | 60 | **Operación**: ver, crear, editar, imprimir y firmar. **Padrones**: solo ver. Su sede |
+
+- Padrones u Operación se decide por el **menú** del módulo (`modulos.menu_id`, o el de su padre en submódulos), no por nombres: `RolesPlantillaSeeder::esPadron()`. Por eso `MenuSeeder` corre antes que `RolesPlantillaSeeder` en `DatabaseSeeder`.
+- Las plantillas solo se crean si no existen (no se pisan los cambios). Para bases existentes, la migración `2026_10_05_000200_agente_solo_consulta_padrones` quita crear/editar/imprimir/firmar de los Padrones a los roles "Agente" (plantilla y copias por empresa) **solo si siguen exactamente igual a la plantilla anterior** (ver/crear/editar/imprimir/firmar de todos los módulos de Seguridad, alcance sede, nada más). Un Agente personalizado no se toca; se ajusta a mano en la Matriz de permisos. No tiene reversa.
+
 ## Componentes
 
 - `App\Http\Controllers\Administracion\RolController`, `PermisoController`, `EmpresaActivaController`

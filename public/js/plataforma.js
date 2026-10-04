@@ -6,20 +6,7 @@
 (function () {
     'use strict';
 
-    var CLAVE_CONTRASTE = 'plataforma_alto_contraste';
-
-    /* ---------- Alto contraste (exteriores) ---------- */
-    function leerContraste() {
-        try { return localStorage.getItem(CLAVE_CONTRASTE) === '1'; } catch (e) { return false; }
-    }
-
-    function aplicarContraste(activo) {
-        document.body.classList.toggle('alto-contraste', activo);
-        document.querySelectorAll('[data-accion="alto-contraste"]').forEach(function (boton) {
-            boton.classList.toggle('activo', activo);
-            boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
-        });
-    }
+    // El modo de pantalla (Normal, Sol, Noche) vive en modo-pantalla.js, que se carga en <head>
 
     /* ---------- Mostrar u ocultar contraseña ---------- */
     function alternarContrasena(boton) {
@@ -39,12 +26,6 @@
         if (!objetivo) { return; }
 
         switch (objetivo.getAttribute('data-accion')) {
-            case 'alto-contraste':
-                evento.preventDefault();
-                var activo = !document.body.classList.contains('alto-contraste');
-                try { localStorage.setItem(CLAVE_CONTRASTE, activo ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
-                aplicarContraste(activo);
-                break;
             case 'ver-contrasena':
                 alternarContrasena(objetivo);
                 break;
@@ -121,7 +102,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        aplicarContraste(leerContraste());
         vigilarSesion();
     });
 })();

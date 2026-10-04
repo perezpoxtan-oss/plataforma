@@ -1,0 +1,303 @@
+/* ==========================================================================
+   Modos de pantalla (botón junto al nombre del usuario)
+     Normal → Sol → Noche → Normal
+   - Sol (html.modo-sol): alto contraste real para exteriores a pleno sol:
+     fondo blanco puro, texto negro, bordes gruesos, colores sólidos y sin
+     transparencias.
+   - Noche (html.modo-noche): colores oscuros para turnos nocturnos. Además
+     se activa el tema oscuro de Bootstrap (data-bs-theme="dark").
+   La clase la pone public/js/modo-pantalla.js antes de pintar la página.
+   Casi todo se resuelve redefiniendo las variables de plataforma.css; lo
+   demás (colores fijos de componentes) se ajusta abajo, por componente.
+   ========================================================================== */
+
+/* Botón del modo: indica el modo actual */
+.btn-alto-contraste[data-modo="sol"] { background: #facc15; border-color: #000; color: #000; }
+.btn-alto-contraste[data-modo="noche"] { background: #312e81; border-color: #6366f1; color: #e0e7ff; }
+.menu-lateral-modo { background: transparent; border: none; width: 100%; text-align: left; font-family: inherit; }
+.menu-lateral-modo i { color: #f59e0b; }
+.menu-lateral-modo[data-modo="noche"] i { color: #a5b4fc; }
+
+/* ==========================================================================
+   SOL — alto contraste para exteriores
+   ========================================================================== */
+html.modo-sol {
+    --fondo: #ffffff;
+    --fondo-acceso: #ffffff;
+    --texto: #000000;
+    --texto-suave: #111827;
+    --texto-tenue: #1f2937;
+    --borde: #000000;
+    --primario-fuerte: color-mix(in srgb, var(--color-primario) 65%, #000);
+    --color-primario-suave: color-mix(in srgb, var(--color-primario) 18%, #fff);
+    --color-primario-foco: color-mix(in srgb, var(--color-primario) 35%, transparent);
+}
+html.modo-sol body { font-weight: 500; background: #fff; color: #000; }
+html.modo-sol .text-secondary, html.modo-sol .text-dark { color: #000 !important; }
+html.modo-sol .text-muted, html.modo-sol .texto-traza, html.modo-sol .campo-ayuda { color: #111827 !important; font-weight: 600; }
+
+/* Sin vidrios ni sombras suaves: superficies blancas con borde grueso */
+html.modo-sol .barra-pc,
+html.modo-sol .cabecera-movil,
+html.modo-sol .barra-inferior,
+html.modo-sol .menu-desplegable,
+html.modo-sol .dialogo,
+html.modo-sol .dialogo::backdrop { backdrop-filter: none; }
+html.modo-sol .barra-pc,
+html.modo-sol .bloque-usuario,
+html.modo-sol .menu-desplegable,
+html.modo-sol .tarjeta,
+html.modo-sol .ficha,
+html.modo-sol .ficha-card,
+html.modo-sol .area-habitacion,
+html.modo-sol .encabezado-pantalla .icono,
+html.modo-sol .selector-empresa,
+html.modo-sol .tabla-scroll,
+html.modo-sol .acceso-tarjeta,
+html.modo-sol .vista-previa { background: #fff; border: 2px solid #000; box-shadow: none; }
+html.modo-sol .cabecera-movil { background: #fff; border-bottom: 2px solid #000; }
+html.modo-sol .barra-inferior { background: #fff; border-top: 2px solid #000; box-shadow: none; }
+html.modo-sol .menu-lateral { border-left: 2px solid #000; }
+html.modo-sol .offcanvas-header { background: #fff !important; border-bottom: 2px solid #000 !important; }
+html.modo-sol .ficha-card:hover { transform: none; border-color: #000; box-shadow: 0 0 0 2px #000; }
+html.modo-sol .ficha-create { background: #fff; border: 3px dashed #000; }
+html.modo-sol .ficha-create i, html.modo-sol .ficha-create .titulo-crear { color: #000 !important; }
+html.modo-sol .ficha-footer, html.modo-sol .dialogo-cabecera, html.modo-sol .dialogo-acciones { border-color: #000; }
+html.modo-sol .ficha-meta, html.modo-sol .elemento, html.modo-sol .ficha-dato, html.modo-sol .chip-seccion { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .menu-separador, html.modo-sol .menu-lateral-grupo { border-top: 2px solid #000; }
+html.modo-sol .menu-lateral-grupo:first-child { border-top: none; }
+
+/* Texto de navegación y marca, siempre oscuro y legible */
+html.modo-sol .boton-nav,
+html.modo-sol .menu-desplegable-item,
+html.modo-sol .menu-lateral-item,
+html.modo-sol .barra-inferior-item,
+html.modo-sol .menu-seccion,
+html.modo-sol .menu-lateral-grupo,
+html.modo-sol .bloque-usuario-rol,
+html.modo-sol .ficha-meta,
+html.modo-sol .migas a,
+html.modo-sol .acceso-pie { color: #000; font-weight: 700; }
+html.modo-sol .marca-texto,
+html.modo-sol .boton-nav.activo, html.modo-sol .boton-nav.activo i,
+html.modo-sol .barra-inferior-item.activo,
+html.modo-sol .menu-lateral-grupo.actual,
+html.modo-sol .text-primary { color: var(--primario-fuerte) !important; }
+html.modo-sol .menu-desplegable-item.activo,
+html.modo-sol .menu-lateral-item.activo { background: var(--primario-fuerte); color: #fff; }
+html.modo-sol .menu-desplegable-item.activo i,
+html.modo-sol .menu-lateral-item.activo i { color: #fff !important; }
+html.modo-sol .text-danger { color: #991b1b !important; }
+html.modo-sol .text-success { color: #14532d !important; }
+html.modo-sol .text-warning { color: #78350f !important; }
+html.modo-sol .text-info { color: #0c4a6e !important; }
+html.modo-sol .text-indigo { color: #312e81 !important; }
+
+/* Campos: blancos, borde negro grueso */
+html.modo-sol .campo,
+html.modo-sol .filtro-select,
+html.modo-sol .buscador input,
+html.modo-sol .select-alcance,
+html.modo-sol .selector-empresa select,
+html.modo-sol .acceso-entrada input,
+html.modo-sol .form-control,
+html.modo-sol .form-select { background: #fff; color: #000; border: 2px solid #000; box-shadow: none; font-weight: 600; }
+html.modo-sol .campo:focus,
+html.modo-sol .buscador input:focus,
+html.modo-sol .acceso-entrada input:focus { border-color: #000; box-shadow: 0 0 0 3px #facc15; }
+html.modo-sol ::placeholder { color: #374151; opacity: 1; }
+html.modo-sol .campo-etiqueta,
+html.modo-sol .acceso-campo label { color: #000; font-weight: 800; }
+html.modo-sol .form-check-input { border: 2px solid #000; }
+
+/* Botones con colores sólidos y fuertes */
+html.modo-sol .btn-icono { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .btn-icono:hover { background: #000; color: #fff; }
+html.modo-sol [class*="tema-"] .btn-icono.editar, html.modo-sol .btn-icono.desactivar { color: #000; }
+html.modo-sol .btn-icono.eliminar { color: #991b1b; }
+html.modo-sol .btn-icono.reactivar { color: #14532d; }
+html.modo-sol .btn-icono.desbloquear { color: #78350f; }
+html.modo-sol [class*="tema-"] .btn-icono:hover { background: #000; color: #fff; }
+html.modo-sol .btn-cerrar, html.modo-sol .btn-cancelar { background: #fff; color: #000; border: 2px solid #000 !important; opacity: 1; }
+html.modo-sol .btn-rojo { background: #b91c1c; color: #fff; }
+html.modo-sol .btn-indigo { background: #3730a3; color: #fff; }
+html.modo-sol .btn-verde { background: #166534; color: #fff; }
+html.modo-sol .btn-azul { background: #1e40af; color: #fff; }
+html.modo-sol .btn-ambar { background: #92400e; color: #fff; }
+html.modo-sol .btn-guardar-permisos { background: #854d0e; }
+html.modo-sol .btn-guardar-identidad, html.modo-sol .acceso-boton { background: var(--primario-fuerte); }
+html.modo-sol .btn-entrar { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-agregar-elemento { border: 2px dashed #991b1b; color: #991b1b; }
+html.modo-sol .btn-dark { background: #000; border-color: #000; }
+html.modo-sol .btn-outline-dark { border-width: 2px; color: #000; border-color: #000; }
+html.modo-sol .rol-tab { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .rol-tab.activo { background: #854d0e; color: #fff; }
+html.modo-sol .menu-lateral-salir { background: #b91c1c; }
+
+/* Etiquetas sólidas */
+html.modo-sol .etiqueta-estado.activo { background: #166534; color: #fff; }
+html.modo-sol .etiqueta-estado.inactivo,
+html.modo-sol .etiqueta-inactiva,
+html.modo-sol .badge-estado { background: #991b1b; color: #fff; }
+html.modo-sol .etiqueta-estado.bloqueado { background: #92400e; color: #fff; border-color: #000; }
+html.modo-sol .badge-nivel { background: #fff; color: #000; border: 2px solid #000; }
+
+/* Tablas y diálogos */
+html.modo-sol .tabla-permisos { background: #fff; }
+html.modo-sol .tabla-permisos th { background: #fff; color: #000; border-bottom: 2px solid #000; }
+html.modo-sol .tabla-permisos td { border-bottom: 1px solid #000; }
+html.modo-sol .tabla-permisos tr.fila-area td { background: #e5e7eb; color: #000; }
+html.modo-sol .dialogo { background: #fff; border: 3px solid #000; }
+html.modo-sol .dialogo-cabecera, html.modo-sol .dialogo-acciones { background: #fff; }
+html.modo-sol .dialogo::backdrop { background: rgba(0, 0, 0, 0.75); }
+html.modo-sol .alert { border: 2px solid #000; color: #000; font-weight: 600; }
+html.modo-sol .aviso-solo-lectura { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .opcion-asignar { border: 2px solid #000; }
+html.modo-sol .ficha-card.inactiva, html.modo-sol .area-habitacion.inactiva { opacity: 0.8; }
+
+/* ==========================================================================
+   NOCHE — colores oscuros para turnos nocturnos
+   ========================================================================== */
+html.modo-noche {
+    color-scheme: dark;
+    --fondo: #0f172a;
+    --fondo-acceso: #0b1120;
+    --superficie: #1e293b;
+    --superficie-2: #273449;
+    --campo-fondo: #0f172a;
+    --texto: #e2e8f0;
+    --texto-suave: #94a3b8;
+    --texto-tenue: #7c8ba1;
+    --borde: #334155;
+    --primario-claro: color-mix(in srgb, var(--color-primario) 55%, #fff);
+    --color-primario-suave: color-mix(in srgb, var(--color-primario) 24%, transparent);
+    --color-primario-foco: color-mix(in srgb, var(--color-primario) 35%, transparent);
+    --bs-body-bg: #0f172a;
+    --bs-body-color: #e2e8f0;
+}
+html.modo-noche body { background: var(--fondo); color: var(--texto); }
+
+/* Franja de ambiente QA: sigue siendo amarilla pero sin deslumbrar */
+html.modo-noche .franja-ambiente { background: repeating-linear-gradient(-45deg, #713f12, #713f12 12px, #854d0e 12px, #854d0e 24px); color: #fef08a; }
+
+/* Superficies */
+html.modo-noche .barra-pc { background: rgba(30, 41, 59, 0.92); border-color: var(--borde); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); }
+html.modo-noche .bloque-usuario,
+html.modo-noche .tarjeta,
+html.modo-noche .ficha,
+html.modo-noche .ficha-card,
+html.modo-noche .area-habitacion,
+html.modo-noche .encabezado-pantalla .icono,
+html.modo-noche .selector-empresa,
+html.modo-noche .acceso-tarjeta,
+html.modo-noche .vista-previa,
+html.modo-noche .vp-barra,
+html.modo-noche .vp-acceso { background: var(--superficie); border-color: var(--borde); box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.5); }
+html.modo-noche .ficha-card:hover { box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.6); }
+html.modo-noche .ficha-create { background: rgba(148, 163, 184, 0.06); }
+html.modo-noche .ficha-meta,
+html.modo-noche .elemento,
+html.modo-noche .ficha-dato,
+html.modo-noche .chip-seccion,
+html.modo-noche .vista-imagen { background: var(--superficie-2); color: #cbd5e1; border-color: var(--borde); }
+html.modo-noche .menu-desplegable { background: rgba(30, 41, 59, 0.98); border-color: var(--borde); box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7); }
+html.modo-noche .cabecera-movil { background: rgba(15, 23, 42, 0.95); border-bottom-color: var(--borde); }
+html.modo-noche .tarjeta-usuario-movil { border-color: var(--borde); }
+html.modo-noche .barra-inferior { background: rgba(15, 23, 42, 0.96); border-top-color: var(--borde); box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.5); }
+html.modo-noche .menu-lateral { background: var(--superficie); border-left-color: var(--borde); }
+html.modo-noche .offcanvas-header { background: var(--fondo) !important; border-color: var(--borde) !important; }
+html.modo-noche .modal-content { background: var(--superficie); color: var(--texto); }
+
+/* Texto */
+html.modo-noche .menu-desplegable-item,
+html.modo-noche .menu-lateral-item { color: #cbd5e1; }
+html.modo-noche .acceso-pie { color: var(--texto-suave); }
+html.modo-noche .marca-texto,
+html.modo-noche .boton-nav.activo, html.modo-noche .boton-nav.activo i,
+html.modo-noche .boton-nav:hover,
+html.modo-noche .menu-desplegable-item:hover, html.modo-noche .menu-desplegable-item.activo,
+html.modo-noche .menu-lateral-item.activo,
+html.modo-noche .menu-lateral-grupo.actual,
+html.modo-noche .barra-inferior-item.activo,
+html.modo-noche .acceso-simbolo,
+html.modo-noche .ficha .icono, html.modo-noche .estado-vacio .icono,
+html.modo-noche .avatar-letra,
+html.modo-noche .migas a:hover,
+html.modo-noche .text-primary { color: var(--primario-claro) !important; }
+html.modo-noche .menu-lateral-grupo.actual > span::before { background: var(--primario-claro); }
+html.modo-noche .text-dark { color: var(--texto) !important; }
+html.modo-noche .text-muted, html.modo-noche .text-secondary { color: var(--texto-suave) !important; }
+html.modo-noche .text-danger { color: #f87171 !important; }
+html.modo-noche .text-success { color: #4ade80 !important; }
+html.modo-noche .text-warning { color: #fbbf24 !important; }
+html.modo-noche .text-info { color: #38bdf8 !important; }
+html.modo-noche .text-indigo { color: #a5b4fc !important; }
+html.modo-noche .bg-light { background-color: var(--fondo) !important; }
+html.modo-noche .tabla-permisos tr.submodulo td.modulo { color: #cbd5e1; }
+html.modo-noche .tema-verde .ficha-title { color: #4ade80; }
+html.modo-noche .ficha-footer a { color: #a5b4fc; }
+/* Íconos con color fijo escrito en la vista (habitaciones) */
+html.modo-noche [style*="color:#0f172a"] { color: var(--texto) !important; }
+html.modo-noche [style*="color:#b45309"] { color: #f59e0b !important; }
+
+/* Campos */
+html.modo-noche .campo,
+html.modo-noche .filtro-select,
+html.modo-noche .buscador input,
+html.modo-noche .select-alcance,
+html.modo-noche .selector-empresa select,
+html.modo-noche .acceso-entrada input,
+html.modo-noche .vp-campo { background: var(--campo-fondo); color: var(--texto); border-color: #475569; box-shadow: none; }
+html.modo-noche .campo:focus,
+html.modo-noche .buscador input:focus { background: #111c33; }
+html.modo-noche .select-alcance:disabled { background: var(--superficie-2); color: var(--texto-tenue); }
+html.modo-noche ::placeholder { color: #64748b; opacity: 1; }
+
+/* Botones */
+html.modo-noche .btn-icono { background: var(--superficie-2); }
+html.modo-noche .btn-icono:disabled:hover { background: var(--superficie-2); }
+html.modo-noche .btn-icono.editar { color: #a5b4fc; }
+html.modo-noche .tema-rojo .btn-icono.editar { color: #f87171; }
+html.modo-noche .tema-verde .btn-icono.editar { color: #4ade80; }
+html.modo-noche .tema-azul .btn-icono.editar { color: #60a5fa; }
+html.modo-noche .tema-ambar .btn-icono.editar { color: #fbbf24; }
+html.modo-noche .btn-icono.eliminar { color: #f87171; }
+html.modo-noche .btn-icono.desactivar { color: #cbd5e1; }
+html.modo-noche .btn-icono.reactivar { color: #4ade80; }
+html.modo-noche .btn-icono.desbloquear { color: #fbbf24; }
+html.modo-noche .btn-cerrar { background: var(--superficie-2); color: var(--texto); }
+html.modo-noche .btn-cerrar:hover { background: #334155; }
+html.modo-noche .btn-cancelar { background: var(--superficie-2); color: #cbd5e1; border-color: #475569 !important; }
+html.modo-noche .btn-dark { background: #e2e8f0; border-color: #e2e8f0; color: #0f172a; }
+html.modo-noche .btn-dark:hover { background: #fff; color: #0f172a; }
+html.modo-noche .btn-outline-dark { color: #e2e8f0; border-color: #64748b; }
+html.modo-noche .btn-outline-dark:hover { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .btn-entrar { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+html.modo-noche .btn-entrar:hover { background: rgba(245, 158, 11, 0.25); color: #fcd34d; }
+html.modo-noche .tema-rojo .btn-entrar { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+html.modo-noche .btn-agregar-elemento { border-color: #7f1d1d; color: #f87171; }
+html.modo-noche .btn-agregar-elemento:hover { background: rgba(239, 68, 68, 0.12); }
+html.modo-noche .rol-tab { background: var(--superficie); color: #cbd5e1; }
+html.modo-noche .rol-tab.activo { background: linear-gradient(135deg, #eab308, #ca8a04); color: #0f172a; }
+
+/* Etiquetas */
+html.modo-noche .etiqueta-estado.activo { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+html.modo-noche .etiqueta-estado.inactivo,
+html.modo-noche .etiqueta-inactiva,
+html.modo-noche .badge-estado { background: rgba(239, 68, 68, 0.16); color: #fca5a5; }
+html.modo-noche .etiqueta-estado.bloqueado { background: rgba(245, 158, 11, 0.16); color: #fcd34d; border-color: #b45309; }
+html.modo-noche .badge-nivel { background: rgba(99, 102, 241, 0.2); color: #c7d2fe; }
+
+/* Tablas, diálogos y avisos */
+html.modo-noche .tabla-permisos { background: var(--superficie); }
+html.modo-noche .tabla-permisos th { background: var(--fondo); color: #cbd5e1; }
+html.modo-noche .tabla-permisos td { border-bottom-color: var(--borde); }
+html.modo-noche .tabla-permisos tr.fila-area td { background: var(--superficie-2); }
+html.modo-noche .otras-acciones label { background: var(--superficie-2); }
+html.modo-noche .dialogo { background: var(--superficie); color: var(--texto); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); }
+html.modo-noche .dialogo-cabecera,
+html.modo-noche .dialogo-acciones { background: var(--superficie); }
+html.modo-noche .dialogo::backdrop { background: rgba(2, 6, 23, 0.75); }
+html.modo-noche .aviso-solo-lectura { background: rgba(234, 179, 8, 0.1); color: #fde68a; }
+html.modo-noche .opcion-asignar:has(input:checked) { background: rgba(239, 68, 68, 0.12); border-color: #7f1d1d; }
+html.modo-noche .ficha-resaltada { box-shadow: 0 0 0 3px #4ade80 !important; }

@@ -84,12 +84,16 @@
                             @if ($u->ultimo_acceso_en)
                                 <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Último acceso: {{ $u->ultimo_acceso_en->format('d/m/Y H:i') }}</div>
                             @endif
-                            @if ($u->estaBloqueado())
-                                <div class="text-danger" style="font-size: 0.72rem;"><i class="bi bi-lock-fill" aria-hidden="true"></i> Bloqueado por intentos fallidos hasta las {{ $u->bloqueado_hasta->format('H:i') }}</div>
-                            @endif
                         </div>
                     </div>
                     <div class="mt-2">
+                        @if ($u->estaBloqueado())
+                            <div class="mb-2">
+                                <span class="etiqueta-estado bloqueado" title="Bloqueado por intentos fallidos de inicio de sesión">
+                                    <i class="bi bi-lock-fill" aria-hidden="true"></i> BLOQUEADO hasta {{ $u->bloqueado_hasta->copy()->setTimezone($zonaHoraria)->format('H:i') }}
+                                </span>
+                            </div>
+                        @endif
                         @if ($u->creado_por_nombre)
                             <div class="texto-traza"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $u->creado_por_nombre }} · {{ $u->created_at?->format('d/m/Y H:i') }}</div>
                         @endif
@@ -100,6 +104,14 @@
                     <div class="ficha-footer">
                         <span class="etiqueta-estado {{ $u->activo ? 'activo' : 'inactivo' }}">{{ $u->activo ? 'ACTIVO' : 'INACTIVO' }}</span>
                         <div class="d-flex gap-2">
+                            @if ($puede['desbloquear'] && $administrable && in_array($u->id, $desbloqueables, true))
+                                <form action="{{ route('usuarios.desbloquear', $u->id) }}" method="POST" class="m-0"
+                                      data-confirmar="¿Desbloquear a «{{ $u->name }}»? Podrá volver a iniciar sesión de inmediato.">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn-icono desbloquear" title="Desbloquear" aria-label="Desbloquear a {{ $u->name }}"><i class="bi bi-unlock-fill" aria-hidden="true"></i></button>
+                                </form>
+                            @endif
                             @if ($puede['editar'] && $administrable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar a {{ $u->name }}"
                                         data-accion="editar-registro" data-dialogo="dialogoEditarUsuario"

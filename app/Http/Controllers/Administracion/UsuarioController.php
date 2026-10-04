@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Administracion;
 
 use App\Http\Controllers\Controller;
+use App\Models\Empresa;
 use App\Models\Rol;
 use App\Models\Sede;
 use App\Models\User;
-use App\Services\Permisos\Alcance;
-use App\Services\Permisos\Autorizador;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -27,7 +26,6 @@ class UsuarioController extends Controller
 {
     public function __construct(
         private readonly AdministradorUsuarios $administrador,
-        private readonly Autorizador $autorizador,
         private readonly EmpresaDeTrabajo $empresa,
         private readonly Tenant $tenant,
     ) {}
@@ -54,6 +52,14 @@ class UsuarioController extends Controller
 
         $sedes = $this->tenant->conEmpresa($empresaId, fn () => Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'empresa_id']));
         $nivelPropio = $actor->nivelJerarquia();
+        $puedeDesbloquear = $actor->can('usuarios.desbloquear');
+
+        // Cuentas bloqueadas que este usuario puede desbloquear (según el alcance del permiso)
+        $desbloqueables = ! $puedeDesbloquear ? [] : $this->administrador
+            ->limitarAlcance($this->visibles($actor, $empresaId), $actor, 'usuarios.desbloquear')
+            ->where('users.bloqueado_hasta', '>', now())
+            ->pluck('users.id')
+            ->all();
 
         $roles = Rol::where('empresa_id', $empresaId)
             ->where('activo', true)
@@ -67,10 +73,13 @@ class UsuarioController extends Controller
             'sedes' => $sedes->keyBy('id'),
             'roles' => $roles,
             'nivelPropio' => $nivelPropio,
+            'desbloqueables' => $desbloqueables,
+            'zonaHoraria' => Empresa::whereKey($empresaId)->value('zona_horaria') ?? config('app.timezone'),
             'puede' => [
                 'crear' => $actor->can('usuarios.crear'),
                 'editar' => $actor->can('usuarios.editar'),
                 'eliminar' => $actor->can('usuarios.eliminar'),
+                'desbloquear' => $puedeDesbloquear,
             ],
         ]);
     }
@@ -131,6 +140,24 @@ class UsuarioController extends Controller
             : 'Usuario desactivado: ya no puede iniciar sesión y su sesión abierta se cerró. Puedes reactivarlo con el mismo botón.');
     }
 
+    public function desbloquear(Request $request, User $usuario): RedirectResponse
+    {
+        Gate::authorize('usuarios.desbloquear');
+        $this->exigirVisible($request, $usuario);
+
+        if (! $usuario->estaBloqueado()) {
+            return redirect()->route('usuarios.index')->with('aviso', "«{$usuario->name}» no está bloqueado; ya puede entrar.");
+        }
+
+        try {
+            $this->administrador->desbloquear($request->user(), $usuario);
+        } catch (AuthorizationException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('usuarios.index')->with('ok', "«{$usuario->name}» desbloqueado; ya puede entrar.");
+    }
+
     /**
      * Usuarios de la empresa que el actor puede ver según el alcance de "usuarios.ver":
      * toda la empresa, los asignados a sus sedes, o solo los que él dio de alta.
@@ -139,18 +166,7 @@ class UsuarioController extends Controller
     {
         $consulta = User::query()->where('users.empresa_id', $empresaId)->where('users.es_superadmin', false);
 
-        if ($actor->es_superadmin) {
-            return $consulta;
-        }
-
-        $permiso = $this->autorizador->permisosEfectivos($actor)['usuarios.ver'] ?? null;
-
-        return match (true) {
-            $permiso === null => $consulta->whereRaw('1 = 0'),
-            $permiso->alcance === Alcance::Empresa, $permiso->alcance === Alcance::Sede && $permiso->sedes === null => $consulta,
-            $permiso->alcance === Alcance::Sede => $consulta->whereHas('roles', fn ($q) => $q->whereIn('usuario_roles.sede_id', $permiso->sedes)),
-            default => $consulta->where('users.creado_por', $actor->id),
-        };
+        return $this->administrador->limitarAlcance($consulta, $actor, 'usuarios.ver');
     }
 
     private function exigirVisible(Request $request, User $usuario): int
