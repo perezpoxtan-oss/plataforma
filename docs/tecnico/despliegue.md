@@ -34,6 +34,10 @@ El `index.php` del subdominio lee el destino de `actual` en cada visita con `rea
 4. Copia los archivos públicos al subdominio y cambia `actual` a la versión nueva.
 5. Consulta `/up`. Si no responde 200, **regresa solo a la versión anterior**, marca la nueva como fallida y no la reintenta hasta que llegue otra.
 
+En cada revisión sin versión nueva, el script **asegura los permisos de lectura** de la carpeta pública (Apache lee `.htaccess`, css y js con otro usuario: 644/755) y **consulta `/up`**. Si no responde 200, lo anota como ADVERTENCIA en el archivo de estado.
+
+Al instalar una versión, el script **se actualiza a sí mismo** con la copia de `despliegue/desplegar.sh` que trae el paquete: solo hay que subirlo a mano la primera vez.
+
 Una falla en `migrate` deja la versión anterior funcionando. Las migraciones que sí alcanzaron a correr no se revierten: por eso cada migración debe ser compatible con la versión anterior del código.
 
 ## Archivos que se suben una sola vez
