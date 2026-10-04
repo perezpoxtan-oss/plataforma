@@ -29,8 +29,9 @@ class EstablecerEmpresa
         if (! $usuario->activo || ($usuario->empresa_id !== null && ! $usuario->empresa?->activo)) {
             Auth::logout();
             $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-            return redirect('/login')->with('error', 'Tu cuenta no esta activa.');
+            return redirect()->route('login')->with('acceso', 'inactiva');
         }
 
         $empresaId = $usuario->es_superadmin

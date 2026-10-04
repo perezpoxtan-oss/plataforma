@@ -19,7 +19,8 @@ class Modulo extends Model
     protected $attributes = ['activo' => true];
 
     protected $fillable = [
-        'area_id', 'padre_id', 'clave', 'nombre', 'descripcion', 'icono', 'ruta', 'orden', 'tipo', 'activo',
+        'area_id', 'padre_id', 'menu_id', 'seccion_menu', 'orden_menu', 'clave', 'nombre', 'descripcion', 'icono', 'color_icono',
+        'ruta', 'orden', 'tipo', 'activo',
     ];
 
     protected function casts(): array
@@ -30,6 +31,11 @@ class Modulo extends Model
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class);
+    }
+
+    public function menu(): BelongsTo
+    {
+        return $this->belongsTo(Menu::class);
     }
 
     public function padre(): BelongsTo
