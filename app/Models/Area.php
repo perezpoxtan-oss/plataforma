@@ -9,6 +9,9 @@ class Area extends Model
 {
     protected $table = 'areas';
 
+    /** Mismos valores por defecto que la base de datos (disponibles antes de recargar). */
+    protected $attributes = ['activo' => true];
+
     protected $fillable = ['clave', 'nombre', 'icono', 'orden', 'activo'];
 
     protected function casts(): array

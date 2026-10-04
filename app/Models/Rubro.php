@@ -9,6 +9,9 @@ class Rubro extends Model
 {
     protected $table = 'rubros';
 
+    /** Mismos valores por defecto que la base de datos (disponibles antes de recargar). */
+    protected $attributes = ['activo' => true];
+
     protected $fillable = ['clave', 'nombre', 'terminologia', 'activo'];
 
     protected function casts(): array

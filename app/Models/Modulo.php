@@ -15,6 +15,9 @@ class Modulo extends Model
 
     protected $table = 'modulos';
 
+    /** Mismos valores por defecto que la base de datos (disponibles antes de recargar). */
+    protected $attributes = ['activo' => true];
+
     protected $fillable = [
         'area_id', 'padre_id', 'clave', 'nombre', 'descripcion', 'icono', 'ruta', 'orden', 'tipo', 'activo',
     ];

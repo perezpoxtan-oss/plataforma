@@ -18,6 +18,9 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    /** Mismos valores por defecto que la base de datos (disponibles antes de recargar). */
+    protected $attributes = ['activo' => true, 'es_superadmin' => false, 'intentos_fallidos' => 0];
+
     protected $fillable = [
         'empresa_id', 'name', 'username', 'email', 'password', 'activo',
     ];

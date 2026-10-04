@@ -19,6 +19,9 @@ class Empresa extends Model
 
     protected $table = 'empresas';
 
+    /** Mismos valores por defecto que la base de datos (disponibles antes de recargar). */
+    protected $attributes = ['activo' => true, 'zona_horaria' => 'America/Mexico_City', 'idioma' => 'es', 'moneda' => 'MXN'];
+
     protected $fillable = [
         'rubro_id', 'nombre_comercial', 'razon_social', 'rfc', 'logo_ruta',
         'zona_horaria', 'idioma', 'moneda', 'activo',
