@@ -312,3 +312,16 @@ html.modo-noche .btn-pill-tipo.active { background: #0284c7; border-color: #0284
 html.modo-noche .badge-tipo-admin { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
 html.modo-noche .badge-tipo-op { background: rgba(14, 165, 233, 0.2); color: #7dd3fc; }
 html.modo-noche .chip-catalogo, html.modo-noche .caja-checks, html.modo-noche .opcion-todas { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+
+/* Turnos (índigo) */
+html.modo-sol .turno-horario, html.modo-sol .btn-sedes-turno, html.modo-sol .opcion-sede-turno { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .turno-medianoche { color: #312e81; font-weight: 800; }
+html.modo-sol .opcion-sede-turno:has(input:checked) { background: #e0e7ff; }
+html.modo-noche .tema-indigo .btn-icono.editar { color: #a5b4fc; }
+html.modo-noche .turno-horario { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+html.modo-noche .turno-medianoche { color: #a5b4fc; }
+html.modo-noche .btn-sedes-turno { background: rgba(99, 102, 241, 0.18); color: #c7d2fe; }
+html.modo-noche .btn-sedes-turno:hover { background: rgba(99, 102, 241, 0.3); }
+html.modo-noche .opcion-sede-turno { border-color: #334155; }
+html.modo-noche .opcion-sede-turno:has(input:checked) { background: rgba(99, 102, 241, 0.16); border-color: #6366f1; }
+/* Fin Turnos */
