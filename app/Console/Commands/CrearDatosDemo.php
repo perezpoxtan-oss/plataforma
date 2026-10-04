@@ -10,6 +10,7 @@ use App\Models\Rol;
 use App\Models\Rubro;
 use App\Models\Sede;
 use App\Models\TipoEspacio;
+use App\Models\Turno;
 use App\Models\User;
 use App\Models\UsuarioRol;
 use App\Services\Espacios\AdministradorEspacios;
@@ -89,6 +90,7 @@ class CrearDatosDemo extends Command
 
         $tenant->conEmpresa($empresa->id, fn () => $this->espaciosDemo($sedes['CEN'], User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->departamentosYPuestosDemo($sedes['PLA']));
+        $tenant->conEmpresa($empresa->id, fn () => $this->turnosDemo($sedes['PLA']));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -124,6 +126,23 @@ class CrearDatosDemo extends Command
         foreach ($puestos as $nombre => [$tipo, $de]) {
             Puesto::create(['nombre' => $nombre, 'tipo' => $tipo])->departamentos()->sync(collect($de)->map(fn ($d) => $deptos[$d]->id)->all());
         }
+    }
+
+    /**
+     * Turnos de un hotel (uno cruza la medianoche), solo la primera vez.
+     */
+    private function turnosDemo(Sede $playa): void
+    {
+        if (Turno::exists()) {
+            return;
+        }
+
+        foreach ([['Matutino', '07:00', '15:00'], ['Vespertino', '15:00', '23:00'], ['Nocturno', '23:00', '07:00']] as [$nombre, $inicio, $fin]) {
+            Turno::create(['nombre' => $nombre, 'hora_inicio' => "{$inicio}:00", 'hora_fin' => "{$fin}:00"]);
+        }
+        // Mixto Playa solo se usa en la sede de playa
+        Turno::create(['nombre' => 'Mixto Playa', 'hora_inicio' => '10:00:00', 'hora_fin' => '18:00:00', 'todas_las_sedes' => false])
+            ->sedes()->sync([$playa->id]);
     }
 
     /**

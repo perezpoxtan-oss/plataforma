@@ -335,7 +335,8 @@
 
 /* ==========================================================================
    Filtro genérico de fichas: buscador + Todas / Activas / Inactivas
-   (contenedor data-fichas="clave"; fichas con data-ficha, data-texto y data-estado)
+   (contenedor data-fichas="clave"; fichas con data-ficha, data-texto y data-estado;
+   data-sede puede ser un id o varios separados por espacio)
    ========================================================================== */
 (function () {
     'use strict';
@@ -357,7 +358,8 @@
         contenedor.querySelectorAll('[data-ficha]').forEach(function (f) {
             var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1)
                 && (estado === 'todas' || f.dataset.estado === estado)
-                && (sede === '' || f.dataset.sede === sede)
+                // data-sede admite una lista separada por espacios (p. ej. turnos en varias sedes)
+                && (sede === '' || (' ' + (f.dataset.sede || '') + ' ').indexOf(' ' + sede + ' ') !== -1)
                 && (tipo === '' || f.dataset.tipo === tipo);
             f.style.display = ok ? '' : 'none';
             if (ok) { visibles++; }

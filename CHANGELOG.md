@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Turnos: horarios de la empresa (también los que cruzan la medianoche, con duración y aviso "Termina al día siguiente"), sedes que usan cada turno (todas, incluidas las futuras, o solo algunas; el usuario de sede solo cambia la suya), filtro por sede, mismas pantallas de SEGCAT y auditoría.
 - Ajustes de pruebas QA (ronda 2):
   - Las ventanas de alta y edición se cierran limpias: al cerrarlas (Cancelar, X o Esc) y volver a abrirlas ya no conservan lo capturado; tras un error se reabren con los datos para corregir y, si se cierran, quedan vacías. Genérico para todas las pantallas; excepción con `data-conservar-al-cerrar` (R-01 / U-01).
   - Roles: debajo del nivel jerárquico se explica el nivel propio y desde qué número se puede crear, con la escala de la empresa; el aviso del navegador y el del servidor lo dicen en español claro (`data-mensaje-min`) (R-02).

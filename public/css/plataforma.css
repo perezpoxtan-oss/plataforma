@@ -427,3 +427,24 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .fila-check input { width: 18px; height: 18px; accent-color: #0ea5e9; flex-shrink: 0; }
 .opcion-todas { display: flex; align-items: flex-start; gap: 0.6rem; border: 1px solid var(--borde); border-radius: 10px; padding: 0.65rem 0.8rem; margin-bottom: 0.75rem; cursor: pointer; }
 .opcion-todas input { width: 18px; height: 18px; margin-top: 2px; accent-color: #ca8a04; flex-shrink: 0; }
+
+/* ==========================================================================
+   Turnos (índigo) — réplica de SEGCAT
+   ========================================================================== */
+.tema-indigo .ficha-card:hover { box-shadow: 0 12px 24px -10px rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.4); }
+.tema-indigo .ficha-create { background: rgba(99,102,241,0.03); border-color: rgba(99,102,241,0.4); min-height: 170px; }
+.tema-indigo .ficha-create:hover { background: rgba(99,102,241,0.08); border-color: #6366f1; }
+.tema-indigo .ficha-create i, .tema-indigo .ficha-create .titulo-crear { color: #6366f1; }
+.tema-indigo .campo:focus, .tema-indigo .buscador input:focus, .tema-indigo .filtro-select:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); outline: none; }
+.tema-indigo .opcion-todas input, .tema-indigo .fila-check input, .opcion-sede-turno input { accent-color: #6366f1; }
+.turno-horario { background: var(--fondo); color: #475569; font-size: 0.85rem; font-weight: 700; padding: 0.5rem 0.6rem; border-radius: 8px; border: 1px solid var(--borde); margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.turno-medianoche { color: #4338ca; font-size: 0.75rem; font-weight: 600; }
+.btn-sedes-turno { background: #eef2ff; color: #4f46e5; border: none; padding: 0.4rem 0.75rem; min-height: 36px; border-radius: 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-top: 0.6rem; font-family: inherit; }
+.btn-sedes-turno:hover { background: #e0e7ff; }
+.turno-horas { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.turno-ayuda { margin: -0.4rem 0 1rem; }
+.lista-sedes-turno { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; max-height: 45vh; overflow-y: auto; }
+.opcion-sede-turno { display: flex; align-items: center; gap: 0.6rem; border: 1px solid var(--borde); border-radius: 10px; padding: 0.55rem 0.75rem; min-height: 44px; cursor: pointer; margin: 0; }
+.opcion-sede-turno input { width: 18px; height: 18px; flex-shrink: 0; }
+.opcion-sede-turno:has(input:checked) { border-color: #a5b4fc; background: #eef2ff; }
+/* Fin Turnos */

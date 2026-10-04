@@ -12,6 +12,7 @@ use App\Http\Controllers\ModuloPendienteController;
 use App\Http\Controllers\Organizacion\DepartamentoController;
 use App\Http\Controllers\Organizacion\EspacioController;
 use App\Http\Controllers\Organizacion\PuestoController;
+use App\Http\Controllers\Organizacion\TurnoController;
 use App\Http\Controllers\PanelController;
 use Illuminate\Support\Facades\Route;
 
@@ -54,6 +55,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/puestos', [PuestoController::class, 'store'])->name('puestos.store');
     Route::put('/puestos/{puesto}', [PuestoController::class, 'update'])->whereNumber('puesto')->name('puestos.update');
     Route::patch('/puestos/{puesto}/estado', [PuestoController::class, 'estado'])->whereNumber('puesto')->name('puestos.estado');
+    Route::get('/turnos', [TurnoController::class, 'index'])->name('turnos.index');
+    Route::post('/turnos', [TurnoController::class, 'store'])->name('turnos.store');
+    Route::put('/turnos/{turno}', [TurnoController::class, 'update'])->whereNumber('turno')->name('turnos.update');
+    Route::put('/turnos/{turno}/sedes', [TurnoController::class, 'sedes'])->whereNumber('turno')->name('turnos.sedes');
+    Route::patch('/turnos/{turno}/estado', [TurnoController::class, 'estado'])->whereNumber('turno')->name('turnos.estado');
 
     // Zonas y áreas (árbol de espacios)
     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');
