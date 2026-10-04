@@ -6,6 +6,8 @@
 </head>
 <body class="acceso">
 
+    @include('layouts.partes.ambiente')
+
 <div class="acceso-caja">
     <div class="acceso-tarjeta">
 

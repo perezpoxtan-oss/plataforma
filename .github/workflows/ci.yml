@@ -72,3 +72,11 @@ jobs:
       - name: Anotar fallas
         if: failure()
         run: php .github/scripts/anotar-fallas.php junit.xml
+
+  paquete:
+    name: Paquete para QA
+    needs: pruebas
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/paquete.yml

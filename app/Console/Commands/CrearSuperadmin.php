@@ -16,7 +16,7 @@ class CrearSuperadmin extends Command
         {email : Correo de acceso}
         {--nombre=Super Administrador : Nombre visible}
         {--usuario= : Nombre de usuario (opcional)}
-        {--password= : Contrasena nueva (si no se da, se genera una)}
+        {--password= : Contrasena nueva (si no se da, se toma de PLATAFORMA_CONTRASENA o se genera una)}
         {--hash= : Hash bcrypt existente (conserva la contrasena de SEGCAT)}';
 
     protected $description = 'Crea o actualiza el Super Administrador de la plataforma';
@@ -49,8 +49,9 @@ class CrearSuperadmin extends Command
         if ($hash !== null) {
             // Asignacion directa para no volver a cifrar el hash
             $usuario->setRawAttributes(['password' => $hash] + $usuario->getAttributes());
-        } elseif ($this->option('password') !== null) {
-            $usuario->password = $this->option('password');
+        } elseif (($contrasena = $this->option('password') ?? (getenv('PLATAFORMA_CONTRASENA') ?: null)) !== null) {
+            // La variable de entorno evita que la contrasena aparezca en la lista de procesos
+            $usuario->password = $contrasena;
         } elseif (! $usuario->exists) {
             $generada = Str::password(16);
             $usuario->password = $generada;

@@ -1,0 +1,87 @@
+name: Paquete
+
+# Arma el paquete listo para el servidor (codigo + librerias, sin pruebas ni
+# documentacion) y lo publica en GitHub:
+#  - Cada entrega que llega a develop y pasa la CI  -> version "qa" (portal de pruebas)
+#  - Cada etiqueta vMAYOR.MENOR.PARCHE              -> version de Produccion
+# El servidor lo descarga con desplegar.sh (ver docs/tecnico/despliegue.md).
+
+on:
+  # La CI lo llama al terminar en verde sobre develop
+  workflow_call:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paquete-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  paquete:
+    name: Armar y publicar paquete
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SHA: ${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.SHA }}
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, curl, dom, exif, fileinfo, gd, intl, mbstring, pdo_mysql, sodium, xml, zip
+          coverage: none
+
+      - name: Librerias de produccion
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader --no-scripts
+
+      - name: Descubrir paquetes de Laravel
+        run: php artisan package:discover
+
+      - name: Destino
+        id: destino
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "etiqueta=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "nombre=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "etiqueta=qa" >> "$GITHUB_OUTPUT"
+            echo "nombre=qa-${SHA:0:7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Armar paquete
+        run: |
+          printf '%s\n%s\n%s\n' "${{ steps.destino.outputs.nombre }}" "${SHA}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > VERSION
+          tar -czf "$RUNNER_TEMP/paquete.tar.gz" \
+            --exclude=./.git --exclude=./.github --exclude=./tests --exclude=./docs \
+            --exclude=./storage --exclude=./node_modules --exclude=./.env \
+            --exclude=./database/database.sqlite --exclude=./phpunit.xml --exclude=./junit.xml \
+            .
+          ls -lh "$RUNNER_TEMP/paquete.tar.gz"
+          sha256sum "$RUNNER_TEMP/paquete.tar.gz"
+
+      - name: Publicar en QA
+        if: steps.destino.outputs.etiqueta == 'qa'
+        run: |
+          NOTAS="Portal de pruebas · commit ${SHA:0:7} · $(date -u '+%Y-%m-%d %H:%M UTC')"
+          if ! gh release view qa >/dev/null 2>&1; then
+            gh release create qa --prerelease --target "$SHA" --title "QA (develop)" --notes "$NOTAS"
+          else
+            gh release edit qa --notes "$NOTAS"
+          fi
+          gh release upload qa "$RUNNER_TEMP/paquete.tar.gz" --clobber
+
+      - name: Publicar version de Produccion
+        if: steps.destino.outputs.etiqueta != 'qa'
+        run: |
+          TAG="${{ steps.destino.outputs.etiqueta }}"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes
+          fi
+          gh release upload "$TAG" "$RUNNER_TEMP/paquete.tar.gz" --clobber

@@ -1,0 +1,4 @@
+CORREO=tu-correo@ejemplo.com
+NOMBRE=Marcelino
+USUARIO=marcelino
+CONTRASENA=EscribeAquiUnaContrasenaNueva
