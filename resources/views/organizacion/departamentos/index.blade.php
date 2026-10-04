@@ -133,7 +133,7 @@
                             <span class="campo-etiqueta d-block">Sedes donde aplica</span>
                             <input type="hidden" name="todas_las_sedes" value="0">
                             <label class="opcion-todas">
-                                <input type="checkbox" name="todas_las_sedes" value="1" @checked($todas) data-oculta-si-marcado="#{{ $modo }}_lista_sedes">
+                                <input type="checkbox" name="todas_las_sedes" value="1" @checked($todas) data-por-defecto data-oculta-si-marcado="#{{ $modo }}_lista_sedes">
                                 <span><strong>Todas las sedes</strong><br><span class="small text-muted">También las que se abran después. Desmárcalo para elegir solo algunas.</span></span>
                             </label>
                             <div class="caja-checks" id="{{ $modo }}_lista_sedes" @if ($todas) hidden @endif>

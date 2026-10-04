@@ -6,6 +6,14 @@ Aquí se dan de alta las cuentas para entrar a la plataforma: **Estructura → O
 
 ![Usuarios con una cuenta bloqueada](img/ajustes/1-usuario-bloqueado.png)
 
+## ¿De qué empresa son?
+
+La plataforma atiende a varias empresas, y cada usuario pertenece a **una**. Debajo del título se ve cuál: "Usuarios de «Hotel Demo»". En el alta y en la edición, arriba de la sede, aparece **Empresa: Hotel Demo**: el usuario se crea en esa empresa y la **sede** solo limita lo que ve dentro de ella.
+
+El Super Administrador cambia de empresa con el selector **Empresa de trabajo** de arriba.
+
+![Alta con la empresa visible](img/ajustes2/01-alta-usuario-con-empresa.png)
+
 ## Buscar
 
 Escribe en el buscador un nombre, usuario, correo o rol. Si la empresa tiene varias sedes, filtra también por sede. El filtro se mantiene mientras trabajas.
@@ -24,6 +32,12 @@ Escribe en el buscador un nombre, usuario, correo o rol. Si la empresa tiene var
 ![Alta](img/usuarios/2-alta.png)
 
 En la lista de roles solo aparecen los que tú puedes asignar, es decir, los de nivel inferior al tuyo.
+
+Si cierras la ventana (Cancelar, la X o la tecla Esc), al volver a abrirla aparece **vacía**. Si al registrar hubo un error (por ejemplo, un usuario repetido), la ventana se vuelve a abrir con lo que capturaste para que lo corrijas; si en vez de corregir la cierras, la próxima vez abre vacía.
+
+| Regresa con el error | Cerrada y vuelta a abrir |
+|---|---|
+| ![Con error](img/ajustes2/02-alta-con-error-conserva-datos.png) | ![Limpia](img/ajustes2/03-alta-reabierta-limpia.png) |
 
 ## Editar
 

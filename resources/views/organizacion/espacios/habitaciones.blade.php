@@ -84,7 +84,7 @@
                     <input type="hidden" name="_dialogo" value="lote">
                     <input type="hidden" name="modo" value="{{ $modo }}" data-modo-actual>
                     <div class="lote-modos" role="group" aria-label="Forma de capturar">
-                        <button type="button" class="btn btn-sm fw-bold {{ $modo === 'rango' ? 'btn-dark' : 'btn-outline-dark' }}" data-modo-lote="rango">Rango numérico</button>
+                        <button type="button" class="btn btn-sm fw-bold {{ $modo === 'rango' ? 'btn-dark' : 'btn-outline-dark' }}" data-modo-lote="rango" data-por-defecto>Rango numérico</button>
                         <button type="button" class="btn btn-sm fw-bold {{ $modo === 'lista' ? 'btn-dark' : 'btn-outline-dark' }}" data-modo-lote="lista">Lista de nombres</button>
                     </div>
 
@@ -95,7 +95,7 @@
                             <div style="flex:1"><label class="campo-etiqueta" for="lote_hasta">Hasta</label><input type="number" id="lote_hasta" name="rango_hasta" class="campo" min="0" placeholder="20" value="{{ $loteReabrir ? old('rango_hasta') : '' }}"></div>
                         </div>
                         <div class="form-check mb-2">
-                            <input type="checkbox" class="form-check-input" id="lote_ceros" name="relleno_ceros" value="1" @checked(! $loteReabrir || old('relleno_ceros'))>
+                            <input type="checkbox" class="form-check-input" id="lote_ceros" name="relleno_ceros" value="1" @checked(! $loteReabrir || old('relleno_ceros')) data-por-defecto>
                             <label class="form-check-label small" for="lote_ceros">Rellenar con ceros (01, 02…)</label>
                         </div>
                         <p class="campo-ayuda mb-3">Ejemplo: prefijo "10", desde 1 hasta 5, con ceros → 1001, 1002, 1003, 1004, 1005. Máximo 500 por lote.</p>

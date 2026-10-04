@@ -163,7 +163,7 @@ class DepartamentosYPuestosTest extends TestCase
         $this->actingAs($this->admin)->post('/departamentos', ['nombre' => 'Club de Playa', 'todas_las_sedes' => '0', 'sedes' => [$this->playa->id]]);
 
         $sa = $this->crearSuperadmin();
-        $gerente = app(AdministradorRoles::class)->crearRol($sa, $this->empresa->id, ['nombre' => 'Gerente', 'nivel_jerarquia' => 40]);
+        $gerente = app(AdministradorRoles::class)->crearRol($sa, $this->empresa->id, ['nombre' => 'Gerente', 'nivel_jerarquia' => 35]);
         app(AdministradorRoles::class)->sincronizarPermisos($sa, $gerente, [
             'departamentos.ver' => Alcance::Sede, 'departamentos.crear' => Alcance::Sede, 'departamentos.editar' => Alcance::Sede,
         ]);

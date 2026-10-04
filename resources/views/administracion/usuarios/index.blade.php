@@ -27,7 +27,7 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-people-fill text-danger" aria-hidden="true"></i></div>
-                <div><h1>Usuarios Operativos</h1><p>Control de credenciales y visibilidad del sistema.</p></div>
+                <div><h1>Usuarios Operativos</h1><p>Usuarios de «{{ $empresaNombre }}»: control de credenciales y visibilidad del sistema.</p></div>
             </div>
             <div class="barra-filtros justify-content-md-end">
                 @if ($sedes->count() > 1)
@@ -174,6 +174,12 @@
                             </div>
                         </div>
 
+                        <p class="linea-empresa mb-3" data-empresa-usuario>
+                            <i class="bi bi-buildings" aria-hidden="true"></i>
+                            Empresa: <strong>{{ $empresaNombre }}</strong>
+                            <span class="text-muted">· el usuario pertenece a esta empresa; la sede limita lo que ve dentro de ella.</span>
+                        </p>
+
                         <div class="row">
                             <div class="col-md-6">
                                 <label class="campo-etiqueta" for="{{ $modo }}_sede">1. Sede</label>
@@ -217,7 +223,7 @@
                         @unless ($esNuevo)
                             <input type="hidden" name="activo" value="0">
                             <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" role="switch" id="editar_activo" name="activo" value="1" @checked(! $reabrir || old('activo'))>
+                                <input class="form-check-input" type="checkbox" role="switch" id="editar_activo" name="activo" value="1" @checked(! $reabrir || old('activo')) data-por-defecto>
                                 <label class="form-check-label small fw-semibold" for="editar_activo">Cuenta activa (si la apagas, no podrá iniciar sesión)</label>
                             </div>
                         @endunless
