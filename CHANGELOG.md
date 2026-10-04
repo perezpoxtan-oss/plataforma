@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Roles y Jerarquía y Matriz de permisos con alcance por módulo, acciones adicionales y reglas contra escalamiento; selector de empresa de trabajo para el Super Administrador.
 - Portal de QA con despliegue automático: GitHub arma el paquete y el servidor lo instala, verifica y regresa solo si falla.
 - Franja "Ambiente de pruebas" fuera de Producción y empresa demo con un usuario por rol.
 - Pantalla de acceso, cierre por inactividad con aviso, bloqueo tras 5 intentos y estructura de pantallas (PC y celular) idénticas a SEGCAT.

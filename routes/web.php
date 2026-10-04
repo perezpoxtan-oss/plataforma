@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Administracion\EmpresaActivaController;
+use App\Http\Controllers\Administracion\PermisoController;
+use App\Http\Controllers\Administracion\RolController;
 use App\Http\Controllers\Auth\SesionController;
 use App\Http\Controllers\ModuloPendienteController;
 use App\Http\Controllers\PanelController;
@@ -18,6 +21,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/sesion/latido', [SesionController::class, 'latido'])->name('sesion.latido');
 
     Route::get('/', PanelController::class)->name('panel');
+
+    // Administración: roles y permisos (cada pantalla exige su "modulo.accion")
+    Route::post('/empresa-activa', EmpresaActivaController::class)->name('empresa-activa');
+    Route::get('/roles', [RolController::class, 'index'])->name('roles.index');
+    Route::post('/roles', [RolController::class, 'store'])->name('roles.store');
+    Route::put('/roles/{rol}', [RolController::class, 'update'])->name('roles.update');
+    Route::delete('/roles/{rol}', [RolController::class, 'destroy'])->name('roles.destroy');
+    Route::get('/permisos', [PermisoController::class, 'index'])->name('permisos.index');
+    Route::put('/permisos/{rol}', [PermisoController::class, 'update'])->name('permisos.update');
 
     // Modulos del menu que aun no se migran
     Route::get('/modulos/{clave}', ModuloPendienteController::class)
