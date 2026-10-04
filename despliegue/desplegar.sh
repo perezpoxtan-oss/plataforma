@@ -20,7 +20,9 @@
 #   <amb>_inicial.txt (solo QA) correo, nombre y contrasena para crear los usuarios de prueba
 # =============================================================================
 set -u
-umask 027
+# Archivos legibles por el servidor web (Apache necesita leer .htaccess, css, js...).
+# Lo privado (.env, token) se protege explicitamente con chmod 600/700.
+umask 022
 
 REPO="perezpoxtan-oss/plataforma"
 AMB="${1:-}"
@@ -46,6 +48,7 @@ ESTADO="$HOME/despliegue_${AMB}_estado.txt"
 LOG="$APP/despliegue.log"
 mkdir -p "$APP/releases" "$PRIVADO"
 chmod 700 "$PRIVADO"
+chmod 750 "$APP"
 
 ahora() { date '+%Y-%m-%d %H:%M:%S'; }
 log() { echo "[$(ahora)] $*" >> "$LOG"; }
@@ -63,6 +66,14 @@ fallo() {
   log "ERROR: $*"
   estado "ERROR: $*"
   exit 1
+}
+
+# Apache lee la carpeta publica con otro usuario: todo debe ser legible (644 / 755)
+permisos_publicos() {
+  [ -d "$PUB" ] && chmod -R go+rX "$PUB" 2>/dev/null
+}
+responde() {  # codigo HTTP de /up
+  curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$URL/up"
 }
 
 # --- Una sola corrida a la vez -------------------------------------------------
@@ -222,6 +233,7 @@ require \$base.'/vendor/autoload.php';
 \$app->handleRequest(Request::capture());
 PHPEOF
   ln -sfn "$APP/shared/storage/app/public" "$PUB/storage"
+  permisos_publicos
 
   # Cambio instantaneo a la version nueva
   ln -sfn "releases/$NOMBRE" "$APP/actual.nuevo" && mv -T "$APP/actual.nuevo" "$APP/actual"
@@ -230,16 +242,18 @@ PHPEOF
 
   # Comprobar que el sitio responde; si no, regresar a la version anterior
   sleep 2
-  CODIGO="$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$URL/up")"
+  CODIGO="$(responde)"
   if [ "$CODIGO" != "200" ]; then
-    echo "$NOMBRE" > "$APP/.release_fallida"
     if [ -n "$ACTUAL" ] && [ "$ACTUAL" != "$NOMBRE" ] && [ -d "$APP/releases/$ACTUAL" ]; then
+      echo "$NOMBRE" > "$APP/.release_fallida"
       ln -sfn "releases/$ACTUAL" "$APP/actual.nuevo" && mv -T "$APP/actual.nuevo" "$APP/actual"
       echo "$ACTUAL" > "$APP/.release_actual"
       rm -rf "$REL"
       fallo "El sitio respondio $CODIGO con $NOMBRE; se regreso a $ACTUAL"
     fi
-    fallo "El sitio respondio $CODIGO con $NOMBRE (no hay version anterior a cual regresar)"
+    # Sin version anterior (primera instalacion): queda instalada y se vuelve a
+    # comprobar en cada revision (p. ej. mientras se emite el certificado SSL)
+    fallo "El sitio respondio $CODIGO con $NOMBRE; se volvera a comprobar en la siguiente revision"
   fi
 
   # Conservar solo las 3 versiones mas recientes (para poder regresar)
@@ -248,8 +262,22 @@ PHPEOF
   rm -f "$APP/.release_fallida"
   log "Instalada $NOMBRE; el sitio responde 200"
   estado "OK: instalada $NOMBRE"
+
+  # El propio script se actualiza con la copia que trae el paquete
+  if [ -f "$REL/despliegue/desplegar.sh" ] && ! cmp -s "$REL/despliegue/desplegar.sh" "$HOME/desplegar.sh"; then
+    cp "$REL/despliegue/desplegar.sh" "$HOME/desplegar.sh.nuevo" && mv "$HOME/desplegar.sh.nuevo" "$HOME/desplegar.sh"
+    log "desplegar.sh se actualizo con la version del paquete"
+  fi
 else
-  estado "OK: sin cambios"
+  # Sin version nueva: se revisa que el sitio siga respondiendo
+  permisos_publicos
+  CODIGO="$(responde)"
+  if [ "$CODIGO" = "200" ]; then
+    estado "OK: sin cambios"
+  else
+    log "ADVERTENCIA: el sitio responde $CODIGO"
+    estado "ADVERTENCIA: el sitio responde $CODIGO (si es 000, revisa el certificado SSL; si es 403/500, avisame)"
+  fi
 fi
 
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
