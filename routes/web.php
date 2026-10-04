@@ -9,6 +9,7 @@ use App\Http\Controllers\Administracion\SedeController;
 use App\Http\Controllers\Administracion\UsuarioController;
 use App\Http\Controllers\Auth\SesionController;
 use App\Http\Controllers\ModuloPendienteController;
+use App\Http\Controllers\Organizacion\ColaboradorController;
 use App\Http\Controllers\Organizacion\DepartamentoController;
 use App\Http\Controllers\Organizacion\EspacioController;
 use App\Http\Controllers\Organizacion\PuestoController;
@@ -60,6 +61,15 @@ Route::middleware('auth')->group(function () {
     Route::put('/turnos/{turno}', [TurnoController::class, 'update'])->whereNumber('turno')->name('turnos.update');
     Route::put('/turnos/{turno}/sedes', [TurnoController::class, 'sedes'])->whereNumber('turno')->name('turnos.sedes');
     Route::patch('/turnos/{turno}/estado', [TurnoController::class, 'estado'])->whereNumber('turno')->name('turnos.estado');
+    // Colaboradores (y el registro rápido y la búsqueda que usan otros módulos)
+    Route::get('/colaboradores', [ColaboradorController::class, 'index'])->name('colaboradores.index');
+    Route::post('/colaboradores', [ColaboradorController::class, 'store'])->name('colaboradores.store');
+    Route::get('/colaboradores/buscar', [ColaboradorController::class, 'buscar'])->name('colaboradores.buscar');
+    Route::post('/colaboradores/rapido', [ColaboradorController::class, 'rapido'])->name('colaboradores.rapido');
+    Route::put('/colaboradores/{colaborador}', [ColaboradorController::class, 'update'])->whereNumber('colaborador')->name('colaboradores.update');
+    Route::patch('/colaboradores/{colaborador}/estado', [ColaboradorController::class, 'estado'])->whereNumber('colaborador')->name('colaboradores.estado');
+    Route::put('/colaboradores/{colaborador}/sedes', [ColaboradorController::class, 'sedes'])->whereNumber('colaborador')->name('colaboradores.sedes');
+    Route::get('/colaboradores/{colaborador}/datos-personales', [ColaboradorController::class, 'datosPersonales'])->whereNumber('colaborador')->name('colaboradores.datos-personales');
 
     // Zonas y áreas (árbol de espacios)
     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');

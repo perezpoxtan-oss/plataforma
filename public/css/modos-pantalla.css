@@ -325,3 +325,17 @@ html.modo-noche .btn-sedes-turno:hover { background: rgba(99, 102, 241, 0.3); }
 html.modo-noche .opcion-sede-turno { border-color: #334155; }
 html.modo-noche .opcion-sede-turno:has(input:checked) { background: rgba(99, 102, 241, 0.16); border-color: #6366f1; }
 /* Fin Turnos */
+/* Colaboradores */
+html.modo-sol .btn-esmeralda { background: #065f46; color: #fff; }
+html.modo-sol .btn-registro-rapido { background: #1e40af; color: #fff; }
+html.modo-sol .avatar-colaborador, html.modo-sol .badge-num-empleado, html.modo-sol .btn-sedes-colab { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .buscador-colab-resultados { background: #fff; border: 2px solid #000; }
+html.modo-sol button.buscador-colab-item:hover, html.modo-sol button.buscador-colab-item:focus { background: #000; color: #fff; }
+html.modo-noche .tema-esmeralda .btn-icono.editar { color: #34d399; }
+html.modo-noche .avatar-colaborador { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; }
+html.modo-noche .badge-num-empleado { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+html.modo-noche .btn-sedes-colab { background: rgba(16, 185, 129, 0.14); color: #6ee7b7; }
+html.modo-noche .btn-sedes-colab:hover { background: rgba(16, 185, 129, 0.24); }
+html.modo-noche .buscador-colab-resultados { background: var(--superficie); border-color: var(--borde); }
+html.modo-noche .buscador-colab-item { border-bottom-color: var(--borde); color: var(--texto); }
+html.modo-noche button.buscador-colab-item:hover, html.modo-noche button.buscador-colab-item:focus { background: var(--superficie-2); }

@@ -448,3 +448,31 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .opcion-sede-turno input { width: 18px; height: 18px; flex-shrink: 0; }
 .opcion-sede-turno:has(input:checked) { border-color: #a5b4fc; background: #eef2ff; }
 /* Fin Turnos */
+   Colaboradores (esmeralda, como en SEGCAT) y Núm. Colaborador en Usuarios
+   ========================================================================== */
+.tema-esmeralda .ficha-card:hover { box-shadow: 0 12px 24px -10px rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.4); }
+.tema-esmeralda .ficha-create { background: rgba(16,185,129,0.03); border-color: rgba(16,185,129,0.4); min-height: 230px; }
+.tema-esmeralda .ficha-create:hover { background: rgba(16,185,129,0.08); border-color: #10b981; }
+.tema-esmeralda .ficha-create i, .tema-esmeralda .ficha-create .titulo-crear { color: #10b981; }
+.tema-esmeralda .btn-icono.editar { color: #10b981; }
+.tema-esmeralda .btn-icono.editar:hover { background: #10b981; color: #fff; }
+.tema-esmeralda .campo:focus, .tema-esmeralda .buscador input:focus, .tema-esmeralda .filtro-select:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.15); outline: none; }
+.tema-esmeralda .barra-filtros { max-width: 920px; }
+.tema-esmeralda .barra-filtros .filtro-select { max-width: 250px; }
+@media (max-width: 575.98px) { .tema-esmeralda .barra-filtros .filtro-select { max-width: none; width: 100%; } }
+.btn-esmeralda { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+.btn-registro-rapido { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; }
+.dialogo.extra-ancho { max-width: 850px; }
+.subtitulo-dialogo { font-size: 1rem; font-weight: 700; color: var(--texto); margin-bottom: 0.75rem; }
+.avatar-colaborador { width: 44px; height: 44px; border-radius: 12px; background: rgba(16,185,129,0.1); color: #10b981; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; flex-shrink: 0; }
+.badge-num-empleado { display: inline-block; margin-top: 0.25rem; background: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; border-radius: 6px; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; }
+.btn-sedes-colab { background: #ecfdf5; color: #059669; border: none; padding: 0.35rem 0.7rem; min-height: 36px; border-radius: 10px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-top: 0.5rem; font-family: inherit; }
+.btn-sedes-colab:hover { background: #d1fae5; }
+.tema-esmeralda .fila-check input { accent-color: #10b981; }
+.buscador-colab { position: relative; }
+.buscador-colab-resultados { position: absolute; z-index: 20; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid var(--borde); border-radius: 12px; box-shadow: 0 12px 24px -10px rgba(0,0,0,0.2); max-height: 240px; overflow-y: auto; margin-top: -0.75rem; }
+.buscador-colab-item { display: block; width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid #f1f5f9; padding: 0.7rem 1rem; font-size: 0.85rem; font-family: inherit; color: var(--texto); }
+button.buscador-colab-item { cursor: pointer; }
+button.buscador-colab-item:hover, button.buscador-colab-item:focus { background: #fef2f2; outline: none; }
+.buscador-colab-item small { display: block; color: var(--texto-tenue); }
+/* Fin Colaboradores */
