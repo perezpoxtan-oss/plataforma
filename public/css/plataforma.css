@@ -54,6 +54,10 @@ body.alto-contraste .barra-inferior { border-color: #000 !important; }
 .btn-alto-contraste { background: transparent; border: 1px solid var(--borde); color: inherit; border-radius: 10px; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .btn-alto-contraste.activo { background: #facc15; border-color: #facc15; color: #0f172a; }
 
+/* ---------- Franja de ambiente (QA / desarrollo) ---------- */
+.franja-ambiente { background: repeating-linear-gradient(-45deg, #facc15, #facc15 12px, #fde047 12px, #fde047 24px); color: #0f172a; font-size: 0.75rem; font-weight: 700; text-align: center; padding: 0.3rem 0.75rem; letter-spacing: 0.2px; }
+body.acceso .franja-ambiente { position: fixed; top: 0; left: 0; right: 0; z-index: 10; }
+
 /* ---------- Marca ---------- */
 .marca { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; }
 .marca-simbolo { width: 36px; height: 36px; background: linear-gradient(135deg, var(--color-primario), var(--color-primario-hover)); color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primario) 20%, transparent); }

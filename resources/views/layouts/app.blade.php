@@ -14,6 +14,8 @@
       data-latido="{{ route('sesion.latido') }}"
       data-expirada="{{ route('sesion.expirada') }}">
 
+    @include('layouts.partes.ambiente')
+
     {{-- ===================== Barra superior (PC) ===================== --}}
     <div class="barra-pc-contenedor">
         <nav class="barra-pc" aria-label="Menú principal">
