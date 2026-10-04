@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Administracion;
 
 use App\Http\Controllers\Controller;
+use App\Models\Colaborador;
 use App\Models\Empresa;
 use App\Models\Rol;
 use App\Models\Sede;
@@ -17,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -43,7 +45,7 @@ class UsuarioController extends Controller
         }
 
         $usuarios = $this->visibles($actor, $empresaId)
-            ->with(['roles' => fn ($q) => $q->select('roles.id', 'roles.nombre', 'roles.nivel_jerarquia')])
+            ->with(['roles' => fn ($q) => $q->select('roles.id', 'roles.nombre', 'roles.nivel_jerarquia'), 'colaborador:id,activo'])
             ->leftJoin('users as uc', 'uc.id', '=', 'users.creado_por')
             ->leftJoin('users as ua', 'ua.id', '=', 'users.actualizado_por')
             ->select('users.*', 'uc.name as creado_por_nombre', 'ua.name as actualizado_por_nombre')
@@ -92,7 +94,7 @@ class UsuarioController extends Controller
         $empresaId = $this->empresa->id($request->user());
         abort_if($empresaId === null, 404);
 
-        $datos = $this->validar($request, $empresaId);
+        $datos = $this->vincularColaborador($this->validar($request, $empresaId), $empresaId);
         [$rol, $sede] = $this->rolYSede($datos, $empresaId);
 
         try {
@@ -109,7 +111,7 @@ class UsuarioController extends Controller
         Gate::authorize('usuarios.editar');
         $empresaId = $this->exigirVisible($request, $usuario);
 
-        $datos = $this->validar($request, $empresaId, $usuario);
+        $datos = $this->vincularColaborador($this->validar($request, $empresaId, $usuario), $empresaId, $usuario);
         [$rol, $sede] = $this->rolYSede($datos, $empresaId);
 
         try {
@@ -187,6 +189,7 @@ class UsuarioController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'numero_colaborador' => ['nullable', 'string', 'max:30', Rule::unique('users', 'numero_colaborador')->where('empresa_id', $empresaId)->ignore($usuario?->id)],
+            'colaborador_id' => ['nullable', 'integer'],
             'username' => ['required', 'string', 'max:60', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')->ignore($usuario?->id)],
             'email' => ['required', 'email:rfc', 'max:150', Rule::unique('users', 'email')->ignore($usuario?->id)],
             'password' => [$usuario === null ? 'required' : 'nullable', 'string', Password::min(8)->letters()->numbers()],
@@ -208,6 +211,44 @@ class UsuarioController extends Controller
     }
 
     /**
+     * Vínculo opcional con Colaboradores (SEGCAT: usuarios.id_colaborador): el
+     * colaborador debe ser de la misma empresa y no tener ya otra cuenta. El
+     * número de colaborador de la cuenta se toma del colaborador.
+     *
+     * @param  array<string, mixed>  $datos
+     * @return array<string, mixed>
+     */
+    private function vincularColaborador(array $datos, int $empresaId, ?User $usuario = null): array
+    {
+        if (empty($datos['colaborador_id'])) {
+            $datos['colaborador_id'] = null;
+
+            return $datos;
+        }
+
+        $id = (int) $datos['colaborador_id'];
+        $colaborador = $this->tenant->conEmpresa($empresaId, fn () => Colaborador::find($id));
+        if ($colaborador === null) {
+            throw ValidationException::withMessages(['colaborador_id' => 'El colaborador no existe en esta empresa.']);
+        }
+        if (! $colaborador->activo && $id !== (int) $usuario?->colaborador_id) {
+            throw ValidationException::withMessages(['colaborador_id' => 'Ese colaborador está dado de baja.']);
+        }
+        if (User::where('colaborador_id', $id)->when($usuario !== null, fn ($q) => $q->whereKeyNot($usuario->id))->exists()) {
+            throw ValidationException::withMessages(['colaborador_id' => 'Ese colaborador ya tiene una cuenta de usuario: búscala en la lista en vez de crear otra.']);
+        }
+        if (User::where('empresa_id', $empresaId)->where('numero_colaborador', $colaborador->num_empleado)
+            ->when($usuario !== null, fn ($q) => $q->whereKeyNot($usuario->id))->exists()) {
+            throw ValidationException::withMessages(['numero_colaborador' => 'Ya existe otro usuario registrado con ese número de colaborador.']);
+        }
+
+        $datos['colaborador_id'] = $id;
+        $datos['numero_colaborador'] = $colaborador->num_empleado;
+
+        return $datos;
+    }
+
+    /**
      * @return array{0: Rol, 1: ?Sede}
      */
     private function rolYSede(array $datos, int $empresaId): array
@@ -225,7 +266,7 @@ class UsuarioController extends Controller
     }
 
     /**
-     * @return array{name: string, username: string, numero_colaborador: ?string, email: string, password: ?string}
+     * @return array{name: string, username: string, numero_colaborador: ?string, colaborador_id: ?int, email: string, password: ?string}
      */
     private function campos(array $datos): array
     {
@@ -233,6 +274,7 @@ class UsuarioController extends Controller
             'name' => trim($datos['name']),
             'username' => trim($datos['username']),
             'numero_colaborador' => isset($datos['numero_colaborador']) && trim($datos['numero_colaborador']) !== '' ? trim($datos['numero_colaborador']) : null,
+            'colaborador_id' => $datos['colaborador_id'] ?? null,
             'email' => mb_strtolower(trim($datos['email'])),
             'password' => $datos['password'] ?? null,
         ];

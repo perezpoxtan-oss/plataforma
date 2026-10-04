@@ -592,3 +592,347 @@ document.addEventListener('click', function (e) {
         aviso.textContent = repetido ? 'Ya existe uno con ese nombre en esta empresa.' : 'Disponible.';
     });
 })();
+
+/* ==========================================================================
+   Colaboradores: filtro de fichas, combos dependientes (sede → departamento
+   → puesto), aviso de número repetido, datos personales bajo demanda,
+   sedes adicionales, registro rápido y autocompletar en Usuarios.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function lista(texto) { return (texto || '').split(',').filter(Boolean); }
+
+    /* ---------- Filtro de fichas: texto, sede (física o adicional) y departamento ---------- */
+    var CLAVE_FILTRO = 'plataforma_filtro_colaboradores';
+
+    function filtrarColaboradores() {
+        var cont = document.querySelector('[data-colaboradores]');
+        if (!cont) { return; }
+        var valor = function (tipo) { var el = document.querySelector('[data-filtro-colab="' + tipo + '"]'); return el ? el.value : ''; };
+        var texto = valor('texto').toLowerCase().trim();
+        var sede = valor('sede');
+        var depto = valor('depto');
+        var fichas = cont.querySelectorAll('[data-colaborador]');
+        var visibles = 0;
+
+        fichas.forEach(function (f) {
+            var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1)
+                && (sede === '' || lista(f.dataset.sedes).indexOf(sede) !== -1)
+                && (depto === '' || f.dataset.depto === depto);
+            f.style.display = ok ? '' : 'none';
+            if (ok) { visibles++; }
+        });
+
+        var vacio = cont.querySelector('[data-sin-resultados-colab]');
+        if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+        try { sessionStorage.setItem(CLAVE_FILTRO, JSON.stringify({ texto: valor('texto'), sede: sede, depto: depto })); } catch (e) { /* sin almacenamiento */ }
+    }
+
+    document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-colab]')) { filtrarColaboradores(); } });
+    document.addEventListener('change', function (e) { if (e.target.matches('[data-filtro-colab]')) { filtrarColaboradores(); } });
+
+    /* ---------- Combos dependientes ---------- */
+    function mostrarOpcion(opcion, visible) {
+        opcion.hidden = !visible;
+        opcion.disabled = !visible;
+    }
+
+    function acotarPuestos(form) {
+        var depto = form.querySelector('[data-colab-depto]');
+        var puesto = form.querySelector('[data-colab-puesto]');
+        if (!puesto) { return; }
+        var d = depto ? depto.value : '';
+        Array.prototype.forEach.call(puesto.options, function (o) {
+            if (o.value === '') { return; }
+            var deps = lista(o.dataset.deps);
+            mostrarOpcion(o, d === '' || deps.length === 0 || deps.indexOf(d) !== -1);
+        });
+        if (puesto.selectedOptions[0] && puesto.selectedOptions[0].disabled) { puesto.value = ''; }
+    }
+
+    function acotarDepartamentos(form) {
+        var sede = form.querySelector('[data-colab-sede]');
+        var depto = form.querySelector('[data-colab-depto]');
+        if (sede) {
+            // Sedes fuera del alcance o desactivadas: solo se muestran si son la actual
+            Array.prototype.forEach.call(sede.options, function (o) {
+                if (o.hasAttribute('data-ajena')) { o.hidden = o.value !== sede.value; }
+            });
+        }
+        if (depto) {
+            var s = sede ? sede.value : '';
+            Array.prototype.forEach.call(depto.options, function (o) {
+                if (o.value === '') { return; }
+                mostrarOpcion(o, s === '' || o.dataset.todas === '1' || lista(o.dataset.sedes).indexOf(s) !== -1);
+            });
+            if (depto.selectedOptions[0] && depto.selectedOptions[0].disabled) { depto.value = ''; }
+        }
+        acotarPuestos(form);
+    }
+
+    // El valor guardado nunca se pierde en silencio: si ya no encaja, se deja visible y el servidor avisa
+    function conservarActual(select) {
+        var o = select.selectedOptions[0];
+        if (o && o.value !== '' && o.disabled) { mostrarOpcion(o, true); }
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.closest('[data-form-colaborador]');
+        if (!form) { return; }
+        if (e.target.matches('[data-colab-sede]')) { acotarDepartamentos(form); }
+        if (e.target.matches('[data-colab-depto]')) { acotarPuestos(form); }
+    });
+
+    /* ---------- Aviso en vivo de número de empleado repetido ---------- */
+    function avisarNumero(campo) {
+        var aviso = campo.form && campo.form.querySelector('[data-aviso-numero]');
+        if (!aviso) { return; }
+        var numero = campo.value.trim().toLowerCase();
+        var original = (campo.dataset.original || '').trim().toLowerCase();
+        var existentes = [];
+        try { existentes = JSON.parse(campo.getAttribute('data-numeros-existentes') || '[]'); } catch (x) { /* vacío */ }
+        if (numero === '' || numero === original) { aviso.hidden = true; return; }
+        var repetido = existentes.indexOf(numero) !== -1;
+        aviso.hidden = false;
+        aviso.className = 'small mb-2 ' + (repetido ? 'text-warning' : 'text-success');
+        aviso.textContent = repetido
+            ? 'Ya existe un Colaborador con el número "' + campo.value.trim() + '" en esta empresa.'
+            : 'Disponible.';
+    }
+
+    document.addEventListener('input', function (e) {
+        if (e.target.matches('[data-numeros-existentes]')) { avisarNumero(e.target); }
+    });
+
+    /* ---------- Al abrir editar / sedes adicionales (después del llenado genérico) ---------- */
+    function cargarDatosPersonales(form, url) {
+        var campos = form.querySelectorAll('[data-dato-personal]');
+        var cargando = form.querySelector('[data-cargando-datos]');
+        var textoCargando = cargando ? (cargando.dataset.textoOriginal || cargando.innerHTML) : '';
+        if (cargando) { cargando.dataset.textoOriginal = textoCargando; cargando.innerHTML = textoCargando; cargando.hidden = false; }
+        campos.forEach(function (c) { c.value = ''; c.disabled = true; });
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
+            .then(function (datos) {
+                campos.forEach(function (c) {
+                    var v = datos[c.name];
+                    c.value = (v === null || v === undefined) ? '' : String(v);
+                    c.disabled = false;
+                });
+                if (cargando) { cargando.hidden = true; }
+            })
+            .catch(function () {
+                // Sin datos cargados los campos siguen bloqueados: no se envían y no se borra nada
+                if (cargando) { cargando.textContent = 'No se pudieron cargar los datos personales; se conservan sin cambios.'; }
+            });
+    }
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        var form = dialogo && dialogo.querySelector('form');
+        if (!form) { return; }
+        var valores = {};
+        try { valores = JSON.parse(boton.dataset.valores || '{}'); } catch (x) { /* sin valores */ }
+
+        if (form.hasAttribute('data-form-colaborador')) {
+            // El llenado genérico ya puso los valores; se acotan los combos sin perderlos
+            var sede = form.querySelector('[data-colab-sede]');
+            var depto = form.querySelector('[data-colab-depto]');
+            var puesto = form.querySelector('[data-colab-puesto]');
+            if (sede) { sede.value = valores.sede_id ? String(valores.sede_id) : ''; }
+            acotarDepartamentos(form);
+            if (depto) { depto.value = valores.departamento_id ? String(valores.departamento_id) : ''; conservarActual(depto); }
+            acotarPuestos(form);
+            if (puesto) { puesto.value = valores.puesto_id ? String(valores.puesto_id) : ''; conservarActual(puesto); }
+            var numero = form.querySelector('[data-numeros-existentes]');
+            if (numero) { numero.dataset.original = numero.value; avisarNumero(numero); }
+            if (boton.dataset.urlDatos) { cargarDatosPersonales(form, boton.dataset.urlDatos); }
+        }
+
+        if (boton.dataset.dialogo === 'dialogoSedesColaborador') {
+            dialogo.querySelectorAll('[data-colab-nombre]').forEach(function (n) { n.textContent = boton.dataset.nombre || ''; });
+            dialogo.querySelectorAll('[data-colab-sede-principal]').forEach(function (n) { n.textContent = boton.dataset.sedePrincipal || ''; });
+            // La sede principal no se repite como adicional
+            dialogo.querySelectorAll('[data-sede-opcion]').forEach(function (fila) {
+                var esPrincipal = String(valores.sede_id || '') === fila.dataset.sedeOpcion;
+                fila.hidden = esPrincipal;
+                if (esPrincipal) { fila.querySelector('input').checked = false; }
+            });
+        }
+
+        // Usuarios: vínculo con colaborador (campo oculto que el llenado genérico no toca)
+        var oculto = form.querySelector('[data-campo-colaborador]');
+        if (oculto) {
+            oculto.value = valores.colaborador_id ? String(valores.colaborador_id) : '';
+            mostrarVinculo(form);
+        }
+    });
+
+    /* ---------- Registro rápido (respuesta JSON; avisa con el evento colaborador:registrado) ---------- */
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-registro-rapido-colaborador]')) { return; }
+        e.preventDefault();
+        var boton = form.querySelector('button[type="submit"]');
+        var errores = form.querySelector('[data-errores-rapido]');
+        if (boton) { boton.disabled = true; boton.textContent = 'Guardando...'; }
+        if (errores) { errores.hidden = true; errores.textContent = ''; }
+
+        function terminar() { if (boton) { boton.disabled = false; boton.textContent = boton.dataset.textoOriginal || 'Registrar'; } }
+
+        fetch(form.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form)
+        })
+            .then(function (r) { return r.json().then(function (d) { return { estado: r.status, datos: d }; }); })
+            .then(function (res) {
+                terminar();
+                if (res.estado === 201 && res.datos.ok) {
+                    form.reset();
+                    var dialogo = form.closest('dialog');
+                    if (dialogo) { dialogo.close(); }
+                    document.dispatchEvent(new CustomEvent('colaborador:registrado', { detail: res.datos.colaborador }));
+                    return;
+                }
+                var mensajes = [];
+                Object.keys(res.datos.errores || {}).forEach(function (k) { mensajes = mensajes.concat(res.datos.errores[k]); });
+                if (mensajes.length === 0) { mensajes.push(res.datos.mensaje || res.datos.message || 'No se pudo registrar. Intenta de nuevo.'); }
+                if (errores) {
+                    mensajes.forEach(function (m) { var div = document.createElement('div'); div.textContent = m; errores.appendChild(div); });
+                    errores.hidden = false;
+                }
+            })
+            .catch(function () {
+                terminar();
+                if (errores) { errores.textContent = 'No se pudo registrar en este momento.'; errores.hidden = false; }
+            });
+    });
+
+    /* ---------- Usuarios: Núm. Colaborador con autocompletar ---------- */
+    var espera = null;
+
+    function mostrarVinculo(form) {
+        var oculto = form.querySelector('[data-campo-colaborador]');
+        var aviso = form.querySelector('[data-colab-vinculo]');
+        if (aviso && oculto) { aviso.hidden = oculto.value === ''; }
+    }
+
+    function cerrarResultados(caja, campo) {
+        if (!caja) { return; }
+        caja.hidden = true;
+        caja.textContent = '';
+        if (campo) { campo.setAttribute('aria-expanded', 'false'); }
+    }
+
+    function elegirColaborador(campo, c) {
+        var form = campo.form;
+        campo.value = c.num_empleado;
+        var oculto = form.querySelector('[data-campo-colaborador]');
+        if (oculto) { oculto.value = String(c.id); }
+        var nombre = document.getElementById(campo.dataset.destinoNombre);
+        if (nombre) { nombre.value = c.nombre_completo; }
+        cerrarResultados(document.getElementById(campo.getAttribute('aria-controls')), campo);
+        mostrarVinculo(form);
+    }
+
+    function pintarResultados(campo, datos) {
+        var caja = document.getElementById(campo.getAttribute('aria-controls'));
+        if (!caja) { return; }
+        caja.textContent = '';
+        var resultados = datos.resultados || [];
+        if (resultados.length === 0) {
+            var vacio = document.createElement('div');
+            vacio.className = 'buscador-colab-item ' + (datos.todas_ya_tienen_usuario ? 'text-warning' : 'text-muted');
+            vacio.textContent = datos.todas_ya_tienen_usuario
+                ? 'Ese colaborador ya tiene una cuenta de usuario: búscalo en la lista principal en vez de crear una nueva.'
+                : 'Sin coincidencias: puedes capturar los datos a mano.';
+            caja.appendChild(vacio);
+        }
+        resultados.forEach(function (c) {
+            var item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'buscador-colab-item';
+            item.setAttribute('role', 'option');
+            item.textContent = c.nombre_completo;
+            var detalle = document.createElement('small');
+            detalle.textContent = '#' + c.num_empleado + (c.puesto ? ' · ' + c.puesto : '') + (c.sede ? ' · ' + c.sede : '');
+            item.appendChild(detalle);
+            item.addEventListener('click', function () { elegirColaborador(campo, c); });
+            caja.appendChild(item);
+        });
+        caja.hidden = false;
+        campo.setAttribute('aria-expanded', 'true');
+    }
+
+    document.addEventListener('input', function (e) {
+        var campo = e.target;
+        if (!campo.matches('[data-buscar-colaborador]')) { return; }
+        // Si se cambia el número a mano, se quita el vínculo (como en SEGCAT)
+        var oculto = campo.form.querySelector('[data-campo-colaborador]');
+        if (oculto) { oculto.value = ''; mostrarVinculo(campo.form); }
+
+        clearTimeout(espera);
+        var texto = campo.value.trim();
+        var caja = document.getElementById(campo.getAttribute('aria-controls'));
+        if (texto.length < 2) { cerrarResultados(caja, campo); return; }
+
+        espera = setTimeout(function () {
+            var url = campo.dataset.buscarColaborador + '?sin_usuario=1&q=' + encodeURIComponent(texto);
+            fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
+                .then(function (datos) { pintarResultados(campo, datos); })
+                .catch(function () { cerrarResultados(caja, campo); });
+        }, 250);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && e.target.matches('[data-buscar-colaborador]')) {
+            var caja = document.getElementById(e.target.getAttribute('aria-controls'));
+            if (caja && !caja.hidden) { e.preventDefault(); cerrarResultados(caja, e.target); }
+        }
+    });
+
+    // Cierra la lista de resultados con un clic fuera
+    document.addEventListener('click', function (e) {
+        document.querySelectorAll('.buscador-colab-resultados').forEach(function (caja) {
+            var envoltura = caja.closest('.buscador-colab');
+            if (envoltura && !envoltura.contains(e.target)) { cerrarResultados(caja, envoltura.querySelector('[data-buscar-colaborador]')); }
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-form-colaborador]').forEach(function (form) {
+            var depto = form.querySelector('[data-colab-depto]');
+            var puesto = form.querySelector('[data-colab-puesto]');
+            var d = depto ? depto.value : '';
+            var p = puesto ? puesto.value : '';
+            acotarDepartamentos(form);
+            if (depto && d) { depto.value = d; conservarActual(depto); }
+            acotarPuestos(form);
+            if (puesto && p) { puesto.value = p; conservarActual(puesto); }
+        });
+        document.querySelectorAll('[data-campo-colaborador]').forEach(function (c) { if (c.form) { mostrarVinculo(c.form); } });
+
+        if (!document.querySelector('[data-colaboradores]')) { return; }
+        // ?sede=X (desde la ficha de una sede) manda sobre el filtro guardado
+        var sedeUrl = new URLSearchParams(window.location.search).get('sede');
+        var selSede = document.querySelector('[data-filtro-colab="sede"]');
+        try {
+            var g = JSON.parse(sessionStorage.getItem(CLAVE_FILTRO) || 'null');
+            if (g && !sedeUrl) {
+                var t = document.querySelector('[data-filtro-colab="texto"]');
+                var dep = document.querySelector('[data-filtro-colab="depto"]');
+                if (t && g.texto) { t.value = g.texto; }
+                if (selSede && g.sede) { selSede.value = g.sede; }
+                if (dep && g.depto) { dep.value = g.depto; }
+            }
+        } catch (x) { /* valor guardado dañado: se ignora */ }
+        if (sedeUrl && selSede) { selSede.value = sedeUrl; }
+        filtrarColaboradores();
+    });
+})();

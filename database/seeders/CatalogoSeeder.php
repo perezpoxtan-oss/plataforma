@@ -27,6 +27,7 @@ class CatalogoSeeder extends Seeder
         'reabrir' => 'Reabrir',
         'configurar' => 'Configurar',
         'desbloquear' => 'Desbloquear',
+        'datos_personales' => 'Datos personales',
     ];
 
     private const CRUD = ['ver', 'crear', 'editar', 'eliminar'];
@@ -42,6 +43,7 @@ class CatalogoSeeder extends Seeder
         'departamentos' => 'departamentos.index',
         'puestos' => 'puestos.index',
         'turnos' => 'turnos.index',
+        'colaboradores' => 'colaboradores.index',
         'roles' => 'roles.index',
         'permisos' => 'permisos.index',
         'usuarios' => 'usuarios.index',
@@ -61,7 +63,7 @@ class CatalogoSeeder extends Seeder
                 'departamentos' => ['Departamentos', 'bi-diagram-2', []],
                 'puestos' => ['Puestos', 'bi-person-badge', []],
                 'turnos' => ['Turnos', 'bi-clock', []],
-                'colaboradores' => ['Colaboradores', 'bi-people', ['exportar']],
+                'colaboradores' => ['Colaboradores', 'bi-people', ['exportar', 'datos_personales']],
             ]],
             'seguridad' => ['Seguridad', 'bi-shield-lock', [
                 'accesos' => ['Bitácora de accesos', 'bi-door-open', ['aprobar', 'exportar']],

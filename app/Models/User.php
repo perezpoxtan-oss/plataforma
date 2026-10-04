@@ -22,7 +22,7 @@ class User extends Authenticatable
     protected $attributes = ['activo' => true, 'es_superadmin' => false, 'intentos_fallidos' => 0];
 
     protected $fillable = [
-        'empresa_id', 'name', 'username', 'numero_colaborador', 'email', 'password', 'activo',
+        'empresa_id', 'name', 'username', 'numero_colaborador', 'colaborador_id', 'email', 'password', 'activo',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -42,6 +42,14 @@ class User extends Authenticatable
     public function empresa(): BelongsTo
     {
         return $this->belongsTo(Empresa::class);
+    }
+
+    /**
+     * Colaborador vinculado a la cuenta (opcional; las cuentas de soporte no tienen).
+     */
+    public function colaborador(): BelongsTo
+    {
+        return $this->belongsTo(Colaborador::class);
     }
 
     public function roles(): BelongsToMany

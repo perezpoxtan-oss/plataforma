@@ -22,7 +22,7 @@ Escribe en el buscador un nombre, usuario, correo o rol. Si la empresa tiene var
 
 1. Toca **Nuevo Usuario**.
 2. Captura:
-   - **Núm. Colaborador:** opcional.
+   - **Núm. Colaborador:** opcional. Escribe el número o el nombre del colaborador y elígelo de la lista (ver abajo).
    - **Nombre completo**.
    - **Sede:** la sede donde trabaja, o *Todas las sedes* si debe ver todas.
    - **Rol**.
@@ -38,6 +38,22 @@ Si cierras la ventana (Cancelar, la X o la tecla Esc), al volver a abrirla apare
 | Regresa con el error | Cerrada y vuelta a abrir |
 |---|---|
 | ![Con error](img/ajustes2/02-alta-con-error-conserva-datos.png) | ![Limpia](img/ajustes2/03-alta-reabierta-limpia.png) |
+
+### Vincular la cuenta con su colaborador
+
+Si la persona ya está en **Colaboradores**, no vuelvas a teclear sus datos:
+
+1. En **Núm. Colaborador** escribe al menos 2 letras o números (por ejemplo, "mari" o "1007").
+2. Elige a la persona en la lista: se llenan su número y su **nombre completo**, y aparece "Vinculado a Colaboradores".
+
+![Buscar colaborador](img/usuarios/4-num-colaborador.png)
+
+![Vinculado](img/usuarios/5-vinculado-a-colaborador.png)
+
+- Si ya tiene una cuenta, te avisa en vez de mostrarla: búscala en la lista principal.
+- Solo aparecen colaboradores activos de tu empresa (y de tus sedes, si tu rol es de una sede).
+- Si cambias el número a mano, el vínculo se quita. Las cuentas de soporte pueden quedarse sin colaborador.
+- La ficha del usuario dice **Vinculado a Colaborador (activo)**. Si el colaborador se dio de baja, dice **(¡inactivo! revisar)**: revisa si la cuenta debe desactivarse.
 
 ## Editar
 

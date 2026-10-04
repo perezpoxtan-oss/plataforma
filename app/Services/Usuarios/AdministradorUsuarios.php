@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  */
 class AdministradorUsuarios
 {
-    private const CAMPOS_AUDITADOS = ['name', 'username', 'numero_colaborador', 'email', 'activo'];
+    private const CAMPOS_AUDITADOS = ['name', 'username', 'numero_colaborador', 'colaborador_id', 'email', 'activo'];
 
     public function __construct(
         private readonly AdministradorRoles $roles,
@@ -31,7 +31,7 @@ class AdministradorUsuarios
     ) {}
 
     /**
-     * @param  array{name: string, username: string, numero_colaborador: ?string, email: string, password: string}  $datos
+     * @param  array{name: string, username: string, numero_colaborador: ?string, colaborador_id?: ?int, email: string, password: string}  $datos
      */
     public function crear(User $actor, int $empresaId, array $datos, Rol $rol, ?Sede $sede): User
     {
@@ -53,7 +53,7 @@ class AdministradorUsuarios
     }
 
     /**
-     * @param  array{name: string, username: string, numero_colaborador: ?string, email: string, password?: ?string, activo: bool}  $datos
+     * @param  array{name: string, username: string, numero_colaborador: ?string, colaborador_id?: ?int, email: string, password?: ?string, activo: bool}  $datos
      */
     public function actualizar(User $actor, User $usuario, array $datos, Rol $rol, ?Sede $sede): User
     {

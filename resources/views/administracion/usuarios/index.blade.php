@@ -60,7 +60,7 @@
                     $esPropio = $u->id === auth()->id();
                     $administrable = ! $esPropio && (auth()->user()->es_superadmin || ($asignacion?->nivel_jerarquia ?? 65535) > $nivelPropio);
                     $valoresEdicion = json_encode([
-                        'name' => $u->name, 'numero_colaborador' => $u->numero_colaborador, 'username' => $u->username,
+                        'name' => $u->name, 'numero_colaborador' => $u->numero_colaborador, 'colaborador_id' => $u->colaborador_id, 'username' => $u->username,
                         'email' => $u->email, 'rol_id' => $asignacion?->id, 'sede_id' => $sedeId, 'activo' => $u->activo,
                     ]);
                 @endphp
@@ -78,6 +78,11 @@
                         <div class="ficha-meta">
                             <div><i class="bi bi-shield-lock text-danger" aria-hidden="true"></i> <strong>Rol:</strong> {{ $asignacion?->nombre ?? 'Sin rol' }}</div>
                             <div class="text-muted small"><i class="bi bi-envelope" aria-hidden="true"></i> {{ $u->email }}</div>
+                            @if ($u->colaborador)
+                                <div class="{{ $u->colaborador->activo ? 'text-success' : 'text-danger' }}" style="font-size: 0.75rem;">
+                                    <i class="bi bi-link-45deg" aria-hidden="true"></i> Vinculado a Colaborador {{ $u->colaborador->activo ? '(activo)' : '(¡inactivo! revisar)' }}
+                                </div>
+                            @endif
                             <div class="text-muted small border-top pt-2 mt-1"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
                                 {{ $sedeId ? ($sedes[$sedeId]->nombre ?? 'Sede inactiva') : 'Ve '.$nombreSedes.' de la empresa' }}
                             </div>
@@ -166,7 +171,15 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <label class="campo-etiqueta" for="{{ $modo }}_numero">Núm. Colaborador <span class="text-muted text-lowercase fw-normal">(opcional)</span></label>
-                                <input type="text" id="{{ $modo }}_numero" name="numero_colaborador" class="campo" maxlength="30" value="{{ $valor('numero_colaborador') }}">
+                                {{-- Autocompleta con Colaboradores (número o nombre) y llena el nombre; ver docs/tecnico/colaboradores.md --}}
+                                <div class="buscador-colab">
+                                    <input type="text" id="{{ $modo }}_numero" name="numero_colaborador" class="campo" maxlength="30" value="{{ $valor('numero_colaborador') }}"
+                                           placeholder="Número o nombre del colaborador" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false"
+                                           aria-controls="{{ $modo }}_colab_resultados" data-buscar-colaborador="{{ route('colaboradores.buscar') }}" data-destino-nombre="{{ $modo }}_nombre">
+                                    <input type="hidden" name="colaborador_id" value="{{ $valor('colaborador_id') }}" data-campo-colaborador>
+                                    <div class="buscador-colab-resultados" id="{{ $modo }}_colab_resultados" role="listbox" hidden></div>
+                                </div>
+                                <p class="campo-ayuda text-success" data-colab-vinculo hidden><i class="bi bi-link-45deg" aria-hidden="true"></i> Vinculado a Colaboradores. Si cambias el número, se quita el vínculo.</p>
                             </div>
                             <div class="col-md-6">
                                 <label class="campo-etiqueta" for="{{ $modo }}_nombre">Nombre Completo</label>
