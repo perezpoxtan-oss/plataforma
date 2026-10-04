@@ -37,6 +37,7 @@ class CatalogoSeeder extends Seeder
     public const RUTAS = [
         'empresas' => 'empresas.index',
         'sedes' => 'sedes.index',
+        'espacios' => 'espacios.index',
         'roles' => 'roles.index',
         'permisos' => 'permisos.index',
         'usuarios' => 'usuarios.index',

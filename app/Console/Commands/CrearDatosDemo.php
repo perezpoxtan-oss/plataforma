@@ -3,11 +3,14 @@
 namespace App\Console\Commands;
 
 use App\Models\Empresa;
+use App\Models\Espacio;
 use App\Models\Rol;
 use App\Models\Rubro;
 use App\Models\Sede;
+use App\Models\TipoEspacio;
 use App\Models\User;
 use App\Models\UsuarioRol;
+use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Console\Command;
@@ -82,8 +85,40 @@ class CrearDatosDemo extends Command
             ]);
         }
 
+        $tenant->conEmpresa($empresa->id, fn () => $this->espaciosDemo($sedes['CEN'], User::where('username', 'admin.demo')->firstOrFail()));
+
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Torre A con dos pisos y algunas habitaciones con detalle, solo la primera vez.
+     */
+    private function espaciosDemo(Sede $sede, User $actor): void
+    {
+        if (Espacio::where('nivel', Espacio::EDIFICIO)->exists()) {
+            return;
+        }
+
+        $espacios = app(AdministradorEspacios::class);
+        $tipo = fn (string $nivel, string $nombre) => TipoEspacio::whereNull('empresa_id')->where('nivel', $nivel)->where('nombre', $nombre)->value('id');
+
+        $torre = $espacios->crear($actor, $sede, null, Espacio::EDIFICIO, ['nombre' => 'Torre A', 'codigo' => 'TA', 'tipo_espacio_id' => $tipo(Espacio::EDIFICIO, 'Torre')], false);
+        foreach ([1, 2] as $n) {
+            $piso = $espacios->crear($actor, $sede, $torre, Espacio::AREA, ['nombre' => "Piso {$n}", 'tipo_espacio_id' => $tipo(Espacio::AREA, 'Piso')], false);
+            $espacios->crearLote($actor, $piso, array_map(fn ($h) => $n.'0'.$h, range(1, 4)), null, $tipo(Espacio::AREA_ESPECIFICA, 'Habitación'));
+        }
+
+        $seccion = $espacios->crearGrupo($actor, $sede, 'Vista al mar');
+        $espacios->asignarGrupo($actor, $seccion, Espacio::whereIn('nombre', ['101', '102', '201', '202'])->pluck('id')->all());
+
+        $hab = Espacio::where('nombre', '101')->firstOrFail();
+        foreach (['Recámara' => ['Cama', 'Televisión', 'Caja fuerte'], 'Baño' => ['Lavabo', 'Regadera', 'Inodoro']] as $area => $elementos) {
+            $nodo = $espacios->crear($actor, $sede, $hab, Espacio::SUBAREA, ['nombre' => '', 'tipo_espacio_id' => $tipo(Espacio::SUBAREA, $area)], false);
+            foreach ($elementos as $el) {
+                $espacios->crear($actor, $sede, $nodo, Espacio::ELEMENTO, ['nombre' => '', 'tipo_espacio_id' => $tipo(Espacio::ELEMENTO, $el)], false);
+            }
+        }
     }
 }

@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Zonas y áreas: Zonas/Edificios → Pisos → Habitaciones → Detalle (áreas y elementos) y Secciones, con las mismas pantallas de SEGCAT. Una sola estructura en árbol, alta por lote, copia de pisos, asignación masiva a secciones, tipos propios por empresa y desactivación en cascada.
 - Empresas (alta por el Super Administrador con módulos y roles base; "Mi Empresa" para el cliente) y Sedes con terminología del rubro, código único por empresa, dirección completa y zona horaria propia.
 - Identidad de la plataforma (solo Super Administrador): nombre, eslogan, titular, colores, símbolo e ícono, con vista previa en vivo; módulos de tipo plataforma.
 - Usuarios: alta, edición, desactivar y reactivar con rol y sede, buscador y filtro por sede, cierre inmediato de sesión y reglas contra escalamiento.
