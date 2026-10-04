@@ -125,3 +125,86 @@
         vigilarSesion();
     });
 })();
+
+/* ==========================================================================
+   Pantallas de administración: diálogos, confirmaciones y matriz de permisos
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function abrir(dialogo) {
+        if (dialogo && typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
+    }
+
+    document.addEventListener('click', function (evento) {
+        var abrirEn = evento.target.closest('[data-abrir-dialogo]');
+        if (abrirEn) {
+            abrir(document.getElementById(abrirEn.getAttribute('data-abrir-dialogo')));
+            return;
+        }
+
+        var cerrar = evento.target.closest('[data-cerrar-dialogo]');
+        if (cerrar) {
+            var d = cerrar.closest('dialog');
+            if (d) { d.close(); }
+            return;
+        }
+
+        // Editar rol: se llena el diálogo con los datos de la ficha
+        var editar = evento.target.closest('[data-accion="editar-rol"]');
+        if (editar) {
+            var dialogo = document.getElementById('dialogoEditarRol');
+            var form = document.getElementById('formEditarRol');
+            if (!dialogo || !form) { return; }
+            form.action = editar.dataset.url;
+            form.querySelector('[data-campo="dialogo"]').value = 'editar-' + editar.dataset.id;
+            form.querySelector('[data-campo="nombre"]').value = editar.dataset.nombre || '';
+            form.querySelector('[data-campo="descripcion"]').value = editar.dataset.descripcion || '';
+            form.querySelector('[data-campo="nivel"]').value = editar.dataset.nivel || '';
+            form.querySelector('[data-campo="activo"]').checked = editar.dataset.activo === '1';
+            abrir(dialogo);
+            return;
+        }
+
+        // Matriz: toda la celda es área de toque (44 px), no solo la casilla
+        var celda = evento.target.closest('td.celda-casilla');
+        if (celda && evento.target === celda) {
+            var casilla = celda.querySelector('input[type="checkbox"]:not(:disabled)');
+            if (casilla) { casilla.click(); }
+        }
+    });
+
+    // Confirmación antes de enviar formularios sensibles
+    document.addEventListener('submit', function (evento) {
+        var mensaje = evento.target.getAttribute('data-confirmar');
+        if (mensaje && !window.confirm(mensaje)) { evento.preventDefault(); }
+    });
+
+    document.addEventListener('change', function (evento) {
+        var el = evento.target;
+
+        if (el.matches('[data-enviar-al-cambiar]')) {
+            el.form.submit();
+            return;
+        }
+
+        // Matriz de permisos: cualquier acción implica "Ver"; quitar "Ver" quita todo
+        if (el.matches('[data-accion-permiso]')) {
+            var fila = el.closest('[data-fila-permisos]');
+            if (!fila) { return; }
+            var ver = fila.querySelector('[data-accion-permiso="ver"]');
+            if (el.dataset.accionPermiso === 'ver') {
+                if (!el.checked) {
+                    fila.querySelectorAll('[data-accion-permiso]:not(:disabled)').forEach(function (c) { c.checked = false; });
+                }
+            } else if (el.checked && ver && !ver.disabled) {
+                ver.checked = true;
+            }
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Un formulario que regresó con errores vuelve a abrir su diálogo
+        document.querySelectorAll('dialog[data-abrir-al-cargar]').forEach(abrir);
+    });
+})();

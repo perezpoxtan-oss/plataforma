@@ -34,21 +34,38 @@ class AdministradorRoles
 
         $resueltos = [];
         foreach ($permisos as $clave => $alcance) {
-            $alcance = $alcance instanceof Alcance ? $alcance : Alcance::from($alcance);
-            $moduloAccion = $this->resolver($clave);
-
-            if (! $actor->es_superadmin) {
-                $propio = $this->autorizador->permisosEfectivos($actor)[$clave] ?? null;
-
-                if ($propio === null || ! $propio->alcance->cubre($alcance)) {
-                    throw new AuthorizationException("No puedes otorgar «{$clave}» con alcance «{$alcance->value}»: no lo tienes.");
-                }
-            }
-
-            $resueltos[$moduloAccion->id] = $alcance;
+            $resueltos[$clave] = $alcance instanceof Alcance ? $alcance : Alcance::from($alcance);
         }
 
         $antes = $this->clavesDe($rol);
+
+        // Solo se valida lo que cambia: lo que ya tenia el rol (otorgado por
+        // alguien de mayor nivel) puede quedarse aunque el actor no lo tenga.
+        if (! $actor->es_superadmin) {
+            $propios = $this->autorizador->permisosEfectivos($actor);
+
+            foreach (array_unique([...array_keys($resueltos), ...array_keys($antes)]) as $clave) {
+                $nuevo = $resueltos[$clave] ?? null;
+                $previo = isset($antes[$clave]) ? Alcance::from($antes[$clave]) : null;
+
+                if ($nuevo === $previo) {
+                    continue;
+                }
+
+                $requerido = $nuevo !== null && $previo !== null ? Alcance::mayor($nuevo, $previo) : ($nuevo ?? $previo);
+                $propio = $propios[$clave] ?? null;
+
+                if ($propio === null || ! $propio->alcance->cubre($requerido)) {
+                    throw new AuthorizationException("No puedes cambiar «{$clave}»: no tienes ese permiso con alcance «{$requerido->etiqueta()}».");
+                }
+            }
+        }
+
+        $ids = [];
+        foreach ($resueltos as $clave => $alcance) {
+            $ids[$this->resolver($clave)->id] = $alcance;
+        }
+        $resueltos = $ids;
 
         DB::transaction(function () use ($rol, $resueltos): void {
             RolPermiso::where('rol_id', $rol->id)
@@ -65,6 +82,53 @@ class AdministradorRoles
 
         $this->autorizador->olvidar();
         $this->auditar($actor, 'permisos.rol_actualizado', $rol, $antes, $this->clavesDe($rol));
+    }
+
+    /**
+     * @param  array{nombre: string, descripcion?: ?string, nivel_jerarquia: int, activo?: bool}  $datos
+     */
+    public function crearRol(User $actor, ?int $empresaId, array $datos): Rol
+    {
+        $rol = new Rol(['empresa_id' => $empresaId, ...$datos]);
+        $this->exigirPuedeAdministrarRol($actor, $rol, 'roles.crear');
+
+        $rol->save();
+        $this->auditar($actor, 'roles.creado', $rol, null, $rol->only(['nombre', 'descripcion', 'nivel_jerarquia', 'activo']));
+
+        return $rol;
+    }
+
+    /**
+     * @param  array{nombre: string, descripcion?: ?string, nivel_jerarquia: int, activo?: bool}  $datos
+     */
+    public function actualizarRol(User $actor, Rol $rol, array $datos): Rol
+    {
+        $this->exigirPuedeAdministrarRol($actor, $rol, 'roles.editar');
+
+        $antes = $rol->only(['nombre', 'descripcion', 'nivel_jerarquia', 'activo']);
+        $rol->fill($datos);
+        // Tampoco se puede subir un rol a un nivel igual o superior al propio
+        $this->exigirPuedeAdministrarRol($actor, $rol, 'roles.editar');
+
+        $rol->save();
+        $this->autorizador->olvidar();
+        $this->auditar($actor, 'roles.actualizado', $rol, $antes, $rol->only(array_keys($antes)));
+
+        return $rol;
+    }
+
+    public function eliminarRol(User $actor, Rol $rol): void
+    {
+        $this->exigirPuedeAdministrarRol($actor, $rol, 'roles.eliminar');
+
+        if (UsuarioRol::where('rol_id', $rol->id)->exists()) {
+            throw new \DomainException('No puedes eliminar un rol que todavía tiene usuarios asignados; reasígnalos primero.');
+        }
+
+        $antes = $rol->only(['nombre', 'descripcion', 'nivel_jerarquia', 'activo']);
+        $rol->delete();
+        $this->autorizador->olvidar();
+        $this->auditar($actor, 'roles.eliminado', $rol, $antes, null);
     }
 
     public function asignarRol(User $actor, User $usuario, Rol $rol, ?Sede $sede = null): UsuarioRol

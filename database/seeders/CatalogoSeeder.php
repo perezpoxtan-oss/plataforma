@@ -31,6 +31,15 @@ class CatalogoSeeder extends Seeder
     private const CRUD = ['ver', 'crear', 'editar', 'eliminar'];
 
     /**
+     * Pantalla (nombre de ruta) de cada modulo ya migrado. El menu enlaza aqui;
+     * los modulos sin ruta muestran el aviso "en migracion".
+     */
+    public const RUTAS = [
+        'roles' => 'roles.index',
+        'permisos' => 'permisos.index',
+    ];
+
+    /**
      * area => [nombre, icono, modulos[clave => [nombre, icono, acciones extra, submodulos]]]
      */
     public static function catalogo(): array
@@ -122,6 +131,7 @@ class CatalogoSeeder extends Seeder
             'icono' => $definicion[1],
             'orden' => $orden,
             'tipo' => Modulo::TIPO_SISTEMA,
+            'ruta' => self::RUTAS[$clave] ?? null,
         ]);
 
         $base = $definicion[4] ?? self::CRUD;
