@@ -9,7 +9,9 @@ use App\Http\Controllers\Administracion\SedeController;
 use App\Http\Controllers\Administracion\UsuarioController;
 use App\Http\Controllers\Auth\SesionController;
 use App\Http\Controllers\ModuloPendienteController;
+use App\Http\Controllers\Organizacion\DepartamentoController;
 use App\Http\Controllers\Organizacion\EspacioController;
+use App\Http\Controllers\Organizacion\PuestoController;
 use App\Http\Controllers\PanelController;
 use Illuminate\Support\Facades\Route;
 
@@ -43,6 +45,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/sedes', [SedeController::class, 'store'])->name('sedes.store');
     Route::put('/sedes/{sede}', [SedeController::class, 'update'])->whereNumber('sede')->name('sedes.update');
     Route::patch('/sedes/{sede}/estado', [SedeController::class, 'estado'])->whereNumber('sede')->name('sedes.estado');
+    // Departamentos y Puestos
+    Route::get('/departamentos', [DepartamentoController::class, 'index'])->name('departamentos.index');
+    Route::post('/departamentos', [DepartamentoController::class, 'store'])->name('departamentos.store');
+    Route::put('/departamentos/{departamento}', [DepartamentoController::class, 'update'])->whereNumber('departamento')->name('departamentos.update');
+    Route::patch('/departamentos/{departamento}/estado', [DepartamentoController::class, 'estado'])->whereNumber('departamento')->name('departamentos.estado');
+    Route::get('/puestos', [PuestoController::class, 'index'])->name('puestos.index');
+    Route::post('/puestos', [PuestoController::class, 'store'])->name('puestos.store');
+    Route::put('/puestos/{puesto}', [PuestoController::class, 'update'])->whereNumber('puesto')->name('puestos.update');
+    Route::patch('/puestos/{puesto}/estado', [PuestoController::class, 'estado'])->whereNumber('puesto')->name('puestos.estado');
+
     // Zonas y áreas (árbol de espacios)
     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');
     Route::post('/espacios', [EspacioController::class, 'store'])->name('espacios.store');

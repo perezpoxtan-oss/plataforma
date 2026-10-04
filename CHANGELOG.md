@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Departamentos (sedes donde aplica: todas, incluidas las futuras, o solo algunas) y Puestos (operativo o administrativo, ligados a departamentos), con las mismas pantallas de SEGCAT, aviso en vivo de nombre repetido y auditoría.
 - Ajustes de pruebas QA (ronda 1):
   - Usuarios: desbloqueo manual de cuentas bloqueadas por intentos fallidos (permiso `usuarios.desbloquear`, para Administrador y Jefe de seguridad), con etiqueta "BLOQUEADO hasta HH:MM" y auditoría `usuarios.desbloqueado` (A-03).
   - Plantilla Agente: en Padrones solo consulta (`ver`); en Operación conserva ver, crear, editar, imprimir y firmar. Los Agentes de empresas que seguían igual a la plantilla anterior se ajustan; los personalizados no se tocan (M-01).

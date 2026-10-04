@@ -220,12 +220,23 @@
         form.querySelectorAll('input[name], select[name], textarea[name]').forEach(function (campo) {
             if (campo.type === 'hidden' || campo.name.charAt(0) === '_') { return; }
             if (campo.type === 'password') { campo.value = ''; return; }
+            // Listas de casillas (name="sedes[]") reciben un arreglo de ids
+            if (campo.type === 'checkbox' && campo.name.slice(-2) === '[]') {
+                var lista = valores[campo.name.slice(0, -2)];
+                campo.checked = Array.isArray(lista) && lista.map(String).indexOf(campo.value) !== -1;
+                return;
+            }
             var valor = valores[campo.name];
             if (campo.type === 'checkbox') {
                 campo.checked = !!valor;
             } else {
                 campo.value = (valor === null || valor === undefined) ? '' : String(valor);
+                if (campo.hasAttribute('data-nombres-existentes')) { campo.dataset.original = campo.value; }
             }
+        });
+        // Que los campos dependientes y avisos reflejen los valores cargados
+        form.querySelectorAll('[data-oculta-si-marcado], [data-nombres-existentes]').forEach(function (c) {
+            c.dispatchEvent(new Event(c.type === 'checkbox' ? 'change' : 'input', { bubbles: true }));
         });
 
         if (typeof dialogo.showModal === 'function') { dialogo.showModal(); }
@@ -339,12 +350,15 @@
         var texto = buscador ? buscador.value.toLowerCase().trim() : '';
         var estado = activo ? activo.dataset.valor : 'todas';
         var sede = selSede ? selSede.value : '';
+        var pTipo = document.querySelector('[data-filtro-tipo="' + clave + '"][aria-pressed="true"]');
+        var tipo = pTipo ? pTipo.dataset.valor : '';
         var visibles = 0;
 
         contenedor.querySelectorAll('[data-ficha]').forEach(function (f) {
             var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1)
                 && (estado === 'todas' || f.dataset.estado === estado)
-                && (sede === '' || f.dataset.sede === sede);
+                && (sede === '' || f.dataset.sede === sede)
+                && (tipo === '' || f.dataset.tipo === tipo);
             f.style.display = ok ? '' : 'none';
             if (ok) { visibles++; }
         });
@@ -363,7 +377,7 @@
     }
 
     function contenedorDe(el) {
-        var clave = el.dataset.filtroTexto || el.dataset.filtroEstado || el.dataset.filtroSede;
+        var clave = el.dataset.filtroTexto || el.dataset.filtroEstado || el.dataset.filtroSede || el.dataset.filtroTipo;
         return document.querySelector('[data-fichas="' + clave + '"]');
     }
 
@@ -373,6 +387,18 @@
 
     document.addEventListener('change', function (e) {
         if (e.target.matches('[data-filtro-sede]')) { var c = contenedorDe(e.target); if (c) { aplicar(c); } }
+    });
+
+    // Píldoras de tipo (Administrativos / Operativos): [data-filtro-tipo="clave"][data-valor]
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-filtro-tipo]');
+        if (!b) { return; }
+        document.querySelectorAll('[data-filtro-tipo="' + b.dataset.filtroTipo + '"]').forEach(function (x) {
+            x.setAttribute('aria-pressed', String(x === b));
+            x.classList.toggle('active', x === b);
+        });
+        var c = contenedorDe(b);
+        if (c) { aplicar(c); }
     });
 
     document.addEventListener('click', function (e) {
@@ -423,3 +449,39 @@ document.addEventListener('click', function (e) {
     });
     form.querySelectorAll('[data-panel-lote]').forEach(function (p) { p.hidden = p.dataset.panelLote !== modo; });
 });
+
+/* Casilla que oculta un bloque cuando está marcada (p. ej. "Todas las sedes") */
+(function () {
+    'use strict';
+    function sincronizar(c) {
+        var destino = document.querySelector(c.getAttribute('data-oculta-si-marcado'));
+        if (destino) { destino.hidden = c.checked; }
+    }
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-oculta-si-marcado]')) { sincronizar(e.target); }
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-oculta-si-marcado]').forEach(sincronizar);
+    });
+})();
+
+/* Aviso en vivo de nombre repetido, sin consultar al servidor:
+   <input data-nombres-existentes='["recepción", ...]'> + <p data-aviso-nombre> en el mismo formulario */
+(function () {
+    'use strict';
+    document.addEventListener('input', function (e) {
+        var campo = e.target;
+        if (!campo.matches('[data-nombres-existentes]')) { return; }
+        var aviso = campo.form && campo.form.querySelector('[data-aviso-nombre]');
+        if (!aviso) { return; }
+        var nombre = campo.value.trim().replace(/\s+/g, ' ').toLowerCase();
+        var original = (campo.dataset.original || '').trim().toLowerCase();
+        var existentes = [];
+        try { existentes = JSON.parse(campo.getAttribute('data-nombres-existentes') || '[]'); } catch (x) { /* vacío */ }
+        if (nombre === '' || nombre === original) { aviso.hidden = true; return; }
+        var repetido = existentes.indexOf(nombre) !== -1;
+        aviso.hidden = false;
+        aviso.className = 'small mb-2 ' + (repetido ? 'text-warning' : 'text-success');
+        aviso.textContent = repetido ? 'Ya existe uno con ese nombre en esta empresa.' : 'Disponible.';
+    });
+})();
