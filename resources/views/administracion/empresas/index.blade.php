@@ -83,9 +83,9 @@
                     </div>
                 </div>
                 <div class="mt-2">
-                    <div class="texto-traza">Desde {{ $emp->created_at?->format('m/Y') }}@if ($emp->creado_por_nombre) · creada por {{ $emp->creado_por_nombre }}@endif</div>
+                    <div class="texto-traza">Desde @fecha($emp->created_at, 'm/Y')@if ($emp->creado_por_nombre) · creada por {{ $emp->creado_por_nombre }}@endif</div>
                     @if ($emp->actualizado_por_nombre && $emp->updated_at?->ne($emp->created_at))
-                        <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $emp->actualizado_por_nombre }} · {{ $emp->updated_at->format('d/m/Y H:i') }}</div>
+                        <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $emp->actualizado_por_nombre }} · @fecha($emp->updated_at)</div>
                     @endif
                 </div>
                 <div class="ficha-footer">

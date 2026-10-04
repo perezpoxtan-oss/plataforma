@@ -77,7 +77,6 @@ class UsuarioController extends Controller
             'nivelPropio' => $nivelPropio,
             'desbloqueables' => $desbloqueables,
             'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
-            'zonaHoraria' => Empresa::whereKey($empresaId)->value('zona_horaria') ?? config('app.timezone'),
             'puede' => [
                 'crear' => $actor->can('usuarios.crear'),
                 'editar' => $actor->can('usuarios.editar'),

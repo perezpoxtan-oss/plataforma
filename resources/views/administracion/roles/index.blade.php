@@ -56,10 +56,10 @@
                     <p class="text-muted small mb-2">{{ $r->descripcion ?: 'Sin descripción.' }}</p>
                     <div class="text-muted small"><i class="bi bi-people" aria-hidden="true"></i> {{ $r->total_usuarios }} {{ $r->total_usuarios == 1 ? 'usuario' : 'usuarios' }} con este rol</div>
                     @if ($r->creado_por_nombre)
-                        <div class="texto-traza mt-2"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $r->creado_por_nombre }} · {{ \Illuminate\Support\Carbon::parse($r->created_at)->format('d/m/Y H:i') }}</div>
+                        <div class="texto-traza mt-2"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $r->creado_por_nombre }} · @fecha($r->created_at, 'd/m/Y H:i')</div>
                     @endif
                     @if ($r->actualizado_por_nombre && $r->updated_at !== $r->created_at)
-                        <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $r->actualizado_por_nombre }} · {{ \Illuminate\Support\Carbon::parse($r->updated_at)->format('d/m/Y H:i') }}</div>
+                        <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $r->actualizado_por_nombre }} · @fecha($r->updated_at, 'd/m/Y H:i')</div>
                     @endif
                 </div>
                 <div class="ficha-footer">

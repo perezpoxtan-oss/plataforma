@@ -135,13 +135,13 @@
                             @elseif ($c->fusionado_en_id && $c->fusionadoEn)
                                 <div class="small mt-1 text-muted"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Era un duplicado: se unió con #{{ $c->fusionadoEn->num_empleado }} {{ $c->fusionadoEn->nombreCompleto() }}.</div>
                             @elseif ($c->validado_en)
-                                <div class="texto-traza mt-1"><i class="bi bi-patch-check" aria-hidden="true"></i> Validado por Recursos Humanos · {{ $c->validado_en->format('d/m/Y H:i') }}</div>
+                                <div class="texto-traza mt-1"><i class="bi bi-patch-check" aria-hidden="true"></i> Validado por Recursos Humanos · @fecha($c->validado_en)</div>
                             @endif
                             @if ($c->creado_por_nombre)
-                                <div class="texto-traza mt-1"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $c->creado_por_nombre }} · {{ $c->created_at?->format('d/m/Y H:i') }}</div>
+                                <div class="texto-traza mt-1"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $c->creado_por_nombre }} · @fecha($c->created_at)</div>
                             @endif
                             @if ($c->actualizado_por_nombre && $c->updated_at?->ne($c->created_at))
-                                <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $c->actualizado_por_nombre }} · {{ $c->updated_at->format('d/m/Y H:i') }}</div>
+                                <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $c->actualizado_por_nombre }} · @fecha($c->updated_at)</div>
                             @endif
                         </div>
                         @if ($validable)

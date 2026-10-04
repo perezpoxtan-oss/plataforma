@@ -115,7 +115,7 @@ class EmpresasYSedesTest extends TestCase
     {
         $admin = $this->crearUsuario($this->empresa, 'Administrador');
 
-        $this->actingAs($admin)->get('/sedes')->assertOk()->assertSee('Alta Hoteles')->assertSee('Nuevo Hotel');
+        $this->actingAs($admin)->get('/sedes')->assertOk()->assertSee('Alta Sedes')->assertSee('Nueva Sede');
 
         $this->actingAs($admin)->post('/sedes', $this->sedeDatos())->assertRedirect('/sedes')->assertSessionHas('ok');
 
@@ -166,7 +166,7 @@ class EmpresasYSedesTest extends TestCase
         app(AdministradorRoles::class)->sincronizarPermisos($sa, $gerente, ['sedes.ver' => Alcance::Sede]);
         $usuario = $this->crearUsuario($this->empresa, 'Gerente', $centro);
 
-        $this->actingAs($usuario)->get('/sedes')->assertSee('Sede CEN')->assertDontSee('Sede PLA')->assertDontSee('Nuevo Hotel');
+        $this->actingAs($usuario)->get('/sedes')->assertSee('Sede CEN')->assertDontSee('Sede PLA')->assertDontSee('Nueva Sede');
     }
 
     public function test_un_agente_no_entra_y_el_superadmin_elige_empresa(): void
@@ -176,6 +176,6 @@ class EmpresasYSedesTest extends TestCase
 
         $sa = $this->crearSuperadmin();
         $this->actingAs($sa)->get('/sedes')->assertSee('Elige arriba la');
-        $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])->get('/sedes')->assertSee('Alta Hoteles');
+        $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])->get('/sedes')->assertSee('Alta Sedes');
     }
 }

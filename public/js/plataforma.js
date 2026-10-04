@@ -976,6 +976,10 @@ document.addEventListener('click', function (e) {
             }
         } catch (x) { /* valor guardado dañado: se ignora */ }
         if (sedeUrl && selSede) { selSede.value = sedeUrl; }
+        // ?registro=provisional (aviso del Inicio): abre directo en "Por validar"
+        var registroUrl = new URLSearchParams(window.location.search).get('registro');
+        var selRegistro = document.querySelector('[data-filtro-colab="registro"]');
+        if (registroUrl && selRegistro) { selRegistro.value = registroUrl; }
         filtrarColaboradores();
     });
 })();
@@ -992,4 +996,29 @@ document.addEventListener('close', function (e) {
 /* En la pantalla de Colaboradores, un alta (rápida o provisional) se ve al recargar la lista */
 document.addEventListener('colaborador:registrado', function () {
     if (document.querySelector('[data-colaboradores]')) { window.location.reload(); }
+});
+
+/* Bitácora de auditoría: detalle de un movimiento (antes / después) */
+document.addEventListener('click', function (e) {
+    var boton = e.target.closest('[data-detalle-auditoria]');
+    if (!boton) { return; }
+    var dialogo = document.getElementById('dialogoDetalleAuditoria');
+    if (!dialogo) { return; }
+    var datos = {};
+    try { datos = JSON.parse(boton.getAttribute('data-detalle-auditoria')); } catch (x) { return; }
+    dialogo.querySelector('[data-aud-titulo]').textContent = datos.titulo || '';
+    dialogo.querySelector('[data-aud-registro]').textContent = datos.registro || '';
+    var cuerpo = dialogo.querySelector('[data-aud-filas]');
+    cuerpo.textContent = '';
+    (datos.filas || []).forEach(function (f) {
+        var tr = document.createElement('tr');
+        if (f.cambio) { tr.className = 'cambio'; }
+        [f.campo, f.antes, f.despues].forEach(function (v) { var td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
+        cuerpo.appendChild(tr);
+    });
+    if (!datos.filas || datos.filas.length === 0) {
+        var vacio = document.createElement('tr');
+        var td = document.createElement('td'); td.colSpan = 3; td.textContent = 'Sin detalle de campos.'; vacio.appendChild(td); cuerpo.appendChild(vacio);
+    }
+    dialogo.showModal();
 });

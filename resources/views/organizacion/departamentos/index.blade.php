@@ -64,10 +64,10 @@
                         @endif
                         <div class="small text-muted"><i class="bi bi-person-badge" aria-hidden="true"></i> {{ $d->puestos_count }} puesto(s) ligado(s)</div>
                         @if ($d->creado_por_nombre)
-                            <div class="texto-traza mt-2"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $d->creado_por_nombre }} · {{ $d->created_at?->format('d/m/Y H:i') }}</div>
+                            <div class="texto-traza mt-2"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $d->creado_por_nombre }} · @fecha($d->created_at)</div>
                         @endif
                         @if ($d->actualizado_por_nombre && $d->updated_at?->ne($d->created_at))
-                            <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $d->actualizado_por_nombre }} · {{ $d->updated_at->format('d/m/Y H:i') }}</div>
+                            <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $d->actualizado_por_nombre }} · @fecha($d->updated_at)</div>
                         @endif
                     </div>
                     <div class="ficha-footer">

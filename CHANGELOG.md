@@ -3,6 +3,12 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Las fechas se muestran en la hora local de la sede o de la empresa (antes salían en hora universal, 5 horas adelante en Cancún).
+- Pantallas de error en español (sin permiso, no encontrado, sesión expirada, demasiados intentos, error del sistema, mantenimiento).
+- Bitácora de auditoría: consulta legible de quién hizo qué y cuándo, con filtros, detalle de antes y después y exportación a Excel.
+- Aviso en el Inicio para Recursos Humanos con las altas provisionales por validar.
+- En hoteles la sede se llama «Sede» (antes «Hotel»), a petición del cliente; «Nueva Sede», «Nueva Planta»… con el género correcto.
+- Lecciones 8 (Empresas y Sedes) y 9 (Identidad y Bitácora de auditoría).
 - Áreas **Dirección** (estructura y gobierno), **Recursos Humanos** (Colaboradores) y **Seguridad** (padrones, operación y reportes) en el catálogo y la Matriz de permisos; menú propio de Recursos Humanos y rol base "Recursos Humanos" (nivel 25).
 - Altas provisionales de colaboradores: la caseta registra a quien aún no existe (con aviso si ya hay alguien con ese nombre) y Recursos Humanos lo valida con su número de empleado o lo une con su registro correcto.
 - Turnos: horarios de la empresa (también los que cruzan la medianoche, con duración y aviso "Termina al día siguiente"), sedes que usan cada turno (todas, incluidas las futuras, o solo algunas; el usuario de sede solo cambia la suya), filtro por sede, mismas pantallas de SEGCAT y auditoría.

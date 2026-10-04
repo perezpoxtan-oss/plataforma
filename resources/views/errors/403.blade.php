@@ -1,0 +1,1 @@
+@include('errors.plantilla', ['codigo' => 403, 'icono' => 'bi-shield-lock', 'color' => '#dc2626', 'titulo' => 'No tienes permiso para ver esto', 'mensaje' => 'Tu rol no tiene acceso a esta pantalla o a este registro. Si lo necesitas para tu trabajo, pide a tu administrador que te lo asigne en la Matriz de permisos.', 'accion' => 'inicio'])

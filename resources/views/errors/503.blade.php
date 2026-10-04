@@ -1,0 +1,1 @@
+@include('errors.plantilla', ['codigo' => 503, 'icono' => 'bi-tools', 'color' => '#2563eb', 'titulo' => 'Estamos actualizando la plataforma', 'mensaje' => 'En unos minutos estará lista de nuevo. Gracias por tu paciencia.', 'accion' => 'recargar'])

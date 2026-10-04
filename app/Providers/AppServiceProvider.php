@@ -4,10 +4,12 @@ namespace App\Providers;
 
 use App\Models\User;
 use App\Services\Permisos\Autorizador;
+use App\Support\HoraLocal;
 use App\Support\Identidad;
 use App\Support\Menu\ConstructorMenu;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -21,11 +23,15 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(Autorizador::class);
         $this->app->scoped(Identidad::class);
         $this->app->scoped(ConstructorMenu::class);
+        $this->app->scoped(HoraLocal::class);
     }
 
     public function boot(): void
     {
         Model::shouldBeStrict(! $this->app->isProduction());
+
+        // Fechas en la hora local de quien las ve: @fecha($registro->created_at) o @fecha($valor, 'H:i')
+        Blade::directive('fecha', fn (string $expresion) => "<?php echo e(app(\\App\\Support\\HoraLocal::class)->formatear({$expresion})); ?>");
 
         // Toda habilidad con forma "modulo.accion" la resuelve el motor de permisos.
         // Asi funcionan @can, $user->can(), authorize() y el middleware "can:".

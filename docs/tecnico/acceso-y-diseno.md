@@ -95,3 +95,24 @@ Tabla `menus` (botones de la barra: Estructura, Padrones, Operación) y, en `mod
 ## Pruebas
 
 `tests/Feature/Acceso/InicioSesionTest.php`, `MenuTest.php` y `PantallaYMenuLateralTest.php`.
+
+
+## Hora local (`App\Support\HoraLocal`)
+
+- **Cómo se guarda:** la base guarda las fechas en UTC (`config/app.php` → `timezone = UTC`).
+- **Cómo se muestra:** en la hora de quien ve la pantalla. La zona se elige así, en este orden:
+  1. la zona de **su sede**, si trabaja en una sola y tiene zona propia;
+  2. la zona de la **empresa de trabajo**;
+  3. `America/Mexico_City`.
+- **En las vistas:** `@fecha($registro->created_at)` (formato `d/m/Y H:i`) o `@fecha($valor, 'H:i')`. Nunca `->format()` directo sobre una fecha guardada.
+- **En controladores:** `app(HoraLocal::class)->formatear($fecha, $formato)` y `->zona()`, por ejemplo para convertir los filtros de fecha a UTC.
+
+## Pantallas de error (`resources/views/errors`)
+
+- **Cuáles:** 403, 404, 419, 429, 500 y 503, en español, con el estilo de la pantalla de acceso y los modos Sol y Noche.
+- **Sin dependencias:** no usan la base de datos ni la identidad, para verse aunque la base esté caída.
+- **Contenido:** cada una explica qué pasó y ofrece una salida: ir al inicio, volver a entrar o intentar de nuevo.
+
+## Avisos en el Inicio
+
+`PanelController` arma la lista `pendientes`. Cada pendiente es una tarjeta con enlace directo. Hoy la usa Recursos Humanos para las altas provisionales por validar (enlace `?registro=provisional`). Los módulos que vengan agregan aquí sus pendientes.
