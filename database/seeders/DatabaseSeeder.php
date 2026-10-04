@@ -2,24 +2,21 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * Datos base de la plataforma. Idempotente: seguro de correr en cada despliegue.
+ * No crea empresas ni usuarios; el Super Administrador se crea con
+ * `php artisan plataforma:superadmin`.
+ */
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            CatalogoSeeder::class,
+            RubrosSeeder::class,
+            RolesPlantillaSeeder::class,
         ]);
     }
 }
