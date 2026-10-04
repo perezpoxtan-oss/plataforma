@@ -29,7 +29,7 @@ jobs:
           - 3306:3306
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -67,4 +67,8 @@ jobs:
           php -r '$p=new PDO("mysql:host=127.0.0.1;dbname=plataforma_ci","ci","ci"); $r=$p->query("SELECT table_name, engine FROM information_schema.tables WHERE table_schema=\"plataforma_ci\" AND engine<>\"InnoDB\"")->fetchAll(PDO::FETCH_ASSOC); if($r){print_r($r); exit(1);} echo "Todas las tablas en InnoDB\n";'
 
       - name: Pruebas
-        run: php artisan test
+        run: php artisan test --log-junit junit.xml
+
+      - name: Anotar fallas
+        if: failure()
+        run: php .github/scripts/anotar-fallas.php junit.xml
