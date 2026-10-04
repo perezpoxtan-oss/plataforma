@@ -14,7 +14,9 @@ class Identidad
     public const VALORES_POR_DEFECTO = [
         'nombre' => 'Plataforma',
         'nombre_corto' => 'Plataforma',
-        'eslogan' => 'Control de accesos y seguridad',
+        'eslogan' => 'Sistema de Seguridad e Infraestructura',
+        // Quien opera la plataforma (aparece en el pie: "(c) 2026 VDCP")
+        'titular' => 'VDCP',
         'logo_claro' => null,
         'logo_oscuro' => null,
         'simbolo' => null,
@@ -47,10 +49,19 @@ class Identidad
             $guardados = ConfiguracionPlataforma::where('clave', 'identidad')->value('valor') ?? [];
         }
 
-        return $this->valores = array_merge(self::VALORES_POR_DEFECTO, array_filter(
+        $valores = array_merge(self::VALORES_POR_DEFECTO, array_filter(
             $guardados,
             fn ($valor) => $valor !== null && $valor !== '',
         ));
+
+        // Los colores van dentro de CSS: solo se aceptan en formato #rrggbb
+        foreach (['color_primario', 'color_acento'] as $color) {
+            if (! is_string($valores[$color]) || ! preg_match('/^#[0-9a-fA-F]{6}$/', $valores[$color])) {
+                $valores[$color] = self::VALORES_POR_DEFECTO[$color];
+            }
+        }
+
+        return $this->valores = $valores;
     }
 
     /**

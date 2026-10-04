@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Middleware\ControlarInactividad;
 use App\Http\Middleware\EstablecerEmpresa;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 $app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,15 +15,27 @@ $app = Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Empresa activa y cierre de sesion de usuarios desactivados
+        // Cierre por inactividad, empresa activa y cierre de usuarios desactivados
         $middleware->web(append: [
+            ControlarInactividad::class,
             EstablecerEmpresa::class,
         ]);
+        $middleware->redirectUsersTo(fn () => route('panel'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Formulario abierto demasiado tiempo (token CSRF vencido): volver a la
+        // pantalla de acceso con un aviso, en lugar de la pagina de error 419.
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if ($e->getStatusCode() === 419 && ! $request->expectsJson()) {
+                return redirect()->route('login')->with('acceso', 'pagina_vencida');
+            }
+
+            return null;
+        });
     })->create();
 
 // Carpeta publica fuera del proyecto (hosting compartido): la ruta vive en .public_path.

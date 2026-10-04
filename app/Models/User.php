@@ -64,6 +64,28 @@ class User extends Authenticatable
         return (int) ($this->roles()->where('roles.activo', true)->min('nivel_jerarquia') ?? 65535);
     }
 
+    /**
+     * Iniciales para el avatar (primera letra de las dos primeras palabras).
+     */
+    public function iniciales(): string
+    {
+        $palabras = preg_split('/\s+/', trim((string) $this->name)) ?: [];
+
+        return mb_strtoupper(mb_substr($palabras[0] ?? '', 0, 1).mb_substr($palabras[1] ?? '', 0, 1));
+    }
+
+    /**
+     * Rol que se muestra junto al nombre: el de mayor jerarquia.
+     */
+    public function nombreRolPrincipal(): string
+    {
+        if ($this->es_superadmin) {
+            return 'Super Administrador';
+        }
+
+        return $this->roles()->where('roles.activo', true)->orderBy('nivel_jerarquia')->value('nombre') ?? 'Personal';
+    }
+
     public function estaBloqueado(): bool
     {
         return $this->bloqueado_hasta !== null && $this->bloqueado_hasta->isFuture();
