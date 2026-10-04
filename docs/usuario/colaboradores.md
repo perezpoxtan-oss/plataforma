@@ -64,7 +64,11 @@ La persona queda marcada **PROVISIONAL / POR VALIDAR** y ya puedes usarla.
 
 ## Validar altas provisionales (Recursos Humanos)
 
-Al entrar verás el aviso "Hay N altas provisionales de la caseta por validar". Elige **Por validar** en el filtro.
+En el **Inicio** aparece una tarjeta "N altas provisionales por validar"; tócala y llegas directo a la lista filtrada. Dentro de Colaboradores también verás el aviso.
+
+![Aviso en el Inicio](img/inicio/1-aviso-rh.png)
+
+ Elige **Por validar** en el filtro.
 
 ![Por validar](img/colaboradores/11-rh-por-validar.png)
 

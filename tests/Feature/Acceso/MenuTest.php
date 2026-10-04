@@ -74,8 +74,8 @@ class MenuTest extends TestCase
         $items = collect(app(ConstructorMenu::class)->para($admin))
             ->flatMap(fn ($m) => collect($m['secciones'])->flatten(1))->keyBy('clave');
 
-        // Rubro hotel: "Sedes" se llama "Hoteles"
-        $this->assertSame('Hoteles', $items['sedes']['nombre']);
+        // Rubro hotel: el cliente prefiere "Sedes" (QA)
+        $this->assertSame('Sedes', $items['sedes']['nombre']);
 
         DB::table('empresa_modulos')->where('empresa_id', $this->empresa->id)
             ->where('modulo_id', Modulo::where('clave', 'llaves')->value('id'))

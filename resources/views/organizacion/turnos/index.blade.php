@@ -87,10 +87,10 @@
                             </div>
                         @endif
                         @if ($t->creado_por_nombre)
-                            <div class="texto-traza mt-2"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $t->creado_por_nombre }} · {{ $t->created_at?->format('d/m/Y H:i') }}</div>
+                            <div class="texto-traza mt-2"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $t->creado_por_nombre }} · @fecha($t->created_at)</div>
                         @endif
                         @if ($t->actualizado_por_nombre && $t->updated_at?->ne($t->created_at))
-                            <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $t->actualizado_por_nombre }} · {{ $t->updated_at->format('d/m/Y H:i') }}</div>
+                            <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $t->actualizado_por_nombre }} · @fecha($t->updated_at)</div>
                         @endif
                     </div>
                     <div class="ficha-footer">

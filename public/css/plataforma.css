@@ -494,3 +494,42 @@ button.buscador-colab-item:hover, button.buscador-colab-item:focus { background:
 .caja-parecidos { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 0.75rem; margin-bottom: 1rem; font-size: 0.85rem; }
 .opcion-parecido { display: block; width: 100%; text-align: left; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.55rem 0.75rem; margin-bottom: 0.4rem; font-weight: 600; min-height: 44px; cursor: pointer; }
 .opcion-parecido:hover { border-color: #059669; background: #ecfdf5; }
+
+/* ==========================================================================
+   Pantallas de error (403, 404, 419, 429, 500, 503)
+   ========================================================================== */
+.pagina-error { text-align: center; }
+.error-icono { width: 72px; height: 72px; margin: 0 auto 1rem; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--error-color); background: color-mix(in srgb, var(--error-color) 10%, #fff); }
+.error-codigo { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texto-suave); margin-bottom: 0.25rem; }
+html.modo-noche .error-icono { background: color-mix(in srgb, var(--error-color) 20%, #0f172a); }
+
+/* ==========================================================================
+   Bitácora de auditoría
+   ========================================================================== */
+.filtros-auditoria { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; align-items: end; }
+.lista-auditoria { overflow: hidden; }
+.fila-auditoria { display: grid; grid-template-columns: 110px 1fr 200px 52px; gap: 0.75rem; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid var(--borde); font-size: 0.85rem; }
+.fila-auditoria:last-child { border-bottom: none; }
+.aud-fecha { font-size: 0.78rem; color: var(--texto-suave); }
+.aud-que { min-width: 0; }
+.tabla-auditoria td, .tabla-auditoria th { font-size: 0.82rem; word-break: break-word; }
+.tabla-auditoria tr.cambio td { background: #fffbeb; font-weight: 600; }
+@media (max-width: 767.98px) {
+    .fila-auditoria { grid-template-columns: 1fr 44px; }
+    .aud-fecha, .aud-quien { grid-column: 1; }
+    .aud-ver { grid-column: 2; grid-row: 1 / span 3; }
+}
+html.modo-noche .tabla-auditoria tr.cambio td { background: rgba(245, 158, 11, 0.15); }
+html.modo-sol .tabla-auditoria tr.cambio td { background: #fff; outline: 2px solid #000; }
+
+/* Inicio: pendientes que requieren atención (p. ej. altas provisionales por validar) */
+.aviso-pendiente { display: flex; align-items: center; gap: 1rem; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 18px; padding: 1rem 1.25rem; color: #78350f; text-decoration: none; }
+.aviso-pendiente:hover { border-color: #d97706; color: #78350f; }
+.aviso-pendiente .icono { width: 48px; height: 48px; border-radius: 14px; background: #fef3c7; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #b45309; flex-shrink: 0; }
+.aviso-pendiente .boton { font-weight: 800; font-size: 0.85rem; white-space: nowrap; color: #b45309; }
+@media (max-width: 575.98px) { .aviso-pendiente { flex-wrap: wrap; } .aviso-pendiente .boton { width: 100%; text-align: right; } }
+html.modo-noche .aviso-pendiente { background: rgba(245, 158, 11, 0.1); border-color: #b45309; color: #fde68a; }
+html.modo-noche .aviso-pendiente .icono { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+html.modo-noche .aviso-pendiente .boton { color: #fcd34d; }
+html.modo-sol .aviso-pendiente { background: #fff; border: 3px solid #000; color: #000; }
+html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { color: #000; background: #fff; }

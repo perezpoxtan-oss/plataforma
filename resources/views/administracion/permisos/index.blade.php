@@ -36,7 +36,7 @@
         </nav>
 
         @if ($ultimaModificacion)
-            <p class="text-muted small mb-3"><i class="bi bi-clock-history" aria-hidden="true"></i> Última modificación de este rol: {{ $ultimaModificacion->name ?? 'alguien' }} · {{ \Illuminate\Support\Carbon::parse($ultimaModificacion->creado_en)->format('d/m/Y H:i') }}</p>
+            <p class="text-muted small mb-3"><i class="bi bi-clock-history" aria-hidden="true"></i> Última modificación de este rol: {{ $ultimaModificacion->name ?? 'alguien' }} · @fecha($ultimaModificacion->creado_en, 'd/m/Y H:i')</p>
         @endif
 
         <p class="text-muted small mb-3">

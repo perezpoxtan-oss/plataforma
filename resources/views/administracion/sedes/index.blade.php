@@ -53,7 +53,7 @@
             @if ($puede['crear'])
                 <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevaSede">
                     <i class="bi bi-plus-circle-fill" aria-hidden="true"></i>
-                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">Nuevo {{ $singular }}</span>
+                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">{{ $termino['nuevo'] }} {{ $singular }}</span>
                 </button>
             @endif
 
@@ -82,10 +82,10 @@
                     </div>
                     <div class="mt-2">
                         @if ($s->creado_por_nombre)
-                            <div class="texto-traza"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $s->creado_por_nombre }} · {{ $s->created_at?->format('d/m/Y H:i') }}</div>
+                            <div class="texto-traza"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $s->creado_por_nombre }} · @fecha($s->created_at)</div>
                         @endif
                         @if ($s->actualizado_por_nombre && $s->updated_at?->ne($s->created_at))
-                            <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $s->actualizado_por_nombre }} · {{ $s->updated_at->format('d/m/Y H:i') }}</div>
+                            <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $s->actualizado_por_nombre }} · @fecha($s->updated_at)</div>
                         @endif
                     </div>
                     <div class="ficha-footer">
@@ -132,7 +132,7 @@
             @endphp
             <dialog id="{{ $esNueva ? 'dialogoNuevaSede' : 'dialogoEditarSede' }}" class="dialogo" aria-labelledby="titulo-sede-{{ $modo }}" @if ($reabrir) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
-                    <h2 id="titulo-sede-{{ $modo }}"><i class="bi {{ $esNueva ? 'bi-house-door' : 'bi-pencil-square' }} me-2 text-success" aria-hidden="true"></i>{{ $esNueva ? 'Nuevo '.$singular : 'Editar '.$singular }}</h2>
+                    <h2 id="titulo-sede-{{ $modo }}"><i class="bi {{ $esNueva ? 'bi-house-door' : 'bi-pencil-square' }} me-2 text-success" aria-hidden="true"></i>{{ $esNueva ? $termino['nuevo'].' '.$singular : 'Editar '.$singular }}</h2>
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                 </div>
                 <div class="dialogo-cuerpo">
@@ -193,7 +193,7 @@
                                 </optgroup>
                             @endforeach
                         </select>
-                        <p class="campo-ayuda mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> Cámbiala solo si este {{ mb_strtolower($singular) }} está en otra zona horaria que la empresa: las bitácoras registran la hora local de cada sede.</p>
+                        <p class="campo-ayuda mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> Cámbiala solo si {{ $termino['este'] }} {{ mb_strtolower($singular) }} está en otra zona horaria que la empresa: las bitácoras registran la hora local de cada sede.</p>
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>

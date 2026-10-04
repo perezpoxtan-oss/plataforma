@@ -11,6 +11,17 @@
         </p>
     </div>
 
+    @foreach ($pendientes as $p)
+        <a href="{{ $p['ruta'] }}" class="aviso-pendiente mt-3">
+            <span class="icono"><i class="bi {{ $p['icono'] }}" aria-hidden="true"></i></span>
+            <span class="flex-grow-1">
+                <strong class="d-block">{{ $p['titulo'] }}</strong>
+                <span class="small">{{ $p['texto'] }}</span>
+            </span>
+            <span class="boton">{{ $p['boton'] }} <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+        </a>
+    @endforeach
+
     {{-- Las fichas (colaboradores, personas en sitio, llaves en uso, transporte,
          novedades, equipos) se agregan aquí conforme se migra cada módulo. --}}
     <div class="tarjeta estado-vacio mt-4">

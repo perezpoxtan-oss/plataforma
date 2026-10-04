@@ -87,7 +87,7 @@
                                 {{ $sedeId ? ($sedes[$sedeId]->nombre ?? 'Sede inactiva') : 'Ve '.$nombreSedes.' de la empresa' }}
                             </div>
                             @if ($u->ultimo_acceso_en)
-                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Último acceso: {{ $u->ultimo_acceso_en->format('d/m/Y H:i') }}</div>
+                                <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Último acceso: @fecha($u->ultimo_acceso_en)</div>
                             @endif
                         </div>
                     </div>
@@ -95,15 +95,15 @@
                         @if ($u->estaBloqueado())
                             <div class="mb-2">
                                 <span class="etiqueta-estado bloqueado" title="Bloqueado por intentos fallidos de inicio de sesión">
-                                    <i class="bi bi-lock-fill" aria-hidden="true"></i> BLOQUEADO hasta {{ $u->bloqueado_hasta->copy()->setTimezone($zonaHoraria)->format('H:i') }}
+                                    <i class="bi bi-lock-fill" aria-hidden="true"></i> BLOQUEADO hasta @fecha($u->bloqueado_hasta, 'H:i')
                                 </span>
                             </div>
                         @endif
                         @if ($u->creado_por_nombre)
-                            <div class="texto-traza"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $u->creado_por_nombre }} · {{ $u->created_at?->format('d/m/Y H:i') }}</div>
+                            <div class="texto-traza"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $u->creado_por_nombre }} · @fecha($u->created_at)</div>
                         @endif
                         @if ($u->actualizado_por_nombre && $u->updated_at?->ne($u->created_at))
-                            <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $u->actualizado_por_nombre }} · {{ $u->updated_at->format('d/m/Y H:i') }}</div>
+                            <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $u->actualizado_por_nombre }} · @fecha($u->updated_at)</div>
                         @endif
                     </div>
                     <div class="ficha-footer">

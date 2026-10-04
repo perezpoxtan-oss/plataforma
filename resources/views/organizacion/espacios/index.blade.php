@@ -77,11 +77,11 @@
                             </div>
                             <div class="text-muted small mb-2 border-bottom pb-2 mt-1 d-flex justify-content-between gap-2 flex-wrap">
                                 <span><i class="bi bi-geo-alt" aria-hidden="true"></i> Sede: {{ $sede?->nombre }}@if ($ed->tipo) · {{ $ed->tipo->nombre }}@endif</span>
-                                <span>Desde {{ $ed->created_at?->format('m/Y') }}</span>
+                                <span>Desde @fecha($ed->created_at, 'm/Y')</span>
                             </div>
                             <div class="small text-muted"><i class="bi bi-layers" aria-hidden="true"></i> {{ $ed->pisos_count }} Piso(s) registrado(s)</div>
                             @if ($ed->actualizado_por_nombre && $ed->updated_at?->ne($ed->created_at))
-                                <div class="texto-traza mt-1"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $ed->actualizado_por_nombre }} · {{ $ed->updated_at->format('d/m/Y H:i') }}</div>
+                                <div class="texto-traza mt-1"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $ed->actualizado_por_nombre }} · @fecha($ed->updated_at)</div>
                             @endif
                         </div>
                         <a href="{{ route('espacios.show', $ed->id) }}" class="btn-entrar"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Entrar a Pisos</a>

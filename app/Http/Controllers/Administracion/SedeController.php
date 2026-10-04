@@ -178,12 +178,21 @@ class SedeController extends Controller
     /**
      * Cómo se llama la sede en el rubro de la empresa.
      *
-     * @return array{singular: string, plural: string}
+     * @return array{singular: string, plural: string, nuevo: string, este: string}
      */
     private function termino(?Empresa $empresa): array
     {
         $t = $empresa?->rubro?->terminologia ?? [];
 
-        return ['singular' => $t['sede'] ?? 'Sede', 'plural' => $t['sedes'] ?? 'Sedes'];
+        $singular = $t['sede'] ?? 'Sede';
+        // Hotel es masculino; Sede, Planta, Torre y Privada, femeninos
+        $femenino = ($t['sede_genero'] ?? (in_array($singular, ['Hotel'], true) ? 'm' : 'f')) === 'f';
+
+        return [
+            'singular' => $singular,
+            'plural' => $t['sedes'] ?? 'Sedes',
+            'nuevo' => $femenino ? 'Nueva' : 'Nuevo',
+            'este' => $femenino ? 'esta' : 'este',
+        ];
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Administracion\AuditoriaController;
 use App\Http\Controllers\Administracion\EmpresaActivaController;
 use App\Http\Controllers\Administracion\EmpresaController;
 use App\Http\Controllers\Administracion\IdentidadController;
@@ -43,6 +44,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/empresas', [EmpresaController::class, 'store'])->name('empresas.store');
     Route::put('/empresas/{empresa}', [EmpresaController::class, 'update'])->name('empresas.update');
     Route::patch('/empresas/{empresa}/estado', [EmpresaController::class, 'estado'])->name('empresas.estado');
+    Route::get('/auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index');
+    Route::get('/auditoria/exportar', [AuditoriaController::class, 'exportar'])->name('auditoria.exportar');
     Route::get('/sedes', [SedeController::class, 'index'])->name('sedes.index');
     Route::post('/sedes', [SedeController::class, 'store'])->name('sedes.store');
     Route::put('/sedes/{sede}', [SedeController::class, 'update'])->whereNumber('sede')->name('sedes.update');
