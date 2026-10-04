@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Empresas (alta por el Super Administrador con módulos y roles base; "Mi Empresa" para el cliente) y Sedes con terminología del rubro, código único por empresa, dirección completa y zona horaria propia.
 - Identidad de la plataforma (solo Super Administrador): nombre, eslogan, titular, colores, símbolo e ícono, con vista previa en vivo; módulos de tipo plataforma.
 - Usuarios: alta, edición, desactivar y reactivar con rol y sede, buscador y filtro por sede, cierre inmediato de sesión y reglas contra escalamiento.
 - Roles y Jerarquía y Matriz de permisos con alcance por módulo, acciones adicionales y reglas contra escalamiento; selector de empresa de trabajo para el Super Administrador.

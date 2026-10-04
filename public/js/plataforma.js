@@ -335,3 +335,84 @@
         });
     });
 })();
+
+/* ==========================================================================
+   Filtro genérico de fichas: buscador + Todas / Activas / Inactivas
+   (contenedor data-fichas="clave"; fichas con data-ficha, data-texto y data-estado)
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var ESTILOS = { todas: ['btn-dark', 'btn-outline-dark'], 1: ['btn-success', 'btn-outline-success'], 0: ['btn-danger', 'btn-outline-danger'] };
+
+    function aplicar(contenedor) {
+        var clave = contenedor.dataset.fichas;
+        var buscador = document.querySelector('[data-filtro-texto="' + clave + '"]');
+        var activo = document.querySelector('[data-filtro-estado="' + clave + '"][aria-pressed="true"]');
+        var texto = buscador ? buscador.value.toLowerCase().trim() : '';
+        var estado = activo ? activo.dataset.valor : 'todas';
+        var visibles = 0;
+
+        contenedor.querySelectorAll('[data-ficha]').forEach(function (f) {
+            var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1)
+                && (estado === 'todas' || f.dataset.estado === estado);
+            f.style.display = ok ? '' : 'none';
+            if (ok) { visibles++; }
+        });
+
+        var vacio = document.querySelector('[data-sin-resultados="' + clave + '"]');
+        if (vacio) { vacio.hidden = visibles !== 0 || contenedor.querySelectorAll('[data-ficha]').length === 0; }
+
+        document.querySelectorAll('[data-filtro-estado="' + clave + '"]').forEach(function (b) {
+            var estilos = ESTILOS[b.dataset.valor] || ESTILOS.todas;
+            var on = b.getAttribute('aria-pressed') === 'true';
+            b.classList.toggle(estilos[0], on);
+            b.classList.toggle(estilos[1], !on);
+        });
+
+        try { sessionStorage.setItem('plataforma_filtro_' + clave, JSON.stringify({ texto: texto, estado: estado })); } catch (e) {}
+    }
+
+    function contenedorDe(el) {
+        var clave = el.dataset.filtroTexto || el.dataset.filtroEstado;
+        return document.querySelector('[data-fichas="' + clave + '"]');
+    }
+
+    document.addEventListener('input', function (e) {
+        if (e.target.matches('[data-filtro-texto]')) { var c = contenedorDe(e.target); if (c) { aplicar(c); } }
+    });
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-filtro-estado]');
+        if (!b) { return; }
+        document.querySelectorAll('[data-filtro-estado="' + b.dataset.filtroEstado + '"]').forEach(function (x) {
+            x.setAttribute('aria-pressed', String(x === b));
+        });
+        var c = contenedorDe(b);
+        if (c) { aplicar(c); }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-fichas]').forEach(function (c) {
+            var clave = c.dataset.fichas;
+            try {
+                var g = JSON.parse(sessionStorage.getItem('plataforma_filtro_' + clave) || 'null');
+                if (g) {
+                    var t = document.querySelector('[data-filtro-texto="' + clave + '"]');
+                    if (t && g.texto) { t.value = g.texto; }
+                    var b = document.querySelector('[data-filtro-estado="' + clave + '"][data-valor="' + g.estado + '"]');
+                    if (b) {
+                        document.querySelectorAll('[data-filtro-estado="' + clave + '"]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+                    }
+                }
+            } catch (e) { /* ignorado */ }
+            aplicar(c);
+        });
+
+        // Abrir y resaltar una ficha enlazada (#sede-12)
+        if (location.hash && /^#[a-z]+-\d+$/.test(location.hash)) {
+            var objetivo = document.querySelector(location.hash);
+            if (objetivo) { objetivo.classList.add('ficha-resaltada'); objetivo.scrollIntoView({ block: 'center' }); }
+        }
+    });
+})();

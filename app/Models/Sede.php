@@ -16,7 +16,10 @@ class Sede extends Model
     /** Mismos valores por defecto que la base de datos (disponibles antes de recargar). */
     protected $attributes = ['activo' => true];
 
-    protected $fillable = ['empresa_id', 'codigo', 'nombre', 'direccion', 'zona_horaria', 'activo'];
+    protected $fillable = [
+        'empresa_id', 'codigo', 'nombre', 'ciudad', 'entidad', 'direccion', 'colonia', 'codigo_postal',
+        'telefono', 'zona_horaria', 'activo',
+    ];
 
     protected function casts(): array
     {

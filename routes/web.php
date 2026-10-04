@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\Administracion\EmpresaActivaController;
+use App\Http\Controllers\Administracion\EmpresaController;
 use App\Http\Controllers\Administracion\IdentidadController;
 use App\Http\Controllers\Administracion\PermisoController;
 use App\Http\Controllers\Administracion\RolController;
+use App\Http\Controllers\Administracion\SedeController;
 use App\Http\Controllers\Administracion\UsuarioController;
 use App\Http\Controllers\Auth\SesionController;
 use App\Http\Controllers\ModuloPendienteController;
@@ -32,6 +34,14 @@ Route::middleware('auth')->group(function () {
     Route::delete('/roles/{rol}', [RolController::class, 'destroy'])->name('roles.destroy');
     Route::get('/permisos', [PermisoController::class, 'index'])->name('permisos.index');
     Route::put('/permisos/{rol}', [PermisoController::class, 'update'])->name('permisos.update');
+    Route::get('/empresas', [EmpresaController::class, 'index'])->name('empresas.index');
+    Route::post('/empresas', [EmpresaController::class, 'store'])->name('empresas.store');
+    Route::put('/empresas/{empresa}', [EmpresaController::class, 'update'])->name('empresas.update');
+    Route::patch('/empresas/{empresa}/estado', [EmpresaController::class, 'estado'])->name('empresas.estado');
+    Route::get('/sedes', [SedeController::class, 'index'])->name('sedes.index');
+    Route::post('/sedes', [SedeController::class, 'store'])->name('sedes.store');
+    Route::put('/sedes/{sede}', [SedeController::class, 'update'])->whereNumber('sede')->name('sedes.update');
+    Route::patch('/sedes/{sede}/estado', [SedeController::class, 'estado'])->whereNumber('sede')->name('sedes.estado');
     Route::get('/identidad', [IdentidadController::class, 'edit'])->name('identidad.edit');
     Route::put('/identidad', [IdentidadController::class, 'update'])->name('identidad.update');
     Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
