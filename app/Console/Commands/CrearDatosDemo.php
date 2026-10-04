@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Espacio;
+use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Rubro;
 use App\Models\Sede;
@@ -86,10 +88,42 @@ class CrearDatosDemo extends Command
         }
 
         $tenant->conEmpresa($empresa->id, fn () => $this->espaciosDemo($sedes['CEN'], User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->departamentosYPuestosDemo($sedes['PLA']));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Departamentos y puestos típicos de un hotel, solo la primera vez.
+     */
+    private function departamentosYPuestosDemo(Sede $playa): void
+    {
+        if (Departamento::exists()) {
+            return;
+        }
+
+        $deptos = collect(['Seguridad', 'Recepción', 'Ama de Llaves', 'Mantenimiento', 'Alimentos y Bebidas', 'Recursos Humanos'])
+            ->mapWithKeys(fn ($n) => [$n => Departamento::create(['nombre' => $n])]);
+        // Club de Playa solo existe en la sede de playa
+        $club = Departamento::create(['nombre' => 'Club de Playa', 'todas_las_sedes' => false]);
+        $club->sedes()->sync([$playa->id]);
+
+        $puestos = [
+            'Agente de Seguridad' => [Puesto::OPERATIVO, ['Seguridad']],
+            'Supervisor de Seguridad' => [Puesto::OPERATIVO, ['Seguridad']],
+            'Jefe de Seguridad' => [Puesto::ADMINISTRATIVO, ['Seguridad']],
+            'Recepcionista' => [Puesto::OPERATIVO, ['Recepción']],
+            'Camarista' => [Puesto::OPERATIVO, ['Ama de Llaves']],
+            'Técnico de Mantenimiento' => [Puesto::OPERATIVO, ['Mantenimiento']],
+            'Mesero' => [Puesto::OPERATIVO, ['Alimentos y Bebidas']],
+            'Gerente' => [Puesto::ADMINISTRATIVO, []],
+            'Auxiliar Administrativo' => [Puesto::ADMINISTRATIVO, ['Recursos Humanos', 'Recepción']],
+        ];
+        foreach ($puestos as $nombre => [$tipo, $de]) {
+            Puesto::create(['nombre' => $nombre, 'tipo' => $tipo])->departamentos()->sync(collect($de)->map(fn ($d) => $deptos[$d]->id)->all());
+        }
     }
 
     /**

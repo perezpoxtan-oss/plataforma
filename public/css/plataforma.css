@@ -398,3 +398,30 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .lista-asignar { max-height: 45vh; overflow-y: auto; display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
 .opcion-asignar { display: flex; align-items: center; gap: 0.6rem; border: 1px solid var(--borde); border-radius: 10px; padding: 0.55rem 0.75rem; cursor: pointer; min-height: 44px; }
 .opcion-asignar:has(input:checked) { border-color: #fca5a5; background: #fef2f2; }
+
+/* ==========================================================================
+   Departamentos (ámbar) y Puestos (cian) — réplica de SEGCAT
+   ========================================================================== */
+.btn-ambar-degradado { background: linear-gradient(135deg, #eab308, #ca8a04); color: #fff; }
+.tema-cian .ficha-card:hover { box-shadow: 0 12px 24px -10px rgba(14,165,233,0.2); border-color: rgba(14,165,233,0.4); }
+.tema-cian .ficha-create { background: rgba(14,165,233,0.03); border-color: rgba(14,165,233,0.4); }
+.tema-cian .ficha-create:hover { background: rgba(14,165,233,0.08); border-color: #0ea5e9; }
+.tema-cian .ficha-create i, .tema-cian .ficha-create .titulo-crear { color: #0284c7; }
+.tema-cian .btn-icono.editar { color: #0284c7; }
+.tema-cian .btn-icono.editar:hover { background: #0284c7; color: #fff; }
+.tema-cian .campo:focus, .tema-cian .buscador input:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.15); outline: none; }
+.btn-cian { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; }
+
+.pildoras-tipo { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.btn-pill-tipo { background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; padding: 0.5rem 1rem; min-height: 44px; display: inline-flex; align-items: center; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+.btn-pill-tipo:hover { background: #e2e8f0; }
+.btn-pill-tipo.active { background: #0ea5e9; border-color: #0ea5e9; color: #fff; }
+.badge-tipo-admin { background: #ede9fe; color: #6d28d9; font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
+.badge-tipo-op { background: #e0f2fe; color: #0369a1; font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
+.chip-catalogo { display: inline-flex; align-items: center; gap: 0.25rem; background: var(--fondo); border: 1px solid var(--borde); border-radius: 999px; padding: 0.15rem 0.6rem; font-size: 0.72rem; font-weight: 600; color: var(--texto-suave); }
+.chip-catalogo.inactivo { text-decoration: line-through; opacity: 0.6; }
+.caja-checks { max-height: 180px; overflow-y: auto; border: 1px solid var(--borde); border-radius: 10px; padding: 0.5rem 0.7rem; background: var(--fondo); margin-bottom: 1rem; }
+.fila-check { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.2rem; font-size: 0.85rem; cursor: pointer; min-height: 40px; margin: 0; }
+.fila-check input { width: 18px; height: 18px; accent-color: #0ea5e9; flex-shrink: 0; }
+.opcion-todas { display: flex; align-items: flex-start; gap: 0.6rem; border: 1px solid var(--borde); border-radius: 10px; padding: 0.65rem 0.8rem; margin-bottom: 0.75rem; cursor: pointer; }
+.opcion-todas input { width: 18px; height: 18px; margin-top: 2px; accent-color: #ca8a04; flex-shrink: 0; }

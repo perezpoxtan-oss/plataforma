@@ -39,6 +39,8 @@ class CatalogoSeeder extends Seeder
         'empresas' => 'empresas.index',
         'sedes' => 'sedes.index',
         'espacios' => 'espacios.index',
+        'departamentos' => 'departamentos.index',
+        'puestos' => 'puestos.index',
         'roles' => 'roles.index',
         'permisos' => 'permisos.index',
         'usuarios' => 'usuarios.index',
