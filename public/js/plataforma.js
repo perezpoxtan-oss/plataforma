@@ -208,3 +208,81 @@
         document.querySelectorAll('dialog[data-abrir-al-cargar]').forEach(abrir);
     });
 })();
+
+/* ==========================================================================
+   Edición genérica en diálogo y filtro de fichas (Usuarios y siguientes)
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    // data-accion="editar-registro" data-dialogo="id" data-url="..." data-id="..." data-valores='{"campo": valor}'
+    document.addEventListener('click', function (evento) {
+        var boton = evento.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        var form = dialogo && dialogo.querySelector('form');
+        if (!form) { return; }
+
+        var valores = {};
+        try { valores = JSON.parse(boton.dataset.valores || '{}'); } catch (e) { /* sin valores */ }
+
+        form.action = boton.dataset.url;
+        var marca = form.querySelector('[data-campo-dialogo]');
+        if (marca) { marca.value = 'editar-' + boton.dataset.id; }
+
+        form.querySelectorAll('input[name], select[name], textarea[name]').forEach(function (campo) {
+            if (campo.type === 'hidden' || campo.name.charAt(0) === '_') { return; }
+            if (campo.type === 'password') { campo.value = ''; return; }
+            var valor = valores[campo.name];
+            if (campo.type === 'checkbox') {
+                campo.checked = !!valor;
+            } else {
+                campo.value = (valor === null || valor === undefined) ? '' : String(valor);
+            }
+        });
+
+        if (typeof dialogo.showModal === 'function') { dialogo.showModal(); }
+    });
+
+    // Filtro de usuarios por texto y sede; se recuerda en la pestaña tras guardar
+    var CLAVE = 'plataforma_filtro_usuarios';
+
+    function filtrar() {
+        var lista = document.getElementById('listaUsuarios');
+        if (!lista) { return; }
+        var texto = (document.getElementById('filtroTexto') || {}).value || '';
+        var sede = (document.getElementById('filtroSede') || {}).value || '';
+        texto = texto.toLowerCase().trim();
+        var visibles = 0;
+
+        lista.querySelectorAll('[data-usuario]').forEach(function (ficha) {
+            var ok = (texto === '' || ficha.dataset.texto.indexOf(texto) !== -1)
+                && (sede === '' || ficha.dataset.sede === sede);
+            ficha.style.display = ok ? '' : 'none';
+            if (ok) { visibles++; }
+        });
+
+        var vacio = document.getElementById('sinResultados');
+        if (vacio) { vacio.hidden = visibles !== 0 || lista.querySelectorAll('[data-usuario]').length === 0; }
+
+        try { sessionStorage.setItem(CLAVE, JSON.stringify({ texto: texto, sede: sede })); } catch (e) { /* sin almacenamiento */ }
+    }
+
+    document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-usuarios]')) { filtrar(); } });
+    document.addEventListener('change', function (e) { if (e.target.matches('[data-filtro-usuarios]')) { filtrar(); } });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!document.getElementById('listaUsuarios')) { return; }
+        try {
+            var guardado = JSON.parse(sessionStorage.getItem(CLAVE) || 'null');
+            if (guardado) {
+                var t = document.getElementById('filtroTexto');
+                var s = document.getElementById('filtroSede');
+                if (t && guardado.texto) { t.value = guardado.texto; }
+                if (s && guardado.sede) { s.value = guardado.sede; }
+            }
+        } catch (e) { /* valor guardado dañado: se ignora */ }
+        filtrar();
+    });
+})();

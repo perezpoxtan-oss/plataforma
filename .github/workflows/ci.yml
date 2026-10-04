@@ -57,6 +57,8 @@ jobs:
           DB_USERNAME: ci
           DB_PASSWORD: ci
         run: |
+          set -o pipefail
+          exec > >(tee migraciones.log) 2>&1
           # Igual que en Neubox: si no se indica motor, MariaDB crea MyISAM.
           # Asi la CI detecta cualquier tabla que no se cree en InnoDB.
           php -r '$p=new PDO("mysql:host=127.0.0.1","root","root"); $p->exec("SET GLOBAL default_storage_engine=MyISAM");'
@@ -71,7 +73,11 @@ jobs:
 
       - name: Anotar fallas
         if: failure()
-        run: php .github/scripts/anotar-fallas.php junit.xml
+        run: |
+          if [ -s migraciones.log ] && [ ! -f junit.xml ]; then
+            echo "::error title=Migraciones::$(tail -n 25 migraciones.log | sed 's/%/%25/g' | tr '\n' '|' | sed 's/|/%0A/g')"
+          fi
+          php .github/scripts/anotar-fallas.php junit.xml
 
   paquete:
     name: Paquete para QA

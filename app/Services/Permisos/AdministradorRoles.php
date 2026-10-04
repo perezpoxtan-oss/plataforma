@@ -221,7 +221,7 @@ class AdministradorRoles
             ->all();
     }
 
-    private function auditar(User $actor, string $evento, Model $sujeto, ?array $antes, ?array $despues): void
+    public function auditar(User $actor, string $evento, Model $sujeto, ?array $antes, ?array $despues): void
     {
         Auditoria::create([
             'empresa_id' => $sujeto->getAttributes()['empresa_id'] ?? $actor->empresa_id,
