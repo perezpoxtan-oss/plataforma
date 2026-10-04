@@ -17,4 +17,7 @@
 <link href="{{ $version('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
 <link href="{{ $version('css/plataforma.css') }}" rel="stylesheet">
 <style>:root { --color-primario: {{ $identidad->get('color_primario') }}; --color-acento: {{ $identidad->get('color_acento') }}; }</style>
+{{-- Modos de pantalla (Normal, Sol, Noche): la clase se pone en <html> antes de pintar --}}
+<link href="{{ $version('css/modos-pantalla.css') }}" rel="stylesheet">
+<script src="{{ $version('js/modo-pantalla.js') }}"></script>
 @stack('estilos')

@@ -95,6 +95,8 @@
                     'id' => 'dialogoNuevaZona', 'titulo' => 'Alta de Zona / Edificio', 'icono' => 'bi-building text-danger',
                     'nivel' => 'edificio', 'padreId' => null, 'sedes' => $sedes, 'tipos' => $tiposEdificio, 'conCodigo' => true,
                     'editar' => false, 'boton' => 'Registrar Zona', 'claseBoton' => 'btn-rojo', 'etiquetaNombre' => 'Nombre de la Zona / Edificio',
+                    // Las zonas no llevan sección; sin esto heredan $secciones (agrupadas por sede) de la pantalla
+                    'secciones' => null,
                 ])
             @endif
             @if ($puede['editar'])
@@ -102,6 +104,8 @@
                     'id' => 'dialogoEditarZona', 'titulo' => 'Editar Zona / Edificio', 'icono' => 'bi-pencil-square text-danger',
                     'nivel' => 'edificio', 'tipos' => $tiposEdificio, 'conCodigo' => true,
                     'editar' => true, 'boton' => 'Guardar Cambios', 'claseBoton' => 'btn-rojo', 'etiquetaNombre' => 'Nombre de la Zona / Edificio',
+                    // Las zonas no llevan sección; sin esto heredan $secciones (agrupadas por sede) de la pantalla
+                    'secciones' => null,
                 ])
             @endif
         @else

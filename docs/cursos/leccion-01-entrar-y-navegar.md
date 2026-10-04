@@ -9,14 +9,14 @@ Al terminar podrás entrar a la plataforma, encontrar cualquier módulo de tu ro
 ## Práctica
 
 1. Entra con tu usuario. Luego sal y vuelve a entrar con tu correo: ambos funcionan.
-2. En computadora, abre **Operación** y localiza *Bitácora de accesos*. En celular, haz lo mismo desde **Menú**.
-3. Activa el **alto contraste** y vuelve a desactivarlo. El ajuste se recuerda en ese equipo.
+2. En computadora, abre **Operación** y localiza *Bitácora de accesos*. En celular, haz lo mismo desde **Menú** (los grupos inician cerrados: toca *Operación* para abrirlo).
+3. Toca el botón de **modo de pantalla** junto a tu nombre: pasa por **Sol** (exteriores), **Noche** (turno nocturno) y regresa a **Normal**. El ajuste se recuerda en ese equipo.
 4. Cierra sesión con el botón rojo.
 
 ## Para recordar
 
 - Solo ves los módulos que tu rol permite; si te falta uno, pídelo a tu administrador.
-- 5 intentos fallidos bloquean la cuenta 15 minutos.
+- 5 intentos fallidos bloquean la cuenta 15 minutos; tu administrador o jefe de seguridad puede desbloquearla antes.
 - 20 minutos sin uso cierran la sesión; el aviso te da 2 minutos para seguir.
 - Nunca compartas tu usuario: todo lo que haces queda registrado a tu nombre.
 

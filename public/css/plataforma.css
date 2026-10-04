@@ -46,11 +46,7 @@ body.app {
 .text-indigo { color: #6366f1 !important; }
 .text-primary { color: var(--color-primario) !important; }
 
-/* ---------- Alto contraste (exteriores, se activa a mano) ---------- */
-body.alto-contraste { --texto: #000000; --texto-suave: #1e293b; }
-body.alto-contraste * { border-color: rgba(0, 0, 0, 0.4) !important; }
-body.alto-contraste .cabecera-movil,
-body.alto-contraste .barra-inferior { border-color: #000 !important; }
+/* ---------- Botón de modo de pantalla (los modos Sol y Noche están en modos-pantalla.css) ---------- */
 .btn-alto-contraste { background: transparent; border: 1px solid var(--borde); color: inherit; border-radius: 10px; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .btn-alto-contraste.activo { background: #facc15; border-color: #facc15; color: #0f172a; }
 
@@ -109,6 +105,8 @@ body.acceso .franja-ambiente { position: fixed; top: 0; left: 0; right: 0; z-ind
 .menu-lateral-grupo.contraible { display: flex; align-items: center; justify-content: space-between; cursor: pointer; min-height: 44px; user-select: none; }
 .menu-lateral-grupo.contraible .bi-chevron-down { transition: transform 0.2s; }
 .menu-lateral-grupo.contraible[aria-expanded="false"] .bi-chevron-down { transform: rotate(-90deg); }
+.menu-lateral-grupo.actual { color: var(--color-primario); }
+.menu-lateral-grupo.actual > span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--color-primario); margin-right: 0.5rem; vertical-align: middle; }
 .menu-lateral-salir { background: rgba(220, 53, 69, 0.75); color: #fff; border: none; width: 100%; }
 .menu-lateral-salir i { color: #fff; }
 
@@ -303,6 +301,9 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .etiqueta-estado { border-radius: 999px; padding: 0.5rem 1rem; font-weight: 700; font-size: 0.75rem; }
 .etiqueta-estado.activo { background: #d1e7dd; color: #198754; }
 .etiqueta-estado.inactivo { background: #f8d7da; color: #dc3545; }
+.etiqueta-estado.bloqueado { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
+.btn-icono.desbloquear { color: #b45309; }
+.btn-icono.desbloquear:hover { background: #b45309; color: #fff; }
 
 /* ---------- Identidad de la plataforma ---------- */
 .vista-imagen { width: 64px; height: 64px; border-radius: 16px; border: 1px dashed #cbd5e1; background: var(--fondo); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; font-size: 1.5rem; }
