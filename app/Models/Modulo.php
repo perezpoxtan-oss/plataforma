@@ -13,6 +13,9 @@ class Modulo extends Model
 
     public const TIPO_CONFIGURABLE = 'configurable';
 
+    /** Solo para el Super Administrador: nunca se contrata ni se copia a las empresas. */
+    public const TIPO_PLATAFORMA = 'plataforma';
+
     protected $table = 'modulos';
 
     /** Mismos valores por defecto que la base de datos (disponibles antes de recargar). */

@@ -303,3 +303,24 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .etiqueta-estado { border-radius: 999px; padding: 0.5rem 1rem; font-weight: 700; font-size: 0.75rem; }
 .etiqueta-estado.activo { background: #d1e7dd; color: #198754; }
 .etiqueta-estado.inactivo { background: #f8d7da; color: #dc3545; }
+
+/* ---------- Identidad de la plataforma ---------- */
+.vista-imagen { width: 64px; height: 64px; border-radius: 16px; border: 1px dashed #cbd5e1; background: var(--fondo); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; font-size: 1.5rem; }
+.vista-imagen img { width: 100%; height: 100%; object-fit: contain; }
+.btn-guardar-identidad { background: var(--color-primario); color: #fff; border: none; padding: 0.9rem 2rem; border-radius: 12px; font-weight: 700; margin-top: 1rem; cursor: pointer; font-family: inherit; }
+.btn-guardar-identidad:hover { background: var(--color-primario-hover); }
+.vista-previa { position: sticky; top: 1rem; background: var(--fondo-acceso); border: 1px solid var(--borde); border-radius: 20px; padding: 1.25rem; }
+.vp-barra { background: #fff; border: 1px solid var(--borde); border-radius: 16px; padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; }
+.vp-simbolo { width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(135deg, var(--vp-primario), color-mix(in srgb, var(--vp-primario) 82%, #000)); color: #fff; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+.vp-simbolo img { width: 70%; height: 70%; object-fit: contain; }
+.vp-simbolo.grande { width: 52px; height: 52px; border-radius: 16px; font-size: 1.4rem; margin-bottom: 0.6rem; }
+.vp-nombre-corto { font-weight: 800; color: var(--vp-primario); }
+.vp-menu { margin-left: auto; font-size: 0.75rem; font-weight: 600; color: var(--vp-primario); }
+.vp-acceso { background: #fff; border-radius: 20px; padding: 1.5rem; text-align: center; border: 1px solid var(--borde); }
+.vp-titulo { font-weight: 700; font-size: 1.3rem; }
+.vp-eslogan { font-size: 0.8rem; color: var(--texto-suave); margin-bottom: 1rem; }
+.vp-campo { height: 34px; border: 1px solid var(--borde); border-radius: 10px; margin-bottom: 0.6rem; }
+.vp-boton { background: var(--vp-primario); color: #fff; border-radius: 10px; padding: 0.6rem; font-size: 0.75rem; font-weight: 600; }
+.vp-pie { font-size: 0.7rem; color: var(--texto-suave); margin-top: 0.8rem; }
+/* Con símbolo propio (normalmente blanco) el recuadro del acceso usa el color principal */
+.acceso-simbolo:has(img) { background: linear-gradient(135deg, var(--color-primario), var(--color-primario-hover)); box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primario) 20%, transparent); }

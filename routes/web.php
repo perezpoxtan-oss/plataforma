@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Administracion\EmpresaActivaController;
+use App\Http\Controllers\Administracion\IdentidadController;
 use App\Http\Controllers\Administracion\PermisoController;
 use App\Http\Controllers\Administracion\RolController;
 use App\Http\Controllers\Administracion\UsuarioController;
@@ -31,6 +32,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/roles/{rol}', [RolController::class, 'destroy'])->name('roles.destroy');
     Route::get('/permisos', [PermisoController::class, 'index'])->name('permisos.index');
     Route::put('/permisos/{rol}', [PermisoController::class, 'update'])->name('permisos.update');
+    Route::get('/identidad', [IdentidadController::class, 'edit'])->name('identidad.edit');
+    Route::put('/identidad', [IdentidadController::class, 'update'])->name('identidad.update');
     Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
     Route::post('/usuarios', [UsuarioController::class, 'store'])->name('usuarios.store');
     Route::put('/usuarios/{usuario}', [UsuarioController::class, 'update'])->name('usuarios.update');

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Accion;
 use App\Models\Area;
 use App\Models\Auditoria;
+use App\Models\Modulo;
 use App\Models\Rol;
 use App\Models\RolPermiso;
 use App\Services\Permisos\AdministradorRoles;
@@ -164,7 +165,7 @@ class PermisoController extends Controller
         $areas = Area::query()
             ->where('activo', true)
             ->orderBy('orden')
-            ->with(['modulos' => fn ($q) => $q->where('activo', true)->orderBy('orden')->with(['acciones' => fn ($a) => $a->orderBy('orden')])])
+            ->with(['modulos' => fn ($q) => $q->where('activo', true)->where('tipo', '!=', Modulo::TIPO_PLATAFORMA)->orderBy('orden')->with(['acciones' => fn ($a) => $a->orderBy('orden')])])
             ->get();
 
         foreach ($areas as $area) {
