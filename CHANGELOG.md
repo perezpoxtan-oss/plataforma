@@ -3,6 +3,8 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Áreas **Dirección** (estructura y gobierno), **Recursos Humanos** (Colaboradores) y **Seguridad** (padrones, operación y reportes) en el catálogo y la Matriz de permisos; menú propio de Recursos Humanos y rol base "Recursos Humanos" (nivel 25).
+- Altas provisionales de colaboradores: la caseta registra a quien aún no existe (con aviso si ya hay alguien con ese nombre) y Recursos Humanos lo valida con su número de empleado o lo une con su registro correcto.
 - Turnos: horarios de la empresa (también los que cruzan la medianoche, con duración y aviso "Termina al día siguiente"), sedes que usan cada turno (todas, incluidas las futuras, o solo algunas; el usuario de sede solo cambia la suya), filtro por sede, mismas pantallas de SEGCAT y auditoría.
 - Ajustes de pruebas QA (ronda 2):
   - Las ventanas de alta y edición se cierran limpias: al cerrarlas (Cancelar, X o Esc) y volver a abrirlas ya no conservan lo capturado; tras un error se reabren con los datos para corregir y, si se cierran, quedan vacías. Genérico para todas las pantallas; excepción con `data-conservar-al-cerrar` (R-01 / U-01).

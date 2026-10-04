@@ -33,6 +33,7 @@ class CrearDatosDemo extends Command
     public const USUARIOS = [
         'admin.demo' => ['Ana Administradora', 'Administrador', null],
         'director.demo' => ['Diego Director', 'Director', null],
+        'rh.demo' => ['Rita Recursos Humanos', 'Recursos Humanos', null],
         'jefe.demo' => ['Julia Jefa de Seguridad', 'Jefe de seguridad', null],
         'supervisor.demo' => ['Sergio Supervisor', 'Supervisor', 'CEN'],
         'agente.demo' => ['Andrea Agente', 'Agente', 'CEN'],
@@ -95,6 +96,7 @@ class CrearDatosDemo extends Command
         $tenant->conEmpresa($empresa->id, fn () => $this->departamentosYPuestosDemo($sedes['PLA']));
         $tenant->conEmpresa($empresa->id, fn () => $this->turnosDemo($sedes['PLA']));
         $tenant->conEmpresa($empresa->id, fn () => $this->colaboradoresDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->provisionalesDemo($sedes, User::where('username', 'agente.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -204,6 +206,30 @@ class CrearDatosDemo extends Command
 
         // Roberto cubre también la sede de playa
         Colaborador::where('num_empleado', '1005')->firstOrFail()->sedesAdicionales()->sync([$sedes['PLA']->id]);
+    }
+
+    /**
+     * Dos altas provisionales de la caseta para que Recursos Humanos practique:
+     * una persona nueva (se valida) y un duplicado de Roberto Hernández (se une).
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function provisionalesDemo($sedes, User $agente): void
+    {
+        if (Colaborador::where('provisional', true)->exists()) {
+            return;
+        }
+
+        foreach ([
+            ['Jorge', 'Méndez', 'Tun', 'Mantenimiento'],
+            ['Beto', 'Hernandez', null, 'Seguridad'],
+        ] as [$nombre, $paterno, $materno, $dep]) {
+            $nuevo = new Colaborador([
+                'nombre' => $nombre, 'apellido_paterno' => $paterno, 'apellido_materno' => $materno,
+                'sede_id' => $sedes['CEN']->id, 'departamento_id' => Departamento::where('nombre', $dep)->value('id'),
+            ]);
+            $nuevo->forceFill(['provisional' => true, 'creado_por' => $agente->id, 'actualizado_por' => $agente->id])->save();
+        }
     }
 
     /**

@@ -215,7 +215,7 @@
 
         form.action = boton.dataset.url;
         var marca = form.querySelector('[data-campo-dialogo]');
-        if (marca) { marca.value = 'editar-' + boton.dataset.id; }
+        if (marca) { marca.value = (marca.dataset.prefijoDialogo || 'editar-') + boton.dataset.id; }
 
         form.querySelectorAll('input[name], select[name], textarea[name]').forEach(function (campo) {
             if (campo.type === 'hidden' || campo.name.charAt(0) === '_') { return; }
@@ -613,13 +613,15 @@ document.addEventListener('click', function (e) {
         var texto = valor('texto').toLowerCase().trim();
         var sede = valor('sede');
         var depto = valor('depto');
+        var registro = valor('registro');
         var fichas = cont.querySelectorAll('[data-colaborador]');
         var visibles = 0;
 
         fichas.forEach(function (f) {
             var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1)
                 && (sede === '' || lista(f.dataset.sedes).indexOf(sede) !== -1)
-                && (depto === '' || f.dataset.depto === depto);
+                && (depto === '' || f.dataset.depto === depto)
+                && (registro === '' || f.dataset.registro === registro);
             f.style.display = ok ? '' : 'none';
             if (ok) { visibles++; }
         });
@@ -799,6 +801,11 @@ document.addEventListener('click', function (e) {
                     document.dispatchEvent(new CustomEvent('colaborador:registrado', { detail: res.datos.colaborador }));
                     return;
                 }
+                // Alta provisional: ya hay alguien con ese nombre. Se ofrece usarlo o confirmar que es otra persona.
+                if (res.estado === 409 && res.datos.parecidos) {
+                    mostrarParecidos(form, res.datos);
+                    return;
+                }
                 var mensajes = [];
                 Object.keys(res.datos.errores || {}).forEach(function (k) { mensajes = mensajes.concat(res.datos.errores[k]); });
                 if (mensajes.length === 0) { mensajes.push(res.datos.mensaje || res.datos.message || 'No se pudo registrar. Intenta de nuevo.'); }
@@ -812,6 +819,42 @@ document.addEventListener('click', function (e) {
                 if (errores) { errores.textContent = 'No se pudo registrar en este momento.'; errores.hidden = false; }
             });
     });
+
+    function mostrarParecidos(form, datos) {
+        var caja = form.querySelector('[data-parecidos-rapido]');
+        if (!caja) { return; }
+        caja.textContent = '';
+        var titulo = document.createElement('p');
+        titulo.className = 'fw-semibold mb-2';
+        titulo.textContent = datos.mensaje;
+        caja.appendChild(titulo);
+        datos.parecidos.forEach(function (c) {
+            var boton = document.createElement('button');
+            boton.type = 'button';
+            boton.className = 'opcion-parecido';
+            boton.textContent = c.nombre_completo + (c.num_empleado ? ' · #' + c.num_empleado : ' · provisional') + (c.puesto ? ' · ' + c.puesto : '') + (c.sede ? ' · ' + c.sede : '');
+            boton.addEventListener('click', function () {
+                caja.hidden = true;
+                form.reset();
+                var dialogo = form.closest('dialog');
+                if (dialogo) { dialogo.close(); }
+                document.dispatchEvent(new CustomEvent('colaborador:registrado', { detail: c }));
+            });
+            caja.appendChild(boton);
+        });
+        var otra = document.createElement('button');
+        otra.type = 'button';
+        otra.className = 'btn btn-outline-dark btn-sm fw-bold mt-2';
+        otra.textContent = 'Es otra persona: registrarla';
+        otra.addEventListener('click', function () {
+            var confirmar = form.querySelector('[data-confirmar-nuevo]');
+            if (confirmar) { confirmar.value = '1'; }
+            caja.hidden = true;
+            form.requestSubmit();
+        });
+        caja.appendChild(otra);
+        caja.hidden = false;
+    }
 
     /* ---------- Usuarios: Núm. Colaborador con autocompletar ---------- */
     var espera = null;
@@ -936,3 +979,17 @@ document.addEventListener('click', function (e) {
         filtrarColaboradores();
     });
 })();
+
+/* Registro rápido: al cerrar, se olvida la confirmación "es otra persona" y la lista de parecidos */
+document.addEventListener('close', function (e) {
+    if (!e.target.querySelector) { return; }
+    var confirmar = e.target.querySelector('[data-confirmar-nuevo]');
+    if (confirmar) { confirmar.value = '0'; }
+    var parecidos = e.target.querySelector('[data-parecidos-rapido]');
+    if (parecidos) { parecidos.hidden = true; parecidos.textContent = ''; }
+}, true);
+
+/* En la pantalla de Colaboradores, un alta (rápida o provisional) se ve al recargar la lista */
+document.addEventListener('colaborador:registrado', function () {
+    if (document.querySelector('[data-colaboradores]')) { window.location.reload(); }
+});

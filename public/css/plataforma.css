@@ -476,3 +476,21 @@ button.buscador-colab-item { cursor: pointer; }
 button.buscador-colab-item:hover, button.buscador-colab-item:focus { background: #fef2f2; outline: none; }
 .buscador-colab-item small { display: block; color: var(--texto-tenue); }
 /* Fin Colaboradores */
+
+/* ==========================================================================
+   Colaboradores: altas provisionales de la caseta (Recursos Humanos valida)
+   ========================================================================== */
+.ficha-provisional { border-color: rgba(217,119,6,0.45) !important; background: rgba(245,158,11,0.04) !important; text-align: center; }
+.ficha-provisional i, .ficha-provisional .titulo-crear { color: #b45309 !important; }
+.ficha-pendiente { border: 2px dashed rgba(217,119,6,0.55); }
+.badge-provisional { display: inline-flex; align-items: center; gap: 0.25rem; background: #fef3c7; color: #92400e; font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; margin-left: 0.25rem; }
+.texto-provisional { color: #92400e; font-weight: 600; }
+.etiqueta-estado.pendiente { background: #fef3c7; color: #92400e; }
+.btn-validar-colab, .btn-duplicado-colab { border-radius: 10px; padding: 0.45rem 0.8rem; font-size: 0.8rem; font-weight: 700; min-height: 40px; cursor: pointer; border: 1px solid; }
+.btn-validar-colab { background: #059669; border-color: #059669; color: #fff; }
+.btn-validar-colab:hover { background: #047857; }
+.btn-duplicado-colab { background: #fff; border-color: #d97706; color: #b45309; }
+.btn-duplicado-colab:hover { background: #fffbeb; }
+.caja-parecidos { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 0.75rem; margin-bottom: 1rem; font-size: 0.85rem; }
+.opcion-parecido { display: block; width: 100%; text-align: left; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.55rem 0.75rem; margin-bottom: 0.4rem; font-weight: 600; min-height: 44px; cursor: pointer; }
+.opcion-parecido:hover { border-color: #059669; background: #ecfdf5; }

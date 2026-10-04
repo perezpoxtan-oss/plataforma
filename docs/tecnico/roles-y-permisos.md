@@ -2,6 +2,20 @@
 
 Réplica de `modules/roles/rol_lista.php` y `modules/permisos/permisos_lista.php` de SEGCAT sobre el motor de permisos (ver `nucleo.md` y ADR-0002).
 
+## Áreas del catálogo
+
+Los módulos se agrupan en tres áreas. Así aparecen en la Matriz de permisos y así se contratan:
+
+| Área | Módulos | Por qué |
+|---|---|---|
+| **Dirección** | Empresas, Sedes, Zonas y áreas, Departamentos, Puestos, Turnos, Usuarios, Roles, Matriz de permisos, Configuración, Auditoría (+ Identidad, solo plataforma) | La estructura de la empresa y su gobierno. Es la base que toda empresa tiene, contrate lo que contrate |
+| **Recursos Humanos** | Colaboradores | El personal. Con el tiempo: vacaciones, incidencias, expedientes |
+| **Seguridad** | Padrones, Operación y sus reportes (Tablero, Informe ejecutivo, Tendencias, Bitácora del día) | La operación de seguridad |
+
+- Departamentos, Puestos y Turnos se quedan en **Dirección** y no en Recursos Humanos: Seguridad los necesita aunque la empresa no contrate RH.
+- El **menú** conserva las secciones de SEGCAT (Estructura, Padrones, Operación) y suma **Recursos Humanos**.
+- La migración `2026_10_06_000400` reacomoda las áreas de las bases existentes: Organización + Administración pasan a Dirección, y Reportes pasa a Seguridad.
+
 ## Pantallas
 
 | Ruta | Permiso | Qué hace |
@@ -45,6 +59,15 @@ Un selector "Empresa de trabajo" (`EmpresaDeTrabajo`, sesión `empresa_activa_id
 
 - Padrones u Operación se decide por el **menú** del módulo (`modulos.menu_id`, o el de su padre en submódulos), no por nombres: `RolesPlantillaSeeder::esPadron()`. Por eso `MenuSeeder` corre antes que `RolesPlantillaSeeder` en `DatabaseSeeder`.
 - Las plantillas solo se crean si no existen (no se pisan los cambios). Para bases existentes, la migración `2026_10_05_000200_agente_solo_consulta_padrones` quita crear/editar/imprimir/firmar de los Padrones a los roles "Agente" (plantilla y copias por empresa) **solo si siguen exactamente igual a la plantilla anterior** (ver/crear/editar/imprimir/firmar de todos los módulos de Seguridad, alcance sede, nada más). Un Agente personalizado no se toca; se ajusta a mano en la Matriz de permisos. No tiene reversa.
+
+### Recursos Humanos (nivel 25)
+
+- **Puede:**
+  - todo en su área (Colaboradores, datos personales y validar altas provisionales), en toda la empresa;
+  - consultar Sedes, Departamentos, Puestos y Turnos.
+- **No tiene** permisos de Seguridad.
+
+La caseta (Jefe de seguridad, Asistente, Supervisor y Agente) recibe `colaboradores.ver` y `colaboradores.provisional` de su sede: consulta al personal de su sede y da altas provisionales.
 
 ### Asistente (QA U-02)
 

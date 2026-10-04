@@ -68,6 +68,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/colaboradores/rapido', [ColaboradorController::class, 'rapido'])->name('colaboradores.rapido');
     Route::put('/colaboradores/{colaborador}', [ColaboradorController::class, 'update'])->whereNumber('colaborador')->name('colaboradores.update');
     Route::patch('/colaboradores/{colaborador}/estado', [ColaboradorController::class, 'estado'])->whereNumber('colaborador')->name('colaboradores.estado');
+    Route::put('/colaboradores/{colaborador}/validar', [ColaboradorController::class, 'validar'])->whereNumber('colaborador')->name('colaboradores.validar');
+    Route::put('/colaboradores/{colaborador}/fusionar', [ColaboradorController::class, 'fusionar'])->whereNumber('colaborador')->name('colaboradores.fusionar');
     Route::put('/colaboradores/{colaborador}/sedes', [ColaboradorController::class, 'sedes'])->whereNumber('colaborador')->name('colaboradores.sedes');
     Route::get('/colaboradores/{colaborador}/datos-personales', [ColaboradorController::class, 'datosPersonales'])->whereNumber('colaborador')->name('colaboradores.datos-personales');
 

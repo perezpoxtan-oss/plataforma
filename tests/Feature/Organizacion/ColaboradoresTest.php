@@ -345,8 +345,8 @@ class ColaboradoresTest extends TestCase
         $this->actingAs($this->admin)->post('/colaboradores/rapido', ['num_empleado' => 'R-1', 'nombre' => 'Otro', 'apellido_paterno' => 'X', 'sede_id' => $this->playa->id])
             ->assertStatus(422)->assertJsonPath('errores.num_empleado.0', 'Ya existe otro colaborador registrado con ese número de empleado.');
 
-        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
-        $this->actingAs($agente)->postJson('/colaboradores/rapido', ['num_empleado' => 'R-3'])->assertForbidden();
+        $sinRol = $this->crearUsuario($this->empresa);
+        $this->actingAs($sinRol)->postJson('/colaboradores/rapido', ['num_empleado' => 'R-3'])->assertForbidden();
 
         // El parcial para otros módulos se dibuja para quien puede crear
         $this->actingAs($this->admin);
@@ -383,7 +383,7 @@ class ColaboradoresTest extends TestCase
         $this->flushSession();
         $this->assertSame(['Rosa Poot'], array_column($this->actingAs($gerente)->getJson('/colaboradores/buscar?q=ro')->json('resultados'), 'nombre_completo'));
 
-        $sinPermiso = $this->crearUsuario($this->empresa, 'Agente');
+        $sinPermiso = $this->crearUsuario($this->empresa);
         $this->actingAs($sinPermiso)->getJson('/colaboradores/buscar?q=ro')->assertForbidden();
     }
 
@@ -465,6 +465,11 @@ class ColaboradoresTest extends TestCase
         $demo = Empresa::where('nombre_comercial', CrearDatosDemo::EMPRESA)->firstOrFail();
         $todos = $this->enEmpresa(fn () => Colaborador::with('sedesAdicionales')->get(), $demo);
 
+        // Más dos altas provisionales de la caseta (sin datos personales), creadas una sola vez
+        $provisionales = $todos->where('provisional', true);
+        $this->assertSame(['Beto', 'Jorge'], $provisionales->pluck('nombre')->sort()->values()->all());
+        $todos = $todos->where('provisional', false);
+
         $this->assertCount(13, $todos);
         $this->assertSame(['1013'], $todos->where('activo', false)->pluck('num_empleado')->values()->all());
         $this->assertSame(2, $todos->pluck('sede_id')->filter()->unique()->count());
@@ -480,9 +485,11 @@ class ColaboradoresTest extends TestCase
 
     public function test_agente_sin_permiso_y_superadmin_elige_empresa(): void
     {
+        // La caseta consulta su sede y solo hace altas provisionales
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
-        $this->actingAs($agente)->get('/colaboradores')->assertForbidden();
+        $this->actingAs($agente)->get('/colaboradores')->assertOk()->assertSee('Alta provisional')->assertDontSee('Nuevo Colaborador');
         $this->actingAs($agente)->post('/colaboradores', $this->datos())->assertForbidden();
+        $this->actingAs($this->crearUsuario($this->empresa))->get('/colaboradores')->assertForbidden();
 
         $director = $this->crearUsuario($this->empresa, 'Director');
         $this->actingAs($director)->get('/colaboradores')->assertOk()->assertDontSee('Nuevo Colaborador')->assertDontSee('data-accion="editar-registro"', false);

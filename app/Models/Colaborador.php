@@ -42,7 +42,7 @@ class Colaborador extends Model
 
     public const NSS = '/^\d{11}$/';
 
-    protected $attributes = ['activo' => true, 'nacionalidad' => 'Mexicana'];
+    protected $attributes = ['activo' => true, 'provisional' => false, 'nacionalidad' => 'Mexicana'];
 
     protected $fillable = [
         'empresa_id', 'sede_id', 'departamento_id', 'puesto_id', 'num_empleado', 'nombre', 'apellido_paterno',
@@ -52,7 +52,13 @@ class Colaborador extends Model
 
     protected function casts(): array
     {
-        return ['activo' => 'boolean', 'fecha_nacimiento' => 'date:Y-m-d'];
+        return ['activo' => 'boolean', 'provisional' => 'boolean', 'fecha_nacimiento' => 'date:Y-m-d', 'validado_en' => 'datetime'];
+    }
+
+    /** Registro que lo sustituyó cuando se unió como duplicado. */
+    public function fusionadoEn(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'fusionado_en_id');
     }
 
     public function sede(): BelongsTo

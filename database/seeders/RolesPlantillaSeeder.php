@@ -31,6 +31,16 @@ class RolesPlantillaSeeder extends Seeder
      */
     public const ACCIONES_ASISTENTE = ['ver', 'crear', 'editar', 'imprimir', 'exportar'];
 
+    /**
+     * La caseta (Jefe, Asistente, Supervisor y Agente) consulta a los
+     * colaboradores de su sede y da de alta provisionales cuando la persona aún
+     * no existe; Recursos Humanos los valida.
+     */
+    public const COLABORADOR_PROVISIONAL = ['colaboradores.ver', 'colaboradores.provisional'];
+
+    /** Recursos Humanos consulta estos catálogos de Dirección para capturar al personal. */
+    public const CONSULTA_RH = ['sedes', 'departamentos', 'puestos', 'turnos'];
+
     /** El Jefe de seguridad ve los usuarios de su sede y los desbloquea. */
     public const USUARIOS_JEFE = ['usuarios.ver', 'usuarios.desbloquear'];
 
@@ -52,19 +62,34 @@ class RolesPlantillaSeeder extends Seeder
      */
     public static function definiciones(): array
     {
-        $deSeguridad = fn ($ma) => in_array($ma->modulo->area->clave, ['seguridad', 'reportes'], true);
+        $deSeguridad = fn ($ma) => $ma->modulo->area->clave === 'seguridad';
+        $provisional = fn ($ma) => in_array($ma->clave(), self::COLABORADOR_PROVISIONAL, true);
+        // El Agente trabaja en los menús de caseta: Operación y Padrones (no en reportes)
+        $deCaseta = fn ($ma) => $deSeguridad($ma) && in_array(self::menuDe($ma->modulo), ['operacion', 'padrones'], true);
 
         return [
             'Administrador' => [10, 'Administra toda su empresa', fn ($ma) => Alcance::Empresa],
             'Director' => [20, 'Consulta y aprueba en toda la empresa', fn ($ma) => in_array($ma->accion->clave, ['ver', 'aprobar', 'exportar', 'imprimir'], true) ? Alcance::Empresa : null],
-            'Jefe de seguridad' => [30, 'Opera y supervisa seguridad en su sede', fn ($ma) => $deSeguridad($ma)
+            'Recursos Humanos' => [25, 'Administra el personal y valida las altas provisionales de la caseta', fn ($ma) => $ma->modulo->area->clave === 'recursos_humanos'
+                ? Alcance::Empresa
+                : (in_array($ma->modulo->clave, self::CONSULTA_RH, true) && $ma->accion->clave === 'ver' ? Alcance::Empresa : null)],
+            'Jefe de seguridad' => [30, 'Opera y supervisa seguridad en su sede', fn ($ma) => $deSeguridad($ma) || $provisional($ma)
                 || in_array($ma->clave(), self::USUARIOS_JEFE, true) ? Alcance::Sede : null],
-            'Asistente' => [40, 'Apoyo de gestión de seguridad en su sede', fn ($ma) => $deSeguridad($ma)
-                && in_array($ma->accion->clave, self::ACCIONES_ASISTENTE, true) ? Alcance::Sede : null],
-            'Supervisor' => [50, 'Da seguimiento a la operación de su sede', fn ($ma) => $deSeguridad($ma) && $ma->accion->clave !== 'eliminar' ? Alcance::Sede : null],
-            'Agente' => [60, 'Registra la operación de caseta', fn ($ma) => $ma->modulo->area->clave === 'seguridad'
-                && in_array($ma->accion->clave, self::esPadron($ma->modulo) ? self::ACCIONES_AGENTE_PADRONES : self::ACCIONES_AGENTE_OPERACION, true) ? Alcance::Sede : null],
+            'Asistente' => [40, 'Apoyo de gestión de seguridad en su sede', fn ($ma) => ($deSeguridad($ma)
+                && in_array($ma->accion->clave, self::ACCIONES_ASISTENTE, true)) || $provisional($ma) ? Alcance::Sede : null],
+            'Supervisor' => [50, 'Da seguimiento a la operación de su sede', fn ($ma) => ($deSeguridad($ma) && $ma->accion->clave !== 'eliminar') || $provisional($ma) ? Alcance::Sede : null],
+            'Agente' => [60, 'Registra la operación de caseta', fn ($ma) => ($deCaseta($ma)
+                && in_array($ma->accion->clave, self::esPadron($ma->modulo) ? self::ACCIONES_AGENTE_PADRONES : self::ACCIONES_AGENTE_OPERACION, true))
+                || $provisional($ma) ? Alcance::Sede : null],
         ];
+    }
+
+    /**
+     * Clave del menú donde aparece el módulo (los submódulos heredan el de su padre).
+     */
+    public static function menuDe(Modulo $modulo): ?string
+    {
+        return ($modulo->menu ?? $modulo->padre?->menu)?->clave;
     }
 
     public function run(): void

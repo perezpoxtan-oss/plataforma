@@ -80,9 +80,27 @@ document.addEventListener('colaborador:registrado', function (e) { /* e.detail.i
 
 ### Búsqueda — `GET /colaboradores/buscar`
 
-Para quien tenga `colaboradores.ver`, `usuarios.crear` o `usuarios.editar` (si no, 403). Parámetros: `q` (mínimo 2 caracteres; por inicio del número de empleado o por palabras del nombre y apellidos), `sin_usuario=1` (excluye a quien ya tiene cuenta), `usuario={id}` (no excluye al vinculado con esa cuenta). Solo activos, de la empresa de trabajo y, con alcance de sede, de sus sedes (el más amplio entre los permisos que le dan acceso). Máximo 15.
+Para quien tenga `colaboradores.ver`, `colaboradores.provisional`, `usuarios.crear` o `usuarios.editar` (si no, 403). Parámetros: `q` (mínimo 2 caracteres; por inicio del número de empleado o por palabras del nombre y apellidos), `sin_usuario=1` (excluye a quien ya tiene cuenta), `usuario={id}` (no excluye al vinculado con esa cuenta). Solo activos, de la empresa de trabajo y, con alcance de sede, de sus sedes (el más amplio entre los permisos que le dan acceso). Máximo 15.
 
 Respuesta: `{"resultados": [{"id", "num_empleado", "nombre_completo", "puesto", "departamento", "sede_id", "sede"}], "todas_ya_tienen_usuario": bool}`. `todas_ya_tienen_usuario` es verdadero cuando hubo coincidencias pero todas ya tienen cuenta.
+
+## Altas provisionales (caseta → Recursos Humanos)
+
+Cuando un guardia necesita registrar a alguien en un formulario (acceso, préstamo, pase…) y la persona **no aparece** en el directorio, la da de alta como **provisional** para no detener la operación. Recursos Humanos después la valida o la une con su registro correcto.
+
+| Paso | Quién | Permiso | Qué pasa |
+|---|---|---|---|
+| Alta provisional | Caseta: Jefe de seguridad, Asistente, Supervisor, Agente | `colaboradores.provisional` (su sede) | `POST /colaboradores/rapido`. Sin `colaboradores.crear` el alta es provisional: el número de empleado es opcional y la sede es una de las suyas. Queda con `provisional = 1` y se puede usar de inmediato |
+| Evitar duplicados | — | — | Si hay alguien activo con el mismo nombre y apellidos (sin importar mayúsculas ni acentos), responde **409** con `parecidos` y el diálogo ofrece usarlo. Para registrarla de todos modos se reenvía con `confirmar_nuevo=1` |
+| Validar | Recursos Humanos, Administrador, Director | `colaboradores.aprobar` | `PUT /colaboradores/{id}/validar`: corrige los datos y asigna el **número de empleado** (obligatorio, único). Guarda `validado_por` y `validado_en` |
+| Es un duplicado | Mismo permiso | `colaboradores.aprobar` | `PUT /colaboradores/{id}/fusionar` con `destino_id`: todo lo que se registró con el provisional pasa al colaborador correcto (`AdministradorColaboradores::REFERENCIAS`). El provisional queda de baja con `fusionado_en_id` |
+
+- **Para los módulos que vienen** (Accesos, Préstamo de llaves, Pases, Responsivas): cada tabla que guarde un `colaborador_id` **debe agregarse** a `AdministradorColaboradores::REFERENCIAS`, para que al unir un duplicado sus registros apunten al colaborador correcto.
+- La búsqueda devuelve `provisional: true` para que el formulario lo marque.
+- Auditoría: `colaboradores.provisional`, `colaboradores.validado` y `colaboradores.fusionado`.
+- En la pantalla de Colaboradores:
+  - quien tiene `provisional` pero no `crear` ve la ficha **Alta provisional**;
+  - quien tiene `aprobar` ve el aviso "Hay N altas provisionales por validar", el filtro **Por validar** y, en cada ficha pendiente, los botones **Validar** y **Es un duplicado**.
 
 ## Usuarios ↔ Colaborador
 
@@ -102,6 +120,8 @@ Respuesta: `{"resultados": [{"id", "num_empleado", "nombre_completo", "puesto", 
 
 `plataforma:demo` crea, solo la primera vez, 13 colaboradores en las dos sedes (seguridad, recepción, ama de llaves, mantenimiento, alimentos y bebidas; uno corporativo y uno de baja), con CURP, RFC y NSS ficticios de formato válido. Roberto Hernández (Centro) tiene Playa como sede adicional. `admin.demo`, `supervisor.demo`, `agente.demo` y `agente2.demo` quedan vinculados a su colaborador.
 
+`plataforma:demo` también crea dos altas provisionales hechas por `agente.demo` (Jorge Méndez Tun, persona nueva, y Beto Hernandez, duplicado de Roberto Hernández) y la cuenta `rh.demo` con el rol Recursos Humanos.
+
 ## Pruebas
 
-`tests/Feature/Organizacion/ColaboradoresTest.php`
+`tests/Feature/Organizacion/ColaboradoresTest.php` y `tests/Feature/Organizacion/ColaboradoresProvisionalesTest.php`
