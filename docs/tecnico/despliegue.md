@@ -86,3 +86,7 @@ Para cambiar la configuración después, basta con subir otro `env_qa.txt`: se c
 ## Probar el script fuera del servidor
 
 `PLATAFORMA_API` y `PLATAFORMA_URL` sustituyen a GitHub y al sitio, para ensayarlo con un servidor simulado. Así se probaron la primera instalación, la actualización, la versión defectuosa con regreso automático y la corrida sin cambios.
+
+## Respaldos de la base
+
+`desplegar.sh` respalda la base antes de cada migración (`plataforma:respaldar --motivo=antes-de-actualizar`) y hace el respaldo diario (`--si-toca`, después de las 3:00 hora de Cancún) en cada corrida del cron. No hace falta otro cron. Los archivos quedan en `$APP/shared/storage/app/private/respaldos` (permisos 600) y se conservan 14 días. Ver `docs/tecnico/configuracion.md`.

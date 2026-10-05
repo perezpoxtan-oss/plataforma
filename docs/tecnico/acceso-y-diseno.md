@@ -103,7 +103,7 @@ Tabla `menus` (botones de la barra: Estructura, Padrones, Operación) y, en `mod
 - **Cómo se muestra:** en la hora de quien ve la pantalla. La zona se elige así, en este orden:
   1. la zona de **su sede**, si trabaja en una sola y tiene zona propia;
   2. la zona de la **empresa de trabajo**;
-  3. `America/Mexico_City`.
+  3. la de la plataforma, `America/Cancun` (`HoraLocal::ZONA_PLATAFORMA`).
 - **En las vistas:** `@fecha($registro->created_at)` (formato `d/m/Y H:i`) o `@fecha($valor, 'H:i')`. Nunca `->format()` directo sobre una fecha guardada.
 - **En controladores:** `app(HoraLocal::class)->formatear($fecha, $formato)` y `->zona()`, por ejemplo para convertir los filtros de fecha a UTC.
 

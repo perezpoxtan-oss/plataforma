@@ -542,3 +542,9 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .alternar-area[aria-expanded="true"] .flecha { transform: rotate(90deg); }
 .alternar-area .resumen-area { margin-left: auto; font-size: 0.72rem; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--texto-suave); }
 @media (max-width: 575.98px) { .alternar-area .resumen-area { display: none; } }
+
+/* Configuración */
+.secciones-config { display: grid; gap: 1.25rem; max-width: 900px; }
+.lista-respaldos { display: flex; flex-direction: column; gap: 0.4rem; }
+.fila-respaldo { display: grid; grid-template-columns: 1fr auto auto 44px; gap: 0.75rem; align-items: center; border: 1px solid var(--borde); border-radius: 12px; padding: 0.4rem 0.6rem 0.4rem 0.9rem; font-size: 0.88rem; }
+@media (max-width: 575.98px) { .fila-respaldo { grid-template-columns: 1fr 44px; } .fila-respaldo .chip-catalogo, .fila-respaldo .small { grid-column: 1; } .fila-respaldo .btn-icono { grid-column: 2; grid-row: 1 / span 3; } }

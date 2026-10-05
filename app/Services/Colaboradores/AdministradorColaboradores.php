@@ -7,6 +7,7 @@ use App\Models\Departamento;
 use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\User;
+use App\Services\Avisos\AvisosCorreo;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -173,6 +174,7 @@ class AdministradorColaboradores
         });
 
         $this->auditoria->auditar($actor, 'colaboradores.provisional', $colaborador, null, $this->foto($colaborador));
+        app(AvisosCorreo::class)->altaProvisional($colaborador, $actor);
 
         return $colaborador;
     }

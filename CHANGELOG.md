@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Configuración: correo de la plataforma (SMTP, contraseña cifrada, correo de prueba), avisos por correo por empresa (alta provisional a Recursos Humanos) y respaldos de la base (diario automático, antes de cada actualización y manual; 14 días; descarga auditada).
 - Las sedes se llaman «Sedes» en todos los rubros (antes Hoteles, Plantas, Torres o Privadas).
 - Matriz de permisos: cada área (Dirección, Recursos Humanos, Seguridad) se contrae y muestra cuántos permisos tiene otorgados; botones Expandir todo / Contraer todo.
 - Las fechas se muestran en la hora local de la sede o de la empresa (antes salían en hora universal, 5 horas adelante en Cancún).
