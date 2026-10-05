@@ -6,6 +6,7 @@ use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
 use App\Models\Concerns\TieneIdentificador;
 use App\Support\Lector\Identificable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,8 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * imprime en "doble vista" con su QR y se da de baja con voucher si se
  * pierde, se daña o lo roban.
  *
- * Estado "EN SITIO": lo dará la Bitácora de accesos cuando se migre (el
- * gafete prestado a alguien que sigue dentro). Ver disponibleParaAsignar().
+ * Estado "EN SITIO": lo da la Bitácora de accesos (el gafete prestado a
+ * alguien que sigue dentro o espera autorización). Ver disponibleParaAsignar().
  */
 class Gafete extends Model implements Identificable
 {
@@ -46,13 +47,40 @@ class Gafete extends Model implements Identificable
     /**
      * ¿Se le puede prestar a alguien en caseta?
      *
-     * Gancho para la Bitácora de accesos: hoy solo exige que esté activo. Al
-     * migrarse Accesos se agrega aquí "y que no esté EN SITIO" (prestado a
-     * una visita o a un acompañante que sigue dentro), como en SEGCAT.
+     * Debe estar activo y no estar "EN SITIO": prestado a un acceso que sigue
+     * dentro o pendiente de autorización, o a un acompañante que no ha salido
+     * (aunque haya salido un rato: su gafete sigue reservado), como en SEGCAT.
      */
     public function disponibleParaAsignar(): bool
     {
-        return (bool) $this->activo;
+        return (bool) $this->activo && ! static::query()->whereKey($this->getKey())->prestados()->exists();
+    }
+
+    /**
+     * Gafetes que hoy tiene alguien (Bitácora de accesos). Ver disponibleParaAsignar().
+     *
+     * @param  Builder<Gafete>  $consulta
+     */
+    public function scopePrestados(Builder $consulta): void
+    {
+        $abiertos = Acceso::ESTADOS_ABIERTOS;
+        $consulta->where(fn ($q) => $q
+            ->whereExists(fn ($s) => $s->selectRaw('1')->from('accesos')
+                ->whereColumn('accesos.gafete_id', 'gafetes.id')->whereIn('accesos.estado', $abiertos))
+            ->orWhereExists(fn ($s) => $s->selectRaw('1')->from('acompanantes_acceso')
+                ->join('accesos as acceso_acompanante', 'acceso_acompanante.id', '=', 'acompanantes_acceso.acceso_id')
+                ->whereColumn('acompanantes_acceso.gafete_id', 'gafetes.id')->whereNull('acompanantes_acceso.salida_at')
+                ->whereIn('acceso_acompanante.estado', $abiertos)));
+    }
+
+    /**
+     * Activos y sin prestar: los que se pueden dar en caseta.
+     *
+     * @param  Builder<Gafete>  $consulta
+     */
+    public function scopeDisponibles(Builder $consulta): void
+    {
+        $consulta->where('gafetes.activo', true)->whereNot(fn ($q) => $q->prestados());
     }
 
     public static function tipoLector(): string

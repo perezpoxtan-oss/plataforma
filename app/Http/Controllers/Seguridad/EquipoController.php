@@ -46,7 +46,10 @@ class EquipoController extends Controller
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId) {
             $lista = $this->equipos->limitar(Equipo::query(), $actor, 'equipos.ver')
-                ->with(['tipo:id,nombre', 'sede:id,nombre'])
+                ->with(['tipo:id,nombre', 'sede:id,nombre',
+                    // Responsivas: quién lo tiene ahora (ver docs/tecnico/responsivas.md)
+                    'resguardoActual:id,responsiva_id,equipo_id,modalidad', 'resguardoActual.responsiva:id,folio,colaborador_id,entregado_en',
+                    'resguardoActual.responsiva.colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno'])
                 ->leftJoin('users as uc', 'uc.id', '=', 'equipos.creado_por')
                 ->leftJoin('users as ua', 'ua.id', '=', 'equipos.actualizado_por')
                 ->select(['equipos.*', 'uc.name as creado_por_nombre', 'ua.name as actualizado_por_nombre'])

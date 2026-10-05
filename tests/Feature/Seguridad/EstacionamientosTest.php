@@ -7,8 +7,8 @@ use App\Models\Empresa;
 use App\Models\Sede;
 use App\Models\User;
 use App\Models\ZonaEstacionamiento;
+use App\Services\Accesos\OcupacionPorAccesos;
 use App\Services\Estacionamientos\OcupacionEstacionamientos;
-use App\Services\Estacionamientos\SinOcupacion;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
@@ -90,9 +90,10 @@ class EstacionamientosTest extends TestCase
         $lleno = $this->zona('Sótano 1A', ['cupo_total' => 8]);
         $medio = $this->zona('Colaboradores', ['cupo_total' => 20]);
         $anden = $this->zona('Andén', ['tipo' => 'zona_descarga', 'cupo_total' => null]);
-        $this->assertInstanceOf(SinOcupacion::class, app(OcupacionEstacionamientos::class));
+        // La Bitácora de accesos registra su conteo (AccesosServiceProvider)
+        $this->assertInstanceOf(OcupacionPorAccesos::class, app(OcupacionEstacionamientos::class));
 
-        // Así se conectará la Bitácora de accesos
+        // Cualquier implementación del contrato alimenta la pantalla
         $this->app->bind(OcupacionEstacionamientos::class, fn () => new class([$lleno->id => 8, $medio->id => 5, $anden->id => 1]) implements OcupacionEstacionamientos
         {
             public function __construct(private array $conteo) {}

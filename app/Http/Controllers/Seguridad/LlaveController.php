@@ -61,7 +61,8 @@ class LlaveController extends Controller
             $lista = $this->consulta($actor, 'llaves.ver')
                 ->leftJoin('users as uc', 'uc.id', '=', 'llaves.creado_por')
                 ->leftJoin('users as ua', 'ua.id', '=', 'llaves.actualizado_por')
-                ->select(['llaves.*', 'uc.name as creado_por_nombre', 'ua.name as actualizado_por_nombre'])
+                // addSelect: consulta() ya trae llaves.* y "en_uso" (Préstamo de llaves)
+                ->addSelect(['uc.name as creado_por_nombre', 'ua.name as actualizado_por_nombre'])
                 ->orderByDesc('llaves.id')
                 ->get();
 
@@ -272,7 +273,9 @@ class LlaveController extends Controller
             'sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre',
             'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno',
             'horarios', 'espacios:id,nombre,nivel,padre_id', 'espacios.padre:id,nombre', 'grupos:id,nombre',
-        ]);
+            // Préstamo de llaves: insignia "EN USO" y "Usada por" (ver docs/tecnico/prestamo-llaves.md)
+            'prestamoAbierto:id,llave_id,colaborador_id,prestado_en', 'prestamoAbierto.colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno',
+        ])->withExists(['prestamoAbierto as en_uso']);
     }
 
     /**

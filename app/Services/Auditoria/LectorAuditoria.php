@@ -2,6 +2,8 @@
 
 namespace App\Services\Auditoria;
 
+use App\Models\Acceso;
+use App\Models\AcompananteAcceso;
 use App\Models\Auditoria;
 use App\Models\Colaborador;
 use App\Models\Departamento;
@@ -12,10 +14,14 @@ use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
 use App\Models\Modulo;
+use App\Models\MovimientoTransporte;
 use App\Models\Paradero;
+use App\Models\PaseSalida;
 use App\Models\Persona;
+use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
 use App\Models\Puesto;
+use App\Models\Responsiva;
 use App\Models\Rol;
 use App\Models\Ruta;
 use App\Models\Sede;
@@ -73,6 +79,12 @@ class LectorAuditoria
         ZonaEstacionamiento::class => ['Zona de estacionamiento', 'nombre'],
         Ruta::class => ['Ruta de transporte', 'nombre'],
         Paradero::class => ['Paradero', 'nombre'],
+        Acceso::class => ['Acceso', 'nombre'],
+        AcompananteAcceso::class => ['Acompañante', 'nombre'],
+        PrestamoLlave::class => ['Préstamo de llave', null],
+        Responsiva::class => ['Resguardo', 'folio'],
+        PaseSalida::class => ['Pase de salida', 'folio'],
+        MovimientoTransporte::class => ['Movimiento de transporte', null],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

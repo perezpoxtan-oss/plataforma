@@ -2541,3 +2541,2421 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Rutas de transporte */
+/* ==========================================================================
+   Firma autógrafa (componentes/firma.blade.php): dibuja con dedo, lápiz o
+   mouse y deja la imagen (JPEG, ligera) en el campo oculto al soltar.
+   Un formulario con firma obligatoria vacía no se envía.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function preparar(caja) {
+        var lienzo = caja.querySelector('[data-firma-lienzo]');
+        if (!lienzo || lienzo.dataset.listo) { return; }
+        lienzo.dataset.listo = '1';
+        var ctx = lienzo.getContext('2d');
+        var valor = caja.querySelector('[data-firma-valor]');
+        var guia = caja.querySelector('[data-firma-guia]');
+        var dibujando = false;
+        var trazos = 0;
+
+        function pos(e) {
+            var r = lienzo.getBoundingClientRect();
+            return { x: (e.clientX - r.left) * (lienzo.width / r.width), y: (e.clientY - r.top) * (lienzo.height / r.height) };
+        }
+        function exportar() {
+            if (!trazos) { valor.value = ''; return; }
+            // Fondo blanco + JPEG: pocos KB (los firewalls del hosting rechazan envíos grandes)
+            var copia = document.createElement('canvas');
+            copia.width = lienzo.width; copia.height = lienzo.height;
+            var c = copia.getContext('2d');
+            c.fillStyle = '#ffffff'; c.fillRect(0, 0, copia.width, copia.height);
+            c.drawImage(lienzo, 0, 0);
+            valor.value = copia.toDataURL('image/jpeg', 0.7);
+        }
+
+        lienzo.addEventListener('pointerdown', function (e) {
+            dibujando = true;
+            lienzo.setPointerCapture(e.pointerId);
+            ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0f172a';
+            var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y);
+            if (guia) { guia.hidden = true; }
+            e.preventDefault();
+        });
+        lienzo.addEventListener('pointermove', function (e) {
+            if (!dibujando) { return; }
+            var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke();
+            trazos++;
+            e.preventDefault();
+        });
+        ['pointerup', 'pointercancel'].forEach(function (ev) {
+            lienzo.addEventListener(ev, function () { if (dibujando) { dibujando = false; exportar(); caja.classList.remove('falta'); } });
+        });
+
+        caja.limpiarFirma = function () {
+            ctx.clearRect(0, 0, lienzo.width, lienzo.height);
+            trazos = 0; valor.value = '';
+            if (guia) { guia.hidden = false; }
+        };
+    }
+
+    document.addEventListener('DOMContentLoaded', function () { document.querySelectorAll('[data-firma]').forEach(preparar); });
+    // Por si el recuadro aparece después (filas dinámicas, diálogos cargados)
+    document.addEventListener('pointerdown', function (e) {
+        var caja = e.target.closest && e.target.closest('[data-firma]');
+        if (caja && !caja.querySelector('[data-firma-lienzo]').dataset.listo) { preparar(caja); }
+    }, true);
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-firma-limpiar]');
+        if (!b) { return; }
+        var caja = b.closest('[data-firma]');
+        preparar(caja);
+        caja.limpiarFirma();
+    });
+
+    document.addEventListener('submit', function (e) {
+        var faltan = Array.prototype.filter.call(e.target.querySelectorAll('[data-firma-requerida]'), function (v) { return !v.value; });
+        if (!faltan.length) { return; }
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        faltan.forEach(function (v) { v.closest('[data-firma]').classList.add('falta'); });
+        faltan[0].closest('[data-firma]').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, true);
+
+    // Al cerrar el diálogo que la contiene, la firma se borra
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-firma]').forEach(function (caja) { preparar(caja); caja.limpiarFirma(); caja.classList.remove('falta'); });
+    }, true);
+
+    window.Firma = { preparar: preparar };
+})();
+/* Fin Firma autógrafa */
+/* ==========================================================================
+   Bitácora de accesos (seguridad/accesos): "Registro Inteligente de Ingreso"
+   (bloques según el tipo de persona, sugerencias al escribir, gafetes libres
+   de la sede, acompañantes con su gafete), "Dar Salida" rápida, diálogos de
+   las tarjetas (zona, salida a tour, regreso) y filtro de las tarjetas.
+   Los escaneos los hace el lector universal (evento lector:elegido).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var CLAVE_SEDE = 'plataforma_accesos_sede';
+    var gafetesPorSede = {};
+    var esperas = {};
+    var destinoProvisional = null;
+
+    function lista(texto) { return (texto || '').split(/\s+/).filter(Boolean); }
+    function dialogoIngreso() { return document.querySelector('[data-dialogo-ingreso]'); }
+    function formIngreso() { return document.querySelector('[data-form-acceso]'); }
+    function radio(form, nombre) { var r = form.querySelector('input[name="' + nombre + '"]:checked'); return r ? r.value : ''; }
+    function sedeDe(form) { var s = form && form.querySelector('[data-acceso-sede]'); return s ? s.value : ''; }
+    function token() { var t = document.querySelector('[data-form-acceso] [name="_token"]') || document.querySelector('form [name="_token"]'); return t ? t.value : ''; }
+    function urlDe(clave) { var d = dialogoIngreso(); return d ? d.dataset[clave] : ''; }
+    function esperar(clave, fn, ms) { clearTimeout(esperas[clave]); esperas[clave] = setTimeout(fn, ms || 250); }
+    function pedirJson(url) {
+        return fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); });
+    }
+    function elemento(etiqueta, clase, texto) {
+        var e = document.createElement(etiqueta);
+        if (clase) { e.className = clase; }
+        if (texto !== undefined && texto !== null) { e.textContent = texto; }
+        return e;
+    }
+
+    /* ---------- Bloques según tipo, forma de llegada, motivo y reserva ---------- */
+    function sincronizar(form) {
+        if (!form) { return; }
+        var tipo = radio(form, 'tipo');
+        var modo = radio(form, 'modo_arribo');
+        var motivo = radio(form, 'motivo_visita');
+        var reserva = radio(form, 'tiene_reserva');
+        form.querySelectorAll('[data-condicion]').forEach(function (b) {
+            var ok = true;
+            if (b.hasAttribute('data-solo-tipos')) { ok = ok && lista(b.dataset.soloTipos).indexOf(tipo) !== -1; }
+            if (b.hasAttribute('data-solo-motivo')) { ok = ok && b.dataset.soloMotivo === motivo; }
+            if (b.hasAttribute('data-solo-reserva')) { ok = ok && b.dataset.soloReserva === reserva; }
+            if (b.hasAttribute('data-solo-vehiculo')) { ok = ok && (tipo === 'emergencia' || modo === 'auto'); }
+            b.hidden = !ok;
+        });
+        // Un campo oculto no se envía (SEGCAT mandaba los de todos los bloques y el servidor tomaba el equivocado)
+        form.querySelectorAll('input, select, textarea').forEach(function (c) {
+            if (c.type === 'hidden' && (c.name === '_token' || c.name === '_dialogo' || c.hasAttribute('data-acceso-sede'))) { return; }
+            c.disabled = !!c.closest('[data-condicion][hidden]');
+        });
+        form.querySelectorAll('[data-etiqueta-tipo]').forEach(function (e) { e.hidden = lista(e.dataset.etiquetaTipo).indexOf(tipo) === -1; });
+        sugerirTipoGafete(form, tipo, motivo);
+        acotarPorSede(form, sedeDe(form));
+    }
+
+    // "Tipo de Gafete" se sugiere al cambiar el tipo de persona (el guardia lo puede cambiar)
+    function sugerirTipoGafete(form, tipo, motivo) {
+        var clave = tipo + '|' + motivo;
+        if (form.dataset.tipoSugerido === clave) { return; }
+        form.dataset.tipoSugerido = clave;
+        var sel = form.querySelector('[data-filtro-tipo-gafete]');
+        if (!sel) { return; }
+        var esperados = tipo === 'proveedor' ? ['proveedor'] : tipo === 'contratista' ? ['contratista']
+            : tipo === 'visitante' ? (motivo === 'rh' ? ['recursos humanos', 'rrhh', 'capital humano', 'visitante'] : ['visitante']) : [];
+        var elegido = '';
+        esperados.forEach(function (esperado) {
+            if (elegido) { return; }
+            Array.prototype.forEach.call(sel.options, function (o) {
+                if (!elegido && o.value && (o.dataset.nombre || '').indexOf(esperado) !== -1) { elegido = o.value; }
+            });
+        });
+        sel.value = elegido;
+    }
+
+    // Zonas y departamentos solo de la sede elegida
+    function acotarOpciones(select, sede, conservar) {
+        if (!select) { return; }
+        Array.prototype.forEach.call(select.options, function (o) {
+            if (!o.value) { return; }
+            var aplica;
+            if (o.hasAttribute('data-todas')) {
+                aplica = o.dataset.todas === '1' || lista((o.dataset.sedes || '').replace(/,/g, ' ')).indexOf(String(sede)) !== -1;
+            } else {
+                aplica = String(o.dataset.sede) === String(sede);
+            }
+            o.hidden = !aplica;
+            o.disabled = !aplica;
+        });
+        if (!conservar && select.selectedOptions.length && select.selectedOptions[0].disabled) { select.value = ''; }
+    }
+
+    function acotarPorSede(form, sede) {
+        acotarOpciones(form.querySelector('[data-zona-sede]'), sede);
+        acotarOpciones(form.querySelector('[data-departamento-sede]'), sede);
+    }
+
+    /* ---------- Gafetes libres de la sede ---------- */
+    function cargarGafetes(sede, fresco) {
+        if (!sede) { return Promise.resolve([]); }
+        if (!fresco && gafetesPorSede[sede]) { return Promise.resolve(gafetesPorSede[sede]); }
+        return pedirJson(urlDe('urlGafetes') + '?sede=' + encodeURIComponent(sede))
+            .then(function (d) { gafetesPorSede[sede] = d.resultados || []; return gafetesPorSede[sede]; })
+            .catch(function () { return []; });
+    }
+
+    function gafetesElegidos(form, excepto) {
+        var ids = [];
+        var principal = form.querySelector('[name="gafete_id"]');
+        if (principal && principal.value && !principal.disabled) { ids.push(principal.value); }
+        form.querySelectorAll('[data-gafete-acompanante]').forEach(function (s) { if (s !== excepto && s.value) { ids.push(s.value); } });
+        return ids;
+    }
+
+    function llenarGafetesAcompanantes(form) {
+        cargarGafetes(sedeDe(form)).then(function (gafetes) {
+            form.querySelectorAll('[data-gafete-acompanante]').forEach(function (sel) {
+                var actual = sel.value || sel.dataset.valor || '';
+                var ocupados = gafetesElegidos(form, sel);
+                sel.textContent = '';
+                sel.appendChild(new Option('-- Sin gafete --', ''));
+                gafetes.forEach(function (g) {
+                    if (ocupados.indexOf(String(g.id)) !== -1 && String(g.id) !== actual) { return; }
+                    sel.appendChild(new Option(g.titulo + ' — ' + g.detalle, g.id));
+                });
+                sel.value = actual;
+                if (sel.value !== actual) { sel.value = ''; }
+                sel.dataset.valor = '';
+            });
+        });
+    }
+
+    /* ---------- Acompañantes: una fila por persona ---------- */
+    function ajustarAcompanantes(form) {
+        var campo = form.querySelector('[data-num-acompanantes]');
+        var filas = form.querySelector('[data-filas-acompanantes]');
+        var plantilla = form.querySelector('[data-plantilla-acompanante]');
+        if (!campo || !filas || !plantilla) { return; }
+        var maximo = parseInt(campo.max || '15', 10);
+        var cantidad = Math.max(0, Math.min(maximo, parseInt(campo.value, 10) || 0));
+        if (String(cantidad) !== campo.value) { campo.value = cantidad; }
+        var actuales = filas.querySelectorAll('[data-fila-acompanante]');
+        for (var i = actuales.length; i < cantidad; i++) {
+            var html = plantilla.innerHTML.replace(/__i__/g, String(i));
+            var caja = document.createElement('div');
+            caja.innerHTML = html.trim();
+            var fila = caja.firstElementChild;
+            fila.querySelector('[data-numero-acompanante]').textContent = String(i + 1);
+            filas.appendChild(fila);
+        }
+        for (var j = actuales.length - 1; j >= cantidad; j--) { actuales[j].remove(); }
+        llenarGafetesAcompanantes(form);
+    }
+
+    /* ---------- Sugerencias al escribir (gafete, colaborador, vehículo) ---------- */
+    function cajaSugerencias(envoltura) { return envoltura.querySelector('[data-sugerencias]'); }
+
+    function ocultarSugerencias(envoltura) {
+        var caja = envoltura && cajaSugerencias(envoltura);
+        if (caja) { caja.hidden = true; caja.textContent = ''; }
+    }
+
+    function pintarSugerencias(envoltura, items, vacio, alElegir) {
+        var caja = cajaSugerencias(envoltura);
+        if (!caja) { return; }
+        caja.textContent = '';
+        if (!items.length) {
+            if (!vacio) { caja.hidden = true; return; }
+            caja.appendChild(elemento('div', 'acceso-sugerencia nada', vacio));
+        }
+        items.forEach(function (it) {
+            var b = elemento('button', 'acceso-sugerencia');
+            b.type = 'button';
+            b.appendChild(elemento('strong', '', it.titulo));
+            if (it.detalle) { b.appendChild(elemento('small', '', it.detalle)); }
+            b.addEventListener('click', function () { alElegir(it); ocultarSugerencias(envoltura); });
+            caja.appendChild(b);
+        });
+        caja.hidden = false;
+    }
+
+    function elegirEnLector(envoltura, registro) {
+        var caja = envoltura.querySelector('[data-lector]');
+        if (caja && window.Lector) { window.Lector.elegir(caja, registro); }
+    }
+
+    function llenarVehiculo(envoltura, v) {
+        var form = envoltura.closest('form');
+        var placas = envoltura.querySelector('[data-placas]');
+        if (placas) { placas.value = v.placas || v.titulo || ''; }
+        if (!form) { return; }
+        ['tipo', 'marca', 'modelo', 'color'].forEach(function (campo) {
+            var c = form.querySelector('[data-vehiculo-campo="' + campo + '"]');
+            if (c && v[campo]) { c.value = v[campo]; }
+        });
+    }
+
+    function sugerir(envoltura, texto) {
+        var que = envoltura.dataset.sugerir;
+        var form = envoltura.closest('form');
+        if (que === 'gafete') {
+            cargarGafetes(sedeDe(form)).then(function (gafetes) {
+                var tipoSel = form.querySelector('[data-filtro-tipo-gafete]');
+                var tipo = tipoSel ? tipoSel.value : '';
+                var t = (texto || '').toLowerCase();
+                var libres = gafetes.filter(function (g) { return gafetesElegidos(form).indexOf(String(g.id)) === -1 || false; });
+                var porTipo = tipo ? libres.filter(function (g) { return String(g.tipo_id) === tipo; }) : libres;
+                // Si no hay de ese tipo en la sede, se muestran todos (como SEGCAT)
+                var base = porTipo.length ? porTipo : libres;
+                var items = base.filter(function (g) { return !t || g.titulo.toLowerCase().indexOf(t) !== -1; }).slice(0, 8);
+                pintarSugerencias(envoltura, items, sedeDe(form) ? 'No hay gafetes libres con ese texto en esta sede.' : 'Elige primero la sede.', function (g) { elegirEnLector(envoltura, g); });
+            });
+            return;
+        }
+        if (!texto || texto.trim().length < 2) { ocultarSugerencias(envoltura); return; }
+        esperar(que, function () {
+            pedirJson(urlDe('urlBuscar') + '?que=' + que + '&q=' + encodeURIComponent(texto) + (sedeDe(form) ? '&sede=' + encodeURIComponent(sedeDe(form)) : ''))
+                .then(function (d) {
+                    var items = (d.resultados || []).slice(0, 8).map(function (r) {
+                        if (que === 'colaborador') {
+                            return { id: r.id, titulo: r.nombre_completo, detalle: (r.num_empleado ? 'Núm. ' + r.num_empleado : 'Alta provisional') + (r.puesto ? ' · ' + r.puesto : '') + (r.sede ? ' · ' + r.sede : ''), activo: true };
+                        }
+                        return { id: r.id, titulo: r.placas, detalle: [r.descripcion, r.propiedad_etiqueta].filter(Boolean).join(' · '), activo: !!r.activo,
+                            placas: r.placas, tipo: r.tipo, marca: r.marca, modelo: r.modelo, color: r.color };
+                    });
+                    var vacio = que === 'colaborador' ? 'Sin coincidencias. Si no está registrado, usa «Alta provisional».' : 'No está en el padrón: se registrará como vehículo nuevo.';
+                    pintarSugerencias(envoltura, items, vacio, function (it) {
+                        elegirEnLector(envoltura, it);
+                        if (que === 'vehiculo') { llenarVehiculo(envoltura, it); }
+                    });
+                })
+                .catch(function () { ocultarSugerencias(envoltura); });
+        });
+    }
+
+    document.addEventListener('input', function (e) {
+        var entrada = e.target.closest && e.target.closest('[data-lector-entrada]');
+        var envoltura = entrada && entrada.closest('[data-sugerir]');
+        if (!envoltura) { return; }
+        if (envoltura.dataset.sugerir === 'vehiculo') {
+            // Las placas se escriben en el lector: si no está en el padrón, se registra con lo escrito
+            var placas = envoltura.querySelector('[data-placas]');
+            var id = envoltura.querySelector('[data-lector-id]');
+            if (placas && !(id && id.value)) { placas.value = entrada.value.toUpperCase(); }
+        }
+        sugerir(envoltura, entrada.value);
+    });
+
+    // Al tocar el campo del gafete se ofrecen los libres de la sede (sin escribir nada)
+    document.addEventListener('click', function (e) {
+        var entrada = e.target.closest && e.target.closest('[data-lector-entrada]');
+        var envoltura = entrada && entrada.closest('[data-sugerir="gafete"]');
+        if (envoltura && !envoltura.querySelector('[data-lector-id]').value) { sugerir(envoltura, entrada.value); }
+    });
+
+    document.addEventListener('lector:elegido', function (e) {
+        var envoltura = e.target.closest && e.target.closest('[data-sugerir]');
+        if (envoltura) { ocultarSugerencias(envoltura); }
+        // Dar Salida: el gafete que devuelven dice quién era
+        if (e.target.closest && e.target.closest('[data-salida-gafete]')) { buscarEnSitio('gafete=' + encodeURIComponent(e.detail.id)); return; }
+        if (!envoltura) { return; }
+        var form = envoltura.closest('form');
+        if (envoltura.dataset.sugerir === 'gafete') {
+            // El gafete escaneado debe ser de la sede y estar libre
+            var sedeActual = sedeDe(form);
+            cargarGafetes(sedeActual, true).then(function (gafetes) {
+                var libre = gafetes.some(function (g) { return String(g.id) === String(e.detail.id); });
+                if (!libre) {
+                    var caja = envoltura.querySelector('[data-lector]');
+                    window.Lector.limpiar(caja);
+                    var estado = caja.querySelector('[data-lector-estado]');
+                    estado.hidden = false;
+                    estado.className = 'lector-estado error';
+                    estado.textContent = sedeActual ? 'El gafete ' + e.detail.titulo + ' no está disponible: ya está en uso (EN SITIO), está dado de baja o es de otra sede.' : 'Elige primero la sede y vuelve a escanear el gafete.';
+                }
+                llenarGafetesAcompanantes(form);
+            });
+        }
+        if (envoltura.dataset.sugerir === 'vehiculo') {
+            var placas = envoltura.querySelector('[data-placas]');
+            if (placas) { placas.value = e.detail.titulo; }
+            if (!form.closest('[data-dialogo-ingreso]')) { return; }
+            pedirJson(urlDe('urlBuscar') + '?que=vehiculo&q=' + encodeURIComponent(e.detail.titulo)).then(function (d) {
+                var v = (d.resultados || []).filter(function (r) { return r.placas === e.detail.titulo; })[0];
+                if (v) { llenarVehiculo(envoltura, v); }
+            }).catch(function () { /* sin datos extra */ });
+        }
+    });
+
+    // "Cambiar" en el lector de placas: se olvidan las placas y los datos del vehículo
+    document.addEventListener('click', function (e) {
+        var limpiar = e.target.closest('[data-lector-limpiar]');
+        var envoltura = limpiar && limpiar.closest('[data-sugerir="vehiculo"]');
+        if (!envoltura) { return; }
+        var placas = envoltura.querySelector('[data-placas]');
+        if (placas) { placas.value = ''; }
+        var form = envoltura.closest('form');
+        form.querySelectorAll('[data-vehiculo-campo]').forEach(function (c) { if (c.tagName !== 'SELECT') { c.value = ''; } });
+    });
+
+    // Placas que no están en el padrón: no es un error, es un vehículo nuevo
+    function vigilarPlacas(envoltura) {
+        var estado = envoltura.querySelector('[data-lector-estado]');
+        if (!estado || estado.dataset.vigilado || typeof MutationObserver === 'undefined') { return; }
+        estado.dataset.vigilado = '1';
+        new MutationObserver(function () {
+            if (estado.classList.contains('error') && estado.textContent.indexOf('No se encontró') === 0) {
+                estado.className = 'lector-estado info';
+                estado.textContent = 'Vehículo nuevo: se registrará en el padrón con estas placas. Llena marca y color.';
+            }
+        }).observe(estado, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    }
+
+    /* ---------- Nombre (Padrón de personas) y empresa / agencia (Proveedores) ---------- */
+    document.addEventListener('input', function (e) {
+        var campo = e.target;
+        var form = campo.form;
+        if (!form || !form.matches('[data-form-acceso]')) { return; }
+
+        if (campo.matches('[data-nombre-titular]')) {
+            var personaId = form.querySelector('[data-persona-id]');
+            if (personaId) { personaId.value = ''; }
+            var repetida = form.querySelector('[data-caja-persona-repetida]');
+            if (repetida) { repetida.remove(); }
+            var tipo = radio(form, 'tipo');
+            var envoltura = campo.closest('[data-sugerir-persona]');
+            if (['visitante', 'proveedor', 'contratista'].indexOf(tipo) === -1 || campo.value.trim().length < 2) { ocultarSugerencias(envoltura); return; }
+            esperar('persona', function () {
+                pedirJson(urlDe('urlBuscar') + '?que=persona&tipo=' + tipo + '&q=' + encodeURIComponent(campo.value)).then(function (d) {
+                    var items = (d.resultados || []).slice(0, 8).map(function (p) {
+                        return { id: p.id, titulo: p.nombre_completo, detalle: [p.tipo_etiqueta, p.empresa, p.folio].filter(Boolean).join(' · '), persona: p };
+                    });
+                    pintarSugerencias(envoltura, items, 'Sin coincidencias en el Padrón de personas: se registrará como persona nueva.', function (it) { usarPersona(form, it.persona); });
+                }).catch(function () { ocultarSugerencias(envoltura); });
+            });
+            return;
+        }
+
+        var cajaProveedor = campo.closest('[data-sugerir-proveedor]');
+        if (cajaProveedor && campo.type === 'text') {
+            var oculto = cajaProveedor.querySelector('[data-proveedor-id]');
+            if (oculto) { oculto.value = ''; }
+            if (campo.value.trim().length < 2) { ocultarSugerencias(cajaProveedor); return; }
+            esperar('proveedor', function () {
+                pedirJson(urlDe('urlBuscar') + '?que=proveedor&q=' + encodeURIComponent(campo.value) + (sedeDe(form) ? '&sede=' + sedeDe(form) : '')).then(function (d) {
+                    var items = (d.resultados || []).slice(0, 8).map(function (p) { return { id: p.id, titulo: p.nombre, detalle: p.categoria_etiqueta }; });
+                    pintarSugerencias(cajaProveedor, items, 'Sin coincidencias: se registrará como empresa nueva.', function (it) {
+                        campo.value = it.titulo.toUpperCase();
+                        if (oculto) { oculto.value = it.id; }
+                    });
+                }).catch(function () { ocultarSugerencias(cajaProveedor); });
+            });
+        }
+    });
+
+    function usarPersona(form, p) {
+        var nombre = form.querySelector('[data-nombre-titular]');
+        if (nombre) { nombre.value = (p.nombre_completo || '').toUpperCase(); }
+        var id = form.querySelector('[data-persona-id]');
+        if (id) { id.value = p.id; }
+        var empresa = form.querySelector('[data-sugerir-proveedor="proveedor_id"] input[type="text"]');
+        var empresaId = form.querySelector('[data-sugerir-proveedor="proveedor_id"] [data-proveedor-id]');
+        if (empresa && p.empresa && ['proveedor', 'contratista'].indexOf(radio(form, 'tipo')) !== -1) {
+            empresa.value = p.empresa.toUpperCase();
+            if (empresaId) { empresaId.value = p.proveedor_id || ''; }
+        }
+    }
+
+    // Registro rápido en el Padrón de personas (con identificación): se usa al volver
+    document.addEventListener('persona:registrada', function (e) {
+        var form = formIngreso();
+        if (form && e.detail) { usarPersona(form, e.detail); }
+    });
+
+    // Alta provisional de colaborador: queda elegido en el lector que la pidió
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-provisional-para]');
+        if (b) { destinoProvisional = b.dataset.provisionalPara; }
+    });
+    document.addEventListener('colaborador:registrado', function (e) {
+        var entrada = destinoProvisional && document.getElementById(destinoProvisional);
+        var caja = entrada && entrada.closest('[data-lector]');
+        if (!caja || !e.detail || !window.Lector) { return; }
+        window.Lector.elegir(caja, {
+            id: e.detail.id, titulo: e.detail.nombre_completo, activo: true,
+            detalle: e.detail.num_empleado ? 'Núm. ' + e.detail.num_empleado : 'Alta provisional (Recursos Humanos la valida)'
+        });
+        destinoProvisional = null;
+    });
+
+    /* ---------- Eventos del formulario de ingreso ---------- */
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-acceso]')) { return; }
+        if (e.target.matches('[data-acceso-sede]')) {
+            try { localStorage.setItem(CLAVE_SEDE, e.target.value); } catch (x) { /* sin almacenamiento */ }
+            var gafete = form.querySelector('[data-sugerir="gafete"] [data-lector]');
+            if (gafete && window.Lector) { window.Lector.limpiar(gafete); }
+            llenarGafetesAcompanantes(form);
+        }
+        if (e.target.matches('[data-num-acompanantes]')) { ajustarAcompanantes(form); }
+        if (e.target.matches('[data-gafete-acompanante]')) { llenarGafetesAcompanantes(form); }
+        if (e.target.matches('[data-filtro-tipo-gafete]')) {
+            var env = form.querySelector('[data-sugerir="gafete"]');
+            if (env && document.activeElement && env.contains(document.activeElement)) { sugerir(env, ''); }
+        }
+        sincronizar(form);
+    });
+
+    document.addEventListener('click', function (e) {
+        var mas = e.target.closest('[data-acompanantes-mas], [data-acompanantes-menos]');
+        if (!mas) { return; }
+        var form = mas.closest('form');
+        var campo = form.querySelector('[data-num-acompanantes]');
+        campo.value = Math.max(0, (parseInt(campo.value, 10) || 0) + (mas.hasAttribute('data-acompanantes-mas') ? 1 : -1));
+        ajustarAcompanantes(form);
+    });
+
+    // Un solo envío (doble clic en caseta = doble registro)
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-form-acceso]') || e.defaultPrevented) { return; }
+        setTimeout(function () { form.querySelectorAll('button[type="submit"]').forEach(function (b) { b.disabled = true; }); }, 0);
+    });
+
+    function prepararIngreso(fresco) {
+        var form = formIngreso();
+        if (!form) { return; }
+        var sede = form.querySelector('select[data-acceso-sede]');
+        if (sede && !sede.value) {
+            try {
+                var guardada = localStorage.getItem(CLAVE_SEDE);
+                if (guardada && sede.querySelector('option[value="' + guardada + '"]')) { sede.value = guardada; }
+            } catch (x) { /* sin almacenamiento */ }
+        }
+        form.dataset.tipoSugerido = '';
+        sincronizar(form);
+        form.querySelectorAll('[data-sugerir="vehiculo"]').forEach(vigilarPlacas);
+        if (fresco) { gafetesPorSede = {}; }
+        ajustarAcompanantes(form);
+        mostrarVista(false);
+        // Tras un error, se muestra el aviso; si no, en PC el cursor queda listo para escanear (en celular no se abre el teclado solo)
+        var aviso = form.querySelector('[data-caja-persona-repetida], .alert-danger');
+        if (aviso) {
+            setTimeout(function () { aviso.scrollIntoView({ block: 'center' }); }, 150);
+        } else if (window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
+            setTimeout(function () {
+                var primero = form.querySelector('[data-condicion]:not([hidden]) [data-lector-entrada]:not(:disabled)');
+                if (primero) { primero.focus({ preventScroll: true }); }
+            }, 150);
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-abrir-dialogo="dialogoIngreso"]')) { prepararIngreso(true); }
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        if (e.target.matches('[data-dialogo-ingreso]')) {
+            var form = formIngreso();
+            if (!form) { return; }
+            form.querySelectorAll('[data-persona-id], [data-proveedor-id], [data-placas]').forEach(function (c) { c.value = ''; });
+            var num = form.querySelector('[data-num-acompanantes]');
+            if (num) { num.value = '0'; }
+            var filas = form.querySelector('[data-filas-acompanantes]');
+            if (filas) { filas.textContent = ''; }
+            form.querySelectorAll('[data-sugerencias]').forEach(function (c) { c.hidden = true; c.textContent = ''; });
+            form.querySelectorAll('button[type="submit"]').forEach(function (b) { b.disabled = false; });
+            form.querySelectorAll('details.mas-detalles').forEach(function (d) { d.open = false; });
+            var resultados = document.querySelector('[data-resultados-salida]');
+            if (resultados) { resultados.textContent = ''; }
+            form.dataset.tipoSugerido = '';
+            sincronizar(form);
+            return;
+        }
+        // Diálogos de las tarjetas: se olvidan las placas escritas
+        e.target.querySelectorAll('[data-form-dialogo-acceso] [data-placas]').forEach(function (c) { c.value = ''; });
+        e.target.querySelectorAll('[data-sugerencias]').forEach(function (c) { c.hidden = true; c.textContent = ''; });
+    }, true);
+
+    // Cerrar sugerencias con un clic fuera o con Escape
+    document.addEventListener('click', function (e) {
+        document.querySelectorAll('[data-sugerencias]:not([hidden])').forEach(function (caja) {
+            var envoltura = caja.parentElement;
+            if (envoltura && !envoltura.contains(e.target)) { caja.hidden = true; caja.textContent = ''; }
+        });
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') { return; }
+        var abierta = document.querySelector('[data-sugerencias]:not([hidden])');
+        if (abierta) { e.preventDefault(); abierta.hidden = true; abierta.textContent = ''; }
+    });
+
+    /* ---------- Dar Salida (dentro del mismo diálogo) ---------- */
+    function mostrarVista(salida) {
+        var d = dialogoIngreso();
+        if (!d) { return; }
+        var vSalida = d.querySelector('[data-vista-salida]');
+        var vEntrada = d.querySelector('[data-vista-entrada]');
+        if (!vSalida) { return; }
+        vSalida.hidden = !salida;
+        vEntrada.hidden = salida;
+        d.querySelectorAll('[data-titulo-entrada], [data-texto-entrada]').forEach(function (n) { n.hidden = salida; });
+        d.querySelectorAll('[data-titulo-salida], [data-texto-salida]').forEach(function (n) { n.hidden = !salida; });
+        if (salida) {
+            var buscar = d.querySelector('[data-buscar-en-sitio]');
+            if (buscar) { buscar.value = ''; setTimeout(function () { buscar.focus(); }, 80); }
+            d.querySelector('[data-resultados-salida]').textContent = '';
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-alternar-salida-rapida]');
+        if (!b) { return; }
+        var d = dialogoIngreso();
+        mostrarVista(d.querySelector('[data-vista-salida]').hidden);
+    });
+
+    document.addEventListener('input', function (e) {
+        if (!e.target.matches('[data-buscar-en-sitio]')) { return; }
+        var texto = e.target.value.trim();
+        if (texto.length < 2) { document.querySelector('[data-resultados-salida]').textContent = ''; return; }
+        esperar('en-sitio', function () { buscarEnSitio('q=' + encodeURIComponent(texto)); }, 300);
+    });
+
+    function formularioPatch(url, texto, clase, confirmar, metodo) {
+        var f = elemento('form');
+        f.method = 'POST';
+        f.action = url;
+        if (confirmar) { f.setAttribute('data-confirmar', confirmar); }
+        var t = elemento('input'); t.type = 'hidden'; t.name = '_token'; t.value = token(); f.appendChild(t);
+        if (metodo !== 'POST') { var m = elemento('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'PATCH'; f.appendChild(m); }
+        var b = elemento('button', clase, texto); b.type = 'submit'; f.appendChild(b);
+        return f;
+    }
+
+    function botonDialogo(dialogo, url, id, nombre, titulo, texto, clase) {
+        var b = elemento('button', clase, texto);
+        b.type = 'button';
+        b.setAttribute('data-accion', 'acceso-dialogo');
+        b.dataset.dialogo = dialogo; b.dataset.url = url; b.dataset.id = id; b.dataset.nombre = nombre; b.dataset.titulo = titulo;
+        return b;
+    }
+
+    function buscarEnSitio(consulta) {
+        var cont = document.querySelector('[data-resultados-salida]');
+        if (!cont) { return; }
+        pedirJson(urlDe('urlEnSitio') + '?' + consulta).then(function (d) {
+            cont.textContent = '';
+            var datos = d.resultados || [];
+            if (!datos.length) { cont.appendChild(elemento('p', 'text-muted small p-2 m-0', 'Sin resultados en sitio para esa búsqueda.')); return; }
+            datos.forEach(function (r) {
+                var card = elemento('div', 'resultado-salida' + (r.fuera_temporal ? ' fuera' : ''));
+                var nombre = elemento('div', 'resultado-salida-nombre', r.nombre);
+                if (r.habitacion) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'badge-hab', 'Hab. ' + r.habitacion)); }
+                if (r.fuera_temporal) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'estado-acceso fuera mini', 'FUERA')); }
+                card.appendChild(nombre);
+                card.appendChild(elemento('div', 'resultado-salida-dato', r.tipo_etiqueta + (r.sede ? ' · ' + r.sede : '')));
+                if (r.placas) { card.appendChild(elemento('div', 'resultado-salida-dato', 'Vehículo: ' + r.placas + (r.zona ? ' · ' + r.zona + (r.zona_descarga ? ' (descarga)' : '') : ''))); }
+                var pedir = [];
+                if (r.gafete) { pedir.push('gafete ' + r.gafete + ' (titular)'); }
+                (r.acompanantes || []).forEach(function (a) { if (a.gafete) { pedir.push('gafete ' + a.gafete + ' (' + a.nombre + ')'); } });
+                if (r.identificacion) { pedir.push('la identificación (' + r.identificacion + ')'); }
+                if (pedir.length) { card.appendChild(elemento('div', 'resultado-salida-pedir', 'Pedir de vuelta: ' + pedir.join(', '))); }
+                if (!r.fuera_temporal) {
+                    (r.acompanantes || []).forEach(function (a) {
+                        var fila = elemento('div', 'resultado-salida-acomp');
+                        fila.appendChild(elemento('span', '', '• ' + a.nombre + (a.gafete ? ' · Gafete ' + a.gafete : '') + (a.fuera_temporal ? ' · FUERA' : '')));
+                        if (!a.fuera_temporal) {
+                            fila.appendChild(formularioPatch(a.url_salida, 'Salida', 'btn-acomp salida', '¿Confirmar salida de ' + a.nombre + (a.gafete ? ' y devolver su gafete ' + a.gafete : '') + '?'));
+                        }
+                        card.appendChild(fila);
+                    });
+                }
+                var acciones = elemento('div', 'resultado-salida-acciones');
+                if (r.fuera_temporal) {
+                    acciones.appendChild(botonDialogo('dialogoRegresoAcceso', r.url_regreso, r.id, r.nombre, r.tipo === 'huesped' ? 'Regreso de Tour' : 'Regreso', 'Registrar Regreso', 'btn-accion-acceso regreso'));
+                } else {
+                    if (r.salida_temporal) {
+                        acciones.appendChild(botonDialogo('dialogoSalidaTemporalAcceso', r.url_salida_temporal, r.id, r.nombre, r.texto_salida_temporal, r.texto_salida_temporal, 'btn-accion-acceso temporal'));
+                    }
+                    acciones.appendChild(formularioPatch(r.url_salida, r.texto_salida, 'btn-accion-acceso salida',
+                        '¿Confirmar salida de ' + r.nombre + '?' + (pedir.length ? ' Pide de vuelta: ' + pedir.join(', ') + '.' : '')));
+                }
+                card.appendChild(acciones);
+                cont.appendChild(card);
+            });
+        }).catch(function () {
+            cont.textContent = '';
+            cont.appendChild(elemento('p', 'text-danger small p-2 m-0', 'No se pudo buscar en este momento. Intenta de nuevo.'));
+        });
+    }
+
+    /* ---------- Diálogos de las tarjetas: zona, salida a tour / temporal, regreso ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="acceso-dialogo"]');
+        if (!b) { return; }
+        var d = document.getElementById(b.dataset.dialogo);
+        var form = d && d.querySelector('[data-form-dialogo-acceso]');
+        if (!form) { return; }
+        form.action = b.dataset.url;
+        d.querySelectorAll('.alert').forEach(function (n) { n.remove(); });
+        var poner = function (sel, valor) { form.querySelectorAll(sel).forEach(function (c) { c.value = valor || ''; }); };
+        poner('[data-dialogo-acceso-id]', b.dataset.id);
+        poner('[data-dialogo-nombre-campo]', b.dataset.nombre);
+        poner('[data-dialogo-titulo-campo]', b.dataset.titulo);
+        d.querySelectorAll('[data-dialogo-nombre]').forEach(function (n) { n.textContent = b.dataset.nombre || ''; });
+        if (b.dataset.titulo) { d.querySelectorAll('[data-dialogo-titulo]').forEach(function (n) { n.textContent = b.dataset.titulo; }); }
+        var zona = form.querySelector('[data-zona-sede]');
+        if (zona) {
+            acotarOpciones(zona, b.dataset.sede, true);
+            zona.value = b.dataset.zona || '';
+        }
+        d.querySelectorAll('[data-sugerir="vehiculo"]').forEach(vigilarPlacas);
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    });
+
+    /* ---------- Filtro de tarjetas sin recargar (Gente en Sitio y Pendientes) ---------- */
+    function filtrarTarjetas() {
+        var barra = document.querySelector('[data-filtros-accesos="vivo"]');
+        var cont = document.querySelector('[data-accesos]');
+        if (!barra || !cont) { return; }
+        var texto = (barra.querySelector('[data-filtro-accesos-texto]') || {}).value || '';
+        var tipo = (barra.querySelector('[data-filtro-accesos-tipo]') || {}).value || '';
+        var sedeSel = barra.querySelector('[data-filtro-accesos-sede]');
+        var sede = sedeSel ? sedeSel.value : '';
+        var palabras = lista(texto.toLowerCase());
+        var compacto = texto.replace(/[\s\-.]+/g, '').toLowerCase();
+        var fichas = cont.querySelectorAll('[data-acceso-ficha]');
+        var visibles = 0;
+        fichas.forEach(function (f) {
+            var t = f.dataset.texto || '';
+            var porTexto = palabras.every(function (p) { return t.indexOf(p) !== -1; }) || (compacto.length > 1 && t.indexOf(compacto) !== -1);
+            var ok = porTexto && (!tipo || f.dataset.tipo === tipo) && (!sede || f.dataset.sede === sede);
+            f.style.display = ok ? '' : 'none';
+            if (ok) { visibles++; }
+        });
+        var vacio = cont.querySelector('[data-sin-resultados-accesos]');
+        if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+    }
+
+    document.addEventListener('input', function (e) { if (e.target.closest('[data-filtros-accesos="vivo"]')) { filtrarTarjetas(); } });
+    document.addEventListener('change', function (e) { if (e.target.closest('[data-filtros-accesos="vivo"]')) { filtrarTarjetas(); } });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        filtrarTarjetas();
+        var d = dialogoIngreso();
+        if (!d) { return; }
+        // Tras un error, o con "Guardar y capturar siguiente", el diálogo ya se abrió solo
+        if (d.open) {
+            prepararIngreso(false);
+        } else {
+            var form = formIngreso();
+            if (form) { sincronizar(form); }
+        }
+    });
+})();
+/* Fin Bitácora de accesos */
+/* ==========================================================================
+   Operación: Préstamo de llaves y Responsivas
+   - Pestañas (Llaves en Uso / Historial de Entregas; Equipos en Campo /
+     Historial Devueltos) con buscador y filtro de sede sobre la pestaña activa.
+   - Historial de una llave o de un equipo: el reloj abre un diálogo con el
+     fragmento que dibuja el servidor (#historial-llave-ID lo abre al llegar).
+   - "Prestar Llave": se escanea la llave y luego el gafete; "Registrar y
+     Capturar Siguiente" guarda por fetch, pinta la ficha nueva y deja el
+     cuadro abierto y limpio para el siguiente préstamo.
+   - "Nuevo Resguardo (Lote)": cada equipo escaneado se agrega solo a la
+     lista; "+ Añadir Equipo" agrega una fila para elegirlo de la lista
+     (solo equipos DISPONIBLES de la sede elegida y sin repetir).
+   - "Firma": muestra la firma del lote (la sirve la plataforma con permiso).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto, porDefecto) { try { return JSON.parse(texto); } catch (x) { return porDefecto; } }
+
+    /* ---------- Pestañas y filtro ---------- */
+    function vistaActiva() {
+        var b = document.querySelector('[data-pestana-prestamos][aria-selected="true"]');
+        return b ? document.querySelector('[data-vista-prestamos="' + b.dataset.pestanaPrestamos + '"]') : null;
+    }
+
+    function filtrar() {
+        var vista = vistaActiva();
+        if (!vista) { return; }
+        var t = document.querySelector('[data-filtro-prestamos="texto"]');
+        var s = document.querySelector('[data-filtro-prestamos="sede"]');
+        var texto = t ? t.value.toLowerCase().trim() : '';
+        var sede = s ? s.value : '';
+        var fichas = vista.querySelectorAll('[data-ficha-prestamo]');
+        var visibles = 0;
+        fichas.forEach(function (f) {
+            var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1) && (sede === '' || f.dataset.sede === sede);
+            f.hidden = !ok;
+            if (ok) { visibles++; }
+        });
+        var vacio = document.querySelector('[data-sin-resultados-prestamos]');
+        if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+        var exportar = document.querySelector('[data-exportar-prestamos]');
+        if (exportar) { exportar.href = exportar.dataset.base + (sede ? '?sede=' + encodeURIComponent(sede) : ''); }
+    }
+
+    function elegirPestana(clave) {
+        var hay = false;
+        document.querySelectorAll('[data-pestana-prestamos]').forEach(function (b) {
+            var on = b.dataset.pestanaPrestamos === clave;
+            if (on) { hay = true; }
+            b.setAttribute('aria-selected', String(on));
+            b.classList.toggle('activa', on);
+        });
+        if (!hay) { return; }
+        document.querySelectorAll('[data-vista-prestamos]').forEach(function (v) { v.hidden = v.dataset.vistaPrestamos !== clave; });
+        filtrar();
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-pestana-prestamos]');
+        if (b) { elegirPestana(b.dataset.pestanaPrestamos); }
+    });
+    document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-prestamos]')) { filtrar(); } });
+    document.addEventListener('change', function (e) { if (e.target.matches('[data-filtro-prestamos]')) { filtrar(); } });
+
+    /* ---------- Historial de una llave o de un equipo ---------- */
+    function abrirHistorial(url, idDialogo) {
+        var dialogo = document.getElementById(idDialogo || 'dialogoHistorialLlave');
+        if (!dialogo) { return; }
+        var caja = dialogo.querySelector('[data-contenido-historial]');
+        caja.innerHTML = '';
+        var cargando = document.createElement('div');
+        cargando.className = 'p-5 text-center text-muted';
+        cargando.textContent = 'Cargando historial...';
+        caja.appendChild(cargando);
+        if (!dialogo.open) { dialogo.showModal(); }
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'text/html', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.text(); })
+            // Fragmento dibujado (y escapado) por el servidor
+            .then(function (html) { caja.innerHTML = html; })
+            .catch(function () { cargando.textContent = 'No se pudo cargar el historial. Revisa tu conexión e intenta de nuevo.'; });
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-historial-llave]');
+        if (b) { abrirHistorial(b.dataset.historialLlave, b.dataset.dialogoHistorial); }
+    });
+
+    /* ---------- Ver la firma de un resguardo ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-ver-firma]');
+        if (!b) { return; }
+        var dialogo = document.getElementById('dialogoVerFirma');
+        if (!dialogo) { return; }
+        dialogo.querySelector('[data-firma-imagen]').src = b.dataset.verFirma;
+        dialogo.querySelector('[data-firma-folio]').textContent = '· ' + (b.dataset.folio || '');
+        dialogo.querySelector('[data-firma-nombre]').textContent = b.dataset.nombre || '';
+        dialogo.showModal();
+    });
+
+    /* ---------- Lectores dentro de los formularios ---------- */
+    function cajaLector(form, nombre) {
+        var oculto = form.querySelector('[data-lector-id][name="' + nombre + '"]');
+        return oculto ? oculto.closest('[data-lector]') : null;
+    }
+
+    function avisoLector(caja, texto, tipo) {
+        var e = caja && caja.querySelector('[data-lector-estado]');
+        if (!e) { return; }
+        e.hidden = !texto;
+        e.textContent = texto || '';
+        e.className = 'lector-estado' + (tipo ? ' ' + tipo : '');
+    }
+
+    function enfocar(caja) {
+        var entrada = caja && caja.querySelector('[data-lector-entrada]');
+        if (entrada) { setTimeout(function () { entrada.focus(); }, 30); }
+    }
+
+    function mensajes(caja, lista, ok) {
+        if (!caja) { return; }
+        caja.textContent = '';
+        lista.forEach(function (m) { var d = document.createElement('div'); d.textContent = m; caja.appendChild(d); });
+        caja.hidden = lista.length === 0;
+        if (!ok && lista.length) { caja.scrollIntoView({ block: 'nearest' }); }
+    }
+
+    /* ---------- Prestar Llave ---------- */
+    // Al elegir la llave: avisa si es de otra sede o ya está fuera, y pasa al colaborador
+    document.addEventListener('lector:elegido', function (e) {
+        var form = e.target.closest('[data-form-prestamo]');
+        if (!form) { return; }
+        var registro = e.detail || {};
+        var caja = e.target.closest('[data-lector]');
+        if (caja === cajaLector(form, 'llave_id')) {
+            var sede = form.querySelector('[data-sede-prestamo]');
+            var fuera = leer(form.dataset.llavesFuera || '[]', []);
+            if (fuera.map(String).indexOf(String(registro.id)) !== -1) {
+                if (window.Lector) { window.Lector.limpiar(caja); }
+                avisoLector(caja, (registro.titulo || 'Esa llave') + ': esa llave ya está fuera — alguien más la tiene en este momento. Recíbela primero en «Llaves en Uso».', 'error');
+                return;
+            }
+            if (sede && sede.value && registro.sede_id && String(registro.sede_id) !== sede.value) {
+                if (window.Lector) { window.Lector.limpiar(caja); }
+                avisoLector(caja, (registro.titulo || 'Esta llave') + ' es de otra sede: cambia la Sede o escanea otra llave.', 'error');
+                return;
+            }
+            if (sede && !sede.value && registro.sede_id && sede.querySelector('option[value="' + registro.sede_id + '"]')) {
+                sede.value = String(registro.sede_id); // la sede sale de la llave
+            }
+            enfocar(cajaLector(form, 'colaborador_id'));
+        } else if (caja === cajaLector(form, 'colaborador_id')) {
+            var boton = form.querySelector('button[type="submit"]');
+            if (boton) { setTimeout(function () { boton.focus(); }, 30); }
+        }
+    });
+
+    function limpiarParaSiguiente(form) {
+        ['llave_id', 'colaborador_id'].forEach(function (n) {
+            var caja = cajaLector(form, n);
+            if (caja && window.Lector) { window.Lector.limpiar(caja); }
+        });
+        var garantia = form.querySelector('[name="tipo_garantia"]');
+        if (garantia) {
+            var defecto = garantia.querySelector('[data-por-defecto]');
+            garantia.value = defecto ? defecto.value : garantia.options[0].value;
+        }
+        var folio = form.querySelector('[name="folio_garantia"]');
+        if (folio) { folio.value = ''; }
+        enfocar(cajaLector(form, 'llave_id'));
+    }
+
+    function agregarFicha(html) {
+        var vista = document.querySelector('[data-vista-prestamos="uso"]');
+        if (!vista || !html) { return; }
+        var plantilla = document.createElement('template');
+        plantilla.innerHTML = html.trim(); // ficha dibujada (y escapada) por el servidor
+        var ficha = plantilla.content.firstElementChild;
+        if (!ficha) { return; }
+        var vacio = vista.querySelector('[data-vacio-en-uso]');
+        if (vacio) { vacio.hidden = true; vacio.after(ficha); } else { vista.prepend(ficha); }
+        var conteo = document.querySelector('[data-conteo-en-uso]');
+        if (conteo) { conteo.textContent = String(vista.querySelectorAll('[data-ficha-prestamo]').length); }
+        filtrar();
+    }
+
+    var enSesion = 0;
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-form-prestamo]')) { return; }
+        e.preventDefault();
+        var dialogo = form.closest('dialog');
+        var errores = dialogo.querySelector('[data-errores-prestamo]');
+        var ok = dialogo.querySelector('[data-errores-prestamo-ok]');
+        mensajes(ok, [], true);
+
+        var faltan = [];
+        if (!form.querySelector('[name="llave_id"]').value) { faltan.push('Escanea o busca la llave a prestar.'); }
+        if (!form.querySelector('[name="colaborador_id"]').value) { faltan.push('Escanea el gafete o busca al colaborador que se lleva la llave.'); }
+        if (faltan.length) { mensajes(errores, faltan, false); return; }
+        mensajes(errores, [], true);
+
+        var boton = form.querySelector('button[type="submit"]');
+        var texto = boton ? boton.querySelector('span') : null;
+        if (boton) { boton.disabled = true; }
+        if (texto) { texto.textContent = 'Guardando...'; }
+        function terminar() {
+            if (boton) { boton.disabled = false; }
+            if (texto) { texto.textContent = boton.dataset.textoOriginal || 'Registrar y Capturar Siguiente'; }
+        }
+
+        fetch(form.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form)
+        })
+            .then(function (r) { return r.json().then(function (d) { return { estado: r.status, datos: d }; }, function () { return { estado: r.status, datos: {} }; }); })
+            .then(function (res) {
+                terminar();
+                if (res.estado === 201 && res.datos.ok) {
+                    mensajes(ok, [res.datos.mensaje], true);
+                    agregarFicha(res.datos.ficha);
+                    var fuera = leer(form.dataset.llavesFuera || '[]', []);
+                    fuera.push(res.datos.llave_id);
+                    form.dataset.llavesFuera = JSON.stringify(fuera);
+                    enSesion++;
+                    var contador = dialogo.querySelector('[data-contador-prestamos]');
+                    if (contador) { contador.hidden = false; contador.querySelector('[data-numero-prestamos]').textContent = String(enSesion); }
+                    limpiarParaSiguiente(form);
+                    return;
+                }
+                var lista = [];
+                Object.keys(res.datos.errores || {}).forEach(function (k) { lista = lista.concat(res.datos.errores[k]); });
+                if (!lista.length) {
+                    lista.push(res.estado === 419 ? 'La sesión expiró. Recarga la página e intenta de nuevo.'
+                        : (res.estado === 403 ? 'No tienes permiso para prestar llaves.' : (res.datos.mensaje || 'No se pudo completar la operación. Intenta de nuevo.')));
+                }
+                mensajes(errores, lista, false);
+            })
+            .catch(function () {
+                terminar();
+                mensajes(errores, ['No se pudo conectar con el servidor. Intenta de nuevo.'], false);
+            });
+    });
+
+    /* ---------- Nuevo Resguardo (Lote) ---------- */
+    function sedeResguardo(form) { var s = form.querySelector('[data-sede-resguardo]'); return s ? s.value : ''; }
+
+    function filasEquipos(form) { return form.querySelectorAll('[data-fila-equipo]'); }
+
+    function plantillaFila(form) { return form.closest('dialog').querySelector('[data-plantilla-fila-equipo]'); }
+
+    function acomodarOpciones(form) {
+        var sede = sedeResguardo(form);
+        var elegidos = [];
+        filasEquipos(form).forEach(function (f) { var v = f.querySelector('[data-equipo-lote]').value; if (v) { elegidos.push(v); } });
+        filasEquipos(form).forEach(function (f) {
+            var sel = f.querySelector('[data-equipo-lote]');
+            Array.prototype.forEach.call(sel.options, function (op) {
+                if (!op.value) { return; }
+                var deLaSede = sede !== '' && op.dataset.sede === sede;
+                var ocupado = elegidos.indexOf(op.value) !== -1 && op.value !== sel.value;
+                op.hidden = !deLaSede || ocupado;
+                op.disabled = !deLaSede || ocupado;
+            });
+            if (sel.value && sel.selectedOptions[0] && sel.selectedOptions[0].disabled) { sel.value = ''; }
+        });
+        var plantilla = plantillaFila(form);
+        var hayDeLaSede = sede !== '' && !!plantilla && plantilla.content.querySelector('option[data-sede="' + sede + '"]') !== null;
+        var nota = form.querySelector('[data-sin-equipos]');
+        if (nota) { nota.hidden = sede === '' || hayDeLaSede; }
+    }
+
+    function agregarFila(form, valor) {
+        var plantilla = plantillaFila(form);
+        var cont = form.querySelector('[data-filas-equipos]');
+        if (!plantilla || !cont) { return null; }
+        var fila = plantilla.content.firstElementChild.cloneNode(true);
+        cont.appendChild(fila);
+        if (valor) { fila.querySelector('[data-equipo-lote]').value = String(valor); }
+        acomodarOpciones(form);
+        return fila;
+    }
+
+    document.addEventListener('click', function (e) {
+        var anadir = e.target.closest('[data-anadir-equipo]');
+        if (anadir) {
+            var form = anadir.closest('[data-form-resguardo]');
+            var fila = agregarFila(form);
+            if (fila) { fila.querySelector('[data-equipo-lote]').focus(); }
+            return;
+        }
+        var quitar = e.target.closest('[data-quitar-equipo]');
+        if (quitar) {
+            var f2 = quitar.closest('[data-form-resguardo]');
+            quitar.closest('[data-fila-equipo]').remove();
+            acomodarOpciones(f2);
+            return;
+        }
+        var abrir = e.target.closest('[data-abrir-dialogo]');
+        if (!abrir) { return; }
+        var destino = document.getElementById(abrir.getAttribute('data-abrir-dialogo'));
+        var fPrestamo = destino && destino.querySelector('[data-form-prestamo]');
+        // Al abrir "Prestar Llave" el cursor queda listo en la llave (el lector USB escribe ahí)
+        if (fPrestamo) { enfocar(cajaLector(fPrestamo, 'llave_id')); }
+        var fResguardo = destino && destino.querySelector('[data-form-resguardo]');
+        if (fResguardo) {
+            if (!filasEquipos(fResguardo).length) { agregarFila(fResguardo); }
+            acomodarOpciones(fResguardo);
+            enfocar(cajaLector(fResguardo, 'colaborador_id'));
+        }
+    });
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-resguardo]');
+        if (form && (e.target.matches('[data-equipo-lote]') || e.target.matches('[data-sede-resguardo]'))) { acomodarOpciones(form); }
+    });
+
+    // Colaborador elegido: pasa a escanear equipos. Equipo escaneado: se agrega a la lista (o llena la fila vacía)
+    document.addEventListener('lector:elegido', function (e) {
+        var form = e.target.closest('[data-form-resguardo]');
+        if (!form) { return; }
+        var caja = e.target.closest('[data-lector]');
+        var registro = e.detail || {};
+        if (caja === cajaLector(form, 'colaborador_id')) { enfocar(cajaLector(form, '_equipo_leido')); return; }
+        if (caja !== cajaLector(form, '_equipo_leido')) { return; }
+
+        var id = String(registro.id);
+        var nombre = registro.titulo || 'Ese equipo';
+        var plantilla = plantillaFila(form);
+        var opcion = plantilla ? plantilla.content.querySelector('option[value="' + id + '"]') : null;
+        if (window.Lector) { window.Lector.limpiar(caja); }
+        enfocar(caja);
+        if (!opcion) {
+            avisoLector(caja, nombre + ' no está DISPONIBLE en tus sedes: no se puede resguardar.', 'error');
+            return;
+        }
+        var selSede = form.querySelector('[data-sede-resguardo]');
+        if (selSede && selSede.value === '') { selSede.value = opcion.dataset.sede; acomodarOpciones(form); }
+        if (opcion.dataset.sede !== sedeResguardo(form)) {
+            avisoLector(caja, nombre + ' es de otra sede: cambia la Sede de Origen o escanea otro equipo.', 'error');
+            return;
+        }
+        var ya = false;
+        var vacia = null;
+        filasEquipos(form).forEach(function (f) {
+            var v = f.querySelector('[data-equipo-lote]').value;
+            if (v === id) { ya = true; }
+            if (!v && !vacia) { vacia = f; }
+        });
+        if (ya) { avisoLector(caja, nombre + ' ya está en la lista.', 'aviso'); return; }
+        if (vacia) { vacia.querySelector('[data-equipo-lote]').value = id; acomodarOpciones(form); } else { agregarFila(form, id); }
+        avisoLector(caja, '✓ Agregado: ' + opcion.textContent.trim() + '. Escanea el siguiente o pide la firma.', 'ok');
+    });
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-form-resguardo]')) { return; }
+        var errores = form.closest('dialog').querySelector('[data-errores-resguardo]');
+        var lista = [];
+        if (!form.querySelector('[name="colaborador_id"]').value) { lista.push('Escanea el gafete o busca al colaborador responsable.'); }
+        var filas = filasEquipos(form);
+        if (!filas.length) { lista.push('Debe añadir al menos 1 equipo al lote.'); }
+        if (Array.prototype.some.call(filas, function (f) { return !f.querySelector('[data-equipo-lote]').value; })) {
+            lista.push('Seleccione un equipo en todas las filas agregadas (o quite la fila vacía).');
+        }
+        if (lista.length) { e.preventDefault(); mensajes(errores, lista, false); }
+    });
+
+    // Al cerrar: Nuevo Resguardo queda sin filas (al abrirlo aparece una vacía); en Prestar, el contador vuelve a cero
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        var cont = e.target.querySelector('[data-filas-equipos]');
+        if (cont) { cont.textContent = ''; }
+        if (e.target.querySelector('[data-form-prestamo]')) {
+            enSesion = 0;
+            var contador = e.target.querySelector('[data-contador-prestamos]');
+            if (contador) { contador.hidden = true; }
+        }
+        if (e.target.id === 'dialogoVerFirma') { e.target.querySelector('[data-firma-imagen]').removeAttribute('src'); }
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var fResguardo = document.querySelector('[data-form-resguardo]');
+        if (fResguardo) { acomodarOpciones(fResguardo); }
+        if (!document.querySelector('[data-pestana-prestamos]')) { return; }
+        // Al llegar a una ficha (#prestamo-12, #responsiva-3) se abre su pestaña;
+        // #historial-llave-5 (desde el Catálogo de llaves) abre el historial de esa llave
+        var hash = location.hash || '';
+        var ficha = /^#(prestamo|responsiva)-\d+$/.test(hash) ? document.querySelector(hash) : null;
+        if (ficha) {
+            var vista = ficha.closest('[data-vista-prestamos]');
+            if (vista) { elegirPestana(vista.dataset.vistaPrestamos); }
+            ficha.classList.add('ficha-resaltada');
+            ficha.scrollIntoView({ block: 'center' });
+        } else {
+            filtrar();
+        }
+        var m = /^#historial-llave-(\d+)$/.exec(hash);
+        var dialogo = document.getElementById('dialogoHistorialLlave');
+        if (m && dialogo && dialogo.dataset.urlHistorial) {
+            abrirHistorial(dialogo.dataset.urlHistorial.replace(/\/0\/historial$/, '/' + m[1] + '/historial'), 'dialogoHistorialLlave');
+        }
+    });
+})();
+/* Fin Operación: Préstamo de llaves y Responsivas */
+/* ==========================================================================
+   Bitácora de Novedades (seguridad/novedades): pestañas y filtros de la
+   lista, combos que dependen de otro (sede → edificio → piso → habitación,
+   a quién se canaliza, sugerencias de nombres), formato de cada categoría,
+   campos que aparecen según otro, filas dinámicas (testigos, personas,
+   artículos…), mapa corporal y firmas del Accidente, "Buscar Coincidencias"
+   y "Vincular" (Lost & Found, Robo y Ficha de Hechos).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto) { try { return JSON.parse(texto || 'null'); } catch (x) { return null; } }
+    function enFormulario(el) { return el.closest('form') || document; }
+
+    /* ---------- Lista: pestañas y filtros ---------- */
+    var CLAVE_FILTRO = 'plataforma_filtro_novedades';
+
+    function filtrosActuales() {
+        var valor = function (n) { var el = document.querySelector('[data-filtro-novedades="' + n + '"]'); return el ? el.value : ''; };
+        var tab = document.querySelector('[data-pestana-novedades].active');
+        return { texto: valor('texto').toLowerCase().trim(), categoria: valor('categoria'), sede: valor('sede'), pestana: tab ? tab.dataset.pestanaNovedades : 'abiertas' };
+    }
+
+    function filtrarNovedades() {
+        var f = filtrosActuales();
+        document.querySelectorAll('[data-vista-novedades]').forEach(function (vista) {
+            var visibles = 0;
+            var fichas = vista.querySelectorAll('[data-novedad]');
+            fichas.forEach(function (ficha) {
+                var ok = (f.texto === '' || (ficha.dataset.texto || '').indexOf(f.texto) !== -1)
+                    && (f.categoria === '' || ficha.dataset.cat === f.categoria)
+                    && (f.sede === '' || ficha.dataset.sede === f.sede);
+                ficha.hidden = !ok;
+                if (ok) { visibles++; }
+            });
+            var vacio = vista.querySelector('[data-sin-resultados-novedades]');
+            if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+        });
+        // Exportar lleva los mismos filtros que la pantalla
+        var exportar = document.querySelector('[data-exportar-novedades]');
+        if (exportar) {
+            var p = new URLSearchParams();
+            if (f.texto) { p.set('q', f.texto); }
+            if (f.categoria) { p.set('categoria', f.categoria); }
+            if (f.sede) { p.set('sede', f.sede); }
+            p.set('pestana', f.pestana);
+            exportar.href = exportar.dataset.base + '?' + p.toString();
+        }
+        try { sessionStorage.setItem(CLAVE_FILTRO, JSON.stringify(f)); } catch (x) { /* sin almacenamiento */ }
+    }
+
+    function elegirPestana(nombre) {
+        document.querySelectorAll('[data-pestana-novedades]').forEach(function (b) {
+            var on = b.dataset.pestanaNovedades === nombre;
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-selected', String(on));
+        });
+        document.querySelectorAll('[data-vista-novedades]').forEach(function (v) { v.hidden = v.dataset.vistaNovedades !== nombre; });
+        var nota = document.querySelector('[data-nota-resueltas]');
+        if (nota) { nota.hidden = nombre !== 'resueltas'; }
+        filtrarNovedades();
+    }
+
+    document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-novedades]')) { filtrarNovedades(); } });
+    document.addEventListener('change', function (e) { if (e.target.matches('select[data-filtro-novedades]')) { filtrarNovedades(); } });
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-pestana-novedades]');
+        if (b) { elegirPestana(b.dataset.pestanaNovedades); }
+    });
+
+    /* ---------- Combos que dependen de otro ---------- */
+    var originales = new WeakMap();
+
+    function opcionesOriginales(select) {
+        if (!originales.has(select)) {
+            originales.set(select, Array.prototype.map.call(select.options, function (o) { return o.cloneNode(true); }));
+        }
+        return originales.get(select);
+    }
+
+    function reconstruir(select, acepta) {
+        var anterior = select.value;
+        var lista = opcionesOriginales(select);
+        select.textContent = '';
+        lista.forEach(function (op, i) {
+            if (i === 0 || acepta(op)) { select.appendChild(op.cloneNode(true)); }
+        });
+        select.value = anterior;
+        if (select.value !== anterior) { select.selectedIndex = 0; }
+    }
+
+    function padreDe(select) {
+        var form = enFormulario(select);
+        var tipo = select.dataset.novDepende;
+        return tipo === 'sede' ? form.querySelector('[data-nov-sede]') : form.querySelector('[data-nov-edificio]');
+    }
+
+    function areaActual(form) {
+        var piso = form.querySelector('[name="area_piso_id"]');
+        var edificio = form.querySelector('[name="area_edificio_id"]');
+        return (piso && piso.value) || (edificio && edificio.value) || '';
+    }
+
+    function sincronizarCombos(form) {
+        form.querySelectorAll('select[data-nov-depende]').forEach(function (select) {
+            var padre = padreDe(select);
+            if (!padre) { return; }
+            var valor = padre.value;
+            reconstruir(select, function (op) {
+                var de = (op.getAttribute('data-de') || '').split(' ');
+                return valor !== '' && (de.indexOf('todas') !== -1 || de.indexOf(valor) !== -1);
+            });
+        });
+        var area = areaActual(form);
+        form.querySelectorAll('select[data-nov-habitaciones]').forEach(function (select) {
+            reconstruir(select, function (op) { return area !== '' && (op.getAttribute('data-ruta') || '').indexOf('/' + area + '/') !== -1; });
+        });
+    }
+
+    /* ---------- Sugerencias de nombres (colaboradores de la sede) ---------- */
+    var colaboradores = null;
+    var sedeLista = null;
+
+    function datosColaboradores() {
+        if (colaboradores === null) {
+            var nodo = document.getElementById('novColaboradoresDatos');
+            colaboradores = (nodo && leer(nodo.textContent)) || [];
+        }
+        return colaboradores;
+    }
+
+    function sedeDe(el) {
+        var form = enFormulario(el);
+        var sel = form.querySelector && form.querySelector('[data-nov-sede]');
+        if (sel) { return sel.value; }
+        return (form.dataset && form.dataset.sede) || '';
+    }
+
+    function llenarSugerencias(sede) {
+        var lista = document.getElementById('novColaboradores');
+        if (!lista || sede === sedeLista) { return; }
+        sedeLista = sede;
+        lista.textContent = '';
+        if (!sede) { return; }
+        datosColaboradores().forEach(function (c) {
+            var sedes = String(c.s).split(' ');
+            if (sedes.indexOf('todas') === -1 && sedes.indexOf(sede) === -1) { return; }
+            var op = document.createElement('option');
+            op.value = c.n;
+            lista.appendChild(op);
+        });
+    }
+
+    function buscarColaborador(nombre) {
+        var buscado = (nombre || '').trim().toUpperCase();
+        if (!buscado) { return null; }
+        return datosColaboradores().filter(function (c) { return c.n === buscado; })[0] || null;
+    }
+
+    document.addEventListener('focusin', function (e) {
+        if (e.target.matches && e.target.matches('input[list="novColaboradores"]')) { llenarSugerencias(sedeDe(e.target)); }
+    });
+
+    /* ---------- Formato de la categoría y campos que aparecen según otro ---------- */
+    function mostrarFormato(form) {
+        var cat = form.querySelector('[data-nov-categoria]');
+        if (!cat) { return; }
+        form.querySelectorAll('fieldset[data-formato]').forEach(function (fs) {
+            var activo = fs.dataset.formato === cat.value;
+            fs.hidden = !activo;
+            fs.disabled = !activo;
+        });
+    }
+
+    // <div data-nov-mostrar-si='{"campo":["valor"]}'>: solo se oculta (lo capturado no se borra)
+    function sincronizarVisibles(form) {
+        form.querySelectorAll('[data-nov-mostrar-si]').forEach(function (caja) {
+            var cond = leer(caja.getAttribute('data-nov-mostrar-si')) || {};
+            caja.hidden = !Object.keys(cond).some(function (campo) {
+                var el = form.querySelector('[name="' + campo + '"]');
+                return !!el && cond[campo].indexOf(el.value) !== -1;
+            });
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-novedad]')) { return; }
+        if (e.target.matches('[data-nov-categoria]')) { mostrarFormato(form); }
+        if (e.target.matches('[data-nov-sede], [data-nov-edificio], [name="area_piso_id"]')) { sincronizarCombos(form); }
+        if (e.target.matches('[data-nov-sede]')) { sedeLista = null; }
+        if (e.target.matches('[data-nov-marca-hora]')) {
+            var hora = e.target.closest('[data-nov-servicio]').querySelector('[data-nov-hora-servicio]');
+            if (hora) { hora.hidden = !e.target.checked; }
+        }
+        if (e.target.matches('[data-categoria-pc]')) { criteriosPc(e.target); }
+        sincronizarVisibles(form);
+    });
+
+    // Departamento y puesto del colaborador elegido de la lista (se pueden corregir)
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches('[data-nov-nombre]')) { return; }
+        var caja = e.target.closest('[data-nov-autocompletar]');
+        var c = buscarColaborador(e.target.value);
+        if (!caja || !c) { return; }
+        var depto = caja.querySelector('[data-nov-depto]');
+        var puesto = caja.querySelector('[data-nov-puesto]');
+        if (depto) { depto.value = (c.d || '').toUpperCase(); }
+        if (puesto) { puesto.value = (c.p || '').toUpperCase(); }
+    });
+
+    /* ---------- Quién reporta: escrito, "Fui yo" o gafete escaneado ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="novedad-fui-yo"]');
+        if (!b) { return; }
+        var campo = document.getElementById(b.dataset.objetivo);
+        if (!campo) { return; }
+        campo.value = b.dataset.nombre || '';
+        var lector = enFormulario(campo).querySelector('[data-nov-lector-reporta] [data-lector]');
+        if (lector && window.Lector) { window.Lector.limpiar(lector); }
+        campo.focus();
+    });
+
+    document.addEventListener('lector:elegido', function (e) {
+        var caja = e.target;
+        var oculto = caja.querySelector('[data-lector-id]');
+        var form = enFormulario(caja);
+        if (!oculto) { return; }
+        if (oculto.name === 'reportado_colaborador_id') {
+            var reporta = form.querySelector('[data-nov-reporta]');
+            if (reporta) { reporta.value = (e.detail.titulo || '').toUpperCase(); reporta.dataset.delLector = reporta.value; }
+        }
+        if (oculto.name === 'c_id_colaborador') {
+            var datos = form.querySelector('[data-nov-colaborador-datos]');
+            var c = datosColaboradores().filter(function (x) { return String(x.id) === String(e.detail.id); })[0];
+            if (datos) {
+                datos.querySelector('[data-nov-depto]').value = c ? (c.d || '').toUpperCase() : '';
+                datos.querySelector('[data-nov-puesto]').value = c ? (c.p || '').toUpperCase() : ((e.detail.detalle || '').split(' · ')[1] || '').toUpperCase();
+            }
+        }
+    });
+
+    // Si se escribe otro nombre, deja de contar el gafete escaneado
+    document.addEventListener('input', function (e) {
+        if (!e.target.matches('[data-nov-reporta]') || !e.target.dataset.delLector) { return; }
+        if (e.target.value.trim().toUpperCase() !== e.target.dataset.delLector) {
+            var lector = enFormulario(e.target).querySelector('[data-nov-lector-reporta] [data-lector]');
+            if (lector && window.Lector) { window.Lector.limpiar(lector); }
+            delete e.target.dataset.delLector;
+        }
+    });
+
+    /* ---------- Filas dinámicas ---------- */
+    function renumerar(contenedor) {
+        contenedor.querySelectorAll(':scope > [data-fila]').forEach(function (fila, i) {
+            fila.querySelectorAll('[data-numero-fila]').forEach(function (n) { n.textContent = String(i + 1); });
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        var agregar = e.target.closest('[data-agregar-fila]');
+        if (agregar) {
+            var clave = agregar.dataset.agregarFila;
+            var ambito = agregar.closest('.accordion-body') || enFormulario(agregar);
+            var contenedor = ambito.querySelector('[data-filas="' + clave + '"]');
+            var plantilla = ambito.querySelector('template[data-plantilla="' + (agregar.dataset.plantillaDe || clave) + '"]');
+            if (!contenedor || !plantilla) { return; }
+            var indice = parseInt(contenedor.dataset.siguiente || '0', 10);
+            contenedor.dataset.siguiente = String(indice + 1);
+            var numero = contenedor.querySelectorAll(':scope > [data-fila]').length + 1;
+            var temporal = document.createElement('div');
+            temporal.innerHTML = plantilla.innerHTML.replace(/__i__/g, String(indice)).replace(/__n__/g, String(numero));
+            var fila = temporal.firstElementChild;
+            contenedor.appendChild(fila);
+            if (window.Lector) { fila.querySelectorAll('[data-lector]').forEach(window.Lector.preparar); }
+            sincronizarCombos(enFormulario(contenedor));
+            var primero = fila.querySelector('input:not([type="hidden"]):not([readonly]), select, textarea');
+            if (primero) { primero.focus(); }
+            return;
+        }
+        var quitar = e.target.closest('[data-quitar-fila]');
+        if (quitar) {
+            var filaQuitar = quitar.closest('[data-fila]');
+            var padre = filaQuitar && filaQuitar.parentElement;
+            if (filaQuitar) { filaQuitar.remove(); }
+            if (padre) { renumerar(padre); }
+        }
+    });
+
+    /* ---------- Recorrido PC: piezas a revisar según la categoría ---------- */
+    function criteriosPc(select) {
+        var fila = select.closest('[data-punto-pc]');
+        var ambito = select.closest('[data-criterios-pc]');
+        var defs = (ambito && leer(ambito.dataset.criteriosPc)) || {};
+        var caja = fila && fila.querySelector('.criterios-pc');
+        var indice = (select.name.match(/rpc_puntos\[(\d+)\]/) || [])[1];
+        if (!caja || indice === undefined) { return; }
+        caja.textContent = '';
+        var piezas = defs[select.value];
+        if (!piezas) {
+            var aviso = document.createElement('div');
+            aviso.className = 'col-12 text-muted small fst-italic';
+            aviso.textContent = 'Seleccione una categoría arriba para cargar las piezas a evaluar.';
+            caja.appendChild(aviso);
+            return;
+        }
+        Object.keys(piezas).forEach(function (clave) {
+            var col = document.createElement('div');
+            col.className = 'col-md-4 col-sm-6 mb-2';
+            var label = document.createElement('label');
+            label.className = 'd-flex align-items-center gap-2 small';
+            var chk = document.createElement('input');
+            chk.type = 'checkbox'; chk.className = 'casilla-grande'; chk.value = '1'; chk.checked = true;
+            chk.name = 'rpc_puntos[' + indice + '][criterios][' + clave + ']';
+            label.appendChild(chk);
+            label.appendChild(document.createTextNode(' ' + piezas[clave]));
+            col.appendChild(label);
+            caja.appendChild(col);
+        });
+    }
+
+    /* ---------- Accidente: mapa corporal ---------- */
+    document.addEventListener('click', function (e) {
+        var parte = e.target.closest && e.target.closest('[data-nov-mapa-corporal] [data-zona]');
+        if (!parte) { return; }
+        var form = enFormulario(parte);
+        var campos = parte.closest('fieldset.expediente-campos');
+        if (campos && campos.disabled) { return; }
+        var mapa = parte.closest('[data-nov-mapa-corporal]');
+        var zona = parte.getAttribute('data-zona');
+        var marcar = !parte.classList.contains('selected');
+        mapa.querySelectorAll('[data-zona]').forEach(function (p) { if (p.getAttribute('data-zona') === zona) { p.classList.toggle('selected', marcar); } });
+        var vistas = [];
+        mapa.querySelectorAll('[data-zona].selected').forEach(function (p) {
+            var z = p.getAttribute('data-zona');
+            if (vistas.indexOf(z) === -1) { vistas.push(z); }
+        });
+        var campo = form.querySelector('[data-nov-zonas]');
+        if (campo) { campo.value = vistas.join(', '); }
+    });
+
+    /* ---------- Accidente: "Guardar Esta Firma" (un recuadro, seis firmantes, como SEGCAT) ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="novedad-guardar-firma"]');
+        if (!b) { return; }
+        var caja = b.closest('[data-nov-firmas]');
+        var recuadro = caja.querySelector('[data-firma]');
+        var valor = recuadro.querySelector('[data-firma-valor]');
+        var selector = caja.querySelector('[data-nov-selector-firma]');
+        var estado = caja.querySelector('[data-nov-estado-firmas]');
+        if (!valor.value) { recuadro.classList.add('falta'); return; }
+        var destino = caja.querySelector('#val_firma_' + selector.value);
+        if (!destino) { return; }
+        destino.value = valor.value;
+        var previa = estado.querySelector('[data-firma-rol="' + selector.value + '"]');
+        if (previa) { previa.remove(); }
+        var badge = document.createElement('span');
+        badge.className = 'badge bg-success me-1 mb-1';
+        badge.setAttribute('data-firma-rol', selector.value);
+        var icono = document.createElement('i');
+        icono.className = 'bi bi-check-circle-fill me-1';
+        icono.setAttribute('aria-hidden', 'true');
+        badge.appendChild(icono);
+        badge.appendChild(document.createTextNode(' ' + selector.options[selector.selectedIndex].text + ' GUARDADA (se guarda con el expediente)'));
+        estado.appendChild(badge);
+        if (window.Firma) { window.Firma.preparar(recuadro); }
+        if (recuadro.limpiarFirma) { recuadro.limpiarFirma(); }
+        recuadro.classList.remove('falta');
+    });
+
+    /* ---------- Buscar Coincidencias y Vincular ---------- */
+    function token() { var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.content : ''; }
+
+    function mostrarResultados(caja, lista, urlVincular, texto) {
+        caja.textContent = '';
+        if (!lista.length) {
+            var vacio = document.createElement('div');
+            vacio.className = 'small text-muted p-2';
+            vacio.textContent = texto || 'Sin coincidencias por ahora — puedes volver a intentar más tarde, según se sigan registrando artículos.';
+            caja.appendChild(vacio);
+            return;
+        }
+        lista.forEach(function (a) {
+            var fila = document.createElement('div');
+            fila.className = 'resultado-coincidencia';
+            var dato = document.createElement('span');
+            var folio = document.createElement('strong');
+            folio.textContent = a.folio;
+            dato.appendChild(folio);
+            dato.appendChild(document.createTextNode(' — ' + a.objeto + ' (' + [a.marca, a.color].filter(Boolean).join(' ') + ') · encontrado ' + a.fecha));
+            var acciones = document.createElement('span');
+            acciones.className = 'd-flex gap-1';
+            var ver = document.createElement('a');
+            ver.href = a.url; ver.target = '_blank'; ver.rel = 'noopener'; ver.className = 'btn-mini'; ver.textContent = 'Ver';
+            acciones.appendChild(ver);
+            if (urlVincular) {
+                var vincular = document.createElement('button');
+                vincular.type = 'button'; vincular.className = 'btn-mini verde'; vincular.textContent = 'Vincular';
+                vincular.setAttribute('data-accion', 'novedad-vincular');
+                vincular.setAttribute('data-url', urlVincular);
+                vincular.setAttribute('data-articulo', a.id);
+                acciones.appendChild(vincular);
+            }
+            fila.appendChild(dato);
+            fila.appendChild(acciones);
+            caja.appendChild(fila);
+        });
+    }
+
+    function buscarCoincidencias(boton, parametros, urlVincular, textoVacio) {
+        var ambito = boton.closest('[data-coincidencias]');
+        var caja = (boton.closest('[data-fila]') || ambito).querySelector('[data-resultados-coincidencias]');
+        if (!ambito || !caja) { return; }
+        caja.textContent = 'Buscando…';
+        fetch(ambito.dataset.coincidencias + '?' + new URLSearchParams(parametros).toString(), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+            .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
+            .then(function (d) { mostrarResultados(caja, d.resultados || [], urlVincular, textoVacio); })
+            .catch(function () { caja.textContent = 'No se pudo buscar en este momento.'; });
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="novedad-coincidencias"]');
+        if (b) {
+            var fila = b.closest('[data-fila]');
+            var v = function (n) { var el = fila.querySelector('[data-rp="' + n + '"]'); return el ? el.value : ''; };
+            buscarCoincidencias(b, { tipo_valor: v('tipo_valor'), objeto: v('objeto'), marca: v('marca'), color: v('color'), fecha: v('fecha') }, b.dataset.vincular);
+            return;
+        }
+        var r = e.target.closest('[data-accion="novedad-coincidencias-robo"]');
+        if (r) {
+            // Solo la primera frase de "¿Qué se llevaron?" como palabra clave
+            var form = enFormulario(r);
+            var objetos = form.querySelector('[data-robo-objetos]');
+            var clave = ((objetos && objetos.value) || '').split(/[,.\n]/)[0].trim().slice(0, 40);
+            var cuando = form.querySelector('[name="ocurrio_en"]');
+            buscarCoincidencias(r, { objeto: clave, fecha: cuando && cuando.value ? cuando.value.slice(0, 10) : '' }, r.dataset.vincular,
+                clave ? 'Sin coincidencias para «' + clave + '» por ahora.' : 'Escribe primero «¿Qué se llevaron?».');
+        }
+    });
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="novedad-vincular"]');
+        if (!b) { return; }
+        b.disabled = true;
+        b.textContent = 'Vinculando…';
+        var datos = new FormData();
+        datos.append('articulo_id', b.dataset.articulo);
+        fetch(b.dataset.url, { method: 'POST', credentials: 'same-origin', body: datos,
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': token() } })
+            .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, datos: d }; }); })
+            .then(function (res) {
+                if (res.ok && res.datos.ok) {
+                    var listo = document.createElement('span');
+                    listo.className = 'small text-success fw-bold';
+                    listo.textContent = '✔ ' + (res.datos.mensaje || 'Vinculado');
+                    b.replaceWith(listo);
+                    var fila = listo.closest('[data-fila]');
+                    var estado = fila && fila.querySelector('[data-rp-estatus]');
+                    if (estado) { estado.textContent = 'Vinculado con un hallazgo'; }
+                    return;
+                }
+                var errores = res.datos.errors ? Object.values(res.datos.errors)[0] : null;
+                b.disabled = false;
+                b.textContent = 'Vincular';
+                window.alert('No se pudo vincular: ' + ((errores && errores[0]) || res.datos.message || 'intenta de nuevo.'));
+            })
+            .catch(function () { b.disabled = false; b.textContent = 'Vincular'; window.alert('No se pudo vincular en este momento.'); });
+    });
+
+    /* ---------- Diálogos ---------- */
+    // "¿Cuándo sucedió?" propone la hora actual al abrir el alta (si no se ha cambiado)
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-abrir-dialogo="dialogoAltaTicket"]')) { return; }
+        var campo = document.getElementById('alta_cuando');
+        if (campo && campo.value === campo.defaultValue) {
+            var d = new Date();
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            campo.value = d.toISOString().slice(0, 16);
+        }
+        var form = document.querySelector('[data-form-novedad="alta"]');
+        if (form) { sincronizarCombos(form); }
+    });
+
+    // Al cerrar el expediente, la dirección ya no lo vuelve a abrir
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement) || !e.target.hasAttribute('data-expediente')) { return; }
+        try {
+            var url = new URL(window.location.href);
+            url.searchParams.delete('abrir');
+            window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+        } catch (x) { /* navegador antiguo */ }
+    }, true);
+    // Al cerrar el alta, sus combos vuelven a su estado inicial
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        var form = e.target.querySelector('[data-form-novedad="alta"]');
+        if (form) { setTimeout(function () { sincronizarCombos(form); }, 0); }
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[data-form-novedad]').forEach(function (form) {
+            sincronizarCombos(form);
+            mostrarFormato(form);
+            sincronizarVisibles(form);
+        });
+        if (!document.querySelector('[data-vista-novedades]')) { return; }
+        var g = null;
+        try { g = JSON.parse(sessionStorage.getItem(CLAVE_FILTRO) || 'null'); } catch (x) { g = null; }
+        if (g) {
+            var poner = function (n, v) { var el = document.querySelector('[data-filtro-novedades="' + n + '"]'); if (el && v) { el.value = v; } };
+            poner('texto', g.texto); poner('categoria', g.categoria); poner('sede', g.sede);
+        }
+        // Un ticket enlazado (#novedad-12) se muestra aunque esté en la otra pestaña
+        var destino = location.hash && /^#novedad-\d+$/.test(location.hash) ? document.querySelector(location.hash) : null;
+        var vista = destino ? destino.closest('[data-vista-novedades]') : null;
+        elegirPestana(vista ? vista.dataset.vistaNovedades : ((g && g.pestana) || 'abiertas'));
+        if (destino) {
+            if (destino.hidden) { ['texto', 'categoria', 'sede'].forEach(function (n) { var el = document.querySelector('[data-filtro-novedades="' + n + '"]'); if (el) { el.value = ''; } }); filtrarNovedades(); }
+            destino.scrollIntoView({ block: 'center' });
+        }
+    });
+})();
+/* Fin Bitácora de Novedades */
+/* ==========================================================================
+   Pases de salida: detalle "Firmas del pase" en diálogo, firmar por rol,
+   rechazo, "Nuevo Pase de Salida" (renglones de artículos, equipo escaneado,
+   solicitante con lector o por nombre, atajos Nuevo Colaborador / Nuevo
+   Proveedor, dirección y teléfono del destino).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var ENCABEZADOS = { 'Accept': 'text/html', 'X-Requested-With': 'XMLHttpRequest' };
+
+    /* ---------- Detalle del pase (se pide al abrir; sin JavaScript abre ?pase=ID) ---------- */
+    function dialogoDetalle() { return document.querySelector('[data-dialogo-detalle-pase]'); }
+
+    function aviso(dialogo, texto, clase) {
+        dialogo.textContent = '';
+        var cuerpo = document.createElement('div');
+        cuerpo.className = 'dialogo-cuerpo text-center p-5 ' + (clase || '');
+        cuerpo.textContent = texto;
+        dialogo.appendChild(cuerpo);
+    }
+
+    document.addEventListener('click', function (e) {
+        var enlace = e.target.closest('[data-detalle-pase]');
+        if (!enlace) { return; }
+        var dialogo = dialogoDetalle();
+        if (!dialogo || typeof dialogo.showModal !== 'function') { return; }
+        e.preventDefault();
+        aviso(dialogo, 'Cargando…', 'text-muted');
+        if (!dialogo.open) { dialogo.showModal(); }
+        fetch(enlace.getAttribute('data-detalle-pase'), { credentials: 'same-origin', headers: ENCABEZADOS })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.text(); })
+            .then(function (html) { dialogo.innerHTML = html; })
+            .catch(function () { aviso(dialogo, 'No se pudo cargar el pase. Revisa tu conexión e intenta de nuevo.', 'text-danger'); });
+    });
+
+    // Al cerrar el detalle abierto por ?pase=ID, la dirección se limpia para que al recargar no vuelva a abrirse
+    document.addEventListener('close', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-dialogo-detalle-pase]')) { return; }
+        try {
+            var url = new URL(window.location.href);
+            if (url.searchParams.has('pase')) { url.searchParams.delete('pase'); window.history.replaceState(null, '', url.toString()); }
+        } catch (x) { /* navegador antiguo */ }
+    }, true);
+
+    /* ---------- Firmar un rol y rechazar ---------- */
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-firmar-rol]');
+        if (boton) {
+            var dialogo = boton.closest('dialog') || document;
+            var caja = dialogo.querySelector('[data-caja-firma-pase]');
+            if (!caja) { return; }
+            caja.querySelector('[data-firma-rol]').value = boton.getAttribute('data-firmar-rol');
+            caja.querySelector('[data-firma-titulo]').textContent = 'Firma — ' + boton.getAttribute('data-rol-texto');
+            caja.querySelector('[data-firma-nombre]').value = boton.getAttribute('data-sugerido') || '';
+            var firma = caja.querySelector('[data-firma]');
+            if (firma && window.Firma) { window.Firma.preparar(firma); if (firma.limpiarFirma) { firma.limpiarFirma(); } firma.classList.remove('falta'); }
+            dialogo.querySelectorAll('.fila-firma.eligiendo').forEach(function (f) { f.classList.remove('eligiendo'); });
+            boton.closest('.fila-firma').classList.add('eligiendo');
+            caja.hidden = false;
+            caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        var cancelar = e.target.closest('[data-cancelar-firma]');
+        if (cancelar) {
+            var cajaF = cancelar.closest('[data-caja-firma-pase]');
+            var f = cajaF.querySelector('[data-firma]');
+            if (f && f.limpiarFirma) { f.limpiarFirma(); }
+            cajaF.hidden = true;
+            var d = cajaF.closest('dialog');
+            if (d) { d.querySelectorAll('.fila-firma.eligiendo').forEach(function (x) { x.classList.remove('eligiendo'); }); }
+            return;
+        }
+        var rechazo = e.target.closest('[data-mostrar-rechazo]');
+        if (rechazo) {
+            var zona = rechazo.closest('.zona-rechazo');
+            var form = zona.querySelector('[data-caja-rechazo]');
+            form.hidden = false;
+            rechazo.hidden = true;
+            form.querySelector('textarea').focus();
+        }
+    });
+
+    /* ---------- Nuevo pase: campos dependientes y destino ---------- */
+    function formPase() { return document.querySelector('[data-form-pase]'); }
+
+    // La sede destino no puede ser la de origen
+    function ocultarOrigen(form) {
+        var origen = form.querySelector('[data-pase-origen]');
+        var destino = form.querySelector('[data-pase-sede-destino]');
+        if (!origen || !destino) { return; }
+        Array.prototype.forEach.call(destino.options, function (o) {
+            if (o.value === '') { return; }
+            var igual = o.value === origen.value;
+            o.hidden = igual;
+            o.disabled = igual;
+        });
+        if (destino.value !== '' && destino.value === origen.value) { destino.value = ''; }
+    }
+
+    function sincronizar(form) {
+        // El acomodo genérico de data-mostrar-si (Padrón Vehicular) responde a un "change"
+        var motivo = form.querySelector('[data-pase-motivo]');
+        if (motivo) { motivo.dispatchEvent(new Event('change', { bubbles: true })); }
+        ocultarOrigen(form);
+    }
+
+    function llenarContacto(form, opcion) {
+        if (!opcion || opcion.value === '') { return; }
+        var dir = form.querySelector('[data-pase-direccion]');
+        var tel = form.querySelector('[data-pase-telefono]');
+        if (dir) { dir.value = opcion.getAttribute('data-direccion') || ''; }
+        if (tel) { tel.value = opcion.getAttribute('data-telefono') || ''; }
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-pase]');
+        if (!form) { return; }
+        if (e.target.matches('[data-pase-origen]')) { ocultarOrigen(form); }
+        if (e.target.matches('[data-pase-sede-destino], [data-pase-proveedor]')) { llenarContacto(form, e.target.selectedOptions[0]); }
+        if (e.target.matches('[name="destino_tipo"]')) {
+            var dir = form.querySelector('[data-pase-direccion]');
+            var tel = form.querySelector('[data-pase-telefono]');
+            if (dir) { dir.value = ''; }
+            if (tel) { tel.value = ''; }
+        }
+    });
+
+    /* ---------- Renglones de artículos ---------- */
+    function agregarArticulo(form) {
+        var cont = form.querySelector('[data-articulos-pase]');
+        var plantilla = form.querySelector('[data-plantilla-articulo]');
+        if (!cont || !plantilla) { return null; }
+        var i = parseInt(cont.getAttribute('data-siguiente') || '0', 10);
+        cont.setAttribute('data-siguiente', String(i + 1));
+        var envoltura = document.createElement('div');
+        envoltura.innerHTML = plantilla.innerHTML.replace(/__i__/g, String(i));
+        var fila = envoltura.querySelector('[data-articulo-fila]');
+        cont.appendChild(fila);
+        return fila;
+    }
+
+    function reiniciarArticulos(form) {
+        var cont = form.querySelector('[data-articulos-pase]');
+        if (!cont) { return; }
+        cont.textContent = '';
+        cont.setAttribute('data-siguiente', '0');
+        agregarArticulo(form);
+    }
+
+    document.addEventListener('click', function (e) {
+        var agregar = e.target.closest('[data-agregar-articulo]');
+        if (agregar) {
+            var fila = agregarArticulo(agregar.closest('form'));
+            if (fila) { fila.querySelector('[data-articulo="equipo"]').focus(); }
+            return;
+        }
+        var quitar = e.target.closest('[data-quitar-articulo]');
+        if (quitar) {
+            var form = quitar.closest('form');
+            quitar.closest('[data-articulo-fila]').remove();
+            if (!form.querySelector('[data-articulo-fila]')) { agregarArticulo(form); }
+        }
+    });
+
+    /* ---------- Equipo escaneado del padrón: llena un renglón ---------- */
+    function estadoLector(caja, texto, clase) {
+        var estado = caja && caja.querySelector('[data-lector-estado]');
+        if (!estado) { return; }
+        estado.hidden = !texto;
+        estado.className = 'lector-estado ' + (clase || '');
+        estado.textContent = texto || '';
+    }
+
+    document.addEventListener('lector:elegido', function (e) {
+        var caja = e.target;
+        if (!caja.closest || !caja.closest('[data-pase-lector-equipo]')) { return; }
+        var form = caja.closest('form');
+        var registro = e.detail || {};
+        var url = form.getAttribute('data-url-equipo').replace(/\/0$/, '/' + encodeURIComponent(registro.id));
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
+            .then(function (datos) {
+                var fila = null;
+                form.querySelectorAll('[data-articulo-fila]').forEach(function (f) {
+                    if (!fila && f.querySelector('[data-articulo="equipo"]').value.trim() === '') { fila = f; }
+                });
+                fila = fila || agregarArticulo(form);
+                ['equipo_id', 'equipo', 'marca', 'modelo', 'serie', 'descripcion'].forEach(function (c) {
+                    var campo = fila.querySelector('[data-articulo="' + c + '"]');
+                    if (campo) { campo.value = datos[c] === null || datos[c] === undefined ? '' : String(datos[c]); }
+                });
+                fila.querySelector('[data-articulo="cantidad"]').value = '1';
+                if (window.Lector) { window.Lector.limpiar(caja); }
+                estadoLector(caja, 'Agregado: ' + datos.equipo + ' · Serie ' + datos.serie + '. Puedes escanear el siguiente.', 'ok');
+            })
+            .catch(function () { estadoLector(caja, 'No se pudieron traer los datos del equipo. Captúralo a mano.', 'error'); });
+    });
+
+    /* ---------- Solicitante / colaborador destino: búsqueda por nombre y Departamento / Puesto ---------- */
+    var espera = null;
+
+    function cajaDe(para) {
+        var envoltura = document.querySelector('[data-pase-colaborador][data-para="' + para + '"]');
+        return envoltura ? envoltura.querySelector('[data-lector]') : null;
+    }
+
+    function mostrarDepto(registro) {
+        var form = formPase();
+        if (!form) { return; }
+        var d = form.querySelector('[data-solicitante-depto]');
+        var p = form.querySelector('[data-solicitante-puesto]');
+        if (d) { d.value = registro ? (registro.departamento || '—') : ''; }
+        if (p) { p.value = registro ? (registro.puesto || '—') : ''; }
+    }
+
+    function buscarColaboradores(form, texto) {
+        var url = form.getAttribute('data-url-buscar-colaborador');
+        if (!url || !texto) { return Promise.resolve([]); }
+        return fetch(url + '?q=' + encodeURIComponent(texto), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
+            .then(function (d) { return d.resultados || []; });
+    }
+
+    function elegirColaborador(caja, c) {
+        if (!window.Lector || !caja || !c || !c.id) { return; }
+        window.Lector.elegir(caja, {
+            id: c.id, titulo: c.nombre_completo, activo: true,
+            detalle: (c.num_empleado ? 'Núm. ' + c.num_empleado : 'provisional') + (c.puesto ? ' · ' + c.puesto : ''),
+            departamento: c.departamento || null, puesto: c.puesto || null
+        });
+    }
+
+    document.addEventListener('input', function (e) {
+        var entrada = e.target.closest && e.target.closest('[data-pase-colaborador] [data-lector-entrada]');
+        if (!entrada) { return; }
+        var caja = entrada.closest('[data-lector]');
+        var form = entrada.closest('form');
+        var opciones = caja.querySelector('[data-lector-opciones]');
+        clearTimeout(espera);
+        var texto = entrada.value.trim();
+        // Solo nombres (con letras): los números y códigos los resuelve el lector al dar Enter
+        if (texto.length < 3 || !/[a-záéíóúñü]/i.test(texto) || !form.getAttribute('data-url-buscar-colaborador')) { return; }
+        espera = setTimeout(function () {
+            buscarColaboradores(form, texto).then(function (lista) {
+                if (entrada.value.trim() !== texto) { return; }
+                opciones.textContent = '';
+                if (!lista.length) {
+                    estadoLector(caja, 'Nadie coincide con «' + texto + '». Si no está registrado, usa «Nuevo Colaborador».', 'aviso');
+                    opciones.hidden = true;
+                    return;
+                }
+                estadoLector(caja, 'Elige a la persona:', 'info');
+                lista.forEach(function (c) {
+                    var b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'lector-opcion';
+                    var t = document.createElement('strong'); t.textContent = c.nombre_completo;
+                    var d = document.createElement('span');
+                    d.textContent = (c.num_empleado ? 'Núm. ' + c.num_empleado : 'Provisional') + (c.puesto ? ' · ' + c.puesto : '') + (c.departamento ? ' · ' + c.departamento : '') + (c.sede ? ' · ' + c.sede : '');
+                    b.appendChild(t); b.appendChild(d);
+                    b.addEventListener('click', function () { elegirColaborador(caja, c); });
+                    opciones.appendChild(b);
+                });
+                opciones.hidden = false;
+            }).catch(function () { /* sin red: queda el lector normal */ });
+        }, 300);
+    });
+
+    // Al elegir al solicitante (escaneado o por nombre) se muestran su departamento y puesto
+    document.addEventListener('lector:elegido', function (e) {
+        var envoltura = e.target.closest && e.target.closest('[data-pase-colaborador][data-para="solicitante"]');
+        if (!envoltura) { return; }
+        var r = e.detail || {};
+        if (r.departamento !== undefined || r.puesto !== undefined) { mostrarDepto(r); return; }
+        mostrarDepto({ departamento: '…', puesto: '…' });
+        var num = /Núm\. ([^\s·]+)/.exec(r.detalle || '');
+        buscarColaboradores(envoltura.closest('form'), num ? num[1] : (r.titulo || '')).then(function (lista) {
+            mostrarDepto(lista.filter(function (x) { return String(x.id) === String(r.id); })[0] || { departamento: '—', puesto: '—' });
+        }).catch(function () { mostrarDepto({ departamento: '—', puesto: '—' }); });
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-pase-colaborador][data-para="solicitante"] [data-lector-limpiar]')) { mostrarDepto(null); }
+    });
+
+    /* ---------- Atajos: Nuevo Colaborador (alta provisional) y Nuevo Proveedor ---------- */
+    var registrarPara = 'solicitante';
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-registrar-para]');
+        if (b) { registrarPara = b.getAttribute('data-registrar-para'); }
+    }, true);
+
+    document.addEventListener('colaborador:registrado', function (e) {
+        if (!formPase()) { return; }
+        elegirColaborador(cajaDe(registrarPara), e.detail || {});
+    });
+
+    // Dirección y teléfono capturados en el alta rápida (ese formulario se limpia antes de avisar)
+    var contactoProveedor = null;
+    document.addEventListener('submit', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-alta-rapida-proveedor]')) { return; }
+        contactoProveedor = {
+            direccion: (e.target.querySelector('[name="direccion"]') || {}).value || '',
+            telefono: (e.target.querySelector('[name="telefono"]') || {}).value || ''
+        };
+    }, true);
+
+    document.addEventListener('proveedor:registrado', function (e) {
+        var form = formPase();
+        var select = form && form.querySelector('[data-pase-proveedor]');
+        if (!select || !e.detail) { return; }
+        var p = e.detail;
+        var opcion = Array.prototype.filter.call(select.options, function (o) { return o.value === String(p.id); })[0];
+        if (!opcion) {
+            opcion = document.createElement('option');
+            opcion.value = String(p.id);
+            opcion.textContent = p.nombre;
+            opcion.setAttribute('data-direccion', contactoProveedor && !p.ya_existia ? contactoProveedor.direccion : '');
+            opcion.setAttribute('data-telefono', contactoProveedor && !p.ya_existia ? contactoProveedor.telefono : '');
+            select.appendChild(opcion);
+        }
+        select.value = String(p.id);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    /* ---------- Envío: el solicitante (y el colaborador destino) son obligatorios ---------- */
+    document.addEventListener('submit', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-form-pase]')) { return; }
+        var faltan = Array.prototype.filter.call(e.target.querySelectorAll('[data-pase-colaborador] [data-lector-id]'), function (oculto) {
+            var caja = oculto.closest('[data-lector]');
+            var requerido = oculto.hasAttribute('data-requerido') || !!caja.closest('[data-para="destino"]');
+            return !caja.closest('[hidden]') && requerido && !oculto.disabled && oculto.value === '';
+        });
+        if (!faltan.length) { return; }
+        e.preventDefault();
+        faltan.forEach(function (oculto) {
+            estadoLector(oculto.closest('[data-lector]'), 'Falta elegir a la persona: escanea su gafete o escribe su nombre y elígela de la lista.', 'error');
+        });
+        faltan[0].closest('[data-lector]').querySelector('[data-lector-entrada]').focus();
+    });
+
+    /* ---------- Abrir y cerrar el diálogo Nuevo Pase ---------- */
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-abrir-dialogo="dialogoNuevoPase"]')) { return; }
+        var form = formPase();
+        if (form) { sincronizar(form); }
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement) || e.target.id !== 'dialogoNuevoPase') { return; }
+        var form = e.target.querySelector('[data-form-pase]');
+        if (!form) { return; }
+        reiniciarArticulos(form);
+        mostrarDepto(null);
+        sincronizar(form);
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var form = formPase();
+        if (form) {
+            sincronizar(form);
+            // Tras un error: el solicitante ya elegido vuelve a mostrar su departamento y puesto
+            var caja = cajaDe('solicitante');
+            var oculto = caja && caja.querySelector('[data-lector-id]');
+            var titulo = caja && caja.querySelector('[data-lector-titulo]');
+            if (oculto && oculto.value && titulo) {
+                buscarColaboradores(form, titulo.textContent.split(' · ')[0]).then(function (lista) {
+                    mostrarDepto(lista.filter(function (x) { return String(x.id) === oculto.value; })[0] || null);
+                }).catch(function () { /* sin datos */ });
+            }
+        }
+        // Tras un error al firmar, el recuadro de firma queda a la vista
+        var cajaFirma = document.querySelector('[data-dialogo-detalle-pase] [data-caja-firma-pase]:not([hidden])');
+        if (cajaFirma) { setTimeout(function () { cajaFirma.scrollIntoView({ block: 'center' }); }, 50); }
+    });
+})();
+/* Fin Pases de salida */
+/* ==========================================================================
+   Bitácora de transporte (seguridad/transporte): diálogo "Registrar Bitácora
+   Logística" y "Editar Registro".
+   - La lista "Ruta" se filtra por sede y tipo (llegada / salida) y propone el
+     horario más cercano a la hora actual de la sede (data-sugerencias).
+   - Estatus "NO LLEGO": se ocultan los datos de la unidad y aparecen los taxis
+     (plantilla <template data-plantilla-taxi>); siempre queda al menos uno.
+   - Pasajeros de cada taxi: se agregan con el lector universal (lector:elegido)
+     como fichas con su campo oculto; también los de un alta provisional
+     (colaborador:registrado).
+   - Tope de la ruta: si el monto lo supera, la justificación se vuelve obligatoria.
+   - Placas y chofer conocidos completan marca, modelo, número económico,
+     capacidad y teléfono (sin consultar al servidor).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto, porDefecto) { try { return JSON.parse(texto || ''); } catch (x) { return porDefecto; } }
+    function valorRadio(form, nombre) { var r = form.querySelector('input[name="' + nombre + '"]:checked'); return r ? r.value : ''; }
+    function sedeDe(form) { var s = form.querySelector('[data-sede-transporte]'); return s ? s.value : ''; }
+    function dinero(n) { return '$' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+    /* ---------- Pasajeros (fichas) ---------- */
+    function contar(bloque) {
+        var c = bloque.querySelector('[data-contador-pax]');
+        if (c) { c.textContent = bloque.querySelectorAll('.chip-pasajero').length + ' PAX'; }
+    }
+
+    function agregarPasajero(bloque, id, texto) {
+        var lista = bloque.querySelector('[data-pasajeros]');
+        if (!lista || lista.querySelector('.chip-pasajero[data-id="' + id + '"]')) { return false; }
+        var chip = document.createElement('span');
+        chip.className = 'chip-pasajero';
+        chip.setAttribute('data-id', id);
+        chip.appendChild(document.createTextNode(texto));
+        var oculto = document.createElement('input');
+        oculto.type = 'hidden'; oculto.name = bloque.getAttribute('data-nombre'); oculto.value = id;
+        chip.appendChild(oculto);
+        var quitar = document.createElement('button');
+        quitar.type = 'button'; quitar.setAttribute('data-quitar-pasajero', ''); quitar.setAttribute('aria-label', 'Quitar a ' + texto); quitar.textContent = '×';
+        chip.appendChild(quitar);
+        lista.appendChild(chip);
+        contar(bloque);
+        return true;
+    }
+
+    var bloqueAlta = null; // a qué taxi va el colaborador que se da de alta provisional
+
+    document.addEventListener('lector:elegido', function (e) {
+        var bloque = e.target.closest('[data-pasajeros-taxi]');
+        if (!bloque) { return; }
+        var r = e.detail || {};
+        var caja = e.target.closest('[data-lector]');
+        var nuevo = agregarPasajero(bloque, r.id, r.titulo + (r.detalle ? ' · ' + r.detalle.split(' · ')[0] : ''));
+        if (window.Lector && caja) {
+            window.Lector.limpiar(caja);
+            var estado = caja.querySelector('[data-lector-estado]');
+            if (estado) {
+                estado.hidden = false;
+                estado.className = 'lector-estado ' + (nuevo ? 'ok' : 'info');
+                estado.textContent = nuevo ? 'Agregado: ' + r.titulo + '. Escanea el siguiente.' : r.titulo + ' ya estaba en la lista.';
+            }
+            var entrada = caja.querySelector('[data-lector-entrada]');
+            if (entrada) { entrada.focus(); }
+        }
+    });
+
+    document.addEventListener('colaborador:registrado', function (e) {
+        if (!bloqueAlta || !document.body.contains(bloqueAlta)) { return; }
+        var c = e.detail || {};
+        agregarPasajero(bloqueAlta, c.id, c.nombre_completo + (c.num_empleado ? ' · Núm. ' + c.num_empleado : ' · provisional'));
+        bloqueAlta = null;
+    });
+
+    /* ---------- Tope de la ruta ---------- */
+    function topeDe(form) {
+        if (form.hasAttribute('data-form-editar-transporte')) { return parseFloat(form.getAttribute('data-tope')); }
+        var ruta = form.querySelector('[data-ruta-transporte]');
+        var op = ruta && ruta.value ? ruta.selectedOptions[0] : null;
+        return op ? parseFloat(op.getAttribute('data-tope')) : NaN;
+    }
+
+    function revisarTope(contenedor, form) {
+        var monto = contenedor.querySelector('[data-monto-taxi]');
+        var aviso = contenedor.querySelector('[data-aviso-tope]');
+        var just = contenedor.querySelector('[data-justificacion-taxi]');
+        if (!monto || !aviso) { return; }
+        var tope = topeDe(form);
+        var valor = parseFloat(monto.value) || 0;
+        var excede = !isNaN(tope) && valor > tope && !monto.disabled;
+        aviso.hidden = !excede;
+        if (just) { just.required = excede; }
+        if (excede) {
+            var t = aviso.querySelector('[data-texto-tope]');
+            if (t) { t.textContent = 'Este monto (' + dinero(valor) + ') supera el tope autorizado de ' + dinero(tope) + ' para esta ruta.'; }
+        }
+    }
+
+    /* ---------- Taxis ---------- */
+    function renumerar(form) {
+        var filas = form.querySelectorAll('[data-taxi]');
+        filas.forEach(function (f, i) {
+            var t = f.querySelector('[data-titulo-taxi]');
+            if (t) { t.textContent = 'Taxi ' + (i + 1); }
+            var q = f.querySelector('[data-quitar-taxi]');
+            if (q) { q.disabled = filas.length <= 1; q.title = filas.length <= 1 ? 'Debe haber al menos un taxi' : 'Quitar este taxi'; }
+        });
+    }
+
+    function listaParaderos(form) {
+        var sede = sedeDe(form) || '0';
+        form.querySelectorAll('[data-destino-taxi]').forEach(function (c) { c.setAttribute('list', 'paraderosTransporte-' + sede); });
+    }
+
+    function agregarTaxi(form) {
+        var cont = form.querySelector('[data-taxis]');
+        var plantilla = document.querySelector('template[data-plantilla-taxi]');
+        if (!cont || !plantilla) { return null; }
+        var n = parseInt(cont.getAttribute('data-siguiente') || '0', 10);
+        cont.setAttribute('data-siguiente', String(n + 1));
+        var caja = document.createElement('div');
+        caja.innerHTML = plantilla.innerHTML.replace(/__T__/g, String(n)).trim();
+        var fila = caja.firstElementChild;
+        cont.appendChild(fila);
+        fila.querySelectorAll('[data-lector]').forEach(function (l) { if (window.Lector) { window.Lector.preparar(l); } });
+        listaParaderos(form);
+        renumerar(form);
+        return fila;
+    }
+
+    /* ---------- Sincronizar el alta ---------- */
+    function sobrecupo(form) {
+        var pax = form.querySelector('[data-pax-normal]');
+        var cap = form.querySelector('[data-capacidad-normal]');
+        var aviso = form.querySelector('[data-aviso-sobrecupo]');
+        if (!pax || !cap || !aviso) { return; }
+        var p = parseInt(pax.value, 10) || 0;
+        var c = parseInt(cap.value, 10) || 0;
+        aviso.hidden = !(c > 0 && p > c);
+        if (!aviso.hidden) { aviso.querySelector('[data-texto-sobrecupo]').textContent = 'Sobrecupo: ' + p + ' pasajeros declarados contra una capacidad de ' + c + '. Verifica antes de continuar.'; }
+    }
+
+    function firmaGuardia(form, taxis) {
+        var firma = form.querySelector('input[name="firma_guardia"]');
+        if (!firma) { return; }
+        var caja = firma.closest('[data-firma]');
+        if (taxis) { firma.setAttribute('data-firma-requerida', ''); } else { firma.removeAttribute('data-firma-requerida'); caja.classList.remove('falta'); }
+        var etiqueta = caja.querySelector('.campo-etiqueta');
+        var asterisco = etiqueta && etiqueta.querySelector('[data-asterisco]');
+        if (etiqueta && taxis && !asterisco) {
+            asterisco = document.createElement('span');
+            asterisco.className = 'text-danger'; asterisco.setAttribute('data-asterisco', ''); asterisco.setAttribute('aria-hidden', 'true'); asterisco.textContent = ' *';
+            etiqueta.appendChild(asterisco);
+        } else if (!taxis && asterisco) { asterisco.remove(); }
+    }
+
+    function sincronizar(form, elegirSugerido) {
+        var sede = sedeDe(form);
+        var tipo = valorRadio(form, 'tipo_movimiento');
+        var estatus = valorRadio(form, 'estatus');
+        var ruta = form.querySelector('[data-ruta-transporte]');
+        var dialogo = form.closest('dialog');
+        var sugerencias = leer(dialogo && dialogo.getAttribute('data-sugerencias'), {});
+
+        // Rutas de la sede y el sentido elegidos
+        var visibles = 0;
+        if (ruta) {
+            Array.prototype.forEach.call(ruta.options, function (op) {
+                if (!op.value) { return; }
+                var ok = op.getAttribute('data-sede') === sede && op.getAttribute('data-sentido') === tipo;
+                op.hidden = !ok; op.disabled = !ok;
+                if (ok) { visibles++; }
+            });
+            var actual = ruta.value ? ruta.selectedOptions[0] : null;
+            if (elegirSugerido || (actual && actual.disabled)) {
+                var sugerido = sugerencias[sede] && sugerencias[sede][tipo];
+                ruta.value = sugerido ? String(sugerido) : '';
+                if (ruta.value && ruta.selectedOptions[0].disabled) { ruta.value = ''; }
+            }
+        }
+        var sinRutas = form.querySelector('[data-sin-rutas]');
+        if (sinRutas) { sinRutas.hidden = !sede || !tipo || visibles > 0; }
+
+        // Transportista y tope de la ruta elegida
+        var info = form.querySelector('[data-info-ruta]');
+        var op = ruta && ruta.value ? ruta.selectedOptions[0] : null;
+        if (info) {
+            info.hidden = !op;
+            info.textContent = '';
+            if (op) {
+                var tope = op.getAttribute('data-tope');
+                var i = document.createElement('i'); i.className = 'bi bi-building me-1'; i.setAttribute('aria-hidden', 'true');
+                info.appendChild(i);
+                info.appendChild(document.createTextNode('Empresa Asociada: ' + (op.getAttribute('data-transportista') || '—')
+                    + ' · ' + (tope ? 'Tope por taxi: ' + dinero(tope) : 'Sin tope por taxi')));
+            }
+        }
+
+        // Unidad normal o taxis
+        var taxis = estatus === 'no_llego';
+        var normal = form.querySelector('[data-caja-normal]');
+        var cajaTaxi = form.querySelector('[data-caja-taxi]');
+        if (normal) {
+            normal.hidden = taxis;
+            normal.querySelectorAll('input, select, textarea').forEach(function (c) { c.disabled = taxis; });
+        }
+        if (cajaTaxi) {
+            cajaTaxi.hidden = !taxis;
+            var cont = cajaTaxi.querySelector('[data-taxis]');
+            if (taxis && cont && !cont.querySelector('[data-taxi]')) { agregarTaxi(form); }
+            if (!taxis && cont) { cont.innerHTML = ''; cont.setAttribute('data-siguiente', '0'); }
+        }
+        firmaGuardia(form, taxis);
+        listaParaderos(form);
+        form.querySelectorAll('[data-taxi]').forEach(function (f) { revisarTope(f, form); });
+        renumerar(form);
+        sobrecupo(form);
+    }
+
+    /* ---------- Autollenado de unidad y chofer ---------- */
+    function autollenarUnidad(campo) {
+        var form = campo.form;
+        var mapa = leer(form.getAttribute(campo.getAttribute('data-autollenar') === 'taxi' ? 'data-taxis' : 'data-unidades'), {});
+        var datos = mapa[(campo.value || '').replace(/[\s\-.]+/g, '').toUpperCase()];
+        if (!datos) { return; }
+        var raiz = campo.closest('[data-taxi]') || campo.closest('[data-caja-normal]');
+        Object.keys(datos).forEach(function (k) {
+            var c = raiz.querySelector('[data-campo-unidad="' + k + '"]');
+            if (!c) { return; }
+            if (k === 'tipo') {
+                if (c.querySelector('option[value="' + datos[k] + '"]')) { c.value = datos[k]; }
+            } else if (!c.value) { c.value = datos[k]; }
+        });
+        sobrecupo(form);
+    }
+
+    function autollenarChofer(campo) {
+        var mapa = leer(campo.form.getAttribute('data-choferes'), {});
+        var tel = mapa[(campo.value || '').trim().replace(/\s+/g, ' ').toUpperCase()];
+        if (!tel) { return; }
+        var raiz = campo.closest('[data-taxi]') || campo.closest('[data-caja-normal]');
+        var c = raiz && raiz.querySelector('[data-telefono-chofer]');
+        if (c && !c.value) { c.value = tel; }
+    }
+
+    /* ---------- Editar ---------- */
+    function abrirEdicion(boton) {
+        var dialogo = document.getElementById(boton.getAttribute('data-dialogo'));
+        var f = dialogo && dialogo.querySelector('form[data-form-editar-transporte]');
+        if (!f) { return; }
+        var v = leer(boton.getAttribute('data-valores'), {});
+        f.action = boton.getAttribute('data-url');
+        f.querySelector('[data-campo-dialogo]').value = 'editar-' + boton.getAttribute('data-id');
+        f.setAttribute('data-tope', v.tope === null || v.tope === undefined ? '' : String(v.tope));
+        dialogo.querySelector('[data-editar-folio]').textContent = v.folio || '';
+        var badge = dialogo.querySelector('[data-editar-tipo]');
+        badge.textContent = v.taxi ? 'TAXI' : 'NORMAL';
+        badge.className = 'badge-tipo-registro ' + (v.taxi ? 'taxi' : 'normal');
+        var soloTaxi = f.querySelector('[data-solo-taxi]');
+        var soloNormal = f.querySelector('[data-solo-normal]');
+        soloTaxi.hidden = !v.taxi;
+        soloNormal.hidden = !!v.taxi;
+        soloTaxi.querySelectorAll('input, textarea').forEach(function (c) { c.disabled = !v.taxi; });
+        soloNormal.querySelectorAll('input').forEach(function (c) { c.disabled = !!v.taxi; });
+        ['cantidad_pax', 'monto', 'destino', 'justificacion', 'observaciones'].forEach(function (nombre) {
+            var c = f.querySelector('[name="' + nombre + '"]');
+            if (c) { c.value = v[nombre] === null || v[nombre] === undefined ? '' : String(v[nombre]); }
+        });
+        f.querySelectorAll('input[name="estatus"]').forEach(function (r) { r.checked = r.value === v.estatus; });
+        var destino = f.querySelector('[data-destino-taxi]');
+        if (destino) { destino.setAttribute('list', 'paraderosTransporte-' + v.sede_id); }
+        var bloque = f.querySelector('[data-pasajeros-taxi]');
+        if (bloque) {
+            bloque.querySelector('[data-pasajeros]').innerHTML = '';
+            (v.pasajeros || []).forEach(function (p) { agregarPasajero(bloque, p.id, p.texto); });
+            contar(bloque);
+        }
+        revisarTope(f, f);
+        if (typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
+    }
+
+    /* ---------- Eventos ---------- */
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-transporte]')) { return; }
+        var cambioSedeOTipo = e.target.matches('[data-sede-transporte]') || e.target.name === 'tipo_movimiento';
+        if (cambioSedeOTipo || e.target.name === 'estatus' || e.target.matches('[data-ruta-transporte]')) { sincronizar(form, cambioSedeOTipo); }
+        if (e.target.matches('[data-autollenar]')) { autollenarUnidad(e.target); }
+        if (e.target.matches('[data-autollenar-chofer]')) { autollenarChofer(e.target); }
+    });
+
+    document.addEventListener('input', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-transporte], [data-form-editar-transporte]')) { return; }
+        if (e.target.matches('[data-monto-taxi]')) { revisarTope(e.target.closest('[data-taxi]') || form, form); }
+        if (e.target.matches('[data-pax-normal], [data-capacidad-normal]')) { sobrecupo(form); }
+        // Al elegir de la lista de sugerencias el navegador lanza "input"
+        if (e.target.matches('[data-autollenar]')) { autollenarUnidad(e.target); }
+        if (e.target.matches('[data-autollenar-chofer]')) { autollenarChofer(e.target); }
+    });
+
+    document.addEventListener('click', function (e) {
+        var form = e.target.closest('form[data-form-transporte]');
+        if (form && e.target.closest('[data-agregar-taxi]')) {
+            var fila = agregarTaxi(form);
+            if (fila) {
+                fila.scrollIntoView({ block: 'nearest' });
+                var placas = fila.querySelector('input[type="text"]');
+                if (placas) { placas.focus(); }
+            }
+            return;
+        }
+        var quitarTaxi = form && e.target.closest('[data-quitar-taxi]');
+        if (quitarTaxi) {
+            if (form.querySelectorAll('[data-taxi]').length > 1) { quitarTaxi.closest('[data-taxi]').remove(); renumerar(form); }
+            return;
+        }
+        var quitar = e.target.closest('[data-quitar-pasajero]');
+        if (quitar) {
+            var bloque = quitar.closest('[data-pasajeros-taxi]');
+            quitar.closest('.chip-pasajero').remove();
+            if (bloque) { contar(bloque); }
+            return;
+        }
+        var alta = e.target.closest('[data-alta-pasajero]');
+        if (alta) { bloqueAlta = alta.closest('[data-pasajeros-taxi]'); return; }
+
+        var editar = e.target.closest('[data-accion="editar-movimiento"]');
+        if (editar) { abrirEdicion(editar); }
+    });
+
+    // Al cerrar, el alta vuelve a su estado inicial (sin taxis ni pasajeros) y la edición sin fichas
+    // ("close" no burbujea: se escucha en captura, después del limpiado genérico)
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('form[data-form-transporte]').forEach(function (form) {
+            var cont = form.querySelector('[data-taxis]');
+            if (cont) { cont.innerHTML = ''; cont.setAttribute('data-siguiente', '0'); }
+            // Después de que los campos vuelvan a sus valores iniciales (manejador genérico)
+            setTimeout(function () { sincronizar(form, true); }, 0);
+        });
+        e.target.querySelectorAll('form[data-form-editar-transporte] [data-pasajeros]').forEach(function (l) { l.innerHTML = ''; });
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[data-form-transporte]').forEach(function (form) {
+            sincronizar(form, false);
+            form.querySelectorAll('[data-pasajeros-taxi]').forEach(contar);
+        });
+        document.querySelectorAll('form[data-form-editar-transporte]').forEach(function (form) {
+            form.querySelectorAll('[data-pasajeros-taxi]').forEach(contar);
+            revisarTope(form, form);
+        });
+    });
+})();
+/* Fin Bitácora de transporte */

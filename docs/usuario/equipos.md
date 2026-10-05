@@ -9,7 +9,7 @@ Padrones → Inventarios de Seguridad → **Equipos de seguridad**. Aquí está 
 | Estado | Qué quiere decir |
 |---|---|
 | **DISPONIBLE** (verde) | Está en la caseta, listo para prestarse. |
-| **ASIGNADO** (amarillo) | Lo tiene un colaborador. Lo pone el módulo de Responsivas (próximamente). |
+| **ASIGNADO** (amarillo) | Lo tiene un colaborador. Lo pone el módulo de [Responsivas](responsivas.md); la ficha dice **A cargo de** quién está. |
 | **EN MANTENIMIENTO** (morado) | En reparación o revisión: no se presta. |
 | **BAJA/PERDIDO** (rojo) | Se perdió, se dañó o lo robaron. Se dio de baja con un voucher. |
 

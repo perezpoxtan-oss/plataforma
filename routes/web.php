@@ -12,6 +12,8 @@ use App\Http\Controllers\Administracion\UsuarioController;
 use App\Http\Controllers\Auth\SesionController;
 use App\Http\Controllers\LectorController;
 use App\Http\Controllers\ModuloPendienteController;
+use App\Http\Controllers\Operacion\PrestamoLlaveController;
+use App\Http\Controllers\Operacion\ResponsivaController;
 use App\Http\Controllers\Organizacion\ColaboradorController;
 use App\Http\Controllers\Organizacion\DepartamentoController;
 use App\Http\Controllers\Organizacion\EspacioController;
@@ -20,11 +22,14 @@ use App\Http\Controllers\Organizacion\TurnoController;
 use App\Http\Controllers\Padrones\ProveedorController;
 use App\Http\Controllers\Padrones\RutaController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\Seguridad\AccesoController;
 use App\Http\Controllers\Seguridad\EquipoController;
 use App\Http\Controllers\Seguridad\EstacionamientoController;
 use App\Http\Controllers\Seguridad\GafeteController;
 use App\Http\Controllers\Seguridad\LlaveController;
+use App\Http\Controllers\Seguridad\PaseSalidaController;
 use App\Http\Controllers\Seguridad\PersonaController;
+use App\Http\Controllers\Seguridad\TransporteController;
 use App\Http\Controllers\Seguridad\VehiculoController;
 use App\Http\Controllers\Seguridad\VoucherController;
 use Illuminate\Support\Facades\Route;
@@ -191,6 +196,79 @@ Route::middleware('auth')->group(function () {
     Route::post('/rutas/{ruta}/clonar', [RutaController::class, 'clonar'])->whereNumber('ruta')->name('rutas.clonar');
     Route::get('/rutas/{ruta}/itinerario', [RutaController::class, 'itinerario'])->whereNumber('ruta')->name('rutas.itinerario');
     // Fin Padrones: Rutas de transporte
+
+    // Padrones: Bitácora de accesos (Gente en Sitio, Pendientes de Autorización, Historial, Registro Inteligente de Ingreso)
+    Route::get('/accesos', [AccesoController::class, 'index'])->name('accesos.index');
+    Route::post('/accesos', [AccesoController::class, 'store'])->name('accesos.store');
+    Route::get('/accesos/exportar', [AccesoController::class, 'exportar'])->name('accesos.exportar');
+    Route::get('/accesos/en-sitio', [AccesoController::class, 'enSitio'])->middleware('throttle:120,1')->name('accesos.en-sitio');
+    Route::get('/accesos/buscar', [AccesoController::class, 'buscar'])->middleware('throttle:240,1')->name('accesos.buscar');
+    Route::get('/accesos/gafetes', [AccesoController::class, 'gafetes'])->name('accesos.gafetes');
+    Route::patch('/accesos/{acceso}/autorizar', [AccesoController::class, 'autorizar'])->whereNumber('acceso')->name('accesos.autorizar');
+    Route::patch('/accesos/{acceso}/salida', [AccesoController::class, 'salida'])->whereNumber('acceso')->name('accesos.salida');
+    Route::patch('/accesos/{acceso}/zona', [AccesoController::class, 'zona'])->whereNumber('acceso')->name('accesos.zona');
+    Route::post('/accesos/{acceso}/salida-temporal', [AccesoController::class, 'salidaTemporal'])->whereNumber('acceso')->name('accesos.salida-temporal');
+    Route::patch('/accesos/{acceso}/regreso', [AccesoController::class, 'regreso'])->whereNumber('acceso')->name('accesos.regreso');
+    Route::patch('/accesos/acompanantes/{acompanante}/salida', [AccesoController::class, 'acompananteSalida'])->whereNumber('acompanante')->name('accesos.acompanantes.salida');
+    Route::patch('/accesos/acompanantes/{acompanante}/salida-temporal', [AccesoController::class, 'acompananteSalidaTemporal'])->whereNumber('acompanante')->name('accesos.acompanantes.salida-temporal');
+    Route::patch('/accesos/acompanantes/{acompanante}/regreso', [AccesoController::class, 'acompananteRegreso'])->whereNumber('acompanante')->name('accesos.acompanantes.regreso');
+    // Fin Padrones: Bitácora de accesos
+    // Padrones: Préstamo de llaves y Responsivas (menú Operación; ver docs/tecnico/prestamo-llaves.md y responsivas.md)
+    Route::get('/prestamo-llaves', [PrestamoLlaveController::class, 'index'])->name('prestamo_llaves.index');
+    Route::post('/prestamo-llaves', [PrestamoLlaveController::class, 'store'])->name('prestamo_llaves.store');
+    Route::get('/prestamo-llaves/exportar', [PrestamoLlaveController::class, 'exportar'])->name('prestamo_llaves.exportar');
+    Route::get('/prestamo-llaves/llaves/{llave}/historial', [PrestamoLlaveController::class, 'historial'])->whereNumber('llave')->name('prestamo_llaves.historial');
+    Route::patch('/prestamo-llaves/{prestamo}/recibir', [PrestamoLlaveController::class, 'recibir'])->whereNumber('prestamo')->name('prestamo_llaves.recibir');
+    Route::patch('/prestamo-llaves/{prestamo}/anular', [PrestamoLlaveController::class, 'anular'])->whereNumber('prestamo')->name('prestamo_llaves.anular');
+    Route::patch('/prestamo-llaves/{prestamo}/reactivar', [PrestamoLlaveController::class, 'reactivar'])->whereNumber('prestamo')->name('prestamo_llaves.reactivar');
+    Route::get('/responsivas', [ResponsivaController::class, 'index'])->name('responsivas.index');
+    Route::post('/responsivas', [ResponsivaController::class, 'store'])->name('responsivas.store');
+    Route::get('/responsivas/equipos/{equipo}/historial', [ResponsivaController::class, 'historial'])->whereNumber('equipo')->name('responsivas.historial');
+    Route::patch('/responsivas/{responsiva}/recibir', [ResponsivaController::class, 'recibir'])->whereNumber('responsiva')->name('responsivas.recibir');
+    Route::get('/responsivas/{responsiva}/firma', [ResponsivaController::class, 'firma'])->whereNumber('responsiva')->name('responsivas.firma');
+    Route::get('/responsivas/{responsiva}/hoja', [ResponsivaController::class, 'hoja'])->whereNumber('responsiva')->name('responsivas.hoja');
+    // Fin Padrones: Préstamo de llaves y Responsivas
+    // Padrones: Bitácora de Novedades (despacho de tickets con expediente por categoría; Lost & Found trabaja solo sus tickets)
+    Route::controller('App\Http\Controllers\Seguridad\NovedadController')->group(function () {
+        Route::get('/novedades', 'index')->name('novedades.index');
+        Route::get('/novedades/lost-found', 'index')->name('lost_found.index');
+        Route::post('/novedades', 'store')->middleware('throttle:60,1')->name('novedades.store');
+        Route::get('/novedades/exportar', 'exportar')->name('novedades.exportar');
+        Route::get('/novedades/ficha-hechos', 'fichaHechos')->name('novedades.ficha-hechos');
+        Route::get('/novedades/coincidencias', 'coincidencias')->middleware('throttle:60,1')->name('novedades.coincidencias');
+        Route::post('/novedades/perdidas/{reporte}/vincular', 'vincularPerdida')->whereNumber('reporte')->name('novedades.perdidas.vincular');
+        Route::put('/novedades/{novedad}', 'update')->whereNumber('novedad')->name('novedades.update');
+        Route::post('/novedades/{novedad}/reabrir', 'reabrir')->whereNumber('novedad')->name('novedades.reabrir');
+        Route::post('/novedades/{novedad}/vincular-hallazgo', 'vincularRobo')->whereNumber('novedad')->name('novedades.robo.vincular');
+        Route::get('/novedades/{novedad}/imprimir', 'imprimir')->whereNumber('novedad')->name('novedades.imprimir');
+        Route::get('/novedades/{novedad}/acuse', 'acuse')->whereNumber('novedad')->name('novedades.acuse');
+        Route::get('/novedades/{novedad}/firmas/{rol}', 'firma')->whereNumber('novedad')->where('rol', '[a-z]+')->name('novedades.firma');
+    });
+    // Fin Padrones: Bitácora de Novedades
+
+    // Padrones: Pases de salida (Operación: circuito de firmas, rechazo e impresión)
+    Route::get('/pases-salida', [PaseSalidaController::class, 'index'])->name('pases-salida.index');
+    Route::post('/pases-salida', [PaseSalidaController::class, 'store'])->name('pases-salida.store');
+    Route::get('/pases-salida/equipos/{equipo}', [PaseSalidaController::class, 'equipo'])->whereNumber('equipo')->name('pases-salida.equipo');
+    Route::get('/pases-salida/{pase}', [PaseSalidaController::class, 'show'])->whereNumber('pase')->name('pases-salida.show');
+    Route::post('/pases-salida/{pase}/firmas', [PaseSalidaController::class, 'firmar'])->whereNumber('pase')->middleware('throttle:60,1')->name('pases-salida.firmar');
+    Route::get('/pases-salida/{pase}/firmas/{firma}', [PaseSalidaController::class, 'firma'])->whereNumber(['pase', 'firma'])->name('pases-salida.firma');
+    Route::post('/pases-salida/{pase}/rechazar', [PaseSalidaController::class, 'rechazar'])->whereNumber('pase')->name('pases-salida.rechazar');
+    Route::get('/pases-salida/{pase}/imprimir', [PaseSalidaController::class, 'imprimir'])->whereNumber('pase')->name('pases-salida.imprimir');
+    // Fin Padrones: Pases de salida
+    // Padrones: Bitácora de transporte (Operación: llegadas, salidas y vales de taxi)
+    Route::get('/transporte', [TransporteController::class, 'index'])->name('transporte.index');
+    Route::post('/transporte', [TransporteController::class, 'store'])->name('transporte.store');
+    Route::get('/transporte/reportes', [TransporteController::class, 'reportes'])->name('transporte.reportes');
+    Route::get('/transporte/exportar', [TransporteController::class, 'exportar'])->name('transporte.exportar');
+    Route::get('/transporte/{movimiento}', [TransporteController::class, 'show'])->whereNumber('movimiento')->name('transporte.show');
+    Route::put('/transporte/{movimiento}', [TransporteController::class, 'update'])->whereNumber('movimiento')->name('transporte.update');
+    Route::patch('/transporte/{movimiento}/anular', [TransporteController::class, 'anular'])->whereNumber('movimiento')->name('transporte.anular');
+    Route::patch('/transporte/{movimiento}/reactivar', [TransporteController::class, 'reactivar'])->whereNumber('movimiento')->name('transporte.reactivar');
+    Route::patch('/transporte/{movimiento}/autorizar', [TransporteController::class, 'autorizar'])->whereNumber('movimiento')->name('transporte.autorizar');
+    Route::get('/transporte/{movimiento}/vale', [TransporteController::class, 'vale'])->whereNumber('movimiento')->name('transporte.vale');
+    Route::get('/transporte/{movimiento}/firma/{cual}', [TransporteController::class, 'firma'])->whereNumber('movimiento')->whereIn('cual', ['guardia', 'taxista'])->name('transporte.firma');
+    // Fin Padrones: Bitácora de transporte
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');

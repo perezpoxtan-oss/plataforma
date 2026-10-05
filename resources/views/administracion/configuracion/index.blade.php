@@ -32,6 +32,13 @@
                             <input type="checkbox" name="avisos[{{ $clave }}]" value="1" @checked($empresa->aviso($clave)) @disabled(! $puedeEditar)>
                             <span>{{ $etiqueta }}</span>
                         </label>
+                        @if (in_array($clave, \App\Models\Empresa::AVISOS_CON_DESTINATARIOS, true))
+                            <div class="ms-4 mb-3">
+                                <label class="campo-etiqueta" for="dest_{{ $clave }}">Correos que lo reciben <span class="text-lowercase fw-normal">(uno por línea o separados por coma)</span></label>
+                                <textarea id="dest_{{ $clave }}" name="destinatarios[{{ $clave }}]" class="campo mb-1" rows="2" maxlength="3500" placeholder="finanzas@tuempresa.com" @disabled(! $puedeEditar)>{{ old("destinatarios.$clave", implode("\n", $empresa->destinatariosAviso($clave))) }}</textarea>
+                                <p class="campo-ayuda mt-0">Si lo dejas vacío, se envía a los usuarios que pueden autorizar vales de taxi en esa sede.</p>
+                            </div>
+                        @endif
                     @endforeach
                     @if ($puedeEditar)
                         <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar avisos</button>

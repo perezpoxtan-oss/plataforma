@@ -41,6 +41,13 @@ class AdministradorColaboradores
         'vehiculos' => 'colaborador_id',
         'llaves' => 'colaborador_id',
         'vouchers_reposicion' => 'colaborador_id',
+        'accesos' => 'colaborador_id',
+        'prestamos_llaves' => 'colaborador_id',
+        'responsivas' => 'colaborador_id',
+        'novedades' => 'reportado_colaborador_id',
+        'accidente_colaboradores' => 'colaborador_id',
+        'pases_salida' => 'colaborador_id',
+        'movimiento_transporte_pasajeros' => 'colaborador_id',
     ];
 
     private const SIN_ACENTOS = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u'];

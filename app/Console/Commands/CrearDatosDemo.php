@@ -2,6 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Acceso;
+use App\Models\AccidenteFirma;
+use App\Models\AcompananteAcceso;
 use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
@@ -10,9 +13,15 @@ use App\Models\Espacio;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
+use App\Models\LostFoundArticulo;
+use App\Models\MovimientoTransporte;
+use App\Models\Novedad;
+use App\Models\PaseSalida;
 use App\Models\Persona;
+use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
 use App\Models\Puesto;
+use App\Models\Responsiva;
 use App\Models\Rol;
 use App\Models\Rubro;
 use App\Models\Ruta;
@@ -28,11 +37,19 @@ use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Llaves\AdministradorLlaves;
+use App\Services\Novedades\AdministradorNovedades;
+use App\Services\Novedades\Formatos\RecorridoPc;
+use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Plataforma\ProvisionarEmpresa;
+use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
+use App\Services\Responsivas\AdministradorResponsivas;
 use App\Services\Rutas\AdministradorRutas;
+use App\Services\Transporte\BitacoraTransporte;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\Tenant;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -126,6 +143,11 @@ class CrearDatosDemo extends Command
         $tenant->conEmpresa($empresa->id, fn () => $this->gafetesDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->equiposYEstacionamientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->rutasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->accesosDemo($empresa, $sedes, User::where('username', 'jefe.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->prestamosYResponsivasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->novedadesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'agente2.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->pasesSalidaDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->transporteDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -708,5 +730,634 @@ class CrearDatosDemo extends Command
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }
+    }
+
+    /**
+     * Bitácora de accesos de ejemplo, solo la primera vez: gente en sitio
+     * (colaboradores, visitas con gafete y acompañantes, huéspedes con auto en
+     * el estacionamiento, una huésped fuera en tour, un contratista con un
+     * ayudante que salió por material), proveedores pendientes de autorizar
+     * y visitas finalizadas hoy y ayer (incluida una emergencia y un tour
+     * completo). Usa los colaboradores, personas, vehículos, proveedores,
+     * gafetes y zonas demo si existen; si no, deja los datos como texto.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function accesosDemo(Empresa $empresa, $sedes, User $jefe, User $agente): void
+    {
+        if (Acceso::exists()) {
+            return;
+        }
+
+        // Hora local de Cancún de hoy (o de hace N días), guardada en hora universal
+        $a = fn (string $hora, int $diasAtras = 0) => Carbon::now('America/Cancun')->subDays($diasAtras)->setTimeFromTimeString($hora)->utc();
+        $colaborador = fn (string $num) => Colaborador::where('num_empleado', $num)->first();
+        $persona = fn (string $nombre) => Persona::where('nombre_completo', $nombre)->first();
+        $vehiculo = fn (string $placas) => Vehiculo::where('placas', Vehiculo::normalizarPlacas($placas))->first();
+        $proveedor = fn (string $nombre) => Proveedor::where('nombre', $nombre)->first();
+        $zonaDe = fn (string $sede, string $nombre) => ZonaEstacionamiento::where('sede_id', $sedes[$sede]->id)->where('nombre', $nombre)->where('activo', true)->value('id');
+        $gafete = fn (string $sede, string $tipo, int $n) => Gafete::where('activo', true)
+            ->where('nomenclatura', AdministradorGafetes::prefijo($empresa->nombre_comercial, $sedes[$sede]->codigo, $tipo).str_pad((string) $n, 3, '0', STR_PAD_LEFT))->first();
+        $nombreDe = fn ($c, string $texto) => $c ? mb_strtoupper($c->nombreCompleto()) : $texto;
+        $placasDe = fn ($v, string $texto) => $v?->placas ?? Vehiculo::normalizarPlacas($texto);
+
+        $crear = function (string $sede, array $datos, $entrada, User $autor, array $extra = []) use ($sedes): Acceso {
+            $acceso = new Acceso($datos + ['sede_id' => $sedes[$sede]->id, 'entrada_at' => $entrada]);
+            $acceso->forceFill($extra + ['creado_por' => $autor->id, 'actualizado_por' => $autor->id])->save();
+
+            return $acceso;
+        };
+        $acompanante = function (Acceso $acceso, string $nombre, ?string $identificacion = null, ?Gafete $g = null, array $extra = []): void {
+            $ac = new AcompananteAcceso(['acceso_id' => $acceso->id, 'nombre' => $nombre, 'identificacion' => $identificacion, 'gafete_id' => $g?->id, 'gafete_texto' => $g?->nomenclatura]);
+            $ac->forceFill($extra + ['creado_por' => $acceso->creado_por, 'actualizado_por' => $acceso->creado_por])->save();
+        };
+
+        // ---------------- En sitio: Hotel Demo Centro ----------------
+        $roberto = $colaborador('1005');
+        $crear('CEN', ['tipo' => 'colaborador', 'nombre' => $nombreDe($roberto, 'ROBERTO HERNÁNDEZ CRUZ'), 'colaborador_id' => $roberto?->id, 'modo_arribo' => 'a_pie'], $a('06:52'), $agente);
+
+        $carlos = $colaborador('1006');
+        $pickup = $vehiculo('VPK-77-12');
+        $crear('CEN', ['tipo' => 'colaborador', 'nombre' => $nombreDe($carlos, 'CARLOS PÉREZ GÓMEZ'), 'colaborador_id' => $carlos?->id, 'modo_arribo' => 'auto',
+            'vehiculo_id' => $pickup?->id, 'placas' => $placasDe($pickup, 'VPK-77-12'), 'zona_estacionamiento_id' => $zonaDe('CEN', 'Estacionamiento Colaboradores')], $a('07:10'), $agente);
+
+        $mariana = $colaborador('1007');
+        $g1 = $gafete('CEN', 'Visitante', 1);
+        $visita = $crear('CEN', ['tipo' => 'visitante', 'nombre' => 'LAURA MÉNDEZ RÍOS', 'persona_id' => $persona('Laura Méndez Ríos')?->id, 'identificacion' => 'ine',
+            'motivo_visita' => 'colaborador', 'visita_colaborador_id' => $mariana?->id, 'persona_visita' => $nombreDe($mariana, 'MARIANA LÓPEZ PECH'),
+            'gafete_id' => $g1?->id, 'gafete_texto' => $g1?->nomenclatura, 'modo_arribo' => 'a_pie', 'num_acompanantes' => 1], $a('09:40'), $agente);
+        $acompanante($visita, 'SOFÍA MÉNDEZ', 'ine', $gafete('CEN', 'Visitante', 2));
+
+        $jetta = $vehiculo('QRR 44 10');
+        $g3 = $gafete('CEN', 'Visitante', 3);
+        $crear('CEN', ['tipo' => 'visitante', 'nombre' => 'RICARDO ORTEGA VELA', 'persona_id' => $persona('Ricardo Ortega Vela')?->id, 'identificacion' => 'pasaporte',
+            'motivo_visita' => 'rh', 'gafete_id' => $g3?->id, 'gafete_texto' => $g3?->nomenclatura, 'modo_arribo' => 'auto', 'vehiculo_id' => $jetta?->id,
+            'placas' => $placasDe($jetta, 'QRR4410'), 'zona_estacionamiento_id' => $zonaDe('CEN', 'Estacionamiento Huéspedes')], $a('10:05'), $jefe);
+
+        $turquesa = $proveedor('Viajes Turquesa');
+        $versa = $vehiculo('ABC-123-A');
+        $leticia = $crear('CEN', ['tipo' => 'huesped', 'nombre' => 'LETICIA VÁZQUEZ', 'habitacion' => '204', 'tiene_reserva' => true, 'numero_reserva' => '1234567',
+            'tipo_pase' => 'estancia', 'proveedor_id' => $turquesa?->id, 'empresa_procedencia' => $turquesa ? 'VIAJES TURQUESA' : null, 'modo_arribo' => 'auto',
+            'vehiculo_id' => $versa?->id, 'placas' => $placasDe($versa, 'ABC123A'), 'zona_estacionamiento_id' => $zonaDe('CEN', 'Estacionamiento Huéspedes'),
+            'num_acompanantes' => 2], $a('08:30', 2), $agente);
+        $acompanante($leticia, 'JORGE VÁZQUEZ');
+        $acompanante($leticia, 'MARIO VÁZQUEZ');
+
+        // Huésped fuera en tour desde las 10:30
+        $ayleen = $crear('CEN', ['tipo' => 'huesped', 'nombre' => 'AYLEEN PÉREZ', 'habitacion' => '310', 'tiene_reserva' => true, 'numero_reserva' => '1234569',
+            'tipo_pase' => 'estancia', 'modo_arribo' => 'a_pie'], $a('16:20', 1), $agente);
+        $crear('CEN', ['tipo' => 'huesped', 'movimiento' => 'salida_temporal', 'acceso_origen_id' => $ayleen->id, 'nombre' => 'AYLEEN PÉREZ', 'habitacion' => '310',
+            'modo_arribo' => 'auto', 'placas' => 'TUR450', 'conductor' => 'GUÍA TOURS DEL CARIBE'], $a('10:30'), $agente);
+
+        // Pendientes de autorización
+        $abarrotes = $proveedor('Abarrotes del Caribe');
+        $camion = $vehiculo('UPS-03-CL');
+        $gp = $gafete('CEN', 'Proveedor', 1);
+        $crear('CEN', ['tipo' => 'proveedor', 'estado' => 'pendiente', 'nombre' => 'JESÚS BALAM TUN', 'persona_id' => $persona('Jesús Balam Tun')?->id,
+            'proveedor_id' => $abarrotes?->id, 'empresa_procedencia' => 'ABARROTES DEL CARIBE', 'host_colaborador_id' => $carlos?->id, 'identificacion' => 'licencia',
+            'gafete_id' => $gp?->id, 'gafete_texto' => $gp?->nomenclatura, 'tipo_visita' => 'ejecucion',
+            'departamento_id' => Departamento::where('nombre', 'Alimentos y Bebidas')->value('id'), 'area_trabajo' => 'ANDÉN DE ALMACÉN',
+            'actividad' => 'Entrega de abarrotes de la semana.', 'modo_arribo' => 'auto', 'vehiculo_id' => $camion?->id, 'placas' => $placasDe($camion, 'UPS03CL'),
+            'zona_estacionamiento_id' => $zonaDe('CEN', 'Andén de Almacén General')], $a('11:15'), $agente);
+
+        $patricia = $crear('CEN', ['tipo' => 'contratista', 'estado' => 'pendiente', 'nombre' => 'PATRICIA GÓMEZ SOSA', 'persona_id' => $persona('Patricia Gómez Sosa')?->id,
+            'empresa_procedencia' => 'FUMIGACIONES PENINSULARES', 'host_colaborador_id' => $colaborador('1009')?->id, 'identificacion' => 'ine', 'tipo_visita' => 'levantamiento',
+            'area_trabajo' => 'HABITACIONES PISO 3', 'actividad' => 'Recorrido para cotizar el control de plagas.', 'modo_arribo' => 'a_pie', 'num_acompanantes' => 1], $a('11:40'), $agente);
+        $acompanante($patricia, 'LUIS SOSA', 'ine');
+
+        // ---------------- En sitio: Hotel Demo Playa ----------------
+        $daniela = $colaborador('1008');
+        $crear('PLA', ['tipo' => 'colaborador', 'nombre' => $nombreDe($daniela, 'DANIELA CANUL MAY'), 'colaborador_id' => $daniela?->id, 'modo_arribo' => 'a_pie'], $a('06:58'), $agente);
+
+        $maya = $proveedor('Constructora Maya');
+        $gc1 = $gafete('PLA', 'Contratista', 1);
+        $contratista = $crear('PLA', ['tipo' => 'contratista', 'nombre' => 'JOSÉ LUIS EK CAUICH', 'persona_id' => $persona('José Luis Ek Cauich')?->id,
+            'proveedor_id' => $maya?->id, 'empresa_procedencia' => $maya ? 'CONSTRUCTORA MAYA' : 'CONSTRUCCIONES Y MANTENIMIENTO MAYA',
+            'host_colaborador_id' => $colaborador('1011')?->id, 'identificacion' => 'ine', 'gafete_id' => $gc1?->id, 'gafete_texto' => $gc1?->nomenclatura,
+            'tipo_visita' => 'ejecucion', 'area_trabajo' => 'LOBBY', 'actividad' => 'Remodelación del lobby (fase 2).', 'modo_arribo' => 'a_pie', 'num_acompanantes' => 1],
+            $a('08:05'), $agente, ['autorizado_at' => $a('08:12'), 'autorizado_por' => $jefe->id]);
+        // Su ayudante salió por material y aún no regresa (su gafete sigue reservado)
+        $acompanante($contratista, 'ANDRÉS HERRERA KÚ', 'ine', $gafete('PLA', 'Contratista', 2), ['salida_temporal_at' => $a('11:00'), 'salida_temporal_por' => $agente->id]);
+
+        // ---------------- Finalizados (hoy y ayer) ----------------
+        $g4 = $gafete('CEN', 'Visitante', 4);
+        $crear('CEN', ['tipo' => 'visitante', 'estado' => 'finalizado', 'nombre' => 'SOFÍA CASTILLO UC', 'persona_id' => $persona('Sofía Castillo Uc')?->id,
+            'identificacion' => 'ine', 'motivo_visita' => 'rh', 'gafete_id' => $g4?->id, 'gafete_texto' => $g4?->nomenclatura, 'modo_arribo' => 'a_pie'],
+            $a('08:15'), $agente, ['salida_at' => $a('09:05'), 'salida_por' => $agente->id]);
+
+        $crear('CEN', ['tipo' => 'emergencia', 'estado' => 'finalizado', 'nombre' => 'CRUZ ROJA UNIDAD 12', 'tipo_emergencia' => 'ambulancia', 'modo_arribo' => 'auto',
+            'placas' => 'CR012', 'observaciones' => 'Traslado de un huésped con malestar desde el lobby.'], $a('22:10', 1), $jefe, ['salida_at' => $a('22:55', 1), 'salida_por' => $jefe->id]);
+
+        $crear('CEN', ['tipo' => 'proveedor', 'estado' => 'finalizado', 'nombre' => 'FERNANDO RIVAS LEÓN', 'persona_id' => $persona('Fernando Rivas León')?->id,
+            'proveedor_id' => $proveedor('Transportes Kin-Ha')?->id, 'empresa_procedencia' => 'TRANSPORTES KIN-HA', 'host_colaborador_id' => $carlos?->id,
+            'identificacion' => 'licencia', 'tipo_visita' => 'cortesia', 'modo_arribo' => 'a_pie'],
+            $a('06:00', 1), $agente, ['autorizado_at' => $a('06:04', 1), 'autorizado_por' => $jefe->id, 'salida_at' => $a('06:20', 1), 'salida_por' => $agente->id]);
+
+        // Huésped de ayer con un tour completo (salió y regresó) y su salida final
+        $pamela = $crear('PLA', ['tipo' => 'huesped', 'estado' => 'finalizado', 'nombre' => 'PAMELA ALCOCER', 'tiene_reserva' => false, 'tipo_pase' => 'daypass', 'modo_arribo' => 'a_pie'],
+            $a('10:00', 1), $agente, ['salida_at' => $a('18:30', 1), 'salida_por' => $agente->id]);
+        $crear('PLA', ['tipo' => 'huesped', 'movimiento' => 'salida_temporal', 'acceso_origen_id' => $pamela->id, 'estado' => 'finalizado', 'nombre' => 'PAMELA ALCOCER',
+            'conductor' => 'TOURS XCARET EXPRESS'], $a('12:00', 1), $agente, ['salida_at' => $a('14:30', 1), 'salida_por' => $agente->id]);
+        $crear('PLA', ['tipo' => 'huesped', 'movimiento' => 'regreso', 'acceso_origen_id' => $pamela->id, 'estado' => 'finalizado', 'nombre' => 'PAMELA ALCOCER',
+            'conductor' => 'TOURS XCARET EXPRESS'], $a('14:30', 1), $agente, ['salida_at' => $a('14:30', 1), 'salida_por' => $agente->id]);
+    }
+
+    /**
+     * Préstamo de llaves y Responsivas de ejemplo, cada uno solo la primera
+     * vez: llaves fuera y devueltas (una anulada por captura equivocada) y
+     * resguardos de equipo en campo y uno ya recibido, con firma. Se capturan
+     * con las mismas reglas de la pantalla, como agente.demo en Centro y
+     * admin.demo en Playa.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function prestamosYResponsivasDemo($sedes, User $admin, User $agente): void
+    {
+        $colaborador = fn (string $num) => Colaborador::where('num_empleado', $num)->value('id');
+        $llave = fn (string $nomenclatura) => Llave::where('nomenclatura', $nomenclatura)->where('activo', true)->value('id');
+        $equipo = fn (string $serie) => Equipo::where('numero_serie', $serie)->where('estado', 'disponible')->value('id');
+        $previo = auth()->user();
+
+        try {
+            if (! PrestamoLlave::exists() && Llave::exists() && Colaborador::exists()) {
+                $prestamos = app(AdministradorPrestamosLlaves::class);
+                // [actor, sede, llave, colaborador, garantía, folio, hace (minutos), qué pasa después]
+                $plan = [
+                    [$agente, 'CEN', 'HDC-TA-ZONA', '1006', 'ine', 'INE-0457', 1500, 'recibir'],
+                    [$agente, 'CEN', 'HDC-P1-AMA', '1007', 'gafete_interno', null, 190, 'anular'],
+                    [$agente, 'CEN', 'HDC-MASTER-01', '1005', 'ine', 'INE-8841', 150, null],
+                    [$agente, 'CEN', 'HDC-BOD-01', '1009', 'gafete_interno', 'DEPTO AMA DE LLAVES', 45, null],
+                    [$admin, 'PLA', 'HDP-MASTER-01', '1011', 'licencia', null, 2900, 'recibir'],
+                    [$admin, 'PLA', 'HDP-ALBERCA', '1008', 'ninguna', null, 30, null],
+                ];
+                foreach ($plan as [$actor, $sede, $nomenclatura, $num, $garantia, $folio, $hace, $despues]) {
+                    $llaveId = $llave($nomenclatura);
+                    $colaboradorId = $colaborador($num);
+                    if ($llaveId === null || $colaboradorId === null) {
+                        continue;
+                    }
+                    auth()->setUser($actor);
+                    $p = $prestamos->prestar($actor, ['sede_id' => $sedes[$sede]->id, 'llave_id' => $llaveId, 'colaborador_id' => $colaboradorId,
+                        'tipo_garantia' => $garantia, 'folio_garantia' => $folio]);
+                    $p->forceFill(['prestado_en' => now()->subMinutes($hace)])->save();
+                    if ($despues === 'recibir') {
+                        $prestamos->recibir($actor, $p);
+                        $p->forceFill(['devuelto_en' => now()->subMinutes((int) ($hace * 0.6))])->save();
+                    } elseif ($despues === 'anular') {
+                        // Anular es de supervisión (el Agente no anula): lo hace admin.demo
+                        auth()->setUser($admin);
+                        $prestamos->anular($admin, $p);
+                    }
+                }
+            }
+
+            if (! Responsiva::exists() && Equipo::exists() && Colaborador::exists() && function_exists('imagecreatetruecolor')) {
+                $responsivas = app(AdministradorResponsivas::class);
+                // [actor, sede, colaborador, [serie => modalidad], hace (minutos), recibir]
+                $plan = [
+                    [$agente, 'CEN', '1005', ['DM-1187' => 'asignado'], 2000, true],
+                    [$agente, 'CEN', '1003', ['752TSFQ504' => 'prestado', 'LT-0001' => 'prestado'], 120, false],
+                    [$admin, 'PLA', '1004', ['752TSFQ610' => 'prestado', 'CH-002' => 'asignado'], 300, false],
+                ];
+                foreach ($plan as $n => [$actor, $sede, $num, $equipos, $hace, $recibir]) {
+                    $ids = array_filter(array_map(fn ($serie) => $equipo($serie), array_keys($equipos)));
+                    $colaboradorId = $colaborador($num);
+                    if (count($ids) !== count($equipos) || $colaboradorId === null) {
+                        continue;
+                    }
+                    auth()->setUser($actor);
+                    $r = $responsivas->crear($actor, ['sede_id' => $sedes[$sede]->id, 'colaborador_id' => $colaboradorId,
+                        'equipos' => array_values($ids), 'modalidades' => array_values($equipos), 'firma' => $this->firmaDemo($n)]);
+                    $r->forceFill(['entregado_en' => now()->subMinutes($hace)])->save();
+                    if ($recibir) {
+                        $responsivas->recibir($actor, $r);
+                        $r->forceFill(['devuelto_en' => now()->subMinutes((int) ($hace * 0.4))])->save();
+                    }
+                }
+            }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    /**
+     * Pases de salida de ejemplo, solo la primera vez: uno en cada estado del
+     * circuito (pendiente con una aprobación, rechazado, aprobado, salió
+     * cerrado, en camino a la otra sede, en destino, en tránsito de regreso,
+     * regresado y uno vencido). Se registran y firman con las mismas reglas
+     * de la pantalla (AdministradorPasesSalida), como si los capturara la
+     * caseta; las firmas son trazos de ejemplo.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function pasesSalidaDemo($sedes, User $admin, User $agente): void
+    {
+        if (PaseSalida::exists() || ! function_exists('imagecreatetruecolor')) {
+            return;
+        }
+        $colaborador = fn (string $num) => Colaborador::where('num_empleado', $num)->value('id');
+        $proveedor = fn (string $nombre) => Proveedor::where('nombre', $nombre)->where('activo', true)->value('id');
+        if ($colaborador('1007') === null || $proveedor('Constructora Maya') === null) {
+            return; // sin colaboradores ni proveedores demo no hay a quién asignar los pases
+        }
+
+        $hoy = now('America/Cancun');
+        $dia = fn (int $dias) => $hoy->copy()->addDays($dias)->format('Y-m-d');
+        $radio = Equipo::where('numero_serie', '752TSFQ505')->first();
+
+        // [quién lo registra, datos, artículos, firmas por grupo (true = todos los roles; número = los primeros n), motivo de rechazo]
+        $plan = [
+            [$agente, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1007'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(1), 'fecha_tentativa_regreso' => $dia(8)],
+                [['cantidad' => 1, 'equipo' => 'Proyector', 'marca' => 'EPSON', 'modelo' => 'PowerLite X49', 'serie' => 'X49-55821', 'descripcion' => 'Con cable HDMI y control remoto, para el evento de capacitación']],
+                ['aprobacion' => 1], null],
+            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'venta', 'colaborador_id' => $colaborador('1001'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Abarrotes del Caribe'),
+                'destino_direccion' => 'Av. Andrés Quintana Roo 45, Cancún', 'destino_telefono' => '9988841020', 'fecha_salida_programada' => $dia(0)],
+                [['cantidad' => 4, 'equipo' => 'Refrigerador exhibidor', 'marca' => 'IMBERA', 'modelo' => 'VR-17', 'descripcion' => 'Usados, de la tienda del lobby']],
+                [], 'Falta la factura de venta autorizada por Contraloría.'],
+            [$admin, ['sede_id' => $sedes['PLA']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1011'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
+                'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(0), 'fecha_tentativa_regreso' => $dia(10)],
+                [['cantidad' => 1, 'equipo' => 'Taladro rotomartillo', 'marca' => 'DEWALT', 'modelo' => 'DCD996', 'serie' => 'DW-778120', 'descripcion' => 'No gira el mandril']],
+                ['aprobacion' => true], null],
+            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'traspaso_definitivo', 'colaborador_id' => $colaborador('1009'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(-2)],
+                [['cantidad' => 1, 'equipo' => 'Lavadora industrial', 'marca' => 'SPEED QUEEN', 'modelo' => 'SC40', 'serie' => 'SQ-40-1187', 'descripcion' => 'Pasa a la lavandería de Playa']],
+                ['aprobacion' => true, 'salida_fisica' => true], null],
+            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1005'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(-1), 'fecha_tentativa_regreso' => $dia(5)],
+                [$radio ? ['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505', 'equipo_id' => $radio->id, 'descripcion' => 'Con cargador']
+                    : ['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505']],
+                ['aprobacion' => true, 'salida_fisica' => true, 'recepcion_destino' => 2], null],
+            [$admin, ['sede_id' => $sedes['PLA']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1008'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['CEN']->id,
+                'fecha_salida_programada' => $dia(-4), 'fecha_tentativa_regreso' => $dia(3)],
+                [['cantidad' => 2, 'equipo' => 'Aspiradora', 'marca' => 'KÄRCHER', 'modelo' => 'NT 30/1', 'descripcion' => 'Apoyo por la limpieza profunda de Centro']],
+                ['aprobacion' => true, 'salida_fisica' => true, 'recepcion_destino' => true], null],
+            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'consignacion', 'colaborador_id' => $colaborador('1007'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(-6), 'fecha_tentativa_regreso' => $dia(1)],
+                [['cantidad' => 1, 'equipo' => 'Carpa plegable 3x3', 'marca' => 'TRUPER', 'descripcion' => 'Color blanco, con bolsa'], ['cantidad' => 6, 'equipo' => 'Silla plegable', 'descripcion' => 'Negras']],
+                ['aprobacion' => true, 'salida_fisica' => true, 'recepcion_destino' => true, 'salida_regreso' => true], null],
+            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'colaborador', 'colaborador_destino_id' => $colaborador('1005'),
+                'fecha_salida_programada' => $dia(-9), 'fecha_tentativa_regreso' => $dia(-2)],
+                [['cantidad' => 1, 'equipo' => 'Laptop', 'marca' => 'LENOVO', 'modelo' => 'L14', 'serie' => 'ABC123LATCAT', 'descripcion' => 'Bajo resguardo de Sistemas, para home office']],
+                ['aprobacion' => true, 'salida_fisica' => true, 'regreso' => true], null],
+            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
+                'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(-10), 'fecha_tentativa_regreso' => $dia(-3)],
+                [['cantidad' => 1, 'equipo' => 'Puerta corrediza de cristal', 'marca' => 'MITEL', 'modelo' => '989484', 'descripcion' => 'Riel dañado; la reparan en el taller del proveedor']],
+                ['aprobacion' => true, 'salida_fisica' => true], null],
+        ];
+
+        $pases = app(AdministradorPasesSalida::class);
+        $firmantes = ['MARIANA LÓPEZ PECH', 'CARLOS PÉREZ GÓMEZ', 'ANA ADMINISTRADORA', 'ROBERTO HERNÁNDEZ CRUZ', 'DIEGO DIRECTOR', 'SERGIO SUPERVISOR'];
+        $previo = auth()->user();
+        try {
+            foreach ($plan as $n => [$autor, $datos, $articulos, $firmas, $rechazo]) {
+                auth()->setUser($autor);
+                $pase = $pases->crear($autor, $datos + ['articulos' => $articulos]);
+                auth()->setUser($admin);
+                foreach ($firmas as $grupo => $cuantas) {
+                    $roles = array_keys(PaseSalida::GRUPOS[$grupo][1]);
+                    foreach (array_slice($roles, 0, $cuantas === true ? count($roles) : $cuantas) as $i => $rol) {
+                        $pases->firmar($admin, $pase->refresh(), [
+                            'rol' => $rol, 'nombre_firma' => $firmantes[($n + $i) % count($firmantes)], 'firma' => $this->firmaDemo($n * 10 + $i),
+                        ]);
+                    }
+                }
+                if ($rechazo !== null) {
+                    $pases->rechazar($admin, $pase->refresh(), ['motivo_rechazo' => $rechazo]);
+                }
+            }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    /**
+     * Bitácora de Novedades: tickets de cada categoría en distintos estatus
+     * (abierto, pendiente de turno, resuelto), un Accidente con sus 6 firmas,
+     * un Siniestro que abrió solo su Accidente, Lost & Found con artículos y
+     * un reporte de pérdida, y un Recorrido PC histórico. Solo la primera vez.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function novedadesDemo($sedes, User $admin, User $agente, User $agentePlaya): void
+    {
+        if (Novedad::exists()) {
+            return;
+        }
+
+        $novedades = app(AdministradorNovedades::class);
+        $centro = $sedes['CEN'];
+        $zona = $centro->zonaHoraria();
+        // Fecha y hora local de la sede de hace N horas (nunca en el futuro)
+        $hace = fn (int $horas) => now($zona)->subHours($horas)->format('Y-m-d\TH:i');
+        $espacio = fn (string $nombre) => Espacio::where('sede_id', $centro->id)->where('nombre', $nombre)->first();
+        $torre = $espacio('Torre A');
+        $piso1 = $espacio('Piso 1');
+        $piso2 = $espacio('Piso 2');
+        $area = fn (?Espacio $piso) => $piso === null ? [] : ['area_edificio_id' => $torre?->id, 'area_piso_id' => $piso->id];
+        $hab = fn (string $nombre) => $espacio($nombre)?->id;
+        $colaborador = fn (string $num) => Colaborador::where('num_empleado', $num)->value('id');
+        // Firma de ejemplo: un trazo distinto por rol, JPEG ligero como el del recuadro
+        $firma = function (int $n): string {
+            $img = imagecreatetruecolor(600, 200);
+            imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+            $tinta = imagecolorallocate($img, 15, 23, 42);
+            imagesetthickness($img, 3);
+            for ($x = 40; $x < 520; $x += 20) {
+                imageline($img, $x, (int) (100 + 40 * sin(($x + $n * 37) / 35)), $x + 20, (int) (100 + 40 * sin(($x + 20 + $n * 37) / 35)), $tinta);
+            }
+            ob_start();
+            imagejpeg($img, null, 70);
+
+            return 'data:image/jpeg;base64,'.base64_encode((string) ob_get_clean());
+        };
+
+        $previo = auth()->user();
+        $base = fn (array $extra) => $extra + ['estatus' => 'abierto'];
+        $crear = function (User $actor, array $datos) use ($novedades) {
+            auth()->setUser($actor);
+
+            return $novedades->crear($actor, $datos);
+        };
+        $atender = function (User $actor, Novedad $n, array $datos) use ($novedades, $base) {
+            auth()->setUser($actor);
+
+            return $novedades->actualizar($actor, $n->fresh(), $base($datos + ['categoria' => $n->categoria]));
+        };
+
+        try {
+            // 1. Reporte General abierto (lo observó el agente en su ronda)
+            $n = $crear($agente, ['sede_id' => $centro->id, 'categoria' => 'incidente_general', 'reportado_por' => $agente->name, 'ubicacion' => 'Puerta de servicio, andén de carga',
+                'descripcion' => 'Puerta de servicio abierta y sin vigilancia durante la ronda nocturna.', 'ocurrio_en' => $hace(3)] + $area($piso1));
+            $atender($agente, $n, ['ig_observados' => 'Personal de proveedor de lavandería', 'ig_actividad' => 'Descarga de blancos', 'ig_motivo' => 'Llegaron fuera de horario',
+                'ig_acciones' => 'Se cerró la puerta y se avisó al supervisor de turno.', 'nueva_nota' => 'Se revisaron cámaras del andén: sin incidentes adicionales.']);
+
+            // 2. Accidente de huésped con dictamen y las 6 firmas, pendiente para el siguiente turno
+            $n = $crear($agente, ['sede_id' => $centro->id, 'categoria' => 'accidente', 'reportado_por' => 'Mariana López Pech', 'reportado_colaborador_id' => $colaborador('1007'),
+                'ubicacion' => 'Escaleras de emergencia', 'descripcion' => 'Huésped resbaló al bajar las escaleras y se lastimó el pie derecho.',
+                'como_sucedio' => 'Bajaba corriendo y no vio el último escalón.', 'ocurrio_en' => $hace(20)] + $area($piso1));
+            $atender($admin, $n, [
+                'estatus' => 'pendiente_turno', 'area_especifica_id' => $hab('103'), 'acc_tipo_afectado' => 'HUESPED',
+                'h_fecha_accidente' => now($zona)->subDay()->format('Y-m-d'), 'h_hora_accidente' => '18:20', 'h_nombre' => 'John Miller', 'h_hab' => '103',
+                'h_agencia' => 'Expedia', 'h_pais' => 'Estados Unidos', 'h_sexo' => 'M', 'h_edad' => '46', 'h_lugar' => 'Escaleras de emergencia, Piso 1',
+                'h_explicacion' => 'Pisó mal el último escalón; el piso estaba seco.', 'h_req_medico' => '1', 'h_motivo' => 'Dolor e inflamación en tobillo', 'h_testigos' => '0',
+                'm_herida' => ['Contusa'], 'm_parte' => 'Pie Der', 'm_primeros_aux' => '1', 'm_primeros_cuales' => 'Hielo y vendaje', 'm_atencion_med' => '1',
+                'm_atencion_cuales' => 'Valoración del médico de guardia', 'm_diagnostico' => 'Esguince leve de tobillo derecho.', 'm_hosp' => '0',
+                'm_traslado' => 'No aplica', 'm_doctor' => 'Dra. Patricia Herrera', 'm_observaciones' => 'Reposo y revisión en 48 horas.',
+                'nueva_nota' => 'Falta la firma de conformidad de la gerencia (pasa al siguiente turno).',
+            ] + collect(array_keys(AccidenteFirma::ROLES))->mapWithKeys(fn ($rol, $i) => ['f_'.$rol => $firma($i)])->all());
+
+            // 3. Accidente de colaboradora, resuelto con incapacidad de RH
+            $n = $crear($admin, ['sede_id' => $centro->id, 'categoria' => 'accidente', 'reportado_por' => 'Guadalupe Chan Ek', 'reportado_colaborador_id' => $colaborador('1009'),
+                'ubicacion' => 'Cuarto de blancos', 'descripcion' => 'Camarista se cortó la mano con un vidrio roto.', 'ocurrio_en' => $hace(150)] + $area($piso2));
+            $atender($admin, $n, [
+                'acc_tipo_afectado' => 'COLABORADOR', 'c_id_colaborador' => $colaborador('1009'), 'c_fecha_accidente' => now($zona)->subDays(6)->format('Y-m-d'),
+                'c_hora_accidente' => '10:15', 'c_turno_colaborador' => 'Matutino', 'c_area_trabajo' => 'Cuarto de blancos', 'c_jefe' => 'Carlos Pérez Gómez',
+                'c_puesto_jefe' => 'Jefe de Seguridad', 'c_primera_vez' => '1', 'c_causa_condicion' => '1', 'c_explicacion' => 'Vidrio roto dentro de una bolsa de blancos.',
+                'acc_testigos' => [['nombre' => 'Rosa María Poot Uc', 'departamento' => 'Ama de Llaves']], 'c_aviso_por' => 'Guadalupe Chan Ek', 'c_depto_aviso' => 'Ama de Llaves',
+                'c_actividades' => 'Clasificación de blancos', 'c_mismas_actividades' => '1', 'm_herida' => ['Cortante'], 'm_parte' => 'Mano Izq', 'm_primeros_aux' => '1',
+                'm_primeros_cuales' => 'Limpieza y vendaje', 'm_atencion_med' => '0', 'm_hosp' => '0', 'rh_dias' => '2', 'rh_fecha' => now($zona)->subDays(3)->format('Y-m-d'),
+                'estatus' => 'resuelto', 'resolucion' => 'Se reincorporó a sus labores; se reforzó el uso de guantes en el cuarto de blancos.',
+            ]);
+
+            // 4. Valores a la Vista en la 102, abierto
+            $n = $crear($agente, ['sede_id' => $centro->id, 'categoria' => 'habitacion', 'reportado_por' => 'Guadalupe Chan Ek', 'reportado_colaborador_id' => $colaborador('1009'),
+                'ubicacion' => 'Habitación 102', 'descripcion' => 'Habitación con puerta abierta y caja fuerte abierta con valores.', 'ocurrio_en' => $hace(2), 'asignado_a' => $agente->id] + $area($piso1));
+            $atender($agente, $n, [
+                'area_especifica_id' => $hab('102'), 'hab_id_area_especifica' => $hab('102'), 'hab_quien_reporta' => 'Guadalupe Chan Ek', 'hab_depto_reporta' => 'Ama de Llaves',
+                'hab_puesto_reporta' => 'Camarista', 'hab_actividad_reporta' => 'Limpieza de rutina', 'hab_quien_atiende' => $agente->name, 'hab_depto_atiende' => 'Seguridad',
+                'hab_puesto_atiende' => 'Agente de Seguridad', 'hab_personas' => [['nombre' => 'Rosa María Poot Uc', 'departamento' => 'Ama de Llaves', 'puesto' => 'Camarista', 'actividad' => 'Apoyo', 'se_retira' => '1']],
+                'hab_aperturas' => [['tipo' => 'puerta', 'estado' => 'abierta', 'es_especial' => '0'], ['tipo' => 'terraza', 'estado' => 'cerrada', 'descripcion' => 'Balcón principal']],
+                'hab_caja_estado' => 'abierta_con_valores', 'hab_caja_accion' => 'cerrada_bloqueada', 'hab_valores_dentro' => 'Pasaportes y efectivo en dólares.',
+                'hab_valores' => [['zona' => 'Recámara', 'descripcion' => 'Reloj y cartera sobre el buró']], 'hab_personal_retiro' => 'si', 'hab_cliente_llega' => '0', 'hab_tomo_fotos' => 'si',
+                'hab_observaciones_grales' => 'Se notificó al Gerente en Turno.', 'nueva_nota' => 'Se cerró la caja fuerte en presencia de la camarista.',
+            ]);
+
+            // 5. Siniestro de Protección Civil con un lesionado: abre solo su ticket de Accidente
+            $n = $crear($admin, ['sede_id' => $centro->id, 'categoria' => 'proteccion_civil', 'reportado_por' => 'Javier Ramírez Soto',
+                'ubicacion' => 'Cocina del restaurante', 'descripcion' => 'Conato de incendio en la campana de la cocina.', 'ocurrio_en' => $hace(50)] + $area($piso2));
+            $atender($admin, $n, [
+                'pc_tipo_evento' => 'CONATO DE INCENDIO', 'pc_fecha_control' => $hace(49), 'pc_alarma' => '1', 'pc_evacuacion' => '1', 'pc_num_evacuados' => '35',
+                'pc_punto_reunion' => 'Estacionamiento norte', 'pc_servicios' => [0 => ['activo' => '1', 'hora' => '14:25'], 1 => ['activo' => '1', 'hora' => '14:30']],
+                'pc_hubo_lesionados' => '1', 'pc_num_lesionados' => '1', 'siniestro_equipos' => [['identificador' => 'EXT-07', 'estado_uso' => 'utilizado']],
+                'siniestro_danos' => [['zona' => 'Cocina', 'descripcion' => 'Campana y filtros dañados por humo']],
+                'siniestro_testigos' => [['nombre' => 'Luis Fernando Díaz Kú', 'departamento' => 'Alimentos y Bebidas']],
+                'pc_causa_probable' => 'Acumulación de grasa en los filtros.', 'pc_acciones_tomadas' => 'Se usó el extintor tipo K; se programó limpieza profunda.',
+            ]);
+
+            // 6. Lost & Found con artículos y un reporte de pérdida (para "Buscar Coincidencias")
+            $n = $crear($agente, ['sede_id' => $centro->id, 'categoria' => 'lost_found', 'reportado_por' => 'Rosa María Poot Uc',
+                'ubicacion' => 'Habitación 201', 'descripcion' => 'Objetos olvidados encontrados durante la limpieza.', 'ocurrio_en' => $hace(1)] + $area($piso2));
+            $atender($agente, $n, [
+                'area_especifica_id' => $hab('201'),
+                'lf_articulos' => [
+                    ['objeto' => 'Teléfono celular', 'tipo_valor' => 'ELECTRONICO', 'marca' => 'Samsung', 'color' => 'Negro', 'area_especifica_id' => $hab('201'), 'ubicacion_bodega' => 'Bodega de Seguridad, Caja 1'],
+                    ['objeto' => 'Sombrero', 'tipo_valor' => 'ROPA', 'color' => 'Beige', 'area_especifica_id' => $hab('201'), 'ubicacion_bodega' => 'Anaquel 3'],
+                ],
+                'rp_reportes' => [['objeto' => 'Teléfono', 'tipo_valor' => 'ELECTRONICO', 'marca' => 'Samsung', 'color' => 'Negro', 'nombre_huesped' => 'Laura Gómez',
+                    'area_especifica_id' => $hab('201'), 'fecha_aproximada' => now($zona)->subDay()->format('Y-m-d'), 'telefono' => '9981234567', 'descripcion' => 'Funda azul con iniciales L.G.']],
+            ]);
+            // El sombrero lleva 25 días en resguardo (semáforo "Por vencer")
+            LostFoundArticulo::where('novedad_id', $n->id)->where('objeto', 'SOMBRERO')->update(['created_at' => now()->subDays(25)]);
+
+            // 7. Robo abierto en la 202
+            $n = $crear($admin, ['sede_id' => $centro->id, 'categoria' => 'robo', 'reportado_por' => 'Laura Gómez', 'ubicacion' => 'Habitación 202',
+                'descripcion' => 'Huésped reporta que le robaron una laptop de la habitación.', 'ocurrio_en' => $hace(26)] + $area($piso2));
+            $atender($admin, $n, [
+                'area_especifica_id' => $hab('202'), 'robo_hora_aproximada' => '15:30', 'robo_lugar_exacto' => 'Escritorio de la habitación',
+                'robo_objetos_descripcion' => 'Laptop Dell gris con estuche negro.', 'robo_valor_estimado' => '18000', 'robo_hay_sospechoso' => '0',
+                'robo_testigos' => [['nombre' => 'Daniela Canul May', 'departamento' => 'Recepción', 'declaracion' => 'Vio salir a una persona con mochila negra.']],
+                'robo_se_dio_parte_policia' => '1', 'robo_folio_policial' => 'FGE-2026-1458', 'robo_canalizado_gerencia' => '1',
+                'robo_observaciones_investigacion' => 'Se solicitaron las grabaciones del pasillo del piso 2.',
+            ]);
+
+            // 8. Playa: uno sin clasificar (agente de playa) y un Reporte General resuelto
+            $crear($agentePlaya, ['sede_id' => $sedes['PLA']->id, 'categoria' => 'sin_clasificar', 'reportado_por' => $agentePlaya->name,
+                'ubicacion' => 'Cuarto de máquinas', 'descripcion' => 'Ruido extraño en el cuarto de máquinas de la alberca.', 'ocurrio_en' => $hace(4)]);
+            $n = $crear($admin, ['sede_id' => $sedes['PLA']->id, 'categoria' => 'incidente_general', 'reportado_por' => 'Daniela Canul May',
+                'ubicacion' => 'Lobby', 'descripcion' => 'Vendedor ambulante dentro del lobby.', 'ocurrio_en' => $hace(75)]);
+            $atender($admin, $n, ['ig_acciones' => 'Se le pidió retirarse con cortesía.', 'estatus' => 'resuelto', 'resolucion' => 'La persona se retiró sin incidentes.']);
+
+            // 9. Recorrido PC histórico (ya no se crea desde aquí; viene de SEGCAT)
+            $n = $crear($admin, ['sede_id' => $centro->id, 'reportado_por' => $admin->name, 'ubicacion' => 'Torre A', 'descripcion' => 'Recorrido de inspección de extintores (histórico).',
+                'ocurrio_en' => $hace(240)]);
+            $n->forceFill(['categoria' => 'recorrido_pc'])->save();
+            $atender($admin, $n, ['rpc_puntos' => [
+                ['identificador' => 'EXT-01', 'categoria' => 'EXTINTOR', 'edificio' => 'Torre A', 'nivel' => 'Piso 1', 'area' => 'Pasillo',
+                    'criterios' => array_fill_keys(array_keys(RecorridoPc::piezas('EXTINTOR')), '1')],
+                ['identificador' => 'EXT-02', 'categoria' => 'EXTINTOR', 'edificio' => 'Torre A', 'nivel' => 'Piso 2', 'area' => 'Elevadores',
+                    'criterios' => ['cilindro' => '1', 'manguera' => '1'], 'observaciones' => 'Manómetro en zona roja.'],
+            ]]);
+
+            // 10. Más casos en otros estatus: Lost & Found y Valores a la Vista resueltos, Robo pendiente de turno
+            $n = $crear($agente, ['sede_id' => $centro->id, 'categoria' => 'lost_found', 'reportado_por' => 'Guadalupe Chan Ek',
+                'ubicacion' => 'Habitación 104', 'descripcion' => 'Lentes de sol olvidados en el buró.', 'ocurrio_en' => $hace(96)] + $area($piso1));
+            $atender($agente, $n, ['area_especifica_id' => $hab('104'), 'lf_articulos' => [['objeto' => 'Lentes de sol', 'tipo_valor' => 'OTRO', 'marca' => 'Ray-Ban',
+                'color' => 'Negro', 'area_especifica_id' => $hab('104'), 'ubicacion_bodega' => 'Anaquel 1']],
+                'estatus' => 'resuelto', 'resolucion' => 'El huésped pasó por ellos a recepción antes de su salida.']);
+            $n = $crear($agente, ['sede_id' => $centro->id, 'categoria' => 'habitacion', 'reportado_por' => 'Rosa María Poot Uc',
+                'ubicacion' => 'Habitación 101', 'descripcion' => 'Caja fuerte abierta sin valores al hacer la limpieza.', 'ocurrio_en' => $hace(120)] + $area($piso1));
+            $atender($agente, $n, ['area_especifica_id' => $hab('101'), 'hab_id_area_especifica' => $hab('101'), 'hab_quien_reporta' => 'Rosa María Poot Uc',
+                'hab_quien_atiende' => $agente->name, 'hab_caja_estado' => 'abierta_sin_valores', 'hab_personal_retiro' => 'si', 'hab_tomo_fotos' => 'no',
+                'estatus' => 'resuelto', 'resolucion' => 'Se cerró la caja fuerte y se avisó a recepción.']);
+            $n = $crear($agentePlaya, ['sede_id' => $sedes['PLA']->id, 'categoria' => 'robo', 'reportado_por' => 'Huésped camastro 12',
+                'ubicacion' => 'Playa, zona de camastros', 'descripcion' => 'Huésped reporta que le tomaron una bolsa de playa mientras nadaba.', 'ocurrio_en' => $hace(6)]);
+            $atender($agentePlaya, $n, ['robo_objetos_descripcion' => 'Bolsa de playa azul con toalla y bloqueador.', 'robo_hay_sospechoso' => '0',
+                'estatus' => 'pendiente_turno', 'nueva_nota' => 'Se revisarán las cámaras de la palapa con el siguiente turno.']);
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    /**
+     * Firma de ejemplo (un trazo a mano alzada), como la deja el recuadro de firma.
+     */
+    private function firmaDemo(int $semilla): string
+    {
+        $img = imagecreatetruecolor(600, 200);
+        imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+        $tinta = imagecolorallocate($img, 15, 23, 42);
+        imagesetthickness($img, 3);
+        $x = 60;
+        $y = 120;
+        for ($i = 0; $i < 90; $i++) {
+            $nx = $x + 5;
+            $ny = (int) (110 + sin(($i + $semilla * 7) / 4) * 45 + cos(($i + $semilla) / 9) * 18);
+            imageline($img, $x, $y, $nx, $ny, $tinta);
+            [$x, $y] = [$nx, $ny];
+        }
+        imageline($img, 80, 165, 520, 160, $tinta);
+        ob_start();
+        imagejpeg($img, null, 70);
+        $binario = (string) ob_get_clean();
+        imagedestroy($img);
+
+        return 'data:image/jpeg;base64,'.base64_encode($binario);
+    }
+
+    /**
+     * Bitácora de transporte de ejemplo, solo la primera vez: una semana de
+     * llegadas y salidas de las rutas demo (con algunos retrasos) registradas
+     * por los agentes de cada sede, y dos fallas de fletera con taxis: una con
+     * un taxi dentro del tope (ya autorizado) y otra con dos taxis, uno arriba
+     * del tope con su justificación (pendiente de Vo.Bo.). Se capturan con las
+     * mismas reglas de la pantalla (BitacoraTransporte).
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function transporteDemo($sedes, User $admin): void
+    {
+        if (MovimientoTransporte::exists() || ! Ruta::exists()) {
+            return;
+        }
+
+        $bitacora = app(BitacoraTransporte::class);
+        $agentes = ['CEN' => User::where('username', 'agente.demo')->first() ?? $admin, 'PLA' => User::where('username', 'agente2.demo')->first() ?? $admin];
+        // Una firma de ejemplo (garabato) si el servidor tiene GD; si no, los vales quedan para firmar a mano
+        $firma = null;
+        if (function_exists('imagecreatetruecolor')) {
+            $img = imagecreatetruecolor(600, 200);
+            imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+            $tinta = imagecolorallocate($img, 15, 23, 42);
+            imagesetthickness($img, 3);
+            for ($x = 60, $y = 120; $x < 520; $x += 20) {
+                $ny = 70 + (int) (60 * abs(sin($x / 37)));
+                imageline($img, $x, $y, $x + 20, $ny, $tinta);
+                $y = $ny;
+            }
+            ob_start();
+            imagejpeg($img, null, 70);
+            $firma = 'data:image/jpeg;base64,'.base64_encode((string) ob_get_clean());
+        }
+        $conFirmas = $firma !== null;
+
+        $unidades = [
+            'CEN' => [['TKH-101', 'autobus', 'MERCEDES-BENZ', 'BOXER OF', '101', 40, 'JUAN CARLOS POOT CHAN'], ['SHR-033', 'van', 'TOYOTA', 'HIACE', '33', 15, 'MARIO EK CANUL']],
+            'PLA' => [['TKH-205', 'autobus', 'VOLVO', '7300', '205', 45, 'RAÚL CHI DZIB'], ['SHR-041', 'van', 'NISSAN', 'URVAN', '41', 15, 'MARIO EK CANUL']],
+        ];
+
+        $previo = auth()->user();
+        try {
+            foreach (['CEN', 'PLA'] as $codigo) {
+                $sede = $sedes[$codigo];
+                $agente = $agentes[$codigo];
+                auth()->setUser($agente);
+                $horarios = $bitacora->horariosPara([$sede->id]);
+                // Cada transportista con su propia unidad y chofer
+                $transportistas = $horarios->pluck('ruta.proveedor_id')->unique()->values();
+                $ahora = $bitacora->ahoraEn($sede);
+                $n = 0;
+                for ($dias = 6; $dias >= 0; $dias--) {
+                    $dia = $ahora->startOfDay()->subDays($dias);
+                    foreach ($horarios as $h) {
+                        if (! $h->aplicaEn($dia->dayOfWeekIso)) {
+                            continue;
+                        }
+                        $cuando = $dia->setTimeFromTimeString($bitacora->horaDeCaseta($h));
+                        if ($cuando->gt($ahora)) {
+                            continue;
+                        }
+                        $n++;
+                        $retraso = $n % 5 === 0;
+                        $u = $unidades[$codigo][min(1, (int) $transportistas->search($h->ruta->proveedor_id))];
+                        $m = $bitacora->registrar($agente, [
+                            'sede_id' => $sede->id, 'tipo_movimiento' => $h->ruta->sentido, 'estatus' => $retraso ? 'retraso' : 'a_tiempo',
+                            'ruta_horario_id' => $h->id, 'placas' => $u[0], 'tipo_unidad' => $u[1], 'marca' => $u[2], 'modelo' => $u[3],
+                            'economico' => $u[4], 'capacidad' => $u[5], 'chofer' => $u[6], 'cantidad_pax' => 8 + ($n * 7) % 25,
+                            'observaciones' => $retraso ? 'Tráfico en Av. Kabah.' : null,
+                        ], false, null)->first();
+                        $this->fechaDemo($m, $cuando->addMinutes($retraso ? 25 : 3));
+                    }
+                }
+            }
+
+            // Fallas de fletera (Centro)
+            $sede = $sedes['CEN'];
+            $agente = $agentes['CEN'];
+            auth()->setUser($agente);
+            $pasajeros = Colaborador::where('sede_id', $sede->id)->where('activo', true)->whereNull('fusionado_en_id')->orderBy('num_empleado')->pluck('id')->all();
+            $horarios = $bitacora->horariosPara([$sede->id]);
+            $llegada = $horarios->first(fn ($h) => $h->ruta->sentido === 'llegada' && $h->ruta->costo_maximo_taxi !== null);
+            $salida = $horarios->first(fn ($h) => $h->ruta->sentido === 'salida' && $h->ruta->costo_maximo_taxi !== null);
+            if ($pasajeros === [] || $llegada === null || $salida === null) {
+                return;
+            }
+            $ahora = $bitacora->ahoraEn($sede);
+            $taxi = fn (array $datos) => $datos + ['tipo' => 'sedan', 'firma' => $firma];
+
+            $vales = $bitacora->registrar($agente, [
+                'sede_id' => $sede->id, 'tipo_movimiento' => 'llegada', 'estatus' => 'no_llego', 'ruta_horario_id' => $llegada->id,
+                'firma_guardia' => $firma, 'observaciones' => 'La unidad de la fletera se descompuso en el crucero de la Región 94.',
+                'taxis' => [$taxi(['placas' => 'TX-2301', 'chofer' => 'ALBERTO CANCHÉ MAY', 'monto' => '180', 'destino' => $llegada->paradas()->with('paradero')->first()?->paradero?->nombre ?? 'REGIÓN 94 (CRUCERO)',
+                    'marca' => 'NISSAN', 'modelo' => 'VERSA', 'economico' => 'T-230', 'chofer_telefono' => '9981234567', 'pasajeros' => array_slice($pasajeros, 0, 3)])],
+            ], $conFirmas, null);
+            $this->fechaDemo($vales->first(), $ahora->subDays(2)->setTimeFromTimeString($llegada->fin())->addMinutes(20));
+            auth()->setUser($admin);
+            $bitacora->autorizar($admin, $vales->first());
+            $vales->first()->forceFill(['autorizado_en' => $ahora->subDays(2)->setTime(18, 5)->utc()])->saveQuietly();
+            auth()->setUser($agente);
+
+            $tope = (float) $salida->ruta->costo_maximo_taxi;
+            $vales = $bitacora->registrar($agente, [
+                'sede_id' => $sede->id, 'tipo_movimiento' => 'salida', 'estatus' => 'no_llego', 'ruta_horario_id' => $salida->id,
+                'firma_guardia' => $firma, 'observaciones' => 'La fletera no envió unidad. Se despacharon dos taxis.',
+                'taxis' => [
+                    $taxi(['placas' => 'TX-4410', 'chofer' => 'PEDRO PECH UC', 'monto' => (string) ($tope + 70), 'destino' => 'REGIÓN 94 (CRUCERO)',
+                        'justificacion' => 'Lluvia intensa: ninguna plataforma tenía tarifa menor y el personal salía de turno.', 'tipo' => 'suv', 'marca' => 'KIA', 'modelo' => 'SPORTAGE',
+                        'pasajeros' => array_slice($pasajeros, 0, 2)]),
+                    $taxi(['placas' => 'TX-1187', 'chofer' => 'ALBERTO CANCHÉ MAY', 'monto' => '200', 'destino' => 'CHEDRAUI PORTILLO', 'pasajeros' => array_slice($pasajeros, 2, 3)]),
+                ],
+            ], $conFirmas, null);
+            foreach ($vales as $vale) {
+                $this->fechaDemo($vale, $ahora->subDay()->setTimeFromTimeString($salida->inicio())->addMinutes(15));
+            }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    private function fechaDemo(MovimientoTransporte $m, CarbonImmutable $cuando): void
+    {
+        $m->forceFill(['fecha' => $cuando->toDateString(), 'created_at' => $cuando->utc(), 'updated_at' => $cuando->utc()])->saveQuietly();
     }
 }

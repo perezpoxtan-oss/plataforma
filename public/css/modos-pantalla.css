@@ -608,3 +608,293 @@ html.modo-noche .btn-quitar-fila { background: rgba(239, 68, 68, 0.14); color: #
 html.modo-noche .rutas-paraderos-encabezado { color: #7c8ba1; }
 html.modo-noche .rutas-separador { border-top-color: var(--borde); }
 /* Fin Rutas de transporte */
+/* Firma autógrafa: el recuadro siempre blanco (la tinta es oscura) */
+html.modo-sol .firma-lienzo { border: 3px solid #000; }
+html.modo-noche .firma-lienzo { border-color: #475569; }
+/* Fin Firma autógrafa */
+/* Bitácora de accesos */
+html.modo-sol .ficha-acceso { background: #fff; border: 2px solid #000; border-top-width: 6px; box-shadow: none; }
+html.modo-sol .ficha-acceso.es-en_sitio { border-top-color: #b91c1c; }
+html.modo-sol .ficha-acceso.es-pendientes, html.modo-sol .ficha-acceso.tour-fuera { border-top-color: #92400e; }
+html.modo-sol .ficha-acceso.es-historial { border-top-color: #166534; }
+html.modo-sol .badge-acceso, html.modo-sol .estado-acceso, html.modo-sol .badge-hab { border: 2px solid #000; }
+html.modo-sol .badge-acceso.tipo-visitante, html.modo-sol .badge-acceso.tipo-contratista { color: #000; }
+html.modo-sol .gafete-box, html.modo-sol .ficha-acceso-tiempos, html.modo-sol .aviso-fuera, html.modo-sol .aviso-sin-permiso,
+html.modo-sol .caja-gafete, html.modo-sol .acceso-sugerencias, html.modo-sol .resultado-salida { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .ficha-acceso-nombre, html.modo-sol .ficha-acceso-datos, html.modo-sol .ficha-acceso-datos strong, html.modo-sol .ficha-acceso-empresa,
+html.modo-sol .ficha-acceso-sede, html.modo-sol .gafete-mini, html.modo-sol .lista-acompanantes li, html.modo-sol .resultado-salida-dato,
+html.modo-sol .accesos-pestana, html.modo-sol .nota-pendiente { color: #000 !important; }
+html.modo-sol .dato-destacado, html.modo-sol .texto-gafete, html.modo-sol .resultado-salida-pedir { color: #000; text-decoration: underline; }
+html.modo-sol .accesos-pestanas { border-bottom-color: #000; }
+html.modo-sol .accesos-pestana.activa { border-bottom-color: #000; text-decoration: underline; }
+html.modo-sol .lista-acompanantes { border-left-color: #000; }
+html.modo-sol .opcion-tipo, html.modo-sol .modo-opt, html.modo-sol .btn-contador, html.modo-sol .btn-acomp, html.modo-sol .btn-salida-rapida,
+html.modo-sol .btn-accion-acceso.temporal, html.modo-sol .btn-accion-acceso.zona, html.modo-sol .btn-siguiente-ingreso, html.modo-sol .btn-exportar-accesos,
+html.modo-sol .btn-limpiar-accesos, html.modo-sol .btn-decision.distinta { background: #fff; color: #000; border: 2px solid #000 !important; }
+html.modo-sol .opcion-tipo:has(input:checked), html.modo-sol .modo-opt:has(input:checked), html.modo-sol .btn-nuevo-ingreso, html.modo-sol .btn-guardar-ingreso,
+html.modo-sol .btn-accion-acceso.salida, html.modo-sol .btn-filtrar-accesos { background: #000; color: #fff; border: 2px solid #000; }
+html.modo-sol .btn-accion-acceso.autorizar, html.modo-sol .btn-decision.misma { background: #14532d; color: #fff; border: 2px solid #000; }
+html.modo-sol .btn-accion-acceso.regreso, html.modo-sol .btn-ambar-acceso { background: #fde047; color: #000; border: 2px solid #000; }
+html.modo-sol .caja-persona-repetida.alert-danger { background: #fff; color: #000; border: 3px solid #000; }
+html.modo-sol .numero-acompanante { background: #000; color: #fff; }
+html.modo-noche .ficha-acceso { background: var(--superficie); border-color: var(--borde); }
+html.modo-noche .ficha-acceso.es-en_sitio { border-top-color: #ef4444; }
+html.modo-noche .ficha-acceso.es-pendientes, html.modo-noche .ficha-acceso.tour-fuera { border-top-color: #f59e0b; }
+html.modo-noche .ficha-acceso.es-historial { border-top-color: #10b981; }
+html.modo-noche .ficha-acceso-nombre, html.modo-noche .ficha-acceso-datos strong, html.modo-noche .resultado-salida-nombre { color: var(--texto); }
+html.modo-noche .ficha-acceso-datos, html.modo-noche .lista-acompanantes li { color: #cbd5e1; }
+html.modo-noche .ficha-acceso-empresa, html.modo-noche .ficha-acceso-sede, html.modo-noche .gafete-mini, html.modo-noche .resultado-salida-dato { color: var(--texto-suave); }
+html.modo-noche .gafete-box { background: var(--superficie-2); border-color: #475569; color: var(--texto); }
+html.modo-noche .ficha-acceso-tiempos { background: var(--superficie-2); color: #cbd5e1; }
+html.modo-noche .ficha-acceso-acciones { border-top-color: var(--borde); }
+html.modo-noche .lista-acompanantes { border-left-color: #475569; }
+html.modo-noche .dato-destacado { color: #93c5fd; }
+html.modo-noche .texto-gafete, html.modo-noche .resultado-salida-pedir { color: #fca5a5; }
+html.modo-noche .texto-devuelta { color: #86efac; }
+html.modo-noche .aviso-fuera, html.modo-noche .aviso-sin-permiso { background: rgba(245,158,11,0.12); border-color: #92400e; color: #fcd34d; }
+html.modo-noche .estado-acceso.movimiento { background: #334155; color: #e2e8f0; }
+html.modo-noche .accesos-pestanas { border-bottom-color: var(--borde); }
+html.modo-noche .accesos-pestana { color: #94a3b8; }
+html.modo-noche .accesos-pestana.activa, html.modo-noche .accesos-pestana:hover { color: #e2e8f0; }
+html.modo-noche .accesos-pestana.pendientes { color: #fbbf24; }
+html.modo-noche .btn-exportar-accesos { border-color: #cbd5e1; color: #e2e8f0; }
+html.modo-noche .btn-exportar-accesos:hover { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .btn-limpiar-accesos { background: var(--superficie-2); color: #e2e8f0; border-color: #475569; }
+html.modo-noche .btn-acomp, html.modo-noche .btn-accion-acceso.temporal, html.modo-noche .btn-accion-acceso.zona, html.modo-noche .btn-salida-rapida,
+html.modo-noche .btn-siguiente-ingreso, html.modo-noche .btn-decision.distinta { background: transparent; }
+html.modo-noche .btn-acomp.salida, html.modo-noche .btn-salida-rapida, html.modo-noche .btn-siguiente-ingreso { color: #fca5a5; border-color: #f87171 !important; }
+html.modo-noche .btn-acomp.temporal, html.modo-noche .btn-accion-acceso.temporal { color: #fcd34d; }
+html.modo-noche .btn-acomp.regreso { color: #86efac; }
+html.modo-noche .btn-accion-acceso.zona { color: #93c5fd; border-color: #60a5fa; }
+html.modo-noche .btn-decision.distinta { color: #e2e8f0; border-color: #cbd5e1; }
+html.modo-noche .opcion-tipo, html.modo-noche .modo-opt { background: var(--campo-fondo); border-color: #475569; color: #cbd5e1; }
+html.modo-noche .opcion-tipo:has(input:checked), html.modo-noche .modo-opt:has(input:checked) { background: rgba(239,68,68,0.16); border-color: #ef4444; color: #fecaca; }
+html.modo-noche .caja-gafete { background: rgba(239,68,68,0.08); border-color: #7f1d1d; }
+html.modo-noche .caja-gafete .campo-etiqueta { color: #fca5a5; }
+html.modo-noche .acceso-sugerencias { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .acceso-sugerencia { color: var(--texto); border-bottom-color: var(--borde); }
+html.modo-noche .acceso-sugerencia:hover, html.modo-noche .acceso-sugerencia:focus-visible { background: rgba(239,68,68,0.14); }
+html.modo-noche .btn-provisional { color: #93c5fd; }
+html.modo-noche .caja-persona-repetida.alert-danger { background: rgba(245,158,11,0.12); border-color: #b45309; color: #fcd34d; }
+html.modo-noche .btn-contador { background: var(--superficie-2); border-color: #475569; color: var(--texto); }
+html.modo-noche .numero-acompanante { background: rgba(239,68,68,0.18); color: #fecaca; }
+html.modo-noche .acciones-ingreso { background: var(--superficie); border-top-color: var(--borde); }
+html.modo-noche .resultado-salida { border-color: var(--borde); border-left-color: #ef4444; }
+html.modo-noche .resultado-salida.fuera { border-left-color: #f59e0b; }
+/* Fin Bitácora de accesos */
+/* Operación: Préstamo de llaves y Responsivas */
+html.modo-noche .pestanas-prestamo { border-bottom-color: var(--borde); }
+html.modo-noche .pestanas-prestamo button { color: #94a3b8; }
+html.modo-noche .pestanas-prestamo button.activa { color: #e2e8f0; border-bottom-color: #60a5fa; }
+html.modo-noche .estado-vacio-prestamo { background: var(--superficie); }
+html.modo-noche .llave-box { background: var(--superficie-2); border-color: #475569; color: #fca5a5; }
+html.modo-noche .btn-historial-llave { background: var(--superficie-2); border-color: #475569; color: #93c5fd; }
+html.modo-noche .btn-historial-llave.suelto { background: transparent; }
+html.modo-noche .prestamo-descripcion { color: #cbd5e1; }
+html.modo-noche .id-box { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border-color: #7f1d1d; }
+html.modo-noche .id-box-mini { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+html.modo-noche .prestamo-detalle, html.modo-noche .linea-tiempo-datos, html.modo-noche .caja-resguardante,
+html.modo-noche .eq-lista, html.modo-noche .caja-equipos-lote, html.modo-noche .chip-nomina { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .linea-tiempo { border-left-color: #475569; }
+html.modo-noche .linea-tiempo-item::before { border-color: var(--superficie); }
+html.modo-noche .eq-item { border-bottom-color: #475569; }
+html.modo-noche .eq-serie-resguardo { color: #fca5a5; }
+html.modo-noche .folio-resguardo { color: #93c5fd; }
+html.modo-noche .folio-resguardo.cerrado { color: #94a3b8; }
+html.modo-noche .pastilla-modalidad.prestado { background: rgba(14, 165, 233, 0.18); color: #7dd3fc; }
+html.modo-noche .pastilla-modalidad.asignado { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+html.modo-noche .pastilla-modalidad.baja { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+html.modo-noche .btn-excel-llaves, html.modo-noche .btn-reactivar-prestamo { background: transparent; color: #4ade80; border-color: #22c55e; }
+html.modo-noche .btn-anular-prestamo, html.modo-noche .btn-quitar-equipo { background: transparent; }
+html.modo-noche .btn-anular-prestamo { color: #cbd5e1; border-color: #64748b; }
+html.modo-noche .btn-resguardo-firma { background: transparent; color: #e2e8f0; border-color: #94a3b8; }
+html.modo-noche .btn-resguardo-hoja { background: transparent; color: #93c5fd; border-color: #60a5fa; }
+html.modo-noche .eq-resguardo, html.modo-noche .llave-usada-por { background: rgba(245, 158, 11, 0.12); border-color: #92400e; color: #fcd34d; }
+html.modo-noche .llave-historial-enlace, html.modo-noche .etiqueta-equipos-lote { color: #93c5fd; }
+html.modo-noche .texto-regreso { color: #4ade80; }
+html.modo-noche .texto-aun-en-uso { color: #fbbf24; }
+html.modo-noche .firma-registrada { border-color: #475569; }
+html.modo-sol .ficha-prestamo, html.modo-sol .ficha-resguardo { opacity: 1; }
+html.modo-sol .ficha-prestamo.fuera, html.modo-sol .ficha-resguardo.activa { border-top: 6px solid #b45309; }
+html.modo-sol .ficha-prestamo.dentro, html.modo-sol .ficha-resguardo.devuelta { border-top: 6px solid #166534; }
+html.modo-sol .ficha-prestamo.anulada { border-top: 6px solid #000; }
+html.modo-sol .pestanas-prestamo { border-bottom: 3px solid #000; }
+html.modo-sol .pestanas-prestamo button { color: #000; }
+html.modo-sol .pestanas-prestamo button.activa { border-bottom: 4px solid #000; text-decoration: underline; }
+html.modo-sol .llave-box { background: #fff; border: 3px solid #000; color: #b91c1c; }
+html.modo-sol .id-box, html.modo-sol .id-box-mini { background: #fff; color: #7f1d1d; border: 2px solid #7f1d1d; }
+html.modo-sol .badge-prestamo.fuera, html.modo-sol .badge-resguardo.en-campo { background: #facc15; color: #000; border: 2px solid #000; }
+html.modo-sol .badge-prestamo.dentro, html.modo-sol .badge-resguardo.cerrado { background: #14532d; color: #fff; }
+html.modo-sol .badge-prestamo.anulada { background: #000; color: #fff; }
+html.modo-sol .prestamo-detalle, html.modo-sol .caja-resguardante, html.modo-sol .eq-lista, html.modo-sol .caja-equipos-lote, html.modo-sol .linea-tiempo-datos { background: #fff; border: 2px solid #000; }
+html.modo-sol .btn-prestar-llave, html.modo-sol .btn-registrar-prestamo { background: #facc15; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-recibir-llave, html.modo-sol .btn-recibir-lote, html.modo-sol .btn-nuevo-resguardo, html.modo-sol .btn-guardar-resguardo { background: #14532d; border: 2px solid #000; color: #fff; }
+html.modo-sol .btn-historial-llave, html.modo-sol .btn-anular-prestamo, html.modo-sol .btn-resguardo-firma, html.modo-sol .btn-resguardo-hoja, html.modo-sol .btn-excel-llaves { border: 2px solid #000; color: #000; background: #fff; }
+html.modo-sol .eq-resguardo, html.modo-sol .llave-usada-por { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .folio-resguardo, html.modo-sol .folio-prestamo, html.modo-sol .llave-historial-enlace { color: #000; }
+/* Fin Operación: Préstamo de llaves y Responsivas */
+/* Bitácora de Novedades */
+html.modo-sol .ficha-novedad, html.modo-sol .texto-novedad, html.modo-sol .preguntas-base, html.modo-sol .reporte-inicial,
+html.modo-sol .tarjeta-articulo, html.modo-sol .tarjeta-perdida, html.modo-sol .ficha-hecho, html.modo-sol .resultado-coincidencia { background: #fff; border: 2px solid #000; }
+html.modo-sol .ficha-novedad.abierta { border-top: 6px solid #b91c1c; }
+html.modo-sol .ficha-novedad.resuelta { border-top: 6px solid #047857; }
+html.modo-sol .badge-categoria.abierta { background: #b91c1c; color: #fff; border-color: #000; }
+html.modo-sol .badge-categoria.resuelta { background: #047857; color: #fff; border-color: #000; }
+html.modo-sol .pastilla-pendiente-turno, html.modo-sol .badge-semaforo { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .folio-novedad, html.modo-sol .pestanas-novedades button { color: #000; }
+html.modo-sol .pestanas-novedades button.active { border-bottom-color: #000; text-decoration: underline; }
+html.modo-sol .btn-nuevo-ticket, html.modo-sol .btn-despachar { background: #b91c1c; color: #fff; border: 2px solid #000; }
+html.modo-sol .btn-expediente { border-width: 2px; color: #000; border-color: #000; }
+html.modo-sol .btn-guardar-expediente { background: #000; color: #fff; }
+html.modo-sol .btn-reabrir { background: #facc15; color: #000; border: 2px solid #000 !important; }
+html.modo-sol .btn-fui-yo, html.modo-sol .btn-ver-detalle, html.modo-sol .btn-agregar-fila, html.modo-sol .btn-accion-novedades, html.modo-sol .btn-mini { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .expediente-formatos .accordion-item { border: 2px solid #000; }
+html.modo-sol .expediente-formatos .accordion-button, html.modo-sol .expediente-formatos .accordion-button:not(.collapsed) { background: #fff; color: #000; }
+html.modo-sol .minuto-a-minuto { background: #000; }
+html.modo-sol .log-notas { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .nota-log.sistema, html.modo-sol .nota-log.vacia { color: #000; }
+html.modo-sol .nota-log.reapertura { color: #92400e; }
+html.modo-sol .body-part, html.modo-sol .node-dot { stroke: #000; stroke-width: 2; }
+html.modo-sol .body-part.selected, html.modo-sol .node-dot.selected { fill: #b91c1c; }
+html.modo-sol .dialogo-novedad, html.modo-sol .dialogo-expediente { background: #fff; }
+html.modo-noche .dialogo-novedad, html.modo-noche .dialogo-expediente { background: var(--fondo); }
+html.modo-noche .ficha-novedad, html.modo-noche .preguntas-base, html.modo-noche .reporte-inicial, html.modo-noche .ficha-hecho,
+html.modo-noche .resultado-coincidencia, html.modo-noche .firmas-guardadas figure { background: var(--superficie); border-color: var(--borde); }
+html.modo-noche .texto-novedad { background: var(--superficie-2); border-color: var(--borde); color: #e2e8f0; }
+html.modo-noche .ficha-novedad.resuelta .texto-novedad { border-color: transparent; }
+html.modo-noche .badge-categoria.abierta { background: rgba(239, 68, 68, 0.16); color: #fca5a5; border-color: #7f1d1d; }
+html.modo-noche .badge-categoria.resuelta { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; border-color: #065f46; }
+html.modo-noche .pastilla-pendiente-turno { background: rgba(245, 158, 11, 0.14); color: #fcd34d; border-color: #92400e; }
+html.modo-noche .folio-novedad, html.modo-noche .pestanas-novedades button { color: #94a3b8; }
+html.modo-noche .pestanas-novedades button.active { color: #e2e8f0; }
+html.modo-noche .pestanas-novedades .conteo-pill { background: var(--superficie-2); color: #cbd5e1; }
+html.modo-noche .pestanas-novedades button.active .conteo-pill { background: rgba(59, 130, 246, 0.25); color: #93c5fd; }
+html.modo-noche .btn-expediente.abrir { color: #fca5a5; border-color: #ef4444; }
+html.modo-noche .btn-expediente.ver { color: #cbd5e1; border-color: #64748b; }
+html.modo-noche .btn-expediente.resuelto { color: #6ee7b7; border-color: #10b981; }
+html.modo-noche .btn-accion-novedades, html.modo-noche .btn-ver-detalle, html.modo-noche .btn-agregar-fila, html.modo-noche .btn-mini { background: var(--superficie-2); color: #e2e8f0; border-color: #475569; }
+html.modo-noche .btn-agregar-fila.ambar { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: #92400e; }
+html.modo-noche .btn-fui-yo { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border-color: #1e40af; }
+html.modo-noche .dialogo-novedad .linea-empresa { color: #93c5fd; }
+html.modo-noche .expediente-formatos .accordion-item { border-color: var(--borde); }
+html.modo-noche .expediente-formatos .accordion-button { background: var(--superficie-2); color: #e2e8f0; }
+html.modo-noche .expediente-formatos .accordion-button:not(.collapsed) { background: rgba(14, 165, 233, 0.16); color: #7dd3fc; }
+html.modo-noche .expediente-formatos .accordion-body { background: var(--superficie); }
+html.modo-noche .expediente-formatos .bg-light, html.modo-noche .expediente-formatos .bg-white { background: var(--superficie-2) !important; }
+html.modo-noche .expediente-formatos .text-dark, html.modo-noche .titulo-seccion-formato { color: #e2e8f0 !important; }
+html.modo-noche .tarjeta-articulo { background: rgba(245, 158, 11, 0.08); border-color: #78350f; }
+html.modo-noche .tarjeta-perdida { background: rgba(239, 68, 68, 0.08); border-color: #7f1d1d; }
+html.modo-noche .badge-semaforo.verde { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+html.modo-noche .badge-semaforo.amarillo { background: rgba(234, 179, 8, 0.16); color: #fde047; }
+html.modo-noche .badge-semaforo.rojo { background: rgba(239, 68, 68, 0.16); color: #fca5a5; }
+html.modo-noche .minuto-a-minuto { background: #020617; border: 1px solid var(--borde); }
+html.modo-noche .log-notas { background: #334155; }
+html.modo-noche .minuto-a-minuto .campo-nota { background: var(--campo-fondo); color: #e2e8f0; border: 1px solid #475569; }
+html.modo-noche .body-part { fill: #475569; stroke: #94a3b8; }
+html.modo-noche .node-dot { fill: #64748b; stroke: #cbd5e1; }
+html.modo-noche .body-label, html.modo-noche .firmas-guardadas figcaption { color: #cbd5e1; }
+html.modo-noche .icono-hecho { background: var(--superficie-2); }
+/* Fin Bitácora de Novedades */
+/* Pases de salida */
+html.modo-noche .pase-card, html.modo-noche .articulo-pase, html.modo-noche .seccion-firmas, html.modo-noche .fila-firma.firmada { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .pase-card { border-left-color: var(--pase-color); }
+html.modo-noche .pase-titulo { color: var(--texto); }
+html.modo-noche .pase-ruta { color: #cbd5e1; }
+html.modo-noche .texto-vencido { color: #f87171; }
+html.modo-noche .btn-ver-pase { border-color: #94a3b8; color: #e2e8f0; }
+html.modo-noche .btn-ver-pase:hover { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .filtros-pases .btn-outline-dark { color: #e2e8f0; border-color: #64748b; }
+html.modo-noche .filtros-pases .btn-dark { background: #e2e8f0; color: #0f172a; border-color: #e2e8f0; }
+html.modo-noche .conteo-filtro { background: rgba(148, 163, 184, 0.25); }
+html.modo-noche .btn-buscar-pases { background: #334155; }
+html.modo-noche .btn-limpiar-pases { background: var(--superficie); color: #cbd5e1; }
+html.modo-noche .dialogo-pase .resumen-pase, html.modo-noche .fila-firma, html.modo-noche .caja-firma-pase, html.modo-noche .lector-equipo-pase, html.modo-noche .articulo-fila { background: var(--superficie-2); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .articulo-fila { border-left-color: #3b82f6; }
+html.modo-noche .fila-firma.eligiendo { background: rgba(37, 99, 235, 0.2); border-color: #3b82f6; }
+html.modo-noche .seccion-firmas.abierta { border-color: #3b82f6; }
+html.modo-noche .campo-solo-lectura { background: var(--superficie-2); color: #cbd5e1; }
+html.modo-noche .btn-firmar-rol, html.modo-noche .btn-atajo-pase { background: transparent; color: #93c5fd; border-color: #3b82f6; }
+html.modo-noche .btn-firmar-rol:hover, html.modo-noche .btn-atajo-pase:hover { background: #2563eb; color: #fff; }
+html.modo-noche .btn-agregar-articulo { background: var(--superficie-2); color: #e2e8f0; border-color: var(--borde); }
+html.modo-noche .btn-quitar-articulo { background: transparent; }
+html.modo-noche .btn-rechazar-pase { color: #fca5a5; border-color: #ef4444; }
+html.modo-noche .titulo-firma-pase { color: #93c5fd; }
+html.modo-noche .chip-padron { background: var(--superficie-2); color: #cbd5e1; }
+html.modo-noche .estado-seccion.completo { background: rgba(34, 197, 94, 0.18); color: #86efac; }
+html.modo-noche .estado-seccion.en-curso { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+html.modo-noche .estado-seccion.pendiente, html.modo-noche .estado-seccion.no-aplica { background: var(--superficie-2); color: #94a3b8; }
+html.modo-noche .aviso-sin-firma { background: rgba(245, 158, 11, 0.12); border-color: #92400e; color: #fcd34d; }
+html.modo-noche .btn-imprimir-pase { background: #e2e8f0; color: #0f172a; }
+html.modo-sol .pase-card, html.modo-sol .seccion-firmas, html.modo-sol .fila-firma, html.modo-sol .articulo-pase, html.modo-sol .articulo-fila, html.modo-sol .caja-firma-pase { border: 2px solid #000; background: #fff; color: #000; }
+html.modo-sol .pase-card { border-left: 8px solid var(--pase-color); }
+html.modo-sol .articulo-fila { border-left: 6px solid #1d4ed8; }
+html.modo-sol .pase-meta, html.modo-sol .pase-ruta { color: #000; font-weight: 600; }
+html.modo-sol .btn-ver-pase, html.modo-sol .btn-firmar-rol, html.modo-sol .btn-atajo-pase { border: 2px solid #000; color: #000; font-weight: 800; }
+html.modo-sol .badge-pase { border: 2px solid #000; }
+html.modo-sol .estado-seccion { border: 2px solid #000; color: #000; }
+html.modo-sol .campo-solo-lectura { background: #f1f5f9; color: #000; border: 2px solid #000; }
+html.modo-sol .aviso-sin-firma { border: 2px solid #000; color: #000; background: #fef3c7; }
+html.modo-sol .filtros-pases .btn-outline-warning { color: #78350f; border: 2px solid #000; }
+html.modo-sol .filtros-pases .btn-outline-primary, html.modo-sol .filtros-pases .btn-outline-danger, html.modo-sol .filtros-pases .btn-outline-dark { border: 2px solid #000; }
+/* Fin Pases de salida */
+/* Bitácora de transporte */
+html.modo-sol .filtros-transporte, html.modo-sol .resumen-transporte > div, html.modo-sol .transporte-card, html.modo-sol .transporte-caja-pago,
+html.modo-sol .caja-normal, html.modo-sol .caja-taxi, html.modo-sol .taxi-fila, html.modo-sol .aviso-tope, html.modo-sol .tabla-reporte-transporte { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .transporte-card { border-left-width: 8px; }
+html.modo-sol .transporte-card.taxi { border-left-style: double; }
+html.modo-sol .transporte-card.anulada { opacity: 1; border-style: dashed; }
+html.modo-sol .transporte-ruta, html.modo-sol .transporte-sede, html.modo-sol .transporte-dato-etiqueta, html.modo-sol .transporte-card-pie, html.modo-sol .transporte-folio,
+html.modo-sol .resumen-transporte .valor, html.modo-sol .resumen-transporte .etiqueta, html.modo-sol .transporte-pago, html.modo-sol .taxi-fila-titulo, html.modo-sol .caja-titulo,
+html.modo-sol .transporte-info-ruta, html.modo-sol .transporte-sin-rutas, html.modo-sol .transporte-justificacion, html.modo-sol .transporte-horario,
+html.modo-sol .transporte-pax-numero, html.modo-sol .transporte-pax-numero i { color: #000 !important; font-weight: 800; }
+html.modo-sol .badge-mov, html.modo-sol .pill-estatus, html.modo-sol .vobo, html.modo-sol .chip-pasajero, html.modo-sol .rango-rapido, html.modo-sol .transporte-opcion,
+html.modo-sol .btn-planilla, html.modo-sol .btn-reportes, html.modo-sol .btn-alta-pasajero, html.modo-sol .transporte-acciones .btn-siguiente, html.modo-sol .transporte-horario { background: #fff; color: #000; border: 2px solid #000 !important; }
+html.modo-sol .rango-rapido.activo, html.modo-sol .transporte-opcion:has(input:checked), html.modo-sol .btn-registrar-movimiento, html.modo-sol .btn-transporte,
+html.modo-sol .btn-filtrar, html.modo-sol .btn-exportar, html.modo-sol .btn-agregar-taxi, html.modo-sol .btn-autorizar, html.modo-sol .pax-contador,
+html.modo-sol .badge-tipo-registro, html.modo-sol .badge-anulado { background: #000; color: #fff; border: 2px solid #000; }
+html.modo-sol .pill-estatus.no-llego { text-decoration: underline; }
+html.modo-sol .chip-pasajero button { color: #000; }
+html.modo-sol .tabla-reporte-transporte th { background: #000; }
+html.modo-sol .tabla-reporte-transporte a, html.modo-sol .btn-icono.ver, html.modo-sol .tema-transporte .btn-icono.editar { color: #000; }
+html.modo-noche .filtros-transporte, html.modo-noche .resumen-transporte > div, html.modo-noche .transporte-card, html.modo-noche .tabla-reporte-transporte { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .transporte-card { border-left-color: #60a5fa; }
+html.modo-noche .transporte-card.taxi { background: rgba(239, 68, 68, 0.08); border-left-color: #f87171; }
+html.modo-noche .transporte-card.anulada { border-left-color: #64748b; }
+html.modo-noche .transporte-hora, html.modo-noche .transporte-pax-numero, html.modo-noche .resumen-transporte .valor { color: var(--texto); }
+html.modo-noche .resumen-transporte .a-tiempo .valor, html.modo-noche .resumen-transporte .gasto .valor, html.modo-noche .transporte-sede, html.modo-noche .transporte-info-ruta { color: #86efac; }
+html.modo-noche .resumen-transporte .retraso .valor, html.modo-noche .transporte-sin-rutas, html.modo-noche .transporte-justificacion { color: #fcd34d; }
+html.modo-noche .resumen-transporte .taxis .valor, html.modo-noche .transporte-pago, html.modo-noche .taxi-fila-titulo { color: #fca5a5; }
+html.modo-noche .transporte-ruta, html.modo-noche .tabla-reporte-transporte a { color: #93c5fd; }
+html.modo-noche .transporte-horario { background: rgba(59, 130, 246, 0.16); color: #bfdbfe; }
+html.modo-noche .transporte-pax { border-left-color: var(--borde); }
+html.modo-noche .badge-mov.llegada { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+html.modo-noche .badge-mov.salida { background: rgba(234, 179, 8, 0.16); color: #fde047; }
+html.modo-noche .pill-estatus.retraso { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+html.modo-noche .transporte-caja-pago { background: var(--superficie-2); border-color: #b91c1c; }
+html.modo-noche .btn-planilla { background: transparent; color: #fca5a5; border-color: #f87171; }
+html.modo-noche .vobo.autorizado { background: rgba(34, 197, 94, 0.14); color: #86efac; }
+html.modo-noche .vobo.pendiente { background: rgba(245, 158, 11, 0.14); color: #fcd34d; }
+html.modo-noche .rango-rapido, html.modo-noche .btn-reportes { background: transparent; color: #cbd5e1; border-color: #475569; }
+html.modo-noche .rango-rapido.activo { background: #2563eb; border-color: #2563eb; color: #fff; }
+html.modo-noche .btn-filtrar { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .filtros-transporte .filtro-fecha input, html.modo-noche .caja-normal .campo, html.modo-noche .caja-taxi .campo, html.modo-noche .aviso-tope .campo { background: var(--campo-fondo); color: var(--texto); border-color: #475569; }
+html.modo-noche .filtros-transporte .btn-limpiar-filtros { background: transparent; color: #fca5a5; border-color: #7f1d1d; }
+html.modo-noche .transporte-opcion { background: var(--campo-fondo); border-color: #475569; color: #cbd5e1; }
+html.modo-noche .transporte-opcion.llegada:has(input:checked), html.modo-noche .transporte-opcion.estatus-a-tiempo:has(input:checked) { background: rgba(34, 197, 94, 0.16); border-color: #22c55e; color: #86efac; }
+html.modo-noche .transporte-opcion.salida:has(input:checked), html.modo-noche .transporte-opcion.estatus-retraso:has(input:checked) { background: rgba(245, 158, 11, 0.16); border-color: #f59e0b; color: #fcd34d; }
+html.modo-noche .transporte-opcion.estatus-no-llego:has(input:checked) { background: rgba(239, 68, 68, 0.16); border-color: #ef4444; color: #fca5a5; }
+html.modo-noche .caja-normal { background: rgba(34, 197, 94, 0.07); border-color: #166534; }
+html.modo-noche .caja-taxi { background: rgba(239, 68, 68, 0.08); border-color: #7f1d1d; }
+html.modo-noche .taxi-fila { background: var(--superficie-2); border-color: #b91c1c; }
+html.modo-noche .aviso-tope { background: rgba(245, 158, 11, 0.12); border-color: #b45309; color: #fde68a; }
+html.modo-noche .taxi-pasajeros { border-top-color: #7f1d1d; }
+html.modo-noche .chip-pasajero { background: rgba(99, 102, 241, 0.2); color: #c7d2fe; }
+html.modo-noche .chip-pasajero button { color: #c7d2fe; }
+html.modo-noche .chip-pasajero button:hover { background: rgba(99, 102, 241, 0.35); }
+html.modo-noche .btn-alta-pasajero { background: transparent; color: #6ee7b7; border-color: #047857; }
+html.modo-noche .transporte-acciones .btn-siguiente { background: rgba(59, 130, 246, 0.14); color: #93c5fd; border-color: #1d4ed8 !important; }
+html.modo-noche .transporte-detalles summary { color: #cbd5e1; }
+html.modo-noche .btn-icono.ver, html.modo-noche .tema-transporte .btn-icono.editar { color: #93c5fd; }
+html.modo-noche .tabla-reporte-transporte td { border-bottom-color: var(--borde); }
+html.modo-noche .transporte-firmas img { border-color: #475569; }
+/* Fin Bitácora de transporte */

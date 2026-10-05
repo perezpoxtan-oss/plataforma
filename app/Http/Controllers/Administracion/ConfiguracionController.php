@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
@@ -108,9 +109,11 @@ class ConfiguracionController extends Controller
         $empresa = Empresa::findOrFail($empresaId);
         $antes = $empresa->preferencias['avisos'] ?? [];
         $avisos = collect(Empresa::AVISOS)->mapWithKeys(fn ($v, $clave) => [$clave => $request->boolean("avisos.{$clave}")])->all();
-        $empresa->forceFill(['preferencias' => array_merge($empresa->preferencias ?? [], ['avisos' => $avisos])])->save();
+        // Avisos con lista de correos (p. ej. vales de taxi): uno por línea o separados por coma
+        $destinatarios = $this->destinatariosAvisos($request);
+        $empresa->forceFill(['preferencias' => array_merge($empresa->preferencias ?? [], ['avisos' => $avisos, 'avisos_destinatarios' => $destinatarios])])->save();
 
-        $this->auditoria->auditar($request->user(), 'configuracion.avisos', $empresa, ['avisos' => $antes], ['avisos' => $avisos]);
+        $this->auditoria->auditar($request->user(), 'configuracion.avisos', $empresa, ['avisos' => $antes], ['avisos' => $avisos, 'avisos_destinatarios' => $destinatarios]);
 
         return redirect()->route('configuracion.index')->with('ok', 'Avisos por correo actualizados.');
     }
@@ -143,6 +146,33 @@ class ConfiguracionController extends Controller
         $this->auditar($request, 'configuracion.respaldo_descargado', ['archivo' => $archivo]);
 
         return response()->download($ruta, $archivo, ['Content-Type' => 'application/gzip', 'Cache-Control' => 'no-store, private']);
+    }
+
+    /**
+     * Listas de correos de Empresa::AVISOS_CON_DESTINATARIOS (máximo 20 por aviso).
+     *
+     * @return array<string, list<string>>
+     */
+    private function destinatariosAvisos(Request $request): array
+    {
+        $resultado = [];
+        $errores = [];
+        foreach (Empresa::AVISOS_CON_DESTINATARIOS as $clave) {
+            $texto = $request->input("destinatarios.{$clave}");
+            $correos = collect(preg_split('/[\s,;]+/', is_string($texto) ? mb_strtolower($texto) : '') ?: [])->filter()->unique()->values();
+            $invalidos = $correos->reject(fn ($c) => filter_var($c, FILTER_VALIDATE_EMAIL) !== false && mb_strlen($c) <= 150);
+            if ($invalidos->isNotEmpty()) {
+                $errores["destinatarios.{$clave}"] = 'Revisa estos correos: '.$invalidos->take(3)->implode(', ').'.';
+            } elseif ($correos->count() > 20) {
+                $errores["destinatarios.{$clave}"] = 'Captura máximo 20 correos por aviso.';
+            }
+            $resultado[$clave] = $correos->all();
+        }
+        if ($errores !== []) {
+            throw ValidationException::withMessages($errores);
+        }
+
+        return $resultado;
     }
 
     // -------------------------------------------------------------------------
