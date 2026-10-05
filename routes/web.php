@@ -10,6 +10,7 @@ use App\Http\Controllers\Administracion\RolController;
 use App\Http\Controllers\Administracion\SedeController;
 use App\Http\Controllers\Administracion\UsuarioController;
 use App\Http\Controllers\Auth\SesionController;
+use App\Http\Controllers\LectorController;
 use App\Http\Controllers\ModuloPendienteController;
 use App\Http\Controllers\Organizacion\ColaboradorController;
 use App\Http\Controllers\Organizacion\DepartamentoController;
@@ -17,9 +18,15 @@ use App\Http\Controllers\Organizacion\EspacioController;
 use App\Http\Controllers\Organizacion\PuestoController;
 use App\Http\Controllers\Organizacion\TurnoController;
 use App\Http\Controllers\Padrones\ProveedorController;
+use App\Http\Controllers\Padrones\RutaController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\Seguridad\EquipoController;
+use App\Http\Controllers\Seguridad\EstacionamientoController;
+use App\Http\Controllers\Seguridad\GafeteController;
+use App\Http\Controllers\Seguridad\LlaveController;
 use App\Http\Controllers\Seguridad\PersonaController;
 use App\Http\Controllers\Seguridad\VehiculoController;
+use App\Http\Controllers\Seguridad\VoucherController;
 use Illuminate\Support\Facades\Route;
 
 // Acceso
@@ -138,4 +145,55 @@ Route::middleware('auth')->group(function () {
     Route::get('/modulos/{clave}', ModuloPendienteController::class)
         ->where('clave', '[a-z0-9_]+')
         ->name('modulos.pendiente');
+
+    // Padrones: Llaves (catálogo; el préstamo vive en Operación)
+    Route::get('/llaves', [LlaveController::class, 'index'])->name('llaves.index');
+    Route::post('/llaves', [LlaveController::class, 'store'])->name('llaves.store');
+    Route::get('/llaves/exportar', [LlaveController::class, 'exportar'])->name('llaves.exportar');
+    Route::get('/llaves/etiquetas', [LlaveController::class, 'imprimir'])->name('llaves.imprimir');
+    Route::put('/llaves/{llave}', [LlaveController::class, 'update'])->whereNumber('llave')->name('llaves.update');
+    Route::post('/llaves/{llave}/baja', [LlaveController::class, 'baja'])->whereNumber('llave')->name('llaves.baja');
+    Route::patch('/llaves/{llave}/reactivar', [LlaveController::class, 'reactivar'])->whereNumber('llave')->name('llaves.reactivar');
+    // Fin Padrones: Llaves
+    // Padrones: Gafetes y Vouchers de reposición
+    Route::get('/gafetes', [GafeteController::class, 'index'])->name('gafetes.index');
+    Route::post('/gafetes/lote', [GafeteController::class, 'lote'])->name('gafetes.lote');
+    Route::match(['get', 'post'], '/gafetes/imprimir', [GafeteController::class, 'imprimir'])->name('gafetes.imprimir');
+    Route::put('/gafetes/{gafete}', [GafeteController::class, 'update'])->whereNumber('gafete')->name('gafetes.update');
+    Route::post('/gafetes/{gafete}/baja', [GafeteController::class, 'baja'])->whereNumber('gafete')->name('gafetes.baja');
+    Route::patch('/gafetes/{gafete}/reactivar', [GafeteController::class, 'reactivar'])->whereNumber('gafete')->name('gafetes.reactivar');
+    Route::get('/vouchers', [VoucherController::class, 'index'])->name('vouchers.index');
+    Route::get('/vouchers/{voucher}/imprimir', [VoucherController::class, 'imprimir'])->whereNumber('voucher')->name('vouchers.imprimir');
+    // Fin Padrones: Gafetes y Vouchers de reposición
+    // Padrones: Equipos de seguridad y Estacionamientos
+    Route::get('/equipos', [EquipoController::class, 'index'])->name('equipos.index');
+    Route::post('/equipos', [EquipoController::class, 'store'])->name('equipos.store');
+    Route::put('/equipos/{equipo}', [EquipoController::class, 'update'])->whereNumber('equipo')->name('equipos.update');
+    Route::post('/equipos/{equipo}/baja', [EquipoController::class, 'baja'])->whereNumber('equipo')->name('equipos.baja');
+    Route::patch('/equipos/{equipo}/reactivar', [EquipoController::class, 'reactivar'])->whereNumber('equipo')->name('equipos.reactivar');
+    Route::get('/equipos/{equipo}/etiqueta', [EquipoController::class, 'etiqueta'])->whereNumber('equipo')->name('equipos.etiqueta');
+    Route::get('/equipos/{equipo}/qr', [EquipoController::class, 'qr'])->whereNumber('equipo')->name('equipos.qr');
+    Route::get('/estacionamientos', [EstacionamientoController::class, 'index'])->name('estacionamientos.index');
+    Route::post('/estacionamientos', [EstacionamientoController::class, 'store'])->name('estacionamientos.store');
+    Route::put('/estacionamientos/{zona}', [EstacionamientoController::class, 'update'])->whereNumber('zona')->name('estacionamientos.update');
+    Route::patch('/estacionamientos/{zona}/estado', [EstacionamientoController::class, 'estado'])->whereNumber('zona')->name('estacionamientos.estado');
+    // Fin Padrones: Equipos de seguridad y Estacionamientos
+    // Padrones: Rutas de transporte (fichas por sede, pestañas Llegadas / Salidas / Paraderos, hoja del día e itinerario)
+    Route::get('/rutas', [RutaController::class, 'index'])->name('rutas.index');
+    Route::post('/rutas', [RutaController::class, 'store'])->name('rutas.store');
+    Route::get('/rutas/sede/{sede}', [RutaController::class, 'sede'])->whereNumber('sede')->name('rutas.sede');
+    Route::get('/rutas/sede/{sede}/dia', [RutaController::class, 'dia'])->whereNumber('sede')->name('rutas.dia');
+    Route::post('/rutas/sede/{sede}/paraderos', [RutaController::class, 'guardarParadero'])->whereNumber('sede')->name('rutas.paraderos.store');
+    Route::put('/rutas/paraderos/{paradero}', [RutaController::class, 'actualizarParadero'])->whereNumber('paradero')->name('rutas.paraderos.update');
+    Route::patch('/rutas/paraderos/{paradero}/estado', [RutaController::class, 'estadoParadero'])->whereNumber('paradero')->name('rutas.paraderos.estado');
+    Route::put('/rutas/{ruta}', [RutaController::class, 'update'])->whereNumber('ruta')->name('rutas.update');
+    Route::patch('/rutas/{ruta}/estado', [RutaController::class, 'estado'])->whereNumber('ruta')->name('rutas.estado');
+    Route::post('/rutas/{ruta}/clonar', [RutaController::class, 'clonar'])->whereNumber('ruta')->name('rutas.clonar');
+    Route::get('/rutas/{ruta}/itinerario', [RutaController::class, 'itinerario'])->whereNumber('ruta')->name('rutas.itinerario');
+    // Fin Padrones: Rutas de transporte
+
+    // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
+    Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
+    Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');
+    // Fin Lector universal
 });

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
+use App\Models\Concerns\TieneIdentificador;
+use App\Support\Lector\Identificable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,9 +18,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * adicionales donde también tiene presencia, un departamento (área) y un
  * puesto (rango), que se eligen por separado.
  */
-class Colaborador extends Model
+class Colaborador extends Model implements Identificable
 {
-    use PerteneceAEmpresa, RegistraAutor;
+    use PerteneceAEmpresa, RegistraAutor, TieneIdentificador;
+
+    /** Se encuentra también tecleando su número de empleado. */
+    protected string $columnaLegible = 'num_empleado';
 
     protected $table = 'colaboradores';
 
@@ -47,7 +52,7 @@ class Colaborador extends Model
     protected $fillable = [
         'empresa_id', 'sede_id', 'departamento_id', 'puesto_id', 'num_empleado', 'nombre', 'apellido_paterno',
         'apellido_materno', 'telefono', 'fecha_nacimiento', 'lugar_nacimiento', 'nacionalidad', 'curp', 'rfc',
-        'nss', 'correo_personal', 'direccion_completa', 'activo',
+        'nss', 'correo_personal', 'direccion_completa', 'etiqueta_nfc', 'activo',
     ];
 
     protected function casts(): array
@@ -117,5 +122,30 @@ class Colaborador extends Model
         }
 
         return str_repeat('*', max(0, mb_strlen($valor) - 4)).mb_substr($valor, -4);
+    }
+
+    public static function tipoLector(): string
+    {
+        return 'colaborador';
+    }
+
+    public static function permisoLector(): string
+    {
+        return 'colaboradores.ver';
+    }
+
+    public function resumenLector(): array
+    {
+        return [
+            'titulo' => $this->nombreCompleto(),
+            'detalle' => 'Núm. '.$this->num_empleado.($this->puesto ? ' · '.$this->puesto->nombre : ''),
+            'activo' => (bool) $this->activo && $this->fusionado_en_id === null,
+            'sede_id' => $this->sede_id,
+        ];
+    }
+
+    public function urlLector(): string
+    {
+        return route('colaboradores.index').'#colaborador-'.$this->id;
     }
 }

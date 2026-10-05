@@ -5,20 +5,32 @@ namespace App\Console\Commands;
 use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
+use App\Models\Equipo;
 use App\Models\Espacio;
+use App\Models\Gafete;
+use App\Models\GrupoEspacio;
+use App\Models\Llave;
 use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Rubro;
+use App\Models\Ruta;
 use App\Models\Sede;
+use App\Models\TipoEquipo;
 use App\Models\TipoEspacio;
 use App\Models\Turno;
 use App\Models\User;
 use App\Models\UsuarioRol;
 use App\Models\Vehiculo;
+use App\Models\ZonaEstacionamiento;
+use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
+use App\Services\Gafetes\AdministradorGafetes;
+use App\Services\Llaves\AdministradorLlaves;
 use App\Services\Plataforma\ProvisionarEmpresa;
+use App\Services\Rutas\AdministradorRutas;
+use App\Support\HoraLocal;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -104,6 +116,10 @@ class CrearDatosDemo extends Command
         // Padrón de personas: después de los proveedores (si existen) para ligar a su personal
         $tenant->conEmpresa($empresa->id, fn () => $this->personasDemo(User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'jefe.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->vehiculosDemo(User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->llavesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->gafetesDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->equiposYEstacionamientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->rutasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -412,6 +428,279 @@ class CrearDatosDemo extends Command
                 'marca' => $marca, 'modelo' => $modelo, 'color' => $color,
             ], $extra));
             $vehiculo->forceFill(['creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+        }
+    }
+
+    /**
+     * Catálogo de llaves de ejemplo, solo la primera vez: llave maestra,
+     * llaves de zona, piso, cuarto y sección (de Zonas y áreas, si existen),
+     * una por vencer, una vencida y una dada de baja con voucher.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function llavesDemo($sedes, User $admin): void
+    {
+        if (Llave::exists()) {
+            return;
+        }
+
+        $cen = $sedes['CEN'];
+        $pla = $sedes['PLA'];
+        $espacio = fn (string $nivel, string $nombre) => Espacio::where('sede_id', $cen->id)->where('nivel', $nivel)->where('nombre', $nombre)->value('id');
+        $seccion = GrupoEspacio::where('sede_id', $cen->id)->where('nombre', 'Vista al mar')->value('id');
+        $depto = fn (string $n) => Departamento::where('nombre', $n)->value('id');
+        $puesto = fn (string $n) => Puesto::where('nombre', $n)->value('id');
+        $dias = fn (int $n) => now(HoraLocal::ZONA_PLATAFORMA)->addDays($n)->format('Y-m-d');
+        $torre = $espacio(Espacio::EDIFICIO, 'Torre A');
+        $piso1 = $espacio(Espacio::AREA, 'Piso 1');
+        $hab101 = $espacio(Espacio::AREA_ESPECIFICA, '101');
+
+        // [nomenclatura, sede, descripción, tipo, alcance, lugares (espacios o secciones), extra, horarios]
+        $llaves = [
+            ['HDC-MASTER-01', $cen, 'Llave maestra de la sede Centro', 'electronica_rfid', 'global', [],
+                ['departamento_id' => $depto('Seguridad'), 'id_externo' => 'VC-000187', 'plataforma_externa' => 'VingCard', 'fecha_caducidad' => $dias(200)], []],
+            ['HDC-TA-ZONA', $cen, 'Acceso general a la Torre A', 'metalica', $torre ? 'zona' : 'otra', $torre ? [$torre] : [],
+                ['departamento_id' => $depto('Mantenimiento'), 'puesto_id' => $puesto('Técnico de Mantenimiento'), 'alcance_otro' => $torre ? null : 'Torre A'], [['Mantenimiento', '07:00', '15:00']]],
+            ['HDC-P1-AMA', $cen, 'Habitaciones del Piso 1 para Ama de Llaves', 'electronica_rfid', $piso1 ? 'piso' : 'otra', $piso1 ? [$piso1] : [],
+                ['departamento_id' => $depto('Ama de Llaves'), 'puesto_id' => $puesto('Camarista'), 'id_externo' => 'S-4471', 'plataforma_externa' => 'Salto', 'fecha_caducidad' => $dias(20), 'alcance_otro' => $piso1 ? null : 'Piso 1'],
+                [['Turno Limpieza', '08:00', '16:00']]],
+            ['HDC-101', $cen, 'Habitación 101 (llave de respaldo)', 'electronica_rfid', $hab101 ? 'area' : 'otra', $hab101 ? [$hab101] : [],
+                ['fecha_caducidad' => $dias(-5), 'alcance_otro' => $hab101 ? null : 'Habitación 101'], []],
+            ['HDC-VISTA-MAR', $cen, 'Habitaciones con vista al mar', 'electronica_rfid', $seccion ? 'seccion' : 'otra', $seccion ? [$seccion] : [],
+                ['departamento_id' => $depto('Ama de Llaves'), 'id_externo' => 'VC-000233', 'plataforma_externa' => 'VingCard', 'fecha_caducidad' => $dias(90), 'alcance_otro' => $seccion ? null : 'Vista al mar'],
+                [['Turno Matutino', '07:00', '15:00'], ['Turno Nocturno', '23:00', '07:00']]],
+            ['HDC-SITE-TI', $cen, 'Site central de TI', 'biometrica', 'otra', [],
+                ['alcance_otro' => 'Site central de TI', 'plataforma_externa' => null, 'colaborador_id' => Colaborador::where('num_empleado', '1006')->value('id')], []],
+            ['HDC-BOD-01', $cen, 'Bodega de blancos', 'metalica', 'otra', [],
+                ['alcance_otro' => 'Bodega de blancos', 'departamento_id' => $depto('Ama de Llaves')], [['Apertura', '07:00', '19:00']]],
+            ['HDP-MASTER-01', $pla, 'Llave maestra de la sede Playa', 'metalica', 'global', [], ['departamento_id' => $depto('Seguridad')], []],
+            ['HDP-ALBERCA', $pla, 'Reja de la alberca', 'clave_pin', 'otra', [],
+                ['alcance_otro' => 'Reja de alberca', 'departamento_id' => $depto('Club de Playa')], [['Apertura', '06:00', '22:00']]],
+            ['HDP-MANT-02', $pla, 'Cuarto de máquinas', 'metalica', 'otra', [],
+                ['alcance_otro' => 'Cuarto de máquinas', 'departamento_id' => $depto('Mantenimiento')], []],
+        ];
+
+        foreach ($llaves as [$nomenclatura, $sede, $descripcion, $tipo, $alcance, $lugares, $extra, $horarios]) {
+            $llave = new Llave(array_merge([
+                'sede_id' => $sede->id, 'nomenclatura' => $nomenclatura, 'descripcion' => $descripcion,
+                'tipo_dispositivo' => $tipo, 'alcance' => $alcance,
+            ], $extra));
+            $llave->forceFill(['creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+            if ($alcance === 'seccion') {
+                $llave->grupos()->sync($lugares);
+            } elseif ($lugares !== []) {
+                $llave->espacios()->sync($lugares);
+            }
+            foreach ($horarios as [$nombre, $inicio, $fin]) {
+                $llave->horarios()->create(['nombre' => $nombre, 'hora_inicio' => "{$inicio}:00", 'hora_fin' => "{$fin}:00"]);
+            }
+        }
+
+        // Una llave extraviada: baja con voucher de reposición con cobro al responsable
+        $extraviada = Llave::where('nomenclatura', 'HDP-MANT-02')->firstOrFail();
+        $responsable = Colaborador::where('num_empleado', '1011')->value('id');
+        app(AdministradorLlaves::class)->darDeBaja($admin, $extraviada, [
+            'motivo' => 'extraviado', 'descripcion' => 'Se perdió durante la ronda nocturna de mantenimiento.',
+            'aplica_cobro' => $responsable !== null, 'monto' => '350', 'colaborador_id' => $responsable,
+        ]);
+    }
+
+    /**
+     * Inventario de gafetes de ejemplo, solo la primera vez: en cada sede un
+     * lote de Visitante (10), Proveedor (5) y Contratista (5); dos dados de
+     * baja con su voucher (uno con cobro a un colaborador demo).
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function gafetesDemo(Empresa $empresa, $sedes, User $admin): void
+    {
+        if (Gafete::exists()) {
+            return;
+        }
+
+        $gafetes = app(AdministradorGafetes::class);
+        $tipos = $gafetes->tipos($admin, true)->pluck('id', 'nombre');
+        foreach ($sedes as $sede) {
+            foreach (['Visitante' => 10, 'Proveedor' => 5, 'Contratista' => 5] as $tipo => $cantidad) {
+                $gafetes->generarLote($admin, $empresa->id, ['sede_id' => $sede->id, 'tipo_gafete_id' => $tipos[$tipo], 'cantidad' => $cantidad]);
+            }
+        }
+
+        $codigo = fn (Sede $sede, string $tipo, int $n) => AdministradorGafetes::prefijo($empresa->nombre_comercial, $sede->codigo, $tipo).str_pad((string) $n, 3, '0', STR_PAD_LEFT);
+        $responsable = Colaborador::where('num_empleado', '1005')->value('id');
+
+        $perdido = Gafete::where('nomenclatura', $codigo($sedes['CEN'], 'Visitante', 10))->first();
+        // Desde la consola no hay sesión: el voucher se firma a nombre del administrador demo
+        $firmar = fn ($voucher) => $voucher->forceFill(['creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+        if ($perdido !== null) {
+            $firmar($gafetes->darDeBaja($admin, $perdido, [
+                'motivo' => 'extraviado',
+                'descripcion' => 'El visitante se retiró sin devolver el gafete; no contestó al teléfono que dejó en caseta.',
+                'aplica_cobro' => $responsable !== null,
+                'monto' => $responsable !== null ? '150.00' : null,
+                'colaborador_id' => $responsable,
+            ]));
+        }
+        $roto = Gafete::where('nomenclatura', $codigo($sedes['PLA'], 'Proveedor', 5))->first();
+        if ($roto !== null) {
+            $firmar($gafetes->darDeBaja($admin, $roto, ['motivo' => 'danado', 'descripcion' => 'La mica se rompió y el plástico quedó doblado.', 'aplica_cobro' => false]));
+        }
+    }
+
+    /**
+     * Equipos de seguridad y zonas de estacionamiento de ejemplo, cada uno
+     * solo la primera vez: radios, lámparas, detectores, chalecos y
+     * botiquines en las dos sedes (uno en mantenimiento y uno de baja con su
+     * voucher) y 2–3 zonas por sede, incluida una zona de descarga.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function equiposYEstacionamientosDemo($sedes, User $admin): void
+    {
+        if (! Equipo::exists()) {
+            $tipos = collect(['Radio de Comunicación', 'Lámpara Táctica', 'Detector de Metales', 'Chaleco Reflejante', 'Botiquín de Primeros Auxilios'])
+                ->mapWithKeys(fn ($nombre) => [$nombre => TipoEquipo::firstOrCreate(['nombre' => $nombre])->id]);
+
+            // [sede, tipo, marca, modelo, serie, costo, estado, observaciones]
+            $equipos = [
+                ['CEN', 'Radio de Comunicación', 'MOTOROLA', 'DEP 450', '752TSFQ504', 4800, 'disponible', 'Radio de caseta principal'],
+                ['CEN', 'Radio de Comunicación', 'MOTOROLA', 'DEP 450', '752TSFQ505', 4800, 'disponible', null],
+                ['CEN', 'Radio de Comunicación', 'MOTOROLA', 'SL500E', '130TXP1568', 5800, 'en_mantenimiento', 'La batería no retiene carga: en servicio técnico'],
+                ['PLA', 'Radio de Comunicación', 'MOTOROLA', 'DEP 450', '752TSFQ610', 4800, 'disponible', null],
+                ['CEN', 'Lámpara Táctica', 'STREAMLIGHT', 'STINGER 2020', 'LT-0001', 1650, 'disponible', null],
+                ['PLA', 'Lámpara Táctica', 'STREAMLIGHT', 'STINGER 2020', 'LT-0002', 1650, 'disponible', null],
+                ['CEN', 'Detector de Metales', 'GARRETT', 'SUPER SCANNER V', 'DM-1187', 3200, 'disponible', null],
+                ['PLA', 'Detector de Metales', 'GARRETT', 'SUPER SCANNER V', 'DM-1188', 3200, 'disponible', null],
+                ['CEN', 'Chaleco Reflejante', 'TRUPER', 'CHR-CLASE 2', 'CH-001', 350, 'disponible', null],
+                ['PLA', 'Chaleco Reflejante', 'TRUPER', 'CHR-CLASE 2', 'CH-002', 350, 'disponible', null],
+                ['CEN', 'Botiquín de Primeros Auxilios', null, null, 'BK-CEN-01', 900, 'disponible', 'Revisar caducidades cada mes'],
+                ['PLA', 'Botiquín de Primeros Auxilios', null, null, 'BK-PLA-01', 900, 'disponible', null],
+            ];
+
+            foreach ($equipos as [$sede, $tipo, $marca, $modelo, $serie, $costo, $estado, $observaciones]) {
+                $equipo = new Equipo([
+                    'sede_id' => $sedes[$sede]->id, 'tipo_equipo_id' => $tipos[$tipo], 'marca' => $marca, 'modelo' => $modelo,
+                    'numero_serie' => $serie, 'costo' => $costo, 'observaciones' => $observaciones,
+                ]);
+                $equipo->forceFill(['estado' => $estado, 'creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+            }
+
+            // Una lámpara extraviada en Playa, con su voucher y cobro al responsable (si hay colaboradores)
+            $lampara = Equipo::where('numero_serie', 'LT-0002')->firstOrFail();
+            $responsable = Colaborador::where('num_empleado', '1003')->value('id');
+            app(AdministradorEquipos::class)->darDeBaja($admin, $lampara, [
+                'motivo' => 'extraviado',
+                'descripcion' => 'Se quedó en la playa al terminar el rondín nocturno; no apareció al día siguiente.',
+                'aplica_cobro' => $responsable !== null,
+                'monto' => $responsable !== null ? '1650.00' : null,
+                'colaborador_id' => $responsable,
+            ]);
+        }
+
+        if (! ZonaEstacionamiento::exists()) {
+            // [sede, nombre, tipo, cupo, activa]
+            $zonas = [
+                ['CEN', 'Estacionamiento Huéspedes', 'estacionamiento', 40, true],
+                ['CEN', 'Estacionamiento Colaboradores', 'estacionamiento', 25, true],
+                ['CEN', 'Andén de Almacén General', 'zona_descarga', null, true],
+                ['PLA', 'Sótano 1A', 'estacionamiento', 8, true],
+                ['PLA', 'Lobby', 'zona_descarga', null, true],
+                ['PLA', 'Estacionamiento Temporal (obra)', 'estacionamiento', 10, false],
+            ];
+            foreach ($zonas as [$sede, $nombre, $tipo, $cupo, $activa]) {
+                $zona = new ZonaEstacionamiento(['sede_id' => $sedes[$sede]->id, 'nombre' => $nombre, 'tipo' => $tipo, 'cupo_total' => $cupo]);
+                $zona->forceFill(['activo' => $activa, 'creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+            }
+        }
+    }
+
+    /**
+     * Rutas de transporte de ejemplo, solo la primera vez: por sede, dos
+     * llegadas y dos salidas con los turnos y el transporte de personal demo,
+     * paraderos en colonias de Cancún, un horario que cruza la medianoche y
+     * una ruta suspendida. Se dan de alta con las mismas reglas de la
+     * pantalla (AdministradorRutas), como si las capturara admin.demo.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function rutasDemo($sedes, User $admin): void
+    {
+        if (Ruta::exists()) {
+            return;
+        }
+
+        $turno = fn (string $nombre) => Turno::where('nombre', $nombre)->where('activo', true)->value('id') ?? Turno::where('activo', true)->orderBy('id')->value('id');
+        $proveedor = fn (array $nombres, array $categorias) => Proveedor::whereIn('nombre', $nombres)->where('activo', true)->value('id')
+            ?? Proveedor::where('activo', true)->whereIn('categoria', $categorias)->where('todas_las_sedes', true)->orderBy('id')->value('id');
+        $personal = $proveedor(['Transportes Kin-Ha'], ['transporte_personal', 'transportadora']);
+        $shuttle = $proveedor(['Shuttle Riviera'], ['transporte_huespedes', 'transporte_personal']) ?? $personal;
+        if ($turno('Matutino') === null || $personal === null) {
+            return; // sin turnos ni transportista no hay rutas que mostrar
+        }
+
+        $paradas = fn (array $lista) => array_map(fn ($p) => ['nombre' => $p[0], 'hora' => $p[1]], $lista);
+        $laborales = ['LU', 'MA', 'MI', 'JU', 'VI'];
+
+        // sede => [paraderos extra (sin ruta), rutas [sentido, nombre, turno, proveedor, costo taxi, activa, horarios]]
+        $plan = [
+            'CEN' => [['AV. TALLERES'], [
+                ['llegada', 'RUTA 1 - REGIÓN 94', 'Matutino', $personal, 250, true, [
+                    ['Lunes a viernes', $laborales, '05:45', '06:40', $paradas([['REGIÓN 94 (CRUCERO)', '05:45'], ['SUPERMANZANA 63 (MERCADO 28)', '06:00'], ['AV. KABAH CON LEONA VICARIO', '06:10'], ['CHEDRAUI PORTILLO', '06:20']])],
+                    ['Fin de semana', ['SA', 'DO'], '06:15', '07:00', $paradas([['REGIÓN 94 (CRUCERO)', '06:15'], ['CHEDRAUI PORTILLO', '06:35']])],
+                ]],
+                ['llegada', 'RUTA 2 - KABAH', 'Vespertino', $personal, null, true, [
+                    ['Todos los días', [], '13:25', '14:45', $paradas([['AV. KABAH CON LEONA VICARIO', '13:25'], ['PLAZA LAS AMÉRICAS', '13:50'], ['SUPERMANZANA 63 (MERCADO 28)', '14:05']])],
+                ]],
+                ['salida', 'RUTA 1 - REGIÓN 94', 'Matutino', $personal, 250, true, [
+                    ['Todos los días', [], '15:10', '16:05', $paradas([['CHEDRAUI PORTILLO', '15:35'], ['SUPERMANZANA 63 (MERCADO 28)', '15:45'], ['REGIÓN 94 (CRUCERO)', '16:05']])],
+                ]],
+                // Cruza la medianoche: sale 23:20 y llega 00:30 del día siguiente
+                ['salida', 'RUTA 3 - NOCTURNA KABAH', 'Vespertino', $shuttle, 300, true, [
+                    ['Todos los días', [], '23:20', '00:30', $paradas([['PLAZA LAS AMÉRICAS', '23:40'], ['AV. KABAH CON LEONA VICARIO', '23:55'], ['REGIÓN 94 (CRUCERO)', '00:30']])],
+                ]],
+                ['llegada', 'RUTA 9 - TEMPORADA ALTA', 'Matutino', $shuttle, null, false, [
+                    ['Sábados', ['SA'], '06:30', '07:10', $paradas([['PLAZA LAS AMÉRICAS', '06:30']])],
+                ]],
+            ]],
+            'PLA' => [['MERCADO 23'], [
+                ['llegada', 'RUTA 1 - BONFIL', 'Matutino', $personal, 280, true, [
+                    ['Todos los días', [], '06:00', '06:50', $paradas([['BONFIL (GLORIETA)', '06:00'], ['VILLAS OTOCH', '06:15'], ['AV. TULUM CON COBÁ', '06:35']])],
+                ]],
+                ['llegada', 'RUTA 2 - CIELO NUEVO', 'Mixto Playa', $shuttle, null, true, [
+                    ['Lunes a sábado', [...$laborales, 'SA'], '09:00', '09:50', $paradas([['CIELO NUEVO (COPPEL)', '09:00'], ['VILLAS OTOCH', '09:15'], ['AV. TULUM CON COBÁ', '09:30']])],
+                ]],
+                ['salida', 'RUTA 1 - BONFIL', 'Matutino', $personal, 280, true, [
+                    ['Todos los días', [], '15:10', '16:00', $paradas([['AV. TULUM CON COBÁ', '15:30'], ['VILLAS OTOCH', '15:45'], ['BONFIL (GLORIETA)', '16:00']])],
+                ]],
+                ['salida', 'RUTA 2 - CIELO NUEVO', 'Mixto Playa', $shuttle, null, true, [
+                    ['Lunes a sábado', [...$laborales, 'SA'], '18:15', '19:05', $paradas([['AV. TULUM CON COBÁ', '18:30'], ['CIELO NUEVO (COPPEL)', '19:05']])],
+                ]],
+            ]],
+        ];
+
+        $rutas = app(AdministradorRutas::class);
+        // Las reglas de la pantalla registran autor y auditoría con el usuario en sesión
+        $previo = auth()->user();
+        auth()->setUser($admin);
+        try {
+            foreach ($plan as $codigo => [$extras, $lista]) {
+                $sede = $sedes[$codigo];
+                foreach ($lista as [$sentido, $nombre, $nombreTurno, $proveedorId, $costo, $activa, $horarios]) {
+                    $ruta = $rutas->crear($admin, $sede, [
+                        'sentido' => $sentido, 'nombre' => $nombre, 'turno_id' => $turno($nombreTurno),
+                        'proveedor_id' => $proveedorId, 'costo_maximo_taxi' => $costo,
+                        'horarios' => array_map(fn ($h) => ['nombre' => $h[0], 'dias' => $h[1], 'hora_inicio' => $h[2], 'hora_fin' => $h[3], 'paraderos' => $h[4]], $horarios),
+                    ]);
+                    if (! $activa) {
+                        $rutas->cambiarEstado($admin, $ruta, false);
+                    }
+                }
+                foreach ($extras as $extra) {
+                    $rutas->crearParadero($admin, $sede, $extra);
+                }
+            }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }
     }
 }

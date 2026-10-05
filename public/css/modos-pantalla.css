@@ -435,3 +435,176 @@ html.modo-noche .caja-propietario { background: var(--superficie-2); border-colo
 html.modo-noche .btn-pizarra { background: #475569; border: 1px solid #64748b; }
 html.modo-noche .btn-cerrar-calcomania { background: var(--superficie); color: #e2e8f0; border-color: var(--borde); }
 /* Fin Padrón Vehicular */
+/* Lector universal */
+html.modo-sol .btn-lector, html.modo-sol .lector-elegido, html.modo-sol .lector-opcion { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-lector:hover { background: #000; color: #fff; }
+html.modo-sol .lector-cambiar { color: #000; }
+html.modo-noche .btn-lector { background: var(--superficie-2); border-color: var(--borde); color: #93c5fd; }
+html.modo-noche .lector-elegido { background: rgba(34, 197, 94, 0.12); border-color: #166534; color: #86efac; }
+html.modo-noche .lector-cambiar { color: #86efac; }
+html.modo-noche .lector-opcion { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .lector-estado.ok { color: #86efac; }
+html.modo-noche .lector-estado.aviso { color: #fcd34d; }
+html.modo-noche .lector-estado.error { color: #fca5a5; }
+/* Fin Lector universal */
+/* Catálogo de llaves */
+html.modo-sol .badge-tipo-llave, html.modo-sol .pastilla-alcance, html.modo-sol .mini-horario, html.modo-sol .meta-llave,
+html.modo-sol .mini-etiqueta, html.modo-sol .caja-id-externo, html.modo-sol .caja-cobro, html.modo-sol .dialogo-llave .caja-lugares { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .meta-llave, html.modo-sol .llave-descripcion, html.modo-sol .llave-responsable { color: #000; font-weight: 700; }
+html.modo-sol .badge-caducidad.ok { background: #166534; color: #fff; }
+html.modo-sol .badge-caducidad.pronto { background: #92400e; color: #fff; }
+html.modo-sol .badge-caducidad.vencida { background: #991b1b; color: #fff; }
+html.modo-sol .etiqueta-estado.en-uso { background: #92400e; color: #fff; }
+html.modo-sol .btn-accion-llaves { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-accion-llaves.oscuro, html.modo-sol .btn-accion-llaves.activo, html.modo-sol .tema-indigo .btn-pill-tipo.active { background: #000; color: #fff; border-color: #000; }
+html.modo-sol .ficha-llave.marcada { border: 3px solid #000; box-shadow: none; }
+html.modo-sol .btn-agregar-horario, html.modo-sol .btn-quitar-horario { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-noche .badge-tipo-llave, html.modo-noche .pastilla-alcance { background: var(--superficie-2); color: #cbd5e1; border-color: var(--borde); }
+html.modo-noche .meta-llave { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .meta-llave strong { color: #e2e8f0; }
+html.modo-noche .mini-horario { background: var(--superficie); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .mini-etiqueta { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .mini-etiqueta-nombre, html.modo-noche .mini-etiqueta-qr { color: #e2e8f0; }
+html.modo-noche .llave-responsable { color: #a5b4fc; }
+html.modo-noche .badge-caducidad.ok { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+html.modo-noche .badge-caducidad.pronto { background: rgba(245, 158, 11, 0.16); color: #fcd34d; }
+html.modo-noche .badge-caducidad.vencida { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+html.modo-noche .etiqueta-estado.en-uso { background: rgba(245, 158, 11, 0.18); color: #fcd34d; }
+html.modo-noche .btn-accion-llaves { background: var(--superficie-2); border-color: var(--borde); color: #e2e8f0; }
+html.modo-noche .btn-accion-llaves:hover { background: var(--superficie); }
+html.modo-noche .btn-accion-llaves.oscuro { background: #6366f1; border-color: #6366f1; color: #fff; }
+html.modo-noche .btn-accion-llaves.activo { background: rgba(99, 102, 241, 0.25); border-color: #6366f1; color: #c7d2fe; }
+html.modo-noche .tema-indigo .btn-pill-tipo.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+html.modo-noche .tema-indigo .btn-pill-tipo:not(.active) { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .dialogo-llave .caja-lugares { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .dialogo-llave .lista-lugares { background: var(--superficie); }
+html.modo-noche .caja-id-externo { background: rgba(34, 197, 94, 0.08); border-color: #166534; }
+html.modo-noche .caja-cobro { background: rgba(239, 68, 68, 0.08); border-color: #7f1d1d; }
+html.modo-noche .grupo-monto-simbolo { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .btn-agregar-horario { background: rgba(99, 102, 241, 0.15); color: #c7d2fe; }
+html.modo-noche .btn-quitar-horario { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+html.modo-noche .opcion-cobro { color: #e2e8f0; }
+html.modo-noche .pagina-etiquetas-llaves { background: #0f172a; }
+html.modo-noche .panel-etiquetas-llaves { background: var(--superficie); color: #e2e8f0; }
+/* Fin Catálogo de llaves */
+/* Padrones: Gafetes y Vouchers de reposición */
+html.modo-sol .gafete-meta, html.modo-sol .voucher-como, html.modo-sol .voucher-folio, html.modo-sol .caja-cobro,
+html.modo-sol .aviso-voucher-generado, html.modo-sol .aviso-sin-marcar, html.modo-sol .filtro-fecha, html.modo-sol .btn-marcar-todos { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .gafete-meta strong, html.modo-sol .voucher-meta, html.modo-sol .voucher-meta strong, html.modo-sol .gafete-codigo,
+html.modo-sol .gafete-nomenclatura, html.modo-sol .voucher-articulo, html.modo-sol .voucher-como span, html.modo-sol .casilla-cobro { color: #000 !important; }
+html.modo-sol .estado-gafete, html.modo-sol .voucher-cobro { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .estado-gafete.no-disponible, html.modo-sol .voucher-cobro.con-cobro { background: #000; color: #fff; }
+html.modo-sol .btn-gafetes, html.modo-sol .btn-ver-voucher, html.modo-sol .tema-gafetes .btn-pill-tipo.active { background: #000; border-color: #000; color: #fff; }
+html.modo-sol .casilla-imprimir input, html.modo-sol .casilla-cobro input { accent-color: #000; }
+html.modo-noche .tema-gafetes .ficha-create { background: rgba(148, 163, 184, 0.06); border-color: #475569; }
+html.modo-noche .tema-gafetes .ficha-create i, html.modo-noche .tema-gafetes .ficha-create .titulo-crear,
+html.modo-noche .tema-gafetes .btn-icono.editar { color: #cbd5e1; }
+html.modo-noche .tema-gafetes .btn-pill-tipo.active { background: #475569; border-color: #64748b; color: #fff; }
+html.modo-noche .tema-gafetes .btn-pill-tipo:not(.active) { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .gafete-nomenclatura, html.modo-noche .voucher-articulo { color: #f1f5f9; }
+html.modo-noche .gafete-meta, html.modo-noche .voucher-como { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .gafete-meta strong, html.modo-noche .voucher-meta strong { color: #e2e8f0; }
+html.modo-noche .voucher-meta { color: #94a3b8; }
+html.modo-noche .voucher-meta .voucher-monto { color: #fca5a5; }
+html.modo-noche .voucher-folio { background: var(--superficie-2); color: #cbd5e1; }
+html.modo-noche .estado-gafete.disponible, html.modo-noche .voucher-cobro.sin-cobro { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+html.modo-noche .estado-gafete.no-disponible, html.modo-noche .voucher-cobro.con-cobro { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+html.modo-noche .casilla-imprimir:hover { background: var(--superficie-2); }
+html.modo-noche .casilla-imprimir input { accent-color: #94a3b8; }
+html.modo-noche .btn-marcar-todos, html.modo-noche .filtro-fecha { background: var(--superficie); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .btn-marcar-todos:hover, html.modo-noche .btn-marcar-todos[aria-pressed="true"] { background: var(--superficie-2); border-color: #94a3b8; color: #f1f5f9; }
+html.modo-noche .btn-gafetes, html.modo-noche .btn-ver-voucher { background: #475569; border: 1px solid #64748b; color: #fff; }
+html.modo-noche .btn-gafetes:hover, html.modo-noche .btn-ver-voucher:hover { background: #64748b; }
+html.modo-noche .conteo-seleccion { background: #0f172a; color: #e2e8f0; }
+html.modo-noche .aviso-voucher-generado { background: var(--superficie); border-color: #64748b; color: #e2e8f0; }
+html.modo-noche .aviso-voucher-generado > i { color: #cbd5e1; }
+html.modo-noche .aviso-sin-marcar { background: rgba(245, 158, 11, 0.12); border-color: #92400e; color: #fcd34d; }
+html.modo-noche .casilla-cobro { color: #fca5a5; }
+html.modo-noche .caja-cobro { background: rgba(239, 68, 68, 0.08); border-color: #7f1d1d; }
+html.modo-noche .grupo-monto-simbolo { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .grupo-monto-input { background: var(--campo-fondo); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .btn-limpiar-filtros { color: #cbd5e1; }
+html.modo-noche .btn-limpiar-filtros:hover { background: var(--superficie-2); color: #fff; }
+/* Fin Padrones: Gafetes y Vouchers de reposición */
+/* Padrones: Equipos de seguridad y Estacionamientos */
+html.modo-sol .badge-estado-eq, html.modo-sol .distintivo-zona, html.modo-sol .estado-fijo-eq, html.modo-sol .aviso-baja-eq { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .estado-eq-baja, html.modo-sol .texto-lleno { color: #b91c1c; }
+html.modo-sol .eq-serie, html.modo-sol .eq-tipo, html.modo-sol .eq-marca, html.modo-sol .eq-observaciones, html.modo-sol .eq-nfc, html.modo-sol .nombre-zona, html.modo-sol .ocupacion-zona { color: #000; }
+html.modo-sol .eq-pie { border-top: 2px solid #000; }
+html.modo-sol .pantalla-equipos .btn-pill-tipo.active, html.modo-sol .btn-oscuro, html.modo-sol .btn-nueva-zona, html.modo-sol .btn-qr-eq.imprimir { background: #000; border-color: #000; color: #fff; }
+html.modo-sol .cupo-barra { background: #fff; border: 2px solid #000; height: 14px; }
+html.modo-sol .cupo-barra-fill { background: #000; }
+html.modo-sol .cupo-barra-fill.lleno { background: #b91c1c; }
+html.modo-sol .ficha-zona.tipo-estac, html.modo-sol .ficha-zona.tipo-descarga { border-top-width: 6px; }
+html.modo-sol .ficha-zona.tipo-estac { border-top-color: #000; }
+html.modo-sol .pantalla-equipos .grupo-monto-simbolo { background: #fff; color: #000; border: 2px solid #000; border-right: none; }
+html.modo-noche .pantalla-equipos .ficha-create { background: rgba(148,163,184,0.06); border-color: #475569; }
+html.modo-noche .pantalla-equipos .ficha-create i, html.modo-noche .pantalla-equipos .ficha-create .titulo-crear { color: #cbd5e1; }
+html.modo-noche .pantalla-equipos .btn-pill-tipo.active { background: #64748b; border-color: #64748b; }
+html.modo-noche .pantalla-equipos .btn-icono.editar { color: #cbd5e1; }
+html.modo-noche .eq-serie { color: #f1f5f9; }
+html.modo-noche .eq-tipo { color: #93c5fd; }
+html.modo-noche .eq-nfc { color: #7dd3fc; }
+html.modo-noche .estado-eq-disponible { background: rgba(34,197,94,0.14); color: #86efac; border-color: rgba(34,197,94,0.4); }
+html.modo-noche .estado-eq-asignado { background: rgba(245,158,11,0.14); color: #fcd34d; border-color: rgba(245,158,11,0.4); }
+html.modo-noche .estado-eq-en_mantenimiento { background: rgba(99,102,241,0.16); color: #a5b4fc; border-color: rgba(99,102,241,0.4); }
+html.modo-noche .estado-eq-baja { background: rgba(239,68,68,0.14); color: #fca5a5; border-color: rgba(239,68,68,0.4); }
+html.modo-noche .btn-oscuro, html.modo-noche .btn-qr-eq.imprimir { background: #475569; border: 1px solid #64748b; }
+html.modo-noche .btn-qr-eq { background: var(--superficie-2); color: #e2e8f0; border-color: var(--borde); }
+html.modo-noche .qr-eq-codigo, html.modo-noche .pantalla-equipos .grupo-monto-simbolo { background: var(--superficie-2); color: #e2e8f0; border-color: var(--borde); }
+html.modo-noche .estado-fijo-eq { background: rgba(245,158,11,0.12); color: #fcd34d; border-color: rgba(245,158,11,0.4); }
+html.modo-noche .aviso-baja-eq { background: rgba(239,68,68,0.1); color: #fecaca; border-color: rgba(239,68,68,0.35); }
+html.modo-noche .cupo-barra { background: #334155; }
+html.modo-noche .distintivo-zona.estac { background: #1d4ed8; }
+html.modo-noche .texto-lleno { color: #fca5a5; }
+/* Fin Padrones: Equipos de seguridad y Estacionamientos */
+/* Rutas de transporte */
+html.modo-sol .rutas-sentido, html.modo-sol .rutas-proximos-col, html.modo-sol .rutas-aviso-suspendidas, html.modo-sol .rutas-fila-horarios li,
+html.modo-sol .rutas-sede-icono, html.modo-sol .btn-detalle-sede, html.modo-sol .rutas-dia, html.modo-sol .rutas-sentido-opcion,
+html.modo-sol .btn-agregar-paradero, html.modo-sol .btn-agregar-horario, html.modo-sol .rutas-crear-mini { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .rutas-fila, html.modo-sol .rutas-horario { background: #fff; border: 2px solid #000; }
+html.modo-sol .rutas-fila.inactiva { border-style: dashed; }
+html.modo-sol .rutas-proximos-titulo, html.modo-sol .rutas-proximos-item, html.modo-sol .rutas-transportistas, html.modo-sol .rutas-fila-meta,
+html.modo-sol .rutas-sede-empresa, html.modo-sol .rutas-horario-titulo, html.modo-sol .rutas-fila-horarios strong, html.modo-sol .rutas-pestana { color: #000 !important; font-weight: 700; }
+html.modo-sol .rutas-pestanas { border-bottom-color: #000; }
+html.modo-sol .rutas-pestana.activa { border-bottom-color: #000; text-decoration: underline; }
+html.modo-sol .rutas-dia:has(input:checked), html.modo-sol .rutas-sentido-opcion:has(input:checked), html.modo-sol .btn-rutas,
+html.modo-sol .btn-detalle-sede:hover { background: #000; color: #fff; border-color: #000; }
+html.modo-sol .rutas-icono-titulo, html.modo-sol .rutas-icono-paradero, html.modo-sol .btn-icono.clonar, html.modo-sol .btn-icono.imprimir-hoja { color: #000; }
+html.modo-sol .btn-quitar-fila { background: #fff; color: #991b1b; border: 2px solid #000; }
+html.modo-noche .rutas-sede-icono { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+html.modo-noche .rutas-sede-titulo h2 a { color: var(--texto); }
+html.modo-noche .rutas-sede-empresa { color: #93c5fd; }
+html.modo-noche .rutas-sentido.llegada { background: rgba(59, 130, 246, 0.16); color: #93c5fd; border-color: rgba(59, 130, 246, 0.4); }
+html.modo-noche .rutas-sentido.salida { background: rgba(34, 197, 94, 0.14); color: #86efac; border-color: rgba(34, 197, 94, 0.4); }
+html.modo-noche .rutas-sentido.paradero { background: rgba(245, 158, 11, 0.14); color: #fcd34d; border-color: rgba(245, 158, 11, 0.4); }
+html.modo-noche .rutas-proximos-col { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .rutas-proximos-titulo { color: #cbd5e1; }
+html.modo-noche .rutas-proximos-item, html.modo-noche .rutas-fila-horarios li { color: #e2e8f0; }
+html.modo-noche .rutas-transportistas, html.modo-noche .rutas-fila-meta, html.modo-noche .rutas-horario-nombre { color: #94a3b8; }
+html.modo-noche .rutas-aviso-suspendidas { background: rgba(245, 158, 11, 0.14); border-color: #92400e; color: #fcd34d; }
+html.modo-noche .btn-detalle-sede { background: rgba(245, 158, 11, 0.14); border-color: #92400e; color: #fbbf24; }
+html.modo-noche .btn-detalle-sede:hover { background: rgba(245, 158, 11, 0.25); color: #fcd34d; }
+html.modo-noche .rutas-pestana { color: #94a3b8; }
+html.modo-noche .rutas-pestana.activa, html.modo-noche .rutas-pestana:hover { color: #fbbf24; }
+html.modo-noche .rutas-crear-mini { background: rgba(245, 158, 11, 0.08); color: #fbbf24; }
+html.modo-noche .rutas-fila { background: var(--superficie); border-color: var(--borde); }
+html.modo-noche .rutas-fila.inactiva { background: var(--fondo); }
+html.modo-noche .rutas-fila-nombre { color: var(--texto); }
+html.modo-noche .rutas-fila-horarios li { background: rgba(245, 158, 11, 0.1); border-color: #78350f; }
+html.modo-noche .rutas-fila-horarios strong, html.modo-noche .rutas-horario-titulo, html.modo-noche .rutas-icono-titulo, html.modo-noche .rutas-icono-paradero { color: #fbbf24; }
+html.modo-noche .rutas-dia-siguiente { color: #c4b5fd; }
+html.modo-noche .tema-rutas .btn-icono.editar { color: #fbbf24; }
+html.modo-noche .btn-icono.clonar { color: #7dd3fc; }
+html.modo-noche .btn-icono.imprimir-hoja { color: #cbd5e1; }
+html.modo-noche .rutas-horario { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .rutas-dia, html.modo-noche .rutas-sentido-opcion { background: var(--campo-fondo); border-color: #475569; color: #cbd5e1; }
+html.modo-noche .rutas-dia:has(input:checked), html.modo-noche .rutas-sentido-opcion:has(input:checked) { background: rgba(245, 158, 11, 0.16); border-color: #f59e0b; color: #fcd34d; }
+html.modo-noche .rutas-transportista { color: #86efac; }
+html.modo-noche .btn-agregar-paradero { background: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: #b45309; }
+html.modo-noche .btn-agregar-horario { background: transparent; color: #e2e8f0; border-color: #475569; }
+html.modo-noche .btn-agregar-horario:hover { color: #fbbf24; border-color: #f59e0b; }
+html.modo-noche .btn-quitar-fila { background: rgba(239, 68, 68, 0.14); color: #fca5a5; }
+html.modo-noche .rutas-paraderos-encabezado { color: #7c8ba1; }
+html.modo-noche .rutas-separador { border-top-color: var(--borde); }
+/* Fin Rutas de transporte */

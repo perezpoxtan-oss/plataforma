@@ -1485,3 +1485,1059 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Padrón Vehicular */
+/* ==========================================================================
+   Lector universal (componentes/lector.blade.php): QR con cámara, NFC del
+   celular (Android + Chrome) y lectores USB/Bluetooth que "escriben como
+   teclado" (RFID, NFC, código de barras). Avisa con el evento
+   "lector:elegido" (detail = registro) o "lector:capturado" (detail = texto).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var hayCamara = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    var hayNfc = 'NDEFReader' in window;
+
+    function partes(caja) {
+        return {
+            entrada: caja.querySelector('[data-lector-entrada]'),
+            id: caja.querySelector('[data-lector-id]'),
+            elegido: caja.querySelector('[data-lector-elegido]'),
+            titulo: caja.querySelector('[data-lector-titulo]'),
+            opciones: caja.querySelector('[data-lector-opciones]'),
+            estado: caja.querySelector('[data-lector-estado]')
+        };
+    }
+
+    function estado(caja, texto, tipo) {
+        var e = partes(caja).estado;
+        if (!e) { return; }
+        e.hidden = !texto;
+        e.textContent = texto || '';
+        e.className = 'lector-estado' + (tipo ? ' ' + tipo : '');
+    }
+
+    function elegir(caja, registro) {
+        var p = partes(caja);
+        if (p.id) { p.id.value = registro.id; }
+        if (p.titulo) { p.titulo.textContent = registro.titulo + (registro.detalle ? ' · ' + registro.detalle : ''); }
+        if (p.elegido) { p.elegido.hidden = false; }
+        if (p.opciones) { p.opciones.hidden = true; p.opciones.textContent = ''; }
+        p.entrada.value = '';
+        estado(caja, registro.activo ? '' : 'Atención: este registro está dado de baja.', registro.activo ? '' : 'aviso');
+        caja.dispatchEvent(new CustomEvent('lector:elegido', { bubbles: true, detail: registro }));
+    }
+
+    function limpiar(caja) {
+        var p = partes(caja);
+        if (p.id) { p.id.value = ''; }
+        if (p.elegido) { p.elegido.hidden = true; }
+        if (p.opciones) { p.opciones.hidden = true; p.opciones.textContent = ''; }
+        estado(caja, '');
+    }
+
+    function resolver(caja, texto) {
+        texto = (texto || '').trim();
+        if (!texto) { return; }
+        var p = partes(caja);
+
+        if (caja.dataset.modo === 'capturar') {
+            p.entrada.value = texto;
+            estado(caja, 'Etiqueta leída: ' + texto, 'ok');
+            caja.dispatchEvent(new CustomEvent('lector:capturado', { bubbles: true, detail: texto }));
+            return;
+        }
+
+        estado(caja, 'Buscando…', 'info');
+        var url = caja.dataset.url + '?entrada=' + encodeURIComponent(texto) + (caja.dataset.tipos ? '&tipos=' + encodeURIComponent(caja.dataset.tipos) : '');
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
+            .then(function (datos) {
+                var lista = datos.resultados || [];
+                if (lista.length === 1) { elegir(caja, lista[0]); return; }
+                if (!lista.length) { estado(caja, 'No se encontró nada con «' + texto + '». Revisa la etiqueta o búscalo escribiendo.', 'error'); return; }
+                // Varias coincidencias: que la persona elija
+                estado(caja, 'Hay ' + lista.length + ' coincidencias, elige una:', 'info');
+                p.opciones.textContent = '';
+                lista.forEach(function (r) {
+                    var b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'lector-opcion' + (r.activo ? '' : ' inactiva');
+                    var t = document.createElement('strong'); t.textContent = r.titulo;
+                    var d = document.createElement('span'); d.textContent = r.detalle || '';
+                    b.appendChild(t); b.appendChild(d);
+                    b.addEventListener('click', function () { elegir(caja, r); });
+                    p.opciones.appendChild(b);
+                });
+                p.opciones.hidden = false;
+            })
+            .catch(function () { estado(caja, 'No se pudo consultar. Revisa tu conexión e intenta de nuevo.', 'error'); });
+    }
+
+    /* ---------- Cámara: BarcodeDetector si existe; si no (iPhone, Firefox), jsQR ---------- */
+    var dialogoCamara = null;
+    var corriendo = false;
+
+    function cargarJsQR(url) {
+        return new Promise(function (ok, falla) {
+            if (window.jsQR) { ok(); return; }
+            var s = document.createElement('script');
+            s.src = url; s.onload = ok; s.onerror = falla;
+            document.head.appendChild(s);
+        });
+    }
+
+    function abrirCamara(caja) {
+        if (!dialogoCamara) {
+            dialogoCamara = document.createElement('dialog');
+            dialogoCamara.className = 'dialogo dialogo-camara';
+            dialogoCamara.setAttribute('aria-label', 'Leer código QR');
+            dialogoCamara.innerHTML = '<div class="dialogo-cabecera"><h2><i class="bi bi-qr-code-scan me-2" aria-hidden="true"></i>Apunta al código QR</h2>' +
+                '<button type="button" class="btn-cerrar" data-cerrar-camara aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button></div>' +
+                '<div class="dialogo-cuerpo"><video playsinline muted></video><p class="lector-estado info" data-camara-estado>Abriendo la cámara…</p></div>';
+            document.body.appendChild(dialogoCamara);
+            dialogoCamara.querySelector('[data-cerrar-camara]').addEventListener('click', function () { dialogoCamara.close(); });
+            dialogoCamara.addEventListener('close', detenerCamara);
+        }
+        var video = dialogoCamara.querySelector('video');
+        var aviso = dialogoCamara.querySelector('[data-camara-estado]');
+        dialogoCamara.showModal();
+
+        var detector = ('BarcodeDetector' in window) ? new window.BarcodeDetector({ formats: ['qr_code'] }) : null;
+        var preparar = detector ? Promise.resolve() : cargarJsQR(caja.dataset.jsqr);
+        var lienzo = document.createElement('canvas');
+        var ctx = lienzo.getContext('2d', { willReadFrequently: true });
+
+        preparar
+            .then(function () { return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }); })
+            .then(function (flujo) {
+                video.srcObject = flujo;
+                return video.play();
+            })
+            .then(function () {
+                aviso.textContent = 'Centra el código dentro de la imagen.';
+                corriendo = true;
+                var cuadro = function () {
+                    if (!corriendo) { return; }
+                    if (video.readyState < 2) { requestAnimationFrame(cuadro); return; }
+                    var listo = function (texto) {
+                        if (texto) { dialogoCamara.close(); resolver(caja, texto); } else { requestAnimationFrame(cuadro); }
+                    };
+                    if (detector) {
+                        detector.detect(video).then(function (c) { listo(c.length ? c[0].rawValue : null); }).catch(function () { requestAnimationFrame(cuadro); });
+                    } else {
+                        lienzo.width = video.videoWidth; lienzo.height = video.videoHeight;
+                        ctx.drawImage(video, 0, 0, lienzo.width, lienzo.height);
+                        var img = ctx.getImageData(0, 0, lienzo.width, lienzo.height);
+                        var r = window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+                        listo(r ? r.data : null);
+                    }
+                };
+                requestAnimationFrame(cuadro);
+            })
+            .catch(function (err) {
+                if (window.console) { console.warn('Lector (cámara):', err); }
+                aviso.className = 'lector-estado error';
+                aviso.textContent = 'No se pudo usar la cámara. Revisa que la página tenga permiso para usarla (y que sea https).';
+            });
+    }
+
+    function detenerCamara() {
+        corriendo = false;
+        if (!dialogoCamara) { return; }
+        var video = dialogoCamara.querySelector('video');
+        if (video.srcObject) { video.srcObject.getTracks().forEach(function (t) { t.stop(); }); video.srcObject = null; }
+    }
+
+    /* ---------- NFC del celular (Web NFC: Android + Chrome) ---------- */
+    function leerNfc(caja) {
+        var capturar = caja.dataset.modo === 'capturar';
+        estado(caja, 'Acerca la tarjeta o etiqueta a la parte trasera del celular…', 'info');
+        var control = new AbortController();
+        var lector = new window.NDEFReader();
+        lector.scan({ signal: control.signal }).then(function () {
+            lector.onreading = function (evento) {
+                var texto = '';
+                // Al asignar una tarjeta se usa su número de serie; al buscar, primero lo que traiga escrito (texto o dirección)
+                if (!capturar) {
+                    for (var i = 0; i < evento.message.records.length; i++) {
+                        var reg = evento.message.records[i];
+                        if (reg.recordType === 'text' || reg.recordType === 'url' || reg.recordType === 'absolute-url') {
+                            texto = new TextDecoder(reg.encoding || 'utf-8').decode(reg.data);
+                            break;
+                        }
+                    }
+                }
+                if (!texto) { texto = evento.serialNumber || ''; }
+                control.abort();
+                if (texto) { resolver(caja, texto); } else { estado(caja, 'La etiqueta no trae datos legibles.', 'error'); }
+            };
+            lector.onreadingerror = function () { estado(caja, 'No se pudo leer la etiqueta. Intenta de nuevo sin moverla.', 'error'); };
+        }).catch(function () {
+            estado(caja, 'No se pudo activar el NFC: revisa que esté encendido y que la página tenga permiso.', 'error');
+        });
+        setTimeout(function () { control.abort(); }, 30000);
+    }
+
+    /* ---------- Conexión con la página ---------- */
+    function preparar(caja) {
+        var c = caja.querySelector('[data-lector-camara]');
+        var n = caja.querySelector('[data-lector-nfc]');
+        // Al asignar una tarjeta se lee su número de serie: la cámara no aplica
+        if (c) { c.hidden = !hayCamara || caja.dataset.modo === 'capturar'; }
+        if (n) { n.hidden = !hayNfc; }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-lector]').forEach(preparar);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        var entrada = e.target.closest && e.target.closest('[data-lector-entrada]');
+        if (!entrada || e.key !== 'Enter') { return; }
+        // Los lectores que escriben como teclado terminan con Enter: busca en lugar de enviar el formulario
+        e.preventDefault();
+        resolver(entrada.closest('[data-lector]'), entrada.value);
+    });
+
+    document.addEventListener('paste', function (e) {
+        var entrada = e.target.closest && e.target.closest('[data-lector-entrada]');
+        if (!entrada) { return; }
+        setTimeout(function () { resolver(entrada.closest('[data-lector]'), entrada.value); }, 0);
+    });
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-lector-camara], [data-lector-nfc], [data-lector-limpiar]');
+        if (!b) { return; }
+        var caja = b.closest('[data-lector]');
+        if (b.hasAttribute('data-lector-camara')) { abrirCamara(caja); }
+        else if (b.hasAttribute('data-lector-nfc')) { leerNfc(caja); }
+        else { limpiar(caja); partes(caja).entrada.focus(); }
+    });
+
+    // Al cerrar el diálogo que lo contiene, el lector vuelve a su estado inicial
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement) || e.target === dialogoCamara) { return; }
+        e.target.querySelectorAll('[data-lector]').forEach(function (caja) {
+            if (caja.dataset.modo !== 'capturar') { limpiar(caja); }
+            estado(caja, '');
+        });
+    }, true);
+
+    // Para pantallas que crean el lector después de cargar o que llenan uno al editar
+    window.Lector = { preparar: preparar, elegir: elegir, limpiar: limpiar };
+})();
+/* Fin Lector universal */
+/* ==========================================================================
+   Catálogo de llaves: filtros de la lista, selección para imprimir etiquetas,
+   exportación con los filtros elegidos, formulario (sede → departamento →
+   puesto, lugares según el alcance, horarios, responsable) y baja con
+   voucher de reposición.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto) { try { return JSON.parse(texto || '{}'); } catch (x) { return {}; } }
+
+    /* ---------- Lista: filtros, selección y exportación ---------- */
+    var CLAVE = 'plataforma_filtro_llaves';
+
+    function valorFiltro(nombre) {
+        var el = document.querySelector('[data-filtro-llaves="' + nombre + '"]');
+        return el ? el.value : '';
+    }
+
+    function estadoElegido() {
+        var b = document.querySelector('[data-filtro-llaves-estado][aria-pressed="true"]');
+        return b ? b.dataset.filtroLlavesEstado : '';
+    }
+
+    function contar() {
+        var marcadas = document.querySelectorAll('[data-chk-llave]:checked').length;
+        document.querySelectorAll('[data-conteo-llaves]').forEach(function (n) { n.textContent = marcadas ? '(' + marcadas + ')' : ''; });
+        document.querySelectorAll('[data-imprimir-llaves]').forEach(function (b) {
+            b.disabled = marcadas === 0;
+            b.title = marcadas === 0 ? 'Marca primero las llaves (casilla de cada ficha o botón Todo)' : '';
+        });
+        document.querySelectorAll('[data-chk-llave]').forEach(function (c) {
+            var ficha = c.closest('[data-llave]');
+            if (ficha) { ficha.classList.toggle('marcada', c.checked); }
+        });
+    }
+
+    function actualizarExportar(filtros) {
+        var enlace = document.querySelector('[data-exportar-llaves]');
+        if (!enlace) { return; }
+        var partes = [];
+        Object.keys(filtros).forEach(function (k) {
+            if (filtros[k] !== '') { partes.push(encodeURIComponent(k) + '=' + encodeURIComponent(filtros[k])); }
+        });
+        enlace.href = enlace.dataset.base + (partes.length ? '?' + partes.join('&') : '');
+    }
+
+    function filtrar() {
+        var cont = document.querySelector('[data-llaves]');
+        if (!cont) { return; }
+        var texto = valorFiltro('texto').toLowerCase().trim();
+        var sede = valorFiltro('sede');
+        var tipo = valorFiltro('tipo');
+        var caducidad = valorFiltro('caducidad');
+        var estado = estadoElegido();
+        var fichas = cont.querySelectorAll('[data-llave]');
+        var visibles = 0;
+        fichas.forEach(function (f) {
+            var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1)
+                && (sede === '' || f.dataset.sede === sede)
+                && (tipo === '' || f.dataset.tipo === tipo)
+                && (caducidad === '' || f.dataset.caducidad === caducidad)
+                && (estado === '' || f.dataset.estado === estado);
+            f.style.display = ok ? '' : 'none';
+            if (ok) { visibles++; }
+        });
+        var vacio = cont.querySelector('[data-sin-resultados-llaves]');
+        if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+        actualizarExportar({ q: texto, sede: sede, tipo: tipo, caducidad: caducidad, estado: estado });
+        try { sessionStorage.setItem(CLAVE, JSON.stringify({ texto: valorFiltro('texto'), sede: sede, tipo: tipo, caducidad: caducidad, estado: estado })); } catch (x) { /* sin almacenamiento */ }
+    }
+
+    function elegirEstado(valor) {
+        document.querySelectorAll('[data-filtro-llaves-estado]').forEach(function (x) {
+            var on = x.dataset.filtroLlavesEstado === valor;
+            x.setAttribute('aria-pressed', String(on));
+            x.classList.toggle('active', on);
+        });
+    }
+
+    document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-llaves]')) { filtrar(); } });
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-filtro-llaves]')) { filtrar(); }
+        if (e.target.matches('[data-chk-llave]')) { contar(); }
+    });
+
+    document.addEventListener('click', function (e) {
+        var pill = e.target.closest('[data-filtro-llaves-estado]');
+        if (pill) { elegirEstado(pill.dataset.filtroLlavesEstado); filtrar(); return; }
+
+        var todas = e.target.closest('[data-accion="llaves-marcar-todas"]');
+        if (todas) {
+            var marcar = todas.getAttribute('aria-pressed') !== 'true';
+            document.querySelectorAll('[data-llave]').forEach(function (f) {
+                var c = f.querySelector('[data-chk-llave]');
+                if (c && f.style.display !== 'none') { c.checked = marcar; }
+            });
+            todas.setAttribute('aria-pressed', String(marcar));
+            todas.classList.toggle('activo', marcar);
+            contar();
+        }
+    });
+
+    /* ---------- Formulario: sede → departamento → puesto y lugares según el alcance ---------- */
+    function contiene(lista, valor) { return (' ' + (lista || '') + ' ').indexOf(' ' + valor + ' ') !== -1; }
+
+    function acomodar(form) {
+        var sede = form.querySelector('[data-llave-sede]').value;
+        var alcance = form.querySelector('[data-llave-alcance]').value;
+
+        var depto = form.querySelector('[data-llave-depto]');
+        Array.prototype.forEach.call(depto.options, function (o) {
+            if (!o.value) { return; }
+            var aplica = (o.dataset.sedes || 'todas') === 'todas' || contiene(o.dataset.sedes, sede);
+            if (!aplica && o.selected) { depto.value = ''; }
+            o.hidden = !aplica || (o.hasAttribute('data-inactivo') && !o.selected);
+        });
+
+        var puesto = form.querySelector('[data-llave-puesto]');
+        Array.prototype.forEach.call(puesto.options, function (o) {
+            if (!o.value) { return; }
+            var aplica = depto.value === '' || !o.dataset.deps || contiene(o.dataset.deps, depto.value);
+            if (!aplica && o.selected) { puesto.value = ''; }
+            o.hidden = !aplica || (o.hasAttribute('data-inactivo') && !o.selected);
+        });
+
+        form.querySelectorAll('[data-llave-lugares]').forEach(function (caja) {
+            var activa = caja.dataset.llaveLugares === alcance;
+            caja.hidden = !activa;
+            // Lo que no aplica no se envía (el servidor revalida todo contra la sede)
+            caja.querySelectorAll('input, select, textarea').forEach(function (c) { c.disabled = !activa; });
+            var buscar = caja.querySelector('[data-buscar-lugar]');
+            var texto = buscar ? buscar.value.toLowerCase().trim() : '';
+            var deLaSede = 0;
+            caja.querySelectorAll('[data-lugar]').forEach(function (fila) {
+                var casilla = fila.querySelector('input');
+                var enSede = sede !== '' && fila.dataset.sede === sede;
+                if (!enSede && casilla.checked) { casilla.checked = false; }
+                var disponible = enSede && (!fila.hasAttribute('data-inactivo') || casilla.checked);
+                if (disponible) { deLaSede++; }
+                fila.hidden = !disponible || (texto !== '' && !casilla.checked && (fila.dataset.nombre || '').indexOf(texto) === -1);
+            });
+            var sinSede = caja.querySelector('[data-lugares-sin-sede]');
+            if (sinSede) { sinSede.hidden = sede !== ''; }
+            var vacio = caja.querySelector('[data-lugares-vacio]');
+            if (vacio) { vacio.hidden = sede === '' || deLaSede !== 0; }
+            if (buscar) { buscar.hidden = deLaSede < 8; }
+        });
+
+        var otra = form.querySelector('[data-llave-otra]');
+        if (otra) { otra.required = alcance === 'otra'; }
+    }
+
+    // El campo "ID externo" usa data-mostrar-si (bloque del Padrón Vehicular): se acomoda con un "change"
+    function acomodarTodo(form) {
+        acomodar(form);
+        var tipo = form.querySelector('[data-llave-tipo]');
+        if (tipo) { tipo.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-llave]');
+        if (form && e.target.matches('[data-llave-sede], [data-llave-alcance], [data-llave-depto]')) { acomodar(form); }
+    });
+    document.addEventListener('input', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-llave]');
+        if (form && e.target.matches('[data-buscar-lugar]')) { acomodar(form); }
+    });
+
+    /* ---------- Horarios ---------- */
+    function agregarHorario(form, datos) {
+        var plantilla = form.querySelector('[data-plantilla-horario]');
+        var fila = plantilla.content.firstElementChild.cloneNode(true);
+        if (datos) {
+            fila.querySelector('[name="horario_nombre[]"]').value = datos.nombre || '';
+            fila.querySelector('[name="horario_inicio[]"]').value = datos.inicio || '';
+            fila.querySelector('[name="horario_fin[]"]').value = datos.fin || '';
+        }
+        form.querySelector('[data-horarios-llave]').appendChild(fila);
+        return fila;
+    }
+
+    function rellenarHorarios(form, lista) {
+        form.querySelector('[data-horarios-llave]').textContent = '';
+        (lista || []).forEach(function (h) { agregarHorario(form, h); });
+    }
+
+    document.addEventListener('click', function (e) {
+        var agregar = e.target.closest('[data-agregar-horario]');
+        if (agregar) {
+            var fila = agregarHorario(agregar.closest('form'));
+            fila.querySelector('input').focus();
+            return;
+        }
+        var quitar = e.target.closest('[data-quitar-horario]');
+        if (quitar) { quitar.closest('[data-fila-horario]').remove(); }
+    });
+
+    /* ---------- Editar: después del llenado genérico (editar-registro) ---------- */
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        var form = dialogo && dialogo.querySelector('[data-form-llave]');
+        if (!form) { return; }
+        var valores = leer(boton.dataset.valores);
+        rellenarHorarios(form, valores.horarios);
+        var lector = form.querySelector('[data-lector][data-modo="buscar"]');
+        if (lector && window.Lector) {
+            if (valores.colaborador_id) {
+                window.Lector.elegir(lector, { id: valores.colaborador_id, titulo: valores.colaborador_texto || '', detalle: '', activo: true });
+            } else {
+                window.Lector.limpiar(lector);
+            }
+        }
+        acomodarTodo(form);
+    });
+
+    /* ---------- Baja con voucher ---------- */
+    function sincronizarCobro(form) {
+        var casilla = form.querySelector('[data-cobro-llave]');
+        var caja = form.querySelector('[data-caja-cobro-llave]');
+        if (!casilla || !caja) { return; }
+        caja.hidden = !casilla.checked;
+        var monto = form.querySelector('[data-monto-llave]');
+        if (monto) { monto.required = casilla.checked; }
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-cobro-llave]')) { sincronizarCobro(e.target.form); }
+    });
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="baja-llave"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById('dialogoBajaLlave');
+        var form = dialogo && dialogo.querySelector('[data-form-baja-llave]');
+        if (!form) { return; }
+        form.action = boton.dataset.url;
+        form.querySelector('[data-campo-dialogo]').value = 'baja-' + boton.dataset.id;
+        dialogo.querySelector('[data-baja-nombre]').textContent = boton.dataset.nombre || '';
+        var sugerido = leer(dialogo.dataset.costos)[boton.dataset.tipo];
+        var monto = form.querySelector('[data-monto-llave]');
+        var nota = form.querySelector('[data-nota-monto]');
+        if (monto) { monto.value = sugerido || ''; }
+        if (nota) {
+            nota.textContent = sugerido
+                ? '(sugerido: último cobro de una llave ' + (boton.dataset.tipoTexto || '') + '; puedes ajustarlo)'
+                : '(escribe el costo de reposición)';
+        }
+        sincronizarCobro(form);
+        if (typeof dialogo.showModal === 'function') { dialogo.showModal(); }
+    });
+
+    /* ---------- Al cerrar (y limpiarse) un diálogo, todo vuelve a acomodarse ---------- */
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-form-llave]').forEach(function (form) {
+            rellenarHorarios(form, form.closest('#dialogoNuevaLlave') ? [{}] : []);
+            acomodarTodo(form);
+        });
+        e.target.querySelectorAll('[data-form-baja-llave]').forEach(sincronizarCobro);
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-form-llave]').forEach(acomodarTodo);
+        document.querySelectorAll('[data-form-baja-llave]').forEach(sincronizarCobro);
+        if (!document.querySelector('[data-llaves]')) { return; }
+        // Al llegar a una ficha (#llave-12, p. ej. desde el QR) se muestran todas
+        if (!/^#llave-\d+$/.test(location.hash)) {
+            try {
+                var g = JSON.parse(sessionStorage.getItem(CLAVE) || 'null');
+                if (g) {
+                    ['texto', 'sede', 'tipo', 'caducidad'].forEach(function (k) {
+                        var el = document.querySelector('[data-filtro-llaves="' + k + '"]');
+                        if (el && g[k]) { el.value = g[k]; }
+                    });
+                    if (g.estado) { elegirEstado(g.estado); }
+                }
+            } catch (x) { /* valor guardado dañado: se ignora */ }
+        }
+        filtrar();
+        contar();
+    });
+})();
+/* Fin Catálogo de llaves */
+/* ==========================================================================
+   Padrones: Gafetes y Vouchers de reposición
+   - "Marcar todos" (solo los visibles con el filtro actual) e "Imprimir"
+     los marcados, con el conteo en el botón.
+   - Diálogos de editar y de baja: título con la nomenclatura, tipo nuevo y
+     la caja de cobro (monto y responsable) que aparece al marcar "Aplica CXC".
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function casillas() { return Array.prototype.slice.call(document.querySelectorAll('[data-casilla-gafete]')); }
+
+    function visible(casilla) {
+        var ficha = casilla.closest('[data-ficha]');
+        return !ficha || ficha.style.display !== 'none';
+    }
+
+    function actualizarConteo() {
+        var marcadas = casillas().filter(function (c) { return c.checked; }).length;
+        var conteo = document.querySelector('[data-conteo-gafetes]');
+        if (conteo) { conteo.hidden = marcadas === 0; conteo.textContent = String(marcadas); }
+        var visibles = casillas().filter(visible);
+        var todas = visibles.length > 0 && visibles.every(function (c) { return c.checked; });
+        var boton = document.querySelector('[data-marcar-gafetes]');
+        if (boton) {
+            boton.setAttribute('aria-pressed', String(todas));
+            var texto = boton.querySelector('[data-texto-marcar]');
+            if (texto) { texto.textContent = todas ? 'Desmarcar todos' : 'Marcar todos'; }
+        }
+        if (marcadas > 0) {
+            var aviso = document.querySelector('[data-aviso-sin-marcar]');
+            if (aviso) { aviso.hidden = true; }
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-marcar-gafetes]')) { return; }
+        var visibles = casillas().filter(visible);
+        var marcar = !visibles.every(function (c) { return c.checked; });
+        visibles.forEach(function (c) { c.checked = marcar; });
+        actualizarConteo();
+    });
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-casilla-gafete]')) { actualizarConteo(); }
+    });
+
+    // Al cambiar los filtros, el botón refleja si los visibles están marcados
+    ['input', 'change', 'click'].forEach(function (tipo) {
+        document.addEventListener(tipo, function (e) {
+            if (e.target.closest && e.target.closest('[data-filtro-texto="gafetes"], [data-filtro-sede="gafetes"], [data-filtro-tipo="gafetes"], [data-filtro-estado="gafetes"]')) {
+                setTimeout(actualizarConteo, 0);
+            }
+        });
+    });
+
+    // Imprimir sin nada marcado: aviso en lugar de abrir una pestaña vacía
+    document.addEventListener('submit', function (e) {
+        if (!e.target.matches('[data-form-imprimir-gafetes]')) { return; }
+        if (casillas().some(function (c) { return c.checked; })) { return; }
+        e.preventDefault();
+        var aviso = document.querySelector('[data-aviso-sin-marcar]');
+        if (aviso) { aviso.hidden = false; aviso.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    });
+
+    /* ---------- Casilla que muestra un bloque (y lo hace obligatorio) ---------- */
+    function sincronizarCaja(casilla) {
+        var caja = document.querySelector(casilla.getAttribute('data-muestra-si-marcado'));
+        if (!caja) { return; }
+        caja.hidden = !casilla.checked;
+        caja.querySelectorAll('input, select, textarea').forEach(function (c) {
+            c.disabled = !casilla.checked;
+            if (c.hasAttribute('data-requerido-si-marcado')) { c.required = casilla.checked; }
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-muestra-si-marcado]')) { sincronizarCaja(e.target); }
+    });
+
+    function sincronizarFormulario(form) {
+        form.querySelectorAll('[data-muestra-si-marcado]').forEach(sincronizarCaja);
+        // Lista de tipo: muestra u oculta "Nombre del tipo nuevo" (data-mostrar-si)
+        form.querySelectorAll('select[name="tipo_gafete_id"]').forEach(function (s) {
+            s.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+
+    // Editar / dar de baja: después del llenado genérico (editar-registro)
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        var form = dialogo && dialogo.querySelector('[data-form-gafete]');
+        if (!form) { return; }
+        var titulo = dialogo.querySelector('[data-titulo-registro]');
+        if (titulo && boton.dataset.tituloRegistro) { titulo.textContent = boton.dataset.tituloRegistro; }
+        sincronizarFormulario(form);
+    });
+
+    // Al cerrar (y limpiarse) el diálogo, sus bloques dependientes se acomodan otra vez
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-form-gafete]').forEach(sincronizarFormulario);
+    }, true); // "close" no burbujea: fase de captura, después de la limpieza común
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-muestra-si-marcado]').forEach(sincronizarCaja);
+        actualizarConteo();
+    });
+})();
+/* Fin Padrones: Gafetes y Vouchers de reposición */
+/* ==========================================================================
+   Padrones: Equipos de seguridad y Estacionamientos
+   - Equipos: filtro de fichas (texto, sede, tipo y estado), edición (estado
+     de solo lectura si está ASIGNADO o de BAJA), aviso de número de serie
+     repetido, costo sugerido por marca y modelo, "Ver QR" y baja con
+     voucher (el monto y el responsable aparecen al marcar "Aplica CXC").
+   - Estacionamientos: los grupos por sede se ocultan si el filtro los deja
+     sin zonas; el cupo solo aplica a estacionamientos.
+   Los campos que dependen de otro usan data-mostrar-si (Padrón Vehicular).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto) { try { return JSON.parse(texto || '{}'); } catch (x) { return {}; } }
+
+    // El manejador genérico de data-mostrar-si escucha "change" en el formulario
+    function resincronizar(form) {
+        var campo = form && form.querySelector('[data-mostrar-si]') && form.querySelector('select[name]');
+        if (campo) { campo.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
+
+    /* ---------- "Aplica CXC": muestra monto y responsable ---------- */
+    function sincronizarCobro(casilla) {
+        var caja = document.querySelector(casilla.getAttribute('data-muestra-si-marcado'));
+        if (!caja) { return; }
+        caja.hidden = !casilla.checked;
+        caja.querySelectorAll('input, select, textarea').forEach(function (c) { c.disabled = !casilla.checked; });
+        caja.querySelectorAll('[data-requerido-si-marcado]').forEach(function (c) { c.required = casilla.checked; });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-muestra-si-marcado]')) { sincronizarCobro(e.target); }
+    });
+
+    // Con cobro, el responsable es obligatorio (el lector guarda su id en un campo oculto)
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-form-baja-equipo]')) { return; }
+        var casilla = form.querySelector('[data-muestra-si-marcado]');
+        var id = form.querySelector('[data-lector-id]');
+        if (casilla && casilla.checked && id && !id.value) {
+            e.preventDefault();
+            var estado = form.querySelector('[data-lector] [data-lector-estado]');
+            if (estado) { estado.hidden = false; estado.className = 'lector-estado error'; estado.textContent = 'Elige al colaborador responsable al que se le cobrará.'; }
+            var entrada = form.querySelector('[data-lector-entrada]');
+            if (entrada) { entrada.focus(); }
+        }
+    }, true);
+
+    /* ---------- Aviso en vivo de número de serie ya registrado ---------- */
+    function serie(texto) { return (texto || '').trim().replace(/\s+/g, ' ').toUpperCase(); }
+
+    function avisarSerie(campo) {
+        var aviso = campo.form && campo.form.querySelector('[data-aviso-serie]');
+        if (!aviso) { return; }
+        var valor = serie(campo.value);
+        var existentes = leer(campo.getAttribute('data-series-existentes'));
+        if (!Array.isArray(existentes)) { existentes = []; }
+        var repetida = valor !== '' && valor !== serie(campo.dataset.original) && existentes.indexOf(valor) !== -1;
+        aviso.hidden = !repetida;
+        aviso.className = 'small mb-2 text-warning fw-semibold';
+        aviso.textContent = repetida ? 'Ese número de serie ya existe en el inventario.' : '';
+    }
+
+    /* ---------- Costo sugerido por marca y modelo (solo si no se escribió a mano) ---------- */
+    function sugerirCosto(form) {
+        var costo = form.querySelector('[data-costos-equipo]');
+        var marca = form.querySelector('[data-costo-marca]');
+        var modelo = form.querySelector('[data-costo-modelo]');
+        if (!costo || !marca || !modelo) { return; }
+        if (costo.value !== '' && costo.dataset.sugerido !== '1') { return; }
+        var monto = leer(costo.getAttribute('data-costos-equipo'))[serie(marca.value) + '|' + serie(modelo.value)];
+        var nota = costo.form.querySelector('[data-nota-costo]');
+        if (monto) {
+            costo.value = monto;
+            costo.dataset.sugerido = '1';
+            if (nota) { nota.textContent = '(sugerido según altas anteriores de este modelo)'; }
+        } else if (costo.dataset.sugerido === '1') {
+            costo.value = '';
+            costo.dataset.sugerido = '';
+            if (nota) { nota.textContent = '(para el voucher, si algún día se da de baja)'; }
+        }
+    }
+
+    document.addEventListener('input', function (e) {
+        var el = e.target;
+        if (el.matches('[data-series-existentes]')) { avisarSerie(el); }
+        if (el.matches('[data-costo-marca], [data-costo-modelo]') && el.form) { sugerirCosto(el.form); }
+        if (el.matches('[data-costos-equipo]')) { el.dataset.sugerido = ''; }
+    });
+
+    /* ---------- Editar equipo y abrir la baja (después del llenado genérico) ---------- */
+    var ESTADOS_FIJOS = {
+        asignado: 'ASIGNADO — lo cambia Responsivas cuando se devuelva el equipo.',
+        baja: 'BAJA/PERDIDO — para volver a usarlo, oprime «Reactivar» en su ficha.'
+    };
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        if (!dialogo) { return; }
+
+        var form = dialogo.querySelector('[data-form-equipo]');
+        if (form) {
+            var valores = leer(boton.dataset.valores);
+            // Los campos dependientes pudieron quedar deshabilitados al ocultarse
+            form.querySelectorAll('[data-mostrar-si] input').forEach(function (c) { c.disabled = false; c.value = ''; });
+            resincronizar(form);
+            var editable = form.querySelector('[data-estado-editable]');
+            var fijo = form.querySelector('[data-estado-fijo]');
+            var texto = ESTADOS_FIJOS[valores.estado];
+            if (editable) {
+                editable.hidden = !!texto;
+                editable.querySelectorAll('select').forEach(function (s) { s.disabled = !!texto; });
+            }
+            if (fijo) { fijo.hidden = !texto; fijo.textContent = texto ? 'Estado actual: ' + texto : ''; }
+            var campoSerie = form.querySelector('[data-series-existentes]');
+            if (campoSerie) { campoSerie.dataset.original = campoSerie.value; avisarSerie(campoSerie); }
+            var costo = form.querySelector('[data-costos-equipo]');
+            if (costo) { costo.dataset.sugerido = ''; }
+        }
+
+        var zona = dialogo.querySelector('[data-form-zona]');
+        if (zona) { resincronizar(zona); }
+
+        var baja = dialogo.querySelector('[data-form-baja-equipo]');
+        if (baja) {
+            var nombre = dialogo.querySelector('[data-baja-nombre]');
+            if (nombre) { nombre.textContent = boton.dataset.bajaNombre || ''; }
+            baja.querySelectorAll('[data-lector]').forEach(function (caja) { if (window.Lector) { window.Lector.limpiar(caja); } });
+            baja.querySelectorAll('[data-muestra-si-marcado]').forEach(sincronizarCobro);
+        }
+    });
+
+    /* ---------- Ver QR ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-ver-qr-equipo]');
+        if (!b) { return; }
+        var d = document.getElementById('dialogoQrEquipo');
+        if (!d) { return; }
+        d.querySelector('[data-qr-nombre]').textContent = b.dataset.nombre || '';
+        d.querySelector('[data-qr-imagen]').src = b.dataset.qr;
+        d.querySelector('[data-qr-enlace]').textContent = b.dataset.enlace || '';
+        var imprimir = d.querySelector('[data-qr-imprimir]');
+        if (imprimir) { imprimir.hidden = !b.dataset.imprimir; imprimir.href = b.dataset.imprimir || '#'; }
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    });
+
+    /* ---------- Al cerrar (y limpiarse) un diálogo, se acomoda de nuevo ---------- */
+    function acomodar(raiz) {
+        raiz.querySelectorAll('[data-form-equipo], [data-form-zona]').forEach(function (form) {
+            resincronizar(form);
+            var aviso = form.querySelector('[data-aviso-serie]');
+            if (aviso) { aviso.hidden = true; }
+            var nota = form.querySelector('[data-nota-costo]');
+            if (nota) { nota.textContent = '(para el voucher, si algún día se da de baja)'; }
+            var editable = form.querySelector('[data-estado-editable]');
+            if (editable) { editable.hidden = false; editable.querySelectorAll('select').forEach(function (s) { s.disabled = false; }); }
+            var fijo = form.querySelector('[data-estado-fijo]');
+            if (fijo) { fijo.hidden = true; }
+        });
+        raiz.querySelectorAll('[data-muestra-si-marcado]').forEach(sincronizarCobro);
+    }
+
+    document.addEventListener('close', function (e) {
+        if (e.target instanceof HTMLDialogElement) { acomodar(e.target); }
+    }, true);
+
+    /* ---------- Filtro de equipos: texto, sede, tipo y estado ---------- */
+    var CLAVE = 'plataforma_filtro_equipos';
+
+    function valorFiltro(nombre) {
+        var el = document.querySelector('[data-filtro-equipos="' + nombre + '"]');
+        return el ? el.value : '';
+    }
+
+    function filtrarEquipos() {
+        var cont = document.querySelector('[data-equipos]');
+        if (!cont) { return; }
+        var texto = valorFiltro('texto').toLowerCase().trim();
+        var sede = valorFiltro('sede');
+        var tipo = valorFiltro('tipo');
+        var pill = document.querySelector('[data-filtro-estado-equipo][aria-pressed="true"]');
+        var estado = pill ? pill.dataset.filtroEstadoEquipo : '';
+        var fichas = cont.querySelectorAll('[data-equipo]');
+        var visibles = 0;
+        fichas.forEach(function (f) {
+            var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1)
+                && (sede === '' || f.dataset.sede === sede)
+                && (tipo === '' || f.dataset.tipo === tipo)
+                && (estado === '' || f.dataset.estado === estado);
+            f.style.display = ok ? '' : 'none';
+            if (ok) { visibles++; }
+        });
+        var vacio = cont.querySelector('[data-sin-resultados-equipos]');
+        if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+        try { sessionStorage.setItem(CLAVE, JSON.stringify({ texto: valorFiltro('texto'), sede: sede, tipo: tipo, estado: estado })); } catch (x) { /* sin almacenamiento */ }
+    }
+
+    function elegirEstado(valor) {
+        document.querySelectorAll('[data-filtro-estado-equipo]').forEach(function (x) {
+            var on = x.dataset.filtroEstadoEquipo === valor;
+            x.setAttribute('aria-pressed', String(on));
+            x.classList.toggle('active', on);
+        });
+    }
+
+    document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-equipos]')) { filtrarEquipos(); } });
+    document.addEventListener('change', function (e) { if (e.target.matches('[data-filtro-equipos]')) { filtrarEquipos(); } });
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-filtro-estado-equipo]');
+        if (!b) { return; }
+        elegirEstado(b.dataset.filtroEstadoEquipo);
+        filtrarEquipos();
+    });
+
+    /* ---------- Estacionamientos: ocultar las sedes que el filtro deja vacías ---------- */
+    function gruposZonas() {
+        document.querySelectorAll('[data-grupo-zonas]').forEach(function (g) {
+            var alguna = Array.prototype.some.call(g.querySelectorAll('[data-ficha]'), function (f) { return f.style.display !== 'none'; });
+            g.hidden = !alguna;
+        });
+    }
+
+    function despuesDelFiltro(e) {
+        var el = e.target.closest && e.target.closest('[data-filtro-texto="zonas"], [data-filtro-sede="zonas"], [data-filtro-tipo="zonas"]');
+        if (el) { setTimeout(gruposZonas, 0); }
+    }
+    document.addEventListener('input', despuesDelFiltro);
+    document.addEventListener('change', despuesDelFiltro);
+    document.addEventListener('click', despuesDelFiltro);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        acomodar(document);
+        document.querySelectorAll('dialog[data-abrir-al-cargar] [data-series-existentes]').forEach(avisarSerie);
+        setTimeout(gruposZonas, 0);
+
+        if (!document.querySelector('[data-equipos]')) { return; }
+        // Al llegar a una ficha (#equipo-12, p. ej. desde el QR) se muestran todas
+        if (!/^#equipo-\d+$/.test(location.hash)) {
+            try {
+                var g = JSON.parse(sessionStorage.getItem(CLAVE) || 'null');
+                if (g) {
+                    ['texto', 'sede', 'tipo'].forEach(function (k) {
+                        var el = document.querySelector('[data-filtro-equipos="' + k + '"]');
+                        // Solo si el valor guardado todavía existe en la lista
+                        if (el && g[k] && (el.tagName !== 'SELECT' || el.querySelector('option[value="' + g[k] + '"]'))) { el.value = g[k]; }
+                    });
+                    if (g.estado) { elegirEstado(g.estado); }
+                }
+            } catch (x) { /* valor guardado dañado: se ignora */ }
+        }
+        filtrarEquipos();
+    });
+})();
+/* Fin Padrones: Equipos de seguridad y Estacionamientos */
+/* ==========================================================================
+   Rutas de transporte: diálogo "Configurar Ruta y Horarios" con horarios y
+   paraderos dinámicos (plantillas <template data-plantilla-horario> y
+   <template data-plantilla-paradero> de padrones/rutas/sede.blade.php).
+   - Agregar horario copia los paraderos del último (como en SEGCAT).
+   - Siempre queda al menos un horario: su botón "Quitar" se deshabilita.
+   - Editar (data-accion="editar-ruta") llena la ruta y rehace sus horarios.
+   - Al cerrar el diálogo, vuelve a un solo horario vacío.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function plantilla(selector) {
+        var t = document.querySelector(selector);
+        return t ? t.innerHTML : '';
+    }
+
+    function elemento(html) {
+        var caja = document.createElement('div');
+        caja.innerHTML = html.trim();
+        return caja.firstElementChild;
+    }
+
+    function prefijo(form) { return form.getAttribute('data-prefijo') || 'ruta'; }
+
+    function campo(raiz, nombre) { return raiz.querySelector('[name="' + nombre + '"]'); }
+
+    function renumerar(form) {
+        var bloques = form.querySelectorAll('[data-horario]');
+        bloques.forEach(function (b, i) {
+            var titulo = b.querySelector('[data-titulo-horario]');
+            if (titulo) { titulo.textContent = 'Horario ' + (i + 1); }
+            var quitar = b.querySelector('[data-quitar-horario]');
+            if (quitar) {
+                quitar.disabled = bloques.length <= 1;
+                quitar.title = bloques.length <= 1 ? 'Una ruta necesita al menos un horario' : 'Quitar este horario';
+            }
+        });
+    }
+
+    function nuevaParada(form, bloque, valores) {
+        var h = bloque.getAttribute('data-indice');
+        var p = parseInt(bloque.getAttribute('data-siguiente-paradero') || '0', 10);
+        bloque.setAttribute('data-siguiente-paradero', String(p + 1));
+        var fila = elemento(plantilla('template[data-plantilla-paradero]')
+            .replace(/__H__/g, h).replace(/__P__/g, String(p)).replace(/__F__/g, prefijo(form)));
+        if (!fila) { return null; }
+        if (valores) {
+            fila.querySelector('input[type="text"]').value = valores.nombre || '';
+            fila.querySelector('input[type="time"]').value = valores.hora || '';
+        }
+        bloque.querySelector('[data-paraderos]').appendChild(fila);
+        return fila;
+    }
+
+    function nuevoHorario(form, valores) {
+        var cont = form.querySelector('[data-horarios]');
+        var h = parseInt(cont.getAttribute('data-siguiente') || '0', 10);
+        cont.setAttribute('data-siguiente', String(h + 1));
+        var bloque = elemento(plantilla('template[data-plantilla-horario]')
+            .replace(/__H__/g, String(h)).replace(/__F__/g, prefijo(form)));
+        if (!bloque) { return null; }
+        cont.appendChild(bloque);
+        valores = valores || {};
+        var base = 'horarios[' + h + ']';
+        bloque.querySelector('[data-horario-id]').value = valores.id || '';
+        campo(bloque, base + '[nombre]').value = valores.nombre || '';
+        campo(bloque, base + '[hora_inicio]').value = valores.hora_inicio || '';
+        campo(bloque, base + '[hora_fin]').value = valores.hora_fin || '';
+        var dias = valores.dias || [];
+        bloque.querySelectorAll('input[name="' + base + '[dias][]"]').forEach(function (c) { c.checked = dias.indexOf(c.value) !== -1; });
+        (valores.paraderos || []).forEach(function (p) { nuevaParada(form, bloque, p); });
+        renumerar(form);
+        return bloque;
+    }
+
+    function reiniciar(form, horarios) {
+        var cont = form.querySelector('[data-horarios]');
+        if (!cont) { return; }
+        cont.innerHTML = '';
+        cont.setAttribute('data-siguiente', '0');
+        (horarios && horarios.length ? horarios : [null]).forEach(function (h) { nuevoHorario(form, h); });
+    }
+
+    document.addEventListener('click', function (e) {
+        var form = e.target.closest('form[data-form-ruta]');
+
+        if (form && e.target.closest('[data-agregar-horario]')) {
+            var bloques = form.querySelectorAll('[data-horario]');
+            var ultimo = bloques[bloques.length - 1];
+            var copia = [];
+            if (ultimo) {
+                ultimo.querySelectorAll('[data-paradero-fila]').forEach(function (f) {
+                    copia.push({ nombre: f.querySelector('input[type="text"]').value, hora: f.querySelector('input[type="time"]').value });
+                });
+            }
+            var nuevo = nuevoHorario(form, { paraderos: copia });
+            if (nuevo) {
+                nuevo.scrollIntoView({ block: 'nearest' });
+                var nombre = nuevo.querySelector('input[type="text"]');
+                if (nombre) { nombre.focus(); }
+            }
+            return;
+        }
+
+        var quitarHorario = form && e.target.closest('[data-quitar-horario]');
+        if (quitarHorario) {
+            if (form.querySelectorAll('[data-horario]').length > 1) {
+                quitarHorario.closest('[data-horario]').remove();
+                renumerar(form);
+            }
+            return;
+        }
+
+        var agregarParada = form && e.target.closest('[data-agregar-paradero]');
+        if (agregarParada) {
+            var fila = nuevaParada(form, agregarParada.closest('[data-horario]'));
+            if (fila) { fila.querySelector('input[type="text"]').focus(); }
+            return;
+        }
+
+        var quitarParada = form && e.target.closest('[data-quitar-paradero]');
+        if (quitarParada) {
+            quitarParada.closest('[data-paradero-fila]').remove();
+            return;
+        }
+
+        // Editar: datos de la ruta y sus horarios desde data-valores
+        var editar = e.target.closest('[data-accion="editar-ruta"]');
+        if (editar) {
+            var dialogo = document.getElementById(editar.dataset.dialogo);
+            var f = dialogo && dialogo.querySelector('form[data-form-ruta]');
+            if (!f) { return; }
+            var v = {};
+            try { v = JSON.parse(editar.dataset.valores || '{}'); } catch (x) { /* sin valores */ }
+            f.action = editar.dataset.url;
+            var marca = f.querySelector('[data-campo-dialogo]');
+            if (marca) { marca.value = 'editar-' + editar.dataset.id; }
+            f.querySelectorAll('input[name="sentido"]').forEach(function (r) { r.checked = r.value === v.sentido; });
+            ['nombre', 'turno_id', 'proveedor_id', 'costo_maximo_taxi'].forEach(function (n) {
+                var c = campo(f, n);
+                if (c) { c.value = (v[n] === null || v[n] === undefined) ? '' : String(v[n]); }
+            });
+            reiniciar(f, v.horarios);
+            if (typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
+        }
+    });
+
+    // Al cerrar (Cancelar, X o Esc) el diálogo vuelve a un solo horario vacío
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement) || e.target.hasAttribute('data-conservar-al-cerrar')) { return; }
+        e.target.querySelectorAll('form[data-form-ruta]').forEach(function (form) { reiniciar(form, null); });
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[data-form-ruta]').forEach(renumerar);
+    });
+})();
+/* Fin Rutas de transporte */

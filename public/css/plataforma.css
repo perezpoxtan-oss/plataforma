@@ -703,3 +703,554 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
     .calcomania-acciones, .franja-ambiente { display: none !important; }
 }
 /* Fin Padrón Vehicular */
+/* ==========================================================================
+   Lector universal (QR, NFC, RFID, código de barras)
+   ========================================================================== */
+.lector { margin-bottom: 1rem; }
+.lector-fila { display: flex; gap: 0.5rem; align-items: stretch; position: relative; }
+.lector-icono { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--texto-tenue); pointer-events: none; }
+.lector .lector-entrada { flex: 1; min-width: 0; margin-bottom: 0; padding-left: 2.4rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.03em; }
+.lector .lector-entrada::placeholder { font-family: var(--fuente); letter-spacing: 0; }
+.btn-lector { flex-shrink: 0; width: 48px; min-height: 48px; border-radius: 12px; border: 1px solid var(--borde); background: var(--color-primario-suave); color: var(--color-primario); font-size: 1.2rem; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.btn-lector:hover { background: var(--color-primario); color: #fff; border-color: var(--color-primario); }
+.lector-elegido { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; padding: 0.55rem 0.75rem; border-radius: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; font-weight: 700; font-size: 0.88rem; }
+.lector-elegido span { flex: 1; overflow-wrap: anywhere; }
+.lector-cambiar { border: none; background: none; color: #15803d; text-decoration: underline; font-weight: 700; font-size: 0.8rem; cursor: pointer; min-height: 36px; padding: 0 0.25rem; }
+.lector-opciones { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem; }
+.lector-opcion { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 0.1rem; border: 1px solid var(--borde); background: #fff; border-radius: 10px; padding: 0.55rem 0.75rem; min-height: 44px; cursor: pointer; font-family: inherit; }
+.lector-opcion:hover { border-color: var(--color-primario); background: var(--color-primario-suave); }
+.lector-opcion strong { font-size: 0.9rem; color: var(--texto); }
+.lector-opcion span { font-size: 0.78rem; color: var(--texto-suave); }
+.lector-opcion.inactiva { opacity: 0.6; }
+.lector-estado { margin: 0.45rem 0 0; font-size: 0.82rem; font-weight: 600; color: var(--texto-suave); }
+.lector-estado.info { color: var(--color-primario); }
+.lector-estado.ok { color: #15803d; }
+.lector-estado.aviso { color: #b45309; }
+.lector-estado.error { color: #b91c1c; }
+.dialogo-camara video { width: 100%; max-height: 60vh; border-radius: 14px; background: #000; display: block; object-fit: cover; }
+.lector .campo-ayuda { margin: 0.4rem 0 0; }
+/* Fin Lector universal */
+/* ==========================================================================
+   Catálogo de llaves (colores de SEGCAT: índigo; barra verde = electrónica,
+   roja = metálica)
+   ========================================================================== */
+.pantalla-llaves .buscador-llaves { max-width: 340px; width: 100%; }
+.barra-llaves { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.barra-llaves .filtro-select { max-width: 240px; padding-top: 0.7rem; padding-bottom: 0.7rem; min-height: 44px; }
+.filtros-estado-llaves { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.filtros-estado-llaves .btn-pill-tipo { min-height: 44px; }
+.tema-indigo .btn-pill-tipo.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+.acciones-llaves { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+.btn-accion-llaves { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-height: 44px; padding: 0.55rem 1rem; border-radius: 12px; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-weight: 600; font-size: 0.88rem; text-decoration: none; cursor: pointer; font-family: inherit; }
+.btn-accion-llaves:hover { background: #f1f5f9; color: #0f172a; }
+.btn-accion-llaves.activo { background: #eef2ff; border-color: #6366f1; color: #4338ca; }
+.btn-accion-llaves.oscuro { background: #0f172a; border-color: #0f172a; color: #fff; font-weight: 700; }
+.btn-accion-llaves.oscuro:hover { background: #1e293b; }
+.btn-accion-llaves:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-accion-llaves .conteo-pill { margin-left: 0.1rem; opacity: 0.9; }
+.pantalla-llaves .fichas-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+.ficha-llave { padding: 1.3rem; }
+.ficha-llave.marcada { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25); }
+.ficha-llave .etiqueta-estado { padding: 0.25rem 0.6rem; font-size: 0.65rem; white-space: nowrap; }
+.etiqueta-estado.en-uso { background: #fef3c7; color: #92400e; }
+.badge-tipo-llave { font-size: 0.68rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; line-height: 1.4; }
+.chk-llave { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: -10px -10px -10px 0; cursor: pointer; }
+.chk-llave input { width: 20px; height: 20px; accent-color: #6366f1; cursor: pointer; }
+.llave-titulo { font-size: 1.2rem; font-weight: 800; color: var(--texto); margin: 0.6rem 0 0.1rem; overflow-wrap: anywhere; }
+.llave-descripcion { font-size: 0.85rem; color: var(--texto-suave); margin: 0; }
+.llave-responsable { font-size: 0.75rem; color: #4f46e5; margin: 0.2rem 0 0; font-weight: 600; }
+.mini-etiqueta { display: flex; align-items: stretch; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; margin-top: 0.7rem; background: #fff; height: 46px; }
+.mini-etiqueta-barra { width: 6px; flex-shrink: 0; }
+.tipo-electronica_rfid { --color-llave: #10b981; }
+.tipo-metalica { --color-llave: #ef4444; }
+.tipo-biometrica { --color-llave: #8b5cf6; }
+.tipo-clave_pin { --color-llave: #f59e0b; }
+.mini-etiqueta-barra, .etiqueta-llave-barra { background: var(--color-llave, #64748b); }
+.mini-etiqueta-cuerpo { flex: 1; padding: 3px 8px; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.mini-etiqueta-nombre { font-size: 0.8rem; font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-etiqueta-sub { font-size: 0.62rem; color: #64748b; font-weight: 700; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-etiqueta-qr { width: 42px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #0f172a; }
+.meta-llave { background: var(--fondo); border: 1px solid var(--borde); border-radius: 12px; padding: 0.6rem 0.8rem; font-size: 0.8rem; color: #475569; display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.8rem; overflow-wrap: anywhere; }
+.mini-horario { background: #fff; border: 1px solid var(--borde); border-radius: 6px; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; color: #475569; display: inline-block; margin: 2px 3px 0 0; }
+.badge-caducidad { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+.badge-caducidad.ok { background: #f0fdf4; color: #15803d; }
+.badge-caducidad.pronto { background: #fffbeb; color: #b45309; }
+.badge-caducidad.vencida { background: #fef2f2; color: #b91c1c; }
+.pastilla-alcance { background: #f8fafc; color: #475569; border: 1px solid var(--borde); border-radius: 999px; padding: 0.3rem 0.75rem; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; max-width: 65%; line-height: 1.3; }
+.ficha-llave .ficha-footer { margin-top: 1rem; padding-top: 0.8rem; gap: 0.5rem; }
+.estado-vacio-llaves { grid-column: 1 / -1; }
+.dialogo-llave .caja-lugares { background: #f8fafc; border: 1px solid var(--borde); border-radius: 12px; padding: 0.75rem; margin-bottom: 1rem; }
+.dialogo-llave .lista-lugares { max-height: 220px; margin-bottom: 0; background: #fff; }
+.dialogo-llave .fila-check input { accent-color: #6366f1; }
+.dialogo-llave .campo-buscar-lugar { padding: 0.6rem 0.8rem; }
+.caja-id-externo { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 0.75rem; margin-bottom: 1rem; }
+.horarios-llave { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.35rem 0 0.5rem; }
+.fila-horario { display: grid; grid-template-columns: 1fr 140px 140px 44px; gap: 0.5rem; align-items: center; }
+.btn-quitar-horario { background: #fef2f2; color: #dc2626; border: none; width: 44px; height: 44px; border-radius: 10px; cursor: pointer; }
+.btn-quitar-horario:hover { background: #fee2e2; }
+.btn-agregar-horario { background: #eef2ff; color: #4f46e5; border: 1px dashed #6366f1; border-radius: 10px; padding: 0.55rem 0.9rem; min-height: 44px; font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btn-agregar-horario:hover { background: #e0e7ff; }
+.opcion-cobro { display: flex; align-items: center; gap: 0.6rem; min-height: 44px; font-weight: 700; font-size: 0.85rem; color: var(--texto); cursor: pointer; margin-bottom: 0.75rem; }
+.opcion-cobro input { width: 20px; height: 20px; accent-color: #dc2626; flex-shrink: 0; }
+.caja-cobro { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 0.75rem; margin-bottom: 0.5rem; }
+.grupo-monto { display: flex; align-items: stretch; margin-bottom: 1rem; }
+.grupo-monto-simbolo { display: flex; align-items: center; padding: 0 0.9rem; background: #f1f5f9; border: 1px solid var(--borde); border-right: none; border-radius: 12px 0 0 12px; color: #64748b; font-weight: 700; }
+.grupo-monto .grupo-monto-campo { flex: 1; min-width: 0; margin-bottom: 0; border-radius: 0 12px 12px 0; }
+.btn-baja-llave { background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; }
+@media (max-width: 575.98px) {
+    .barra-llaves .filtro-select { max-width: none; flex: 1 1 calc(50% - 0.25rem); min-width: 0; padding-right: 2rem; }
+    .barra-llaves .filtro-select:first-child:nth-last-child(4) { flex-basis: 100%; }
+    .pantalla-llaves .buscador-llaves { max-width: none; }
+    .acciones-llaves .btn-accion-llaves { flex: 1 1 auto; }
+    .fila-horario { grid-template-columns: 1fr 1fr 44px; }
+    .fila-horario input[type="text"] { grid-column: 1 / -1; }
+}
+
+/* Etiquetas de llaveros: hoja carta, etiquetas de 6.5 × 3.5 cm */
+.pagina-etiquetas-llaves { background: #e2e8f0; margin: 0; padding: 20px 12px; min-height: 100vh; font-family: var(--fuente); color: #0f172a; }
+.panel-etiquetas-llaves { background: #fff; padding: 1rem 1.2rem; border-radius: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 216mm; margin: 0 auto 1.2rem; text-align: center; }
+.panel-etiquetas-llaves h1 { font-size: 1.3rem; font-weight: 800; margin: 0 0 0.3rem; }
+.panel-etiquetas-llaves p { font-size: 0.85rem; color: #64748b; margin: 0 0 0.8rem; }
+.panel-etiquetas-acciones { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-bottom: 0.6rem; }
+.panel-etiquetas-llaves .panel-etiquetas-nota { font-size: 0.75rem; margin: 0; }
+.hoja-etiquetas-llaves { width: 216mm; max-width: 100%; min-height: 279mm; background: #fff; margin: 0 auto; padding: 8mm 6mm; display: flex; flex-wrap: wrap; gap: 4mm; align-content: flex-start; box-sizing: border-box; }
+.etiqueta-llave { width: 65mm; height: 35mm; border: 1px dashed #94a3b8; box-sizing: border-box; display: flex; background: #fff; page-break-inside: avoid; break-inside: avoid; overflow: hidden; color: #0f172a; }
+.etiqueta-llave-barra { width: 4mm; flex-shrink: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.etiqueta-llave-cuerpo { flex: 1; padding: 2mm 2mm 2mm 3mm; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+.etiqueta-llave-empresa { font-size: 0.55rem; font-weight: 900; color: #64748b; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.etiqueta-llave-nombre { font-size: 0.95rem; font-weight: 900; letter-spacing: 0.5px; line-height: 1.1; overflow-wrap: anywhere; }
+.etiqueta-llave-alcance { font-size: 0.5rem; font-weight: 800; color: #fff; background: #334155; padding: 1px 4px; border-radius: 3px; display: inline-block; text-transform: uppercase; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.etiqueta-llave-lugar { font-size: 0.5rem; color: #475569; font-weight: 700; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.etiqueta-llave-codigo { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.5rem; color: #334155; letter-spacing: 0.5px; }
+.etiqueta-llave-baja { font-size: 0.5rem; font-weight: 900; color: #b91c1c; }
+.etiqueta-llave-qr { width: 23mm; flex-shrink: 0; display: flex; align-items: center; justify-content: center; padding-right: 1.5mm; }
+.etiqueta-llave-qr svg { width: 21mm; height: 21mm; display: block; }
+@media print {
+    @page { size: letter; margin: 0; }
+    .pagina-etiquetas-llaves { background: #fff !important; padding: 0; min-height: 0; }
+    .panel-etiquetas-llaves, .franja-ambiente { display: none !important; }
+    .hoja-etiquetas-llaves { box-shadow: none; margin: 0; }
+    .etiqueta-llave { border: 1px solid #cbd5e1; background: #fff !important; color: #000 !important; }
+}
+/* Fin Catálogo de llaves */
+/* ==========================================================================
+   Padrones: Gafetes y Vouchers de reposición (oscuro #0f172a, como en SEGCAT)
+   ========================================================================== */
+.tema-gafetes .ficha-card { padding: 1.3rem; }
+.tema-gafetes .ficha-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px -10px rgba(15,23,42,0.15); border-color: rgba(15,23,42,0.3); }
+.tema-gafetes .ficha-create { background: rgba(15,23,42,0.03); border-color: rgba(15,23,42,0.3); min-height: 200px; }
+.tema-gafetes .ficha-create:hover { background: rgba(15,23,42,0.08); border-color: #0f172a; }
+.tema-gafetes .ficha-create i, .tema-gafetes .ficha-create .titulo-crear { color: #0f172a; }
+.tema-gafetes .btn-icono.editar { color: #0f172a; }
+.tema-gafetes .btn-icono.editar:hover { background: #0f172a; color: #fff; }
+.tema-gafetes .campo:focus, .tema-gafetes .buscador input:focus, .tema-gafetes .filtro-select:focus { border-color: #0f172a; box-shadow: 0 0 0 3px rgba(15,23,42,0.1); outline: none; }
+.tema-gafetes .btn-pill-tipo.active { background: #0f172a; border-color: #0f172a; color: #fff; }
+.tema-gafetes .ficha-footer { margin-top: 1rem; padding-top: 0.8rem; flex-wrap: wrap; gap: 0.5rem; }
+.tema-gafetes .filtros-estado .btn { min-height: 40px; padding-left: 0.9rem; padding-right: 0.9rem; }
+.btn-gafetes { background: linear-gradient(135deg, #334155, #0f172a); color: #fff; border: none; border-radius: 12px; padding: 0.6rem 1.1rem; min-height: 44px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.btn-gafetes:hover, .btn-gafetes:focus-visible { background: #0f172a; color: #fff; }
+.dialogo-acciones .btn-gafetes { flex: 1; }
+.barra-gafetes { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; justify-content: flex-end; }
+.barra-gafetes .filtro-select { max-width: 220px; padding-top: 0.6rem; padding-bottom: 0.6rem; min-height: 44px; }
+.barra-gafetes .buscador { max-width: 280px; }
+.btn-marcar-todos { background: #fff; border: 1px solid #94a3b8; color: #334155; border-radius: 12px; padding: 0.55rem 1rem; min-height: 44px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.btn-marcar-todos:hover, .btn-marcar-todos[aria-pressed="true"] { background: #f1f5f9; border-color: #0f172a; color: #0f172a; }
+.conteo-seleccion { background: #fff; color: #0f172a; border-radius: 999px; padding: 0 0.5rem; margin-left: 0.4rem; font-size: 0.75rem; font-weight: 800; line-height: 1.4; }
+.aviso-sin-marcar { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 12px; padding: 0.6rem 0.9rem; font-size: 0.88rem; font-weight: 600; margin: 0 0 0.75rem; }
+.aviso-voucher-generado { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.9rem; background: #fff; border: 1px solid #0f172a; border-left-width: 5px; border-radius: 12px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.9rem; }
+.aviso-voucher-generado > i { font-size: 1.3rem; color: #0f172a; }
+.aviso-voucher-generado > span { flex: 1; min-width: 200px; }
+.gafete-nomenclatura { font-size: 1.05rem; font-weight: 900; color: #0f172a; margin: 0; line-height: 1.3; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gafete-nomenclatura i { font-size: 0.95rem; }
+.casilla-imprimir { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: -10px -10px 0 0; flex-shrink: 0; cursor: pointer; border-radius: 10px; }
+.casilla-imprimir:hover { background: #f1f5f9; }
+.casilla-imprimir input { width: 22px; height: 22px; cursor: pointer; accent-color: #0f172a; }
+.gafete-meta { background: #f8fafc; color: #475569; font-size: 0.82rem; padding: 0.5rem 0.7rem; border-radius: 8px; border: 1px solid var(--borde); display: flex; flex-direction: column; gap: 0.15rem; }
+.gafete-meta > div { display: flex; justify-content: space-between; gap: 0.75rem; }
+.gafete-meta strong { color: #0f172a; text-align: right; overflow-wrap: anywhere; }
+.gafete-codigo { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.72rem; color: var(--texto-suave); margin: 0.4rem 0 0; overflow-wrap: anywhere; }
+.estado-gafete { border-radius: 999px; padding: 0.35rem 0.8rem; font-weight: 800; font-size: 0.7rem; white-space: nowrap; }
+.estado-gafete.disponible { background: #dcfce7; color: #15803d; }
+.estado-gafete.no-disponible { background: #fee2e2; color: #b91c1c; }
+.estado-vacio-gafetes { grid-column: 1 / -1; }
+.campo-cantidad { flex: 0 0 150px; }
+.campo-nomenclatura { font-weight: 800; letter-spacing: 0.5px; }
+.campo-codigo { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--texto-suave); }
+.casilla-cobro { display: flex; align-items: center; gap: 0.6rem; min-height: 44px; font-weight: 700; font-size: 0.85rem; color: #b91c1c; cursor: pointer; margin-bottom: 0.75rem; }
+.casilla-cobro input { width: 22px; height: 22px; accent-color: #dc2626; flex-shrink: 0; }
+.caja-cobro { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 0.8rem; margin-bottom: 0.5rem; }
+.grupo-monto { display: flex; align-items: stretch; margin-bottom: 1rem; }
+.grupo-monto-simbolo { display: flex; align-items: center; padding: 0 0.9rem; background: #f1f5f9; border: 1px solid var(--borde); border-right: none; border-radius: 12px 0 0 12px; color: #475569; font-weight: 700; }
+.grupo-monto-input { flex: 1; min-width: 0; background: #fff; border: 1px solid var(--borde); border-radius: 0 12px 12px 0; padding: 0.85rem; font-size: 0.95rem; font-family: inherit; color: var(--texto); }
+.grupo-monto-input:focus { border-color: #0f172a; outline: none; box-shadow: 0 0 0 3px rgba(15,23,42,0.1); }
+@media (max-width: 575.98px) {
+    .barra-gafetes { justify-content: stretch; }
+    .barra-gafetes > * { flex: 1 1 calc(50% - 0.5rem); }
+    .barra-gafetes .filtro-select, .barra-gafetes .buscador { max-width: none; flex-basis: 100%; }
+    .campo-cantidad { flex-basis: auto; }
+    .tema-gafetes .ficha-create { min-height: 110px; }
+}
+
+/* Vouchers de reposición */
+.filtros-vouchers { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
+.filtros-vouchers .buscador { max-width: 340px; }
+.filtros-vouchers .filtro-select { max-width: 260px; padding-top: 0.6rem; padding-bottom: 0.6rem; min-height: 44px; }
+.rango-fechas { display: flex; gap: 0.5rem; }
+.filtro-fecha { display: flex; align-items: center; gap: 0.4rem; background: #fff; border: 1px solid var(--borde); border-radius: 14px; padding: 0 0.6rem; min-height: 44px; margin: 0; font-size: 0.8rem; font-weight: 700; color: var(--texto-suave); }
+.filtro-fecha input { border: none; background: transparent; font-family: inherit; color: var(--texto); min-height: 40px; min-width: 0; width: 100%; }
+.filtro-fecha input:focus { outline: none; }
+.acciones-filtro { display: flex; gap: 0.5rem; align-items: center; }
+.btn-limpiar-filtros { display: inline-flex; align-items: center; min-height: 44px; padding: 0 0.8rem; border-radius: 12px; color: #475569; text-decoration: none; font-weight: 600; font-size: 0.88rem; }
+.btn-limpiar-filtros:hover { background: #f1f5f9; color: #0f172a; }
+.conteo-vouchers { font-size: 0.85rem; font-weight: 700; color: var(--texto-suave); margin: 0 0 -0.5rem; }
+.fichas-vouchers { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.2rem; }
+.ficha-voucher { gap: 0.6rem; justify-content: flex-start; border-radius: 18px; }
+.ficha-voucher:hover { transform: none !important; }
+.voucher-folio { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; font-weight: 700; color: #475569; background: #f1f5f9; padding: 0.25rem 0.6rem; border-radius: 8px; }
+.voucher-cobro { font-size: 0.7rem; font-weight: 800; padding: 0.3rem 0.7rem; border-radius: 999px; white-space: nowrap; }
+.voucher-cobro.con-cobro { background: #fef2f2; color: #dc2626; }
+.voucher-cobro.sin-cobro { background: #f0fdf4; color: #16a34a; }
+.voucher-articulo { font-size: 1.05rem; font-weight: 900; color: #0f172a; margin: 0; overflow-wrap: anywhere; }
+.voucher-meta { font-size: 0.82rem; color: #64748b; display: flex; flex-direction: column; gap: 0.15rem; }
+.voucher-meta > div { display: flex; justify-content: space-between; gap: 0.75rem; }
+.voucher-meta strong { color: #0f172a; text-align: right; overflow-wrap: anywhere; }
+.voucher-meta .voucher-monto { color: #dc2626; }
+.voucher-como { font-size: 0.8rem; color: #475569; background: #f8fafc; border-radius: 8px; padding: 0.5rem 0.6rem; margin: 0; overflow-wrap: anywhere; }
+.voucher-como span { display: block; font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; }
+.btn-ver-voucher { background: #0f172a; color: #fff; border-radius: 10px; font-weight: 600; font-size: 0.85rem; min-height: 44px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.4rem; margin-top: auto; }
+.btn-ver-voucher:hover { background: #334155; color: #fff; }
+@media (max-width: 575.98px) {
+    .filtros-vouchers > *, .filtros-vouchers .buscador, .filtros-vouchers .filtro-select { flex: 1 1 100%; max-width: none; }
+    .rango-fechas { flex-direction: column; }
+    .rango-fechas .filtro-fecha { flex: 1; min-width: 0; }
+    .filtro-fecha span { min-width: 3.2rem; }
+    .acciones-filtro > * { flex: 1; justify-content: center; }
+}
+
+/* Impresiones: gafetes doble vista y voucher de 3 copias */
+.pagina-impresion-gafetes, .pagina-impresion-voucher { background: #e2e8f0; margin: 0; padding: 20px 12px; color: #0f172a; min-height: 100vh; }
+.controles-impresion { background: #fff; padding: 1.2rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin: 0 auto 1.5rem; text-align: center; max-width: 216mm; }
+.controles-impresion h1 { font-size: 1.35rem; font-weight: 800; margin: 0 0 0.4rem; }
+.controles-impresion p { color: #64748b; margin: 0 0 0.4rem; }
+.controles-impresion .detalle { font-size: 0.85rem; font-weight: 600; }
+.controles-impresion .aviso-bajas { color: #b91c1c; }
+.controles-impresion .acciones { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 0.8rem; }
+.hoja-gafetes { width: 216mm; max-width: 100%; min-height: 279mm; background: #fff; margin: 0 auto; padding: 10mm; box-sizing: border-box; display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center; gap: 5mm; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+.gafete-doble { width: 172mm; height: 54mm; flex-shrink: 0; border: 1px solid #cbd5e1; box-sizing: border-box; display: flex; break-inside: avoid; page-break-inside: avoid; background: #fff; }
+.gafete-frente, .gafete-reverso { width: 86mm; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.gafete-frente { border-right: 1px dashed #94a3b8; }
+.gafete-franja { padding: 3mm 4mm; text-align: center; color: #fff; border-bottom: 3px solid rgba(0,0,0,0.1); }
+.franja-visitante { background: #f97316; }
+.franja-proveedor { background: #3b82f6; }
+.franja-contratista { background: #64748b; }
+.gafete-empresa { font-size: 1rem; font-weight: 900; line-height: 1.1; margin-bottom: 2px; overflow-wrap: anywhere; }
+.gafete-sede { font-size: 0.62rem; font-weight: 700; opacity: 0.95; text-transform: uppercase; }
+.gafete-cuerpo { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2mm; min-height: 0; }
+.gafete-tipo { font-size: 1.5rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; line-height: 1.1; overflow-wrap: anywhere; }
+.tipo-visitante { color: #f97316; }
+.tipo-proveedor { color: #3b82f6; }
+.tipo-contratista { color: #64748b; }
+.gafete-logo { max-height: 14mm; max-width: 60mm; object-fit: contain; margin-top: auto; }
+.gafete-sin-logo { margin-top: auto; color: #94a3b8; font-size: 0.6rem; font-weight: 700; border: 1px dashed #cbd5e1; padding: 2mm 10mm; border-radius: 4px; }
+.gafete-reverso { align-items: center; justify-content: center; padding: 2mm; text-align: center; }
+.gafete-qr { width: 28mm; height: 28mm; margin-bottom: 1mm; }
+.gafete-qr svg { width: 100%; height: 100%; display: block; }
+.gafete-nomenclatura-reverso { font-size: 1rem; font-weight: 900; color: #0f172a; margin-bottom: 1mm; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.gafete-baja { font-size: 0.6rem; font-weight: 800; color: #b91c1c; border: 1px solid #b91c1c; border-radius: 4px; padding: 0 2mm; margin-bottom: 1mm; }
+.gafete-reglas { font-size: 0.45rem; color: #475569; line-height: 1.25; text-transform: uppercase; font-weight: 700; }
+.hoja-voucher { width: 216mm; max-width: 100%; min-height: 279mm; background: #fff; margin: 0 auto; padding: 8mm 10mm; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
+.copia-voucher { flex: 1; display: flex; flex-direction: column; padding: 3mm 0; min-height: 0; }
+.linea-corte { border-top: 1px dashed #94a3b8; position: relative; flex: 0 0 0; }
+.linea-corte span { position: absolute; right: 0; top: -0.6em; background: #fff; padding: 0 2mm; font-size: 0.55rem; color: #94a3b8; font-weight: 700; }
+.copia-etiqueta { text-align: right; font-size: 0.62rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 1.5mm; }
+.voucher-encabezado { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1.5px solid #0f172a; padding-bottom: 1.5mm; margin-bottom: 2mm; }
+.voucher-encabezado h2 { font-size: 0.95rem; font-weight: 900; margin: 0; }
+.voucher-folio-impreso { font-size: 0.75rem; font-weight: 700; color: #475569; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.voucher-datos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1mm 4mm; margin-bottom: 1.5mm; flex: 1; align-content: start; }
+.dato-etiqueta { font-size: 0.55rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
+.dato-valor { font-size: 0.74rem; font-weight: 700; color: #0f172a; line-height: 1.3; overflow-wrap: anywhere; }
+.dato-valor.normal { font-weight: 400; font-size: 0.7rem; }
+.dato-completo { grid-column: 1 / -1; }
+.voucher-cobro-firmas { display: flex; align-items: center; flex-wrap: wrap; gap: 3mm; margin-top: 1mm; }
+.caja-cxc { border-radius: 6px; padding: 1mm 2.5mm; border: 1px solid; }
+.caja-cxc.con-cobro { background: #fef2f2; border-color: #fecaca; }
+.caja-cxc.sin-cobro { background: #f0fdf4; border-color: #bbf7d0; }
+.cxc-monto { font-size: 0.8rem; font-weight: 900; white-space: nowrap; }
+.caja-cxc.con-cobro .cxc-monto { color: #dc2626; }
+.caja-cxc.sin-cobro .cxc-monto { color: #16a34a; }
+.caja-referencia { flex: 1; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 1mm 2.5mm; min-height: 7mm; min-width: 40mm; }
+.voucher-genero { font-size: 0.68rem; color: #475569; margin-left: auto; }
+.voucher-firmas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; margin-top: 2mm; }
+.firma-espacio { height: 7mm; }
+.firma-linea { border-top: 1px solid #0f172a; padding-top: 0.8mm; text-align: center; font-size: 0.55rem; font-weight: 700; color: #475569; text-transform: uppercase; overflow-wrap: anywhere; }
+@media (max-width: 575.98px) {
+    .hoja-gafetes { padding: 3mm; overflow-x: auto; justify-content: flex-start; }
+    .hoja-voucher { padding: 4mm; }
+    .voucher-datos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media print {
+    @page { size: letter; margin: 0; }
+    .pagina-impresion-gafetes, .pagina-impresion-voucher { background: #fff !important; padding: 0; min-height: 0; }
+    .controles-impresion, .franja-ambiente { display: none !important; }
+    .hoja-gafetes, .hoja-voucher { box-shadow: none; margin: 0; width: 216mm; max-width: none; }
+    .hoja-voucher { height: 279mm; }
+    .hoja-gafetes, .hoja-voucher, .gafete-doble, .gafete-franja, .caja-cxc { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+/* Fin Padrones: Gafetes y Vouchers de reposición */
+/* ==========================================================================
+   Padrones: Equipos de seguridad y Estacionamientos (textos y colores de SEGCAT)
+   ========================================================================== */
+/* Equipos: tono oscuro (#0f172a) como en SEGCAT */
+.pantalla-equipos .ficha-create { background: rgba(15,23,42,0.03); border-color: rgba(15,23,42,0.3); min-height: 220px; }
+.pantalla-equipos .ficha-create:hover { background: rgba(15,23,42,0.08); border-color: #0f172a; }
+.pantalla-equipos .ficha-create i, .pantalla-equipos .ficha-create .titulo-crear { color: #0f172a; }
+.pantalla-equipos .btn-pill-tipo.active { background: #0f172a; border-color: #0f172a; color: #fff; }
+.pantalla-equipos .btn-icono.editar { color: #0f172a; }
+.pantalla-equipos .btn-icono.editar:hover { background: #0f172a; color: #fff; }
+.filtros-equipos { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; width: 100%; }
+.filtros-equipos .buscador { flex: 1 1 240px; }
+.filtros-equipos .filtro-select { flex: 0 1 200px; min-height: 48px; }
+@media (min-width: 992px) { .filtros-equipos { width: auto; max-width: 760px; justify-content: flex-end; } }
+@media (max-width: 575.98px) { .filtros-equipos .filtro-select, .filtros-zonas .filtro-select { flex: 1 1 100%; max-width: none; } }
+.badge-estado-eq { font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid transparent; white-space: nowrap; display: inline-flex; align-items: center; }
+.badge-estado-eq .bi-circle-fill { font-size: 0.5rem; }
+.estado-eq-disponible { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.estado-eq-asignado { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.estado-eq-en_mantenimiento { background: #e0e7ff; color: #3730a3; border-color: #c7d2fe; }
+.estado-eq-baja { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+.eq-rotulo { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--texto-suave); }
+.eq-serie { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.1rem; font-weight: 900; color: #0f172a; margin-bottom: 0.2rem; overflow-wrap: anywhere; }
+.eq-tipo { font-weight: 700; color: #2563eb; font-size: 0.9rem; }
+.eq-marca, .eq-observaciones, .eq-nfc { color: var(--texto-suave); font-size: 0.8rem; margin-top: 0.2rem; overflow-wrap: anywhere; }
+.eq-nfc { color: #0369a1; font-weight: 600; }
+.eq-pie { margin-top: 1rem; padding-top: 0.6rem; border-top: 1px solid var(--borde); }
+.btn-oscuro { background: #0f172a; color: #fff; font-weight: 700 !important; }
+.btn-oscuro:hover { background: #1e293b; }
+.pantalla-equipos .grupo-monto { display: flex; align-items: stretch; margin-bottom: 1rem; }
+.pantalla-equipos .grupo-monto-simbolo { display: flex; align-items: center; padding: 0 0.9rem; background: #f1f5f9; border: 1px solid var(--borde); border-right: none; border-radius: 12px 0 0 12px; color: var(--texto-suave); font-weight: 700; }
+.pantalla-equipos .grupo-monto-campo { flex: 1; min-width: 0; margin-bottom: 0; border-radius: 0 12px 12px 0; }
+.estado-fijo-eq { font-size: 0.85rem; font-weight: 700; color: #92400e; background: #fef3c7; border: 1px solid #fde68a; border-radius: 10px; padding: 0.6rem 0.8rem; }
+.aviso-baja-eq { font-size: 0.85rem; color: #7f1d1d; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 0.6rem 0.8rem; }
+.casilla-cobro-eq { display: flex; align-items: center; gap: 0.6rem; min-height: 44px; font-weight: 700; font-size: 0.85rem; color: var(--texto); cursor: pointer; margin-bottom: 0.75rem; }
+.casilla-cobro-eq input { width: 22px; height: 22px; accent-color: #dc2626; flex-shrink: 0; }
+.caja-cobro-eq { border-left: 3px solid #fecaca; padding-left: 0.75rem; }
+.dialogo-qr-eq { max-width: 340px; }
+.qr-eq-imagen { width: 220px; height: 220px; max-width: 100%; display: block; margin: 0 auto; background: #fff; border-radius: 8px; }
+.qr-eq-codigo { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; font-weight: 700; background: #f1f5f9; padding: 0.5rem; border-radius: 8px; word-break: break-all; }
+.btn-qr-eq { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; margin-top: 0.6rem; border-radius: 12px; font-weight: 600; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; text-decoration: none; cursor: pointer; font-family: inherit; }
+.btn-qr-eq.imprimir { background: #0f172a; color: #fff; border-color: #0f172a; }
+.btn-qr-eq[hidden] { display: none; }
+/* Etiqueta impresa */
+.etiqueta-equipo-tipo { font-size: 1.1rem; font-weight: 900; color: #0f172a; margin: 0.4rem 0; }
+.etiqueta-equipo-serie { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.4rem; font-weight: 900; letter-spacing: 1px; color: #0f172a; border: 2px solid #0f172a; border-radius: 8px; padding: 4px 8px; margin-bottom: 0.4rem; background: #f8fafc; word-break: break-all; }
+.etiqueta-equipo-qr { width: 170px; height: 170px; }
+
+/* Estacionamientos */
+.btn-nueva-zona { background: #2563eb; color: #fff; border: none; border-radius: 12px; padding: 0.75rem 1.2rem; min-height: 48px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.btn-nueva-zona:hover { background: #1d4ed8; }
+.filtros-zonas { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+.filtros-zonas .buscador { flex: 1 1 260px; }
+.filtros-zonas .filtro-select { min-height: 48px; }
+.grupo-sede-zonas { margin-bottom: 1.75rem; }
+.titulo-sede-zonas { font-size: 1.05rem; font-weight: 800; color: var(--texto); margin: 0.5rem 0 0; display: flex; align-items: center; }
+.zonas-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.2rem; margin-top: 0.75rem; }
+.ficha-zona { padding: 1.2rem; }
+.ficha-zona.tipo-descarga { border-top: 5px solid #f59e0b; }
+.ficha-zona.tipo-estac { border-top: 5px solid #3b82f6; }
+.distintivo-zona { display: inline-block; font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.3px; }
+.distintivo-zona.estac { background: #2563eb; color: #fff; }
+.distintivo-zona.descarga { background: #fbbf24; color: #0f172a; }
+.nombre-zona { font-size: 1.15rem; font-weight: 800; color: var(--texto); margin: 0.5rem 0 0; overflow-wrap: anywhere; }
+.ocupacion-zona { font-size: 0.9rem; color: var(--texto); }
+.icono-descarga { color: #d97706; }
+.cupo-barra { height: 10px; border-radius: 999px; background: #e2e8f0; overflow: hidden; margin: 0.5rem 0; }
+.cupo-barra-fill { height: 100%; background: #3b82f6; }
+.cupo-barra-fill.lleno { background: #ef4444; }
+.texto-lleno { color: #dc2626; }
+.min-w-0 { min-width: 0; }
+.pie-zona { border-color: var(--borde) !important; }
+/* Fin Padrones: Equipos de seguridad y Estacionamientos */
+/* ==========================================================================
+   Rutas de transporte (ámbar #f59e0b / naranja #c2410c, como en SEGCAT):
+   fichas por sede, pestañas Llegadas / Salidas / Paraderos, diálogo de
+   horarios y paraderos, hoja del día e itinerario para imprimir.
+   ========================================================================== */
+.tema-rutas .ficha-card:hover { transform: translateY(-3px); box-shadow: 0 12px 20px -8px rgba(245,158,11,0.18); border-color: rgba(245,158,11,0.45); }
+.tema-rutas .campo:focus, .tema-rutas .buscador input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.15); outline: none; }
+.tema-rutas .btn-icono.editar { color: #b45309; }
+.tema-rutas .btn-icono.editar:hover { background: #b45309; color: #fff; }
+.tema-rutas .filtros-estado .btn { min-height: 44px; }
+.rutas-icono-titulo { color: #d97706; }
+.btn-rutas { background: #b45309; color: #fff; border: none; }
+.btn-rutas:hover { background: #92400e; color: #fff; }
+.rutas-boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0.55rem 1rem; border-radius: 12px; font-weight: 700; font-size: 0.88rem; text-decoration: none; cursor: pointer; font-family: inherit; }
+.rutas-acciones-sede { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Fichas de sede */
+.rutas-sedes-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.rutas-ficha-sede { padding: 1.4rem; }
+.rutas-sede-cabecera { display: flex; align-items: center; gap: 0.8rem; }
+.rutas-sede-icono { width: 44px; height: 44px; border-radius: 12px; background: #fff7ed; color: #c2410c; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+.rutas-sede-titulo { flex: 1; min-width: 0; }
+.rutas-sede-titulo h2 { margin: 0; font-size: 1.05rem; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rutas-sede-titulo h2 a { color: var(--texto); text-decoration: none; }
+.rutas-sede-titulo h2 a:hover { color: #c2410c; }
+.rutas-sede-empresa { font-size: 0.72rem; font-weight: 700; color: #2563eb; }
+.rutas-insignias { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.9rem; }
+.rutas-sentido { font-size: 0.68rem; font-weight: 800; padding: 5px 10px; border-radius: 6px; text-transform: uppercase; display: inline-flex; align-items: center; white-space: nowrap; }
+.rutas-sentido.llegada { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.rutas-sentido.salida { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.rutas-sentido.paradero { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.rutas-proximos { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.7rem; }
+.rutas-proximos-col { background: var(--fondo); border: 1px solid var(--borde); border-radius: 10px; padding: 0.5rem 0.6rem; min-width: 0; }
+.rutas-proximos-titulo { font-size: 0.66rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 3px; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rutas-proximos-item { font-size: 0.75rem; color: #334155; padding: 1px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rutas-transportistas { font-size: 0.75rem; color: #64748b; margin-top: 0.6rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rutas-aviso-suspendidas { display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 3px 8px; border-radius: 6px; margin-top: 0.6rem; }
+.rutas-sede-acciones { display: flex; gap: 0.5rem; margin-top: 1rem; }
+.btn-detalle-sede { flex: 1; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; border-radius: 12px; font-weight: 700; font-size: 0.88rem; text-decoration: none; }
+.btn-detalle-sede:hover { background: #fed7aa; color: #9a3412; }
+.btn-icono.imprimir-hoja { color: #475569; text-decoration: none; flex-shrink: 0; }
+.btn-icono.imprimir-hoja:hover { background: #475569; color: #fff; }
+.btn-icono.clonar { color: #0369a1; }
+.btn-icono.clonar:hover { background: #0369a1; color: #fff; }
+.rutas-vacio { grid-column: 1 / -1; }
+
+/* Pestañas de la sede */
+.rutas-pestanas { display: flex; gap: 0.25rem; margin-bottom: 1rem; border-bottom: 2px solid var(--borde); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.rutas-pestana { display: inline-flex; align-items: center; min-height: 44px; padding: 0.6rem 1rem; font-weight: 700; font-size: 0.88rem; color: #64748b; text-decoration: none; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; }
+.rutas-pestana:hover { color: #c2410c; }
+.rutas-pestana.activa { color: #c2410c; border-bottom-color: #f59e0b; }
+.rutas-crear-mini { display: block; width: 100%; background: rgba(245,158,11,0.05); border: 1.5px dashed rgba(245,158,11,0.55); border-radius: 12px; padding: 0.7rem 0.9rem; min-height: 48px; text-align: center; cursor: pointer; font-weight: 700; color: #b45309; font-size: 0.9rem; margin-bottom: 0.8rem; font-family: inherit; }
+.rutas-crear-mini:hover { background: rgba(245,158,11,0.12); }
+.rutas-nota { margin: -0.2rem 0 0.8rem; }
+.rutas-filtros { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
+
+/* Filas de rutas y paraderos */
+.rutas-lista { display: flex; flex-direction: column; gap: 0.6rem; }
+.rutas-fila { display: flex; align-items: flex-start; gap: 0.8rem; background: #fff; border: 1px solid var(--borde); border-radius: 14px; padding: 0.8rem 0.9rem; transition: 0.2s; }
+.rutas-fila:hover { border-color: #f59e0b; }
+.rutas-fila.inactiva { background: var(--fondo); }
+.rutas-fila.inactiva .rutas-fila-nombre { color: #64748b; }
+.rutas-fila.ficha-resaltada { box-shadow: 0 0 0 3px #f59e0b !important; }
+.rutas-fila-info { flex: 1; min-width: 0; }
+.rutas-fila-nombre { font-size: 0.95rem; font-weight: 800; color: var(--texto); margin: 0; overflow-wrap: anywhere; }
+.rutas-fila-meta { font-size: 0.75rem; color: #64748b; display: flex; gap: 0.35rem 0.8rem; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+.rutas-fila-meta .etiqueta-estado { padding: 0.15rem 0.55rem; font-size: 0.62rem; }
+.rutas-fila-horarios { list-style: none; padding: 0; margin: 0.45rem 0 0; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.rutas-fila-horarios li { font-size: 0.72rem; color: #475569; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 2px 7px; }
+.rutas-fila-horarios strong { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #92400e; }
+.rutas-dia-siguiente { font-size: 0.6rem; font-weight: 800; color: #7c3aed; margin-left: 2px; vertical-align: super; }
+.rutas-horario-nombre { color: #64748b; }
+.rutas-fila-acciones { display: flex; gap: 0.35rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.rutas-icono-paradero { color: #d97706; }
+@media (max-width: 575.98px) {
+    .rutas-fila { flex-direction: column; }
+    .rutas-fila-acciones { width: 100%; justify-content: flex-start; padding-top: 0.5rem; border-top: 1px dashed var(--borde); }
+    .rutas-filtros .buscador { max-width: none; }
+    .rutas-acciones-sede .rutas-boton { flex: 1; }
+    .rutas-proximos { grid-template-columns: 1fr; }
+    .rutas-pestana { padding: 0.6rem 0.65rem; font-size: 0.82rem; }
+}
+
+/* Diálogo de ruta */
+.rutas-dialogo { max-width: 700px; }
+.rutas-ayuda { margin-top: -0.6rem; margin-bottom: 0.9rem; font-size: 0.8rem; }
+.rutas-separador { border-top: 1px solid var(--borde); padding-top: 0.8rem; margin-top: 0.4rem; }
+.rutas-sentido-opciones { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
+.rutas-sentido-opcion { flex: 1; text-align: center; padding: 0.8rem 0.5rem; border: 2px solid var(--borde); border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 0.85rem; color: #64748b; position: relative; min-height: 44px; }
+.rutas-sentido-opcion input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.rutas-sentido-opcion:has(input:checked) { border-color: #f59e0b; background: #fffbeb; color: #b45309; }
+.rutas-sentido-opcion:has(input:focus-visible) { outline: 3px solid #f59e0b; outline-offset: 2px; }
+.rutas-transportista { font-weight: 700; color: #15803d; }
+.rutas-horario { background: var(--fondo); border: 1px solid var(--borde); border-radius: 14px; padding: 0.9rem 0.9rem 0.3rem; margin: 0 0 1rem; min-width: 0; }
+.rutas-horario-cabecera { display: flex; justify-content: space-between; align-items: center; float: left; width: 100%; margin-bottom: 0.6rem; font-size: inherit; padding: 0; }
+.rutas-horario-titulo { font-weight: 800; font-size: 0.9rem; color: #b45309; }
+.btn-quitar-fila { background: #fef2f2; color: #dc2626; border: none; width: 44px; height: 44px; border-radius: 10px; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+.btn-quitar-fila:hover:not(:disabled) { background: #dc2626; color: #fff; }
+.btn-quitar-fila:disabled { opacity: 0.35; cursor: not-allowed; }
+.rutas-dias { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+.rutas-dia { background: #fff; border: 1px solid var(--borde); border-radius: 10px; padding: 0.45rem 0.65rem; min-height: 44px; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #475569; }
+.rutas-dia input { accent-color: #d97706; width: 16px; height: 16px; }
+.rutas-dia:has(input:checked) { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
+.rutas-paraderos-encabezado { display: grid; grid-template-columns: 1fr 150px 44px; gap: 0.5rem; font-size: 0.68rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem; }
+.rutas-paradero-fila { display: grid; grid-template-columns: 1fr 150px 44px; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
+.rutas-paradero-fila > div { min-width: 0; }
+.rutas-paradero-fila .text-uppercase::placeholder { text-transform: none; }
+.btn-agregar-paradero { background: #fffbeb; color: #b45309; border: 1px dashed #f59e0b; border-radius: 10px; padding: 0.5rem 0.9rem; min-height: 44px; font-size: 0.85rem; font-weight: 700; cursor: pointer; margin: 0.2rem 0 0.9rem; font-family: inherit; }
+.btn-agregar-paradero:hover { background: #fef3c7; }
+.btn-agregar-horario { width: 100%; background: #fff; color: #0f172a; border: 2px dashed #cbd5e1; border-radius: 12px; padding: 0.7rem; min-height: 48px; font-weight: 700; font-size: 0.88rem; cursor: pointer; margin-bottom: 0.5rem; font-family: inherit; }
+.btn-agregar-horario:hover { border-color: #f59e0b; color: #b45309; }
+@media (max-width: 575.98px) {
+    .rutas-paraderos-encabezado { display: none; }
+    .rutas-paradero-fila { grid-template-columns: 1fr 44px; gap: 0.4rem; padding-bottom: 0.5rem; border-bottom: 1px dashed var(--borde); }
+    .rutas-paradero-fila > div:first-child { grid-column: 1 / -1; }
+    .rutas-horario { padding: 0.7rem 0.6rem 0.2rem; }
+}
+
+/* Hoja del día e itinerario: páginas propias para imprimir */
+.pagina-rutas-hoja { background: #e2e8f0; min-height: 100vh; margin: 0; padding: 24px 12px; color: #0f172a; font-family: var(--fuente); }
+.rutas-hoja { background: #fff; color: #0f172a; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); padding: 1.4rem 1.6rem 1.6rem; margin: 0 auto; }
+.rutas-hoja-horizontal { max-width: 1250px; }
+.rutas-hoja-vertical { max-width: 720px; }
+.rutas-hoja-controles { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 1px dashed #cbd5e1; }
+.rutas-hoja-fecha { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.rutas-hoja-fecha .campo { width: auto; min-height: 44px; padding: 0.5rem 0.7rem; background: #fff; color: #0f172a; }
+.rutas-hoja-controles .btn-imprimir-calcomania, .rutas-hoja-controles .btn-cerrar-calcomania { display: inline-flex; align-items: center; justify-content: center; }
+.rutas-hoja-encabezado { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; border-bottom: 3px solid #0f172a; padding-bottom: 0.7rem; margin-bottom: 1rem; }
+.rutas-hoja-encabezado h1 { font-size: 1.3rem; font-weight: 900; margin: 0; color: #0f172a; }
+.rutas-hoja-empresa { font-size: 0.78rem; color: #64748b; font-weight: 700; }
+.rutas-hoja-fecha-texto { text-align: right; }
+.rutas-hoja-fecha-texto small { display: block; font-size: 0.78rem; color: #475569; font-weight: 600; }
+.rutas-hoja-titulo { font-size: 0.95rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px; }
+.rutas-hoja-pagina { margin-bottom: 1.6rem; padding-bottom: 1.4rem; border-bottom: 2px dashed #cbd5e1; }
+.rutas-hoja-pagina:last-of-type { border-bottom: none; }
+.rutas-hoja-tabla-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.rutas-hoja-tabla { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+.rutas-hoja-tabla th { background: #eef2f7; color: #0f172a; text-align: left; padding: 4px; font-size: 0.6rem; text-transform: uppercase; border-bottom: 2px solid #0f172a; }
+.rutas-hoja-tabla td { padding: 4px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; color: #0f172a; }
+.rutas-hoja-tabla tbody tr:nth-child(even) td { background: #f8fafc; }
+.rutas-hoja-tabla tbody tr { break-inside: avoid; page-break-inside: avoid; }
+.rutas-hoja-tabla .col-hora { font-weight: 800; white-space: nowrap; width: 48px; }
+.rutas-hoja-tabla .col-ruta { min-width: 130px; }
+.rutas-hoja-extra { display: block; font-size: 0.62rem; font-weight: 700; color: #b45309; text-transform: uppercase; }
+.rutas-hoja-transportista { display: block; font-size: 0.62rem; color: #64748b; }
+.rutas-hoja-tabla .col-paradero { width: 40px; text-align: center; color: #94a3b8; }
+.rutas-hoja-tabla td.con-parada { color: #0f172a; font-weight: 700; }
+.rutas-hoja-tabla th.col-paradero { vertical-align: bottom; text-align: center; padding: 4px 1px 8px; color: #0f172a; width: 44px; }
+.rutas-hoja-tabla th.col-paradero span { writing-mode: vertical-rl; transform: rotate(180deg); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; white-space: normal; height: 120px; max-width: 40px; overflow: hidden; line-height: 1.1; word-break: break-word; font-weight: 700; margin: 0 auto; }
+.rutas-hoja-vacia { text-align: center; color: #64748b; font-size: 0.85rem; padding: 1rem 0.5rem; margin: 0; }
+.rutas-hoja-pie { margin-top: 0.8rem; font-size: 0.68rem; color: #64748b; text-align: right; }
+.rutas-itinerario-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem 1.5rem; margin-bottom: 1.4rem; }
+.rutas-itinerario-datos div { font-size: 0.88rem; }
+.rutas-itinerario-datos strong { display: block; font-size: 0.66rem; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
+.rutas-itinerario-horario { margin-bottom: 1.4rem; break-inside: avoid; page-break-inside: avoid; }
+.rutas-itinerario-destacado { background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 0.8rem; text-align: center; margin-bottom: 0.6rem; }
+.rutas-itinerario-etiqueta { font-size: 0.72rem; color: #92400e; text-transform: uppercase; font-weight: 800; }
+.rutas-itinerario-hora { font-size: 1.6rem; font-weight: 900; color: #b45309; }
+.rutas-itinerario-hora small { font-size: 0.75rem; font-weight: 700; }
+.rutas-itinerario-tabla { width: 100%; border-collapse: collapse; }
+.rutas-itinerario-tabla th { background: #0f172a; color: #fff; text-align: left; padding: 0.55rem 0.8rem; font-size: 0.72rem; text-transform: uppercase; }
+.rutas-itinerario-tabla td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #f1f5f9; font-size: 0.88rem; color: #0f172a; }
+.rutas-itinerario-tabla tr:nth-child(even) td { background: #f8fafc; }
+.rutas-itinerario-tabla .col-hora { width: 130px; font-weight: 700; color: #b45309; }
+.rutas-itinerario-tabla th.col-hora { color: #fff; }
+.rutas-itinerario-tabla th:first-child { width: 44px; }
+@media (max-width: 575.98px) {
+    .rutas-hoja { padding: 1rem; border-radius: 12px; }
+    .rutas-itinerario-datos { grid-template-columns: 1fr; }
+    .rutas-hoja-fecha-texto { text-align: left; }
+}
+@media print {
+    .pagina-rutas-hoja { background: #fff !important; padding: 0; min-height: 0; }
+    .rutas-hoja { box-shadow: none; border-radius: 0; padding: 0; max-width: 100%; background: #fff !important; color: #000 !important; }
+    .rutas-hoja-controles, .rutas-hoja .calcomania-acciones, .franja-ambiente { display: none !important; }
+    .rutas-hoja-horizontal .rutas-hoja-pagina { border-bottom: none; margin-bottom: 0; padding-bottom: 0; break-after: page; page-break-after: always; }
+    .rutas-hoja-horizontal .rutas-hoja-pagina:last-of-type { break-after: auto; page-break-after: auto; }
+    .rutas-hoja-tabla-scroll { overflow: visible; }
+    .rutas-hoja-tabla, .rutas-itinerario-destacado, .rutas-itinerario-tabla th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+/* Página con nombre: solo la hoja del día sale horizontal */
+@media print { .rutas-hoja-horizontal { page: rutas-horizontal; } }
+@page rutas-horizontal { size: letter landscape; margin: 10mm; }
+/* Fin Rutas de transporte */
