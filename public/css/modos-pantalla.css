@@ -487,3 +487,42 @@ html.modo-noche .opcion-cobro { color: #e2e8f0; }
 html.modo-noche .pagina-etiquetas-llaves { background: #0f172a; }
 html.modo-noche .panel-etiquetas-llaves { background: var(--superficie); color: #e2e8f0; }
 /* Fin Catálogo de llaves */
+/* Padrones: Gafetes y Vouchers de reposición */
+html.modo-sol .gafete-meta, html.modo-sol .voucher-como, html.modo-sol .voucher-folio, html.modo-sol .caja-cobro,
+html.modo-sol .aviso-voucher-generado, html.modo-sol .aviso-sin-marcar, html.modo-sol .filtro-fecha, html.modo-sol .btn-marcar-todos { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .gafete-meta strong, html.modo-sol .voucher-meta, html.modo-sol .voucher-meta strong, html.modo-sol .gafete-codigo,
+html.modo-sol .gafete-nomenclatura, html.modo-sol .voucher-articulo, html.modo-sol .voucher-como span, html.modo-sol .casilla-cobro { color: #000 !important; }
+html.modo-sol .estado-gafete, html.modo-sol .voucher-cobro { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .estado-gafete.no-disponible, html.modo-sol .voucher-cobro.con-cobro { background: #000; color: #fff; }
+html.modo-sol .btn-gafetes, html.modo-sol .btn-ver-voucher, html.modo-sol .tema-gafetes .btn-pill-tipo.active { background: #000; border-color: #000; color: #fff; }
+html.modo-sol .casilla-imprimir input, html.modo-sol .casilla-cobro input { accent-color: #000; }
+html.modo-noche .tema-gafetes .ficha-create { background: rgba(148, 163, 184, 0.06); border-color: #475569; }
+html.modo-noche .tema-gafetes .ficha-create i, html.modo-noche .tema-gafetes .ficha-create .titulo-crear,
+html.modo-noche .tema-gafetes .btn-icono.editar { color: #cbd5e1; }
+html.modo-noche .tema-gafetes .btn-pill-tipo.active { background: #475569; border-color: #64748b; color: #fff; }
+html.modo-noche .tema-gafetes .btn-pill-tipo:not(.active) { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .gafete-nomenclatura, html.modo-noche .voucher-articulo { color: #f1f5f9; }
+html.modo-noche .gafete-meta, html.modo-noche .voucher-como { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .gafete-meta strong, html.modo-noche .voucher-meta strong { color: #e2e8f0; }
+html.modo-noche .voucher-meta { color: #94a3b8; }
+html.modo-noche .voucher-meta .voucher-monto { color: #fca5a5; }
+html.modo-noche .voucher-folio { background: var(--superficie-2); color: #cbd5e1; }
+html.modo-noche .estado-gafete.disponible, html.modo-noche .voucher-cobro.sin-cobro { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+html.modo-noche .estado-gafete.no-disponible, html.modo-noche .voucher-cobro.con-cobro { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+html.modo-noche .casilla-imprimir:hover { background: var(--superficie-2); }
+html.modo-noche .casilla-imprimir input { accent-color: #94a3b8; }
+html.modo-noche .btn-marcar-todos, html.modo-noche .filtro-fecha { background: var(--superficie); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .btn-marcar-todos:hover, html.modo-noche .btn-marcar-todos[aria-pressed="true"] { background: var(--superficie-2); border-color: #94a3b8; color: #f1f5f9; }
+html.modo-noche .btn-gafetes, html.modo-noche .btn-ver-voucher { background: #475569; border: 1px solid #64748b; color: #fff; }
+html.modo-noche .btn-gafetes:hover, html.modo-noche .btn-ver-voucher:hover { background: #64748b; }
+html.modo-noche .conteo-seleccion { background: #0f172a; color: #e2e8f0; }
+html.modo-noche .aviso-voucher-generado { background: var(--superficie); border-color: #64748b; color: #e2e8f0; }
+html.modo-noche .aviso-voucher-generado > i { color: #cbd5e1; }
+html.modo-noche .aviso-sin-marcar { background: rgba(245, 158, 11, 0.12); border-color: #92400e; color: #fcd34d; }
+html.modo-noche .casilla-cobro { color: #fca5a5; }
+html.modo-noche .caja-cobro { background: rgba(239, 68, 68, 0.08); border-color: #7f1d1d; }
+html.modo-noche .grupo-monto-simbolo { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .grupo-monto-input { background: var(--campo-fondo); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .btn-limpiar-filtros { color: #cbd5e1; }
+html.modo-noche .btn-limpiar-filtros:hover { background: var(--superficie-2); color: #fff; }
+/* Fin Padrones: Gafetes y Vouchers de reposición */

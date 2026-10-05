@@ -55,6 +55,8 @@ class CatalogoSeeder extends Seeder
         'visitantes' => 'personas.index',
         'vehiculos' => 'vehiculos.index',
         'llaves' => 'llaves.index',
+        'gafetes' => 'gafetes.index',
+        'vouchers' => 'vouchers.index',
     ];
 
     /**

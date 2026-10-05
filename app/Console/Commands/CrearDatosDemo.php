@@ -8,6 +8,7 @@ use App\Models\Empresa;
 use App\Models\Espacio;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
+use App\Models\Gafete;
 use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\Puesto;
@@ -21,6 +22,7 @@ use App\Models\UsuarioRol;
 use App\Models\Vehiculo;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Llaves\AdministradorLlaves;
+use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\Tenant;
@@ -109,6 +111,7 @@ class CrearDatosDemo extends Command
         $tenant->conEmpresa($empresa->id, fn () => $this->personasDemo(User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'jefe.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->vehiculosDemo(User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->llavesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->gafetesDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -492,5 +495,47 @@ class CrearDatosDemo extends Command
             'motivo' => 'extraviado', 'descripcion' => 'Se perdió durante la ronda nocturna de mantenimiento.',
             'aplica_cobro' => $responsable !== null, 'monto' => '350', 'colaborador_id' => $responsable,
         ]);
+    }
+
+    /**
+     * Inventario de gafetes de ejemplo, solo la primera vez: en cada sede un
+     * lote de Visitante (10), Proveedor (5) y Contratista (5); dos dados de
+     * baja con su voucher (uno con cobro a un colaborador demo).
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function gafetesDemo(Empresa $empresa, $sedes, User $admin): void
+    {
+        if (Gafete::exists()) {
+            return;
+        }
+
+        $gafetes = app(AdministradorGafetes::class);
+        $tipos = $gafetes->tipos($admin, true)->pluck('id', 'nombre');
+        foreach ($sedes as $sede) {
+            foreach (['Visitante' => 10, 'Proveedor' => 5, 'Contratista' => 5] as $tipo => $cantidad) {
+                $gafetes->generarLote($admin, $empresa->id, ['sede_id' => $sede->id, 'tipo_gafete_id' => $tipos[$tipo], 'cantidad' => $cantidad]);
+            }
+        }
+
+        $codigo = fn (Sede $sede, string $tipo, int $n) => AdministradorGafetes::prefijo($empresa->nombre_comercial, $sede->codigo, $tipo).str_pad((string) $n, 3, '0', STR_PAD_LEFT);
+        $responsable = Colaborador::where('num_empleado', '1005')->value('id');
+
+        $perdido = Gafete::where('nomenclatura', $codigo($sedes['CEN'], 'Visitante', 10))->first();
+        // Desde la consola no hay sesión: el voucher se firma a nombre del administrador demo
+        $firmar = fn ($voucher) => $voucher->forceFill(['creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+        if ($perdido !== null) {
+            $firmar($gafetes->darDeBaja($admin, $perdido, [
+                'motivo' => 'extraviado',
+                'descripcion' => 'El visitante se retiró sin devolver el gafete; no contestó al teléfono que dejó en caseta.',
+                'aplica_cobro' => $responsable !== null,
+                'monto' => $responsable !== null ? '150.00' : null,
+                'colaborador_id' => $responsable,
+            ]));
+        }
+        $roto = Gafete::where('nomenclatura', $codigo($sedes['PLA'], 'Proveedor', 5))->first();
+        if ($roto !== null) {
+            $firmar($gafetes->darDeBaja($admin, $roto, ['motivo' => 'danado', 'descripcion' => 'La mica se rompió y el plástico quedó doblado.', 'aplica_cobro' => false]));
+        }
     }
 }

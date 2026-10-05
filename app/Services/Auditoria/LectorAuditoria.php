@@ -7,6 +7,7 @@ use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Espacio;
+use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
 use App\Models\Modulo;
@@ -16,6 +17,7 @@ use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Sede;
 use App\Models\TipoEspacio;
+use App\Models\TipoGafete;
 use App\Models\Turno;
 use App\Models\User;
 use App\Models\Vehiculo;
@@ -59,6 +61,8 @@ class LectorAuditoria
         Vehiculo::class => ['Vehículo', 'placas'],
         VoucherReposicion::class => ['Voucher', 'folio'],
         Llave::class => ['Llave', 'nomenclatura'],
+        Gafete::class => ['Gafete', 'nomenclatura'],
+        TipoGafete::class => ['Tipo de gafete', 'nombre'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */
