@@ -93,8 +93,13 @@ class Respaldos
         }
 
         $ambiente = preg_replace('/[^a-z0-9]/', '', strtolower((string) config('app.env'))) ?: 'local';
-        $archivo = sprintf('respaldo_%s_%s_%s.sql.gz', $ambiente, now()->utc()->format('Ymd_His'), $motivo);
-        $ruta = $this->carpeta().'/'.$archivo;
+        // Dos respaldos en el mismo segundo no se pisan: se toma el siguiente segundo libre
+        $momento = now()->utc();
+        do {
+            $archivo = sprintf('respaldo_%s_%s_%s.sql.gz', $ambiente, $momento->format('Ymd_His'), $motivo);
+            $ruta = $this->carpeta().'/'.$archivo;
+            $momento->addSecond();
+        } while (file_exists($ruta));
         $temporal = $ruta.'.parcial';
 
         $gz = gzopen($temporal, 'wb6');
