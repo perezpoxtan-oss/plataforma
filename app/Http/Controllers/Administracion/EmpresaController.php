@@ -10,7 +10,9 @@ use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Support\ZonasHorarias;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -63,7 +65,8 @@ class EmpresaController extends Controller
         $datos = $this->validar($request);
         $rubro = Rubro::findOrFail($datos['rubro_id']);
 
-        $empresa = $provisionar->crear($rubro, collect($datos)->except('rubro_id')->all());
+        $empresa = $provisionar->crear($rubro, collect($datos)->except(['rubro_id', 'logo', 'quitar_logo'])->all());
+        $this->guardarLogo($request, $empresa);
         $this->auditoria->auditar($request->user(), 'empresas.creada', $empresa, null, $empresa->only(self::CAMPOS));
 
         return redirect()->route('empresas.index')->with('ok', "Empresa «{$empresa->nombre_comercial}» creada con sus módulos y roles base. Ahora registra sus sedes.");
@@ -83,7 +86,8 @@ class EmpresaController extends Controller
         }
 
         $antes = $empresa->only(self::CAMPOS);
-        $empresa->fill($datos)->save();
+        $empresa->fill(collect($datos)->except(['logo', 'quitar_logo'])->all())->save();
+        $this->guardarLogo($request, $empresa);
         $this->auditoria->auditar($actor, 'empresas.actualizada', $empresa, $antes, $empresa->only(self::CAMPOS));
 
         return redirect()->route('empresas.index')->with('ok', 'Empresa actualizada correctamente.');
@@ -115,7 +119,14 @@ class EmpresaController extends Controller
             'rfc' => ['required', 'string', 'regex:/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/u', Rule::unique('empresas', 'rfc')->ignore($empresa?->id)],
             'rubro_id' => [$empresa === null ? 'required' : 'sometimes', 'integer', Rule::exists('rubros', 'id')],
             'zona_horaria' => ['required', 'timezone:all'],
+            // Como en SEGCAT: PNG o JPG (y WEBP); sin SVG por seguridad
+            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:512', 'dimensions:max_width=2048,max_height=2048'],
+            'quitar_logo' => ['nullable', 'boolean'],
         ], [
+            'logo.image' => 'El logo debe ser una imagen PNG, JPG o WEBP.',
+            'logo.mimes' => 'El logo debe ser PNG, JPG o WEBP (SVG no está permitido por seguridad).',
+            'logo.max' => 'El logo no debe pesar más de 512 KB.',
+            'logo.dimensions' => 'El logo no debe medir más de 2048 × 2048 píxeles.',
             'rfc.regex' => 'El RFC no tiene un formato válido (12 caracteres para persona moral, 13 para persona física).',
             'rfc.unique' => 'Ya existe una empresa registrada con ese RFC.',
         ], [
@@ -123,11 +134,36 @@ class EmpresaController extends Controller
             'razon_social' => 'razón social',
             'rubro_id' => 'rubro',
             'zona_horaria' => 'zona horaria',
+            'logo' => 'logo',
         ]);
 
         $datos['nombre_comercial'] = trim($datos['nombre_comercial']);
         $datos['razon_social'] = trim($datos['razon_social']);
 
         return $datos;
+    }
+
+    /**
+     * Logo de la empresa (sale en gafetes, vouchers e impresiones). Se guarda
+     * en storage/app/public/empresas/logos y reemplaza al anterior.
+     */
+    private function guardarLogo(Request $request, Empresa $empresa): void
+    {
+        $archivo = $request->file('logo');
+        $anterior = $empresa->logo_ruta;
+
+        if ($archivo instanceof UploadedFile) {
+            $nueva = 'storage/'.$archivo->store('empresas/logos', 'public');
+        } elseif ($request->boolean('quitar_logo')) {
+            $nueva = null;
+        } else {
+            return;
+        }
+
+        $empresa->forceFill(['logo_ruta' => $nueva])->save();
+        if ($anterior !== null && str_starts_with($anterior, 'storage/empresas/logos/')) {
+            Storage::disk('public')->delete(substr($anterior, strlen('storage/')));
+        }
+        $this->auditoria->auditar($request->user(), 'empresas.logo_actualizado', $empresa, ['logo_ruta' => $anterior], ['logo_ruta' => $nueva]);
     }
 }

@@ -54,7 +54,12 @@
             <div class="ficha-card" id="empresa-{{ $emp->id }}" data-ficha data-estado="{{ $emp->activo ? 1 : 0 }}"
                  data-texto="{{ mb_strtolower($emp->nombre_comercial.' '.$emp->razon_social.' '.$emp->rfc) }}">
                 <div>
-                    <h2 class="ficha-title">{{ $emp->nombre_comercial }}</h2>
+                    <div class="d-flex align-items-center gap-3">
+                        @if ($emp->logo_ruta)
+                            <img src="{{ asset($emp->logo_ruta) }}" alt="Logo de {{ $emp->nombre_comercial }}" class="logo-empresa-ficha">
+                        @endif
+                        <h2 class="ficha-title m-0">{{ $emp->nombre_comercial }}</h2>
+                    </div>
                     <div class="ficha-subtitulo">{{ $emp->razon_social }}</div>
                     <div class="d-flex flex-wrap gap-2">
                         <span class="ficha-dato"><i class="bi bi-card-text text-primary" aria-hidden="true"></i> RFC: {{ $emp->rfc ?: '—' }}</span>
@@ -132,7 +137,7 @@
                 <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
             </div>
             <div class="dialogo-cuerpo">
-                <form action="{{ $esNueva ? route('empresas.store') : ($editandoId ? route('empresas.update', $editandoId) : '') }}" method="POST" autocomplete="off">
+                <form action="{{ $esNueva ? route('empresas.store') : ($editandoId ? route('empresas.update', $editandoId) : '') }}" method="POST" autocomplete="off" enctype="multipart/form-data">
                     @csrf
                     @unless ($esNueva) @method('PUT') @endunless
                     <input type="hidden" name="_dialogo" value="{{ $esNueva ? 'crear' : ($editandoId ? 'editar-'.$editandoId : '') }}" data-campo-dialogo>
@@ -174,6 +179,13 @@
                             </optgroup>
                         @endforeach
                     </select>
+
+                    <label class="campo-etiqueta" for="{{ $modo }}_logo">Logo de la Empresa <span class="text-lowercase fw-normal">(opcional)</span></label>
+                    <input type="file" id="{{ $modo }}_logo" name="logo" class="form-control mb-1" accept="image/png,image/jpeg,image/webp">
+                    <p class="campo-ayuda mb-2"><i class="bi bi-info-circle" aria-hidden="true"></i> PNG, JPG o WEBP de hasta 512 KB. Sale en gafetes, vouchers y demás impresiones.</p>
+                    @unless ($esNueva)
+                        <label class="fila-check mb-3"><input type="checkbox" name="quitar_logo" value="1"> Quitar el logo actual</label>
+                    @endunless
 
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>

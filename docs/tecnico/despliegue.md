@@ -90,3 +90,12 @@ Para cambiar la configuración después, basta con subir otro `env_qa.txt`: se c
 ## Respaldos de la base
 
 `desplegar.sh` respalda la base antes de cada migración (`plataforma:respaldar --motivo=antes-de-actualizar`) y hace el respaldo diario (`--si-toca`, después de las 3:00 hora de Cancún) en cada corrida del cron. No hace falta otro cron. Los archivos quedan en `$APP/shared/storage/app/private/respaldos` (permisos 600) y se conservan 14 días. Ver `docs/tecnico/configuracion.md`.
+
+## QA: datos demo al día
+
+En QA, cada versión nueva corre `plataforma:demo` una vez, con la contraseña de `qa_inicial`; la marca de la versión ya completada queda en `$APP/.demo_completado`. El comando:
+
+- crea solo las cuentas demo que faltan (por ejemplo `rh.demo`) y no cambia el correo ni la contraseña de las que ya existen;
+- llena los datos de ejemplo de los módulos nuevos (cada uno solo si su tabla está vacía).
+
+Como `desplegar.sh` se actualiza a sí mismo al final de una instalación, este paso empieza a correr a partir de la siguiente revisión del cron, unos 5 minutos después.

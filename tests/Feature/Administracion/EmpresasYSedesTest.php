@@ -11,7 +11,9 @@ use App\Services\Permisos\Alcance;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
 use Tests\TestCase;
 
@@ -99,6 +101,30 @@ class EmpresasYSedesTest extends TestCase
         $this->actingAs($admin)->put("/empresas/{$otra->id}", $this->empresaDatos(['rfc' => 'XAXX010101000']))->assertNotFound();
         $this->actingAs($admin)->post('/empresas', $this->empresaDatos())->assertForbidden();
         $this->actingAs($admin)->patch("/empresas/{$this->empresa->id}/estado", ['activo' => '0'])->assertForbidden();
+    }
+
+    public function test_el_administrador_sube_cambia_y_quita_el_logo(): void
+    {
+        Storage::fake('public');
+        $admin = $this->crearUsuario($this->empresa, 'Administrador');
+
+        $this->actingAs($admin)->put("/empresas/{$this->empresa->id}", $this->empresaDatos(['logo' => UploadedFile::fake()->image('logo.png', 300, 120)]))
+            ->assertSessionHasNoErrors();
+        $primero = $this->empresa->fresh()->logo_ruta;
+        $this->assertStringStartsWith('storage/empresas/logos/', $primero);
+        Storage::disk('public')->assertExists(substr($primero, 8));
+        $this->actingAs($admin)->get('/empresas')->assertSee($primero);
+
+        // Reemplazar borra el anterior; quitar lo deja sin logo
+        $this->actingAs($admin)->put("/empresas/{$this->empresa->id}", $this->empresaDatos(['logo' => UploadedFile::fake()->image('nuevo.jpg', 200, 200)]));
+        Storage::disk('public')->assertMissing(substr($primero, 8));
+        $this->actingAs($admin)->put("/empresas/{$this->empresa->id}", $this->empresaDatos(['quitar_logo' => '1']));
+        $this->assertNull($this->empresa->fresh()->logo_ruta);
+        $this->assertDatabaseHas('auditoria', ['evento' => 'empresas.logo_actualizado', 'auditable_id' => $this->empresa->id]);
+
+        // Nada de SVG ni archivos que no sean imagen
+        $this->actingAs($admin)->put("/empresas/{$this->empresa->id}", $this->empresaDatos(['logo' => UploadedFile::fake()->createWithContent('x.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>')]))
+            ->assertSessionHasErrors('logo');
     }
 
     public function test_desactivar_la_empresa_saca_a_sus_usuarios(): void

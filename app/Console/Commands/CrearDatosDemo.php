@@ -93,13 +93,19 @@ class CrearDatosDemo extends Command
 
         foreach (self::USUARIOS as $usuario => [$nombre, $rol, $sede]) {
             $cuenta = User::firstOrNew(['username' => $usuario]);
-            $cuenta->fill([
-                'empresa_id' => $empresa->id,
-                'name' => $nombre,
-                'email' => $usuario.'@demo.local',
-                'password' => $contrasena,
-                'activo' => true,
-            ])->save();
+            // Al completar el demo en QA no se tocan las cuentas que ya existen
+            // (quien prueba pudo cambiarles el correo o la contraseña): solo se
+            // crean las que faltan y se asegura su rol.
+            if (! $cuenta->exists) {
+                $cuenta->fill([
+                    'empresa_id' => $empresa->id,
+                    'name' => $nombre,
+                    'email' => $usuario.'@demo.local',
+                    'password' => $contrasena,
+                    'activo' => true,
+                ])->save();
+                $this->line("Usuario demo creado: {$usuario}");
+            }
 
             $rolId = Rol::where('empresa_id', $empresa->id)->where('nombre', $rol)->value('id');
             UsuarioRol::firstOrCreate(['user_id' => $cuenta->id, 'rol_id' => $rolId], [

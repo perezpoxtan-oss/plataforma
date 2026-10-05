@@ -286,6 +286,22 @@ else
   fi
 fi
 
+# --- QA: completar los datos demo con cada version nueva ------------------------
+# Los modulos nuevos traen sus datos de ejemplo (y a veces usuarios demo nuevos,
+# como rh.demo). Se agregan una vez por version; lo que ya existe no se toca.
+if [ "$AMB" = "qa" ] && [ -f "$PRIVADO/qa_inicial" ] && [ -d "$APP/actual" ] \
+   && [ "$(cat "$APP/.release_actual" 2>/dev/null)" != "$(cat "$APP/.demo_completado" 2>/dev/null)" ]; then
+  PLATAFORMA_CONTRASENA="$(grep -E '^CONTRASENA=' "$PRIVADO/qa_inicial" | cut -d= -f2-)"
+  export PLATAFORMA_CONTRASENA
+  if [ -n "$PLATAFORMA_CONTRASENA" ] && (cd "$APP/actual" && "${P[@]}" artisan plataforma:demo >> "$LOG" 2>&1); then
+    cat "$APP/.release_actual" > "$APP/.demo_completado"
+    log "Datos demo completados para $(cat "$APP/.release_actual")"
+  else
+    log "ADVERTENCIA: no se pudieron completar los datos demo (revisa despliegue.log)"
+  fi
+  unset PLATAFORMA_CONTRASENA
+fi
+
 # --- Respaldo diario de la base (uno por dia, despues de las 3:00) ---------------
 if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:respaldar'); then
   (cd "$APP/actual" && "${P[@]}" artisan plataforma:respaldar --si-toca >> "$LOG" 2>&1) \
