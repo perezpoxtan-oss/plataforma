@@ -7,9 +7,9 @@ use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\Espacio;
+use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
-use App\Models\Gafete;
 use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\Puesto;
@@ -26,11 +26,11 @@ use App\Models\Vehiculo;
 use App\Models\ZonaEstacionamiento;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
-use App\Services\Llaves\AdministradorLlaves;
 use App\Services\Gafetes\AdministradorGafetes;
+use App\Services\Llaves\AdministradorLlaves;
 use App\Services\Plataforma\ProvisionarEmpresa;
-use App\Support\HoraLocal;
 use App\Services\Rutas\AdministradorRutas;
+use App\Support\HoraLocal;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -544,6 +544,7 @@ class CrearDatosDemo extends Command
         $roto = Gafete::where('nomenclatura', $codigo($sedes['PLA'], 'Proveedor', 5))->first();
         if ($roto !== null) {
             $firmar($gafetes->darDeBaja($admin, $roto, ['motivo' => 'danado', 'descripcion' => 'La mica se rompió y el plástico quedó doblado.', 'aplica_cobro' => false]));
+        }
     }
 
     /**
@@ -610,6 +611,7 @@ class CrearDatosDemo extends Command
                 $zona = new ZonaEstacionamiento(['sede_id' => $sedes[$sede]->id, 'nombre' => $nombre, 'tipo' => $tipo, 'cupo_total' => $cupo]);
                 $zona->forceFill(['activo' => $activa, 'creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
             }
+        }
     }
 
     /**

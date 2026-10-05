@@ -3,6 +3,7 @@
 namespace App\Services\Lector;
 
 use App\Models\User;
+use App\Services\Permisos\Autorizador;
 use App\Support\Lector\Etiqueta;
 use App\Support\Lector\Identificable;
 use App\Support\Tenancy\Tenant;
@@ -19,7 +20,10 @@ use Illuminate\Support\Collection;
  */
 class Lector
 {
-    public function __construct(private readonly Tenant $tenant) {}
+    public function __construct(
+        private readonly Tenant $tenant,
+        private readonly Autorizador $autorizador,
+    ) {}
 
     /**
      * @return array<string, class-string<Model&Identificable>>
@@ -50,9 +54,13 @@ class Lector
             ->when($tipos !== null, fn ($c) => $c->only($tipos))
             ->filter(fn (string $clase) => $usuario->can($clase::permisoLector()));
 
-        return $this->tenant->conEmpresa($empresaId, fn () => $clases->flatMap(
-            fn (string $clase, string $tipo) => $clase::query()->coincideConLectura($codigo, $candidatos)->limit($limite)->get()
+        return $this->tenant->conEmpresa($empresaId, fn () => $clases->flatMap(function (string $clase, string $tipo) use ($usuario, $codigo, $candidatos, $limite) {
+            // Con alcance de sede solo aparece lo de sus sedes (lo que no tiene sede, como un vehículo o un colaborador corporativo, sí)
+            $sedes = $this->autorizador->sedesPermitidas($usuario, $clase::permisoLector());
+
+            return $clase::query()->coincideConLectura($codigo, $candidatos)->limit($limite * 3)->get()
                 ->map(fn (Model&Identificable $registro) => ['tipo' => $tipo, 'id' => (int) $registro->getKey()] + $registro->resumenLector() + ['url' => $registro->urlLector()])
-        )->sortByDesc('activo')->values()->take($limite));
+                ->filter(fn (array $r) => $sedes === null || $r['sede_id'] === null || in_array($r['sede_id'], $sedes, true));
+        })->sortByDesc('activo')->values()->take($limite));
     }
 }

@@ -71,6 +71,22 @@ class LectorYVouchersTest extends TestCase
         $this->actingAs($sinRol)->getJson('/lector/resolver?entrada=x&tipos=DROP;')->assertUnprocessable();
     }
 
+    public function test_con_alcance_de_sede_solo_encuentra_lo_de_sus_sedes(): void
+    {
+        $centro = $this->empresa->sedes()->firstOrFail();
+        $playa = $this->crearSede($this->empresa, 'PLA');
+        $this->enEmpresa(function () use ($centro, $playa) {
+            Colaborador::create(['num_empleado' => '21', 'nombre' => 'De', 'apellido_paterno' => 'Centro', 'sede_id' => $centro->id, 'etiqueta_nfc' => 'C0C0C0C0']);
+            Colaborador::create(['num_empleado' => '22', 'nombre' => 'De', 'apellido_paterno' => 'Playa', 'sede_id' => $playa->id, 'etiqueta_nfc' => 'B0B0B0B0']);
+            Colaborador::create(['num_empleado' => '23', 'nombre' => 'Del', 'apellido_paterno' => 'Corporativo', 'etiqueta_nfc' => 'A0A0A0A0']);
+        });
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $centro);
+
+        $this->actingAs($agente)->getJson('/lector/resolver?entrada=C0C0C0C0')->assertJsonPath('resultados.0.titulo', 'De Centro');
+        $this->actingAs($agente)->getJson('/lector/resolver?entrada=A0A0A0A0')->assertJsonPath('resultados.0.titulo', 'Del Corporativo');
+        $this->actingAs($agente)->getJson('/lector/resolver?entrada=B0B0B0B0')->assertJsonCount(0, 'resultados');
+    }
+
     public function test_la_misma_etiqueta_no_se_repite_en_la_empresa(): void
     {
         $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => '1', 'nombre' => 'A', 'apellido_paterno' => 'B', 'etiqueta_nfc' => '04:A2:3B:1C']));

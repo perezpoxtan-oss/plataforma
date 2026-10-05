@@ -1,9 +1,9 @@
 <?php
 
 use App\Models\Colaborador;
-use App\Models\Llave;
-use App\Models\Gafete;
 use App\Models\Equipo;
+use App\Models\Gafete;
+use App\Models\Llave;
 use App\Models\Vehiculo;
 
 /*

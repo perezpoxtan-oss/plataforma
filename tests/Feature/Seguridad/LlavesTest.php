@@ -415,7 +415,9 @@ class LlavesTest extends TestCase
         $this->actingAs($jefe)->put("/llaves/{$dePlaya->id}", $this->datos(['nomenclatura' => 'HDP-1']))->assertNotFound();
         $this->actingAs($jefe)->post("/llaves/{$dePlaya->id}/baja", ['motivo' => 'robado'])->assertNotFound();
         $this->actingAs($jefe)->get(route('llaves.imprimir', ['llaves' => [$dePlaya->id]]))->assertNotFound();
-        $this->actingAs($jefe)->getJson('/lector/resolver?entrada=hdp-1&tipos=llave')->assertJsonPath('resultados.0.sede_id', $this->playa->id);
+        // El lector universal tampoco la encuentra fuera de sus sedes
+        $this->actingAs($jefe)->getJson('/lector/resolver?entrada=hdp-1&tipos=llave')->assertJsonCount(0, 'resultados');
+        $this->actingAs($jefe)->getJson('/lector/resolver?entrada=hdc-1&tipos=llave')->assertJsonPath('resultados.0.id', $deCentro->id);
     }
 
     public function test_el_agente_consulta_pero_no_registra_ni_imprime(): void
