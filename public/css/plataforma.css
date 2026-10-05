@@ -703,3 +703,30 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
     .calcomania-acciones, .franja-ambiente { display: none !important; }
 }
 /* Fin Padrón Vehicular */
+/* ==========================================================================
+   Lector universal (QR, NFC, RFID, código de barras)
+   ========================================================================== */
+.lector { margin-bottom: 1rem; }
+.lector-fila { display: flex; gap: 0.5rem; align-items: stretch; position: relative; }
+.lector-icono { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--texto-tenue); pointer-events: none; }
+.lector .lector-entrada { flex: 1; min-width: 0; margin-bottom: 0; padding-left: 2.4rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.03em; }
+.lector .lector-entrada::placeholder { font-family: var(--fuente); letter-spacing: 0; }
+.btn-lector { flex-shrink: 0; width: 48px; min-height: 48px; border-radius: 12px; border: 1px solid var(--borde); background: var(--color-primario-suave); color: var(--color-primario); font-size: 1.2rem; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.btn-lector:hover { background: var(--color-primario); color: #fff; border-color: var(--color-primario); }
+.lector-elegido { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; padding: 0.55rem 0.75rem; border-radius: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; font-weight: 700; font-size: 0.88rem; }
+.lector-elegido span { flex: 1; overflow-wrap: anywhere; }
+.lector-cambiar { border: none; background: none; color: #15803d; text-decoration: underline; font-weight: 700; font-size: 0.8rem; cursor: pointer; min-height: 36px; padding: 0 0.25rem; }
+.lector-opciones { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem; }
+.lector-opcion { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 0.1rem; border: 1px solid var(--borde); background: #fff; border-radius: 10px; padding: 0.55rem 0.75rem; min-height: 44px; cursor: pointer; font-family: inherit; }
+.lector-opcion:hover { border-color: var(--color-primario); background: var(--color-primario-suave); }
+.lector-opcion strong { font-size: 0.9rem; color: var(--texto); }
+.lector-opcion span { font-size: 0.78rem; color: var(--texto-suave); }
+.lector-opcion.inactiva { opacity: 0.6; }
+.lector-estado { margin: 0.45rem 0 0; font-size: 0.82rem; font-weight: 600; color: var(--texto-suave); }
+.lector-estado.info { color: var(--color-primario); }
+.lector-estado.ok { color: #15803d; }
+.lector-estado.aviso { color: #b45309; }
+.lector-estado.error { color: #b91c1c; }
+.dialogo-camara video { width: 100%; max-height: 60vh; border-radius: 14px; background: #000; display: block; object-fit: cover; }
+.lector .campo-ayuda { margin: 0.4rem 0 0; }
+/* Fin Lector universal */

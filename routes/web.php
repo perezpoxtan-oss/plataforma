@@ -10,6 +10,7 @@ use App\Http\Controllers\Administracion\RolController;
 use App\Http\Controllers\Administracion\SedeController;
 use App\Http\Controllers\Administracion\UsuarioController;
 use App\Http\Controllers\Auth\SesionController;
+use App\Http\Controllers\LectorController;
 use App\Http\Controllers\ModuloPendienteController;
 use App\Http\Controllers\Organizacion\ColaboradorController;
 use App\Http\Controllers\Organizacion\DepartamentoController;
@@ -138,4 +139,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/modulos/{clave}', ModuloPendienteController::class)
         ->where('clave', '[a-z0-9_]+')
         ->name('modulos.pendiente');
+
+    // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
+    Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
+    Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');
+    // Fin Lector universal
 });

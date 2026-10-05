@@ -18,6 +18,7 @@ use App\Models\TipoEspacio;
 use App\Models\Turno;
 use App\Models\User;
 use App\Models\Vehiculo;
+use App\Models\VoucherReposicion;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -55,6 +56,7 @@ class LectorAuditoria
         Proveedor::class => ['Proveedor', 'nombre'],
         Persona::class => ['Persona', 'nombre_completo'],
         Vehiculo::class => ['Vehículo', 'placas'],
+        VoucherReposicion::class => ['Voucher', 'folio'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

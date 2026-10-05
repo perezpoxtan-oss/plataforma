@@ -1485,3 +1485,245 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Padrón Vehicular */
+/* ==========================================================================
+   Lector universal (componentes/lector.blade.php): QR con cámara, NFC del
+   celular (Android + Chrome) y lectores USB/Bluetooth que "escriben como
+   teclado" (RFID, NFC, código de barras). Avisa con el evento
+   "lector:elegido" (detail = registro) o "lector:capturado" (detail = texto).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var hayCamara = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    var hayNfc = 'NDEFReader' in window;
+
+    function partes(caja) {
+        return {
+            entrada: caja.querySelector('[data-lector-entrada]'),
+            id: caja.querySelector('[data-lector-id]'),
+            elegido: caja.querySelector('[data-lector-elegido]'),
+            titulo: caja.querySelector('[data-lector-titulo]'),
+            opciones: caja.querySelector('[data-lector-opciones]'),
+            estado: caja.querySelector('[data-lector-estado]')
+        };
+    }
+
+    function estado(caja, texto, tipo) {
+        var e = partes(caja).estado;
+        if (!e) { return; }
+        e.hidden = !texto;
+        e.textContent = texto || '';
+        e.className = 'lector-estado' + (tipo ? ' ' + tipo : '');
+    }
+
+    function elegir(caja, registro) {
+        var p = partes(caja);
+        if (p.id) { p.id.value = registro.id; }
+        if (p.titulo) { p.titulo.textContent = registro.titulo + (registro.detalle ? ' · ' + registro.detalle : ''); }
+        if (p.elegido) { p.elegido.hidden = false; }
+        if (p.opciones) { p.opciones.hidden = true; p.opciones.textContent = ''; }
+        p.entrada.value = '';
+        estado(caja, registro.activo ? '' : 'Atención: este registro está dado de baja.', registro.activo ? '' : 'aviso');
+        caja.dispatchEvent(new CustomEvent('lector:elegido', { bubbles: true, detail: registro }));
+    }
+
+    function limpiar(caja) {
+        var p = partes(caja);
+        if (p.id) { p.id.value = ''; }
+        if (p.elegido) { p.elegido.hidden = true; }
+        if (p.opciones) { p.opciones.hidden = true; p.opciones.textContent = ''; }
+        estado(caja, '');
+    }
+
+    function resolver(caja, texto) {
+        texto = (texto || '').trim();
+        if (!texto) { return; }
+        var p = partes(caja);
+
+        if (caja.dataset.modo === 'capturar') {
+            p.entrada.value = texto;
+            estado(caja, 'Etiqueta leída: ' + texto, 'ok');
+            caja.dispatchEvent(new CustomEvent('lector:capturado', { bubbles: true, detail: texto }));
+            return;
+        }
+
+        estado(caja, 'Buscando…', 'info');
+        var url = caja.dataset.url + '?entrada=' + encodeURIComponent(texto) + (caja.dataset.tipos ? '&tipos=' + encodeURIComponent(caja.dataset.tipos) : '');
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
+            .then(function (datos) {
+                var lista = datos.resultados || [];
+                if (lista.length === 1) { elegir(caja, lista[0]); return; }
+                if (!lista.length) { estado(caja, 'No se encontró nada con «' + texto + '». Revisa la etiqueta o búscalo escribiendo.', 'error'); return; }
+                // Varias coincidencias: que la persona elija
+                estado(caja, 'Hay ' + lista.length + ' coincidencias, elige una:', 'info');
+                p.opciones.textContent = '';
+                lista.forEach(function (r) {
+                    var b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'lector-opcion' + (r.activo ? '' : ' inactiva');
+                    var t = document.createElement('strong'); t.textContent = r.titulo;
+                    var d = document.createElement('span'); d.textContent = r.detalle || '';
+                    b.appendChild(t); b.appendChild(d);
+                    b.addEventListener('click', function () { elegir(caja, r); });
+                    p.opciones.appendChild(b);
+                });
+                p.opciones.hidden = false;
+            })
+            .catch(function () { estado(caja, 'No se pudo consultar. Revisa tu conexión e intenta de nuevo.', 'error'); });
+    }
+
+    /* ---------- Cámara: BarcodeDetector si existe; si no (iPhone, Firefox), jsQR ---------- */
+    var dialogoCamara = null;
+    var corriendo = false;
+
+    function cargarJsQR(url) {
+        return new Promise(function (ok, falla) {
+            if (window.jsQR) { ok(); return; }
+            var s = document.createElement('script');
+            s.src = url; s.onload = ok; s.onerror = falla;
+            document.head.appendChild(s);
+        });
+    }
+
+    function abrirCamara(caja) {
+        if (!dialogoCamara) {
+            dialogoCamara = document.createElement('dialog');
+            dialogoCamara.className = 'dialogo dialogo-camara';
+            dialogoCamara.setAttribute('aria-label', 'Leer código QR');
+            dialogoCamara.innerHTML = '<div class="dialogo-cabecera"><h2><i class="bi bi-qr-code-scan me-2" aria-hidden="true"></i>Apunta al código QR</h2>' +
+                '<button type="button" class="btn-cerrar" data-cerrar-camara aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button></div>' +
+                '<div class="dialogo-cuerpo"><video playsinline muted></video><p class="lector-estado info" data-camara-estado>Abriendo la cámara…</p></div>';
+            document.body.appendChild(dialogoCamara);
+            dialogoCamara.querySelector('[data-cerrar-camara]').addEventListener('click', function () { dialogoCamara.close(); });
+            dialogoCamara.addEventListener('close', detenerCamara);
+        }
+        var video = dialogoCamara.querySelector('video');
+        var aviso = dialogoCamara.querySelector('[data-camara-estado]');
+        dialogoCamara.showModal();
+
+        var detector = ('BarcodeDetector' in window) ? new window.BarcodeDetector({ formats: ['qr_code'] }) : null;
+        var preparar = detector ? Promise.resolve() : cargarJsQR(caja.dataset.jsqr);
+        var lienzo = document.createElement('canvas');
+        var ctx = lienzo.getContext('2d', { willReadFrequently: true });
+
+        preparar
+            .then(function () { return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }); })
+            .then(function (flujo) {
+                video.srcObject = flujo;
+                return video.play();
+            })
+            .then(function () {
+                aviso.textContent = 'Centra el código dentro de la imagen.';
+                corriendo = true;
+                var cuadro = function () {
+                    if (!corriendo) { return; }
+                    if (video.readyState < 2) { requestAnimationFrame(cuadro); return; }
+                    var listo = function (texto) {
+                        if (texto) { dialogoCamara.close(); resolver(caja, texto); } else { requestAnimationFrame(cuadro); }
+                    };
+                    if (detector) {
+                        detector.detect(video).then(function (c) { listo(c.length ? c[0].rawValue : null); }).catch(function () { requestAnimationFrame(cuadro); });
+                    } else {
+                        lienzo.width = video.videoWidth; lienzo.height = video.videoHeight;
+                        ctx.drawImage(video, 0, 0, lienzo.width, lienzo.height);
+                        var img = ctx.getImageData(0, 0, lienzo.width, lienzo.height);
+                        var r = window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+                        listo(r ? r.data : null);
+                    }
+                };
+                requestAnimationFrame(cuadro);
+            })
+            .catch(function (err) {
+                if (window.console) { console.warn('Lector (cámara):', err); }
+                aviso.className = 'lector-estado error';
+                aviso.textContent = 'No se pudo usar la cámara. Revisa que la página tenga permiso para usarla (y que sea https).';
+            });
+    }
+
+    function detenerCamara() {
+        corriendo = false;
+        if (!dialogoCamara) { return; }
+        var video = dialogoCamara.querySelector('video');
+        if (video.srcObject) { video.srcObject.getTracks().forEach(function (t) { t.stop(); }); video.srcObject = null; }
+    }
+
+    /* ---------- NFC del celular (Web NFC: Android + Chrome) ---------- */
+    function leerNfc(caja) {
+        var capturar = caja.dataset.modo === 'capturar';
+        estado(caja, 'Acerca la tarjeta o etiqueta a la parte trasera del celular…', 'info');
+        var control = new AbortController();
+        var lector = new window.NDEFReader();
+        lector.scan({ signal: control.signal }).then(function () {
+            lector.onreading = function (evento) {
+                var texto = '';
+                // Al asignar una tarjeta se usa su número de serie; al buscar, primero lo que traiga escrito (texto o dirección)
+                if (!capturar) {
+                    for (var i = 0; i < evento.message.records.length; i++) {
+                        var reg = evento.message.records[i];
+                        if (reg.recordType === 'text' || reg.recordType === 'url' || reg.recordType === 'absolute-url') {
+                            texto = new TextDecoder(reg.encoding || 'utf-8').decode(reg.data);
+                            break;
+                        }
+                    }
+                }
+                if (!texto) { texto = evento.serialNumber || ''; }
+                control.abort();
+                if (texto) { resolver(caja, texto); } else { estado(caja, 'La etiqueta no trae datos legibles.', 'error'); }
+            };
+            lector.onreadingerror = function () { estado(caja, 'No se pudo leer la etiqueta. Intenta de nuevo sin moverla.', 'error'); };
+        }).catch(function () {
+            estado(caja, 'No se pudo activar el NFC: revisa que esté encendido y que la página tenga permiso.', 'error');
+        });
+        setTimeout(function () { control.abort(); }, 30000);
+    }
+
+    /* ---------- Conexión con la página ---------- */
+    function preparar(caja) {
+        var c = caja.querySelector('[data-lector-camara]');
+        var n = caja.querySelector('[data-lector-nfc]');
+        // Al asignar una tarjeta se lee su número de serie: la cámara no aplica
+        if (c) { c.hidden = !hayCamara || caja.dataset.modo === 'capturar'; }
+        if (n) { n.hidden = !hayNfc; }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-lector]').forEach(preparar);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        var entrada = e.target.closest && e.target.closest('[data-lector-entrada]');
+        if (!entrada || e.key !== 'Enter') { return; }
+        // Los lectores que escriben como teclado terminan con Enter: busca en lugar de enviar el formulario
+        e.preventDefault();
+        resolver(entrada.closest('[data-lector]'), entrada.value);
+    });
+
+    document.addEventListener('paste', function (e) {
+        var entrada = e.target.closest && e.target.closest('[data-lector-entrada]');
+        if (!entrada) { return; }
+        setTimeout(function () { resolver(entrada.closest('[data-lector]'), entrada.value); }, 0);
+    });
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-lector-camara], [data-lector-nfc], [data-lector-limpiar]');
+        if (!b) { return; }
+        var caja = b.closest('[data-lector]');
+        if (b.hasAttribute('data-lector-camara')) { abrirCamara(caja); }
+        else if (b.hasAttribute('data-lector-nfc')) { leerNfc(caja); }
+        else { limpiar(caja); partes(caja).entrada.focus(); }
+    });
+
+    // Al cerrar el diálogo que lo contiene, el lector vuelve a su estado inicial
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement) || e.target === dialogoCamara) { return; }
+        e.target.querySelectorAll('[data-lector]').forEach(function (caja) {
+            if (caja.dataset.modo !== 'capturar') { limpiar(caja); }
+            estado(caja, '');
+        });
+    }, true);
+
+    // Para pantallas que crean el lector después de cargar o que llenan uno al editar
+    window.Lector = { preparar: preparar, elegir: elegir, limpiar: limpiar };
+})();
+/* Fin Lector universal */

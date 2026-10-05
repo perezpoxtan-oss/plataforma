@@ -4,17 +4,21 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
+use App\Models\Concerns\TieneIdentificador;
+use App\Support\Lector\Identificable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 
 /**
  * Vehículo del padrón vehicular (SEGCAT: vehiculos). Lleva un código QR
  * aleatorio para su calcomanía.
  */
-class Vehiculo extends Model
+class Vehiculo extends Model implements Identificable
 {
-    use PerteneceAEmpresa, RegistraAutor;
+    use PerteneceAEmpresa, RegistraAutor, TieneIdentificador;
+
+    /** Se encuentra también tecleando o escaneando las placas. */
+    protected string $columnaLegible = 'placas';
 
     /** clave => etiqueta (SEGCAT: propiedad_vehiculo) */
     public const PROPIEDADES = [
@@ -40,16 +44,8 @@ class Vehiculo extends Model
 
     protected $fillable = [
         'empresa_id', 'placas', 'tipo', 'descripcion_otro', 'marca', 'modelo', 'color', 'propiedad',
-        'capacidad', 'numero_economico', 'proveedor_id', 'colaborador_id', 'activo',
+        'capacidad', 'numero_economico', 'proveedor_id', 'colaborador_id', 'etiqueta_nfc', 'activo',
     ];
-
-    protected static function booted(): void
-    {
-        // Código de la calcomanía: aleatorio y no adivinable (en SEGCAT era consecutivo)
-        static::creating(function (Vehiculo $v) {
-            $v->codigo_qr ??= Str::lower(Str::random(24));
-        });
-    }
 
     protected function casts(): array
     {
@@ -72,5 +68,30 @@ class Vehiculo extends Model
     public static function normalizarPlacas(?string $placas): string
     {
         return mb_strtoupper((string) preg_replace('/[\s\-.]+/u', '', (string) $placas));
+    }
+
+    public static function tipoLector(): string
+    {
+        return 'vehiculo';
+    }
+
+    public static function permisoLector(): string
+    {
+        return 'vehiculos.ver';
+    }
+
+    public function resumenLector(): array
+    {
+        return [
+            'titulo' => $this->placas,
+            'detalle' => trim($this->marca.' '.$this->modelo).' · '.$this->color.' · '.(self::PROPIEDADES[$this->propiedad] ?? $this->propiedad),
+            'activo' => (bool) $this->activo,
+            'sede_id' => null,
+        ];
+    }
+
+    public function urlLector(): string
+    {
+        return route('vehiculos.index').'#vehiculo-'.$this->id;
     }
 }
