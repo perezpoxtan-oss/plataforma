@@ -1065,3 +1065,137 @@ document.addEventListener('click', function (e) {
         botones.forEach(function (b) { poner(b, previas.indexOf(b.dataset.alternarArea) !== -1); });
     });
 })();
+
+/* ==========================================================================
+   Padrón de personas: campos según el tipo (categoría solo para visitantes;
+   empresa que representa solo para proveedor/contratista; texto libre de
+   procedencia si no está en el directorio), regreso a la ficha del proveedor
+   y registro rápido (evento persona:registrada).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function sincronizar(form) {
+        if (!form) { return; }
+        var tipo = form.querySelector('[data-persona-tipo]');
+        var proveedor = form.querySelector('[data-persona-proveedor]');
+        var esVisitante = !tipo || tipo.value === 'visitante';
+        form.querySelectorAll('[data-solo-visitante]').forEach(function (n) { n.hidden = !esVisitante; });
+        form.querySelectorAll('[data-solo-empresa]').forEach(function (n) { n.hidden = esVisitante; });
+        var conProveedor = !esVisitante && proveedor && proveedor.value !== '';
+        form.querySelectorAll('[data-solo-sin-proveedor]').forEach(function (n) { n.hidden = conProveedor; });
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-persona]')) { return; }
+        // Al elegir la empresa, el tipo sigue a su categoría (contratista o proveedor)
+        if (e.target.matches('[data-persona-proveedor]') && e.target.value !== '') {
+            var op = e.target.options[e.target.selectedIndex];
+            var tipo = form.querySelector('[data-persona-tipo]');
+            if (tipo && op) { tipo.value = op.getAttribute('data-categoria') === 'contratista' ? 'contratista' : 'proveedor'; }
+        }
+        if (e.target.matches('[data-persona-tipo], [data-persona-proveedor]')) { sincronizar(form); }
+    });
+
+    // Después de que el llenado genérico pone los valores de la ficha
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        if (dialogo) { sincronizar(dialogo.querySelector('[data-form-persona]')); }
+    });
+
+    // Al cerrar: ya no regresa a la ficha del proveedor y se olvida la respuesta del registro rápido
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        var volver = e.target.querySelector('[data-volver-proveedor]');
+        if (volver) { volver.value = ''; }
+        e.target.querySelectorAll('[data-aviso-volver]').forEach(function (n) { n.hidden = true; });
+        e.target.querySelectorAll('[data-errores-rapido-persona], [data-existente-rapido-persona]').forEach(function (n) { n.hidden = true; n.textContent = ''; });
+        sincronizar(e.target.querySelector('[data-form-persona]'));
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-form-persona]').forEach(sincronizar);
+    });
+
+    function avisar(persona) {
+        document.dispatchEvent(new CustomEvent('persona:registrada', { detail: persona }));
+    }
+
+    function mostrarExistente(form, datos) {
+        var caja = form.querySelector('[data-existente-rapido-persona]');
+        if (!caja) { return; }
+        var p = datos.persona || {};
+        caja.textContent = '';
+        var titulo = document.createElement('p');
+        titulo.className = 'fw-semibold mb-2';
+        titulo.textContent = datos.mensaje || 'Ese folio ya está registrado.';
+        caja.appendChild(titulo);
+        if (p.activo) {
+            var usar = document.createElement('button');
+            usar.type = 'button';
+            usar.className = 'opcion-parecido';
+            usar.textContent = 'Usar a esta persona: ' + p.nombre_completo + (p.folio ? ' · ' + p.folio : '') + (p.empresa ? ' · ' + p.empresa : '');
+            usar.addEventListener('click', function () {
+                form.reset();
+                var dialogo = form.closest('dialog');
+                if (dialogo) { dialogo.close(); }
+                avisar(p);
+            });
+            caja.appendChild(usar);
+        } else {
+            var baja = document.createElement('p');
+            baja.className = 'small m-0';
+            baja.textContent = 'Está dada de baja: pide que la reactiven en el Padrón de personas.';
+            caja.appendChild(baja);
+        }
+        caja.hidden = false;
+    }
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-registro-rapido-persona]')) { return; }
+        e.preventDefault();
+        var boton = form.querySelector('button[type="submit"]');
+        var errores = form.querySelector('[data-errores-rapido-persona]');
+        var existente = form.querySelector('[data-existente-rapido-persona]');
+        if (boton) { boton.disabled = true; boton.textContent = 'Guardando...'; }
+        if (errores) { errores.hidden = true; errores.textContent = ''; }
+        if (existente) { existente.hidden = true; existente.textContent = ''; }
+
+        function terminar() { if (boton) { boton.disabled = false; boton.textContent = boton.dataset.textoOriginal || 'Registrar'; } }
+
+        fetch(form.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form)
+        })
+            .then(function (r) { return r.json().then(function (d) { return { estado: r.status, datos: d }; }); })
+            .then(function (res) {
+                terminar();
+                if (res.estado === 201 && res.datos.ok) {
+                    form.reset();
+                    var dialogo = form.closest('dialog');
+                    if (dialogo) { dialogo.close(); }
+                    avisar(res.datos.persona);
+                    return;
+                }
+                if (res.estado === 409 && res.datos.persona) { mostrarExistente(form, res.datos); return; }
+                var mensajes = [];
+                Object.keys(res.datos.errores || {}).forEach(function (k) { mensajes = mensajes.concat(res.datos.errores[k]); });
+                if (mensajes.length === 0) { mensajes.push(res.datos.mensaje || res.datos.message || 'No se pudo registrar. Intenta de nuevo.'); }
+                if (errores) {
+                    mensajes.forEach(function (m) { var div = document.createElement('div'); div.textContent = m; errores.appendChild(div); });
+                    errores.hidden = false;
+                }
+            })
+            .catch(function () {
+                terminar();
+                if (errores) { errores.textContent = 'No se pudo registrar en este momento.'; errores.hidden = false; }
+            });
+    });
+})();
+/* Fin Padrón de personas */

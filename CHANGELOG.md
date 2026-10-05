@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Padrón de personas (`/personas`), con las pantallas y colores de SEGCAT: visitantes (general, candidato/prospecto, familiar), personal de proveedores y contratistas en una sola lista con filtros por tipo, categoría y texto; folio de identificación normalizado y único por empresa (el aviso dice quién lo tiene), oculto (`••••1234`) para quien solo consulta; teléfono validado; alcance «propios»; baja y reactivación solo con `visitantes.eliminar`; auditoría con folio y teléfono enmascarados. Contrato con la ficha del proveedor (`?nuevo=1&proveedor={id}` y regreso con `volver=proveedor`), búsqueda (`GET /personas/buscar`) y registro rápido (`POST /personas/rapido`, 409 con la persona del folio) para la Bitácora de accesos. 12 personas demo y lección 12.
 - Configuración: correo de la plataforma (SMTP, contraseña cifrada, correo de prueba), avisos por correo por empresa (alta provisional a Recursos Humanos) y respaldos de la base (diario automático, antes de cada actualización y manual; 14 días; descarga auditada).
 - Las sedes se llaman «Sedes» en todos los rubros (antes Hoteles, Plantas, Torres o Privadas).
 - Matriz de permisos: cada área (Dirección, Recursos Humanos, Seguridad) se contrae y muestra cuántos permisos tiene otorgados; botones Expandir todo / Contraer todo.

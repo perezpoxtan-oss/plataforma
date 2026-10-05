@@ -17,6 +17,7 @@ use App\Http\Controllers\Organizacion\EspacioController;
 use App\Http\Controllers\Organizacion\PuestoController;
 use App\Http\Controllers\Organizacion\TurnoController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\Seguridad\PersonaController;
 use Illuminate\Support\Facades\Route;
 
 // Acceso
@@ -83,6 +84,14 @@ Route::middleware('auth')->group(function () {
     Route::put('/colaboradores/{colaborador}/fusionar', [ColaboradorController::class, 'fusionar'])->whereNumber('colaborador')->name('colaboradores.fusionar');
     Route::put('/colaboradores/{colaborador}/sedes', [ColaboradorController::class, 'sedes'])->whereNumber('colaborador')->name('colaboradores.sedes');
     Route::get('/colaboradores/{colaborador}/datos-personales', [ColaboradorController::class, 'datosPersonales'])->whereNumber('colaborador')->name('colaboradores.datos-personales');
+
+    // Padrones: Personas (y la búsqueda y el registro rápido de la Bitácora de accesos)
+    Route::get('/personas', [PersonaController::class, 'index'])->name('personas.index');
+    Route::post('/personas', [PersonaController::class, 'store'])->name('personas.store');
+    Route::get('/personas/buscar', [PersonaController::class, 'buscar'])->name('personas.buscar');
+    Route::post('/personas/rapido', [PersonaController::class, 'rapido'])->name('personas.rapido');
+    Route::put('/personas/{persona}', [PersonaController::class, 'update'])->whereNumber('persona')->name('personas.update');
+    Route::patch('/personas/{persona}/estado', [PersonaController::class, 'estado'])->whereNumber('persona')->name('personas.estado');
 
     // Zonas y áreas (árbol de espacios)
     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');

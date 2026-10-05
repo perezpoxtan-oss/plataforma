@@ -351,3 +351,26 @@ html.modo-noche .ficha-provisional { background: rgba(245, 158, 11, 0.06) !impor
 html.modo-noche .btn-duplicado-colab { background: transparent; color: #fcd34d; border-color: #b45309; }
 html.modo-noche .caja-parecidos { background: rgba(245, 158, 11, 0.1); border-color: #b45309; color: #e2e8f0; }
 html.modo-noche .opcion-parecido { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+/* Padrón de personas */
+html.modo-sol .insignia-persona, html.modo-sol .estado-persona, html.modo-sol .btn-editar-perfil { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .estado-persona.baja { text-decoration: underline; }
+html.modo-sol .btn-editar-perfil:hover { background: #000; color: #fff; }
+html.modo-sol .tema-azul .btn-pill-tipo.active { background: #000; border-color: #000; color: #fff; }
+html.modo-sol .caja-empresa-persona, html.modo-sol .aviso-desde-proveedor { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .caja-empresa-persona .campo-etiqueta { color: #000; }
+html.modo-noche .insignia-persona.visitante { background: rgba(59, 130, 246, 0.16); color: #93c5fd; border-color: #1e40af; }
+html.modo-noche .insignia-persona.proveedor { background: rgba(34, 197, 94, 0.14); color: #86efac; border-color: #166534; }
+html.modo-noche .insignia-persona.contratista { background: rgba(249, 115, 22, 0.15); color: #fdba74; border-color: #9a3412; }
+html.modo-noche .insignia-persona.prospecto { background: rgba(217, 70, 239, 0.15); color: #f0abfc; border-color: #86198f; }
+html.modo-noche .insignia-persona.familiar { background: #0f172a; color: #cbd5e1; border-color: #475569; }
+html.modo-noche .estado-persona.activo { background: rgba(34, 197, 94, 0.18); color: #86efac; }
+html.modo-noche .estado-persona.baja { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+html.modo-noche .btn-editar-perfil { background: var(--superficie-2); border-color: var(--borde); color: #93c5fd; }
+html.modo-noche .btn-editar-perfil:hover { background: #2563eb; color: #fff; }
+html.modo-noche .tema-azul .btn-icono.editar { color: #93c5fd; }
+html.modo-noche .tema-azul .btn-pill-tipo.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+html.modo-noche .tema-azul .btn-pill-tipo:not(.active) { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .caja-empresa-persona { background: rgba(34, 197, 94, 0.08); border-color: #166534; }
+html.modo-noche .caja-empresa-persona .campo-etiqueta { color: #86efac; }
+html.modo-noche .aviso-desde-proveedor { background: rgba(59, 130, 246, 0.12); border-color: #1e40af; color: #bfdbfe; }
+/* Fin Padrón de personas */
