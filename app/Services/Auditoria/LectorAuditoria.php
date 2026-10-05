@@ -15,6 +15,7 @@ use App\Models\GrupoEspacio;
 use App\Models\Llave;
 use App\Models\Modulo;
 use App\Models\Paradero;
+use App\Models\PaseSalida;
 use App\Models\Persona;
 use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
@@ -81,6 +82,7 @@ class LectorAuditoria
         AcompananteAcceso::class => ['Acompañante', 'nombre'],
         PrestamoLlave::class => ['Préstamo de llave', null],
         Responsiva::class => ['Resguardo', 'folio'],
+        PaseSalida::class => ['Pase de salida', 'folio'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

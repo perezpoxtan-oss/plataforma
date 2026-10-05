@@ -27,6 +27,7 @@ use App\Http\Controllers\Seguridad\EquipoController;
 use App\Http\Controllers\Seguridad\EstacionamientoController;
 use App\Http\Controllers\Seguridad\GafeteController;
 use App\Http\Controllers\Seguridad\LlaveController;
+use App\Http\Controllers\Seguridad\PaseSalidaController;
 use App\Http\Controllers\Seguridad\PersonaController;
 use App\Http\Controllers\Seguridad\VehiculoController;
 use App\Http\Controllers\Seguridad\VoucherController;
@@ -244,6 +245,16 @@ Route::middleware('auth')->group(function () {
     });
     // Fin Padrones: Bitácora de Novedades
 
+    // Padrones: Pases de salida (Operación: circuito de firmas, rechazo e impresión)
+    Route::get('/pases-salida', [PaseSalidaController::class, 'index'])->name('pases-salida.index');
+    Route::post('/pases-salida', [PaseSalidaController::class, 'store'])->name('pases-salida.store');
+    Route::get('/pases-salida/equipos/{equipo}', [PaseSalidaController::class, 'equipo'])->whereNumber('equipo')->name('pases-salida.equipo');
+    Route::get('/pases-salida/{pase}', [PaseSalidaController::class, 'show'])->whereNumber('pase')->name('pases-salida.show');
+    Route::post('/pases-salida/{pase}/firmas', [PaseSalidaController::class, 'firmar'])->whereNumber('pase')->middleware('throttle:60,1')->name('pases-salida.firmar');
+    Route::get('/pases-salida/{pase}/firmas/{firma}', [PaseSalidaController::class, 'firma'])->whereNumber(['pase', 'firma'])->name('pases-salida.firma');
+    Route::post('/pases-salida/{pase}/rechazar', [PaseSalidaController::class, 'rechazar'])->whereNumber('pase')->name('pases-salida.rechazar');
+    Route::get('/pases-salida/{pase}/imprimir', [PaseSalidaController::class, 'imprimir'])->whereNumber('pase')->name('pases-salida.imprimir');
+    // Fin Padrones: Pases de salida
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
     Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');

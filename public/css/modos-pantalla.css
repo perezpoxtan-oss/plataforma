@@ -795,3 +795,45 @@ html.modo-noche .node-dot { fill: #64748b; stroke: #cbd5e1; }
 html.modo-noche .body-label, html.modo-noche .firmas-guardadas figcaption { color: #cbd5e1; }
 html.modo-noche .icono-hecho { background: var(--superficie-2); }
 /* Fin Bitácora de Novedades */
+/* Pases de salida */
+html.modo-noche .pase-card, html.modo-noche .articulo-pase, html.modo-noche .seccion-firmas, html.modo-noche .fila-firma.firmada { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .pase-card { border-left-color: var(--pase-color); }
+html.modo-noche .pase-titulo { color: var(--texto); }
+html.modo-noche .pase-ruta { color: #cbd5e1; }
+html.modo-noche .texto-vencido { color: #f87171; }
+html.modo-noche .btn-ver-pase { border-color: #94a3b8; color: #e2e8f0; }
+html.modo-noche .btn-ver-pase:hover { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .filtros-pases .btn-outline-dark { color: #e2e8f0; border-color: #64748b; }
+html.modo-noche .filtros-pases .btn-dark { background: #e2e8f0; color: #0f172a; border-color: #e2e8f0; }
+html.modo-noche .conteo-filtro { background: rgba(148, 163, 184, 0.25); }
+html.modo-noche .btn-buscar-pases { background: #334155; }
+html.modo-noche .btn-limpiar-pases { background: var(--superficie); color: #cbd5e1; }
+html.modo-noche .dialogo-pase .resumen-pase, html.modo-noche .fila-firma, html.modo-noche .caja-firma-pase, html.modo-noche .lector-equipo-pase, html.modo-noche .articulo-fila { background: var(--superficie-2); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .articulo-fila { border-left-color: #3b82f6; }
+html.modo-noche .fila-firma.eligiendo { background: rgba(37, 99, 235, 0.2); border-color: #3b82f6; }
+html.modo-noche .seccion-firmas.abierta { border-color: #3b82f6; }
+html.modo-noche .campo-solo-lectura { background: var(--superficie-2); color: #cbd5e1; }
+html.modo-noche .btn-firmar-rol, html.modo-noche .btn-atajo-pase { background: transparent; color: #93c5fd; border-color: #3b82f6; }
+html.modo-noche .btn-firmar-rol:hover, html.modo-noche .btn-atajo-pase:hover { background: #2563eb; color: #fff; }
+html.modo-noche .btn-agregar-articulo { background: var(--superficie-2); color: #e2e8f0; border-color: var(--borde); }
+html.modo-noche .btn-quitar-articulo { background: transparent; }
+html.modo-noche .btn-rechazar-pase { color: #fca5a5; border-color: #ef4444; }
+html.modo-noche .titulo-firma-pase { color: #93c5fd; }
+html.modo-noche .chip-padron { background: var(--superficie-2); color: #cbd5e1; }
+html.modo-noche .estado-seccion.completo { background: rgba(34, 197, 94, 0.18); color: #86efac; }
+html.modo-noche .estado-seccion.en-curso { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+html.modo-noche .estado-seccion.pendiente, html.modo-noche .estado-seccion.no-aplica { background: var(--superficie-2); color: #94a3b8; }
+html.modo-noche .aviso-sin-firma { background: rgba(245, 158, 11, 0.12); border-color: #92400e; color: #fcd34d; }
+html.modo-noche .btn-imprimir-pase { background: #e2e8f0; color: #0f172a; }
+html.modo-sol .pase-card, html.modo-sol .seccion-firmas, html.modo-sol .fila-firma, html.modo-sol .articulo-pase, html.modo-sol .articulo-fila, html.modo-sol .caja-firma-pase { border: 2px solid #000; background: #fff; color: #000; }
+html.modo-sol .pase-card { border-left: 8px solid var(--pase-color); }
+html.modo-sol .articulo-fila { border-left: 6px solid #1d4ed8; }
+html.modo-sol .pase-meta, html.modo-sol .pase-ruta { color: #000; font-weight: 600; }
+html.modo-sol .btn-ver-pase, html.modo-sol .btn-firmar-rol, html.modo-sol .btn-atajo-pase { border: 2px solid #000; color: #000; font-weight: 800; }
+html.modo-sol .badge-pase { border: 2px solid #000; }
+html.modo-sol .estado-seccion { border: 2px solid #000; color: #000; }
+html.modo-sol .campo-solo-lectura { background: #f1f5f9; color: #000; border: 2px solid #000; }
+html.modo-sol .aviso-sin-firma { border: 2px solid #000; color: #000; background: #fef3c7; }
+html.modo-sol .filtros-pases .btn-outline-warning { color: #78350f; border: 2px solid #000; }
+html.modo-sol .filtros-pases .btn-outline-primary, html.modo-sol .filtros-pases .btn-outline-danger, html.modo-sol .filtros-pases .btn-outline-dark { border: 2px solid #000; }
+/* Fin Pases de salida */

@@ -4225,3 +4225,381 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Bitácora de Novedades */
+/* ==========================================================================
+   Pases de salida: detalle "Firmas del pase" en diálogo, firmar por rol,
+   rechazo, "Nuevo Pase de Salida" (renglones de artículos, equipo escaneado,
+   solicitante con lector o por nombre, atajos Nuevo Colaborador / Nuevo
+   Proveedor, dirección y teléfono del destino).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var ENCABEZADOS = { 'Accept': 'text/html', 'X-Requested-With': 'XMLHttpRequest' };
+
+    /* ---------- Detalle del pase (se pide al abrir; sin JavaScript abre ?pase=ID) ---------- */
+    function dialogoDetalle() { return document.querySelector('[data-dialogo-detalle-pase]'); }
+
+    function aviso(dialogo, texto, clase) {
+        dialogo.textContent = '';
+        var cuerpo = document.createElement('div');
+        cuerpo.className = 'dialogo-cuerpo text-center p-5 ' + (clase || '');
+        cuerpo.textContent = texto;
+        dialogo.appendChild(cuerpo);
+    }
+
+    document.addEventListener('click', function (e) {
+        var enlace = e.target.closest('[data-detalle-pase]');
+        if (!enlace) { return; }
+        var dialogo = dialogoDetalle();
+        if (!dialogo || typeof dialogo.showModal !== 'function') { return; }
+        e.preventDefault();
+        aviso(dialogo, 'Cargando…', 'text-muted');
+        if (!dialogo.open) { dialogo.showModal(); }
+        fetch(enlace.getAttribute('data-detalle-pase'), { credentials: 'same-origin', headers: ENCABEZADOS })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.text(); })
+            .then(function (html) { dialogo.innerHTML = html; })
+            .catch(function () { aviso(dialogo, 'No se pudo cargar el pase. Revisa tu conexión e intenta de nuevo.', 'text-danger'); });
+    });
+
+    // Al cerrar el detalle abierto por ?pase=ID, la dirección se limpia para que al recargar no vuelva a abrirse
+    document.addEventListener('close', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-dialogo-detalle-pase]')) { return; }
+        try {
+            var url = new URL(window.location.href);
+            if (url.searchParams.has('pase')) { url.searchParams.delete('pase'); window.history.replaceState(null, '', url.toString()); }
+        } catch (x) { /* navegador antiguo */ }
+    }, true);
+
+    /* ---------- Firmar un rol y rechazar ---------- */
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-firmar-rol]');
+        if (boton) {
+            var dialogo = boton.closest('dialog') || document;
+            var caja = dialogo.querySelector('[data-caja-firma-pase]');
+            if (!caja) { return; }
+            caja.querySelector('[data-firma-rol]').value = boton.getAttribute('data-firmar-rol');
+            caja.querySelector('[data-firma-titulo]').textContent = 'Firma — ' + boton.getAttribute('data-rol-texto');
+            caja.querySelector('[data-firma-nombre]').value = boton.getAttribute('data-sugerido') || '';
+            var firma = caja.querySelector('[data-firma]');
+            if (firma && window.Firma) { window.Firma.preparar(firma); if (firma.limpiarFirma) { firma.limpiarFirma(); } firma.classList.remove('falta'); }
+            dialogo.querySelectorAll('.fila-firma.eligiendo').forEach(function (f) { f.classList.remove('eligiendo'); });
+            boton.closest('.fila-firma').classList.add('eligiendo');
+            caja.hidden = false;
+            caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        var cancelar = e.target.closest('[data-cancelar-firma]');
+        if (cancelar) {
+            var cajaF = cancelar.closest('[data-caja-firma-pase]');
+            var f = cajaF.querySelector('[data-firma]');
+            if (f && f.limpiarFirma) { f.limpiarFirma(); }
+            cajaF.hidden = true;
+            var d = cajaF.closest('dialog');
+            if (d) { d.querySelectorAll('.fila-firma.eligiendo').forEach(function (x) { x.classList.remove('eligiendo'); }); }
+            return;
+        }
+        var rechazo = e.target.closest('[data-mostrar-rechazo]');
+        if (rechazo) {
+            var zona = rechazo.closest('.zona-rechazo');
+            var form = zona.querySelector('[data-caja-rechazo]');
+            form.hidden = false;
+            rechazo.hidden = true;
+            form.querySelector('textarea').focus();
+        }
+    });
+
+    /* ---------- Nuevo pase: campos dependientes y destino ---------- */
+    function formPase() { return document.querySelector('[data-form-pase]'); }
+
+    // La sede destino no puede ser la de origen
+    function ocultarOrigen(form) {
+        var origen = form.querySelector('[data-pase-origen]');
+        var destino = form.querySelector('[data-pase-sede-destino]');
+        if (!origen || !destino) { return; }
+        Array.prototype.forEach.call(destino.options, function (o) {
+            if (o.value === '') { return; }
+            var igual = o.value === origen.value;
+            o.hidden = igual;
+            o.disabled = igual;
+        });
+        if (destino.value !== '' && destino.value === origen.value) { destino.value = ''; }
+    }
+
+    function sincronizar(form) {
+        // El acomodo genérico de data-mostrar-si (Padrón Vehicular) responde a un "change"
+        var motivo = form.querySelector('[data-pase-motivo]');
+        if (motivo) { motivo.dispatchEvent(new Event('change', { bubbles: true })); }
+        ocultarOrigen(form);
+    }
+
+    function llenarContacto(form, opcion) {
+        if (!opcion || opcion.value === '') { return; }
+        var dir = form.querySelector('[data-pase-direccion]');
+        var tel = form.querySelector('[data-pase-telefono]');
+        if (dir) { dir.value = opcion.getAttribute('data-direccion') || ''; }
+        if (tel) { tel.value = opcion.getAttribute('data-telefono') || ''; }
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-pase]');
+        if (!form) { return; }
+        if (e.target.matches('[data-pase-origen]')) { ocultarOrigen(form); }
+        if (e.target.matches('[data-pase-sede-destino], [data-pase-proveedor]')) { llenarContacto(form, e.target.selectedOptions[0]); }
+        if (e.target.matches('[name="destino_tipo"]')) {
+            var dir = form.querySelector('[data-pase-direccion]');
+            var tel = form.querySelector('[data-pase-telefono]');
+            if (dir) { dir.value = ''; }
+            if (tel) { tel.value = ''; }
+        }
+    });
+
+    /* ---------- Renglones de artículos ---------- */
+    function agregarArticulo(form) {
+        var cont = form.querySelector('[data-articulos-pase]');
+        var plantilla = form.querySelector('[data-plantilla-articulo]');
+        if (!cont || !plantilla) { return null; }
+        var i = parseInt(cont.getAttribute('data-siguiente') || '0', 10);
+        cont.setAttribute('data-siguiente', String(i + 1));
+        var envoltura = document.createElement('div');
+        envoltura.innerHTML = plantilla.innerHTML.replace(/__i__/g, String(i));
+        var fila = envoltura.querySelector('[data-articulo-fila]');
+        cont.appendChild(fila);
+        return fila;
+    }
+
+    function reiniciarArticulos(form) {
+        var cont = form.querySelector('[data-articulos-pase]');
+        if (!cont) { return; }
+        cont.textContent = '';
+        cont.setAttribute('data-siguiente', '0');
+        agregarArticulo(form);
+    }
+
+    document.addEventListener('click', function (e) {
+        var agregar = e.target.closest('[data-agregar-articulo]');
+        if (agregar) {
+            var fila = agregarArticulo(agregar.closest('form'));
+            if (fila) { fila.querySelector('[data-articulo="equipo"]').focus(); }
+            return;
+        }
+        var quitar = e.target.closest('[data-quitar-articulo]');
+        if (quitar) {
+            var form = quitar.closest('form');
+            quitar.closest('[data-articulo-fila]').remove();
+            if (!form.querySelector('[data-articulo-fila]')) { agregarArticulo(form); }
+        }
+    });
+
+    /* ---------- Equipo escaneado del padrón: llena un renglón ---------- */
+    function estadoLector(caja, texto, clase) {
+        var estado = caja && caja.querySelector('[data-lector-estado]');
+        if (!estado) { return; }
+        estado.hidden = !texto;
+        estado.className = 'lector-estado ' + (clase || '');
+        estado.textContent = texto || '';
+    }
+
+    document.addEventListener('lector:elegido', function (e) {
+        var caja = e.target;
+        if (!caja.closest || !caja.closest('[data-pase-lector-equipo]')) { return; }
+        var form = caja.closest('form');
+        var registro = e.detail || {};
+        var url = form.getAttribute('data-url-equipo').replace(/\/0$/, '/' + encodeURIComponent(registro.id));
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
+            .then(function (datos) {
+                var fila = null;
+                form.querySelectorAll('[data-articulo-fila]').forEach(function (f) {
+                    if (!fila && f.querySelector('[data-articulo="equipo"]').value.trim() === '') { fila = f; }
+                });
+                fila = fila || agregarArticulo(form);
+                ['equipo_id', 'equipo', 'marca', 'modelo', 'serie', 'descripcion'].forEach(function (c) {
+                    var campo = fila.querySelector('[data-articulo="' + c + '"]');
+                    if (campo) { campo.value = datos[c] === null || datos[c] === undefined ? '' : String(datos[c]); }
+                });
+                fila.querySelector('[data-articulo="cantidad"]').value = '1';
+                if (window.Lector) { window.Lector.limpiar(caja); }
+                estadoLector(caja, 'Agregado: ' + datos.equipo + ' · Serie ' + datos.serie + '. Puedes escanear el siguiente.', 'ok');
+            })
+            .catch(function () { estadoLector(caja, 'No se pudieron traer los datos del equipo. Captúralo a mano.', 'error'); });
+    });
+
+    /* ---------- Solicitante / colaborador destino: búsqueda por nombre y Departamento / Puesto ---------- */
+    var espera = null;
+
+    function cajaDe(para) {
+        var envoltura = document.querySelector('[data-pase-colaborador][data-para="' + para + '"]');
+        return envoltura ? envoltura.querySelector('[data-lector]') : null;
+    }
+
+    function mostrarDepto(registro) {
+        var form = formPase();
+        if (!form) { return; }
+        var d = form.querySelector('[data-solicitante-depto]');
+        var p = form.querySelector('[data-solicitante-puesto]');
+        if (d) { d.value = registro ? (registro.departamento || '—') : ''; }
+        if (p) { p.value = registro ? (registro.puesto || '—') : ''; }
+    }
+
+    function buscarColaboradores(form, texto) {
+        var url = form.getAttribute('data-url-buscar-colaborador');
+        if (!url || !texto) { return Promise.resolve([]); }
+        return fetch(url + '?q=' + encodeURIComponent(texto), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
+            .then(function (d) { return d.resultados || []; });
+    }
+
+    function elegirColaborador(caja, c) {
+        if (!window.Lector || !caja || !c || !c.id) { return; }
+        window.Lector.elegir(caja, {
+            id: c.id, titulo: c.nombre_completo, activo: true,
+            detalle: (c.num_empleado ? 'Núm. ' + c.num_empleado : 'provisional') + (c.puesto ? ' · ' + c.puesto : ''),
+            departamento: c.departamento || null, puesto: c.puesto || null
+        });
+    }
+
+    document.addEventListener('input', function (e) {
+        var entrada = e.target.closest && e.target.closest('[data-pase-colaborador] [data-lector-entrada]');
+        if (!entrada) { return; }
+        var caja = entrada.closest('[data-lector]');
+        var form = entrada.closest('form');
+        var opciones = caja.querySelector('[data-lector-opciones]');
+        clearTimeout(espera);
+        var texto = entrada.value.trim();
+        // Solo nombres (con letras): los números y códigos los resuelve el lector al dar Enter
+        if (texto.length < 3 || !/[a-záéíóúñü]/i.test(texto) || !form.getAttribute('data-url-buscar-colaborador')) { return; }
+        espera = setTimeout(function () {
+            buscarColaboradores(form, texto).then(function (lista) {
+                if (entrada.value.trim() !== texto) { return; }
+                opciones.textContent = '';
+                if (!lista.length) {
+                    estadoLector(caja, 'Nadie coincide con «' + texto + '». Si no está registrado, usa «Nuevo Colaborador».', 'aviso');
+                    opciones.hidden = true;
+                    return;
+                }
+                estadoLector(caja, 'Elige a la persona:', 'info');
+                lista.forEach(function (c) {
+                    var b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'lector-opcion';
+                    var t = document.createElement('strong'); t.textContent = c.nombre_completo;
+                    var d = document.createElement('span');
+                    d.textContent = (c.num_empleado ? 'Núm. ' + c.num_empleado : 'Provisional') + (c.puesto ? ' · ' + c.puesto : '') + (c.departamento ? ' · ' + c.departamento : '') + (c.sede ? ' · ' + c.sede : '');
+                    b.appendChild(t); b.appendChild(d);
+                    b.addEventListener('click', function () { elegirColaborador(caja, c); });
+                    opciones.appendChild(b);
+                });
+                opciones.hidden = false;
+            }).catch(function () { /* sin red: queda el lector normal */ });
+        }, 300);
+    });
+
+    // Al elegir al solicitante (escaneado o por nombre) se muestran su departamento y puesto
+    document.addEventListener('lector:elegido', function (e) {
+        var envoltura = e.target.closest && e.target.closest('[data-pase-colaborador][data-para="solicitante"]');
+        if (!envoltura) { return; }
+        var r = e.detail || {};
+        if (r.departamento !== undefined || r.puesto !== undefined) { mostrarDepto(r); return; }
+        mostrarDepto({ departamento: '…', puesto: '…' });
+        var num = /Núm\. ([^\s·]+)/.exec(r.detalle || '');
+        buscarColaboradores(envoltura.closest('form'), num ? num[1] : (r.titulo || '')).then(function (lista) {
+            mostrarDepto(lista.filter(function (x) { return String(x.id) === String(r.id); })[0] || { departamento: '—', puesto: '—' });
+        }).catch(function () { mostrarDepto({ departamento: '—', puesto: '—' }); });
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-pase-colaborador][data-para="solicitante"] [data-lector-limpiar]')) { mostrarDepto(null); }
+    });
+
+    /* ---------- Atajos: Nuevo Colaborador (alta provisional) y Nuevo Proveedor ---------- */
+    var registrarPara = 'solicitante';
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-registrar-para]');
+        if (b) { registrarPara = b.getAttribute('data-registrar-para'); }
+    }, true);
+
+    document.addEventListener('colaborador:registrado', function (e) {
+        if (!formPase()) { return; }
+        elegirColaborador(cajaDe(registrarPara), e.detail || {});
+    });
+
+    // Dirección y teléfono capturados en el alta rápida (ese formulario se limpia antes de avisar)
+    var contactoProveedor = null;
+    document.addEventListener('submit', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-alta-rapida-proveedor]')) { return; }
+        contactoProveedor = {
+            direccion: (e.target.querySelector('[name="direccion"]') || {}).value || '',
+            telefono: (e.target.querySelector('[name="telefono"]') || {}).value || ''
+        };
+    }, true);
+
+    document.addEventListener('proveedor:registrado', function (e) {
+        var form = formPase();
+        var select = form && form.querySelector('[data-pase-proveedor]');
+        if (!select || !e.detail) { return; }
+        var p = e.detail;
+        var opcion = Array.prototype.filter.call(select.options, function (o) { return o.value === String(p.id); })[0];
+        if (!opcion) {
+            opcion = document.createElement('option');
+            opcion.value = String(p.id);
+            opcion.textContent = p.nombre;
+            opcion.setAttribute('data-direccion', contactoProveedor && !p.ya_existia ? contactoProveedor.direccion : '');
+            opcion.setAttribute('data-telefono', contactoProveedor && !p.ya_existia ? contactoProveedor.telefono : '');
+            select.appendChild(opcion);
+        }
+        select.value = String(p.id);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    /* ---------- Envío: el solicitante (y el colaborador destino) son obligatorios ---------- */
+    document.addEventListener('submit', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-form-pase]')) { return; }
+        var faltan = Array.prototype.filter.call(e.target.querySelectorAll('[data-pase-colaborador] [data-lector-id]'), function (oculto) {
+            var caja = oculto.closest('[data-lector]');
+            var requerido = oculto.hasAttribute('data-requerido') || !!caja.closest('[data-para="destino"]');
+            return !caja.closest('[hidden]') && requerido && !oculto.disabled && oculto.value === '';
+        });
+        if (!faltan.length) { return; }
+        e.preventDefault();
+        faltan.forEach(function (oculto) {
+            estadoLector(oculto.closest('[data-lector]'), 'Falta elegir a la persona: escanea su gafete o escribe su nombre y elígela de la lista.', 'error');
+        });
+        faltan[0].closest('[data-lector]').querySelector('[data-lector-entrada]').focus();
+    });
+
+    /* ---------- Abrir y cerrar el diálogo Nuevo Pase ---------- */
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-abrir-dialogo="dialogoNuevoPase"]')) { return; }
+        var form = formPase();
+        if (form) { sincronizar(form); }
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement) || e.target.id !== 'dialogoNuevoPase') { return; }
+        var form = e.target.querySelector('[data-form-pase]');
+        if (!form) { return; }
+        reiniciarArticulos(form);
+        mostrarDepto(null);
+        sincronizar(form);
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var form = formPase();
+        if (form) {
+            sincronizar(form);
+            // Tras un error: el solicitante ya elegido vuelve a mostrar su departamento y puesto
+            var caja = cajaDe('solicitante');
+            var oculto = caja && caja.querySelector('[data-lector-id]');
+            var titulo = caja && caja.querySelector('[data-lector-titulo]');
+            if (oculto && oculto.value && titulo) {
+                buscarColaboradores(form, titulo.textContent.split(' · ')[0]).then(function (lista) {
+                    mostrarDepto(lista.filter(function (x) { return String(x.id) === oculto.value; })[0] || null);
+                }).catch(function () { /* sin datos */ });
+            }
+        }
+        // Tras un error al firmar, el recuadro de firma queda a la vista
+        var cajaFirma = document.querySelector('[data-dialogo-detalle-pase] [data-caja-firma-pase]:not([hidden])');
+        if (cajaFirma) { setTimeout(function () { cajaFirma.scrollIntoView({ block: 'center' }); }, 50); }
+    });
+})();
+/* Fin Pases de salida */

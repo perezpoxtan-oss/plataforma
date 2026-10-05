@@ -65,6 +65,7 @@ class CatalogoSeeder extends Seeder
         'responsivas' => 'responsivas.index',
         'novedades' => 'novedades.index',
         'lost_found' => 'lost_found.index',
+        'pases_salida' => 'pases-salida.index',
     ];
 
     /**
