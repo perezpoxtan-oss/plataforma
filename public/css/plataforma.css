@@ -448,6 +448,7 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .opcion-sede-turno input { width: 18px; height: 18px; flex-shrink: 0; }
 .opcion-sede-turno:has(input:checked) { border-color: #a5b4fc; background: #eef2ff; }
 /* Fin Turnos */
+/* ==========================================================================
    Colaboradores (esmeralda, como en SEGCAT) y Núm. Colaborador en Usuarios
    ========================================================================== */
 .tema-esmeralda .ficha-card:hover { box-shadow: 0 12px 24px -10px rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.4); }
@@ -548,7 +549,6 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .lista-respaldos { display: flex; flex-direction: column; gap: 0.4rem; }
 .fila-respaldo { display: grid; grid-template-columns: 1fr auto auto 44px; gap: 0.75rem; align-items: center; border: 1px solid var(--borde); border-radius: 12px; padding: 0.4rem 0.6rem 0.4rem 0.9rem; font-size: 0.88rem; }
 @media (max-width: 575.98px) { .fila-respaldo { grid-template-columns: 1fr 44px; } .fila-respaldo .chip-catalogo, .fila-respaldo .small { grid-column: 1; } .fila-respaldo .btn-icono { grid-column: 2; grid-row: 1 / span 3; } }
-
 /* ==========================================================================
    Padrones: Proveedores / Empresas Externas (esmeralda, como en SEGCAT)
    ========================================================================== */
@@ -607,3 +607,37 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .btn-agregar-padron { background: #10b981; color: #fff; border: none; border-radius: 10px; padding: 0.7rem 1.1rem; min-height: 44px; font-weight: 700; display: inline-flex; align-items: center; text-decoration: none; }
 .btn-agregar-padron:hover { background: #059669; color: #fff; }
 /* Fin Padrones: Proveedores */
+/* ==========================================================================
+   Padrón de personas (réplica de modules/visitantes de SEGCAT, azul)
+   ========================================================================== */
+.tema-azul .btn-pill-tipo.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+.tema-azul .filtro-select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+.insignia-persona { display: inline-flex; align-items: center; font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; border: 1px solid transparent; }
+.insignia-persona.visitante { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.insignia-persona.proveedor { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+.insignia-persona.contratista { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+.insignia-persona.prospecto { background: #fdf4ff; color: #a21caf; border-color: #f5d0fe; }
+.insignia-persona.familiar { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+.estado-persona { font-size: 0.65rem; font-weight: 700; padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.estado-persona.activo { background: #d1e7dd; color: #146c43; }
+.estado-persona.baja { background: #f8d7da; color: #b02a37; }
+.persona-nombre { font-size: 1.15rem; font-weight: 800; color: var(--texto); margin: 0; line-height: 1.2; overflow-wrap: anywhere; }
+.persona-meta { margin-top: 0.8rem; font-weight: 500; gap: 0.3rem; padding: 0.6rem 0.8rem; border-radius: 12px; }
+.persona-meta strong { font-weight: 700; }
+.persona-motivo { color: var(--texto-suave); font-size: 0.75rem; overflow-wrap: anywhere; }
+.folio-persona { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.04em; }
+.persona-pie { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--borde); }
+.btn-editar-perfil { background: #fff; border: 1px solid var(--borde); color: #2563eb; border-radius: 8px; min-height: 44px; padding: 0.4rem 0.9rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; transition: 0.2s; }
+.btn-editar-perfil:hover { background: #2563eb; border-color: #2563eb; color: #fff; }
+.caja-empresa-persona { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.75rem; border-radius: 10px; margin-bottom: 0.8rem; }
+.caja-empresa-persona .campo-etiqueta { color: #15803d; }
+.caja-empresa-persona .campo-ayuda { margin-bottom: 0; }
+.dialogo-persona .campo.is-invalid { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,0.12); }
+.aviso-desde-proveedor { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 10px; padding: 0.6rem 0.8rem; font-size: 0.85rem; margin-bottom: 0.8rem; }
+@media (max-width: 575.98px) {
+    .persona-pie .btn-editar-perfil { flex: 1; justify-content: center; }
+    .filtro-categoria-persona { max-width: none; width: 100%; }
+    .ficha-crear-persona { min-height: 110px; flex-direction: row; gap: 0.75rem; }
+    .ficha-crear-persona .titulo-crear { margin-top: 0 !important; }
+}
+/* Fin Padrón de personas */

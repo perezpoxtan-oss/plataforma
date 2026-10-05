@@ -42,6 +42,28 @@ class Persona extends Model
     }
 
     /**
+     * Empresa de donde viene: el proveedor registrado o el texto libre.
+     */
+    public function empresaQueRepresenta(): ?string
+    {
+        return $this->proveedor?->nombre ?? $this->empresa_procedencia;
+    }
+
+    /**
+     * Identificación para quien solo consulta: "INE ••••5678".
+     */
+    public function folioEnmascarado(): ?string
+    {
+        if ($this->folio_identificacion === null || $this->folio_identificacion === '') {
+            return null;
+        }
+
+        $tipo = self::IDENTIFICACIONES[$this->tipo_identificacion] ?? 'ID';
+
+        return $tipo.' ••••'.mb_substr($this->folio_identificacion, -4);
+    }
+
+    /**
      * Mayúsculas, sin espacios, guiones ni puntos: "abc-123 45" -> "ABC12345".
      */
     public static function normalizarFolio(?string $folio): ?string
