@@ -2125,3 +2125,260 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Padrones: Gafetes y Vouchers de reposición */
+/* ==========================================================================
+   Padrones: Equipos de seguridad y Estacionamientos
+   - Equipos: filtro de fichas (texto, sede, tipo y estado), edición (estado
+     de solo lectura si está ASIGNADO o de BAJA), aviso de número de serie
+     repetido, costo sugerido por marca y modelo, "Ver QR" y baja con
+     voucher (el monto y el responsable aparecen al marcar "Aplica CXC").
+   - Estacionamientos: los grupos por sede se ocultan si el filtro los deja
+     sin zonas; el cupo solo aplica a estacionamientos.
+   Los campos que dependen de otro usan data-mostrar-si (Padrón Vehicular).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto) { try { return JSON.parse(texto || '{}'); } catch (x) { return {}; } }
+
+    // El manejador genérico de data-mostrar-si escucha "change" en el formulario
+    function resincronizar(form) {
+        var campo = form && form.querySelector('[data-mostrar-si]') && form.querySelector('select[name]');
+        if (campo) { campo.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
+
+    /* ---------- "Aplica CXC": muestra monto y responsable ---------- */
+    function sincronizarCobro(casilla) {
+        var caja = document.querySelector(casilla.getAttribute('data-muestra-si-marcado'));
+        if (!caja) { return; }
+        caja.hidden = !casilla.checked;
+        caja.querySelectorAll('input, select, textarea').forEach(function (c) { c.disabled = !casilla.checked; });
+        caja.querySelectorAll('[data-requerido-si-marcado]').forEach(function (c) { c.required = casilla.checked; });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-muestra-si-marcado]')) { sincronizarCobro(e.target); }
+    });
+
+    // Con cobro, el responsable es obligatorio (el lector guarda su id en un campo oculto)
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-form-baja-equipo]')) { return; }
+        var casilla = form.querySelector('[data-muestra-si-marcado]');
+        var id = form.querySelector('[data-lector-id]');
+        if (casilla && casilla.checked && id && !id.value) {
+            e.preventDefault();
+            var estado = form.querySelector('[data-lector] [data-lector-estado]');
+            if (estado) { estado.hidden = false; estado.className = 'lector-estado error'; estado.textContent = 'Elige al colaborador responsable al que se le cobrará.'; }
+            var entrada = form.querySelector('[data-lector-entrada]');
+            if (entrada) { entrada.focus(); }
+        }
+    }, true);
+
+    /* ---------- Aviso en vivo de número de serie ya registrado ---------- */
+    function serie(texto) { return (texto || '').trim().replace(/\s+/g, ' ').toUpperCase(); }
+
+    function avisarSerie(campo) {
+        var aviso = campo.form && campo.form.querySelector('[data-aviso-serie]');
+        if (!aviso) { return; }
+        var valor = serie(campo.value);
+        var existentes = leer(campo.getAttribute('data-series-existentes'));
+        if (!Array.isArray(existentes)) { existentes = []; }
+        var repetida = valor !== '' && valor !== serie(campo.dataset.original) && existentes.indexOf(valor) !== -1;
+        aviso.hidden = !repetida;
+        aviso.className = 'small mb-2 text-warning fw-semibold';
+        aviso.textContent = repetida ? 'Ese número de serie ya existe en el inventario.' : '';
+    }
+
+    /* ---------- Costo sugerido por marca y modelo (solo si no se escribió a mano) ---------- */
+    function sugerirCosto(form) {
+        var costo = form.querySelector('[data-costos-equipo]');
+        var marca = form.querySelector('[data-costo-marca]');
+        var modelo = form.querySelector('[data-costo-modelo]');
+        if (!costo || !marca || !modelo) { return; }
+        if (costo.value !== '' && costo.dataset.sugerido !== '1') { return; }
+        var monto = leer(costo.getAttribute('data-costos-equipo'))[serie(marca.value) + '|' + serie(modelo.value)];
+        var nota = costo.form.querySelector('[data-nota-costo]');
+        if (monto) {
+            costo.value = monto;
+            costo.dataset.sugerido = '1';
+            if (nota) { nota.textContent = '(sugerido según altas anteriores de este modelo)'; }
+        } else if (costo.dataset.sugerido === '1') {
+            costo.value = '';
+            costo.dataset.sugerido = '';
+            if (nota) { nota.textContent = '(para el voucher, si algún día se da de baja)'; }
+        }
+    }
+
+    document.addEventListener('input', function (e) {
+        var el = e.target;
+        if (el.matches('[data-series-existentes]')) { avisarSerie(el); }
+        if (el.matches('[data-costo-marca], [data-costo-modelo]') && el.form) { sugerirCosto(el.form); }
+        if (el.matches('[data-costos-equipo]')) { el.dataset.sugerido = ''; }
+    });
+
+    /* ---------- Editar equipo y abrir la baja (después del llenado genérico) ---------- */
+    var ESTADOS_FIJOS = {
+        asignado: 'ASIGNADO — lo cambia Responsivas cuando se devuelva el equipo.',
+        baja: 'BAJA/PERDIDO — para volver a usarlo, oprime «Reactivar» en su ficha.'
+    };
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        if (!dialogo) { return; }
+
+        var form = dialogo.querySelector('[data-form-equipo]');
+        if (form) {
+            var valores = leer(boton.dataset.valores);
+            // Los campos dependientes pudieron quedar deshabilitados al ocultarse
+            form.querySelectorAll('[data-mostrar-si] input').forEach(function (c) { c.disabled = false; c.value = ''; });
+            resincronizar(form);
+            var editable = form.querySelector('[data-estado-editable]');
+            var fijo = form.querySelector('[data-estado-fijo]');
+            var texto = ESTADOS_FIJOS[valores.estado];
+            if (editable) {
+                editable.hidden = !!texto;
+                editable.querySelectorAll('select').forEach(function (s) { s.disabled = !!texto; });
+            }
+            if (fijo) { fijo.hidden = !texto; fijo.textContent = texto ? 'Estado actual: ' + texto : ''; }
+            var campoSerie = form.querySelector('[data-series-existentes]');
+            if (campoSerie) { campoSerie.dataset.original = campoSerie.value; avisarSerie(campoSerie); }
+            var costo = form.querySelector('[data-costos-equipo]');
+            if (costo) { costo.dataset.sugerido = ''; }
+        }
+
+        var zona = dialogo.querySelector('[data-form-zona]');
+        if (zona) { resincronizar(zona); }
+
+        var baja = dialogo.querySelector('[data-form-baja-equipo]');
+        if (baja) {
+            var nombre = dialogo.querySelector('[data-baja-nombre]');
+            if (nombre) { nombre.textContent = boton.dataset.bajaNombre || ''; }
+            baja.querySelectorAll('[data-lector]').forEach(function (caja) { if (window.Lector) { window.Lector.limpiar(caja); } });
+            baja.querySelectorAll('[data-muestra-si-marcado]').forEach(sincronizarCobro);
+        }
+    });
+
+    /* ---------- Ver QR ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-ver-qr-equipo]');
+        if (!b) { return; }
+        var d = document.getElementById('dialogoQrEquipo');
+        if (!d) { return; }
+        d.querySelector('[data-qr-nombre]').textContent = b.dataset.nombre || '';
+        d.querySelector('[data-qr-imagen]').src = b.dataset.qr;
+        d.querySelector('[data-qr-enlace]').textContent = b.dataset.enlace || '';
+        var imprimir = d.querySelector('[data-qr-imprimir]');
+        if (imprimir) { imprimir.hidden = !b.dataset.imprimir; imprimir.href = b.dataset.imprimir || '#'; }
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    });
+
+    /* ---------- Al cerrar (y limpiarse) un diálogo, se acomoda de nuevo ---------- */
+    function acomodar(raiz) {
+        raiz.querySelectorAll('[data-form-equipo], [data-form-zona]').forEach(function (form) {
+            resincronizar(form);
+            var aviso = form.querySelector('[data-aviso-serie]');
+            if (aviso) { aviso.hidden = true; }
+            var nota = form.querySelector('[data-nota-costo]');
+            if (nota) { nota.textContent = '(para el voucher, si algún día se da de baja)'; }
+            var editable = form.querySelector('[data-estado-editable]');
+            if (editable) { editable.hidden = false; editable.querySelectorAll('select').forEach(function (s) { s.disabled = false; }); }
+            var fijo = form.querySelector('[data-estado-fijo]');
+            if (fijo) { fijo.hidden = true; }
+        });
+        raiz.querySelectorAll('[data-muestra-si-marcado]').forEach(sincronizarCobro);
+    }
+
+    document.addEventListener('close', function (e) {
+        if (e.target instanceof HTMLDialogElement) { acomodar(e.target); }
+    }, true);
+
+    /* ---------- Filtro de equipos: texto, sede, tipo y estado ---------- */
+    var CLAVE = 'plataforma_filtro_equipos';
+
+    function valorFiltro(nombre) {
+        var el = document.querySelector('[data-filtro-equipos="' + nombre + '"]');
+        return el ? el.value : '';
+    }
+
+    function filtrarEquipos() {
+        var cont = document.querySelector('[data-equipos]');
+        if (!cont) { return; }
+        var texto = valorFiltro('texto').toLowerCase().trim();
+        var sede = valorFiltro('sede');
+        var tipo = valorFiltro('tipo');
+        var pill = document.querySelector('[data-filtro-estado-equipo][aria-pressed="true"]');
+        var estado = pill ? pill.dataset.filtroEstadoEquipo : '';
+        var fichas = cont.querySelectorAll('[data-equipo]');
+        var visibles = 0;
+        fichas.forEach(function (f) {
+            var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1)
+                && (sede === '' || f.dataset.sede === sede)
+                && (tipo === '' || f.dataset.tipo === tipo)
+                && (estado === '' || f.dataset.estado === estado);
+            f.style.display = ok ? '' : 'none';
+            if (ok) { visibles++; }
+        });
+        var vacio = cont.querySelector('[data-sin-resultados-equipos]');
+        if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+        try { sessionStorage.setItem(CLAVE, JSON.stringify({ texto: valorFiltro('texto'), sede: sede, tipo: tipo, estado: estado })); } catch (x) { /* sin almacenamiento */ }
+    }
+
+    function elegirEstado(valor) {
+        document.querySelectorAll('[data-filtro-estado-equipo]').forEach(function (x) {
+            var on = x.dataset.filtroEstadoEquipo === valor;
+            x.setAttribute('aria-pressed', String(on));
+            x.classList.toggle('active', on);
+        });
+    }
+
+    document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-equipos]')) { filtrarEquipos(); } });
+    document.addEventListener('change', function (e) { if (e.target.matches('[data-filtro-equipos]')) { filtrarEquipos(); } });
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-filtro-estado-equipo]');
+        if (!b) { return; }
+        elegirEstado(b.dataset.filtroEstadoEquipo);
+        filtrarEquipos();
+    });
+
+    /* ---------- Estacionamientos: ocultar las sedes que el filtro deja vacías ---------- */
+    function gruposZonas() {
+        document.querySelectorAll('[data-grupo-zonas]').forEach(function (g) {
+            var alguna = Array.prototype.some.call(g.querySelectorAll('[data-ficha]'), function (f) { return f.style.display !== 'none'; });
+            g.hidden = !alguna;
+        });
+    }
+
+    function despuesDelFiltro(e) {
+        var el = e.target.closest && e.target.closest('[data-filtro-texto="zonas"], [data-filtro-sede="zonas"], [data-filtro-tipo="zonas"]');
+        if (el) { setTimeout(gruposZonas, 0); }
+    }
+    document.addEventListener('input', despuesDelFiltro);
+    document.addEventListener('change', despuesDelFiltro);
+    document.addEventListener('click', despuesDelFiltro);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        acomodar(document);
+        document.querySelectorAll('dialog[data-abrir-al-cargar] [data-series-existentes]').forEach(avisarSerie);
+        setTimeout(gruposZonas, 0);
+
+        if (!document.querySelector('[data-equipos]')) { return; }
+        // Al llegar a una ficha (#equipo-12, p. ej. desde el QR) se muestran todas
+        if (!/^#equipo-\d+$/.test(location.hash)) {
+            try {
+                var g = JSON.parse(sessionStorage.getItem(CLAVE) || 'null');
+                if (g) {
+                    ['texto', 'sede', 'tipo'].forEach(function (k) {
+                        var el = document.querySelector('[data-filtro-equipos="' + k + '"]');
+                        // Solo si el valor guardado todavía existe en la lista
+                        if (el && g[k] && (el.tagName !== 'SELECT' || el.querySelector('option[value="' + g[k] + '"]'))) { el.value = g[k]; }
+                    });
+                    if (g.estado) { elegirEstado(g.estado); }
+                }
+            } catch (x) { /* valor guardado dañado: se ignora */ }
+        }
+        filtrarEquipos();
+    });
+})();
+/* Fin Padrones: Equipos de seguridad y Estacionamientos */

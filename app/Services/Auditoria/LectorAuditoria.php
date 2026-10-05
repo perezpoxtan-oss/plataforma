@@ -6,6 +6,7 @@ use App\Models\Auditoria;
 use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
+use App\Models\Equipo;
 use App\Models\Espacio;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
@@ -16,12 +17,14 @@ use App\Models\Proveedor;
 use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Sede;
+use App\Models\TipoEquipo;
 use App\Models\TipoEspacio;
 use App\Models\TipoGafete;
 use App\Models\Turno;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\VoucherReposicion;
+use App\Models\ZonaEstacionamiento;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -63,6 +66,9 @@ class LectorAuditoria
         Llave::class => ['Llave', 'nomenclatura'],
         Gafete::class => ['Gafete', 'nomenclatura'],
         TipoGafete::class => ['Tipo de gafete', 'nombre'],
+        Equipo::class => ['Equipo', 'numero_serie'],
+        TipoEquipo::class => ['Tipo de equipo', 'nombre'],
+        ZonaEstacionamiento::class => ['Zona de estacionamiento', 'nombre'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

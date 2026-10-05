@@ -3,6 +3,7 @@
 use App\Models\Colaborador;
 use App\Models\Llave;
 use App\Models\Gafete;
+use App\Models\Equipo;
 use App\Models\Vehiculo;
 
 /*
@@ -20,5 +21,6 @@ return [
         'vehiculo' => Vehiculo::class,
         'llave' => Llave::class,
         'gafete' => Gafete::class,
+        'equipo' => Equipo::class,
     ],
 ];

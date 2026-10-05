@@ -21,6 +21,8 @@ use App\Http\Controllers\Padrones\ProveedorController;
 use App\Http\Controllers\PanelController;
 use App\Http\Controllers\Seguridad\LlaveController;
 use App\Http\Controllers\Seguridad\GafeteController;
+use App\Http\Controllers\Seguridad\EquipoController;
+use App\Http\Controllers\Seguridad\EstacionamientoController;
 use App\Http\Controllers\Seguridad\PersonaController;
 use App\Http\Controllers\Seguridad\VehiculoController;
 use App\Http\Controllers\Seguridad\VoucherController;
@@ -162,6 +164,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/vouchers', [VoucherController::class, 'index'])->name('vouchers.index');
     Route::get('/vouchers/{voucher}/imprimir', [VoucherController::class, 'imprimir'])->whereNumber('voucher')->name('vouchers.imprimir');
     // Fin Padrones: Gafetes y Vouchers de reposición
+    // Padrones: Equipos de seguridad y Estacionamientos
+    Route::get('/equipos', [EquipoController::class, 'index'])->name('equipos.index');
+    Route::post('/equipos', [EquipoController::class, 'store'])->name('equipos.store');
+    Route::put('/equipos/{equipo}', [EquipoController::class, 'update'])->whereNumber('equipo')->name('equipos.update');
+    Route::post('/equipos/{equipo}/baja', [EquipoController::class, 'baja'])->whereNumber('equipo')->name('equipos.baja');
+    Route::patch('/equipos/{equipo}/reactivar', [EquipoController::class, 'reactivar'])->whereNumber('equipo')->name('equipos.reactivar');
+    Route::get('/equipos/{equipo}/etiqueta', [EquipoController::class, 'etiqueta'])->whereNumber('equipo')->name('equipos.etiqueta');
+    Route::get('/equipos/{equipo}/qr', [EquipoController::class, 'qr'])->whereNumber('equipo')->name('equipos.qr');
+    Route::get('/estacionamientos', [EstacionamientoController::class, 'index'])->name('estacionamientos.index');
+    Route::post('/estacionamientos', [EstacionamientoController::class, 'store'])->name('estacionamientos.store');
+    Route::put('/estacionamientos/{zona}', [EstacionamientoController::class, 'update'])->whereNumber('zona')->name('estacionamientos.update');
+    Route::patch('/estacionamientos/{zona}/estado', [EstacionamientoController::class, 'estado'])->whereNumber('zona')->name('estacionamientos.estado');
+    // Fin Padrones: Equipos de seguridad y Estacionamientos
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
