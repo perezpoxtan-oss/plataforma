@@ -39,6 +39,7 @@ class AdministradorColaboradores
     public const REFERENCIAS = [
         'users' => 'colaborador_id',
         'vehiculos' => 'colaborador_id',
+        'vouchers_reposicion' => 'colaborador_id',
     ];
 
     private const SIN_ACENTOS = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u'];

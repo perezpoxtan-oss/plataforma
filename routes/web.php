@@ -19,8 +19,10 @@ use App\Http\Controllers\Organizacion\PuestoController;
 use App\Http\Controllers\Organizacion\TurnoController;
 use App\Http\Controllers\Padrones\ProveedorController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\Seguridad\GafeteController;
 use App\Http\Controllers\Seguridad\PersonaController;
 use App\Http\Controllers\Seguridad\VehiculoController;
+use App\Http\Controllers\Seguridad\VoucherController;
 use Illuminate\Support\Facades\Route;
 
 // Acceso
@@ -139,6 +141,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/modulos/{clave}', ModuloPendienteController::class)
         ->where('clave', '[a-z0-9_]+')
         ->name('modulos.pendiente');
+
+    // Padrones: Gafetes y Vouchers de reposición
+    Route::get('/gafetes', [GafeteController::class, 'index'])->name('gafetes.index');
+    Route::post('/gafetes/lote', [GafeteController::class, 'lote'])->name('gafetes.lote');
+    Route::match(['get', 'post'], '/gafetes/imprimir', [GafeteController::class, 'imprimir'])->name('gafetes.imprimir');
+    Route::put('/gafetes/{gafete}', [GafeteController::class, 'update'])->whereNumber('gafete')->name('gafetes.update');
+    Route::post('/gafetes/{gafete}/baja', [GafeteController::class, 'baja'])->whereNumber('gafete')->name('gafetes.baja');
+    Route::patch('/gafetes/{gafete}/reactivar', [GafeteController::class, 'reactivar'])->whereNumber('gafete')->name('gafetes.reactivar');
+    Route::get('/vouchers', [VoucherController::class, 'index'])->name('vouchers.index');
+    Route::get('/vouchers/{voucher}/imprimir', [VoucherController::class, 'imprimir'])->whereNumber('voucher')->name('vouchers.imprimir');
+    // Fin Padrones: Gafetes y Vouchers de reposición
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');

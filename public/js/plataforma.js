@@ -1727,3 +1727,115 @@ document.addEventListener('click', function (e) {
     window.Lector = { preparar: preparar, elegir: elegir, limpiar: limpiar };
 })();
 /* Fin Lector universal */
+/* ==========================================================================
+   Padrones: Gafetes y Vouchers de reposición
+   - "Marcar todos" (solo los visibles con el filtro actual) e "Imprimir"
+     los marcados, con el conteo en el botón.
+   - Diálogos de editar y de baja: título con la nomenclatura, tipo nuevo y
+     la caja de cobro (monto y responsable) que aparece al marcar "Aplica CXC".
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function casillas() { return Array.prototype.slice.call(document.querySelectorAll('[data-casilla-gafete]')); }
+
+    function visible(casilla) {
+        var ficha = casilla.closest('[data-ficha]');
+        return !ficha || ficha.style.display !== 'none';
+    }
+
+    function actualizarConteo() {
+        var marcadas = casillas().filter(function (c) { return c.checked; }).length;
+        var conteo = document.querySelector('[data-conteo-gafetes]');
+        if (conteo) { conteo.hidden = marcadas === 0; conteo.textContent = String(marcadas); }
+        var visibles = casillas().filter(visible);
+        var todas = visibles.length > 0 && visibles.every(function (c) { return c.checked; });
+        var boton = document.querySelector('[data-marcar-gafetes]');
+        if (boton) {
+            boton.setAttribute('aria-pressed', String(todas));
+            var texto = boton.querySelector('[data-texto-marcar]');
+            if (texto) { texto.textContent = todas ? 'Desmarcar todos' : 'Marcar todos'; }
+        }
+        if (marcadas > 0) {
+            var aviso = document.querySelector('[data-aviso-sin-marcar]');
+            if (aviso) { aviso.hidden = true; }
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-marcar-gafetes]')) { return; }
+        var visibles = casillas().filter(visible);
+        var marcar = !visibles.every(function (c) { return c.checked; });
+        visibles.forEach(function (c) { c.checked = marcar; });
+        actualizarConteo();
+    });
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-casilla-gafete]')) { actualizarConteo(); }
+    });
+
+    // Al cambiar los filtros, el botón refleja si los visibles están marcados
+    ['input', 'change', 'click'].forEach(function (tipo) {
+        document.addEventListener(tipo, function (e) {
+            if (e.target.closest && e.target.closest('[data-filtro-texto="gafetes"], [data-filtro-sede="gafetes"], [data-filtro-tipo="gafetes"], [data-filtro-estado="gafetes"]')) {
+                setTimeout(actualizarConteo, 0);
+            }
+        });
+    });
+
+    // Imprimir sin nada marcado: aviso en lugar de abrir una pestaña vacía
+    document.addEventListener('submit', function (e) {
+        if (!e.target.matches('[data-form-imprimir-gafetes]')) { return; }
+        if (casillas().some(function (c) { return c.checked; })) { return; }
+        e.preventDefault();
+        var aviso = document.querySelector('[data-aviso-sin-marcar]');
+        if (aviso) { aviso.hidden = false; aviso.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    });
+
+    /* ---------- Casilla que muestra un bloque (y lo hace obligatorio) ---------- */
+    function sincronizarCaja(casilla) {
+        var caja = document.querySelector(casilla.getAttribute('data-muestra-si-marcado'));
+        if (!caja) { return; }
+        caja.hidden = !casilla.checked;
+        caja.querySelectorAll('input, select, textarea').forEach(function (c) {
+            c.disabled = !casilla.checked;
+            if (c.hasAttribute('data-requerido-si-marcado')) { c.required = casilla.checked; }
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-muestra-si-marcado]')) { sincronizarCaja(e.target); }
+    });
+
+    function sincronizarFormulario(form) {
+        form.querySelectorAll('[data-muestra-si-marcado]').forEach(sincronizarCaja);
+        // Lista de tipo: muestra u oculta "Nombre del tipo nuevo" (data-mostrar-si)
+        form.querySelectorAll('select[name="tipo_gafete_id"]').forEach(function (s) {
+            s.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+
+    // Editar / dar de baja: después del llenado genérico (editar-registro)
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        var form = dialogo && dialogo.querySelector('[data-form-gafete]');
+        if (!form) { return; }
+        var titulo = dialogo.querySelector('[data-titulo-registro]');
+        if (titulo && boton.dataset.tituloRegistro) { titulo.textContent = boton.dataset.tituloRegistro; }
+        sincronizarFormulario(form);
+    });
+
+    // Al cerrar (y limpiarse) el diálogo, sus bloques dependientes se acomodan otra vez
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-form-gafete]').forEach(sincronizarFormulario);
+    }, true); // "close" no burbujea: fase de captura, después de la limpieza común
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-muestra-si-marcado]').forEach(sincronizarCaja);
+        actualizarConteo();
+    });
+})();
+/* Fin Padrones: Gafetes y Vouchers de reposición */
