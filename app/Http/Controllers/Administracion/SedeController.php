@@ -21,7 +21,7 @@ use Illuminate\View\View;
 
 /**
  * Sedes (réplica de modules/hoteles/hotel_lista.php de SEGCAT). El nombre de la
- * pantalla sale del rubro: Hoteles, Plantas, Torres, Privadas...
+ * pantalla sale de la terminología del rubro (hoy, en todos los rubros, "Sedes").
  */
 class SedeController extends Controller
 {

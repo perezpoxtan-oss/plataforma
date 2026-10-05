@@ -533,3 +533,12 @@ html.modo-noche .aviso-pendiente .icono { background: rgba(245, 158, 11, 0.2); c
 html.modo-noche .aviso-pendiente .boton { color: #fcd34d; }
 html.modo-sol .aviso-pendiente { background: #fff; border: 3px solid #000; color: #000; }
 html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { color: #000; background: #fff; }
+
+/* Matriz de permisos: áreas contraíbles */
+.tabla-permisos tr.fila-area td { padding: 0; }
+.alternar-area { display: flex; align-items: center; gap: 0.55rem; width: 100%; min-height: 48px; padding: 0.6rem 0.9rem; background: transparent; border: none; text-align: left; font: inherit; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--texto); cursor: pointer; }
+.alternar-area:hover { background: rgba(15, 23, 42, 0.04); }
+.alternar-area .flecha { transition: transform 0.2s; color: var(--texto-suave); }
+.alternar-area[aria-expanded="true"] .flecha { transform: rotate(90deg); }
+.alternar-area .resumen-area { margin-left: auto; font-size: 0.72rem; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--texto-suave); }
+@media (max-width: 575.98px) { .alternar-area .resumen-area { display: none; } }

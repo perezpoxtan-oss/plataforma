@@ -11,9 +11,9 @@ class RubrosSeeder extends Seeder
     {
         $rubros = [
             'hotel' => ['Hotel', ['sede' => 'Sede', 'sedes' => 'Sedes', 'area_especifica' => 'Habitación', 'visitante' => 'Huésped']],
-            'corporativo' => ['Corporativo / industria', ['sede' => 'Planta', 'sedes' => 'Plantas', 'area_especifica' => 'Oficina', 'visitante' => 'Visitante']],
-            'condominio' => ['Condominio', ['sede' => 'Torre', 'sedes' => 'Torres', 'area_especifica' => 'Departamento', 'visitante' => 'Visita', 'colaborador' => 'Residente']],
-            'fraccionamiento' => ['Fraccionamiento', ['sede' => 'Privada', 'sedes' => 'Privadas', 'area_especifica' => 'Casa', 'visitante' => 'Visita', 'colaborador' => 'Residente']],
+            'corporativo' => ['Corporativo / industria', ['sede' => 'Sede', 'sedes' => 'Sedes', 'area_especifica' => 'Oficina', 'visitante' => 'Visitante']],
+            'condominio' => ['Condominio', ['sede' => 'Sede', 'sedes' => 'Sedes', 'area_especifica' => 'Departamento', 'visitante' => 'Visita', 'colaborador' => 'Residente']],
+            'fraccionamiento' => ['Fraccionamiento', ['sede' => 'Sede', 'sedes' => 'Sedes', 'area_especifica' => 'Casa', 'visitante' => 'Visita', 'colaborador' => 'Residente']],
         ];
 
         foreach ($rubros as $clave => [$nombre, $terminologia]) {

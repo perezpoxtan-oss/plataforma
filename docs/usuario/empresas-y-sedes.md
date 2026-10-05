@@ -7,7 +7,7 @@
 - **Super Administrador:** da de alta cada cliente con **Nueva Empresa**. Captura nombre comercial, razón social, RFC, **rubro** (hotel, corporativo, condominio o fraccionamiento) y **zona horaria**. Al guardar, la empresa queda lista con sus módulos y roles base; después registra sus sedes.
 - **Administrador del cliente:** ve **Mi Empresa** y puede corregir sus datos fiscales y su zona horaria.
 
-## Sedes (Estructura → Entidades Legales → Sedes, Plantas, Torres…)
+## Sedes (Estructura → Entidades Legales → Sedes)
 
 ![Sedes](img/empresas/2-sedes.png)
 

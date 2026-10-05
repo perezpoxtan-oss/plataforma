@@ -19,7 +19,7 @@ class ConstructorMenu
 {
     /**
      * Modulos cuyo nombre cambia segun el rubro de la empresa
-     * (p. ej. "Sedes" se llama "Hoteles" en un hotel).
+     * (p. ej. "Habitación" u "Oficina" según el rubro; las sedes siempre se llaman "Sedes").
      */
     private const TERMINOLOGIA = ['sedes' => 'sedes'];
 

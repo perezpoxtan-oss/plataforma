@@ -161,7 +161,7 @@
                         @endif
                     </div>
                     @if ($esSuperadmin && $esNueva)
-                        <p class="campo-ayuda mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> El rubro define cómo se llaman las sedes (Hoteles, Plantas, Torres…). Al crearla se activan sus módulos y se copian los roles base.</p>
+                        <p class="campo-ayuda mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> El rubro define la terminología de la operación (Habitación, Oficina, Departamento, Casa…). Al crearla se activan sus módulos y se copian los roles base.</p>
                     @endif
 
                     <label class="campo-etiqueta" for="{{ $modo }}_zona">Zona Horaria</label>

@@ -1022,3 +1022,46 @@ document.addEventListener('click', function (e) {
     }
     dialogo.showModal();
 });
+
+/* Matriz de permisos: cada área (Dirección, Recursos Humanos, Seguridad) se abre y se cierra.
+   Se recuerda qué áreas dejó abiertas en la pestaña del navegador. */
+(function () {
+    'use strict';
+    var CLAVE = 'plataforma_areas_abiertas';
+
+    function abiertas() {
+        try { return JSON.parse(sessionStorage.getItem(CLAVE) || '[]'); } catch (x) { return []; }
+    }
+    function guardar() {
+        var ids = [];
+        document.querySelectorAll('[data-alternar-area][aria-expanded="true"]').forEach(function (b) { ids.push(b.dataset.alternarArea); });
+        try { sessionStorage.setItem(CLAVE, JSON.stringify(ids)); } catch (x) { /* sin almacenamiento */ }
+    }
+    function poner(boton, abrir) {
+        var cuerpo = document.getElementById(boton.dataset.alternarArea);
+        if (!cuerpo) { return; }
+        cuerpo.hidden = !abrir;
+        boton.setAttribute('aria-expanded', String(abrir));
+    }
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-alternar-area]');
+        if (boton) {
+            poner(boton, boton.getAttribute('aria-expanded') !== 'true');
+            guardar();
+            return;
+        }
+        var todas = e.target.closest('[data-areas-todas]');
+        if (todas) {
+            document.querySelectorAll('[data-alternar-area]').forEach(function (b) { poner(b, todas.dataset.areasTodas === 'abrir'); });
+            guardar();
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var botones = document.querySelectorAll('[data-alternar-area]');
+        if (botones.length === 0) { return; }
+        var previas = abiertas();
+        botones.forEach(function (b) { poner(b, previas.indexOf(b.dataset.alternarArea) !== -1); });
+    });
+})();
