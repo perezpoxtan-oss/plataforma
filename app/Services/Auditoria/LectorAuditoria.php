@@ -13,6 +13,7 @@ use App\Models\GrupoEspacio;
 use App\Models\Llave;
 use App\Models\Modulo;
 use App\Models\Paradero;
+use App\Models\PaseSalida;
 use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\Puesto;
@@ -73,6 +74,7 @@ class LectorAuditoria
         ZonaEstacionamiento::class => ['Zona de estacionamiento', 'nombre'],
         Ruta::class => ['Ruta de transporte', 'nombre'],
         Paradero::class => ['Paradero', 'nombre'],
+        PaseSalida::class => ['Pase de salida', 'folio'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

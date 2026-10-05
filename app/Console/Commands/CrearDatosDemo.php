@@ -10,6 +10,7 @@ use App\Models\Espacio;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
+use App\Models\PaseSalida;
 use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\Puesto;
@@ -28,6 +29,7 @@ use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Llaves\AdministradorLlaves;
+use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Services\Rutas\AdministradorRutas;
 use App\Support\HoraLocal;
@@ -126,6 +128,7 @@ class CrearDatosDemo extends Command
         $tenant->conEmpresa($empresa->id, fn () => $this->gafetesDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->equiposYEstacionamientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->rutasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->pasesSalidaDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -708,5 +711,122 @@ class CrearDatosDemo extends Command
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }
+    }
+
+    /**
+     * Pases de salida de ejemplo, solo la primera vez: uno en cada estado del
+     * circuito (pendiente con una aprobación, rechazado, aprobado, salió
+     * cerrado, en camino a la otra sede, en destino, en tránsito de regreso,
+     * regresado y uno vencido). Se registran y firman con las mismas reglas
+     * de la pantalla (AdministradorPasesSalida), como si los capturara la
+     * caseta; las firmas son trazos de ejemplo.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function pasesSalidaDemo($sedes, User $admin, User $agente): void
+    {
+        if (PaseSalida::exists() || ! function_exists('imagecreatetruecolor')) {
+            return;
+        }
+        $colaborador = fn (string $num) => Colaborador::where('num_empleado', $num)->value('id');
+        $proveedor = fn (string $nombre) => Proveedor::where('nombre', $nombre)->where('activo', true)->value('id');
+        if ($colaborador('1007') === null || $proveedor('Constructora Maya') === null) {
+            return; // sin colaboradores ni proveedores demo no hay a quién asignar los pases
+        }
+
+        $hoy = now('America/Cancun');
+        $dia = fn (int $dias) => $hoy->copy()->addDays($dias)->format('Y-m-d');
+        $radio = Equipo::where('numero_serie', '752TSFQ505')->first();
+
+        // [quién lo registra, datos, artículos, firmas por grupo (true = todos los roles; número = los primeros n), motivo de rechazo]
+        $plan = [
+            [$agente, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1007'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(1), 'fecha_tentativa_regreso' => $dia(8)],
+                [['cantidad' => 1, 'equipo' => 'Proyector', 'marca' => 'EPSON', 'modelo' => 'PowerLite X49', 'serie' => 'X49-55821', 'descripcion' => 'Con cable HDMI y control remoto, para el evento de capacitación']],
+                ['aprobacion' => 1], null],
+            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'venta', 'colaborador_id' => $colaborador('1001'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Abarrotes del Caribe'),
+                'destino_direccion' => 'Av. Andrés Quintana Roo 45, Cancún', 'destino_telefono' => '9988841020', 'fecha_salida_programada' => $dia(0)],
+                [['cantidad' => 4, 'equipo' => 'Refrigerador exhibidor', 'marca' => 'IMBERA', 'modelo' => 'VR-17', 'descripcion' => 'Usados, de la tienda del lobby']],
+                [], 'Falta la factura de venta autorizada por Contraloría.'],
+            [$admin, ['sede_id' => $sedes['PLA']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1011'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
+                'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(0), 'fecha_tentativa_regreso' => $dia(10)],
+                [['cantidad' => 1, 'equipo' => 'Taladro rotomartillo', 'marca' => 'DEWALT', 'modelo' => 'DCD996', 'serie' => 'DW-778120', 'descripcion' => 'No gira el mandril']],
+                ['aprobacion' => true], null],
+            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'traspaso_definitivo', 'colaborador_id' => $colaborador('1009'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(-2)],
+                [['cantidad' => 1, 'equipo' => 'Lavadora industrial', 'marca' => 'SPEED QUEEN', 'modelo' => 'SC40', 'serie' => 'SQ-40-1187', 'descripcion' => 'Pasa a la lavandería de Playa']],
+                ['aprobacion' => true, 'salida_fisica' => true], null],
+            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1005'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(-1), 'fecha_tentativa_regreso' => $dia(5)],
+                [$radio ? ['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505', 'equipo_id' => $radio->id, 'descripcion' => 'Con cargador']
+                    : ['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505']],
+                ['aprobacion' => true, 'salida_fisica' => true, 'recepcion_destino' => 2], null],
+            [$admin, ['sede_id' => $sedes['PLA']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1008'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['CEN']->id,
+                'fecha_salida_programada' => $dia(-4), 'fecha_tentativa_regreso' => $dia(3)],
+                [['cantidad' => 2, 'equipo' => 'Aspiradora', 'marca' => 'KÄRCHER', 'modelo' => 'NT 30/1', 'descripcion' => 'Apoyo por la limpieza profunda de Centro']],
+                ['aprobacion' => true, 'salida_fisica' => true, 'recepcion_destino' => true], null],
+            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'consignacion', 'colaborador_id' => $colaborador('1007'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(-6), 'fecha_tentativa_regreso' => $dia(1)],
+                [['cantidad' => 1, 'equipo' => 'Carpa plegable 3x3', 'marca' => 'TRUPER', 'descripcion' => 'Color blanco, con bolsa'], ['cantidad' => 6, 'equipo' => 'Silla plegable', 'descripcion' => 'Negras']],
+                ['aprobacion' => true, 'salida_fisica' => true, 'recepcion_destino' => true, 'salida_regreso' => true], null],
+            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'colaborador', 'colaborador_destino_id' => $colaborador('1005'),
+                'fecha_salida_programada' => $dia(-9), 'fecha_tentativa_regreso' => $dia(-2)],
+                [['cantidad' => 1, 'equipo' => 'Laptop', 'marca' => 'LENOVO', 'modelo' => 'L14', 'serie' => 'ABC123LATCAT', 'descripcion' => 'Bajo resguardo de Sistemas, para home office']],
+                ['aprobacion' => true, 'salida_fisica' => true, 'regreso' => true], null],
+            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
+                'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(-10), 'fecha_tentativa_regreso' => $dia(-3)],
+                [['cantidad' => 1, 'equipo' => 'Puerta corrediza de cristal', 'marca' => 'MITEL', 'modelo' => '989484', 'descripcion' => 'Riel dañado; la reparan en el taller del proveedor']],
+                ['aprobacion' => true, 'salida_fisica' => true], null],
+        ];
+
+        $pases = app(AdministradorPasesSalida::class);
+        $firmantes = ['MARIANA LÓPEZ PECH', 'CARLOS PÉREZ GÓMEZ', 'ANA ADMINISTRADORA', 'ROBERTO HERNÁNDEZ CRUZ', 'DIEGO DIRECTOR', 'SERGIO SUPERVISOR'];
+        $previo = auth()->user();
+        try {
+            foreach ($plan as $n => [$autor, $datos, $articulos, $firmas, $rechazo]) {
+                auth()->setUser($autor);
+                $pase = $pases->crear($autor, $datos + ['articulos' => $articulos]);
+                auth()->setUser($admin);
+                foreach ($firmas as $grupo => $cuantas) {
+                    $roles = array_keys(PaseSalida::GRUPOS[$grupo][1]);
+                    foreach (array_slice($roles, 0, $cuantas === true ? count($roles) : $cuantas) as $i => $rol) {
+                        $pases->firmar($admin, $pase->refresh(), [
+                            'rol' => $rol, 'nombre_firma' => $firmantes[($n + $i) % count($firmantes)], 'firma' => $this->firmaDemo($n * 10 + $i),
+                        ]);
+                    }
+                }
+                if ($rechazo !== null) {
+                    $pases->rechazar($admin, $pase->refresh(), ['motivo_rechazo' => $rechazo]);
+                }
+            }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    /**
+     * Trazo de firma de ejemplo (JPEG en base64, como lo manda la pantalla).
+     */
+    private function firmaDemo(int $semilla): string
+    {
+        $img = imagecreatetruecolor(600, 200);
+        imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+        $tinta = imagecolorallocate($img, 15, 23, 42);
+        imagesetthickness($img, 3);
+        mt_srand($semilla + 7);
+        $x = 60;
+        $y = 120;
+        for ($i = 0; $i < 14; $i++) {
+            $nx = $x + mt_rand(20, 38);
+            $ny = 70 + mt_rand(0, 80);
+            imageline($img, $x, $y, $nx, $ny, $tinta);
+            [$x, $y] = [$nx, $ny];
+        }
+        imageline($img, 70, 160, $x, 150, $tinta);
+        mt_srand();
+        ob_start();
+        imagejpeg($img, null, 70);
+
+        return 'data:image/jpeg;base64,'.base64_encode((string) ob_get_clean());
     }
 }

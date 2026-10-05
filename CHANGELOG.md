@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Pases de salida (`/pases-salida`), con las pantallas, textos y colores de SEGCAT: filtros Todos / Pendientes de Aprobación / Aprobados / Fuera de la propiedad / Esperando Regreso / Vencidos (contra la fecha local de la sede) y búsqueda por folio, solicitante, artículo o serie; «Nuevo Pase de Salida» en 3 pasos con solicitante leído con el lector universal o buscado por nombre, atajos Nuevo Colaborador (alta provisional) y Nuevo Proveedor, dirección y teléfono del destino autollenados y equipos del padrón escaneados como artículos; folio PS-000123 consecutivo por empresa; circuito de firmas de SEGCAT (aprobación, salida física, recepción en destino, salida de regreso y regreso) con firma autógrafa privada, nombre propuesto, rechazo con motivo y hoja impresa con todas las firmas. Aprobar/rechazar pide «aprobar» y el resto «firmar» (SEGCAT usaba «editar»); la sede destino ve y firma lo suyo. 9 pases demo, uno por estado. Lección 21.
 - Firma autógrafa en pantalla (dedo, lápiz o mouse) para los módulos de Operación; las firmas se guardan fuera de la carpeta pública y solo se ven con permiso.
 - Logo de la empresa (como en SEGCAT): se sube al editar la empresa y sale en su ficha, en los gafetes y en las impresiones.
 - QA: con cada versión nueva se completan solos los datos y usuarios demo que falten (por ejemplo rh.demo), sin tocar las cuentas que ya existen.

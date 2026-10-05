@@ -1268,3 +1268,146 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .firma.falta .firma-lienzo { border-color: #ef4444; background: #fef2f2; }
 .firma.falta .firma-guia { color: #b91c1c; }
 /* Fin Firma autógrafa */
+/* ==========================================================================
+   Pases de salida (colores de estado de SEGCAT: $ESTATUS_COLOR)
+   ========================================================================== */
+.pantalla-pases { --pase-color: #64748b; }
+.pase-pendiente, .pase-espera { --pase-color: #d97706; }
+.pase-rechazado, .pase-vencido { --pase-color: #dc2626; }
+.pase-aprobado { --pase-color: #2563eb; }
+.pase-salio { --pase-color: #7c3aed; }
+.pase-en-destino { --pase-color: #0891b2; }
+.pase-en-transito { --pase-color: #ea580c; }
+.pase-regresado, .pase-cerrado { --pase-color: #16a34a; }
+.pase-otro { --pase-color: #64748b; }
+
+.btn-nuevo-pase { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; border-radius: 10px; padding: 0.7rem 1.25rem; min-height: 48px; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; }
+.btn-nuevo-pase:hover { filter: brightness(1.08); }
+
+.filtros-pases { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.filtros-pases .btn { min-height: 44px; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 10px; }
+.conteo-filtro { background: rgba(15, 23, 42, 0.1); border-radius: 999px; padding: 0.05rem 0.5rem; font-size: 0.75rem; }
+.filtros-pases .btn-dark .conteo-filtro, .filtros-pases .btn-primary .conteo-filtro, .filtros-pases .btn-danger .conteo-filtro { background: rgba(255, 255, 255, 0.25); }
+
+.busqueda-pases { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
+.busqueda-pases .buscador { flex: 1 1 260px; max-width: none; }
+.busqueda-pases .filtro-select { min-height: 48px; }
+.btn-buscar-pases { background: #0f172a; color: #fff; border: none; border-radius: 12px; min-height: 48px; min-width: 48px; padding: 0 1rem; font-weight: 700; font-family: inherit; cursor: pointer; }
+.btn-limpiar-pases { display: inline-flex; align-items: center; min-height: 48px; padding: 0 1rem; border: 1px solid var(--borde); border-radius: 12px; color: #475569; background: #fff; text-decoration: none; font-weight: 600; }
+
+.lista-pases { display: flex; flex-direction: column; gap: 0.7rem; }
+.pase-card { background: #fff; border: 1px solid var(--borde); border-left: 5px solid var(--pase-color); border-radius: 12px; padding: 1rem 1.1rem; transition: box-shadow 0.15s; }
+.pase-card:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06); }
+.pase-card-cabecera { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; flex-wrap: wrap; }
+.pase-titulo { font-size: 1rem; font-weight: 500; margin: 0; color: var(--texto); overflow-wrap: anywhere; }
+.pase-meta { font-size: 0.85rem; color: var(--texto-suave); margin-top: 0.25rem; }
+.pase-ruta { font-size: 0.82rem; color: #475569; margin-top: 0.2rem; overflow-wrap: anywhere; }
+.texto-vencido { color: #dc2626; font-weight: 700; }
+.badge-pase { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; color: #fff; background: var(--pase-color); }
+.pase-card-pie { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
+.btn-ver-pase { display: inline-flex; align-items: center; min-height: 44px; padding: 0.4rem 1rem; border: 1px solid #0f172a; border-radius: 8px; color: #0f172a; background: transparent; font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+.btn-ver-pase:hover { background: #0f172a; color: #fff; }
+
+/* Diálogos */
+.dialogo-pase .resumen-pase { background: #f8fafc; border: 1px solid var(--borde); border-radius: 10px; padding: 0.75rem; font-size: 0.88rem; margin-bottom: 1rem; overflow-wrap: anywhere; }
+.titulo-seccion-pase { font-size: 0.95rem; font-weight: 700; color: var(--texto); border-bottom: 1px solid var(--borde); padding-bottom: 0.5rem; margin: 0 0 0.6rem; }
+.titulo-seccion-pase .normal { font-weight: 400; color: var(--texto-suave); font-size: 0.8rem; text-transform: none; }
+.articulo-pase { font-size: 0.86rem; border: 1px solid var(--borde); border-radius: 8px; padding: 0.5rem 0.65rem; margin-bottom: 0.35rem; background: #fff; overflow-wrap: anywhere; }
+.chip-padron { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.68rem; font-weight: 700; color: #475569; background: #f1f5f9; border-radius: 999px; padding: 0.05rem 0.45rem; margin-left: 0.3rem; }
+.texto-morado { color: #7c3aed; }
+.seccion-firmas { border: 1px solid var(--borde); border-radius: 12px; padding: 0.65rem; margin-bottom: 0.6rem; background: #fff; }
+.seccion-firmas.abierta { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08); }
+.seccion-firmas-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.45rem; flex-wrap: wrap; }
+.seccion-firmas-cabecera h4 { font-size: 0.9rem; font-weight: 700; margin: 0; }
+.estado-seccion { font-size: 0.7rem; font-weight: 700; border-radius: 999px; padding: 0.15rem 0.6rem; white-space: nowrap; }
+.estado-seccion.completo { background: #dcfce7; color: #15803d; }
+.estado-seccion.en-curso { background: #dbeafe; color: #1d4ed8; }
+.estado-seccion.pendiente { background: #f1f5f9; color: #475569; }
+.estado-seccion.no-aplica { background: #f1f5f9; color: #94a3b8; }
+.fila-firma { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; border: 1px solid var(--borde); border-radius: 8px; padding: 0.45rem 0.6rem; margin-bottom: 0.35rem; font-size: 0.84rem; background: #f8fafc; min-height: 44px; }
+.fila-firma.firmada { background: #fff; }
+.fila-firma.apagada { color: var(--texto-suave); }
+.fila-firma.eligiendo { border-color: #2563eb; background: #eff6ff; }
+.miniatura-firma { height: 40px; max-width: 110px; object-fit: contain; border: 1px solid var(--borde); border-radius: 6px; background: #fff; flex-shrink: 0; }
+.btn-firmar-rol { border: 1px solid #2563eb; color: #2563eb; background: #fff; border-radius: 8px; min-height: 40px; padding: 0.3rem 0.9rem; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; }
+.btn-firmar-rol:hover { background: #2563eb; color: #fff; }
+.aviso-sin-firma { font-size: 0.8rem; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.45rem 0.6rem; margin: 0.35rem 0 0; }
+.caja-firma-pase { border: 2px solid #93c5fd; border-radius: 12px; padding: 0.75rem; background: #f8fafc; margin: 0.75rem 0; }
+.titulo-firma-pase { font-weight: 800; color: #1d4ed8; margin: 0 0 0.5rem; }
+.caja-firma-pase .dialogo-acciones { background: transparent; position: static; }
+.zona-rechazo { border-top: 1px solid var(--borde); margin-top: 0.75rem; padding-top: 0.75rem; }
+.btn-rechazar-pase { border: 1px solid #dc2626; color: #dc2626; background: transparent; border-radius: 8px; min-height: 44px; padding: 0.3rem 1rem; font-weight: 700; font-family: inherit; cursor: pointer; }
+.btn-rechazar-pase:hover { background: #dc2626; color: #fff; }
+.btn-confirmar-rechazo { background: #dc2626; color: #fff; border: none; border-radius: 8px; min-height: 44px; padding: 0.3rem 1rem; font-weight: 700; font-family: inherit; cursor: pointer; }
+.pie-detalle-pase { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; border-top: 1px solid var(--borde); margin-top: 0.75rem; padding-top: 0.75rem; }
+.btn-imprimir-pase { display: inline-flex; align-items: center; min-height: 44px; padding: 0.3rem 1rem; border-radius: 8px; background: #0f172a; color: #fff; text-decoration: none; font-weight: 700; }
+.btn-imprimir-pase:hover { color: #fff; filter: brightness(1.2); }
+
+.paso-pase { display: flex; align-items: center; font-size: 1rem; font-weight: 700; color: var(--texto); border-bottom: 1px solid var(--borde); padding-bottom: 0.5rem; margin: 1.1rem 0 0.8rem; }
+.numero-paso { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 0.8rem; margin-right: 0.5rem; flex-shrink: 0; }
+.aviso-regreso { font-size: 0.85rem; color: var(--texto-suave); margin: 0 0 0.8rem; }
+.fila-con-boton { display: flex; gap: 0.6rem; align-items: flex-start; }
+.btn-atajo-pase { margin-top: 1.45rem; min-height: 48px; border: 1px solid #2563eb; color: #2563eb; background: #fff; border-radius: 10px; padding: 0.4rem 0.9rem; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; }
+.btn-atajo-pase:hover { background: #eff6ff; }
+.campo-solo-lectura { background: #f1f5f9; color: #475569; }
+.lector-equipo-pase { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 0.75rem 0.75rem 0.1rem; margin-bottom: 0.8rem; }
+.articulo-fila { position: relative; border: 1px solid var(--borde); border-left: 4px solid #2563eb; border-radius: 12px; background: #f8fafc; padding: 0.75rem 3.2rem 0 0.75rem; margin-bottom: 0.6rem; }
+.btn-quitar-articulo { position: absolute; top: 0.4rem; right: 0.4rem; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid #fca5a5; color: #dc2626; background: #fff; border-radius: 10px; cursor: pointer; }
+.btn-quitar-articulo:hover { background: #dc2626; color: #fff; }
+.btn-agregar-articulo { background: #f1f5f9; border: 1px solid var(--borde); border-radius: 10px; min-height: 44px; padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 700; color: #334155; cursor: pointer; font-family: inherit; }
+.btn-agregar-articulo:hover { background: #e2e8f0; }
+
+@media (max-width: 575.98px) {
+    .btn-nuevo-pase { width: 100%; }
+    .busqueda-pases .filtro-select { max-width: none; flex: 1 1 100%; }
+    .fila-con-boton { flex-direction: column; gap: 0; }
+    .btn-atajo-pase { margin-top: -0.4rem; margin-bottom: 1rem; width: 100%; }
+    .articulo-fila { padding-right: 0.75rem; padding-top: 3.3rem; }
+    .fila-firma { flex-wrap: wrap; }
+    .fila-firma .btn-firmar-rol { margin-left: auto; }
+    .pase-card-pie .btn-ver-pase { width: 100%; justify-content: center; }
+}
+
+/* Hoja impresa */
+.pagina-impresion-pase { font-family: var(--fuente); background: #e2e8f0; margin: 0; padding: 20px 12px; color: #0f172a; min-height: 100vh; }
+.hoja-pase { background: #fff; max-width: 216mm; margin: 0 auto; padding: 12mm; border-radius: 8px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); color: #0f172a; }
+.hoja-pase-encabezado { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; border-bottom: 2px solid #0f172a; padding-bottom: 4mm; margin-bottom: 4mm; }
+.hoja-pase-empresa { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+.hoja-pase-logo { max-height: 16mm; max-width: 40mm; object-fit: contain; }
+.hoja-pase-nombre-empresa { font-size: 1.05rem; font-weight: 800; }
+.hoja-pase-sede { font-size: 0.75rem; color: #475569; }
+.hoja-pase-folio { text-align: right; }
+.hoja-pase-titulo { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #475569; }
+.hoja-pase-numero { font-size: 1.5rem; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin-bottom: 0.2rem; }
+.hoja-pase-datos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.5mm 4mm; margin-bottom: 4mm; }
+.hoja-pase-datos .dato-etiqueta { font-size: 0.6rem; }
+.hoja-pase-datos .dato-valor { font-size: 0.82rem; }
+.hoja-pase-datos .normal { font-weight: 400; }
+.hoja-pase-articulos { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin-bottom: 4mm; }
+.hoja-pase-articulos th { background: #f1f5f9; text-transform: uppercase; font-size: 0.6rem; letter-spacing: 0.5px; }
+.hoja-pase-articulos th, .hoja-pase-articulos td { border: 1px solid #cbd5e1; padding: 1.2mm 1.6mm; text-align: left; overflow-wrap: anywhere; }
+.hoja-pase-rechazo { border: 1px solid #dc2626; color: #b91c1c; border-radius: 6px; padding: 2mm 3mm; font-size: 0.8rem; }
+.hoja-pase-grupo { break-inside: avoid; page-break-inside: avoid; margin-bottom: 3mm; }
+.hoja-pase-grupo h2 { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 1.5mm; border-bottom: 1px solid #cbd5e1; padding-bottom: 1mm; }
+.hoja-pase-firmas { display: grid; grid-template-columns: repeat(auto-fill, minmax(42mm, 1fr)); gap: 2mm 4mm; }
+.hoja-pase-firma { text-align: center; min-width: 0; }
+.hoja-pase-imagen { height: 14mm; display: flex; align-items: flex-end; justify-content: center; }
+.hoja-pase-imagen img { max-height: 14mm; max-width: 100%; object-fit: contain; }
+.hoja-pase-firmante { font-size: 0.62rem; font-weight: 700; overflow-wrap: anywhere; }
+.hoja-pase-fecha { font-size: 0.58rem; color: #475569; }
+.hoja-pase-pie { margin-top: 4mm; font-size: 0.6rem; color: #64748b; text-align: right; }
+@media (max-width: 575.98px) {
+    .hoja-pase { padding: 5mm; }
+    .hoja-pase-encabezado { flex-direction: column; }
+    .hoja-pase-folio { text-align: left; }
+    .hoja-pase-datos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media print {
+    .pagina-impresion-pase { background: #fff !important; padding: 0; min-height: 0; }
+    .pagina-impresion-pase .controles-impresion, .pagina-impresion-pase .franja-ambiente { display: none !important; }
+    .hoja-pase { box-shadow: none; border-radius: 0; padding: 0; max-width: 100%; background: #fff !important; color: #000 !important; }
+    .hoja-pase .badge-pase, .hoja-pase-articulos th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+@media print { .hoja-pase { page: pase-salida; } }
+@page pase-salida { size: letter; margin: 10mm; }
+/* Fin Pases de salida */
