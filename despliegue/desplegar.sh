@@ -289,15 +289,23 @@ fi
 # --- QA: completar los datos demo con cada version nueva ------------------------
 # Los modulos nuevos traen sus datos de ejemplo (y a veces usuarios demo nuevos,
 # como rh.demo). Se agregan una vez por version; lo que ya existe no se toca.
-if [ "$AMB" = "qa" ] && [ -f "$PRIVADO/qa_inicial" ] && [ -d "$APP/actual" ] \
+# Si no hay contraseña guardada, las cuentas nuevas reciben la de admin.demo.
+if [ "$AMB" = "qa" ] && [ -d "$APP/actual" ] \
    && [ "$(cat "$APP/.release_actual" 2>/dev/null)" != "$(cat "$APP/.demo_completado" 2>/dev/null)" ]; then
-  PLATAFORMA_CONTRASENA="$(grep -E '^CONTRASENA=' "$PRIVADO/qa_inicial" | cut -d= -f2-)"
+  PLATAFORMA_CONTRASENA="$(grep -E '^CONTRASENA=' "$PRIVADO/qa_inicial" 2>/dev/null | cut -d= -f2-)"
   export PLATAFORMA_CONTRASENA
-  if [ -n "$PLATAFORMA_CONTRASENA" ] && (cd "$APP/actual" && "${P[@]}" artisan plataforma:demo >> "$LOG" 2>&1); then
+  [ -n "$PLATAFORMA_CONTRASENA" ] || unset PLATAFORMA_CONTRASENA
+  SALIDA_DEMO="$(cd "$APP/actual" && "${P[@]}" artisan plataforma:demo 2>&1)"; RC_DEMO=$?
+  printf '%s\n' "$SALIDA_DEMO" >> "$LOG"
+  if [ $RC_DEMO -eq 0 ]; then
     cat "$APP/.release_actual" > "$APP/.demo_completado"
     log "Datos demo completados para $(cat "$APP/.release_actual")"
+    NUEVOS="$(printf '%s\n' "$SALIDA_DEMO" | grep -o 'Usuario demo creado: [a-z0-9.]*' | sed 's/Usuario demo creado: //' | tr '\n' ' ')"
+    SIN="$(printf '%s\n' "$SALIDA_DEMO" | grep 'Partes del demo sin completar' | head -1)"
+    estado "OK: $(cat "$APP/.release_actual") · datos demo al dia${NUEVOS:+ · usuarios nuevos: $NUEVOS}${SIN:+ · $SIN}"
   else
-    log "ADVERTENCIA: no se pudieron completar los datos demo (revisa despliegue.log)"
+    log "ADVERTENCIA: no se pudieron completar los datos demo"
+    estado "ADVERTENCIA: no se pudieron completar los datos demo: $(printf '%s\n' "$SALIDA_DEMO" | grep -v '^\s*$' | tail -1 | cut -c1-200)"
   fi
   unset PLATAFORMA_CONTRASENA
 fi

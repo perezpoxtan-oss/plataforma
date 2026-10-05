@@ -93,7 +93,7 @@ Para cambiar la configuración después, basta con subir otro `env_qa.txt`: se c
 
 ## QA: datos demo al día
 
-En QA, cada versión nueva corre `plataforma:demo` una vez, con la contraseña de `qa_inicial`; la marca de la versión ya completada queda en `$APP/.demo_completado`. El comando:
+En QA, cada versión nueva corre `plataforma:demo` una vez, con la contraseña de `qa_inicial` (si ya no está, las cuentas nuevas reciben la contraseña de admin.demo; cada parte del demo se completa por separado y el resultado, con los usuarios nuevos, queda en `despliegue_qa_estado.txt`); la marca de la versión ya completada queda en `$APP/.demo_completado`. El comando:
 
 - crea solo las cuentas demo que faltan (por ejemplo `rh.demo`) y no cambia el correo ni la contraseña de las que ya existen;
 - llena los datos de ejemplo de los módulos nuevos (cada uno solo si su tabla está vacía).

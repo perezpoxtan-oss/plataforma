@@ -4,6 +4,7 @@ namespace Tests\Feature\Nucleo;
 
 use App\Console\Commands\CrearDatosDemo;
 use App\Models\Empresa;
+use App\Models\Rol;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -54,6 +55,21 @@ class DatosDemoTest extends TestCase
         $this->assertTrue(Hash::check('OtraClave99', $admin->password));
         $rh = User::where('username', 'rh.demo')->firstOrFail();
         $this->assertTrue(Hash::check('Nueva1234!', $rh->password));
+        $this->assertTrue($rh->can('colaboradores.aprobar'));
+    }
+
+    public function test_sin_contrasena_completa_un_demo_existente_con_la_de_admin_y_el_rol_que_faltaba(): void
+    {
+        $this->artisan('plataforma:demo', ['--password' => 'Prueba123!'])->assertSuccessful();
+        // QA creada antes de Recursos Humanos: no existen ni rh.demo ni el rol en la empresa
+        User::where('username', 'rh.demo')->delete();
+        $empresa = Empresa::where('nombre_comercial', CrearDatosDemo::EMPRESA)->firstOrFail();
+        Rol::where('empresa_id', $empresa->id)->where('nombre', 'Recursos Humanos')->get()->each->delete();
+
+        $this->artisan('plataforma:demo')->assertSuccessful()->expectsOutputToContain('Usuario demo creado: rh.demo');
+
+        $rh = User::where('username', 'rh.demo')->firstOrFail();
+        $this->assertTrue(Hash::check('Prueba123!', $rh->password));
         $this->assertTrue($rh->can('colaboradores.aprobar'));
     }
 

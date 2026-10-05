@@ -51,6 +51,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -86,7 +87,12 @@ class CrearDatosDemo extends Command
         }
 
         $contrasena = $this->option('password') ?? (getenv('PLATAFORMA_CONTRASENA') ?: null);
-        if ($contrasena === null || strlen($contrasena) < 8) {
+        // Sin contraseña se puede completar un demo que ya existe: las cuentas
+        // nuevas (p. ej. rh.demo) reciben la misma contraseña que admin.demo.
+        $hashExistente = $contrasena === null
+            ? User::whereIn('username', array_keys(self::USUARIOS))->orderByRaw("username = 'admin.demo' desc")->value('password')
+            : null;
+        if (($contrasena === null || strlen($contrasena) < 8) && $hashExistente === null) {
             $this->error('Indica una contrasena de al menos 8 caracteres (--password o PLATAFORMA_CONTRASENA).');
 
             return self::FAILURE;
@@ -118,37 +124,65 @@ class CrearDatosDemo extends Command
                     'empresa_id' => $empresa->id,
                     'name' => $nombre,
                     'email' => $usuario.'@demo.local',
-                    'password' => $contrasena,
+                    'password' => $contrasena ?? Str::random(40),
                     'activo' => true,
                 ])->save();
+                if ($contrasena === null) {
+                    // El hash ya viene calculado: se escribe tal cual, sin volver a cifrarlo
+                    DB::table('users')->where('id', $cuenta->id)->update(['password' => $hashExistente]);
+                }
                 $this->line("Usuario demo creado: {$usuario}");
             }
 
             $rolId = Rol::where('empresa_id', $empresa->id)->where('nombre', $rol)->value('id');
+            if ($rolId === null && ($plantilla = Rol::plantillas()->with('permisos')->where('nombre', $rol)->first()) !== null) {
+                // Rol base agregado después de crear la empresa demo (p. ej. Recursos Humanos)
+                $rolId = $provisionar->copiarPlantillaSiFalta($plantilla, $empresa->id)?->id;
+            }
+            if ($rolId === null) {
+                $this->warn("La empresa demo no tiene el rol «{$rol}»: {$usuario} quedó sin rol.");
+
+                continue;
+            }
             UsuarioRol::firstOrCreate(['user_id' => $cuenta->id, 'rol_id' => $rolId], [
                 'sede_id' => $sede === null ? null : $sedes[$sede]->id,
             ]);
         }
 
-        $tenant->conEmpresa($empresa->id, fn () => $this->espaciosDemo($sedes['CEN'], User::where('username', 'admin.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->departamentosYPuestosDemo($sedes['PLA']));
-        $tenant->conEmpresa($empresa->id, fn () => $this->turnosDemo($sedes['PLA']));
-        $tenant->conEmpresa($empresa->id, fn () => $this->colaboradoresDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->provisionalesDemo($sedes, User::where('username', 'agente.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->proveedoresDemo($sedes));
-        // Padrón de personas: después de los proveedores (si existen) para ligar a su personal
-        $tenant->conEmpresa($empresa->id, fn () => $this->personasDemo(User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'jefe.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->vehiculosDemo(User::where('username', 'admin.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->llavesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->gafetesDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->equiposYEstacionamientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->rutasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->accesosDemo($empresa, $sedes, User::where('username', 'jefe.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->prestamosYResponsivasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->novedadesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'agente2.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->pasesSalidaDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
-        $tenant->conEmpresa($empresa->id, fn () => $this->transporteDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        // Cada parte del demo va por separado: si una falla (por ejemplo, con
+        // datos que alguien ya modificó en QA), las demás se completan igual.
+        $fallas = [];
+        $paso = function (string $nombre, callable $fn) use ($tenant, $empresa, &$fallas) {
+            try {
+                $tenant->conEmpresa($empresa->id, $fn);
+            } catch (\Throwable $e) {
+                $fallas[] = $nombre;
+                $this->warn("No se pudo completar {$nombre}: ".$e->getMessage());
+            }
+        };
 
+        $paso('espaciosDemo', fn () => $this->espaciosDemo($sedes['CEN'], User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('departamentosYPuestosDemo', fn () => $this->departamentosYPuestosDemo($sedes['PLA']));
+        $paso('turnosDemo', fn () => $this->turnosDemo($sedes['PLA']));
+        $paso('colaboradoresDemo', fn () => $this->colaboradoresDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('provisionalesDemo', fn () => $this->provisionalesDemo($sedes, User::where('username', 'agente.demo')->firstOrFail()));
+        $paso('proveedoresDemo', fn () => $this->proveedoresDemo($sedes));
+        // Padrón de personas: después de los proveedores (si existen) para ligar a su personal
+        $paso('personasDemo', fn () => $this->personasDemo(User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'jefe.demo')->firstOrFail()));
+        $paso('vehiculosDemo', fn () => $this->vehiculosDemo(User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('llavesDemo', fn () => $this->llavesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('gafetesDemo', fn () => $this->gafetesDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('equiposYEstacionamientosDemo', fn () => $this->equiposYEstacionamientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('rutasDemo', fn () => $this->rutasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('accesosDemo', fn () => $this->accesosDemo($empresa, $sedes, User::where('username', 'jefe.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
+        $paso('prestamosYResponsivasDemo', fn () => $this->prestamosYResponsivasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
+        $paso('novedadesDemo', fn () => $this->novedadesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'agente2.demo')->firstOrFail()));
+        $paso('pasesSalidaDemo', fn () => $this->pasesSalidaDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
+        $paso('transporteDemo', fn () => $this->transporteDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+
+        if ($fallas !== []) {
+            $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
+        }
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
         return self::SUCCESS;
