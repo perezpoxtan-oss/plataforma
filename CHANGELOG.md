@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Firma autógrafa en pantalla (dedo, lápiz o mouse) para los módulos de Operación; las firmas se guardan fuera de la carpeta pública y solo se ven con permiso.
 - Logo de la empresa (como en SEGCAT): se sube al editar la empresa y sale en su ficha, en los gafetes y en las impresiones.
 - QA: con cada versión nueva se completan solos los datos y usuarios demo que falten (por ejemplo rh.demo), sin tocar las cuentas que ya existen.
 - Catálogo de llaves (`/llaves`), con las pantallas de SEGCAT: fichas con horarios, insignia de caducidad (vencida / vence pronto / vigente) y lo que abre cada llave; filtros por sede, tipo, estado y caducidad; alta y edición con sede, departamento, puesto, responsable con el lector universal, alcance de apertura con lugares de Zonas y áreas revalidados contra la sede, ID externo por plataforma, etiqueta NFC/RFID y horarios (también los que cruzan la medianoche). Baja con voucher de reposición y costo sugerido, reactivación, etiquetas de llaveros con QR generado en la plataforma (antes `api.qrserver.com`) y exportación a Excel con los filtros. La edición ya no permite dar de baja sin voucher. Lección 14.

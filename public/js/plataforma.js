@@ -2541,3 +2541,94 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Rutas de transporte */
+/* ==========================================================================
+   Firma autógrafa (componentes/firma.blade.php): dibuja con dedo, lápiz o
+   mouse y deja la imagen (JPEG, ligera) en el campo oculto al soltar.
+   Un formulario con firma obligatoria vacía no se envía.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function preparar(caja) {
+        var lienzo = caja.querySelector('[data-firma-lienzo]');
+        if (!lienzo || lienzo.dataset.listo) { return; }
+        lienzo.dataset.listo = '1';
+        var ctx = lienzo.getContext('2d');
+        var valor = caja.querySelector('[data-firma-valor]');
+        var guia = caja.querySelector('[data-firma-guia]');
+        var dibujando = false;
+        var trazos = 0;
+
+        function pos(e) {
+            var r = lienzo.getBoundingClientRect();
+            return { x: (e.clientX - r.left) * (lienzo.width / r.width), y: (e.clientY - r.top) * (lienzo.height / r.height) };
+        }
+        function exportar() {
+            if (!trazos) { valor.value = ''; return; }
+            // Fondo blanco + JPEG: pocos KB (los firewalls del hosting rechazan envíos grandes)
+            var copia = document.createElement('canvas');
+            copia.width = lienzo.width; copia.height = lienzo.height;
+            var c = copia.getContext('2d');
+            c.fillStyle = '#ffffff'; c.fillRect(0, 0, copia.width, copia.height);
+            c.drawImage(lienzo, 0, 0);
+            valor.value = copia.toDataURL('image/jpeg', 0.7);
+        }
+
+        lienzo.addEventListener('pointerdown', function (e) {
+            dibujando = true;
+            lienzo.setPointerCapture(e.pointerId);
+            ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0f172a';
+            var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y);
+            if (guia) { guia.hidden = true; }
+            e.preventDefault();
+        });
+        lienzo.addEventListener('pointermove', function (e) {
+            if (!dibujando) { return; }
+            var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke();
+            trazos++;
+            e.preventDefault();
+        });
+        ['pointerup', 'pointercancel'].forEach(function (ev) {
+            lienzo.addEventListener(ev, function () { if (dibujando) { dibujando = false; exportar(); caja.classList.remove('falta'); } });
+        });
+
+        caja.limpiarFirma = function () {
+            ctx.clearRect(0, 0, lienzo.width, lienzo.height);
+            trazos = 0; valor.value = '';
+            if (guia) { guia.hidden = false; }
+        };
+    }
+
+    document.addEventListener('DOMContentLoaded', function () { document.querySelectorAll('[data-firma]').forEach(preparar); });
+    // Por si el recuadro aparece después (filas dinámicas, diálogos cargados)
+    document.addEventListener('pointerdown', function (e) {
+        var caja = e.target.closest && e.target.closest('[data-firma]');
+        if (caja && !caja.querySelector('[data-firma-lienzo]').dataset.listo) { preparar(caja); }
+    }, true);
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-firma-limpiar]');
+        if (!b) { return; }
+        var caja = b.closest('[data-firma]');
+        preparar(caja);
+        caja.limpiarFirma();
+    });
+
+    document.addEventListener('submit', function (e) {
+        var faltan = Array.prototype.filter.call(e.target.querySelectorAll('[data-firma-requerida]'), function (v) { return !v.value; });
+        if (!faltan.length) { return; }
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        faltan.forEach(function (v) { v.closest('[data-firma]').classList.add('falta'); });
+        faltan[0].closest('[data-firma]').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, true);
+
+    // Al cerrar el diálogo que la contiene, la firma se borra
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-firma]').forEach(function (caja) { preparar(caja); caja.limpiarFirma(); caja.classList.remove('falta'); });
+    }, true);
+
+    window.Firma = { preparar: preparar };
+})();
+/* Fin Firma autógrafa */

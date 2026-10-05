@@ -608,3 +608,7 @@ html.modo-noche .btn-quitar-fila { background: rgba(239, 68, 68, 0.14); color: #
 html.modo-noche .rutas-paraderos-encabezado { color: #7c8ba1; }
 html.modo-noche .rutas-separador { border-top-color: var(--borde); }
 /* Fin Rutas de transporte */
+/* Firma autógrafa: el recuadro siempre blanco (la tinta es oscura) */
+html.modo-sol .firma-lienzo { border: 3px solid #000; }
+html.modo-noche .firma-lienzo { border-color: #475569; }
+/* Fin Firma autógrafa */
