@@ -41,6 +41,8 @@ class AdministradorColaboradores
         'vehiculos' => 'colaborador_id',
         'llaves' => 'colaborador_id',
         'vouchers_reposicion' => 'colaborador_id',
+        'novedades' => 'reportado_colaborador_id',
+        'accidente_colaboradores' => 'colaborador_id',
     ];
 
     private const SIN_ACENTOS = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u'];

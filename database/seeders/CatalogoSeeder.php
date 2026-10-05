@@ -60,6 +60,8 @@ class CatalogoSeeder extends Seeder
         'equipos' => 'equipos.index',
         'estacionamientos' => 'estacionamientos.index',
         'rutas' => 'rutas.index',
+        'novedades' => 'novedades.index',
+        'lost_found' => 'lost_found.index',
     ];
 
     /**

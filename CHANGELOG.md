@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Bitácora de Novedades (`/novedades`), con las pantallas de SEGCAT: pestañas Tickets Abiertos / Asignados e Historial Resueltos, «Generar Ticket Rápido» con gafete escaneado de quien reporta, Expediente con Preguntas Base, formato por categoría (Reporte General, Accidente idéntico al de SEGCAT con mapa del cuerpo y 6 firmas privadas, Valores a la Vista, Siniestro PC que abre su Accidente, Recorrido PC histórico, Lost & Found con folios LF-/RP-, Robo), Minuto a Minuto que no se borra, Pendiente de Turno, cierre con resolución y reapertura con motivo; Buscar Coincidencias y Vincular, Ficha de Hechos, impresión, acuse de Lost & Found y exportación CSV; Lost & Found solo con su permiso, alcance por sede y auditoría. Lección 20.
 - Firma autógrafa en pantalla (dedo, lápiz o mouse) para los módulos de Operación; las firmas se guardan fuera de la carpeta pública y solo se ven con permiso.
 - Logo de la empresa (como en SEGCAT): se sube al editar la empresa y sale en su ficha, en los gafetes y en las impresiones.
 - QA: con cada versión nueva se completan solos los datos y usuarios demo que falten (por ejemplo rh.demo), sin tocar las cuentas que ya existen.
