@@ -9,10 +9,12 @@ use App\Models\Empresa;
 use App\Models\Espacio;
 use App\Models\GrupoEspacio;
 use App\Models\Modulo;
+use App\Models\Paradero;
 use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\Puesto;
 use App\Models\Rol;
+use App\Models\Ruta;
 use App\Models\Sede;
 use App\Models\TipoEspacio;
 use App\Models\Turno;
@@ -57,6 +59,8 @@ class LectorAuditoria
         Persona::class => ['Persona', 'nombre_completo'],
         Vehiculo::class => ['Vehículo', 'placas'],
         VoucherReposicion::class => ['Voucher', 'folio'],
+        Ruta::class => ['Ruta de transporte', 'nombre'],
+        Paradero::class => ['Paradero', 'nombre'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

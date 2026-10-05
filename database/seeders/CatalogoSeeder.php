@@ -54,6 +54,7 @@ class CatalogoSeeder extends Seeder
         'proveedores' => 'proveedores.index',
         'visitantes' => 'personas.index',
         'vehiculos' => 'vehiculos.index',
+        'rutas' => 'rutas.index',
     ];
 
     /**

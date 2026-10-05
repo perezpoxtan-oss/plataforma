@@ -730,3 +730,187 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .dialogo-camara video { width: 100%; max-height: 60vh; border-radius: 14px; background: #000; display: block; object-fit: cover; }
 .lector .campo-ayuda { margin: 0.4rem 0 0; }
 /* Fin Lector universal */
+/* ==========================================================================
+   Rutas de transporte (ámbar #f59e0b / naranja #c2410c, como en SEGCAT):
+   fichas por sede, pestañas Llegadas / Salidas / Paraderos, diálogo de
+   horarios y paraderos, hoja del día e itinerario para imprimir.
+   ========================================================================== */
+.tema-rutas .ficha-card:hover { transform: translateY(-3px); box-shadow: 0 12px 20px -8px rgba(245,158,11,0.18); border-color: rgba(245,158,11,0.45); }
+.tema-rutas .campo:focus, .tema-rutas .buscador input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.15); outline: none; }
+.tema-rutas .btn-icono.editar { color: #b45309; }
+.tema-rutas .btn-icono.editar:hover { background: #b45309; color: #fff; }
+.tema-rutas .filtros-estado .btn { min-height: 44px; }
+.rutas-icono-titulo { color: #d97706; }
+.btn-rutas { background: #b45309; color: #fff; border: none; }
+.btn-rutas:hover { background: #92400e; color: #fff; }
+.rutas-boton { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0.55rem 1rem; border-radius: 12px; font-weight: 700; font-size: 0.88rem; text-decoration: none; cursor: pointer; font-family: inherit; }
+.rutas-acciones-sede { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Fichas de sede */
+.rutas-sedes-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.rutas-ficha-sede { padding: 1.4rem; }
+.rutas-sede-cabecera { display: flex; align-items: center; gap: 0.8rem; }
+.rutas-sede-icono { width: 44px; height: 44px; border-radius: 12px; background: #fff7ed; color: #c2410c; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+.rutas-sede-titulo { flex: 1; min-width: 0; }
+.rutas-sede-titulo h2 { margin: 0; font-size: 1.05rem; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rutas-sede-titulo h2 a { color: var(--texto); text-decoration: none; }
+.rutas-sede-titulo h2 a:hover { color: #c2410c; }
+.rutas-sede-empresa { font-size: 0.72rem; font-weight: 700; color: #2563eb; }
+.rutas-insignias { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.9rem; }
+.rutas-sentido { font-size: 0.68rem; font-weight: 800; padding: 5px 10px; border-radius: 6px; text-transform: uppercase; display: inline-flex; align-items: center; white-space: nowrap; }
+.rutas-sentido.llegada { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.rutas-sentido.salida { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.rutas-sentido.paradero { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.rutas-proximos { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.7rem; }
+.rutas-proximos-col { background: var(--fondo); border: 1px solid var(--borde); border-radius: 10px; padding: 0.5rem 0.6rem; min-width: 0; }
+.rutas-proximos-titulo { font-size: 0.66rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 3px; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rutas-proximos-item { font-size: 0.75rem; color: #334155; padding: 1px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rutas-transportistas { font-size: 0.75rem; color: #64748b; margin-top: 0.6rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rutas-aviso-suspendidas { display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 700; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 3px 8px; border-radius: 6px; margin-top: 0.6rem; }
+.rutas-sede-acciones { display: flex; gap: 0.5rem; margin-top: 1rem; }
+.btn-detalle-sede { flex: 1; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; border-radius: 12px; font-weight: 700; font-size: 0.88rem; text-decoration: none; }
+.btn-detalle-sede:hover { background: #fed7aa; color: #9a3412; }
+.btn-icono.imprimir-hoja { color: #475569; text-decoration: none; flex-shrink: 0; }
+.btn-icono.imprimir-hoja:hover { background: #475569; color: #fff; }
+.btn-icono.clonar { color: #0369a1; }
+.btn-icono.clonar:hover { background: #0369a1; color: #fff; }
+.rutas-vacio { grid-column: 1 / -1; }
+
+/* Pestañas de la sede */
+.rutas-pestanas { display: flex; gap: 0.25rem; margin-bottom: 1rem; border-bottom: 2px solid var(--borde); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.rutas-pestana { display: inline-flex; align-items: center; min-height: 44px; padding: 0.6rem 1rem; font-weight: 700; font-size: 0.88rem; color: #64748b; text-decoration: none; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; }
+.rutas-pestana:hover { color: #c2410c; }
+.rutas-pestana.activa { color: #c2410c; border-bottom-color: #f59e0b; }
+.rutas-crear-mini { display: block; width: 100%; background: rgba(245,158,11,0.05); border: 1.5px dashed rgba(245,158,11,0.55); border-radius: 12px; padding: 0.7rem 0.9rem; min-height: 48px; text-align: center; cursor: pointer; font-weight: 700; color: #b45309; font-size: 0.9rem; margin-bottom: 0.8rem; font-family: inherit; }
+.rutas-crear-mini:hover { background: rgba(245,158,11,0.12); }
+.rutas-nota { margin: -0.2rem 0 0.8rem; }
+.rutas-filtros { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
+
+/* Filas de rutas y paraderos */
+.rutas-lista { display: flex; flex-direction: column; gap: 0.6rem; }
+.rutas-fila { display: flex; align-items: flex-start; gap: 0.8rem; background: #fff; border: 1px solid var(--borde); border-radius: 14px; padding: 0.8rem 0.9rem; transition: 0.2s; }
+.rutas-fila:hover { border-color: #f59e0b; }
+.rutas-fila.inactiva { background: var(--fondo); }
+.rutas-fila.inactiva .rutas-fila-nombre { color: #64748b; }
+.rutas-fila.ficha-resaltada { box-shadow: 0 0 0 3px #f59e0b !important; }
+.rutas-fila-info { flex: 1; min-width: 0; }
+.rutas-fila-nombre { font-size: 0.95rem; font-weight: 800; color: var(--texto); margin: 0; overflow-wrap: anywhere; }
+.rutas-fila-meta { font-size: 0.75rem; color: #64748b; display: flex; gap: 0.35rem 0.8rem; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+.rutas-fila-meta .etiqueta-estado { padding: 0.15rem 0.55rem; font-size: 0.62rem; }
+.rutas-fila-horarios { list-style: none; padding: 0; margin: 0.45rem 0 0; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.rutas-fila-horarios li { font-size: 0.72rem; color: #475569; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 2px 7px; }
+.rutas-fila-horarios strong { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #92400e; }
+.rutas-dia-siguiente { font-size: 0.6rem; font-weight: 800; color: #7c3aed; margin-left: 2px; vertical-align: super; }
+.rutas-horario-nombre { color: #64748b; }
+.rutas-fila-acciones { display: flex; gap: 0.35rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.rutas-icono-paradero { color: #d97706; }
+@media (max-width: 575.98px) {
+    .rutas-fila { flex-direction: column; }
+    .rutas-fila-acciones { width: 100%; justify-content: flex-start; padding-top: 0.5rem; border-top: 1px dashed var(--borde); }
+    .rutas-filtros .buscador { max-width: none; }
+    .rutas-acciones-sede .rutas-boton { flex: 1; }
+    .rutas-proximos { grid-template-columns: 1fr; }
+    .rutas-pestana { padding: 0.6rem 0.65rem; font-size: 0.82rem; }
+}
+
+/* Diálogo de ruta */
+.rutas-dialogo { max-width: 700px; }
+.rutas-ayuda { margin-top: -0.6rem; margin-bottom: 0.9rem; font-size: 0.8rem; }
+.rutas-separador { border-top: 1px solid var(--borde); padding-top: 0.8rem; margin-top: 0.4rem; }
+.rutas-sentido-opciones { display: flex; gap: 0.6rem; margin-bottom: 1rem; }
+.rutas-sentido-opcion { flex: 1; text-align: center; padding: 0.8rem 0.5rem; border: 2px solid var(--borde); border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 0.85rem; color: #64748b; position: relative; min-height: 44px; }
+.rutas-sentido-opcion input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.rutas-sentido-opcion:has(input:checked) { border-color: #f59e0b; background: #fffbeb; color: #b45309; }
+.rutas-sentido-opcion:has(input:focus-visible) { outline: 3px solid #f59e0b; outline-offset: 2px; }
+.rutas-transportista { font-weight: 700; color: #15803d; }
+.rutas-horario { background: var(--fondo); border: 1px solid var(--borde); border-radius: 14px; padding: 0.9rem 0.9rem 0.3rem; margin: 0 0 1rem; min-width: 0; }
+.rutas-horario-cabecera { display: flex; justify-content: space-between; align-items: center; float: left; width: 100%; margin-bottom: 0.6rem; font-size: inherit; padding: 0; }
+.rutas-horario-titulo { font-weight: 800; font-size: 0.9rem; color: #b45309; }
+.btn-quitar-fila { background: #fef2f2; color: #dc2626; border: none; width: 44px; height: 44px; border-radius: 10px; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; }
+.btn-quitar-fila:hover:not(:disabled) { background: #dc2626; color: #fff; }
+.btn-quitar-fila:disabled { opacity: 0.35; cursor: not-allowed; }
+.rutas-dias { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+.rutas-dia { background: #fff; border: 1px solid var(--borde); border-radius: 10px; padding: 0.45rem 0.65rem; min-height: 44px; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: #475569; }
+.rutas-dia input { accent-color: #d97706; width: 16px; height: 16px; }
+.rutas-dia:has(input:checked) { background: #fffbeb; border-color: #f59e0b; color: #b45309; }
+.rutas-paraderos-encabezado { display: grid; grid-template-columns: 1fr 150px 44px; gap: 0.5rem; font-size: 0.68rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem; }
+.rutas-paradero-fila { display: grid; grid-template-columns: 1fr 150px 44px; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
+.rutas-paradero-fila > div { min-width: 0; }
+.rutas-paradero-fila .text-uppercase::placeholder { text-transform: none; }
+.btn-agregar-paradero { background: #fffbeb; color: #b45309; border: 1px dashed #f59e0b; border-radius: 10px; padding: 0.5rem 0.9rem; min-height: 44px; font-size: 0.85rem; font-weight: 700; cursor: pointer; margin: 0.2rem 0 0.9rem; font-family: inherit; }
+.btn-agregar-paradero:hover { background: #fef3c7; }
+.btn-agregar-horario { width: 100%; background: #fff; color: #0f172a; border: 2px dashed #cbd5e1; border-radius: 12px; padding: 0.7rem; min-height: 48px; font-weight: 700; font-size: 0.88rem; cursor: pointer; margin-bottom: 0.5rem; font-family: inherit; }
+.btn-agregar-horario:hover { border-color: #f59e0b; color: #b45309; }
+@media (max-width: 575.98px) {
+    .rutas-paraderos-encabezado { display: none; }
+    .rutas-paradero-fila { grid-template-columns: 1fr 44px; gap: 0.4rem; padding-bottom: 0.5rem; border-bottom: 1px dashed var(--borde); }
+    .rutas-paradero-fila > div:first-child { grid-column: 1 / -1; }
+    .rutas-horario { padding: 0.7rem 0.6rem 0.2rem; }
+}
+
+/* Hoja del día e itinerario: páginas propias para imprimir */
+.pagina-rutas-hoja { background: #e2e8f0; min-height: 100vh; margin: 0; padding: 24px 12px; color: #0f172a; font-family: var(--fuente); }
+.rutas-hoja { background: #fff; color: #0f172a; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); padding: 1.4rem 1.6rem 1.6rem; margin: 0 auto; }
+.rutas-hoja-horizontal { max-width: 1250px; }
+.rutas-hoja-vertical { max-width: 720px; }
+.rutas-hoja-controles { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 1px dashed #cbd5e1; }
+.rutas-hoja-fecha { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.rutas-hoja-fecha .campo { width: auto; min-height: 44px; padding: 0.5rem 0.7rem; background: #fff; color: #0f172a; }
+.rutas-hoja-controles .btn-imprimir-calcomania, .rutas-hoja-controles .btn-cerrar-calcomania { display: inline-flex; align-items: center; justify-content: center; }
+.rutas-hoja-encabezado { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; border-bottom: 3px solid #0f172a; padding-bottom: 0.7rem; margin-bottom: 1rem; }
+.rutas-hoja-encabezado h1 { font-size: 1.3rem; font-weight: 900; margin: 0; color: #0f172a; }
+.rutas-hoja-empresa { font-size: 0.78rem; color: #64748b; font-weight: 700; }
+.rutas-hoja-fecha-texto { text-align: right; }
+.rutas-hoja-fecha-texto small { display: block; font-size: 0.78rem; color: #475569; font-weight: 600; }
+.rutas-hoja-titulo { font-size: 0.95rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px; }
+.rutas-hoja-pagina { margin-bottom: 1.6rem; padding-bottom: 1.4rem; border-bottom: 2px dashed #cbd5e1; }
+.rutas-hoja-pagina:last-of-type { border-bottom: none; }
+.rutas-hoja-tabla-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.rutas-hoja-tabla { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+.rutas-hoja-tabla th { background: #eef2f7; color: #0f172a; text-align: left; padding: 4px; font-size: 0.6rem; text-transform: uppercase; border-bottom: 2px solid #0f172a; }
+.rutas-hoja-tabla td { padding: 4px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; color: #0f172a; }
+.rutas-hoja-tabla tbody tr:nth-child(even) td { background: #f8fafc; }
+.rutas-hoja-tabla tbody tr { break-inside: avoid; page-break-inside: avoid; }
+.rutas-hoja-tabla .col-hora { font-weight: 800; white-space: nowrap; width: 48px; }
+.rutas-hoja-tabla .col-ruta { min-width: 130px; }
+.rutas-hoja-extra { display: block; font-size: 0.62rem; font-weight: 700; color: #b45309; text-transform: uppercase; }
+.rutas-hoja-transportista { display: block; font-size: 0.62rem; color: #64748b; }
+.rutas-hoja-tabla .col-paradero { width: 40px; text-align: center; color: #94a3b8; }
+.rutas-hoja-tabla td.con-parada { color: #0f172a; font-weight: 700; }
+.rutas-hoja-tabla th.col-paradero { vertical-align: bottom; text-align: center; padding: 4px 1px 8px; color: #0f172a; width: 44px; }
+.rutas-hoja-tabla th.col-paradero span { writing-mode: vertical-rl; transform: rotate(180deg); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; white-space: normal; height: 120px; max-width: 40px; overflow: hidden; line-height: 1.1; word-break: break-word; font-weight: 700; margin: 0 auto; }
+.rutas-hoja-vacia { text-align: center; color: #64748b; font-size: 0.85rem; padding: 1rem 0.5rem; margin: 0; }
+.rutas-hoja-pie { margin-top: 0.8rem; font-size: 0.68rem; color: #64748b; text-align: right; }
+.rutas-itinerario-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem 1.5rem; margin-bottom: 1.4rem; }
+.rutas-itinerario-datos div { font-size: 0.88rem; }
+.rutas-itinerario-datos strong { display: block; font-size: 0.66rem; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
+.rutas-itinerario-horario { margin-bottom: 1.4rem; break-inside: avoid; page-break-inside: avoid; }
+.rutas-itinerario-destacado { background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 0.8rem; text-align: center; margin-bottom: 0.6rem; }
+.rutas-itinerario-etiqueta { font-size: 0.72rem; color: #92400e; text-transform: uppercase; font-weight: 800; }
+.rutas-itinerario-hora { font-size: 1.6rem; font-weight: 900; color: #b45309; }
+.rutas-itinerario-hora small { font-size: 0.75rem; font-weight: 700; }
+.rutas-itinerario-tabla { width: 100%; border-collapse: collapse; }
+.rutas-itinerario-tabla th { background: #0f172a; color: #fff; text-align: left; padding: 0.55rem 0.8rem; font-size: 0.72rem; text-transform: uppercase; }
+.rutas-itinerario-tabla td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #f1f5f9; font-size: 0.88rem; color: #0f172a; }
+.rutas-itinerario-tabla tr:nth-child(even) td { background: #f8fafc; }
+.rutas-itinerario-tabla .col-hora { width: 130px; font-weight: 700; color: #b45309; }
+.rutas-itinerario-tabla th.col-hora { color: #fff; }
+.rutas-itinerario-tabla th:first-child { width: 44px; }
+@media (max-width: 575.98px) {
+    .rutas-hoja { padding: 1rem; border-radius: 12px; }
+    .rutas-itinerario-datos { grid-template-columns: 1fr; }
+    .rutas-hoja-fecha-texto { text-align: left; }
+}
+@media print {
+    .pagina-rutas-hoja { background: #fff !important; padding: 0; min-height: 0; }
+    .rutas-hoja { box-shadow: none; border-radius: 0; padding: 0; max-width: 100%; background: #fff !important; color: #000 !important; }
+    .rutas-hoja-controles, .rutas-hoja .calcomania-acciones, .franja-ambiente { display: none !important; }
+    .rutas-hoja-horizontal .rutas-hoja-pagina { border-bottom: none; margin-bottom: 0; padding-bottom: 0; break-after: page; page-break-after: always; }
+    .rutas-hoja-horizontal .rutas-hoja-pagina:last-of-type { break-after: auto; page-break-after: auto; }
+    .rutas-hoja-tabla-scroll { overflow: visible; }
+    .rutas-hoja-tabla, .rutas-itinerario-destacado, .rutas-itinerario-tabla th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+/* Página con nombre: solo la hoja del día sale horizontal */
+@media print { .rutas-hoja-horizontal { page: rutas-horizontal; } }
+@page rutas-horizontal { size: letter landscape; margin: 10mm; }
+/* Fin Rutas de transporte */
