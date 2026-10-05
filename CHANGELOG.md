@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Padrón Vehicular (`/vehiculos`), con las pantallas de SEGCAT: fichas por categoría con píldoras Propios / Flotillas / Taxis, búsqueda por placas sin importar guiones ni espacios, campos que aparecen según la categoría y el tipo (proveedor obligatorio en flotillas, número económico, capacidad, colaborador dueño), placas normalizadas y únicas por empresa, baja y reactivación con auditoría. Calcomanía con QR generado en la plataforma (antes se enviaba a un servicio externo) que abre la ficha del vehículo. Búsqueda (`GET /vehiculos/buscar`) y registro rápido (`POST /vehiculos/rapido`) para Accesos y Estacionamientos; alta prellenada desde la ficha del proveedor. Nueva dependencia `bacon/bacon-qr-code`. Lección 13.
 - Configuración: correo de la plataforma (SMTP, contraseña cifrada, correo de prueba), avisos por correo por empresa (alta provisional a Recursos Humanos) y respaldos de la base (diario automático, antes de cada actualización y manual; 14 días; descarga auditada).
 - Las sedes se llaman «Sedes» en todos los rubros (antes Hoteles, Plantas, Torres o Privadas).
 - Matriz de permisos: cada área (Dirección, Recursos Humanos, Seguridad) se contrae y muestra cuántos permisos tiene otorgados; botones Expandir todo / Contraer todo.

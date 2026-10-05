@@ -15,6 +15,7 @@ use App\Models\Sede;
 use App\Models\TipoEspacio;
 use App\Models\Turno;
 use App\Models\User;
+use App\Models\Vehiculo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -49,6 +50,7 @@ class LectorAuditoria
         Puesto::class => ['Puesto', 'nombre'],
         Turno::class => ['Turno', 'nombre'],
         Colaborador::class => ['Colaborador', null],
+        Vehiculo::class => ['Vehículo', 'placas'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

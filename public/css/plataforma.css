@@ -548,3 +548,66 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .lista-respaldos { display: flex; flex-direction: column; gap: 0.4rem; }
 .fila-respaldo { display: grid; grid-template-columns: 1fr auto auto 44px; gap: 0.75rem; align-items: center; border: 1px solid var(--borde); border-radius: 12px; padding: 0.4rem 0.6rem 0.4rem 0.9rem; font-size: 0.88rem; }
 @media (max-width: 575.98px) { .fila-respaldo { grid-template-columns: 1fr 44px; } .fila-respaldo .chip-catalogo, .fila-respaldo .small { grid-column: 1; } .fila-respaldo .btn-icono { grid-column: 2; grid-row: 1 / span 3; } }
+
+/* ==========================================================================
+   Padrón Vehicular (pizarra #475569, como en SEGCAT) y calcomanía QR
+   ========================================================================== */
+.tema-pizarra .ficha-card { padding: 1.3rem; }
+.tema-pizarra .ficha-card:hover { transform: translateY(-3px); box-shadow: 0 12px 20px -8px rgba(71,85,105,0.15); border-color: rgba(71,85,105,0.4); }
+.tema-pizarra .ficha-create { background: rgba(71,85,105,0.03); border-color: rgba(71,85,105,0.3); }
+.tema-pizarra .ficha-create:hover { background: rgba(71,85,105,0.08); border-color: #475569; }
+.tema-pizarra .ficha-create i, .tema-pizarra .ficha-create .titulo-crear { color: #475569; }
+.tema-pizarra .btn-icono.editar { color: #475569; }
+.tema-pizarra .btn-icono.editar:hover { background: #475569; color: #fff; }
+.tema-pizarra .campo:focus, .tema-pizarra .buscador input:focus { border-color: #475569; box-shadow: 0 0 0 3px rgba(71,85,105,0.12); outline: none; }
+.tema-pizarra .btn-pill-tipo.active { background: #475569; border-color: #475569; color: #fff; }
+.tema-pizarra .ficha-footer { margin-top: 1rem; padding-top: 0.8rem; }
+.btn-pizarra { background: #475569; color: #fff; }
+.btn-pizarra:hover { background: #334155; }
+.conteo-pill { margin-left: 0.4rem; font-size: 0.72rem; font-weight: 800; opacity: 0.75; }
+.texto-padron-de { font-size: 0.75rem !important; color: #2563eb !important; margin-top: 0.15rem !important; }
+.veh-placas { font-size: 1.4rem; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: 1px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; border: 2px solid #cbd5e1; padding: 4px 12px; border-radius: 8px; display: inline-block; background: #f8fafc; word-break: break-all; }
+.badge-prop { font-size: 0.65rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; line-height: 1.4; }
+.bg-renta { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.bg-proveedor { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.bg-huesped { background: #fdf4ff; color: #a21caf; border: 1px solid #f5d0fe; }
+.bg-visitante { background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; }
+.bg-colaborador { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.bg-taxi { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.bg-personal { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+.tema-pizarra .etiqueta-estado { padding: 0.25rem 0.6rem; font-size: 0.65rem; white-space: nowrap; }
+.meta-vehiculo { padding: 0.5rem 0 0; font-size: 0.85rem; color: #475569; display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.8rem; border-top: 1px dashed var(--borde); }
+.meta-vehiculo > div:not(.texto-asociado):not(.texto-traza) { display: flex; justify-content: space-between; gap: 0.75rem; }
+.meta-vehiculo > div > strong { text-align: right; }
+.texto-asociado { color: #15803d; font-size: 0.78rem; margin-top: 0.2rem; }
+.btn-icono.imprimir-qr { color: #475569; text-decoration: none; }
+.btn-icono.imprimir-qr:hover { background: #475569; color: #fff; }
+.caja-propietario { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; border-radius: 10px; margin-bottom: 1rem; }
+.campo-placas { text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
+
+/* Calcomanía: página propia para imprimir */
+.pagina-calcomania { background: #e2e8f0; min-height: 100vh; margin: 0; padding: 30px 16px; display: flex; justify-content: center; align-items: flex-start; }
+.calcomania-contenedor { width: 100%; max-width: 340px; }
+.calcomania { background: #fff; color: #0f172a; border-radius: 18px; border: 3px solid #0f172a; padding: 1.2rem; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+.calcomania-empresa { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+.calcomania-placas { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 2.1rem; font-weight: 900; letter-spacing: 2px; color: #0f172a; border: 3px solid #0f172a; border-radius: 10px; padding: 6px 10px; margin: 0.6rem 0; background: #f8fafc; word-break: break-all; }
+.calcomania-qr { width: 190px; height: 190px; margin: 0.6rem auto; }
+.calcomania-qr svg { width: 100%; height: 100%; display: block; }
+.calcomania-codigo { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; font-weight: 700; color: #334155; letter-spacing: 1px; }
+.calcomania-detalle { font-size: 0.8rem; color: #475569; margin-top: 0.6rem; text-align: left; background: #f8fafc; border-radius: 10px; padding: 0.6rem 0.9rem; }
+.calcomania-detalle div { display: flex; justify-content: space-between; gap: 0.75rem; padding: 2px 0; }
+.calcomania-detalle strong { text-align: right; color: #0f172a; }
+.calcomania-baja { margin-top: 0.6rem; font-size: 0.75rem; font-weight: 800; color: #b91c1c; border: 2px solid #b91c1c; border-radius: 8px; padding: 0.3rem; }
+.calcomania-pie { font-size: 0.65rem; color: #64748b; margin-top: 0.8rem; }
+.calcomania-acciones { display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch; margin-top: 1.2rem; }
+.btn-imprimir-calcomania { background: #0f172a; color: #fff; border: none; padding: 0.8rem 1.5rem; min-height: 48px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btn-cerrar-calcomania { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 0.7rem 1.5rem; min-height: 44px; border-radius: 10px; font-weight: 600; text-decoration: none; text-align: center; }
+.btn-cerrar-calcomania:hover { background: #e2e8f0; color: #334155; }
+@media print {
+    @page { margin: 8mm; }
+    .pagina-calcomania { background: #fff !important; padding: 0; min-height: 0; display: block; }
+    .calcomania-contenedor { margin: 0 auto; }
+    .calcomania { box-shadow: none; background: #fff !important; color: #000 !important; border-color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .calcomania-acciones, .franja-ambiente { display: none !important; }
+}
+/* Fin Padrón Vehicular */
