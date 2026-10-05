@@ -191,7 +191,16 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         // Un formulario que regresó con errores vuelve a abrir su diálogo
-        document.querySelectorAll('dialog[data-abrir-al-cargar]').forEach(abrir);
+        // y, si el diálogo no trae sus propios errores, se copian dentro los de la
+        // página (si no, quedarían escondidos detrás del diálogo)
+        var erroresPagina = document.querySelector('.alert-danger.aviso');
+        document.querySelectorAll('dialog[data-abrir-al-cargar]').forEach(function (d) {
+            var form = d.querySelector('form');
+            if (erroresPagina && form && !d.querySelector('.alert-danger:not([hidden])')) {
+                form.insertBefore(erroresPagina.cloneNode(true), form.firstChild);
+            }
+            abrir(d);
+        });
     });
 })();
 
@@ -541,7 +550,13 @@ document.addEventListener('click', function (e) {
 
         // Avisos de validación y de nombre repetido
         dialogo.querySelectorAll('.is-invalid').forEach(function (n) { n.classList.remove('is-invalid'); });
-        dialogo.querySelectorAll('.invalid-feedback, [data-error-campo], .alert').forEach(function (n) { n.remove(); });
+        dialogo.querySelectorAll('.invalid-feedback, [data-error-campo]').forEach(function (n) { n.remove(); });
+        // Los avisos que pinta el servidor se quitan; los contenedores que reutiliza
+        // el registro rápido (data-errores-...) solo se vacían y se ocultan
+        dialogo.querySelectorAll('.alert').forEach(function (n) {
+            var reutilizable = Array.prototype.some.call(n.attributes, function (a) { return a.name.indexOf('data-errores') === 0; });
+            if (reutilizable) { n.hidden = true; n.textContent = ''; } else { n.remove(); }
+        });
         dialogo.querySelectorAll('[data-aviso-nombre]').forEach(function (n) { n.hidden = true; n.textContent = ''; });
     }
 

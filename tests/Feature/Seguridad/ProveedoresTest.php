@@ -251,11 +251,11 @@ class ProveedoresTest extends TestCase
         // "Agregar persona / vehículo" solo cuando existen esos padrones (contrato con sus pantallas)
         $personal = $this->actingAs($this->admin)->get("/proveedores/{$kinha->id}?tab=personal");
         Route::has('personas.index')
-            ? $personal->assertSee(route('personas.index', ['nuevo' => 1, 'proveedor' => $kinha->id]), false)->assertSee('#persona-', false)
+            ? $personal->assertSee(route('personas.index', ['nuevo' => 1, 'proveedor' => $kinha->id]))->assertSee('#persona-', false)
             : $personal->assertDontSee('Agregar persona');
         $flotilla = $this->actingAs($this->admin)->get("/proveedores/{$kinha->id}?tab=flotilla");
         Route::has('vehiculos.index')
-            ? $flotilla->assertSee(route('vehiculos.index', ['nuevo' => 1, 'proveedor' => $kinha->id]), false)
+            ? $flotilla->assertSee(route('vehiculos.index', ['nuevo' => 1, 'proveedor' => $kinha->id]))
             : $flotilla->assertDontSee('Agregar vehículo');
 
         // Editar desde la ficha regresa a la ficha
