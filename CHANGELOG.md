@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Préstamo de llaves (`/prestamo-llaves`) y Responsivas (`/responsivas`), con las pantallas de SEGCAT. Préstamo: pestañas Llaves en Uso / Historial de Entregas, «Prestar Llave» con el lector universal (llave y gafete) y «Registrar y Capturar Siguiente» sin cerrar el cuadro, garantía (Gafete interno, INE, Licencia, Pasaporte, Ninguna), recibir, anular y reactivar con reglas (ya no se recibe dos veces y la base impide prestar una llave dos veces), historial por llave, Excel de auditoría con filtros, permisos propios `prestamo_llaves.*` (antes `llaves.*`) e insignia EN USO / «Usada por» en el Catálogo de llaves. Responsivas: lotes con folio `CENRES-000001`, equipos DISPONIBLES de la sede escaneados o elegidos (Turno / Fijo), firma obligatoria guardada fuera de la carpeta pública y visible solo con permiso, hoja «Resguardo múltiple de activos de seguridad», «Recibir Lote Completo (OK)» y «A cargo de» en la ficha del equipo. Alcance por sede, auditoría y datos demo. Lección 19.
 - Firma autógrafa en pantalla (dedo, lápiz o mouse) para los módulos de Operación; las firmas se guardan fuera de la carpeta pública y solo se ven con permiso.
 - Logo de la empresa (como en SEGCAT): se sube al editar la empresa y sale en su ficha, en los gafetes y en las impresiones.
 - QA: con cada versión nueva se completan solos los datos y usuarios demo que falten (por ejemplo rh.demo), sin tocar las cuentas que ya existen.

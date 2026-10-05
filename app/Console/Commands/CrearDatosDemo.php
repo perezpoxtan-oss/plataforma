@@ -11,8 +11,10 @@ use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
 use App\Models\Persona;
+use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
 use App\Models\Puesto;
+use App\Models\Responsiva;
 use App\Models\Rol;
 use App\Models\Rubro;
 use App\Models\Ruta;
@@ -29,6 +31,8 @@ use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Llaves\AdministradorLlaves;
 use App\Services\Plataforma\ProvisionarEmpresa;
+use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
+use App\Services\Responsivas\AdministradorResponsivas;
 use App\Services\Rutas\AdministradorRutas;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\Tenant;
@@ -126,6 +130,7 @@ class CrearDatosDemo extends Command
         $tenant->conEmpresa($empresa->id, fn () => $this->gafetesDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->equiposYEstacionamientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->rutasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->prestamosYResponsivasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -708,5 +713,109 @@ class CrearDatosDemo extends Command
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }
+    }
+
+    /**
+     * Préstamo de llaves y Responsivas de ejemplo, cada uno solo la primera
+     * vez: llaves fuera y devueltas (una anulada por captura equivocada) y
+     * resguardos de equipo en campo y uno ya recibido, con firma. Se capturan
+     * con las mismas reglas de la pantalla, como agente.demo en Centro y
+     * admin.demo en Playa.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function prestamosYResponsivasDemo($sedes, User $admin, User $agente): void
+    {
+        $colaborador = fn (string $num) => Colaborador::where('num_empleado', $num)->value('id');
+        $llave = fn (string $nomenclatura) => Llave::where('nomenclatura', $nomenclatura)->where('activo', true)->value('id');
+        $equipo = fn (string $serie) => Equipo::where('numero_serie', $serie)->where('estado', 'disponible')->value('id');
+        $previo = auth()->user();
+
+        try {
+            if (! PrestamoLlave::exists() && Llave::exists() && Colaborador::exists()) {
+                $prestamos = app(AdministradorPrestamosLlaves::class);
+                // [actor, sede, llave, colaborador, garantía, folio, hace (minutos), qué pasa después]
+                $plan = [
+                    [$agente, 'CEN', 'HDC-TA-ZONA', '1006', 'ine', 'INE-0457', 1500, 'recibir'],
+                    [$agente, 'CEN', 'HDC-P1-AMA', '1007', 'gafete_interno', null, 190, 'anular'],
+                    [$agente, 'CEN', 'HDC-MASTER-01', '1005', 'ine', 'INE-8841', 150, null],
+                    [$agente, 'CEN', 'HDC-BOD-01', '1009', 'gafete_interno', 'DEPTO AMA DE LLAVES', 45, null],
+                    [$admin, 'PLA', 'HDP-MASTER-01', '1011', 'licencia', null, 2900, 'recibir'],
+                    [$admin, 'PLA', 'HDP-ALBERCA', '1008', 'ninguna', null, 30, null],
+                ];
+                foreach ($plan as [$actor, $sede, $nomenclatura, $num, $garantia, $folio, $hace, $despues]) {
+                    $llaveId = $llave($nomenclatura);
+                    $colaboradorId = $colaborador($num);
+                    if ($llaveId === null || $colaboradorId === null) {
+                        continue;
+                    }
+                    auth()->setUser($actor);
+                    $p = $prestamos->prestar($actor, ['sede_id' => $sedes[$sede]->id, 'llave_id' => $llaveId, 'colaborador_id' => $colaboradorId,
+                        'tipo_garantia' => $garantia, 'folio_garantia' => $folio]);
+                    $p->forceFill(['prestado_en' => now()->subMinutes($hace)])->save();
+                    if ($despues === 'recibir') {
+                        $prestamos->recibir($actor, $p);
+                        $p->forceFill(['devuelto_en' => now()->subMinutes((int) ($hace * 0.6))])->save();
+                    } elseif ($despues === 'anular') {
+                        // Anular es de supervisión (el Agente no anula): lo hace admin.demo
+                        auth()->setUser($admin);
+                        $prestamos->anular($admin, $p);
+                    }
+                }
+            }
+
+            if (! Responsiva::exists() && Equipo::exists() && Colaborador::exists() && function_exists('imagecreatetruecolor')) {
+                $responsivas = app(AdministradorResponsivas::class);
+                // [actor, sede, colaborador, [serie => modalidad], hace (minutos), recibir]
+                $plan = [
+                    [$agente, 'CEN', '1005', ['DM-1187' => 'asignado'], 2000, true],
+                    [$agente, 'CEN', '1003', ['752TSFQ504' => 'prestado', 'LT-0001' => 'prestado'], 120, false],
+                    [$admin, 'PLA', '1004', ['752TSFQ610' => 'prestado', 'CH-002' => 'asignado'], 300, false],
+                ];
+                foreach ($plan as $n => [$actor, $sede, $num, $equipos, $hace, $recibir]) {
+                    $ids = array_filter(array_map(fn ($serie) => $equipo($serie), array_keys($equipos)));
+                    $colaboradorId = $colaborador($num);
+                    if (count($ids) !== count($equipos) || $colaboradorId === null) {
+                        continue;
+                    }
+                    auth()->setUser($actor);
+                    $r = $responsivas->crear($actor, ['sede_id' => $sedes[$sede]->id, 'colaborador_id' => $colaboradorId,
+                        'equipos' => array_values($ids), 'modalidades' => array_values($equipos), 'firma' => $this->firmaDemo($n)]);
+                    $r->forceFill(['entregado_en' => now()->subMinutes($hace)])->save();
+                    if ($recibir) {
+                        $responsivas->recibir($actor, $r);
+                        $r->forceFill(['devuelto_en' => now()->subMinutes((int) ($hace * 0.4))])->save();
+                    }
+                }
+            }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    /**
+     * Firma de ejemplo (un trazo a mano alzada), como la deja el recuadro de firma.
+     */
+    private function firmaDemo(int $semilla): string
+    {
+        $img = imagecreatetruecolor(600, 200);
+        imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+        $tinta = imagecolorallocate($img, 15, 23, 42);
+        imagesetthickness($img, 3);
+        $x = 60;
+        $y = 120;
+        for ($i = 0; $i < 90; $i++) {
+            $nx = $x + 5;
+            $ny = (int) (110 + sin(($i + $semilla * 7) / 4) * 45 + cos(($i + $semilla) / 9) * 18);
+            imageline($img, $x, $y, $nx, $ny, $tinta);
+            [$x, $y] = [$nx, $ny];
+        }
+        imageline($img, 80, 165, 520, 160, $tinta);
+        ob_start();
+        imagejpeg($img, null, 70);
+        $binario = (string) ob_get_clean();
+        imagedestroy($img);
+
+        return 'data:image/jpeg;base64,'.base64_encode($binario);
     }
 }

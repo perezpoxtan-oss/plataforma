@@ -1268,3 +1268,182 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .firma.falta .firma-lienzo { border-color: #ef4444; background: #fef2f2; }
 .firma.falta .firma-guia { color: #b91c1c; }
 /* Fin Firma autógrafa */
+/* ==========================================================================
+   Operación: Préstamo de llaves y Responsivas (colores de SEGCAT:
+   ámbar = fuera / en campo, verde = en caseta / cerrado, gris = anulado)
+   ========================================================================== */
+.acciones-prestamo { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.btn-prestar-llave, .btn-excel-llaves, .btn-nuevo-resguardo { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0.75rem 1.2rem; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; text-decoration: none; font-family: inherit; }
+.btn-prestar-llave { background: #ffc107; color: #0f172a; border: 1px solid #ffc107; }
+.btn-prestar-llave:hover { background: #ffca2c; }
+.btn-excel-llaves { background: #fff; color: #198754; border: 1px solid #198754; }
+.btn-excel-llaves:hover { background: #198754; color: #fff; }
+.btn-nuevo-resguardo { background: #198754; color: #fff; border: 1px solid #198754; }
+.btn-nuevo-resguardo:hover { background: #157347; color: #fff; }
+
+.pestanas-prestamo { border-bottom: 2px solid #e2e8f0; display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.pestanas-prestamo button { background: none; border: none; padding: 0.8rem 1.2rem; min-height: 48px; font-weight: 700; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; font-family: inherit; font-size: 0.95rem; }
+.pestanas-prestamo button.activa { color: #0f172a; border-bottom-color: #3b82f6; }
+.filtros-prestamo { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.5rem; }
+.filtros-prestamo .buscador { max-width: 420px; }
+
+.fichas-prestamo, .fichas-resguardo { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.2rem; margin-top: 1rem; }
+.ficha-prestamo, .ficha-resguardo { border-radius: 14px; padding: 1.2rem; }
+.ficha-prestamo.fuera, .ficha-resguardo.activa { border-top: 5px solid #f59e0b; }
+.ficha-prestamo.dentro { border-top: 5px solid #10b981; }
+.ficha-resguardo.devuelta { border-top: 5px solid #10b981; }
+.ficha-prestamo.anulada { border-top: 5px solid #94a3b8; opacity: 0.75; }
+.ficha-prestamo[hidden], .ficha-resguardo[hidden] { display: none !important; }
+.estado-vacio-prestamo { grid-column: 1 / -1; color: var(--texto-suave); padding: 1.5rem; text-align: center; background: #fff; border: 1px dashed var(--borde); border-radius: 14px; }
+
+.badge-prestamo, .badge-resguardo { display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; }
+.badge-prestamo.fuera, .badge-resguardo.en-campo { background: #ffc107; color: #0f172a; }
+.badge-prestamo.dentro, .badge-resguardo.cerrado { background: #198754; color: #fff; }
+.badge-prestamo.anulada { background: #6c757d; color: #fff; }
+.folio-prestamo { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; font-weight: 700; color: var(--texto-suave); }
+.prestamo-colaborador { font-size: 1.15rem; font-weight: 800; margin: 0; color: var(--texto); }
+.prestamo-nomina { font-size: 0.85rem; color: var(--texto-suave); margin-bottom: 0.9rem; }
+.llave-box { position: relative; background: #f8fafc; border: 2px solid #cbd5e1; text-align: center; padding: 10px 52px; border-radius: 8px; font-weight: 900; font-size: 1.2rem; color: #b91c1c; margin-bottom: 10px; word-break: break-word; }
+.btn-historial-llave { background: #fff; border: 1px solid #cbd5e1; color: #0d6efd; border-radius: 8px; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+.llave-box .btn-historial-llave { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); width: 40px; height: 40px; }
+.btn-historial-llave.suelto { border: none; background: transparent; font-size: 1.2rem; }
+.prestamo-descripcion { text-align: center; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 0.5rem; }
+.id-box { background: #fef2f2; color: #991b1b; padding: 6px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 700; display: inline-block; margin-top: 5px; border: 1px dashed #fca5a5; }
+.prestamo-salio, .prestamo-sede { font-size: 0.85rem; margin-top: 0.5rem; color: var(--texto); }
+.prestamo-acciones { display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--borde); }
+.btn-recibir-llave, .btn-reactivar-prestamo, .btn-recibir-lote { width: 100%; min-height: 44px; border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; }
+.btn-recibir-llave, .btn-recibir-lote { background: #198754; color: #fff; border: 1px solid #198754; }
+.btn-recibir-llave:hover, .btn-recibir-lote:hover { background: #157347; }
+.btn-reactivar-prestamo { background: #fff; color: #198754; border: 1px solid #198754; }
+.btn-anular-prestamo { background: #fff; border: 1px solid #6c757d; color: #6c757d; }
+.btn-anular-prestamo:hover { background: #6c757d; color: #fff; }
+.prestamo-llave-titulo { font-weight: 800; font-size: 1rem; color: var(--texto); border-bottom: 1px solid var(--borde); padding-bottom: 0.3rem; margin-bottom: 0.5rem; }
+.prestamo-usada-por { font-size: 0.95rem; font-weight: 700; margin: 0; color: var(--texto); }
+.prestamo-detalle { font-size: 0.82rem; background: #f8fafc; padding: 0.6rem; border-radius: 8px; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.15rem; }
+
+/* Diálogo Prestar Llave */
+.dialogo-prestar { max-width: 650px; }
+.badge-escaner { display: inline-flex; align-items: center; background: #0d6efd; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 6px; margin-left: 0.5rem; vertical-align: middle; }
+.lector-llave-prestamo .campo-etiqueta { color: #dc3545; }
+.etiqueta-garantia { color: #0d6efd; }
+.separador-prestamo { margin: 0.5rem 0 1rem; border-color: var(--borde); opacity: 1; }
+.contador-sesion { font-size: 0.85rem; color: var(--texto-suave); margin-bottom: 0.75rem; }
+.campo-grupo-garantia > div { min-width: 0; }
+.btn-cerrar-prestamo { flex: 0 0 28%; border-radius: 10px; font-weight: 700; min-height: 48px; cursor: pointer; font-family: inherit; }
+.btn-registrar-prestamo { flex: 1; background: #ffc107; color: #0f172a; border: none; border-radius: 10px; font-weight: 800; font-size: 1.05rem; min-height: 48px; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; }
+.btn-registrar-prestamo:disabled { opacity: 0.7; cursor: wait; }
+
+/* Historial (línea de tiempo) */
+.dialogo-historial { max-width: 650px; }
+.historial-subtitulo { font-size: 0.85rem; font-weight: 700; color: var(--texto); margin-top: 0.2rem; }
+.linea-tiempo { list-style: none; margin: 0 0 0 10px; padding: 0 0 0 18px; border-left: 2px solid #e2e8f0; }
+.linea-tiempo-item { position: relative; margin-bottom: 1.25rem; }
+.linea-tiempo-item::before { content: ''; position: absolute; left: -26px; top: 5px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; background: #10b981; }
+.linea-tiempo-item.fuera::before { background: #f59e0b; }
+.linea-tiempo-item.anulado::before { background: #94a3b8; }
+.linea-tiempo-datos { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; margin-top: 0.5rem; background: #f8fafc; padding: 0.6rem; border-radius: 8px; border: 1px solid var(--borde); font-size: 0.82rem; }
+.linea-tiempo-devolucion { border-left: 1px solid var(--borde); padding-left: 1rem; }
+.linea-tiempo-rotulo { display: block; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--texto-suave); }
+.chip-nomina { display: inline-block; background: #f8fafc; border: 1px solid var(--borde); border-radius: 6px; font-size: 0.72rem; padding: 0 6px; margin-left: 0.35rem; }
+.id-box-mini { display: inline-block; background: #fee2e2; color: #b91c1c; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+.texto-regreso { color: #198754; }
+.texto-aun-en-uso { color: #b45309; }
+
+/* Responsivas */
+.folio-resguardo { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 800; font-size: 1rem; color: #0d6efd; }
+.folio-resguardo.cerrado { color: #64748b; }
+.caja-resguardante { background: #f8fafc; border: 1px solid var(--borde); border-radius: 8px; padding: 0.6rem; margin-bottom: 0.6rem; }
+.rotulo-resguardo { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: var(--texto-suave); margin-bottom: 0.3rem; }
+.nombre-resguardante { font-weight: 800; color: var(--texto); }
+.nomina-resguardante { font-size: 0.8rem; color: var(--texto-suave); }
+.eq-lista { background: #f8fafc; border: 1px solid var(--borde); border-radius: 8px; padding: 8px; margin-bottom: 10px; }
+.eq-item { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.85rem; border-bottom: 1px dashed #cbd5e1; padding-bottom: 6px; margin-bottom: 6px; }
+.eq-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.eq-item-texto { line-height: 1.25; min-width: 0; }
+.eq-serie-resguardo { display: block; margin-left: 1.3rem; color: #b91c1c; font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+.pastilla-modalidad { display: inline-block; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 5px; margin-left: 0.25rem; vertical-align: middle; text-transform: uppercase; }
+.pastilla-modalidad.prestado { background: #e0f2fe; color: #075985; }
+.pastilla-modalidad.asignado { background: #ede9fe; color: #5b21b6; }
+.pastilla-modalidad.baja { background: #fee2e2; color: #b91c1c; }
+.traza-resguardo { font-size: 0.82rem; color: var(--texto-suave); margin-bottom: 0.4rem; }
+.acciones-resguardo { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--borde); }
+.btn-resguardo-firma, .btn-resguardo-hoja { flex: 1; min-height: 44px; border-radius: 10px; font-weight: 700; font-size: 0.88rem; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; font-family: inherit; background: #fff; }
+.btn-resguardo-firma { color: #212529; border: 1px solid #212529; }
+.btn-resguardo-firma:hover { background: #212529; color: #fff; }
+.btn-resguardo-hoja { color: #0d6efd; border: 1px solid #0d6efd; }
+.btn-resguardo-hoja:hover { background: #0d6efd; color: #fff; }
+.eq-resguardo { font-size: 0.8rem; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.35rem 0.6rem; margin-top: 0.5rem; }
+.llave-usada-por { font-size: 0.82rem; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.35rem 0.6rem; margin: 0.4rem 0 0; }
+.llave-historial-enlace { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 36px; font-size: 0.8rem; font-weight: 700; color: #0d6efd; text-decoration: none; }
+
+/* Diálogo Nuevo Resguardo */
+.dialogo-resguardo { max-width: 680px; }
+.caja-equipos-lote { background: #f8fafc; border: 1px solid var(--borde); border-radius: 12px; padding: 0.9rem; margin-bottom: 1rem; }
+.etiqueta-equipos-lote { color: #0d6efd; }
+.btn-anadir-equipo { background: #0d6efd; color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 0.85rem; min-height: 44px; padding: 0 0.9rem; cursor: pointer; font-family: inherit; }
+.filas-equipos { display: flex; flex-direction: column; gap: 0.5rem; }
+.fila-equipo { display: flex; gap: 0.5rem; align-items: center; }
+.campo-equipo-lote { flex: 1; min-width: 0; font-weight: 700; }
+.campo-modalidad-lote { flex: 0 0 110px; }
+.btn-quitar-equipo { flex: 0 0 44px; height: 44px; border-radius: 10px; border: 1px solid #dc3545; color: #dc3545; background: #fff; cursor: pointer; }
+.btn-quitar-equipo:hover { background: #dc3545; color: #fff; }
+.btn-guardar-resguardo { flex: 1; background: #198754; color: #fff; border: none; border-radius: 10px; font-weight: 700; min-height: 48px; cursor: pointer; font-family: inherit; }
+.dialogo-firma-registrada { max-width: 420px; }
+.firma-registrada { max-width: 100%; border: 1px solid #ccc; background: #fff; border-radius: 8px; min-height: 80px; }
+.dialogo-resguardo .firma .campo-ayuda, .caja-equipos-lote .campo-ayuda { margin-top: 0.4rem; }
+
+@media (max-width: 575.98px) {
+    .acciones-prestamo { width: 100%; }
+    .acciones-prestamo > * { flex: 1; }
+    .btn-nuevo-resguardo { width: 100%; }
+    .pestanas-prestamo button { flex: 1; padding: 0.7rem 0.5rem; font-size: 0.88rem; }
+    .fichas-prestamo, .fichas-resguardo { grid-template-columns: 1fr; }
+    .filtros-prestamo .buscador, .filtros-prestamo .filtro-select { max-width: 100%; width: 100%; }
+    .campo-grupo-garantia { flex-direction: column; gap: 0; }
+    .fila-equipo { flex-wrap: wrap; }
+    .campo-equipo-lote { flex: 1 1 100%; }
+    .campo-modalidad-lote { flex: 1; }
+    .dialogo-prestar .dialogo-cabecera h2 { font-size: 1.1rem; }
+    .linea-tiempo-devolucion { border-left: none; padding-left: 0; }
+}
+
+/* Hoja del resguardo (impresión) */
+.pagina-hoja-resguardo { background: #f1f5f9; padding: 1rem; font-size: 13px; color: #111; }
+.hoja-resguardo-acciones { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem; }
+.btn-imprimir-resguardo, .btn-volver-resguardo { min-height: 44px; display: inline-flex; align-items: center; padding: 0 1.2rem; border-radius: 8px; font-weight: 700; text-decoration: none; cursor: pointer; font-family: inherit; }
+.btn-imprimir-resguardo { background: #1e293b; color: #fff; border: none; }
+.btn-volver-resguardo { background: #fff; color: #1e293b; border: 1px solid #cbd5e1; }
+.hoja-resguardo { max-width: 800px; margin: 0 auto; background: #fff; padding: 1.5cm; border-radius: 8px; box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.2); line-height: 1.5; color: #111; }
+.hoja-resguardo-encabezado { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; position: relative; }
+.hoja-resguardo-encabezado h1 { margin: 0; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+.hoja-resguardo-encabezado h2 { margin: 3px 0 0; color: #444; font-size: 14px; font-weight: 600; }
+.hoja-resguardo-folio { display: inline-block; margin-top: 8px; background: #f3f4f6; border: 1px solid #000; padding: 5px 15px; font-weight: 700; font-size: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.hoja-resguardo-cerrado { text-align: center; font-weight: 700; color: #166534; border: 1px dashed #16a34a; border-radius: 6px; padding: 4px; margin-bottom: 10px; }
+.hoja-resguardo-emision { text-align: right; font-size: 12px; margin-bottom: 15px; }
+.hoja-resguardo-caja { border: 1px solid #ddd; padding: 12px; border-radius: 8px; margin-bottom: 20px; }
+.hoja-resguardo-titulo { font-size: 11px; text-transform: uppercase; color: #666; font-weight: 700; border-bottom: 1px solid #eee; padding-bottom: 4px; margin-bottom: 8px; }
+.hoja-resguardo-nombre { font-size: 14px; font-weight: 700; }
+.hoja-resguardo-tabla-scroll { overflow-x: auto; }
+.hoja-resguardo-tabla { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+.hoja-resguardo-tabla th, .hoja-resguardo-tabla td { border: 1px solid #000; padding: 8px; text-align: left; }
+.hoja-resguardo-tabla th { background: #f3f4f6; font-weight: 700; text-transform: uppercase; }
+.hoja-resguardo-serie { color: #b91c1c; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; }
+.hoja-resguardo-legal { text-align: justify; margin: 20px 0; font-size: 12px; color: #222; }
+.hoja-resguardo-firmas { margin-top: 40px; display: flex; justify-content: space-around; align-items: flex-end; gap: 1rem; }
+.hoja-resguardo-firma { text-align: center; width: 40%; }
+.hoja-resguardo-firma-imagen { height: 100px; display: flex; align-items: flex-end; justify-content: center; }
+.hoja-resguardo-firma-imagen img { max-height: 90px; max-width: 100%; mix-blend-mode: multiply; }
+.hoja-resguardo-linea { border-top: 1px solid #000; padding-top: 5px; font-weight: 700; font-size: 12px; }
+.hoja-resguardo-linea span { font-weight: 400; font-size: 11px; }
+@media (max-width: 575.98px) {
+    .hoja-resguardo { padding: 1rem; }
+    .hoja-resguardo-firmas { flex-direction: column; align-items: stretch; }
+    .hoja-resguardo-firma { width: 100%; }
+}
+@media print {
+    .pagina-hoja-resguardo { background: #fff !important; padding: 0; }
+    .hoja-resguardo { box-shadow: none; border-radius: 0; padding: 0; max-width: 100%; background: #fff !important; color: #000 !important; }
+    .hoja-resguardo-acciones, .franja-ambiente { display: none !important; }
+    .hoja-resguardo-tabla th, .hoja-resguardo-folio { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+/* Fin Operación: Préstamo de llaves y Responsivas */

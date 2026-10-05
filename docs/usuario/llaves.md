@@ -2,7 +2,7 @@
 
 Seguridad → Padrones → **Catálogo de llaves**. Aquí está el inventario de todas las llaves de tus sedes: llaves metálicas, tarjetas electrónicas, accesos con huella y claves. Para cada llave se anota **qué abre**, **en qué horario** sirve y **hasta cuándo** es válida. Cada llave tiene una **etiqueta con código QR** para su llavero.
 
-> El préstamo diario de llaves (quién se la llevó y cuándo la regresó) se registra en **Préstamo de llaves**, no aquí.
+> El préstamo diario de llaves (quién se la llevó y cuándo la regresó) se registra en **[Préstamo de llaves](prestamo-llaves.md)**, no aquí. Mientras una llave está prestada, su ficha muestra **EN USO** y **Usada por**; el enlace **Historial de préstamos** abre sus movimientos.
 
 ![Lista del catálogo de llaves](img/llaves/01-lista.png)
 

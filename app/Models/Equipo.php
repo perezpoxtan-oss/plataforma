@@ -8,6 +8,7 @@ use App\Models\Concerns\TieneIdentificador;
 use App\Support\Lector\Identificable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Equipo de seguridad prestable a la guardia (SEGCAT: cat_equipos_seguridad):
@@ -51,6 +52,12 @@ class Equipo extends Model implements Identificable
     public function tipo(): BelongsTo
     {
         return $this->belongsTo(TipoEquipo::class, 'tipo_equipo_id');
+    }
+
+    /** Renglón del resguardo abierto (Responsivas): quién lo tiene ahora. */
+    public function resguardoActual(): HasOne
+    {
+        return $this->hasOne(EquipoResponsiva::class)->whereNull('devuelto_en');
     }
 
     public function estaActivo(): bool

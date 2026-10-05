@@ -612,3 +612,54 @@ html.modo-noche .rutas-separador { border-top-color: var(--borde); }
 html.modo-sol .firma-lienzo { border: 3px solid #000; }
 html.modo-noche .firma-lienzo { border-color: #475569; }
 /* Fin Firma autógrafa */
+/* Operación: Préstamo de llaves y Responsivas */
+html.modo-noche .pestanas-prestamo { border-bottom-color: var(--borde); }
+html.modo-noche .pestanas-prestamo button { color: #94a3b8; }
+html.modo-noche .pestanas-prestamo button.activa { color: #e2e8f0; border-bottom-color: #60a5fa; }
+html.modo-noche .estado-vacio-prestamo { background: var(--superficie); }
+html.modo-noche .llave-box { background: var(--superficie-2); border-color: #475569; color: #fca5a5; }
+html.modo-noche .btn-historial-llave { background: var(--superficie-2); border-color: #475569; color: #93c5fd; }
+html.modo-noche .btn-historial-llave.suelto { background: transparent; }
+html.modo-noche .prestamo-descripcion { color: #cbd5e1; }
+html.modo-noche .id-box { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border-color: #7f1d1d; }
+html.modo-noche .id-box-mini { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+html.modo-noche .prestamo-detalle, html.modo-noche .linea-tiempo-datos, html.modo-noche .caja-resguardante,
+html.modo-noche .eq-lista, html.modo-noche .caja-equipos-lote, html.modo-noche .chip-nomina { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .linea-tiempo { border-left-color: #475569; }
+html.modo-noche .linea-tiempo-item::before { border-color: var(--superficie); }
+html.modo-noche .eq-item { border-bottom-color: #475569; }
+html.modo-noche .eq-serie-resguardo { color: #fca5a5; }
+html.modo-noche .folio-resguardo { color: #93c5fd; }
+html.modo-noche .folio-resguardo.cerrado { color: #94a3b8; }
+html.modo-noche .pastilla-modalidad.prestado { background: rgba(14, 165, 233, 0.18); color: #7dd3fc; }
+html.modo-noche .pastilla-modalidad.asignado { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+html.modo-noche .pastilla-modalidad.baja { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+html.modo-noche .btn-excel-llaves, html.modo-noche .btn-reactivar-prestamo { background: transparent; color: #4ade80; border-color: #22c55e; }
+html.modo-noche .btn-anular-prestamo, html.modo-noche .btn-quitar-equipo { background: transparent; }
+html.modo-noche .btn-anular-prestamo { color: #cbd5e1; border-color: #64748b; }
+html.modo-noche .btn-resguardo-firma { background: transparent; color: #e2e8f0; border-color: #94a3b8; }
+html.modo-noche .btn-resguardo-hoja { background: transparent; color: #93c5fd; border-color: #60a5fa; }
+html.modo-noche .eq-resguardo, html.modo-noche .llave-usada-por { background: rgba(245, 158, 11, 0.12); border-color: #92400e; color: #fcd34d; }
+html.modo-noche .llave-historial-enlace, html.modo-noche .etiqueta-equipos-lote { color: #93c5fd; }
+html.modo-noche .texto-regreso { color: #4ade80; }
+html.modo-noche .texto-aun-en-uso { color: #fbbf24; }
+html.modo-noche .firma-registrada { border-color: #475569; }
+html.modo-sol .ficha-prestamo, html.modo-sol .ficha-resguardo { opacity: 1; }
+html.modo-sol .ficha-prestamo.fuera, html.modo-sol .ficha-resguardo.activa { border-top: 6px solid #b45309; }
+html.modo-sol .ficha-prestamo.dentro, html.modo-sol .ficha-resguardo.devuelta { border-top: 6px solid #166534; }
+html.modo-sol .ficha-prestamo.anulada { border-top: 6px solid #000; }
+html.modo-sol .pestanas-prestamo { border-bottom: 3px solid #000; }
+html.modo-sol .pestanas-prestamo button { color: #000; }
+html.modo-sol .pestanas-prestamo button.activa { border-bottom: 4px solid #000; text-decoration: underline; }
+html.modo-sol .llave-box { background: #fff; border: 3px solid #000; color: #b91c1c; }
+html.modo-sol .id-box, html.modo-sol .id-box-mini { background: #fff; color: #7f1d1d; border: 2px solid #7f1d1d; }
+html.modo-sol .badge-prestamo.fuera, html.modo-sol .badge-resguardo.en-campo { background: #facc15; color: #000; border: 2px solid #000; }
+html.modo-sol .badge-prestamo.dentro, html.modo-sol .badge-resguardo.cerrado { background: #14532d; color: #fff; }
+html.modo-sol .badge-prestamo.anulada { background: #000; color: #fff; }
+html.modo-sol .prestamo-detalle, html.modo-sol .caja-resguardante, html.modo-sol .eq-lista, html.modo-sol .caja-equipos-lote, html.modo-sol .linea-tiempo-datos { background: #fff; border: 2px solid #000; }
+html.modo-sol .btn-prestar-llave, html.modo-sol .btn-registrar-prestamo { background: #facc15; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-recibir-llave, html.modo-sol .btn-recibir-lote, html.modo-sol .btn-nuevo-resguardo, html.modo-sol .btn-guardar-resguardo { background: #14532d; border: 2px solid #000; color: #fff; }
+html.modo-sol .btn-historial-llave, html.modo-sol .btn-anular-prestamo, html.modo-sol .btn-resguardo-firma, html.modo-sol .btn-resguardo-hoja, html.modo-sol .btn-excel-llaves { border: 2px solid #000; color: #000; background: #fff; }
+html.modo-sol .eq-resguardo, html.modo-sol .llave-usada-por { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .folio-resguardo, html.modo-sol .folio-prestamo, html.modo-sol .llave-historial-enlace { color: #000; }
+/* Fin Operación: Préstamo de llaves y Responsivas */

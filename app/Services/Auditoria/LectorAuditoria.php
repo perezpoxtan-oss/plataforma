@@ -14,8 +14,10 @@ use App\Models\Llave;
 use App\Models\Modulo;
 use App\Models\Paradero;
 use App\Models\Persona;
+use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
 use App\Models\Puesto;
+use App\Models\Responsiva;
 use App\Models\Rol;
 use App\Models\Ruta;
 use App\Models\Sede;
@@ -73,6 +75,8 @@ class LectorAuditoria
         ZonaEstacionamiento::class => ['Zona de estacionamiento', 'nombre'],
         Ruta::class => ['Ruta de transporte', 'nombre'],
         Paradero::class => ['Paradero', 'nombre'],
+        PrestamoLlave::class => ['Préstamo de llave', null],
+        Responsiva::class => ['Resguardo', 'folio'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

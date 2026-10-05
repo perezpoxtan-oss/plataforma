@@ -2632,3 +2632,411 @@ document.addEventListener('click', function (e) {
     window.Firma = { preparar: preparar };
 })();
 /* Fin Firma autógrafa */
+/* ==========================================================================
+   Operación: Préstamo de llaves y Responsivas
+   - Pestañas (Llaves en Uso / Historial de Entregas; Equipos en Campo /
+     Historial Devueltos) con buscador y filtro de sede sobre la pestaña activa.
+   - Historial de una llave o de un equipo: el reloj abre un diálogo con el
+     fragmento que dibuja el servidor (#historial-llave-ID lo abre al llegar).
+   - "Prestar Llave": se escanea la llave y luego el gafete; "Registrar y
+     Capturar Siguiente" guarda por fetch, pinta la ficha nueva y deja el
+     cuadro abierto y limpio para el siguiente préstamo.
+   - "Nuevo Resguardo (Lote)": cada equipo escaneado se agrega solo a la
+     lista; "+ Añadir Equipo" agrega una fila para elegirlo de la lista
+     (solo equipos DISPONIBLES de la sede elegida y sin repetir).
+   - "Firma": muestra la firma del lote (la sirve la plataforma con permiso).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto, porDefecto) { try { return JSON.parse(texto); } catch (x) { return porDefecto; } }
+
+    /* ---------- Pestañas y filtro ---------- */
+    function vistaActiva() {
+        var b = document.querySelector('[data-pestana-prestamos][aria-selected="true"]');
+        return b ? document.querySelector('[data-vista-prestamos="' + b.dataset.pestanaPrestamos + '"]') : null;
+    }
+
+    function filtrar() {
+        var vista = vistaActiva();
+        if (!vista) { return; }
+        var t = document.querySelector('[data-filtro-prestamos="texto"]');
+        var s = document.querySelector('[data-filtro-prestamos="sede"]');
+        var texto = t ? t.value.toLowerCase().trim() : '';
+        var sede = s ? s.value : '';
+        var fichas = vista.querySelectorAll('[data-ficha-prestamo]');
+        var visibles = 0;
+        fichas.forEach(function (f) {
+            var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1) && (sede === '' || f.dataset.sede === sede);
+            f.hidden = !ok;
+            if (ok) { visibles++; }
+        });
+        var vacio = document.querySelector('[data-sin-resultados-prestamos]');
+        if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+        var exportar = document.querySelector('[data-exportar-prestamos]');
+        if (exportar) { exportar.href = exportar.dataset.base + (sede ? '?sede=' + encodeURIComponent(sede) : ''); }
+    }
+
+    function elegirPestana(clave) {
+        var hay = false;
+        document.querySelectorAll('[data-pestana-prestamos]').forEach(function (b) {
+            var on = b.dataset.pestanaPrestamos === clave;
+            if (on) { hay = true; }
+            b.setAttribute('aria-selected', String(on));
+            b.classList.toggle('activa', on);
+        });
+        if (!hay) { return; }
+        document.querySelectorAll('[data-vista-prestamos]').forEach(function (v) { v.hidden = v.dataset.vistaPrestamos !== clave; });
+        filtrar();
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-pestana-prestamos]');
+        if (b) { elegirPestana(b.dataset.pestanaPrestamos); }
+    });
+    document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-prestamos]')) { filtrar(); } });
+    document.addEventListener('change', function (e) { if (e.target.matches('[data-filtro-prestamos]')) { filtrar(); } });
+
+    /* ---------- Historial de una llave o de un equipo ---------- */
+    function abrirHistorial(url, idDialogo) {
+        var dialogo = document.getElementById(idDialogo || 'dialogoHistorialLlave');
+        if (!dialogo) { return; }
+        var caja = dialogo.querySelector('[data-contenido-historial]');
+        caja.innerHTML = '';
+        var cargando = document.createElement('div');
+        cargando.className = 'p-5 text-center text-muted';
+        cargando.textContent = 'Cargando historial...';
+        caja.appendChild(cargando);
+        if (!dialogo.open) { dialogo.showModal(); }
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'text/html', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.text(); })
+            // Fragmento dibujado (y escapado) por el servidor
+            .then(function (html) { caja.innerHTML = html; })
+            .catch(function () { cargando.textContent = 'No se pudo cargar el historial. Revisa tu conexión e intenta de nuevo.'; });
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-historial-llave]');
+        if (b) { abrirHistorial(b.dataset.historialLlave, b.dataset.dialogoHistorial); }
+    });
+
+    /* ---------- Ver la firma de un resguardo ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-ver-firma]');
+        if (!b) { return; }
+        var dialogo = document.getElementById('dialogoVerFirma');
+        if (!dialogo) { return; }
+        dialogo.querySelector('[data-firma-imagen]').src = b.dataset.verFirma;
+        dialogo.querySelector('[data-firma-folio]').textContent = '· ' + (b.dataset.folio || '');
+        dialogo.querySelector('[data-firma-nombre]').textContent = b.dataset.nombre || '';
+        dialogo.showModal();
+    });
+
+    /* ---------- Lectores dentro de los formularios ---------- */
+    function cajaLector(form, nombre) {
+        var oculto = form.querySelector('[data-lector-id][name="' + nombre + '"]');
+        return oculto ? oculto.closest('[data-lector]') : null;
+    }
+
+    function avisoLector(caja, texto, tipo) {
+        var e = caja && caja.querySelector('[data-lector-estado]');
+        if (!e) { return; }
+        e.hidden = !texto;
+        e.textContent = texto || '';
+        e.className = 'lector-estado' + (tipo ? ' ' + tipo : '');
+    }
+
+    function enfocar(caja) {
+        var entrada = caja && caja.querySelector('[data-lector-entrada]');
+        if (entrada) { setTimeout(function () { entrada.focus(); }, 30); }
+    }
+
+    function mensajes(caja, lista, ok) {
+        if (!caja) { return; }
+        caja.textContent = '';
+        lista.forEach(function (m) { var d = document.createElement('div'); d.textContent = m; caja.appendChild(d); });
+        caja.hidden = lista.length === 0;
+        if (!ok && lista.length) { caja.scrollIntoView({ block: 'nearest' }); }
+    }
+
+    /* ---------- Prestar Llave ---------- */
+    // Al elegir la llave: avisa si es de otra sede o ya está fuera, y pasa al colaborador
+    document.addEventListener('lector:elegido', function (e) {
+        var form = e.target.closest('[data-form-prestamo]');
+        if (!form) { return; }
+        var registro = e.detail || {};
+        var caja = e.target.closest('[data-lector]');
+        if (caja === cajaLector(form, 'llave_id')) {
+            var sede = form.querySelector('[data-sede-prestamo]');
+            var fuera = leer(form.dataset.llavesFuera || '[]', []);
+            if (fuera.map(String).indexOf(String(registro.id)) !== -1) {
+                if (window.Lector) { window.Lector.limpiar(caja); }
+                avisoLector(caja, (registro.titulo || 'Esa llave') + ': esa llave ya está fuera — alguien más la tiene en este momento. Recíbela primero en «Llaves en Uso».', 'error');
+                return;
+            }
+            if (sede && sede.value && registro.sede_id && String(registro.sede_id) !== sede.value) {
+                if (window.Lector) { window.Lector.limpiar(caja); }
+                avisoLector(caja, (registro.titulo || 'Esta llave') + ' es de otra sede: cambia la Sede o escanea otra llave.', 'error');
+                return;
+            }
+            if (sede && !sede.value && registro.sede_id && sede.querySelector('option[value="' + registro.sede_id + '"]')) {
+                sede.value = String(registro.sede_id); // la sede sale de la llave
+            }
+            enfocar(cajaLector(form, 'colaborador_id'));
+        } else if (caja === cajaLector(form, 'colaborador_id')) {
+            var boton = form.querySelector('button[type="submit"]');
+            if (boton) { setTimeout(function () { boton.focus(); }, 30); }
+        }
+    });
+
+    function limpiarParaSiguiente(form) {
+        ['llave_id', 'colaborador_id'].forEach(function (n) {
+            var caja = cajaLector(form, n);
+            if (caja && window.Lector) { window.Lector.limpiar(caja); }
+        });
+        var garantia = form.querySelector('[name="tipo_garantia"]');
+        if (garantia) {
+            var defecto = garantia.querySelector('[data-por-defecto]');
+            garantia.value = defecto ? defecto.value : garantia.options[0].value;
+        }
+        var folio = form.querySelector('[name="folio_garantia"]');
+        if (folio) { folio.value = ''; }
+        enfocar(cajaLector(form, 'llave_id'));
+    }
+
+    function agregarFicha(html) {
+        var vista = document.querySelector('[data-vista-prestamos="uso"]');
+        if (!vista || !html) { return; }
+        var plantilla = document.createElement('template');
+        plantilla.innerHTML = html.trim(); // ficha dibujada (y escapada) por el servidor
+        var ficha = plantilla.content.firstElementChild;
+        if (!ficha) { return; }
+        var vacio = vista.querySelector('[data-vacio-en-uso]');
+        if (vacio) { vacio.hidden = true; vacio.after(ficha); } else { vista.prepend(ficha); }
+        var conteo = document.querySelector('[data-conteo-en-uso]');
+        if (conteo) { conteo.textContent = String(vista.querySelectorAll('[data-ficha-prestamo]').length); }
+        filtrar();
+    }
+
+    var enSesion = 0;
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-form-prestamo]')) { return; }
+        e.preventDefault();
+        var dialogo = form.closest('dialog');
+        var errores = dialogo.querySelector('[data-errores-prestamo]');
+        var ok = dialogo.querySelector('[data-errores-prestamo-ok]');
+        mensajes(ok, [], true);
+
+        var faltan = [];
+        if (!form.querySelector('[name="llave_id"]').value) { faltan.push('Escanea o busca la llave a prestar.'); }
+        if (!form.querySelector('[name="colaborador_id"]').value) { faltan.push('Escanea el gafete o busca al colaborador que se lleva la llave.'); }
+        if (faltan.length) { mensajes(errores, faltan, false); return; }
+        mensajes(errores, [], true);
+
+        var boton = form.querySelector('button[type="submit"]');
+        var texto = boton ? boton.querySelector('span') : null;
+        if (boton) { boton.disabled = true; }
+        if (texto) { texto.textContent = 'Guardando...'; }
+        function terminar() {
+            if (boton) { boton.disabled = false; }
+            if (texto) { texto.textContent = boton.dataset.textoOriginal || 'Registrar y Capturar Siguiente'; }
+        }
+
+        fetch(form.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form)
+        })
+            .then(function (r) { return r.json().then(function (d) { return { estado: r.status, datos: d }; }, function () { return { estado: r.status, datos: {} }; }); })
+            .then(function (res) {
+                terminar();
+                if (res.estado === 201 && res.datos.ok) {
+                    mensajes(ok, [res.datos.mensaje], true);
+                    agregarFicha(res.datos.ficha);
+                    var fuera = leer(form.dataset.llavesFuera || '[]', []);
+                    fuera.push(res.datos.llave_id);
+                    form.dataset.llavesFuera = JSON.stringify(fuera);
+                    enSesion++;
+                    var contador = dialogo.querySelector('[data-contador-prestamos]');
+                    if (contador) { contador.hidden = false; contador.querySelector('[data-numero-prestamos]').textContent = String(enSesion); }
+                    limpiarParaSiguiente(form);
+                    return;
+                }
+                var lista = [];
+                Object.keys(res.datos.errores || {}).forEach(function (k) { lista = lista.concat(res.datos.errores[k]); });
+                if (!lista.length) {
+                    lista.push(res.estado === 419 ? 'La sesión expiró. Recarga la página e intenta de nuevo.'
+                        : (res.estado === 403 ? 'No tienes permiso para prestar llaves.' : (res.datos.mensaje || 'No se pudo completar la operación. Intenta de nuevo.')));
+                }
+                mensajes(errores, lista, false);
+            })
+            .catch(function () {
+                terminar();
+                mensajes(errores, ['No se pudo conectar con el servidor. Intenta de nuevo.'], false);
+            });
+    });
+
+    /* ---------- Nuevo Resguardo (Lote) ---------- */
+    function sedeResguardo(form) { var s = form.querySelector('[data-sede-resguardo]'); return s ? s.value : ''; }
+
+    function filasEquipos(form) { return form.querySelectorAll('[data-fila-equipo]'); }
+
+    function plantillaFila(form) { return form.closest('dialog').querySelector('[data-plantilla-fila-equipo]'); }
+
+    function acomodarOpciones(form) {
+        var sede = sedeResguardo(form);
+        var elegidos = [];
+        filasEquipos(form).forEach(function (f) { var v = f.querySelector('[data-equipo-lote]').value; if (v) { elegidos.push(v); } });
+        filasEquipos(form).forEach(function (f) {
+            var sel = f.querySelector('[data-equipo-lote]');
+            Array.prototype.forEach.call(sel.options, function (op) {
+                if (!op.value) { return; }
+                var deLaSede = sede !== '' && op.dataset.sede === sede;
+                var ocupado = elegidos.indexOf(op.value) !== -1 && op.value !== sel.value;
+                op.hidden = !deLaSede || ocupado;
+                op.disabled = !deLaSede || ocupado;
+            });
+            if (sel.value && sel.selectedOptions[0] && sel.selectedOptions[0].disabled) { sel.value = ''; }
+        });
+        var plantilla = plantillaFila(form);
+        var hayDeLaSede = sede !== '' && !!plantilla && plantilla.content.querySelector('option[data-sede="' + sede + '"]') !== null;
+        var nota = form.querySelector('[data-sin-equipos]');
+        if (nota) { nota.hidden = sede === '' || hayDeLaSede; }
+    }
+
+    function agregarFila(form, valor) {
+        var plantilla = plantillaFila(form);
+        var cont = form.querySelector('[data-filas-equipos]');
+        if (!plantilla || !cont) { return null; }
+        var fila = plantilla.content.firstElementChild.cloneNode(true);
+        cont.appendChild(fila);
+        if (valor) { fila.querySelector('[data-equipo-lote]').value = String(valor); }
+        acomodarOpciones(form);
+        return fila;
+    }
+
+    document.addEventListener('click', function (e) {
+        var anadir = e.target.closest('[data-anadir-equipo]');
+        if (anadir) {
+            var form = anadir.closest('[data-form-resguardo]');
+            var fila = agregarFila(form);
+            if (fila) { fila.querySelector('[data-equipo-lote]').focus(); }
+            return;
+        }
+        var quitar = e.target.closest('[data-quitar-equipo]');
+        if (quitar) {
+            var f2 = quitar.closest('[data-form-resguardo]');
+            quitar.closest('[data-fila-equipo]').remove();
+            acomodarOpciones(f2);
+            return;
+        }
+        var abrir = e.target.closest('[data-abrir-dialogo]');
+        if (!abrir) { return; }
+        var destino = document.getElementById(abrir.getAttribute('data-abrir-dialogo'));
+        var fPrestamo = destino && destino.querySelector('[data-form-prestamo]');
+        // Al abrir "Prestar Llave" el cursor queda listo en la llave (el lector USB escribe ahí)
+        if (fPrestamo) { enfocar(cajaLector(fPrestamo, 'llave_id')); }
+        var fResguardo = destino && destino.querySelector('[data-form-resguardo]');
+        if (fResguardo) {
+            if (!filasEquipos(fResguardo).length) { agregarFila(fResguardo); }
+            acomodarOpciones(fResguardo);
+            enfocar(cajaLector(fResguardo, 'colaborador_id'));
+        }
+    });
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-resguardo]');
+        if (form && (e.target.matches('[data-equipo-lote]') || e.target.matches('[data-sede-resguardo]'))) { acomodarOpciones(form); }
+    });
+
+    // Colaborador elegido: pasa a escanear equipos. Equipo escaneado: se agrega a la lista (o llena la fila vacía)
+    document.addEventListener('lector:elegido', function (e) {
+        var form = e.target.closest('[data-form-resguardo]');
+        if (!form) { return; }
+        var caja = e.target.closest('[data-lector]');
+        var registro = e.detail || {};
+        if (caja === cajaLector(form, 'colaborador_id')) { enfocar(cajaLector(form, '_equipo_leido')); return; }
+        if (caja !== cajaLector(form, '_equipo_leido')) { return; }
+
+        var id = String(registro.id);
+        var nombre = registro.titulo || 'Ese equipo';
+        var plantilla = plantillaFila(form);
+        var opcion = plantilla ? plantilla.content.querySelector('option[value="' + id + '"]') : null;
+        if (window.Lector) { window.Lector.limpiar(caja); }
+        enfocar(caja);
+        if (!opcion) {
+            avisoLector(caja, nombre + ' no está DISPONIBLE en tus sedes: no se puede resguardar.', 'error');
+            return;
+        }
+        var selSede = form.querySelector('[data-sede-resguardo]');
+        if (selSede && selSede.value === '') { selSede.value = opcion.dataset.sede; acomodarOpciones(form); }
+        if (opcion.dataset.sede !== sedeResguardo(form)) {
+            avisoLector(caja, nombre + ' es de otra sede: cambia la Sede de Origen o escanea otro equipo.', 'error');
+            return;
+        }
+        var ya = false;
+        var vacia = null;
+        filasEquipos(form).forEach(function (f) {
+            var v = f.querySelector('[data-equipo-lote]').value;
+            if (v === id) { ya = true; }
+            if (!v && !vacia) { vacia = f; }
+        });
+        if (ya) { avisoLector(caja, nombre + ' ya está en la lista.', 'aviso'); return; }
+        if (vacia) { vacia.querySelector('[data-equipo-lote]').value = id; acomodarOpciones(form); } else { agregarFila(form, id); }
+        avisoLector(caja, '✓ Agregado: ' + opcion.textContent.trim() + '. Escanea el siguiente o pide la firma.', 'ok');
+    });
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-form-resguardo]')) { return; }
+        var errores = form.closest('dialog').querySelector('[data-errores-resguardo]');
+        var lista = [];
+        if (!form.querySelector('[name="colaborador_id"]').value) { lista.push('Escanea el gafete o busca al colaborador responsable.'); }
+        var filas = filasEquipos(form);
+        if (!filas.length) { lista.push('Debe añadir al menos 1 equipo al lote.'); }
+        if (Array.prototype.some.call(filas, function (f) { return !f.querySelector('[data-equipo-lote]').value; })) {
+            lista.push('Seleccione un equipo en todas las filas agregadas (o quite la fila vacía).');
+        }
+        if (lista.length) { e.preventDefault(); mensajes(errores, lista, false); }
+    });
+
+    // Al cerrar: Nuevo Resguardo queda sin filas (al abrirlo aparece una vacía); en Prestar, el contador vuelve a cero
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        var cont = e.target.querySelector('[data-filas-equipos]');
+        if (cont) { cont.textContent = ''; }
+        if (e.target.querySelector('[data-form-prestamo]')) {
+            enSesion = 0;
+            var contador = e.target.querySelector('[data-contador-prestamos]');
+            if (contador) { contador.hidden = true; }
+        }
+        if (e.target.id === 'dialogoVerFirma') { e.target.querySelector('[data-firma-imagen]').removeAttribute('src'); }
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var fResguardo = document.querySelector('[data-form-resguardo]');
+        if (fResguardo) { acomodarOpciones(fResguardo); }
+        if (!document.querySelector('[data-pestana-prestamos]')) { return; }
+        // Al llegar a una ficha (#prestamo-12, #responsiva-3) se abre su pestaña;
+        // #historial-llave-5 (desde el Catálogo de llaves) abre el historial de esa llave
+        var hash = location.hash || '';
+        var ficha = /^#(prestamo|responsiva)-\d+$/.test(hash) ? document.querySelector(hash) : null;
+        if (ficha) {
+            var vista = ficha.closest('[data-vista-prestamos]');
+            if (vista) { elegirPestana(vista.dataset.vistaPrestamos); }
+            ficha.classList.add('ficha-resaltada');
+            ficha.scrollIntoView({ block: 'center' });
+        } else {
+            filtrar();
+        }
+        var m = /^#historial-llave-(\d+)$/.exec(hash);
+        var dialogo = document.getElementById('dialogoHistorialLlave');
+        if (m && dialogo && dialogo.dataset.urlHistorial) {
+            abrirHistorial(dialogo.dataset.urlHistorial.replace(/\/0\/historial$/, '/' + m[1] + '/historial'), 'dialogoHistorialLlave');
+        }
+    });
+})();
+/* Fin Operación: Préstamo de llaves y Responsivas */

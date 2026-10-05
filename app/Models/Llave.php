@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -22,10 +23,9 @@ use Illuminate\Support\Carbon;
  * llavero), por la tarjeta o chip asignado (etiqueta_nfc) o tecleando su
  * nomenclatura.
  *
- * Préstamo de llaves (Operación, pendiente): la insignia "EN USO" de la lista
- * saldrá de ahí. Cuando exista la bitácora de préstamos basta con agregar a
- * este modelo la relación del préstamo abierto y, en la consulta de la lista,
- * withExists(['prestamoAbierto as en_uso']): enUso() ya lee ese atributo.
+ * Préstamo de llaves (Operación): la insignia "EN USO" de la lista sale del
+ * préstamo vigente (prestamoAbierto); la consulta de la lista agrega
+ * withExists(['prestamoAbierto as en_uso']) y enUso() lee ese atributo.
  */
 class Llave extends Model implements Identificable
 {
@@ -116,6 +116,12 @@ class Llave extends Model implements Identificable
         return $this->belongsToMany(GrupoEspacio::class, 'grupo_espacio_llave');
     }
 
+    /** Préstamo vigente (la llave está fuera de la caseta), si lo hay. */
+    public function prestamoAbierto(): HasOne
+    {
+        return $this->hasOne(PrestamoLlave::class)->where('estado', PrestamoLlave::EN_USO)->where('anulado', false);
+    }
+
     public function etiquetaTipo(): string
     {
         return self::TIPOS_DISPOSITIVO[$this->tipo_dispositivo] ?? $this->tipo_dispositivo;
@@ -194,8 +200,8 @@ class Llave extends Model implements Identificable
     }
 
     /**
-     * ¿Está prestada ahora? Gancho para el Préstamo de llaves: la consulta
-     * de la lista agregará "en_uso" (withExists) cuando exista la bitácora.
+     * ¿Está prestada ahora? Lo agrega la consulta de la lista con
+     * withExists(['prestamoAbierto as en_uso']) (Préstamo de llaves).
      */
     public function enUso(): bool
     {
