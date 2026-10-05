@@ -59,6 +59,7 @@ class CatalogoSeeder extends Seeder
         'vouchers' => 'vouchers.index',
         'equipos' => 'equipos.index',
         'estacionamientos' => 'estacionamientos.index',
+        'rutas' => 'rutas.index',
     ];
 
     /**

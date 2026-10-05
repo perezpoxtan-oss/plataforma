@@ -15,6 +15,7 @@ use App\Models\Proveedor;
 use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Rubro;
+use App\Models\Ruta;
 use App\Models\Sede;
 use App\Models\TipoEquipo;
 use App\Models\TipoEspacio;
@@ -29,6 +30,7 @@ use App\Services\Llaves\AdministradorLlaves;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Support\HoraLocal;
+use App\Services\Rutas\AdministradorRutas;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -117,6 +119,7 @@ class CrearDatosDemo extends Command
         $tenant->conEmpresa($empresa->id, fn () => $this->llavesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->gafetesDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->equiposYEstacionamientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->rutasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -607,6 +610,95 @@ class CrearDatosDemo extends Command
                 $zona = new ZonaEstacionamiento(['sede_id' => $sedes[$sede]->id, 'nombre' => $nombre, 'tipo' => $tipo, 'cupo_total' => $cupo]);
                 $zona->forceFill(['activo' => $activa, 'creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
             }
+    }
+
+    /**
+     * Rutas de transporte de ejemplo, solo la primera vez: por sede, dos
+     * llegadas y dos salidas con los turnos y el transporte de personal demo,
+     * paraderos en colonias de Cancún, un horario que cruza la medianoche y
+     * una ruta suspendida. Se dan de alta con las mismas reglas de la
+     * pantalla (AdministradorRutas), como si las capturara admin.demo.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function rutasDemo($sedes, User $admin): void
+    {
+        if (Ruta::exists()) {
+            return;
+        }
+
+        $turno = fn (string $nombre) => Turno::where('nombre', $nombre)->where('activo', true)->value('id') ?? Turno::where('activo', true)->orderBy('id')->value('id');
+        $proveedor = fn (array $nombres, array $categorias) => Proveedor::whereIn('nombre', $nombres)->where('activo', true)->value('id')
+            ?? Proveedor::where('activo', true)->whereIn('categoria', $categorias)->where('todas_las_sedes', true)->orderBy('id')->value('id');
+        $personal = $proveedor(['Transportes Kin-Ha'], ['transporte_personal', 'transportadora']);
+        $shuttle = $proveedor(['Shuttle Riviera'], ['transporte_huespedes', 'transporte_personal']) ?? $personal;
+        if ($turno('Matutino') === null || $personal === null) {
+            return; // sin turnos ni transportista no hay rutas que mostrar
+        }
+
+        $paradas = fn (array $lista) => array_map(fn ($p) => ['nombre' => $p[0], 'hora' => $p[1]], $lista);
+        $laborales = ['LU', 'MA', 'MI', 'JU', 'VI'];
+
+        // sede => [paraderos extra (sin ruta), rutas [sentido, nombre, turno, proveedor, costo taxi, activa, horarios]]
+        $plan = [
+            'CEN' => [['AV. TALLERES'], [
+                ['llegada', 'RUTA 1 - REGIÓN 94', 'Matutino', $personal, 250, true, [
+                    ['Lunes a viernes', $laborales, '05:45', '06:40', $paradas([['REGIÓN 94 (CRUCERO)', '05:45'], ['SUPERMANZANA 63 (MERCADO 28)', '06:00'], ['AV. KABAH CON LEONA VICARIO', '06:10'], ['CHEDRAUI PORTILLO', '06:20']])],
+                    ['Fin de semana', ['SA', 'DO'], '06:15', '07:00', $paradas([['REGIÓN 94 (CRUCERO)', '06:15'], ['CHEDRAUI PORTILLO', '06:35']])],
+                ]],
+                ['llegada', 'RUTA 2 - KABAH', 'Vespertino', $personal, null, true, [
+                    ['Todos los días', [], '13:25', '14:45', $paradas([['AV. KABAH CON LEONA VICARIO', '13:25'], ['PLAZA LAS AMÉRICAS', '13:50'], ['SUPERMANZANA 63 (MERCADO 28)', '14:05']])],
+                ]],
+                ['salida', 'RUTA 1 - REGIÓN 94', 'Matutino', $personal, 250, true, [
+                    ['Todos los días', [], '15:10', '16:05', $paradas([['CHEDRAUI PORTILLO', '15:35'], ['SUPERMANZANA 63 (MERCADO 28)', '15:45'], ['REGIÓN 94 (CRUCERO)', '16:05']])],
+                ]],
+                // Cruza la medianoche: sale 23:20 y llega 00:30 del día siguiente
+                ['salida', 'RUTA 3 - NOCTURNA KABAH', 'Vespertino', $shuttle, 300, true, [
+                    ['Todos los días', [], '23:20', '00:30', $paradas([['PLAZA LAS AMÉRICAS', '23:40'], ['AV. KABAH CON LEONA VICARIO', '23:55'], ['REGIÓN 94 (CRUCERO)', '00:30']])],
+                ]],
+                ['llegada', 'RUTA 9 - TEMPORADA ALTA', 'Matutino', $shuttle, null, false, [
+                    ['Sábados', ['SA'], '06:30', '07:10', $paradas([['PLAZA LAS AMÉRICAS', '06:30']])],
+                ]],
+            ]],
+            'PLA' => [['MERCADO 23'], [
+                ['llegada', 'RUTA 1 - BONFIL', 'Matutino', $personal, 280, true, [
+                    ['Todos los días', [], '06:00', '06:50', $paradas([['BONFIL (GLORIETA)', '06:00'], ['VILLAS OTOCH', '06:15'], ['AV. TULUM CON COBÁ', '06:35']])],
+                ]],
+                ['llegada', 'RUTA 2 - CIELO NUEVO', 'Mixto Playa', $shuttle, null, true, [
+                    ['Lunes a sábado', [...$laborales, 'SA'], '09:00', '09:50', $paradas([['CIELO NUEVO (COPPEL)', '09:00'], ['VILLAS OTOCH', '09:15'], ['AV. TULUM CON COBÁ', '09:30']])],
+                ]],
+                ['salida', 'RUTA 1 - BONFIL', 'Matutino', $personal, 280, true, [
+                    ['Todos los días', [], '15:10', '16:00', $paradas([['AV. TULUM CON COBÁ', '15:30'], ['VILLAS OTOCH', '15:45'], ['BONFIL (GLORIETA)', '16:00']])],
+                ]],
+                ['salida', 'RUTA 2 - CIELO NUEVO', 'Mixto Playa', $shuttle, null, true, [
+                    ['Lunes a sábado', [...$laborales, 'SA'], '18:15', '19:05', $paradas([['AV. TULUM CON COBÁ', '18:30'], ['CIELO NUEVO (COPPEL)', '19:05']])],
+                ]],
+            ]],
+        ];
+
+        $rutas = app(AdministradorRutas::class);
+        // Las reglas de la pantalla registran autor y auditoría con el usuario en sesión
+        $previo = auth()->user();
+        auth()->setUser($admin);
+        try {
+            foreach ($plan as $codigo => [$extras, $lista]) {
+                $sede = $sedes[$codigo];
+                foreach ($lista as [$sentido, $nombre, $nombreTurno, $proveedorId, $costo, $activa, $horarios]) {
+                    $ruta = $rutas->crear($admin, $sede, [
+                        'sentido' => $sentido, 'nombre' => $nombre, 'turno_id' => $turno($nombreTurno),
+                        'proveedor_id' => $proveedorId, 'costo_maximo_taxi' => $costo,
+                        'horarios' => array_map(fn ($h) => ['nombre' => $h[0], 'dias' => $h[1], 'hora_inicio' => $h[2], 'hora_fin' => $h[3], 'paraderos' => $h[4]], $horarios),
+                    ]);
+                    if (! $activa) {
+                        $rutas->cambiarEstado($admin, $ruta, false);
+                    }
+                }
+                foreach ($extras as $extra) {
+                    $rutas->crearParadero($admin, $sede, $extra);
+                }
+            }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }
     }
 }

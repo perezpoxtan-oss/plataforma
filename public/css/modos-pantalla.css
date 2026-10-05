@@ -558,3 +558,53 @@ html.modo-noche .cupo-barra { background: #334155; }
 html.modo-noche .distintivo-zona.estac { background: #1d4ed8; }
 html.modo-noche .texto-lleno { color: #fca5a5; }
 /* Fin Padrones: Equipos de seguridad y Estacionamientos */
+/* Rutas de transporte */
+html.modo-sol .rutas-sentido, html.modo-sol .rutas-proximos-col, html.modo-sol .rutas-aviso-suspendidas, html.modo-sol .rutas-fila-horarios li,
+html.modo-sol .rutas-sede-icono, html.modo-sol .btn-detalle-sede, html.modo-sol .rutas-dia, html.modo-sol .rutas-sentido-opcion,
+html.modo-sol .btn-agregar-paradero, html.modo-sol .btn-agregar-horario, html.modo-sol .rutas-crear-mini { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .rutas-fila, html.modo-sol .rutas-horario { background: #fff; border: 2px solid #000; }
+html.modo-sol .rutas-fila.inactiva { border-style: dashed; }
+html.modo-sol .rutas-proximos-titulo, html.modo-sol .rutas-proximos-item, html.modo-sol .rutas-transportistas, html.modo-sol .rutas-fila-meta,
+html.modo-sol .rutas-sede-empresa, html.modo-sol .rutas-horario-titulo, html.modo-sol .rutas-fila-horarios strong, html.modo-sol .rutas-pestana { color: #000 !important; font-weight: 700; }
+html.modo-sol .rutas-pestanas { border-bottom-color: #000; }
+html.modo-sol .rutas-pestana.activa { border-bottom-color: #000; text-decoration: underline; }
+html.modo-sol .rutas-dia:has(input:checked), html.modo-sol .rutas-sentido-opcion:has(input:checked), html.modo-sol .btn-rutas,
+html.modo-sol .btn-detalle-sede:hover { background: #000; color: #fff; border-color: #000; }
+html.modo-sol .rutas-icono-titulo, html.modo-sol .rutas-icono-paradero, html.modo-sol .btn-icono.clonar, html.modo-sol .btn-icono.imprimir-hoja { color: #000; }
+html.modo-sol .btn-quitar-fila { background: #fff; color: #991b1b; border: 2px solid #000; }
+html.modo-noche .rutas-sede-icono { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+html.modo-noche .rutas-sede-titulo h2 a { color: var(--texto); }
+html.modo-noche .rutas-sede-empresa { color: #93c5fd; }
+html.modo-noche .rutas-sentido.llegada { background: rgba(59, 130, 246, 0.16); color: #93c5fd; border-color: rgba(59, 130, 246, 0.4); }
+html.modo-noche .rutas-sentido.salida { background: rgba(34, 197, 94, 0.14); color: #86efac; border-color: rgba(34, 197, 94, 0.4); }
+html.modo-noche .rutas-sentido.paradero { background: rgba(245, 158, 11, 0.14); color: #fcd34d; border-color: rgba(245, 158, 11, 0.4); }
+html.modo-noche .rutas-proximos-col { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .rutas-proximos-titulo { color: #cbd5e1; }
+html.modo-noche .rutas-proximos-item, html.modo-noche .rutas-fila-horarios li { color: #e2e8f0; }
+html.modo-noche .rutas-transportistas, html.modo-noche .rutas-fila-meta, html.modo-noche .rutas-horario-nombre { color: #94a3b8; }
+html.modo-noche .rutas-aviso-suspendidas { background: rgba(245, 158, 11, 0.14); border-color: #92400e; color: #fcd34d; }
+html.modo-noche .btn-detalle-sede { background: rgba(245, 158, 11, 0.14); border-color: #92400e; color: #fbbf24; }
+html.modo-noche .btn-detalle-sede:hover { background: rgba(245, 158, 11, 0.25); color: #fcd34d; }
+html.modo-noche .rutas-pestana { color: #94a3b8; }
+html.modo-noche .rutas-pestana.activa, html.modo-noche .rutas-pestana:hover { color: #fbbf24; }
+html.modo-noche .rutas-crear-mini { background: rgba(245, 158, 11, 0.08); color: #fbbf24; }
+html.modo-noche .rutas-fila { background: var(--superficie); border-color: var(--borde); }
+html.modo-noche .rutas-fila.inactiva { background: var(--fondo); }
+html.modo-noche .rutas-fila-nombre { color: var(--texto); }
+html.modo-noche .rutas-fila-horarios li { background: rgba(245, 158, 11, 0.1); border-color: #78350f; }
+html.modo-noche .rutas-fila-horarios strong, html.modo-noche .rutas-horario-titulo, html.modo-noche .rutas-icono-titulo, html.modo-noche .rutas-icono-paradero { color: #fbbf24; }
+html.modo-noche .rutas-dia-siguiente { color: #c4b5fd; }
+html.modo-noche .tema-rutas .btn-icono.editar { color: #fbbf24; }
+html.modo-noche .btn-icono.clonar { color: #7dd3fc; }
+html.modo-noche .btn-icono.imprimir-hoja { color: #cbd5e1; }
+html.modo-noche .rutas-horario { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .rutas-dia, html.modo-noche .rutas-sentido-opcion { background: var(--campo-fondo); border-color: #475569; color: #cbd5e1; }
+html.modo-noche .rutas-dia:has(input:checked), html.modo-noche .rutas-sentido-opcion:has(input:checked) { background: rgba(245, 158, 11, 0.16); border-color: #f59e0b; color: #fcd34d; }
+html.modo-noche .rutas-transportista { color: #86efac; }
+html.modo-noche .btn-agregar-paradero { background: rgba(245, 158, 11, 0.1); color: #fbbf24; border-color: #b45309; }
+html.modo-noche .btn-agregar-horario { background: transparent; color: #e2e8f0; border-color: #475569; }
+html.modo-noche .btn-agregar-horario:hover { color: #fbbf24; border-color: #f59e0b; }
+html.modo-noche .btn-quitar-fila { background: rgba(239, 68, 68, 0.14); color: #fca5a5; }
+html.modo-noche .rutas-paraderos-encabezado { color: #7c8ba1; }
+html.modo-noche .rutas-separador { border-top-color: var(--borde); }
+/* Fin Rutas de transporte */

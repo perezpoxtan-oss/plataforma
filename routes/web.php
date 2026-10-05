@@ -18,6 +18,7 @@ use App\Http\Controllers\Organizacion\EspacioController;
 use App\Http\Controllers\Organizacion\PuestoController;
 use App\Http\Controllers\Organizacion\TurnoController;
 use App\Http\Controllers\Padrones\ProveedorController;
+use App\Http\Controllers\Padrones\RutaController;
 use App\Http\Controllers\PanelController;
 use App\Http\Controllers\Seguridad\LlaveController;
 use App\Http\Controllers\Seguridad\GafeteController;
@@ -177,6 +178,19 @@ Route::middleware('auth')->group(function () {
     Route::put('/estacionamientos/{zona}', [EstacionamientoController::class, 'update'])->whereNumber('zona')->name('estacionamientos.update');
     Route::patch('/estacionamientos/{zona}/estado', [EstacionamientoController::class, 'estado'])->whereNumber('zona')->name('estacionamientos.estado');
     // Fin Padrones: Equipos de seguridad y Estacionamientos
+    // Padrones: Rutas de transporte (fichas por sede, pestañas Llegadas / Salidas / Paraderos, hoja del día e itinerario)
+    Route::get('/rutas', [RutaController::class, 'index'])->name('rutas.index');
+    Route::post('/rutas', [RutaController::class, 'store'])->name('rutas.store');
+    Route::get('/rutas/sede/{sede}', [RutaController::class, 'sede'])->whereNumber('sede')->name('rutas.sede');
+    Route::get('/rutas/sede/{sede}/dia', [RutaController::class, 'dia'])->whereNumber('sede')->name('rutas.dia');
+    Route::post('/rutas/sede/{sede}/paraderos', [RutaController::class, 'guardarParadero'])->whereNumber('sede')->name('rutas.paraderos.store');
+    Route::put('/rutas/paraderos/{paradero}', [RutaController::class, 'actualizarParadero'])->whereNumber('paradero')->name('rutas.paraderos.update');
+    Route::patch('/rutas/paraderos/{paradero}/estado', [RutaController::class, 'estadoParadero'])->whereNumber('paradero')->name('rutas.paraderos.estado');
+    Route::put('/rutas/{ruta}', [RutaController::class, 'update'])->whereNumber('ruta')->name('rutas.update');
+    Route::patch('/rutas/{ruta}/estado', [RutaController::class, 'estado'])->whereNumber('ruta')->name('rutas.estado');
+    Route::post('/rutas/{ruta}/clonar', [RutaController::class, 'clonar'])->whereNumber('ruta')->name('rutas.clonar');
+    Route::get('/rutas/{ruta}/itinerario', [RutaController::class, 'itinerario'])->whereNumber('ruta')->name('rutas.itinerario');
+    // Fin Padrones: Rutas de transporte
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');

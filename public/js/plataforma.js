@@ -2382,3 +2382,162 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Padrones: Equipos de seguridad y Estacionamientos */
+/* ==========================================================================
+   Rutas de transporte: diálogo "Configurar Ruta y Horarios" con horarios y
+   paraderos dinámicos (plantillas <template data-plantilla-horario> y
+   <template data-plantilla-paradero> de padrones/rutas/sede.blade.php).
+   - Agregar horario copia los paraderos del último (como en SEGCAT).
+   - Siempre queda al menos un horario: su botón "Quitar" se deshabilita.
+   - Editar (data-accion="editar-ruta") llena la ruta y rehace sus horarios.
+   - Al cerrar el diálogo, vuelve a un solo horario vacío.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function plantilla(selector) {
+        var t = document.querySelector(selector);
+        return t ? t.innerHTML : '';
+    }
+
+    function elemento(html) {
+        var caja = document.createElement('div');
+        caja.innerHTML = html.trim();
+        return caja.firstElementChild;
+    }
+
+    function prefijo(form) { return form.getAttribute('data-prefijo') || 'ruta'; }
+
+    function campo(raiz, nombre) { return raiz.querySelector('[name="' + nombre + '"]'); }
+
+    function renumerar(form) {
+        var bloques = form.querySelectorAll('[data-horario]');
+        bloques.forEach(function (b, i) {
+            var titulo = b.querySelector('[data-titulo-horario]');
+            if (titulo) { titulo.textContent = 'Horario ' + (i + 1); }
+            var quitar = b.querySelector('[data-quitar-horario]');
+            if (quitar) {
+                quitar.disabled = bloques.length <= 1;
+                quitar.title = bloques.length <= 1 ? 'Una ruta necesita al menos un horario' : 'Quitar este horario';
+            }
+        });
+    }
+
+    function nuevaParada(form, bloque, valores) {
+        var h = bloque.getAttribute('data-indice');
+        var p = parseInt(bloque.getAttribute('data-siguiente-paradero') || '0', 10);
+        bloque.setAttribute('data-siguiente-paradero', String(p + 1));
+        var fila = elemento(plantilla('template[data-plantilla-paradero]')
+            .replace(/__H__/g, h).replace(/__P__/g, String(p)).replace(/__F__/g, prefijo(form)));
+        if (!fila) { return null; }
+        if (valores) {
+            fila.querySelector('input[type="text"]').value = valores.nombre || '';
+            fila.querySelector('input[type="time"]').value = valores.hora || '';
+        }
+        bloque.querySelector('[data-paraderos]').appendChild(fila);
+        return fila;
+    }
+
+    function nuevoHorario(form, valores) {
+        var cont = form.querySelector('[data-horarios]');
+        var h = parseInt(cont.getAttribute('data-siguiente') || '0', 10);
+        cont.setAttribute('data-siguiente', String(h + 1));
+        var bloque = elemento(plantilla('template[data-plantilla-horario]')
+            .replace(/__H__/g, String(h)).replace(/__F__/g, prefijo(form)));
+        if (!bloque) { return null; }
+        cont.appendChild(bloque);
+        valores = valores || {};
+        var base = 'horarios[' + h + ']';
+        bloque.querySelector('[data-horario-id]').value = valores.id || '';
+        campo(bloque, base + '[nombre]').value = valores.nombre || '';
+        campo(bloque, base + '[hora_inicio]').value = valores.hora_inicio || '';
+        campo(bloque, base + '[hora_fin]').value = valores.hora_fin || '';
+        var dias = valores.dias || [];
+        bloque.querySelectorAll('input[name="' + base + '[dias][]"]').forEach(function (c) { c.checked = dias.indexOf(c.value) !== -1; });
+        (valores.paraderos || []).forEach(function (p) { nuevaParada(form, bloque, p); });
+        renumerar(form);
+        return bloque;
+    }
+
+    function reiniciar(form, horarios) {
+        var cont = form.querySelector('[data-horarios]');
+        if (!cont) { return; }
+        cont.innerHTML = '';
+        cont.setAttribute('data-siguiente', '0');
+        (horarios && horarios.length ? horarios : [null]).forEach(function (h) { nuevoHorario(form, h); });
+    }
+
+    document.addEventListener('click', function (e) {
+        var form = e.target.closest('form[data-form-ruta]');
+
+        if (form && e.target.closest('[data-agregar-horario]')) {
+            var bloques = form.querySelectorAll('[data-horario]');
+            var ultimo = bloques[bloques.length - 1];
+            var copia = [];
+            if (ultimo) {
+                ultimo.querySelectorAll('[data-paradero-fila]').forEach(function (f) {
+                    copia.push({ nombre: f.querySelector('input[type="text"]').value, hora: f.querySelector('input[type="time"]').value });
+                });
+            }
+            var nuevo = nuevoHorario(form, { paraderos: copia });
+            if (nuevo) {
+                nuevo.scrollIntoView({ block: 'nearest' });
+                var nombre = nuevo.querySelector('input[type="text"]');
+                if (nombre) { nombre.focus(); }
+            }
+            return;
+        }
+
+        var quitarHorario = form && e.target.closest('[data-quitar-horario]');
+        if (quitarHorario) {
+            if (form.querySelectorAll('[data-horario]').length > 1) {
+                quitarHorario.closest('[data-horario]').remove();
+                renumerar(form);
+            }
+            return;
+        }
+
+        var agregarParada = form && e.target.closest('[data-agregar-paradero]');
+        if (agregarParada) {
+            var fila = nuevaParada(form, agregarParada.closest('[data-horario]'));
+            if (fila) { fila.querySelector('input[type="text"]').focus(); }
+            return;
+        }
+
+        var quitarParada = form && e.target.closest('[data-quitar-paradero]');
+        if (quitarParada) {
+            quitarParada.closest('[data-paradero-fila]').remove();
+            return;
+        }
+
+        // Editar: datos de la ruta y sus horarios desde data-valores
+        var editar = e.target.closest('[data-accion="editar-ruta"]');
+        if (editar) {
+            var dialogo = document.getElementById(editar.dataset.dialogo);
+            var f = dialogo && dialogo.querySelector('form[data-form-ruta]');
+            if (!f) { return; }
+            var v = {};
+            try { v = JSON.parse(editar.dataset.valores || '{}'); } catch (x) { /* sin valores */ }
+            f.action = editar.dataset.url;
+            var marca = f.querySelector('[data-campo-dialogo]');
+            if (marca) { marca.value = 'editar-' + editar.dataset.id; }
+            f.querySelectorAll('input[name="sentido"]').forEach(function (r) { r.checked = r.value === v.sentido; });
+            ['nombre', 'turno_id', 'proveedor_id', 'costo_maximo_taxi'].forEach(function (n) {
+                var c = campo(f, n);
+                if (c) { c.value = (v[n] === null || v[n] === undefined) ? '' : String(v[n]); }
+            });
+            reiniciar(f, v.horarios);
+            if (typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
+        }
+    });
+
+    // Al cerrar (Cancelar, X o Esc) el diálogo vuelve a un solo horario vacío
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement) || e.target.hasAttribute('data-conservar-al-cerrar')) { return; }
+        e.target.querySelectorAll('form[data-form-ruta]').forEach(function (form) { reiniciar(form, null); });
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[data-form-ruta]').forEach(renumerar);
+    });
+})();
+/* Fin Rutas de transporte */

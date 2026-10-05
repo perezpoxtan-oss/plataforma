@@ -12,10 +12,12 @@ use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
 use App\Models\Modulo;
+use App\Models\Paradero;
 use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\Puesto;
 use App\Models\Rol;
+use App\Models\Ruta;
 use App\Models\Sede;
 use App\Models\TipoEquipo;
 use App\Models\TipoEspacio;
@@ -69,6 +71,8 @@ class LectorAuditoria
         Equipo::class => ['Equipo', 'numero_serie'],
         TipoEquipo::class => ['Tipo de equipo', 'nombre'],
         ZonaEstacionamiento::class => ['Zona de estacionamiento', 'nombre'],
+        Ruta::class => ['Ruta de transporte', 'nombre'],
+        Paradero::class => ['Paradero', 'nombre'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */
