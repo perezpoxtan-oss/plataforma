@@ -140,6 +140,13 @@
                         @if ($responsable)
                             <p class="llave-responsable"><i class="bi bi-person-check-fill" aria-hidden="true"></i> Responsable: {{ $responsable }}</p>
                         @endif
+                        {{-- Préstamo de llaves: quién la tiene ahora y su historial --}}
+                        @if ($l->enUso() && $l->prestamoAbierto?->colaborador)
+                            <p class="llave-usada-por"><i class="bi bi-key-fill" aria-hidden="true"></i> Usada por: {{ $l->prestamoAbierto->colaborador->nombreCompleto() }} · desde @fecha($l->prestamoAbierto->prestado_en, 'd/m H:i')</p>
+                        @endif
+                        @can('prestamo_llaves.ver')
+                            <a class="llave-historial-enlace" href="{{ route('prestamo_llaves.index') }}#historial-llave-{{ $l->id }}"><i class="bi bi-clock-history" aria-hidden="true"></i> Historial de préstamos</a>
+                        @endcan
 
                         <div class="mini-etiqueta" aria-hidden="true">
                             <div class="mini-etiqueta-barra tipo-{{ $l->tipo_dispositivo }}"></div>

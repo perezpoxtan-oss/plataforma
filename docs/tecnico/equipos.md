@@ -82,5 +82,5 @@ Todo responde **404** si el equipo es de otra empresa o está fuera del alcance 
 
 ## Pendiente / ganchos
 
-- **Responsivas** (Operación): debe usar `asignarPorResponsiva()` y, al dar de baja un equipo ASIGNADO, prellenar el responsable (SEGCAT lo hacía con `equipo_responsable_activo_ajax.php`).
+- **Responsivas** (Operación, conectado): usa `asignarPorResponsiva()`; la ficha muestra **A cargo de: colaborador · Turno/Fijo · folio** (`Equipo::resguardoActual()` cargado en `index()`). Ver [responsivas.md](responsivas.md). Pendiente: al dar de baja un equipo ASIGNADO, prellenar el responsable (SEGCAT lo hacía con `equipo_responsable_activo_ajax.php`).
 - Catálogo de tipos: no tiene pantalla propia (tampoco en SEGCAT); se administra desde el alta.

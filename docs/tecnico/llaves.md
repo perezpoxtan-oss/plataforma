@@ -69,14 +69,11 @@ Constantes del modelo (antes eran catálogos `cat_tipos_llave` y `cat_alcances` 
 - **Baja:** `Vouchers::validar()` + `Vouchers::darDeBaja()` con `referenciaCosto` = texto del tipo de dispositivo; audita `vouchers.creado` y `llaves.desactivado` (con el folio). El costo sugerido sale de `Vouchers::costoSugerido('llave', tipo)` y va incrustado en el diálogo (`data-costos`).
 - **Auditoría:** `llaves.creado`, `llaves.actualizado` (con lugares y horarios), `llaves.desactivado`, `llaves.reactivado`.
 
-## Gancho para Préstamo de llaves
+## Gancho con Préstamo de llaves (conectado)
 
-`Llave::enUso()` lee el atributo `en_uso`. Cuando exista la bitácora de préstamos:
-
-1. agregar al modelo la relación del préstamo abierto (por ejemplo `prestamoAbierto(): HasOne` con `estatus = en_uso`);
-2. en `LlaveController::consulta()` agregar `->withExists(['prestamoAbierto as en_uso'])`.
-
-La ficha ya pinta la insignia **EN USO** cuando `enUso()` es verdadero. El préstamo debe usar `llaves.activo = true` y el lector con `tipos=llave`.
+- `Llave::prestamoAbierto()` (`HasOne` a `prestamos_llaves` en uso y no anulado) y `LlaveController::consulta()` con `->withExists(['prestamoAbierto as en_uso'])` y el colaborador del préstamo: `Llave::enUso()` pinta la insignia **EN USO**.
+- La ficha muestra **Usada por: nombre · desde dd/mm HH:MM** y, con `prestamo_llaves.ver`, el enlace **Historial de préstamos** (`/prestamo-llaves#historial-llave-{id}` abre el historial de esa llave).
+- `index()` usa `addSelect()` para no perder `en_uso`. Detalle en [prestamo-llaves.md](prestamo-llaves.md).
 
 ## Qué se corrigió respecto a SEGCAT
 

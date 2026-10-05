@@ -107,6 +107,10 @@
                         @if ($e->observaciones)
                             <div class="eq-observaciones"><i class="bi bi-chat-left-text me-1" aria-hidden="true"></i>{{ $e->observaciones }}</div>
                         @endif
+                        @if ($e->resguardoActual?->responsiva?->colaborador)
+                            {{-- Responsivas: quién lo tiene ahora --}}
+                            <div class="eq-resguardo"><i class="bi bi-person-badge me-1" aria-hidden="true"></i>A cargo de: <strong>{{ $e->resguardoActual->responsiva->colaborador->nombreCompleto() }}</strong> · {{ $e->resguardoActual->etiquetaModalidad() }} · {{ $e->resguardoActual->responsiva->folio }}</div>
+                        @endif
                         @if ($e->etiqueta_nfc)
                             <div class="eq-nfc"><i class="bi bi-broadcast-pin me-1" aria-hidden="true"></i>Etiqueta NFC / RFID asignada</div>
                         @endif

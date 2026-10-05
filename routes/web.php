@@ -12,6 +12,8 @@ use App\Http\Controllers\Administracion\UsuarioController;
 use App\Http\Controllers\Auth\SesionController;
 use App\Http\Controllers\LectorController;
 use App\Http\Controllers\ModuloPendienteController;
+use App\Http\Controllers\Operacion\PrestamoLlaveController;
+use App\Http\Controllers\Operacion\ResponsivaController;
 use App\Http\Controllers\Organizacion\ColaboradorController;
 use App\Http\Controllers\Organizacion\DepartamentoController;
 use App\Http\Controllers\Organizacion\EspacioController;
@@ -209,6 +211,21 @@ Route::middleware('auth')->group(function () {
     Route::patch('/accesos/acompanantes/{acompanante}/salida-temporal', [AccesoController::class, 'acompananteSalidaTemporal'])->whereNumber('acompanante')->name('accesos.acompanantes.salida-temporal');
     Route::patch('/accesos/acompanantes/{acompanante}/regreso', [AccesoController::class, 'acompananteRegreso'])->whereNumber('acompanante')->name('accesos.acompanantes.regreso');
     // Fin Padrones: Bitácora de accesos
+    // Padrones: Préstamo de llaves y Responsivas (menú Operación; ver docs/tecnico/prestamo-llaves.md y responsivas.md)
+    Route::get('/prestamo-llaves', [PrestamoLlaveController::class, 'index'])->name('prestamo_llaves.index');
+    Route::post('/prestamo-llaves', [PrestamoLlaveController::class, 'store'])->name('prestamo_llaves.store');
+    Route::get('/prestamo-llaves/exportar', [PrestamoLlaveController::class, 'exportar'])->name('prestamo_llaves.exportar');
+    Route::get('/prestamo-llaves/llaves/{llave}/historial', [PrestamoLlaveController::class, 'historial'])->whereNumber('llave')->name('prestamo_llaves.historial');
+    Route::patch('/prestamo-llaves/{prestamo}/recibir', [PrestamoLlaveController::class, 'recibir'])->whereNumber('prestamo')->name('prestamo_llaves.recibir');
+    Route::patch('/prestamo-llaves/{prestamo}/anular', [PrestamoLlaveController::class, 'anular'])->whereNumber('prestamo')->name('prestamo_llaves.anular');
+    Route::patch('/prestamo-llaves/{prestamo}/reactivar', [PrestamoLlaveController::class, 'reactivar'])->whereNumber('prestamo')->name('prestamo_llaves.reactivar');
+    Route::get('/responsivas', [ResponsivaController::class, 'index'])->name('responsivas.index');
+    Route::post('/responsivas', [ResponsivaController::class, 'store'])->name('responsivas.store');
+    Route::get('/responsivas/equipos/{equipo}/historial', [ResponsivaController::class, 'historial'])->whereNumber('equipo')->name('responsivas.historial');
+    Route::patch('/responsivas/{responsiva}/recibir', [ResponsivaController::class, 'recibir'])->whereNumber('responsiva')->name('responsivas.recibir');
+    Route::get('/responsivas/{responsiva}/firma', [ResponsivaController::class, 'firma'])->whereNumber('responsiva')->name('responsivas.firma');
+    Route::get('/responsivas/{responsiva}/hoja', [ResponsivaController::class, 'hoja'])->whereNumber('responsiva')->name('responsivas.hoja');
+    // Fin Padrones: Préstamo de llaves y Responsivas
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
