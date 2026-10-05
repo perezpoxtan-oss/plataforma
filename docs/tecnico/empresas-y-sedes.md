@@ -34,3 +34,10 @@ El nombre de la pantalla sale de la terminología del rubro. Por decisión del c
 ## Pruebas
 
 `tests/Feature/Administracion/EmpresasYSedesTest.php`
+
+## Logo de la empresa
+
+- Campo `logo` en alta y edición (`EmpresaController::guardarLogo`). Acepta PNG, JPG o WEBP de hasta 512 KB y 2048 × 2048 píxeles; **SVG no**, porque puede llevar código. Con `quitar_logo=1` se quita.
+- Se guarda en el disco `public` (`storage/app/public/empresas/logos/`). La columna `empresas.logo_ruta` guarda `storage/empresas/logos/<archivo>` y el archivo anterior se borra.
+- Lo usan la ficha de la empresa y las impresiones (gafetes). Queda en la auditoría como `empresas.logo_actualizado`.
+- SEGCAT lo guardaba en `uploads/logos/` con el nombre `logo_<id>_<fecha>`. Ahora el nombre es aleatorio y el archivo queda fuera del código.

@@ -1254,3 +1254,5 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 @media print { .rutas-hoja-horizontal { page: rutas-horizontal; } }
 @page rutas-horizontal { size: letter landscape; margin: 10mm; }
 /* Fin Rutas de transporte */
+/* Logo de la empresa en su ficha */
+.logo-empresa-ficha { max-height: 44px; max-width: 120px; object-fit: contain; border-radius: 8px; background: #fff; border: 1px solid var(--borde); padding: 4px; }

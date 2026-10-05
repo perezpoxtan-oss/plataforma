@@ -40,6 +40,23 @@ class DatosDemoTest extends TestCase
         $this->assertSame(1, $agente->roles()->count());
     }
 
+    public function test_al_completar_crea_las_cuentas_que_faltan_sin_tocar_las_existentes(): void
+    {
+        $this->artisan('plataforma:demo', ['--password' => 'Prueba123!'])->assertSuccessful();
+        // Quien prueba cambió el correo de admin.demo y alguien borró rh.demo (como una QA anterior a RH)
+        User::where('username', 'admin.demo')->update(['email' => 'real@vdcp.com.mx', 'password' => Hash::make('OtraClave99')]);
+        User::where('username', 'rh.demo')->delete();
+
+        $this->artisan('plataforma:demo', ['--password' => 'Nueva1234!'])->assertSuccessful()->expectsOutputToContain('Usuario demo creado: rh.demo');
+
+        $admin = User::where('username', 'admin.demo')->firstOrFail();
+        $this->assertSame('real@vdcp.com.mx', $admin->email);
+        $this->assertTrue(Hash::check('OtraClave99', $admin->password));
+        $rh = User::where('username', 'rh.demo')->firstOrFail();
+        $this->assertTrue(Hash::check('Nueva1234!', $rh->password));
+        $this->assertTrue($rh->can('colaboradores.aprobar'));
+    }
+
     public function test_toma_la_contrasena_de_la_variable_de_entorno(): void
     {
         putenv('PLATAFORMA_CONTRASENA=DesdeEntorno9');

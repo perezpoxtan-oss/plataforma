@@ -6,6 +6,7 @@
 
 - **Super Administrador:** da de alta cada cliente con **Nueva Empresa**. Captura nombre comercial, razón social, RFC, **rubro** (hotel, corporativo, condominio o fraccionamiento) y **zona horaria**. Al guardar, la empresa queda lista con sus módulos y roles base; después registra sus sedes.
 - **Administrador del cliente:** ve **Mi Empresa** y puede corregir sus datos fiscales y su zona horaria.
+- **Logo de la empresa:** en **Editar** elige un archivo PNG, JPG o WEBP de hasta 512 KB y guarda. El logo sale en la ficha de la empresa, en los gafetes y en las demás impresiones. Para quitarlo, marca **Quitar el logo actual**.
 
 ## Sedes (Estructura → Entidades Legales → Sedes)
 
