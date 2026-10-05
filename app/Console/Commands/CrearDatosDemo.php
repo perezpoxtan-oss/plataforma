@@ -6,6 +6,8 @@ use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Espacio;
+use App\Models\GrupoEspacio;
+use App\Models\Llave;
 use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\Puesto;
@@ -18,7 +20,9 @@ use App\Models\User;
 use App\Models\UsuarioRol;
 use App\Models\Vehiculo;
 use App\Services\Espacios\AdministradorEspacios;
+use App\Services\Llaves\AdministradorLlaves;
 use App\Services\Plataforma\ProvisionarEmpresa;
+use App\Support\HoraLocal;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -104,6 +108,7 @@ class CrearDatosDemo extends Command
         // Padrón de personas: después de los proveedores (si existen) para ligar a su personal
         $tenant->conEmpresa($empresa->id, fn () => $this->personasDemo(User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'jefe.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->vehiculosDemo(User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->llavesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -413,5 +418,79 @@ class CrearDatosDemo extends Command
             ], $extra));
             $vehiculo->forceFill(['creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
         }
+    }
+
+    /**
+     * Catálogo de llaves de ejemplo, solo la primera vez: llave maestra,
+     * llaves de zona, piso, cuarto y sección (de Zonas y áreas, si existen),
+     * una por vencer, una vencida y una dada de baja con voucher.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function llavesDemo($sedes, User $admin): void
+    {
+        if (Llave::exists()) {
+            return;
+        }
+
+        $cen = $sedes['CEN'];
+        $pla = $sedes['PLA'];
+        $espacio = fn (string $nivel, string $nombre) => Espacio::where('sede_id', $cen->id)->where('nivel', $nivel)->where('nombre', $nombre)->value('id');
+        $seccion = GrupoEspacio::where('sede_id', $cen->id)->where('nombre', 'Vista al mar')->value('id');
+        $depto = fn (string $n) => Departamento::where('nombre', $n)->value('id');
+        $puesto = fn (string $n) => Puesto::where('nombre', $n)->value('id');
+        $dias = fn (int $n) => now(HoraLocal::ZONA_PLATAFORMA)->addDays($n)->format('Y-m-d');
+        $torre = $espacio(Espacio::EDIFICIO, 'Torre A');
+        $piso1 = $espacio(Espacio::AREA, 'Piso 1');
+        $hab101 = $espacio(Espacio::AREA_ESPECIFICA, '101');
+
+        // [nomenclatura, sede, descripción, tipo, alcance, lugares (espacios o secciones), extra, horarios]
+        $llaves = [
+            ['HDC-MASTER-01', $cen, 'Llave maestra de la sede Centro', 'electronica_rfid', 'global', [],
+                ['departamento_id' => $depto('Seguridad'), 'id_externo' => 'VC-000187', 'plataforma_externa' => 'VingCard', 'fecha_caducidad' => $dias(200)], []],
+            ['HDC-TA-ZONA', $cen, 'Acceso general a la Torre A', 'metalica', $torre ? 'zona' : 'otra', $torre ? [$torre] : [],
+                ['departamento_id' => $depto('Mantenimiento'), 'puesto_id' => $puesto('Técnico de Mantenimiento'), 'alcance_otro' => $torre ? null : 'Torre A'], [['Mantenimiento', '07:00', '15:00']]],
+            ['HDC-P1-AMA', $cen, 'Habitaciones del Piso 1 para Ama de Llaves', 'electronica_rfid', $piso1 ? 'piso' : 'otra', $piso1 ? [$piso1] : [],
+                ['departamento_id' => $depto('Ama de Llaves'), 'puesto_id' => $puesto('Camarista'), 'id_externo' => 'S-4471', 'plataforma_externa' => 'Salto', 'fecha_caducidad' => $dias(20), 'alcance_otro' => $piso1 ? null : 'Piso 1'],
+                [['Turno Limpieza', '08:00', '16:00']]],
+            ['HDC-101', $cen, 'Habitación 101 (llave de respaldo)', 'electronica_rfid', $hab101 ? 'area' : 'otra', $hab101 ? [$hab101] : [],
+                ['fecha_caducidad' => $dias(-5), 'alcance_otro' => $hab101 ? null : 'Habitación 101'], []],
+            ['HDC-VISTA-MAR', $cen, 'Habitaciones con vista al mar', 'electronica_rfid', $seccion ? 'seccion' : 'otra', $seccion ? [$seccion] : [],
+                ['departamento_id' => $depto('Ama de Llaves'), 'id_externo' => 'VC-000233', 'plataforma_externa' => 'VingCard', 'fecha_caducidad' => $dias(90), 'alcance_otro' => $seccion ? null : 'Vista al mar'],
+                [['Turno Matutino', '07:00', '15:00'], ['Turno Nocturno', '23:00', '07:00']]],
+            ['HDC-SITE-TI', $cen, 'Site central de TI', 'biometrica', 'otra', [],
+                ['alcance_otro' => 'Site central de TI', 'plataforma_externa' => null, 'colaborador_id' => Colaborador::where('num_empleado', '1006')->value('id')], []],
+            ['HDC-BOD-01', $cen, 'Bodega de blancos', 'metalica', 'otra', [],
+                ['alcance_otro' => 'Bodega de blancos', 'departamento_id' => $depto('Ama de Llaves')], [['Apertura', '07:00', '19:00']]],
+            ['HDP-MASTER-01', $pla, 'Llave maestra de la sede Playa', 'metalica', 'global', [], ['departamento_id' => $depto('Seguridad')], []],
+            ['HDP-ALBERCA', $pla, 'Reja de la alberca', 'clave_pin', 'otra', [],
+                ['alcance_otro' => 'Reja de alberca', 'departamento_id' => $depto('Club de Playa')], [['Apertura', '06:00', '22:00']]],
+            ['HDP-MANT-02', $pla, 'Cuarto de máquinas', 'metalica', 'otra', [],
+                ['alcance_otro' => 'Cuarto de máquinas', 'departamento_id' => $depto('Mantenimiento')], []],
+        ];
+
+        foreach ($llaves as [$nomenclatura, $sede, $descripcion, $tipo, $alcance, $lugares, $extra, $horarios]) {
+            $llave = new Llave(array_merge([
+                'sede_id' => $sede->id, 'nomenclatura' => $nomenclatura, 'descripcion' => $descripcion,
+                'tipo_dispositivo' => $tipo, 'alcance' => $alcance,
+            ], $extra));
+            $llave->forceFill(['creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+            if ($alcance === 'seccion') {
+                $llave->grupos()->sync($lugares);
+            } elseif ($lugares !== []) {
+                $llave->espacios()->sync($lugares);
+            }
+            foreach ($horarios as [$nombre, $inicio, $fin]) {
+                $llave->horarios()->create(['nombre' => $nombre, 'hora_inicio' => "{$inicio}:00", 'hora_fin' => "{$fin}:00"]);
+            }
+        }
+
+        // Una llave extraviada: baja con voucher de reposición con cobro al responsable
+        $extraviada = Llave::where('nomenclatura', 'HDP-MANT-02')->firstOrFail();
+        $responsable = Colaborador::where('num_empleado', '1011')->value('id');
+        app(AdministradorLlaves::class)->darDeBaja($admin, $extraviada, [
+            'motivo' => 'extraviado', 'descripcion' => 'Se perdió durante la ronda nocturna de mantenimiento.',
+            'aplica_cobro' => $responsable !== null, 'monto' => '350', 'colaborador_id' => $responsable,
+        ]);
     }
 }

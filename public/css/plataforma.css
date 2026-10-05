@@ -730,3 +730,106 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .dialogo-camara video { width: 100%; max-height: 60vh; border-radius: 14px; background: #000; display: block; object-fit: cover; }
 .lector .campo-ayuda { margin: 0.4rem 0 0; }
 /* Fin Lector universal */
+/* ==========================================================================
+   Catálogo de llaves (colores de SEGCAT: índigo; barra verde = electrónica,
+   roja = metálica)
+   ========================================================================== */
+.pantalla-llaves .buscador-llaves { max-width: 340px; width: 100%; }
+.barra-llaves { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.barra-llaves .filtro-select { max-width: 240px; padding-top: 0.7rem; padding-bottom: 0.7rem; min-height: 44px; }
+.filtros-estado-llaves { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.filtros-estado-llaves .btn-pill-tipo { min-height: 44px; }
+.tema-indigo .btn-pill-tipo.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+.acciones-llaves { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+.btn-accion-llaves { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; min-height: 44px; padding: 0.55rem 1rem; border-radius: 12px; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-weight: 600; font-size: 0.88rem; text-decoration: none; cursor: pointer; font-family: inherit; }
+.btn-accion-llaves:hover { background: #f1f5f9; color: #0f172a; }
+.btn-accion-llaves.activo { background: #eef2ff; border-color: #6366f1; color: #4338ca; }
+.btn-accion-llaves.oscuro { background: #0f172a; border-color: #0f172a; color: #fff; font-weight: 700; }
+.btn-accion-llaves.oscuro:hover { background: #1e293b; }
+.btn-accion-llaves:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-accion-llaves .conteo-pill { margin-left: 0.1rem; opacity: 0.9; }
+.pantalla-llaves .fichas-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+.ficha-llave { padding: 1.3rem; }
+.ficha-llave.marcada { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25); }
+.ficha-llave .etiqueta-estado { padding: 0.25rem 0.6rem; font-size: 0.65rem; white-space: nowrap; }
+.etiqueta-estado.en-uso { background: #fef3c7; color: #92400e; }
+.badge-tipo-llave { font-size: 0.68rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; line-height: 1.4; }
+.chk-llave { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: -10px -10px -10px 0; cursor: pointer; }
+.chk-llave input { width: 20px; height: 20px; accent-color: #6366f1; cursor: pointer; }
+.llave-titulo { font-size: 1.2rem; font-weight: 800; color: var(--texto); margin: 0.6rem 0 0.1rem; overflow-wrap: anywhere; }
+.llave-descripcion { font-size: 0.85rem; color: var(--texto-suave); margin: 0; }
+.llave-responsable { font-size: 0.75rem; color: #4f46e5; margin: 0.2rem 0 0; font-weight: 600; }
+.mini-etiqueta { display: flex; align-items: stretch; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; margin-top: 0.7rem; background: #fff; height: 46px; }
+.mini-etiqueta-barra { width: 6px; flex-shrink: 0; }
+.tipo-electronica_rfid { --color-llave: #10b981; }
+.tipo-metalica { --color-llave: #ef4444; }
+.tipo-biometrica { --color-llave: #8b5cf6; }
+.tipo-clave_pin { --color-llave: #f59e0b; }
+.mini-etiqueta-barra, .etiqueta-llave-barra { background: var(--color-llave, #64748b); }
+.mini-etiqueta-cuerpo { flex: 1; padding: 3px 8px; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.mini-etiqueta-nombre { font-size: 0.8rem; font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-etiqueta-sub { font-size: 0.62rem; color: #64748b; font-weight: 700; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-etiqueta-qr { width: 42px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #0f172a; }
+.meta-llave { background: var(--fondo); border: 1px solid var(--borde); border-radius: 12px; padding: 0.6rem 0.8rem; font-size: 0.8rem; color: #475569; display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.8rem; overflow-wrap: anywhere; }
+.mini-horario { background: #fff; border: 1px solid var(--borde); border-radius: 6px; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; color: #475569; display: inline-block; margin: 2px 3px 0 0; }
+.badge-caducidad { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+.badge-caducidad.ok { background: #f0fdf4; color: #15803d; }
+.badge-caducidad.pronto { background: #fffbeb; color: #b45309; }
+.badge-caducidad.vencida { background: #fef2f2; color: #b91c1c; }
+.pastilla-alcance { background: #f8fafc; color: #475569; border: 1px solid var(--borde); border-radius: 999px; padding: 0.3rem 0.75rem; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; max-width: 65%; line-height: 1.3; }
+.ficha-llave .ficha-footer { margin-top: 1rem; padding-top: 0.8rem; gap: 0.5rem; }
+.estado-vacio-llaves { grid-column: 1 / -1; }
+.dialogo-llave .caja-lugares { background: #f8fafc; border: 1px solid var(--borde); border-radius: 12px; padding: 0.75rem; margin-bottom: 1rem; }
+.dialogo-llave .lista-lugares { max-height: 220px; margin-bottom: 0; background: #fff; }
+.dialogo-llave .fila-check input { accent-color: #6366f1; }
+.dialogo-llave .campo-buscar-lugar { padding: 0.6rem 0.8rem; }
+.caja-id-externo { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 0.75rem; margin-bottom: 1rem; }
+.horarios-llave { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.35rem 0 0.5rem; }
+.fila-horario { display: grid; grid-template-columns: 1fr 140px 140px 44px; gap: 0.5rem; align-items: center; }
+.btn-quitar-horario { background: #fef2f2; color: #dc2626; border: none; width: 44px; height: 44px; border-radius: 10px; cursor: pointer; }
+.btn-quitar-horario:hover { background: #fee2e2; }
+.btn-agregar-horario { background: #eef2ff; color: #4f46e5; border: 1px dashed #6366f1; border-radius: 10px; padding: 0.55rem 0.9rem; min-height: 44px; font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btn-agregar-horario:hover { background: #e0e7ff; }
+.opcion-cobro { display: flex; align-items: center; gap: 0.6rem; min-height: 44px; font-weight: 700; font-size: 0.85rem; color: var(--texto); cursor: pointer; margin-bottom: 0.75rem; }
+.opcion-cobro input { width: 20px; height: 20px; accent-color: #dc2626; flex-shrink: 0; }
+.caja-cobro { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 0.75rem; margin-bottom: 0.5rem; }
+.grupo-monto { display: flex; align-items: stretch; margin-bottom: 1rem; }
+.grupo-monto-simbolo { display: flex; align-items: center; padding: 0 0.9rem; background: #f1f5f9; border: 1px solid var(--borde); border-right: none; border-radius: 12px 0 0 12px; color: #64748b; font-weight: 700; }
+.grupo-monto .grupo-monto-campo { flex: 1; min-width: 0; margin-bottom: 0; border-radius: 0 12px 12px 0; }
+.btn-baja-llave { background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; }
+@media (max-width: 575.98px) {
+    .barra-llaves .filtro-select { max-width: none; flex: 1 1 calc(50% - 0.25rem); min-width: 0; padding-right: 2rem; }
+    .barra-llaves .filtro-select:first-child:nth-last-child(4) { flex-basis: 100%; }
+    .pantalla-llaves .buscador-llaves { max-width: none; }
+    .acciones-llaves .btn-accion-llaves { flex: 1 1 auto; }
+    .fila-horario { grid-template-columns: 1fr 1fr 44px; }
+    .fila-horario input[type="text"] { grid-column: 1 / -1; }
+}
+
+/* Etiquetas de llaveros: hoja carta, etiquetas de 6.5 × 3.5 cm */
+.pagina-etiquetas-llaves { background: #e2e8f0; margin: 0; padding: 20px 12px; min-height: 100vh; font-family: var(--fuente); color: #0f172a; }
+.panel-etiquetas-llaves { background: #fff; padding: 1rem 1.2rem; border-radius: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 216mm; margin: 0 auto 1.2rem; text-align: center; }
+.panel-etiquetas-llaves h1 { font-size: 1.3rem; font-weight: 800; margin: 0 0 0.3rem; }
+.panel-etiquetas-llaves p { font-size: 0.85rem; color: #64748b; margin: 0 0 0.8rem; }
+.panel-etiquetas-acciones { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-bottom: 0.6rem; }
+.panel-etiquetas-llaves .panel-etiquetas-nota { font-size: 0.75rem; margin: 0; }
+.hoja-etiquetas-llaves { width: 216mm; max-width: 100%; min-height: 279mm; background: #fff; margin: 0 auto; padding: 8mm 6mm; display: flex; flex-wrap: wrap; gap: 4mm; align-content: flex-start; box-sizing: border-box; }
+.etiqueta-llave { width: 65mm; height: 35mm; border: 1px dashed #94a3b8; box-sizing: border-box; display: flex; background: #fff; page-break-inside: avoid; break-inside: avoid; overflow: hidden; color: #0f172a; }
+.etiqueta-llave-barra { width: 4mm; flex-shrink: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.etiqueta-llave-cuerpo { flex: 1; padding: 2mm 2mm 2mm 3mm; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+.etiqueta-llave-empresa { font-size: 0.55rem; font-weight: 900; color: #64748b; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.etiqueta-llave-nombre { font-size: 0.95rem; font-weight: 900; letter-spacing: 0.5px; line-height: 1.1; overflow-wrap: anywhere; }
+.etiqueta-llave-alcance { font-size: 0.5rem; font-weight: 800; color: #fff; background: #334155; padding: 1px 4px; border-radius: 3px; display: inline-block; text-transform: uppercase; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.etiqueta-llave-lugar { font-size: 0.5rem; color: #475569; font-weight: 700; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.etiqueta-llave-codigo { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.5rem; color: #334155; letter-spacing: 0.5px; }
+.etiqueta-llave-baja { font-size: 0.5rem; font-weight: 900; color: #b91c1c; }
+.etiqueta-llave-qr { width: 23mm; flex-shrink: 0; display: flex; align-items: center; justify-content: center; padding-right: 1.5mm; }
+.etiqueta-llave-qr svg { width: 21mm; height: 21mm; display: block; }
+@media print {
+    @page { size: letter; margin: 0; }
+    .pagina-etiquetas-llaves { background: #fff !important; padding: 0; min-height: 0; }
+    .panel-etiquetas-llaves, .franja-ambiente { display: none !important; }
+    .hoja-etiquetas-llaves { box-shadow: none; margin: 0; }
+    .etiqueta-llave { border: 1px solid #cbd5e1; background: #fff !important; color: #000 !important; }
+}
+/* Fin Catálogo de llaves */

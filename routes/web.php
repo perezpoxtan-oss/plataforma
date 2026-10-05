@@ -19,6 +19,7 @@ use App\Http\Controllers\Organizacion\PuestoController;
 use App\Http\Controllers\Organizacion\TurnoController;
 use App\Http\Controllers\Padrones\ProveedorController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\Seguridad\LlaveController;
 use App\Http\Controllers\Seguridad\PersonaController;
 use App\Http\Controllers\Seguridad\VehiculoController;
 use Illuminate\Support\Facades\Route;
@@ -139,6 +140,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/modulos/{clave}', ModuloPendienteController::class)
         ->where('clave', '[a-z0-9_]+')
         ->name('modulos.pendiente');
+
+    // Padrones: Llaves (catálogo; el préstamo vive en Operación)
+    Route::get('/llaves', [LlaveController::class, 'index'])->name('llaves.index');
+    Route::post('/llaves', [LlaveController::class, 'store'])->name('llaves.store');
+    Route::get('/llaves/exportar', [LlaveController::class, 'exportar'])->name('llaves.exportar');
+    Route::get('/llaves/etiquetas', [LlaveController::class, 'imprimir'])->name('llaves.imprimir');
+    Route::put('/llaves/{llave}', [LlaveController::class, 'update'])->whereNumber('llave')->name('llaves.update');
+    Route::post('/llaves/{llave}/baja', [LlaveController::class, 'baja'])->whereNumber('llave')->name('llaves.baja');
+    Route::patch('/llaves/{llave}/reactivar', [LlaveController::class, 'reactivar'])->whereNumber('llave')->name('llaves.reactivar');
+    // Fin Padrones: Llaves
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');

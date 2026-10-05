@@ -447,3 +447,43 @@ html.modo-noche .lector-estado.ok { color: #86efac; }
 html.modo-noche .lector-estado.aviso { color: #fcd34d; }
 html.modo-noche .lector-estado.error { color: #fca5a5; }
 /* Fin Lector universal */
+/* Catálogo de llaves */
+html.modo-sol .badge-tipo-llave, html.modo-sol .pastilla-alcance, html.modo-sol .mini-horario, html.modo-sol .meta-llave,
+html.modo-sol .mini-etiqueta, html.modo-sol .caja-id-externo, html.modo-sol .caja-cobro, html.modo-sol .dialogo-llave .caja-lugares { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .meta-llave, html.modo-sol .llave-descripcion, html.modo-sol .llave-responsable { color: #000; font-weight: 700; }
+html.modo-sol .badge-caducidad.ok { background: #166534; color: #fff; }
+html.modo-sol .badge-caducidad.pronto { background: #92400e; color: #fff; }
+html.modo-sol .badge-caducidad.vencida { background: #991b1b; color: #fff; }
+html.modo-sol .etiqueta-estado.en-uso { background: #92400e; color: #fff; }
+html.modo-sol .btn-accion-llaves { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-accion-llaves.oscuro, html.modo-sol .btn-accion-llaves.activo, html.modo-sol .tema-indigo .btn-pill-tipo.active { background: #000; color: #fff; border-color: #000; }
+html.modo-sol .ficha-llave.marcada { border: 3px solid #000; box-shadow: none; }
+html.modo-sol .btn-agregar-horario, html.modo-sol .btn-quitar-horario { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-noche .badge-tipo-llave, html.modo-noche .pastilla-alcance { background: var(--superficie-2); color: #cbd5e1; border-color: var(--borde); }
+html.modo-noche .meta-llave { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .meta-llave strong { color: #e2e8f0; }
+html.modo-noche .mini-horario { background: var(--superficie); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .mini-etiqueta { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .mini-etiqueta-nombre, html.modo-noche .mini-etiqueta-qr { color: #e2e8f0; }
+html.modo-noche .llave-responsable { color: #a5b4fc; }
+html.modo-noche .badge-caducidad.ok { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+html.modo-noche .badge-caducidad.pronto { background: rgba(245, 158, 11, 0.16); color: #fcd34d; }
+html.modo-noche .badge-caducidad.vencida { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+html.modo-noche .etiqueta-estado.en-uso { background: rgba(245, 158, 11, 0.18); color: #fcd34d; }
+html.modo-noche .btn-accion-llaves { background: var(--superficie-2); border-color: var(--borde); color: #e2e8f0; }
+html.modo-noche .btn-accion-llaves:hover { background: var(--superficie); }
+html.modo-noche .btn-accion-llaves.oscuro { background: #6366f1; border-color: #6366f1; color: #fff; }
+html.modo-noche .btn-accion-llaves.activo { background: rgba(99, 102, 241, 0.25); border-color: #6366f1; color: #c7d2fe; }
+html.modo-noche .tema-indigo .btn-pill-tipo.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+html.modo-noche .tema-indigo .btn-pill-tipo:not(.active) { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .dialogo-llave .caja-lugares { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .dialogo-llave .lista-lugares { background: var(--superficie); }
+html.modo-noche .caja-id-externo { background: rgba(34, 197, 94, 0.08); border-color: #166534; }
+html.modo-noche .caja-cobro { background: rgba(239, 68, 68, 0.08); border-color: #7f1d1d; }
+html.modo-noche .grupo-monto-simbolo { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .btn-agregar-horario { background: rgba(99, 102, 241, 0.15); color: #c7d2fe; }
+html.modo-noche .btn-quitar-horario { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+html.modo-noche .opcion-cobro { color: #e2e8f0; }
+html.modo-noche .pagina-etiquetas-llaves { background: #0f172a; }
+html.modo-noche .panel-etiquetas-llaves { background: var(--superficie); color: #e2e8f0; }
+/* Fin Catálogo de llaves */

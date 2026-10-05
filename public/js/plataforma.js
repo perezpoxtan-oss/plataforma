@@ -1727,3 +1727,289 @@ document.addEventListener('click', function (e) {
     window.Lector = { preparar: preparar, elegir: elegir, limpiar: limpiar };
 })();
 /* Fin Lector universal */
+/* ==========================================================================
+   Catálogo de llaves: filtros de la lista, selección para imprimir etiquetas,
+   exportación con los filtros elegidos, formulario (sede → departamento →
+   puesto, lugares según el alcance, horarios, responsable) y baja con
+   voucher de reposición.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto) { try { return JSON.parse(texto || '{}'); } catch (x) { return {}; } }
+
+    /* ---------- Lista: filtros, selección y exportación ---------- */
+    var CLAVE = 'plataforma_filtro_llaves';
+
+    function valorFiltro(nombre) {
+        var el = document.querySelector('[data-filtro-llaves="' + nombre + '"]');
+        return el ? el.value : '';
+    }
+
+    function estadoElegido() {
+        var b = document.querySelector('[data-filtro-llaves-estado][aria-pressed="true"]');
+        return b ? b.dataset.filtroLlavesEstado : '';
+    }
+
+    function contar() {
+        var marcadas = document.querySelectorAll('[data-chk-llave]:checked').length;
+        document.querySelectorAll('[data-conteo-llaves]').forEach(function (n) { n.textContent = marcadas ? '(' + marcadas + ')' : ''; });
+        document.querySelectorAll('[data-imprimir-llaves]').forEach(function (b) {
+            b.disabled = marcadas === 0;
+            b.title = marcadas === 0 ? 'Marca primero las llaves (casilla de cada ficha o botón Todo)' : '';
+        });
+        document.querySelectorAll('[data-chk-llave]').forEach(function (c) {
+            var ficha = c.closest('[data-llave]');
+            if (ficha) { ficha.classList.toggle('marcada', c.checked); }
+        });
+    }
+
+    function actualizarExportar(filtros) {
+        var enlace = document.querySelector('[data-exportar-llaves]');
+        if (!enlace) { return; }
+        var partes = [];
+        Object.keys(filtros).forEach(function (k) {
+            if (filtros[k] !== '') { partes.push(encodeURIComponent(k) + '=' + encodeURIComponent(filtros[k])); }
+        });
+        enlace.href = enlace.dataset.base + (partes.length ? '?' + partes.join('&') : '');
+    }
+
+    function filtrar() {
+        var cont = document.querySelector('[data-llaves]');
+        if (!cont) { return; }
+        var texto = valorFiltro('texto').toLowerCase().trim();
+        var sede = valorFiltro('sede');
+        var tipo = valorFiltro('tipo');
+        var caducidad = valorFiltro('caducidad');
+        var estado = estadoElegido();
+        var fichas = cont.querySelectorAll('[data-llave]');
+        var visibles = 0;
+        fichas.forEach(function (f) {
+            var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1)
+                && (sede === '' || f.dataset.sede === sede)
+                && (tipo === '' || f.dataset.tipo === tipo)
+                && (caducidad === '' || f.dataset.caducidad === caducidad)
+                && (estado === '' || f.dataset.estado === estado);
+            f.style.display = ok ? '' : 'none';
+            if (ok) { visibles++; }
+        });
+        var vacio = cont.querySelector('[data-sin-resultados-llaves]');
+        if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+        actualizarExportar({ q: texto, sede: sede, tipo: tipo, caducidad: caducidad, estado: estado });
+        try { sessionStorage.setItem(CLAVE, JSON.stringify({ texto: valorFiltro('texto'), sede: sede, tipo: tipo, caducidad: caducidad, estado: estado })); } catch (x) { /* sin almacenamiento */ }
+    }
+
+    function elegirEstado(valor) {
+        document.querySelectorAll('[data-filtro-llaves-estado]').forEach(function (x) {
+            var on = x.dataset.filtroLlavesEstado === valor;
+            x.setAttribute('aria-pressed', String(on));
+            x.classList.toggle('active', on);
+        });
+    }
+
+    document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-llaves]')) { filtrar(); } });
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-filtro-llaves]')) { filtrar(); }
+        if (e.target.matches('[data-chk-llave]')) { contar(); }
+    });
+
+    document.addEventListener('click', function (e) {
+        var pill = e.target.closest('[data-filtro-llaves-estado]');
+        if (pill) { elegirEstado(pill.dataset.filtroLlavesEstado); filtrar(); return; }
+
+        var todas = e.target.closest('[data-accion="llaves-marcar-todas"]');
+        if (todas) {
+            var marcar = todas.getAttribute('aria-pressed') !== 'true';
+            document.querySelectorAll('[data-llave]').forEach(function (f) {
+                var c = f.querySelector('[data-chk-llave]');
+                if (c && f.style.display !== 'none') { c.checked = marcar; }
+            });
+            todas.setAttribute('aria-pressed', String(marcar));
+            todas.classList.toggle('activo', marcar);
+            contar();
+        }
+    });
+
+    /* ---------- Formulario: sede → departamento → puesto y lugares según el alcance ---------- */
+    function contiene(lista, valor) { return (' ' + (lista || '') + ' ').indexOf(' ' + valor + ' ') !== -1; }
+
+    function acomodar(form) {
+        var sede = form.querySelector('[data-llave-sede]').value;
+        var alcance = form.querySelector('[data-llave-alcance]').value;
+
+        var depto = form.querySelector('[data-llave-depto]');
+        Array.prototype.forEach.call(depto.options, function (o) {
+            if (!o.value) { return; }
+            var aplica = (o.dataset.sedes || 'todas') === 'todas' || contiene(o.dataset.sedes, sede);
+            if (!aplica && o.selected) { depto.value = ''; }
+            o.hidden = !aplica || (o.hasAttribute('data-inactivo') && !o.selected);
+        });
+
+        var puesto = form.querySelector('[data-llave-puesto]');
+        Array.prototype.forEach.call(puesto.options, function (o) {
+            if (!o.value) { return; }
+            var aplica = depto.value === '' || !o.dataset.deps || contiene(o.dataset.deps, depto.value);
+            if (!aplica && o.selected) { puesto.value = ''; }
+            o.hidden = !aplica || (o.hasAttribute('data-inactivo') && !o.selected);
+        });
+
+        form.querySelectorAll('[data-llave-lugares]').forEach(function (caja) {
+            var activa = caja.dataset.llaveLugares === alcance;
+            caja.hidden = !activa;
+            // Lo que no aplica no se envía (el servidor revalida todo contra la sede)
+            caja.querySelectorAll('input, select, textarea').forEach(function (c) { c.disabled = !activa; });
+            var buscar = caja.querySelector('[data-buscar-lugar]');
+            var texto = buscar ? buscar.value.toLowerCase().trim() : '';
+            var deLaSede = 0;
+            caja.querySelectorAll('[data-lugar]').forEach(function (fila) {
+                var casilla = fila.querySelector('input');
+                var enSede = sede !== '' && fila.dataset.sede === sede;
+                if (!enSede && casilla.checked) { casilla.checked = false; }
+                var disponible = enSede && (!fila.hasAttribute('data-inactivo') || casilla.checked);
+                if (disponible) { deLaSede++; }
+                fila.hidden = !disponible || (texto !== '' && !casilla.checked && (fila.dataset.nombre || '').indexOf(texto) === -1);
+            });
+            var sinSede = caja.querySelector('[data-lugares-sin-sede]');
+            if (sinSede) { sinSede.hidden = sede !== ''; }
+            var vacio = caja.querySelector('[data-lugares-vacio]');
+            if (vacio) { vacio.hidden = sede === '' || deLaSede !== 0; }
+            if (buscar) { buscar.hidden = deLaSede < 8; }
+        });
+
+        var otra = form.querySelector('[data-llave-otra]');
+        if (otra) { otra.required = alcance === 'otra'; }
+    }
+
+    // El campo "ID externo" usa data-mostrar-si (bloque del Padrón Vehicular): se acomoda con un "change"
+    function acomodarTodo(form) {
+        acomodar(form);
+        var tipo = form.querySelector('[data-llave-tipo]');
+        if (tipo) { tipo.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-llave]');
+        if (form && e.target.matches('[data-llave-sede], [data-llave-alcance], [data-llave-depto]')) { acomodar(form); }
+    });
+    document.addEventListener('input', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-llave]');
+        if (form && e.target.matches('[data-buscar-lugar]')) { acomodar(form); }
+    });
+
+    /* ---------- Horarios ---------- */
+    function agregarHorario(form, datos) {
+        var plantilla = form.querySelector('[data-plantilla-horario]');
+        var fila = plantilla.content.firstElementChild.cloneNode(true);
+        if (datos) {
+            fila.querySelector('[name="horario_nombre[]"]').value = datos.nombre || '';
+            fila.querySelector('[name="horario_inicio[]"]').value = datos.inicio || '';
+            fila.querySelector('[name="horario_fin[]"]').value = datos.fin || '';
+        }
+        form.querySelector('[data-horarios-llave]').appendChild(fila);
+        return fila;
+    }
+
+    function rellenarHorarios(form, lista) {
+        form.querySelector('[data-horarios-llave]').textContent = '';
+        (lista || []).forEach(function (h) { agregarHorario(form, h); });
+    }
+
+    document.addEventListener('click', function (e) {
+        var agregar = e.target.closest('[data-agregar-horario]');
+        if (agregar) {
+            var fila = agregarHorario(agregar.closest('form'));
+            fila.querySelector('input').focus();
+            return;
+        }
+        var quitar = e.target.closest('[data-quitar-horario]');
+        if (quitar) { quitar.closest('[data-fila-horario]').remove(); }
+    });
+
+    /* ---------- Editar: después del llenado genérico (editar-registro) ---------- */
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        var form = dialogo && dialogo.querySelector('[data-form-llave]');
+        if (!form) { return; }
+        var valores = leer(boton.dataset.valores);
+        rellenarHorarios(form, valores.horarios);
+        var lector = form.querySelector('[data-lector][data-modo="buscar"]');
+        if (lector && window.Lector) {
+            if (valores.colaborador_id) {
+                window.Lector.elegir(lector, { id: valores.colaborador_id, titulo: valores.colaborador_texto || '', detalle: '', activo: true });
+            } else {
+                window.Lector.limpiar(lector);
+            }
+        }
+        acomodarTodo(form);
+    });
+
+    /* ---------- Baja con voucher ---------- */
+    function sincronizarCobro(form) {
+        var casilla = form.querySelector('[data-cobro-llave]');
+        var caja = form.querySelector('[data-caja-cobro-llave]');
+        if (!casilla || !caja) { return; }
+        caja.hidden = !casilla.checked;
+        var monto = form.querySelector('[data-monto-llave]');
+        if (monto) { monto.required = casilla.checked; }
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-cobro-llave]')) { sincronizarCobro(e.target.form); }
+    });
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="baja-llave"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById('dialogoBajaLlave');
+        var form = dialogo && dialogo.querySelector('[data-form-baja-llave]');
+        if (!form) { return; }
+        form.action = boton.dataset.url;
+        form.querySelector('[data-campo-dialogo]').value = 'baja-' + boton.dataset.id;
+        dialogo.querySelector('[data-baja-nombre]').textContent = boton.dataset.nombre || '';
+        var sugerido = leer(dialogo.dataset.costos)[boton.dataset.tipo];
+        var monto = form.querySelector('[data-monto-llave]');
+        var nota = form.querySelector('[data-nota-monto]');
+        if (monto) { monto.value = sugerido || ''; }
+        if (nota) {
+            nota.textContent = sugerido
+                ? '(sugerido: último cobro de una llave ' + (boton.dataset.tipoTexto || '') + '; puedes ajustarlo)'
+                : '(escribe el costo de reposición)';
+        }
+        sincronizarCobro(form);
+        if (typeof dialogo.showModal === 'function') { dialogo.showModal(); }
+    });
+
+    /* ---------- Al cerrar (y limpiarse) un diálogo, todo vuelve a acomodarse ---------- */
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-form-llave]').forEach(function (form) {
+            rellenarHorarios(form, form.closest('#dialogoNuevaLlave') ? [{}] : []);
+            acomodarTodo(form);
+        });
+        e.target.querySelectorAll('[data-form-baja-llave]').forEach(sincronizarCobro);
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-form-llave]').forEach(acomodarTodo);
+        document.querySelectorAll('[data-form-baja-llave]').forEach(sincronizarCobro);
+        if (!document.querySelector('[data-llaves]')) { return; }
+        // Al llegar a una ficha (#llave-12, p. ej. desde el QR) se muestran todas
+        if (!/^#llave-\d+$/.test(location.hash)) {
+            try {
+                var g = JSON.parse(sessionStorage.getItem(CLAVE) || 'null');
+                if (g) {
+                    ['texto', 'sede', 'tipo', 'caducidad'].forEach(function (k) {
+                        var el = document.querySelector('[data-filtro-llaves="' + k + '"]');
+                        if (el && g[k]) { el.value = g[k]; }
+                    });
+                    if (g.estado) { elegirEstado(g.estado); }
+                }
+            } catch (x) { /* valor guardado dañado: se ignora */ }
+        }
+        filtrar();
+        contar();
+    });
+})();
+/* Fin Catálogo de llaves */

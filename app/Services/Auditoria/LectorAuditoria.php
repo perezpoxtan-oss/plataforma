@@ -8,6 +8,7 @@ use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Espacio;
 use App\Models\GrupoEspacio;
+use App\Models\Llave;
 use App\Models\Modulo;
 use App\Models\Persona;
 use App\Models\Proveedor;
@@ -57,6 +58,7 @@ class LectorAuditoria
         Persona::class => ['Persona', 'nombre_completo'],
         Vehiculo::class => ['Vehículo', 'placas'],
         VoucherReposicion::class => ['Voucher', 'folio'],
+        Llave::class => ['Llave', 'nomenclatura'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */
