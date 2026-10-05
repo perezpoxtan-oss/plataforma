@@ -27,9 +27,19 @@ class Empresa extends Model
         'zona_horaria', 'idioma', 'moneda', 'activo',
     ];
 
+    /** Avisos por correo y su valor si la empresa no lo ha cambiado. */
+    public const AVISOS = [
+        'alta_provisional' => ['Avisar a Recursos Humanos cuando la caseta registre un alta provisional de colaborador', true],
+    ];
+
+    public function aviso(string $clave): bool
+    {
+        return (bool) ($this->preferencias['avisos'][$clave] ?? (self::AVISOS[$clave][1] ?? false));
+    }
+
     protected function casts(): array
     {
-        return ['activo' => 'boolean'];
+        return ['activo' => 'boolean', 'preferencias' => 'array'];
     }
 
     public function rubro(): BelongsTo

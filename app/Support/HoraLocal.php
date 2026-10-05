@@ -21,7 +21,7 @@ use Illuminate\Support\Carbon;
  */
 class HoraLocal
 {
-    public const ZONA_PLATAFORMA = 'America/Mexico_City';
+    public const ZONA_PLATAFORMA = 'America/Cancun';
 
     private ?string $zona = null;
 

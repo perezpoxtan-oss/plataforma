@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Administracion\AuditoriaController;
+use App\Http\Controllers\Administracion\ConfiguracionController;
 use App\Http\Controllers\Administracion\EmpresaActivaController;
 use App\Http\Controllers\Administracion\EmpresaController;
 use App\Http\Controllers\Administracion\IdentidadController;
@@ -44,6 +45,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/empresas', [EmpresaController::class, 'store'])->name('empresas.store');
     Route::put('/empresas/{empresa}', [EmpresaController::class, 'update'])->name('empresas.update');
     Route::patch('/empresas/{empresa}/estado', [EmpresaController::class, 'estado'])->name('empresas.estado');
+    // Configuración: correo y respaldos (plataforma) y avisos (empresa)
+    Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
+    Route::put('/configuracion/correo', [ConfiguracionController::class, 'correo'])->name('configuracion.correo');
+    Route::post('/configuracion/correo/prueba', [ConfiguracionController::class, 'probarCorreo'])->middleware('throttle:5,1')->name('configuracion.correo.prueba');
+    Route::put('/configuracion/avisos', [ConfiguracionController::class, 'avisos'])->name('configuracion.avisos');
+    Route::post('/configuracion/respaldos', [ConfiguracionController::class, 'respaldar'])->middleware('throttle:3,1')->name('configuracion.respaldos');
+    Route::get('/configuracion/respaldos/{archivo}', [ConfiguracionController::class, 'descargar'])->where('archivo', '[A-Za-z0-9_.-]+')->name('configuracion.respaldos.descargar');
     Route::get('/auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index');
     Route::get('/auditoria/exportar', [AuditoriaController::class, 'exportar'])->name('auditoria.exportar');
     Route::get('/sedes', [SedeController::class, 'index'])->name('sedes.index');

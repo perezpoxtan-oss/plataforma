@@ -194,6 +194,12 @@ if [ "$NOMBRE" != "$ACTUAL" ] || [ -n "${ENV_NUEVO:-}" ]; then
   # Modo mantenimiento mientras se actualiza la base (lo comparten ambas versiones)
   [ -n "$ACTUAL" ] && "${P[@]}" artisan down --retry=30 >> "$LOG" 2>&1
 
+  # Respaldo de la base antes de tocarla (si no hay comando aun, se sigue: versiones viejas)
+  if [ -n "$ACTUAL" ] && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:respaldar'; then
+    "${P[@]}" artisan plataforma:respaldar --motivo=antes-de-actualizar >> "$LOG" 2>&1 \
+      || log "ADVERTENCIA: no se pudo respaldar antes de actualizar (se continua)"
+  fi
+
   if ! "${P[@]}" artisan migrate --force >> "$LOG" 2>&1; then
     "${P[@]}" artisan up >> "$LOG" 2>&1
     echo "$NOMBRE" > "$APP/.release_fallida"
@@ -278,6 +284,12 @@ else
     log "ADVERTENCIA: el sitio responde $CODIGO"
     estado "ADVERTENCIA: el sitio responde $CODIGO (si es 000, revisa el certificado SSL; si es 403/500, avisame)"
   fi
+fi
+
+# --- Respaldo diario de la base (uno por dia, despues de las 3:00) ---------------
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:respaldar'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:respaldar --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudo hacer el respaldo diario (revisa despliegue.log)"
 fi
 
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
