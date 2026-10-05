@@ -16,6 +16,7 @@ use App\Models\TipoEspacio;
 use App\Models\Turno;
 use App\Models\User;
 use App\Models\UsuarioRol;
+use App\Models\Vehiculo;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Support\Tenancy\Tenant;
@@ -102,6 +103,7 @@ class CrearDatosDemo extends Command
         $tenant->conEmpresa($empresa->id, fn () => $this->proveedoresDemo($sedes));
         // Padrón de personas: después de los proveedores (si existen) para ligar a su personal
         $tenant->conEmpresa($empresa->id, fn () => $this->personasDemo(User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'jefe.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->vehiculosDemo(User::where('username', 'admin.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -364,6 +366,52 @@ class CrearDatosDemo extends Command
                 'motivo_visita' => $motivo, 'activo' => $activo,
             ]);
             $persona->forceFill(['creado_por' => $autor->id, 'actualizado_por' => $autor->id])->save();
+        }
+    }
+
+    /**
+     * Padrón vehicular de ejemplo, solo la primera vez: autos de huéspedes,
+     * visitantes y colaboradores, taxis, una unidad rentada y la flotilla de
+     * transporte. Los proveedores se usan si ya existen (si no, quedan sin
+     * empresa propietaria); los colaboradores, si existen.
+     */
+    private function vehiculosDemo(User $admin): void
+    {
+        if (Vehiculo::exists()) {
+            return;
+        }
+
+        $colaborador = fn (string $num) => Colaborador::where('num_empleado', $num)->value('id');
+        $proveedor = fn (array $categorias) => Proveedor::where('activo', true)->whereIn('categoria', $categorias)->orderBy('id')->value('id');
+        $transporte = $proveedor(['transporte_personal', 'transporte_huespedes', 'transportadora']);
+        $taxi = $proveedor(['taxi']);
+        $agencia = $proveedor(['agencia_autos']);
+        $cualquiera = $proveedor(array_keys(Proveedor::CATEGORIAS));
+
+        // [placas, propiedad, tipo, marca, modelo, color, extra]
+        $vehiculos = [
+            ['ABC-123-A', 'propio_huesped', 'sedan', 'NISSAN', 'VERSA', 'BLANCO', []],
+            ['YUC-552-1', 'propio_huesped', 'suv', 'MAZDA', 'CX-5', 'ROJO', []],
+            ['QRR 44 10', 'propio_visitante', 'sedan', 'VOLKSWAGEN', 'JETTA', 'GRIS', []],
+            ['UZX-902-A', 'propio_familiar', 'suv', 'HONDA', 'CR-V', 'AZUL', []],
+            ['URB-1830', 'propio_colaborador', 'sedan', 'CHEVROLET', 'AVEO', 'PLATA', ['colaborador_id' => $colaborador('1003')]],
+            ['N8T-2Z', 'propio_colaborador', 'motocicleta', 'ITALIKA', 'FT150', 'NEGRO', ['colaborador_id' => $colaborador('1011')]],
+            ['VPK-77-12', 'propio_colaborador', 'pickup', 'FORD', 'RANGER', 'BLANCO', ['colaborador_id' => $colaborador('1006')]],
+            ['A-4521-TX', 'taxi_app', 'sedan', 'NISSAN', 'TSURU', 'BLANCO Y VERDE', ['numero_economico' => 'T-045', 'proveedor_id' => $taxi]],
+            ['B-1187-TX', 'taxi_app', 'suv', 'TOYOTA', 'AVANZA', 'BLANCO', ['numero_economico' => 'T-112', 'proveedor_id' => $taxi]],
+            ['TP-07-QR', 'transporte_personal', 'autobus', 'MERCEDES-BENZ', 'SPRINTER', 'BLANCO', ['numero_economico' => 'TP-07', 'capacidad' => 20, 'proveedor_id' => $transporte]],
+            ['RNT-220-B', 'agencia_renta', 'sedan', 'KIA', 'RIO', 'BLANCO', ['numero_economico' => 'R-22', 'proveedor_id' => $agencia]],
+            // La flotilla de un proveedor exige proveedor: sin ninguno, queda como transporte de personal
+            ['UPS-03-CL', $cualquiera ? 'empresa_proveedor' : 'transporte_personal', 'camion_ligero', 'ISUZU', 'ELF 300', 'BLANCO', ['numero_economico' => 'U-03', 'capacidad' => 3, 'proveedor_id' => $cualquiera]],
+            ['DEF-567-8', 'propio_visitante', 'otro', 'CLUB CAR', 'ONWARD', 'BEIGE', ['descripcion_otro' => 'Carrito de golf', 'activo' => false]],
+        ];
+
+        foreach ($vehiculos as [$placas, $propiedad, $tipo, $marca, $modelo, $color, $extra]) {
+            $vehiculo = new Vehiculo(array_merge([
+                'placas' => Vehiculo::normalizarPlacas($placas), 'propiedad' => $propiedad, 'tipo' => $tipo,
+                'marca' => $marca, 'modelo' => $modelo, 'color' => $color,
+            ], $extra));
+            $vehiculo->forceFill(['creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
         }
     }
 }
