@@ -548,3 +548,62 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .lista-respaldos { display: flex; flex-direction: column; gap: 0.4rem; }
 .fila-respaldo { display: grid; grid-template-columns: 1fr auto auto 44px; gap: 0.75rem; align-items: center; border: 1px solid var(--borde); border-radius: 12px; padding: 0.4rem 0.6rem 0.4rem 0.9rem; font-size: 0.88rem; }
 @media (max-width: 575.98px) { .fila-respaldo { grid-template-columns: 1fr 44px; } .fila-respaldo .chip-catalogo, .fila-respaldo .small { grid-column: 1; } .fila-respaldo .btn-icono { grid-column: 2; grid-row: 1 / span 3; } }
+
+/* ==========================================================================
+   Padrones: Proveedores / Empresas Externas (esmeralda, como en SEGCAT)
+   ========================================================================== */
+.pantalla-proveedores .ficha-card:hover { box-shadow: 0 12px 20px -8px rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); }
+.pantalla-proveedores .ficha-create { min-height: 200px; }
+.pantalla-proveedores .btn-pill-tipo.active { background: #10b981; border-color: #10b981; color: #fff; }
+.pantalla-proveedores .pildoras-tipo { margin-bottom: 0.75rem; }
+.pantalla-proveedores .filtros-estado { margin-bottom: 0; }
+/* En el celular las 10 categorías van en una tira que se desliza, no en 6 renglones */
+@media (max-width: 575.98px) {
+    .pantalla-proveedores .pildoras-tipo { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -1rem 0.75rem; padding: 0 1rem 0.25rem; -webkit-overflow-scrolling: touch; }
+    .pantalla-proveedores .pildoras-tipo::-webkit-scrollbar { display: none; }
+    .pantalla-proveedores .btn-pill-tipo { flex-shrink: 0; white-space: nowrap; }
+}
+.pantalla-proveedores .opcion-todas input, .pantalla-proveedores .opcion-sede-turno input { accent-color: #10b981; }
+.pantalla-proveedores .opcion-sede-turno:has(input:checked) { border-color: #6ee7b7; background: #ecfdf5; }
+.pantalla-proveedores .ext-title { font-size: 1.15rem; font-weight: 800; color: var(--texto); margin: 0; line-height: 1.2; overflow-wrap: anywhere; }
+.pantalla-proveedores .ext-badge { display: inline-flex; align-items: center; font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; border: 1px solid #cbd5e1; }
+.pantalla-proveedores .bg-proveedor { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+.pantalla-proveedores .bg-agencia { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.pantalla-proveedores .bg-contratista { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+.pantalla-proveedores .meta-lista { background: var(--fondo); border: 1px solid var(--borde); border-radius: 12px; padding: 0.6rem 0.8rem; font-size: 0.8rem; color: #475569; display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.8rem; }
+.pantalla-proveedores .badge-sedes { background: #f0fdf4; color: #15803d; border: none; font-size: 0.72rem; font-weight: 700; padding: 0.35rem 0.7rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+.pantalla-proveedores button.badge-sedes { min-height: 36px; cursor: pointer; }
+.pantalla-proveedores button.badge-sedes:hover { background: #dcfce7; }
+.pantalla-proveedores .btn-ficha { background: #f8fafc; border: 1px solid var(--borde); color: var(--texto); border-radius: 10px; min-height: 44px; padding: 0 0.7rem; display: inline-flex; align-items: center; font-size: 0.82rem; font-weight: 700; text-decoration: none; cursor: pointer; font-family: inherit; }
+.pantalla-proveedores .btn-ficha:hover { border-color: #10b981; color: #047857; background: #ecfdf5; }
+.pantalla-proveedores .ficha-footer { gap: 0.4rem; flex-wrap: wrap; }
+.pantalla-proveedores .ficha-footer .etiqueta-estado { padding: 0.45rem 0.7rem; white-space: nowrap; }
+.pantalla-proveedores .ficha-footer .d-flex { gap: 0.4rem !important; margin-left: auto; }
+.pantalla-proveedores .campo-mayusculas { text-transform: uppercase; }
+.pantalla-proveedores .campo-mayusculas::placeholder { text-transform: none; }
+.errores-rapido-proveedor { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 10px; padding: 0.5rem 0.75rem; font-size: 0.85rem; margin-bottom: 0.75rem; }
+/* Ficha del proveedor */
+.ficha-proveedor { max-width: 1100px; margin: 0 auto; }
+.ficha-header-prov { background: #fff; border: 1px solid var(--borde); border-radius: 20px; padding: 1.5rem; margin-bottom: 1.2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.ficha-proveedor .ext-title { font-size: 1.5rem; }
+.datos-proveedor { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; margin-top: 0.75rem; font-size: 0.875rem; color: var(--texto-suave); }
+.datos-proveedor a { color: inherit; }
+.tabs-ficha { display: flex; gap: 0.5rem; margin-bottom: 1.2rem; flex-wrap: wrap; border-bottom: 1px solid var(--borde); }
+.tab-ficha { padding: 0.8rem 1.2rem; min-height: 44px; display: inline-flex; align-items: center; font-weight: 700; font-size: 0.88rem; color: var(--texto-suave); text-decoration: none; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.tab-ficha:hover { color: #047857; }
+.tab-ficha.activo { color: #10b981; border-bottom-color: #10b981; }
+.chip-sede { display: inline-flex; align-items: center; background: var(--fondo); border: 1px solid var(--borde); color: var(--texto); border-radius: 8px; padding: 0.3rem 0.7rem; font-size: 0.8rem; font-weight: 600; }
+.chip-sede.inactiva { opacity: 0.6; text-decoration: line-through; }
+.resumen-padron { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.resumen-padron .ficha { text-decoration: none; }
+.resumen-padron .ficha:hover { border-color: rgba(16,185,129,0.4); }
+.resumen-padron .ficha .icono { background: #ecfdf5; color: #10b981; }
+.ficha-proveedor .fila-item { background: #fff; border: 1px solid var(--borde); border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 0.7rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.ficha-proveedor .fila-item.inactivo { opacity: 0.55; }
+.ficha-proveedor .fila-titulo { margin: 0; font-size: 1rem; font-weight: 800; color: var(--texto); }
+.ficha-proveedor .fila-titulo a { color: inherit; text-decoration: none; }
+.ficha-proveedor .fila-titulo a:hover { color: #047857; text-decoration: underline; }
+.ficha-proveedor .fila-item .meta { font-size: 0.78rem; color: var(--texto-suave); }
+.btn-agregar-padron { background: #10b981; color: #fff; border: none; border-radius: 10px; padding: 0.7rem 1.1rem; min-height: 44px; font-weight: 700; display: inline-flex; align-items: center; text-decoration: none; }
+.btn-agregar-padron:hover { background: #059669; color: #fff; }
+/* Fin Padrones: Proveedores */

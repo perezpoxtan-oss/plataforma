@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Proveedores / Empresas Externas, con las pantallas de SEGCAT: fichas por categoría (9 píldoras), búsqueda, filtros por sede y estado, alta y edición con RFC y teléfono validados, sedes donde opera (todas, incluidas las futuras, o solo algunas), baja / vetada reversible y auditoría. Ficha del proveedor con pestañas Resumen, Personal y Flotilla. Con alcance de sede se registra para su sede y, si el nombre ya existe, no se duplica: se agrega su sede. Búsqueda (`GET /proveedores/buscar`) y alta rápida (`POST /proveedores/rapido`) para otros módulos. Corrige que en SEGCAT "Visible en todas las sedes" guardaba al proveedor sin ninguna sede. Lección 11.
 - Configuración: correo de la plataforma (SMTP, contraseña cifrada, correo de prueba), avisos por correo por empresa (alta provisional a Recursos Humanos) y respaldos de la base (diario automático, antes de cada actualización y manual; 14 días; descarga auditada).
 - Las sedes se llaman «Sedes» en todos los rubros (antes Hoteles, Plantas, Torres o Privadas).
 - Matriz de permisos: cada área (Dirección, Recursos Humanos, Seguridad) se contrae y muestra cuántos permisos tiene otorgados; botones Expandir todo / Contraer todo.

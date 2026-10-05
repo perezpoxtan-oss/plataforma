@@ -1065,3 +1065,61 @@ document.addEventListener('click', function (e) {
         botones.forEach(function (b) { poner(b, previas.indexOf(b.dataset.alternarArea) !== -1); });
     });
 })();
+
+/* ==========================================================================
+   Padrones: Proveedores — alta rápida "Nueva Empresa Externa" desde otros
+   módulos (respuesta JSON; avisa con el evento proveedor:registrado)
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-alta-rapida-proveedor]')) { return; }
+        e.preventDefault();
+        var boton = form.querySelector('button[type="submit"]');
+        var errores = form.querySelector('[data-errores-proveedor]');
+        if (boton) { boton.disabled = true; boton.textContent = 'Guardando...'; }
+        if (errores) { errores.hidden = true; errores.textContent = ''; }
+
+        function terminar() { if (boton) { boton.disabled = false; boton.textContent = boton.dataset.textoOriginal || 'Guardar'; } }
+
+        fetch(form.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form)
+        })
+            .then(function (r) { return r.json().then(function (d) { return { estado: r.status, datos: d }; }); })
+            .then(function (res) {
+                terminar();
+                if ((res.estado === 201 || res.estado === 200) && res.datos.ok) {
+                    form.reset();
+                    var dialogo = form.closest('dialog');
+                    if (dialogo) { dialogo.close(); }
+                    var detalle = res.datos.proveedor;
+                    detalle.ya_existia = !!res.datos.ya_existia;
+                    document.dispatchEvent(new CustomEvent('proveedor:registrado', { detail: detalle }));
+                    return;
+                }
+                var mensajes = [];
+                Object.keys(res.datos.errores || {}).forEach(function (k) { mensajes = mensajes.concat(res.datos.errores[k]); });
+                if (mensajes.length === 0) { mensajes.push(res.datos.mensaje || res.datos.message || 'No se pudo registrar. Intenta de nuevo.'); }
+                if (errores) {
+                    mensajes.forEach(function (m) { var div = document.createElement('div'); div.textContent = m; errores.appendChild(div); });
+                    errores.hidden = false;
+                }
+            })
+            .catch(function () {
+                terminar();
+                if (errores) { errores.textContent = 'No se pudo registrar en este momento.'; errores.hidden = false; }
+            });
+    });
+
+    // Al cerrar, se olvidan los errores de la captura anterior
+    document.addEventListener('close', function (e) {
+        var errores = e.target.querySelector && e.target.querySelector('[data-errores-proveedor]');
+        if (errores) { errores.hidden = true; errores.textContent = ''; }
+    }, true);
+})();
+/* Fin Padrones: Proveedores */

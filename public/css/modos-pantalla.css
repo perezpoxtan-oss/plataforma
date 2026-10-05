@@ -351,3 +351,39 @@ html.modo-noche .ficha-provisional { background: rgba(245, 158, 11, 0.06) !impor
 html.modo-noche .btn-duplicado-colab { background: transparent; color: #fcd34d; border-color: #b45309; }
 html.modo-noche .caja-parecidos { background: rgba(245, 158, 11, 0.1); border-color: #b45309; color: #e2e8f0; }
 html.modo-noche .opcion-parecido { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+
+/* ==========================================================================
+   Padrones: Proveedores / Empresas Externas
+   ========================================================================== */
+html.modo-sol .pantalla-proveedores .meta-lista,
+html.modo-sol .pantalla-proveedores .badge-sedes,
+html.modo-sol .pantalla-proveedores .ext-badge,
+html.modo-sol .pantalla-proveedores .btn-ficha,
+html.modo-sol .ficha-header-prov,
+html.modo-sol .ficha-proveedor .fila-item,
+html.modo-sol .chip-sede { background: #fff; color: #000; border: 2px solid #000; box-shadow: none; }
+html.modo-sol .pantalla-proveedores .btn-pill-tipo.active { background: #000; border-color: #000; color: #fff; }
+html.modo-sol .tab-ficha { color: #000; }
+html.modo-sol .tab-ficha.activo { color: #000; border-bottom: 4px solid #000; }
+html.modo-sol .btn-agregar-padron { background: #000; color: #fff; }
+html.modo-sol .ficha-proveedor .fila-item.inactivo { opacity: 0.8; }
+html.modo-noche .pantalla-proveedores .meta-lista,
+html.modo-noche .ficha-header-prov,
+html.modo-noche .ficha-proveedor .fila-item { background: var(--superficie); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .pantalla-proveedores .ficha-card .meta-lista { background: var(--superficie-2); }
+html.modo-noche .pantalla-proveedores .btn-pill-tipo.active { background: #059669; border-color: #059669; color: #fff; }
+html.modo-noche .pantalla-proveedores .badge-sedes { background: rgba(16, 185, 129, 0.14); color: #6ee7b7; }
+html.modo-noche .pantalla-proveedores button.badge-sedes:hover { background: rgba(16, 185, 129, 0.24); }
+html.modo-noche .pantalla-proveedores .bg-proveedor { background: rgba(34, 197, 94, 0.14); color: #86efac; border-color: #166534; }
+html.modo-noche .pantalla-proveedores .bg-agencia { background: rgba(59, 130, 246, 0.16); color: #93c5fd; border-color: #1e3a8a; }
+html.modo-noche .pantalla-proveedores .bg-contratista { background: rgba(249, 115, 22, 0.14); color: #fdba74; border-color: #9a3412; }
+html.modo-noche .pantalla-proveedores .btn-ficha { background: var(--superficie-2); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .pantalla-proveedores .btn-ficha:hover { border-color: #10b981; color: #6ee7b7; }
+html.modo-noche .pantalla-proveedores .btn-icono.editar { color: #6ee7b7; }
+html.modo-noche .pantalla-proveedores .opcion-sede-turno:has(input:checked) { background: rgba(16, 185, 129, 0.14); border-color: #10b981; }
+html.modo-noche .tab-ficha.activo { color: #6ee7b7; border-bottom-color: #10b981; }
+html.modo-noche .chip-sede { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .resumen-padron .ficha .icono { background: rgba(16, 185, 129, 0.14); color: #6ee7b7 !important; }
+html.modo-noche .ficha-proveedor .fila-titulo a:hover { color: #6ee7b7; }
+html.modo-noche .errores-rapido-proveedor { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border-color: #7f1d1d; }
+/* Fin Padrones: Proveedores */

@@ -51,6 +51,7 @@ class CatalogoSeeder extends Seeder
         'identidad' => 'identidad.edit',
         'auditoria' => 'auditoria.index',
         'configuracion' => 'configuracion.index',
+        'proveedores' => 'proveedores.index',
     ];
 
     /**

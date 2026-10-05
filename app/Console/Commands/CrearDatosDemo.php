@@ -6,6 +6,7 @@ use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Espacio;
+use App\Models\Proveedor;
 use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Rubro;
@@ -97,6 +98,7 @@ class CrearDatosDemo extends Command
         $tenant->conEmpresa($empresa->id, fn () => $this->turnosDemo($sedes['PLA']));
         $tenant->conEmpresa($empresa->id, fn () => $this->colaboradoresDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->provisionalesDemo($sedes, User::where('username', 'agente.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->proveedoresDemo($sedes));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -282,5 +284,36 @@ class CrearDatosDemo extends Command
                 $espacios->crear($actor, $sede, $nodo, Espacio::ELEMENTO, ['nombre' => '', 'tipo_espacio_id' => $tipo(Espacio::ELEMENTO, $el)], false);
             }
         }
+    }
+
+    /**
+     * Empresas externas de un hotel en Cancún (una por categoría, casi todas en
+     * todas las sedes), solo la primera vez.
+     */
+    private function proveedoresDemo($sedes): void
+    {
+        if (Proveedor::exists()) {
+            return;
+        }
+
+        $lista = [
+            ['Abarrotes del Caribe', 'proveedor', 'ACA150312KJ8', '9988841020', 'Av. Andrés Quintana Roo 45, Cancún', null],
+            ['Transportes Kin-Ha', 'transporte_personal', 'TKH0905217T3', '9988872233', 'Av. Kabah Mz 3 Lt 12, Cancún', null],
+            ['Shuttle Riviera', 'transporte_huespedes', null, '9982001122', null, null],
+            ['Constructora Maya', 'contratista', 'CMA1102148W1', '9981234567', 'Calle 20 Sur 110, Cancún', ['PLA']],
+            ['Renta de Autos Caribe Sur', 'agencia_autos', null, '9988850011', null, ['CEN']],
+            ['Taxis Aeropuerto', 'taxi', null, '9988860000', 'Terminal 3, Aeropuerto de Cancún', null],
+            ['Viajes Turquesa', 'agencia_viajes', 'VTU180606AB2', '+529981112233', null, null],
+            ['Tours Xcaret Express', 'agencia_tours', null, '9982223344', null, ['PLA']],
+        ];
+        foreach ($lista as [$nombre, $categoria, $rfc, $telefono, $direccion, $soloEn]) {
+            $proveedor = Proveedor::create([
+                'nombre' => $nombre, 'categoria' => $categoria, 'rfc' => $rfc, 'telefono' => $telefono,
+                'direccion' => $direccion, 'todas_las_sedes' => $soloEn === null,
+            ]);
+            $proveedor->sedes()->sync(collect($soloEn ?? [])->map(fn ($codigo) => $sedes[$codigo]->id)->all());
+        }
+        // Una dada de baja (vetada), para ver el estado en la lista
+        Proveedor::create(['nombre' => 'Fletes Rápidos del Sureste', 'categoria' => 'transportadora', 'telefono' => '9997001234', 'activo' => false]);
     }
 }

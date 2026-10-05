@@ -16,6 +16,7 @@ use App\Http\Controllers\Organizacion\DepartamentoController;
 use App\Http\Controllers\Organizacion\EspacioController;
 use App\Http\Controllers\Organizacion\PuestoController;
 use App\Http\Controllers\Organizacion\TurnoController;
+use App\Http\Controllers\Padrones\ProveedorController;
 use App\Http\Controllers\PanelController;
 use Illuminate\Support\Facades\Route;
 
@@ -83,6 +84,17 @@ Route::middleware('auth')->group(function () {
     Route::put('/colaboradores/{colaborador}/fusionar', [ColaboradorController::class, 'fusionar'])->whereNumber('colaborador')->name('colaboradores.fusionar');
     Route::put('/colaboradores/{colaborador}/sedes', [ColaboradorController::class, 'sedes'])->whereNumber('colaborador')->name('colaboradores.sedes');
     Route::get('/colaboradores/{colaborador}/datos-personales', [ColaboradorController::class, 'datosPersonales'])->whereNumber('colaborador')->name('colaboradores.datos-personales');
+
+    // Padrones: Proveedores (y la búsqueda y el alta rápida que usan otros módulos)
+    Route::get('/proveedores', [ProveedorController::class, 'index'])->name('proveedores.index');
+    Route::post('/proveedores', [ProveedorController::class, 'store'])->name('proveedores.store');
+    Route::get('/proveedores/buscar', [ProveedorController::class, 'buscar'])->name('proveedores.buscar');
+    Route::post('/proveedores/rapido', [ProveedorController::class, 'rapido'])->name('proveedores.rapido');
+    Route::get('/proveedores/{proveedor}', [ProveedorController::class, 'show'])->whereNumber('proveedor')->name('proveedores.show');
+    Route::put('/proveedores/{proveedor}', [ProveedorController::class, 'update'])->whereNumber('proveedor')->name('proveedores.update');
+    Route::put('/proveedores/{proveedor}/sedes', [ProveedorController::class, 'sedes'])->whereNumber('proveedor')->name('proveedores.sedes');
+    Route::patch('/proveedores/{proveedor}/estado', [ProveedorController::class, 'estado'])->whereNumber('proveedor')->name('proveedores.estado');
+    // Fin Padrones: Proveedores
 
     // Zonas y áreas (árbol de espacios)
     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');
