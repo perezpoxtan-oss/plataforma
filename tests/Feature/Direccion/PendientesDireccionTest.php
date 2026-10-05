@@ -5,6 +5,8 @@ namespace Tests\Feature\Direccion;
 use App\Models\Auditoria;
 use App\Models\Colaborador;
 use App\Models\Empresa;
+use App\Models\Rol;
+use App\Models\Rubro;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
@@ -128,5 +130,29 @@ class PendientesDireccionTest extends TestCase
 
         $this->actingAs($rh)->get('/')->assertSee('1 alta provisional por validar')->assertSee('registro=provisional', false);
         $this->assertSame(1, app(Tenant::class)->conEmpresa($this->empresa->id, fn () => Colaborador::where('provisional', true)->count()));
+    }
+
+    // ------------------------------------------- Sedes y Matriz contraíble
+
+    public function test_las_sedes_se_llaman_sedes_en_todos_los_rubros(): void
+    {
+        foreach (Rubro::all() as $rubro) {
+            $this->assertSame('Sede', $rubro->terminologia['sede'], $rubro->clave);
+            $this->assertSame('Sedes', $rubro->terminologia['sedes'], $rubro->clave);
+        }
+        $this->actingAs($this->admin)->get('/sedes')->assertSee('Alta Sedes')->assertSee('Nueva Sede')->assertDontSee('Hoteles');
+    }
+
+    public function test_la_matriz_agrupa_por_area_contraible_con_resumen(): void
+    {
+        $agente = Rol::where('empresa_id', $this->empresa->id)->where('nombre', 'Agente')->firstOrFail();
+
+        $this->actingAs($this->admin)->get("/permisos?rol={$agente->id}")->assertOk()
+            ->assertSee('data-alternar-area="area-direccion"', false)
+            ->assertSee('data-alternar-area="area-recursos_humanos"', false)
+            ->assertSee('data-alternar-area="area-seguridad"', false)
+            ->assertSee('id="area-seguridad" class="modulos-area" hidden', false)
+            ->assertSee('permiso(s) otorgado(s)')
+            ->assertSee('Expandir todo');
     }
 }

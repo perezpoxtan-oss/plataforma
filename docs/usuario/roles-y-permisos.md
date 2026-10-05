@@ -60,3 +60,9 @@ Arriba aparece **Empresa de trabajo**:
 
 - **Plantillas de la plataforma:** son los roles y permisos que recibe cada empresa nueva al darse de alta.
 - **Una empresa:** administras sus roles como si fueras su administrador.
+
+### Áreas contraíbles
+
+Los permisos están agrupados en **Dirección**, **Recursos Humanos** y **Seguridad**. Toca el nombre de un área para abrirla o cerrarla; a la derecha ves cuántos módulos tiene y cuántos permisos lleva otorgados ese rol. Con **Expandir todo** y **Contraer todo** abres o cierras todas a la vez. Las áreas que dejes abiertas siguen abiertas al cambiar de rol.
+
+![Matriz por áreas](img/roles/6-matriz-por-areas.png)

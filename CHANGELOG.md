@@ -3,6 +3,8 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Las sedes se llaman «Sedes» en todos los rubros (antes Hoteles, Plantas, Torres o Privadas).
+- Matriz de permisos: cada área (Dirección, Recursos Humanos, Seguridad) se contrae y muestra cuántos permisos tiene otorgados; botones Expandir todo / Contraer todo.
 - Las fechas se muestran en la hora local de la sede o de la empresa (antes salían en hora universal, 5 horas adelante en Cancún).
 - Pantallas de error en español (sin permiso, no encontrado, sesión expirada, demasiados intentos, error del sistema, mantenimiento).
 - Bitácora de auditoría: consulta legible de quién hizo qué y cuándo, con filtros, detalle de antes y después y exportación a Excel.

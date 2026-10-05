@@ -16,7 +16,7 @@ Réplica de `modules/empresas/empresa_lista.php` y `modules/hoteles/hotel_lista.
 
 ## Sedes (`/sedes`)
 
-El nombre de la pantalla sale de la terminología del rubro: Hoteles, Plantas, Torres o Privadas.
+El nombre de la pantalla sale de la terminología del rubro. Por decisión del cliente (QA, 2026-10-04) en todos los rubros se llama **Sedes**; el resto de la terminología (Habitación, Oficina, Departamento, Casa; Huésped, Visita…) sí cambia por rubro.
 
 - **Campos de SEGCAT:** nombre, código, ciudad, estado (`entidad`), calle y número, colonia, código postal y teléfono. Se agrega la **zona horaria propia**, que es opcional: vacía significa la de la empresa (`Sede::zonaHoraria()`).
 - **Código:** solo letras, números y guiones, en mayúsculas. Es **único por empresa**; en SEGCAT `codigo_hotel` era único en toda la plataforma.

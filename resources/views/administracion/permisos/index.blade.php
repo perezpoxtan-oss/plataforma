@@ -50,6 +50,11 @@
             @csrf
             @method('PUT')
 
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                <button type="button" class="btn btn-sm btn-outline-dark fw-bold" data-areas-todas="abrir"><i class="bi bi-arrows-expand me-1" aria-hidden="true"></i>Expandir todo</button>
+                <button type="button" class="btn btn-sm btn-outline-dark fw-bold" data-areas-todas="cerrar"><i class="bi bi-arrows-collapse me-1" aria-hidden="true"></i>Contraer todo</button>
+            </div>
+
             <div class="tabla-scroll">
                 <table class="tabla-permisos">
                     <thead>
@@ -62,10 +67,25 @@
                             <th scope="col">Alcance</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @foreach ($areas as $area)
-                            <tr class="fila-area"><td colspan="{{ count($basicas) + 3 }}"><i class="bi {{ $area->icono }} me-1" aria-hidden="true"></i>{{ $area->nombre }}</td></tr>
-
+                    @foreach ($areas as $area)
+                        @php
+                            $idsArea = $area->modulosVisibles->pluck('id');
+                            $otorgados = $idsArea->sum(fn ($id) => ($actuales[$id] ?? collect())->count());
+                        @endphp
+                        {{-- Cada área se contrae: un tbody para el título y otro para sus módulos --}}
+                        <tbody>
+                            <tr class="fila-area">
+                                <td colspan="{{ count($basicas) + 3 }}">
+                                    <button type="button" class="alternar-area" data-alternar-area="area-{{ $area->clave }}" aria-controls="area-{{ $area->clave }}" aria-expanded="false">
+                                        <i class="bi bi-chevron-right flecha" aria-hidden="true"></i>
+                                        <i class="bi {{ $area->icono }}" aria-hidden="true"></i>
+                                        <span>{{ $area->nombre }}</span>
+                                        <span class="resumen-area" data-resumen-area>{{ $area->modulosVisibles->count() }} módulo(s) · {{ $otorgados }} permiso(s) otorgado(s)</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tbody id="area-{{ $area->clave }}" class="modulos-area" hidden>
                             @foreach ($area->modulosVisibles as $modulo)
                                 @php
                                     $tiene = ($actuales[$modulo->id] ?? collect())->keyBy('accion');
@@ -128,8 +148,8 @@
                                     </td>
                                 </tr>
                             @endforeach
-                        @endforeach
-                    </tbody>
+                        </tbody>
+                    @endforeach
                 </table>
             </div>
 

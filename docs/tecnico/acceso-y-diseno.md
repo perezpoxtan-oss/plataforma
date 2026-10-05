@@ -87,7 +87,7 @@ Tabla `menus` (botones de la barra: Estructura, Padrones, Operación) y, en `mod
 - Un módulo aparece solo si el usuario puede `modulo.ver` (el motor revisa también que la empresa lo tenga contratado).
 - Un menú o una sección sin módulos visibles se oculta.
 - En celular los grupos se ordenan por `orden_movil`: Operación primero, como en SEGCAT.
-- El nombre visible sale, en este orden, de: el nombre que le dio la empresa (`empresa_modulos.nombre_visible`), la terminología del rubro (en un hotel, "Sedes" se llama "Hoteles") y el nombre del catálogo.
+- El nombre visible sale, en este orden, de: el nombre que le dio la empresa (`empresa_modulos.nombre_visible`), la terminología del rubro (por ejemplo, el área específica es "Habitación" en un hotel y "Oficina" en un corporativo) y el nombre del catálogo.
 - La barra inferior del celular tiene atajos fijos a Novedades y Accesos si el usuario puede verlos.
 - `MenuSeeder` solo acomoda módulos sin menú; lo que se cambie desde la interfaz se respeta.
 - Mientras un módulo no tenga `ruta`, su enlace lleva a la pantalla "en migración".
