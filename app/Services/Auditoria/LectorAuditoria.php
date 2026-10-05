@@ -14,6 +14,7 @@ use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
 use App\Models\Modulo;
+use App\Models\MovimientoTransporte;
 use App\Models\Paradero;
 use App\Models\PaseSalida;
 use App\Models\Persona;
@@ -83,6 +84,7 @@ class LectorAuditoria
         PrestamoLlave::class => ['Préstamo de llave', null],
         Responsiva::class => ['Resguardo', 'folio'],
         PaseSalida::class => ['Pase de salida', 'folio'],
+        MovimientoTransporte::class => ['Movimiento de transporte', null],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

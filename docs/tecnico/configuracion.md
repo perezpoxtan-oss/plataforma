@@ -27,6 +27,7 @@ Pantalla `GET /configuracion` (módulo `configuracion`, área Dirección). Crece
 - **`altaProvisional`:** avisa a los usuarios activos de la empresa con `colaboradores.aprobar` que alcancen la sede del colaborador.
   - Va sin datos personales: nombre, sede, quién lo registró, hora y enlace.
   - Se manda solo si el aviso está activo en la empresa (activo por defecto) y el correo de la plataforma está configurado.
+- **`valeTaxi`** (Bitácora de transporte): cada vale de taxi va a la **lista de correos** del aviso `vale_taxi` (textarea en la pantalla, `empresas.preferencias.avisos_destinatarios.vale_taxi`, máximo 20, validados); si la lista está vacía, a los usuarios con `transporte.aprobar` que alcancen la sede. Los avisos con lista se declaran en `Empresa::AVISOS_CON_DESTINATARIOS` y se leen con `Empresa::destinatariosAviso()`.
 - **Para agregar un aviso nuevo:**
   1. agrega una entrada en `Empresa::AVISOS` (etiqueta y valor por defecto);
   2. agrega un método en `AvisosCorreo` y su Mailable en `app/Mail`, con su vista en `resources/views/correos`.

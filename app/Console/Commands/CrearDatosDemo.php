@@ -16,6 +16,7 @@ use App\Models\Llave;
 use App\Models\LostFoundArticulo;
 use App\Models\Novedad;
 use App\Models\PaseSalida;
+use App\Models\MovimientoTransporte;
 use App\Models\Persona;
 use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
@@ -43,8 +44,10 @@ use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Services\Rutas\AdministradorRutas;
+use App\Services\Transporte\BitacoraTransporte;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\Tenant;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -144,6 +147,7 @@ class CrearDatosDemo extends Command
         $tenant->conEmpresa($empresa->id, fn () => $this->prestamosYResponsivasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->novedadesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'agente2.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->pasesSalidaDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->transporteDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -1206,7 +1210,7 @@ class CrearDatosDemo extends Command
     }
 
     /**
-     * Trazo de firma de ejemplo (JPEG en base64, como lo manda la pantalla).
+     * Firma de ejemplo (un trazo a mano alzada), como la deja el recuadro de firma.
      */
     private function firmaDemo(int $semilla): string
     {
@@ -1214,20 +1218,20 @@ class CrearDatosDemo extends Command
         imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
         $tinta = imagecolorallocate($img, 15, 23, 42);
         imagesetthickness($img, 3);
-        mt_srand($semilla + 7);
         $x = 60;
         $y = 120;
-        for ($i = 0; $i < 14; $i++) {
-            $nx = $x + mt_rand(20, 38);
-            $ny = 70 + mt_rand(0, 80);
+        for ($i = 0; $i < 90; $i++) {
+            $nx = $x + 5;
+            $ny = (int) (110 + sin(($i + $semilla * 7) / 4) * 45 + cos(($i + $semilla) / 9) * 18);
             imageline($img, $x, $y, $nx, $ny, $tinta);
             [$x, $y] = [$nx, $ny];
         }
-        imageline($img, 70, 160, $x, 150, $tinta);
-        mt_srand();
+        imageline($img, 80, 165, 520, 160, $tinta);
         ob_start();
         imagejpeg($img, null, 70);
+        $binario = (string) ob_get_clean();
+        imagedestroy($img);
 
-        return 'data:image/jpeg;base64,'.base64_encode((string) ob_get_clean());
+        return 'data:image/jpeg;base64,'.base64_encode($binario);
     }
 }

@@ -4603,3 +4603,359 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Pases de salida */
+/* ==========================================================================
+   Bitácora de transporte (seguridad/transporte): diálogo "Registrar Bitácora
+   Logística" y "Editar Registro".
+   - La lista "Ruta" se filtra por sede y tipo (llegada / salida) y propone el
+     horario más cercano a la hora actual de la sede (data-sugerencias).
+   - Estatus "NO LLEGO": se ocultan los datos de la unidad y aparecen los taxis
+     (plantilla <template data-plantilla-taxi>); siempre queda al menos uno.
+   - Pasajeros de cada taxi: se agregan con el lector universal (lector:elegido)
+     como fichas con su campo oculto; también los de un alta provisional
+     (colaborador:registrado).
+   - Tope de la ruta: si el monto lo supera, la justificación se vuelve obligatoria.
+   - Placas y chofer conocidos completan marca, modelo, número económico,
+     capacidad y teléfono (sin consultar al servidor).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto, porDefecto) { try { return JSON.parse(texto || ''); } catch (x) { return porDefecto; } }
+    function valorRadio(form, nombre) { var r = form.querySelector('input[name="' + nombre + '"]:checked'); return r ? r.value : ''; }
+    function sedeDe(form) { var s = form.querySelector('[data-sede-transporte]'); return s ? s.value : ''; }
+    function dinero(n) { return '$' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+    /* ---------- Pasajeros (fichas) ---------- */
+    function contar(bloque) {
+        var c = bloque.querySelector('[data-contador-pax]');
+        if (c) { c.textContent = bloque.querySelectorAll('.chip-pasajero').length + ' PAX'; }
+    }
+
+    function agregarPasajero(bloque, id, texto) {
+        var lista = bloque.querySelector('[data-pasajeros]');
+        if (!lista || lista.querySelector('.chip-pasajero[data-id="' + id + '"]')) { return false; }
+        var chip = document.createElement('span');
+        chip.className = 'chip-pasajero';
+        chip.setAttribute('data-id', id);
+        chip.appendChild(document.createTextNode(texto));
+        var oculto = document.createElement('input');
+        oculto.type = 'hidden'; oculto.name = bloque.getAttribute('data-nombre'); oculto.value = id;
+        chip.appendChild(oculto);
+        var quitar = document.createElement('button');
+        quitar.type = 'button'; quitar.setAttribute('data-quitar-pasajero', ''); quitar.setAttribute('aria-label', 'Quitar a ' + texto); quitar.textContent = '×';
+        chip.appendChild(quitar);
+        lista.appendChild(chip);
+        contar(bloque);
+        return true;
+    }
+
+    var bloqueAlta = null; // a qué taxi va el colaborador que se da de alta provisional
+
+    document.addEventListener('lector:elegido', function (e) {
+        var bloque = e.target.closest('[data-pasajeros-taxi]');
+        if (!bloque) { return; }
+        var r = e.detail || {};
+        var caja = e.target.closest('[data-lector]');
+        var nuevo = agregarPasajero(bloque, r.id, r.titulo + (r.detalle ? ' · ' + r.detalle.split(' · ')[0] : ''));
+        if (window.Lector && caja) {
+            window.Lector.limpiar(caja);
+            var estado = caja.querySelector('[data-lector-estado]');
+            if (estado) {
+                estado.hidden = false;
+                estado.className = 'lector-estado ' + (nuevo ? 'ok' : 'info');
+                estado.textContent = nuevo ? 'Agregado: ' + r.titulo + '. Escanea el siguiente.' : r.titulo + ' ya estaba en la lista.';
+            }
+            var entrada = caja.querySelector('[data-lector-entrada]');
+            if (entrada) { entrada.focus(); }
+        }
+    });
+
+    document.addEventListener('colaborador:registrado', function (e) {
+        if (!bloqueAlta || !document.body.contains(bloqueAlta)) { return; }
+        var c = e.detail || {};
+        agregarPasajero(bloqueAlta, c.id, c.nombre_completo + (c.num_empleado ? ' · Núm. ' + c.num_empleado : ' · provisional'));
+        bloqueAlta = null;
+    });
+
+    /* ---------- Tope de la ruta ---------- */
+    function topeDe(form) {
+        if (form.hasAttribute('data-form-editar-transporte')) { return parseFloat(form.getAttribute('data-tope')); }
+        var ruta = form.querySelector('[data-ruta-transporte]');
+        var op = ruta && ruta.value ? ruta.selectedOptions[0] : null;
+        return op ? parseFloat(op.getAttribute('data-tope')) : NaN;
+    }
+
+    function revisarTope(contenedor, form) {
+        var monto = contenedor.querySelector('[data-monto-taxi]');
+        var aviso = contenedor.querySelector('[data-aviso-tope]');
+        var just = contenedor.querySelector('[data-justificacion-taxi]');
+        if (!monto || !aviso) { return; }
+        var tope = topeDe(form);
+        var valor = parseFloat(monto.value) || 0;
+        var excede = !isNaN(tope) && valor > tope && !monto.disabled;
+        aviso.hidden = !excede;
+        if (just) { just.required = excede; }
+        if (excede) {
+            var t = aviso.querySelector('[data-texto-tope]');
+            if (t) { t.textContent = 'Este monto (' + dinero(valor) + ') supera el tope autorizado de ' + dinero(tope) + ' para esta ruta.'; }
+        }
+    }
+
+    /* ---------- Taxis ---------- */
+    function renumerar(form) {
+        var filas = form.querySelectorAll('[data-taxi]');
+        filas.forEach(function (f, i) {
+            var t = f.querySelector('[data-titulo-taxi]');
+            if (t) { t.textContent = 'Taxi ' + (i + 1); }
+            var q = f.querySelector('[data-quitar-taxi]');
+            if (q) { q.disabled = filas.length <= 1; q.title = filas.length <= 1 ? 'Debe haber al menos un taxi' : 'Quitar este taxi'; }
+        });
+    }
+
+    function listaParaderos(form) {
+        var sede = sedeDe(form) || '0';
+        form.querySelectorAll('[data-destino-taxi]').forEach(function (c) { c.setAttribute('list', 'paraderosTransporte-' + sede); });
+    }
+
+    function agregarTaxi(form) {
+        var cont = form.querySelector('[data-taxis]');
+        var plantilla = document.querySelector('template[data-plantilla-taxi]');
+        if (!cont || !plantilla) { return null; }
+        var n = parseInt(cont.getAttribute('data-siguiente') || '0', 10);
+        cont.setAttribute('data-siguiente', String(n + 1));
+        var caja = document.createElement('div');
+        caja.innerHTML = plantilla.innerHTML.replace(/__T__/g, String(n)).trim();
+        var fila = caja.firstElementChild;
+        cont.appendChild(fila);
+        fila.querySelectorAll('[data-lector]').forEach(function (l) { if (window.Lector) { window.Lector.preparar(l); } });
+        listaParaderos(form);
+        renumerar(form);
+        return fila;
+    }
+
+    /* ---------- Sincronizar el alta ---------- */
+    function sobrecupo(form) {
+        var pax = form.querySelector('[data-pax-normal]');
+        var cap = form.querySelector('[data-capacidad-normal]');
+        var aviso = form.querySelector('[data-aviso-sobrecupo]');
+        if (!pax || !cap || !aviso) { return; }
+        var p = parseInt(pax.value, 10) || 0;
+        var c = parseInt(cap.value, 10) || 0;
+        aviso.hidden = !(c > 0 && p > c);
+        if (!aviso.hidden) { aviso.querySelector('[data-texto-sobrecupo]').textContent = 'Sobrecupo: ' + p + ' pasajeros declarados contra una capacidad de ' + c + '. Verifica antes de continuar.'; }
+    }
+
+    function firmaGuardia(form, taxis) {
+        var firma = form.querySelector('input[name="firma_guardia"]');
+        if (!firma) { return; }
+        var caja = firma.closest('[data-firma]');
+        if (taxis) { firma.setAttribute('data-firma-requerida', ''); } else { firma.removeAttribute('data-firma-requerida'); caja.classList.remove('falta'); }
+        var etiqueta = caja.querySelector('.campo-etiqueta');
+        var asterisco = etiqueta && etiqueta.querySelector('[data-asterisco]');
+        if (etiqueta && taxis && !asterisco) {
+            asterisco = document.createElement('span');
+            asterisco.className = 'text-danger'; asterisco.setAttribute('data-asterisco', ''); asterisco.setAttribute('aria-hidden', 'true'); asterisco.textContent = ' *';
+            etiqueta.appendChild(asterisco);
+        } else if (!taxis && asterisco) { asterisco.remove(); }
+    }
+
+    function sincronizar(form, elegirSugerido) {
+        var sede = sedeDe(form);
+        var tipo = valorRadio(form, 'tipo_movimiento');
+        var estatus = valorRadio(form, 'estatus');
+        var ruta = form.querySelector('[data-ruta-transporte]');
+        var dialogo = form.closest('dialog');
+        var sugerencias = leer(dialogo && dialogo.getAttribute('data-sugerencias'), {});
+
+        // Rutas de la sede y el sentido elegidos
+        var visibles = 0;
+        if (ruta) {
+            Array.prototype.forEach.call(ruta.options, function (op) {
+                if (!op.value) { return; }
+                var ok = op.getAttribute('data-sede') === sede && op.getAttribute('data-sentido') === tipo;
+                op.hidden = !ok; op.disabled = !ok;
+                if (ok) { visibles++; }
+            });
+            var actual = ruta.value ? ruta.selectedOptions[0] : null;
+            if (elegirSugerido || (actual && actual.disabled)) {
+                var sugerido = sugerencias[sede] && sugerencias[sede][tipo];
+                ruta.value = sugerido ? String(sugerido) : '';
+                if (ruta.value && ruta.selectedOptions[0].disabled) { ruta.value = ''; }
+            }
+        }
+        var sinRutas = form.querySelector('[data-sin-rutas]');
+        if (sinRutas) { sinRutas.hidden = !sede || !tipo || visibles > 0; }
+
+        // Transportista y tope de la ruta elegida
+        var info = form.querySelector('[data-info-ruta]');
+        var op = ruta && ruta.value ? ruta.selectedOptions[0] : null;
+        if (info) {
+            info.hidden = !op;
+            info.textContent = '';
+            if (op) {
+                var tope = op.getAttribute('data-tope');
+                var i = document.createElement('i'); i.className = 'bi bi-building me-1'; i.setAttribute('aria-hidden', 'true');
+                info.appendChild(i);
+                info.appendChild(document.createTextNode('Empresa Asociada: ' + (op.getAttribute('data-transportista') || '—')
+                    + ' · ' + (tope ? 'Tope por taxi: ' + dinero(tope) : 'Sin tope por taxi')));
+            }
+        }
+
+        // Unidad normal o taxis
+        var taxis = estatus === 'no_llego';
+        var normal = form.querySelector('[data-caja-normal]');
+        var cajaTaxi = form.querySelector('[data-caja-taxi]');
+        if (normal) {
+            normal.hidden = taxis;
+            normal.querySelectorAll('input, select, textarea').forEach(function (c) { c.disabled = taxis; });
+        }
+        if (cajaTaxi) {
+            cajaTaxi.hidden = !taxis;
+            var cont = cajaTaxi.querySelector('[data-taxis]');
+            if (taxis && cont && !cont.querySelector('[data-taxi]')) { agregarTaxi(form); }
+            if (!taxis && cont) { cont.innerHTML = ''; cont.setAttribute('data-siguiente', '0'); }
+        }
+        firmaGuardia(form, taxis);
+        listaParaderos(form);
+        form.querySelectorAll('[data-taxi]').forEach(function (f) { revisarTope(f, form); });
+        renumerar(form);
+        sobrecupo(form);
+    }
+
+    /* ---------- Autollenado de unidad y chofer ---------- */
+    function autollenarUnidad(campo) {
+        var form = campo.form;
+        var mapa = leer(form.getAttribute(campo.getAttribute('data-autollenar') === 'taxi' ? 'data-taxis' : 'data-unidades'), {});
+        var datos = mapa[(campo.value || '').replace(/[\s\-.]+/g, '').toUpperCase()];
+        if (!datos) { return; }
+        var raiz = campo.closest('[data-taxi]') || campo.closest('[data-caja-normal]');
+        Object.keys(datos).forEach(function (k) {
+            var c = raiz.querySelector('[data-campo-unidad="' + k + '"]');
+            if (!c) { return; }
+            if (k === 'tipo') {
+                if (c.querySelector('option[value="' + datos[k] + '"]')) { c.value = datos[k]; }
+            } else if (!c.value) { c.value = datos[k]; }
+        });
+        sobrecupo(form);
+    }
+
+    function autollenarChofer(campo) {
+        var mapa = leer(campo.form.getAttribute('data-choferes'), {});
+        var tel = mapa[(campo.value || '').trim().replace(/\s+/g, ' ').toUpperCase()];
+        if (!tel) { return; }
+        var raiz = campo.closest('[data-taxi]') || campo.closest('[data-caja-normal]');
+        var c = raiz && raiz.querySelector('[data-telefono-chofer]');
+        if (c && !c.value) { c.value = tel; }
+    }
+
+    /* ---------- Editar ---------- */
+    function abrirEdicion(boton) {
+        var dialogo = document.getElementById(boton.getAttribute('data-dialogo'));
+        var f = dialogo && dialogo.querySelector('form[data-form-editar-transporte]');
+        if (!f) { return; }
+        var v = leer(boton.getAttribute('data-valores'), {});
+        f.action = boton.getAttribute('data-url');
+        f.querySelector('[data-campo-dialogo]').value = 'editar-' + boton.getAttribute('data-id');
+        f.setAttribute('data-tope', v.tope === null || v.tope === undefined ? '' : String(v.tope));
+        dialogo.querySelector('[data-editar-folio]').textContent = v.folio || '';
+        var badge = dialogo.querySelector('[data-editar-tipo]');
+        badge.textContent = v.taxi ? 'TAXI' : 'NORMAL';
+        badge.className = 'badge-tipo-registro ' + (v.taxi ? 'taxi' : 'normal');
+        var soloTaxi = f.querySelector('[data-solo-taxi]');
+        var soloNormal = f.querySelector('[data-solo-normal]');
+        soloTaxi.hidden = !v.taxi;
+        soloNormal.hidden = !!v.taxi;
+        soloTaxi.querySelectorAll('input, textarea').forEach(function (c) { c.disabled = !v.taxi; });
+        soloNormal.querySelectorAll('input').forEach(function (c) { c.disabled = !!v.taxi; });
+        ['cantidad_pax', 'monto', 'destino', 'justificacion', 'observaciones'].forEach(function (nombre) {
+            var c = f.querySelector('[name="' + nombre + '"]');
+            if (c) { c.value = v[nombre] === null || v[nombre] === undefined ? '' : String(v[nombre]); }
+        });
+        f.querySelectorAll('input[name="estatus"]').forEach(function (r) { r.checked = r.value === v.estatus; });
+        var destino = f.querySelector('[data-destino-taxi]');
+        if (destino) { destino.setAttribute('list', 'paraderosTransporte-' + v.sede_id); }
+        var bloque = f.querySelector('[data-pasajeros-taxi]');
+        if (bloque) {
+            bloque.querySelector('[data-pasajeros]').innerHTML = '';
+            (v.pasajeros || []).forEach(function (p) { agregarPasajero(bloque, p.id, p.texto); });
+            contar(bloque);
+        }
+        revisarTope(f, f);
+        if (typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
+    }
+
+    /* ---------- Eventos ---------- */
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-transporte]')) { return; }
+        var cambioSedeOTipo = e.target.matches('[data-sede-transporte]') || e.target.name === 'tipo_movimiento';
+        if (cambioSedeOTipo || e.target.name === 'estatus' || e.target.matches('[data-ruta-transporte]')) { sincronizar(form, cambioSedeOTipo); }
+        if (e.target.matches('[data-autollenar]')) { autollenarUnidad(e.target); }
+        if (e.target.matches('[data-autollenar-chofer]')) { autollenarChofer(e.target); }
+    });
+
+    document.addEventListener('input', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-transporte], [data-form-editar-transporte]')) { return; }
+        if (e.target.matches('[data-monto-taxi]')) { revisarTope(e.target.closest('[data-taxi]') || form, form); }
+        if (e.target.matches('[data-pax-normal], [data-capacidad-normal]')) { sobrecupo(form); }
+        // Al elegir de la lista de sugerencias el navegador lanza "input"
+        if (e.target.matches('[data-autollenar]')) { autollenarUnidad(e.target); }
+        if (e.target.matches('[data-autollenar-chofer]')) { autollenarChofer(e.target); }
+    });
+
+    document.addEventListener('click', function (e) {
+        var form = e.target.closest('form[data-form-transporte]');
+        if (form && e.target.closest('[data-agregar-taxi]')) {
+            var fila = agregarTaxi(form);
+            if (fila) {
+                fila.scrollIntoView({ block: 'nearest' });
+                var placas = fila.querySelector('input[type="text"]');
+                if (placas) { placas.focus(); }
+            }
+            return;
+        }
+        var quitarTaxi = form && e.target.closest('[data-quitar-taxi]');
+        if (quitarTaxi) {
+            if (form.querySelectorAll('[data-taxi]').length > 1) { quitarTaxi.closest('[data-taxi]').remove(); renumerar(form); }
+            return;
+        }
+        var quitar = e.target.closest('[data-quitar-pasajero]');
+        if (quitar) {
+            var bloque = quitar.closest('[data-pasajeros-taxi]');
+            quitar.closest('.chip-pasajero').remove();
+            if (bloque) { contar(bloque); }
+            return;
+        }
+        var alta = e.target.closest('[data-alta-pasajero]');
+        if (alta) { bloqueAlta = alta.closest('[data-pasajeros-taxi]'); return; }
+
+        var editar = e.target.closest('[data-accion="editar-movimiento"]');
+        if (editar) { abrirEdicion(editar); }
+    });
+
+    // Al cerrar, el alta vuelve a su estado inicial (sin taxis ni pasajeros) y la edición sin fichas
+    // ("close" no burbujea: se escucha en captura, después del limpiado genérico)
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('form[data-form-transporte]').forEach(function (form) {
+            var cont = form.querySelector('[data-taxis]');
+            if (cont) { cont.innerHTML = ''; cont.setAttribute('data-siguiente', '0'); }
+            // Después de que los campos vuelvan a sus valores iniciales (manejador genérico)
+            setTimeout(function () { sincronizar(form, true); }, 0);
+        });
+        e.target.querySelectorAll('form[data-form-editar-transporte] [data-pasajeros]').forEach(function (l) { l.innerHTML = ''; });
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[data-form-transporte]').forEach(function (form) {
+            sincronizar(form, false);
+            form.querySelectorAll('[data-pasajeros-taxi]').forEach(contar);
+        });
+        document.querySelectorAll('form[data-form-editar-transporte]').forEach(function (form) {
+            form.querySelectorAll('[data-pasajeros-taxi]').forEach(contar);
+            revisarTope(form, form);
+        });
+    });
+})();
+/* Fin Bitácora de transporte */

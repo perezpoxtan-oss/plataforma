@@ -29,6 +29,7 @@ use App\Http\Controllers\Seguridad\GafeteController;
 use App\Http\Controllers\Seguridad\LlaveController;
 use App\Http\Controllers\Seguridad\PaseSalidaController;
 use App\Http\Controllers\Seguridad\PersonaController;
+use App\Http\Controllers\Seguridad\TransporteController;
 use App\Http\Controllers\Seguridad\VehiculoController;
 use App\Http\Controllers\Seguridad\VoucherController;
 use Illuminate\Support\Facades\Route;
@@ -255,6 +256,20 @@ Route::middleware('auth')->group(function () {
     Route::post('/pases-salida/{pase}/rechazar', [PaseSalidaController::class, 'rechazar'])->whereNumber('pase')->name('pases-salida.rechazar');
     Route::get('/pases-salida/{pase}/imprimir', [PaseSalidaController::class, 'imprimir'])->whereNumber('pase')->name('pases-salida.imprimir');
     // Fin Padrones: Pases de salida
+    // Padrones: Bitácora de transporte (Operación: llegadas, salidas y vales de taxi)
+    Route::get('/transporte', [TransporteController::class, 'index'])->name('transporte.index');
+    Route::post('/transporte', [TransporteController::class, 'store'])->name('transporte.store');
+    Route::get('/transporte/reportes', [TransporteController::class, 'reportes'])->name('transporte.reportes');
+    Route::get('/transporte/exportar', [TransporteController::class, 'exportar'])->name('transporte.exportar');
+    Route::get('/transporte/{movimiento}', [TransporteController::class, 'show'])->whereNumber('movimiento')->name('transporte.show');
+    Route::put('/transporte/{movimiento}', [TransporteController::class, 'update'])->whereNumber('movimiento')->name('transporte.update');
+    Route::patch('/transporte/{movimiento}/anular', [TransporteController::class, 'anular'])->whereNumber('movimiento')->name('transporte.anular');
+    Route::patch('/transporte/{movimiento}/reactivar', [TransporteController::class, 'reactivar'])->whereNumber('movimiento')->name('transporte.reactivar');
+    Route::patch('/transporte/{movimiento}/autorizar', [TransporteController::class, 'autorizar'])->whereNumber('movimiento')->name('transporte.autorizar');
+    Route::get('/transporte/{movimiento}/vale', [TransporteController::class, 'vale'])->whereNumber('movimiento')->name('transporte.vale');
+    Route::get('/transporte/{movimiento}/firma/{cual}', [TransporteController::class, 'firma'])->whereNumber('movimiento')->whereIn('cual', ['guardia', 'taxista'])->name('transporte.firma');
+    // Fin Padrones: Bitácora de transporte
+
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
     Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');

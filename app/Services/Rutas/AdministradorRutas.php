@@ -516,8 +516,10 @@ class AdministradorRutas
     /**
      * El paradero escrito en una ruta: el del catálogo de la sede con ese
      * nombre o uno nuevo. Si estaba desactivado se reactiva (se está usando).
+     * También lo usa la Bitácora de transporte para el destino de cada taxi
+     * ($nombre ya normalizado con Paradero::normalizarNombre).
      */
-    private function paraderoParaRuta(User $actor, Sede $sede, string $nombre): Paradero
+    public function paraderoParaRuta(User $actor, Sede $sede, string $nombre): Paradero
     {
         $paradero = Paradero::where('sede_id', $sede->id)->whereRaw('UPPER(nombre) = ?', [$nombre])->first();
         if ($paradero === null) {
