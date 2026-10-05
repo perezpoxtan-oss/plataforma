@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Acceso;
 use App\Models\AcompananteAcceso;
+use App\Models\AccidenteFirma;
 use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
@@ -12,6 +13,8 @@ use App\Models\Espacio;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
+use App\Models\LostFoundArticulo;
+use App\Models\Novedad;
 use App\Models\Persona;
 use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
@@ -32,6 +35,8 @@ use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Llaves\AdministradorLlaves;
+use App\Services\Novedades\AdministradorNovedades;
+use App\Services\Novedades\Formatos\RecorridoPc;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
 use App\Services\Responsivas\AdministradorResponsivas;
@@ -135,6 +140,7 @@ class CrearDatosDemo extends Command
         $tenant->conEmpresa($empresa->id, fn () => $this->rutasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->accesosDemo($empresa, $sedes, User::where('username', 'jefe.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->prestamosYResponsivasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->novedadesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'agente2.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -922,6 +928,184 @@ class CrearDatosDemo extends Command
                     }
                 }
             }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    /**
+     * Bitácora de Novedades: tickets de cada categoría en distintos estatus
+     * (abierto, pendiente de turno, resuelto), un Accidente con sus 6 firmas,
+     * un Siniestro que abrió solo su Accidente, Lost & Found con artículos y
+     * un reporte de pérdida, y un Recorrido PC histórico. Solo la primera vez.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function novedadesDemo($sedes, User $admin, User $agente, User $agentePlaya): void
+    {
+        if (Novedad::exists()) {
+            return;
+        }
+
+        $novedades = app(AdministradorNovedades::class);
+        $centro = $sedes['CEN'];
+        $zona = $centro->zonaHoraria();
+        // Fecha y hora local de la sede de hace N horas (nunca en el futuro)
+        $hace = fn (int $horas) => now($zona)->subHours($horas)->format('Y-m-d\TH:i');
+        $espacio = fn (string $nombre) => Espacio::where('sede_id', $centro->id)->where('nombre', $nombre)->first();
+        $torre = $espacio('Torre A');
+        $piso1 = $espacio('Piso 1');
+        $piso2 = $espacio('Piso 2');
+        $area = fn (?Espacio $piso) => $piso === null ? [] : ['area_edificio_id' => $torre?->id, 'area_piso_id' => $piso->id];
+        $hab = fn (string $nombre) => $espacio($nombre)?->id;
+        $colaborador = fn (string $num) => Colaborador::where('num_empleado', $num)->value('id');
+        // Firma de ejemplo: un trazo distinto por rol, JPEG ligero como el del recuadro
+        $firma = function (int $n): string {
+            $img = imagecreatetruecolor(600, 200);
+            imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+            $tinta = imagecolorallocate($img, 15, 23, 42);
+            imagesetthickness($img, 3);
+            for ($x = 40; $x < 520; $x += 20) {
+                imageline($img, $x, (int) (100 + 40 * sin(($x + $n * 37) / 35)), $x + 20, (int) (100 + 40 * sin(($x + 20 + $n * 37) / 35)), $tinta);
+            }
+            ob_start();
+            imagejpeg($img, null, 70);
+
+            return 'data:image/jpeg;base64,'.base64_encode((string) ob_get_clean());
+        };
+
+        $previo = auth()->user();
+        $base = fn (array $extra) => $extra + ['estatus' => 'abierto'];
+        $crear = function (User $actor, array $datos) use ($novedades) {
+            auth()->setUser($actor);
+
+            return $novedades->crear($actor, $datos);
+        };
+        $atender = function (User $actor, Novedad $n, array $datos) use ($novedades, $base) {
+            auth()->setUser($actor);
+
+            return $novedades->actualizar($actor, $n->fresh(), $base($datos + ['categoria' => $n->categoria]));
+        };
+
+        try {
+            // 1. Reporte General abierto (lo observó el agente en su ronda)
+            $n = $crear($agente, ['sede_id' => $centro->id, 'categoria' => 'incidente_general', 'reportado_por' => $agente->name, 'ubicacion' => 'Puerta de servicio, andén de carga',
+                'descripcion' => 'Puerta de servicio abierta y sin vigilancia durante la ronda nocturna.', 'ocurrio_en' => $hace(3)] + $area($piso1));
+            $atender($agente, $n, ['ig_observados' => 'Personal de proveedor de lavandería', 'ig_actividad' => 'Descarga de blancos', 'ig_motivo' => 'Llegaron fuera de horario',
+                'ig_acciones' => 'Se cerró la puerta y se avisó al supervisor de turno.', 'nueva_nota' => 'Se revisaron cámaras del andén: sin incidentes adicionales.']);
+
+            // 2. Accidente de huésped con dictamen y las 6 firmas, pendiente para el siguiente turno
+            $n = $crear($agente, ['sede_id' => $centro->id, 'categoria' => 'accidente', 'reportado_por' => 'Mariana López Pech', 'reportado_colaborador_id' => $colaborador('1007'),
+                'ubicacion' => 'Escaleras de emergencia', 'descripcion' => 'Huésped resbaló al bajar las escaleras y se lastimó el pie derecho.',
+                'como_sucedio' => 'Bajaba corriendo y no vio el último escalón.', 'ocurrio_en' => $hace(20)] + $area($piso1));
+            $atender($admin, $n, [
+                'estatus' => 'pendiente_turno', 'area_especifica_id' => $hab('103'), 'acc_tipo_afectado' => 'HUESPED',
+                'h_fecha_accidente' => now($zona)->subDay()->format('Y-m-d'), 'h_hora_accidente' => '18:20', 'h_nombre' => 'John Miller', 'h_hab' => '103',
+                'h_agencia' => 'Expedia', 'h_pais' => 'Estados Unidos', 'h_sexo' => 'M', 'h_edad' => '46', 'h_lugar' => 'Escaleras de emergencia, Piso 1',
+                'h_explicacion' => 'Pisó mal el último escalón; el piso estaba seco.', 'h_req_medico' => '1', 'h_motivo' => 'Dolor e inflamación en tobillo', 'h_testigos' => '0',
+                'm_herida' => ['Contusa'], 'm_parte' => 'Pie Der', 'm_primeros_aux' => '1', 'm_primeros_cuales' => 'Hielo y vendaje', 'm_atencion_med' => '1',
+                'm_atencion_cuales' => 'Valoración del médico de guardia', 'm_diagnostico' => 'Esguince leve de tobillo derecho.', 'm_hosp' => '0',
+                'm_traslado' => 'No aplica', 'm_doctor' => 'Dra. Patricia Herrera', 'm_observaciones' => 'Reposo y revisión en 48 horas.',
+                'nueva_nota' => 'Falta la firma de conformidad de la gerencia (pasa al siguiente turno).',
+            ] + collect(array_keys(AccidenteFirma::ROLES))->mapWithKeys(fn ($rol, $i) => ['f_'.$rol => $firma($i)])->all());
+
+            // 3. Accidente de colaboradora, resuelto con incapacidad de RH
+            $n = $crear($admin, ['sede_id' => $centro->id, 'categoria' => 'accidente', 'reportado_por' => 'Guadalupe Chan Ek', 'reportado_colaborador_id' => $colaborador('1009'),
+                'ubicacion' => 'Cuarto de blancos', 'descripcion' => 'Camarista se cortó la mano con un vidrio roto.', 'ocurrio_en' => $hace(150)] + $area($piso2));
+            $atender($admin, $n, [
+                'acc_tipo_afectado' => 'COLABORADOR', 'c_id_colaborador' => $colaborador('1009'), 'c_fecha_accidente' => now($zona)->subDays(6)->format('Y-m-d'),
+                'c_hora_accidente' => '10:15', 'c_turno_colaborador' => 'Matutino', 'c_area_trabajo' => 'Cuarto de blancos', 'c_jefe' => 'Carlos Pérez Gómez',
+                'c_puesto_jefe' => 'Jefe de Seguridad', 'c_primera_vez' => '1', 'c_causa_condicion' => '1', 'c_explicacion' => 'Vidrio roto dentro de una bolsa de blancos.',
+                'acc_testigos' => [['nombre' => 'Rosa María Poot Uc', 'departamento' => 'Ama de Llaves']], 'c_aviso_por' => 'Guadalupe Chan Ek', 'c_depto_aviso' => 'Ama de Llaves',
+                'c_actividades' => 'Clasificación de blancos', 'c_mismas_actividades' => '1', 'm_herida' => ['Cortante'], 'm_parte' => 'Mano Izq', 'm_primeros_aux' => '1',
+                'm_primeros_cuales' => 'Limpieza y vendaje', 'm_atencion_med' => '0', 'm_hosp' => '0', 'rh_dias' => '2', 'rh_fecha' => now($zona)->subDays(3)->format('Y-m-d'),
+                'estatus' => 'resuelto', 'resolucion' => 'Se reincorporó a sus labores; se reforzó el uso de guantes en el cuarto de blancos.',
+            ]);
+
+            // 4. Valores a la Vista en la 102, abierto
+            $n = $crear($agente, ['sede_id' => $centro->id, 'categoria' => 'habitacion', 'reportado_por' => 'Guadalupe Chan Ek', 'reportado_colaborador_id' => $colaborador('1009'),
+                'ubicacion' => 'Habitación 102', 'descripcion' => 'Habitación con puerta abierta y caja fuerte abierta con valores.', 'ocurrio_en' => $hace(2), 'asignado_a' => $agente->id] + $area($piso1));
+            $atender($agente, $n, [
+                'area_especifica_id' => $hab('102'), 'hab_id_area_especifica' => $hab('102'), 'hab_quien_reporta' => 'Guadalupe Chan Ek', 'hab_depto_reporta' => 'Ama de Llaves',
+                'hab_puesto_reporta' => 'Camarista', 'hab_actividad_reporta' => 'Limpieza de rutina', 'hab_quien_atiende' => $agente->name, 'hab_depto_atiende' => 'Seguridad',
+                'hab_puesto_atiende' => 'Agente de Seguridad', 'hab_personas' => [['nombre' => 'Rosa María Poot Uc', 'departamento' => 'Ama de Llaves', 'puesto' => 'Camarista', 'actividad' => 'Apoyo', 'se_retira' => '1']],
+                'hab_aperturas' => [['tipo' => 'puerta', 'estado' => 'abierta', 'es_especial' => '0'], ['tipo' => 'terraza', 'estado' => 'cerrada', 'descripcion' => 'Balcón principal']],
+                'hab_caja_estado' => 'abierta_con_valores', 'hab_caja_accion' => 'cerrada_bloqueada', 'hab_valores_dentro' => 'Pasaportes y efectivo en dólares.',
+                'hab_valores' => [['zona' => 'Recámara', 'descripcion' => 'Reloj y cartera sobre el buró']], 'hab_personal_retiro' => 'si', 'hab_cliente_llega' => '0', 'hab_tomo_fotos' => 'si',
+                'hab_observaciones_grales' => 'Se notificó al Gerente en Turno.', 'nueva_nota' => 'Se cerró la caja fuerte en presencia de la camarista.',
+            ]);
+
+            // 5. Siniestro de Protección Civil con un lesionado: abre solo su ticket de Accidente
+            $n = $crear($admin, ['sede_id' => $centro->id, 'categoria' => 'proteccion_civil', 'reportado_por' => 'Javier Ramírez Soto',
+                'ubicacion' => 'Cocina del restaurante', 'descripcion' => 'Conato de incendio en la campana de la cocina.', 'ocurrio_en' => $hace(50)] + $area($piso2));
+            $atender($admin, $n, [
+                'pc_tipo_evento' => 'CONATO DE INCENDIO', 'pc_fecha_control' => $hace(49), 'pc_alarma' => '1', 'pc_evacuacion' => '1', 'pc_num_evacuados' => '35',
+                'pc_punto_reunion' => 'Estacionamiento norte', 'pc_servicios' => [0 => ['activo' => '1', 'hora' => '14:25'], 1 => ['activo' => '1', 'hora' => '14:30']],
+                'pc_hubo_lesionados' => '1', 'pc_num_lesionados' => '1', 'siniestro_equipos' => [['identificador' => 'EXT-07', 'estado_uso' => 'utilizado']],
+                'siniestro_danos' => [['zona' => 'Cocina', 'descripcion' => 'Campana y filtros dañados por humo']],
+                'siniestro_testigos' => [['nombre' => 'Luis Fernando Díaz Kú', 'departamento' => 'Alimentos y Bebidas']],
+                'pc_causa_probable' => 'Acumulación de grasa en los filtros.', 'pc_acciones_tomadas' => 'Se usó el extintor tipo K; se programó limpieza profunda.',
+            ]);
+
+            // 6. Lost & Found con artículos y un reporte de pérdida (para "Buscar Coincidencias")
+            $n = $crear($agente, ['sede_id' => $centro->id, 'categoria' => 'lost_found', 'reportado_por' => 'Rosa María Poot Uc',
+                'ubicacion' => 'Habitación 201', 'descripcion' => 'Objetos olvidados encontrados durante la limpieza.', 'ocurrio_en' => $hace(1)] + $area($piso2));
+            $atender($agente, $n, [
+                'area_especifica_id' => $hab('201'),
+                'lf_articulos' => [
+                    ['objeto' => 'Teléfono celular', 'tipo_valor' => 'ELECTRONICO', 'marca' => 'Samsung', 'color' => 'Negro', 'area_especifica_id' => $hab('201'), 'ubicacion_bodega' => 'Bodega de Seguridad, Caja 1'],
+                    ['objeto' => 'Sombrero', 'tipo_valor' => 'ROPA', 'color' => 'Beige', 'area_especifica_id' => $hab('201'), 'ubicacion_bodega' => 'Anaquel 3'],
+                ],
+                'rp_reportes' => [['objeto' => 'Teléfono', 'tipo_valor' => 'ELECTRONICO', 'marca' => 'Samsung', 'color' => 'Negro', 'nombre_huesped' => 'Laura Gómez',
+                    'area_especifica_id' => $hab('201'), 'fecha_aproximada' => now($zona)->subDay()->format('Y-m-d'), 'telefono' => '9981234567', 'descripcion' => 'Funda azul con iniciales L.G.']],
+            ]);
+            // El sombrero lleva 25 días en resguardo (semáforo "Por vencer")
+            LostFoundArticulo::where('novedad_id', $n->id)->where('objeto', 'SOMBRERO')->update(['created_at' => now()->subDays(25)]);
+
+            // 7. Robo abierto en la 202
+            $n = $crear($admin, ['sede_id' => $centro->id, 'categoria' => 'robo', 'reportado_por' => 'Laura Gómez', 'ubicacion' => 'Habitación 202',
+                'descripcion' => 'Huésped reporta que le robaron una laptop de la habitación.', 'ocurrio_en' => $hace(26)] + $area($piso2));
+            $atender($admin, $n, [
+                'area_especifica_id' => $hab('202'), 'robo_hora_aproximada' => '15:30', 'robo_lugar_exacto' => 'Escritorio de la habitación',
+                'robo_objetos_descripcion' => 'Laptop Dell gris con estuche negro.', 'robo_valor_estimado' => '18000', 'robo_hay_sospechoso' => '0',
+                'robo_testigos' => [['nombre' => 'Daniela Canul May', 'departamento' => 'Recepción', 'declaracion' => 'Vio salir a una persona con mochila negra.']],
+                'robo_se_dio_parte_policia' => '1', 'robo_folio_policial' => 'FGE-2026-1458', 'robo_canalizado_gerencia' => '1',
+                'robo_observaciones_investigacion' => 'Se solicitaron las grabaciones del pasillo del piso 2.',
+            ]);
+
+            // 8. Playa: uno sin clasificar (agente de playa) y un Reporte General resuelto
+            $crear($agentePlaya, ['sede_id' => $sedes['PLA']->id, 'categoria' => 'sin_clasificar', 'reportado_por' => $agentePlaya->name,
+                'ubicacion' => 'Cuarto de máquinas', 'descripcion' => 'Ruido extraño en el cuarto de máquinas de la alberca.', 'ocurrio_en' => $hace(4)]);
+            $n = $crear($admin, ['sede_id' => $sedes['PLA']->id, 'categoria' => 'incidente_general', 'reportado_por' => 'Daniela Canul May',
+                'ubicacion' => 'Lobby', 'descripcion' => 'Vendedor ambulante dentro del lobby.', 'ocurrio_en' => $hace(75)]);
+            $atender($admin, $n, ['ig_acciones' => 'Se le pidió retirarse con cortesía.', 'estatus' => 'resuelto', 'resolucion' => 'La persona se retiró sin incidentes.']);
+
+            // 9. Recorrido PC histórico (ya no se crea desde aquí; viene de SEGCAT)
+            $n = $crear($admin, ['sede_id' => $centro->id, 'reportado_por' => $admin->name, 'ubicacion' => 'Torre A', 'descripcion' => 'Recorrido de inspección de extintores (histórico).',
+                'ocurrio_en' => $hace(240)]);
+            $n->forceFill(['categoria' => 'recorrido_pc'])->save();
+            $atender($admin, $n, ['rpc_puntos' => [
+                ['identificador' => 'EXT-01', 'categoria' => 'EXTINTOR', 'edificio' => 'Torre A', 'nivel' => 'Piso 1', 'area' => 'Pasillo',
+                    'criterios' => array_fill_keys(array_keys(RecorridoPc::piezas('EXTINTOR')), '1')],
+                ['identificador' => 'EXT-02', 'categoria' => 'EXTINTOR', 'edificio' => 'Torre A', 'nivel' => 'Piso 2', 'area' => 'Elevadores',
+                    'criterios' => ['cilindro' => '1', 'manguera' => '1'], 'observaciones' => 'Manómetro en zona roja.'],
+            ]]);
+
+            // 10. Más casos en otros estatus: Lost & Found y Valores a la Vista resueltos, Robo pendiente de turno
+            $n = $crear($agente, ['sede_id' => $centro->id, 'categoria' => 'lost_found', 'reportado_por' => 'Guadalupe Chan Ek',
+                'ubicacion' => 'Habitación 104', 'descripcion' => 'Lentes de sol olvidados en el buró.', 'ocurrio_en' => $hace(96)] + $area($piso1));
+            $atender($agente, $n, ['area_especifica_id' => $hab('104'), 'lf_articulos' => [['objeto' => 'Lentes de sol', 'tipo_valor' => 'OTRO', 'marca' => 'Ray-Ban',
+                'color' => 'Negro', 'area_especifica_id' => $hab('104'), 'ubicacion_bodega' => 'Anaquel 1']],
+                'estatus' => 'resuelto', 'resolucion' => 'El huésped pasó por ellos a recepción antes de su salida.']);
+            $n = $crear($agente, ['sede_id' => $centro->id, 'categoria' => 'habitacion', 'reportado_por' => 'Rosa María Poot Uc',
+                'ubicacion' => 'Habitación 101', 'descripcion' => 'Caja fuerte abierta sin valores al hacer la limpieza.', 'ocurrio_en' => $hace(120)] + $area($piso1));
+            $atender($agente, $n, ['area_especifica_id' => $hab('101'), 'hab_id_area_especifica' => $hab('101'), 'hab_quien_reporta' => 'Rosa María Poot Uc',
+                'hab_quien_atiende' => $agente->name, 'hab_caja_estado' => 'abierta_sin_valores', 'hab_personal_retiro' => 'si', 'hab_tomo_fotos' => 'no',
+                'estatus' => 'resuelto', 'resolucion' => 'Se cerró la caja fuerte y se avisó a recepción.']);
+            $n = $crear($agentePlaya, ['sede_id' => $sedes['PLA']->id, 'categoria' => 'robo', 'reportado_por' => 'Huésped camastro 12',
+                'ubicacion' => 'Playa, zona de camastros', 'descripcion' => 'Huésped reporta que le tomaron una bolsa de playa mientras nadaba.', 'ocurrio_en' => $hace(6)]);
+            $atender($agentePlaya, $n, ['robo_objetos_descripcion' => 'Bolsa de playa azul con toalla y bloqueador.', 'robo_hay_sospechoso' => '0',
+                'estatus' => 'pendiente_turno', 'nueva_nota' => 'Se revisarán las cámaras de la palapa con el siguiente turno.']);
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }

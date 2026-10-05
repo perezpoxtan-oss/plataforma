@@ -44,6 +44,8 @@ class AdministradorColaboradores
         'accesos' => 'colaborador_id',
         'prestamos_llaves' => 'colaborador_id',
         'responsivas' => 'colaborador_id',
+        'novedades' => 'reportado_colaborador_id',
+        'accidente_colaboradores' => 'colaborador_id',
     ];
 
     private const SIN_ACENTOS = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u'];

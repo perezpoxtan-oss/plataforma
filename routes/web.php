@@ -226,6 +226,23 @@ Route::middleware('auth')->group(function () {
     Route::get('/responsivas/{responsiva}/firma', [ResponsivaController::class, 'firma'])->whereNumber('responsiva')->name('responsivas.firma');
     Route::get('/responsivas/{responsiva}/hoja', [ResponsivaController::class, 'hoja'])->whereNumber('responsiva')->name('responsivas.hoja');
     // Fin Padrones: Préstamo de llaves y Responsivas
+    // Padrones: Bitácora de Novedades (despacho de tickets con expediente por categoría; Lost & Found trabaja solo sus tickets)
+    Route::controller('App\Http\Controllers\Seguridad\NovedadController')->group(function () {
+        Route::get('/novedades', 'index')->name('novedades.index');
+        Route::get('/novedades/lost-found', 'index')->name('lost_found.index');
+        Route::post('/novedades', 'store')->middleware('throttle:60,1')->name('novedades.store');
+        Route::get('/novedades/exportar', 'exportar')->name('novedades.exportar');
+        Route::get('/novedades/ficha-hechos', 'fichaHechos')->name('novedades.ficha-hechos');
+        Route::get('/novedades/coincidencias', 'coincidencias')->middleware('throttle:60,1')->name('novedades.coincidencias');
+        Route::post('/novedades/perdidas/{reporte}/vincular', 'vincularPerdida')->whereNumber('reporte')->name('novedades.perdidas.vincular');
+        Route::put('/novedades/{novedad}', 'update')->whereNumber('novedad')->name('novedades.update');
+        Route::post('/novedades/{novedad}/reabrir', 'reabrir')->whereNumber('novedad')->name('novedades.reabrir');
+        Route::post('/novedades/{novedad}/vincular-hallazgo', 'vincularRobo')->whereNumber('novedad')->name('novedades.robo.vincular');
+        Route::get('/novedades/{novedad}/imprimir', 'imprimir')->whereNumber('novedad')->name('novedades.imprimir');
+        Route::get('/novedades/{novedad}/acuse', 'acuse')->whereNumber('novedad')->name('novedades.acuse');
+        Route::get('/novedades/{novedad}/firmas/{rol}', 'firma')->whereNumber('novedad')->where('rol', '[a-z]+')->name('novedades.firma');
+    });
+    // Fin Padrones: Bitácora de Novedades
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');

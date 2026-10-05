@@ -733,3 +733,65 @@ html.modo-sol .btn-historial-llave, html.modo-sol .btn-anular-prestamo, html.mod
 html.modo-sol .eq-resguardo, html.modo-sol .llave-usada-por { background: #fff; border: 2px solid #000; color: #000; }
 html.modo-sol .folio-resguardo, html.modo-sol .folio-prestamo, html.modo-sol .llave-historial-enlace { color: #000; }
 /* Fin Operación: Préstamo de llaves y Responsivas */
+/* Bitácora de Novedades */
+html.modo-sol .ficha-novedad, html.modo-sol .texto-novedad, html.modo-sol .preguntas-base, html.modo-sol .reporte-inicial,
+html.modo-sol .tarjeta-articulo, html.modo-sol .tarjeta-perdida, html.modo-sol .ficha-hecho, html.modo-sol .resultado-coincidencia { background: #fff; border: 2px solid #000; }
+html.modo-sol .ficha-novedad.abierta { border-top: 6px solid #b91c1c; }
+html.modo-sol .ficha-novedad.resuelta { border-top: 6px solid #047857; }
+html.modo-sol .badge-categoria.abierta { background: #b91c1c; color: #fff; border-color: #000; }
+html.modo-sol .badge-categoria.resuelta { background: #047857; color: #fff; border-color: #000; }
+html.modo-sol .pastilla-pendiente-turno, html.modo-sol .badge-semaforo { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .folio-novedad, html.modo-sol .pestanas-novedades button { color: #000; }
+html.modo-sol .pestanas-novedades button.active { border-bottom-color: #000; text-decoration: underline; }
+html.modo-sol .btn-nuevo-ticket, html.modo-sol .btn-despachar { background: #b91c1c; color: #fff; border: 2px solid #000; }
+html.modo-sol .btn-expediente { border-width: 2px; color: #000; border-color: #000; }
+html.modo-sol .btn-guardar-expediente { background: #000; color: #fff; }
+html.modo-sol .btn-reabrir { background: #facc15; color: #000; border: 2px solid #000 !important; }
+html.modo-sol .btn-fui-yo, html.modo-sol .btn-ver-detalle, html.modo-sol .btn-agregar-fila, html.modo-sol .btn-accion-novedades, html.modo-sol .btn-mini { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .expediente-formatos .accordion-item { border: 2px solid #000; }
+html.modo-sol .expediente-formatos .accordion-button, html.modo-sol .expediente-formatos .accordion-button:not(.collapsed) { background: #fff; color: #000; }
+html.modo-sol .minuto-a-minuto { background: #000; }
+html.modo-sol .log-notas { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .nota-log.sistema, html.modo-sol .nota-log.vacia { color: #000; }
+html.modo-sol .nota-log.reapertura { color: #92400e; }
+html.modo-sol .body-part, html.modo-sol .node-dot { stroke: #000; stroke-width: 2; }
+html.modo-sol .body-part.selected, html.modo-sol .node-dot.selected { fill: #b91c1c; }
+html.modo-sol .dialogo-novedad, html.modo-sol .dialogo-expediente { background: #fff; }
+html.modo-noche .dialogo-novedad, html.modo-noche .dialogo-expediente { background: var(--fondo); }
+html.modo-noche .ficha-novedad, html.modo-noche .preguntas-base, html.modo-noche .reporte-inicial, html.modo-noche .ficha-hecho,
+html.modo-noche .resultado-coincidencia, html.modo-noche .firmas-guardadas figure { background: var(--superficie); border-color: var(--borde); }
+html.modo-noche .texto-novedad { background: var(--superficie-2); border-color: var(--borde); color: #e2e8f0; }
+html.modo-noche .ficha-novedad.resuelta .texto-novedad { border-color: transparent; }
+html.modo-noche .badge-categoria.abierta { background: rgba(239, 68, 68, 0.16); color: #fca5a5; border-color: #7f1d1d; }
+html.modo-noche .badge-categoria.resuelta { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; border-color: #065f46; }
+html.modo-noche .pastilla-pendiente-turno { background: rgba(245, 158, 11, 0.14); color: #fcd34d; border-color: #92400e; }
+html.modo-noche .folio-novedad, html.modo-noche .pestanas-novedades button { color: #94a3b8; }
+html.modo-noche .pestanas-novedades button.active { color: #e2e8f0; }
+html.modo-noche .pestanas-novedades .conteo-pill { background: var(--superficie-2); color: #cbd5e1; }
+html.modo-noche .pestanas-novedades button.active .conteo-pill { background: rgba(59, 130, 246, 0.25); color: #93c5fd; }
+html.modo-noche .btn-expediente.abrir { color: #fca5a5; border-color: #ef4444; }
+html.modo-noche .btn-expediente.ver { color: #cbd5e1; border-color: #64748b; }
+html.modo-noche .btn-expediente.resuelto { color: #6ee7b7; border-color: #10b981; }
+html.modo-noche .btn-accion-novedades, html.modo-noche .btn-ver-detalle, html.modo-noche .btn-agregar-fila, html.modo-noche .btn-mini { background: var(--superficie-2); color: #e2e8f0; border-color: #475569; }
+html.modo-noche .btn-agregar-fila.ambar { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: #92400e; }
+html.modo-noche .btn-fui-yo { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border-color: #1e40af; }
+html.modo-noche .dialogo-novedad .linea-empresa { color: #93c5fd; }
+html.modo-noche .expediente-formatos .accordion-item { border-color: var(--borde); }
+html.modo-noche .expediente-formatos .accordion-button { background: var(--superficie-2); color: #e2e8f0; }
+html.modo-noche .expediente-formatos .accordion-button:not(.collapsed) { background: rgba(14, 165, 233, 0.16); color: #7dd3fc; }
+html.modo-noche .expediente-formatos .accordion-body { background: var(--superficie); }
+html.modo-noche .expediente-formatos .bg-light, html.modo-noche .expediente-formatos .bg-white { background: var(--superficie-2) !important; }
+html.modo-noche .expediente-formatos .text-dark, html.modo-noche .titulo-seccion-formato { color: #e2e8f0 !important; }
+html.modo-noche .tarjeta-articulo { background: rgba(245, 158, 11, 0.08); border-color: #78350f; }
+html.modo-noche .tarjeta-perdida { background: rgba(239, 68, 68, 0.08); border-color: #7f1d1d; }
+html.modo-noche .badge-semaforo.verde { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+html.modo-noche .badge-semaforo.amarillo { background: rgba(234, 179, 8, 0.16); color: #fde047; }
+html.modo-noche .badge-semaforo.rojo { background: rgba(239, 68, 68, 0.16); color: #fca5a5; }
+html.modo-noche .minuto-a-minuto { background: #020617; border: 1px solid var(--borde); }
+html.modo-noche .log-notas { background: #334155; }
+html.modo-noche .minuto-a-minuto .campo-nota { background: var(--campo-fondo); color: #e2e8f0; border: 1px solid #475569; }
+html.modo-noche .body-part { fill: #475569; stroke: #94a3b8; }
+html.modo-noche .node-dot { fill: #64748b; stroke: #cbd5e1; }
+html.modo-noche .body-label, html.modo-noche .firmas-guardadas figcaption { color: #cbd5e1; }
+html.modo-noche .icono-hecho { background: var(--superficie-2); }
+/* Fin Bitácora de Novedades */
