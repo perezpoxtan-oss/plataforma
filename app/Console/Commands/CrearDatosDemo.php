@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\Acceso;
-use App\Models\AcompananteAcceso;
 use App\Models\AccidenteFirma;
+use App\Models\AcompananteAcceso;
 use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
@@ -14,9 +14,9 @@ use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
 use App\Models\LostFoundArticulo;
+use App\Models\MovimientoTransporte;
 use App\Models\Novedad;
 use App\Models\PaseSalida;
-use App\Models\MovimientoTransporte;
 use App\Models\Persona;
 use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
@@ -1233,5 +1233,131 @@ class CrearDatosDemo extends Command
         imagedestroy($img);
 
         return 'data:image/jpeg;base64,'.base64_encode($binario);
+    }
+
+    /**
+     * Bitácora de transporte de ejemplo, solo la primera vez: una semana de
+     * llegadas y salidas de las rutas demo (con algunos retrasos) registradas
+     * por los agentes de cada sede, y dos fallas de fletera con taxis: una con
+     * un taxi dentro del tope (ya autorizado) y otra con dos taxis, uno arriba
+     * del tope con su justificación (pendiente de Vo.Bo.). Se capturan con las
+     * mismas reglas de la pantalla (BitacoraTransporte).
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function transporteDemo($sedes, User $admin): void
+    {
+        if (MovimientoTransporte::exists() || ! Ruta::exists()) {
+            return;
+        }
+
+        $bitacora = app(BitacoraTransporte::class);
+        $agentes = ['CEN' => User::where('username', 'agente.demo')->first() ?? $admin, 'PLA' => User::where('username', 'agente2.demo')->first() ?? $admin];
+        // Una firma de ejemplo (garabato) si el servidor tiene GD; si no, los vales quedan para firmar a mano
+        $firma = null;
+        if (function_exists('imagecreatetruecolor')) {
+            $img = imagecreatetruecolor(600, 200);
+            imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+            $tinta = imagecolorallocate($img, 15, 23, 42);
+            imagesetthickness($img, 3);
+            for ($x = 60, $y = 120; $x < 520; $x += 20) {
+                $ny = 70 + (int) (60 * abs(sin($x / 37)));
+                imageline($img, $x, $y, $x + 20, $ny, $tinta);
+                $y = $ny;
+            }
+            ob_start();
+            imagejpeg($img, null, 70);
+            $firma = 'data:image/jpeg;base64,'.base64_encode((string) ob_get_clean());
+        }
+        $conFirmas = $firma !== null;
+
+        $unidades = [
+            'CEN' => [['TKH-101', 'autobus', 'MERCEDES-BENZ', 'BOXER OF', '101', 40, 'JUAN CARLOS POOT CHAN'], ['SHR-033', 'van', 'TOYOTA', 'HIACE', '33', 15, 'MARIO EK CANUL']],
+            'PLA' => [['TKH-205', 'autobus', 'VOLVO', '7300', '205', 45, 'RAÚL CHI DZIB'], ['SHR-041', 'van', 'NISSAN', 'URVAN', '41', 15, 'MARIO EK CANUL']],
+        ];
+
+        $previo = auth()->user();
+        try {
+            foreach (['CEN', 'PLA'] as $codigo) {
+                $sede = $sedes[$codigo];
+                $agente = $agentes[$codigo];
+                auth()->setUser($agente);
+                $horarios = $bitacora->horariosPara([$sede->id]);
+                // Cada transportista con su propia unidad y chofer
+                $transportistas = $horarios->pluck('ruta.proveedor_id')->unique()->values();
+                $ahora = $bitacora->ahoraEn($sede);
+                $n = 0;
+                for ($dias = 6; $dias >= 0; $dias--) {
+                    $dia = $ahora->startOfDay()->subDays($dias);
+                    foreach ($horarios as $h) {
+                        if (! $h->aplicaEn($dia->dayOfWeekIso)) {
+                            continue;
+                        }
+                        $cuando = $dia->setTimeFromTimeString($bitacora->horaDeCaseta($h));
+                        if ($cuando->gt($ahora)) {
+                            continue;
+                        }
+                        $n++;
+                        $retraso = $n % 5 === 0;
+                        $u = $unidades[$codigo][min(1, (int) $transportistas->search($h->ruta->proveedor_id))];
+                        $m = $bitacora->registrar($agente, [
+                            'sede_id' => $sede->id, 'tipo_movimiento' => $h->ruta->sentido, 'estatus' => $retraso ? 'retraso' : 'a_tiempo',
+                            'ruta_horario_id' => $h->id, 'placas' => $u[0], 'tipo_unidad' => $u[1], 'marca' => $u[2], 'modelo' => $u[3],
+                            'economico' => $u[4], 'capacidad' => $u[5], 'chofer' => $u[6], 'cantidad_pax' => 8 + ($n * 7) % 25,
+                            'observaciones' => $retraso ? 'Tráfico en Av. Kabah.' : null,
+                        ], false, null)->first();
+                        $this->fechaDemo($m, $cuando->addMinutes($retraso ? 25 : 3));
+                    }
+                }
+            }
+
+            // Fallas de fletera (Centro)
+            $sede = $sedes['CEN'];
+            $agente = $agentes['CEN'];
+            auth()->setUser($agente);
+            $pasajeros = Colaborador::where('sede_id', $sede->id)->where('activo', true)->whereNull('fusionado_en_id')->orderBy('num_empleado')->pluck('id')->all();
+            $horarios = $bitacora->horariosPara([$sede->id]);
+            $llegada = $horarios->first(fn ($h) => $h->ruta->sentido === 'llegada' && $h->ruta->costo_maximo_taxi !== null);
+            $salida = $horarios->first(fn ($h) => $h->ruta->sentido === 'salida' && $h->ruta->costo_maximo_taxi !== null);
+            if ($pasajeros === [] || $llegada === null || $salida === null) {
+                return;
+            }
+            $ahora = $bitacora->ahoraEn($sede);
+            $taxi = fn (array $datos) => $datos + ['tipo' => 'sedan', 'firma' => $firma];
+
+            $vales = $bitacora->registrar($agente, [
+                'sede_id' => $sede->id, 'tipo_movimiento' => 'llegada', 'estatus' => 'no_llego', 'ruta_horario_id' => $llegada->id,
+                'firma_guardia' => $firma, 'observaciones' => 'La unidad de la fletera se descompuso en el crucero de la Región 94.',
+                'taxis' => [$taxi(['placas' => 'TX-2301', 'chofer' => 'ALBERTO CANCHÉ MAY', 'monto' => '180', 'destino' => $llegada->paradas()->with('paradero')->first()?->paradero?->nombre ?? 'REGIÓN 94 (CRUCERO)',
+                    'marca' => 'NISSAN', 'modelo' => 'VERSA', 'economico' => 'T-230', 'chofer_telefono' => '9981234567', 'pasajeros' => array_slice($pasajeros, 0, 3)])],
+            ], $conFirmas, null);
+            $this->fechaDemo($vales->first(), $ahora->subDays(2)->setTimeFromTimeString($llegada->fin())->addMinutes(20));
+            auth()->setUser($admin);
+            $bitacora->autorizar($admin, $vales->first());
+            $vales->first()->forceFill(['autorizado_en' => $ahora->subDays(2)->setTime(18, 5)->utc()])->saveQuietly();
+            auth()->setUser($agente);
+
+            $tope = (float) $salida->ruta->costo_maximo_taxi;
+            $vales = $bitacora->registrar($agente, [
+                'sede_id' => $sede->id, 'tipo_movimiento' => 'salida', 'estatus' => 'no_llego', 'ruta_horario_id' => $salida->id,
+                'firma_guardia' => $firma, 'observaciones' => 'La fletera no envió unidad. Se despacharon dos taxis.',
+                'taxis' => [
+                    $taxi(['placas' => 'TX-4410', 'chofer' => 'PEDRO PECH UC', 'monto' => (string) ($tope + 70), 'destino' => 'REGIÓN 94 (CRUCERO)',
+                        'justificacion' => 'Lluvia intensa: ninguna plataforma tenía tarifa menor y el personal salía de turno.', 'tipo' => 'suv', 'marca' => 'KIA', 'modelo' => 'SPORTAGE',
+                        'pasajeros' => array_slice($pasajeros, 0, 2)]),
+                    $taxi(['placas' => 'TX-1187', 'chofer' => 'ALBERTO CANCHÉ MAY', 'monto' => '200', 'destino' => 'CHEDRAUI PORTILLO', 'pasajeros' => array_slice($pasajeros, 2, 3)]),
+                ],
+            ], $conFirmas, null);
+            foreach ($vales as $vale) {
+                $this->fechaDemo($vale, $ahora->subDay()->setTimeFromTimeString($salida->inicio())->addMinutes(15));
+            }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    private function fechaDemo(MovimientoTransporte $m, CarbonImmutable $cuando): void
+    {
+        $m->forceFill(['fecha' => $cuando->toDateString(), 'created_at' => $cuando->utc(), 'updated_at' => $cuando->utc()])->saveQuietly();
     }
 }
