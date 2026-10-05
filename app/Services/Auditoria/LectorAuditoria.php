@@ -12,6 +12,7 @@ use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
 use App\Models\Modulo;
+use App\Models\MovimientoTransporte;
 use App\Models\Paradero;
 use App\Models\Persona;
 use App\Models\Proveedor;
@@ -73,6 +74,7 @@ class LectorAuditoria
         ZonaEstacionamiento::class => ['Zona de estacionamiento', 'nombre'],
         Ruta::class => ['Ruta de transporte', 'nombre'],
         Paradero::class => ['Paradero', 'nombre'],
+        MovimientoTransporte::class => ['Movimiento de transporte', null],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

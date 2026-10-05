@@ -3,8 +3,10 @@
 namespace App\Services\Avisos;
 
 use App\Mail\AltaProvisionalRegistrada;
+use App\Mail\ValeTaxiRegistrado;
 use App\Models\Colaborador;
 use App\Models\Empresa;
+use App\Models\MovimientoTransporte;
 use App\Models\User;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -47,6 +49,41 @@ class AvisosCorreo
             $registro->name,
             app(HoraLocal::class)->formatear(now()),
             route('colaboradores.index', ['registro' => 'provisional']),
+        );
+
+        defer(fn () => $this->correo->enviar($destinatarios, $mensaje));
+    }
+
+    /**
+     * Bitácora de transporte: cada vale de taxi (SEGCAT: un correo por vale a
+     * "destinatarios_vouchers"). Va a la lista capturada en Configuración; si
+     * está vacía, a quien puede autorizar vales (transporte.aprobar) en esa sede.
+     */
+    public function valeTaxi(MovimientoTransporte $vale, User $registro): void
+    {
+        $empresa = Empresa::find($vale->empresa_id);
+        if ($empresa === null || ! $empresa->aviso('vale_taxi') || ! $this->correo->configurado()) {
+            return;
+        }
+
+        $destinatarios = $empresa->destinatariosAviso('vale_taxi') ?: $this->conPermiso($empresa->id, 'transporte.aprobar', $vale->sede_id);
+        if ($destinatarios === []) {
+            return;
+        }
+
+        $vale->loadMissing(['sede:id,nombre', 'ruta:id,nombre', 'chofer:id,nombre_completo', 'paradero:id,nombre']);
+        $mensaje = new ValeTaxiRegistrado(
+            $vale->folio(),
+            (float) $vale->monto,
+            $vale->sede?->nombre,
+            $vale->ruta?->nombre,
+            $vale->chofer?->nombre_completo,
+            $vale->paradero?->nombre,
+            (int) $vale->cantidad_pax,
+            $vale->justificacion,
+            $registro->name,
+            app(HoraLocal::class)->formatear($vale->created_at ?? now()),
+            route('transporte.vale', $vale->id),
         );
 
         defer(fn () => $this->correo->enviar($destinatarios, $mensaje));

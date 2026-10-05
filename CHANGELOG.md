@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- Bitácora de transporte (`/transporte`), con las pantallas y colores de SEGCAT: lista por fechas (día local de la sede) con atajos Hoy / Ayer / 7 días, filtros y resumen; «Registrar Bitácora Logística» con la ruta y el horario más cercano ya propuestos, servicio normal (unidad y chofer que se registran solos en sus padrones, sobrecupo) o taxis de emergencia (uno o más, monto, destino del catálogo de paraderos, justificación si supera el tope de la ruta, pasajeros con el lector universal y alta provisional, firmas en pantalla) y «Registrar y capturar siguiente»; un vale por taxi con «VALE DE CAJA CHICA - TAXI DE OPERACIÓN» de 3 copias; editar, anular / reactivar y Vo.Bo. del vale (`transporte.aprobar`); firmas privadas; aviso por correo de cada vale a una lista configurable; reportes de 25 por página y CSV con BOM (antes `.xls` HTML). Lección 22.
 - Firma autógrafa en pantalla (dedo, lápiz o mouse) para los módulos de Operación; las firmas se guardan fuera de la carpeta pública y solo se ven con permiso.
 - Logo de la empresa (como en SEGCAT): se sube al editar la empresa y sale en su ficha, en los gafetes y en las impresiones.
 - QA: con cada versión nueva se completan solos los datos y usuarios demo que falten (por ejemplo rh.demo), sin tocar las cuentas que ya existen.

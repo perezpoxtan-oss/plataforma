@@ -444,7 +444,9 @@ class PersonasTest extends TestCase
         $this->artisan('plataforma:demo', ['--password' => 'Prueba123!'])->assertSuccessful();
 
         $demo = Empresa::where('nombre_comercial', CrearDatosDemo::EMPRESA)->firstOrFail();
-        $todas = $this->enEmpresa(fn () => Persona::with('proveedor')->get(), $demo);
+        // Sin los choferes y taxistas que registra la Bitácora de transporte demo
+        $todas = $this->enEmpresa(fn () => Persona::with('proveedor')->get(), $demo)
+            ->reject(fn ($p) => str_contains((string) $p->motivo_visita, '(Bitácora de transporte)'))->values();
 
         $this->assertCount(12, $todas);
         $this->assertSame(['Raúl Domínguez Can'], $todas->where('activo', false)->pluck('nombre_completo')->values()->all());

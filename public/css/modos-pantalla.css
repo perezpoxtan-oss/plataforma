@@ -612,3 +612,64 @@ html.modo-noche .rutas-separador { border-top-color: var(--borde); }
 html.modo-sol .firma-lienzo { border: 3px solid #000; }
 html.modo-noche .firma-lienzo { border-color: #475569; }
 /* Fin Firma autógrafa */
+/* Bitácora de transporte */
+html.modo-sol .filtros-transporte, html.modo-sol .resumen-transporte > div, html.modo-sol .transporte-card, html.modo-sol .transporte-caja-pago,
+html.modo-sol .caja-normal, html.modo-sol .caja-taxi, html.modo-sol .taxi-fila, html.modo-sol .aviso-tope, html.modo-sol .tabla-reporte-transporte { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .transporte-card { border-left-width: 8px; }
+html.modo-sol .transporte-card.taxi { border-left-style: double; }
+html.modo-sol .transporte-card.anulada { opacity: 1; border-style: dashed; }
+html.modo-sol .transporte-ruta, html.modo-sol .transporte-sede, html.modo-sol .transporte-dato-etiqueta, html.modo-sol .transporte-card-pie, html.modo-sol .transporte-folio,
+html.modo-sol .resumen-transporte .valor, html.modo-sol .resumen-transporte .etiqueta, html.modo-sol .transporte-pago, html.modo-sol .taxi-fila-titulo, html.modo-sol .caja-titulo,
+html.modo-sol .transporte-info-ruta, html.modo-sol .transporte-sin-rutas, html.modo-sol .transporte-justificacion, html.modo-sol .transporte-horario,
+html.modo-sol .transporte-pax-numero, html.modo-sol .transporte-pax-numero i { color: #000 !important; font-weight: 800; }
+html.modo-sol .badge-mov, html.modo-sol .pill-estatus, html.modo-sol .vobo, html.modo-sol .chip-pasajero, html.modo-sol .rango-rapido, html.modo-sol .transporte-opcion,
+html.modo-sol .btn-planilla, html.modo-sol .btn-reportes, html.modo-sol .btn-alta-pasajero, html.modo-sol .transporte-acciones .btn-siguiente, html.modo-sol .transporte-horario { background: #fff; color: #000; border: 2px solid #000 !important; }
+html.modo-sol .rango-rapido.activo, html.modo-sol .transporte-opcion:has(input:checked), html.modo-sol .btn-registrar-movimiento, html.modo-sol .btn-transporte,
+html.modo-sol .btn-filtrar, html.modo-sol .btn-exportar, html.modo-sol .btn-agregar-taxi, html.modo-sol .btn-autorizar, html.modo-sol .pax-contador,
+html.modo-sol .badge-tipo-registro, html.modo-sol .badge-anulado { background: #000; color: #fff; border: 2px solid #000; }
+html.modo-sol .pill-estatus.no-llego { text-decoration: underline; }
+html.modo-sol .chip-pasajero button { color: #000; }
+html.modo-sol .tabla-reporte-transporte th { background: #000; }
+html.modo-sol .tabla-reporte-transporte a, html.modo-sol .btn-icono.ver, html.modo-sol .tema-transporte .btn-icono.editar { color: #000; }
+html.modo-noche .filtros-transporte, html.modo-noche .resumen-transporte > div, html.modo-noche .transporte-card, html.modo-noche .tabla-reporte-transporte { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .transporte-card { border-left-color: #60a5fa; }
+html.modo-noche .transporte-card.taxi { background: rgba(239, 68, 68, 0.08); border-left-color: #f87171; }
+html.modo-noche .transporte-card.anulada { border-left-color: #64748b; }
+html.modo-noche .transporte-hora, html.modo-noche .transporte-pax-numero, html.modo-noche .resumen-transporte .valor { color: var(--texto); }
+html.modo-noche .resumen-transporte .a-tiempo .valor, html.modo-noche .resumen-transporte .gasto .valor, html.modo-noche .transporte-sede, html.modo-noche .transporte-info-ruta { color: #86efac; }
+html.modo-noche .resumen-transporte .retraso .valor, html.modo-noche .transporte-sin-rutas, html.modo-noche .transporte-justificacion { color: #fcd34d; }
+html.modo-noche .resumen-transporte .taxis .valor, html.modo-noche .transporte-pago, html.modo-noche .taxi-fila-titulo { color: #fca5a5; }
+html.modo-noche .transporte-ruta, html.modo-noche .tabla-reporte-transporte a { color: #93c5fd; }
+html.modo-noche .transporte-horario { background: rgba(59, 130, 246, 0.16); color: #bfdbfe; }
+html.modo-noche .transporte-pax { border-left-color: var(--borde); }
+html.modo-noche .badge-mov.llegada { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+html.modo-noche .badge-mov.salida { background: rgba(234, 179, 8, 0.16); color: #fde047; }
+html.modo-noche .pill-estatus.retraso { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+html.modo-noche .transporte-caja-pago { background: var(--superficie-2); border-color: #b91c1c; }
+html.modo-noche .btn-planilla { background: transparent; color: #fca5a5; border-color: #f87171; }
+html.modo-noche .vobo.autorizado { background: rgba(34, 197, 94, 0.14); color: #86efac; }
+html.modo-noche .vobo.pendiente { background: rgba(245, 158, 11, 0.14); color: #fcd34d; }
+html.modo-noche .rango-rapido, html.modo-noche .btn-reportes { background: transparent; color: #cbd5e1; border-color: #475569; }
+html.modo-noche .rango-rapido.activo { background: #2563eb; border-color: #2563eb; color: #fff; }
+html.modo-noche .btn-filtrar { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .filtros-transporte .filtro-fecha input, html.modo-noche .caja-normal .campo, html.modo-noche .caja-taxi .campo, html.modo-noche .aviso-tope .campo { background: var(--campo-fondo); color: var(--texto); border-color: #475569; }
+html.modo-noche .filtros-transporte .btn-limpiar-filtros { background: transparent; color: #fca5a5; border-color: #7f1d1d; }
+html.modo-noche .transporte-opcion { background: var(--campo-fondo); border-color: #475569; color: #cbd5e1; }
+html.modo-noche .transporte-opcion.llegada:has(input:checked), html.modo-noche .transporte-opcion.estatus-a-tiempo:has(input:checked) { background: rgba(34, 197, 94, 0.16); border-color: #22c55e; color: #86efac; }
+html.modo-noche .transporte-opcion.salida:has(input:checked), html.modo-noche .transporte-opcion.estatus-retraso:has(input:checked) { background: rgba(245, 158, 11, 0.16); border-color: #f59e0b; color: #fcd34d; }
+html.modo-noche .transporte-opcion.estatus-no-llego:has(input:checked) { background: rgba(239, 68, 68, 0.16); border-color: #ef4444; color: #fca5a5; }
+html.modo-noche .caja-normal { background: rgba(34, 197, 94, 0.07); border-color: #166534; }
+html.modo-noche .caja-taxi { background: rgba(239, 68, 68, 0.08); border-color: #7f1d1d; }
+html.modo-noche .taxi-fila { background: var(--superficie-2); border-color: #b91c1c; }
+html.modo-noche .aviso-tope { background: rgba(245, 158, 11, 0.12); border-color: #b45309; color: #fde68a; }
+html.modo-noche .taxi-pasajeros { border-top-color: #7f1d1d; }
+html.modo-noche .chip-pasajero { background: rgba(99, 102, 241, 0.2); color: #c7d2fe; }
+html.modo-noche .chip-pasajero button { color: #c7d2fe; }
+html.modo-noche .chip-pasajero button:hover { background: rgba(99, 102, 241, 0.35); }
+html.modo-noche .btn-alta-pasajero { background: transparent; color: #6ee7b7; border-color: #047857; }
+html.modo-noche .transporte-acciones .btn-siguiente { background: rgba(59, 130, 246, 0.14); color: #93c5fd; border-color: #1d4ed8 !important; }
+html.modo-noche .transporte-detalles summary { color: #cbd5e1; }
+html.modo-noche .btn-icono.ver, html.modo-noche .tema-transporte .btn-icono.editar { color: #93c5fd; }
+html.modo-noche .tabla-reporte-transporte td { border-bottom-color: var(--borde); }
+html.modo-noche .transporte-firmas img { border-color: #475569; }
+/* Fin Bitácora de transporte */

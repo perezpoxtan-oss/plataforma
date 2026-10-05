@@ -30,11 +30,28 @@ class Empresa extends Model
     /** Avisos por correo y su valor si la empresa no lo ha cambiado. */
     public const AVISOS = [
         'alta_provisional' => ['Avisar a Recursos Humanos cuando la caseta registre un alta provisional de colaborador', true],
+        // Bitácora de transporte (SEGCAT: configuracion_correo.destinatarios_vouchers)
+        'vale_taxi' => ['Enviar cada vale de taxi de la Bitácora de transporte (para su autorización)', true],
     ];
+
+    /** Avisos que se mandan a una lista de correos capturada en Configuración (y no solo a usuarios con permiso). */
+    public const AVISOS_CON_DESTINATARIOS = ['vale_taxi'];
 
     public function aviso(string $clave): bool
     {
         return (bool) ($this->preferencias['avisos'][$clave] ?? (self::AVISOS[$clave][1] ?? false));
+    }
+
+    /**
+     * Correos capturados para un aviso (Configuración → Avisos por correo).
+     *
+     * @return list<string>
+     */
+    public function destinatariosAviso(string $clave): array
+    {
+        $lista = $this->preferencias['avisos_destinatarios'][$clave] ?? [];
+
+        return is_array($lista) ? array_values(array_filter($lista, 'is_string')) : [];
     }
 
     protected function casts(): array
