@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
+use App\Models\Equipo;
 use App\Models\Espacio;
 use App\Models\Persona;
 use App\Models\Proveedor;
@@ -12,11 +13,14 @@ use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Rubro;
 use App\Models\Sede;
+use App\Models\TipoEquipo;
 use App\Models\TipoEspacio;
 use App\Models\Turno;
 use App\Models\User;
 use App\Models\UsuarioRol;
 use App\Models\Vehiculo;
+use App\Models\ZonaEstacionamiento;
+use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Support\Tenancy\Tenant;
@@ -104,6 +108,7 @@ class CrearDatosDemo extends Command
         // Padrón de personas: después de los proveedores (si existen) para ligar a su personal
         $tenant->conEmpresa($empresa->id, fn () => $this->personasDemo(User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'jefe.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->vehiculosDemo(User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->equiposYEstacionamientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -412,6 +417,73 @@ class CrearDatosDemo extends Command
                 'marca' => $marca, 'modelo' => $modelo, 'color' => $color,
             ], $extra));
             $vehiculo->forceFill(['creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+        }
+    }
+
+    /**
+     * Equipos de seguridad y zonas de estacionamiento de ejemplo, cada uno
+     * solo la primera vez: radios, lámparas, detectores, chalecos y
+     * botiquines en las dos sedes (uno en mantenimiento y uno de baja con su
+     * voucher) y 2–3 zonas por sede, incluida una zona de descarga.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function equiposYEstacionamientosDemo($sedes, User $admin): void
+    {
+        if (! Equipo::exists()) {
+            $tipos = collect(['Radio de Comunicación', 'Lámpara Táctica', 'Detector de Metales', 'Chaleco Reflejante', 'Botiquín de Primeros Auxilios'])
+                ->mapWithKeys(fn ($nombre) => [$nombre => TipoEquipo::firstOrCreate(['nombre' => $nombre])->id]);
+
+            // [sede, tipo, marca, modelo, serie, costo, estado, observaciones]
+            $equipos = [
+                ['CEN', 'Radio de Comunicación', 'MOTOROLA', 'DEP 450', '752TSFQ504', 4800, 'disponible', 'Radio de caseta principal'],
+                ['CEN', 'Radio de Comunicación', 'MOTOROLA', 'DEP 450', '752TSFQ505', 4800, 'disponible', null],
+                ['CEN', 'Radio de Comunicación', 'MOTOROLA', 'SL500E', '130TXP1568', 5800, 'en_mantenimiento', 'La batería no retiene carga: en servicio técnico'],
+                ['PLA', 'Radio de Comunicación', 'MOTOROLA', 'DEP 450', '752TSFQ610', 4800, 'disponible', null],
+                ['CEN', 'Lámpara Táctica', 'STREAMLIGHT', 'STINGER 2020', 'LT-0001', 1650, 'disponible', null],
+                ['PLA', 'Lámpara Táctica', 'STREAMLIGHT', 'STINGER 2020', 'LT-0002', 1650, 'disponible', null],
+                ['CEN', 'Detector de Metales', 'GARRETT', 'SUPER SCANNER V', 'DM-1187', 3200, 'disponible', null],
+                ['PLA', 'Detector de Metales', 'GARRETT', 'SUPER SCANNER V', 'DM-1188', 3200, 'disponible', null],
+                ['CEN', 'Chaleco Reflejante', 'TRUPER', 'CHR-CLASE 2', 'CH-001', 350, 'disponible', null],
+                ['PLA', 'Chaleco Reflejante', 'TRUPER', 'CHR-CLASE 2', 'CH-002', 350, 'disponible', null],
+                ['CEN', 'Botiquín de Primeros Auxilios', null, null, 'BK-CEN-01', 900, 'disponible', 'Revisar caducidades cada mes'],
+                ['PLA', 'Botiquín de Primeros Auxilios', null, null, 'BK-PLA-01', 900, 'disponible', null],
+            ];
+
+            foreach ($equipos as [$sede, $tipo, $marca, $modelo, $serie, $costo, $estado, $observaciones]) {
+                $equipo = new Equipo([
+                    'sede_id' => $sedes[$sede]->id, 'tipo_equipo_id' => $tipos[$tipo], 'marca' => $marca, 'modelo' => $modelo,
+                    'numero_serie' => $serie, 'costo' => $costo, 'observaciones' => $observaciones,
+                ]);
+                $equipo->forceFill(['estado' => $estado, 'creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+            }
+
+            // Una lámpara extraviada en Playa, con su voucher y cobro al responsable (si hay colaboradores)
+            $lampara = Equipo::where('numero_serie', 'LT-0002')->firstOrFail();
+            $responsable = Colaborador::where('num_empleado', '1003')->value('id');
+            app(AdministradorEquipos::class)->darDeBaja($admin, $lampara, [
+                'motivo' => 'extraviado',
+                'descripcion' => 'Se quedó en la playa al terminar el rondín nocturno; no apareció al día siguiente.',
+                'aplica_cobro' => $responsable !== null,
+                'monto' => $responsable !== null ? '1650.00' : null,
+                'colaborador_id' => $responsable,
+            ]);
+        }
+
+        if (! ZonaEstacionamiento::exists()) {
+            // [sede, nombre, tipo, cupo, activa]
+            $zonas = [
+                ['CEN', 'Estacionamiento Huéspedes', 'estacionamiento', 40, true],
+                ['CEN', 'Estacionamiento Colaboradores', 'estacionamiento', 25, true],
+                ['CEN', 'Andén de Almacén General', 'zona_descarga', null, true],
+                ['PLA', 'Sótano 1A', 'estacionamiento', 8, true],
+                ['PLA', 'Lobby', 'zona_descarga', null, true],
+                ['PLA', 'Estacionamiento Temporal (obra)', 'estacionamiento', 10, false],
+            ];
+            foreach ($zonas as [$sede, $nombre, $tipo, $cupo, $activa]) {
+                $zona = new ZonaEstacionamiento(['sede_id' => $sedes[$sede]->id, 'nombre' => $nombre, 'tipo' => $tipo, 'cupo_total' => $cupo]);
+                $zona->forceFill(['activo' => $activa, 'creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+            }
         }
     }
 }

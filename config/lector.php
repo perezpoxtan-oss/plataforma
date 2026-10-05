@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Colaborador;
+use App\Models\Equipo;
 use App\Models\Vehiculo;
 
 /*
@@ -16,5 +17,6 @@ return [
     'tipos' => [
         'colaborador' => Colaborador::class,
         'vehiculo' => Vehiculo::class,
+        'equipo' => Equipo::class,
     ],
 ];

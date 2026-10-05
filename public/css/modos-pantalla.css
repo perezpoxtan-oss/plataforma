@@ -447,3 +447,35 @@ html.modo-noche .lector-estado.ok { color: #86efac; }
 html.modo-noche .lector-estado.aviso { color: #fcd34d; }
 html.modo-noche .lector-estado.error { color: #fca5a5; }
 /* Fin Lector universal */
+/* Padrones: Equipos de seguridad y Estacionamientos */
+html.modo-sol .badge-estado-eq, html.modo-sol .distintivo-zona, html.modo-sol .estado-fijo-eq, html.modo-sol .aviso-baja-eq { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .estado-eq-baja, html.modo-sol .texto-lleno { color: #b91c1c; }
+html.modo-sol .eq-serie, html.modo-sol .eq-tipo, html.modo-sol .eq-marca, html.modo-sol .eq-observaciones, html.modo-sol .eq-nfc, html.modo-sol .nombre-zona, html.modo-sol .ocupacion-zona { color: #000; }
+html.modo-sol .eq-pie { border-top: 2px solid #000; }
+html.modo-sol .pantalla-equipos .btn-pill-tipo.active, html.modo-sol .btn-oscuro, html.modo-sol .btn-nueva-zona, html.modo-sol .btn-qr-eq.imprimir { background: #000; border-color: #000; color: #fff; }
+html.modo-sol .cupo-barra { background: #fff; border: 2px solid #000; height: 14px; }
+html.modo-sol .cupo-barra-fill { background: #000; }
+html.modo-sol .cupo-barra-fill.lleno { background: #b91c1c; }
+html.modo-sol .ficha-zona.tipo-estac, html.modo-sol .ficha-zona.tipo-descarga { border-top-width: 6px; }
+html.modo-sol .ficha-zona.tipo-estac { border-top-color: #000; }
+html.modo-sol .pantalla-equipos .grupo-monto-simbolo { background: #fff; color: #000; border: 2px solid #000; border-right: none; }
+html.modo-noche .pantalla-equipos .ficha-create { background: rgba(148,163,184,0.06); border-color: #475569; }
+html.modo-noche .pantalla-equipos .ficha-create i, html.modo-noche .pantalla-equipos .ficha-create .titulo-crear { color: #cbd5e1; }
+html.modo-noche .pantalla-equipos .btn-pill-tipo.active { background: #64748b; border-color: #64748b; }
+html.modo-noche .pantalla-equipos .btn-icono.editar { color: #cbd5e1; }
+html.modo-noche .eq-serie { color: #f1f5f9; }
+html.modo-noche .eq-tipo { color: #93c5fd; }
+html.modo-noche .eq-nfc { color: #7dd3fc; }
+html.modo-noche .estado-eq-disponible { background: rgba(34,197,94,0.14); color: #86efac; border-color: rgba(34,197,94,0.4); }
+html.modo-noche .estado-eq-asignado { background: rgba(245,158,11,0.14); color: #fcd34d; border-color: rgba(245,158,11,0.4); }
+html.modo-noche .estado-eq-en_mantenimiento { background: rgba(99,102,241,0.16); color: #a5b4fc; border-color: rgba(99,102,241,0.4); }
+html.modo-noche .estado-eq-baja { background: rgba(239,68,68,0.14); color: #fca5a5; border-color: rgba(239,68,68,0.4); }
+html.modo-noche .btn-oscuro, html.modo-noche .btn-qr-eq.imprimir { background: #475569; border: 1px solid #64748b; }
+html.modo-noche .btn-qr-eq { background: var(--superficie-2); color: #e2e8f0; border-color: var(--borde); }
+html.modo-noche .qr-eq-codigo, html.modo-noche .pantalla-equipos .grupo-monto-simbolo { background: var(--superficie-2); color: #e2e8f0; border-color: var(--borde); }
+html.modo-noche .estado-fijo-eq { background: rgba(245,158,11,0.12); color: #fcd34d; border-color: rgba(245,158,11,0.4); }
+html.modo-noche .aviso-baja-eq { background: rgba(239,68,68,0.1); color: #fecaca; border-color: rgba(239,68,68,0.35); }
+html.modo-noche .cupo-barra { background: #334155; }
+html.modo-noche .distintivo-zona.estac { background: #1d4ed8; }
+html.modo-noche .texto-lleno { color: #fca5a5; }
+/* Fin Padrones: Equipos de seguridad y Estacionamientos */
