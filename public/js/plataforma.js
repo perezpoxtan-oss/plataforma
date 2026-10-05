@@ -2632,3 +2632,665 @@ document.addEventListener('click', function (e) {
     window.Firma = { preparar: preparar };
 })();
 /* Fin Firma autógrafa */
+/* ==========================================================================
+   Bitácora de accesos (seguridad/accesos): "Registro Inteligente de Ingreso"
+   (bloques según el tipo de persona, sugerencias al escribir, gafetes libres
+   de la sede, acompañantes con su gafete), "Dar Salida" rápida, diálogos de
+   las tarjetas (zona, salida a tour, regreso) y filtro de las tarjetas.
+   Los escaneos los hace el lector universal (evento lector:elegido).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var CLAVE_SEDE = 'plataforma_accesos_sede';
+    var gafetesPorSede = {};
+    var esperas = {};
+    var destinoProvisional = null;
+
+    function lista(texto) { return (texto || '').split(/\s+/).filter(Boolean); }
+    function dialogoIngreso() { return document.querySelector('[data-dialogo-ingreso]'); }
+    function formIngreso() { return document.querySelector('[data-form-acceso]'); }
+    function radio(form, nombre) { var r = form.querySelector('input[name="' + nombre + '"]:checked'); return r ? r.value : ''; }
+    function sedeDe(form) { var s = form && form.querySelector('[data-acceso-sede]'); return s ? s.value : ''; }
+    function token() { var t = document.querySelector('[data-form-acceso] [name="_token"]') || document.querySelector('form [name="_token"]'); return t ? t.value : ''; }
+    function urlDe(clave) { var d = dialogoIngreso(); return d ? d.dataset[clave] : ''; }
+    function esperar(clave, fn, ms) { clearTimeout(esperas[clave]); esperas[clave] = setTimeout(fn, ms || 250); }
+    function pedirJson(url) {
+        return fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); });
+    }
+    function elemento(etiqueta, clase, texto) {
+        var e = document.createElement(etiqueta);
+        if (clase) { e.className = clase; }
+        if (texto !== undefined && texto !== null) { e.textContent = texto; }
+        return e;
+    }
+
+    /* ---------- Bloques según tipo, forma de llegada, motivo y reserva ---------- */
+    function sincronizar(form) {
+        if (!form) { return; }
+        var tipo = radio(form, 'tipo');
+        var modo = radio(form, 'modo_arribo');
+        var motivo = radio(form, 'motivo_visita');
+        var reserva = radio(form, 'tiene_reserva');
+        form.querySelectorAll('[data-condicion]').forEach(function (b) {
+            var ok = true;
+            if (b.hasAttribute('data-solo-tipos')) { ok = ok && lista(b.dataset.soloTipos).indexOf(tipo) !== -1; }
+            if (b.hasAttribute('data-solo-motivo')) { ok = ok && b.dataset.soloMotivo === motivo; }
+            if (b.hasAttribute('data-solo-reserva')) { ok = ok && b.dataset.soloReserva === reserva; }
+            if (b.hasAttribute('data-solo-vehiculo')) { ok = ok && (tipo === 'emergencia' || modo === 'auto'); }
+            b.hidden = !ok;
+        });
+        // Un campo oculto no se envía (SEGCAT mandaba los de todos los bloques y el servidor tomaba el equivocado)
+        form.querySelectorAll('input, select, textarea').forEach(function (c) {
+            if (c.type === 'hidden' && (c.name === '_token' || c.name === '_dialogo' || c.hasAttribute('data-acceso-sede'))) { return; }
+            c.disabled = !!c.closest('[data-condicion][hidden]');
+        });
+        form.querySelectorAll('[data-etiqueta-tipo]').forEach(function (e) { e.hidden = lista(e.dataset.etiquetaTipo).indexOf(tipo) === -1; });
+        sugerirTipoGafete(form, tipo, motivo);
+        acotarPorSede(form, sedeDe(form));
+    }
+
+    // "Tipo de Gafete" se sugiere al cambiar el tipo de persona (el guardia lo puede cambiar)
+    function sugerirTipoGafete(form, tipo, motivo) {
+        var clave = tipo + '|' + motivo;
+        if (form.dataset.tipoSugerido === clave) { return; }
+        form.dataset.tipoSugerido = clave;
+        var sel = form.querySelector('[data-filtro-tipo-gafete]');
+        if (!sel) { return; }
+        var esperados = tipo === 'proveedor' ? ['proveedor'] : tipo === 'contratista' ? ['contratista']
+            : tipo === 'visitante' ? (motivo === 'rh' ? ['recursos humanos', 'rrhh', 'capital humano', 'visitante'] : ['visitante']) : [];
+        var elegido = '';
+        esperados.forEach(function (esperado) {
+            if (elegido) { return; }
+            Array.prototype.forEach.call(sel.options, function (o) {
+                if (!elegido && o.value && (o.dataset.nombre || '').indexOf(esperado) !== -1) { elegido = o.value; }
+            });
+        });
+        sel.value = elegido;
+    }
+
+    // Zonas y departamentos solo de la sede elegida
+    function acotarOpciones(select, sede, conservar) {
+        if (!select) { return; }
+        Array.prototype.forEach.call(select.options, function (o) {
+            if (!o.value) { return; }
+            var aplica;
+            if (o.hasAttribute('data-todas')) {
+                aplica = o.dataset.todas === '1' || lista((o.dataset.sedes || '').replace(/,/g, ' ')).indexOf(String(sede)) !== -1;
+            } else {
+                aplica = String(o.dataset.sede) === String(sede);
+            }
+            o.hidden = !aplica;
+            o.disabled = !aplica;
+        });
+        if (!conservar && select.selectedOptions.length && select.selectedOptions[0].disabled) { select.value = ''; }
+    }
+
+    function acotarPorSede(form, sede) {
+        acotarOpciones(form.querySelector('[data-zona-sede]'), sede);
+        acotarOpciones(form.querySelector('[data-departamento-sede]'), sede);
+    }
+
+    /* ---------- Gafetes libres de la sede ---------- */
+    function cargarGafetes(sede, fresco) {
+        if (!sede) { return Promise.resolve([]); }
+        if (!fresco && gafetesPorSede[sede]) { return Promise.resolve(gafetesPorSede[sede]); }
+        return pedirJson(urlDe('urlGafetes') + '?sede=' + encodeURIComponent(sede))
+            .then(function (d) { gafetesPorSede[sede] = d.resultados || []; return gafetesPorSede[sede]; })
+            .catch(function () { return []; });
+    }
+
+    function gafetesElegidos(form, excepto) {
+        var ids = [];
+        var principal = form.querySelector('[name="gafete_id"]');
+        if (principal && principal.value && !principal.disabled) { ids.push(principal.value); }
+        form.querySelectorAll('[data-gafete-acompanante]').forEach(function (s) { if (s !== excepto && s.value) { ids.push(s.value); } });
+        return ids;
+    }
+
+    function llenarGafetesAcompanantes(form) {
+        cargarGafetes(sedeDe(form)).then(function (gafetes) {
+            form.querySelectorAll('[data-gafete-acompanante]').forEach(function (sel) {
+                var actual = sel.value || sel.dataset.valor || '';
+                var ocupados = gafetesElegidos(form, sel);
+                sel.textContent = '';
+                sel.appendChild(new Option('-- Sin gafete --', ''));
+                gafetes.forEach(function (g) {
+                    if (ocupados.indexOf(String(g.id)) !== -1 && String(g.id) !== actual) { return; }
+                    sel.appendChild(new Option(g.titulo + ' — ' + g.detalle, g.id));
+                });
+                sel.value = actual;
+                if (sel.value !== actual) { sel.value = ''; }
+                sel.dataset.valor = '';
+            });
+        });
+    }
+
+    /* ---------- Acompañantes: una fila por persona ---------- */
+    function ajustarAcompanantes(form) {
+        var campo = form.querySelector('[data-num-acompanantes]');
+        var filas = form.querySelector('[data-filas-acompanantes]');
+        var plantilla = form.querySelector('[data-plantilla-acompanante]');
+        if (!campo || !filas || !plantilla) { return; }
+        var maximo = parseInt(campo.max || '15', 10);
+        var cantidad = Math.max(0, Math.min(maximo, parseInt(campo.value, 10) || 0));
+        if (String(cantidad) !== campo.value) { campo.value = cantidad; }
+        var actuales = filas.querySelectorAll('[data-fila-acompanante]');
+        for (var i = actuales.length; i < cantidad; i++) {
+            var html = plantilla.innerHTML.replace(/__i__/g, String(i));
+            var caja = document.createElement('div');
+            caja.innerHTML = html.trim();
+            var fila = caja.firstElementChild;
+            fila.querySelector('[data-numero-acompanante]').textContent = String(i + 1);
+            filas.appendChild(fila);
+        }
+        for (var j = actuales.length - 1; j >= cantidad; j--) { actuales[j].remove(); }
+        llenarGafetesAcompanantes(form);
+    }
+
+    /* ---------- Sugerencias al escribir (gafete, colaborador, vehículo) ---------- */
+    function cajaSugerencias(envoltura) { return envoltura.querySelector('[data-sugerencias]'); }
+
+    function ocultarSugerencias(envoltura) {
+        var caja = envoltura && cajaSugerencias(envoltura);
+        if (caja) { caja.hidden = true; caja.textContent = ''; }
+    }
+
+    function pintarSugerencias(envoltura, items, vacio, alElegir) {
+        var caja = cajaSugerencias(envoltura);
+        if (!caja) { return; }
+        caja.textContent = '';
+        if (!items.length) {
+            if (!vacio) { caja.hidden = true; return; }
+            caja.appendChild(elemento('div', 'acceso-sugerencia nada', vacio));
+        }
+        items.forEach(function (it) {
+            var b = elemento('button', 'acceso-sugerencia');
+            b.type = 'button';
+            b.appendChild(elemento('strong', '', it.titulo));
+            if (it.detalle) { b.appendChild(elemento('small', '', it.detalle)); }
+            b.addEventListener('click', function () { alElegir(it); ocultarSugerencias(envoltura); });
+            caja.appendChild(b);
+        });
+        caja.hidden = false;
+    }
+
+    function elegirEnLector(envoltura, registro) {
+        var caja = envoltura.querySelector('[data-lector]');
+        if (caja && window.Lector) { window.Lector.elegir(caja, registro); }
+    }
+
+    function llenarVehiculo(envoltura, v) {
+        var form = envoltura.closest('form');
+        var placas = envoltura.querySelector('[data-placas]');
+        if (placas) { placas.value = v.placas || v.titulo || ''; }
+        if (!form) { return; }
+        ['tipo', 'marca', 'modelo', 'color'].forEach(function (campo) {
+            var c = form.querySelector('[data-vehiculo-campo="' + campo + '"]');
+            if (c && v[campo]) { c.value = v[campo]; }
+        });
+    }
+
+    function sugerir(envoltura, texto) {
+        var que = envoltura.dataset.sugerir;
+        var form = envoltura.closest('form');
+        if (que === 'gafete') {
+            cargarGafetes(sedeDe(form)).then(function (gafetes) {
+                var tipoSel = form.querySelector('[data-filtro-tipo-gafete]');
+                var tipo = tipoSel ? tipoSel.value : '';
+                var t = (texto || '').toLowerCase();
+                var libres = gafetes.filter(function (g) { return gafetesElegidos(form).indexOf(String(g.id)) === -1 || false; });
+                var porTipo = tipo ? libres.filter(function (g) { return String(g.tipo_id) === tipo; }) : libres;
+                // Si no hay de ese tipo en la sede, se muestran todos (como SEGCAT)
+                var base = porTipo.length ? porTipo : libres;
+                var items = base.filter(function (g) { return !t || g.titulo.toLowerCase().indexOf(t) !== -1; }).slice(0, 8);
+                pintarSugerencias(envoltura, items, sedeDe(form) ? 'No hay gafetes libres con ese texto en esta sede.' : 'Elige primero la sede.', function (g) { elegirEnLector(envoltura, g); });
+            });
+            return;
+        }
+        if (!texto || texto.trim().length < 2) { ocultarSugerencias(envoltura); return; }
+        esperar(que, function () {
+            pedirJson(urlDe('urlBuscar') + '?que=' + que + '&q=' + encodeURIComponent(texto) + (sedeDe(form) ? '&sede=' + encodeURIComponent(sedeDe(form)) : ''))
+                .then(function (d) {
+                    var items = (d.resultados || []).slice(0, 8).map(function (r) {
+                        if (que === 'colaborador') {
+                            return { id: r.id, titulo: r.nombre_completo, detalle: (r.num_empleado ? 'Núm. ' + r.num_empleado : 'Alta provisional') + (r.puesto ? ' · ' + r.puesto : '') + (r.sede ? ' · ' + r.sede : ''), activo: true };
+                        }
+                        return { id: r.id, titulo: r.placas, detalle: [r.descripcion, r.propiedad_etiqueta].filter(Boolean).join(' · '), activo: !!r.activo,
+                            placas: r.placas, tipo: r.tipo, marca: r.marca, modelo: r.modelo, color: r.color };
+                    });
+                    var vacio = que === 'colaborador' ? 'Sin coincidencias. Si no está registrado, usa «Alta provisional».' : 'No está en el padrón: se registrará como vehículo nuevo.';
+                    pintarSugerencias(envoltura, items, vacio, function (it) {
+                        elegirEnLector(envoltura, it);
+                        if (que === 'vehiculo') { llenarVehiculo(envoltura, it); }
+                    });
+                })
+                .catch(function () { ocultarSugerencias(envoltura); });
+        });
+    }
+
+    document.addEventListener('input', function (e) {
+        var entrada = e.target.closest && e.target.closest('[data-lector-entrada]');
+        var envoltura = entrada && entrada.closest('[data-sugerir]');
+        if (!envoltura) { return; }
+        if (envoltura.dataset.sugerir === 'vehiculo') {
+            // Las placas se escriben en el lector: si no está en el padrón, se registra con lo escrito
+            var placas = envoltura.querySelector('[data-placas]');
+            var id = envoltura.querySelector('[data-lector-id]');
+            if (placas && !(id && id.value)) { placas.value = entrada.value.toUpperCase(); }
+        }
+        sugerir(envoltura, entrada.value);
+    });
+
+    // Al tocar el campo del gafete se ofrecen los libres de la sede (sin escribir nada)
+    document.addEventListener('click', function (e) {
+        var entrada = e.target.closest && e.target.closest('[data-lector-entrada]');
+        var envoltura = entrada && entrada.closest('[data-sugerir="gafete"]');
+        if (envoltura && !envoltura.querySelector('[data-lector-id]').value) { sugerir(envoltura, entrada.value); }
+    });
+
+    document.addEventListener('lector:elegido', function (e) {
+        var envoltura = e.target.closest && e.target.closest('[data-sugerir]');
+        if (envoltura) { ocultarSugerencias(envoltura); }
+        // Dar Salida: el gafete que devuelven dice quién era
+        if (e.target.closest && e.target.closest('[data-salida-gafete]')) { buscarEnSitio('gafete=' + encodeURIComponent(e.detail.id)); return; }
+        if (!envoltura) { return; }
+        var form = envoltura.closest('form');
+        if (envoltura.dataset.sugerir === 'gafete') {
+            // El gafete escaneado debe ser de la sede y estar libre
+            var sedeActual = sedeDe(form);
+            cargarGafetes(sedeActual, true).then(function (gafetes) {
+                var libre = gafetes.some(function (g) { return String(g.id) === String(e.detail.id); });
+                if (!libre) {
+                    var caja = envoltura.querySelector('[data-lector]');
+                    window.Lector.limpiar(caja);
+                    var estado = caja.querySelector('[data-lector-estado]');
+                    estado.hidden = false;
+                    estado.className = 'lector-estado error';
+                    estado.textContent = sedeActual ? 'El gafete ' + e.detail.titulo + ' no está disponible: ya está en uso (EN SITIO), está dado de baja o es de otra sede.' : 'Elige primero la sede y vuelve a escanear el gafete.';
+                }
+                llenarGafetesAcompanantes(form);
+            });
+        }
+        if (envoltura.dataset.sugerir === 'vehiculo') {
+            var placas = envoltura.querySelector('[data-placas]');
+            if (placas) { placas.value = e.detail.titulo; }
+            if (!form.closest('[data-dialogo-ingreso]')) { return; }
+            pedirJson(urlDe('urlBuscar') + '?que=vehiculo&q=' + encodeURIComponent(e.detail.titulo)).then(function (d) {
+                var v = (d.resultados || []).filter(function (r) { return r.placas === e.detail.titulo; })[0];
+                if (v) { llenarVehiculo(envoltura, v); }
+            }).catch(function () { /* sin datos extra */ });
+        }
+    });
+
+    // "Cambiar" en el lector de placas: se olvidan las placas y los datos del vehículo
+    document.addEventListener('click', function (e) {
+        var limpiar = e.target.closest('[data-lector-limpiar]');
+        var envoltura = limpiar && limpiar.closest('[data-sugerir="vehiculo"]');
+        if (!envoltura) { return; }
+        var placas = envoltura.querySelector('[data-placas]');
+        if (placas) { placas.value = ''; }
+        var form = envoltura.closest('form');
+        form.querySelectorAll('[data-vehiculo-campo]').forEach(function (c) { if (c.tagName !== 'SELECT') { c.value = ''; } });
+    });
+
+    // Placas que no están en el padrón: no es un error, es un vehículo nuevo
+    function vigilarPlacas(envoltura) {
+        var estado = envoltura.querySelector('[data-lector-estado]');
+        if (!estado || estado.dataset.vigilado || typeof MutationObserver === 'undefined') { return; }
+        estado.dataset.vigilado = '1';
+        new MutationObserver(function () {
+            if (estado.classList.contains('error') && estado.textContent.indexOf('No se encontró') === 0) {
+                estado.className = 'lector-estado info';
+                estado.textContent = 'Vehículo nuevo: se registrará en el padrón con estas placas. Llena marca y color.';
+            }
+        }).observe(estado, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    }
+
+    /* ---------- Nombre (Padrón de personas) y empresa / agencia (Proveedores) ---------- */
+    document.addEventListener('input', function (e) {
+        var campo = e.target;
+        var form = campo.form;
+        if (!form || !form.matches('[data-form-acceso]')) { return; }
+
+        if (campo.matches('[data-nombre-titular]')) {
+            var personaId = form.querySelector('[data-persona-id]');
+            if (personaId) { personaId.value = ''; }
+            var repetida = form.querySelector('[data-caja-persona-repetida]');
+            if (repetida) { repetida.remove(); }
+            var tipo = radio(form, 'tipo');
+            var envoltura = campo.closest('[data-sugerir-persona]');
+            if (['visitante', 'proveedor', 'contratista'].indexOf(tipo) === -1 || campo.value.trim().length < 2) { ocultarSugerencias(envoltura); return; }
+            esperar('persona', function () {
+                pedirJson(urlDe('urlBuscar') + '?que=persona&tipo=' + tipo + '&q=' + encodeURIComponent(campo.value)).then(function (d) {
+                    var items = (d.resultados || []).slice(0, 8).map(function (p) {
+                        return { id: p.id, titulo: p.nombre_completo, detalle: [p.tipo_etiqueta, p.empresa, p.folio].filter(Boolean).join(' · '), persona: p };
+                    });
+                    pintarSugerencias(envoltura, items, 'Sin coincidencias en el Padrón de personas: se registrará como persona nueva.', function (it) { usarPersona(form, it.persona); });
+                }).catch(function () { ocultarSugerencias(envoltura); });
+            });
+            return;
+        }
+
+        var cajaProveedor = campo.closest('[data-sugerir-proveedor]');
+        if (cajaProveedor && campo.type === 'text') {
+            var oculto = cajaProveedor.querySelector('[data-proveedor-id]');
+            if (oculto) { oculto.value = ''; }
+            if (campo.value.trim().length < 2) { ocultarSugerencias(cajaProveedor); return; }
+            esperar('proveedor', function () {
+                pedirJson(urlDe('urlBuscar') + '?que=proveedor&q=' + encodeURIComponent(campo.value) + (sedeDe(form) ? '&sede=' + sedeDe(form) : '')).then(function (d) {
+                    var items = (d.resultados || []).slice(0, 8).map(function (p) { return { id: p.id, titulo: p.nombre, detalle: p.categoria_etiqueta }; });
+                    pintarSugerencias(cajaProveedor, items, 'Sin coincidencias: se registrará como empresa nueva.', function (it) {
+                        campo.value = it.titulo.toUpperCase();
+                        if (oculto) { oculto.value = it.id; }
+                    });
+                }).catch(function () { ocultarSugerencias(cajaProveedor); });
+            });
+        }
+    });
+
+    function usarPersona(form, p) {
+        var nombre = form.querySelector('[data-nombre-titular]');
+        if (nombre) { nombre.value = (p.nombre_completo || '').toUpperCase(); }
+        var id = form.querySelector('[data-persona-id]');
+        if (id) { id.value = p.id; }
+        var empresa = form.querySelector('[data-sugerir-proveedor="proveedor_id"] input[type="text"]');
+        var empresaId = form.querySelector('[data-sugerir-proveedor="proveedor_id"] [data-proveedor-id]');
+        if (empresa && p.empresa && ['proveedor', 'contratista'].indexOf(radio(form, 'tipo')) !== -1) {
+            empresa.value = p.empresa.toUpperCase();
+            if (empresaId) { empresaId.value = p.proveedor_id || ''; }
+        }
+    }
+
+    // Registro rápido en el Padrón de personas (con identificación): se usa al volver
+    document.addEventListener('persona:registrada', function (e) {
+        var form = formIngreso();
+        if (form && e.detail) { usarPersona(form, e.detail); }
+    });
+
+    // Alta provisional de colaborador: queda elegido en el lector que la pidió
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-provisional-para]');
+        if (b) { destinoProvisional = b.dataset.provisionalPara; }
+    });
+    document.addEventListener('colaborador:registrado', function (e) {
+        var entrada = destinoProvisional && document.getElementById(destinoProvisional);
+        var caja = entrada && entrada.closest('[data-lector]');
+        if (!caja || !e.detail || !window.Lector) { return; }
+        window.Lector.elegir(caja, {
+            id: e.detail.id, titulo: e.detail.nombre_completo, activo: true,
+            detalle: e.detail.num_empleado ? 'Núm. ' + e.detail.num_empleado : 'Alta provisional (Recursos Humanos la valida)'
+        });
+        destinoProvisional = null;
+    });
+
+    /* ---------- Eventos del formulario de ingreso ---------- */
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-acceso]')) { return; }
+        if (e.target.matches('[data-acceso-sede]')) {
+            try { localStorage.setItem(CLAVE_SEDE, e.target.value); } catch (x) { /* sin almacenamiento */ }
+            var gafete = form.querySelector('[data-sugerir="gafete"] [data-lector]');
+            if (gafete && window.Lector) { window.Lector.limpiar(gafete); }
+            llenarGafetesAcompanantes(form);
+        }
+        if (e.target.matches('[data-num-acompanantes]')) { ajustarAcompanantes(form); }
+        if (e.target.matches('[data-gafete-acompanante]')) { llenarGafetesAcompanantes(form); }
+        if (e.target.matches('[data-filtro-tipo-gafete]')) {
+            var env = form.querySelector('[data-sugerir="gafete"]');
+            if (env && document.activeElement && env.contains(document.activeElement)) { sugerir(env, ''); }
+        }
+        sincronizar(form);
+    });
+
+    document.addEventListener('click', function (e) {
+        var mas = e.target.closest('[data-acompanantes-mas], [data-acompanantes-menos]');
+        if (!mas) { return; }
+        var form = mas.closest('form');
+        var campo = form.querySelector('[data-num-acompanantes]');
+        campo.value = Math.max(0, (parseInt(campo.value, 10) || 0) + (mas.hasAttribute('data-acompanantes-mas') ? 1 : -1));
+        ajustarAcompanantes(form);
+    });
+
+    // Un solo envío (doble clic en caseta = doble registro)
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-form-acceso]') || e.defaultPrevented) { return; }
+        setTimeout(function () { form.querySelectorAll('button[type="submit"]').forEach(function (b) { b.disabled = true; }); }, 0);
+    });
+
+    function prepararIngreso(fresco) {
+        var form = formIngreso();
+        if (!form) { return; }
+        var sede = form.querySelector('select[data-acceso-sede]');
+        if (sede && !sede.value) {
+            try {
+                var guardada = localStorage.getItem(CLAVE_SEDE);
+                if (guardada && sede.querySelector('option[value="' + guardada + '"]')) { sede.value = guardada; }
+            } catch (x) { /* sin almacenamiento */ }
+        }
+        form.dataset.tipoSugerido = '';
+        sincronizar(form);
+        form.querySelectorAll('[data-sugerir="vehiculo"]').forEach(vigilarPlacas);
+        if (fresco) { gafetesPorSede = {}; }
+        ajustarAcompanantes(form);
+        mostrarVista(false);
+        // Tras un error, se muestra el aviso; si no, en PC el cursor queda listo para escanear (en celular no se abre el teclado solo)
+        var aviso = form.querySelector('[data-caja-persona-repetida], .alert-danger');
+        if (aviso) {
+            setTimeout(function () { aviso.scrollIntoView({ block: 'center' }); }, 150);
+        } else if (window.matchMedia && window.matchMedia('(pointer: fine)').matches) {
+            setTimeout(function () {
+                var primero = form.querySelector('[data-condicion]:not([hidden]) [data-lector-entrada]:not(:disabled)');
+                if (primero) { primero.focus({ preventScroll: true }); }
+            }, 150);
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-abrir-dialogo="dialogoIngreso"]')) { prepararIngreso(true); }
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        if (e.target.matches('[data-dialogo-ingreso]')) {
+            var form = formIngreso();
+            if (!form) { return; }
+            form.querySelectorAll('[data-persona-id], [data-proveedor-id], [data-placas]').forEach(function (c) { c.value = ''; });
+            var num = form.querySelector('[data-num-acompanantes]');
+            if (num) { num.value = '0'; }
+            var filas = form.querySelector('[data-filas-acompanantes]');
+            if (filas) { filas.textContent = ''; }
+            form.querySelectorAll('[data-sugerencias]').forEach(function (c) { c.hidden = true; c.textContent = ''; });
+            form.querySelectorAll('button[type="submit"]').forEach(function (b) { b.disabled = false; });
+            form.querySelectorAll('details.mas-detalles').forEach(function (d) { d.open = false; });
+            var resultados = document.querySelector('[data-resultados-salida]');
+            if (resultados) { resultados.textContent = ''; }
+            form.dataset.tipoSugerido = '';
+            sincronizar(form);
+            return;
+        }
+        // Diálogos de las tarjetas: se olvidan las placas escritas
+        e.target.querySelectorAll('[data-form-dialogo-acceso] [data-placas]').forEach(function (c) { c.value = ''; });
+        e.target.querySelectorAll('[data-sugerencias]').forEach(function (c) { c.hidden = true; c.textContent = ''; });
+    }, true);
+
+    // Cerrar sugerencias con un clic fuera o con Escape
+    document.addEventListener('click', function (e) {
+        document.querySelectorAll('[data-sugerencias]:not([hidden])').forEach(function (caja) {
+            var envoltura = caja.parentElement;
+            if (envoltura && !envoltura.contains(e.target)) { caja.hidden = true; caja.textContent = ''; }
+        });
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') { return; }
+        var abierta = document.querySelector('[data-sugerencias]:not([hidden])');
+        if (abierta) { e.preventDefault(); abierta.hidden = true; abierta.textContent = ''; }
+    });
+
+    /* ---------- Dar Salida (dentro del mismo diálogo) ---------- */
+    function mostrarVista(salida) {
+        var d = dialogoIngreso();
+        if (!d) { return; }
+        var vSalida = d.querySelector('[data-vista-salida]');
+        var vEntrada = d.querySelector('[data-vista-entrada]');
+        if (!vSalida) { return; }
+        vSalida.hidden = !salida;
+        vEntrada.hidden = salida;
+        d.querySelectorAll('[data-titulo-entrada], [data-texto-entrada]').forEach(function (n) { n.hidden = salida; });
+        d.querySelectorAll('[data-titulo-salida], [data-texto-salida]').forEach(function (n) { n.hidden = !salida; });
+        if (salida) {
+            var buscar = d.querySelector('[data-buscar-en-sitio]');
+            if (buscar) { buscar.value = ''; setTimeout(function () { buscar.focus(); }, 80); }
+            d.querySelector('[data-resultados-salida]').textContent = '';
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-alternar-salida-rapida]');
+        if (!b) { return; }
+        var d = dialogoIngreso();
+        mostrarVista(d.querySelector('[data-vista-salida]').hidden);
+    });
+
+    document.addEventListener('input', function (e) {
+        if (!e.target.matches('[data-buscar-en-sitio]')) { return; }
+        var texto = e.target.value.trim();
+        if (texto.length < 2) { document.querySelector('[data-resultados-salida]').textContent = ''; return; }
+        esperar('en-sitio', function () { buscarEnSitio('q=' + encodeURIComponent(texto)); }, 300);
+    });
+
+    function formularioPatch(url, texto, clase, confirmar, metodo) {
+        var f = elemento('form');
+        f.method = 'POST';
+        f.action = url;
+        if (confirmar) { f.setAttribute('data-confirmar', confirmar); }
+        var t = elemento('input'); t.type = 'hidden'; t.name = '_token'; t.value = token(); f.appendChild(t);
+        if (metodo !== 'POST') { var m = elemento('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'PATCH'; f.appendChild(m); }
+        var b = elemento('button', clase, texto); b.type = 'submit'; f.appendChild(b);
+        return f;
+    }
+
+    function botonDialogo(dialogo, url, id, nombre, titulo, texto, clase) {
+        var b = elemento('button', clase, texto);
+        b.type = 'button';
+        b.setAttribute('data-accion', 'acceso-dialogo');
+        b.dataset.dialogo = dialogo; b.dataset.url = url; b.dataset.id = id; b.dataset.nombre = nombre; b.dataset.titulo = titulo;
+        return b;
+    }
+
+    function buscarEnSitio(consulta) {
+        var cont = document.querySelector('[data-resultados-salida]');
+        if (!cont) { return; }
+        pedirJson(urlDe('urlEnSitio') + '?' + consulta).then(function (d) {
+            cont.textContent = '';
+            var datos = d.resultados || [];
+            if (!datos.length) { cont.appendChild(elemento('p', 'text-muted small p-2 m-0', 'Sin resultados en sitio para esa búsqueda.')); return; }
+            datos.forEach(function (r) {
+                var card = elemento('div', 'resultado-salida' + (r.fuera_temporal ? ' fuera' : ''));
+                var nombre = elemento('div', 'resultado-salida-nombre', r.nombre);
+                if (r.habitacion) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'badge-hab', 'Hab. ' + r.habitacion)); }
+                if (r.fuera_temporal) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'estado-acceso fuera mini', 'FUERA')); }
+                card.appendChild(nombre);
+                card.appendChild(elemento('div', 'resultado-salida-dato', r.tipo_etiqueta + (r.sede ? ' · ' + r.sede : '')));
+                if (r.placas) { card.appendChild(elemento('div', 'resultado-salida-dato', 'Vehículo: ' + r.placas + (r.zona ? ' · ' + r.zona + (r.zona_descarga ? ' (descarga)' : '') : ''))); }
+                var pedir = [];
+                if (r.gafete) { pedir.push('gafete ' + r.gafete + ' (titular)'); }
+                (r.acompanantes || []).forEach(function (a) { if (a.gafete) { pedir.push('gafete ' + a.gafete + ' (' + a.nombre + ')'); } });
+                if (r.identificacion) { pedir.push('la identificación (' + r.identificacion + ')'); }
+                if (pedir.length) { card.appendChild(elemento('div', 'resultado-salida-pedir', 'Pedir de vuelta: ' + pedir.join(', '))); }
+                if (!r.fuera_temporal) {
+                    (r.acompanantes || []).forEach(function (a) {
+                        var fila = elemento('div', 'resultado-salida-acomp');
+                        fila.appendChild(elemento('span', '', '• ' + a.nombre + (a.gafete ? ' · Gafete ' + a.gafete : '') + (a.fuera_temporal ? ' · FUERA' : '')));
+                        if (!a.fuera_temporal) {
+                            fila.appendChild(formularioPatch(a.url_salida, 'Salida', 'btn-acomp salida', '¿Confirmar salida de ' + a.nombre + (a.gafete ? ' y devolver su gafete ' + a.gafete : '') + '?'));
+                        }
+                        card.appendChild(fila);
+                    });
+                }
+                var acciones = elemento('div', 'resultado-salida-acciones');
+                if (r.fuera_temporal) {
+                    acciones.appendChild(botonDialogo('dialogoRegresoAcceso', r.url_regreso, r.id, r.nombre, r.tipo === 'huesped' ? 'Regreso de Tour' : 'Regreso', 'Registrar Regreso', 'btn-accion-acceso regreso'));
+                } else {
+                    if (r.salida_temporal) {
+                        acciones.appendChild(botonDialogo('dialogoSalidaTemporalAcceso', r.url_salida_temporal, r.id, r.nombre, r.texto_salida_temporal, r.texto_salida_temporal, 'btn-accion-acceso temporal'));
+                    }
+                    acciones.appendChild(formularioPatch(r.url_salida, r.texto_salida, 'btn-accion-acceso salida',
+                        '¿Confirmar salida de ' + r.nombre + '?' + (pedir.length ? ' Pide de vuelta: ' + pedir.join(', ') + '.' : '')));
+                }
+                card.appendChild(acciones);
+                cont.appendChild(card);
+            });
+        }).catch(function () {
+            cont.textContent = '';
+            cont.appendChild(elemento('p', 'text-danger small p-2 m-0', 'No se pudo buscar en este momento. Intenta de nuevo.'));
+        });
+    }
+
+    /* ---------- Diálogos de las tarjetas: zona, salida a tour / temporal, regreso ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="acceso-dialogo"]');
+        if (!b) { return; }
+        var d = document.getElementById(b.dataset.dialogo);
+        var form = d && d.querySelector('[data-form-dialogo-acceso]');
+        if (!form) { return; }
+        form.action = b.dataset.url;
+        d.querySelectorAll('.alert').forEach(function (n) { n.remove(); });
+        var poner = function (sel, valor) { form.querySelectorAll(sel).forEach(function (c) { c.value = valor || ''; }); };
+        poner('[data-dialogo-acceso-id]', b.dataset.id);
+        poner('[data-dialogo-nombre-campo]', b.dataset.nombre);
+        poner('[data-dialogo-titulo-campo]', b.dataset.titulo);
+        d.querySelectorAll('[data-dialogo-nombre]').forEach(function (n) { n.textContent = b.dataset.nombre || ''; });
+        if (b.dataset.titulo) { d.querySelectorAll('[data-dialogo-titulo]').forEach(function (n) { n.textContent = b.dataset.titulo; }); }
+        var zona = form.querySelector('[data-zona-sede]');
+        if (zona) {
+            acotarOpciones(zona, b.dataset.sede, true);
+            zona.value = b.dataset.zona || '';
+        }
+        d.querySelectorAll('[data-sugerir="vehiculo"]').forEach(vigilarPlacas);
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    });
+
+    /* ---------- Filtro de tarjetas sin recargar (Gente en Sitio y Pendientes) ---------- */
+    function filtrarTarjetas() {
+        var barra = document.querySelector('[data-filtros-accesos="vivo"]');
+        var cont = document.querySelector('[data-accesos]');
+        if (!barra || !cont) { return; }
+        var texto = (barra.querySelector('[data-filtro-accesos-texto]') || {}).value || '';
+        var tipo = (barra.querySelector('[data-filtro-accesos-tipo]') || {}).value || '';
+        var sedeSel = barra.querySelector('[data-filtro-accesos-sede]');
+        var sede = sedeSel ? sedeSel.value : '';
+        var palabras = lista(texto.toLowerCase());
+        var compacto = texto.replace(/[\s\-.]+/g, '').toLowerCase();
+        var fichas = cont.querySelectorAll('[data-acceso-ficha]');
+        var visibles = 0;
+        fichas.forEach(function (f) {
+            var t = f.dataset.texto || '';
+            var porTexto = palabras.every(function (p) { return t.indexOf(p) !== -1; }) || (compacto.length > 1 && t.indexOf(compacto) !== -1);
+            var ok = porTexto && (!tipo || f.dataset.tipo === tipo) && (!sede || f.dataset.sede === sede);
+            f.style.display = ok ? '' : 'none';
+            if (ok) { visibles++; }
+        });
+        var vacio = cont.querySelector('[data-sin-resultados-accesos]');
+        if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+    }
+
+    document.addEventListener('input', function (e) { if (e.target.closest('[data-filtros-accesos="vivo"]')) { filtrarTarjetas(); } });
+    document.addEventListener('change', function (e) { if (e.target.closest('[data-filtros-accesos="vivo"]')) { filtrarTarjetas(); } });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        filtrarTarjetas();
+        var d = dialogoIngreso();
+        if (!d) { return; }
+        // Tras un error, o con "Guardar y capturar siguiente", el diálogo ya se abrió solo
+        if (d.open) {
+            prepararIngreso(false);
+        } else {
+            var form = formIngreso();
+            if (form) { sincronizar(form); }
+        }
+    });
+})();
+/* Fin Bitácora de accesos */

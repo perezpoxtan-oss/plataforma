@@ -2,6 +2,8 @@
 
 namespace App\Services\Auditoria;
 
+use App\Models\Acceso;
+use App\Models\AcompananteAcceso;
 use App\Models\Auditoria;
 use App\Models\Colaborador;
 use App\Models\Departamento;
@@ -73,6 +75,8 @@ class LectorAuditoria
         ZonaEstacionamiento::class => ['Zona de estacionamiento', 'nombre'],
         Ruta::class => ['Ruta de transporte', 'nombre'],
         Paradero::class => ['Paradero', 'nombre'],
+        Acceso::class => ['Acceso', 'nombre'],
+        AcompananteAcceso::class => ['Acompañante', 'nombre'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

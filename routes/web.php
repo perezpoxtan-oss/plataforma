@@ -20,6 +20,7 @@ use App\Http\Controllers\Organizacion\TurnoController;
 use App\Http\Controllers\Padrones\ProveedorController;
 use App\Http\Controllers\Padrones\RutaController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\Seguridad\AccesoController;
 use App\Http\Controllers\Seguridad\EquipoController;
 use App\Http\Controllers\Seguridad\EstacionamientoController;
 use App\Http\Controllers\Seguridad\GafeteController;
@@ -191,6 +192,23 @@ Route::middleware('auth')->group(function () {
     Route::post('/rutas/{ruta}/clonar', [RutaController::class, 'clonar'])->whereNumber('ruta')->name('rutas.clonar');
     Route::get('/rutas/{ruta}/itinerario', [RutaController::class, 'itinerario'])->whereNumber('ruta')->name('rutas.itinerario');
     // Fin Padrones: Rutas de transporte
+
+    // Padrones: Bitácora de accesos (Gente en Sitio, Pendientes de Autorización, Historial, Registro Inteligente de Ingreso)
+    Route::get('/accesos', [AccesoController::class, 'index'])->name('accesos.index');
+    Route::post('/accesos', [AccesoController::class, 'store'])->name('accesos.store');
+    Route::get('/accesos/exportar', [AccesoController::class, 'exportar'])->name('accesos.exportar');
+    Route::get('/accesos/en-sitio', [AccesoController::class, 'enSitio'])->middleware('throttle:120,1')->name('accesos.en-sitio');
+    Route::get('/accesos/buscar', [AccesoController::class, 'buscar'])->middleware('throttle:240,1')->name('accesos.buscar');
+    Route::get('/accesos/gafetes', [AccesoController::class, 'gafetes'])->name('accesos.gafetes');
+    Route::patch('/accesos/{acceso}/autorizar', [AccesoController::class, 'autorizar'])->whereNumber('acceso')->name('accesos.autorizar');
+    Route::patch('/accesos/{acceso}/salida', [AccesoController::class, 'salida'])->whereNumber('acceso')->name('accesos.salida');
+    Route::patch('/accesos/{acceso}/zona', [AccesoController::class, 'zona'])->whereNumber('acceso')->name('accesos.zona');
+    Route::post('/accesos/{acceso}/salida-temporal', [AccesoController::class, 'salidaTemporal'])->whereNumber('acceso')->name('accesos.salida-temporal');
+    Route::patch('/accesos/{acceso}/regreso', [AccesoController::class, 'regreso'])->whereNumber('acceso')->name('accesos.regreso');
+    Route::patch('/accesos/acompanantes/{acompanante}/salida', [AccesoController::class, 'acompananteSalida'])->whereNumber('acompanante')->name('accesos.acompanantes.salida');
+    Route::patch('/accesos/acompanantes/{acompanante}/salida-temporal', [AccesoController::class, 'acompananteSalidaTemporal'])->whereNumber('acompanante')->name('accesos.acompanantes.salida-temporal');
+    Route::patch('/accesos/acompanantes/{acompanante}/regreso', [AccesoController::class, 'acompananteRegreso'])->whereNumber('acompanante')->name('accesos.acompanantes.regreso');
+    // Fin Padrones: Bitácora de accesos
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');

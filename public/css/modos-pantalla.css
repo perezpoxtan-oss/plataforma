@@ -612,3 +612,73 @@ html.modo-noche .rutas-separador { border-top-color: var(--borde); }
 html.modo-sol .firma-lienzo { border: 3px solid #000; }
 html.modo-noche .firma-lienzo { border-color: #475569; }
 /* Fin Firma autógrafa */
+/* Bitácora de accesos */
+html.modo-sol .ficha-acceso { background: #fff; border: 2px solid #000; border-top-width: 6px; box-shadow: none; }
+html.modo-sol .ficha-acceso.es-en_sitio { border-top-color: #b91c1c; }
+html.modo-sol .ficha-acceso.es-pendientes, html.modo-sol .ficha-acceso.tour-fuera { border-top-color: #92400e; }
+html.modo-sol .ficha-acceso.es-historial { border-top-color: #166534; }
+html.modo-sol .badge-acceso, html.modo-sol .estado-acceso, html.modo-sol .badge-hab { border: 2px solid #000; }
+html.modo-sol .badge-acceso.tipo-visitante, html.modo-sol .badge-acceso.tipo-contratista { color: #000; }
+html.modo-sol .gafete-box, html.modo-sol .ficha-acceso-tiempos, html.modo-sol .aviso-fuera, html.modo-sol .aviso-sin-permiso,
+html.modo-sol .caja-gafete, html.modo-sol .acceso-sugerencias, html.modo-sol .resultado-salida { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .ficha-acceso-nombre, html.modo-sol .ficha-acceso-datos, html.modo-sol .ficha-acceso-datos strong, html.modo-sol .ficha-acceso-empresa,
+html.modo-sol .ficha-acceso-sede, html.modo-sol .gafete-mini, html.modo-sol .lista-acompanantes li, html.modo-sol .resultado-salida-dato,
+html.modo-sol .accesos-pestana, html.modo-sol .nota-pendiente { color: #000 !important; }
+html.modo-sol .dato-destacado, html.modo-sol .texto-gafete, html.modo-sol .resultado-salida-pedir { color: #000; text-decoration: underline; }
+html.modo-sol .accesos-pestanas { border-bottom-color: #000; }
+html.modo-sol .accesos-pestana.activa { border-bottom-color: #000; text-decoration: underline; }
+html.modo-sol .lista-acompanantes { border-left-color: #000; }
+html.modo-sol .opcion-tipo, html.modo-sol .modo-opt, html.modo-sol .btn-contador, html.modo-sol .btn-acomp, html.modo-sol .btn-salida-rapida,
+html.modo-sol .btn-accion-acceso.temporal, html.modo-sol .btn-accion-acceso.zona, html.modo-sol .btn-siguiente-ingreso, html.modo-sol .btn-exportar-accesos,
+html.modo-sol .btn-limpiar-accesos, html.modo-sol .btn-decision.distinta { background: #fff; color: #000; border: 2px solid #000 !important; }
+html.modo-sol .opcion-tipo:has(input:checked), html.modo-sol .modo-opt:has(input:checked), html.modo-sol .btn-nuevo-ingreso, html.modo-sol .btn-guardar-ingreso,
+html.modo-sol .btn-accion-acceso.salida, html.modo-sol .btn-filtrar-accesos { background: #000; color: #fff; border: 2px solid #000; }
+html.modo-sol .btn-accion-acceso.autorizar, html.modo-sol .btn-decision.misma { background: #14532d; color: #fff; border: 2px solid #000; }
+html.modo-sol .btn-accion-acceso.regreso, html.modo-sol .btn-ambar-acceso { background: #fde047; color: #000; border: 2px solid #000; }
+html.modo-sol .caja-persona-repetida.alert-danger { background: #fff; color: #000; border: 3px solid #000; }
+html.modo-sol .numero-acompanante { background: #000; color: #fff; }
+html.modo-noche .ficha-acceso { background: var(--superficie); border-color: var(--borde); }
+html.modo-noche .ficha-acceso.es-en_sitio { border-top-color: #ef4444; }
+html.modo-noche .ficha-acceso.es-pendientes, html.modo-noche .ficha-acceso.tour-fuera { border-top-color: #f59e0b; }
+html.modo-noche .ficha-acceso.es-historial { border-top-color: #10b981; }
+html.modo-noche .ficha-acceso-nombre, html.modo-noche .ficha-acceso-datos strong, html.modo-noche .resultado-salida-nombre { color: var(--texto); }
+html.modo-noche .ficha-acceso-datos, html.modo-noche .lista-acompanantes li { color: #cbd5e1; }
+html.modo-noche .ficha-acceso-empresa, html.modo-noche .ficha-acceso-sede, html.modo-noche .gafete-mini, html.modo-noche .resultado-salida-dato { color: var(--texto-suave); }
+html.modo-noche .gafete-box { background: var(--superficie-2); border-color: #475569; color: var(--texto); }
+html.modo-noche .ficha-acceso-tiempos { background: var(--superficie-2); color: #cbd5e1; }
+html.modo-noche .ficha-acceso-acciones { border-top-color: var(--borde); }
+html.modo-noche .lista-acompanantes { border-left-color: #475569; }
+html.modo-noche .dato-destacado { color: #93c5fd; }
+html.modo-noche .texto-gafete, html.modo-noche .resultado-salida-pedir { color: #fca5a5; }
+html.modo-noche .texto-devuelta { color: #86efac; }
+html.modo-noche .aviso-fuera, html.modo-noche .aviso-sin-permiso { background: rgba(245,158,11,0.12); border-color: #92400e; color: #fcd34d; }
+html.modo-noche .estado-acceso.movimiento { background: #334155; color: #e2e8f0; }
+html.modo-noche .accesos-pestanas { border-bottom-color: var(--borde); }
+html.modo-noche .accesos-pestana { color: #94a3b8; }
+html.modo-noche .accesos-pestana.activa, html.modo-noche .accesos-pestana:hover { color: #e2e8f0; }
+html.modo-noche .accesos-pestana.pendientes { color: #fbbf24; }
+html.modo-noche .btn-exportar-accesos { border-color: #cbd5e1; color: #e2e8f0; }
+html.modo-noche .btn-exportar-accesos:hover { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .btn-limpiar-accesos { background: var(--superficie-2); color: #e2e8f0; border-color: #475569; }
+html.modo-noche .btn-acomp, html.modo-noche .btn-accion-acceso.temporal, html.modo-noche .btn-accion-acceso.zona, html.modo-noche .btn-salida-rapida,
+html.modo-noche .btn-siguiente-ingreso, html.modo-noche .btn-decision.distinta { background: transparent; }
+html.modo-noche .btn-acomp.salida, html.modo-noche .btn-salida-rapida, html.modo-noche .btn-siguiente-ingreso { color: #fca5a5; border-color: #f87171 !important; }
+html.modo-noche .btn-acomp.temporal, html.modo-noche .btn-accion-acceso.temporal { color: #fcd34d; }
+html.modo-noche .btn-acomp.regreso { color: #86efac; }
+html.modo-noche .btn-accion-acceso.zona { color: #93c5fd; border-color: #60a5fa; }
+html.modo-noche .btn-decision.distinta { color: #e2e8f0; border-color: #cbd5e1; }
+html.modo-noche .opcion-tipo, html.modo-noche .modo-opt { background: var(--campo-fondo); border-color: #475569; color: #cbd5e1; }
+html.modo-noche .opcion-tipo:has(input:checked), html.modo-noche .modo-opt:has(input:checked) { background: rgba(239,68,68,0.16); border-color: #ef4444; color: #fecaca; }
+html.modo-noche .caja-gafete { background: rgba(239,68,68,0.08); border-color: #7f1d1d; }
+html.modo-noche .caja-gafete .campo-etiqueta { color: #fca5a5; }
+html.modo-noche .acceso-sugerencias { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .acceso-sugerencia { color: var(--texto); border-bottom-color: var(--borde); }
+html.modo-noche .acceso-sugerencia:hover, html.modo-noche .acceso-sugerencia:focus-visible { background: rgba(239,68,68,0.14); }
+html.modo-noche .btn-provisional { color: #93c5fd; }
+html.modo-noche .caja-persona-repetida.alert-danger { background: rgba(245,158,11,0.12); border-color: #b45309; color: #fcd34d; }
+html.modo-noche .btn-contador { background: var(--superficie-2); border-color: #475569; color: var(--texto); }
+html.modo-noche .numero-acompanante { background: rgba(239,68,68,0.18); color: #fecaca; }
+html.modo-noche .acciones-ingreso { background: var(--superficie); border-top-color: var(--borde); }
+html.modo-noche .resultado-salida { border-color: var(--borde); border-left-color: #ef4444; }
+html.modo-noche .resultado-salida.fuera { border-left-color: #f59e0b; }
+/* Fin Bitácora de accesos */

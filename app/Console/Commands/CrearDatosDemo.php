@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Acceso;
+use App\Models\AcompananteAcceso;
 use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
@@ -33,6 +35,7 @@ use App\Services\Rutas\AdministradorRutas;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -126,6 +129,7 @@ class CrearDatosDemo extends Command
         $tenant->conEmpresa($empresa->id, fn () => $this->gafetesDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->equiposYEstacionamientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->rutasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->accesosDemo($empresa, $sedes, User::where('username', 'jefe.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -708,5 +712,135 @@ class CrearDatosDemo extends Command
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }
+    }
+
+    /**
+     * Bitácora de accesos de ejemplo, solo la primera vez: gente en sitio
+     * (colaboradores, visitas con gafete y acompañantes, huéspedes con auto en
+     * el estacionamiento, una huésped fuera en tour, un contratista con un
+     * ayudante que salió por material), proveedores pendientes de autorizar
+     * y visitas finalizadas hoy y ayer (incluida una emergencia y un tour
+     * completo). Usa los colaboradores, personas, vehículos, proveedores,
+     * gafetes y zonas demo si existen; si no, deja los datos como texto.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function accesosDemo(Empresa $empresa, $sedes, User $jefe, User $agente): void
+    {
+        if (Acceso::exists()) {
+            return;
+        }
+
+        // Hora local de Cancún de hoy (o de hace N días), guardada en hora universal
+        $a = fn (string $hora, int $diasAtras = 0) => Carbon::now('America/Cancun')->subDays($diasAtras)->setTimeFromTimeString($hora)->utc();
+        $colaborador = fn (string $num) => Colaborador::where('num_empleado', $num)->first();
+        $persona = fn (string $nombre) => Persona::where('nombre_completo', $nombre)->first();
+        $vehiculo = fn (string $placas) => Vehiculo::where('placas', Vehiculo::normalizarPlacas($placas))->first();
+        $proveedor = fn (string $nombre) => Proveedor::where('nombre', $nombre)->first();
+        $zonaDe = fn (string $sede, string $nombre) => ZonaEstacionamiento::where('sede_id', $sedes[$sede]->id)->where('nombre', $nombre)->where('activo', true)->value('id');
+        $gafete = fn (string $sede, string $tipo, int $n) => Gafete::where('activo', true)
+            ->where('nomenclatura', AdministradorGafetes::prefijo($empresa->nombre_comercial, $sedes[$sede]->codigo, $tipo).str_pad((string) $n, 3, '0', STR_PAD_LEFT))->first();
+        $nombreDe = fn ($c, string $texto) => $c ? mb_strtoupper($c->nombreCompleto()) : $texto;
+        $placasDe = fn ($v, string $texto) => $v?->placas ?? Vehiculo::normalizarPlacas($texto);
+
+        $crear = function (string $sede, array $datos, $entrada, User $autor, array $extra = []) use ($sedes): Acceso {
+            $acceso = new Acceso($datos + ['sede_id' => $sedes[$sede]->id, 'entrada_at' => $entrada]);
+            $acceso->forceFill($extra + ['creado_por' => $autor->id, 'actualizado_por' => $autor->id])->save();
+
+            return $acceso;
+        };
+        $acompanante = function (Acceso $acceso, string $nombre, ?string $identificacion = null, ?Gafete $g = null, array $extra = []): void {
+            $ac = new AcompananteAcceso(['acceso_id' => $acceso->id, 'nombre' => $nombre, 'identificacion' => $identificacion, 'gafete_id' => $g?->id, 'gafete_texto' => $g?->nomenclatura]);
+            $ac->forceFill($extra + ['creado_por' => $acceso->creado_por, 'actualizado_por' => $acceso->creado_por])->save();
+        };
+
+        // ---------------- En sitio: Hotel Demo Centro ----------------
+        $roberto = $colaborador('1005');
+        $crear('CEN', ['tipo' => 'colaborador', 'nombre' => $nombreDe($roberto, 'ROBERTO HERNÁNDEZ CRUZ'), 'colaborador_id' => $roberto?->id, 'modo_arribo' => 'a_pie'], $a('06:52'), $agente);
+
+        $carlos = $colaborador('1006');
+        $pickup = $vehiculo('VPK-77-12');
+        $crear('CEN', ['tipo' => 'colaborador', 'nombre' => $nombreDe($carlos, 'CARLOS PÉREZ GÓMEZ'), 'colaborador_id' => $carlos?->id, 'modo_arribo' => 'auto',
+            'vehiculo_id' => $pickup?->id, 'placas' => $placasDe($pickup, 'VPK-77-12'), 'zona_estacionamiento_id' => $zonaDe('CEN', 'Estacionamiento Colaboradores')], $a('07:10'), $agente);
+
+        $mariana = $colaborador('1007');
+        $g1 = $gafete('CEN', 'Visitante', 1);
+        $visita = $crear('CEN', ['tipo' => 'visitante', 'nombre' => 'LAURA MÉNDEZ RÍOS', 'persona_id' => $persona('Laura Méndez Ríos')?->id, 'identificacion' => 'ine',
+            'motivo_visita' => 'colaborador', 'visita_colaborador_id' => $mariana?->id, 'persona_visita' => $nombreDe($mariana, 'MARIANA LÓPEZ PECH'),
+            'gafete_id' => $g1?->id, 'gafete_texto' => $g1?->nomenclatura, 'modo_arribo' => 'a_pie', 'num_acompanantes' => 1], $a('09:40'), $agente);
+        $acompanante($visita, 'SOFÍA MÉNDEZ', 'ine', $gafete('CEN', 'Visitante', 2));
+
+        $jetta = $vehiculo('QRR 44 10');
+        $g3 = $gafete('CEN', 'Visitante', 3);
+        $crear('CEN', ['tipo' => 'visitante', 'nombre' => 'RICARDO ORTEGA VELA', 'persona_id' => $persona('Ricardo Ortega Vela')?->id, 'identificacion' => 'pasaporte',
+            'motivo_visita' => 'rh', 'gafete_id' => $g3?->id, 'gafete_texto' => $g3?->nomenclatura, 'modo_arribo' => 'auto', 'vehiculo_id' => $jetta?->id,
+            'placas' => $placasDe($jetta, 'QRR4410'), 'zona_estacionamiento_id' => $zonaDe('CEN', 'Estacionamiento Huéspedes')], $a('10:05'), $jefe);
+
+        $turquesa = $proveedor('Viajes Turquesa');
+        $versa = $vehiculo('ABC-123-A');
+        $leticia = $crear('CEN', ['tipo' => 'huesped', 'nombre' => 'LETICIA VÁZQUEZ', 'habitacion' => '204', 'tiene_reserva' => true, 'numero_reserva' => '1234567',
+            'tipo_pase' => 'estancia', 'proveedor_id' => $turquesa?->id, 'empresa_procedencia' => $turquesa ? 'VIAJES TURQUESA' : null, 'modo_arribo' => 'auto',
+            'vehiculo_id' => $versa?->id, 'placas' => $placasDe($versa, 'ABC123A'), 'zona_estacionamiento_id' => $zonaDe('CEN', 'Estacionamiento Huéspedes'),
+            'num_acompanantes' => 2], $a('08:30', 2), $agente);
+        $acompanante($leticia, 'JORGE VÁZQUEZ');
+        $acompanante($leticia, 'MARIO VÁZQUEZ');
+
+        // Huésped fuera en tour desde las 10:30
+        $ayleen = $crear('CEN', ['tipo' => 'huesped', 'nombre' => 'AYLEEN PÉREZ', 'habitacion' => '310', 'tiene_reserva' => true, 'numero_reserva' => '1234569',
+            'tipo_pase' => 'estancia', 'modo_arribo' => 'a_pie'], $a('16:20', 1), $agente);
+        $crear('CEN', ['tipo' => 'huesped', 'movimiento' => 'salida_temporal', 'acceso_origen_id' => $ayleen->id, 'nombre' => 'AYLEEN PÉREZ', 'habitacion' => '310',
+            'modo_arribo' => 'auto', 'placas' => 'TUR450', 'conductor' => 'GUÍA TOURS DEL CARIBE'], $a('10:30'), $agente);
+
+        // Pendientes de autorización
+        $abarrotes = $proveedor('Abarrotes del Caribe');
+        $camion = $vehiculo('UPS-03-CL');
+        $gp = $gafete('CEN', 'Proveedor', 1);
+        $crear('CEN', ['tipo' => 'proveedor', 'estado' => 'pendiente', 'nombre' => 'JESÚS BALAM TUN', 'persona_id' => $persona('Jesús Balam Tun')?->id,
+            'proveedor_id' => $abarrotes?->id, 'empresa_procedencia' => 'ABARROTES DEL CARIBE', 'host_colaborador_id' => $carlos?->id, 'identificacion' => 'licencia',
+            'gafete_id' => $gp?->id, 'gafete_texto' => $gp?->nomenclatura, 'tipo_visita' => 'ejecucion',
+            'departamento_id' => Departamento::where('nombre', 'Alimentos y Bebidas')->value('id'), 'area_trabajo' => 'ANDÉN DE ALMACÉN',
+            'actividad' => 'Entrega de abarrotes de la semana.', 'modo_arribo' => 'auto', 'vehiculo_id' => $camion?->id, 'placas' => $placasDe($camion, 'UPS03CL'),
+            'zona_estacionamiento_id' => $zonaDe('CEN', 'Andén de Almacén General')], $a('11:15'), $agente);
+
+        $patricia = $crear('CEN', ['tipo' => 'contratista', 'estado' => 'pendiente', 'nombre' => 'PATRICIA GÓMEZ SOSA', 'persona_id' => $persona('Patricia Gómez Sosa')?->id,
+            'empresa_procedencia' => 'FUMIGACIONES PENINSULARES', 'host_colaborador_id' => $colaborador('1009')?->id, 'identificacion' => 'ine', 'tipo_visita' => 'levantamiento',
+            'area_trabajo' => 'HABITACIONES PISO 3', 'actividad' => 'Recorrido para cotizar el control de plagas.', 'modo_arribo' => 'a_pie', 'num_acompanantes' => 1], $a('11:40'), $agente);
+        $acompanante($patricia, 'LUIS SOSA', 'ine');
+
+        // ---------------- En sitio: Hotel Demo Playa ----------------
+        $daniela = $colaborador('1008');
+        $crear('PLA', ['tipo' => 'colaborador', 'nombre' => $nombreDe($daniela, 'DANIELA CANUL MAY'), 'colaborador_id' => $daniela?->id, 'modo_arribo' => 'a_pie'], $a('06:58'), $agente);
+
+        $maya = $proveedor('Constructora Maya');
+        $gc1 = $gafete('PLA', 'Contratista', 1);
+        $contratista = $crear('PLA', ['tipo' => 'contratista', 'nombre' => 'JOSÉ LUIS EK CAUICH', 'persona_id' => $persona('José Luis Ek Cauich')?->id,
+            'proveedor_id' => $maya?->id, 'empresa_procedencia' => $maya ? 'CONSTRUCTORA MAYA' : 'CONSTRUCCIONES Y MANTENIMIENTO MAYA',
+            'host_colaborador_id' => $colaborador('1011')?->id, 'identificacion' => 'ine', 'gafete_id' => $gc1?->id, 'gafete_texto' => $gc1?->nomenclatura,
+            'tipo_visita' => 'ejecucion', 'area_trabajo' => 'LOBBY', 'actividad' => 'Remodelación del lobby (fase 2).', 'modo_arribo' => 'a_pie', 'num_acompanantes' => 1],
+            $a('08:05'), $agente, ['autorizado_at' => $a('08:12'), 'autorizado_por' => $jefe->id]);
+        // Su ayudante salió por material y aún no regresa (su gafete sigue reservado)
+        $acompanante($contratista, 'ANDRÉS HERRERA KÚ', 'ine', $gafete('PLA', 'Contratista', 2), ['salida_temporal_at' => $a('11:00'), 'salida_temporal_por' => $agente->id]);
+
+        // ---------------- Finalizados (hoy y ayer) ----------------
+        $g4 = $gafete('CEN', 'Visitante', 4);
+        $crear('CEN', ['tipo' => 'visitante', 'estado' => 'finalizado', 'nombre' => 'SOFÍA CASTILLO UC', 'persona_id' => $persona('Sofía Castillo Uc')?->id,
+            'identificacion' => 'ine', 'motivo_visita' => 'rh', 'gafete_id' => $g4?->id, 'gafete_texto' => $g4?->nomenclatura, 'modo_arribo' => 'a_pie'],
+            $a('08:15'), $agente, ['salida_at' => $a('09:05'), 'salida_por' => $agente->id]);
+
+        $crear('CEN', ['tipo' => 'emergencia', 'estado' => 'finalizado', 'nombre' => 'CRUZ ROJA UNIDAD 12', 'tipo_emergencia' => 'ambulancia', 'modo_arribo' => 'auto',
+            'placas' => 'CR012', 'observaciones' => 'Traslado de un huésped con malestar desde el lobby.'], $a('22:10', 1), $jefe, ['salida_at' => $a('22:55', 1), 'salida_por' => $jefe->id]);
+
+        $crear('CEN', ['tipo' => 'proveedor', 'estado' => 'finalizado', 'nombre' => 'FERNANDO RIVAS LEÓN', 'persona_id' => $persona('Fernando Rivas León')?->id,
+            'proveedor_id' => $proveedor('Transportes Kin-Ha')?->id, 'empresa_procedencia' => 'TRANSPORTES KIN-HA', 'host_colaborador_id' => $carlos?->id,
+            'identificacion' => 'licencia', 'tipo_visita' => 'cortesia', 'modo_arribo' => 'a_pie'],
+            $a('06:00', 1), $agente, ['autorizado_at' => $a('06:04', 1), 'autorizado_por' => $jefe->id, 'salida_at' => $a('06:20', 1), 'salida_por' => $agente->id]);
+
+        // Huésped de ayer con un tour completo (salió y regresó) y su salida final
+        $pamela = $crear('PLA', ['tipo' => 'huesped', 'estado' => 'finalizado', 'nombre' => 'PAMELA ALCOCER', 'tiene_reserva' => false, 'tipo_pase' => 'daypass', 'modo_arribo' => 'a_pie'],
+            $a('10:00', 1), $agente, ['salida_at' => $a('18:30', 1), 'salida_por' => $agente->id]);
+        $crear('PLA', ['tipo' => 'huesped', 'movimiento' => 'salida_temporal', 'acceso_origen_id' => $pamela->id, 'estado' => 'finalizado', 'nombre' => 'PAMELA ALCOCER',
+            'conductor' => 'TOURS XCARET EXPRESS'], $a('12:00', 1), $agente, ['salida_at' => $a('14:30', 1), 'salida_por' => $agente->id]);
+        $crear('PLA', ['tipo' => 'huesped', 'movimiento' => 'regreso', 'acceso_origen_id' => $pamela->id, 'estado' => 'finalizado', 'nombre' => 'PAMELA ALCOCER',
+            'conductor' => 'TOURS XCARET EXPRESS'], $a('14:30', 1), $agente, ['salida_at' => $a('14:30', 1), 'salida_por' => $agente->id]);
     }
 }
