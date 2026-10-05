@@ -191,7 +191,16 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         // Un formulario que regresó con errores vuelve a abrir su diálogo
-        document.querySelectorAll('dialog[data-abrir-al-cargar]').forEach(abrir);
+        // y, si el diálogo no trae sus propios errores, se copian dentro los de la
+        // página (si no, quedarían escondidos detrás del diálogo)
+        var erroresPagina = document.querySelector('.alert-danger.aviso');
+        document.querySelectorAll('dialog[data-abrir-al-cargar]').forEach(function (d) {
+            var form = d.querySelector('form');
+            if (erroresPagina && form && !d.querySelector('.alert-danger:not([hidden])')) {
+                form.insertBefore(erroresPagina.cloneNode(true), form.firstChild);
+            }
+            abrir(d);
+        });
     });
 })();
 
@@ -541,7 +550,13 @@ document.addEventListener('click', function (e) {
 
         // Avisos de validación y de nombre repetido
         dialogo.querySelectorAll('.is-invalid').forEach(function (n) { n.classList.remove('is-invalid'); });
-        dialogo.querySelectorAll('.invalid-feedback, [data-error-campo], .alert').forEach(function (n) { n.remove(); });
+        dialogo.querySelectorAll('.invalid-feedback, [data-error-campo]').forEach(function (n) { n.remove(); });
+        // Los avisos que pinta el servidor se quitan; los contenedores que reutiliza
+        // el registro rápido (data-errores-...) solo se vacían y se ocultan
+        dialogo.querySelectorAll('.alert').forEach(function (n) {
+            var reutilizable = Array.prototype.some.call(n.attributes, function (a) { return a.name.indexOf('data-errores') === 0; });
+            if (reutilizable) { n.hidden = true; n.textContent = ''; } else { n.remove(); }
+        });
         dialogo.querySelectorAll('[data-aviso-nombre]').forEach(function (n) { n.hidden = true; n.textContent = ''; });
     }
 
@@ -1065,3 +1080,408 @@ document.addEventListener('click', function (e) {
         botones.forEach(function (b) { poner(b, previas.indexOf(b.dataset.alternarArea) !== -1); });
     });
 })();
+/* ==========================================================================
+   Padrones: Proveedores — alta rápida "Nueva Empresa Externa" desde otros
+   módulos (respuesta JSON; avisa con el evento proveedor:registrado)
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-alta-rapida-proveedor]')) { return; }
+        e.preventDefault();
+        var boton = form.querySelector('button[type="submit"]');
+        var errores = form.querySelector('[data-errores-proveedor]');
+        if (boton) { boton.disabled = true; boton.textContent = 'Guardando...'; }
+        if (errores) { errores.hidden = true; errores.textContent = ''; }
+
+        function terminar() { if (boton) { boton.disabled = false; boton.textContent = boton.dataset.textoOriginal || 'Guardar'; } }
+
+        fetch(form.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form)
+        })
+            .then(function (r) { return r.json().then(function (d) { return { estado: r.status, datos: d }; }); })
+            .then(function (res) {
+                terminar();
+                if ((res.estado === 201 || res.estado === 200) && res.datos.ok) {
+                    form.reset();
+                    var dialogo = form.closest('dialog');
+                    if (dialogo) { dialogo.close(); }
+                    var detalle = res.datos.proveedor;
+                    detalle.ya_existia = !!res.datos.ya_existia;
+                    document.dispatchEvent(new CustomEvent('proveedor:registrado', { detail: detalle }));
+                    return;
+                }
+                var mensajes = [];
+                Object.keys(res.datos.errores || {}).forEach(function (k) { mensajes = mensajes.concat(res.datos.errores[k]); });
+                if (mensajes.length === 0) { mensajes.push(res.datos.mensaje || res.datos.message || 'No se pudo registrar. Intenta de nuevo.'); }
+                if (errores) {
+                    mensajes.forEach(function (m) { var div = document.createElement('div'); div.textContent = m; errores.appendChild(div); });
+                    errores.hidden = false;
+                }
+            })
+            .catch(function () {
+                terminar();
+                if (errores) { errores.textContent = 'No se pudo registrar en este momento.'; errores.hidden = false; }
+            });
+    });
+
+    // Al cerrar, se olvidan los errores de la captura anterior
+    document.addEventListener('close', function (e) {
+        var errores = e.target.querySelector && e.target.querySelector('[data-errores-proveedor]');
+        if (errores) { errores.hidden = true; errores.textContent = ''; }
+    }, true);
+})();
+/* Fin Padrones: Proveedores */
+/* ==========================================================================
+   Padrón de personas: campos según el tipo (categoría solo para visitantes;
+   empresa que representa solo para proveedor/contratista; texto libre de
+   procedencia si no está en el directorio), regreso a la ficha del proveedor
+   y registro rápido (evento persona:registrada).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function sincronizar(form) {
+        if (!form) { return; }
+        var tipo = form.querySelector('[data-persona-tipo]');
+        var proveedor = form.querySelector('[data-persona-proveedor]');
+        var esVisitante = !tipo || tipo.value === 'visitante';
+        form.querySelectorAll('[data-solo-visitante]').forEach(function (n) { n.hidden = !esVisitante; });
+        form.querySelectorAll('[data-solo-empresa]').forEach(function (n) { n.hidden = esVisitante; });
+        var conProveedor = !esVisitante && proveedor && proveedor.value !== '';
+        form.querySelectorAll('[data-solo-sin-proveedor]').forEach(function (n) { n.hidden = conProveedor; });
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-persona]')) { return; }
+        // Al elegir la empresa, el tipo sigue a su categoría (contratista o proveedor)
+        if (e.target.matches('[data-persona-proveedor]') && e.target.value !== '') {
+            var op = e.target.options[e.target.selectedIndex];
+            var tipo = form.querySelector('[data-persona-tipo]');
+            if (tipo && op) { tipo.value = op.getAttribute('data-categoria') === 'contratista' ? 'contratista' : 'proveedor'; }
+        }
+        if (e.target.matches('[data-persona-tipo], [data-persona-proveedor]')) { sincronizar(form); }
+    });
+
+    // Después de que el llenado genérico pone los valores de la ficha
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        if (dialogo) { sincronizar(dialogo.querySelector('[data-form-persona]')); }
+    });
+
+    // Al cerrar: ya no regresa a la ficha del proveedor y se olvida la respuesta del registro rápido
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        var volver = e.target.querySelector('[data-volver-proveedor]');
+        if (volver) { volver.value = ''; }
+        e.target.querySelectorAll('[data-aviso-volver]').forEach(function (n) { n.hidden = true; });
+        e.target.querySelectorAll('[data-errores-rapido-persona], [data-existente-rapido-persona]').forEach(function (n) { n.hidden = true; n.textContent = ''; });
+        sincronizar(e.target.querySelector('[data-form-persona]'));
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-form-persona]').forEach(sincronizar);
+    });
+
+    function avisar(persona) {
+        document.dispatchEvent(new CustomEvent('persona:registrada', { detail: persona }));
+    }
+
+    function mostrarExistente(form, datos) {
+        var caja = form.querySelector('[data-existente-rapido-persona]');
+        if (!caja) { return; }
+        var p = datos.persona || {};
+        caja.textContent = '';
+        var titulo = document.createElement('p');
+        titulo.className = 'fw-semibold mb-2';
+        titulo.textContent = datos.mensaje || 'Ese folio ya está registrado.';
+        caja.appendChild(titulo);
+        if (p.activo) {
+            var usar = document.createElement('button');
+            usar.type = 'button';
+            usar.className = 'opcion-parecido';
+            usar.textContent = 'Usar a esta persona: ' + p.nombre_completo + (p.folio ? ' · ' + p.folio : '') + (p.empresa ? ' · ' + p.empresa : '');
+            usar.addEventListener('click', function () {
+                form.reset();
+                var dialogo = form.closest('dialog');
+                if (dialogo) { dialogo.close(); }
+                avisar(p);
+            });
+            caja.appendChild(usar);
+        } else {
+            var baja = document.createElement('p');
+            baja.className = 'small m-0';
+            baja.textContent = 'Está dada de baja: pide que la reactiven en el Padrón de personas.';
+            caja.appendChild(baja);
+        }
+        caja.hidden = false;
+    }
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-registro-rapido-persona]')) { return; }
+        e.preventDefault();
+        var boton = form.querySelector('button[type="submit"]');
+        var errores = form.querySelector('[data-errores-rapido-persona]');
+        var existente = form.querySelector('[data-existente-rapido-persona]');
+        if (boton) { boton.disabled = true; boton.textContent = 'Guardando...'; }
+        if (errores) { errores.hidden = true; errores.textContent = ''; }
+        if (existente) { existente.hidden = true; existente.textContent = ''; }
+
+        function terminar() { if (boton) { boton.disabled = false; boton.textContent = boton.dataset.textoOriginal || 'Registrar'; } }
+
+        fetch(form.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form)
+        })
+            .then(function (r) { return r.json().then(function (d) { return { estado: r.status, datos: d }; }); })
+            .then(function (res) {
+                terminar();
+                if (res.estado === 201 && res.datos.ok) {
+                    form.reset();
+                    var dialogo = form.closest('dialog');
+                    if (dialogo) { dialogo.close(); }
+                    avisar(res.datos.persona);
+                    return;
+                }
+                if (res.estado === 409 && res.datos.persona) { mostrarExistente(form, res.datos); return; }
+                var mensajes = [];
+                Object.keys(res.datos.errores || {}).forEach(function (k) { mensajes = mensajes.concat(res.datos.errores[k]); });
+                if (mensajes.length === 0) { mensajes.push(res.datos.mensaje || res.datos.message || 'No se pudo registrar. Intenta de nuevo.'); }
+                if (errores) {
+                    mensajes.forEach(function (m) { var div = document.createElement('div'); div.textContent = m; errores.appendChild(div); });
+                    errores.hidden = false;
+                }
+            })
+            .catch(function () {
+                terminar();
+                if (errores) { errores.textContent = 'No se pudo registrar en este momento.'; errores.hidden = false; }
+            });
+    });
+})();
+/* Fin Padrón de personas */
+/* ==========================================================================
+   Padrón Vehicular: campos que dependen de otro, filtro de fichas, aviso de
+   placas repetidas, alta desde la ficha de un proveedor, registro rápido
+   (evento vehiculo:registrado) e impresión de la calcomanía.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    /* ---------- Campos que dependen de otro (genérico) ----------
+       <div data-mostrar-si='{"propiedad":["a","b"],"tipo":["otro"]}'> se ve si
+       ALGUNA condición se cumple (el campo con ese name tiene uno de esos
+       valores). Oculto: sus campos se vacían y se deshabilitan (no se envían).
+       <input data-requerido-si='{"tipo":["otro"]}'> es obligatorio solo si se cumple. */
+    function leer(texto) { try { return JSON.parse(texto || '{}'); } catch (x) { return {}; } }
+
+    function cumple(form, condiciones) {
+        return Object.keys(condiciones).some(function (campo) {
+            var el = form.elements[campo];
+            return !!el && condiciones[campo].indexOf(el.value) !== -1;
+        });
+    }
+
+    function sincronizarDependientes(form) {
+        form.querySelectorAll('[data-mostrar-si]').forEach(function (caja) {
+            var visible = cumple(form, leer(caja.getAttribute('data-mostrar-si')));
+            caja.hidden = !visible;
+            caja.querySelectorAll('input, select, textarea').forEach(function (c) {
+                if (!visible) { c.value = ''; }
+                c.disabled = !visible;
+            });
+        });
+        form.querySelectorAll('[data-requerido-si]').forEach(function (c) {
+            c.required = !c.disabled && cumple(form, leer(c.getAttribute('data-requerido-si')));
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (form && form.querySelector('[data-mostrar-si], [data-requerido-si]')) { sincronizarDependientes(form); }
+    });
+
+    /* ---------- Aviso en vivo de placas ya registradas ---------- */
+    function placas(texto) { return (texto || '').replace(/[\s\-.]+/g, '').toUpperCase(); }
+
+    function avisarPlacas(campo) {
+        var aviso = campo.form && campo.form.querySelector('[data-aviso-placas]');
+        if (!aviso) { return; }
+        var valor = placas(campo.value);
+        var existentes = leer(campo.getAttribute('data-placas-existentes'));
+        if (!Array.isArray(existentes)) { existentes = []; }
+        if (valor === '' || valor === placas(campo.dataset.original)) { aviso.hidden = true; return; }
+        var repetidas = existentes.indexOf(valor) !== -1;
+        aviso.hidden = false;
+        aviso.className = 'small mb-2 ' + (repetidas ? 'text-warning' : 'text-success');
+        aviso.textContent = repetidas ? 'Las placas ' + valor + ' ya están registradas en el padrón.' : 'Se guardarán como ' + valor + '.';
+    }
+
+    document.addEventListener('input', function (e) {
+        if (e.target.matches('[data-placas-existentes]')) { avisarPlacas(e.target); }
+    });
+
+    // Editar: después del llenado genérico, se acomodan los campos y el aviso
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        var form = dialogo && dialogo.querySelector('[data-form-vehiculo]');
+        if (!form) { return; }
+        var valores = leer(boton.dataset.valores);
+        // Los campos dependientes se llenan de nuevo (pudieron quedar vacíos al ocultarse) y se acomodan
+        form.querySelectorAll('[data-mostrar-si] input, [data-mostrar-si] select').forEach(function (c) {
+            c.disabled = false;
+            c.value = (valores[c.name] === null || valores[c.name] === undefined) ? '' : String(valores[c.name]);
+        });
+        sincronizarDependientes(form);
+        var campo = form.querySelector('[data-placas-existentes]');
+        if (campo) { campo.dataset.original = campo.value; avisarPlacas(campo); }
+    });
+
+    // Al cerrar (y limpiarse) un diálogo, sus campos dependientes vuelven a acomodarse;
+    // el regreso a la ficha del proveedor solo vale para la primera alta
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-form-vehiculo]').forEach(function (form) {
+            var volver = form.querySelector('[data-volver]');
+            if (volver) { volver.value = ''; }
+            var aviso = form.querySelector('[data-aviso-placas]');
+            if (aviso) { aviso.hidden = true; }
+            sincronizarDependientes(form);
+        });
+    }, true);
+
+    /* ---------- Filtro de fichas: texto (placas sin guiones ni espacios) y píldoras ---------- */
+    var CLAVE = 'plataforma_filtro_vehiculos';
+
+    function filtrarVehiculos() {
+        var cont = document.querySelector('[data-vehiculos]');
+        if (!cont) { return; }
+        var buscador = document.querySelector('[data-filtro-vehiculos]');
+        var pill = document.querySelector('[data-filtro-tipo="vehiculos"][aria-pressed="true"]');
+        var texto = buscador ? buscador.value.toLowerCase().trim() : '';
+        var compacto = placas(texto).toLowerCase();
+        var grupo = pill ? pill.dataset.valor : '';
+        var fichas = cont.querySelectorAll('[data-vehiculo]');
+        var visibles = 0;
+        fichas.forEach(function (f) {
+            var t = f.dataset.texto || '';
+            var ok = (texto === '' || t.indexOf(texto) !== -1 || (compacto !== '' && t.indexOf(compacto) !== -1))
+                && (grupo === '' || f.dataset.grupo === grupo);
+            f.style.display = ok ? '' : 'none';
+            if (ok) { visibles++; }
+        });
+        var vacio = cont.querySelector('[data-sin-resultados-vehiculos]');
+        if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+        try { sessionStorage.setItem(CLAVE, JSON.stringify({ texto: buscador ? buscador.value : '', grupo: grupo })); } catch (x) { /* sin almacenamiento */ }
+    }
+
+    document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-vehiculos]')) { filtrarVehiculos(); } });
+    // La píldora ya cambió su estado en el manejador genérico de data-filtro-tipo
+    document.addEventListener('click', function (e) { if (e.target.closest('[data-filtro-tipo="vehiculos"]')) { filtrarVehiculos(); } });
+
+    function elegirPildora(valor) {
+        document.querySelectorAll('[data-filtro-tipo="vehiculos"]').forEach(function (x) {
+            var on = x.dataset.valor === valor;
+            x.setAttribute('aria-pressed', String(on));
+            x.classList.toggle('active', on);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-form-vehiculo]').forEach(sincronizarDependientes);
+        if (!document.querySelector('[data-vehiculos]')) { return; }
+        // Al llegar a una ficha (#vehiculo-12, p. ej. desde el QR) se muestran todas
+        if (!/^#vehiculo-\d+$/.test(location.hash)) {
+            try {
+                var g = JSON.parse(sessionStorage.getItem(CLAVE) || 'null');
+                var b = document.querySelector('[data-filtro-vehiculos]');
+                if (g && b && g.texto) { b.value = g.texto; }
+                if (g && g.grupo) { elegirPildora(g.grupo); }
+            } catch (x) { /* valor guardado dañado: se ignora */ }
+        }
+        filtrarVehiculos();
+    });
+
+    /* ---------- Registro rápido (respuesta JSON; avisa con el evento vehiculo:registrado) ---------- */
+    function avisarRegistrado(form, vehiculo) {
+        form.reset();
+        sincronizarDependientes(form);
+        var dialogo = form.closest('dialog');
+        if (dialogo) { dialogo.close(); }
+        document.dispatchEvent(new CustomEvent('vehiculo:registrado', { detail: vehiculo }));
+    }
+
+    function mostrarExistente(form, datos) {
+        var caja = form.querySelector('[data-existente-vehiculo]');
+        if (!caja) { return; }
+        caja.textContent = '';
+        var titulo = document.createElement('p');
+        titulo.className = 'fw-semibold mb-2';
+        titulo.textContent = datos.mensaje;
+        caja.appendChild(titulo);
+        var v = datos.vehiculo;
+        var boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = 'opcion-parecido';
+        boton.textContent = 'Usar ' + v.placas + (v.descripcion ? ' · ' + v.descripcion : '') + ' · ' + v.propiedad_etiqueta;
+        boton.addEventListener('click', function () { caja.hidden = true; avisarRegistrado(form, v); });
+        caja.appendChild(boton);
+        caja.hidden = false;
+    }
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-registro-rapido-vehiculo]')) { return; }
+        e.preventDefault();
+        var boton = form.querySelector('button[type="submit"]');
+        var errores = form.querySelector('[data-errores-rapido-vehiculo]');
+        var existente = form.querySelector('[data-existente-vehiculo]');
+        if (boton) { boton.disabled = true; boton.textContent = 'Guardando...'; }
+        if (errores) { errores.hidden = true; errores.textContent = ''; }
+        if (existente) { existente.hidden = true; }
+
+        function terminar() { if (boton) { boton.disabled = false; boton.textContent = boton.dataset.textoOriginal || 'Registrar'; } }
+
+        fetch(form.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form)
+        })
+            .then(function (r) { return r.json().then(function (d) { return { estado: r.status, datos: d }; }); })
+            .then(function (res) {
+                terminar();
+                if (res.estado === 201 && res.datos.ok) { avisarRegistrado(form, res.datos.vehiculo); return; }
+                if (res.estado === 409 && res.datos.vehiculo) { mostrarExistente(form, res.datos); return; }
+                var mensajes = [];
+                Object.keys(res.datos.errores || {}).forEach(function (k) { mensajes = mensajes.concat(res.datos.errores[k]); });
+                if (mensajes.length === 0) { mensajes.push(res.datos.mensaje || res.datos.message || 'No se pudo registrar. Intenta de nuevo.'); }
+                if (errores) {
+                    mensajes.forEach(function (m) { var div = document.createElement('div'); div.textContent = m; errores.appendChild(div); });
+                    errores.hidden = false;
+                }
+            })
+            .catch(function () {
+                terminar();
+                if (errores) { errores.textContent = 'No se pudo registrar en este momento.'; errores.hidden = false; }
+            });
+    });
+
+    /* ---------- Calcomanía: imprimir ---------- */
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-accion="imprimir"]')) { window.print(); }
+    });
+})();
+/* Fin Padrón Vehicular */

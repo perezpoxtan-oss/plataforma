@@ -6,6 +6,8 @@ use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Espacio;
+use App\Models\Persona;
+use App\Models\Proveedor;
 use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Rubro;
@@ -14,6 +16,7 @@ use App\Models\TipoEspacio;
 use App\Models\Turno;
 use App\Models\User;
 use App\Models\UsuarioRol;
+use App\Models\Vehiculo;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Support\Tenancy\Tenant;
@@ -97,6 +100,10 @@ class CrearDatosDemo extends Command
         $tenant->conEmpresa($empresa->id, fn () => $this->turnosDemo($sedes['PLA']));
         $tenant->conEmpresa($empresa->id, fn () => $this->colaboradoresDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $tenant->conEmpresa($empresa->id, fn () => $this->provisionalesDemo($sedes, User::where('username', 'agente.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->proveedoresDemo($sedes));
+        // Padrón de personas: después de los proveedores (si existen) para ligar a su personal
+        $tenant->conEmpresa($empresa->id, fn () => $this->personasDemo(User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'jefe.demo')->firstOrFail()));
+        $tenant->conEmpresa($empresa->id, fn () => $this->vehiculosDemo(User::where('username', 'admin.demo')->firstOrFail()));
 
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
@@ -281,6 +288,130 @@ class CrearDatosDemo extends Command
             foreach ($elementos as $el) {
                 $espacios->crear($actor, $sede, $nodo, Espacio::ELEMENTO, ['nombre' => '', 'tipo_espacio_id' => $tipo(Espacio::ELEMENTO, $el)], false);
             }
+        }
+    }
+
+    /**
+     * Empresas externas de un hotel en Cancún (una por categoría, casi todas en
+     * todas las sedes), solo la primera vez.
+     */
+    private function proveedoresDemo($sedes): void
+    {
+        if (Proveedor::exists()) {
+            return;
+        }
+
+        $lista = [
+            ['Abarrotes del Caribe', 'proveedor', 'ACA150312KJ8', '9988841020', 'Av. Andrés Quintana Roo 45, Cancún', null],
+            ['Transportes Kin-Ha', 'transporte_personal', 'TKH0905217T3', '9988872233', 'Av. Kabah Mz 3 Lt 12, Cancún', null],
+            ['Shuttle Riviera', 'transporte_huespedes', null, '9982001122', null, null],
+            ['Constructora Maya', 'contratista', 'CMA1102148W1', '9981234567', 'Calle 20 Sur 110, Cancún', ['PLA']],
+            ['Renta de Autos Caribe Sur', 'agencia_autos', null, '9988850011', null, ['CEN']],
+            ['Taxis Aeropuerto', 'taxi', null, '9988860000', 'Terminal 3, Aeropuerto de Cancún', null],
+            ['Viajes Turquesa', 'agencia_viajes', 'VTU180606AB2', '+529981112233', null, null],
+            ['Tours Xcaret Express', 'agencia_tours', null, '9982223344', null, ['PLA']],
+        ];
+        foreach ($lista as [$nombre, $categoria, $rfc, $telefono, $direccion, $soloEn]) {
+            $proveedor = Proveedor::create([
+                'nombre' => $nombre, 'categoria' => $categoria, 'rfc' => $rfc, 'telefono' => $telefono,
+                'direccion' => $direccion, 'todas_las_sedes' => $soloEn === null,
+            ]);
+            $proveedor->sedes()->sync(collect($soloEn ?? [])->map(fn ($codigo) => $sedes[$codigo]->id)->all());
+        }
+        // Una dada de baja (vetada), para ver el estado en la lista
+        Proveedor::create(['nombre' => 'Fletes Rápidos del Sureste', 'categoria' => 'transportadora', 'telefono' => '9997001234', 'activo' => false]);
+    }
+
+    /**
+     * Padrón de personas: visitantes, prospectos, un familiar, personal de
+     * proveedores y contratistas, solo la primera vez. Folios ficticios con
+     * formato realista. Si los proveedores demo existen, el personal se liga
+     * a ellos; si no, su empresa queda como texto de procedencia.
+     */
+    private function personasDemo(User $admin, User $jefe): void
+    {
+        if (Persona::exists()) {
+            return;
+        }
+
+        // Busca el proveedor por nombre (o el primero activo de la categoría); null si no hay
+        $proveedor = fn (array $nombres, string $categoria) => Proveedor::whereIn('nombre', $nombres)->value('id')
+            ?? Proveedor::where('categoria', $categoria)->where('activo', true)->orderBy('id')->value('id');
+
+        $insumos = $proveedor(['Distribuidora de Alimentos del Sureste', 'Abarrotes y Alimentos del Sureste'], 'proveedor');
+        $transporte = $proveedor(['Transportes Turísticos del Caribe', 'Transportes del Caribe'], 'transporte_personal');
+        $contratista = $proveedor(['Construcciones y Mantenimiento Maya', 'Mantenimiento Maya'], 'contratista');
+
+        // [tipo, categoria, nombre, proveedor_id, procedencia, identificación, folio, teléfono, motivo, activo, autor]
+        $personas = [
+            ['visitante', 'general', 'Laura Méndez Ríos', null, 'Particular', 'ine', 'MNRSLR85031423M700', '9981457820', 'Reunión con Gerencia General.', true, $admin],
+            ['visitante', 'general', 'Ricardo Ortega Vela', null, 'Auditoría Peninsular', 'pasaporte', 'G48291736', '9997218845', 'Auditoría externa de seguridad.', true, $admin],
+            ['visitante', 'prospecto_rrhh', 'Sofía Castillo Uc', null, null, 'ine', 'CSUCSF99071223M400', '9982236714', 'Entrevista de trabajo para Recepción.', true, $jefe],
+            ['visitante', 'prospecto_rrhh', 'Miguel Ángel Pech Chi', null, null, 'curp', 'PECM980212HYNCHG04', '9983340912', 'Entrevista para Mantenimiento.', true, $admin],
+            ['visitante', 'familiar', 'Carmen Poot Canché', null, null, 'ine', 'PTCNCR70102031M900', '9984412287', 'Visita familiar a colaboradora de Ama de Llaves.', true, $jefe],
+            ['proveedor', 'general', 'Jesús Balam Tun', $insumos, $insumos ? null : 'Distribuidora de Alimentos del Sureste', 'licencia', 'Q0284516', '9985567301', 'Entrega de abarrotes (martes y viernes).', true, $admin],
+            ['proveedor', 'general', 'Fernando Rivas León', $transporte, $transporte ? null : 'Transportes Turísticos del Caribe', 'licencia', 'Q0391287', '9986672945', 'Chofer del transporte de personal.', true, $admin],
+            ['proveedor', 'general', 'Alejandra Núñez Torres', null, 'Lavandería Industrial Cancún', 'ine', 'NZTRAL92050423M100', '9987783012', 'Recolección y entrega de blancos.', true, $admin],
+            ['contratista', 'general', 'José Luis Ek Cauich', $contratista, $contratista ? null : 'Construcciones y Mantenimiento Maya', 'ine', 'EKCSJS88111523H800', '9988894123', 'Mantenimiento preventivo de elevadores.', true, $admin],
+            ['contratista', 'general', 'Andrés Herrera Kú', $contratista, $contratista ? null : 'Construcciones y Mantenimiento Maya', 'id_imss', '82139045671', '9989905234', 'Ayudante de obra en remodelación del lobby.', true, $admin],
+            ['contratista', 'general', 'Patricia Gómez Sosa', null, 'Fumigaciones Peninsulares', 'cedula', '12847563', '9981016345', 'Control de plagas mensual.', true, $jefe],
+            ['visitante', 'general', 'Raúl Domínguez Can', null, 'Paquetería del Caribe', null, null, null, 'Mensajería (ya no presta el servicio).', false, $admin],
+        ];
+
+        foreach ($personas as [$tipo, $categoria, $nombre, $proveedorId, $procedencia, $tipoId, $folio, $telefono, $motivo, $activo, $autor]) {
+            $persona = new Persona([
+                'tipo' => $tipo, 'categoria' => $categoria, 'nombre_completo' => $nombre, 'proveedor_id' => $proveedorId,
+                'empresa_procedencia' => $procedencia, 'tipo_identificacion' => $tipoId,
+                'folio_identificacion' => Persona::normalizarFolio($folio), 'telefono' => $telefono,
+                'motivo_visita' => $motivo, 'activo' => $activo,
+            ]);
+            $persona->forceFill(['creado_por' => $autor->id, 'actualizado_por' => $autor->id])->save();
+        }
+    }
+
+    /**
+     * Padrón vehicular de ejemplo, solo la primera vez: autos de huéspedes,
+     * visitantes y colaboradores, taxis, una unidad rentada y la flotilla de
+     * transporte. Los proveedores se usan si ya existen (si no, quedan sin
+     * empresa propietaria); los colaboradores, si existen.
+     */
+    private function vehiculosDemo(User $admin): void
+    {
+        if (Vehiculo::exists()) {
+            return;
+        }
+
+        $colaborador = fn (string $num) => Colaborador::where('num_empleado', $num)->value('id');
+        $proveedor = fn (array $categorias) => Proveedor::where('activo', true)->whereIn('categoria', $categorias)->orderBy('id')->value('id');
+        $transporte = $proveedor(['transporte_personal', 'transporte_huespedes', 'transportadora']);
+        $taxi = $proveedor(['taxi']);
+        $agencia = $proveedor(['agencia_autos']);
+        $cualquiera = $proveedor(array_keys(Proveedor::CATEGORIAS));
+
+        // [placas, propiedad, tipo, marca, modelo, color, extra]
+        $vehiculos = [
+            ['ABC-123-A', 'propio_huesped', 'sedan', 'NISSAN', 'VERSA', 'BLANCO', []],
+            ['YUC-552-1', 'propio_huesped', 'suv', 'MAZDA', 'CX-5', 'ROJO', []],
+            ['QRR 44 10', 'propio_visitante', 'sedan', 'VOLKSWAGEN', 'JETTA', 'GRIS', []],
+            ['UZX-902-A', 'propio_familiar', 'suv', 'HONDA', 'CR-V', 'AZUL', []],
+            ['URB-1830', 'propio_colaborador', 'sedan', 'CHEVROLET', 'AVEO', 'PLATA', ['colaborador_id' => $colaborador('1003')]],
+            ['N8T-2Z', 'propio_colaborador', 'motocicleta', 'ITALIKA', 'FT150', 'NEGRO', ['colaborador_id' => $colaborador('1011')]],
+            ['VPK-77-12', 'propio_colaborador', 'pickup', 'FORD', 'RANGER', 'BLANCO', ['colaborador_id' => $colaborador('1006')]],
+            ['A-4521-TX', 'taxi_app', 'sedan', 'NISSAN', 'TSURU', 'BLANCO Y VERDE', ['numero_economico' => 'T-045', 'proveedor_id' => $taxi]],
+            ['B-1187-TX', 'taxi_app', 'suv', 'TOYOTA', 'AVANZA', 'BLANCO', ['numero_economico' => 'T-112', 'proveedor_id' => $taxi]],
+            ['TP-07-QR', 'transporte_personal', 'autobus', 'MERCEDES-BENZ', 'SPRINTER', 'BLANCO', ['numero_economico' => 'TP-07', 'capacidad' => 20, 'proveedor_id' => $transporte]],
+            ['RNT-220-B', 'agencia_renta', 'sedan', 'KIA', 'RIO', 'BLANCO', ['numero_economico' => 'R-22', 'proveedor_id' => $agencia]],
+            // La flotilla de un proveedor exige proveedor: sin ninguno, queda como transporte de personal
+            ['UPS-03-CL', $cualquiera ? 'empresa_proveedor' : 'transporte_personal', 'camion_ligero', 'ISUZU', 'ELF 300', 'BLANCO', ['numero_economico' => 'U-03', 'capacidad' => 3, 'proveedor_id' => $cualquiera]],
+            ['DEF-567-8', 'propio_visitante', 'otro', 'CLUB CAR', 'ONWARD', 'BEIGE', ['descripcion_otro' => 'Carrito de golf', 'activo' => false]],
+        ];
+
+        foreach ($vehiculos as [$placas, $propiedad, $tipo, $marca, $modelo, $color, $extra]) {
+            $vehiculo = new Vehiculo(array_merge([
+                'placas' => Vehiculo::normalizarPlacas($placas), 'propiedad' => $propiedad, 'tipo' => $tipo,
+                'marca' => $marca, 'modelo' => $modelo, 'color' => $color,
+            ], $extra));
+            $vehiculo->forceFill(['creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
         }
     }
 }

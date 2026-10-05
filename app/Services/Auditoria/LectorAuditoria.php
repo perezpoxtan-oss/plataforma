@@ -9,12 +9,15 @@ use App\Models\Empresa;
 use App\Models\Espacio;
 use App\Models\GrupoEspacio;
 use App\Models\Modulo;
+use App\Models\Persona;
+use App\Models\Proveedor;
 use App\Models\Puesto;
 use App\Models\Rol;
 use App\Models\Sede;
 use App\Models\TipoEspacio;
 use App\Models\Turno;
 use App\Models\User;
+use App\Models\Vehiculo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -49,6 +52,9 @@ class LectorAuditoria
         Puesto::class => ['Puesto', 'nombre'],
         Turno::class => ['Turno', 'nombre'],
         Colaborador::class => ['Colaborador', null],
+        Proveedor::class => ['Proveedor', 'nombre'],
+        Persona::class => ['Persona', 'nombre_completo'],
+        Vehiculo::class => ['Vehículo', 'placas'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

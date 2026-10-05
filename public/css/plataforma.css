@@ -448,6 +448,7 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .opcion-sede-turno input { width: 18px; height: 18px; flex-shrink: 0; }
 .opcion-sede-turno:has(input:checked) { border-color: #a5b4fc; background: #eef2ff; }
 /* Fin Turnos */
+/* ==========================================================================
    Colaboradores (esmeralda, como en SEGCAT) y Núm. Colaborador en Usuarios
    ========================================================================== */
 .tema-esmeralda .ficha-card:hover { box-shadow: 0 12px 24px -10px rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.4); }
@@ -548,3 +549,157 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .lista-respaldos { display: flex; flex-direction: column; gap: 0.4rem; }
 .fila-respaldo { display: grid; grid-template-columns: 1fr auto auto 44px; gap: 0.75rem; align-items: center; border: 1px solid var(--borde); border-radius: 12px; padding: 0.4rem 0.6rem 0.4rem 0.9rem; font-size: 0.88rem; }
 @media (max-width: 575.98px) { .fila-respaldo { grid-template-columns: 1fr 44px; } .fila-respaldo .chip-catalogo, .fila-respaldo .small { grid-column: 1; } .fila-respaldo .btn-icono { grid-column: 2; grid-row: 1 / span 3; } }
+/* ==========================================================================
+   Padrones: Proveedores / Empresas Externas (esmeralda, como en SEGCAT)
+   ========================================================================== */
+.pantalla-proveedores .ficha-card:hover { box-shadow: 0 12px 20px -8px rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); }
+.pantalla-proveedores .ficha-create { min-height: 200px; }
+.pantalla-proveedores .btn-pill-tipo.active { background: #10b981; border-color: #10b981; color: #fff; }
+.pantalla-proveedores .pildoras-tipo { margin-bottom: 0.75rem; }
+.pantalla-proveedores .filtros-estado { margin-bottom: 0; }
+/* En el celular las 10 categorías van en una tira que se desliza, no en 6 renglones */
+@media (max-width: 575.98px) {
+    .pantalla-proveedores .pildoras-tipo { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -1rem 0.75rem; padding: 0 1rem 0.25rem; -webkit-overflow-scrolling: touch; }
+    .pantalla-proveedores .pildoras-tipo::-webkit-scrollbar { display: none; }
+    .pantalla-proveedores .btn-pill-tipo { flex-shrink: 0; white-space: nowrap; }
+}
+.pantalla-proveedores .opcion-todas input, .pantalla-proveedores .opcion-sede-turno input { accent-color: #10b981; }
+.pantalla-proveedores .opcion-sede-turno:has(input:checked) { border-color: #6ee7b7; background: #ecfdf5; }
+.pantalla-proveedores .ext-title { font-size: 1.15rem; font-weight: 800; color: var(--texto); margin: 0; line-height: 1.2; overflow-wrap: anywhere; }
+.pantalla-proveedores .ext-badge { display: inline-flex; align-items: center; font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; border: 1px solid #cbd5e1; }
+.pantalla-proveedores .bg-proveedor { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+.pantalla-proveedores .bg-agencia { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.pantalla-proveedores .bg-contratista { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+.pantalla-proveedores .meta-lista { background: var(--fondo); border: 1px solid var(--borde); border-radius: 12px; padding: 0.6rem 0.8rem; font-size: 0.8rem; color: #475569; display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.8rem; }
+.pantalla-proveedores .badge-sedes { background: #f0fdf4; color: #15803d; border: none; font-size: 0.72rem; font-weight: 700; padding: 0.35rem 0.7rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; font-family: inherit; }
+.pantalla-proveedores button.badge-sedes { min-height: 36px; cursor: pointer; }
+.pantalla-proveedores button.badge-sedes:hover { background: #dcfce7; }
+.pantalla-proveedores .btn-ficha { background: #f8fafc; border: 1px solid var(--borde); color: var(--texto); border-radius: 10px; min-height: 44px; padding: 0 0.7rem; display: inline-flex; align-items: center; font-size: 0.82rem; font-weight: 700; text-decoration: none; cursor: pointer; font-family: inherit; }
+.pantalla-proveedores .btn-ficha:hover { border-color: #10b981; color: #047857; background: #ecfdf5; }
+.pantalla-proveedores .ficha-footer { gap: 0.4rem; flex-wrap: wrap; }
+.pantalla-proveedores .ficha-footer .etiqueta-estado { padding: 0.45rem 0.7rem; white-space: nowrap; }
+.pantalla-proveedores .ficha-footer .d-flex { gap: 0.4rem !important; margin-left: auto; }
+.pantalla-proveedores .campo-mayusculas { text-transform: uppercase; }
+.pantalla-proveedores .campo-mayusculas::placeholder { text-transform: none; }
+.errores-rapido-proveedor { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 10px; padding: 0.5rem 0.75rem; font-size: 0.85rem; margin-bottom: 0.75rem; }
+/* Ficha del proveedor */
+.ficha-proveedor { max-width: 1100px; margin: 0 auto; }
+.ficha-header-prov { background: #fff; border: 1px solid var(--borde); border-radius: 20px; padding: 1.5rem; margin-bottom: 1.2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.ficha-proveedor .ext-title { font-size: 1.5rem; }
+.datos-proveedor { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; margin-top: 0.75rem; font-size: 0.875rem; color: var(--texto-suave); }
+.datos-proveedor a { color: inherit; }
+.tabs-ficha { display: flex; gap: 0.5rem; margin-bottom: 1.2rem; flex-wrap: wrap; border-bottom: 1px solid var(--borde); }
+.tab-ficha { padding: 0.8rem 1.2rem; min-height: 44px; display: inline-flex; align-items: center; font-weight: 700; font-size: 0.88rem; color: var(--texto-suave); text-decoration: none; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.tab-ficha:hover { color: #047857; }
+.tab-ficha.activo { color: #10b981; border-bottom-color: #10b981; }
+.chip-sede { display: inline-flex; align-items: center; background: var(--fondo); border: 1px solid var(--borde); color: var(--texto); border-radius: 8px; padding: 0.3rem 0.7rem; font-size: 0.8rem; font-weight: 600; }
+.chip-sede.inactiva { opacity: 0.6; text-decoration: line-through; }
+.resumen-padron { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.resumen-padron .ficha { text-decoration: none; }
+.resumen-padron .ficha:hover { border-color: rgba(16,185,129,0.4); }
+.resumen-padron .ficha .icono { background: #ecfdf5; color: #10b981; }
+.ficha-proveedor .fila-item { background: #fff; border: 1px solid var(--borde); border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 0.7rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.ficha-proveedor .fila-item.inactivo { opacity: 0.55; }
+.ficha-proveedor .fila-titulo { margin: 0; font-size: 1rem; font-weight: 800; color: var(--texto); }
+.ficha-proveedor .fila-titulo a { color: inherit; text-decoration: none; }
+.ficha-proveedor .fila-titulo a:hover { color: #047857; text-decoration: underline; }
+.ficha-proveedor .fila-item .meta { font-size: 0.78rem; color: var(--texto-suave); }
+.btn-agregar-padron { background: #10b981; color: #fff; border: none; border-radius: 10px; padding: 0.7rem 1.1rem; min-height: 44px; font-weight: 700; display: inline-flex; align-items: center; text-decoration: none; }
+.btn-agregar-padron:hover { background: #059669; color: #fff; }
+/* Fin Padrones: Proveedores */
+/* ==========================================================================
+   Padrón de personas (réplica de modules/visitantes de SEGCAT, azul)
+   ========================================================================== */
+.tema-azul .btn-pill-tipo.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+.tema-azul .filtro-select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+.insignia-persona { display: inline-flex; align-items: center; font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; border: 1px solid transparent; }
+.insignia-persona.visitante { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.insignia-persona.proveedor { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+.insignia-persona.contratista { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+.insignia-persona.prospecto { background: #fdf4ff; color: #a21caf; border-color: #f5d0fe; }
+.insignia-persona.familiar { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+.estado-persona { font-size: 0.65rem; font-weight: 700; padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.estado-persona.activo { background: #d1e7dd; color: #146c43; }
+.estado-persona.baja { background: #f8d7da; color: #b02a37; }
+.persona-nombre { font-size: 1.15rem; font-weight: 800; color: var(--texto); margin: 0; line-height: 1.2; overflow-wrap: anywhere; }
+.persona-meta { margin-top: 0.8rem; font-weight: 500; gap: 0.3rem; padding: 0.6rem 0.8rem; border-radius: 12px; }
+.persona-meta strong { font-weight: 700; }
+.persona-motivo { color: var(--texto-suave); font-size: 0.75rem; overflow-wrap: anywhere; }
+.folio-persona { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.04em; }
+.persona-pie { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--borde); }
+.btn-editar-perfil { background: #fff; border: 1px solid var(--borde); color: #2563eb; border-radius: 8px; min-height: 44px; padding: 0.4rem 0.9rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; transition: 0.2s; }
+.btn-editar-perfil:hover { background: #2563eb; border-color: #2563eb; color: #fff; }
+.caja-empresa-persona { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.75rem; border-radius: 10px; margin-bottom: 0.8rem; }
+.caja-empresa-persona .campo-etiqueta { color: #15803d; }
+.caja-empresa-persona .campo-ayuda { margin-bottom: 0; }
+.dialogo-persona .campo.is-invalid { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,0.12); }
+.aviso-desde-proveedor { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; border-radius: 10px; padding: 0.6rem 0.8rem; font-size: 0.85rem; margin-bottom: 0.8rem; }
+@media (max-width: 575.98px) {
+    .persona-pie .btn-editar-perfil { flex: 1; justify-content: center; }
+    .filtro-categoria-persona { max-width: none; width: 100%; }
+    .ficha-crear-persona { min-height: 110px; flex-direction: row; gap: 0.75rem; }
+    .ficha-crear-persona .titulo-crear { margin-top: 0 !important; }
+}
+/* Fin Padrón de personas */
+/* ==========================================================================
+   Padrón Vehicular (pizarra #475569, como en SEGCAT) y calcomanía QR
+   ========================================================================== */
+.tema-pizarra .ficha-card { padding: 1.3rem; }
+.tema-pizarra .ficha-card:hover { transform: translateY(-3px); box-shadow: 0 12px 20px -8px rgba(71,85,105,0.15); border-color: rgba(71,85,105,0.4); }
+.tema-pizarra .ficha-create { background: rgba(71,85,105,0.03); border-color: rgba(71,85,105,0.3); }
+.tema-pizarra .ficha-create:hover { background: rgba(71,85,105,0.08); border-color: #475569; }
+.tema-pizarra .ficha-create i, .tema-pizarra .ficha-create .titulo-crear { color: #475569; }
+.tema-pizarra .btn-icono.editar { color: #475569; }
+.tema-pizarra .btn-icono.editar:hover { background: #475569; color: #fff; }
+.tema-pizarra .campo:focus, .tema-pizarra .buscador input:focus { border-color: #475569; box-shadow: 0 0 0 3px rgba(71,85,105,0.12); outline: none; }
+.tema-pizarra .btn-pill-tipo.active { background: #475569; border-color: #475569; color: #fff; }
+.tema-pizarra .ficha-footer { margin-top: 1rem; padding-top: 0.8rem; }
+.btn-pizarra { background: #475569; color: #fff; }
+.btn-pizarra:hover { background: #334155; }
+.conteo-pill { margin-left: 0.4rem; font-size: 0.72rem; font-weight: 800; opacity: 0.75; }
+.texto-padron-de { font-size: 0.75rem !important; color: #2563eb !important; margin-top: 0.15rem !important; }
+.veh-placas { font-size: 1.4rem; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: 1px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; border: 2px solid #cbd5e1; padding: 4px 12px; border-radius: 8px; display: inline-block; background: #f8fafc; word-break: break-all; }
+.badge-prop { font-size: 0.65rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; line-height: 1.4; }
+.bg-renta { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.bg-proveedor { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.bg-huesped { background: #fdf4ff; color: #a21caf; border: 1px solid #f5d0fe; }
+.bg-visitante { background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; }
+.bg-colaborador { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.bg-taxi { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.bg-personal { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+.tema-pizarra .etiqueta-estado { padding: 0.25rem 0.6rem; font-size: 0.65rem; white-space: nowrap; }
+.meta-vehiculo { padding: 0.5rem 0 0; font-size: 0.85rem; color: #475569; display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.8rem; border-top: 1px dashed var(--borde); }
+.meta-vehiculo > div:not(.texto-asociado):not(.texto-traza) { display: flex; justify-content: space-between; gap: 0.75rem; }
+.meta-vehiculo > div > strong { text-align: right; }
+.texto-asociado { color: #15803d; font-size: 0.78rem; margin-top: 0.2rem; }
+.btn-icono.imprimir-qr { color: #475569; text-decoration: none; }
+.btn-icono.imprimir-qr:hover { background: #475569; color: #fff; }
+.caja-propietario { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px; border-radius: 10px; margin-bottom: 1rem; }
+.campo-placas { text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
+
+/* Calcomanía: página propia para imprimir */
+.pagina-calcomania { background: #e2e8f0; min-height: 100vh; margin: 0; padding: 30px 16px; display: flex; justify-content: center; align-items: flex-start; }
+.calcomania-contenedor { width: 100%; max-width: 340px; }
+.calcomania { background: #fff; color: #0f172a; border-radius: 18px; border: 3px solid #0f172a; padding: 1.2rem; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+.calcomania-empresa { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+.calcomania-placas { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 2.1rem; font-weight: 900; letter-spacing: 2px; color: #0f172a; border: 3px solid #0f172a; border-radius: 10px; padding: 6px 10px; margin: 0.6rem 0; background: #f8fafc; word-break: break-all; }
+.calcomania-qr { width: 190px; height: 190px; margin: 0.6rem auto; }
+.calcomania-qr svg { width: 100%; height: 100%; display: block; }
+.calcomania-codigo { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8rem; font-weight: 700; color: #334155; letter-spacing: 1px; }
+.calcomania-detalle { font-size: 0.8rem; color: #475569; margin-top: 0.6rem; text-align: left; background: #f8fafc; border-radius: 10px; padding: 0.6rem 0.9rem; }
+.calcomania-detalle div { display: flex; justify-content: space-between; gap: 0.75rem; padding: 2px 0; }
+.calcomania-detalle strong { text-align: right; color: #0f172a; }
+.calcomania-baja { margin-top: 0.6rem; font-size: 0.75rem; font-weight: 800; color: #b91c1c; border: 2px solid #b91c1c; border-radius: 8px; padding: 0.3rem; }
+.calcomania-pie { font-size: 0.65rem; color: #64748b; margin-top: 0.8rem; }
+.calcomania-acciones { display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch; margin-top: 1.2rem; }
+.btn-imprimir-calcomania { background: #0f172a; color: #fff; border: none; padding: 0.8rem 1.5rem; min-height: 48px; border-radius: 10px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btn-cerrar-calcomania { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 0.7rem 1.5rem; min-height: 44px; border-radius: 10px; font-weight: 600; text-decoration: none; text-align: center; }
+.btn-cerrar-calcomania:hover { background: #e2e8f0; color: #334155; }
+@media print {
+    @page { margin: 8mm; }
+    .pagina-calcomania { background: #fff !important; padding: 0; min-height: 0; display: block; }
+    .calcomania-contenedor { margin: 0 auto; }
+    .calcomania { box-shadow: none; background: #fff !important; color: #000 !important; border-color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .calcomania-acciones, .franja-ambiente { display: none !important; }
+}
+/* Fin Padrón Vehicular */

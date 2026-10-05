@@ -16,7 +16,10 @@ use App\Http\Controllers\Organizacion\DepartamentoController;
 use App\Http\Controllers\Organizacion\EspacioController;
 use App\Http\Controllers\Organizacion\PuestoController;
 use App\Http\Controllers\Organizacion\TurnoController;
+use App\Http\Controllers\Padrones\ProveedorController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\Seguridad\PersonaController;
+use App\Http\Controllers\Seguridad\VehiculoController;
 use Illuminate\Support\Facades\Route;
 
 // Acceso
@@ -83,6 +86,33 @@ Route::middleware('auth')->group(function () {
     Route::put('/colaboradores/{colaborador}/fusionar', [ColaboradorController::class, 'fusionar'])->whereNumber('colaborador')->name('colaboradores.fusionar');
     Route::put('/colaboradores/{colaborador}/sedes', [ColaboradorController::class, 'sedes'])->whereNumber('colaborador')->name('colaboradores.sedes');
     Route::get('/colaboradores/{colaborador}/datos-personales', [ColaboradorController::class, 'datosPersonales'])->whereNumber('colaborador')->name('colaboradores.datos-personales');
+
+    // Padrones: Proveedores (y la búsqueda y el alta rápida que usan otros módulos)
+    Route::get('/proveedores', [ProveedorController::class, 'index'])->name('proveedores.index');
+    Route::post('/proveedores', [ProveedorController::class, 'store'])->name('proveedores.store');
+    Route::get('/proveedores/buscar', [ProveedorController::class, 'buscar'])->name('proveedores.buscar');
+    Route::post('/proveedores/rapido', [ProveedorController::class, 'rapido'])->name('proveedores.rapido');
+    Route::get('/proveedores/{proveedor}', [ProveedorController::class, 'show'])->whereNumber('proveedor')->name('proveedores.show');
+    Route::put('/proveedores/{proveedor}', [ProveedorController::class, 'update'])->whereNumber('proveedor')->name('proveedores.update');
+    Route::put('/proveedores/{proveedor}/sedes', [ProveedorController::class, 'sedes'])->whereNumber('proveedor')->name('proveedores.sedes');
+    Route::patch('/proveedores/{proveedor}/estado', [ProveedorController::class, 'estado'])->whereNumber('proveedor')->name('proveedores.estado');
+    // Fin Padrones: Proveedores
+    // Padrones: Personas (y la búsqueda y el registro rápido de la Bitácora de accesos)
+    Route::get('/personas', [PersonaController::class, 'index'])->name('personas.index');
+    Route::post('/personas', [PersonaController::class, 'store'])->name('personas.store');
+    Route::get('/personas/buscar', [PersonaController::class, 'buscar'])->name('personas.buscar');
+    Route::post('/personas/rapido', [PersonaController::class, 'rapido'])->name('personas.rapido');
+    Route::put('/personas/{persona}', [PersonaController::class, 'update'])->whereNumber('persona')->name('personas.update');
+    Route::patch('/personas/{persona}/estado', [PersonaController::class, 'estado'])->whereNumber('persona')->name('personas.estado');
+    // Padrones: Vehículos (y la búsqueda y el registro rápido que usarán Accesos y Estacionamientos)
+    Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
+    Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
+    Route::get('/vehiculos/buscar', [VehiculoController::class, 'buscar'])->name('vehiculos.buscar');
+    Route::post('/vehiculos/rapido', [VehiculoController::class, 'rapido'])->middleware('throttle:30,1')->name('vehiculos.rapido');
+    Route::get('/vehiculos/qr/{codigo}', [VehiculoController::class, 'qr'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('vehiculos.qr');
+    Route::put('/vehiculos/{vehiculo}', [VehiculoController::class, 'update'])->whereNumber('vehiculo')->name('vehiculos.update');
+    Route::patch('/vehiculos/{vehiculo}/estado', [VehiculoController::class, 'estado'])->whereNumber('vehiculo')->name('vehiculos.estado');
+    Route::get('/vehiculos/{vehiculo}/calcomania', [VehiculoController::class, 'calcomania'])->whereNumber('vehiculo')->name('vehiculos.calcomania');
 
     // Zonas y áreas (árbol de espacios)
     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');

@@ -351,3 +351,87 @@ html.modo-noche .ficha-provisional { background: rgba(245, 158, 11, 0.06) !impor
 html.modo-noche .btn-duplicado-colab { background: transparent; color: #fcd34d; border-color: #b45309; }
 html.modo-noche .caja-parecidos { background: rgba(245, 158, 11, 0.1); border-color: #b45309; color: #e2e8f0; }
 html.modo-noche .opcion-parecido { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+/* ==========================================================================
+   Padrones: Proveedores / Empresas Externas
+   ========================================================================== */
+html.modo-sol .pantalla-proveedores .meta-lista,
+html.modo-sol .pantalla-proveedores .badge-sedes,
+html.modo-sol .pantalla-proveedores .ext-badge,
+html.modo-sol .pantalla-proveedores .btn-ficha,
+html.modo-sol .ficha-header-prov,
+html.modo-sol .ficha-proveedor .fila-item,
+html.modo-sol .chip-sede { background: #fff; color: #000; border: 2px solid #000; box-shadow: none; }
+html.modo-sol .pantalla-proveedores .btn-pill-tipo.active { background: #000; border-color: #000; color: #fff; }
+html.modo-sol .tab-ficha { color: #000; }
+html.modo-sol .tab-ficha.activo { color: #000; border-bottom: 4px solid #000; }
+html.modo-sol .btn-agregar-padron { background: #000; color: #fff; }
+html.modo-sol .ficha-proveedor .fila-item.inactivo { opacity: 0.8; }
+html.modo-noche .pantalla-proveedores .meta-lista,
+html.modo-noche .ficha-header-prov,
+html.modo-noche .ficha-proveedor .fila-item { background: var(--superficie); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .pantalla-proveedores .ficha-card .meta-lista { background: var(--superficie-2); }
+html.modo-noche .pantalla-proveedores .btn-pill-tipo.active { background: #059669; border-color: #059669; color: #fff; }
+html.modo-noche .pantalla-proveedores .badge-sedes { background: rgba(16, 185, 129, 0.14); color: #6ee7b7; }
+html.modo-noche .pantalla-proveedores button.badge-sedes:hover { background: rgba(16, 185, 129, 0.24); }
+html.modo-noche .pantalla-proveedores .bg-proveedor { background: rgba(34, 197, 94, 0.14); color: #86efac; border-color: #166534; }
+html.modo-noche .pantalla-proveedores .bg-agencia { background: rgba(59, 130, 246, 0.16); color: #93c5fd; border-color: #1e3a8a; }
+html.modo-noche .pantalla-proveedores .bg-contratista { background: rgba(249, 115, 22, 0.14); color: #fdba74; border-color: #9a3412; }
+html.modo-noche .pantalla-proveedores .btn-ficha { background: var(--superficie-2); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .pantalla-proveedores .btn-ficha:hover { border-color: #10b981; color: #6ee7b7; }
+html.modo-noche .pantalla-proveedores .btn-icono.editar { color: #6ee7b7; }
+html.modo-noche .pantalla-proveedores .opcion-sede-turno:has(input:checked) { background: rgba(16, 185, 129, 0.14); border-color: #10b981; }
+html.modo-noche .tab-ficha.activo { color: #6ee7b7; border-bottom-color: #10b981; }
+html.modo-noche .chip-sede { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .resumen-padron .ficha .icono { background: rgba(16, 185, 129, 0.14); color: #6ee7b7 !important; }
+html.modo-noche .ficha-proveedor .fila-titulo a:hover { color: #6ee7b7; }
+html.modo-noche .errores-rapido-proveedor { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border-color: #7f1d1d; }
+/* Fin Padrones: Proveedores */
+/* Padrón de personas */
+html.modo-sol .insignia-persona, html.modo-sol .estado-persona, html.modo-sol .btn-editar-perfil { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .estado-persona.baja { text-decoration: underline; }
+html.modo-sol .btn-editar-perfil:hover { background: #000; color: #fff; }
+html.modo-sol .tema-azul .btn-pill-tipo.active { background: #000; border-color: #000; color: #fff; }
+html.modo-sol .caja-empresa-persona, html.modo-sol .aviso-desde-proveedor { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .caja-empresa-persona .campo-etiqueta { color: #000; }
+html.modo-noche .insignia-persona.visitante { background: rgba(59, 130, 246, 0.16); color: #93c5fd; border-color: #1e40af; }
+html.modo-noche .insignia-persona.proveedor { background: rgba(34, 197, 94, 0.14); color: #86efac; border-color: #166534; }
+html.modo-noche .insignia-persona.contratista { background: rgba(249, 115, 22, 0.15); color: #fdba74; border-color: #9a3412; }
+html.modo-noche .insignia-persona.prospecto { background: rgba(217, 70, 239, 0.15); color: #f0abfc; border-color: #86198f; }
+html.modo-noche .insignia-persona.familiar { background: #0f172a; color: #cbd5e1; border-color: #475569; }
+html.modo-noche .estado-persona.activo { background: rgba(34, 197, 94, 0.18); color: #86efac; }
+html.modo-noche .estado-persona.baja { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+html.modo-noche .btn-editar-perfil { background: var(--superficie-2); border-color: var(--borde); color: #93c5fd; }
+html.modo-noche .btn-editar-perfil:hover { background: #2563eb; color: #fff; }
+html.modo-noche .tema-azul .btn-icono.editar { color: #93c5fd; }
+html.modo-noche .tema-azul .btn-pill-tipo.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+html.modo-noche .tema-azul .btn-pill-tipo:not(.active) { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
+html.modo-noche .caja-empresa-persona { background: rgba(34, 197, 94, 0.08); border-color: #166534; }
+html.modo-noche .caja-empresa-persona .campo-etiqueta { color: #86efac; }
+html.modo-noche .aviso-desde-proveedor { background: rgba(59, 130, 246, 0.12); border-color: #1e40af; color: #bfdbfe; }
+/* Fin Padrón de personas */
+/* Padrón Vehicular */
+html.modo-sol .veh-placas, html.modo-sol .calcomania-placas { background: #fff; color: #000; border: 3px solid #000; }
+html.modo-sol .badge-prop, html.modo-sol .caja-propietario { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .meta-vehiculo, html.modo-sol .texto-asociado, html.modo-sol .texto-padron-de { color: #000 !important; font-weight: 700; }
+html.modo-sol .meta-vehiculo { border-top: 2px dashed #000; }
+html.modo-sol .tema-pizarra .btn-pill-tipo.active, html.modo-sol .btn-pizarra { background: #000; border-color: #000; color: #fff; }
+html.modo-sol .btn-icono.imprimir-qr { color: #000; }
+html.modo-noche .veh-placas { background: #0f172a; color: #f1f5f9; border-color: #475569; }
+html.modo-noche .meta-vehiculo { color: #cbd5e1; }
+html.modo-noche .meta-vehiculo strong { color: #e2e8f0; }
+html.modo-noche .texto-asociado { color: #6ee7b7; }
+html.modo-noche .texto-padron-de { color: #93c5fd !important; }
+html.modo-noche .bg-renta { background: rgba(59, 130, 246, 0.16); color: #93c5fd; border-color: rgba(59, 130, 246, 0.4); }
+html.modo-noche .bg-proveedor { background: rgba(34, 197, 94, 0.14); color: #86efac; border-color: rgba(34, 197, 94, 0.4); }
+html.modo-noche .bg-huesped { background: rgba(217, 70, 239, 0.14); color: #f0abfc; border-color: rgba(217, 70, 239, 0.4); }
+html.modo-noche .bg-visitante { background: rgba(148, 163, 184, 0.14); color: #cbd5e1; border-color: #475569; }
+html.modo-noche .bg-colaborador { background: rgba(16, 185, 129, 0.14); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4); }
+html.modo-noche .bg-taxi { background: rgba(245, 158, 11, 0.14); color: #fcd34d; border-color: rgba(245, 158, 11, 0.4); }
+html.modo-noche .bg-personal { background: rgba(99, 102, 241, 0.16); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.4); }
+html.modo-noche .tema-pizarra .btn-icono.editar, html.modo-noche .btn-icono.imprimir-qr { color: #cbd5e1; }
+html.modo-noche .tema-pizarra .btn-pill-tipo.active { background: #64748b; border-color: #64748b; }
+html.modo-noche .tema-pizarra .ficha-create i, html.modo-noche .tema-pizarra .ficha-create .titulo-crear { color: #cbd5e1; }
+html.modo-noche .caja-propietario { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .btn-pizarra { background: #475569; border: 1px solid #64748b; }
+html.modo-noche .btn-cerrar-calcomania { background: var(--superficie); color: #e2e8f0; border-color: var(--borde); }
+/* Fin Padrón Vehicular */
