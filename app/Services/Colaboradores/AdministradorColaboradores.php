@@ -51,6 +51,20 @@ class AdministradorColaboradores
         'lost_found_entregas' => 'colaborador_id',
     ];
 
+    /**
+     * Segunda (o tercera) columna de colaborador en una tabla que ya está en
+     * REFERENCIAS. Revisión funcional FUN-02: sin esto, al unir un duplicado el
+     * host y "a quién visita" de Accesos y el colaborador destino de un Pase de
+     * salida seguían apuntando al provisional dado de baja.
+     *
+     * @var list<array{0: string, 1: string}> [tabla, columna]
+     */
+    public const REFERENCIAS_ADICIONALES = [
+        ['accesos', 'host_colaborador_id'],
+        ['accesos', 'visita_colaborador_id'],
+        ['pases_salida', 'colaborador_destino_id'],
+    ];
+
     private const SIN_ACENTOS = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u'];
 
     public function __construct(
@@ -239,6 +253,9 @@ class AdministradorColaboradores
                     continue;
                 }
                 $movidos[$tabla] = $consulta->update([$columna => $destino->id]);
+            }
+            foreach (self::REFERENCIAS_ADICIONALES as [$tabla, $columna]) {
+                $movidos["{$tabla}.{$columna}"] = DB::table($tabla)->where($columna, $provisional->id)->update([$columna => $destino->id]);
             }
             $provisional->forceFill(['activo' => false, 'fusionado_en_id' => $destino->id])->save();
 

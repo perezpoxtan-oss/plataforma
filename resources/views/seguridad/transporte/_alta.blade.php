@@ -41,7 +41,7 @@
 </template>
 
 <dialog id="dialogoAltaTransporte" class="dialogo ancho transporte-dialogo" aria-labelledby="titulo-alta-transporte"
-        data-sugerencias="{{ json_encode($alta['sugerencias']) }}" @if ($trasError || $siguiente) data-abrir-al-cargar @endif>
+        data-horarios-sugeridos="{{ json_encode($alta['sugerencias']) }}" @if ($trasError || $siguiente) data-abrir-al-cargar @endif>
     <div class="dialogo-cabecera">
         <h2 id="titulo-alta-transporte"><i class="bi bi-clipboard2-pulse me-2 text-primary" aria-hidden="true"></i>Registrar Bitácora Logística</h2>
         <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>

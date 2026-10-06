@@ -1777,6 +1777,11 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .tabla-impresion { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
 .tabla-impresion th, .tabla-impresion td { border: 1px solid #cbd5e1; padding: 0.25rem 0.4rem; text-align: left; vertical-align: top; }
 .tabla-impresion th { background: #f8fafc; font-size: 0.65rem; text-transform: uppercase; }
+/* Seguridad: revisión funcional FUN-03 — en el teléfono las tablas de la hoja se desplazan dentro de la hoja, sin mover la página de lado */
+@media screen and (max-width: 575.98px) {
+    .tabla-impresion { display: block; overflow-x: auto; }
+}
+/* Fin Seguridad: FUN-03 */
 .log-impresion { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.72rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.4rem; }
 .log-impresion > * { white-space: pre-wrap; margin: 0; }
 .firmas-impresion { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem 1.5rem; margin-top: 0.6rem; }

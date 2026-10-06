@@ -34,9 +34,9 @@ Réplica de `modules/usuarios/usuario_lista.php`, `usuario_modal_editar.php` y `
 - Bases existentes: la migración `2026_10_05_000100_agregar_accion_desbloquear_usuarios` (el despliegue corre `migrate` antes de `db:seed`) crea la acción y la otorga a los roles "Administrador" (plantilla y copias de cada empresa) que ya tienen `usuarios.editar`, con ese mismo alcance, y a los roles "Jefe de seguridad" (`usuarios.ver` y `usuarios.desbloquear`, su sede). Solo agrega; no cambia permisos existentes. En una instalación nueva no hace nada (lo hacen los seeders).
 - El Super Administrador elige la empresa con el selector "Empresa de trabajo".
 
-## Pendiente para Colaboradores
+## Vínculo con Colaboradores (resuelto)
 
-SEGCAT permitía buscar un colaborador para llenar los datos y vincular la cuenta (`id_colaborador`). Se agregará al migrar Colaboradores, con la columna `colaborador_id`.
+SEGCAT permitía buscar un colaborador para llenar los datos y vincular la cuenta (`id_colaborador`). Ya está: columna `users.colaborador_id` y búsqueda en el diálogo (ver [colaboradores.md](colaboradores.md#usuarios--colaborador)).
 
 ## Componentes
 

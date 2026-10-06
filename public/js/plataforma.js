@@ -4607,7 +4607,7 @@ document.addEventListener('click', function (e) {
    Bitácora de transporte (seguridad/transporte): diálogo "Registrar Bitácora
    Logística" y "Editar Registro".
    - La lista "Ruta" se filtra por sede y tipo (llegada / salida) y propone el
-     horario más cercano a la hora actual de la sede (data-sugerencias).
+     horario más cercano a la hora actual de la sede (data-horarios-sugeridos; no usar data-sugerencias: es la caja de sugerencias de Accesos y su Escape la vaciaba — Seguridad: FUN-01).
    - Estatus "NO LLEGO": se ocultan los datos de la unidad y aparecen los taxis
      (plantilla <template data-plantilla-taxi>); siempre queda al menos uno.
    - Pasajeros de cada taxi: se agregan con el lector universal (lector:elegido)
@@ -4765,7 +4765,7 @@ document.addEventListener('click', function (e) {
         var estatus = valorRadio(form, 'estatus');
         var ruta = form.querySelector('[data-ruta-transporte]');
         var dialogo = form.closest('dialog');
-        var sugerencias = leer(dialogo && dialogo.getAttribute('data-sugerencias'), {});
+        var sugerencias = leer(dialogo && dialogo.getAttribute('data-horarios-sugeridos'), {});
 
         // Rutas de la sede y el sentido elegidos
         var visibles = 0;

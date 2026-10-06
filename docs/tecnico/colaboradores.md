@@ -95,7 +95,7 @@ Cuando un guardia necesita registrar a alguien en un formulario (acceso, présta
 | Validar | Recursos Humanos, Administrador, Director | `colaboradores.aprobar` | `PUT /colaboradores/{id}/validar`: corrige los datos y asigna el **número de empleado** (obligatorio, único). Guarda `validado_por` y `validado_en` |
 | Es un duplicado | Mismo permiso | `colaboradores.aprobar` | `PUT /colaboradores/{id}/fusionar` con `destino_id`: todo lo que se registró con el provisional pasa al colaborador correcto (`AdministradorColaboradores::REFERENCIAS`). El provisional queda de baja con `fusionado_en_id` |
 
-- **Para los módulos que vienen** (Accesos, Préstamo de llaves, Pases, Responsivas): cada tabla que guarde un `colaborador_id` **debe agregarse** a `AdministradorColaboradores::REFERENCIAS`, para que al unir un duplicado sus registros apunten al colaborador correcto.
+- **Para los módulos que vienen** (Accesos, Préstamo de llaves, Pases, Responsivas): cada tabla que guarde un `colaborador_id` **debe agregarse** a `AdministradorColaboradores::REFERENCIAS` (una segunda columna en la misma tabla va en `REFERENCIAS_ADICIONALES`), para que al unir un duplicado sus registros apunten al colaborador correcto. `tests/Feature/SeguridadAuditoria/RevisionFuncionalTest.php` falla si una llave foránea a `colaboradores` no está registrada.
 - La búsqueda devuelve `provisional: true` para que el formulario lo marque.
 - Auditoría: `colaboradores.provisional`, `colaboradores.validado` y `colaboradores.fusionado`.
 - En la pantalla de Colaboradores:
