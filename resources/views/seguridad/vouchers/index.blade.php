@@ -34,7 +34,7 @@
             </div>
         </div>
 
-        <form method="GET" action="{{ route('vouchers.index') }}" class="filtros-vouchers" role="search" aria-label="Filtrar vouchers">
+        <form method="GET" data-autoenviar action="{{ route('vouchers.index') }}" class="filtros-vouchers" role="search" aria-label="Filtrar vouchers">
             <div class="buscador">
                 <i class="bi bi-search" aria-hidden="true"></i>
                 <input type="search" name="q" value="{{ $filtros['q'] }}" placeholder="Folio, artículo o responsable..." aria-label="Buscar voucher">

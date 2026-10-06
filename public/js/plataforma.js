@@ -4959,3 +4959,101 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Bitácora de transporte */
+/* ==========================================================================
+   Filtros que se aplican solos (<form method="GET" data-autoenviar>): al
+   cambiar una lista, fecha o casilla se aplica de inmediato; al escribir en
+   la búsqueda, al dejar de teclear. Al recargar, el cursor vuelve al campo
+   donde se estaba escribiendo.
+   ========================================================================== */
+(function () {
+    'use strict';
+    var CLAVE = 'plataforma:filtro-activo';
+    var espera = null;
+
+    function enviar(form, campo) {
+        try { sessionStorage.setItem(CLAVE, form.getAttribute('action') + '|' + (campo && campo.name || '')); } catch (e) { /* sin almacenamiento: no pasa nada */ }
+        if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.hasAttribute('data-autoenviar')) { return; }
+        if (e.target.matches('input[type="search"], input[type="text"]')) { return; }
+        clearTimeout(espera);
+        enviar(form, e.target);
+    });
+
+    document.addEventListener('input', function (e) {
+        var form = e.target.form;
+        if (!form || !form.hasAttribute('data-autoenviar') || !e.target.matches('input[type="search"], input[type="text"]')) { return; }
+        clearTimeout(espera);
+        espera = setTimeout(function () { enviar(form, e.target); }, 700);
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var guardado = null;
+        try { guardado = sessionStorage.getItem(CLAVE); sessionStorage.removeItem(CLAVE); } catch (e) { return; }
+        if (!guardado) { return; }
+        var partes = guardado.split('|');
+        document.querySelectorAll('form[data-autoenviar]').forEach(function (form) {
+            if (form.getAttribute('action') !== partes[0] || !partes[1]) { return; }
+            var campo = form.elements[partes[1]];
+            if (campo && campo.matches && campo.matches('input[type="search"], input[type="text"]')) {
+                campo.focus();
+                var fin = campo.value.length;
+                try { campo.setSelectionRange(fin, fin); } catch (e) { /* tipos sin selección */ }
+            }
+        });
+    });
+})();
+/* Fin Filtros que se aplican solos */
+/* ==========================================================================
+   Listas con buscador (<select data-select-buscable>): agrega encima un
+   campo para escribir y deja en la lista solo las opciones que coinciden
+   (sin importar acentos ni mayúsculas). Si queda una sola, se elige sola.
+   ========================================================================== */
+(function () {
+    'use strict';
+    function normal(t) { return (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+
+    function preparar(select) {
+        if (select.dataset.buscableListo) { return; }
+        select.dataset.buscableListo = '1';
+        var buscador = document.createElement('input');
+        buscador.type = 'search';
+        buscador.className = 'campo campo-buscador-lista';
+        buscador.placeholder = select.dataset.selectBuscable || 'Escribe para buscar…';
+        buscador.setAttribute('aria-label', buscador.placeholder);
+        buscador.autocomplete = 'off';
+        select.parentNode.insertBefore(buscador, select);
+
+        buscador.addEventListener('input', function () {
+            var q = normal(buscador.value.trim());
+            var visibles = [];
+            Array.prototype.forEach.call(select.options, function (op) {
+                if (!op.value) { return; }
+                var ok = !q || normal(op.textContent).indexOf(q) !== -1;
+                op.hidden = !ok;
+                op.disabled = !ok;
+                if (ok) { visibles.push(op); }
+            });
+            if (visibles.length === 1) { select.value = visibles[0].value; }
+            else if (select.selectedOptions[0] && select.selectedOptions[0].hidden) { select.value = ''; }
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        buscador.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); } });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('select[data-select-buscable]').forEach(preparar);
+    });
+    // Al cerrar el diálogo, el buscador se limpia y la lista vuelve completa
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('.campo-buscador-lista').forEach(function (b) {
+            b.value = '';
+            b.dispatchEvent(new Event('input'));
+        });
+    }, true);
+})();
+/* Fin Listas con buscador */
