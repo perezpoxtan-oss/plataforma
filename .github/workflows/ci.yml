@@ -40,6 +40,18 @@ jobs:
       - name: Dependencias
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      - name: Vulnerabilidades conocidas (composer audit)
+        run: |
+          set +e
+          composer audit --locked --format=plain --abandoned=report > audit.txt 2>&1
+          rc=$?
+          cat audit.txt
+          if [ $rc -ne 0 ]; then
+            echo "::error title=Dependencias con vulnerabilidades conocidas::$(sed 's/%/%25/g' audit.txt | tr '\n' '|' | sed 's/|/%0A/g')"
+            exit 1
+          fi
+          echo "::notice title=composer audit::Sin vulnerabilidades conocidas en las dependencias"
+
       - name: Estilo de codigo (Pint)
         run: vendor/bin/pint --test
 
