@@ -9,6 +9,7 @@ use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Equipo;
+use App\Models\EquipoPc;
 use App\Models\Espacio;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
@@ -21,6 +22,7 @@ use App\Models\Persona;
 use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
 use App\Models\Puesto;
+use App\Models\RecorridoPc;
 use App\Models\Responsiva;
 use App\Models\Rol;
 use App\Models\Ruta;
@@ -85,6 +87,8 @@ class LectorAuditoria
         Responsiva::class => ['Resguardo', 'folio'],
         PaseSalida::class => ['Pase de salida', 'folio'],
         MovimientoTransporte::class => ['Movimiento de transporte', null],
+        EquipoPc::class => ['Equipo de Protección Civil', 'numero_serie'],
+        RecorridoPc::class => ['Recorrido de Protección Civil', 'numero'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

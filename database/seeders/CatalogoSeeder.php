@@ -67,6 +67,7 @@ class CatalogoSeeder extends Seeder
         'lost_found' => 'lost_found.index',
         'pases_salida' => 'pases-salida.index',
         'transporte' => 'transporte.index',
+        'recorridos_pc' => 'recorridos_pc.index',
     ];
 
     /**

@@ -4959,3 +4959,239 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Bitácora de transporte */
+/* ==========================================================================
+   Recorridos de Protección Civil (seguridad/recorridos-pc)
+   - Lista: filtro por estatus (píldoras), sede y texto.
+   - Recorrido en curso: al escanear (lector universal, evento
+     "lector:elegido") se abre el punto de inspección de ese equipo; en PC
+     con lector USB el campo queda listo para leer sin tocar la pantalla.
+   - Punto de inspección: piezas de la categoría elegida (captura a mano),
+     resultado en vivo (OK / FALLA) y confirmación de «Finalizar Recorrido».
+   - Catálogo de equipos: filtros, zona/piso y área específica según la sede
+     (y el área según la zona elegida), «Ver QR».
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    /* ---------- Lista de recorridos ---------- */
+    function filtrarRecorridos() {
+        var lista = document.querySelector('[data-lista-rpc]');
+        if (!lista) { return; }
+        var pill = document.querySelector('[data-filtro-rpc-estatus][aria-pressed="true"]');
+        var estatus = pill ? pill.getAttribute('data-filtro-rpc-estatus') : '';
+        var campoTexto = document.querySelector('[data-filtro-rpc="texto"]');
+        var campoSede = document.querySelector('[data-filtro-rpc="sede"]');
+        var texto = campoTexto ? campoTexto.value.toLowerCase().trim() : '';
+        var sede = campoSede ? campoSede.value : '';
+        var fichas = lista.querySelectorAll('[data-rpc]');
+        var visibles = 0;
+        fichas.forEach(function (f) {
+            var ok = (estatus === '' || f.dataset.estatus === estatus)
+                && (sede === '' || f.dataset.sede === sede)
+                && (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1);
+            f.hidden = !ok;
+            if (ok) { visibles++; }
+        });
+        var vacio = lista.querySelector('[data-sin-resultados-rpc]');
+        if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+    }
+
+    /* ---------- Catálogo de equipos ---------- */
+    function filtrarEquipos() {
+        var lista = document.querySelector('[data-lista-epc]');
+        if (!lista) { return; }
+        var pill = document.querySelector('[data-filtro-epc-estado][aria-pressed="true"]');
+        var activo = pill ? pill.getAttribute('data-filtro-epc-estado') : '';
+        var valor = function (n) { var el = document.querySelector('[data-filtro-epc="' + n + '"]'); return el ? el.value : ''; };
+        var texto = valor('texto').toLowerCase().trim();
+        var sede = valor('sede');
+        var categoria = valor('categoria');
+        var fichas = lista.querySelectorAll('[data-epc]');
+        var visibles = 0;
+        fichas.forEach(function (f) {
+            var ok = (activo === '' || f.dataset.activo === activo)
+                && (sede === '' || f.dataset.sede === sede)
+                && (categoria === '' || f.dataset.categoria === categoria)
+                && (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1);
+            f.hidden = !ok;
+            if (ok) { visibles++; }
+        });
+        var vacio = lista.querySelector('[data-sin-resultados-epc]');
+        if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
+    }
+
+    function elegirPildora(boton, atributo) {
+        document.querySelectorAll('[' + atributo + ']').forEach(function (b) {
+            var on = b === boton;
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-pressed', String(on));
+        });
+    }
+
+    /* Zona/piso y área específica: solo las de la sede elegida; el área, además, de la zona elegida */
+    function acomodarUbicaciones(form) {
+        var sede = form.querySelector('[data-epc-sede]');
+        var zona = form.querySelector('[data-epc-zona]');
+        var area = form.querySelector('[data-epc-area]');
+        if (!sede || !zona) { return; }
+        var idSede = sede.value;
+        var mostrar = function (op, ok) { op.hidden = !ok; op.disabled = !ok; };
+        Array.prototype.forEach.call(zona.options, function (op) {
+            if (op.value === '') { op.textContent = idSede ? '-- Toda la sede --' : '-- Elige sede primero --'; return; }
+            mostrar(op, op.dataset.sede === idSede && (!op.hasAttribute('data-inactivo') || op.selected));
+        });
+        if (zona.selectedOptions.length && zona.selectedOptions[0].disabled) { zona.value = ''; }
+        if (!area) { return; }
+        var idZona = zona.value;
+        Array.prototype.forEach.call(area.options, function (op) {
+            if (op.value === '') { return; }
+            var ancestros = ' ' + (op.dataset.ancestros || '') + ' ';
+            mostrar(op, op.dataset.sede === idSede && (idZona === '' || ancestros.indexOf(' ' + idZona + ' ') !== -1) && (!op.hasAttribute('data-inactivo') || op.selected));
+        });
+        if (area.selectedOptions.length && area.selectedOptions[0].disabled) { area.value = ''; }
+    }
+
+    /* Nuevo Recorrido: edificios de la sede elegida */
+    function acomodarEdificios(form) {
+        var sede = form.querySelector('[data-rpc-sede]');
+        var edificio = form.querySelector('[data-rpc-depende-sede]');
+        if (!sede || !edificio) { return; }
+        Array.prototype.forEach.call(edificio.options, function (op) {
+            if (op.value === '') { return; }
+            var ok = op.dataset.sede === sede.value;
+            op.hidden = !ok;
+            op.disabled = !ok;
+        });
+        if (edificio.selectedOptions.length && edificio.selectedOptions[0].disabled) { edificio.value = ''; }
+    }
+
+    /* ---------- Punto de inspección ---------- */
+    function acomodarCategoria(form) {
+        var selector = form.querySelector('[data-rpc-categoria]');
+        if (!selector) { return; }
+        var cat = selector.value;
+        form.querySelectorAll('[data-rpc-criterios]').forEach(function (bloque) {
+            var on = bloque.getAttribute('data-rpc-criterios') === cat;
+            bloque.hidden = !on;
+            bloque.querySelectorAll('input').forEach(function (c) { c.disabled = !on; });
+        });
+        var universales = form.querySelector('[data-rpc-universales]');
+        if (universales) {
+            universales.hidden = cat === '';
+            universales.querySelectorAll('input').forEach(function (c) { c.disabled = cat === ''; });
+        }
+        var aviso = form.querySelector('[data-rpc-sin-categoria]');
+        if (aviso) { aviso.hidden = cat !== ''; }
+    }
+
+    function mostrarResultado(form) {
+        var salida = form.querySelector('[data-rpc-resultado]');
+        if (!salida) { return; }
+        var casillas = form.querySelectorAll('.rpc-criterio input:not(:disabled)');
+        if (!casillas.length) { salida.hidden = true; return; }
+        var malas = Array.prototype.filter.call(casillas, function (c) { return !c.checked; }).length;
+        var obs = form.querySelector('[name="observaciones"]');
+        var conObs = obs && obs.value.trim() !== '';
+        var falla = malas > 0 || conObs;
+        salida.hidden = false;
+        salida.className = 'rpc-resultado ' + (falla ? 'falla' : 'ok');
+        salida.textContent = falla
+            ? 'Resultado: FALLA' + (malas > 0 ? ' (' + malas + (malas === 1 ? ' pieza' : ' piezas') + ' con falla)' : ' (hay observaciones)') + ' — se reportará en la Bitácora de Novedades.'
+            : 'Resultado: OK — todo sano y presente.';
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-filtro-rpc-estatus]');
+        if (b) { elegirPildora(b, 'data-filtro-rpc-estatus'); filtrarRecorridos(); return; }
+        b = e.target.closest('[data-filtro-epc-estado]');
+        if (b) { elegirPildora(b, 'data-filtro-epc-estado'); filtrarEquipos(); return; }
+
+        // Confirmación de un botón en particular (p. ej. «Finalizar Recorrido»)
+        b = e.target.closest('[data-confirmar-boton]');
+        if (b) {
+            if (!window.confirm(b.getAttribute('data-confirmar-boton'))) { e.preventDefault(); }
+            return;
+        }
+
+        // «Ver QR» del catálogo
+        b = e.target.closest('[data-ver-qr-pc]');
+        if (b) {
+            var d = document.getElementById('dialogoQrEquipoPc');
+            if (!d) { return; }
+            d.querySelector('[data-qr-nombre]').textContent = b.dataset.nombre || '';
+            d.querySelector('[data-qr-imagen]').src = b.dataset.qr;
+            d.querySelector('[data-qr-enlace]').textContent = b.dataset.enlace || '';
+            var imprimir = d.querySelector('[data-qr-imprimir]');
+            imprimir.hidden = !b.dataset.imprimir;
+            imprimir.href = b.dataset.imprimir || '#';
+            d.showModal();
+            return;
+        }
+
+        // Editar equipo: después del llenado genérico, se acomodan zona y área
+        b = e.target.closest('[data-accion="editar-registro"][data-dialogo="dialogoEditarEquipoPc"]');
+        if (b) {
+            var form = document.querySelector('#dialogoEditarEquipoPc [data-form-epc]');
+            if (!form) { return; }
+            var valores = {};
+            try { valores = JSON.parse(b.dataset.valores || '{}'); } catch (x) { /* sin valores */ }
+            form.querySelectorAll('[data-epc-zona] option, [data-epc-area] option').forEach(function (op) { op.disabled = false; op.hidden = false; });
+            ['zona_id', 'area_especifica_id'].forEach(function (n) {
+                if (form.elements[n]) { form.elements[n].value = valores[n] === null || valores[n] === undefined ? '' : String(valores[n]); }
+            });
+            acomodarUbicaciones(form);
+        }
+    });
+
+    document.addEventListener('input', function (e) {
+        if (e.target.matches('[data-filtro-rpc="texto"]')) { filtrarRecorridos(); }
+        if (e.target.matches('[data-filtro-epc="texto"]')) { filtrarEquipos(); }
+        var form = e.target.closest && e.target.closest('[data-form-punto-rpc]');
+        if (form) { mostrarResultado(form); }
+    });
+
+    document.addEventListener('change', function (e) {
+        var el = e.target;
+        if (el.matches('[data-filtro-rpc="sede"]')) { filtrarRecorridos(); }
+        if (el.matches('select[data-filtro-epc]')) { filtrarEquipos(); }
+        if (el.matches('[data-epc-sede]')) { var z = el.form.querySelector('[data-epc-zona]'); if (z) { z.value = ''; } }
+        if (el.matches('[data-epc-sede], [data-epc-zona]')) {
+            var a = el.form.querySelector('[data-epc-area]');
+            if (a) { a.value = ''; }
+            acomodarUbicaciones(el.form);
+        }
+        if (el.matches('[data-rpc-sede]')) { acomodarEdificios(el.form); }
+        var punto = el.closest && el.closest('[data-form-punto-rpc]');
+        if (punto) {
+            if (el.matches('[data-rpc-categoria]')) { acomodarCategoria(punto); }
+            mostrarResultado(punto);
+        }
+    });
+
+    // Escanear un equipo abre su punto de inspección
+    document.addEventListener('lector:elegido', function (e) {
+        var form = e.target.closest && e.target.closest('[data-escaner-rpc]');
+        if (!form || !e.detail || !e.detail.id) { return; }
+        window.location.href = form.getAttribute('action') + '?equipo=' + encodeURIComponent(e.detail.id) + '#punto';
+    });
+
+    // Al cerrar (y limpiarse) un diálogo, sus combos vuelven a acomodarse
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-form-epc]').forEach(acomodarUbicaciones);
+        e.target.querySelectorAll('[data-form-nuevo-rpc]').forEach(acomodarEdificios);
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        filtrarRecorridos();
+        filtrarEquipos();
+        document.querySelectorAll('[data-form-epc]').forEach(acomodarUbicaciones);
+        document.querySelectorAll('[data-form-nuevo-rpc]').forEach(acomodarEdificios);
+        document.querySelectorAll('[data-form-punto-rpc]').forEach(function (f) { acomodarCategoria(f); mostrarResultado(f); });
+
+        // Con lector USB (PC: puntero fino) el campo queda listo para leer; en el celular no se abre el teclado solo
+        var escaner = document.querySelector('[data-escaner-rpc] [data-lector-entrada]');
+        if (escaner && window.matchMedia && window.matchMedia('(pointer: fine)').matches) { escaner.focus({ preventScroll: true }); }
+    });
+})();
+/* Fin Recorridos de Protección Civil */

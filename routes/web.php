@@ -270,6 +270,28 @@ Route::middleware('auth')->group(function () {
     Route::get('/transporte/{movimiento}/firma/{cual}', [TransporteController::class, 'firma'])->whereNumber('movimiento')->whereIn('cual', ['guardia', 'taxista'])->name('transporte.firma');
     // Fin Padrones: Bitácora de transporte
 
+    // Padrones: Recorridos de Protección Civil (Operación: recorrido en curso un punto a la vez, Reporte de Auditoría y Catálogo de Equipos PC)
+    Route::controller('App\Http\Controllers\Seguridad\RecorridoPcController')->group(function () {
+        Route::get('/recorridos-pc', 'index')->name('recorridos_pc.index');
+        Route::post('/recorridos-pc', 'store')->middleware('throttle:60,1')->name('recorridos_pc.store');
+        Route::get('/recorridos-pc/reporte', 'reporte')->name('recorridos_pc.reporte');
+        Route::get('/recorridos-pc/exportar', 'exportar')->name('recorridos_pc.exportar');
+        Route::get('/recorridos-pc/{recorrido}', 'show')->whereNumber('recorrido')->name('recorridos_pc.show');
+        Route::put('/recorridos-pc/{recorrido}', 'update')->whereNumber('recorrido')->name('recorridos_pc.update');
+        Route::post('/recorridos-pc/{recorrido}/revisiones', 'registrarPunto')->whereNumber('recorrido')->middleware('throttle:120,1')->name('recorridos_pc.revisiones.store');
+    });
+    Route::controller('App\Http\Controllers\Seguridad\EquipoPcController')->group(function () {
+        Route::get('/recorridos-pc/equipos', 'index')->name('recorridos_pc.equipos.index');
+        Route::post('/recorridos-pc/equipos', 'store')->name('recorridos_pc.equipos.store');
+        Route::put('/recorridos-pc/equipos/{equipo}', 'update')->whereNumber('equipo')->name('recorridos_pc.equipos.update');
+        Route::patch('/recorridos-pc/equipos/{equipo}/desactivar', 'desactivar')->whereNumber('equipo')->name('recorridos_pc.equipos.desactivar');
+        Route::patch('/recorridos-pc/equipos/{equipo}/reactivar', 'reactivar')->whereNumber('equipo')->name('recorridos_pc.equipos.reactivar');
+        Route::get('/recorridos-pc/equipos/{equipo}/etiqueta', 'etiqueta')->whereNumber('equipo')->name('recorridos_pc.equipos.etiqueta');
+        Route::get('/recorridos-pc/equipos/{equipo}/qr', 'qr')->whereNumber('equipo')->name('recorridos_pc.equipos.qr');
+        Route::get('/recorridos-pc/equipos/{equipo}/ir', 'ir')->whereNumber('equipo')->name('recorridos_pc.equipos.ir');
+    });
+    // Fin Padrones: Recorridos de Protección Civil
+
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
     Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');

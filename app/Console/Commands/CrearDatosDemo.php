@@ -9,6 +9,7 @@ use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Equipo;
+use App\Models\EquipoPc;
 use App\Models\Espacio;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
@@ -42,6 +43,7 @@ use App\Services\Novedades\Formatos\RecorridoPc;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
+use App\Services\RecorridosPc\AdministradorRecorridosPc;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Services\Rutas\AdministradorRutas;
 use App\Services\Transporte\BitacoraTransporte;
@@ -179,6 +181,7 @@ class CrearDatosDemo extends Command
         $paso('novedadesDemo', fn () => $this->novedadesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'agente2.demo')->firstOrFail()));
         $paso('pasesSalidaDemo', fn () => $this->pasesSalidaDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('transporteDemo', fn () => $this->transporteDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('recorridosPcDemo', fn () => $this->recorridosPcDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -1393,5 +1396,98 @@ class CrearDatosDemo extends Command
     private function fechaDemo(MovimientoTransporte $m, CarbonImmutable $cuando): void
     {
         $m->forceFill(['fecha' => $cuando->toDateString(), 'created_at' => $cuando->utc(), 'updated_at' => $cuando->utc()])->saveQuietly();
+    }
+
+    /**
+     * Recorridos de Protección Civil, solo la primera vez: catálogo de equipos
+     * en las dos sedes (con su ubicación en la Torre A de Centro) y cuatro
+     * recorridos hechos con las mismas reglas de la pantalla: uno COMPLETO,
+     * uno CON HALLAZGOS (abre su ticket en la Bitácora de Novedades), uno EN
+     * PROCESO para continuarlo y uno de Playa.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function recorridosPcDemo($sedes, User $admin): void
+    {
+        if (EquipoPc::exists()) {
+            return;
+        }
+
+        $centro = $sedes['CEN'];
+        $espacio = fn (string $nombre) => Espacio::where('sede_id', $centro->id)->where('nombre', $nombre)->value('id');
+        // [sede, categoría, ID, ubicación, referencia, activo, etiqueta NFC]
+        $catalogo = [
+            ['CEN', 'EXTINTOR', 'EXT-01', 'Piso 1', 'Junto al elevador', true, '04:A2:3B:1C:5D:80:01'],
+            ['CEN', 'EXTINTOR', 'EXT-02', 'Piso 2', 'Pasillo de habitaciones', true, null],
+            ['CEN', 'EXTINTOR', 'EXT-03', 'Torre A', 'Cocina principal', true, null],
+            ['CEN', 'HIDRANTE', 'HID-01', 'Piso 1', 'Gabinete frente a recepción', true, null],
+            ['CEN', 'DETECTOR_HUMO', 'DH-101', '101', null, true, null],
+            ['CEN', 'DETECTOR_HUMO', 'DH-201', '201', null, true, null],
+            ['CEN', 'SALIDA_EMERGENCIA', 'SAL-01', 'Piso 1', 'Escalera de emergencia norte', true, null],
+            ['CEN', 'BOTIQUIN', 'BOT-01', 'Torre A', 'Caseta de seguridad', true, null],
+            ['CEN', 'LAMPARA_EMERGENCIA', 'LAM-01', 'Piso 2', 'Salida de escalera', true, null],
+            ['CEN', 'TABLERO_ELECTRICO', 'TAB-01', 'Torre A', 'Cuarto de máquinas', true, null],
+            ['CEN', 'GAS_LP', 'GAS-01', null, 'Patio de servicio', true, null],
+            ['CEN', 'EXTINTOR', 'EXT-99', null, 'Retirado: se envió a recarga', false, null],
+            ['PLA', 'EXTINTOR', 'EXT-P01', null, 'Lobby, junto a recepción', true, null],
+            ['PLA', 'HIDRANTE', 'HID-P01', null, 'Acceso a la playa', true, null],
+            ['PLA', 'BOTIQUIN', 'BOT-P01', null, 'Caseta de playa', true, null],
+        ];
+        $equipos = [];
+        foreach ($catalogo as [$sede, $categoria, $serie, $lugar, $referencia, $activo, $nfc]) {
+            $e = new EquipoPc(['sede_id' => $sedes[$sede]->id, 'categoria' => $categoria, 'numero_serie' => $serie,
+                'espacio_id' => $lugar !== null && $sede === 'CEN' ? $espacio($lugar) : null, 'referencia' => $referencia, 'etiqueta_nfc' => $nfc]);
+            $e->forceFill(['activo' => $activo, 'creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+            $equipos[$serie] = $e;
+        }
+
+        $servicio = app(AdministradorRecorridosPc::class);
+        $agente = User::where('username', 'agente.demo')->first() ?? $admin;
+        $agentePlaya = User::where('username', 'agente2.demo')->first() ?? $admin;
+        $ahora = CarbonImmutable::now($centro->zonaHoraria());
+        // Todas las piezas sanas, menos las indicadas
+        $sano = fn (string $serie, array $malas = []) => array_fill_keys(array_diff(array_keys(EquipoPc::criterios($equipos[$serie]->categoria)), $malas), '1');
+        $previo = auth()->user();
+
+        $recorrido = function (User $actor, Sede $sede, ?string $zona, ?string $obs, array $puntos, bool $finalizar, CarbonImmutable $cuando) use ($servicio, $equipos, $sano, $espacio) {
+            auth()->setUser($actor);
+            $r = $servicio->iniciar($actor, ['sede_id' => $sede->id, 'espacio_id' => $zona !== null ? $espacio($zona) : null, 'observaciones_generales' => $obs]);
+            $minuto = 0;
+            foreach ($puntos as [$serie, $malas, $observaciones]) {
+                $p = $servicio->registrarPunto($actor, $r->fresh(), ['equipo_pc_id' => $equipos[$serie]->id, 'criterios' => $sano($serie, $malas), 'observaciones' => $observaciones]);
+                $p->forceFill(['created_at' => $cuando->addMinutes($minuto += 4)->utc(), 'updated_at' => $cuando->addMinutes($minuto)->utc()])->saveQuietly();
+            }
+            $r = $r->fresh();
+            if ($finalizar) {
+                $r = $servicio->guardar($actor, $r, ['observaciones_generales' => $obs], true);
+                $r->forceFill(['finalizado_en' => $cuando->addMinutes($minuto + 3)->utc()])->saveQuietly();
+            }
+            $r->forceFill(['created_at' => $cuando->utc(), 'updated_at' => $cuando->addMinutes($minuto + 3)->utc()])->saveQuietly();
+            if ($r->novedad_id !== null) {
+                Novedad::whereKey($r->novedad_id)->update(['created_at' => $cuando->addMinutes(8)->utc(), 'updated_at' => $cuando->addMinutes(8)->utc(), 'ocurrio_en' => $cuando->addMinutes(8)->utc()]);
+            }
+
+            return $r;
+        };
+
+        try {
+            $recorrido($agente, $centro, 'Torre A', null, [
+                ['EXT-01', [], null], ['EXT-02', [], null], ['HID-01', [], null], ['SAL-01', [], null],
+            ], true, $ahora->subDays(2)->setTime(7, 10));
+            $recorrido($agente, $centro, 'Torre A', 'Ronda matutina. Se avisó a mantenimiento de los hallazgos.', [
+                ['EXT-01', [], null],
+                ['EXT-02', ['manometro', 'precinto'], 'Manómetro en zona roja y precinto roto.'],
+                ['DH-101', [], null],
+                ['LAM-01', ['foco_izq'], 'Faro izquierdo fundido.'],
+            ], true, $ahora->subDay()->setTime(7, 5));
+            $recorrido($agente, $centro, null, null, [
+                ['EXT-01', [], null], ['BOT-01', [], null],
+            ], false, $ahora->subMinutes(40));
+            $recorrido($agentePlaya, $sedes['PLA'], null, null, [
+                ['EXT-P01', [], null], ['BOT-P01', [], null],
+            ], true, $ahora->subDay()->setTime(8, 20));
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
     }
 }
