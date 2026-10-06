@@ -64,3 +64,11 @@ Permisos: `espacios.ver`, `espacios.crear`, `espacios.editar` y `espacios.elimin
 ## Pruebas
 
 `tests/Feature/Organizacion/EspaciosTest.php`
+
+## Pendiente (nota del dueño, Ronda 5 · Z-08)
+
+No se construye todavía; se diseñará junto con Llaves:
+
+1. **Las "Secciones" de hoy cambiarán de nombre a «Categoría de habitación».** En hotelería cada habitación tiene una categoría (por ejemplo "Vista al mar", "Junior Suite") y cada categoría tiene un **costo** propio. Se conserva lo construido (tabla `grupos_espacio` y la pestaña), se le cambia el nombre en pantalla y se le agregará el costo por categoría.
+2. **Nuevo concepto «Sección de llaves».** Un grupo de cuartos que abre una llave maestra, sin importar edificio ni piso (por ejemplo, "Sección 1 A abre B101, B102 y C305"). Será propio de Llaves: hoy el alcance "Sección" de una llave usa las secciones de Zonas y áreas (`grupo_espacio_llave`); al separar los conceptos, ese alcance apuntará a la Sección de llaves.
+3. Mientras tanto no se cambia nada: las secciones actuales siguen sirviendo para categorizar habitaciones y para el alcance "Sección" de las llaves.

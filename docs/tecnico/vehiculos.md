@@ -88,6 +88,10 @@ Ventana lista para incluir en cualquier pantalla:
 
 Al guardar (o al elegir "Usar …" en el 409) `plataforma.js` lanza en `document` el evento **`vehiculo:registrado`** con `detail` = el objeto `vehiculo`. Solo se muestra a quien tiene `vehiculos.crear` y requiere el Tenant activo.
 
+## Ronda 5 (VE-04): QR en un diálogo
+
+El botón QR de la ficha ya no abre la calcomanía en otra página: abre el diálogo común «Código e identificación» (QR, dirección con Copiar, **Imprimir calcomanía** → `vehiculos.calcomania` si hay `vehiculos.imprimir`, y asignar etiqueta NFC/RFID con `vehiculos.editar`). Detalle en [lector.md](lector.md#código-e-identificación-ronda-5).
+
 ## Contrato con la ficha de Proveedor
 
 - `/vehiculos?nuevo=1&proveedor={id}` abre sola el **Alta de Vehículo** con ese proveedor elegido y la categoría según su `categoria`: `taxi` → `taxi_app`, `agencia_autos` → `agencia_renta`, `transporte_personal` y `transporte_huespedes` → `transporte_personal`, cualquier otra → `empresa_proveedor` (constante `AdministradorVehiculos::PROPIEDAD_POR_CATEGORIA`). Lleva el campo oculto `volver=proveedor`. Un proveedor inexistente, inactivo o de otra empresa se ignora.

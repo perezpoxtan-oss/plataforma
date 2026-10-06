@@ -1107,3 +1107,31 @@ html.modo-sol .borrar-aviso-bloqueado { border-color: #92400e; }
 html.modo-sol .borrar-clave { border: 2px solid #000; color: #000; background: #fff; font-weight: 800; }
 html.modo-sol .borrar-indicacion { color: #000; background: #fff; border: 2px solid #92400e; }
 /* Fin Eliminar definitivamente */
+/* Ajustes Ronda 5: Noche y Sol */
+html.modo-noche .pildora-cascada { background: rgba(99, 102, 241, 0.15); border-color: #4338ca; color: #c7d2fe; }
+html.modo-noche [data-pildora-piso] { background: rgba(20, 184, 166, 0.12); border-color: #0f766e; color: #99f6e4; }
+html.modo-noche .pildora-cascada.activa { background: #6366f1; color: #fff; }
+html.modo-noche [data-pildora-piso].activa { background: #0f766e; color: #fff; }
+html.modo-noche .cascada-titulo .fw-normal, html.modo-noche .ident-detalle, html.modo-noche .ident-ayuda, html.modo-noche .ident-nfc-actual, html.modo-noche .sesion-cuenta { color: var(--texto-suave, #94a3b8); }
+html.modo-noche .ident-enlace code { background: var(--superficie-2); color: var(--texto); }
+html.modo-noche .btn-ident-copiar, html.modo-noche .btn-ver-voucher.secundario { background: var(--superficie-2); color: var(--texto); border-color: var(--borde); }
+html.modo-noche .btn-ident-imprimir { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .btn-ident-quitar { background: transparent; color: #fca5a5; border-color: #7f1d1d; }
+html.modo-noche .ident-mensaje.ok { background: rgba(22, 163, 74, 0.18); color: #bbf7d0; }
+html.modo-noche .ident-mensaje.error { background: rgba(220, 38, 38, 0.18); color: #fecaca; }
+html.modo-noche .ident-mensaje.info { background: rgba(14, 165, 233, 0.18); color: #bae6fd; }
+html.modo-noche .opcion-firma-voucher:has(input:checked) { background: rgba(220, 38, 38, 0.15); }
+html.modo-noche .voucher-firma-estado.digital { color: #93c5fd; }
+html.modo-noche .voucher-firma-estado.papel { color: #86efac; }
+html.modo-noche .voucher-firma-estado.pendiente { color: #fcd34d; }
+html.modo-sol .pildora-cascada { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .pildora-cascada.activa { background: #000; color: #fff; }
+html.modo-sol .ident-enlace code { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .btn-ident-copiar, html.modo-sol .btn-ident-quitar, html.modo-sol .btn-ver-voucher.secundario { border: 2px solid #000; color: #000; background: #fff; }
+html.modo-sol .btn-ident-imprimir, html.modo-sol .btn-ident-guardar { background: #000; color: #fff; }
+html.modo-sol .ident-mensaje { border: 2px solid #000; color: #000; background: #fff; }
+html.modo-sol .opcion-firma-voucher { border: 2px solid #000; color: #000; }
+html.modo-sol .opcion-firma-voucher:has(input:checked) { background: #fef08a; }
+html.modo-sol .voucher-firma-estado { color: #000; text-decoration: underline; }
+html.modo-sol .sesion-cuenta, html.modo-sol .sesion-cuenta strong { color: #000; }
+/* Fin Ajustes Ronda 5 */

@@ -54,12 +54,54 @@ Para cada lectura se arma una lista de candidatos:
 - **Al cerrar** el `<dialog>` que lo contiene, el lector vuelve a su estado inicial.
 - **Al asignar una etiqueta,** el servidor normaliza con el trait y valida que no esté ocupada (`Modelo::etiquetaOcupada($valor, $exceptoId)`). El mensaje debe decir qué registro la tiene.
 
+## Búsqueda sin Enter (Ronda 5, LL-04)
+
+En modo **buscar**, el lector consulta solo mientras se escribe: espera **350 ms** sin teclear y al menos **2 caracteres** (`ESPERA_MS`, `MINIMO` en el bloque "Lector universal"). Reglas:
+
+- **Enter** (lo que mandan los lectores USB/Bluetooth tipo teclado al terminar) cancela la espera y busca al momento; pegar también busca al momento.
+- Solo cuenta la respuesta de la última búsqueda (`_turnoLector`); si la persona siguió escribiendo, la respuesta vieja se descarta.
+- Con un resultado se elige solo; con varios se muestran para tocar; sin resultados, en la búsqueda automática el aviso es informativo («Sin coincidencias… todavía»), y con Enter es el error de siempre.
+- El modo **capturar** no busca: solo guarda lo leído.
+
+## Código e identificación (Ronda 5)
+
+Diálogo común «Código e identificación» para **todas** las fichas con QR, en lugar de abrir otra página (petición del dueño en LL-05 y VE-04).
+
+| Pieza | Archivo |
+|---|---|
+| Botón de la ficha | `resources/views/componentes/boton-identificacion.blade.php` (parámetros con prefijo `ident…`, porque un `@include` hereda las variables de la vista) |
+| Diálogo (uno por página) | `resources/views/componentes/codigo-identificacion.blade.php` |
+| Servicio | `app/Services/Lector/Identificacion.php` |
+| Controlador | `app/Http/Controllers/IdentificacionController.php` |
+| Comportamiento y estilos | bloque "Ajustes Ronda 5" de `plataforma.js`, `plataforma.css` y `modos-pantalla.css` |
+
+| Método y ruta | Nombre | Permiso | Qué hace |
+|---|---|---|---|
+| `GET /identificacion/{tipo}/{id}/qr` | `identificacion.qr` | `<modulo>.ver` | QR en SVG (local, `bacon/bacon-qr-code`) con `/e/{codigo_qr}` |
+| `PUT /identificacion/{tipo}/{id}/etiqueta` (`etiqueta_nfc`, vacío = quitar) | `identificacion.etiqueta` | `<modulo>.editar` | Asigna o quita la etiqueta NFC/RFID; JSON `{ok, etiqueta, mensaje}`; 60 por minuto |
+
+- `{tipo}` es la clave de `config/lector.php`; el módulo de permisos sale de `permisoLector()` (`llaves.ver` → `llaves`). Tipo desconocido → 404.
+- Empresa de trabajo (tenant), sedes del permiso (el `sede_id` de `resumenLector()`) y alcance «propios» (`creado_por`): fuera de eso → **404**; sin el permiso → **403**.
+- La etiqueta se normaliza (`Etiqueta::normalizar`) y no puede estar en **ningún** registro de la empresa de **ningún** tipo registrado (el lector no sabría cuál abrir): «Esa tarjeta o etiqueta NFC/RFID ya está asignada a la llave «HDC-101». Quítala de ahí primero o usa otra.».
+- Auditoría: `<modulo>.etiqueta_asignada` / `<modulo>.etiqueta_quitada` con antes y después.
+- El diálogo: título y detalle, QR, dirección con **Copiar** (portapapeles o selección), **Imprimir …** (abre la página de impresión del módulo, si hay permiso) y, con permiso de editar, **Asignar etiqueta NFC / RFID** con `componentes.lector` en modo capturar: lo leído con Enter o NFC se guarda solo.
+- Fichas que lo usan: Vehículos (Imprimir calcomanía), Llaves (Imprimir etiqueta; se abre solo después de reactivar con `session('identificacion')`), Gafetes, Equipos de seguridad, Equipos de Protección Civil, Colaboradores (sin imprimir), Lost & Found (lista y ficha). Procedimientos aún no existe en `develop`: cuando llegue, solo agrega el botón y el diálogo. Se retiraron los diálogos propios «Ver QR» de Equipos y Equipos PC (las rutas `equipos.qr` y `equipos_pc.qr` siguen existiendo).
+
+```blade
+@include('componentes.boton-identificacion', ['identTipo' => 'llave', 'identRegistro' => $l, 'identTitulo' => $l->nomenclatura,
+    'identDetalle' => $l->sede?->nombre, 'identImprimir' => route('llaves.imprimir', ['llaves' => [$l->id]]),
+    'identImprimirTexto' => 'Imprimir etiqueta', 'identEditable' => $editable])
+{{-- …y una vez al final de la página: --}}
+@include('componentes.codigo-identificacion')
+```
+
 ## Agregar un tipo nuevo
 
 1. **Migración:** `codigo_qr` (string 32, único) y `etiqueta_nfc` (string 64, nullable, `unique(['empresa_id','etiqueta_nfc'])`).
 2. **Modelo:** `implements Identificable`, `use TieneIdentificador`, `$columnaLegible` opcional, y los métodos `tipoLector()`, `permisoLector()`, `resumenLector()` y `urlLector()`.
 3. **Registro:** su línea en `config/lector.php`.
 4. **Etiquetas impresas:** el QR codifica `route('lector.ir', $registro->codigo_qr)`. Se genera localmente con `bacon/bacon-qr-code`, como la calcomanía vehicular.
+5. **Ficha:** el botón `componentes.boton-identificacion` y el diálogo `componentes.codigo-identificacion` (sección anterior). Agrega el nombre del tipo en `Identificacion::NOMBRES` para el mensaje de etiqueta ocupada.
 
 ## Vouchers de reposición (base)
 

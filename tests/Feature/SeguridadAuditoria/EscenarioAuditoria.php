@@ -79,7 +79,7 @@ trait EscenarioAuditoria
             return str_starts_with($ruta, 'equipos_pc.') ? 'equipos_pc' : 'equipos';
         }
         // Eliminar definitivamente (/borrar/{registro}/{id}): se recorre con llaves (registro de una sede)
-        if ($parametro === 'id' && str_starts_with($ruta, 'borrar.')) {
+        if ($parametro === 'id' && (str_starts_with($ruta, 'borrar.') || str_starts_with($ruta, 'identificacion.'))) {
             return 'llaves';
         }
 
@@ -134,6 +134,10 @@ trait EscenarioAuditoria
                     : DB::table('roles')->where('empresa_id', $this->demo->id)->where('nombre', 'Agente')->value('id');
             case 'cual':
                 return 'guardia';
+            case 'parte':
+                return 'seguridad';
+            case 'tipo':
+                return 'llave';
             case 'pantalla':
                 return 'etiqueta';
             case 'clave':
@@ -199,7 +203,7 @@ trait EscenarioAuditoria
     {
         $parametros = [];
         foreach ($ruta->parameterNames() as $nombre) {
-            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'pantalla', 'registro'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
+            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'pantalla', 'registro', 'tipo', 'parte'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
             $valor = match (true) {
                 ! $inexistente || $esTexto => $this->valorParametro((string) $ruta->getName(), $nombre, $sede),
                 $nombre === 'codigo' => 'zzzzzzzzzzzzzzzzzzzzzzzz',

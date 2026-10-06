@@ -23,6 +23,9 @@ Si algo falla, la pantalla muestra el último error, por ejemplo una contraseña
 Marca los avisos que quieres que lleguen. Hoy está disponible:
 
 - **Altas provisionales:** cuando la caseta registra a alguien que no estaba en el directorio, Recursos Humanos recibe un correo con un botón para revisarlo.
+- **Vouchers de reposición con cobro (CXC):** cada copia del voucher (Seguridad, Recepción y Administración) se envía por correo. Escribe los correos de cada área en su cuadro (uno por línea o separados por coma). El colaborador responsable no recibe copia. Si dejas los tres cuadros vacíos, se envía a quienes pueden imprimir vouchers en esa sede.
+
+![Copias del voucher por correo](img/ronda-5/configuracion-copias-voucher.png)
 
 ## Lost & Found: días de resguardo (Administrador de la empresa)
 

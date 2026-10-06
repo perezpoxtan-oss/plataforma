@@ -5,10 +5,12 @@ namespace App\Services\Avisos;
 use App\Mail\AltaProvisionalRegistrada;
 use App\Mail\AvisoPaseSalida;
 use App\Mail\ValeTaxiRegistrado;
+use App\Mail\VoucherConCobro;
 use App\Models\Colaborador;
 use App\Models\Empresa;
 use App\Models\MovimientoTransporte;
 use App\Models\User;
+use App\Models\VoucherReposicion;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Support\CorreoPlataforma;
@@ -134,4 +136,66 @@ class AvisosCorreo
         return $this->correo->enviar($destinatarios, $mensaje);
     }
     // Fin Pases de salida
+
+    // Ronda 5 (LL-04): copias del voucher con cobro
+
+    /**
+     * Voucher de reposición con cobro (CXC): cada copia (Seguridad, Recepción,
+     * Administración) va a su lista de Configuración. Si las tres están
+     * vacías, a quien puede imprimir vouchers en esa sede. Nunca al
+     * colaborador responsable.
+     *
+     * @return array<string, list<string>> copia => destinatarios (lo que se envió)
+     */
+    public function voucherConCobro(VoucherReposicion $voucher, User $registro): array
+    {
+        $empresa = Empresa::find($voucher->empresa_id);
+        if ($empresa === null || ! $empresa->aviso('voucher_cobro') || ! $this->correo->configurado()) {
+            return [];
+        }
+
+        $envios = [];
+        foreach (Empresa::DESTINATARIOS_VOUCHER as $clave => $copia) {
+            $lista = $empresa->destinatariosAviso($clave);
+            if ($lista !== []) {
+                $envios[$copia] = $lista;
+            }
+        }
+        if ($envios === []) {
+            $porPermiso = $this->conPermiso($empresa->id, 'vouchers.imprimir', $voucher->sede_id);
+            if ($porPermiso === []) {
+                return [];
+            }
+            $envios = ['Copias Seguridad, Recepción y Administración' => $porPermiso];
+        }
+
+        $voucher->loadMissing(['sede:id,nombre', 'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno']);
+        $fecha = app(HoraLocal::class)->formatear($voucher->created_at ?? now());
+        $firma = match ($voucher->estadoFirma()) {
+            'digital' => 'Firmado digitalmente en la plataforma',
+            'pendiente' => 'Firma física: se imprime y se firma a mano',
+            default => null,
+        };
+
+        foreach ($envios as $copia => $destinatarios) {
+            $mensaje = new VoucherConCobro(
+                $copia,
+                $voucher->folio,
+                $voucher->origen_descripcion,
+                $voucher->etiquetaOrigen(),
+                VoucherReposicion::MOTIVOS[$voucher->motivo] ?? $voucher->motivo,
+                (float) $voucher->monto,
+                $voucher->sede?->nombre,
+                $voucher->colaborador ? $voucher->colaborador->nombreCompleto().' (Núm. '.$voucher->colaborador->num_empleado.')' : null,
+                $firma,
+                $registro->name,
+                $fecha,
+                route('vouchers.imprimir', $voucher->id),
+            );
+            defer(fn () => $this->correo->enviar($destinatarios, $mensaje));
+        }
+
+        return $envios;
+    }
+    // Fin Ronda 5
 }

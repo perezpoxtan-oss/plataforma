@@ -192,6 +192,7 @@ class CrearDatosDemo extends Command
         $paso('borradoDemo', fn () => $this->borradoDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('lostFoundRoboDemo', fn () => $this->lostFoundRoboDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('recorridosPcDemo', fn () => $this->recorridosPcDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('ronda5Demo', fn () => $this->ronda5Demo($empresa, $sedes['CEN'], User::where('username', 'admin.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -1683,5 +1684,37 @@ class CrearDatosDemo extends Command
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }
+    }
+
+    /**
+     * Ronda 5 (solo la primera vez): un segundo edificio con pisos y cuartos
+     * para ver la cascada Zona → Piso → Área en Llaves, costos de reposición
+     * (uno fijo y uno variable) y los correos de las copias del voucher con cobro.
+     */
+    private function ronda5Demo(Empresa $empresa, Sede $centro, User $actor): void
+    {
+        if (Llave::whereNotNull('costo_reposicion')->exists()) {
+            return;
+        }
+
+        if (! Espacio::where('nombre', 'Villas')->where('nivel', Espacio::EDIFICIO)->exists()) {
+            $espacios = app(AdministradorEspacios::class);
+            $tipo = fn (string $nivel, string $nombre) => TipoEspacio::whereNull('empresa_id')->where('nivel', $nivel)->where('nombre', $nombre)->value('id');
+            $villas = $espacios->crear($actor, $centro, null, Espacio::EDIFICIO, ['nombre' => 'Villas', 'codigo' => 'VI', 'tipo_espacio_id' => $tipo(Espacio::EDIFICIO, 'Torre')], false);
+            $planta = $espacios->crear($actor, $centro, $villas, Espacio::AREA, ['nombre' => 'Planta baja', 'tipo_espacio_id' => $tipo(Espacio::AREA, 'Piso')], false);
+            $espacios->crearLote($actor, $planta, ['V01', 'V02', 'V03'], null, $tipo(Espacio::AREA_ESPECIFICA, 'Habitación'));
+        }
+
+        // HDC-TA-ZONA: costo fijo; HDC-BOD-01: costo variable (se sugiere 350 y se ajusta en cada baja)
+        Llave::where('nomenclatura', 'HDC-TA-ZONA')->update(['costo_reposicion' => 250, 'costo_variable' => false]);
+        Llave::where('nomenclatura', 'HDC-BOD-01')->update(['costo_reposicion' => 350, 'costo_variable' => true]);
+
+        $preferencias = $empresa->fresh()->preferencias ?? [];
+        $preferencias['avisos_destinatarios'] = ($preferencias['avisos_destinatarios'] ?? []) + [
+            'voucher_seguridad' => ['seguridad@hoteldemo.mx'],
+            'voucher_recepcion' => ['recepcion@hoteldemo.mx'],
+            'voucher_administracion' => ['administracion@hoteldemo.mx'],
+        ];
+        $empresa->forceFill(['preferencias' => $preferencias])->save();
     }
 }

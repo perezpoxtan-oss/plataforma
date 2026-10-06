@@ -10,6 +10,7 @@ use App\Http\Controllers\Administracion\RolController;
 use App\Http\Controllers\Administracion\SedeController;
 use App\Http\Controllers\Administracion\UsuarioController;
 use App\Http\Controllers\Auth\SesionController;
+use App\Http\Controllers\IdentificacionController;
 use App\Http\Controllers\LectorController;
 use App\Http\Controllers\ModuloPendienteController;
 use App\Http\Controllers\Operacion\PrestamoLlaveController;
@@ -335,6 +336,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/colaboradores/homonimos', [ColaboradorController::class, 'homonimos'])->middleware('throttle:120,1')->name('colaboradores.homonimos');
     Route::put('/configuracion/lost-found', [ConfiguracionController::class, 'lostFound'])->name('configuracion.lost_found');
     // Fin Padrones: Ajustes QA 4
+
+    // Padrones: Ajustes Ronda 5 (código e identificación de las fichas; firmas de vouchers)
+    Route::get('/identificacion/{tipo}/{id}/qr', [IdentificacionController::class, 'qr'])
+        ->where('tipo', '[a-z_]+')->whereNumber('id')->name('identificacion.qr');
+    Route::put('/identificacion/{tipo}/{id}/etiqueta', [IdentificacionController::class, 'etiqueta'])
+        ->where('tipo', '[a-z_]+')->whereNumber('id')->middleware('throttle:60,1')->name('identificacion.etiqueta');
+    Route::get('/vouchers/{voucher}/firma/{parte}', [VoucherController::class, 'firma'])
+        ->whereNumber('voucher')->whereIn('parte', ['seguridad', 'responsable', 'hoja'])->name('vouchers.firma');
+    Route::post('/vouchers/{voucher}/papel', [VoucherController::class, 'papel'])->whereNumber('voucher')->name('vouchers.papel');
+    // Fin Padrones: Ajustes Ronda 5
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');

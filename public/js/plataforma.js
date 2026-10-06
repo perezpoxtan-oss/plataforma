@@ -40,6 +40,13 @@
        silencioso cada 3 minutos mantiene viva la sesión, así no se pierde un
        formulario largo a medio llenar. Si no hay actividad, 2 minutos antes
        del cierre aparece un aviso para confirmar que sigues ahí. */
+    /* Ronda 5 (LL-02, "me sacó sin avisar"): la última actividad se comparte
+       entre pestañas (una pestaña olvidada ya no cierra la sesión de la que
+       sí se usa), el reloj se revisa cada 5 s y al volver a la pestaña o
+       despertar el celular (los navegadores pausan los relojes en segundo
+       plano), y el aviso muestra la cuenta regresiva con "Seguir conectado".
+       Si la sesión ya terminó en el servidor, se va directo al aviso
+       "Sesión finalizada por seguridad". */
     function vigilarSesion() {
         var datos = document.body.dataset;
         if (!datos.inactividad || !datos.latido) { return; }
@@ -47,28 +54,53 @@
         var LIMITE = parseInt(datos.inactividad, 10);
         var AVISO = parseInt(datos.aviso || '120', 10);
         var LATIDO_SI_ACTIVO = 180;
-        var REVISAR_CADA_MS = 30 * 1000;
+        var REVISAR_CADA_MS = 5 * 1000;
+        var CLAVE = 'plataforma_ultima_actividad';
 
         var ultimaActividad = Date.now();
         var ultimoLatido = Date.now();
         var avisoVisible = false;
         var modal = null;
+        var ultimoGuardado = 0;
+
+        function compartida() {
+            try { return parseInt(localStorage.getItem(CLAVE) || '0', 10) || 0; } catch (x) { return 0; }
+        }
+
+        function marcarActividad() {
+            ultimaActividad = Date.now();
+            // Se escribe como mucho cada 5 s (mousemove dispara cientos de veces)
+            if (ultimaActividad - ultimoGuardado > 5000) {
+                ultimoGuardado = ultimaActividad;
+                try { localStorage.setItem(CLAVE, String(ultimaActividad)); } catch (x) { /* sin almacenamiento */ }
+            }
+        }
 
         ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function (tipo) {
-            document.addEventListener(tipo, function () { ultimaActividad = Date.now(); }, { passive: true });
+            document.addEventListener(tipo, function () { if (!avisoVisible) { marcarActividad(); } }, { passive: true });
         });
 
         function segundos(desde) { return (Date.now() - desde) / 1000; }
+        function inactividad() { return segundos(Math.max(ultimaActividad, compartida())); }
+
+        function irAlAviso() { window.location.href = datos.expirada; }
 
         function latido() {
             ultimoLatido = Date.now();
             fetch(datos.latido, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
                 .then(function (r) {
-                    if (r.status === 401) { window.location.href = datos.expirada; return null; }
+                    if (r.status === 401 || r.status === 419) { irAlAviso(); return null; }
                     return r.json();
                 })
                 .then(function (d) { if (d && d.ok) { ocultarAviso(); } })
                 .catch(function () { /* sin red: decide el chequeo normal */ });
+        }
+
+        function pintarCuenta(restan) {
+            var el = document.querySelector('[data-sesion-cuenta]');
+            if (!el) { return; }
+            var s = Math.max(0, Math.ceil(restan));
+            el.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
         }
 
         function mostrarAviso() {
@@ -85,13 +117,15 @@
             if (modal) { modal.hide(); }
         }
 
-        /* Seguridad: el cierre se pide por POST con el token CSRF (un GET ya no cierra la sesión) */
+        /* Seguridad: el cierre se pide por POST con el token CSRF (un GET ya no
+           cierra la sesión). Si la sesión ya terminó en el servidor (token
+           vencido), bootstrap/app.php lleva igual al aviso "Sesión finalizada". */
         var cerrando = false;
         function cerrarPorInactividad() {
             if (cerrando) { return; }
             cerrando = true;
             var meta = document.querySelector('meta[name="csrf-token"]');
-            if (!meta) { window.location.href = datos.expirada; return; }
+            if (!meta) { irAlAviso(); return; }
             var form = document.createElement('form');
             form.method = 'POST';
             form.action = datos.expirada;
@@ -106,19 +140,30 @@
         }
 
         window.plataformaSesion = {
-            seguir: function () { ultimaActividad = Date.now(); latido(); }
+            seguir: function () { ultimoGuardado = 0; marcarActividad(); latido(); }
         };
 
-        setInterval(function () {
-            var inactivo = segundos(ultimaActividad);
+        function revisar() {
+            if (cerrando) { return; }
+            var inactivo = inactividad();
             if (inactivo >= LIMITE) {
                 cerrarPorInactividad();
             } else if (inactivo >= LIMITE - AVISO) {
+                pintarCuenta(LIMITE - inactivo);
                 if (!avisoVisible) { mostrarAviso(); }
-            } else if (segundos(ultimoLatido) >= LATIDO_SI_ACTIVO && inactivo <= LATIDO_SI_ACTIVO) {
-                latido();
+            } else {
+                // Otra pestaña siguió trabajando: el aviso de esta sobra
+                if (avisoVisible) { ocultarAviso(); }
+                if (segundos(ultimoLatido) >= LATIDO_SI_ACTIVO && segundos(ultimaActividad) <= LATIDO_SI_ACTIVO) { latido(); }
             }
-        }, REVISAR_CADA_MS);
+        }
+
+        marcarActividad();
+        setInterval(revisar, REVISAR_CADA_MS);
+        // Al volver a la pestaña o despertar el celular, se revisa de inmediato
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) { revisar(); } });
+        window.addEventListener('focus', revisar);
+        window.addEventListener('pageshow', revisar);
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -624,7 +669,8 @@ document.addEventListener('click', function (e) {
         var repetido = existentes.indexOf(nombre) !== -1;
         aviso.hidden = false;
         aviso.className = 'small mb-2 ' + (repetido ? 'text-warning' : 'text-success');
-        aviso.textContent = repetido ? 'Ya existe uno con ese nombre en esta empresa.' : 'Disponible.';
+        // data-ambito-nombre (Ronda 5, Llaves): "esta sede" cuando el nombre se repite solo por sede
+        aviso.textContent = repetido ? 'Ya existe uno con ese nombre en ' + (campo.getAttribute('data-ambito-nombre') || 'esta empresa') + '.' : 'Disponible.';
     });
 })();
 
@@ -1549,13 +1595,38 @@ document.addEventListener('click', function (e) {
 
     function limpiar(caja) {
         var p = partes(caja);
+        cancelarEspera(caja);
+        caja._turnoLector = (caja._turnoLector || 0) + 1; // descarta respuestas en camino
         if (p.id) { p.id.value = ''; }
         if (p.elegido) { p.elegido.hidden = true; }
         if (p.opciones) { p.opciones.hidden = true; p.opciones.textContent = ''; }
         estado(caja, '');
     }
 
-    function resolver(caja, texto) {
+    /* Ronda 5 (LL-04): búsqueda automática al escribir, sin Enter. Espera
+       ~350 ms sin teclear y al menos 2 caracteres. Los lectores que "escriben
+       como teclado" terminan con Enter: el Enter cancela la espera y busca
+       al momento. Solo cuenta la respuesta de la última búsqueda. */
+    var ESPERA_MS = 350;
+    var MINIMO = 2;
+
+    function cancelarEspera(caja) {
+        if (caja._esperaLector) { clearTimeout(caja._esperaLector); caja._esperaLector = null; }
+    }
+
+    function programarBusqueda(caja) {
+        cancelarEspera(caja);
+        if (caja.dataset.modo === 'capturar') { return; }
+        var texto = partes(caja).entrada.value.trim();
+        if (texto.length < MINIMO) { estado(caja, ''); return; }
+        caja._esperaLector = setTimeout(function () {
+            caja._esperaLector = null;
+            resolver(caja, texto, true);
+        }, ESPERA_MS);
+    }
+
+    function resolver(caja, texto, automatica) {
+        cancelarEspera(caja);
         texto = (texto || '').trim();
         if (!texto) { return; }
         var p = partes(caja);
@@ -1567,14 +1638,23 @@ document.addEventListener('click', function (e) {
             return;
         }
 
+        var turno = (caja._turnoLector || 0) + 1;
+        caja._turnoLector = turno;
         estado(caja, 'Buscando…', 'info');
         var url = caja.dataset.url + '?entrada=' + encodeURIComponent(texto) + (caja.dataset.tipos ? '&tipos=' + encodeURIComponent(caja.dataset.tipos) : '');
         fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
             .then(function (datos) {
+                // Llegó tarde: ya hay otra búsqueda más nueva, o la persona siguió escribiendo
+                if (caja._turnoLector !== turno || (automatica && p.entrada.value.trim() !== texto)) { return; }
                 var lista = datos.resultados || [];
                 if (lista.length === 1) { elegir(caja, lista[0]); return; }
-                if (!lista.length) { estado(caja, 'No se encontró nada con «' + texto + '». Revisa la etiqueta o búscalo escribiendo.', 'error'); return; }
+                if (!lista.length) {
+                    estado(caja, automatica
+                        ? 'Sin coincidencias con «' + texto + '» todavía. Sigue escribiendo o escanea la etiqueta.'
+                        : 'No se encontró nada con «' + texto + '». Revisa la etiqueta o búscalo escribiendo.', automatica ? 'info' : 'error');
+                    return;
+                }
                 // Varias coincidencias: que la persona elija
                 estado(caja, 'Hay ' + lista.length + ' coincidencias, elige una:', 'info');
                 p.opciones.textContent = '';
@@ -1590,7 +1670,10 @@ document.addEventListener('click', function (e) {
                 });
                 p.opciones.hidden = false;
             })
-            .catch(function () { estado(caja, 'No se pudo consultar. Revisa tu conexión e intenta de nuevo.', 'error'); });
+            .catch(function () {
+                if (caja._turnoLector !== turno) { return; }
+                estado(caja, 'No se pudo consultar. Revisa tu conexión e intenta de nuevo.', 'error');
+            });
     }
 
     /* ---------- Cámara: BarcodeDetector si existe; si no (iPhone, Firefox), jsQR ---------- */
@@ -1723,6 +1806,13 @@ document.addEventListener('click', function (e) {
         var entrada = e.target.closest && e.target.closest('[data-lector-entrada]');
         if (!entrada) { return; }
         setTimeout(function () { resolver(entrada.closest('[data-lector]'), entrada.value); }, 0);
+    });
+
+    // Ronda 5 (LL-04): busca sola mientras se escribe (sin Enter)
+    document.addEventListener('input', function (e) {
+        var entrada = e.target.closest && e.target.closest('[data-lector-entrada]');
+        if (!entrada || e.inputType === 'insertFromPaste') { return; }
+        programarBusqueda(entrada.closest('[data-lector]'));
     });
 
     document.addEventListener('click', function (e) {
@@ -6156,3 +6246,319 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Eliminar definitivamente */
+/* ==========================================================================
+   Ajustes Ronda 5 (QA del dueño; ver docs/cursos/leccion-28-ajustes-ronda-5.md)
+   - Llaves: nombre único por sede (LL-03), lugares en cascada
+     Zona/Edificio → Piso → Área específica (LL-02), costo fijo o variable y
+     firmas del voucher de baja: digital o física (LL-04, LL-05).
+   - Diálogo "Código e identificación" de todas las fichas con QR: QR, copiar
+     la dirección, imprimir y asignar etiqueta NFC/RFID (LL-05, VE-04).
+   - Vouchers: "Registrar firma en papel".
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto, siFalla) { try { return JSON.parse(texto); } catch (x) { return siFalla; } }
+
+    /* ---------- Llaves: nombre único POR SEDE (aviso en vivo) ---------- */
+    function nombresDeSede(form) {
+        var campo = form.querySelector('[data-nombres-por-sede]');
+        var sede = form.querySelector('[data-llave-sede]');
+        if (!campo || !sede) { return; }
+        var mapa = leer(campo.getAttribute('data-nombres-por-sede') || '{}', {}) || {};
+        campo.setAttribute('data-nombres-existentes', JSON.stringify(mapa[sede.value] || []));
+        if (campo.value) { campo.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+
+    /* ---------- Llaves: lugares en cascada (como las píldoras de SEGCAT) ----------
+       Sin nada marcado se ve todo lo de la sede; al tocar edificios se ven solo
+       sus pisos (y sus cuartos); al tocar pisos, solo sus cuartos. Lo ya
+       marcado nunca se esconde. */
+    function cascada(form) {
+        var sede = (form.querySelector('[data-llave-sede]') || {}).value || '';
+        form.querySelectorAll('[data-llave-lugares]').forEach(function (caja) {
+            var c = caja.querySelector('[data-cascada]');
+            if (!c) { return; }
+            var edificios = [];
+            c.querySelectorAll('[data-pildora-edificio]').forEach(function (p) {
+                var casilla = p.querySelector('input');
+                var visible = sede !== '' && p.dataset.sede === sede;
+                if (!visible) { casilla.checked = false; }
+                p.hidden = !visible;
+                p.classList.toggle('activa', casilla.checked);
+                if (casilla.checked) { edificios.push(casilla.value); }
+            });
+            var pisos = [];
+            c.querySelectorAll('[data-pildora-piso]').forEach(function (p) {
+                var casilla = p.querySelector('input');
+                var visible = sede !== '' && p.dataset.sede === sede && (edificios.length === 0 || edificios.indexOf(p.dataset.edificio) !== -1);
+                if (!visible) { casilla.checked = false; }
+                p.hidden = !visible;
+                p.classList.toggle('activa', casilla.checked);
+                if (casilla.checked) { pisos.push(casilla.value); }
+            });
+            c.querySelectorAll('[data-cascada-paso]').forEach(function (paso) {
+                paso.hidden = !paso.querySelector('.pildora-cascada:not([hidden])');
+            });
+            c.hidden = sede === '' || !c.querySelector('.pildora-cascada:not([hidden])');
+            caja.querySelectorAll('[data-lugar]').forEach(function (fila) {
+                var casilla = fila.querySelector('input');
+                if (fila.hidden || casilla.checked) { return; } // ya oculto por sede o búsqueda / marcado: se queda
+                fila.hidden = !((edificios.length === 0 || edificios.indexOf(fila.dataset.edificio) !== -1)
+                    && (pisos.length === 0 || pisos.indexOf(fila.dataset.piso) !== -1));
+            });
+        });
+    }
+
+    function reiniciarCascada(form) {
+        form.querySelectorAll('[data-cascada] input').forEach(function (c) { c.checked = false; });
+    }
+
+    function acomodarLlave(form) { nombresDeSede(form); cascada(form); }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-llave]');
+        if (!form) { return; }
+        if (e.target.closest('[data-cascada]')) {
+            // Vuelve a calcular desde cero (sede, búsqueda) y luego aplica la cascada
+            var buscar = e.target.closest('[data-llave-lugares]').querySelector('[data-buscar-lugar]');
+            if (buscar) { buscar.dispatchEvent(new Event('input', { bubbles: true })); } else { cascada(form); }
+            return;
+        }
+        if (e.target.matches('[data-llave-sede], [data-llave-alcance]')) { acomodarLlave(form); }
+    });
+    document.addEventListener('input', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-llave]');
+        if (form && e.target.matches('[data-buscar-lugar]')) { cascada(form); }
+    });
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        var form = dialogo && dialogo.querySelector('[data-form-llave]');
+        if (!form) { return; }
+        reiniciarCascada(form);
+        acomodarLlave(form);
+    });
+
+    /* ---------- Baja de llave: costo fijo o variable ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="baja-llave"]');
+        if (!b) { return; }
+        var d = document.getElementById('dialogoBajaLlave');
+        if (!d) { return; }
+        var monto = d.querySelector('[data-monto-llave]');
+        var nota = d.querySelector('[data-nota-monto]');
+        var fijo = b.dataset.costoFijo || '';
+        var propio = b.dataset.costoPropio || '';
+        if (monto) {
+            monto.readOnly = fijo !== '';
+            if (fijo !== '') {
+                monto.value = fijo;
+                if (nota) { nota.textContent = '(costo fijo de esta llave)'; }
+            } else if (propio !== '') {
+                monto.value = propio;
+                if (nota) { nota.textContent = '(costo variable: sugerido $' + propio + ', ajústalo)'; }
+            }
+        }
+        sincronizarFirmas(d);
+    });
+
+    /* ---------- Firmas del voucher: física (por omisión) o digital ---------- */
+    function requerida(campo, si) {
+        if (!campo) { return; }
+        if (si) { campo.setAttribute('data-firma-requerida', ''); } else { campo.removeAttribute('data-firma-requerida'); }
+    }
+
+    function sincronizarFirmas(raiz) {
+        if (!raiz) { return; }
+        raiz.querySelectorAll('[data-firmas-voucher]').forEach(function (caja) {
+            var form = caja.closest('form');
+            var marcado = caja.querySelector('[data-firma-modo]:checked');
+            var digital = !!marcado && marcado.value === 'digital';
+            var digitales = caja.querySelector('[data-firmas-digitales]');
+            if (digitales) { digitales.hidden = !digital; }
+            var ayuda = caja.querySelector('[data-firma-ayuda-fisica]');
+            if (ayuda) { ayuda.hidden = digital; }
+            requerida(caja.querySelector('[name="firma_seguridad"]'), digital);
+            // El responsable firma solo si se eligió uno
+            var id = form && form.querySelector('[name="colaborador_id"]');
+            var hay = !!(id && id.value);
+            var cajaResp = caja.querySelector('[data-firma-responsable-caja]');
+            if (cajaResp) { cajaResp.hidden = !hay; }
+            requerida(caja.querySelector('[name="firma_responsable"]'), digital && hay);
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-firma-modo]')) { sincronizarFirmas(e.target.form); }
+    });
+    document.addEventListener('lector:elegido', function (e) {
+        var form = e.target.closest && e.target.closest('form');
+        if (form) { sincronizarFirmas(form); }
+    });
+    document.addEventListener('click', function (e) {
+        var limpiar = e.target.closest('[data-lector-limpiar]');
+        var form = limpiar && limpiar.closest('form');
+        if (form) { sincronizarFirmas(form); }
+    });
+
+    /* ---------- Al cerrar un diálogo (ya limpio), todo se acomoda otra vez ---------- */
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-form-llave]').forEach(function (form) { reiniciarCascada(form); acomodarLlave(form); });
+        var monto = e.target.querySelector('[data-monto-llave]');
+        if (monto) { monto.readOnly = false; }
+        sincronizarFirmas(e.target);
+    }, true);
+
+    /* ---------- Código e identificación (QR, imprimir, NFC/RFID) ---------- */
+    var botonActual = null;
+
+    function dialogoIdent() { return document.getElementById('dialogoIdentificacion'); }
+
+    function mensaje(d, texto, tipo) {
+        var m = d.querySelector('[data-ident-mensaje]');
+        m.hidden = !texto;
+        m.textContent = texto || '';
+        m.className = 'ident-mensaje' + (tipo ? ' ' + tipo : '');
+    }
+
+    function pintarEtiqueta(d, etiqueta) {
+        d.querySelector('[data-ident-nfc-actual]').textContent = etiqueta
+            ? 'Asignada ahora: ' + etiqueta + '. Si lees otra, la reemplaza.'
+            : 'Todavía no tiene una etiqueta NFC / RFID asignada.';
+        d.querySelector('[data-ident-quitar]').hidden = !etiqueta;
+    }
+
+    function abrirIdentificacion(boton) {
+        var d = dialogoIdent();
+        if (!d) { return; }
+        var datos = leer(boton.getAttribute('data-ver-identificacion') || '{}', {}) || {};
+        botonActual = boton;
+        d.querySelector('[data-ident-titulo]').textContent = datos.titulo || '';
+        var detalle = d.querySelector('[data-ident-detalle]');
+        detalle.textContent = datos.detalle || '';
+        detalle.hidden = !datos.detalle;
+        var img = d.querySelector('[data-ident-qr]');
+        img.src = datos.qr || '';
+        img.alt = 'Código QR de ' + (datos.titulo || 'este registro');
+        d.querySelector('[data-ident-enlace]').textContent = datos.enlace || '';
+        d.querySelector('[data-ident-copiar-texto]').textContent = 'Copiar';
+        var imprimir = d.querySelector('[data-ident-imprimir]');
+        imprimir.hidden = !datos.imprimir;
+        imprimir.href = datos.imprimir || '#';
+        d.querySelector('[data-ident-imprimir-texto]').textContent = datos.imprimirTexto || 'Imprimir etiqueta';
+        d.querySelector('[data-ident-nfc]').hidden = !datos.etiquetaUrl;
+        var form = d.querySelector('[data-ident-form]');
+        form.setAttribute('action', datos.etiquetaUrl || '');
+        var entrada = form.querySelector('[name="etiqueta_nfc"]');
+        if (entrada) { entrada.value = ''; }
+        pintarEtiqueta(d, datos.etiqueta || '');
+        mensaje(d, '');
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    }
+
+    function guardarEtiqueta(d, valor) {
+        var form = d.querySelector('[data-ident-form]');
+        if (!form.getAttribute('action')) { return; }
+        var cuerpo = new FormData(form);
+        cuerpo.set('etiqueta_nfc', valor);
+        mensaje(d, 'Guardando…', 'info');
+        fetch(form.getAttribute('action'), {
+            method: 'POST', body: cuerpo, credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(function (r) {
+                return r.json().then(function (j) { return { ok: r.ok, estado: r.status, j: j }; }, function () { return { ok: r.ok, estado: r.status, j: {} }; });
+            })
+            .then(function (res) {
+                if (res.ok) {
+                    mensaje(d, res.j.mensaje || 'Listo.', 'ok');
+                    pintarEtiqueta(d, res.j.etiqueta || '');
+                    var entrada = form.querySelector('[name="etiqueta_nfc"]');
+                    if (entrada) { entrada.value = ''; }
+                    if (botonActual) {
+                        var datos = leer(botonActual.getAttribute('data-ver-identificacion') || '{}', {}) || {};
+                        datos.etiqueta = res.j.etiqueta || '';
+                        botonActual.setAttribute('data-ver-identificacion', JSON.stringify(datos));
+                    }
+                    return;
+                }
+                var errores = (res.j && res.j.errors) || {};
+                var texto = errores.etiqueta_nfc ? errores.etiqueta_nfc[0] : '';
+                if (res.estado === 403 || res.estado === 404) { texto = 'No tienes permiso para cambiar la etiqueta de este registro.'; }
+                if (res.estado === 419 || res.estado === 401) { texto = 'Tu sesión terminó. Vuelve a entrar e inténtalo otra vez.'; }
+                mensaje(d, texto || 'No se pudo guardar. Intenta de nuevo.', 'error');
+            })
+            .catch(function () { mensaje(d, 'No se pudo guardar. Revisa tu conexión e intenta de nuevo.', 'error'); });
+    }
+
+    function copiar(d) {
+        var codigo = d.querySelector('[data-ident-enlace]');
+        var aviso = d.querySelector('[data-ident-copiar-texto]');
+        var listo = function () { aviso.textContent = '¡Copiado!'; };
+        var aMano = function () {
+            try {
+                var rango = document.createRange();
+                rango.selectNodeContents(codigo);
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(rango);
+                if (document.execCommand('copy')) { listo(); } else { aviso.textContent = 'Selecciónalo y cópialo'; }
+            } catch (x) { aviso.textContent = 'Selecciónalo y cópialo'; }
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(codigo.textContent).then(listo, aMano);
+        } else {
+            aMano();
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-ver-identificacion]');
+        if (boton) { abrirIdentificacion(boton); return; }
+        var d = dialogoIdent();
+        if (!d || !d.contains(e.target)) { return; }
+        if (e.target.closest('[data-ident-copiar]')) { copiar(d); return; }
+        if (e.target.closest('[data-ident-quitar]')) { guardarEtiqueta(d, ''); }
+    });
+
+    document.addEventListener('submit', function (e) {
+        if (!e.target.matches('[data-ident-form]')) { return; }
+        e.preventDefault();
+        var d = dialogoIdent();
+        var entrada = e.target.querySelector('[name="etiqueta_nfc"]');
+        var valor = entrada ? entrada.value.trim() : '';
+        if (!valor) { mensaje(d, 'Acerca la tarjeta al lector o escribe su número.', 'error'); return; }
+        guardarEtiqueta(d, valor);
+    });
+
+    // Lo leído con el lector (Enter del lector USB/Bluetooth o NFC del celular) se guarda solo
+    document.addEventListener('lector:capturado', function (e) {
+        var d = dialogoIdent();
+        if (d && d.contains(e.target) && e.detail) { guardarEtiqueta(d, e.detail); }
+    });
+
+    /* ---------- Vouchers: registrar la firma en papel ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="voucher-papel"]');
+        if (!b) { return; }
+        var d = document.getElementById('dialogoPapelVoucher');
+        var form = d && d.querySelector('[data-form-papel]');
+        if (!form) { return; }
+        form.action = b.dataset.url;
+        form.querySelector('[data-campo-dialogo]').value = 'papel-' + b.dataset.id;
+        d.querySelector('[data-papel-folio]').textContent = b.dataset.folio || '';
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-form-llave]').forEach(acomodarLlave);
+        sincronizarFirmas(document);
+        // Después de reactivar una llave se abre su "Código e identificación"
+        var abrir = document.querySelector('[data-abrir-identificacion]');
+        if (abrir) { abrirIdentificacion(abrir); }
+    });
+})();
+/* Fin Ajustes Ronda 5 */

@@ -305,6 +305,12 @@ class RecorridoPantallasTest extends TestCase
             'lector.ir' => collect([Vehiculo::class, Equipo::class, EquipoPc::class, Llave::class, Gafete::class, Colaborador::class, LostFoundArticulo::class])
                 ->map(fn ($m) => $m::withoutGlobalScopes()->where('empresa_id', $e)->value('codigo_qr'))->filter()->map(fn ($c) => ['codigo' => $c])->values()->all(),
             'configuracion.respaldos.descargar' => [],
+            // Ronda 5: QR del diálogo "Código e identificación" (cada tipo del lector) y firmas de vouchers
+            'identificacion.qr' => collect(['vehiculo' => Vehiculo::class, 'equipo' => Equipo::class, 'equipo_pc' => EquipoPc::class, 'llave' => Llave::class,
+                'gafete' => Gafete::class, 'colaborador' => Colaborador::class, 'lost_found' => LostFoundArticulo::class])
+                ->map(fn ($m, $tipo) => ['tipo' => $tipo, 'id' => $primero($m)])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
+            'vouchers.firma' => collect(['seguridad', 'responsable', 'hoja'])->map(fn ($p) => ['voucher' => $primero(VoucherReposicion::class), 'parte' => $p])
+                ->filter(fn ($j) => $j['voucher'] !== null)->values()->all(),
             // Eliminar definitivamente: el primer registro de cada catálogo o padrón registrado
             'borrar.revisar' => collect(RegistroBorrado::definiciones())
                 ->map(fn ($d, $clave) => ['registro' => $clave, 'id' => $primero($d['modelo'])])->filter(fn ($j) => $j['id'] !== null)->values()->all(),

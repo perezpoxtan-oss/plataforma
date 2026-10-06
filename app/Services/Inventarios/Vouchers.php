@@ -5,6 +5,8 @@ namespace App\Services\Inventarios;
 use App\Models\Colaborador;
 use App\Models\User;
 use App\Models\VoucherReposicion;
+use App\Services\Avisos\AvisosCorreo;
+use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * Bajas con voucher de reposición, compartidas por Llaves, Gafetes y Equipos
@@ -27,9 +30,17 @@ use Illuminate\Validation\ValidationException;
  */
 class Vouchers
 {
+    /** Ronda 5 (LL-04): cómo se firman las copias del voucher. */
+    public const FIRMA_MODOS = [
+        'fisica' => 'Firma física (imprimir y firmar a mano)',
+        'digital' => 'Firma digital (en la pantalla)',
+    ];
+
     public function __construct(
         private readonly AdministradorRoles $roles,
         private readonly Tenant $tenant,
+        private readonly Firmas $firmas,
+        private readonly AvisosCorreo $avisos,
     ) {}
 
     /**
@@ -46,7 +57,11 @@ class Vouchers
             'aplica_cobro' => ['nullable', 'boolean'],
             'monto' => ['nullable', 'required_if_accepted:aplica_cobro', 'numeric', 'min:0', 'max:999999.99'],
             'colaborador_id' => ['nullable', 'integer', 'required_if_accepted:aplica_cobro'],
+            'firma_modo' => ['nullable', Rule::in(array_keys(self::FIRMA_MODOS))],
+            'firma_seguridad' => ['nullable', 'string', 'max:500000'],
+            'firma_responsable' => ['nullable', 'string', 'max:500000'],
         ], [
+            'firma_modo.in' => 'Elige cómo se firmará el voucher: digital o física.',
             'motivo.required' => 'Indica el motivo de la baja.',
             'monto.required_if_accepted' => 'Indica el monto a cobrar.',
             'colaborador_id.required_if_accepted' => 'Elige al responsable al que se le cobrará.',
@@ -58,12 +73,26 @@ class Vouchers
             throw ValidationException::withMessages(['colaborador_id' => 'El responsable no pertenece a esta empresa.']);
         }
 
+        // Firma digital: firma quien registra (Seguridad) y, si hay responsable, también él
+        $modo = $datos['firma_modo'] ?? null;
+        if ($modo === 'digital') {
+            if (! $this->firmas->viene($datos['firma_seguridad'] ?? null)) {
+                throw ValidationException::withMessages(['firma_seguridad' => 'Falta la firma de Seguridad: firma en el recuadro o elige «Firma física».']);
+            }
+            if ($colaboradorId !== null && ! $this->firmas->viene($datos['firma_responsable'] ?? null)) {
+                throw ValidationException::withMessages(['firma_responsable' => 'Falta la firma del responsable: que firme en el recuadro o elige «Firma física».']);
+            }
+        }
+
         return [
             'motivo' => $datos['motivo'],
             'descripcion' => isset($datos['descripcion']) ? trim($datos['descripcion']) : null,
             'aplica_cobro' => $cobro,
             'monto' => $cobro ? number_format((float) $datos['monto'], 2, '.', '') : '0.00',
             'colaborador_id' => $colaboradorId,
+            'firma_modo' => $modo,
+            'firma_seguridad' => $modo === 'digital' ? $datos['firma_seguridad'] : null,
+            'firma_responsable' => $modo === 'digital' && $colaboradorId !== null ? $datos['firma_responsable'] : null,
         ];
     }
 
@@ -76,6 +105,36 @@ class Vouchers
      * @param  string|null  $referenciaCosto  para recordar el costo (tipo de llave, tipo de gafete, "MARCA|MODELO")
      */
     public function darDeBaja(User $actor, Model $origen, string $origenTipo, string $descripcion, array $datos, callable $marcarBaja, ?string $referenciaCosto = null): VoucherReposicion
+    {
+        // Firmas digitales: al disco privado antes de la transacción; si algo falla, se borran
+        $guardadas = [];
+        foreach (['firma_seguridad' => 'la firma de Seguridad', 'firma_responsable' => 'la firma del responsable'] as $campo => $etiqueta) {
+            $valor = $datos[$campo] ?? null;
+            $datos[$campo] = null;
+            if (($datos['firma_modo'] ?? null) === 'digital' && $valor !== null) {
+                $datos[$campo] = $guardadas[] = $this->firmas->guardar($valor, 'vouchers', $campo, $etiqueta);
+            }
+        }
+
+        try {
+            $voucher = $this->emitir($actor, $origen, $origenTipo, $descripcion, $datos, $marcarBaja, $referenciaCosto);
+        } catch (Throwable $e) {
+            array_map(fn ($ruta) => $this->firmas->borrar($ruta), $guardadas);
+            throw $e;
+        }
+
+        // Ronda 5 (LL-04): con cobro (CXC) las copias van por correo a Seguridad, Recepción y Administración
+        if ($voucher->aplica_cobro) {
+            $this->avisos->voucherConCobro($voucher, $actor);
+        }
+
+        return $voucher;
+    }
+
+    /**
+     * @param  array<string, mixed>  $datos
+     */
+    private function emitir(User $actor, Model $origen, string $origenTipo, string $descripcion, array $datos, callable $marcarBaja, ?string $referenciaCosto): VoucherReposicion
     {
         return DB::transaction(function () use ($actor, $origen, $origenTipo, $descripcion, $datos, $marcarBaja, $referenciaCosto) {
             $marcarBaja();
@@ -93,7 +152,7 @@ class Vouchers
             }
 
             $this->roles->auditar($actor, 'vouchers.creado', $voucher, null, $voucher->only([
-                'folio', 'origen_tipo', 'origen_id', 'origen_descripcion', 'motivo', 'aplica_cobro', 'monto', 'colaborador_id',
+                'folio', 'origen_tipo', 'origen_id', 'origen_descripcion', 'motivo', 'aplica_cobro', 'monto', 'colaborador_id', 'firma_modo',
             ]));
 
             return $voucher;

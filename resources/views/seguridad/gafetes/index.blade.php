@@ -138,6 +138,11 @@
                             <span class="estado-gafete no-disponible" title="Extraviado / Dañado / Robado">NO DISPONIBLE</span>
                         @endif
                         <div class="d-flex gap-2">
+                            {{-- Ronda 5: QR y etiqueta NFC/RFID en un diálogo --}}
+                            @include('componentes.boton-identificacion', ['identTipo' => 'gafete', 'identRegistro' => $g, 'identTitulo' => $g->nomenclatura,
+                                'identDetalle' => trim(($g->tipo?->nombre ?? '').' · '.($g->sede?->nombre ?? ''), ' ·'),
+                                'identImprimir' => $imprimible ? route('gafetes.imprimir', ['gafetes' => [$g->id]]) : null, 'identImprimirTexto' => 'Imprimir gafete',
+                                'identEditable' => $editable])
                             @if ($imprimible)
                                 <a href="{{ route('gafetes.imprimir', ['gafetes' => [$g->id]]) }}" target="_blank" rel="noopener" class="btn-icono imprimir-qr" title="Imprimir este gafete" aria-label="Imprimir el gafete {{ $g->nomenclatura }}"><i class="bi bi-printer" aria-hidden="true"></i></a>
                             @endif
@@ -347,6 +352,8 @@
                 </div>
             </dialog>
         @endif
+
+        @include('componentes.codigo-identificacion')
     @endif
 </div>
 @endsection

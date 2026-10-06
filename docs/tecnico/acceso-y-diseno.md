@@ -27,6 +27,18 @@ Réplica en Laravel de `login.php`, `login_proceso.php`, `logout.php`, `includes
 
 Valores en `config/plataforma.php` (`sesion.*`). La inactividad se puede cambiar con `PLATAFORMA_INACTIVIDAD_MINUTOS`.
 
+### Aviso de sesión por cerrar (Ronda 5, nota del dueño en LL-02: "me sacó sin avisar")
+
+Causas encontradas y corrección:
+
+| Causa | Corrección |
+|---|---|
+| `SESSION_LIFETIME=20` igual a la inactividad: la fila de la sesión caducaba a la vez que el cierre por inactividad, así que el servidor ya no sabía que había una sesión y mandaba a Entrar **sin** el aviso «Sesión finalizada por seguridad». | `config/session.php`: `lifetime = max(SESSION_LIFETIME, PLATAFORMA_INACTIVIDAD_MINUTOS + 10)`. El cierre lo hace siempre `ControlarInactividad`, que deja el aviso. |
+| El reloj del navegador revisaba cada 30 s y los navegadores lo pausan en segundo plano o con el celular bloqueado: al volver ya era tarde y no hubo aviso. | `vigilarSesion()` revisa cada 5 s y además al volver a la pestaña (`visibilitychange`, `focus`, `pageshow`). |
+| Una pestaña olvidada cerraba la sesión de otra que sí se usaba. | La última actividad se comparte entre pestañas (`localStorage` `plataforma_ultima_actividad`, con `try/catch`); el aviso de una pestaña se quita si otra sigue activa. |
+| El POST de cierre con la sesión ya terminada (token vencido) mostraba «página vencida». | `bootstrap/app.php`: un 419 en `/sesion/expirada` lleva a Entrar con `acceso=expirado`. |
+| El aviso no decía cuánto faltaba. | Cuenta regresiva (`[data-sesion-cuenta]`) y botón **Seguir conectado**; la pantalla de Entrar explica «Se cerró tras N minutos sin actividad». |
+
 ## Mejoras respecto a SEGCAT (sin cambio visible)
 
 - Los mensajes ya no viajan en la URL (`?error=bloqueado&minutos=…`), sino en la sesión: nadie puede fabricar un aviso falso.

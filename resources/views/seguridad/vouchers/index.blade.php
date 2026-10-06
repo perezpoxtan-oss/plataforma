@@ -99,8 +99,27 @@
                         <p class="voucher-como"><span>¿Cómo pasó?</span> {{ \Illuminate\Support\Str::limit($v->descripcion, 160) }}</p>
                     @endif
                     <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Generado por {{ $v->creado_por_nombre ?? 'alguien' }} · @fecha($v->created_at)</div>
+                    {{-- Ronda 5 (LL-04): firma digital o física --}}
+                    @switch($v->estadoFirma())
+                        @case('digital')
+                            <p class="voucher-firma-estado digital"><i class="bi bi-pen-fill" aria-hidden="true"></i> Firmado digitalmente</p>
+                            @break
+                        @case('papel')
+                            <p class="voucher-firma-estado papel"><i class="bi bi-file-earmark-check" aria-hidden="true"></i> Firmado en papel{{ $v->firmado_papel_por_nombre ? ' · registró '.$v->firmado_papel_por_nombre : '' }} · @fecha($v->firmado_papel_en)
+                                @if ($v->hoja_firmada) · <a href="{{ route('vouchers.firma', [$v->id, 'hoja']) }}" target="_blank" rel="noopener">Ver hoja</a>@endif</p>
+                            @break
+                        @case('pendiente')
+                            <p class="voucher-firma-estado pendiente"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Firma en papel pendiente</p>
+                            @break
+                    @endswitch
                     @if ($puedeImprimir)
-                        <a href="{{ route('vouchers.imprimir', $v->id) }}" target="_blank" rel="noopener" class="btn-ver-voucher"><i class="bi bi-printer" aria-hidden="true"></i> Ver / Reimprimir</a>
+                        <div class="acciones-voucher">
+                            <a href="{{ route('vouchers.imprimir', $v->id) }}" target="_blank" rel="noopener" class="btn-ver-voucher"><i class="bi bi-printer" aria-hidden="true"></i> Ver / Reimprimir</a>
+                            @if ($v->firma_modo !== 'digital')
+                                <button type="button" class="btn-ver-voucher secundario" data-accion="voucher-papel" data-url="{{ route('vouchers.papel', $v->id) }}"
+                                        data-id="{{ $v->id }}" data-folio="{{ $v->folio }}"><i class="bi bi-file-earmark-arrow-up" aria-hidden="true"></i> {{ $v->firmado_papel_en ? 'Cambiar hoja firmada' : 'Registrar firma en papel' }}</button>
+                            @endif
+                        </div>
                     @endif
                 </article>
             @empty
@@ -118,6 +137,37 @@
 
         @if ($vouchers->hasPages())
             <div class="mt-4">{{ $vouchers->onEachSide(1)->links('pagination::bootstrap-5') }}</div>
+        @endif
+
+        {{-- Ronda 5 (LL-04): firma física → "firmado en papel" con la hoja escaneada (opcional) --}}
+        @if ($puedeImprimir)
+            @php
+                $dialogoPapel = old('_dialogo');
+                $papelId = is_string($dialogoPapel) && str_starts_with($dialogoPapel, 'papel-') ? (int) substr($dialogoPapel, 6) : null;
+            @endphp
+            <dialog id="dialogoPapelVoucher" class="dialogo" aria-labelledby="titulo-papel" @if ($papelId && $errors->any()) data-abrir-al-cargar @endif>
+                <div class="dialogo-cabecera">
+                    <h2 id="titulo-papel"><i class="bi bi-file-earmark-check me-2" aria-hidden="true"></i>Firma en papel <span data-papel-folio>{{ $papelId ? optional($vouchers->firstWhere('id', $papelId))->folio : '' }}</span></h2>
+                    <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                </div>
+                <div class="dialogo-cuerpo">
+                    <form method="POST" action="{{ $papelId ? route('vouchers.papel', $papelId) : '' }}" enctype="multipart/form-data" data-form-papel>
+                        @csrf
+                        <input type="hidden" name="_dialogo" value="{{ $papelId ? 'papel-'.$papelId : '' }}" data-campo-dialogo>
+                        @if ($errors->any() && $papelId)
+                            <div class="alert alert-danger small py-2" role="alert">{{ $errors->first() }}</div>
+                        @endif
+                        <p class="small">Confirma que las tres copias (Seguridad, Recepción y Administración) ya se firmaron a mano. Si quieres, toma una foto de la hoja firmada para guardarla.</p>
+                        <label class="campo-etiqueta" for="papel_hoja">Foto o escaneo de la hoja firmada <span class="text-lowercase fw-normal">(opcional)</span></label>
+                        <input type="file" id="papel_hoja" name="hoja" class="campo" accept="image/jpeg,image/png,image/webp" capture="environment">
+                        <p class="campo-ayuda">Se guarda en un lugar privado: solo la ve quien puede consultar este voucher.</p>
+                        <div class="dialogo-acciones">
+                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                            <button type="submit" class="btn-gafetes"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Registrar firmado en papel</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
         @endif
     @endif
 </div>

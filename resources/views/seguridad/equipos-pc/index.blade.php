@@ -93,11 +93,11 @@
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                             <span class="rpc-badge-categoria"><i class="bi {{ $e->icono() }} me-1" aria-hidden="true"></i>{{ $e->etiquetaCategoria() }}</span>
                             <div class="d-flex gap-2">
-                                <button type="button" class="btn-icono imprimir-qr" title="Ver código QR" aria-label="Ver código QR de {{ $e->numero_serie }}"
-                                        data-ver-qr-pc data-qr="{{ route('equipos_pc.qr', $e->id) }}" data-nombre="{{ $e->etiquetaCategoria().' '.$e->numero_serie }}"
-                                        data-enlace="{{ route('lector.ir', $e->codigo_qr) }}" data-imprimir="{{ $puede['imprimir'] ? route('equipos_pc.etiqueta', $e->id) : '' }}">
-                                    <i class="bi bi-qr-code" aria-hidden="true"></i>
-                                </button>
+                                {{-- Ronda 5: diálogo común "Código e identificación" (QR, imprimir y NFC/RFID) --}}
+                                @include('componentes.boton-identificacion', ['identTipo' => 'equipo_pc', 'identRegistro' => $e, 'identTitulo' => $e->etiquetaCategoria().' '.$e->numero_serie,
+                                    'identDetalle' => $ubicacion ?? ($e->sede?->nombre ?? ''),
+                                    'identImprimir' => $puede['imprimir'] ? route('equipos_pc.etiqueta', $e->id) : null, 'identImprimirTexto' => 'Imprimir etiqueta',
+                                    'identEditable' => $editable])
                                 @if ($editable)
                                     <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar equipo {{ $e->numero_serie }}"
                                             data-accion="editar-registro" data-dialogo="dialogoEditarEquipoPc"
@@ -270,17 +270,8 @@
             </dialog>
         @endforeach
 
-        {{-- ===== Ver QR ===== --}}
-        <dialog id="dialogoQrEquipoPc" class="dialogo dialogo-qr-eq" aria-labelledby="titulo-epc-qr">
-            <div class="dialogo-cuerpo text-center">
-                <h2 class="h5 fw-bold mb-3" id="titulo-epc-qr" data-qr-nombre></h2>
-                <img src="" alt="Código QR del equipo" width="220" height="220" class="qr-eq-imagen" data-qr-imagen>
-                <p class="text-muted small mt-3 mb-1">Dirección vinculada (para grabar en la etiqueta NFC):</p>
-                <p class="qr-eq-codigo" data-qr-enlace></p>
-                <a href="#" target="_blank" rel="noopener" class="btn-qr-eq imprimir" data-qr-imprimir hidden><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir Etiqueta</a>
-                <button type="button" class="btn-qr-eq" data-cerrar-dialogo>Cerrar</button>
-            </div>
-        </dialog>
+        {{-- ===== Ver QR (Ronda 5: diálogo común) ===== --}}
+        @include('componentes.codigo-identificacion')
     @endif
 </div>
 @endsection

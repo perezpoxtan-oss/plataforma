@@ -39,7 +39,13 @@ Toca el lápiz de la ficha. Si cambias la categoría, los datos que ya no aplica
 
 ## Calcomanía
 
-Toca el botón del **código QR** en la ficha: se abre la calcomanía en otra pestaña con placas, QR, marca/modelo, color, tipo y categoría. Toca **Imprimir Calcomanía**; los botones no salen en la impresión.
+Toca el botón del **código QR** en la ficha: se abre la ventana **Código e identificación** (sin salir del padrón) con el QR, la dirección para copiar y, si puedes editar, **Asignar etiqueta NFC / RFID** (acerca el tag del vehículo al lector y se guarda solo).
+
+![Código e identificación del vehículo](img/ronda-5/identificacion-vehiculo-nfc.png)
+
+Para imprimir, toca **Imprimir calcomanía** dentro de esa ventana: se abre la calcomanía en otra pestaña con placas, QR, marca/modelo, color, tipo y categoría. Toca **Imprimir Calcomanía**; los botones no salen en la impresión.
+
+La misma ventana está en las fichas de **Llaves, Gafetes, Equipos de seguridad, Equipos de Protección Civil, Colaboradores y Lost & Found**.
 
 Al escanear el QR con un celular que tenga la sesión iniciada, se abre la ficha del vehículo en el padrón. El QR no contiene datos personales y solo funciona dentro de tu empresa.
 

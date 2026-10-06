@@ -80,6 +80,10 @@ Todo responde **404** si el equipo es de otra empresa o está fuera del alcance 
 - Mensajes de error por URL (`?error=serie_duplicada`); ahora se muestran dentro del diálogo, con el dato que se capturó.
 - Se quitó código muerto (`categoria_equipo`, edificio y sección) y JS en línea (`onclick`).
 
+## Ronda 5: diálogo común de QR
+
+El «Ver QR» propio (`dialogoQrEquipo`) se reemplazó por el diálogo común «Código e identificación» (también en Equipos de Protección Civil, Gafetes, Colaboradores y Lost & Found). La ruta `equipos.qr` se conserva. Ver [lector.md](lector.md#código-e-identificación-ronda-5).
+
 ## Pendiente / ganchos
 
 - **Responsivas** (Operación, conectado): usa `asignarPorResponsiva()`; la ficha muestra **A cargo de: colaborador · Turno/Fijo · folio** (`Equipo::resguardoActual()` cargado en `index()`). Ver [responsivas.md](responsivas.md). Pendiente: al dar de baja un equipo ASIGNADO, prellenar el responsable (SEGCAT lo hacía con `equipo_responsable_activo_ajax.php`).

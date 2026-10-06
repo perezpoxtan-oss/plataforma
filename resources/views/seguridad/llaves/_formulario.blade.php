@@ -32,6 +32,17 @@
         'piso' => ['Piso(s)', '(pueden ser de distintos edificios)', \App\Models\Espacio::AREA],
         'area' => ['Área Específica / Cuarto(s)', '(cualquiera, sin importar edificio o piso)', \App\Models\Espacio::AREA_ESPECIFICA],
     ];
+    // Ronda 5 (LL-02): selección en cascada Zona/Edificio → Piso → Área específica (como las píldoras de SEGCAT)
+    $edificios = $catalogos['espacios']->where('nivel', \App\Models\Espacio::EDIFICIO)->where('activo', true);
+    $pisos = $catalogos['espacios']->where('nivel', \App\Models\Espacio::AREA)->where('activo', true);
+    $cascada = function ($e) {
+        $padre = $e->padre;
+        return match (true) {
+            $padre === null => ['', ''],
+            $padre->nivel === \App\Models\Espacio::AREA => [(string) ($padre->padre_id ?? ''), (string) $padre->id],
+            default => [(string) $padre->id, ''],
+        };
+    };
 @endphp
 <dialog id="{{ $esNueva ? 'dialogoNuevaLlave' : 'dialogoEditarLlave' }}" class="dialogo ancho dialogo-llave" aria-labelledby="titulo-ll-{{ $modo }}"
         @if ($trasError) data-abrir-al-cargar @endif>
@@ -85,9 +96,11 @@
                 'tipos' => 'colaborador', 'nombre' => 'colaborador_id', 'valor' => $trasError ? old('colaborador_id') : null, 'elegido' => $responsableTexto,
                 'ayuda' => 'Excepcional: la mayoría de las llaves NO llevan a nadie aquí; el préstamo normal se registra en Préstamo de llaves. Escanea su gafete o escribe su número de empleado.'])
 
-            <label class="campo-etiqueta" for="{{ $p }}nomenclatura">Nombre de la Llave (Única en tu empresa)</label>
+            <label class="campo-etiqueta" for="{{ $p }}nomenclatura">Nombre de la Llave (Único en su sede)</label>
+            {{-- Ronda 5 (LL-03): la lista de nombres cambia con la sede elegida (data-nombres-por-sede) --}}
             <input type="text" id="{{ $p }}nomenclatura" name="nomenclatura" class="campo text-uppercase mb-1" maxlength="50" placeholder="Ej: LL-CAT-SIT-01"
-                   value="{{ $valor('nomenclatura') }}" autocapitalize="characters" data-nombres-existentes="{{ $nombresExistentes }}" required>
+                   value="{{ $valor('nomenclatura') }}" autocapitalize="characters" data-nombres-existentes="[]" data-nombres-por-sede="{{ $nombresExistentes }}"
+                   data-ambito-nombre="esta sede" required>
             <p class="small mb-2" data-aviso-nombre hidden></p>
 
             <label class="campo-etiqueta" for="{{ $p }}descripcion">Descripción de Accesos</label>
@@ -120,10 +133,39 @@
                 <div class="caja-lugares" data-llave-lugares="{{ $alcance }}" hidden>
                     <label class="campo-etiqueta" for="{{ $p }}buscar_{{ $alcance }}">{{ $titulo }} <span class="text-lowercase fw-normal">{{ $nota }}</span></label>
                     <p class="campo-ayuda mb-2" data-lugares-sin-sede><i class="bi bi-info-circle" aria-hidden="true"></i> Elige la Sede arriba primero.</p>
+                    @if ($alcance !== 'zona')
+                        <div class="cascada-lugares" data-cascada>
+                            <div class="cascada-paso" data-cascada-paso="edificio">
+                                <span class="cascada-titulo">1. Zona / Edificio <span class="fw-normal">(toca uno o varios para ver solo sus {{ $alcance === 'piso' ? 'pisos' : 'pisos y cuartos' }})</span></span>
+                                <div class="cascada-pildoras">
+                                    @foreach ($edificios as $ed)
+                                        <label class="pildora-cascada" data-pildora-edificio data-sede="{{ $ed->sede_id }}">
+                                            <input type="checkbox" value="{{ $ed->id }}"> {{ $ed->nombre }}
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @if ($alcance === 'area')
+                                <div class="cascada-paso" data-cascada-paso="piso">
+                                    <span class="cascada-titulo">2. Piso <span class="fw-normal">(opcional: acota todavía más)</span></span>
+                                    <div class="cascada-pildoras">
+                                        @foreach ($pisos as $pi)
+                                            <label class="pildora-cascada" data-pildora-piso data-sede="{{ $pi->sede_id }}" data-edificio="{{ $pi->padre_id }}">
+                                                <input type="checkbox" value="{{ $pi->id }}"> {{ $pi->nombre }}@if ($pi->padre) <span class="text-muted fw-normal">({{ $pi->padre->nombre }})</span>@endif
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                            <span class="cascada-titulo">{{ $alcance === 'area' ? '3. Cuartos / áreas' : '2. Pisos' }} <span class="fw-normal">(marca los que abre)</span></span>
+                        </div>
+                    @endif
                     <input type="search" id="{{ $p }}buscar_{{ $alcance }}" class="campo campo-buscar-lugar mb-2" placeholder="Buscar por nombre..." data-buscar-lugar>
                     <div class="caja-checks lista-lugares">
                         @foreach ($catalogos['espacios']->where('nivel', $nivel) as $e)
-                            <label class="fila-check" data-lugar data-sede="{{ $e->sede_id }}" data-nombre="{{ mb_strtolower($etiquetaLugar($e)) }}" @unless ($e->activo) data-inactivo @endunless>
+                            @php [$deEdificio, $dePiso] = $cascada($e); @endphp
+                            <label class="fila-check" data-lugar data-sede="{{ $e->sede_id }}" data-nombre="{{ mb_strtolower($etiquetaLugar($e)) }}" @unless ($e->activo) data-inactivo @endunless
+                                   data-edificio="{{ $deEdificio }}" data-piso="{{ $dePiso }}">
                                 <input type="checkbox" name="espacios[]" value="{{ $e->id }}" @checked(in_array($e->id, $marcados, true))>
                                 {{ $etiquetaLugar($e) }}{{ $e->activo ? '' : ' (desactivado)' }}
                             </label>
@@ -169,6 +211,17 @@
                     <label class="campo-etiqueta" for="{{ $p }}caducidad">Fecha de Caducidad <span class="text-lowercase fw-normal">(opcional)</span></label>
                     <input type="date" id="{{ $p }}caducidad" name="fecha_caducidad" class="campo mb-1" value="{{ $valor('fecha_caducidad') }}">
                     <p class="campo-ayuda mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> Para saber con tiempo qué llaves necesitan reprogramarse.</p>
+                    {{-- Ronda 5 (LL-05): costo de reposición fijo o variable --}}
+                    <label class="campo-etiqueta" for="{{ $p }}costo">Costo de Reposición <span class="text-lowercase fw-normal">(opcional)</span></label>
+                    <div class="grupo-monto mb-1">
+                        <span class="grupo-monto-simbolo" aria-hidden="true">$</span>
+                        <input type="number" step="0.01" min="0" max="999999.99" id="{{ $p }}costo" name="costo_reposicion" class="campo grupo-monto-campo" inputmode="decimal" placeholder="0.00" value="{{ $valor('costo_reposicion') }}">
+                    </div>
+                    <label class="opcion-cobro mb-1">
+                        <input type="checkbox" name="costo_variable" value="1" @checked($valor('costo_variable') === '1')>
+                        Costo variable (se captura en cada baja)
+                    </label>
+                    <p class="campo-ayuda mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> Con costo fijo, el voucher de baja cobra este monto. Con costo variable, se pregunta el monto en cada baja (este valor solo se sugiere).</p>
                 </div>
                 <div class="col-md-6">
                     @include('componentes.lector', ['id' => $p.'nfc', 'etiqueta' => 'Etiqueta NFC / RFID (opcional)', 'modo' => 'capturar',

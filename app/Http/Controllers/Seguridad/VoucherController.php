@@ -6,17 +6,23 @@ use App\Http\Controllers\Controller;
 use App\Models\Empresa;
 use App\Models\Sede;
 use App\Models\VoucherReposicion;
+use App\Services\Firmas\Firmas;
+use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Services\Vouchers\ConsultaVouchers;
 use App\Support\Entrada;
 use App\Support\HoraLocal;
+use App\Support\ImagenSegura;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Vouchers de reposición (réplica de modules/vouchers de SEGCAT). Solo
@@ -57,7 +63,9 @@ class VoucherController extends Controller
                     'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno',
                 ])
                 ->leftJoin('users as uc', 'uc.id', '=', 'vouchers_reposicion.creado_por')
-                ->select(['vouchers_reposicion.*', 'uc.name as creado_por_nombre'])
+                // Ronda 5: quién registró la firma en papel
+                ->leftJoin('users as up', 'up.id', '=', 'vouchers_reposicion.firmado_papel_por')
+                ->select(['vouchers_reposicion.*', 'uc.name as creado_por_nombre', 'up.name as firmado_papel_por_nombre'])
                 ->orderByDesc('vouchers_reposicion.id')
                 ->paginate(self::POR_PAGINA)
                 ->withQueryString();
@@ -104,6 +112,76 @@ class VoucherController extends Controller
                 'empresaNombre' => Empresa::whereKey($modelo->empresa_id)->value('nombre_comercial'),
             ]);
         });
+    }
+
+    /**
+     * Ronda 5 (LL-04): firma digital (seguridad | responsable) u hoja firmada
+     * escaneada (hoja), desde el disco privado. Solo con permiso y alcance.
+     */
+    public function firma(Request $request, Firmas $firmas, int $voucher, string $parte): StreamedResponse
+    {
+        Gate::authorize('vouchers.ver');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $firmas, $voucher, $parte) {
+            $modelo = $this->consulta->consulta($request->user())->find($voucher);
+            abort_if($modelo === null, 404);
+
+            return $firmas->respuesta(match ($parte) {
+                'seguridad' => $modelo->firma_seguridad,
+                'responsable' => $modelo->firma_responsable,
+                default => $modelo->hoja_firmada,
+            });
+        });
+    }
+
+    /**
+     * Ronda 5 (LL-04): firma física. Se marca "firmado en papel" y, si se
+     * quiere, se sube la hoja escaneada o fotografiada (imagen limpia, disco
+     * privado). Quien imprime vouchers lo registra.
+     */
+    public function papel(Request $request, Firmas $firmas, AdministradorRoles $auditoria, int $voucher): RedirectResponse
+    {
+        Gate::authorize('vouchers.imprimir');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+        $request->validate([
+            'hoja' => ['nullable', 'file', 'max:6144', 'mimes:jpg,jpeg,png,webp'],
+        ], [
+            'hoja.max' => 'La foto de la hoja pesa demasiado (máximo 6 MB).',
+            'hoja.mimes' => 'Sube la hoja como foto o imagen (JPG, PNG o WEBP).',
+            'hoja.file' => 'No se pudo leer el archivo de la hoja firmada.',
+        ]);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $firmas, $auditoria, $voucher, $empresaId) {
+            $modelo = $this->consulta->consulta($request->user(), 'vouchers.imprimir')->find($voucher);
+            abort_if($modelo === null, 404);
+            if ($modelo->firma_modo === 'digital') {
+                throw ValidationException::withMessages(['hoja' => "El voucher {$modelo->folio} ya se firmó digitalmente."]);
+            }
+
+            $antes = $modelo->only(['firmado_papel_en', 'hoja_firmada']);
+            $anterior = $modelo->hoja_firmada;
+            $hoja = $request->file('hoja');
+            $modelo->forceFill([
+                'firma_modo' => 'fisica',
+                'firmado_papel_en' => $modelo->firmado_papel_en ?? now(),
+                'firmado_papel_por' => $modelo->firmado_papel_por ?? $request->user()->id,
+                'hoja_firmada' => $hoja ? ImagenSegura::guardar($hoja, "firmas/{$empresaId}/vouchers-hojas/".now()->format('Y/m'), 'hoja', 'local') : $anterior,
+            ])->save();
+            if ($hoja && $anterior !== null) {
+                $firmas->borrar($anterior);
+            }
+            $auditoria->auditar($request->user(), 'vouchers.firmado_papel', $modelo, $antes, [
+                'firmado_papel_en' => $modelo->firmado_papel_en?->toIso8601String(), 'hoja_firmada' => $modelo->hoja_firmada !== null,
+            ]);
+
+            return $modelo;
+        });
+
+        return redirect()->to(route('vouchers.index').'#voucher-'.$modelo->id)
+            ->with('ok', "Voucher {$modelo->folio}: firma en papel registrada".($request->hasFile('hoja') ? ' con la hoja escaneada.' : '.'));
     }
 
     /**

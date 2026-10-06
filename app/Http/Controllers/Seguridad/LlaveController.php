@@ -147,6 +147,7 @@ class LlaveController extends Controller
 
         return redirect()->to(route('llaves.index').'#llave-'.$modelo->id)->with('aviso', "Llave {$modelo->nomenclatura} dada de baja. "
             ."Se generó el voucher de reposición {$voucher->folio}".($voucher->aplica_cobro ? ' con cobro de $'.number_format((float) $voucher->monto, 2).'.' : ' sin cobro.')
+            .($voucher->firma_modo === 'fisica' ? ' Imprímelo en Vouchers de reposición para firmarlo a mano.' : '')
             .' Si aparece, puedes reactivarla con un clic.');
     }
 
@@ -162,7 +163,10 @@ class LlaveController extends Controller
             return $modelo;
         });
 
-        return redirect()->to(route('llaves.index').'#llave-'.$modelo->id)->with('ok', "Llave {$modelo->nomenclatura} reactivada correctamente.");
+        // Ronda 5 (LL-05): al volver se abre su "Código e identificación" (QR, imprimir y NFC/RFID)
+        return redirect()->to(route('llaves.index').'#llave-'.$modelo->id)
+            ->with('ok', "Llave {$modelo->nomenclatura} reactivada correctamente. Revisa su código QR: puedes reimprimir la etiqueta o asignarle otra tarjeta NFC/RFID.")
+            ->with('identificacion', $modelo->id);
     }
 
     /**
@@ -298,7 +302,7 @@ class LlaveController extends Controller
             'puestos' => Puesto::with('departamentos:departamentos.id')
                 ->where(fn ($q) => $q->where('activo', true)->orWhereIn('id', $usados('puesto_id')))
                 ->orderBy('nombre')->get(['id', 'nombre', 'activo']),
-            'espacios' => Espacio::with(['padre:id,nombre,padre_id', 'padre.padre:id,nombre'])->whereIn('sede_id', $sedes)
+            'espacios' => Espacio::with(['padre:id,nombre,padre_id,nivel', 'padre.padre:id,nombre'])->whereIn('sede_id', $sedes)
                 ->whereIn('nivel', array_values(Llave::NIVEL_DEL_ALCANCE))
                 ->where(fn ($q) => $q->where('activo', true)->orWhereIn('id', $lista->flatMap(fn ($l) => $l->espacios->pluck('id'))->unique()->values()))
                 ->orderBy('ruta')->get(['id', 'sede_id', 'padre_id', 'nivel', 'nombre', 'activo'])

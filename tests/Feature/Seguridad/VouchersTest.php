@@ -158,7 +158,8 @@ class VouchersTest extends TestCase
 
         $html = $this->actingAs($this->admin)->get("/vouchers/{$v->id}/imprimir")->assertOk()
             ->assertSee('Voucher de Reposición — 3 copias en una sola hoja')
-            ->assertSee('Copia Seguridad')->assertSee('Copia Colaborador')->assertSee('Copia Recepción')
+            // Ronda 5 (LL-04): Seguridad, Recepción y Administración; el colaborador no recibe copia
+            ->assertSee('Copia Seguridad')->assertSee('Copia Recepción')->assertSee('Copia Administración')->assertDontSee('Copia Colaborador')
             ->assertSee('VR-2610-00001')->assertSee('Hotel Uno')->assertSee('Sede CEN')->assertSee('HOT-CEN-VIS-010')
             ->assertSee('Roberto Hernández (Núm. 1005)')->assertSee('$150.00 MXN')->assertSee('Referencia de pago (a mano):')
             ->assertSee('Extraviado')->assertSee('&lt;b&gt;Línea 2&lt;/b&gt;', false)

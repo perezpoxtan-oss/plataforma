@@ -36,6 +36,15 @@ class Empresa extends Model
         'pase_salida_aprobacion' => ['Pases de salida: avisar a quien debe aprobar el siguiente paso', true],
         'pase_salida_resultado' => ['Pases de salida: avisar al solicitante cuando su pase se aprueba o se rechaza', true],
         'pase_salida_vencido' => ['Pases de salida: recordatorio diario de los pases vencidos que no han regresado', true],
+        // Ronda 5 (LL-04): copias del voucher con cobro
+        'voucher_cobro' => ['Vouchers de reposición con cobro (CXC): enviar las copias a Seguridad, Recepción y Administración', true],
+    ];
+
+    /** Ronda 5 (LL-04): lista de correos de cada copia del voucher con cobro (Configuración → Avisos por correo). */
+    public const DESTINATARIOS_VOUCHER = [
+        'voucher_seguridad' => 'Copia Seguridad',
+        'voucher_recepcion' => 'Copia Recepción',
+        'voucher_administracion' => 'Copia Administración',
     ];
 
     /** Avisos que se mandan a una lista de correos capturada en Configuración (y no solo a usuarios con permiso). */

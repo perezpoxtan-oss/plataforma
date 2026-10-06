@@ -53,7 +53,16 @@ Las ventanas de captura y la pantalla de acceso también se adaptan:
 
 ## Cierre automático
 
-Si dejas la pantalla sin usar, 2 minutos antes de que se cierre aparece **"Tu sesión está por cerrarse"**. Toca **Sí, seguir aquí** para continuar. Mientras estés escribiendo o usando la pantalla, la sesión no se cierra.
+Por seguridad, la sesión se cierra sola tras **20 minutos sin usarla**.
+
+- **2 minutos antes** aparece **"Tu sesión está por cerrarse"** con la cuenta regresiva (por ejemplo «Se cerrará en 1:42»). Toca **Seguir conectado** para continuar.
+- Mientras estés escribiendo o usando la pantalla, la sesión no se cierra.
+- Si tienes **varias pestañas** abiertas, basta con usar una: las demás no te sacan.
+- Si el celular se apagó o cambiaste de app y volviste tarde, al regresar la pantalla te lleva a **Entrar** con el aviso **«Sesión finalizada por seguridad»** y cuántos minutos sin actividad pasaron. Solo vuelve a entrar.
+
+![Aviso antes de cerrar](img/ronda-5/sesion-por-cerrar.png)
+![En el celular](img/ronda-5/sesion-por-cerrar-movil.png)
+![Después del cierre](img/ronda-5/sesion-finalizada.png)
 
 ## Módulos en migración
 

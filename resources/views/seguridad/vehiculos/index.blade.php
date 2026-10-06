@@ -107,11 +107,11 @@
                     </div>
 
                     <div class="ficha-footer">
-                        @if ($puede['imprimir'])
-                            <a href="{{ route('vehiculos.calcomania', $v->id) }}" target="_blank" rel="noopener" class="btn-icono imprimir-qr" title="Imprimir Calcomanía" aria-label="Imprimir calcomanía de {{ $v->placas }}"><i class="bi bi-qr-code" aria-hidden="true"></i></a>
-                        @else
-                            <span></span>
-                        @endif
+                        {{-- Ronda 5 (VE-04): el QR se ve en un diálogo; "Imprimir calcomanía" abre la página de impresión --}}
+                        @include('componentes.boton-identificacion', ['identTipo' => 'vehiculo', 'identRegistro' => $v, 'identTitulo' => $v->placas,
+                            'identDetalle' => trim($v->marca.' '.$v->modelo.' · '.$v->color, ' ·'),
+                            'identImprimir' => $puede['imprimir'] ? route('vehiculos.calcomania', $v->id) : null, 'identImprimirTexto' => 'Imprimir calcomanía',
+                            'identEditable' => $editable])
                         <div class="d-flex gap-2">
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar vehículo {{ $v->placas }}"
@@ -271,6 +271,8 @@
                 </div>
             </dialog>
         @endforeach
+
+        @include('componentes.codigo-identificacion')
     @endif
 </div>
 @endsection

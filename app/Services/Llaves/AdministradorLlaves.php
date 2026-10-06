@@ -160,6 +160,11 @@ class AdministradorLlaves
             throw ValidationException::withMessages(['motivo' => "La llave {$llave->nomenclatura} ya está dada de baja."]);
         }
 
+        // Ronda 5 (LL-05): con costo fijo el monto no se captura; con costo variable sí
+        if ($llave->costoFijo() !== null && filter_var($entrada['aplica_cobro'] ?? false, FILTER_VALIDATE_BOOL)) {
+            $entrada['monto'] = $llave->costoFijo();
+        }
+
         $datos = $this->vouchers->validar($entrada);
         $voucher = $this->vouchers->darDeBaja($actor, $llave, 'llave', $llave->nomenclatura, $datos,
             fn () => $llave->forceFill(['activo' => false])->save(),
@@ -247,6 +252,8 @@ class AdministradorLlaves
             'id_externo' => ['nullable', 'string', 'max:60'],
             'plataforma_externa' => ['nullable', 'string', 'max:80'],
             'fecha_caducidad' => ['nullable', 'date_format:Y-m-d'],
+            'costo_reposicion' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'costo_variable' => ['nullable', 'boolean'],
             'etiqueta_nfc' => ['nullable', 'string', 'max:'.Etiqueta::MAXIMO],
             'horario_nombre' => ['nullable', 'array', 'max:'.self::MAX_HORARIOS],
             'horario_nombre.*' => ['nullable', 'string', 'max:60'],
@@ -263,6 +270,9 @@ class AdministradorLlaves
             'alcance.in' => 'Elige el alcance de apertura de la lista.',
             'alcance_otro.required_if' => 'Escribe qué espacio abre (por ejemplo: Cuarto de máquinas).',
             'fecha_caducidad.date_format' => 'Revisa la fecha de caducidad.',
+            'costo_reposicion.numeric' => 'El costo de reposición debe ser una cantidad (por ejemplo 350 o 350.50).',
+            'costo_reposicion.min' => 'El costo de reposición no puede ser negativo.',
+            'costo_reposicion.max' => 'El costo de reposición es demasiado alto.',
             'horario_nombre.max' => 'Una llave puede tener hasta '.self::MAX_HORARIOS.' horarios.',
             'espacios.max' => 'Son demasiados lugares marcados para una sola llave.',
         ], [
@@ -276,6 +286,7 @@ class AdministradorLlaves
             'id_externo' => 'ID externo',
             'plataforma_externa' => 'plataforma',
             'fecha_caducidad' => 'fecha de caducidad',
+            'costo_reposicion' => 'costo de reposición',
             'etiqueta_nfc' => 'etiqueta NFC / RFID',
         ])->validate();
 
@@ -284,9 +295,10 @@ class AdministradorLlaves
         $alcance = $validados['alcance'];
         $nomenclatura = $validados['nomenclatura'];
 
-        $otra = Llave::where('nomenclatura', $nomenclatura)->when($actual !== null, fn ($q) => $q->whereKeyNot($actual->id))->first();
+        // Ronda 5 (LL-03): el nombre no se repite en la MISMA sede; otra sede sí puede usarlo
+        $otra = Llave::where('sede_id', $sede->id)->where('nomenclatura', $nomenclatura)->when($actual !== null, fn ($q) => $q->whereKeyNot($actual->id))->first();
         if ($otra !== null) {
-            throw ValidationException::withMessages(['nomenclatura' => "Ya existe una llave con el nombre «{$nomenclatura}» en esta empresa"
+            throw ValidationException::withMessages(['nomenclatura' => "Ya existe una llave con el nombre «{$nomenclatura}» en la sede {$sede->nombre}"
                 .($otra->activo ? '.' : ' (dada de baja: reactívala en lugar de registrarla otra vez).')]);
         }
 
@@ -323,6 +335,8 @@ class AdministradorLlaves
             'id_externo' => $idExterno,
             'plataforma_externa' => $plataforma,
             'fecha_caducidad' => $validados['fecha_caducidad'] ?? null,
+            'costo_reposicion' => isset($validados['costo_reposicion']) ? number_format((float) $validados['costo_reposicion'], 2, '.', '') : null,
+            'costo_variable' => (bool) ($validados['costo_variable'] ?? false),
             'etiqueta_nfc' => $etiqueta === '' ? null : $etiqueta,
         ];
 
@@ -341,7 +355,7 @@ class AdministradorLlaves
         $entrada = array_intersect_key($entrada, array_flip([
             'sede_id', 'departamento_id', 'puesto_id', 'colaborador_id', 'nomenclatura', 'descripcion', 'tipo_dispositivo',
             'alcance', 'alcance_otro', 'espacios', 'grupos', 'id_externo', 'plataforma_externa', 'fecha_caducidad',
-            'etiqueta_nfc', 'horario_nombre', 'horario_inicio', 'horario_fin',
+            'etiqueta_nfc', 'horario_nombre', 'horario_inicio', 'horario_fin', 'costo_reposicion', 'costo_variable',
         ]));
 
         foreach ($entrada as $campo => $valor) {
@@ -551,8 +565,9 @@ class AdministradorLlaves
 
         return $llave->only([
             'sede_id', 'departamento_id', 'puesto_id', 'colaborador_id', 'nomenclatura', 'descripcion', 'tipo_dispositivo',
-            'alcance', 'alcance_otro', 'id_externo', 'plataforma_externa', 'etiqueta_nfc', 'activo',
+            'alcance', 'alcance_otro', 'id_externo', 'plataforma_externa', 'etiqueta_nfc', 'activo', 'costo_variable',
         ]) + [
+            'costo_reposicion' => $llave->costo_reposicion === null ? null : (string) $llave->costo_reposicion,
             'fecha_caducidad' => $llave->fecha_caducidad?->format('Y-m-d'),
             'espacios' => $llave->espacios->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all(),
             'grupos' => $llave->grupos->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all(),

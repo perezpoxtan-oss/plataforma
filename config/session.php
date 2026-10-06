@@ -32,7 +32,11 @@ return [
     |
     */
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 120),
+    // Ronda 5: la sesión guardada dura al menos 10 minutos más que el cierre por
+    // inactividad (PLATAFORMA_INACTIVIDAD_MINUTOS). Así el cierre lo hace
+    // ControlarInactividad y la pantalla de acceso avisa "Sesión finalizada
+    // por seguridad", en lugar de que la sesión desaparezca sin aviso.
+    'lifetime' => max((int) env('SESSION_LIFETIME', 120), (int) env('PLATAFORMA_INACTIVIDAD_MINUTOS', 20) + 10),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 

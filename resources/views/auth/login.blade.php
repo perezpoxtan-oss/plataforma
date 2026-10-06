@@ -20,6 +20,7 @@
             @case('expirado')
                 <div class="alert alert-warning acceso-aviso" role="alert">
                     <i class="bi bi-clock-history me-2" aria-hidden="true"></i> Sesión finalizada por seguridad.
+                    <span class="d-block small mt-1">Se cerró tras {{ (int) config('plataforma.sesion.inactividad_minutos') }} minutos sin actividad. Vuelve a entrar para continuar.</span>
                 </div>
                 @break
             @case('credenciales')

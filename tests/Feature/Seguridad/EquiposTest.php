@@ -101,7 +101,7 @@ class EquiposTest extends TestCase
             ->assertSee('estado-eq-disponible', false)->assertSee('estado-eq-en_mantenimiento', false)
             ->assertSee('EN MANTENIMIENTO')->assertSee('Baja/Perdido')
             ->assertSee('data-filtro-equipos="sede"', false)->assertSee('data-filtro-estado-equipo="asignado"', false)
-            ->assertSee(route('equipos.etiqueta', $radio->id))->assertSee(route('equipos.qr', $radio->id))
+            ->assertSee(route('equipos.etiqueta', $radio->id))->assertSee(route('identificacion.qr', ['equipo', $radio->id]))
             // Etiqueta NFC al dar de alta y responsable de la baja con el lector universal
             ->assertSee('Etiqueta NFC / RFID (opcional)')->assertSee('data-tipos="colaborador"', false)
             // Sugerencias de marca y modelo de la empresa
@@ -380,7 +380,7 @@ class EquiposTest extends TestCase
         $e = $this->equipo('752TSFQ504');
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
 
-        $this->actingAs($agente)->get('/equipos')->assertOk()->assertSee('752TSFQ504')->assertSee(route('equipos.qr', $e->id))
+        $this->actingAs($agente)->get('/equipos')->assertOk()->assertSee('752TSFQ504')->assertSee(route('identificacion.qr', ['equipo', $e->id]))
             ->assertDontSee('Nuevo Equipo')->assertDontSee('dialogoEditarEquipo')->assertDontSee('dialogoBajaEquipo')
             ->assertDontSee(route('equipos.etiqueta', $e->id));
         $this->actingAs($agente)->get("/equipos/{$e->id}/qr")->assertOk();
