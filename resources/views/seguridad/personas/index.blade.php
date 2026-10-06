@@ -268,6 +268,9 @@
                             <button type="submit" class="btn-azul">{{ $esNuevo ? 'Guardar en Padrón' : 'Actualizar Cambios' }}</button>
                         </div>
                     </form>
+                    @unless ($esNuevo)
+                        @include('componentes.borrar', ['registro' => 'personas', 'id' => $editandoId])
+                    @endunless
                 </div>
             </dialog>
         @endforeach

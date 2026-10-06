@@ -70,7 +70,7 @@ class EquiposPcTest extends TestCase
         $modulo = Modulo::with('menu', 'area')->where('clave', 'equipos_pc')->firstOrFail();
         $this->assertSame(['Equipos de Protección Civil', 'seguridad', 'padrones', 'Inventarios de Seguridad', 'equipos_pc.index'],
             [$modulo->nombre, $modulo->area->clave, $modulo->menu->clave, $modulo->seccion_menu, $modulo->ruta]);
-        $this->assertEqualsCanonicalizing(['ver', 'crear', 'editar', 'eliminar', 'imprimir'], $modulo->acciones()->pluck('clave')->all());
+        $this->assertEqualsCanonicalizing(['ver', 'crear', 'editar', 'eliminar', 'imprimir', 'borrar'], $modulo->acciones()->pluck('clave')->all());
 
         // En el menú, justo después de Equipos de seguridad
         $orden = Modulo::where('menu_id', $modulo->menu_id)->orderBy('orden_menu')->pluck('clave')->all();

@@ -369,6 +369,9 @@
                         <button type="submit" class="btn-rutas">{{ $esNuevo ? 'Guardar Ruta' : 'Guardar Cambios' }}</button>
                     </div>
                 </form>
+                @unless ($esNuevo)
+                    @include('componentes.borrar', ['registro' => 'rutas', 'id' => $editandoId])
+                @endunless
             </div>
         </dialog>
     @endforeach
@@ -416,6 +419,7 @@
                         <button type="submit" class="btn-rutas">Guardar</button>
                     </div>
                 </form>
+                @include('componentes.borrar', ['registro' => 'paraderos', 'id' => $editandoParadero])
             </div>
         </dialog>
     @endif

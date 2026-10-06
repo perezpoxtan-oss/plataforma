@@ -1089,3 +1089,21 @@ html.modo-sol .pestana-pase.activa { color: #1d4ed8; border-bottom-color: #1d4ed
 html.modo-sol .btn-accion-pase { border: 2px solid #000; }
 html.modo-sol .chip-me-toca, html.modo-sol .chip-verificado, html.modo-sol .chip-regreso, html.modo-sol .chip-opcional { border: 1px solid #64748b; color: #000; }
 /* Fin Pases de salida v2 */
+/* Eliminar definitivamente: Noche y Sol */
+html.modo-noche .zona-borrar-definitivo { border-top-color: #7f1d1d; }
+html.modo-noche .btn-borrar-definitivo,
+html.modo-noche .btn-icono.borrar-definitivo,
+html.modo-noche .tipos-borrables > summary { color: #fca5a5; }
+html.modo-noche .btn-borrar-definitivo:hover, html.modo-noche .btn-borrar-definitivo:focus-visible { background: rgba(220, 38, 38, 0.15); border-color: #7f1d1d; }
+html.modo-noche .borrar-aviso { background: rgba(220, 38, 38, 0.12); border-color: #7f1d1d; color: #fecaca; }
+html.modo-noche .borrar-aviso > i { color: #f87171; }
+html.modo-noche .borrar-aviso-bloqueado { background: rgba(245, 158, 11, 0.12); border-color: #b45309; color: #fde68a; }
+html.modo-noche .borrar-aviso-bloqueado > i { color: #fbbf24; }
+html.modo-noche .borrar-clave, html.modo-noche .borrar-indicacion, html.modo-noche .tipos-borrables li { background: var(--superficie-2); border-color: var(--borde); color: var(--texto); }
+html.modo-sol .btn-borrar-definitivo { color: #991b1b; border-color: #991b1b; text-decoration: underline; }
+html.modo-sol .zona-borrar-definitivo { border-top: 2px dashed #991b1b; }
+html.modo-sol .borrar-aviso { border: 2px solid #991b1b; color: #000; background: #fff; }
+html.modo-sol .borrar-aviso-bloqueado { border-color: #92400e; }
+html.modo-sol .borrar-clave { border: 2px solid #000; color: #000; background: #fff; font-weight: 800; }
+html.modo-sol .borrar-indicacion { color: #000; background: #fff; border: 2px solid #92400e; }
+/* Fin Eliminar definitivamente */

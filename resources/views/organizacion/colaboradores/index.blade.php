@@ -368,6 +368,9 @@
                             <button type="submit" class="btn-esmeralda">{{ $esNuevo ? 'Registrar Colaborador' : 'Guardar Cambios' }}</button>
                         </div>
                     </form>
+                    @unless ($esNuevo)
+                        @include('componentes.borrar', ['registro' => 'colaboradores', 'id' => $editandoId])
+                    @endunless
                 </div>
             </dialog>
         @endforeach

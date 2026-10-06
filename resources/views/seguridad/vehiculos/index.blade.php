@@ -265,6 +265,9 @@
                             <button type="submit" class="btn-pizarra">{{ $esNuevo ? 'Guardar Vehículo' : 'Actualizar Datos' }}</button>
                         </div>
                     </form>
+                    @unless ($esNuevo)
+                        @include('componentes.borrar', ['registro' => 'vehiculos', 'id' => $editandoId])
+                    @endunless
                 </div>
             </dialog>
         @endforeach

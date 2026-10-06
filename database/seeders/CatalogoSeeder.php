@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Accion;
 use App\Models\Area;
 use App\Models\Modulo;
+use App\Services\Borrado\RegistroBorrado;
 use Illuminate\Database\Seeder;
 
 /**
@@ -29,6 +30,8 @@ class CatalogoSeeder extends Seeder
         'desbloquear' => 'Desbloquear',
         'datos_personales' => 'Datos personales',
         'provisional' => 'Alta provisional',
+        // Eliminar definitivamente (borrado físico controlado): solo catálogos y padrones
+        'borrar' => 'Eliminar definitivamente',
     ];
 
     private const CRUD = ['ver', 'crear', 'editar', 'eliminar'];
@@ -175,6 +178,10 @@ class CatalogoSeeder extends Seeder
 
         $base = $definicion[4] ?? self::CRUD;
         $claves = array_unique(array_merge($base, $definicion[2] ?? []));
+        // Eliminar definitivamente: solo los módulos de RegistroBorrado (nunca bitácoras ni evidencias)
+        if (in_array($clave, RegistroBorrado::modulos(), true)) {
+            $claves[] = 'borrar';
+        }
         $modulo->acciones()->syncWithoutDetaching(
             array_map(fn (string $accion) => $acciones[$accion], $claves),
         );

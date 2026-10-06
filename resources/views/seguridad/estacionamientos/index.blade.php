@@ -212,6 +212,9 @@
                             <button type="submit" class="btn-azul">Guardar</button>
                         </div>
                     </form>
+                    @unless ($esNueva)
+                        @include('componentes.borrar', ['registro' => 'estacionamientos', 'id' => $editandoId])
+                    @endunless
                 </div>
             </dialog>
         @endforeach

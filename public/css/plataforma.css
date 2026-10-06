@@ -2781,3 +2781,30 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
     .hoja-pase-qr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 /* Fin Pases de salida v2 */
+/* Eliminar definitivamente (componentes/borrar): botón discreto y diálogo de confirmación */
+.zona-borrar-definitivo { display: flex; justify-content: flex-start; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed #fecaca; }
+.btn-borrar-definitivo { background: transparent; border: 1px solid transparent; color: #b91c1c; font-weight: 600; font-size: 0.85rem; min-height: 44px; padding: 0.5rem 0.75rem; border-radius: 12px; display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; font-family: inherit; }
+.btn-borrar-definitivo:hover, .btn-borrar-definitivo:focus-visible { background: #fef2f2; border-color: #fecaca; }
+.btn-icono.borrar-definitivo { color: #b91c1c; }
+.btn-icono.borrar-definitivo:hover { background: #dc3545; color: #fff; }
+.dialogo-borrar { max-width: 520px; }
+.borrar-aviso { display: flex; gap: 0.75rem; align-items: flex-start; background: #fef2f2; border: 1px solid #fecaca; color: #7f1d1d; border-radius: 14px; padding: 0.9rem 1rem; font-size: 0.92rem; line-height: 1.45; }
+.borrar-aviso > i { font-size: 1.4rem; color: #dc2626; line-height: 1; margin-top: 0.1rem; }
+.borrar-aviso-bloqueado { background: #fffbeb; border-color: #fde68a; color: #78350f; }
+.borrar-aviso-bloqueado > i { color: #b45309; }
+.borrar-aviso strong { overflow-wrap: anywhere; }
+.borrar-clave { display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--fondo); border: 1px solid var(--borde); border-radius: 8px; padding: 0.1rem 0.45rem; color: var(--texto); text-transform: none; letter-spacing: 0; overflow-wrap: anywhere; }
+.borrar-indicacion { margin: 0.75rem 0 0; padding: 0.6rem 0.8rem; border-left: 4px solid #b45309; background: var(--fondo); border-radius: 8px; font-size: 0.9rem; }
+.dialogo-borrar .dialogo-acciones button[disabled] { opacity: 0.5; cursor: not-allowed; }
+/* En el celular: hoja inferior del alto de su contenido (el pulgar alcanza los botones) */
+@media (max-width: 480px) {
+    .dialogo.dialogo-borrar { height: fit-content; max-height: 92vh; margin: auto 0 0; border-radius: 22px 22px 0 0; background: #fff; }
+    .dialogo-borrar .dialogo-cuerpo { max-height: calc(92vh - 64px); padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
+}
+/* Tipos (de gafete / de equipo) capturados por error */
+.tipos-borrables { margin: 0 0 1rem; font-size: 0.875rem; }
+.tipos-borrables > summary { cursor: pointer; color: #b91c1c; font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; gap: 0.4rem; }
+.tipos-borrables ul { list-style: none; padding: 0; margin: 0.25rem 0 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.tipos-borrables li { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--fondo); border: 1px solid var(--borde); border-radius: 12px; padding: 0 0 0 0.75rem; }
+.tipos-borrables li .btn-icono { background: transparent; }
+/* Fin Eliminar definitivamente */

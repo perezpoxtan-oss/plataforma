@@ -307,6 +307,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/recorridos-pc/{recorrido}/revisiones', 'registrarPunto')->whereNumber('recorrido')->middleware('throttle:120,1')->name('recorridos_pc.revisiones.store');
     });
     // Fin Padrones: Recorridos de Protección Civil
+    // Padrones: Eliminar definitivamente (borrado físico controlado de catálogos y padrones; ver docs/tecnico/borrado.md)
+    Route::controller('App\Http\Controllers\BorradoController')->group(function () {
+        // {registro}: clave de App\Services\Borrado\RegistroBorrado (una desconocida responde 404)
+        Route::get('/borrar/{registro}/{id}', 'revisar')->where('registro', '[a-z_]+')->whereNumber('id')->name('borrar.revisar');
+        Route::delete('/borrar/{registro}/{id}', 'destroy')->where('registro', '[a-z_]+')->whereNumber('id')->middleware('throttle:30,1')->name('borrar.destroy');
+    });
+    // Fin Padrones: Eliminar definitivamente
 
     // Padrones: Equipos de Protección Civil (Padrones → Inventarios de Seguridad; ver docs/tecnico/equipos-pc.md)
     Route::controller('App\Http\Controllers\Seguridad\EquipoPcController')->group(function () {
