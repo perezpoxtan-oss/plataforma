@@ -32,7 +32,7 @@ class EmpresaActivaController extends Controller
         $anterior = (string) ($request->headers->get('referer') ?: $request->session()->previousUrl());
         $host = parse_url($anterior, PHP_URL_HOST);
         $mismoSitio = $host === $request->getHost()
-            || ($host === null && str_starts_with($anterior, '/') && ! str_starts_with($anterior, '//'));
+            || ($host === null && str_starts_with($anterior, '/') && ! str_starts_with($anterior, '//') && ! str_contains($anterior, '\\')); // Seguridad: "/\\otro-sitio" lo abre el navegador como //otro-sitio
 
         return redirect()->to($mismoSitio ? strtok($anterior, '?') : route('panel'));
     }

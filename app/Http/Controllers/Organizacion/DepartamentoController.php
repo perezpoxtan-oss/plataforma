@@ -8,6 +8,7 @@ use App\Models\Departamento;
 use App\Models\Sede;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
@@ -143,7 +144,7 @@ class DepartamentoController extends Controller
      */
     private function validar(Request $request, int $empresaId, ?Departamento $departamento = null): array
     {
-        $request->merge(['nombre' => $this->normalizarNombre($request->input('nombre'))]);
+        $request->merge(['nombre' => $this->normalizarNombre(Entrada::texto($request->input('nombre')))]);
         $todas = $request->boolean('todas_las_sedes', true);
 
         $datos = $request->validate([

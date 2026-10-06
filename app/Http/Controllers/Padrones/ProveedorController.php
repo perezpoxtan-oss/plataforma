@@ -8,6 +8,7 @@ use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Padrones\AdministradorProveedores;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
@@ -239,7 +240,7 @@ class ProveedorController extends Controller
         }
 
         $resultados = $this->tenant->conEmpresa($empresaId, fn () => $this->proveedores->buscar(
-            (string) $request->query('q', ''),
+            Entrada::texto($request->query('q', '')),
             $this->proveedores->sedes($actor, 'proveedores.ver'),
         ));
 

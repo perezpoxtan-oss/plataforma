@@ -9,6 +9,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Colaboradores\ColaboradorParecido;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
@@ -277,7 +278,7 @@ class ColaboradorController extends Controller
         }
 
         $resultado = $this->tenant->conEmpresa($empresaId, fn () => $this->colaboradores->buscar(
-            (string) $request->query('q', ''),
+            Entrada::texto($request->query('q', '')),
             $sedes,
             $request->boolean('sin_usuario'),
             $request->filled('usuario') ? (int) $request->query('usuario') : null,

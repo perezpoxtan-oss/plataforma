@@ -2,6 +2,7 @@
 
 namespace App\Services\Firmas;
 
+use App\Support\ImagenSegura;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -49,9 +50,12 @@ class Firmas
             throw ValidationException::withMessages([$campo => "No se pudo leer {$etiqueta}. Vuelve a firmar."]);
         }
 
+        // Seguridad: se guarda la imagen re-dibujada, no los bytes que llegaron
+        // (descarta HTML/JS pegado a la imagen y metadatos)
+        [$binario, $extension] = ImagenSegura::recodificar($binario, $campo, [IMAGETYPE_JPEG, IMAGETYPE_PNG], "No se pudo leer {$etiqueta}. Vuelve a firmar.");
+
         $carpeta = preg_replace('/[^a-z0-9\-]/', '', strtolower($carpeta)) ?: 'general';
         $empresa = $this->tenant->empresaId() ?? 0;
-        $extension = $info[2] === IMAGETYPE_PNG ? 'png' : 'jpg';
         $ruta = "firmas/{$empresa}/{$carpeta}/".now()->format('Y/m').'/'.Str::uuid().'.'.$extension;
         Storage::disk(self::DISCO)->put($ruta, $binario);
 

@@ -10,6 +10,7 @@ use App\Models\Sede;
 use App\Models\TipoEspacio;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Permisos\Autorizador;
+use App\Support\Entrada;
 use App\Support\Espacios\Etiquetas;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -335,7 +336,7 @@ class EspacioController extends Controller
      */
     private function validar(Request $request, bool $nuevo): array
     {
-        $request->merge(['codigo' => $request->filled('codigo') ? mb_strtoupper(trim((string) $request->input('codigo'))) : null]);
+        $request->merge(['codigo' => $request->filled('codigo') ? mb_strtoupper(trim(Entrada::texto($request->input('codigo')))) : null]);
 
         $datos = $request->validate([
             'nivel' => [$nuevo ? 'required' : 'prohibited', 'in:'.implode(',', array_keys(Espacio::PADRES))],

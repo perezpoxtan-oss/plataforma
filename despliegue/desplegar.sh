@@ -113,6 +113,18 @@ mkdir -p "$APP/shared/storage/app/public" "$APP/shared/storage/framework/cache/d
          "$APP/shared/storage/framework/sessions" "$APP/shared/storage/framework/views" \
          "$APP/shared/storage/logs"
 
+# Seguridad: en la carpeta de imágenes subidas (public/storage) no se ejecuta
+# ni se sirve nada que no sea imagen, y el navegador no adivina el tipo
+cat > "$APP/shared/storage/app/public/.htaccess" <<'HTEOF'
+<FilesMatch "(?i)\.(php[0-9]?|phtml|phar|pht|pl|py|cgi|sh|s?html?|svg|svgz|xml|js|htaccess)$">
+    Require all denied
+</FilesMatch>
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set Content-Security-Policy "default-src 'none'; sandbox"
+</IfModule>
+HTEOF
+
 if [ -f "$HOME/env_${AMB}.txt" ]; then
   if grep -q "\[CONTRASENA" "$HOME/env_${AMB}.txt"; then
     fallo "env_${AMB}.txt todavia dice [CONTRASENA...]: escribe la contrasena real de la base y guarda"

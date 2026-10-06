@@ -11,6 +11,7 @@ Pantalla `GET /configuracion` (módulo `configuracion`, área Dirección). Crece
 ## Correo (`App\Support\CorreoPlataforma`)
 
 - **Dónde se configura:** en la pantalla, no en el `.env`. Se capturan servidor, puerto, cifrado (TLS/STARTTLS 587, SSL 465 o ninguno), usuario, contraseña y remitente.
+- **Servidor y puerto permitidos** (`CorreoPlataforma::problemaDestino`): solo puertos de correo (25, 465, 587, 2525) y ningún servidor que apunte a direcciones reservadas (169.254.x.x de metadatos de la nube, 0.0.0.0, multicast, enlace local IPv6). Se revisa al guardar y otra vez antes de cada envío. Evita usar la pantalla para tocar otros servicios de la red interna.
 - **Contraseña:**
   - se guarda cifrada con la `APP_KEY` (`Crypt::encryptString`);
   - nunca se devuelve a la vista ni se escribe en la bitácora (solo "cambiada", "quitada" o "sin cambio");

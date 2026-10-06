@@ -7,6 +7,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Support\Entrada;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -229,11 +230,11 @@ class AdministradorProveedores
      */
     private function validarDatos(Request $request): array
     {
-        $rfc = mb_strtoupper((string) preg_replace('/[\s\-.]+/u', '', (string) $request->input('rfc')));
-        $telefono = (string) preg_replace('/[\s\-.()]+/', '', (string) $request->input('telefono'));
-        $direccion = self::normalizarNombre($request->input('direccion'));
+        $rfc = mb_strtoupper((string) preg_replace('/[\s\-.]+/u', '', Entrada::texto($request->input('rfc'))));
+        $telefono = (string) preg_replace('/[\s\-.()]+/', '', Entrada::texto($request->input('telefono')));
+        $direccion = self::normalizarNombre(Entrada::texto($request->input('direccion')));
         $request->merge([
-            'nombre' => self::normalizarNombre($request->input('nombre')),
+            'nombre' => self::normalizarNombre(Entrada::texto($request->input('nombre'))),
             'rfc' => $rfc === '' ? null : $rfc,
             'telefono' => $telefono === '' ? null : $telefono,
             'direccion' => $direccion === '' ? null : $direccion,

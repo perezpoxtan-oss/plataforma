@@ -10,6 +10,7 @@ use App\Models\RutaHorario;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Rutas\AdministradorRutas;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
@@ -96,7 +97,7 @@ class RutaController extends Controller
         Gate::authorize('rutas.ver');
         $actor = $request->user();
         $empresaId = $this->empresaDeTrabajo($request);
-        $tab = array_key_exists((string) $request->query('tab'), self::PESTANAS) ? (string) $request->query('tab') : 'llegadas';
+        $tab = array_key_exists(Entrada::texto($request->query('tab')), self::PESTANAS) ? Entrada::texto($request->query('tab')) : 'llegadas';
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $sede, $tab, $empresaId) {
             $modelo = $this->sedeVisible($actor, $sede);
@@ -257,7 +258,7 @@ class RutaController extends Controller
             abort_unless($this->rutas->puedeEnSede($request->user(), 'rutas.imprimir', $modelo->id), 403);
 
             $ahora = $this->rutas->ahoraEn($modelo);
-            $texto = (string) $request->query('fecha', '');
+            $texto = Entrada::texto($request->query('fecha', ''));
             $fecha = preg_match('/^\d{4}-\d{2}-\d{2}$/', $texto) && checkdate((int) substr($texto, 5, 2), (int) substr($texto, 8, 2), (int) substr($texto, 0, 4))
                 ? CarbonImmutable::createFromFormat('!Y-m-d', $texto, $ahora->getTimezone())
                 : $ahora->startOfDay();

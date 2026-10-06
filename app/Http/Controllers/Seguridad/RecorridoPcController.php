@@ -13,6 +13,7 @@ use App\Services\Novedades\AdministradorNovedades;
 use App\Services\RecorridosPc\AdministradorRecorridosPc;
 use App\Services\RecorridosPc\CatalogoEquiposPc;
 use App\Services\RecorridosPc\Ubicaciones;
+use App\Support\Csv;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -245,15 +246,15 @@ class RecorridoPcController extends Controller
         return response()->streamDownload(function () use ($recorridos, $hora) {
             $salida = fopen('php://output', 'w');
             fwrite($salida, "\xEF\xBB\xBF"); // para que Excel respete los acentos
-            fputcsv($salida, ['Recorrido', 'Inicio', 'Sede', 'Edificio / Zona', 'Realizó', 'Estatus', 'Ticket de Novedades', 'Hora del punto', 'Revisó',
+            Csv::fila($salida, ['Recorrido', 'Inicio', 'Sede', 'Edificio / Zona', 'Realizó', 'Estatus', 'Ticket de Novedades', 'Hora del punto', 'Revisó',
                 'Identificador', 'Categoría', 'Ubicación', 'Resultado', 'Piezas / criterios con falla', 'Observaciones', 'Observaciones generales']);
             foreach ($recorridos as $r) {
                 $comunes = [$r->folio(), $hora->formatear($r->created_at), $r->sede?->nombre, $r->espacio?->nombre, $r->creador?->name, $r->etiquetaEstatus(), $r->novedad?->folio()];
                 if ($r->revisiones->isEmpty()) {
-                    fputcsv($salida, [...$comunes, '', '', '', '', '', '', '', '', $r->observaciones_generales]);
+                    Csv::fila($salida, [...$comunes, '', '', '', '', '', '', '', '', $r->observaciones_generales]);
                 }
                 foreach ($r->revisiones as $p) {
-                    fputcsv($salida, [...$comunes, $hora->formatear($p->created_at, 'H:i'), $p->creador?->name, $p->identificador, $p->etiquetaCategoria(), $p->ubicacion,
+                    Csv::fila($salida, [...$comunes, $hora->formatear($p->created_at, 'H:i'), $p->creador?->name, $p->identificador, $p->etiquetaCategoria(), $p->ubicacion,
                         $p->esFalla() ? 'FALLA' : 'OK', implode(', ', $p->criteriosConFalla()), $p->observaciones, $r->observaciones_generales]);
                 }
             }

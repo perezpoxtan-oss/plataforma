@@ -9,6 +9,7 @@ use App\Models\Proveedor;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Services\Vehiculos\AdministradorVehiculos;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
@@ -181,7 +182,7 @@ class VehiculoController extends Controller
             return response()->json(['resultados' => []]);
         }
 
-        $resultados = $this->tenant->conEmpresa($empresaId, fn () => $this->vehiculos->buscar((string) $request->query('q', '')));
+        $resultados = $this->tenant->conEmpresa($empresaId, fn () => $this->vehiculos->buscar(Entrada::texto($request->query('q', ''))));
 
         return response()->json(['resultados' => $resultados]);
     }
@@ -201,7 +202,7 @@ class VehiculoController extends Controller
         }
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $request) {
-            $existente = $this->vehiculos->conPlacas($request->input('placas'));
+            $existente = $this->vehiculos->conPlacas(Entrada::texto($request->input('placas')));
             if ($existente !== null) {
                 return response()->json([
                     'ok' => false,
