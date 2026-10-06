@@ -14,6 +14,8 @@ use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
 use App\Models\LostFoundArticulo;
+use App\Models\LostFoundEntrega;
+use App\Models\LostFoundReportePerdida;
 use App\Models\MovimientoTransporte;
 use App\Models\Novedad;
 use App\Models\PaseSalida;
@@ -38,6 +40,7 @@ use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Llaves\AdministradorLlaves;
 use App\Services\Novedades\AdministradorNovedades;
+use App\Services\Novedades\ArchivoLostFound;
 use App\Services\Novedades\Formatos\RecorridoPc;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Plataforma\ProvisionarEmpresa;
@@ -179,6 +182,7 @@ class CrearDatosDemo extends Command
         $paso('novedadesDemo', fn () => $this->novedadesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'agente2.demo')->firstOrFail()));
         $paso('pasesSalidaDemo', fn () => $this->pasesSalidaDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('transporteDemo', fn () => $this->transporteDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('lostFoundRoboDemo', fn () => $this->lostFoundRoboDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -1393,5 +1397,82 @@ class CrearDatosDemo extends Command
     private function fechaDemo(MovimientoTransporte $m, CarbonImmutable $cuando): void
     {
         $m->forceFill(['fecha' => $cuando->toDateString(), 'created_at' => $cuando->utc(), 'updated_at' => $cuando->utc()])->saveQuietly();
+    }
+
+    /**
+     * Lost & Found (archivo) y Robo — Seguimiento, solo la primera vez: el
+     * teléfono vinculado al reporte de pérdida de Laura Gómez (listo para
+     * entregar), unos lentes ya devueltos con firma, artículos de alberca con
+     * el semáforo en rojo y ámbar (una gorra donada a un colaborador), un
+     * ticket sin artículos capturados y un robo con sospechoso sin parte a la
+     * policía.
+     */
+    private function lostFoundRoboDemo($sedes, User $admin, User $agente): void
+    {
+        if (LostFoundEntrega::exists() || ! LostFoundArticulo::exists()) {
+            return;
+        }
+
+        $novedades = app(AdministradorNovedades::class);
+        $archivo = app(ArchivoLostFound::class);
+        $centro = $sedes['CEN'];
+        $zona = $centro->zonaHoraria();
+        $hace = fn (int $horas) => now($zona)->subHours($horas)->format('Y-m-d\\TH:i');
+        $previo = auth()->user();
+
+        try {
+            // 1. El teléfono encontrado en la 201 es el que reportó Laura Gómez
+            $telefono = LostFoundArticulo::where('objeto', 'TELÉFONO CELULAR')->first();
+            $reporte = LostFoundReportePerdida::where('estatus', LostFoundReportePerdida::BUSCANDO)->where('nombre_huesped', 'LAURA GÓMEZ')->first();
+            if ($telefono !== null && $reporte !== null) {
+                auth()->setUser($admin);
+                $novedades->vincularPerdida($admin, $reporte->load('novedad'), $telefono);
+            }
+
+            // 2. Los lentes de sol ya se devolvieron al huésped, con su firma
+            $lentes = LostFoundArticulo::where('objeto', 'LENTES DE SOL')->where('estatus', LostFoundArticulo::EN_RESGUARDO)->first();
+            if ($lentes !== null) {
+                auth()->setUser($agente);
+                $archivo->cerrar($agente, $lentes, ['tipo_cierre' => 'PERSONA', 'recibe_es' => 'externo', 'nombre_recibe' => 'Mark Johnson',
+                    'tipo_identificacion' => 'PASAPORTE', 'correo_recibe' => 'mark.johnson@example.com', 'firma' => $this->firmaDemo(11),
+                    'observaciones' => 'Pasó a recepción antes de su salida.']);
+            }
+
+            // 3. Objetos de la alberca: semáforo en rojo y ámbar; la gorra se donó a un colaborador
+            auth()->setUser($agente);
+            $n = $novedades->crear($agente, ['sede_id' => $centro->id, 'categoria' => 'lost_found', 'reportado_por' => 'Salvavidas de turno',
+                'ubicacion' => 'Alberca principal', 'descripcion' => 'Objetos olvidados en los camastros de la alberca.', 'ocurrio_en' => $hace(3)]);
+            $novedades->actualizar($agente, $n->fresh(), ['categoria' => 'lost_found', 'estatus' => 'abierto', 'lf_articulos' => [
+                ['objeto' => 'Bufanda', 'tipo_valor' => 'ROPA', 'color' => 'Roja', 'lugar_detalle' => 'Camastro 8', 'ubicacion_bodega' => 'Anaquel 3'],
+                ['objeto' => 'Gorra', 'tipo_valor' => 'ROPA', 'marca' => 'Nike', 'color' => 'Azul', 'lugar_detalle' => 'Camastro 3', 'ubicacion_bodega' => 'Anaquel 3'],
+                ['objeto' => 'Audífonos inalámbricos', 'tipo_valor' => 'ELECTRONICO', 'marca' => 'JBL', 'color' => 'Blanco', 'lugar_detalle' => 'Bar de la alberca', 'ubicacion_bodega' => 'Bodega de Seguridad, Caja 2'],
+                ['objeto' => 'Termo', 'tipo_valor' => 'OTRO', 'color' => 'Verde', 'lugar_detalle' => 'Regaderas', 'ubicacion_bodega' => 'Anaquel 1'],
+            ]]);
+            foreach (['BUFANDA' => 40, 'GORRA' => 35, 'AUDÍFONOS INALÁMBRICOS' => 130, 'TERMO' => 10] as $objeto => $dias) {
+                LostFoundArticulo::where('novedad_id', $n->id)->where('objeto', $objeto)->update(['created_at' => now()->subDays($dias)]);
+            }
+            $gorra = LostFoundArticulo::where('novedad_id', $n->id)->where('objeto', 'GORRA')->first();
+            $colaborador = Colaborador::where('activo', true)->whereNull('fusionado_en_id')->where('sede_id', $centro->id)->where('provisional', false)->orderBy('id')->first();
+            if ($gorra !== null && $colaborador !== null) {
+                $archivo->cerrar($agente, $gorra, ['tipo_cierre' => 'DONADO', 'colaborador_id' => $colaborador->id, 'firma' => $this->firmaDemo(12),
+                    'observaciones' => 'Venció su tiempo de resguardo; autorizó el jefe de seguridad.']);
+            }
+
+            // 4. Un ticket de Lost & Found al que todavía no le capturan los objetos
+            $novedades->crear($agente, ['sede_id' => $centro->id, 'categoria' => 'lost_found', 'reportado_por' => 'Recepción',
+                'ubicacion' => 'Lobby', 'descripcion' => 'Un huésped entregó una bolsa con objetos encontrados en el lobby.', 'ocurrio_en' => $hace(2)]);
+
+            // 5. Robo con sospechoso y sin parte a la policía (para los filtros de Robo — Seguimiento)
+            auth()->setUser($admin);
+            $robo = $novedades->crear($admin, ['sede_id' => $centro->id, 'categoria' => 'robo', 'reportado_por' => 'Carlos Pérez',
+                'ubicacion' => 'Alberca principal', 'descripcion' => 'Huésped reporta que le sacaron la cartera de su mochila en el camastro.', 'ocurrio_en' => $hace(20)]);
+            $novedades->actualizar($admin, $robo->fresh(), ['categoria' => 'robo', 'estatus' => 'abierto', 'robo_hora_aproximada' => '13:15',
+                'robo_lugar_exacto' => 'Camastro 5', 'robo_objetos_descripcion' => 'Cartera café de piel con identificaciones y $2,000 en efectivo.',
+                'robo_valor_estimado' => '2500', 'robo_hay_sospechoso' => '1', 'robo_descripcion_sospechoso' => 'Hombre de gorra negra y playera blanca, no es huésped.',
+                'robo_se_dio_parte_policia' => '0', 'robo_testigos' => [['nombre' => 'Salvavidas de turno', 'departamento' => 'Recreación', 'declaracion' => 'Vio a una persona revisar mochilas.']],
+                'nueva_nota' => 'Se pidió a Seguridad revisar las cámaras de la alberca.']);
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
     }
 }

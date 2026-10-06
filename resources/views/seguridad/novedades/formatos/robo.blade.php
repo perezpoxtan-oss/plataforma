@@ -30,7 +30,7 @@
                         <a class="btn btn-sm btn-outline-dark" target="_blank" rel="noopener"
                            href="{{ route('novedades.ficha-hechos', ['habitacion' => $n->area_especifica_id, 'fecha' => $n->ocurrio_en ? $n->ocurrio_en->copy()->setTimezone($n->zonaSede())->format('Y-m-d') : null, 'novedad' => $n->id, 'origen' => 'robo', 'origen_id' => $n->id]) }}"><i class="bi bi-clipboard-data-fill me-1" aria-hidden="true"></i>Ficha de Hechos (habitación, llaves y más)</a>
                     @else
-                        <span class="text-muted small align-self-center"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Para la Ficha de Hechos elige arriba la habitación específica y guarda.</span>
+                        <span class="text-muted small align-self-center"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ $textoSinHabitacion ?? 'Para la Ficha de Hechos elige arriba la habitación específica y guarda.' }}</span>
                     @endif
                 </div>
                 <div class="resultados-coincidencias mt-2" data-resultados-coincidencias aria-live="polite"></div>

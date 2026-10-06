@@ -5057,3 +5057,144 @@ document.addEventListener('click', function (e) {
     }, true);
 })();
 /* Fin Listas con buscador */
+/* ==========================================================================
+   Lost & Found (archivo) y Robo — Seguimiento: escanear la etiqueta de la
+   bolsa (abre la ficha del artículo), "Cerrar / Entregar" (bloques según cómo
+   se cierra y quién recibe, quién firma, persona del Padrón, colaborador con
+   el lector universal) y un solo envío. El expediente de Robo usa los
+   ganchos de la Bitácora de Novedades (formato, filas, coincidencias).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function marcado(form, nombre) {
+        var r = form.querySelector('input[name="' + nombre + '"]:checked');
+        return r ? r.value : '';
+    }
+
+    function poner(raiz, selector, texto) {
+        var el = raiz.querySelector(selector);
+        if (el) { el.textContent = texto || ''; }
+    }
+
+    /* ---------- Bloques según "¿Cómo se cierra?" y "¿Quién recibe?" ----------
+       <div data-lf-si-tipo="PERSONA PAQUETERIA" [data-lf-si-recibe="externo"]>:
+       oculto, sus campos se deshabilitan (no se envían ni se validan). */
+    function sincronizar(form) {
+        var tipo = marcado(form, 'tipo_cierre');
+        var recibe = marcado(form, 'recibe_es') || 'externo';
+        form.querySelectorAll('[data-lf-si-tipo]').forEach(function (caja) {
+            var tipos = caja.getAttribute('data-lf-si-tipo').split(' ');
+            var quien = caja.getAttribute('data-lf-si-recibe');
+            var visible = tipos.indexOf(tipo) !== -1 && (!quien || quien === recibe);
+            caja.hidden = !visible;
+            caja.querySelectorAll('input, select, textarea, button').forEach(function (c) { c.disabled = !visible; });
+        });
+        var elegido = form.querySelector('input[name="tipo_cierre"]:checked');
+        var etiqueta = form.querySelector('#lf_firma_etiqueta');
+        if (elegido && etiqueta && etiqueta.firstChild) { etiqueta.firstChild.nodeValue = elegido.dataset.etiquetaFirma + ' '; }
+        form.querySelectorAll('.opcion-cierre-lf').forEach(function (l) {
+            var r = l.querySelector('input');
+            l.classList.toggle('elegida', !!(r && r.checked));
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-cierre-lf]') || (e.target.name !== 'tipo_cierre' && e.target.name !== 'recibe_es')) { return; }
+        // Cada forma de cierre la firma alguien distinto: al cambiarla, la firma se vuelve a pedir
+        if (e.target.name === 'tipo_cierre') {
+            form.querySelectorAll('[data-firma]').forEach(function (caja) {
+                if (window.Firma) { window.Firma.preparar(caja); }
+                if (caja.limpiarFirma) { caja.limpiarFirma(); }
+            });
+        }
+        sincronizar(form);
+    });
+
+    /* ---------- Abrir "Cerrar / Entregar" desde el archivo ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="lf-cerrar"]');
+        if (!b) { return; }
+        var dialogo = document.getElementById('dialogoCerrarArticulo');
+        var form = dialogo && dialogo.querySelector('[data-form-cierre-lf]');
+        if (!form) { return; }
+        form.action = b.dataset.url;
+        form.querySelector('[data-lf-dialogo]').value = 'cerrar-' + b.dataset.id;
+        poner(dialogo, '[data-lf-folio]', b.dataset.folio);
+        poner(dialogo, '[data-lf-objeto]', b.dataset.objeto);
+        poner(dialogo, '[data-lf-detalle]', b.dataset.detalle);
+        poner(dialogo, '[data-lf-bodega]', b.dataset.bodega);
+        var vinculo = dialogo.querySelector('[data-lf-vinculo]');
+        if (vinculo) { vinculo.hidden = !b.dataset.vinculo; poner(vinculo, '[data-lf-vinculo-texto]', b.dataset.vinculo); }
+        // Si un reporte de pérdida está vinculado, se propone a ese huésped como quien recibe
+        form.querySelectorAll('[data-lf-nombre-recibe]').forEach(function (c) { c.value = (b.dataset.recibe || '').toUpperCase(); });
+        form.querySelectorAll('[data-lf-correo]').forEach(function (c) { c.value = b.dataset.correo || ''; });
+        olvidarPersona(form);
+        sincronizar(form);
+        if (typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
+    });
+
+    /* ---------- Persona registrada en el Padrón (registro rápido) ---------- */
+    function olvidarPersona(form) {
+        var id = form.querySelector('[data-lf-persona-id]');
+        var aviso = form.querySelector('[data-lf-persona-elegida]');
+        if (id) { id.value = ''; }
+        if (aviso) { aviso.hidden = true; }
+    }
+
+    document.addEventListener('persona:registrada', function (e) {
+        var form = document.querySelector('[data-form-cierre-lf]');
+        if (!form || !e.detail) { return; }
+        var nombre = form.querySelector('#lf_nombre_recibe');
+        if (nombre) { nombre.value = (e.detail.nombre_completo || '').toUpperCase(); nombre.dataset.persona = nombre.value; }
+        var id = form.querySelector('[data-lf-persona-id]');
+        if (id) { id.value = e.detail.id; }
+        var aviso = form.querySelector('[data-lf-persona-elegida]');
+        if (aviso) { aviso.hidden = false; }
+    });
+
+    // Si se escribe otro nombre, deja de contar la persona del padrón
+    document.addEventListener('input', function (e) {
+        if (e.target.id !== 'lf_nombre_recibe' || !e.target.dataset.persona) { return; }
+        if (e.target.value.trim().toUpperCase() !== e.target.dataset.persona) {
+            olvidarPersona(e.target.form);
+            delete e.target.dataset.persona;
+        }
+    });
+
+    /* ---------- Enviar: colaborador obligatorio donde aplica y un solo envío ---------- */
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches('[data-form-cierre-lf]') || e.defaultPrevented) { return; }
+        var falta = Array.prototype.filter.call(form.querySelectorAll('[data-lector-id][data-requerido]'), function (c) { return !c.disabled && !c.value; })[0];
+        if (falta) {
+            e.preventDefault();
+            var caja = falta.closest('[data-lector]');
+            var estado = caja && caja.querySelector('[data-lector-estado]');
+            if (estado) { estado.hidden = false; estado.className = 'lector-estado error'; estado.textContent = 'Escanea el gafete o busca al colaborador que recibe.'; }
+            var entrada = caja && caja.querySelector('[data-lector-entrada]');
+            if (entrada) { entrada.focus(); }
+            return;
+        }
+        setTimeout(function () { form.querySelectorAll('button[type="submit"]').forEach(function (b) { b.disabled = true; }); }, 0);
+    });
+
+    // Al cerrar (y limpiarse) el diálogo, los bloques se acomodan otra vez
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        var form = document.querySelector('[data-form-cierre-lf]');
+        if (form) { setTimeout(function () { sincronizar(form); }, 0); }
+    }, true);
+
+    /* ---------- Escanear la etiqueta de la bolsa: abre la ficha del artículo ---------- */
+    document.addEventListener('lector:elegido', function (e) {
+        if (!e.target.closest || !e.target.closest('.escaner-lf') || !e.detail || !e.detail.url) { return; }
+        window.location.href = e.detail.url;
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-form-cierre-lf]').forEach(sincronizar);
+    });
+})();
+/* Fin Lost & Found (archivo) y Robo — Seguimiento */

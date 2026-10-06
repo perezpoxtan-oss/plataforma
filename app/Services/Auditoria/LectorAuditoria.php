@@ -13,6 +13,7 @@ use App\Models\Espacio;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
+use App\Models\LostFoundArticulo;
 use App\Models\Modulo;
 use App\Models\MovimientoTransporte;
 use App\Models\Paradero;
@@ -85,6 +86,7 @@ class LectorAuditoria
         Responsiva::class => ['Resguardo', 'folio'],
         PaseSalida::class => ['Pase de salida', 'folio'],
         MovimientoTransporte::class => ['Movimiento de transporte', null],
+        LostFoundArticulo::class => ['Artículo de Lost & Found', 'folio'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

@@ -4,6 +4,7 @@ use App\Models\Colaborador;
 use App\Models\Equipo;
 use App\Models\Gafete;
 use App\Models\Llave;
+use App\Models\LostFoundArticulo;
 use App\Models\Vehiculo;
 
 /*
@@ -22,5 +23,6 @@ return [
         'llave' => Llave::class,
         'gafete' => Gafete::class,
         'equipo' => Equipo::class,
+        'lost_found' => LostFoundArticulo::class,
     ],
 ];

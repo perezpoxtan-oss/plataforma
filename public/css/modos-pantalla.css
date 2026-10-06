@@ -898,3 +898,65 @@ html.modo-noche .btn-icono.ver, html.modo-noche .tema-transporte .btn-icono.edit
 html.modo-noche .tabla-reporte-transporte td { border-bottom-color: var(--borde); }
 html.modo-noche .transporte-firmas img { border-color: #475569; }
 /* Fin Bitácora de transporte */
+
+/* Lost & Found (archivo) y Robo — Seguimiento */
+html.modo-sol .fila-articulo, html.modo-sol .caso-robo, html.modo-sol .umbral-card, html.modo-sol .resumen-cierre-lf,
+html.modo-sol .opcion-cierre-lf, html.modo-sol .opcion-recibe-lf, html.modo-sol .firma-entrega-lf { background: #fff; border: 2px solid #000; }
+html.modo-sol .fila-articulo, html.modo-sol .ficha-articulo-lf { border-left-width: 8px; }
+html.modo-sol .fila-articulo.rojo, html.modo-sol .ficha-articulo-lf.rojo { border-left-color: #b91c1c; }
+html.modo-sol .fila-articulo.amarillo, html.modo-sol .fila-articulo.pendiente, html.modo-sol .ficha-articulo-lf.amarillo { border-left-color: #b45309; }
+html.modo-sol .fila-articulo.verde, html.modo-sol .ficha-articulo-lf.verde, html.modo-sol .ficha-articulo-lf.cerrado { border-left-color: #047857; }
+html.modo-sol .fila-articulo.cerrado { border-left-color: #000; }
+html.modo-sol .caso-robo { border-left: 8px solid #b91c1c; }
+html.modo-sol .caso-robo.resuelto { border-left-color: #047857; }
+html.modo-sol .mes-header-lf { background: #000; border: 2px solid #000; }
+html.modo-sol .folio-lf, html.modo-sol .leyenda-semaforo-lf, html.modo-sol .subtitulo-lf { color: #000; }
+html.modo-sol .semaforo-punto { border: 2px solid #000; width: 14px; height: 14px; }
+html.modo-sol .semaforo-punto.rojo { background: #b91c1c; }
+html.modo-sol .semaforo-punto.amarillo { background: #facc15; }
+html.modo-sol .semaforo-punto.verde { background: #047857; }
+html.modo-sol .dias-lf.rojo { color: #7f1d1d; }
+html.modo-sol .dias-lf.amarillo { color: #78350f; }
+html.modo-sol .badge-tipo-lf, html.modo-sol .badge-robo, html.modo-sol .estatus-lf { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .estatus-lf.resguardo, html.modo-sol .badge-robo.ambar { background: #facc15; }
+html.modo-sol .estatus-lf.cerrado, html.modo-sol .badge-robo.verde { background: #047857; color: #fff; }
+html.modo-sol .badge-robo.rojo { background: #b91c1c; color: #fff; }
+html.modo-sol .btn-lf, html.modo-sol .btn-abrir-robo { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-lf.grande, html.modo-sol .btn-registrar-cierre, html.modo-sol .opcion-cierre-lf.elegida { background: #facc15; color: #000; border: 2px solid #000 !important; }
+html.modo-sol .btn-guardar-robo { background: #b91c1c; color: #fff; border: 2px solid #000 !important; }
+html.modo-sol .btn-accion-novedades.oscuro { background: #000; color: #fff; border: 2px solid #000; }
+html.modo-sol .btn-accion-novedades.azul { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .opcion-cierre-lf i { color: #000; }
+html.modo-sol .datos-articulo-lf .dato-etiqueta { color: #000; }
+
+html.modo-noche .fila-articulo, html.modo-noche .caso-robo, html.modo-noche .umbral-card, html.modo-noche .resumen-cierre-lf,
+html.modo-noche .opcion-cierre-lf, html.modo-noche .opcion-recibe-lf { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .fila-articulo.verde { border-left-color: #22c55e; }
+html.modo-noche .fila-articulo.amarillo, html.modo-noche .fila-articulo.pendiente { background: rgba(245, 158, 11, 0.08); border-color: #78350f; border-left-color: #f59e0b; }
+html.modo-noche .fila-articulo.rojo { background: rgba(239, 68, 68, 0.08); border-color: #7f1d1d; border-left-color: #ef4444; }
+html.modo-noche .fila-articulo.cerrado { border-left-color: #475569; }
+html.modo-noche .caso-robo { border-left-color: #ef4444; }
+html.modo-noche .caso-robo.resuelto { border-left-color: #22c55e; }
+html.modo-noche .mes-header-lf { background: #020617; border: 1px solid var(--borde); }
+html.modo-noche .folio-lf { color: #e2e8f0; }
+html.modo-noche .leyenda-semaforo-lf, html.modo-noche .subtitulo-lf, html.modo-noche .datos-articulo-lf .dato-etiqueta { color: #94a3b8; }
+html.modo-noche .badge-tipo-lf, html.modo-noche .badge-robo.gris { background: var(--superficie-2); color: #cbd5e1; }
+html.modo-noche .dias-lf.rojo { color: #fca5a5; }
+html.modo-noche .dias-lf.amarillo { color: #fcd34d; }
+html.modo-noche .estatus-lf.resguardo, html.modo-noche .badge-robo.ambar { background: rgba(245, 158, 11, 0.16); color: #fcd34d; }
+html.modo-noche .estatus-lf.cerrado, html.modo-noche .badge-robo.verde { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+html.modo-noche .badge-robo.rojo { background: rgba(239, 68, 68, 0.16); color: #fca5a5; }
+html.modo-noche .badge-robo.azul { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+html.modo-noche .btn-lf.cerrar, html.modo-noche .btn-lf.completar { color: #fbbf24; border-color: #b45309; }
+html.modo-noche .btn-lf.cerrar:hover, html.modo-noche .btn-lf.completar:hover { background: #f59e0b; color: #0f172a; }
+html.modo-noche .btn-abrir-robo { color: #e2e8f0; border-color: #94a3b8; }
+html.modo-noche .btn-abrir-robo:hover { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .btn-accion-novedades.oscuro { background: #e2e8f0; color: #0f172a; border-color: #e2e8f0; }
+html.modo-noche .btn-accion-novedades.azul { background: var(--superficie-2); color: #93c5fd; border-color: #1e40af; }
+html.modo-noche .opcion-cierre-lf i { color: #fbbf24; }
+html.modo-noche .opcion-cierre-lf.elegida { background: rgba(245, 158, 11, 0.14); border-color: #f59e0b; }
+html.modo-noche .vinculos-lf { border-top-color: var(--borde); }
+html.modo-noche .filtros-lf .btn-outline-dark { color: #e2e8f0; border-color: #64748b; }
+html.modo-noche .filtros-lf .btn-dark { background: #e2e8f0; color: #0f172a; border-color: #e2e8f0; }
+html.modo-noche .filtros-lf .btn-dark .conteo-filtro { background: rgba(15, 23, 42, 0.15); }
+/* Fin Lost & Found (archivo) y Robo — Seguimiento */
