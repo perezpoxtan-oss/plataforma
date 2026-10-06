@@ -44,6 +44,7 @@ use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Novedades\ArchivoLostFound;
 use App\Services\Novedades\Formatos\RecorridoPc;
 use App\Services\PasesSalida\AdministradorPasesSalida;
+use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
 use App\Services\RecorridosPc\AdministradorRecorridosPc;
@@ -54,6 +55,7 @@ use App\Support\HoraLocal;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -192,6 +194,7 @@ class CrearDatosDemo extends Command
         $paso('borradoDemo', fn () => $this->borradoDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('lostFoundRoboDemo', fn () => $this->lostFoundRoboDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('recorridosPcDemo', fn () => $this->recorridosPcDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('procedimientosDemo', fn () => $this->procedimientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -1683,5 +1686,227 @@ class CrearDatosDemo extends Command
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }
+    }
+
+    /**
+     * Procedimientos de ejemplo, solo la primera vez, capturados con las
+     * reglas de la pantalla (AdministradorProcedimientos):
+     *  - PRO-SEG-001 Robo en habitación: publicado en versión 2 (con historial;
+     *    agente.demo firmó la 1 y debe firmar otra vez la 2);
+     *  - PRO-PC-002 Conato de incendio: publicado, firmado por supervisor.demo;
+     *  - PRO-SEG-003 Entrega de turno: en revisión, espera la aprobación de admin.demo;
+     *  - PRO-ACC-004 Pérdida de llave maestra: borrador;
+     *  - PRO-PC-005 Huracán: publicado con adjuntos (PDF e imagen) y su versión 2 en borrador.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function procedimientosDemo($sedes, User $admin): void
+    {
+        // Clases por nombre: así este bloque no toca la lista de "use" (compartida con otros módulos)
+        [$modelo, $servicio] = ['App\Models\Procedimiento', 'App\Services\Procedimientos\AdministradorProcedimientos'];
+        if ($modelo::exists() || ! function_exists('imagecreatetruecolor')) {
+            return;
+        }
+        $usuario = fn (string $u) => User::where('username', $u)->first();
+        [$jefe, $director, $supervisor, $agente, $agente2] = [$usuario('jefe.demo'), $usuario('director.demo'), $usuario('supervisor.demo'), $usuario('agente.demo'), $usuario('agente2.demo')];
+        if ($jefe === null || $director === null || $supervisor === null || $agente === null) {
+            return;
+        }
+
+        $srv = app($servicio);
+        $categorias = $srv->categorias()->pluck('id', 'nombre');
+        $depto = fn (string $n) => Departamento::where('nombre', $n)->value('id');
+        $previo = auth()->user();
+        $semilla = 40;
+        $como = function (User $u, callable $fn) {
+            auth()->setUser($u);
+            app(Autorizador::class)->olvidar();
+
+            return $fn();
+        };
+        $pasos = fn (array $lista) => array_map(fn ($p) => is_array($p) ? ['texto' => $p[0], 'responsable' => $p[1] ?? null, 'critico' => $p[2] ?? false] : ['texto' => $p], $lista);
+        $firmar = function (User $u, $p) use ($srv, &$semilla, $como) {
+            $p->refresh();
+            $como($u, fn () => $srv->aprobar($u, $p, ['version_id' => $p->trabajo()->value('id'), 'firma_modo' => 'nueva', 'firma' => $this->firmaDemo(++$semilla)]));
+        };
+        $acusar = function (User $u, $p) use ($srv, &$semilla, $como) {
+            $p->refresh();
+            $como($u, fn () => $srv->acusar($u, $p, ['version_id' => $p->vigente()->value('id'), 'entendido' => '1', 'firma_modo' => 'nueva', 'firma' => $this->firmaDemo(++$semilla)]));
+        };
+
+        try {
+            // ===== PRO-SEG-001 Robo en habitación (v1 publicada → v2 publicada) =====
+            $robo = $como($jefe, fn () => $srv->crear($jefe, [
+                'clave' => 'PRO-SEG-001', 'titulo' => 'Robo en habitación', 'categoria_id' => $categorias['Emergencias'],
+                'objetivo' => 'Atender el reporte de robo de un huésped con calma, cuidando su seguridad y conservando las evidencias para la investigación.',
+                'alcance' => 'Cualquier reporte de faltante o robo en habitaciones de huéspedes.',
+                'responsables' => 'Agente de caseta, Supervisor de turno, Gerente de guardia.',
+                'aplica' => 'todas', 'departamentos' => array_filter([$depto('Seguridad'), $depto('Recepción')]),
+                'pasos' => $pasos([
+                    ['Escuchar al huésped y anotar: nombre, habitación, qué falta y cuándo lo vio por última vez.', 'Agente de caseta'],
+                    ['No tocar nada en la habitación y no dejar entrar a nadie hasta que llegue el supervisor.', 'Agente de caseta', true],
+                    ['Avisar por radio al Supervisor de turno y al Gerente de guardia.', 'Agente de caseta'],
+                    ['Revisar las cámaras del pasillo y la bitácora de llaves de esa habitación.', 'Supervisor de turno'],
+                    ['Levantar el ticket de Robo en la Bitácora de novedades con lo que se sabe.', 'Supervisor de turno'],
+                ]),
+                'notas' => 'Nunca acusar a nadie frente al huésped. Si el huésped quiere denunciar, ofrecerle el teléfono de la Fiscalía.',
+                'enviar' => '1',
+            ]));
+            $firmar($admin, $robo);
+            $acusar($agente, $robo);
+            $como($jefe, fn () => $srv->nuevaVersion($jefe, $robo->refresh()));
+            $v2 = $robo->refresh()->trabajo()->with('pasos', 'aplicaciones')->first();
+            $como($jefe, fn () => $srv->actualizar($jefe, $robo, [
+                'clave' => 'PRO-SEG-001', 'titulo' => 'Robo en habitación', 'categoria_id' => $categorias['Emergencias'],
+                'objetivo' => $v2->objetivo, 'alcance' => $v2->alcance, 'responsables' => $v2->responsables, 'notas' => $v2->notas,
+                'aplica' => 'todas', 'departamentos' => $v2->idsDe('departamento'),
+                'pasos' => $pasos([
+                    ['Escuchar al huésped y anotar: nombre, habitación, qué falta y cuándo lo vio por última vez.', 'Agente de caseta'],
+                    ['No tocar nada en la habitación y no dejar entrar a nadie hasta que llegue el supervisor.', 'Agente de caseta', true],
+                    ['Avisar por radio al Supervisor de turno y al Gerente de guardia.', 'Agente de caseta'],
+                    ['Si hay violencia o el sospechoso sigue en el hotel, llamar al 911 de inmediato.', 'Supervisor de turno', true],
+                    ['Revisar las cámaras del pasillo y la bitácora de llaves de esa habitación.', 'Supervisor de turno'],
+                    ['Levantar el ticket de Robo en la Bitácora de novedades con lo que se sabe.', 'Supervisor de turno'],
+                ]),
+                'resumen_cambios' => 'Se agregó el paso 4: llamar al 911 si hay violencia o el sospechoso sigue en el hotel.',
+                'enviar' => '1',
+            ]));
+            $firmar($director, $robo);
+            $acusar($supervisor, $robo);
+            if ($agente2 !== null) {
+                $acusar($agente2, $robo);
+            }
+
+            // ===== PRO-PC-002 Conato de incendio =====
+            $incendio = $como($jefe, fn () => $srv->crear($jefe, [
+                'clave' => 'PRO-PC-002', 'titulo' => 'Conato de incendio', 'categoria_id' => $categorias['Emergencias'],
+                'objetivo' => 'Controlar un fuego pequeño en sus primeros minutos y, si no se puede, evacuar a tiempo.',
+                'alcance' => 'Fuego pequeño en cualquier área: cocina, cuarto eléctrico, habitación o bodega.',
+                'responsables' => 'Todo el personal; brigada contra incendio.',
+                'aplica' => 'todas',
+                'pasos' => $pasos([
+                    ['Dar la voz de alarma: «¡Fuego!» y la ubicación exacta, por radio y en voz alta.', null, true],
+                    ['Si es seguro, usar el extintor más cercano (PAS: jalar el seguro, apuntar a la base, apretar y barrer).', 'Brigada contra incendio'],
+                    ['Cortar la energía o el gas del área si se puede hacer sin riesgo.', 'Mantenimiento'],
+                    ['Si el fuego no se apaga en 30 segundos, salir, cerrar la puerta y activar la evacuación.', null, true],
+                    ['Llamar a Bomberos (911) y esperarlos en la entrada principal para guiarlos.', 'Agente de caseta'],
+                ]),
+                'notas' => 'Nunca usar agua en fuego eléctrico o de aceite.',
+                'enviar' => '1',
+            ]));
+            $firmar($director, $incendio);
+            $acusar($supervisor, $incendio);
+
+            // ===== PRO-SEG-003 Entrega de turno (en revisión, la aprueba admin.demo) =====
+            $como($supervisor, fn () => $srv->crear($supervisor, [
+                'clave' => 'PRO-SEG-003', 'titulo' => 'Entrega de turno en caseta', 'categoria_id' => $categorias['Operación de caseta'],
+                'objetivo' => 'Que el turno que entra sepa todo lo pendiente y reciba completo el equipo de la caseta.',
+                'responsables' => 'Agente que entrega y agente que recibe.',
+                'aplica' => 'sedes', 'sedes' => [$sedes['CEN']->id], 'departamentos' => array_filter([$depto('Seguridad')]),
+                'pasos' => $pasos([
+                    ['Revisar juntos la Bitácora de novedades: tickets abiertos y pendientes de turno.', 'Agente que entrega'],
+                    ['Contar radios, lámparas y llaves de la caseta contra la responsiva.', 'Agente que recibe', true],
+                    ['Revisar «Gente en sitio» en la Bitácora de accesos y quién no ha salido.', 'Agente que recibe'],
+                    ['Firmar la entrega en el libro de turno.', 'Ambos'],
+                ]),
+                'enviar' => '1',
+            ]));
+
+            // ===== PRO-ACC-004 Pérdida de llave maestra (borrador) =====
+            $como($jefe, fn () => $srv->crear($jefe, [
+                'clave' => 'PRO-ACC-004', 'titulo' => 'Pérdida de llave maestra', 'categoria_id' => $categorias['Accesos'],
+                'objetivo' => 'Reducir el riesgo cuando se pierde una llave maestra o una tarjeta con acceso a varias áreas.',
+                'aplica' => 'todas',
+                'pasos' => $pasos([
+                    ['Reportarlo de inmediato al Supervisor de turno.', 'Quien la perdió', true],
+                    ['Bloquear la tarjeta en el sistema de cerraduras o cambiar el cilindro.', 'Mantenimiento'],
+                    ['Registrar la baja con voucher en el Catálogo de llaves.', 'Supervisor de turno'],
+                ]),
+            ]));
+
+            // ===== PRO-PC-005 Huracán (publicado con adjuntos; v2 en borrador) =====
+            $adjuntos = $this->adjuntosProcedimientoDemo();
+            $huracan = $como($jefe, fn () => $srv->crear($jefe, [
+                'clave' => 'PRO-PC-005', 'titulo' => 'Huracán: antes, durante y después', 'categoria_id' => $categorias['Protección civil'],
+                'objetivo' => 'Proteger a huéspedes y personal ante un huracán siguiendo las alertas de Protección Civil.',
+                'alcance' => 'Desde la alerta amarilla del Sistema de Alerta Temprana hasta que se levanta la alerta.',
+                'responsables' => 'Comité de Protección Civil, Jefe de seguridad, brigadas.',
+                'aplica' => 'todas',
+                'pasos' => $pasos([
+                    ['Alerta amarilla: revisar plantas de emergencia, agua, linternas y radios cargados.', 'Mantenimiento'],
+                    ['Alerta naranja: retirar objetos sueltos de terrazas y albercas; informar a los huéspedes.', 'Brigadas'],
+                    ['Alerta roja: llevar a todos a los refugios internos señalados en el plano (ver adjunto).', 'Jefe de seguridad', true],
+                    ['Durante el huracán: nadie sale de los refugios hasta que lo indique Protección Civil.', null, true],
+                    ['Después: revisar daños, cables caídos y fugas antes de reabrir áreas.', 'Mantenimiento'],
+                ]),
+                'adjuntos' => $adjuntos,
+                'enviar' => '1',
+            ]));
+            $firmar($admin, $huracan);
+            $como($jefe, fn () => $srv->nuevaVersion($jefe, $huracan->refresh()));
+        } finally {
+            foreach ($adjuntos ?? [] as $archivo) {
+                @unlink($archivo->getRealPath());
+            }
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+            app(Autorizador::class)->olvidar();
+        }
+    }
+
+    /**
+     * Un PDF sencillo y una imagen (plano de refugios) para el procedimiento demo de Huracán.
+     *
+     * @return list<UploadedFile>
+     */
+    private function adjuntosProcedimientoDemo(): array
+    {
+        $texto = 'BT /F1 18 Tf 60 740 Td (Directorio de emergencia - Huracan) Tj 0 -30 Td /F1 12 Tf (Proteccion Civil municipal: 998 000 0000) Tj 0 -20 Td (Bomberos y emergencias: 911) Tj ET';
+        $objetos = [
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+            '<< /Length '.strlen($texto).' >>'."\nstream\n".$texto."\nendstream",
+            '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+        ];
+        $pdf = "%PDF-1.4\n";
+        $posiciones = [];
+        foreach ($objetos as $i => $objeto) {
+            $posiciones[] = strlen($pdf);
+            $pdf .= ($i + 1)." 0 obj\n{$objeto}\nendobj\n";
+        }
+        $xref = strlen($pdf);
+        $pdf .= "xref\n0 ".(count($objetos) + 1)."\n0000000000 65535 f \n";
+        foreach ($posiciones as $p) {
+            $pdf .= sprintf("%010d 00000 n \n", $p);
+        }
+        $pdf .= "trailer\n<< /Size ".(count($objetos) + 1)." /Root 1 0 R >>\nstartxref\n{$xref}\n%%EOF";
+        $rutaPdf = tempnam(sys_get_temp_dir(), 'pdf');
+        file_put_contents($rutaPdf, $pdf);
+
+        $img = imagecreatetruecolor(800, 500);
+        imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+        $azul = imagecolorallocate($img, 37, 99, 235);
+        $verde = imagecolorallocate($img, 22, 163, 74);
+        $negro = imagecolorallocate($img, 15, 23, 42);
+        imagesetthickness($img, 4);
+        imagerectangle($img, 40, 40, 760, 460, $negro);
+        imageline($img, 400, 40, 400, 460, $negro);
+        imageline($img, 40, 250, 760, 250, $negro);
+        imagefilledrectangle($img, 70, 290, 360, 430, $verde);
+        imagefilledrectangle($img, 440, 70, 730, 220, $verde);
+        imagestring($img, 5, 90, 350, 'REFUGIO 1 - Salon Maya', imagecolorallocate($img, 255, 255, 255));
+        imagestring($img, 5, 460, 140, 'REFUGIO 2 - Comedor', imagecolorallocate($img, 255, 255, 255));
+        imagestring($img, 5, 60, 60, 'Plano de refugios internos', $azul);
+        ob_start();
+        imagepng($img);
+        $png = (string) ob_get_clean();
+        imagedestroy($img);
+        $rutaPng = tempnam(sys_get_temp_dir(), 'png');
+        file_put_contents($rutaPng, $png);
+
+        return [
+            new UploadedFile($rutaPdf, 'Directorio de emergencia.pdf', 'application/pdf', null, true),
+            new UploadedFile($rutaPng, 'Plano de refugios.png', 'image/png', null, true),
+        ];
     }
 }

@@ -67,7 +67,7 @@ class RolesPlantillaSeeder extends Seeder
         // El Agente trabaja en los menús de caseta: Operación y Padrones (no en reportes)
         $deCaseta = fn ($ma) => $deSeguridad($ma) && in_array(self::menuDe($ma->modulo), ['operacion', 'padrones'], true);
 
-        return self::soloAdministradorBorra([
+        return self::soloAdministradorBorra(self::reglaProcedimientos([
             'Administrador' => [10, 'Administra toda su empresa', fn ($ma) => Alcance::Empresa],
             'Director' => [20, 'Consulta y aprueba en toda la empresa', fn ($ma) => in_array($ma->accion->clave, ['ver', 'aprobar', 'exportar', 'imprimir'], true) ? Alcance::Empresa : null],
             'Recursos Humanos' => [25, 'Administra el personal y valida las altas provisionales de la caseta', fn ($ma) => $ma->modulo->area->clave === 'recursos_humanos'
@@ -81,8 +81,46 @@ class RolesPlantillaSeeder extends Seeder
             'Agente' => [60, 'Registra la operación de caseta', fn ($ma) => ($deCaseta($ma)
                 && in_array($ma->accion->clave, self::esPadron($ma->modulo) ? self::ACCIONES_AGENTE_PADRONES : self::ACCIONES_AGENTE_OPERACION, true))
                 || $provisional($ma) ? Alcance::Sede : null],
-        ]);
+        ]));
     }
+
+    // Procedimientos
+
+    /**
+     * Procedimientos (manual operativo) no sigue la regla general de
+     * Seguridad: decisión del dueño del proyecto. rol => [acciones, alcance].
+     * "borrar" lo sigue decidiendo soloAdministradorBorra().
+     */
+    public const PROCEDIMIENTOS = [
+        'Administrador' => [['ver', 'crear', 'editar', 'eliminar', 'aprobar', 'borrar'], Alcance::Empresa],
+        'Director' => [['ver', 'crear', 'editar', 'eliminar', 'aprobar'], Alcance::Empresa],
+        'Jefe de seguridad' => [['ver', 'crear', 'editar', 'eliminar', 'aprobar'], Alcance::Sede],
+        'Supervisor' => [['ver', 'crear', 'editar'], Alcance::Sede],
+        'Asistente' => [['ver'], Alcance::Sede],
+        'Agente' => [['ver'], Alcance::Sede],
+        'Recursos Humanos' => [['ver'], Alcance::Empresa],
+    ];
+
+    /**
+     * @param  array<string, array{0: int, 1: string, 2: Closure}>  $definiciones
+     * @return array<string, array{0: int, 1: string, 2: Closure}>
+     */
+    private static function reglaProcedimientos(array $definiciones): array
+    {
+        foreach ($definiciones as $nombre => [$nivel, $descripcion, $regla]) {
+            $definiciones[$nombre][2] = function ($ma) use ($nombre, $regla) {
+                if ($ma->modulo->clave !== 'procedimientos') {
+                    return $regla($ma);
+                }
+                [$acciones, $alcance] = self::PROCEDIMIENTOS[$nombre] ?? [[], null];
+
+                return in_array($ma->accion->clave, $acciones, true) ? $alcance : null;
+            };
+        }
+
+        return $definiciones;
+    }
+    // Fin Procedimientos
 
     /**
      * "Eliminar definitivamente" (acción borrar) solo lo recibe el
