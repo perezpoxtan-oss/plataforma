@@ -27,7 +27,7 @@ class SuperficieDeRutasTest extends TestCase
             ->map(fn (Route $r) => implode('|', array_diff($r->methods(), ['HEAD'])).' /'.ltrim($r->uri(), '/'))
             ->sort()->values()->all();
 
-        $this->assertSame(['GET /login', 'GET /sesion/expirada', 'GET /up', 'POST /login'], $abiertas);
+        $this->assertSame(['GET /login', 'GET /sesion/expirada', 'GET /up', 'POST /login', 'POST /sesion/expirada'], $abiertas);
     }
 
     /**

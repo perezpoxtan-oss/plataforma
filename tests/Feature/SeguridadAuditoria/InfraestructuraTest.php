@@ -91,7 +91,7 @@ class InfraestructuraTest extends TestCase
         $respuesta = $this->get('/login')->assertOk();
         $respuesta->assertHeader('X-Content-Type-Options', 'nosniff');
         $respuesta->assertHeader('X-Frame-Options', 'SAMEORIGIN');
-        $respuesta->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $respuesta->assertHeader('Referrer-Policy', 'same-origin');
         $this->assertStringContainsString('camera=(self)', $respuesta->headers->get('Permissions-Policy'));
         $this->assertStringContainsString('microphone=()', $respuesta->headers->get('Permissions-Policy'));
         $respuesta->assertHeaderMissing('Strict-Transport-Security'); // por HTTP no se anuncia HSTS
