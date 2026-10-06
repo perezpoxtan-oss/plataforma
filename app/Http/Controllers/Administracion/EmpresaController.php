@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Administracion;
 use App\Http\Controllers\Controller;
 use App\Models\Empresa;
 use App\Models\Rubro;
+use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
+use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Support\ZonasHorarias;
 use Illuminate\Http\RedirectResponse;
@@ -50,7 +52,7 @@ class EmpresaController extends Controller
             'esSuperadmin' => $actor->es_superadmin,
             'puede' => [
                 'crear' => $actor->es_superadmin && $actor->can('empresas.crear'),
-                'editar' => $actor->can('empresas.editar'),
+                'editar' => $this->editaEmpresa($actor),
                 'estado' => $actor->es_superadmin,
                 'sedes' => $actor->can('sedes.ver'),
             ],
@@ -74,9 +76,12 @@ class EmpresaController extends Controller
 
     public function update(Request $request, Empresa $empresa): RedirectResponse
     {
-        Gate::authorize('empresas.editar');
         $actor = $request->user();
+        // Seguridad (AZ-03): otra empresa responde 404 aunque no se tenga el permiso (sin revelar que existe)
         abort_unless($actor->es_superadmin || $empresa->id === (int) $actor->empresa_id, 404);
+        Gate::authorize('empresas.editar');
+        // Seguridad (AZ-02): los datos de la empresa solo los cambia quien tiene alcance de empresa
+        abort_unless($this->editaEmpresa($actor), 403, 'Los datos de la empresa solo los cambia quien tiene el permiso «editar» de Empresas con alcance de empresa.');
 
         $datos = $this->validar($request, $empresa);
 
@@ -95,6 +100,8 @@ class EmpresaController extends Controller
 
     public function estado(Request $request, Empresa $empresa): RedirectResponse
     {
+        // Seguridad (AZ-03): otra empresa responde 404 (sin revelar que existe)
+        abort_unless($request->user()->es_superadmin || $empresa->id === (int) $request->user()->empresa_id, 404);
         abort_unless($request->user()->es_superadmin, 403);
 
         $activo = $request->boolean('activo');
@@ -104,6 +111,11 @@ class EmpresaController extends Controller
         return redirect()->route('empresas.index')->with($activo ? 'ok' : 'aviso', $activo
             ? 'Empresa reactivada correctamente.'
             : 'Empresa desactivada: sus usuarios ya no pueden entrar. Puedes reactivarla con el mismo botón.');
+    }
+
+    private function editaEmpresa(User $actor): bool
+    {
+        return $actor->can('empresas.editar') && app(Autorizador::class)->alcanceDeEmpresa($actor, 'empresas.editar');
     }
 
     /**

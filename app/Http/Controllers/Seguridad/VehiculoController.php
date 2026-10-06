@@ -138,8 +138,9 @@ class VehiculoController extends Controller
         Gate::authorize('vehiculos.imprimir');
         $empresaId = $this->empresaDeTrabajo($request);
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($vehiculo) {
-            $modelo = Vehiculo::with('proveedor:id,nombre')->find($vehiculo);
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $vehiculo) {
+            // Seguridad (AZ-04): dentro del alcance del permiso ("solo los propios")
+            $modelo = $this->vehiculos->limitar(Vehiculo::query(), $request->user(), 'vehiculos.imprimir')->with('proveedor:id,nombre')->find($vehiculo);
             abort_if($modelo === null, 404);
 
             $url = route('vehiculos.qr', $modelo->codigo_qr);

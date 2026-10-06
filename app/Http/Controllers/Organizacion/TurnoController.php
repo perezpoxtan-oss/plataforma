@@ -57,6 +57,9 @@ class TurnoController extends Controller
 
         $permitidas = $this->autorizador()->sedesPermitidas($actor, 'turnos.ver');
         $editables = $actor->can('turnos.editar') ? $this->autorizador()->sedesPermitidas($actor, 'turnos.editar') : [];
+        if ($editables === null && ! $this->autorizador()->alcanceDeEmpresa($actor, 'turnos.editar')) {
+            $editables = []; // Seguridad (AZ-04)
+        }
         $puede = $this->permisosCatalogo($actor, 'turnos') + [
             'sedes' => $editables !== [],
             'todasLasSedes' => $editables === null,
@@ -137,6 +140,10 @@ class TurnoController extends Controller
     {
         Gate::authorize('turnos.editar');
         $editables = $this->autorizador()->sedesPermitidas($request->user(), 'turnos.editar');
+        // Seguridad (AZ-04): "Solo los propios" sin sede no es alcance de empresa
+        if ($editables === null && ! $this->autorizador()->alcanceDeEmpresa($request->user(), 'turnos.editar')) {
+            $editables = [];
+        }
         abort_if($editables === [], 403);
         [$modelo, $empresaId] = $this->buscar($request, $turno);
 

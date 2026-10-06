@@ -166,7 +166,7 @@ class PrestamoLlaveController extends Controller
             $modelo = Llave::query()->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))->find($llave);
             abort_if($modelo === null, 404);
 
-            return view('operacion.prestamo-llaves._historial', ['llave' => $modelo, 'movimientos' => $this->prestamos->historialDe($modelo)]);
+            return view('operacion.prestamo-llaves._historial', ['llave' => $modelo, 'movimientos' => $this->prestamos->historialDe($modelo, $request->user())]);
         });
     }
 

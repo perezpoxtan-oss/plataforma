@@ -58,7 +58,7 @@ class AuditoriaController extends Controller
             'filtros' => $filtros,
             'lector' => $this->lector,
             'zona' => $this->hora->etiqueta(),
-            'soloPropios' => ! $actor->es_superadmin && $this->autorizador->sedesPermitidas($actor, 'auditoria.ver') !== null,
+            'soloPropios' => ! $this->autorizador->alcanceDeEmpresa($actor, 'auditoria.ver'),
             'puedeExportar' => $actor->can('auditoria.exportar'),
         ]);
     }
@@ -97,7 +97,8 @@ class AuditoriaController extends Controller
         $empresaId = $this->empresa->id($actor);
         $consulta = Auditoria::query()->when($empresaId === null, fn ($q) => $q->whereNull('empresa_id'), fn ($q) => $q->where('empresa_id', $empresaId));
 
-        if (! $actor->es_superadmin && $this->autorizador->sedesPermitidas($actor, 'auditoria.ver') !== null) {
+        // Seguridad (AZ-04): con alcance de sede o "solo los propios" (aunque sea en todas las sedes), solo lo suyo
+        if (! $this->autorizador->alcanceDeEmpresa($actor, 'auditoria.ver')) {
             $consulta->where('user_id', $actor->id);
         }
 

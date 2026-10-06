@@ -168,6 +168,19 @@ class AdministradorRoles
             throw new AuthorizationException("No tienes el permiso «{$permiso}».");
         }
 
+        // Seguridad (AZ-02): un rol y sus permisos aplican en todas las sedes;
+        // con alcance de sede se consultan, no se cambian.
+        if (str_starts_with($permiso, 'roles.') || str_starts_with($permiso, 'permisos.')) {
+            $propios = $this->autorizador->soloPropios($actor, $permiso);
+            if (! $propios && ! $this->autorizador->alcanceDeEmpresa($actor, $permiso)) {
+                throw new AuthorizationException("Los roles son de toda la empresa: para cambiarlos hace falta «{$permiso}» con alcance de empresa.");
+            }
+            // Seguridad (AZ-04): con "Solo los propios", solo los roles que él dio de alta
+            if ($propios && $rol->exists && (int) $rol->creado_por !== (int) $actor->id) {
+                throw new AuthorizationException('Con alcance «Solo los propios» solo administras los roles que tú diste de alta.');
+            }
+        }
+
         if ($rol->esPlantilla() || (int) $rol->empresa_id !== (int) $actor->empresa_id) {
             throw new AuthorizationException('Solo puedes administrar roles de tu empresa.');
         }

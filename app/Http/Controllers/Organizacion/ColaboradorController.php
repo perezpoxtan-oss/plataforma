@@ -233,6 +233,8 @@ class ColaboradorController extends Controller
     {
         Gate::authorize('colaboradores.aprobar');
         $empresaId = $this->empresaDeTrabajo($request);
+        // Seguridad (AZ-03): primero el registro (404 si es ajeno), luego la captura
+        $this->tenant->conEmpresa($empresaId, fn () => $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.aprobar'));
         $destinoId = (int) $request->validate(['destino_id' => ['required', 'integer']], ['destino_id.required' => 'Elige el colaborador correcto.'])['destino_id'];
 
         [$provisional, $destino] = $this->tenant->conEmpresa($empresaId, function () use ($request, $colaborador, $destinoId) {

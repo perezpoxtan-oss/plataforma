@@ -118,12 +118,12 @@ class PaseSalidaController extends Controller
         Gate::authorize('pases_salida.ver');
         $empresaId = $this->empresaDeTrabajo($request);
 
-        if (! $request->ajax()) {
-            return redirect()->route('pases-salida.index', ['pase' => $pase]);
-        }
-
         return $this->tenant->conEmpresa($empresaId, function () use ($request, $pase) {
+            // Seguridad (AZ-03): un pase ajeno responde 404 también sin AJAX
             $modelo = $this->buscarEnAlcance($request->user(), $pase, 'pases_salida.ver');
+            if (! $request->ajax()) {
+                return redirect()->route('pases-salida.index', ['pase' => $modelo->id]);
+            }
 
             return view('seguridad.pases-salida._detalle', $this->datosDetalle($request->user(), $modelo));
         });

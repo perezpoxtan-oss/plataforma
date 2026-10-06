@@ -20,15 +20,16 @@ trait CatalogoDeEmpresa
      */
     protected function permisosCatalogo(User $usuario, string $modulo): array
     {
+        // Seguridad (AZ-04): "Solo los propios" no es alcance de empresa
         $enEmpresa = fn (string $accion) => $usuario->can("{$modulo}.{$accion}")
-            && $this->autorizador()->sedesPermitidas($usuario, "{$modulo}.{$accion}") === null;
+            && $this->autorizador()->alcanceDeEmpresa($usuario, "{$modulo}.{$accion}");
 
         return ['crear' => $enEmpresa('crear'), 'editar' => $enEmpresa('editar'), 'estado' => $enEmpresa('eliminar')];
     }
 
     protected function exigirAlcanceDeEmpresa(User $usuario, string $permiso): void
     {
-        abort_unless($this->autorizador()->sedesPermitidas($usuario, $permiso) === null, 403, 'Este catálogo es de toda la empresa: solo lo modifica quien tiene alcance de empresa.');
+        abort_unless($this->autorizador()->alcanceDeEmpresa($usuario, $permiso), 403, 'Este catálogo es de toda la empresa: solo lo modifica quien tiene alcance de empresa.');
     }
 
     /**
