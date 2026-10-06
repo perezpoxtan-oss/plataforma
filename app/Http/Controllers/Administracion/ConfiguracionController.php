@@ -145,7 +145,9 @@ class ConfiguracionController extends Controller
         // Descargar la base completa queda en la bitácora
         $this->auditar($request, 'configuracion.respaldo_descargado', ['archivo' => $archivo]);
 
-        return response()->download($ruta, $archivo, ['Content-Type' => 'application/gzip', 'Cache-Control' => 'no-store, private']);
+        // Seguridad: BinaryFileResponse se marca "public" por defecto y pisaba el "private"
+        return response()->download($ruta, $archivo, ['Content-Type' => 'application/gzip', 'Cache-Control' => 'no-store, private'])
+            ->setPrivate();
     }
 
     /**

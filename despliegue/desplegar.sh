@@ -72,21 +72,69 @@ fallo() {
 permisos_publicos() {
   [ -d "$PUB" ] && chmod -R go+rX "$PUB" 2>/dev/null
 }
+# Copia los archivos publicos de una version ($1) al subdominio y escribe el
+# index.php que apunta a la version activa (se usa al instalar y al regresar)
+publicar() {
+  mkdir -p "$PUB"
+  cp -a "$1/public/." "$PUB/"
+  rm -f "$PUB/index.html" "$PUB/default.html"
+  cat > "$PUB/index.php" <<PHPEOF
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+
+define('LARAVEL_START', microtime(true));
+
+// Generado por desplegar.sh: el codigo vive fuera de la carpeta publica.
+// Se lee el destino de "actual" en cada visita (readlink no usa la cache de
+// rutas de PHP), asi el cambio de version es inmediato.
+\$base = '$APP/'.readlink('$APP/actual');
+
+if (file_exists(\$mantenimiento = \$base.'/storage/framework/maintenance.php')) {
+    require \$mantenimiento;
+}
+
+require \$base.'/vendor/autoload.php';
+
+/** @var Application \$app */
+\$app = require_once \$base.'/bootstrap/app.php';
+
+\$app->handleRequest(Request::capture());
+PHPEOF
+  ln -sfn "$APP/shared/storage/app/public" "$PUB/storage"
+  permisos_publicos
+}
 responde() {  # codigo HTTP de /up
   curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$URL/up"
 }
 
 # --- Una sola corrida a la vez -------------------------------------------------
+# Seguridad: el candado guarda el numero de proceso. Se considera abandonado solo
+# si ese proceso ya no existe (o lleva mas de 3 horas: ninguna corrida tarda eso),
+# o si no tiene numero y pasa de 30 minutos. Antes bastaban 30 minutos aunque la
+# corrida siguiera viva, y una instalacion lenta podia encimarse con otra.
 CANDADO="$APP/.desplegando"
 if ! mkdir "$CANDADO" 2>/dev/null; then
-  # Un candado de mas de 30 minutos es de una corrida que se interrumpio
-  if [ -n "$(find "$CANDADO" -maxdepth 0 -mmin +30 2>/dev/null)" ]; then
-    rmdir "$CANDADO"; mkdir "$CANDADO" || exit 0
-  else
+  DUENO="$(cat "$CANDADO/pid" 2>/dev/null)"
+  if [[ "$DUENO" =~ ^[0-9]+$ ]]; then
+    kill -0 "$DUENO" 2>/dev/null && [ -z "$(find "$CANDADO" -maxdepth 0 -mmin +180 2>/dev/null)" ] && exit 0
+  elif [ -z "$(find "$CANDADO" -maxdepth 0 -mmin +30 2>/dev/null)" ]; then
     exit 0
   fi
+  # Abandonado: se toma con un cambio de nombre atomico (solo una corrida lo logra);
+  # si lo movido ya no es el candado abandonado, otra corrida gano: se devuelve
+  mv -T "$CANDADO" "$CANDADO.viejo.$$" 2>/dev/null || exit 0
+  if [ "$(cat "$CANDADO.viejo.$$/pid" 2>/dev/null)" != "$DUENO" ]; then
+    mv -T "$CANDADO.viejo.$$" "$CANDADO" 2>/dev/null
+    exit 0
+  fi
+  rm -rf "$CANDADO.viejo.$$"
+  mkdir "$CANDADO" 2>/dev/null || exit 0
 fi
-trap 'rmdir "$CANDADO" 2>/dev/null' EXIT
+echo $$ > "$CANDADO/pid"
+# Al salir solo se quita el candado propio
+trap '[ "$(cat "$CANDADO/pid" 2>/dev/null)" = "$$" ] && rm -rf "$CANDADO"' EXIT
 
 # --- PHP de linea de comandos ---------------------------------------------------
 PHP="$(cat "$HOME/.php_cli_path" 2>/dev/null)"
@@ -108,6 +156,14 @@ guardar_privado() {  # $1 = archivo visible en $HOME, $2 = destino privado
 guardar_privado github_token.txt "$PRIVADO/github_token"
 TOKEN="$(tr -d ' \n' < "$PRIVADO/github_token" 2>/dev/null)"
 [ -n "$TOKEN" ] || fallo "Falta el token de GitHub: sube github_token.txt a tu carpeta principal"
+# Seguridad: un token de GitHub solo tiene letras, numeros y guion bajo
+[[ "$TOKEN" =~ ^[A-Za-z0-9_]+$ ]] || fallo "github_token.txt no parece un token de GitHub (solo letras, numeros y _)"
+
+# Seguridad: el token viaja a curl por la entrada estandar (-K -), no como argumento,
+# para que no aparezca en la lista de procesos del servidor compartido
+github() {
+  printf 'header = "Authorization: Bearer %s"\nheader = "X-GitHub-Api-Version: 2022-11-28"\n' "$TOKEN" | curl -K - "$@"
+}
 
 mkdir -p "$APP/shared/storage/app/public" "$APP/shared/storage/framework/cache/data" \
          "$APP/shared/storage/framework/sessions" "$APP/shared/storage/framework/views" \
@@ -120,19 +176,42 @@ if [ -f "$HOME/env_${AMB}.txt" ]; then
   CLAVE="$(grep -E '^APP_KEY=base64:' "$APP/shared/.env" 2>/dev/null | head -1)"
   [ -n "$CLAVE" ] || CLAVE="APP_KEY=base64:$(head -c 32 /dev/urandom | base64)"
   [ -f "$APP/shared/.env" ] && cp "$APP/shared/.env" "$APP/shared/.env.respaldo.$(date +%Y%m%d%H%M%S)"
-  { echo "$CLAVE"; tr -d '\r' < "$HOME/env_${AMB}.txt" | grep -v '^APP_KEY='; } > "$APP/shared/.env"
+  # Seguridad: el .env nace con permisos 600 (umask 077), sin un instante legible por otros
+  ( umask 077; { echo "$CLAVE"; tr -d '\r' < "$HOME/env_${AMB}.txt" | grep -v '^APP_KEY='; } > "$APP/shared/.env.nuevo" ) \
+    && mv -f "$APP/shared/.env.nuevo" "$APP/shared/.env"
   chmod 600 "$APP/shared/.env" "$APP/shared/.env.respaldo."* 2>/dev/null
+  # Seguridad: cada respaldo del .env tiene la contrasena de la base; se guardan solo los 3 mas recientes
+  ls -1t "$APP/shared/".env.respaldo.* 2>/dev/null | tail -n +4 | while read -r viejo; do rm -f "$viejo"; done
   rm -f "$HOME/env_${AMB}.txt"
   log "Configuracion (.env) actualizada desde env_${AMB}.txt (APP_KEY conservada)"
   ENV_NUEVO=1
 fi
 [ -f "$APP/shared/.env" ] || fallo "Falta la configuracion: sube env_${AMB}.txt a tu carpeta principal"
 
+# Seguridad: Produccion nunca corre en modo depuracion ni con otro nombre de ambiente
+# (APP_ENV distinto de "production" desactiva los candados de Produccion).
+valor_env() { grep -E "^$1=" "$APP/shared/.env" | tail -1 | cut -d= -f2- | tr -d "\"' \r"; }
+if [ "$AMB" = "prod" ]; then
+  [ "$(valor_env APP_ENV)" = "production" ] || fallo "env_prod.txt debe decir APP_ENV=production (dice: $(valor_env APP_ENV))"
+  case "$(valor_env APP_DEBUG)" in
+    ""|false|0) ;;
+    *) fallo "env_prod.txt debe decir APP_DEBUG=false: en Produccion los errores no deben mostrar detalles internos" ;;
+  esac
+  case "$(valor_env APP_URL)" in
+    https://*) ;;
+    *) fallo "env_prod.txt debe tener APP_URL con https://" ;;
+  esac
+fi
+
 # --- Que version toca instalar ---------------------------------------------------
 if [ "$AMB" = "prod" ]; then
-  ETIQUETA="$(tr -d ' \r\n' < "$HOME/desplegar_version.txt" 2>/dev/null)"
+  # Primera linea: "v0.1.0" y, opcionalmente, la huella autorizada: "v0.1.0 sha256:<64 hex>"
+  ETIQUETA=""; HUELLA_AUTORIZADA=""
+  read -r ETIQUETA HUELLA_AUTORIZADA _ < <(head -1 "$HOME/desplegar_version.txt" 2>/dev/null | tr -d '\r')
   [ -n "$ETIQUETA" ] || { estado "Sin version autorizada (falta desplegar_version.txt)"; exit 0; }
-  [[ "$ETIQUETA" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || fallo "desplegar_version.txt debe decir algo como v0.1.0 (dice: $ETIQUETA)"
+  [[ "$ETIQUETA" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || fallo "desplegar_version.txt debe decir algo como v0.1.0 (dice: ${ETIQUETA:0:40})"
+  [ -z "$HUELLA_AUTORIZADA" ] || [[ "$HUELLA_AUTORIZADA" =~ ^sha256:[0-9a-f]{64}$ ]] \
+    || fallo "La huella en desplegar_version.txt debe tener la forma sha256:<64 caracteres 0-9a-f>"
 else
   ETIQUETA="qa"
 fi
@@ -140,8 +219,7 @@ fi
 # PLATAFORMA_API / PLATAFORMA_URL solo se usan para probar el script fuera del servidor
 API="${PLATAFORMA_API:-https://api.github.com}/repos/$REPO"
 URL="${PLATAFORMA_URL:-$URL}"
-CABECERAS=(-H "Authorization: Bearer $TOKEN" -H "X-GitHub-Api-Version: 2022-11-28")
-JSON="$(curl -fsS --max-time 60 "${CABECERAS[@]}" -H "Accept: application/vnd.github+json" "$API/releases/tags/$ETIQUETA" 2>&1)" \
+JSON="$(github -fsS --max-time 60 -H "Accept: application/vnd.github+json" "$API/releases/tags/$ETIQUETA" 2>&1)" \
   || fallo "GitHub no respondio la version $ETIQUETA (revisa el token o que la version exista): $(echo "$JSON" | head -c 200)"
 
 read -r ACTIVO_ID DIGESTO <<< "$(printf '%s' "$JSON" | "$PHP" -r '
@@ -151,6 +229,23 @@ read -r ACTIVO_ID DIGESTO <<< "$(printf '%s' "$JSON" | "$PHP" -r '
   }
   echo "- -";')"
 [ "$ACTIVO_ID" != "-" ] || fallo "La version $ETIQUETA no tiene paquete.tar.gz todavia"
+# Seguridad: el numero del paquete forma rutas (releases/<nombre>) y la huella es obligatoria:
+# sin ella no hay forma de saber que lo descargado es lo que publico la CI
+[[ "$ACTIVO_ID" =~ ^[0-9]+$ ]] || fallo "GitHub devolvio un identificador de paquete no valido"
+[[ "$DIGESTO" =~ ^sha256:[0-9a-f]{64}$ ]] || fallo "GitHub no dio la huella sha256 del paquete de $ETIQUETA; no se instala sin poder verificarlo"
+
+# Seguridad (Produccion): una version autorizada no cambia de contenido. Si el paquete
+# de la misma etiqueta se reemplaza en GitHub (otra huella), no se instala.
+HUELLAS="$APP/.huellas"
+if [ "$AMB" = "prod" ]; then
+  if [ -n "$HUELLA_AUTORIZADA" ] && [ "$HUELLA_AUTORIZADA" != "$DIGESTO" ]; then
+    fallo "El paquete de $ETIQUETA no coincide con la huella escrita en desplegar_version.txt"
+  fi
+  CONOCIDA="$(awk -v t="$ETIQUETA" '$1 == t { print $2 }' "$HUELLAS" 2>/dev/null | tail -1)"
+  if [ -n "$CONOCIDA" ] && [ "$CONOCIDA" != "$DIGESTO" ]; then
+    fallo "El paquete de $ETIQUETA cambio en GitHub despues de autorizarse (huella distinta); publica una version nueva (otra etiqueta)"
+  fi
+fi
 
 NOMBRE="${ETIQUETA}-${ACTIVO_ID}"
 ACTUAL="$(cat "$APP/.release_actual" 2>/dev/null)"
@@ -168,10 +263,12 @@ if [ "$NOMBRE" != "$ACTUAL" ] || [ -n "${ENV_NUEVO:-}" ]; then
 
   if [ "$NOMBRE" != "$ACTUAL" ]; then
     TMP="$APP/paquete.tmp.tar.gz"
-    curl -fsSL --max-time 600 "${CABECERAS[@]}" -H "Accept: application/octet-stream" \
+    rm -f "$TMP"
+    github -fsSL --max-time 600 -H "Accept: application/octet-stream" \
       "$API/releases/assets/$ACTIVO_ID" -o "$TMP" || fallo "No se pudo descargar el paquete"
-    if [[ "$DIGESTO" == sha256:* ]]; then
-      [ "sha256:$(sha256sum "$TMP" | cut -d' ' -f1)" = "$DIGESTO" ] || fallo "El paquete descargado no coincide con su huella (sha256)"
+    [ "sha256:$(sha256sum "$TMP" | cut -d' ' -f1)" = "$DIGESTO" ] || { rm -f "$TMP"; fallo "El paquete descargado no coincide con su huella (sha256)"; }
+    if [ "$AMB" = "prod" ] && ! awk -v t="$ETIQUETA" '$1 == t { e = 1 } END { exit !e }' "$HUELLAS" 2>/dev/null; then
+      echo "$ETIQUETA $DIGESTO" >> "$HUELLAS"
     fi
     rm -rf "$REL" && mkdir -p "$REL"
     tar -xzf "$TMP" -C "$REL" || fallo "No se pudo descomprimir el paquete"
@@ -211,35 +308,7 @@ if [ "$NOMBRE" != "$ACTUAL" ] || [ -n "${ENV_NUEVO:-}" ]; then
   "${P[@]}" artisan view:cache >> "$LOG" 2>&1
 
   # Archivos publicos al subdominio + index.php que apunta a la version activa
-  mkdir -p "$PUB"
-  cp -a "$REL/public/." "$PUB/"
-  rm -f "$PUB/index.html" "$PUB/default.html"
-  cat > "$PUB/index.php" <<PHPEOF
-<?php
-
-use Illuminate\Foundation\Application;
-use Illuminate\Http\Request;
-
-define('LARAVEL_START', microtime(true));
-
-// Generado por desplegar.sh: el codigo vive fuera de la carpeta publica.
-// Se lee el destino de "actual" en cada visita (readlink no usa la cache de
-// rutas de PHP), asi el cambio de version es inmediato.
-\$base = '$APP/'.readlink('$APP/actual');
-
-if (file_exists(\$mantenimiento = \$base.'/storage/framework/maintenance.php')) {
-    require \$mantenimiento;
-}
-
-require \$base.'/vendor/autoload.php';
-
-/** @var Application \$app */
-\$app = require_once \$base.'/bootstrap/app.php';
-
-\$app->handleRequest(Request::capture());
-PHPEOF
-  ln -sfn "$APP/shared/storage/app/public" "$PUB/storage"
-  permisos_publicos
+  publicar "$REL"
 
   # Cambio instantaneo a la version nueva
   ln -sfn "releases/$NOMBRE" "$APP/actual.nuevo" && mv -T "$APP/actual.nuevo" "$APP/actual"
@@ -254,6 +323,8 @@ PHPEOF
       echo "$NOMBRE" > "$APP/.release_fallida"
       ln -sfn "releases/$ACTUAL" "$APP/actual.nuevo" && mv -T "$APP/actual.nuevo" "$APP/actual"
       echo "$ACTUAL" > "$APP/.release_actual"
+      # Seguridad/continuidad: tambien regresan .htaccess, css y js de la version anterior
+      publicar "$APP/releases/$ACTUAL"
       rm -rf "$REL"
       fallo "El sitio respondio $CODIGO con $NOMBRE; se regreso a $ACTUAL"
     fi
@@ -329,7 +400,7 @@ elif [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ]; then
   export PLATAFORMA_CONTRASENA
   cd "$APP/actual" || fallo "No hay version instalada para crear usuarios"
   if [ -n "$CORREO" ] && [ -n "$PLATAFORMA_CONTRASENA" ] \
-     && "${P[@]}" artisan plataforma:superadmin "$CORREO" --nombre="${NOMBRE_SA:-Super Administrador}" --usuario="${USUARIO_SA}" >> "$LOG" 2>&1 \
+     && "${P[@]}" artisan plataforma:superadmin --nombre="${NOMBRE_SA:-Super Administrador}" --usuario="${USUARIO_SA}" -- "$CORREO" >> "$LOG" 2>&1 \
      && "${P[@]}" artisan plataforma:demo >> "$LOG" 2>&1; then
     log "Usuarios de prueba creados (Super Administrador y empresa demo)"
     estado "OK: $(cat "$APP/.release_actual") · usuarios de prueba creados"

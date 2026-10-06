@@ -67,6 +67,9 @@ class CrearDatosDemo extends Command
 {
     public const EMPRESA = 'Hotel Demo';
 
+    /** Ambientes donde se permite crear el demo */
+    public const AMBIENTES = ['local', 'testing', 'qa'];
+
     /** usuario => [nombre, rol, sede (null = todas)] */
     public const USUARIOS = [
         'admin.demo' => ['Ana Administradora', 'Administrador', null],
@@ -85,8 +88,10 @@ class CrearDatosDemo extends Command
 
     public function handle(ProvisionarEmpresa $provisionar, Tenant $tenant): int
     {
-        if (app()->isProduction()) {
-            $this->error('Los datos demo no se crean en Produccion.');
+        // Seguridad: lista de ambientes permitidos (no "todo menos production"): un
+        // APP_ENV mal escrito en Produccion ("prod", "produccion") no crea cuentas demo
+        if (! app()->environment(self::AMBIENTES)) {
+            $this->error('Los datos demo solo se crean en '.implode(', ', self::AMBIENTES).' (este ambiente: '.app()->environment().').');
 
             return self::FAILURE;
         }

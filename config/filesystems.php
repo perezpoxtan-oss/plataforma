@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Seguridad: sin rutas /storage/{path} (GET y PUT) sobre el disco privado, donde
+            // viven respaldos y firmas; la plataforma entrega esos archivos con sus permisos
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

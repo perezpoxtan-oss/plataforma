@@ -5,6 +5,29 @@
 
     RewriteEngine On
 
+    # Seguridad: HTTPS obligatorio (salvo la validacion del certificado en /.well-known
+    # y pruebas en el propio equipo). Si el sitio esta detras de un proxy que ya
+    # termina HTTPS, X-Forwarded-Proto evita el ciclo de redirecciones.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https [NC]
+    RewriteCond %{REQUEST_URI} !^/\.well-known/
+    RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:[0-9]+)?$ [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Seguridad: nada oculto se sirve (.env, .git, .htaccess, .user.ini...), salvo /.well-known
+    RewriteRule (^|/)\.(?!well-known(/|$)) - [F,L]
+
+    # Seguridad: respaldos, bitacoras, configuracion o codigo copiados por error a la
+    # carpeta publica nunca se descargan (solo aplica a archivos que existen: las
+    # rutas de Laravel, como la descarga de respaldos con permiso, no se afectan)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule \.(sql|gz|tgz|zip|rar|7z|tar|bak|backup|old|orig|save|swp|tmp|log|env|ini|conf|sh|lock|ya?ml|md|dist|sqlite3?|db|key|pem)$ - [F,L,NC]
+    RewriteRule (^|/)(composer\.(json|lock)|package(-lock)?\.json|artisan|phpunit\.xml|web\.config|error_log)$ - [F,L,NC]
+
+    # Seguridad: solo index.php ejecuta PHP (un .php subido o dejado en /storage no corre)
+    RewriteCond %{REQUEST_URI} !^/index\.php$
+    RewriteRule \.(php[0-9]?|phtml|phar|pht)$ - [F,L,NC]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -22,4 +45,15 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+# Seguridad: sin listado de carpetas aunque mod_negotiation no este cargado
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+# Seguridad: encabezados tambien para css, js, fuentes y logos (lo que no pasa por Laravel)
+<IfModule mod_headers.c>
+    Header setifempty X-Content-Type-Options "nosniff"
+    Header setifempty Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
