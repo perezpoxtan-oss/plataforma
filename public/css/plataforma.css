@@ -2341,3 +2341,181 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
     .pagina-impresion-novedad .controles-auditoria-lf { display: none; }
 }
 /* Fin Lost & Found (archivo) y Robo — Seguimiento */
+/* ==========================================================================
+   Recorridos de Protección Civil (seguridad/recorridos-pc): lista, recorrido
+   en curso (un punto a la vez, botones grandes para el celular), catálogo de
+   equipos, etiqueta y Reporte de Auditoría. Colores de SEGCAT: verde de
+   Protección Civil, ámbar para hallazgos, azul para "En Proceso".
+   ========================================================================== */
+.rpc-acciones-cabecera { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.rpc-acciones-cabecera .btn-rpc { flex: 1 1 auto; }
+.btn-rpc { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0.55rem 1rem; border-radius: 10px; font-weight: 700; font-size: 0.9rem; text-decoration: none; cursor: pointer; border: 1px solid transparent; font-family: inherit; line-height: 1.2; text-align: center; }
+.btn-rpc-verde { background: #198754; border-color: #198754; color: #fff; }
+.btn-rpc-verde:hover { background: #157347; color: #fff; }
+.dialogo-acciones .btn-rpc-verde, .dialogo-acciones .btn-rpc-claro { flex: 1; }
+.dialogo-acciones .btn-rpc-claro { background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1 !important; }
+.btn-rpc-azul { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+.btn-rpc-azul:hover { background: #0b5ed7; color: #fff; }
+.btn-rpc-oscuro { background: #0f172a; border-color: #0f172a; color: #fff; }
+.btn-rpc-oscuro:hover { background: #1e293b; color: #fff; }
+.btn-rpc-contorno { background: #fff; border-color: #198754; color: #198754; }
+.btn-rpc-contorno:hover { background: #198754; color: #fff; }
+.btn-rpc-oscuro-contorno { background: #fff; border-color: #212529; color: #212529; }
+.btn-rpc-oscuro-contorno:hover { background: #212529; color: #fff; }
+.btn-rpc-claro { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
+.btn-rpc-claro:hover { background: #e2e8f0; color: #0f172a; }
+
+/* Lista */
+.rpc-filtros { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 0.5rem; }
+.rpc-filtros-campos { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.rpc-filtros-campos .buscador { flex: 1 1 240px; }
+.rpc-fichas { gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.rpc-ficha { padding: 1.1rem; border-radius: 14px; }
+.rpc-ficha:hover, .rpc-ficha-equipo:hover { transform: none; }
+.rpc-ficha.estatus-con_hallazgos { border-color: #f59e0b; background: #fffbeb; }
+.rpc-ficha-titulo { font-size: 1.05rem; font-weight: 800; margin: 0 0 0.35rem; }
+.rpc-badge { display: inline-block; padding: 0.3rem 0.65rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+.rpc-badge-en_proceso { background: #0d6efd; color: #fff; }
+.rpc-badge-completo { background: #198754; color: #fff; }
+.rpc-badge-con_hallazgos { background: #ffc107; color: #212529; }
+.rpc-texto-hallazgo { color: #b45309; font-weight: 700; }
+.rpc-texto-ok { color: #15803d; font-weight: 700; }
+.rpc-texto-ticket { color: #b45309; font-weight: 700; }
+.rpc-texto-ticket a { color: inherit; text-decoration: underline; }
+.rpc-vacio { grid-column: 1 / -1; }
+.rpc-ayuda { font-size: 0.82rem; color: var(--texto-suave); background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 0.6rem 0.75rem; margin-bottom: 1rem; }
+.dialogo-recorrido-pc .dialogo-acciones { flex-wrap: wrap; }
+
+/* Recorrido: cabecera y avance */
+.rpc-cabecera, .rpc-progreso, .rpc-escaner, .rpc-punto, .rpc-pendientes, .rpc-revisados, .rpc-cierre { padding: 1rem 1.1rem; margin-bottom: 1rem; }
+.rpc-cabecera.estatus-con_hallazgos { border-color: #f59e0b; }
+.rpc-cabecera-fila { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; }
+.rpc-titulo { font-size: 1.35rem; font-weight: 800; margin: 0; }
+.rpc-subtitulo { margin: 0.2rem 0 0; font-weight: 600; color: var(--texto-suave); overflow-wrap: anywhere; }
+.rpc-trazas { list-style: none; padding: 0; margin: 0.6rem 0 0; font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.rpc-trazas i { color: var(--texto-suave); margin-right: 4px; }
+.rpc-progreso-texto { font-size: 1.05rem; }
+.rpc-barra { height: 14px; border-radius: 999px; background: #e2e8f0; overflow: hidden; margin: 0.5rem 0 0.6rem; }
+.rpc-barra-relleno { display: block; height: 100%; background: #198754; border-radius: 999px; width: 0; }
+.rpc-ancho-5 { width: 5%; } .rpc-ancho-10 { width: 10%; } .rpc-ancho-15 { width: 15%; } .rpc-ancho-20 { width: 20%; }
+.rpc-ancho-25 { width: 25%; } .rpc-ancho-30 { width: 30%; } .rpc-ancho-35 { width: 35%; } .rpc-ancho-40 { width: 40%; }
+.rpc-ancho-45 { width: 45%; } .rpc-ancho-50 { width: 50%; } .rpc-ancho-55 { width: 55%; } .rpc-ancho-60 { width: 60%; }
+.rpc-ancho-65 { width: 65%; } .rpc-ancho-70 { width: 70%; } .rpc-ancho-75 { width: 75%; } .rpc-ancho-80 { width: 80%; }
+.rpc-ancho-85 { width: 85%; } .rpc-ancho-90 { width: 90%; } .rpc-ancho-95 { width: 95%; } .rpc-ancho-100 { width: 100%; }
+.rpc-contadores { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; font-size: 0.88rem; font-weight: 600; }
+.rpc-contadores i { margin-right: 3px; }
+
+/* Escanear y punto de inspección */
+.rpc-escaner { border: 2px solid #198754; }
+.rpc-punto { border: 2px solid #198754; scroll-margin-top: 80px; }
+.rpc-punto-titulo { font-size: 1.05rem; font-weight: 800; margin: 0 0 0.75rem; color: #15803d; }
+.rpc-revisados .rpc-punto-titulo { color: var(--texto); }
+.rpc-escaner .lector-entrada { min-height: 52px; font-size: 1.05rem; font-weight: 700; }
+.rpc-escaner .btn-lector { min-width: 52px; }
+.rpc-enlace-manual { display: inline-flex; align-items: center; min-height: 44px; font-size: 0.88rem; font-weight: 700; color: #0f172a; }
+.rpc-equipo { display: flex; gap: 0.8rem; align-items: center; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 0.75rem; margin-bottom: 1rem; overflow-wrap: anywhere; }
+.rpc-equipo-icono { width: 48px; height: 48px; border-radius: 12px; background: #198754; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+.rpc-equipo-serie { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.3rem; font-weight: 900; letter-spacing: 0.5px; }
+.rpc-equipo-categoria { font-weight: 700; color: #15803d; }
+.rpc-aviso-duplicado { background: #fffbeb; border: 1px solid #f59e0b; color: #92400e; border-radius: 10px; padding: 0.6rem 0.75rem; font-size: 0.85rem; font-weight: 600; }
+.rpc-seccion { font-size: 0.9rem; font-weight: 800; margin: 1rem 0 0.5rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--borde); }
+.rpc-seccion span { font-weight: 500; color: var(--texto-suave); font-size: 0.8rem; }
+.rpc-sin-categoria { font-size: 0.85rem; font-style: italic; color: var(--texto-suave); }
+.rpc-criterios { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.5rem; }
+.rpc-criterios[hidden], .rpc-universales[hidden] { display: none; }
+.rpc-criterio { position: relative; display: flex; align-items: center; gap: 0.7rem; min-height: 52px; padding: 0.5rem 0.75rem; border: 2px solid #fecaca; background: #fef2f2; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 0.9rem; user-select: none; }
+.rpc-criterio:has(input:checked) { border-color: #bbf7d0; background: #f0fdf4; }
+.rpc-criterio input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.rpc-interruptor { position: relative; width: 46px; height: 26px; border-radius: 999px; background: #dc2626; flex-shrink: 0; transition: background 0.15s; }
+.rpc-interruptor::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left 0.15s; }
+.rpc-criterio input:checked + .rpc-interruptor { background: #198754; }
+.rpc-criterio input:checked + .rpc-interruptor::after { left: 23px; }
+.rpc-criterio input:focus-visible + .rpc-interruptor { outline: 3px solid #0d6efd; outline-offset: 2px; }
+.rpc-criterio-texto { flex: 1; }
+.rpc-etiqueta-falla { color: #b91c1c; }
+.rpc-campo-falla { border-color: #fca5a5; }
+.rpc-resultado { border-radius: 10px; padding: 0.6rem 0.75rem; font-weight: 700; font-size: 0.9rem; margin: 0 0 0.75rem; }
+.rpc-resultado.ok { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.rpc-resultado.falla { background: #fffbeb; color: #92400e; border: 1px solid #f59e0b; }
+.rpc-punto-acciones, .rpc-cierre-acciones { display: flex; gap: 0.6rem; flex-wrap: wrap; padding: 0.6rem 0 0.2rem; }
+.rpc-punto { background: #fff; }
+.rpc-punto-acciones .btn-rpc { flex: 1 1 140px; min-height: 52px; font-size: 1rem; }
+.rpc-punto-acciones .btn-rpc-verde { flex: 2 1 220px; }
+.rpc-cierre-acciones .btn-rpc { flex: 1 1 220px; min-height: 52px; }
+.rpc-texto-largo { white-space: pre-line; overflow-wrap: anywhere; }
+
+/* Pendientes y revisados */
+.rpc-pendientes summary { cursor: pointer; font-weight: 800; min-height: 44px; display: flex; align-items: center; }
+.rpc-lista-pendientes { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.rpc-lista-pendientes li { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0; border-bottom: 1px solid var(--borde); }
+.rpc-pendiente-icono { width: 36px; height: 36px; border-radius: 10px; background: #f0fdf4; color: #15803d; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rpc-pendiente-texto { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 0.9rem; }
+.rpc-pendiente-texto small { display: block; color: var(--texto-suave); }
+.rpc-btn-revisar { flex-shrink: 0; }
+.rpc-revision { border: 1px solid var(--borde); border-left: 5px solid #198754; border-radius: 10px; padding: 0.65rem 0.8rem; margin-bottom: 0.5rem; overflow-wrap: anywhere; }
+.rpc-revision.falla { border-left-color: #f59e0b; background: #fffbeb; }
+.rpc-revision-titulo { font-weight: 800; }
+.rpc-revision-titulo span { font-weight: 600; color: var(--texto-suave); }
+.rpc-resultado-badge { font-size: 0.72rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 999px; white-space: nowrap; }
+.rpc-resultado-badge.ok { background: #dcfce7; color: #166534; }
+.rpc-resultado-badge.falla { background: #fde68a; color: #78350f; }
+
+/* Catálogo de equipos */
+.rpc-crear { min-height: 180px; }
+.rpc-ficha-equipo { padding: 1.1rem; border-radius: 14px; }
+.rpc-badge-categoria { display: inline-flex; align-items: center; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 0.3rem 0.6rem; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+.rpc-rotulo { font-size: 0.65rem; font-weight: 800; color: var(--texto-suave); letter-spacing: 0.5px; }
+.rpc-serie { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.2rem; font-weight: 900; margin-bottom: 0.3rem; overflow-wrap: anywhere; }
+.rpc-nfc { color: #4f46e5; font-weight: 600; }
+.rpc-pie-ficha { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.8rem; padding-top: 0.6rem; border-top: 1px solid var(--borde); }
+
+/* Etiqueta (verde de Protección Civil, como SEGCAT) */
+.calcomania.etiqueta-pc { border-color: #15803d; }
+.etiqueta-pc-tipo { font-size: 1.1rem; font-weight: 900; color: #15803d; margin: 0.4rem 0; }
+.etiqueta-pc-serie { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.4rem; font-weight: 900; letter-spacing: 1px; color: #0f172a; border: 2px solid #15803d; border-radius: 8px; padding: 4px 8px; margin-bottom: 0.6rem; background: #f0fdf4; overflow-wrap: anywhere; }
+.etiqueta-pc-ubicacion { font-size: 0.75rem; color: #334155; margin-top: 0.4rem; }
+.etiqueta-pc-imprimir { background: #15803d; }
+@media print {
+    .calcomania.etiqueta-pc { border-color: #15803d !important; }
+}
+
+/* Reporte de Auditoría (SEGCAT: recorridos_pc_pdf.php) */
+.pagina-reporte-rpc { background: #fff; color: #1e293b; margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+.hoja-reporte-rpc { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
+.hoja-reporte-rpc h1 { font-size: 18px; margin: 0 0 4px; font-weight: 800; }
+.hoja-reporte-rpc .subtitulo { color: #64748b; margin-bottom: 16px; }
+.hoja-reporte-rpc .resumen { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.hoja-reporte-rpc .resumen div { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 16px; }
+.hoja-reporte-rpc .resumen strong { display: block; font-size: 20px; }
+.hoja-reporte-rpc table { width: 100%; border-collapse: collapse; margin-bottom: 16px; min-width: 560px; }
+.hoja-reporte-rpc th { background: #0f172a; color: #fff; padding: 6px 8px; text-align: left; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.hoja-reporte-rpc td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; vertical-align: top; }
+.hoja-reporte-rpc .sesion-header td { background: #f1f5f9; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.hoja-reporte-rpc .falla { color: #b91c1c; font-weight: 700; }
+.hoja-reporte-rpc .ok { color: #15803d; }
+.rpc-reporte-filtros { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: flex-end; margin-bottom: 1.2rem; padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; font-size: 0.85rem; }
+.rpc-reporte-filtros label { display: flex; flex-direction: column; font-weight: 700; color: #475569; flex: 1 1 150px; }
+.rpc-reporte-filtros .campo { margin-bottom: 0; padding: 0.6rem; min-height: 44px; }
+.rpc-reporte-botones { display: flex; flex-wrap: wrap; gap: 0.5rem; flex: 1 1 100%; }
+@media print {
+    .no-imprimir, .franja-ambiente { display: none !important; }
+    .hoja-reporte-rpc { padding: 0; max-width: 100%; }
+    .hoja-reporte-rpc table { min-width: 0; }
+    .hoja-reporte-rpc .tabla-scroll { overflow: visible; border: none; }
+}
+
+/* En el celular los botones del punto quedan siempre a la mano */
+@media (max-width: 767.98px) {
+    /* Arriba de la barra inferior del menú (fija, ~76 px) */
+    .rpc-punto-acciones { position: sticky; bottom: calc(76px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid var(--borde); z-index: 2; flex-wrap: nowrap; }
+    .rpc-punto-acciones .btn-rpc-claro { flex: 0 0 auto; }
+    .rpc-punto-acciones .btn-rpc-verde { flex: 1 1 auto; }
+}
+@media (max-width: 575.98px) {
+    .rpc-cabecera-fila { flex-direction: column-reverse; }
+    .rpc-titulo { font-size: 1.2rem; }
+    .rpc-criterios { grid-template-columns: 1fr; }
+    .rpc-acciones-cabecera .btn-rpc { flex: 1 1 100%; }
+    .rpc-filtros-campos .filtro-select { max-width: none; flex: 1 1 100%; }
+}
+/* Fin Recorridos de Protección Civil */

@@ -68,6 +68,7 @@ class CatalogoSeeder extends Seeder
         'pases_salida' => 'pases-salida.index',
         'transporte' => 'transporte.index',
         'robo' => 'robo.index',
+        'recorridos_pc' => 'recorridos_pc.index',
     ];
 
     /**

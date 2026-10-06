@@ -2,6 +2,7 @@
 
 use App\Models\Colaborador;
 use App\Models\Equipo;
+use App\Models\EquipoPc;
 use App\Models\Gafete;
 use App\Models\Llave;
 use App\Models\LostFoundArticulo;
@@ -24,5 +25,6 @@ return [
         'gafete' => Gafete::class,
         'equipo' => Equipo::class,
         'lost_found' => LostFoundArticulo::class,
+        'equipo_pc' => EquipoPc::class,
     ],
 ];
