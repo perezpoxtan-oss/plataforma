@@ -37,6 +37,9 @@ class Empresa extends Model
         'pase_salida_resultado' => ['Pases de salida: avisar al solicitante cuando su pase se aprueba o se rechaza', true],
         'pase_salida_vencido' => ['Pases de salida: recordatorio diario de los pases vencidos que no han regresado', true],
         'alta_por_verificar' => ['Avisar a quien administra Vehículos, Empresas externas o Personas cuando la caseta registre un alta pendiente de verificar', true],
+        // Procedimientos (acuse «Leí y entendí»)
+        'procedimiento_publicado' => ['Procedimientos: avisar al personal cuando se publica una versión que debe leer y firmar', true],
+        'procedimiento_recordatorio' => ['Procedimientos: recordar (cada 3 días) los procedimientos que alguien aún no firma de enterado', true],
     ];
 
     /** Avisos que se mandan a una lista de correos capturada en Configuración (y no solo a usuarios con permiso). */

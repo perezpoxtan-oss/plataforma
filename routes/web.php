@@ -29,6 +29,7 @@ use App\Http\Controllers\Seguridad\GafeteController;
 use App\Http\Controllers\Seguridad\LlaveController;
 use App\Http\Controllers\Seguridad\PaseSalidaController;
 use App\Http\Controllers\Seguridad\PersonaController;
+use App\Http\Controllers\Seguridad\ProcedimientoController;
 use App\Http\Controllers\Seguridad\TransporteController;
 use App\Http\Controllers\Seguridad\VehiculoController;
 use App\Http\Controllers\Seguridad\VoucherController;
@@ -349,6 +350,32 @@ Route::middleware('auth')->group(function () {
         Route::put('/personas/{persona}/unir', 'unirPersona')->whereNumber('persona')->name('personas.unir');
     });
     // Fin Padrones: Altas por verificar
+    // Padrones: Procedimientos (Operación → Consulta: manual operativo con versiones, aprobación con firma y acuse «Leí y entendí»; ver docs/tecnico/procedimientos.md)
+    Route::controller(ProcedimientoController::class)->group(function () {
+        Route::get('/procedimientos', 'index')->name('procedimientos.index');
+        Route::post('/procedimientos', 'store')->middleware('throttle:30,1')->name('procedimientos.store');
+        Route::get('/procedimientos/por-leer', 'porLeer')->name('procedimientos.por-leer');
+        Route::get('/procedimientos/mi-firma', 'miFirma')->name('procedimientos.mi-firma');
+        Route::post('/procedimientos/categorias', 'guardarCategoria')->name('procedimientos.categorias.store');
+        Route::put('/procedimientos/categorias/{categoria}', 'actualizarCategoria')->whereNumber('categoria')->name('procedimientos.categorias.update');
+        Route::get('/procedimientos/{procedimiento}', 'show')->whereNumber('procedimiento')->name('procedimientos.show');
+        Route::put('/procedimientos/{procedimiento}', 'update')->whereNumber('procedimiento')->middleware('throttle:30,1')->name('procedimientos.update');
+        Route::get('/procedimientos/{procedimiento}/leer', 'leer')->whereNumber('procedimiento')->name('procedimientos.leer');
+        Route::get('/procedimientos/{procedimiento}/imprimir', 'imprimir')->whereNumber('procedimiento')->name('procedimientos.imprimir');
+        Route::post('/procedimientos/{procedimiento}/nueva-version', 'nuevaVersion')->whereNumber('procedimiento')->name('procedimientos.nueva-version');
+        Route::post('/procedimientos/{procedimiento}/enviar', 'enviar')->whereNumber('procedimiento')->name('procedimientos.enviar');
+        Route::post('/procedimientos/{procedimiento}/aprobar', 'aprobar')->whereNumber('procedimiento')->middleware('throttle:30,1')->name('procedimientos.aprobar');
+        Route::post('/procedimientos/{procedimiento}/rechazar', 'rechazar')->whereNumber('procedimiento')->name('procedimientos.rechazar');
+        Route::post('/procedimientos/{procedimiento}/descartar', 'descartar')->whereNumber('procedimiento')->name('procedimientos.descartar');
+        Route::post('/procedimientos/{procedimiento}/retirar', 'retirar')->whereNumber('procedimiento')->name('procedimientos.retirar');
+        Route::post('/procedimientos/{procedimiento}/reactivar', 'reactivar')->whereNumber('procedimiento')->name('procedimientos.reactivar');
+        Route::post('/procedimientos/{procedimiento}/acuse', 'acusar')->whereNumber('procedimiento')->middleware('throttle:30,1')->name('procedimientos.acuse');
+        Route::get('/procedimientos/{procedimiento}/acuses/exportar', 'exportarAcuses')->whereNumber('procedimiento')->name('procedimientos.acuses.exportar');
+        Route::get('/procedimientos/{procedimiento}/acuses/{acuse}/firma', 'firmaAcuse')->whereNumber(['procedimiento', 'acuse'])->name('procedimientos.acuses.firma');
+        Route::get('/procedimientos/{procedimiento}/versiones/{version}/firma', 'firmaAprobacion')->whereNumber(['procedimiento', 'version'])->name('procedimientos.versiones.firma');
+        Route::get('/procedimientos/{procedimiento}/adjuntos/{adjunto}', 'adjunto')->whereNumber(['procedimiento', 'adjunto'])->name('procedimientos.adjunto');
+    });
+    // Fin Padrones: Procedimientos
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');

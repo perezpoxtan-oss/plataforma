@@ -5,6 +5,7 @@ namespace App\Services\Avisos;
 use App\Mail\AltaPorVerificarRegistrada;
 use App\Mail\AltaProvisionalRegistrada;
 use App\Mail\AvisoPaseSalida;
+use App\Mail\AvisoProcedimiento;
 use App\Mail\ValeTaxiRegistrado;
 use App\Models\Colaborador;
 use App\Models\Empresa;
@@ -175,4 +176,30 @@ class AvisosCorreo
         defer(fn () => $this->correo->enviar($destinatarios, $mensaje));
     }
     // Fin Altas por verificar
+    // Procedimientos (ver docs/tecnico/procedimientos.md)
+
+    /**
+     * Procedimientos: aviso de una versión publicada o recordatorio de acuses
+     * pendientes, a una lista ya resuelta por el módulo. $clave es el aviso de
+     * Empresa::AVISOS que lo enciende; $diferido = false en el comando diario.
+     *
+     * @param  list<string>  $destinatarios
+     */
+    public function procedimiento(int $empresaId, string $clave, array $destinatarios, AvisoProcedimiento $mensaje, bool $diferido = true): bool
+    {
+        $empresa = Empresa::find($empresaId);
+        $destinatarios = array_values(array_unique(array_filter($destinatarios)));
+        if ($empresa === null || ! $empresa->aviso($clave) || ! $this->correo->configurado() || $destinatarios === []) {
+            return false;
+        }
+
+        if ($diferido) {
+            defer(fn () => $this->correo->enviar($destinatarios, $mensaje));
+
+            return true;
+        }
+
+        return $this->correo->enviar($destinatarios, $mensaje);
+    }
+    // Fin Procedimientos
 }

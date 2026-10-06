@@ -6,6 +6,7 @@ use App\Models\EquipoPc;
 use App\Models\Gafete;
 use App\Models\Llave;
 use App\Models\LostFoundArticulo;
+use App\Models\Procedimiento;
 use App\Models\Vehiculo;
 
 /*
@@ -26,5 +27,6 @@ return [
         'equipo' => Equipo::class,
         'lost_found' => LostFoundArticulo::class,
         'equipo_pc' => EquipoPc::class,
+        'procedimiento' => Procedimiento::class,
     ],
 ];

@@ -111,6 +111,8 @@ class PlantillaAgenteTest extends TestCase
         $plantilla = Rol::plantillas()->where('nombre', 'Agente')->firstOrFail();
         $deCaseta = fn (Rol $rol) => RolPermiso::where('rol_id', $rol->id)->with('moduloAccion.modulo.menu', 'moduloAccion.modulo.padre.menu')->get()
             ->filter(fn ($p) => in_array(RolesPlantillaSeeder::menuDe($p->moduloAccion->modulo), ['operacion', 'padrones'], true))
+            // Procedimientos tiene su propia regla (RolesPlantillaSeeder::PROCEDIMIENTOS y su migración)
+            ->reject(fn ($p) => $p->moduloAccion->modulo->clave === 'procedimientos')
             ->pluck('modulo_accion_id')->all();
         $this->assertEqualsCanonicalizing($deCaseta($plantilla), $deCaseta($this->agente()));
     }

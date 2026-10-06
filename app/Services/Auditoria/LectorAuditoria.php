@@ -21,6 +21,9 @@ use App\Models\Paradero;
 use App\Models\PaseSalida;
 use App\Models\Persona;
 use App\Models\PrestamoLlave;
+use App\Models\Procedimiento;
+use App\Models\ProcedimientoAcuse;
+use App\Models\ProcedimientoCategoria;
 use App\Models\Proveedor;
 use App\Models\Puesto;
 use App\Models\RecorridoPc;
@@ -91,6 +94,9 @@ class LectorAuditoria
         LostFoundArticulo::class => ['Artículo de Lost & Found', 'folio'],
         EquipoPc::class => ['Equipo de Protección Civil', 'numero_serie'],
         RecorridoPc::class => ['Recorrido de Protección Civil', 'numero'],
+        Procedimiento::class => ['Procedimiento', 'clave'],
+        ProcedimientoCategoria::class => ['Categoría de procedimientos', 'nombre'],
+        ProcedimientoAcuse::class => ['Acuse de procedimiento', 'nombre'],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */
