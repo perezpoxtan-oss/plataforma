@@ -39,21 +39,61 @@ Si cierras la ventana (Cancelar, la X o la tecla Esc), al volver a abrirla apare
 |---|---|
 | ![Con error](img/ajustes2/02-alta-con-error-conserva-datos.png) | ![Limpia](img/ajustes2/03-alta-reabierta-limpia.png) |
 
-### Vincular la cuenta con su colaborador
+### Vincular la cuenta con su colaborador (paso a paso)
 
-Si la persona ya está en **Colaboradores**, no vuelvas a teclear sus datos:
+**¿Qué es "vincular"?** Muchas personas que usan la plataforma también están en **Recursos Humanos → Colaboradores** (el directorio del personal, con su número de empleado). *Vincular* es decirle a la plataforma: «esta cuenta de usuario es de este colaborador». Así no capturas su nombre dos veces, y si Recursos Humanos lo da de baja, en su cuenta aparece un aviso para que la revises.
 
-1. En **Núm. Colaborador** escribe al menos 2 letras o números (por ejemplo, "mari" o "1007").
-2. Elige a la persona en la lista: se llenan su número y su **nombre completo**, y aparece "Vinculado a Colaboradores".
+No es obligatorio: una cuenta de soporte o de un proveedor puede quedarse sin colaborador.
 
-![Buscar colaborador](img/usuarios/4-num-colaborador.png)
+**Ejemplo:** vas a crear la cuenta de **Daniela Canul May**, que ya está en Colaboradores con el número **1008**.
 
-![Vinculado](img/usuarios/5-vinculado-a-colaborador.png)
+1. Toca **Nuevo Usuario**.
+2. En el primer campo, **Núm. Colaborador**, escribe su número (`1008`) **o** parte de su nombre (`dani`). Basta con 2 letras o números.
+3. Aparece una lista debajo. Toca **Daniela Canul May · #1008**.
+   - Se llenan solos su **número** y su **Nombre Completo**.
+   - Debajo aparece en verde **«Vinculado a Colaboradores»**: eso confirma el vínculo.
 
-- Si ya tiene una cuenta, te avisa en vez de mostrarla: búscala en la lista principal.
-- Solo aparecen colaboradores activos de tu empresa (y de tus sedes, si tu rol es de una sede).
-- Si cambias el número a mano, el vínculo se quita. Las cuentas de soporte pueden quedarse sin colaborador.
-- La ficha del usuario dice **Vinculado a Colaborador (activo)**. Si el colaborador se dio de baja, dice **(¡inactivo! revisar)**: revisa si la cuenta debe desactivarse.
+   ![Buscar colaborador](img/usuarios/4-num-colaborador.png)
+
+   ![Vinculado](img/usuarios/5-vinculado-a-colaborador.png)
+
+4. Otra forma: si empiezas por el **Nombre Completo** y escribes `Daniela Canul May`, la ventana te avisa que hay un colaborador con ese nombre que aún no tiene cuenta. Toca **Vincular con colaborador #1008 Daniela Canul May** y queda vinculado igual.
+
+   ![Sugerencia para vincular](img/ajustes4/us-1-sugerencia-vincular.png)
+
+   ![Ya vinculado](img/ajustes4/us-2-vinculado.png)
+
+5. Completa **Sede**, **Rol**, **Usuario**, **Correo** y **Contraseña**, y toca **Registrar Usuario**.
+6. En la lista, la ficha de Daniela dice **Vinculado a Colaborador (activo)**.
+
+   ![Usuario registrado y vinculado](img/ajustes4/us-3-registrado.png)
+
+Cosas que conviene saber:
+
+- **Si ya tiene cuenta**, no aparece en la lista: te avisa «Ese colaborador ya tiene una cuenta de usuario». Búscala en la lista principal y edítala; no hagas otra.
+- **Si borras o cambias el número a mano**, el vínculo se quita (desaparece el texto verde). Vuelve a elegirlo de la lista para vincularlo otra vez.
+- Solo aparecen colaboradores **activos** de tu empresa (y de tus sedes, si tu rol es de una sede).
+- Si un día la ficha dice **Vinculado a Colaborador (¡inactivo! revisar)**, Recursos Humanos lo dio de baja: revisa si su cuenta también debe desactivarse.
+- Para vincular una cuenta que ya existe: toca su **lápiz**, en **Núm. Colaborador** escribe el número o el nombre, elígelo y toca **Guardar Cambios**.
+
+### Dos personas con el mismo nombre
+
+Si escribes un **Nombre Completo** que ya tiene otra cuenta de tu empresa (sin importar mayúsculas ni acentos), la ventana te avisa en ese momento:
+
+> Ya existe un usuario con ese nombre: @daniela.canul (Agente). ¿Es la misma persona?
+
+![Ya existe un usuario con ese nombre](img/ajustes4/us-4-ya-existe.png)
+
+- **Si es la misma persona:** toca **Cancelar** y edita su cuenta en la lista. No hagas una segunda cuenta.
+- **Si de verdad es otra persona con el mismo nombre** (pasa): marca **Sí, es otra persona con el mismo nombre** y registra. Sin esa marca la plataforma no la guarda y te lo vuelve a explicar dentro de la ventana:
+
+![Falta confirmar](img/ajustes4/us-5-error-sin-confirmar.png)
+
+El **usuario** y el **correo** nunca se pueden repetir, aunque el nombre sí. Al editar, el aviso solo te pide confirmar si cambias el nombre por uno que ya tiene otra cuenta.
+
+| En el celular | Noche | Sol |
+|---|---|---|
+| ![Celular](img/ajustes4/us-6-celular.png) | ![Noche](img/ajustes4/us-7-noche.png) | ![Sol](img/ajustes4/us-7-sol.png) |
 
 ## Editar
 

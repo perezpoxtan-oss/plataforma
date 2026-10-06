@@ -18,8 +18,8 @@
 5. En **Escanear etiqueta de la bolsa** escribe `LF-000004` y Enter: se abre la ficha de la Bufanda. Toca **Etiqueta** e imprímela.
 6. Cierra la **Bufanda** como **Donado a colaborador**: escribe el número de empleado de un compañero en el lector y elige.
 7. Toca **Auditoría**, elige la sede y **Aplicar**. Imprime y cuenta.
-8. Abre **Días de Resguardo**: como Agente solo puedes consultarlos.
-9. **`admin.demo`**: en **Días de Resguardo** cambia *Ropa* a `20` y guarda. Vuelve al archivo: el **Sombrero** (25 días) pasa a rojo.
+8. Fíjate que el Agente no ve el enlace a los días de resguardo: los días de cada tipo aparecen en el filtro de tipo de valor.
+9. **`admin.demo`**: toca **Configurar en Estructura → Configuración** (o Estructura → Configuración → *Lost & Found: días de resguardo*), cambia *Ropa* a `20` y guarda. Vuelve al archivo: el **Sombrero** (25 días) pasa a rojo.
 10. **`agente.demo`**: abre Operación → **Robo — seguimiento** y toca **Con sospechoso**. Abre el caso de la **Cartera**, escribe una nota, cambia *¿Se dio parte a la policía?* a **Sí** con el folio `FGE-2026-2001` y guarda: deja de salir en **Sin parte a la policía**.
 11. En el caso de la **Laptop**, toca **Buscar Coincidencias en Lost & Found**.
 12. **`director.demo`**: abre los dos archivos. Puede ver e imprimir, pero no entregar ni editar.

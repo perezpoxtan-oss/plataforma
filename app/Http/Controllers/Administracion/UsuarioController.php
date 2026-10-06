@@ -11,10 +11,13 @@ use App\Models\User;
 use App\Rules\ContrasenaSegura;
 use App\Services\Permisos\Autorizador;
 use App\Services\Usuarios\AdministradorUsuarios;
+use App\Services\Usuarios\HomonimosUsuarios;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -33,6 +36,7 @@ class UsuarioController extends Controller
         private readonly EmpresaDeTrabajo $empresa,
         private readonly Tenant $tenant,
         private readonly Autorizador $autorizador,
+        private readonly HomonimosUsuarios $homonimos,
     ) {}
 
     public function index(Request $request): View
@@ -100,6 +104,7 @@ class UsuarioController extends Controller
 
         $datos = $this->vincularColaborador($this->validar($request, $empresaId), $empresaId);
         [$rol, $sede] = $this->rolYSede($datos, $empresaId);
+        $this->exigirConfirmacionHomonimo($request, $empresaId, $datos['name']);
 
         try {
             $this->administrador->crear($request->user(), $empresaId, $this->campos($datos), $rol, $sede);
@@ -118,6 +123,7 @@ class UsuarioController extends Controller
 
         $datos = $this->vincularColaborador($this->validar($request, $empresaId, $usuario), $empresaId, $usuario);
         [$rol, $sede] = $this->rolYSede($datos, $empresaId);
+        $this->exigirConfirmacionHomonimo($request, $empresaId, $datos['name'], $usuario);
 
         try {
             $this->administrador->actualizar($request->user(), $usuario, $this->campos($datos) + [
@@ -166,6 +172,70 @@ class UsuarioController extends Controller
         }
 
         return redirect()->route('usuarios.index')->with('ok', "«{$usuario->name}» desbloqueado; ya puede entrar.");
+    }
+
+    /**
+     * Aviso en vivo del diálogo de alta y edición: usuarios con el mismo
+     * nombre (sin importar mayúsculas ni acentos) y colaboradores con ese
+     * nombre que aún no tienen cuenta, para sugerir vincularlos.
+     * ?nombre=Daniela Canul May&excluir={id del usuario que se edita}
+     */
+    public function homonimos(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        $permiso = $actor->can('usuarios.crear') ? 'usuarios.crear' : 'usuarios.editar';
+        Gate::authorize($permiso);
+        $empresaId = $this->empresa->id($actor);
+        $nombre = trim(Entrada::texto($request->query('nombre')));
+        $vacio = ['usuarios' => [], 'otros' => 0, 'colaboradores' => [], 'requiere_confirmacion' => false, 'mensaje' => null];
+        if ($empresaId === null || mb_strlen($nombre) < 3 || mb_strlen($nombre) > 150) {
+            return response()->json($vacio);
+        }
+
+        // La cuenta que se edita debe estar a la vista; si no, se ignora
+        $excluir = is_numeric($request->query('excluir'))
+            ? $this->visibles($actor, $empresaId)->whereKey((int) $request->query('excluir'))->first()
+            : null;
+
+        $iguales = $this->homonimos->usuarios($empresaId, $nombre, $excluir?->id);
+        $idsVisibles = $iguales->isEmpty() ? [] : $this->visibles($actor, $empresaId)->whereIn('users.id', $iguales->pluck('id'))->pluck('users.id')->all();
+        $visibles = $iguales->whereIn('id', $idsVisibles)->values();
+        $otros = $iguales->count() - $visibles->count();
+
+        $sedes = $this->autorizador->sedesPermitidas($actor, $permiso);
+        $colaboradores = $this->tenant->conEmpresa($empresaId, fn () => $this->homonimos->colaboradoresSinCuenta($nombre, $sedes, $excluir?->id));
+
+        return response()->json([
+            'usuarios' => $visibles->map(fn (User $u) => [
+                'username' => $u->username,
+                'rol' => $u->roles->first()?->nombre,
+                'colaborador' => $u->colaborador?->num_empleado,
+                'activo' => (bool) $u->activo,
+            ])->all(),
+            'otros' => $otros,
+            'colaboradores' => $colaboradores,
+            'requiere_confirmacion' => $iguales->isNotEmpty() && ($excluir === null || HomonimosUsuarios::clave($excluir->name) !== HomonimosUsuarios::clave($nombre)),
+            'mensaje' => $iguales->isEmpty() ? null : HomonimosUsuarios::mensaje($visibles, $otros),
+        ]);
+    }
+
+    /**
+     * Un homónimo no impide guardar (hay personas con el mismo nombre), pero
+     * hay que confirmarlo con «Sí, es otra persona con el mismo nombre».
+     */
+    private function exigirConfirmacionHomonimo(Request $request, int $empresaId, string $nombre, ?User $usuario = null): void
+    {
+        if ($request->boolean('confirmar_homonimo') || ! $this->homonimos->requiereConfirmacion($empresaId, $nombre, $usuario)) {
+            return;
+        }
+
+        $iguales = $this->homonimos->usuarios($empresaId, $nombre, $usuario?->id);
+        $ids = $this->visibles($request->user(), $empresaId)->whereIn('users.id', $iguales->pluck('id'))->pluck('users.id')->all();
+        $visibles = $iguales->whereIn('id', $ids)->values();
+
+        throw ValidationException::withMessages(['confirmar_homonimo' => HomonimosUsuarios::mensaje($visibles, $iguales->count() - $visibles->count())
+            .' Si es otra persona con el mismo nombre, marca «Sí, es otra persona con el mismo nombre» y guarda de nuevo.'
+            .' Si es la misma persona, cancela y edita su cuenta en la lista.']);
     }
 
     /**

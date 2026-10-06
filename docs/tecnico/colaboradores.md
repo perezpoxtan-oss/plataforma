@@ -84,6 +84,10 @@ Para quien tenga `colaboradores.ver`, `colaboradores.provisional`, `usuarios.cre
 
 Respuesta: `{"resultados": [{"id", "num_empleado", "nombre_completo", "puesto", "departamento", "sede_id", "sede"}], "todas_ya_tienen_usuario": bool}`. `todas_ya_tienen_usuario` es verdadero cuando hubo coincidencias pero todas ya tienen cuenta.
 
+### Homónimos en el alta — `GET /colaboradores/homonimos` (QA 4)
+
+Aviso en vivo del diálogo **Alta de Colaborador**: con `nombre`, `apellido_paterno` y (opcional) `apellido_materno` responde `{"parecidos": [resumen], "otros": n, "mensaje"}` usando `AdministradorColaboradores::parecidos()` (activos, mismo nombre y apellidos sin importar mayúsculas ni acentos; el mismo criterio del alta provisional). Permiso `colaboradores.crear` (si no, 403). Con alcance de sede, los de otras sedes solo se cuentan en `otros`. Es **solo un aviso** («¿Es la misma persona? Si lo es, no lo des de alta otra vez: búscalo en la lista»): Recursos Humanos decide; el alta no se bloquea.
+
 ## Altas provisionales (caseta → Recursos Humanos)
 
 Cuando un guardia necesita registrar a alguien en un formulario (acceso, préstamo, pase…) y la persona **no aparece** en el directorio, la da de alta como **provisional** para no detener la operación. Recursos Humanos después la valida o la une con su registro correcto.
@@ -107,6 +111,7 @@ Cuando un guardia necesita registrar a alguien en un formulario (acceso, présta
 - En el diálogo de Usuarios, **Núm. Colaborador** autocompleta (número o nombre) con `GET /colaboradores/buscar?sin_usuario=1`. Al elegir, llena el nombre y el campo oculto `colaborador_id`. Si se vuelve a escribir en el número, el vínculo se quita (como en SEGCAT).
 - El servidor valida que el colaborador sea de la misma empresa, que esté activo (si es un vínculo nuevo) y que no tenga otra cuenta; el número de colaborador de la cuenta se toma del colaborador. `colaborador_id` entra en la bitácora de `usuarios.*`.
 - La ficha del usuario muestra "Vinculado a Colaborador (activo)" o "(¡inactivo! revisar)", como SEGCAT.
+- **Homónimos (QA 4):** al escribir el nombre completo, si hay un colaborador con ese nombre sin cuenta, el diálogo ofrece «Vincular con colaborador #1008 …» (ver [usuarios.md](usuarios.md#homónimos-qa-4)).
 
 ## Componentes en `public/js/plataforma.js` (bloque "Colaboradores")
 

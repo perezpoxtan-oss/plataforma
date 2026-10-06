@@ -19,11 +19,12 @@ use Illuminate\Validation\ValidationException;
 /**
  * Catálogo de Equipos de Protección Civil (SEGCAT: pc_equipos_proceso.php).
  *
- * Permisos: se consulta con «recorridos_pc.ver» (la guardia lo necesita para
- * su recorrido) y se administra con los de Equipos de seguridad (Padrones):
- * «equipos.crear», «equipos.editar», «equipos.eliminar» (desactivar y
- * reactivar) y «equipos.imprimir» (etiqueta). Así el Agente lo consulta pero
- * no da de alta equipos, como en el resto de los padrones.
+ * Permisos: módulo propio en Padrones → Inventarios de Seguridad:
+ * «equipos_pc.ver», «equipos_pc.crear», «equipos_pc.editar»,
+ * «equipos_pc.eliminar» (desactivar y reactivar) y «equipos_pc.imprimir»
+ * (etiqueta). Así el Agente lo consulta pero no da de alta equipos, como en
+ * el resto de los padrones. El recorrido (Operación) sigue escaneando los
+ * equipos de su sede con «recorridos_pc.*».
  *
  * Alcance: el equipo pertenece a una sede; con alcance de sede solo se ven y
  * se tocan los de sus sedes; con «propios», solo los que el usuario registró.
@@ -110,7 +111,7 @@ class CatalogoEquiposPc
         return DB::transaction(function () use ($actor, $entrada) {
             $equipo = new EquipoPc($this->validar($actor, $entrada, null));
             $equipo->save();
-            $this->auditoria->auditar($actor, 'recorridos_pc.creado', $equipo, null, $this->foto($equipo));
+            $this->auditoria->auditar($actor, 'equipos_pc.creado', $equipo, null, $this->foto($equipo));
 
             return $equipo;
         });
@@ -124,7 +125,7 @@ class CatalogoEquiposPc
         return DB::transaction(function () use ($actor, $equipo, $entrada) {
             $antes = $this->foto($equipo);
             $equipo->fill($this->validar($actor, $entrada, $equipo))->save();
-            $this->auditoria->auditar($actor, 'recorridos_pc.actualizado', $equipo, $antes, $this->foto($equipo));
+            $this->auditoria->auditar($actor, 'equipos_pc.actualizado', $equipo, $antes, $this->foto($equipo));
 
             return $equipo;
         });
@@ -137,7 +138,7 @@ class CatalogoEquiposPc
             throw ValidationException::withMessages(['activo' => 'Este equipo ya está dado de baja.']);
         }
         $equipo->forceFill(['activo' => false])->save();
-        $this->auditoria->auditar($actor, 'recorridos_pc.desactivado', $equipo, ['activo' => true], ['activo' => false]);
+        $this->auditoria->auditar($actor, 'equipos_pc.desactivado', $equipo, ['activo' => true], ['activo' => false]);
     }
 
     public function reactivar(User $actor, EquipoPc $equipo): void
@@ -150,7 +151,7 @@ class CatalogoEquiposPc
             throw ValidationException::withMessages(['activo' => "Ya hay otro equipo con el ID «{$equipo->numero_serie}» en esta sede."]);
         }
         $equipo->forceFill(['activo' => true])->save();
-        $this->auditoria->auditar($actor, 'recorridos_pc.reactivado', $equipo, ['activo' => false], ['activo' => true]);
+        $this->auditoria->auditar($actor, 'equipos_pc.reactivado', $equipo, ['activo' => false], ['activo' => true]);
     }
 
     // --------------------------------------------------------------- Validación
@@ -233,7 +234,7 @@ class CatalogoEquiposPc
         if ($actual !== null && $sedeId === (int) $actual->sede_id) {
             return $sedeId;
         }
-        $permiso = $actual === null ? 'equipos.crear' : 'equipos.editar';
+        $permiso = $actual === null ? 'equipos_pc.crear' : 'equipos_pc.editar';
         if (! $this->sedesParaElegir($actor, $permiso)->contains('id', $sedeId)) {
             throw ValidationException::withMessages(['sede_id' => 'Elige una sede activa de la lista: esa sede no existe, está desactivada o no está a tu cargo.']);
         }

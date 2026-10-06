@@ -52,9 +52,11 @@
                 @if ($puede['imprimir'])
                     <a href="{{ route('lost_found.auditoria', array_filter(['sede' => $sedeFiltro])) }}" target="_blank" rel="noopener" class="btn-accion-novedades oscuro"><i class="bi bi-clipboard-check-fill" aria-hidden="true"></i> Auditoría</a>
                 @endif
-                <a href="{{ route('lost_found.umbrales') }}" class="btn-accion-novedades azul"><i class="bi bi-sliders" aria-hidden="true"></i> {{ $puede['configurar'] ? 'Configurar Días' : 'Días de Resguardo' }}</a>
             </div>
         </div>
+        @if ($puede['configurar'])
+            <p class="small text-muted mb-3 lf-enlace-config"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Días de resguardo: <a href="{{ route('configuracion.index') }}#lost-found">Configurar en Estructura → Configuración</a>.</p>
+        @endif
 
         {{-- Escanear la etiqueta de la bolsa (QR, NFC o el folio tecleado) y abrir su ficha --}}
         <div class="tarjeta escaner-lf">

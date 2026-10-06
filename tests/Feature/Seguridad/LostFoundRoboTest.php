@@ -101,7 +101,7 @@ class LostFoundRoboTest extends PruebaNovedades
             ->assertSee('Solo urgentes / vencidos')->assertSee('Sin artículos capturados aún (1)')->assertSee('Completar')
             ->assertSee($vencida->folio)->assertSee($porVencer->folio)->assertSee($enTiempo->folio)->assertSee($playa->folio)
             ->assertSee('40 día(s) en resguardo')->assertSee('fila-articulo rojo', false)->assertSee('fila-articulo amarillo', false)
-            ->assertSee('Cerrar / Entregar')->assertSee('Configurar Días')->assertSee('Auditoría');
+            ->assertSee('Cerrar / Entregar')->assertDontSee('Configurar Días')->assertSee('Configurar en Estructura → Configuración')->assertSee('Auditoría');
 
         // Urgentes: solo lo que está en amarillo o rojo, primero lo vencido
         $urgentes = $this->actingAs($this->admin)->get('/lost-found?filtro=urgentes')->assertOk()
@@ -293,10 +293,12 @@ class LostFoundRoboTest extends PruebaNovedades
         $director = $this->crearUsuario($this->empresa, 'Director');
         $a = $this->articulo();
 
-        $this->actingAs($agente)->get('/lost-found')->assertOk()->assertSee('Cerrar / Entregar')->assertSee('Días de Resguardo')->assertDontSee('Configurar Días');
-        $this->actingAs($agente)->get('/lost-found/dias-resguardo')->assertOk()->assertSee('Tu rol solo puede consultar esta configuración, no modificarla.')
-            ->assertDontSee('Guardar Cambios');
-        $this->actingAs($agente)->put('/lost-found/dias-resguardo', ['dias' => ['ROPA' => 5]])->assertForbidden();
+        // Los días de resguardo ya no se configuran desde Lost & Found: el agente no ve el enlace ni entra a Configuración
+        $this->actingAs($agente)->get('/lost-found')->assertOk()->assertSee('Cerrar / Entregar')->assertDontSee('Configurar en Estructura')
+            ->assertDontSee(route('lost_found.umbrales'));
+        $this->actingAs($agente)->get('/lost-found/dias-resguardo')->assertStatus(301)->assertRedirect(route('lost_found.archivo'));
+        $this->actingAs($agente)->get('/configuracion')->assertForbidden();
+        $this->actingAs($agente)->put('/configuracion/lost-found', ['dias' => ['ROPA' => 5]])->assertForbidden();
 
         $this->actingAs($director)->get('/lost-found')->assertOk()->assertSee($a->folio)->assertDontSee('data-accion="lf-cerrar"', false);
         $this->actingAs($director)->get("/lost-found/articulos/{$a->id}")->assertOk()->assertDontSee('dialogoCerrarArticulo');
@@ -309,17 +311,27 @@ class LostFoundRoboTest extends PruebaNovedades
 
     public function test_dias_de_resguardo_solo_con_configurar_en_toda_la_empresa(): void
     {
+        // El Jefe de seguridad tiene «configurar» solo en su sede: no cambia los días de toda la empresa
         $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro);
-        $this->actingAs($jefe)->put('/lost-found/dias-resguardo', ['dias' => ['ROPA' => 5]])->assertForbidden();
+        $this->actingAs($jefe)->put('/configuracion/lost-found', ['dias' => ['ROPA' => 5]])->assertForbidden();
+        $this->actingAs($jefe)->get('/lost-found')->assertOk()->assertDontSee('Configurar en Estructura');
+        $this->actingAs($jefe)->get('/lost-found/dias-resguardo')->assertStatus(301)->assertRedirect(route('lost_found.archivo'));
+
+        // El Administrador ve el enlace pequeño en Lost & Found y la sección en Estructura → Configuración
+        $this->actingAs($this->admin)->get('/lost-found')->assertOk()->assertSee('Configurar en Estructura → Configuración')
+            ->assertSee(route('configuracion.index').'#lost-found', false);
+        $this->actingAs($this->admin)->get('/lost-found/dias-resguardo')->assertStatus(301)->assertRedirect(route('configuracion.index').'#lost-found');
+        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Lost &amp; Found: días de resguardo', false)
+            ->assertSee('Guardar días de resguardo')->assertSee('id="lost-found"', false);
 
         $dias = ['OTRO' => 60, 'ALTO_VALOR' => 365, 'ELECTRONICO' => 120, 'ROPA' => 15, 'PERECEDERO' => 1];
-        $this->actingAs($this->admin)->get('/lost-found/dias-resguardo')->assertOk()->assertSee('Días de Resguardo — Lost &amp; Found', false)->assertSee('Guardar Cambios');
-        $this->actingAs($this->admin)->put('/lost-found/dias-resguardo', ['dias' => ['ROPA' => 0] + $dias])
+        $this->actingAs($this->admin)->put('/configuracion/lost-found', ['dias' => ['ROPA' => 0] + $dias])
             ->assertSessionHasErrors(['dias.ROPA' => 'Los días de «Ropa» deben ser al menos 1: un artículo no puede vencer el mismo día que se encuentra.']);
-        $this->actingAs($this->admin)->put('/lost-found/dias-resguardo', ['dias' => ['OTRO' => 'mucho'] + $dias])
+        $this->actingAs($this->admin)->put('/configuracion/lost-found', ['dias' => ['OTRO' => 'mucho'] + $dias])
             ->assertSessionHasErrors(['dias.OTRO' => 'Los días de «Otro» deben ser un número entero.']);
-        $this->actingAs($this->admin)->put('/lost-found/dias-resguardo', ['dias' => $dias])
-            ->assertRedirect(route('lost_found.umbrales'))->assertSessionHas('ok', 'Los umbrales se guardaron correctamente.');
+        $this->actingAs($this->admin)->put('/configuracion/lost-found', ['dias' => $dias])
+            ->assertRedirect(route('configuracion.index').'#lost-found')->assertSessionHas('ok', 'Los días de resguardo de Lost & Found se guardaron correctamente.');
+        $this->actingAs($this->admin)->get('/configuracion')->assertSee('value="15"', false)->assertSee('Editado por '.$this->admin->name);
 
         $this->assertEquals($dias, $this->enEmpresa(fn () => LostFoundUmbral::vigentes()));
         $this->assertSame(15, Auditoria::where('evento', 'lost_found.configurado')->firstOrFail()->despues['ROPA']);

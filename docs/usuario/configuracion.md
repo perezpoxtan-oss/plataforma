@@ -24,6 +24,27 @@ Marca los avisos que quieres que lleguen. Hoy está disponible:
 
 - **Altas provisionales:** cuando la caseta registra a alguien que no estaba en el directorio, Recursos Humanos recibe un correo con un botón para revisarlo.
 
+## Lost & Found: días de resguardo (Administrador de la empresa)
+
+Aquí decides **cuántos días** puede estar guardado un artículo de Lost & Found, según su tipo (Otro, Alto Valor, Electrónico, Ropa, Perecedero), antes de que el semáforo lo marque:
+
+- **Amarillo:** cuando ya pasó el 70 % de sus días.
+- **Rojo (vencido):** cuando llega a sus días. Hay que decidir si se entrega, se dona o se destruye.
+
+Pasos:
+
+1. Entra a **Estructura → Configuración** y baja a **Lost & Found: días de resguardo** (desde Lost & Found también llegas con el enlace **Configurar en Estructura → Configuración**).
+2. Escribe los días de cada tipo (mínimo 1).
+3. Toca **Guardar días de resguardo**. Aplica a **todas las sedes** de la empresa.
+
+![Días de resguardo](img/ajustes4/lf-1-configuracion.png)
+
+Solo los cambia quien tiene el permiso **Configurar** de Lost & Found en **toda la empresa** (por omisión, el Administrador). Un Jefe de seguridad de una sede no los puede cambiar.
+
+| En el celular | Noche | Sol |
+|---|---|---|
+| ![Celular](img/ajustes4/lf-3-celular.png) | ![Noche](img/ajustes4/lf-4-noche.png) | ![Sol](img/ajustes4/lf-5-sol.png) |
+
 ## Respaldos (solo Super Administrador)
 
 - **Automáticos:** la plataforma se respalda **sola** cada día después de las 3:00 y antes de instalar cada versión nueva. Se guardan 14 días.
