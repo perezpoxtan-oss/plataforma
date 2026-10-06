@@ -405,6 +405,12 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudieron enviar los recordatorios de pases vencidos (revisa despliegue.log)"
 fi
 # --- Fin Pases de salida ---
+# --- Procedimientos: recordatorio de acuses «Leí y entendí» pendientes (después de las 8:00, máximo uno cada 3 días por persona) ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:procedimientos-pendientes'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:procedimientos-pendientes --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudieron enviar los recordatorios de procedimientos (revisa despliegue.log)"
+fi
+# --- Fin Procedimientos ---
 
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
 if [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ] && grep -Eq "EscribeAqui|tu-correo@" "$HOME/qa_inicial.txt"; then

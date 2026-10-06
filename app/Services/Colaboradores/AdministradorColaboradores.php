@@ -49,6 +49,7 @@ class AdministradorColaboradores
         'pases_salida' => 'colaborador_id',
         'movimiento_transporte_pasajeros' => 'colaborador_id',
         'lost_found_entregas' => 'colaborador_id',
+        'procedimiento_acuses' => 'colaborador_id',
     ];
 
     /**

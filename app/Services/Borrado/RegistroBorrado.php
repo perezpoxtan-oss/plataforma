@@ -11,6 +11,8 @@ use App\Models\Gafete;
 use App\Models\Llave;
 use App\Models\Paradero;
 use App\Models\Persona;
+use App\Models\Procedimiento;
+use App\Models\ProcedimientoVersion;
 use App\Models\Proveedor;
 use App\Models\Puesto;
 use App\Models\Rol;
@@ -220,6 +222,18 @@ class RegistroBorrado
                 'alcance' => 'sede',
                 'baja' => $estado('rutas.paraderos.estado', 'rutas.eliminar'),
                 'volver' => fn (Paradero $m) => route('rutas.sede', $m->sede_id),
+            ],
+            // Procedimientos: solo un borrador que NUNCA se publicó (lo publicado se retira, no se borra)
+            'procedimientos' => [
+                'modulo' => 'procedimientos', 'modelo' => Procedimiento::class, 'tipo' => ['procedimiento', 'm'],
+                'nombre' => fn (Procedimiento $m) => $m->clave.' · '.$m->titulo,
+                'confirmar' => fn (Procedimiento $m) => $m->clave,
+                'alcance' => 'empresa',
+                'propios' => ['procedimiento_versiones', 'procedimiento_pasos', 'procedimiento_aplicaciones', 'procedimiento_adjuntos', 'procedimiento_eventos'],
+                'verificar' => fn (Procedimiento $m) => ProcedimientoVersion::where('procedimiento_id', $m->id)->whereNotNull('aprobado_en')->exists()
+                    ? 'Ya se publicó una versión (su historial y sus acuses se conservan).' : null,
+                'baja' => 'Si ya se publicó, usa «Retirar» en su ficha: queda como obsoleto con todo su historial.',
+                'volver' => 'procedimientos.index',
             ],
         ];
     }

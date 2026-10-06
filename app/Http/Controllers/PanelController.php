@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Colaborador;
 use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\PasesSalida\AdministradorPasesSalida;
+use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
@@ -52,6 +53,31 @@ class PanelController extends Controller
             }
         }
         // Fin Pases de salida
+
+        // Procedimientos: versiones por aprobar y procedimientos por leer y firmar («Leí y entendí»)
+        if ($empresaId !== null && $actor->can('procedimientos.ver')) {
+            $procedimientos = app(AdministradorProcedimientos::class);
+            [$porAprobar, $porLeer] = $tenant->conEmpresa($empresaId, fn () => [count($procedimientos->idsPorAprobar($actor)), $procedimientos->pendientesDe($actor)->count()]);
+            if ($porAprobar > 0) {
+                $pendientes[] = [
+                    'icono' => 'bi-patch-check',
+                    'titulo' => $porAprobar === 1 ? '1 procedimiento espera tu aprobación' : "{$porAprobar} procedimientos esperan tu aprobación",
+                    'texto' => 'Revisa los pasos y apruébalo con tu firma, o recházalo con tus comentarios para que lo corrijan.',
+                    'ruta' => route('procedimientos.index', ['filtro' => 'por_aprobar']),
+                    'boton' => 'Revisar',
+                ];
+            }
+            if ($porLeer > 0) {
+                $pendientes[] = [
+                    'icono' => 'bi-book',
+                    'titulo' => $porLeer === 1 ? 'Tienes 1 procedimiento por leer y firmar' : "Tienes {$porLeer} procedimientos por leer y firmar",
+                    'texto' => 'Léelos con calma y firma «Leí y entendí». Así sabrás qué hacer en cada situación.',
+                    'ruta' => route('procedimientos.por-leer'),
+                    'boton' => 'Leer ahora',
+                ];
+            }
+        }
+        // Fin Procedimientos
 
         return view('panel.index', ['pendientes' => $pendientes]);
     }

@@ -33,6 +33,7 @@ Aprobado por el dueño del proyecto con estas reglas:
 | `estacionamientos` | `estacionamientos.borrar` | `ZonaEstacionamiento` | nombre | sede | — | |
 | `rutas` | `rutas.borrar` | `Ruta` | nombre | sede | `ruta_horarios` y sus `ruta_paradas` (propias) | movimientos de transporte de la ruta **o de sus horarios** |
 | `paraderos` | `rutas.borrar` | `Paradero` | nombre | sede | — | paradas en rutas (`ruta_paradas`) |
+| `procedimientos` | `procedimientos.borrar` | `Procedimiento` (solo si **nunca** se publicó una versión) | clave | empresa | versiones, pasos, aplicación, adjuntos e historial (propias; los archivos adjuntos quedan en el disco privado) | acuses de lectura |
 
 Usuarios no se incluyó a propósito: casi todo usuario ya actuó (creó, editó, firmó…) y su id está en la auditoría; se dan de baja.
 

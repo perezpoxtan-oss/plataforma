@@ -31,6 +31,7 @@ use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route as Rutas;
 use Illuminate\Support\Str;
@@ -305,6 +306,15 @@ class RecorridoPantallasTest extends TestCase
             'lector.ir' => collect([Vehiculo::class, Equipo::class, EquipoPc::class, Llave::class, Gafete::class, Colaborador::class, LostFoundArticulo::class])
                 ->map(fn ($m) => $m::withoutGlobalScopes()->where('empresa_id', $e)->value('codigo_qr'))->filter()->map(fn ($c) => ['codigo' => $c])->values()->all(),
             'configuracion.respaldos.descargar' => [],
+            // Procedimientos: todos los de la demo (publicados, en revisión y borrador) y sus firmas y adjuntos
+            'procedimientos.show', 'procedimientos.leer', 'procedimientos.imprimir', 'procedimientos.acuses.exportar' => DB::table('procedimientos')
+                ->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['procedimiento' => $id])->all(),
+            'procedimientos.adjunto' => DB::table('procedimiento_adjuntos as a')->join('procedimiento_versiones as v', 'v.id', '=', 'a.version_id')
+                ->where('a.empresa_id', $e)->limit(2)->get(['v.procedimiento_id', 'a.id'])->map(fn ($f) => ['procedimiento' => $f->procedimiento_id, 'adjunto' => $f->id])->all(),
+            'procedimientos.versiones.firma' => DB::table('procedimiento_versiones')->where('empresa_id', $e)->whereNotNull('firma_ruta')->limit(2)
+                ->get(['procedimiento_id', 'id'])->map(fn ($f) => ['procedimiento' => $f->procedimiento_id, 'version' => $f->id])->all(),
+            'procedimientos.acuses.firma' => DB::table('procedimiento_acuses as a')->join('procedimiento_versiones as v', 'v.id', '=', 'a.version_id')
+                ->where('a.empresa_id', $e)->limit(2)->get(['v.procedimiento_id', 'a.id'])->map(fn ($f) => ['procedimiento' => $f->procedimiento_id, 'acuse' => $f->id])->all(),
             // Eliminar definitivamente: el primer registro de cada catálogo o padrón registrado
             'borrar.revisar' => collect(RegistroBorrado::definiciones())
                 ->map(fn ($d, $clave) => ['registro' => $clave, 'id' => $primero($d['modelo'])])->filter(fn ($j) => $j['id'] !== null)->values()->all(),

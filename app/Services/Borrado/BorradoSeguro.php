@@ -85,6 +85,9 @@ class BorradoSeguro
         'vehiculos' => ['vehículo', 'vehículos'],
         'vouchers_reposicion' => ['voucher', 'vouchers'],
         'zonas_estacionamiento' => ['zona de estacionamiento', 'zonas de estacionamiento'],
+        // Procedimientos
+        'procedimiento_aplicaciones' => ['procedimiento que le aplica', 'procedimientos que le aplican'],
+        'procedimiento_acuses' => ['acuse de lectura', 'acuses de lectura'],
     ];
 
     /** @var array{referencias: array<string, list<array{0: string, 1: string}>>, puentes: array<string, true>}|null */

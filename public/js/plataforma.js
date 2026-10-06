@@ -6156,3 +6156,122 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Eliminar definitivamente */
+/* ==========================================================================
+   Procedimientos (ver docs/tecnico/procedimientos.md): editor de pasos
+   (agregar, subir, bajar, quitar), "Todas las sedes / Sedes elegidas",
+   QR escaneado con el lector universal (abre el modo lectura) y tamaño de
+   letra del modo lectura (se recuerda en este equipo).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    /* ---------- Editor de pasos ---------- */
+    function renumerar(lista) {
+        lista.querySelectorAll('[data-paso-fila]').forEach(function (fila, i) {
+            var numero = fila.querySelector('[data-paso-numero]');
+            if (numero) { numero.textContent = String(i + 1); }
+        });
+    }
+
+    function agregarPaso(form) {
+        var lista = form.querySelector('[data-pasos-editor]');
+        var plantilla = form.querySelector('template[data-plantilla-paso]');
+        if (!lista || !plantilla) { return; }
+        var indice = parseInt(lista.getAttribute('data-siguiente') || '0', 10);
+        lista.setAttribute('data-siguiente', String(indice + 1));
+        lista.insertAdjacentHTML('beforeend', plantilla.innerHTML.replace(/__i__/g, String(indice)));
+        renumerar(lista);
+        var texto = lista.lastElementChild && lista.lastElementChild.querySelector('textarea');
+        if (texto) { texto.focus(); }
+    }
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-agregar-paso], [data-paso-subir], [data-paso-bajar], [data-paso-quitar]');
+        if (!boton) { return; }
+        var form = boton.closest('form');
+        if (!form) { return; }
+        if (boton.hasAttribute('data-agregar-paso')) { agregarPaso(form); return; }
+
+        var fila = boton.closest('[data-paso-fila]');
+        var lista = fila && fila.parentElement;
+        if (!fila || !lista) { return; }
+        if (boton.hasAttribute('data-paso-subir') && fila.previousElementSibling) {
+            lista.insertBefore(fila, fila.previousElementSibling);
+            boton.focus();
+        } else if (boton.hasAttribute('data-paso-bajar') && fila.nextElementSibling) {
+            lista.insertBefore(fila.nextElementSibling, fila);
+            boton.focus();
+        } else if (boton.hasAttribute('data-paso-quitar')) {
+            if (lista.querySelectorAll('[data-paso-fila]').length > 1) {
+                fila.remove();
+            } else {
+                // Siempre queda un renglón: solo se vacía
+                fila.querySelectorAll('textarea, input[type="text"]').forEach(function (c) { c.value = ''; });
+                fila.querySelectorAll('input[type="checkbox"]').forEach(function (c) { c.checked = false; });
+            }
+        }
+        renumerar(lista);
+    });
+
+    /* ---------- A quién aplica: todas las sedes o sedes elegidas ---------- */
+    function sincronizarSedes(form) {
+        var elegido = form.querySelector('[data-aplica-sedes]:checked');
+        var caja = form.querySelector('[data-sedes-elegidas]');
+        if (!caja) { return; }
+        caja.hidden = !!elegido && elegido.value !== 'sedes';
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches && e.target.matches('[data-aplica-sedes]')) { sincronizarSedes(e.target.form); }
+    });
+
+    // Al enviar, los pasos van en el orden en que se ven en pantalla
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches || !form.matches('[data-form-procedimiento]')) { return; }
+        var lista = form.querySelector('[data-pasos-editor]');
+        if (!lista) { return; }
+        lista.querySelectorAll('[data-paso-fila]').forEach(function (fila, i) {
+            fila.querySelectorAll('[name^="pasos["]').forEach(function (c) {
+                c.name = c.name.replace(/^pasos\[[^\]]*\]/, 'pasos[' + i + ']');
+            });
+        });
+    });
+
+    /* ---------- QR de la hoja leído con el lector universal: abre el modo lectura ---------- */
+    document.addEventListener('lector:elegido', function (e) {
+        var caja = e.target;
+        if (!caja.closest || !caja.closest('[data-lector-procedimiento]')) { return; }
+        var registro = e.detail || {};
+        if (registro.url) { window.location.href = registro.url; }
+    });
+
+    /* ---------- Modo lectura: tamaño de letra (0 a 3) ---------- */
+    var CLAVE_LETRA = 'procedimientos.letra';
+
+    function aplicarLetra(nivel) {
+        var lectura = document.querySelector('[data-modo-lectura]');
+        if (!lectura) { return; }
+        nivel = Math.max(0, Math.min(3, isNaN(nivel) ? 1 : nivel));
+        lectura.setAttribute('data-letra-nivel', String(nivel));
+        try { window.localStorage.setItem(CLAVE_LETRA, String(nivel)); } catch (x) { /* sin almacenamiento */ }
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-letra]');
+        if (!b) { return; }
+        var lectura = document.querySelector('[data-modo-lectura]');
+        var actual = parseInt((lectura && lectura.getAttribute('data-letra-nivel')) || '1', 10);
+        aplicarLetra(actual + parseInt(b.getAttribute('data-letra'), 10));
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-form-procedimiento]').forEach(sincronizarSedes);
+        if (document.querySelector('[data-modo-lectura]')) {
+            var guardado = null;
+            try { guardado = window.localStorage.getItem(CLAVE_LETRA); } catch (x) { guardado = null; }
+            aplicarLetra(guardado === null ? 1 : parseInt(guardado, 10));
+        }
+    });
+})();
+/* Fin Procedimientos */

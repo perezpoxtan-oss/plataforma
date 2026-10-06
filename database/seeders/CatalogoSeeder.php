@@ -73,6 +73,7 @@ class CatalogoSeeder extends Seeder
         'robo' => 'robo.index',
         'recorridos_pc' => 'recorridos_pc.index',
         'equipos_pc' => 'equipos_pc.index',
+        'procedimientos' => 'procedimientos.index',
     ];
 
     /**
