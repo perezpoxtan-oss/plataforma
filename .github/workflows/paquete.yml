@@ -23,16 +23,17 @@ jobs:
   paquete:
     name: Armar y publicar paquete
     runs-on: ubuntu-latest
+    # Seguridad: el token con permiso de escritura solo se entrega a los pasos que publican
     env:
-      GH_TOKEN: ${{ github.token }}
       SHA: ${{ github.sha }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: ${{ env.SHA }}
+          persist-credentials: false
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
           php-version: '8.4'
           extensions: bcmath, ctype, curl, dom, exif, fileinfo, gd, intl, mbstring, pdo_mysql, sodium, xml, zip
@@ -48,6 +49,12 @@ jobs:
         id: destino
         run: |
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            # Seguridad: solo etiquetas vMAYOR.MENOR.PARCHE exactas (el patron v*.*.* del
+            # disparador acepta cualquier texto, p. ej. con $( ) o comillas)
+            if ! [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Etiqueta no valida: debe ser vMAYOR.MENOR.PARCHE"
+              exit 1
+            fi
             echo "etiqueta=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
             echo "nombre=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           else
@@ -56,8 +63,10 @@ jobs:
           fi
 
       - name: Armar paquete
+        env:
+          NOMBRE: ${{ steps.destino.outputs.nombre }}
         run: |
-          printf '%s\n%s\n%s\n' "${{ steps.destino.outputs.nombre }}" "${SHA}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > VERSION
+          printf '%s\n%s\n%s\n' "${NOMBRE}" "${SHA}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > VERSION
           tar -czf "$RUNNER_TEMP/paquete.tar.gz" \
             --exclude=./.git --exclude=./.github --exclude=./tests --exclude=./docs \
             --exclude=./storage --exclude=./node_modules --exclude=./.env \
@@ -68,6 +77,9 @@ jobs:
 
       - name: Publicar en QA
         if: steps.destino.outputs.etiqueta == 'qa'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           NOTAS="Portal de pruebas · commit ${SHA:0:7} · $(date -u '+%Y-%m-%d %H:%M UTC')"
           if ! gh release view qa >/dev/null 2>&1; then
@@ -79,9 +91,18 @@ jobs:
 
       - name: Publicar version de Produccion
         if: steps.destino.outputs.etiqueta != 'qa'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.destino.outputs.etiqueta }}
         run: |
-          TAG="${{ steps.destino.outputs.etiqueta }}"
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes
           fi
-          gh release upload "$TAG" "$RUNNER_TEMP/paquete.tar.gz" --clobber
+          # Seguridad: el paquete de una version de Produccion no se reemplaza nunca
+          # (sin --clobber). desplegar.sh tambien rechaza un paquete con otra huella.
+          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -qx 'paquete.tar.gz'; then
+            echo "::notice::$TAG ya tiene paquete.tar.gz; no se reemplaza. Para cambios, publica otra version."
+          else
+            gh release upload "$TAG" "$RUNNER_TEMP/paquete.tar.gz"
+          fi

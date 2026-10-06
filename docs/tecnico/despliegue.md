@@ -48,6 +48,7 @@ Se suben a la carpeta principal (`/home/vdcpcomm`) con el Administrador de archi
 |---|---|
 | `github_token.txt` | Token *fine-grained* de GitHub, solo lectura de *Contents* del repositorio `plataforma` |
 | `env_qa.txt` | Configuración de QA (plantilla en `despliegue/env_qa.txt`); la `APP_KEY` se genera sola |
+| `env_prod.txt` | Configuración de Producción (plantilla en `despliegue/env_prod.txt`): debe decir `APP_ENV=production`, `APP_DEBUG=false` y `APP_URL` con `https://`, o el script no instala |
 | `qa_inicial.txt` | Correo, nombre, usuario y contraseña para crear el Super Administrador y la empresa demo |
 
 Para cambiar la configuración después, basta con subir otro `env_qa.txt`: se conserva la `APP_KEY` y queda un respaldo del `.env` anterior.
@@ -99,3 +100,21 @@ En QA, cada versión nueva corre `plataforma:demo` una vez, con la contraseña d
 - llena los datos de ejemplo de los módulos nuevos (cada uno solo si su tabla está vacía).
 
 Como `desplegar.sh` se actualiza a sí mismo al final de una instalación, este paso empieza a correr a partir de la siguiente revisión del cron, unos 5 minutos después.
+
+## Candados de seguridad del despliegue
+
+Revisados en la auditoría del 2026-10-06 (`docs/seguridad/auditoria-2026-10-06-infraestructura.md`); cada uno tiene su prueba en `tests/Feature/SeguridadAuditoria/DesplegarScriptTest.php`, que corre el script real contra un GitHub simulado.
+
+- **Huella obligatoria.** Si GitHub no da la huella `sha256` del paquete, no se instala. El número del paquete debe ser numérico (forma la carpeta `releases/`).
+- **Producción no cambia de contenido.** La primera vez que se descarga una versión (`v1.2.3`) su huella queda en `$APP/.huellas`; si después el paquete de esa misma versión aparece con otra huella (alguien lo reemplazó en GitHub), no se instala. Además, `desplegar_version.txt` acepta la huella autorizada en la misma línea:
+
+  ```
+  v1.2.3 sha256:0f3c…(64 caracteres)
+  ```
+
+  La huella está en GitHub → *Releases* → `paquete.tar.gz` (o en el registro del flujo *Paquete*). El flujo ya no reemplaza el paquete de una versión publicada.
+- **Configuración de Producción.** Antes de instalar se revisa el `.env`: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL` con `https://`.
+- **Token.** Se pasa a `curl` por la entrada estándar (`-K -`), no como argumento, para que no aparezca en la lista de procesos.
+- **Candado de corrida.** Guarda el número de proceso; solo se retira si ese proceso ya terminó (o tras 3 horas).
+- **Regreso automático.** Al regresar a la versión anterior también se restauran sus archivos públicos (`.htaccess`, css, js).
+- **`.env`.** Se escribe con permisos `600` desde el inicio y se conservan solo los 3 respaldos más recientes (`.env.respaldo.*`).

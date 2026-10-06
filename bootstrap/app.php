@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Middleware\ControlarInactividad;
+use App\Http\Middleware\EncabezadosSeguridad;
 use App\Http\Middleware\EstablecerEmpresa;
+use App\Http\Middleware\VerificarHost;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,6 +23,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
             EstablecerEmpresa::class,
         ]);
         $middleware->redirectUsersTo(fn () => route('panel'));
+
+        // Seguridad: dominio verificado (enlaces sin Host falso) y encabezados de endurecimiento
+        $middleware->prepend(VerificarHost::class);
+        $middleware->append(EncabezadosSeguridad::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
