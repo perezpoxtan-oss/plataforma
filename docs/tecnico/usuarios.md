@@ -19,9 +19,9 @@ Réplica de `modules/usuarios/usuario_lista.php`, `usuario_modal_editar.php` y `
 - No se administra la **propia cuenta**, ni a usuarios de nivel igual o superior, ni al Super Administrador.
 - La lista respeta el **alcance** de `usuarios.ver`: toda la empresa, los usuarios asignados a sus sedes, o solo los que el actor dio de alta.
 - Únicos: el usuario y el correo, en toda la plataforma; el número de colaborador, dentro de cada empresa. El número es opcional, para cuentas de soporte.
-- Contraseña: mínimo 8 caracteres, con letras y números.
+- Contraseña: mínimo 8 caracteres, con letras y números; máximo 72; no puede ser de las más usadas (`App\Rules\ContrasenaSegura`) ni contener el nombre de usuario o el correo.
 - **Desactivar** o **cambiar la contraseña** cierra de inmediato las sesiones abiertas de esa persona: se borran de la tabla `sessions`.
-- Auditoría: `usuarios.creado`, `usuarios.actualizado`, `usuarios.desactivado`, `usuarios.reactivado` y `usuarios.desbloqueado`, con el antes y el después (incluidos rol y sede).
+- Auditoría: `usuarios.creado`, `usuarios.actualizado`, `usuarios.desactivado`, `usuarios.reactivado` y `usuarios.desbloqueado`, con el antes y el después (incluidos rol y sede). Si se cambió la contraseña solo se anota `contrasena: cambiada`; nunca su valor ni su hash.
 
 ## Desbloqueo manual (QA A-03)
 

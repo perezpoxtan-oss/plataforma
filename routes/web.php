@@ -40,7 +40,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [SesionController::class, 'iniciar'])->name('login.iniciar');
 });
 
-Route::get('/sesion/expirada', [SesionController::class, 'expirada'])->name('sesion.expirada');
+// Seguridad: el cierre por inactividad es POST (con token); el GET solo muestra el aviso
+Route::get('/sesion/expirada', [SesionController::class, 'avisoExpirada'])->name('sesion.expirada');
+Route::post('/sesion/expirada', [SesionController::class, 'expirada'])->name('sesion.expirada.cerrar');
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [SesionController::class, 'cerrar'])->name('logout');

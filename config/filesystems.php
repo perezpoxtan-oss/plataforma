@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Seguridad: no publicar /storage/{ruta} (aquí viven los respaldos de la base);
+            // la plataforma no usa URLs firmadas de este disco
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

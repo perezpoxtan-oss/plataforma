@@ -85,6 +85,26 @@
             if (modal) { modal.hide(); }
         }
 
+        /* Seguridad: el cierre se pide por POST con el token CSRF (un GET ya no cierra la sesión) */
+        var cerrando = false;
+        function cerrarPorInactividad() {
+            if (cerrando) { return; }
+            cerrando = true;
+            var meta = document.querySelector('meta[name="csrf-token"]');
+            if (!meta) { window.location.href = datos.expirada; return; }
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = datos.expirada;
+            form.hidden = true;
+            var token = document.createElement('input');
+            token.type = 'hidden';
+            token.name = '_token';
+            token.value = meta.getAttribute('content');
+            form.appendChild(token);
+            document.body.appendChild(form);
+            form.submit();
+        }
+
         window.plataformaSesion = {
             seguir: function () { ultimaActividad = Date.now(); latido(); }
         };
@@ -92,7 +112,7 @@
         setInterval(function () {
             var inactivo = segundos(ultimaActividad);
             if (inactivo >= LIMITE) {
-                window.location.href = datos.expirada;
+                cerrarPorInactividad();
             } else if (inactivo >= LIMITE - AVISO) {
                 if (!avisoVisible) { mostrarAviso(); }
             } else if (segundos(ultimoLatido) >= LATIDO_SI_ACTIVO && inactivo <= LATIDO_SI_ACTIVO) {

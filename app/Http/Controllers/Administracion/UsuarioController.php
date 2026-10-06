@@ -8,6 +8,7 @@ use App\Models\Empresa;
 use App\Models\Rol;
 use App\Models\Sede;
 use App\Models\User;
+use App\Rules\ContrasenaSegura;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -191,7 +192,8 @@ class UsuarioController extends Controller
             'colaborador_id' => ['nullable', 'integer'],
             'username' => ['required', 'string', 'max:60', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')->ignore($usuario?->id)],
             'email' => ['required', 'email:rfc', 'max:150', Rule::unique('users', 'email')->ignore($usuario?->id)],
-            'password' => [$usuario === null ? 'required' : 'nullable', 'string', Password::min(8)->letters()->numbers()],
+            'password' => [$usuario === null ? 'required' : 'nullable', 'string', Password::min(8)->letters()->numbers(),
+                new ContrasenaSegura((string) $request->input('username'), (string) $request->input('email'))],
             'rol_id' => ['required', 'integer'],
             'sede_id' => ['nullable', 'integer'],
         ], [

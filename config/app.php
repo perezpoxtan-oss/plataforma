@@ -39,7 +39,9 @@ return [
     |
     */
 
-    'debug' => (bool) env('APP_DEBUG', false),
+    // Seguridad: en Producción nunca se muestra el detalle técnico de un error,
+    // aunque el .env diga APP_DEBUG=true por descuido
+    'debug' => (bool) env('APP_DEBUG', false) && env('APP_ENV', 'production') !== 'production',
 
     /*
     |--------------------------------------------------------------------------
