@@ -114,7 +114,7 @@ class CatalogoSeeder extends Seeder
                 'equipos' => ['Equipos de seguridad', 'bi-tools', ['imprimir']],
                 'responsivas' => ['Responsivas', 'bi-pen', ['firmar', 'imprimir']],
                 'estacionamientos' => ['Estacionamientos', 'bi-p-square', []],
-                'pases_salida' => ['Pases de salida', 'bi-box-arrow-right', ['aprobar', 'firmar', 'imprimir']],
+                'pases_salida' => ['Pases de salida', 'bi-box-arrow-right', ['aprobar', 'firmar', 'imprimir', 'configurar']],
                 'visitantes' => ['Padrón de personas', 'bi-person-lines-fill', []],
                 'vehiculos' => ['Padrón vehicular', 'bi-car-front', ['imprimir']],
                 'proveedores' => ['Proveedores', 'bi-truck', []],

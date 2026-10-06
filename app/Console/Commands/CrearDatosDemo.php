@@ -987,12 +987,16 @@ class CrearDatosDemo extends Command
     }
 
     /**
-     * Pases de salida de ejemplo, solo la primera vez: uno en cada estado del
-     * circuito (pendiente con una aprobación, rechazado, aprobado, salió
-     * cerrado, en camino a la otra sede, en destino, en tránsito de regreso,
-     * regresado y uno vencido). Se registran y firman con las mismas reglas
-     * de la pantalla (AdministradorPasesSalida), como si los capturara la
-     * caseta; las firmas son trazos de ejemplo.
+     * Pases de salida de ejemplo, solo la primera vez: el circuito de
+     * aprobación de la empresa demo (1. Jefe de Seguridad → rol "Jefe de
+     * seguridad", 2. Contraloría → director.demo, 3. Gerencia → rol
+     * "Administrador", solo en venta, traspaso definitivo y consignación) y un
+     * pase en cada estado: pendiente en el paso 1 (bandeja de jefe.demo),
+     * pendiente en Gerencia (bandeja de admin.demo), rechazado, cancelado,
+     * aprobado, salió cerrado, en camino a la otra sede, en destino, en
+     * tránsito de regreso, regreso parcial, regresado y uno vencido. Se
+     * registran y firman con las mismas reglas de la pantalla; las firmas son
+     * trazos de ejemplo. admin.demo deja guardada su firma.
      *
      * @param  Collection<string, Sede>  $sedes
      */
@@ -1003,75 +1007,151 @@ class CrearDatosDemo extends Command
         }
         $colaborador = fn (string $num) => Colaborador::where('num_empleado', $num)->value('id');
         $proveedor = fn (string $nombre) => Proveedor::where('nombre', $nombre)->where('activo', true)->value('id');
-        if ($colaborador('1007') === null || $proveedor('Constructora Maya') === null) {
-            return; // sin colaboradores ni proveedores demo no hay a quién asignar los pases
+        $jefe = User::where('username', 'jefe.demo')->first();
+        $director = User::where('username', 'director.demo')->first();
+        if ($colaborador('1007') === null || $proveedor('Constructora Maya') === null || $jefe === null || $director === null) {
+            return; // sin colaboradores, proveedores ni aprobadores demo no hay con quién armar el circuito
         }
 
-        $hoy = now('America/Cancun');
-        $dia = fn (int $dias) => $hoy->copy()->addDays($dias)->format('Y-m-d');
-        $radio = Equipo::where('numero_serie', '752TSFQ505')->first();
-
-        // [quién lo registra, datos, artículos, firmas por grupo (true = todos los roles; número = los primeros n), motivo de rechazo]
-        $plan = [
-            [$agente, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1007'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
-                'fecha_salida_programada' => $dia(1), 'fecha_tentativa_regreso' => $dia(8)],
-                [['cantidad' => 1, 'equipo' => 'Proyector', 'marca' => 'EPSON', 'modelo' => 'PowerLite X49', 'serie' => 'X49-55821', 'descripcion' => 'Con cable HDMI y control remoto, para el evento de capacitación']],
-                ['aprobacion' => 1], null],
-            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'venta', 'colaborador_id' => $colaborador('1001'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Abarrotes del Caribe'),
-                'destino_direccion' => 'Av. Andrés Quintana Roo 45, Cancún', 'destino_telefono' => '9988841020', 'fecha_salida_programada' => $dia(0)],
-                [['cantidad' => 4, 'equipo' => 'Refrigerador exhibidor', 'marca' => 'IMBERA', 'modelo' => 'VR-17', 'descripcion' => 'Usados, de la tienda del lobby']],
-                [], 'Falta la factura de venta autorizada por Contraloría.'],
-            [$admin, ['sede_id' => $sedes['PLA']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1011'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
-                'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(0), 'fecha_tentativa_regreso' => $dia(10)],
-                [['cantidad' => 1, 'equipo' => 'Taladro rotomartillo', 'marca' => 'DEWALT', 'modelo' => 'DCD996', 'serie' => 'DW-778120', 'descripcion' => 'No gira el mandril']],
-                ['aprobacion' => true], null],
-            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'traspaso_definitivo', 'colaborador_id' => $colaborador('1009'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
-                'fecha_salida_programada' => $dia(-2)],
-                [['cantidad' => 1, 'equipo' => 'Lavadora industrial', 'marca' => 'SPEED QUEEN', 'modelo' => 'SC40', 'serie' => 'SQ-40-1187', 'descripcion' => 'Pasa a la lavandería de Playa']],
-                ['aprobacion' => true, 'salida_fisica' => true], null],
-            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1005'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
-                'fecha_salida_programada' => $dia(-1), 'fecha_tentativa_regreso' => $dia(5)],
-                [$radio ? ['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505', 'equipo_id' => $radio->id, 'descripcion' => 'Con cargador']
-                    : ['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505']],
-                ['aprobacion' => true, 'salida_fisica' => true, 'recepcion_destino' => 2], null],
-            [$admin, ['sede_id' => $sedes['PLA']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1008'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['CEN']->id,
-                'fecha_salida_programada' => $dia(-4), 'fecha_tentativa_regreso' => $dia(3)],
-                [['cantidad' => 2, 'equipo' => 'Aspiradora', 'marca' => 'KÄRCHER', 'modelo' => 'NT 30/1', 'descripcion' => 'Apoyo por la limpieza profunda de Centro']],
-                ['aprobacion' => true, 'salida_fisica' => true, 'recepcion_destino' => true], null],
-            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'consignacion', 'colaborador_id' => $colaborador('1007'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
-                'fecha_salida_programada' => $dia(-6), 'fecha_tentativa_regreso' => $dia(1)],
-                [['cantidad' => 1, 'equipo' => 'Carpa plegable 3x3', 'marca' => 'TRUPER', 'descripcion' => 'Color blanco, con bolsa'], ['cantidad' => 6, 'equipo' => 'Silla plegable', 'descripcion' => 'Negras']],
-                ['aprobacion' => true, 'salida_fisica' => true, 'recepcion_destino' => true, 'salida_regreso' => true], null],
-            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'colaborador', 'colaborador_destino_id' => $colaborador('1005'),
-                'fecha_salida_programada' => $dia(-9), 'fecha_tentativa_regreso' => $dia(-2)],
-                [['cantidad' => 1, 'equipo' => 'Laptop', 'marca' => 'LENOVO', 'modelo' => 'L14', 'serie' => 'ABC123LATCAT', 'descripcion' => 'Bajo resguardo de Sistemas, para home office']],
-                ['aprobacion' => true, 'salida_fisica' => true, 'regreso' => true], null],
-            [$admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
-                'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(-10), 'fecha_tentativa_regreso' => $dia(-3)],
-                [['cantidad' => 1, 'equipo' => 'Puerta corrediza de cristal', 'marca' => 'MITEL', 'modelo' => '989484', 'descripcion' => 'Riel dañado; la reparan en el taller del proveedor']],
-                ['aprobacion' => true, 'salida_fisica' => true], null],
-        ];
-
         $pases = app(AdministradorPasesSalida::class);
-        $firmantes = ['MARIANA LÓPEZ PECH', 'CARLOS PÉREZ GÓMEZ', 'ANA ADMINISTRADORA', 'ROBERTO HERNÁNDEZ CRUZ', 'DIEGO DIRECTOR', 'SERGIO SUPERVISOR'];
         $previo = auth()->user();
         try {
-            foreach ($plan as $n => [$autor, $datos, $articulos, $firmas, $rechazo]) {
-                auth()->setUser($autor);
-                $pase = $pases->crear($autor, $datos + ['articulos' => $articulos]);
-                auth()->setUser($admin);
-                foreach ($firmas as $grupo => $cuantas) {
-                    $roles = array_keys(PaseSalida::GRUPOS[$grupo][1]);
-                    foreach (array_slice($roles, 0, $cuantas === true ? count($roles) : $cuantas) as $i => $rol) {
-                        $pases->firmar($admin, $pase->refresh(), [
-                            'rol' => $rol, 'nombre_firma' => $firmantes[($n + $i) % count($firmantes)], 'firma' => $this->firmaDemo($n * 10 + $i),
-                        ]);
+            auth()->setUser($admin);
+            $rol = fn (string $nombre) => Rol::where('empresa_id', $admin->empresa_id)->where('nombre', $nombre)->value('id');
+            $pases->circuito()->guardar($admin, ['pasos' => [
+                ['nombre' => 'Jefe de Seguridad', 'tipo' => 'rol', 'rol_id' => $rol('Jefe de seguridad'), 'departamento' => 'cualquiera', 'obligatorio' => 1],
+                ['nombre' => 'Contraloría', 'tipo' => 'usuarios', 'usuarios' => [$director->id], 'departamento' => 'cualquiera', 'obligatorio' => 1],
+                ['nombre' => 'Gerencia', 'tipo' => 'rol', 'rol_id' => $rol('Administrador'), 'departamento' => 'cualquiera', 'obligatorio' => 1,
+                    'motivos' => ['venta', 'traspaso_definitivo', 'consignacion']],
+            ]]);
+            $pases->guardarFirmaUsuario($admin, $this->firmaDemo(99));
+
+            $hoy = now('America/Cancun');
+            $dia = fn (int $dias) => $hoy->copy()->addDays($dias)->format('Y-m-d');
+            $radio = Equipo::where('numero_serie', '752TSFQ505')->first();
+            $aprobadores = [$jefe, $director, $admin];
+            $semilla = 0;
+            $firma = function () use (&$semilla) {
+                return $this->firmaDemo(++$semilla);
+            };
+            $aprobar = function (PaseSalida $pase, int $cuantos) use ($pases, $aprobadores, $firma) {
+                for ($k = 0; $k < $cuantos; $k++) {
+                    $pase->refresh()->load('aprobaciones');
+                    $actual = $pases->circuito()->actual($pase);
+                    if ($actual === null) {
+                        return;
                     }
+                    $quien = $aprobadores[$actual->orden - 1] ?? end($aprobadores);
+                    auth()->setUser($quien);
+                    $pases->aprobar($quien, $pase, ['aprobacion_id' => $actual->id, 'firma_modo' => 'nueva', 'firma' => $firma(),
+                        'comentario' => $k === 0 ? 'Revisado, adelante.' : null]);
                 }
-                if ($rechazo !== null) {
-                    $pases->rechazar($admin, $pase->refresh(), ['motivo_rechazo' => $rechazo]);
-                }
-            }
+            };
+            $paso = function (PaseSalida $pase, User $quien, string $persona, array $extra = []) use ($pases, $firma) {
+                $pase->refresh()->load('articulos');
+                auth()->setUser($quien);
+                $pases->registrarPaso($quien, $pase, $extra + [
+                    'paso' => $pase->pasoFisico(), 'persona_nombre' => $persona, 'firma_persona' => $firma(), 'firma_modo' => 'nueva', 'firma' => $firma(),
+                    'verificados' => $pase->articulos->pluck('id')->all(),
+                    'escaneados' => $pase->articulos->whereNotNull('equipo_id')->pluck('id')->all(),
+                    'regresa' => $pase->articulos->mapWithKeys(fn ($a) => [$a->id => $a->pendientes()])->all(),
+                ]);
+            };
+            $crear = function (User $autor, array $datos, array $articulos) use ($pases) {
+                auth()->setUser($autor);
+
+                return $pases->crear($autor, $datos + ['articulos' => $articulos]);
+            };
+
+            // 1. Pendiente en el paso 1: espera a jefe.demo
+            $crear($agente, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1007'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(1), 'fecha_tentativa_regreso' => $dia(8)],
+                [['cantidad' => 1, 'equipo' => 'Proyector', 'marca' => 'EPSON', 'modelo' => 'PowerLite X49', 'serie' => 'X49-55821', 'descripcion' => 'Con cable HDMI y control remoto, para el evento de capacitación']]);
+
+            // 2. Venta pendiente en Gerencia: espera a admin.demo
+            $venta = $crear($agente, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'venta', 'colaborador_id' => $colaborador('1002') ?? $colaborador('1007'), 'destino_tipo' => 'proveedor',
+                'proveedor_id' => $proveedor('Abarrotes del Caribe') ?? $proveedor('Constructora Maya'),
+                'destino_direccion' => 'Av. Andrés Quintana Roo 45, Cancún', 'destino_telefono' => '9988841020', 'fecha_salida_programada' => $dia(0)],
+                [['cantidad' => 4, 'equipo' => 'Refrigerador exhibidor', 'marca' => 'IMBERA', 'modelo' => 'VR-17', 'descripcion' => 'Usados, de la tienda del lobby']]);
+            $aprobar($venta, 2);
+
+            // 3. Rechazado en Contraloría: devuelto al solicitante
+            $rechazado = $crear($admin, ['sede_id' => $sedes['PLA']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1011'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
+                'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(0), 'fecha_tentativa_regreso' => $dia(12)],
+                [['cantidad' => 1, 'equipo' => 'Podadora', 'marca' => 'HONDA', 'modelo' => 'HRX217', 'serie' => 'HRX-20981', 'descripcion' => 'No arranca']]);
+            $aprobar($rechazado, 1);
+            auth()->setUser($director);
+            $pases->rechazar($director, $rechazado->refresh(), ['motivo_rechazo' => 'Falta la cotización del proveedor: adjúntala y reenvía.']);
+
+            // 4. Cancelado por quien lo registró
+            $cancelado = $crear($agente, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1009'), 'destino_tipo' => 'colaborador', 'colaborador_destino_id' => $colaborador('1009'),
+                'fecha_salida_programada' => $dia(0), 'fecha_tentativa_regreso' => $dia(2)],
+                [['cantidad' => 1, 'equipo' => 'Escalera de aluminio', 'marca' => 'CUPRUM', 'descripcion' => '6 peldaños']]);
+            auth()->setUser($agente);
+            $pases->cancelar($agente, $cancelado->refresh(), ['motivo_cancelacion' => 'Ya no se necesita: la prestaron en el edificio.']);
+
+            // 5. Aprobado, listo para salir
+            $listo = $crear($admin, ['sede_id' => $sedes['PLA']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1011'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
+                'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(0), 'fecha_tentativa_regreso' => $dia(10)],
+                [['cantidad' => 1, 'equipo' => 'Taladro rotomartillo', 'marca' => 'DEWALT', 'modelo' => 'DCD996', 'serie' => 'DW-778120', 'descripcion' => 'No gira el mandril']]);
+            $aprobar($listo, 2);
+
+            // 6. Traspaso definitivo: salió y quedó cerrado
+            $traspaso = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'traspaso_definitivo', 'colaborador_id' => $colaborador('1009'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(-2)],
+                [['cantidad' => 1, 'equipo' => 'Lavadora industrial', 'marca' => 'SPEED QUEEN', 'modelo' => 'SC40', 'serie' => 'SQ-40-1187', 'descripcion' => 'Pasa a la lavandería de Playa']]);
+            $aprobar($traspaso, 3);
+            $paso($traspaso, $agente, 'GUADALUPE CHAN EK');
+
+            // 7. Salió hacia Playa: falta confirmar la llegada (radio escaneado del padrón)
+            $enCamino = $crear($agente, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1005'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(-1), 'fecha_tentativa_regreso' => $dia(5)],
+                [$radio ? ['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505', 'equipo_id' => $radio->id, 'descripcion' => 'Con cargador']
+                    : ['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505']]);
+            $aprobar($enCamino, 2);
+            $paso($enCamino, $agente, 'ROBERTO HERNÁNDEZ CRUZ');
+
+            // 8. En destino (Centro recibió las aspiradoras de Playa)
+            $enDestino = $crear($admin, ['sede_id' => $sedes['PLA']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1008'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['CEN']->id,
+                'fecha_salida_programada' => $dia(-4), 'fecha_tentativa_regreso' => $dia(3)],
+                [['cantidad' => 2, 'equipo' => 'Aspiradora', 'marca' => 'KÄRCHER', 'modelo' => 'NT 30/1', 'descripcion' => 'Apoyo por la limpieza profunda de Centro']]);
+            $aprobar($enDestino, 2);
+            $paso($enDestino, $admin, 'DANIELA CANUL MAY');
+            $paso($enDestino, $agente, 'DANIELA CANUL MAY');
+
+            // 9. En tránsito de regreso (consignación: 3 aprobaciones)
+            $transito = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'consignacion', 'colaborador_id' => $colaborador('1007'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(-6), 'fecha_tentativa_regreso' => $dia(1)],
+                [['cantidad' => 1, 'equipo' => 'Carpa plegable 3x3', 'marca' => 'TRUPER', 'descripcion' => 'Color blanco, con bolsa'], ['cantidad' => 6, 'equipo' => 'Silla plegable', 'descripcion' => 'Negras']]);
+            $aprobar($transito, 3);
+            $paso($transito, $agente, 'MARIANA LÓPEZ PECH');
+            $paso($transito, $admin, 'MARIANA LÓPEZ PECH');
+            $paso($transito, $admin, 'MARIANA LÓPEZ PECH');
+
+            // 10. Regreso parcial: regresaron 2 de 4 radios portátiles
+            $parcial = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
+                'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'fecha_salida_programada' => $dia(-3), 'fecha_tentativa_regreso' => $dia(4)],
+                [['cantidad' => 4, 'equipo' => 'Radio portátil', 'marca' => 'KENWOOD', 'modelo' => 'TK-3402', 'descripcion' => 'Para la obra de la alberca']]);
+            $aprobar($parcial, 2);
+            $paso($parcial, $agente, 'CARLOS PÉREZ GÓMEZ');
+            $parcial->refresh()->load('articulos');
+            $paso($parcial, $agente, 'CARLOS PÉREZ GÓMEZ', ['regresa' => [$parcial->articulos->first()->id => 2],
+                'comentario' => 'El proveedor regresa los otros 2 el viernes.']);
+
+            // 11. Regresado y cerrado (laptop bajo resguardo de un colaborador)
+            $regresado = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'colaborador', 'colaborador_destino_id' => $colaborador('1005'),
+                'fecha_salida_programada' => $dia(-9), 'fecha_tentativa_regreso' => $dia(-2)],
+                [['cantidad' => 1, 'equipo' => 'Laptop', 'marca' => 'LENOVO', 'modelo' => 'L14', 'serie' => 'ABC123LATCAT', 'descripcion' => 'Bajo resguardo de Sistemas, para home office']]);
+            $aprobar($regresado, 2);
+            $paso($regresado, $agente, 'ROBERTO HERNÁNDEZ CRUZ');
+            $paso($regresado, $agente, 'ROBERTO HERNÁNDEZ CRUZ');
+
+            // 12. Vencido: debió regresar del taller hace 3 días
+            $vencido = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
+                'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(-10), 'fecha_tentativa_regreso' => $dia(-3)],
+                [['cantidad' => 1, 'equipo' => 'Puerta corrediza de cristal', 'marca' => 'MITEL', 'modelo' => '989484', 'descripcion' => 'Riel dañado; la reparan en el taller del proveedor']]);
+            $aprobar($vencido, 2);
+            $paso($vencido, $agente, 'CARLOS PÉREZ GÓMEZ');
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }

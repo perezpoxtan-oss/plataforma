@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Colaborador;
 use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
@@ -36,6 +37,21 @@ class PanelController extends Controller
                 ];
             }
         }
+
+        // Pases de salida: aprobaciones que esperan la firma de quien entra (bandeja de firmas)
+        if ($empresaId !== null && $actor->can('pases_salida.aprobar')) {
+            $porAprobar = count($tenant->conEmpresa($empresaId, fn () => app(AdministradorPasesSalida::class)->idsPorAprobar($actor)));
+            if ($porAprobar > 0) {
+                $pendientes[] = [
+                    'icono' => 'bi-pen',
+                    'titulo' => $porAprobar === 1 ? '1 pase de salida espera tu aprobación' : "{$porAprobar} pases de salida esperan tu aprobación",
+                    'texto' => 'Revisa los artículos y firma o rechaza con tus comentarios. El siguiente paso no avanza hasta que firmes.',
+                    'ruta' => route('pases-salida.pendientes'),
+                    'boton' => 'Ir a mi bandeja',
+                ];
+            }
+        }
+        // Fin Pases de salida
 
         return view('panel.index', ['pendientes' => $pendientes]);
     }

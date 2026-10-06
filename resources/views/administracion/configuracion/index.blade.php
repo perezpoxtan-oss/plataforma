@@ -47,6 +47,12 @@
             </section>
         @endif
 
+        {{-- Pases de salida: circuito de aprobación (ver docs/tecnico/pases-salida.md) --}}
+        @if ($empresa && auth()->user()->can('pases_salida.configurar'))
+            @include('seguridad.pases-salida._config-resumen', ['empresa' => $empresa])
+        @endif
+        {{-- Fin Pases de salida --}}
+
         @if ($esSuperadmin)
             {{-- ================= Correo saliente (plataforma) ================= --}}
             <section class="tarjeta p-4" aria-labelledby="t-correo">

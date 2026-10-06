@@ -32,6 +32,10 @@ class Empresa extends Model
         'alta_provisional' => ['Avisar a Recursos Humanos cuando la caseta registre un alta provisional de colaborador', true],
         // Bitácora de transporte (SEGCAT: configuracion_correo.destinatarios_vouchers)
         'vale_taxi' => ['Enviar cada vale de taxi de la Bitácora de transporte (para su autorización)', true],
+        // Pases de salida (circuito de aprobación)
+        'pase_salida_aprobacion' => ['Pases de salida: avisar a quien debe aprobar el siguiente paso', true],
+        'pase_salida_resultado' => ['Pases de salida: avisar al solicitante cuando su pase se aprueba o se rechaza', true],
+        'pase_salida_vencido' => ['Pases de salida: recordatorio diario de los pases vencidos que no han regresado', true],
     ];
 
     /** Avisos que se mandan a una lista de correos capturada en Configuración (y no solo a usuarios con permiso). */
