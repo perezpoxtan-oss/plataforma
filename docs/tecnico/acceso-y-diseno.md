@@ -10,7 +10,8 @@ Réplica en Laravel de `login.php`, `login_proceso.php`, `logout.php`, `includes
 | `POST /login` | `login.iniciar` | Valida usuario o correo y contraseña |
 | `POST /logout` | `logout` | Cierra la sesión (antes era un enlace GET) |
 | `GET /sesion/latido` | `sesion.latido` | Mantiene viva la sesión mientras hay actividad |
-| `GET /sesion/expirada` | `sesion.expirada` | Destino del aviso de inactividad: cierra y avisa |
+| `POST /sesion/expirada` | `sesion.expirada.cerrar` | Aviso de inactividad del navegador (con token CSRF): cierra y avisa |
+| `GET /sesion/expirada` | `sesion.expirada` | Solo muestra el aviso; con sesión viva regresa al panel (un enlace ya no cierra la sesión) |
 | `GET /` | `panel` | Consola de Monitoreo Central |
 | `GET /modulos/{clave}` | `modulos.pendiente` | Pantalla provisional de un módulo aún no migrado (exige `clave.ver`) |
 
@@ -18,6 +19,8 @@ Réplica en Laravel de `login.php`, `login_proceso.php`, `logout.php`, `includes
 
 - Se entra con **usuario o correo**; solo cuentas activas de empresas activas (o el Super Administrador).
 - **5 intentos fallidos** seguidos bloquean la cuenta **15 minutos**; un acceso correcto reinicia el contador.
+- Un usuario o correo que no existe (o una cuenta desactivada) también "se bloquea" a los 5 intentos, con el mismo aviso y el mismo tiempo: el mensaje de bloqueo no revela qué cuentas existen (caché `acceso-cuenta:*`).
+- Cabeceras de seguridad en toda respuesta (`App\Http\Middleware\CabecerasSeguridad`): CSP sin JavaScript en línea, no se puede incrustar en otro sitio, cámara solo para el propio sitio, HSTS por HTTPS y `no-store` en pantallas con sesión. Ver `docs/seguridad/auditoria-2026-10-06-autenticacion.md`.
 - **20 minutos** sin actividad cierran la sesión; 2 minutos antes aparece el aviso "¿Sigues aquí?".
 - Mientras hay actividad real (teclado, clic, mouse) un latido cada 3 minutos evita perder formularios largos.
 - Desactivar a un usuario o a su empresa corta su sesión abierta en la siguiente petición.

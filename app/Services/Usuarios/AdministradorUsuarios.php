@@ -81,7 +81,9 @@ class AdministradorUsuarios
             $this->cerrarSesiones($usuario);
         }
 
-        $this->roles->auditar($actor, 'usuarios.actualizado', $usuario, $antes, $this->foto($usuario->fresh()));
+        // La bitácora anota que la contraseña cambió, nunca su valor ni su hash
+        $despues = $this->foto($usuario->fresh()) + (! empty($datos['password']) ? ['contrasena' => 'cambiada'] : []);
+        $this->roles->auditar($actor, 'usuarios.actualizado', $usuario, $antes, $despues);
 
         return $usuario;
     }

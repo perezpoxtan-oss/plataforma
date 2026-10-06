@@ -69,11 +69,25 @@ class SesionController extends Controller
     }
 
     /**
-     * Destino del aviso de inactividad del navegador: cierra y avisa.
+     * Aviso de inactividad del navegador (POST con token CSRF): cierra y avisa.
      */
     public function expirada(Request $request): RedirectResponse
     {
         $this->terminar($request);
+
+        return redirect()->route('login')->with('acceso', 'expirado');
+    }
+
+    /**
+     * Abrir el enlace de "sesión expirada" (GET) ya no cierra la sesión: otro
+     * sitio podría sacar al usuario con solo un enlace o una imagen. Si la
+     * sesión sigue viva vuelve al panel; si ya terminó, muestra el aviso.
+     */
+    public function avisoExpirada(Request $request): RedirectResponse
+    {
+        if ($request->user() !== null) {
+            return redirect()->route('panel');
+        }
 
         return redirect()->route('login')->with('acceso', 'expirado');
     }

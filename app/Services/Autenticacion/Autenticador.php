@@ -3,6 +3,7 @@
 namespace App\Services\Autenticacion;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 
 /**
@@ -31,10 +32,7 @@ class Autenticador
             ->first();
 
         if ($usuario === null) {
-            // Se compara contra un hash falso para no revelar por el tiempo de respuesta si la cuenta existe
-            Hash::check($contrasena, '$2y$12$'.str_repeat('a', 53));
-
-            return ResultadoAcceso::credenciales();
+            return $this->falloSinCuenta($identificador, $contrasena);
         }
 
         if ($usuario->estaBloqueado()) {
@@ -49,6 +47,11 @@ class Autenticador
             return ResultadoAcceso::credenciales();
         }
 
+        // Si cambió el costo del cifrado, la contraseña se vuelve a cifrar con el actual
+        if (Hash::needsRehash($usuario->password)) {
+            $usuario->password = $contrasena;
+        }
+
         $usuario->forceFill([
             'intentos_fallidos' => 0,
             'bloqueado_hasta' => null,
@@ -56,6 +59,42 @@ class Autenticador
         ])->save();
 
         return ResultadoAcceso::correcto($usuario);
+    }
+
+    /**
+     * Usuario o correo que no existe (o cuenta desactivada): responde igual que
+     * una cuenta real, incluido el bloqueo tras los mismos intentos, para que
+     * el mensaje "cuenta bloqueada" no revele qué cuentas existen.
+     */
+    private function falloSinCuenta(string $identificador, string $contrasena): ResultadoAcceso
+    {
+        $llave = 'acceso-cuenta:'.hash('sha256', mb_strtolower($identificador));
+        $maximo = (int) config('plataforma.sesion.max_intentos');
+        $minutos = (int) config('plataforma.sesion.minutos_bloqueo');
+
+        $hasta = (int) Cache::get($llave.':hasta', 0);
+        if ($hasta > now()->getTimestamp()) {
+            return ResultadoAcceso::bloqueado((int) ceil(($hasta - now()->getTimestamp()) / 60));
+        }
+
+        // Hash falso con el mismo costo que los reales: el tiempo de respuesta no
+        // revela si la cuenta existe
+        $coste = max(4, min(31, (int) config('hashing.bcrypt.rounds', 12)));
+        Hash::check($contrasena, sprintf('$2y$%02d$', $coste).str_repeat('a', 53));
+
+        // Igual que en una cuenta real: el contador no se reinicia solo con el tiempo
+        // (aquí se conserva un día) y al bloquear vuelve a cero
+        Cache::add($llave, 0, now()->addDay());
+        $intentos = (int) Cache::increment($llave);
+
+        if ($intentos >= $maximo) {
+            Cache::forget($llave);
+            Cache::put($llave.':hasta', now()->addMinutes($minutos)->getTimestamp(), now()->addMinutes($minutos));
+
+            return ResultadoAcceso::bloqueado($minutos);
+        }
+
+        return ResultadoAcceso::credenciales();
     }
 
     private function registrarFallo(User $usuario): ResultadoAcceso
