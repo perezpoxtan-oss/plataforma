@@ -88,8 +88,10 @@ return new class extends Migration
         Schema::table('pases_salida_firmas', function (Blueprint $table) {
             $table->foreignId('user_id')->nullable()->after('nombre_firma')->constrained('users')->nullOnDelete(); // quien firmó con su usuario (null: una persona sin cuenta)
             $table->string('cargo', 120)->nullable()->after('user_id');                  // "Contraloría", "Seguridad"…
-            $table->dropUnique(['pase_salida_id', 'rol']);                                 // un rol puede firmar en cada ronda y en cada regreso parcial
+            // Primero el índice normal: en MySQL/MariaDB la llave foránea de pase_salida_id
+            // necesita un índice que empiece con esa columna mientras se quita el único
             $table->index(['pase_salida_id', 'rol']);
+            $table->dropUnique(['pase_salida_id', 'rol']);                                 // un rol puede firmar en cada ronda y en cada regreso parcial
         });
 
         Schema::create('pases_salida_aprobaciones', function (Blueprint $table) {
@@ -277,8 +279,8 @@ return new class extends Migration
         Schema::dropIfExists('pases_salida_bitacora');
         Schema::dropIfExists('pases_salida_aprobaciones');
         Schema::table('pases_salida_firmas', function (Blueprint $table) {
-            $table->dropIndex(['pase_salida_id', 'rol']);
             $table->unique(['pase_salida_id', 'rol']);
+            $table->dropIndex(['pase_salida_id', 'rol']);
             $table->dropConstrainedForeignId('user_id');
             $table->dropColumn('cargo');
         });
