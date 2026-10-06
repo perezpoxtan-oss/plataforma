@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Seguridad (AZ-05): el disco privado (firmas) no se publica en /storage/{path};
+            // cada archivo se sirve desde la pantalla de su módulo, con permiso y alcance.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

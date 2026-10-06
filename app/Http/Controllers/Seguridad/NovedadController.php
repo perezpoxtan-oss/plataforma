@@ -322,11 +322,18 @@ class NovedadController extends Controller
     {
         abort_unless($this->novedades->puedeModulo($request->user(), 'editar'), 403);
         $empresaId = $this->empresaDeTrabajo($request);
-        $datos = $request->validate(['articulo_id' => ['required', 'integer']], ['articulo_id.required' => 'Elige el artículo encontrado.']);
-
-        $this->tenant->conEmpresa($empresaId, function () use ($request, $reporte, $datos) {
+        // Seguridad (AZ-03): primero el registro (404 si es ajeno), luego la captura
+        $buscar = function () use ($request, $reporte) {
             $modelo = LostFoundReportePerdida::with('novedad')->find($reporte);
             abort_if($modelo === null || ! $this->novedades->permite($request->user(), 'editar', $modelo->novedad), 404);
+
+            return $modelo;
+        };
+        $this->tenant->conEmpresa($empresaId, $buscar);
+        $datos = $request->validate(['articulo_id' => ['required', 'integer']], ['articulo_id.required' => 'Elige el artículo encontrado.']);
+
+        $this->tenant->conEmpresa($empresaId, function () use ($request, $datos, $buscar) {
+            $modelo = $buscar();
             abort_if($modelo->novedad->resuelto(), 422, 'Este caso ya está Resuelto. Reábrelo antes de vincular un hallazgo.');
             $this->novedades->vincularPerdida($request->user(), $modelo, $this->articuloVisible($request->user(), (int) $datos['articulo_id']));
         });
@@ -343,6 +350,8 @@ class NovedadController extends Controller
     {
         Gate::authorize('novedades.editar');
         $empresaId = $this->empresaDeTrabajo($request);
+        // Seguridad (AZ-03): primero el registro (404 si es ajeno), luego la captura
+        $this->tenant->conEmpresa($empresaId, fn () => $this->novedades->buscar($request->user(), $novedad, 'editar'));
         $datos = $request->validate(['articulo_id' => ['required', 'integer']], ['articulo_id.required' => 'Elige el artículo encontrado.']);
 
         $this->tenant->conEmpresa($empresaId, function () use ($request, $novedad, $datos) {

@@ -93,8 +93,9 @@ class PermisoController extends Controller
 
     public function update(Request $request, Rol $rol): RedirectResponse
     {
-        Gate::authorize('permisos.editar');
+        // Seguridad (AZ-03): primero la empresa (404), luego el permiso (403)
         abort_unless($rol->empresa_id === $this->empresa->id($request->user()), 404);
+        Gate::authorize('permisos.editar');
 
         $datos = $request->validate([
             'permisos' => ['array'],

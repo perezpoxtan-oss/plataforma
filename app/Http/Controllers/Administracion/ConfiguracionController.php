@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Mail\CorreoDePrueba;
 use App\Models\ConfiguracionPlataforma;
 use App\Models\Empresa;
+use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
+use App\Services\Permisos\Autorizador;
 use App\Services\Respaldos\Respaldos;
 use App\Support\CorreoPlataforma;
 use App\Support\Tenancy\EmpresaDeTrabajo;
@@ -31,6 +33,7 @@ class ConfiguracionController extends Controller
         private readonly Respaldos $respaldos,
         private readonly EmpresaDeTrabajo $empresa,
         private readonly AdministradorRoles $auditoria,
+        private readonly Autorizador $autorizador,
     ) {}
 
     public function index(Request $request): View
@@ -49,7 +52,7 @@ class ConfiguracionController extends Controller
             'respaldos' => $actor->es_superadmin ? $this->respaldos->listar() : collect(),
             'empresa' => $empresaId === null ? null : Empresa::find($empresaId),
             'avisos' => Empresa::AVISOS,
-            'puedeEditar' => $actor->can('configuracion.editar'),
+            'puedeEditar' => $this->editaEmpresa($actor),
         ]);
     }
 
@@ -103,6 +106,8 @@ class ConfiguracionController extends Controller
     public function avisos(Request $request): RedirectResponse
     {
         Gate::authorize('configuracion.editar');
+        // Seguridad (AZ-02): los avisos son de toda la empresa; con alcance de sede solo se consultan
+        abort_unless($this->editaEmpresa($request->user()), 403, 'Los avisos son de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa.');
         $empresaId = $this->empresa->id($request->user());
         abort_if($empresaId === null, 404);
 
@@ -176,6 +181,15 @@ class ConfiguracionController extends Controller
     }
 
     // -------------------------------------------------------------------------
+
+    /**
+     * Seguridad (AZ-02): la configuración de la empresa solo la cambia quien
+     * tiene "configuracion.editar" con alcance de toda la empresa.
+     */
+    private function editaEmpresa(User $actor): bool
+    {
+        return $actor->can('configuracion.editar') && $this->autorizador->alcanceDeEmpresa($actor, 'configuracion.editar');
+    }
 
     private function soloSuperadmin(Request $request): void
     {

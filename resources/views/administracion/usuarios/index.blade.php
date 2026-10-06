@@ -197,8 +197,12 @@
                             <div class="col-md-6">
                                 <label class="campo-etiqueta" for="{{ $modo }}_sede">1. Sede</label>
                                 <select id="{{ $modo }}_sede" name="sede_id" class="campo">
-                                    <option value="">Todas las sedes de la empresa</option>
+                                    {{-- Seguridad (AZ-01): con alcance de sede solo se ofrecen sus sedes --}}
+                                    @if ($sedesAsignables === null)
+                                        <option value="">Todas las sedes de la empresa</option>
+                                    @endif
                                     @foreach ($sedes as $sede)
+                                        @continue($sedesAsignables !== null && ! in_array($sede->id, $sedesAsignables, true))
                                         <option value="{{ $sede->id }}" @selected($reabrir && (string) old('sede_id') === (string) $sede->id)>{{ $sede->nombre }}</option>
                                     @endforeach
                                 </select>

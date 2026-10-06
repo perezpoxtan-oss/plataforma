@@ -156,6 +156,7 @@ class EspacioController extends Controller
     {
         Gate::authorize('espacios.editar');
         [$nodo, $empresaId] = $this->buscar($request, $espacio);
+        Gate::authorize('espacios.editar', $nodo); // Seguridad (AZ-04): alcance sobre el registro ("solo los propios")
         $datos = $this->validar($request, false);
 
         $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->actualizar($request->user(), $nodo, $datos));
@@ -168,6 +169,7 @@ class EspacioController extends Controller
     {
         Gate::authorize('espacios.eliminar');
         [$nodo, $empresaId] = $this->buscar($request, $espacio);
+        Gate::authorize('espacios.eliminar', $nodo); // Seguridad (AZ-04): alcance sobre el registro ("solo los propios")
         $activo = $request->boolean('activo');
 
         $afectados = $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->cambiarEstado($request->user(), $nodo, $activo));

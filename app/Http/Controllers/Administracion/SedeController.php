@@ -122,7 +122,10 @@ class SedeController extends Controller
 
         return match (true) {
             $permiso === null => $consulta->whereRaw('1 = 0'),
-            $permiso->sedes === null, $permiso->alcance === Alcance::Empresa => $consulta,
+            $permiso->alcance === Alcance::Empresa => $consulta,
+            // Seguridad (AZ-04): "Solo los propios" sin sede no es toda la empresa
+            $permiso->alcance === Alcance::Propios && $permiso->sedes === null => $consulta->where('sedes.creado_por', $actor->id),
+            $permiso->sedes === null => $consulta,
             default => $consulta->whereIn('sedes.id', $permiso->sedes),
         };
     }

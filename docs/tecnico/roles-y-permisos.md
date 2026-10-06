@@ -40,6 +40,9 @@ En SEGCAT ambas pantallas usaban los permisos del módulo `permisos`. Ahora **Ro
 - La matriz muestra solo los módulos **contratados** por la empresa. Los permisos de módulos no visibles se conservan al guardar.
 - Módulos y acciones salen del catálogo de la base de datos: lo que llegue del navegador y no exista en el catálogo se ignora.
 - Desactivar un rol retira de inmediato sus permisos a quienes lo tienen; el motor ignora roles inactivos.
+- Roles y Matriz son de **toda la empresa** (un rol lo usan todas las sedes): crearlos, editarlos, borrarlos o cambiar sus permisos exige `roles.*` / `permisos.editar` con **alcance de empresa**. Con "Solo los propios", solo los roles que él dio de alta. Con alcance de sede se consultan (auditoría AZ-02).
+- "Solo los propios" **nunca** cuenta como toda la empresa, aunque la asignación no tenga sede: use `Autorizador::alcanceDeEmpresa()` (no `sedesPermitidas() === null`) para decidir si alguien puede cambiar algo de toda la empresa, y `Autorizador::soloPropios()` para acotar a lo que dio de alta (auditoría AZ-04).
+- Quien da de alta o edita usuarios con alcance de sede solo asigna sus sedes (nunca "Todas las sedes") (auditoría AZ-01).
 - Todo cambio queda en `auditoria` con los eventos `roles.creado`, `roles.actualizado`, `roles.eliminado` y `permisos.rol_actualizado`, incluyendo el antes y el después.
 
 ## Super Administrador

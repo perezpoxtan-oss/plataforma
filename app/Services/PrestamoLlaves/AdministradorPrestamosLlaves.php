@@ -309,12 +309,19 @@ class AdministradorPrestamosLlaves
     /**
      * Últimos movimientos de una llave (SEGCAT: llave_historial_ajax.php).
      *
+     * Con $actor, solo los préstamos dentro de su alcance (Seguridad AZ-04: "solo los propios").
+     *
      * @return Collection<int, PrestamoLlave>
      */
-    public function historialDe(Llave $llave): Collection
+    public function historialDe(Llave $llave, ?User $actor = null): Collection
     {
-        return PrestamoLlave::with(['colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno', 'entrego:id,name', 'recibio:id,name', 'anulo:id,name'])
-            ->where('llave_id', $llave->id)->orderByDesc('prestado_en')->orderByDesc('id')
+        $consulta = PrestamoLlave::query();
+        if ($actor !== null) {
+            $consulta = $this->limitar($consulta, $actor, 'prestamo_llaves.ver');
+        }
+
+        return $consulta->with(['colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno', 'entrego:id,name', 'recibio:id,name', 'anulo:id,name'])
+            ->where('prestamos_llaves.llave_id', $llave->id)->orderByDesc('prestado_en')->orderByDesc('id')
             ->limit(self::HISTORIAL_LLAVE)->get();
     }
 

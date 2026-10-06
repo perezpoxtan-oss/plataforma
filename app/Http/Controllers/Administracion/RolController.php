@@ -80,8 +80,9 @@ class RolController extends Controller
 
     public function update(Request $request, Rol $rol): RedirectResponse
     {
-        Gate::authorize('roles.editar');
+        // Seguridad (AZ-03): primero la empresa (404), luego el permiso (403)
         $this->exigirMismaEmpresa($request, $rol);
+        Gate::authorize('roles.editar');
 
         $datos = $this->validar($request, $rol->empresa_id, $rol);
 
@@ -96,8 +97,9 @@ class RolController extends Controller
 
     public function destroy(Request $request, Rol $rol): RedirectResponse
     {
-        Gate::authorize('roles.eliminar');
+        // Seguridad (AZ-03): primero la empresa (404), luego el permiso (403)
         $this->exigirMismaEmpresa($request, $rol);
+        Gate::authorize('roles.eliminar');
 
         try {
             $this->administrador->eliminarRol($request->user(), $rol);

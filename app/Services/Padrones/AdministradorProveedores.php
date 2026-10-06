@@ -58,7 +58,17 @@ class AdministradorProveedores
     {
         $sedes = $this->sedes($usuario, $permiso);
 
-        return Proveedor::query()->when($sedes !== null, fn ($q) => $q->operanEn($sedes));
+        return Proveedor::query()->when($sedes !== null, fn ($q) => $q->operanEn($sedes))
+            // Seguridad (AZ-04): "Solo los propios" = los que él dio de alta
+            ->when($this->autorizador->soloPropios($usuario, $permiso), fn ($q) => $q->where('proveedores.creado_por', $usuario->id));
+    }
+
+    /**
+     * Seguridad (AZ-04): con "Solo los propios" solo se modifica lo que él dio de alta.
+     */
+    public function esPropioSiAplica(User $usuario, Proveedor $proveedor, string $permiso): bool
+    {
+        return ! $this->autorizador->soloPropios($usuario, $permiso) || (int) $proveedor->creado_por === (int) $usuario->id;
     }
 
     /**
