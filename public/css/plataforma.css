@@ -2179,3 +2179,162 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .tema-transporte .text-uppercase::placeholder { text-transform: none; }
 .transporte-detalles summary .text-muted { margin-left: 0.3rem; }
 /* Fin Bitácora de transporte */
+/* ==========================================================================
+   Lost & Found (archivo) y Robo — Seguimiento (como SEGCAT lf_archivo.php y
+   robo_archivo.php): píldoras de filtro, filas de artículo con borde
+   izquierdo de semáforo (rojo vencido / ámbar por vencer), encabezado oscuro
+   por mes, "Cerrar / Entregar" ámbar, etiqueta de la bolsa con borde ámbar,
+   Auditoría de Inventario, Días de Resguardo y casos de Robo con borde rojo
+   (abiertos) o verde (resueltos).
+   ========================================================================== */
+.btn-accion-novedades.oscuro { background: #0f172a; color: #fff; border-color: #0f172a; }
+.btn-accion-novedades.oscuro:hover { background: #1e293b; color: #fff; }
+.btn-accion-novedades.azul { color: #2563eb; border-color: #2563eb; }
+.btn-accion-novedades.azul:hover { background: #2563eb; color: #fff; }
+.escaner-lf { padding: 1rem 1.2rem; margin-bottom: 1rem; }
+.escaner-lf .campo-ayuda { margin-bottom: 0; }
+.filtros-lf { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.filtros-lf .btn { min-height: 44px; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 10px; }
+.filtros-lf .btn-dark .conteo-filtro, .filtros-lf .btn-danger .conteo-filtro, .filtros-lf .btn-success .conteo-filtro, .filtros-lf .btn-secondary .conteo-filtro { background: rgba(255, 255, 255, 0.25); }
+.busqueda-lf { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.8rem; }
+.busqueda-lf .buscador { flex: 1 1 280px; max-width: none; }
+.busqueda-lf .filtro-select { flex: 0 1 240px; min-height: 48px; max-width: none; }
+.leyenda-semaforo-lf { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; font-size: 0.78rem; color: #475569; margin: 0 0 1rem; }
+.leyenda-semaforo-lf > span { display: inline-flex; align-items: center; }
+.semaforo-punto { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
+.semaforo-punto.rojo { background: #dc2626; }
+.semaforo-punto.amarillo { background: #d97706; }
+.semaforo-punto.verde { background: #16a34a; }
+.subtitulo-lf { font-size: 0.85rem; font-weight: 800; color: #475569; margin: 0 0 0.5rem; }
+.mes-header-lf { background: #0f172a; color: #fff; padding: 0.6rem 1rem; border-radius: 10px; font-weight: 700; margin: 1.2rem 0 0.6rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+.fila-articulo { background: #fff; border: 1px solid var(--borde); border-left: 5px solid #cbd5e1; border-radius: 12px; padding: 0.9rem 1.1rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.7rem; transition: box-shadow 0.15s; }
+.fila-articulo:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+.fila-articulo.verde { border-left-color: #16a34a; }
+.fila-articulo.amarillo { border-left-color: #d97706; background: #fffbeb; }
+.fila-articulo.rojo { border-left-color: #dc2626; background: #fef2f2; }
+.fila-articulo.pendiente { border-left-color: #f59e0b; background: #fffbeb; }
+.fila-articulo.ficha-resaltada { box-shadow: 0 0 0 3px #f59e0b; }
+.fila-articulo-datos { flex: 1 1 320px; min-width: 0; overflow-wrap: anywhere; }
+.fila-articulo-acciones { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+.titulo-articulo-lf { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; font-weight: 600; }
+.folio-lf { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; color: #0f172a; text-decoration: none; }
+.folio-lf:hover { text-decoration: underline; }
+.badge-tipo-lf { display: inline-block; font-size: 0.7rem; font-weight: 700; background: #e2e8f0; color: #475569; border-radius: 6px; padding: 0.15rem 0.5rem; }
+.dias-lf.rojo { color: #b91c1c; }
+.dias-lf.amarillo { color: #b45309; }
+.estatus-lf { display: inline-flex; align-items: center; font-size: 0.75rem; font-weight: 700; border-radius: 6px; padding: 0.3rem 0.6rem; }
+.estatus-lf.resguardo { background: #fef3c7; color: #92400e; }
+.estatus-lf.cerrado { background: #dcfce7; color: #166534; }
+.estatus-lf.grande { font-size: 0.85rem; padding: 0.4rem 0.8rem; }
+.btn-lf { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0.4rem 0.9rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; border: 1px solid; background: transparent; cursor: pointer; text-decoration: none; font-family: inherit; }
+.btn-lf.cerrar, .btn-lf.completar { color: #b45309; border-color: #f59e0b; }
+.btn-lf.cerrar:hover, .btn-lf.completar:hover { background: #f59e0b; color: #0f172a; }
+.btn-lf.grande { min-height: 48px; padding: 0.5rem 1.2rem; font-size: 0.95rem; background: #ffc107; color: #0f172a; border-color: #ffc107; }
+.btn-lf.grande:hover { background: #e0a800; }
+
+/* Ficha del artículo */
+.ficha-articulo-lf { padding: 1.2rem; margin-bottom: 1rem; border-left: 6px solid #cbd5e1; }
+.ficha-articulo-lf.verde { border-left-color: #16a34a; }
+.ficha-articulo-lf.amarillo { border-left-color: #d97706; }
+.ficha-articulo-lf.rojo { border-left-color: #dc2626; }
+.ficha-articulo-lf.cerrado { border-left-color: #10b981; }
+.datos-articulo-lf { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem 1.2rem; font-size: 0.9rem; }
+.datos-articulo-lf > div { min-width: 0; overflow-wrap: anywhere; }
+.datos-articulo-lf .completo { grid-column: 1 / -1; }
+.datos-articulo-lf .dato-etiqueta { display: block; font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.03em; }
+.vinculos-lf { margin-top: 0.8rem; padding-top: 0.6rem; border-top: 1px dashed var(--borde); font-size: 0.88rem; display: flex; flex-direction: column; gap: 0.3rem; overflow-wrap: anywhere; }
+.entrega-lf { padding: 1.2rem; margin-bottom: 1rem; }
+.firma-entrega-lf { margin: 1rem 0 0; max-width: 340px; background: #fff; border: 1px solid var(--borde); border-radius: 10px; padding: 0.5rem; }
+.firma-entrega-lf img { width: 100%; height: 110px; object-fit: contain; display: block; }
+.firma-entrega-lf figcaption { font-size: 0.72rem; font-weight: 700; color: #475569; text-align: center; margin-top: 0.2rem; }
+
+/* Cerrar Artículo */
+.dialogo.dialogo-cierre-lf { max-width: 620px; }
+.resumen-cierre-lf { background: #f8fafc; border: 1px solid var(--borde); border-radius: 10px; padding: 0.6rem 0.8rem; margin-bottom: 0.8rem; font-size: 0.9rem; overflow-wrap: anywhere; }
+.tipos-cierre-lf, .recibe-lf { border: 0; padding: 0; margin: 0 0 0.8rem; min-width: 0; }
+.tipos-cierre-lf { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0.5rem; }
+.tipos-cierre-lf legend, .recibe-lf legend { float: none; width: 100%; grid-column: 1 / -1; margin-bottom: 0.2rem; }
+.opcion-cierre-lf { display: flex; align-items: center; gap: 0.5rem; min-height: 52px; padding: 0.5rem 0.75rem; border: 2px solid var(--borde); border-radius: 12px; background: #fff; cursor: pointer; font-weight: 700; font-size: 0.88rem; }
+.opcion-cierre-lf input { width: 1.15rem; height: 1.15rem; accent-color: #d97706; flex-shrink: 0; }
+.opcion-cierre-lf i { color: #b45309; font-size: 1.1rem; }
+.opcion-cierre-lf.elegida { border-color: #f59e0b; background: #fffbeb; }
+.recibe-lf { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.opcion-recibe-lf { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 44px; padding: 0.4rem 0.8rem; border: 1px solid var(--borde); border-radius: 10px; background: #fff; cursor: pointer; font-size: 0.88rem; font-weight: 600; }
+.opcion-recibe-lf input { width: 1.1rem; height: 1.1rem; accent-color: #d97706; }
+.bloque-cierre-lf[hidden], .bloque-cierre-lf [hidden] { display: none !important; }
+.btn-registrar-cierre { background: #ffc107; color: #0f172a; flex: 2 !important; font-weight: 800 !important; }
+.btn-registrar-cierre:hover { background: #e0a800; }
+.btn-registrar-cierre:disabled { opacity: 0.6; cursor: wait; }
+
+/* Etiqueta de la bolsa (borde ámbar, como SEGCAT) */
+.etiqueta-lf-contenedor { max-width: 300px; }
+.calcomania.etiqueta-lf { border-color: #b45309; padding: 0.9rem; }
+.etiqueta-lf-folio { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.35rem; font-weight: 900; letter-spacing: 1px; color: #0f172a; border: 2px solid #b45309; border-radius: 8px; padding: 4px 6px; margin: 0.4rem 0; background: #fffbeb; }
+.etiqueta-lf-qr { width: 150px; height: 150px; margin: 0.4rem auto; }
+.etiqueta-lf-objeto { font-size: 0.9rem; font-weight: 800; color: #0f172a; overflow-wrap: anywhere; }
+.etiqueta-lf-dato { font-size: 0.75rem; color: #334155; margin-top: 0.15rem; overflow-wrap: anywhere; }
+.etiqueta-lf-bodega { font-size: 0.8rem; font-weight: 800; color: #b45309; margin-top: 0.3rem; }
+.etiqueta-lf-imprimir { background: #b45309; }
+.etiqueta-lf-imprimir:hover { background: #92400e; }
+
+/* Auditoría de Inventario */
+.filtros-auditoria-lf { display: flex; flex-wrap: wrap; gap: 0.5rem 0.8rem; justify-content: center; align-items: flex-end; text-align: left; margin-top: 0.6rem; }
+.filtros-auditoria-lf > div { flex: 1 1 160px; max-width: 220px; }
+.filtros-auditoria-lf .campo { margin-bottom: 0; min-height: 48px; }
+.tabla-auditoria-lf .col-check { width: 30px; text-align: center; }
+.tabla-auditoria-lf td:nth-child(2) { white-space: nowrap; font-weight: 700; }
+.casilla-auditoria { display: inline-block; width: 14px; height: 14px; border: 2px solid #334155; }
+.discrepancias-lf { margin-top: 1.5rem; }
+.renglon-lf { border-bottom: 1px solid #94a3b8; height: 24px; margin-top: 16px; }
+.linea-firma-lf { border-top: 1px solid #334155; padding-top: 4px; font-size: 0.72rem; color: #64748b; text-align: center; }
+
+/* Días de Resguardo */
+.pantalla-umbrales-lf { max-width: 820px; }
+.umbral-card { background: #fff; border: 1px solid var(--borde); border-radius: 12px; padding: 1rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.7rem; }
+.umbral-card .texto-traza { margin: 0.2rem 0 0; }
+.campo-dias-lf { width: 110px; margin: 0; text-align: center; font-weight: 800; }
+.btn-guardar-umbrales { display: inline-flex; align-items: center; min-height: 48px; border: none; border-radius: 12px; padding: 0.7rem 1.4rem; font-weight: 700; margin-top: 0.8rem; font-family: inherit; cursor: pointer; }
+
+/* Robo — Seguimiento */
+.caso-robo { background: #fff; border: 1px solid var(--borde); border-left: 5px solid #dc2626; border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 0.7rem; transition: box-shadow 0.15s; }
+.caso-robo:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+.caso-robo.resuelto { border-left-color: #16a34a; }
+.caso-robo.ficha-resaltada { box-shadow: 0 0 0 3px #f87171; }
+.caso-robo-datos { flex: 1 1 320px; min-width: 0; overflow-wrap: anywhere; }
+.texto-robo { color: var(--texto); }
+.badges-robo { display: flex; flex-wrap: wrap; gap: 0.3rem; max-width: 260px; }
+.badge-robo { font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+.badge-robo.rojo { background: #fee2e2; color: #b91c1c; }
+.badge-robo.verde { background: #dcfce7; color: #166534; }
+.badge-robo.ambar { background: #fef3c7; color: #92400e; }
+.badge-robo.gris { background: #f1f5f9; color: #475569; }
+.badge-robo.azul { background: #dbeafe; color: #1d4ed8; }
+.btn-abrir-robo { display: inline-flex; align-items: center; min-height: 44px; padding: 0.4rem 1rem; margin-top: 0.6rem; border-radius: 8px; border: 1px solid #0f172a; color: #0f172a; font-weight: 700; font-size: 0.85rem; text-decoration: none; }
+.btn-abrir-robo:hover { background: #0f172a; color: #fff; }
+.btn-abrir-robo.ver { border-color: #64748b; color: #475569; }
+.btn-guardar-robo { background: #dc3545; color: #fff; flex: 2 !important; }
+.btn-guardar-robo:hover { background: #bb2d3b; }
+.dialogo-robo .minuto-a-minuto { margin-top: 1rem; }
+
+@media (max-width: 575.98px) {
+    .busqueda-lf .buscador { order: 1; flex: 1 1 calc(100% - 64px); }
+    .busqueda-lf .btn-buscar-pases { order: 2; }
+    .busqueda-lf .filtro-select { order: 3; flex: 1 1 100%; }
+    .busqueda-lf .btn-limpiar-pases { order: 4; }
+    .fila-articulo-acciones .btn-lf { white-space: nowrap; padding: 0.4rem 0.6rem; }
+    .filtros-lf .btn { flex: 1 1 auto; justify-content: center; }
+    .fila-articulo-acciones { width: 100%; }
+    .fila-articulo-acciones .btn-lf { flex: 1; }
+    .fila-articulo-acciones .estatus-lf { margin-right: auto; }
+    .datos-articulo-lf { grid-template-columns: 1fr; }
+    .tipos-cierre-lf { grid-template-columns: 1fr 1fr; }
+    .opcion-cierre-lf { font-size: 0.82rem; padding: 0.5rem; }
+    .badges-robo { max-width: none; }
+    .btn-abrir-robo { width: 100%; justify-content: center; }
+    .umbral-card { flex-direction: column; align-items: stretch; text-align: center; }
+    .umbral-card > div:last-child { justify-content: center; }
+}
+@media print {
+    .pagina-impresion-novedad .controles-auditoria-lf { display: none; }
+}
+/* Fin Lost & Found (archivo) y Robo — Seguimiento */

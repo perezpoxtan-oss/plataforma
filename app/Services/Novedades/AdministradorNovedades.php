@@ -199,12 +199,53 @@ class AdministradorNovedades
     {
         $general = $novedad === null ? $actor->can('novedades.'.$accion) : $this->permiteGeneral($actor, $accion, $novedad);
         $lista = $general ? Novedad::CATEGORIAS_ELEGIBLES : ['lost_found'];
+        // Robo — seguimiento (submódulo "robo"): atiende su caso sin cambiarle la categoría
+        if (! $general && $novedad !== null && $novedad->categoria === 'robo' && $this->permiteRobo($actor, $accion, $novedad)) {
+            return ['robo'];
+        }
         // Recorrido PC solo se conserva en los tickets que ya la traían
         if ($novedad !== null && $novedad->categoria === 'recorrido_pc' && $general) {
             $lista[] = 'recorrido_pc';
         }
 
         return $lista;
+    }
+
+    // ------------------------------------------------- Robo — seguimiento
+
+    /**
+     * Casos de Robo que el actor puede tocar con "robo.{accion}" (submódulo
+     * Robo — seguimiento), con su alcance de sede o de propios.
+     *
+     * @param  Builder<Novedad>  $consulta
+     * @return Builder<Novedad>
+     */
+    public function limitarRobo(Builder $consulta, User $actor, string $accion): Builder
+    {
+        $consulta->where('novedades.categoria', 'robo');
+        if ($actor->es_superadmin) {
+            return $consulta;
+        }
+        $c = $this->condicion($actor, 'robo.'.$accion);
+        if ($c === null) {
+            return $consulta->whereRaw('1 = 0');
+        }
+
+        return $consulta
+            ->when($c['sedes'] !== null, fn ($q) => $q->whereIn('novedades.sede_id', $c['sedes']))
+            ->when($c['propios'], fn ($q) => $q->where('novedades.creado_por', $actor->id));
+    }
+
+    /** ¿Puede hacer "robo.{accion}" sobre este caso? (misma regla que limitarRobo). */
+    public function permiteRobo(User $actor, string $accion, Novedad $novedad): bool
+    {
+        if ($novedad->categoria !== 'robo') {
+            return false;
+        }
+        $c = $this->condicion($actor, 'robo.'.$accion);
+
+        return $c !== null && ($c['sedes'] === null || in_array((int) $novedad->sede_id, $c['sedes'], true))
+            && (! $c['propios'] || (int) $novedad->creado_por === (int) $actor->id);
     }
 
     private function permiteGeneral(User $actor, string $accion, Novedad $novedad): bool

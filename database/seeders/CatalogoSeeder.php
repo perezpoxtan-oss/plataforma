@@ -64,9 +64,10 @@ class CatalogoSeeder extends Seeder
         'prestamo_llaves' => 'prestamo_llaves.index',
         'responsivas' => 'responsivas.index',
         'novedades' => 'novedades.index',
-        'lost_found' => 'lost_found.index',
+        'lost_found' => 'lost_found.archivo',
         'pases_salida' => 'pases-salida.index',
         'transporte' => 'transporte.index',
+        'robo' => 'robo.index',
     ];
 
     /**

@@ -4,19 +4,28 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
+use App\Models\Concerns\TieneIdentificador;
+use App\Support\Lector\Identificable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Artículo encontrado (Lost & Found). Nace EN_RESGUARDO con folio LF-000123
  * (consecutivo por empresa, nunca cambia). El estatus solo lo cambia el
  * "Cerrar / Entregar" de la pantalla de Lost & Found (con firma), nunca la
  * edición del ticket. SEGCAT: lost_found_articulos.
+ *
+ * Es "identificable" (ADR-0005): la etiqueta de la bolsa lleva un QR con su
+ * codigo_qr y también se encuentra tecleando o escaneando el folio.
  */
-class LostFoundArticulo extends Model
+class LostFoundArticulo extends Model implements Identificable
 {
-    use PerteneceAEmpresa, RegistraAutor;
+    use PerteneceAEmpresa, RegistraAutor, TieneIdentificador;
+
+    /** Se encuentra también tecleando o escaneando el folio (LF-000123). */
+    protected string $columnaLegible = 'folio';
 
     /** Mismos códigos que SEGCAT (y que los umbrales). */
     public const TIPOS_VALOR = [
@@ -35,6 +44,15 @@ class LostFoundArticulo extends Model
         'DONADO' => 'Donado a Colaborador',
         'DESTRUIDO' => 'Destruido',
         'ENTREGADO_BENEFICENCIA' => 'Entregado a Beneficencia',
+    ];
+
+    /** Cómo se cierra => estatus en que queda el artículo (SEGCAT: lf_articulo_proceso.php). */
+    public const ESTATUS_POR_CIERRE = [
+        'PERSONA' => 'DEVUELTO',
+        'PAQUETERIA' => 'DEVUELTO',
+        'DONADO' => 'DONADO',
+        'DESTRUIDO' => 'DESTRUIDO',
+        'BENEFICENCIA' => 'ENTREGADO_BENEFICENCIA',
     ];
 
     protected $table = 'lost_found_articulos';
@@ -68,6 +86,33 @@ class LostFoundArticulo extends Model
     public function reportesVinculados(): HasMany
     {
         return $this->hasMany(LostFoundReportePerdida::class, 'articulo_vinculado_id');
+    }
+
+    /** Casos de Robo que resultaron ser este hallazgo. */
+    public function robosVinculados(): HasMany
+    {
+        return $this->hasMany(RoboDetalle::class, 'articulo_vinculado_id');
+    }
+
+    /** Cierre / entrega (uno por artículo: un artículo cerrado ya no se vuelve a cerrar). */
+    public function entrega(): HasOne
+    {
+        return $this->hasOne(LostFoundEntrega::class, 'articulo_id')->latestOfMany();
+    }
+
+    public function creador(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'creado_por');
+    }
+
+    public function editor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'actualizado_por');
+    }
+
+    public function cerrador(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cerrado_por');
     }
 
     public function enResguardo(): bool
@@ -105,5 +150,34 @@ class LostFoundArticulo extends Model
             $dias >= $umbral * 0.7 => ['clase' => 'amarillo', 'texto' => 'Por vencer', 'dias' => $dias],
             default => ['clase' => 'verde', 'texto' => 'En tiempo', 'dias' => $dias],
         };
+    }
+
+    // ------------------------------------------------------------ Lector universal
+
+    public static function tipoLector(): string
+    {
+        return 'lost_found';
+    }
+
+    public static function permisoLector(): string
+    {
+        return 'lost_found.ver';
+    }
+
+    public function resumenLector(): array
+    {
+        $this->loadMissing('sede:id,nombre');
+
+        return [
+            'titulo' => $this->folio,
+            'detalle' => implode(' · ', array_filter([$this->objeto, $this->etiquetaEstatus(), $this->ubicacion_bodega ? 'Bodega: '.$this->ubicacion_bodega : null, $this->sede?->nombre])),
+            'activo' => $this->enResguardo(),
+            'sede_id' => $this->sede_id,
+        ];
+    }
+
+    public function urlLector(): string
+    {
+        return route('lost_found.articulos.show', $this->id);
     }
 }

@@ -270,6 +270,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/transporte/{movimiento}/firma/{cual}', [TransporteController::class, 'firma'])->whereNumber('movimiento')->whereIn('cual', ['guardia', 'taxista'])->name('transporte.firma');
     // Fin Padrones: Bitácora de transporte
 
+    // Padrones: Lost & Found (archivo) y Robo — Seguimiento (menú Operación; ver docs/tecnico/lost-found-y-robo.md)
+    Route::controller('App\Http\Controllers\Seguridad\LostFoundController')->group(function () {
+        Route::get('/lost-found', 'index')->name('lost_found.archivo');
+        Route::get('/lost-found/auditoria', 'auditoria')->name('lost_found.auditoria');
+        Route::get('/lost-found/dias-resguardo', 'umbrales')->name('lost_found.umbrales');
+        Route::put('/lost-found/dias-resguardo', 'guardarUmbrales')->name('lost_found.umbrales.guardar');
+        Route::get('/lost-found/articulos/{articulo}', 'show')->whereNumber('articulo')->name('lost_found.articulos.show');
+        Route::post('/lost-found/articulos/{articulo}/cerrar', 'cerrar')->whereNumber('articulo')->middleware('throttle:60,1')->name('lost_found.articulos.cerrar');
+        Route::get('/lost-found/articulos/{articulo}/etiqueta', 'etiqueta')->whereNumber('articulo')->name('lost_found.articulos.etiqueta');
+        Route::get('/lost-found/entregas/{entrega}/firma', 'firma')->whereNumber('entrega')->name('lost_found.entregas.firma');
+    });
+    Route::get('/robos', ['App\Http\Controllers\Seguridad\RoboController', 'index'])->name('robo.index');
+    Route::put('/robos/{novedad}', ['App\Http\Controllers\Seguridad\RoboController', 'update'])->whereNumber('novedad')->name('robo.update');
+    // Fin Padrones: Lost & Found (archivo) y Robo — Seguimiento
+
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
     Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');

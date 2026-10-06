@@ -32,8 +32,8 @@ Todas llevan `empresa_id` (scope de tenant) y autoría `creado_por` / `actualiza
 | `lost_found_articulos` | Artículos encontrados: `numero`, `folio` (`LF-000123`), objeto, `tipo_valor`, marca, color, habitación, lugar, ubicación en bodega, `estatus` (nace `EN_RESGUARDO`), `cerrado_en` | Únicos `(empresa_id, numero)` y `(empresa_id, folio)`. |
 | `lost_found_reportes_perdida` | Reportes de pérdida (`RP-000123`), datos del huésped, `estatus` BUSCANDO / VINCULADO / CERRADO_SIN_HALLAZGO, `articulo_vinculado_id`, `vinculado_en/por` | |
 | `lost_found_umbrales` | Días de resguardo por tipo de valor (ALTO_VALOR 180, ELECTRONICO 180, OTRO 90, ROPA 30, PERECEDERO 2) | La migración siembra los de las empresas existentes; las nuevas usan `LostFoundUmbral::POR_OMISION` hasta configurarlos. |
-| `lost_found_entregas` | Cierre / entrega de un artículo (persona, paquetería, donado, destruido, beneficencia, firma privada) | Lista para la pantalla de cierre de L&F (siguiente ronda). |
-| `robo_detalles` | Circunstancias, sospechoso, parte policial, canalización, `articulo_vinculado_id` | Se crea al despachar un Robo (para la pantalla de seguimiento de Robo, siguiente ronda). |
+| `lost_found_entregas` | Cierre / entrega de un artículo (persona, paquetería, donado, destruido, beneficencia, firma privada) | La registra «Cerrar / Entregar» del [archivo de Lost & Found](lost-found-y-robo.md). |
+| `robo_detalles` | Circunstancias, sospechoso, parte policial, canalización, `articulo_vinculado_id` | Se crea al despachar un Robo; se atiende también en [Robo — Seguimiento](lost-found-y-robo.md). |
 
 ### Mapeo para el importador de SEGCAT
 

@@ -5,11 +5,12 @@ namespace App\Models;
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Días de resguardo por tipo de valor (semáforo de Lost & Found). Cada
  * empresa tiene los suyos; mientras no los configure se usan los de SEGCAT.
- * La pantalla "Días de Resguardo" llega con el archivo de Lost & Found.
+ * Se cambian en "Días de Resguardo" del archivo de Lost & Found.
  */
 class LostFoundUmbral extends Model
 {
@@ -25,6 +26,11 @@ class LostFoundUmbral extends Model
     protected function casts(): array
     {
         return ['dias' => 'integer'];
+    }
+
+    public function editor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'actualizado_por');
     }
 
     /**
