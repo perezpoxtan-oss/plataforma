@@ -54,17 +54,17 @@ html.modo-sol .encabezado-pantalla .icono,
 html.modo-sol .selector-empresa,
 html.modo-sol .tabla-scroll,
 html.modo-sol .acceso-tarjeta,
-html.modo-sol .vista-previa { background: #fff; border: 2px solid #000; box-shadow: none; }
-html.modo-sol .cabecera-movil { background: #fff; border-bottom: 2px solid #000; }
-html.modo-sol .barra-inferior { background: #fff; border-top: 2px solid #000; box-shadow: none; }
-html.modo-sol .menu-lateral { border-left: 2px solid #000; }
-html.modo-sol .offcanvas-header { background: #fff !important; border-bottom: 2px solid #000 !important; }
-html.modo-sol .ficha-card:hover { transform: none; border-color: #000; box-shadow: 0 0 0 2px #000; }
-html.modo-sol .ficha-create { background: #fff; border: 3px dashed #000; }
+html.modo-sol .vista-previa { background: #fff; border: 1px solid #64748b; box-shadow: none; }
+html.modo-sol .cabecera-movil { background: #fff; border-bottom: 1px solid #64748b; }
+html.modo-sol .barra-inferior { background: #fff; border-top: 1px solid #64748b; box-shadow: none; }
+html.modo-sol .menu-lateral { border-left: 1px solid #64748b; }
+html.modo-sol .offcanvas-header { background: #fff !important; border-bottom: 1px solid #64748b !important; }
+html.modo-sol .ficha-card:hover { transform: none; border-color: #000; box-shadow: 0 0 0 2px #1e293b; }
+html.modo-sol .ficha-create { background: #fff; border: 2px dashed #475569; }
 html.modo-sol .ficha-create i, html.modo-sol .ficha-create .titulo-crear { color: #000 !important; }
 html.modo-sol .ficha-footer, html.modo-sol .dialogo-cabecera, html.modo-sol .dialogo-acciones { border-color: #000; }
-html.modo-sol .ficha-meta, html.modo-sol .elemento, html.modo-sol .ficha-dato, html.modo-sol .chip-seccion { background: #fff; color: #000; border: 2px solid #000; }
-html.modo-sol .menu-separador, html.modo-sol .menu-lateral-grupo { border-top: 2px solid #000; }
+html.modo-sol .ficha-meta, html.modo-sol .elemento, html.modo-sol .ficha-dato, html.modo-sol .chip-seccion { background: #fff; color: #000; border: 1px solid #64748b; }
+html.modo-sol .menu-separador, html.modo-sol .menu-lateral-grupo { border-top: 1px solid #64748b; }
 html.modo-sol .menu-lateral-grupo:first-child { border-top: none; }
 
 /* Texto de navegación y marca, siempre oscuro y legible */
@@ -101,24 +101,24 @@ html.modo-sol .select-alcance,
 html.modo-sol .selector-empresa select,
 html.modo-sol .acceso-entrada input,
 html.modo-sol .form-control,
-html.modo-sol .form-select { background: #fff; color: #000; border: 2px solid #000; box-shadow: none; font-weight: 600; }
+html.modo-sol .form-select { background: #fff; color: #000; border: 1px solid #64748b; box-shadow: none; font-weight: 600; }
 html.modo-sol .campo:focus,
 html.modo-sol .buscador input:focus,
 html.modo-sol .acceso-entrada input:focus { border-color: #000; box-shadow: 0 0 0 3px #facc15; }
 html.modo-sol ::placeholder { color: #374151; opacity: 1; }
 html.modo-sol .campo-etiqueta,
 html.modo-sol .acceso-campo label { color: #000; font-weight: 800; }
-html.modo-sol .form-check-input { border: 2px solid #000; }
+html.modo-sol .form-check-input { border: 1px solid #64748b; }
 
 /* Botones con colores sólidos y fuertes */
-html.modo-sol .btn-icono { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .btn-icono { background: #fff; border: 1px solid #64748b; color: #000; }
 html.modo-sol .btn-icono:hover { background: #000; color: #fff; }
 html.modo-sol [class*="tema-"] .btn-icono.editar, html.modo-sol .btn-icono.desactivar { color: #000; }
 html.modo-sol .btn-icono.eliminar { color: #991b1b; }
 html.modo-sol .btn-icono.reactivar { color: #14532d; }
 html.modo-sol .btn-icono.desbloquear { color: #78350f; }
 html.modo-sol [class*="tema-"] .btn-icono:hover { background: #000; color: #fff; }
-html.modo-sol .btn-cerrar, html.modo-sol .btn-cancelar { background: #fff; color: #000; border: 2px solid #000 !important; opacity: 1; }
+html.modo-sol .btn-cerrar, html.modo-sol .btn-cancelar { background: #fff; color: #000; border: 1px solid #64748b !important; opacity: 1; }
 html.modo-sol .btn-rojo { background: #b91c1c; color: #fff; }
 html.modo-sol .btn-indigo { background: #3730a3; color: #fff; }
 html.modo-sol .btn-verde { background: #166534; color: #fff; }
@@ -126,11 +126,11 @@ html.modo-sol .btn-azul { background: #1e40af; color: #fff; }
 html.modo-sol .btn-ambar { background: #92400e; color: #fff; }
 html.modo-sol .btn-guardar-permisos { background: #854d0e; }
 html.modo-sol .btn-guardar-identidad, html.modo-sol .acceso-boton { background: var(--primario-fuerte); }
-html.modo-sol .btn-entrar { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-entrar { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .btn-agregar-elemento { border: 2px dashed #991b1b; color: #991b1b; }
 html.modo-sol .btn-dark { background: #000; border-color: #000; }
 html.modo-sol .btn-outline-dark { border-width: 2px; color: #000; border-color: #000; }
-html.modo-sol .rol-tab { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .rol-tab { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .rol-tab.activo { background: #854d0e; color: #fff; }
 html.modo-sol .menu-lateral-salir { background: #b91c1c; }
 
@@ -140,19 +140,19 @@ html.modo-sol .etiqueta-estado.inactivo,
 html.modo-sol .etiqueta-inactiva,
 html.modo-sol .badge-estado { background: #991b1b; color: #fff; }
 html.modo-sol .etiqueta-estado.bloqueado { background: #92400e; color: #fff; border-color: #000; }
-html.modo-sol .badge-nivel { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .badge-nivel { background: #fff; color: #000; border: 1px solid #64748b; }
 
 /* Tablas y diálogos */
 html.modo-sol .tabla-permisos { background: #fff; }
-html.modo-sol .tabla-permisos th { background: #fff; color: #000; border-bottom: 2px solid #000; }
-html.modo-sol .tabla-permisos td { border-bottom: 1px solid #000; }
+html.modo-sol .tabla-permisos th { background: #fff; color: #000; border-bottom: 1px solid #64748b; }
+html.modo-sol .tabla-permisos td { border-bottom: 1px solid #64748b; }
 html.modo-sol .tabla-permisos tr.fila-area td { background: #e5e7eb; color: #000; }
-html.modo-sol .dialogo { background: #fff; border: 3px solid #000; }
+html.modo-sol .dialogo { background: #fff; border: 2px solid #1e293b; }
 html.modo-sol .dialogo-cabecera, html.modo-sol .dialogo-acciones { background: #fff; }
 html.modo-sol .dialogo::backdrop { background: rgba(0, 0, 0, 0.75); }
-html.modo-sol .alert { border: 2px solid #000; color: #000; font-weight: 600; }
-html.modo-sol .aviso-solo-lectura { background: #fff; border: 2px solid #000; color: #000; }
-html.modo-sol .opcion-asignar { border: 2px solid #000; }
+html.modo-sol .alert { border: 1px solid #64748b; color: #000; font-weight: 600; }
+html.modo-sol .aviso-solo-lectura { background: #fff; border: 1px solid #64748b; color: #000; }
+html.modo-sol .opcion-asignar { border: 1px solid #64748b; }
 html.modo-sol .ficha-card.inactiva, html.modo-sol .area-habitacion.inactiva { opacity: 0.8; }
 
 /* ==========================================================================
@@ -303,9 +303,9 @@ html.modo-noche .opcion-asignar:has(input:checked) { background: rgba(239, 68, 6
 html.modo-noche .ficha-resaltada { box-shadow: 0 0 0 3px #4ade80 !important; }
 
 /* Departamentos y Puestos */
-html.modo-sol .btn-pill-tipo, html.modo-sol .chip-catalogo, html.modo-sol .badge-tipo-admin, html.modo-sol .badge-tipo-op { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-pill-tipo, html.modo-sol .chip-catalogo, html.modo-sol .badge-tipo-admin, html.modo-sol .badge-tipo-op { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .btn-pill-tipo.active { background: #000; color: #fff; }
-html.modo-sol .caja-checks, html.modo-sol .opcion-todas { background: #fff; border: 2px solid #000; }
+html.modo-sol .caja-checks, html.modo-sol .opcion-todas { background: #fff; border: 1px solid #64748b; }
 html.modo-noche .btn-pill-tipo { background: #1e293b; border-color: #334155; color: #cbd5e1; }
 html.modo-noche .btn-pill-tipo:hover { background: #334155; }
 html.modo-noche .btn-pill-tipo.active { background: #0284c7; border-color: #0284c7; color: #fff; }
@@ -314,7 +314,7 @@ html.modo-noche .badge-tipo-op { background: rgba(14, 165, 233, 0.2); color: #7d
 html.modo-noche .chip-catalogo, html.modo-noche .caja-checks, html.modo-noche .opcion-todas { background: #0f172a; border-color: #334155; color: #cbd5e1; }
 
 /* Turnos (índigo) */
-html.modo-sol .turno-horario, html.modo-sol .btn-sedes-turno, html.modo-sol .opcion-sede-turno { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .turno-horario, html.modo-sol .btn-sedes-turno, html.modo-sol .opcion-sede-turno { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .turno-medianoche { color: #312e81; font-weight: 800; }
 html.modo-sol .opcion-sede-turno:has(input:checked) { background: #e0e7ff; }
 html.modo-noche .tema-indigo .btn-icono.editar { color: #a5b4fc; }
@@ -328,8 +328,8 @@ html.modo-noche .opcion-sede-turno:has(input:checked) { background: rgba(99, 102
 /* Colaboradores */
 html.modo-sol .btn-esmeralda { background: #065f46; color: #fff; }
 html.modo-sol .btn-registro-rapido { background: #1e40af; color: #fff; }
-html.modo-sol .avatar-colaborador, html.modo-sol .badge-num-empleado, html.modo-sol .btn-sedes-colab { background: #fff; color: #000; border: 2px solid #000; }
-html.modo-sol .buscador-colab-resultados { background: #fff; border: 2px solid #000; }
+html.modo-sol .avatar-colaborador, html.modo-sol .badge-num-empleado, html.modo-sol .btn-sedes-colab { background: #fff; color: #000; border: 1px solid #64748b; }
+html.modo-sol .buscador-colab-resultados { background: #fff; border: 1px solid #64748b; }
 html.modo-sol button.buscador-colab-item:hover, html.modo-sol button.buscador-colab-item:focus { background: #000; color: #fff; }
 html.modo-noche .tema-esmeralda .btn-icono.editar { color: #34d399; }
 html.modo-noche .avatar-colaborador { background: rgba(16, 185, 129, 0.16); color: #6ee7b7; }
@@ -341,10 +341,10 @@ html.modo-noche .buscador-colab-item { border-bottom-color: var(--borde); color:
 html.modo-noche button.buscador-colab-item:hover, html.modo-noche button.buscador-colab-item:focus { background: var(--superficie-2); }
 
 /* Colaboradores provisionales */
-html.modo-sol .badge-provisional, html.modo-sol .etiqueta-estado.pendiente { background: #fff; color: #000; border: 2px solid #000; }
-html.modo-sol .ficha-pendiente { border: 3px dashed #000; }
+html.modo-sol .badge-provisional, html.modo-sol .etiqueta-estado.pendiente { background: #fff; color: #000; border: 1px solid #64748b; }
+html.modo-sol .ficha-pendiente { border: 2px dashed #475569; }
 html.modo-sol .texto-provisional { color: #000; }
-html.modo-sol .caja-parecidos, html.modo-sol .opcion-parecido { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .caja-parecidos, html.modo-sol .opcion-parecido { background: #fff; border: 1px solid #64748b; color: #000; }
 html.modo-noche .badge-provisional, html.modo-noche .etiqueta-estado.pendiente { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
 html.modo-noche .texto-provisional { color: #fcd34d; }
 html.modo-noche .ficha-provisional { background: rgba(245, 158, 11, 0.06) !important; }
@@ -360,10 +360,10 @@ html.modo-sol .pantalla-proveedores .ext-badge,
 html.modo-sol .pantalla-proveedores .btn-ficha,
 html.modo-sol .ficha-header-prov,
 html.modo-sol .ficha-proveedor .fila-item,
-html.modo-sol .chip-sede { background: #fff; color: #000; border: 2px solid #000; box-shadow: none; }
+html.modo-sol .chip-sede { background: #fff; color: #000; border: 1px solid #64748b; box-shadow: none; }
 html.modo-sol .pantalla-proveedores .btn-pill-tipo.active { background: #000; border-color: #000; color: #fff; }
 html.modo-sol .tab-ficha { color: #000; }
-html.modo-sol .tab-ficha.activo { color: #000; border-bottom: 4px solid #000; }
+html.modo-sol .tab-ficha.activo { color: #000; border-bottom: 2px solid #1e293b; }
 html.modo-sol .btn-agregar-padron { background: #000; color: #fff; }
 html.modo-sol .ficha-proveedor .fila-item.inactivo { opacity: 0.8; }
 html.modo-noche .pantalla-proveedores .meta-lista,
@@ -387,11 +387,11 @@ html.modo-noche .ficha-proveedor .fila-titulo a:hover { color: #6ee7b7; }
 html.modo-noche .errores-rapido-proveedor { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border-color: #7f1d1d; }
 /* Fin Padrones: Proveedores */
 /* Padrón de personas */
-html.modo-sol .insignia-persona, html.modo-sol .estado-persona, html.modo-sol .btn-editar-perfil { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .insignia-persona, html.modo-sol .estado-persona, html.modo-sol .btn-editar-perfil { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .estado-persona.baja { text-decoration: underline; }
 html.modo-sol .btn-editar-perfil:hover { background: #000; color: #fff; }
 html.modo-sol .tema-azul .btn-pill-tipo.active { background: #000; border-color: #000; color: #fff; }
-html.modo-sol .caja-empresa-persona, html.modo-sol .aviso-desde-proveedor { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .caja-empresa-persona, html.modo-sol .aviso-desde-proveedor { background: #fff; border: 1px solid #64748b; color: #000; }
 html.modo-sol .caja-empresa-persona .campo-etiqueta { color: #000; }
 html.modo-noche .insignia-persona.visitante { background: rgba(59, 130, 246, 0.16); color: #93c5fd; border-color: #1e40af; }
 html.modo-noche .insignia-persona.proveedor { background: rgba(34, 197, 94, 0.14); color: #86efac; border-color: #166534; }
@@ -410,10 +410,10 @@ html.modo-noche .caja-empresa-persona .campo-etiqueta { color: #86efac; }
 html.modo-noche .aviso-desde-proveedor { background: rgba(59, 130, 246, 0.12); border-color: #1e40af; color: #bfdbfe; }
 /* Fin Padrón de personas */
 /* Padrón Vehicular */
-html.modo-sol .veh-placas, html.modo-sol .calcomania-placas { background: #fff; color: #000; border: 3px solid #000; }
-html.modo-sol .badge-prop, html.modo-sol .caja-propietario { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .veh-placas, html.modo-sol .calcomania-placas { background: #fff; color: #000; border: 2px solid #1e293b; }
+html.modo-sol .badge-prop, html.modo-sol .caja-propietario { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .meta-vehiculo, html.modo-sol .texto-asociado, html.modo-sol .texto-padron-de { color: #000 !important; font-weight: 700; }
-html.modo-sol .meta-vehiculo { border-top: 2px dashed #000; }
+html.modo-sol .meta-vehiculo { border-top: 2px dashed #475569; }
 html.modo-sol .tema-pizarra .btn-pill-tipo.active, html.modo-sol .btn-pizarra { background: #000; border-color: #000; color: #fff; }
 html.modo-sol .btn-icono.imprimir-qr { color: #000; }
 html.modo-noche .veh-placas { background: #0f172a; color: #f1f5f9; border-color: #475569; }
@@ -436,7 +436,7 @@ html.modo-noche .btn-pizarra { background: #475569; border: 1px solid #64748b; }
 html.modo-noche .btn-cerrar-calcomania { background: var(--superficie); color: #e2e8f0; border-color: var(--borde); }
 /* Fin Padrón Vehicular */
 /* Lector universal */
-html.modo-sol .btn-lector, html.modo-sol .lector-elegido, html.modo-sol .lector-opcion { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-lector, html.modo-sol .lector-elegido, html.modo-sol .lector-opcion { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .btn-lector:hover { background: #000; color: #fff; }
 html.modo-sol .lector-cambiar { color: #000; }
 html.modo-noche .btn-lector { background: var(--superficie-2); border-color: var(--borde); color: #93c5fd; }
@@ -449,16 +449,16 @@ html.modo-noche .lector-estado.error { color: #fca5a5; }
 /* Fin Lector universal */
 /* Catálogo de llaves */
 html.modo-sol .badge-tipo-llave, html.modo-sol .pastilla-alcance, html.modo-sol .mini-horario, html.modo-sol .meta-llave,
-html.modo-sol .mini-etiqueta, html.modo-sol .caja-id-externo, html.modo-sol .caja-cobro, html.modo-sol .dialogo-llave .caja-lugares { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .mini-etiqueta, html.modo-sol .caja-id-externo, html.modo-sol .caja-cobro, html.modo-sol .dialogo-llave .caja-lugares { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .meta-llave, html.modo-sol .llave-descripcion, html.modo-sol .llave-responsable { color: #000; font-weight: 700; }
 html.modo-sol .badge-caducidad.ok { background: #166534; color: #fff; }
 html.modo-sol .badge-caducidad.pronto { background: #92400e; color: #fff; }
 html.modo-sol .badge-caducidad.vencida { background: #991b1b; color: #fff; }
 html.modo-sol .etiqueta-estado.en-uso { background: #92400e; color: #fff; }
-html.modo-sol .btn-accion-llaves { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-accion-llaves { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .btn-accion-llaves.oscuro, html.modo-sol .btn-accion-llaves.activo, html.modo-sol .tema-indigo .btn-pill-tipo.active { background: #000; color: #fff; border-color: #000; }
-html.modo-sol .ficha-llave.marcada { border: 3px solid #000; box-shadow: none; }
-html.modo-sol .btn-agregar-horario, html.modo-sol .btn-quitar-horario { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .ficha-llave.marcada { border: 2px solid #1e293b; box-shadow: none; }
+html.modo-sol .btn-agregar-horario, html.modo-sol .btn-quitar-horario { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-noche .badge-tipo-llave, html.modo-noche .pastilla-alcance { background: var(--superficie-2); color: #cbd5e1; border-color: var(--borde); }
 html.modo-noche .meta-llave { background: var(--superficie-2); border-color: var(--borde); color: #cbd5e1; }
 html.modo-noche .meta-llave strong { color: #e2e8f0; }
@@ -489,10 +489,10 @@ html.modo-noche .panel-etiquetas-llaves { background: var(--superficie); color: 
 /* Fin Catálogo de llaves */
 /* Padrones: Gafetes y Vouchers de reposición */
 html.modo-sol .gafete-meta, html.modo-sol .voucher-como, html.modo-sol .voucher-folio, html.modo-sol .caja-cobro,
-html.modo-sol .aviso-voucher-generado, html.modo-sol .aviso-sin-marcar, html.modo-sol .filtro-fecha, html.modo-sol .btn-marcar-todos { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .aviso-voucher-generado, html.modo-sol .aviso-sin-marcar, html.modo-sol .filtro-fecha, html.modo-sol .btn-marcar-todos { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .gafete-meta strong, html.modo-sol .voucher-meta, html.modo-sol .voucher-meta strong, html.modo-sol .gafete-codigo,
 html.modo-sol .gafete-nomenclatura, html.modo-sol .voucher-articulo, html.modo-sol .voucher-como span, html.modo-sol .casilla-cobro { color: #000 !important; }
-html.modo-sol .estado-gafete, html.modo-sol .voucher-cobro { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .estado-gafete, html.modo-sol .voucher-cobro { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .estado-gafete.no-disponible, html.modo-sol .voucher-cobro.con-cobro { background: #000; color: #fff; }
 html.modo-sol .btn-gafetes, html.modo-sol .btn-ver-voucher, html.modo-sol .tema-gafetes .btn-pill-tipo.active { background: #000; border-color: #000; color: #fff; }
 html.modo-sol .casilla-imprimir input, html.modo-sol .casilla-cobro input { accent-color: #000; }
@@ -527,17 +527,17 @@ html.modo-noche .btn-limpiar-filtros { color: #cbd5e1; }
 html.modo-noche .btn-limpiar-filtros:hover { background: var(--superficie-2); color: #fff; }
 /* Fin Padrones: Gafetes y Vouchers de reposición */
 /* Padrones: Equipos de seguridad y Estacionamientos */
-html.modo-sol .badge-estado-eq, html.modo-sol .distintivo-zona, html.modo-sol .estado-fijo-eq, html.modo-sol .aviso-baja-eq { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .badge-estado-eq, html.modo-sol .distintivo-zona, html.modo-sol .estado-fijo-eq, html.modo-sol .aviso-baja-eq { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .estado-eq-baja, html.modo-sol .texto-lleno { color: #b91c1c; }
 html.modo-sol .eq-serie, html.modo-sol .eq-tipo, html.modo-sol .eq-marca, html.modo-sol .eq-observaciones, html.modo-sol .eq-nfc, html.modo-sol .nombre-zona, html.modo-sol .ocupacion-zona { color: #000; }
-html.modo-sol .eq-pie { border-top: 2px solid #000; }
+html.modo-sol .eq-pie { border-top: 1px solid #64748b; }
 html.modo-sol .pantalla-equipos .btn-pill-tipo.active, html.modo-sol .btn-oscuro, html.modo-sol .btn-nueva-zona, html.modo-sol .btn-qr-eq.imprimir { background: #000; border-color: #000; color: #fff; }
-html.modo-sol .cupo-barra { background: #fff; border: 2px solid #000; height: 14px; }
+html.modo-sol .cupo-barra { background: #fff; border: 1px solid #64748b; height: 14px; }
 html.modo-sol .cupo-barra-fill { background: #000; }
 html.modo-sol .cupo-barra-fill.lleno { background: #b91c1c; }
 html.modo-sol .ficha-zona.tipo-estac, html.modo-sol .ficha-zona.tipo-descarga { border-top-width: 6px; }
 html.modo-sol .ficha-zona.tipo-estac { border-top-color: #000; }
-html.modo-sol .pantalla-equipos .grupo-monto-simbolo { background: #fff; color: #000; border: 2px solid #000; border-right: none; }
+html.modo-sol .pantalla-equipos .grupo-monto-simbolo { background: #fff; color: #000; border: 1px solid #64748b; border-right: none; }
 html.modo-noche .pantalla-equipos .ficha-create { background: rgba(148,163,184,0.06); border-color: #475569; }
 html.modo-noche .pantalla-equipos .ficha-create i, html.modo-noche .pantalla-equipos .ficha-create .titulo-crear { color: #cbd5e1; }
 html.modo-noche .pantalla-equipos .btn-pill-tipo.active { background: #64748b; border-color: #64748b; }
@@ -561,8 +561,8 @@ html.modo-noche .texto-lleno { color: #fca5a5; }
 /* Rutas de transporte */
 html.modo-sol .rutas-sentido, html.modo-sol .rutas-proximos-col, html.modo-sol .rutas-aviso-suspendidas, html.modo-sol .rutas-fila-horarios li,
 html.modo-sol .rutas-sede-icono, html.modo-sol .btn-detalle-sede, html.modo-sol .rutas-dia, html.modo-sol .rutas-sentido-opcion,
-html.modo-sol .btn-agregar-paradero, html.modo-sol .btn-agregar-horario, html.modo-sol .rutas-crear-mini { background: #fff; color: #000; border: 2px solid #000; }
-html.modo-sol .rutas-fila, html.modo-sol .rutas-horario { background: #fff; border: 2px solid #000; }
+html.modo-sol .btn-agregar-paradero, html.modo-sol .btn-agregar-horario, html.modo-sol .rutas-crear-mini { background: #fff; color: #000; border: 1px solid #64748b; }
+html.modo-sol .rutas-fila, html.modo-sol .rutas-horario { background: #fff; border: 1px solid #64748b; }
 html.modo-sol .rutas-fila.inactiva { border-style: dashed; }
 html.modo-sol .rutas-proximos-titulo, html.modo-sol .rutas-proximos-item, html.modo-sol .rutas-transportistas, html.modo-sol .rutas-fila-meta,
 html.modo-sol .rutas-sede-empresa, html.modo-sol .rutas-horario-titulo, html.modo-sol .rutas-fila-horarios strong, html.modo-sol .rutas-pestana { color: #000 !important; font-weight: 700; }
@@ -571,7 +571,7 @@ html.modo-sol .rutas-pestana.activa { border-bottom-color: #000; text-decoration
 html.modo-sol .rutas-dia:has(input:checked), html.modo-sol .rutas-sentido-opcion:has(input:checked), html.modo-sol .btn-rutas,
 html.modo-sol .btn-detalle-sede:hover { background: #000; color: #fff; border-color: #000; }
 html.modo-sol .rutas-icono-titulo, html.modo-sol .rutas-icono-paradero, html.modo-sol .btn-icono.clonar, html.modo-sol .btn-icono.imprimir-hoja { color: #000; }
-html.modo-sol .btn-quitar-fila { background: #fff; color: #991b1b; border: 2px solid #000; }
+html.modo-sol .btn-quitar-fila { background: #fff; color: #991b1b; border: 1px solid #64748b; }
 html.modo-noche .rutas-sede-icono { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
 html.modo-noche .rutas-sede-titulo h2 a { color: var(--texto); }
 html.modo-noche .rutas-sede-empresa { color: #93c5fd; }
@@ -609,18 +609,18 @@ html.modo-noche .rutas-paraderos-encabezado { color: #7c8ba1; }
 html.modo-noche .rutas-separador { border-top-color: var(--borde); }
 /* Fin Rutas de transporte */
 /* Firma autógrafa: el recuadro siempre blanco (la tinta es oscura) */
-html.modo-sol .firma-lienzo { border: 3px solid #000; }
+html.modo-sol .firma-lienzo { border: 2px solid #1e293b; }
 html.modo-noche .firma-lienzo { border-color: #475569; }
 /* Fin Firma autógrafa */
 /* Bitácora de accesos */
-html.modo-sol .ficha-acceso { background: #fff; border: 2px solid #000; border-top-width: 6px; box-shadow: none; }
+html.modo-sol .ficha-acceso { background: #fff; border: 1px solid #64748b; border-top-width: 6px; box-shadow: none; }
 html.modo-sol .ficha-acceso.es-en_sitio { border-top-color: #b91c1c; }
 html.modo-sol .ficha-acceso.es-pendientes, html.modo-sol .ficha-acceso.tour-fuera { border-top-color: #92400e; }
 html.modo-sol .ficha-acceso.es-historial { border-top-color: #166534; }
-html.modo-sol .badge-acceso, html.modo-sol .estado-acceso, html.modo-sol .badge-hab { border: 2px solid #000; }
+html.modo-sol .badge-acceso, html.modo-sol .estado-acceso, html.modo-sol .badge-hab { border: 1px solid #64748b; }
 html.modo-sol .badge-acceso.tipo-visitante, html.modo-sol .badge-acceso.tipo-contratista { color: #000; }
 html.modo-sol .gafete-box, html.modo-sol .ficha-acceso-tiempos, html.modo-sol .aviso-fuera, html.modo-sol .aviso-sin-permiso,
-html.modo-sol .caja-gafete, html.modo-sol .acceso-sugerencias, html.modo-sol .resultado-salida { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .caja-gafete, html.modo-sol .acceso-sugerencias, html.modo-sol .resultado-salida { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .ficha-acceso-nombre, html.modo-sol .ficha-acceso-datos, html.modo-sol .ficha-acceso-datos strong, html.modo-sol .ficha-acceso-empresa,
 html.modo-sol .ficha-acceso-sede, html.modo-sol .gafete-mini, html.modo-sol .lista-acompanantes li, html.modo-sol .resultado-salida-dato,
 html.modo-sol .accesos-pestana, html.modo-sol .nota-pendiente { color: #000 !important; }
@@ -630,12 +630,12 @@ html.modo-sol .accesos-pestana.activa { border-bottom-color: #000; text-decorati
 html.modo-sol .lista-acompanantes { border-left-color: #000; }
 html.modo-sol .opcion-tipo, html.modo-sol .modo-opt, html.modo-sol .btn-contador, html.modo-sol .btn-acomp, html.modo-sol .btn-salida-rapida,
 html.modo-sol .btn-accion-acceso.temporal, html.modo-sol .btn-accion-acceso.zona, html.modo-sol .btn-siguiente-ingreso, html.modo-sol .btn-exportar-accesos,
-html.modo-sol .btn-limpiar-accesos, html.modo-sol .btn-decision.distinta { background: #fff; color: #000; border: 2px solid #000 !important; }
+html.modo-sol .btn-limpiar-accesos, html.modo-sol .btn-decision.distinta { background: #fff; color: #000; border: 1px solid #64748b !important; }
 html.modo-sol .opcion-tipo:has(input:checked), html.modo-sol .modo-opt:has(input:checked), html.modo-sol .btn-nuevo-ingreso, html.modo-sol .btn-guardar-ingreso,
-html.modo-sol .btn-accion-acceso.salida, html.modo-sol .btn-filtrar-accesos { background: #000; color: #fff; border: 2px solid #000; }
-html.modo-sol .btn-accion-acceso.autorizar, html.modo-sol .btn-decision.misma { background: #14532d; color: #fff; border: 2px solid #000; }
-html.modo-sol .btn-accion-acceso.regreso, html.modo-sol .btn-ambar-acceso { background: #fde047; color: #000; border: 2px solid #000; }
-html.modo-sol .caja-persona-repetida.alert-danger { background: #fff; color: #000; border: 3px solid #000; }
+html.modo-sol .btn-accion-acceso.salida, html.modo-sol .btn-filtrar-accesos { background: #000; color: #fff; border: 1px solid #64748b; }
+html.modo-sol .btn-accion-acceso.autorizar, html.modo-sol .btn-decision.misma { background: #14532d; color: #fff; border: 1px solid #64748b; }
+html.modo-sol .btn-accion-acceso.regreso, html.modo-sol .btn-ambar-acceso { background: #fde047; color: #000; border: 1px solid #64748b; }
+html.modo-sol .caja-persona-repetida.alert-danger { background: #fff; color: #000; border: 2px solid #1e293b; }
 html.modo-sol .numero-acompanante { background: #000; color: #fff; }
 html.modo-noche .ficha-acceso { background: var(--superficie); border-color: var(--borde); }
 html.modo-noche .ficha-acceso.es-en_sitio { border-top-color: #ef4444; }
@@ -717,41 +717,41 @@ html.modo-noche .firma-registrada { border-color: #475569; }
 html.modo-sol .ficha-prestamo, html.modo-sol .ficha-resguardo { opacity: 1; }
 html.modo-sol .ficha-prestamo.fuera, html.modo-sol .ficha-resguardo.activa { border-top: 6px solid #b45309; }
 html.modo-sol .ficha-prestamo.dentro, html.modo-sol .ficha-resguardo.devuelta { border-top: 6px solid #166534; }
-html.modo-sol .ficha-prestamo.anulada { border-top: 6px solid #000; }
-html.modo-sol .pestanas-prestamo { border-bottom: 3px solid #000; }
+html.modo-sol .ficha-prestamo.anulada { border-top: 2px solid #1e293b; }
+html.modo-sol .pestanas-prestamo { border-bottom: 2px solid #1e293b; }
 html.modo-sol .pestanas-prestamo button { color: #000; }
-html.modo-sol .pestanas-prestamo button.activa { border-bottom: 4px solid #000; text-decoration: underline; }
-html.modo-sol .llave-box { background: #fff; border: 3px solid #000; color: #b91c1c; }
+html.modo-sol .pestanas-prestamo button.activa { border-bottom: 2px solid #1e293b; text-decoration: underline; }
+html.modo-sol .llave-box { background: #fff; border: 2px solid #1e293b; color: #b91c1c; }
 html.modo-sol .id-box, html.modo-sol .id-box-mini { background: #fff; color: #7f1d1d; border: 2px solid #7f1d1d; }
-html.modo-sol .badge-prestamo.fuera, html.modo-sol .badge-resguardo.en-campo { background: #facc15; color: #000; border: 2px solid #000; }
+html.modo-sol .badge-prestamo.fuera, html.modo-sol .badge-resguardo.en-campo { background: #facc15; color: #000; border: 1px solid #64748b; }
 html.modo-sol .badge-prestamo.dentro, html.modo-sol .badge-resguardo.cerrado { background: #14532d; color: #fff; }
 html.modo-sol .badge-prestamo.anulada { background: #000; color: #fff; }
-html.modo-sol .prestamo-detalle, html.modo-sol .caja-resguardante, html.modo-sol .eq-lista, html.modo-sol .caja-equipos-lote, html.modo-sol .linea-tiempo-datos { background: #fff; border: 2px solid #000; }
-html.modo-sol .btn-prestar-llave, html.modo-sol .btn-registrar-prestamo { background: #facc15; color: #000; border: 2px solid #000; }
-html.modo-sol .btn-recibir-llave, html.modo-sol .btn-recibir-lote, html.modo-sol .btn-nuevo-resguardo, html.modo-sol .btn-guardar-resguardo { background: #14532d; border: 2px solid #000; color: #fff; }
-html.modo-sol .btn-historial-llave, html.modo-sol .btn-anular-prestamo, html.modo-sol .btn-resguardo-firma, html.modo-sol .btn-resguardo-hoja, html.modo-sol .btn-excel-llaves { border: 2px solid #000; color: #000; background: #fff; }
-html.modo-sol .eq-resguardo, html.modo-sol .llave-usada-por { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .prestamo-detalle, html.modo-sol .caja-resguardante, html.modo-sol .eq-lista, html.modo-sol .caja-equipos-lote, html.modo-sol .linea-tiempo-datos { background: #fff; border: 1px solid #64748b; }
+html.modo-sol .btn-prestar-llave, html.modo-sol .btn-registrar-prestamo { background: #facc15; color: #000; border: 1px solid #64748b; }
+html.modo-sol .btn-recibir-llave, html.modo-sol .btn-recibir-lote, html.modo-sol .btn-nuevo-resguardo, html.modo-sol .btn-guardar-resguardo { background: #14532d; border: 1px solid #64748b; color: #fff; }
+html.modo-sol .btn-historial-llave, html.modo-sol .btn-anular-prestamo, html.modo-sol .btn-resguardo-firma, html.modo-sol .btn-resguardo-hoja, html.modo-sol .btn-excel-llaves { border: 1px solid #64748b; color: #000; background: #fff; }
+html.modo-sol .eq-resguardo, html.modo-sol .llave-usada-por { background: #fff; border: 1px solid #64748b; color: #000; }
 html.modo-sol .folio-resguardo, html.modo-sol .folio-prestamo, html.modo-sol .llave-historial-enlace { color: #000; }
 /* Fin Operación: Préstamo de llaves y Responsivas */
 /* Bitácora de Novedades */
 html.modo-sol .ficha-novedad, html.modo-sol .texto-novedad, html.modo-sol .preguntas-base, html.modo-sol .reporte-inicial,
-html.modo-sol .tarjeta-articulo, html.modo-sol .tarjeta-perdida, html.modo-sol .ficha-hecho, html.modo-sol .resultado-coincidencia { background: #fff; border: 2px solid #000; }
+html.modo-sol .tarjeta-articulo, html.modo-sol .tarjeta-perdida, html.modo-sol .ficha-hecho, html.modo-sol .resultado-coincidencia { background: #fff; border: 1px solid #64748b; }
 html.modo-sol .ficha-novedad.abierta { border-top: 6px solid #b91c1c; }
 html.modo-sol .ficha-novedad.resuelta { border-top: 6px solid #047857; }
 html.modo-sol .badge-categoria.abierta { background: #b91c1c; color: #fff; border-color: #000; }
 html.modo-sol .badge-categoria.resuelta { background: #047857; color: #fff; border-color: #000; }
-html.modo-sol .pastilla-pendiente-turno, html.modo-sol .badge-semaforo { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .pastilla-pendiente-turno, html.modo-sol .badge-semaforo { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .folio-novedad, html.modo-sol .pestanas-novedades button { color: #000; }
 html.modo-sol .pestanas-novedades button.active { border-bottom-color: #000; text-decoration: underline; }
-html.modo-sol .btn-nuevo-ticket, html.modo-sol .btn-despachar { background: #b91c1c; color: #fff; border: 2px solid #000; }
+html.modo-sol .btn-nuevo-ticket, html.modo-sol .btn-despachar { background: #b91c1c; color: #fff; border: 1px solid #64748b; }
 html.modo-sol .btn-expediente { border-width: 2px; color: #000; border-color: #000; }
 html.modo-sol .btn-guardar-expediente { background: #000; color: #fff; }
-html.modo-sol .btn-reabrir { background: #facc15; color: #000; border: 2px solid #000 !important; }
-html.modo-sol .btn-fui-yo, html.modo-sol .btn-ver-detalle, html.modo-sol .btn-agregar-fila, html.modo-sol .btn-accion-novedades, html.modo-sol .btn-mini { background: #fff; color: #000; border: 2px solid #000; }
-html.modo-sol .expediente-formatos .accordion-item { border: 2px solid #000; }
+html.modo-sol .btn-reabrir { background: #facc15; color: #000; border: 1px solid #64748b !important; }
+html.modo-sol .btn-fui-yo, html.modo-sol .btn-ver-detalle, html.modo-sol .btn-agregar-fila, html.modo-sol .btn-accion-novedades, html.modo-sol .btn-mini { background: #fff; color: #000; border: 1px solid #64748b; }
+html.modo-sol .expediente-formatos .accordion-item { border: 1px solid #64748b; }
 html.modo-sol .expediente-formatos .accordion-button, html.modo-sol .expediente-formatos .accordion-button:not(.collapsed) { background: #fff; color: #000; }
 html.modo-sol .minuto-a-minuto { background: #000; }
-html.modo-sol .log-notas { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .log-notas { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .nota-log.sistema, html.modo-sol .nota-log.vacia { color: #000; }
 html.modo-sol .nota-log.reapertura { color: #92400e; }
 html.modo-sol .body-part, html.modo-sol .node-dot { stroke: #000; stroke-width: 2; }
@@ -825,21 +825,21 @@ html.modo-noche .estado-seccion.en-curso { background: rgba(59, 130, 246, 0.2); 
 html.modo-noche .estado-seccion.pendiente, html.modo-noche .estado-seccion.no-aplica { background: var(--superficie-2); color: #94a3b8; }
 html.modo-noche .aviso-sin-firma { background: rgba(245, 158, 11, 0.12); border-color: #92400e; color: #fcd34d; }
 html.modo-noche .btn-imprimir-pase { background: #e2e8f0; color: #0f172a; }
-html.modo-sol .pase-card, html.modo-sol .seccion-firmas, html.modo-sol .fila-firma, html.modo-sol .articulo-pase, html.modo-sol .articulo-fila, html.modo-sol .caja-firma-pase { border: 2px solid #000; background: #fff; color: #000; }
+html.modo-sol .pase-card, html.modo-sol .seccion-firmas, html.modo-sol .fila-firma, html.modo-sol .articulo-pase, html.modo-sol .articulo-fila, html.modo-sol .caja-firma-pase { border: 1px solid #64748b; background: #fff; color: #000; }
 html.modo-sol .pase-card { border-left: 8px solid var(--pase-color); }
 html.modo-sol .articulo-fila { border-left: 6px solid #1d4ed8; }
 html.modo-sol .pase-meta, html.modo-sol .pase-ruta { color: #000; font-weight: 600; }
-html.modo-sol .btn-ver-pase, html.modo-sol .btn-firmar-rol, html.modo-sol .btn-atajo-pase { border: 2px solid #000; color: #000; font-weight: 800; }
-html.modo-sol .badge-pase { border: 2px solid #000; }
-html.modo-sol .estado-seccion { border: 2px solid #000; color: #000; }
-html.modo-sol .campo-solo-lectura { background: #f1f5f9; color: #000; border: 2px solid #000; }
-html.modo-sol .aviso-sin-firma { border: 2px solid #000; color: #000; background: #fef3c7; }
-html.modo-sol .filtros-pases .btn-outline-warning { color: #78350f; border: 2px solid #000; }
-html.modo-sol .filtros-pases .btn-outline-primary, html.modo-sol .filtros-pases .btn-outline-danger, html.modo-sol .filtros-pases .btn-outline-dark { border: 2px solid #000; }
+html.modo-sol .btn-ver-pase, html.modo-sol .btn-firmar-rol, html.modo-sol .btn-atajo-pase { border: 1px solid #64748b; color: #000; font-weight: 800; }
+html.modo-sol .badge-pase { border: 1px solid #64748b; }
+html.modo-sol .estado-seccion { border: 1px solid #64748b; color: #000; }
+html.modo-sol .campo-solo-lectura { background: #f1f5f9; color: #000; border: 1px solid #64748b; }
+html.modo-sol .aviso-sin-firma { border: 1px solid #64748b; color: #000; background: #fef3c7; }
+html.modo-sol .filtros-pases .btn-outline-warning { color: #78350f; border: 1px solid #64748b; }
+html.modo-sol .filtros-pases .btn-outline-primary, html.modo-sol .filtros-pases .btn-outline-danger, html.modo-sol .filtros-pases .btn-outline-dark { border: 1px solid #64748b; }
 /* Fin Pases de salida */
 /* Bitácora de transporte */
 html.modo-sol .filtros-transporte, html.modo-sol .resumen-transporte > div, html.modo-sol .transporte-card, html.modo-sol .transporte-caja-pago,
-html.modo-sol .caja-normal, html.modo-sol .caja-taxi, html.modo-sol .taxi-fila, html.modo-sol .aviso-tope, html.modo-sol .tabla-reporte-transporte { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .caja-normal, html.modo-sol .caja-taxi, html.modo-sol .taxi-fila, html.modo-sol .aviso-tope, html.modo-sol .tabla-reporte-transporte { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .transporte-card { border-left-width: 8px; }
 html.modo-sol .transporte-card.taxi { border-left-style: double; }
 html.modo-sol .transporte-card.anulada { opacity: 1; border-style: dashed; }
@@ -848,10 +848,10 @@ html.modo-sol .resumen-transporte .valor, html.modo-sol .resumen-transporte .eti
 html.modo-sol .transporte-info-ruta, html.modo-sol .transporte-sin-rutas, html.modo-sol .transporte-justificacion, html.modo-sol .transporte-horario,
 html.modo-sol .transporte-pax-numero, html.modo-sol .transporte-pax-numero i { color: #000 !important; font-weight: 800; }
 html.modo-sol .badge-mov, html.modo-sol .pill-estatus, html.modo-sol .vobo, html.modo-sol .chip-pasajero, html.modo-sol .rango-rapido, html.modo-sol .transporte-opcion,
-html.modo-sol .btn-planilla, html.modo-sol .btn-reportes, html.modo-sol .btn-alta-pasajero, html.modo-sol .transporte-acciones .btn-siguiente, html.modo-sol .transporte-horario { background: #fff; color: #000; border: 2px solid #000 !important; }
+html.modo-sol .btn-planilla, html.modo-sol .btn-reportes, html.modo-sol .btn-alta-pasajero, html.modo-sol .transporte-acciones .btn-siguiente, html.modo-sol .transporte-horario { background: #fff; color: #000; border: 1px solid #64748b !important; }
 html.modo-sol .rango-rapido.activo, html.modo-sol .transporte-opcion:has(input:checked), html.modo-sol .btn-registrar-movimiento, html.modo-sol .btn-transporte,
 html.modo-sol .btn-filtrar, html.modo-sol .btn-exportar, html.modo-sol .btn-agregar-taxi, html.modo-sol .btn-autorizar, html.modo-sol .pax-contador,
-html.modo-sol .badge-tipo-registro, html.modo-sol .badge-anulado { background: #000; color: #fff; border: 2px solid #000; }
+html.modo-sol .badge-tipo-registro, html.modo-sol .badge-anulado { background: #000; color: #fff; border: 1px solid #64748b; }
 html.modo-sol .pill-estatus.no-llego { text-decoration: underline; }
 html.modo-sol .chip-pasajero button { color: #000; }
 html.modo-sol .tabla-reporte-transporte th { background: #000; }
@@ -901,7 +901,7 @@ html.modo-noche .transporte-firmas img { border-color: #475569; }
 
 /* Lost & Found (archivo) y Robo — Seguimiento */
 html.modo-sol .fila-articulo, html.modo-sol .caso-robo, html.modo-sol .umbral-card, html.modo-sol .resumen-cierre-lf,
-html.modo-sol .opcion-cierre-lf, html.modo-sol .opcion-recibe-lf, html.modo-sol .firma-entrega-lf { background: #fff; border: 2px solid #000; }
+html.modo-sol .opcion-cierre-lf, html.modo-sol .opcion-recibe-lf, html.modo-sol .firma-entrega-lf { background: #fff; border: 1px solid #64748b; }
 html.modo-sol .fila-articulo, html.modo-sol .ficha-articulo-lf { border-left-width: 8px; }
 html.modo-sol .fila-articulo.rojo, html.modo-sol .ficha-articulo-lf.rojo { border-left-color: #b91c1c; }
 html.modo-sol .fila-articulo.amarillo, html.modo-sol .fila-articulo.pendiente, html.modo-sol .ficha-articulo-lf.amarillo { border-left-color: #b45309; }
@@ -909,23 +909,23 @@ html.modo-sol .fila-articulo.verde, html.modo-sol .ficha-articulo-lf.verde, html
 html.modo-sol .fila-articulo.cerrado { border-left-color: #000; }
 html.modo-sol .caso-robo { border-left: 8px solid #b91c1c; }
 html.modo-sol .caso-robo.resuelto { border-left-color: #047857; }
-html.modo-sol .mes-header-lf { background: #000; border: 2px solid #000; }
+html.modo-sol .mes-header-lf { background: #000; border: 1px solid #64748b; }
 html.modo-sol .folio-lf, html.modo-sol .leyenda-semaforo-lf, html.modo-sol .subtitulo-lf { color: #000; }
-html.modo-sol .semaforo-punto { border: 2px solid #000; width: 14px; height: 14px; }
+html.modo-sol .semaforo-punto { border: 1px solid #64748b; width: 14px; height: 14px; }
 html.modo-sol .semaforo-punto.rojo { background: #b91c1c; }
 html.modo-sol .semaforo-punto.amarillo { background: #facc15; }
 html.modo-sol .semaforo-punto.verde { background: #047857; }
 html.modo-sol .dias-lf.rojo { color: #7f1d1d; }
 html.modo-sol .dias-lf.amarillo { color: #78350f; }
-html.modo-sol .badge-tipo-lf, html.modo-sol .badge-robo, html.modo-sol .estatus-lf { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .badge-tipo-lf, html.modo-sol .badge-robo, html.modo-sol .estatus-lf { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .estatus-lf.resguardo, html.modo-sol .badge-robo.ambar { background: #facc15; }
 html.modo-sol .estatus-lf.cerrado, html.modo-sol .badge-robo.verde { background: #047857; color: #fff; }
 html.modo-sol .badge-robo.rojo { background: #b91c1c; color: #fff; }
-html.modo-sol .btn-lf, html.modo-sol .btn-abrir-robo { background: #fff; color: #000; border: 2px solid #000; }
-html.modo-sol .btn-lf.grande, html.modo-sol .btn-registrar-cierre, html.modo-sol .opcion-cierre-lf.elegida { background: #facc15; color: #000; border: 2px solid #000 !important; }
-html.modo-sol .btn-guardar-robo { background: #b91c1c; color: #fff; border: 2px solid #000 !important; }
-html.modo-sol .btn-accion-novedades.oscuro { background: #000; color: #fff; border: 2px solid #000; }
-html.modo-sol .btn-accion-novedades.azul { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-lf, html.modo-sol .btn-abrir-robo { background: #fff; color: #000; border: 1px solid #64748b; }
+html.modo-sol .btn-lf.grande, html.modo-sol .btn-registrar-cierre, html.modo-sol .opcion-cierre-lf.elegida { background: #facc15; color: #000; border: 1px solid #64748b !important; }
+html.modo-sol .btn-guardar-robo { background: #b91c1c; color: #fff; border: 1px solid #64748b !important; }
+html.modo-sol .btn-accion-novedades.oscuro { background: #000; color: #fff; border: 1px solid #64748b; }
+html.modo-sol .btn-accion-novedades.azul { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .opcion-cierre-lf i { color: #000; }
 html.modo-sol .datos-articulo-lf .dato-etiqueta { color: #000; }
 
@@ -965,22 +965,22 @@ html.modo-noche .filtros-lf .btn-dark .conteo-filtro { background: rgba(15, 23, 
    ========================================================================== */
 html.modo-sol .rpc-ficha, html.modo-sol .rpc-ficha-equipo, html.modo-sol .rpc-revision, html.modo-sol .rpc-criterio,
 html.modo-sol .rpc-equipo, html.modo-sol .rpc-aviso-duplicado, html.modo-sol .rpc-resultado, html.modo-sol .rpc-ayuda { border-width: 2px; border-color: #000; }
-html.modo-sol .rpc-escaner, html.modo-sol .rpc-punto { border: 3px solid #000; }
+html.modo-sol .rpc-escaner, html.modo-sol .rpc-punto { border: 2px solid #1e293b; }
 html.modo-sol .rpc-ficha.estatus-con_hallazgos, html.modo-sol .rpc-revision.falla { background: #fff7d6; border-color: #000; border-left: 6px solid #b45309; }
 html.modo-sol .rpc-revision.ok { border-left: 6px solid #14532d; }
 html.modo-sol .rpc-badge-en_proceso { background: #1d4ed8; }
 html.modo-sol .rpc-badge-completo { background: #14532d; }
-html.modo-sol .rpc-badge-con_hallazgos { background: #facc15; color: #000; border: 2px solid #000; }
+html.modo-sol .rpc-badge-con_hallazgos { background: #facc15; color: #000; border: 1px solid #64748b; }
 html.modo-sol .rpc-texto-hallazgo, html.modo-sol .rpc-texto-ticket { color: #7c2d12; }
 html.modo-sol .rpc-texto-ok, html.modo-sol .rpc-punto-titulo, html.modo-sol .rpc-equipo-categoria { color: #14532d; }
 html.modo-sol .rpc-criterio { background: #fff; }
 html.modo-sol .rpc-criterio:has(input:checked) { background: #fff; border-color: #14532d; }
-html.modo-sol .rpc-interruptor { background: #b91c1c; border: 2px solid #000; }
+html.modo-sol .rpc-interruptor { background: #b91c1c; border: 1px solid #64748b; }
 html.modo-sol .rpc-criterio input:checked + .rpc-interruptor { background: #14532d; }
 html.modo-sol .btn-rpc-verde { background: #14532d; border-color: #000; }
 html.modo-sol .btn-rpc-azul { background: #1d4ed8; border-color: #000; }
-html.modo-sol .btn-rpc-claro, html.modo-sol .btn-rpc-contorno, html.modo-sol .btn-rpc-oscuro-contorno { background: #fff; color: #000; border: 2px solid #000; }
-html.modo-sol .rpc-barra { background: #fff; border: 2px solid #000; }
+html.modo-sol .btn-rpc-claro, html.modo-sol .btn-rpc-contorno, html.modo-sol .btn-rpc-oscuro-contorno { background: #fff; color: #000; border: 1px solid #64748b; }
+html.modo-sol .rpc-barra { background: #fff; border: 1px solid #64748b; }
 html.modo-sol .rpc-barra-relleno { background: #14532d; }
 html.modo-sol .rpc-badge-categoria { background: #fff; color: #14532d; border: 2px solid #14532d; }
 
@@ -1013,3 +1013,18 @@ html.modo-noche .rpc-nfc { color: #a5b4fc; }
 html.modo-noche .rpc-campo-falla { border-color: #7f1d1d; }
 html.modo-noche .rpc-etiqueta-falla { color: #fca5a5; }
 /* Fin Recorridos de Protección Civil */
+/* Sol (versión más ligera, observación de QA T-06): el contraste lo dan el
+   texto negro y grueso y el fondo blanco; los contornos son grises y solo
+   las tarjetas, la barra y las ventanas llevan un borde oscuro. */
+html.modo-sol .barra-pc,
+html.modo-sol .tarjeta,
+html.modo-sol .ficha,
+html.modo-sol .ficha-card,
+html.modo-sol .dialogo,
+html.modo-sol .acceso-tarjeta { border: 2px solid #1e293b; }
+html.modo-sol .ficha-card .ficha-meta,
+html.modo-sol .ficha-card .ficha-dato,
+html.modo-sol .ficha-card .chip-seccion,
+html.modo-sol .turno-horario { border-color: #94a3b8; }
+html.modo-sol .ficha-create { border: 2px dashed #475569; }
+/* Fin Sol ligero */

@@ -39,7 +39,7 @@ class RolesPlantillaSeeder extends Seeder
     public const COLABORADOR_PROVISIONAL = ['colaboradores.ver', 'colaboradores.provisional'];
 
     /** Recursos Humanos consulta estos catálogos de Dirección para capturar al personal. */
-    public const CONSULTA_RH = ['sedes', 'departamentos', 'puestos', 'turnos'];
+    public const CONSULTA_RH = ['sedes'];
 
     /** El Jefe de seguridad ve los usuarios de su sede y los desbloquea. */
     public const USUARIOS_JEFE = ['usuarios.ver', 'usuarios.desbloquear'];

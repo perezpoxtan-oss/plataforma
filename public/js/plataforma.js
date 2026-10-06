@@ -5454,3 +5454,125 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Recorridos de Protección Civil */
+/* ==========================================================================
+   Ajustes de captura (observaciones de QA):
+   - Ojo para ver/ocultar en toda contraseña (input.campo[type=password]).
+   - Horas siempre en formato de 24 h (HH:MM): los <input type="time"> se
+     convierten en un campo de texto con dos puntos automáticos. Se excluye
+     el formato de Accidente (no se modifica por indicación del responsable)
+     y cualquier campo con data-hora-nativa.
+   - Selector de archivo en español, con el nombre del archivo elegido.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function prepararContrasena(input) {
+        if (input.dataset.conOjo || input.closest('.acceso-entrada')) { return; }
+        input.dataset.conOjo = '1';
+        var caja = document.createElement('div');
+        caja.className = 'campo-contrasena';
+        input.parentNode.insertBefore(caja, input);
+        caja.appendChild(input);
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn-ver-contrasena';
+        b.setAttribute('aria-label', 'Mostrar u ocultar contraseña');
+        b.innerHTML = '<i class="bi bi-eye" aria-hidden="true"></i>';
+        b.addEventListener('click', function () {
+            var ver = input.type === 'password';
+            input.type = ver ? 'text' : 'password';
+            b.innerHTML = '<i class="bi ' + (ver ? 'bi-eye-slash' : 'bi-eye') + '" aria-hidden="true"></i>';
+        });
+        caja.appendChild(b);
+    }
+
+    function formatearHora(v) {
+        var d = v.replace(/\D/g, '').slice(0, 4);
+        if (d.length >= 3) { return d.slice(0, 2) + ':' + d.slice(2); }
+        return d;
+    }
+
+    function prepararHora(input) {
+        if (input.dataset.hora24 || input.hasAttribute('data-hora-nativa') || input.closest('[data-formato="accidente"]')) { return; }
+        input.dataset.hora24 = '1';
+        var valor = (input.value || '').slice(0, 5);
+        input.type = 'text';
+        input.value = valor;
+        input.defaultValue = (input.defaultValue || '').slice(0, 5);
+        input.setAttribute('inputmode', 'numeric');
+        input.setAttribute('maxlength', '5');
+        input.setAttribute('pattern', '([01][0-9]|2[0-3]):[0-5][0-9]');
+        input.setAttribute('autocomplete', 'off');
+        if (!input.placeholder) { input.placeholder = 'HH:MM (24 h)'; }
+        if (!input.title) { input.title = 'Hora en formato de 24 horas, por ejemplo 19:30'; }
+        input.classList.add('campo-hora24');
+    }
+
+    document.addEventListener('input', function (e) {
+        var i = e.target;
+        if (!i.dataset || !i.dataset.hora24) { return; }
+        var antes = i.value;
+        var nuevo = formatearHora(antes);
+        if (nuevo !== antes) { i.value = nuevo; }
+    });
+    // Al salir del campo, "730" → "07:30" y "7" → "07:00"
+    document.addEventListener('blur', function (e) {
+        var i = e.target;
+        if (!i.dataset || !i.dataset.hora24 || !i.value) { return; }
+        var d = i.value.replace(/\D/g, '');
+        if (d.length === 1 || d.length === 2) { d = ('0' + d).slice(-2) + '00'; }
+        else if (d.length === 3) { d = '0' + d; }
+        i.value = formatearHora(d);
+    }, true);
+
+    // Al llenar un diálogo de edición la hora puede venir con segundos ("19:00:00")
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="editar-registro"]');
+        if (!b) { return; }
+        setTimeout(function () {
+            var d = document.getElementById(b.dataset.dialogo);
+            if (!d) { return; }
+            d.querySelectorAll('input[data-hora24]').forEach(function (i) { i.value = (i.value || '').slice(0, 5); });
+        }, 0);
+    });
+
+    function prepararArchivo(input) {
+        if (input.dataset.archivoListo) { return; }
+        input.dataset.archivoListo = '1';
+        var caja = document.createElement('label');
+        caja.className = 'campo-archivo';
+        caja.setAttribute('for', input.id || '');
+        input.parentNode.insertBefore(caja, input);
+        caja.appendChild(input);
+        var boton = document.createElement('span');
+        boton.className = 'campo-archivo-boton';
+        boton.innerHTML = '<i class="bi bi-upload me-1" aria-hidden="true"></i>Elegir archivo';
+        var nombre = document.createElement('span');
+        nombre.className = 'campo-archivo-nombre';
+        nombre.textContent = 'Ningún archivo elegido';
+        caja.appendChild(boton);
+        caja.appendChild(nombre);
+        input.addEventListener('change', function () {
+            nombre.textContent = input.files && input.files.length ? input.files[0].name : 'Ningún archivo elegido';
+        });
+        var form = input.form;
+        if (form) { form.addEventListener('reset', function () { setTimeout(function () { nombre.textContent = 'Ningún archivo elegido'; }, 0); }); }
+    }
+
+    function preparar(raiz) {
+        raiz.querySelectorAll('input.campo[type="password"], input.form-control[type="password"]').forEach(prepararContrasena);
+        raiz.querySelectorAll('input[type="time"]').forEach(prepararHora);
+        raiz.querySelectorAll('input[type="file"]').forEach(prepararArchivo);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        preparar(document);
+        // Filas que se agregan después (horarios de rutas, llaves…)
+        new MutationObserver(function (cambios) {
+            cambios.forEach(function (c) {
+                c.addedNodes.forEach(function (n) { if (n.nodeType === 1) { preparar(n.matches && n.matches('input') ? n.parentNode || n : n); } });
+            });
+        }).observe(document.body, { childList: true, subtree: true });
+    });
+})();
+/* Fin Ajustes de captura */
