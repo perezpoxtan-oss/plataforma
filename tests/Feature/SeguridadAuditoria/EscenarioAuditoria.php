@@ -141,6 +141,10 @@ trait EscenarioAuditoria
 
                 return DB::table('pases_salida_firmas')->whereIn('pase_salida_id', $pase)->orderBy('id')->value('id');
             case 'codigo':
+                if ($ruta === 'pases-salida.verificar') {
+                    return $this->consulta('pases_salida', $sede)->orderBy('id')->value('codigo_verificacion');
+                }
+
                 return $this->consulta($ruta === 'vehiculos.qr' ? 'vehiculos' : 'llaves', $sede)->orderBy('id')->value('codigo_qr');
         }
 

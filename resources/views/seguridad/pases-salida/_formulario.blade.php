@@ -4,27 +4,48 @@
     El solicitante y el colaborador destino se eligen con el lector universal
     (gafete, QR o NFC) o buscando su nombre; los equipos del padrón se pueden
     escanear para llenar su renglón.
+
+    $modoFormulario: 'crear' (lista) o 'corregir' (ficha de un pase rechazado: $paseEditar,
+    se guarda con PUT y empieza una ronda nueva de aprobaciones).
 --}}
 @php
-    $reabrir = old('_dialogo') === 'crear';
-    $previo = fn (string $campo, $porDefecto = '') => $reabrir ? old($campo, $porDefecto) : $porDefecto;
+    $modoFormulario = $modoFormulario ?? 'crear';
+    $corrigiendo = $modoFormulario === 'corregir';
+    $reabrir = old('_dialogo') === $modoFormulario || ($modoFormulario === 'crear' && request()->boolean('nuevo'));
+    $conErrores = old('_dialogo') === $modoFormulario;
+    $base = $corrigiendo ? [
+        'sede_id' => $paseEditar->sede_id, 'motivo' => $paseEditar->motivo, 'colaborador_id' => $paseEditar->colaborador_id,
+        'destino_tipo' => $paseEditar->destino_tipo, 'sede_destino_id' => $paseEditar->sede_destino_id, 'proveedor_id' => $paseEditar->proveedor_id,
+        'colaborador_destino_id' => $paseEditar->colaborador_destino_id, 'destino_direccion' => $paseEditar->destino_direccion,
+        'destino_telefono' => $paseEditar->destino_telefono, 'fecha_salida_programada' => $paseEditar->fecha_salida_programada?->format('Y-m-d'),
+        'fecha_tentativa_regreso' => $paseEditar->fecha_tentativa_regreso?->format('Y-m-d'),
+    ] : [];
+    $previo = fn (string $campo, $porDefecto = '') => $conErrores ? old($campo, $base[$campo] ?? $porDefecto) : ($base[$campo] ?? $porDefecto);
     $hoy = now(app(\App\Support\HoraLocal::class)->zona())->format('Y-m-d');
     $sedeUnica = $formulario['sedesOrigen']->count() === 1 ? (string) $formulario['sedesOrigen']->first()->id : '';
-    $articulosPrevios = $reabrir && is_array(old('articulos')) ? array_values(old('articulos')) : [[]];
+    $articulosPrevios = $conErrores && is_array(old('articulos')) ? array_values(old('articulos'))
+        : ($corrigiendo ? $paseEditar->articulos->map(fn ($a) => $a->only(['equipo_id', 'cantidad', 'equipo', 'marca', 'modelo', 'serie', 'descripcion']))->all() : [[]]);
     $conRegreso = array_values(array_diff(array_keys(\App\Models\PaseSalida::MOTIVOS), \App\Models\PaseSalida::SIN_REGRESO));
     $buscarNombres = auth()->user()->can('colaboradores.ver') || auth()->user()->can('colaboradores.provisional');
+    $idDialogo = $corrigiendo ? 'dialogoCorregirPase' : 'dialogoNuevoPase';
 @endphp
-<dialog id="dialogoNuevoPase" class="dialogo extra-ancho dialogo-pase" aria-labelledby="titulo-nuevo-pase" @if ($reabrir) data-abrir-al-cargar @endif>
+<dialog id="{{ $idDialogo }}" class="dialogo extra-ancho dialogo-pase" aria-labelledby="titulo-{{ $idDialogo }}" @if ($reabrir) data-abrir-al-cargar @endif>
     <div class="dialogo-cabecera">
-        <h2 id="titulo-nuevo-pase"><i class="bi bi-box-arrow-up-right me-2 text-primary" aria-hidden="true"></i>Nuevo Pase de Salida</h2>
+        <h2 id="titulo-{{ $idDialogo }}"><i class="bi {{ $corrigiendo ? 'bi-pencil-square' : 'bi-box-arrow-up-right' }} me-2 text-primary" aria-hidden="true"></i>{{ $corrigiendo ? 'Corregir y reenviar '.$paseEditar->folio : 'Nuevo Pase de Salida' }}</h2>
         <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
     </div>
     <div class="dialogo-cuerpo">
-        <form action="{{ route('pases-salida.store') }}" method="POST" autocomplete="off" data-form-pase
+        <form action="{{ $corrigiendo ? route('pases-salida.update', $paseEditar->id) : route('pases-salida.store') }}" method="POST" autocomplete="off" data-form-pase
               data-url-equipo="{{ route('pases-salida.equipo', 0) }}" @if ($buscarNombres) data-url-buscar-colaborador="{{ route('colaboradores.buscar') }}" @endif>
             @csrf
-            <input type="hidden" name="_dialogo" value="crear">
-            @if ($reabrir && $errors->any())
+            @if ($corrigiendo) @method('PUT') @endif
+            <input type="hidden" name="_dialogo" value="{{ $modoFormulario }}">
+            @if ($corrigiendo)
+                <div class="alert alert-warning small py-2"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Corrige lo que pidieron y reenvía: las aprobaciones empiezan otra vez desde el primer paso.
+                    @if ($paseEditar->motivo_rechazo)<br><strong>Motivo del rechazo:</strong> {{ $paseEditar->motivo_rechazo }}@endif
+                </div>
+            @endif
+            @if ($conErrores && $errors->any())
                 <div class="alert alert-danger small py-2" role="alert">
                     @foreach ($errors->all() as $error)<div><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>{{ $error }}</div>@endforeach
                 </div>
@@ -53,7 +74,7 @@
             <div class="fila-con-boton" data-pase-colaborador data-para="solicitante">
                 <div class="flex-fill min-w-0">
                     @include('componentes.lector', ['id' => 'ps_solicitante', 'etiqueta' => 'Solicitante (escanea su gafete o busca su nombre)', 'tipos' => 'colaborador',
-                        'nombre' => 'colaborador_id', 'requerido' => true, 'valor' => $previo('colaborador_id'), 'elegido' => $reabrir ? ($anteriores['colaborador_id'] ?? null) : null])
+                        'nombre' => 'colaborador_id', 'requerido' => true, 'valor' => $previo('colaborador_id'), 'elegido' => $anteriores['colaborador_id'] ?? null])
                 </div>
                 @if ($puede['colaborador'])
                     <button type="button" class="btn-atajo-pase" data-abrir-dialogo="dialogoRegistroRapidoColaborador" data-registrar-para="solicitante">
@@ -106,7 +127,7 @@
                 <div class="fila-con-boton" data-pase-colaborador data-para="destino">
                     <div class="flex-fill min-w-0">
                         @include('componentes.lector', ['id' => 'ps_colaborador_destino', 'etiqueta' => 'Colaborador que se lo lleva (escanea su gafete o busca su nombre)', 'tipos' => 'colaborador',
-                            'nombre' => 'colaborador_destino_id', 'valor' => $previo('colaborador_destino_id'), 'elegido' => $reabrir ? ($anteriores['colaborador_destino_id'] ?? null) : null])
+                            'nombre' => 'colaborador_destino_id', 'valor' => $previo('colaborador_destino_id'), 'elegido' => $anteriores['colaborador_destino_id'] ?? null])
                     </div>
                     @if ($puede['colaborador'])
                         <button type="button" class="btn-atajo-pase" data-abrir-dialogo="dialogoRegistroRapidoColaborador" data-registrar-para="destino">
@@ -155,9 +176,18 @@
             </template>
             <button type="button" class="btn-agregar-articulo" data-agregar-articulo><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar artículo</button>
 
+            @if ($corrigiendo)
+                <label class="campo-etiqueta mt-2" for="ps_respuesta">Qué corregiste <span class="text-lowercase fw-normal">(opcional, lo verán los aprobadores)</span></label>
+                <textarea id="ps_respuesta" name="comentario" class="campo" rows="2" maxlength="1000" placeholder="Ej: Se agregó la factura y se corrigió la serie.">{{ $conErrores ? old('comentario') : '' }}</textarea>
+            @endif
             <div class="dialogo-acciones">
                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                <button type="submit" class="btn-azul">Guardar y Enviar a Aprobación</button>
+                @if ($corrigiendo)
+                    <button type="submit" class="btn-azul">Guardar y Reenviar a Aprobación</button>
+                @else
+                    <button type="submit" class="btn-cancelar btn-siguiente-pase" name="siguiente" value="1">Registrar y capturar siguiente</button>
+                    <button type="submit" class="btn-azul">Guardar y Enviar a Aprobación</button>
+                @endif
             </div>
         </form>
     </div>

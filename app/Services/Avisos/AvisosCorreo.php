@@ -3,6 +3,7 @@
 namespace App\Services\Avisos;
 
 use App\Mail\AltaProvisionalRegistrada;
+use App\Mail\AvisoPaseSalida;
 use App\Mail\ValeTaxiRegistrado;
 use App\Models\Colaborador;
 use App\Models\Empresa;
@@ -105,4 +106,32 @@ class AvisosCorreo
             })
             ->pluck('email')->unique()->values()->all();
     }
+
+    // Pases de salida (circuito de aprobación; ver docs/tecnico/pases-salida.md)
+
+    /**
+     * Pases de salida: aviso del circuito a una lista de correos ya resuelta
+     * por el módulo (quien debe aprobar, el solicitante, los responsables de
+     * un vencido). $clave es el aviso de Empresa::AVISOS que lo enciende.
+     * $diferido = false para enviarlo en el momento (comando de recordatorios).
+     *
+     * @param  list<string>  $destinatarios
+     */
+    public function paseSalida(int $empresaId, string $clave, array $destinatarios, AvisoPaseSalida $mensaje, bool $diferido = true): bool
+    {
+        $empresa = Empresa::find($empresaId);
+        $destinatarios = array_values(array_unique(array_filter($destinatarios)));
+        if ($empresa === null || ! $empresa->aviso($clave) || ! $this->correo->configurado() || $destinatarios === []) {
+            return false;
+        }
+
+        if ($diferido) {
+            defer(fn () => $this->correo->enviar($destinatarios, $mensaje));
+
+            return true;
+        }
+
+        return $this->correo->enviar($destinatarios, $mensaje);
+    }
+    // Fin Pases de salida
 }

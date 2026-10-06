@@ -5576,7 +5576,6 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Ajustes de captura */
-
 /* ==========================================================================
    Ajustes QA 4: aviso de homónimos (Usuarios y Colaboradores)
    <div data-homonimos="url" data-homonimos-campos="name" data-homonimos-modo="usuarios|colaboradores">
@@ -5749,3 +5748,249 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Ajustes QA 4 */
+/* ==========================================================================
+   Pases de salida v2: pestañas de la ficha del pase, "usar mi firma
+   guardada", verificación de artículos con el lector universal en la
+   caseta, regreso parcial y circuito de aprobación (agregar, mover y quitar
+   pasos).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    /* ---------- Pestañas: Resumen · Artículos · Firmas y bitácora ---------- */
+    function activarPestana(grupo, clave) {
+        var hay = false;
+        grupo.querySelectorAll('[data-pestana-pase]').forEach(function (b) {
+            var activa = b.getAttribute('data-pestana-pase') === clave;
+            hay = hay || activa;
+            b.classList.toggle('activa', activa);
+            b.setAttribute('aria-selected', activa ? 'true' : 'false');
+        });
+        if (!hay) { return false; }
+        document.querySelectorAll('[data-panel-pase]').forEach(function (p) {
+            p.hidden = p.getAttribute('data-panel-pase') !== clave;
+        });
+        return true;
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-pestana-pase]');
+        if (!b) { return; }
+        var grupo = b.closest('[data-pestanas-pase]');
+        if (grupo && activarPestana(grupo, b.getAttribute('data-pestana-pase'))) {
+            try { window.history.replaceState(null, '', '#' + b.getAttribute('data-pestana-pase')); } catch (x) { /* navegador antiguo */ }
+        }
+    });
+
+    /* ---------- Firma propia: guardada o en el recuadro ---------- */
+    function sincronizarFirmaPropia(caja) {
+        var elegido = caja.querySelector('[data-firma-modo]:checked');
+        var nueva = caja.querySelector('[data-firma-nueva]');
+        if (!nueva) { return; }
+        var dibujar = !elegido || elegido.value === 'nueva';
+        nueva.hidden = !dibujar;
+        if (dibujar && window.Firma) {
+            var recuadro = nueva.querySelector('[data-firma]');
+            if (recuadro) { window.Firma.preparar(recuadro); }
+        }
+    }
+
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-firma-modo]')) { return; }
+        sincronizarFirmaPropia(e.target.closest('[data-firma-propia]'));
+    });
+
+    // Si toca dibujar la firma propia, no se envía vacía
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches || !form.matches('[data-form-firma-propia]')) { return; }
+        var caja = form.querySelector('[data-firma-propia]');
+        if (!caja) { return; }
+        var nueva = caja.querySelector('[data-firma-nueva]');
+        if (!nueva || nueva.hidden) { return; }
+        var valor = nueva.querySelector('[data-firma-valor]');
+        if (valor && !valor.value) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            var recuadro = nueva.querySelector('[data-firma]');
+            recuadro.classList.add('falta');
+            recuadro.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, true);
+
+    /* ---------- Caseta: verificar artículos (escaneando o marcando) ---------- */
+    function contar(form) {
+        var casillas = form.querySelectorAll('[data-verificado]');
+        var conteo = form.querySelector('[data-conteo-verificados]');
+        if (!conteo || !casillas.length) { return 0; }
+        var marcadas = Array.prototype.filter.call(casillas, function (c) { return c.checked; }).length;
+        var faltan = casillas.length - marcadas;
+        conteo.textContent = faltan === 0
+            ? 'Listo: verificaste los ' + casillas.length + ' artículos.'
+            : 'Verificados ' + marcadas + ' de ' + casillas.length + (faltan === 1 ? ' — falta 1.' : ' — faltan ' + faltan + '.');
+        conteo.className = 'conteo-verificados ' + (faltan === 0 ? 'completo' : 'falta');
+        return faltan;
+    }
+
+    function estadoLector(caja, texto, clase) {
+        var estado = caja && caja.querySelector('[data-lector-estado]');
+        if (!estado) { return; }
+        estado.hidden = !texto;
+        estado.className = 'lector-estado ' + (clase || '');
+        estado.textContent = texto || '';
+    }
+
+    document.addEventListener('lector:elegido', function (e) {
+        var caja = e.target;
+        if (!caja.closest || !caja.closest('[data-lector-verificar]')) { return; }
+        var form = caja.closest('form');
+        var registro = e.detail || {};
+        var fila = form.querySelector('[data-articulo-verificar][data-equipo-id="' + String(registro.id) + '"]');
+        if (window.Lector) { window.Lector.limpiar(caja); }
+        if (!fila) {
+            estadoLector(caja, 'Ese equipo NO está en este pase: no debe salir con él.', 'error');
+            return;
+        }
+        fila.querySelector('[data-verificado]').checked = true;
+        var escaneado = fila.querySelector('[data-escaneado]');
+        if (escaneado) { escaneado.checked = true; }
+        var marca = fila.querySelector('[data-marca-escaneado]');
+        if (marca) { marca.hidden = false; }
+        var faltan = contar(form);
+        estadoLector(caja, 'Verificado: ' + (registro.titulo || 'equipo') + (faltan ? '. Escanea el siguiente.' : '. Ya están todos.'), 'ok');
+    });
+
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches) { return; }
+        if (e.target.matches('[data-verificado]')) {
+            // Desmarcar a mano quita la marca de escaneado
+            if (!e.target.checked) {
+                var fila = e.target.closest('[data-articulo-verificar]');
+                var escaneado = fila && fila.querySelector('[data-escaneado]');
+                if (escaneado) { escaneado.checked = false; }
+                var marca = fila && fila.querySelector('[data-marca-escaneado]');
+                if (marca) { marca.hidden = true; }
+            }
+            contar(e.target.closest('form'));
+        }
+    });
+
+    // Regreso: si regresan menos de los que faltan, se ofrece cerrar con faltantes
+    function revisarRegreso(form) {
+        var faltan = 0;
+        form.querySelectorAll('[data-cantidad-regreso]').forEach(function (c) {
+            var pendientes = parseInt(c.getAttribute('data-pendientes') || '0', 10);
+            var valor = parseInt(c.value || '0', 10);
+            faltan += Math.max(0, pendientes - (isNaN(valor) ? 0 : valor));
+        });
+        var opcion = form.querySelector('[data-cerrar-faltantes]');
+        if (opcion) {
+            opcion.hidden = faltan === 0;
+            if (faltan === 0) { opcion.querySelector('input').checked = false; }
+        }
+    }
+
+    document.addEventListener('input', function (e) {
+        if (e.target.matches && e.target.matches('[data-cantidad-regreso]')) { revisarRegreso(e.target.closest('form')); }
+    });
+
+    // Salida: no se envía hasta verificar cada artículo
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches || !form.matches('[data-form-paso-pase][data-paso="salida"]')) { return; }
+        if (contar(form) > 0) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            var conteo = form.querySelector('[data-conteo-verificados]');
+            if (conteo) { conteo.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        }
+    }, true);
+
+    /* ---------- Circuito de aprobación ---------- */
+    function acomodarPaso(paso) {
+        var tipo = paso.querySelector('[data-paso-tipo]');
+        var depto = paso.querySelector('[data-paso-departamento]');
+        paso.querySelectorAll('[data-si-tipo]').forEach(function (c) {
+            var ver = tipo && c.getAttribute('data-si-tipo') === tipo.value;
+            c.hidden = !ver;
+            c.querySelectorAll('input, select').forEach(function (x) { x.disabled = !ver; });
+        });
+        paso.querySelectorAll('[data-si-departamento]').forEach(function (c) {
+            var ver = depto && c.getAttribute('data-si-departamento') === depto.value;
+            c.hidden = !ver;
+            c.querySelectorAll('input, select').forEach(function (x) { x.disabled = !ver; });
+        });
+    }
+
+    function numerar(lista) {
+        lista.querySelectorAll('[data-paso-circuito]').forEach(function (p, i) {
+            var n = p.querySelector('[data-numero-paso]');
+            if (n) { n.textContent = String(i + 1); }
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-paso-tipo], [data-paso-departamento]')) { return; }
+        acomodarPaso(e.target.closest('[data-paso-circuito]'));
+    });
+
+    document.addEventListener('click', function (e) {
+        var form = e.target.closest('[data-form-circuito]');
+        if (!form) { return; }
+        var lista = form.querySelector('[data-pasos-circuito]');
+        if (e.target.closest('[data-agregar-paso-circuito]')) {
+            var plantilla = form.querySelector('[data-plantilla-paso-circuito]');
+            var i = parseInt(lista.getAttribute('data-siguiente') || '0', 10);
+            lista.setAttribute('data-siguiente', String(i + 1));
+            var envoltura = document.createElement('div');
+            envoltura.innerHTML = plantilla.innerHTML.replace(/__i__/g, String(i));
+            var nuevo = envoltura.querySelector('[data-paso-circuito]');
+            lista.appendChild(nuevo);
+            acomodarPaso(nuevo);
+            numerar(lista);
+            nuevo.querySelector('input[type="text"]').focus();
+            return;
+        }
+        var paso = e.target.closest('[data-paso-circuito]');
+        if (!paso) { return; }
+        var mover = e.target.closest('[data-mover-paso]');
+        if (mover) {
+            if (mover.getAttribute('data-mover-paso') === 'arriba' && paso.previousElementSibling) {
+                lista.insertBefore(paso, paso.previousElementSibling);
+            } else if (mover.getAttribute('data-mover-paso') === 'abajo' && paso.nextElementSibling) {
+                lista.insertBefore(paso.nextElementSibling, paso);
+            }
+            numerar(lista);
+            mover.focus();
+            return;
+        }
+        if (e.target.closest('[data-quitar-paso]')) {
+            if (lista.querySelectorAll('[data-paso-circuito]').length <= 1) {
+                window.alert('El circuito necesita al menos un paso de aprobación.');
+                return;
+            }
+            paso.remove();
+            numerar(lista);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var grupo = document.querySelector('[data-pestanas-pase]');
+        if (grupo) {
+            var hash = (window.location.hash || '').replace('#', '');
+            if (!activarPestana(grupo, hash)) { activarPestana(grupo, grupo.getAttribute('data-inicial') || 'resumen'); }
+        }
+        document.querySelectorAll('[data-firma-propia]').forEach(sincronizarFirmaPropia);
+        document.querySelectorAll('[data-form-paso-pase]').forEach(function (f) { contar(f); revisarRegreso(f); });
+        document.querySelectorAll('[data-paso-circuito]').forEach(acomodarPaso);
+        var lista = document.querySelector('[data-pasos-circuito]');
+        if (lista) { numerar(lista); }
+    });
+
+    // Al cerrar el diálogo de caseta, la lista vuelve a contarse (las casillas no se borran)
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-firma-propia]').forEach(sincronizarFirmaPropia);
+    }, true);
+})();
+/* Fin Pases de salida v2 */

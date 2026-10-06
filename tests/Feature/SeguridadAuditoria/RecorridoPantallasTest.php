@@ -287,6 +287,7 @@ class RecorridoPantallasTest extends TestCase
             ])),
             'pases-salida.firma' => PaseSalidaFirma::query()->withoutGlobalScopes()->whereIn('pase_salida_id', PaseSalida::withoutGlobalScopes()->where('empresa_id', $e)->select('id'))
                 ->limit(2)->get(['id', 'pase_salida_id'])->map(fn ($f) => ['pase' => $f->pase_salida_id, 'firma' => $f->id])->all(),
+            'pases-salida.verificar' => array_map(fn ($c) => ['codigo' => $c], array_filter([PaseSalida::withoutGlobalScopes()->where('empresa_id', $e)->value('codigo_verificacion')])),
             'transporte.show', 'transporte.vale' => array_map(fn ($id) => ['movimiento' => $id], $ids([
                 $primero(MovimientoTransporte::class), MovimientoTransporte::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
             ])),

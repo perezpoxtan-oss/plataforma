@@ -248,14 +248,24 @@ Route::middleware('auth')->group(function () {
     });
     // Fin Padrones: Bitácora de Novedades
 
-    // Padrones: Pases de salida (Operación: circuito de firmas, rechazo e impresión)
+    // Padrones: Pases de salida (Operación: circuito de aprobación configurable, bandeja de firmas, pasos de caseta, hoja con QR)
     Route::get('/pases-salida', [PaseSalidaController::class, 'index'])->name('pases-salida.index');
     Route::post('/pases-salida', [PaseSalidaController::class, 'store'])->name('pases-salida.store');
+    Route::get('/pases-salida/mis-pendientes', [PaseSalidaController::class, 'pendientes'])->name('pases-salida.pendientes');
+    Route::get('/pases-salida/circuito', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'edit'])->name('pases-salida.circuito');
+    Route::put('/pases-salida/circuito', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'update'])->name('pases-salida.circuito.update');
+    Route::delete('/pases-salida/circuito', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'destroy'])->name('pases-salida.circuito.destroy');
+    Route::get('/pases-salida/mi-firma', [PaseSalidaController::class, 'miFirma'])->name('pases-salida.mi-firma');
+    Route::delete('/pases-salida/mi-firma', [PaseSalidaController::class, 'borrarMiFirma'])->name('pases-salida.mi-firma.destroy');
+    Route::get('/pases-salida/verificar/{codigo}', [PaseSalidaController::class, 'verificar'])->where('codigo', '[A-Za-z0-9]{8,32}')->middleware('throttle:60,1')->name('pases-salida.verificar');
     Route::get('/pases-salida/equipos/{equipo}', [PaseSalidaController::class, 'equipo'])->whereNumber('equipo')->name('pases-salida.equipo');
     Route::get('/pases-salida/{pase}', [PaseSalidaController::class, 'show'])->whereNumber('pase')->name('pases-salida.show');
+    Route::put('/pases-salida/{pase}', [PaseSalidaController::class, 'update'])->whereNumber('pase')->name('pases-salida.update');
     Route::post('/pases-salida/{pase}/firmas', [PaseSalidaController::class, 'firmar'])->whereNumber('pase')->middleware('throttle:60,1')->name('pases-salida.firmar');
     Route::get('/pases-salida/{pase}/firmas/{firma}', [PaseSalidaController::class, 'firma'])->whereNumber(['pase', 'firma'])->name('pases-salida.firma');
     Route::post('/pases-salida/{pase}/rechazar', [PaseSalidaController::class, 'rechazar'])->whereNumber('pase')->name('pases-salida.rechazar');
+    Route::post('/pases-salida/{pase}/omitir', [PaseSalidaController::class, 'omitir'])->whereNumber('pase')->name('pases-salida.omitir');
+    Route::post('/pases-salida/{pase}/cancelar', [PaseSalidaController::class, 'cancelar'])->whereNumber('pase')->name('pases-salida.cancelar');
     Route::get('/pases-salida/{pase}/imprimir', [PaseSalidaController::class, 'imprimir'])->whereNumber('pase')->name('pases-salida.imprimir');
     // Fin Padrones: Pases de salida
     // Padrones: Bitácora de transporte (Operación: llegadas, salidas y vales de taxi)

@@ -399,6 +399,13 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudo hacer el respaldo diario (revisa despliegue.log)"
 fi
 
+# --- Pases de salida: recordatorio diario de vencidos (despues de las 8:00 de cada sede) ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:pases-vencidos'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:pases-vencidos --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudieron enviar los recordatorios de pases vencidos (revisa despliegue.log)"
+fi
+# --- Fin Pases de salida ---
+
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
 if [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ] && grep -Eq "EscribeAqui|tu-correo@" "$HOME/qa_inicial.txt"; then
   estado "ERROR: qa_inicial.txt todavia tiene los datos de ejemplo; escribe tu correo y una contrasena nueva"

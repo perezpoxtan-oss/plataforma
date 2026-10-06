@@ -16,6 +16,11 @@ use App\Services\Permisos\Autorizador;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,13 +31,15 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Pases de salida (réplica de modules/pases_salida de SEGCAT): lista con
- * filtros, "Nuevo Pase de Salida" en 3 pasos, detalle "Firmas del pase" con
- * el circuito de firmas, rechazo y hoja impresa con todas las firmas.
+ * Pases de salida (réplica de modules/pases_salida de SEGCAT, circuito v2):
+ * lista en fichas con indicador de pasos, bandeja de firmas, ficha del pase
+ * (Resumen · Artículos · Firmas y bitácora), aprobaciones en orden, pasos de
+ * caseta con verificación de artículos, hoja impresa con QR y página de
+ * verificación.
  *
- * Permisos: ver, crear, aprobar (aprobaciones y rechazo), firmar (salida,
- * recepción en destino, salida de regreso y regreso) e imprimir. Ver
- * App\Services\PasesSalida\AdministradorPasesSalida para el alcance.
+ * Permisos: ver, crear, aprobar (aprobar, rechazar, omitir), firmar (pasos
+ * de caseta), imprimir y configurar (circuito, ver CircuitoPasesSalidaController).
+ * Ver App\Services\PasesSalida\AdministradorPasesSalida para el alcance.
  */
 class PaseSalidaController extends Controller
 {
@@ -43,35 +50,56 @@ class PaseSalidaController extends Controller
         private readonly Autorizador $autorizador,
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         Gate::authorize('pases_salida.ver');
+
+        // Enlaces anteriores (?pase=ID) abren la ficha del pase
+        if ($request->filled('pase') && is_numeric($request->input('pase'))) {
+            return redirect()->route('pases-salida.show', (int) $request->input('pase'));
+        }
+
+        return $this->lista($request, null);
+    }
+
+    /**
+     * Bandeja de firmas: lo que espera la firma del usuario en sesión.
+     */
+    public function pendientes(Request $request): View
+    {
+        Gate::authorize('pases_salida.ver');
+
+        return $this->lista($request, 'mi_firma');
+    }
+
+    private function lista(Request $request, ?string $forzar): View
+    {
         $actor = $request->user();
         $empresaId = $this->empresa->id($actor);
 
         if ($empresaId === null) {
-            return view('seguridad.pases-salida.index', ['sinEmpresa' => true]);
+            return view('seguridad.pases-salida.index', ['sinEmpresa' => true, 'bandeja' => $forzar !== null]);
         }
 
         $filtros = $request->validate([
             'filtro' => ['nullable', 'string'],
-            'q' => ['nullable', 'string', 'max:100'],
+            'q' => ['nullable', 'string', 'max:200'],
             'sede' => ['nullable', 'integer'],
-            'pase' => ['nullable', 'integer'],
         ]);
-        $filtro = array_key_exists($filtros['filtro'] ?? '', AdministradorPasesSalida::FILTROS) ? $filtros['filtro'] : 'todos';
-        $texto = trim((string) ($filtros['q'] ?? ''));
+        $filtro = $forzar ?? (array_key_exists($filtros['filtro'] ?? '', AdministradorPasesSalida::FILTROS) ? $filtros['filtro'] : 'todos');
+        $texto = Entrada::texto($filtros['q'] ?? '');
         $sedeFiltro = isset($filtros['sede']) ? (int) $filtros['sede'] : null;
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $filtro, $texto, $sedeFiltro, $filtros) {
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $filtro, $texto, $sedeFiltro, $forzar) {
             $base = fn () => $this->pases->buscar($this->pases->limitar(PaseSalida::query(), $actor, 'pases_salida.ver'), $texto)
                 ->when($sedeFiltro !== null, fn ($q) => $q->where(fn ($s) => $s->where('pases_salida.sede_id', $sedeFiltro)->orWhere('pases_salida.sede_destino_id', $sedeFiltro)));
 
-            $conteos = collect(AdministradorPasesSalida::FILTROS)->map(fn ($t, $clave) => $this->pases->filtrar($base(), $clave)->count());
+            $conteos = collect(AdministradorPasesSalida::FILTROS)->map(fn ($t, $clave) => $this->pases->filtrar($base(), $clave, $actor)->count());
 
-            $lista = $this->pases->filtrar($base(), $filtro)
+            $lista = $this->pases->filtrar($base(), $filtro, $actor)
                 ->with(['sede:id,nombre', 'sedeDestino:id,nombre', 'proveedor:id,nombre', 'colaboradorDestino:id,nombre,apellido_paterno,apellido_materno',
-                    'solicitante:id,num_empleado,nombre,apellido_paterno,apellido_materno', 'creador:id,name', 'editor:id,name'])
+                    'solicitante:id,num_empleado,nombre,apellido_paterno,apellido_materno', 'creador:id,name', 'editor:id,name',
+                    'aprobaciones.rol:id,nombre', 'aprobaciones.departamento:id,nombre'])
                 ->withCount('articulos')
                 ->orderByDesc('pases_salida.id')
                 ->paginate(AdministradorPasesSalida::POR_PAGINA)->withQueryString();
@@ -82,12 +110,11 @@ class PaseSalidaController extends Controller
 
             $puedeCrear = $actor->can('pases_salida.crear');
             $sedesOrigen = $puedeCrear ? $this->pases->sedesOrigen($actor) : collect();
-
-            // Detalle abierto al cargar: tras firmar, rechazar o un error (?pase=ID)
-            $detalle = isset($filtros['pase']) ? $this->buscarEnAlcance($actor, (int) $filtros['pase'], 'pases_salida.ver') : null;
+            $porFirmar = $this->pases->idsPorFirmar($actor);
 
             return view('seguridad.pases-salida.index', [
                 'sinEmpresa' => false,
+                'bandeja' => $forzar !== null,
                 'pases' => $lista,
                 'filtro' => $filtro,
                 'texto' => $texto,
@@ -96,37 +123,35 @@ class PaseSalidaController extends Controller
                 'sedesVisibles' => $sedesVisibles,
                 'variasSedes' => $sedesVisibles->count() > 1,
                 'pasesSrv' => $this->pases,
+                'porFirmar' => $porFirmar,
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'puede' => [
                     'crear' => $puedeCrear && $sedesOrigen->isNotEmpty(),
                     'colaborador' => $actor->can('colaboradores.crear') || $actor->can('colaboradores.provisional'),
                     'proveedor' => $actor->can('proveedores.crear'),
                     'equipos' => $actor->can('equipos.ver'),
+                    'configurar' => $actor->can('pases_salida.configurar'),
                 ],
                 'formulario' => $puedeCrear && $sedesOrigen->isNotEmpty() ? $this->formulario($sedesOrigen) : null,
                 'anteriores' => $this->colaboradoresAnteriores(),
-                'detalle' => $detalle === null ? null : $this->datosDetalle($actor, $detalle),
             ]);
         });
     }
 
     /**
-     * Detalle "Firmas del pase" (SEGCAT: pases_salida_modal_aprobar.php). Se
-     * pide al abrir el diálogo; sin JavaScript abre la lista con el detalle.
+     * Ficha del pase: Resumen · Artículos · Firmas y bitácora, con las
+     * acciones que el usuario puede hacer ahora.
      */
-    public function show(Request $request, int $pase): View|RedirectResponse
+    public function show(Request $request, int $pase): View
     {
         Gate::authorize('pases_salida.ver');
         $empresaId = $this->empresaDeTrabajo($request);
 
         return $this->tenant->conEmpresa($empresaId, function () use ($request, $pase) {
-            // Seguridad (AZ-03): un pase ajeno responde 404 también sin AJAX
+            // Seguridad (AZ-03): un pase ajeno responde 404
             $modelo = $this->buscarEnAlcance($request->user(), $pase, 'pases_salida.ver');
-            if (! $request->ajax()) {
-                return redirect()->route('pases-salida.index', ['pase' => $modelo->id]);
-            }
 
-            return view('seguridad.pases-salida._detalle', $this->datosDetalle($request->user(), $modelo));
+            return view('seguridad.pases-salida.show', $this->datosFicha($request->user(), $modelo));
         });
     }
 
@@ -137,64 +162,105 @@ class PaseSalidaController extends Controller
 
         $pase = $this->tenant->conEmpresa($empresaId, fn () => $this->pases->crear($request->user(), $request->all()));
 
-        return redirect()->to(route('pases-salida.index').'#pase-'.$pase->id)
-            ->with('ok', "Pase {$pase->folio} registrado y enviado a aprobación.");
+        // "Registrar y capturar siguiente": vuelve a la lista con el diálogo abierto
+        if ($request->boolean('siguiente')) {
+            return redirect()->route('pases-salida.index', ['nuevo' => 1])
+                ->with('ok', "Pase {$pase->folio} registrado y enviado a aprobación. Captura el siguiente.");
+        }
+
+        return redirect()->route('pases-salida.show', $pase->id)->with('ok', "Pase {$pase->folio} registrado y enviado a aprobación.");
     }
 
     /**
-     * Firma de un rol del circuito (SEGCAT: pases_salida_firmar.php).
+     * Corregir y reenviar un pase rechazado.
      */
-    public function firmar(Request $request, int $pase): RedirectResponse
+    public function update(Request $request, int $pase): RedirectResponse
     {
-        abort_unless($request->user()->can('pases_salida.aprobar') || $request->user()->can('pases_salida.firmar'), 403);
-        $empresaId = $this->empresaDeTrabajo($request);
-
-        try {
-            [$modelo, $estado] = $this->tenant->conEmpresa($empresaId, function () use ($request, $pase) {
-                $modelo = $this->buscarEnAlcance($request->user(), $pase, 'pases_salida.ver');
-
-                return [$modelo, $this->pases->firmar($request->user(), $modelo, $request->all())];
-            });
-        } catch (ValidationException $e) {
-            return redirect()->route('pases-salida.index', ['pase' => $pase])->withErrors($e->errors())
-                ->withInput($request->except(['firma', '_token']));
-        }
-
-        $rol = PaseSalida::grupoDeRol(Entrada::texto($request->input('rol')));
-        $texto = $rol ? PaseSalida::GRUPOS[$rol][1][$request->input('rol')] : 'la firma';
-        $mensaje = "Firma de «{$texto}» registrada en el pase {$modelo->folio}.";
-        if ($estado !== null) {
-            $mensaje .= ' El pase avanzó a «'.$modelo->insignia(false)[0].'».';
-        }
-
-        return redirect()->route('pases-salida.index', ['pase' => $modelo->id])->with('ok', $mensaje);
-    }
-
-    /**
-     * Rechazo con motivo (SEGCAT: pases_salida_rechazar.php).
-     */
-    public function rechazar(Request $request, int $pase): RedirectResponse
-    {
-        Gate::authorize('pases_salida.aprobar');
+        Gate::authorize('pases_salida.crear');
         $empresaId = $this->empresaDeTrabajo($request);
 
         try {
             $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $pase) {
                 $modelo = $this->buscarEnAlcance($request->user(), $pase, 'pases_salida.ver');
-                $this->pases->rechazar($request->user(), $modelo, $request->all());
+                $this->autorizar(fn () => $this->pases->reenviar($request->user(), $modelo, $request->all()));
 
                 return $modelo;
             });
         } catch (ValidationException $e) {
-            return redirect()->route('pases-salida.index', ['pase' => $pase])->withErrors($e->errors())
-                ->withInput(['_dialogo' => 'rechazar', 'motivo_rechazo' => Entrada::texto($request->input('motivo_rechazo'))]);
+            return redirect()->route('pases-salida.show', $pase)->withErrors($e->errors())
+                ->withInput($request->except(['_token', '_method']) + ['_dialogo' => 'corregir']);
         }
 
-        return redirect()->route('pases-salida.index', ['pase' => $modelo->id])->with('aviso', "Pase {$modelo->folio} rechazado.");
+        return redirect()->route('pases-salida.show', $modelo->id)->with('ok', "Pase {$modelo->folio} corregido y reenviado a aprobación.");
     }
 
     /**
-     * Hoja impresa del pase con todas sus firmas.
+     * Firma del paso que toca: una aprobación (paso=aprobacion, permiso
+     * "aprobar") o un paso de caseta (salida, recepcion, salida_regreso,
+     * regreso; permiso "firmar").
+     */
+    public function firmar(Request $request, int $pase): RedirectResponse
+    {
+        $paso = Entrada::texto($request->input('paso'));
+        Gate::authorize($paso === 'aprobacion' ? 'pases_salida.aprobar' : 'pases_salida.firmar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        try {
+            [$modelo, $estado] = $this->tenant->conEmpresa($empresaId, function () use ($request, $pase, $paso) {
+                $modelo = $this->buscarEnAlcance($request->user(), $pase, 'pases_salida.ver');
+                $estado = $this->autorizar(fn () => $paso === 'aprobacion'
+                    ? $this->pases->aprobar($request->user(), $modelo, $request->all())
+                    : $this->pases->registrarPaso($request->user(), $modelo, $request->all()));
+
+                return [$modelo->refresh(), $estado];
+            });
+        } catch (ValidationException $e) {
+            return redirect()->route('pases-salida.show', $pase)->withErrors($e->errors())
+                ->withInput($request->except(['firma', 'firma_persona', '_token']) + ['_dialogo' => $paso === 'aprobacion' ? 'aprobar' : 'paso']);
+        }
+
+        $mensaje = $paso === 'aprobacion'
+            ? "Aprobación registrada en el pase {$modelo->folio}.".($estado === PaseSalida::APROBADO ? ' El pase quedó «Aprobado, listo para salir».' : ' Se avisó al siguiente aprobador.')
+            : "Listo: {$modelo->folio} ahora está «{$modelo->insignia(false)[0]}».";
+
+        return redirect()->route('pases-salida.show', $modelo->id)->with('ok', $mensaje);
+    }
+
+    /**
+     * Rechazo con motivo: el pase vuelve al solicitante.
+     */
+    public function rechazar(Request $request, int $pase): RedirectResponse
+    {
+        Gate::authorize('pases_salida.aprobar');
+
+        return $this->accionAprobacion($request, $pase, 'rechazar', fn ($m) => $this->pases->rechazar($request->user(), $m, $request->all()),
+            fn ($m) => ['aviso', "Pase {$m->folio} rechazado y devuelto al solicitante."], ['motivo_rechazo']);
+    }
+
+    /**
+     * Omitir un paso opcional, con comentario.
+     */
+    public function omitir(Request $request, int $pase): RedirectResponse
+    {
+        Gate::authorize('pases_salida.aprobar');
+
+        return $this->accionAprobacion($request, $pase, 'omitir', fn ($m) => $this->pases->omitir($request->user(), $m, $request->all()),
+            fn ($m) => ['ok', "Paso omitido en el pase {$m->folio}."], ['comentario']);
+    }
+
+    /**
+     * Cancelar (antes de aprobarse): su dueño.
+     */
+    public function cancelar(Request $request, int $pase): RedirectResponse
+    {
+        abort_unless($request->user()->can('pases_salida.crear') || $request->user()->can('pases_salida.editar'), 403);
+
+        return $this->accionAprobacion($request, $pase, 'cancelar', fn ($m) => $this->pases->cancelar($request->user(), $m, $request->all()),
+            fn ($m) => ['aviso', "Pase {$m->folio} cancelado."], ['motivo_cancelacion']);
+    }
+
+    /**
+     * Hoja impresa del pase: logo, folio, QR de verificación, artículos y todas las firmas.
      */
     public function imprimir(Request $request, int $pase): View
     {
@@ -203,14 +269,40 @@ class PaseSalidaController extends Controller
 
         return $this->tenant->conEmpresa($empresaId, function () use ($request, $pase, $empresaId) {
             $modelo = $this->buscarEnAlcance($request->user(), $pase, 'pases_salida.imprimir');
-            $this->cargarDetalle($modelo);
+            $this->cargarFicha($modelo);
             $empresa = Empresa::whereKey($empresaId)->first(['id', 'nombre_comercial', 'razon_social', 'logo_ruta']);
             $logo = $empresa->logo_ruta;
+            $url = route('pases-salida.verificar', $modelo->codigo_verificacion);
 
             return view('seguridad.pases-salida.imprimir', [
                 'pase' => $modelo,
                 'empresa' => $empresa,
                 'logo' => is_string($logo) && $logo !== '' && ! str_contains($logo, '..') && is_file(public_path($logo)) ? asset($logo) : null,
+                'vencido' => $this->pases->vencido($modelo),
+                'aprobaciones' => $this->pases->circuito()->rondaActual($modelo),
+                'qr' => (string) preg_replace('/^<\?xml[^>]*>\s*/', '', (new Writer(new ImageRenderer(new RendererStyle(150, 1), new SvgImageBackEnd)))->writeString($url)),
+                'urlVerificar' => $url,
+            ]);
+        });
+    }
+
+    /**
+     * Verificación del QR de la hoja: confirma que el pase es auténtico y su
+     * estado. Pide sesión y alcance (como todo el módulo: el pase sale de
+     * sus sedes o va a ellas) y solo muestra folio y estado (nada personal).
+     */
+    public function verificar(Request $request, string $codigo): View
+    {
+        Gate::authorize('pases_salida.ver');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $codigo) {
+            $modelo = $this->pases->limitar(PaseSalida::query(), $request->user(), 'pases_salida.ver')
+                ->with('sede:id,nombre')->withCount('articulos')->where('codigo_verificacion', mb_strtoupper($codigo))->first();
+            abort_if($modelo === null, 404);
+
+            return view('seguridad.pases-salida.verificar', [
+                'pase' => $modelo,
                 'vencido' => $this->pases->vencido($modelo),
             ]);
         });
@@ -232,6 +324,32 @@ class PaseSalidaController extends Controller
 
             return $firmas->respuesta($registro->firma_ruta);
         });
+    }
+
+    /**
+     * Mi firma guardada (solo la ve su dueño).
+     */
+    public function miFirma(Request $request, Firmas $firmas): StreamedResponse
+    {
+        abort_unless($request->user()->can('pases_salida.aprobar') || $request->user()->can('pases_salida.firmar'), 403);
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $firmas) {
+            $guardada = $this->pases->firmaGuardada($request->user());
+            abort_if($guardada === null, 404);
+
+            return $firmas->respuesta($guardada->firma_ruta);
+        });
+    }
+
+    public function borrarMiFirma(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->can('pases_salida.aprobar') || $request->user()->can('pases_salida.firmar'), 403);
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $borrada = $this->tenant->conEmpresa($empresaId, fn () => $this->pases->borrarFirmaUsuario($request->user()));
+
+        return back()->with('ok', $borrada ? 'Tu firma guardada se borró. La próxima vez firmarás en el recuadro.' : 'No tenías una firma guardada.');
     }
 
     /**
@@ -257,6 +375,48 @@ class PaseSalidaController extends Controller
     // ------------------------------------------------------------------ Apoyo
 
     /**
+     * Rechazar, omitir o cancelar: mismo manejo de errores (vuelven dentro de su diálogo).
+     *
+     * @param  list<string>  $conservar
+     */
+    private function accionAprobacion(Request $request, int $pase, string $dialogo, callable $accion, callable $mensaje, array $conservar): RedirectResponse
+    {
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        try {
+            $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $pase, $accion) {
+                $modelo = $this->buscarEnAlcance($request->user(), $pase, 'pases_salida.ver');
+                $this->autorizar(fn () => $accion($modelo));
+
+                return $modelo->refresh();
+            });
+        } catch (ValidationException $e) {
+            $previo = ['_dialogo' => $dialogo];
+            foreach ($conservar as $campo) {
+                $previo[$campo] = Entrada::texto($request->input($campo));
+            }
+
+            return redirect()->route('pases-salida.show', $pase)->withErrors($e->errors())->withInput($previo);
+        }
+
+        [$tipo, $texto] = $mensaje($modelo);
+
+        return redirect()->route('pases-salida.show', $modelo->id)->with($tipo, $texto);
+    }
+
+    /**
+     * Las reglas del circuito (quién firma) responden 403 con su explicación.
+     */
+    private function autorizar(callable $accion): mixed
+    {
+        try {
+            return $accion();
+        } catch (AuthorizationException $e) {
+            abort(403, $e->getMessage());
+        }
+    }
+
+    /**
      * Opciones del formulario "Nuevo Pase de Salida".
      *
      * @param  Collection<int, Sede>  $sedesOrigen
@@ -275,28 +435,53 @@ class PaseSalidaController extends Controller
     }
 
     /**
-     * Todo lo que pinta el detalle de un pase.
+     * Todo lo que pinta la ficha de un pase.
      *
      * @return array<string, mixed>
      */
-    private function datosDetalle(User $actor, PaseSalida $pase): array
+    private function datosFicha(User $actor, PaseSalida $pase): array
     {
-        $this->cargarDetalle($pase);
-        $grupo = $pase->grupoAbierto();
+        $this->cargarFicha($pase);
+        $circuito = $this->pases->circuito();
+        $actual = $circuito->actual($pase);
+        $paso = $pase->pasoFisico();
+        $puedeAprobar = $actual !== null && $circuito->puedeAprobar($actor, $pase, $actual);
+        $gestionar = $this->pases->puedeGestionar($actor, $pase);
+        $corregir = $gestionar && $pase->estado === PaseSalida::RECHAZADO && $actor->can('pases_salida.crear');
+        $sedesOrigen = $corregir ? $this->pases->sedesOrigen($actor) : collect();
+        $vencido = $this->pases->vencido($pase);
 
         return [
             'pase' => $pase,
-            'grupoAbierto' => $grupo,
-            'vencido' => $this->pases->vencido($pase),
-            'puedeFirmar' => $grupo !== null && $this->pases->puedeFirmarGrupo($actor, $pase, $grupo),
-            'puedeRechazar' => $this->pases->puedeRechazar($actor, $pase),
-            'puedeImprimir' => $actor->can('pases_salida.imprimir')
-                && $this->pases->limitar(PaseSalida::query(), $actor, 'pases_salida.imprimir')->whereKey($pase->id)->exists(),
-            'sugeridos' => $this->nombresSugeridos($actor, $pase),
+            'vencido' => $vencido,
+            'etapas' => $this->pases->etapas($pase, $vencido),
+            'siguiente' => $this->pases->siguiente($pase),
+            'ronda' => $circuito->rondaActual($pase),
+            'rondasAnteriores' => $pase->aprobaciones->where('ronda', '<', $pase->ronda)->groupBy('ronda'),
+            'actual' => $actual,
+            'sinFirmantes' => $actual !== null && $circuito->reglaSinFirmantes($pase, $actual),
+            'paso' => $paso,
+            'puede' => [
+                'aprobar' => $puedeAprobar,
+                'omitir' => $puedeAprobar && ! $actual->obligatorio,
+                'porQueNo' => $actual !== null && ! $puedeAprobar ? $circuito->motivoNoPuede($actor, $pase, $actual) : null,
+                'firmarPaso' => $paso !== null && $this->pases->puedeFirmarPaso($actor, $pase, $paso),
+                'cancelar' => $gestionar,
+                'corregir' => $corregir && $sedesOrigen->isNotEmpty(),
+                'imprimir' => $actor->can('pases_salida.imprimir')
+                    && $this->pases->limitar(PaseSalida::query(), $actor, 'pases_salida.imprimir')->whereKey($pase->id)->exists(),
+                'colaborador' => $actor->can('colaboradores.crear') || $actor->can('colaboradores.provisional'),
+                'proveedor' => $actor->can('proveedores.crear'),
+                'equipos' => $actor->can('equipos.ver'),
+            ],
+            'firmaGuardada' => ($actor->can('pases_salida.aprobar') || $actor->can('pases_salida.firmar')) && $this->pases->firmaGuardada($actor) !== null,
+            'personaSugerida' => $paso !== null ? $this->pases->personaSugerida($pase) : '',
+            'formulario' => $corregir && $sedesOrigen->isNotEmpty() ? $this->formulario($sedesOrigen) : null,
+            'anteriores' => $this->colaboradoresAnteriores($pase),
         ];
     }
 
-    private function cargarDetalle(PaseSalida $pase): void
+    private function cargarFicha(PaseSalida $pase): void
     {
         $pase->load([
             'sede:id,nombre,direccion,colonia,ciudad', 'sedeDestino:id,nombre', 'proveedor:id,nombre',
@@ -304,49 +489,22 @@ class PaseSalidaController extends Controller
             'solicitante.departamento:id,nombre', 'solicitante.puesto:id,nombre',
             'colaboradorDestino:id,num_empleado,nombre,apellido_paterno,apellido_materno',
             'articulos', 'firmas.capturo:id,name', 'creador:id,name', 'editor:id,name', 'rechazador:id,name',
+            'aprobaciones.rol:id,nombre', 'aprobaciones.departamento:id,nombre', 'aprobaciones.resolvio:id,name', 'aprobaciones.firma',
+            'bitacora.firmas',
         ]);
     }
 
     /**
-     * Nombre que se propone al firmar, para teclear lo menos posible: el
-     * solicitante en sus roles, quien se lleva el equipo cuando es un
-     * colaborador y el usuario en sesión en los roles de Seguridad.
+     * Tras un error al guardar (o al corregir un pase): el solicitante y el
+     * colaborador destino ya elegidos, para volver a mostrarlos en el lector.
      *
      * @return array<string, string>
      */
-    private function nombresSugeridos(User $actor, PaseSalida $pase): array
-    {
-        $solicitante = $pase->solicitante?->nombreCompleto();
-        $destino = $pase->colaboradorDestino?->nombreCompleto();
-        $sugeridos = [];
-        foreach (PaseSalida::GRUPOS as [, $roles]) {
-            foreach (array_keys($roles) as $rol) {
-                $nombre = match (true) {
-                    str_starts_with($rol, 'solicitante_') => $solicitante,
-                    str_starts_with($rol, 'seguridad_') => $actor->name,
-                    $rol === 'recibe_salida' && $pase->destino_tipo === 'colaborador' => $destino,
-                    default => null,
-                };
-                if ($nombre) {
-                    $sugeridos[$rol] = mb_strtoupper($nombre, 'UTF-8');
-                }
-            }
-        }
-
-        return $sugeridos;
-    }
-
-    /**
-     * Tras un error al guardar: el solicitante y el colaborador destino que ya
-     * se habían elegido, para volver a mostrarlos en el lector.
-     *
-     * @return array<string, string>
-     */
-    private function colaboradoresAnteriores(): array
+    private function colaboradoresAnteriores(?PaseSalida $pase = null): array
     {
         $anteriores = [];
         foreach (['colaborador_id', 'colaborador_destino_id'] as $campo) {
-            $id = request()->old($campo);
+            $id = request()->old($campo, $pase?->{$campo});
             $colaborador = is_numeric($id) ? Colaborador::find((int) $id) : null;
             if ($colaborador !== null) {
                 $anteriores[$campo] = $colaborador->nombreCompleto().($colaborador->num_empleado ? ' · Núm. '.$colaborador->num_empleado : ' · provisional');
