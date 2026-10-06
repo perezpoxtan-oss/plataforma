@@ -326,7 +326,9 @@ class ProveedoresTest extends TestCase
         $this->actingAs($agente)->get("/proveedores/{$p->id}")->assertOk()->assertDontSee('Editar Datos Generales');
         $this->actingAs($agente)->getJson('/proveedores/buscar?q=taxis')->assertJsonCount(1, 'resultados');
         $this->actingAs($agente)->post('/proveedores', ['nombre' => 'Otro', 'categoria' => 'taxi'])->assertForbidden();
-        $this->actingAs($agente)->postJson('/proveedores/rapido', ['nombre' => 'Otro', 'categoria' => 'taxi'])->assertForbidden();
+        // Altas por verificar (ADR-0006): desde la caseta sí registra, pero queda pendiente de verificar
+        $this->actingAs($agente)->postJson('/proveedores/rapido', ['nombre' => 'Otro', 'categoria' => 'taxi'])
+            ->assertCreated()->assertJsonPath('proveedor.verificacion', 'pendiente');
         $this->actingAs($agente)->put("/proveedores/{$p->id}", ['nombre' => 'X', 'categoria' => 'taxi'])->assertForbidden();
         $this->actingAs($agente)->patch("/proveedores/{$p->id}/estado", ['activo' => '0'])->assertForbidden();
     }

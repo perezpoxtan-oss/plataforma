@@ -126,3 +126,12 @@ document.addEventListener('persona:registrada', function (e) { /* e.detail.id, e
 ## Pruebas
 
 `tests/Feature/Seguridad/PersonasTest.php`: alta con normalización y auditoría enmascarada, folio único por empresa sin importar formato (y permitido en otra), validaciones y reglas de tipo, enmascarado para quien solo consulta (Agente), alcance propios, contrato `?nuevo=1&proveedor=` y regreso con `volver=proveedor` (con y sin la ruta de la ficha), búsqueda y registro rápido (201/409/422), baja y reactivación, aislamiento entre empresas, superadministrador y datos demo.
+
+## Altas por verificar
+
+Lo que la caseta registra en este padrón desde Operación (con el registro rápido, o al guardar un ingreso o un movimiento) pasa por dos pasos:
+
+1. Antes de crear, se sugieren los parecidos («¿Es alguno de estos?»).
+2. Si quien lo registra no puede editar el padrón, queda «Pendiente de verificar» hasta que alguien lo acepta, lo rechaza o lo une con el existente.
+
+Ver [altas-por-verificar.md](altas-por-verificar.md) y ADR-0006.

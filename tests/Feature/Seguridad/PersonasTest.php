@@ -218,7 +218,9 @@ class PersonasTest extends TestCase
         $p = $this->buscarPersona('Laura Méndez Ríos');
         $this->actingAs($agente)->put("/personas/{$p->id}", $this->datos())->assertForbidden();
         $this->actingAs($agente)->patch("/personas/{$p->id}/estado", ['activo' => '0'])->assertForbidden();
-        $this->actingAs($agente)->postJson('/personas/rapido', $this->datos())->assertForbidden();
+        // Altas por verificar (ADR-0006): desde la caseta sí registra, pero queda pendiente de verificar
+        $this->actingAs($agente)->postJson('/personas/rapido', $this->datos(['nombre_completo' => 'Pedro Canul Dzib', 'folio_identificacion' => '']))
+            ->assertCreated()->assertJsonPath('persona.verificacion', 'pendiente');
         // Sí busca (la caseta consulta antes de registrar en la bitácora)
         $this->actingAs($agente)->getJson('/personas/buscar?q=laura')->assertOk()->assertJsonPath('resultados.0.folio', 'INE ••••M700');
 
@@ -446,7 +448,9 @@ class PersonasTest extends TestCase
         $demo = Empresa::where('nombre_comercial', CrearDatosDemo::EMPRESA)->firstOrFail();
         // Sin los choferes y taxistas que registra la Bitácora de transporte demo
         $todas = $this->enEmpresa(fn () => Persona::with('proveedor')->get(), $demo)
-            ->reject(fn ($p) => str_contains((string) $p->motivo_visita, '(Bitácora de transporte)'))->values();
+            ->reject(fn ($p) => str_contains((string) $p->motivo_visita, '(Bitácora de transporte)'))
+            // Ni las altas que la caseta registró desde Operación (ADR-0006)
+            ->reject(fn ($p) => $p->origen_alta !== null)->values();
 
         $this->assertCount(12, $todas);
         $this->assertSame(['Raúl Domínguez Can'], $todas->where('activo', false)->pluck('nombre_completo')->values()->all());

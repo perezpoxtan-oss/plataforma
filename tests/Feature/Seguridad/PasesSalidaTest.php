@@ -687,7 +687,8 @@ class PasesSalidaTest extends TestCase
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
 
         $this->actingAs($agente)->get('/pases-salida')->assertOk()->assertSee('Nuevo Pase')
-            ->assertSee('dialogoRegistroRapidoColaborador')->assertDontSee('dialogoAltaRapidaProveedor');
+            // Altas por verificar (ADR-0006): la caseta da de alta la empresa externa que no existe; queda pendiente de verificar
+            ->assertSee('dialogoRegistroRapidoColaborador')->assertSee('dialogoAltaRapidaProveedor');
         $pase = $this->crearPase([], $agente);
         $this->assertSame($agente->id, $pase->creado_por);
 

@@ -91,7 +91,7 @@ class AccesoController extends Controller
                     'aprobar' => $actor->can('accesos.aprobar'),
                     'exportar' => $actor->can('accesos.exportar'),
                     'provisional' => $actor->can('colaboradores.crear') || $actor->can('colaboradores.provisional'),
-                    'persona' => $actor->can('visitantes.crear'),
+                    'persona' => $actor->can('visitantes.crear') || $actor->can('accesos.crear'), // Altas por verificar (ADR-0006)
                 ],
             ]);
         });

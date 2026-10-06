@@ -22,6 +22,7 @@
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
             // Textos de SEGCAT (visitante_lista.php)
             $categoriasUi = ['general' => 'Visitante general', 'prospecto_rrhh' => 'Candidato/prospecto', 'familiar' => 'Familiar/personal'];
+            $altas = app(\App\Services\Padrones\AltasPorVerificar::class)->paraLista('personas', $personas, auth()->user());
             $insignia = fn ($p) => match (true) {
                 $p->tipo === 'proveedor' => ['proveedor', 'Proveedor'],
                 $p->tipo === 'contratista' => ['contratista', 'Contratista'],
@@ -59,6 +60,7 @@
             <button type="button" class="btn-pill-tipo" data-filtro-tipo="personas" data-valor="visitante" aria-pressed="false"><i class="bi bi-person me-1" aria-hidden="true"></i>Visitantes</button>
             <button type="button" class="btn-pill-tipo" data-filtro-tipo="personas" data-valor="proveedor" aria-pressed="false"><i class="bi bi-truck me-1" aria-hidden="true"></i>Proveedores</button>
             <button type="button" class="btn-pill-tipo" data-filtro-tipo="personas" data-valor="contratista" aria-pressed="false"><i class="bi bi-tools me-1" aria-hidden="true"></i>Contratistas</button>
+            @include('padrones.altas-por-verificar._pildora', ['altas' => $altas])
         </div>
 
         <div class="fichas-grid" data-fichas="personas">
@@ -72,8 +74,8 @@
             @forelse ($personas as $p)
                 @php
                     [$claseInsignia, $textoInsignia] = $insignia($p);
-                    $editable = $puede['editar'] && ($editables === null || in_array($p->id, $editables, true));
-                    $desactivable = $puede['estado'] && ($desactivables === null || in_array($p->id, $desactivables, true));
+                    $editable = $puede['editar'] && ($editables === null || in_array($p->id, $editables, true)) && ! $p->estaRechazado();
+                    $desactivable = $puede['estado'] && ($desactivables === null || in_array($p->id, $desactivables, true)) && ! $p->estaRechazado();
                     $empresaDe = $p->empresaQueRepresenta();
                     $tipoId = \App\Models\Persona::IDENTIFICACIONES[$p->tipo_identificacion] ?? 'Identificación';
                     // El folio completo solo para quien puede editar esta ficha (y solo entonces entra al buscador)
@@ -94,6 +96,7 @@
                             <span class="insignia-persona {{ $claseInsignia }}"><i class="bi bi-tag-fill me-1" aria-hidden="true"></i>{{ $textoInsignia }}</span>
                             <span class="estado-persona {{ $p->activo ? 'activo' : 'baja' }}">{{ $p->activo ? 'ACTIVO' : 'BAJA' }}</span>
                         </div>
+                        @include('padrones.altas-por-verificar._insignia', ['registro' => $p, 'femenino' => true])
                         <h2 class="persona-nombre">{{ $p->nombre_completo }}</h2>
 
                         <div class="ficha-meta persona-meta">
@@ -135,6 +138,7 @@
                         @else
                             <span></span>
                         @endif
+                        @include('padrones.altas-por-verificar._boton', ['registro' => $p])
                         @if ($editable)
                             <button type="button" class="btn-editar-perfil" aria-label="Editar el perfil de {{ $p->nombre_completo }}"
                                     data-accion="editar-registro" data-dialogo="dialogoEditarPersona"
@@ -274,6 +278,7 @@
                 </div>
             </dialog>
         @endforeach
+        @include('padrones.altas-por-verificar._dialogo', ['altas' => $altas])
     @endif
 </div>
 @endsection

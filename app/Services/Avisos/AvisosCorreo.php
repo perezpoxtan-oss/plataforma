@@ -2,19 +2,24 @@
 
 namespace App\Services\Avisos;
 
+use App\Mail\AltaPorVerificarRegistrada;
 use App\Mail\AltaProvisionalRegistrada;
 use App\Mail\AvisoPaseSalida;
+use App\Mail\AvisoProcedimiento;
 use App\Mail\ValeTaxiRegistrado;
 use App\Mail\VoucherConCobro;
 use App\Models\Colaborador;
 use App\Models\Empresa;
 use App\Models\MovimientoTransporte;
+use App\Models\Sede;
 use App\Models\User;
 use App\Models\VoucherReposicion;
+use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Support\CorreoPlataforma;
 use App\Support\HoraLocal;
+use Illuminate\Database\Eloquent\Model;
 
 use function Illuminate\Support\defer;
 
@@ -198,4 +203,67 @@ class AvisosCorreo
         return $envios;
     }
     // Fin Ronda 5
+
+    // Altas por verificar (ver docs/tecnico/altas-por-verificar.md)
+
+    /**
+     * La caseta registró desde Operación un vehículo, una empresa externa o
+     * una persona que no estaba en su padrón: aviso a quien puede verificarlo
+     * ("<padrón>.editar") en la sede donde se registró.
+     */
+    public function altaPorVerificar(string $padron, Model $registro, User $registradoPor): void
+    {
+        $empresa = Empresa::find($registro->empresa_id);
+        if ($empresa === null || ! $empresa->aviso('alta_por_verificar') || ! $this->correo->configurado()) {
+            return;
+        }
+
+        $altas = app(AltasPorVerificar::class);
+        $definicion = $altas->definicion($padron);
+        $sedeId = $registro->sede_alta_id === null ? null : (int) $registro->sede_alta_id;
+        $destinatarios = $this->conPermiso($empresa->id, $definicion['permiso'].'.editar', $sedeId);
+        if ($destinatarios === []) {
+            return;
+        }
+
+        $mensaje = new AltaPorVerificarRegistrada(
+            $definicion['singular'],
+            $altas->titulo($padron, $registro),
+            $definicion['padron'],
+            $sedeId === null ? null : Sede::whereKey($sedeId)->value('nombre'),
+            $registro->origen_alta !== null ? (AltasPorVerificar::ORIGENES[$registro->origen_alta]['nombre'] ?? null) : null,
+            $registradoPor->name,
+            app(HoraLocal::class)->formatear(now()),
+            route($definicion['ruta'], ['verificacion' => 'pendiente']),
+        );
+
+        defer(fn () => $this->correo->enviar($destinatarios, $mensaje));
+    }
+    // Fin Altas por verificar
+    // Procedimientos (ver docs/tecnico/procedimientos.md)
+
+    /**
+     * Procedimientos: aviso de una versión publicada o recordatorio de acuses
+     * pendientes, a una lista ya resuelta por el módulo. $clave es el aviso de
+     * Empresa::AVISOS que lo enciende; $diferido = false en el comando diario.
+     *
+     * @param  list<string>  $destinatarios
+     */
+    public function procedimiento(int $empresaId, string $clave, array $destinatarios, AvisoProcedimiento $mensaje, bool $diferido = true): bool
+    {
+        $empresa = Empresa::find($empresaId);
+        $destinatarios = array_values(array_unique(array_filter($destinatarios)));
+        if ($empresa === null || ! $empresa->aviso($clave) || ! $this->correo->configurado() || $destinatarios === []) {
+            return false;
+        }
+
+        if ($diferido) {
+            defer(fn () => $this->correo->enviar($destinatarios, $mensaje));
+
+            return true;
+        }
+
+        return $this->correo->enviar($destinatarios, $mensaje);
+    }
+    // Fin Procedimientos
 }

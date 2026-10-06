@@ -23,6 +23,7 @@
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
             $placasExistentes = json_encode($vehiculos->pluck('placas')->values());
+            $altas = app(\App\Services\Padrones\AltasPorVerificar::class)->paraLista('vehiculos', $vehiculos, auth()->user());
             $colores = [
                 'agencia_renta' => 'bg-renta', 'empresa_proveedor' => 'bg-proveedor', 'propio_huesped' => 'bg-huesped',
                 'taxi_app' => 'bg-taxi', 'transporte_personal' => 'bg-personal', 'propio_colaborador' => 'bg-colaborador',
@@ -49,6 +50,7 @@
             <button type="button" class="btn-pill-tipo" data-filtro-tipo="vehiculos" data-valor="propios" aria-pressed="false"><i class="bi bi-person me-1" aria-hidden="true"></i>Propios <span class="conteo-pill">{{ $conteo['propios'] ?? 0 }}</span></button>
             <button type="button" class="btn-pill-tipo" data-filtro-tipo="vehiculos" data-valor="flotillas" aria-pressed="false"><i class="bi bi-truck me-1" aria-hidden="true"></i>Flotillas <span class="conteo-pill">{{ $conteo['flotillas'] ?? 0 }}</span></button>
             <button type="button" class="btn-pill-tipo" data-filtro-tipo="vehiculos" data-valor="taxis" aria-pressed="false"><i class="bi bi-taxi-front me-1" aria-hidden="true"></i>Taxis <span class="conteo-pill">{{ $conteo['taxis'] ?? 0 }}</span></button>
+            @include('padrones.altas-por-verificar._pildora', ['altas' => $altas])
         </div>
 
         <div class="fichas-grid" data-vehiculos>
@@ -61,8 +63,8 @@
 
             @forelse ($vehiculos as $v)
                 @php
-                    $editable = $puede['editar'] && ($editables === null || in_array($v->id, $editables, true));
-                    $desactivable = $puede['estado'] && ($desactivables === null || in_array($v->id, $desactivables, true));
+                    $editable = $puede['editar'] && ($editables === null || in_array($v->id, $editables, true)) && ! $v->estaRechazado();
+                    $desactivable = $puede['estado'] && ($desactivables === null || in_array($v->id, $desactivables, true)) && ! $v->estaRechazado();
                     $etiqueta = \App\Models\Vehiculo::PROPIEDADES[$v->propiedad] ?? $v->propiedad;
                     $tipo = $v->tipo === 'otro' && $v->descripcion_otro ? $v->descripcion_otro : (\App\Models\Vehiculo::TIPOS[$v->tipo] ?? '—');
                     $marcaModelo = trim(($v->marca ?? '').' '.($v->modelo ?? '')) ?: '—';
@@ -78,6 +80,7 @@
                             <span class="badge-prop {{ $colores[$v->propiedad] ?? 'bg-visitante' }}"><i class="bi bi-info-circle-fill me-1" aria-hidden="true"></i>{{ $etiqueta }}</span>
                             <span class="etiqueta-estado {{ $v->activo ? 'activo' : 'inactivo' }}">{{ $v->activo ? 'ACTIVO' : 'BAJA' }}</span>
                         </div>
+                        @include('padrones.altas-por-verificar._insignia', ['registro' => $v])
                         <div class="text-center mb-2">
                             <h2 class="veh-placas">{{ $v->placas }}</h2>
                         </div>
@@ -113,6 +116,7 @@
                             'identImprimir' => $puede['imprimir'] ? route('vehiculos.calcomania', $v->id) : null, 'identImprimirTexto' => 'Imprimir calcomanía',
                             'identEditable' => $editable])
                         <div class="d-flex gap-2">
+                            @include('padrones.altas-por-verificar._boton', ['registro' => $v])
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar vehículo {{ $v->placas }}"
                                         data-accion="editar-registro" data-dialogo="dialogoEditarVehiculo"
@@ -273,6 +277,7 @@
         @endforeach
 
         @include('componentes.codigo-identificacion')
+        @include('padrones.altas-por-verificar._dialogo', ['altas' => $altas])
     @endif
 </div>
 @endsection

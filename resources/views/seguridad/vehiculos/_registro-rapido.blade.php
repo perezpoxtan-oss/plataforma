@@ -12,12 +12,17 @@
     Si las placas ya existen (409), se ofrece usar ese vehículo: elegirlo lanza
     el mismo evento con el vehículo existente. Ver docs/tecnico/vehiculos.md.
 
-    Solo se muestra a quien tiene "vehiculos.crear".
+    Se muestra a quien tiene "vehiculos.crear" o, desde una pantalla de
+    Operación (Accesos, Transporte), su permiso operativo: entonces el vehículo
+    nace "pendiente de verificar" (ADR-0006). Antes de crear se ofrecen las
+    placas parecidas ("¿Es alguno de estos?").
 --}}
 @php
     $tenantRapidoVe = app(\App\Support\Tenancy\Tenant::class);
+    $altasRapidoVe = app(\App\Services\Padrones\AltasPorVerificar::class);
+    $origenRapidoVe = $altasRapidoVe->origenDeRuta(request()->route()?->getName());
 @endphp
-@if (auth()->user()?->can('vehiculos.crear') && $tenantRapidoVe->activo())
+@if (auth()->user() && $altasRapidoVe->puedeAltaRapida(auth()->user(), 'vehiculos', $origenRapidoVe) && $tenantRapidoVe->activo())
     @php
         $proveedoresRapido = \App\Models\Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
     @endphp
@@ -27,8 +32,13 @@
             <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
         </div>
         <div class="dialogo-cuerpo">
-            <form action="{{ route('vehiculos.rapido') }}" method="POST" autocomplete="off" data-registro-rapido-vehiculo data-form-vehiculo>
+            @include('padrones.altas-por-verificar._aviso-alta', ['padron' => 'vehiculos'])
+            <form action="{{ route('vehiculos.rapido') }}" method="POST" autocomplete="off" data-registro-rapido-vehiculo data-form-vehiculo
+                  data-alta-padron="vehiculos" data-url-parecidos="{{ route('altas_por_verificar.parecidos') }}">
                 @csrf
+                <input type="hidden" name="origen" value="{{ $origenRapidoVe }}">
+                <input type="hidden" name="confirmar_nuevo" value="0" data-alta-confirmar>
+                <div class="caja-parecidos" role="alert" data-alta-parecidos hidden></div>
                 <div class="alert alert-danger small py-2" role="alert" data-errores-rapido-vehiculo hidden></div>
                 <div class="caja-parecidos" role="alert" data-existente-vehiculo hidden></div>
                 <div class="row">

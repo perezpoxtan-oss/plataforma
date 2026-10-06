@@ -128,7 +128,7 @@ class PaseSalidaController extends Controller
                 'puede' => [
                     'crear' => $puedeCrear && $sedesOrigen->isNotEmpty(),
                     'colaborador' => $actor->can('colaboradores.crear') || $actor->can('colaboradores.provisional'),
-                    'proveedor' => $actor->can('proveedores.crear'),
+                    'proveedor' => $actor->can('proveedores.crear') || $actor->can('pases_salida.crear'), // Altas por verificar (ADR-0006)
                     'equipos' => $actor->can('equipos.ver'),
                     'configurar' => $actor->can('pases_salida.configurar'),
                 ],
@@ -471,7 +471,7 @@ class PaseSalidaController extends Controller
                 'imprimir' => $actor->can('pases_salida.imprimir')
                     && $this->pases->limitar(PaseSalida::query(), $actor, 'pases_salida.imprimir')->whereKey($pase->id)->exists(),
                 'colaborador' => $actor->can('colaboradores.crear') || $actor->can('colaboradores.provisional'),
-                'proveedor' => $actor->can('proveedores.crear'),
+                'proveedor' => $actor->can('proveedores.crear') || $actor->can('pases_salida.crear'), // Altas por verificar (ADR-0006)
                 'equipos' => $actor->can('equipos.ver'),
             ],
             'firmaGuardada' => ($actor->can('pases_salida.aprobar') || $actor->can('pases_salida.firmar')) && $this->pases->firmaGuardada($actor) !== null,

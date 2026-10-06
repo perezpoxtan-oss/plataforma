@@ -110,6 +110,12 @@ trait EscenarioAuditoria
             'turno' => 'turnos',
             'vehiculo' => 'vehiculos',
             'voucher' => 'vouchers_reposicion',
+            // Procedimientos
+            'procedimiento' => 'procedimientos',
+            'version' => 'procedimiento_versiones',
+            'adjunto' => 'procedimiento_adjuntos',
+            'acuse' => 'procedimiento_acuses',
+            'categoria' => 'procedimiento_categorias',
         ][$parametro] ?? null;
     }
 

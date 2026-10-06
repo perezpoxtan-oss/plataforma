@@ -185,6 +185,14 @@ class EliminarDefinitivoTest extends TestCase
                 fn (int $id) => $this->fila('movimientos_transporte', ['sede_id' => $this->centro->id, 'ruta_id' => $id, 'tipo_movimiento' => 'entrada', 'estatus' => 'llegada', 'fecha' => now()->toDateString()]),
                 '1 movimiento de transporte',
             ],
+            'procedimientos' => [
+                fn (?Empresa $e = null) => $this->fila('procedimientos', ['clave' => 'PRO-B'.$this->n, 'titulo' => 'Borrador por error',
+                    'categoria_id' => $this->fila('procedimiento_categorias', ['nombre' => 'Categoría '.$this->n], $e)], $e),
+                fn (int $id) => $this->fila('procedimiento_acuses', ['version_id' => $this->fila('procedimiento_versiones', ['procedimiento_id' => $id, 'numero' => 1,
+                    'categoria_id' => DB::table('procedimientos')->where('id', $id)->value('categoria_id'), 'titulo' => 'x', 'objetivo' => 'x']),
+                    'user_id' => $this->admin->id, 'nombre' => 'Ana', 'firma_ruta' => 'firmas/x.jpg', 'leido_en' => now()]),
+                '1 acuse de lectura',
+            ],
             'paraderos' => [
                 fn (?Empresa $e = null) => $this->fila('paraderos', ['sede_id' => $this->sedeDe($e), 'nombre' => 'Glorieta '.$this->n], $e),
                 fn (int $id) => $this->fila('ruta_paradas', ['ruta_horario_id' => $this->fila('ruta_horarios', ['ruta_id' => $ruta(), 'nombre' => 'L-V', 'dias' => '1,2,3,4,5',
@@ -200,7 +208,7 @@ class EliminarDefinitivoTest extends TestCase
     public static function modulosRegistrados(): array
     {
         $claves = ['sedes', 'espacios', 'departamentos', 'puestos', 'turnos', 'colaboradores', 'roles', 'proveedores', 'personas', 'vehiculos',
-            'llaves', 'gafetes', 'tipos_gafete', 'equipos', 'tipos_equipo', 'equipos_pc', 'estacionamientos', 'rutas', 'paraderos'];
+            'llaves', 'gafetes', 'tipos_gafete', 'equipos', 'tipos_equipo', 'equipos_pc', 'estacionamientos', 'rutas', 'paraderos', 'procedimientos'];
 
         return array_combine($claves, array_map(fn ($c) => [$c], $claves));
     }
@@ -345,6 +353,8 @@ class EliminarDefinitivoTest extends TestCase
 
         $migracion->up();
         $migracion->up(); // idempotente
+        // Procedimientos (módulo posterior) liga «borrar» con su propia migración
+        (require database_path('migrations/2026_10_12_000100_crear_procedimientos.php'))->permisos();
 
         $borrar = fn (Rol $rol) => RolPermiso::with('moduloAccion.modulo', 'moduloAccion.accion')->where('rol_id', $rol->id)->get()
             ->filter(fn ($p) => $p->moduloAccion->accion->clave === 'borrar');

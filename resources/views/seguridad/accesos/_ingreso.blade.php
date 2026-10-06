@@ -56,6 +56,7 @@
                 @csrf
                 <input type="hidden" name="_dialogo" value="ingreso">
                 <input type="hidden" name="persona_id" value="{{ $previo('persona_id') }}" data-persona-id>
+                <span hidden data-alta-sugerencias="{{ route('altas_por_verificar.parecidos') }}"></span>{{-- Altas por verificar: "¿Es alguno de estos?" (ADR-0006) --}}
 
                 @if ($sig && ! $trasError)
                     <div class="alert alert-success small py-2 px-3" role="status"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>{{ $sig['mensaje'] ?? 'Ingreso registrado.' }} Captura el siguiente.</div>

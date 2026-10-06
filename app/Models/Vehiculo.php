@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
 use App\Models\Concerns\TieneIdentificador;
+use App\Models\Concerns\VerificableEnPadron;
 use App\Support\Lector\Identificable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Vehiculo extends Model implements Identificable
 {
-    use PerteneceAEmpresa, RegistraAutor, TieneIdentificador;
+    use PerteneceAEmpresa, RegistraAutor, TieneIdentificador, VerificableEnPadron;
 
     /** Se encuentra también tecleando o escaneando las placas. */
     protected string $columnaLegible = 'placas';

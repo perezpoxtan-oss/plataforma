@@ -1135,3 +1135,74 @@ html.modo-sol .opcion-firma-voucher:has(input:checked) { background: #fef08a; }
 html.modo-sol .voucher-firma-estado { color: #000; text-decoration: underline; }
 html.modo-sol .sesion-cuenta, html.modo-sol .sesion-cuenta strong { color: #000; }
 /* Fin Ajustes Ronda 5 */
+
+/* Procedimientos: Noche y Sol */
+html.modo-noche .fichas-procedimientos .ficha-procedimiento, html.modo-noche .paso-procedimiento, html.modo-noche .version-procedimiento, html.modo-noche .acuse-fila,
+html.modo-noche .adjuntos-procedimiento a, html.modo-noche .lectura, html.modo-noche .paso-editor, html.modo-noche .opcion-aplica, html.modo-noche .categoria-fila,
+html.modo-noche .chip-categoria, html.modo-noche .chip-version-selector, html.modo-noche .btn-letra, html.modo-noche .escanear-procedimiento[open] { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .fichas-procedimientos .ficha-procedimiento, html.modo-noche .lectura { border-top-color: var(--cat-color); }
+html.modo-noche .categoria-fila { border-left-color: var(--cat-color); }
+html.modo-noche .chip-categoria.activa { background: var(--cat-color, #e2e8f0); border-color: var(--cat-color, #e2e8f0); color: #fff; }
+html.modo-noche .chip-version-selector.activa, html.modo-noche .chip-version { background: #e2e8f0; border-color: #e2e8f0; color: #0f172a; }
+html.modo-noche .ficha-procedimiento-titulo, html.modo-noche .lectura-cabecera h1 { color: var(--texto); }
+html.modo-noche .ficha-procedimiento-objetivo, html.modo-noche .ficha-procedimiento-meta, html.modo-noche .lectura-clave, html.modo-noche .lectura-bloque h2, html.modo-noche .paso-responsable { color: #cbd5e1; }
+html.modo-noche .categoria-procedimiento { color: color-mix(in srgb, var(--cat-color) 55%, #fff); }
+html.modo-noche .lectura-pasos li { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .paso-procedimiento.critico, html.modo-noche .lectura-pasos li.critico, html.modo-noche .paso-editor:has(.paso-editor-critico input:checked) { background: rgba(220, 38, 38, 0.15); border-color: #ef4444; }
+html.modo-noche .lectura-pasos li.critico p, html.modo-noche .etiqueta-critico, html.modo-noche .texto-critico, html.modo-noche .paso-editor-critico { color: #fca5a5; }
+html.modo-noche .paso-procedimiento-numero, html.modo-noche .lectura-numero, html.modo-noche .paso-editor-numero { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .paso-procedimiento.critico .paso-procedimiento-numero, html.modo-noche .lectura-pasos .critico .lectura-numero { background: #ef4444; color: #fff; }
+html.modo-noche .badge-procedimiento { background: var(--superficie-2); color: #e2e8f0; }
+html.modo-noche .badge-procedimiento.publicado { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+html.modo-noche .badge-procedimiento.revision { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+html.modo-noche .badge-procedimiento.retirado { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+html.modo-noche .acuse-barra-fondo { background: #334155; }
+html.modo-noche .aviso-por-leer, html.modo-noche .casilla-entendido { background: rgba(59, 130, 246, 0.18); color: #bfdbfe; border-color: #3b82f6; }
+html.modo-noche .aviso-leido { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+html.modo-noche .aviso-version { background: var(--superficie-2); color: #e2e8f0; }
+html.modo-noche .aviso-version.borrador, html.modo-noche .aviso-version.revision { background: rgba(245, 158, 11, 0.15); color: #fde68a; }
+html.modo-noche .aviso-version.retirado, html.modo-noche .aviso-version.reemplazada { background: rgba(239, 68, 68, 0.15); color: #fecaca; }
+html.modo-noche .opcion-aplica:has(input:checked) { background: rgba(37, 99, 235, 0.2); border-color: #3b82f6; }
+html.modo-noche .escanear-procedimiento > summary, html.modo-noche .detalle-aplica > summary { color: #93c5fd; }
+html.modo-noche .acuse-fila.falta .acuse-icono, html.modo-noche .estado-seccion.pendiente { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+html.modo-noche .acuse-fila.firmo .acuse-icono { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+html.modo-sol .fichas-procedimientos .ficha-procedimiento, html.modo-sol .paso-procedimiento, html.modo-sol .version-procedimiento, html.modo-sol .acuse-fila,
+html.modo-sol .adjuntos-procedimiento a, html.modo-sol .lectura, html.modo-sol .paso-editor, html.modo-sol .opcion-aplica, html.modo-sol .categoria-fila,
+html.modo-sol .chip-categoria, html.modo-sol .chip-version-selector, html.modo-sol .btn-letra { border: 1px solid #64748b; background: #fff; color: #000; }
+html.modo-sol .fichas-procedimientos .ficha-procedimiento, html.modo-sol .lectura { border-top: 8px solid var(--cat-color); }
+html.modo-sol .categoria-fila { border-left: 6px solid var(--cat-color); }
+html.modo-sol .chip-categoria.activa, html.modo-sol .chip-version-selector.activa { background: #000; color: #fff; }
+html.modo-sol .ficha-procedimiento-objetivo, html.modo-sol .ficha-procedimiento-meta, html.modo-sol .lectura-bloque h2, html.modo-sol .paso-responsable, html.modo-sol .lectura-clave { color: #000; font-weight: 700; }
+html.modo-sol .lectura-pasos li { background: #fff; border: 1px solid #64748b; }
+html.modo-sol .paso-procedimiento.critico, html.modo-sol .lectura-pasos li.critico, html.modo-sol .paso-editor:has(.paso-editor-critico input:checked) { border: 3px solid #b91c1c; background: #fff; }
+html.modo-sol .lectura-pasos li.critico p, html.modo-sol .etiqueta-critico { color: #7f1d1d; }
+html.modo-sol .badge-procedimiento { border: 1px solid #000; color: #000; background: #fff; }
+html.modo-sol .badge-procedimiento.publicado { background: #15803d; color: #fff; }
+html.modo-sol .badge-procedimiento.revision { background: #92400e; color: #fff; }
+html.modo-sol .badge-procedimiento.retirado { background: #b91c1c; color: #fff; }
+html.modo-sol .aviso-por-leer, html.modo-sol .casilla-entendido, html.modo-sol .aviso-leido, html.modo-sol .aviso-version { border: 2px solid #000; color: #000; background: #fff; }
+html.modo-sol .acuse-barra-fondo { background: #fff; border: 1px solid #000; }
+html.modo-sol .acuse-barra-avance { background: #92400e; }
+html.modo-sol .acuse-barra-avance.completo { background: #15803d; }
+html.modo-noche .cabecera-procedimiento { border-top-color: var(--cat-color); }
+html.modo-sol .cabecera-procedimiento { border-top: 8px solid var(--cat-color); }
+/* Fin Procedimientos */
+/* Altas por verificar (ADR-0006): Sol y Noche */
+html.modo-sol .insignia-verificacion.pendiente, html.modo-sol .btn-verificar-alta, html.modo-sol .btn-pill-tipo.btn-pill-verificar,
+html.modo-sol .aviso-alta-pendiente, html.modo-sol .grupo-alta-verificar { background: #facc15; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-pill-tipo.btn-pill-verificar.active, html.modo-sol .btn-verificar-alta:hover { background: #000; color: #facc15; }
+html.modo-sol .insignia-verificacion.rechazado { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .resumen-alta, html.modo-sol .opcion-unir, html.modo-sol .acceso-sugerencia.encabezado-parecidos { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .opcion-unir:has(input:checked), html.modo-sol .dialogo-verificar-alta .modo-opt:has(input:checked) { background: #facc15; color: #000; border-color: #000; }
+html.modo-sol .errores-verificar { background: #fff; color: #7f1d1d; border: 2px solid #b91c1c; }
+html.modo-sol .grupo-alta-verificar .conteo { background: #000; color: #facc15; }
+html.modo-noche .insignia-verificacion.pendiente, html.modo-noche .btn-verificar-alta, html.modo-noche .btn-pill-tipo.btn-pill-verificar,
+html.modo-noche .aviso-alta-pendiente, html.modo-noche .acceso-sugerencia.encabezado-parecidos { background: rgba(245, 158, 11, 0.14); color: #fcd34d; border-color: #b45309; }
+html.modo-noche .btn-pill-tipo.btn-pill-verificar.active, html.modo-noche .btn-verificar-alta:hover { background: #d97706; color: #fff; }
+html.modo-noche .insignia-verificacion.rechazado { background: var(--superficie-2); color: #cbd5e1; border-color: #475569; }
+html.modo-noche .resumen-alta, html.modo-noche .opcion-unir { background: var(--superficie-2); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .opcion-unir:has(input:checked), html.modo-noche .dialogo-verificar-alta .modo-opt:has(input:checked) { background: rgba(245, 158, 11, 0.16); border-color: #d97706; color: #fde68a; }
+html.modo-noche .errores-verificar { background: rgba(239, 68, 68, 0.12); border-color: #b91c1c; color: #fecaca; }
+html.modo-noche .grupo-alta-verificar { background: var(--superficie-2); border-color: #b45309; color: #fcd34d; }
+html.modo-noche .grupo-alta-verificar .conteo { background: rgba(245, 158, 11, 0.2); color: #fde68a; }
+/* Fin Altas por verificar */
