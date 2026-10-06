@@ -76,7 +76,7 @@ trait EscenarioAuditoria
     private function tablaDe(string $ruta, string $parametro): ?string
     {
         if ($parametro === 'equipo') {
-            return str_starts_with($ruta, 'recorridos_pc.') ? 'equipos_pc' : 'equipos';
+            return str_starts_with($ruta, 'equipos_pc.') ? 'equipos_pc' : 'equipos';
         }
 
         return [
@@ -130,6 +130,8 @@ trait EscenarioAuditoria
                     : DB::table('roles')->where('empresa_id', $this->demo->id)->where('nombre', 'Agente')->value('id');
             case 'cual':
                 return 'guardia';
+            case 'pantalla':
+                return 'etiqueta';
             case 'clave':
                 return 'accesos';
             case 'archivo':
@@ -187,7 +189,7 @@ trait EscenarioAuditoria
     {
         $parametros = [];
         foreach ($ruta->parameterNames() as $nombre) {
-            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
+            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'pantalla'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
             $valor = match (true) {
                 ! $inexistente || $esTexto => $this->valorParametro((string) $ruta->getName(), $nombre, $sede),
                 $nombre === 'codigo' => 'zzzzzzzzzzzzzzzzzzzzzzzz',

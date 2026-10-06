@@ -100,7 +100,7 @@ class RecorridosPcTest extends TestCase
         $piso = $this->espacio($this->centro, Espacio::AREA, 'Piso 1', $torre);
         $cocina = $this->espacio($this->centro, Espacio::AREA_ESPECIFICA, 'Cocina', $piso);
 
-        $this->actingAs($this->admin)->post('/recorridos-pc/equipos', [
+        $this->actingAs($this->admin)->post('/equipos-pc', [
             'sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => ' ext  01 ', 'zona_id' => $piso->id,
             'area_especifica_id' => $cocina->id, 'referencia' => 'Junto a la estufa', 'etiqueta_nfc' => '04:a2:3b:1c',
         ])->assertSessionHasNoErrors()->assertSessionHas('ok');
@@ -110,26 +110,26 @@ class RecorridosPcTest extends TestCase
         $this->assertSame('04A23B1C', $e->etiqueta_nfc);
         $this->assertSame(24, strlen($e->codigo_qr));
 
-        $pagina = $this->actingAs($this->admin)->get('/recorridos-pc/equipos')->assertOk()
+        $pagina = $this->actingAs($this->admin)->get('/equipos-pc')->assertOk()
             ->assertSee('Catálogo de Equipos de Protección Civil')->assertSee('EXT 01')->assertSee('Torre A · Piso 1 · Cocina')
             ->assertSee('Junto a la estufa')->assertSee('Nuevo Equipo')->assertSee('Creado por')->getContent();
         $this->assertStringContainsString('"zona_id":'.$piso->id, html_entity_decode($pagina));
 
-        $this->actingAs($this->admin)->put("/recorridos-pc/equipos/{$e->id}", ['sede_id' => $this->centro->id, 'categoria' => 'HIDRANTE', 'numero_serie' => 'HID-01', 'zona_id' => $torre->id])
+        $this->actingAs($this->admin)->put("/equipos-pc/{$e->id}", ['sede_id' => $this->centro->id, 'categoria' => 'HIDRANTE', 'numero_serie' => 'HID-01', 'zona_id' => $torre->id])
             ->assertSessionHasNoErrors();
         $e = $this->enEmpresa(fn () => $e->fresh());
         $this->assertSame(['HIDRANTE', 'HID-01', $torre->id], [$e->categoria, $e->numero_serie, $e->espacio_id]);
 
-        $this->actingAs($this->admin)->patch("/recorridos-pc/equipos/{$e->id}/desactivar")->assertSessionHas('aviso');
+        $this->actingAs($this->admin)->patch("/equipos-pc/{$e->id}/desactivar")->assertSessionHas('aviso');
         $this->assertFalse($this->enEmpresa(fn () => $e->fresh()->activo));
         // Transición prohibida: ya está de baja
-        $this->actingAs($this->admin)->patch("/recorridos-pc/equipos/{$e->id}/desactivar")->assertSessionHasErrors('activo');
-        $this->actingAs($this->admin)->patch("/recorridos-pc/equipos/{$e->id}/reactivar")->assertSessionHas('ok');
+        $this->actingAs($this->admin)->patch("/equipos-pc/{$e->id}/desactivar")->assertSessionHasErrors('activo');
+        $this->actingAs($this->admin)->patch("/equipos-pc/{$e->id}/reactivar")->assertSessionHas('ok');
         $this->assertTrue($this->enEmpresa(fn () => $e->fresh()->activo));
-        $this->actingAs($this->admin)->patch("/recorridos-pc/equipos/{$e->id}/reactivar")->assertSessionHasErrors('activo');
+        $this->actingAs($this->admin)->patch("/equipos-pc/{$e->id}/reactivar")->assertSessionHasErrors('activo');
 
         $eventos = Auditoria::where('auditable_type', EquipoPc::class)->orderBy('id')->pluck('evento')->all();
-        $this->assertSame(['recorridos_pc.creado', 'recorridos_pc.actualizado', 'recorridos_pc.desactivado', 'recorridos_pc.reactivado'], $eventos);
+        $this->assertSame(['equipos_pc.creado', 'equipos_pc.actualizado', 'equipos_pc.desactivado', 'equipos_pc.reactivado'], $eventos);
     }
 
     public function test_validacion_y_unicidad_por_sede(): void
@@ -137,21 +137,21 @@ class RecorridosPcTest extends TestCase
         $this->equipo('EXT-01');
         $otraTorre = $this->espacio($this->playa, Espacio::EDIFICIO, 'Torre Playa');
 
-        $this->actingAs($this->admin)->post('/recorridos-pc/equipos', ['_dialogo' => 'crear'])
+        $this->actingAs($this->admin)->post('/equipos-pc', ['_dialogo' => 'crear'])
             ->assertSessionHasErrors(['sede_id' => 'Elige la sede donde está el equipo.', 'categoria' => 'Elige el tipo de equipo.', 'numero_serie']);
-        $this->actingAs($this->admin)->post('/recorridos-pc/equipos', ['sede_id' => $this->centro->id, 'categoria' => 'COHETE', 'numero_serie' => 'X'])
+        $this->actingAs($this->admin)->post('/equipos-pc', ['sede_id' => $this->centro->id, 'categoria' => 'COHETE', 'numero_serie' => 'X'])
             ->assertSessionHasErrors(['categoria' => 'Elige un tipo de equipo de la lista.']);
-        $this->actingAs($this->admin)->post('/recorridos-pc/equipos', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'ext-01'])
+        $this->actingAs($this->admin)->post('/equipos-pc', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'ext-01'])
             ->assertSessionHasErrors(['numero_serie' => 'El Núm. de Serie / ID «EXT-01» ya está registrado en esta sede (Extintor).']);
         // Ubicación de otra sede
-        $this->actingAs($this->admin)->post('/recorridos-pc/equipos', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-02', 'zona_id' => $otraTorre->id])
+        $this->actingAs($this->admin)->post('/equipos-pc', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-02', 'zona_id' => $otraTorre->id])
             ->assertSessionHasErrors('zona_id');
         // La misma etiqueta NFC no puede estar en dos registros
         $this->equipo('EXT-09', 'EXTINTOR', null, ['etiqueta_nfc' => '04AABBCC']);
-        $this->actingAs($this->admin)->post('/recorridos-pc/equipos', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-03', 'etiqueta_nfc' => '04:aa:bb:cc'])
+        $this->actingAs($this->admin)->post('/equipos-pc', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-03', 'etiqueta_nfc' => '04:aa:bb:cc'])
             ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta NFC / RFID ya está asignada a otro registro: Equipo de Protección Civil «EXT-09». Usa otra etiqueta o quítasela primero a ese registro.']);
         // El mismo ID en otra sede sí se permite
-        $this->actingAs($this->admin)->post('/recorridos-pc/equipos', ['sede_id' => $this->playa->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-01'])
+        $this->actingAs($this->admin)->post('/equipos-pc', ['sede_id' => $this->playa->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-01'])
             ->assertSessionHasNoErrors();
         $this->assertSame(2, $this->enEmpresa(fn () => EquipoPc::where('numero_serie', 'EXT-01')->count()));
     }
@@ -159,9 +159,9 @@ class RecorridosPcTest extends TestCase
     public function test_registrar_y_capturar_siguiente_conserva_sede_tipo_y_ubicacion(): void
     {
         $torre = $this->espacio($this->centro, Espacio::EDIFICIO, 'Torre A');
-        $this->actingAs($this->admin)->post('/recorridos-pc/equipos', ['_siguiente' => 1, 'sede_id' => $this->centro->id, 'categoria' => 'DETECTOR_HUMO', 'numero_serie' => 'DH-1', 'zona_id' => $torre->id])
+        $this->actingAs($this->admin)->post('/equipos-pc', ['_siguiente' => 1, 'sede_id' => $this->centro->id, 'categoria' => 'DETECTOR_HUMO', 'numero_serie' => 'DH-1', 'zona_id' => $torre->id])
             ->assertSessionHas('capturar_siguiente', ['sede_id' => $this->centro->id, 'categoria' => 'DETECTOR_HUMO', 'zona_id' => (string) $torre->id, 'area_especifica_id' => null]);
-        $this->actingAs($this->admin)->get('/recorridos-pc/equipos')->assertSee('Capturando el siguiente');
+        $this->actingAs($this->admin)->get('/equipos-pc')->assertSee('Capturando el siguiente');
     }
 
     public function test_aislamiento_entre_empresas(): void
@@ -172,11 +172,11 @@ class RecorridosPcTest extends TestCase
         $this->actingAs($otroAdmin)->post('/recorridos-pc', ['sede_id' => $ajeno->sede_id])->assertSessionHasNoErrors();
         $recorridoAjeno = $this->enEmpresa(fn () => RecorridoPc::firstOrFail(), $otra);
 
-        $this->actingAs($this->admin)->get('/recorridos-pc/equipos')->assertOk()->assertDontSee('EXT-77');
-        $this->actingAs($this->admin)->put("/recorridos-pc/equipos/{$ajeno->id}", ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'Z'])->assertNotFound();
-        $this->actingAs($this->admin)->patch("/recorridos-pc/equipos/{$ajeno->id}/desactivar")->assertNotFound();
-        $this->actingAs($this->admin)->get("/recorridos-pc/equipos/{$ajeno->id}/etiqueta")->assertNotFound();
-        $this->actingAs($this->admin)->get("/recorridos-pc/equipos/{$ajeno->id}/qr")->assertNotFound();
+        $this->actingAs($this->admin)->get('/equipos-pc')->assertOk()->assertDontSee('EXT-77');
+        $this->actingAs($this->admin)->put("/equipos-pc/{$ajeno->id}", ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'Z'])->assertNotFound();
+        $this->actingAs($this->admin)->patch("/equipos-pc/{$ajeno->id}/desactivar")->assertNotFound();
+        $this->actingAs($this->admin)->get("/equipos-pc/{$ajeno->id}/etiqueta")->assertNotFound();
+        $this->actingAs($this->admin)->get("/equipos-pc/{$ajeno->id}/qr")->assertNotFound();
         $this->actingAs($this->admin)->get("/recorridos-pc/{$recorridoAjeno->id}")->assertNotFound();
         $this->actingAs($this->admin)->post("/recorridos-pc/{$recorridoAjeno->id}/revisiones", ['equipo_pc_id' => $ajeno->id])->assertNotFound();
         $this->actingAs($this->admin)->put("/recorridos-pc/{$recorridoAjeno->id}", ['finalizar' => 1])->assertNotFound();
@@ -194,10 +194,10 @@ class RecorridosPcTest extends TestCase
         $agentePlaya = $this->crearUsuario($this->empresa, 'Agente', $this->playa);
         $recorridoCentro = $this->recorrido();
 
-        $this->actingAs($supervisor)->get('/recorridos-pc/equipos')->assertOk()->assertSee('EXT-C1')->assertDontSee('EXT-P1');
-        $this->actingAs($supervisor)->post('/recorridos-pc/equipos', ['sede_id' => $this->playa->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'NUEVO'])
+        $this->actingAs($supervisor)->get('/equipos-pc')->assertOk()->assertSee('EXT-C1')->assertDontSee('EXT-P1');
+        $this->actingAs($supervisor)->post('/equipos-pc', ['sede_id' => $this->playa->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'NUEVO'])
             ->assertSessionHasErrors('sede_id');
-        $this->actingAs($supervisor)->put("/recorridos-pc/equipos/{$dePlaya->id}", ['sede_id' => $this->playa->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'X'])->assertNotFound();
+        $this->actingAs($supervisor)->put("/equipos-pc/{$dePlaya->id}", ['sede_id' => $this->playa->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'X'])->assertNotFound();
         $this->actingAs($supervisor)->post('/recorridos-pc', ['sede_id' => $this->playa->id])->assertSessionHasErrors(['sede_id' => 'Elige una de tus sedes activas.']);
 
         // El agente de Playa no ve ni toca el recorrido de Centro
@@ -213,13 +213,13 @@ class RecorridosPcTest extends TestCase
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
         $e = $this->equipo('EXT-01');
 
-        $this->actingAs($agente)->get('/recorridos-pc/equipos')->assertOk()->assertSee('EXT-01')
-            ->assertDontSee('Nuevo Equipo')->assertDontSee('dialogoEditarEquipoPc')->assertDontSee(route('recorridos_pc.equipos.etiqueta', $e->id));
-        $this->actingAs($agente)->post('/recorridos-pc/equipos', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'X'])->assertForbidden();
-        $this->actingAs($agente)->put("/recorridos-pc/equipos/{$e->id}", [])->assertForbidden();
-        $this->actingAs($agente)->patch("/recorridos-pc/equipos/{$e->id}/desactivar")->assertForbidden();
-        $this->actingAs($agente)->get("/recorridos-pc/equipos/{$e->id}/etiqueta")->assertForbidden();
-        $this->actingAs($agente)->get("/recorridos-pc/equipos/{$e->id}/qr")->assertOk();
+        $this->actingAs($agente)->get('/equipos-pc')->assertOk()->assertSee('EXT-01')
+            ->assertDontSee('Nuevo Equipo')->assertDontSee('dialogoEditarEquipoPc')->assertDontSee(route('equipos_pc.etiqueta', $e->id));
+        $this->actingAs($agente)->post('/equipos-pc', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'X'])->assertForbidden();
+        $this->actingAs($agente)->put("/equipos-pc/{$e->id}", [])->assertForbidden();
+        $this->actingAs($agente)->patch("/equipos-pc/{$e->id}/desactivar")->assertForbidden();
+        $this->actingAs($agente)->get("/equipos-pc/{$e->id}/etiqueta")->assertForbidden();
+        $this->actingAs($agente)->get("/equipos-pc/{$e->id}/qr")->assertOk();
 
         // Su sede viene elegida en «Nuevo Recorrido»
         $pagina = $this->actingAs($agente)->get('/recorridos-pc')->assertOk()->assertSee('Nuevo Recorrido')->assertDontSee('Exportar')->getContent();
@@ -234,7 +234,7 @@ class RecorridosPcTest extends TestCase
     {
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
         $this->actingAs($rh)->get('/recorridos-pc')->assertForbidden();
-        $this->actingAs($rh)->get('/recorridos-pc/equipos')->assertForbidden();
+        $this->actingAs($rh)->get('/equipos-pc')->assertForbidden();
         $this->actingAs($rh)->post('/recorridos-pc', ['sede_id' => $this->centro->id])->assertForbidden();
         $this->actingAs($rh)->get('/recorridos-pc/reporte')->assertForbidden();
     }
@@ -259,21 +259,21 @@ class RecorridosPcTest extends TestCase
         $this->assertStringNotContainsString('html5-qrcode', $pagina);
 
         // El QR (o la etiqueta NFC con dirección) lleva al recorrido abierto, listo para inspeccionar
-        $this->actingAs($this->admin)->get('/e/'.$e->codigo_qr)->assertRedirect(route('recorridos_pc.equipos.ir', $e->id));
-        $this->actingAs($this->admin)->get(route('recorridos_pc.equipos.ir', $e->id))
+        $this->actingAs($this->admin)->get('/e/'.$e->codigo_qr)->assertRedirect(route('equipos_pc.ir', $e->id));
+        $this->actingAs($this->admin)->get(route('equipos_pc.ir', $e->id))
             ->assertRedirect(route('recorridos_pc.show', ['recorrido' => $r->id, 'equipo' => $e->id]).'#punto');
         // Sin recorrido abierto, a su ficha del catálogo
         $this->punto($r, $e)->assertSessionHasNoErrors();
         $this->actingAs($this->admin)->put("/recorridos-pc/{$r->id}", ['finalizar' => 1])->assertSessionHasNoErrors();
-        $this->actingAs($this->admin)->get(route('recorridos_pc.equipos.ir', $e->id))->assertRedirect(route('recorridos_pc.equipos.index').'#equipopc-'.$e->id);
+        $this->actingAs($this->admin)->get(route('equipos_pc.ir', $e->id))->assertRedirect(route('equipos_pc.index').'#equipopc-'.$e->id);
     }
 
     public function test_la_etiqueta_lleva_qr_local_con_la_direccion_del_lector(): void
     {
         $e = $this->equipo('EXT-01');
-        $this->actingAs($this->admin)->get("/recorridos-pc/equipos/{$e->id}/etiqueta")->assertOk()
+        $this->actingAs($this->admin)->get("/equipos-pc/{$e->id}/etiqueta")->assertOk()
             ->assertSee('EXT-01')->assertSee('Extintor')->assertSee('<svg', false)->assertDontSee('qrserver');
-        $this->actingAs($this->admin)->get("/recorridos-pc/equipos/{$e->id}/qr")->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
+        $this->actingAs($this->admin)->get("/equipos-pc/{$e->id}/qr")->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
     }
 
     // ------------------------------------------------------------ Recorrido
@@ -471,7 +471,7 @@ class RecorridosPcTest extends TestCase
     {
         $this->recorrido();
         $this->actingAs($this->admin)->get('/recorridos-pc')->assertOk()->assertSee('Recorridos de Protección Civil')
-            ->assertSee('Catálogo de Equipos')->assertSee('Reporte de Auditoría')->assertSee('En Proceso')->assertSee('Con Hallazgos')
+            ->assertDontSee('Catálogo de Equipos')->assertSee('Padrones → Equipos de Protección Civil')->assertSee('Reporte de Auditoría')->assertSee('En Proceso')->assertSee('Con Hallazgos')
             ->assertSee('Iniciado por')->assertSee('data-filtro-rpc-estatus', false);
         $this->assertSame('recorridos_pc.index', Modulo::where('clave', 'recorridos_pc')->value('ruta'));
         $this->assertSame(RevisionRecorridoPc::OK, 'ok');

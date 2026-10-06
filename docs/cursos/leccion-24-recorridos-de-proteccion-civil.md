@@ -8,21 +8,21 @@
 - Marcar las piezas dañadas y saber cuándo un equipo queda con FALLA.
 - Qué pasa con un hallazgo (ticket en la Bitácora de Novedades).
 - Guardar para después, continuar y finalizar.
-- Imprimir el Reporte de Auditoría y mantener el Catálogo de Equipos.
+- Imprimir el Reporte de Auditoría y mantener el catálogo (Padrones → Equipos de Protección Civil).
 
 ## Práctica (en QA)
 
 1. **`agente.demo`** (sede Centro): abre Operación → Recorridos de Protección Civil. Fíjate en los colores: **Recorrido #00002** está *Con Hallazgos* y dice qué ticket generó; toca el número del ticket y mira en Novedades el Minuto a Minuto con los dos hallazgos.
 2. Regresa y toca **Continuar Recorrido** en el **#00003** (En Proceso). Mira el avance: 2 de 11 equipos.
-3. En el escáner escribe `EXT-02` y Enter (o escanea su QR desde el Catálogo con otro celular). Deja todo en verde y toca **Guardar y escanear siguiente**: sale «EXT-02 revisado: OK».
+3. En el escáner escribe `EXT-02` y Enter (o escanea su QR desde Padrones → Equipos de Protección Civil con otro celular). Deja todo en verde y toca **Guardar y escanear siguiente**: sale «EXT-02 revisado: OK».
 4. Abre **Equipos pendientes de revisar** y toca **Revisar** en `HID-01`. Toca **Manómetro** para ponerlo en rojo: el resultado cambia a FALLA. Guarda. Aparece el aviso con el ticket nuevo de Protección Civil.
 5. Escanea `LAM-01`, deja todo en verde pero escribe en Observaciones «Batería baja». Guarda: también es FALLA y se anota en el **mismo** ticket.
 6. Toca **¿No tiene etiqueta…? Captúralo a mano**: ID `EXT-80`, categoría *1. Extintores*, guarda.
 7. Escribe una observación general y toca **Guardar y Continuar Después**: el recorrido sigue En Proceso en la lista.
 8. Ábrelo otra vez y toca **Finalizar Recorrido** → confirma. Queda *Con Hallazgos*.
 9. Toca **Reporte de Auditoría**, elige el rango del mes y revisa tus recorridos. Imprime o guarda como PDF.
-10. **`agente.demo`** abre **Catálogo de Equipos**: puede ver los equipos y sus QR, pero no aparece **Nuevo Equipo**.
-11. **`admin.demo`**: en el Catálogo toca **Nuevo Equipo**, sede Centro, *Extintor*, ID `EXT-01` → guarda: el mensaje dice que ya existe en esta sede. Cámbialo a `EXT-04`, zona *Torre A · Piso 2* y toca **Guardar y capturar siguiente**; registra `EXT-05` con lo mismo. Imprime la etiqueta de `EXT-04`.
+10. **`agente.demo`** abre **Padrones → Equipos de Protección Civil**: puede ver los equipos y sus QR, pero no aparece **Nuevo Equipo**.
+11. **`admin.demo`**: en Padrones → Equipos de Protección Civil toca **Nuevo Equipo**, sede Centro, *Extintor*, ID `EXT-01` → guarda: el mensaje dice que ya existe en esta sede. Cámbialo a `EXT-04`, zona *Torre A · Piso 2* y toca **Guardar y capturar siguiente**; registra `EXT-05` con lo mismo. Imprime la etiqueta de `EXT-04`.
 12. **`agente2.demo`** (Playa): solo ve el recorrido y los equipos de Hotel Demo Playa.
 
 ## Para recordar

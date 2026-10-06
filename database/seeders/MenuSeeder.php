@@ -46,7 +46,7 @@ class MenuSeeder extends Seeder
                 ],
                 'Inventarios de Seguridad' => [
                     'llaves' => 'primary', 'gafetes' => 'warning', 'vouchers' => 'danger',
-                    'equipos' => 'dark', 'estacionamientos' => 'primary',
+                    'equipos' => 'dark', 'equipos_pc' => 'danger', 'estacionamientos' => 'primary',
                 ],
                 'Logística' => [
                     'rutas' => 'info',

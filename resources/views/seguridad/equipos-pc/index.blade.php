@@ -35,9 +35,11 @@
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Inventario de: <strong>{{ $empresaNombre }}</strong></p>
                 </div>
             </div>
-            <div class="rpc-acciones-cabecera">
-                <a href="{{ route('recorridos_pc.index') }}" class="btn-rpc btn-rpc-oscuro-contorno"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Recorridos PC</a>
-            </div>
+            @if ($puede['recorridos'])
+                <div class="rpc-acciones-cabecera">
+                    <a href="{{ route('recorridos_pc.index') }}" class="btn-rpc btn-rpc-oscuro-contorno"><i class="bi bi-clipboard-check me-2" aria-hidden="true"></i>Recorridos PC</a>
+                </div>
+            @endif
         </div>
 
         <div class="rpc-filtros">
@@ -92,14 +94,14 @@
                             <span class="rpc-badge-categoria"><i class="bi {{ $e->icono() }} me-1" aria-hidden="true"></i>{{ $e->etiquetaCategoria() }}</span>
                             <div class="d-flex gap-2">
                                 <button type="button" class="btn-icono imprimir-qr" title="Ver código QR" aria-label="Ver código QR de {{ $e->numero_serie }}"
-                                        data-ver-qr-pc data-qr="{{ route('recorridos_pc.equipos.qr', $e->id) }}" data-nombre="{{ $e->etiquetaCategoria().' '.$e->numero_serie }}"
-                                        data-enlace="{{ route('lector.ir', $e->codigo_qr) }}" data-imprimir="{{ $puede['imprimir'] ? route('recorridos_pc.equipos.etiqueta', $e->id) : '' }}">
+                                        data-ver-qr-pc data-qr="{{ route('equipos_pc.qr', $e->id) }}" data-nombre="{{ $e->etiquetaCategoria().' '.$e->numero_serie }}"
+                                        data-enlace="{{ route('lector.ir', $e->codigo_qr) }}" data-imprimir="{{ $puede['imprimir'] ? route('equipos_pc.etiqueta', $e->id) : '' }}">
                                     <i class="bi bi-qr-code" aria-hidden="true"></i>
                                 </button>
                                 @if ($editable)
                                     <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar equipo {{ $e->numero_serie }}"
                                             data-accion="editar-registro" data-dialogo="dialogoEditarEquipoPc"
-                                            data-url="{{ route('recorridos_pc.equipos.update', $e->id) }}" data-id="{{ $e->id }}"
+                                            data-url="{{ route('equipos_pc.update', $e->id) }}" data-id="{{ $e->id }}"
                                             data-valores="{{ json_encode(app(\App\Services\RecorridosPc\CatalogoEquiposPc::class)->valoresEdicion($e, $nodos)) }}">
                                         <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                     </button>
@@ -130,19 +132,19 @@
                     @if ($puede['imprimir'] || $desactivable)
                         <div class="rpc-pie-ficha">
                             @if ($puede['imprimir'])
-                                <a href="{{ route('recorridos_pc.equipos.etiqueta', $e->id) }}" target="_blank" rel="noopener" class="btn-icono imprimir-qr" title="Imprimir Etiqueta" aria-label="Imprimir etiqueta de {{ $e->numero_serie }}"><i class="bi bi-printer" aria-hidden="true"></i></a>
+                                <a href="{{ route('equipos_pc.etiqueta', $e->id) }}" target="_blank" rel="noopener" class="btn-icono imprimir-qr" title="Imprimir Etiqueta" aria-label="Imprimir etiqueta de {{ $e->numero_serie }}"><i class="bi bi-printer" aria-hidden="true"></i></a>
                             @else
                                 <span></span>
                             @endif
                             @if ($desactivable)
                                 @if ($e->activo)
-                                    <form action="{{ route('recorridos_pc.equipos.desactivar', $e->id) }}" method="POST" class="m-0" data-confirmar="¿Dar de baja el equipo {{ $e->numero_serie }}? Ya no aparecerá en los recorridos.">
+                                    <form action="{{ route('equipos_pc.desactivar', $e->id) }}" method="POST" class="m-0" data-confirmar="¿Dar de baja el equipo {{ $e->numero_serie }}? Ya no aparecerá en los recorridos.">
                                         @csrf
                                         @method('PATCH')
                                         <button type="submit" class="btn-icono desactivar" title="Dar de baja" aria-label="Dar de baja {{ $e->numero_serie }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
                                     </form>
                                 @else
-                                    <form action="{{ route('recorridos_pc.equipos.reactivar', $e->id) }}" method="POST" class="m-0" data-confirmar="¿Reactivar el equipo {{ $e->numero_serie }}? Volverá a aparecer en los recorridos.">
+                                    <form action="{{ route('equipos_pc.reactivar', $e->id) }}" method="POST" class="m-0" data-confirmar="¿Reactivar el equipo {{ $e->numero_serie }}? Volverá a aparecer en los recorridos.">
                                         @csrf
                                         @method('PATCH')
                                         <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar {{ $e->numero_serie }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
@@ -186,7 +188,7 @@
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                 </div>
                 <div class="dialogo-cuerpo">
-                    <form action="{{ $esNuevo ? route('recorridos_pc.equipos.store') : ($editandoId ? route('recorridos_pc.equipos.update', $editandoId) : '') }}" method="POST" autocomplete="off" data-form-epc>
+                    <form action="{{ $esNuevo ? route('equipos_pc.store') : ($editandoId ? route('equipos_pc.update', $editandoId) : '') }}" method="POST" autocomplete="off" data-form-epc>
                         @csrf
                         @unless ($esNuevo) @method('PUT') @endunless
                         <input type="hidden" name="_dialogo" value="{{ $esNuevo ? 'crear' : ($editandoId ? 'editar-'.$editandoId : '') }}" data-campo-dialogo>

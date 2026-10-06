@@ -38,7 +38,7 @@
     </div>
     <div class="calcomania-acciones">
         <button type="button" class="btn-imprimir-calcomania etiqueta-pc-imprimir" data-accion="imprimir"><i class="bi bi-printer me-1" aria-hidden="true"></i> Imprimir Etiqueta</button>
-        <a href="{{ route('recorridos_pc.equipos.index') }}#equipopc-{{ $equipo->id }}" class="btn-cerrar-calcomania"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Volver al Catálogo de Equipos</a>
+        <a href="{{ route('equipos_pc.index') }}#equipopc-{{ $equipo->id }}" class="btn-cerrar-calcomania"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Volver al Catálogo de Equipos</a>
     </div>
 </main>
 <script src="{{ $version('js/plataforma.js') }}"></script>

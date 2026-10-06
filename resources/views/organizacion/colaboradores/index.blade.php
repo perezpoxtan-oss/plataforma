@@ -295,6 +295,10 @@
                                 <input type="text" id="{{ $modo }}_co_materno" name="apellido_materno" class="campo" maxlength="60" value="{{ $valor('apellido_materno') }}">
                             </div>
                         </div>
+                        @if ($esNuevo)
+                            {{-- Homónimos: aviso en vivo si ya hay un colaborador activo con ese nombre --}}
+                            <div class="caja-parecidos aviso-homonimo" role="status" aria-live="polite" data-homonimos="{{ route('colaboradores.homonimos') }}" data-homonimos-campos="nombre,apellido_paterno,apellido_materno" data-homonimos-modo="colaboradores" hidden></div>
+                        @endif
 
                         <div class="row">
                             <div class="col-md-6">

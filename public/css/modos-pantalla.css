@@ -1028,3 +1028,12 @@ html.modo-sol .ficha-card .chip-seccion,
 html.modo-sol .turno-horario { border-color: #94a3b8; }
 html.modo-sol .ficha-create { border: 2px dashed #475569; }
 /* Fin Sol ligero */
+
+/* Ajustes QA 4: modos Sol y Noche (homónimos y enlaces) */
+html.modo-sol .confirmar-homonimo { background: #fff; border: 2px solid #1e293b; color: #000; }
+html.modo-sol .aviso-homonimo .homonimo-item:hover { background: #fff; border-color: #64748b; }
+html.modo-noche .confirmar-homonimo { background: rgba(245, 158, 11, 0.1); border-color: #b45309; color: #e2e8f0; }
+html.modo-noche .aviso-homonimo .homonimo-item:hover { background: #0f172a; border-color: #334155; }
+html.modo-noche .rpc-enlace-catalogo { color: #cbd5e1; }
+html.modo-noche .rpc-enlace-catalogo a, html.modo-noche .lf-enlace-config a { color: #93c5fd; }
+/* Fin Ajustes QA 4 */

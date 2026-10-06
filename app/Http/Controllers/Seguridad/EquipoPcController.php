@@ -25,11 +25,9 @@ use Illuminate\View\View;
 /**
  * Catálogo de Equipos de Protección Civil (réplica de pc_equipos_* de
  * SEGCAT): lista por sede, alta y edición, baja y reactivación, código QR y
- * etiqueta para imprimir.
- *
- * Se consulta con «recorridos_pc.ver»; se administra con los permisos de
- * Equipos de seguridad («equipos.crear | editar | eliminar | imprimir»), ver
- * App\Services\RecorridosPc\CatalogoEquiposPc.
+ * etiqueta para imprimir. Módulo propio «equipos_pc» en Padrones →
+ * Inventarios de Seguridad («equipos_pc.ver | crear | editar | eliminar |
+ * imprimir»), ver App\Services\RecorridosPc\CatalogoEquiposPc.
  */
 class EquipoPcController extends Controller
 {
@@ -42,16 +40,16 @@ class EquipoPcController extends Controller
 
     public function index(Request $request): View
     {
-        Gate::authorize('recorridos_pc.ver');
+        Gate::authorize('equipos_pc.ver');
         $actor = $request->user();
         $empresaId = $this->empresa->id($actor);
 
         if ($empresaId === null) {
-            return view('seguridad.recorridos-pc.equipos', ['sinEmpresa' => true]);
+            return view('seguridad.equipos-pc.index', ['sinEmpresa' => true]);
         }
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId) {
-            $lista = $this->catalogo->limitar(EquipoPc::query(), $actor, 'recorridos_pc.ver')
+            $lista = $this->catalogo->limitar(EquipoPc::query(), $actor, 'equipos_pc.ver')
                 ->with('sede:id,nombre')
                 ->leftJoin('users as uc', 'uc.id', '=', 'equipos_pc.creado_por')
                 ->leftJoin('users as ua', 'ua.id', '=', 'equipos_pc.actualizado_por')
@@ -59,18 +57,19 @@ class EquipoPcController extends Controller
                 ->orderBy('equipos_pc.numero_serie')->get();
 
             $puede = [
-                'crear' => $this->catalogo->sedesParaElegir($actor, 'equipos.crear')->isNotEmpty(),
-                'editar' => $actor->can('equipos.editar'),
-                'baja' => $actor->can('equipos.eliminar'),
-                'imprimir' => $actor->can('equipos.imprimir'),
+                'crear' => $this->catalogo->sedesParaElegir($actor, 'equipos_pc.crear')->isNotEmpty(),
+                'editar' => $actor->can('equipos_pc.editar'),
+                'baja' => $actor->can('equipos_pc.eliminar'),
+                'imprimir' => $actor->can('equipos_pc.imprimir'),
+                'recorridos' => $actor->can('recorridos_pc.ver'),
             ];
-            $sedesAlta = $puede['crear'] ? $this->catalogo->sedesParaElegir($actor, 'equipos.crear') : collect();
-            $sedesEdicion = $puede['editar'] ? $this->catalogo->sedesParaElegir($actor, 'equipos.editar') : collect();
+            $sedesAlta = $puede['crear'] ? $this->catalogo->sedesParaElegir($actor, 'equipos_pc.crear') : collect();
+            $sedesEdicion = $puede['editar'] ? $this->catalogo->sedesParaElegir($actor, 'equipos_pc.editar') : collect();
             $sedesFiltro = $lista->pluck('sede')->filter()->unique('id')->sortBy('nombre')->values();
             // Ubicaciones: las de las sedes que se ven o se pueden elegir (una sola consulta)
             $nodos = $this->ubicaciones->nodos($sedesFiltro->pluck('id')->merge($sedesAlta->pluck('id'))->merge($sedesEdicion->pluck('id'))->unique()->values()->all());
 
-            return view('seguridad.recorridos-pc.equipos', [
+            return view('seguridad.equipos-pc.index', [
                 'sinEmpresa' => false,
                 'equipos' => $lista,
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
@@ -79,8 +78,8 @@ class EquipoPcController extends Controller
                 'sedesAlta' => $sedesAlta,
                 'sedesEdicion' => $sedesEdicion,
                 'nodos' => $nodos,
-                'editables' => $this->catalogo->idsEnAlcance($actor, 'equipos.editar'),
-                'desactivables' => $this->catalogo->idsEnAlcance($actor, 'equipos.eliminar'),
+                'editables' => $this->catalogo->idsEnAlcance($actor, 'equipos_pc.editar'),
+                'desactivables' => $this->catalogo->idsEnAlcance($actor, 'equipos_pc.eliminar'),
                 'siguiente' => session('capturar_siguiente'),
                 'puede' => $puede,
             ]);
@@ -89,12 +88,12 @@ class EquipoPcController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        Gate::authorize('equipos.crear');
+        Gate::authorize('equipos_pc.crear');
         $empresaId = $this->empresaDeTrabajo($request);
 
         $equipo = $this->tenant->conEmpresa($empresaId, fn () => $this->catalogo->crear($request->user(), $request->all()));
 
-        $respuesta = redirect()->to(route('recorridos_pc.equipos.index').'#equipopc-'.$equipo->id)
+        $respuesta = redirect()->to(route('equipos_pc.index').'#equipopc-'.$equipo->id)
             ->with('ok', "Equipo {$equipo->numero_serie} ({$equipo->etiquetaCategoria()}) registrado. Ya puedes imprimir su etiqueta QR.");
         // «Registrar y capturar siguiente»: se vuelve a abrir el alta con la misma sede, tipo y ubicación
         if ($request->boolean('_siguiente')) {
@@ -109,45 +108,45 @@ class EquipoPcController extends Controller
 
     public function update(Request $request, int $equipo): RedirectResponse
     {
-        Gate::authorize('equipos.editar');
+        Gate::authorize('equipos_pc.editar');
         $empresaId = $this->empresaDeTrabajo($request);
 
         $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
-            return $this->catalogo->actualizar($request->user(), $this->buscarEnAlcance($request->user(), $equipo, 'equipos.editar'), $request->all());
+            return $this->catalogo->actualizar($request->user(), $this->buscarEnAlcance($request->user(), $equipo, 'equipos_pc.editar'), $request->all());
         });
 
-        return redirect()->to(route('recorridos_pc.equipos.index').'#equipopc-'.$modelo->id)->with('ok', "Equipo {$modelo->numero_serie} actualizado correctamente.");
+        return redirect()->to(route('equipos_pc.index').'#equipopc-'.$modelo->id)->with('ok', "Equipo {$modelo->numero_serie} actualizado correctamente.");
     }
 
     public function desactivar(Request $request, int $equipo): RedirectResponse
     {
-        Gate::authorize('equipos.eliminar');
+        Gate::authorize('equipos_pc.eliminar');
         $empresaId = $this->empresaDeTrabajo($request);
 
         $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
-            $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos.eliminar');
+            $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos_pc.eliminar');
             $this->catalogo->desactivar($request->user(), $modelo);
 
             return $modelo;
         });
 
-        return redirect()->to(route('recorridos_pc.equipos.index').'#equipopc-'.$modelo->id)
+        return redirect()->to(route('equipos_pc.index').'#equipopc-'.$modelo->id)
             ->with('aviso', "Equipo {$modelo->numero_serie} dado de baja: ya no aparece en los recorridos. Puedes reactivarlo con un clic.");
     }
 
     public function reactivar(Request $request, int $equipo): RedirectResponse
     {
-        Gate::authorize('equipos.eliminar');
+        Gate::authorize('equipos_pc.eliminar');
         $empresaId = $this->empresaDeTrabajo($request);
 
         $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
-            $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos.eliminar');
+            $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos_pc.eliminar');
             $this->catalogo->reactivar($request->user(), $modelo);
 
             return $modelo;
         });
 
-        return redirect()->to(route('recorridos_pc.equipos.index').'#equipopc-'.$modelo->id)
+        return redirect()->to(route('equipos_pc.index').'#equipopc-'.$modelo->id)
             ->with('ok', "Equipo {$modelo->numero_serie} reactivado: vuelve a aparecer en los recorridos.");
     }
 
@@ -158,14 +157,14 @@ class EquipoPcController extends Controller
      */
     public function etiqueta(Request $request, int $equipo): View
     {
-        Gate::authorize('equipos.imprimir');
+        Gate::authorize('equipos_pc.imprimir');
         $empresaId = $this->empresaDeTrabajo($request);
 
         return $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
-            $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos.imprimir');
+            $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos_pc.imprimir');
             $modelo->load(['sede:id,nombre', 'espacio:id,nombre,ruta']);
 
-            return view('seguridad.recorridos-pc.etiqueta', [
+            return view('seguridad.equipos-pc.etiqueta', [
                 'equipo' => $modelo,
                 'empresaNombre' => Empresa::whereKey($modelo->empresa_id)->value('nombre_comercial'),
                 'ubicacion' => $modelo->espacio ? $this->ubicaciones->texto($modelo->espacio) : null,
@@ -178,10 +177,10 @@ class EquipoPcController extends Controller
     /** Imagen del QR para el diálogo «Ver QR» (SVG generado localmente). */
     public function qr(Request $request, int $equipo): Response
     {
-        Gate::authorize('recorridos_pc.ver');
+        Gate::authorize('equipos_pc.ver');
         $empresaId = $this->empresaDeTrabajo($request);
 
-        $svg = $this->tenant->conEmpresa($empresaId, fn () => $this->qrSvg($this->buscarEnAlcance($request->user(), $equipo, 'recorridos_pc.ver'), 220, true));
+        $svg = $this->tenant->conEmpresa($empresaId, fn () => $this->qrSvg($this->buscarEnAlcance($request->user(), $equipo, 'equipos_pc.ver'), 220, true));
 
         return response($svg, 200, ['Content-Type' => 'image/svg+xml', 'Cache-Control' => 'private, max-age=3600', 'X-Content-Type-Options' => 'nosniff']);
     }
@@ -194,12 +193,12 @@ class EquipoPcController extends Controller
      */
     public function ir(Request $request, int $equipo, AdministradorRecorridosPc $recorridos): RedirectResponse
     {
-        Gate::authorize('recorridos_pc.ver');
+        Gate::authorize('equipos_pc.ver');
         $actor = $request->user();
         $empresaId = $this->empresaDeTrabajo($request);
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $equipo, $recorridos) {
-            $modelo = $this->buscarEnAlcance($actor, $equipo, 'recorridos_pc.ver');
+            $modelo = $this->buscarEnAlcance($actor, $equipo, 'equipos_pc.ver');
             $abierto = $modelo->activo && $actor->can('recorridos_pc.crear')
                 ? $recorridos->limitar(RecorridoPc::query(), $actor, 'recorridos_pc.crear')
                     ->where('sede_id', $modelo->sede_id)->where('estatus', RecorridoPc::EN_PROCESO)
@@ -208,8 +207,33 @@ class EquipoPcController extends Controller
 
             return $abierto !== null
                 ? redirect()->to(route('recorridos_pc.show', ['recorrido' => $abierto->id, 'equipo' => $modelo->id]).'#punto')
-                : redirect()->to(route('recorridos_pc.equipos.index').'#equipopc-'.$modelo->id);
+                : redirect()->to(route('equipos_pc.index').'#equipopc-'.$modelo->id);
         });
+    }
+
+    /**
+     * Dirección anterior del catálogo (/recorridos-pc/equipos): redirección
+     * permanente a /equipos-pc, conservando los filtros de la consulta.
+     */
+    public function anterior(Request $request): RedirectResponse
+    {
+        Gate::authorize('equipos_pc.ver');
+
+        return redirect()->route('equipos_pc.index', $request->query(), 301);
+    }
+
+    /**
+     * Direcciones anteriores de un equipo (etiqueta, QR y a dónde lleva el
+     * lector): redirección permanente a la nueva, solo si el equipo está a
+     * la vista (uno de otra empresa o sede ajena responde 404).
+     */
+    public function anteriorEquipo(Request $request, int $equipo, string $pantalla): RedirectResponse
+    {
+        Gate::authorize('equipos_pc.ver');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $this->tenant->conEmpresa($empresaId, fn () => $this->buscarEnAlcance($request->user(), $equipo, 'equipos_pc.ver'));
+
+        return redirect()->route('equipos_pc.'.$pantalla, ['equipo' => $equipo] + $request->query(), 301);
     }
 
     private function qrSvg(EquipoPc $equipo, int $tamano, bool $conDeclaracion = false): string

@@ -31,10 +31,12 @@
                     <h1>Recorridos de Protección Civil</h1>
                     <p>Ronda de inspección de equipos — actividad diaria, se completa en una sola sesión.</p>
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Recorridos de: <strong>{{ $empresaNombre }}</strong></p>
+                    @if ($puede['catalogo'])
+                        <p class="small m-0 rpc-enlace-catalogo"><i class="bi bi-fire me-1" aria-hidden="true"></i>Los equipos se dan de alta en <a href="{{ route('equipos_pc.index') }}">Padrones → Equipos de Protección Civil</a>.</p>
+                    @endif
                 </div>
             </div>
             <div class="rpc-acciones-cabecera">
-                <a href="{{ route('recorridos_pc.equipos.index') }}" class="btn-rpc btn-rpc-contorno"><i class="bi bi-shield-fill-check me-2" aria-hidden="true"></i>Catálogo de Equipos</a>
                 @if ($puede['imprimir'])
                     <a href="{{ route('recorridos_pc.reporte', $periodo) }}" target="_blank" rel="noopener" class="btn-rpc btn-rpc-oscuro-contorno"><i class="bi bi-file-earmark-pdf-fill me-2" aria-hidden="true"></i>Reporte de Auditoría</a>
                 @endif

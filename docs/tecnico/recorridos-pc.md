@@ -2,12 +2,14 @@
 
 Réplica de `modules/bitacora/recorridos_pc_*` y `pc_equipos_*` de SEGCAT (`recorridos_pc_lista.php`, `recorridos_pc_proceso.php`, `recorridos_pc_detalle_ajax.php`, `recorridos_pc_pdf.php`, `pc_equipos_lista.php`, `pc_equipos_modal_editar.php`, `pc_equipos_proceso.php`, `pc_equipos_ticket.php`; inventario §4.26). Pantalla `/recorridos-pc` (menú Operación → Recorridos de Protección Civil, submódulo `recorridos_pc` de Bitácora de novedades).
 
+> **QA 4:** el Catálogo de Equipos de Protección Civil pasó a ser el módulo propio `equipos_pc` en Padrones → Inventarios de Seguridad (`/equipos-pc`, permisos `equipos_pc.*`). Sus rutas, permisos y migración están en [equipos-pc.md](equipos-pc.md). El recorrido sigue escaneando los equipos de su sede.
+
 - Controladores: `app/Http/Controllers/Seguridad/RecorridoPcController.php` (recorridos, reporte, exportación) y `EquipoPcController.php` (catálogo, QR, etiqueta, `ir`)
 - Reglas: `app/Services/RecorridosPc/AdministradorRecorridosPc.php` (alcance, iniciar, punto de inspección, ticket, guardar / finalizar, avance) y `CatalogoEquiposPc.php` (alcance, alta, edición, baja, reactivación, validación)
 - Ubicaciones: `app/Services/RecorridosPc/Ubicaciones.php` (zona · piso · área de Zonas y áreas con una sola consulta)
 - Modelos: `EquipoPc` (Identificable, `TieneIdentificador`), `RecorridoPc`, `RevisionRecorridoPc` (los tres con `PerteneceAEmpresa` y `RegistraAutor`)
 - Migración: `2026_10_10_000350_crear_recorridos_de_proteccion_civil`
-- Vistas: `resources/views/seguridad/recorridos-pc/{index,show,equipos,etiqueta,reporte}.blade.php`
+- Vistas: `resources/views/seguridad/recorridos-pc/{index,show,reporte}.blade.php` (el catálogo: `seguridad/equipos-pc/{index,etiqueta}.blade.php`)
 - JS: bloque «Recorridos de Protección Civil» al final de `public/js/plataforma.js`; CSS: bloque al final de `public/css/plataforma.css` y de `public/css/modos-pantalla.css` (Sol y Noche)
 - Pruebas: `tests/Feature/Seguridad/RecorridosPcTest.php` (18)
 
@@ -43,23 +45,17 @@ Todas llevan `empresa_id` (scope de tenant) y autoría `creado_por` / `actualiza
 | PUT | `/recorridos-pc/{id}` (`observaciones_generales`, `finalizar=1`) | `recorridos_pc.update` | `recorridos_pc.crear` sobre el recorrido |
 | GET | `/recorridos-pc/reporte?desde=&hasta=&sede=` | `recorridos_pc.reporte` | `recorridos_pc.imprimir` |
 | GET | `/recorridos-pc/exportar?desde=&hasta=&sede=` | `recorridos_pc.exportar` | `recorridos_pc.exportar` (CSV con BOM, un renglón por equipo revisado) |
-| GET | `/recorridos-pc/equipos` | `recorridos_pc.equipos.index` | `recorridos_pc.ver` |
-| POST | `/recorridos-pc/equipos` (`_siguiente=1`: «Guardar y capturar siguiente») | `recorridos_pc.equipos.store` | `equipos.crear` |
-| PUT | `/recorridos-pc/equipos/{id}` | `recorridos_pc.equipos.update` | `equipos.editar` |
-| PATCH | `/recorridos-pc/equipos/{id}/desactivar` · `/reactivar` | `recorridos_pc.equipos.desactivar` · `.reactivar` | `equipos.eliminar` |
-| GET | `/recorridos-pc/equipos/{id}/etiqueta` | `recorridos_pc.equipos.etiqueta` | `equipos.imprimir` |
-| GET | `/recorridos-pc/equipos/{id}/qr` (SVG) | `recorridos_pc.equipos.qr` | `recorridos_pc.ver` |
-| GET | `/recorridos-pc/equipos/{id}/ir` | `recorridos_pc.equipos.ir` | `recorridos_pc.ver` (a donde lleva el lector: ver abajo) |
+| — | Catálogo de equipos (`/equipos-pc`, antes `/recorridos-pc/equipos`, que redirige con 301) | `equipos_pc.*` | ver [equipos-pc.md](equipos-pc.md) |
 
 - **Alcance:** con alcance de **sede** solo se ve y se toca lo de sus sedes (otra sede u otra empresa → 404); con **propios**, lo que él registró. El superadministrador elige la empresa de trabajo.
-- **Catálogo con permisos de Equipos de seguridad.** El catálogo se **consulta** con `recorridos_pc.ver` (la guardia lo necesita en su ronda) y se **administra** con `equipos.crear | editar | eliminar | imprimir` (Padrones). Así el **Agente** lo consulta pero no da de alta equipos, como en el resto de los padrones; Asistente, Supervisor y Jefe de seguridad sí, en su sede. El catálogo de módulos no se tocó.
+- **Catálogo con permisos propios (QA 4).** El catálogo se consulta y administra con `equipos_pc.ver | crear | editar | eliminar | imprimir` (Padrones). El **Agente** lo consulta pero no da de alta equipos; Asistente, Supervisor y Jefe de seguridad sí, en su sede. En la lista de recorridos se quitó el botón «Catálogo de Equipos»; queda un enlace pequeño a Padrones para quien ve el catálogo.
 - **Plantillas de rol:** el Agente inicia, continúa y finaliza recorridos de su sede e imprime el Reporte de Auditoría; no exporta.
 
 ## Lector universal
 
-- `EquipoPc` es `Identificable`: tipo **`equipo_pc`** en `config/lector.php`, permiso `recorridos_pc.ver`, columna legible `numero_serie` (se encuentra tecleando «EXT-01», con el QR, con la etiqueta NFC/RFID o con un lector USB/Bluetooth).
+- `EquipoPc` es `Identificable`: tipo **`equipo_pc`** en `config/lector.php`, permiso `equipos_pc.ver`, columna legible `numero_serie` (se encuentra tecleando «EXT-01», con el QR, con la etiqueta NFC/RFID o con un lector USB/Bluetooth).
 - La pantalla del recorrido usa `@include('componentes.lector', ['tipos' => 'equipo_pc', 'nombre' => 'equipo'])`; el JS escucha `lector:elegido` y abre `?equipo=ID#punto`. En PC (puntero fino) el campo queda enfocado para el lector USB; en el celular no se abre el teclado solo.
-- `urlLector()` → `recorridos_pc.equipos.ir`: si el usuario puede crear y hay un recorrido **En Proceso** de la sede del equipo (primero uno que él inició), abre ese recorrido con el equipo listo para inspeccionar; si no, la ficha del catálogo. Así el iPhone que lee la etiqueta NFC con dirección `/e/{codigo}` (sin app) cae directo en el punto de inspección.
+- `urlLector()` → `equipos_pc.ir`: si el usuario puede crear y hay un recorrido **En Proceso** de la sede del equipo (primero uno que él inició), abre ese recorrido con el equipo listo para inspeccionar; si no, la ficha del catálogo. Así el iPhone que lee la etiqueta NFC con dirección `/e/{codigo}` (sin app) cae directo en el punto de inspección.
 - La etiqueta impresa lleva el QR dibujado en el servidor (`bacon/bacon-qr-code`) con `route('lector.ir', codigo_qr)`.
 
 ## Reglas
@@ -80,7 +76,7 @@ Todas llevan `empresa_id` (scope de tenant) y autoría `creado_por` / `actualiza
 - **Finalizar Recorrido:** exige al menos un punto («Agrega al menos un equipo al recorrido antes de finalizarlo.») → **COMPLETO** si ningún punto tiene falla, **CON HALLAZGOS** si alguno la tiene (cuentan todos los puntos del recorrido). Fija `finalizado_en/por`. Auditoría `recorridos_pc.finalizado`.
 - **Transiciones prohibidas:** un recorrido COMPLETO o CON HALLAZGOS ya no recibe puntos, no se vuelve a finalizar ni cambia sus observaciones (error «… ya se finalizó …»). No hay reapertura.
 - **Avance:** equipos activos del catálogo de la sede (o de la zona elegida y todo lo que cuelga de ella) contra los ya revisados; lista de **pendientes** con botón «Revisar» (por si la etiqueta está dañada).
-- **Catálogo:** Núm. de Serie / ID obligatorio, en mayúsculas, **único por sede** (en otra sede se puede repetir); la ubicación (zona/piso y área específica) debe ser de la sede, activa, y el área debe colgar de la zona elegida; la etiqueta NFC no puede estar en ningún otro registro de la empresa. Dar de baja (`recorridos_pc.desactivado`) lo quita de los pendientes y del escaneo; reactivar (`recorridos_pc.reactivado`). Alta y edición: `recorridos_pc.creado` / `recorridos_pc.actualizado` sobre `EquipoPc`.
+- **Catálogo:** Núm. de Serie / ID obligatorio, en mayúsculas, **único por sede** (en otra sede se puede repetir); la ubicación (zona/piso y área específica) debe ser de la sede, activa, y el área debe colgar de la zona elegida; la etiqueta NFC no puede estar en ningún otro registro de la empresa. Dar de baja (`equipos_pc.desactivado`) lo quita de los pendientes y del escaneo; reactivar (`equipos_pc.reactivado`). Alta y edición: `equipos_pc.creado` / `equipos_pc.actualizado` sobre `EquipoPc`.
 - **Reporte de Auditoría:** por rango de fechas en la hora local (por omisión del 1.º del mes a hoy, máximo 366 días) y sede; resumen (recorridos, equipos revisados, hallazgos) y una tabla por recorrido con las piezas con falla.
 - **Lista:** todos los recorridos En Proceso más los últimos 100 finalizados (SEGCAT: 100); para lo anterior, el Reporte de Auditoría. Filtros por estatus, sede y texto, sin consultas extra (`withCount`).
 
@@ -94,6 +90,6 @@ Todas llevan `empresa_id` (scope de tenant) y autoría `creado_por` / `actualiza
 - **QR de la etiqueta:** se pedía a `api.qrserver.com` con el número de serie (dato a un tercero, sin internet no salía). Ahora se dibuja en el servidor con un código no adivinable.
 - **Ubicación:** edificios, secciones y áreas específicas se cargaban de **todas** las sedes de **todas** las empresas en el JavaScript de la página. Ahora salen de Zonas y áreas, solo de las sedes del usuario, y se validan contra la sede.
 - **Número de recorrido por empresa** (antes el id global, compartido entre empresas) y alcance por sede en todas las rutas (antes el detalle respondía 403 a otra sede pero mostraba que existía; ahora 404).
-- **Permisos:** todo se hacía con `bitacora.*`. Ahora el recorrido usa `recorridos_pc.*` y el catálogo los de Equipos de seguridad: el Agente ya no puede dar de alta o editar extintores.
+- **Permisos:** todo se hacía con `bitacora.*`. Ahora el recorrido usa `recorridos_pc.*` y el catálogo sus propios permisos `equipos_pc.*` (Padrones): el Agente ya no puede dar de alta o editar extintores.
 - **Exportación** a CSV con los mismos filtros del reporte (no existía).
 - Sin `onclick` ni JavaScript en la página; mensajes de validación en español dentro del punto o del diálogo; modos Sol y Noche.

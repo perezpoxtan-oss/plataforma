@@ -69,6 +69,7 @@ class CatalogoSeeder extends Seeder
         'transporte' => 'transporte.index',
         'robo' => 'robo.index',
         'recorridos_pc' => 'recorridos_pc.index',
+        'equipos_pc' => 'equipos_pc.index',
     ];
 
     /**
@@ -112,6 +113,7 @@ class CatalogoSeeder extends Seeder
                 'gafetes' => ['Gafetes', 'bi-person-vcard', ['imprimir']],
                 'vouchers' => ['Vouchers de reposición', 'bi-receipt', ['imprimir']],
                 'equipos' => ['Equipos de seguridad', 'bi-tools', ['imprimir']],
+                'equipos_pc' => ['Equipos de Protección Civil', 'bi-fire', ['imprimir']],
                 'responsivas' => ['Responsivas', 'bi-pen', ['firmar', 'imprimir']],
                 'estacionamientos' => ['Estacionamientos', 'bi-p-square', []],
                 'pases_salida' => ['Pases de salida', 'bi-box-arrow-right', ['aprobar', 'firmar', 'imprimir']],
