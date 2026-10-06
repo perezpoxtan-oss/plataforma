@@ -8,6 +8,7 @@ use App\Models\Departamento;
 use App\Models\Puesto;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
@@ -141,7 +142,7 @@ class PuestoController extends Controller
      */
     private function validar(Request $request, int $empresaId, ?Puesto $puesto = null): array
     {
-        $request->merge(['nombre' => $this->normalizarNombre($request->input('nombre'))]);
+        $request->merge(['nombre' => $this->normalizarNombre(Entrada::texto($request->input('nombre')))]);
 
         $datos = $request->validate([
             'tipo' => ['required', Rule::in(array_keys(Puesto::TIPOS))],

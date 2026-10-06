@@ -18,6 +18,7 @@ Las usan Responsivas, Préstamo de llaves, Lost & Found, Pases de salida, Bitác
 
 - **`guardar($dataUrl, 'carpeta', 'campo', 'la firma del …')`:**
   - Valida que sea JPEG o PNG real, de hasta 300 KB, y que no esté vacía. Si no, lanza un error de validación en ese campo, con un mensaje claro.
+  - No guarda los bytes tal como llegaron: la imagen se vuelve a dibujar con GD (`App\Support\ImagenSegura`), lo que descarta código pegado a la imagen y metadatos.
   - La guarda en el disco **privado** `local`, en `firmas/<empresa>/<carpeta>/<año>/<mes>/<uuid>.jpg`.
   - Devuelve la ruta para guardarla en la base.
 - **`viene($dataUrl)`:** dice si llegó una firma, para las opcionales.

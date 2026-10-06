@@ -16,6 +16,8 @@ use App\Models\Vehiculo;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Firmas\Firmas;
 use App\Services\Transporte\BitacoraTransporte;
+use App\Support\Csv;
+use App\Support\Entrada;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -292,10 +294,10 @@ class TransporteController extends Controller
         return response()->streamDownload(function () use ($filas, $hora) {
             $salida = fopen('php://output', 'w');
             fwrite($salida, "\xEF\xBB\xBF"); // para que Excel respete los acentos
-            fputcsv($salida, ['Folio', 'Fecha y hora', 'Sede', 'Movimiento', 'Ruta', 'Horario', 'Transportista', 'Estatus', 'Vehículo', 'Placas', 'Núm. económico',
+            Csv::fila($salida, ['Folio', 'Fecha y hora', 'Sede', 'Movimiento', 'Ruta', 'Horario', 'Transportista', 'Estatus', 'Vehículo', 'Placas', 'Núm. económico',
                 'Conductor', 'PAX', 'Monto taxi ($)', 'Destino taxi', 'Justificación costo', 'Colaboradores', 'Observaciones', 'Registró (guardia)', 'Vo.Bo.', 'Anulado']);
             foreach ($filas as $m) {
-                fputcsv($salida, [
+                Csv::fila($salida, [
                     $m->folio(), $hora->formatear($m->created_at), $m->sede?->nombre, $m->etiquetaTipo(), $m->ruta?->nombre,
                     $m->horario ? $m->horario->inicio().'-'.$m->horario->fin() : '', $m->ruta?->proveedor?->nombre, $m->etiquetaEstatus(),
                     $m->etiquetaUnidad(), $m->vehiculo?->placas, $m->vehiculo?->numero_economico, $m->chofer?->nombre_completo, $m->cantidad_pax,
@@ -463,11 +465,11 @@ class TransporteController extends Controller
             'fecha_inicio' => $desde,
             'fecha_fin' => $hasta,
             'sede' => is_numeric($request->query('sede')) ? (int) $request->query('sede') : null,
-            'estatus' => array_key_exists((string) $request->query('estatus'), MovimientoTransporte::ESTATUS) ? (string) $request->query('estatus') : null,
-            'tipo' => array_key_exists((string) $request->query('tipo'), MovimientoTransporte::TIPOS) ? (string) $request->query('tipo') : null,
+            'estatus' => array_key_exists(Entrada::texto($request->query('estatus')), MovimientoTransporte::ESTATUS) ? Entrada::texto($request->query('estatus')) : null,
+            'tipo' => array_key_exists(Entrada::texto($request->query('tipo')), MovimientoTransporte::TIPOS) ? Entrada::texto($request->query('tipo')) : null,
             'proveedor' => is_numeric($request->query('proveedor')) ? (int) $request->query('proveedor') : null,
-            'estado' => in_array($request->query('estado'), ['vigentes', 'anulados', 'por_autorizar'], true) ? (string) $request->query('estado') : null,
-            'q' => mb_substr(trim((string) $request->query('q', '')), 0, 100),
+            'estado' => in_array($request->query('estado'), ['vigentes', 'anulados', 'por_autorizar'], true) ? Entrada::texto($request->query('estado')) : null,
+            'q' => mb_substr(trim(Entrada::texto($request->query('q', ''))), 0, 100),
         ];
     }
 

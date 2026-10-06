@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use App\Support\ZonasHorarias;
@@ -149,7 +150,7 @@ class SedeController extends Controller
      */
     private function validar(Request $request, int $empresaId, ?Sede $sede = null): array
     {
-        $request->merge(['codigo' => mb_strtoupper(trim((string) $request->input('codigo')))]);
+        $request->merge(['codigo' => mb_strtoupper(trim(Entrada::texto($request->input('codigo'))))]);
 
         $datos = $request->validate([
             'nombre' => ['required', 'string', 'max:150'],

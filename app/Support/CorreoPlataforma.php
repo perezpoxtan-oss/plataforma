@@ -26,6 +26,13 @@ class CorreoPlataforma
     public const CIFRADOS = ['tls' => 'TLS / STARTTLS (puerto 587)', 'ssl' => 'SSL (puerto 465)', 'ninguno' => 'Sin cifrado (no recomendado)'];
 
     /**
+     * Seguridad (SSRF): solo puertos de correo. Con cualquier puerto, la
+     * pantalla serviría para tocar otros servicios del servidor o de la red
+     * interna y leer su respuesta en el mensaje de error.
+     */
+    public const PUERTOS = [25, 465, 587, 2525];
+
+    /**
      * @return array<string, mixed>
      */
     public function datos(): array
@@ -74,6 +81,14 @@ class CorreoPlataforma
             return false;
         }
 
+        $d = $this->datos();
+        $problema = self::problemaDestino((string) $d['host'], (int) $d['puerto']);
+        if ($problema !== null) {
+            $this->anotar(['ultimo_error' => mb_substr(now()->toIso8601String().' · '.$problema, 0, 300)]);
+
+            return false;
+        }
+
         try {
             $this->aplicar();
             Mail::mailer(self::MAILER)->to($para)->send($correo);
@@ -87,6 +102,49 @@ class CorreoPlataforma
 
             return false;
         }
+    }
+
+    /**
+     * Seguridad (SSRF): ¿por qué no se debe usar ese servidor? null si está bien.
+     * Se aceptan nombres y direcciones públicas, privadas y locales (un
+     * servidor de correo interno es válido), pero no direcciones reservadas
+     * como 169.254.x.x (metadatos de la nube), 0.0.0.0 o multicast.
+     */
+    public static function problemaDestino(string $host, int $puerto): ?string
+    {
+        if (! in_array($puerto, self::PUERTOS, true)) {
+            return 'Usa un puerto de correo: '.implode(', ', self::PUERTOS).'.';
+        }
+        $host = trim($host, '[]');
+        $direcciones = filter_var($host, FILTER_VALIDATE_IP) !== false ? [$host] : (gethostbynamel($host) ?: []);
+        foreach ($direcciones as $ip) {
+            if (self::direccionReservada($ip)) {
+                return 'Ese servidor apunta a una dirección reservada; escribe el servidor de correo de tu proveedor.';
+            }
+        }
+
+        return null;
+    }
+
+    private static function direccionReservada(string $ip): bool
+    {
+        $bin = @inet_pton($ip);
+        if ($bin === false) {
+            return true;
+        }
+        if (strlen($bin) === 16 && str_starts_with($bin, str_repeat("\0", 10)."\xff\xff")) {
+            $bin = substr($bin, 12); // IPv4 dentro de IPv6 (::ffff:a.b.c.d)
+        }
+        if (strlen($bin) === 4) {
+            $a = ord($bin[0]);
+
+            return $a === 0 || $a >= 224 || ($a === 169 && ord($bin[1]) === 254);
+        }
+        $b0 = ord($bin[0]);
+
+        return $bin === str_repeat("\0", 16) // ::
+            || $b0 === 0xFF // multicast
+            || ($b0 === 0xFE && (ord($bin[1]) & 0xC0) === 0x80); // fe80::/10 (enlace local)
     }
 
     /**

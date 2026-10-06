@@ -9,6 +9,7 @@ use App\Models\Sede;
 use App\Models\Turno;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
@@ -202,7 +203,7 @@ class TurnoController extends Controller
      */
     private function validar(Request $request, int $empresaId, ?Turno $turno = null): array
     {
-        $request->merge(['nombre' => $this->normalizarNombre($request->input('nombre'))]);
+        $request->merge(['nombre' => $this->normalizarNombre(Entrada::texto($request->input('nombre')))]);
 
         $datos = $request->validate([
             'nombre' => ['required', 'string', 'max:50', $this->nombreLibre('turnos', $empresaId, $turno?->id, 'Ya existe un turno con ese nombre en esta empresa.')],

@@ -32,6 +32,8 @@ Los valores viven en `configuracion_plataforma` (clave `identidad`) y se leen co
 - Los colores solo se aceptan como `#RRGGBB`, porque se insertan en CSS. También se validan al leerlos y en la vista previa.
 - Las imágenes se aceptan en PNG, JPG o WEBP. SVG está prohibido porque puede llevar código. Tamaño máximo: 512 KB el símbolo y 256 KB el ícono, con máximo 2048 px por lado.
 - Los archivos van al disco `public` en `identidad/` con nombre aleatorio. Al reemplazar o quitar una imagen, se borra la anterior.
+- La imagen se guarda re-dibujada con GD (`App\Support\ImagenSegura`), nunca el archivo original: así no puede llevar HTML, JavaScript o PHP escondido. Lo mismo aplica al logo de cada empresa.
+- `desplegar.sh` deja un `.htaccess` en `public/storage` que bloquea scripts, HTML y SVG y envía `X-Content-Type-Options: nosniff`.
 - Cada cambio queda en `auditoria` con el evento `identidad.actualizada`, con el antes y el después.
 
 ## Vista previa

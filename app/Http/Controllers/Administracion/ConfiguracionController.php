@@ -11,6 +11,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Services\Respaldos\Respaldos;
 use App\Support\CorreoPlataforma;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -62,14 +63,23 @@ class ConfiguracionController extends Controller
     {
         $this->soloSuperadmin($request);
         $datos = $request->validate([
-            'host' => ['required', 'string', 'max:150', 'regex:/^[A-Za-z0-9.-]+$/'],
-            'puerto' => ['required', 'integer', 'between:1,65535'],
+            // Seguridad (SSRF): solo servidores que no sean direcciones reservadas y solo puertos de correo
+            'host' => ['required', 'string', 'max:150', 'regex:/^[A-Za-z0-9.-]+$/', function (string $campo, mixed $valor, \Closure $falla) {
+                $problema = CorreoPlataforma::problemaDestino(Entrada::texto($valor), CorreoPlataforma::PUERTOS[0]);
+                if ($problema !== null) {
+                    $falla($problema);
+                }
+            }],
+            'puerto' => ['required', 'integer', Rule::in(CorreoPlataforma::PUERTOS)],
             'cifrado' => ['required', Rule::in(array_keys(CorreoPlataforma::CIFRADOS))],
             'usuario' => ['nullable', 'string', 'max:150'],
             'contrasena' => ['nullable', 'string', 'max:200'],
             'remitente_correo' => ['required', 'email:rfc', 'max:150'],
             'remitente_nombre' => ['nullable', 'string', 'max:80'],
-        ], ['host.regex' => 'Escribe solo el nombre del servidor (ej. mail.tudominio.com), sin https:// ni espacios.'], [
+        ], [
+            'host.regex' => 'Escribe solo el nombre del servidor (ej. mail.tudominio.com), sin https:// ni espacios.',
+            'puerto.in' => 'Usa un puerto de correo: '.implode(', ', CorreoPlataforma::PUERTOS).'.',
+        ], [
             'host' => 'servidor', 'puerto' => 'puerto', 'remitente_correo' => 'correo del remitente', 'remitente_nombre' => 'nombre del remitente',
         ]);
 

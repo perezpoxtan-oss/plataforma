@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\ProvisionarEmpresa;
+use App\Support\Entrada;
+use App\Support\ImagenSegura;
 use App\Support\ZonasHorarias;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -123,7 +125,7 @@ class EmpresaController extends Controller
      */
     private function validar(Request $request, ?Empresa $empresa = null): array
     {
-        $request->merge(['rfc' => mb_strtoupper(trim((string) $request->input('rfc')))]);
+        $request->merge(['rfc' => mb_strtoupper(trim(Entrada::texto($request->input('rfc'))))]);
 
         $datos = $request->validate([
             'nombre_comercial' => ['required', 'string', 'max:150'],
@@ -165,7 +167,8 @@ class EmpresaController extends Controller
         $anterior = $empresa->logo_ruta;
 
         if ($archivo instanceof UploadedFile) {
-            $nueva = 'storage/'.$archivo->store('empresas/logos', 'public');
+            // Seguridad: se guarda una copia re-dibujada (sin código ni metadatos escondidos)
+            $nueva = 'storage/'.ImagenSegura::guardar($archivo, 'empresas/logos', 'logo');
         } elseif ($request->boolean('quitar_logo')) {
             $nueva = null;
         } else {

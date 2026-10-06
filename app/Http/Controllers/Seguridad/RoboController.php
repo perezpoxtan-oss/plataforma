@@ -10,6 +10,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Permisos\Autorizador;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Builder;
@@ -82,7 +83,7 @@ class RoboController extends Controller
             $sedesFiltro = Sede::orderBy('nombre')->get(['id', 'nombre'])->filter(fn ($s) => $sedesVer === null || in_array($s->id, $sedesVer, true))->values();
 
             $expediente = null;
-            if ($request->filled('abrir') && ctype_digit((string) $request->query('abrir'))) {
+            if ($request->filled('abrir') && ctype_digit(Entrada::texto($request->query('abrir')))) {
                 $expediente = $this->expediente($actor, (int) $request->query('abrir'));
             }
 
