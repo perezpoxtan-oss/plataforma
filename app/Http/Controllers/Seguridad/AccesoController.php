@@ -13,6 +13,7 @@ use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Accesos\MovimientoNoPermitido;
 use App\Services\Accesos\MovimientosAccesos;
 use App\Services\Accesos\RegistroAccesos;
+use App\Support\Csv;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -284,11 +285,11 @@ class AccesoController extends Controller
         return response()->streamDownload(function () use ($filas, $hora) {
             $salida = fopen('php://output', 'w');
             fwrite($salida, "\xEF\xBB\xBF");
-            fputcsv($salida, ['Folio', 'Sede', 'Tipo', 'Movimiento', 'Nombre', 'Empresa / Procedencia', 'Gafete', 'Placas', 'Vehículo', 'Zona',
+            Csv::fila($salida, ['Folio', 'Sede', 'Tipo', 'Movimiento', 'Nombre', 'Empresa / Procedencia', 'Gafete', 'Placas', 'Vehículo', 'Zona',
                 'Conductor', 'Visita a / Host', 'Departamento', 'Habitación', 'Pase', 'ID custodiada', 'Acompañantes',
                 'Entrada', 'Autorizado', 'Salida', 'Registró', 'Autorizó', 'Dio salida']);
             foreach ($filas as $a) {
-                fputcsv($salida, [
+                Csv::fila($salida, [
                     $a->id, $a->sede?->nombre, $a->etiquetaTipo(), Acceso::MOVIMIENTOS[$a->movimiento] ?? $a->movimiento, $a->nombre,
                     $a->empresa_procedencia, $a->gafete_texto, $a->placas,
                     $a->vehiculo ? trim($a->vehiculo->marca.' '.$a->vehiculo->modelo.' '.$a->vehiculo->color) : null,

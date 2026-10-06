@@ -115,5 +115,5 @@ Usa además: `GET /lector/resolver` (lector universal, tipos `colaborador` y `eq
 
 ## Pendientes para integración
 
-- `AdministradorColaboradores::REFERENCIAS` admite **una** columna por tabla: se registró `pases_salida.colaborador_id` (solicitante). `colaborador_destino_id` **no** se mueve al unir un duplicado; hace falta que REFERENCIAS acepte varias columnas por tabla.
+- Unir duplicados mueve el solicitante (`REFERENCIAS`) y el colaborador destino (`REFERENCIAS_ADICIONALES`, revisión funcional FUN-02).
 - Avisos por correo ("pase pendiente de aprobación", "pase vencido") no se incluyeron: requieren una clave nueva en `Empresa::AVISOS`.

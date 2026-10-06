@@ -8,6 +8,7 @@ use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Padrones\AdministradorProveedores;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
@@ -192,6 +193,7 @@ class ProveedorController extends Controller
 
         [$modelo, $sigueVisible] = $this->tenant->conEmpresa($empresaId, function () use ($request, $proveedor) {
             $modelo = $this->buscarVisible($request->user(), $proveedor);
+            abort_unless($this->proveedores->esPropioSiAplica($request->user(), $modelo, 'proveedores.editar'), 403, 'Con alcance «Solo los propios» solo modificas los proveedores que tú diste de alta.');
             $this->proveedores->actualizarSedes($request->user(), $modelo, $request);
 
             return [$modelo, $this->proveedores->consulta($request->user())->whereKey($modelo->id)->exists()];
@@ -239,7 +241,7 @@ class ProveedorController extends Controller
         }
 
         $resultados = $this->tenant->conEmpresa($empresaId, fn () => $this->proveedores->buscar(
-            (string) $request->query('q', ''),
+            Entrada::texto($request->query('q', '')),
             $this->proveedores->sedes($actor, 'proveedores.ver'),
         ));
 
@@ -306,6 +308,7 @@ class ProveedorController extends Controller
      */
     private function exigirExclusivo(User $actor, Proveedor $proveedor, string $permiso): void
     {
+        abort_unless($this->proveedores->esPropioSiAplica($actor, $proveedor, $permiso), 403, 'Con alcance «Solo los propios» solo modificas los proveedores que tú diste de alta.');
         abort_unless(
             $this->proveedores->esExclusivoDe($proveedor, $this->proveedores->sedes($actor, $permiso)),
             403,

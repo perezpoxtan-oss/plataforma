@@ -72,7 +72,7 @@ Vuelve a **DISPONIBLE** (por ejemplo, apareció). El voucher se conserva. Audito
 "Impresión Doble Vista (Libro)": cada gafete mide 172 × 54 mm, frente y reverso lado a lado para doblar por la línea punteada.
 
 - **Frente**: franja de color por tipo (Visitante naranja, Proveedor azul, cualquier otro gris, como SEGCAT), empresa, "Sede: …", tipo en grande y logo.
-- **Logo**: `empresas.logo_ruta` si existe un archivo en `public/`; si no, el símbolo de la Identidad de la plataforma; si no, el recuadro "Espacio Logo" de SEGCAT. *Hoy la plataforma aún no tiene pantalla para subir el logo de cada empresa.*
+- **Logo**: `empresas.logo_ruta` si existe un archivo en `public/`; si no, el símbolo de la Identidad de la plataforma; si no, el recuadro "Espacio Logo" de SEGCAT. El logo se sube en Empresas (ver [empresas-y-sedes.md](empresas-y-sedes.md#logo-de-la-empresa)).
 - **Reverso**: QR, nomenclatura y reglas ("Portar en lugar visible…"). Los dados de baja llevan "GAFETE DADO DE BAJA".
 - El QR codifica **solo** `route('lector.ir', $codigo_qr)` (`/e/{código}`) y se dibuja en el servidor en SVG con `bacon/bacon-qr-code` (igual que la calcomanía vehicular). No se usa `api.qrserver.com`.
 - POST desde "Marcar todos" + "Imprimir" (las casillas usan `form="formImprimirGafetes"` para no anidar formularios); GET desde el botón de impresora de cada ficha. Sin nada marcado: aviso en la lista, sin abrir una pestaña vacía. Máximo 500 por impresión. Los ids fuera de la empresa o del alcance se descartan (si no queda ninguno: 404).

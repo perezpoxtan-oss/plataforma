@@ -8,6 +8,7 @@ use App\Models\Proveedor;
 use App\Models\User;
 use App\Services\Personas\AdministradorPersonas;
 use App\Services\Personas\FolioDuplicado;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
@@ -164,7 +165,7 @@ class PersonaController extends Controller
         }
 
         return response()->json([
-            'resultados' => $this->tenant->conEmpresa($empresaId, fn () => $this->personas->buscar((string) $request->query('q', ''))),
+            'resultados' => $this->tenant->conEmpresa($empresaId, fn () => $this->personas->buscar(Entrada::texto($request->query('q', '')))),
         ]);
     }
 

@@ -160,7 +160,8 @@ class InicioSesionTest extends TestCase
     {
         $this->actingAs($this->agente());
 
-        $this->get('/sesion/expirada')->assertRedirect('/login')->assertSessionHas('acceso', 'expirado');
+        // Seguridad: el cierre es POST (con token); ver tests/Feature/SeguridadAuditoria
+        $this->post('/sesion/expirada')->assertRedirect('/login')->assertSessionHas('acceso', 'expirado');
         $this->assertGuest();
     }
 

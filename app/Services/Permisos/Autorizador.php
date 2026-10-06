@@ -133,6 +133,34 @@ class Autorizador
         };
     }
 
+    /**
+     * ¿Usa el permiso sobre TODA la empresa? Alcance de empresa, o de sede
+     * sin limitarse a ninguna. "Solo los propios" nunca cuenta como toda la
+     * empresa, aunque su asignación no tenga sede (sedesPermitidas() da null
+     * en ese caso porque solo habla de sedes).
+     */
+    public function alcanceDeEmpresa(User $usuario, string $permiso): bool
+    {
+        if ($usuario->es_superadmin) {
+            return true;
+        }
+
+        $efectivo = $this->permisosEfectivos($usuario)[$permiso] ?? null;
+
+        return $efectivo !== null
+            && $efectivo->alcance !== Alcance::Propios
+            && $this->sedesPermitidas($usuario, $permiso) === null;
+    }
+
+    /**
+     * ¿El permiso es "Solo los propios"?
+     */
+    public function soloPropios(User $usuario, string $permiso): bool
+    {
+        return ! $usuario->es_superadmin
+            && ($this->permisosEfectivos($usuario)[$permiso] ?? null)?->alcance === Alcance::Propios;
+    }
+
     public function dentroDeAlcance(User $usuario, PermisoEfectivo $efectivo, Model $registro): bool
     {
         $empresaRegistro = $this->atributo($registro, 'empresa_id');

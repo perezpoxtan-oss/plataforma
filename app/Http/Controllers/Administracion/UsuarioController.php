@@ -8,6 +8,8 @@ use App\Models\Empresa;
 use App\Models\Rol;
 use App\Models\Sede;
 use App\Models\User;
+use App\Rules\ContrasenaSegura;
+use App\Services\Permisos\Autorizador;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -30,6 +32,7 @@ class UsuarioController extends Controller
         private readonly AdministradorUsuarios $administrador,
         private readonly EmpresaDeTrabajo $empresa,
         private readonly Tenant $tenant,
+        private readonly Autorizador $autorizador,
     ) {}
 
     public function index(Request $request): View
@@ -75,6 +78,8 @@ class UsuarioController extends Controller
             'sedes' => $sedes->keyBy('id'),
             'roles' => $roles,
             'nivelPropio' => $nivelPropio,
+            // Seguridad (AZ-01): sedes a las que puede asignar cuentas (null = todas)
+            'sedesAsignables' => $actor->es_superadmin ? null : $this->autorizador->sedesPermitidas($actor, $actor->can('usuarios.crear') ? 'usuarios.crear' : 'usuarios.editar'),
             'desbloqueables' => $desbloqueables,
             'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
             'puede' => [
@@ -107,6 +112,7 @@ class UsuarioController extends Controller
 
     public function update(Request $request, User $usuario): RedirectResponse
     {
+        $this->exigirDeLaEmpresa($request, $usuario);
         Gate::authorize('usuarios.editar');
         $empresaId = $this->exigirVisible($request, $usuario);
 
@@ -126,6 +132,7 @@ class UsuarioController extends Controller
 
     public function estado(Request $request, User $usuario): RedirectResponse
     {
+        $this->exigirDeLaEmpresa($request, $usuario);
         Gate::authorize('usuarios.eliminar');
         $this->exigirVisible($request, $usuario);
 
@@ -144,6 +151,7 @@ class UsuarioController extends Controller
 
     public function desbloquear(Request $request, User $usuario): RedirectResponse
     {
+        $this->exigirDeLaEmpresa($request, $usuario);
         Gate::authorize('usuarios.desbloquear');
         $this->exigirVisible($request, $usuario);
 
@@ -171,6 +179,16 @@ class UsuarioController extends Controller
         return $this->administrador->limitarAlcance($consulta, $actor, 'usuarios.ver');
     }
 
+    /**
+     * Seguridad (AZ-03): una cuenta de otra empresa (o el Super Administrador)
+     * responde 404 antes de revisar el permiso, para no revelar que existe.
+     */
+    private function exigirDeLaEmpresa(Request $request, User $usuario): void
+    {
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null || $usuario->es_superadmin || (int) $usuario->empresa_id !== $empresaId, 404);
+    }
+
     private function exigirVisible(Request $request, User $usuario): int
     {
         $empresaId = $this->empresa->id($request->user());
@@ -191,7 +209,8 @@ class UsuarioController extends Controller
             'colaborador_id' => ['nullable', 'integer'],
             'username' => ['required', 'string', 'max:60', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')->ignore($usuario?->id)],
             'email' => ['required', 'email:rfc', 'max:150', Rule::unique('users', 'email')->ignore($usuario?->id)],
-            'password' => [$usuario === null ? 'required' : 'nullable', 'string', Password::min(8)->letters()->numbers()],
+            'password' => [$usuario === null ? 'required' : 'nullable', 'string', Password::min(8)->letters()->numbers(),
+                new ContrasenaSegura((string) $request->input('username'), (string) $request->input('email'))],
             'rol_id' => ['required', 'integer'],
             'sede_id' => ['nullable', 'integer'],
         ], [

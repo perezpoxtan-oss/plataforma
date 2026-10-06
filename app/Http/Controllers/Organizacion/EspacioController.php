@@ -10,6 +10,7 @@ use App\Models\Sede;
 use App\Models\TipoEspacio;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Permisos\Autorizador;
+use App\Support\Entrada;
 use App\Support\Espacios\Etiquetas;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -156,6 +157,7 @@ class EspacioController extends Controller
     {
         Gate::authorize('espacios.editar');
         [$nodo, $empresaId] = $this->buscar($request, $espacio);
+        Gate::authorize('espacios.editar', $nodo); // Seguridad (AZ-04): alcance sobre el registro ("solo los propios")
         $datos = $this->validar($request, false);
 
         $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->actualizar($request->user(), $nodo, $datos));
@@ -168,6 +170,7 @@ class EspacioController extends Controller
     {
         Gate::authorize('espacios.eliminar');
         [$nodo, $empresaId] = $this->buscar($request, $espacio);
+        Gate::authorize('espacios.eliminar', $nodo); // Seguridad (AZ-04): alcance sobre el registro ("solo los propios")
         $activo = $request->boolean('activo');
 
         $afectados = $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->cambiarEstado($request->user(), $nodo, $activo));
@@ -335,7 +338,7 @@ class EspacioController extends Controller
      */
     private function validar(Request $request, bool $nuevo): array
     {
-        $request->merge(['codigo' => $request->filled('codigo') ? mb_strtoupper(trim((string) $request->input('codigo'))) : null]);
+        $request->merge(['codigo' => $request->filled('codigo') ? mb_strtoupper(trim(Entrada::texto($request->input('codigo')))) : null]);
 
         $datos = $request->validate([
             'nivel' => [$nuevo ? 'required' : 'prohibited', 'in:'.implode(',', array_keys(Espacio::PADRES))],

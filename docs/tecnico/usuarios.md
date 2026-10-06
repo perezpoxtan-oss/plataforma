@@ -19,9 +19,9 @@ Réplica de `modules/usuarios/usuario_lista.php`, `usuario_modal_editar.php` y `
 - No se administra la **propia cuenta**, ni a usuarios de nivel igual o superior, ni al Super Administrador.
 - La lista respeta el **alcance** de `usuarios.ver`: toda la empresa, los usuarios asignados a sus sedes, o solo los que el actor dio de alta.
 - Únicos: el usuario y el correo, en toda la plataforma; el número de colaborador, dentro de cada empresa. El número es opcional, para cuentas de soporte.
-- Contraseña: mínimo 8 caracteres, con letras y números.
+- Contraseña: mínimo 8 caracteres, con letras y números; máximo 72; no puede ser de las más usadas (`App\Rules\ContrasenaSegura`) ni contener el nombre de usuario o el correo.
 - **Desactivar** o **cambiar la contraseña** cierra de inmediato las sesiones abiertas de esa persona: se borran de la tabla `sessions`.
-- Auditoría: `usuarios.creado`, `usuarios.actualizado`, `usuarios.desactivado`, `usuarios.reactivado` y `usuarios.desbloqueado`, con el antes y el después (incluidos rol y sede).
+- Auditoría: `usuarios.creado`, `usuarios.actualizado`, `usuarios.desactivado`, `usuarios.reactivado` y `usuarios.desbloqueado`, con el antes y el después (incluidos rol y sede). Si se cambió la contraseña solo se anota `contrasena: cambiada`; nunca su valor ni su hash.
 
 ## Desbloqueo manual (QA A-03)
 
@@ -34,9 +34,9 @@ Réplica de `modules/usuarios/usuario_lista.php`, `usuario_modal_editar.php` y `
 - Bases existentes: la migración `2026_10_05_000100_agregar_accion_desbloquear_usuarios` (el despliegue corre `migrate` antes de `db:seed`) crea la acción y la otorga a los roles "Administrador" (plantilla y copias de cada empresa) que ya tienen `usuarios.editar`, con ese mismo alcance, y a los roles "Jefe de seguridad" (`usuarios.ver` y `usuarios.desbloquear`, su sede). Solo agrega; no cambia permisos existentes. En una instalación nueva no hace nada (lo hacen los seeders).
 - El Super Administrador elige la empresa con el selector "Empresa de trabajo".
 
-## Pendiente para Colaboradores
+## Vínculo con Colaboradores (resuelto)
 
-SEGCAT permitía buscar un colaborador para llenar los datos y vincular la cuenta (`id_colaborador`). Se agregará al migrar Colaboradores, con la columna `colaborador_id`.
+SEGCAT permitía buscar un colaborador para llenar los datos y vincular la cuenta (`id_colaborador`). Ya está: columna `users.colaborador_id` y búsqueda en el diálogo (ver [colaboradores.md](colaboradores.md#usuarios--colaborador)).
 
 ## Componentes
 

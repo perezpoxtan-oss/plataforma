@@ -21,7 +21,8 @@
                 </div>
             </div>
             <div class="d-flex flex-wrap gap-2 mb-2">
-                @if ($v['lf_enlace_externo'])
+                {{-- Seguridad: solo enlaces http(s); al regresar con errores no se pinta un javascript: --}}
+                @if (is_string($v['lf_enlace_externo']) && preg_match('#^https?://#i', $v['lf_enlace_externo']))
                     <a href="{{ $v['lf_enlace_externo'] }}" target="_blank" rel="noopener noreferrer" class="btn-ver-detalle"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Abrir en la otra plataforma</a>
                 @endif
                 @if ($expediente['puedeImprimir'] && $n->categoria === 'lost_found')

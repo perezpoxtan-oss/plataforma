@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ConfiguracionPlataforma;
 use App\Services\Permisos\AdministradorRoles;
 use App\Support\Identidad;
+use App\Support\ImagenSegura;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -79,8 +80,10 @@ class IdentidadController extends Controller
             $archivo = $request->file($campo);
 
             if ($archivo instanceof UploadedFile) {
+                // Seguridad: se guarda una copia re-dibujada (sin código ni metadatos escondidos)
+                $nueva = 'storage/'.ImagenSegura::guardar($archivo, self::CARPETA, $campo);
                 $this->borrar($antes[$campo] ?? null);
-                $nuevos[$campo] = 'storage/'.$archivo->store(self::CARPETA, 'public');
+                $nuevos[$campo] = $nueva;
             } elseif ($request->boolean("quitar_{$campo}")) {
                 $this->borrar($antes[$campo] ?? null);
                 $nuevos[$campo] = null;

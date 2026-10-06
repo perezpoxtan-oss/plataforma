@@ -81,7 +81,9 @@ class AdministradorUsuarios
             $this->cerrarSesiones($usuario);
         }
 
-        $this->roles->auditar($actor, 'usuarios.actualizado', $usuario, $antes, $this->foto($usuario->fresh()));
+        // La bitácora anota que la contraseña cambió, nunca su valor ni su hash
+        $despues = $this->foto($usuario->fresh()) + (! empty($datos['password']) ? ['contrasena' => 'cambiada'] : []);
+        $this->roles->auditar($actor, 'usuarios.actualizado', $usuario, $antes, $despues);
 
         return $usuario;
     }
@@ -178,6 +180,14 @@ class AdministradorUsuarios
 
         // Asignar un rol exige poder administrarlo (nivel inferior al propio)
         $this->roles->exigirPuedeAdministrarRol($actor, $rol, $permiso);
+
+        // Seguridad (AZ-01): con alcance limitado a sus sedes, la cuenta debe
+        // quedar en una de ellas; nunca en otra sede ni en "todas las sedes"
+        // (tendría más alcance que quien la da de alta).
+        $sedes = $actor->es_superadmin ? null : $this->autorizador->sedesPermitidas($actor, $permiso);
+        if ($sedes !== null && ($sede === null || ! in_array((int) $sede->id, $sedes, true))) {
+            throw new AuthorizationException('Solo puedes asignar cuentas a tus sedes: elige una de ellas.');
+        }
     }
 
     /**

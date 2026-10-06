@@ -28,12 +28,21 @@ class Respaldos
 
     private const FILAS_POR_INSERT = 200;
 
+    /**
+     * Seguridad: tablas que se respaldan sin filas. Son datos temporales que no
+     * hacen falta para restaurar y no deben viajar en un archivo descargable
+     * (sesiones abiertas, caché y fichas para restablecer contraseña).
+     */
+    public const TABLAS_SIN_FILAS = ['sessions', 'cache', 'cache_locks', 'password_reset_tokens'];
+
     public function carpeta(): string
     {
         $carpeta = storage_path('app/private/respaldos');
         if (! is_dir($carpeta)) {
             mkdir($carpeta, 0700, true);
         }
+        // Seguridad: la carpeta queda privada aunque alguien la haya creado con otros permisos
+        @chmod($carpeta, 0700);
 
         return $carpeta;
     }
@@ -106,6 +115,7 @@ class Respaldos
         if ($gz === false) {
             throw new RuntimeException('No se pudo crear el archivo de respaldo.');
         }
+        @chmod($temporal, 0600); // Seguridad: privado desde el primer byte
 
         try {
             $driver = DB::connection()->getDriverName();
@@ -190,6 +200,12 @@ class Respaldos
      */
     private function volcarFilas($gz, string $tabla, callable $citar, string $comilla): void
     {
+        if (in_array($tabla, self::TABLAS_SIN_FILAS, true)) {
+            gzwrite($gz, "-- {$tabla}: solo estructura (datos temporales)\n\n");
+
+            return;
+        }
+
         $lote = [];
         $columnas = null;
         foreach (DB::table($tabla)->cursor() as $fila) {

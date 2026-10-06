@@ -5,8 +5,12 @@ namespace App\Http\Controllers\Administracion;
 use App\Http\Controllers\Controller;
 use App\Models\Empresa;
 use App\Models\Rubro;
+use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
+use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\ProvisionarEmpresa;
+use App\Support\Entrada;
+use App\Support\ImagenSegura;
 use App\Support\ZonasHorarias;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,7 +54,7 @@ class EmpresaController extends Controller
             'esSuperadmin' => $actor->es_superadmin,
             'puede' => [
                 'crear' => $actor->es_superadmin && $actor->can('empresas.crear'),
-                'editar' => $actor->can('empresas.editar'),
+                'editar' => $this->editaEmpresa($actor),
                 'estado' => $actor->es_superadmin,
                 'sedes' => $actor->can('sedes.ver'),
             ],
@@ -74,9 +78,12 @@ class EmpresaController extends Controller
 
     public function update(Request $request, Empresa $empresa): RedirectResponse
     {
-        Gate::authorize('empresas.editar');
         $actor = $request->user();
+        // Seguridad (AZ-03): otra empresa responde 404 aunque no se tenga el permiso (sin revelar que existe)
         abort_unless($actor->es_superadmin || $empresa->id === (int) $actor->empresa_id, 404);
+        Gate::authorize('empresas.editar');
+        // Seguridad (AZ-02): los datos de la empresa solo los cambia quien tiene alcance de empresa
+        abort_unless($this->editaEmpresa($actor), 403, 'Los datos de la empresa solo los cambia quien tiene el permiso «editar» de Empresas con alcance de empresa.');
 
         $datos = $this->validar($request, $empresa);
 
@@ -95,6 +102,8 @@ class EmpresaController extends Controller
 
     public function estado(Request $request, Empresa $empresa): RedirectResponse
     {
+        // Seguridad (AZ-03): otra empresa responde 404 (sin revelar que existe)
+        abort_unless($request->user()->es_superadmin || $empresa->id === (int) $request->user()->empresa_id, 404);
         abort_unless($request->user()->es_superadmin, 403);
 
         $activo = $request->boolean('activo');
@@ -106,12 +115,17 @@ class EmpresaController extends Controller
             : 'Empresa desactivada: sus usuarios ya no pueden entrar. Puedes reactivarla con el mismo botón.');
     }
 
+    private function editaEmpresa(User $actor): bool
+    {
+        return $actor->can('empresas.editar') && app(Autorizador::class)->alcanceDeEmpresa($actor, 'empresas.editar');
+    }
+
     /**
      * @return array<string, mixed>
      */
     private function validar(Request $request, ?Empresa $empresa = null): array
     {
-        $request->merge(['rfc' => mb_strtoupper(trim((string) $request->input('rfc')))]);
+        $request->merge(['rfc' => mb_strtoupper(trim(Entrada::texto($request->input('rfc'))))]);
 
         $datos = $request->validate([
             'nombre_comercial' => ['required', 'string', 'max:150'],
@@ -153,7 +167,8 @@ class EmpresaController extends Controller
         $anterior = $empresa->logo_ruta;
 
         if ($archivo instanceof UploadedFile) {
-            $nueva = 'storage/'.$archivo->store('empresas/logos', 'public');
+            // Seguridad: se guarda una copia re-dibujada (sin código ni metadatos escondidos)
+            $nueva = 'storage/'.ImagenSegura::guardar($archivo, 'empresas/logos', 'logo');
         } elseif ($request->boolean('quitar_logo')) {
             $nueva = null;
         } else {

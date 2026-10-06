@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Middleware\CabecerasSeguridad;
 use App\Http\Middleware\ControlarInactividad;
 use App\Http\Middleware\EstablecerEmpresa;
+use App\Http\Middleware\VerificarHost;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,8 +23,16 @@ $app = Application::configure(basePath: dirname(__DIR__))
             EstablecerEmpresa::class,
         ]);
         $middleware->redirectUsersTo(fn () => route('panel'));
+
+        // Seguridad: dominio verificado (enlaces sin Host falso)
+        $middleware->prepend(VerificarHost::class);
+        // Seguridad: cabeceras (CSP, clickjacking, nosniff, HSTS, sin caché con sesión) en toda respuesta
+        $middleware->append(CabecerasSeguridad::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Seguridad: contraseñas (de usuario o del correo SMTP) nunca se guardan en la sesión al fallar una validación
+        $exceptions->dontFlash(['password', 'password_confirmation', 'current_password', 'contrasena', 'contrasena_actual']);
+
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );

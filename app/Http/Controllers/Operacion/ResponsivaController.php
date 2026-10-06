@@ -174,7 +174,7 @@ class ResponsivaController extends Controller
             $modelo = Equipo::with('tipo:id,nombre')->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))->find($equipo);
             abort_if($modelo === null, 404);
 
-            return view('operacion.responsivas._historial', ['equipo' => $modelo, 'movimientos' => $this->responsivas->historialDe($modelo)]);
+            return view('operacion.responsivas._historial', ['equipo' => $modelo, 'movimientos' => $this->responsivas->historialDe($modelo, $request->user())]);
         });
     }
 

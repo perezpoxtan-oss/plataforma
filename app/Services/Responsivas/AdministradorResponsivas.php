@@ -305,10 +305,13 @@ class AdministradorResponsivas
      *
      * @return Collection<int, EquipoResponsiva>
      */
-    public function historialDe(Equipo $equipo): Collection
+    public function historialDe(Equipo $equipo, ?User $actor = null): Collection
     {
-        return EquipoResponsiva::with(['responsiva:id,folio,colaborador_id,entregado_en,entregado_por,recibido_por,devuelto_en',
-            'responsiva.colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno', 'responsiva.entrego:id,name', 'responsiva.recibio:id,name'])
+        return EquipoResponsiva::query()
+            // Seguridad (AZ-04): con $actor, solo las responsivas dentro de su alcance ("solo los propios")
+            ->when($actor !== null, fn ($q) => $q->whereHas('responsiva', fn ($r) => $this->limitar($r, $actor, 'responsivas.ver')))
+            ->with(['responsiva:id,folio,colaborador_id,entregado_en,entregado_por,recibido_por,devuelto_en',
+                'responsiva.colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno', 'responsiva.entrego:id,name', 'responsiva.recibio:id,name'])
             ->where('equipo_id', $equipo->id)->orderByDesc('id')->limit(self::HISTORIAL_EQUIPO)->get();
     }
 

@@ -8,6 +8,7 @@ use App\Models\Sede;
 use App\Models\VoucherReposicion;
 use App\Services\Permisos\Autorizador;
 use App\Services\Vouchers\ConsultaVouchers;
+use App\Support\Entrada;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -122,9 +123,9 @@ class VoucherController extends Controller
         };
 
         return [
-            'q' => mb_substr(trim((string) $request->query('q', '')), 0, 100),
+            'q' => mb_substr(trim(Entrada::texto($request->query('q', ''))), 0, 100),
             'sede' => is_numeric($request->query('sede')) ? (int) $request->query('sede') : null,
-            'origen' => array_key_exists((string) $request->query('origen'), VoucherReposicion::ORIGENES) ? (string) $request->query('origen') : null,
+            'origen' => array_key_exists(Entrada::texto($request->query('origen')), VoucherReposicion::ORIGENES) ? Entrada::texto($request->query('origen')) : null,
             'cobro' => in_array($request->query('cobro'), ['1', '0'], true) ? $request->query('cobro') : null,
             'desde' => $fecha($request->query('desde')),
             'hasta' => $fecha($request->query('hasta')),

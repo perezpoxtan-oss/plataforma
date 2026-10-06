@@ -7,6 +7,7 @@ use App\Models\Auditoria;
 use App\Models\User;
 use App\Services\Auditoria\LectorAuditoria;
 use App\Services\Permisos\Autorizador;
+use App\Support\Csv;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Database\Eloquent\Builder;
@@ -58,7 +59,7 @@ class AuditoriaController extends Controller
             'filtros' => $filtros,
             'lector' => $this->lector,
             'zona' => $this->hora->etiqueta(),
-            'soloPropios' => ! $actor->es_superadmin && $this->autorizador->sedesPermitidas($actor, 'auditoria.ver') !== null,
+            'soloPropios' => ! $this->autorizador->alcanceDeEmpresa($actor, 'auditoria.ver'),
             'puedeExportar' => $actor->can('auditoria.exportar'),
         ]);
     }
@@ -77,10 +78,10 @@ class AuditoriaController extends Controller
         return response()->streamDownload(function () use ($filas, $registros, $nombres) {
             $salida = fopen('php://output', 'w');
             fwrite($salida, "\xEF\xBB\xBF"); // para que Excel respete los acentos
-            fputcsv($salida, ['Fecha', 'Usuario', 'Módulo', 'Acción', 'Registro', 'IP', 'Campos que cambiaron']);
+            Csv::fila($salida, ['Fecha', 'Usuario', 'Módulo', 'Acción', 'Registro', 'IP', 'Campos que cambiaron']);
             foreach ($filas as $f) {
                 $cambios = collect($this->lector->diferencias($f->antes, $f->despues))->where('cambio', true)->pluck('campo')->join(', ');
-                fputcsv($salida, [
+                Csv::fila($salida, [
                     $this->hora->formatear($f->creado_en), $nombres[$f->user_id] ?? 'Sistema', $this->lector->modulo($f->evento),
                     $this->lector->accion($f->evento), $registros[$f->auditable_type.'#'.$f->auditable_id] ?? '', $f->ip, $cambios,
                 ]);
@@ -97,7 +98,8 @@ class AuditoriaController extends Controller
         $empresaId = $this->empresa->id($actor);
         $consulta = Auditoria::query()->when($empresaId === null, fn ($q) => $q->whereNull('empresa_id'), fn ($q) => $q->where('empresa_id', $empresaId));
 
-        if (! $actor->es_superadmin && $this->autorizador->sedesPermitidas($actor, 'auditoria.ver') !== null) {
+        // Seguridad (AZ-04): con alcance de sede o "solo los propios" (aunque sea en todas las sedes), solo lo suyo
+        if (! $this->autorizador->alcanceDeEmpresa($actor, 'auditoria.ver')) {
             $consulta->where('user_id', $actor->id);
         }
 
@@ -140,7 +142,8 @@ class AuditoriaController extends Controller
             ->when($f['desde'], fn ($q, $d) => $q->where('creado_en', '>=', Carbon::parse($d, $zona)->startOfDay()->utc()))
             ->when($f['hasta'], fn ($q, $d) => $q->where('creado_en', '<=', Carbon::parse($d, $zona)->endOfDay()->utc()))
             ->when($f['usuario'], fn ($q, $u) => $q->where('user_id', $u))
-            ->when($f['modulo'], fn ($q, $m) => $q->where('evento', 'like', $m.'.%'))
+            // Seguridad: prefijo exacto "modulo." sin LIKE (el "_" del nombre es comodín en LIKE)
+            ->when($f['modulo'], fn ($q, $m) => $q->whereRaw('SUBSTR(evento, 1, ?) = ?', [mb_strlen($m) + 1, $m.'.']))
             ->when($f['texto'], fn ($q, $t) => $q->where(fn ($w) => $w->where('ip', 'like', '%'.addcslashes($t, '%_\\').'%')
                 ->orWhere('antes', 'like', '%'.addcslashes($t, '%_\\').'%')
                 ->orWhere('despues', 'like', '%'.addcslashes($t, '%_\\').'%')));

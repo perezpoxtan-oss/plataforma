@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use App\Support\ZonasHorarias;
@@ -122,7 +123,10 @@ class SedeController extends Controller
 
         return match (true) {
             $permiso === null => $consulta->whereRaw('1 = 0'),
-            $permiso->sedes === null, $permiso->alcance === Alcance::Empresa => $consulta,
+            $permiso->alcance === Alcance::Empresa => $consulta,
+            // Seguridad (AZ-04): "Solo los propios" sin sede no es toda la empresa
+            $permiso->alcance === Alcance::Propios && $permiso->sedes === null => $consulta->where('sedes.creado_por', $actor->id),
+            $permiso->sedes === null => $consulta,
             default => $consulta->whereIn('sedes.id', $permiso->sedes),
         };
     }
@@ -146,7 +150,7 @@ class SedeController extends Controller
      */
     private function validar(Request $request, int $empresaId, ?Sede $sede = null): array
     {
-        $request->merge(['codigo' => mb_strtoupper(trim((string) $request->input('codigo')))]);
+        $request->merge(['codigo' => mb_strtoupper(trim(Entrada::texto($request->input('codigo'))))]);
 
         $datos = $request->validate([
             'nombre' => ['required', 'string', 'max:150'],

@@ -59,9 +59,9 @@ La primera vez, `plataforma:demo` crea cuatro turnos:
 | Nocturno | 23:00–07:00 | Todas |
 | Mixto Playa | 10:00–18:00 | Solo Hotel Demo Playa |
 
-## Pendiente para Rutas de transporte
+## Rutas de transporte (resuelto)
 
-En SEGCAT, Rutas usa los turnos de la empresa sin mirar `turnos_hoteles`. Cuando se migre Rutas, conviene ofrecer solo los turnos activos que `aplicanEn` la sede de la ruta.
+En SEGCAT, Rutas usaba los turnos de la empresa sin mirar `turnos_hoteles`. Rutas ya ofrece y valida solo los turnos activos que `aplicanEn` la sede de la ruta (ver [rutas.md](rutas.md)).
 
 ## Pruebas
 

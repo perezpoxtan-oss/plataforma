@@ -10,6 +10,7 @@ use App\Models\PrestamoLlave;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
+use App\Support\Csv;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -166,7 +167,7 @@ class PrestamoLlaveController extends Controller
             $modelo = Llave::query()->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))->find($llave);
             abort_if($modelo === null, 404);
 
-            return view('operacion.prestamo-llaves._historial', ['llave' => $modelo, 'movimientos' => $this->prestamos->historialDe($modelo)]);
+            return view('operacion.prestamo-llaves._historial', ['llave' => $modelo, 'movimientos' => $this->prestamos->historialDe($modelo, $request->user())]);
         });
     }
 
@@ -204,11 +205,11 @@ class PrestamoLlaveController extends Controller
         return response()->streamDownload(function () use ($filas, $hora) {
             $salida = fopen('php://output', 'w');
             fwrite($salida, "\xEF\xBB\xBF"); // para que Excel respete los acentos
-            fputcsv($salida, ['Folio', 'Sede', 'Código de llave', 'Descripción de la llave', 'Nómina del colaborador', 'Nombre del colaborador',
+            Csv::fila($salida, ['Folio', 'Sede', 'Código de llave', 'Descripción de la llave', 'Nómina del colaborador', 'Nombre del colaborador',
                 'ID en garantía', 'Folio / detalle de la ID', 'Fecha de salida', 'Guardia que entrega', 'Fecha de regreso', 'Guardia que recibe',
                 'Estado actual', 'Anulado por', 'Fecha de anulación']);
             foreach ($filas as $p) {
-                fputcsv($salida, [
+                Csv::fila($salida, [
                     $p->folio(), $p->sede?->nombre, $p->llave?->nomenclatura, $p->llave?->descripcion, $p->colaborador?->num_empleado,
                     $p->colaborador?->nombreCompleto(), $p->etiquetaGarantia(), $p->folio_garantia, $hora->formatear($p->prestado_en), $p->entrego?->name,
                     $p->devuelto_en ? $hora->formatear($p->devuelto_en) : 'PENDIENTE', $p->recibio?->name ?? ($p->devuelto_en ? '' : 'PENDIENTE'),

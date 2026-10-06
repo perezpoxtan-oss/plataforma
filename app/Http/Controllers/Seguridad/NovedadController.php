@@ -18,6 +18,8 @@ use App\Services\Firmas\Firmas;
 use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Novedades\CoincidenciasLostFound;
 use App\Services\Novedades\FichaHechos\FichaDeHechos;
+use App\Support\Csv;
+use App\Support\Entrada;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -72,7 +74,7 @@ class NovedadController extends Controller
 
             // Expediente que se abre (?abrir=ID), como el ?abrir= de SEGCAT
             $expediente = null;
-            if ($request->filled('abrir') && ctype_digit((string) $request->query('abrir'))) {
+            if ($request->filled('abrir') && ctype_digit(Entrada::texto($request->query('abrir')))) {
                 $expediente = $this->expediente($actor, (int) $request->query('abrir'));
             }
 
@@ -217,11 +219,11 @@ class NovedadController extends Controller
         return response()->streamDownload(function () use ($lista, $hora) {
             $salida = fopen('php://output', 'w');
             fwrite($salida, "\xEF\xBB\xBF");
-            fputcsv($salida, ['Ticket', 'Fecha de reporte', 'Sede', 'Categoría', 'Estatus', '¿Quién reporta?', '¿A quién se canaliza?', 'Área General',
+            Csv::fila($salida, ['Ticket', 'Fecha de reporte', 'Sede', 'Categoría', 'Estatus', '¿Quién reporta?', '¿A quién se canaliza?', 'Área General',
                 'Habitación', 'Ubicación específica', '¿Cuándo sucedió?', '¿Qué sucedió?', '¿Cómo sucedió?', 'Involucrados', 'Resolución',
                 'Fecha de cierre', 'Cerró', 'Creó', 'Último en dar seguimiento', 'Folios Lost & Found']);
             foreach ($lista as $n) {
-                fputcsv($salida, [
+                Csv::fila($salida, [
                     $n->folio(), $hora->formatear($n->created_at), $n->sede?->nombre, $n->etiquetaCategoria(), $n->etiquetaEstatus(),
                     $n->reportado_por, $n->asignado?->name, $n->textoArea(false), $n->areaEspecifica?->nombre, $n->ubicacion,
                     $hora->formatear($n->ocurrio_en), $n->descripcion, $n->como_sucedio, $n->involucrados, $n->resolucion,
@@ -322,11 +324,18 @@ class NovedadController extends Controller
     {
         abort_unless($this->novedades->puedeModulo($request->user(), 'editar'), 403);
         $empresaId = $this->empresaDeTrabajo($request);
-        $datos = $request->validate(['articulo_id' => ['required', 'integer']], ['articulo_id.required' => 'Elige el artículo encontrado.']);
-
-        $this->tenant->conEmpresa($empresaId, function () use ($request, $reporte, $datos) {
+        // Seguridad (AZ-03): primero el registro (404 si es ajeno), luego la captura
+        $buscar = function () use ($request, $reporte) {
             $modelo = LostFoundReportePerdida::with('novedad')->find($reporte);
             abort_if($modelo === null || ! $this->novedades->permite($request->user(), 'editar', $modelo->novedad), 404);
+
+            return $modelo;
+        };
+        $this->tenant->conEmpresa($empresaId, $buscar);
+        $datos = $request->validate(['articulo_id' => ['required', 'integer']], ['articulo_id.required' => 'Elige el artículo encontrado.']);
+
+        $this->tenant->conEmpresa($empresaId, function () use ($request, $datos, $buscar) {
+            $modelo = $buscar();
             abort_if($modelo->novedad->resuelto(), 422, 'Este caso ya está Resuelto. Reábrelo antes de vincular un hallazgo.');
             $this->novedades->vincularPerdida($request->user(), $modelo, $this->articuloVisible($request->user(), (int) $datos['articulo_id']));
         });
@@ -343,6 +352,8 @@ class NovedadController extends Controller
     {
         Gate::authorize('novedades.editar');
         $empresaId = $this->empresaDeTrabajo($request);
+        // Seguridad (AZ-03): primero el registro (404 si es ajeno), luego la captura
+        $this->tenant->conEmpresa($empresaId, fn () => $this->novedades->buscar($request->user(), $novedad, 'editar'));
         $datos = $request->validate(['articulo_id' => ['required', 'integer']], ['articulo_id.required' => 'Elige el artículo encontrado.']);
 
         $this->tenant->conEmpresa($empresaId, function () use ($request, $novedad, $datos) {

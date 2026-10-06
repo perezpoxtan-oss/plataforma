@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Mail\CorreoDePrueba;
 use App\Models\ConfiguracionPlataforma;
 use App\Models\Empresa;
+use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
+use App\Services\Permisos\Autorizador;
 use App\Services\Respaldos\Respaldos;
 use App\Support\CorreoPlataforma;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +34,7 @@ class ConfiguracionController extends Controller
         private readonly Respaldos $respaldos,
         private readonly EmpresaDeTrabajo $empresa,
         private readonly AdministradorRoles $auditoria,
+        private readonly Autorizador $autorizador,
     ) {}
 
     public function index(Request $request): View
@@ -49,7 +53,7 @@ class ConfiguracionController extends Controller
             'respaldos' => $actor->es_superadmin ? $this->respaldos->listar() : collect(),
             'empresa' => $empresaId === null ? null : Empresa::find($empresaId),
             'avisos' => Empresa::AVISOS,
-            'puedeEditar' => $actor->can('configuracion.editar'),
+            'puedeEditar' => $this->editaEmpresa($actor),
         ]);
     }
 
@@ -59,14 +63,23 @@ class ConfiguracionController extends Controller
     {
         $this->soloSuperadmin($request);
         $datos = $request->validate([
-            'host' => ['required', 'string', 'max:150', 'regex:/^[A-Za-z0-9.-]+$/'],
-            'puerto' => ['required', 'integer', 'between:1,65535'],
+            // Seguridad (SSRF): solo servidores que no sean direcciones reservadas y solo puertos de correo
+            'host' => ['required', 'string', 'max:150', 'regex:/^[A-Za-z0-9.-]+$/', function (string $campo, mixed $valor, \Closure $falla) {
+                $problema = CorreoPlataforma::problemaDestino(Entrada::texto($valor), CorreoPlataforma::PUERTOS[0]);
+                if ($problema !== null) {
+                    $falla($problema);
+                }
+            }],
+            'puerto' => ['required', 'integer', Rule::in(CorreoPlataforma::PUERTOS)],
             'cifrado' => ['required', Rule::in(array_keys(CorreoPlataforma::CIFRADOS))],
             'usuario' => ['nullable', 'string', 'max:150'],
             'contrasena' => ['nullable', 'string', 'max:200'],
             'remitente_correo' => ['required', 'email:rfc', 'max:150'],
             'remitente_nombre' => ['nullable', 'string', 'max:80'],
-        ], ['host.regex' => 'Escribe solo el nombre del servidor (ej. mail.tudominio.com), sin https:// ni espacios.'], [
+        ], [
+            'host.regex' => 'Escribe solo el nombre del servidor (ej. mail.tudominio.com), sin https:// ni espacios.',
+            'puerto.in' => 'Usa un puerto de correo: '.implode(', ', CorreoPlataforma::PUERTOS).'.',
+        ], [
             'host' => 'servidor', 'puerto' => 'puerto', 'remitente_correo' => 'correo del remitente', 'remitente_nombre' => 'nombre del remitente',
         ]);
 
@@ -103,6 +116,8 @@ class ConfiguracionController extends Controller
     public function avisos(Request $request): RedirectResponse
     {
         Gate::authorize('configuracion.editar');
+        // Seguridad (AZ-02): los avisos son de toda la empresa; con alcance de sede solo se consultan
+        abort_unless($this->editaEmpresa($request->user()), 403, 'Los avisos son de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa.');
         $empresaId = $this->empresa->id($request->user());
         abort_if($empresaId === null, 404);
 
@@ -145,7 +160,9 @@ class ConfiguracionController extends Controller
         // Descargar la base completa queda en la bitácora
         $this->auditar($request, 'configuracion.respaldo_descargado', ['archivo' => $archivo]);
 
-        return response()->download($ruta, $archivo, ['Content-Type' => 'application/gzip', 'Cache-Control' => 'no-store, private']);
+        // Seguridad: BinaryFileResponse se marca "public" por defecto y pisaba el "private"
+        return response()->download($ruta, $archivo, ['Content-Type' => 'application/gzip', 'Cache-Control' => 'no-store, private'])
+            ->setPrivate();
     }
 
     /**
@@ -176,6 +193,15 @@ class ConfiguracionController extends Controller
     }
 
     // -------------------------------------------------------------------------
+
+    /**
+     * Seguridad (AZ-02): la configuración de la empresa solo la cambia quien
+     * tiene "configuracion.editar" con alcance de toda la empresa.
+     */
+    private function editaEmpresa(User $actor): bool
+    {
+        return $actor->can('configuracion.editar') && $this->autorizador->alcanceDeEmpresa($actor, 'configuracion.editar');
+    }
 
     private function soloSuperadmin(Request $request): void
     {

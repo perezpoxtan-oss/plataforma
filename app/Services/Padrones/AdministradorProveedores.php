@@ -7,6 +7,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Support\Entrada;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -58,7 +59,17 @@ class AdministradorProveedores
     {
         $sedes = $this->sedes($usuario, $permiso);
 
-        return Proveedor::query()->when($sedes !== null, fn ($q) => $q->operanEn($sedes));
+        return Proveedor::query()->when($sedes !== null, fn ($q) => $q->operanEn($sedes))
+            // Seguridad (AZ-04): "Solo los propios" = los que él dio de alta
+            ->when($this->autorizador->soloPropios($usuario, $permiso), fn ($q) => $q->where('proveedores.creado_por', $usuario->id));
+    }
+
+    /**
+     * Seguridad (AZ-04): con "Solo los propios" solo se modifica lo que él dio de alta.
+     */
+    public function esPropioSiAplica(User $usuario, Proveedor $proveedor, string $permiso): bool
+    {
+        return ! $this->autorizador->soloPropios($usuario, $permiso) || (int) $proveedor->creado_por === (int) $usuario->id;
     }
 
     /**
@@ -229,11 +240,11 @@ class AdministradorProveedores
      */
     private function validarDatos(Request $request): array
     {
-        $rfc = mb_strtoupper((string) preg_replace('/[\s\-.]+/u', '', (string) $request->input('rfc')));
-        $telefono = (string) preg_replace('/[\s\-.()]+/', '', (string) $request->input('telefono'));
-        $direccion = self::normalizarNombre($request->input('direccion'));
+        $rfc = mb_strtoupper((string) preg_replace('/[\s\-.]+/u', '', Entrada::texto($request->input('rfc'))));
+        $telefono = (string) preg_replace('/[\s\-.()]+/', '', Entrada::texto($request->input('telefono')));
+        $direccion = self::normalizarNombre(Entrada::texto($request->input('direccion')));
         $request->merge([
-            'nombre' => self::normalizarNombre($request->input('nombre')),
+            'nombre' => self::normalizarNombre(Entrada::texto($request->input('nombre'))),
             'rfc' => $rfc === '' ? null : $rfc,
             'telefono' => $telefono === '' ? null : $telefono,
             'direccion' => $direccion === '' ? null : $direccion,

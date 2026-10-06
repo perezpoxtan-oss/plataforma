@@ -10,6 +10,7 @@ use App\Support\Menu\ConstructorMenu;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -29,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Model::shouldBeStrict(! $this->app->isProduction());
+
+        // Seguridad: en Produccion no corren migrate:fresh/refresh/reset/rollback ni db:wipe
+        DB::prohibitDestructiveCommands($this->app->isProduction());
 
         // Fechas en la hora local de quien las ve: @fecha($registro->created_at) o @fecha($valor, 'H:i')
         Blade::directive('fecha', fn (string $expresion) => "<?php echo e(app(\\App\\Support\\HoraLocal::class)->formatear({$expresion})); ?>");

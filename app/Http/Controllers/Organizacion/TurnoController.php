@@ -9,6 +9,7 @@ use App\Models\Sede;
 use App\Models\Turno;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
@@ -57,6 +58,9 @@ class TurnoController extends Controller
 
         $permitidas = $this->autorizador()->sedesPermitidas($actor, 'turnos.ver');
         $editables = $actor->can('turnos.editar') ? $this->autorizador()->sedesPermitidas($actor, 'turnos.editar') : [];
+        if ($editables === null && ! $this->autorizador()->alcanceDeEmpresa($actor, 'turnos.editar')) {
+            $editables = []; // Seguridad (AZ-04)
+        }
         $puede = $this->permisosCatalogo($actor, 'turnos') + [
             'sedes' => $editables !== [],
             'todasLasSedes' => $editables === null,
@@ -137,6 +141,10 @@ class TurnoController extends Controller
     {
         Gate::authorize('turnos.editar');
         $editables = $this->autorizador()->sedesPermitidas($request->user(), 'turnos.editar');
+        // Seguridad (AZ-04): "Solo los propios" sin sede no es alcance de empresa
+        if ($editables === null && ! $this->autorizador()->alcanceDeEmpresa($request->user(), 'turnos.editar')) {
+            $editables = [];
+        }
         abort_if($editables === [], 403);
         [$modelo, $empresaId] = $this->buscar($request, $turno);
 
@@ -195,7 +203,7 @@ class TurnoController extends Controller
      */
     private function validar(Request $request, int $empresaId, ?Turno $turno = null): array
     {
-        $request->merge(['nombre' => $this->normalizarNombre($request->input('nombre'))]);
+        $request->merge(['nombre' => $this->normalizarNombre(Entrada::texto($request->input('nombre')))]);
 
         $datos = $request->validate([
             'nombre' => ['required', 'string', 'max:50', $this->nombreLibre('turnos', $empresaId, $turno?->id, 'Ya existe un turno con ese nombre en esta empresa.')],

@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\Firmas\Firmas;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Permisos\Autorizador;
+use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
@@ -118,12 +119,12 @@ class PaseSalidaController extends Controller
         Gate::authorize('pases_salida.ver');
         $empresaId = $this->empresaDeTrabajo($request);
 
-        if (! $request->ajax()) {
-            return redirect()->route('pases-salida.index', ['pase' => $pase]);
-        }
-
         return $this->tenant->conEmpresa($empresaId, function () use ($request, $pase) {
+            // Seguridad (AZ-03): un pase ajeno responde 404 también sin AJAX
             $modelo = $this->buscarEnAlcance($request->user(), $pase, 'pases_salida.ver');
+            if (! $request->ajax()) {
+                return redirect()->route('pases-salida.index', ['pase' => $modelo->id]);
+            }
 
             return view('seguridad.pases-salida._detalle', $this->datosDetalle($request->user(), $modelo));
         });
@@ -159,7 +160,7 @@ class PaseSalidaController extends Controller
                 ->withInput($request->except(['firma', '_token']));
         }
 
-        $rol = PaseSalida::grupoDeRol((string) $request->input('rol'));
+        $rol = PaseSalida::grupoDeRol(Entrada::texto($request->input('rol')));
         $texto = $rol ? PaseSalida::GRUPOS[$rol][1][$request->input('rol')] : 'la firma';
         $mensaje = "Firma de «{$texto}» registrada en el pase {$modelo->folio}.";
         if ($estado !== null) {
@@ -186,7 +187,7 @@ class PaseSalidaController extends Controller
             });
         } catch (ValidationException $e) {
             return redirect()->route('pases-salida.index', ['pase' => $pase])->withErrors($e->errors())
-                ->withInput(['_dialogo' => 'rechazar', 'motivo_rechazo' => (string) $request->input('motivo_rechazo')]);
+                ->withInput(['_dialogo' => 'rechazar', 'motivo_rechazo' => Entrada::texto($request->input('motivo_rechazo'))]);
         }
 
         return redirect()->route('pases-salida.index', ['pase' => $modelo->id])->with('aviso', "Pase {$modelo->folio} rechazado.");

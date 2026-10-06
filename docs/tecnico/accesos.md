@@ -139,4 +139,4 @@ Donde SEGCAT tenía "escáner / QR / NFC" se usa `componentes.lector`: gafete as
 ## Pendientes y notas
 
 - "Pendientes" no tiene "Rechazar": un proveedor que el host no autoriza se queda pendiente (igual que SEGCAT). Propuesta para una versión futura.
-- `REFERENCIAS` admite una columna por tabla: solo se registra `accesos.colaborador_id`; si un host o "a quién visita" provisional se une a otro registro, esas dos columnas no se mueven.
+- Unir duplicados mueve también `host_colaborador_id` y `visita_colaborador_id` (`AdministradorColaboradores::REFERENCIAS_ADICIONALES`, revisión funcional FUN-02).

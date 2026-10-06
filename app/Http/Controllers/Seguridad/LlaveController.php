@@ -13,6 +13,7 @@ use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Llaves\AdministradorLlaves;
+use App\Support\Csv;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -234,11 +235,11 @@ class LlaveController extends Controller
         return response()->streamDownload(function () use ($llaves, $hora) {
             $salida = fopen('php://output', 'w');
             fwrite($salida, "\xEF\xBB\xBF"); // para que Excel respete los acentos
-            fputcsv($salida, ['Nombre de la llave', 'Descripción de accesos', 'Sede', 'Tipo de dispositivo', 'Alcance de apertura', 'Lugares que abre',
+            Csv::fila($salida, ['Nombre de la llave', 'Descripción de accesos', 'Sede', 'Tipo de dispositivo', 'Alcance de apertura', 'Lugares que abre',
                 'Departamento', 'Puesto objetivo', 'Responsable', 'ID externo', 'Plataforma', 'Fecha de caducidad', 'Caducidad', 'Horarios',
                 'Etiqueta NFC / RFID', 'Estado', 'Creada por', 'Fecha de alta']);
             foreach ($llaves as $l) {
-                fputcsv($salida, [
+                Csv::fila($salida, [
                     $l->nomenclatura, $l->descripcion, $l->sede?->nombre, $l->etiquetaTipo(), $l->etiquetaAlcance(), implode(', ', $l->lugares()),
                     $l->departamento?->nombre, $l->puesto?->nombre, $l->colaborador?->nombreCompleto(), $l->id_externo, $l->plataforma_externa,
                     $hora->formatear($l->caducidadParaMostrar(), 'd/m/Y'), $l->caducidad()['texto'] ?? 'Sin caducidad',
