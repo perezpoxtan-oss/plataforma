@@ -2808,3 +2808,63 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .tipos-borrables li { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--fondo); border: 1px solid var(--borde); border-radius: 12px; padding: 0 0 0 0.75rem; }
 .tipos-borrables li .btn-icono { background: transparent; }
 /* Fin Eliminar definitivamente */
+/* Altas por verificar (ADR-0006): insignias de las fichas, píldora, diálogo "Verificar" y aviso de Inicio */
+.linea-verificacion { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem; margin-bottom: 0.6rem; }
+.insignia-verificacion { display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 999px; padding: 0.3rem 0.75rem; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; }
+.insignia-verificacion.pendiente { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+.insignia-verificacion.rechazado { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+.motivo-verificacion { font-size: 0.78rem; color: var(--texto-suave); overflow-wrap: anywhere; }
+.btn-pill-tipo.btn-pill-verificar { background: #fffbeb; border-color: #f59e0b; color: #92400e; }
+.btn-pill-tipo.btn-pill-verificar.active { background: #d97706; border-color: #d97706; color: #fff; }
+.ficha-card.oculta-por-verificacion { display: none !important; }
+.btn-verificar-alta { display: inline-flex; align-items: center; min-height: 44px; padding: 0.4rem 0.9rem; border-radius: 12px; border: 1px solid #f59e0b; background: #fef3c7; color: #92400e; font-weight: 800; font-size: 0.85rem; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.btn-verificar-alta:hover, .btn-verificar-alta:focus-visible { background: #d97706; border-color: #d97706; color: #fff; }
+/* Empresas externas: el pie ya trae Ficha, Editar y Baja; Verificar ocupa su propia fila */
+.ficha-footer .d-flex:has(> .btn-verificar-alta):has(> .btn-ficha) { flex-wrap: wrap; justify-content: flex-end; }
+.ficha-footer .d-flex:has(> .btn-ficha) > .btn-verificar-alta { flex: 1 1 100%; justify-content: center; }
+.persona-pie:has(> .btn-verificar-alta) { flex-wrap: wrap; gap: 0.5rem; }
+.persona-pie > .btn-verificar-alta { order: 3; flex: 1 1 100%; justify-content: center; }
+.aviso-alta-pendiente { display: flex; gap: 0.6rem; align-items: flex-start; background: #fffbeb; border: 1px solid #fcd34d; color: #78350f; border-radius: 12px; padding: 0.6rem 0.8rem; font-size: 0.85rem; line-height: 1.4; }
+.aviso-alta-pendiente > i { color: #b45309; font-size: 1.1rem; line-height: 1.2; }
+.opcion-parecido small { font-weight: 500; color: var(--texto-suave); }
+.opcion-parecido[disabled] { opacity: 0.65; cursor: not-allowed; }
+.btn-alta-nuevo { min-height: 44px; width: 100%; }
+.acceso-sugerencia.encabezado-parecidos { cursor: default; background: #fffbeb; color: #92400e; font-weight: 800; font-size: 0.8rem; }
+.acceso-sugerencia.parecido strong::before { content: '≈ '; color: #b45309; }
+.acceso-sugerencia.parecido[disabled] { opacity: 0.6; cursor: not-allowed; }
+.dialogo-verificar-alta { max-width: 720px; }
+.resumen-alta { background: var(--fondo); border: 1px solid var(--borde); border-radius: 14px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+.resumen-alta .titulo-alta { display: block; font-size: 1.25rem; font-weight: 800; margin: 0.4rem 0 0.15rem; overflow-wrap: anywhere; }
+.resumen-alta small { color: var(--texto-suave); }
+.errores-verificar { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 12px; padding: 0.6rem 0.8rem; margin-bottom: 1rem; font-size: 0.88rem; }
+.caminos-verificar { border: 0; padding: 0; margin: 0; }
+.dialogo-verificar-alta .modo-opt { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; border: 2px solid var(--borde); border-radius: 14px; padding: 0.5rem; cursor: pointer; font-weight: 700; font-size: 0.85rem; text-align: center; }
+.dialogo-verificar-alta .modo-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.dialogo-verificar-alta .modo-opt i { font-size: 1.25rem; }
+.dialogo-verificar-alta .modo-opt:has(input:checked) { border-color: #d97706; background: #fffbeb; color: #92400e; }
+.dialogo-verificar-alta .modo-opt:has(input:focus-visible) { outline: 3px solid #f59e0b; outline-offset: 2px; }
+.lista-unir { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.5rem; }
+.opcion-unir { display: flex; align-items: flex-start; gap: 0.6rem; border: 1px solid var(--borde); border-radius: 12px; padding: 0.6rem 0.8rem; min-height: 44px; cursor: pointer; background: #fff; }
+.opcion-unir input { margin-top: 0.3rem; width: 1.2rem; height: 1.2rem; flex-shrink: 0; accent-color: #d97706; }
+.opcion-unir:has(input:checked) { border-color: #d97706; background: #fffbeb; }
+.opcion-unir small { color: var(--texto-suave); overflow-wrap: anywhere; }
+.btn-verificar-aceptar, .btn-verificar-unir, .btn-verificar-rechazar { min-height: 44px; border: none; border-radius: 12px; padding: 0.6rem 1.1rem; font-weight: 800; color: #fff; cursor: pointer; font-family: inherit; }
+.btn-verificar-aceptar { background: #059669; }
+.btn-verificar-aceptar:hover { background: #047857; }
+.btn-verificar-unir { background: #d97706; }
+.btn-verificar-unir:hover { background: #b45309; }
+.btn-verificar-rechazar { background: #dc2626; }
+.btn-verificar-rechazar:hover { background: #b91c1c; }
+.btn-verificar-aceptar[disabled], .btn-verificar-unir[disabled], .btn-verificar-rechazar[disabled] { opacity: 0.6; cursor: wait; }
+.aviso-altas-verificar { align-items: flex-start; }
+.grupos-altas-verificar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.65rem; }
+.grupo-alta-verificar { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 44px; padding: 0.4rem 0.85rem; border-radius: 12px; background: #fff; border: 1px solid #f59e0b; color: #78350f; font-weight: 700; font-size: 0.88rem; text-decoration: none; }
+.grupo-alta-verificar:hover, .grupo-alta-verificar:focus-visible { background: #d97706; border-color: #d97706; color: #fff; }
+.grupo-alta-verificar .conteo { background: #fef3c7; color: #92400e; border-radius: 999px; padding: 0 0.5rem; font-weight: 800; }
+.grupo-alta-verificar:hover .conteo { background: #fff; }
+@media (max-width: 575.98px) {
+    .dialogo-verificar-alta .modo-toggle.tres .modo-opt { flex: 1 1 0; min-width: 0; font-size: 0.78rem; }
+    .grupo-alta-verificar { flex: 1 1 100%; justify-content: space-between; }
+    .aviso-altas-verificar .icono { display: none; }
+}
+/* Fin Altas por verificar */

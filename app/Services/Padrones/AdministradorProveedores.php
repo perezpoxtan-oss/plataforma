@@ -99,10 +99,11 @@ class AdministradorProveedores
      *
      * @return array{0: Proveedor, 1: string}
      */
-    public function crear(User $actor, Request $request, bool $rapido = false): array
+    public function crear(User $actor, Request $request, bool $rapido = false, string $permiso = 'proveedores.crear'): array
     {
         $datos = $this->validarDatos($request);
-        $mias = $this->sedes($actor, 'proveedores.crear');
+        // $permiso: el operativo de la pantalla de origen en un alta por verificar (ADR-0006)
+        $mias = $this->sedes($actor, $permiso);
 
         $existente = $this->buscarPorNombre($datos['nombre']);
         if ($existente !== null) {
@@ -137,6 +138,7 @@ class AdministradorProveedores
      */
     public function actualizar(User $actor, Proveedor $proveedor, Request $request): Proveedor
     {
+        app(AltasPorVerificar::class)->exigirNoRechazado($proveedor, 'nombre');
         $datos = $this->validarDatos($request);
         $otro = $this->buscarPorNombre($datos['nombre']);
         if ($otro !== null && $otro->id !== $proveedor->id) {
@@ -180,6 +182,9 @@ class AdministradorProveedores
         if ($proveedor->activo === $activo) {
             return;
         }
+        if ($activo) {
+            app(AltasPorVerificar::class)->exigirNoRechazado($proveedor);
+        }
         $proveedor->forceFill(['activo' => $activo])->save();
         $this->auditoria->auditar($actor, $activo ? 'proveedores.reactivado' : 'proveedores.desactivado', $proveedor, ['activo' => ! $activo], ['activo' => $activo]);
     }
@@ -189,7 +194,7 @@ class AdministradorProveedores
      * letras, máximo 15, solo activos y de las sedes del usuario.
      *
      * @param  list<int>|null  $sedes
-     * @return list<array{id: int, nombre: string, categoria: string, categoria_etiqueta: string}>
+     * @return list<array{id: int, nombre: string, categoria: string, categoria_etiqueta: string, verificacion: ?string}>
      */
     public function buscar(string $texto, ?array $sedes): array
     {
@@ -204,13 +209,13 @@ class AdministradorProveedores
             ->where(fn ($q) => $q->whereRaw('LOWER(nombre) LIKE ?', [$patron])->orWhereRaw('LOWER(rfc) LIKE ?', [$patron]))
             ->orderBy('nombre')
             ->limit(15)
-            ->get(['id', 'nombre', 'categoria'])
+            ->get(['id', 'nombre', 'categoria', 'verificacion'])
             ->map(fn (Proveedor $p) => $this->resumen($p))
             ->all();
     }
 
     /**
-     * @return array{id: int, nombre: string, categoria: string, categoria_etiqueta: string}
+     * @return array{id: int, nombre: string, categoria: string, categoria_etiqueta: string, verificacion: ?string}
      */
     public function resumen(Proveedor $p): array
     {
@@ -219,6 +224,7 @@ class AdministradorProveedores
             'nombre' => $p->nombre,
             'categoria' => $p->categoria,
             'categoria_etiqueta' => Proveedor::CATEGORIAS[$p->categoria] ?? $p->categoria,
+            'verificacion' => $p->verificacion,
         ];
     }
 

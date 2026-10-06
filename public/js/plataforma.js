@@ -6156,3 +6156,406 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Eliminar definitivamente */
+/* ==========================================================================
+   Altas por verificar (ADR-0006; ver docs/tecnico/altas-por-verificar.md)
+   1. Altas rápidas desde Operación (vehículo, persona, empresa externa:
+      <form data-alta-padron data-url-parecidos>): antes de crear se pregunta
+      "¿Es alguno de estos?" con los parecidos del padrón. Elegir uno lanza el
+      mismo evento que el registro (vehiculo:registrado, persona:registrada,
+      proveedor:registrado); "No es ninguno" registra el nuevo (pendiente de
+      verificar si quien registra no edita el padrón).
+   2. Registro Inteligente de Ingreso: cuando la búsqueda de placas, nombre o
+      empresa no encuentra nada, se agregan los parecidos (sin mayúsculas,
+      acentos, espacios ni guiones) para elegir uno con un toque.
+   3. Lista de cada padrón: píldora "Pendientes de verificar" y diálogo
+      "Verificar Alta Pendiente" (Es correcto / Ya existía / Rechazar).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var EVENTOS = { vehiculos: 'vehiculo:registrado', personas: 'persona:registrada', proveedores: 'proveedor:registrado' };
+
+    function nodo(etiqueta, clase, texto) {
+        var e = document.createElement(etiqueta);
+        if (clase) { e.className = clase; }
+        if (texto !== undefined && texto !== null) { e.textContent = texto; }
+        return e;
+    }
+
+    function pedirJson(url) {
+        return fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); });
+    }
+
+    function detalleDe(r) {
+        return [r.detalle, r.estado_texto].filter(Boolean).join(' · ');
+    }
+
+    /* ---------- 1. Altas rápidas: "¿Es alguno de estos?" antes de crear ---------- */
+    function urlParecidos(form) {
+        var p = new URLSearchParams();
+        p.set('padron', form.dataset.altaPadron);
+        var origen = form.querySelector('[name="origen"]');
+        if (origen && origen.value) { p.set('origen', origen.value); }
+        ['placas', 'nombre', 'nombre_completo', 'folio_identificacion'].forEach(function (n) {
+            var c = form.querySelector('[name="' + n + '"]');
+            if (c && c.value.trim()) { p.set(n, c.value.trim()); }
+        });
+        return form.dataset.urlParecidos + '?' + p.toString();
+    }
+
+    function confirmar(form, valor) {
+        var c = form.querySelector('[data-alta-confirmar]');
+        if (c) { c.value = valor; }
+    }
+
+    function ocultarParecidos(form) {
+        var caja = form.querySelector('[data-alta-parecidos]');
+        if (caja) { caja.hidden = true; caja.textContent = ''; }
+    }
+
+    function usar(form, r) {
+        var padron = form.dataset.altaPadron;
+        var detalle = Object.assign({}, r);
+        if (padron === 'proveedores') { detalle.ya_existia = true; }
+        ocultarParecidos(form);
+        confirmar(form, '0');
+        form.reset();
+        var dialogo = form.closest('dialog');
+        if (dialogo) { dialogo.close(); }
+        document.dispatchEvent(new CustomEvent(EVENTOS[padron], { detail: detalle }));
+    }
+
+    function mostrarParecidos(form, lista) {
+        var caja = form.querySelector('[data-alta-parecidos]');
+        if (!caja) { return; }
+        caja.textContent = '';
+        caja.appendChild(nodo('p', 'fw-semibold mb-2', form.dataset.altaPadron === 'vehiculos'
+            ? '¿Es alguno de estos? Hay placas parecidas en el padrón.'
+            : '¿Es alguno de estos? Ya hay registros parecidos en el padrón.'));
+        lista.forEach(function (r) {
+            var b = nodo('button', 'opcion-parecido');
+            b.type = 'button';
+            b.appendChild(nodo('strong', '', r.titulo));
+            var d = detalleDe(r);
+            if (d) { b.appendChild(nodo('small', 'd-block', d)); }
+            if (!r.usable) {
+                b.disabled = true;
+                b.appendChild(nodo('small', 'd-block text-danger', 'Dado de baja: pide que lo reactiven en el padrón.'));
+            } else {
+                b.addEventListener('click', function () { usar(form, r); });
+            }
+            caja.appendChild(b);
+        });
+        var nuevo = nodo('button', 'btn btn-outline-dark fw-bold mt-2 btn-alta-nuevo', 'No es ninguno: registrarlo como nuevo');
+        nuevo.type = 'button';
+        nuevo.addEventListener('click', function () {
+            confirmar(form, '1');
+            ocultarParecidos(form);
+            form.requestSubmit();
+        });
+        caja.appendChild(nuevo);
+        caja.hidden = false;
+        caja.scrollIntoView({ block: 'nearest' });
+    }
+
+    // Fase de captura: se revisa antes que el registro rápido de cada padrón
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches || !form.matches('form[data-alta-padron][data-url-parecidos]')) { return; }
+        var c = form.querySelector('[data-alta-confirmar]');
+        if (c && c.value === '1') { return; }
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        var boton = form.querySelector('button[type="submit"]');
+        if (boton) { boton.disabled = true; }
+        pedirJson(urlParecidos(form))
+            .then(function (d) {
+                if (boton) { boton.disabled = false; }
+                var lista = d.resultados || [];
+                if (lista.length) { mostrarParecidos(form, lista); return; }
+                confirmar(form, '1');
+                form.requestSubmit();
+            })
+            .catch(function () {
+                // Sin respuesta: el servidor vuelve a revisar al registrar
+                if (boton) { boton.disabled = false; }
+                form.dataset.altaSinRevision = '1';
+                confirmar(form, '0');
+                form.removeAttribute('data-url-parecidos');
+                form.requestSubmit();
+            });
+    }, true);
+
+    // Si cambia lo capturado, se vuelve a revisar
+    document.addEventListener('input', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('form[data-alta-padron]')) { return; }
+        if (['placas', 'nombre', 'nombre_completo', 'folio_identificacion'].indexOf(e.target.name) !== -1) {
+            confirmar(form, '0');
+            ocultarParecidos(form);
+        }
+    });
+
+    // El servidor también pregunta (409 con "parecidos") si algo cambió entre la revisión y el registro
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('form[data-alta-padron]').forEach(function (form) {
+            confirmar(form, '0');
+            ocultarParecidos(form);
+        });
+    }, true);
+
+    /* ---------- 2. Registro Inteligente de Ingreso: parecidos cuando no hay coincidencias ---------- */
+    var cache = {};
+
+    function urlSugerencias() {
+        var s = document.querySelector('[data-alta-sugerencias]');
+        return s ? s.dataset.altaSugerencias : '';
+    }
+
+    function contextoDe(caja) {
+        var env = caja.closest('[data-sugerir="vehiculo"]');
+        if (env) { return { padron: 'vehiculos', campo: 'placas', env: env, entrada: env.querySelector('[data-lector-entrada]') }; }
+        env = caja.closest('[data-sugerir-persona]');
+        if (env) { return { padron: 'personas', campo: 'nombre_completo', env: env, entrada: env.querySelector('[data-nombre-titular]') }; }
+        env = caja.closest('[data-sugerir-proveedor]');
+        if (env) { return { padron: 'proveedores', campo: 'nombre', env: env, entrada: env.querySelector('input[type="text"]') }; }
+        return null;
+    }
+
+    function elegirEnIngreso(ctx, caja, r) {
+        caja.hidden = true;
+        caja.textContent = '';
+        if (ctx.padron === 'vehiculos') {
+            var lector = ctx.env.querySelector('[data-lector]');
+            if (lector && window.Lector) { window.Lector.elegir(lector, { id: r.id, titulo: r.placas, detalle: detalleDe(r), activo: true }); }
+            var placas = ctx.env.querySelector('[data-placas]');
+            if (placas) { placas.value = r.placas; }
+            var form = ctx.env.closest('form');
+            ['tipo', 'marca', 'modelo', 'color'].forEach(function (campo) {
+                var c = form && form.querySelector('[data-vehiculo-campo="' + campo + '"]');
+                if (c && r[campo]) { c.value = r[campo]; }
+            });
+            return;
+        }
+        if (ctx.padron === 'personas') {
+            document.dispatchEvent(new CustomEvent('persona:registrada', { detail: r }));
+            return;
+        }
+        ctx.entrada.value = (r.nombre || '').toUpperCase();
+        var oculto = ctx.env.querySelector('[data-proveedor-id]');
+        if (oculto) { oculto.value = r.id; }
+    }
+
+    function agregarParecidos(caja, ctx, texto, lista) {
+        if (!lista.length || caja.querySelector('[data-alta-parecido]')) { return; }
+        var titulo = nodo('div', 'acceso-sugerencia encabezado-parecidos', '¿Es alguno de estos? (parecidos en el padrón)');
+        titulo.setAttribute('data-alta-parecido', '');
+        caja.appendChild(titulo);
+        lista.forEach(function (r) {
+            var b = nodo('button', 'acceso-sugerencia parecido');
+            b.type = 'button';
+            b.setAttribute('data-alta-parecido', '');
+            b.appendChild(nodo('strong', '', r.titulo));
+            var d = detalleDe(r);
+            if (d) { b.appendChild(nodo('small', '', d)); }
+            if (!r.usable) {
+                b.disabled = true;
+            } else {
+                b.addEventListener('click', function () { elegirEnIngreso(ctx, caja, r); });
+            }
+            caja.appendChild(b);
+        });
+        var nota = nodo('div', 'acceso-sugerencia nada', 'Si no es ninguno, sigue: se registra como nuevo y queda pendiente de verificar.');
+        nota.setAttribute('data-alta-parecido', '');
+        caja.appendChild(nota);
+        caja.hidden = false;
+    }
+
+    function revisarCaja(caja) {
+        if (caja.hidden || !caja.querySelector('.acceso-sugerencia.nada:not([data-alta-parecido])') || caja.querySelector('[data-alta-parecido]')) { return; }
+        var ctx = contextoDe(caja);
+        var url = urlSugerencias();
+        if (!ctx || !ctx.entrada || !url) { return; }
+        var texto = ctx.entrada.value.trim();
+        if (texto.length < 3) { return; }
+        var clave = ctx.padron + '|' + texto.toUpperCase();
+        if (cache[clave]) { agregarParecidos(caja, ctx, texto, cache[clave]); return; }
+        var p = new URLSearchParams({ padron: ctx.padron, origen: 'accesos' });
+        p.set(ctx.campo, texto);
+        pedirJson(url + '?' + p.toString()).then(function (d) {
+            cache[clave] = d.resultados || [];
+            // Solo si sigue diciendo "sin coincidencias" para el mismo texto
+            if (ctx.entrada.value.trim() === texto) { agregarParecidos(caja, ctx, texto, cache[clave]); }
+        }).catch(function () { /* sin parecidos */ });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof MutationObserver === 'undefined' || !urlSugerencias()) { return; }
+        document.querySelectorAll('[data-dialogo-ingreso] [data-sugerencias]').forEach(function (caja) {
+            new MutationObserver(function () { revisarCaja(caja); }).observe(caja, { childList: true, attributes: true, attributeFilter: ['hidden'] });
+        });
+    });
+
+    /* ---------- 3. Lista del padrón: píldora "Pendientes de verificar" ---------- */
+    function filtrarPendientes(boton) {
+        var on = boton.getAttribute('aria-pressed') !== 'true';
+        boton.setAttribute('aria-pressed', String(on));
+        boton.classList.toggle('active', on);
+        document.querySelectorAll('.fichas-grid .ficha-card').forEach(function (f) {
+            if (f.classList.contains('ficha-create')) { f.classList.toggle('oculta-por-verificacion', on); return; }
+            f.classList.toggle('oculta-por-verificacion', on && !f.querySelector('[data-insignia-verificacion="pendiente"]'));
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-filtro-verificacion]');
+        if (b) { filtrarPendientes(b); }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var b = document.querySelector('[data-filtro-verificacion][data-encender]');
+        if (b) { filtrarPendientes(b); }
+    });
+
+    /* ---------- 3. Diálogo "Verificar Alta Pendiente" ---------- */
+    var actual = null;
+    var espera = null;
+
+    function dialogo() { return document.querySelector('[data-dialogo-verificar]'); }
+
+    function camino(valor) {
+        var d = dialogo();
+        if (!d) { return; }
+        d.querySelectorAll('[data-va-form]').forEach(function (f) { f.hidden = f.dataset.vaForm !== valor; });
+        d.querySelectorAll('[data-va-camino]').forEach(function (r) { r.checked = r.value === valor; });
+        errores([]);
+    }
+
+    function errores(lista) {
+        var caja = dialogo() && dialogo().querySelector('[data-va-errores]');
+        if (!caja) { return; }
+        caja.textContent = '';
+        lista.forEach(function (m) { caja.appendChild(nodo('div', '', m)); });
+        caja.hidden = lista.length === 0;
+    }
+
+    function opcionUnir(r) {
+        var label = nodo('label', 'opcion-unir');
+        var radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'destino_id';
+        radio.value = r.id;
+        label.appendChild(radio);
+        var texto = nodo('span', '');
+        texto.appendChild(nodo('strong', 'd-block', r.titulo));
+        var d = detalleDe(r);
+        if (d) { texto.appendChild(nodo('small', 'd-block', d)); }
+        label.appendChild(texto);
+        return label;
+    }
+
+    function pintarLista(caja, lista, vacio) {
+        caja.textContent = '';
+        if (!lista.length) { if (vacio) { caja.appendChild(nodo('p', 'campo-ayuda m-0', vacio)); } return; }
+        lista.forEach(function (r) { caja.appendChild(opcionUnir(r)); });
+    }
+
+    // La búsqueda de cada padrón responde su propio resumen; se lleva a título y detalle
+    function comoParecido(r) {
+        var titulo = r.placas || r.nombre_completo || r.nombre || '';
+        var detalle = [r.descripcion, r.propiedad_etiqueta, r.tipo_etiqueta, r.empresa, r.categoria_etiqueta].filter(Boolean).join(' · ');
+        return { id: r.id, titulo: titulo, detalle: detalle, usable: r.activo !== false, verificacion: r.verificacion || 'verificado' };
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-verificar-alta]');
+        var d = dialogo();
+        if (!b || !d) { return; }
+        try { actual = JSON.parse(b.dataset.verificarAlta); } catch (x) { return; }
+        d.querySelector('[data-va-titulo]').textContent = actual.titulo;
+        d.querySelector('[data-va-registro]').textContent = actual.registro || '';
+        d.querySelectorAll('[data-va-form]').forEach(function (f) { f.action = actual[f.dataset.vaForm]; });
+        var aceptar = d.querySelector('[data-va-form="aceptar"]');
+        Object.keys(actual.valores || {}).forEach(function (campo) {
+            var c = aceptar.querySelector('[name="' + campo + '"]');
+            if (c) { c.value = actual.valores[campo] === null ? '' : String(actual.valores[campo]); }
+        });
+        var parecidos = d.querySelector('[data-va-parecidos]');
+        pintarLista(parecidos, [], null);
+        parecidos.appendChild(nodo('p', 'campo-ayuda m-0', 'Buscando parecidos...'));
+        pintarLista(d.querySelector('[data-va-resultados]'), [], null);
+        var buscar = d.querySelector('[data-va-buscar]');
+        if (buscar) { buscar.value = ''; }
+        camino('aceptar');
+        pedirJson(actual.parecidos).then(function (r) {
+            pintarLista(parecidos, r.resultados || [], 'No hay registros parecidos. Si sabes cuál es, búscalo abajo.');
+        }).catch(function () { pintarLista(parecidos, [], 'No se pudieron buscar parecidos: búscalo abajo.'); });
+        if (typeof d.showModal === 'function') { d.showModal(); }
+    });
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches && e.target.matches('[data-va-camino]')) { camino(e.target.value); }
+    });
+
+    document.addEventListener('input', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-va-buscar]')) { return; }
+        var d = dialogo();
+        var caja = d.querySelector('[data-va-resultados]');
+        var texto = e.target.value.trim();
+        clearTimeout(espera);
+        if (texto.length < 2) { pintarLista(caja, [], null); return; }
+        espera = setTimeout(function () {
+            pedirJson(d.dataset.urlBuscar + '?q=' + encodeURIComponent(texto)).then(function (r) {
+                var lista = (r.resultados || []).map(comoParecido).filter(function (x) {
+                    return x.usable && x.verificacion === 'verificado' && actual && String(x.id) !== String(actual.id);
+                });
+                pintarLista(caja, lista.slice(0, 8), 'Sin resultados activos y verificados con ese texto.');
+            }).catch(function () { pintarLista(caja, [], 'No se pudo buscar en este momento.'); });
+        }, 300);
+    });
+
+    function irA(url) {
+        var destino = new URL(url, location.href);
+        if (destino.pathname + destino.search === location.pathname + location.search) {
+            location.hash = destino.hash;
+            location.reload();
+            return;
+        }
+        location.href = destino.href;
+    }
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches || !form.matches('[data-va-form]')) { return; }
+        e.preventDefault();
+        if (form.dataset.vaForm === 'unir' && !form.querySelector('[name="destino_id"]:checked')) {
+            errores(['Elige con cuál registro se une (de los parecidos o de la búsqueda).']);
+            return;
+        }
+        var boton = form.querySelector('button[type="submit"]');
+        if (boton) { boton.disabled = true; }
+        errores([]);
+        fetch(form.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form)
+        })
+            .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { estado: r.status, datos: d }; }); })
+            .then(function (res) {
+                if (boton) { boton.disabled = false; }
+                if (res.estado === 200 && res.datos.ok) { irA(res.datos.ir); return; }
+                if (res.estado === 403 || res.estado === 404) { errores(['No tienes permiso para verificar este registro o ya no existe. Recarga la pantalla.']); return; }
+                var lista = [];
+                Object.keys(res.datos.errors || {}).forEach(function (k) { lista = lista.concat(res.datos.errors[k]); });
+                errores(lista.length ? lista : [res.datos.message || 'No se pudo guardar. Intenta de nuevo.']);
+            })
+            .catch(function () {
+                if (boton) { boton.disabled = false; }
+                errores(['No se pudo guardar en este momento. Revisa tu conexión e intenta de nuevo.']);
+            });
+    });
+})();
+/* Fin Altas por verificar */

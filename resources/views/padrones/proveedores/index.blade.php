@@ -25,6 +25,7 @@
             $existentes = json_encode($proveedores->map(fn ($p) => mb_strtolower($p->nombre))->values());
             $idsActivas = $sedes->pluck('id');
             $totalSedes = $sedes->count();
+            $altas = app(\App\Services\Padrones\AltasPorVerificar::class)->paraLista('proveedores', $proveedores, auth()->user());
         @endphp
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
@@ -56,6 +57,7 @@
             @foreach ($estilos as $clave => [$icono, , , $pildora])
                 <button type="button" class="btn-pill-tipo" data-filtro-tipo="proveedores" data-valor="{{ $clave }}" aria-pressed="false"><i class="bi {{ $icono }} me-1" aria-hidden="true"></i>{{ $pildora }}</button>
             @endforeach
+            @include('padrones.altas-por-verificar._pildora', ['altas' => $altas])
         </div>
 
         <div class="filtros-estado" role="group" aria-label="Filtrar por estado">
@@ -78,8 +80,8 @@
                     $sedesActivas = $p->sedes->where('activo', true);
                     $operaEn = $p->todas_las_sedes ? $idsActivas : $sedesActivas->pluck('id');
                     $etiquetaSedes = $p->todas_las_sedes || ($totalSedes > 0 && $sedesActivas->count() >= $totalSedes) ? 'Todas las sedes' : $sedesActivas->count().' de '.$totalSedes.' sedes';
-                    $editable = in_array($p->id, $editables, true);
-                    $desactivable = in_array($p->id, $desactivables, true);
+                    $editable = in_array($p->id, $editables, true) && ! $p->estaRechazado();
+                    $desactivable = in_array($p->id, $desactivables, true) && ! $p->estaRechazado();
                     $valores = json_encode($p->only(['nombre', 'categoria', 'rfc', 'telefono', 'direccion']));
                 @endphp
                 <div class="ficha-card {{ $p->activo ? '' : 'inactiva' }}" id="proveedor-{{ $p->id }}" data-ficha data-estado="{{ $p->activo ? 1 : 0 }}"
@@ -87,6 +89,7 @@
                      data-texto="{{ mb_strtolower($p->nombre.' '.$p->rfc.' '.$p->telefono.' '.$insignia) }}">
                     <div>
                         <div class="mb-2"><span class="ext-badge {{ $clase }}"><i class="bi {{ $icono }} me-1" aria-hidden="true"></i>{{ $insignia }}</span></div>
+                        @include('padrones.altas-por-verificar._insignia', ['registro' => $p, 'femenino' => true])
                         <h2 class="ficha-title ext-title">{{ $p->nombre }}</h2>
 
                         <div class="meta-lista">
@@ -117,6 +120,7 @@
                     <div class="ficha-footer">
                         <span class="etiqueta-estado {{ $p->activo ? 'activo' : 'inactivo' }}">{{ $p->activo ? 'ACTIVA' : 'BAJA / VETADA' }}</span>
                         <div class="d-flex gap-2">
+                            @include('padrones.altas-por-verificar._boton', ['registro' => $p])
                             <a href="{{ route('proveedores.show', $p->id) }}" class="btn-ficha" aria-label="Ficha de {{ $p->nombre }}"><i class="bi bi-person-lines-fill me-1" aria-hidden="true"></i>Ficha</a>
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar {{ $p->nombre }}"
@@ -243,6 +247,7 @@
                 ])
             @endforeach
         @endif
+        @include('padrones.altas-por-verificar._dialogo', ['altas' => $altas])
     @endif
 </div>
 @endsection

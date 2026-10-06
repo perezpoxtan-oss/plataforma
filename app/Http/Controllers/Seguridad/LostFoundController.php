@@ -280,7 +280,7 @@ class LostFoundController extends Controller
             'imprimir' => $actor->can('lost_found.imprimir'),
             'configurar' => $this->archivo->puedeConfigurar($actor),
             'tickets' => $this->novedades->puedeModulo($actor, 'ver'),
-            'persona' => $actor->can('visitantes.crear'),
+            'persona' => $actor->can('visitantes.crear') || $actor->can('lost_found.firmar'), // Altas por verificar (ADR-0006)
         ];
     }
 

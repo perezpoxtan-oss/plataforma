@@ -8,12 +8,15 @@ use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Padrones\AdministradorProveedores;
+use App\Services\Padrones\AltasPorVerificar;
+use App\Services\Padrones\HayParecidos;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
@@ -253,20 +256,59 @@ class ProveedorController extends Controller
      * proveedor_proceso.php con formato_respuesta=json).
      * 201 creado; 200 si ya existía (se agrega la sede de quien la registra);
      * 422 con los errores de captura o si la existente está dada de baja.
+     * 409 sin confirmar_nuevo si hay nombres parecidos ("parecidos").
+     *
+     * Altas por verificar (ADR-0006): también lo usa quien solo tiene el
+     * permiso operativo de la pantalla de origen (origen=pases_salida|accesos):
+     * la empresa nace pendiente de verificar, en las sedes de ese permiso, y
+     * si ya existía se usa tal cual (sin tocar el directorio).
      */
     public function rapido(Request $request): JsonResponse
     {
-        Gate::authorize('proveedores.crear');
-        $empresaId = $this->empresa->id($request->user());
+        $actor = $request->user();
+        $altas = app(AltasPorVerificar::class);
+        $origen = $request->filled('origen') || ! $actor->can('proveedores.crear') ? $altas->origenDeAlta($actor, 'proveedores', $request->input('origen')) : null;
+        $conPadron = $actor->can('proveedores.crear');
+        abort_unless($conPadron || $origen !== null, 403);
+        $empresaId = $this->empresa->id($actor);
         if ($empresaId === null) {
             return response()->json(['ok' => false, 'mensaje' => 'Elige primero la empresa de trabajo.', 'errores' => []], 422);
         }
+        $permiso = $conPadron ? 'proveedores.crear' : AltasPorVerificar::ORIGENES[$origen]['permiso'];
 
         try {
-            [$proveedor, $resultado] = $this->tenant->conEmpresa($empresaId, fn () => $this->proveedores->crear($request->user(), $request, rapido: true));
+            $respuesta = $this->tenant->conEmpresa($empresaId, function () use ($actor, $request, $altas, $origen, $conPadron, $permiso) {
+                $nombre = AdministradorProveedores::normalizarNombre(Entrada::texto($request->input('nombre')));
+                $existente = $nombre === '' ? null : $this->proveedores->buscarPorNombre($nombre);
+                // Unida con otra: se usa la correcta; rechazada: no se puede usar.
+                // Sin permiso del directorio, la existente se usa tal cual.
+                if ($existente !== null && ($existente->estaRechazado() || ! $conPadron)) {
+                    return [$altas->paraOperacion('proveedores', $existente, 'nombre'), 'ya_existia'];
+                }
+
+                return DB::transaction(function () use ($actor, $request, $altas, $origen, $permiso) {
+                    [$proveedor, $resultado] = $this->proveedores->crear($actor, $request, rapido: true, permiso: $permiso);
+                    // Ya validada: si hay nombres parecidos se deshace y se pregunta primero
+                    if ($resultado === 'creado' && ! $request->boolean('confirmar_nuevo')) {
+                        $parecidos = $altas->parecidos('proveedores', ['nombre' => $proveedor->nombre], $this->proveedores->sedes($actor, $permiso), $proveedor->id);
+                        if ($parecidos !== []) {
+                            throw new HayParecidos($parecidos);
+                        }
+                    }
+                    if ($resultado === 'creado') {
+                        $sedes = $proveedor->sedes()->pluck('sedes.id');
+                        $altas->registrarAlta($actor, 'proveedores', $proveedor, $origen, $sedes->count() === 1 ? (int) $sedes->first() : null);
+                    }
+
+                    return [$proveedor, $resultado];
+                });
+            });
         } catch (ValidationException $e) {
             return response()->json(['ok' => false, 'mensaje' => collect($e->errors())->flatten()->first(), 'errores' => $e->errors()], 422);
+        } catch (HayParecidos $e) {
+            return response()->json(['ok' => false, 'mensaje' => '¿Es alguna de estas empresas? Ya hay nombres parecidos en el directorio.', 'parecidos' => $e->parecidos], 409);
         }
+        [$proveedor, $resultado] = $respuesta;
 
         if (! $proveedor->activo) {
             return response()->json([

@@ -108,3 +108,12 @@ Al guardar (o al elegir "Usar …" en el 409) `plataforma.js` lanza en `document
 ## Datos demo
 
 `plataforma:demo` crea 13 vehículos la primera vez (`vehiculosDemo()`, protegido por `Vehiculo::exists()`): huéspedes, visitante, familiar, tres de colaboradores demo (#1003, #1006, #1011), dos taxis, una unidad rentada, un autobús de transporte de personal, un camión ligero de flotilla y un carrito de golf dado de baja. Usa los proveedores demo si ya existen (transporte, taxi, agencia); si no, quedan sin empresa propietaria y la flotilla pasa a transporte de personal.
+
+## Altas por verificar
+
+Lo que la caseta registra en este padrón desde Operación (con el registro rápido, o al guardar un ingreso o un movimiento) pasa por dos pasos:
+
+1. Antes de crear, se sugieren los parecidos («¿Es alguno de estos?»).
+2. Si quien lo registra no puede editar el padrón, queda «Pendiente de verificar» hasta que alguien lo acepta, lo rechaza o lo une con el existente.
+
+Ver [altas-por-verificar.md](altas-por-verificar.md) y ADR-0006.

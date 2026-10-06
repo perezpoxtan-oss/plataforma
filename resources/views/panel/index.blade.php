@@ -12,6 +12,7 @@
     </div>
 
     @foreach ($pendientes as $p)
+        @if (isset($p['grupos'])) @include('panel._altas-por-verificar', ['aviso' => $p]) @continue @endif
         <a href="{{ $p['ruta'] }}" class="aviso-pendiente mt-3">
             <span class="icono"><i class="bi {{ $p['icono'] }}" aria-hidden="true"></i></span>
             <span class="flex-grow-1">

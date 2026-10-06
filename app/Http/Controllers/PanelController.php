@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Colaborador;
 use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -52,6 +53,22 @@ class PanelController extends Controller
             }
         }
         // Fin Pases de salida
+        // Altas por verificar: lo que la caseta registró desde Operación en los padrones que el usuario edita (ADR-0006)
+        if ($empresaId !== null) {
+            $grupos = $tenant->conEmpresa($empresaId, fn () => app(AltasPorVerificar::class)->pendientesPorPadron($actor));
+            $total = array_sum(array_column($grupos, 'total'));
+            if ($total > 0) {
+                $pendientes[] = [
+                    'icono' => 'bi-patch-question',
+                    'titulo' => $total === 1 ? '1 alta por verificar' : "{$total} altas por verificar",
+                    'texto' => 'La caseta registró desde Operación algo que no estaba en el padrón. Acéptalo, recházalo o únelo con el registro correcto.',
+                    'ruta' => $grupos[0]['ruta'],
+                    'boton' => 'Revisar ahora',
+                    'grupos' => $grupos,
+                ];
+            }
+        }
+        // Fin Altas por verificar
 
         return view('panel.index', ['pendientes' => $pendientes]);
     }

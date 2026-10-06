@@ -6,6 +6,7 @@ use App\Models\Colaborador;
 use App\Models\Proveedor;
 use App\Models\User;
 use App\Models\Vehiculo;
+use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -135,6 +136,7 @@ class AdministradorVehiculos
      */
     public function actualizar(User $actor, int $empresaId, Vehiculo $vehiculo, array $entrada): Vehiculo
     {
+        app(AltasPorVerificar::class)->exigirNoRechazado($vehiculo, 'placas');
         $antes = $this->foto($vehiculo);
         $datos = $this->validar($entrada, $empresaId, $vehiculo);
 
@@ -151,6 +153,9 @@ class AdministradorVehiculos
      */
     public function cambiarEstado(User $actor, Vehiculo $vehiculo, bool $activo): void
     {
+        if ($activo) {
+            app(AltasPorVerificar::class)->exigirNoRechazado($vehiculo);
+        }
         $vehiculo->forceFill(['activo' => $activo])->save();
         $this->auditoria->auditar($actor, $activo ? 'vehiculos.reactivado' : 'vehiculos.desactivado', $vehiculo, ['activo' => ! $activo], ['activo' => $activo]);
     }
@@ -363,6 +368,7 @@ class AdministradorVehiculos
             'colaborador' => $v->colaborador?->nombreCompleto(),
             'codigo_qr' => $v->codigo_qr,
             'activo' => (bool) $v->activo,
+            'verificacion' => $v->verificacion,
         ];
     }
 

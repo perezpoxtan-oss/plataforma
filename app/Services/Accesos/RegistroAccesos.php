@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\ZonaEstacionamiento;
 use App\Services\Padrones\AdministradorProveedores;
+use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Personas\AdministradorPersonas;
 use App\Services\Vehiculos\AdministradorVehiculos;
@@ -189,7 +190,10 @@ class RegistroAccesos
         $personaRepetida = null;
         if (in_array($tipo, Acceso::AL_PADRON, true)) {
             if (! empty($d['persona_id'])) {
-                $elegida = Persona::where('activo', true)->find((int) $d['persona_id']);
+                // Altas por verificar: una persona unida a otra se sustituye por la correcta; una rechazada no se usa
+                $elegida = Persona::find((int) $d['persona_id']);
+                $elegida = $elegida === null ? null : app(AltasPorVerificar::class)->paraOperacion('personas', $elegida, 'nombre');
+                $elegida = $elegida?->activo ? $elegida : null;
                 if ($elegida === null) {
                     throw ValidationException::withMessages(['nombre' => 'La persona elegida ya no está activa en el Padrón de personas. Escribe su nombre de nuevo.']);
                 }
@@ -222,7 +226,7 @@ class RegistroAccesos
             [$proveedorId, $procedencia] = $this->empresaExterna($actor, $tipo, $d, $sedeId);
 
             if (in_array($tipo, Acceso::AL_PADRON, true) && $personaId === null) {
-                $personaId = $personaRepetida?->id ?? $this->nuevaPersona($actor, $tipo, (string) $nombre, $proveedorId, $procedencia);
+                $personaId = $personaRepetida?->id ?? $this->nuevaPersona($actor, $tipo, (string) $nombre, $proveedorId, $procedencia, $sedeId);
             }
 
             $vehiculoId = null;
@@ -233,7 +237,7 @@ class RegistroAccesos
                     in_array($tipo, Acceso::CON_AUTORIZACION, true) => 'empresa_proveedor',
                     default => 'propio_visitante',
                 };
-                $vehiculoId = $this->vehiculo($actor, $placas, $tipoVehiculo, $d, $propiedad, $propiedad === 'empresa_proveedor' ? $proveedorId : null)->id;
+                $vehiculoId = $this->vehiculo($actor, $placas, $tipoVehiculo, $d, $propiedad, $propiedad === 'empresa_proveedor' ? $proveedorId : null, $sedeId)->id;
             }
 
             $reserva = $tipo === 'huesped' ? (bool) ($d['tiene_reserva'] ?? true) : null;
@@ -422,6 +426,8 @@ class RegistroAccesos
         if ($proveedor === null && $texto !== '') {
             $proveedor = $this->proveedores->buscarPorNombre($texto);
         }
+        // Altas por verificar: unida a otra = la correcta; rechazada = no se usa
+        $proveedor = $proveedor === null ? null : app(AltasPorVerificar::class)->paraOperacion('proveedores', $proveedor, 'empresa_procedencia');
         if ($proveedor !== null && ! $proveedor->activo) {
             if ($esProveedor) {
                 throw ValidationException::withMessages(['empresa_procedencia' => "La empresa «{$proveedor->nombre}» está dada de baja (vetada) en Proveedores: no puede ingresar."]);
@@ -442,12 +448,13 @@ class RegistroAccesos
             $proveedor = Proveedor::create(['nombre' => $texto, 'categoria' => $categoria, 'todas_las_sedes' => false]);
             $proveedor->sedes()->sync([$sedeId]);
             $this->auditoria->auditar($actor, 'proveedores.creado', $proveedor, null, $this->proveedores->foto($proveedor));
+            app(AltasPorVerificar::class)->registrarAlta($actor, 'proveedores', $proveedor, 'accesos', $sedeId);
         }
 
         return [$proveedor->id, mb_strtoupper($proveedor->nombre)];
     }
 
-    private function nuevaPersona(User $actor, string $tipo, string $nombre, ?int $proveedorId, ?string $procedencia): int
+    private function nuevaPersona(User $actor, string $tipo, string $nombre, ?int $proveedorId, ?string $procedencia, ?int $sedeId = null): int
     {
         $persona = Persona::create([
             'tipo' => $tipo,
@@ -457,6 +464,7 @@ class RegistroAccesos
             'empresa_procedencia' => $tipo === 'visitante' || $proveedorId !== null ? null : $procedencia,
         ]);
         $this->auditoria->auditar($actor, 'visitantes.creado', $persona, null, $this->personas->foto($persona));
+        app(AltasPorVerificar::class)->registrarAlta($actor, 'personas', $persona, 'accesos', $sedeId);
 
         return $persona->id;
     }
@@ -467,7 +475,7 @@ class RegistroAccesos
      *
      * @param  array<string, mixed>  $d
      */
-    public function vehiculo(User $actor, string $placas, string $tipoVehiculo, array $d, string $propiedad, ?int $proveedorId): Vehiculo
+    public function vehiculo(User $actor, string $placas, string $tipoVehiculo, array $d, string $propiedad, ?int $proveedorId, ?int $sedeId = null): Vehiculo
     {
         $datos = array_filter([
             'marca' => $this->mayusculas($d['marca'] ?? null),
@@ -477,6 +485,8 @@ class RegistroAccesos
 
         $existente = $this->vehiculos->conPlacas($placas);
         if ($existente !== null) {
+            // Altas por verificar: unido a otro = el correcto; rechazado = no se usa
+            $existente = app(AltasPorVerificar::class)->paraOperacion('vehiculos', $existente, 'placas');
             $faltantes = array_filter($datos, fn ($v, $campo) => $existente->{$campo} === null || $existente->{$campo} === '', ARRAY_FILTER_USE_BOTH);
             if ($faltantes !== []) {
                 $antes = $this->vehiculos->foto($existente);
@@ -494,6 +504,7 @@ class RegistroAccesos
             'proveedor_id' => $proveedorId,
         ]);
         $this->auditoria->auditar($actor, 'vehiculos.creado', $vehiculo, null, $this->vehiculos->foto($vehiculo));
+        app(AltasPorVerificar::class)->registrarAlta($actor, 'vehiculos', $vehiculo, 'accesos', $sedeId);
 
         return $vehiculo;
     }

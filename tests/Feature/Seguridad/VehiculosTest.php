@@ -400,7 +400,9 @@ class VehiculosTest extends TestCase
         $this->actingAs($agente)->put("/vehiculos/{$v->id}", $this->datos())->assertForbidden();
         $this->actingAs($agente)->patch("/vehiculos/{$v->id}/estado", ['activo' => 0])->assertForbidden();
         $this->actingAs($agente)->get("/vehiculos/{$v->id}/calcomania")->assertForbidden();
-        $this->actingAs($agente)->postJson('/vehiculos/rapido', $this->datos(['placas' => 'NUEVO1']))->assertForbidden();
+        // Altas por verificar (ADR-0006): desde la caseta sí registra, pero queda pendiente de verificar
+        $this->actingAs($agente)->postJson('/vehiculos/rapido', $this->datos(['placas' => 'NUEVO1']))
+            ->assertCreated()->assertJsonPath('vehiculo.verificacion', 'pendiente');
         $this->actingAs($agente)->getJson('/vehiculos/buscar?q=abc')->assertOk()->assertJsonCount(1, 'resultados');
         $this->actingAs($agente)->get(route('vehiculos.qr', $v->codigo_qr))->assertRedirect();
 

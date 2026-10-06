@@ -14,20 +14,30 @@
     con alcance de sede, se le agrega la sede de quien lo registra).
     Ver docs/tecnico/proveedores.md.
 
-    Solo se dibuja si el usuario tiene "proveedores.crear" y hay empresa activa.
+    Se dibuja si hay empresa activa y el usuario tiene "proveedores.crear" o,
+    desde una pantalla de Operación (Pases de salida, Accesos), su permiso
+    operativo: entonces la empresa nace "pendiente de verificar" (ADR-0006).
+    Antes de crear se ofrecen los nombres parecidos ("¿Es alguna de estas?").
 --}}
 @php
     $tenantProveedor = app(\App\Support\Tenancy\Tenant::class);
+    $altasProveedor = app(\App\Services\Padrones\AltasPorVerificar::class);
+    $origenProveedor = $altasProveedor->origenDeRuta(request()->route()?->getName());
 @endphp
-@if ($tenantProveedor->activo() && auth()->user()?->can('proveedores.crear'))
+@if ($tenantProveedor->activo() && auth()->user() && $altasProveedor->puedeAltaRapida(auth()->user(), 'proveedores', $origenProveedor))
     <dialog id="dialogoAltaRapidaProveedor" class="dialogo tema-esmeralda" aria-labelledby="titulo-proveedor-rapido">
         <div class="dialogo-cabecera">
             <h2 id="titulo-proveedor-rapido"><i class="bi bi-building-add me-2 text-success" aria-hidden="true"></i>Nueva Empresa Externa</h2>
             <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
         </div>
         <div class="dialogo-cuerpo">
-            <form action="{{ route('proveedores.rapido') }}" method="POST" autocomplete="off" data-alta-rapida-proveedor>
+            @include('padrones.altas-por-verificar._aviso-alta', ['padron' => 'proveedores'])
+            <form action="{{ route('proveedores.rapido') }}" method="POST" autocomplete="off" data-alta-rapida-proveedor
+                  data-alta-padron="proveedores" data-url-parecidos="{{ route('altas_por_verificar.parecidos') }}">
                 @csrf
+                <input type="hidden" name="origen" value="{{ $origenProveedor }}">
+                <input type="hidden" name="confirmar_nuevo" value="0" data-alta-confirmar>
+                <div class="caja-parecidos" role="alert" data-alta-parecidos hidden></div>
                 {{-- Sin la clase "alert": el cierre genérico de diálogos borra los .alert del DOM --}}
                 <div class="errores-rapido-proveedor" role="alert" data-errores-proveedor hidden></div>
                 <input type="hidden" name="todas_las_sedes" value="1">

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
+use App\Models\Concerns\VerificableEnPadron;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Persona extends Model
 {
-    use PerteneceAEmpresa, RegistraAutor;
+    use PerteneceAEmpresa, RegistraAutor, VerificableEnPadron;
 
     public const TIPOS = ['visitante' => 'Visitante', 'proveedor' => 'Proveedor', 'contratista' => 'Contratista'];
 
