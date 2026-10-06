@@ -42,7 +42,7 @@
         </div>
 
         {{-- Búsqueda y filtro por tipo: en Gente en Sitio y Pendientes filtran al escribir; en el historial, con Filtrar --}}
-        <form method="GET" action="{{ route('accesos.index') }}" class="filtros-accesos {{ $esHistorial ? 'con-fechas' : '' }}" role="search" data-filtros-accesos="{{ $esHistorial ? 'servidor' : 'vivo' }}">
+        <form method="GET" data-autoenviar action="{{ route('accesos.index') }}" class="filtros-accesos {{ $esHistorial ? 'con-fechas' : '' }}" role="search" data-filtros-accesos="{{ $esHistorial ? 'servidor' : 'vivo' }}">
             <input type="hidden" name="pestana" value="{{ $pestana }}">
             <div class="buscador filtro-texto">
                 <i class="bi bi-search" aria-hidden="true"></i>

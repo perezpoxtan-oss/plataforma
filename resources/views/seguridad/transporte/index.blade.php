@@ -57,7 +57,7 @@
             </div>
         @endif
 
-        <form class="filtros-transporte" method="GET" action="{{ route('transporte.index') }}" role="search" aria-label="Filtrar la bitácora">
+        <form class="filtros-transporte" method="GET" data-autoenviar action="{{ route('transporte.index') }}" role="search" aria-label="Filtrar la bitácora">
             <div class="filtros-transporte-fechas">
                 <label class="fecha-transporte"><span>Fecha Inicio</span><input type="date" name="fecha_inicio" value="{{ $filtros['fecha_inicio'] }}"></label>
                 <label class="fecha-transporte"><span>Fecha Fin</span><input type="date" name="fecha_fin" value="{{ $filtros['fecha_fin'] }}"></label>

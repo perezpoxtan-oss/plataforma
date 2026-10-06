@@ -49,7 +49,7 @@
             @endforeach
         </nav>
 
-        <form method="GET" action="{{ route('pases-salida.index') }}" class="busqueda-pases" role="search">
+        <form method="GET" data-autoenviar action="{{ route('pases-salida.index') }}" class="busqueda-pases" role="search">
             @if ($filtro !== 'todos')<input type="hidden" name="filtro" value="{{ $filtro }}">@endif
             @if ($variasSedes)
                 <select name="sede" class="filtro-select" aria-label="Filtrar por sede" data-enviar-al-cambiar>

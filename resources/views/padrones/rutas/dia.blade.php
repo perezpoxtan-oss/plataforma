@@ -25,7 +25,7 @@
 <body class="pagina-rutas-hoja">
 <main class="rutas-hoja rutas-hoja-horizontal">
     <div class="rutas-hoja-controles">
-        <form method="GET" action="{{ route('rutas.dia', $sede->id) }}" class="rutas-hoja-fecha">
+        <form method="GET" data-autoenviar action="{{ route('rutas.dia', $sede->id) }}" class="rutas-hoja-fecha">
             <label for="fecha" class="fw-bold">Día:</label>
             <input type="date" id="fecha" name="fecha" value="{{ $fecha->toDateString() }}" class="campo mb-0">
             <button type="submit" class="btn-cancelar rutas-boton">Ver</button>

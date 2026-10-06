@@ -20,7 +20,7 @@
         @endif
     </div>
 
-    <form method="GET" action="{{ route('auditoria.index') }}" class="tarjeta p-3 mb-3 filtros-auditoria" role="search">
+    <form method="GET" data-autoenviar action="{{ route('auditoria.index') }}" class="tarjeta p-3 mb-3 filtros-auditoria" role="search">
         <div>
             <label class="campo-etiqueta" for="aud_desde">Desde</label>
             <input type="date" id="aud_desde" name="desde" class="campo mb-0" value="{{ $filtros['desde'] }}">
@@ -110,7 +110,7 @@
                     <tbody data-aud-filas></tbody>
                 </table>
             </div>
-            <p class="campo-ayuda mb-0"><i class="bi bi-shield-lock" aria-hidden="true"></i> Los datos personales (CURP, RFC, NSS, teléfono) se guardan enmascarados.</p>
+            <p class="campo-ayuda mb-0"><i class="bi bi-shield-lock" aria-hidden="true"></i> Por privacidad, en esta bitácora la CURP, el RFC, el NSS y los teléfonos aparecen ocultos (por ejemplo ••••1234).</p>
         </div>
     </dialog>
 </div>

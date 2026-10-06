@@ -453,7 +453,7 @@
                         @csrf
                         @method('PUT')
                         <label class="campo-etiqueta" for="fusionar_destino">Colaborador correcto</label>
-                        <select id="fusionar_destino" name="destino_id" class="campo" required>
+                        <select id="fusionar_destino" name="destino_id" class="campo" required data-select-buscable="Escribe nombre o número de empleado…">
                             <option value="">-- Selecciona --</option>
                             @foreach ($validados as $op)
                                 <option value="{{ $op->id }}">{{ $op->nombreCompleto() }} · #{{ $op->num_empleado }}{{ $op->sede ? ' · '.$op->sede->nombre : '' }}</option>

@@ -32,7 +32,7 @@
                 'estatus' => $filtros['estatus'], 'proveedor' => $filtros['proveedor'], 'tipo' => $filtros['tipo'], 'estado' => $filtros['estado']], fn ($v) => $v !== null);
             $clases = ['a_tiempo' => 'a-tiempo', 'retraso' => 'retraso', 'no_llego' => 'no-llego'];
         @endphp
-        <form method="GET" action="{{ route('transporte.reportes') }}" class="filtro-reporte tarjeta" role="search" aria-label="Filtros del reporte">
+        <form method="GET" data-autoenviar action="{{ route('transporte.reportes') }}" class="filtro-reporte tarjeta" role="search" aria-label="Filtros del reporte">
             <div class="filtro-reporte-campos">
                 @if ($sedes->count() > 1)
                     <label><span class="campo-etiqueta">Sede</span>
