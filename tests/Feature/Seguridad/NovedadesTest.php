@@ -332,9 +332,10 @@ class NovedadesTest extends PruebaNovedades
     {
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
         $this->actingAs($agente)->get('/novedades')->assertOk()
-            ->assertSee(route('novedades.index'))->assertSee(route('lost_found.index'));
+            ->assertSee(route('novedades.index'))->assertSee(route('lost_found.archivo'));
         $this->assertSame('novedades.index', Modulo::where('clave', 'novedades')->value('ruta'));
-        $this->assertSame('lost_found.index', Modulo::where('clave', 'lost_found')->value('ruta'));
+        // El menú "Lost & Found" abre el archivo (como SEGCAT lf_archivo.php); los tickets filtrados siguen en /novedades/lost-found
+        $this->assertSame('lost_found.archivo', Modulo::where('clave', 'lost_found')->value('ruta'));
     }
 
     // ----------------------------------------------------------- Firmas

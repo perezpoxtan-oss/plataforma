@@ -2182,3 +2182,340 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 /* Listas con buscador */
 .campo-buscador-lista { margin-bottom: 0.5rem; }
 /* Fin Listas con buscador */
+/* ==========================================================================
+   Lost & Found (archivo) y Robo — Seguimiento (como SEGCAT lf_archivo.php y
+   robo_archivo.php): píldoras de filtro, filas de artículo con borde
+   izquierdo de semáforo (rojo vencido / ámbar por vencer), encabezado oscuro
+   por mes, "Cerrar / Entregar" ámbar, etiqueta de la bolsa con borde ámbar,
+   Auditoría de Inventario, Días de Resguardo y casos de Robo con borde rojo
+   (abiertos) o verde (resueltos).
+   ========================================================================== */
+.btn-accion-novedades.oscuro { background: #0f172a; color: #fff; border-color: #0f172a; }
+.btn-accion-novedades.oscuro:hover { background: #1e293b; color: #fff; }
+.btn-accion-novedades.azul { color: #2563eb; border-color: #2563eb; }
+.btn-accion-novedades.azul:hover { background: #2563eb; color: #fff; }
+.escaner-lf { padding: 1rem 1.2rem; margin-bottom: 1rem; }
+.escaner-lf .campo-ayuda { margin-bottom: 0; }
+.filtros-lf { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.filtros-lf .btn { min-height: 44px; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 10px; }
+.filtros-lf .btn-dark .conteo-filtro, .filtros-lf .btn-danger .conteo-filtro, .filtros-lf .btn-success .conteo-filtro, .filtros-lf .btn-secondary .conteo-filtro { background: rgba(255, 255, 255, 0.25); }
+.busqueda-lf { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.8rem; }
+.busqueda-lf .buscador { flex: 1 1 280px; max-width: none; }
+.busqueda-lf .filtro-select { flex: 0 1 240px; min-height: 48px; max-width: none; }
+.leyenda-semaforo-lf { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; font-size: 0.78rem; color: #475569; margin: 0 0 1rem; }
+.leyenda-semaforo-lf > span { display: inline-flex; align-items: center; }
+.semaforo-punto { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
+.semaforo-punto.rojo { background: #dc2626; }
+.semaforo-punto.amarillo { background: #d97706; }
+.semaforo-punto.verde { background: #16a34a; }
+.subtitulo-lf { font-size: 0.85rem; font-weight: 800; color: #475569; margin: 0 0 0.5rem; }
+.mes-header-lf { background: #0f172a; color: #fff; padding: 0.6rem 1rem; border-radius: 10px; font-weight: 700; margin: 1.2rem 0 0.6rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+.fila-articulo { background: #fff; border: 1px solid var(--borde); border-left: 5px solid #cbd5e1; border-radius: 12px; padding: 0.9rem 1.1rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.7rem; transition: box-shadow 0.15s; }
+.fila-articulo:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+.fila-articulo.verde { border-left-color: #16a34a; }
+.fila-articulo.amarillo { border-left-color: #d97706; background: #fffbeb; }
+.fila-articulo.rojo { border-left-color: #dc2626; background: #fef2f2; }
+.fila-articulo.pendiente { border-left-color: #f59e0b; background: #fffbeb; }
+.fila-articulo.ficha-resaltada { box-shadow: 0 0 0 3px #f59e0b; }
+.fila-articulo-datos { flex: 1 1 320px; min-width: 0; overflow-wrap: anywhere; }
+.fila-articulo-acciones { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+.titulo-articulo-lf { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; font-weight: 600; }
+.folio-lf { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; color: #0f172a; text-decoration: none; }
+.folio-lf:hover { text-decoration: underline; }
+.badge-tipo-lf { display: inline-block; font-size: 0.7rem; font-weight: 700; background: #e2e8f0; color: #475569; border-radius: 6px; padding: 0.15rem 0.5rem; }
+.dias-lf.rojo { color: #b91c1c; }
+.dias-lf.amarillo { color: #b45309; }
+.estatus-lf { display: inline-flex; align-items: center; font-size: 0.75rem; font-weight: 700; border-radius: 6px; padding: 0.3rem 0.6rem; }
+.estatus-lf.resguardo { background: #fef3c7; color: #92400e; }
+.estatus-lf.cerrado { background: #dcfce7; color: #166534; }
+.estatus-lf.grande { font-size: 0.85rem; padding: 0.4rem 0.8rem; }
+.btn-lf { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0.4rem 0.9rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; border: 1px solid; background: transparent; cursor: pointer; text-decoration: none; font-family: inherit; }
+.btn-lf.cerrar, .btn-lf.completar { color: #b45309; border-color: #f59e0b; }
+.btn-lf.cerrar:hover, .btn-lf.completar:hover { background: #f59e0b; color: #0f172a; }
+.btn-lf.grande { min-height: 48px; padding: 0.5rem 1.2rem; font-size: 0.95rem; background: #ffc107; color: #0f172a; border-color: #ffc107; }
+.btn-lf.grande:hover { background: #e0a800; }
+
+/* Ficha del artículo */
+.ficha-articulo-lf { padding: 1.2rem; margin-bottom: 1rem; border-left: 6px solid #cbd5e1; }
+.ficha-articulo-lf.verde { border-left-color: #16a34a; }
+.ficha-articulo-lf.amarillo { border-left-color: #d97706; }
+.ficha-articulo-lf.rojo { border-left-color: #dc2626; }
+.ficha-articulo-lf.cerrado { border-left-color: #10b981; }
+.datos-articulo-lf { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem 1.2rem; font-size: 0.9rem; }
+.datos-articulo-lf > div { min-width: 0; overflow-wrap: anywhere; }
+.datos-articulo-lf .completo { grid-column: 1 / -1; }
+.datos-articulo-lf .dato-etiqueta { display: block; font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.03em; }
+.vinculos-lf { margin-top: 0.8rem; padding-top: 0.6rem; border-top: 1px dashed var(--borde); font-size: 0.88rem; display: flex; flex-direction: column; gap: 0.3rem; overflow-wrap: anywhere; }
+.entrega-lf { padding: 1.2rem; margin-bottom: 1rem; }
+.firma-entrega-lf { margin: 1rem 0 0; max-width: 340px; background: #fff; border: 1px solid var(--borde); border-radius: 10px; padding: 0.5rem; }
+.firma-entrega-lf img { width: 100%; height: 110px; object-fit: contain; display: block; }
+.firma-entrega-lf figcaption { font-size: 0.72rem; font-weight: 700; color: #475569; text-align: center; margin-top: 0.2rem; }
+
+/* Cerrar Artículo */
+.dialogo.dialogo-cierre-lf { max-width: 620px; }
+.resumen-cierre-lf { background: #f8fafc; border: 1px solid var(--borde); border-radius: 10px; padding: 0.6rem 0.8rem; margin-bottom: 0.8rem; font-size: 0.9rem; overflow-wrap: anywhere; }
+.tipos-cierre-lf, .recibe-lf { border: 0; padding: 0; margin: 0 0 0.8rem; min-width: 0; }
+.tipos-cierre-lf { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0.5rem; }
+.tipos-cierre-lf legend, .recibe-lf legend { float: none; width: 100%; grid-column: 1 / -1; margin-bottom: 0.2rem; }
+.opcion-cierre-lf { display: flex; align-items: center; gap: 0.5rem; min-height: 52px; padding: 0.5rem 0.75rem; border: 2px solid var(--borde); border-radius: 12px; background: #fff; cursor: pointer; font-weight: 700; font-size: 0.88rem; }
+.opcion-cierre-lf input { width: 1.15rem; height: 1.15rem; accent-color: #d97706; flex-shrink: 0; }
+.opcion-cierre-lf i { color: #b45309; font-size: 1.1rem; }
+.opcion-cierre-lf.elegida { border-color: #f59e0b; background: #fffbeb; }
+.recibe-lf { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.opcion-recibe-lf { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 44px; padding: 0.4rem 0.8rem; border: 1px solid var(--borde); border-radius: 10px; background: #fff; cursor: pointer; font-size: 0.88rem; font-weight: 600; }
+.opcion-recibe-lf input { width: 1.1rem; height: 1.1rem; accent-color: #d97706; }
+.bloque-cierre-lf[hidden], .bloque-cierre-lf [hidden] { display: none !important; }
+.btn-registrar-cierre { background: #ffc107; color: #0f172a; flex: 2 !important; font-weight: 800 !important; }
+.btn-registrar-cierre:hover { background: #e0a800; }
+.btn-registrar-cierre:disabled { opacity: 0.6; cursor: wait; }
+
+/* Etiqueta de la bolsa (borde ámbar, como SEGCAT) */
+.etiqueta-lf-contenedor { max-width: 300px; }
+.calcomania.etiqueta-lf { border-color: #b45309; padding: 0.9rem; }
+.etiqueta-lf-folio { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.35rem; font-weight: 900; letter-spacing: 1px; color: #0f172a; border: 2px solid #b45309; border-radius: 8px; padding: 4px 6px; margin: 0.4rem 0; background: #fffbeb; }
+.etiqueta-lf-qr { width: 150px; height: 150px; margin: 0.4rem auto; }
+.etiqueta-lf-objeto { font-size: 0.9rem; font-weight: 800; color: #0f172a; overflow-wrap: anywhere; }
+.etiqueta-lf-dato { font-size: 0.75rem; color: #334155; margin-top: 0.15rem; overflow-wrap: anywhere; }
+.etiqueta-lf-bodega { font-size: 0.8rem; font-weight: 800; color: #b45309; margin-top: 0.3rem; }
+.etiqueta-lf-imprimir { background: #b45309; }
+.etiqueta-lf-imprimir:hover { background: #92400e; }
+
+/* Auditoría de Inventario */
+.filtros-auditoria-lf { display: flex; flex-wrap: wrap; gap: 0.5rem 0.8rem; justify-content: center; align-items: flex-end; text-align: left; margin-top: 0.6rem; }
+.filtros-auditoria-lf > div { flex: 1 1 160px; max-width: 220px; }
+.filtros-auditoria-lf .campo { margin-bottom: 0; min-height: 48px; }
+.tabla-auditoria-lf .col-check { width: 30px; text-align: center; }
+.tabla-auditoria-lf td:nth-child(2) { white-space: nowrap; font-weight: 700; }
+.casilla-auditoria { display: inline-block; width: 14px; height: 14px; border: 2px solid #334155; }
+.discrepancias-lf { margin-top: 1.5rem; }
+.renglon-lf { border-bottom: 1px solid #94a3b8; height: 24px; margin-top: 16px; }
+.linea-firma-lf { border-top: 1px solid #334155; padding-top: 4px; font-size: 0.72rem; color: #64748b; text-align: center; }
+
+/* Días de Resguardo */
+.pantalla-umbrales-lf { max-width: 820px; }
+.umbral-card { background: #fff; border: 1px solid var(--borde); border-radius: 12px; padding: 1rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.7rem; }
+.umbral-card .texto-traza { margin: 0.2rem 0 0; }
+.campo-dias-lf { width: 110px; margin: 0; text-align: center; font-weight: 800; }
+.btn-guardar-umbrales { display: inline-flex; align-items: center; min-height: 48px; border: none; border-radius: 12px; padding: 0.7rem 1.4rem; font-weight: 700; margin-top: 0.8rem; font-family: inherit; cursor: pointer; }
+
+/* Robo — Seguimiento */
+.caso-robo { background: #fff; border: 1px solid var(--borde); border-left: 5px solid #dc2626; border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 0.7rem; transition: box-shadow 0.15s; }
+.caso-robo:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+.caso-robo.resuelto { border-left-color: #16a34a; }
+.caso-robo.ficha-resaltada { box-shadow: 0 0 0 3px #f87171; }
+.caso-robo-datos { flex: 1 1 320px; min-width: 0; overflow-wrap: anywhere; }
+.texto-robo { color: var(--texto); }
+.badges-robo { display: flex; flex-wrap: wrap; gap: 0.3rem; max-width: 260px; }
+.badge-robo { font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+.badge-robo.rojo { background: #fee2e2; color: #b91c1c; }
+.badge-robo.verde { background: #dcfce7; color: #166534; }
+.badge-robo.ambar { background: #fef3c7; color: #92400e; }
+.badge-robo.gris { background: #f1f5f9; color: #475569; }
+.badge-robo.azul { background: #dbeafe; color: #1d4ed8; }
+.btn-abrir-robo { display: inline-flex; align-items: center; min-height: 44px; padding: 0.4rem 1rem; margin-top: 0.6rem; border-radius: 8px; border: 1px solid #0f172a; color: #0f172a; font-weight: 700; font-size: 0.85rem; text-decoration: none; }
+.btn-abrir-robo:hover { background: #0f172a; color: #fff; }
+.btn-abrir-robo.ver { border-color: #64748b; color: #475569; }
+.btn-guardar-robo { background: #dc3545; color: #fff; flex: 2 !important; }
+.btn-guardar-robo:hover { background: #bb2d3b; }
+.dialogo-robo .minuto-a-minuto { margin-top: 1rem; }
+
+@media (max-width: 575.98px) {
+    .busqueda-lf .buscador { order: 1; flex: 1 1 calc(100% - 64px); }
+    .busqueda-lf .btn-buscar-pases { order: 2; }
+    .busqueda-lf .filtro-select { order: 3; flex: 1 1 100%; }
+    .busqueda-lf .btn-limpiar-pases { order: 4; }
+    .fila-articulo-acciones .btn-lf { white-space: nowrap; padding: 0.4rem 0.6rem; }
+    .filtros-lf .btn { flex: 1 1 auto; justify-content: center; }
+    .fila-articulo-acciones { width: 100%; }
+    .fila-articulo-acciones .btn-lf { flex: 1; }
+    .fila-articulo-acciones .estatus-lf { margin-right: auto; }
+    .datos-articulo-lf { grid-template-columns: 1fr; }
+    .tipos-cierre-lf { grid-template-columns: 1fr 1fr; }
+    .opcion-cierre-lf { font-size: 0.82rem; padding: 0.5rem; }
+    .badges-robo { max-width: none; }
+    .btn-abrir-robo { width: 100%; justify-content: center; }
+    .umbral-card { flex-direction: column; align-items: stretch; text-align: center; }
+    .umbral-card > div:last-child { justify-content: center; }
+}
+@media print {
+    .pagina-impresion-novedad .controles-auditoria-lf { display: none; }
+}
+/* Fin Lost & Found (archivo) y Robo — Seguimiento */
+/* ==========================================================================
+   Recorridos de Protección Civil (seguridad/recorridos-pc): lista, recorrido
+   en curso (un punto a la vez, botones grandes para el celular), catálogo de
+   equipos, etiqueta y Reporte de Auditoría. Colores de SEGCAT: verde de
+   Protección Civil, ámbar para hallazgos, azul para "En Proceso".
+   ========================================================================== */
+.rpc-acciones-cabecera { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.rpc-acciones-cabecera .btn-rpc { flex: 1 1 auto; }
+.btn-rpc { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0.55rem 1rem; border-radius: 10px; font-weight: 700; font-size: 0.9rem; text-decoration: none; cursor: pointer; border: 1px solid transparent; font-family: inherit; line-height: 1.2; text-align: center; }
+.btn-rpc-verde { background: #198754; border-color: #198754; color: #fff; }
+.btn-rpc-verde:hover { background: #157347; color: #fff; }
+.dialogo-acciones .btn-rpc-verde, .dialogo-acciones .btn-rpc-claro { flex: 1; }
+.dialogo-acciones .btn-rpc-claro { background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1 !important; }
+.btn-rpc-azul { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+.btn-rpc-azul:hover { background: #0b5ed7; color: #fff; }
+.btn-rpc-oscuro { background: #0f172a; border-color: #0f172a; color: #fff; }
+.btn-rpc-oscuro:hover { background: #1e293b; color: #fff; }
+.btn-rpc-contorno { background: #fff; border-color: #198754; color: #198754; }
+.btn-rpc-contorno:hover { background: #198754; color: #fff; }
+.btn-rpc-oscuro-contorno { background: #fff; border-color: #212529; color: #212529; }
+.btn-rpc-oscuro-contorno:hover { background: #212529; color: #fff; }
+.btn-rpc-claro { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
+.btn-rpc-claro:hover { background: #e2e8f0; color: #0f172a; }
+
+/* Lista */
+.rpc-filtros { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 0.5rem; }
+.rpc-filtros-campos { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.rpc-filtros-campos .buscador { flex: 1 1 240px; }
+.rpc-fichas { gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.rpc-ficha { padding: 1.1rem; border-radius: 14px; }
+.rpc-ficha:hover, .rpc-ficha-equipo:hover { transform: none; }
+.rpc-ficha.estatus-con_hallazgos { border-color: #f59e0b; background: #fffbeb; }
+.rpc-ficha-titulo { font-size: 1.05rem; font-weight: 800; margin: 0 0 0.35rem; }
+.rpc-badge { display: inline-block; padding: 0.3rem 0.65rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+.rpc-badge-en_proceso { background: #0d6efd; color: #fff; }
+.rpc-badge-completo { background: #198754; color: #fff; }
+.rpc-badge-con_hallazgos { background: #ffc107; color: #212529; }
+.rpc-texto-hallazgo { color: #b45309; font-weight: 700; }
+.rpc-texto-ok { color: #15803d; font-weight: 700; }
+.rpc-texto-ticket { color: #b45309; font-weight: 700; }
+.rpc-texto-ticket a { color: inherit; text-decoration: underline; }
+.rpc-vacio { grid-column: 1 / -1; }
+.rpc-ayuda { font-size: 0.82rem; color: var(--texto-suave); background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 0.6rem 0.75rem; margin-bottom: 1rem; }
+.dialogo-recorrido-pc .dialogo-acciones { flex-wrap: wrap; }
+
+/* Recorrido: cabecera y avance */
+.rpc-cabecera, .rpc-progreso, .rpc-escaner, .rpc-punto, .rpc-pendientes, .rpc-revisados, .rpc-cierre { padding: 1rem 1.1rem; margin-bottom: 1rem; }
+.rpc-cabecera.estatus-con_hallazgos { border-color: #f59e0b; }
+.rpc-cabecera-fila { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; }
+.rpc-titulo { font-size: 1.35rem; font-weight: 800; margin: 0; }
+.rpc-subtitulo { margin: 0.2rem 0 0; font-weight: 600; color: var(--texto-suave); overflow-wrap: anywhere; }
+.rpc-trazas { list-style: none; padding: 0; margin: 0.6rem 0 0; font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.rpc-trazas i { color: var(--texto-suave); margin-right: 4px; }
+.rpc-progreso-texto { font-size: 1.05rem; }
+.rpc-barra { height: 14px; border-radius: 999px; background: #e2e8f0; overflow: hidden; margin: 0.5rem 0 0.6rem; }
+.rpc-barra-relleno { display: block; height: 100%; background: #198754; border-radius: 999px; width: 0; }
+.rpc-ancho-5 { width: 5%; } .rpc-ancho-10 { width: 10%; } .rpc-ancho-15 { width: 15%; } .rpc-ancho-20 { width: 20%; }
+.rpc-ancho-25 { width: 25%; } .rpc-ancho-30 { width: 30%; } .rpc-ancho-35 { width: 35%; } .rpc-ancho-40 { width: 40%; }
+.rpc-ancho-45 { width: 45%; } .rpc-ancho-50 { width: 50%; } .rpc-ancho-55 { width: 55%; } .rpc-ancho-60 { width: 60%; }
+.rpc-ancho-65 { width: 65%; } .rpc-ancho-70 { width: 70%; } .rpc-ancho-75 { width: 75%; } .rpc-ancho-80 { width: 80%; }
+.rpc-ancho-85 { width: 85%; } .rpc-ancho-90 { width: 90%; } .rpc-ancho-95 { width: 95%; } .rpc-ancho-100 { width: 100%; }
+.rpc-contadores { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; font-size: 0.88rem; font-weight: 600; }
+.rpc-contadores i { margin-right: 3px; }
+
+/* Escanear y punto de inspección */
+.rpc-escaner { border: 2px solid #198754; }
+.rpc-punto { border: 2px solid #198754; scroll-margin-top: 80px; }
+.rpc-punto-titulo { font-size: 1.05rem; font-weight: 800; margin: 0 0 0.75rem; color: #15803d; }
+.rpc-revisados .rpc-punto-titulo { color: var(--texto); }
+.rpc-escaner .lector-entrada { min-height: 52px; font-size: 1.05rem; font-weight: 700; }
+.rpc-escaner .btn-lector { min-width: 52px; }
+.rpc-enlace-manual { display: inline-flex; align-items: center; min-height: 44px; font-size: 0.88rem; font-weight: 700; color: #0f172a; }
+.rpc-equipo { display: flex; gap: 0.8rem; align-items: center; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 0.75rem; margin-bottom: 1rem; overflow-wrap: anywhere; }
+.rpc-equipo-icono { width: 48px; height: 48px; border-radius: 12px; background: #198754; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+.rpc-equipo-serie { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.3rem; font-weight: 900; letter-spacing: 0.5px; }
+.rpc-equipo-categoria { font-weight: 700; color: #15803d; }
+.rpc-aviso-duplicado { background: #fffbeb; border: 1px solid #f59e0b; color: #92400e; border-radius: 10px; padding: 0.6rem 0.75rem; font-size: 0.85rem; font-weight: 600; }
+.rpc-seccion { font-size: 0.9rem; font-weight: 800; margin: 1rem 0 0.5rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--borde); }
+.rpc-seccion span { font-weight: 500; color: var(--texto-suave); font-size: 0.8rem; }
+.rpc-sin-categoria { font-size: 0.85rem; font-style: italic; color: var(--texto-suave); }
+.rpc-criterios { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.5rem; }
+.rpc-criterios[hidden], .rpc-universales[hidden] { display: none; }
+.rpc-criterio { position: relative; display: flex; align-items: center; gap: 0.7rem; min-height: 52px; padding: 0.5rem 0.75rem; border: 2px solid #fecaca; background: #fef2f2; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 0.9rem; user-select: none; }
+.rpc-criterio:has(input:checked) { border-color: #bbf7d0; background: #f0fdf4; }
+.rpc-criterio input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.rpc-interruptor { position: relative; width: 46px; height: 26px; border-radius: 999px; background: #dc2626; flex-shrink: 0; transition: background 0.15s; }
+.rpc-interruptor::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left 0.15s; }
+.rpc-criterio input:checked + .rpc-interruptor { background: #198754; }
+.rpc-criterio input:checked + .rpc-interruptor::after { left: 23px; }
+.rpc-criterio input:focus-visible + .rpc-interruptor { outline: 3px solid #0d6efd; outline-offset: 2px; }
+.rpc-criterio-texto { flex: 1; }
+.rpc-etiqueta-falla { color: #b91c1c; }
+.rpc-campo-falla { border-color: #fca5a5; }
+.rpc-resultado { border-radius: 10px; padding: 0.6rem 0.75rem; font-weight: 700; font-size: 0.9rem; margin: 0 0 0.75rem; }
+.rpc-resultado.ok { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.rpc-resultado.falla { background: #fffbeb; color: #92400e; border: 1px solid #f59e0b; }
+.rpc-punto-acciones, .rpc-cierre-acciones { display: flex; gap: 0.6rem; flex-wrap: wrap; padding: 0.6rem 0 0.2rem; }
+.rpc-punto { background: #fff; }
+.rpc-punto-acciones .btn-rpc { flex: 1 1 140px; min-height: 52px; font-size: 1rem; }
+.rpc-punto-acciones .btn-rpc-verde { flex: 2 1 220px; }
+.rpc-cierre-acciones .btn-rpc { flex: 1 1 220px; min-height: 52px; }
+.rpc-texto-largo { white-space: pre-line; overflow-wrap: anywhere; }
+
+/* Pendientes y revisados */
+.rpc-pendientes summary { cursor: pointer; font-weight: 800; min-height: 44px; display: flex; align-items: center; }
+.rpc-lista-pendientes { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.rpc-lista-pendientes li { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0; border-bottom: 1px solid var(--borde); }
+.rpc-pendiente-icono { width: 36px; height: 36px; border-radius: 10px; background: #f0fdf4; color: #15803d; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rpc-pendiente-texto { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 0.9rem; }
+.rpc-pendiente-texto small { display: block; color: var(--texto-suave); }
+.rpc-btn-revisar { flex-shrink: 0; }
+.rpc-revision { border: 1px solid var(--borde); border-left: 5px solid #198754; border-radius: 10px; padding: 0.65rem 0.8rem; margin-bottom: 0.5rem; overflow-wrap: anywhere; }
+.rpc-revision.falla { border-left-color: #f59e0b; background: #fffbeb; }
+.rpc-revision-titulo { font-weight: 800; }
+.rpc-revision-titulo span { font-weight: 600; color: var(--texto-suave); }
+.rpc-resultado-badge { font-size: 0.72rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 999px; white-space: nowrap; }
+.rpc-resultado-badge.ok { background: #dcfce7; color: #166534; }
+.rpc-resultado-badge.falla { background: #fde68a; color: #78350f; }
+
+/* Catálogo de equipos */
+.rpc-crear { min-height: 180px; }
+.rpc-ficha-equipo { padding: 1.1rem; border-radius: 14px; }
+.rpc-badge-categoria { display: inline-flex; align-items: center; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 0.3rem 0.6rem; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+.rpc-rotulo { font-size: 0.65rem; font-weight: 800; color: var(--texto-suave); letter-spacing: 0.5px; }
+.rpc-serie { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.2rem; font-weight: 900; margin-bottom: 0.3rem; overflow-wrap: anywhere; }
+.rpc-nfc { color: #4f46e5; font-weight: 600; }
+.rpc-pie-ficha { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.8rem; padding-top: 0.6rem; border-top: 1px solid var(--borde); }
+
+/* Etiqueta (verde de Protección Civil, como SEGCAT) */
+.calcomania.etiqueta-pc { border-color: #15803d; }
+.etiqueta-pc-tipo { font-size: 1.1rem; font-weight: 900; color: #15803d; margin: 0.4rem 0; }
+.etiqueta-pc-serie { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.4rem; font-weight: 900; letter-spacing: 1px; color: #0f172a; border: 2px solid #15803d; border-radius: 8px; padding: 4px 8px; margin-bottom: 0.6rem; background: #f0fdf4; overflow-wrap: anywhere; }
+.etiqueta-pc-ubicacion { font-size: 0.75rem; color: #334155; margin-top: 0.4rem; }
+.etiqueta-pc-imprimir { background: #15803d; }
+@media print {
+    .calcomania.etiqueta-pc { border-color: #15803d !important; }
+}
+
+/* Reporte de Auditoría (SEGCAT: recorridos_pc_pdf.php) */
+.pagina-reporte-rpc { background: #fff; color: #1e293b; margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+.hoja-reporte-rpc { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
+.hoja-reporte-rpc h1 { font-size: 18px; margin: 0 0 4px; font-weight: 800; }
+.hoja-reporte-rpc .subtitulo { color: #64748b; margin-bottom: 16px; }
+.hoja-reporte-rpc .resumen { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.hoja-reporte-rpc .resumen div { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 16px; }
+.hoja-reporte-rpc .resumen strong { display: block; font-size: 20px; }
+.hoja-reporte-rpc table { width: 100%; border-collapse: collapse; margin-bottom: 16px; min-width: 560px; }
+.hoja-reporte-rpc th { background: #0f172a; color: #fff; padding: 6px 8px; text-align: left; font-size: 11px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.hoja-reporte-rpc td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; font-size: 11px; vertical-align: top; }
+.hoja-reporte-rpc .sesion-header td { background: #f1f5f9; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.hoja-reporte-rpc .falla { color: #b91c1c; font-weight: 700; }
+.hoja-reporte-rpc .ok { color: #15803d; }
+.rpc-reporte-filtros { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: flex-end; margin-bottom: 1.2rem; padding: 0.8rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; font-size: 0.85rem; }
+.rpc-reporte-filtros label { display: flex; flex-direction: column; font-weight: 700; color: #475569; flex: 1 1 150px; }
+.rpc-reporte-filtros .campo { margin-bottom: 0; padding: 0.6rem; min-height: 44px; }
+.rpc-reporte-botones { display: flex; flex-wrap: wrap; gap: 0.5rem; flex: 1 1 100%; }
+@media print {
+    .no-imprimir, .franja-ambiente { display: none !important; }
+    .hoja-reporte-rpc { padding: 0; max-width: 100%; }
+    .hoja-reporte-rpc table { min-width: 0; }
+    .hoja-reporte-rpc .tabla-scroll { overflow: visible; border: none; }
+}
+
+/* En el celular los botones del punto quedan siempre a la mano */
+@media (max-width: 767.98px) {
+    /* Arriba de la barra inferior del menú (fija, ~76 px) */
+    .rpc-punto-acciones { position: sticky; bottom: calc(76px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid var(--borde); z-index: 2; flex-wrap: nowrap; }
+    .rpc-punto-acciones .btn-rpc-claro { flex: 0 0 auto; }
+    .rpc-punto-acciones .btn-rpc-verde { flex: 1 1 auto; }
+}
+@media (max-width: 575.98px) {
+    .rpc-cabecera-fila { flex-direction: column-reverse; }
+    .rpc-titulo { font-size: 1.2rem; }
+    .rpc-criterios { grid-template-columns: 1fr; }
+    .rpc-acciones-cabecera .btn-rpc { flex: 1 1 100%; }
+    .rpc-filtros-campos .filtro-select { max-width: none; flex: 1 1 100%; }
+}
+/* Fin Recorridos de Protección Civil */

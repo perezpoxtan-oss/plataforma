@@ -9,11 +9,14 @@ use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Equipo;
+use App\Models\EquipoPc;
 use App\Models\Espacio;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\Llave;
 use App\Models\LostFoundArticulo;
+use App\Models\LostFoundEntrega;
+use App\Models\LostFoundReportePerdida;
 use App\Models\MovimientoTransporte;
 use App\Models\Novedad;
 use App\Models\PaseSalida;
@@ -38,10 +41,12 @@ use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Llaves\AdministradorLlaves;
 use App\Services\Novedades\AdministradorNovedades;
+use App\Services\Novedades\ArchivoLostFound;
 use App\Services\Novedades\Formatos\RecorridoPc;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
+use App\Services\RecorridosPc\AdministradorRecorridosPc;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Services\Rutas\AdministradorRutas;
 use App\Services\Transporte\BitacoraTransporte;
@@ -179,6 +184,8 @@ class CrearDatosDemo extends Command
         $paso('novedadesDemo', fn () => $this->novedadesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'agente2.demo')->firstOrFail()));
         $paso('pasesSalidaDemo', fn () => $this->pasesSalidaDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('transporteDemo', fn () => $this->transporteDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('lostFoundRoboDemo', fn () => $this->lostFoundRoboDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
+        $paso('recorridosPcDemo', fn () => $this->recorridosPcDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -1393,5 +1400,175 @@ class CrearDatosDemo extends Command
     private function fechaDemo(MovimientoTransporte $m, CarbonImmutable $cuando): void
     {
         $m->forceFill(['fecha' => $cuando->toDateString(), 'created_at' => $cuando->utc(), 'updated_at' => $cuando->utc()])->saveQuietly();
+    }
+
+    /**
+     * Lost & Found (archivo) y Robo — Seguimiento, solo la primera vez: el
+     * teléfono vinculado al reporte de pérdida de Laura Gómez (listo para
+     * entregar), unos lentes ya devueltos con firma, artículos de alberca con
+     * el semáforo en rojo y ámbar (una gorra donada a un colaborador), un
+     * ticket sin artículos capturados y un robo con sospechoso sin parte a la
+     * policía.
+     */
+    private function lostFoundRoboDemo($sedes, User $admin, User $agente): void
+    {
+        if (LostFoundEntrega::exists() || ! LostFoundArticulo::exists()) {
+            return;
+        }
+
+        $novedades = app(AdministradorNovedades::class);
+        $archivo = app(ArchivoLostFound::class);
+        $centro = $sedes['CEN'];
+        $zona = $centro->zonaHoraria();
+        $hace = fn (int $horas) => now($zona)->subHours($horas)->format('Y-m-d\\TH:i');
+        $previo = auth()->user();
+
+        try {
+            // 1. El teléfono encontrado en la 201 es el que reportó Laura Gómez
+            $telefono = LostFoundArticulo::where('objeto', 'TELÉFONO CELULAR')->first();
+            $reporte = LostFoundReportePerdida::where('estatus', LostFoundReportePerdida::BUSCANDO)->where('nombre_huesped', 'LAURA GÓMEZ')->first();
+            if ($telefono !== null && $reporte !== null) {
+                auth()->setUser($admin);
+                $novedades->vincularPerdida($admin, $reporte->load('novedad'), $telefono);
+            }
+
+            // 2. Los lentes de sol ya se devolvieron al huésped, con su firma
+            $lentes = LostFoundArticulo::where('objeto', 'LENTES DE SOL')->where('estatus', LostFoundArticulo::EN_RESGUARDO)->first();
+            if ($lentes !== null) {
+                auth()->setUser($agente);
+                $archivo->cerrar($agente, $lentes, ['tipo_cierre' => 'PERSONA', 'recibe_es' => 'externo', 'nombre_recibe' => 'Mark Johnson',
+                    'tipo_identificacion' => 'PASAPORTE', 'correo_recibe' => 'mark.johnson@example.com', 'firma' => $this->firmaDemo(11),
+                    'observaciones' => 'Pasó a recepción antes de su salida.']);
+            }
+
+            // 3. Objetos de la alberca: semáforo en rojo y ámbar; la gorra se donó a un colaborador
+            auth()->setUser($agente);
+            $n = $novedades->crear($agente, ['sede_id' => $centro->id, 'categoria' => 'lost_found', 'reportado_por' => 'Salvavidas de turno',
+                'ubicacion' => 'Alberca principal', 'descripcion' => 'Objetos olvidados en los camastros de la alberca.', 'ocurrio_en' => $hace(3)]);
+            $novedades->actualizar($agente, $n->fresh(), ['categoria' => 'lost_found', 'estatus' => 'abierto', 'lf_articulos' => [
+                ['objeto' => 'Bufanda', 'tipo_valor' => 'ROPA', 'color' => 'Roja', 'lugar_detalle' => 'Camastro 8', 'ubicacion_bodega' => 'Anaquel 3'],
+                ['objeto' => 'Gorra', 'tipo_valor' => 'ROPA', 'marca' => 'Nike', 'color' => 'Azul', 'lugar_detalle' => 'Camastro 3', 'ubicacion_bodega' => 'Anaquel 3'],
+                ['objeto' => 'Audífonos inalámbricos', 'tipo_valor' => 'ELECTRONICO', 'marca' => 'JBL', 'color' => 'Blanco', 'lugar_detalle' => 'Bar de la alberca', 'ubicacion_bodega' => 'Bodega de Seguridad, Caja 2'],
+                ['objeto' => 'Termo', 'tipo_valor' => 'OTRO', 'color' => 'Verde', 'lugar_detalle' => 'Regaderas', 'ubicacion_bodega' => 'Anaquel 1'],
+            ]]);
+            foreach (['BUFANDA' => 40, 'GORRA' => 35, 'AUDÍFONOS INALÁMBRICOS' => 130, 'TERMO' => 10] as $objeto => $dias) {
+                LostFoundArticulo::where('novedad_id', $n->id)->where('objeto', $objeto)->update(['created_at' => now()->subDays($dias)]);
+            }
+            $gorra = LostFoundArticulo::where('novedad_id', $n->id)->where('objeto', 'GORRA')->first();
+            $colaborador = Colaborador::where('activo', true)->whereNull('fusionado_en_id')->where('sede_id', $centro->id)->where('provisional', false)->orderBy('id')->first();
+            if ($gorra !== null && $colaborador !== null) {
+                $archivo->cerrar($agente, $gorra, ['tipo_cierre' => 'DONADO', 'colaborador_id' => $colaborador->id, 'firma' => $this->firmaDemo(12),
+                    'observaciones' => 'Venció su tiempo de resguardo; autorizó el jefe de seguridad.']);
+            }
+
+            // 4. Un ticket de Lost & Found al que todavía no le capturan los objetos
+            $novedades->crear($agente, ['sede_id' => $centro->id, 'categoria' => 'lost_found', 'reportado_por' => 'Recepción',
+                'ubicacion' => 'Lobby', 'descripcion' => 'Un huésped entregó una bolsa con objetos encontrados en el lobby.', 'ocurrio_en' => $hace(2)]);
+
+            // 5. Robo con sospechoso y sin parte a la policía (para los filtros de Robo — Seguimiento)
+            auth()->setUser($admin);
+            $robo = $novedades->crear($admin, ['sede_id' => $centro->id, 'categoria' => 'robo', 'reportado_por' => 'Carlos Pérez',
+                'ubicacion' => 'Alberca principal', 'descripcion' => 'Huésped reporta que le sacaron la cartera de su mochila en el camastro.', 'ocurrio_en' => $hace(20)]);
+            $novedades->actualizar($admin, $robo->fresh(), ['categoria' => 'robo', 'estatus' => 'abierto', 'robo_hora_aproximada' => '13:15',
+                'robo_lugar_exacto' => 'Camastro 5', 'robo_objetos_descripcion' => 'Cartera café de piel con identificaciones y $2,000 en efectivo.',
+                'robo_valor_estimado' => '2500', 'robo_hay_sospechoso' => '1', 'robo_descripcion_sospechoso' => 'Hombre de gorra negra y playera blanca, no es huésped.',
+                'robo_se_dio_parte_policia' => '0', 'robo_testigos' => [['nombre' => 'Salvavidas de turno', 'departamento' => 'Recreación', 'declaracion' => 'Vio a una persona revisar mochilas.']],
+                'nueva_nota' => 'Se pidió a Seguridad revisar las cámaras de la alberca.']);
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    /**
+     * Recorridos de Protección Civil, solo la primera vez: catálogo de equipos
+     * en las dos sedes (con su ubicación en la Torre A de Centro) y cuatro
+     * recorridos hechos con las mismas reglas de la pantalla: uno COMPLETO,
+     * uno CON HALLAZGOS (abre su ticket en la Bitácora de Novedades), uno EN
+     * PROCESO para continuarlo y uno de Playa.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function recorridosPcDemo($sedes, User $admin): void
+    {
+        if (EquipoPc::exists()) {
+            return;
+        }
+
+        $centro = $sedes['CEN'];
+        $espacio = fn (string $nombre) => Espacio::where('sede_id', $centro->id)->where('nombre', $nombre)->value('id');
+        // [sede, categoría, ID, ubicación, referencia, activo, etiqueta NFC]
+        $catalogo = [
+            ['CEN', 'EXTINTOR', 'EXT-01', 'Piso 1', 'Junto al elevador', true, '04:A2:3B:1C:5D:80:01'],
+            ['CEN', 'EXTINTOR', 'EXT-02', 'Piso 2', 'Pasillo de habitaciones', true, null],
+            ['CEN', 'EXTINTOR', 'EXT-03', 'Torre A', 'Cocina principal', true, null],
+            ['CEN', 'HIDRANTE', 'HID-01', 'Piso 1', 'Gabinete frente a recepción', true, null],
+            ['CEN', 'DETECTOR_HUMO', 'DH-101', '101', null, true, null],
+            ['CEN', 'DETECTOR_HUMO', 'DH-201', '201', null, true, null],
+            ['CEN', 'SALIDA_EMERGENCIA', 'SAL-01', 'Piso 1', 'Escalera de emergencia norte', true, null],
+            ['CEN', 'BOTIQUIN', 'BOT-01', 'Torre A', 'Caseta de seguridad', true, null],
+            ['CEN', 'LAMPARA_EMERGENCIA', 'LAM-01', 'Piso 2', 'Salida de escalera', true, null],
+            ['CEN', 'TABLERO_ELECTRICO', 'TAB-01', 'Torre A', 'Cuarto de máquinas', true, null],
+            ['CEN', 'GAS_LP', 'GAS-01', null, 'Patio de servicio', true, null],
+            ['CEN', 'EXTINTOR', 'EXT-99', null, 'Retirado: se envió a recarga', false, null],
+            ['PLA', 'EXTINTOR', 'EXT-P01', null, 'Lobby, junto a recepción', true, null],
+            ['PLA', 'HIDRANTE', 'HID-P01', null, 'Acceso a la playa', true, null],
+            ['PLA', 'BOTIQUIN', 'BOT-P01', null, 'Caseta de playa', true, null],
+        ];
+        $equipos = [];
+        foreach ($catalogo as [$sede, $categoria, $serie, $lugar, $referencia, $activo, $nfc]) {
+            $e = new EquipoPc(['sede_id' => $sedes[$sede]->id, 'categoria' => $categoria, 'numero_serie' => $serie,
+                'espacio_id' => $lugar !== null && $sede === 'CEN' ? $espacio($lugar) : null, 'referencia' => $referencia, 'etiqueta_nfc' => $nfc]);
+            $e->forceFill(['activo' => $activo, 'creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+            $equipos[$serie] = $e;
+        }
+
+        $servicio = app(AdministradorRecorridosPc::class);
+        $agente = User::where('username', 'agente.demo')->first() ?? $admin;
+        $agentePlaya = User::where('username', 'agente2.demo')->first() ?? $admin;
+        $ahora = CarbonImmutable::now($centro->zonaHoraria());
+        // Todas las piezas sanas, menos las indicadas
+        $sano = fn (string $serie, array $malas = []) => array_fill_keys(array_diff(array_keys(EquipoPc::criterios($equipos[$serie]->categoria)), $malas), '1');
+        $previo = auth()->user();
+
+        $recorrido = function (User $actor, Sede $sede, ?string $zona, ?string $obs, array $puntos, bool $finalizar, CarbonImmutable $cuando) use ($servicio, $equipos, $sano, $espacio) {
+            auth()->setUser($actor);
+            $r = $servicio->iniciar($actor, ['sede_id' => $sede->id, 'espacio_id' => $zona !== null ? $espacio($zona) : null, 'observaciones_generales' => $obs]);
+            $minuto = 0;
+            foreach ($puntos as [$serie, $malas, $observaciones]) {
+                $p = $servicio->registrarPunto($actor, $r->fresh(), ['equipo_pc_id' => $equipos[$serie]->id, 'criterios' => $sano($serie, $malas), 'observaciones' => $observaciones]);
+                $p->forceFill(['created_at' => $cuando->addMinutes($minuto += 4)->utc(), 'updated_at' => $cuando->addMinutes($minuto)->utc()])->saveQuietly();
+            }
+            $r = $r->fresh();
+            if ($finalizar) {
+                $r = $servicio->guardar($actor, $r, ['observaciones_generales' => $obs], true);
+                $r->forceFill(['finalizado_en' => $cuando->addMinutes($minuto + 3)->utc()])->saveQuietly();
+            }
+            $r->forceFill(['created_at' => $cuando->utc(), 'updated_at' => $cuando->addMinutes($minuto + 3)->utc()])->saveQuietly();
+            if ($r->novedad_id !== null) {
+                Novedad::whereKey($r->novedad_id)->update(['created_at' => $cuando->addMinutes(8)->utc(), 'updated_at' => $cuando->addMinutes(8)->utc(), 'ocurrio_en' => $cuando->addMinutes(8)->utc()]);
+            }
+
+            return $r;
+        };
+
+        try {
+            $recorrido($agente, $centro, 'Torre A', null, [
+                ['EXT-01', [], null], ['EXT-02', [], null], ['HID-01', [], null], ['SAL-01', [], null],
+            ], true, $ahora->subDays(2)->setTime(7, 10));
+            $recorrido($agente, $centro, 'Torre A', 'Ronda matutina. Se avisó a mantenimiento de los hallazgos.', [
+                ['EXT-01', [], null],
+                ['EXT-02', ['manometro', 'precinto'], 'Manómetro en zona roja y precinto roto.'],
+                ['DH-101', [], null],
+                ['LAM-01', ['foco_izq'], 'Faro izquierdo fundido.'],
+            ], true, $ahora->subDay()->setTime(7, 5));
+            $recorrido($agente, $centro, null, null, [
+                ['EXT-01', [], null], ['BOT-01', [], null],
+            ], false, $ahora->subMinutes(40));
+            $recorrido($agentePlaya, $sedes['PLA'], null, null, [
+                ['EXT-P01', [], null], ['BOT-P01', [], null],
+            ], true, $ahora->subDay()->setTime(8, 20));
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
     }
 }

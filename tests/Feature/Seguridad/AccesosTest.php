@@ -691,6 +691,8 @@ class AccesosTest extends TestCase
 
     public function test_historial_paginado_con_filtros_y_exportacion(): void
     {
+        // Mediodía fijo: cerca de medianoche, "hoy" en la sede y en UTC son días distintos
+        $this->travelTo(now()->setTimezone('UTC')->setTime(18, 0));
         for ($i = 1; $i <= 26; $i++) {
             $this->registrar(['tipo' => $i % 2 ? 'visitante' : 'emergencia', 'nombre' => 'Persona '.str_pad((string) $i, 2, '0', STR_PAD_LEFT)]);
             $this->actingAs($this->admin)->patch('/accesos/'.$this->ultimo()->id.'/salida');

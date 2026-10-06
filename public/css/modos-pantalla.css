@@ -898,3 +898,118 @@ html.modo-noche .btn-icono.ver, html.modo-noche .tema-transporte .btn-icono.edit
 html.modo-noche .tabla-reporte-transporte td { border-bottom-color: var(--borde); }
 html.modo-noche .transporte-firmas img { border-color: #475569; }
 /* Fin Bitácora de transporte */
+
+/* Lost & Found (archivo) y Robo — Seguimiento */
+html.modo-sol .fila-articulo, html.modo-sol .caso-robo, html.modo-sol .umbral-card, html.modo-sol .resumen-cierre-lf,
+html.modo-sol .opcion-cierre-lf, html.modo-sol .opcion-recibe-lf, html.modo-sol .firma-entrega-lf { background: #fff; border: 2px solid #000; }
+html.modo-sol .fila-articulo, html.modo-sol .ficha-articulo-lf { border-left-width: 8px; }
+html.modo-sol .fila-articulo.rojo, html.modo-sol .ficha-articulo-lf.rojo { border-left-color: #b91c1c; }
+html.modo-sol .fila-articulo.amarillo, html.modo-sol .fila-articulo.pendiente, html.modo-sol .ficha-articulo-lf.amarillo { border-left-color: #b45309; }
+html.modo-sol .fila-articulo.verde, html.modo-sol .ficha-articulo-lf.verde, html.modo-sol .ficha-articulo-lf.cerrado { border-left-color: #047857; }
+html.modo-sol .fila-articulo.cerrado { border-left-color: #000; }
+html.modo-sol .caso-robo { border-left: 8px solid #b91c1c; }
+html.modo-sol .caso-robo.resuelto { border-left-color: #047857; }
+html.modo-sol .mes-header-lf { background: #000; border: 2px solid #000; }
+html.modo-sol .folio-lf, html.modo-sol .leyenda-semaforo-lf, html.modo-sol .subtitulo-lf { color: #000; }
+html.modo-sol .semaforo-punto { border: 2px solid #000; width: 14px; height: 14px; }
+html.modo-sol .semaforo-punto.rojo { background: #b91c1c; }
+html.modo-sol .semaforo-punto.amarillo { background: #facc15; }
+html.modo-sol .semaforo-punto.verde { background: #047857; }
+html.modo-sol .dias-lf.rojo { color: #7f1d1d; }
+html.modo-sol .dias-lf.amarillo { color: #78350f; }
+html.modo-sol .badge-tipo-lf, html.modo-sol .badge-robo, html.modo-sol .estatus-lf { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .estatus-lf.resguardo, html.modo-sol .badge-robo.ambar { background: #facc15; }
+html.modo-sol .estatus-lf.cerrado, html.modo-sol .badge-robo.verde { background: #047857; color: #fff; }
+html.modo-sol .badge-robo.rojo { background: #b91c1c; color: #fff; }
+html.modo-sol .btn-lf, html.modo-sol .btn-abrir-robo { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-lf.grande, html.modo-sol .btn-registrar-cierre, html.modo-sol .opcion-cierre-lf.elegida { background: #facc15; color: #000; border: 2px solid #000 !important; }
+html.modo-sol .btn-guardar-robo { background: #b91c1c; color: #fff; border: 2px solid #000 !important; }
+html.modo-sol .btn-accion-novedades.oscuro { background: #000; color: #fff; border: 2px solid #000; }
+html.modo-sol .btn-accion-novedades.azul { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .opcion-cierre-lf i { color: #000; }
+html.modo-sol .datos-articulo-lf .dato-etiqueta { color: #000; }
+
+html.modo-noche .fila-articulo, html.modo-noche .caso-robo, html.modo-noche .umbral-card, html.modo-noche .resumen-cierre-lf,
+html.modo-noche .opcion-cierre-lf, html.modo-noche .opcion-recibe-lf { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .fila-articulo.verde { border-left-color: #22c55e; }
+html.modo-noche .fila-articulo.amarillo, html.modo-noche .fila-articulo.pendiente { background: rgba(245, 158, 11, 0.08); border-color: #78350f; border-left-color: #f59e0b; }
+html.modo-noche .fila-articulo.rojo { background: rgba(239, 68, 68, 0.08); border-color: #7f1d1d; border-left-color: #ef4444; }
+html.modo-noche .fila-articulo.cerrado { border-left-color: #475569; }
+html.modo-noche .caso-robo { border-left-color: #ef4444; }
+html.modo-noche .caso-robo.resuelto { border-left-color: #22c55e; }
+html.modo-noche .mes-header-lf { background: #020617; border: 1px solid var(--borde); }
+html.modo-noche .folio-lf { color: #e2e8f0; }
+html.modo-noche .leyenda-semaforo-lf, html.modo-noche .subtitulo-lf, html.modo-noche .datos-articulo-lf .dato-etiqueta { color: #94a3b8; }
+html.modo-noche .badge-tipo-lf, html.modo-noche .badge-robo.gris { background: var(--superficie-2); color: #cbd5e1; }
+html.modo-noche .dias-lf.rojo { color: #fca5a5; }
+html.modo-noche .dias-lf.amarillo { color: #fcd34d; }
+html.modo-noche .estatus-lf.resguardo, html.modo-noche .badge-robo.ambar { background: rgba(245, 158, 11, 0.16); color: #fcd34d; }
+html.modo-noche .estatus-lf.cerrado, html.modo-noche .badge-robo.verde { background: rgba(34, 197, 94, 0.16); color: #86efac; }
+html.modo-noche .badge-robo.rojo { background: rgba(239, 68, 68, 0.16); color: #fca5a5; }
+html.modo-noche .badge-robo.azul { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+html.modo-noche .btn-lf.cerrar, html.modo-noche .btn-lf.completar { color: #fbbf24; border-color: #b45309; }
+html.modo-noche .btn-lf.cerrar:hover, html.modo-noche .btn-lf.completar:hover { background: #f59e0b; color: #0f172a; }
+html.modo-noche .btn-abrir-robo { color: #e2e8f0; border-color: #94a3b8; }
+html.modo-noche .btn-abrir-robo:hover { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .btn-accion-novedades.oscuro { background: #e2e8f0; color: #0f172a; border-color: #e2e8f0; }
+html.modo-noche .btn-accion-novedades.azul { background: var(--superficie-2); color: #93c5fd; border-color: #1e40af; }
+html.modo-noche .opcion-cierre-lf i { color: #fbbf24; }
+html.modo-noche .opcion-cierre-lf.elegida { background: rgba(245, 158, 11, 0.14); border-color: #f59e0b; }
+html.modo-noche .vinculos-lf { border-top-color: var(--borde); }
+html.modo-noche .filtros-lf .btn-outline-dark { color: #e2e8f0; border-color: #64748b; }
+html.modo-noche .filtros-lf .btn-dark { background: #e2e8f0; color: #0f172a; border-color: #e2e8f0; }
+html.modo-noche .filtros-lf .btn-dark .conteo-filtro { background: rgba(15, 23, 42, 0.15); }
+/* Fin Lost & Found (archivo) y Robo — Seguimiento */
+/* ==========================================================================
+   Recorridos de Protección Civil: modos Sol y Noche
+   ========================================================================== */
+html.modo-sol .rpc-ficha, html.modo-sol .rpc-ficha-equipo, html.modo-sol .rpc-revision, html.modo-sol .rpc-criterio,
+html.modo-sol .rpc-equipo, html.modo-sol .rpc-aviso-duplicado, html.modo-sol .rpc-resultado, html.modo-sol .rpc-ayuda { border-width: 2px; border-color: #000; }
+html.modo-sol .rpc-escaner, html.modo-sol .rpc-punto { border: 3px solid #000; }
+html.modo-sol .rpc-ficha.estatus-con_hallazgos, html.modo-sol .rpc-revision.falla { background: #fff7d6; border-color: #000; border-left: 6px solid #b45309; }
+html.modo-sol .rpc-revision.ok { border-left: 6px solid #14532d; }
+html.modo-sol .rpc-badge-en_proceso { background: #1d4ed8; }
+html.modo-sol .rpc-badge-completo { background: #14532d; }
+html.modo-sol .rpc-badge-con_hallazgos { background: #facc15; color: #000; border: 2px solid #000; }
+html.modo-sol .rpc-texto-hallazgo, html.modo-sol .rpc-texto-ticket { color: #7c2d12; }
+html.modo-sol .rpc-texto-ok, html.modo-sol .rpc-punto-titulo, html.modo-sol .rpc-equipo-categoria { color: #14532d; }
+html.modo-sol .rpc-criterio { background: #fff; }
+html.modo-sol .rpc-criterio:has(input:checked) { background: #fff; border-color: #14532d; }
+html.modo-sol .rpc-interruptor { background: #b91c1c; border: 2px solid #000; }
+html.modo-sol .rpc-criterio input:checked + .rpc-interruptor { background: #14532d; }
+html.modo-sol .btn-rpc-verde { background: #14532d; border-color: #000; }
+html.modo-sol .btn-rpc-azul { background: #1d4ed8; border-color: #000; }
+html.modo-sol .btn-rpc-claro, html.modo-sol .btn-rpc-contorno, html.modo-sol .btn-rpc-oscuro-contorno { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .rpc-barra { background: #fff; border: 2px solid #000; }
+html.modo-sol .rpc-barra-relleno { background: #14532d; }
+html.modo-sol .rpc-badge-categoria { background: #fff; color: #14532d; border: 2px solid #14532d; }
+
+html.modo-noche .rpc-ficha.estatus-con_hallazgos, html.modo-noche .rpc-revision.falla { background: rgba(245, 158, 11, 0.1); border-color: #b45309; }
+html.modo-noche .rpc-revision { border-color: var(--borde); }
+html.modo-noche .rpc-revision.ok { border-left-color: #22c55e; }
+html.modo-noche .rpc-revision.falla { border-left-color: #f59e0b; }
+html.modo-noche .rpc-cabecera.estatus-con_hallazgos { border-color: #b45309; }
+html.modo-noche .rpc-texto-hallazgo, html.modo-noche .rpc-texto-ticket { color: #fcd34d; }
+html.modo-noche .rpc-texto-ok, html.modo-noche .rpc-punto-titulo, html.modo-noche .rpc-equipo-categoria { color: #86efac; }
+html.modo-noche .rpc-revisados .rpc-punto-titulo { color: var(--texto); }
+html.modo-noche .rpc-escaner, html.modo-noche .rpc-punto { border-color: #15803d; }
+html.modo-noche .rpc-punto, html.modo-noche .rpc-punto-acciones { background: var(--superficie); }
+html.modo-noche .rpc-equipo, html.modo-noche .rpc-ayuda { background: rgba(34, 197, 94, 0.08); border-color: #166534; color: var(--texto); }
+html.modo-noche .rpc-aviso-duplicado { background: rgba(245, 158, 11, 0.12); border-color: #b45309; color: #fde68a; }
+html.modo-noche .rpc-criterio { background: rgba(239, 68, 68, 0.1); border-color: #7f1d1d; color: var(--texto); }
+html.modo-noche .rpc-criterio:has(input:checked) { background: rgba(34, 197, 94, 0.08); border-color: #166534; }
+html.modo-noche .rpc-resultado.ok { background: rgba(34, 197, 94, 0.1); color: #86efac; border-color: #166534; }
+html.modo-noche .rpc-resultado.falla { background: rgba(245, 158, 11, 0.12); color: #fde68a; border-color: #b45309; }
+html.modo-noche .rpc-barra { background: #334155; }
+html.modo-noche .rpc-badge-categoria { background: rgba(34, 197, 94, 0.14); color: #86efac; border-color: #166534; }
+html.modo-noche .rpc-pendiente-icono { background: rgba(34, 197, 94, 0.14); color: #86efac; }
+html.modo-noche .rpc-resultado-badge.ok { background: rgba(34, 197, 94, 0.18); color: #86efac; }
+html.modo-noche .rpc-resultado-badge.falla { background: rgba(245, 158, 11, 0.2); color: #fde68a; }
+html.modo-noche .btn-rpc-claro, html.modo-noche .dialogo-acciones .btn-rpc-claro { background: transparent; color: #cbd5e1; border-color: #475569 !important; }
+html.modo-noche .btn-rpc-contorno { background: transparent; color: #86efac; border-color: #15803d; }
+html.modo-noche .btn-rpc-oscuro-contorno { background: transparent; color: #cbd5e1; border-color: #64748b; }
+html.modo-noche .rpc-enlace-manual { color: #cbd5e1; }
+html.modo-noche .rpc-nfc { color: #a5b4fc; }
+html.modo-noche .rpc-campo-falla { border-color: #7f1d1d; }
+html.modo-noche .rpc-etiqueta-falla { color: #fca5a5; }
+/* Fin Recorridos de Protección Civil */

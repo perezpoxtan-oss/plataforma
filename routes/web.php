@@ -270,6 +270,42 @@ Route::middleware('auth')->group(function () {
     Route::get('/transporte/{movimiento}/firma/{cual}', [TransporteController::class, 'firma'])->whereNumber('movimiento')->whereIn('cual', ['guardia', 'taxista'])->name('transporte.firma');
     // Fin Padrones: Bitácora de transporte
 
+    // Padrones: Lost & Found (archivo) y Robo — Seguimiento (menú Operación; ver docs/tecnico/lost-found-y-robo.md)
+    Route::controller('App\Http\Controllers\Seguridad\LostFoundController')->group(function () {
+        Route::get('/lost-found', 'index')->name('lost_found.archivo');
+        Route::get('/lost-found/auditoria', 'auditoria')->name('lost_found.auditoria');
+        Route::get('/lost-found/dias-resguardo', 'umbrales')->name('lost_found.umbrales');
+        Route::put('/lost-found/dias-resguardo', 'guardarUmbrales')->name('lost_found.umbrales.guardar');
+        Route::get('/lost-found/articulos/{articulo}', 'show')->whereNumber('articulo')->name('lost_found.articulos.show');
+        Route::post('/lost-found/articulos/{articulo}/cerrar', 'cerrar')->whereNumber('articulo')->middleware('throttle:60,1')->name('lost_found.articulos.cerrar');
+        Route::get('/lost-found/articulos/{articulo}/etiqueta', 'etiqueta')->whereNumber('articulo')->name('lost_found.articulos.etiqueta');
+        Route::get('/lost-found/entregas/{entrega}/firma', 'firma')->whereNumber('entrega')->name('lost_found.entregas.firma');
+    });
+    Route::get('/robos', ['App\Http\Controllers\Seguridad\RoboController', 'index'])->name('robo.index');
+    Route::put('/robos/{novedad}', ['App\Http\Controllers\Seguridad\RoboController', 'update'])->whereNumber('novedad')->name('robo.update');
+    // Fin Padrones: Lost & Found (archivo) y Robo — Seguimiento
+    // Padrones: Recorridos de Protección Civil (Operación: recorrido en curso un punto a la vez, Reporte de Auditoría y Catálogo de Equipos PC)
+    Route::controller('App\Http\Controllers\Seguridad\RecorridoPcController')->group(function () {
+        Route::get('/recorridos-pc', 'index')->name('recorridos_pc.index');
+        Route::post('/recorridos-pc', 'store')->middleware('throttle:60,1')->name('recorridos_pc.store');
+        Route::get('/recorridos-pc/reporte', 'reporte')->name('recorridos_pc.reporte');
+        Route::get('/recorridos-pc/exportar', 'exportar')->name('recorridos_pc.exportar');
+        Route::get('/recorridos-pc/{recorrido}', 'show')->whereNumber('recorrido')->name('recorridos_pc.show');
+        Route::put('/recorridos-pc/{recorrido}', 'update')->whereNumber('recorrido')->name('recorridos_pc.update');
+        Route::post('/recorridos-pc/{recorrido}/revisiones', 'registrarPunto')->whereNumber('recorrido')->middleware('throttle:120,1')->name('recorridos_pc.revisiones.store');
+    });
+    Route::controller('App\Http\Controllers\Seguridad\EquipoPcController')->group(function () {
+        Route::get('/recorridos-pc/equipos', 'index')->name('recorridos_pc.equipos.index');
+        Route::post('/recorridos-pc/equipos', 'store')->name('recorridos_pc.equipos.store');
+        Route::put('/recorridos-pc/equipos/{equipo}', 'update')->whereNumber('equipo')->name('recorridos_pc.equipos.update');
+        Route::patch('/recorridos-pc/equipos/{equipo}/desactivar', 'desactivar')->whereNumber('equipo')->name('recorridos_pc.equipos.desactivar');
+        Route::patch('/recorridos-pc/equipos/{equipo}/reactivar', 'reactivar')->whereNumber('equipo')->name('recorridos_pc.equipos.reactivar');
+        Route::get('/recorridos-pc/equipos/{equipo}/etiqueta', 'etiqueta')->whereNumber('equipo')->name('recorridos_pc.equipos.etiqueta');
+        Route::get('/recorridos-pc/equipos/{equipo}/qr', 'qr')->whereNumber('equipo')->name('recorridos_pc.equipos.qr');
+        Route::get('/recorridos-pc/equipos/{equipo}/ir', 'ir')->whereNumber('equipo')->name('recorridos_pc.equipos.ir');
+    });
+    // Fin Padrones: Recorridos de Protección Civil
+
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
     Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');
