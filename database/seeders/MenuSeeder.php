@@ -24,7 +24,6 @@ class MenuSeeder extends Seeder
                     'empresas' => 'primary', 'sedes' => 'success', 'espacios' => 'danger',
                 ],
                 'Organización Interna' => [
-                    'departamentos' => 'warning', 'puestos' => 'info', 'turnos' => 'secondary',
                     'usuarios' => 'danger', 'permisos' => 'warning',
                     'roles' => 'indigo', 'configuracion' => 'indigo', 'informe_ejecutivo' => 'indigo',
                     'auditoria' => 'indigo',
@@ -36,6 +35,9 @@ class MenuSeeder extends Seeder
             'recursos_humanos' => ['Recursos Humanos', 'bi-people-fill', 4, [
                 'Personal' => [
                     'colaboradores' => 'success',
+                ],
+                'Catálogos del personal' => [
+                    'departamentos' => 'warning', 'puestos' => 'info', 'turnos' => 'secondary',
                 ],
             ]],
             'padrones' => ['Padrones', 'bi-folder2-open', 2, [

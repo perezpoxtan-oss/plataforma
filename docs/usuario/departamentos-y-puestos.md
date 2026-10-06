@@ -2,7 +2,7 @@
 
 Los departamentos son las **áreas** de la empresa (Seguridad, Recepción, Ama de Llaves…). Los puestos son los **rangos** (Agente, Supervisor, Gerente…). Al dar de alta a un colaborador elegirás su departamento, su puesto y su sede.
 
-## Departamentos (Estructura → Departamentos)
+## Departamentos (Recursos Humanos → Departamentos)
 
 ![Departamentos](img/departamentos/1-departamentos.png)
 
@@ -13,7 +13,7 @@ Los departamentos son las **áreas** de la empresa (Seguridad, Recepción, Ama d
 
 La ficha te dice en qué sedes aplica y cuántos puestos tiene ligados.
 
-## Puestos (Estructura → Puestos)
+## Puestos (Recursos Humanos → Puestos)
 
 ![Puestos](img/departamentos/3-puestos.png)
 

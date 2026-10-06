@@ -26,3 +26,7 @@ El catálogo heredado tenía cuatro áreas (Organización, Seguridad, Reportes, 
 - Los permisos ya otorgados no cambian: solo se reagrupan.
 - Las plantillas de rol se expresan por área y menú; el Agente se limita a los menús de caseta.
 - Todo módulo nuevo que guarde `colaborador_id` debe registrarse en `AdministradorColaboradores::REFERENCIAS`.
+
+## Actualización 2026-10-06
+
+A petición del responsable del proyecto (observación D-04 de QA), **Departamentos, Puestos y Turnos pasan a Recursos Humanos**: área en la Matriz de permisos y menú «Recursos Humanos → Catálogos del personal». Los permisos que ya tenía cada rol no cambian (Seguridad sigue usando esos catálogos en sus listas); el rol base Recursos Humanos los administra con alcance de empresa. Migración `2026_10_11_000100_catalogos_de_personal_en_recursos_humanos`.

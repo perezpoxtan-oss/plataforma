@@ -2,7 +2,7 @@
 
 Los turnos son los **horarios fijos** de la empresa: Matutino, Vespertino, Nocturno… Después se usan en otras pantallas, como Rutas de transporte.
 
-## Ver los turnos (Estructura → Turnos)
+## Ver los turnos (Recursos Humanos → Turnos)
 
 ![Turnos](img/turnos/1-turnos.png)
 

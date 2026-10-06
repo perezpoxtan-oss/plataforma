@@ -83,9 +83,6 @@ class CatalogoSeeder extends Seeder
                 'empresas' => ['Empresas', 'bi-building', []],
                 'sedes' => ['Sedes', 'bi-geo-alt', []],
                 'espacios' => ['Zonas y áreas', 'bi-grid-3x3-gap', ['imprimir']],
-                'departamentos' => ['Departamentos', 'bi-diagram-2', []],
-                'puestos' => ['Puestos', 'bi-person-badge', []],
-                'turnos' => ['Turnos', 'bi-clock', []],
                 'usuarios' => ['Usuarios', 'bi-person-gear', ['desbloquear']],
                 'roles' => ['Roles', 'bi-person-rolodex', []],
                 'permisos' => ['Matriz de permisos', 'bi-ui-checks-grid', [], [], ['ver', 'editar']],
@@ -93,10 +90,14 @@ class CatalogoSeeder extends Seeder
                 'auditoria' => ['Bitácora de auditoría', 'bi-clipboard-data', ['exportar'], [], ['ver']],
                 'identidad' => ['Identidad de la plataforma', 'bi-palette', [], [], ['ver', 'editar'], Modulo::TIPO_PLATAFORMA],
             ]],
-            // Recursos Humanos: el personal. "aprobar" = validar las altas
-            // provisionales que hace la caseta; "provisional" = darlas de alta.
+            // Recursos Humanos: el personal y sus catálogos (departamentos, puestos
+            // y turnos). "aprobar" = validar las altas provisionales que hace la
+            // caseta; "provisional" = darlas de alta.
             'recursos_humanos' => ['Recursos Humanos', 'bi-people-fill', [
                 'colaboradores' => ['Colaboradores', 'bi-people', ['exportar', 'datos_personales', 'aprobar', 'provisional']],
+                'departamentos' => ['Departamentos', 'bi-diagram-2', []],
+                'puestos' => ['Puestos', 'bi-person-badge', []],
+                'turnos' => ['Turnos', 'bi-clock', []],
             ]],
             // Seguridad: padrones, operación y sus reportes.
             'seguridad' => ['Seguridad', 'bi-shield-lock', [

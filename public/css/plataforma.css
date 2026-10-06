@@ -2524,3 +2524,16 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
     .rpc-filtros-campos .filtro-select { max-width: none; flex: 1 1 100%; }
 }
 /* Fin Recorridos de Protección Civil */
+/* Ajustes de captura: ver contraseña, horas 24 h y selector de archivo */
+.campo-contrasena { position: relative; }
+.campo-contrasena input { padding-right: 2.8rem; }
+.btn-ver-contrasena { position: absolute; right: 0.4rem; top: 0; height: 48px; width: 40px; display: inline-flex; align-items: center; justify-content: center; border: none; background: none; color: var(--texto-tenue); font-size: 1.1rem; cursor: pointer; }
+.btn-ver-contrasena:hover { color: var(--color-primario); }
+.campo-hora24 { font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+.campo-archivo { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; border: 1px dashed var(--borde); border-radius: 12px; padding: 0.55rem 0.7rem; margin: 0 0 0.6rem; cursor: pointer; background: var(--fondo); min-height: 48px; }
+.campo-archivo input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.campo-archivo:focus-within { outline: 3px solid var(--color-primario-foco); border-color: var(--color-primario); }
+.campo-archivo-boton { background: var(--color-primario); color: #fff; border-radius: 9px; padding: 0.45rem 0.85rem; font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
+.campo-archivo-nombre { color: var(--texto-suave); font-size: 0.85rem; overflow-wrap: anywhere; min-width: 0; flex: 1; }
+.campo-archivo + .campo-ayuda { margin-top: 0; }
+/* Fin Ajustes de captura */

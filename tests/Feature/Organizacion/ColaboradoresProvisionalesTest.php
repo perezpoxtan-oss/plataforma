@@ -67,10 +67,13 @@ class ColaboradoresProvisionalesTest extends TestCase
         $this->assertSame(['direccion', 'recursos_humanos', 'seguridad'], Area::orderBy('orden')->pluck('clave')->all());
 
         $area = fn (string $modulo) => Modulo::with('area')->where('clave', $modulo)->firstOrFail()->area->clave;
-        foreach (['empresas', 'sedes', 'espacios', 'departamentos', 'puestos', 'turnos', 'usuarios', 'roles', 'permisos'] as $m) {
+        foreach (['empresas', 'sedes', 'espacios', 'usuarios', 'roles', 'permisos'] as $m) {
             $this->assertSame('direccion', $area($m), $m);
         }
-        $this->assertSame('recursos_humanos', $area('colaboradores'));
+        foreach (['colaboradores', 'departamentos', 'puestos', 'turnos'] as $m) {
+            $this->assertSame('recursos_humanos', $area($m), $m);
+            $this->assertSame('recursos_humanos', Modulo::with('menu')->where('clave', $m)->firstOrFail()->menu->clave, $m);
+        }
         foreach (['accesos', 'llaves', 'novedades', 'dashboard', 'informe_ejecutivo'] as $m) {
             $this->assertSame('seguridad', $area($m), $m);
         }
@@ -78,13 +81,14 @@ class ColaboradoresProvisionalesTest extends TestCase
         $this->assertSame('recursos_humanos', Modulo::with('menu')->where('clave', 'colaboradores')->firstOrFail()->menu->clave);
         $this->assertSame(['estructura', 'recursos_humanos', 'padrones', 'operacion'], Menu::orderBy('orden')->pluck('clave')->all());
 
-        // Rol base de Recursos Humanos (nivel 25): todo en su área y consulta de catálogos
+        // Rol base de Recursos Humanos (nivel 25): todo en su área (personal y sus catálogos)
         $rol = Rol::where('empresa_id', $this->empresa->id)->where('nombre', 'Recursos Humanos')->firstOrFail();
         $this->assertSame(25, $rol->nivel_jerarquia);
         foreach (['colaboradores.crear', 'colaboradores.aprobar', 'colaboradores.datos_personales', 'departamentos.ver', 'puestos.ver'] as $p) {
             $this->assertTrue($this->rh->can($p), $p);
         }
-        $this->assertFalse($this->rh->can('departamentos.crear'));
+        $this->assertTrue($this->rh->can('departamentos.crear'));
+        $this->assertTrue($this->rh->can('turnos.editar'));
         $this->assertFalse($this->rh->can('accesos.ver'));
 
         // La caseta consulta su sede y da altas provisionales, no altas completas
