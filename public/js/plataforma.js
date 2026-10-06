@@ -5576,3 +5576,583 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Ajustes de captura */
+/* ==========================================================================
+   Ajustes QA 4: aviso de homónimos (Usuarios y Colaboradores)
+   <div data-homonimos="url" data-homonimos-campos="name" data-homonimos-modo="usuarios|colaboradores">
+   Al escribir el nombre se consulta si ya hay alguien con ese nombre (sin
+   importar mayúsculas ni acentos). En Usuarios además sugiere vincular al
+   colaborador y muestra «Sí, es otra persona con el mismo nombre».
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var esperas = {};
+    var consecutivo = 0;
+
+    function cajaDe(form) { return form ? form.querySelector('[data-homonimos]') : null; }
+
+    function campos(caja) { return (caja.dataset.homonimosCampos || '').split(',').filter(Boolean); }
+
+    function valor(form, nombre) {
+        var c = form.querySelector('[name="' + nombre + '"]');
+        return c ? c.value.trim() : '';
+    }
+
+    function limpiar(caja) {
+        caja.hidden = true;
+        caja.textContent = '';
+        var form = caja.closest('form');
+        var confirmar = form && form.querySelector('[data-confirmar-homonimo]');
+        if (confirmar) {
+            confirmar.hidden = true;
+            var casilla = confirmar.querySelector('input');
+            if (casilla) { casilla.checked = false; }
+        }
+    }
+
+    function parrafo(texto, clase) {
+        var p = document.createElement('p');
+        p.className = clase || 'mb-2';
+        p.textContent = texto;
+        return p;
+    }
+
+    function vincular(form, c) {
+        var numero = form.querySelector('[name="numero_colaborador"]');
+        var oculto = form.querySelector('[data-campo-colaborador]');
+        var nombre = form.querySelector('[name="name"]');
+        if (numero) { numero.value = c.num_empleado || ''; }
+        if (oculto) { oculto.value = String(c.id); }
+        if (nombre) { nombre.value = c.nombre_completo; }
+        var aviso = form.querySelector('[data-colab-vinculo]');
+        if (aviso) { aviso.hidden = false; }
+    }
+
+    function pintarUsuarios(caja, datos) {
+        var form = caja.closest('form');
+        var oculto = form.querySelector('[data-campo-colaborador]');
+        var colaboradores = (oculto && oculto.value !== '') ? [] : (datos.colaboradores || []);
+        caja.textContent = '';
+        if (datos.mensaje) {
+            caja.appendChild(parrafo(datos.mensaje, 'fw-semibold mb-2'));
+        }
+        if (colaboradores.length) {
+            caja.appendChild(parrafo(colaboradores.length === 1
+                ? 'Hay un colaborador con ese nombre que aún no tiene cuenta:'
+                : 'Hay colaboradores con ese nombre que aún no tienen cuenta:', 'mb-1'));
+            colaboradores.forEach(function (c) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'opcion-parecido';
+                b.textContent = 'Vincular con colaborador ' + (c.num_empleado ? '#' + c.num_empleado + ' ' : '') + c.nombre_completo
+                    + (c.puesto ? ' · ' + c.puesto : '') + (c.sede ? ' · ' + c.sede : '');
+                b.addEventListener('click', function () {
+                    vincular(form, c);
+                    revisar(form);
+                });
+                caja.appendChild(b);
+            });
+        }
+        var confirmar = form.querySelector('[data-confirmar-homonimo]');
+        if (confirmar) {
+            confirmar.hidden = !datos.requiere_confirmacion;
+            if (!datos.requiere_confirmacion) { confirmar.querySelector('input').checked = false; }
+        }
+        caja.hidden = !datos.mensaje && colaboradores.length === 0;
+    }
+
+    function pintarColaboradores(caja, datos) {
+        caja.textContent = '';
+        if (!datos.mensaje) { caja.hidden = true; return; }
+        caja.appendChild(parrafo(datos.mensaje, 'fw-semibold mb-2'));
+        (datos.parecidos || []).forEach(function (c) {
+            var linea = document.createElement('div');
+            linea.className = 'opcion-parecido homonimo-item';
+            linea.textContent = (c.num_empleado ? '#' + c.num_empleado : 'Provisional') + ' · ' + c.nombre_completo
+                + (c.puesto ? ' · ' + c.puesto : '') + (c.sede ? ' · ' + c.sede : '');
+            caja.appendChild(linea);
+        });
+        caja.hidden = false;
+    }
+
+    function revisar(form) {
+        var caja = cajaDe(form);
+        if (!caja) { return; }
+        var lista = campos(caja);
+        var params = new URLSearchParams();
+        var usuarios = caja.dataset.homonimosModo === 'usuarios';
+        if (usuarios) {
+            params.set('nombre', valor(form, 'name'));
+            var marca = form.querySelector('[data-campo-dialogo]');
+            var m = marca ? /^editar-(\d+)$/.exec(marca.value) : null;
+            if (m) { params.set('excluir', m[1]); }
+            if (params.get('nombre').length < 3) { limpiar(caja); return; }
+        } else {
+            lista.forEach(function (n) { params.set(n, valor(form, n)); });
+            if (!params.get(lista[0]) || !params.get(lista[1])) { limpiar(caja); return; }
+        }
+        var turno = ++consecutivo;
+        caja.dataset.turno = String(turno);
+        fetch(caja.dataset.homonimos + '?' + params.toString(), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
+            .then(function (datos) {
+                if (caja.dataset.turno !== String(turno)) { return; } // llegó una respuesta más nueva
+                if (usuarios) { pintarUsuarios(caja, datos); } else { pintarColaboradores(caja, datos); }
+            })
+            .catch(function () { /* sin aviso: el servidor vuelve a revisar al guardar */ });
+    }
+
+    function programar(form) {
+        var caja = cajaDe(form);
+        if (!caja) { return; }
+        var id = caja.dataset.homonimos + (form.id || form.action);
+        clearTimeout(esperas[id]);
+        esperas[id] = setTimeout(function () { revisar(form); }, 450);
+    }
+
+    document.addEventListener('input', function (e) {
+        var c = e.target;
+        if (!c.form || !c.name) { return; }
+        var caja = cajaDe(c.form);
+        if (caja && campos(caja).indexOf(c.name) !== -1) { programar(c.form); }
+    });
+
+    // Al abrir la edición de un usuario: se revisa con el nombre ya cargado
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="editar-registro"]');
+        if (!b) { return; }
+        setTimeout(function () {
+            var d = document.getElementById(b.dataset.dialogo);
+            var form = d && d.querySelector('form');
+            var caja = cajaDe(form);
+            if (caja) { limpiar(caja); revisar(form); }
+        }, 0);
+    });
+
+    // Al cerrar el diálogo se olvidan el aviso y la confirmación
+    document.addEventListener('close', function (e) {
+        if (!e.target.querySelector) { return; }
+        var caja = e.target.querySelector('[data-homonimos]');
+        if (caja) { limpiar(caja); }
+    }, true);
+
+    // Un diálogo que regresó con errores: se vuelve a mostrar el aviso
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('dialog[data-abrir-al-cargar] [data-homonimos]').forEach(function (caja) {
+            var form = caja.closest('form');
+            var confirmar = form.querySelector('[data-confirmar-homonimo]');
+            var yaVisible = confirmar && !confirmar.hidden;
+            revisar(form);
+            if (yaVisible) { confirmar.hidden = false; }
+        });
+    });
+})();
+/* Fin Ajustes QA 4 */
+/* ==========================================================================
+   Pases de salida v2: pestañas de la ficha del pase, "usar mi firma
+   guardada", verificación de artículos con el lector universal en la
+   caseta, regreso parcial y circuito de aprobación (agregar, mover y quitar
+   pasos).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    /* ---------- Pestañas: Resumen · Artículos · Firmas y bitácora ---------- */
+    function activarPestana(grupo, clave) {
+        var hay = false;
+        grupo.querySelectorAll('[data-pestana-pase]').forEach(function (b) {
+            var activa = b.getAttribute('data-pestana-pase') === clave;
+            hay = hay || activa;
+            b.classList.toggle('activa', activa);
+            b.setAttribute('aria-selected', activa ? 'true' : 'false');
+        });
+        if (!hay) { return false; }
+        document.querySelectorAll('[data-panel-pase]').forEach(function (p) {
+            p.hidden = p.getAttribute('data-panel-pase') !== clave;
+        });
+        return true;
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-pestana-pase]');
+        if (!b) { return; }
+        var grupo = b.closest('[data-pestanas-pase]');
+        if (grupo && activarPestana(grupo, b.getAttribute('data-pestana-pase'))) {
+            try { window.history.replaceState(null, '', '#' + b.getAttribute('data-pestana-pase')); } catch (x) { /* navegador antiguo */ }
+        }
+    });
+
+    /* ---------- Firma propia: guardada o en el recuadro ---------- */
+    function sincronizarFirmaPropia(caja) {
+        var elegido = caja.querySelector('[data-firma-modo]:checked');
+        var nueva = caja.querySelector('[data-firma-nueva]');
+        if (!nueva) { return; }
+        var dibujar = !elegido || elegido.value === 'nueva';
+        nueva.hidden = !dibujar;
+        if (dibujar && window.Firma) {
+            var recuadro = nueva.querySelector('[data-firma]');
+            if (recuadro) { window.Firma.preparar(recuadro); }
+        }
+    }
+
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-firma-modo]')) { return; }
+        sincronizarFirmaPropia(e.target.closest('[data-firma-propia]'));
+    });
+
+    // Si toca dibujar la firma propia, no se envía vacía
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches || !form.matches('[data-form-firma-propia]')) { return; }
+        var caja = form.querySelector('[data-firma-propia]');
+        if (!caja) { return; }
+        var nueva = caja.querySelector('[data-firma-nueva]');
+        if (!nueva || nueva.hidden) { return; }
+        var valor = nueva.querySelector('[data-firma-valor]');
+        if (valor && !valor.value) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            var recuadro = nueva.querySelector('[data-firma]');
+            recuadro.classList.add('falta');
+            recuadro.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, true);
+
+    /* ---------- Caseta: verificar artículos (escaneando o marcando) ---------- */
+    function contar(form) {
+        var casillas = form.querySelectorAll('[data-verificado]');
+        var conteo = form.querySelector('[data-conteo-verificados]');
+        if (!conteo || !casillas.length) { return 0; }
+        var marcadas = Array.prototype.filter.call(casillas, function (c) { return c.checked; }).length;
+        var faltan = casillas.length - marcadas;
+        conteo.textContent = faltan === 0
+            ? 'Listo: verificaste los ' + casillas.length + ' artículos.'
+            : 'Verificados ' + marcadas + ' de ' + casillas.length + (faltan === 1 ? ' — falta 1.' : ' — faltan ' + faltan + '.');
+        conteo.className = 'conteo-verificados ' + (faltan === 0 ? 'completo' : 'falta');
+        return faltan;
+    }
+
+    function estadoLector(caja, texto, clase) {
+        var estado = caja && caja.querySelector('[data-lector-estado]');
+        if (!estado) { return; }
+        estado.hidden = !texto;
+        estado.className = 'lector-estado ' + (clase || '');
+        estado.textContent = texto || '';
+    }
+
+    document.addEventListener('lector:elegido', function (e) {
+        var caja = e.target;
+        if (!caja.closest || !caja.closest('[data-lector-verificar]')) { return; }
+        var form = caja.closest('form');
+        var registro = e.detail || {};
+        var fila = form.querySelector('[data-articulo-verificar][data-equipo-id="' + String(registro.id) + '"]');
+        if (window.Lector) { window.Lector.limpiar(caja); }
+        if (!fila) {
+            estadoLector(caja, 'Ese equipo NO está en este pase: no debe salir con él.', 'error');
+            return;
+        }
+        fila.querySelector('[data-verificado]').checked = true;
+        var escaneado = fila.querySelector('[data-escaneado]');
+        if (escaneado) { escaneado.checked = true; }
+        var marca = fila.querySelector('[data-marca-escaneado]');
+        if (marca) { marca.hidden = false; }
+        var faltan = contar(form);
+        estadoLector(caja, 'Verificado: ' + (registro.titulo || 'equipo') + (faltan ? '. Escanea el siguiente.' : '. Ya están todos.'), 'ok');
+    });
+
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches) { return; }
+        if (e.target.matches('[data-verificado]')) {
+            // Desmarcar a mano quita la marca de escaneado
+            if (!e.target.checked) {
+                var fila = e.target.closest('[data-articulo-verificar]');
+                var escaneado = fila && fila.querySelector('[data-escaneado]');
+                if (escaneado) { escaneado.checked = false; }
+                var marca = fila && fila.querySelector('[data-marca-escaneado]');
+                if (marca) { marca.hidden = true; }
+            }
+            contar(e.target.closest('form'));
+        }
+    });
+
+    // Regreso: si regresan menos de los que faltan, se ofrece cerrar con faltantes
+    function revisarRegreso(form) {
+        var faltan = 0;
+        form.querySelectorAll('[data-cantidad-regreso]').forEach(function (c) {
+            var pendientes = parseInt(c.getAttribute('data-pendientes') || '0', 10);
+            var valor = parseInt(c.value || '0', 10);
+            faltan += Math.max(0, pendientes - (isNaN(valor) ? 0 : valor));
+        });
+        var opcion = form.querySelector('[data-cerrar-faltantes]');
+        if (opcion) {
+            opcion.hidden = faltan === 0;
+            if (faltan === 0) { opcion.querySelector('input').checked = false; }
+        }
+    }
+
+    document.addEventListener('input', function (e) {
+        if (e.target.matches && e.target.matches('[data-cantidad-regreso]')) { revisarRegreso(e.target.closest('form')); }
+    });
+
+    // Salida: no se envía hasta verificar cada artículo
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches || !form.matches('[data-form-paso-pase][data-paso="salida"]')) { return; }
+        if (contar(form) > 0) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            var conteo = form.querySelector('[data-conteo-verificados]');
+            if (conteo) { conteo.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        }
+    }, true);
+
+    /* ---------- Circuito de aprobación ---------- */
+    function acomodarPaso(paso) {
+        var tipo = paso.querySelector('[data-paso-tipo]');
+        var depto = paso.querySelector('[data-paso-departamento]');
+        paso.querySelectorAll('[data-si-tipo]').forEach(function (c) {
+            var ver = tipo && c.getAttribute('data-si-tipo') === tipo.value;
+            c.hidden = !ver;
+            c.querySelectorAll('input, select').forEach(function (x) { x.disabled = !ver; });
+        });
+        paso.querySelectorAll('[data-si-departamento]').forEach(function (c) {
+            var ver = depto && c.getAttribute('data-si-departamento') === depto.value;
+            c.hidden = !ver;
+            c.querySelectorAll('input, select').forEach(function (x) { x.disabled = !ver; });
+        });
+    }
+
+    function numerar(lista) {
+        lista.querySelectorAll('[data-paso-circuito]').forEach(function (p, i) {
+            var n = p.querySelector('[data-numero-paso]');
+            if (n) { n.textContent = String(i + 1); }
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-paso-tipo], [data-paso-departamento]')) { return; }
+        acomodarPaso(e.target.closest('[data-paso-circuito]'));
+    });
+
+    document.addEventListener('click', function (e) {
+        var form = e.target.closest('[data-form-circuito]');
+        if (!form) { return; }
+        var lista = form.querySelector('[data-pasos-circuito]');
+        if (e.target.closest('[data-agregar-paso-circuito]')) {
+            var plantilla = form.querySelector('[data-plantilla-paso-circuito]');
+            var i = parseInt(lista.getAttribute('data-siguiente') || '0', 10);
+            lista.setAttribute('data-siguiente', String(i + 1));
+            var envoltura = document.createElement('div');
+            envoltura.innerHTML = plantilla.innerHTML.replace(/__i__/g, String(i));
+            var nuevo = envoltura.querySelector('[data-paso-circuito]');
+            lista.appendChild(nuevo);
+            acomodarPaso(nuevo);
+            numerar(lista);
+            nuevo.querySelector('input[type="text"]').focus();
+            return;
+        }
+        var paso = e.target.closest('[data-paso-circuito]');
+        if (!paso) { return; }
+        var mover = e.target.closest('[data-mover-paso]');
+        if (mover) {
+            if (mover.getAttribute('data-mover-paso') === 'arriba' && paso.previousElementSibling) {
+                lista.insertBefore(paso, paso.previousElementSibling);
+            } else if (mover.getAttribute('data-mover-paso') === 'abajo' && paso.nextElementSibling) {
+                lista.insertBefore(paso.nextElementSibling, paso);
+            }
+            numerar(lista);
+            mover.focus();
+            return;
+        }
+        if (e.target.closest('[data-quitar-paso]')) {
+            if (lista.querySelectorAll('[data-paso-circuito]').length <= 1) {
+                window.alert('El circuito necesita al menos un paso de aprobación.');
+                return;
+            }
+            paso.remove();
+            numerar(lista);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var grupo = document.querySelector('[data-pestanas-pase]');
+        if (grupo) {
+            var hash = (window.location.hash || '').replace('#', '');
+            if (!activarPestana(grupo, hash)) { activarPestana(grupo, grupo.getAttribute('data-inicial') || 'resumen'); }
+        }
+        document.querySelectorAll('[data-firma-propia]').forEach(sincronizarFirmaPropia);
+        document.querySelectorAll('[data-form-paso-pase]').forEach(function (f) { contar(f); revisarRegreso(f); });
+        document.querySelectorAll('[data-paso-circuito]').forEach(acomodarPaso);
+        var lista = document.querySelector('[data-pasos-circuito]');
+        if (lista) { numerar(lista); }
+    });
+
+    // Al cerrar el diálogo de caseta, la lista vuelve a contarse (las casillas no se borran)
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-firma-propia]').forEach(sincronizarFirmaPropia);
+    }, true);
+})();
+/* Fin Pases de salida v2 */
+/* ==========================================================================
+   Eliminar definitivamente (borrado físico controlado; ver docs/tecnico/borrado.md)
+   Botón: [data-borrar-definitivo] data-registro data-id data-url (componentes/borrar).
+   1) Pregunta al servidor qué lo usa (GET /borrar/{registro}/{id}).
+   2) Si algo depende de él lo explica y ofrece "Dar de baja".
+   3) Si no, pide teclear su nombre o identificador y lo borra (DELETE).
+   En los diálogos de edición compartidos, el id lo toma del botón "Editar".
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var esperado = '';
+
+    function normalizar(texto) { return String(texto || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+
+    function token() {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
+    function paso(dialogo, nombre) {
+        dialogo.querySelectorAll('[data-borrar-paso]').forEach(function (p) { p.hidden = p.getAttribute('data-borrar-paso') !== nombre; });
+    }
+
+    function textos(dialogo, selector, valor) {
+        dialogo.querySelectorAll(selector).forEach(function (n) { n.textContent = valor; });
+    }
+
+    function mostrarError(dialogo, mensaje) {
+        textos(dialogo, '[data-borrar-error]', mensaje);
+        paso(dialogo, 'error');
+    }
+
+    function prepararBaja(dialogo, baja) {
+        var form = dialogo.querySelector('[data-borrar-baja-form]');
+        var boton = dialogo.querySelector('[data-borrar-baja-boton]');
+        var indicacion = dialogo.querySelector('[data-borrar-baja-texto]');
+        var campos = dialogo.querySelector('[data-borrar-baja-campos]');
+        campos.textContent = '';
+        form.removeAttribute('action');
+        boton.hidden = true;
+        indicacion.hidden = true;
+        if (!baja) { return; }
+        if (baja.texto) {
+            indicacion.textContent = baja.texto;
+            indicacion.hidden = false;
+            return;
+        }
+        form.setAttribute('action', baja.url);
+        dialogo.querySelector('[data-borrar-baja-metodo]').value = baja.metodo || 'PATCH';
+        Object.keys(baja.campos || {}).forEach(function (nombre) {
+            var oculto = document.createElement('input');
+            oculto.type = 'hidden';
+            oculto.name = nombre;
+            oculto.value = String(baja.campos[nombre]);
+            campos.appendChild(oculto);
+        });
+        boton.hidden = false;
+    }
+
+    function mostrarDependencias(dialogo, datos) {
+        textos(dialogo, '[data-borrar-mensaje]', datos.mensaje || '');
+        prepararBaja(dialogo, datos.baja);
+        paso(dialogo, 'dependencias');
+    }
+
+    function respuesta(r) {
+        return r.json().catch(function () { return {}; }).then(function (d) { return { estado: r.status, datos: d }; });
+    }
+
+    function abrirConfirmacion(boton) {
+        var dialogo = document.getElementById('dialogoBorrarDefinitivo');
+        var id = boton.getAttribute('data-id');
+        if (!dialogo || !id) { return; }
+
+        var form = dialogo.querySelector('[data-borrar-form]');
+        var entrada = dialogo.querySelector('[data-borrar-entrada]');
+        var url = boton.getAttribute('data-url') + '/' + encodeURIComponent(id);
+        form.setAttribute('data-url', url);
+        entrada.value = '';
+        esperado = '';
+        dialogo.querySelector('[data-borrar-enviar]').disabled = true;
+        dialogo.querySelector('[data-borrar-error-form]').hidden = true;
+        paso(dialogo, 'cargando');
+        if (!dialogo.open && typeof dialogo.showModal === 'function') { dialogo.showModal(); }
+
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(respuesta)
+            .then(function (res) {
+                if (res.estado !== 200) {
+                    mostrarError(dialogo, res.estado === 404
+                        ? 'No se encontró el registro o está fuera de tus sedes.'
+                        : (res.datos.mensaje || res.datos.message || 'No tienes permiso para eliminar este registro.'));
+                    return;
+                }
+                var d = res.datos;
+                textos(dialogo, '[data-borrar-nombre]', d.nombre);
+                textos(dialogo, '[data-borrar-tipo]', d.tipo);
+                textos(dialogo, '[data-borrar-tipo-mayuscula]', d.tipo.charAt(0).toUpperCase() + d.tipo.slice(1));
+                textos(dialogo, '[data-borrar-confirmar]', d.confirmar);
+                if (!d.puede_eliminar) { mostrarDependencias(dialogo, d); return; }
+                esperado = normalizar(d.confirmar);
+                form.setAttribute('data-url', d.url);
+                paso(dialogo, 'confirmar');
+                entrada.focus();
+            })
+            .catch(function () { mostrarError(dialogo, 'Sin conexión: no se pudo revisar el registro. Intenta de nuevo.'); });
+    }
+
+    document.addEventListener('click', function (evento) {
+        var boton = evento.target.closest('[data-borrar-definitivo]');
+        if (boton) { abrirConfirmacion(boton); return; }
+
+        // Diálogos de edición compartidos: el botón de borrar toma el id del registro que se abrió
+        var editar = evento.target.closest('[data-accion="editar-registro"], [data-accion="editar-rol"], [data-accion="editar-ruta"]');
+        if (editar) {
+            var destino = document.getElementById(editar.dataset.dialogo || 'dialogoEditarRol');
+            if (destino) {
+                destino.querySelectorAll('[data-borrar-definitivo]').forEach(function (b) { b.setAttribute('data-id', editar.dataset.id || ''); });
+            }
+        }
+    });
+
+    document.addEventListener('input', function (evento) {
+        if (!evento.target.matches('[data-borrar-entrada]')) { return; }
+        var dialogo = evento.target.closest('dialog');
+        dialogo.querySelector('[data-borrar-enviar]').disabled = esperado === '' || normalizar(evento.target.value) !== esperado;
+    });
+
+    document.addEventListener('submit', function (evento) {
+        var form = evento.target;
+        if (!form.matches('[data-borrar-form]')) { return; }
+        evento.preventDefault();
+        var dialogo = form.closest('dialog');
+        var enviar = form.querySelector('[data-borrar-enviar]');
+        var error = form.querySelector('[data-borrar-error-form]');
+        enviar.disabled = true;
+        error.hidden = true;
+
+        fetch(form.getAttribute('data-url'), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': token() },
+            body: new FormData(form)
+        })
+            .then(respuesta)
+            .then(function (res) {
+                if (res.estado === 200 && res.datos.ok) { window.location.href = res.datos.redirect; return; }
+                // Alguien lo empezó a usar mientras se confirmaba: se explica y se ofrece cerrar
+                if (res.estado === 409) { mostrarDependencias(dialogo, { mensaje: res.datos.mensaje, baja: null }); return; }
+                error.textContent = res.datos.mensaje || res.datos.message || 'No se pudo eliminar. Intenta de nuevo.';
+                error.hidden = false;
+                enviar.disabled = false;
+            })
+            .catch(function () {
+                error.textContent = 'Sin conexión: no se eliminó nada. Intenta de nuevo.';
+                error.hidden = false;
+                enviar.disabled = false;
+            });
+    });
+})();
+/* Fin Eliminar definitivamente */

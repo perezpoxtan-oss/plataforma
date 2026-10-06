@@ -11,13 +11,13 @@
         <div class="icono"><i class="bi bi-sliders text-primary" aria-hidden="true"></i></div>
         <div>
             <h1>Configuración</h1>
-            <p>Correo, avisos y respaldos de la plataforma.</p>
+            <p>Correo, avisos, respaldos y ajustes de los módulos.</p>
         </div>
     </div>
 
     <div class="secciones-config">
         {{-- ================= Avisos por correo (empresa) ================= --}}
-        @if ($empresa)
+        @if ($empresa && $verConfiguracion)
             <section class="tarjeta p-4" aria-labelledby="t-avisos">
                 <h2 id="t-avisos" class="h5 fw-bold"><i class="bi bi-bell me-2 text-primary" aria-hidden="true"></i>Avisos por correo de {{ $empresa->nombre_comercial }}</h2>
                 <p class="small text-muted">Se envían a los usuarios con permiso para atender cada asunto, al correo de su cuenta.</p>
@@ -46,6 +46,47 @@
                 </form>
             </section>
         @endif
+
+        {{-- ================= Lost & Found: días de resguardo (empresa) ================= --}}
+        @if ($lostFound)
+            <section class="tarjeta p-4 config-lost-found" id="lost-found" aria-labelledby="t-lost-found">
+                <h2 id="t-lost-found" class="h5 fw-bold"><i class="bi bi-bag-fill me-2 text-warning" aria-hidden="true"></i>Lost &amp; Found: días de resguardo</h2>
+                <p class="small text-muted">Cuántos días puede estar un artículo en resguardo, según su clasificación, antes de que el semáforo lo marque para atención. Aplica a todas las sedes de {{ $empresa->nombre_comercial }}.</p>
+                @unless ($lostFound['puedeEditar'])
+                    <div class="alert alert-secondary small py-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Tu rol solo puede consultar esta configuración, no modificarla.</div>
+                @endunless
+                <form action="{{ route('configuracion.lost_found') }}" method="POST">
+                    @csrf
+                    @method('PUT')
+                    @foreach (\App\Models\LostFoundArticulo::TIPOS_VALOR as $tipo => $nombre)
+                        @php $guardado = $lostFound['guardados'][$tipo] ?? null; $dias = $lostFound['dias'][$tipo]; @endphp
+                        <div class="umbral-card">
+                            <div>
+                                <label class="fw-bold" for="dias_{{ $tipo }}">{{ $nombre }}</label>
+                                <div class="small text-muted">Amarillo a partir del día {{ (int) ceil($dias * 0.7) }}; rojo (vencido) desde el día {{ $dias }}.</div>
+                                @if ($guardado && $guardado->updated_at)
+                                    <div class="texto-traza">Editado por {{ $guardado->editor?->name ?? 'el sistema' }} · @fecha($guardado->updated_at)</div>
+                                @endif
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="number" id="dias_{{ $tipo }}" name="dias[{{ $tipo }}]" class="campo campo-dias-lf" min="1" max="{{ \App\Services\Novedades\ArchivoLostFound::MAX_DIAS }}" inputmode="numeric" required
+                                       value="{{ old('dias.'.$tipo, $dias) }}" @disabled(! $lostFound['puedeEditar'])
+                                       data-mensaje-min="Debe ser al menos 1 día: un artículo no puede vencer el mismo día que se encuentra.">
+                                <span class="text-muted small">día(s)</span>
+                            </div>
+                        </div>
+                    @endforeach
+                    @if ($lostFound['puedeEditar'])
+                        <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar días de resguardo</button>
+                    @endif
+                </form>
+            </section>
+        @endif
+        {{-- Pases de salida: circuito de aprobación (ver docs/tecnico/pases-salida.md) --}}
+        @if ($empresa && auth()->user()->can('pases_salida.configurar'))
+            @include('seguridad.pases-salida._config-resumen', ['empresa' => $empresa])
+        @endif
+        {{-- Fin Pases de salida --}}
 
         @if ($esSuperadmin)
             {{-- ================= Correo saliente (plataforma) ================= --}}

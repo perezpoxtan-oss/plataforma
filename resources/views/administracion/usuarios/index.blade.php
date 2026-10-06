@@ -187,6 +187,13 @@
                             </div>
                         </div>
 
+                        {{-- Homónimos: aviso en vivo si ya hay un usuario con ese nombre y sugerencia de vincular al colaborador (ver docs/tecnico/usuarios.md) --}}
+                        <div class="caja-parecidos aviso-homonimo" role="status" aria-live="polite" data-homonimos="{{ route('usuarios.homonimos') }}" data-homonimos-campos="name" data-homonimos-modo="usuarios" hidden></div>
+                        <label class="confirmar-homonimo" data-confirmar-homonimo @unless ($reabrir && $errors->has('confirmar_homonimo')) hidden @endunless>
+                            <input type="checkbox" name="confirmar_homonimo" value="1">
+                            <span>Sí, es otra persona con el mismo nombre</span>
+                        </label>
+
                         <p class="linea-empresa mb-3" data-empresa-usuario>
                             <i class="bi bi-buildings" aria-hidden="true"></i>
                             Empresa: <strong>{{ $empresaNombre }}</strong>

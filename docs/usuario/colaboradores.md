@@ -17,11 +17,13 @@ El directorio del personal de la empresa: **Estructura → Organización Interna
 3. **Núm. Empleado:** mientras escribes te avisa si ya existe en tu empresa.
 4. **Departamento:** solo aparecen los que aplican en la sede elegida.
 5. **Puesto:** se acota según el departamento. Los puestos sin departamento (por ejemplo, *Gerente*) siempre aparecen.
-6. Nombre(s), apellidos y, si quieres, teléfono (10 dígitos; puedes escribir espacios o guiones).
+6. Nombre(s), apellidos y, si quieres, teléfono (10 dígitos; puedes escribir espacios o guiones). Si ya hay alguien activo con el mismo nombre y apellidos, la ventana te avisa en ese momento («Ya existe un colaborador con ese nombre. ¿Es la misma persona?») y te muestra su número, puesto y sede. Si es la misma persona, cancela y búscala en la lista; si es otra, continúa.
 7. **Datos Legales (Opcionales):** CURP, RFC, NSS, fecha y estado de nacimiento y nacionalidad. Solo aparecen si tu rol tiene el permiso **Datos personales**.
 8. Toca **Registrar Colaborador**.
 
 ![Alta](img/colaboradores/2-alta.png)
+
+![Aviso de mismo nombre](img/ajustes4/co-1-ya-existe.png)
 
 Si el CURP, RFC o NSS no tienen el formato correcto, o ya los tiene otra persona de tu empresa, te lo dice junto al aviso. El CURP y el RFC se pasan a mayúsculas solos.
 

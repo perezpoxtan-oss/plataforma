@@ -66,6 +66,7 @@
                 <button type="button" class="btn-pill-tipo" data-filtro-estado-equipo="{{ $clave }}" aria-pressed="false">{{ $texto }} <span class="conteo-pill">{{ $conteo[$clave] ?? 0 }}</span></button>
             @endforeach
         </div>
+        @include('componentes.borrar-tipos', ['registro' => 'tipos_equipo', 'tipos' => $tipos, 'conteo' => $equipos->countBy('tipo_equipo_id'), 'titulo' => 'tipos de equipo'])
 
         <div class="fichas-grid" data-equipos>
             @if ($puede['crear'])
@@ -276,6 +277,9 @@
                             <button type="submit" class="btn-oscuro">{{ $esNuevo ? 'Registrar Equipo' : 'Actualizar Equipo' }}</button>
                         </div>
                     </form>
+                    @unless ($esNuevo)
+                        @include('componentes.borrar', ['registro' => 'equipos', 'id' => $editandoId])
+                    @endunless
                 </div>
             </dialog>
         @endforeach

@@ -76,7 +76,11 @@ trait EscenarioAuditoria
     private function tablaDe(string $ruta, string $parametro): ?string
     {
         if ($parametro === 'equipo') {
-            return str_starts_with($ruta, 'recorridos_pc.') ? 'equipos_pc' : 'equipos';
+            return str_starts_with($ruta, 'equipos_pc.') ? 'equipos_pc' : 'equipos';
+        }
+        // Eliminar definitivamente (/borrar/{registro}/{id}): se recorre con llaves (registro de una sede)
+        if ($parametro === 'id' && str_starts_with($ruta, 'borrar.')) {
+            return 'llaves';
         }
 
         return [
@@ -130,8 +134,12 @@ trait EscenarioAuditoria
                     : DB::table('roles')->where('empresa_id', $this->demo->id)->where('nombre', 'Agente')->value('id');
             case 'cual':
                 return 'guardia';
+            case 'pantalla':
+                return 'etiqueta';
             case 'clave':
                 return 'accesos';
+            case 'registro':
+                return 'llaves';
             case 'archivo':
                 return 'respaldo.zip';
             case 'firma':
@@ -139,6 +147,10 @@ trait EscenarioAuditoria
 
                 return DB::table('pases_salida_firmas')->whereIn('pase_salida_id', $pase)->orderBy('id')->value('id');
             case 'codigo':
+                if ($ruta === 'pases-salida.verificar') {
+                    return $this->consulta('pases_salida', $sede)->orderBy('id')->value('codigo_verificacion');
+                }
+
                 return $this->consulta($ruta === 'vehiculos.qr' ? 'vehiculos' : 'llaves', $sede)->orderBy('id')->value('codigo_qr');
         }
 
@@ -187,7 +199,7 @@ trait EscenarioAuditoria
     {
         $parametros = [];
         foreach ($ruta->parameterNames() as $nombre) {
-            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
+            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'pantalla', 'registro'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
             $valor = match (true) {
                 ! $inexistente || $esTexto => $this->valorParametro((string) $ruta->getName(), $nombre, $sede),
                 $nombre === 'codigo' => 'zzzzzzzzzzzzzzzzzzzzzzzz',

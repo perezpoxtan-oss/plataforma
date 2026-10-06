@@ -26,6 +26,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\VoucherReposicion;
+use App\Services\Borrado\RegistroBorrado;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
@@ -159,7 +160,7 @@ class RecorridoPantallasTest extends TestCase
                 if (getenv('RECORRIDO_DEBUG')) {
                     fwrite(STDERR, "{$etiqueta}\t{$codigo}\t{$url}\t".($respuesta->headers->get('Location') ?? '')."\n");
                 }
-                if (! in_array($codigo, [200, 204, 302, 403, 404, 422], true)) {
+                if (! in_array($codigo, [200, 204, 301, 302, 403, 404, 422], true)) {
                     $detalle = $respuesta->exception ? get_class($respuesta->exception).': '.Str::limit($respuesta->exception->getMessage(), 400) : '';
                     $fallas[] = "{$etiqueta} GET {$url} => {$codigo} {$detalle}";
 
@@ -168,7 +169,7 @@ class RecorridoPantallasTest extends TestCase
 
                 if ($ajena && $conRegistro) {
                     $final = $codigo;
-                    if ($codigo === 302) {
+                    if (in_array($codigo, [301, 302], true)) {
                         // Sin JavaScript algunas fichas redirigen a la lista con ?id=: el destino tampoco debe abrir el registro ajeno
                         $this->app['auth']->forgetGuards();
                         $final = $this->actingAs($actor)->withSession($sesion)->get((string) $respuesta->headers->get('Location'))->getStatusCode();
@@ -232,7 +233,7 @@ class RecorridoPantallasTest extends TestCase
         }
         // Un id que no existe: debe ser 404, nunca 500
         $inexistente = array_map(fn ($p) => match ($p) {
-            'rol' => 'afectado', 'cual' => 'guardia', 'codigo' => 'noexiste0000', 'clave' => 'no_existe', 'archivo' => 'no-existe.sql.gz',
+            'rol' => 'afectado', 'cual' => 'guardia', 'pantalla' => 'qr', 'codigo' => 'noexiste0000', 'clave' => 'no_existe', 'archivo' => 'no-existe.sql.gz',
             default => 999999,
         }, array_combine($parametros, $parametros));
         $urls[] = [route($nombre, $inexistente), false];
@@ -267,7 +268,8 @@ class RecorridoPantallasTest extends TestCase
                 Espacio::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
             ])),
             'equipos.etiqueta', 'equipos.qr', 'pases-salida.equipo', 'responsivas.historial' => array_map(fn ($id) => ['equipo' => $id], $ids([$primero(Equipo::class)])),
-            'recorridos_pc.equipos.etiqueta', 'recorridos_pc.equipos.qr', 'recorridos_pc.equipos.ir' => array_map(fn ($id) => ['equipo' => $id], $ids([$primero(EquipoPc::class)])),
+            'equipos_pc.etiqueta', 'equipos_pc.qr', 'equipos_pc.ir' => array_map(fn ($id) => ['equipo' => $id], $ids([$primero(EquipoPc::class)])),
+            'equipos_pc.anterior.equipo' => array_map(fn ($id) => ['equipo' => $id, 'pantalla' => 'etiqueta'], $ids([$primero(EquipoPc::class)])),
             'rutas.sede', 'rutas.dia' => array_map(fn ($id) => ['sede' => $id], $ids([
                 $primero(Sede::class), Sede::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
             ])),
@@ -286,6 +288,7 @@ class RecorridoPantallasTest extends TestCase
             ])),
             'pases-salida.firma' => PaseSalidaFirma::query()->withoutGlobalScopes()->whereIn('pase_salida_id', PaseSalida::withoutGlobalScopes()->where('empresa_id', $e)->select('id'))
                 ->limit(2)->get(['id', 'pase_salida_id'])->map(fn ($f) => ['pase' => $f->pase_salida_id, 'firma' => $f->id])->all(),
+            'pases-salida.verificar' => array_map(fn ($c) => ['codigo' => $c], array_filter([PaseSalida::withoutGlobalScopes()->where('empresa_id', $e)->value('codigo_verificacion')])),
             'transporte.show', 'transporte.vale' => array_map(fn ($id) => ['movimiento' => $id], $ids([
                 $primero(MovimientoTransporte::class), MovimientoTransporte::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
             ])),
@@ -302,6 +305,9 @@ class RecorridoPantallasTest extends TestCase
             'lector.ir' => collect([Vehiculo::class, Equipo::class, EquipoPc::class, Llave::class, Gafete::class, Colaborador::class, LostFoundArticulo::class])
                 ->map(fn ($m) => $m::withoutGlobalScopes()->where('empresa_id', $e)->value('codigo_qr'))->filter()->map(fn ($c) => ['codigo' => $c])->values()->all(),
             'configuracion.respaldos.descargar' => [],
+            // Eliminar definitivamente: el primer registro de cada catálogo o padrón registrado
+            'borrar.revisar' => collect(RegistroBorrado::definiciones())
+                ->map(fn ($d, $clave) => ['registro' => $clave, 'id' => $primero($d['modelo'])])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
             default => null,
         };
 

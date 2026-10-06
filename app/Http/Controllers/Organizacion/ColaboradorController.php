@@ -253,6 +253,38 @@ class ColaboradorController extends Controller
     }
 
     /**
+     * Aviso en vivo del Alta de Colaborador: ¿ya hay alguien activo con el
+     * mismo nombre (sin importar mayúsculas ni acentos)? Es solo un aviso:
+     * Recursos Humanos decide si es otra persona.
+     * ?nombre=Daniela&apellido_paterno=Canul&apellido_materno=May
+     */
+    public function homonimos(Request $request): JsonResponse
+    {
+        Gate::authorize('colaboradores.crear');
+        $empresaId = $this->empresa->id($request->user());
+        $nombre = trim(Entrada::texto($request->query('nombre')));
+        $paterno = trim(Entrada::texto($request->query('apellido_paterno')));
+        $materno = trim(Entrada::texto($request->query('apellido_materno')));
+        if ($empresaId === null || $nombre === '' || $paterno === '' || mb_strlen($nombre.$paterno.$materno) > 180) {
+            return response()->json(['parecidos' => [], 'mensaje' => null]);
+        }
+
+        $todos = $this->tenant->conEmpresa($empresaId, fn () => $this->colaboradores->parecidos($nombre, $paterno, $materno === '' ? null : $materno));
+        // Con alcance de sede, los de otras sedes solo se cuentan (sin sus datos)
+        $permitidas = $this->colaboradores->sedesPermitidas($request->user(), 'colaboradores.crear');
+        $parecidos = array_values(array_filter($todos, fn (array $c) => $permitidas === null || in_array((int) $c['sede_id'], $permitidas, true)));
+        $otros = count($todos) - count($parecidos);
+
+        return response()->json([
+            'parecidos' => $parecidos,
+            'otros' => $otros,
+            'mensaje' => $todos === [] ? null : (count($todos) === 1
+                ? 'Ya existe un colaborador con ese nombre'.($otros > 0 ? ' en una sede que no tienes a cargo' : '').'. ¿Es la misma persona? Si lo es, no lo des de alta otra vez: búscalo en la lista.'
+                : 'Ya existen colaboradores con ese nombre'.($otros > 0 ? " ({$otros} en sedes que no tienes a cargo)" : '').'. ¿Es alguno de ellos? Si lo es, no lo des de alta otra vez: búscalo en la lista.'),
+        ]);
+    }
+
+    /**
      * Búsqueda para autocompletar (SEGCAT: usuarios/colaborador_buscar_ajax.php):
      * por número de empleado o nombre, mínimo 2 letras, máximo 15 resultados,
      * solo activos, de la empresa y de las sedes del usuario.

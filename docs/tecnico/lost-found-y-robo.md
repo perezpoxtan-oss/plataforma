@@ -7,11 +7,11 @@ Réplica de `modules/bitacora/lf_archivo.php`, `lf_articulo_cerrar_modal.php`, `
 | Pieza | Archivo |
 |---|---|
 | Controladores | `app/Http/Controllers/Seguridad/LostFoundController.php`, `RoboController.php` (solo arman pantallas) |
-| Reglas de Lost & Found | `app/Services/Novedades/ArchivoLostFound.php` (alcance, filtros, Cerrar / Entregar, Días de Resguardo) |
+| Reglas de Lost & Found | `app/Services/Novedades/ArchivoLostFound.php` (alcance, filtros, Cerrar / Entregar, Días de Resguardo — su pantalla está en Configuración, ver [configuracion.md](configuracion.md#lost--found-días-de-resguardo-qa-4)) |
 | Reglas de Robo | `AdministradorNovedades::limitarRobo()` / `permiteRobo()` + `actualizar()` y el formato `Formatos/Robo` (las mismas del expediente de Novedades) |
 | Modelos | `LostFoundArticulo` (ahora `Identificable`), `LostFoundEntrega`, `LostFoundUmbral`, `RoboDetalle` |
 | Migración | `2026_10_10_000310_completar_lost_found_y_robo` |
-| Vistas | `resources/views/seguridad/lost-found/{index,show,_cerrar,etiqueta,auditoria,umbrales}.blade.php`, `seguridad/robo/{index,_expediente}.blade.php` (reusa `novedades/formatos/robo.blade.php`) |
+| Vistas | `resources/views/seguridad/lost-found/{index,show,_cerrar,etiqueta,auditoria}.blade.php` (los días de resguardo: sección de `administracion/configuracion/index.blade.php`), `seguridad/robo/{index,_expediente}.blade.php` (reusa `novedades/formatos/robo.blade.php`) |
 | JS / CSS | Bloque «Lost & Found (archivo) y Robo — Seguimiento» al final de `public/js/plataforma.js`, `public/css/plataforma.css` y `public/css/modos-pantalla.css` |
 | Pruebas | `tests/Feature/Seguridad/LostFoundRoboTest.php` (21) |
 
@@ -46,8 +46,8 @@ Todas llevan `empresa_id` (scope de tenant) y autoría `creado_por` / `actualiza
 | GET | `/lost-found/articulos/{id}/etiqueta` | `lost_found.articulos.etiqueta` | `lost_found.imprimir` |
 | GET | `/lost-found/entregas/{id}/firma` | `lost_found.entregas.firma` | `lost_found.ver` (firma desde el disco privado) |
 | GET | `/lost-found/auditoria?sede=&desde=&hasta=` | `lost_found.auditoria` | `lost_found.imprimir` |
-| GET | `/lost-found/dias-resguardo` | `lost_found.umbrales` | `lost_found.ver` (solo lectura) |
-| PUT | `/lost-found/dias-resguardo` | `lost_found.umbrales.guardar` | `lost_found.configurar` **con alcance de empresa** |
+| GET | `/lost-found/dias-resguardo` (dirección anterior) | `lost_found.umbrales` | `lost_found.ver` → 301 a `/configuracion#lost-found` (o a `/lost-found` si no puede abrir Configuración) |
+| PUT | `/configuracion/lost-found` | `configuracion.lost_found` | `lost_found.configurar` **con alcance de empresa** |
 | GET | `/robos?filtro=&q=&sede=&abrir=` | `robo.index` | `robo.ver` (menú «Robo — seguimiento») |
 | PUT | `/robos/{id}` | `robo.update` | `robo.editar` |
 
@@ -78,7 +78,7 @@ Desde Robo se reutilizan los endpoints de Novedades: `novedades.coincidencias` (
 - **Transiciones prohibidas:** un artículo cerrado no se vuelve a cerrar (SEGCAT agregaba cierres repetidos); no hay vuelta a `EN_RESGUARDO`.
 - **Etiqueta:** QR local (`bacon/bacon-qr-code`) con `route('lector.ir', codigo_qr)`, folio, objeto, fecha y lugar, marca/color/tipo y bodega. Si el artículo ya se cerró, lo dice en rojo.
 - **Auditoría de Inventario:** lo que está `EN_RESGUARDO` en el alcance de «imprimir», ordenado por sede, bodega y folio; filtros de sede y de fecha en que se encontró (desde/hasta en hora local). Casillas, renglones de discrepancias y firmas «Realizó el conteo» / «Cotejó / Gerente de Seguridad».
-- **Días de Resguardo:** por empresa, de 1 a 3650 días por tipo de valor; las empresas sin configurar usan los de SEGCAT (`LostFoundUmbral::POR_OMISION`).
+- **Días de Resguardo:** por empresa, de 1 a 3650 días por tipo de valor; las empresas sin configurar usan los de SEGCAT (`LostFoundUmbral::POR_OMISION`). Se cambian en **Estructura → Configuración** (QA 4); en el archivo queda solo un enlace pequeño para quien puede configurarlos.
 - **Robo — Seguimiento:** filtros Todos / Abiertos / Sin parte a la policía / Con sospechoso con su conteo, búsqueda por #ticket, ubicación, lugar exacto, qué se llevaron o descripción, y sede; 40 por página. El expediente (`?abrir=ID`) pide nota, estatus (Abierto / Pendiente de turno si ya lo estaba / Resuelto y Cerrado), resolución y las 4 secciones; guarda con `AdministradorNovedades::actualizar()` (Resuelto exige resolución; un caso Resuelto no se edita hasta reabrirlo en Novedades). Solo se aceptan esos campos: ubicación, descripción y categoría no se tocan desde aquí.
 - **Auditoría:** `lost_found.cerrado` (antes/después con tipo, quién recibe, guía), `lost_found.configurado` (días antes/después, sobre la empresa); Robo deja `novedades.actualizado` / `novedades.resuelto` y `novedades.hallazgo_vinculado`.
 

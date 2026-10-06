@@ -139,7 +139,7 @@ class EquipoPc extends Model implements Identificable
 
     public static function permisoLector(): string
     {
-        return 'recorridos_pc.ver';
+        return 'equipos_pc.ver';
     }
 
     public function resumenLector(): array
@@ -162,6 +162,6 @@ class EquipoPc extends Model implements Identificable
      */
     public function urlLector(): string
     {
-        return route('recorridos_pc.equipos.ir', $this->id);
+        return route('equipos_pc.ir', $this->id);
     }
 }

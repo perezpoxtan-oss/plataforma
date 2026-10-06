@@ -159,6 +159,9 @@
                             <button type="submit" class="btn-cian">{{ $esNuevo ? 'Guardar Puesto' : 'Guardar Cambios' }}</button>
                         </div>
                     </form>
+                    @unless ($esNuevo)
+                        @include('componentes.borrar', ['registro' => 'puestos', 'id' => $editandoId])
+                    @endunless
                 </div>
             </dialog>
         @endforeach

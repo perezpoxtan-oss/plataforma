@@ -237,33 +237,19 @@ class LostFoundController extends Controller
     }
 
     /**
-     * Días de Resguardo (SEGCAT: lf_config_umbrales.php). Lo ve quien ve Lost &
-     * Found; lo cambia quien tiene "configurar" en toda la empresa.
+     * Dirección anterior de «Días de Resguardo»: ahora se configuran en
+     * Estructura → Configuración. Redirección permanente (301) para quien
+     * puede verla; los demás regresan al archivo de Lost & Found.
      */
-    public function umbrales(Request $request): View
+    public function umbrales(Request $request): RedirectResponse
     {
         Gate::authorize('lost_found.ver');
         $actor = $request->user();
-        $empresaId = $this->empresaDeTrabajo($request);
+        $verConfiguracion = $actor->can('configuracion.ver') || $this->archivo->puedeConfigurar($actor);
 
-        return $this->tenant->conEmpresa($empresaId, fn () => view('seguridad.lost-found.umbrales', [
-            'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
-            'dias' => LostFoundUmbral::vigentes(),
-            'guardados' => LostFoundUmbral::with('editor:id,name')->get()->keyBy('tipo_valor'),
-            'puedeEditar' => $this->archivo->puedeConfigurar($actor),
-        ]));
-    }
-
-    public function guardarUmbrales(Request $request): RedirectResponse
-    {
-        Gate::authorize('lost_found.configurar');
-        $actor = $request->user();
-        abort_unless($this->archivo->puedeConfigurar($actor), 403, 'Los días de resguardo son de toda la empresa: hace falta el permiso «configurar» de Lost & Found con alcance de empresa.');
-        $empresaId = $this->empresaDeTrabajo($request);
-
-        $this->tenant->conEmpresa($empresaId, fn () => $this->archivo->guardarUmbrales($actor, $request->only('dias')));
-
-        return redirect()->route('lost_found.umbrales')->with('ok', 'Los umbrales se guardaron correctamente.');
+        return $verConfiguracion
+            ? redirect()->to(route('configuracion.index').'#lost-found', 301)
+            : redirect()->route('lost_found.archivo', [], 301);
     }
 
     /**

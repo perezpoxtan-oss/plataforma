@@ -6,15 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Mail\CorreoDePrueba;
 use App\Models\ConfiguracionPlataforma;
 use App\Models\Empresa;
+use App\Models\LostFoundUmbral;
 use App\Models\User;
+use App\Services\Novedades\ArchivoLostFound;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Services\Respaldos\Respaldos;
 use App\Support\CorreoPlataforma;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -26,6 +30,8 @@ use Throwable;
  * Configuración. Crece por secciones conforme se necesitan:
  *  - Plataforma (solo Super Administrador): Correo saliente y Respaldos.
  *  - Empresa (configuracion.editar): Avisos por correo.
+ *  - Lost & Found: días de resguardo (lost_found.configurar con alcance de
+ *    empresa; antes estaba en la pantalla de Lost & Found).
  */
 class ConfiguracionController extends Controller
 {
@@ -35,12 +41,16 @@ class ConfiguracionController extends Controller
         private readonly EmpresaDeTrabajo $empresa,
         private readonly AdministradorRoles $auditoria,
         private readonly Autorizador $autorizador,
+        private readonly ArchivoLostFound $lostFound,
+        private readonly Tenant $tenant,
     ) {}
 
     public function index(Request $request): View
     {
-        Gate::authorize('configuracion.ver');
         $actor = $request->user();
+        // Entra quien ve Configuración o quien configura los días de resguardo de Lost & Found
+        $configuraLostFound = $this->lostFound->puedeConfigurar($actor);
+        abort_unless($actor->can('configuracion.ver') || $configuraLostFound, 403);
         $empresaId = $this->empresa->id($actor);
         $correo = $this->correo->datos();
 
@@ -54,6 +64,46 @@ class ConfiguracionController extends Controller
             'empresa' => $empresaId === null ? null : Empresa::find($empresaId),
             'avisos' => Empresa::AVISOS,
             'puedeEditar' => $this->editaEmpresa($actor),
+            'verConfiguracion' => $actor->can('configuracion.ver'),
+            'lostFound' => $this->datosLostFound($actor, $empresaId, $configuraLostFound),
+        ]);
+    }
+
+    // ------------------------------------------- Lost & Found: días de resguardo
+
+    /**
+     * Días de resguardo por clasificación (SEGCAT: lf_config_umbrales.php).
+     * Son de toda la empresa: hace falta «lost_found.configurar» con alcance de empresa.
+     */
+    public function lostFound(Request $request): RedirectResponse
+    {
+        Gate::authorize('lost_found.configurar');
+        $actor = $request->user();
+        abort_unless($this->lostFound->puedeConfigurar($actor), 403, 'Los días de resguardo son de toda la empresa: hace falta el permiso «configurar» de Lost & Found con alcance de empresa.');
+        $empresaId = $this->empresa->id($actor);
+        abort_if($empresaId === null, 404);
+
+        $this->tenant->conEmpresa($empresaId, fn () => $this->lostFound->guardarUmbrales($actor, $request->only('dias')));
+
+        return redirect()->to(route('configuracion.index').'#lost-found')->with('ok', 'Los días de resguardo de Lost & Found se guardaron correctamente.');
+    }
+
+    /**
+     * Sección «Lost & Found: días de resguardo»: editable para quien la
+     * configura; de consulta para quien ve Configuración y Lost & Found.
+     *
+     * @return array{dias: array<string, int>, guardados: Collection<string, LostFoundUmbral>, puedeEditar: bool}|null
+     */
+    private function datosLostFound(User $actor, ?int $empresaId, bool $configura): ?array
+    {
+        if ($empresaId === null || (! $configura && ! ($actor->can('configuracion.ver') && $actor->can('lost_found.ver')))) {
+            return null;
+        }
+
+        return $this->tenant->conEmpresa($empresaId, fn () => [
+            'dias' => LostFoundUmbral::vigentes(),
+            'guardados' => LostFoundUmbral::with('editor:id,name')->get()->keyBy('tipo_valor'),
+            'puedeEditar' => $configura,
         ]);
     }
 

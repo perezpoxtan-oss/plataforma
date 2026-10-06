@@ -150,6 +150,9 @@
                             <button type="submit" class="btn-ambar-degradado">{{ $esNuevo ? 'Guardar Departamento' : 'Guardar Cambios' }}</button>
                         </div>
                     </form>
+                    @unless ($esNuevo)
+                        @include('componentes.borrar', ['registro' => 'departamentos', 'id' => $editandoId])
+                    @endunless
                 </div>
             </dialog>
         @endforeach

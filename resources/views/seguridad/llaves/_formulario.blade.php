@@ -203,5 +203,8 @@
                 <button type="submit" class="btn-indigo">{{ $esNueva ? 'Guardar e Indexar Llave' : 'Actualizar Registro' }}</button>
             </div>
         </form>
+        @unless ($esNueva)
+            @include('componentes.borrar', ['registro' => 'llaves', 'id' => $editandoId ?? null])
+        @endunless
     </div>
 </dialog>

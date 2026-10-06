@@ -74,6 +74,7 @@ class RecorridoPcController extends Controller
                 'crear' => $sedesAlta->isNotEmpty(),
                 'imprimir' => $actor->can('recorridos_pc.imprimir'),
                 'exportar' => $actor->can('recorridos_pc.exportar'),
+                'catalogo' => $actor->can('equipos_pc.ver'),
             ];
             $hoy = CarbonImmutable::now($this->hora->zona());
 

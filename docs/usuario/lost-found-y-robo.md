@@ -86,9 +86,13 @@ Toca la etiqueta (en la fila o en la ficha) y **Imprimir Etiqueta**. Pégala en 
 
 ### Días de Resguardo
 
-Cuántos días puede estar guardado un artículo de cada tipo antes de ponerse en rojo. Aplican a todas las sedes de la empresa. Solo los cambia quien tiene permiso de configurar en toda la empresa (por ejemplo, el Administrador); los demás solo los consultan.
+Cuántos días puede estar guardado un artículo de cada tipo antes de ponerse en rojo. Aplican a todas las sedes de la empresa. Ahora se cambian en **Estructura → Configuración → Lost & Found: días de resguardo** (ver [Configuración](configuracion.md#lost--found-días-de-resguardo-administrador-de-la-empresa)). Quien puede cambiarlos ve arriba del archivo el enlace **Configurar en Estructura → Configuración**:
 
-![Días de Resguardo](img/lost-found-y-robo/13-dias-resguardo.png)
+![Enlace a Configuración](img/ajustes4/lf-2-enlace-lost-found.png)
+
+Los demás ven los días de cada tipo en el filtro de tipo de valor y en cada artículo («12 día(s) en resguardo de 30»). Así lo ve el Agente en el celular, sin el enlace:
+
+![Lost & Found del Agente](img/ajustes4/lf-6-agente-celular.png)
 
 ## Robo — Seguimiento
 

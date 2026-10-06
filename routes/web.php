@@ -248,14 +248,24 @@ Route::middleware('auth')->group(function () {
     });
     // Fin Padrones: Bitácora de Novedades
 
-    // Padrones: Pases de salida (Operación: circuito de firmas, rechazo e impresión)
+    // Padrones: Pases de salida (Operación: circuito de aprobación configurable, bandeja de firmas, pasos de caseta, hoja con QR)
     Route::get('/pases-salida', [PaseSalidaController::class, 'index'])->name('pases-salida.index');
     Route::post('/pases-salida', [PaseSalidaController::class, 'store'])->name('pases-salida.store');
+    Route::get('/pases-salida/mis-pendientes', [PaseSalidaController::class, 'pendientes'])->name('pases-salida.pendientes');
+    Route::get('/pases-salida/circuito', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'edit'])->name('pases-salida.circuito');
+    Route::put('/pases-salida/circuito', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'update'])->name('pases-salida.circuito.update');
+    Route::delete('/pases-salida/circuito', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'destroy'])->name('pases-salida.circuito.destroy');
+    Route::get('/pases-salida/mi-firma', [PaseSalidaController::class, 'miFirma'])->name('pases-salida.mi-firma');
+    Route::delete('/pases-salida/mi-firma', [PaseSalidaController::class, 'borrarMiFirma'])->name('pases-salida.mi-firma.destroy');
+    Route::get('/pases-salida/verificar/{codigo}', [PaseSalidaController::class, 'verificar'])->where('codigo', '[A-Za-z0-9]{8,32}')->middleware('throttle:60,1')->name('pases-salida.verificar');
     Route::get('/pases-salida/equipos/{equipo}', [PaseSalidaController::class, 'equipo'])->whereNumber('equipo')->name('pases-salida.equipo');
     Route::get('/pases-salida/{pase}', [PaseSalidaController::class, 'show'])->whereNumber('pase')->name('pases-salida.show');
+    Route::put('/pases-salida/{pase}', [PaseSalidaController::class, 'update'])->whereNumber('pase')->name('pases-salida.update');
     Route::post('/pases-salida/{pase}/firmas', [PaseSalidaController::class, 'firmar'])->whereNumber('pase')->middleware('throttle:60,1')->name('pases-salida.firmar');
     Route::get('/pases-salida/{pase}/firmas/{firma}', [PaseSalidaController::class, 'firma'])->whereNumber(['pase', 'firma'])->name('pases-salida.firma');
     Route::post('/pases-salida/{pase}/rechazar', [PaseSalidaController::class, 'rechazar'])->whereNumber('pase')->name('pases-salida.rechazar');
+    Route::post('/pases-salida/{pase}/omitir', [PaseSalidaController::class, 'omitir'])->whereNumber('pase')->name('pases-salida.omitir');
+    Route::post('/pases-salida/{pase}/cancelar', [PaseSalidaController::class, 'cancelar'])->whereNumber('pase')->name('pases-salida.cancelar');
     Route::get('/pases-salida/{pase}/imprimir', [PaseSalidaController::class, 'imprimir'])->whereNumber('pase')->name('pases-salida.imprimir');
     // Fin Padrones: Pases de salida
     // Padrones: Bitácora de transporte (Operación: llegadas, salidas y vales de taxi)
@@ -276,8 +286,8 @@ Route::middleware('auth')->group(function () {
     Route::controller('App\Http\Controllers\Seguridad\LostFoundController')->group(function () {
         Route::get('/lost-found', 'index')->name('lost_found.archivo');
         Route::get('/lost-found/auditoria', 'auditoria')->name('lost_found.auditoria');
+        // Los días de resguardo se configuran en Estructura → Configuración; la dirección anterior redirige (301)
         Route::get('/lost-found/dias-resguardo', 'umbrales')->name('lost_found.umbrales');
-        Route::put('/lost-found/dias-resguardo', 'guardarUmbrales')->name('lost_found.umbrales.guardar');
         Route::get('/lost-found/articulos/{articulo}', 'show')->whereNumber('articulo')->name('lost_found.articulos.show');
         Route::post('/lost-found/articulos/{articulo}/cerrar', 'cerrar')->whereNumber('articulo')->middleware('throttle:60,1')->name('lost_found.articulos.cerrar');
         Route::get('/lost-found/articulos/{articulo}/etiqueta', 'etiqueta')->whereNumber('articulo')->name('lost_found.articulos.etiqueta');
@@ -286,7 +296,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/robos', ['App\Http\Controllers\Seguridad\RoboController', 'index'])->name('robo.index');
     Route::put('/robos/{novedad}', ['App\Http\Controllers\Seguridad\RoboController', 'update'])->whereNumber('novedad')->name('robo.update');
     // Fin Padrones: Lost & Found (archivo) y Robo — Seguimiento
-    // Padrones: Recorridos de Protección Civil (Operación: recorrido en curso un punto a la vez, Reporte de Auditoría y Catálogo de Equipos PC)
+    // Padrones: Recorridos de Protección Civil (Operación: recorrido en curso un punto a la vez y Reporte de Auditoría)
     Route::controller('App\Http\Controllers\Seguridad\RecorridoPcController')->group(function () {
         Route::get('/recorridos-pc', 'index')->name('recorridos_pc.index');
         Route::post('/recorridos-pc', 'store')->middleware('throttle:60,1')->name('recorridos_pc.store');
@@ -296,17 +306,35 @@ Route::middleware('auth')->group(function () {
         Route::put('/recorridos-pc/{recorrido}', 'update')->whereNumber('recorrido')->name('recorridos_pc.update');
         Route::post('/recorridos-pc/{recorrido}/revisiones', 'registrarPunto')->whereNumber('recorrido')->middleware('throttle:120,1')->name('recorridos_pc.revisiones.store');
     });
-    Route::controller('App\Http\Controllers\Seguridad\EquipoPcController')->group(function () {
-        Route::get('/recorridos-pc/equipos', 'index')->name('recorridos_pc.equipos.index');
-        Route::post('/recorridos-pc/equipos', 'store')->name('recorridos_pc.equipos.store');
-        Route::put('/recorridos-pc/equipos/{equipo}', 'update')->whereNumber('equipo')->name('recorridos_pc.equipos.update');
-        Route::patch('/recorridos-pc/equipos/{equipo}/desactivar', 'desactivar')->whereNumber('equipo')->name('recorridos_pc.equipos.desactivar');
-        Route::patch('/recorridos-pc/equipos/{equipo}/reactivar', 'reactivar')->whereNumber('equipo')->name('recorridos_pc.equipos.reactivar');
-        Route::get('/recorridos-pc/equipos/{equipo}/etiqueta', 'etiqueta')->whereNumber('equipo')->name('recorridos_pc.equipos.etiqueta');
-        Route::get('/recorridos-pc/equipos/{equipo}/qr', 'qr')->whereNumber('equipo')->name('recorridos_pc.equipos.qr');
-        Route::get('/recorridos-pc/equipos/{equipo}/ir', 'ir')->whereNumber('equipo')->name('recorridos_pc.equipos.ir');
-    });
     // Fin Padrones: Recorridos de Protección Civil
+    // Padrones: Eliminar definitivamente (borrado físico controlado de catálogos y padrones; ver docs/tecnico/borrado.md)
+    Route::controller('App\Http\Controllers\BorradoController')->group(function () {
+        // {registro}: clave de App\Services\Borrado\RegistroBorrado (una desconocida responde 404)
+        Route::get('/borrar/{registro}/{id}', 'revisar')->where('registro', '[a-z_]+')->whereNumber('id')->name('borrar.revisar');
+        Route::delete('/borrar/{registro}/{id}', 'destroy')->where('registro', '[a-z_]+')->whereNumber('id')->middleware('throttle:30,1')->name('borrar.destroy');
+    });
+    // Fin Padrones: Eliminar definitivamente
+
+    // Padrones: Equipos de Protección Civil (Padrones → Inventarios de Seguridad; ver docs/tecnico/equipos-pc.md)
+    Route::controller('App\Http\Controllers\Seguridad\EquipoPcController')->group(function () {
+        Route::get('/equipos-pc', 'index')->name('equipos_pc.index');
+        Route::post('/equipos-pc', 'store')->name('equipos_pc.store');
+        Route::put('/equipos-pc/{equipo}', 'update')->whereNumber('equipo')->name('equipos_pc.update');
+        Route::patch('/equipos-pc/{equipo}/desactivar', 'desactivar')->whereNumber('equipo')->name('equipos_pc.desactivar');
+        Route::patch('/equipos-pc/{equipo}/reactivar', 'reactivar')->whereNumber('equipo')->name('equipos_pc.reactivar');
+        Route::get('/equipos-pc/{equipo}/etiqueta', 'etiqueta')->whereNumber('equipo')->name('equipos_pc.etiqueta');
+        Route::get('/equipos-pc/{equipo}/qr', 'qr')->whereNumber('equipo')->name('equipos_pc.qr');
+        Route::get('/equipos-pc/{equipo}/ir', 'ir')->whereNumber('equipo')->name('equipos_pc.ir');
+        // Direcciones anteriores (dentro de Recorridos PC): redirección permanente (301) a las nuevas
+        Route::get('/recorridos-pc/equipos', 'anterior')->name('equipos_pc.anterior');
+        Route::get('/recorridos-pc/equipos/{equipo}/{pantalla}', 'anteriorEquipo')->whereNumber('equipo')->whereIn('pantalla', ['etiqueta', 'qr', 'ir'])->name('equipos_pc.anterior.equipo');
+    });
+    // Fin Padrones: Equipos de Protección Civil
+    // Padrones: Ajustes QA 4 (homónimos en Usuarios y Colaboradores; días de resguardo de Lost & Found en Configuración)
+    Route::get('/usuarios/homonimos', [UsuarioController::class, 'homonimos'])->middleware('throttle:120,1')->name('usuarios.homonimos');
+    Route::get('/colaboradores/homonimos', [ColaboradorController::class, 'homonimos'])->middleware('throttle:120,1')->name('colaboradores.homonimos');
+    Route::put('/configuracion/lost-found', [ConfiguracionController::class, 'lostFound'])->name('configuracion.lost_found');
+    // Fin Padrones: Ajustes QA 4
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');

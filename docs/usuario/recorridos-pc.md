@@ -14,7 +14,9 @@ Está pensado para hacerse **caminando con el celular**: botones grandes, un equ
   - **Completo** (verde): se finalizó y todo estaba bien.
   - **Con Hallazgos** (amarillo): se finalizó y algún equipo falló. Dice qué **ticket de seguimiento** generó (tócalo para abrirlo en Novedades).
 - Arriba puedes filtrar por estatus, por sede y buscar por número, guardia o zona.
-- Botones: **Catálogo de Equipos**, **Reporte de Auditoría** (para imprimir) y **Nuevo Recorrido**.
+- Botones: **Reporte de Auditoría** (para imprimir) y **Nuevo Recorrido**. Los equipos que se revisan se dan de alta en **Padrones → Equipos de Protección Civil** (si puedes verlo, aparece un enlace pequeño debajo del título).
+
+![Enlace al catálogo](img/equipos-pc/7-recorridos-enlace.png)
 
 En el celular se ve así:
 
@@ -101,34 +103,9 @@ Toca **Ver detalle** en la tarjeta. Ves todos los equipos revisados, en amarillo
 
 ## 8. Catálogo de Equipos de Protección Civil
 
-**Catálogo de Equipos** muestra los equipos de cada sede: tipo, ID, ubicación y referencia. Filtra por activos / de baja, sede, tipo o búsqueda.
+El catálogo (extintores, hidrantes, detectores…) ahora está en **Padrones → Inventarios de Seguridad → Equipos de Protección Civil**. Cómo registrar, editar, dar de baja e imprimir etiquetas: ver la guía [Equipos de Protección Civil](equipos-pc.md).
 
-![Catálogo](img/recorridos-pc/08-catalogo.png)
-
-Para registrar uno (Supervisor, Jefe de seguridad, Asistente o Administrador):
-
-1. Toca **Nuevo Equipo**.
-2. Elige **Sede** y **Tipo de Equipo**.
-3. Escribe el **Núm. de Serie / ID** que irá en la etiqueta (ej. `EXT-01`). No se puede repetir en la misma sede.
-4. Elige **Zona / Piso** y, si quieres, el **Área Específica**. Escribe una **Referencia** para encontrarlo rápido («Junto al elevador»).
-5. Si la etiqueta trae chip NFC, acércala en **Etiqueta NFC / RFID**.
-6. **Guardar**, o **Guardar y capturar siguiente** para registrar otro con la misma sede, tipo y ubicación.
-
-![Nuevo equipo](img/recorridos-pc/09-alta-equipo.png)
-
-Si algo está mal, el mensaje aparece dentro de la ventana:
-
-![Error en la ventana](img/recorridos-pc/10-error-en-dialogo.png)
-
-En cada equipo: **lápiz** para editar, **QR** para ver su código, **impresora** para imprimir su etiqueta y **círculo tachado** para darlo de baja (ya no aparece en los recorridos; con la flecha se reactiva).
-
-![Editar equipo](img/recorridos-pc/11-editar-equipo.png)
-![Ver QR](img/recorridos-pc/12-ver-qr.png)
-![Etiqueta](img/recorridos-pc/13-etiqueta.png)
-
-El **Agente** consulta el catálogo pero no registra ni edita equipos:
-
-![Catálogo visto por el Agente](img/recorridos-pc/23-movil-catalogo-agente.png)
+Si tenías guardada la dirección anterior (`/recorridos-pc/equipos`), te lleva sola a la nueva. Las etiquetas QR ya impresas siguen funcionando igual.
 
 ## 9. Modo Sol y modo Noche
 

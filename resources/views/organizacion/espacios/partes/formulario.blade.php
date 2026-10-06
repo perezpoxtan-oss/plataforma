@@ -84,5 +84,8 @@
                 <button type="submit" class="{{ $claseBoton }}">{{ $boton }}</button>
             </div>
         </form>
+        @if ($editar)
+            @include('componentes.borrar', ['registro' => 'espacios', 'id' => $editId])
+        @endif
     </div>
 </dialog>

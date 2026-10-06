@@ -2,11 +2,29 @@
 
 Pantalla `GET /configuracion` (módulo `configuracion`, área Dirección). Crece por secciones conforme se necesitan.
 
+Entra quien tiene `configuracion.ver` **o** quien configura los días de resguardo de Lost & Found (`lost_found.configurar` con alcance de empresa); este último solo ve su sección.
+
 | Sección | Quién | Dónde se guarda |
 |---|---|---|
 | Avisos por correo de la empresa | `configuracion.editar` (Administrador) | `empresas.preferencias` (JSON) → `avisos.*` |
 | Correo de la plataforma (SMTP) | Solo el Super Administrador | `configuracion_plataforma` (clave `correo`) |
 | Respaldos de la base de datos | Solo el Super Administrador | Archivos en `storage/app/private/respaldos` |
+| Lost & Found: días de resguardo (`#lost-found`) | Cambia: `lost_found.configurar` **con alcance de empresa** (Administrador). Consulta: quien tiene `configuracion.ver` y `lost_found.ver` | `lost_found_umbrales` (por empresa, sin cambios) |
+
+## Lost & Found: días de resguardo (QA 4)
+
+Antes era la pantalla `/lost-found/dias-resguardo` dentro de Lost & Found; ahora es una sección de Configuración (petición del responsable).
+
+| Método | Ruta | Nombre | Permiso |
+|---|---|---|---|
+| PUT | `/configuracion/lost-found` (`dias[OTRO|ALTO_VALOR|ELECTRONICO|ROPA|PERECEDERO]`) | `configuracion.lost_found` | `lost_found.configurar` con alcance de empresa (con alcance de sede → 403) |
+| GET | `/lost-found/dias-resguardo` (dirección anterior) | `lost_found.umbrales` | `lost_found.ver` → **301** a `/configuracion#lost-found` si puede abrir Configuración; si no, 301 a `/lost-found` |
+
+- Reglas, mensajes y auditoría sin cambios: `ArchivoLostFound::guardarUmbrales()` (1 a 3650 días por tipo de valor, `lost_found.configurado` sobre la empresa). Al guardar regresa a `/configuracion#lost-found`.
+- Cada tipo muestra cuándo se pone en amarillo (70 %) y en rojo, y «Editado por … · fecha» con `@fecha`.
+- En `/lost-found` se quitó el botón «Configurar Días» / «Días de Resguardo»; queda un enlace pequeño «Días de resguardo: Configurar en Estructura → Configuración» solo para quien puede configurarlos. Los días de cada tipo se siguen viendo en el filtro de tipo de valor y en cada artículo.
+- La sección de Avisos por correo ahora solo se muestra a quien tiene `configuracion.ver`.
+- Se borró la vista `seguridad/lost-found/umbrales.blade.php` y el método `LostFoundController::guardarUmbrales()`.
 
 ## Correo (`App\Support\CorreoPlataforma`)
 
@@ -46,4 +64,4 @@ Pantalla `GET /configuracion` (módulo `configuracion`, área Dirección). Crece
 
 ## Pruebas
 
-`tests/Feature/Direccion/ConfiguracionTest.php`
+`tests/Feature/Direccion/ConfiguracionTest.php`; días de resguardo en `tests/Feature/Seguridad/LostFoundRoboTest.php` (`test_dias_de_resguardo_solo_con_configurar_en_toda_la_empresa`).
