@@ -181,6 +181,9 @@
                         <button type="submit" class="btn-indigo">Guardar Cambios</button>
                     </div>
                 </form>
+                @unless ($esPlantillas)
+                    @include('componentes.borrar', ['registro' => 'roles', 'id' => $editando?->id])
+                @endunless
             </div>
         </dialog>
     @endif

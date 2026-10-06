@@ -307,6 +307,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/recorridos-pc/equipos/{equipo}/ir', 'ir')->whereNumber('equipo')->name('recorridos_pc.equipos.ir');
     });
     // Fin Padrones: Recorridos de Protección Civil
+    // Padrones: Eliminar definitivamente (borrado físico controlado de catálogos y padrones; ver docs/tecnico/borrado.md)
+    Route::controller('App\Http\Controllers\BorradoController')->group(function () {
+        // {registro}: clave de App\Services\Borrado\RegistroBorrado (una desconocida responde 404)
+        Route::get('/borrar/{registro}/{id}', 'revisar')->where('registro', '[a-z_]+')->whereNumber('id')->name('borrar.revisar');
+        Route::delete('/borrar/{registro}/{id}', 'destroy')->where('registro', '[a-z_]+')->whereNumber('id')->middleware('throttle:30,1')->name('borrar.destroy');
+    });
+    // Fin Padrones: Eliminar definitivamente
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');

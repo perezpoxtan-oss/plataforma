@@ -26,6 +26,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\VoucherReposicion;
+use App\Services\Borrado\RegistroBorrado;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
@@ -302,6 +303,9 @@ class RecorridoPantallasTest extends TestCase
             'lector.ir' => collect([Vehiculo::class, Equipo::class, EquipoPc::class, Llave::class, Gafete::class, Colaborador::class, LostFoundArticulo::class])
                 ->map(fn ($m) => $m::withoutGlobalScopes()->where('empresa_id', $e)->value('codigo_qr'))->filter()->map(fn ($c) => ['codigo' => $c])->values()->all(),
             'configuracion.respaldos.descargar' => [],
+            // Eliminar definitivamente: el primer registro de cada catálogo o padrón registrado
+            'borrar.revisar' => collect(RegistroBorrado::definiciones())
+                ->map(fn ($d, $clave) => ['registro' => $clave, 'id' => $primero($d['modelo'])])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
             default => null,
         };
 

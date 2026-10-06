@@ -173,6 +173,7 @@
                         <button type="submit" class="btn-esmeralda">Actualizar Datos</button>
                     </div>
                 </form>
+                @include('componentes.borrar', ['registro' => 'proveedores', 'id' => $proveedor->id])
             </div>
         </dialog>
     @endif

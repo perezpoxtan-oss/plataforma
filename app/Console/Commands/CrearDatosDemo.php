@@ -189,6 +189,7 @@ class CrearDatosDemo extends Command
         $paso('novedadesDemo', fn () => $this->novedadesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'agente2.demo')->firstOrFail()));
         $paso('pasesSalidaDemo', fn () => $this->pasesSalidaDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('transporteDemo', fn () => $this->transporteDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('borradoDemo', fn () => $this->borradoDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('lostFoundRoboDemo', fn () => $this->lostFoundRoboDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('recorridosPcDemo', fn () => $this->recorridosPcDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
@@ -1572,6 +1573,33 @@ class CrearDatosDemo extends Command
             $recorrido($agentePlaya, $sedes['PLA'], null, null, [
                 ['EXT-P01', [], null], ['BOT-P01', [], null],
             ], true, $ahora->subDay()->setTime(8, 20));
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    /**
+     * Eliminar definitivamente: registros "capturados por error" que nadie usa,
+     * para probar el borrado (los demás datos demo sí tienen historial y solo
+     * se pueden dar de baja). Solo la primera vez: si ya existen o ya se
+     * eliminó alguno, no se vuelven a crear.
+     */
+    private function borradoDemo($sedes, User $admin): void
+    {
+        // Clases por nombre: así este bloque no toca la lista de "use" (compartida con otros módulos)
+        [$tipoGafete, $paradero] = ['App\Models\TipoGafete', 'App\Models\Paradero'];
+        if (Departamento::where('nombre', 'Compras (duplicado)')->exists()
+            || DB::table('auditoria')->where('evento', 'like', '%.eliminado_definitivo')->exists()) {
+            return;
+        }
+
+        $previo = auth()->user();
+        auth()->setUser($admin);
+        try {
+            Departamento::create(['nombre' => 'Compras (duplicado)']);
+            Puesto::create(['nombre' => 'Puesto de prueba', 'tipo' => Puesto::OPERATIVO]);
+            $tipoGafete::create(['nombre' => 'VIP (prueba)']);
+            $paradero::create(['sede_id' => $sedes['CEN']->id, 'nombre' => 'PARADERO DE PRUEBA']);
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }

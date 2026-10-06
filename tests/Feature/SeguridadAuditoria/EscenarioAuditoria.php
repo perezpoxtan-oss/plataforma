@@ -78,6 +78,10 @@ trait EscenarioAuditoria
         if ($parametro === 'equipo') {
             return str_starts_with($ruta, 'recorridos_pc.') ? 'equipos_pc' : 'equipos';
         }
+        // Eliminar definitivamente (/borrar/{registro}/{id}): se recorre con llaves (registro de una sede)
+        if ($parametro === 'id' && str_starts_with($ruta, 'borrar.')) {
+            return 'llaves';
+        }
 
         return [
             'acompanante' => 'acompanantes_acceso',
@@ -132,6 +136,8 @@ trait EscenarioAuditoria
                 return 'guardia';
             case 'clave':
                 return 'accesos';
+            case 'registro':
+                return 'llaves';
             case 'archivo':
                 return 'respaldo.zip';
             case 'firma':
@@ -187,7 +193,7 @@ trait EscenarioAuditoria
     {
         $parametros = [];
         foreach ($ruta->parameterNames() as $nombre) {
-            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
+            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'registro'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
             $valor = match (true) {
                 ! $inexistente || $esTexto => $this->valorParametro((string) $ruta->getName(), $nombre, $sede),
                 $nombre === 'codigo' => 'zzzzzzzzzzzzzzzzzzzzzzzz',

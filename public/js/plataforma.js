@@ -5576,3 +5576,165 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Ajustes de captura */
+/* ==========================================================================
+   Eliminar definitivamente (borrado físico controlado; ver docs/tecnico/borrado.md)
+   Botón: [data-borrar-definitivo] data-registro data-id data-url (componentes/borrar).
+   1) Pregunta al servidor qué lo usa (GET /borrar/{registro}/{id}).
+   2) Si algo depende de él lo explica y ofrece "Dar de baja".
+   3) Si no, pide teclear su nombre o identificador y lo borra (DELETE).
+   En los diálogos de edición compartidos, el id lo toma del botón "Editar".
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var esperado = '';
+
+    function normalizar(texto) { return String(texto || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+
+    function token() {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
+    function paso(dialogo, nombre) {
+        dialogo.querySelectorAll('[data-borrar-paso]').forEach(function (p) { p.hidden = p.getAttribute('data-borrar-paso') !== nombre; });
+    }
+
+    function textos(dialogo, selector, valor) {
+        dialogo.querySelectorAll(selector).forEach(function (n) { n.textContent = valor; });
+    }
+
+    function mostrarError(dialogo, mensaje) {
+        textos(dialogo, '[data-borrar-error]', mensaje);
+        paso(dialogo, 'error');
+    }
+
+    function prepararBaja(dialogo, baja) {
+        var form = dialogo.querySelector('[data-borrar-baja-form]');
+        var boton = dialogo.querySelector('[data-borrar-baja-boton]');
+        var indicacion = dialogo.querySelector('[data-borrar-baja-texto]');
+        var campos = dialogo.querySelector('[data-borrar-baja-campos]');
+        campos.textContent = '';
+        form.removeAttribute('action');
+        boton.hidden = true;
+        indicacion.hidden = true;
+        if (!baja) { return; }
+        if (baja.texto) {
+            indicacion.textContent = baja.texto;
+            indicacion.hidden = false;
+            return;
+        }
+        form.setAttribute('action', baja.url);
+        dialogo.querySelector('[data-borrar-baja-metodo]').value = baja.metodo || 'PATCH';
+        Object.keys(baja.campos || {}).forEach(function (nombre) {
+            var oculto = document.createElement('input');
+            oculto.type = 'hidden';
+            oculto.name = nombre;
+            oculto.value = String(baja.campos[nombre]);
+            campos.appendChild(oculto);
+        });
+        boton.hidden = false;
+    }
+
+    function mostrarDependencias(dialogo, datos) {
+        textos(dialogo, '[data-borrar-mensaje]', datos.mensaje || '');
+        prepararBaja(dialogo, datos.baja);
+        paso(dialogo, 'dependencias');
+    }
+
+    function respuesta(r) {
+        return r.json().catch(function () { return {}; }).then(function (d) { return { estado: r.status, datos: d }; });
+    }
+
+    function abrirConfirmacion(boton) {
+        var dialogo = document.getElementById('dialogoBorrarDefinitivo');
+        var id = boton.getAttribute('data-id');
+        if (!dialogo || !id) { return; }
+
+        var form = dialogo.querySelector('[data-borrar-form]');
+        var entrada = dialogo.querySelector('[data-borrar-entrada]');
+        var url = boton.getAttribute('data-url') + '/' + encodeURIComponent(id);
+        form.setAttribute('data-url', url);
+        entrada.value = '';
+        esperado = '';
+        dialogo.querySelector('[data-borrar-enviar]').disabled = true;
+        dialogo.querySelector('[data-borrar-error-form]').hidden = true;
+        paso(dialogo, 'cargando');
+        if (!dialogo.open && typeof dialogo.showModal === 'function') { dialogo.showModal(); }
+
+        fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(respuesta)
+            .then(function (res) {
+                if (res.estado !== 200) {
+                    mostrarError(dialogo, res.estado === 404
+                        ? 'No se encontró el registro o está fuera de tus sedes.'
+                        : (res.datos.mensaje || res.datos.message || 'No tienes permiso para eliminar este registro.'));
+                    return;
+                }
+                var d = res.datos;
+                textos(dialogo, '[data-borrar-nombre]', d.nombre);
+                textos(dialogo, '[data-borrar-tipo]', d.tipo);
+                textos(dialogo, '[data-borrar-tipo-mayuscula]', d.tipo.charAt(0).toUpperCase() + d.tipo.slice(1));
+                textos(dialogo, '[data-borrar-confirmar]', d.confirmar);
+                if (!d.puede_eliminar) { mostrarDependencias(dialogo, d); return; }
+                esperado = normalizar(d.confirmar);
+                form.setAttribute('data-url', d.url);
+                paso(dialogo, 'confirmar');
+                entrada.focus();
+            })
+            .catch(function () { mostrarError(dialogo, 'Sin conexión: no se pudo revisar el registro. Intenta de nuevo.'); });
+    }
+
+    document.addEventListener('click', function (evento) {
+        var boton = evento.target.closest('[data-borrar-definitivo]');
+        if (boton) { abrirConfirmacion(boton); return; }
+
+        // Diálogos de edición compartidos: el botón de borrar toma el id del registro que se abrió
+        var editar = evento.target.closest('[data-accion="editar-registro"], [data-accion="editar-rol"], [data-accion="editar-ruta"]');
+        if (editar) {
+            var destino = document.getElementById(editar.dataset.dialogo || 'dialogoEditarRol');
+            if (destino) {
+                destino.querySelectorAll('[data-borrar-definitivo]').forEach(function (b) { b.setAttribute('data-id', editar.dataset.id || ''); });
+            }
+        }
+    });
+
+    document.addEventListener('input', function (evento) {
+        if (!evento.target.matches('[data-borrar-entrada]')) { return; }
+        var dialogo = evento.target.closest('dialog');
+        dialogo.querySelector('[data-borrar-enviar]').disabled = esperado === '' || normalizar(evento.target.value) !== esperado;
+    });
+
+    document.addEventListener('submit', function (evento) {
+        var form = evento.target;
+        if (!form.matches('[data-borrar-form]')) { return; }
+        evento.preventDefault();
+        var dialogo = form.closest('dialog');
+        var enviar = form.querySelector('[data-borrar-enviar]');
+        var error = form.querySelector('[data-borrar-error-form]');
+        enviar.disabled = true;
+        error.hidden = true;
+
+        fetch(form.getAttribute('data-url'), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': token() },
+            body: new FormData(form)
+        })
+            .then(respuesta)
+            .then(function (res) {
+                if (res.estado === 200 && res.datos.ok) { window.location.href = res.datos.redirect; return; }
+                // Alguien lo empezó a usar mientras se confirmaba: se explica y se ofrece cerrar
+                if (res.estado === 409) { mostrarDependencias(dialogo, { mensaje: res.datos.mensaje, baja: null }); return; }
+                error.textContent = res.datos.mensaje || res.datos.message || 'No se pudo eliminar. Intenta de nuevo.';
+                error.hidden = false;
+                enviar.disabled = false;
+            })
+            .catch(function () {
+                error.textContent = 'Sin conexión: no se eliminó nada. Intenta de nuevo.';
+                error.hidden = false;
+                enviar.disabled = false;
+            });
+    });
+})();
+/* Fin Eliminar definitivamente */

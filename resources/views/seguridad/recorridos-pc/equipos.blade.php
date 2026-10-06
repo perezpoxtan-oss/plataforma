@@ -261,6 +261,9 @@
                             <button type="submit" class="btn-rpc-verde">{{ $esNuevo ? 'Guardar' : 'Guardar Cambios' }}</button>
                         </div>
                     </form>
+                    @unless ($esNuevo)
+                        @include('componentes.borrar', ['registro' => 'equipos_pc', 'id' => $editandoId])
+                    @endunless
                 </div>
             </dialog>
         @endforeach

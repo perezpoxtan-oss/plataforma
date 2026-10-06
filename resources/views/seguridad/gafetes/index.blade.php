@@ -74,6 +74,7 @@
                 <button type="button" class="btn-pill-tipo" data-filtro-tipo="gafetes" data-valor="{{ $t->id }}" aria-pressed="false">{{ $t->nombre }} <span class="conteo-pill">{{ $conteoTipo[$t->id] ?? 0 }}</span></button>
             @endforeach
         </div>
+        @include('componentes.borrar-tipos', ['registro' => 'tipos_gafete', 'tipos' => $tipos, 'conteo' => $conteoTipo, 'titulo' => 'tipos de gafete'])
 
         <div class="filtros-estado" role="group" aria-label="Filtrar por estado">
             <button type="button" class="btn btn-dark btn-sm fw-bold" data-filtro-estado="gafetes" data-valor="todas" aria-pressed="true">Todos</button>
@@ -290,6 +291,7 @@
                             <button type="submit" class="btn-gafetes">Guardar Cambios</button>
                         </div>
                     </form>
+                    @include('componentes.borrar', ['registro' => 'gafetes', 'id' => $editandoId])
                 </div>
             </dialog>
         @endif

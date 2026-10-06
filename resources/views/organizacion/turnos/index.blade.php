@@ -187,6 +187,9 @@
                             <button type="submit" class="btn-indigo">{{ $esNuevo ? 'Guardar Turno' : 'Actualizar' }}</button>
                         </div>
                     </form>
+                    @unless ($esNuevo)
+                        @include('componentes.borrar', ['registro' => 'turnos', 'id' => $editandoId])
+                    @endunless
                 </div>
             </dialog>
         @endforeach
