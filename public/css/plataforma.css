@@ -3729,6 +3729,9 @@ html:has(dialog.dialogo[open]) { overflow: hidden; scrollbar-gutter: stable; }
 @media print {
     .seccion-plegable > summary .seccion-plegable-flecha { display: none; }
 }
+/* AC-05: la búsqueda encontró a un acompañante */
+.pista-acompanante { font-size: 0.8rem; font-weight: 600; color: #6d28d9; background: #f5f3ff; border-radius: 8px; padding: 0.3rem 0.55rem; margin: 0.15rem 0 0.45rem; overflow-wrap: anywhere; }
+.pista-acompanante[hidden] { display: none; }
 /* NV-06: los filtros se aplican solos (data-autoenviar); el botón queda solo si no hay JavaScript */
 html.filtros-automaticos form[data-autoenviar] button[type="submit"]:not([data-mantener-boton]) { display: none; }
 /* Fin Ronda 8 de ajustes de QA */

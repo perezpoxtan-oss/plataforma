@@ -3312,6 +3312,8 @@ document.addEventListener('click', function (e) {
                 if (r.habitacion) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'badge-hab', 'Hab. ' + r.habitacion)); }
                 if (r.fuera_temporal) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'estado-acceso fuera mini', 'FUERA')); }
                 card.appendChild(nombre);
+                // Ronda 8 (AC-05): se encontró por un acompañante
+                if (r.coincide_acompanante) { card.appendChild(elemento('div', 'pista-acompanante', 'Coincide con ' + r.coincide_acompanante + ', acompañante de ' + r.nombre)); }
                 card.appendChild(elemento('div', 'resultado-salida-dato', r.tipo_etiqueta + (r.sede ? ' · ' + r.sede : '')));
                 if (r.placas) { card.appendChild(elemento('div', 'resultado-salida-dato', 'Vehículo: ' + r.placas + (r.zona ? ' · ' + r.zona + (r.zona_descarga ? ' (descarga)' : '') : ''))); }
                 var pedir = [];
@@ -3381,16 +3383,28 @@ document.addEventListener('click', function (e) {
         var tipo = (barra.querySelector('[data-filtro-accesos-tipo]') || {}).value || '';
         var sedeSel = barra.querySelector('[data-filtro-accesos-sede]');
         var sede = sedeSel ? sedeSel.value : '';
-        var palabras = lista(texto.toLowerCase());
-        var compacto = texto.replace(/[\s\-.]+/g, '').toLowerCase();
+        // Ronda 8 (AC-05): sin acentos ni mayúsculas ("sofia mendez" = "SOFÍA MÉNDEZ")
+        var sinAcentos = function (s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
+        var palabras = lista(sinAcentos(texto));
+        var compacto = sinAcentos(texto.replace(/[\s\-.]+/g, ''));
         var fichas = cont.querySelectorAll('[data-acceso-ficha]');
         var visibles = 0;
         fichas.forEach(function (f) {
-            var t = f.dataset.texto || '';
+            var t = sinAcentos(f.dataset.texto || '');
             var porTexto = palabras.every(function (p) { return t.indexOf(p) !== -1; }) || (compacto.length > 1 && t.indexOf(compacto) !== -1);
             var ok = porTexto && (!tipo || f.dataset.tipo === tipo) && (!sede || f.dataset.sede === sede);
             f.style.display = ok ? '' : 'none';
             if (ok) { visibles++; }
+            // «Coincide con X, acompañante de Y» solo si el titular no coincide y ese acompañante sí
+            var titular = sinAcentos((f.querySelector('.ficha-acceso-nombre') || {}).textContent || '');
+            var porTitular = palabras.length > 0 && palabras.every(function (p) { return titular.indexOf(p) !== -1; });
+            var ya = false;
+            f.querySelectorAll('[data-pista-acompanante]').forEach(function (pista) {
+                var suyo = pista.getAttribute('data-pista-acompanante') || '';
+                var muestra = !ya && !porTitular && palabras.length > 0 && palabras.every(function (p) { return suyo.indexOf(p) !== -1; });
+                pista.hidden = !muestra;
+                if (muestra) { ya = true; }
+            });
         });
         var vacio = cont.querySelector('[data-sin-resultados-accesos]');
         if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }

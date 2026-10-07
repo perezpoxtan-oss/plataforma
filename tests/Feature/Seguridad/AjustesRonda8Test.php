@@ -2,9 +2,13 @@
 
 namespace Tests\Feature\Seguridad;
 
+use App\Models\Acceso;
 use App\Models\AccidenteFirma;
 use App\Models\Colaborador;
+use App\Models\Gafete;
 use App\Models\Novedad;
+use App\Models\TipoGafete;
+use App\Services\Accesos\ConsultaAccesos;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -197,6 +201,44 @@ class AjustesRonda8Test extends PruebaNovedades
         $this->actingAs($this->admin)->get('/pases-salida')->assertOk()->assertSee('data-seccion="pase-3"', false);
         $this->actingAs($this->admin)->get('/procedimientos')->assertOk()->assertSee('data-seccion="procedimiento-4"', false);
         $this->actingAs($this->admin)->get('/candidatos')->assertOk()->assertSee('data-seccion="cv-6"', false);
+    }
+
+    // ------------------------------------------------------------- AC-05
+
+    public function test_ac05_la_busqueda_de_accesos_encuentra_al_acompanante_y_dice_de_quien(): void
+    {
+        $gafete = fn (string $n) => $this->enEmpresa(fn () => Gafete::create(['sede_id' => $this->centro->id,
+            'tipo_gafete_id' => TipoGafete::firstOrCreate(['nombre' => 'Visitante'])->id, 'nomenclatura' => 'HOT-CEN-VIS-'.$n, 'consecutivo' => (int) $n]));
+        $andrea = $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => '1003', 'nombre' => 'Andrea', 'apellido_paterno' => 'Pech', 'sede_id' => $this->centro->id]));
+        $this->actingAs($this->admin)->post('/accesos', ['sede_id' => $this->centro->id, '_dialogo' => 'ingreso',
+            'tipo' => 'visitante', 'nombre' => 'laura mendez rios', 'identificacion' => 'pasaporte', 'gafete_id' => $gafete('001')->id,
+            'motivo_visita' => 'colaborador', 'visita_colaborador_id' => $andrea->id, 'modo_arribo' => 'a_pie', 'num_acompanantes' => 1,
+            'acompanantes' => [['nombre' => 'sofia castillo', 'identificacion' => 'ine', 'gafete_id' => $gafete('002')->id]],
+        ])->assertSessionHasNoErrors();
+
+        // Gente en Sitio (el filtro se aplica en el servidor al dejar de teclear): aparece LAURA con el aviso
+        $html = $this->actingAs($this->admin)->get('/accesos?q=sofia+castillo')->assertOk()->getContent();
+        $this->assertStringContainsString('LAURA MENDEZ RIOS', $html);
+        $this->assertMatchesRegularExpression('/data-pista-acompanante="sofia castillo hot-cen-vis-002"\s+>/', $html);
+        $this->assertStringContainsString('Coincide con <strong>SOFIA CASTILLO</strong>, acompañante de LAURA MENDEZ RIOS', $html);
+        // Si lo buscado es el titular, el aviso no se muestra
+        $this->assertMatchesRegularExpression('/data-pista-acompanante="sofia castillo hot-cen-vis-002"\s+hidden/',
+            $this->actingAs($this->admin)->get('/accesos?q=laura')->assertOk()->getContent());
+
+        // «Dar Salida»: la búsqueda por nombre del acompañante trae el registro principal y dice de quién es
+        $this->actingAs($this->admin)->getJson('/accesos/en-sitio?q=sofia')->assertOk()
+            ->assertJsonPath('resultados.0.nombre', 'LAURA MENDEZ RIOS')
+            ->assertJsonPath('resultados.0.coincide_acompanante', 'SOFIA CASTILLO');
+        $this->actingAs($this->admin)->getJson('/accesos/en-sitio?q=laura')->assertOk()->assertJsonPath('resultados.0.coincide_acompanante', null);
+
+        // Historial: después de la salida también se encuentra por el acompañante
+        $acceso = $this->enEmpresa(fn () => Acceso::firstOrFail());
+        $this->actingAs($this->admin)->patch("/accesos/{$acceso->id}/salida")->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->get('/accesos?pestana=historial&q=castillo')->assertOk()
+            ->assertSee('LAURA MENDEZ RIOS')->assertSee('acompañante de LAURA MENDEZ RIOS', false);
+        $this->actingAs($this->admin)->get('/accesos?pestana=historial&q=inexistente')->assertOk()->assertDontSee('LAURA MENDEZ RIOS');
+        // La búsqueda sin acentos también reconoce al acompañante
+        $this->assertSame('sofia mendez', ConsultaAccesos::normalizar('  SOFÍA   MÉNDEZ '));
     }
 
     // ------------------------------------------------------------- RT-04

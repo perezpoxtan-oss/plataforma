@@ -1349,4 +1349,6 @@ html.modo-sol .seccion-plegable-aviso { color: #991b1b; }
 html.modo-noche .seccion-plegable { background: var(--superficie); border-color: var(--borde); }
 html.modo-noche .seccion-plegable > summary:hover { background: var(--superficie-2); }
 html.modo-noche .seccion-plegable-aviso { color: #fca5a5; }
+html.modo-sol .pista-acompanante { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-noche .pista-acompanante { background: rgba(139, 92, 246, 0.18); color: #ddd6fe; }
 /* Fin Ronda 8 de ajustes de QA */
