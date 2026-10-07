@@ -10,12 +10,17 @@ use App\Models\Equipo;
 use App\Models\EquipoResponsiva;
 use App\Models\Gafete;
 use App\Models\Novedad;
+use App\Models\Proveedor;
 use App\Models\Responsiva;
+use App\Models\Ruta;
+use App\Models\Sede;
 use App\Models\TipoEquipo;
 use App\Models\TipoGafete;
+use App\Models\Turno;
 use App\Models\User;
 use App\Models\VoucherReposicion;
 use App\Services\Accesos\ConsultaAccesos;
+use App\Services\Rutas\AdministradorRutas;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -342,6 +347,69 @@ class AjustesRonda8Test extends PruebaNovedades
         $this->actingAs($this->crearUsuario($otra, 'Administrador'))->patch("/responsivas/{$lote->id}/equipos/{$f1->id}/recibir", ['estado_recepcion' => 'ok'])->assertNotFound();
         $this->actingAs($this->admin)->patch('/responsivas/'.($lote->id + 50).'/equipos/'.$f1->id.'/recibir', ['estado_recepcion' => 'ok'])->assertNotFound();
         $this->actingAs($this->crearUsuario($this->empresa, 'Recursos Humanos'))->patch("/responsivas/{$lote->id}/equipos/{$f1->id}/recibir", ['estado_recepcion' => 'ok'])->assertForbidden();
+    }
+
+    // ------------------------------------------------------- RT-07 / RT-08
+
+    private function rutaDemo(string $nombre, array $horarios, bool $activa = true): Ruta
+    {
+        return $this->enEmpresa(function () use ($nombre, $horarios, $activa) {
+            $turno = Turno::firstOrCreate(['nombre' => 'Matutino'], ['hora_inicio' => '07:00:00', 'hora_fin' => '15:00:00', 'todas_las_sedes' => true, 'activo' => true]);
+            $proveedor = Proveedor::firstOrCreate(['nombre' => 'Transportes Kin-Ha'], ['categoria' => 'transporte_personal', 'activo' => true, 'todas_las_sedes' => true]);
+            $ruta = app(AdministradorRutas::class)->crear($this->admin, Sede::find($this->centro->id), ['sede_id' => $this->centro->id, 'sentido' => 'llegada',
+                'nombre' => $nombre, 'turno_id' => $turno->id, 'proveedor_id' => $proveedor->id, 'horarios' => $horarios]);
+            if (! $activa) {
+                $ruta->forceFill(['activo' => false])->save();
+            }
+
+            return $ruta;
+        });
+    }
+
+    public function test_rt07_hoja_de_la_semana_con_horarios_alternos_y_la_del_dia_explica_lo_que_no_sale(): void
+    {
+        $this->rutaDemo('RUTA 1 - REGIÓN 94', [
+            ['nombre' => 'Lunes a viernes', 'dias' => ['LU', 'MA', 'MI', 'JU', 'VI'], 'hora_inicio' => '05:45', 'hora_fin' => '06:40', 'paraderos' => [['nombre' => 'REGIÓN 94 (CRUCERO)', 'hora' => '05:45']]],
+            ['nombre' => 'Fin de semana', 'dias' => ['SA', 'DO'], 'hora_inicio' => '06:15', 'hora_fin' => '07:00', 'paraderos' => [['nombre' => 'REGIÓN 94 (CRUCERO)', 'hora' => '06:15']]],
+        ]);
+        $this->rutaDemo('RUTA 2 - KABAH', [['nombre' => 'Todos los días', 'dias' => ['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'], 'hora_inicio' => '13:25', 'hora_fin' => '14:45', 'paraderos' => []]]);
+        $this->rutaDemo('RUTA 4 - MARTES Y JUEVES', [['nombre' => 'Mar y Jue', 'dias' => ['MA', 'JU'], 'hora_inicio' => '04:00', 'hora_fin' => '05:00', 'paraderos' => []]]);
+        $this->rutaDemo('RUTA 9 - TEMPORADA ALTA', [['nombre' => 'Sábados', 'dias' => ['SA'], 'hora_inicio' => '06:30', 'hora_fin' => '07:10', 'paraderos' => []]], false);
+
+        // Semana: todos los horarios activos con su mini semana; orden de SEGCAT (L-D, L-V, sueltos, S-D) y por hora
+        $html = $this->actingAs($this->admin)->get(route('rutas.semana', $this->centro->id))->assertOk()
+            ->assertSee('Horario de Llegadas')->assertSee('Vista informativa de la semana')
+            ->assertSee('Lunes a viernes')->assertSee('Fin de semana')->assertSee('06:15')->assertSee('05:45')
+            ->assertSee('Suspendidas (no operan):')->assertSee('RUTA 9 - TEMPORADA ALTA')
+            ->assertSee('<span class="si">S</span><span class="si">D</span>', false)
+            ->getContent();
+        $orden = array_map(fn ($t) => strpos($html, $t), ['13:25', '05:45', '04:00', '06:15']);
+        $copia = $orden;
+        sort($copia);
+        $this->assertSame($copia, $orden, 'Orden: todos los días, lunes a viernes, días sueltos, fin de semana');
+
+        // Día (domingo): sale el horario alterno de las 06:15 y se explica lo que no sale
+        $this->actingAs($this->admin)->get(route('rutas.dia', ['sede' => $this->centro->id, 'fecha' => '2026-10-11']))->assertOk()
+            ->assertSee('06:15')->assertSee('No operan este día:')->assertSee('RUTA 1 - REGIÓN 94 05:45 (Lunes a viernes)')
+            ->assertSee('Suspendidas (no operan):')->assertSee(route('rutas.semana', $this->centro->id), false);
+        // Lunes: el de lunes a viernes sale; el de fin de semana se menciona como «no opera»
+        $this->actingAs($this->admin)->get(route('rutas.dia', ['sede' => $this->centro->id, 'fecha' => '2026-10-05']))->assertOk()
+            ->assertSee('RUTA 1 - REGIÓN 94 06:15 (Sábado y domingo)');
+    }
+
+    public function test_rt08_el_agente_abre_e_imprime_la_hoja_de_la_semana_de_su_sede(): void
+    {
+        $this->rutaDemo('RUTA 1 - REGIÓN 94', [['nombre' => 'Todos', 'dias' => ['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'], 'hora_inicio' => '05:45', 'hora_fin' => '06:40', 'paraderos' => []]]);
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $this->actingAs($agente)->get('/rutas')->assertOk()->assertSee(route('rutas.semana', $this->centro->id), false);
+        $this->actingAs($agente)->get(route('rutas.sede', $this->centro->id))->assertOk()->assertSee('Hoja de horarios');
+        $this->actingAs($agente)->get(route('rutas.semana', $this->centro->id))->assertOk()->assertSee('RUTA 1 - REGIÓN 94')->assertSee('data-accion="imprimir"', false);
+        // Otra sede (fuera de su alcance) u otra empresa: no
+        $this->actingAs($agente)->get(route('rutas.semana', $this->playa->id))->assertNotFound();
+        $sedeAjena = $this->crearSede($this->crearEmpresa('Hotel Dos'), 'XX');
+        $this->actingAs($agente)->get(route('rutas.semana', $sedeAjena->id))->assertNotFound();
+        // Sin permiso de Rutas (RH): 403
+        $this->actingAs($this->crearUsuario($this->empresa, 'Recursos Humanos'))->get(route('rutas.semana', $this->centro->id))->assertForbidden();
     }
 
     // ------------------------------------------------------------- RT-04

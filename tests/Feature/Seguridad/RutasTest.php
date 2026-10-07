@@ -159,7 +159,7 @@ class RutasTest extends TestCase
             ->assertSee('Con 1 ruta suspendida')
             ->assertSee('Transportes Kin-Ha')
             ->assertSee(route('rutas.sede', $this->centro->id))
-            ->assertSee(route('rutas.dia', $this->centro->id))
+            ->assertSee(route('rutas.semana', $this->centro->id)) // Ronda 8: la hoja de la semana
             ->assertSee('data-fichas="rutas-sedes"', false);
 
         $this->assertSame('rutas.index', Modulo::where('clave', 'rutas')->value('ruta'));
@@ -458,13 +458,13 @@ class RutasTest extends TestCase
         // Lunes 5 de octubre de 2026
         $lunes = $this->actingAs($this->admin)->get(route('rutas.dia', ['sede' => $this->centro->id, 'fecha' => '2026-10-05']))->assertOk()
             ->assertSee('Lunes 5 de octubre de 2026')->assertSee('Llegadas del día')->assertSee('Salidas del día')
-            ->assertSee('RUTA 2')->assertSee('NOCTURNA')->assertDontSee('SUSPENDIDA X')
+            ->assertSee('RUTA 2')->assertSee('NOCTURNA')->assertSee('Suspendidas (no operan):</strong> SUSPENDIDA X', false) // Ronda 8: se explica al pie
             ->assertSee('<sup title="Día siguiente">+1</sup>', false)
             ->assertSee('REGIÓN 94 (CRUCERO)')->assertSee('KABAH')
             ->getContent();
         $this->assertLessThan(strpos($lunes, 'RUTA 1 - REGIÓN 94'), strpos($lunes, '<strong>RUTA 2</strong>'));
         $this->assertStringContainsString('05:45', $lunes);
-        $this->assertStringNotContainsString('06:15', $lunes);
+        $this->assertStringNotContainsString('06:15', (string) strstr($lunes, 'No operan este día', true)); // Ronda 8: solo en la nota
 
         // Domingo: solo el horario de fin de semana
         $this->actingAs($this->admin)->get(route('rutas.dia', ['sede' => $this->centro->id, 'fecha' => '2026-10-11']))->assertOk()
@@ -560,7 +560,9 @@ class RutasTest extends TestCase
         $this->actingAs($agente)->post(route('rutas.clonar', $ruta->id))->assertForbidden();
         $this->actingAs($agente)->patch(route('rutas.estado', $ruta->id), ['activo' => 0])->assertForbidden();
         $this->actingAs($agente)->post(route('rutas.paraderos.store', $this->centro->id), ['nombre' => 'X'])->assertForbidden();
-        $this->actingAs($agente)->get(route('rutas.dia', $this->centro->id))->assertForbidden();
+        // Ronda 8 (RT-08): las hojas de horarios (semana y día) son de consulta para caseta
+        $this->actingAs($agente)->get(route('rutas.dia', $this->centro->id))->assertOk();
+        $this->actingAs($agente)->get(route('rutas.semana', $this->centro->id))->assertOk();
         $this->actingAs($agente)->get(route('rutas.itinerario', $ruta->id))->assertForbidden();
     }
 

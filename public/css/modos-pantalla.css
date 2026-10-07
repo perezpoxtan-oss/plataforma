@@ -1365,4 +1365,6 @@ html.modo-noche .aviso-recibir.faltante { background: rgba(239, 68, 68, 0.12); c
 html.modo-noche .pastilla-devolucion.ok { background: rgba(34, 197, 94, 0.2); color: #86efac; }
 html.modo-noche .pastilla-devolucion.danado { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
 html.modo-noche .pastilla-devolucion.faltante { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+html.modo-sol .mini-semana .no { color: #6b7280; }
+html.modo-sol .rutas-hoja-nota, html.modo-sol .patron-dias { color: #000; }
 /* Fin Ronda 8 de ajustes de QA */

@@ -273,7 +273,7 @@ class RecorridoPantallasTest extends TestCase
             'equipos.etiqueta', 'equipos.qr', 'pases-salida.equipo', 'responsivas.historial' => array_map(fn ($id) => ['equipo' => $id], $ids([$primero(Equipo::class)])),
             'equipos_pc.etiqueta', 'equipos_pc.qr', 'equipos_pc.ir' => array_map(fn ($id) => ['equipo' => $id], $ids([$primero(EquipoPc::class)])),
             'equipos_pc.anterior.equipo' => array_map(fn ($id) => ['equipo' => $id, 'pantalla' => 'etiqueta'], $ids([$primero(EquipoPc::class)])),
-            'rutas.sede', 'rutas.dia' => array_map(fn ($id) => ['sede' => $id], $ids([
+            'rutas.sede', 'rutas.dia', 'rutas.semana' => array_map(fn ($id) => ['sede' => $id], $ids([
                 $primero(Sede::class), Sede::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
             ])),
             'rutas.itinerario' => array_map(fn ($id) => ['ruta' => $id], $ids([$primero(Ruta::class)])),

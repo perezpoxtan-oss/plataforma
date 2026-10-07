@@ -197,6 +197,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/rutas', [RutaController::class, 'store'])->name('rutas.store');
     Route::get('/rutas/sede/{sede}', [RutaController::class, 'sede'])->whereNumber('sede')->name('rutas.sede');
     Route::get('/rutas/sede/{sede}/dia', [RutaController::class, 'dia'])->whereNumber('sede')->name('rutas.dia');
+    // Ronda 8 (RT-07/RT-08): hoja de horarios de la semana (consulta de caseta)
+    Route::get('/rutas/sede/{sede}/semana', [RutaController::class, 'semana'])->whereNumber('sede')->name('rutas.semana');
     Route::post('/rutas/sede/{sede}/paraderos', [RutaController::class, 'guardarParadero'])->whereNumber('sede')->name('rutas.paraderos.store');
     Route::put('/rutas/paraderos/{paradero}', [RutaController::class, 'actualizarParadero'])->whereNumber('paradero')->name('rutas.paraderos.update');
     Route::patch('/rutas/paraderos/{paradero}/estado', [RutaController::class, 'estadoParadero'])->whereNumber('paradero')->name('rutas.paraderos.estado');
