@@ -7,6 +7,7 @@ use App\Models\EquipoResponsiva;
 use App\Models\Responsiva;
 use App\Models\Sede;
 use App\Models\User;
+use App\Models\VoucherReposicion;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
@@ -212,6 +213,86 @@ class AdministradorResponsivas
         $this->auditoria->auditar($actor, 'responsivas.recibido', $responsiva, $antes, $this->foto($responsiva));
 
         return $regresaron;
+    }
+
+    /**
+     * Ronda 8 (RS-04): «Recibir» un equipo del lote (devolución parcial).
+     *  - ok: vuelve a DISPONIBLE.
+     *  - danado: queda EN MANTENIMIENTO, o de BAJA con voucher si se pide.
+     *  - faltante: siempre de BAJA con voucher de reposición (motivo extraviado o robado).
+     * El voucher lo emite el flujo común (AdministradorEquipos::darDeBaja →
+     * Inventarios\Vouchers::darDeBaja); el responsable del cobro, si aplica, es
+     * el resguardante. Cuando regresa el último equipo, el lote pasa a
+     * LOTE CERRADO (Historial Devueltos).
+     *
+     * @param  array<string, mixed>  $entrada  estado_recepcion, nota, generar_voucher, motivo, aplica_cobro, monto, firma_modo, firmas
+     * @return array{estado: string, voucher: ?VoucherReposicion, cerrado: bool, faltan: int}
+     */
+    public function recibirEquipo(User $actor, Responsiva $responsiva, EquipoResponsiva $fila, array $entrada, bool $puedeVoucher): array
+    {
+        if (! $responsiva->enCampo() || $fila->responsiva_id !== $responsiva->id) {
+            throw ValidationException::withMessages(['estado_recepcion' => "El resguardo {$responsiva->folio} ya se había recibido."]);
+        }
+        if (! $fila->pendiente()) {
+            throw ValidationException::withMessages(['estado_recepcion' => 'Este equipo ya se había recibido.']);
+        }
+        $datos = Validator::make($entrada, [
+            'estado_recepcion' => ['required', Rule::in(EquipoResponsiva::ESTADOS_AL_RECIBIR)],
+            'nota' => ['nullable', 'required_unless:estado_recepcion,ok', 'string', 'max:500'],
+            'generar_voucher' => ['nullable', 'boolean'],
+        ], [
+            'estado_recepcion.required' => 'Elige cómo regresa el equipo: OK, Dañado o Faltante.',
+            'estado_recepcion.in' => 'Elige cómo regresa el equipo: OK, Dañado o Faltante.',
+            'nota.required_unless' => 'Escribe una nota: qué daño tiene o qué pasó con el equipo.',
+            'nota.max' => 'La nota es muy larga (máximo 500 caracteres).',
+        ])->validate();
+        $estado = $datos['estado_recepcion'];
+        $nota = isset($datos['nota']) ? trim((string) $datos['nota']) : null;
+        $conVoucher = $estado === 'faltante' || ($estado === 'danado' && (bool) ($datos['generar_voucher'] ?? false));
+        if ($conVoucher && ! $puedeVoucher) {
+            throw ValidationException::withMessages(['generar_voucher' => 'Tu rol no puede dar de baja con voucher. '
+                .($estado === 'faltante' ? 'Pide a un supervisor que reciba este equipo faltante.' : 'Recíbelo como dañado sin voucher (queda EN MANTENIMIENTO).')]);
+        }
+        $antes = $this->foto($responsiva);
+
+        $resultado = DB::transaction(function () use ($actor, $responsiva, $fila, $entrada, $estado, $nota, $conVoucher) {
+            $equipo = Equipo::with('tipo:id,nombre')->whereKey($fila->equipo_id)->lockForUpdate()->first();
+            $voucher = null;
+            $final = $estado;
+            if ($equipo === null || $equipo->estado === 'baja') {
+                $final = 'baja';
+            } elseif ($conVoucher) {
+                $motivos = $estado === 'faltante' ? ['extraviado', 'robado'] : ['danado'];
+                $voucher = $this->equipos->darDeBaja($actor, $equipo, [
+                    'motivo' => in_array($entrada['motivo'] ?? null, $motivos, true) ? $entrada['motivo'] : $motivos[0],
+                    'descripcion' => 'Responsiva '.$responsiva->folio.': '.$nota,
+                    'colaborador_id' => ! empty($entrada['aplica_cobro']) ? $responsiva->colaborador_id : null,
+                ] + array_intersect_key($entrada, array_flip(['aplica_cobro', 'monto', 'firma_modo', 'firma_seguridad', 'firma_responsable'])));
+            } elseif ($estado === 'danado') {
+                $this->equipos->recibirDanadoDeResponsiva($actor, $equipo);
+            } else {
+                $this->equipos->asignarPorResponsiva($actor, $equipo, false);
+            }
+            $fila->forceFill(['devuelto_en' => now(), 'estado_devolucion' => $final, 'nota_devolucion' => $nota,
+                'recibido_por' => $actor->id, 'voucher_id' => $voucher?->id])->save();
+
+            $faltan = $responsiva->equipos()->whereNull('devuelto_en')->count();
+            if ($faltan === 0) {
+                $responsiva->forceFill(['estado' => Responsiva::DEVUELTA, 'devuelto_en' => now(), 'recibido_por' => $actor->id])->save();
+            }
+
+            return ['estado' => $final, 'voucher' => $voucher, 'cerrado' => $faltan === 0, 'faltan' => $faltan, 'serie' => $equipo?->numero_serie];
+        });
+
+        $this->auditoria->auditar($actor, 'responsivas.equipo_recibido', $responsiva, null, [
+            'folio' => $responsiva->folio, 'equipo' => $resultado['serie'], 'estado' => EquipoResponsiva::ESTADOS_DEVOLUCION[$resultado['estado']],
+            'nota' => $nota, 'voucher' => $resultado['voucher']?->folio, 'faltan' => $resultado['faltan'],
+        ]);
+        if ($resultado['cerrado']) {
+            $this->auditoria->auditar($actor, 'responsivas.recibido', $responsiva, $antes, $this->foto($responsiva));
+        }
+
+        return $resultado;
     }
 
     // --------------------------------------------------------------- Validación

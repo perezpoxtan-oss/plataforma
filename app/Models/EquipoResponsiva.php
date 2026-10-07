@@ -29,11 +29,45 @@ class EquipoResponsiva extends Model
         'asignado' => 'Asignación Fija',
     ];
 
+    /**
+     * Ronda 8 (RS-04): estado de cada equipo al recibirlo (devolución parcial).
+     * "baja" = ya estaba dado de baja cuando se recibió el lote.
+     */
+    public const ESTADOS_DEVOLUCION = [
+        'ok' => 'OK',
+        'danado' => 'Dañado',
+        'faltante' => 'Faltante',
+        'baja' => 'Ya estaba de baja',
+    ];
+
+    /** Los que se eligen en «Recibir» (uno por uno). */
+    public const ESTADOS_AL_RECIBIR = ['ok', 'danado', 'faltante'];
+
     protected $fillable = ['empresa_id', 'responsiva_id', 'equipo_id', 'modalidad'];
 
     protected function casts(): array
     {
         return ['devuelto_en' => 'datetime'];
+    }
+
+    public function recibio(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recibido_por');
+    }
+
+    public function voucher(): BelongsTo
+    {
+        return $this->belongsTo(VoucherReposicion::class, 'voucher_id');
+    }
+
+    public function pendiente(): bool
+    {
+        return $this->devuelto_en === null;
+    }
+
+    public function etiquetaDevolucion(): ?string
+    {
+        return $this->estado_devolucion === null ? null : (self::ESTADOS_DEVOLUCION[$this->estado_devolucion] ?? $this->estado_devolucion);
     }
 
     public function responsiva(): BelongsTo

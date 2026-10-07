@@ -203,6 +203,19 @@ class AdministradorEquipos
         $this->auditoria->auditar($actor, $asignado ? 'equipos.asignado' : 'equipos.devuelto', $equipo, ['estado' => $esperado], ['estado' => $nuevo]);
     }
 
+    /**
+     * Ronda 8 (RS-04): el equipo regresa dañado de una Responsiva y no se da de
+     * baja: queda EN MANTENIMIENTO (de ASIGNADO, nunca de otro estado).
+     */
+    public function recibirDanadoDeResponsiva(User $actor, Equipo $equipo): void
+    {
+        if ($equipo->estado !== 'asignado') {
+            throw ValidationException::withMessages(['equipo' => "El equipo {$equipo->numero_serie} no está asignado."]);
+        }
+        $equipo->forceFill(['estado' => 'en_mantenimiento'])->save();
+        $this->auditoria->auditar($actor, 'equipos.devuelto', $equipo, ['estado' => 'asignado'], ['estado' => 'en_mantenimiento']);
+    }
+
     // --------------------------------------------------------------- Validación
 
     /**

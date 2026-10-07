@@ -1351,4 +1351,18 @@ html.modo-noche .seccion-plegable > summary:hover { background: var(--superficie
 html.modo-noche .seccion-plegable-aviso { color: #fca5a5; }
 html.modo-sol .pista-acompanante { background: #fff; color: #000; border: 2px solid #000; }
 html.modo-noche .pista-acompanante { background: rgba(139, 92, 246, 0.18); color: #ddd6fe; }
+html.modo-sol .btn-recibir-equipo, html.modo-sol .opcion-recibir, html.modo-sol .resumen-recibir-equipo { border: 2px solid #000; color: #000; background: #fff; }
+html.modo-sol .opcion-recibir:has(input:checked) { background: #000; color: #fff; }
+html.modo-sol .pastilla-devolucion, html.modo-sol .aviso-recibir { background: #fff; color: #000; border: 1px solid #000; }
+html.modo-noche .btn-recibir-equipo { background: transparent; color: #86efac; border-color: #22c55e; }
+html.modo-noche .opcion-recibir { background: var(--superficie); }
+html.modo-noche .opcion-recibir.ok:has(input:checked) { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+html.modo-noche .opcion-recibir.danado:has(input:checked) { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+html.modo-noche .opcion-recibir.faltante:has(input:checked) { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+html.modo-noche .aviso-recibir.ok { background: rgba(34, 197, 94, 0.12); color: #86efac; }
+html.modo-noche .aviso-recibir.danado { background: rgba(245, 158, 11, 0.12); color: #fcd34d; }
+html.modo-noche .aviso-recibir.faltante { background: rgba(239, 68, 68, 0.12); color: #fca5a5; }
+html.modo-noche .pastilla-devolucion.ok { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+html.modo-noche .pastilla-devolucion.danado { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+html.modo-noche .pastilla-devolucion.faltante { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
 /* Fin Ronda 8 de ajustes de QA */

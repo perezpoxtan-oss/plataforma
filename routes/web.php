@@ -234,6 +234,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/responsivas', [ResponsivaController::class, 'store'])->name('responsivas.store');
     Route::get('/responsivas/equipos/{equipo}/historial', [ResponsivaController::class, 'historial'])->whereNumber('equipo')->name('responsivas.historial');
     Route::patch('/responsivas/{responsiva}/recibir', [ResponsivaController::class, 'recibir'])->whereNumber('responsiva')->name('responsivas.recibir');
+    // Ronda 8 (RS-04): devolución parcial, un equipo a la vez
+    Route::patch('/responsivas/{responsiva}/equipos/{equipo}/recibir', [ResponsivaController::class, 'recibirEquipo'])->whereNumber(['responsiva', 'equipo'])->name('responsivas.recibir-equipo');
     Route::get('/responsivas/{responsiva}/firma', [ResponsivaController::class, 'firma'])->whereNumber('responsiva')->name('responsivas.firma');
     Route::get('/responsivas/{responsiva}/hoja', [ResponsivaController::class, 'hoja'])->whereNumber('responsiva')->name('responsivas.hoja');
     // Fin Padrones: Préstamo de llaves y Responsivas

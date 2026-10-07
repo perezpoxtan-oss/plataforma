@@ -8286,6 +8286,68 @@ document.addEventListener('click', function (e) {
         }, true);
     });
 
+    /* ---------- RS-04: Recibir un equipo del lote (OK, Dañado, Faltante) ---------- */
+    function sincronizarRecibir(form) {
+        var marcado = form.querySelector('[data-recibir-estado]:checked');
+        var estado = marcado ? marcado.value : 'ok';
+        form.querySelectorAll('[data-recibir-solo]').forEach(function (el) {
+            var visible = (el.getAttribute('data-recibir-solo') || '').split(' ').indexOf(estado) !== -1;
+            el.hidden = !visible;
+            // Lo oculto no se envía (sin borrar lo que se escribió)
+            el.querySelectorAll('input, select, textarea').forEach(function (c) { c.disabled = !visible; });
+        });
+        // Dentro de lo visible, una caja oculta por su propia regla tampoco se envía
+        form.querySelectorAll('[data-recibir-solo]:not([hidden]) [data-recibir-solo][hidden] input, [data-recibir-solo]:not([hidden]) [data-recibir-solo][hidden] select').forEach(function (c) { c.disabled = true; });
+        var nota = form.querySelector('[name="nota"]');
+        if (nota) { nota.required = estado !== 'ok'; }
+        var cobro = form.querySelector('[name="aplica_cobro"]');
+        var responsable = form.querySelector('[data-recibir-responsable]');
+        if (responsable) { responsable.value = cobro && cobro.checked && !cobro.disabled ? 'resguardante' : ''; }
+        // Sin voucher, las firmas digitales no se piden
+        var caja = form.querySelector('.caja-voucher-recibir');
+        var fisica = form.querySelector('[data-firma-modo][value="fisica"]');
+        if (caja && caja.hidden && fisica) { fisica.checked = true; }
+        // Que las firmas del voucher sepan si firma también el responsable
+        var modo = form.querySelector('[data-firma-modo]:checked');
+        if (modo) { modo.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-recibir-equipo]');
+        if (!b) { return; }
+        var dialogo = document.getElementById('dialogoRecibirEquipo');
+        var form = dialogo && dialogo.querySelector('form[data-form-recibir-equipo]');
+        if (!form) { return; }
+        form.action = b.getAttribute('data-url');
+        var marca = form.querySelector('[data-campo-dialogo]');
+        if (marca) { marca.value = 'recibir-' + b.getAttribute('data-id'); }
+        [['[data-recibir-equipo-nombre]', 'data-recibir-equipo'], ['[data-recibir-folio]', 'data-folio'], ['[data-recibir-resguardante]', 'data-resguardante']].forEach(function (par) {
+            var el = form.querySelector(par[0]);
+            if (el) { el.textContent = b.getAttribute(par[1]) || ''; }
+        });
+        // Cada equipo empieza en OK, sin nota ni voucher
+        var ok = form.querySelector('[data-recibir-estado][value="ok"]');
+        if (ok) { ok.checked = true; }
+        form.querySelectorAll('textarea, input[type="number"]').forEach(function (c) { c.value = ''; });
+        form.querySelectorAll('input[type="checkbox"]').forEach(function (c) { c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); });
+        sincronizarRecibir(form);
+        if (typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
+    });
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-recibir-equipo]')) { return; }
+        if (e.target.matches('[data-recibir-estado]')) {
+            var motivo = form.querySelector('[name="motivo"]');
+            if (motivo && e.target.value === 'faltante') { motivo.value = 'extraviado'; }
+        }
+        if (e.target.matches('[data-recibir-estado], [name="aplica_cobro"]')) { sincronizarRecibir(form); }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[data-form-recibir-equipo]').forEach(sincronizarRecibir);
+    });
+
     // Un campo obligatorio vacío dentro de una sección cerrada: se abre para que el navegador lo muestre
     document.addEventListener('invalid', function (e) {
         var sec = e.target.closest && e.target.closest('details.seccion-plegable');

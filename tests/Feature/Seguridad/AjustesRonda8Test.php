@@ -4,10 +4,17 @@ namespace Tests\Feature\Seguridad;
 
 use App\Models\Acceso;
 use App\Models\AccidenteFirma;
+use App\Models\Auditoria;
 use App\Models\Colaborador;
+use App\Models\Equipo;
+use App\Models\EquipoResponsiva;
 use App\Models\Gafete;
 use App\Models\Novedad;
+use App\Models\Responsiva;
+use App\Models\TipoEquipo;
 use App\Models\TipoGafete;
+use App\Models\User;
+use App\Models\VoucherReposicion;
 use App\Services\Accesos\ConsultaAccesos;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -239,6 +246,102 @@ class AjustesRonda8Test extends PruebaNovedades
         $this->actingAs($this->admin)->get('/accesos?pestana=historial&q=inexistente')->assertOk()->assertDontSee('LAURA MENDEZ RIOS');
         // La búsqueda sin acentos también reconoce al acompañante
         $this->assertSame('sofia mendez', ConsultaAccesos::normalizar('  SOFÍA   MÉNDEZ '));
+    }
+
+    // ------------------------------------------------------------- RS-04
+
+    private function equipoRs(string $serie): Equipo
+    {
+        return $this->enEmpresa(fn () => Equipo::create(['sede_id' => $this->centro->id, 'tipo_equipo_id' => TipoEquipo::firstOrCreate(['nombre' => 'Radio de Comunicación'])->id,
+            'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'numero_serie' => $serie, 'costo' => 3500]));
+    }
+
+    private function estadoEquipo(Equipo $e): string
+    {
+        return $this->enEmpresa(fn () => Equipo::findOrFail($e->id)->estado);
+    }
+
+    public function test_rs04_devolucion_parcial_del_lote_con_estado_al_recibir_y_voucher(): void
+    {
+        Storage::fake('local');
+        $rosa = $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => '3001', 'nombre' => 'Rosa', 'apellido_paterno' => 'Poot', 'sede_id' => $this->centro->id]));
+        [$e1, $e2, $e3, $e4] = [$this->equipoRs('SN-001'), $this->equipoRs('SN-002'), $this->equipoRs('SN-003'), $this->equipoRs('SN-004')];
+        $this->actingAs($this->admin)->post('/responsivas', ['_dialogo' => 'nuevo-resguardo', 'sede_id' => $this->centro->id, 'colaborador_id' => $rosa->id,
+            'equipos' => [$e1->id, $e2->id, $e3->id, $e4->id], 'modalidades' => ['prestado', 'prestado', 'asignado', 'prestado'], 'firma' => self::firmaJpeg()])->assertSessionHasNoErrors();
+        $lote = $this->enEmpresa(fn () => Responsiva::with('equipos')->firstOrFail());
+        $fila = fn (Equipo $e) => $lote->equipos->firstWhere('equipo_id', $e->id);
+        $recibir = fn (Equipo $e, array $datos, ?User $quien = null) => $this->actingAs($quien ?? $this->admin)
+            ->patch("/responsivas/{$lote->id}/equipos/{$fila($e)->id}/recibir", $datos + ['_dialogo' => "recibir-{$lote->id}-{$fila($e)->id}"]);
+
+        // Cada equipo en campo tiene su botón «Recibir»; sigue «Recibir Lote Completo (OK)»
+        $this->actingAs($this->admin)->get('/responsivas')->assertOk()->assertSee('Recibir Lote Completo (OK)')
+            ->assertSee(route('responsivas.recibir-equipo', [$lote->id, $fila($e1)->id]), false)->assertSee('¿Cómo regresa el equipo?');
+
+        // 1. OK: vuelve a DISPONIBLE y el lote sigue en campo
+        $recibir($e1, ['estado_recepcion' => 'ok'])->assertSessionHasNoErrors()
+            ->assertSessionHas('ok', 'Equipo SN-001 recibido (OK). Del lote '.$lote->folio.' faltan 3 equipos por regresar.');
+        $this->assertSame('disponible', $this->estadoEquipo($e1));
+        $this->assertSame(Responsiva::EN_CAMPO, $this->enEmpresa(fn () => $lote->fresh()->estado));
+        // …y no se recibe dos veces
+        $recibir($e1, ['estado_recepcion' => 'ok'])->assertSessionHasErrors(['estado_recepcion' => 'Este equipo ya se había recibido.']);
+
+        // 2. Dañado: la nota es obligatoria; sin voucher queda EN MANTENIMIENTO
+        $recibir($e2, ['estado_recepcion' => 'danado'])->assertSessionHasErrors(['nota' => 'Escribe una nota: qué daño tiene o qué pasó con el equipo.']);
+        $recibir($e2, ['estado_recepcion' => 'inventado'])->assertSessionHasErrors('estado_recepcion');
+        $recibir($e2, ['estado_recepcion' => 'danado', 'nota' => 'Antena rota'])->assertSessionHasNoErrors();
+        $this->assertSame('en_mantenimiento', $this->estadoEquipo($e2));
+
+        // 3. Faltante: el Agente no genera vouchers (equipos.eliminar)
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $recibir($e3, ['estado_recepcion' => 'faltante', 'nota' => 'No lo regresó'], $agente)->assertSessionHasErrors('generar_voucher');
+        $this->assertSame('asignado', $this->estadoEquipo($e3));
+        // El administrador sí: voucher de reposición con cobro al resguardante y el equipo de BAJA
+        $recibir($e3, ['estado_recepcion' => 'faltante', 'nota' => 'Lo perdió en la playa', 'motivo' => 'extraviado', 'aplica_cobro' => '1', 'monto' => '3500', 'firma_modo' => 'fisica'])
+            ->assertSessionHasNoErrors();
+        $voucher = $this->enEmpresa(fn () => VoucherReposicion::firstOrFail());
+        $this->assertSame(['equipo', $e3->id, 'extraviado', true, '3500.00', $rosa->id], [$voucher->origen_tipo, $voucher->origen_id, $voucher->motivo, (bool) $voucher->aplica_cobro, (string) $voucher->monto, $voucher->colaborador_id]);
+        $this->assertSame('baja', $this->estadoEquipo($e3));
+
+        // 4. Dañado con voucher (ya no sirve) cierra el lote: pasa a Historial Devueltos
+        $recibir($e4, ['estado_recepcion' => 'danado', 'nota' => 'Pantalla estrellada', 'generar_voucher' => '1', 'firma_modo' => 'fisica'])->assertSessionHasNoErrors()
+            ->assertSessionHas('aviso', fn ($t) => str_contains($t, 'pasa a Historial Devueltos'));
+        $this->assertSame('baja', $this->estadoEquipo($e4));
+        $this->assertSame('danado', $this->enEmpresa(fn () => VoucherReposicion::where('origen_id', $e4->id)->value('motivo')));
+        $cerrado = $this->enEmpresa(fn () => $lote->fresh(['equipos']));
+        $this->assertSame([Responsiva::DEVUELTA, ['ok', 'danado', 'faltante', 'danado']], [$cerrado->estado, $cerrado->equipos->sortBy('id')->pluck('estado_devolucion')->values()->all()]);
+        $this->assertTrue(Auditoria::where('evento', 'responsivas.equipo_recibido')->count() === 4 && Auditoria::where('evento', 'responsivas.recibido')->exists());
+
+        // Transiciones prohibidas: el lote cerrado ya no se recibe (ni completo ni por equipo)
+        $this->actingAs($this->admin)->patch("/responsivas/{$lote->id}/recibir")->assertSessionHasErrors('responsiva');
+        $recibir($e1, ['estado_recepcion' => 'ok'])->assertSessionHasErrors('estado_recepcion');
+
+        // La hoja dice cómo y cuándo regresó cada equipo
+        $this->actingAs($this->admin)->get("/responsivas/{$lote->id}/hoja")->assertOk()
+            ->assertSee('Devolución')->assertSee('DAÑADO')->assertSee('FALTANTE')->assertSee('Antena rota')->assertSee('Voucher '.$voucher->folio);
+    }
+
+    public function test_rs04_lote_completo_recibe_solo_lo_que_sigue_en_campo_y_aislamiento(): void
+    {
+        Storage::fake('local');
+        $rosa = $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => '3001', 'nombre' => 'Rosa', 'apellido_paterno' => 'Poot', 'sede_id' => $this->centro->id]));
+        [$e1, $e2] = [$this->equipoRs('SN-101'), $this->equipoRs('SN-102')];
+        $this->actingAs($this->admin)->post('/responsivas', ['_dialogo' => 'nuevo-resguardo', 'sede_id' => $this->centro->id, 'colaborador_id' => $rosa->id,
+            'equipos' => [$e1->id, $e2->id], 'modalidades' => ['prestado', 'prestado'], 'firma' => self::firmaJpeg()])->assertSessionHasNoErrors();
+        $lote = $this->enEmpresa(fn () => Responsiva::with('equipos')->firstOrFail());
+        $f1 = $lote->equipos->firstWhere('equipo_id', $e1->id);
+        $this->actingAs($this->admin)->patch("/responsivas/{$lote->id}/equipos/{$f1->id}/recibir", ['estado_recepcion' => 'danado', 'nota' => 'Golpe'])->assertSessionHasNoErrors();
+
+        // «Recibir Lote Completo (OK)» con un equipo ya recibido: solo el que faltaba
+        $this->actingAs($this->admin)->patch("/responsivas/{$lote->id}/recibir")->assertSessionHasNoErrors()
+            ->assertSessionHas('ok', 'Lote '.$lote->folio.' recibido: 1 equipo vuelve a DISPONIBLE.');
+        $this->assertSame(['en_mantenimiento', 'disponible'], [$this->estadoEquipo($e1), $this->estadoEquipo($e2)]);
+        $this->assertSame('danado', $this->enEmpresa(fn () => EquipoResponsiva::find($f1->id)->estado_devolucion));
+
+        // Otra empresa: 404; un renglón de otro lote: 404; sin permiso: 403
+        $otra = $this->crearEmpresa('Hotel Dos');
+        $this->actingAs($this->crearUsuario($otra, 'Administrador'))->patch("/responsivas/{$lote->id}/equipos/{$f1->id}/recibir", ['estado_recepcion' => 'ok'])->assertNotFound();
+        $this->actingAs($this->admin)->patch('/responsivas/'.($lote->id + 50).'/equipos/'.$f1->id.'/recibir', ['estado_recepcion' => 'ok'])->assertNotFound();
+        $this->actingAs($this->crearUsuario($this->empresa, 'Recursos Humanos'))->patch("/responsivas/{$lote->id}/equipos/{$f1->id}/recibir", ['estado_recepcion' => 'ok'])->assertForbidden();
     }
 
     // ------------------------------------------------------------- RT-04

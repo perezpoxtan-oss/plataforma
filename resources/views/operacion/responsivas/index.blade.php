@@ -97,14 +97,28 @@
                                     <div class="rotulo-resguardo">ACTIVOS VINCULADOS AL RESGUARDO:</div>
                                 @endif
                                 @foreach ($r->equipos as $f)
-                                    <div class="eq-item">
+                                    <div class="eq-item {{ $activa && ! $f->pendiente() ? 'recibido' : '' }}">
                                         <div class="eq-item-texto">
-                                            <div class="fw-bold"><i class="bi {{ $activa ? 'bi-check-circle-fill text-success' : 'bi-dot' }} me-1" aria-hidden="true"></i>{{ $f->equipo?->tipo?->nombre ?? 'Equipo' }}
+                                            <div class="fw-bold"><i class="bi {{ $activa && $f->pendiente() ? 'bi-check-circle-fill text-success' : 'bi-dot' }} me-1" aria-hidden="true"></i>{{ $f->equipo?->tipo?->nombre ?? 'Equipo' }}
                                                 <span class="pastilla-modalidad {{ $f->modalidad }}">{{ $f->etiquetaModalidad() }}</span>
                                                 @if ($f->estado_devolucion === 'baja')<span class="pastilla-modalidad baja">BAJA</span>@endif
+                                                {{-- Ronda 8 (RS-04): estado con el que regresó --}}
+                                                @if (in_array($f->estado_devolucion, ['danado', 'faltante'], true))<span class="pastilla-devolucion {{ $f->estado_devolucion }}">{{ mb_strtoupper($f->etiquetaDevolucion()) }}</span>@endif
+                                                @if ($activa && $f->estado_devolucion === 'ok')<span class="pastilla-devolucion ok">DEVUELTO</span>@endif
                                             </div>
                                             <small class="eq-serie-resguardo">S/N: {{ $f->equipo?->numero_serie }}</small>
+                                            @if ($f->devuelto_en && ($activa || $f->estado_devolucion !== 'ok'))
+                                                <small class="eq-devolucion">Recibido @fecha($f->devuelto_en){{ $f->recibio ? ' por '.$f->recibio->name : '' }}{{ $f->voucher ? ' · Voucher '.$f->voucher->folio : '' }}{{ $f->nota_devolucion ? ' · '.$f->nota_devolucion : '' }}</small>
+                                            @endif
                                         </div>
+                                        @if ($recibible && $f->pendiente())
+                                            <button type="button" class="btn-recibir-equipo"
+                                                    data-url="{{ route('responsivas.recibir-equipo', [$r->id, $f->id]) }}" data-id="{{ $r->id }}-{{ $f->id }}"
+                                                    data-recibir-equipo="{{ trim(($f->equipo?->tipo?->nombre ?? 'Equipo').' · S/N '.$f->equipo?->numero_serie) }}"
+                                                    data-resguardante="{{ $nombre }}" data-folio="{{ $r->folio }}">
+                                                <i class="bi bi-box-arrow-in-down-left me-1" aria-hidden="true"></i>Recibir
+                                            </button>
+                                        @endif
                                         <button type="button" class="btn-historial-llave" title="Ver Historial del Equipo" aria-label="Ver historial del equipo {{ $f->equipo?->numero_serie }}"
                                                 data-historial-llave="{{ route('responsivas.historial', $f->equipo_id) }}" data-dialogo-historial="dialogoHistorialEquipo">
                                             <i class="bi bi-clock-history" aria-hidden="true"></i>
@@ -135,7 +149,7 @@
                                 @endif
                             </div>
                             @if ($recibible)
-                                <form action="{{ route('responsivas.recibir', $r->id) }}" method="POST" class="m-0" data-confirmar="¿Confirmar recepción de todos los equipos del lote {{ $r->folio }} en estado OK?">
+                                <form action="{{ route('responsivas.recibir', $r->id) }}" method="POST" class="m-0" data-confirmar="¿Confirmar recepción de {{ ($pendientesLote = $r->equipos->filter->pendiente()->count()) === $r->equipos->count() ? 'todos los equipos' : 'los '.$pendientesLote.' equipos que siguen en campo' }} del lote {{ $r->folio }} en estado OK?">
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit" class="btn-recibir-lote"><i class="bi bi-arrow-return-left me-1" aria-hidden="true"></i>Recibir Lote Completo (OK)</button>
@@ -154,6 +168,86 @@
                 @endforelse
             </div>
         @endforeach
+
+        {{-- ===== Ronda 8 (RS-04): Recibir un equipo del lote (devolución parcial) ===== --}}
+        @if ($puede['recibir'])
+            @php
+                // Tras un error se reabre con el mismo equipo
+                $reabrirRecibir = preg_match('/^recibir-(\d+)-(\d+)$/', (string) old('_dialogo'), $m) ? $enCampo->firstWhere('id', (int) $m[1]) : null;
+                $filaRecibir = $reabrirRecibir?->equipos->firstWhere('id', (int) ($m[2] ?? 0));
+                $estadoRecibir = $filaRecibir ? old('estado_recepcion', 'ok') : 'ok';
+            @endphp
+            <dialog id="dialogoRecibirEquipo" class="dialogo dialogo-recibir-equipo" aria-labelledby="titulo-recibir-equipo" @if ($filaRecibir) data-abrir-al-cargar @endif>
+                <div class="dialogo-cabecera">
+                    <h2 id="titulo-recibir-equipo"><i class="bi bi-box-arrow-in-down-left me-2 text-success" aria-hidden="true"></i>Recibir Equipo</h2>
+                    <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                </div>
+                <div class="dialogo-cuerpo">
+                    <form action="{{ $filaRecibir ? route('responsivas.recibir-equipo', [$reabrirRecibir->id, $filaRecibir->id]) : '' }}" method="POST" autocomplete="off" data-form-recibir-equipo>
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="_dialogo" value="{{ $filaRecibir ? 'recibir-'.$reabrirRecibir->id.'-'.$filaRecibir->id : '' }}" data-campo-dialogo data-prefijo-dialogo="recibir-">
+                        <div class="resumen-recibir-equipo">
+                            <div class="fw-bold" data-recibir-equipo-nombre>{{ $filaRecibir ? trim(($filaRecibir->equipo?->tipo?->nombre ?? 'Equipo').' · S/N '.$filaRecibir->equipo?->numero_serie) : '' }}</div>
+                            <div class="small text-muted">Lote <span data-recibir-folio>{{ $reabrirRecibir?->folio }}</span> · Resguardante: <span data-recibir-resguardante>{{ $reabrirRecibir?->colaborador?->nombreCompleto() }}</span></div>
+                        </div>
+
+                        <span class="campo-etiqueta">¿Cómo regresa el equipo?</span>
+                        <div class="opciones-recibir-equipo" role="radiogroup" aria-label="Estado al recibir">
+                            @foreach (['ok' => ['bi-check-circle-fill', 'OK'], 'danado' => ['bi-tools', 'Dañado'], 'faltante' => ['bi-question-octagon-fill', 'Faltante']] as $clave => [$icono, $texto])
+                                <label class="opcion-recibir {{ $clave }}">
+                                    <input type="radio" name="estado_recepcion" value="{{ $clave }}" @checked($estadoRecibir === $clave) @if ($clave === 'ok') data-por-defecto @endif data-recibir-estado>
+                                    <i class="bi {{ $icono }}" aria-hidden="true"></i><span>{{ $texto }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+
+                        <label class="campo-etiqueta" for="recibir_nota">Nota <span class="text-lowercase fw-normal" data-recibir-solo="ok">(opcional)</span><span class="text-danger" data-recibir-solo="danado faltante" hidden> * obligatoria: qué daño tiene o qué pasó</span></label>
+                        <textarea id="recibir_nota" name="nota" class="campo" rows="2" maxlength="500" placeholder="Ej: Antena rota; lo entregó el compañero del turno nocturno…">{{ $filaRecibir ? old('nota') : '' }}</textarea>
+
+                        <p class="aviso-recibir ok" data-recibir-solo="ok"><i class="bi bi-arrow-return-left me-1" aria-hidden="true"></i>El equipo vuelve a <strong>DISPONIBLE</strong>.</p>
+                        <input type="hidden" name="colaborador_id" value="" data-recibir-responsable>
+                        @if ($puede['voucher'])
+                            <div class="caja-voucher-recibir" data-recibir-solo="danado faltante" hidden>
+                                <label class="casilla-cobro-eq" data-recibir-solo="danado" hidden>
+                                    <input type="checkbox" name="generar_voucher" value="1" @checked($filaRecibir && old('generar_voucher'))>
+                                    Ya no sirve: darlo de baja con <strong>voucher de reposición</strong> (si no, queda EN MANTENIMIENTO)
+                                </label>
+                                <p class="aviso-recibir faltante" data-recibir-solo="faltante" hidden><i class="bi bi-receipt me-1" aria-hidden="true"></i>Se genera el <strong>voucher de reposición</strong> y el equipo queda como <strong>BAJA/PERDIDO</strong>. Si aparece, se reactiva en Equipos.</p>
+                                <div data-recibir-solo="faltante" hidden>
+                                    <label class="campo-etiqueta" for="recibir_motivo">Motivo del voucher</label>
+                                    <select id="recibir_motivo" name="motivo" class="campo">
+                                        <option value="extraviado" @selected(old('motivo') !== 'robado')>Extraviado</option>
+                                        <option value="robado" @selected($filaRecibir && old('motivo') === 'robado')>Robado</option>
+                                    </select>
+                                </div>
+                                <label class="casilla-cobro-eq" for="recibir_cobro">
+                                    <input type="checkbox" id="recibir_cobro" name="aplica_cobro" value="1" data-muestra-si-marcado="#cajaCobroRecibir" @checked($filaRecibir && old('aplica_cobro'))>
+                                    Aplica CXC (se le cobra al resguardante)
+                                </label>
+                                <div id="cajaCobroRecibir" class="caja-cobro-eq" hidden>
+                                    <label class="campo-etiqueta" for="recibir_monto">Monto</label>
+                                    <div class="grupo-monto">
+                                        <span class="grupo-monto-simbolo" aria-hidden="true">$</span>
+                                        <input type="number" step="0.01" min="0" max="999999.99" inputmode="decimal" id="recibir_monto" name="monto" class="campo grupo-monto-campo" placeholder="0.00"
+                                               value="{{ $filaRecibir ? old('monto') : '' }}" data-requerido-si-marcado="#recibir_cobro">
+                                    </div>
+                                </div>
+                                @include('seguridad.vouchers._firmas-baja', ['id' => 'recibir'])
+                            </div>
+                        @else
+                            <p class="aviso-recibir danado" data-recibir-solo="danado" hidden><i class="bi bi-tools me-1" aria-hidden="true"></i>El equipo queda <strong>EN MANTENIMIENTO</strong>.</p>
+                            <p class="aviso-recibir faltante" data-recibir-solo="faltante" hidden><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Un equipo faltante se da de baja con voucher de reposición, y tu rol no puede generarlo: pide a tu supervisor que lo reciba.</p>
+                        @endif
+
+                        <div class="dialogo-acciones">
+                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                            <button type="submit" class="btn-recibir-lote"><i class="bi bi-box-arrow-in-down-left me-1" aria-hidden="true"></i>Recibir Equipo</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        @endif
 
         {{-- ===== Nuevo Resguardo (Lote) ===== --}}
         @if ($puede['crear'])

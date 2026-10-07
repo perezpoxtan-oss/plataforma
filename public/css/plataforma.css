@@ -3732,6 +3732,32 @@ html:has(dialog.dialogo[open]) { overflow: hidden; scrollbar-gutter: stable; }
 /* AC-05: la búsqueda encontró a un acompañante */
 .pista-acompanante { font-size: 0.8rem; font-weight: 600; color: #6d28d9; background: #f5f3ff; border-radius: 8px; padding: 0.3rem 0.55rem; margin: 0.15rem 0 0.45rem; overflow-wrap: anywhere; }
 .pista-acompanante[hidden] { display: none; }
+/* RS-04: devolución parcial de un lote de Responsivas */
+.btn-recibir-equipo { flex-shrink: 0; min-height: 44px; padding: 0 0.7rem; border-radius: 10px; border: 1px solid #198754; background: #fff; color: #198754; font-weight: 700; font-size: 0.8rem; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; }
+.btn-recibir-equipo:hover { background: #ecfdf5; }
+.eq-item .btn-recibir-equipo + .btn-historial-llave { margin-left: -0.15rem; }
+.eq-item.recibido .eq-item-texto { opacity: 0.75; }
+.eq-devolucion { display: block; font-size: 0.72rem; color: var(--texto-suave); margin-top: 2px; overflow-wrap: anywhere; }
+.pastilla-devolucion { display: inline-block; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 5px; margin-left: 0.25rem; vertical-align: middle; }
+.pastilla-devolucion.ok { background: #dcfce7; color: #166534; }
+.pastilla-devolucion.danado { background: #fef3c7; color: #92400e; }
+.pastilla-devolucion.faltante { background: #fee2e2; color: #b91c1c; }
+.dialogo.dialogo-recibir-equipo { max-width: 560px; }
+.resumen-recibir-equipo { background: var(--fondo); border: 1px solid var(--borde); border-radius: 12px; padding: 0.65rem 0.8rem; margin-bottom: 1rem; overflow-wrap: anywhere; }
+.opciones-recibir-equipo { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.opcion-recibir { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; min-height: 64px; padding: 0.55rem 0.3rem; border: 2px solid var(--borde); border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 0.85rem; color: var(--texto-suave); position: relative; text-align: center; }
+.opcion-recibir input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.opcion-recibir i { font-size: 1.2rem; }
+.opcion-recibir:has(input:focus-visible) { outline: 3px solid var(--color-primario); outline-offset: 2px; }
+.opcion-recibir.ok:has(input:checked) { border-color: #16a34a; background: #f0fdf4; color: #166534; }
+.opcion-recibir.danado:has(input:checked) { border-color: #d97706; background: #fffbeb; color: #92400e; }
+.opcion-recibir.faltante:has(input:checked) { border-color: #dc2626; background: #fef2f2; color: #b91c1c; }
+.aviso-recibir { font-size: 0.85rem; border-radius: 10px; padding: 0.55rem 0.75rem; margin-bottom: 0.75rem; }
+.aviso-recibir.ok { background: #f0fdf4; color: #166534; }
+.aviso-recibir.danado { background: #fffbeb; color: #92400e; }
+.aviso-recibir.faltante { background: #fef2f2; color: #7f1d1d; }
+.caja-voucher-recibir { border: 1px dashed #fca5a5; border-radius: 12px; padding: 0.75rem 0.8rem 0.25rem; margin-bottom: 0.75rem; }
+.hoja-resguardo-devolucion { font-size: 0.8em; line-height: 1.3; }
 /* NV-06: los filtros se aplican solos (data-autoenviar); el botón queda solo si no hay JavaScript */
 html.filtros-automaticos form[data-autoenviar] button[type="submit"]:not([data-mantener-boton]) { display: none; }
 /* Fin Ronda 8 de ajustes de QA */
