@@ -2114,6 +2114,8 @@ class CrearDatosDemo extends Command
             // ---------- Candidatos (la caseta los registra y RR. HH. los avanza) ----------
             $acceso = function (string $nombre, int $minutos, bool $abierto, array $extra = []) use ($sedes, $agente, $candidatos, $hace): Acceso {
                 $persona = $candidatos->personaDelPadron($agente, $nombre, null);
+                // Como las registra la caseta desde Operación (ADR-0006), ya verificadas
+                $persona->forceFill(['origen_alta' => 'accesos', 'sede_alta_id' => $sedes['CEN']->id])->save();
                 $a = new Acceso($extra + ['sede_id' => $sedes['CEN']->id, 'tipo' => 'visitante', 'nombre' => mb_strtoupper($nombre), 'persona_id' => $persona->id,
                     'motivo_visita' => 'rh', 'identificacion' => 'ine', 'modo_arribo' => 'a_pie', 'entrada_at' => $hace($minutos)]);
                 $a->forceFill(['estado' => $abierto ? 'en_sitio' : 'finalizado', 'creado_por' => $agente->id, 'actualizado_por' => $agente->id]
@@ -2145,9 +2147,18 @@ class CrearDatosDemo extends Command
 
                 return $c->fresh();
             };
-            $atras = fn ($c, int $dias) => $c->forceFill(collect(['llegada_en', 'avisado_rh_en', 'revision_en', 'aprobado_rh_en', 'enviado_departamento_en',
-                'respuesta_departamento_en', 'entrevista_en', 'decision_en', 'contratado_en'])
-                ->mapWithKeys(fn ($campo, $i) => [$campo => $c->{$campo}?->copy()->subDays($dias)->addMinutes($i * 9)])->all())->save();
+            // Tiempos realistas desde la llegada (minutos después de llegar a caseta); $dias queda por compatibilidad
+            $atras = function ($c, int $dias) {
+                $minutos = ['avisado_rh_en' => 1, 'revision_en' => 9, 'aprobado_rh_en' => 35, 'enviado_departamento_en' => 35,
+                    'respuesta_departamento_en' => 52, 'entrevista_en' => 70, 'decision_en' => 110, 'contratado_en' => 1440];
+                $cambios = [];
+                foreach ($minutos as $campo => $min) {
+                    if ($c->{$campo} !== null) {
+                        $cambios[$campo] = $c->llegada_en->copy()->addMinutes($min);
+                    }
+                }
+                $c->forceFill($cambios)->save();
+            };
 
             // Esperando ahora, con su QR del kiosco
             $karla = $nuevo('Karla Pérez Uc', 12, 'Ama de Llaves', 'Camarista', true, ['escolaridad' => null, 'experiencia' => null, 'referencias' => null,
@@ -2227,7 +2238,8 @@ class CrearDatosDemo extends Command
             $visita = $acceso('Ingrid Solís Paredes', 6, true, ['motivo_visita' => 'departamento', 'departamento_id' => $depto('Seguridad')->id,
                 'empresa_procedencia' => 'CÁMARAS Y ALARMAS DEL SURESTE']);
             $visita->forceFill(['estado' => 'pendiente', 'autorizacion' => 'esperando'])->save();
-            $autorizaciones->solicitarVisita($agente, $visita, $depto('Seguridad')->id);
+            $solicitud = $autorizaciones->solicitarVisita($agente, $visita, $depto('Seguridad')->id);
+            $solicitud?->forceFill(['solicitada_en' => $visita->entrada_at->copy()->addMinute()])->save();
 
             // ---------- Visitas respondidas de días anteriores (tiempos de espera) ----------
             $quien = ['Seguridad' => $jefe, 'Alimentos y Bebidas' => $director, 'Recursos Humanos' => $rh];

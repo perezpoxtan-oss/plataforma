@@ -114,6 +114,8 @@ class AutorizacionController extends Controller
     public function responder(Request $request, int $autorizacion): RedirectResponse
     {
         Gate::authorize('autorizaciones.responder');
+        // Primero el registro (otra empresa o fuera de alcance → 404) y después la validación
+        $this->tenant->conEmpresa($this->empresaDeTrabajo($request), fn () => $this->buscar($request->user(), $autorizacion));
         $datos = $request->validate([
             'respuesta' => ['required', Rule::in(['autorizar', 'rechazar', 'entrevistar'])],
             'comentario' => ['nullable', 'string', 'max:500'],

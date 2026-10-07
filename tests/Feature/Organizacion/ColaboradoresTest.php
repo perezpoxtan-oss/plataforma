@@ -469,6 +469,8 @@ class ColaboradoresTest extends TestCase
         $provisionales = $todos->where('provisional', true);
         $this->assertSame(['Beto', 'Jorge'], $provisionales->pluck('nombre')->sort()->values()->all());
         $todos = $todos->where('provisional', false);
+        // Recepción (ADR-0007): el candidato contratado del demo no trae datos personales completos
+        $todos = $todos->reject(fn ($c) => $c->num_empleado === '2001');
 
         $this->assertCount(13, $todos);
         $this->assertSame(['1013'], $todos->where('activo', false)->pluck('num_empleado')->values()->all());

@@ -426,7 +426,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/rh/recepcion/datos', 'datos')->middleware('throttle:120,1')->name('recepcion.datos');
         Route::get('/rh/recepcion/metricas', 'metricas')->name('recepcion.metricas');
         Route::get('/rh/recepcion/kiosco', 'kiosco')->name('recepcion.kiosco');
-        Route::post('/rh/recepcion/kiosco/{candidato}', 'generarEnlace')->whereNumber('candidato')->middleware('throttle:30,1')->name('recepcion.kiosco.generar');
+        Route::post('/rh/recepcion/kiosco/{candidato}', 'generarEnlace')->whereNumber('candidato')->name('recepcion.kiosco.generar');
         Route::get('/rh/recepcion/ajustes', 'ajustes')->name('recepcion.ajustes');
         Route::put('/rh/recepcion/ajustes', 'guardarAjustes')->name('recepcion.ajustes.guardar');
         Route::get('/accesos/{acceso}/foto-persona', 'fotoPersona')->whereNumber('acceso')->name('accesos.foto-persona');

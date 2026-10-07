@@ -184,7 +184,7 @@
                 <button type="submit" class="btn-accion-acceso autorizar"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Confirmar Autorización</button>
             </form>
         </div>
-    @elseif ($modo === 'pendientes')
+    @elseif ($modo === 'pendientes' && $a->autorizacion !== 'esperando'){{-- Recepción: la visita espera al departamento, no al host --}}
         <p class="aviso-sin-permiso"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Espera a que el Host autorice; tu supervisor confirma la autorización en el sistema.</p>
     @elseif ($modo === 'en_sitio' && $puede['editar'])
         <div class="ficha-acceso-acciones">

@@ -137,6 +137,8 @@ class CandidatoController extends Controller
     public function etapa(Request $request, int $candidato): RedirectResponse
     {
         Gate::authorize('candidatos.editar');
+        // Primero el registro (otra empresa o sede → 404) y después la validación
+        $this->existe($request, $candidato, 'candidatos.editar');
         $datos = $request->validate([
             'etapa' => ['required', Rule::in(array_keys(Candidato::ETAPAS))],
             'comentario' => ['nullable', 'string', 'max:500'],
@@ -201,6 +203,7 @@ class CandidatoController extends Controller
     public function subirDocumento(Request $request, int $candidato): RedirectResponse
     {
         Gate::authorize('candidatos.editar');
+        $this->existe($request, $candidato, 'candidatos.editar');
         $request->validate([
             'tipo' => ['required', Rule::in(array_keys(CandidatoDocumento::TIPOS))],
             'documento' => ['required', 'file', 'max:'.DocumentosCandidato::MAXIMO_KB, 'mimes:pdf,jpg,jpeg,png'],
@@ -321,6 +324,11 @@ class CandidatoController extends Controller
         abort_if($c === null, 404);
 
         return $c;
+    }
+
+    private function existe(Request $request, int $id, string $permiso): void
+    {
+        $this->tenant->conEmpresa($this->empresaDeTrabajo($request), fn () => $this->buscar($request->user(), $id, $permiso));
     }
 
     private function conCandidato(Request $request, int $id, string $permiso, \Closure $accion, ?string $volver = null): RedirectResponse

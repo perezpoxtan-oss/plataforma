@@ -360,6 +360,7 @@ class CandidatosYAutorizacionesTest extends TestCase
         $doc = $this->enEmpresa(fn () => CandidatoDocumento::sole());
         $this->assertStringStartsWith('candidatos/'.$this->empresa->id.'/'.$c->id.'/', $doc->ruta);
         Storage::disk('local')->assertExists($doc->ruta);
+        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertOk()->assertSee('cv.pdf');
 
         // Un ejecutable o un HTML disfrazado no pasa
         $this->actingAs($this->rh)->post("/candidatos/{$c->id}/documentos", ['tipo' => 'ine', 'documento' => UploadedFile::fake()->createWithContent('ine.png', '<script>alert(1)</script>')])

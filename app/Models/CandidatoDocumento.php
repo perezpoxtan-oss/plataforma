@@ -31,6 +31,11 @@ class CandidatoDocumento extends Model
         return $this->belongsTo(Candidato::class);
     }
 
+    public function registradoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'creado_por');
+    }
+
     public function esImagen(): bool
     {
         return str_starts_with($this->mime, 'image/');
