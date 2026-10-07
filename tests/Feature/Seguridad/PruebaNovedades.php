@@ -54,7 +54,7 @@ abstract class PruebaNovedades extends TestCase
         return array_merge([
             '_dialogo' => 'crear',
             'sede_id' => $this->centro->id,
-            'categoria' => 'sin_clasificar',
+            'categoria' => 'incidente_general', // Ronda 8 (NV-01): ya no se despacha «Sin clasificar»
             'reportado_por' => ' camarista  rosa ',
             'ubicacion' => 'piso 2, cerca del elevador',
             'descripcion' => 'Huésped reporta olor a gas en el pasillo.',

@@ -1254,7 +1254,7 @@ class CrearDatosDemo extends Command
                 'm_atencion_cuales' => 'Valoración del médico de guardia', 'm_diagnostico' => 'Esguince leve de tobillo derecho.', 'm_hosp' => '0',
                 'm_traslado' => 'No aplica', 'm_doctor' => 'Dra. Patricia Herrera', 'm_observaciones' => 'Reposo y revisión en 48 horas.',
                 'nueva_nota' => 'Falta la firma de conformidad de la gerencia (pasa al siguiente turno).',
-            ] + collect(array_keys(AccidenteFirma::ROLES))->mapWithKeys(fn ($rol, $i) => ['f_'.$rol => $firma($i)])->all());
+            ] + collect(array_keys(AccidenteFirma::rolesPara('HUESPED')))->mapWithKeys(fn ($rol, $i) => ['f_'.$rol => $firma($i)])->all());
 
             // 3. Accidente de colaboradora, resuelto con incapacidad de RH
             $n = $crear($admin, ['sede_id' => $centro->id, 'categoria' => 'accidente', 'reportado_por' => 'Guadalupe Chan Ek', 'reportado_colaborador_id' => $colaborador('1009'),
@@ -1321,14 +1321,16 @@ class CrearDatosDemo extends Command
             ]);
 
             // 8. Playa: uno sin clasificar (agente de playa) y un Reporte General resuelto
-            $crear($agentePlaya, ['sede_id' => $sedes['PLA']->id, 'categoria' => 'sin_clasificar', 'reportado_por' => $agentePlaya->name,
-                'ubicacion' => 'Cuarto de máquinas', 'descripcion' => 'Ruido extraño en el cuarto de máquinas de la alberca.', 'ocurrio_en' => $hace(4)]);
+            // Ronda 8: ya no se despacha sin clasificar; queda como los tickets que se importen de SEGCAT
+            $crear($agentePlaya, ['sede_id' => $sedes['PLA']->id, 'categoria' => 'incidente_general', 'reportado_por' => $agentePlaya->name,
+                'ubicacion' => 'Cuarto de máquinas', 'descripcion' => 'Ruido extraño en el cuarto de máquinas de la alberca.', 'ocurrio_en' => $hace(4)])
+                ->forceFill(['categoria' => 'sin_clasificar'])->saveQuietly();
             $n = $crear($admin, ['sede_id' => $sedes['PLA']->id, 'categoria' => 'incidente_general', 'reportado_por' => 'Daniela Canul May',
                 'ubicacion' => 'Lobby', 'descripcion' => 'Vendedor ambulante dentro del lobby.', 'ocurrio_en' => $hace(75)]);
             $atender($admin, $n, ['ig_acciones' => 'Se le pidió retirarse con cortesía.', 'estatus' => 'resuelto', 'resolucion' => 'La persona se retiró sin incidentes.']);
 
             // 9. Recorrido PC histórico (ya no se crea desde aquí; viene de SEGCAT)
-            $n = $crear($admin, ['sede_id' => $centro->id, 'reportado_por' => $admin->name, 'ubicacion' => 'Torre A', 'descripcion' => 'Recorrido de inspección de extintores (histórico).',
+            $n = $crear($admin, ['sede_id' => $centro->id, 'categoria' => 'incidente_general', 'reportado_por' => $admin->name, 'ubicacion' => 'Torre A', 'descripcion' => 'Recorrido de inspección de extintores (histórico).',
                 'ocurrio_en' => $hace(240)]);
             $n->forceFill(['categoria' => 'recorrido_pc'])->save();
             $atender($admin, $n, ['rpc_puntos' => [

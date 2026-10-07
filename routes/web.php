@@ -247,6 +247,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/novedades/coincidencias', 'coincidencias')->middleware('throttle:60,1')->name('novedades.coincidencias');
         Route::post('/novedades/perdidas/{reporte}/vincular', 'vincularPerdida')->whereNumber('reporte')->name('novedades.perdidas.vincular');
         Route::put('/novedades/{novedad}', 'update')->whereNumber('novedad')->name('novedades.update');
+        // Ronda 8 (NV-03): con GET la dirección del expediente lo abre (antes: 405)
+        Route::get('/novedades/{novedad}', 'mostrar')->whereNumber('novedad')->name('novedades.mostrar');
         Route::post('/novedades/{novedad}/reabrir', 'reabrir')->whereNumber('novedad')->name('novedades.reabrir');
         Route::post('/novedades/{novedad}/vincular-hallazgo', 'vincularRobo')->whereNumber('novedad')->name('novedades.robo.vincular');
         Route::get('/novedades/{novedad}/imprimir', 'imprimir')->whereNumber('novedad')->name('novedades.imprimir');

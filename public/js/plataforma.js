@@ -8170,3 +8170,68 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Recepción de candidatos y autorizaciones departamentales */
+/* ==========================================================================
+   Ronda 8 de ajustes de QA
+   - NV-03: los firmantes del Accidente dependen del Tipo de Afectado y una
+     firma dibujada sin «Guardar Esta Firma» no se pierde al guardar.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    /* ---------- NV-03: firmantes según huésped o colaborador ---------- */
+    function rolesFirma(selector, tipo) {
+        var todos = {};
+        try { todos = JSON.parse(selector.getAttribute('data-roles-por-tipo') || '{}'); } catch (x) { todos = {}; }
+        return todos[tipo] || todos[''] || [];
+    }
+
+    function sincronizarFirmantes(form) {
+        var tipo = form.querySelector('[name="acc_tipo_afectado"]');
+        var selector = form.querySelector('[data-nov-selector-firma]');
+        if (!tipo || !selector) { return; }
+        var roles = rolesFirma(selector, tipo.value);
+        var validos = roles.map(function (r) { return r[0]; });
+        var actual = selector.value;
+        selector.textContent = '';
+        roles.forEach(function (r) {
+            var op = document.createElement('option');
+            op.value = r[0];
+            op.textContent = r[1];
+            selector.appendChild(op);
+        });
+        if (validos.indexOf(actual) !== -1) { selector.value = actual; }
+        // Las firmas pendientes de un firmante que ya no aplica no se envían
+        var caja = selector.closest('[data-nov-firmas]');
+        if (!caja) { return; }
+        caja.querySelectorAll('input[type="hidden"][id^="val_firma_"]').forEach(function (oculto) {
+            var rol = oculto.id.replace('val_firma_', '');
+            if (validos.indexOf(rol) === -1 && oculto.value) {
+                oculto.value = '';
+                var badge = caja.querySelector('[data-firma-rol="' + rol + '"]');
+                if (badge) { badge.remove(); }
+            }
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches || !e.target.matches('[name="acc_tipo_afectado"]') || !e.target.form) { return; }
+        sincronizarFirmantes(e.target.form);
+    });
+
+    // Al guardar: si quedó una firma dibujada sin «Guardar Esta Firma», se guarda
+    // para el firmante elegido; el recuadro de trabajo no se envía (pesa de más)
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches || !form.matches('[data-form-novedad="expediente"]')) { return; }
+        var caja = form.querySelector('fieldset[data-formato="accidente"]:not([disabled]) [data-nov-firmas]');
+        if (!caja) { return; }
+        var trabajo = caja.querySelector('[data-firma-valor]');
+        var selector = caja.querySelector('[data-nov-selector-firma]');
+        if (trabajo && trabajo.value && selector) {
+            var destino = caja.querySelector('#val_firma_' + selector.value);
+            if (destino && !destino.value) { destino.value = trabajo.value; }
+        }
+        if (trabajo) { trabajo.disabled = true; }
+    }, true);
+})();
+/* Fin Ronda 8 de ajustes de QA */

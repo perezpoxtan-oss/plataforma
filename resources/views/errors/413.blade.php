@@ -1,0 +1,2 @@
+{{-- Ronda 8: envío demasiado grande (fotos o firmas que superan el límite del servidor) --}}
+@include('errors.plantilla', ['codigo' => 413, 'icono' => 'bi-file-earmark-x', 'color' => '#d97706', 'titulo' => 'La información es demasiado grande', 'mensaje' => 'El envío supera el tamaño que acepta el servidor (por ejemplo, fotos muy pesadas o muchas firmas a la vez). Regresa a la pantalla, guarda en partes o usa imágenes más ligeras.', 'accion' => 'inicio'])
