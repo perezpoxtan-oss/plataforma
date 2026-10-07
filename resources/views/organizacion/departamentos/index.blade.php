@@ -20,7 +20,6 @@
         @php
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
-            $existentes = json_encode($departamentos->map(fn ($d) => mb_strtolower($d->nombre))->values());
             $variasSedes = $sedes->count() > 1;
         @endphp
 
@@ -126,8 +125,8 @@
 
                         <label class="campo-etiqueta" for="{{ $modo }}_dep_nombre">Nombre del Departamento</label>
                         <input type="text" id="{{ $modo }}_dep_nombre" name="nombre" class="campo" maxlength="100" placeholder="Ej. Recursos Humanos"
-                               value="{{ $reabrir ? old('nombre') : '' }}" data-nombres-existentes="{{ $existentes }}" required>
-                        <p data-aviso-nombre hidden></p>
+                               value="{{ $reabrir ? old('nombre') : '' }}" required
+                               data-duplicado="{{ route('departamentos.duplicado') }}">
 
                         @if ($variasSedes)
                             <span class="campo-etiqueta d-block">Sedes donde aplica</span>

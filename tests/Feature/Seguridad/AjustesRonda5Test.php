@@ -110,12 +110,10 @@ class AjustesRonda5Test extends TestCase
         $this->actingAs($this->admin)->put("/llaves/{$playa->id}", ['sede_id' => $this->centro->id, 'nomenclatura' => 'HDC-101', 'descripcion' => 'X',
             'tipo_dispositivo' => 'metalica', 'alcance' => 'global'])->assertSessionHasErrors('nomenclatura');
 
-        // El aviso en vivo trae la lista por sede
-        $pagina = $this->actingAs($this->admin)->get('/llaves')->assertOk()->assertSee('Nombre de la Llave (Único en su sede)')
-            ->assertSee('data-ambito-nombre="esta sede"', false)->getContent();
-        $this->assertStringContainsString('data-nombres-por-sede="{', $pagina);
-        $this->assertStringContainsString('&quot;'.$this->centro->id.'&quot;:[&quot;hdc-101&quot;]', $pagina);
-        $this->assertStringContainsString('&quot;'.$this->playa->id.'&quot;:[&quot;hdc-101&quot;]', $pagina);
+        // El aviso en vivo revisa la sede elegida (Ronda 7: aviso único de duplicados, ver AjustesRonda7Test)
+        $this->actingAs($this->admin)->get('/llaves')->assertOk()->assertSee('Nombre de la Llave (Único en su sede)')
+            ->assertSee('data-duplicado="'.route('llaves.duplicado').'"', false)->assertSee('data-duplicado-con="sede_id"', false);
+        $this->actingAs($this->admin)->getJson('/llaves/duplicado?campo=nomenclatura&valor=hdc-101&sede_id='.$this->centro->id)->assertJsonPath('estado', 'existe');
     }
 
     // ------------------------------------------------- LL-02: cascada de lugares

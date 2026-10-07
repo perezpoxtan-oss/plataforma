@@ -13,6 +13,7 @@ use App\Services\Permisos\Alcance;
 use App\Services\Usuarios\HomonimosUsuarios;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
 use Tests\TestCase;
 
@@ -109,37 +110,46 @@ class UsuariosHomonimosTest extends TestCase
         $this->actingAs($this->admin)->put("/usuarios/{$otra->id}", $base + ['name' => 'DANIELA CANUL MAY', 'email' => 'otra2@ejemplo.mx'])->assertSessionHasNoErrors();
     }
 
+    /** Ronda 7: el aviso en vivo usa el mecanismo único de duplicados (GET /usuarios/duplicado?campo=name). */
+    private function aviso(User $quien, string $nombre, array $extra = []): TestResponse
+    {
+        return $this->actingAs($quien)->getJson('/usuarios/duplicado?'.http_build_query(['campo' => 'name', 'valor' => $nombre] + $extra));
+    }
+
     public function test_aviso_en_vivo_con_usuarios_y_colaborador_por_vincular(): void
     {
         $c = $this->colaborador('1008', 'Daniela', 'Canul', 'May');
         $this->colaborador('2000', 'Daniela', 'Canul', 'Pech'); // otro apellido materno: no es homónimo
-        $vacio = $this->actingAs($this->admin)->getJson('/usuarios/homonimos?nombre=daniela canul may')->assertOk();
-        $this->assertSame([], $vacio->json('usuarios'));
+        $vacio = $this->aviso($this->admin, 'daniela canul may')->assertOk()->assertJsonPath('estado', 'parecido');
         $this->assertFalse($vacio->json('requiere_confirmacion'));
-        $this->assertSame([[$c->id, '1008', 'Daniela Canul May']], array_map(fn ($x) => [$x['id'], $x['num_empleado'], $x['nombre_completo']], $vacio->json('colaboradores')));
+        $this->assertSame([[$c->id, '1008', 'Daniela Canul May']], array_map(fn ($x) => [$x['vincular']['id'], $x['vincular']['num_empleado'], $x['vincular']['nombre_completo']], $vacio->json('coincidencias')));
+        $this->assertStringContainsString('toca «Vincular»', $vacio->json('mensaje'));
 
         // Con un usuario «Daniela Canul May» que NO está vinculado
         $this->actingAs($this->admin)->post('/usuarios', $this->datos())->assertSessionHasNoErrors();
-        $r = $this->actingAs($this->admin)->getJson('/usuarios/homonimos?nombre='.urlencode('DANIELA CANÚL MAY'))->assertOk();
-        $this->assertSame('Ya existe un usuario con ese nombre: @dcanul (Agente). ¿Es la misma persona?', $r->json('mensaje'));
-        $this->assertSame([['username' => 'dcanul', 'rol' => 'Agente', 'colaborador' => null, 'activo' => true]], $r->json('usuarios'));
+        $r = $this->aviso($this->admin, 'DANIELA CANÚL MAY')->assertOk();
+        $this->assertSame('Ya existe un usuario con ese nombre: @dcanul (Agente). ¿Es la misma persona? Si es otra persona, marca «Sí, es otra persona con el mismo nombre».', $r->json('mensaje'));
+        $this->assertSame('@dcanul', $r->json('coincidencias.0.titulo'));
+        $this->assertSame('Daniela Canul May · Agente', $r->json('coincidencias.0.detalle'));
         $this->assertTrue($r->json('requiere_confirmacion'));
         // El colaborador #1008 sigue sin cuenta: se sugiere vincularlo
-        $this->assertSame($c->id, $r->json('colaboradores.0.id'));
+        $this->assertSame($c->id, $r->json('coincidencias.1.vincular.id'));
 
         // Editando a la misma cuenta: no se cuenta a sí misma
         $dcanul = User::where('username', 'dcanul')->firstOrFail();
-        $this->actingAs($this->admin)->getJson("/usuarios/homonimos?nombre=Daniela Canul May&excluir={$dcanul->id}")
-            ->assertJsonPath('usuarios', [])->assertJsonPath('requiere_confirmacion', false);
+        $sinSiMisma = $this->aviso($this->admin, 'Daniela Canul May', ['excluir' => $dcanul->id])->assertJsonPath('requiere_confirmacion', false);
+        $this->assertNotContains('@dcanul', array_column($sinSiMisma->json('coincidencias'), 'titulo'));
 
         // Una vez vinculado, el colaborador ya no se sugiere
         $dcanul->forceFill(['colaborador_id' => $c->id])->save();
-        $this->actingAs($this->admin)->getJson('/usuarios/homonimos?nombre=Daniela Canul May')->assertJsonPath('colaboradores', [])
-            ->assertJsonPath('usuarios.0.colaborador', '1008');
+        $vinculado = $this->aviso($this->admin, 'Daniela Canul May')->assertJsonCount(1, 'coincidencias');
+        $this->assertSame('Daniela Canul May · Agente · Colaborador #1008', $vinculado->json('coincidencias.0.detalle'));
+        // El que se acaba de vincular en el formulario (colaborador_id) tampoco
+        $this->aviso($this->admin, 'Daniela Canul May', ['excluir' => $dcanul->id, 'colaborador_id' => $c->id])->assertJsonPath('estado', 'nada');
 
-        // Nombre corto o raro: vacío, sin error
-        $this->actingAs($this->admin)->getJson('/usuarios/homonimos?nombre=Da')->assertJsonPath('usuarios', []);
-        $this->actingAs($this->admin)->getJson('/usuarios/homonimos?nombre[]=x')->assertOk()->assertJsonPath('usuarios', []);
+        // Nombre corto o raro: nada, sin error
+        $this->aviso($this->admin, 'Da')->assertJsonPath('estado', 'nada');
+        $this->actingAs($this->admin)->getJson('/usuarios/duplicado?campo=name&valor[]=x')->assertOk()->assertJsonPath('estado', 'nada');
     }
 
     public function test_el_aviso_respeta_empresa_permiso_y_alcance_de_sede(): void
@@ -149,11 +159,10 @@ class UsuariosHomonimosTest extends TestCase
 
         // Otra empresa: no ve nada de esta
         $intruso = $this->crearUsuario($this->crearEmpresa('Hotel Dos'), 'Administrador');
-        $this->actingAs($intruso)->getJson('/usuarios/homonimos?nombre=Daniela Canul May')
-            ->assertOk()->assertJsonPath('usuarios', [])->assertJsonPath('otros', 0)->assertJsonPath('colaboradores', []);
+        $this->aviso($intruso, 'Daniela Canul May')->assertOk()->assertJsonPath('estado', 'nada')->assertJsonPath('coincidencias', []);
 
         // Sin permiso de usuarios: 403
-        $this->actingAs($this->crearUsuario($this->empresa, 'Agente', $this->centro))->getJson('/usuarios/homonimos?nombre=Daniela Canul May')->assertForbidden();
+        $this->aviso($this->crearUsuario($this->empresa, 'Agente', $this->centro), 'Daniela Canul May')->assertForbidden();
 
         // Con alcance de sede (Centro): sabe que existe, pero no ve los datos de la otra sede
         $rol = Rol::create(['empresa_id' => $this->empresa->id, 'nombre' => 'Gerente', 'nivel_jerarquia' => 15]);
@@ -163,17 +172,16 @@ class UsuariosHomonimosTest extends TestCase
             RolPermiso::create(['rol_id' => $rol->id, 'modulo_accion_id' => $ma->id, 'alcance' => Alcance::Sede]);
         }
         $gerente = $this->crearUsuario($this->empresa, 'Gerente', $this->centro);
-        $r = $this->actingAs($gerente)->getJson('/usuarios/homonimos?nombre=Daniela Canul May')->assertOk();
-        $this->assertSame([], $r->json('usuarios'));
-        $this->assertSame(1, $r->json('otros'));
-        $this->assertSame([], $r->json('colaboradores'));
-        $this->assertSame('Ya existe un usuario con ese nombre: otro usuario de una sede que no tienes a cargo. ¿Es la misma persona?', $r->json('mensaje'));
+        $r = $this->aviso($gerente, 'Daniela Canul May')->assertOk()->assertJsonPath('estado', 'parecido');
+        $this->assertSame([], $r->json('coincidencias'));
+        $this->assertSame('Ya existe un usuario con ese nombre: otro usuario de una sede que no tienes a cargo. ¿Es la misma persona? Si es otra persona, marca «Sí, es otra persona con el mismo nombre».', $r->json('mensaje'));
     }
 
     public function test_la_pantalla_trae_el_aviso_y_la_confirmacion(): void
     {
         $this->actingAs($this->admin)->get('/usuarios')->assertOk()
-            ->assertSee('data-homonimos="'.route('usuarios.homonimos').'"', false)
+            ->assertSee('data-duplicado="'.route('usuarios.duplicado').'"', false)
+            ->assertDontSee('data-homonimos', false)
             ->assertSee('name="confirmar_homonimo"', false)
             ->assertSee('Sí, es otra persona con el mismo nombre');
     }

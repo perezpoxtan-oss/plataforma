@@ -143,7 +143,8 @@ class CatalogoSeeder extends Seeder
                 'tendencias' => ['Tendencias', 'bi-graph-up', ['exportar'], [], ['ver']],
                 'bitacora_dia' => ['Bitácora general del día', 'bi-calendar-day', ['exportar', 'imprimir'], [], ['ver']],
                 // Ronda 6 (LL-06): impresión masiva de etiquetas QR; cada tipo pide además su propio permiso
-                'etiquetas_qr' => ['Etiquetas QR', 'bi-qr-code', [], [], ['ver']],
+                // Ronda 7: «configurar» = sub-pantalla Plantillas del gestor de impresión
+                'etiquetas_qr' => ['Etiquetas QR', 'bi-qr-code', ['configurar'], [], ['ver']],
             ]],
         ];
     }

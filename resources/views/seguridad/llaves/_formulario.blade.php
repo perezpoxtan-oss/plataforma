@@ -97,11 +97,10 @@
                 'ayuda' => 'Excepcional: la mayoría de las llaves NO llevan a nadie aquí; el préstamo normal se registra en Préstamo de llaves. Escanea su gafete o escribe su número de empleado.'])
 
             <label class="campo-etiqueta" for="{{ $p }}nomenclatura">Nombre de la Llave (Único en su sede)</label>
-            {{-- Ronda 5 (LL-03): la lista de nombres cambia con la sede elegida (data-nombres-por-sede) --}}
+            {{-- Ronda 7: aviso único de duplicados; el nombre se revisa en la sede elegida (data-duplicado-con="sede_id") --}}
             <input type="text" id="{{ $p }}nomenclatura" name="nomenclatura" class="campo text-uppercase mb-1" maxlength="50" placeholder="Ej: LL-CAT-SIT-01"
-                   value="{{ $valor('nomenclatura') }}" autocapitalize="characters" data-nombres-existentes="[]" data-nombres-por-sede="{{ $nombresExistentes }}"
-                   data-ambito-nombre="esta sede" required>
-            <p class="small mb-2" data-aviso-nombre hidden></p>
+                   value="{{ $valor('nomenclatura') }}" autocapitalize="characters" required
+                   data-duplicado="{{ route('llaves.duplicado') }}" data-duplicado-con="sede_id">
 
             <label class="campo-etiqueta" for="{{ $p }}descripcion">Descripción de Accesos</label>
             <input type="text" id="{{ $p }}descripcion" name="descripcion" class="campo" maxlength="255" placeholder="Ej: Llaves del site central de TI" value="{{ $valor('descripcion') }}" required>

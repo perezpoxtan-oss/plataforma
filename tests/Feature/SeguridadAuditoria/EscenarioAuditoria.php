@@ -122,6 +122,9 @@ trait EscenarioAuditoria
             'notificacion' => 'notificaciones',
             'autorizacion' => 'autorizaciones',
             'delegacion' => 'delegaciones',
+            // Ronda 7: gestor de impresión QR
+            'impresion' => 'impresiones_etiquetas',
+            'plantilla' => 'etiquetas_plantillas',
         ][$parametro] ?? null;
     }
 

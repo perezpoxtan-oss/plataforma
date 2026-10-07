@@ -1248,6 +1248,42 @@ html.modo-noche .texto-etiqueta-qr small { color: #94a3b8; }
 html.modo-noche .pantalla-etiquetas-qr .texto-error { color: #fca5a5; }
 /* Fin Ajustes Ronda 6 */
 
+/* ==========================================================================
+   Ajustes Ronda 7 — Sol (alto contraste) y Noche
+   ========================================================================== */
+html.modo-sol .btn-vincular-duplicado { background: #000; color: #fff; border: 2px solid #000; }
+html.modo-sol .pestanas-etiquetas-qr { border-bottom-color: #000; }
+html.modo-sol .pestanas-etiquetas-qr a { color: #000; }
+html.modo-sol .pestanas-etiquetas-qr a.activa { border-bottom-color: #000; text-decoration: underline; }
+html.modo-sol .impresion-qr, html.modo-sol .plantilla-qr, html.modo-sol .ayuda-plantillas-qr, html.modo-sol .opcion-formato-qr { background: #fff; border: 2px solid #000; color: #000; box-shadow: none; }
+html.modo-sol .impresion-qr-detalle, html.modo-sol .impresion-qr-titulos, html.modo-sol .impresion-qr-cabeza small, html.modo-sol .plantilla-qr-datos,
+html.modo-sol .plantilla-qr-cabeza p, html.modo-sol .traza-plantilla-qr, html.modo-sol .lista-reimprimir-qr small { color: #000; }
+html.modo-sol .conteo-impresion-qr { background: #000; color: #fff; }
+html.modo-sol .pildora-reimpresion, html.modo-sol .pildora-siempre { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-desactivar-plantilla, html.modo-sol .btn-activar-plantilla { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .aviso-medidas-qr, html.modo-sol .texto-error-campo { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .texto-error-campo { border: none; text-decoration: underline; }
+html.modo-sol .opcion-formato-qr:has(input:checked) { outline: 3px solid #000; outline-offset: 1px; }
+html.modo-sol .lista-reimprimir-qr { border: 2px solid #000; }
+
+html.modo-noche .btn-vincular-duplicado { background: rgba(59, 130, 246, 0.15); border-color: #1d4ed8; color: #bfdbfe; }
+html.modo-noche .pestanas-etiquetas-qr { border-bottom-color: #334155; }
+html.modo-noche .pestanas-etiquetas-qr a { color: #94a3b8; }
+html.modo-noche .pestanas-etiquetas-qr a:hover, html.modo-noche .pestanas-etiquetas-qr a.activa { color: #f1f5f9; border-bottom-color: #e2e8f0; }
+html.modo-noche .impresion-qr-detalle, html.modo-noche .plantilla-qr-datos, html.modo-noche .ayuda-plantillas-qr { color: #cbd5e1; }
+html.modo-noche .conteo-impresion-qr { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .pildora-reimpresion { background: rgba(99, 102, 241, 0.18); color: #c7d2fe; }
+html.modo-noche .pildora-siempre { background: #334155; color: #e2e8f0; }
+html.modo-noche .titulo-seccion-qr { color: #f1f5f9; }
+html.modo-noche .opcion-formato-qr { border-color: #334155; }
+html.modo-noche .opcion-formato-qr:has(input:checked) { border-color: #94a3b8; background: #273449; }
+html.modo-noche .btn-desactivar-plantilla { background: transparent; border-color: #b91c1c; color: #fca5a5; }
+html.modo-noche .btn-activar-plantilla { background: rgba(16, 185, 129, 0.15); border-color: #059669; color: #6ee7b7; }
+html.modo-noche .aviso-medidas-qr { background: rgba(239, 68, 68, 0.12); border-color: #b91c1c; color: #fecaca; }
+html.modo-noche .texto-error-campo { color: #fca5a5; }
+html.modo-noche .vista-plantilla-qr { background: repeating-conic-gradient(#1e293b 0 25%, #0f172a 0 50%) 0 0 / 16px 16px; border-color: #334155; }
+html.modo-noche .plantilla-qr-muestra { background: #e2e8f0; }
+/* Fin Ajustes Ronda 7 */
 /* Recepción de candidatos y autorizaciones (ADR-0007): Sol y Noche */
 html.modo-sol .btn-campana, html.modo-sol .btn-secundario-rh, html.modo-sol .btn-etapa, html.modo-sol .opcion-cv, html.modo-sol .btn-foto-acceso,
 html.modo-sol .campana-panel, html.modo-sol .notificacion-fila, html.modo-sol .contador-rh, html.modo-sol .fila-recepcion, html.modo-sol .tarjeta-autorizacion,

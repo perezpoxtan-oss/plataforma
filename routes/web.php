@@ -338,7 +338,6 @@ Route::middleware('auth')->group(function () {
     });
     // Fin Padrones: Equipos de Protección Civil
     // Padrones: Ajustes QA 4 (homónimos en Usuarios y Colaboradores; días de resguardo de Lost & Found en Configuración)
-    Route::get('/usuarios/homonimos', [UsuarioController::class, 'homonimos'])->middleware('throttle:120,1')->name('usuarios.homonimos');
     Route::get('/colaboradores/homonimos', [ColaboradorController::class, 'homonimos'])->middleware('throttle:120,1')->name('colaboradores.homonimos');
     Route::put('/configuracion/lost-found', [ConfiguracionController::class, 'lostFound'])->name('configuracion.lost_found');
     // Fin Padrones: Ajustes QA 4
@@ -408,7 +407,7 @@ Route::middleware('auth')->group(function () {
     });
     Route::controller('App\Http\Controllers\Padrones\EtiquetaController')->group(function () {
         Route::get('/etiquetas', 'index')->name('etiquetas.index');
-        Route::get('/etiquetas/imprimir', 'imprimir')->name('etiquetas.imprimir');
+        Route::post('/etiquetas/imprimir', 'imprimir')->name('etiquetas.imprimir'); // Ronda 7: POST (registra la impresión en el historial)
     });
     Route::post('/vouchers/{voucher}/recuperado', [VoucherController::class, 'recuperado'])->whereNumber('voucher')->name('vouchers.recuperado');
     Route::post('/vouchers/{voucher}/reembolso', [VoucherController::class, 'reembolso'])->whereNumber('voucher')->name('vouchers.reembolso');
@@ -459,6 +458,29 @@ Route::middleware('auth')->group(function () {
         Route::get('/accesos/autorizaciones-estado', 'estadoCaseta')->middleware('throttle:120,1')->name('accesos.autorizaciones-estado');
     });
     // Fin Padrones: Recepción de candidatos y autorizaciones departamentales
+    // Padrones: Ajustes Ronda 7 (avisos de duplicado de Llaves, catálogos de RH y Usuarios; gestor de impresión QR)
+    Route::controller('App\Http\Controllers\Padrones\DuplicadoCatalogosController')->middleware('throttle:120,1')->group(function () {
+        Route::get('/llaves/duplicado', 'llaves')->name('llaves.duplicado');
+        Route::get('/departamentos/duplicado', 'departamentos')->name('departamentos.duplicado');
+        Route::get('/puestos/duplicado', 'puestos')->name('puestos.duplicado');
+        Route::get('/turnos/duplicado', 'turnos')->name('turnos.duplicado');
+        Route::get('/usuarios/duplicado', 'usuarios')->name('usuarios.duplicado');
+    });
+    Route::controller('App\Http\Controllers\Padrones\EtiquetaController')->group(function () {
+        Route::get('/etiquetas/historial', 'historial')->name('etiquetas.historial');
+        Route::get('/etiquetas/impresiones/{impresion}', 'impresion')->whereNumber('impresion')->name('etiquetas.impresion');
+        Route::post('/etiquetas/impresiones/{impresion}/reimprimir', 'reimprimir')->whereNumber('impresion')->name('etiquetas.reimprimir');
+    });
+    Route::controller('App\Http\Controllers\Padrones\EtiquetaPlantillaController')->group(function () {
+        Route::get('/etiquetas/plantillas', 'index')->name('etiquetas.plantillas');
+        Route::get('/etiquetas/plantillas/nueva', 'create')->name('etiquetas.plantillas.create');
+        Route::post('/etiquetas/plantillas', 'store')->name('etiquetas.plantillas.store');
+        Route::get('/etiquetas/plantillas/{plantilla}/editar', 'edit')->whereNumber('plantilla')->name('etiquetas.plantillas.edit');
+        Route::put('/etiquetas/plantillas/{plantilla}', 'update')->whereNumber('plantilla')->name('etiquetas.plantillas.update');
+        Route::patch('/etiquetas/plantillas/{plantilla}/estado', 'estado')->whereNumber('plantilla')->name('etiquetas.plantillas.estado');
+        Route::get('/etiquetas/plantillas/{plantilla}/prueba', 'prueba')->whereNumber('plantilla')->name('etiquetas.plantillas.prueba');
+    });
+    // Fin Padrones: Ajustes Ronda 7
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
