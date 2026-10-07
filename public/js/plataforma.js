@@ -7226,6 +7226,7 @@ document.addEventListener('click', function (e) {
                 // Solo la respuesta más nueva y si el texto sigue igual
                 if (campo.getAttribute('data-duplicado-turno') !== mio || campo.value.trim() !== valor) { return; }
                 pintar(campo, datos);
+                campo.dispatchEvent(new CustomEvent('duplicado:pintado', { bubbles: true, detail: datos })); // Ronda 7: para acciones propias de un módulo (Usuarios: «Vincular»)
             })
             .catch(function () { limpiar(campo); /* sin aviso: el servidor vuelve a revisar al guardar */ });
     }
@@ -7634,3 +7635,538 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Ajustes Ronda 6 */
+/* ==========================================================================
+   Ajustes Ronda 7 (ver docs/cursos/leccion-32-ajustes-ronda-7-e-impresion.md)
+   1. Usuarios: el aviso de homónimos usa el aviso único de duplicados
+      (<input name="name" data-duplicado data-duplicado-usuarios>). Aquí
+      solo se agregan «Vincular» (colaborador con ese nombre que aún no tiene
+      cuenta) y la casilla «Sí, es otra persona con el mismo nombre».
+   2. Etiquetas QR: la medida de la plantilla elegida, debajo de la barra.
+   3. Etiquetas QR → Historial: diálogo «Reimprimir» (todas o algunas).
+   4. Etiquetas QR → Plantillas: campos de la hoja según el formato y vista
+      previa a escala, con aviso si la planilla no cabe en la hoja.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto, siFalla) { try { return JSON.parse(texto); } catch (x) { return siFalla; } }
+
+    function nodo(etiqueta, clase, texto) {
+        var e = document.createElement(etiqueta);
+        if (clase) { e.className = clase; }
+        if (texto !== undefined && texto !== null) { e.textContent = texto; }
+        return e;
+    }
+
+    /* ---------- 1. Usuarios: «Vincular» y «Sí, es otra persona…» ---------- */
+    function confirmarDe(form) { return form ? form.querySelector('[data-confirmar-homonimo]') : null; }
+
+    function mostrarConfirmar(form, visible) {
+        var confirmar = confirmarDe(form);
+        if (!confirmar) { return; }
+        confirmar.hidden = !visible;
+        if (!visible) {
+            var casilla = confirmar.querySelector('input');
+            if (casilla) { casilla.checked = false; }
+        }
+    }
+
+    function vincular(form, c) {
+        var numero = form.querySelector('[name="numero_colaborador"]');
+        var oculto = form.querySelector('[data-campo-colaborador]');
+        var nombre = form.querySelector('[name="name"]');
+        if (numero) { numero.value = c.num_empleado || ''; }
+        if (oculto) { oculto.value = String(c.id); }
+        if (nombre) { nombre.value = c.nombre_completo; }
+        var aviso = form.querySelector('[data-colab-vinculo]');
+        if (aviso) { aviso.hidden = false; }
+        // Se revisa otra vez con el colaborador ya vinculado
+        if (nombre) { nombre.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+
+    document.addEventListener('duplicado:pintado', function (e) {
+        var campo = e.target;
+        if (!campo.matches || !campo.matches('[data-duplicado-usuarios]')) { return; }
+        var form = campo.form;
+        var datos = e.detail || {};
+        mostrarConfirmar(form, !!datos.requiere_confirmacion);
+        var caja = document.getElementById(campo.getAttribute('data-duplicado-aviso') || '');
+        if (!caja) { return; }
+        var items = caja.querySelectorAll('.aviso-duplicado-item');
+        (datos.coincidencias || []).forEach(function (c, i) {
+            if (!c.vincular || !items[i]) { return; }
+            var b = nodo('button', 'btn-vincular-duplicado', 'Vincular');
+            b.type = 'button';
+            b.setAttribute('aria-label', 'Vincular esta cuenta con ' + c.vincular.nombre_completo);
+            b.addEventListener('click', function () { vincular(form, c.vincular); });
+            items[i].appendChild(b);
+        });
+    });
+
+    // Si el nombre queda corto o vacío, la confirmación ya no aplica
+    document.addEventListener('input', function (e) {
+        if (e.target.matches && e.target.matches('[data-duplicado-usuarios]') && e.target.value.trim().length < 3) { mostrarConfirmar(e.target.form, false); }
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        var campo = e.target.querySelector('[data-duplicado-usuarios]');
+        if (campo) { mostrarConfirmar(campo.form, false); }
+    }, true);
+
+    /* ---------- 2. Etiquetas QR: medida de la plantilla elegida ---------- */
+    function describirPlantilla(select) {
+        var detalle = select.form && select.form.querySelector('[data-plantilla-detalle] span');
+        var opcion = select.selectedOptions && select.selectedOptions[0];
+        if (detalle && opcion) { detalle.textContent = opcion.getAttribute('data-resumen') || ''; }
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches && e.target.matches('[data-plantilla-etiquetas]')) { describirPlantilla(e.target); }
+        // El conteo de la Ronda 6 habla de «tamaño»: ahora se elige una plantilla
+        var form = e.target.form;
+        var ayuda = form && form.matches('[data-etiquetas-qr]') ? form.querySelector('[data-etiquetas-ayuda]') : null;
+        if (ayuda) { ayuda.textContent = ayuda.textContent.replace('Elige el tamaño', 'Elige la plantilla'); }
+    });
+
+    /* ---------- 3. Historial: «Reimprimir» ---------- */
+    function contarReimprimir(form) {
+        var casillas = form.querySelectorAll('[data-reimprimir-item]');
+        var marcadas = form.querySelectorAll('[data-reimprimir-item]:checked').length;
+        var todas = form.querySelector('[data-reimprimir-todas]');
+        if (todas) {
+            todas.checked = marcadas === casillas.length;
+            todas.indeterminate = marcadas > 0 && marcadas < casillas.length;
+        }
+        var conteo = form.querySelector('[data-reimprimir-marcadas]');
+        if (conteo) { conteo.textContent = String(marcadas); }
+        var total = form.querySelector('[data-reimprimir-conteo]');
+        if (total) { total.textContent = '(' + casillas.length + ')'; }
+        var enviar = form.querySelector('[data-reimprimir-enviar]');
+        if (enviar) { enviar.disabled = marcadas === 0; }
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="reimprimir-etiquetas"]');
+        var d = document.getElementById('dialogoReimprimirEtiquetas');
+        if (!b || !d) { return; }
+        var form = d.querySelector('[data-form-reimprimir]');
+        form.action = b.dataset.url;
+        d.querySelector('[data-reimprimir-numero]').textContent = b.dataset.numero || '';
+        var lista = form.querySelector('[data-reimprimir-lista]');
+        lista.textContent = '';
+        (leer(b.dataset.reimprimir || '[]', []) || []).forEach(function (item) {
+            var li = nodo('li');
+            var etiqueta = nodo('label', 'fila-check');
+            var casilla = nodo('input');
+            casilla.type = 'checkbox';
+            casilla.name = 'sel[]';
+            casilla.value = item.clave;
+            casilla.checked = true;
+            casilla.setAttribute('data-reimprimir-item', '');
+            etiqueta.appendChild(casilla);
+            var texto = nodo('span');
+            texto.appendChild(nodo('strong', '', item.titulo));
+            texto.appendChild(nodo('small', '', ' · ' + item.tipo));
+            etiqueta.appendChild(texto);
+            li.appendChild(etiqueta);
+            lista.appendChild(li);
+        });
+        var plantilla = form.querySelector('[data-reimprimir-plantilla]');
+        if (plantilla) { plantilla.value = ''; }
+        contarReimprimir(form);
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    });
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-reimprimir]')) { return; }
+        if (e.target.matches('[data-reimprimir-todas]')) {
+            var marcar = e.target.checked;
+            form.querySelectorAll('[data-reimprimir-item]').forEach(function (c) { c.checked = marcar; });
+        }
+        contarReimprimir(form);
+    });
+
+    // La hoja se abre en otra pestaña: el diálogo se cierra
+    document.addEventListener('submit', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-form-reimprimir]')) { return; }
+        var d = e.target.closest('dialog');
+        setTimeout(function () { if (d && d.open) { d.close(); } }, 0);
+    });
+
+    /* ---------- 4. Plantillas: campos según el formato y vista previa ---------- */
+    function numero(form, nombre) {
+        var c = form.elements[nombre];
+        var v = c ? parseFloat(String(c.value || '').replace(',', '.')) : NaN;
+        return isNaN(v) ? 0 : v;
+    }
+
+    function formatoDe(form) {
+        var elegido = form.querySelector('[data-formato-plantilla]:checked');
+        return elegido ? elegido.value : 'rollo';
+    }
+
+    function acomodarFormato(form) {
+        var formato = formatoDe(form);
+        form.querySelectorAll('[data-solo-formato]').forEach(function (caja) {
+            var visible = caja.getAttribute('data-solo-formato') === formato;
+            caja.hidden = !visible;
+            // Ocultos no se envían, pero no se borran (si regresa, ahí siguen)
+            caja.querySelectorAll('input, select').forEach(function (c) { c.disabled = !visible; });
+        });
+        form.querySelectorAll('[data-texto-formato]').forEach(function (t) { t.hidden = t.getAttribute('data-texto-formato') !== formato; });
+    }
+
+    function redondear(v) { return Math.round(v * 10) / 10; }
+
+    function vistaPrevia(form) {
+        var etiqueta = form.querySelector('[data-vista-etiqueta]');
+        if (!etiqueta) { return; }
+        var ancho = numero(form, 'ancho_mm');
+        var alto = numero(form, 'alto_mm');
+        var qr = numero(form, 'qr_mm');
+        var horizontal = (form.querySelector('[name="orientacion"]:checked') || {}).value !== 'vertical';
+        var resumen = form.querySelector('[data-vista-resumen]');
+        var aviso = form.querySelector('[data-aviso-medidas]');
+        if (ancho <= 0 || alto <= 0) { etiqueta.hidden = true; if (resumen) { resumen.textContent = ''; } return; }
+        etiqueta.hidden = false;
+        // A escala: lo más grande posible sin pasar de 280 px de ancho ni 190 px de alto
+        var escala = Math.min(280 / ancho, 190 / alto, 6);
+        etiqueta.style.width = Math.round(ancho * escala) + 'px';
+        etiqueta.style.height = Math.round(alto * escala) + 'px';
+        etiqueta.style.padding = Math.round(1.5 * escala) + 'px';
+        etiqueta.classList.toggle('vertical', !horizontal);
+        var lado = Math.max(4, Math.round(Math.min(qr, Math.min(ancho, alto)) * escala));
+        var cuadro = form.querySelector('[data-vista-qr]');
+        cuadro.style.width = lado + 'px';
+        cuadro.style.height = lado + 'px';
+        cuadro.style.fontSize = Math.round(lado * 0.8) + 'px';
+        form.querySelectorAll('[data-vista-dato]').forEach(function (linea) {
+            var casilla = form.querySelector('input[type="checkbox"][name="' + linea.getAttribute('data-vista-dato') + '"]');
+            linea.hidden = !(casilla && casilla.checked);
+        });
+
+        var problemas = [];
+        var maximo = Math.min(ancho, alto) - 3;
+        if (qr > maximo) { problemas.push('El QR no cabe: en esta etiqueta puede medir hasta ' + redondear(Math.max(0, maximo)) + ' mm.'); }
+        var texto = '';
+        if (formatoDe(form) === 'hoja') {
+            var papel = form.elements.papel && form.elements.papel.selectedOptions[0];
+            var anchoHoja = papel ? parseFloat(papel.getAttribute('data-ancho')) : 215.9;
+            var altoHoja = papel ? parseFloat(papel.getAttribute('data-alto')) : 279.4;
+            var columnas = Math.max(1, Math.floor(numero(form, 'columnas')));
+            var filas = Math.max(1, Math.floor(numero(form, 'filas')));
+            var usadoAncho = numero(form, 'margen_izquierdo_mm') + columnas * ancho + (columnas - 1) * numero(form, 'separacion_horizontal_mm');
+            var usadoAlto = numero(form, 'margen_superior_mm') + filas * alto + (filas - 1) * numero(form, 'separacion_vertical_mm');
+            if (usadoAncho > anchoHoja) { problemas.push('A lo ancho ocupan ' + redondear(usadoAncho) + ' mm y la hoja mide ' + redondear(anchoHoja) + ' mm: quita una columna o reduce las medidas.'); }
+            if (usadoAlto > altoHoja) { problemas.push('A lo largo ocupan ' + redondear(usadoAlto) + ' mm y la hoja mide ' + redondear(altoHoja) + ' mm: quita una fila o reduce las medidas.'); }
+            texto = columnas + ' × ' + filas + ' = ' + (columnas * filas) + ' etiquetas por hoja.';
+        } else {
+            texto = 'Una etiqueta por página del rollo.';
+        }
+        if (resumen) { resumen.textContent = 'Tamaño real: ' + redondear(ancho) + ' × ' + redondear(alto) + ' mm. ' + texto; }
+        if (aviso) {
+            aviso.hidden = problemas.length === 0;
+            aviso.textContent = problemas.join(' ');
+        }
+    }
+
+    function prepararPlantilla(form) {
+        acomodarFormato(form);
+        vistaPrevia(form);
+    }
+
+    document.addEventListener('input', function (e) {
+        var form = e.target.form;
+        if (form && form.matches('[data-form-plantilla-qr]')) { vistaPrevia(form); }
+    });
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (form && form.matches('[data-form-plantilla-qr]')) { prepararPlantilla(form); }
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[data-form-plantilla-qr]').forEach(prepararPlantilla);
+    });
+})();
+/* Fin Ajustes Ronda 7 */
+/* ==========================================================================
+   Recepción de candidatos y autorizaciones departamentales (ADR-0007)
+   - Centro de notificaciones (campana): contador cada 30 s con la pestaña
+     visible; la lista se pide al abrir. Sin websockets (hosting compartido).
+   - Panel «Recepción» de RR. HH.: se vuelve a pintar cada 15 s.
+   - Caseta: las visitas «Esperando autorización» se actualizan solas.
+   - CV: agregar y quitar renglones (escolaridad, experiencia, referencias).
+   - Fotos de caseta: vista previa y reducción antes de enviar.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function token() { var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.getAttribute('content') : ''; }
+    function el(etiqueta, clase, texto) {
+        var e = document.createElement(etiqueta);
+        if (clase) { e.className = clase; }
+        if (texto !== undefined && texto !== null) { e.textContent = texto; }
+        return e;
+    }
+    function pedir(url) {
+        return fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) {
+                if (r.status === 401 || r.status === 419) { throw new Error('sesion'); }
+                if (!r.ok) { throw new Error(String(r.status)); }
+                return r.json();
+            });
+    }
+    /* Consulta periódica que se pausa con la pestaña oculta y se repite al volver. */
+    function cadaTanto(fn, ms) {
+        var reloj = null;
+        function programar() { clearTimeout(reloj); if (!document.hidden) { reloj = setTimeout(function () { fn(); programar(); }, ms); } }
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) { fn(); } programar(); });
+        programar();
+    }
+    function formulario(url, campos, clase, texto, confirmar) {
+        var f = el('form', 'm-0');
+        f.method = 'POST';
+        f.action = url;
+        if (confirmar) { f.setAttribute('data-confirmar', confirmar); }
+        var t = el('input'); t.type = 'hidden'; t.name = '_token'; t.value = token(); f.appendChild(t);
+        Object.keys(campos || {}).forEach(function (k) { var i = el('input'); i.type = 'hidden'; i.name = k; i.value = campos[k]; f.appendChild(i); });
+        var b = el('button', clase, texto); b.type = 'submit'; f.appendChild(b);
+        return f;
+    }
+
+    /* ---------- Campana ---------- */
+    var campanas = [];
+    var ultimoResumen = null;
+
+    function pintarContador(n) {
+        campanas.forEach(function (c) {
+            var cont = c.querySelector('[data-campana-contador]');
+            var boton = c.querySelector('[data-campana-boton]');
+            var icono = boton ? boton.querySelector('i') : null;
+            if (cont) { cont.hidden = n === 0; cont.textContent = n > 99 ? '99+' : String(n); }
+            if (boton) { boton.setAttribute('aria-label', 'Notificaciones: ' + n + ' sin leer'); }
+            if (icono) { icono.className = 'bi ' + (n > 0 ? 'bi-bell-fill' : 'bi-bell'); }
+        });
+    }
+
+    function pintarLista(campana, datos) {
+        var lista = campana.querySelector('[data-campana-lista]');
+        if (!lista) { return; }
+        lista.textContent = '';
+        if (!datos.lista || !datos.lista.length) {
+            lista.appendChild(el('p', 'campana-vacia', 'No tienes notificaciones.'));
+            return;
+        }
+        datos.lista.forEach(function (n) {
+            var item = el('div', 'campana-item nivel-' + n.nivel + (n.leida ? ' leida' : ''));
+            var abrir = formulario(n.abrir, {}, 'campana-abrir', '');
+            var boton = abrir.querySelector('button');
+            var icono = el('i', 'bi ' + n.icono); icono.setAttribute('aria-hidden', 'true');
+            var cuerpo = el('span', 'campana-texto');
+            cuerpo.appendChild(el('strong', null, n.titulo));
+            if (n.texto) { cuerpo.appendChild(el('span', null, n.texto)); }
+            cuerpo.appendChild(el('small', null, n.hace + (n.leida ? '' : ' · Sin leer')));
+            boton.appendChild(icono);
+            boton.appendChild(cuerpo);
+            item.appendChild(abrir);
+            if (n.acciones && n.acciones.length) {
+                var acciones = el('div', 'campana-acciones');
+                n.acciones.forEach(function (a) {
+                    acciones.appendChild(formulario(a.url, a.campos, 'btn-respuesta ' + (a.estilo === 'rechazar' ? 'rechazar' : 'aceptar'), a.etiqueta,
+                        a.estilo === 'rechazar' ? '¿Rechazar? La caseta y Recursos Humanos verán tu respuesta.' : null));
+                });
+                item.appendChild(acciones);
+            }
+            lista.appendChild(item);
+        });
+    }
+
+    function actualizarCampanas(conLista) {
+        if (!campanas.length) { return; }
+        pedir(campanas[0].dataset.url).then(function (d) {
+            ultimoResumen = d;
+            pintarContador(d.no_leidas || 0);
+            campanas.forEach(function (c) { if (conLista || !c.querySelector('[data-campana-panel]').hidden) { pintarLista(c, d); } });
+        }).catch(function () { /* sin red o sesión cerrada: decide el aviso de sesión */ });
+    }
+
+    function cerrarCampanas(excepto) {
+        campanas.forEach(function (c) {
+            if (c === excepto) { return; }
+            var p = c.querySelector('[data-campana-panel]');
+            var b = c.querySelector('[data-campana-boton]');
+            if (p) { p.hidden = true; }
+            if (b) { b.setAttribute('aria-expanded', 'false'); }
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-campana-boton]');
+        if (boton) {
+            var campana = boton.closest('[data-campana]');
+            var panel = campana.querySelector('[data-campana-panel]');
+            var abrir = panel.hidden;
+            cerrarCampanas(campana);
+            panel.hidden = !abrir;
+            boton.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+            if (abrir) {
+                if (ultimoResumen) { pintarLista(campana, ultimoResumen); }
+                actualizarCampanas(true);
+            }
+            return;
+        }
+        if (!e.target.closest('[data-campana-panel]')) { cerrarCampanas(null); }
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrarCampanas(null); } });
+
+    /* ---------- Panel de Recepción ---------- */
+    function actualizarRecepcion(panel) {
+        var estado = panel.querySelector('[data-recepcion-estado]');
+        pedir(panel.dataset.url).then(function (d) {
+            var lista = panel.querySelector('[data-recepcion-lista]');
+            // Server-side Blade: el HTML ya viene escapado
+            if (lista && typeof d.html === 'string' && !lista.contains(document.activeElement)) { lista.innerHTML = d.html; }
+            if (d.contadores) {
+                Object.keys(d.contadores).forEach(function (k) {
+                    var c = document.querySelector('[data-contador="' + k + '"]');
+                    if (c) { c.textContent = d.contadores[k]; }
+                });
+            }
+            if (estado) { estado.classList.remove('sin-conexion'); estado.textContent = 'En vivo · actualizado ' + (d.hora || ''); }
+        }).catch(function () {
+            if (estado) { estado.classList.add('sin-conexion'); estado.textContent = 'Sin conexión: se reintentará en unos segundos.'; }
+        });
+    }
+
+    /* ---------- Caseta: visitas que esperan al departamento ---------- */
+    function vigilarEsperas() {
+        var esperas = document.querySelectorAll('[data-acceso-esperando]');
+        if (!esperas.length) { return; }
+        var ids = Array.prototype.map.call(esperas, function (e) { return e.getAttribute('data-acceso-esperando'); });
+        var url = esperas[0].getAttribute('data-url-estado') + '?ids=' + encodeURIComponent(ids.join(','));
+        cadaTanto(function () {
+            pedir(url).then(function (d) {
+                var cambio = ids.some(function (id) { return d.estados && d.estados[id] !== undefined && d.estados[id] !== 'pendiente|esperando'; });
+                if (!cambio) { return; }
+                // Con un diálogo abierto no se recarga (se perdería lo capturado): se avisa
+                if (document.querySelector('dialog[open]')) {
+                    esperas.forEach(function (e) { e.classList.add('respondida'); e.querySelector('.small').textContent = 'El responsable ya contestó: cierra el diálogo y recarga para ver su respuesta.'; });
+                    return;
+                }
+                window.location.reload();
+            }).catch(function () { /* se reintenta */ });
+        }, 15000);
+    }
+
+    /* ---------- CV: renglones ---------- */
+    var siguiente = 1000;
+    document.addEventListener('click', function (e) {
+        var agregar = e.target.closest('[data-agregar-fila-cv]');
+        if (agregar) {
+            var caja = agregar.closest('[data-filas-cv]');
+            var lista = caja.querySelector('[data-filas-cv-lista]');
+            var plantilla = caja.querySelector('template[data-plantilla-fila]');
+            var maximo = parseInt(agregar.getAttribute('data-maximo') || '6', 10);
+            if (!lista || !plantilla) { return; }
+            if (lista.querySelectorAll('[data-fila-cv]').length >= maximo) { agregar.disabled = true; return; }
+            var html = plantilla.innerHTML.replace(/__i__/g, String(siguiente++));
+            var temporal = document.createElement('div');
+            temporal.innerHTML = html;
+            var fila = temporal.firstElementChild;
+            lista.appendChild(fila);
+            var primero = fila.querySelector('input, select');
+            if (primero) { primero.focus(); }
+            agregar.disabled = lista.querySelectorAll('[data-fila-cv]').length >= maximo;
+            return;
+        }
+        var quitar = e.target.closest('[data-quitar-fila-cv]');
+        if (quitar) {
+            var filaQ = quitar.closest('[data-fila-cv]');
+            var listaQ = filaQ.parentElement;
+            if (listaQ.querySelectorAll('[data-fila-cv]').length > 1) {
+                filaQ.remove();
+            } else {
+                filaQ.querySelectorAll('input, select').forEach(function (c) { if (c.type === 'checkbox') { c.checked = false; } else { c.value = ''; } });
+            }
+            var botonA = listaQ.closest('[data-filas-cv]').querySelector('[data-agregar-fila-cv]');
+            if (botonA) { botonA.disabled = false; }
+            return;
+        }
+        // «Guardar en cartera» / «Descartar» abren el mismo diálogo con la opción elegida
+        var destino = e.target.closest('[data-etapa-destino]');
+        if (destino) {
+            var radio = document.querySelector('[data-etapa-opcion][value="' + destino.getAttribute('data-etapa-destino') + '"]');
+            if (radio) { radio.checked = true; }
+        }
+    });
+
+    /* ---------- Fotos de caseta: vista previa y reducción (las del celular pesan varios MB) ---------- */
+    function reducir(archivo) {
+        return new Promise(function (resolver) {
+            if (!archivo || !/^image\//.test(archivo.type) || archivo.size < 700 * 1024 || typeof DataTransfer === 'undefined') { resolver(null); return; }
+            var img = new Image();
+            var url = URL.createObjectURL(archivo);
+            img.onload = function () {
+                var max = 1600;
+                var escala = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+                var lienzo = document.createElement('canvas');
+                lienzo.width = Math.round(img.naturalWidth * escala);
+                lienzo.height = Math.round(img.naturalHeight * escala);
+                lienzo.getContext('2d').drawImage(img, 0, 0, lienzo.width, lienzo.height);
+                URL.revokeObjectURL(url);
+                lienzo.toBlob(function (blob) { resolver(blob ? new File([blob], 'foto.jpg', { type: 'image/jpeg' }) : null); }, 'image/jpeg', 0.85);
+            };
+            img.onerror = function () { URL.revokeObjectURL(url); resolver(null); };
+            img.src = url;
+        });
+    }
+    document.addEventListener('change', function (e) {
+        var campo = e.target;
+        if (campo.matches('[data-foto-ingreso]')) {
+            var caja = document.querySelector('label[for="' + campo.id + '"]');
+            var vista = caja ? caja.querySelector('[data-vista-foto]') : null;
+            var archivo = campo.files && campo.files[0];
+            if (vista) {
+                if (archivo) { vista.src = URL.createObjectURL(archivo); vista.hidden = false; caja.classList.add('con-foto'); } else { vista.hidden = true; caja.classList.remove('con-foto'); }
+            }
+            reducir(archivo).then(function (chico) {
+                if (!chico) { return; }
+                var dt = new DataTransfer();
+                dt.items.add(chico);
+                campo.files = dt.files;
+            });
+            return;
+        }
+        // Departamentos de la sede elegida (Registro de ingreso)
+        if (campo.matches('[data-acceso-sede]')) { acotarDeptos(campo.form); }
+    });
+    function acotarDeptos(form) {
+        if (!form) { return; }
+        var sede = (form.querySelector('[data-acceso-sede]') || {}).value || '';
+        form.querySelectorAll('[data-depto-recepcion]').forEach(function (sel) {
+            Array.prototype.forEach.call(sel.options, function (o) {
+                if (!o.value) { return; }
+                var ok = !sede || o.getAttribute('data-todas') === '1' || (o.getAttribute('data-sedes') || '').split(',').indexOf(sede) !== -1;
+                o.hidden = !ok;
+                o.disabled = !ok;
+                if (!ok && o.selected) { sel.value = ''; }
+            });
+        });
+    }
+    // Al cerrar el diálogo de ingreso se quitan las vistas previas
+    document.addEventListener('close', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-dialogo-ingreso]')) { return; }
+        e.target.querySelectorAll('[data-vista-foto]').forEach(function (v) { v.hidden = true; v.removeAttribute('src'); });
+        e.target.querySelectorAll('.caja-foto-ingreso.con-foto').forEach(function (c) { c.classList.remove('con-foto'); });
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        campanas = Array.prototype.slice.call(document.querySelectorAll('[data-campana]'));
+        if (campanas.length) { cadaTanto(function () { actualizarCampanas(false); }, 30000); }
+        document.querySelectorAll('[data-recepcion]').forEach(function (panel) { cadaTanto(function () { actualizarRecepcion(panel); }, 15000); });
+        vigilarEsperas();
+        document.querySelectorAll('[data-form-acceso]').forEach(acotarDeptos);
+    });
+})();
+/* Fin Recepción de candidatos y autorizaciones departamentales */

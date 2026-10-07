@@ -20,7 +20,6 @@
         @php
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
-            $existentes = json_encode($puestos->map(fn ($p) => mb_strtolower($p->nombre))->values());
         @endphp
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
@@ -139,8 +138,8 @@
 
                         <label class="campo-etiqueta" for="{{ $modo }}_pu_nombre">Nombre del Puesto</label>
                         <input type="text" id="{{ $modo }}_pu_nombre" name="nombre" class="campo" maxlength="100" placeholder="Ej. Jefe"
-                               value="{{ $reabrir ? old('nombre') : '' }}" data-nombres-existentes="{{ $existentes }}" required>
-                        <p data-aviso-nombre hidden></p>
+                               value="{{ $reabrir ? old('nombre') : '' }}" required
+                               data-duplicado="{{ route('puestos.duplicado') }}">
 
                         <span class="campo-etiqueta d-block">Departamentos donde aplica <span class="text-lowercase fw-normal">(opcional — si no marcas ninguno, aplica en cualquiera)</span></span>
                         @if ($departamentos->isEmpty())

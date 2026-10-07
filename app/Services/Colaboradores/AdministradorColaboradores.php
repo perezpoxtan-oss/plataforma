@@ -50,6 +50,7 @@ class AdministradorColaboradores
         'movimiento_transporte_pasajeros' => 'colaborador_id',
         'lost_found_entregas' => 'colaborador_id',
         'procedimiento_acuses' => 'colaborador_id',
+        'candidatos' => 'colaborador_id', // Recepción: el colaborador que resultó de contratar al candidato
     ];
 
     /**

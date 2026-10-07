@@ -9,7 +9,9 @@ use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EquipoPc;
 use App\Models\Espacio;
+use App\Models\EtiquetaPlantilla;
 use App\Models\Gafete;
+use App\Models\ImpresionEtiquetas;
 use App\Models\Llave;
 use App\Models\LostFoundArticulo;
 use App\Models\LostFoundEntrega;
@@ -324,6 +326,20 @@ class RecorridoPantallasTest extends TestCase
             // Eliminar definitivamente: el primer registro de cada catálogo o padrón registrado
             'borrar.revisar' => collect(RegistroBorrado::definiciones())
                 ->map(fn ($d, $clave) => ['registro' => $clave, 'id' => $primero($d['modelo'])])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
+            // Recepción de candidatos y autorizaciones (ADR-0007)
+            'candidatos.show' => DB::table('candidatos')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['candidato' => $id])->all(),
+            'candidatos.documento' => DB::table('candidato_documentos')->where('empresa_id', $e)->limit(2)->get(['candidato_id', 'id'])
+                ->map(fn ($f) => ['candidato' => $f->candidato_id, 'documento' => $f->id])->all() ?: [['candidato' => (int) DB::table('candidatos')->where('empresa_id', $e)->value('id'), 'documento' => 1]],
+            'accesos.foto-persona', 'accesos.foto-identificacion' => array_map(fn ($id) => ['acceso' => $id], $ids([
+                DB::table('accesos')->where('empresa_id', $e)->whereNotNull('foto_persona')->value('id'), DB::table('accesos')->where('empresa_id', $e)->orderBy('id')->value('id'),
+            ])),
+            'autorizaciones.show', 'autorizaciones.confirmar' => DB::table('autorizaciones')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['autorizacion' => $id])->all(),
+            'kiosco.mostrar' => [['token' => str_repeat('a', 48)]],
+            // Ronda 7: gestor de impresión QR (hoja de una impresión y plantillas)
+            'etiquetas.impresion' => array_map(fn ($id) => ['impresion' => $id], $ids([$primero(ImpresionEtiquetas::class)])),
+            'etiquetas.plantillas.edit', 'etiquetas.plantillas.prueba' => array_map(fn ($id) => ['plantilla' => $id], $ids([
+                $primero(EtiquetaPlantilla::class), $primero(EtiquetaPlantilla::class, fn ($q) => $q->whereNotNull('sede_id')),
+            ])),
             default => null,
         };
 
@@ -353,6 +369,14 @@ class RecorridoPantallasTest extends TestCase
             'novedades.index' => [[['categoria' => 'accidente_huesped'], false], [['pestana' => 'resueltas', 'q' => 'a'], false], [['sede' => $sede], false]],
             'novedades.exportar' => [[['pestana' => 'resueltas'], false]],
             'accesos.index' => [[['pestana' => 'historial', 'sede' => $sede], false], [['pestana' => 'pendientes'], false], [['desde' => $hoy, 'hasta' => $hoy], false]],
+            'candidatos.index', 'candidatos.exportar' => [[['etapa' => 'en_proceso'], false], [['q' => 'a', 'sede' => $sede], false], [['etapa' => 'descartado'], false]],
+            'recepcion.metricas' => [[['desde' => now()->subMonth()->toDateString(), 'hasta' => $hoy, 'sede' => $sede], false], [['desde' => 'x', 'hasta' => '2026-99-99'], false]],
+            'recepcion.datos', 'notificaciones.resumen' => [[[], true]],
+            'recepcion.kiosco' => [[['candidato' => (int) DB::table('candidatos')->where('empresa_id', $this->empresa->id)->value('id')], false]],
+            'accesos.autorizaciones-estado' => [[['ids' => DB::table('accesos')->where('empresa_id', $this->empresa->id)->limit(5)->pluck('id')->join(',')], true]],
+            'autorizaciones.index' => [[['estado' => 'pendiente'], false]],
+            'notificaciones.index' => [[['filtro' => 'no_leidas'], false]],
+            'kiosco.codigo' => [[['codigo' => 'ABC123'], false]],
             'transporte.index', 'transporte.reportes' => [[['desde' => now()->subMonth()->toDateString(), 'hasta' => $hoy, 'sede' => $sede], false]],
             'recorridos_pc.reporte' => [[['desde' => now()->subMonth()->toDateString(), 'hasta' => $hoy], false]],
             'auditoria.index' => [[['q' => 'a'], false], [['modulo' => 'novedades'], false]],

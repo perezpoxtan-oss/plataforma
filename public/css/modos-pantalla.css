@@ -1247,3 +1247,94 @@ html.modo-noche .texto-etiqueta-qr strong, html.modo-noche .fila-etiqueta-qr inp
 html.modo-noche .texto-etiqueta-qr small { color: #94a3b8; }
 html.modo-noche .pantalla-etiquetas-qr .texto-error { color: #fca5a5; }
 /* Fin Ajustes Ronda 6 */
+
+/* ==========================================================================
+   Ajustes Ronda 7 — Sol (alto contraste) y Noche
+   ========================================================================== */
+html.modo-sol .btn-vincular-duplicado { background: #000; color: #fff; border: 2px solid #000; }
+html.modo-sol .pestanas-etiquetas-qr { border-bottom-color: #000; }
+html.modo-sol .pestanas-etiquetas-qr a { color: #000; }
+html.modo-sol .pestanas-etiquetas-qr a.activa { border-bottom-color: #000; text-decoration: underline; }
+html.modo-sol .impresion-qr, html.modo-sol .plantilla-qr, html.modo-sol .ayuda-plantillas-qr, html.modo-sol .opcion-formato-qr { background: #fff; border: 2px solid #000; color: #000; box-shadow: none; }
+html.modo-sol .impresion-qr-detalle, html.modo-sol .impresion-qr-titulos, html.modo-sol .impresion-qr-cabeza small, html.modo-sol .plantilla-qr-datos,
+html.modo-sol .plantilla-qr-cabeza p, html.modo-sol .traza-plantilla-qr, html.modo-sol .lista-reimprimir-qr small { color: #000; }
+html.modo-sol .conteo-impresion-qr { background: #000; color: #fff; }
+html.modo-sol .pildora-reimpresion, html.modo-sol .pildora-siempre { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-desactivar-plantilla, html.modo-sol .btn-activar-plantilla { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .aviso-medidas-qr, html.modo-sol .texto-error-campo { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .texto-error-campo { border: none; text-decoration: underline; }
+html.modo-sol .opcion-formato-qr:has(input:checked) { outline: 3px solid #000; outline-offset: 1px; }
+html.modo-sol .lista-reimprimir-qr { border: 2px solid #000; }
+
+html.modo-noche .btn-vincular-duplicado { background: rgba(59, 130, 246, 0.15); border-color: #1d4ed8; color: #bfdbfe; }
+html.modo-noche .pestanas-etiquetas-qr { border-bottom-color: #334155; }
+html.modo-noche .pestanas-etiquetas-qr a { color: #94a3b8; }
+html.modo-noche .pestanas-etiquetas-qr a:hover, html.modo-noche .pestanas-etiquetas-qr a.activa { color: #f1f5f9; border-bottom-color: #e2e8f0; }
+html.modo-noche .impresion-qr-detalle, html.modo-noche .plantilla-qr-datos, html.modo-noche .ayuda-plantillas-qr { color: #cbd5e1; }
+html.modo-noche .conteo-impresion-qr { background: #e2e8f0; color: #0f172a; }
+html.modo-noche .pildora-reimpresion { background: rgba(99, 102, 241, 0.18); color: #c7d2fe; }
+html.modo-noche .pildora-siempre { background: #334155; color: #e2e8f0; }
+html.modo-noche .titulo-seccion-qr { color: #f1f5f9; }
+html.modo-noche .opcion-formato-qr { border-color: #334155; }
+html.modo-noche .opcion-formato-qr:has(input:checked) { border-color: #94a3b8; background: #273449; }
+html.modo-noche .btn-desactivar-plantilla { background: transparent; border-color: #b91c1c; color: #fca5a5; }
+html.modo-noche .btn-activar-plantilla { background: rgba(16, 185, 129, 0.15); border-color: #059669; color: #6ee7b7; }
+html.modo-noche .aviso-medidas-qr { background: rgba(239, 68, 68, 0.12); border-color: #b91c1c; color: #fecaca; }
+html.modo-noche .texto-error-campo { color: #fca5a5; }
+html.modo-noche .vista-plantilla-qr { background: repeating-conic-gradient(#1e293b 0 25%, #0f172a 0 50%) 0 0 / 16px 16px; border-color: #334155; }
+html.modo-noche .plantilla-qr-muestra { background: #e2e8f0; }
+/* Fin Ajustes Ronda 7 */
+/* Recepción de candidatos y autorizaciones (ADR-0007): Sol y Noche */
+html.modo-sol .btn-campana, html.modo-sol .btn-secundario-rh, html.modo-sol .btn-etapa, html.modo-sol .opcion-cv, html.modo-sol .btn-foto-acceso,
+html.modo-sol .campana-panel, html.modo-sol .notificacion-fila, html.modo-sol .contador-rh, html.modo-sol .fila-recepcion, html.modo-sol .tarjeta-autorizacion,
+html.modo-sol .fila-delegacion, html.modo-sol .bloque-cv, html.modo-sol .fila-cv, html.modo-sol .caja-foto-ingreso { background: #fff; color: #000; border: 2px solid #000; box-shadow: none; }
+html.modo-sol .campana-contador { background: #000; color: #facc15; border-color: #fff; }
+html.modo-sol .campana-item:not(.leida), html.modo-sol .notificacion-fila.no-leida, html.modo-sol .contador-rh.esperando,
+html.modo-sol .aviso-esperando-autorizacion, html.modo-sol .aviso-autocaptura, html.modo-sol .pastilla-revisar, html.modo-sol .aviso-confirmar-correo { background: #facc15; color: #000; border: 2px solid #000; }
+html.modo-sol .pastilla-etapa, html.modo-sol .pastilla-origen, html.modo-sol .pastilla-tipo-rh, html.modo-sol .pastilla-estado-aut { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-respuesta.aceptar, html.modo-sol .btn-etapa.principal, html.modo-sol .btn-etapa.contratar { background: #000; color: #fff; border: 2px solid #000; }
+html.modo-sol .btn-respuesta.rechazar, html.modo-sol .btn-etapa.peligro, html.modo-sol .btn-eliminar-candidato { background: #fff; color: #000; border: 2px solid #000; text-decoration: underline; }
+html.modo-sol .fila-recepcion, html.modo-sol .tarjeta-autorizacion { border-left-width: 8px; }
+html.modo-sol .minutos-espera, html.modo-sol .espera-autorizacion, html.modo-sol .estado-recepcion, html.modo-sol .campana-texto span, html.modo-sol .datos-candidato,
+html.modo-sol .campana-texto small, html.modo-sol .contador-rh span { color: #000; }
+html.modo-sol .aviso-privacidad-cv, html.modo-sol .casilla-candidato, html.modo-sol .aviso-departamento { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .opcion-cv:has(input:checked) { background: #facc15; color: #000; }
+html.modo-sol .avance-candidato li.hecho .punto, html.modo-sol .avance-candidato li.actual .punto { background: #000; border-color: #000; color: #fff; }
+html.modo-noche .btn-campana, html.modo-noche .btn-secundario-rh, html.modo-noche .btn-etapa, html.modo-noche .opcion-cv, html.modo-noche .btn-foto-acceso,
+html.modo-noche .btn-quitar-fila-cv, html.modo-noche .btn-eliminar-candidato { background: var(--superficie-2); color: var(--texto); border-color: var(--borde); }
+html.modo-noche .campana-panel, html.modo-noche .notificacion-fila, html.modo-noche .contador-rh, html.modo-noche .fila-recepcion, html.modo-noche .tarjeta-autorizacion,
+html.modo-noche .fila-delegacion, html.modo-noche .qr-kiosco-imagen { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .qr-kiosco-imagen { background: #fff; }
+html.modo-noche .campana-contador { border-color: var(--superficie); }
+html.modo-noche .campana-item { border-color: var(--borde); }
+html.modo-noche .campana-abrir, html.modo-noche .notificacion-abrir, html.modo-noche .campana-texto strong { color: var(--texto); }
+html.modo-noche .fila-cv, html.modo-noche .caja-foto-ingreso, html.modo-noche .notas-rh, html.modo-noche .texto-privacidad { background: var(--superficie-2); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .fila-cv .campo { background: var(--campo-fondo); color: var(--texto); }
+html.modo-noche .contador-rh.esperando { background: rgba(249, 115, 22, 0.12); border-color: #c2410c; }
+html.modo-noche .contador-rh.esperando strong { color: #fdba74; }
+html.modo-noche .aviso-esperando-autorizacion, html.modo-noche .aviso-autocaptura, html.modo-noche .pastilla-revisar, html.modo-noche .aviso-confirmar-correo { background: rgba(245, 158, 11, 0.14); border-color: #b45309; color: #fde68a; }
+html.modo-noche .aviso-departamento { background: rgba(59, 130, 246, 0.12); border-color: #1e40af; color: #bfdbfe; }
+html.modo-noche .aviso-departamento.estado-entrevista, html.modo-noche .aviso-departamento.estado-autorizada { background: rgba(34, 197, 94, 0.12); border-color: #166534; color: #bbf7d0; }
+html.modo-noche .aviso-departamento.estado-rechazada { background: rgba(239, 68, 68, 0.12); border-color: #991b1b; color: #fecaca; }
+html.modo-noche .aviso-privacidad-cv, html.modo-noche .casilla-candidato, html.modo-noche .btn-agregar-fila-cv { background: rgba(34, 197, 94, 0.1); border-color: #166534; color: #bbf7d0; }
+html.modo-noche .aviso-privacidad-cv summary { color: #86efac; }
+html.modo-noche .opcion-cv:has(input:checked) { background: rgba(34, 197, 94, 0.18); border-color: #22c55e; color: #bbf7d0; }
+html.modo-noche .etapa-gris, html.modo-noche .pastilla-origen, html.modo-noche .pastilla-estado-aut { background: var(--superficie-2); color: #cbd5e1; border-color: var(--borde); }
+html.modo-noche .etapa-azul, html.modo-noche .pastilla-tipo-rh.tramite { background: rgba(59, 130, 246, 0.18); color: #bfdbfe; }
+html.modo-noche .etapa-indigo, html.modo-noche .pastilla-tipo-rh.visita { background: rgba(99, 102, 241, 0.2); color: #c7d2fe; }
+html.modo-noche .etapa-ambar, html.modo-noche .pastilla-estado-aut.estado-pendiente, html.modo-noche .pastilla-estado-aut.estado-programada { background: rgba(245, 158, 11, 0.18); color: #fde68a; }
+html.modo-noche .etapa-verde, html.modo-noche .pastilla-tipo-rh.candidato, html.modo-noche .pastilla-estado-aut.estado-autorizada,
+html.modo-noche .pastilla-estado-aut.estado-entrevista, html.modo-noche .pastilla-estado-aut.estado-activa { background: rgba(34, 197, 94, 0.18); color: #bbf7d0; }
+html.modo-noche .etapa-cian { background: rgba(6, 182, 212, 0.18); color: #a5f3fc; }
+html.modo-noche .etapa-rojo, html.modo-noche .pastilla-estado-aut.estado-rechazada, html.modo-noche .btn-respuesta.rechazar { background: rgba(239, 68, 68, 0.16); color: #fecaca; border-color: #991b1b; }
+html.modo-noche .aviso-etapa-lateral.etapa-cartera { background: rgba(6, 182, 212, 0.12); color: #a5f3fc; }
+html.modo-noche .aviso-etapa-lateral.etapa-descartado { background: rgba(239, 68, 68, 0.12); color: #fecaca; }
+html.modo-noche .avance-candidato .punto { background: var(--superficie); border-color: var(--borde); }
+html.modo-noche .tabla-metricas thead th { background: var(--superficie-2); }
+html.modo-noche .tabla-metricas th, html.modo-noche .tabla-metricas td, html.modo-noche .documento-candidato { border-color: var(--borde); }
+html.modo-noche .codigo-kiosco-mini { background: var(--superficie-2); border-color: var(--borde); }
+html.modo-noche .linea-autorizacion.autorizada, html.modo-noche .minutos-espera, html.modo-noche .espera-autorizacion, html.modo-noche .estado-recepcion { color: #86efac; }
+html.modo-noche .linea-autorizacion.rechazada, html.modo-noche .espera-roja .minutos-espera, html.modo-noche .espera-autorizacion.larga { color: #fca5a5; }
+html.modo-noche .espera-ambar .minutos-espera { color: #fcd34d; }
+html.modo-noche body.kiosco-publico { background: var(--fondo); }
+/* Fin Recepción de candidatos y autorizaciones */

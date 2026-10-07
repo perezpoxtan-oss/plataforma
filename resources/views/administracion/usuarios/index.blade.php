@@ -183,12 +183,13 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="campo-etiqueta" for="{{ $modo }}_nombre">Nombre Completo</label>
-                                <input type="text" id="{{ $modo }}_nombre" name="name" class="campo" maxlength="150" value="{{ $valor('name') }}" required>
+                                <input type="text" id="{{ $modo }}_nombre" name="name" class="campo" maxlength="150" value="{{ $valor('name') }}" required
+                                       data-duplicado="{{ route('usuarios.duplicado') }}" data-duplicado-min="3" data-duplicado-con="colaborador_id" data-duplicado-aviso="{{ $modo }}_aviso_nombre" data-duplicado-usuarios>
                             </div>
                         </div>
 
-                        {{-- Homónimos: aviso en vivo si ya hay un usuario con ese nombre y sugerencia de vincular al colaborador (ver docs/tecnico/usuarios.md) --}}
-                        <div class="caja-parecidos aviso-homonimo" role="status" aria-live="polite" data-homonimos="{{ route('usuarios.homonimos') }}" data-homonimos-campos="name" data-homonimos-modo="usuarios" hidden></div>
+                        {{-- Ronda 7: homónimos con el aviso único de duplicados (data-duplicado). «Vincular» y «Sí, es otra persona…»: bloque «Ajustes Ronda 7» de plataforma.js --}}
+                        <div class="aviso-duplicado" id="{{ $modo }}_aviso_nombre" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
                         <label class="confirmar-homonimo" data-confirmar-homonimo @unless ($reabrir && $errors->has('confirmar_homonimo')) hidden @endunless>
                             <input type="checkbox" name="confirmar_homonimo" value="1">
                             <span>Sí, es otra persona con el mismo nombre</span>
@@ -229,11 +230,13 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <label class="campo-etiqueta" for="{{ $modo }}_usuario">Usuario</label>
-                                <input type="text" id="{{ $modo }}_usuario" name="username" class="campo" maxlength="60" value="{{ $valor('username') }}" autocapitalize="none" required>
+                                <input type="text" id="{{ $modo }}_usuario" name="username" class="campo" maxlength="60" value="{{ $valor('username') }}" autocapitalize="none" required
+                                       data-duplicado="{{ route('usuarios.duplicado') }}" data-duplicado-min="3" data-duplicado-aviso="{{ $modo }}_aviso_cuenta">
                             </div>
                             <div class="col-md-4">
                                 <label class="campo-etiqueta" for="{{ $modo }}_correo">Correo</label>
-                                <input type="email" id="{{ $modo }}_correo" name="email" class="campo" maxlength="150" value="{{ $valor('email') }}" required>
+                                <input type="email" id="{{ $modo }}_correo" name="email" class="campo" maxlength="150" value="{{ $valor('email') }}" required
+                                       data-duplicado="{{ route('usuarios.duplicado') }}" data-duplicado-min="5" data-duplicado-aviso="{{ $modo }}_aviso_correo">
                             </div>
                             <div class="col-md-4">
                                 <label class="campo-etiqueta {{ $esNuevo ? '' : 'text-warning' }}" for="{{ $modo }}_contrasena">
@@ -243,6 +246,9 @@
                                        placeholder="{{ $esNuevo ? 'Mínimo 8, con letras y números' : 'Dejar en blanco para mantener' }}" @if ($esNuevo) required @endif>
                             </div>
                         </div>
+                        {{-- Ronda 7: avisos de usuario y correo repetidos a todo lo ancho --}}
+                        <div class="aviso-duplicado" id="{{ $modo }}_aviso_cuenta" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
+                        <div class="aviso-duplicado" id="{{ $modo }}_aviso_correo" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
 
                         @unless ($esNuevo)
                             <input type="hidden" name="activo" value="0">

@@ -32,6 +32,9 @@ class CatalogoSeeder extends Seeder
         'provisional' => 'Alta provisional',
         // Eliminar definitivamente (borrado físico controlado): solo catálogos y padrones
         'borrar' => 'Eliminar definitivamente',
+        // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
+        'contratar' => 'Contratar',
+        'responder' => 'Responder',
     ];
 
     private const CRUD = ['ver', 'crear', 'editar', 'eliminar'];
@@ -75,6 +78,9 @@ class CatalogoSeeder extends Seeder
         'equipos_pc' => 'equipos_pc.index',
         'procedimientos' => 'procedimientos.index',
         'etiquetas_qr' => 'etiquetas.index',
+        'recepcion_rh' => 'recepcion.index',
+        'candidatos' => 'candidatos.index',
+        'autorizaciones' => 'autorizaciones.index',
     ];
 
     /**
@@ -104,6 +110,10 @@ class CatalogoSeeder extends Seeder
                 'departamentos' => ['Departamentos', 'bi-diagram-2', []],
                 'puestos' => ['Puestos', 'bi-person-badge', []],
                 'turnos' => ['Turnos', 'bi-clock', []],
+                // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
+                'recepcion_rh' => ['Recepción de RR. HH.', 'bi-person-check', [], [], ['ver']],
+                'candidatos' => ['Candidatos', 'bi-person-workspace', ['exportar', 'contratar', 'configurar']],
+                'autorizaciones' => ['Autorizaciones departamentales', 'bi-patch-check', [], [], ['ver', 'responder', 'configurar']],
             ]],
             // Seguridad: padrones, operación y sus reportes.
             'seguridad' => ['Seguridad', 'bi-shield-lock', [
@@ -133,7 +143,8 @@ class CatalogoSeeder extends Seeder
                 'tendencias' => ['Tendencias', 'bi-graph-up', ['exportar'], [], ['ver']],
                 'bitacora_dia' => ['Bitácora general del día', 'bi-calendar-day', ['exportar', 'imprimir'], [], ['ver']],
                 // Ronda 6 (LL-06): impresión masiva de etiquetas QR; cada tipo pide además su propio permiso
-                'etiquetas_qr' => ['Etiquetas QR', 'bi-qr-code', [], [], ['ver']],
+                // Ronda 7: «configurar» = sub-pantalla Plantillas del gestor de impresión
+                'etiquetas_qr' => ['Etiquetas QR', 'bi-qr-code', ['configurar'], [], ['ver']],
             ]],
         ];
     }

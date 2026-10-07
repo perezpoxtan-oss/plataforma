@@ -12,12 +12,10 @@ use App\Rules\ContrasenaSegura;
 use App\Services\Permisos\Autorizador;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Services\Usuarios\HomonimosUsuarios;
-use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -172,51 +170,6 @@ class UsuarioController extends Controller
         }
 
         return redirect()->route('usuarios.index')->with('ok', "«{$usuario->name}» desbloqueado; ya puede entrar.");
-    }
-
-    /**
-     * Aviso en vivo del diálogo de alta y edición: usuarios con el mismo
-     * nombre (sin importar mayúsculas ni acentos) y colaboradores con ese
-     * nombre que aún no tienen cuenta, para sugerir vincularlos.
-     * ?nombre=Daniela Canul May&excluir={id del usuario que se edita}
-     */
-    public function homonimos(Request $request): JsonResponse
-    {
-        $actor = $request->user();
-        $permiso = $actor->can('usuarios.crear') ? 'usuarios.crear' : 'usuarios.editar';
-        Gate::authorize($permiso);
-        $empresaId = $this->empresa->id($actor);
-        $nombre = trim(Entrada::texto($request->query('nombre')));
-        $vacio = ['usuarios' => [], 'otros' => 0, 'colaboradores' => [], 'requiere_confirmacion' => false, 'mensaje' => null];
-        if ($empresaId === null || mb_strlen($nombre) < 3 || mb_strlen($nombre) > 150) {
-            return response()->json($vacio);
-        }
-
-        // La cuenta que se edita debe estar a la vista; si no, se ignora
-        $excluir = is_numeric($request->query('excluir'))
-            ? $this->visibles($actor, $empresaId)->whereKey((int) $request->query('excluir'))->first()
-            : null;
-
-        $iguales = $this->homonimos->usuarios($empresaId, $nombre, $excluir?->id);
-        $idsVisibles = $iguales->isEmpty() ? [] : $this->visibles($actor, $empresaId)->whereIn('users.id', $iguales->pluck('id'))->pluck('users.id')->all();
-        $visibles = $iguales->whereIn('id', $idsVisibles)->values();
-        $otros = $iguales->count() - $visibles->count();
-
-        $sedes = $this->autorizador->sedesPermitidas($actor, $permiso);
-        $colaboradores = $this->tenant->conEmpresa($empresaId, fn () => $this->homonimos->colaboradoresSinCuenta($nombre, $sedes, $excluir?->id));
-
-        return response()->json([
-            'usuarios' => $visibles->map(fn (User $u) => [
-                'username' => $u->username,
-                'rol' => $u->roles->first()?->nombre,
-                'colaborador' => $u->colaborador?->num_empleado,
-                'activo' => (bool) $u->activo,
-            ])->all(),
-            'otros' => $otros,
-            'colaboradores' => $colaboradores,
-            'requiere_confirmacion' => $iguales->isNotEmpty() && ($excluir === null || HomonimosUsuarios::clave($excluir->name) !== HomonimosUsuarios::clave($nombre)),
-            'mensaje' => $iguales->isEmpty() ? null : HomonimosUsuarios::mensaje($visibles, $otros),
-        ]);
     }
 
     /**

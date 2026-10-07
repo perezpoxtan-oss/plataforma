@@ -5,19 +5,27 @@ namespace App\Console\Commands;
 use App\Models\Acceso;
 use App\Models\AccidenteFirma;
 use App\Models\AcompananteAcceso;
+use App\Models\Autorizacion;
+use App\Models\Candidato;
+use App\Models\CandidatoDocumento;
 use App\Models\Colaborador;
+use App\Models\Delegacion;
 use App\Models\Departamento;
+use App\Models\DepartamentoResponsable;
 use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EquipoPc;
 use App\Models\Espacio;
+use App\Models\EtiquetaPlantilla;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
+use App\Models\ImpresionEtiquetas;
 use App\Models\Llave;
 use App\Models\LostFoundArticulo;
 use App\Models\LostFoundEntrega;
 use App\Models\LostFoundReportePerdida;
 use App\Models\MovimientoTransporte;
+use App\Models\Notificacion;
 use App\Models\Novedad;
 use App\Models\PaseSalida;
 use App\Models\Persona;
@@ -36,6 +44,9 @@ use App\Models\User;
 use App\Models\UsuarioRol;
 use App\Models\Vehiculo;
 use App\Models\ZonaEstacionamiento;
+use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Candidatos\AdministradorCandidatos;
+use App\Services\Candidatos\Kiosco;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Gafetes\AdministradorGafetes;
@@ -47,6 +58,7 @@ use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
+use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\RecorridosPc\AdministradorRecorridosPc;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Services\Rutas\AdministradorRutas;
@@ -59,6 +71,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -199,6 +212,8 @@ class CrearDatosDemo extends Command
         $paso('procedimientosDemo', fn () => $this->procedimientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('ronda5bDemo', fn () => $this->ronda5bDemo($sedes['CEN'], User::where('username', 'admin.demo')->firstOrFail()));
         $paso('ronda6Demo', fn () => $this->ronda6Demo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('recepcionDemo', fn () => $this->recepcionDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'jefe.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
+        $paso('ronda7Demo', fn () => $this->ronda7Demo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -2051,6 +2066,235 @@ class CrearDatosDemo extends Command
                     'cobro_pagado' => true, 'comentario' => 'Apareció en el taller de Mantenimiento; ya se le había descontado en nómina.',
                 ]);
             }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    /**
+     * Recepción, candidatos y autorizaciones, solo la primera vez:
+     *  - las visitas a un departamento esperan la autorización de su responsable;
+     *  - responsables: Seguridad → jefe.demo (titular) y supervisor.demo (suplente en
+     *    Centro); Alimentos y Bebidas → director.demo; Recursos Humanos → rh.demo;
+     *  - director.demo delegó en admin.demo («No molestar», activa) y jefe.demo
+     *    tiene una delegación programada para la próxima semana;
+     *  - un candidato en cada etapa; Karla espera ahora mismo con su QR del kiosco;
+     *  - una visita a Seguridad «Esperando autorización» de jefe.demo;
+     *  - visitas ya respondidas de días anteriores (para los tiempos de espera).
+     */
+    private function recepcionDemo(Empresa $empresa, $sedes, User $admin, User $rh, User $jefe, User $agente): void
+    {
+        if (Candidato::exists()) {
+            return;
+        }
+        $previo = auth()->user();
+        $supervisor = User::where('username', 'supervisor.demo')->firstOrFail();
+        $director = User::where('username', 'director.demo')->firstOrFail();
+        $depto = fn (string $n) => Departamento::where('nombre', $n)->firstOrFail();
+        $puesto = fn (string $n) => Puesto::where('nombre', $n)->value('id');
+        $candidatos = app(AdministradorCandidatos::class);
+        $autorizaciones = app(Autorizaciones::class);
+        $hace = fn (int $minutos) => now()->subMinutes($minutos);
+
+        try {
+            $empresa->forceFill(['preferencias' => array_merge($empresa->preferencias ?? [], ['recepcion' => ['visitas_requieren_autorizacion' => true]])])->save();
+
+            // ---------- Responsables y delegaciones ----------
+            auth()->setUser($admin);
+            $responsable = fn (string $d, User $u, bool $suplente = false, ?int $sede = null) => DepartamentoResponsable::create([
+                'departamento_id' => $depto($d)->id, 'user_id' => $u->id, 'es_suplente' => $suplente, 'sede_id' => $sede]);
+            $responsable('Seguridad', $jefe);
+            $responsable('Seguridad', $supervisor, true, $sedes['CEN']->id);
+            $responsable('Alimentos y Bebidas', $director);
+            $responsable('Recursos Humanos', $rh);
+            Delegacion::create(['user_id' => $director->id, 'delegado_id' => $admin->id, 'desde' => now()->subDay(), 'hasta' => now()->addDays(3),
+                'motivo' => 'Viaje de trabajo a Mérida']);
+            Delegacion::create(['user_id' => $jefe->id, 'delegado_id' => $supervisor->id, 'desde' => now()->addDays(7)->startOfDay()->addHours(13),
+                'hasta' => now()->addDays(10)->startOfDay()->addHours(13), 'motivo' => 'Vacaciones']);
+
+            // ---------- Candidatos (la caseta los registra y RR. HH. los avanza) ----------
+            $acceso = function (string $nombre, int $minutos, bool $abierto, array $extra = []) use ($sedes, $agente, $candidatos, $hace): Acceso {
+                $persona = $candidatos->personaDelPadron($agente, $nombre, null);
+                // Como las registra la caseta desde Operación (ADR-0006), ya verificadas
+                $persona->forceFill(['origen_alta' => 'accesos', 'sede_alta_id' => $sedes['CEN']->id])->save();
+                $a = new Acceso($extra + ['sede_id' => $sedes['CEN']->id, 'tipo' => 'visitante', 'nombre' => mb_strtoupper($nombre), 'persona_id' => $persona->id,
+                    'motivo_visita' => 'rh', 'identificacion' => 'ine', 'modo_arribo' => 'a_pie', 'entrada_at' => $hace($minutos)]);
+                $a->forceFill(['estado' => $abierto ? 'en_sitio' : 'finalizado', 'creado_por' => $agente->id, 'actualizado_por' => $agente->id]
+                    + ($abierto ? [] : ['salida_at' => $hace(max(0, $minutos - 90)), 'salida_por' => $agente->id]))->save();
+
+                return $a;
+            };
+            $cv = [
+                'escolaridad' => [['nivel' => 'bachillerato', 'institucion' => 'CBTIS 111', 'titulo' => null, 'concluido' => true]],
+                'experiencia' => [['empresa' => 'Hotel Sol Caribe', 'puesto' => 'Ayudante general', 'anos' => 2, 'motivo_salida' => 'Cambio de domicilio']],
+                'referencias' => [['nombre' => 'Martha Chablé', 'telefono' => '9981112233', 'relacion' => 'Jefa anterior']],
+                'habilidades' => 'Atención a huéspedes, trabajo en equipo', 'idiomas' => 'Español, inglés básico', 'disponibilidad' => 'inmediata',
+                'ciudad' => 'Cancún',
+            ];
+            $nuevo = function (string $nombre, int $minutos, string $dep, ?string $pue, bool $abierto = false, array $datos = []) use ($acceso, $agente, $candidatos, $depto, $puesto, $cv) {
+                auth()->setUser($agente);
+                $a = $acceso($nombre, $minutos, $abierto);
+                $c = $candidatos->desdeAcceso($agente, $a, ['departamento_id' => $depto($dep)->id, 'puesto_id' => $pue ? $puesto($pue) : null, 'vacante' => $pue ? null : 'Ayudante de cocina']);
+                $c->forceFill($datos + $cv + ['avisado_rh_en' => $a->entrada_at->copy()->addMinute(), 'telefono' => '998'.random_int(1000000, 9999999), 'privacidad_aceptada_en' => $a->entrada_at, 'privacidad_ip' => '10.0.0.15',
+                    'privacidad_version' => app(AjustesRecepcion::class)->versionPrivacidad(Empresa::findOrFail($c->empresa_id)), 'privacidad_medio' => 'rh'])->save();
+
+                return $c;
+            };
+            $mover = function ($c, array $etapas, ?string $comentario = null) use ($rh, $candidatos) {
+                auth()->setUser($rh);
+                foreach ($etapas as $e) {
+                    $candidatos->cambiarEtapa($rh, $c->fresh(), $e, $e === 'descartado' ? $comentario : null);
+                }
+
+                return $c->fresh();
+            };
+            // Tiempos realistas desde la llegada (minutos después de llegar a caseta); $dias queda por compatibilidad
+            $atras = function ($c, int $dias) {
+                $minutos = ['avisado_rh_en' => 1, 'revision_en' => 9, 'aprobado_rh_en' => 35, 'enviado_departamento_en' => 35,
+                    'respuesta_departamento_en' => 52, 'entrevista_en' => 70, 'decision_en' => 110, 'contratado_en' => 1440];
+                $cambios = [];
+                foreach ($minutos as $campo => $min) {
+                    if ($c->{$campo} !== null) {
+                        $cambios[$campo] = $c->llegada_en->copy()->addMinutes($min);
+                    }
+                }
+                $c->forceFill($cambios)->save();
+            };
+
+            // Esperando ahora, con su QR del kiosco
+            $karla = $nuevo('Karla Pérez Uc', 12, 'Ama de Llaves', 'Camarista', true, ['escolaridad' => null, 'experiencia' => null, 'referencias' => null,
+                'habilidades' => null, 'privacidad_aceptada_en' => null, 'privacidad_ip' => null, 'privacidad_version' => null, 'privacidad_medio' => null]);
+            auth()->setUser($rh);
+            app(Kiosco::class)->generar($rh, $karla);
+
+            // En revisión: llenó su CV en el kiosco y falta que RR. HH. lo revise
+            $luis = $nuevo('Luis Ángel Chi Canul', 35, 'Mantenimiento', 'Técnico de Mantenimiento', true, ['privacidad_medio' => 'kiosco']);
+            $mover($luis, ['revision']);
+            $luis->forceFill(['autocaptura_pendiente' => true, 'autocaptura_en' => now()->subMinutes(20), 'origen' => 'caseta'])->save();
+
+            // Evidencia de caseta (foto de Luis) y documentos que subió en el kiosco (archivos de ejemplo en el disco privado)
+            $imagen = function (int $ancho, int $alto, array $fondo, string $texto): string {
+                $img = imagecreatetruecolor($ancho, $alto);
+                imagefill($img, 0, 0, imagecolorallocate($img, ...$fondo));
+                $blanco = imagecolorallocate($img, 255, 255, 255);
+                imagefilledellipse($img, intdiv($ancho, 2), intdiv($alto, 2) - 20, intdiv($ancho, 3), intdiv($ancho, 3), $blanco);
+                imagestring($img, 5, 12, $alto - 30, $texto, $blanco);
+                ob_start();
+                imagejpeg($img, null, 85);
+
+                return (string) ob_get_clean();
+            };
+            $rutaFoto = 'accesos/'.$empresa->id.'/fotos/demo/'.Str::uuid().'.jpg';
+            Storage::disk('local')->put($rutaFoto, $imagen(360, 360, [37, 99, 235], 'FOTO DE CASETA (DEMO)'));
+            Acceso::whereKey($luis->acceso_id)->update(['foto_persona' => $rutaFoto]);
+            foreach ([['cv', 'CV Luis Chi.pdf', 'application/pdf', "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\n%%EOF\n"],
+                ['ine', 'INE frente.jpg', 'image/jpeg', $imagen(480, 300, [100, 116, 139], 'INE (DEMO)')]] as [$tipo, $nombreArchivo, $mime, $contenido]) {
+                $ruta = 'candidatos/'.$empresa->id.'/'.$luis->id.'/'.Str::uuid().($tipo === 'cv' ? '.pdf' : '.jpg');
+                Storage::disk('local')->put($ruta, $contenido);
+                $doc = new CandidatoDocumento(['candidato_id' => $luis->id, 'tipo' => $tipo, 'nombre_original' => $nombreArchivo, 'ruta' => $ruta,
+                    'mime' => $mime, 'bytes' => strlen($contenido), 'origen' => 'kiosco']);
+                $doc->forceFill(['empresa_id' => $empresa->id])->save();
+            }
+
+            // Aprobada por RR. HH.: espera a Alimentos y Bebidas (director.demo delegó en admin.demo)
+            $fernanda = $nuevo('Fernanda Ruiz Kú', 95, 'Alimentos y Bebidas', 'Mesero', true);
+            $mover($fernanda, ['revision', 'aprobado_rh']);
+
+            // Entrevista (el departamento pidió bajarlo)
+            $jorge = $nuevo('Jorge Tun Pech', 60 * 26, 'Seguridad', 'Agente de Seguridad');
+            $mover($jorge, ['revision', 'aprobado_rh']);
+            $pendienteJorge = Autorizacion::where('candidato_id', $jorge->id)->where('estado', 'pendiente')->first();
+            if ($pendienteJorge) {
+                auth()->setUser($jefe);
+                $autorizaciones->responder($jefe, $pendienteJorge, 'entrevistar', 'Que suba mañana a las 10:00 con su solicitud.');
+            }
+            $atras($jorge->fresh(), 1);
+
+            // Seleccionada
+            $mariela = $nuevo('Mariela Canché Dzib', 60 * 50, 'Recepción', 'Recepcionista');
+            $mover($mariela, ['revision', 'entrevista', 'seleccionado']);
+            $atras($mariela->fresh(), 2);
+
+            // Contratado: ya es colaborador
+            $ramon = $nuevo('Ramón Ek Balam', 60 * 75, 'Mantenimiento', 'Técnico de Mantenimiento');
+            $mover($ramon, ['revision', 'entrevista', 'seleccionado']);
+            auth()->setUser($rh);
+            $candidatos->contratar($rh, $ramon->fresh(), ['num_empleado' => '2001', 'nombre' => 'Ramón', 'apellido_paterno' => 'Ek', 'apellido_materno' => 'Balam']);
+            $atras($ramon->fresh(), 3);
+
+            // En cartera y descartado
+            $silvia = $nuevo('Silvia Mena Couoh', 60 * 100, 'Recepción', 'Recepcionista');
+            $mover($silvia, ['revision', 'cartera']);
+            $atras($silvia->fresh(), 4);
+            $pedro = $nuevo('Pedro Uicab Noh', 60 * 120, 'Alimentos y Bebidas', null);
+            $mover($pedro, ['revision', 'descartado'], 'No cubre el horario nocturno que pide la vacante.');
+            $atras($pedro->fresh(), 5);
+
+            // Los avisos de candidatos de días anteriores ya se leyeron
+            Notificacion::where('referencia_tipo', 'candidato')->whereIn('referencia_id', [$jorge->id, $mariela->id, $ramon->id, $silvia->id, $pedro->id])
+                ->update(['leida_en' => now()]);
+
+            // ---------- Visita que espera la autorización de jefe.demo ----------
+            auth()->setUser($agente);
+            $visita = $acceso('Ingrid Solís Paredes', 6, true, ['motivo_visita' => 'departamento', 'departamento_id' => $depto('Seguridad')->id,
+                'empresa_procedencia' => 'CÁMARAS Y ALARMAS DEL SURESTE']);
+            $visita->forceFill(['estado' => 'pendiente', 'autorizacion' => 'esperando'])->save();
+            $solicitud = $autorizaciones->solicitarVisita($agente, $visita, $depto('Seguridad')->id);
+            $solicitud?->forceFill(['solicitada_en' => $visita->entrada_at->copy()->addMinute()])->save();
+
+            // ---------- Visitas respondidas de días anteriores (tiempos de espera) ----------
+            $quien = ['Seguridad' => $jefe, 'Alimentos y Bebidas' => $director, 'Recursos Humanos' => $rh];
+            foreach ([[1, 'Seguridad', 4, 'autorizada', 'Óscar Méndez Lara'], [1, 'Alimentos y Bebidas', 17, 'autorizada', 'Claudia Ríos Batún'],
+                [2, 'Seguridad', 9, 'rechazada', 'Iván Torres Pool'], [3, 'Recursos Humanos', 6, 'autorizada', 'Lucía Gamboa Ku'],
+                [4, 'Alimentos y Bebidas', 26, 'autorizada', 'Raúl Herrera Chan'], [5, 'Seguridad', 3, 'autorizada', 'Elena Vargas Mex']] as $i => [$dias, $dep, $min, $estado, $nombre]) {
+                $llegada = now()->subDays($dias)->setTime(9 + $i, 15);
+                $responde = $quien[$dep];
+                $v = $acceso($nombre, (int) $llegada->diffInMinutes(now()), false, ['motivo_visita' => 'departamento', 'departamento_id' => $depto($dep)->id]);
+                $v->forceFill(['autorizacion' => $estado, 'autorizado_at' => $estado === 'autorizada' ? $llegada->copy()->addMinutes($min) : null,
+                    'autorizado_por' => $estado === 'autorizada' ? $responde->id : null])->save();
+                $aut = new Autorizacion(['sede_id' => $sedes['CEN']->id, 'departamento_id' => $depto($dep)->id, 'tipo' => 'visita', 'acceso_id' => $v->id,
+                    'solicitada_en' => $llegada->copy()->addMinute()]);
+                $aut->forceFill(['estado' => $estado, 'respondida_en' => $llegada->copy()->addMinutes($min + 1), 'respondida_por' => $responde->id, 'respuesta_medio' => 'plataforma',
+                    'creado_por' => $agente->id, 'actualizado_por' => $responde->id])->save();
+            }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+    // Fin Recepción de candidatos
+
+    /**
+     * Ronda 7 (gestor de impresión QR): las 4 plantillas de siempre, una
+     * plantilla de rollo Zebra de 2 × 1 pulgadas solo para Centro, una
+     * impresión de 3 llaveros de Centro y la reimpresión de uno de ellos.
+     */
+    private function ronda7Demo($sedes, User $admin): void
+    {
+        if (ImpresionEtiquetas::exists()) {
+            return;
+        }
+        $previo = auth()->user();
+        auth()->setUser($admin);
+        try {
+            $plantillas = app('App\Services\Lector\PlantillasEtiquetas');
+            $plantillas->asegurar();
+            $plantillas->guardar($admin, [
+                'nombre' => 'Zebra 2 × 1 pulgadas (Centro)', 'sede_id' => $sedes['CEN']->id, 'formato' => 'rollo',
+                'ancho_mm' => '50.8', 'alto_mm' => '25.4', 'separacion_vertical_mm' => '0', 'orientacion' => 'horizontal', 'qr_mm' => '21',
+                'mostrar_titulo' => '1', 'mostrar_codigo' => '1', 'mostrar_tipo' => '1', 'mostrar_ubicacion' => '1', 'mostrar_fecha' => '1', 'mostrar_logo' => '0',
+            ]);
+
+            $llaves = Llave::where('sede_id', $sedes['CEN']->id)->where('activo', true)->orderBy('id')->limit(3)->get();
+            if ($llaves->isEmpty()) {
+                return;
+            }
+            $masivas = app('App\Services\Lector\EtiquetasMasivas');
+            $impresiones = app('App\Services\Lector\ImpresionesEtiquetas');
+            $llavero = EtiquetaPlantilla::where('clave', 'llavero')->firstOrFail();
+            $etiquetas = $masivas->paraImprimir($admin, $llaves->map(fn (Llave $l) => 'llave-'.$l->id)->all());
+            $original = $impresiones->registrar($admin, $llavero, $etiquetas);
+            $original->forceFill(['created_at' => now()->subDays(2), 'updated_at' => now()->subDays(2)])->save();
+            $impresiones->registrar($admin, $llavero, $etiquetas->take(1), $original);
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }

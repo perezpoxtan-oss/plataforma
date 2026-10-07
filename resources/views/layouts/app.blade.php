@@ -57,6 +57,7 @@
             </div>
 
             <div class="barra-pc-acciones">
+                @include('componentes.campana'){{-- Centro de notificaciones (ADR-0007) --}}
                 <button type="button" class="btn-alto-contraste" data-accion="modo-pantalla" title="Modo de pantalla: Normal" aria-label="Modo de pantalla: Normal. Cambiar a Sol">
                     <i class="bi bi-sun" aria-hidden="true"></i>
                 </button>
@@ -88,6 +89,7 @@
             </a>
         </div>
         <div class="d-flex align-items-center gap-2">
+            @include('componentes.campana'){{-- Centro de notificaciones (ADR-0007) --}}
             <button type="button" class="btn-alto-contraste" data-accion="modo-pantalla" title="Modo de pantalla: Normal" aria-label="Modo de pantalla: Normal. Cambiar a Sol">
                 <i class="bi bi-sun" aria-hidden="true"></i>
             </button>

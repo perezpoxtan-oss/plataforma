@@ -23,6 +23,11 @@ use App\Http\Controllers\Organizacion\TurnoController;
 use App\Http\Controllers\Padrones\ProveedorController;
 use App\Http\Controllers\Padrones\RutaController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\RecursosHumanos\AutorizacionController;
+use App\Http\Controllers\RecursosHumanos\CandidatoController;
+use App\Http\Controllers\RecursosHumanos\KioscoController;
+use App\Http\Controllers\RecursosHumanos\NotificacionController;
+use App\Http\Controllers\RecursosHumanos\RecepcionController;
 use App\Http\Controllers\Seguridad\AccesoController;
 use App\Http\Controllers\Seguridad\EquipoController;
 use App\Http\Controllers\Seguridad\EstacionamientoController;
@@ -333,7 +338,6 @@ Route::middleware('auth')->group(function () {
     });
     // Fin Padrones: Equipos de Protección Civil
     // Padrones: Ajustes QA 4 (homónimos en Usuarios y Colaboradores; días de resguardo de Lost & Found en Configuración)
-    Route::get('/usuarios/homonimos', [UsuarioController::class, 'homonimos'])->middleware('throttle:120,1')->name('usuarios.homonimos');
     Route::get('/colaboradores/homonimos', [ColaboradorController::class, 'homonimos'])->middleware('throttle:120,1')->name('colaboradores.homonimos');
     Route::put('/configuracion/lost-found', [ConfiguracionController::class, 'lostFound'])->name('configuracion.lost_found');
     // Fin Padrones: Ajustes QA 4
@@ -403,14 +407,92 @@ Route::middleware('auth')->group(function () {
     });
     Route::controller('App\Http\Controllers\Padrones\EtiquetaController')->group(function () {
         Route::get('/etiquetas', 'index')->name('etiquetas.index');
-        Route::get('/etiquetas/imprimir', 'imprimir')->name('etiquetas.imprimir');
+        Route::post('/etiquetas/imprimir', 'imprimir')->name('etiquetas.imprimir'); // Ronda 7: POST (registra la impresión en el historial)
     });
     Route::post('/vouchers/{voucher}/recuperado', [VoucherController::class, 'recuperado'])->whereNumber('voucher')->name('vouchers.recuperado');
     Route::post('/vouchers/{voucher}/reembolso', [VoucherController::class, 'reembolso'])->whereNumber('voucher')->name('vouchers.reembolso');
     // Fin Padrones: Ajustes Ronda 6
+
+    // Padrones: Recepción de candidatos y autorizaciones departamentales (Recursos Humanos; ver docs/tecnico/recepcion-y-autorizaciones.md)
+    Route::controller(NotificacionController::class)->group(function () {
+        Route::get('/notificaciones', 'index')->name('notificaciones.index');
+        Route::get('/notificaciones/resumen', 'resumen')->middleware('throttle:120,1')->name('notificaciones.resumen');
+        Route::post('/notificaciones/leer-todas', 'leerTodas')->name('notificaciones.leer-todas');
+        Route::post('/notificaciones/{notificacion}/abrir', 'abrir')->whereNumber('notificacion')->name('notificaciones.abrir');
+    });
+    Route::controller(RecepcionController::class)->group(function () {
+        Route::get('/rh/recepcion', 'index')->name('recepcion.index');
+        Route::get('/rh/recepcion/datos', 'datos')->middleware('throttle:120,1')->name('recepcion.datos');
+        Route::get('/rh/recepcion/metricas', 'metricas')->name('recepcion.metricas');
+        Route::get('/rh/recepcion/kiosco', 'kiosco')->name('recepcion.kiosco');
+        Route::post('/rh/recepcion/kiosco/{candidato}', 'generarEnlace')->whereNumber('candidato')->name('recepcion.kiosco.generar');
+        Route::get('/rh/recepcion/ajustes', 'ajustes')->name('recepcion.ajustes');
+        Route::put('/rh/recepcion/ajustes', 'guardarAjustes')->name('recepcion.ajustes.guardar');
+        Route::get('/accesos/{acceso}/foto-persona', 'fotoPersona')->whereNumber('acceso')->name('accesos.foto-persona');
+        Route::get('/accesos/{acceso}/foto-identificacion', 'fotoIdentificacion')->whereNumber('acceso')->name('accesos.foto-identificacion');
+    });
+    Route::controller(CandidatoController::class)->group(function () {
+        Route::get('/candidatos', 'index')->name('candidatos.index');
+        Route::post('/candidatos', 'store')->name('candidatos.store');
+        Route::get('/candidatos/exportar', 'exportar')->name('candidatos.exportar');
+        Route::get('/candidatos/{candidato}', 'show')->whereNumber('candidato')->name('candidatos.show');
+        Route::put('/candidatos/{candidato}', 'update')->whereNumber('candidato')->name('candidatos.update');
+        Route::delete('/candidatos/{candidato}', 'destroy')->whereNumber('candidato')->name('candidatos.destroy');
+        Route::patch('/candidatos/{candidato}/etapa', 'etapa')->whereNumber('candidato')->name('candidatos.etapa');
+        Route::post('/candidatos/{candidato}/revisado', 'revisado')->whereNumber('candidato')->name('candidatos.revisado');
+        Route::post('/candidatos/{candidato}/contratar', 'contratar')->whereNumber('candidato')->name('candidatos.contratar');
+        Route::post('/candidatos/{candidato}/enlace/revocar', 'revocarEnlace')->whereNumber('candidato')->name('candidatos.enlace.revocar');
+        Route::post('/candidatos/{candidato}/documentos', 'subirDocumento')->whereNumber('candidato')->name('candidatos.documentos.store');
+        Route::get('/candidatos/{candidato}/documentos/{documento}', 'documento')->whereNumber(['candidato', 'documento'])->name('candidatos.documento');
+        Route::delete('/candidatos/{candidato}/documentos/{documento}', 'borrarDocumento')->whereNumber(['candidato', 'documento'])->name('candidatos.documentos.destroy');
+    });
+    Route::controller(AutorizacionController::class)->group(function () {
+        Route::get('/autorizaciones', 'index')->name('autorizaciones.index');
+        Route::get('/autorizaciones/responsables', 'responsables')->name('autorizaciones.responsables');
+        Route::put('/autorizaciones/responsables/{departamento}', 'guardarResponsables')->whereNumber('departamento')->name('autorizaciones.responsables.guardar');
+        Route::post('/autorizaciones/delegaciones', 'delegar')->name('autorizaciones.delegar');
+        Route::patch('/autorizaciones/delegaciones/{delegacion}/cancelar', 'cancelarDelegacion')->whereNumber('delegacion')->name('autorizaciones.delegaciones.cancelar');
+        Route::get('/autorizaciones/{autorizacion}', 'show')->whereNumber('autorizacion')->name('autorizaciones.show');
+        Route::get('/autorizaciones/{autorizacion}/confirmar', 'confirmar')->whereNumber('autorizacion')->name('autorizaciones.confirmar');
+        Route::post('/autorizaciones/{autorizacion}/responder', 'responder')->whereNumber('autorizacion')->middleware('throttle:60,1')->name('autorizaciones.responder');
+        Route::get('/accesos/autorizaciones-estado', 'estadoCaseta')->middleware('throttle:120,1')->name('accesos.autorizaciones-estado');
+    });
+    // Fin Padrones: Recepción de candidatos y autorizaciones departamentales
+    // Padrones: Ajustes Ronda 7 (avisos de duplicado de Llaves, catálogos de RH y Usuarios; gestor de impresión QR)
+    Route::controller('App\Http\Controllers\Padrones\DuplicadoCatalogosController')->middleware('throttle:120,1')->group(function () {
+        Route::get('/llaves/duplicado', 'llaves')->name('llaves.duplicado');
+        Route::get('/departamentos/duplicado', 'departamentos')->name('departamentos.duplicado');
+        Route::get('/puestos/duplicado', 'puestos')->name('puestos.duplicado');
+        Route::get('/turnos/duplicado', 'turnos')->name('turnos.duplicado');
+        Route::get('/usuarios/duplicado', 'usuarios')->name('usuarios.duplicado');
+    });
+    Route::controller('App\Http\Controllers\Padrones\EtiquetaController')->group(function () {
+        Route::get('/etiquetas/historial', 'historial')->name('etiquetas.historial');
+        Route::get('/etiquetas/impresiones/{impresion}', 'impresion')->whereNumber('impresion')->name('etiquetas.impresion');
+        Route::post('/etiquetas/impresiones/{impresion}/reimprimir', 'reimprimir')->whereNumber('impresion')->name('etiquetas.reimprimir');
+    });
+    Route::controller('App\Http\Controllers\Padrones\EtiquetaPlantillaController')->group(function () {
+        Route::get('/etiquetas/plantillas', 'index')->name('etiquetas.plantillas');
+        Route::get('/etiquetas/plantillas/nueva', 'create')->name('etiquetas.plantillas.create');
+        Route::post('/etiquetas/plantillas', 'store')->name('etiquetas.plantillas.store');
+        Route::get('/etiquetas/plantillas/{plantilla}/editar', 'edit')->whereNumber('plantilla')->name('etiquetas.plantillas.edit');
+        Route::put('/etiquetas/plantillas/{plantilla}', 'update')->whereNumber('plantilla')->name('etiquetas.plantillas.update');
+        Route::patch('/etiquetas/plantillas/{plantilla}/estado', 'estado')->whereNumber('plantilla')->name('etiquetas.plantillas.estado');
+        Route::get('/etiquetas/plantillas/{plantilla}/prueba', 'prueba')->whereNumber('plantilla')->name('etiquetas.plantillas.prueba');
+    });
+    // Fin Padrones: Ajustes Ronda 7
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
     Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');
     // Fin Lector universal
 });
+
+// Público: Kiosco de auto-registro de candidatos (SIN sesión; enlace temporal de un solo candidato; ver docs/tecnico/candidatos.md)
+Route::controller(KioscoController::class)->group(function () {
+    Route::get('/k', 'codigo')->middleware('throttle:120,1')->name('kiosco.codigo');
+    Route::post('/k', 'canjear')->middleware('throttle:10,1')->name('kiosco.canjear');
+    Route::get('/k/{token}', 'mostrar')->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:120,1')->name('kiosco.mostrar');
+    Route::post('/k/{token}', 'guardar')->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:10,1')->name('kiosco.guardar');
+});
+// Fin Público: Kiosco de auto-registro de candidatos

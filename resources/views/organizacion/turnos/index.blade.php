@@ -21,7 +21,6 @@
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
             $sedesDeId = is_string($dialogo) && str_starts_with($dialogo, 'sedes-') ? (int) substr($dialogo, 6) : null;
-            $existentes = json_encode($turnos->map(fn ($t) => mb_strtolower($t->nombre))->values());
             $variasSedes = $sedes->count() > 1;
             $idsActivas = $sedes->pluck('id');
         @endphp
@@ -149,8 +148,8 @@
 
                         <label class="campo-etiqueta" for="{{ $modo }}_turno_nombre">Nombre del Turno</label>
                         <input type="text" id="{{ $modo }}_turno_nombre" name="nombre" class="campo" maxlength="50" placeholder="Ej. Matutino"
-                               value="{{ $reabrir ? old('nombre') : '' }}" data-nombres-existentes="{{ $existentes }}" required>
-                        <p data-aviso-nombre hidden></p>
+                               value="{{ $reabrir ? old('nombre') : '' }}" required
+                               data-duplicado="{{ route('turnos.duplicado') }}">
 
                         <div class="turno-horas">
                             <div>

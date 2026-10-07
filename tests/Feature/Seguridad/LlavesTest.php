@@ -184,7 +184,8 @@ class LlavesTest extends TestCase
         $sedeOtra = $this->crearSede($otra, 'X1');
         $this->actingAs($this->crearUsuario($otra, 'Administrador'))->post('/llaves', $this->datos(['sede_id' => $sedeOtra->id]))->assertSessionHasNoErrors();
 
-        $this->actingAs($this->admin)->get('/llaves')->assertSee('data-nombres-existentes', false)->assertSee('ll-cat-sit-01');
+        // Ronda 7: el aviso en vivo es el único de duplicados (data-duplicado, por sede)
+        $this->actingAs($this->admin)->get('/llaves')->assertSee('data-duplicado="'.route('llaves.duplicado').'"', false)->assertDontSee('data-nombres-existentes', false);
     }
 
     public function test_id_externo_unico_por_plataforma_y_sede_y_etiqueta_nfc_unica(): void

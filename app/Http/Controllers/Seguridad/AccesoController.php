@@ -111,6 +111,10 @@ class AccesoController extends Controller
         $mensaje = $acceso->estado === 'pendiente'
             ? "Registro de {$acceso->nombre} guardado: queda PENDIENTE hasta que el host confirme la autorización."
             : "Ingreso de {$acceso->nombre} registrado correctamente.";
+        // Recepción (ADR-0007): visita que espera al responsable del departamento
+        if (($acceso->getAttributes()['autorizacion'] ?? null) === 'esperando') {
+            $mensaje = "Registro de {$acceso->nombre} guardado: ESPERANDO AUTORIZACIÓN del departamento. Ya se avisó al responsable; aquí verás su respuesta.";
+        }
         $redireccion = redirect()->route('accesos.index', $acceso->estado === 'pendiente' ? ['pestana' => 'pendientes'] : [])->with('ok', $mensaje);
 
         return $request->boolean('siguiente')

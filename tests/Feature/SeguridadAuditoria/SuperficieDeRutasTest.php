@@ -27,7 +27,8 @@ class SuperficieDeRutasTest extends TestCase
             ->map(fn (Route $r) => implode('|', array_diff($r->methods(), ['HEAD'])).' /'.ltrim($r->uri(), '/'))
             ->sort()->values()->all();
 
-        $this->assertSame(['GET /login', 'GET /sesion/expirada', 'GET /up', 'POST /login', 'POST /sesion/expirada'], $abiertas);
+        // Kiosco de candidatos (ADR-0007): enlace temporal de un solo candidato, con límite de peticiones
+        $this->assertSame(['GET /k', 'GET /k/{token}', 'GET /login', 'GET /sesion/expirada', 'GET /up', 'POST /k', 'POST /k/{token}', 'POST /login', 'POST /sesion/expirada'], $abiertas);
     }
 
     /**

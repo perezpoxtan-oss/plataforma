@@ -52,7 +52,7 @@
 
         {{-- ===== Registro de ingreso ===== --}}
         <div data-vista-entrada>
-            <form action="{{ route('accesos.store') }}" method="POST" autocomplete="off" data-form-acceso novalidate>
+            <form action="{{ route('accesos.store') }}" method="POST" autocomplete="off" data-form-acceso novalidate enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="_dialogo" value="ingreso">
                 <input type="hidden" name="persona_id" value="{{ $previo('persona_id') }}" data-persona-id>
@@ -180,15 +180,17 @@
                 {{-- Personal externo: motivo y a quién visita --}}
                 <div class="bloque-perfil" data-condicion data-solo-tipos="visitante">
                     <span class="campo-etiqueta">Motivo de la Visita</span>
-                    <div class="modo-toggle">
+                    <div class="modo-toggle tres">
                         <label class="modo-opt"><input type="radio" name="motivo_visita" value="rh" @checked($previo('motivo_visita', 'rh') === 'rh') data-por-defecto data-acceso-motivo><i class="bi bi-person-vcard" aria-hidden="true"></i><span>Recursos Humanos</span></label>
                         <label class="modo-opt"><input type="radio" name="motivo_visita" value="colaborador" @checked($previo('motivo_visita') === 'colaborador') data-acceso-motivo><i class="bi bi-people-fill" aria-hidden="true"></i><span>Visita a Colaborador</span></label>
+                        {{-- Recepción (ADR-0007) --}}<label class="modo-opt"><input type="radio" name="motivo_visita" value="departamento" @checked($previo('motivo_visita') === 'departamento') data-acceso-motivo><i class="bi bi-diagram-2-fill" aria-hidden="true"></i><span>Visita a Departamento</span></label>
                     </div>
                     <div data-condicion data-solo-motivo="colaborador" data-sugerir="colaborador">
                         @include('componentes.lector', ['id' => 'ingreso_visita', 'etiqueta' => '¿A quién visita?', 'tipos' => 'colaborador', 'nombre' => 'visita_colaborador_id',
                             'valor' => $previo('visita_colaborador_id'), 'elegido' => $previos['visita_colaborador_id'] ?? null])
                         <div class="acceso-sugerencias" data-sugerencias hidden></div>
                     </div>
+                    @include('rh.recepcion._ingreso-acceso', ['previo' => $previo, 'departamentos' => $departamentos]){{-- Recepción: candidato y visita a departamento (ADR-0007) --}}
                 </div>
 
                 {{-- Proveedor / contratista --}}
@@ -354,6 +356,8 @@
                         </div>
                     </details>
                 </div>
+
+                @include('rh.recepcion._ingreso-fotos'){{-- Recepción: fotos de evidencia (ADR-0007) --}}
 
                 <div class="acciones-ingreso">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>

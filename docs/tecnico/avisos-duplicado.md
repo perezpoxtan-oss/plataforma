@@ -104,7 +104,22 @@ Reglas comunes:
 - **GV-03 (etiqueta NFC en vivo)**: el lector en modo capturar acepta `'duplicado' => route('identificacion.etiqueta-duplicado', ['gafete', 0])` y pinta el aviso debajo de sí mismo. Lo leído con el NFC del celular o el Enter del lector USB dispara la revisión (evento `lector:capturado`). En el diálogo «Código e identificación» la dirección y el registro los pone el JS al abrir (`duplicadoUrl` en `data-ver-identificacion`, con el tipo y el id del registro en la dirección). Ahí, lo leído con el lector se guarda en el acto, así que el resultado lo da el propio diálogo; lo tecleado se avisa mientras se escribe.
 - Los campos de `data-duplicado-con` vuelven a revisar **mientras se escribe** en ellos (no solo al salir del campo): bloque «Ajustes Ronda 6» de `plataforma.js`.
 
-Siguen con su aviso propio (fuera del alcance de la Ronda 6): Llaves, Departamentos, Puestos y Turnos (`data-nombres-existentes`) y Usuarios (`data-homonimos`, con «Vincular con colaborador»). El endpoint `GET /colaboradores/homonimos` se conserva porque lo usan pruebas y Usuarios. Para un padrón nuevo, usa `data-duplicado`.
+### Ronda 7: los últimos padrones
+
+Llaves, Departamentos, Puestos, Turnos y Usuarios dejaron sus avisos propios (`data-nombres-existentes`, `data-nombres-por-sede`, `data-aviso-nombre` y la caja de homónimos `data-homonimos` de Usuarios; se quitó la ruta `GET /usuarios/homonimos`). Ya no queda ningún aviso propio: **todo usa `data-duplicado`**. Controlador `App\Http\Controllers\Padrones\DuplicadoCatalogosController`, bloque `// Padrones: Ajustes Ronda 7` de `routes/web.php` (`throttle:120,1`):
+
+| Ruta | Permiso | Campo | existe | parecido |
+|---|---|---|---|---|
+| `GET /llaves/duplicado` | `llaves.crear` / `.editar` | `nomenclatura` + `sede_id` (`data-duplicado-con`) | mismo nombre **en esa sede** (de baja: «Reactivar» → `llaves.reactivar`) | igual sin guiones ni espacios, en la sede. Sin sede o sede ajena: `nada` |
+| `GET /departamentos/duplicado` · `/puestos/duplicado` · `/turnos/duplicado` | `X.crear` / `.editar` **con alcance de empresa** (catálogos de toda la empresa; si no, 403) | `nombre` | mismo nombre sin mayúsculas (desactivado: «Reactivar» → `X.estado`) | `seParecen()` (acentos, una letra, orden) |
+| `GET /usuarios/duplicado` | `usuarios.crear` / `.editar` | `username`, `email` | ya lo usa otra cuenta (único en **toda** la plataforma; de otra empresa, de una sede ajena o el Super Administrador: sin datos). Inactiva: «Reactivar» → `usuarios.estado` | `username` igual sin puntos ni guiones (`d.canul` ≈ `dcanul`) |
+| | | `name` (+ `colaborador_id`) | — | homónimos (`HomonimosUsuarios`) y colaboradores con ese nombre **sin cuenta** |
+
+La etiqueta NFC de Llaves ya usaba el aviso único desde la Ronda 6 (`identificacion.etiqueta-duplicado`).
+
+**Usuarios, extras**: la respuesta de `name` trae `requiere_confirmacion` y, en cada colaborador sin cuenta, `vincular: {id, num_empleado, nombre_completo}`. El bloque genérico emite el evento **`duplicado:pintado`** (`detail` = la respuesta) después de pintar el aviso —una sola línea agregada al bloque de la Ronda 5—; el bloque «Ajustes Ronda 7» de `plataforma.js` lo usa para agregar el botón **Vincular** (llena el número, el colaborador y el nombre) y mostrar «Sí, es otra persona con el mismo nombre». El servidor sigue exigiendo esa confirmación al guardar (`confirmar_homonimo`). Otros módulos pueden usar el mismo evento para acciones propias.
+
+El endpoint `GET /colaboradores/homonimos` se conserva (lo usan pruebas). Para un padrón nuevo, usa `data-duplicado`.
 
 ## Agregar el aviso a otro módulo
 
@@ -115,4 +130,4 @@ Siguen con su aviso propio (fuera del alcance de la Ronda 6): Llaves, Departamen
 
 ## Pruebas
 
-`tests/Feature/Seguridad/AjustesRonda5bTest.php` y, para los padrones de la Ronda 6 y la etiqueta NFC, `tests/Feature/Seguridad/AjustesRonda6Test.php`.
+`tests/Feature/Seguridad/AjustesRonda5bTest.php`; los padrones de la Ronda 6 y la etiqueta NFC, `AjustesRonda6Test.php`; Llaves, Departamentos, Puestos, Turnos y Usuarios, `AjustesRonda7Test.php` y `tests/Feature/Administracion/UsuariosHomonimosTest.php`.
