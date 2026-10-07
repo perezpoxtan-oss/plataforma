@@ -68,6 +68,7 @@ Todas llevan `empresa_id` (scope de tenant) y autoría `creado_por` / `actualiza
 | GET | `/novedades/lost-found` | `lost_found.index` | ídem (solo tickets Lost & Found) |
 | POST | `/novedades` | `novedades.store` | `novedades.crear` (o `lost_found.crear`: solo categoría Lost & Found) |
 | PUT | `/novedades/{id}` | `novedades.update` | `editar` sobre el ticket |
+| GET | `/novedades/{id}` (Ronda 8) | `novedades.mostrar` | `ver` sobre el ticket: redirige a `/novedades?abrir={id}` (antes 405) |
 | POST | `/novedades/{id}/reabrir` (`motivo`) | `novedades.reabrir` | `novedades.reabrir` |
 | GET | `/novedades/{id}/imprimir` | `novedades.imprimir` | `imprimir` sobre el ticket |
 | GET | `/novedades/{id}/acuse` | `novedades.acuse` | `imprimir` (solo Lost & Found) |
@@ -84,11 +85,11 @@ Plantillas de rol: el **Agente** (módulo de Operación) despacha, atiende e imp
 
 ## Reglas
 
-- **Despachar** (Preguntas Base): sede activa de su alcance, categoría (si no sabe: Sin clasificar), ¿quién reporta? (texto, «Fui yo quien lo observó» o gafete escaneado con el lector universal → `reportado_colaborador_id`), ¿a quién se canaliza? (usuario **activo** de la empresa con rol en toda la empresa o en esa sede; SEGCAT lo ignoraba), Área General (edificio y piso de la sede, activos; el piso debe ser de ese edificio), ubicación, involucrados, ¿cuándo? (hora local de la sede, no futura), ¿qué sucedió?, ¿cómo sucedió?. Textos clave en mayúsculas.
+- **Despachar** (Preguntas Base): sede activa de su alcance, categoría (Ronda 8: obligatoria, sin «Sin clasificar»; quien solo trabaja Lost & Found no elige), ¿quién reporta? (texto, «Fui yo quien lo observó» o gafete escaneado con el lector universal → `reportado_colaborador_id`), ¿a quién se canaliza? (Ronda 8: solo **personal de Seguridad** activo —rol con `novedades.editar`, `reabrir` o `exportar`— en toda la empresa o en esa sede; SEGCAT lo ignoraba), Área General (edificio y piso de la sede, activos; el piso debe ser de ese edificio), ubicación, involucrados, ¿cuándo? (hora local de la sede, no futura), ¿qué sucedió?, ¿cómo sucedió?. Textos clave en mayúsculas.
 - **Expediente**: preguntas base + formato de la categoría (todos los parciales se pintan en el servidor; el JS solo muestra el elegido y deshabilita los demás para que no se envíen) + nota del Minuto a Minuto + estatus.
 - **Estatus**: `abierto` ⇄ `pendiente_turno` → `resuelto`. Resuelto exige **resolución** y fija `cerrado_en`/`cerrado_por`. Cada cambio de estatus deja una nota de sistema. Un caso Resuelto **no se edita** (ni con una nota) hasta **Reabrir Caso** con motivo (mín. 5 letras) → vuelve a `abierto`, borra el cierre y anota «REABRIÓ EL CASO — Motivo: …».
 - **Recorrido PC** ya no se elige al despachar ni al cambiar categoría (tiene su propio módulo); solo se conserva en los tickets que ya la traían.
-- **Accidente**: formulario idéntico a `frag_accidente.php` (secciones, campos, etiquetas, opciones, orden y las 6 firmas). Se guarda huésped **o** colaborador según «Tipo de Afectado»; testigos y RH van con el de colaborador; el dictamen siempre; guardavidas solo si trae nombre; cada firma solo si se capturó (reemplaza y borra el archivo anterior). Departamento y puesto del colaborador se toman de su expediente.
+- **Accidente**: formulario idéntico a `frag_accidente.php` (secciones, campos, etiquetas, opciones y orden); Ronda 8: los firmantes dependen del Tipo de Afectado (ver abajo). Se guarda huésped **o** colaborador según «Tipo de Afectado»; testigos y RH van con el de colaborador; el dictamen siempre; guardavidas solo si trae nombre; cada firma solo si se capturó (reemplaza y borra el archivo anterior). Departamento y puesto del colaborador se toman de su expediente.
 - **Siniestro PC** con lesionados abre **una sola vez** un ticket de Accidente ligado (`origen_novedad_id`), con nota en ambos.
 - **Lost & Found**: artículos nacen `EN_RESGUARDO`, el folio se asigna una vez (consecutivo por empresa); el estatus no se cambia desde el expediente. Un artículo ya entregado o vinculado, y un reporte ya vinculado, no se pueden quitar. La habitación de cada artículo debe colgar del Área General del ticket. Semáforo de resguardo con los umbrales.
 - **Buscar coincidencias**: artículos en resguardo visibles para el usuario, mismo tipo de valor, objeto/marca/color parecidos, encontrados de 7 días antes a 30 días después de la fecha (máx. 15).
@@ -110,3 +111,28 @@ Plantillas de rol: el **Agente** (módulo de Operación) despacha, atiende e imp
 - Reapertura exige motivo y queda en el historial y en la auditoría; un caso Resuelto ya no se puede editar «por debajo».
 - Número de ticket y folios LF-/RP- consecutivos **por empresa** (antes salían del id global de la tabla, compartido entre empresas).
 - Exportación CSV con los mismos filtros y alcance que la pantalla.
+
+## Ronda 8 (QA NV-01, NV-03 y NV-06)
+
+- **NV-03 — «405 Method Not Allowed» al guardar el expediente.** El formulario del expediente es correcto (POST con `@method('PUT')`, sin formularios anidados ni `formaction`; con Playwright, escritorio y celular, «Guardar Esta Firma» + «Guardar Expediente» guarda bien). El 405 aparece cuando la dirección del expediente (`/novedades/{id}`) llega **con GET** o **sin el campo `_method`** (recargar o volver atrás después de guardar, un envío que el servidor o su firewall redirigió o cortó). Se corrigió de tres formas:
+  - `GET /novedades/{id}` (`novedades.mostrar`, permiso `ver` + alcance) **abre el expediente** (`/novedades?abrir={id}`) en lugar de dar 405.
+  - El recuadro de trabajo de la firma (`firma_en_curso`) ya no se envía (pesaba de más en cada guardado) y una firma dibujada sin «Guardar Esta Firma» se guarda para el firmante elegido.
+  - Páginas de error en español para **405**, **413** y cualquier **4xx/5xx** sin vista propia (`resources/views/errors/405.blade.php`, `413`, `4xx`, `5xx`): con `APP_DEBUG=false` ya no sale la página genérica en inglés «Oops! An Error Occurred».
+- **NV-03 — firmantes según el afectado.** `AccidenteFirma::ROLES_POR_TIPO` (claves de SEGCAT + `testigo` y `supervisor`):
+
+  | Huésped / Cliente | Colaborador Interno |
+  |---|---|
+  | Huésped / Afectado (`afectado`) | Colaborador Afectado (`afectado`) |
+  | Testigo (`testigo`) | Jefe Inmediato (Jefe de Área / Departamento) (`jefe`) |
+  | Agente de Seguridad (Atiende) (`seguridad`) | Testigo (`testigo`) |
+  | Supervisor de Seguridad (`supervisor`) | Agente de Seguridad (Atiende) (`seguridad`) |
+  | Médico / Enfermería (Si aplica) (`medico`) | Supervisor de Seguridad (`supervisor`) |
+  | Gerente en Turno / Ejecutivo de Guardia (`ejecutivo`) | Servicio Médico (Si aplica) (`medico`) |
+  |  | Recursos Humanos (Si aplica) (`rh`) |
+
+  Sin «Tipo de Afectado» se ofrecen los 6 de SEGCAT. El selector cambia al elegir el tipo (`data-roles-por-tipo`, bloque «Ronda 8» de `plataforma.js`) y el servidor rechaza, dentro del diálogo, un firmante que no corresponde («La firma de «Recursos Humanos (Si aplica)» no corresponde a un accidente de huésped. Elige otro firmante.»). La impresión muestra las líneas de firma del tipo (y cualquier firma ya guardada). La columna `accidente_firmas.rol` (15 caracteres) ya admitía las claves nuevas: sin migración. El resto del formato de Accidente no cambió.
+- **NV-01 — ¿A quién se canaliza?** `AdministradorNovedades::personalCanalizable($sedes)`: usuarios activos de la empresa con un rol que tenga `novedades.editar`, `novedades.reabrir` o `novedades.exportar` (Agente, Supervisor, Jefe de seguridad, Asistente, Director, Administrador) en toda la empresa o en esa sede; una sola consulta. Lo decide el motor de permisos, no el nombre del rol: Recursos Humanos u otros usuarios ya no aparecen. Se valida igual en el servidor (`asignadoValido`): «Solo se canaliza al personal de Seguridad activo de esa sede (agentes, supervisores, jefes o mandos).»
+- **NV-01 — clasificación obligatoria al despachar.** SEGCAT dejaba el ticket «Sin clasificar» por omisión; ahora la Categoría es obligatoria al despachar («Elige la clasificación del ticket (Categoría). Si aún no estás seguro, elige la más cercana: se puede corregir al atenderlo.»), sin la opción «Sin clasificar». Quien solo trabaja Lost & Found no elige (su única categoría). Los tickets que ya estaban «Sin clasificar» (o los que se importen de SEGCAT) se siguen atendiendo y se clasifican en el expediente.
+- **NV-06 — secciones plegables** en los formatos Valores a la Vista, Siniestro PC, Lost & Found y Robo (también en Robo — Seguimiento): cada título numerado es un `<x-seccion>`; ver [acceso-y-diseno.md](acceso-y-diseno.md#secciones-plegables-ronda-8-nv-06). Accidente se queda idéntico.
+
+Pruebas: `tests/Feature/Seguridad/AjustesRonda8Test.php` (NV-03 y NV-01) y los ajustes en `NovedadesTest` / `NovedadesFormatosTest`.

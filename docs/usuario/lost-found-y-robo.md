@@ -137,3 +137,9 @@ Todo funciona igual en el celular: filtros y botones grandes, y la ventana de ci
 | Administrador | Todo, incluso los Días de Resguardo. | Todo. |
 
 ![Vista del Director](img/lost-found-y-robo/50-director-archivo.png)
+
+## Ronda 8: filtros automáticos
+
+La búsqueda del archivo de Lost & Found, la Auditoría de Inventario y Robo — Seguimiento se aplican solas al escribir o cambiar un filtro (ya no hay que tocar «Buscar»). Los apartados del expediente de Robo se contraen tocando su título.
+
+![Archivo de Lost & Found sin botón Buscar](img/ronda-8/05-filtros-automaticos-lost-found.png)

@@ -163,3 +163,40 @@ Con el botón del sol (junto a tu nombre) cambias a **Sol** (alto contraste) o *
 | Ama de Llaves (con permiso de Lost & Found) | Solo tickets de Lost & Found. |
 
 ![Vista del agente](img/novedades/30-agente-lista.png)
+
+## Ronda 8: lo que cambió
+
+### Firmas del Accidente según quién se accidentó
+
+En **Firmas Digitales de Cierre**, la lista «Seleccione quién va a firmar en este momento» cambia según el **Tipo de Afectado** que elegiste arriba:
+
+- **Huésped / Cliente**: Huésped / Afectado, Testigo, Agente de Seguridad (Atiende), Supervisor de Seguridad, Médico / Enfermería y Gerente en Turno / Ejecutivo de Guardia.
+- **Colaborador Interno**: Colaborador Afectado, Jefe Inmediato, Testigo, Agente de Seguridad (Atiende), Supervisor de Seguridad, Servicio Médico y Recursos Humanos.
+
+Pasos: elige quién firma → que firme en el recuadro → **Guardar Esta Firma** → repite con el siguiente → **Guardar Expediente**. Si se te olvida tocar «Guardar Esta Firma», la firma que quedó en el recuadro se guarda igual para la persona elegida.
+
+![Firmantes de un huésped](img/ronda-8/01-firmantes-huesped.png)
+![Firmantes de un colaborador](img/ronda-8/02-firmantes-colaborador.png)
+
+Si algún día el navegador muestra un error al guardar, ahora verás la página de la plataforma en español («La acción no llegó completa») con un botón para regresar; vuelve a abrir el expediente y revisa si tus cambios ya están.
+
+![Página de error 405](img/ronda-8/23-error-405.png)
+
+### Nuevo Ticket: clasificación obligatoria y canalizar solo a Seguridad
+
+- **Categoría** ya no viene en «Sin clasificar»: elige la más cercana (se puede corregir al atender). Si no la eliges, la ventana te lo pide.
+- **¿A quién se canaliza?** muestra solo al **personal de Seguridad** de esa sede (agentes, supervisores, jefes y mandos), ya no a todo el personal.
+
+![Nuevo ticket sin clasificación](img/ronda-8/03-nuevo-ticket-sin-clasificacion.png)
+
+### Apartados que se contraen
+
+En los formatos largos (Valores a la Vista, Siniestro, Lost & Found y Robo) cada apartado numerado se abre o se cierra tocando su título (flecha a la derecha). El primero viene abierto; la plataforma recuerda cuáles dejaste abiertos. Si un apartado tiene un error, se abre solo y dice **Revisar**. El formato de **Accidente** se queda igual que siempre.
+
+![Apartados que se contraen en Robo](img/ronda-8/04-secciones-plegables-robo.png)
+
+En el celular, de noche y a pleno sol:
+
+![Celular](img/ronda-8/16-celular-secciones-robo.png)
+![Noche](img/ronda-8/20-noche-secciones.png)
+![Sol](img/ronda-8/18-sol-secciones.png)

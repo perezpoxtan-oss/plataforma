@@ -146,7 +146,7 @@ class ResponsivaController extends Controller
 
         $texto = 'Equipo '.($r['serie'] ?? '').' recibido ('.mb_strtoupper(EquipoResponsiva::ESTADOS_DEVOLUCION[$r['estado']]).')'
             .($r['voucher'] ? ' y dado de baja con el voucher '.$r['voucher']->folio.($r['voucher']->aplica_cobro ? ' (con cobro de $'.number_format((float) $r['voucher']->monto, 2).')' : '') : '')
-            .'. '.($r['cerrado'] ? "El lote {$modelo->folio} quedó completo y pasa a Historial Devueltos." : "Del lote {$modelo->folio} faltan {$r['faltan']} ".($r['faltan'] === 1 ? 'equipo' : 'equipos').' por regresar.');
+            .'. '.($r['cerrado'] ? "El lote {$modelo->folio} quedó completo y pasa a Historial Devueltos." : "Del lote {$modelo->folio} ".($r['faltan'] === 1 ? 'falta 1 equipo' : "faltan {$r['faltan']} equipos").' por regresar.');
 
         return redirect()->to(route('responsivas.index').'#responsiva-'.$modelo->id)->with($r['estado'] === 'ok' ? 'ok' : 'aviso', $texto);
     }
