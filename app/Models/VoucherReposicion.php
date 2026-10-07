@@ -32,7 +32,20 @@ class VoucherReposicion extends Model
         'robado' => 'Robado',
     ];
 
-    protected $attributes = ['aplica_cobro' => false, 'monto' => 0];
+    /**
+     * Ronda 6 (GV-04): estado del voucher. Nace «vigente»; si el artículo
+     * aparece se marca «Recuperado»: «cancelado_recuperacion» (sin cobro, o el
+     * cobro no se había pagado y se cancela) o «reembolso_pendiente» (ya se
+     * había cobrado), que pasa a «reembolsado» al devolver el dinero.
+     */
+    public const ESTADOS = [
+        'vigente' => 'Vigente',
+        'cancelado_recuperacion' => 'Cancelado por recuperación',
+        'reembolso_pendiente' => 'Reembolso pendiente',
+        'reembolsado' => 'Reembolsado',
+    ];
+
+    protected $attributes = ['aplica_cobro' => false, 'monto' => 0, 'estado' => 'vigente'];
 
     protected $fillable = [
         'empresa_id', 'sede_id', 'folio', 'origen_tipo', 'origen_id', 'origen_descripcion', 'motivo',
@@ -45,7 +58,31 @@ class VoucherReposicion extends Model
 
     protected function casts(): array
     {
-        return ['aplica_cobro' => 'boolean', 'monto' => 'decimal:2', 'firmado_papel_en' => 'datetime'];
+        return [
+            'aplica_cobro' => 'boolean', 'monto' => 'decimal:2', 'firmado_papel_en' => 'datetime',
+            'recuperado_en' => 'datetime', 'reembolsado_en' => 'datetime',
+        ];
+    }
+
+    public function etiquetaEstado(): string
+    {
+        return self::ESTADOS[$this->estado ?? 'vigente'] ?? (string) $this->estado;
+    }
+
+    /** ¿Se puede marcar «Recuperado»? Solo un voucher vigente. */
+    public function esVigente(): bool
+    {
+        return ($this->estado ?? 'vigente') === 'vigente';
+    }
+
+    public function recuperadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recuperado_por');
+    }
+
+    public function reembolsadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reembolsado_por');
     }
 
     public function sede(): BelongsTo

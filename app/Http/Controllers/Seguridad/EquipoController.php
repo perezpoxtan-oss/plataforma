@@ -8,6 +8,7 @@ use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\TipoEquipo;
 use App\Models\User;
+use App\Models\VoucherReposicion;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -85,6 +86,10 @@ class EquipoController extends Controller
                 'editables' => $this->equipos->idsEnAlcance($actor, 'equipos.editar'),
                 'desactivables' => $this->equipos->idsEnAlcance($actor, 'equipos.eliminar'),
                 'puede' => $puede,
+                // Ronda 6 (EQ-04): folio del último voucher de cada equipo de baja (una sola consulta)
+                'vouchersBaja' => VoucherReposicion::where('origen_tipo', 'equipo')
+                    ->whereIn('origen_id', $lista->where('estado', 'baja')->pluck('id'))
+                    ->orderBy('id')->pluck('folio', 'origen_id')->all(),
             ]);
         });
     }

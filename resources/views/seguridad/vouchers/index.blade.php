@@ -60,6 +60,13 @@
                 <option value="1" @selected($filtros['cobro'] === '1')>Solo con cobro</option>
                 <option value="0" @selected($filtros['cobro'] === '0')>Solo sin cobro</option>
             </select>
+            {{-- Ronda 6 (GV-04) --}}
+            <select name="estado" class="filtro-select" aria-label="Filtrar por estado del voucher" data-enviar-al-cambiar>
+                <option value="">Cualquier estado</option>
+                @foreach (\App\Models\VoucherReposicion::ESTADOS as $clave => $etiqueta)
+                    <option value="{{ $clave }}" @selected($filtros['estado'] === $clave)>{{ $etiqueta }}</option>
+                @endforeach
+            </select>
             <div class="rango-fechas">
                 <label class="filtro-fecha"><span>Desde</span><input type="date" name="desde" value="{{ $filtros['desde'] }}" data-enviar-al-cambiar></label>
                 <label class="filtro-fecha"><span>Hasta</span><input type="date" name="hasta" value="{{ $filtros['hasta'] }}" data-enviar-al-cambiar></label>
@@ -80,11 +87,15 @@
 
         <div class="fichas-grid fichas-vouchers">
             @forelse ($vouchers as $v)
-                <article class="ficha-card ficha-voucher" id="voucher-{{ $v->id }}">
+                <article class="ficha-card ficha-voucher {{ $v->esVigente() ? '' : 'voucher-recuperado' }}" id="voucher-{{ $v->id }}">
                     <div class="d-flex justify-content-between align-items-start gap-2">
                         <span class="voucher-folio">{{ $v->folio }}</span>
-                        <span class="voucher-cobro {{ $v->aplica_cobro ? 'con-cobro' : 'sin-cobro' }}">{{ $v->aplica_cobro ? 'CON COBRO' : 'SIN COBRO' }}</span>
+                        <span class="voucher-cobro {{ $v->aplica_cobro ? 'con-cobro' : 'sin-cobro' }}">{{ $v->aplica_cobro ? ($v->estado === 'cancelado_recuperacion' ? 'COBRO CANCELADO' : 'CON COBRO') : 'SIN COBRO' }}</span>
                     </div>
+                    @unless ($v->esVigente())
+                        {{-- Ronda 6 (GV-04) --}}
+                        <span class="voucher-estado estado-{{ $v->estado }}"><i class="bi {{ $v->estado === 'reembolso_pendiente' ? 'bi-hourglass-split' : 'bi-arrow-counterclockwise' }} me-1" aria-hidden="true"></i>{{ $v->etiquetaEstado() }}</span>
+                    @endunless
                     <h2 class="voucher-articulo"><i class="bi {{ $iconos[$v->origen_tipo] ?? 'bi-box' }} me-1 text-muted" aria-hidden="true"></i>{{ $v->origen_descripcion }}</h2>
                     <div class="voucher-meta">
                         <div><span>Origen:</span> <strong>{{ $v->etiquetaOrigen() }}</strong></div>
@@ -99,6 +110,29 @@
                         <p class="voucher-como"><span>¿Cómo pasó?</span> {{ \Illuminate\Support\Str::limit($v->descripcion, 160) }}</p>
                     @endif
                     <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Generado por {{ $v->creado_por_nombre ?? 'alguien' }} · @fecha($v->created_at)</div>
+                    @if ($v->recuperado_en)
+                        <div class="texto-traza"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Recuperado por {{ $v->recuperado_por_nombre ?? 'alguien' }} · @fecha($v->recuperado_en){{ $v->recuperacion_comentario ? ' — '.$v->recuperacion_comentario : '' }}</div>
+                    @endif
+                    @if ($v->reembolsado_en)
+                        <div class="texto-traza"><i class="bi bi-cash-coin" aria-hidden="true"></i> Reembolsado por {{ $v->reembolsado_por_nombre ?? 'alguien' }} · @fecha($v->reembolsado_en){{ $v->reembolso_comentario ? ' — '.$v->reembolso_comentario : '' }}</div>
+                    @endif
+                    @php
+                        $recuperable = $v->esVigente() && in_array($v->origen_tipo, $puedeRecuperar, true);
+                        $reembolsable = $puedeReembolsar && $v->estado === 'reembolso_pendiente';
+                    @endphp
+                    @if ($recuperable || $reembolsable)
+                        <div class="acciones-voucher acciones-recuperado">
+                            @if ($recuperable)
+                                <button type="button" class="btn-ver-voucher recuperado" data-accion="voucher-recuperado" data-url="{{ route('vouchers.recuperado', $v->id) }}"
+                                        data-id="{{ $v->id }}" data-folio="{{ $v->folio }}" data-articulo="{{ $v->origen_descripcion }}"
+                                        data-cobro="{{ $v->aplica_cobro && (float) $v->monto > 0 ? '$'.number_format((float) $v->monto, 2) : '' }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Recuperado</button>
+                            @endif
+                            @if ($reembolsable)
+                                <button type="button" class="btn-ver-voucher recuperado" data-accion="voucher-reembolso" data-url="{{ route('vouchers.reembolso', $v->id) }}"
+                                        data-id="{{ $v->id }}" data-folio="{{ $v->folio }}" data-cobro="{{ '$'.number_format((float) $v->monto, 2) }}"><i class="bi bi-cash-coin" aria-hidden="true"></i> Reembolso entregado</button>
+                            @endif
+                        </div>
+                    @endif
                     {{-- Ronda 5 (LL-04): firma digital o física --}}
                     @switch($v->estadoFirma())
                         @case('digital')
@@ -137,6 +171,75 @@
 
         @if ($vouchers->hasPages())
             <div class="mt-4">{{ $vouchers->onEachSide(1)->links('pagination::bootstrap-5') }}</div>
+        @endif
+
+        {{-- Ronda 6 (GV-04): el artículo apareció → «Recuperado»; si ya se había cobrado, después «Reembolso entregado» --}}
+        @php
+            $dialogoR6 = old('_dialogo');
+            $recuperarId = is_string($dialogoR6) && str_starts_with($dialogoR6, 'recuperar-') ? (int) substr($dialogoR6, 10) : null;
+            $reembolsoId = is_string($dialogoR6) && str_starts_with($dialogoR6, 'reembolso-') ? (int) substr($dialogoR6, 10) : null;
+            $vRecuperar = $recuperarId ? $vouchers->firstWhere('id', $recuperarId) : null;
+            $vReembolso = $reembolsoId ? $vouchers->firstWhere('id', $reembolsoId) : null;
+        @endphp
+        @if ($puedeRecuperar !== [])
+            <dialog id="dialogoRecuperadoVoucher" class="dialogo" aria-labelledby="titulo-recuperado" @if ($vRecuperar && $errors->any()) data-abrir-al-cargar @endif>
+                <div class="dialogo-cabecera">
+                    <h2 id="titulo-recuperado"><i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true"></i>Recuperado <span data-recuperado-folio>{{ $vRecuperar?->folio }}</span></h2>
+                    <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                </div>
+                <div class="dialogo-cuerpo">
+                    <form method="POST" action="{{ $vRecuperar ? route('vouchers.recuperado', $vRecuperar->id) : '' }}" autocomplete="off" data-form-recuperado>
+                        @csrf
+                        <input type="hidden" name="_dialogo" value="{{ $vRecuperar ? 'recuperar-'.$vRecuperar->id : '' }}" data-campo-dialogo>
+                        @if ($errors->any() && $vRecuperar)
+                            <div class="alert alert-danger small py-2" role="alert">{{ $errors->first() }}</div>
+                        @endif
+                        <p class="small">Apareció <strong data-recuperado-articulo>{{ $vRecuperar?->origen_descripcion }}</strong> y se devolvió a Seguridad. Al confirmar:</p>
+                        <ul class="small lista-recuperado">
+                            <li>El artículo se <strong>reactiva</strong> y vuelve a estar disponible.</li>
+                            <li>El voucher queda <strong>Cancelado por recuperación</strong> (se conserva como historial).</li>
+                        </ul>
+                        <div class="caja-cobro-recuperado" data-recuperado-cobro @unless ($vRecuperar && $vRecuperar->aplica_cobro) hidden @endunless>
+                            <p class="small mb-2"><i class="bi bi-cash-coin me-1" aria-hidden="true"></i>Este voucher tiene un cobro de <strong data-recuperado-monto>{{ $vRecuperar ? '$'.number_format((float) $vRecuperar->monto, 2) : '' }}</strong>.</p>
+                            <label class="casilla-recuperado">
+                                <input type="checkbox" name="cobro_pagado" value="1" @checked($vRecuperar && old('cobro_pagado'))>
+                                <span>Ya se le cobró al responsable (quedará <strong>Reembolso pendiente</strong>)</span>
+                            </label>
+                            <p class="campo-ayuda">Si todavía no se le cobraba, déjalo sin marcar: el cobro se <strong>cancela</strong>.</p>
+                        </div>
+                        <label class="campo-etiqueta" for="recuperado_comentario">Comentario <span class="text-lowercase fw-normal">(dónde apareció, quién lo entregó…)</span></label>
+                        <textarea id="recuperado_comentario" name="comentario" class="campo" rows="2" maxlength="500" placeholder="Ej: lo entregó el área de Ama de Llaves">{{ $vRecuperar ? old('comentario') : '' }}</textarea>
+                        <div class="dialogo-acciones">
+                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                            <button type="submit" class="btn-gafetes"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Confirmar recuperado</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        @endif
+        @if ($puedeReembolsar)
+            <dialog id="dialogoReembolsoVoucher" class="dialogo" aria-labelledby="titulo-reembolso" @if ($vReembolso && $errors->any()) data-abrir-al-cargar @endif>
+                <div class="dialogo-cabecera">
+                    <h2 id="titulo-reembolso"><i class="bi bi-cash-coin me-2" aria-hidden="true"></i>Reembolso <span data-reembolso-folio>{{ $vReembolso?->folio }}</span></h2>
+                    <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                </div>
+                <div class="dialogo-cuerpo">
+                    <form method="POST" action="{{ $vReembolso ? route('vouchers.reembolso', $vReembolso->id) : '' }}" autocomplete="off" data-form-reembolso>
+                        @csrf
+                        <input type="hidden" name="_dialogo" value="{{ $vReembolso ? 'reembolso-'.$vReembolso->id : '' }}" data-campo-dialogo>
+                        @if ($errors->any() && $vReembolso)
+                            <div class="alert alert-danger small py-2" role="alert">{{ $errors->first() }}</div>
+                        @endif
+                        <p class="small">Confirma que ya se le devolvieron <strong data-reembolso-monto>{{ $vReembolso ? '$'.number_format((float) $vReembolso->monto, 2) : '' }}</strong> al responsable. El voucher quedará <strong>Reembolsado</strong>.</p>
+                        <label class="campo-etiqueta" for="reembolso_comentario">Comentario <span class="text-lowercase fw-normal">(opcional)</span></label>
+                        <textarea id="reembolso_comentario" name="comentario" class="campo" rows="2" maxlength="500" placeholder="Ej: reembolsado en la nómina del 15">{{ $vReembolso ? old('comentario') : '' }}</textarea>
+                        <div class="dialogo-acciones">
+                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                            <button type="submit" class="btn-gafetes"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Reembolso entregado</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
         @endif
 
         {{-- Ronda 5 (LL-04): firma física → "firmado en papel" con la hoja escaneada (opcional) --}}

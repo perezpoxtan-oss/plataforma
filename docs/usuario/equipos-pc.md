@@ -77,3 +77,7 @@ Se decide en **Estructura → Matriz de permisos**, módulo **Equipos de Protecc
 | Imprimir | Imprimir la etiqueta |
 
 Al instalar esta versión, cada rol recibió lo mismo que ya podía hacer: quien veía Recorridos ahora ve el catálogo, y quien podía crear, editar, dar de baja o imprimir en **Equipos de seguridad** puede hacer lo mismo aquí.
+
+## Ronda 6
+
+Al escribir el **Núm. de Serie / ID** te avisa si ya existe en esa sede o si se parece a otro. Al acercar o escribir la **etiqueta NFC** te avisa si ya la tiene otro registro.

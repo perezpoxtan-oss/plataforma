@@ -22,7 +22,6 @@
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
             $sedesDeId = is_string($dialogo) && str_starts_with($dialogo, 'sedes-') ? (int) substr($dialogo, 6) : null;
-            $existentes = json_encode($proveedores->map(fn ($p) => mb_strtolower($p->nombre))->values());
             $idsActivas = $sedes->pluck('id');
             $totalSedes = $sedes->count();
             $altas = app(\App\Services\Padrones\AltasPorVerificar::class)->paraLista('proveedores', $proveedores, auth()->user());
@@ -169,7 +168,7 @@
                     <form action="{{ route('proveedores.store') }}" method="POST" autocomplete="off">
                         @csrf
                         <input type="hidden" name="_dialogo" value="crear">
-                        @include('padrones.proveedores._campos', ['prefijo' => 'nuevo_proveedor', 'reabrir' => $reabrir, 'existentes' => $puede['crearEnEmpresa'] ? $existentes : null])
+                        @include('padrones.proveedores._campos', ['prefijo' => 'nuevo_proveedor', 'reabrir' => $reabrir, 'duplicado' => true])
 
                         @if ($puede['crearEnEmpresa'])
                             @if ($totalSedes > 1)
@@ -224,7 +223,7 @@
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="_dialogo" value="{{ $editandoId ? 'editar-'.$editandoId : '' }}" data-campo-dialogo>
-                        @include('padrones.proveedores._campos', ['prefijo' => 'editar_proveedor', 'reabrir' => $reabrir, 'existentes' => $existentes])
+                        @include('padrones.proveedores._campos', ['prefijo' => 'editar_proveedor', 'reabrir' => $reabrir, 'duplicado' => true])
                         <p class="small text-muted"><i class="bi bi-signpost-split me-1" aria-hidden="true"></i>Las sedes se cambian con el botón de sedes de la tarjeta.</p>
 
                         <div class="dialogo-acciones">

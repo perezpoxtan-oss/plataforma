@@ -113,3 +113,42 @@ Copias: **Copia Seguridad, Copia Recepción, Copia Administración** (antes Segu
 | Imprimir solo verificaba el permiso del módulo de origen. | Exige también `vouchers.imprimir`, además de la visibilidad. |
 | "Dañado" guardado con acento como valor. | Clave `danado`; la etiqueta se muestra "Dañado". |
 | `onclick` y CSS en línea. | Sin JS en línea; estilos en `plataforma.css` con modos Sol y Noche. |
+
+## Ronda 6 (GV-04): el artículo apareció — «Recuperado»
+
+Si una llave, un gafete o un equipo con voucher aparece y se devuelve, el voucher **no se borra**: cambia de estado.
+
+### Esquema (migración `2026_10_13_000100_ajustes_ronda_6`)
+
+`vouchers_reposicion` gana `estado` (`vigente` por omisión), `recuperado_en`, `recuperado_por` (FK users), `recuperacion_comentario` (500), `reembolsado_en`, `reembolsado_por` (FK users), `reembolso_comentario` (500) e índice `(empresa_id, estado)`. Constantes `VoucherReposicion::ESTADOS`.
+
+### Estados y transiciones (`App\Services\Vouchers\RecuperacionVouchers`)
+
+| Desde | Acción | Hacia | Cuándo |
+|---|---|---|---|
+| `vigente` | Recuperado | `cancelado_recuperacion` | Sin cobro, o con cobro que **todavía no se pagaba**: el cobro se cancela («COBRO CANCELADO» en la tarjeta y «CANCELADO» junto al CXC impreso). |
+| `vigente` | Recuperado + «Ya se le cobró» | `reembolso_pendiente` | El responsable ya pagó: el comentario es **obligatorio** (cómo se le devolverá). |
+| `reembolso_pendiente` | Reembolso entregado | `reembolsado` | Se le devolvió el dinero (comentario opcional). |
+
+Prohibidas (error dentro del diálogo, sin cambios): recuperar un voucher que no esté vigente, «reembolsar» uno vigente, cancelado o ya reembolsado, y recuperar un voucher viejo cuando el artículo se volvió a dar de baja después con otro voucher («marca ese como recuperado»).
+
+«Recuperado» reactiva el artículo con la regla de su módulo (`AdministradorLlaves::reactivar`, `AdministradorGafetes::reactivar`, `AdministradorEquipos::reactivar` → DISPONIBLE) y su auditoría (`llaves.reactivado`…). Si ya estaba activo (alguien usó «Reactivar» en la ficha) solo cambia el voucher. Todo en una transacción. Auditoría propia: `vouchers.recuperado` (antes/después + `cobro`: «sin cobro» | «cancelado» | «ya pagado: reembolso pendiente», y `articulo_reactivado`) y `vouchers.reembolsado`.
+
+### Endpoints y permisos
+
+| Ruta | Nombre | Permiso |
+|---|---|---|
+| `POST /vouchers/{voucher}/recuperado` (`cobro_pagado`, `comentario`) | `vouchers.recuperado` | `vouchers.editar` (con su alcance de sede) + `<módulo de origen>.eliminar` (el mismo de «Reactivar») sobre el artículo |
+| `POST /vouchers/{voucher}/reembolso` (`comentario`) | `vouchers.reembolso` | `vouchers.editar` |
+
+Otra empresa u otra sede: 404. Sin permiso: 403. El Agente (Padrones solo consulta) no ve los botones.
+
+### Pantalla e impresión
+
+- Tarjeta: insignia de estado, «Recuperado por … · fecha — comentario» y «Reembolsado por …», botón **Recuperado** (vigente) o **Reembolso entregado** (reembolso pendiente).
+- Filtro nuevo **Cualquier estado / Vigente / Cancelado por recuperación / Reembolso pendiente / Reembolsado** (`?estado=`).
+- Hoja impresa: sello con el estado, quién y cuándo lo recuperó, comentario y reembolso.
+
+### Qué se corrigió respecto a SEGCAT
+
+SEGCAT no tenía forma de registrar que el artículo apareció: se reactivaba y el voucher seguía como si el cobro procediera. Ahora queda la historia completa y el cobro se cancela o se marca para reembolso.

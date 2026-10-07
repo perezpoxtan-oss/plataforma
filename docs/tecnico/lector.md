@@ -128,3 +128,9 @@ La pantalla de Vouchers y la impresión triple viven en su propio módulo.
 - **El número de serie** de la tarjeta se guarda normalizado y se reconoce aunque el lector lo entregue en otro formato.
 - **Los QR** dejan de llevar consecutivos adivinables (`id`) y ya no se generan en `api.qrserver.com`, que filtraba datos a terceros.
 - **La baja con voucher** era código repetido en cada módulo. Ahora es un servicio con transacción y auditoría.
+
+## Ronda 6
+
+- **GV-03**: el componente acepta `'duplicado' => route('identificacion.etiqueta-duplicado', ['<tipo>', 0])` en modo capturar: el aviso «ya la tiene X» sale en vivo debajo del lector al teclear o al leer la tarjeta (ver `avisos-duplicado.md`). Lo usan las ediciones de Llaves, Gafetes, Equipos y Equipos PC y el diálogo «Código e identificación».
+- **LL-06**: la impresión masiva de etiquetas de todos los tipos está en Padrones → **Etiquetas QR** (ver `etiquetas-qr.md`). Un tipo nuevo de `config/lector.php` aparece ahí solo.
+- El título de los equipos de seguridad es «Serie: …» (EQ-04).

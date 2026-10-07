@@ -17,6 +17,8 @@
       elegido     en modo buscar, texto del registro ya elegido (al editar)
       requerido   bool
       ayuda       texto bajo el campo (opcional)
+      duplicado   solo en modo capturar (Ronda 6, GV-03): dirección del aviso en vivo «ya la tiene X»
+                  (route('identificacion.etiqueta-duplicado', tipo)); el aviso sale debajo del lector
 --}}
 @php
     $modo = $modo ?? 'buscar';
@@ -32,6 +34,7 @@
         <input type="text" id="{{ $id }}" class="campo lector-entrada" data-lector-entrada autocomplete="off" autocapitalize="characters" spellcheck="false"
                maxlength="200" enterkeyhint="search"
                @if ($capturar) name="{{ $nombre }}" value="{{ $valor ?? '' }}" @if ($requerido ?? false) required @endif @endif
+               @if ($capturar && ! empty($duplicado)) data-duplicado="{{ $duplicado }}" data-duplicado-min="4" data-duplicado-aviso="{{ $id }}_aviso" @endif
                placeholder="{{ $capturar ? 'Acerca la tarjeta al lector o escribe su número' : 'Escanea, acerca la etiqueta o escribe' }}">
         <button type="button" class="btn-lector" data-lector-camara hidden title="Leer código QR con la cámara" aria-label="Leer código QR con la cámara"><i class="bi bi-qr-code-scan" aria-hidden="true"></i></button>
         <button type="button" class="btn-lector" data-lector-nfc hidden title="Leer con el NFC del celular" aria-label="Leer con el NFC del celular"><i class="bi bi-broadcast" aria-hidden="true"></i></button>
@@ -46,6 +49,9 @@
         <div class="lector-opciones" data-lector-opciones hidden></div>
     @endunless
     <p class="lector-estado" data-lector-estado role="status" hidden></p>
+    @if ($capturar && ! empty($duplicado))
+        <div class="aviso-duplicado" id="{{ $id }}_aviso" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
+    @endif
     @isset($ayuda)
         <p class="campo-ayuda">{{ $ayuda }}</p>
     @endisset

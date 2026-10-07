@@ -232,7 +232,10 @@
                                 </div>
                                 <div class="campo-cantidad">
                                     <label class="campo-etiqueta" for="ga_lote_cantidad">Cantidad a Crear</label>
-                                    <input type="number" id="ga_lote_cantidad" name="cantidad" class="campo" value="{{ $trasError ? old('cantidad', 1) : 1 }}" min="1" max="{{ \App\Services\Gafetes\AdministradorGafetes::LOTE_MAXIMO }}" inputmode="numeric" required>
+                                    <input type="number" id="ga_lote_cantidad" name="cantidad" class="campo mb-1" value="{{ $trasError ? old('cantidad', 1) : 1 }}" min="1" max="{{ \App\Services\Gafetes\AdministradorGafetes::LOTE_MAXIMO }}" inputmode="numeric" required
+                                           aria-describedby="ga_lote_cantidad_ayuda" data-mensaje-max="Máximo {{ \App\Services\Gafetes\AdministradorGafetes::LOTE_MAXIMO }} gafetes por lote.">
+                                    {{-- Ronda 6 (GV-02): el límite se ve antes de escribir --}}
+                                    <p class="campo-ayuda" id="ga_lote_cantidad_ayuda">Máximo {{ \App\Services\Gafetes\AdministradorGafetes::LOTE_MAXIMO }} por lote.</p>
                                 </div>
                             </div>
 
@@ -269,7 +272,8 @@
                         <input type="hidden" name="_dialogo" value="{{ $editandoId ? 'editar-'.$editandoId : '' }}" data-campo-dialogo>
 
                         <label class="campo-etiqueta" for="ga_ed_nomenclatura">Nomenclatura</label>
-                        <input type="text" id="ga_ed_nomenclatura" name="nomenclatura" class="campo text-uppercase campo-nomenclatura" maxlength="50" value="{{ $trasError ? old('nomenclatura') : '' }}" required>
+                        <input type="text" id="ga_ed_nomenclatura" name="nomenclatura" class="campo text-uppercase campo-nomenclatura" maxlength="50" value="{{ $trasError ? old('nomenclatura') : '' }}" required
+                               data-duplicado="{{ route('gafetes.duplicado') }}" data-duplicado-min="3">
 
                         <label class="campo-etiqueta" for="ga_ed_tipo">Tipo de Gafete</label>
                         <select id="ga_ed_tipo" name="tipo_gafete_id" class="campo" required>
@@ -285,7 +289,7 @@
                         </div>
 
                         @include('componentes.lector', ['id' => 'ga_ed_nfc', 'etiqueta' => 'Etiqueta NFC / RFID (opcional)', 'modo' => 'capturar',
-                            'nombre' => 'etiqueta_nfc', 'valor' => $trasError ? old('etiqueta_nfc') : '',
+                            'nombre' => 'etiqueta_nfc', 'valor' => $trasError ? old('etiqueta_nfc') : '', 'duplicado' => route('identificacion.etiqueta-duplicado', ['gafete', 0]),
                             'ayuda' => 'Si el gafete trae chip o tarjeta, acércala al lector (o escribe su número) para que también se encuentre así. Déjalo vacío si no tiene.'])
 
                         <label class="campo-etiqueta" for="ga_ed_codigo">Código Interno <span class="text-lowercase fw-normal">(fijo, para QR/NFC)</span></label>

@@ -88,3 +88,9 @@ En **Personal → Agregar persona** y **Flotilla → Agregar vehículo**:
 ![Agregar vehículo desde la ficha](img/ronda-5b/ficha-agregar-vehiculo.png)
 
 ![De regreso en la ficha (Flotilla)](img/ronda-5b/ficha-regreso-flotilla.png)
+
+## Ronda 6: te avisa si la empresa ya existe
+
+Al escribir la **Razón Social** te avisa si ya existe o si se parece a una registrada. No cuentan «S.A. de C.V.» ni los signos: «Abarrotes del Caribe SA» se parece a «Abarrotes del Caribe». Si está desactivada, toca **Reactivar** en lugar de registrarla otra vez.
+
+![Empresa parecida](img/ronda-6/06-proveedor-parecido.png)

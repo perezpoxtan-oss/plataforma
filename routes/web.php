@@ -391,6 +391,23 @@ Route::middleware('auth')->group(function () {
     Route::get('/personas/duplicado', [PersonaController::class, 'duplicado'])->middleware('throttle:120,1')->name('personas.duplicado');
     Route::get('/espacios/duplicado', [EspacioController::class, 'duplicado'])->middleware('throttle:120,1')->name('espacios.duplicado');
     // Fin Padrones: Ajustes Ronda 5 (parte 2)
+    // Padrones: Ajustes Ronda 6 (avisos de duplicado de los demás padrones y de la etiqueta NFC; Etiquetas QR; voucher recuperado)
+    Route::controller('App\Http\Controllers\Padrones\DuplicadoController')->middleware('throttle:120,1')->group(function () {
+        Route::get('/proveedores/duplicado', 'proveedores')->name('proveedores.duplicado');
+        Route::get('/vehiculos/duplicado', 'vehiculos')->name('vehiculos.duplicado');
+        Route::get('/colaboradores/duplicado', 'colaboradores')->name('colaboradores.duplicado');
+        Route::get('/gafetes/duplicado', 'gafetes')->name('gafetes.duplicado');
+        Route::get('/equipos/duplicado', 'equipos')->name('equipos.duplicado');
+        Route::get('/equipos-pc/duplicado', 'equiposPc')->name('equipos_pc.duplicado');
+        Route::get('/identificacion/{tipo}/{id}/etiqueta-duplicado', 'etiqueta')->where('tipo', '[a-z_]+')->whereNumber('id')->name('identificacion.etiqueta-duplicado');
+    });
+    Route::controller('App\Http\Controllers\Padrones\EtiquetaController')->group(function () {
+        Route::get('/etiquetas', 'index')->name('etiquetas.index');
+        Route::get('/etiquetas/imprimir', 'imprimir')->name('etiquetas.imprimir');
+    });
+    Route::post('/vouchers/{voucher}/recuperado', [VoucherController::class, 'recuperado'])->whereNumber('voucher')->name('vouchers.recuperado');
+    Route::post('/vouchers/{voucher}/reembolso', [VoucherController::class, 'reembolso'])->whereNumber('voucher')->name('vouchers.reembolso');
+    // Fin Padrones: Ajustes Ronda 6
 
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');

@@ -88,3 +88,9 @@ El «Ver QR» propio (`dialogoQrEquipo`) se reemplazó por el diálogo común «
 
 - **Responsivas** (Operación, conectado): usa `asignarPorResponsiva()`; la ficha muestra **A cargo de: colaborador · Turno/Fijo · folio** (`Equipo::resguardoActual()` cargado en `index()`). Ver [responsivas.md](responsivas.md). Pendiente: al dar de baja un equipo ASIGNADO, prellenar el responsable (SEGCAT lo hacía con `equipo_responsable_activo_ajax.php`).
 - Catálogo de tipos: no tiene pantalla propia (tampoco en SEGCAT); se administra desde el alta.
+
+## Ronda 6
+
+- **EQ-04 (claridad)**: el número nunca va sin su rótulo. `Equipo::resumenLector()['titulo']` es «Serie: 130TXP1568» (lector, «Código e identificación», etiquetas, avisos) y Responsivas muestra «Serie: … · Radio …». Al editar, `[data-explicacion-estado]` explica por qué el estado está limitado: DISPONIBLE (puede pasar a En mantenimiento), EN MANTENIMIENTO (solo Disponible o seguir en mantenimiento), ASIGNADO (lo cambia Responsivas) y BAJA con el folio de su voucher («márcalo Recuperado en Vouchers o Reactivar en su ficha»). El folio sale de `vouchersBaja` (una consulta, el último voucher de cada equipo de baja).
+- **Aviso de duplicado en vivo**: el número de serie usa `data-duplicado` (`GET /equipos/duplicado`, ver `avisos-duplicado.md`) en lugar de `data-series-existentes`; la etiqueta NFC avisa «ya la tiene X» al leerla (`identificacion.etiqueta-duplicado`).
+- Un equipo de baja con voucher también se reactiva desde Vouchers → **Recuperado** (ver `vouchers.md`).

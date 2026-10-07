@@ -74,6 +74,7 @@ class CatalogoSeeder extends Seeder
         'recorridos_pc' => 'recorridos_pc.index',
         'equipos_pc' => 'equipos_pc.index',
         'procedimientos' => 'procedimientos.index',
+        'etiquetas_qr' => 'etiquetas.index',
     ];
 
     /**
@@ -131,6 +132,8 @@ class CatalogoSeeder extends Seeder
                 'informe_ejecutivo' => ['Informe ejecutivo', 'bi-file-earmark-bar-graph', ['exportar'], [], ['ver']],
                 'tendencias' => ['Tendencias', 'bi-graph-up', ['exportar'], [], ['ver']],
                 'bitacora_dia' => ['Bitácora general del día', 'bi-calendar-day', ['exportar', 'imprimir'], [], ['ver']],
+                // Ronda 6 (LL-06): impresión masiva de etiquetas QR; cada tipo pide además su propio permiso
+                'etiquetas_qr' => ['Etiquetas QR', 'bi-qr-code', [], [], ['ver']],
             ]],
         ];
     }

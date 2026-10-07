@@ -90,3 +90,9 @@ CURP, RFC, NSS, fecha y estado de nacimiento, nacionalidad, correo personal y di
 ![Alta en el celular](img/colaboradores/6-celular-alta.png)
 
 ![Modo Noche](img/colaboradores/7-noche.png)
+
+## Ronda 6: número y nombre repetidos
+
+Al escribir el **Núm. Empleado** te avisa en rojo si ya lo tiene otro colaborador. Al escribir **nombre y apellidos** te avisa en amarillo si ya hay alguien con ese nombre (sin importar acentos ni mayúsculas). Si es de una sede que no tienes a cargo, solo te dice que existe.
+
+![Número y nombre repetidos](img/ronda-6/08-colaborador-numero-y-nombre.png)

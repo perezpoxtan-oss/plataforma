@@ -164,7 +164,7 @@ class GafetesTest extends TestCase
         $datos = ['sede_id' => $this->centro->id, 'tipo_gafete_id' => $tipo->id, '_dialogo' => 'lote'];
 
         $this->actingAs($this->admin)->post('/gafetes/lote', $datos + ['cantidad' => 0])->assertSessionHasErrors(['cantidad' => 'La cantidad debe ser de 1 a 50 gafetes.']);
-        $this->actingAs($this->admin)->post('/gafetes/lote', $datos + ['cantidad' => 51])->assertSessionHasErrors(['cantidad' => 'La cantidad debe ser de 1 a 50 gafetes por lote.']);
+        $this->actingAs($this->admin)->post('/gafetes/lote', $datos + ['cantidad' => 51])->assertSessionHasErrors(['cantidad' => 'Máximo 50 gafetes por lote. Si necesitas más, genera otro lote.']);
         $this->actingAs($this->admin)->post('/gafetes/lote', ['tipo_gafete_id' => $tipo->id, 'cantidad' => 1])->assertSessionHasErrors(['sede_id' => 'Elige la sede donde se usarán los gafetes.']);
 
         // Sede o tipo de otra empresa: como si no existieran
@@ -182,7 +182,7 @@ class GafetesTest extends TestCase
 
         // El error se ve dentro del diálogo, que se vuelve a abrir solo
         $html = $this->actingAs($this->admin)->from('/gafetes')->followingRedirects()->post('/gafetes/lote', $datos + ['cantidad' => 99])
-            ->assertSee('La cantidad debe ser de 1 a 50 gafetes por lote.')->getContent();
+            ->assertSee('Máximo 50 gafetes por lote.')->getContent();
         $this->assertMatchesRegularExpression('/<dialog id="dialogoLoteGafetes"[^>]*data-abrir-al-cargar/', $html);
     }
 

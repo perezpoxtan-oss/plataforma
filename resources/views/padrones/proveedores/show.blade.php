@@ -165,9 +165,9 @@
                 <form action="{{ route('proveedores.update', $proveedor->id) }}" method="POST" autocomplete="off">
                     @csrf
                     @method('PUT')
-                    <input type="hidden" name="_dialogo" value="editar-{{ $proveedor->id }}">
+                    <input type="hidden" name="_dialogo" value="editar-{{ $proveedor->id }}" data-campo-dialogo>
                     <input type="hidden" name="_volver" value="ficha">
-                    @include('padrones.proveedores._campos', ['prefijo' => 'ficha_proveedor', 'reabrir' => $reabrir, 'valores' => $proveedor->only(['nombre', 'categoria', 'rfc', 'telefono', 'direccion'])])
+                    @include('padrones.proveedores._campos', ['prefijo' => 'ficha_proveedor', 'reabrir' => $reabrir, 'duplicado' => true, 'valores' => $proveedor->only(['nombre', 'categoria', 'rfc', 'telefono', 'direccion'])])
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                         <button type="submit" class="btn-esmeralda">Actualizar Datos</button>

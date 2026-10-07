@@ -22,7 +22,6 @@
             $conteo = $vehiculos->countBy(fn ($v) => $grupos[$v->propiedad] ?? 'propios');
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
-            $placasExistentes = json_encode($vehiculos->pluck('placas')->values());
             $altas = app(\App\Services\Padrones\AltasPorVerificar::class)->paraLista('vehiculos', $vehiculos, auth()->user());
             $colores = [
                 'agencia_renta' => 'bg-renta', 'empresa_proveedor' => 'bg-proveedor', 'propio_huesped' => 'bg-huesped',
@@ -203,8 +202,8 @@
                             <div class="col-md-5">
                                 <label class="campo-etiqueta" for="{{ $modo }}_ve_placas">Placas (Únicas)</label>
                                 <input type="text" id="{{ $modo }}_ve_placas" name="placas" class="campo campo-placas mb-1" maxlength="25" placeholder="Ej: ABC-123-A"
-                                       value="{{ $valor('placas') }}" autocapitalize="characters" data-placas-existentes="{{ $placasExistentes }}" required>
-                                <p class="small mb-2" data-aviso-placas hidden></p>
+                                       value="{{ $valor('placas') }}" autocapitalize="characters" required
+                                       data-duplicado="{{ route('vehiculos.duplicado') }}" data-duplicado-min="3" data-duplicado-aviso="{{ $modo }}_ve_aviso_placas">
                             </div>
                             <div class="col-md-7">
                                 <label class="campo-etiqueta" for="{{ $modo }}_ve_propiedad">Categoría <span class="text-lowercase fw-normal">(¿de quién es?)</span></label>
@@ -216,6 +215,8 @@
                                 </select>
                             </div>
                         </div>
+                        {{-- Ronda 6: aviso en vivo de placas repetidas o parecidas (O/0, I/1) --}}
+                        <div class="aviso-duplicado" id="{{ $modo }}_ve_aviso_placas" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
 
                         <div class="caja-propietario" data-mostrar-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::CON_PROVEEDOR) }}}'>
                             <label class="campo-etiqueta" for="{{ $modo }}_ve_proveedor"><i class="bi bi-building me-1" aria-hidden="true"></i> Agencia o Empresa Propietaria

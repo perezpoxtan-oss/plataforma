@@ -24,7 +24,6 @@
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
             $bajaId = is_string($dialogo) && str_starts_with($dialogo, 'baja-') ? (int) substr($dialogo, 5) : null;
             $bajaEquipo = $bajaId ? $equipos->firstWhere('id', $bajaId) : null;
-            $seriesExistentes = json_encode($equipos->pluck('numero_serie')->values());
         @endphp
 
         <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
@@ -81,8 +80,10 @@
                     $editable = $puede['editar'] && ($editables === null || in_array($e->id, $editables, true));
                     $desactivable = $puede['baja'] && ($desactivables === null || in_array($e->id, $desactivables, true));
                     $marcaModelo = trim(($e->marca ?? '').' '.($e->modelo ?? ''));
-                    $nombre = trim(($e->tipo->nombre ?? 'Equipo').' '.$e->numero_serie);
-                    $valores = json_encode($e->only(['sede_id', 'tipo_equipo_id', 'marca', 'modelo', 'numero_serie', 'costo', 'observaciones', 'etiqueta_nfc', 'estado']));
+                    // Ronda 6 (EQ-04): el número siempre con su rótulo
+                    $nombre = ($e->tipo->nombre ?? 'Equipo').' · Serie: '.$e->numero_serie;
+                    $valores = json_encode($e->only(['sede_id', 'tipo_equipo_id', 'marca', 'modelo', 'numero_serie', 'costo', 'observaciones', 'etiqueta_nfc', 'estado'])
+                        + ['voucher' => $vouchersBaja[$e->id] ?? null]);
                     $texto = mb_strtolower(implode(' ', array_filter([$e->numero_serie, $e->tipo->nombre ?? null, $e->marca, $e->modelo, $e->sede->nombre ?? null, $estados[$e->estado] ?? null, $e->observaciones])));
                 @endphp
                 <div class="ficha-card ficha-equipo {{ $e->estado === 'baja' ? 'inactiva' : '' }}" id="equipo-{{ $e->id }}" data-equipo
@@ -241,10 +242,12 @@
                             <div class="col-md-4">
                                 <label class="campo-etiqueta text-primary" for="{{ $modo }}_eq_serie">Núm. de Serie / ID</label>
                                 <input type="text" id="{{ $modo }}_eq_serie" name="numero_serie" class="campo text-uppercase fw-bold mb-1" maxlength="100" placeholder="Ej: RAD-8829"
-                                       value="{{ $valor('numero_serie') }}" autocapitalize="characters" data-series-existentes="{{ $seriesExistentes }}" required>
-                                <p class="small mb-2" data-aviso-serie hidden></p>
+                                       value="{{ $valor('numero_serie') }}" autocapitalize="characters" required
+                                       data-duplicado="{{ route('equipos.duplicado') }}" data-duplicado-min="3" data-duplicado-aviso="{{ $modo }}_eq_aviso_serie">
                             </div>
                         </div>
+                        {{-- Ronda 6: aviso en vivo de número de serie repetido o parecido --}}
+                        <div class="aviso-duplicado" id="{{ $modo }}_eq_aviso_serie" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
 
                         <label class="campo-etiqueta" for="{{ $modo }}_eq_costo">Costo <span class="text-lowercase fw-normal" data-nota-costo>(para el voucher, si algún día se da de baja)</span></label>
                         <div class="grupo-monto">
@@ -263,13 +266,15 @@
                                 </select>
                             </div>
                             <p class="estado-fijo-eq" data-estado-fijo hidden></p>
+                            {{-- Ronda 6 (EQ-04): por qué el estado solo admite ciertas opciones (lo llena plataforma.js) --}}
+                            <p class="explicacion-estado-eq" data-explicacion-estado role="note" hidden></p>
                         @endunless
 
                         <label class="campo-etiqueta" for="{{ $modo }}_eq_obs">Observaciones <span class="text-lowercase fw-normal">(opcional)</span></label>
                         <input type="text" id="{{ $modo }}_eq_obs" name="observaciones" class="campo" maxlength="1000" placeholder="Condición inicial del activo..." value="{{ $valor('observaciones') }}">
 
                         @include('componentes.lector', ['id' => $modo.'_eq_nfc', 'etiqueta' => 'Etiqueta NFC / RFID (opcional)', 'modo' => 'capturar',
-                            'nombre' => 'etiqueta_nfc', 'valor' => $valor('etiqueta_nfc'),
+                            'nombre' => 'etiqueta_nfc', 'valor' => $valor('etiqueta_nfc'), 'duplicado' => route('identificacion.etiqueta-duplicado', ['equipo', 0]),
                             'ayuda' => 'Acerca la etiqueta o tarjeta pegada al equipo para que el lector la reconozca. Puedes dejarlo vacío: el equipo siempre se encuentra con su QR o su número de serie.'])
 
                         <div class="dialogo-acciones">

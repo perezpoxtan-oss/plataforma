@@ -1218,3 +1218,32 @@ html.modo-noche .aviso-duplicado.libre { color: #6ee7b7; }
 html.modo-noche .aviso-duplicado-item, html.modo-noche .campo-fijo { background: var(--superficie-2); border-color: var(--borde); color: var(--texto); }
 html.modo-noche .btn-reactivar-duplicado { background: rgba(16, 185, 129, 0.15); border-color: #059669; color: #6ee7b7; }
 /* Fin Ronda 5 de ajustes (parte 2) */
+
+/* ==========================================================================
+   Ajustes Ronda 6 — Sol (alto contraste) y Noche
+   ========================================================================== */
+html.modo-sol .explicacion-estado-eq { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .voucher-estado, html.modo-sol .cxc-cancelado { background: #fff !important; color: #000 !important; border: 2px solid #000; }
+html.modo-sol .btn-ver-voucher.recuperado { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .caja-cobro-recuperado { background: #fff; border: 2px solid #000; }
+html.modo-sol .barra-etiquetas-qr, html.modo-sol .fila-etiqueta-qr label { background: #fff; border: 2px solid #000; color: #000; box-shadow: none; }
+html.modo-sol .fila-etiqueta-qr label:has(input:checked) { outline: 3px solid #000; outline-offset: 1px; }
+html.modo-sol .icono-etiqueta-qr { background: #000; color: #fff; }
+html.modo-sol .texto-etiqueta-qr small, html.modo-sol .marcar-todas-qr small { color: #000; }
+html.modo-sol .pantalla-etiquetas-qr .texto-error { color: #000; text-decoration: underline; }
+
+html.modo-noche .explicacion-estado-eq { background: rgba(59, 130, 246, 0.12); border-color: #1e40af; color: #bfdbfe; }
+html.modo-noche .voucher-estado.estado-cancelado_recuperacion { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+html.modo-noche .voucher-estado.estado-reembolso_pendiente { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+html.modo-noche .voucher-estado.estado-reembolsado { background: rgba(99, 102, 241, 0.18); color: #c7d2fe; }
+html.modo-noche .ficha-voucher.voucher-recuperado .voucher-articulo { color: #cbd5e1; }
+html.modo-noche .btn-ver-voucher.recuperado { background: transparent; color: #86efac; border-color: #166534; }
+html.modo-noche .btn-ver-voucher.recuperado:hover { background: rgba(34, 197, 94, 0.12); }
+html.modo-noche .caja-cobro-recuperado { background: rgba(245, 158, 11, 0.1); border-color: #92400e; }
+html.modo-noche .barra-etiquetas-qr, html.modo-noche .fila-etiqueta-qr label { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+html.modo-noche .fila-etiqueta-qr label:has(input:checked) { border-color: #94a3b8; background: #273449; box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.3); }
+html.modo-noche .icono-etiqueta-qr { background: #334155; color: #e2e8f0; }
+html.modo-noche .texto-etiqueta-qr strong, html.modo-noche .fila-etiqueta-qr input:checked ~ .texto-etiqueta-qr strong { color: #f1f5f9; }
+html.modo-noche .texto-etiqueta-qr small { color: #94a3b8; }
+html.modo-noche .pantalla-etiquetas-qr .texto-error { color: #fca5a5; }
+/* Fin Ajustes Ronda 6 */

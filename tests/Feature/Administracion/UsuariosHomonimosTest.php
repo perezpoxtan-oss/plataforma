@@ -203,6 +203,8 @@ class UsuariosHomonimosTest extends TestCase
 
         // Sin permiso de alta: 403; la pantalla de alta trae el aviso
         $this->actingAs($this->crearUsuario($this->empresa, 'Agente', $this->centro))->getJson('/colaboradores/homonimos?nombre=Daniela&apellido_paterno=Canul')->assertForbidden();
-        $this->actingAs($this->admin)->get('/colaboradores')->assertOk()->assertSee('data-homonimos="'.route('colaboradores.homonimos').'"', false);
+        // Ronda 6: la pantalla usa el aviso único de duplicados (nombre + apellidos)
+        $this->actingAs($this->admin)->get('/colaboradores')->assertOk()
+            ->assertSee('data-duplicado="'.route('colaboradores.duplicado').'" data-duplicado-con="apellido_paterno,apellido_materno"', false);
     }
 }

@@ -71,7 +71,7 @@ class EstacionamientosTest extends TestCase
 
         $pagina = $this->actingAs($this->admin)->get('/estacionamientos')->assertOk()
             ->assertSee('Estacionamientos y Zonas')
-            ->assertSee('Cupos por sede — Estacionamiento (cuenta espacios) o Zona de Descarga (Lobby, Almacenes, sin cupo numérico).')
+            ->assertSee('Cupos por sede — Estacionamiento (cuenta espacios) o Zona de Descarga (Lobby, Almacenes, Andén, Patio de maniobras; capacidad opcional).')
             ->assertSee('Nueva Zona')->assertSee('ESTACIONAMIENTO')->assertSee('ZONA DE DESCARGA')
             ->assertSee('0 / 40 espacios')->assertSee('0 / 8 espacios')->assertSee('vehículos usando el andén ahora')
             ->assertSee('cupo-barra', false)->assertSee('Inactiva')
@@ -128,7 +128,7 @@ class EstacionamientosTest extends TestCase
             ->assertSessionHasErrors(['nombre' => 'Ya existe una zona «Estacionamiento Huéspedes» en esa sede.']);
         $this->actingAs($this->admin)->post('/estacionamientos', $this->datos(['sede_id' => $this->playa->id]))->assertSessionHasNoErrors();
 
-        // Cupo obligatorio (≥ 1) en estacionamientos; en descarga se guarda vacío aunque llegue
+        // Cupo obligatorio (≥ 1) en estacionamientos; en descarga es opcional (Ronda 6, ES-02)
         $this->actingAs($this->admin)->post('/estacionamientos', $this->datos(['nombre' => 'Otro', 'cupo_total' => '']))
             ->assertSessionHasErrors(['cupo_total' => 'Un estacionamiento necesita su cupo total de espacios (1 o más).']);
         $this->actingAs($this->admin)->post('/estacionamientos', $this->datos(['nombre' => 'Otro', 'cupo_total' => '0']))
@@ -139,9 +139,9 @@ class EstacionamientosTest extends TestCase
         $this->actingAs($this->admin)->put("/estacionamientos/{$zona->id}", $this->datos(['nombre' => 'Lobby', 'tipo' => 'zona_descarga', 'cupo_total' => '15']))
             ->assertRedirect(route('estacionamientos.index').'#zona-'.$zona->id)->assertSessionHas('ok', 'Zona «Lobby» actualizada correctamente.');
         $zona->refresh();
-        $this->assertSame(['Lobby', 'zona_descarga', null], [$zona->nombre, $zona->tipo, $zona->cupo_total]);
+        $this->assertSame(['Lobby', 'zona_descarga', 15], [$zona->nombre, $zona->tipo, $zona->cupo_total]);
         $auditoria = Auditoria::where('evento', 'estacionamientos.actualizado')->where('auditable_id', $zona->id)->firstOrFail();
-        $this->assertSame([40, null], [$auditoria->antes['cupo_total'], $auditoria->despues['cupo_total']]);
+        $this->assertSame([40, 15], [$auditoria->antes['cupo_total'], $auditoria->despues['cupo_total']]);
     }
 
     public function test_desactivar_y_reactivar_con_auditoria(): void

@@ -1,7 +1,7 @@
 {{--
     Datos generales de una empresa externa (alta, edición y alta rápida).
     Parámetros: $prefijo (ids únicos), $reabrir (tras un error, usar old()),
-    $existentes (JSON de nombres en minúsculas, opcional), $valores (array opcional).
+    $duplicado (bool, opcional: aviso en vivo «ya existe / se parece», Ronda 6), $valores (array opcional).
 --}}
 @php
     $valores ??= [];
@@ -10,8 +10,7 @@
 @endphp
 <label class="campo-etiqueta" for="{{ $prefijo }}_nombre">Razón Social o Nombre Comercial</label>
 <input type="text" id="{{ $prefijo }}_nombre" name="nombre" class="campo" maxlength="150" placeholder="Ej: GRUPO BIMBO S.A. DE C.V."
-       value="{{ $valor('nombre') }}" @if (! empty($existentes)) data-nombres-existentes="{{ $existentes }}" @endif required>
-@if (! empty($existentes))<p data-aviso-nombre hidden></p>@endif
+       value="{{ $valor('nombre') }}" @if (! empty($duplicado)) data-duplicado="{{ route('proveedores.duplicado') }}" data-duplicado-min="3" @endif required>
 
 <label class="campo-etiqueta" for="{{ $prefijo }}_categoria">Categoría de Proveedor</label>
 <select id="{{ $prefijo }}_categoria" name="categoria" class="campo" required>

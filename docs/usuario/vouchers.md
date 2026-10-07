@@ -56,3 +56,26 @@ Los filtros se acomodan uno debajo de otro y las tarjetas en una columna. El mod
 
 ![Celular](img/vouchers/movil.png)
 ![Modo Noche](img/vouchers/noche.png)
+
+## Si el artículo aparece: «Recuperado»
+
+Si la llave, el gafete o el equipo de un voucher aparece y lo devuelven:
+
+1. En la tarjeta del voucher toca **Recuperado**.
+2. Lee lo que va a pasar: el artículo se **reactiva** y el voucher queda **Cancelado por recuperación** (no se borra).
+3. Si el voucher tenía **cobro**:
+   - Si **todavía no** se le cobraba al responsable, deja la casilla sin marcar: el cobro se **cancela**.
+   - Si **ya** se le cobró, marca **Ya se le cobró al responsable** y escribe cómo se le devolverá el dinero. El voucher queda **Reembolso pendiente**.
+4. Escribe un comentario (dónde apareció, quién lo entregó) y toca **Confirmar recuperado**.
+
+![Recuperado](img/ronda-6/17-voucher-recuperado-dialogo.png)
+
+Cuando ya le devolviste el dinero, toca **Reembolso entregado** en la tarjeta. Queda **Reembolsado**.
+
+![Estados del voucher](img/ronda-6/16-vouchers.png)
+
+Con el filtro **Cualquier estado** puedes ver solo los vigentes, los cancelados por recuperación, los que tienen reembolso pendiente o los reembolsados. La hoja impresa también muestra el estado:
+
+![Voucher impreso con reembolso pendiente](img/ronda-6/18-voucher-impreso-reembolso.png)
+
+Lo hacen quienes pueden editar vouchers y reactivar en el módulo del artículo (Administrador, Jefe de seguridad). El Agente no ve estos botones.

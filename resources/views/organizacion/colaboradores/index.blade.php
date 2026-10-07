@@ -20,7 +20,6 @@
         @php
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
-            $numeros = json_encode($colaboradores->pluck('num_empleado')->filter()->map(fn ($n) => mb_strtolower($n))->values());
             $porValidar = $colaboradores->where('provisional', true)->whereNull('fusionado_en_id')->where('activo', true)->count();
         @endphp
 
@@ -252,8 +251,7 @@
                             <div class="col-md-6">
                                 <label class="campo-etiqueta" for="{{ $modo }}_co_num">Núm. Empleado</label>
                                 <input type="text" id="{{ $modo }}_co_num" name="num_empleado" class="campo mb-1" maxlength="20" value="{{ $valor('num_empleado') }}"
-                                       data-numeros-existentes="{{ $numeros }}" autocapitalize="characters" required>
-                                <p class="small mb-2" data-aviso-numero hidden></p>
+                                       autocapitalize="characters" required data-duplicado="{{ route('colaboradores.duplicado') }}" data-duplicado-min="1">
                             </div>
                         </div>
 
@@ -287,7 +285,8 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <label class="campo-etiqueta" for="{{ $modo }}_co_nombre">Nombre(s)</label>
-                                <input type="text" id="{{ $modo }}_co_nombre" name="nombre" class="campo" maxlength="60" value="{{ $valor('nombre') }}" required>
+                                <input type="text" id="{{ $modo }}_co_nombre" name="nombre" class="campo" maxlength="60" value="{{ $valor('nombre') }}" required
+                                       data-duplicado="{{ route('colaboradores.duplicado') }}" data-duplicado-con="apellido_paterno,apellido_materno" data-duplicado-aviso="{{ $modo }}_co_aviso_nombre">
                             </div>
                             <div class="col-md-4">
                                 <label class="campo-etiqueta" for="{{ $modo }}_co_paterno">Apellido Paterno</label>
@@ -298,10 +297,8 @@
                                 <input type="text" id="{{ $modo }}_co_materno" name="apellido_materno" class="campo" maxlength="60" value="{{ $valor('apellido_materno') }}">
                             </div>
                         </div>
-                        @if ($esNuevo)
-                            {{-- Homónimos: aviso en vivo si ya hay un colaborador activo con ese nombre --}}
-                            <div class="caja-parecidos aviso-homonimo" role="status" aria-live="polite" data-homonimos="{{ route('colaboradores.homonimos') }}" data-homonimos-campos="nombre,apellido_paterno,apellido_materno" data-homonimos-modo="colaboradores" hidden></div>
-                        @endif
+                        {{-- Ronda 6: homónimos con el aviso único de duplicados (nombre + apellidos; se revisa también al cambiar los apellidos) --}}
+                        <div class="aviso-duplicado" id="{{ $modo }}_co_aviso_nombre" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
 
                         <div class="row">
                             <div class="col-md-6">
@@ -404,8 +401,7 @@
                             <div class="col-md-6">
                                 <label class="campo-etiqueta" for="validar_co_num">Núm. Empleado</label>
                                 <input type="text" id="validar_co_num" name="num_empleado" class="campo mb-1" maxlength="20" value="{{ $v('num_empleado') }}"
-                                       data-numeros-existentes="{{ $numeros }}" autocapitalize="characters" required>
-                                <p class="small mb-2" data-aviso-numero hidden></p>
+                                       autocapitalize="characters" required data-duplicado="{{ route('colaboradores.duplicado') }}" data-duplicado-min="1">
                             </div>
                             <div class="col-md-6">
                                 <label class="campo-etiqueta" for="validar_co_sede">Sede Física</label>

@@ -198,6 +198,7 @@ class CrearDatosDemo extends Command
         $paso('altasPorVerificarDemo', fn () => $this->altasPorVerificarDemo($sedes, User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'admin.demo')->firstOrFail()));
         $paso('procedimientosDemo', fn () => $this->procedimientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('ronda5bDemo', fn () => $this->ronda5bDemo($sedes['CEN'], User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('ronda6Demo', fn () => $this->ronda6Demo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -2007,5 +2008,51 @@ class CrearDatosDemo extends Command
         $tipo = TipoEspacio::whereNull('empresa_id')->where('nivel', Espacio::EDIFICIO)->where('nombre', 'Torre')->value('id');
         $jardin = $espacios->crear($actor, $centro, null, Espacio::EDIFICIO, ['nombre' => 'Torre Jardín', 'codigo' => 'TJ', 'tipo_espacio_id' => $tipo], false);
         $espacios->cambiarEstado($actor, $jardin, false);
+    }
+
+    /**
+     * Ronda 6 (solo la primera vez):
+     *  - ES-02: «Patio de Maniobras» (Centro), zona de descarga con capacidad de 4 vehículos.
+     *  - GV-03: la llave HDC-101 trae la etiqueta NFC 04A1B2C3D4, para ver el aviso
+     *    en vivo «ya la tiene la llave HDC-101» al asignarla a otro registro.
+     *  - GV-04: el voucher de la llave HDP-MANT-02 (Playa, con cobro) se marca
+     *    «Recuperado» con el cobro ya pagado: queda «Reembolso pendiente» y la
+     *    llave vuelve a estar activa. La lámpara LT-0002 sigue de baja (EQ-04).
+     *  - RT-01: «PARADERO DE PRUEBA» (de la práctica de Eliminar definitivamente)
+     *    queda desactivado: Centro muestra sus 6 paraderos activos.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function ronda6Demo($sedes, User $admin): void
+    {
+        [$zonaClase, $paraderoClase, $voucherClase] = ['App\Models\ZonaEstacionamiento', 'App\Models\Paradero', 'App\Models\VoucherReposicion'];
+        if ($zonaClase::where('nombre', 'Patio de Maniobras')->exists()) {
+            return;
+        }
+        $previo = auth()->user();
+        auth()->setUser($admin);
+        try {
+            app('App\Services\Estacionamientos\AdministradorEstacionamientos')->crear($admin, [
+                'sede_id' => $sedes['CEN']->id, 'nombre' => 'Patio de Maniobras', 'tipo' => 'zona_descarga', 'cupo_total' => 4,
+            ]);
+
+            $llave = Llave::where('nomenclatura', 'HDC-101')->where('sede_id', $sedes['CEN']->id)->first();
+            if ($llave !== null && $llave->etiqueta_nfc === null && ! Llave::where('etiqueta_nfc', '04A1B2C3D4')->exists()) {
+                $llave->forceFill(['etiqueta_nfc' => '04A1B2C3D4'])->save();
+            }
+
+            $paraderoClase::where('sede_id', $sedes['CEN']->id)->where('nombre', 'PARADERO DE PRUEBA')->where('activo', true)
+                ->each(fn ($p) => $p->forceFill(['activo' => false])->save());
+
+            $mantenimiento = Llave::where('nomenclatura', 'HDP-MANT-02')->first();
+            $voucher = $mantenimiento ? $voucherClase::where('origen_tipo', 'llave')->where('origen_id', $mantenimiento->id)->where('estado', 'vigente')->latest('id')->first() : null;
+            if ($voucher !== null && $voucher->aplica_cobro) {
+                app('App\Services\Vouchers\RecuperacionVouchers')->recuperar($admin, $voucher, [
+                    'cobro_pagado' => true, 'comentario' => 'Apareció en el taller de Mantenimiento; ya se le había descontado en nómina.',
+                ]);
+            }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
     }
 }

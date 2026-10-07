@@ -2034,13 +2034,14 @@ document.addEventListener('click', function (e) {
 
     document.addEventListener('click', function (e) {
         var agregar = e.target.closest('[data-agregar-horario]');
-        if (agregar) {
+        // Ronda 6: solo los horarios de llaves (el diálogo de Rutas tiene su propio bloque)
+        if (agregar && agregar.form && agregar.form.querySelector('[data-horarios-llave]')) {
             var fila = agregarHorario(agregar.closest('form'));
             fila.querySelector('input').focus();
             return;
         }
         var quitar = e.target.closest('[data-quitar-horario]');
-        if (quitar) { quitar.closest('[data-fila-horario]').remove(); }
+        if (quitar && quitar.closest('[data-fila-horario]')) { quitar.closest('[data-fila-horario]').remove(); }
     });
 
     /* ---------- Editar: después del llenado genérico (editar-registro) ---------- */
@@ -2548,8 +2549,8 @@ document.addEventListener('click', function (e) {
             .replace(/__H__/g, h).replace(/__P__/g, String(p)).replace(/__F__/g, prefijo(form)));
         if (!fila) { return null; }
         if (valores) {
-            fila.querySelector('input[type="text"]').value = valores.nombre || '';
-            fila.querySelector('input[type="time"]').value = valores.hora || '';
+            fila.querySelector('input[name$="[nombre]"]').value = valores.nombre || '';
+            fila.querySelector('input[name$="[hora]"]').value = valores.hora || '';
         }
         bloque.querySelector('[data-paraderos]').appendChild(fila);
         return fila;
@@ -2593,7 +2594,7 @@ document.addEventListener('click', function (e) {
             var copia = [];
             if (ultimo) {
                 ultimo.querySelectorAll('[data-paradero-fila]').forEach(function (f) {
-                    copia.push({ nombre: f.querySelector('input[type="text"]').value, hora: f.querySelector('input[type="time"]').value });
+                    copia.push({ nombre: f.querySelector('input[name$="[nombre]"]').value, hora: f.querySelector('input[name$="[hora]"]').value });
                 });
             }
             var nuevo = nuevoHorario(form, { paraderos: copia });
@@ -7424,3 +7425,212 @@ document.addEventListener('click', function (e) {
     }, true);
 })();
 /* Fin Ronda 5 de ajustes (parte 2) */
+
+/* ==========================================================================
+   Ajustes Ronda 6 (QA del dueño; ver docs/cursos/leccion-31-ajustes-ronda-6.md)
+   1. LL-08: los filtros, búsquedas y píldoras que se recuerdan en el
+      navegador valen solo para la sesión y el usuario que los dejó. Al entrar
+      (nueva sesión) o si cambia el usuario, se olvidan y cada pantalla
+      empieza limpia. <body data-usuario-filtros data-sesion-filtros>.
+   2. Avisos de duplicado en vivo (data-duplicado): se vuelven a revisar al
+      escribir en los campos de data-duplicado-con (apellidos de un
+      colaborador, sede de un equipo de Protección Civil) y al leer una
+      etiqueta con el lector (NFC del celular, lector USB/Bluetooth).
+      GV-03: en «Código e identificación» el aviso «ya la tiene X» sale al
+      escribir el número de la etiqueta.
+   3. data-mensaje-max="…": mensaje propio cuando un número pasa del máximo
+      (GV-02: «Máximo 50 gafetes por lote.»).
+   4. GV-04: diálogos «Recuperado» y «Reembolso entregado» de Vouchers.
+   5. EQ-04: al editar un equipo, por qué su estado solo admite ciertas opciones.
+   6. LL-06: Etiquetas QR — «Marcar todas», conteo y botón Imprimir.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    /* ---------- 1. Filtros por sesión y por usuario (LL-08) ---------- */
+    (function () {
+        var cuerpo = document.body;
+        if (!cuerpo || !cuerpo.hasAttribute('data-sesion-filtros')) { return; }
+        var usuario = cuerpo.getAttribute('data-usuario-filtros') || '';
+        var marca = usuario + ':' + (cuerpo.getAttribute('data-sesion-filtros') || '');
+        var esFiltro = function (k) {
+            return k.indexOf('plataforma_filtro') === 0 || k.indexOf('plataforma:filtro') === 0 || k === 'plataforma_areas_abiertas';
+        };
+        var limpiar = function (almacen, cuales) {
+            var borrar = [];
+            for (var i = 0; i < almacen.length; i++) {
+                var k = almacen.key(i);
+                if (k && cuales(k)) { borrar.push(k); }
+            }
+            borrar.forEach(function (k) { almacen.removeItem(k); });
+        };
+        try {
+            // Pestaña: filtros de la sesión anterior (o de otro usuario) fuera
+            if (sessionStorage.getItem('plataforma_marca_filtros') !== marca) {
+                limpiar(sessionStorage, esFiltro);
+                sessionStorage.setItem('plataforma_marca_filtros', marca);
+            }
+        } catch (x) { /* sin almacenamiento: no hay nada que limpiar */ }
+        try {
+            // Equipo: la sede que se recordó en Accesos es del usuario que la eligió
+            if (localStorage.getItem('plataforma_usuario_filtros') !== usuario) {
+                limpiar(localStorage, function (k) { return esFiltro(k) || k === 'plataforma_accesos_sede'; });
+                localStorage.setItem('plataforma_usuario_filtros', usuario);
+            }
+        } catch (x) { /* sin almacenamiento */ }
+    })();
+
+    function leer(texto, siFalla) { try { return JSON.parse(texto); } catch (x) { return siFalla; } }
+
+    /* ---------- 2. Avisos de duplicado: campos relacionados y lector ---------- */
+    function revisarDuplicado(campo) {
+        if (campo && campo.matches('[data-duplicado]')) { campo.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+
+    // Apellidos del colaborador, sede del equipo PC…: se revisa mientras se escribe, no solo al salir del campo
+    document.addEventListener('input', function (e) {
+        var form = e.target.form;
+        if (!form || !e.target.name || e.target.matches('[data-duplicado]')) { return; }
+        form.querySelectorAll('[data-duplicado-con]').forEach(function (campo) {
+            var con = campo.getAttribute('data-duplicado-con').split(',');
+            if (con.indexOf(e.target.name) !== -1 && campo.value.trim() !== '') { revisarDuplicado(campo); }
+        });
+    });
+
+    // Lo leído con el lector (NFC del celular, Enter del lector USB) también se revisa
+    document.addEventListener('lector:capturado', function (e) {
+        var entrada = e.target.querySelector && e.target.querySelector('[data-lector-entrada][data-duplicado]');
+        if (!entrada) { return; }
+        if (entrada.closest('#dialogoIdentificacion')) {
+            // Ahí se guarda en el acto: el resultado lo dice el propio diálogo
+            var caja = document.getElementById(entrada.getAttribute('data-duplicado-aviso') || '');
+            if (caja) { caja.hidden = true; }
+            return;
+        }
+        revisarDuplicado(entrada);
+    });
+
+    // «Código e identificación»: dirección del aviso (tipo y registro que se edita)
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-ver-identificacion]');
+        var d = document.getElementById('dialogoIdentificacion');
+        if (!boton || !d) { return; }
+        var datos = leer(boton.getAttribute('data-ver-identificacion') || '{}', {}) || {};
+        var entrada = d.querySelector('[data-ident-form] [data-lector-entrada]');
+        if (entrada) {
+            if (datos.duplicadoUrl) { entrada.setAttribute('data-duplicado', datos.duplicadoUrl); } else { entrada.removeAttribute('data-duplicado'); }
+            var caja = document.getElementById(entrada.getAttribute('data-duplicado-aviso') || '');
+            if (caja) { caja.hidden = true; caja.textContent = ''; }
+        }
+    });
+
+    /* ---------- 3. Mensaje propio al pasar del máximo ---------- */
+    function revisarMaximo(campo) {
+        var maximo = parseFloat(campo.getAttribute('max'));
+        var valor = parseFloat(campo.value);
+        campo.setCustomValidity(!isNaN(maximo) && !isNaN(valor) && valor > maximo ? campo.getAttribute('data-mensaje-max') : '');
+    }
+    document.addEventListener('input', function (e) {
+        if (e.target.matches && e.target.matches('[data-mensaje-max]')) { revisarMaximo(e.target); }
+    });
+    document.addEventListener('invalid', function (e) {
+        if (e.target.matches && e.target.matches('[data-mensaje-max]')) { revisarMaximo(e.target); }
+    }, true);
+
+    /* ---------- 4. Vouchers: Recuperado / Reembolso entregado (GV-04) ---------- */
+    function prepararVoucher(d, b, prefijo) {
+        var form = d.querySelector('form');
+        form.action = b.dataset.url;
+        var marca = form.querySelector('[data-campo-dialogo]');
+        if (marca) { marca.value = prefijo + b.dataset.id; }
+        form.querySelectorAll('textarea').forEach(function (t) { t.value = ''; });
+        form.querySelectorAll('input[type="checkbox"]').forEach(function (c) { c.checked = false; });
+        d.querySelectorAll('.alert').forEach(function (a) { a.remove(); });
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="voucher-recuperado"], [data-accion="voucher-reembolso"]');
+        if (!b) { return; }
+        var recuperar = b.dataset.accion === 'voucher-recuperado';
+        var d = document.getElementById(recuperar ? 'dialogoRecuperadoVoucher' : 'dialogoReembolsoVoucher');
+        if (!d) { return; }
+        if (recuperar) {
+            d.querySelector('[data-recuperado-folio]').textContent = b.dataset.folio || '';
+            d.querySelector('[data-recuperado-articulo]').textContent = b.dataset.articulo || '';
+            var cobro = d.querySelector('[data-recuperado-cobro]');
+            cobro.hidden = !b.dataset.cobro;
+            d.querySelector('[data-recuperado-monto]').textContent = b.dataset.cobro || '';
+        } else {
+            d.querySelector('[data-reembolso-folio]').textContent = b.dataset.folio || '';
+            d.querySelector('[data-reembolso-monto]').textContent = b.dataset.cobro || '';
+        }
+        prepararVoucher(d, b, recuperar ? 'recuperar-' : 'reembolso-');
+    });
+
+    /* ---------- 5. Equipos: por qué el estado está limitado (EQ-04) ---------- */
+    var EXPLICACION_ESTADO = {
+        disponible: 'Está DISPONIBLE: puedes ponerlo «En mantenimiento». Para prestarlo o asignarlo usa Responsivas; para darlo de baja, el botón «Dar de baja» de su ficha.',
+        en_mantenimiento: 'Está EN MANTENIMIENTO: solo puedes cambiarlo a «Disponible» (cuando regrese del servicio) o dejarlo «En mantenimiento». Mientras tanto no se puede prestar.',
+        asignado: 'Está ASIGNADO a un colaborador por Responsivas: el estado cambia solo cuando lo devuelvan. Lo demás (marca, modelo, serie…) sí se puede corregir.'
+    };
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="editar-registro"][data-dialogo="dialogoEditarEquipo"]');
+        if (!b) { return; }
+        var d = document.getElementById('dialogoEditarEquipo');
+        var nota = d && d.querySelector('[data-explicacion-estado]');
+        if (!nota) { return; }
+        var valores = leer(b.dataset.valores || '{}', {}) || {};
+        var texto = valores.estado === 'baja'
+            ? (valores.voucher
+                ? 'Está de BAJA con el voucher ' + valores.voucher + ': para volver a usarlo márcalo «Recuperado» en Vouchers (o «Reactivar» en su ficha). Después podrás editar su estado.'
+                : 'Está de BAJA: reactívalo en su ficha («Reactivar») para editar su estado.')
+            : (EXPLICACION_ESTADO[valores.estado] || '');
+        nota.textContent = texto;
+        nota.hidden = !texto;
+        // En ASIGNADO y BAJA la explicación sustituye al texto corto de solo lectura
+        var fijo = d.querySelector('[data-estado-fijo]');
+        if (fijo && (valores.estado === 'baja' || valores.estado === 'asignado')) { fijo.hidden = true; }
+    });
+
+    /* ---------- 6. Etiquetas QR: marcar todas, conteo e imprimir (LL-06) ---------- */
+    function contarEtiquetas(form) {
+        var casillas = form.querySelectorAll('[data-etiqueta-qr]');
+        var marcadas = form.querySelectorAll('[data-etiqueta-qr]:checked').length;
+        var maximo = 200;
+        var boton = form.querySelector('[data-etiquetas-imprimir]');
+        var conteo = form.querySelector('[data-etiquetas-conteo]');
+        var todas = form.querySelector('[data-etiquetas-todas]');
+        var ayuda = form.querySelector('[data-etiquetas-ayuda]');
+        if (conteo) { conteo.textContent = String(marcadas); }
+        if (boton) { boton.disabled = marcadas === 0 || marcadas > maximo; }
+        if (todas) {
+            todas.checked = casillas.length > 0 && marcadas === casillas.length;
+            todas.indeterminate = marcadas > 0 && marcadas < casillas.length;
+        }
+        if (ayuda) {
+            ayuda.classList.toggle('texto-error', marcadas > maximo);
+            ayuda.textContent = marcadas > maximo
+                ? 'Marcaste ' + marcadas + ': el máximo por impresión es ' + maximo + '. Quita algunas o usa los filtros.'
+                : (marcadas === 0
+                    ? 'Marca las etiquetas que quieras imprimir (máximo ' + maximo + ' por hoja de impresión). Se abre en otra pestaña.'
+                    : marcadas + (marcadas === 1 ? ' etiqueta marcada.' : ' etiquetas marcadas.') + ' Elige el tamaño y oprime «Imprimir».');
+        }
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-etiquetas-qr]')) { return; }
+        if (e.target.matches('[data-etiquetas-todas]')) {
+            var marcar = e.target.checked;
+            form.querySelectorAll('[data-etiqueta-qr]').forEach(function (c) { c.checked = marcar; });
+        }
+        contarEtiquetas(form);
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[data-etiquetas-qr]').forEach(contarEtiquetas);
+    });
+})();
+/* Fin Ajustes Ronda 6 */

@@ -10,6 +10,7 @@ use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Services\Vouchers\ConsultaVouchers;
+use App\Services\Vouchers\RecuperacionVouchers;
 use App\Support\Entrada;
 use App\Support\HoraLocal;
 use App\Support\ImagenSegura;
@@ -65,7 +66,11 @@ class VoucherController extends Controller
                 ->leftJoin('users as uc', 'uc.id', '=', 'vouchers_reposicion.creado_por')
                 // Ronda 5: quién registró la firma en papel
                 ->leftJoin('users as up', 'up.id', '=', 'vouchers_reposicion.firmado_papel_por')
-                ->select(['vouchers_reposicion.*', 'uc.name as creado_por_nombre', 'up.name as firmado_papel_por_nombre'])
+                // Ronda 6 (GV-04): quién lo marcó recuperado / reembolsado
+                ->leftJoin('users as ur', 'ur.id', '=', 'vouchers_reposicion.recuperado_por')
+                ->leftJoin('users as ue', 'ue.id', '=', 'vouchers_reposicion.reembolsado_por')
+                ->select(['vouchers_reposicion.*', 'uc.name as creado_por_nombre', 'up.name as firmado_papel_por_nombre',
+                    'ur.name as recuperado_por_nombre', 'ue.name as reembolsado_por_nombre'])
                 ->orderByDesc('vouchers_reposicion.id')
                 ->paginate(self::POR_PAGINA)
                 ->withQueryString();
@@ -81,6 +86,11 @@ class VoucherController extends Controller
                 'sedes' => Sede::orderBy('nombre')->when($permitidas !== null, fn ($q) => $q->whereIn('id', $permitidas))->get(['id', 'nombre']),
                 'empresaNombre' => Empresa::whereKey($this->tenant->empresaId())->value('nombre_comercial'),
                 'puedeImprimir' => $actor->can('vouchers.imprimir'),
+                // Ronda 6 (GV-04): «Recuperado» (vigente) y «Reembolsado» (reembolso pendiente)
+                'puedeRecuperar' => $actor->can('vouchers.editar')
+                    ? collect(VoucherReposicion::ORIGENES)->filter(fn ($o) => $actor->can($o[1].'.eliminar'))->keys()->all()
+                    : [],
+                'puedeReembolsar' => $actor->can('vouchers.editar'),
             ]);
         });
     }
@@ -103,7 +113,9 @@ class VoucherController extends Controller
                     'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno',
                 ])
                 ->leftJoin('users as uc', 'uc.id', '=', 'vouchers_reposicion.creado_por')
-                ->select(['vouchers_reposicion.*', 'uc.name as creado_por_nombre'])
+                ->leftJoin('users as ur', 'ur.id', '=', 'vouchers_reposicion.recuperado_por')
+                ->leftJoin('users as ue', 'ue.id', '=', 'vouchers_reposicion.reembolsado_por')
+                ->select(['vouchers_reposicion.*', 'uc.name as creado_por_nombre', 'ur.name as recuperado_por_nombre', 'ue.name as reembolsado_por_nombre'])
                 ->find($voucher);
             abort_if($modelo === null, 404);
 
@@ -185,9 +197,51 @@ class VoucherController extends Controller
     }
 
     /**
+     * Ronda 6 (GV-04): el artículo apareció y se devolvió. Reactiva la llave,
+     * el gafete o el equipo y deja el voucher «Cancelado por recuperación» o,
+     * si ya se había cobrado, «Reembolso pendiente».
+     */
+    public function recuperado(Request $request, RecuperacionVouchers $recuperacion, int $voucher): RedirectResponse
+    {
+        Gate::authorize('vouchers.editar');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $recuperacion, $voucher) {
+            $modelo = $this->consulta->consulta($request->user(), 'vouchers.editar')->find($voucher);
+            abort_if($modelo === null, 404);
+            abort_unless($request->user()->can($recuperacion->permisoReactivar($modelo)), 403);
+
+            return $recuperacion->recuperar($request->user(), $modelo, $request->only(['cobro_pagado', 'comentario']));
+        });
+
+        return redirect()->to(route('vouchers.index').'#voucher-'.$modelo->id)->with('ok', match ($modelo->estado) {
+            'reembolso_pendiente' => "Voucher {$modelo->folio}: artículo recuperado y reactivado. Queda «Reembolso pendiente» hasta que se le devuelva el dinero al responsable.",
+            default => "Voucher {$modelo->folio}: artículo recuperado y reactivado. El voucher queda «Cancelado por recuperación»".($modelo->aplica_cobro ? ' y el cobro se canceló.' : '.'),
+        });
+    }
+
+    /** Ronda 6 (GV-04): ya se le devolvió el dinero al responsable. */
+    public function reembolso(Request $request, RecuperacionVouchers $recuperacion, int $voucher): RedirectResponse
+    {
+        Gate::authorize('vouchers.editar');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $recuperacion, $voucher) {
+            $modelo = $this->consulta->consulta($request->user(), 'vouchers.editar')->find($voucher);
+            abort_if($modelo === null, 404);
+
+            return $recuperacion->reembolsar($request->user(), $modelo, $request->only(['comentario']));
+        });
+
+        return redirect()->to(route('vouchers.index').'#voucher-'.$modelo->id)->with('ok', "Voucher {$modelo->folio}: reembolso entregado.");
+    }
+
+    /**
      * Filtros de la lista (en la dirección, para poder compartir la búsqueda).
      *
-     * @return array{q: string, sede: ?int, origen: ?string, cobro: ?string, desde: ?string, hasta: ?string}
+     * @return array{q: string, sede: ?int, origen: ?string, cobro: ?string, estado: ?string, desde: ?string, hasta: ?string}
      */
     private function filtros(Request $request): array
     {
@@ -205,6 +259,7 @@ class VoucherController extends Controller
             'sede' => is_numeric($request->query('sede')) ? (int) $request->query('sede') : null,
             'origen' => array_key_exists(Entrada::texto($request->query('origen')), VoucherReposicion::ORIGENES) ? Entrada::texto($request->query('origen')) : null,
             'cobro' => in_array($request->query('cobro'), ['1', '0'], true) ? $request->query('cobro') : null,
+            'estado' => array_key_exists(Entrada::texto($request->query('estado')), VoucherReposicion::ESTADOS) ? Entrada::texto($request->query('estado')) : null,
             'desde' => $fecha($request->query('desde')),
             'hasta' => $fecha($request->query('hasta')),
         ];
@@ -212,7 +267,7 @@ class VoucherController extends Controller
 
     /**
      * @param  Builder<VoucherReposicion>  $consulta
-     * @param  array{q: string, sede: ?int, origen: ?string, cobro: ?string, desde: ?string, hasta: ?string}  $f
+     * @param  array{q: string, sede: ?int, origen: ?string, cobro: ?string, estado: ?string, desde: ?string, hasta: ?string}  $f
      * @return Builder<VoucherReposicion>
      */
     private function filtrar(Builder $consulta, array $f): Builder
@@ -223,6 +278,7 @@ class VoucherController extends Controller
             ->when($f['sede'] !== null, fn ($q) => $q->where('vouchers_reposicion.sede_id', $f['sede']))
             ->when($f['origen'] !== null, fn ($q) => $q->where('vouchers_reposicion.origen_tipo', $f['origen']))
             ->when($f['cobro'] !== null, fn ($q) => $q->where('vouchers_reposicion.aplica_cobro', $f['cobro'] === '1'))
+            ->when($f['estado'] !== null, fn ($q) => $q->where('vouchers_reposicion.estado', $f['estado']))
             // Los días se cuentan en la hora local de la empresa
             ->when($f['desde'] !== null, fn ($q) => $q->where('vouchers_reposicion.created_at', '>=', CarbonImmutable::parse($f['desde'], $zona)->startOfDay()->utc()))
             ->when($f['hasta'] !== null, fn ($q) => $q->where('vouchers_reposicion.created_at', '<=', CarbonImmutable::parse($f['hasta'], $zona)->endOfDay()->utc()))
