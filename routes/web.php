@@ -336,6 +336,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/colaboradores/homonimos', [ColaboradorController::class, 'homonimos'])->middleware('throttle:120,1')->name('colaboradores.homonimos');
     Route::put('/configuracion/lost-found', [ConfiguracionController::class, 'lostFound'])->name('configuracion.lost_found');
     // Fin Padrones: Ajustes QA 4
+    // Padrones: Altas por verificar (vehículos, empresas externas y personas registrados desde Operación; ver docs/tecnico/altas-por-verificar.md)
+    Route::controller('App\Http\Controllers\Padrones\AltaPorVerificarController')->group(function () {
+        Route::get('/altas-por-verificar/parecidos', 'parecidos')->middleware('throttle:120,1')->name('altas_por_verificar.parecidos');
+        Route::put('/vehiculos/{vehiculo}/aceptar', 'aceptarVehiculo')->whereNumber('vehiculo')->name('vehiculos.aceptar');
+        Route::put('/vehiculos/{vehiculo}/rechazar', 'rechazarVehiculo')->whereNumber('vehiculo')->name('vehiculos.rechazar');
+        Route::put('/vehiculos/{vehiculo}/unir', 'unirVehiculo')->whereNumber('vehiculo')->name('vehiculos.unir');
+        Route::put('/proveedores/{proveedor}/aceptar', 'aceptarProveedor')->whereNumber('proveedor')->name('proveedores.aceptar');
+        Route::put('/proveedores/{proveedor}/rechazar', 'rechazarProveedor')->whereNumber('proveedor')->name('proveedores.rechazar');
+        Route::put('/proveedores/{proveedor}/unir', 'unirProveedor')->whereNumber('proveedor')->name('proveedores.unir');
+        Route::put('/personas/{persona}/aceptar', 'aceptarPersona')->whereNumber('persona')->name('personas.aceptar');
+        Route::put('/personas/{persona}/rechazar', 'rechazarPersona')->whereNumber('persona')->name('personas.rechazar');
+        Route::put('/personas/{persona}/unir', 'unirPersona')->whereNumber('persona')->name('personas.unir');
+    });
+    // Fin Padrones: Altas por verificar
     // Padrones: Procedimientos (Operación → Consulta: manual operativo con versiones, aprobación con firma y acuse «Leí y entendí»; ver docs/tecnico/procedimientos.md)
     Route::controller(ProcedimientoController::class)->group(function () {
         Route::get('/procedimientos', 'index')->name('procedimientos.index');

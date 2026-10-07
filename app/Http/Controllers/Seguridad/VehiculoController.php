@@ -8,6 +8,8 @@ use App\Models\Empresa;
 use App\Models\Proveedor;
 use App\Models\User;
 use App\Models\Vehiculo;
+use App\Services\Padrones\AltasPorVerificar;
+use App\Services\Padrones\HayParecidos;
 use App\Services\Vehiculos\AdministradorVehiculos;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
@@ -19,6 +21,7 @@ use BaconQrCode\Writer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
@@ -190,21 +193,35 @@ class VehiculoController extends Controller
 
     /**
      * Registro rápido desde otros módulos. 201 con el vehículo; 409 si las
-     * placas ya existen (con el vehículo existente, para usarlo); 422 con
-     * los errores de captura.
+     * placas ya existen (con el vehículo existente, para usarlo) o, sin
+     * confirmar_nuevo, si hay placas parecidas ("¿Es alguno de estos?",
+     * con la lista en "parecidos"); 422 con los errores de captura.
+     *
+     * Altas por verificar (ADR-0006): también lo usa quien solo tiene el
+     * permiso operativo de la pantalla de origen (origen=accesos|transporte);
+     * entonces el vehículo nace pendiente de verificar.
      */
     public function rapido(Request $request): JsonResponse
     {
-        Gate::authorize('vehiculos.crear');
         $actor = $request->user();
+        $altas = app(AltasPorVerificar::class);
+        $origen = $request->filled('origen') || ! $actor->can('vehiculos.crear') ? $altas->origenDeAlta($actor, 'vehiculos', $request->input('origen')) : null;
+        abort_unless($actor->can('vehiculos.crear') || $origen !== null, 403);
         $empresaId = $this->empresa->id($actor);
         if ($empresaId === null) {
             return response()->json(['ok' => false, 'mensaje' => 'Elige primero la empresa de trabajo.', 'errores' => []], 422);
         }
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $request) {
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $request, $altas, $origen) {
             $existente = $this->vehiculos->conPlacas(Entrada::texto($request->input('placas')));
             if ($existente !== null) {
+                try {
+                    // Unido con otro: se ofrece el correcto. Rechazado: no se puede usar.
+                    $existente = $altas->paraOperacion('vehiculos', $existente, 'placas');
+                } catch (ValidationException $e) {
+                    return response()->json(['ok' => false, 'mensaje' => collect($e->errors())->flatten()->first(), 'errores' => $e->errors()], 422);
+                }
+
                 return response()->json([
                     'ok' => false,
                     'mensaje' => "Las placas {$existente->placas} ya están en el padrón".($existente->activo ? '.' : ' (dado de baja).'),
@@ -213,9 +230,23 @@ class VehiculoController extends Controller
             }
 
             try {
-                $vehiculo = $this->vehiculos->crear($actor, $empresaId, $request->all());
+                $vehiculo = DB::transaction(function () use ($actor, $empresaId, $request, $altas, $origen) {
+                    $vehiculo = $this->vehiculos->crear($actor, $empresaId, $request->all());
+                    // Ya validado: si hay placas parecidas se deshace y se pregunta primero
+                    if (! $request->boolean('confirmar_nuevo')) {
+                        $parecidos = $altas->parecidos('vehiculos', ['placas' => $vehiculo->placas], null, $vehiculo->id);
+                        if ($parecidos !== []) {
+                            throw new HayParecidos($parecidos);
+                        }
+                    }
+                    $altas->registrarAlta($actor, 'vehiculos', $vehiculo, $origen);
+
+                    return $vehiculo;
+                });
             } catch (ValidationException $e) {
                 return response()->json(['ok' => false, 'mensaje' => collect($e->errors())->flatten()->first(), 'errores' => $e->errors()], 422);
+            } catch (HayParecidos $e) {
+                return response()->json(['ok' => false, 'mensaje' => '¿Es alguno de estos? Hay placas parecidas en el padrón.', 'parecidos' => $e->parecidos], 409);
             }
 
             return response()->json(['ok' => true, 'vehiculo' => $this->vehiculos->resumen($vehiculo)], 201);

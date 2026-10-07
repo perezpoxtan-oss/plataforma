@@ -68,3 +68,12 @@ Un proveedor de otra empresa o fuera de las sedes del usuario responde 404. La p
 ## Pruebas
 
 `tests/Feature/Seguridad/ProveedoresTest.php` (11 pruebas): alta y normalización, validaciones, nombre repetido, sedes y estado, regla "se agregó a tu sede", visibilidad y límites con alcance de sede, ficha con pestañas, JSON de búsqueda y alta rápida, aislamiento entre empresas, Agente solo consulta, Super Administrador.
+
+## Altas por verificar
+
+Lo que la caseta registra en este padrón desde Operación (con el registro rápido, o al guardar un ingreso o un movimiento) pasa por dos pasos:
+
+1. Antes de crear, se sugieren los parecidos («¿Es alguno de estos?»).
+2. Si quien lo registra no puede editar el padrón, queda «Pendiente de verificar» hasta que alguien lo acepta, lo rechaza o lo une con el existente.
+
+Ver [altas-por-verificar.md](altas-por-verificar.md) y ADR-0006.

@@ -12,6 +12,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Services\Firmas\Firmas;
+use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -231,9 +232,9 @@ class BitacoraTransporte
     {
         $ruta = $d['horario']->ruta;
         $vehiculo = $d['placas'] !== null
-            ? $this->vehiculo($actor, $d['placas'], MovimientoTransporte::TIPOS_UNIDAD[$d['tipo_unidad']], 'transporte_personal', $ruta->proveedor_id, $d)
+            ? $this->vehiculo($actor, $d['placas'], MovimientoTransporte::TIPOS_UNIDAD[$d['tipo_unidad']], 'transporte_personal', $ruta->proveedor_id, $d, (int) $d['sede']->id)
             : null;
-        $chofer = $d['chofer'] !== null ? $this->chofer($actor, $d['chofer'], $ruta->proveedor_id, $d['chofer_telefono']) : null;
+        $chofer = $d['chofer'] !== null ? $this->chofer($actor, $d['chofer'], $ruta->proveedor_id, $d['chofer_telefono'], (int) $d['sede']->id) : null;
 
         $m = new MovimientoTransporte([
             'sede_id' => $d['sede']->id, 'ruta_id' => $ruta->id, 'ruta_horario_id' => $d['horario']->id,
@@ -260,8 +261,8 @@ class BitacoraTransporte
 
         foreach ($d['taxis'] as $t) {
             // Taxis de ocasión: unidades externas sin empresa propietaria (como SEGCAT)
-            $vehiculo = $this->vehiculo($actor, $t['placas'], MovimientoTransporte::TIPOS_TAXI[$t['tipo']], 'taxi_app', null, $t);
-            $chofer = $this->chofer($actor, $t['chofer'], null, $t['chofer_telefono']);
+            $vehiculo = $this->vehiculo($actor, $t['placas'], MovimientoTransporte::TIPOS_TAXI[$t['tipo']], 'taxi_app', null, $t, (int) $d['sede']->id);
+            $chofer = $this->chofer($actor, $t['chofer'], null, $t['chofer_telefono'], (int) $d['sede']->id);
             $paradero = $this->rutas->paraderoParaRuta($actor, $d['sede'], $t['destino']);
 
             $m = new MovimientoTransporte([
@@ -287,10 +288,12 @@ class BitacoraTransporte
      * @param  array{0: string, 1: string, 2: ?string}  $tipo
      * @param  array<string, mixed>  $d
      */
-    private function vehiculo(User $actor, string $placas, array $tipo, string $propiedad, ?int $proveedorId, array $d): Vehiculo
+    private function vehiculo(User $actor, string $placas, array $tipo, string $propiedad, ?int $proveedorId, array $d, ?int $sedeId = null): Vehiculo
     {
         $existente = $this->vehiculos->conPlacas($placas);
         if ($existente !== null) {
+            // Altas por verificar: unido a otro = el correcto; rechazado = no se usa
+            $existente = app(AltasPorVerificar::class)->paraOperacion('vehiculos', $existente, 'placas');
             $antes = $this->vehiculos->foto($existente);
             foreach (['marca' => 'marca', 'modelo' => 'modelo', 'numero_economico' => 'economico', 'capacidad' => 'capacidad'] as $columna => $campo) {
                 if (($existente->{$columna} === null || $existente->{$columna} === '') && ($d[$campo] ?? null) !== null) {
@@ -311,6 +314,7 @@ class BitacoraTransporte
             'capacidad' => $d['capacidad'] ?? null, 'proveedor_id' => $proveedorId,
         ]);
         $this->auditoria->auditar($actor, 'vehiculos.creado', $vehiculo, null, $this->vehiculos->foto($vehiculo));
+        app(AltasPorVerificar::class)->registrarAlta($actor, 'vehiculos', $vehiculo, 'transporte', $sedeId);
 
         return $vehiculo;
     }
@@ -320,7 +324,7 @@ class BitacoraTransporte
      * transportista (sin empresa para los taxistas). Si ya existía sin
      * teléfono, se le completa.
      */
-    private function chofer(User $actor, string $nombre, ?int $proveedorId, ?string $telefono): Persona
+    private function chofer(User $actor, string $nombre, ?int $proveedorId, ?string $telefono, ?int $sedeId = null): Persona
     {
         $existente = Persona::where('tipo', 'proveedor')
             ->whereRaw('UPPER(nombre_completo) = ?', [$nombre])
@@ -328,6 +332,8 @@ class BitacoraTransporte
             ->orderByDesc('activo')->first();
 
         if ($existente !== null) {
+            // Altas por verificar: unida a otra = la correcta; rechazada = no se usa
+            $existente = app(AltasPorVerificar::class)->paraOperacion('personas', $existente, 'chofer');
             if ($telefono !== null && ($existente->telefono === null || $existente->telefono === '')) {
                 $antes = $this->personas->foto($existente);
                 $existente->forceFill(['telefono' => $telefono])->save();
@@ -343,6 +349,7 @@ class BitacoraTransporte
             'motivo_visita' => $proveedorId === null ? 'Taxista (Bitácora de transporte).' : 'Chofer de transporte de personal (Bitácora de transporte).',
         ]);
         $this->auditoria->auditar($actor, 'visitantes.creado', $persona, null, $this->personas->foto($persona));
+        app(AltasPorVerificar::class)->registrarAlta($actor, 'personas', $persona, 'transporte', $sedeId);
 
         return $persona;
     }

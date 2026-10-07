@@ -1158,3 +1158,22 @@ html.modo-sol .acuse-barra-avance.completo { background: #15803d; }
 html.modo-noche .cabecera-procedimiento { border-top-color: var(--cat-color); }
 html.modo-sol .cabecera-procedimiento { border-top: 8px solid var(--cat-color); }
 /* Fin Procedimientos */
+/* Altas por verificar (ADR-0006): Sol y Noche */
+html.modo-sol .insignia-verificacion.pendiente, html.modo-sol .btn-verificar-alta, html.modo-sol .btn-pill-tipo.btn-pill-verificar,
+html.modo-sol .aviso-alta-pendiente, html.modo-sol .grupo-alta-verificar { background: #facc15; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-pill-tipo.btn-pill-verificar.active, html.modo-sol .btn-verificar-alta:hover { background: #000; color: #facc15; }
+html.modo-sol .insignia-verificacion.rechazado { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .resumen-alta, html.modo-sol .opcion-unir, html.modo-sol .acceso-sugerencia.encabezado-parecidos { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .opcion-unir:has(input:checked), html.modo-sol .dialogo-verificar-alta .modo-opt:has(input:checked) { background: #facc15; color: #000; border-color: #000; }
+html.modo-sol .errores-verificar { background: #fff; color: #7f1d1d; border: 2px solid #b91c1c; }
+html.modo-sol .grupo-alta-verificar .conteo { background: #000; color: #facc15; }
+html.modo-noche .insignia-verificacion.pendiente, html.modo-noche .btn-verificar-alta, html.modo-noche .btn-pill-tipo.btn-pill-verificar,
+html.modo-noche .aviso-alta-pendiente, html.modo-noche .acceso-sugerencia.encabezado-parecidos { background: rgba(245, 158, 11, 0.14); color: #fcd34d; border-color: #b45309; }
+html.modo-noche .btn-pill-tipo.btn-pill-verificar.active, html.modo-noche .btn-verificar-alta:hover { background: #d97706; color: #fff; }
+html.modo-noche .insignia-verificacion.rechazado { background: var(--superficie-2); color: #cbd5e1; border-color: #475569; }
+html.modo-noche .resumen-alta, html.modo-noche .opcion-unir { background: var(--superficie-2); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .opcion-unir:has(input:checked), html.modo-noche .dialogo-verificar-alta .modo-opt:has(input:checked) { background: rgba(245, 158, 11, 0.16); border-color: #d97706; color: #fde68a; }
+html.modo-noche .errores-verificar { background: rgba(239, 68, 68, 0.12); border-color: #b91c1c; color: #fecaca; }
+html.modo-noche .grupo-alta-verificar { background: var(--superficie-2); border-color: #b45309; color: #fcd34d; }
+html.modo-noche .grupo-alta-verificar .conteo { background: rgba(245, 158, 11, 0.2); color: #fde68a; }
+/* Fin Altas por verificar */

@@ -6,6 +6,7 @@ use App\Models\Colaborador;
 use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\User;
+use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -96,6 +97,7 @@ class AdministradorPersonas
 
     public function actualizar(User $actor, Persona $persona, Request $request): Persona
     {
+        app(AltasPorVerificar::class)->exigirNoRechazado($persona, 'nombre_completo');
         $antes = $this->foto($persona);
         $datos = $this->validar($request, $actor, $persona);
 
@@ -121,6 +123,9 @@ class AdministradorPersonas
 
     public function cambiarEstado(User $actor, Persona $persona, bool $activo): void
     {
+        if ($activo) {
+            app(AltasPorVerificar::class)->exigirNoRechazado($persona);
+        }
         $persona->forceFill(['activo' => $activo])->save();
         $this->auditoria->auditar($actor, $activo ? 'visitantes.reactivado' : 'visitantes.desactivado', $persona, ['activo' => ! $activo], ['activo' => $activo]);
     }
@@ -307,6 +312,7 @@ class AdministradorPersonas
             'proveedor_id' => $p->proveedor_id,
             'folio' => $p->folioEnmascarado(),
             'activo' => (bool) $p->activo,
+            'verificacion' => $p->verificacion,
         ];
     }
 

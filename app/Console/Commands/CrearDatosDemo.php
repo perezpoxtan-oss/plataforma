@@ -194,6 +194,7 @@ class CrearDatosDemo extends Command
         $paso('borradoDemo', fn () => $this->borradoDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('lostFoundRoboDemo', fn () => $this->lostFoundRoboDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('recorridosPcDemo', fn () => $this->recorridosPcDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('altasPorVerificarDemo', fn () => $this->altasPorVerificarDemo($sedes, User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'admin.demo')->firstOrFail()));
         $paso('procedimientosDemo', fn () => $this->procedimientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         if ($fallas !== []) {
@@ -1685,6 +1686,54 @@ class CrearDatosDemo extends Command
             $paradero::create(['sede_id' => $sedes['CEN']->id, 'nombre' => 'PARADERO DE PRUEBA']);
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    /**
+     * Altas por verificar (ADR-0006): lo que agente.demo registró en la caseta
+     * de Centro (Bitácora de accesos) y aún no estaba en los padrones, para que
+     * admin.demo lo vea en Inicio y practique Aceptar, Rechazar y Unir:
+     *  - parecidos a uno que ya existía (para "Ya existía"): placas ABC128A
+     *    (existe ABC123A), «Abarrotes del Caribe S.A. de C.V.» y «Laura Mendez Rios»;
+     *  - nuevos de verdad (para "Es correcto"): XTR901C, «Plomería Express Cancún», «Pedro Canul Dzib»;
+     *  - uno ya rechazado por admin.demo, para ver cómo se queda como historia.
+     * Solo la primera vez.
+     */
+    private function altasPorVerificarDemo($sedes, User $agente, User $admin): void
+    {
+        if (Vehiculo::where('verificacion', '!=', Vehiculo::VERIFICADO)->whereIn('placas', ['ABC128A', 'XTR901C', 'ZZZ000'])->exists()) {
+            return;
+        }
+
+        $centro = $sedes['CEN']->id;
+        $pendiente = fn ($modelo, array $extra = []) => $modelo->forceFill(array_merge([
+            'verificacion' => Vehiculo::PENDIENTE, 'origen_alta' => 'accesos', 'sede_alta_id' => $centro,
+            'creado_por' => $agente->id, 'actualizado_por' => $agente->id,
+        ], $extra))->save();
+
+        foreach ([['ABC128A', 'NISSAN', 'VERSA', 'BLANCO'], ['XTR901C', 'KIA', 'SOUL', 'NARANJA']] as [$placas, $marca, $modelo, $color]) {
+            if (! Vehiculo::where('placas', $placas)->exists()) {
+                $pendiente(new Vehiculo(['placas' => $placas, 'propiedad' => 'propio_visitante', 'tipo' => 'sedan', 'marca' => $marca, 'modelo' => $modelo, 'color' => $color]));
+            }
+        }
+        foreach ([['Abarrotes del Caribe S.A. de C.V.', 'proveedor'], ['Plomería Express Cancún', 'contratista']] as [$nombre, $categoria]) {
+            if (! Proveedor::where('nombre', $nombre)->exists()) {
+                $proveedor = new Proveedor(['nombre' => $nombre, 'categoria' => $categoria, 'todas_las_sedes' => false]);
+                $pendiente($proveedor);
+                $proveedor->sedes()->sync([$centro]);
+            }
+        }
+        foreach ([['Laura Mendez Rios', 'visitante'], ['Pedro Canul Dzib', 'visitante']] as [$nombre, $tipo]) {
+            if (! Persona::where('nombre_completo', $nombre)->exists()) {
+                $pendiente(new Persona(['tipo' => $tipo, 'categoria' => 'general', 'nombre_completo' => $nombre, 'motivo_visita' => 'Registrada en la caseta (Bitácora de accesos).']));
+            }
+        }
+        // Uno ya revisado y rechazado: se queda como historia y la caseta ya no lo puede usar
+        if (! Vehiculo::where('placas', 'ZZZ000')->exists()) {
+            $pendiente(new Vehiculo(['placas' => 'ZZZ000', 'propiedad' => 'propio_visitante', 'tipo' => 'sedan', 'marca' => 'SIN DATOS', 'color' => 'SIN DATOS']), [
+                'verificacion' => Vehiculo::RECHAZADO, 'activo' => false, 'motivo_rechazo' => 'Placas de prueba capturadas por error: la unidad no existe.',
+                'verificado_por' => $admin->id, 'verificado_en' => now(),
+            ]);
         }
     }
 

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\User;
+use App\Services\Padrones\AltasPorVerificar;
+use App\Services\Padrones\HayParecidos;
 use App\Services\Personas\AdministradorPersonas;
 use App\Services\Personas\FolioDuplicado;
 use App\Support\Entrada;
@@ -15,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
@@ -125,19 +128,41 @@ class PersonaController extends Controller
     /**
      * Registro rápido desde otros módulos (Bitácora de accesos).
      * 201 con la persona; 422 con errores; 409 si el folio ya es de alguien
-     * (con esa persona, para usarla en vez de duplicarla).
+     * (con esa persona, para usarla en vez de duplicarla) o, sin
+     * confirmar_nuevo, si hay personas parecidas ("parecidos").
+     *
+     * Altas por verificar (ADR-0006): también lo usa quien solo tiene el
+     * permiso operativo de la pantalla de origen (origen=accesos|lost_found|
+     * transporte); entonces la persona nace pendiente de verificar.
      */
     public function rapido(Request $request): JsonResponse
     {
-        abort_unless($request->user()->can('visitantes.crear'), 403);
+        $actor = $request->user();
+        $altas = app(AltasPorVerificar::class);
+        $origen = $request->filled('origen') || ! $actor->can('visitantes.crear') ? $altas->origenDeAlta($actor, 'personas', $request->input('origen')) : null;
+        abort_unless($actor->can('visitantes.crear') || $origen !== null, 403);
 
-        $empresaId = $this->empresa->id($request->user());
+        $empresaId = $this->empresa->id($actor);
         if ($empresaId === null) {
             return response()->json(['ok' => false, 'mensaje' => 'Elige primero la empresa de trabajo.', 'errores' => []], 422);
         }
 
         try {
-            $resumen = $this->tenant->conEmpresa($empresaId, fn () => $this->personas->resumen($this->personas->crear($request->user(), $request)));
+            $resumen = $this->tenant->conEmpresa($empresaId, fn () => DB::transaction(function () use ($actor, $request, $altas, $origen) {
+                $persona = $this->personas->crear($actor, $request);
+                // Ya validada (el folio repetido responde el 409 de siempre): si hay parecidas se deshace y se pregunta primero
+                if (! $request->boolean('confirmar_nuevo')) {
+                    $parecidos = $altas->parecidos('personas', $persona->only(['nombre_completo', 'folio_identificacion']), null, $persona->id);
+                    if ($parecidos !== []) {
+                        throw new HayParecidos($parecidos);
+                    }
+                }
+                $altas->registrarAlta($actor, 'personas', $persona, $origen);
+
+                return $this->personas->resumen($persona);
+            }));
+        } catch (HayParecidos $e) {
+            return response()->json(['ok' => false, 'mensaje' => '¿Es alguna de estas personas? Ya hay registros parecidos en el padrón.', 'parecidos' => $e->parecidos], 409);
         } catch (FolioDuplicado $e) {
             return response()->json([
                 'ok' => false,

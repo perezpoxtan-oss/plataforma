@@ -13,13 +13,18 @@
     Si el folio ya lo tiene otra persona, el servidor responde 409 con esa persona y el diálogo
     ofrece "Usar a esta persona" (lanza el mismo evento con ella) en vez de duplicarla.
 
-    Solo se dibuja para quien tiene "visitantes.crear" y con empresa de trabajo.
-    Ver docs/tecnico/personas.md.
+    Se dibuja para quien tiene "visitantes.crear" o, desde una pantalla de
+    Operación (Accesos, Lost & Found, Transporte), su permiso operativo:
+    entonces la persona nace "pendiente de verificar" (ADR-0006). Antes de
+    crear se ofrecen las personas parecidas ("¿Es alguna de estas?").
+    Siempre con empresa de trabajo. Ver docs/tecnico/personas.md.
 --}}
 @php
     $tenantRapidoPe = app(\App\Support\Tenancy\Tenant::class);
+    $altasRapidoPe = app(\App\Services\Padrones\AltasPorVerificar::class);
+    $origenRapidoPe = $altasRapidoPe->origenDeRuta(request()->route()?->getName());
 @endphp
-@if (auth()->user()?->can('visitantes.crear') && $tenantRapidoPe->activo())
+@if (auth()->user() && $altasRapidoPe->puedeAltaRapida(auth()->user(), 'personas', $origenRapidoPe) && $tenantRapidoPe->activo())
     @php
         $proveedoresRapidoPe = \App\Models\Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'categoria']);
         $sugeridoPe = (int) ($proveedorSugerido ?? 0);
@@ -34,8 +39,13 @@
         </div>
         <div class="dialogo-cuerpo">
             <div class="alert alert-secondary py-2 px-3 small"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Úsalo solo si la persona <strong>no aparece</strong> al buscarla. Queda en el Padrón de personas.</div>
-            <form action="{{ route('personas.rapido') }}" method="POST" autocomplete="off" data-registro-rapido-persona data-form-persona>
+            @include('padrones.altas-por-verificar._aviso-alta', ['padron' => 'personas'])
+            <form action="{{ route('personas.rapido') }}" method="POST" autocomplete="off" data-registro-rapido-persona data-form-persona
+                  data-alta-padron="personas" data-url-parecidos="{{ route('altas_por_verificar.parecidos') }}">
                 @csrf
+                <input type="hidden" name="origen" value="{{ $origenRapidoPe }}">
+                <input type="hidden" name="confirmar_nuevo" value="0" data-alta-confirmar>
+                <div class="caja-parecidos" role="alert" data-alta-parecidos hidden></div>
                 <div class="alert alert-danger small py-2" role="alert" data-errores-rapido-persona hidden></div>
                 <div class="caja-parecidos" role="alert" data-existente-rapido-persona hidden></div>
                 <div class="row">
