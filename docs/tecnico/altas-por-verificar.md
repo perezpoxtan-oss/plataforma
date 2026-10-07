@@ -233,3 +233,7 @@ Además, los ingresos y movimientos de transporte demo que registran Agentes dej
 - Las placas se comparaban tal cual («ABC-123-A» ≠ «ABC123A»). Ahora se comparan sin separadores y con las confusiones O/0 e I/1.
 - El Agente no podía registrar a una persona con identificación ni una empresa nueva desde la caseta: dependía de que alguien la diera de alta en el padrón. Ahora puede hacerlo, sin poder editar los padrones.
 - Se avisa a quien administra el padrón (Inicio y correo). Antes nadie se enteraba de lo que crecía.
+
+## Reutilizado por los avisos en vivo (Ronda 5, parte 2)
+
+`similitud()` y `claveNombre()` son públicas: las usa `App\Services\Padrones\AvisoDuplicado` (ver [avisos-duplicado.md](avisos-duplicado.md)). En Transporte, Placas y Chofer consultan `GET /altas-por-verificar/parecidos?origen=transporte` mientras se escribe y muestran «¿Es alguno de estos?» como en Accesos.

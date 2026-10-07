@@ -616,11 +616,14 @@ document.addEventListener('click', function (e) {
         // Avisos de validación y de nombre repetido
         dialogo.querySelectorAll('.is-invalid').forEach(function (n) { n.classList.remove('is-invalid'); });
         dialogo.querySelectorAll('.invalid-feedback, [data-error-campo]').forEach(function (n) { n.remove(); });
-        // Los avisos que pinta el servidor se quitan; los contenedores que reutiliza
-        // el registro rápido (data-errores-...) solo se vacían y se ocultan
+        // Los avisos de error o de "guardado" que pinta el servidor se quitan; los
+        // contenedores que reutiliza el registro rápido (data-errores-...) solo se
+        // vacían y se ocultan. Los informativos (gris, azul, amarillo) se quedan
+        // (Ronda 5: «Úsalo solo si la persona no aparece…» desaparecía al cerrar).
         dialogo.querySelectorAll('.alert').forEach(function (n) {
             var reutilizable = Array.prototype.some.call(n.attributes, function (a) { return a.name.indexOf('data-errores') === 0; });
-            if (reutilizable) { n.hidden = true; n.textContent = ''; } else { n.remove(); }
+            if (reutilizable) { n.hidden = true; n.textContent = ''; return; }
+            if (n.classList.contains('alert-danger') || n.matches('.alert-success[role="status"]')) { n.remove(); }
         });
         dialogo.querySelectorAll('[data-aviso-nombre]').forEach(function (n) { n.hidden = true; n.textContent = ''; });
     }
@@ -1439,12 +1442,16 @@ document.addEventListener('click', function (e) {
         var texto = buscador ? buscador.value.toLowerCase().trim() : '';
         var compacto = placas(texto).toLowerCase();
         var grupo = pill ? pill.dataset.valor : '';
+        // Ronda 5 (VE-03): la Categoría va en las píldoras y el Tipo / Estilo en su lista, en la misma línea
+        var selEstilo = document.querySelector('[data-filtro-estilo-vehiculo]');
+        var estilo = selEstilo ? selEstilo.value : '';
         var fichas = cont.querySelectorAll('[data-vehiculo]');
         var visibles = 0;
         fichas.forEach(function (f) {
             var t = f.dataset.texto || '';
             var ok = (texto === '' || t.indexOf(texto) !== -1 || (compacto !== '' && t.indexOf(compacto) !== -1))
-                && (grupo === '' || f.dataset.grupo === grupo);
+                && (grupo === '' || f.dataset.grupo === grupo)
+                && (estilo === '' || f.dataset.estilo === estilo);
             f.style.display = ok ? '' : 'none';
             if (ok) { visibles++; }
         });
@@ -1454,6 +1461,7 @@ document.addEventListener('click', function (e) {
     }
 
     document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-vehiculos]')) { filtrarVehiculos(); } });
+    document.addEventListener('change', function (e) { if (e.target.matches('[data-filtro-estilo-vehiculo]')) { filtrarVehiculos(); } });
     // La píldora ya cambió su estado en el manejador genérico de data-filtro-tipo
     document.addEventListener('click', function (e) { if (e.target.closest('[data-filtro-tipo="vehiculos"]')) { filtrarVehiculos(); } });
 
@@ -7085,3 +7093,334 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Altas por verificar */
+/* ==========================================================================
+   Ronda 5 de ajustes (parte 2; ver docs/tecnico/avisos-duplicado.md)
+   1. Avisos de duplicado en vivo (un solo mecanismo para todos los padrones):
+        <input name="folio_identificacion" data-duplicado="URL"
+               [data-duplicado-campo="tipo"]        (lo que se manda como "campo"; por omisión el name)
+               [data-duplicado-con="nivel,padre_id"] (otros campos del formulario que se mandan)
+               [data-duplicado-min="4"]             (letras mínimas para preguntar; por omisión 2)
+               [data-duplicado-aviso="id"]>         (contenedor del aviso; por omisión, justo debajo del campo)
+      Mientras se escribe se pregunta al servidor (GET URL?campo&valor&excluir…)
+      y el aviso aparece debajo del campo: «Ya existe…» (no se guardará),
+      «Se parece a «Torre B» (TB)» (solo aviso) o «Disponible.». Si lo que
+      ya existe está dado de baja y quien captura puede reactivarlo, se
+      ofrece «Reactivar» en lugar de duplicarlo. En una edición se excluye
+      el propio registro ([data-campo-dialogo] = editar-ID).
+   2. Personas (PE-02): «Empresa que representa» solo muestra las empresas
+      de la categoría que corresponde al tipo (Contratista ↔ contratistas).
+   3. Diálogos abiertos desde la ficha de una empresa externa (PV-05/06):
+      <dialog data-al-cerrar-ir="URL"> al cerrar sin guardar regresa a la ficha.
+   4. Transporte: «¿Es alguno de estos?» en vivo al escribir placas o chofer
+      (<input data-parecidos-vivo="vehiculos|personas" data-parecidos-url
+      data-parecidos-origen="transporte">), con el mismo aspecto que Accesos.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function nodo(etiqueta, clase, texto) {
+        var e = document.createElement(etiqueta);
+        if (clase) { e.className = clase; }
+        if (texto !== undefined && texto !== null) { e.textContent = texto; }
+        return e;
+    }
+
+    function pedirJson(url) {
+        return fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); });
+    }
+
+    /* ---------- 1. Avisos de duplicado en vivo ---------- */
+    var turno = 0;
+
+    function cajaDe(campo, crear) {
+        // data-duplicado-aviso="id": el aviso va en ese contenedor (p. ej. debajo de toda la fila)
+        var destino = campo.getAttribute('data-duplicado-aviso');
+        if (destino && document.getElementById(destino)) { return document.getElementById(destino); }
+        var sig = campo.nextElementSibling;
+        if (sig && sig.hasAttribute('data-aviso-duplicado')) { return sig; }
+        if (!crear) { return null; }
+        var caja = nodo('div', 'aviso-duplicado');
+        caja.setAttribute('data-aviso-duplicado', '');
+        caja.setAttribute('role', 'status');
+        caja.setAttribute('aria-live', 'polite');
+        caja.hidden = true;
+        campo.insertAdjacentElement('afterend', caja);
+        return caja;
+    }
+
+    function limpiar(campo) {
+        var caja = cajaDe(campo, false);
+        if (caja) { caja.hidden = true; caja.textContent = ''; caja.className = 'aviso-duplicado'; }
+        campo.removeAttribute('data-duplicado-estado');
+    }
+
+    function reactivar(campo, url) {
+        var token = campo.form && campo.form.querySelector('input[name="_token"]');
+        var f = nodo('form');
+        f.method = 'POST';
+        f.action = url;
+        f.hidden = true;
+        [['_token', token ? token.value : ''], ['_method', 'PATCH'], ['activo', '1']].forEach(function (par) {
+            var i = nodo('input');
+            i.type = 'hidden';
+            i.name = par[0];
+            i.value = par[1];
+            f.appendChild(i);
+        });
+        document.body.appendChild(f);
+        f.submit();
+    }
+
+    function pintar(campo, datos) {
+        var caja = cajaDe(campo, true);
+        caja.textContent = '';
+        campo.setAttribute('data-duplicado-estado', datos.estado);
+        if (datos.estado === 'nada' || !datos.mensaje) { caja.hidden = true; return; }
+        caja.className = 'aviso-duplicado ' + datos.estado;
+        var icono = { libre: 'bi-check-circle-fill', existe: 'bi-exclamation-octagon-fill', parecido: 'bi-exclamation-triangle-fill' }[datos.estado] || 'bi-info-circle';
+        var p = nodo('p', 'aviso-duplicado-mensaje');
+        var i = nodo('i', 'bi ' + icono + ' me-1');
+        i.setAttribute('aria-hidden', 'true');
+        p.appendChild(i);
+        p.appendChild(document.createTextNode(datos.mensaje));
+        caja.appendChild(p);
+        (datos.coincidencias || []).forEach(function (c) {
+            var item = nodo('div', 'aviso-duplicado-item');
+            var texto = nodo('div');
+            texto.appendChild(nodo('strong', '', c.titulo));
+            if (c.detalle) { texto.appendChild(nodo('small', 'd-block', c.detalle)); }
+            item.appendChild(texto);
+            if (c.reactivar) {
+                var b = nodo('button', 'btn-reactivar-duplicado', 'Reactivar');
+                b.type = 'button';
+                b.setAttribute('aria-label', 'Reactivar ' + c.titulo + ' en lugar de crearlo de nuevo');
+                b.addEventListener('click', function () { b.disabled = true; reactivar(campo, c.reactivar); });
+                item.appendChild(b);
+            }
+            caja.appendChild(item);
+        });
+        caja.hidden = false;
+    }
+
+    function revisar(campo) {
+        var valor = campo.value.trim();
+        var minimo = parseInt(campo.getAttribute('data-duplicado-min') || '2', 10);
+        if (valor.length < minimo) { limpiar(campo); return; }
+        var form = campo.form;
+        var p = new URLSearchParams();
+        p.set('campo', campo.getAttribute('data-duplicado-campo') || campo.name);
+        p.set('valor', valor);
+        var marca = form && form.querySelector('[data-campo-dialogo]');
+        var m = marca ? /^editar-(\d+)$/.exec(marca.value) : null;
+        if (m) { p.set('excluir', m[1]); }
+        (campo.getAttribute('data-duplicado-con') || '').split(',').filter(Boolean).forEach(function (n) {
+            var otro = form && form.querySelector('[name="' + n + '"]');
+            if (otro && otro.value) { p.set(n, otro.value); }
+        });
+        var mio = String(++turno);
+        campo.setAttribute('data-duplicado-turno', mio);
+        pedirJson(campo.getAttribute('data-duplicado') + '?' + p.toString())
+            .then(function (datos) {
+                // Solo la respuesta más nueva y si el texto sigue igual
+                if (campo.getAttribute('data-duplicado-turno') !== mio || campo.value.trim() !== valor) { return; }
+                pintar(campo, datos);
+            })
+            .catch(function () { limpiar(campo); /* sin aviso: el servidor vuelve a revisar al guardar */ });
+    }
+
+    var esperas = {};
+    function programar(campo) {
+        var clave = campo.id || campo.name;
+        clearTimeout(esperas[clave]);
+        esperas[clave] = setTimeout(function () { revisar(campo); }, 400);
+    }
+
+    document.addEventListener('input', function (e) {
+        if (e.target.matches && e.target.matches('[data-duplicado]')) { programar(e.target); }
+    });
+
+    // Si cambia el lugar (sede, nivel, contenedor) se vuelve a revisar lo escrito
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !e.target.name) { return; }
+        form.querySelectorAll('[data-duplicado-con]').forEach(function (campo) {
+            var con = campo.getAttribute('data-duplicado-con').split(',');
+            if (con.indexOf(e.target.name) !== -1 && campo.value.trim() !== '') { programar(campo); }
+        });
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-duplicado]').forEach(limpiar);
+    }, true);
+
+    // Un diálogo que regresó con errores: se vuelve a mostrar el aviso
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('dialog[data-abrir-al-cargar] [data-duplicado]').forEach(function (campo) {
+            if (campo.value.trim() !== '') { revisar(campo); }
+        });
+    });
+
+    /* ---------- 2. Personas: empresas según el tipo (PE-02) ---------- */
+    var AYUDA_EMPRESA = {
+        contratista: 'Solo se muestran las empresas registradas como Contratista. Si no aparece, déjalo así y escribe su nombre abajo.',
+        proveedor: 'Se muestran proveedores, transporte, agencias y taxis (no contratistas). Si no aparece, déjalo así y escribe su nombre abajo.'
+    };
+
+    function filtrarEmpresas(form, conservar) {
+        var lista = form && form.querySelector('select[data-categorias-por-tipo]');
+        var tipo = form && form.querySelector('[data-persona-tipo]');
+        if (!lista || !tipo) { return; }
+        var mapa = {};
+        try { mapa = JSON.parse(lista.getAttribute('data-categorias-por-tipo') || '{}'); } catch (x) { /* sin filtro */ }
+        var permitidas = mapa[tipo.value] || null;
+        Array.prototype.forEach.call(lista.options, function (o) {
+            if (o.value === '') { return; }
+            var ok = !permitidas || permitidas.indexOf(o.getAttribute('data-categoria')) !== -1;
+            // Lo ya guardado nunca se pierde en silencio al abrir la edición
+            if (!ok && conservar && o.selected) { ok = true; }
+            o.hidden = !ok;
+            o.disabled = !ok;
+        });
+        if (lista.selectedOptions[0] && lista.selectedOptions[0].disabled) { lista.value = ''; }
+        var ayuda = form.querySelector('[data-ayuda-empresa-tipo]');
+        if (ayuda && AYUDA_EMPRESA[tipo.value]) { ayuda.textContent = AYUDA_EMPRESA[tipo.value]; }
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (form && form.matches('[data-form-persona]') && e.target.matches('[data-persona-tipo]')) { filtrarEmpresas(form, false); }
+    });
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="editar-registro"]');
+        if (!b) { return; }
+        setTimeout(function () {
+            var d = document.getElementById(b.dataset.dialogo);
+            if (d) { filtrarEmpresas(d.querySelector('[data-form-persona]'), true); }
+        }, 0);
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        var form = e.target.querySelector('[data-form-persona]');
+        // Después de que el diálogo vuelve a sus valores de fábrica
+        if (form) { setTimeout(function () { filtrarEmpresas(form, true); }, 0); }
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-form-persona]').forEach(function (f) { filtrarEmpresas(f, true); });
+    });
+
+    /* ---------- 3. Desde la ficha de una empresa externa: al cerrar se regresa a ella ---------- */
+    document.addEventListener('submit', function (e) {
+        var d = e.target.closest && e.target.closest('dialog[data-al-cerrar-ir]');
+        if (d && !e.defaultPrevented) { d.setAttribute('data-enviando', '1'); }
+    });
+
+    document.addEventListener('close', function (e) {
+        var d = e.target;
+        if (!(d instanceof HTMLDialogElement) || !d.hasAttribute('data-al-cerrar-ir') || d.hasAttribute('data-enviando')) { return; }
+        window.location.assign(d.getAttribute('data-al-cerrar-ir'));
+    }, true);
+
+    /* ---------- 4. Transporte: «¿Es alguno de estos?» en vivo (placas y chofer) ---------- */
+    function clave(texto) {
+        return (texto || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z0-9]/g, '');
+    }
+
+    function conocido(campo, valor) {
+        var lista = campo.list;
+        if (!lista) { return false; }
+        var c = clave(valor);
+        return Array.prototype.some.call(lista.options, function (o) { return clave(o.value) === c; });
+    }
+
+    function cajaParecidos(campo, crear) {
+        var sig = campo.nextElementSibling;
+        if (sig && sig.hasAttribute('data-parecidos-vivo-caja')) { return sig; }
+        if (!crear) { return null; }
+        var caja = nodo('div', 'acceso-sugerencias parecidos-vivo');
+        caja.setAttribute('data-parecidos-vivo-caja', '');
+        caja.hidden = true;
+        campo.insertAdjacentElement('afterend', caja);
+        return caja;
+    }
+
+    function ocultarParecidos(campo) {
+        var caja = cajaParecidos(campo, false);
+        if (caja) { caja.hidden = true; caja.textContent = ''; }
+    }
+
+    function elegirParecido(campo, r) {
+        ocultarParecidos(campo);
+        var valor = (r.titulo || '').toUpperCase();
+        campo.setAttribute('data-parecido-elegido', valor);
+        campo.value = valor;
+        // Que el autollenado de la Bitácora complete marca, modelo, teléfono…
+        campo.dispatchEvent(new Event('input', { bubbles: true }));
+        campo.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function mostrarParecidos(campo, lista) {
+        var caja = cajaParecidos(campo, true);
+        caja.textContent = '';
+        caja.appendChild(nodo('div', 'acceso-sugerencia encabezado-parecidos', '¿Es alguno de estos? (parecidos en el padrón)'));
+        lista.forEach(function (r) {
+            var b = nodo('button', 'acceso-sugerencia parecido');
+            b.type = 'button';
+            b.appendChild(nodo('strong', '', r.titulo));
+            var d = [r.detalle, r.estado_texto].filter(Boolean).join(' · ');
+            if (d) { b.appendChild(nodo('small', '', d)); }
+            if (!r.usable) { b.disabled = true; } else { b.addEventListener('click', function () { elegirParecido(campo, r); }); }
+            caja.appendChild(b);
+        });
+        caja.appendChild(nodo('div', 'acceso-sugerencia nada', 'Si no es ninguno, sigue: se registra como nuevo y queda pendiente de verificar.'));
+        caja.hidden = false;
+    }
+
+    function buscarParecidos(campo) {
+        var valor = campo.value.trim();
+        if (valor.length < 3 || conocido(campo, valor) || campo.getAttribute('data-parecido-elegido') === valor.toUpperCase()) { ocultarParecidos(campo); return; }
+        var padron = campo.getAttribute('data-parecidos-vivo');
+        var p = new URLSearchParams({ padron: padron });
+        if (campo.getAttribute('data-parecidos-origen')) { p.set('origen', campo.getAttribute('data-parecidos-origen')); }
+        p.set(padron === 'vehiculos' ? 'placas' : 'nombre_completo', valor);
+        var mio = String(++turno);
+        campo.setAttribute('data-parecidos-turno', mio);
+        pedirJson(campo.getAttribute('data-parecidos-url') + '?' + p.toString())
+            .then(function (d) {
+                if (campo.getAttribute('data-parecidos-turno') !== mio || campo.value.trim() !== valor) { return; }
+                var lista = d.resultados || [];
+                // Si ya existe tal cual, no hay nada que preguntar
+                var igual = lista.some(function (r) { return clave(r.titulo) === clave(valor); });
+                if (igual || !lista.length) { ocultarParecidos(campo); return; }
+                mostrarParecidos(campo, lista);
+            })
+            .catch(function () { ocultarParecidos(campo); });
+    }
+
+    var esperasParecidos = {};
+    document.addEventListener('input', function (e) {
+        var campo = e.target;
+        if (!campo.matches || !campo.matches('[data-parecidos-vivo]')) { return; }
+        if (campo.getAttribute('data-parecido-elegido') !== campo.value.trim().toUpperCase()) { campo.removeAttribute('data-parecido-elegido'); }
+        var c = campo.id || campo.name;
+        clearTimeout(esperasParecidos[c]);
+        esperasParecidos[c] = setTimeout(function () { buscarParecidos(campo); }, 450);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && e.target.matches && e.target.matches('[data-parecidos-vivo]')) {
+            var caja = cajaParecidos(e.target, false);
+            if (caja && !caja.hidden) { e.preventDefault(); ocultarParecidos(e.target); }
+        }
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-parecidos-vivo]').forEach(function (c) { c.removeAttribute('data-parecido-elegido'); ocultarParecidos(c); });
+    }, true);
+})();
+/* Fin Ronda 5 de ajustes (parte 2) */

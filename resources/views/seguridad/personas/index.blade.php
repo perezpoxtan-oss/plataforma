@@ -176,9 +176,15 @@
                 $volver = $esNuevo && ($reabrir ? old('volver') === 'proveedor' : $preset !== []);
                 $nombreProveedor = $volver ? ($proveedores->firstWhere('id', (int) $valor('proveedor_id'))?->nombre) : null;
                 $opcionesProveedor = $esNuevo ? $proveedores->where('activo', true) : $proveedores;
+                // Ronda 5 (PV-06): desde la ficha de una empresa externa, la empresa queda fija y al cerrar se regresa a la ficha
+                $proveedorFijo = $volver ? $proveedores->firstWhere('id', (int) $valor('proveedor_id')) : null;
+                $tipoFijo = $proveedorFijo ? ($proveedorFijo->categoria === 'contratista' ? 'contratista' : 'proveedor') : null;
+                $alCerrar = $proveedorFijo && Route::has('proveedores.show') ? route('proveedores.show', ['proveedor' => $proveedorFijo->id, 'tab' => 'personal']) : null;
+                // Ronda 5 (PE-02): qué categorías de empresa puede representar cada tipo
+                $categoriasPorTipo = json_encode(['proveedor' => \App\Services\Personas\AdministradorPersonas::categoriasPara('proveedor'), 'contratista' => \App\Services\Personas\AdministradorPersonas::categoriasPara('contratista')]);
             @endphp
             <dialog id="{{ $esNuevo ? 'dialogoNuevaPersona' : 'dialogoEditarPersona' }}" class="dialogo ancho dialogo-persona" aria-labelledby="titulo-pe-{{ $modo }}"
-                    @if ($reabrir || $desde !== null) data-abrir-al-cargar @endif>
+                    @if ($reabrir || $desde !== null) data-abrir-al-cargar @endif @if ($alCerrar) data-al-cerrar-ir="{{ $alCerrar }}" @endif>
                 <div class="dialogo-cabecera">
                     <h2 id="titulo-pe-{{ $modo }}"><i class="bi {{ $esNuevo ? 'bi-person-add' : 'bi-pencil-square' }} me-2 text-primary" aria-hidden="true"></i>{{ $esNuevo ? 'Registrar Persona' : 'Actualizar Perfil' }}</h2>
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
@@ -199,7 +205,7 @@
                             @if ($volver && $nombreProveedor)
                                 <p class="aviso-desde-proveedor" data-aviso-volver>
                                     <i class="bi bi-building me-1" aria-hidden="true"></i>
-                                    Registrando personal de <strong>{{ $nombreProveedor }}</strong>.@if (Route::has('proveedores.show')) Al guardar regresarás a su ficha.@endif
+                                    Registrando personal de <strong>{{ $nombreProveedor }}</strong>.@if (Route::has('proveedores.show')) Al guardar o cerrar regresarás a su ficha.@endif
                                 </p>
                             @endif
                         @endif
@@ -207,17 +213,20 @@
                         <div class="row">
                             <div class="col-md-7">
                                 <label class="campo-etiqueta" for="{{ $modo }}_pe_nombre">Nombre Completo</label>
-                                <input type="text" id="{{ $modo }}_pe_nombre" name="nombre_completo" class="campo{{ $reabrir && $errors->has('nombre_completo') ? ' is-invalid' : '' }}" maxlength="150" value="{{ $valor('nombre_completo') }}" required>
+                                <input type="text" id="{{ $modo }}_pe_nombre" name="nombre_completo" class="campo{{ $reabrir && $errors->has('nombre_completo') ? ' is-invalid' : '' }}" maxlength="150" value="{{ $valor('nombre_completo') }}" required
+                                       data-duplicado="{{ route('personas.duplicado') }}" data-duplicado-min="5" data-duplicado-aviso="{{ $modo }}_pe_aviso_nombre">
                             </div>
                             <div class="col-md-5">
                                 <label class="campo-etiqueta" for="{{ $modo }}_pe_tipo">Tipo</label>
                                 <select id="{{ $modo }}_pe_tipo" name="tipo" class="campo" data-persona-tipo required>
                                     @foreach (\App\Models\Persona::TIPOS as $clave => $etiqueta)
-                                        <option value="{{ $clave }}" @if ($clave === 'visitante') data-por-defecto @endif @selected($valor('tipo', 'visitante') === $clave)>{{ $etiqueta }}</option>
+                                        @continue ($tipoFijo !== null && $clave !== $tipoFijo)
+                                        <option value="{{ $clave }}" @if ($clave === ($tipoFijo ?? 'visitante')) data-por-defecto @endif @selected(($tipoFijo ?? $valor('tipo', 'visitante')) === $clave)>{{ $etiqueta }}</option>
                                     @endforeach
                                 </select>
                             </div>
                         </div>
+                        <div class="aviso-duplicado" id="{{ $modo }}_pe_aviso_nombre" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
 
                         <div data-solo-visitante>
                             <label class="campo-etiqueta" for="{{ $modo }}_pe_categoria">Categoría del Visitante</label>
@@ -229,14 +238,21 @@
                         </div>
 
                         <div class="caja-empresa-persona" data-solo-empresa>
-                            <label class="campo-etiqueta" for="{{ $modo }}_pe_proveedor"><i class="bi bi-building me-1" aria-hidden="true"></i> Empresa que representa</label>
-                            <select id="{{ $modo }}_pe_proveedor" name="proveedor_id" class="campo{{ $reabrir && $errors->has('proveedor_id') ? ' is-invalid' : '' }} mb-1" data-persona-proveedor>
-                                <option value="" data-por-defecto>-- No está en el directorio de proveedores --</option>
-                                @foreach ($opcionesProveedor as $prov)
-                                    <option value="{{ $prov->id }}" data-categoria="{{ $prov->categoria }}" @selected($valor('proveedor_id') === (string) $prov->id)>{{ $prov->nombre }}{{ $prov->activo ? '' : ' (inactivo)' }}</option>
-                                @endforeach
-                            </select>
-                            <p class="campo-ayuda mt-0">Si la empresa no aparece, déjalo así y escribe su nombre abajo.</p>
+                            @if ($proveedorFijo)
+                                <span class="campo-etiqueta"><i class="bi bi-building me-1" aria-hidden="true"></i> Empresa que representa</span>
+                                <input type="hidden" name="proveedor_id" value="{{ $proveedorFijo->id }}" data-persona-proveedor>
+                                <p class="campo-fijo"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i><strong>{{ $proveedorFijo->nombre }}</strong> <small>({{ \App\Models\Proveedor::CATEGORIAS[$proveedorFijo->categoria] ?? $proveedorFijo->categoria }})</small></p>
+                            @else
+                                <label class="campo-etiqueta" for="{{ $modo }}_pe_proveedor"><i class="bi bi-building me-1" aria-hidden="true"></i> Empresa que representa</label>
+                                <select id="{{ $modo }}_pe_proveedor" name="proveedor_id" class="campo{{ $reabrir && $errors->has('proveedor_id') ? ' is-invalid' : '' }} mb-1" data-persona-proveedor
+                                        data-categorias-por-tipo="{{ $categoriasPorTipo }}">
+                                    <option value="" data-por-defecto>-- No está en el directorio de proveedores --</option>
+                                    @foreach ($opcionesProveedor as $prov)
+                                        <option value="{{ $prov->id }}" data-categoria="{{ $prov->categoria }}" @selected($valor('proveedor_id') === (string) $prov->id)>{{ $prov->nombre }}{{ $prov->activo ? '' : ' (inactivo)' }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="campo-ayuda mt-0" data-ayuda-empresa-tipo>Si la empresa no aparece, déjalo así y escribe su nombre abajo.</p>
+                            @endif
                         </div>
 
                         <div data-solo-sin-proveedor>
@@ -255,13 +271,15 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="campo-etiqueta" for="{{ $modo }}_pe_folio">Folio / Número</label>
-                                <input type="text" id="{{ $modo }}_pe_folio" name="folio_identificacion" class="campo{{ $reabrir && $errors->has('folio_identificacion') ? ' is-invalid' : '' }} text-uppercase" maxlength="40" autocapitalize="characters" value="{{ $valor('folio_identificacion') }}">
+                                <input type="text" id="{{ $modo }}_pe_folio" name="folio_identificacion" class="campo{{ $reabrir && $errors->has('folio_identificacion') ? ' is-invalid' : '' }} text-uppercase" maxlength="40" autocapitalize="characters" value="{{ $valor('folio_identificacion') }}"
+                                       data-duplicado="{{ route('personas.duplicado') }}" data-duplicado-min="4" data-duplicado-aviso="{{ $modo }}_pe_aviso_folio">
                             </div>
                             <div class="col-md-4">
                                 <label class="campo-etiqueta" for="{{ $modo }}_pe_tel">Teléfono</label>
                                 <input type="tel" inputmode="tel" id="{{ $modo }}_pe_tel" name="telefono" class="campo{{ $reabrir && $errors->has('telefono') ? ' is-invalid' : '' }}" maxlength="20" placeholder="10 dígitos" value="{{ $valor('telefono') }}">
                             </div>
                         </div>
+                        <div class="aviso-duplicado" id="{{ $modo }}_pe_aviso_folio" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
                         <p class="campo-ayuda mt-0"><i class="bi bi-shield-lock" aria-hidden="true"></i> El folio no puede repetirse en la empresa; espacios y guiones no cuentan. Quien solo consulta el padrón lo ve oculto (••••1234).</p>
 
                         <label class="campo-etiqueta" for="{{ $modo }}_pe_motivo">Motivo de la Visita</label>

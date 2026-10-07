@@ -3143,3 +3143,27 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
     .aviso-altas-verificar .icono { display: none; }
 }
 /* Fin Altas por verificar */
+
+/* Ronda 5 de ajustes (parte 2): avisos de duplicado en vivo, empresa fija desde la ficha, filtros de Vehículos y parecidos en Transporte */
+.aviso-duplicado { border-radius: 10px; padding: 0.5rem 0.7rem; margin: 0.25rem 0 0.75rem; font-size: 0.82rem; border: 1px solid transparent; }
+.aviso-duplicado.libre { background: none; border: none; padding: 0.1rem 0; color: #047857; font-weight: 600; }
+.aviso-duplicado.existe { background: #fef2f2; border-color: #fca5a5; color: #7f1d1d; }
+.aviso-duplicado.parecido { background: #fffbeb; border-color: #fcd34d; color: #78350f; }
+.aviso-duplicado-mensaje { margin: 0; font-weight: 700; }
+.aviso-duplicado-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: rgba(255, 255, 255, 0.75); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 8px; padding: 0.4rem 0.6rem; margin-top: 0.4rem; color: var(--texto); }
+.aviso-duplicado-item strong { font-size: 0.85rem; overflow-wrap: anywhere; }
+.aviso-duplicado-item small { color: var(--texto-suave); }
+.btn-reactivar-duplicado { flex: 0 0 auto; min-height: 44px; padding: 0 0.9rem; border-radius: 10px; border: 1px solid #059669; background: #ecfdf5; color: #065f46; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btn-reactivar-duplicado:hover { background: #059669; color: #fff; }
+.campo-fijo { background: #f8fafc; border: 1px dashed var(--borde); border-radius: 10px; padding: 0.65rem 0.8rem; margin-bottom: 0.9rem; min-height: 44px; display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem; }
+.campo-fijo small { color: var(--texto-suave); }
+.filtros-vehiculo { align-items: center; }
+.filtros-vehiculo .filtro-titulo { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: var(--texto-suave); letter-spacing: 0.02em; }
+.filtro-estilo { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0 0 0 auto; }
+.filtro-estilo .filtro-select { padding-top: 0.55rem; padding-bottom: 0.55rem; min-height: 44px; max-width: 200px; }
+@media (max-width: 575.98px) {
+    .filtro-estilo { margin-left: 0; width: 100%; }
+    .filtro-estilo .filtro-select { flex: 1 1 auto; max-width: none; }
+}
+.acceso-sugerencias.parecidos-vivo { margin: 0.25rem 0 0.75rem; }
+/* Fin Ronda 5 de ajustes (parte 2) */

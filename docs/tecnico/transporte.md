@@ -76,3 +76,7 @@ Auditoría: `transporte.creado`, `transporte.actualizado`, `transporte.anulado`,
 | Mensajes en la URL (`?error=validacion&detalle=`), `onclick` y JS en la página. | Errores por taxi dentro del diálogo sin perder lo capturado; JS en `plataforma.js` con `data-*`. |
 | Un colaborador podía ir en dos taxis; el editar de normal no permitía corregir el retraso. | Se impide el duplicado; A TIEMPO ↔ RETRASO se corrige al editar. |
 | "Hotel Sede", "LLEGADA (Al Hotel)". | "Sede", "LLEGADA (A la Sede)". |
+
+## Ronda 5 de ajustes (parte 2): «¿Es alguno de estos?» en vivo
+
+Al escribir **Placas** o **Chofer** (servicio normal y cada taxi) la pantalla consulta `GET /altas-por-verificar/parecidos?padron=vehiculos|personas&origen=transporte` (el endpoint de las altas por verificar; el agente puede usarlo por su permiso `transporte.crear`) y, si lo escrito no está tal cual en la lista de conocidos, muestra **¿Es alguno de estos? (parecidos en el padrón)** con el mismo aspecto que Accesos. Tocar uno lo escribe en el campo y dispara el autollenado (marca, modelo, económico, capacidad o teléfono). Si no es ninguno se sigue igual: al guardar se registra como nuevo y queda pendiente de verificar (eso ya lo hacía el servidor). Atributos: `data-parecidos-vivo="vehiculos|personas"`, `data-parecidos-url`, `data-parecidos-origen="transporte"`; bloque «Ronda 5 de ajustes (parte 2)» de `plataforma.js`. Escape cierra la lista.

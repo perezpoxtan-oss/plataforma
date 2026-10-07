@@ -9,11 +9,13 @@ use App\Models\GrupoEspacio;
 use App\Models\Sede;
 use App\Models\TipoEspacio;
 use App\Services\Espacios\AdministradorEspacios;
+use App\Services\Padrones\AvisoDuplicado;
 use App\Services\Permisos\Autorizador;
 use App\Support\Entrada;
 use App\Support\Espacios\Etiquetas;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -240,7 +242,10 @@ class EspacioController extends Controller
         $datos = $request->validate(['nivel' => ['required', 'in:'.implode(',', array_keys(Espacio::PADRES))], 'nombre' => ['required', 'string', 'max:60']]);
         $tipo = $this->administrador->crearTipo($request->user(), $empresaId, $datos['nivel'], $datos['nombre']);
 
-        return back()->with('ok', "Tipo «{$tipo->nombre}» disponible para tu empresa.");
+        // Ronda 5 (Z-07): si ya existía se dice, en vez de fingir que se agregó
+        return $tipo->wasRecentlyCreated
+            ? back()->with('ok', "Tipo «{$tipo->nombre}» disponible para tu empresa.")
+            : back()->with('aviso', "El tipo «{$tipo->nombre}» ya existía en la lista: no se duplicó y ya puedes elegirlo.");
     }
 
     /**
@@ -276,6 +281,102 @@ class EspacioController extends Controller
         $total = $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->asignarGrupo($request->user(), $seccion, $ids));
 
         return redirect()->route('espacios.index', ['pestana' => 'secciones'])->with('ok', "Sección «{$seccion->nombre}»: {$total} asignada(s).");
+    }
+
+    /**
+     * Aviso de duplicado en vivo (Ronda 5, Z-02 / Z-07): mientras se escribe
+     * el nombre o el código de un espacio, un tipo propio o una sección.
+     * ?campo=nombre|codigo|tipo|seccion&valor=…&nivel=…&padre_id=…&sede_id=…&excluir={id}
+     * Nombre repetido en el mismo lugar = "existe" (no se guardará; si está
+     * desactivado se ofrece reactivarlo). Código igual sin espacios ni guiones
+     * (TB = T-B = T B) o nombre parecido = "parecido" (solo aviso).
+     */
+    public function duplicado(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        abort_unless($actor->can('espacios.crear') || $actor->can('espacios.editar'), 403);
+        $avisos = app(AvisoDuplicado::class);
+        $empresaId = $this->empresa->id($actor);
+        $campo = Entrada::texto($request->query('campo'));
+        $valor = mb_substr(Entrada::texto($request->query('valor')), 0, 100);
+        if ($empresaId === null || ! in_array($campo, ['nombre', 'codigo', 'tipo', 'seccion'], true) || $avisos->clave($valor) === '') {
+            return $avisos->nada();
+        }
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $avisos, $campo, $valor, $empresaId) {
+            $sedes = $this->sedesVisibles($request);
+            $nivel = Entrada::texto($request->query('nivel'));
+
+            if ($campo === 'tipo') {
+                abort_unless(array_key_exists($nivel, Espacio::PADRES), 422);
+                $existente = TipoEspacio::disponiblesPara($empresaId, $nivel)->get(['id', 'nombre'])
+                    ->first(fn ($t) => $avisos->claveNombre($t->nombre) === $avisos->claveNombre($valor));
+
+                return $existente === null
+                    ? $avisos->libre('Tipo nuevo: se agregará a la lista.')
+                    : $avisos->existe("«{$existente->nombre}» ya existe en la lista: no hace falta agregarlo, ya puedes elegirlo.");
+            }
+
+            // Sin sede indicada (formulario con una sola sede) se usa la única visible
+            $sede = $request->filled('sede_id')
+                ? $sedes->firstWhere('id', (int) Entrada::texto($request->query('sede_id')))
+                : ($sedes->count() === 1 ? $sedes->first() : null);
+            if ($campo === 'seccion') {
+                if ($sede === null) {
+                    return $avisos->nada();
+                }
+                $existente = GrupoEspacio::where('sede_id', $sede->id)->get(['id', 'nombre'])
+                    ->first(fn ($g) => $avisos->claveNombre($g->nombre) === $avisos->claveNombre($valor));
+
+                return $existente === null
+                    ? $avisos->libre()
+                    : $avisos->existe("Ya existe la sección «{$existente->nombre}» en {$sede->nombre}.");
+            }
+
+            // Dónde va: el nodo que se edita, su contenedor (padre_id) o la sede (zonas / edificios)
+            $excluir = (int) Entrada::texto($request->query('excluir')) ?: null;
+            $nodo = $excluir !== null ? Espacio::whereKey($excluir)->whereIn('sede_id', $sedes->pluck('id'))->first() : null;
+            $padreId = (int) Entrada::texto($request->query('padre_id')) ?: null;
+            $padre = $nodo !== null ? $nodo->padre : ($padreId !== null ? Espacio::whereKey($padreId)->whereIn('sede_id', $sedes->pluck('id'))->first() : null);
+            $sedeId = $nodo?->sede_id ?? $padre?->sede_id ?? $sede?->id;
+            $nivel = $nodo?->nivel ?? $nivel;
+            if ($sedeId === null || ($padreId !== null && $padre === null) || ! array_key_exists($nivel, Espacio::PADRES)) {
+                return $avisos->nada();
+            }
+
+            $candidatos = Espacio::where('sede_id', $sedeId)
+                ->when($campo === 'codigo', fn ($q) => $q->where('nivel', $nivel)->whereNotNull('codigo'),
+                    fn ($q) => $padre === null ? $q->whereNull('padre_id') : $q->where('padre_id', $padre->id))
+                ->when($nodo !== null, fn ($q) => $q->whereKeyNot($nodo->id))
+                ->orderByDesc('activo')->orderBy('nombre')->limit(500)
+                ->get(['id', 'nombre', 'codigo', 'activo']);
+            $reactivar = fn (Espacio $e) => $actor->can('espacios.eliminar') ? route('espacios.estado', $e->id) : null;
+            $titulo = fn (Espacio $e) => $e->nombre.($e->codigo ? " ({$e->codigo})" : '');
+            $detalle = fn (Espacio $e) => $e->activo ? null : 'Desactivado';
+
+            if ($campo === 'codigo') {
+                $iguales = $candidatos->filter(fn ($e) => $avisos->clave($e->codigo) === $avisos->clave($valor))->take(3);
+
+                return $iguales->isEmpty()
+                    ? $avisos->libre('Código disponible.')
+                    : $avisos->parecido('Se parece a '.$iguales->map(fn ($e) => '«'.$e->nombre.'» ('.$e->codigo.')')->implode(', ').': los espacios y guiones no cuentan, revisa que no sea el mismo.',
+                        $iguales->map(fn ($e) => $avisos->coincidencia($titulo($e), $detalle($e), ! $e->activo, $reactivar($e)))->values()->all());
+            }
+
+            $igual = $candidatos->first(fn ($e) => mb_strtolower(trim($e->nombre)) === mb_strtolower(trim($valor)));
+            if ($igual !== null) {
+                return $avisos->existe($igual->activo
+                    ? "Ya existe «{$igual->nombre}» en este mismo lugar."
+                    : "Ya existe «{$igual->nombre}» en este mismo lugar, pero está desactivado. ¿Lo reactivas en lugar de crearlo de nuevo?",
+                    [$avisos->coincidencia($titulo($igual), $detalle($igual), ! $igual->activo, $reactivar($igual))]);
+            }
+            $parecidos = $candidatos->filter(fn ($e) => $avisos->seParecen($e->nombre, $valor))->take(3);
+
+            return $parecidos->isEmpty()
+                ? $avisos->libre()
+                : $avisos->parecido('Se parece a '.$parecidos->map(fn ($e) => '«'.$titulo($e).'»')->implode(', ').'. Revisa que no sea el mismo.',
+                    $parecidos->map(fn ($e) => $avisos->coincidencia($titulo($e), $detalle($e), ! $e->activo, $reactivar($e)))->values()->all());
+        });
     }
 
     // ------------------------------------------------------------------------

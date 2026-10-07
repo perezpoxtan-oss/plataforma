@@ -297,10 +297,13 @@ class AdministradorEspacios
             ->when($padre === null, fn ($q) => $q->whereNull('padre_id'), fn ($q) => $q->where('padre_id', $padre->id))
             ->whereRaw('LOWER(nombre) = ?', [mb_strtolower(trim($nombre))])
             ->when($excepto !== null, fn ($q) => $q->whereKeyNot($excepto))
-            ->exists();
+            ->first(['id', 'activo']);
 
-        if ($duplicado) {
-            throw ValidationException::withMessages(['nombre' => "Ya existe «{$nombre}» en este mismo lugar."]);
+        if ($duplicado !== null) {
+            // Ronda 5 (Z-02): si está desactivado, se dice para reactivarlo en lugar de duplicarlo
+            throw ValidationException::withMessages(['nombre' => $duplicado->activo
+                ? "Ya existe «{$nombre}» en este mismo lugar."
+                : "Ya existe «{$nombre}» en este mismo lugar, pero está desactivado: reactívalo (flecha verde) en lugar de crearlo de nuevo."]);
         }
     }
 

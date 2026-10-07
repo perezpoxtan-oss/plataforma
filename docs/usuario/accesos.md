@@ -152,3 +152,9 @@ Todo funciona en el celular: el botón **Nuevo Ingreso** ocupa todo el ancho y l
 - **¿Por qué el proveedor no aparece en Gente en Sitio?** Está en *Pendientes de Autorización* hasta que lo autoricen.
 - **Me equivoqué de zona.** Usa **Cambiar Zona**.
 - **El colaborador no está en la lista.** Usa el alta provisional; RH lo valida después.
+
+## Registro rápido: los avisos informativos se quedan (Ronda 5)
+
+Al cerrar y volver a abrir **Registro Rápido de Persona**, el aviso gris «Úsalo solo si la persona **no aparece** al buscarla…» y el aviso amarillo de «pendiente de verificar» siguen ahí. Al cerrar una ventana solo se borran los errores de validación (rojos) y los avisos de «Guardado».
+
+![El aviso gris se conserva](img/ronda-5b/registro-rapido-aviso-se-conserva.png)

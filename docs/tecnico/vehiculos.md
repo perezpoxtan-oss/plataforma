@@ -121,3 +121,22 @@ Lo que la caseta registra en este padrón desde Operación (con el registro ráp
 2. Si quien lo registra no puede editar el padrón, queda «Pendiente de verificar» hasta que alguien lo acepta, lo rechaza o lo une con el existente.
 
 Ver [altas-por-verificar.md](altas-por-verificar.md) y ADR-0006.
+
+## Ronda 5 de ajustes (parte 2)
+
+### VE-03 · Categoría contra Tipo / Estilo (decisión)
+
+Son **dos preguntas distintas** y por eso van en dos listas:
+
+| Lista | Pregunta | Valores | Qué decide |
+|---|---|---|---|
+| **Categoría** (`propiedad`) | ¿De quién es o a qué viene? | Propio huésped/visitante/familiar/colaborador, Agencia, Flotilla, Taxi/Plataforma, Transporte de personal | Qué campos se piden (empresa propietaria, número económico, colaborador, capacidad), la píldora (Propios / Flotillas / Taxis) y las reglas de Accesos y Transporte |
+| **Tipo / Estilo** (`tipo`) | ¿Qué forma tiene? | Sedán, SUV, Pick-up, Autobús, Camión ligero, Motocicleta, **Otro** | Si se pide la descripción («Otro») y si se pide capacidad (autobús, camión ligero) |
+
+**«Otro» no se agrega a Categoría.** Cada categoría trae reglas; una categoría «Otro» no tendría ninguna y escondería unidades que sí son de alguien. Lo que no encaja en un tipo de vehículo es **Tipo «Otro»** (montacargas, carrito de golf) y quien llega sin relación con el hotel es **Propio Visitante**. En el formulario las etiquetas lo dicen: «Categoría (¿de quién es?)» y «Tipo / Estilo (su forma)».
+
+Filtros de la lista, **en la misma línea**: píldoras de **Categoría** (Todos, Propios, Flotillas, Taxis, Pendientes de verificar) y la lista **Tipo / Estilo** (`data-filtro-estilo-vehiculo`; cada ficha lleva `data-estilo`). Se combinan con el buscador.
+
+### PV-05 · Alta desde la ficha de la empresa
+
+Con `/vehiculos?nuevo=1&proveedor={id}` la **Agencia o Empresa Propietaria queda fija** (campo oculto + texto con candado, sin lista) y la Categoría solo ofrece las que llevan empresa (`AdministradorVehiculos::CON_PROVEEDOR`). El diálogo lleva `data-al-cerrar-ir` = ficha de la empresa, pestaña Flotilla: **Cerrar o Cancelar regresa a la ficha** (antes dejaba al usuario en el Padrón vehicular). Guardar ya regresaba a la ficha (`volver=proveedor`).

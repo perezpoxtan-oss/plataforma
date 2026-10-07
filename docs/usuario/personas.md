@@ -43,7 +43,7 @@ Un folio de identificación no puede repetirse en tu empresa. Si ya lo tiene alg
 
 ## Registrar al personal de un proveedor
 
-Desde la ficha de un proveedor, el botón para agregar personal abre aquí el alta con la empresa y el tipo ya elegidos (contratista o proveedor, según la empresa) y el aviso «Registrando personal de …». Al guardar regresas a la ficha del proveedor. Si cierras el diálogo sin guardar, te quedas en el padrón.
+Desde la ficha de un proveedor, el botón para agregar personal abre aquí el alta con la empresa y el tipo ya elegidos (contratista o proveedor, según la empresa) y el aviso «Registrando personal de …». La empresa queda **fija** (con un candado: no se puede cambiar por otra). Al guardar **o al cerrar** la ventana regresas a la ficha del proveedor.
 
 ![Desde la ficha del proveedor](img/personas/07-desde-proveedor.png)
 
@@ -80,3 +80,41 @@ La pantalla se acomoda al celular y respeta los modos **Sol** y **Noche**.
 ![Modo Noche](img/personas/10-noche.png)
 ![Editar en modo Noche](img/personas/11-noche-editar.png)
 ![Modo Sol](img/personas/12-sol.png)
+
+## Avisos mientras escribes (Ronda 5)
+
+No tienes que esperar a guardar para saber si alguien ya está registrado:
+
+- **Folio / Número**: si ese folio ya lo tiene otra persona de tu empresa, aparece una caja **roja**: «Ese folio ya está registrado en la empresa (los espacios y guiones no cuentan)». Abajo dice de quién es. No se podrá guardar: busca a esa persona en la lista. Si está dada de baja y tú puedes reactivar, toca **Reactivar** en vez de registrarla otra vez.
+- **Nombre completo**: si hay personas con un nombre muy parecido, aparece una caja **amarilla** con sus nombres. Es solo un aviso (dos personas pueden llamarse igual): revisa que no sea la misma antes de guardar.
+
+![Avisos de nombre parecido y folio repetido](img/ronda-5b/personas-folio-y-nombre.png)
+
+En el celular el aviso aparece debajo del teléfono, antes de la nota del folio:
+
+![Aviso en el celular](img/ronda-5b/personas-folio-movil.png)
+
+Así se ve en modo **Noche**:
+
+![Modo Noche](img/ronda-5b/personas-folio-noche.png)
+
+## La empresa según el tipo (Ronda 5)
+
+La lista **Empresa que representa** cambia según el **Tipo**:
+
+- **Contratista**: solo empresas registradas como **Contratista**.
+- **Proveedor**: proveedores, transporte, agencias y taxis (no contratistas).
+
+![Contratista: solo empresas contratistas](img/ronda-5b/personas-empresas-contratista.png)
+
+![Proveedor: el resto de las empresas](img/ronda-5b/personas-empresas-proveedor.png)
+
+Si la empresa no aparece, deja «No está en el directorio de proveedores» y escribe su nombre en **Empresa de procedencia**. Si la empresa está mal clasificada, pide que corrijan su categoría en Padrones → Empresas Externas.
+
+Desde la ficha de una empresa externa la empresa ya viene puesta y no se puede cambiar:
+
+![Desde la ficha de Constructora Maya](img/ronda-5b/ficha-agregar-persona.png)
+
+El **Agente** solo consulta el padrón: no ve el botón de registrar ni los avisos.
+
+![Lo que ve el Agente](img/ronda-5b/personas-agente.png)

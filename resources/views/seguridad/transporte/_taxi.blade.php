@@ -19,12 +19,14 @@
         <div class="col-md-6">
             <label class="campo-etiqueta text-danger" for="taxi_{{ $i }}_placas">Placas <span class="text-muted text-lowercase fw-normal">(buscar o nuevo)</span></label>
             <input type="text" id="taxi_{{ $i }}_placas" name="{{ $n }}[placas]" class="campo text-uppercase" maxlength="20" required list="taxisConocidos"
-                   placeholder="Ej: TX-230" autocapitalize="characters" value="{{ $v('placas') }}" data-autollenar="taxi">
+                   placeholder="Ej: TX-230" autocapitalize="characters" value="{{ $v('placas') }}" data-autollenar="taxi"
+                   data-parecidos-vivo="vehiculos" data-parecidos-url="{{ route('altas_por_verificar.parecidos') }}" data-parecidos-origen="transporte">
         </div>
         <div class="col-md-6">
             <label class="campo-etiqueta text-danger" for="taxi_{{ $i }}_chofer">Nombre Conductor <span class="text-muted text-lowercase fw-normal">(buscar o nuevo)</span></label>
             <input type="text" id="taxi_{{ $i }}_chofer" name="{{ $n }}[chofer]" class="campo text-uppercase" maxlength="150" required list="choferesConocidos"
-                   placeholder="Nombre" autocapitalize="characters" value="{{ $v('chofer') }}" data-autollenar-chofer>
+                   placeholder="Nombre" autocapitalize="characters" value="{{ $v('chofer') }}" data-autollenar-chofer
+                   data-parecidos-vivo="personas" data-parecidos-url="{{ route('altas_por_verificar.parecidos') }}" data-parecidos-origen="transporte">
         </div>
     </div>
     <div class="row">

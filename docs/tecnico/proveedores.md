@@ -77,3 +77,10 @@ Lo que la caseta registra en este padrón desde Operación (con el registro ráp
 2. Si quien lo registra no puede editar el padrón, queda «Pendiente de verificar» hasta que alguien lo acepta, lo rechaza o lo une con el existente.
 
 Ver [altas-por-verificar.md](altas-por-verificar.md) y ADR-0006.
+
+## Ronda 5 de ajustes (parte 2): agregar desde la ficha (PV-05 / PV-06)
+
+«Agregar persona» y «Agregar vehículo» de la ficha siguen usando el contrato `?nuevo=1&proveedor={id}`, ahora con dos mejoras:
+
+- La empresa de la ficha **queda fija** en el alta (sin lista para elegir otra): en Personas la «Empresa que representa» y el tipo que le corresponde; en Vehículos la «Agencia o Empresa Propietaria» y solo las categorías que llevan empresa.
+- **Cerrar o Cancelar regresa a la ficha** (pestaña Personal o Flotilla) gracias a `<dialog data-al-cerrar-ir="…">`; antes el usuario quedaba en el Padrón de personas o en el Padrón vehicular. Guardar ya regresaba a la ficha.

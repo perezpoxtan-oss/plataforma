@@ -1206,3 +1206,15 @@ html.modo-noche .errores-verificar { background: rgba(239, 68, 68, 0.12); border
 html.modo-noche .grupo-alta-verificar { background: var(--superficie-2); border-color: #b45309; color: #fcd34d; }
 html.modo-noche .grupo-alta-verificar .conteo { background: rgba(245, 158, 11, 0.2); color: #fde68a; }
 /* Fin Altas por verificar */
+/* Ronda 5 de ajustes (parte 2): Sol y Noche */
+html.modo-sol .aviso-duplicado.existe, html.modo-sol .aviso-duplicado.parecido { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .aviso-duplicado.libre { color: #14532d; }
+html.modo-sol .aviso-duplicado-item, html.modo-sol .campo-fijo { background: #fff; color: #000; border: 1px solid #000; }
+html.modo-sol .btn-reactivar-duplicado { background: #000; color: #fff; border: 2px solid #000; }
+html.modo-sol .filtros-vehiculo .filtro-titulo { color: #000; }
+html.modo-noche .aviso-duplicado.existe { background: rgba(239, 68, 68, 0.12); border-color: #b91c1c; color: #fecaca; }
+html.modo-noche .aviso-duplicado.parecido { background: rgba(245, 158, 11, 0.14); border-color: #b45309; color: #fde68a; }
+html.modo-noche .aviso-duplicado.libre { color: #6ee7b7; }
+html.modo-noche .aviso-duplicado-item, html.modo-noche .campo-fijo { background: var(--superficie-2); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .btn-reactivar-duplicado { background: rgba(16, 185, 129, 0.15); border-color: #059669; color: #6ee7b7; }
+/* Fin Ronda 5 de ajustes (parte 2) */

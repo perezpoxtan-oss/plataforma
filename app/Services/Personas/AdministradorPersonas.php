@@ -171,7 +171,7 @@ class AdministradorPersonas
         // La categoría (prospecto, familiar) solo distingue a los visitantes
         $categoria = $tipo === 'visitante' ? ($validados['categoria'] ?? 'general') : 'general';
         // Un visitante no representa a un proveedor registrado (SEGCAT lo limpiaba igual)
-        $proveedorId = $tipo === 'visitante' ? null : $this->proveedorValido($validados['proveedor_id'] ?? null, $actual);
+        $proveedorId = $tipo === 'visitante' ? null : $this->proveedorValido($validados['proveedor_id'] ?? null, $actual, $tipo);
 
         $folio = $validados['folio_identificacion'] ?? null;
         if ($folio !== null) {
@@ -214,7 +214,7 @@ class AdministradorPersonas
         throw FolioDuplicado::de($otra, $mensaje);
     }
 
-    private function proveedorValido(mixed $id, ?Persona $actual): ?int
+    private function proveedorValido(mixed $id, ?Persona $actual, string $tipo): ?int
     {
         if ($id === null) {
             return null;
@@ -226,7 +226,33 @@ class AdministradorPersonas
             throw ValidationException::withMessages(['proveedor_id' => 'El proveedor no existe en esta empresa o está desactivado.']);
         }
 
+        // Ronda 5 (PE-02): la empresa debe ser de la categoría que corresponde al tipo
+        // (lo ya guardado se respeta mientras no cambien el tipo ni la empresa)
+        $sinCambios = $actual !== null && (int) $actual->proveedor_id === $id && $actual->tipo === $tipo;
+        if (! $sinCambios && ! in_array($proveedor->categoria, self::categoriasPara($tipo), true)) {
+            throw ValidationException::withMessages(['proveedor_id' => $tipo === 'contratista'
+                ? "«{$proveedor->nombre}» no está registrada como Contratista: elige el tipo Proveedor o una empresa contratista."
+                : "«{$proveedor->nombre}» está registrada como Contratista: elige el tipo Contratista."]);
+        }
+
         return $id;
+    }
+
+    /**
+     * Ronda 5 (PE-02): categorías de Empresas externas que puede representar
+     * cada tipo de persona. Contratista → solo contratistas; Proveedor → el
+     * resto (insumos, transporte, agencias, taxis…). El formulario filtra la
+     * lista "Empresa que representa" con esto mismo.
+     *
+     * @return list<string>
+     */
+    public static function categoriasPara(string $tipo): array
+    {
+        return match ($tipo) {
+            'contratista' => ['contratista'],
+            'proveedor' => array_values(array_diff(array_keys(Proveedor::CATEGORIAS), ['contratista'])),
+            default => [],
+        };
     }
 
     /**

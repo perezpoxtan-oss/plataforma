@@ -29,7 +29,7 @@ Seguridad → Padrones → **Padrón vehicular**. Aquí están todos los vehícu
 ![Alta de una flotilla](img/vehiculos/v4-alta-flotilla.png)
 ![Alta del auto de un colaborador](img/vehiculos/v5-alta-colaborador.png)
 
-Si llegaste desde la ficha de un proveedor (botón para agregar un vehículo a su flotilla), la ventana se abre sola con el proveedor y la categoría ya elegidos, y al guardar regresas a la ficha del proveedor.
+Si llegaste desde la ficha de un proveedor (botón para agregar un vehículo a su flotilla), la ventana se abre sola con el proveedor y la categoría ya elegidos. La empresa queda **fija** (con un candado) y al guardar **o al cerrar** regresas a la ficha del proveedor.
 
 ## Editar
 
@@ -67,3 +67,26 @@ La lista se acomoda en una columna y las ventanas ocupan toda la pantalla. El mo
 
 ![Celular](img/vehiculos/v12-celular.png)
 ![Modo noche](img/vehiculos/v9-noche.png)
+
+## Categoría y Tipo / Estilo: ¿cuál es cuál? (Ronda 5)
+
+Son dos preguntas distintas:
+
+- **Categoría** = **¿de quién es o a qué viene?** Propio (huésped, visitante, familiar, colaborador), Agencia, Flotilla de una empresa, **Taxi** / plataforma o Transporte de personal. Según la categoría se piden la empresa propietaria y el número económico.
+- **Tipo / Estilo** = **¿qué forma tiene?** Sedán, SUV, Pick-up, Autobús, Camión ligero, Motocicleta u **Otro**. Con «Otro» se pide que describas el vehículo (por ejemplo, «Carrito de golf»).
+
+Por eso **«Otro» está en Tipo / Estilo y no en Categoría**: un carrito de golf del hotel es Tipo «Otro»; un auto que no es de nadie conocido es Categoría «Propio Visitante».
+
+En la lista, los dos filtros van **en la misma línea**: las píldoras de **Categoría** y la lista **Tipo / Estilo**. Puedes combinarlos con el buscador.
+
+![Filtros de Categoría y Tipo / Estilo](img/ronda-5b/vehiculos-filtros.png)
+
+En el celular los filtros bajan uno debajo de otro:
+
+![Filtros en el celular](img/ronda-5b/vehiculos-filtros-movil.png)
+
+## Agregar un vehículo desde la ficha de una empresa (Ronda 5)
+
+En Padrones → Empresas Externas → Ficha → **Flotilla** → **Agregar vehículo**, la ventana dice «Registrando unidad de …» y la **Agencia o Empresa Propietaria** ya viene puesta, con un candado. Si tocas **Cerrar** o **Cancelar**, regresas a la ficha de la empresa.
+
+![Alta desde la ficha de Constructora Maya](img/ronda-5b/ficha-agregar-vehiculo.png)

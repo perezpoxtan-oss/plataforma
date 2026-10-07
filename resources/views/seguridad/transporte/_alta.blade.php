@@ -112,12 +112,14 @@
                     <div class="col-md-6">
                         <label class="campo-etiqueta text-success" for="tr_placas">Placas <span class="text-muted text-lowercase fw-normal">(buscar o nueva)</span></label>
                         <input type="text" id="tr_placas" name="placas" class="campo text-uppercase" maxlength="20" list="unidadesConocidas" placeholder="Ej: ABC-123"
-                               autocapitalize="characters" value="{{ $anterior('placas') }}" data-autollenar="unidad">
+                               autocapitalize="characters" value="{{ $anterior('placas') }}" data-autollenar="unidad"
+                               data-parecidos-vivo="vehiculos" data-parecidos-url="{{ route('altas_por_verificar.parecidos') }}" data-parecidos-origen="transporte">
                     </div>
                     <div class="col-md-6">
                         <label class="campo-etiqueta text-success" for="tr_chofer">Chofer <span class="text-muted text-lowercase fw-normal">(buscar o nuevo)</span></label>
                         <input type="text" id="tr_chofer" name="chofer" class="campo text-uppercase" maxlength="150" list="choferesConocidos" placeholder="Nombre del chofer"
-                               autocapitalize="characters" value="{{ $anterior('chofer') }}" data-autollenar-chofer>
+                               autocapitalize="characters" value="{{ $anterior('chofer') }}" data-autollenar-chofer
+                               data-parecidos-vivo="personas" data-parecidos-url="{{ route('altas_por_verificar.parecidos') }}" data-parecidos-origen="transporte">
                     </div>
                 </div>
                 <label class="campo-etiqueta text-success" for="tr_pax">Pasajeros</label>

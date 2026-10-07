@@ -45,12 +45,23 @@
             </div>
         </div>
 
-        <div class="pildoras-tipo" role="group" aria-label="Filtrar por categoría">
+        {{-- Ronda 5 (VE-03): Categoría (de quién es: píldoras) y Tipo / Estilo (la forma: lista) en la misma línea --}}
+        <div class="pildoras-tipo filtros-vehiculo" role="group" aria-label="Filtrar por categoría">
+            <span class="filtro-titulo">Categoría:</span>
             <button type="button" class="btn-pill-tipo active" data-filtro-tipo="vehiculos" data-valor="" aria-pressed="true">Todos <span class="conteo-pill">{{ $vehiculos->count() }}</span></button>
             <button type="button" class="btn-pill-tipo" data-filtro-tipo="vehiculos" data-valor="propios" aria-pressed="false"><i class="bi bi-person me-1" aria-hidden="true"></i>Propios <span class="conteo-pill">{{ $conteo['propios'] ?? 0 }}</span></button>
             <button type="button" class="btn-pill-tipo" data-filtro-tipo="vehiculos" data-valor="flotillas" aria-pressed="false"><i class="bi bi-truck me-1" aria-hidden="true"></i>Flotillas <span class="conteo-pill">{{ $conteo['flotillas'] ?? 0 }}</span></button>
             <button type="button" class="btn-pill-tipo" data-filtro-tipo="vehiculos" data-valor="taxis" aria-pressed="false"><i class="bi bi-taxi-front me-1" aria-hidden="true"></i>Taxis <span class="conteo-pill">{{ $conteo['taxis'] ?? 0 }}</span></button>
             @include('padrones.altas-por-verificar._pildora', ['altas' => $altas])
+            <label class="filtro-estilo">
+                <span class="filtro-titulo">Tipo / Estilo:</span>
+                <select class="filtro-select" aria-label="Filtrar por tipo o estilo de vehículo" data-filtro-estilo-vehiculo>
+                    <option value="">Todos</option>
+                    @foreach (\App\Models\Vehiculo::TIPOS as $clave => $texto)
+                        <option value="{{ $clave }}">{{ $texto }}</option>
+                    @endforeach
+                </select>
+            </label>
         </div>
 
         <div class="fichas-grid" data-vehiculos>
@@ -74,7 +85,7 @@
                     ])));
                 @endphp
                 <div class="ficha-card {{ $v->activo ? '' : 'inactiva' }}" id="vehiculo-{{ $v->id }}" data-vehiculo
-                     data-grupo="{{ $grupos[$v->propiedad] ?? 'propios' }}" data-texto="{{ $texto }}">
+                     data-grupo="{{ $grupos[$v->propiedad] ?? 'propios' }}" data-estilo="{{ $v->tipo }}" data-texto="{{ $texto }}">
                     <div>
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
                             <span class="badge-prop {{ $colores[$v->propiedad] ?? 'bg-visitante' }}"><i class="bi bi-info-circle-fill me-1" aria-hidden="true"></i>{{ $etiqueta }}</span>
@@ -166,9 +177,13 @@
 
                     return $desdeProveedor && isset($prefijado[$campo]) && $prefijado[$campo] ? (string) $prefijado[$campo] : $porDefecto;
                 };
+                // Ronda 5 (PV-05): desde la ficha de una empresa externa, su empresa queda fija y al cerrar se regresa a la ficha
+                $proveedorFijo = $esNuevo && ($trasError ? old('volver') === 'proveedor' : $desdeProveedor)
+                    ? $proveedores->where('activo', true)->firstWhere('id', (int) $valor('proveedor_id')) : null;
+                $alCerrar = $proveedorFijo && Route::has('proveedores.show') ? route('proveedores.show', ['proveedor' => $proveedorFijo->id, 'tab' => 'flotilla']) : null;
             @endphp
             <dialog id="{{ $esNuevo ? 'dialogoNuevoVehiculo' : 'dialogoEditarVehiculo' }}" class="dialogo ancho" aria-labelledby="titulo-ve-{{ $modo }}"
-                    @if ($trasError || $desdeProveedor) data-abrir-al-cargar @endif>
+                    @if ($trasError || $desdeProveedor) data-abrir-al-cargar @endif @if ($alCerrar) data-al-cerrar-ir="{{ $alCerrar }}" @endif>
                 <div class="dialogo-cabecera">
                     <h2 id="titulo-ve-{{ $modo }}"><i class="bi {{ $esNuevo ? 'bi-car-front' : 'bi-pencil-square' }} me-2 text-secondary" aria-hidden="true"></i>{{ $esNuevo ? 'Alta de Vehículo' : 'Actualizar Vehículo' }}</h2>
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
@@ -180,6 +195,9 @@
                         <input type="hidden" name="_dialogo" value="{{ $esNuevo ? 'crear' : ($editandoId ? 'editar-'.$editandoId : '') }}" data-campo-dialogo>
                         <input type="hidden" name="volver" value="{{ $trasError ? old('volver', '') : $volver }}" data-volver>
                         <p class="linea-empresa mb-3"><i class="bi bi-building-check me-1" aria-hidden="true"></i>Padrón de: <strong>{{ $empresaNombre }}</strong></p>
+                        @if ($proveedorFijo)
+                            <p class="aviso-desde-proveedor"><i class="bi bi-building me-1" aria-hidden="true"></i>Registrando unidad de <strong>{{ $proveedorFijo->nombre }}</strong>.@if ($alCerrar) Al guardar o cerrar regresarás a su ficha.@endif</p>
+                        @endif
 
                         <div class="row">
                             <div class="col-md-5">
@@ -189,9 +207,10 @@
                                 <p class="small mb-2" data-aviso-placas hidden></p>
                             </div>
                             <div class="col-md-7">
-                                <label class="campo-etiqueta" for="{{ $modo }}_ve_propiedad">Categoría</label>
+                                <label class="campo-etiqueta" for="{{ $modo }}_ve_propiedad">Categoría <span class="text-lowercase fw-normal">(¿de quién es?)</span></label>
                                 <select id="{{ $modo }}_ve_propiedad" name="propiedad" class="campo" required>
                                     @foreach (\App\Services\Vehiculos\AdministradorVehiculos::OPCIONES_PROPIEDAD as $clave => $texto)
+                                        @continue ($proveedorFijo && ! in_array($clave, \App\Services\Vehiculos\AdministradorVehiculos::CON_PROVEEDOR, true))
                                         <option value="{{ $clave }}" @selected($valor('propiedad', 'propio_huesped') === $clave) @if ($clave === 'propio_huesped') data-por-defecto @endif>{{ $texto }}</option>
                                     @endforeach
                                 </select>
@@ -201,6 +220,10 @@
                         <div class="caja-propietario" data-mostrar-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::CON_PROVEEDOR) }}}'>
                             <label class="campo-etiqueta" for="{{ $modo }}_ve_proveedor"><i class="bi bi-building me-1" aria-hidden="true"></i> Agencia o Empresa Propietaria
                                 <span class="text-lowercase fw-normal" data-mostrar-si='{"propiedad":["agencia_renta","taxi_app","transporte_personal"]}'>(opcional)</span></label>
+                            @if ($proveedorFijo)
+                                <input type="hidden" name="proveedor_id" value="{{ $proveedorFijo->id }}">
+                                <p class="campo-fijo mb-0" id="{{ $modo }}_ve_proveedor"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i><strong>{{ $proveedorFijo->nombre }}</strong> <small>(la empresa de la ficha)</small></p>
+                            @else
                             <select id="{{ $modo }}_ve_proveedor" name="proveedor_id" class="campo mb-0" data-requerido-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::PROVEEDOR_OBLIGATORIO) }}}'>
                                 <option value="">-- Seleccionar del Directorio --</option>
                                 @foreach ($proveedores as $pr)
@@ -208,7 +231,8 @@
                                     <option value="{{ $pr->id }}" @selected($valor('proveedor_id') === (string) $pr->id) @unless ($pr->activo) hidden @endunless>{{ $pr->nombre }}{{ $pr->activo ? '' : ' (inactivo)' }}</option>
                                 @endforeach
                             </select>
-                            @if ($proveedores->where('activo', true)->isEmpty())
+                            @endif
+                            @if (! $proveedorFijo && $proveedores->where('activo', true)->isEmpty())
                                 <p class="campo-ayuda mt-2 mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> Todavía no hay proveedores registrados: dalos de alta en el módulo Proveedores.</p>
                             @endif
                         </div>
@@ -226,7 +250,7 @@
 
                         <div class="row">
                             <div class="col-md-4">
-                                <label class="campo-etiqueta" for="{{ $modo }}_ve_tipo">Tipo / Estilo</label>
+                                <label class="campo-etiqueta" for="{{ $modo }}_ve_tipo">Tipo / Estilo <span class="text-lowercase fw-normal">(su forma)</span></label>
                                 <select id="{{ $modo }}_ve_tipo" name="tipo" class="campo" required>
                                     @foreach (\App\Models\Vehiculo::TIPOS as $clave => $texto)
                                         <option value="{{ $clave }}" @selected($valor('tipo', 'sedan') === $clave) @if ($clave === 'sedan') data-por-defecto @endif>{{ $texto }}</option>

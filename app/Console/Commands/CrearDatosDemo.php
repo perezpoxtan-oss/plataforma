@@ -197,6 +197,7 @@ class CrearDatosDemo extends Command
         $paso('ronda5Demo', fn () => $this->ronda5Demo($empresa, $sedes['CEN'], User::where('username', 'admin.demo')->firstOrFail()));
         $paso('altasPorVerificarDemo', fn () => $this->altasPorVerificarDemo($sedes, User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'admin.demo')->firstOrFail()));
         $paso('procedimientosDemo', fn () => $this->procedimientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('ronda5bDemo', fn () => $this->ronda5bDemo($sedes['CEN'], User::where('username', 'admin.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -1990,5 +1991,21 @@ class CrearDatosDemo extends Command
             new UploadedFile($rutaPdf, 'Directorio de emergencia.pdf', 'application/pdf', null, true),
             new UploadedFile($rutaPng, 'Plano de refugios.png', 'image/png', null, true),
         ];
+    }
+
+    /**
+     * Ronda 5, parte 2 (solo la primera vez): una zona desactivada, «Torre
+     * Jardín» (TJ), para practicar el aviso en vivo «Ya existe… está
+     * desactivado, ¿lo reactivas?» al querer darla de alta otra vez.
+     */
+    private function ronda5bDemo(Sede $centro, User $actor): void
+    {
+        if (Espacio::where('nombre', 'Torre Jardín')->where('nivel', Espacio::EDIFICIO)->exists()) {
+            return;
+        }
+        $espacios = app(AdministradorEspacios::class);
+        $tipo = TipoEspacio::whereNull('empresa_id')->where('nivel', Espacio::EDIFICIO)->where('nombre', 'Torre')->value('id');
+        $jardin = $espacios->crear($actor, $centro, null, Espacio::EDIFICIO, ['nombre' => 'Torre Jardín', 'codigo' => 'TJ', 'tipo_espacio_id' => $tipo], false);
+        $espacios->cambiarEstado($actor, $jardin, false);
     }
 }

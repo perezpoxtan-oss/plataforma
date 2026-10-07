@@ -74,3 +74,17 @@ Toca **Ficha** en la tarjeta. Tiene tres pestañas:
 - **No veo una empresa que sí existe.** Solo ves las que operan en tus sedes. Regístrala con el mismo nombre: se agregará a tu sede sin duplicarla.
 - **No me deja editar una empresa.** Opera también en otras sedes; pídeselo a tu administrador.
 - **El Agente** solo consulta la lista y las fichas.
+
+## Agregar persona o vehículo desde la ficha (Ronda 5)
+
+En **Personal → Agregar persona** y **Flotilla → Agregar vehículo**:
+
+- La empresa de la ficha **ya viene puesta** y no se puede cambiar (tiene un candado).
+- Si guardas, regresas a la ficha con el registro nuevo en la lista.
+- Si tocas **Cerrar** o **Cancelar**, también regresas a la ficha.
+
+![Agregar persona desde la ficha](img/ronda-5b/ficha-agregar-persona.png)
+
+![Agregar vehículo desde la ficha](img/ronda-5b/ficha-agregar-vehiculo.png)
+
+![De regreso en la ficha (Flotilla)](img/ronda-5b/ficha-regreso-flotilla.png)

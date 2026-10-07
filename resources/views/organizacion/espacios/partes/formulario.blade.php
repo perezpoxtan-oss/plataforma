@@ -48,15 +48,22 @@
             <div class="campo-grupo">
                 <div style="flex: 3">
                     <label class="campo-etiqueta" for="{{ $id }}_nombre">{{ $etiquetaNombre ?? 'Nombre' }}</label>
-                    <input type="text" id="{{ $id }}_nombre" name="nombre" class="campo" maxlength="100" value="{{ $v('nombre') }}" @if ($nombreOpcional ?? false) placeholder="Si lo dejas vacío se usa el tipo" @else required @endif>
+                    <input type="text" id="{{ $id }}_nombre" name="nombre" class="campo" maxlength="100" value="{{ $v('nombre') }}" @if ($nombreOpcional ?? false) placeholder="Si lo dejas vacío se usa el tipo" @else required @endif
+                           data-duplicado="{{ route('espacios.duplicado') }}" data-duplicado-con="nivel,padre_id,sede_id" data-duplicado-aviso="{{ $id }}_aviso_nombre">
                 </div>
                 @if ($conCodigo ?? false)
                     <div style="flex: 1">
                         <label class="campo-etiqueta" for="{{ $id }}_codigo">Código <span class="text-lowercase fw-normal">(opcional)</span></label>
-                        <input type="text" id="{{ $id }}_codigo" name="codigo" class="campo text-uppercase" maxlength="20" pattern="[A-Za-z0-9\-]+" title="Solo letras, números y guiones" value="{{ $v('codigo') }}">
+                        <input type="text" id="{{ $id }}_codigo" name="codigo" class="campo text-uppercase" maxlength="20" pattern="[A-Za-z0-9\-]+" title="Solo letras, números y guiones" value="{{ $v('codigo') }}"
+                               data-duplicado="{{ route('espacios.duplicado') }}" data-duplicado-con="nivel,padre_id,sede_id" data-duplicado-min="1" data-duplicado-aviso="{{ $id }}_aviso_codigo">
                     </div>
                 @endif
             </div>
+            {{-- Ronda 5: avisos en vivo de nombre repetido o parecido y de código parecido (TB = T-B) --}}
+            <div class="aviso-duplicado" id="{{ $id }}_aviso_nombre" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
+            @if ($conCodigo ?? false)
+                <div class="aviso-duplicado" id="{{ $id }}_aviso_codigo" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
+            @endif
 
             @if ($tipos->isNotEmpty())
                 <label class="campo-etiqueta" for="{{ $id }}_tipo">Tipo</label>
