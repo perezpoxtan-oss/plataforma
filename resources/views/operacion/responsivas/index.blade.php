@@ -211,7 +211,7 @@
                             <div class="caja-voucher-recibir" data-recibir-solo="danado faltante" hidden>
                                 <label class="casilla-cobro-eq" data-recibir-solo="danado" hidden>
                                     <input type="checkbox" name="generar_voucher" value="1" @checked($filaRecibir && old('generar_voucher'))>
-                                    Ya no sirve: darlo de baja con <strong>voucher de reposición</strong> (si no, queda EN MANTENIMIENTO)
+                                    <span>Ya no sirve: darlo de baja con <strong>voucher de reposición</strong> (si no, queda EN MANTENIMIENTO)</span>
                                 </label>
                                 <p class="aviso-recibir faltante" data-recibir-solo="faltante" hidden><i class="bi bi-receipt me-1" aria-hidden="true"></i>Se genera el <strong>voucher de reposición</strong> y el equipo queda como <strong>BAJA/PERDIDO</strong>. Si aparece, se reactiva en Equipos.</p>
                                 <div data-recibir-solo="faltante" hidden>

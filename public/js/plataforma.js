@@ -5910,7 +5910,9 @@ document.addEventListener('click', function (e) {
 
     document.addEventListener('change', function (e) {
         if (!e.target.matches || !e.target.matches('[data-firma-modo]')) { return; }
-        sincronizarFirmaPropia(e.target.closest('[data-firma-propia]'));
+        // Ronda 8: los diálogos de baja con voucher también usan data-firma-modo (sin firma propia)
+        var cajaPropia = e.target.closest('[data-firma-propia]');
+        if (cajaPropia) { sincronizarFirmaPropia(cajaPropia); }
     });
 
     // Si toca dibujar la firma propia, no se envía vacía
