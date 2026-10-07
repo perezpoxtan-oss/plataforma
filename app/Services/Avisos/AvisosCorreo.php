@@ -6,6 +6,7 @@ use App\Mail\AltaPorVerificarRegistrada;
 use App\Mail\AltaProvisionalRegistrada;
 use App\Mail\AvisoPaseSalida;
 use App\Mail\AvisoProcedimiento;
+use App\Mail\AvisoRecepcion;
 use App\Mail\ValeTaxiRegistrado;
 use App\Mail\VoucherConCobro;
 use App\Models\Colaborador;
@@ -266,4 +267,26 @@ class AvisosCorreo
         return $this->correo->enviar($destinatarios, $mensaje);
     }
     // Fin Procedimientos
+    // Recepción de candidatos y autorizaciones (ver docs/tecnico/recepcion-y-autorizaciones.md)
+
+    /**
+     * Recepción y Autorizaciones: aviso a una lista ya resuelta por el módulo
+     * (Recursos Humanos de la sede, el responsable del departamento o su
+     * delegado). $clave es el aviso de Empresa::AVISOS que lo enciende.
+     *
+     * @param  list<string>  $destinatarios
+     */
+    public function recepcion(int $empresaId, string $clave, array $destinatarios, AvisoRecepcion $mensaje): bool
+    {
+        $empresa = Empresa::find($empresaId);
+        $destinatarios = array_values(array_unique(array_filter($destinatarios)));
+        if ($empresa === null || ! $empresa->aviso($clave) || ! $this->correo->configurado() || $destinatarios === []) {
+            return false;
+        }
+
+        defer(fn () => $this->correo->enviar($destinatarios, $mensaje));
+
+        return true;
+    }
+    // Fin Recepción de candidatos
 }

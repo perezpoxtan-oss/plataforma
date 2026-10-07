@@ -7634,3 +7634,284 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Ajustes Ronda 6 */
+
+/* ==========================================================================
+   Recepción de candidatos y autorizaciones departamentales (ADR-0007)
+   - Centro de notificaciones (campana): contador cada 30 s con la pestaña
+     visible; la lista se pide al abrir. Sin websockets (hosting compartido).
+   - Panel «Recepción» de RR. HH.: se vuelve a pintar cada 15 s.
+   - Caseta: las visitas «Esperando autorización» se actualizan solas.
+   - CV: agregar y quitar renglones (escolaridad, experiencia, referencias).
+   - Fotos de caseta: vista previa y reducción antes de enviar.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function token() { var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.getAttribute('content') : ''; }
+    function el(etiqueta, clase, texto) {
+        var e = document.createElement(etiqueta);
+        if (clase) { e.className = clase; }
+        if (texto !== undefined && texto !== null) { e.textContent = texto; }
+        return e;
+    }
+    function pedir(url) {
+        return fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) {
+                if (r.status === 401 || r.status === 419) { throw new Error('sesion'); }
+                if (!r.ok) { throw new Error(String(r.status)); }
+                return r.json();
+            });
+    }
+    /* Consulta periódica que se pausa con la pestaña oculta y se repite al volver. */
+    function cadaTanto(fn, ms) {
+        var reloj = null;
+        function programar() { clearTimeout(reloj); if (!document.hidden) { reloj = setTimeout(function () { fn(); programar(); }, ms); } }
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) { fn(); } programar(); });
+        programar();
+    }
+    function formulario(url, campos, clase, texto, confirmar) {
+        var f = el('form', 'm-0');
+        f.method = 'POST';
+        f.action = url;
+        if (confirmar) { f.setAttribute('data-confirmar', confirmar); }
+        var t = el('input'); t.type = 'hidden'; t.name = '_token'; t.value = token(); f.appendChild(t);
+        Object.keys(campos || {}).forEach(function (k) { var i = el('input'); i.type = 'hidden'; i.name = k; i.value = campos[k]; f.appendChild(i); });
+        var b = el('button', clase, texto); b.type = 'submit'; f.appendChild(b);
+        return f;
+    }
+
+    /* ---------- Campana ---------- */
+    var campanas = [];
+    var ultimoResumen = null;
+
+    function pintarContador(n) {
+        campanas.forEach(function (c) {
+            var cont = c.querySelector('[data-campana-contador]');
+            var boton = c.querySelector('[data-campana-boton]');
+            var icono = boton ? boton.querySelector('i') : null;
+            if (cont) { cont.hidden = n === 0; cont.textContent = n > 99 ? '99+' : String(n); }
+            if (boton) { boton.setAttribute('aria-label', 'Notificaciones: ' + n + ' sin leer'); }
+            if (icono) { icono.className = 'bi ' + (n > 0 ? 'bi-bell-fill' : 'bi-bell'); }
+        });
+    }
+
+    function pintarLista(campana, datos) {
+        var lista = campana.querySelector('[data-campana-lista]');
+        if (!lista) { return; }
+        lista.textContent = '';
+        if (!datos.lista || !datos.lista.length) {
+            lista.appendChild(el('p', 'campana-vacia', 'No tienes notificaciones.'));
+            return;
+        }
+        datos.lista.forEach(function (n) {
+            var item = el('div', 'campana-item nivel-' + n.nivel + (n.leida ? ' leida' : ''));
+            var abrir = formulario(n.abrir, {}, 'campana-abrir', '');
+            var boton = abrir.querySelector('button');
+            var icono = el('i', 'bi ' + n.icono); icono.setAttribute('aria-hidden', 'true');
+            var cuerpo = el('span', 'campana-texto');
+            cuerpo.appendChild(el('strong', null, n.titulo));
+            if (n.texto) { cuerpo.appendChild(el('span', null, n.texto)); }
+            cuerpo.appendChild(el('small', null, n.hace + (n.leida ? '' : ' · Sin leer')));
+            boton.appendChild(icono);
+            boton.appendChild(cuerpo);
+            item.appendChild(abrir);
+            if (n.acciones && n.acciones.length) {
+                var acciones = el('div', 'campana-acciones');
+                n.acciones.forEach(function (a) {
+                    acciones.appendChild(formulario(a.url, a.campos, 'btn-respuesta ' + (a.estilo === 'rechazar' ? 'rechazar' : 'aceptar'), a.etiqueta,
+                        a.estilo === 'rechazar' ? '¿Rechazar? La caseta y Recursos Humanos verán tu respuesta.' : null));
+                });
+                item.appendChild(acciones);
+            }
+            lista.appendChild(item);
+        });
+    }
+
+    function actualizarCampanas(conLista) {
+        if (!campanas.length) { return; }
+        pedir(campanas[0].dataset.url).then(function (d) {
+            ultimoResumen = d;
+            pintarContador(d.no_leidas || 0);
+            campanas.forEach(function (c) { if (conLista || !c.querySelector('[data-campana-panel]').hidden) { pintarLista(c, d); } });
+        }).catch(function () { /* sin red o sesión cerrada: decide el aviso de sesión */ });
+    }
+
+    function cerrarCampanas(excepto) {
+        campanas.forEach(function (c) {
+            if (c === excepto) { return; }
+            var p = c.querySelector('[data-campana-panel]');
+            var b = c.querySelector('[data-campana-boton]');
+            if (p) { p.hidden = true; }
+            if (b) { b.setAttribute('aria-expanded', 'false'); }
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-campana-boton]');
+        if (boton) {
+            var campana = boton.closest('[data-campana]');
+            var panel = campana.querySelector('[data-campana-panel]');
+            var abrir = panel.hidden;
+            cerrarCampanas(campana);
+            panel.hidden = !abrir;
+            boton.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+            if (abrir) {
+                if (ultimoResumen) { pintarLista(campana, ultimoResumen); }
+                actualizarCampanas(true);
+            }
+            return;
+        }
+        if (!e.target.closest('[data-campana-panel]')) { cerrarCampanas(null); }
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrarCampanas(null); } });
+
+    /* ---------- Panel de Recepción ---------- */
+    function actualizarRecepcion(panel) {
+        var estado = panel.querySelector('[data-recepcion-estado]');
+        pedir(panel.dataset.url).then(function (d) {
+            var lista = panel.querySelector('[data-recepcion-lista]');
+            // Server-side Blade: el HTML ya viene escapado
+            if (lista && typeof d.html === 'string' && !lista.contains(document.activeElement)) { lista.innerHTML = d.html; }
+            if (d.contadores) {
+                Object.keys(d.contadores).forEach(function (k) {
+                    var c = document.querySelector('[data-contador="' + k + '"]');
+                    if (c) { c.textContent = d.contadores[k]; }
+                });
+            }
+            if (estado) { estado.classList.remove('sin-conexion'); estado.textContent = 'En vivo · actualizado ' + (d.hora || ''); }
+        }).catch(function () {
+            if (estado) { estado.classList.add('sin-conexion'); estado.textContent = 'Sin conexión: se reintentará en unos segundos.'; }
+        });
+    }
+
+    /* ---------- Caseta: visitas que esperan al departamento ---------- */
+    function vigilarEsperas() {
+        var esperas = document.querySelectorAll('[data-acceso-esperando]');
+        if (!esperas.length) { return; }
+        var ids = Array.prototype.map.call(esperas, function (e) { return e.getAttribute('data-acceso-esperando'); });
+        var url = esperas[0].getAttribute('data-url-estado') + '?ids=' + encodeURIComponent(ids.join(','));
+        cadaTanto(function () {
+            pedir(url).then(function (d) {
+                var cambio = ids.some(function (id) { return d.estados && d.estados[id] !== undefined && d.estados[id] !== 'pendiente|esperando'; });
+                if (!cambio) { return; }
+                // Con un diálogo abierto no se recarga (se perdería lo capturado): se avisa
+                if (document.querySelector('dialog[open]')) {
+                    esperas.forEach(function (e) { e.classList.add('respondida'); e.querySelector('.small').textContent = 'El responsable ya contestó: cierra el diálogo y recarga para ver su respuesta.'; });
+                    return;
+                }
+                window.location.reload();
+            }).catch(function () { /* se reintenta */ });
+        }, 15000);
+    }
+
+    /* ---------- CV: renglones ---------- */
+    var siguiente = 1000;
+    document.addEventListener('click', function (e) {
+        var agregar = e.target.closest('[data-agregar-fila-cv]');
+        if (agregar) {
+            var caja = agregar.closest('[data-filas-cv]');
+            var lista = caja.querySelector('[data-filas-cv-lista]');
+            var plantilla = caja.querySelector('template[data-plantilla-fila]');
+            var maximo = parseInt(agregar.getAttribute('data-maximo') || '6', 10);
+            if (!lista || !plantilla) { return; }
+            if (lista.querySelectorAll('[data-fila-cv]').length >= maximo) { agregar.disabled = true; return; }
+            var html = plantilla.innerHTML.replace(/__i__/g, String(siguiente++));
+            var temporal = document.createElement('div');
+            temporal.innerHTML = html;
+            var fila = temporal.firstElementChild;
+            lista.appendChild(fila);
+            var primero = fila.querySelector('input, select');
+            if (primero) { primero.focus(); }
+            agregar.disabled = lista.querySelectorAll('[data-fila-cv]').length >= maximo;
+            return;
+        }
+        var quitar = e.target.closest('[data-quitar-fila-cv]');
+        if (quitar) {
+            var filaQ = quitar.closest('[data-fila-cv]');
+            var listaQ = filaQ.parentElement;
+            if (listaQ.querySelectorAll('[data-fila-cv]').length > 1) {
+                filaQ.remove();
+            } else {
+                filaQ.querySelectorAll('input, select').forEach(function (c) { if (c.type === 'checkbox') { c.checked = false; } else { c.value = ''; } });
+            }
+            var botonA = listaQ.closest('[data-filas-cv]').querySelector('[data-agregar-fila-cv]');
+            if (botonA) { botonA.disabled = false; }
+            return;
+        }
+        // «Guardar en cartera» / «Descartar» abren el mismo diálogo con la opción elegida
+        var destino = e.target.closest('[data-etapa-destino]');
+        if (destino) {
+            var radio = document.querySelector('[data-etapa-opcion][value="' + destino.getAttribute('data-etapa-destino') + '"]');
+            if (radio) { radio.checked = true; }
+        }
+    });
+
+    /* ---------- Fotos de caseta: vista previa y reducción (las del celular pesan varios MB) ---------- */
+    function reducir(archivo) {
+        return new Promise(function (resolver) {
+            if (!archivo || !/^image\//.test(archivo.type) || archivo.size < 700 * 1024 || typeof DataTransfer === 'undefined') { resolver(null); return; }
+            var img = new Image();
+            var url = URL.createObjectURL(archivo);
+            img.onload = function () {
+                var max = 1600;
+                var escala = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+                var lienzo = document.createElement('canvas');
+                lienzo.width = Math.round(img.naturalWidth * escala);
+                lienzo.height = Math.round(img.naturalHeight * escala);
+                lienzo.getContext('2d').drawImage(img, 0, 0, lienzo.width, lienzo.height);
+                URL.revokeObjectURL(url);
+                lienzo.toBlob(function (blob) { resolver(blob ? new File([blob], 'foto.jpg', { type: 'image/jpeg' }) : null); }, 'image/jpeg', 0.85);
+            };
+            img.onerror = function () { URL.revokeObjectURL(url); resolver(null); };
+            img.src = url;
+        });
+    }
+    document.addEventListener('change', function (e) {
+        var campo = e.target;
+        if (campo.matches('[data-foto-ingreso]')) {
+            var caja = document.querySelector('label[for="' + campo.id + '"]');
+            var vista = caja ? caja.querySelector('[data-vista-foto]') : null;
+            var archivo = campo.files && campo.files[0];
+            if (vista) {
+                if (archivo) { vista.src = URL.createObjectURL(archivo); vista.hidden = false; caja.classList.add('con-foto'); } else { vista.hidden = true; caja.classList.remove('con-foto'); }
+            }
+            reducir(archivo).then(function (chico) {
+                if (!chico) { return; }
+                var dt = new DataTransfer();
+                dt.items.add(chico);
+                campo.files = dt.files;
+            });
+            return;
+        }
+        // Departamentos de la sede elegida (Registro de ingreso)
+        if (campo.matches('[data-acceso-sede]')) { acotarDeptos(campo.form); }
+    });
+    function acotarDeptos(form) {
+        if (!form) { return; }
+        var sede = (form.querySelector('[data-acceso-sede]') || {}).value || '';
+        form.querySelectorAll('[data-depto-recepcion]').forEach(function (sel) {
+            Array.prototype.forEach.call(sel.options, function (o) {
+                if (!o.value) { return; }
+                var ok = !sede || o.getAttribute('data-todas') === '1' || (o.getAttribute('data-sedes') || '').split(',').indexOf(sede) !== -1;
+                o.hidden = !ok;
+                o.disabled = !ok;
+                if (!ok && o.selected) { sel.value = ''; }
+            });
+        });
+    }
+    // Al cerrar el diálogo de ingreso se quitan las vistas previas
+    document.addEventListener('close', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-dialogo-ingreso]')) { return; }
+        e.target.querySelectorAll('[data-vista-foto]').forEach(function (v) { v.hidden = true; v.removeAttribute('src'); });
+        e.target.querySelectorAll('.caja-foto-ingreso.con-foto').forEach(function (c) { c.classList.remove('con-foto'); });
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        campanas = Array.prototype.slice.call(document.querySelectorAll('[data-campana]'));
+        if (campanas.length) { cadaTanto(function () { actualizarCampanas(false); }, 30000); }
+        document.querySelectorAll('[data-recepcion]').forEach(function (panel) { cadaTanto(function () { actualizarRecepcion(panel); }, 15000); });
+        vigilarEsperas();
+        document.querySelectorAll('[data-form-acceso]').forEach(acotarDeptos);
+    });
+})();
+/* Fin Recepción de candidatos y autorizaciones departamentales */

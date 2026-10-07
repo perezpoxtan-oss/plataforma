@@ -5,7 +5,10 @@ namespace App\Services\Auditoria;
 use App\Models\Acceso;
 use App\Models\AcompananteAcceso;
 use App\Models\Auditoria;
+use App\Models\Autorizacion;
+use App\Models\Candidato;
 use App\Models\Colaborador;
+use App\Models\Delegacion;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Equipo;
@@ -97,6 +100,9 @@ class LectorAuditoria
         Procedimiento::class => ['Procedimiento', 'clave'],
         ProcedimientoCategoria::class => ['Categoría de procedimientos', 'nombre'],
         ProcedimientoAcuse::class => ['Acuse de procedimiento', 'nombre'],
+        Candidato::class => ['Candidato', 'nombre_completo'],
+        Autorizacion::class => ['Autorización departamental', null],
+        Delegacion::class => ['Delegación de autorizaciones', null],
     ];
 
     /** Módulos que registran algo en la bitácora, para el filtro. */

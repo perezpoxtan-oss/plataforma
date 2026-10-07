@@ -29,7 +29,9 @@ class MatrizDeRutasTest extends TestCase
     use EscenarioAuditoria, RefreshDatabase;
 
     /** Rutas sin datos de nadie, abiertas a toda sesión. */
-    private const LIBRES = ['panel', 'sesion.latido'];
+    private const LIBRES = ['panel', 'sesion.latido',
+        // Centro de notificaciones (ADR-0007): solo las del propio usuario
+        'notificaciones.index', 'notificaciones.resumen', 'notificaciones.leer-todas'];
 
     protected function setUp(): void
     {

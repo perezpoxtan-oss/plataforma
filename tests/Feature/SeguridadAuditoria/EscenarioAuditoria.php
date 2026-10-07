@@ -116,6 +116,12 @@ trait EscenarioAuditoria
             'adjunto' => 'procedimiento_adjuntos',
             'acuse' => 'procedimiento_acuses',
             'categoria' => 'procedimiento_categorias',
+            // Recepción de candidatos y autorizaciones (ADR-0007)
+            'candidato' => 'candidatos',
+            'documento' => 'candidato_documentos',
+            'notificacion' => 'notificaciones',
+            'autorizacion' => 'autorizaciones',
+            'delegacion' => 'delegaciones',
         ][$parametro] ?? null;
     }
 

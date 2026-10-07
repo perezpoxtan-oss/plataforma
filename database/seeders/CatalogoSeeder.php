@@ -32,6 +32,9 @@ class CatalogoSeeder extends Seeder
         'provisional' => 'Alta provisional',
         // Eliminar definitivamente (borrado físico controlado): solo catálogos y padrones
         'borrar' => 'Eliminar definitivamente',
+        // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
+        'contratar' => 'Contratar',
+        'responder' => 'Responder',
     ];
 
     private const CRUD = ['ver', 'crear', 'editar', 'eliminar'];
@@ -75,6 +78,9 @@ class CatalogoSeeder extends Seeder
         'equipos_pc' => 'equipos_pc.index',
         'procedimientos' => 'procedimientos.index',
         'etiquetas_qr' => 'etiquetas.index',
+        'recepcion_rh' => 'recepcion.index',
+        'candidatos' => 'candidatos.index',
+        'autorizaciones' => 'autorizaciones.index',
     ];
 
     /**
@@ -104,6 +110,10 @@ class CatalogoSeeder extends Seeder
                 'departamentos' => ['Departamentos', 'bi-diagram-2', []],
                 'puestos' => ['Puestos', 'bi-person-badge', []],
                 'turnos' => ['Turnos', 'bi-clock', []],
+                // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
+                'recepcion_rh' => ['Recepción de RR. HH.', 'bi-person-check', [], [], ['ver']],
+                'candidatos' => ['Candidatos', 'bi-person-workspace', ['exportar', 'contratar', 'configurar']],
+                'autorizaciones' => ['Autorizaciones departamentales', 'bi-patch-check', [], [], ['ver', 'responder', 'configurar']],
             ]],
             // Seguridad: padrones, operación y sus reportes.
             'seguridad' => ['Seguridad', 'bi-shield-lock', [

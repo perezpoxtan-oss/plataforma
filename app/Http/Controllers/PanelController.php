@@ -7,6 +7,7 @@ use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Procedimientos\AdministradorProcedimientos;
+use App\Services\Recepcion\AvisosInicio;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
@@ -95,6 +96,12 @@ class PanelController extends Controller
             }
         }
         // Fin Procedimientos
+
+        // Recepción de candidatos y autorizaciones (ADR-0007): quién espera a RR. HH. y lo que espera tu autorización
+        if ($empresaId !== null) {
+            array_push($pendientes, ...$tenant->conEmpresa($empresaId, fn () => app(AvisosInicio::class)->para($actor)));
+        }
+        // Fin Recepción de candidatos
 
         return view('panel.index', ['pendientes' => $pendientes]);
     }

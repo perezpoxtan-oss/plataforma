@@ -3282,3 +3282,283 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
     .etiqueta-qr { border: 1px solid #cbd5e1; background: #fff !important; color: #000 !important; }
 }
 /* Fin Ajustes Ronda 6 */
+
+/* ==========================================================================
+   Recepción de candidatos y autorizaciones departamentales (ADR-0007)
+   ========================================================================== */
+/* ---------- Campana (centro de notificaciones) ---------- */
+.campana { position: relative; }
+.btn-campana { position: relative; background: transparent; border: 1px solid var(--borde); color: inherit; border-radius: 10px; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.15rem; }
+.btn-campana:hover, .btn-campana[aria-expanded="true"] { background: var(--color-primario-suave); color: var(--color-primario); }
+.campana-contador { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: #dc2626; color: #fff; font-size: 0.68rem; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
+.campana-panel { position: absolute; right: 0; top: calc(100% + 8px); width: min(380px, calc(100vw - 24px)); background: #fff; border: 1px solid var(--borde); border-radius: 18px; box-shadow: 0 18px 40px -12px rgba(15, 23, 42, 0.35); z-index: 1060; overflow: hidden; }
+.campana-cabeza { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--borde); }
+.campana-leer-todas { background: none; border: none; color: var(--color-primario); font-size: 0.78rem; font-weight: 700; min-height: 44px; padding: 0 0.25rem; cursor: pointer; }
+.campana-lista { max-height: min(60vh, 460px); overflow-y: auto; }
+.campana-vacia { margin: 0; padding: 1.25rem; text-align: center; color: var(--texto-suave); font-size: 0.85rem; }
+.campana-item { border-bottom: 1px solid #f1f5f9; }
+.campana-item:not(.leida) { background: var(--color-primario-suave); }
+.campana-abrir { display: flex; gap: 0.7rem; width: 100%; text-align: left; background: none; border: none; padding: 0.75rem 1rem; cursor: pointer; color: var(--texto); min-height: 56px; }
+.campana-abrir > i { font-size: 1.2rem; color: var(--color-primario); margin-top: 2px; }
+.campana-item.nivel-alerta .campana-abrir > i { color: #d97706; }
+.campana-item.nivel-exito .campana-abrir > i { color: #16a34a; }
+.campana-texto { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.campana-texto strong { font-size: 0.86rem; overflow-wrap: anywhere; }
+.campana-texto span { font-size: 0.8rem; color: var(--texto-suave); overflow-wrap: anywhere; }
+.campana-texto small { font-size: 0.7rem; color: var(--texto-tenue); }
+.campana-acciones { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0 1rem 0.75rem 2.9rem; }
+.campana-ver-todas { display: flex; align-items: center; justify-content: center; gap: 0.35rem; min-height: 46px; font-size: 0.82rem; font-weight: 700; text-decoration: none; color: var(--color-primario); }
+.btn-respuesta { border: none; border-radius: 10px; min-height: 44px; padding: 0 0.9rem; font-weight: 700; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
+.btn-respuesta.aceptar { background: #16a34a; color: #fff; }
+.btn-respuesta.rechazar { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.btn-respuesta.grande { min-height: 52px; font-size: 0.95rem; padding: 0 1.25rem; flex: 1 1 200px; }
+.btn-respuesta.sugerida { outline: 3px solid #fde047; outline-offset: 2px; }
+@media (max-width: 991.98px) { .campana-panel { position: fixed; right: 12px; left: 12px; top: 70px; width: auto; } }
+
+/* ---------- Página de notificaciones ---------- */
+.lista-notificaciones { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.notificacion-fila { display: flex; gap: 0.8rem; background: #fff; border: 1px solid var(--borde); border-radius: 16px; padding: 0.75rem 1rem; }
+.notificacion-fila.no-leida { border-left: 4px solid var(--color-primario); }
+.notificacion-icono { width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; background: var(--color-primario-suave); color: var(--color-primario); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+.notificacion-fila.nivel-alerta .notificacion-icono { background: #fef3c7; color: #b45309; }
+.notificacion-fila.nivel-exito .notificacion-icono { background: #dcfce7; color: #15803d; }
+.notificacion-cuerpo { flex: 1; min-width: 0; }
+.notificacion-abrir { background: none; border: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 2px; width: 100%; color: var(--texto); cursor: pointer; min-height: 44px; }
+.notificacion-abrir span { font-size: 0.85rem; color: var(--texto-suave); }
+.notificacion-abrir small { font-size: 0.72rem; color: var(--texto-tenue); }
+.notificacion-acciones { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+
+/* ---------- Botones y filtros comunes ---------- */
+.btn-accion-rh { border: none; border-radius: 12px; min-height: 44px; padding: 0 1.1rem; font-weight: 700; font-size: 0.88rem; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-family: inherit; text-decoration: none; }
+.btn-secundario-rh { background: #fff; border: 1px solid var(--borde); color: #334155; border-radius: 12px; min-height: 44px; padding: 0 1rem; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-family: inherit; text-decoration: none; }
+.btn-secundario-rh:hover { border-color: #94a3b8; color: var(--texto); }
+.filtros-rh { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
+.filtros-rh .buscador { flex: 1 1 260px; }
+.enlace-volver { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; font-size: 0.85rem; text-decoration: none; color: var(--texto-suave); margin-bottom: 0.25rem; }
+.titulo-seccion-rh { font-size: 0.9rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--texto-suave); margin-bottom: 0.6rem; }
+.min-w-0 { min-width: 0; }
+
+/* ---------- Candidatos ---------- */
+.fichas-candidatos { margin-top: 0.75rem; gap: 1rem; }
+.ficha-candidato { text-decoration: none; color: inherit; padding: 1.15rem; }
+.ficha-candidato:hover { border-color: #16a34a; box-shadow: 0 12px 24px -12px rgba(22, 163, 74, 0.35); }
+.ver-ficha-candidato { margin-top: 0.75rem; font-size: 0.82rem; font-weight: 700; color: #15803d; }
+.pastilla-etapa, .pastilla-revisar, .pastilla-origen, .pastilla-tipo-rh, .pastilla-estado-aut { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.25rem 0.7rem; font-size: 0.72rem; font-weight: 800; white-space: nowrap; }
+.etapa-gris { background: #f1f5f9; color: #475569; }
+.etapa-azul { background: #dbeafe; color: #1d4ed8; }
+.etapa-indigo { background: #e0e7ff; color: #4338ca; }
+.etapa-ambar { background: #fef3c7; color: #92400e; }
+.etapa-verde { background: #dcfce7; color: #15803d; }
+.etapa-esmeralda { background: #047857; color: #fff; }
+.etapa-cian { background: #cffafe; color: #0e7490; }
+.etapa-rojo { background: #fee2e2; color: #b91c1c; }
+.pastilla-revisar { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
+.pastilla-origen { background: var(--fondo); color: var(--texto-suave); border: 1px solid var(--borde); }
+.pastilla-tipo-rh.candidato { background: #dcfce7; color: #15803d; }
+.pastilla-tipo-rh.tramite { background: #e0f2fe; color: #0369a1; }
+.pastilla-tipo-rh.visita { background: #ede9fe; color: #6d28d9; }
+.datos-candidato { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.82rem; color: var(--texto-suave); margin-top: 0.35rem; }
+.datos-candidato span { overflow-wrap: anywhere; }
+.dato-contratado { color: #047857 !important; font-weight: 800; }
+.cabeza-candidato { padding: 1.25rem; margin-bottom: 1rem; }
+.foto-candidato { width: 96px; height: 96px; border-radius: 18px; object-fit: cover; flex-shrink: 0; overflow: hidden; border: 1px solid var(--borde); display: block; }
+.foto-candidato img { width: 100%; height: 100%; object-fit: cover; }
+.foto-candidato.vacia { background: var(--fondo); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: var(--texto-tenue); }
+.nombre-candidato { font-size: 1.5rem; font-weight: 800; margin: 0.15rem 0 0; color: var(--texto); overflow-wrap: anywhere; }
+.avance-candidato { list-style: none; display: flex; gap: 0.25rem; padding: 0; margin: 1.1rem 0 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.avance-candidato li { flex: 1 0 100px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.3rem; font-size: 0.72rem; font-weight: 700; color: var(--texto-tenue); position: relative; }
+.avance-candidato li::before { content: ''; position: absolute; top: 15px; left: -50%; width: 100%; height: 3px; background: var(--borde); z-index: 0; }
+.avance-candidato li:first-child::before { display: none; }
+.avance-candidato .punto { width: 32px; height: 32px; border-radius: 50%; background: #fff; border: 2px solid var(--borde); display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; font-size: 0.8rem; }
+.avance-candidato li.hecho { color: #15803d; }
+.avance-candidato li.hecho .punto { background: #16a34a; border-color: #16a34a; color: #fff; }
+.avance-candidato li.hecho::before, .avance-candidato li.actual::before { background: #16a34a; }
+.avance-candidato li.actual { color: var(--texto); }
+.avance-candidato li.actual .punto { border-color: #2563eb; background: #2563eb; color: #fff; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15); }
+.aviso-etapa-lateral { margin: 0.75rem 0 0; padding: 0.6rem 0.8rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600; }
+.aviso-etapa-lateral.etapa-cartera { background: #ecfeff; color: #0e7490; }
+.aviso-etapa-lateral.etapa-descartado { background: #fef2f2; color: #b91c1c; }
+.acciones-candidato { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+.btn-etapa { border: 1px solid var(--borde); background: #fff; color: #1e293b; border-radius: 12px; min-height: 46px; padding: 0 1rem; font-weight: 700; font-size: 0.86rem; cursor: pointer; font-family: inherit; }
+.btn-etapa.principal { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-color: transparent; }
+.btn-etapa.contratar { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; border-color: transparent; }
+.btn-etapa.secundario { color: #0e7490; border-color: #a5f3fc; }
+.btn-etapa.peligro { color: #b91c1c; border-color: #fecaca; }
+.aviso-autocaptura, .aviso-departamento, .aviso-confirmar-correo { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding: 0.8rem 1rem; border-radius: 16px; margin-bottom: 1rem; font-size: 0.88rem; }
+.aviso-autocaptura { background: #fef9c3; border: 1px solid #fde047; color: #713f12; }
+.aviso-autocaptura > i, .aviso-departamento > i { font-size: 1.4rem; }
+.aviso-departamento { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; }
+.aviso-departamento.estado-entrevista, .aviso-departamento.estado-autorizada { background: #f0fdf4; border-color: #bbf7d0; color: #14532d; }
+.aviso-departamento.estado-rechazada { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+.aviso-confirmar-correo { background: #fefce8; border: 1px solid #fde047; color: #713f12; font-weight: 600; }
+.rejilla-ficha-candidato { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.cv-datos { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; margin: 0 0 0.75rem; font-size: 0.88rem; }
+.cv-datos dt { color: var(--texto-suave); font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.3px; padding-top: 2px; }
+.cv-datos dd { margin: 0; overflow-wrap: anywhere; }
+.subtitulo-cv { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--texto-suave); margin: 1rem 0 0.35rem; }
+.renglon-cv { font-size: 0.88rem; margin-bottom: 0.35rem; overflow-wrap: anywhere; }
+.notas-rh { white-space: pre-line; background: var(--fondo); border-radius: 10px; padding: 0.6rem 0.75rem; }
+.privacidad-aceptada { font-size: 0.78rem; color: var(--texto-suave); }
+.codigo-kiosco-mini { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 800; letter-spacing: 2px; background: var(--fondo); border: 1px solid var(--borde); border-radius: 6px; padding: 0 0.35rem; }
+.fotos-caseta { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.fotos-caseta a { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; text-decoration: none; font-size: 0.75rem; font-weight: 700; color: var(--texto-suave); }
+.fotos-caseta img { width: 110px; height: 110px; object-fit: cover; border-radius: 12px; border: 1px solid var(--borde); }
+.documento-candidato { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9; }
+.documento-candidato > i { font-size: 1.4rem; color: #64748b; }
+.documento-candidato a { flex: 1; min-width: 0; text-decoration: none; color: var(--texto); display: flex; flex-direction: column; min-height: 44px; justify-content: center; }
+.documento-candidato a span { font-size: 0.75rem; color: var(--texto-suave); overflow-wrap: anywhere; }
+.texto-error-rh { color: #b91c1c; font-size: 0.82rem; font-weight: 600; }
+.tiempos-candidato { list-style: none; padding: 0; margin: 0; font-size: 0.84rem; }
+.tiempos-candidato li { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px dashed var(--borde); }
+.historial-candidato { list-style: none; padding: 0 0 0 1rem; margin: 0; border-left: 2px solid var(--borde); }
+.historial-candidato li { position: relative; padding: 0 0 0.75rem 0.5rem; font-size: 0.85rem; }
+.historial-candidato li::before { content: ''; position: absolute; left: -1.42rem; top: 0.35rem; width: 10px; height: 10px; border-radius: 50%; background: #16a34a; }
+.btn-eliminar-candidato { width: 100%; min-height: 46px; border-radius: 12px; background: #fff; border: 1px solid #fecaca; color: #b91c1c; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+/* ---------- CV (captura) ---------- */
+.bloque-cv { border: 1px solid var(--borde); border-radius: 16px; padding: 0.9rem 1rem 0.25rem; margin-bottom: 1rem; }
+.bloque-cv legend { float: none; width: auto; font-size: 0.9rem; font-weight: 800; padding: 0 0.4rem; margin: 0; color: var(--texto); }
+.rejilla-cv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 0.75rem; }
+.filas-cv { display: flex; flex-direction: column; gap: 0.5rem; }
+.fila-cv { background: var(--fondo); border: 1px dashed var(--borde); border-radius: 12px; padding: 0.6rem 0.7rem 0; }
+.fila-cv label.campo-etiqueta { display: block; }
+.fila-cv .campo { margin-top: 0.3rem; text-transform: none; letter-spacing: normal; font-weight: 400; font-size: 0.95rem; color: var(--texto); background: #fff; }
+.fila-cv-pie { display: flex; gap: 0.6rem; align-items: flex-end; flex-wrap: wrap; }
+.fila-cv-pie .flex-grow-1 { min-width: 160px; }
+.campo-anos { width: 90px; }
+.casilla-concluido { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; cursor: pointer; }
+.casilla-concluido input { width: 20px; height: 20px; }
+.btn-quitar-fila-cv { width: 44px; height: 44px; margin-bottom: 1rem; border-radius: 12px; border: 1px solid #fecaca; background: #fff; color: #b91c1c; cursor: pointer; flex-shrink: 0; }
+.btn-agregar-fila-cv { margin: 0.5rem 0 0.9rem; min-height: 44px; border-radius: 12px; border: 1px dashed #16a34a; background: #f0fdf4; color: #15803d; font-weight: 700; padding: 0 1rem; cursor: pointer; font-family: inherit; }
+.btn-agregar-fila-cv:disabled { opacity: 0.5; cursor: not-allowed; }
+.opciones-cv { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.opcion-cv { display: inline-flex; align-items: center; gap: 0.45rem; border: 1px solid var(--borde); border-radius: 999px; padding: 0 0.9rem; min-height: 44px; cursor: pointer; font-size: 0.86rem; font-weight: 600; background: #fff; }
+.opcion-cv:has(input:checked) { border-color: #16a34a; background: #f0fdf4; color: #14532d; }
+.opcion-cv input { width: 18px; height: 18px; }
+.aviso-privacidad-cv { border: 2px solid #16a34a; border-radius: 16px; padding: 0.8rem 1rem; margin-bottom: 1rem; background: #f0fdf4; }
+.aviso-privacidad-cv summary { cursor: pointer; font-weight: 700; color: #15803d; min-height: 36px; display: flex; align-items: center; }
+.texto-privacidad { white-space: pre-line; font-size: 0.8rem; color: #334155; max-height: 220px; overflow-y: auto; background: #fff; border-radius: 10px; padding: 0.6rem 0.75rem; margin: 0.4rem 0 0.6rem; }
+.casilla-privacidad { display: flex; gap: 0.65rem; align-items: flex-start; cursor: pointer; font-size: 0.9rem; margin: 0; min-height: 44px; }
+.casilla-privacidad input { width: 24px; height: 24px; flex-shrink: 0; margin-top: 2px; accent-color: #16a34a; }
+
+/* ---------- Panel de Recepción ---------- */
+.contadores-recepcion { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+.contador-rh { background: #fff; border: 1px solid var(--borde); border-radius: 16px; padding: 0.8rem 1rem; display: flex; flex-direction: column; }
+.contador-rh strong { font-size: 1.6rem; font-weight: 800; line-height: 1.1; color: var(--texto); }
+.contador-rh span { font-size: 0.75rem; font-weight: 700; color: var(--texto-suave); }
+.contador-rh.esperando { border-color: #fdba74; background: #fff7ed; }
+.contador-rh.esperando strong { color: #c2410c; }
+.estado-recepcion { font-size: 0.75rem; font-weight: 700; color: #15803d; margin: 0 0 0.5rem; }
+.estado-recepcion.sin-conexion { color: #b45309; }
+.lista-recepcion { display: flex; flex-direction: column; gap: 0.6rem; }
+.fila-recepcion { display: flex; gap: 0.9rem; align-items: center; background: #fff; border: 1px solid var(--borde); border-left: 6px solid #94a3b8; border-radius: 16px; padding: 0.8rem 1rem; }
+.fila-recepcion.espera-normal { border-left-color: #22c55e; }
+.fila-recepcion.espera-ambar { border-left-color: #f59e0b; }
+.fila-recepcion.espera-roja { border-left-color: #dc2626; }
+.fila-recepcion.espera-atendido { border-left-color: #3b82f6; }
+.fila-recepcion-foto { width: 56px; height: 56px; border-radius: 14px; overflow: hidden; flex-shrink: 0; background: var(--color-primario-suave); color: var(--color-primario); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.4rem; }
+.fila-recepcion-foto img { width: 100%; height: 100%; object-fit: cover; }
+.fila-recepcion-cuerpo { flex: 1; min-width: 0; }
+.fila-recepcion-nombre { font-size: 1.05rem; font-weight: 800; margin: 0; overflow-wrap: anywhere; }
+.fila-recepcion-tiempos { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.8rem; margin-top: 0.3rem; color: var(--texto-suave); }
+.minutos-espera { font-weight: 800; color: #15803d; }
+.espera-ambar .minutos-espera { color: #b45309; }
+.espera-roja .minutos-espera { color: #dc2626; }
+.espera-atendido .minutos-espera { color: #475569; }
+.estado-fila-rh { font-weight: 700; color: var(--texto); }
+.fila-recepcion-acciones { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: flex-end; }
+
+/* ---------- Modo kiosco (tableta) ---------- */
+.rejilla-kiosco { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 1rem; align-items: start; }
+.fila-kiosco { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.4rem; border-bottom: 1px solid #f1f5f9; border-radius: 10px; }
+.fila-kiosco.elegida { background: var(--color-primario-suave); }
+.qr-kiosco { padding: 1.5rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+.qr-kiosco-hola { font-size: 1.4rem; margin: 0; }
+.qr-kiosco-instruccion { font-size: 1.05rem; color: var(--texto-suave); margin: 0; }
+.qr-kiosco-imagen { width: min(320px, 80vw); background: #fff; padding: 12px; border-radius: 16px; border: 1px solid var(--borde); }
+.qr-kiosco-imagen svg { display: block; width: 100%; height: auto; }
+.qr-kiosco-alterno { font-size: 0.85rem; margin: 0.5rem 0 0; overflow-wrap: anywhere; }
+.codigo-kiosco { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 2.6rem; font-weight: 900; letter-spacing: 0.4rem; margin: 0; color: var(--texto); }
+.qr-kiosco-vacio { font-size: 5rem; color: var(--texto-tenue); }
+
+/* ---------- Métricas ---------- */
+.tabla-metricas { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 0.85rem; }
+.tabla-metricas th, .tabla-metricas td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f1f5f9; text-align: left; vertical-align: middle; }
+.tabla-metricas thead th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--texto-suave); background: var(--fondo); }
+.barra-metrica { display: inline-block; width: 80px; height: 8px; border-radius: 999px; background: #e2e8f0; overflow: hidden; vertical-align: middle; margin-right: 0.4rem; }
+.barra-metrica span { display: block; height: 100%; background: #2563eb; border-radius: 999px; }
+.renglon-metrica { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.4rem 0; border-bottom: 1px dashed var(--borde); font-size: 0.86rem; }
+
+/* ---------- Autorizaciones ---------- */
+.tarjeta-autorizacion { background: #fff; border: 1px solid var(--borde); border-left: 6px solid #94a3b8; border-radius: 16px; padding: 0.9rem 1rem; margin-bottom: 0.6rem; }
+.tarjeta-autorizacion.estado-pendiente { border-left-color: #f59e0b; }
+.tarjeta-autorizacion.estado-autorizada, .tarjeta-autorizacion.estado-entrevista { border-left-color: #16a34a; }
+.tarjeta-autorizacion.estado-rechazada { border-left-color: #dc2626; }
+.nombre-autorizacion { font-size: 1.05rem; font-weight: 800; margin: 0.35rem 0 0; overflow-wrap: anywhere; }
+.nombre-autorizacion a { color: var(--texto); text-decoration: none; }
+.pastilla-estado-aut { background: #f1f5f9; color: #475569; margin-left: 0.25rem; }
+.pastilla-estado-aut.estado-pendiente, .pastilla-estado-aut.estado-programada { background: #fef3c7; color: #92400e; }
+.pastilla-estado-aut.estado-autorizada, .pastilla-estado-aut.estado-entrevista, .pastilla-estado-aut.estado-activa { background: #dcfce7; color: #15803d; }
+.pastilla-estado-aut.estado-rechazada { background: #fee2e2; color: #b91c1c; }
+.espera-autorizacion { font-weight: 800; font-size: 0.85rem; color: #15803d; white-space: nowrap; }
+.espera-autorizacion.larga { color: #dc2626; }
+.botones-autorizacion { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+.responder-autorizacion { margin-top: 1.25rem; border-top: 1px solid var(--borde); padding-top: 1rem; }
+.lista-delegaciones { display: flex; flex-direction: column; gap: 0.5rem; }
+.fila-delegacion { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; background: #fff; border: 1px solid var(--borde); border-radius: 14px; padding: 0.7rem 1rem; }
+.fila-delegacion.estado-terminada, .fila-delegacion.estado-cancelada { opacity: 0.7; }
+
+/* ---------- Bitácora de accesos: candidato, visita a departamento y fotos ---------- */
+.caja-candidato-acceso { margin-top: 0.75rem; }
+.casilla-candidato { display: flex; gap: 0.65rem; align-items: flex-start; cursor: pointer; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 0.7rem 0.9rem; margin-bottom: 0.75rem; min-height: 44px; }
+.casilla-candidato input { width: 24px; height: 24px; flex-shrink: 0; accent-color: #16a34a; }
+.caja-foto-ingreso { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem; min-height: 110px; border: 2px dashed var(--borde); border-radius: 14px; background: var(--fondo); cursor: pointer; text-align: center; font-size: 0.8rem; font-weight: 700; color: var(--texto-suave); padding: 0.5rem; overflow: hidden; }
+.caja-foto-ingreso i { font-size: 1.8rem; }
+.caja-foto-ingreso img { width: 100%; max-height: 140px; object-fit: cover; border-radius: 10px; }
+.caja-foto-ingreso.con-foto { border-style: solid; border-color: #16a34a; }
+.caja-foto-ingreso.con-foto i { display: none; }
+.aviso-esperando-autorizacion { display: flex; gap: 0.6rem; align-items: flex-start; background: #fff7ed; border: 2px solid #fb923c; color: #7c2d12; border-radius: 12px; padding: 0.6rem 0.75rem; margin: 0.6rem 0; font-size: 0.85rem; }
+.aviso-esperando-autorizacion > i { font-size: 1.3rem; animation: girar-reloj 2.5s linear infinite; }
+.aviso-esperando-autorizacion.respondida { background: #f0fdf4; border-color: #22c55e; color: #14532d; }
+@keyframes girar-reloj { 0%, 80% { transform: rotate(0); } 100% { transform: rotate(180deg); } }
+@media (prefers-reduced-motion: reduce) { .aviso-esperando-autorizacion > i { animation: none; } }
+.linea-autorizacion { font-size: 0.82rem; font-weight: 700; margin: 0.4rem 0; }
+.linea-autorizacion.autorizada { color: #15803d; }
+.linea-autorizacion.rechazada { color: #b91c1c; }
+.fotos-acceso { display: flex; gap: 0.4rem; margin: 0.4rem 0; }
+.btn-foto-acceso { display: inline-flex; align-items: center; min-height: 40px; padding: 0 0.75rem; border: 1px solid var(--borde); border-radius: 10px; font-size: 0.78rem; font-weight: 700; text-decoration: none; color: #334155; background: #fff; }
+
+/* ---------- Kiosco público (celular del candidato) ---------- */
+body.kiosco-publico { background: linear-gradient(180deg, #f0fdf4 0%, var(--fondo) 240px); }
+.kiosco-cabeza { display: flex; align-items: center; gap: 0.6rem; padding: 0.9rem 1rem; max-width: 720px; margin: 0 auto; width: 100%; }
+.kiosco-titulo { font-weight: 800; font-size: 1.05rem; }
+.kiosco-contenido { flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 0 0.75rem 1.5rem; }
+.kiosco-tarjeta { padding: 1.25rem; }
+.kiosco-icono { font-size: 3rem; color: #16a34a; display: block; margin-bottom: 0.5rem; }
+.kiosco-icono.exito { color: #16a34a; }
+.kiosco-h1 { font-size: 1.4rem; font-weight: 800; }
+.kiosco-saludo { font-size: 1.2rem; margin-bottom: 0.25rem; }
+.kiosco-boton { border: none; border-radius: 14px; min-height: 54px; padding: 0 1.5rem; font-weight: 800; font-size: 1.05rem; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; font-family: inherit; }
+.campo-codigo-kiosco { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 2rem; font-weight: 800; letter-spacing: 0.5rem; text-align: center; text-transform: uppercase; max-width: 320px; margin: 0.5rem auto 1rem; display: block; }
+.kiosco-pie { text-align: center; font-size: 0.75rem; color: var(--texto-tenue); padding: 1rem; }
+.kiosco-publico .bloque-cv .campo { font-size: 1rem; }
+
+@media (max-width: 991.98px) {
+    .rejilla-ficha-candidato, .rejilla-kiosco { grid-template-columns: 1fr; }
+    .contadores-recepcion { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 576px) {
+    .rejilla-cv { grid-template-columns: 1fr; }
+    .fila-recepcion { flex-wrap: wrap; }
+    .fila-recepcion-acciones { width: 100%; justify-content: stretch; }
+    .fila-recepcion-acciones > *, .fila-recepcion-acciones form, .fila-recepcion-acciones form button { flex: 1 1 auto; }
+    .nombre-candidato { font-size: 1.25rem; }
+    .foto-candidato { width: 72px; height: 72px; }
+    .cv-datos { grid-template-columns: 1fr; gap: 0 0; }
+    .cv-datos dd { margin-bottom: 0.4rem; }
+    .acciones-candidato > *, .acciones-candidato form, .acciones-candidato form button { flex: 1 1 100%; }
+    .codigo-kiosco { font-size: 2rem; letter-spacing: 0.25rem; }
+}
+a.btn-pill-tipo { text-decoration: none; white-space: nowrap; }
+.filtros-rh .filtro-select { max-width: none; }
+/* Fin Recepción de candidatos y autorizaciones departamentales */

@@ -173,10 +173,12 @@
         </div>
     @endif
 
+    @include('rh.recepcion._ficha-acceso'){{-- Recepción: autorización del departamento y fotos (ADR-0007) --}}
+
     @if ($modo === 'pendientes' && $puede['aprobar'])
         <div class="ficha-acceso-acciones">
             <form action="{{ route('accesos.autorizar', $a->id) }}" method="POST" class="m-0 w-100"
-                  data-confirmar="¿El Host confirmó la autorización de este acceso? Al confirmar, la persona podrá ingresar.">
+                  data-confirmar="{{ $a->autorizacion === 'esperando' ? '¿El responsable del departamento ya autorizó (por teléfono o en persona)? Al confirmar, la persona podrá ingresar.' : '¿El Host confirmó la autorización de este acceso? Al confirmar, la persona podrá ingresar.' }}">
                 @csrf
                 @method('PATCH')
                 <button type="submit" class="btn-accion-acceso autorizar"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Confirmar Autorización</button>

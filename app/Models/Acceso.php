@@ -75,7 +75,7 @@ class Acceso extends Model
     /** Identificación que se queda en caseta (SEGCAT: ID Custodiada). */
     public const IDENTIFICACIONES = ['ine' => 'INE / IFE', 'licencia' => 'Licencia Conducir', 'pasaporte' => 'Pasaporte'];
 
-    public const MOTIVOS = ['rh' => 'Recursos Humanos', 'colaborador' => 'Visita a Colaborador'];
+    public const MOTIVOS = ['rh' => 'Recursos Humanos', 'colaborador' => 'Visita a Colaborador', 'departamento' => 'Visita a Departamento']; // «departamento»: Recepción (ADR-0007)
 
     public const PASES = ['estancia' => 'Estancia', 'daypass' => 'Daypass', 'nightpass' => 'Nightpass'];
 
@@ -193,6 +193,21 @@ class Acceso extends Model
     {
         return $this->belongsTo(User::class, 'salida_por');
     }
+
+    // Recepción de candidatos y autorizaciones (ADR-0007)
+
+    /** Ficha del candidato que se registró con este acceso. */
+    public function candidatoRecepcion(): HasOne
+    {
+        return $this->hasOne(Candidato::class, 'acceso_id');
+    }
+
+    /** Solicitud de autorización al departamento (la más reciente). */
+    public function autorizacionDepartamento(): HasOne
+    {
+        return $this->hasOne(Autorizacion::class, 'acceso_id')->latestOfMany();
+    }
+    // Fin Recepción de candidatos
 
     // ------------------------------------------------------------------ Ayudas
 

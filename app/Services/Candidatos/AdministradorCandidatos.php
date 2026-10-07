@@ -1,0 +1,496 @@
+<?php
+
+namespace App\Services\Candidatos;
+
+use App\Mail\AvisoRecepcion;
+use App\Models\Acceso;
+use App\Models\Candidato;
+use App\Models\CandidatoEvento;
+use App\Models\Colaborador;
+use App\Models\Departamento;
+use App\Models\Empresa;
+use App\Models\Persona;
+use App\Models\Puesto;
+use App\Models\Sede;
+use App\Models\User;
+use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Avisos\AvisosCorreo;
+use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\Notificaciones\CentroNotificaciones;
+use App\Services\Permisos\AdministradorRoles;
+use App\Services\Permisos\Alcance;
+use App\Services\Permisos\Autorizador;
+use App\Services\Recepcion\AjustesRecepcion;
+use App\Services\Recepcion\Destinatarios;
+use App\Support\Tenancy\Tenant;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Ficha del candidato: alta (caseta, RR. HH. o kiosco), CV, etapas, contratar.
+ *
+ * Reglas:
+ *  - cada candidato es de una sede; con alcance de sede solo se ve lo de sus sedes;
+ *  - el CV no se guarda sin aceptar el aviso de privacidad (se guarda cuándo,
+ *    desde qué IP y la huella del texto aceptado);
+ *  - las etapas siguen Candidato::TRANSICIONES y cada cambio se condiciona a la
+ *    etapa esperada (doble clic o dos personas a la vez: el segundo recibe aviso);
+ *  - «Contratar» crea el colaborador con las reglas de Colaboradores;
+ *  - la auditoría guarda etapa, sede, departamento y puesto: nunca el CV ni el contacto.
+ */
+class AdministradorCandidatos
+{
+    public const MAX_FILAS = 6;
+
+    public function __construct(
+        private readonly Autorizador $autorizador,
+        private readonly AdministradorRoles $auditoria,
+        private readonly CentroNotificaciones $notificaciones,
+        private readonly Destinatarios $destinatarios,
+        private readonly AjustesRecepcion $ajustes,
+    ) {}
+
+    // ------------------------------------------------------------------ Alcance
+
+    /**
+     * @param  Builder<Candidato>  $consulta
+     * @return Builder<Candidato>
+     */
+    public function limitar(Builder $consulta, User $actor, string $permiso): Builder
+    {
+        if ($actor->es_superadmin) {
+            return $consulta;
+        }
+        $efectivo = $this->autorizador->permisosEfectivos($actor)[$permiso] ?? null;
+        if ($efectivo === null) {
+            return $consulta->whereRaw('1 = 0');
+        }
+        $sedes = $this->autorizador->sedesPermitidas($actor, $permiso);
+
+        return $consulta
+            ->when($sedes !== null, fn ($q) => $q->whereIn('candidatos.sede_id', $sedes))
+            ->when($efectivo->alcance === Alcance::Propios, fn ($q) => $q->where('candidatos.creado_por', $actor->id));
+    }
+
+    /**
+     * @return Collection<int, Sede>
+     */
+    public function sedesParaElegir(User $actor, string $permiso): Collection
+    {
+        $permitidas = $actor->can($permiso) ? $this->autorizador->sedesPermitidas($actor, $permiso) : [];
+
+        return Sede::where('activo', true)->when($permitidas !== null, fn ($q) => $q->whereIn('id', $permitidas))->orderBy('nombre')->get(['id', 'nombre']);
+    }
+
+    // ------------------------------------------------------------------- Altas
+
+    /**
+     * La caseta registró a un candidato en la Bitácora de accesos (Personal
+     * externo → Recursos Humanos → «Viene como candidato»). Se crea su ficha
+     * y se avisa a Recursos Humanos en ese momento.
+     *
+     * @param  array<string, mixed>  $d  departamento_id, puesto_id, vacante (ya validados por el registro)
+     */
+    public function desdeAcceso(User $actor, Acceso $acceso, array $d): Candidato
+    {
+        $candidato = new Candidato([
+            'sede_id' => $acceso->sede_id, 'persona_id' => $acceso->persona_id, 'acceso_id' => $acceso->id,
+            'departamento_id' => $d['departamento_id'] ?? null, 'puesto_id' => $d['puesto_id'] ?? null, 'vacante' => $d['vacante'] ?? null,
+            'nombre_completo' => mb_convert_case(mb_strtolower($acceso->nombre), MB_CASE_TITLE), 'origen' => 'caseta', 'llegada_en' => $acceso->entrada_at ?? now(),
+        ]);
+        $candidato->save();
+        if ($acceso->persona_id !== null) {
+            Persona::whereKey($acceso->persona_id)->where('categoria', 'general')->update(['categoria' => 'prospecto_rrhh']);
+        }
+        $this->evento($candidato, 'registrado', null, 'registrado', 'Registrado en caseta por '.$actor->name.'.', $actor);
+        $this->auditoria->auditar($actor, 'candidatos.creado', $candidato, null, $this->foto($candidato));
+        $this->avisarLlegada($candidato, $actor);
+
+        return $candidato;
+    }
+
+    /**
+     * Recursos Humanos captura un candidato (sin pasar por la caseta).
+     *
+     * @param  array<string, mixed>  $entrada
+     */
+    public function crear(User $actor, array $entrada, string $ip): Candidato
+    {
+        $d = $this->validarCv($entrada, true);
+        $sedeId = $this->sedeValida($actor, $entrada['sede_id'] ?? null, 'candidatos.crear');
+
+        $candidato = DB::transaction(function () use ($actor, $d, $sedeId, $ip) {
+            $persona = $this->personaDelPadron($actor, $d['nombre_completo'], $d['telefono'] ?? null);
+            $candidato = new Candidato($this->soloCv($d) + ['sede_id' => $sedeId, 'persona_id' => $persona->id, 'origen' => 'rh', 'llegada_en' => now()]);
+            $this->aceptarPrivacidad($candidato, $ip, 'rh');
+            $candidato->save();
+
+            return $candidato;
+        });
+
+        $this->evento($candidato, 'registrado', null, 'registrado', 'Capturado por Recursos Humanos.', $actor);
+        $this->auditoria->auditar($actor, 'candidatos.creado', $candidato, null, $this->foto($candidato));
+
+        return $candidato;
+    }
+
+    /**
+     * @param  array<string, mixed>  $entrada
+     */
+    public function actualizar(User $actor, Candidato $candidato, array $entrada, string $ip): Candidato
+    {
+        $d = $this->validarCv($entrada, $candidato->privacidad_aceptada_en === null);
+        $antes = $this->foto($candidato);
+        $candidato->fill($this->soloCv($d));
+        if (array_key_exists('notas_rh', $entrada)) {
+            $notas = trim((string) ($entrada['notas_rh'] ?? ''));
+            $candidato->notas_rh = $notas === '' ? null : mb_substr($notas, 0, 3000);
+        }
+        if ($candidato->privacidad_aceptada_en === null) {
+            $this->aceptarPrivacidad($candidato, $ip, 'rh');
+        }
+        $candidato->autocaptura_pendiente = false;
+        $candidato->save();
+        $this->auditoria->auditar($actor, 'candidatos.actualizado', $candidato, $antes, $this->foto($candidato));
+
+        return $candidato;
+    }
+
+    /**
+     * Recursos Humanos revisó lo que el candidato capturó en el kiosco.
+     */
+    public function autocapturaRevisada(User $actor, Candidato $candidato): void
+    {
+        if ($candidato->autocaptura_pendiente) {
+            $candidato->forceFill(['autocaptura_pendiente' => false])->save();
+            $this->evento($candidato, 'autocaptura_revisada', null, null, 'Recursos Humanos revisó lo que capturó el candidato.', $actor);
+        }
+    }
+
+    // ------------------------------------------------------------------- Etapas
+
+    /**
+     * Cambia de etapa. «Aprobado por RR. HH.» pide el departamento y avisa a su
+     * responsable; «Descartado» pide el motivo.
+     */
+    public function cambiarEtapa(User $actor, Candidato $candidato, string $etapa, ?string $comentario = null): Candidato
+    {
+        $comentario = $comentario === null ? null : (trim($comentario) === '' ? null : mb_substr(trim($comentario), 0, 500));
+        if (! array_key_exists($etapa, Candidato::ETAPAS) || $etapa === 'contratado' || $etapa === 'registrado') {
+            throw new CambioNoPermitido('Elige una etapa válida. Para contratar usa el botón «Contratar».');
+        }
+        if (! $candidato->puedePasarA($etapa)) {
+            throw new CambioNoPermitido('Un candidato «'.$candidato->etiquetaEtapa().'» no puede pasar a «'.Candidato::ETAPAS[$etapa].'».');
+        }
+        if ($etapa === 'descartado' && $comentario === null) {
+            throw ValidationException::withMessages(['comentario' => 'Escribe por qué se descarta (lo verá solo Recursos Humanos).']);
+        }
+        if ($etapa === 'aprobado_rh' && $candidato->departamento_id === null) {
+            throw ValidationException::withMessages(['comentario' => 'Antes de aprobar, indica en la ficha a qué departamento aplica.']);
+        }
+
+        $anterior = $candidato->etapa;
+        $cambios = ['etapa' => $etapa, 'actualizado_por' => $actor->id, 'updated_at' => now()];
+        $cambios += match ($etapa) {
+            'revision' => $candidato->revision_en === null ? ['revision_en' => now()] : [],
+            'aprobado_rh' => ['aprobado_rh_en' => now()],
+            'entrevista' => ['entrevista_en' => now()],
+            'seleccionado', 'cartera', 'descartado' => ['decision_en' => now(), 'decision_por' => $actor->id],
+        };
+        if ($etapa === 'descartado') {
+            $cambios['motivo_descarte'] = $comentario;
+        }
+        $hecho = Candidato::whereKey($candidato->id)->where('etapa', $anterior)->update($cambios);
+        if ($hecho === 0) {
+            throw new CambioNoPermitido('Otra persona acaba de cambiar a este candidato. Revisa su etapa actual.');
+        }
+        $candidato->refresh();
+
+        $this->evento($candidato, 'etapa', $anterior, $etapa, $comentario, $actor);
+        $this->auditoria->auditar($actor, 'candidatos.etapa', $candidato, ['etapa' => $anterior], ['etapa' => $etapa]);
+
+        // Lo que estaba pendiente con el departamento deja de esperar si RR. HH. decide otra cosa
+        if ($anterior === 'aprobado_rh' && $etapa !== 'entrevista') {
+            app(Autorizaciones::class)->cancelarDeCandidato($actor, $candidato);
+        }
+        if ($etapa === 'aprobado_rh') {
+            app(Autorizaciones::class)->solicitarCandidato($actor, $candidato);
+        }
+
+        return $candidato;
+    }
+
+    /**
+     * La respuesta del departamento mueve al candidato (lo llama Autorizaciones).
+     */
+    public function respuestaDepartamento(User $actor, Candidato $candidato, string $estado, ?string $comentario): void
+    {
+        $nueva = $estado === 'entrevista' ? 'entrevista' : 'cartera';
+        $cambios = ['etapa' => $nueva, 'respuesta_departamento_en' => now(), 'actualizado_por' => $actor->id, 'updated_at' => now()]
+            + ($nueva === 'entrevista' ? ['entrevista_en' => now()] : ['decision_en' => now(), 'decision_por' => $actor->id]);
+        if (Candidato::whereKey($candidato->id)->where('etapa', 'aprobado_rh')->update($cambios) === 0) {
+            return;
+        }
+        $candidato->refresh();
+        $texto = $nueva === 'entrevista' ? 'El departamento pidió bajarlo a entrevista.' : 'El departamento no lo aceptó: queda en cartera.';
+        $this->evento($candidato, 'etapa', 'aprobado_rh', $nueva, trim($texto.' '.($comentario ?? '')), $actor);
+        $this->auditoria->auditar($actor, 'candidatos.etapa', $candidato, ['etapa' => 'aprobado_rh'], ['etapa' => $nueva]);
+    }
+
+    /**
+     * «Contratar»: crea el colaborador con los datos capturados (y lo que RR. HH.
+     * confirma en el diálogo: número de empleado, apellidos, sede, puesto).
+     *
+     * @param  array<string, mixed>  $entrada
+     */
+    public function contratar(User $actor, Candidato $candidato, array $entrada): Colaborador
+    {
+        if ($candidato->etapa !== 'seleccionado') {
+            throw new CambioNoPermitido('Solo se contrata a un candidato «Seleccionado».');
+        }
+        $datos = array_merge([
+            'telefono' => $candidato->telefono, 'sede_id' => $candidato->sede_id, 'departamento_id' => $candidato->departamento_id,
+            'puesto_id' => $candidato->puesto_id, 'correo_personal' => $candidato->correo,
+            'fecha_nacimiento' => $candidato->fecha_nacimiento?->format('Y-m-d'),
+        ], array_intersect_key($entrada, array_flip(['num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'sede_id', 'departamento_id', 'puesto_id', 'telefono'])));
+        $datos = array_filter($datos, fn ($v) => $v !== null && $v !== '');
+
+        $colaborador = DB::transaction(function () use ($actor, $candidato, $datos) {
+            $colaborador = app(AdministradorColaboradores::class)->crear($actor, (int) $candidato->empresa_id, Request::create('/', 'POST', $datos));
+            $hecho = Candidato::whereKey($candidato->id)->where('etapa', 'seleccionado')->update([
+                'etapa' => 'contratado', 'contratado_en' => now(), 'colaborador_id' => $colaborador->id,
+                'decision_en' => $candidato->decision_en ?? now(), 'actualizado_por' => $actor->id, 'updated_at' => now(),
+            ]);
+            if ($hecho === 0) {
+                throw new CambioNoPermitido('Otra persona acaba de cambiar a este candidato. Revisa su etapa actual.');
+            }
+
+            return $colaborador;
+        });
+        $candidato->refresh();
+        $this->evento($candidato, 'contratado', 'seleccionado', 'contratado', 'Alta como colaborador (núm. '.$colaborador->num_empleado.').', $actor);
+        $this->auditoria->auditar($actor, 'candidatos.contratado', $candidato, ['etapa' => 'seleccionado'], ['etapa' => 'contratado', 'colaborador_id' => $colaborador->id]);
+
+        return $colaborador;
+    }
+
+    public function eliminar(User $actor, Candidato $candidato): void
+    {
+        $antes = $this->foto($candidato);
+        $documentos = app(DocumentosCandidato::class);
+        foreach ($candidato->documentos as $doc) {
+            $documentos->borrar($doc->ruta);
+        }
+        $candidato->delete();
+        $this->auditoria->auditar($actor, 'candidatos.eliminado', $candidato, $antes, null);
+    }
+
+    // ------------------------------------------------------------ Validación CV
+
+    /**
+     * Valida y normaliza el CV (mismas reglas en RR. HH. y en el kiosco).
+     *
+     * @param  array<string, mixed>  $entrada
+     * @return array<string, mixed>
+     */
+    public function validarCv(array $entrada, bool $pidePrivacidad): array
+    {
+        $entrada = array_map(fn ($v) => is_string($v) && trim($v) === '' ? null : $v, $entrada);
+        foreach (['escolaridad', 'experiencia', 'referencias'] as $lista) {
+            // Filas sin ningún dato escrito (las que el formulario deja en blanco) se omiten
+            $entrada[$lista] = array_values(array_filter(is_array($entrada[$lista] ?? null) ? $entrada[$lista] : [],
+                fn ($f) => is_array($f) && collect($f)->except('concluido')->contains(fn ($v) => is_scalar($v) && trim((string) $v) !== '')));
+        }
+        if (isset($entrada['telefono']) && is_string($entrada['telefono'])) {
+            $entrada['telefono'] = preg_replace('/\D+/', '', $entrada['telefono']);
+        }
+        if (isset($entrada['pretension']) && is_string($entrada['pretension'])) {
+            $entrada['pretension'] = str_replace([',', '$', ' '], '', $entrada['pretension']);
+        }
+
+        $d = Validator::make($entrada, [
+            'nombre_completo' => ['required', 'string', 'min:5', 'max:150'],
+            'telefono' => ['nullable', 'regex:/^\d{10,15}$/'],
+            'correo' => ['nullable', 'email:rfc', 'max:150'],
+            'fecha_nacimiento' => ['nullable', 'date_format:Y-m-d', 'before:-15 years', 'after:1930-01-01'],
+            'ciudad' => ['nullable', 'string', 'max:120'],
+            'departamento_id' => ['nullable', 'integer'],
+            'puesto_id' => ['nullable', 'integer'],
+            'vacante' => ['nullable', 'string', 'max:150'],
+            'escolaridad' => ['array', 'max:'.self::MAX_FILAS],
+            'escolaridad.*.nivel' => ['required', Rule::in(array_keys(Candidato::ESCOLARIDAD))],
+            'escolaridad.*.institucion' => ['nullable', 'string', 'max:150'],
+            'escolaridad.*.titulo' => ['nullable', 'string', 'max:150'],
+            'escolaridad.*.concluido' => ['nullable', 'boolean'],
+            'experiencia' => ['array', 'max:'.self::MAX_FILAS],
+            'experiencia.*.empresa' => ['required', 'string', 'max:150'],
+            'experiencia.*.puesto' => ['nullable', 'string', 'max:150'],
+            'experiencia.*.anos' => ['nullable', 'integer', 'min:0', 'max:60'],
+            'experiencia.*.motivo_salida' => ['nullable', 'string', 'max:200'],
+            'habilidades' => ['nullable', 'string', 'max:1000'],
+            'idiomas' => ['nullable', 'string', 'max:255'],
+            'disponibilidad' => ['nullable', Rule::in(array_keys(Candidato::DISPONIBILIDAD))],
+            'disponibilidad_notas' => ['nullable', 'string', 'max:255'],
+            'pretension' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
+            'referencias' => ['array', 'max:'.self::MAX_FILAS],
+            'referencias.*.nombre' => ['required', 'string', 'max:150'],
+            'referencias.*.telefono' => ['nullable', 'string', 'max:20'],
+            'referencias.*.relacion' => ['nullable', 'string', 'max:80'],
+            'acepta_privacidad' => $pidePrivacidad ? ['accepted'] : ['nullable'],
+        ], [
+            'nombre_completo.required' => 'Escribe el nombre completo.',
+            'nombre_completo.min' => 'Escribe el nombre completo (nombre y apellidos).',
+            'telefono.regex' => 'El teléfono lleva de 10 a 15 números.',
+            'correo.email' => 'Revisa el correo: parece incompleto.',
+            'fecha_nacimiento.*' => 'Revisa la fecha de nacimiento.',
+            'escolaridad.*.nivel.*' => 'En escolaridad, elige el nivel de estudios.',
+            'experiencia.*.empresa.required' => 'En experiencia, escribe el nombre de la empresa.',
+            'experiencia.*.anos.*' => 'En experiencia, los años van de 0 a 60.',
+            'referencias.*.nombre.required' => 'En referencias, escribe el nombre de la persona.',
+            'pretension.*' => 'La pretensión económica es un número (sin letras).',
+            'acepta_privacidad.accepted' => 'Para guardar, marca «Acepto el aviso de privacidad».',
+            '*.max' => 'Ese dato es demasiado largo.',
+            '*.array' => 'Revisa la lista.',
+        ])->validate();
+
+        // Departamento y puesto: de la empresa y activos
+        if (! empty($d['departamento_id']) && ! Departamento::where('activo', true)->whereKey((int) $d['departamento_id'])->exists()) {
+            throw ValidationException::withMessages(['departamento_id' => 'Elige un departamento activo de la lista.']);
+        }
+        if (! empty($d['puesto_id']) && ! Puesto::where('activo', true)->whereKey((int) $d['puesto_id'])->exists()) {
+            throw ValidationException::withMessages(['puesto_id' => 'Elige un puesto activo de la lista.']);
+        }
+
+        $d['nombre_completo'] = mb_convert_case(mb_strtolower((string) preg_replace('/\s+/u', ' ', trim($d['nombre_completo']))), MB_CASE_TITLE);
+        $d['escolaridad'] = array_map(fn ($f) => [
+            'nivel' => $f['nivel'], 'institucion' => $this->linea($f['institucion'] ?? null), 'titulo' => $this->linea($f['titulo'] ?? null),
+            'concluido' => filter_var($f['concluido'] ?? false, FILTER_VALIDATE_BOOL),
+        ], $d['escolaridad'] ?? []);
+        $d['experiencia'] = array_map(fn ($f) => [
+            'empresa' => $this->linea($f['empresa'] ?? null), 'puesto' => $this->linea($f['puesto'] ?? null),
+            'anos' => isset($f['anos']) ? (int) $f['anos'] : null, 'motivo_salida' => $this->linea($f['motivo_salida'] ?? null),
+        ], $d['experiencia'] ?? []);
+        $d['referencias'] = array_map(fn ($f) => [
+            'nombre' => $this->linea($f['nombre'] ?? null), 'telefono' => $this->linea($f['telefono'] ?? null), 'relacion' => $this->linea($f['relacion'] ?? null),
+        ], $d['referencias'] ?? []);
+
+        return $d;
+    }
+
+    /**
+     * @param  array<string, mixed>  $d
+     * @return array<string, mixed>
+     */
+    public function soloCv(array $d): array
+    {
+        $campos = ['nombre_completo', 'telefono', 'correo', 'fecha_nacimiento', 'ciudad', 'departamento_id', 'puesto_id', 'vacante',
+            'escolaridad', 'experiencia', 'habilidades', 'idiomas', 'disponibilidad', 'disponibilidad_notas', 'pretension', 'referencias'];
+        $r = [];
+        foreach ($campos as $c) {
+            $v = $d[$c] ?? null;
+            $r[$c] = is_string($v) ? trim($v) : $v;
+        }
+        $r['escolaridad'] = $r['escolaridad'] ?: null;
+        $r['experiencia'] = $r['experiencia'] ?: null;
+        $r['referencias'] = $r['referencias'] ?: null;
+
+        return $r;
+    }
+
+    public function aceptarPrivacidad(Candidato $candidato, string $ip, string $medio): void
+    {
+        $empresa = Empresa::find($candidato->empresa_id ?? app(Tenant::class)->empresaId());
+        $candidato->forceFill([
+            'privacidad_aceptada_en' => now(), 'privacidad_ip' => mb_substr($ip, 0, 45),
+            'privacidad_version' => $empresa ? $this->ajustes->versionPrivacidad($empresa) : null, 'privacidad_medio' => $medio,
+        ]);
+    }
+
+    // ------------------------------------------------------------------ Ayudas
+
+    public function evento(Candidato $candidato, string $evento, ?string $de, ?string $a, ?string $comentario, ?User $actor): void
+    {
+        $e = new CandidatoEvento(['candidato_id' => $candidato->id, 'evento' => $evento, 'etapa_anterior' => $de, 'etapa_nueva' => $a,
+            'comentario' => $comentario === null ? null : mb_substr($comentario, 0, 500), 'user_id' => $actor?->id]);
+        $e->forceFill(['empresa_id' => $candidato->empresa_id])->save();
+    }
+
+    /**
+     * Aviso a Recursos Humanos (campana + correo) en el momento en que llega un candidato.
+     */
+    public function avisarLlegada(Candidato $candidato, ?User $registro): void
+    {
+        $candidato->loadMissing(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre']);
+        $usuarios = $this->destinatarios->conPermiso((int) $candidato->empresa_id, 'candidatos.editar', (int) $candidato->sede_id)
+            ->reject(fn (User $u) => $registro !== null && $u->id === $registro->id);
+        $puesto = $candidato->puestoVisible();
+        $texto = trim(($puesto ? 'Aplica a: '.$puesto.'. ' : '').($candidato->departamento ? 'Departamento: '.$candidato->departamento->nombre.'. ' : '')
+            .'Sede: '.$candidato->sede?->nombre.'.');
+        $this->notificaciones->avisar((int) $candidato->empresa_id, $usuarios->pluck('id'), 'candidato_llegada', [
+            'titulo' => 'Llegó un candidato: '.$candidato->nombre_completo,
+            'texto' => $texto,
+            'url' => route('candidatos.show', $candidato->id),
+            'referencia_tipo' => 'candidato', 'referencia_id' => $candidato->id,
+        ]);
+        app(AvisosCorreo::class)->recepcion((int) $candidato->empresa_id, 'candidato_llegada', $usuarios->pluck('email')->filter()->values()->all(),
+            new AvisoRecepcion('Llegó un candidato: '.$candidato->nombre_completo, [$texto, 'Registró: '.($registro?->name ?? 'Kiosco').'.'],
+                [['Abrir su ficha', route('candidatos.show', $candidato->id)]]));
+        $candidato->forceFill(['avisado_rh_en' => now()])->save();
+    }
+
+    private function sedeValida(User $actor, mixed $sedeId, string $permiso): int
+    {
+        if (! is_numeric($sedeId) || ! $this->sedesParaElegir($actor, $permiso)->contains('id', (int) $sedeId)) {
+            throw ValidationException::withMessages(['sede_id' => 'Elige una sede activa de la lista.']);
+        }
+
+        return (int) $sedeId;
+    }
+
+    /**
+     * El candidato queda en el Padrón de personas (visitante, «Prospecto de RR. HH.»):
+     * si ya hay una persona activa con ese nombre, se usa.
+     */
+    public function personaDelPadron(User $actor, string $nombre, ?string $telefono): Persona
+    {
+        $existente = Persona::where('activo', true)->where('tipo', 'visitante')
+            ->whereRaw('LOWER(nombre_completo) = ?', [mb_strtolower($nombre)])->orderBy('id')->first();
+        if ($existente !== null) {
+            if ($existente->categoria === 'general') {
+                $existente->forceFill(['categoria' => 'prospecto_rrhh'])->save();
+            }
+
+            return $existente;
+        }
+        $persona = Persona::create(['tipo' => 'visitante', 'categoria' => 'prospecto_rrhh', 'nombre_completo' => $nombre, 'telefono' => $telefono,
+            'motivo_visita' => 'Candidato de Recursos Humanos']);
+        $this->auditoria->auditar($actor, 'visitantes.creado', $persona, null, $persona->only(['tipo', 'categoria', 'nombre_completo']));
+
+        return $persona;
+    }
+
+    private function linea(mixed $v): ?string
+    {
+        if (! is_string($v)) {
+            return null;
+        }
+        $t = trim((string) preg_replace('/\s+/u', ' ', $v));
+
+        return $t === '' ? null : $t;
+    }
+
+    /**
+     * Foto para la auditoría: sin datos de contacto ni CV (dato personal).
+     *
+     * @return array<string, mixed>
+     */
+    public function foto(Candidato $c): array
+    {
+        return $c->only(['sede_id', 'nombre_completo', 'etapa', 'departamento_id', 'puesto_id', 'vacante', 'origen', 'acceso_id', 'colaborador_id']);
+    }
+}

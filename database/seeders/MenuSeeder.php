@@ -39,6 +39,10 @@ class MenuSeeder extends Seeder
                 'Catálogos del personal' => [
                     'departamentos' => 'warning', 'puestos' => 'info', 'turnos' => 'secondary',
                 ],
+                // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
+                'Recepción y candidatos' => [
+                    'recepcion_rh' => 'primary', 'candidatos' => 'success', 'autorizaciones' => 'warning',
+                ],
             ]],
             'padrones' => ['Padrones', 'bi-folder2-open', 2, [
                 'Identidad y Personas' => [

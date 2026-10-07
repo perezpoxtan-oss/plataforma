@@ -101,6 +101,7 @@ class AltasPorVerificar
             ['accesos', 'persona_id'],
             ['lost_found_entregas', 'persona_id'],
             ['movimientos_transporte', 'chofer_id'],
+            ['candidatos', 'persona_id'], // Recepción de candidatos (ADR-0007)
         ],
     ];
 

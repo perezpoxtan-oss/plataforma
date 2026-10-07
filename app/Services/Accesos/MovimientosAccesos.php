@@ -7,6 +7,7 @@ use App\Models\AcompananteAcceso;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\ZonaEstacionamiento;
+use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Permisos\AdministradorRoles;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -43,6 +44,7 @@ class MovimientosAccesos
         }
 
         $this->auditoria->auditar($actor, 'accesos.autorizado', $acceso, ['estado' => 'pendiente'], ['estado' => 'en_sitio']);
+        app(Autorizaciones::class)->resueltaEnCaseta($actor, $acceso); // Recepción: la visita que esperaba al departamento (ADR-0007)
     }
 
     /**

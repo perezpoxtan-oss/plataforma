@@ -97,6 +97,11 @@
             @include('seguridad.pases-salida._config-resumen', ['empresa' => $empresa])
         @endif
         {{-- Fin Pases de salida --}}
+        {{-- Recepción de candidatos: aviso de privacidad y kiosco (ADR-0007) --}}
+        @if ($empresa && auth()->user()->can('candidatos.configurar'))
+            @include('rh.recepcion._ajustes', ['empresa' => $empresa])
+        @endif
+        {{-- Fin Recepción de candidatos --}}
 
         @if ($esSuperadmin)
             {{-- ================= Correo saliente (plataforma) ================= --}}

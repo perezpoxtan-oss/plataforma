@@ -16,6 +16,7 @@ use App\Services\Padrones\AdministradorProveedores;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Personas\AdministradorPersonas;
+use App\Services\Recepcion\RecepcionEnCaseta;
 use App\Services\Vehiculos\AdministradorVehiculos;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -181,6 +182,10 @@ class RegistroAccesos
             $acompanantes[] = ['nombre' => $nombreAc, 'identificacion' => $idAc, 'gafete' => $gafeteAc];
         }
 
+        // Recepción de candidatos y autorizaciones (ADR-0007): candidato, visita a departamento y fotos
+        $recepcion = app(RecepcionEnCaseta::class)->preparar($tipo, $motivo, $entrada, $sedeId, $visita, $errores);
+        // Fin Recepción de candidatos
+
         if ($errores !== []) {
             throw ValidationException::withMessages($errores);
         }
@@ -210,7 +215,7 @@ class RegistroAccesos
             }
         }
 
-        $estado = in_array($tipo, Acceso::CON_AUTORIZACION, true) ? 'pendiente' : 'en_sitio';
+        $estado = in_array($tipo, Acceso::CON_AUTORIZACION, true) || $recepcion['esperar'] ? 'pendiente' : 'en_sitio'; // Recepción: visita que espera al departamento
 
         $acceso = DB::transaction(function () use ($actor, $d, $tipo, $sedeId, $nombre, $colaborador, $host, $visita, $motivo, $departamentoId,
             $placas, $modo, $tipoVehiculo, $zonaId, $conductor, $gafete, $acompanantes, $personaId, $personaRepetida, $estado) {
@@ -289,6 +294,7 @@ class RegistroAccesos
         });
 
         $this->auditoria->auditar($actor, 'accesos.creado', $acceso, null, self::foto($acceso));
+        app(RecepcionEnCaseta::class)->despues($actor, $acceso, $recepcion); // Recepción de candidatos (ADR-0007)
 
         return $acceso;
     }
