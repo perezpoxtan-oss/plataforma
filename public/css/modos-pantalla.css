@@ -1338,3 +1338,15 @@ html.modo-noche .linea-autorizacion.rechazada, html.modo-noche .espera-roja .min
 html.modo-noche .espera-ambar .minutos-espera { color: #fcd34d; }
 html.modo-noche body.kiosco-publico { background: var(--fondo); }
 /* Fin Recepción de candidatos y autorizaciones */
+/* ==========================================================================
+   Ronda 8 de ajustes de QA: secciones plegables en Sol y Noche
+   ========================================================================== */
+html.modo-sol .seccion-plegable { border: 2px solid #000; background: #fff; }
+html.modo-sol .seccion-plegable > summary { color: #000; }
+html.modo-sol .seccion-plegable[open] > summary { border-bottom: 2px solid #000; }
+html.modo-sol .seccion-plegable-flecha { color: #000; }
+html.modo-sol .seccion-plegable-aviso { color: #991b1b; }
+html.modo-noche .seccion-plegable { background: var(--superficie); border-color: var(--borde); }
+html.modo-noche .seccion-plegable > summary:hover { background: var(--superficie-2); }
+html.modo-noche .seccion-plegable-aviso { color: #fca5a5; }
+/* Fin Ronda 8 de ajustes de QA */

@@ -75,7 +75,7 @@
             @endforeach
         </nav>
 
-        <form method="GET" action="{{ route('lost_found.archivo') }}" class="busqueda-lf" role="search">
+        <form method="GET" data-autoenviar action="{{ route('lost_found.archivo') }}" class="busqueda-lf" role="search">
             @if ($filtro !== 'todos')<input type="hidden" name="filtro" value="{{ $filtro }}">@endif
             <div class="buscador">
                 <i class="bi bi-search" aria-hidden="true"></i>

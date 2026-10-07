@@ -33,7 +33,7 @@
         @if ($errors->any())
             <div class="alert alert-danger py-2 small" role="alert">@foreach ($errors->all() as $e)<div>{{ $e }}</div>@endforeach</div>
         @endif
-        <form method="GET" action="{{ route('lost_found.auditoria') }}" class="filtros-auditoria-lf">
+        <form method="GET" data-autoenviar action="{{ route('lost_found.auditoria') }}" class="filtros-auditoria-lf">
             <div>
                 <label class="campo-etiqueta" for="aud_sede">Sede</label>
                 <select id="aud_sede" name="sede" class="campo">

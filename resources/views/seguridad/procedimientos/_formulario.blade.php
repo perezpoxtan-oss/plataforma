@@ -51,7 +51,8 @@
             @endif
 
             {{-- ===== 1. Datos generales ===== --}}
-            <h3 class="paso-pase"><span class="numero-paso">1</span><i class="bi bi-card-heading text-primary me-2" aria-hidden="true"></i>Datos generales</h3>
+            <x-seccion clave="procedimiento-1" :abierta="true">
+                <x-slot:titulo><span class="numero-paso">1</span><i class="bi bi-card-heading text-primary me-2" aria-hidden="true"></i>Datos generales</x-slot:titulo>
             <div class="row">
                 <div class="col-md-4">
                     <label class="campo-etiqueta" for="{{ $modo }}_clave">Clave</label>
@@ -91,7 +92,9 @@
             </div>
 
             {{-- ===== 2. A quién aplica ===== --}}
-            <h3 class="paso-pase"><span class="numero-paso">2</span><i class="bi bi-people text-success me-2" aria-hidden="true"></i>A quién aplica</h3>
+            </x-seccion>
+            <x-seccion clave="procedimiento-2" :abierta="true">
+                <x-slot:titulo><span class="numero-paso">2</span><i class="bi bi-people text-success me-2" aria-hidden="true"></i>A quién aplica</x-slot:titulo>
             <p class="small text-muted mb-2">Quien entre aquí debe leerlo y firmar «Leí y entendí». Sin departamentos ni puestos marcados, aplica a todo el personal de esas sedes.</p>
             <div class="opciones-aplica" role="radiogroup" aria-label="Sedes">
                 @if ($formulario['todasPermitido'])
@@ -135,7 +138,9 @@
             </details>
 
             {{-- ===== 3. Pasos ===== --}}
-            <h3 class="paso-pase"><span class="numero-paso">3</span><i class="bi bi-list-ol text-warning me-2" aria-hidden="true"></i>Pasos <span class="normal">(en orden)</span></h3>
+            </x-seccion>
+            <x-seccion clave="procedimiento-3" :abierta="true">
+                <x-slot:titulo><span class="numero-paso">3</span><i class="bi bi-list-ol text-warning me-2" aria-hidden="true"></i>Pasos <span class="normal">(en orden)</span></x-slot:titulo>
             <p class="small text-muted mb-2">Un paso por renglón, claro y corto. Marca <strong>Punto crítico</strong> lo que nunca debe olvidarse: se resalta en rojo al consultarlo.</p>
             <ol class="pasos-editor" data-pasos-editor data-siguiente="{{ count($pasosPrevios) }}">
                 @foreach ($pasosPrevios as $i => $paso)
@@ -148,7 +153,9 @@
             <button type="button" class="btn-agregar-articulo" data-agregar-paso><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar paso</button>
 
             {{-- ===== 4. Notas y adjuntos ===== --}}
-            <h3 class="paso-pase"><span class="numero-paso">4</span><i class="bi bi-paperclip text-secondary me-2" aria-hidden="true"></i>Notas y adjuntos <span class="normal">(opcional)</span></h3>
+            </x-seccion>
+            <x-seccion clave="procedimiento-4" :abierta="true">
+                <x-slot:titulo><span class="numero-paso">4</span><i class="bi bi-paperclip text-secondary me-2" aria-hidden="true"></i>Notas y adjuntos <span class="normal">(opcional)</span></x-slot:titulo>
             <label class="campo-etiqueta" for="{{ $modo }}_notas">Notas</label>
             <textarea id="{{ $modo }}_notas" name="notas" class="campo" rows="2" maxlength="4000" placeholder="Teléfonos de emergencia, aclaraciones…">{{ $valor('notas') }}</textarea>
             @if ($editando && $trabajo->adjuntos->isNotEmpty())
@@ -166,7 +173,7 @@
                 <label class="campo-etiqueta mt-2" for="{{ $modo }}_resumen">Qué cambió respecto a la versión {{ $trabajo->numero - 1 }} <span class="text-danger" aria-hidden="true">*</span> <span class="text-lowercase fw-normal">(obligatorio al enviar)</span></label>
                 <textarea id="{{ $modo }}_resumen" name="resumen_cambios" class="campo" rows="2" maxlength="1000" placeholder="Ej: Se agregó llamar al 911 antes de avisar a la gerencia.">{{ $valor('resumen_cambios') }}</textarea>
             @endif
-
+            </x-seccion>
             <div class="dialogo-acciones">
                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                 <button type="submit" class="btn-cancelar btn-siguiente-pase"><i class="bi bi-save me-1" aria-hidden="true"></i>Guardar borrador</button>

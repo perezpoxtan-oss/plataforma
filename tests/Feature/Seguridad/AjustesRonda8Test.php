@@ -156,4 +156,59 @@ class AjustesRonda8Test extends PruebaNovedades
         $this->actingAs($amaLlaves)->post('/novedades', $this->datos(['categoria' => '']))->assertSessionHasNoErrors();
         $this->assertSame('lost_found', $this->enEmpresa(fn () => Novedad::firstOrFail()->categoria));
     }
+
+    // ------------------------------------------------------------- NV-06
+
+    public function test_nv06_los_filtros_de_las_listas_se_aplican_solos(): void
+    {
+        foreach (['/lost-found', '/lost-found/auditoria', '/procedimientos', '/robos', '/recorridos-pc/reporte', '/rh/recepcion/metricas',
+            '/accesos', '/pases-salida', '/vouchers', '/transporte', '/candidatos', '/etiquetas/historial'] as $url) {
+            $html = $this->actingAs($this->admin)->get($url)->assertOk()->getContent();
+            $this->assertMatchesRegularExpression('/<form[^>]*method="GET"[^>]*data-autoenviar/', $html, "Sin filtros automáticos en {$url}");
+        }
+        // El botón Buscar/Filtrar queda solo como respaldo (se oculta cuando hay JavaScript)
+        $this->assertStringContainsString('html.filtros-automaticos form[data-autoenviar] button[type="submit"]', (string) file_get_contents(public_path('css/plataforma.css')));
+        $this->assertStringContainsString("classList.add('filtros-automaticos')", (string) file_get_contents(public_path('js/plataforma.js')));
+    }
+
+    public function test_nv06_secciones_plegables_primera_abierta_y_la_del_error_se_abre_sola(): void
+    {
+        $robo = $this->novedad(['categoria' => 'robo']);
+        $html = $this->actingAs($this->admin)->get('/novedades?abrir='.$robo->id)->assertOk()->getContent();
+        $this->assertStringContainsString('<details class="seccion-plegable" data-seccion="nov-robo-1"  open', $html);
+        $this->assertMatchesRegularExpression('/data-seccion="nov-robo-4"\s+>/', $html);
+        $this->assertStringContainsString('<summary class="seccion-plegable-titulo">', $html);
+
+        // Error en «4. Canalización»: esa sección se abre sola y avisa «Revisar»
+        $html = $this->actingAs($this->admin)->from('/novedades?abrir='.$robo->id)->followingRedirects()
+            ->put("/novedades/{$robo->id}", $this->expediente($robo, ['robo_observaciones_investigacion' => str_repeat('a', 5001)]))
+            ->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/data-seccion="nov-robo-4"\s+open\s+data-seccion-con-error/', $html);
+        $this->assertMatchesRegularExpression('/data-seccion="nov-robo-2"\s+>/', $html);
+
+        // El formato de Accidente se queda idéntico (sin secciones plegables nuevas)
+        $accidente = $this->novedad(['categoria' => 'accidente']);
+        $html = $this->actingAs($this->admin)->get('/novedades?abrir='.$accidente->id)->assertOk()->getContent();
+        $inicio = strpos($html, 'data-formato="accidente"');
+        $this->assertStringNotContainsString('seccion-plegable', substr($html, $inicio, strpos($html, '</fieldset>', strpos($html, 'Firmas Digitales de Cierre')) - $inicio));
+        $this->assertStringNotContainsString('<x-seccion', (string) file_get_contents(resource_path('views/seguridad/novedades/formatos/accidente.blade.php')));
+
+        // También en Pases de salida (pasos abiertos), Procedimientos y el CV del candidato
+        $this->actingAs($this->admin)->get('/pases-salida')->assertOk()->assertSee('data-seccion="pase-3"', false);
+        $this->actingAs($this->admin)->get('/procedimientos')->assertOk()->assertSee('data-seccion="procedimiento-4"', false);
+        $this->actingAs($this->admin)->get('/candidatos')->assertOk()->assertSee('data-seccion="cv-6"', false);
+    }
+
+    // ------------------------------------------------------------- RT-04
+
+    public function test_rt04_los_dialogos_tienen_un_solo_scroll(): void
+    {
+        $css = (string) file_get_contents(public_path('css/plataforma.css'));
+        // La página de atrás no se desplaza y el diálogo tampoco: solo su cuerpo
+        $this->assertStringContainsString('html:has(dialog.dialogo[open]) { overflow: hidden;', $css);
+        $this->assertStringContainsString('.dialogo[open]:has(> .dialogo-cuerpo):not(.dialogo-borrar) { display: flex; flex-direction: column; max-height: calc(100dvh - 2rem); overflow: hidden; }', $css);
+        $this->assertStringContainsString('> .dialogo-cuerpo { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto;', $css);
+        // Sin listas con su propio scroll dentro de un diálogo
+        $this->assertStringContainsString('.dialogo .lista-casillas-circuito, .dialogo .caja-checks, .dialogo .texto-privacidad { max-height: none; overflow: visible; }', $css);
+    }
 }

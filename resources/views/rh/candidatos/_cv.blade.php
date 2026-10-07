@@ -15,8 +15,8 @@
     $referencias = $filas('referencias') ?: [[]];
 @endphp
 
-<fieldset class="bloque-cv">
-    <legend><i class="bi bi-person-vcard me-2" aria-hidden="true"></i>Datos de contacto</legend>
+<x-seccion clave="cv-1" :abierta="true" class="bloque-cv">
+    <x-slot:titulo><i class="bi bi-person-vcard me-2" aria-hidden="true"></i>Datos de contacto</x-slot:titulo>
     <label class="campo-etiqueta" for="{{ $id }}_nombre">Nombre completo *</label>
     <input type="text" id="{{ $id }}_nombre" name="nombre_completo" class="campo" maxlength="150" required autocomplete="name"
            value="{{ $valor('nombre_completo', $c?->nombre_completo) }}" placeholder="Nombre y apellidos">
@@ -41,10 +41,10 @@
                    value="{{ $valor('ciudad', $c?->ciudad) }}" placeholder="Ej. Cancún">
         </div>
     </div>
-</fieldset>
+</x-seccion>
 
-<fieldset class="bloque-cv">
-    <legend><i class="bi bi-briefcase me-2" aria-hidden="true"></i>Puesto al que aplica</legend>
+<x-seccion clave="cv-2" :abierta="$kiosco" class="bloque-cv">
+    <x-slot:titulo><i class="bi bi-briefcase me-2" aria-hidden="true"></i>Puesto al que aplica</x-slot:titulo>
     @if ($kiosco)
         <label class="campo-etiqueta" for="{{ $id }}_vacante">¿A qué puesto aplicas?</label>
         <input type="text" id="{{ $id }}_vacante" name="vacante" class="campo" maxlength="150" list="{{ $id }}_puestos"
@@ -74,10 +74,10 @@
         <label class="campo-etiqueta" for="{{ $id }}_vacante">Vacante (si no está en el catálogo)</label>
         <input type="text" id="{{ $id }}_vacante" name="vacante" class="campo" maxlength="150" value="{{ $valor('vacante', $c?->vacante) }}" placeholder="Ej. Ayudante de cocina (temporada)">
     @endif
-</fieldset>
+</x-seccion>
 
-<fieldset class="bloque-cv" data-filas-cv>
-    <legend><i class="bi bi-mortarboard me-2" aria-hidden="true"></i>Escolaridad</legend>
+<x-seccion clave="cv-3" :abierta="$kiosco" class="bloque-cv" data-filas-cv>
+    <x-slot:titulo><i class="bi bi-mortarboard me-2" aria-hidden="true"></i>Escolaridad</x-slot:titulo>
     <div class="filas-cv" data-filas-cv-lista>
         @foreach ($escolaridad as $i => $f)
             @include('rh.candidatos._fila-escolaridad', ['i' => $i, 'f' => (array) $f])
@@ -85,10 +85,10 @@
     </div>
     <template data-plantilla-fila>@include('rh.candidatos._fila-escolaridad', ['i' => '__i__', 'f' => []])</template>
     <button type="button" class="btn-agregar-fila-cv" data-agregar-fila-cv data-maximo="{{ \App\Services\Candidatos\AdministradorCandidatos::MAX_FILAS }}"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar estudios</button>
-</fieldset>
+</x-seccion>
 
-<fieldset class="bloque-cv" data-filas-cv>
-    <legend><i class="bi bi-building me-2" aria-hidden="true"></i>Experiencia laboral</legend>
+<x-seccion clave="cv-4" :abierta="$kiosco" class="bloque-cv" data-filas-cv>
+    <x-slot:titulo><i class="bi bi-building me-2" aria-hidden="true"></i>Experiencia laboral</x-slot:titulo>
     <div class="filas-cv" data-filas-cv-lista>
         @foreach ($experiencia as $i => $f)
             @include('rh.candidatos._fila-experiencia', ['i' => $i, 'f' => (array) $f])
@@ -96,10 +96,10 @@
     </div>
     <template data-plantilla-fila>@include('rh.candidatos._fila-experiencia', ['i' => '__i__', 'f' => []])</template>
     <button type="button" class="btn-agregar-fila-cv" data-agregar-fila-cv data-maximo="{{ \App\Services\Candidatos\AdministradorCandidatos::MAX_FILAS }}"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar otro trabajo</button>
-</fieldset>
+</x-seccion>
 
-<fieldset class="bloque-cv">
-    <legend><i class="bi bi-stars me-2" aria-hidden="true"></i>Habilidades y disponibilidad</legend>
+<x-seccion clave="cv-5" :abierta="$kiosco" class="bloque-cv">
+    <x-slot:titulo><i class="bi bi-stars me-2" aria-hidden="true"></i>Habilidades y disponibilidad</x-slot:titulo>
     <label class="campo-etiqueta" for="{{ $id }}_habilidades">Habilidades (lo que sabes hacer)</label>
     <textarea id="{{ $id }}_habilidades" name="habilidades" class="campo" rows="2" maxlength="1000" placeholder="Ej. Manejo de caja, atención a huéspedes, licencia de manejo">{{ $valor('habilidades', $c?->habilidades) }}</textarea>
     <label class="campo-etiqueta" for="{{ $id }}_idiomas">Idiomas</label>
@@ -120,10 +120,10 @@
             <input type="text" id="{{ $id }}_pretension" name="pretension" class="campo" maxlength="12" inputmode="decimal" value="{{ $valor('pretension', $c?->pretension !== null ? (string) (float) $c->pretension : null) }}" placeholder="Ej. 9000">
         </div>
     </div>
-</fieldset>
+</x-seccion>
 
-<fieldset class="bloque-cv" data-filas-cv>
-    <legend><i class="bi bi-telephone me-2" aria-hidden="true"></i>Referencias</legend>
+<x-seccion clave="cv-6" :abierta="$kiosco" class="bloque-cv" data-filas-cv>
+    <x-slot:titulo><i class="bi bi-telephone me-2" aria-hidden="true"></i>Referencias</x-slot:titulo>
     <div class="filas-cv" data-filas-cv-lista>
         @foreach ($referencias as $i => $f)
             @include('rh.candidatos._fila-referencia', ['i' => $i, 'f' => (array) $f])
@@ -131,7 +131,7 @@
     </div>
     <template data-plantilla-fila>@include('rh.candidatos._fila-referencia', ['i' => '__i__', 'f' => []])</template>
     <button type="button" class="btn-agregar-fila-cv" data-agregar-fila-cv data-maximo="{{ \App\Services\Candidatos\AdministradorCandidatos::MAX_FILAS }}"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar referencia</button>
-</fieldset>
+</x-seccion>
 
 @if ($pidePrivacidad)
     <div class="aviso-privacidad-cv">

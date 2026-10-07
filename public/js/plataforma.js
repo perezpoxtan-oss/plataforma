@@ -8233,5 +8233,52 @@ document.addEventListener('click', function (e) {
         }
         if (trabajo) { trabajo.disabled = true; }
     }, true);
+
+    /* ---------- NV-06: filtros automáticos (el botón Buscar/Filtrar se oculta) ---------- */
+    document.documentElement.classList.add('filtros-automaticos');
+
+    /* ---------- NV-06: secciones plegables (<x-seccion>) ----------
+       Se recuerda cuáles quedaron abiertas por usuario y por formulario
+       (localStorage). Una sección con error o con un campo obligatorio vacío
+       se abre sola. */
+    function claveSecciones(sec) {
+        var cuerpo = document.body;
+        var usuario = (cuerpo && cuerpo.getAttribute('data-usuario-filtros')) || '0';
+        var form = sec.closest('form');
+        var nombre = (form && (form.getAttribute('data-secciones') || form.getAttribute('action'))) || location.pathname;
+        try { nombre = new URL(nombre, location.href).pathname.replace(/\/\d+(?=\/|$)/g, '/n'); } catch (x) { /* tal cual */ }
+        return 'plataforma_secciones:' + usuario + ':' + nombre;
+    }
+    function leerEstado(clave) {
+        try { return JSON.parse(localStorage.getItem(clave) || '{}') || {}; } catch (x) { return {}; }
+    }
+    function guardarEstado(sec) {
+        var clave = claveSecciones(sec);
+        var estado = leerEstado(clave);
+        estado[sec.getAttribute('data-seccion')] = sec.open ? 1 : 0;
+        try { localStorage.setItem(clave, JSON.stringify(estado)); } catch (x) { /* sin almacenamiento */ }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('details.seccion-plegable[data-seccion]').forEach(function (sec) {
+            if (sec.hasAttribute('data-seccion-con-error')) { sec.open = true; return; }
+            var estado = leerEstado(claveSecciones(sec));
+            var valor = estado[sec.getAttribute('data-seccion')];
+            if (valor === 1 || valor === 0) { sec.open = valor === 1; }
+        });
+        // El usuario abre o cierra: se recuerda (el evento toggle no burbujea)
+        document.addEventListener('toggle', function (e) {
+            if (e.target.matches && e.target.matches('details.seccion-plegable[data-seccion]') && e.isTrusted !== false) { guardarEstado(e.target); }
+        }, true);
+    });
+
+    // Un campo obligatorio vacío dentro de una sección cerrada: se abre para que el navegador lo muestre
+    document.addEventListener('invalid', function (e) {
+        var sec = e.target.closest && e.target.closest('details.seccion-plegable');
+        while (sec) {
+            if (!sec.open) { sec.open = true; }
+            sec = sec.parentElement && sec.parentElement.closest('details.seccion-plegable');
+        }
+    }, true);
 })();
 /* Fin Ronda 8 de ajustes de QA */

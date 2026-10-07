@@ -82,7 +82,7 @@
             @endforeach
         </nav>
 
-        <form method="GET" action="{{ $forzado ? route('procedimientos.por-leer') : route('procedimientos.index') }}" class="busqueda-pases" role="search">
+        <form method="GET" data-autoenviar action="{{ $forzado ? route('procedimientos.por-leer') : route('procedimientos.index') }}" class="busqueda-pases" role="search">
             @if (! $forzado && $filtro !== 'todos')<input type="hidden" name="filtro" value="{{ $filtro }}">@endif
             @if ($categoriaFiltro !== null)<input type="hidden" name="categoria" value="{{ $categoriaFiltro }}">@endif
             <div class="buscador">
