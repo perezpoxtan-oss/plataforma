@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class SesionController extends Controller
@@ -40,6 +41,8 @@ class SesionController extends Controller
         Auth::login($resultado->usuario);
         $request->session()->regenerate();
         $request->session()->put('ultima_actividad', now()->getTimestamp());
+        // Ronda 6 (LL-08): marca nueva en cada inicio de sesión; con ella el navegador olvida los filtros guardados antes
+        $request->session()->put('marca_filtros', Str::random(16));
 
         return redirect()->to($this->destinoSeguro($request));
     }

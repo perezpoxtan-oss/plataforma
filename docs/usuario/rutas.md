@@ -94,3 +94,11 @@ Todo funciona en el celular; los paraderos se acomodan en dos renglones. Con el 
 | Agente | Solo consultar las rutas de su sede |
 
 ![Vista del Agente](img/rutas/19-agente-sede.png)
+
+## Ronda 6
+
+- El diálogo **Nueva Ruta** se desplaza con una sola barra, aunque no hayas elegido la empresa transportista.
+- Al tocar **Agregar otro Horario**, el nuevo horario trae ya los **paraderos y horas** del anterior: solo cambia lo que sea distinto.
+- En Hotel Demo Centro hay **6 paraderos activos**. «PARADERO DE PRUEBA» aparece como **desactivado**: es el de la práctica de Eliminar definitivamente.
+
+![Segundo horario con paraderos copiados](img/ronda-6/19-ruta-segundo-horario-con-paraderos.png)

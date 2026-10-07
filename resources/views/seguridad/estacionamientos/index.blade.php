@@ -28,12 +28,9 @@
                 <div class="icono"><i class="bi bi-p-square-fill text-primary" aria-hidden="true"></i></div>
                 <div>
                     <h1>Estacionamientos y Zonas</h1>
-                    <p>Cupos por sede — Estacionamiento (cuenta espacios) o Zona de Descarga (Lobby, Almacenes, sin cupo numérico).</p>
+                    <p>Cupos por sede — Estacionamiento (cuenta espacios) o Zona de Descarga (Lobby, Almacenes, Andén, Patio de maniobras; capacidad opcional).</p>
                 </div>
             </div>
-            @if ($puede['crear'])
-                <button type="button" class="btn-nueva-zona" data-abrir-dialogo="dialogoNuevaZona"><i class="bi bi-plus-circle-fill me-1" aria-hidden="true"></i>Nueva Zona</button>
-            @endif
         </div>
 
         @if ($total > 0)
@@ -59,6 +56,15 @@
         @endif
 
         <div data-fichas="zonas">
+            {{-- Ronda 6 (ES-02): «Nueva Zona» como la tarjeta de alta de los demás padrones --}}
+            @if ($puede['crear'])
+                <div class="fichas-grid zonas-grid mb-3">
+                    <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevaZona">
+                        <i class="bi bi-plus-circle-fill" aria-hidden="true"></i>
+                        <span class="h6 fw-bold m-0 mt-2 titulo-crear">Nueva Zona</span>
+                    </button>
+                </div>
+            @endif
             @forelse ($porSede as $sedeId => $zonas)
                 <section class="grupo-sede-zonas" data-grupo-zonas aria-label="Zonas de {{ $zonas->first()->sede->nombre ?? 'sede' }}">
                     <h2 class="titulo-sede-zonas"><i class="bi bi-geo-alt-fill text-danger me-1" aria-hidden="true"></i>{{ $zonas->first()->sede->nombre ?? '—' }}
@@ -68,8 +74,8 @@
                             @php
                                 $esDescarga = $z->esDescarga();
                                 $ocupadas = $ocupados[$z->id] ?? 0;
-                                $pct = ! $esDescarga && $z->cupo_total > 0 ? min(100, (int) round($ocupadas / $z->cupo_total * 100)) : 0;
-                                $lleno = ! $esDescarga && $z->cupo_total !== null && $ocupadas >= $z->cupo_total;
+                                $pct = $z->tieneCupo() ? min(100, (int) round($ocupadas / $z->cupo_total * 100)) : 0;
+                                $lleno = $z->estaLlena($ocupadas);
                                 $editable = $puede['editar'] && ($editables === null || in_array($z->id, $editables, true));
                                 $desactivable = $puede['estado'] && ($desactivables === null || in_array($z->id, $desactivables, true));
                                 $valores = json_encode($z->only(['sede_id', 'nombre', 'tipo', 'cupo_total']));
@@ -89,12 +95,12 @@
                                         @endunless
                                     </div>
 
-                                    @if ($esDescarga)
+                                    @if ($esDescarga && ! $z->tieneCupo())
                                         <div class="ocupacion-zona mt-3"><i class="bi bi-truck me-1 icono-descarga" aria-hidden="true"></i><strong>{{ $ocupadas }}</strong> {{ $ocupadas === 1 ? 'vehículo usando' : 'vehículos usando' }} el andén ahora</div>
                                     @else
                                         <div class="ocupacion-zona mt-3">
                                             <div class="d-flex justify-content-between small fw-bold">
-                                                <span>{{ $ocupadas }} / {{ $z->cupo_total ?? '—' }} espacios</span>
+                                                <span>@if ($esDescarga)<i class="bi bi-truck me-1 icono-descarga" aria-hidden="true"></i>{{ $ocupadas }} / {{ $z->cupo_total }} vehículos @else{{ $ocupadas }} / {{ $z->cupo_total ?? '—' }} espacios @endif</span>
                                                 @if ($lleno)<span class="texto-lleno">LLENO</span>@endif
                                             </div>
                                             @if ($z->cupo_total)
@@ -144,7 +150,7 @@
                 <div class="tarjeta estado-vacio">
                     <div class="icono"><i class="bi bi-p-square" aria-hidden="true"></i></div>
                     <p class="fw-semibold mb-1">Aún no hay zonas configuradas.</p>
-                    <p class="text-muted small m-0">{{ $puede['crear'] ? 'Crea el primer estacionamiento o zona de descarga con el botón «Nueva Zona».' : 'Cuando el administrador las configure, aquí verás el cupo de cada sede.' }}</p>
+                    <p class="text-muted small m-0">{{ $puede['crear'] ? 'Crea el primer estacionamiento o zona de descarga con la tarjeta «Nueva Zona».' : 'Cuando el administrador las configure, aquí verás el cupo de cada sede.' }}</p>
                 </div>
             @endforelse
 
@@ -201,11 +207,14 @@
                             @endforeach
                         </select>
 
-                        <div data-mostrar-si='{"tipo":["estacionamiento"]}'>
-                            <label class="campo-etiqueta" for="{{ $modo }}_zona_cupo">Cupo Total de Espacios</label>
-                            <input type="number" id="{{ $modo }}_zona_cupo" name="cupo_total" class="campo" min="1" max="9999" inputmode="numeric" placeholder="Ej: 40"
-                                   value="{{ $valor('cupo_total') }}" data-requerido-si='{"tipo":["estacionamiento"]}' data-mensaje-min="El cupo total debe ser de al menos 1 espacio.">
-                        </div>
+                        {{-- Ronda 6 (ES-02): obligatorio en estacionamientos; opcional en zonas de descarga --}}
+                        <label class="campo-etiqueta" for="{{ $modo }}_zona_cupo">
+                            <span data-mostrar-si='{"tipo":["estacionamiento"]}'>Cupo Total de Espacios</span>
+                            <span data-mostrar-si='{"tipo":["zona_descarga"]}'>Capacidad máxima de vehículos <span class="text-lowercase fw-normal">(opcional)</span></span>
+                        </label>
+                        <input type="number" id="{{ $modo }}_zona_cupo" name="cupo_total" class="campo mb-1" min="1" max="9999" inputmode="numeric" placeholder="Ej: 40"
+                               value="{{ $valor('cupo_total') }}" data-requerido-si='{"tipo":["estacionamiento"]}' data-mensaje-min="Debe ser de al menos 1 (en una zona de descarga, déjalo vacío si no tiene límite).">
+                        <p class="campo-ayuda" data-mostrar-si='{"tipo":["zona_descarga"]}'>Si la escribes, verás cuántos vehículos hay (ej. 2 / 4) y te avisará cuando se llene (también en Accesos), igual que un estacionamiento. Déjala vacía si no tiene límite.</p>
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>

@@ -148,8 +148,9 @@ class ResponsivasTest extends TestCase
         $this->assertStringContainsString('data-tipos="colaborador"', $pagina);
         $this->assertStringContainsString('data-firma-requerida', $pagina);
         $this->assertStringContainsString('value="'.$disponible->id.'" data-sede="'.$this->centro->id.'"', $pagina);
-        $this->assertStringContainsString('[RAD-PLA]', $pagina);
-        $this->assertStringNotContainsString('[RAD-MANT]', $pagina);
+        // Ronda 6 (EQ-04): el número con su rótulo
+        $this->assertStringContainsString('Serie: RAD-PLA ·', $pagina);
+        $this->assertStringNotContainsString('Serie: RAD-MANT', $pagina);
         $this->assertStringNotContainsString('canvas.toBlob', $pagina);
     }
 

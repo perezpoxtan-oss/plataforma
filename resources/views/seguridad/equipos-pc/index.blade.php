@@ -225,7 +225,8 @@
 
                         <label class="campo-etiqueta text-primary" for="{{ $modo }}_epc_serie">Núm. de Serie / ID (para QR)</label>
                         <input type="text" id="{{ $modo }}_epc_serie" name="numero_serie" class="campo text-uppercase fw-bold" maxlength="100" required autocapitalize="characters"
-                               placeholder="Ej: EXT-01" value="{{ $trasError ? old('numero_serie') : '' }}">
+                               placeholder="Ej: EXT-01" value="{{ $trasError ? old('numero_serie') : '' }}"
+                               data-duplicado="{{ route('equipos_pc.duplicado') }}" data-duplicado-con="sede_id">
 
                         <div class="row">
                             <div class="col-md-6">
@@ -252,7 +253,7 @@
                         <input type="text" id="{{ $modo }}_epc_ref" name="referencia" class="campo" maxlength="150" placeholder="Ej: Junto al elevador de servicio" value="{{ $trasError ? old('referencia') : '' }}">
 
                         @include('componentes.lector', ['id' => $modo.'_epc_nfc', 'etiqueta' => 'Etiqueta NFC / RFID (opcional)', 'modo' => 'capturar',
-                            'nombre' => 'etiqueta_nfc', 'valor' => $trasError ? old('etiqueta_nfc') : '',
+                            'nombre' => 'etiqueta_nfc', 'valor' => $trasError ? old('etiqueta_nfc') : '', 'duplicado' => route('identificacion.etiqueta-duplicado', ['equipo_pc', 0]),
                             'ayuda' => 'Acerca la etiqueta pegada al equipo para que el lector la reconozca. Puedes dejarlo vacío: el equipo siempre se encuentra con su QR o su ID.'])
 
                         <div class="dialogo-acciones">

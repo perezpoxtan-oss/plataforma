@@ -75,3 +75,7 @@ Las reglas de `RolesPlantillaSeeder` no cambiaron: el módulo es de Seguridad y 
 - El catálogo vivía escondido dentro de la bitácora de recorridos y se protegía con los permisos de la bitácora (`bitacora.*`); ahora es un padrón con sus propios permisos `equipos_pc.*` en la Matriz de permisos, como Llaves, Gafetes o Equipos de seguridad.
 - El QR de la etiqueta se pedía a `api.qrserver.com`; ahora se dibuja en el servidor y lleva un código no adivinable (ver [recorridos-pc.md](recorridos-pc.md#qué-se-corrigió-respecto-a-segcat)).
 - Las direcciones anteriores no se rompen: redirigen de forma permanente (301) sin revelar equipos de otra empresa o sede.
+
+## Ronda 6: aviso de duplicado en vivo
+
+El **Núm. de Serie / ID** avisa mientras se escribe si ya existe **en la sede elegida** (`GET /equipos-pc/duplicado`, con `data-duplicado-con="sede_id"`; sin sede no revisa) o si se parece (sin guiones ni espacios), con **Reactivar** si está dado de baja. La etiqueta NFC avisa «ya la tiene X» al leerla (`identificacion.etiqueta-duplicado`). Ver `avisos-duplicado.md`.

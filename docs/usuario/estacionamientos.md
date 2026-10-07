@@ -52,3 +52,16 @@ Usa **Buscar**, la lista de **sedes** y las píldoras **Estacionamientos / Zonas
 | Jefe de seguridad | Todo, solo en su sede |
 | Asistente | Crear y editar en su sede (no desactivar) |
 | Agente | Consultar los cupos |
+
+## Zonas de descarga con capacidad (Ronda 6)
+
+Una **zona de descarga** (lobby, almacén, andén o patio de maniobras) puede tener una **capacidad máxima de vehículos**. Es **opcional**:
+
+- Si la escribes (por ejemplo 4), verás **0 / 4 vehículos** con su barra y el aviso **LLENO** cuando se llene, también al registrar una entrada en Accesos.
+- Si la dejas vacía, se ve como antes: cuántos vehículos la están usando, sin límite.
+
+Para crear una zona usa la tarjeta **Nueva Zona** (con el signo +), igual que en los demás padrones.
+
+![Estacionamientos con Nueva Zona](img/ronda-6/14-estacionamientos.png)
+![Nueva zona de descarga](img/ronda-6/15-nueva-zona-descarga.png)
+![En el celular](img/ronda-6/22-estacionamientos-movil.png)

@@ -225,7 +225,7 @@
                 </div>
                 <div class="col-md-6">
                     @include('componentes.lector', ['id' => $p.'nfc', 'etiqueta' => 'Etiqueta NFC / RFID (opcional)', 'modo' => 'capturar',
-                        'nombre' => 'etiqueta_nfc', 'valor' => $valor('etiqueta_nfc'), 'ayuda' => 'Acerca la tarjeta o el llavero NFC al lector para asignarlo a esta llave.'])
+                        'nombre' => 'etiqueta_nfc', 'valor' => $valor('etiqueta_nfc'), 'duplicado' => route('identificacion.etiqueta-duplicado', ['llave', 0]), 'ayuda' => 'Acerca la tarjeta o el llavero NFC al lector para asignarlo a esta llave.'])
                 </div>
             </div>
 

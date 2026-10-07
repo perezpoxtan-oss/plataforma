@@ -60,3 +60,12 @@ interface OcupacionEstacionamientos
 - La pantalla quedaba vacía sin explicación si fallaba la consulta y mostraba el error SQL al Súper Admin; ahora hay estado vacío y los errores van a las pantallas de error de la plataforma.
 - Se agregaron búsqueda, filtro por sede y por tipo, agrupación por sede y trazas "Creado por / Editado por".
 - Sin JavaScript en línea (`onclick`, JSON incrustado en atributos de `onclick`).
+
+## Ronda 6 (ES-02): zonas de descarga con capacidad
+
+- Una **zona de descarga** (lobby, almacén, andén, patio de maniobras) acepta una **capacidad máxima de vehículos opcional** en `cupo_total` (1 a 9999; vacío = sin límite). En un estacionamiento sigue siendo obligatorio.
+- `ZonaEstacionamiento::tieneCupo()` y `estaLlena($ocupados)`: con capacidad, la tarjeta muestra «2 / 4 vehículos», la barra y «LLENO»; sin capacidad, como antes («N vehículos usando el andén ahora»).
+- Accesos (`ConsultaAccesos::zonas`): «Patio de Maniobras (zona de descarga 4/4) — LLENO» y `lleno = true`, igual que un estacionamiento lleno.
+- El alta ya no es un botón azul suelto: es la **tarjeta «Nueva Zona»** (`ficha-create`) como en los demás padrones, arriba de las sedes.
+- Demo: «Patio de Maniobras» (Hotel Demo Centro), capacidad 4.
+- Pruebas: `AjustesRonda6Test::test_es02_*` y `EstacionamientosTest` (la descarga ahora guarda su capacidad).

@@ -139,3 +139,9 @@ El gafete **es de una sede**: con alcance de **sede** el usuario solo ve, genera
 | Sin NFC propio: el código interno "se grababa" en una etiqueta. | Columna `etiqueta_nfc` (serie del chip) además del QR; ambos sirven para encontrarlo. |
 | `onclick`, mensajes en la URL (`?msg=generados`), filtros en `sessionStorage` propios. | Sin JS en línea; mensajes en sesión; filtros genéricos de la plataforma. |
 | "Sede / Hotel". | Siempre "Sede". |
+
+## Ronda 6
+
+- **GV-02**: el máximo del lote se ve antes de capturar («Máximo 50 por lote.» bajo el campo) y el error dice «Máximo 50 gafetes por lote. Si necesitas más, genera otro lote.» (servidor) / «Máximo 50 gafetes por lote.» (navegador, `data-mensaje-max`).
+- **Aviso de duplicado en vivo**: la nomenclatura (folio) de la edición usa `GET /gafetes/duplicado` (igual o igual sin guiones/espacios; de otra sede sin datos) y la etiqueta NFC `identificacion.etiqueta-duplicado` («ya la tiene la llave «HDC-101»»), en la edición y en «Código e identificación» (GV-03).
+- **GV-04**: un gafete de baja con voucher se reactiva desde Vouchers → **Recuperado**.

@@ -85,3 +85,13 @@ La pantalla funciona en el celular (los botones son grandes) y con los modos **S
 | Agente | Consultar y ver el QR |
 
 ![Lo que ve un agente](img/equipos/13-agente.png)
+
+## Ronda 6: avisos y estado más claros
+
+- Al escribir el **Núm. de Serie / ID** te avisa si ya existe o si se parece a otro (los guiones y espacios no cuentan). Al acercar o escribir una **etiqueta NFC** te avisa si ya la tiene otro registro.
+- El número de serie siempre aparece con su rótulo: **Serie: 130TXP1568**.
+- Al **editar**, debajo de **Estado actual** se explica por qué solo puedes elegir ciertas opciones. Por ejemplo, el radio MOTOROLA SL500E (Serie: 130TXP1568) está **En mantenimiento**: solo puedes cambiarlo a **Disponible** cuando regrese del servicio. Si el equipo está de **baja**, dice el folio de su voucher y cómo reactivarlo.
+
+![Explicación del estado](img/ronda-6/10-equipo-mantenimiento-explicacion.png)
+![Equipo de baja con voucher](img/ronda-6/11-equipo-baja-explicacion.png)
+![Serie y etiqueta repetidas](img/ronda-6/09-equipo-serie-y-nfc.png)

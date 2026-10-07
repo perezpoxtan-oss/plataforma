@@ -90,3 +90,9 @@ En el celular los filtros bajan uno debajo de otro:
 En Padrones → Empresas Externas → Ficha → **Flotilla** → **Agregar vehículo**, la ventana dice «Registrando unidad de …» y la **Agencia o Empresa Propietaria** ya viene puesta, con un candado. Si tocas **Cerrar** o **Cancelar**, regresas a la ficha de la empresa.
 
 ![Alta desde la ficha de Constructora Maya](img/ronda-5b/ficha-agregar-vehiculo.png)
+
+## Ronda 6: placas repetidas o parecidas
+
+Al escribir las **Placas** te avisa si ya están registradas (aunque las escribas con guiones o espacios) o si se parecen a otras (la letra O y el cero, o la I y el uno, se confunden). Si el vehículo está de baja, toca **Reactivar**.
+
+![Placas parecidas](img/ronda-6/07-vehiculo-placas-parecidas.png)

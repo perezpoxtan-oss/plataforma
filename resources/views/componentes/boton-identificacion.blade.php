@@ -33,6 +33,8 @@
         'imprimirTexto' => $identImprimirTexto,
         'etiquetaUrl' => $identEditable ? route('identificacion.etiqueta', [$identTipo, $identRegistro->getKey()]) : '',
         'etiqueta' => $identRegistro->etiqueta_nfc ?? '',
+        // Ronda 6 (GV-03): aviso en vivo «ya la tiene X» al leer o escribir la etiqueta
+        'duplicadoUrl' => $identEditable ? route('identificacion.etiqueta-duplicado', [$identTipo, $identRegistro->getKey()]) : '',
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 @endphp
 <button type="button" class="{{ $identClase }}" title="Código QR e identificación" aria-label="Código QR e identificación de {{ $identTitulo }}"

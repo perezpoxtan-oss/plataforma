@@ -75,3 +75,9 @@ Auditoría: `rutas.creado`, `rutas.actualizado`, `rutas.desactivado`, `rutas.rea
 | Sin bitácora de cambios; mensajes en la URL (`?msg=`); `onclick` en línea; tipografías e íconos de CDN en las hojas. | Auditoría; mensajes en sesión; JS en `plataforma.js` con `data-*`; recursos locales. |
 | Botón "Guardar" ámbar con texto blanco (contraste 2:1). | Botón `#b45309` (contraste AA). Modos Sol y Noche. |
 | "Hotel / Sede", "Llegada al Hotel". | "Sede", "Llegada a la Sede" en todos los textos. |
+
+## Ronda 6
+
+- **RT-02 (a)**: el diálogo «Configurar Ruta y Horarios» tiene una sola barra de desplazamiento (el cuerpo): `.rutas-dialogo[open]` es una columna flexible de 92 vh con `overflow: hidden` y el cuerpo es el único que se desplaza; los combos largos (transportista) ya no ensanchan el diálogo.
+- **RT-02 (b)**: «Agregar otro Horario» copia los paraderos (y sus horas) del horario anterior, editables. Antes fallaba en silencio: las horas se convierten a texto de 24 h («Ajustes de captura») y el JS las buscaba como `input[type="time"]`; ahora se buscan por su nombre (`[name$="[hora]"]`). También se acotó el manejador de horarios de Llaves, que reaccionaba al botón de Rutas.
+- **RT-01**: la demo deja 6 paraderos **activos** en Hotel Demo Centro (REGIÓN 94 (CRUCERO), SUPERMANZANA 63 (MERCADO 28), AV. KABAH CON LEONA VICARIO, CHEDRAUI PORTILLO, PLAZA LAS AMÉRICAS y AV. TALLERES). El séptimo era «PARADERO DE PRUEBA», que crea `borradoDemo()` para practicar Eliminar definitivamente (lección 26); `ronda6Demo()` lo deja **desactivado**, así que la tarjeta de la sede dice 6 y la pestaña Paraderos lo muestra como desactivado.

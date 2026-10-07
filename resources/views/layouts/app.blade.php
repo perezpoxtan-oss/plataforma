@@ -1,6 +1,8 @@
 @php
     $esInicio = request()->routeIs('panel');
     $menusMovil = collect($menus)->sortBy('orden_movil')->values();
+    // Ronda 6 (LL-08): los filtros guardados en el navegador valen solo para esta sesión y este usuario
+    $marcaFiltros = session('marca_filtros') ?? tap(\Illuminate\Support\Str::random(16), fn ($m) => session()->put('marca_filtros', $m));
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -12,7 +14,8 @@
       data-inactividad="{{ (int) config('plataforma.sesion.inactividad_minutos') * 60 }}"
       data-aviso="{{ (int) config('plataforma.sesion.aviso_segundos') }}"
       data-latido="{{ route('sesion.latido') }}"
-      data-expirada="{{ route('sesion.expirada') }}">
+      data-expirada="{{ route('sesion.expirada') }}"
+      data-usuario-filtros="{{ auth()->id() }}" data-sesion-filtros="{{ $marcaFiltros }}">
 
     @include('layouts.partes.ambiente')
 

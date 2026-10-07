@@ -81,7 +81,30 @@ Las dos rutas llevan `throttle:120,1`, están en el bloque `// Padrones: Ajustes
 | Zonas y áreas → detalle | ¿No encuentras el tipo…? | ««Cama» ya existe en la lista: no hace falta agregarlo…» |
 | Zonas y áreas → Secciones | Nombre de la sección | «Ya existe la sección «X» en Hotel Demo Centro.» |
 
-Los padrones que ya tenían un aviso propio lo conservan: Llaves, Proveedores, Departamentos, Puestos y Turnos (`data-nombres-existentes`), Vehículos (`data-placas-existentes`), Colaboradores (`data-numeros-existentes`) y Usuarios/Colaboradores (homónimos, `data-homonimos`). Para un padrón nuevo, usa `data-duplicado`.
+### Ronda 6: los demás padrones pasan al mismo mecanismo
+
+Proveedores, Vehículos, Colaboradores, Gafetes, Equipos y Equipos de Protección Civil dejaron sus avisos propios (`data-nombres-existentes` en Proveedores, `data-placas-existentes`, `data-numeros-existentes`, `data-series-existentes` y la caja de homónimos `data-homonimos` del alta de Colaboradores). Ahora usan `data-duplicado`, con `App\Http\Controllers\Padrones\DuplicadoController` (bloque `// Padrones: Ajustes Ronda 6` de `routes/web.php`, `throttle:120,1`):
+
+| Ruta | Permiso (cualquiera) | Campo | existe | parecido |
+|---|---|---|---|---|
+| `GET /proveedores/duplicado` | `proveedores.crear` / `.editar` | `nombre` | mismo nombre (sin mayúsculas ni espacios dobles). Con alcance de sede **no** se rechaza: «al guardar no se crea otra, solo se agrega a tu sede» (sale como parecido) | sin «S.A. de C.V.», «S. de R.L.», «S.A.P.I.»… ni signos (`AltasPorVerificar::parecidos('proveedores')`) |
+| `GET /vehiculos/duplicado` | `vehiculos.crear` / `.editar` | `placas` | mismas placas sin espacios, guiones ni puntos | O/0, Q/0, I/1 y una letra de diferencia (`AltasPorVerificar::parecidos('vehiculos')`). Libre: «Se guardarán como ABC123A.» |
+| `GET /colaboradores/duplicado` | `colaboradores.crear` / `.editar` / `.aprobar` | `num_empleado` | mismo número (sin mayúsculas) | — |
+| | | `nombre` (+ `apellido_paterno`, `apellido_materno` con `data-duplicado-con`) | — | homónimos (`AdministradorColaboradores::parecidos`) |
+| `GET /gafetes/duplicado` | `gafetes.crear` / `.editar` | `nomenclatura` (el folio) | mismo folio | igual sin guiones, espacios, puntos ni diagonales |
+| `GET /equipos/duplicado` | `equipos.crear` / `.editar` | `numero_serie` | misma serie (en toda la empresa) | igual sin guiones ni espacios |
+| `GET /equipos-pc/duplicado` | `equipos_pc.crear` / `.editar` | `numero_serie` + `sede_id` (`data-duplicado-con`) | mismo ID **en la sede** | igual sin guiones ni espacios, en la sede |
+| `GET /identificacion/{tipo}/{id}/etiqueta-duplicado` ({id} = registro que se edita, 0 = alta nueva; de otra empresa o sede: 404) | `<módulo del tipo>.crear` / `.editar` | `etiqueta_nfc` | la tarjeta ya la tiene otro registro de **cualquier** tipo del lector: «Esa tarjeta o etiqueta ya la tiene la llave «HDC-101»…» | — |
+
+Reglas comunes:
+
+- **Inactivo con Reactivar**: si lo que existe está dado de baja y quien captura puede reactivarlo (`proveedores.estado`, `vehiculos.estado`, `colaboradores.estado`, `gafetes.reactivar`, `equipos.reactivar`, `equipos_pc.reactivar`), la coincidencia trae `reactivar`.
+- **Otras sedes**: si la coincidencia es de una sede que el usuario no tiene a cargo, se dice que existe «en una sede que no tienes a cargo» **sin** nombre ni datos (Colaboradores, Gafetes, Equipos y la etiqueta NFC). Equipos PC solo revisa sedes del usuario.
+- **Edición**: `excluir` (de `[data-campo-dialogo]` = `editar-ID`). En la etiqueta NFC (edición genérica, dirección con id 0), `excluir` debe ser un registro del tipo que el usuario puede editar (`Identificacion::buscar`); si no, responde `nada`.
+- **GV-03 (etiqueta NFC en vivo)**: el lector en modo capturar acepta `'duplicado' => route('identificacion.etiqueta-duplicado', ['gafete', 0])` y pinta el aviso debajo de sí mismo. Lo leído con el NFC del celular o el Enter del lector USB dispara la revisión (evento `lector:capturado`). En el diálogo «Código e identificación» la dirección y el registro los pone el JS al abrir (`duplicadoUrl` en `data-ver-identificacion`, con el tipo y el id del registro en la dirección). Ahí, lo leído con el lector se guarda en el acto, así que el resultado lo da el propio diálogo; lo tecleado se avisa mientras se escribe.
+- Los campos de `data-duplicado-con` vuelven a revisar **mientras se escribe** en ellos (no solo al salir del campo): bloque «Ajustes Ronda 6» de `plataforma.js`.
+
+Siguen con su aviso propio (fuera del alcance de la Ronda 6): Llaves, Departamentos, Puestos y Turnos (`data-nombres-existentes`) y Usuarios (`data-homonimos`, con «Vincular con colaborador»). El endpoint `GET /colaboradores/homonimos` se conserva porque lo usan pruebas y Usuarios. Para un padrón nuevo, usa `data-duplicado`.
 
 ## Agregar el aviso a otro módulo
 
@@ -92,4 +115,4 @@ Los padrones que ya tenían un aviso propio lo conservan: Llaves, Proveedores, D
 
 ## Pruebas
 
-`tests/Feature/Seguridad/AjustesRonda5bTest.php`.
+`tests/Feature/Seguridad/AjustesRonda5bTest.php` y, para los padrones de la Ronda 6 y la etiqueta NFC, `tests/Feature/Seguridad/AjustesRonda6Test.php`.

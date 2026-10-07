@@ -34,8 +34,10 @@
                 @csrf
                 @method('PUT')
                 {{-- Todos los parámetros explícitos: un @include hereda las variables de la pantalla que lo llama --}}
+                {{-- Ronda 6 (GV-03): el aviso «ya la tiene X» sale en vivo; la dirección (tipo y registro) la pone el JS al abrir --}}
                 @include('componentes.lector', ['id' => 'ident_etiqueta_nfc', 'etiqueta' => 'Tarjeta, llavero o etiqueta', 'modo' => 'capturar',
-                    'nombre' => 'etiqueta_nfc', 'valor' => '', 'tipos' => '', 'requerido' => false, 'elegido' => null, 'ayuda' =>'Acércala al lector USB/Bluetooth o al NFC del celular (Android). También puedes escribir su número.'])
+                    'nombre' => 'etiqueta_nfc', 'valor' => '', 'tipos' => '', 'requerido' => false, 'elegido' => null, 'ayuda' =>'Acércala al lector USB/Bluetooth o al NFC del celular (Android). También puedes escribir su número.',
+                    'duplicado' => route('identificacion.etiqueta-duplicado', ['llave', 0])])
                 <p class="ident-mensaje" data-ident-mensaje role="status" hidden></p>
                 <div class="ident-nfc-botones">
                     <button type="button" class="btn-ident-quitar" data-ident-quitar hidden><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Quitar etiqueta</button>

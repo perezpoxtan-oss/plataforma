@@ -131,3 +131,11 @@ Tabla `menus` (botones de la barra: Estructura, Padrones, Operación) y, en `mod
 ## Avisos en el Inicio
 
 `PanelController` arma la lista `pendientes`. Cada pendiente es una tarjeta con enlace directo. Hoy la usa Recursos Humanos para las altas provisionales por validar (enlace `?registro=provisional`). Los módulos que vengan agregan aquí sus pendientes.
+
+## Filtros recordados: por sesión y por usuario (Ronda 6, LL-08)
+
+Varias pantallas recuerdan en el navegador su búsqueda, filtros y píldoras (`sessionStorage`: `plataforma_filtro_*`, `plataforma:filtro-activo`, `plataforma_areas_abiertas`; `localStorage`: la sede de Accesos `plataforma_accesos_sede`). Para que lo que dejó un usuario no aplique al siguiente en el mismo navegador:
+
+- Cada inicio de sesión guarda una marca nueva en la sesión (`marca_filtros`, `SesionController`); el layout la publica en `<body data-usuario-filtros="ID" data-sesion-filtros="marca">`.
+- El bloque «Ajustes Ronda 6» de `plataforma.js` corre antes que las pantallas restauren sus filtros: si la marca de la pestaña no coincide (nueva sesión u otro usuario), borra esas claves; si cambió el usuario, borra también la sede recordada de Accesos.
+- Dentro de la misma sesión se conserva la comodidad (al guardar y volver, el filtro sigue). Las preferencias del equipo (modo Sol/Noche, tamaño de letra de Procedimientos) no se tocan.

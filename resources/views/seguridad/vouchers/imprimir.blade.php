@@ -49,6 +49,15 @@
                     <h2>Voucher de Reposición</h2>
                     <div class="voucher-folio-impreso">{{ $voucher->folio }}</div>
                 </div>
+                @unless ($voucher->esVigente())
+                    {{-- Ronda 6 (GV-04): el artículo apareció --}}
+                    <div class="voucher-sello-estado estado-{{ $voucher->estado }}">
+                        <strong>{{ mb_strtoupper($voucher->etiquetaEstado()) }}</strong>
+                        <span>Recuperado @fecha($voucher->recuperado_en) · {{ $voucher->recuperado_por_nombre ?? '—' }}{{ $voucher->aplica_cobro && $voucher->estado === 'cancelado_recuperacion' ? ' · Cobro cancelado' : '' }}</span>
+                        @if ($voucher->recuperacion_comentario)<span>{{ $voucher->recuperacion_comentario }}</span>@endif
+                        @if ($voucher->reembolsado_en)<span>Reembolsado @fecha($voucher->reembolsado_en) · {{ $voucher->reembolsado_por_nombre ?? '—' }}{{ $voucher->reembolso_comentario ? ' · '.$voucher->reembolso_comentario : '' }}</span>@endif
+                    </div>
+                @endunless
 
                 <div class="voucher-datos">
                     <div><div class="dato-etiqueta">Empresa</div><div class="dato-valor">{{ $empresaNombre }}</div></div>
@@ -66,6 +75,7 @@
                     <div class="caja-cxc {{ $voucher->aplica_cobro ? 'con-cobro' : 'sin-cobro' }}">
                         <span class="dato-etiqueta">CXC:</span>
                         <span class="cxc-monto">{{ $voucher->aplica_cobro ? '$'.number_format((float) $voucher->monto, 2).' MXN' : 'NO APLICA' }}</span>
+                        @if ($voucher->aplica_cobro && $voucher->estado === 'cancelado_recuperacion')<span class="cxc-cancelado">CANCELADO</span>@endif
                     </div>
                     @if ($voucher->aplica_cobro)
                         <div class="caja-referencia"><span class="dato-etiqueta">Referencia de pago (a mano):</span></div>

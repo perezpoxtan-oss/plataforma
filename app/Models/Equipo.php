@@ -94,7 +94,8 @@ class Equipo extends Model implements Identificable
         $this->loadMissing(['tipo:id,nombre', 'sede:id,nombre']);
 
         return [
-            'titulo' => $this->numero_serie,
+            // Ronda 6 (EQ-04): el número nunca va sin su rótulo
+            'titulo' => 'Serie: '.$this->numero_serie,
             'detalle' => implode(' · ', array_filter([
                 trim(implode(' ', array_filter([$this->tipo?->nombre, $this->marca, $this->modelo]))),
                 self::ESTADOS[$this->estado] ?? $this->estado,

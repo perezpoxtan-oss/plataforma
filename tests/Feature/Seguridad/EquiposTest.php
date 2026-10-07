@@ -198,7 +198,7 @@ class EquiposTest extends TestCase
         $this->assertSame('04A23B1C', $this->buscarSerie('752TSFQ504')->etiqueta_nfc);
 
         $this->actingAs($this->admin)->post('/equipos', $this->datos(['numero_serie' => 'R-2', 'etiqueta_nfc' => '04A23B1C']))
-            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta NFC / RFID ya está asignada a otro registro: Equipo «752TSFQ504». Usa otra etiqueta o quítasela primero a ese registro.']);
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta NFC / RFID ya está asignada a otro registro: Equipo «Serie: 752TSFQ504». Usa otra etiqueta o quítasela primero a ese registro.']);
 
         // También si la tiene otro tipo de registro (un colaborador)
         $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => '7', 'nombre' => 'Eva', 'apellido_paterno' => 'Pérez', 'etiqueta_nfc' => 'AABBCCDD']));
@@ -325,7 +325,8 @@ class EquiposTest extends TestCase
         $this->actingAs($this->admin)->getJson('/lector/resolver?entrada=0012345678&tipos=equipo')->assertJsonPath('resultados.0.id', $e->id);
         // Número de serie tecleado (o leído con lector de código de barras)
         $this->actingAs($this->admin)->getJson('/lector/resolver?entrada=752tsfq504&tipos=equipo')
-            ->assertJsonPath('resultados.0.titulo', '752TSFQ504')
+            // Ronda 6 (EQ-04): el número siempre con su rótulo
+            ->assertJsonPath('resultados.0.titulo', 'Serie: 752TSFQ504')
             ->assertJsonPath('resultados.0.detalle', 'Radio de Comunicación MOTOROLA DEP 450 · DISPONIBLE · Sede CEN');
 
         $this->actingAs($this->admin)->get('/e/'.$e->codigo_qr)->assertRedirect(route('equipos.index').'#equipo-'.$e->id);
@@ -407,8 +408,10 @@ class EquiposTest extends TestCase
         $this->assertSame(['asignado' => 4, 'baja' => 1, 'disponible' => 6, 'en_mantenimiento' => 1], $equipos->countBy('estado')->sortKeys()->all());
         $this->assertSame(1, $this->enEmpresa(fn () => VoucherReposicion::where('origen_tipo', 'equipo')->count(), $demo));
         $zonas = $this->enEmpresa(fn () => ZonaEstacionamiento::all(), $demo);
-        $this->assertCount(6, $zonas);
-        $this->assertSame(2, $zonas->where('tipo', 'zona_descarga')->count());
+        // Ronda 6 (ES-02): más «Patio de Maniobras», zona de descarga con capacidad de 4
+        $this->assertCount(7, $zonas);
+        $this->assertSame(3, $zonas->where('tipo', 'zona_descarga')->count());
+        $this->assertSame(4, $zonas->firstWhere('nombre', 'Patio de Maniobras')?->cupo_total);
     }
 
     public function test_menu_enlaza_a_equipos(): void

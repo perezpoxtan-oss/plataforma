@@ -99,3 +99,11 @@ En el celular la lista queda en una columna y las ventanas ocupan toda la pantal
 ![Modo Noche](img/gafetes/noche.png)
 ![Dar de baja en modo Noche](img/gafetes/noche-baja.png)
 ![Modo Sol](img/gafetes/sol.png)
+
+## Ronda 6
+
+- **Generar lote**: bajo **Cantidad a Crear** se ve el límite: **Máximo 50 por lote**. Si necesitas más, genera otro lote.
+- Al editar un gafete, el **folio** avisa si ya existe. Al acercar o escribir la **etiqueta NFC** (en la edición o en el botón QR → «Código e identificación»), aparece en el acto si ya la tiene otro registro, por ejemplo «ya la tiene la llave «HDC-101»».
+
+![Límite del lote](img/ronda-6/13-gafetes-lote-maximo.png)
+![Etiqueta ocupada](img/ronda-6/12-identificacion-nfc-ocupada.png)

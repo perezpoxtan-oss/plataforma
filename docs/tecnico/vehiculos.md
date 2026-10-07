@@ -140,3 +140,7 @@ Filtros de la lista, **en la misma línea**: píldoras de **Categoría** (Todos,
 ### PV-05 · Alta desde la ficha de la empresa
 
 Con `/vehiculos?nuevo=1&proveedor={id}` la **Agencia o Empresa Propietaria queda fija** (campo oculto + texto con candado, sin lista) y la Categoría solo ofrece las que llevan empresa (`AdministradorVehiculos::CON_PROVEEDOR`). El diálogo lleva `data-al-cerrar-ir` = ficha de la empresa, pestaña Flotilla: **Cerrar o Cancelar regresa a la ficha** (antes dejaba al usuario en el Padrón vehicular). Guardar ya regresaba a la ficha (`volver=proveedor`).
+
+## Ronda 6: aviso de duplicado en vivo
+
+Las placas usan `data-duplicado` → `GET /vehiculos/duplicado` (iguales sin espacios ni guiones = existe; O/0, I/1 o una letra de diferencia = parecido; libre: «Se guardarán como ABC123A.»), con **Reactivar** si el vehículo está de baja. Se quitó `data-placas-existentes` / `data-aviso-placas`; el aviso ocupa toda la fila bajo Placas y Categoría.

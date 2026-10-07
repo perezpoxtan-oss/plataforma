@@ -335,13 +335,14 @@ class ConsultaAccesos
 
         return $zonas->map(function (ZonaEstacionamiento $z) use ($conteo) {
             $ocupados = (int) ($conteo[$z->id] ?? 0);
-            $lleno = ! $z->esDescarga() && $z->cupo_total !== null && $ocupados >= $z->cupo_total;
+            // Ronda 6 (ES-02): una zona de descarga con capacidad también se llena
+            $lleno = $z->estaLlena($ocupados);
 
             return [
                 'id' => $z->id, 'sede_id' => $z->sede_id, 'nombre' => $z->nombre, 'descarga' => $z->esDescarga(),
                 'cupo' => $z->cupo_total, 'ocupados' => $ocupados, 'lleno' => $lleno,
                 // Textos de SEGCAT: "Sótano 1A (3/8)", "Lobby (zona de descarga)", "… — LLENO"
-                'texto' => $z->nombre.' '.($z->esDescarga() ? '(zona de descarga)' : '('.$ocupados.'/'.$z->cupo_total.')').($lleno ? ' — LLENO' : ''),
+                'texto' => $z->nombre.' '.($z->esDescarga() ? '(zona de descarga'.($z->tieneCupo() ? ' '.$ocupados.'/'.$z->cupo_total : '').')' : '('.$ocupados.'/'.$z->cupo_total.')').($lleno ? ' — LLENO' : ''),
             ];
         })->values()->all();
     }

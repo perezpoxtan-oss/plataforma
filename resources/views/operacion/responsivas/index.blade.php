@@ -22,7 +22,7 @@
             $trasError = old('_dialogo') === 'nuevo-resguardo';
             $filasPrevias = $trasError ? collect((array) old('equipos', []))->values() : collect();
             $modalidadesPrevias = $trasError ? array_values((array) old('modalidades', [])) : [];
-            $textoEquipo = fn ($e) => '['.$e->numero_serie.'] '.trim(($e->tipo->nombre ?? 'Equipo').' '.trim(($e->marca ?? '').' '.($e->modelo ?? '')));
+            $textoEquipo = fn ($e) => 'Serie: '.$e->numero_serie.' · '.trim(($e->tipo->nombre ?? 'Equipo').' '.trim(($e->marca ?? '').' '.($e->modelo ?? '')));
         @endphp
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">

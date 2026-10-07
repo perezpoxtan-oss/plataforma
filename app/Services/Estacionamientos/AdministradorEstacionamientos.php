@@ -160,7 +160,7 @@ class AdministradorEstacionamientos
             'tipo.in' => 'Elige el tipo de zona de la lista.',
             'cupo_total.required_if' => 'Un estacionamiento necesita su cupo total de espacios (1 o más).',
             'cupo_total.integer' => 'El cupo total debe ser un número entero de espacios.',
-            'cupo_total.min' => 'El cupo total debe ser de al menos 1 espacio.',
+            'cupo_total.min' => ($entrada['tipo'] ?? null) === 'zona_descarga' ? 'La capacidad debe ser de al menos 1 vehículo (o déjala vacía si no tiene límite).' : 'El cupo total debe ser de al menos 1 espacio.',
             'cupo_total.max' => 'Revisa el cupo total: máximo 9999 espacios.',
         ])->validate();
 
@@ -184,8 +184,8 @@ class AdministradorEstacionamientos
             'sede_id' => $sedeId,
             'nombre' => $datos['nombre'],
             'tipo' => $datos['tipo'],
-            // SEGCAT: las zonas de descarga no cuentan espacios
-            'cupo_total' => $datos['tipo'] === 'estacionamiento' ? (int) $datos['cupo_total'] : null,
+            // Ronda 6 (ES-02): en una zona de descarga la capacidad máxima es opcional (SEGCAT no la tenía)
+            'cupo_total' => isset($datos['cupo_total']) ? (int) $datos['cupo_total'] : null,
         ];
     }
 

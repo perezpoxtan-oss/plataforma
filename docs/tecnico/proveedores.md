@@ -84,3 +84,7 @@ Ver [altas-por-verificar.md](altas-por-verificar.md) y ADR-0006.
 
 - La empresa de la ficha **queda fija** en el alta (sin lista para elegir otra): en Personas la «Empresa que representa» y el tipo que le corresponde; en Vehículos la «Agencia o Empresa Propietaria» y solo las categorías que llevan empresa.
 - **Cerrar o Cancelar regresa a la ficha** (pestaña Personal o Flotilla) gracias a `<dialog data-al-cerrar-ir="…">`; antes el usuario quedaba en el Padrón de personas o en el Padrón vehicular. Guardar ya regresaba a la ficha.
+
+## Ronda 6: aviso de duplicado en vivo
+
+La razón social usa el mecanismo único (`data-duplicado` → `GET /proveedores/duplicado`, ver `avisos-duplicado.md`) en el alta, la edición y la ficha; se quitó `data-nombres-existentes`. «Abarrotes del Caribe» ≈ «Abarrotes del Caribe S.A. de C.V.» (no cuentan «S.A.», «S.A. de C.V.», «S. de R.L.», «S.A.P.I.»…). Una desactivada ofrece **Reactivar**. Con alcance de sede, si ya existe se avisa que al guardar solo se agrega a su sede (no se rechaza).

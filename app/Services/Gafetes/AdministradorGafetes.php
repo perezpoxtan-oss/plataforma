@@ -189,7 +189,7 @@ class AdministradorGafetes
             'cantidad.required' => 'Indica cuántos gafetes vas a crear.',
             'cantidad.integer' => 'La cantidad debe ser un número entero.',
             'cantidad.min' => 'La cantidad debe ser de 1 a '.self::LOTE_MAXIMO.' gafetes.',
-            'cantidad.max' => 'La cantidad debe ser de 1 a '.self::LOTE_MAXIMO.' gafetes por lote.',
+            'cantidad.max' => 'Máximo '.self::LOTE_MAXIMO.' gafetes por lote. Si necesitas más, genera otro lote.',
             'nombre_tipo_nuevo.max' => 'El nombre del tipo es muy largo (máximo 50 caracteres).',
         ])->validate();
 
