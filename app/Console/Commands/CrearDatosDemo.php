@@ -15,6 +15,7 @@ use App\Models\DepartamentoResponsable;
 use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EquipoPc;
+use App\Models\EquipoResponsiva;
 use App\Models\Espacio;
 use App\Models\EtiquetaPlantilla;
 use App\Models\Gafete;
@@ -214,6 +215,7 @@ class CrearDatosDemo extends Command
         $paso('ronda6Demo', fn () => $this->ronda6Demo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('recepcionDemo', fn () => $this->recepcionDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'jefe.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('ronda7Demo', fn () => $this->ronda7Demo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('ronda8Demo', fn () => $this->ronda8Demo(User::where('username', 'agente.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -2270,6 +2272,30 @@ class CrearDatosDemo extends Command
      * plantilla de rollo Zebra de 2 × 1 pulgadas solo para Centro, una
      * impresión de 3 llaveros de Centro y la reimpresión de uno de ellos.
      */
+    /**
+     * Ronda 8 (RS-04): un lote de Centro con devolución parcial (un equipo ya
+     * regresó OK y el otro sigue en campo), solo la primera vez.
+     */
+    private function ronda8Demo(User $agente): void
+    {
+        if (EquipoResponsiva::whereNotNull('recibido_por')->exists()) {
+            return;
+        }
+        $lote = Responsiva::where('estado', Responsiva::EN_CAMPO)->whereHas('sede', fn ($q) => $q->where('codigo', 'CEN'))
+            ->has('equipos', '>=', 2)->with('equipos')->orderBy('id')->first();
+        if ($lote === null) {
+            return;
+        }
+        $previo = auth()->user();
+        auth()->setUser($agente);
+        try {
+            app(AdministradorResponsivas::class)->recibirEquipo($agente, $lote, $lote->equipos->sortBy('id')->first(),
+                ['estado_recepcion' => 'ok', 'nota' => 'Lo entregó al terminar su turno.'], false);
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
     private function ronda7Demo($sedes, User $admin): void
     {
         if (ImpresionEtiquetas::exists()) {
