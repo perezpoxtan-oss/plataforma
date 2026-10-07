@@ -99,16 +99,7 @@ class Identificacion
         $limpia = Etiqueta::normalizar($valor);
         $nueva = $limpia === '' ? null : $limpia;
 
-        if ($nueva !== null) {
-            foreach ($this->lector->tipos() as $otroTipo => $clase) {
-                $ocupada = $clase::etiquetaOcupada($nueva, $clase === $registro::class ? (int) $registro->getKey() : null);
-                if ($ocupada !== null) {
-                    $quien = $ocupada->resumenLector()['titulo'] ?? '';
-                    throw ValidationException::withMessages(['etiqueta_nfc' => 'Esa tarjeta o etiqueta NFC/RFID ya está asignada a '
-                        .(self::NOMBRES[$otroTipo] ?? 'el registro')." «{$quien}». Quítala de ahí primero o usa otra."]);
-                }
-            }
-        }
+        $this->exigirEtiquetaLibre($nueva, $registro);
 
         $antes = $registro->getAttribute('etiqueta_nfc');
         if ($antes === $nueva) {
@@ -121,6 +112,30 @@ class Identificacion
         return $nueva;
     }
 
+    /**
+     * Ronda 8: la MISMA regla para todos los formularios (diálogo «Código e
+     * identificación» y altas/ediciones de Llaves, Gafetes, Equipos y Equipos
+     * PC): una etiqueta NFC/RFID es única en toda la empresa y entre todos
+     * los tipos de config/lector.php. $actual = el registro que se edita
+     * (puede ser nuevo, sin guardar). Debe correr con la empresa ya fijada.
+     */
+    public function exigirEtiquetaLibre(?string $etiqueta, ?Model $actual = null, string $campo = 'etiqueta_nfc'): void
+    {
+        $limpia = Etiqueta::normalizar($etiqueta);
+        if ($limpia === '') {
+            return;
+        }
+        foreach ($this->lector->tipos() as $tipo => $clase) {
+            $excepto = $actual !== null && $actual->exists && $actual instanceof $clase ? (int) $actual->getKey() : null;
+            $ocupada = $clase::etiquetaOcupada($limpia, $excepto);
+            if ($ocupada !== null) {
+                $quien = $ocupada->resumenLector()['titulo'] ?? '';
+                throw ValidationException::withMessages([$campo => 'Esa etiqueta ya la tiene '.(self::NOMBRES[$tipo] ?? 'otro registro')
+                    ." «{$quien}». Quítasela primero o usa otra."]);
+            }
+        }
+    }
+
     /** Para los mensajes: "la llave «HDC-101»", "el vehículo «ABC123»"… */
     public const NOMBRES = [
         'colaborador' => 'el colaborador',
@@ -130,5 +145,6 @@ class Identificacion
         'equipo' => 'el equipo',
         'lost_found' => 'el artículo de Lost & Found',
         'equipo_pc' => 'el equipo de Protección Civil',
+        'procedimiento' => 'el procedimiento',
     ];
 }

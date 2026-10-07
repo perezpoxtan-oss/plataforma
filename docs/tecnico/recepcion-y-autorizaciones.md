@@ -72,3 +72,7 @@ Módulos nuevos en el área Recursos Humanos (menú Recursos Humanos → «Recep
 - La caseta llamaba por teléfono para avisar; ahora el aviso llega solo (campana y correo) y la respuesta regresa a la caseta sin llamadas.
 - No había forma de saber cuánto esperó una visita ni quién la autorizó: ahora cada paso tiene hora y responsable, con métricas.
 - Sin websockets ni procesos en segundo plano: funciona en el hosting compartido.
+
+## Ronda 8: «No molestar» no se delega en uno mismo
+
+El diálogo ya no ofrece al propio usuario como delegado (quien tiene `autorizaciones.configurar` puede elegirse, marcado «(tú)», para delegar por otro titular) y el servidor lo rechaza antes que cualquier otra regla: «No puedes delegar en ti mismo: elige a otra persona que responda por ti.» (o «…en la misma persona que delega» cuando quien configura elige al titular).

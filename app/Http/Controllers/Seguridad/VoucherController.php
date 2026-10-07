@@ -172,6 +172,10 @@ class VoucherController extends Controller
             if ($modelo->firma_modo === 'digital') {
                 throw ValidationException::withMessages(['hoja' => "El voucher {$modelo->folio} ya se firmó digitalmente."]);
             }
+            // Ronda 8: un voucher cancelado por recuperación o reembolsado ya no se firma
+            if (! $modelo->admiteFirmaPapel()) {
+                throw ValidationException::withMessages(['hoja' => "El voucher {$modelo->folio} está «{$modelo->etiquetaEstado()}»: ya no se registra su firma en papel."]);
+            }
 
             $antes = $modelo->only(['firmado_papel_en', 'hoja_firmada']);
             $anterior = $modelo->hoja_firmada;

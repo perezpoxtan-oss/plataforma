@@ -37,7 +37,7 @@ Botones de cada tarjeta: ver detalle (ojo), editar (lápiz) y anular (círculo t
 1. En **Estatus del Servicio** elige **FALLA DE FLETERA (Uso de Taxis)**. Aparece el **Taxi 1**.
 2. Captura **Placas**, **Nombre Conductor**, **Monto Vale ($)** y **Destino** (el paradero; si no existe en la lista, se agrega solo).
 3. Si el monto pasa del tope de la ruta, aparece un aviso amarillo y debes escribir la **justificación**.
-4. **Pasajeros de este Taxi**: escanea el gafete del colaborador (o escribe su número de empleado y presiona Enter). Se agrega como una ficha; escanea al siguiente. Para quitar a alguien toca la **×**. Si la persona no aparece, toca **¿No aparece? Alta provisional**: Recursos Humanos la validará después.
+4. **Pasajeros de este Taxi**: escanea el gafete del colaborador (o escribe su número de empleado: aparece solo, sin Enter). Se agrega como una ficha; escanea al siguiente. Para quitar a alguien toca la **×**. Si la persona no aparece, toca **¿No aparece? Alta provisional**: Recursos Humanos la validará después.
 5. El conductor firma en **Firma del taxista** y tú en **Firma del guardia** (si tu usuario no firma en pantalla, el vale impreso trae las líneas para firmar a mano).
 6. ¿Fueron varios taxis? Toca **Añadir otro Taxi**. Con el bote de basura quitas uno (siempre queda al menos uno).
 7. Guarda. Se crea **un vale por taxi** y aparecen los botones para **imprimir cada vale**. Si la empresa lo activó, cada vale se envía por correo para su autorización.

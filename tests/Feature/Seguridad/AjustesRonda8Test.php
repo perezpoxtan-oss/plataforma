@@ -9,6 +9,7 @@ use App\Models\Colaborador;
 use App\Models\Equipo;
 use App\Models\EquipoResponsiva;
 use App\Models\Gafete;
+use App\Models\Llave;
 use App\Models\Novedad;
 use App\Models\Proveedor;
 use App\Models\Responsiva;
@@ -423,5 +424,74 @@ class AjustesRonda8Test extends PruebaNovedades
         $this->assertStringContainsString('> .dialogo-cuerpo { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto;', $css);
         // Sin listas con su propio scroll dentro de un diálogo
         $this->assertStringContainsString('.dialogo .lista-casillas-circuito, .dialogo .caja-checks, .dialogo .texto-privacidad { max-height: none; overflow: visible; }', $css);
+    }
+
+    // ------------------------------------------- Revisión del catálogo de QA
+
+    public function test_etiqueta_nfc_unica_entre_todos_los_tipos_en_todos_los_formularios(): void
+    {
+        $gafete = $this->enEmpresa(fn () => Gafete::create(['sede_id' => $this->centro->id, 'tipo_gafete_id' => TipoGafete::firstOrCreate(['nombre' => 'Visitante'])->id,
+            'nomenclatura' => 'HOT-CEN-VIS-001', 'consecutivo' => 1, 'etiqueta_nfc' => 'AABBCC01']));
+        $otroGafete = $this->enEmpresa(fn () => Gafete::create(['sede_id' => $this->centro->id, 'tipo_gafete_id' => $gafete->tipo_gafete_id,
+            'nomenclatura' => 'HOT-CEN-VIS-002', 'consecutivo' => 2]));
+        $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => '7', 'nombre' => 'Eva', 'apellido_paterno' => 'Pérez', 'etiqueta_nfc' => 'AABBCC02']));
+        $llave = $this->enEmpresa(fn () => Llave::create(['sede_id' => $this->centro->id, 'nomenclatura' => 'HDC-1', 'descripcion' => 'Site',
+            'tipo_dispositivo' => 'metalica', 'alcance' => 'global', 'etiqueta_nfc' => 'AABBCC03']));
+
+        // Llave nueva con la etiqueta de un gafete (escrita de otra forma): no
+        $this->actingAs($this->admin)->post('/llaves', ['sede_id' => $this->centro->id, 'nomenclatura' => 'HDC-2', 'descripcion' => 'Bodega',
+            'tipo_dispositivo' => 'electronica_rfid', 'alcance' => 'global', 'etiqueta_nfc' => 'aa:bb:cc:01'])
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene el gafete «HOT-CEN-VIS-001». Quítasela primero o usa otra.']);
+        // Gafete editado con la etiqueta de un colaborador o de una llave: no
+        $this->actingAs($this->admin)->put("/gafetes/{$otroGafete->id}", ['nomenclatura' => 'HOT-CEN-VIS-002', 'tipo_gafete_id' => $gafete->tipo_gafete_id, 'etiqueta_nfc' => 'AABBCC02'])
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene el colaborador «Eva Pérez». Quítasela primero o usa otra.']);
+        $this->actingAs($this->admin)->put("/gafetes/{$otroGafete->id}", ['nomenclatura' => 'HOT-CEN-VIS-002', 'tipo_gafete_id' => $gafete->tipo_gafete_id, 'etiqueta_nfc' => 'AABBCC03'])
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene la llave «HDC-1». Quítasela primero o usa otra.']);
+        // El gafete conserva la suya al editarlo (no choca consigo mismo)
+        $this->actingAs($this->admin)->put("/gafetes/{$gafete->id}", ['nomenclatura' => 'HOT-CEN-VIS-001', 'tipo_gafete_id' => $gafete->tipo_gafete_id, 'etiqueta_nfc' => 'AABBCC01'])
+            ->assertSessionHasNoErrors();
+        // Equipo con la etiqueta de la llave: no
+        $tipo = $this->enEmpresa(fn () => TipoEquipo::firstOrCreate(['nombre' => 'Radio']));
+        $this->actingAs($this->admin)->post('/equipos', ['sede_id' => $this->centro->id, 'tipo_equipo_id' => $tipo->id, 'marca' => 'X', 'modelo' => 'Y',
+            'numero_serie' => 'S-1', 'etiqueta_nfc' => 'AABBCC03'])
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene la llave «HDC-1». Quítasela primero o usa otra.']);
+        // Diálogo «Código e identificación» (vehículos, colaboradores, Lost & Found…): mismo mensaje
+        $this->actingAs($this->admin)->putJson("/identificacion/gafete/{$otroGafete->id}/etiqueta", ['etiqueta_nfc' => 'AABBCC03'])
+            ->assertStatus(422)->assertJsonPath('errors.etiqueta_nfc.0', 'Esa etiqueta ya la tiene la llave «HDC-1». Quítasela primero o usa otra.');
+        $this->assertNull($this->enEmpresa(fn () => $otroGafete->fresh()->etiqueta_nfc));
+        $this->assertSame('AABBCC03', $this->enEmpresa(fn () => $llave->fresh()->etiqueta_nfc));
+    }
+
+    public function test_voucher_cancelado_o_reembolsado_no_ofrece_firma_en_papel(): void
+    {
+        $tipo = $this->enEmpresa(fn () => TipoEquipo::firstOrCreate(['nombre' => 'Radio']));
+        $equipo = $this->enEmpresa(fn () => Equipo::create(['sede_id' => $this->centro->id, 'tipo_equipo_id' => $tipo->id, 'marca' => 'X', 'modelo' => 'Y', 'numero_serie' => 'S-9']));
+        $this->actingAs($this->admin)->post("/equipos/{$equipo->id}/baja", ['motivo' => 'extraviado', 'firma_modo' => 'fisica'])->assertSessionHasNoErrors();
+        $v = $this->enEmpresa(fn () => VoucherReposicion::firstOrFail());
+        $this->actingAs($this->admin)->get('/vouchers')->assertOk()->assertSee('Registrar firma en papel');
+
+        foreach (['cancelado_recuperacion' => 'Cancelado por recuperación', 'reembolsado' => 'Reembolsado'] as $estado => $texto) {
+            $this->enEmpresa(fn () => $v->forceFill(['estado' => $estado])->save());
+            $this->actingAs($this->admin)->get('/vouchers')->assertOk()->assertDontSee('Registrar firma en papel');
+            $this->actingAs($this->admin)->post("/vouchers/{$v->id}/papel", ['_dialogo' => 'papel-'.$v->id])
+                ->assertSessionHasErrors(['hoja' => "El voucher {$v->folio} está «{$texto}»: ya no se registra su firma en papel."]);
+        }
+    }
+
+    public function test_no_molestar_no_se_delega_en_uno_mismo(): void
+    {
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro);
+        $this->actingAs($jefe)->get('/autorizaciones')->assertOk()->assertDontSee('(tú)');
+        $this->actingAs($jefe)->post('/autorizaciones/delegaciones', ['_dialogo' => 'delegar', 'delegado_id' => $jefe->id,
+            'desde' => now()->format('Y-m-d\TH:i'), 'hasta' => now()->addDay()->format('Y-m-d\TH:i')])
+            ->assertSessionHasErrors(['delegado_id' => 'No puedes delegar en ti mismo: elige a otra persona que responda por ti.']);
+    }
+
+    public function test_textos_del_lector_ya_no_piden_enter(): void
+    {
+        foreach (['seguridad/transporte/_taxi', 'seguridad/equipos/index', 'seguridad/gafetes/index', 'seguridad/recorridos-pc/show'] as $vista) {
+            $html = (string) file_get_contents(resource_path("views/{$vista}.blade.php"));
+            $this->assertDoesNotMatchRegularExpression('/(presiona|oprim[ae]r?|pulsa) Enter/i', $html, $vista);
+        }
     }
 }

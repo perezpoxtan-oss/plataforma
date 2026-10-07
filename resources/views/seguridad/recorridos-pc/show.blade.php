@@ -192,7 +192,7 @@
                 @endif
                 <form action="{{ route('recorridos_pc.show', $r->id) }}" method="GET" data-escaner-rpc>
                     @include('componentes.lector', ['id' => 'rpc_escaner', 'etiqueta' => 'Lector ID / Escáner QR / NFC / RFID', 'tipos' => 'equipo_pc', 'nombre' => 'equipo',
-                        'ayuda' => 'Escanea el QR del equipo con la cámara, acerca su etiqueta NFC o usa el lector USB. También puedes escribir su ID (ej. EXT-01) y oprimir Enter.'])
+                        'ayuda' => 'Escanea el QR del equipo con la cámara, acerca su etiqueta NFC o usa el lector USB. También puedes escribir su ID (ej. EXT-01): aparece solo, sin Enter.'])
                     <noscript><button type="submit" class="btn-rpc btn-rpc-verde">Abrir punto</button></noscript>
                 </form>
                 <a href="{{ route('recorridos_pc.show', ['recorrido' => $r->id, 'manual' => 1]) }}#punto" class="rpc-enlace-manual"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>¿No tiene etiqueta o no está en el catálogo? Captúralo a mano</a>

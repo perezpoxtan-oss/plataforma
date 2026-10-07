@@ -6,10 +6,10 @@ use App\Models\EquipoPc;
 use App\Models\Espacio;
 use App\Models\Sede;
 use App\Models\User;
+use App\Services\Lector\Identificacion;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
-use App\Support\Lector\Identificable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -277,17 +277,8 @@ class CatalogoEquiposPc
      */
     private function etiquetaLibre(string $etiqueta, ?EquipoPc $actual): void
     {
-        foreach (config('lector.tipos', []) as $tipo => $clase) {
-            if (! is_subclass_of($clase, Identificable::class) || ! method_exists($clase, 'etiquetaOcupada')) {
-                continue;
-            }
-            $ocupada = $clase::etiquetaOcupada($etiqueta, $clase === EquipoPc::class ? $actual?->id : null);
-            if ($ocupada !== null) {
-                $quien = $ocupada->resumenLector()['titulo'];
-                $que = ['vehiculo' => 'Vehículo', 'equipo_pc' => 'Equipo de Protección Civil'][$tipo] ?? ucfirst(str_replace('_', ' ', (string) $tipo));
-                throw ValidationException::withMessages(['etiqueta_nfc' => "Esa etiqueta NFC / RFID ya está asignada a otro registro: {$que} «{$quien}». Usa otra etiqueta o quítasela primero a ese registro."]);
-            }
-        }
+        // Ronda 8: la misma regla y el mismo mensaje que en todos los formularios
+        app(Identificacion::class)->exigirEtiquetaLibre($etiqueta, $actual ?? new EquipoPc);
     }
 
     // ------------------------------------------------------------------ Lectura

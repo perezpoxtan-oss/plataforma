@@ -198,12 +198,12 @@ class EquiposTest extends TestCase
         $this->assertSame('04A23B1C', $this->buscarSerie('752TSFQ504')->etiqueta_nfc);
 
         $this->actingAs($this->admin)->post('/equipos', $this->datos(['numero_serie' => 'R-2', 'etiqueta_nfc' => '04A23B1C']))
-            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta NFC / RFID ya está asignada a otro registro: Equipo «Serie: 752TSFQ504». Usa otra etiqueta o quítasela primero a ese registro.']);
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene el equipo «Serie: 752TSFQ504». Quítasela primero o usa otra.']);
 
         // También si la tiene otro tipo de registro (un colaborador)
         $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => '7', 'nombre' => 'Eva', 'apellido_paterno' => 'Pérez', 'etiqueta_nfc' => 'AABBCCDD']));
         $this->actingAs($this->admin)->post('/equipos', $this->datos(['numero_serie' => 'R-3', 'etiqueta_nfc' => 'aa:bb:cc:dd']))
-            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta NFC / RFID ya está asignada a otro registro: Colaborador «Eva Pérez». Usa otra etiqueta o quítasela primero a ese registro.']);
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene el colaborador «Eva Pérez». Quítasela primero o usa otra.']);
     }
 
     // ---------------------------------------------------------------- Edición y estados
