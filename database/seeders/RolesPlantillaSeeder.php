@@ -67,7 +67,7 @@ class RolesPlantillaSeeder extends Seeder
         // El Agente trabaja en los menús de caseta: Operación y Padrones (no en reportes)
         $deCaseta = fn ($ma) => $deSeguridad($ma) && in_array(self::menuDe($ma->modulo), ['operacion', 'padrones'], true);
 
-        return self::soloAdministradorBorra(self::reglaProcedimientos([
+        return self::soloAdministradorBorra(self::reglaEtiquetasQr(self::reglaProcedimientos([
             'Administrador' => [10, 'Administra toda su empresa', fn ($ma) => Alcance::Empresa],
             'Director' => [20, 'Consulta y aprueba en toda la empresa', fn ($ma) => in_array($ma->accion->clave, ['ver', 'aprobar', 'exportar', 'imprimir'], true) ? Alcance::Empresa : null],
             'Recursos Humanos' => [25, 'Administra el personal y valida las altas provisionales de la caseta', fn ($ma) => $ma->modulo->area->clave === 'recursos_humanos'
@@ -81,7 +81,7 @@ class RolesPlantillaSeeder extends Seeder
             'Agente' => [60, 'Registra la operación de caseta', fn ($ma) => ($deCaseta($ma)
                 && in_array($ma->accion->clave, self::esPadron($ma->modulo) ? self::ACCIONES_AGENTE_PADRONES : self::ACCIONES_AGENTE_OPERACION, true))
                 || $provisional($ma) ? Alcance::Sede : null],
-        ]));
+        ])));
     }
 
     // Procedimientos
@@ -121,6 +121,27 @@ class RolesPlantillaSeeder extends Seeder
         return $definiciones;
     }
     // Fin Procedimientos
+
+    // Etiquetas QR (Ronda 7)
+
+    /** «etiquetas_qr.configurar» (Plantillas del gestor de impresión): rol => alcance; nadie más. */
+    public const ETIQUETAS_CONFIGURAR = ['Administrador' => Alcance::Empresa, 'Director' => Alcance::Empresa, 'Jefe de seguridad' => Alcance::Sede];
+
+    /**
+     * @param  array<string, array{0: int, 1: string, 2: Closure}>  $definiciones
+     * @return array<string, array{0: int, 1: string, 2: Closure}>
+     */
+    private static function reglaEtiquetasQr(array $definiciones): array
+    {
+        foreach ($definiciones as $nombre => [$nivel, $descripcion, $regla]) {
+            $definiciones[$nombre][2] = fn ($ma) => $ma->modulo->clave === 'etiquetas_qr' && $ma->accion->clave === 'configurar'
+                ? (self::ETIQUETAS_CONFIGURAR[$nombre] ?? null)
+                : $regla($ma);
+        }
+
+        return $definiciones;
+    }
+    // Fin Etiquetas QR
 
     /**
      * "Eliminar definitivamente" (acción borrar) solo lo recibe el

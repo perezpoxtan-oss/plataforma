@@ -319,19 +319,20 @@ class AjustesRonda6Test extends TestCase
         }, $otra = $this->crearEmpresa('Hotel Dos'));
         $this->assertNotNull($otra);
 
-        $html = $this->actingAs($this->admin)->get('/etiquetas/imprimir?'.http_build_query(['sel' => ['llave-'.$centro->id, 'vehiculo-'.$vehiculo->id, 'llave-'.$ajena->id], 'tamano' => 'calcomania']))
+        // Ronda 7: «Imprimir» es un POST que registra la impresión y abre su hoja
+        $html = $this->actingAs($this->admin)->followingRedirects()->post('/etiquetas/imprimir', ['sel' => ['llave-'.$centro->id, 'vehiculo-'.$vehiculo->id, 'llave-'.$ajena->id], 'tamano' => 'calcomania'])
             ->assertOk()->assertSee('HDC-101')->assertSee('ABC123A')->assertDontSee('AJENA-1')
-            ->assertSee('etiqueta-qr-calcomania', false)->assertSee('<svg', false)->getContent();
+            ->assertSee('Calcomanía vehicular')->assertSee('<svg', false)->getContent();
         $this->assertStringContainsString(trim(chunk_split($centro->codigo_qr, 4, ' ')), $html);
 
         // Jefe de Centro no imprime lo de Playa; solo ajeno = 404; sin marcar = regresa con aviso
         $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro);
-        $this->actingAs($jefe)->get('/etiquetas/imprimir?sel[]=llave-'.$playa->id)->assertNotFound();
-        $this->actingAs($this->admin)->get('/etiquetas/imprimir?sel[]=llave-'.$ajena->id)->assertNotFound();
-        $this->actingAs($this->admin)->get('/etiquetas/imprimir')->assertRedirect(route('etiquetas.index'))
+        $this->actingAs($jefe)->post('/etiquetas/imprimir', ['sel' => ['llave-'.$playa->id]])->assertNotFound();
+        $this->actingAs($this->admin)->post('/etiquetas/imprimir', ['sel' => ['llave-'.$ajena->id]])->assertNotFound();
+        $this->actingAs($this->admin)->post('/etiquetas/imprimir')->assertRedirect(route('etiquetas.index'))
             ->assertSessionHas('aviso', 'Marca al menos un registro para imprimir sus etiquetas.');
-        // Tamaño desconocido: el de 50 × 25 mm
-        $this->actingAs($this->admin)->get('/etiquetas/imprimir?sel[]=llave-'.$centro->id.'&tamano=xx')->assertSee('etiqueta-qr-etiqueta', false);
+        // Tamaño desconocido: la última plantilla que usó (se recuerda por usuario)
+        $this->actingAs($this->admin)->followingRedirects()->post('/etiquetas/imprimir', ['sel' => ['llave-'.$centro->id], 'tamano' => 'xx'])->assertSee('plantilla «Calcomanía vehicular»', false);
         // Sin el permiso del menú: 403
         $this->actingAs($this->crearUsuario($this->empresa))->get('/etiquetas')->assertForbidden();
     }

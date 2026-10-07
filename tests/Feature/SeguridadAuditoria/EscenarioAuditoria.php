@@ -116,6 +116,9 @@ trait EscenarioAuditoria
             'adjunto' => 'procedimiento_adjuntos',
             'acuse' => 'procedimiento_acuses',
             'categoria' => 'procedimiento_categorias',
+            // Ronda 7: gestor de impresión QR
+            'impresion' => 'impresiones_etiquetas',
+            'plantilla' => 'etiquetas_plantillas',
         ][$parametro] ?? null;
     }
 

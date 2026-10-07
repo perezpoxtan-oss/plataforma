@@ -7226,6 +7226,7 @@ document.addEventListener('click', function (e) {
                 // Solo la respuesta más nueva y si el texto sigue igual
                 if (campo.getAttribute('data-duplicado-turno') !== mio || campo.value.trim() !== valor) { return; }
                 pintar(campo, datos);
+                campo.dispatchEvent(new CustomEvent('duplicado:pintado', { bubbles: true, detail: datos })); // Ronda 7: para acciones propias de un módulo (Usuarios: «Vincular»)
             })
             .catch(function () { limpiar(campo); /* sin aviso: el servidor vuelve a revisar al guardar */ });
     }
@@ -7634,3 +7635,258 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Ajustes Ronda 6 */
+/* ==========================================================================
+   Ajustes Ronda 7 (ver docs/cursos/leccion-32-ajustes-ronda-7-e-impresion.md)
+   1. Usuarios: el aviso de homónimos usa el aviso único de duplicados
+      (<input name="name" data-duplicado data-duplicado-usuarios>). Aquí
+      solo se agregan «Vincular» (colaborador con ese nombre que aún no tiene
+      cuenta) y la casilla «Sí, es otra persona con el mismo nombre».
+   2. Etiquetas QR: la medida de la plantilla elegida, debajo de la barra.
+   3. Etiquetas QR → Historial: diálogo «Reimprimir» (todas o algunas).
+   4. Etiquetas QR → Plantillas: campos de la hoja según el formato y vista
+      previa a escala, con aviso si la planilla no cabe en la hoja.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto, siFalla) { try { return JSON.parse(texto); } catch (x) { return siFalla; } }
+
+    function nodo(etiqueta, clase, texto) {
+        var e = document.createElement(etiqueta);
+        if (clase) { e.className = clase; }
+        if (texto !== undefined && texto !== null) { e.textContent = texto; }
+        return e;
+    }
+
+    /* ---------- 1. Usuarios: «Vincular» y «Sí, es otra persona…» ---------- */
+    function confirmarDe(form) { return form ? form.querySelector('[data-confirmar-homonimo]') : null; }
+
+    function mostrarConfirmar(form, visible) {
+        var confirmar = confirmarDe(form);
+        if (!confirmar) { return; }
+        confirmar.hidden = !visible;
+        if (!visible) {
+            var casilla = confirmar.querySelector('input');
+            if (casilla) { casilla.checked = false; }
+        }
+    }
+
+    function vincular(form, c) {
+        var numero = form.querySelector('[name="numero_colaborador"]');
+        var oculto = form.querySelector('[data-campo-colaborador]');
+        var nombre = form.querySelector('[name="name"]');
+        if (numero) { numero.value = c.num_empleado || ''; }
+        if (oculto) { oculto.value = String(c.id); }
+        if (nombre) { nombre.value = c.nombre_completo; }
+        var aviso = form.querySelector('[data-colab-vinculo]');
+        if (aviso) { aviso.hidden = false; }
+        // Se revisa otra vez con el colaborador ya vinculado
+        if (nombre) { nombre.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+
+    document.addEventListener('duplicado:pintado', function (e) {
+        var campo = e.target;
+        if (!campo.matches || !campo.matches('[data-duplicado-usuarios]')) { return; }
+        var form = campo.form;
+        var datos = e.detail || {};
+        mostrarConfirmar(form, !!datos.requiere_confirmacion);
+        var caja = document.getElementById(campo.getAttribute('data-duplicado-aviso') || '');
+        if (!caja) { return; }
+        var items = caja.querySelectorAll('.aviso-duplicado-item');
+        (datos.coincidencias || []).forEach(function (c, i) {
+            if (!c.vincular || !items[i]) { return; }
+            var b = nodo('button', 'btn-vincular-duplicado', 'Vincular');
+            b.type = 'button';
+            b.setAttribute('aria-label', 'Vincular esta cuenta con ' + c.vincular.nombre_completo);
+            b.addEventListener('click', function () { vincular(form, c.vincular); });
+            items[i].appendChild(b);
+        });
+    });
+
+    // Si el nombre queda corto o vacío, la confirmación ya no aplica
+    document.addEventListener('input', function (e) {
+        if (e.target.matches && e.target.matches('[data-duplicado-usuarios]') && e.target.value.trim().length < 3) { mostrarConfirmar(e.target.form, false); }
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        var campo = e.target.querySelector('[data-duplicado-usuarios]');
+        if (campo) { mostrarConfirmar(campo.form, false); }
+    }, true);
+
+    /* ---------- 2. Etiquetas QR: medida de la plantilla elegida ---------- */
+    function describirPlantilla(select) {
+        var detalle = select.form && select.form.querySelector('[data-plantilla-detalle] span');
+        var opcion = select.selectedOptions && select.selectedOptions[0];
+        if (detalle && opcion) { detalle.textContent = opcion.getAttribute('data-resumen') || ''; }
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches && e.target.matches('[data-plantilla-etiquetas]')) { describirPlantilla(e.target); }
+        // El conteo de la Ronda 6 habla de «tamaño»: ahora se elige una plantilla
+        var form = e.target.form;
+        var ayuda = form && form.matches('[data-etiquetas-qr]') ? form.querySelector('[data-etiquetas-ayuda]') : null;
+        if (ayuda) { ayuda.textContent = ayuda.textContent.replace('Elige el tamaño', 'Elige la plantilla'); }
+    });
+
+    /* ---------- 3. Historial: «Reimprimir» ---------- */
+    function contarReimprimir(form) {
+        var casillas = form.querySelectorAll('[data-reimprimir-item]');
+        var marcadas = form.querySelectorAll('[data-reimprimir-item]:checked').length;
+        var todas = form.querySelector('[data-reimprimir-todas]');
+        if (todas) {
+            todas.checked = marcadas === casillas.length;
+            todas.indeterminate = marcadas > 0 && marcadas < casillas.length;
+        }
+        var conteo = form.querySelector('[data-reimprimir-marcadas]');
+        if (conteo) { conteo.textContent = String(marcadas); }
+        var total = form.querySelector('[data-reimprimir-conteo]');
+        if (total) { total.textContent = '(' + casillas.length + ')'; }
+        var enviar = form.querySelector('[data-reimprimir-enviar]');
+        if (enviar) { enviar.disabled = marcadas === 0; }
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="reimprimir-etiquetas"]');
+        var d = document.getElementById('dialogoReimprimirEtiquetas');
+        if (!b || !d) { return; }
+        var form = d.querySelector('[data-form-reimprimir]');
+        form.action = b.dataset.url;
+        d.querySelector('[data-reimprimir-numero]').textContent = b.dataset.numero || '';
+        var lista = form.querySelector('[data-reimprimir-lista]');
+        lista.textContent = '';
+        (leer(b.dataset.reimprimir || '[]', []) || []).forEach(function (item) {
+            var li = nodo('li');
+            var etiqueta = nodo('label', 'fila-check');
+            var casilla = nodo('input');
+            casilla.type = 'checkbox';
+            casilla.name = 'sel[]';
+            casilla.value = item.clave;
+            casilla.checked = true;
+            casilla.setAttribute('data-reimprimir-item', '');
+            etiqueta.appendChild(casilla);
+            var texto = nodo('span');
+            texto.appendChild(nodo('strong', '', item.titulo));
+            texto.appendChild(nodo('small', '', ' · ' + item.tipo));
+            etiqueta.appendChild(texto);
+            li.appendChild(etiqueta);
+            lista.appendChild(li);
+        });
+        var plantilla = form.querySelector('[data-reimprimir-plantilla]');
+        if (plantilla) { plantilla.value = ''; }
+        contarReimprimir(form);
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    });
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-reimprimir]')) { return; }
+        if (e.target.matches('[data-reimprimir-todas]')) {
+            var marcar = e.target.checked;
+            form.querySelectorAll('[data-reimprimir-item]').forEach(function (c) { c.checked = marcar; });
+        }
+        contarReimprimir(form);
+    });
+
+    // La hoja se abre en otra pestaña: el diálogo se cierra
+    document.addEventListener('submit', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-form-reimprimir]')) { return; }
+        var d = e.target.closest('dialog');
+        setTimeout(function () { if (d && d.open) { d.close(); } }, 0);
+    });
+
+    /* ---------- 4. Plantillas: campos según el formato y vista previa ---------- */
+    function numero(form, nombre) {
+        var c = form.elements[nombre];
+        var v = c ? parseFloat(String(c.value || '').replace(',', '.')) : NaN;
+        return isNaN(v) ? 0 : v;
+    }
+
+    function formatoDe(form) {
+        var elegido = form.querySelector('[data-formato-plantilla]:checked');
+        return elegido ? elegido.value : 'rollo';
+    }
+
+    function acomodarFormato(form) {
+        var formato = formatoDe(form);
+        form.querySelectorAll('[data-solo-formato]').forEach(function (caja) {
+            var visible = caja.getAttribute('data-solo-formato') === formato;
+            caja.hidden = !visible;
+            // Ocultos no se envían, pero no se borran (si regresa, ahí siguen)
+            caja.querySelectorAll('input, select').forEach(function (c) { c.disabled = !visible; });
+        });
+        form.querySelectorAll('[data-texto-formato]').forEach(function (t) { t.hidden = t.getAttribute('data-texto-formato') !== formato; });
+    }
+
+    function redondear(v) { return Math.round(v * 10) / 10; }
+
+    function vistaPrevia(form) {
+        var etiqueta = form.querySelector('[data-vista-etiqueta]');
+        if (!etiqueta) { return; }
+        var ancho = numero(form, 'ancho_mm');
+        var alto = numero(form, 'alto_mm');
+        var qr = numero(form, 'qr_mm');
+        var horizontal = (form.querySelector('[name="orientacion"]:checked') || {}).value !== 'vertical';
+        var resumen = form.querySelector('[data-vista-resumen]');
+        var aviso = form.querySelector('[data-aviso-medidas]');
+        if (ancho <= 0 || alto <= 0) { etiqueta.hidden = true; if (resumen) { resumen.textContent = ''; } return; }
+        etiqueta.hidden = false;
+        // A escala: lo más grande posible sin pasar de 280 px de ancho ni 190 px de alto
+        var escala = Math.min(280 / ancho, 190 / alto, 6);
+        etiqueta.style.width = Math.round(ancho * escala) + 'px';
+        etiqueta.style.height = Math.round(alto * escala) + 'px';
+        etiqueta.style.padding = Math.round(1.5 * escala) + 'px';
+        etiqueta.classList.toggle('vertical', !horizontal);
+        var lado = Math.max(4, Math.round(Math.min(qr, Math.min(ancho, alto)) * escala));
+        var cuadro = form.querySelector('[data-vista-qr]');
+        cuadro.style.width = lado + 'px';
+        cuadro.style.height = lado + 'px';
+        cuadro.style.fontSize = Math.round(lado * 0.8) + 'px';
+        form.querySelectorAll('[data-vista-dato]').forEach(function (linea) {
+            var casilla = form.querySelector('input[type="checkbox"][name="' + linea.getAttribute('data-vista-dato') + '"]');
+            linea.hidden = !(casilla && casilla.checked);
+        });
+
+        var problemas = [];
+        var maximo = Math.min(ancho, alto) - 3;
+        if (qr > maximo) { problemas.push('El QR no cabe: en esta etiqueta puede medir hasta ' + redondear(Math.max(0, maximo)) + ' mm.'); }
+        var texto = '';
+        if (formatoDe(form) === 'hoja') {
+            var papel = form.elements.papel && form.elements.papel.selectedOptions[0];
+            var anchoHoja = papel ? parseFloat(papel.getAttribute('data-ancho')) : 215.9;
+            var altoHoja = papel ? parseFloat(papel.getAttribute('data-alto')) : 279.4;
+            var columnas = Math.max(1, Math.floor(numero(form, 'columnas')));
+            var filas = Math.max(1, Math.floor(numero(form, 'filas')));
+            var usadoAncho = numero(form, 'margen_izquierdo_mm') + columnas * ancho + (columnas - 1) * numero(form, 'separacion_horizontal_mm');
+            var usadoAlto = numero(form, 'margen_superior_mm') + filas * alto + (filas - 1) * numero(form, 'separacion_vertical_mm');
+            if (usadoAncho > anchoHoja) { problemas.push('A lo ancho ocupan ' + redondear(usadoAncho) + ' mm y la hoja mide ' + redondear(anchoHoja) + ' mm: quita una columna o reduce las medidas.'); }
+            if (usadoAlto > altoHoja) { problemas.push('A lo largo ocupan ' + redondear(usadoAlto) + ' mm y la hoja mide ' + redondear(altoHoja) + ' mm: quita una fila o reduce las medidas.'); }
+            texto = columnas + ' × ' + filas + ' = ' + (columnas * filas) + ' etiquetas por hoja.';
+        } else {
+            texto = 'Una etiqueta por página del rollo.';
+        }
+        if (resumen) { resumen.textContent = 'Tamaño real: ' + redondear(ancho) + ' × ' + redondear(alto) + ' mm. ' + texto; }
+        if (aviso) {
+            aviso.hidden = problemas.length === 0;
+            aviso.textContent = problemas.join(' ');
+        }
+    }
+
+    function prepararPlantilla(form) {
+        acomodarFormato(form);
+        vistaPrevia(form);
+    }
+
+    document.addEventListener('input', function (e) {
+        var form = e.target.form;
+        if (form && form.matches('[data-form-plantilla-qr]')) { vistaPrevia(form); }
+    });
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (form && form.matches('[data-form-plantilla-qr]')) { prepararPlantilla(form); }
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[data-form-plantilla-qr]').forEach(prepararPlantilla);
+    });
+})();
+/* Fin Ajustes Ronda 7 */

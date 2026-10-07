@@ -21,8 +21,6 @@
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
             $bajaId = is_string($dialogo) && str_starts_with($dialogo, 'baja-') ? (int) substr($dialogo, 5) : null;
-            // Ronda 5 (LL-03): el nombre se repite solo dentro de la misma sede
-            $nombresExistentes = json_encode($llaves->groupBy('sede_id')->map(fn ($g) => $g->map(fn ($l) => mb_strtolower($l->nomenclatura))->values()), JSON_UNESCAPED_UNICODE);
             $conteoTipos = $llaves->countBy('tipo_dispositivo');
             $variasSedes = $sedesFiltro->count() > 1;
             $llaveBaja = $bajaId ? $llaves->firstWhere('id', $bajaId) : null;
@@ -252,7 +250,6 @@
                 'trasError' => $modo === 'nueva' ? $dialogo === 'crear' : $editandoId !== null,
                 'editandoId' => $editandoId,
                 'sedesFormulario' => $modo === 'nueva' ? $sedesAlta : $sedesEdicion,
-                'nombresExistentes' => $nombresExistentes,
             ])
         @endforeach
 

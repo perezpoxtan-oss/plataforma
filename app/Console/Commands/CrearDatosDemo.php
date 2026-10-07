@@ -11,8 +11,10 @@ use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EquipoPc;
 use App\Models\Espacio;
+use App\Models\EtiquetaPlantilla;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
+use App\Models\ImpresionEtiquetas;
 use App\Models\Llave;
 use App\Models\LostFoundArticulo;
 use App\Models\LostFoundEntrega;
@@ -199,6 +201,7 @@ class CrearDatosDemo extends Command
         $paso('procedimientosDemo', fn () => $this->procedimientosDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('ronda5bDemo', fn () => $this->ronda5bDemo($sedes['CEN'], User::where('username', 'admin.demo')->firstOrFail()));
         $paso('ronda6Demo', fn () => $this->ronda6Demo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('ronda7Demo', fn () => $this->ronda7Demo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -2051,6 +2054,43 @@ class CrearDatosDemo extends Command
                     'cobro_pagado' => true, 'comentario' => 'Apareció en el taller de Mantenimiento; ya se le había descontado en nómina.',
                 ]);
             }
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    /**
+     * Ronda 7 (gestor de impresión QR): las 4 plantillas de siempre, una
+     * plantilla de rollo Zebra de 2 × 1 pulgadas solo para Centro, una
+     * impresión de 3 llaveros de Centro y la reimpresión de uno de ellos.
+     */
+    private function ronda7Demo($sedes, User $admin): void
+    {
+        if (ImpresionEtiquetas::exists()) {
+            return;
+        }
+        $previo = auth()->user();
+        auth()->setUser($admin);
+        try {
+            $plantillas = app('App\Services\Lector\PlantillasEtiquetas');
+            $plantillas->asegurar();
+            $plantillas->guardar($admin, [
+                'nombre' => 'Zebra 2 × 1 pulgadas (Centro)', 'sede_id' => $sedes['CEN']->id, 'formato' => 'rollo',
+                'ancho_mm' => '50.8', 'alto_mm' => '25.4', 'separacion_vertical_mm' => '0', 'orientacion' => 'horizontal', 'qr_mm' => '21',
+                'mostrar_titulo' => '1', 'mostrar_codigo' => '1', 'mostrar_tipo' => '1', 'mostrar_ubicacion' => '1', 'mostrar_fecha' => '1', 'mostrar_logo' => '0',
+            ]);
+
+            $llaves = Llave::where('sede_id', $sedes['CEN']->id)->where('activo', true)->orderBy('id')->limit(3)->get();
+            if ($llaves->isEmpty()) {
+                return;
+            }
+            $masivas = app('App\Services\Lector\EtiquetasMasivas');
+            $impresiones = app('App\Services\Lector\ImpresionesEtiquetas');
+            $llavero = EtiquetaPlantilla::where('clave', 'llavero')->firstOrFail();
+            $etiquetas = $masivas->paraImprimir($admin, $llaves->map(fn (Llave $l) => 'llave-'.$l->id)->all());
+            $original = $impresiones->registrar($admin, $llavero, $etiquetas);
+            $original->forceFill(['created_at' => now()->subDays(2), 'updated_at' => now()->subDays(2)])->save();
+            $impresiones->registrar($admin, $llavero, $etiquetas->take(1), $original);
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }

@@ -2,9 +2,12 @@
 
 namespace App\Services\Lector;
 
+use App\Models\Departamento;
+use App\Models\Sede;
 use App\Models\User;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
+use App\Support\HoraLocal;
 use App\Support\Lector\Identificable;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -12,6 +15,7 @@ use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -110,11 +114,15 @@ class EtiquetasMasivas
     /**
      * Registros para la lista, ya filtrados.
      *
-     * @param  array{tipo: ?string, sede: ?int, estado: string, q: string}  $filtros
+     * Ronda 7: también por fecha de alta (desde / hasta, días en la hora
+     * local) y estatus activos | baja | todos.
+     *
+     * @param  array{tipo: ?string, sede: ?int, estado: string, q: string, desde?: ?string, hasta?: ?string}  $filtros
      * @return Collection<int, array<string, mixed>>
      */
     public function lista(User $actor, array $filtros): Collection
     {
+        [$desde, $hasta] = $this->rangoAlta($filtros['desde'] ?? null, $filtros['hasta'] ?? null);
         $tipos = $this->tipos($actor);
         if ($filtros['tipo'] !== null) {
             $tipos = array_intersect_key($tipos, [$filtros['tipo'] => true]);
@@ -130,9 +138,13 @@ class EtiquetasMasivas
                 }
                 $consulta->where($consulta->getModel()->qualifyColumn('sede_id'), $filtros['sede']);
             }
+            if (($desde !== null || $hasta !== null) && Schema::hasColumn($consulta->getModel()->getTable(), 'created_at')) {
+                $columna = $consulta->getModel()->qualifyColumn('created_at');
+                $consulta->when($desde !== null, fn ($q) => $q->where($columna, '>=', $desde))->when($hasta !== null, fn ($q) => $q->where($columna, '<', $hasta));
+            }
             foreach ($consulta->limit(self::POR_TIPO)->get() as $registro) {
                 $fila = $this->fila($tipo, $info, $registro);
-                if ($filtros['estado'] === 'activos' && ! $fila['activo']) {
+                if (($filtros['estado'] === 'activos' && ! $fila['activo']) || ($filtros['estado'] === 'baja' && $fila['activo'])) {
                     continue;
                 }
                 if ($texto !== '' && ! str_contains(mb_strtolower($fila['titulo'].' '.$fila['detalle'].' '.$fila['codigo']), $texto)) {
@@ -258,6 +270,48 @@ class EtiquetasMasivas
             'sede_id' => $resumen['sede_id'] ?? null,
             'codigo_qr' => $codigo,
             'codigo' => trim(chunk_split($codigo, 4, ' ')),
+            // Ronda 7: alta y departamento (filtro por fecha y «Departamento / sede» en la etiqueta)
+            'creado_en' => array_key_exists('created_at', $registro->getAttributes()) ? $registro->getAttribute('created_at') : null,
+            'departamento_id' => $registro->getAttributes()['departamento_id'] ?? null,
         ];
+    }
+
+    /**
+     * Ronda 7: días «desde» y «hasta» (AAAA-MM-DD, en la hora local de quien
+     * consulta) como rango en hora universal [desde, hasta).
+     *
+     * @return array{0: ?Carbon, 1: ?Carbon}
+     */
+    public function rangoAlta(?string $desde, ?string $hasta): array
+    {
+        $zona = app(HoraLocal::class)->zona();
+        $dia = function (?string $texto) use ($zona): ?Carbon {
+            if ($texto === null || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $texto)) {
+                return null;
+            }
+
+            return rescue(fn () => Carbon::createFromFormat('!Y-m-d', $texto, $zona), null, false);
+        };
+        $inicio = $dia($desde);
+        $fin = $dia($hasta);
+
+        return [$inicio?->utc(), $fin?->addDay()->utc()];
+    }
+
+    /**
+     * Ronda 7: nombre de la sede y del departamento de cada etiqueta (para
+     * «Departamento / sede»), con dos consultas para toda la hoja.
+     *
+     * @param  Collection<int, array<string, mixed>>  $etiquetas
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function conUbicacion(Collection $etiquetas): Collection
+    {
+        $sedes = Sede::whereIn('id', $etiquetas->pluck('sede_id')->filter()->unique())->pluck('nombre', 'id');
+        $departamentos = Departamento::whereIn('id', $etiquetas->pluck('departamento_id')->filter()->unique())->pluck('nombre', 'id');
+
+        return $etiquetas->map(fn (array $e) => $e + [
+            'ubicacion' => implode(' · ', array_filter([$departamentos[$e['departamento_id']] ?? null, $sedes[$e['sede_id']] ?? null])) ?: 'Toda la empresa',
+        ]);
     }
 }

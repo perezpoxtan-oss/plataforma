@@ -9,7 +9,9 @@ use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EquipoPc;
 use App\Models\Espacio;
+use App\Models\EtiquetaPlantilla;
 use App\Models\Gafete;
+use App\Models\ImpresionEtiquetas;
 use App\Models\Llave;
 use App\Models\LostFoundArticulo;
 use App\Models\LostFoundEntrega;
@@ -324,6 +326,11 @@ class RecorridoPantallasTest extends TestCase
             // Eliminar definitivamente: el primer registro de cada catálogo o padrón registrado
             'borrar.revisar' => collect(RegistroBorrado::definiciones())
                 ->map(fn ($d, $clave) => ['registro' => $clave, 'id' => $primero($d['modelo'])])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
+            // Ronda 7: gestor de impresión QR (hoja de una impresión y plantillas)
+            'etiquetas.impresion' => array_map(fn ($id) => ['impresion' => $id], $ids([$primero(ImpresionEtiquetas::class)])),
+            'etiquetas.plantillas.edit', 'etiquetas.plantillas.prueba' => array_map(fn ($id) => ['plantilla' => $id], $ids([
+                $primero(EtiquetaPlantilla::class), $primero(EtiquetaPlantilla::class, fn ($q) => $q->whereNotNull('sede_id')),
+            ])),
             default => null,
         };
 
