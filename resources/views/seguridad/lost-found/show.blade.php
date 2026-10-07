@@ -21,6 +21,11 @@
         </div>
         <div class="acciones-novedades">
             <a href="{{ route('lost_found.archivo') }}#articulo-{{ $a->id }}" class="btn-accion-novedades"><i class="bi bi-arrow-left" aria-hidden="true"></i> Lost &amp; Found</a>
+            {{-- Ronda 5: QR y etiqueta NFC/RFID en un diálogo --}}
+            @include('componentes.boton-identificacion', ['identTipo' => 'lost_found', 'identRegistro' => $a, 'identTitulo' => $a->folio.' — '.$a->objeto,
+                'identDetalle' => $a->sede?->nombre ?? '', 'identClase' => 'btn-accion-novedades', 'identTexto' => 'Código QR',
+                'identImprimir' => $puedeImprimir ? route('lost_found.articulos.etiqueta', $a->id) : null, 'identImprimirTexto' => 'Imprimir etiqueta',
+                'identEditable' => $a->enResguardo() && auth()->user()->can('lost_found.editar')])
             @if ($puedeImprimir)
                 <a href="{{ route('lost_found.articulos.etiqueta', $a->id) }}" target="_blank" rel="noopener" class="btn-accion-novedades oscuro"><i class="bi bi-tag-fill" aria-hidden="true"></i> Etiqueta</a>
             @endif
@@ -127,5 +132,6 @@
             @include('seguridad.personas._registro-rapido')
         @endif
     @endif
+    @include('componentes.codigo-identificacion')
 </div>
 @endsection

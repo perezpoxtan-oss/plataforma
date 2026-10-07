@@ -285,7 +285,8 @@ class VehiculosTest extends TestCase
         $pagina = $html($taxis);
         $this->assertMatchesRegularExpression('/id="dialogoNuevoVehiculo"[^>]*data-abrir-al-cargar/', $pagina);
         $this->assertMatchesRegularExpression('/<option value="taxi_app"\s+selected/', $pagina);
-        $this->assertMatchesRegularExpression('/<option value="'.$taxis->id.'"\s+selected/', $pagina);
+        // Ronda 5 (PV-05): la empresa de la ficha queda fija (sin lista para elegir otra)
+        $this->assertStringContainsString('<input type="hidden" name="proveedor_id" value="'.$taxis->id.'">', $pagina);
         $this->assertStringContainsString('name="volver" value="proveedor"', $pagina);
 
         $this->assertMatchesRegularExpression('/<option value="agencia_renta"\s+selected/', $html($agencia));

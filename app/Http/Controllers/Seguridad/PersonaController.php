@@ -7,6 +7,7 @@ use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\User;
 use App\Services\Padrones\AltasPorVerificar;
+use App\Services\Padrones\AvisoDuplicado;
 use App\Services\Padrones\HayParecidos;
 use App\Services\Personas\AdministradorPersonas;
 use App\Services\Personas\FolioDuplicado;
@@ -192,6 +193,59 @@ class PersonaController extends Controller
         return response()->json([
             'resultados' => $this->tenant->conEmpresa($empresaId, fn () => $this->personas->buscar(Entrada::texto($request->query('q', '')))),
         ]);
+    }
+
+    /**
+     * Aviso de duplicado en vivo (Ronda 5, PE-03): mientras se escribe el
+     * folio (sin espacios ni guiones, igual que al guardar) o el nombre
+     * ("se parece a…", con las reglas de "¿Es alguno de estos?").
+     * ?campo=folio_identificacion|nombre_completo&valor=…&excluir={id}
+     */
+    public function duplicado(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        abort_unless($actor->can('visitantes.crear') || $actor->can('visitantes.editar'), 403);
+        $avisos = app(AvisoDuplicado::class);
+        $empresaId = $this->empresa->id($actor);
+        $valor = mb_substr(Entrada::texto($request->query('valor')), 0, 150);
+        $excluir = (int) Entrada::texto($request->query('excluir')) ?: null;
+        if ($empresaId === null) {
+            return $avisos->nada();
+        }
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $avisos, $valor, $excluir) {
+            $reactivar = fn (Persona $p) => $actor->can('visitantes.eliminar') ? route('personas.estado', $p->id) : null;
+
+            if (Entrada::texto($request->query('campo')) === 'folio_identificacion') {
+                $folio = Persona::normalizarFolio($valor);
+                if ($folio === null || mb_strlen($folio) < 4) {
+                    return $avisos->nada();
+                }
+                $otra = Persona::where('folio_identificacion', $folio)->when($excluir !== null, fn ($q) => $q->whereKeyNot($excluir))->first();
+                if ($otra === null) {
+                    return $avisos->libre('Folio disponible.');
+                }
+
+                return $avisos->existe('Ese folio ya está registrado en la empresa (los espacios y guiones no cuentan). No se puede repetir.', [
+                    $avisos->coincidencia($otra->nombre_completo, Persona::TIPOS[$otra->tipo].' · '.$otra->folioEnmascarado(), ! $otra->activo, $reactivar($otra)),
+                ]);
+            }
+
+            if (mb_strlen($valor) < 5) {
+                return $avisos->nada();
+            }
+            $parecidas = Persona::query()->with('proveedor:id,nombre')->whereKey(array_column(app(AltasPorVerificar::class)->parecidos('personas', ['nombre_completo' => $valor], null, $excluir, 3), 'id'))->get();
+            if ($parecidas->isEmpty()) {
+                return $avisos->nada();
+            }
+
+            return $avisos->parecido('Ya hay personas con un nombre parecido. Revisa que no sea la misma antes de registrarla:', $parecidas->map(fn (Persona $p) => $avisos->coincidencia(
+                $p->nombre_completo,
+                implode(' · ', array_filter([Persona::TIPOS[$p->tipo] ?? null, $p->empresaQueRepresenta(), $p->folioEnmascarado()])),
+                ! $p->activo,
+                $reactivar($p),
+            ))->all());
+        });
     }
 
     /**

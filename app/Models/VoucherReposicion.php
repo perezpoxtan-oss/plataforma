@@ -37,11 +37,15 @@ class VoucherReposicion extends Model
     protected $fillable = [
         'empresa_id', 'sede_id', 'folio', 'origen_tipo', 'origen_id', 'origen_descripcion', 'motivo',
         'descripcion', 'aplica_cobro', 'monto', 'colaborador_id',
+        'firma_modo', 'firma_seguridad', 'firma_responsable', 'firmado_papel_en', 'firmado_papel_por', 'hoja_firmada',
     ];
+
+    /** Ronda 5 (LL-04): copias impresas y por correo. El colaborador firma, pero no recibe copia. */
+    public const COPIAS = ['seguridad' => 'Copia Seguridad', 'recepcion' => 'Copia Recepción', 'administracion' => 'Copia Administración'];
 
     protected function casts(): array
     {
-        return ['aplica_cobro' => 'boolean', 'monto' => 'decimal:2'];
+        return ['aplica_cobro' => 'boolean', 'monto' => 'decimal:2', 'firmado_papel_en' => 'datetime'];
     }
 
     public function sede(): BelongsTo
@@ -60,6 +64,26 @@ class VoucherReposicion extends Model
         $clase = self::ORIGENES[$this->origen_tipo][2] ?? null;
 
         return $clase !== null && class_exists($clase) ? $clase::find($this->origen_id) : null;
+    }
+
+    public function firmadoPapelPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'firmado_papel_por');
+    }
+
+    /**
+     * Estado de las firmas: "digital" (firmado en pantalla), "papel" (marcado
+     * como firmado a mano), "pendiente" (firma física sin marcar) o null
+     * (vouchers anteriores a la Ronda 5).
+     */
+    public function estadoFirma(): ?string
+    {
+        return match (true) {
+            $this->firma_modo === 'digital' => 'digital',
+            $this->firmado_papel_en !== null => 'papel',
+            $this->firma_modo === 'fisica' => 'pendiente',
+            default => null,
+        };
     }
 
     public function etiquetaOrigen(): string

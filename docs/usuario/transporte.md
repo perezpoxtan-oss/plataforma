@@ -102,3 +102,15 @@ Todo funciona en el celular: botones grandes, el lector abre la cámara para lee
 El Agente ve y registra solo en **su sede**, firma en pantalla y corrige registros; no anula, no autoriza vales ni exporta.
 
 ![Vista del Agente](img/transporte/18-agente-lista.png)
+
+## 10. «¿Es alguno de estos?» mientras escribes (Ronda 5)
+
+Al escribir las **Placas** o el **Chofer** (también en cada taxi), si lo que escribes no está tal cual en la lista, la ventana te muestra los parecidos del padrón, igual que en Control de accesos:
+
+![Placas parecidas](img/ronda-5b/transporte-parecidos-placas.png)
+
+![Chofer parecido](img/ronda-5b/transporte-parecidos-chofer.png)
+
+- Si es uno de ellos, **tócalo**: se escribe solo y se llenan marca, modelo y teléfono.
+- Si no es ninguno, **sigue capturando**: al guardar se registra como nuevo y queda **pendiente de verificar**.
+- La tecla **Esc** cierra la lista.

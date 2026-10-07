@@ -224,7 +224,8 @@ class ConfiguracionController extends Controller
     {
         $resultado = [];
         $errores = [];
-        foreach (Empresa::AVISOS_CON_DESTINATARIOS as $clave) {
+        // Ronda 5: más las tres copias del voucher con cobro (Seguridad, Recepción, Administración)
+        foreach ([...Empresa::AVISOS_CON_DESTINATARIOS, ...array_keys(Empresa::DESTINATARIOS_VOUCHER)] as $clave) {
             $texto = $request->input("destinatarios.{$clave}");
             $correos = collect(preg_split('/[\s,;]+/', is_string($texto) ? mb_strtolower($texto) : '') ?: [])->filter()->unique()->values();
             $invalidos = $correos->reject(fn ($c) => filter_var($c, FILTER_VALIDATE_EMAIL) !== false && mb_strlen($c) <= 150);

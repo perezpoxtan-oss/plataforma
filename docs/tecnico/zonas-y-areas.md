@@ -64,3 +64,24 @@ Permisos: `espacios.ver`, `espacios.crear`, `espacios.editar` y `espacios.elimin
 ## Pruebas
 
 `tests/Feature/Organizacion/EspaciosTest.php`
+
+## Pendiente (nota del dueño, Ronda 5 · Z-08)
+
+No se construye todavía; se diseñará junto con Llaves:
+
+1. **Las "Secciones" de hoy cambiarán de nombre a «Categoría de habitación».** En hotelería cada habitación tiene una categoría (por ejemplo "Vista al mar", "Junior Suite") y cada categoría tiene un **costo** propio. Se conserva lo construido (tabla `grupos_espacio` y la pestaña), se le cambia el nombre en pantalla y se le agregará el costo por categoría.
+2. **Nuevo concepto «Sección de llaves».** Un grupo de cuartos que abre una llave maestra, sin importar edificio ni piso (por ejemplo, "Sección 1 A abre B101, B102 y C305"). Será propio de Llaves: hoy el alcance "Sección" de una llave usa las secciones de Zonas y áreas (`grupo_espacio_llave`); al separar los conceptos, ese alcance apuntará a la Sección de llaves.
+3. Mientras tanto no se cambia nada: las secciones actuales siguen sirviendo para categorizar habitaciones y para el alcance "Sección" de las llaves.
+
+## Ronda 5 de ajustes (parte 2): avisos en vivo (Z-02, Z-07)
+
+Con el mecanismo genérico [avisos-duplicado.md](avisos-duplicado.md) y `GET /espacios/duplicado` (`espacios.duplicado`, permiso `espacios.crear` o `espacios.editar`, solo sedes visibles):
+
+- **Nombre**: igual en el mismo lugar (misma sede y mismo contenedor) = «Ya existe…» (el servidor lo rechaza al guardar). Si está **desactivado** lo dice y ofrece **Reactivar** (con `espacios.eliminar`); al guardar, el error también lo dice: «… pero está desactivado: reactívalo (flecha verde) en lugar de crearlo de nuevo.». Parecido sin espacios ni guiones («Torre-A» y «Torre A») = «Se parece a «Torre A (TA)»» (solo aviso).
+- **Código** (zonas / edificios): misma clave en la misma sede y nivel (**TB = T-B = T B = tb**) = «Se parece a «Torre B» (TB): los espacios y guiones no cuentan…». Es un aviso: el código sigue siendo opcional y no único; el formato (solo letras, números y guiones) lo sigue validando el servidor.
+- **Tipo propio** («¿No encuentras el tipo…?»): si ya está en la lista (global o de la empresa, sin importar mayúsculas ni acentos) avisa «… ya existe en la lista: no hace falta agregarlo». Al guardar uno repetido ya **no** dice «disponible»: responde «El tipo «Jacuzzi» ya existía en la lista: no se duplicó y ya puedes elegirlo.» (`TipoEspacio::wasRecentlyCreated`).
+- **Sección**: nombre repetido en la misma sede = «Ya existe la sección…».
+
+Los avisos se pintan debajo de toda la fila (`data-duplicado-aviso`), no dentro de la columna angosta del código.
+
+Datos demo: `ronda5bDemo()` crea, una sola vez, la zona **Torre Jardín (TJ)** desactivada en Centro para practicar «está desactivado, ¿lo reactivas?».

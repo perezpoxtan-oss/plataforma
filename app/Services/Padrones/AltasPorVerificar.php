@@ -617,8 +617,9 @@ class AltasPorVerificar
      * Puntaje de 0 a 100 si se parecen (null si no): iguales, a pocas letras
      * de distancia, muy parecidos (similar_text) o, con $palabras, con las
      * mismas palabras en otro orden o una contenida en la otra.
+     * Pública: también la usan los avisos de duplicado en vivo (AvisoDuplicado).
      */
-    private function similitud(string $a, string $b, int $distancia, bool $palabras = false): ?float
+    public function similitud(string $a, string $b, int $distancia, bool $palabras = false): ?float
     {
         if ($b === '') {
             return null;
@@ -668,8 +669,8 @@ class AltasPorVerificar
         return strtr((string) preg_replace('/[^A-Z0-9]/', '', strtr(Vehiculo::normalizarPlacas($placas), ['Ñ' => 'N'])), ['O' => '0', 'Q' => '0', 'I' => '1']);
     }
 
-    /** minúsculas, sin acentos, guiones ni signos, espacios simples. */
-    private function claveNombre(?string $texto): string
+    /** minúsculas, sin acentos, guiones ni signos, espacios simples (pública: AvisoDuplicado). */
+    public function claveNombre(?string $texto): string
     {
         $texto = mb_strtolower(strtr((string) $texto, self::SIN_ACENTOS));
 

@@ -38,7 +38,7 @@ Los valores inválidos se ignoran. Los selectores y las fechas envían el formul
 
 ## Impresión — `GET /vouchers/{id}/imprimir`
 
-"Voucher de Reposición — 3 copias en una sola hoja": una hoja carta con **Copia Seguridad**, **Copia Colaborador** y **Copia Recepción**, separadas por "✂ recortar aquí". Cada copia: folio, empresa, sede, fecha, artículo, motivo, responsable con número de empleado, cómo pasó, **CXC** ($ MXN o "NO APLICA"), "Referencia de pago (a mano)" si hay cobro, quién lo generó y líneas de firma (Seguridad, Colaborador con su nombre, Recepción). Requiere `vouchers.ver` y `vouchers.imprimir`.
+"Voucher de Reposición — 3 copias en una sola hoja": una hoja carta con **Copia Seguridad**, **Copia Recepción** y **Copia Administración** (Ronda 5), separadas por "✂ recortar aquí". Cada copia: folio, empresa, sede, fecha, artículo, motivo, responsable con número de empleado, cómo pasó, **CXC** ($ MXN o "NO APLICA"), "Referencia de pago (a mano)" si hay cobro, quién lo generó y líneas de firma (Seguridad, Colaborador con su nombre, Recepción). Requiere `vouchers.ver` y `vouchers.imprimir`.
 
 ## Permisos
 
@@ -55,6 +55,49 @@ Plantillas: el **Agente** consulta (Padrones = solo `ver`) pero no imprime; Asis
 |---|---|---|
 | GET | `/vouchers` | `vouchers.index` |
 | GET | `/vouchers/{id}/imprimir` | `vouchers.imprimir` |
+
+## Ronda 5: firmas, copias y correo
+
+Nota del dueño (LL-04): «las copias son para seguridad, recepción y administración… si aplica CXC se envíen las copias por mail y la firma de los involucrados en dos modalidades, firma digital o firma física; el colaborador no debe recibir copia».
+
+### Esquema (migración `2026_10_12_000210_ajustes_ronda_5_llaves_y_vouchers`)
+
+| Columna | Qué guarda |
+|---|---|
+| `firma_modo` | `digital` o `fisica` (null en vouchers anteriores) |
+| `firma_seguridad`, `firma_responsable` | Ruta en el disco **privado** (`firmas/<empresa>/vouchers/aaaa/mm/<uuid>.jpg`) |
+| `firmado_papel_en`, `firmado_papel_por` | Cuándo y quién registró la firma a mano |
+| `hoja_firmada` | Foto/escaneo de la hoja firmada, re-dibujada con `ImagenSegura` en `firmas/<empresa>/vouchers-hojas/…` (privado) |
+
+`VoucherReposicion::estadoFirma()`: `digital`, `papel`, `pendiente` o null. `VoucherReposicion::COPIAS`: Seguridad, Recepción, Administración.
+
+### Servicio común (`App\Services\Inventarios\Vouchers`)
+
+- `validar()` acepta `firma_modo`, `firma_seguridad`, `firma_responsable`. En **digital** exige la de Seguridad y, si hay `colaborador_id`, la del responsable («Falta la firma de…»). Sin `firma_modo` (Gafetes y Equipos hoy) todo sigue igual.
+- `darDeBaja()` guarda las firmas con `Firmas::guardar()` antes de la transacción y las borra si la transacción falla.
+- Con `aplica_cobro`, llama a `AvisosCorreo::voucherConCobro()` (después de responder, con `defer`).
+- Para usarlo en Gafetes o Equipos basta con incluir `@include('seguridad.vouchers._firmas-baja', ['id' => '…'])` en su diálogo de baja.
+
+### Correo (`AvisosCorreo::voucherConCobro`, Mailable `VoucherConCobro`, vista `correos/voucher-cobro`)
+
+- Aviso `voucher_cobro` en `Empresa::AVISOS` (encendido por omisión).
+- Listas por copia en `empresas.preferencias.avisos_destinatarios.voucher_seguridad|voucher_recepcion|voucher_administracion` (`Empresa::DESTINATARIOS_VOUCHER`), capturadas en Configuración (máx. 20, validadas).
+- Un correo por copia: asunto «Voucher VR-… con cobro — Copia Seguridad», folio, artículo, motivo, monto, sede, responsable, estado de firmas y enlace a `vouchers.imprimir` (pide sesión y permiso). Si las tres listas están vacías, a los usuarios con `vouchers.imprimir` en esa sede. **Nunca** al colaborador.
+
+### Endpoints nuevos
+
+| Método y ruta | Nombre | Permiso | Qué hace |
+|---|---|---|---|
+| `GET /vouchers/{id}/firma/{seguridad\|responsable\|hoja}` | `vouchers.firma` | `vouchers.ver` + visibilidad (`ConsultaVouchers`) | Imagen privada con `Firmas::respuesta()`; otra empresa o sede → 404 |
+| `POST /vouchers/{id}/papel` (`hoja` opcional, imagen ≤ 6 MB) | `vouchers.papel` | `vouchers.imprimir` + visibilidad | Marca «firmado en papel» (conserva la primera fecha), sube o reemplaza la hoja; audita `vouchers.firmado_papel`. Un voucher firmado digitalmente no se marca en papel |
+
+### Transiciones de la firma
+
+`fisica` → (Registrar firma en papel) → `papel` → (Cambiar hoja firmada) → `papel` (misma fecha). `digital` es final: no se puede marcar en papel. Los vouchers anteriores (sin modo) pueden registrar firma en papel.
+
+### Impresión
+
+Copias: **Copia Seguridad, Copia Recepción, Copia Administración** (antes Seguridad, Colaborador y Recepción). Líneas de firma: Seguridad, Responsable y «Recibe (área de la copia)». Con firma digital las imágenes salen sobre la línea.
 
 ## Unión de colaboradores duplicados
 

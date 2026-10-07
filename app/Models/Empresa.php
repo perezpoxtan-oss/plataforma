@@ -40,6 +40,15 @@ class Empresa extends Model
         // Procedimientos (acuse «Leí y entendí»)
         'procedimiento_publicado' => ['Procedimientos: avisar al personal cuando se publica una versión que debe leer y firmar', true],
         'procedimiento_recordatorio' => ['Procedimientos: recordar (cada 3 días) los procedimientos que alguien aún no firma de enterado', true],
+        // Ronda 5 (LL-04): copias del voucher con cobro
+        'voucher_cobro' => ['Vouchers de reposición con cobro (CXC): enviar las copias a Seguridad, Recepción y Administración', true],
+    ];
+
+    /** Ronda 5 (LL-04): lista de correos de cada copia del voucher con cobro (Configuración → Avisos por correo). */
+    public const DESTINATARIOS_VOUCHER = [
+        'voucher_seguridad' => 'Copia Seguridad',
+        'voucher_recepcion' => 'Copia Recepción',
+        'voucher_administracion' => 'Copia Administración',
     ];
 
     /** Avisos que se mandan a una lista de correos capturada en Configuración (y no solo a usuarios con permiso). */

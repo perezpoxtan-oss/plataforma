@@ -2808,6 +2808,76 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .tipos-borrables li { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--fondo); border: 1px solid var(--borde); border-radius: 12px; padding: 0 0 0 0.75rem; }
 .tipos-borrables li .btn-icono { background: transparent; }
 /* Fin Eliminar definitivamente */
+
+/* ==========================================================================
+   Ajustes Ronda 5: cascada de lugares (Llaves), "Código e identificación",
+   firmas del voucher y aviso de sesión
+   ========================================================================== */
+/* Llaves: Zona/Edificio → Piso → Área específica */
+.cascada-lugares { margin-bottom: 0.5rem; }
+.cascada-paso { margin-bottom: 0.5rem; }
+.cascada-titulo { display: block; font-size: 0.78rem; font-weight: 700; color: var(--texto); margin-bottom: 0.35rem; }
+.cascada-titulo .fw-normal { color: #64748b; }
+.cascada-pildoras { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.pildora-cascada { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 40px; padding: 0.35rem 0.8rem; border-radius: 999px; border: 1px solid #c7d2fe; background: #eef2ff; color: #3730a3; font-size: 0.8rem; font-weight: 600; cursor: pointer; margin: 0; }
+.pildora-cascada input { width: 16px; height: 16px; accent-color: #6366f1; margin: 0; }
+.pildora-cascada.activa { background: #6366f1; border-color: #6366f1; color: #fff; }
+.pildora-cascada.activa .text-muted { color: #e0e7ff !important; }
+[data-pildora-piso] { border-color: #99f6e4; background: #f0fdfa; color: #0f766e; }
+[data-pildora-piso] input { accent-color: #0f766e; }
+[data-pildora-piso].activa { background: #0f766e; border-color: #0f766e; color: #fff; }
+
+/* Diálogo "Código e identificación" */
+.dialogo-identificacion { max-width: 420px; }
+.dialogo-identificacion .dialogo-cuerpo { text-align: center; }
+.ident-titulo { font-size: 1.15rem; font-weight: 800; margin: 0; word-break: break-word; }
+.ident-detalle { font-size: 0.85rem; color: #64748b; margin: 0.15rem 0 0; }
+.ident-qr { margin: 0.9rem auto 0.6rem; width: 220px; max-width: 100%; background: #fff; border-radius: 12px; padding: 6px; border: 1px solid var(--borde); }
+.ident-qr img { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; }
+.ident-ayuda { font-size: 0.78rem; color: #64748b; margin: 0 0 0.4rem; }
+.ident-enlace { display: flex; align-items: stretch; gap: 0.4rem; text-align: left; }
+.ident-enlace code { flex: 1; min-width: 0; font-size: 0.78rem; font-weight: 700; color: var(--texto); background: #f1f5f9; padding: 0.6rem; border-radius: 10px; word-break: break-all; }
+.btn-ident-copiar { flex-shrink: 0; min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-weight: 600; font-size: 0.8rem; padding: 0 0.7rem; cursor: pointer; font-family: inherit; }
+.ident-acciones { margin-top: 0.6rem; }
+.btn-ident-imprimir { display: flex; align-items: center; justify-content: center; min-height: 44px; border-radius: 12px; background: #0f172a; color: #fff; font-weight: 600; text-decoration: none; }
+.btn-ident-imprimir:hover { color: #fff; background: #1e293b; }
+.ident-nfc { text-align: left; margin-top: 1rem; padding-top: 0.9rem; border-top: 1px dashed var(--borde); }
+.ident-nfc h3 { font-size: 0.95rem; font-weight: 800; margin: 0 0 0.3rem; }
+.ident-nfc-actual { font-size: 0.8rem; color: #475569; margin: 0 0 0.5rem; word-break: break-all; }
+.ident-mensaje { font-size: 0.82rem; font-weight: 600; border-radius: 10px; padding: 0.5rem 0.7rem; margin: 0.4rem 0 0; }
+.ident-mensaje.ok { background: #dcfce7; color: #166534; }
+.ident-mensaje.error { background: #fee2e2; color: #991b1b; }
+.ident-mensaje.info { background: #e0f2fe; color: #075985; }
+.ident-nfc-botones { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; margin-top: 0.6rem; }
+.btn-ident-guardar, .btn-ident-quitar { min-height: 44px; border-radius: 12px; padding: 0 1rem; font-weight: 600; font-family: inherit; cursor: pointer; }
+.btn-ident-guardar { background: #4f46e5; color: #fff; border: none; }
+.btn-ident-quitar { background: #fff; color: #b91c1c; border: 1px solid #fecaca; }
+/* Aquí el "Cerrar" no se queda fijo abajo: taparía el mensaje de la etiqueta recién guardada */
+.dialogo-identificacion .dialogo-acciones { position: static; }
+
+/* Firmas del voucher de baja: física o digital */
+.firmas-voucher { border: 1px solid var(--borde); border-radius: 14px; padding: 0.75rem 0.9rem 0.25rem; margin: 0.25rem 0 1rem; }
+.firmas-voucher legend { float: none; width: auto; padding: 0 0.3rem; margin: 0; font-size: 0.8rem; }
+.opciones-firma-voucher { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+.opcion-firma-voucher { flex: 1 1 200px; display: flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 0.4rem 0.75rem; border: 1px solid var(--borde); border-radius: 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin: 0; }
+.opcion-firma-voucher input { width: 18px; height: 18px; accent-color: #dc2626; flex-shrink: 0; }
+.opcion-firma-voucher:has(input:checked) { border-color: #dc2626; background: #fef2f2; }
+
+/* Vouchers: estado de la firma y botones */
+.voucher-firma-estado { font-size: 0.78rem; font-weight: 600; margin: 0.25rem 0 0.5rem; }
+.voucher-firma-estado.digital { color: #1d4ed8; }
+.voucher-firma-estado.papel { color: #15803d; }
+.voucher-firma-estado.pendiente { color: #b45309; }
+.acciones-voucher { display: flex; flex-direction: column; gap: 0.4rem; margin-top: auto; }
+.btn-ver-voucher.secundario { background: #fff; color: #0f172a; border: 1px solid #cbd5e1; margin-top: 0; cursor: pointer; font-family: inherit; }
+.firma-impresa { max-height: 46px; max-width: 100%; display: block; margin: 0 auto; mix-blend-mode: multiply; } /* el fondo blanco de la firma no tapa la línea */
+.destinatarios-voucher textarea { min-height: 60px; }
+
+/* Aviso de sesión: cuenta regresiva */
+.sesion-cuenta { font-size: 0.95rem; color: #475569; }
+.sesion-cuenta strong { font-size: 1.2rem; color: #b45309; font-variant-numeric: tabular-nums; }
+/* Fin Ajustes Ronda 5 */
+
 /* ==========================================================================
    Procedimientos: fichas por categoría (franja de color), estados, barra de
    acuses, ficha (Contenido · Versiones · Acuses), editor de pasos, modo
@@ -3073,3 +3143,27 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
     .aviso-altas-verificar .icono { display: none; }
 }
 /* Fin Altas por verificar */
+
+/* Ronda 5 de ajustes (parte 2): avisos de duplicado en vivo, empresa fija desde la ficha, filtros de Vehículos y parecidos en Transporte */
+.aviso-duplicado { border-radius: 10px; padding: 0.5rem 0.7rem; margin: 0.25rem 0 0.75rem; font-size: 0.82rem; border: 1px solid transparent; }
+.aviso-duplicado.libre { background: none; border: none; padding: 0.1rem 0; color: #047857; font-weight: 600; }
+.aviso-duplicado.existe { background: #fef2f2; border-color: #fca5a5; color: #7f1d1d; }
+.aviso-duplicado.parecido { background: #fffbeb; border-color: #fcd34d; color: #78350f; }
+.aviso-duplicado-mensaje { margin: 0; font-weight: 700; }
+.aviso-duplicado-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: rgba(255, 255, 255, 0.75); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 8px; padding: 0.4rem 0.6rem; margin-top: 0.4rem; color: var(--texto); }
+.aviso-duplicado-item strong { font-size: 0.85rem; overflow-wrap: anywhere; }
+.aviso-duplicado-item small { color: var(--texto-suave); }
+.btn-reactivar-duplicado { flex: 0 0 auto; min-height: 44px; padding: 0 0.9rem; border-radius: 10px; border: 1px solid #059669; background: #ecfdf5; color: #065f46; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btn-reactivar-duplicado:hover { background: #059669; color: #fff; }
+.campo-fijo { background: #f8fafc; border: 1px dashed var(--borde); border-radius: 10px; padding: 0.65rem 0.8rem; margin-bottom: 0.9rem; min-height: 44px; display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem; }
+.campo-fijo small { color: var(--texto-suave); }
+.filtros-vehiculo { align-items: center; }
+.filtros-vehiculo .filtro-titulo { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; color: var(--texto-suave); letter-spacing: 0.02em; }
+.filtro-estilo { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0 0 0 auto; }
+.filtro-estilo .filtro-select { padding-top: 0.55rem; padding-bottom: 0.55rem; min-height: 44px; max-width: 200px; }
+@media (max-width: 575.98px) {
+    .filtro-estilo { margin-left: 0; width: 100%; }
+    .filtro-estilo .filtro-select { flex: 1 1 auto; max-width: none; }
+}
+.acceso-sugerencias.parecidos-vivo { margin: 0.25rem 0 0.75rem; }
+/* Fin Ronda 5 de ajustes (parte 2) */

@@ -168,15 +168,16 @@ class LlavesTest extends TestCase
         $this->assertSame(0, Llave::withoutGlobalScopes()->where('nomenclatura', '')->count());
     }
 
-    public function test_nomenclatura_unica_por_empresa_y_aviso_en_vivo(): void
+    public function test_nomenclatura_unica_por_sede_y_aviso_en_vivo(): void
     {
+        // Ronda 5 (LL-03): el nombre no se repite en la misma sede
         $this->llave('LL-CAT-SIT-01');
         $this->actingAs($this->admin)->post('/llaves', $this->datos())
-            ->assertSessionHasErrors(['nomenclatura' => 'Ya existe una llave con el nombre «LL-CAT-SIT-01» en esta empresa.']);
+            ->assertSessionHasErrors(['nomenclatura' => 'Ya existe una llave con el nombre «LL-CAT-SIT-01» en la sede Sede CEN.']);
 
         $this->llave('BAJA-1', ['activo' => false]);
         $this->actingAs($this->admin)->post('/llaves', $this->datos(['nomenclatura' => 'baja-1']))
-            ->assertSessionHasErrors(['nomenclatura' => 'Ya existe una llave con el nombre «BAJA-1» en esta empresa (dada de baja: reactívala en lugar de registrarla otra vez).']);
+            ->assertSessionHasErrors(['nomenclatura' => 'Ya existe una llave con el nombre «BAJA-1» en la sede Sede CEN (dada de baja: reactívala en lugar de registrarla otra vez).']);
 
         // Otra empresa puede usar el mismo nombre
         $otra = $this->crearEmpresa('Hotel Dos');
@@ -275,8 +276,8 @@ class LlavesTest extends TestCase
         $this->assertSame([[$torre->id], [$villas->id]], [$auditoria->antes['espacios'], $auditoria->despues['espacios']]);
         $this->assertSame(['Mañana 07:00-15:00'], $auditoria->antes['horarios']);
 
-        // Su propia nomenclatura no choca; la de otra sí
-        $this->llave('OTRA');
+        // Su propia nomenclatura no choca; la de otra llave de la MISMA sede sí (Ronda 5: el nombre es único por sede)
+        $this->llave('OTRA', [], null, $this->playa);
         $this->actingAs($this->admin)->put("/llaves/{$l->id}", $this->datos(['sede_id' => $this->playa->id, 'nomenclatura' => 'otra']))->assertSessionHasErrors('nomenclatura');
         // El estado no se cambia desde la edición (solo con baja y voucher)
         $this->actingAs($this->admin)->put("/llaves/{$l->id}", $this->datos(['sede_id' => $this->playa->id, 'activo' => 0]))->assertSessionHasNoErrors();
@@ -313,7 +314,9 @@ class LlavesTest extends TestCase
         // Dos veces no
         $this->actingAs($this->admin)->post("/llaves/{$l->id}/baja", ['motivo' => 'robado'])->assertSessionHasErrors('motivo');
 
-        $this->actingAs($this->admin)->patch("/llaves/{$l->id}/reactivar")->assertSessionHas('ok', 'Llave HDC-BOD-01 reactivada correctamente.');
+        $this->actingAs($this->admin)->patch("/llaves/{$l->id}/reactivar")
+            ->assertSessionHas('ok', 'Llave HDC-BOD-01 reactivada correctamente. Revisa su código QR: puedes reimprimir la etiqueta o asignarle otra tarjeta NFC/RFID.')
+            ->assertSessionHas('identificacion', $l->id);
         $this->assertTrue($l->fresh()->activo);
         $this->assertSame(1, VoucherReposicion::withoutGlobalScopes()->count());
         $this->assertSame(1, Auditoria::where('evento', 'llaves.reactivado')->count());

@@ -56,3 +56,29 @@ El botón **⊘** desactiva un espacio **y todo lo que tiene dentro**: si desact
 En el celular la pantalla se adapta:
 
 ![Celular](img/espacios/5-celular.png)
+
+## Avisos mientras escribes (Ronda 5)
+
+Al dar de alta o editar una zona, un piso, una habitación, un área o un elemento, la ventana te avisa **antes de guardar**:
+
+- **Nombre igual en el mismo lugar** (caja roja): «Ya existe «Torre A» en este mismo lugar». No se podrá guardar.
+- **Nombre parecido** (caja amarilla): «Se parece a «Torre A (TA)»». Por ejemplo, «Torre-A» y «Torre A». Es solo un aviso.
+- **Código parecido** (caja amarilla): los espacios y guiones no cuentan, así que **TB, T-B y T B se toman como el mismo código**. El aviso dice cuál zona ya lo usa.
+
+![Nombre y código parecidos](img/ronda-5b/zonas-codigo-parecido.png)
+
+- **Ya existe pero está desactivada**: si la zona que quieres crear ya existe y está desactivada, el aviso lo dice y te ofrece **Reactivar**. Tócalo para recuperarla con todo lo que tenía, en lugar de crearla de nuevo.
+
+![Zona desactivada: Reactivar](img/ronda-5b/zonas-inactiva-reactivar.png)
+
+En modo **Sol** y en el celular:
+
+![Modo Sol](img/ronda-5b/zonas-reactivar-sol.png)
+
+![En el celular](img/ronda-5b/zonas-reactivar-movil.png)
+
+- **Tipo que ya existe**: en «¿No encuentras el tipo…?», si escribes un tipo que ya está en la lista te dice «ya existe en la lista: no hace falta agregarlo». Si aun así lo guardas, no se duplica y te avisa que ya existía.
+
+![Tipo que ya existe](img/ronda-5b/zonas-tipo-ya-existe.png)
+
+- **Sección repetida**: en Nueva Sección te avisa si esa sede ya tiene una sección con ese nombre.

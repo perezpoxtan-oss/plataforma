@@ -40,6 +40,13 @@
        silencioso cada 3 minutos mantiene viva la sesión, así no se pierde un
        formulario largo a medio llenar. Si no hay actividad, 2 minutos antes
        del cierre aparece un aviso para confirmar que sigues ahí. */
+    /* Ronda 5 (LL-02, "me sacó sin avisar"): la última actividad se comparte
+       entre pestañas (una pestaña olvidada ya no cierra la sesión de la que
+       sí se usa), el reloj se revisa cada 5 s y al volver a la pestaña o
+       despertar el celular (los navegadores pausan los relojes en segundo
+       plano), y el aviso muestra la cuenta regresiva con "Seguir conectado".
+       Si la sesión ya terminó en el servidor, se va directo al aviso
+       "Sesión finalizada por seguridad". */
     function vigilarSesion() {
         var datos = document.body.dataset;
         if (!datos.inactividad || !datos.latido) { return; }
@@ -47,28 +54,53 @@
         var LIMITE = parseInt(datos.inactividad, 10);
         var AVISO = parseInt(datos.aviso || '120', 10);
         var LATIDO_SI_ACTIVO = 180;
-        var REVISAR_CADA_MS = 30 * 1000;
+        var REVISAR_CADA_MS = 5 * 1000;
+        var CLAVE = 'plataforma_ultima_actividad';
 
         var ultimaActividad = Date.now();
         var ultimoLatido = Date.now();
         var avisoVisible = false;
         var modal = null;
+        var ultimoGuardado = 0;
+
+        function compartida() {
+            try { return parseInt(localStorage.getItem(CLAVE) || '0', 10) || 0; } catch (x) { return 0; }
+        }
+
+        function marcarActividad() {
+            ultimaActividad = Date.now();
+            // Se escribe como mucho cada 5 s (mousemove dispara cientos de veces)
+            if (ultimaActividad - ultimoGuardado > 5000) {
+                ultimoGuardado = ultimaActividad;
+                try { localStorage.setItem(CLAVE, String(ultimaActividad)); } catch (x) { /* sin almacenamiento */ }
+            }
+        }
 
         ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function (tipo) {
-            document.addEventListener(tipo, function () { ultimaActividad = Date.now(); }, { passive: true });
+            document.addEventListener(tipo, function () { if (!avisoVisible) { marcarActividad(); } }, { passive: true });
         });
 
         function segundos(desde) { return (Date.now() - desde) / 1000; }
+        function inactividad() { return segundos(Math.max(ultimaActividad, compartida())); }
+
+        function irAlAviso() { window.location.href = datos.expirada; }
 
         function latido() {
             ultimoLatido = Date.now();
             fetch(datos.latido, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
                 .then(function (r) {
-                    if (r.status === 401) { window.location.href = datos.expirada; return null; }
+                    if (r.status === 401 || r.status === 419) { irAlAviso(); return null; }
                     return r.json();
                 })
                 .then(function (d) { if (d && d.ok) { ocultarAviso(); } })
                 .catch(function () { /* sin red: decide el chequeo normal */ });
+        }
+
+        function pintarCuenta(restan) {
+            var el = document.querySelector('[data-sesion-cuenta]');
+            if (!el) { return; }
+            var s = Math.max(0, Math.ceil(restan));
+            el.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
         }
 
         function mostrarAviso() {
@@ -85,13 +117,15 @@
             if (modal) { modal.hide(); }
         }
 
-        /* Seguridad: el cierre se pide por POST con el token CSRF (un GET ya no cierra la sesión) */
+        /* Seguridad: el cierre se pide por POST con el token CSRF (un GET ya no
+           cierra la sesión). Si la sesión ya terminó en el servidor (token
+           vencido), bootstrap/app.php lleva igual al aviso "Sesión finalizada". */
         var cerrando = false;
         function cerrarPorInactividad() {
             if (cerrando) { return; }
             cerrando = true;
             var meta = document.querySelector('meta[name="csrf-token"]');
-            if (!meta) { window.location.href = datos.expirada; return; }
+            if (!meta) { irAlAviso(); return; }
             var form = document.createElement('form');
             form.method = 'POST';
             form.action = datos.expirada;
@@ -106,19 +140,30 @@
         }
 
         window.plataformaSesion = {
-            seguir: function () { ultimaActividad = Date.now(); latido(); }
+            seguir: function () { ultimoGuardado = 0; marcarActividad(); latido(); }
         };
 
-        setInterval(function () {
-            var inactivo = segundos(ultimaActividad);
+        function revisar() {
+            if (cerrando) { return; }
+            var inactivo = inactividad();
             if (inactivo >= LIMITE) {
                 cerrarPorInactividad();
             } else if (inactivo >= LIMITE - AVISO) {
+                pintarCuenta(LIMITE - inactivo);
                 if (!avisoVisible) { mostrarAviso(); }
-            } else if (segundos(ultimoLatido) >= LATIDO_SI_ACTIVO && inactivo <= LATIDO_SI_ACTIVO) {
-                latido();
+            } else {
+                // Otra pestaña siguió trabajando: el aviso de esta sobra
+                if (avisoVisible) { ocultarAviso(); }
+                if (segundos(ultimoLatido) >= LATIDO_SI_ACTIVO && segundos(ultimaActividad) <= LATIDO_SI_ACTIVO) { latido(); }
             }
-        }, REVISAR_CADA_MS);
+        }
+
+        marcarActividad();
+        setInterval(revisar, REVISAR_CADA_MS);
+        // Al volver a la pestaña o despertar el celular, se revisa de inmediato
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) { revisar(); } });
+        window.addEventListener('focus', revisar);
+        window.addEventListener('pageshow', revisar);
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -571,11 +616,14 @@ document.addEventListener('click', function (e) {
         // Avisos de validación y de nombre repetido
         dialogo.querySelectorAll('.is-invalid').forEach(function (n) { n.classList.remove('is-invalid'); });
         dialogo.querySelectorAll('.invalid-feedback, [data-error-campo]').forEach(function (n) { n.remove(); });
-        // Los avisos que pinta el servidor se quitan; los contenedores que reutiliza
-        // el registro rápido (data-errores-...) solo se vacían y se ocultan
+        // Los avisos de error o de "guardado" que pinta el servidor se quitan; los
+        // contenedores que reutiliza el registro rápido (data-errores-...) solo se
+        // vacían y se ocultan. Los informativos (gris, azul, amarillo) se quedan
+        // (Ronda 5: «Úsalo solo si la persona no aparece…» desaparecía al cerrar).
         dialogo.querySelectorAll('.alert').forEach(function (n) {
             var reutilizable = Array.prototype.some.call(n.attributes, function (a) { return a.name.indexOf('data-errores') === 0; });
-            if (reutilizable) { n.hidden = true; n.textContent = ''; } else { n.remove(); }
+            if (reutilizable) { n.hidden = true; n.textContent = ''; return; }
+            if (n.classList.contains('alert-danger') || n.matches('.alert-success[role="status"]')) { n.remove(); }
         });
         dialogo.querySelectorAll('[data-aviso-nombre]').forEach(function (n) { n.hidden = true; n.textContent = ''; });
     }
@@ -624,7 +672,8 @@ document.addEventListener('click', function (e) {
         var repetido = existentes.indexOf(nombre) !== -1;
         aviso.hidden = false;
         aviso.className = 'small mb-2 ' + (repetido ? 'text-warning' : 'text-success');
-        aviso.textContent = repetido ? 'Ya existe uno con ese nombre en esta empresa.' : 'Disponible.';
+        // data-ambito-nombre (Ronda 5, Llaves): "esta sede" cuando el nombre se repite solo por sede
+        aviso.textContent = repetido ? 'Ya existe uno con ese nombre en ' + (campo.getAttribute('data-ambito-nombre') || 'esta empresa') + '.' : 'Disponible.';
     });
 })();
 
@@ -1393,12 +1442,16 @@ document.addEventListener('click', function (e) {
         var texto = buscador ? buscador.value.toLowerCase().trim() : '';
         var compacto = placas(texto).toLowerCase();
         var grupo = pill ? pill.dataset.valor : '';
+        // Ronda 5 (VE-03): la Categoría va en las píldoras y el Tipo / Estilo en su lista, en la misma línea
+        var selEstilo = document.querySelector('[data-filtro-estilo-vehiculo]');
+        var estilo = selEstilo ? selEstilo.value : '';
         var fichas = cont.querySelectorAll('[data-vehiculo]');
         var visibles = 0;
         fichas.forEach(function (f) {
             var t = f.dataset.texto || '';
             var ok = (texto === '' || t.indexOf(texto) !== -1 || (compacto !== '' && t.indexOf(compacto) !== -1))
-                && (grupo === '' || f.dataset.grupo === grupo);
+                && (grupo === '' || f.dataset.grupo === grupo)
+                && (estilo === '' || f.dataset.estilo === estilo);
             f.style.display = ok ? '' : 'none';
             if (ok) { visibles++; }
         });
@@ -1408,6 +1461,7 @@ document.addEventListener('click', function (e) {
     }
 
     document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-vehiculos]')) { filtrarVehiculos(); } });
+    document.addEventListener('change', function (e) { if (e.target.matches('[data-filtro-estilo-vehiculo]')) { filtrarVehiculos(); } });
     // La píldora ya cambió su estado en el manejador genérico de data-filtro-tipo
     document.addEventListener('click', function (e) { if (e.target.closest('[data-filtro-tipo="vehiculos"]')) { filtrarVehiculos(); } });
 
@@ -1549,13 +1603,38 @@ document.addEventListener('click', function (e) {
 
     function limpiar(caja) {
         var p = partes(caja);
+        cancelarEspera(caja);
+        caja._turnoLector = (caja._turnoLector || 0) + 1; // descarta respuestas en camino
         if (p.id) { p.id.value = ''; }
         if (p.elegido) { p.elegido.hidden = true; }
         if (p.opciones) { p.opciones.hidden = true; p.opciones.textContent = ''; }
         estado(caja, '');
     }
 
-    function resolver(caja, texto) {
+    /* Ronda 5 (LL-04): búsqueda automática al escribir, sin Enter. Espera
+       ~350 ms sin teclear y al menos 2 caracteres. Los lectores que "escriben
+       como teclado" terminan con Enter: el Enter cancela la espera y busca
+       al momento. Solo cuenta la respuesta de la última búsqueda. */
+    var ESPERA_MS = 350;
+    var MINIMO = 2;
+
+    function cancelarEspera(caja) {
+        if (caja._esperaLector) { clearTimeout(caja._esperaLector); caja._esperaLector = null; }
+    }
+
+    function programarBusqueda(caja) {
+        cancelarEspera(caja);
+        if (caja.dataset.modo === 'capturar') { return; }
+        var texto = partes(caja).entrada.value.trim();
+        if (texto.length < MINIMO) { estado(caja, ''); return; }
+        caja._esperaLector = setTimeout(function () {
+            caja._esperaLector = null;
+            resolver(caja, texto, true);
+        }, ESPERA_MS);
+    }
+
+    function resolver(caja, texto, automatica) {
+        cancelarEspera(caja);
         texto = (texto || '').trim();
         if (!texto) { return; }
         var p = partes(caja);
@@ -1567,14 +1646,23 @@ document.addEventListener('click', function (e) {
             return;
         }
 
+        var turno = (caja._turnoLector || 0) + 1;
+        caja._turnoLector = turno;
         estado(caja, 'Buscando…', 'info');
         var url = caja.dataset.url + '?entrada=' + encodeURIComponent(texto) + (caja.dataset.tipos ? '&tipos=' + encodeURIComponent(caja.dataset.tipos) : '');
         fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) { if (!r.ok) { throw new Error(r.status); } return r.json(); })
             .then(function (datos) {
+                // Llegó tarde: ya hay otra búsqueda más nueva, o la persona siguió escribiendo
+                if (caja._turnoLector !== turno || (automatica && p.entrada.value.trim() !== texto)) { return; }
                 var lista = datos.resultados || [];
                 if (lista.length === 1) { elegir(caja, lista[0]); return; }
-                if (!lista.length) { estado(caja, 'No se encontró nada con «' + texto + '». Revisa la etiqueta o búscalo escribiendo.', 'error'); return; }
+                if (!lista.length) {
+                    estado(caja, automatica
+                        ? 'Sin coincidencias con «' + texto + '» todavía. Sigue escribiendo o escanea la etiqueta.'
+                        : 'No se encontró nada con «' + texto + '». Revisa la etiqueta o búscalo escribiendo.', automatica ? 'info' : 'error');
+                    return;
+                }
                 // Varias coincidencias: que la persona elija
                 estado(caja, 'Hay ' + lista.length + ' coincidencias, elige una:', 'info');
                 p.opciones.textContent = '';
@@ -1590,7 +1678,10 @@ document.addEventListener('click', function (e) {
                 });
                 p.opciones.hidden = false;
             })
-            .catch(function () { estado(caja, 'No se pudo consultar. Revisa tu conexión e intenta de nuevo.', 'error'); });
+            .catch(function () {
+                if (caja._turnoLector !== turno) { return; }
+                estado(caja, 'No se pudo consultar. Revisa tu conexión e intenta de nuevo.', 'error');
+            });
     }
 
     /* ---------- Cámara: BarcodeDetector si existe; si no (iPhone, Firefox), jsQR ---------- */
@@ -1723,6 +1814,13 @@ document.addEventListener('click', function (e) {
         var entrada = e.target.closest && e.target.closest('[data-lector-entrada]');
         if (!entrada) { return; }
         setTimeout(function () { resolver(entrada.closest('[data-lector]'), entrada.value); }, 0);
+    });
+
+    // Ronda 5 (LL-04): busca sola mientras se escribe (sin Enter)
+    document.addEventListener('input', function (e) {
+        var entrada = e.target.closest && e.target.closest('[data-lector-entrada]');
+        if (!entrada || e.inputType === 'insertFromPaste') { return; }
+        programarBusqueda(entrada.closest('[data-lector]'));
     });
 
     document.addEventListener('click', function (e) {
@@ -6157,6 +6255,323 @@ document.addEventListener('click', function (e) {
 })();
 /* Fin Eliminar definitivamente */
 /* ==========================================================================
+   Ajustes Ronda 5 (QA del dueño; ver docs/cursos/leccion-28-ajustes-ronda-5.md)
+   - Llaves: nombre único por sede (LL-03), lugares en cascada
+     Zona/Edificio → Piso → Área específica (LL-02), costo fijo o variable y
+     firmas del voucher de baja: digital o física (LL-04, LL-05).
+   - Diálogo "Código e identificación" de todas las fichas con QR: QR, copiar
+     la dirección, imprimir y asignar etiqueta NFC/RFID (LL-05, VE-04).
+   - Vouchers: "Registrar firma en papel".
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function leer(texto, siFalla) { try { return JSON.parse(texto); } catch (x) { return siFalla; } }
+
+    /* ---------- Llaves: nombre único POR SEDE (aviso en vivo) ---------- */
+    function nombresDeSede(form) {
+        var campo = form.querySelector('[data-nombres-por-sede]');
+        var sede = form.querySelector('[data-llave-sede]');
+        if (!campo || !sede) { return; }
+        var mapa = leer(campo.getAttribute('data-nombres-por-sede') || '{}', {}) || {};
+        campo.setAttribute('data-nombres-existentes', JSON.stringify(mapa[sede.value] || []));
+        if (campo.value) { campo.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+
+    /* ---------- Llaves: lugares en cascada (como las píldoras de SEGCAT) ----------
+       Sin nada marcado se ve todo lo de la sede; al tocar edificios se ven solo
+       sus pisos (y sus cuartos); al tocar pisos, solo sus cuartos. Lo ya
+       marcado nunca se esconde. */
+    function cascada(form) {
+        var sede = (form.querySelector('[data-llave-sede]') || {}).value || '';
+        form.querySelectorAll('[data-llave-lugares]').forEach(function (caja) {
+            var c = caja.querySelector('[data-cascada]');
+            if (!c) { return; }
+            var edificios = [];
+            c.querySelectorAll('[data-pildora-edificio]').forEach(function (p) {
+                var casilla = p.querySelector('input');
+                var visible = sede !== '' && p.dataset.sede === sede;
+                if (!visible) { casilla.checked = false; }
+                p.hidden = !visible;
+                p.classList.toggle('activa', casilla.checked);
+                if (casilla.checked) { edificios.push(casilla.value); }
+            });
+            var pisos = [];
+            c.querySelectorAll('[data-pildora-piso]').forEach(function (p) {
+                var casilla = p.querySelector('input');
+                var visible = sede !== '' && p.dataset.sede === sede && (edificios.length === 0 || edificios.indexOf(p.dataset.edificio) !== -1);
+                if (!visible) { casilla.checked = false; }
+                p.hidden = !visible;
+                p.classList.toggle('activa', casilla.checked);
+                if (casilla.checked) { pisos.push(casilla.value); }
+            });
+            c.querySelectorAll('[data-cascada-paso]').forEach(function (paso) {
+                paso.hidden = !paso.querySelector('.pildora-cascada:not([hidden])');
+            });
+            c.hidden = sede === '' || !c.querySelector('.pildora-cascada:not([hidden])');
+            caja.querySelectorAll('[data-lugar]').forEach(function (fila) {
+                var casilla = fila.querySelector('input');
+                if (fila.hidden || casilla.checked) { return; } // ya oculto por sede o búsqueda / marcado: se queda
+                fila.hidden = !((edificios.length === 0 || edificios.indexOf(fila.dataset.edificio) !== -1)
+                    && (pisos.length === 0 || pisos.indexOf(fila.dataset.piso) !== -1));
+            });
+        });
+    }
+
+    function reiniciarCascada(form) {
+        form.querySelectorAll('[data-cascada] input').forEach(function (c) { c.checked = false; });
+    }
+
+    function acomodarLlave(form) { nombresDeSede(form); cascada(form); }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-llave]');
+        if (!form) { return; }
+        if (e.target.closest('[data-cascada]')) {
+            // Vuelve a calcular desde cero (sede, búsqueda) y luego aplica la cascada
+            var buscar = e.target.closest('[data-llave-lugares]').querySelector('[data-buscar-lugar]');
+            if (buscar) { buscar.dispatchEvent(new Event('input', { bubbles: true })); } else { cascada(form); }
+            return;
+        }
+        if (e.target.matches('[data-llave-sede], [data-llave-alcance]')) { acomodarLlave(form); }
+    });
+    document.addEventListener('input', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-llave]');
+        if (form && e.target.matches('[data-buscar-lugar]')) { cascada(form); }
+    });
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="editar-registro"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById(boton.dataset.dialogo);
+        var form = dialogo && dialogo.querySelector('[data-form-llave]');
+        if (!form) { return; }
+        reiniciarCascada(form);
+        acomodarLlave(form);
+    });
+
+    /* ---------- Baja de llave: costo fijo o variable ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="baja-llave"]');
+        if (!b) { return; }
+        var d = document.getElementById('dialogoBajaLlave');
+        if (!d) { return; }
+        var monto = d.querySelector('[data-monto-llave]');
+        var nota = d.querySelector('[data-nota-monto]');
+        var fijo = b.dataset.costoFijo || '';
+        var propio = b.dataset.costoPropio || '';
+        if (monto) {
+            monto.readOnly = fijo !== '';
+            if (fijo !== '') {
+                monto.value = fijo;
+                if (nota) { nota.textContent = '(costo fijo de esta llave)'; }
+            } else if (propio !== '') {
+                monto.value = propio;
+                if (nota) { nota.textContent = '(costo variable: sugerido $' + propio + ', ajústalo)'; }
+            }
+        }
+        sincronizarFirmas(d);
+    });
+
+    /* ---------- Firmas del voucher: física (por omisión) o digital ---------- */
+    function requerida(campo, si) {
+        if (!campo) { return; }
+        if (si) { campo.setAttribute('data-firma-requerida', ''); } else { campo.removeAttribute('data-firma-requerida'); }
+    }
+
+    function sincronizarFirmas(raiz) {
+        if (!raiz) { return; }
+        raiz.querySelectorAll('[data-firmas-voucher]').forEach(function (caja) {
+            var form = caja.closest('form');
+            var marcado = caja.querySelector('[data-firma-modo]:checked');
+            var digital = !!marcado && marcado.value === 'digital';
+            var digitales = caja.querySelector('[data-firmas-digitales]');
+            if (digitales) { digitales.hidden = !digital; }
+            var ayuda = caja.querySelector('[data-firma-ayuda-fisica]');
+            if (ayuda) { ayuda.hidden = digital; }
+            requerida(caja.querySelector('[name="firma_seguridad"]'), digital);
+            // El responsable firma solo si se eligió uno
+            var id = form && form.querySelector('[name="colaborador_id"]');
+            var hay = !!(id && id.value);
+            var cajaResp = caja.querySelector('[data-firma-responsable-caja]');
+            if (cajaResp) { cajaResp.hidden = !hay; }
+            requerida(caja.querySelector('[name="firma_responsable"]'), digital && hay);
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-firma-modo]')) { sincronizarFirmas(e.target.form); }
+    });
+    document.addEventListener('lector:elegido', function (e) {
+        var form = e.target.closest && e.target.closest('form');
+        if (form) { sincronizarFirmas(form); }
+    });
+    document.addEventListener('click', function (e) {
+        var limpiar = e.target.closest('[data-lector-limpiar]');
+        var form = limpiar && limpiar.closest('form');
+        if (form) { sincronizarFirmas(form); }
+    });
+
+    /* ---------- Al cerrar un diálogo (ya limpio), todo se acomoda otra vez ---------- */
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-form-llave]').forEach(function (form) { reiniciarCascada(form); acomodarLlave(form); });
+        var monto = e.target.querySelector('[data-monto-llave]');
+        if (monto) { monto.readOnly = false; }
+        sincronizarFirmas(e.target);
+    }, true);
+
+    /* ---------- Código e identificación (QR, imprimir, NFC/RFID) ---------- */
+    var botonActual = null;
+
+    function dialogoIdent() { return document.getElementById('dialogoIdentificacion'); }
+
+    function mensaje(d, texto, tipo) {
+        var m = d.querySelector('[data-ident-mensaje]');
+        m.hidden = !texto;
+        m.textContent = texto || '';
+        m.className = 'ident-mensaje' + (tipo ? ' ' + tipo : '');
+    }
+
+    function pintarEtiqueta(d, etiqueta) {
+        d.querySelector('[data-ident-nfc-actual]').textContent = etiqueta
+            ? 'Asignada ahora: ' + etiqueta + '. Si lees otra, la reemplaza.'
+            : 'Todavía no tiene una etiqueta NFC / RFID asignada.';
+        d.querySelector('[data-ident-quitar]').hidden = !etiqueta;
+    }
+
+    function abrirIdentificacion(boton) {
+        var d = dialogoIdent();
+        if (!d) { return; }
+        var datos = leer(boton.getAttribute('data-ver-identificacion') || '{}', {}) || {};
+        botonActual = boton;
+        d.querySelector('[data-ident-titulo]').textContent = datos.titulo || '';
+        var detalle = d.querySelector('[data-ident-detalle]');
+        detalle.textContent = datos.detalle || '';
+        detalle.hidden = !datos.detalle;
+        var img = d.querySelector('[data-ident-qr]');
+        img.src = datos.qr || '';
+        img.alt = 'Código QR de ' + (datos.titulo || 'este registro');
+        d.querySelector('[data-ident-enlace]').textContent = datos.enlace || '';
+        d.querySelector('[data-ident-copiar-texto]').textContent = 'Copiar';
+        var imprimir = d.querySelector('[data-ident-imprimir]');
+        imprimir.hidden = !datos.imprimir;
+        imprimir.href = datos.imprimir || '#';
+        d.querySelector('[data-ident-imprimir-texto]').textContent = datos.imprimirTexto || 'Imprimir etiqueta';
+        d.querySelector('[data-ident-nfc]').hidden = !datos.etiquetaUrl;
+        var form = d.querySelector('[data-ident-form]');
+        form.setAttribute('action', datos.etiquetaUrl || '');
+        var entrada = form.querySelector('[name="etiqueta_nfc"]');
+        if (entrada) { entrada.value = ''; }
+        pintarEtiqueta(d, datos.etiqueta || '');
+        mensaje(d, '');
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    }
+
+    function guardarEtiqueta(d, valor) {
+        var form = d.querySelector('[data-ident-form]');
+        if (!form.getAttribute('action')) { return; }
+        var cuerpo = new FormData(form);
+        cuerpo.set('etiqueta_nfc', valor);
+        mensaje(d, 'Guardando…', 'info');
+        fetch(form.getAttribute('action'), {
+            method: 'POST', body: cuerpo, credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(function (r) {
+                return r.json().then(function (j) { return { ok: r.ok, estado: r.status, j: j }; }, function () { return { ok: r.ok, estado: r.status, j: {} }; });
+            })
+            .then(function (res) {
+                if (res.ok) {
+                    mensaje(d, res.j.mensaje || 'Listo.', 'ok');
+                    pintarEtiqueta(d, res.j.etiqueta || '');
+                    var entrada = form.querySelector('[name="etiqueta_nfc"]');
+                    if (entrada) { entrada.value = ''; }
+                    if (botonActual) {
+                        var datos = leer(botonActual.getAttribute('data-ver-identificacion') || '{}', {}) || {};
+                        datos.etiqueta = res.j.etiqueta || '';
+                        botonActual.setAttribute('data-ver-identificacion', JSON.stringify(datos));
+                    }
+                    return;
+                }
+                var errores = (res.j && res.j.errors) || {};
+                var texto = errores.etiqueta_nfc ? errores.etiqueta_nfc[0] : '';
+                if (res.estado === 403 || res.estado === 404) { texto = 'No tienes permiso para cambiar la etiqueta de este registro.'; }
+                if (res.estado === 419 || res.estado === 401) { texto = 'Tu sesión terminó. Vuelve a entrar e inténtalo otra vez.'; }
+                mensaje(d, texto || 'No se pudo guardar. Intenta de nuevo.', 'error');
+            })
+            .catch(function () { mensaje(d, 'No se pudo guardar. Revisa tu conexión e intenta de nuevo.', 'error'); });
+    }
+
+    function copiar(d) {
+        var codigo = d.querySelector('[data-ident-enlace]');
+        var aviso = d.querySelector('[data-ident-copiar-texto]');
+        var listo = function () { aviso.textContent = '¡Copiado!'; };
+        var aMano = function () {
+            try {
+                var rango = document.createRange();
+                rango.selectNodeContents(codigo);
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(rango);
+                if (document.execCommand('copy')) { listo(); } else { aviso.textContent = 'Selecciónalo y cópialo'; }
+            } catch (x) { aviso.textContent = 'Selecciónalo y cópialo'; }
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(codigo.textContent).then(listo, aMano);
+        } else {
+            aMano();
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-ver-identificacion]');
+        if (boton) { abrirIdentificacion(boton); return; }
+        var d = dialogoIdent();
+        if (!d || !d.contains(e.target)) { return; }
+        if (e.target.closest('[data-ident-copiar]')) { copiar(d); return; }
+        if (e.target.closest('[data-ident-quitar]')) { guardarEtiqueta(d, ''); }
+    });
+
+    document.addEventListener('submit', function (e) {
+        if (!e.target.matches('[data-ident-form]')) { return; }
+        e.preventDefault();
+        var d = dialogoIdent();
+        var entrada = e.target.querySelector('[name="etiqueta_nfc"]');
+        var valor = entrada ? entrada.value.trim() : '';
+        if (!valor) { mensaje(d, 'Acerca la tarjeta al lector o escribe su número.', 'error'); return; }
+        guardarEtiqueta(d, valor);
+    });
+
+    // Lo leído con el lector (Enter del lector USB/Bluetooth o NFC del celular) se guarda solo
+    document.addEventListener('lector:capturado', function (e) {
+        var d = dialogoIdent();
+        if (d && d.contains(e.target) && e.detail) { guardarEtiqueta(d, e.detail); }
+    });
+
+    /* ---------- Vouchers: registrar la firma en papel ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="voucher-papel"]');
+        if (!b) { return; }
+        var d = document.getElementById('dialogoPapelVoucher');
+        var form = d && d.querySelector('[data-form-papel]');
+        if (!form) { return; }
+        form.action = b.dataset.url;
+        form.querySelector('[data-campo-dialogo]').value = 'papel-' + b.dataset.id;
+        d.querySelector('[data-papel-folio]').textContent = b.dataset.folio || '';
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-form-llave]').forEach(acomodarLlave);
+        sincronizarFirmas(document);
+        // Después de reactivar una llave se abre su "Código e identificación"
+        var abrir = document.querySelector('[data-abrir-identificacion]');
+        if (abrir) { abrirIdentificacion(abrir); }
+    });
+})();
+/* Fin Ajustes Ronda 5 */
+
+/* ==========================================================================
    Procedimientos (ver docs/tecnico/procedimientos.md): editor de pasos
    (agregar, subir, bajar, quitar), "Todas las sedes / Sedes elegidas",
    QR escaneado con el lector universal (abre el modo lectura) y tamaño de
@@ -6678,3 +7093,334 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Altas por verificar */
+/* ==========================================================================
+   Ronda 5 de ajustes (parte 2; ver docs/tecnico/avisos-duplicado.md)
+   1. Avisos de duplicado en vivo (un solo mecanismo para todos los padrones):
+        <input name="folio_identificacion" data-duplicado="URL"
+               [data-duplicado-campo="tipo"]        (lo que se manda como "campo"; por omisión el name)
+               [data-duplicado-con="nivel,padre_id"] (otros campos del formulario que se mandan)
+               [data-duplicado-min="4"]             (letras mínimas para preguntar; por omisión 2)
+               [data-duplicado-aviso="id"]>         (contenedor del aviso; por omisión, justo debajo del campo)
+      Mientras se escribe se pregunta al servidor (GET URL?campo&valor&excluir…)
+      y el aviso aparece debajo del campo: «Ya existe…» (no se guardará),
+      «Se parece a «Torre B» (TB)» (solo aviso) o «Disponible.». Si lo que
+      ya existe está dado de baja y quien captura puede reactivarlo, se
+      ofrece «Reactivar» en lugar de duplicarlo. En una edición se excluye
+      el propio registro ([data-campo-dialogo] = editar-ID).
+   2. Personas (PE-02): «Empresa que representa» solo muestra las empresas
+      de la categoría que corresponde al tipo (Contratista ↔ contratistas).
+   3. Diálogos abiertos desde la ficha de una empresa externa (PV-05/06):
+      <dialog data-al-cerrar-ir="URL"> al cerrar sin guardar regresa a la ficha.
+   4. Transporte: «¿Es alguno de estos?» en vivo al escribir placas o chofer
+      (<input data-parecidos-vivo="vehiculos|personas" data-parecidos-url
+      data-parecidos-origen="transporte">), con el mismo aspecto que Accesos.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function nodo(etiqueta, clase, texto) {
+        var e = document.createElement(etiqueta);
+        if (clase) { e.className = clase; }
+        if (texto !== undefined && texto !== null) { e.textContent = texto; }
+        return e;
+    }
+
+    function pedirJson(url) {
+        return fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); });
+    }
+
+    /* ---------- 1. Avisos de duplicado en vivo ---------- */
+    var turno = 0;
+
+    function cajaDe(campo, crear) {
+        // data-duplicado-aviso="id": el aviso va en ese contenedor (p. ej. debajo de toda la fila)
+        var destino = campo.getAttribute('data-duplicado-aviso');
+        if (destino && document.getElementById(destino)) { return document.getElementById(destino); }
+        var sig = campo.nextElementSibling;
+        if (sig && sig.hasAttribute('data-aviso-duplicado')) { return sig; }
+        if (!crear) { return null; }
+        var caja = nodo('div', 'aviso-duplicado');
+        caja.setAttribute('data-aviso-duplicado', '');
+        caja.setAttribute('role', 'status');
+        caja.setAttribute('aria-live', 'polite');
+        caja.hidden = true;
+        campo.insertAdjacentElement('afterend', caja);
+        return caja;
+    }
+
+    function limpiar(campo) {
+        var caja = cajaDe(campo, false);
+        if (caja) { caja.hidden = true; caja.textContent = ''; caja.className = 'aviso-duplicado'; }
+        campo.removeAttribute('data-duplicado-estado');
+    }
+
+    function reactivar(campo, url) {
+        var token = campo.form && campo.form.querySelector('input[name="_token"]');
+        var f = nodo('form');
+        f.method = 'POST';
+        f.action = url;
+        f.hidden = true;
+        [['_token', token ? token.value : ''], ['_method', 'PATCH'], ['activo', '1']].forEach(function (par) {
+            var i = nodo('input');
+            i.type = 'hidden';
+            i.name = par[0];
+            i.value = par[1];
+            f.appendChild(i);
+        });
+        document.body.appendChild(f);
+        f.submit();
+    }
+
+    function pintar(campo, datos) {
+        var caja = cajaDe(campo, true);
+        caja.textContent = '';
+        campo.setAttribute('data-duplicado-estado', datos.estado);
+        if (datos.estado === 'nada' || !datos.mensaje) { caja.hidden = true; return; }
+        caja.className = 'aviso-duplicado ' + datos.estado;
+        var icono = { libre: 'bi-check-circle-fill', existe: 'bi-exclamation-octagon-fill', parecido: 'bi-exclamation-triangle-fill' }[datos.estado] || 'bi-info-circle';
+        var p = nodo('p', 'aviso-duplicado-mensaje');
+        var i = nodo('i', 'bi ' + icono + ' me-1');
+        i.setAttribute('aria-hidden', 'true');
+        p.appendChild(i);
+        p.appendChild(document.createTextNode(datos.mensaje));
+        caja.appendChild(p);
+        (datos.coincidencias || []).forEach(function (c) {
+            var item = nodo('div', 'aviso-duplicado-item');
+            var texto = nodo('div');
+            texto.appendChild(nodo('strong', '', c.titulo));
+            if (c.detalle) { texto.appendChild(nodo('small', 'd-block', c.detalle)); }
+            item.appendChild(texto);
+            if (c.reactivar) {
+                var b = nodo('button', 'btn-reactivar-duplicado', 'Reactivar');
+                b.type = 'button';
+                b.setAttribute('aria-label', 'Reactivar ' + c.titulo + ' en lugar de crearlo de nuevo');
+                b.addEventListener('click', function () { b.disabled = true; reactivar(campo, c.reactivar); });
+                item.appendChild(b);
+            }
+            caja.appendChild(item);
+        });
+        caja.hidden = false;
+    }
+
+    function revisar(campo) {
+        var valor = campo.value.trim();
+        var minimo = parseInt(campo.getAttribute('data-duplicado-min') || '2', 10);
+        if (valor.length < minimo) { limpiar(campo); return; }
+        var form = campo.form;
+        var p = new URLSearchParams();
+        p.set('campo', campo.getAttribute('data-duplicado-campo') || campo.name);
+        p.set('valor', valor);
+        var marca = form && form.querySelector('[data-campo-dialogo]');
+        var m = marca ? /^editar-(\d+)$/.exec(marca.value) : null;
+        if (m) { p.set('excluir', m[1]); }
+        (campo.getAttribute('data-duplicado-con') || '').split(',').filter(Boolean).forEach(function (n) {
+            var otro = form && form.querySelector('[name="' + n + '"]');
+            if (otro && otro.value) { p.set(n, otro.value); }
+        });
+        var mio = String(++turno);
+        campo.setAttribute('data-duplicado-turno', mio);
+        pedirJson(campo.getAttribute('data-duplicado') + '?' + p.toString())
+            .then(function (datos) {
+                // Solo la respuesta más nueva y si el texto sigue igual
+                if (campo.getAttribute('data-duplicado-turno') !== mio || campo.value.trim() !== valor) { return; }
+                pintar(campo, datos);
+            })
+            .catch(function () { limpiar(campo); /* sin aviso: el servidor vuelve a revisar al guardar */ });
+    }
+
+    var esperas = {};
+    function programar(campo) {
+        var clave = campo.id || campo.name;
+        clearTimeout(esperas[clave]);
+        esperas[clave] = setTimeout(function () { revisar(campo); }, 400);
+    }
+
+    document.addEventListener('input', function (e) {
+        if (e.target.matches && e.target.matches('[data-duplicado]')) { programar(e.target); }
+    });
+
+    // Si cambia el lugar (sede, nivel, contenedor) se vuelve a revisar lo escrito
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !e.target.name) { return; }
+        form.querySelectorAll('[data-duplicado-con]').forEach(function (campo) {
+            var con = campo.getAttribute('data-duplicado-con').split(',');
+            if (con.indexOf(e.target.name) !== -1 && campo.value.trim() !== '') { programar(campo); }
+        });
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-duplicado]').forEach(limpiar);
+    }, true);
+
+    // Un diálogo que regresó con errores: se vuelve a mostrar el aviso
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('dialog[data-abrir-al-cargar] [data-duplicado]').forEach(function (campo) {
+            if (campo.value.trim() !== '') { revisar(campo); }
+        });
+    });
+
+    /* ---------- 2. Personas: empresas según el tipo (PE-02) ---------- */
+    var AYUDA_EMPRESA = {
+        contratista: 'Solo se muestran las empresas registradas como Contratista. Si no aparece, déjalo así y escribe su nombre abajo.',
+        proveedor: 'Se muestran proveedores, transporte, agencias y taxis (no contratistas). Si no aparece, déjalo así y escribe su nombre abajo.'
+    };
+
+    function filtrarEmpresas(form, conservar) {
+        var lista = form && form.querySelector('select[data-categorias-por-tipo]');
+        var tipo = form && form.querySelector('[data-persona-tipo]');
+        if (!lista || !tipo) { return; }
+        var mapa = {};
+        try { mapa = JSON.parse(lista.getAttribute('data-categorias-por-tipo') || '{}'); } catch (x) { /* sin filtro */ }
+        var permitidas = mapa[tipo.value] || null;
+        Array.prototype.forEach.call(lista.options, function (o) {
+            if (o.value === '') { return; }
+            var ok = !permitidas || permitidas.indexOf(o.getAttribute('data-categoria')) !== -1;
+            // Lo ya guardado nunca se pierde en silencio al abrir la edición
+            if (!ok && conservar && o.selected) { ok = true; }
+            o.hidden = !ok;
+            o.disabled = !ok;
+        });
+        if (lista.selectedOptions[0] && lista.selectedOptions[0].disabled) { lista.value = ''; }
+        var ayuda = form.querySelector('[data-ayuda-empresa-tipo]');
+        if (ayuda && AYUDA_EMPRESA[tipo.value]) { ayuda.textContent = AYUDA_EMPRESA[tipo.value]; }
+    }
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (form && form.matches('[data-form-persona]') && e.target.matches('[data-persona-tipo]')) { filtrarEmpresas(form, false); }
+    });
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="editar-registro"]');
+        if (!b) { return; }
+        setTimeout(function () {
+            var d = document.getElementById(b.dataset.dialogo);
+            if (d) { filtrarEmpresas(d.querySelector('[data-form-persona]'), true); }
+        }, 0);
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        var form = e.target.querySelector('[data-form-persona]');
+        // Después de que el diálogo vuelve a sus valores de fábrica
+        if (form) { setTimeout(function () { filtrarEmpresas(form, true); }, 0); }
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-form-persona]').forEach(function (f) { filtrarEmpresas(f, true); });
+    });
+
+    /* ---------- 3. Desde la ficha de una empresa externa: al cerrar se regresa a ella ---------- */
+    document.addEventListener('submit', function (e) {
+        var d = e.target.closest && e.target.closest('dialog[data-al-cerrar-ir]');
+        if (d && !e.defaultPrevented) { d.setAttribute('data-enviando', '1'); }
+    });
+
+    document.addEventListener('close', function (e) {
+        var d = e.target;
+        if (!(d instanceof HTMLDialogElement) || !d.hasAttribute('data-al-cerrar-ir') || d.hasAttribute('data-enviando')) { return; }
+        window.location.assign(d.getAttribute('data-al-cerrar-ir'));
+    }, true);
+
+    /* ---------- 4. Transporte: «¿Es alguno de estos?» en vivo (placas y chofer) ---------- */
+    function clave(texto) {
+        return (texto || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z0-9]/g, '');
+    }
+
+    function conocido(campo, valor) {
+        var lista = campo.list;
+        if (!lista) { return false; }
+        var c = clave(valor);
+        return Array.prototype.some.call(lista.options, function (o) { return clave(o.value) === c; });
+    }
+
+    function cajaParecidos(campo, crear) {
+        var sig = campo.nextElementSibling;
+        if (sig && sig.hasAttribute('data-parecidos-vivo-caja')) { return sig; }
+        if (!crear) { return null; }
+        var caja = nodo('div', 'acceso-sugerencias parecidos-vivo');
+        caja.setAttribute('data-parecidos-vivo-caja', '');
+        caja.hidden = true;
+        campo.insertAdjacentElement('afterend', caja);
+        return caja;
+    }
+
+    function ocultarParecidos(campo) {
+        var caja = cajaParecidos(campo, false);
+        if (caja) { caja.hidden = true; caja.textContent = ''; }
+    }
+
+    function elegirParecido(campo, r) {
+        ocultarParecidos(campo);
+        var valor = (r.titulo || '').toUpperCase();
+        campo.setAttribute('data-parecido-elegido', valor);
+        campo.value = valor;
+        // Que el autollenado de la Bitácora complete marca, modelo, teléfono…
+        campo.dispatchEvent(new Event('input', { bubbles: true }));
+        campo.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function mostrarParecidos(campo, lista) {
+        var caja = cajaParecidos(campo, true);
+        caja.textContent = '';
+        caja.appendChild(nodo('div', 'acceso-sugerencia encabezado-parecidos', '¿Es alguno de estos? (parecidos en el padrón)'));
+        lista.forEach(function (r) {
+            var b = nodo('button', 'acceso-sugerencia parecido');
+            b.type = 'button';
+            b.appendChild(nodo('strong', '', r.titulo));
+            var d = [r.detalle, r.estado_texto].filter(Boolean).join(' · ');
+            if (d) { b.appendChild(nodo('small', '', d)); }
+            if (!r.usable) { b.disabled = true; } else { b.addEventListener('click', function () { elegirParecido(campo, r); }); }
+            caja.appendChild(b);
+        });
+        caja.appendChild(nodo('div', 'acceso-sugerencia nada', 'Si no es ninguno, sigue: se registra como nuevo y queda pendiente de verificar.'));
+        caja.hidden = false;
+    }
+
+    function buscarParecidos(campo) {
+        var valor = campo.value.trim();
+        if (valor.length < 3 || conocido(campo, valor) || campo.getAttribute('data-parecido-elegido') === valor.toUpperCase()) { ocultarParecidos(campo); return; }
+        var padron = campo.getAttribute('data-parecidos-vivo');
+        var p = new URLSearchParams({ padron: padron });
+        if (campo.getAttribute('data-parecidos-origen')) { p.set('origen', campo.getAttribute('data-parecidos-origen')); }
+        p.set(padron === 'vehiculos' ? 'placas' : 'nombre_completo', valor);
+        var mio = String(++turno);
+        campo.setAttribute('data-parecidos-turno', mio);
+        pedirJson(campo.getAttribute('data-parecidos-url') + '?' + p.toString())
+            .then(function (d) {
+                if (campo.getAttribute('data-parecidos-turno') !== mio || campo.value.trim() !== valor) { return; }
+                var lista = d.resultados || [];
+                // Si ya existe tal cual, no hay nada que preguntar
+                var igual = lista.some(function (r) { return clave(r.titulo) === clave(valor); });
+                if (igual || !lista.length) { ocultarParecidos(campo); return; }
+                mostrarParecidos(campo, lista);
+            })
+            .catch(function () { ocultarParecidos(campo); });
+    }
+
+    var esperasParecidos = {};
+    document.addEventListener('input', function (e) {
+        var campo = e.target;
+        if (!campo.matches || !campo.matches('[data-parecidos-vivo]')) { return; }
+        if (campo.getAttribute('data-parecido-elegido') !== campo.value.trim().toUpperCase()) { campo.removeAttribute('data-parecido-elegido'); }
+        var c = campo.id || campo.name;
+        clearTimeout(esperasParecidos[c]);
+        esperasParecidos[c] = setTimeout(function () { buscarParecidos(campo); }, 450);
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && e.target.matches && e.target.matches('[data-parecidos-vivo]')) {
+            var caja = cajaParecidos(e.target, false);
+            if (caja && !caja.hidden) { e.preventDefault(); ocultarParecidos(e.target); }
+        }
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-parecidos-vivo]').forEach(function (c) { c.removeAttribute('data-parecido-elegido'); ocultarParecidos(c); });
+    }, true);
+})();
+/* Fin Ronda 5 de ajustes (parte 2) */

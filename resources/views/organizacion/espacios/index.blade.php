@@ -208,7 +208,8 @@
                                 <input type="hidden" name="sede_id" value="{{ $sedes->first()->id }}">
                             @endif
                             <label class="campo-etiqueta" for="seccion_nombre">Nombre de la Sección</label>
-                            <input type="text" id="seccion_nombre" name="nombre" class="campo" maxlength="50" value="{{ old('_dialogo') === 'seccion' ? old('nombre') : '' }}" required>
+                            <input type="text" id="seccion_nombre" name="nombre" class="campo" maxlength="50" value="{{ old('_dialogo') === 'seccion' ? old('nombre') : '' }}" required
+                                   data-duplicado="{{ route('espacios.duplicado') }}" data-duplicado-campo="seccion" data-duplicado-con="sede_id">
                             <div class="dialogo-acciones">
                                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                                 <button type="submit" class="btn-rojo">Crear Sección</button>

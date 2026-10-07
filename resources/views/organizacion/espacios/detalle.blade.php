@@ -108,10 +108,12 @@
                 </div>
                 <div style="flex:2">
                     <label class="campo-etiqueta" for="tipo_nombre">Nombre</label>
-                    <input type="text" id="tipo_nombre" name="nombre" class="campo" maxlength="60" placeholder="Ej. Jacuzzi" required>
+                    <input type="text" id="tipo_nombre" name="nombre" class="campo" maxlength="60" placeholder="Ej. Jacuzzi" required
+                           data-duplicado="{{ route('espacios.duplicado') }}" data-duplicado-campo="tipo" data-duplicado-con="nivel" data-duplicado-aviso="tipo_aviso">
                 </div>
                 <div><button type="submit" class="btn-rojo" style="min-height:44px">Agregar tipo</button></div>
             </form>
+            <div class="aviso-duplicado" id="tipo_aviso" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
         </details>
 
         @include('organizacion.espacios.partes.formulario', [

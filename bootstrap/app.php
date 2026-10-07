@@ -41,7 +41,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // pantalla de acceso con un aviso, en lugar de la pagina de error 419.
         $exceptions->render(function (HttpException $e, Request $request) {
             if ($e->getStatusCode() === 419 && ! $request->expectsJson()) {
-                return redirect()->route('login')->with('acceso', 'pagina_vencida');
+                // Ronda 5: el cierre por inactividad con la sesión ya terminada avisa "Sesión finalizada por seguridad"
+                return redirect()->route('login')->with('acceso', $request->is('sesion/expirada') ? 'expirado' : 'pagina_vencida');
             }
 
             return null;

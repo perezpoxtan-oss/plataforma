@@ -186,6 +186,11 @@
                     <div class="fila-articulo-acciones">
                         <span class="estatus-lf {{ $a->enResguardo() ? 'resguardo' : 'cerrado' }}">{{ $a->etiquetaEstatus() }}</span>
                         <a href="{{ route('lost_found.articulos.show', $a->id) }}" class="btn-icono" title="Ver ficha" aria-label="Ver ficha de {{ $a->folio }}"><i class="bi bi-eye" aria-hidden="true"></i></a>
+                        {{-- Ronda 5: QR y etiqueta NFC/RFID de la bolsa en un diálogo --}}
+                        @include('componentes.boton-identificacion', ['identTipo' => 'lost_found', 'identRegistro' => $a, 'identTitulo' => $a->folio.' — '.$a->objeto,
+                            'identDetalle' => $a->sede?->nombre ?? '', 'identClase' => 'btn-icono',
+                            'identImprimir' => in_array($a->id, $imprimibles, true) ? route('lost_found.articulos.etiqueta', $a->id) : null, 'identImprimirTexto' => 'Imprimir etiqueta',
+                            'identEditable' => $a->enResguardo() && auth()->user()->can('lost_found.editar')])
                         @if (in_array($a->id, $imprimibles, true))
                             <a href="{{ route('lost_found.articulos.etiqueta', $a->id) }}" target="_blank" rel="noopener" class="btn-icono" title="Imprimir etiqueta" aria-label="Imprimir etiqueta de {{ $a->folio }}"><i class="bi bi-tag-fill" aria-hidden="true"></i></a>
                         @endif
@@ -217,6 +222,7 @@
                 @include('seguridad.personas._registro-rapido')
             @endif
         @endif
+        @include('componentes.codigo-identificacion')
     @endif
 </div>
 @endsection

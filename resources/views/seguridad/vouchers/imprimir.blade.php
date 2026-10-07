@@ -1,7 +1,9 @@
 {{--
     Voucher de reposición (SEGCAT: voucher_imprimir.php): una sola hoja
-    carta con 3 copias (Seguridad, Colaborador y Recepción) separadas por
-    líneas de corte, para firmarse a mano.
+    carta con 3 copias separadas por líneas de corte. Ronda 5 (LL-04): las
+    copias son para Seguridad, Recepción y Administración (el colaborador
+    firma, pero no recibe copia). Con firma digital, las firmas ya salen
+    impresas; con firma física, se firman a mano.
 --}}
 @php
     $version = fn (string $archivo) => asset($archivo).'?v='.(@filemtime(public_path($archivo)) ?: '1');
@@ -25,7 +27,11 @@
 <main>
     <div class="controles-impresion">
         <h1>Voucher de Reposición — 3 copias en una sola hoja</h1>
-        <p>Recorta por las líneas punteadas. Seguridad, Colaborador y Recepción firman cada copia a mano.</p>
+        @if ($voucher->firma_modo === 'digital')
+            <p>Recorta por las líneas punteadas: una copia para Seguridad, otra para Recepción y otra para Administración. Las firmas digitales ya van impresas.</p>
+        @else
+            <p>Recorta por las líneas punteadas: una copia para Seguridad, otra para Recepción y otra para Administración. Seguridad y el responsable firman cada copia a mano.</p>
+        @endif
         <div class="acciones">
             <button type="button" class="btn-imprimir-calcomania" data-accion="imprimir"><i class="bi bi-printer me-2" aria-hidden="true"></i>Imprimir Voucher</button>
             <a href="{{ route('vouchers.index') }}" class="btn-cerrar-calcomania"><i class="bi bi-receipt me-1" aria-hidden="true"></i> Ver todos los vouchers</a>
@@ -33,7 +39,7 @@
     </div>
 
     <div class="hoja-voucher">
-        @foreach (['Copia Seguridad', 'Copia Colaborador', 'Copia Recepción'] as $copia)
+        @foreach (\App\Models\VoucherReposicion::COPIAS as $copia)
             @unless ($loop->first)
                 <div class="linea-corte" aria-hidden="true"><span>✂ recortar aquí</span></div>
             @endunless
@@ -68,9 +74,15 @@
                 </div>
 
                 <div class="voucher-firmas">
-                    <div><div class="firma-espacio"></div><div class="firma-linea">Seguridad</div></div>
-                    <div><div class="firma-espacio"></div><div class="firma-linea">Colaborador{{ $voucher->colaborador ? ': '.$voucher->colaborador->nombreCompleto() : '' }}</div></div>
-                    <div><div class="firma-espacio"></div><div class="firma-linea">Recepción</div></div>
+                    <div>
+                        <div class="firma-espacio">@if ($voucher->firma_seguridad)<img src="{{ route('vouchers.firma', [$voucher->id, 'seguridad']) }}" alt="Firma de Seguridad" class="firma-impresa">@endif</div>
+                        <div class="firma-linea">Seguridad</div>
+                    </div>
+                    <div>
+                        <div class="firma-espacio">@if ($voucher->firma_responsable)<img src="{{ route('vouchers.firma', [$voucher->id, 'responsable']) }}" alt="Firma del responsable" class="firma-impresa">@endif</div>
+                        <div class="firma-linea">Responsable{{ $voucher->colaborador ? ': '.$voucher->colaborador->nombreCompleto() : '' }}</div>
+                    </div>
+                    <div><div class="firma-espacio"></div><div class="firma-linea">Recibe ({{ \Illuminate\Support\Str::after($copia, 'Copia ') }})</div></div>
                 </div>
             </section>
         @endforeach

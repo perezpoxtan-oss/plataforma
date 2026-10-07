@@ -274,13 +274,14 @@ class PersonasTest extends TestCase
 
         $html = $this->actingAs($this->admin)->get("/personas?nuevo=1&proveedor={$maya->id}")->assertOk()->getContent();
         $this->assertMatchesRegularExpression('/<dialog id="dialogoNuevaPersona"[^>]*data-abrir-al-cargar/', $html);
-        $this->assertMatchesRegularExpression('/<option value="'.$maya->id.'" data-categoria="contratista"\s+selected/', $html);
-        $this->assertMatchesRegularExpression('/<option value="contratista"\s+selected/', $html);
+        // Ronda 5 (PV-06): la empresa de la ficha queda fija (sin lista para elegir otra)
+        $this->assertStringContainsString('<input type="hidden" name="proveedor_id" value="'.$maya->id.'" data-persona-proveedor>', $html);
+        $this->assertMatchesRegularExpression('/<option value="contratista"[^>]*selected/', $html);
         $this->assertStringContainsString('name="volver" value="proveedor"', $html);
         $this->assertStringContainsString('Registrando personal de <strong>Mantenimiento Maya</strong>', $html);
 
         $html = $this->actingAs($this->admin)->get("/personas?nuevo=1&proveedor={$sureste->id}")->getContent();
-        $this->assertMatchesRegularExpression('/<option value="proveedor"\s+selected/', $html);
+        $this->assertMatchesRegularExpression('/<option value="proveedor"[^>]*selected/', $html);
 
         // Proveedor de otra empresa: se abre el alta, sin preselección ni regreso
         $html = $this->actingAs($this->admin)->get("/personas?nuevo=1&proveedor={$ajeno->id}")->assertDontSee('Ajeno SA')->getContent();
@@ -387,7 +388,7 @@ class PersonasTest extends TestCase
         $html = $this->enEmpresa(fn () => view('seguridad.personas._registro-rapido', ['proveedorSugerido' => $maya->id])->render());
         $this->assertStringContainsString('Registro Rápido de Persona', $html);
         $this->assertStringContainsString('data-registro-rapido-persona', $html);
-        $this->assertMatchesRegularExpression('/<option value="contratista"\s+selected/', $html);
+        $this->assertMatchesRegularExpression('/<option value="contratista"[^>]*selected/', $html);
         $this->actingAs($this->crearUsuario($this->empresa, 'Agente', $this->centro));
         $this->assertStringNotContainsString('data-registro-rapido-persona', $this->enEmpresa(fn () => view('seguridad.personas._registro-rapido')->render()));
     }

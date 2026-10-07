@@ -70,12 +70,21 @@ class Llave extends Model implements Identificable
     protected $fillable = [
         'empresa_id', 'sede_id', 'departamento_id', 'puesto_id', 'colaborador_id', 'nomenclatura', 'descripcion',
         'tipo_dispositivo', 'alcance', 'alcance_otro', 'id_externo', 'plataforma_externa', 'fecha_caducidad',
-        'etiqueta_nfc', 'activo',
+        'etiqueta_nfc', 'activo', 'costo_reposicion', 'costo_variable',
     ];
 
     protected function casts(): array
     {
-        return ['activo' => 'boolean', 'fecha_caducidad' => 'date'];
+        return ['activo' => 'boolean', 'fecha_caducidad' => 'date', 'costo_reposicion' => 'decimal:2', 'costo_variable' => 'boolean'];
+    }
+
+    /**
+     * Ronda 5 (LL-05): costo de reposición fijo de esta llave, o null si se
+     * captura en cada baja (costo variable o sin costo registrado).
+     */
+    public function costoFijo(): ?string
+    {
+        return ! $this->costo_variable && $this->costo_reposicion !== null ? number_format((float) $this->costo_reposicion, 2, '.', '') : null;
     }
 
     public function sede(): BelongsTo

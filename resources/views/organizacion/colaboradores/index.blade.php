@@ -172,6 +172,9 @@
                     <div class="ficha-footer">
                         <span class="etiqueta-estado {{ $c->activo ? ($pendiente ? 'pendiente' : 'activo') : 'inactivo' }}">{{ $c->activo ? ($pendiente ? 'POR VALIDAR' : 'ACTIVO') : ($c->fusionado_en_id ? 'UNIDO' : 'BAJA') }}</span>
                         <div class="d-flex gap-2">
+                            {{-- Ronda 5: QR y etiqueta NFC/RFID (gafete o tarjeta del colaborador) en un diálogo --}}
+                            @include('componentes.boton-identificacion', ['identTipo' => 'colaborador', 'identRegistro' => $c, 'identTitulo' => $nombreCompleto,
+                                'identDetalle' => 'Núm. '.$c->num_empleado, 'identImprimir' => null, 'identEditable' => $editable && ! $pendiente])
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar a {{ $nombreCompleto }}"
                                         data-accion="editar-registro" data-dialogo="dialogoEditarColaborador"
@@ -511,6 +514,8 @@
                 </div>
             </dialog>
         @endif
+
+        @include('componentes.codigo-identificacion')
     @endif
 </div>
 @endsection

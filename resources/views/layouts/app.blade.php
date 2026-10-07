@@ -166,8 +166,10 @@
                 <div class="modal-body text-center p-4">
                     <i class="bi bi-clock-history text-warning" style="font-size: 2.5rem;" aria-hidden="true"></i>
                     <h2 class="h5 fw-bold mt-3 mb-2" id="tituloSesion">Tu sesión está por cerrarse</h2>
-                    <p class="text-muted small mb-4">Por seguridad, se cierra sola tras un rato sin actividad. ¿Sigues aquí?</p>
-                    <button type="button" class="btn btn-dark w-100" data-accion="seguir-en-sesion">Sí, seguir aquí</button>
+                    <p class="text-muted small mb-2">Por seguridad, se cierra sola tras {{ (int) config('plataforma.sesion.inactividad_minutos') }} minutos sin actividad. ¿Sigues aquí?</p>
+                    {{-- Ronda 5: cuenta regresiva (la llena plataforma.js) --}}
+                    <p class="sesion-cuenta mb-4" aria-live="polite">Se cerrará en <strong data-sesion-cuenta>2:00</strong></p>
+                    <button type="button" class="btn btn-dark w-100" data-accion="seguir-en-sesion">Seguir conectado</button>
                 </div>
             </div>
         </div>

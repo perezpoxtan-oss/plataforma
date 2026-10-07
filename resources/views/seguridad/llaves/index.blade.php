@@ -21,7 +21,8 @@
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
             $bajaId = is_string($dialogo) && str_starts_with($dialogo, 'baja-') ? (int) substr($dialogo, 5) : null;
-            $nombresExistentes = json_encode($llaves->map(fn ($l) => mb_strtolower($l->nomenclatura))->values());
+            // Ronda 5 (LL-03): el nombre se repite solo dentro de la misma sede
+            $nombresExistentes = json_encode($llaves->groupBy('sede_id')->map(fn ($g) => $g->map(fn ($l) => mb_strtolower($l->nomenclatura))->values()), JSON_UNESCAPED_UNICODE);
             $conteoTipos = $llaves->countBy('tipo_dispositivo');
             $variasSedes = $sedesFiltro->count() > 1;
             $llaveBaja = $bajaId ? $llaves->firstWhere('id', $bajaId) : null;
@@ -110,6 +111,7 @@
                         'alcance' => $l->alcance, 'alcance_otro' => $l->alcance_otro, 'id_externo' => $l->id_externo,
                         'plataforma_externa' => $l->plataforma_externa, 'fecha_caducidad' => $l->fecha_caducidad?->format('Y-m-d'),
                         'etiqueta_nfc' => $l->etiqueta_nfc,
+                        'costo_reposicion' => $l->costo_reposicion, 'costo_variable' => (bool) $l->costo_variable,
                         'espacios' => $l->espacios->pluck('id')->values(), 'grupos' => $l->grupos->pluck('id')->values(),
                         'horarios' => $l->horarios->map(fn ($h) => ['nombre' => $h->nombre, 'inicio' => $h->inicio(), 'fin' => $h->fin()])->values(),
                         'colaborador_id' => $l->colaborador_id, 'colaborador_texto' => $responsable,
@@ -195,11 +197,17 @@
                     <div class="ficha-footer">
                         <span class="pastilla-alcance">Alcance: {{ $l->etiquetaAlcance() }}</span>
                         <div class="d-flex gap-2">
+                            {{-- Ronda 5 (LL-05): QR y etiqueta NFC/RFID en un diálogo, sin salir de la pantalla --}}
+                            @include('componentes.boton-identificacion', ['identTipo' => 'llave', 'identRegistro' => $l, 'identTitulo' => $l->nomenclatura,
+                                'identDetalle' => ($l->sede?->nombre ?? '').' · '.$l->etiquetaTipo(),
+                                'identImprimir' => $imprimible ? route('llaves.imprimir', ['llaves' => [$l->id]]) : null, 'identImprimirTexto' => 'Imprimir etiqueta',
+                                'identEditable' => $editable, 'identAbrir' => (int) session('identificacion') === $l->id])
                             @if ($desactivable)
                                 @if ($l->activo)
                                     <button type="button" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja {{ $l->nomenclatura }}"
                                             data-accion="baja-llave" data-url="{{ route('llaves.baja', $l->id) }}" data-id="{{ $l->id }}"
-                                            data-nombre="{{ $l->nomenclatura }}" data-tipo="{{ $l->tipo_dispositivo }}" data-tipo-texto="{{ $l->etiquetaTipo() }}">
+                                            data-nombre="{{ $l->nomenclatura }}" data-tipo="{{ $l->tipo_dispositivo }}" data-tipo-texto="{{ $l->etiquetaTipo() }}"
+                                            data-costo-fijo="{{ $l->costoFijo() }}" data-costo-propio="{{ $l->costo_reposicion }}">
                                         <i class="bi bi-slash-circle" aria-hidden="true"></i>
                                     </button>
                                 @else
@@ -289,6 +297,8 @@
                                 'ayuda' => 'Escanea su gafete o escribe su número de empleado.'])
                         </div>
 
+                        @include('seguridad.vouchers._firmas-baja', ['id' => 'baja_llave'])
+
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                             <button type="submit" class="btn-baja-llave">Generar Voucher y Dar de Baja</button>
@@ -297,6 +307,8 @@
                 </div>
             </dialog>
         @endif
+
+        @include('componentes.codigo-identificacion')
     @endif
 </div>
 @endsection

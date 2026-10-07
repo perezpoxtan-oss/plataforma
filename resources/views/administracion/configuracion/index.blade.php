@@ -39,6 +39,16 @@
                                 <p class="campo-ayuda mt-0">Si lo dejas vacío, se envía a los usuarios que pueden autorizar vales de taxi en esa sede.</p>
                             </div>
                         @endif
+                        {{-- Ronda 5 (LL-04): una lista por copia del voucher con cobro --}}
+                        @if ($clave === 'voucher_cobro')
+                            <div class="ms-4 mb-3 destinatarios-voucher">
+                                @foreach (\App\Models\Empresa::DESTINATARIOS_VOUCHER as $dest => $copia)
+                                    <label class="campo-etiqueta" for="dest_{{ $dest }}">{{ $copia }} <span class="text-lowercase fw-normal">(correos, uno por línea o separados por coma)</span></label>
+                                    <textarea id="dest_{{ $dest }}" name="destinatarios[{{ $dest }}]" class="campo mb-2" rows="2" maxlength="3500" placeholder="{{ \Illuminate\Support\Str::after($dest, 'voucher_') }}@tuempresa.com" @disabled(! $puedeEditar)>{{ old("destinatarios.$dest", implode("\n", $empresa->destinatariosAviso($dest))) }}</textarea>
+                                @endforeach
+                                <p class="campo-ayuda mt-0">El colaborador responsable no recibe copia. Si dejas las tres listas vacías, se envía a los usuarios que pueden imprimir vouchers en esa sede.</p>
+                            </div>
+                        @endif
                     @endforeach
                     @if ($puedeEditar)
                         <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar avisos</button>
