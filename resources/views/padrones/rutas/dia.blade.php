@@ -34,6 +34,8 @@
             @endif
         </form>
         <div class="d-flex gap-2 flex-wrap">
+            {{-- Ronda 8 (RT-07): la hoja principal es la de la semana --}}
+            <a href="{{ route('rutas.semana', $sede->id) }}" class="btn-cancelar rutas-boton"><i class="bi bi-calendar-week me-1" aria-hidden="true"></i> Semana completa</a>
             <button type="button" class="btn-imprimir-calcomania" data-accion="imprimir"><i class="bi bi-printer me-1" aria-hidden="true"></i> Imprimir</button>
             <a href="{{ route('rutas.sede', $sede->id) }}" class="btn-cerrar-calcomania"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Volver a la sede</a>
         </div>
@@ -90,6 +92,18 @@
                         </tbody>
                     </table>
                 </div>
+            @endif
+            {{-- Ronda 8 (RT-07): por qué no aparece una ruta (opera otros días o está suspendida) --}}
+            @php
+                $noOperanSentido = $noOperan->filter(fn ($h) => $h->ruta->sentido === $sentido);
+                $suspendidasSentido = $suspendidas->where('sentido', $sentido);
+            @endphp
+            @if ($noOperanSentido->isNotEmpty())
+                <p class="rutas-hoja-nota"><i class="bi bi-calendar-minus me-1" aria-hidden="true"></i><strong>No operan este día:</strong>
+                    {{ $noOperanSentido->map(fn ($h) => $h->ruta->nombre.' '.$h->inicio().' ('.$h->textoDias().')')->join(' · ') }}</p>
+            @endif
+            @if ($suspendidasSentido->isNotEmpty())
+                <p class="rutas-hoja-nota"><i class="bi bi-pause-circle me-1" aria-hidden="true"></i><strong>Suspendidas (no operan):</strong> {{ $suspendidasSentido->pluck('nombre')->join(', ') }}</p>
             @endif
         </section>
     @endforeach

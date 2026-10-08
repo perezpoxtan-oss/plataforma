@@ -152,3 +152,7 @@ Otra empresa u otra sede: 404. Sin permiso: 403. El Agente (Padrones solo consul
 ### Qué se corrigió respecto a SEGCAT
 
 SEGCAT no tenía forma de registrar que el artículo apareció: se reactivaba y el voucher seguía como si el cobro procediera. Ahora queda la historia completa y el cobro se cancela o se marca para reembolso.
+
+## Ronda 8
+
+«Registrar firma en papel» / «Cambiar hoja firmada» solo aparece (y `POST /vouchers/{id}/papel` solo se acepta) si el voucher tiene firma física y está **Vigente** o con **Reembolso pendiente** (`VoucherReposicion::admiteFirmaPapel()`). Uno «Cancelado por recuperación» o «Reembolsado» ya no se firma: «El voucher VR-… está «Reembolsado»: ya no se registra su firma en papel.»

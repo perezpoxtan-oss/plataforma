@@ -9,6 +9,7 @@ use App\Models\TipoGafete;
 use App\Models\User;
 use App\Models\VoucherReposicion;
 use App\Services\Inventarios\Vouchers;
+use App\Services\Lector\Identificacion;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -259,10 +260,8 @@ class AdministradorGafetes
             throw ValidationException::withMessages(['nomenclatura' => "Ya existe un gafete con la nomenclatura «{$nomenclatura}» en esta empresa".($repetido->activo ? '.' : ' (dado de baja).')]);
         }
 
-        $ocupada = Gafete::etiquetaOcupada($etiqueta, $gafete->id);
-        if ($ocupada !== null) {
-            throw ValidationException::withMessages(['etiqueta_nfc' => "Esa etiqueta NFC / RFID ya está asignada al gafete {$ocupada->nomenclatura}. Quítasela primero o usa otra."]);
-        }
+        // Ronda 8: única en toda la empresa y entre todos los tipos del lector
+        app(Identificacion::class)->exigirEtiquetaLibre($etiqueta, $gafete);
 
         $antes = $this->foto($gafete);
 

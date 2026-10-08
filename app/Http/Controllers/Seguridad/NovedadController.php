@@ -13,7 +13,6 @@ use App\Models\LostFoundUmbral;
 use App\Models\Novedad;
 use App\Models\Sede;
 use App\Models\User;
-use App\Models\UsuarioRol;
 use App\Services\Firmas\Firmas;
 use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Novedades\CoincidenciasLostFound;
@@ -115,6 +114,20 @@ class NovedadController extends Controller
 
         return redirect()->to(route('novedades.index').'#novedad-'.$novedad->id)
             ->with('ok', "Ticket {$novedad->folio()} despachado correctamente. Ábrelo con «Abrir Expediente» para darle seguimiento.");
+    }
+
+    /**
+     * Ronda 8 (NV-03): la dirección del expediente abierta con GET (recargar o
+     * volver atrás tras guardar, un enlace copiado, un envío que el servidor
+     * redirigió) ya no termina en «405 Method Not Allowed»: abre el expediente.
+     */
+    public function mostrar(Request $request, int $novedad): RedirectResponse
+    {
+        abort_unless($this->novedades->puedeModulo($request->user(), 'ver'), 403);
+        $empresaId = $this->empresaDeTrabajo($request);
+        $modelo = $this->tenant->conEmpresa($empresaId, fn () => $this->novedades->buscar($request->user(), $novedad, 'ver'));
+
+        return redirect()->route('novedades.index', ['abrir' => $modelo->id]);
     }
 
     public function update(Request $request, int $novedad): RedirectResponse
@@ -465,13 +478,8 @@ class NovedadController extends Controller
             ->orderBy('ruta')->get(['id', 'sede_id', 'padre_id', 'nivel', 'nombre', 'ruta', 'activo'])
             ->sortBy('nombre', SORT_NATURAL)->values();
 
-        $roles = UsuarioRol::whereIn('user_id', User::where('empresa_id', $this->tenant->empresaId())->where('activo', true)->select('id'))
-            ->get(['user_id', 'sede_id'])->groupBy('user_id');
-        $usuarios = User::whereIn('id', $roles->keys())->orderBy('name')->get(['id', 'name'])
-            ->map(fn ($u) => ['id' => $u->id, 'nombre' => $u->name,
-                'sedes' => $roles[$u->id]->contains(fn ($r) => $r->sede_id === null) ? 'todas' : $roles[$u->id]->pluck('sede_id')->unique()->join(' ')])
-            ->filter(fn ($u) => $u['sedes'] === 'todas' || array_intersect(explode(' ', $u['sedes']), array_map('strval', $sedes)) !== [])
-            ->values();
+        // Ronda 8 (NV-01): solo el personal de Seguridad (antes: cualquier usuario de la empresa)
+        $usuarios = $this->novedades->personalCanalizable($sedes);
 
         $colaboradores = Colaborador::with(['departamento:id,nombre', 'puesto:id,nombre', 'sedesAdicionales:sedes.id'])
             ->where('activo', true)->whereNull('fusionado_en_id')

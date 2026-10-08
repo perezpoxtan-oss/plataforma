@@ -45,9 +45,9 @@
         </div>
         <div class="rutas-acciones-sede">
             <a href="{{ route('rutas.index') }}" class="btn-cancelar rutas-boton"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Sedes</a>
-            @if ($puede['imprimir'])
-                <a href="{{ route('rutas.dia', $sede->id) }}" target="_blank" rel="noopener" class="btn-rutas rutas-boton"><i class="bi bi-printer me-1" aria-hidden="true"></i>Hoja del día</a>
-            @endif
+            {{-- Ronda 8 (RT-07/RT-08): hojas de consulta para caseta (también el Agente) --}}
+            <a href="{{ route('rutas.semana', $sede->id) }}" target="_blank" rel="noopener" class="btn-rutas rutas-boton"><i class="bi bi-calendar-week me-1" aria-hidden="true"></i>Hoja de horarios</a>
+            <a href="{{ route('rutas.dia', $sede->id) }}" target="_blank" rel="noopener" class="btn-cancelar rutas-boton"><i class="bi bi-printer me-1" aria-hidden="true"></i>Hoja del día</a>
         </div>
     </div>
 

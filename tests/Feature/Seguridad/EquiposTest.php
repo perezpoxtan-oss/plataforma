@@ -198,12 +198,12 @@ class EquiposTest extends TestCase
         $this->assertSame('04A23B1C', $this->buscarSerie('752TSFQ504')->etiqueta_nfc);
 
         $this->actingAs($this->admin)->post('/equipos', $this->datos(['numero_serie' => 'R-2', 'etiqueta_nfc' => '04A23B1C']))
-            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta NFC / RFID ya está asignada a otro registro: Equipo «Serie: 752TSFQ504». Usa otra etiqueta o quítasela primero a ese registro.']);
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene el equipo «Serie: 752TSFQ504». Quítasela primero o usa otra.']);
 
         // También si la tiene otro tipo de registro (un colaborador)
         $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => '7', 'nombre' => 'Eva', 'apellido_paterno' => 'Pérez', 'etiqueta_nfc' => 'AABBCCDD']));
         $this->actingAs($this->admin)->post('/equipos', $this->datos(['numero_serie' => 'R-3', 'etiqueta_nfc' => 'aa:bb:cc:dd']))
-            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta NFC / RFID ya está asignada a otro registro: Colaborador «Eva Pérez». Usa otra etiqueta o quítasela primero a ese registro.']);
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene el colaborador «Eva Pérez». Quítasela primero o usa otra.']);
     }
 
     // ---------------------------------------------------------------- Edición y estados
@@ -404,8 +404,8 @@ class EquiposTest extends TestCase
         $demo = Empresa::where('nombre_comercial', CrearDatosDemo::EMPRESA)->firstOrFail();
         $equipos = $this->enEmpresa(fn () => Equipo::all(), $demo);
         $this->assertCount(12, $equipos);
-        // 4 están en resguardos demo de Responsivas (ASIGNADO)
-        $this->assertSame(['asignado' => 4, 'baja' => 1, 'disponible' => 6, 'en_mantenimiento' => 1], $equipos->countBy('estado')->sortKeys()->all());
+        // 3 siguen en resguardos demo de Responsivas (ASIGNADO); Ronda 8: uno ya regresó (devolución parcial)
+        $this->assertSame(['asignado' => 3, 'baja' => 1, 'disponible' => 7, 'en_mantenimiento' => 1], $equipos->countBy('estado')->sortKeys()->all());
         $this->assertSame(1, $this->enEmpresa(fn () => VoucherReposicion::where('origen_tipo', 'equipo')->count(), $demo));
         $zonas = $this->enEmpresa(fn () => ZonaEstacionamiento::all(), $demo);
         // Ronda 6 (ES-02): más «Patio de Maniobras», zona de descarga con capacidad de 4

@@ -60,7 +60,8 @@
             </select>
 
             {{-- ===== 1. Motivo y Solicitante ===== --}}
-            <h3 class="paso-pase"><span class="numero-paso">1</span><i class="bi bi-info-square text-primary me-2" aria-hidden="true"></i>Motivo y Solicitante</h3>
+            <x-seccion clave="pase-1" :abierta="true">
+                <x-slot:titulo><span class="numero-paso">1</span><i class="bi bi-info-square text-primary me-2" aria-hidden="true"></i>Motivo y Solicitante</x-slot:titulo>
             <label class="campo-etiqueta" for="ps_motivo">Motivo de Salida</label>
             <select id="ps_motivo" name="motivo" class="campo mb-1" required data-pase-motivo>
                 <option value="">-- Seleccionar --</option>
@@ -88,7 +89,9 @@
             </div>
 
             {{-- ===== 2. Enviar A ===== --}}
-            <h3 class="paso-pase"><span class="numero-paso">2</span><i class="bi bi-signpost-split text-success me-2" aria-hidden="true"></i>Enviar A</h3>
+            </x-seccion>
+            <x-seccion clave="pase-2" :abierta="true">
+                <x-slot:titulo><span class="numero-paso">2</span><i class="bi bi-signpost-split text-success me-2" aria-hidden="true"></i>Enviar A</x-slot:titulo>
             <label class="campo-etiqueta" for="ps_destino_tipo">Tipo de Destino</label>
             <select id="ps_destino_tipo" name="destino_tipo" class="campo" required>
                 @foreach (\App\Models\PaseSalida::DESTINOS as $clave => $texto)
@@ -159,7 +162,9 @@
             </div>
 
             {{-- ===== 3. Artículos que Salen ===== --}}
-            <h3 class="paso-pase"><span class="numero-paso">3</span><i class="bi bi-box-seam text-warning me-2" aria-hidden="true"></i>Artículos que Salen</h3>
+            </x-seccion>
+            <x-seccion clave="pase-3" :abierta="true">
+                <x-slot:titulo><span class="numero-paso">3</span><i class="bi bi-box-seam text-warning me-2" aria-hidden="true"></i>Artículos que Salen</x-slot:titulo>
             @if ($puede['equipos'])
                 <div class="lector-equipo-pase" data-pase-lector-equipo>
                     @include('componentes.lector', ['id' => 'ps_equipo_lector', 'etiqueta' => 'Escanear un equipo del padrón (opcional)', 'tipos' => 'equipo', 'nombre' => '',
@@ -180,6 +185,7 @@
                 <label class="campo-etiqueta mt-2" for="ps_respuesta">Qué corregiste <span class="text-lowercase fw-normal">(opcional, lo verán los aprobadores)</span></label>
                 <textarea id="ps_respuesta" name="comentario" class="campo" rows="2" maxlength="1000" placeholder="Ej: Se agregó la factura y se corrigió la serie.">{{ $conErrores ? old('comentario') : '' }}</textarea>
             @endif
+            </x-seccion>
             <div class="dialogo-acciones">
                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                 @if ($corrigiendo)

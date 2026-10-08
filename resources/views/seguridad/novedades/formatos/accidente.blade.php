@@ -280,8 +280,10 @@
         <div class="accordion-body">
             <div class="p-3 bg-light border rounded text-center firmas-accidente" data-nov-firmas>
                 <label class="campo-etiqueta mb-2" for="selectorFirma">Seleccione quién va a firmar en este momento:</label>
-                <select id="selectorFirma" class="campo fw-bold mx-auto mb-3 text-center border-primary selector-firma" data-nov-selector-firma>
-                    @foreach (\App\Models\AccidenteFirma::ROLES as $rol => $texto)
+                {{-- Ronda 8 (NV-03): los firmantes cambian según el Tipo de Afectado (huésped o colaborador) --}}
+                <select id="selectorFirma" class="campo fw-bold mx-auto mb-3 text-center border-primary selector-firma" data-nov-selector-firma
+                        data-roles-por-tipo="{{ json_encode(\App\Models\AccidenteFirma::rolesParaPantalla()) }}">
+                    @foreach (\App\Models\AccidenteFirma::rolesPara($tipoAfectado) as $rol => $texto)
                         <option value="{{ $rol }}">{{ $texto }}</option>
                     @endforeach
                 </select>
@@ -293,15 +295,15 @@
                 </div>
                 <div id="estadoFirmas" class="mt-3 text-start small fw-bold text-success" data-nov-estado-firmas aria-live="polite">
                     @foreach ($firmasGuardadas as $rol => $f)
-                        <span class="badge bg-success me-1 mb-1"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i> {{ \App\Models\AccidenteFirma::ROLES[$rol] ?? $rol }} (previamente guardada)</span>
+                        <span class="badge bg-success me-1 mb-1"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i> {{ \App\Models\AccidenteFirma::etiqueta($rol, $tipoAfectado) }} (previamente guardada)</span>
                     @endforeach
                 </div>
                 @if ($firmasGuardadas->isNotEmpty())
                     <div class="firmas-guardadas">
                         @foreach ($firmasGuardadas as $rol => $f)
                             <figure>
-                                <img src="{{ route('novedades.firma', [$n->id, $rol]) }}" alt="Firma: {{ \App\Models\AccidenteFirma::ROLES[$rol] ?? $rol }}" loading="lazy">
-                                <figcaption>{{ \App\Models\AccidenteFirma::ROLES[$rol] ?? $rol }}</figcaption>
+                                <img src="{{ route('novedades.firma', [$n->id, $rol]) }}" alt="Firma: {{ \App\Models\AccidenteFirma::etiqueta($rol, $tipoAfectado) }}" loading="lazy">
+                                <figcaption>{{ \App\Models\AccidenteFirma::etiqueta($rol, $tipoAfectado) }}</figcaption>
                             </figure>
                         @endforeach
                     </div>

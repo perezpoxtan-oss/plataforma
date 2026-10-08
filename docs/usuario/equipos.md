@@ -61,7 +61,7 @@ Cuando un equipo se pierde, se daña o lo roban:
 3. Escribe **¿Cómo pasó?**: ayuda a decidir si se cobra.
 4. Si se le cobra a alguien, marca **Aplica CXC**. Aparecen:
    - **Monto**: ya viene con el costo del equipo (o lo último que se cobró por ese modelo); puedes ajustarlo.
-   - **Colaborador responsable**: escanea su gafete, acerca su tarjeta o escribe su número de empleado o su nombre y oprime Enter.
+   - **Colaborador responsable**: escanea su gafete, acerca su tarjeta o escribe su número de empleado o su nombre (aparece solo, sin Enter).
 5. Toca **Generar Voucher y Dar de Baja**. El equipo queda como **BAJA/PERDIDO** y se crea el voucher con su folio.
 
 ![Baja con voucher](img/equipos/04-baja.png)

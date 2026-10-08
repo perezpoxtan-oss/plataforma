@@ -326,7 +326,7 @@
                             </div>
                             @include('componentes.lector', ['id' => 'baja_eq_responsable', 'etiqueta' => 'Colaborador responsable', 'tipos' => 'colaborador',
                                 'nombre' => 'colaborador_id', 'valor' => $bajaEquipo ? old('colaborador_id') : '', 'elegido' => $bajaResponsable,
-                                'ayuda' => 'Escanea su gafete o acerca su tarjeta; también puedes escribir su número de empleado o su nombre y oprimir Enter.'])
+                                'ayuda' => 'Escanea su gafete o acerca su tarjeta; también puedes escribir su número de empleado o su nombre: aparece solo, sin Enter.'])
                         </div>
 
                         <div class="dialogo-acciones">

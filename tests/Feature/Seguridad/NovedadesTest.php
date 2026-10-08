@@ -57,7 +57,7 @@ class NovedadesTest extends PruebaNovedades
         $n = $this->enEmpresa(fn () => Novedad::firstOrFail());
         $respuesta->assertRedirect(route('novedades.index').'#novedad-'.$n->id)
             ->assertSessionHas('ok', 'Ticket #00001 despachado correctamente. Ábrelo con «Abrir Expediente» para darle seguimiento.');
-        $this->assertSame([1, 'CAMARISTA ROSA', 'PISO 2, CERCA DEL ELEVADOR', 'sin_clasificar', Novedad::ABIERTO, $this->admin->id],
+        $this->assertSame([1, 'CAMARISTA ROSA', 'PISO 2, CERCA DEL ELEVADOR', 'incidente_general', Novedad::ABIERTO, $this->admin->id],
             [$n->numero, $n->reportado_por, $n->ubicacion, $n->categoria, $n->estatus, $n->creado_por]);
         // La hora llega en la zona de la sede (Ciudad de México, UTC-6) y se guarda en UTC
         $this->assertSame('2026-10-01 14:30:00', $n->ocurrio_en->utc()->format('Y-m-d H:i:s'));
@@ -93,7 +93,7 @@ class NovedadesTest extends PruebaNovedades
         $ajeno = $this->crearUsuario($otra, 'Administrador');
         foreach ([$dePlaya, $ajeno] as $usuario) {
             $this->actingAs($this->admin)->post('/novedades', $this->datos(['asignado_a' => $usuario->id]))
-                ->assertSessionHasErrors(['asignado_a' => 'La persona a quien se canaliza no está activa o no tiene acceso a esa sede.']);
+                ->assertSessionHasErrors(['asignado_a' => 'Solo se canaliza al personal de Seguridad activo de esa sede (agentes, supervisores, jefes o mandos).']);
         }
         $deCentro = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
         $this->actingAs($this->admin)->post('/novedades', $this->datos(['asignado_a' => $deCentro->id]))->assertSessionHasNoErrors();
@@ -130,9 +130,9 @@ class NovedadesTest extends PruebaNovedades
         $n = $this->enEmpresa(fn () => Novedad::firstOrFail());
         $this->assertTrue($this->enEmpresa(fn () => RoboDetalle::where('novedad_id', $n->id)->exists()));
 
-        // Recorrido PC ya no se crea desde aquí: se despacha Sin clasificar
-        $this->actingAs($this->admin)->post('/novedades', $this->datos(['categoria' => 'recorrido_pc']))->assertSessionHasNoErrors();
-        $this->assertSame('sin_clasificar', $this->enEmpresa(fn () => Novedad::orderByDesc('id')->value('categoria')));
+        // Recorrido PC ya no se crea desde aquí (Ronda 8: ni «Sin clasificar»; hay que elegir la clasificación)
+        $this->actingAs($this->admin)->post('/novedades', $this->datos(['categoria' => 'recorrido_pc']))->assertSessionHasErrors('categoria');
+        $this->assertSame(1, $this->enEmpresa(fn () => Novedad::count()));
     }
 
     // -------------------------------------------------------------- Expediente

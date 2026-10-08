@@ -150,7 +150,15 @@
                 <section>
                     <h3>Firmas Digitales de Cierre</h3>
                     <div class="firmas-impresion">
-                        @foreach (\App\Models\AccidenteFirma::ROLES as $rol => $texto)
+                        {{-- Ronda 8 (NV-03): los firmantes del tipo de afectado (y cualquier otra firma ya guardada) --}}
+                        @php
+                            $tipoFirmas = $h ? 'HUESPED' : ($c ? 'COLABORADOR' : null);
+                            $rolesFirma = \App\Models\AccidenteFirma::rolesPara($tipoFirmas);
+                            foreach ($n->firmas as $guardada) {
+                                $rolesFirma[$guardada->rol] ??= \App\Models\AccidenteFirma::etiqueta($guardada->rol, $tipoFirmas);
+                            }
+                        @endphp
+                        @foreach ($rolesFirma as $rol => $texto)
                             @php $f = $n->firmas->firstWhere('rol', $rol); @endphp
                             <div>
                                 <div class="firma-espacio">@if ($f)<img src="{{ route('novedades.firma', [$n->id, $rol]) }}" alt="Firma: {{ $texto }}">@endif</div>

@@ -23,7 +23,7 @@
 </head>
 <body class="pagina-reporte-rpc">
 <main class="hoja-reporte-rpc">
-    <form method="GET" action="{{ route('recorridos_pc.reporte') }}" class="rpc-reporte-filtros no-imprimir" aria-label="Filtrar el reporte">
+    <form method="GET" data-autoenviar action="{{ route('recorridos_pc.reporte') }}" class="rpc-reporte-filtros no-imprimir" aria-label="Filtrar el reporte">
         <label><span>Desde</span><input type="date" name="desde" value="{{ $filtros['desde'] }}" class="campo"></label>
         <label><span>Hasta</span><input type="date" name="hasta" value="{{ $filtros['hasta'] }}" class="campo"></label>
         @if ($sedes->count() > 1)

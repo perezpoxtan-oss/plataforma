@@ -149,7 +149,8 @@
                     @if ($puedeImprimir)
                         <div class="acciones-voucher">
                             <a href="{{ route('vouchers.imprimir', $v->id) }}" target="_blank" rel="noopener" class="btn-ver-voucher"><i class="bi bi-printer" aria-hidden="true"></i> Ver / Reimprimir</a>
-                            @if ($v->firma_modo !== 'digital')
+                            {{-- Ronda 8: no en vouchers cancelados por recuperación ni reembolsados --}}
+                            @if ($v->admiteFirmaPapel())
                                 <button type="button" class="btn-ver-voucher secundario" data-accion="voucher-papel" data-url="{{ route('vouchers.papel', $v->id) }}"
                                         data-id="{{ $v->id }}" data-folio="{{ $v->folio }}"><i class="bi bi-file-earmark-arrow-up" aria-hidden="true"></i> {{ $v->firmado_papel_en ? 'Cambiar hoja firmada' : 'Registrar firma en papel' }}</button>
                             @endif

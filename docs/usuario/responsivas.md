@@ -89,3 +89,23 @@ Toca el **reloj** junto a un equipo: ves quién lo ha tenido, cuándo se entreg�
 | Imprimir la hoja | Administrador, Director, Jefe de seguridad, Asistente, Supervisor y Agente |
 
 Cada quien ve solo los resguardos de **sus sedes**.
+
+## Ronda 8: recibir equipo por equipo (devolución parcial)
+
+Si de un lote solo regresa una parte, ya no tienes que esperar: cada equipo del lote **EN CAMPO** tiene su botón **Recibir**.
+
+1. Toca **Recibir** en el equipo que te entregan.
+2. Elige cómo regresa: **OK**, **Dañado** o **Faltante**.
+   - **OK**: el equipo vuelve a DISPONIBLE.
+   - **Dañado**: escribe qué daño tiene. Queda **EN MANTENIMIENTO**; si ya no sirve, marca «Ya no sirve: darlo de baja con voucher de reposición».
+   - **Faltante**: escribe qué pasó. Se genera el **voucher de reposición** (Extraviado o Robado) y el equipo queda de BAJA/PERDIDO; si aplica cobro, se le cobra al resguardante. (El voucher solo lo puede generar quien tiene permiso de dar de baja equipos, como el supervisor.)
+3. **Recibir Equipo**.
+
+El lote sigue **EN CAMPO** hasta que regresa el último equipo; entonces pasa solo a **Historial Devueltos**. **Recibir Lote Completo (OK)** sigue igual: recibe de una vez los que falten. En la tarjeta y en la hoja impresa se ve cómo y cuándo regresó cada equipo.
+
+![Lote con un equipo ya devuelto](img/ronda-8/09-responsivas-devolucion-parcial.png)
+![Recibir un equipo faltante](img/ronda-8/10-recibir-equipo-faltante.png)
+![Hoja con la columna Devolución](img/ronda-8/11-hoja-resguardo-devolucion.png)
+![En el celular](img/ronda-8/17-celular-recibir-danado.png)
+![Modo Sol](img/ronda-8/19-sol-responsivas.png)
+![Modo Noche](img/ronda-8/22-noche-recibir-faltante.png)

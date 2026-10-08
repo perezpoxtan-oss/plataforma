@@ -16,6 +16,7 @@ use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
@@ -248,14 +249,19 @@ class RutaController extends Controller
      * activas que salen ese día, por hora, en una hoja para Llegadas y otra
      * para Salidas, con una columna por paradero. ?fecha=AAAA-MM-DD (hoy si no viene).
      */
+    /**
+     * Hoja del día (opción de la hoja de horarios): solo lo que opera esa fecha.
+     * Ronda 8 (RT-07/RT-08): es de consulta para caseta (rutas.ver) y avisa qué
+     * horarios no operan ese día y qué rutas están suspendidas.
+     */
     public function dia(Request $request, int $sede): View
     {
-        Gate::authorize('rutas.imprimir');
+        Gate::authorize('rutas.ver');
         $empresaId = $this->empresaDeTrabajo($request);
 
         return $this->tenant->conEmpresa($empresaId, function () use ($request, $sede, $empresaId) {
             $modelo = $this->sedeVisible($request->user(), $sede);
-            abort_unless($this->rutas->puedeEnSede($request->user(), 'rutas.imprimir', $modelo->id), 403);
+            abort_unless($this->rutas->puedeEnSede($request->user(), 'rutas.ver', $modelo->id), 403);
 
             $ahora = $this->rutas->ahoraEn($modelo);
             $texto = Entrada::texto($request->query('fecha', ''));
@@ -263,35 +269,103 @@ class RutaController extends Controller
                 ? CarbonImmutable::createFromFormat('!Y-m-d', $texto, $ahora->getTimezone())
                 : $ahora->startOfDay();
 
-            $horarios = RutaHorario::query()
-                ->whereHas('ruta', fn ($q) => $q->where('sede_id', $modelo->id)->where('activo', true))
-                ->with(['ruta.turno:id,nombre', 'ruta.proveedor:id,nombre', 'paradas.paradero:id,nombre'])
-                ->orderBy('hora_inicio')
-                ->get()
-                ->filter(fn (RutaHorario $h) => $h->aplicaEn($fecha->dayOfWeekIso))
-                ->values();
-
-            $hojas = [];
-            foreach (Ruta::SENTIDOS as $sentido => $etiqueta) {
-                $filas = $horarios->filter(fn ($h) => $h->ruta->sentido === $sentido)->values();
-                $columnas = [];
-                foreach ($filas as $h) {
-                    foreach ($h->paradas as $p) {
-                        $columnas[$p->paradero_id] ??= $p->paradero?->nombre;
-                    }
-                }
-                $hojas[$sentido] = ['titulo' => $sentido === 'llegada' ? 'Llegadas' : 'Salidas', 'filas' => $filas, 'columnas' => $columnas];
-            }
+            $activos = $this->horariosDeSede($modelo);
+            [$hoy, $otrosDias] = $activos->partition(fn (RutaHorario $h) => $h->aplicaEn($fecha->dayOfWeekIso));
 
             return view('padrones.rutas.dia', [
                 'sede' => $modelo,
                 'fecha' => $fecha,
                 'hoy' => $ahora->toDateString(),
                 'generado' => $ahora,
-                'hojas' => $hojas,
+                'hojas' => $this->hojasPorSentido($hoy->values()),
+                'noOperan' => $otrosDias->values(),
+                'suspendidas' => $this->rutasSuspendidas($modelo),
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
             ]);
         });
+    }
+
+    /**
+     * Ronda 8 (RT-07/RT-08): Hoja de horarios de la SEMANA (SEGCAT:
+     * ruta_imprimir_dia.php era informativa de la semana completa). Todos
+     * los horarios activos de la sede, cada uno con los días en que opera
+     * (incluidos los horarios alternos de fin de semana o días sueltos),
+     * agrupados como SEGCAT: todos los días, lunes a viernes, días sueltos y
+     * fin de semana; dentro de cada grupo por hora. La consulta el Agente.
+     */
+    public function semana(Request $request, int $sede): View
+    {
+        Gate::authorize('rutas.ver');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $sede, $empresaId) {
+            $modelo = $this->sedeVisible($request->user(), $sede);
+            abort_unless($this->rutas->puedeEnSede($request->user(), 'rutas.ver', $modelo->id), 403);
+            $ahora = $this->rutas->ahoraEn($modelo);
+
+            $prioridad = fn (RutaHorario $h) => match (Ruta::patronDias($h->dias)) {
+                'L-D' => 0, 'L-V' => 1, 'S-D' => 3, default => 2
+            };
+            $horarios = $this->horariosDeSede($modelo)
+                ->sortBy([fn ($a, $b) => $prioridad($a) <=> $prioridad($b), fn ($a, $b) => strcmp((string) $a->hora_inicio, (string) $b->hora_inicio)])
+                ->values();
+
+            return view('padrones.rutas.semana', [
+                'sede' => $modelo,
+                'hoy' => $ahora->toDateString(),
+                'generado' => $ahora,
+                'hojas' => $this->hojasPorSentido($horarios),
+                'suspendidas' => $this->rutasSuspendidas($modelo),
+                'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
+            ]);
+        });
+    }
+
+    /**
+     * Horarios de las rutas activas de la sede, con lo que pinta la hoja (sin consultas por fila).
+     *
+     * @return Collection<int, RutaHorario>
+     */
+    private function horariosDeSede(Sede $sede): Collection
+    {
+        return RutaHorario::query()
+            ->whereHas('ruta', fn ($q) => $q->where('sede_id', $sede->id)->where('activo', true))
+            ->with(['ruta.turno:id,nombre', 'ruta.proveedor:id,nombre', 'paradas.paradero:id,nombre'])
+            ->orderBy('hora_inicio')->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * Llegadas y Salidas, cada una con sus filas y una columna por paradero (en el orden en que aparecen).
+     *
+     * @param  Collection<int, RutaHorario>  $horarios
+     * @return array<string, array{titulo: string, filas: Collection<int, RutaHorario>, columnas: array<int, ?string>}>
+     */
+    private function hojasPorSentido(Collection $horarios): array
+    {
+        $hojas = [];
+        foreach (array_keys(Ruta::SENTIDOS) as $sentido) {
+            $filas = $horarios->filter(fn ($h) => $h->ruta->sentido === $sentido)->values();
+            $columnas = [];
+            foreach ($filas as $h) {
+                foreach ($h->paradas as $p) {
+                    $columnas[$p->paradero_id] ??= $p->paradero?->nombre;
+                }
+            }
+            $hojas[$sentido] = ['titulo' => $sentido === 'llegada' ? 'Llegadas' : 'Salidas', 'filas' => $filas, 'columnas' => $columnas];
+        }
+
+        return $hojas;
+    }
+
+    /**
+     * Rutas suspendidas de la sede (no salen en la hoja; se mencionan al pie para que caseta sepa por qué).
+     *
+     * @return Collection<int, Ruta>
+     */
+    private function rutasSuspendidas(Sede $sede): Collection
+    {
+        return Ruta::where('sede_id', $sede->id)->where('activo', false)->orderBy('sentido')->orderBy('nombre')->get(['id', 'nombre', 'sentido']);
     }
 
     // ------------------------------------------------------------- Paraderos

@@ -10,7 +10,8 @@
     <h2 class="accordion-header"><a class="accordion-button" role="button" data-bs-toggle="collapse" href="#colProteccion" aria-expanded="true"><i class="bi bi-cone-striped me-2 text-danger" aria-hidden="true"></i>Detalle: Siniestro Protección Civil</a></h2>
     <div id="colProteccion" class="accordion-collapse collapse show">
         <div class="accordion-body">
-            <h6 class="titulo-seccion-formato"><i class="bi bi-info-square text-primary me-2" aria-hidden="true"></i>1. Identificación del Siniestro</h6>
+            <x-seccion clave="nov-proteccion-civil-1" :abierta="true">
+                <x-slot:titulo><i class="bi bi-info-square text-primary me-2" aria-hidden="true"></i>1. Identificación del Siniestro</x-slot:titulo>
             <div class="row">
                 <div class="col-md-6">
                     <label class="campo-etiqueta" for="pc_tipo_evento">Clasificación del Evento</label>
@@ -45,7 +46,9 @@
                 <div class="col-md-6"><label class="campo-etiqueta" for="pc_punto_reunion">Punto de reunión utilizado</label><input type="text" id="pc_punto_reunion" name="pc_punto_reunion" class="campo text-uppercase" maxlength="150" value="{{ $v['pc_punto_reunion'] }}"></div>
             </div>
 
-            <h6 class="titulo-seccion-formato mt-3"><i class="bi bi-telephone-fill text-success me-2" aria-hidden="true"></i>2. Servicios de Emergencia Externos</h6>
+            </x-seccion>
+            <x-seccion clave="nov-proteccion-civil-2" :abierta="false">
+                <x-slot:titulo><i class="bi bi-telephone-fill text-success me-2" aria-hidden="true"></i>2. Servicios de Emergencia Externos</x-slot:titulo>
             <p class="text-muted small mb-1">Marca los que se llamaron y, si ya llegaron, su hora de llegada.</p>
             <div class="row servicios-externos">
                 @foreach (array_keys(\App\Models\SiniestroDetalle::SERVICIOS) as $i => $servicio)
@@ -60,7 +63,9 @@
                 @endforeach
             </div>
 
-            <h6 class="titulo-seccion-formato mt-3"><i class="bi bi-bandaid-fill text-danger me-2" aria-hidden="true"></i>3. Lesionados</h6>
+            </x-seccion>
+            <x-seccion clave="nov-proteccion-civil-3" :abierta="false">
+                <x-slot:titulo><i class="bi bi-bandaid-fill text-danger me-2" aria-hidden="true"></i>3. Lesionados</x-slot:titulo>
             <div class="row">
                 <div class="col-md-6"><label class="campo-etiqueta" for="pc_hubo_lesionados">¿Hubo lesionados?</label>
                     <select id="pc_hubo_lesionados" name="pc_hubo_lesionados" class="campo"><option value="0" {{ $sel($v['pc_hubo_lesionados'], '0') }}>No</option><option value="1" {{ $sel($v['pc_hubo_lesionados'], '1') }}>Sí</option></select>
@@ -76,7 +81,9 @@
                 <div class="alert alert-warning py-2 px-3 small" data-nov-mostrar-si='{"pc_hubo_lesionados":["1"]}' @if ((string) $v['pc_hubo_lesionados'] !== '1') hidden @endif><i class="bi bi-link-45deg me-1" aria-hidden="true"></i>Al guardar, se abrirá automáticamente un ticket de Accidente/Lesión para documentar a cada persona lesionada.</div>
             @endif
 
-            <h6 class="titulo-seccion-formato mt-3"><i class="bi bi-shield-fill-check text-success me-2" aria-hidden="true"></i>4. Equipos de Protección Civil Involucrados</h6>
+            </x-seccion>
+            <x-seccion clave="nov-proteccion-civil-4" :abierta="false">
+                <x-slot:titulo><i class="bi bi-shield-fill-check text-success me-2" aria-hidden="true"></i>4. Equipos de Protección Civil Involucrados</x-slot:titulo>
             <p class="text-muted small mb-1">Equipos que se usaron durante el siniestro (extintor, hidrante...) o que resultaron dañados.</p>
             <div data-filas="siniestro_equipos" data-siguiente="{{ count($equipos) }}">
                 @foreach ($equipos as $i => $e)
@@ -86,7 +93,9 @@
             <template data-plantilla="siniestro_equipos">@include('seguridad.novedades.formatos._fila-equipo-siniestro', ['i' => '__i__', 'e' => []])</template>
             <button type="button" class="btn-ver-detalle mb-2" data-agregar-fila="siniestro_equipos"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar equipo</button>
 
-            <h6 class="titulo-seccion-formato mt-3"><i class="bi bi-exclamation-diamond-fill text-warning me-2" aria-hidden="true"></i>5. Daños Materiales, por Zona</h6>
+            </x-seccion>
+            <x-seccion clave="nov-proteccion-civil-5" :abierta="false">
+                <x-slot:titulo><i class="bi bi-exclamation-diamond-fill text-warning me-2" aria-hidden="true"></i>5. Daños Materiales, por Zona</x-slot:titulo>
             <div data-filas="siniestro_danos" data-siguiente="{{ count($danos) }}">
                 @foreach ($danos as $i => $d)
                     @include('seguridad.novedades.formatos._fila-dano', ['i' => $i, 'd' => $d])
@@ -95,7 +104,9 @@
             <template data-plantilla="siniestro_danos">@include('seguridad.novedades.formatos._fila-dano', ['i' => '__i__', 'd' => []])</template>
             <button type="button" class="btn-ver-detalle mb-2" data-agregar-fila="siniestro_danos"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar zona con daño</button>
 
-            <h6 class="titulo-seccion-formato mt-3"><i class="bi bi-people-fill text-primary me-2" aria-hidden="true"></i>6. Testigos</h6>
+            </x-seccion>
+            <x-seccion clave="nov-proteccion-civil-6" :abierta="false">
+                <x-slot:titulo><i class="bi bi-people-fill text-primary me-2" aria-hidden="true"></i>6. Testigos</x-slot:titulo>
             <div data-filas="siniestro_testigos" data-siguiente="{{ count($testigosPc) }}">
                 @foreach ($testigosPc as $i => $t)
                     @include('seguridad.novedades.formatos._fila-testigo', ['campo' => 'siniestro_testigos', 'i' => $i, 't' => $t, 'declaracion' => false])
@@ -104,11 +115,14 @@
             <template data-plantilla="siniestro_testigos">@include('seguridad.novedades.formatos._fila-testigo', ['campo' => 'siniestro_testigos', 'i' => '__i__', 't' => [], 'declaracion' => false])</template>
             <button type="button" class="btn-ver-detalle mb-2" data-agregar-fila="siniestro_testigos"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar testigo</button>
 
-            <h6 class="titulo-seccion-formato mt-3"><i class="bi bi-search text-dark me-2" aria-hidden="true"></i>7. Causa y Acciones</h6>
+            </x-seccion>
+            <x-seccion clave="nov-proteccion-civil-7" :abierta="false">
+                <x-slot:titulo><i class="bi bi-search text-dark me-2" aria-hidden="true"></i>7. Causa y Acciones</x-slot:titulo>
             <label class="campo-etiqueta" for="pc_causa_probable">Causa probable</label>
             <textarea id="pc_causa_probable" name="pc_causa_probable" class="campo" rows="2" maxlength="5000" placeholder="Si ya se conoce o se sospecha...">{{ $v['pc_causa_probable'] }}</textarea>
             <label class="campo-etiqueta mt-2" for="pc_acciones_tomadas">Acciones tomadas / medidas correctivas</label>
             <textarea id="pc_acciones_tomadas" name="pc_acciones_tomadas" class="campo" rows="2" maxlength="5000" placeholder="Qué se hizo para controlar la situación y qué se hará después...">{{ $v['pc_acciones_tomadas'] }}</textarea>
+            </x-seccion>
         </div>
     </div>
 </div>

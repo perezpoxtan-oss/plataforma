@@ -1338,6 +1338,36 @@ html.modo-noche .linea-autorizacion.rechazada, html.modo-noche .espera-roja .min
 html.modo-noche .espera-ambar .minutos-espera { color: #fcd34d; }
 html.modo-noche body.kiosco-publico { background: var(--fondo); }
 /* Fin Recepción de candidatos y autorizaciones */
+/* ==========================================================================
+   Ronda 8 de ajustes de QA: secciones plegables en Sol y Noche
+   ========================================================================== */
+html.modo-sol .seccion-plegable { border: 2px solid #000; background: #fff; }
+html.modo-sol .seccion-plegable > summary { color: #000; }
+html.modo-sol .seccion-plegable[open] > summary { border-bottom: 2px solid #000; }
+html.modo-sol .seccion-plegable-flecha { color: #000; }
+html.modo-sol .seccion-plegable-aviso { color: #991b1b; }
+html.modo-noche .seccion-plegable { background: var(--superficie); border-color: var(--borde); }
+html.modo-noche .seccion-plegable > summary:hover { background: var(--superficie-2); }
+html.modo-noche .seccion-plegable-aviso { color: #fca5a5; }
+html.modo-sol .pista-acompanante { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-noche .pista-acompanante { background: rgba(139, 92, 246, 0.18); color: #ddd6fe; }
+html.modo-sol .btn-recibir-equipo, html.modo-sol .opcion-recibir, html.modo-sol .resumen-recibir-equipo { border: 2px solid #000; color: #000; background: #fff; }
+html.modo-sol .opcion-recibir:has(input:checked) { background: #000; color: #fff; }
+html.modo-sol .pastilla-devolucion, html.modo-sol .aviso-recibir { background: #fff; color: #000; border: 1px solid #000; }
+html.modo-noche .btn-recibir-equipo { background: transparent; color: #86efac; border-color: #22c55e; }
+html.modo-noche .opcion-recibir { background: var(--superficie); }
+html.modo-noche .opcion-recibir.ok:has(input:checked) { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+html.modo-noche .opcion-recibir.danado:has(input:checked) { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+html.modo-noche .opcion-recibir.faltante:has(input:checked) { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+html.modo-noche .aviso-recibir.ok { background: rgba(34, 197, 94, 0.12); color: #86efac; }
+html.modo-noche .aviso-recibir.danado { background: rgba(245, 158, 11, 0.12); color: #fcd34d; }
+html.modo-noche .aviso-recibir.faltante { background: rgba(239, 68, 68, 0.12); color: #fca5a5; }
+html.modo-noche .pastilla-devolucion.ok { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+html.modo-noche .pastilla-devolucion.danado { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+html.modo-noche .pastilla-devolucion.faltante { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+html.modo-sol .mini-semana .no { color: #6b7280; }
+html.modo-sol .rutas-hoja-nota, html.modo-sol .patron-dias { color: #000; }
+/* Fin Ronda 8 de ajustes de QA */
 /* Menús y Mis pendientes (lección 35) */
 html.modo-sol .btn-mis-pendientes, html.modo-sol .mis-pendientes-panel { background: #fff; color: #000; border: 2px solid #000; }
 html.modo-sol .mis-pendientes-contador, html.modo-sol .mis-pendientes-numero { background: #000; color: #facc15; }

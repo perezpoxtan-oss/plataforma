@@ -390,9 +390,9 @@ class AjustesRonda5Test extends TestCase
 
         // Ocupada por otra llave o por un registro de otro tipo: no
         $this->actingAs($this->admin)->putJson("/identificacion/llave/{$otra->id}/etiqueta", ['etiqueta_nfc' => '04a23b1c'])->assertUnprocessable()
-            ->assertJsonPath('errors.etiqueta_nfc.0', 'Esa tarjeta o etiqueta NFC/RFID ya está asignada a la llave «HDC-101». Quítala de ahí primero o usa otra.');
+            ->assertJsonPath('errors.etiqueta_nfc.0', 'Esa etiqueta ya la tiene la llave «HDC-101». Quítasela primero o usa otra.');
         $this->actingAs($this->admin)->putJson("/identificacion/vehiculo/{$v->id}/etiqueta", ['etiqueta_nfc' => '04A23B1C'])->assertUnprocessable()
-            ->assertJsonPath('errors.etiqueta_nfc.0', 'Esa tarjeta o etiqueta NFC/RFID ya está asignada a la llave «HDC-101». Quítala de ahí primero o usa otra.');
+            ->assertJsonPath('errors.etiqueta_nfc.0', 'Esa etiqueta ya la tiene la llave «HDC-101». Quítasela primero o usa otra.');
 
         // El lector la encuentra
         $this->actingAs($this->admin)->getJson('/lector/resolver?entrada=04:A2:3B:1C&tipos=llave')->assertJsonPath('resultados.0.id', $l->id);

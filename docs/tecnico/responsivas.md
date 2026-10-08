@@ -40,7 +40,8 @@ En SEGCAT el "lote" no existía: era el mismo colaborador con la misma fecha exa
 |---|---|---|---|
 | `GET /responsivas` | `responsivas.index` | `responsivas.ver` | Pestañas Equipos en Campo / Historial Devueltos (últimos 200 lotes) y el diálogo "Nuevo Resguardo (Lote)" |
 | `POST /responsivas` | `responsivas.store` | `responsivas.crear` **y** `responsivas.firmar` | Guardar el lote con la firma |
-| `PATCH /responsivas/{id}/recibir` | `responsivas.recibir` | `responsivas.editar` | "Recibir Lote Completo (OK)" |
+| `PATCH /responsivas/{id}/recibir` | `responsivas.recibir` | `responsivas.editar` | "Recibir Lote Completo (OK)": los equipos que siguen en campo |
+| `PATCH /responsivas/{id}/equipos/{renglon}/recibir` (Ronda 8) | `responsivas.recibir-equipo` | `responsivas.editar` (+ `equipos.eliminar` para el voucher) | «Recibir» un equipo: `estado_recepcion` (ok, danado, faltante), `nota`, `generar_voucher`, `motivo`, `aplica_cobro`, `monto`, `firma_modo` y firmas |
 | `GET /responsivas/{id}/firma` | `responsivas.firma` | `responsivas.ver` | Imagen de la firma (`Firmas::respuesta()`, `Cache-Control: private`, `nosniff`) |
 | `GET /responsivas/{id}/hoja` | `responsivas.hoja` | `responsivas.imprimir` | "RESGUARDO MÚLTIPLE DE ACTIVOS DE SEGURIDAD" para imprimir, con folio y firma |
 | `GET /responsivas/equipos/{equipo}/historial` | `responsivas.historial` | `responsivas.ver` | Fragmento HTML "Historial de Auditoría" del equipo (últimos 15) |
@@ -94,5 +95,20 @@ El lector necesita `equipos.ver` (tipo `equipo`) y `colaboradores.ver`; la lista
 
 ## Pendiente / notas para el integrador
 
-- SEGCAT tenía un diálogo de devolución individual con estado DAÑADO / EXTRAVIADO (`responsiva_modal_devolver.php`) que la lista ya no usaba; no se migró. Para un equipo perdido en campo: darlo de baja con voucher en Equipos y luego recibir el lote.
+- SEGCAT tenía un diálogo de devolución individual con estado DAÑADO / EXTRAVIADO (`responsiva_modal_devolver.php`) que la lista ya no usaba. Ronda 8 (RS-04) lo trae de vuelta como «Recibir» por equipo (ver abajo).
 - Al dar de baja un equipo ASIGNADO, Equipos aún no prellena al responsable del resguardo (ver [equipos.md](equipos.md)).
+
+## Ronda 8 — Devolución parcial (QA RS-04: «¿qué pasa si de ese lote solo regresó uno?»)
+
+- **Migración** `2026_10_15_000101_devolucion_parcial_responsivas`: `equipos_responsiva` gana `nota_devolucion` (500), `recibido_por` (usuario) y `voucher_id` (voucher de reposición). `estado_devolucion`: `ok` | `danado` | `faltante` | `baja` (ya estaba de baja al recibir el lote). Sin columnas a colaboradores (no cambia `AdministradorColaboradores::REFERENCIAS`).
+- **«Recibir» un equipo** (`AdministradorResponsivas::recibirEquipo`, botón por equipo en la tarjeta del lote EN CAMPO):
+  - **OK**: vuelve a DISPONIBLE (`asignarPorResponsiva(..., false)`, audita `equipos.devuelto`).
+  - **Dañado**: nota obligatoria. Sin voucher queda **EN MANTENIMIENTO** (`AdministradorEquipos::recibirDanadoDeResponsiva`, audita `equipos.devuelto`); con «Ya no sirve: darlo de baja con voucher» se da de **BAJA** con voucher motivo *Dañado*.
+  - **Faltante**: nota obligatoria y siempre **BAJA** con voucher de reposición (motivo *Extraviado* o *Robado*).
+  - El voucher lo emite el flujo común (`AdministradorEquipos::darDeBaja` → `Inventarios\Vouchers::darDeBaja`): mismo folio, firmas física o digital, correo si hay cobro. Si aplica cobro (CXC), el responsable es **el resguardante** del lote. Generar voucher pide `equipos.eliminar` (como en Equipos); sin ese permiso el Agente puede recibir OK o Dañado (mantenimiento) y para un Faltante se le pide que lo reciba un supervisor.
+  - Todo en una transacción. El lote sigue **EN CAMPO** mientras falte algún equipo; al regresar el último pasa a LOTE CERRADO (Historial Devueltos) con quién y cuándo.
+- **Transiciones prohibidas**: recibir dos veces el mismo equipo («Este equipo ya se había recibido.»), recibir un equipo de un lote cerrado, un renglón de otro lote (404). «Recibir Lote Completo (OK)» solo toca los que siguen en campo.
+- **Tarjeta**: cada equipo recibido dice DEVUELTO / DAÑADO / FALTANTE, cuándo, quién, la nota y el voucher. **Hoja**: si hay devoluciones agrega la columna «Devolución» (estado, fecha, quién recibió, nota y voucher; «EN CAMPO» si falta).
+- **Auditoría**: `responsivas.equipo_recibido` (folio, serie, estado, nota, voucher, cuántos faltan) y, al cerrar el lote, `responsivas.recibido`; más `equipos.devuelto` o `equipos.desactivado` (baja con voucher).
+- **Demo** (`ronda8Demo()`): el lote CENRES-000002 tiene un equipo ya devuelto (OK) y otro en campo.
+- Pruebas: `AjustesRonda8Test::test_rs04_*`.

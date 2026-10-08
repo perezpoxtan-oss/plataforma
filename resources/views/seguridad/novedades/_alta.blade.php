@@ -33,10 +33,15 @@
                     </select>
                 </div>
                 <div class="col-md-6">
-                    <label class="campo-etiqueta" for="alta_categoria">Categoría <span class="text-lowercase fw-normal">(si aún no se sabe, se confirma al atender)</span></label>
-                    <select id="alta_categoria" name="categoria" class="campo campo-categoria">
-                        @foreach ($categoriasAlta as $clave)
-                            <option value="{{ $clave }}" @selected($val('categoria', $categoriasAlta[0]) === $clave) @if ($loop->first) data-por-defecto @endif>{{ \App\Models\Novedad::OPCIONES_CATEGORIA[$clave] }}</option>
+                    {{-- Ronda 8 (NV-01): la clasificación es obligatoria (ya no se despacha «Sin clasificar») --}}
+                    @php $clasificaciones = array_values(array_diff($categoriasAlta, ['sin_clasificar'])); @endphp
+                    <label class="campo-etiqueta" for="alta_categoria">Categoría <span class="text-danger" aria-hidden="true">*</span> <span class="text-lowercase fw-normal">(elige la más cercana; se puede corregir al atender)</span></label>
+                    <select id="alta_categoria" name="categoria" class="campo campo-categoria @error('categoria') is-invalid @enderror" required>
+                        @if (count($clasificaciones) !== 1)
+                            <option value="" data-por-defecto>-- Elige la clasificación --</option>
+                        @endif
+                        @foreach ($clasificaciones as $clave)
+                            <option value="{{ $clave }}" @selected($val('categoria', count($clasificaciones) === 1 ? $clave : '') === $clave) @if (count($clasificaciones) === 1) data-por-defecto @endif>{{ \App\Models\Novedad::OPCIONES_CATEGORIA[$clave] }}</option>
                         @endforeach
                     </select>
                 </div>

@@ -125,7 +125,9 @@
                         <select id="del_delegado" name="delegado_id" class="campo" required>
                             <option value="">-- Elegir --</option>
                             @foreach ($usuarios as $u)
-                                <option value="{{ $u->id }}" @selected($reabrir && (string) old('delegado_id') === (string) $u->id)>{{ $u->name }}</option>
+                                {{-- Ronda 8: nadie delega en sí mismo (quien configura puede elegirse para otro titular) --}}
+                                @continue ($u->id === auth()->id() && ! $puede['configurar'])
+                                <option value="{{ $u->id }}" @selected($reabrir && (string) old('delegado_id') === (string) $u->id)>{{ $u->name }}{{ $u->id === auth()->id() ? ' (tú)' : '' }}</option>
                             @endforeach
                         </select>
                         <div class="rejilla-cv">

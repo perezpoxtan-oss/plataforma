@@ -149,7 +149,7 @@ class RecorridosPcTest extends TestCase
         // La misma etiqueta NFC no puede estar en dos registros
         $this->equipo('EXT-09', 'EXTINTOR', null, ['etiqueta_nfc' => '04AABBCC']);
         $this->actingAs($this->admin)->post('/equipos-pc', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-03', 'etiqueta_nfc' => '04:aa:bb:cc'])
-            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta NFC / RFID ya está asignada a otro registro: Equipo de Protección Civil «EXT-09». Usa otra etiqueta o quítasela primero a ese registro.']);
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene el equipo de Protección Civil «EXT-09». Quítasela primero o usa otra.']);
         // El mismo ID en otra sede sí se permite
         $this->actingAs($this->admin)->post('/equipos-pc', ['sede_id' => $this->playa->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-01'])
             ->assertSessionHasNoErrors();

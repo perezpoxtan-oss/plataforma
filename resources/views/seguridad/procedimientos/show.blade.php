@@ -213,7 +213,7 @@
                     <div class="acuse-barra-texto"><span>Cumplimiento de la versión {{ $vigente->numero }}</span><strong>{{ $acuses['firmaron'] }} de {{ $acuses['deben'] }} · {{ $porcentaje }}%</strong></div>
                     <div class="acuse-barra-fondo"><div class="acuse-barra-avance {{ $porcentaje === 100 ? 'completo' : '' }}" style="width: {{ $porcentaje }}%"></div></div>
                 </div>
-                <form method="GET" action="{{ route('procedimientos.show', $p->id) }}" class="filtros-acuses">
+                <form method="GET" data-autoenviar action="{{ route('procedimientos.show', $p->id) }}" class="filtros-acuses">
                     <input type="hidden" name="pestana" value="acuses">
                     @if ($sedesAcuses->count() > 1)
                         <select name="sede" class="filtro-select" aria-label="Filtrar por sede" data-enviar-al-cambiar>

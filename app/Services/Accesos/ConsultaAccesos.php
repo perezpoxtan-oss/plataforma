@@ -3,6 +3,7 @@
 namespace App\Services\Accesos;
 
 use App\Models\Acceso;
+use App\Models\AcompananteAcceso;
 use App\Models\Colaborador;
 use App\Models\Gafete;
 use App\Models\Sede;
@@ -22,6 +23,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
  * Lectura de la Bitácora de accesos: alcance por sede, "Gente en Sitio",
@@ -221,7 +223,10 @@ class ConsultaAccesos
                             ->orWhereRaw('LOWER(accesos.empresa_procedencia) LIKE ?', [$comodin])
                             ->orWhereRaw('LOWER(accesos.habitacion) LIKE ?', [$comodin])
                             ->orWhereRaw('LOWER(accesos.persona_visita) LIKE ?', [$comodin])
-                            ->orWhereRaw('LOWER(accesos.conductor) LIKE ?', [$comodin]));
+                            ->orWhereRaw('LOWER(accesos.conductor) LIKE ?', [$comodin])
+                            // Ronda 8 (AC-05): también por el nombre o el gafete de un acompañante
+                            ->orWhereHas('acompanantes', fn ($ac) => $ac->where(fn ($x) => $x->whereRaw('LOWER(nombre) LIKE ?', [$comodin])
+                                ->orWhereRaw('LOWER(gafete_texto) LIKE ?', [$comodin]))));
                     }
                 })
                 ->when($placas !== null, fn ($q) => $q->orWhere('accesos.placas', 'like', $placas)));
@@ -240,6 +245,35 @@ class ConsultaAccesos
             $a->host?->nombreCompleto(), $a->colaborador?->num_empleado, $a->zona?->nombre, $a->sede?->nombre,
             ...$a->acompanantes->map(fn ($ac) => trim($ac->nombre.' '.$ac->gafete_texto))->all(),
         ])));
+    }
+
+    /** Minúsculas y sin acentos, para comparar lo que se escribe ("sofia mendez" = "SOFÍA MÉNDEZ"). */
+    public static function normalizar(?string $texto): string
+    {
+        return Str::lower(Str::ascii(trim((string) preg_replace('/\s+/u', ' ', (string) $texto))));
+    }
+
+    /**
+     * Ronda 8 (AC-05): el acompañante del acceso que coincide con lo buscado
+     * (todas las palabras en su nombre o su gafete), para avisar en la tarjeta
+     * «Coincide con X, acompañante de Y». Null si el titular es quien coincide.
+     */
+    public static function acompananteQueCoincide(Acceso $a, ?string $texto): ?AcompananteAcceso
+    {
+        $palabras = array_filter(explode(' ', self::normalizar($texto)));
+        if ($palabras === [] || ! $a->relationLoaded('acompanantes')) {
+            return null;
+        }
+        $titular = self::normalizar(implode(' ', [$a->nombre, $a->gafete_texto, $a->empresa_procedencia, $a->habitacion, $a->persona_visita, $a->conductor]));
+        if (array_filter($palabras, fn ($p) => ! str_contains($titular, $p)) === []) {
+            return null;
+        }
+
+        return $a->acompanantes->first(function (AcompananteAcceso $ac) use ($palabras) {
+            $suyo = self::normalizar($ac->nombre.' '.$ac->gafete_texto);
+
+            return array_filter($palabras, fn ($p) => ! str_contains($suyo, $p)) === [];
+        });
     }
 
     // ------------------------------------------------- Buscar y dar salida rápido
@@ -276,20 +310,22 @@ class ConsultaAccesos
 
         return $consulta->with($this->relaciones(true))
             ->orderByDesc('accesos.entrada_at')->limit(10)->get()
-            ->map(fn (Acceso $a) => $this->resumen($a))
+            ->map(fn (Acceso $a) => $this->resumen($a, $gafeteId === null ? $texto : null))
             ->all();
     }
 
     /**
+     * @param  string|null  $buscado  lo que se escribió (Ronda 8: avisa si coincidió un acompañante)
      * @return array<string, mixed>
      */
-    public function resumen(Acceso $a): array
+    public function resumen(Acceso $a, ?string $buscado = null): array
     {
         $fuera = $a->relationLoaded('salidaTemporalAbierta') ? $a->salidaTemporalAbierta !== null : false;
 
         return [
             'id' => $a->id,
             'nombre' => $a->nombre,
+            'coincide_acompanante' => self::acompananteQueCoincide($a, $buscado)?->nombreVisible(),
             'tipo' => $a->tipo,
             'tipo_etiqueta' => $a->etiquetaTipo(),
             'sede' => $a->sede?->nombre,

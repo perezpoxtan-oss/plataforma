@@ -15,6 +15,7 @@ use App\Models\DepartamentoResponsable;
 use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EquipoPc;
+use App\Models\EquipoResponsiva;
 use App\Models\Espacio;
 use App\Models\EtiquetaPlantilla;
 use App\Models\Gafete;
@@ -214,6 +215,7 @@ class CrearDatosDemo extends Command
         $paso('ronda6Demo', fn () => $this->ronda6Demo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('recepcionDemo', fn () => $this->recepcionDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'jefe.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('ronda7Demo', fn () => $this->ronda7Demo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('ronda8Demo', fn () => $this->ronda8Demo(User::where('username', 'agente.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -1254,7 +1256,7 @@ class CrearDatosDemo extends Command
                 'm_atencion_cuales' => 'Valoración del médico de guardia', 'm_diagnostico' => 'Esguince leve de tobillo derecho.', 'm_hosp' => '0',
                 'm_traslado' => 'No aplica', 'm_doctor' => 'Dra. Patricia Herrera', 'm_observaciones' => 'Reposo y revisión en 48 horas.',
                 'nueva_nota' => 'Falta la firma de conformidad de la gerencia (pasa al siguiente turno).',
-            ] + collect(array_keys(AccidenteFirma::ROLES))->mapWithKeys(fn ($rol, $i) => ['f_'.$rol => $firma($i)])->all());
+            ] + collect(array_keys(AccidenteFirma::rolesPara('HUESPED')))->mapWithKeys(fn ($rol, $i) => ['f_'.$rol => $firma($i)])->all());
 
             // 3. Accidente de colaboradora, resuelto con incapacidad de RH
             $n = $crear($admin, ['sede_id' => $centro->id, 'categoria' => 'accidente', 'reportado_por' => 'Guadalupe Chan Ek', 'reportado_colaborador_id' => $colaborador('1009'),
@@ -1321,14 +1323,16 @@ class CrearDatosDemo extends Command
             ]);
 
             // 8. Playa: uno sin clasificar (agente de playa) y un Reporte General resuelto
-            $crear($agentePlaya, ['sede_id' => $sedes['PLA']->id, 'categoria' => 'sin_clasificar', 'reportado_por' => $agentePlaya->name,
-                'ubicacion' => 'Cuarto de máquinas', 'descripcion' => 'Ruido extraño en el cuarto de máquinas de la alberca.', 'ocurrio_en' => $hace(4)]);
+            // Ronda 8: ya no se despacha sin clasificar; queda como los tickets que se importen de SEGCAT
+            $crear($agentePlaya, ['sede_id' => $sedes['PLA']->id, 'categoria' => 'incidente_general', 'reportado_por' => $agentePlaya->name,
+                'ubicacion' => 'Cuarto de máquinas', 'descripcion' => 'Ruido extraño en el cuarto de máquinas de la alberca.', 'ocurrio_en' => $hace(4)])
+                ->forceFill(['categoria' => 'sin_clasificar'])->saveQuietly();
             $n = $crear($admin, ['sede_id' => $sedes['PLA']->id, 'categoria' => 'incidente_general', 'reportado_por' => 'Daniela Canul May',
                 'ubicacion' => 'Lobby', 'descripcion' => 'Vendedor ambulante dentro del lobby.', 'ocurrio_en' => $hace(75)]);
             $atender($admin, $n, ['ig_acciones' => 'Se le pidió retirarse con cortesía.', 'estatus' => 'resuelto', 'resolucion' => 'La persona se retiró sin incidentes.']);
 
             // 9. Recorrido PC histórico (ya no se crea desde aquí; viene de SEGCAT)
-            $n = $crear($admin, ['sede_id' => $centro->id, 'reportado_por' => $admin->name, 'ubicacion' => 'Torre A', 'descripcion' => 'Recorrido de inspección de extintores (histórico).',
+            $n = $crear($admin, ['sede_id' => $centro->id, 'categoria' => 'incidente_general', 'reportado_por' => $admin->name, 'ubicacion' => 'Torre A', 'descripcion' => 'Recorrido de inspección de extintores (histórico).',
                 'ocurrio_en' => $hace(240)]);
             $n->forceFill(['categoria' => 'recorrido_pc'])->save();
             $atender($admin, $n, ['rpc_puntos' => [
@@ -2268,6 +2272,30 @@ class CrearDatosDemo extends Command
      * plantilla de rollo Zebra de 2 × 1 pulgadas solo para Centro, una
      * impresión de 3 llaveros de Centro y la reimpresión de uno de ellos.
      */
+    /**
+     * Ronda 8 (RS-04): un lote de Centro con devolución parcial (un equipo ya
+     * regresó OK y el otro sigue en campo), solo la primera vez.
+     */
+    private function ronda8Demo(User $agente): void
+    {
+        if (EquipoResponsiva::whereNotNull('recibido_por')->exists()) {
+            return;
+        }
+        $lote = Responsiva::where('estado', Responsiva::EN_CAMPO)->whereHas('sede', fn ($q) => $q->where('codigo', 'CEN'))
+            ->has('equipos', '>=', 2)->with('equipos')->orderBy('id')->first();
+        if ($lote === null) {
+            return;
+        }
+        $previo = auth()->user();
+        auth()->setUser($agente);
+        try {
+            app(AdministradorResponsivas::class)->recibirEquipo($agente, $lote, $lote->equipos->sortBy('id')->first(),
+                ['estado_recepcion' => 'ok', 'nota' => 'Lo entregó al terminar su turno.'], false);
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
     private function ronda7Demo($sedes, User $admin): void
     {
         if (ImpresionEtiquetas::exists()) {

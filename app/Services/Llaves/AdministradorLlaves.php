@@ -12,6 +12,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\VoucherReposicion;
 use App\Services\Inventarios\Vouchers;
+use App\Services\Lector\Identificacion;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -315,12 +316,8 @@ class AdministradorLlaves
         }
 
         $etiqueta = Etiqueta::normalizar($validados['etiqueta_nfc'] ?? null);
-        if ($etiqueta !== '') {
-            $ocupada = Llave::etiquetaOcupada($etiqueta, $actual?->id);
-            if ($ocupada !== null) {
-                throw ValidationException::withMessages(['etiqueta_nfc' => "Esa tarjeta o etiqueta NFC/RFID ya está asignada a la llave «{$ocupada->nomenclatura}»."]);
-            }
-        }
+        // Ronda 8: única en toda la empresa y entre todos los tipos del lector
+        app(Identificacion::class)->exigirEtiquetaLibre($etiqueta, $actual ?? new Llave);
 
         $datos = [
             'sede_id' => $sede->id,

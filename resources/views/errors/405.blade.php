@@ -1,0 +1,2 @@
+{{-- Ronda 8 (NV-03): sin esta vista, el servidor mostraba la página genérica en inglés «Oops! An Error Occurred / 405 Method Not Allowed» --}}
+@include('errors.plantilla', ['codigo' => 405, 'icono' => 'bi-arrow-repeat', 'color' => '#d97706', 'titulo' => 'La acción no llegó completa', 'mensaje' => 'El servidor recibió la información de una forma que no esperaba (por ejemplo, al recargar o volver atrás después de guardar, o porque el envío se cortó). Regresa a la pantalla, revisa si tus cambios ya aparecen y, si no, vuelve a guardarlos.', 'accion' => 'inicio'])
