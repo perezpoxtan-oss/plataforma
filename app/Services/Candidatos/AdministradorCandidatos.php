@@ -13,6 +13,7 @@ use App\Models\Persona;
 use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\User;
+use App\Models\Vacante;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Colaboradores\AdministradorColaboradores;
@@ -104,6 +105,8 @@ class AdministradorCandidatos
             'departamento_id' => $d['departamento_id'] ?? null, 'puesto_id' => $d['puesto_id'] ?? null, 'vacante' => $d['vacante'] ?? null,
             'nombre_completo' => mb_convert_case(mb_strtolower($acceso->nombre), MB_CASE_TITLE), 'origen' => 'caseta', 'llegada_en' => $acceso->entrada_at ?? now(),
         ]);
+        // Vacantes (lección 36): la vacante publicada que eligió la caseta
+        $candidato->forceFill(['vacante_id' => $d['vacante_id'] ?? null]);
         $candidato->save();
         if ($acceso->persona_id !== null) {
             Persona::whereKey($acceso->persona_id)->where('categoria', 'general')->update(['categoria' => 'prospecto_rrhh']);
@@ -130,6 +133,7 @@ class AdministradorCandidatos
             $candidato = new Candidato($this->soloCv($d) + ['sede_id' => $sedeId, 'persona_id' => $persona->id, 'origen' => 'rh', 'llegada_en' => now()]);
             $this->aceptarPrivacidad($candidato, $ip, 'rh');
             $this->firmarSiViene($candidato, $entrada, 'rh', $actor);
+            $this->ligarVacante($candidato, $entrada);
             $candidato->save();
 
             return $candidato;
@@ -157,6 +161,7 @@ class AdministradorCandidatos
             $this->aceptarPrivacidad($candidato, $ip, 'rh');
         }
         $this->firmarSiViene($candidato, $entrada, 'rh', $actor);
+        $this->ligarVacante($candidato, $entrada);
         $candidato->autocaptura_pendiente = false;
         $candidato->save();
         $this->auditoria->auditar($actor, 'candidatos.actualizado', $candidato, $antes, $this->foto($candidato));
@@ -602,6 +607,27 @@ class AdministradorCandidatos
         $this->firmar($candidato, $entrada['firma'], $medio, $actor, false);
     }
 
+    /**
+     * Vacantes (lección 36): RR. HH. liga al candidato con una vacante de la
+     * bolsa (no borradores; la que ya tenía se conserva aunque esté cerrada).
+     *
+     * @param  array<string, mixed>  $entrada
+     */
+    private function ligarVacante(Candidato $candidato, array $entrada): void
+    {
+        if (! array_key_exists('vacante_id', $entrada)) {
+            return;
+        }
+        $id = is_numeric($entrada['vacante_id']) ? (int) $entrada['vacante_id'] : null;
+        if ($id !== null && $id !== $candidato->vacante_id && ! Vacante::whereKey($id)->whereIn('estado', ['publicada', 'pausada'])->exists()) {
+            throw ValidationException::withMessages(['vacante_id' => 'Elige una vacante publicada (o en pausa) de la lista.']);
+        }
+        $candidato->forceFill(['vacante_id' => $id]);
+        if ($id !== null && ($candidato->vacante === null || $candidato->vacante === '') && $candidato->puesto_id === null) {
+            $candidato->vacante = mb_substr((string) Vacante::whereKey($id)->value('titulo'), 0, 150);
+        }
+    }
+
     /** Años completos entre dos meses «AAAA-MM» (sin salida = hasta hoy). */
     private function anosEntre(string $ingreso, ?string $salida): int
     {
@@ -701,7 +727,7 @@ class AdministradorCandidatos
     public function foto(Candidato $c): array
     {
         // CURP, RFC y NSS solo enmascarados (se sabe que cambiaron, no su valor); domicilio y emergencia nunca
-        return $c->only(['sede_id', 'nombre_completo', 'etapa', 'departamento_id', 'puesto_id', 'vacante', 'origen', 'acceso_id', 'colaborador_id'])
+        return $c->only(['sede_id', 'nombre_completo', 'etapa', 'departamento_id', 'puesto_id', 'vacante', 'vacante_id', 'origen', 'acceso_id', 'colaborador_id'])
             + array_filter(['curp' => Colaborador::enmascarar($c->curp), 'rfc' => Colaborador::enmascarar($c->rfc), 'nss' => Colaborador::enmascarar($c->nss),
                 'firmada' => $c->firma_ruta !== null ? true : null], fn ($v) => $v !== null);
     }

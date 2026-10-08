@@ -16,7 +16,7 @@ Reorganización de la navegación aprobada por el dueño del proyecto (lección 
 | | | Instalaciones | `estacionamientos` Estacionamientos · `rutas` Rutas de transporte |
 | | | Herramientas | `etiquetas_qr` Etiquetas QR |
 | 3 | Recursos Humanos (`recursos_humanos`) | Personal | `colaboradores` |
-| | | Recepción y candidatos | `recepcion_rh` Recepción de RR. HH. · `candidatos` |
+| | | Recepción y candidatos | `vacantes` Vacantes (lección 36) · `recepcion_rh` Recepción de RR. HH. · `candidatos` |
 | | | Catálogos | `departamentos` · `puestos` · `turnos` |
 | 4 | Informes (`informes`, nuevo, `bi-graph-up`) | Informes | `dashboard` Tablero · `bitacora_dia` **Bitácora del día** · `tendencias` · `informe_ejecutivo` |
 | 5 | Estructura (`estructura`) | Empresa | `empresas` · `sedes` · `espacios` Zonas y áreas |

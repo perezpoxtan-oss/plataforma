@@ -8455,5 +8455,26 @@ document.addEventListener('click', function (e) {
             if (campo) { campo.dispatchEvent(new Event('change', { bubbles: true })); }
         });
     });
+
+    // Vacantes: «Copiar enlace» (portapapeles; si el navegador no deja, se muestra para copiarlo a mano)
+    function avisoCopia(boton, texto) {
+        var nodo = boton.lastChild;
+        if (!nodo || nodo.nodeType !== 3) { return; }
+        var original = nodo.nodeValue;
+        nodo.nodeValue = texto;
+        boton.classList.add('copiado');
+        setTimeout(function () { nodo.nodeValue = original; boton.classList.remove('copiado'); }, 2500);
+    }
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-copiar-enlace]');
+        if (!boton) { return; }
+        var enlace = boton.getAttribute('data-copiar-enlace');
+        var aMano = function () { window.prompt('Copia el enlace:', enlace); };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(enlace).then(function () { avisoCopia(boton, '¡Enlace copiado!'); }, aMano);
+        } else {
+            aMano();
+        }
+    });
 })();
 /* Fin Solicitud de empleo formal y Vacantes */

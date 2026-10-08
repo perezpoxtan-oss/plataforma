@@ -8,6 +8,7 @@ use App\Models\CandidatoDocumento;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Puesto;
+use App\Models\Vacante;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\CambioNoPermitido;
 use App\Services\Candidatos\DocumentosCandidato;
@@ -58,7 +59,7 @@ class CandidatoController extends Controller
             $base = $this->candidatos->limitar(Candidato::query(), $actor, 'candidatos.ver');
             $conteos = (clone $base)->selectRaw('etapa, COUNT(*) as total')->groupBy('etapa')->pluck('total', 'etapa');
             $lista = $this->filtrar(clone $base, $filtros)
-                ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'registradoPor:id,name', 'editadoPor:id,name'])
+                ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'registradoPor:id,name', 'editadoPor:id,name', 'vacantePublicada:id,titulo,estado'])
                 ->orderByRaw("CASE WHEN etapa IN ('registrado','revision','aprobado_rh','entrevista','seleccionado') THEN 0 ELSE 1 END")
                 ->orderByDesc('id')->paginate(24)->withQueryString();
             $sedes = $this->candidatos->sedesParaElegir($actor, 'candidatos.ver');
@@ -73,6 +74,10 @@ class CandidatoController extends Controller
                 'sedesAlta' => $actor->can('candidatos.crear') ? $this->candidatos->sedesParaElegir($actor, 'candidatos.crear') : collect(),
                 'departamentos' => Departamento::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
                 'puestos' => Puesto::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
+                // Vacantes (lección 36): filtro y vacantes para ligar
+                'vacantesFiltro' => Vacante::where('estado', '!=', 'borrador')->orderByRaw("CASE estado WHEN 'publicada' THEN 0 WHEN 'pausada' THEN 1 ELSE 2 END")
+                    ->orderBy('titulo')->get(['id', 'titulo', 'estado']),
+                'vacantesElegibles' => Vacante::whereIn('estado', ['publicada', 'pausada'])->orderBy('titulo')->get(['id', 'titulo', 'estado']),
                 'privacidad' => app(AjustesRecepcion::class)->textoPrivacidad(Empresa::findOrFail($empresaId)),
                 'puede' => [
                     'crear' => $actor->can('candidatos.crear'),
@@ -102,7 +107,7 @@ class CandidatoController extends Controller
             $c->load(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'persona:id,nombre_completo,categoria', 'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno',
                 'acceso:id,sede_id,entrada_at,estado,foto_persona,foto_identificacion,gafete_texto,creado_por', 'acceso.registradoPor:id,name',
                 'documentos.registradoPor:id,name', 'eventos.usuario:id,name', 'autorizaciones.respondidaPor:id,name', 'autorizaciones.departamento:id,nombre',
-                'registradoPor:id,name', 'editadoPor:id,name', 'decisionPor:id,name', 'firmaCapturadaPor:id,name']);
+                'registradoPor:id,name', 'editadoPor:id,name', 'decisionPor:id,name', 'firmaCapturadaPor:id,name', 'vacantePublicada:id,titulo,estado']);
             $enlace = $c->enlaces()->whereNull('revocado_en')->where('expira_en', '>', now())->first();
             $partes = $c->partesNombre();
 
@@ -111,6 +116,8 @@ class CandidatoController extends Controller
                 'enlace' => $enlace?->vigente() ? $enlace : null,
                 'departamentos' => Departamento::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
                 'puestos' => Puesto::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
+                'vacantesElegibles' => Vacante::where(fn ($q) => $q->whereIn('estado', ['publicada', 'pausada'])->orWhere('id', $c->vacante_id))
+                    ->orderBy('titulo')->get(['id', 'titulo', 'estado']),
                 'sedesContratar' => $actor->can('candidatos.contratar') ? $this->candidatos->sedesParaElegir($actor, 'colaboradores.crear') : collect(),
                 'partes' => $partes,
                 'privacidad' => app(AjustesRecepcion::class)->textoPrivacidad(Empresa::findOrFail($empresaId)),
@@ -311,7 +318,7 @@ class CandidatoController extends Controller
         $empresaId = $this->empresaDeTrabajo($request);
         $filtros = $this->filtros($request);
         $filas = $this->tenant->conEmpresa($empresaId, fn () => $this->filtrar($this->candidatos->limitar(Candidato::query(), $request->user(), 'candidatos.exportar'), $filtros)
-            ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre'])->orderByDesc('id')->limit(5000)->get());
+            ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'vacantePublicada:id,titulo'])->orderByDesc('id')->limit(5000)->get());
 
         // Datos personales sensibles: solo si se piden expresamente (columnas marcadas)
         $conPersonales = Entrada::texto($request->query('datos')) === 'personales';
@@ -324,10 +331,10 @@ class CandidatoController extends Controller
             $salida = fopen('php://output', 'w');
             fwrite($salida, "\xEF\xBB\xBF");
             $marca = ' [DATO PERSONAL]';
-            Csv::fila($salida, array_merge(['Folio', 'Sede', 'Nombre', 'Puesto', 'Departamento', 'Etapa', 'Origen', 'Escolaridad', 'Años de experiencia', 'Disponibilidad', 'Llegada', 'Decisión'],
+            Csv::fila($salida, array_merge(['Folio', 'Sede', 'Nombre', 'Puesto', 'Vacante', 'Departamento', 'Etapa', 'Origen', 'Escolaridad', 'Años de experiencia', 'Disponibilidad', 'Llegada', 'Decisión'],
                 $conPersonales ? ['Teléfono'.$marca, 'Correo'.$marca, 'CURP'.$marca, 'RFC'.$marca, 'NSS'.$marca, 'Domicilio'.$marca, 'Contacto de emergencia'.$marca] : []));
             foreach ($filas as $c) {
-                Csv::fila($salida, array_merge([$c->id, $c->sede?->nombre, $c->nombre_completo, $c->puestoVisible(), $c->departamento?->nombre, $c->etiquetaEtapa(),
+                Csv::fila($salida, array_merge([$c->id, $c->sede?->nombre, $c->nombre_completo, $c->puestoVisible(), $c->vacantePublicada?->titulo, $c->departamento?->nombre, $c->etiquetaEtapa(),
                     Candidato::ORIGENES[$c->origen] ?? $c->origen, $c->escolaridadMaxima(), $c->anosExperiencia(), Candidato::DISPONIBILIDAD[$c->disponibilidad] ?? null,
                     $hora->formatear($c->llegada_en), $hora->formatear($c->decision_en)],
                     $conPersonales ? [$c->telefono, $c->correo, $c->curp, $c->rfc, $c->nss, $c->domicilioCompleto(),
@@ -349,6 +356,7 @@ class CandidatoController extends Controller
             'etapa' => array_key_exists($etapa, Candidato::ETAPAS) || $etapa === 'en_proceso' ? $etapa : '',
             'sede' => (int) Entrada::texto($request->query('sede'), '0'),
             'departamento' => (int) Entrada::texto($request->query('departamento'), '0'),
+            'vacante' => (int) Entrada::texto($request->query('vacante'), '0'),
         ];
     }
 
@@ -365,7 +373,8 @@ class CandidatoController extends Controller
             ->when($f['etapa'] === 'en_proceso', fn ($x) => $x->whereIn('candidatos.etapa', Candidato::ABIERTAS))
             ->when($f['etapa'] !== '' && $f['etapa'] !== 'en_proceso', fn ($x) => $x->where('candidatos.etapa', $f['etapa']))
             ->when($f['sede'] > 0, fn ($x) => $x->where('candidatos.sede_id', $f['sede']))
-            ->when($f['departamento'] > 0, fn ($x) => $x->where('candidatos.departamento_id', $f['departamento']));
+            ->when($f['departamento'] > 0, fn ($x) => $x->where('candidatos.departamento_id', $f['departamento']))
+            ->when(($f['vacante'] ?? 0) > 0, fn ($x) => $x->where('candidatos.vacante_id', $f['vacante']));
     }
 
     private function buscar($actor, int $id, string $permiso): Candidato

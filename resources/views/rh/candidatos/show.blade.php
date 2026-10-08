@@ -49,6 +49,9 @@
                 <h1 class="nombre-candidato">{{ $c->nombre_completo }}</h1>
                 <div class="datos-candidato">
                     <span><i class="bi bi-briefcase" aria-hidden="true"></i> {{ $c->puestoVisible() ?? 'Puesto sin definir' }}</span>
+                    @if ($c->vacantePublicada)
+                        <span class="dato-vacante"><i class="bi bi-megaphone" aria-hidden="true"></i> Vacante: <a href="{{ route('candidatos.index', ['vacante' => $c->vacante_id]) }}">{{ $c->vacantePublicada->titulo }}</a>{{ $c->vacantePublicada->estado !== 'publicada' ? ' ('.\App\Models\Vacante::ESTADOS[$c->vacantePublicada->estado].')' : '' }}</span>
+                    @endif
                     <span><i class="bi bi-diagram-2" aria-hidden="true"></i> {{ $c->departamento?->nombre ?? 'Departamento sin definir' }}</span>
                     <span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ $c->sede?->nombre }}</span>
                     <span><i class="bi bi-clock" aria-hidden="true"></i> Llegó: @fecha($c->llegada_en ?? $c->created_at)</span>

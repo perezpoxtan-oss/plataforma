@@ -43,6 +43,7 @@ use App\Models\TipoEspacio;
 use App\Models\Turno;
 use App\Models\User;
 use App\Models\UsuarioRol;
+use App\Models\Vacante;
 use App\Models\Vehiculo;
 use App\Models\ZonaEstacionamiento;
 use App\Services\Autorizaciones\Autorizaciones;
@@ -64,6 +65,8 @@ use App\Services\RecorridosPc\AdministradorRecorridosPc;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Services\Rutas\AdministradorRutas;
 use App\Services\Transporte\BitacoraTransporte;
+use App\Services\Vacantes\AdministradorVacantes;
+use App\Services\Vacantes\BolsaTrabajo;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
@@ -2342,8 +2345,99 @@ class CrearDatosDemo extends Command
         auth()->setUser($rh);
         try {
             $this->solicitudesDemo($rh);
+            $this->bolsaDemo($sedes, $rh);
         } finally {
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    /**
+     * Bolsa de trabajo encendida y 3 vacantes: Camarista (publicada, con
+     * postulaciones por internet y de caseta), Cocinero de línea (borrador) y
+     * Recepcionista bilingüe (cerrada: cubierta).
+     */
+    private function bolsaDemo($sedes, User $rh): void
+    {
+        if (Vacante::exists()) {
+            return;
+        }
+        $empresa = Empresa::findOrFail(app(Tenant::class)->empresaId());
+        $bolsa = app(BolsaTrabajo::class);
+        $bolsa->guardarAjustes($rh, $empresa, ['bolsa_activa' => '1', 'bolsa_indexar' => '0',
+            'bolsa_presentacion' => "Somos un hotel en Cancún con más de 20 años recibiendo huéspedes de todo el mundo.\nBuscamos personas con ganas de crecer: capacitación, buen ambiente y prestaciones superiores a las de ley."]);
+        $empresa->refresh();
+        $vacantes = app(AdministradorVacantes::class);
+        $hoy = AdministradorVacantes::hoy($empresa);
+        $depto = fn (string $n) => Departamento::where('nombre', $n)->value('id');
+        $puesto = fn (string $n) => Puesto::where('nombre', $n)->value('id');
+        $turno = fn (string $n) => Turno::where('nombre', $n)->value('id');
+
+        $camarista = $vacantes->crear($rh, [
+            'titulo' => 'Camarista', 'puesto_id' => $puesto('Camarista'), 'departamento_id' => $depto('Ama de Llaves'), 'plazas' => 3,
+            'todas_las_sedes' => '0', 'sedes' => [$sedes['CEN']->id, $sedes['PLA']->id], 'tipo_contrato' => 'indeterminado', 'jornada' => 'completa',
+            'turno_id' => $turno('Matutino'), 'horario' => '6 días a la semana, descanso entre semana', 'sueldo_min' => '9000', 'sueldo_max' => '10500',
+            'sueldo_periodo' => 'mensual', 'descripcion' => "Limpieza y arreglo de habitaciones y áreas públicas del hotel.\nTrabajo en equipo con el ama de llaves.",
+            'requisitos' => "Secundaria terminada\nExperiencia de 6 meses en limpieza (deseable)\nDisponibilidad para rolar descansos",
+            'prestaciones' => "Prestaciones de ley desde el primer día\nComedor para empleados\nTransporte de personal\nUniformes",
+            'escolaridad_minima' => 'secundaria', 'experiencia' => '6 meses (deseable)', 'fecha_cierre' => now()->addDays(30)->format('Y-m-d'),
+            'contacto_nombre' => 'Recursos Humanos', 'contacto_telefono' => '9988811200', 'contacto_correo' => 'rh@hoteldemo.mx',
+        ]);
+        $vacantes->cambiarEstado($rh, $camarista, 'publicada', null, $hoy);
+
+        $vacantes->crear($rh, [
+            'titulo' => 'Cocinero de línea', 'puesto_id' => null, 'departamento_id' => $depto('Alimentos y Bebidas'), 'plazas' => 2,
+            'todas_las_sedes' => '0', 'sedes' => [$sedes['CEN']->id], 'tipo_contrato' => 'temporada', 'jornada' => 'completa', 'turno_id' => $turno('Vespertino'),
+            'sueldo_a_tratar' => '1', 'descripcion' => 'Preparación de platillos de la carta en la cocina principal.',
+            'requisitos' => "Experiencia de 1 año en cocina de hotel o restaurante\nManejo higiénico de alimentos", 'prestaciones' => "Prestaciones de ley\nComedor para empleados",
+            'escolaridad_minima' => 'secundaria', 'experiencia' => '1 año',
+        ]);
+
+        $recepcionista = $vacantes->crear($rh, [
+            'titulo' => 'Recepcionista bilingüe', 'puesto_id' => $puesto('Recepcionista'), 'departamento_id' => $depto('Recepción'), 'plazas' => 1,
+            'todas_las_sedes' => '0', 'sedes' => [$sedes['CEN']->id], 'tipo_contrato' => 'indeterminado', 'jornada' => 'completa', 'turno_id' => $turno('Matutino'),
+            'sueldo_min' => '11000', 'sueldo_max' => '12500', 'requisitos' => "Inglés avanzado\nLicenciatura en Turismo (deseable)", 'prestaciones' => "Prestaciones de ley\nBono de puntualidad",
+            'escolaridad_minima' => 'bachillerato', 'experiencia' => '1 año en recepción',
+        ]);
+        $vacantes->cambiarEstado($rh, $recepcionista, 'publicada', null, $hoy);
+        Vacante::whereKey($recepcionista->id)->update(['publicada_en' => now()->subDays(20), 'fecha_publicacion' => now()->subDays(20)->format('Y-m-d')]);
+
+        // Candidatos de caseta ligados a sus vacantes
+        Candidato::where('nombre_completo', 'Karla Pérez Uc')->update(['vacante_id' => $camarista->id]);
+        Candidato::whereIn('nombre_completo', ['Mariela Canché Dzib', 'Silvia Mena Couoh'])->update(['vacante_id' => $recepcionista->id]);
+        $vacantes->cambiarEstado($rh, $recepcionista->fresh(), 'cerrada', 'cubierta', $hoy);
+
+        // Postulaciones por internet a «Camarista» (lo mismo que hace /empleos)
+        $firma = function (): string {
+            $img = imagecreatetruecolor(600, 200);
+            imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+            $tinta = imagecolorallocate($img, 15, 23, 42);
+            imagesetthickness($img, 4);
+            imageline($img, 60, 140, 200, 60, $tinta);
+            imageline($img, 200, 60, 320, 150, $tinta);
+            imageline($img, 320, 150, 520, 70, $tinta);
+            ob_start();
+            imagejpeg($img, null, 80);
+
+            return 'data:image/jpeg;base64,'.base64_encode((string) ob_get_clean());
+        };
+        foreach ([
+            ['Daniela', 'Mex', 'Pech', '9981230001', 'DAMX', $sedes['CEN']->id, 'Hotel Coral Beach', 'Camarista'],
+            ['Rosa María', 'Uc', 'Chan', '9981230002', 'UCCR', $sedes['PLA']->id, 'Hotel Riviera Sol', 'Ayudante general'],
+        ] as [$nombre, $paterno, $materno, $tel, $curp, $sede, $empresaAnterior, $puestoAnterior]) {
+            $bolsa->postular($empresa, $camarista->fresh('sedes'), [
+                'nombre' => $nombre, 'apellido_paterno' => $paterno, 'apellido_materno' => $materno, 'telefono' => $tel, 'sexo' => 'mujer',
+                'fecha_nacimiento' => '1997-08-15', 'lugar_nacimiento' => 'Yucatán', 'nacionalidad' => 'Mexicana', 'estado_civil' => 'soltero',
+                'curp' => $curp.'970815MYNXCN0'.random_int(1, 9), 'calle_numero' => 'Calle 20 Mz 5 Lt 2', 'colonia' => 'Región 94', 'codigo_postal' => '77517',
+                'municipio' => 'Benito Juárez', 'estado_domicilio' => 'Quintana Roo', 'emergencia_nombre' => 'Mamá de '.$nombre, 'emergencia_parentesco' => 'Mamá',
+                'emergencia_telefono' => '9984440000', 'sede_id' => $sede,
+                'escolaridad' => [['nivel' => 'secundaria', 'institucion' => 'Secundaria Técnica 25', 'periodo' => '2009 a 2012', 'documento' => 'certificado']],
+                'experiencia' => [['empresa' => $empresaAnterior, 'puesto' => $puestoAnterior, 'ingreso' => '2021-03', 'salida' => '2025-08', 'sueldo_final' => '8500',
+                    'jefe' => 'Lucía Pool', 'jefe_telefono' => '9987770000', 'motivo_salida' => 'Busco mejor sueldo', 'pedir_referencias' => 'si']],
+                'referencias' => [['nombre' => 'Teresa Can', 'telefono' => '9981110001', 'relacion' => 'Vecina', 'anos_conocerlo' => '10'],
+                    ['nombre' => 'Pedro Dzul', 'telefono' => '9981110002', 'relacion' => 'Padrino', 'anos_conocerlo' => '15']],
+                'rolar_turnos' => '1', 'disponibilidad' => 'inmediata', 'pretension' => '9500',
+                'acepta_privacidad' => '1', 'declaracion' => '1', 'firma' => $firma(),
+            ], null, '187.190.10.'.random_int(2, 250));
         }
     }
 

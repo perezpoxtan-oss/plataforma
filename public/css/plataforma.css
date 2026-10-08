@@ -3838,4 +3838,77 @@ html.filtros-automaticos form[data-autoenviar] button[type="submit"]:not([data-m
 }
 @media print { .hoja-solicitud { page: solicitud-empleo; } }
 @page solicitud-empleo { size: letter; margin: 10mm; }
+/* ---------- Vacantes ---------- */
+.caja-bolsa { padding: 0.9rem 1.1rem; margin-bottom: 1rem; border-left: 5px solid #94a3b8; }
+.caja-bolsa.encendida { border-left-color: #16a34a; }
+.caja-bolsa-icono { font-size: 1.6rem; color: #2563eb; }
+.caja-bolsa .etiqueta-estado { padding: 0.15rem 0.6rem; font-size: 0.65rem; margin-left: 0.35rem; vertical-align: middle; }
+.enlace-bolsa { font-size: 0.82rem; font-weight: 600; overflow-wrap: anywhere; word-break: break-all; }
+.fichas-vacantes { margin-top: 0.75rem; gap: 1rem; }
+.ficha-vacante { padding: 1.15rem; gap: 0.75rem; border-top: 4px solid #94a3b8; }
+.ficha-vacante.estado-publicada { border-top-color: #16a34a; }
+.ficha-vacante.estado-pausada { border-top-color: #f59e0b; }
+.ficha-vacante.estado-cerrada { border-top-color: #dc2626; opacity: 0.92; }
+.ficha-vacante .ficha-title { overflow-wrap: anywhere; }
+.plazas-vacante { font-size: 0.78rem; font-weight: 700; color: var(--texto-suave); white-space: nowrap; }
+.contador-postulados { display: inline-flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.6rem; min-height: 44px; padding: 0 0.8rem; border-radius: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; text-decoration: none; font-size: 0.85rem; }
+.contador-postulados strong { font-size: 1.05rem; }
+.contador-postulados span { color: #15803d; }
+.contador-postulados:hover { border-color: #16a34a; color: #14532d; }
+.acciones-vacante { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; border-top: 1px solid var(--borde); padding-top: 0.75rem; }
+.acciones-vacante .btn-etapa, .acciones-vacante .btn-secundario-rh { min-height: 44px; padding: 0 0.8rem; font-size: 0.82rem; }
+.btn-whatsapp { color: #15803d; border-color: #bbf7d0; }
+[data-copiar-enlace].copiado { border-color: #16a34a; color: #15803d; }
+.aviso-vacante-vencida { margin: 0.5rem 0 0; font-size: 0.8rem; color: #b91c1c; background: #fef2f2; border-radius: 10px; padding: 0.45rem 0.65rem; }
+.dato-vacante { color: #b45309; font-weight: 700; }
+.dato-vacante a { color: inherit; }
+.lista-sedes-vacante { max-height: 30vh; }
+.dialogo-acciones .btn-borrador-vacante { background: #fff; color: #15803d; border: 1px solid #16a34a !important; }
+.dialogo-vacante .dialogo-acciones { flex-wrap: wrap; }
+@media (max-width: 575.98px) {
+    .dialogo-vacante .dialogo-acciones .btn-verde { flex-basis: 100%; order: 3; }
+}
+/* Cartel de la vacante (hoja carta) */
+.aviso-cartel-sin-qr { background: #fef3c7; color: #92400e; border-radius: 10px; padding: 0.5rem 0.75rem; font-size: 0.85rem; }
+.hoja-cartel { background: #fff; max-width: 216mm; margin: 0 auto; padding: 14mm; border-radius: 8px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); color: #0f172a; border-top: 10mm solid #16a34a; }
+.hoja-cartel-cabeza { display: flex; align-items: center; gap: 0.75rem; }
+.hoja-cartel-logo { max-height: 18mm; max-width: 50mm; object-fit: contain; }
+.hoja-cartel-empresa { font-size: 1.2rem; font-weight: 800; }
+.hoja-cartel-gancho { font-size: 1.1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #16a34a; margin: 8mm 0 1mm; }
+.hoja-cartel-titulo { font-size: 2.6rem; font-weight: 800; line-height: 1.05; margin: 0 0 2mm; overflow-wrap: anywhere; }
+.hoja-cartel-sub { font-size: 1rem; color: #475569; margin: 0 0 6mm; }
+.hoja-cartel-cuerpo { display: flex; gap: 8mm; align-items: flex-start; }
+.hoja-cartel-datos { flex: 1; min-width: 0; font-size: 1rem; }
+.hoja-cartel-datos p { margin: 0 0 2mm; }
+.hoja-cartel-datos h3 { font-size: 0.95rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin: 5mm 0 1.5mm; }
+.hoja-cartel-datos ul { margin: 0; padding-left: 1.2rem; }
+.hoja-cartel-qr { width: 60mm; text-align: center; flex-shrink: 0; }
+.hoja-cartel-qr-imagen svg { width: 100%; height: auto; display: block; }
+.hoja-cartel-qr p { font-size: 0.95rem; margin: 2mm 0 0; }
+.hoja-cartel-pie { border-top: 1px solid #cbd5e1; margin-top: 8mm; padding-top: 3mm; font-size: 0.85rem; color: #475569; }
+.hoja-cartel-pie p { margin: 0 0 1mm; }
+@media (max-width: 575.98px) {
+    .hoja-cartel { padding: 6mm; }
+    .hoja-cartel-titulo { font-size: 1.8rem; }
+    .hoja-cartel-cuerpo { flex-direction: column; }
+    .hoja-cartel-qr { width: 100%; max-width: 240px; margin: 0 auto; }
+}
+@media print {
+    .hoja-cartel { box-shadow: none; border-radius: 0; max-width: 100%; page: cartel-vacante; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+@page cartel-vacante { size: letter; margin: 10mm; }
+/* Bolsa de trabajo pública */
+.bolsa-contenido { max-width: 760px; }
+.bolsa-cabeza-icono { font-size: 1.3rem; color: #16a34a; }
+.bolsa-cabeza-enlace { color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+.bolsa-presentacion { white-space: pre-line; margin: 0; }
+.bolsa-filtros { margin-top: 1rem; }
+.bolsa-lista { display: flex; flex-direction: column; gap: 0.75rem; }
+.bolsa-vacante { display: block; padding: 1rem 1.15rem; text-decoration: none; color: inherit; border-left: 5px solid #16a34a; }
+.bolsa-vacante h2 { font-size: 1.15rem; font-weight: 800; margin: 0 0 0.25rem; overflow-wrap: anywhere; }
+.bolsa-vacante:hover { border-color: #15803d; box-shadow: 0 12px 24px -12px rgba(22, 163, 74, 0.35); }
+.bolsa-ver { display: inline-block; margin-top: 0.6rem; font-size: 0.85rem; font-weight: 700; color: #15803d; }
+.bolsa-descripcion { white-space: pre-line; }
+.bolsa-lista-puntos { padding-left: 1.2rem; }
+.campo-trampa { position: absolute !important; left: -10000px !important; width: 1px; height: 1px; overflow: hidden; }
 /* Fin Solicitud de empleo formal y Vacantes */

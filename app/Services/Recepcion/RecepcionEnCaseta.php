@@ -8,9 +8,11 @@ use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Puesto;
 use App\Models\User;
+use App\Models\Vacante;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\DocumentosCandidato;
+use App\Services\Vacantes\AdministradorVacantes;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\UploadedFile;
 
@@ -70,6 +72,9 @@ class RecepcionEnCaseta
                 $errores['departamento_id'] = 'Elige un departamento activo de esta sede.';
             }
             $r['departamento_id'] = $departamento?->id;
+            // Vacantes (lección 36): la vacante publicada que eligió la caseta
+            $r = $this->vacante($r, $entrada['vacante_id'] ?? null, $sedeId, $errores);
+            // Fin Vacantes
 
             return $r;
         }
@@ -121,6 +126,38 @@ class RecepcionEnCaseta
             $this->autorizaciones->solicitarVisita($actor, $acceso, (int) $r['departamento_id']);
         }
     }
+
+    // Vacantes (lección 36)
+
+    /**
+     * «Viene como candidato» → vacante publicada y vigente de esa sede. Si la
+     * caseta no eligió puesto o departamento, se toman de la vacante.
+     *
+     * @param  array<string, mixed>  $r
+     * @param  array<string, string>  $errores
+     * @return array<string, mixed>
+     */
+    private function vacante(array $r, mixed $id, int $sedeId, array &$errores): array
+    {
+        if (empty($id) || ! is_numeric($id)) {
+            return $r;
+        }
+        $empresa = Empresa::find(app(Tenant::class)->empresaId());
+        $vacante = $empresa === null ? null : Vacante::vigentes(AdministradorVacantes::hoy($empresa))->aplicanEn([$sedeId])->whereKey((int) $id)->first();
+        if ($vacante === null) {
+            $errores['vacante_id'] = 'Elige una vacante publicada de esta sede.';
+
+            return $r;
+        }
+
+        return array_merge($r, [
+            'vacante_id' => $vacante->id,
+            'vacante' => $r['vacante'] ?? mb_substr($vacante->titulo, 0, 150),
+            'puesto_id' => $r['puesto_id'] ?? $vacante->puesto_id,
+            'departamento_id' => $r['departamento_id'] ?? $vacante->departamento_id,
+        ]);
+    }
+    // Fin Vacantes
 
     private function departamento(mixed $id, int $sedeId): ?Departamento
     {

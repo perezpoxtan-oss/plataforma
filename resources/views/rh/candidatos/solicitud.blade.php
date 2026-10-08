@@ -86,8 +86,8 @@
         <section class="hoja-solicitud-seccion">
             <h2>Domicilio y contacto de emergencia</h2>
             <table class="hoja-solicitud-tabla">
-                <tr><th>Domicilio</th><td colspan="3">{{ $c->domicilioCompleto() ?? ($c->ciudad ?? $vacio) }}</td></tr>
                 <tr><th>Tiempo de residencia</th><td>{{ $c->tiempo_residencia ?? $vacio }}</td><th>Teléfono fijo</th><td>{{ $c->telefono_fijo ?? $vacio }}</td></tr>
+                <tr><th>Domicilio</th><td colspan="3">{{ $c->domicilioCompleto() ?? ($c->ciudad ?? $vacio) }}</td></tr>
                 <tr><th>En emergencia avisar a</th><td>{{ $c->emergencia_nombre ?? $vacio }}{{ $c->emergencia_parentesco ? ' ('.$c->emergencia_parentesco.')' : '' }}</td><th>Teléfono</th><td>{{ $c->emergencia_telefono ?? $vacio }}</td></tr>
             </table>
         </section>

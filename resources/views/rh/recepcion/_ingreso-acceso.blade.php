@@ -14,6 +14,23 @@
         <span><strong>Viene como candidato</strong> (solicitud de empleo o entrevista)<br><span class="small text-muted">Recursos Humanos recibe el aviso en ese momento y abre su ficha.</span></span>
     </label>
     <div id="ingreso_datos_candidato" class="datos-candidato-acceso" @unless ($esCandidato) hidden @endunless>
+        {{-- Vacantes (lección 36): vacantes publicadas y vigentes (se acotan a la sede elegida, como los departamentos) --}}
+        @php
+            $empresaVacantes = \App\Models\Empresa::find(app(\App\Support\Tenancy\Tenant::class)->empresaId());
+            $vacantesRecepcion = $empresaVacantes === null ? collect() : \App\Models\Vacante::vigentes(\App\Services\Vacantes\AdministradorVacantes::hoy($empresaVacantes))
+                ->with('sedes:id')->orderBy('titulo')->get(['id', 'titulo', 'todas_las_sedes']);
+        @endphp
+        @if ($vacantesRecepcion->isNotEmpty())
+            <label class="campo-etiqueta" for="ingreso_vacante_id">¿A qué vacante viene?</label>
+            <select id="ingreso_vacante_id" name="vacante_id" class="campo" data-depto-recepcion>
+                <option value="">-- No sabe / otra --</option>
+                @foreach ($vacantesRecepcion as $vac)
+                    <option value="{{ $vac->id }}" data-todas="{{ $vac->todas_las_sedes ? 1 : 0 }}" data-sedes="{{ $vac->sedes->pluck('id')->join(',') }}" @selected((string) $previo('vacante_id') === (string) $vac->id)>{{ $vac->titulo }}</option>
+                @endforeach
+            </select>
+            <p class="campo-ayuda mt-0"><i class="bi bi-megaphone" aria-hidden="true"></i> Si eliges la vacante, el puesto y el departamento se toman de ella.</p>
+        @endif
+        {{-- Fin Vacantes --}}
         <div class="row">
             <div class="col-md-6">
                 <label class="campo-etiqueta" for="ingreso_puesto">Puesto al que aplica</label>

@@ -1385,4 +1385,16 @@ html.modo-sol .firma-solicitud-ficha img { border: 2px solid #000; }
 html.modo-noche .bloque-firma-solicitud { background: rgba(59, 130, 246, 0.1); border-color: #1e40af; color: var(--texto); }
 html.modo-noche .pastilla-sensible { background: rgba(245, 158, 11, 0.18); color: #fde68a; }
 html.modo-noche .firma-solicitud-ficha img { background: #fff; border-color: var(--borde); }
+html.modo-sol .caja-bolsa, html.modo-sol .ficha-vacante, html.modo-sol .contador-postulados, html.modo-sol .bolsa-vacante, html.modo-sol .aviso-vacante-vencida,
+html.modo-sol .btn-whatsapp { background: #fff; color: #000; border: 2px solid #000; box-shadow: none; }
+html.modo-sol .ficha-vacante, html.modo-sol .caja-bolsa, html.modo-sol .bolsa-vacante { border-width: 2px; border-top-width: 6px; }
+html.modo-sol .contador-postulados span, html.modo-sol .plazas-vacante, html.modo-sol .dato-vacante, html.modo-sol .enlace-bolsa { color: #000; }
+html.modo-noche .caja-bolsa, html.modo-noche .bolsa-vacante { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .caja-bolsa.encendida, html.modo-noche .bolsa-vacante { border-left-color: #22c55e; }
+html.modo-noche .contador-postulados { background: rgba(34, 197, 94, 0.12); border-color: #166534; color: #bbf7d0; }
+html.modo-noche .contador-postulados span { color: #86efac; }
+html.modo-noche .aviso-vacante-vencida { background: rgba(239, 68, 68, 0.12); color: #fecaca; }
+html.modo-noche .dato-vacante { color: #fcd34d; }
+html.modo-noche .btn-whatsapp { color: #86efac; border-color: #166534; }
+html.modo-noche .bolsa-ver { color: #86efac; }
 /* Fin Solicitud de empleo formal y Vacantes */

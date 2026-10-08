@@ -19,9 +19,9 @@
         </div>
     @else
         @php
-            $hayFiltros = $filtros['q'] !== '' || $filtros['etapa'] !== '' || $filtros['sede'] > 0 || $filtros['departamento'] > 0;
+            $hayFiltros = $filtros['q'] !== '' || $filtros['etapa'] !== '' || $filtros['sede'] > 0 || $filtros['departamento'] > 0 || $filtros['vacante'] > 0;
             $enProceso = collect(Candidato::ABIERTAS)->sum(fn ($e) => (int) ($conteos[$e] ?? 0));
-            $base = array_filter(['q' => $filtros['q'], 'sede' => $filtros['sede'] ?: null, 'departamento' => $filtros['departamento'] ?: null]);
+            $base = array_filter(['q' => $filtros['q'], 'sede' => $filtros['sede'] ?: null, 'departamento' => $filtros['departamento'] ?: null, 'vacante' => $filtros['vacante'] ?: null]);
             $reabrir = old('_dialogo') === 'candidato';
         @endphp
 
@@ -72,6 +72,16 @@
                     <option value="{{ $d->id }}" @selected($filtros['departamento'] === $d->id)>{{ $d->nombre }}</option>
                 @endforeach
             </select>
+            {{-- Vacantes (lección 36) --}}
+            @if ($vacantesFiltro->isNotEmpty())
+                <select name="vacante" class="filtro-select" aria-label="Filtrar por vacante" data-enviar-al-cambiar>
+                    <option value="">Todas las vacantes</option>
+                    @foreach ($vacantesFiltro as $vf)
+                        <option value="{{ $vf->id }}" @selected($filtros['vacante'] === $vf->id)>{{ $vf->titulo }}{{ $vf->estado !== 'publicada' ? ' ('.\App\Models\Vacante::ESTADOS[$vf->estado].')' : '' }}</option>
+                    @endforeach
+                </select>
+            @endif
+            {{-- Fin Vacantes --}}
             @if ($hayFiltros)
                 <a href="{{ route('candidatos.index') }}" class="btn-limpiar-filtros">Limpiar</a>
             @endif
@@ -98,6 +108,7 @@
                         <h2 class="ficha-title">{{ $c->nombre_completo }}</h2>
                         <div class="datos-candidato">
                             <span><i class="bi bi-briefcase" aria-hidden="true"></i> {{ $c->puestoVisible() ?? 'Puesto sin definir' }}</span>
+                            @if ($c->vacantePublicada)<span class="dato-vacante"><i class="bi bi-megaphone" aria-hidden="true"></i> Vacante: {{ $c->vacantePublicada->titulo }}</span>@endif
                             @if ($c->departamento)<span><i class="bi bi-diagram-2" aria-hidden="true"></i> {{ $c->departamento->nombre }}</span>@endif
                             @if ($sedes->count() > 1)<span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ $c->sede?->nombre }}</span>@endif
                             <span><i class="bi bi-clock" aria-hidden="true"></i> Llegó: @fecha($c->llegada_en ?? $c->created_at) · {{ Candidato::ORIGENES[$c->origen] ?? $c->origen }}</span>

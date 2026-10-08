@@ -214,6 +214,12 @@ class Candidato extends Model
         return $this->belongsTo(User::class, 'decision_por');
     }
 
+    /** Vacante de la bolsa de trabajo a la que aplica (la columna «vacante» es el texto libre de antes). */
+    public function vacantePublicada(): BelongsTo
+    {
+        return $this->belongsTo(Vacante::class, 'vacante_id');
+    }
+
     /** Quién de RR. HH. capturó la firma por el candidato (null = firmó él mismo). */
     public function firmaCapturadaPor(): BelongsTo
     {
