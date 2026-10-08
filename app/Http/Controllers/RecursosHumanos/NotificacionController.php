@@ -5,6 +5,7 @@ namespace App\Http\Controllers\RecursosHumanos;
 use App\Http\Controllers\Controller;
 use App\Models\Notificacion;
 use App\Services\Notificaciones\CentroNotificaciones;
+use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
@@ -47,10 +48,13 @@ class NotificacionController extends Controller
         $actor = $request->user();
         $empresaId = $this->empresa->id($actor);
         if ($empresaId === null) {
-            return response()->json(['no_leidas' => 0, 'lista' => []]);
+            return response()->json(['no_leidas' => 0, 'lista' => [], 'pendientes' => ['total' => 0, 'items' => []]]);
         }
 
-        return response()->json($this->tenant->conEmpresa($empresaId, fn () => $this->centro->resumen($actor)));
+        // Mis pendientes: viaja en la misma consulta de la campana (sin un segundo reloj)
+        $pendientes = app(MisPendientes::class)->para($actor, reciente: false);
+
+        return response()->json([...$this->tenant->conEmpresa($empresaId, fn () => $this->centro->resumen($actor)), 'pendientes' => $pendientes]);
     }
 
     /** Marca como leída y lleva a la pantalla del asunto. */

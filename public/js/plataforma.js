@@ -8170,3 +8170,86 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Recepción de candidatos y autorizaciones departamentales */
+
+/* ==========================================================================
+   Menús y Mis pendientes (lección 35)
+   - Botón «Mis pendientes» junto a la campana: abre/cierra su lista corta.
+   - El número se refresca con la MISMA consulta de la campana (cada 30 s):
+     se lee una copia de la respuesta del resumen; no hay un segundo reloj.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var cajas = Array.prototype.slice.call(document.querySelectorAll('[data-mis-pendientes]'));
+    if (!cajas.length) { return; }
+
+    function cerrar(excepto) {
+        cajas.forEach(function (c) {
+            if (c === excepto) { return; }
+            var p = c.querySelector('[data-mis-pendientes-panel]');
+            var b = c.querySelector('[data-mis-pendientes-boton]');
+            if (p) { p.hidden = true; }
+            if (b) { b.setAttribute('aria-expanded', 'false'); }
+        });
+    }
+
+    function renglon(item) {
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        a.className = 'mis-pendientes-item' + (item.total > 0 ? '' : ' al-dia');
+        a.href = item.url;
+        var i = document.createElement('i'); i.className = 'bi ' + item.icono; i.setAttribute('aria-hidden', 'true');
+        var t = document.createElement('span'); t.textContent = item.titulo;
+        var n = document.createElement('span'); n.className = 'mis-pendientes-numero'; n.textContent = String(item.total);
+        a.appendChild(i); a.appendChild(t); a.appendChild(n);
+        li.appendChild(a);
+        return li;
+    }
+
+    function pintar(datos) {
+        if (!datos || !Array.isArray(datos.items)) { return; }
+        var total = Number(datos.total) || 0;
+        if (total === 0) { cerrar(null); }
+        cajas.forEach(function (c) {
+            c.hidden = total === 0;
+            var cont = c.querySelector('[data-mis-pendientes-contador]');
+            var boton = c.querySelector('[data-mis-pendientes-boton]');
+            var lista = c.querySelector('[data-mis-pendientes-lista]');
+            if (cont) { cont.textContent = total > 99 ? '99+' : String(total); }
+            if (boton) { boton.setAttribute('aria-label', 'Mis pendientes: ' + total); }
+            if (lista) { lista.textContent = ''; datos.items.forEach(function (item) { lista.appendChild(renglon(item)); }); }
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-mis-pendientes-boton]');
+        if (boton) {
+            var caja = boton.closest('[data-mis-pendientes]');
+            var panel = caja.querySelector('[data-mis-pendientes-panel]');
+            var abrir = panel.hidden;
+            cerrar(caja);
+            panel.hidden = !abrir;
+            boton.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+            return;
+        }
+        if (!e.target.closest('[data-mis-pendientes-panel]')) { cerrar(null); }
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrar(null); } });
+
+    // Escucha la consulta periódica de la campana y toma su parte «pendientes»
+    var campana = document.querySelector('[data-campana]');
+    var urlResumen = campana ? campana.dataset.url : null;
+    if (!urlResumen || typeof window.fetch !== 'function') { return; }
+    var fetchOriginal = window.fetch;
+    window.fetch = function (recurso) {
+        var promesa = fetchOriginal.apply(this, arguments);
+        var url = typeof recurso === 'string' ? recurso : (recurso && recurso.url) || '';
+        if (url === urlResumen) {
+            promesa.then(function (r) {
+                if (r && r.ok) { r.clone().json().then(function (d) { pintar(d && d.pendientes); }).catch(function () {}); }
+            }).catch(function () {});
+        }
+        return promesa;
+    };
+})();
+/* Fin Menús y Mis pendientes */

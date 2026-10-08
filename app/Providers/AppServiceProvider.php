@@ -68,9 +68,9 @@ class AppServiceProvider extends ServiceProvider
                 $ruta?->getName() === 'modulos.pendiente' ? $ruta->parameter('clave') : null,
             );
 
-            // Atajos fijos de la barra inferior del celular (como SEGCAT)
+            // Atajos fijos de la barra inferior del celular (como SEGCAT), en el orden del menú Operación
             $items = collect($menus)->flatMap(fn ($menu) => collect($menu['secciones'])->flatten(1))->keyBy('clave');
-            $atajos = collect(['novedades' => ['Novedades', 'bi-headset'], 'accesos' => ['Accesos', 'bi-journal-text']])
+            $atajos = collect(['accesos' => ['Accesos', 'bi-journal-text'], 'novedades' => ['Novedades', 'bi-headset']])
                 ->filter(fn ($_, $clave) => $items->has($clave))
                 ->map(fn ($atajo, $clave) => [...$items[$clave], 'nombre' => $atajo[0], 'icono' => $atajo[1]])
                 ->values()

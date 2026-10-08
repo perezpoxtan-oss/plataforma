@@ -38,7 +38,8 @@ class MenuTest extends TestCase
     {
         $menu = $this->menuDe($this->crearSuperadmin());
 
-        $this->assertSame(['estructura', 'recursos_humanos', 'padrones', 'operacion'], array_keys($menu));
+        // Lección 35: Operación primero; «Informes» se oculta mientras no tenga pantallas
+        $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'estructura'], array_keys($menu));
         $this->assertContains('empresas', $menu['estructura']);
         $this->assertContains('llaves', $menu['padrones']);
         $this->assertContains('accesos', $menu['operacion']);

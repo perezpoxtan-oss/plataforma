@@ -79,7 +79,8 @@ class ColaboradoresProvisionalesTest extends TestCase
         }
 
         $this->assertSame('recursos_humanos', Modulo::with('menu')->where('clave', 'colaboradores')->firstOrFail()->menu->clave);
-        $this->assertSame(['estructura', 'recursos_humanos', 'padrones', 'operacion'], Menu::orderBy('orden')->pluck('clave')->all());
+        // Lección 35: orden aprobado de los menús
+        $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'informes', 'estructura'], Menu::orderBy('orden')->pluck('clave')->all());
 
         // Rol base de Recursos Humanos (nivel 25): todo en su área (personal y sus catálogos)
         $rol = Rol::where('empresa_id', $this->empresa->id)->where('nombre', 'Recursos Humanos')->firstOrFail();

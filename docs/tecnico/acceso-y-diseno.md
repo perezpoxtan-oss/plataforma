@@ -76,7 +76,7 @@ El botón junto al nombre del usuario (en celular, junto al avatar y en *Menú �
 
 ## Menú lateral del celular (QA M-04)
 
-Todos los grupos (Operación, Padrones, Estructura, Pantalla) inician **cerrados**: el usuario elige a dónde ir. El grupo que contiene la pantalla actual se resalta (color principal y un punto) pero también inicia cerrado. En PC el menú es distinto (desplegables de la barra superior) y no cambia.
+Todos los grupos (Operación, Padrones, Recursos Humanos, Estructura, Pantalla) inician **cerrados**: el usuario elige a dónde ir. El grupo que contiene la pantalla actual se resalta (color principal y un punto) pero también inicia cerrado. En PC el menú es distinto (desplegables de la barra superior) y no cambia.
 
 ![Menú lateral, grupos cerrados](../usuario/img/ajustes/10-celular-menu-normal.png) ![Menú lateral en Noche](../usuario/img/ajustes/11-celular-menu-noche.png)
 
@@ -97,19 +97,18 @@ Todo `<dialog class="dialogo">` con formulario vuelve a su estado inicial al **c
 
 ## Menú configurable
 
-Tabla `menus` (botones de la barra: Estructura, Padrones, Operación) y, en `modulos`, las columnas `menu_id`, `seccion_menu`, `orden_menu` y `color_icono`.
+Tabla `menus` (botones de la barra: Operación, Padrones, Recursos Humanos, Informes, Estructura) y, en `modulos`, las columnas `menu_id`, `seccion_menu`, `nombre_menu`, `orden_menu` y `color_icono`. El acomodo vigente, «Mis pendientes» y las reglas completas están en [menus.md](menus.md) (lección 35).
 
-- Un módulo aparece solo si el usuario puede `modulo.ver` (el motor revisa también que la empresa lo tenga contratado).
+- Un módulo aparece solo si el usuario puede `modulo.ver` (el motor revisa también que la empresa lo tenga contratado) **y** si ya tiene pantalla (ruta registrada). Los módulos sin pantalla no salen en ningún menú.
 - Un menú o una sección sin módulos visibles se oculta.
-- En celular los grupos se ordenan por `orden_movil`: Operación primero, como en SEGCAT.
-- El nombre visible sale, en este orden, de: el nombre que le dio la empresa (`empresa_modulos.nombre_visible`), la terminología del rubro (por ejemplo, el área específica es "Habitación" en un hotel y "Oficina" en un corporativo) y el nombre del catálogo.
-- La barra inferior del celular tiene atajos fijos a Novedades y Accesos si el usuario puede verlos.
-- `MenuSeeder` solo acomoda módulos sin menú; lo que se cambie desde la interfaz se respeta.
-- Mientras un módulo no tenga `ruta`, su enlace lleva a la pantalla "en migración".
+- PC y celular usan el mismo orden (`orden` y `orden_movil`): Operación primero, como en SEGCAT.
+- El nombre visible sale, en este orden, de: el nombre que le dio la empresa (`empresa_modulos.nombre_visible`), la terminología del rubro, el nombre corto del menú (`modulos.nombre_menu`) y el nombre del catálogo.
+- La barra inferior del celular tiene atajos fijos a Accesos y Novedades (en ese orden) si el usuario puede verlos.
+- `MenuSeeder` solo acomoda módulos sin menú; lo que se cambie desde la interfaz se respeta. Los cambios de acomodo para instalaciones existentes van en una migración.
 
 ## Pruebas
 
-`tests/Feature/Acceso/InicioSesionTest.php`, `MenuTest.php` y `PantallaYMenuLateralTest.php`.
+`tests/Feature/Acceso/InicioSesionTest.php`, `MenuTest.php`, `MenusReorganizadosTest.php` y `PantallaYMenuLateralTest.php`.
 
 
 ## Hora local (`App\Support\HoraLocal`)

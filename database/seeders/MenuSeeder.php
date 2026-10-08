@@ -7,67 +7,79 @@ use App\Models\Modulo;
 use Illuminate\Database\Seeder;
 
 /**
- * Menu principal tal como esta en SEGCAT (Estructura, Padrones, Operacion).
+ * Menu principal: Operación, Padrones, Recursos Humanos, Informes y Estructura.
  * Solo crea lo que falta y solo acomoda modulos que aun no tienen menu:
  * lo que se cambie despues desde la interfaz se respeta.
  */
 class MenuSeeder extends Seeder
 {
     /**
-     * menu => [nombre, icono, orden_movil, secciones[seccion => [modulo => color]]]
+     * menu => [nombre, icono, orden_movil, secciones[seccion => [modulo => color | [color, nombre en el menú]]]]
+     *
+     * Orden aprobado (PC y celular): Operación, Padrones, Recursos Humanos,
+     * Informes y Estructura. Autorizaciones departamentales no va en ningún
+     * menú (se llega desde «Mis pendientes» y desde la campana).
      */
     public static function menus(): array
     {
         return [
-            'estructura' => ['Estructura', 'bi-building-gear', 3, [
-                'Entidades Legales' => [
-                    'empresas' => 'primary', 'sedes' => 'success', 'espacios' => 'danger',
-                ],
-                'Organización Interna' => [
-                    'usuarios' => 'danger', 'permisos' => 'warning',
-                    'roles' => 'indigo', 'configuracion' => 'indigo', 'informe_ejecutivo' => 'indigo',
-                    'auditoria' => 'indigo',
-                ],
-                'Plataforma' => [
-                    'identidad' => 'primary',
-                ],
-            ]],
-            'recursos_humanos' => ['Recursos Humanos', 'bi-people-fill', 4, [
-                'Personal' => [
-                    'colaboradores' => 'success',
-                ],
-                'Catálogos del personal' => [
-                    'departamentos' => 'warning', 'puestos' => 'info', 'turnos' => 'secondary',
-                ],
-                // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
-                'Recepción y candidatos' => [
-                    'recepcion_rh' => 'primary', 'candidatos' => 'success', 'autorizaciones' => 'warning',
-                ],
-            ]],
-            'padrones' => ['Padrones', 'bi-folder2-open', 2, [
-                'Identidad y Personas' => [
-                    'proveedores' => 'success', 'visitantes' => 'primary', 'vehiculos' => 'secondary',
-                ],
-                'Inventarios de Seguridad' => [
-                    'llaves' => 'primary', 'gafetes' => 'warning', 'vouchers' => 'danger',
-                    'equipos' => 'dark', 'equipos_pc' => 'danger', 'estacionamientos' => 'primary',
-                    'etiquetas_qr' => 'dark',
-                ],
-                'Logística' => [
-                    'rutas' => 'info',
-                ],
-            ]],
             'operacion' => ['Operación', 'bi-shield-shaded', 1, [
-                'Caseta y Control' => [
-                    'novedades' => 'danger', 'lost_found' => 'warning', 'robo' => 'danger',
-                    'pases_salida' => 'primary', 'recorridos_pc' => 'success', 'accesos' => 'primary',
-                    'transporte' => 'warning', 'prestamo_llaves' => 'info',
+                'Caseta' => [
+                    'accesos' => 'primary', 'prestamo_llaves' => 'info', 'pases_salida' => 'primary', 'transporte' => 'warning',
                 ],
-                'Control de Activos' => [
-                    'responsivas' => 'success',
+                'Incidentes' => [
+                    'novedades' => ['danger', 'Novedades'], 'lost_found' => 'warning', 'robo' => ['danger', 'Robo'],
+                ],
+                'Protección civil' => [
+                    'recorridos_pc' => 'success',
+                ],
+                'Activos' => [
+                    'responsivas' => 'success', 'vouchers' => 'danger',
                 ],
                 'Consulta' => [
                     'procedimientos' => 'primary',
+                ],
+            ]],
+            'padrones' => ['Padrones', 'bi-folder2-open', 2, [
+                'Personas y vehículos' => [
+                    'proveedores' => ['success', 'Empresas externas'], 'visitantes' => 'primary', 'vehiculos' => 'secondary',
+                ],
+                'Inventarios' => [
+                    'llaves' => 'primary', 'gafetes' => 'warning', 'equipos' => 'dark', 'equipos_pc' => 'danger',
+                ],
+                'Instalaciones' => [
+                    'estacionamientos' => 'primary', 'rutas' => 'info',
+                ],
+                'Herramientas' => [
+                    'etiquetas_qr' => 'dark',
+                ],
+            ]],
+            'recursos_humanos' => ['Recursos Humanos', 'bi-people-fill', 3, [
+                'Personal' => [
+                    'colaboradores' => 'success',
+                ],
+                'Recepción y candidatos' => [
+                    'recepcion_rh' => 'primary', 'candidatos' => 'success',
+                ],
+                'Catálogos' => [
+                    'departamentos' => 'warning', 'puestos' => 'info', 'turnos' => 'secondary',
+                ],
+            ]],
+            // Sin pantallas todavía: el menú se oculta solo mientras ningún módulo tenga ruta
+            'informes' => ['Informes', 'bi-graph-up', 4, [
+                'Informes' => [
+                    'dashboard' => 'primary', 'bitacora_dia' => ['info', 'Bitácora del día'], 'tendencias' => 'success', 'informe_ejecutivo' => 'indigo',
+                ],
+            ]],
+            'estructura' => ['Estructura', 'bi-building-gear', 5, [
+                'Empresa' => [
+                    'empresas' => 'primary', 'sedes' => 'success', 'espacios' => 'danger',
+                ],
+                'Accesos y permisos' => [
+                    'usuarios' => 'danger', 'roles' => 'indigo', 'permisos' => 'warning',
+                ],
+                'Sistema' => [
+                    'configuracion' => 'indigo', 'identidad' => 'primary', 'auditoria' => 'indigo',
                 ],
             ]],
         ];
@@ -84,13 +96,15 @@ class MenuSeeder extends Seeder
 
             $ordenModulo = 0;
             foreach ($secciones as $seccion => $modulos) {
-                foreach ($modulos as $claveModulo => $color) {
+                foreach ($modulos as $claveModulo => $definicion) {
+                    [$color, $nombreMenu] = is_array($definicion) ? $definicion : [$definicion, null];
                     $ordenModulo++;
                     Modulo::where('clave', $claveModulo)->whereNull('menu_id')->update([
                         'menu_id' => $menu->id,
                         'seccion_menu' => $seccion,
                         'orden_menu' => $ordenModulo,
                         'color_icono' => $color,
+                        'nombre_menu' => $nombreMenu,
                     ]);
                 }
             }

@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Route;
 /**
  * Arma el menu principal de un usuario a partir de la configuracion
  * (menus y modulos) y de sus permisos. Un modulo aparece solo si el usuario
- * puede "modulo.ver"; un menu o una seccion sin modulos visibles se oculta.
+ * puede "modulo.ver" y si ya tiene pantalla (ruta registrada): los modulos
+ * que aun no se migran no se muestran en ningun menu (PC ni celular). Un menu
+ * o una seccion sin modulos visibles se oculta.
  */
 class ConstructorMenu
 {
@@ -35,13 +37,12 @@ class ConstructorMenu
     {
         $menus = $this->cache[$usuario->id] ??= $this->construir($usuario);
 
-        return array_map(function (array $menu) use ($rutaActual, $moduloPendiente) {
+        // $moduloPendiente se conserva por compatibilidad: los modulos sin pantalla ya no salen en el menu
+        return array_map(function (array $menu) use ($rutaActual) {
             $activo = false;
             foreach ($menu['secciones'] as $seccion => $items) {
                 foreach ($items as $i => $item) {
-                    $item['activo'] = $item['disponible']
-                        ? $rutaActual !== null && ($rutaActual === $item['ruta'] || str_starts_with($rutaActual, $item['prefijo']))
-                        : $moduloPendiente === $item['clave'];
+                    $item['activo'] = $rutaActual !== null && ($rutaActual === $item['ruta'] || str_starts_with($rutaActual, $item['prefijo']));
                     $menu['secciones'][$seccion][$i] = $item;
                     $activo = $activo || $item['activo'];
                 }
@@ -69,7 +70,7 @@ class ConstructorMenu
             ->whereNotNull('menu_id')
             ->where('activo', true)
             ->orderBy('orden_menu')
-            ->get(['id', 'menu_id', 'seccion_menu', 'clave', 'nombre', 'icono', 'color_icono', 'ruta'])
+            ->get(['id', 'menu_id', 'seccion_menu', 'nombre_menu', 'clave', 'nombre', 'icono', 'color_icono', 'ruta'])
             ->groupBy('menu_id');
 
         $resultado = [];
@@ -78,25 +79,25 @@ class ConstructorMenu
             $secciones = [];
 
             foreach ($modulos->get($menu->id, collect()) as $modulo) {
-                if (! $this->puedeVer($usuario, $modulo->clave)) {
+                // Sin pantalla todavia (sin ruta): no se muestra en ningun menu
+                if ($modulo->ruta === null || ! Route::has($modulo->ruta) || ! $this->puedeVer($usuario, $modulo->clave)) {
                     continue;
                 }
 
                 $nombre = $nombresEmpresa[$modulo->id]
                     ?? (isset(self::TERMINOLOGIA[$modulo->clave]) ? ($terminologia[self::TERMINOLOGIA[$modulo->clave]] ?? null) : null)
+                    ?? $modulo->nombre_menu
                     ?? $modulo->nombre;
-
-                $existe = $modulo->ruta !== null && Route::has($modulo->ruta);
 
                 $secciones[$modulo->seccion_menu ?? ''][] = [
                     'clave' => $modulo->clave,
                     'nombre' => $nombre,
                     'icono' => $modulo->icono ?? 'bi-circle',
                     'color' => $modulo->color_icono ?? 'primary',
-                    'ruta' => $existe ? $modulo->ruta : 'modulos.pendiente',
-                    'prefijo' => $existe ? preg_replace('/\.[^.]+$/', '.', $modulo->ruta) : null,
-                    'url' => $existe ? route($modulo->ruta) : route('modulos.pendiente', $modulo->clave),
-                    'disponible' => $existe,
+                    'ruta' => $modulo->ruta,
+                    'prefijo' => preg_replace('/\.[^.]+$/', '.', $modulo->ruta),
+                    'url' => route($modulo->ruta),
+                    'disponible' => true,
                 ];
             }
 
