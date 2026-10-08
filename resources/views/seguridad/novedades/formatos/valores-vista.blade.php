@@ -11,7 +11,8 @@
     <h2 class="accordion-header"><a class="accordion-button" role="button" data-bs-toggle="collapse" href="#colHabitacion" aria-expanded="true"><i class="bi bi-door-open-fill me-2 text-warning" aria-hidden="true"></i>Detalle: Valores a la Vista</a></h2>
     <div id="colHabitacion" class="accordion-collapse collapse show">
         <div class="accordion-body">
-            <h6 class="titulo-seccion-formato"><i class="bi bi-info-square text-primary me-2" aria-hidden="true"></i>1. Identificación</h6>
+            <x-seccion clave="nov-valores-vista-1" :abierta="true">
+                <x-slot:titulo><i class="bi bi-info-square text-primary me-2" aria-hidden="true"></i>1. Identificación</x-slot:titulo>
             <div class="row bg-light border p-2 rounded mb-3 mx-0">
                 <div class="col-md-4"><label class="campo-etiqueta" for="hab_edificio">Edificio <span class="text-lowercase fw-normal">(del reporte inicial)</span></label><input type="text" id="hab_edificio" class="campo bg-white" readonly value="{{ $edificioTicket }}" data-nov-texto-edificio></div>
                 <div class="col-md-4"><label class="campo-etiqueta" for="hab_zona">Zona / Piso <span class="text-lowercase fw-normal">(del reporte inicial)</span></label><input type="text" id="hab_zona" class="campo bg-white" readonly value="{{ $zonaTicket }}" data-nov-texto-piso></div>
@@ -27,7 +28,9 @@
                 <div class="col-md-12 mt-1"><label class="campo-etiqueta" for="hab_numero">Habitación (si no está en el catálogo) <span class="text-lowercase fw-normal">(opcional)</span></label><input type="text" id="hab_numero" name="hab_numero" class="campo text-uppercase" maxlength="30" placeholder="Ej. 204-B, suite anexa..." value="{{ $v['hab_numero'] }}"></div>
             </div>
 
-            <h6 class="titulo-seccion-formato"><i class="bi bi-people-fill text-success me-2" aria-hidden="true"></i>2. Personal Involucrado</h6>
+            </x-seccion>
+            <x-seccion clave="nov-valores-vista-2" :abierta="false">
+                <x-slot:titulo><i class="bi bi-people-fill text-success me-2" aria-hidden="true"></i>2. Personal Involucrado</x-slot:titulo>
             <div class="row mb-2" data-nov-autocompletar>
                 <div class="col-md-4"><label class="campo-etiqueta text-primary" for="hab_quien_reporta">Quién Reporta <span class="text-lowercase fw-normal">(del reporte inicial)</span></label><input type="text" id="hab_quien_reporta" name="hab_quien_reporta" class="campo text-uppercase" maxlength="150" list="novColaboradores" placeholder="Buscar colaborador..." value="{{ $v['hab_quien_reporta'] }}" data-nov-nombre></div>
                 <div class="col-md-4"><label class="campo-etiqueta" for="hab_depto_reporta">Departamento (Reporta)</label><input type="text" id="hab_depto_reporta" name="hab_depto_reporta" class="campo bg-white text-uppercase" maxlength="100" placeholder="Autocompleta o escribe..." value="{{ $v['hab_depto_reporta'] }}" data-nov-depto></div>
@@ -49,7 +52,9 @@
             <template data-plantilla="hab_personas">@include('seguridad.novedades.formatos._fila-persona-habitacion', ['i' => '__i__', 'p' => ['se_retira' => true]])</template>
             <button type="button" class="btn-agregar-fila mb-3" data-agregar-fila="hab_personas"><i class="bi bi-person-plus-fill me-1" aria-hidden="true"></i>Añadir Persona</button>
 
-            <h6 class="titulo-seccion-formato mt-2"><i class="bi bi-door-closed text-warning me-2" aria-hidden="true"></i>3. Puertas, Ventanas y Terrazas</h6>
+            </x-seccion>
+            <x-seccion clave="nov-valores-vista-3" :abierta="false">
+                <x-slot:titulo><i class="bi bi-door-closed text-warning me-2" aria-hidden="true"></i>3. Puertas, Ventanas y Terrazas</x-slot:titulo>
             <p class="text-muted small mb-1">Agrega cada una que aplique — marca si es de conexión (puerta) o de baño (ventana/terraza).</p>
             <div data-filas="hab_aperturas" data-siguiente="{{ count($aperturas) }}">
                 @foreach ($aperturas as $i => $a)
@@ -65,7 +70,9 @@
                 <button type="button" class="btn-agregar-fila" data-agregar-fila="hab_aperturas" data-plantilla-de="hab_aperturas_terraza"><i class="bi bi-sun me-1" aria-hidden="true"></i>Añadir Terraza</button>
             </div>
 
-            <h6 class="titulo-seccion-formato mt-2"><i class="bi bi-search text-warning me-2" aria-hidden="true"></i>4. Caja Fuerte y Valores</h6>
+            </x-seccion>
+            <x-seccion clave="nov-valores-vista-4" :abierta="false">
+                <x-slot:titulo><i class="bi bi-search text-warning me-2" aria-hidden="true"></i>4. Caja Fuerte y Valores</x-slot:titulo>
             <label class="campo-etiqueta text-danger" for="hab_caja_estado">Estado de la Caja Fuerte</label>
             <select id="hab_caja_estado" name="hab_caja_estado" class="campo border-danger fw-bold">
                 @foreach (\App\Models\ValoresVistaDetalle::CAJA_FUERTE as $clave => $texto)
@@ -111,6 +118,7 @@
             </div>
             <label class="campo-etiqueta mt-2" for="hab_observaciones_grales">Condiciones generales, observaciones y notificaciones</label>
             <textarea id="hab_observaciones_grales" name="hab_observaciones_grales" class="campo" rows="2" maxlength="5000" placeholder="Ej. Se notificó al Gerente en Turno. Habitación en orden general, sin señales de forzadura...">{{ $v['hab_observaciones_grales'] }}</textarea>
+            </x-seccion>
         </div>
     </div>
 </div>

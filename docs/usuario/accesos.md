@@ -158,3 +158,11 @@ Todo funciona en el celular: el botón **Nuevo Ingreso** ocupa todo el ancho y l
 Al cerrar y volver a abrir **Registro Rápido de Persona**, el aviso gris «Úsalo solo si la persona **no aparece** al buscarla…» y el aviso amarillo de «pendiente de verificar» siguen ahí. Al cerrar una ventana solo se borran los errores de validación (rojos) y los avisos de «Guardado».
 
 ![El aviso gris se conserva](img/ronda-5b/registro-rapido-aviso-se-conserva.png)
+
+## Ronda 8: buscar por el nombre de un acompañante
+
+Escribe el nombre de un acompañante (por ejemplo «sofia») en la búsqueda de **Gente en Sitio**, **Pendientes** o **Historial**, o en **Dar Salida**: aparece la tarjeta de la persona a la que acompaña con el aviso «Coincide con SOFÍA MÉNDEZ, acompañante de LAURA MÉNDEZ RÍOS». No importan los acentos ni las mayúsculas.
+
+![Búsqueda por acompañante](img/ronda-8/07-accesos-busqueda-acompanante.png)
+![Dar Salida encuentra al acompañante](img/ronda-8/08-dar-salida-acompanante.png)
+![Modo Noche](img/ronda-8/21-noche-accesos-acompanante.png)

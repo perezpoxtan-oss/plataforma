@@ -134,3 +134,7 @@ La pantalla de Vouchers y la impresión triple viven en su propio módulo.
 - **GV-03**: el componente acepta `'duplicado' => route('identificacion.etiqueta-duplicado', ['<tipo>', 0])` en modo capturar: el aviso «ya la tiene X» sale en vivo debajo del lector al teclear o al leer la tarjeta (ver `avisos-duplicado.md`). Lo usan las ediciones de Llaves, Gafetes, Equipos y Equipos PC y el diálogo «Código e identificación».
 - **LL-06**: la impresión masiva de etiquetas de todos los tipos está en Padrones → **Etiquetas QR** (ver `etiquetas-qr.md`). Un tipo nuevo de `config/lector.php` aparece ahí solo.
 - El título de los equipos de seguridad es «Serie: …» (EQ-04).
+
+## Ronda 8: etiqueta NFC/RFID única en todos los formularios
+
+`App\Services\Lector\Identificacion::exigirEtiquetaLibre($etiqueta, $registroActual)` es la **única** regla: la etiqueta (normalizada) no puede estar en otro registro de la empresa de **ningún** tipo de `config/lector.php` (el registro que se edita no choca consigo mismo). La usan el diálogo «Código e identificación» (todos los tipos: colaboradores, vehículos, Lost & Found, procedimientos…) y los formularios propios de Llaves, Gafetes, Equipos y Equipos PC; antes Llaves y Gafetes solo revisaban su propio tipo, así que el aviso en vivo decía «ya la tiene…» pero al guardar se aceptaba. Mensaje único: «Esa etiqueta ya la tiene <la llave / el gafete / el colaborador / el vehículo…> «<nombre>». Quítasela primero o usa otra.» Un tipo nuevo solo necesita estar en `config/lector.php` y en `Identificacion::NOMBRES`.

@@ -135,3 +135,9 @@ Todo funciona igual en el celular. Con el botón del sol eliges **Sol** (alto co
 ![Celular, caseta](img/pases-salida/23-celular-caseta-salida.png)
 ![Noche](img/pases-salida/26-noche-ficha.png)
 ![Sol](img/pases-salida/28-sol-lista.png)
+
+## Ronda 8: pasos que se contraen
+
+Los tres pasos del «Nuevo Pase de Salida» (Motivo y Solicitante, Enviar A, Artículos que Salen) vienen abiertos y se pueden contraer tocando su título; la plataforma recuerda cómo los dejaste. Si falta algo, el paso se abre solo.
+
+![Pase con pasos que se contraen](img/ronda-8/06-pase-con-secciones.png)

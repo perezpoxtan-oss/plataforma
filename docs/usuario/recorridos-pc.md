@@ -47,7 +47,7 @@ Al iniciar (o al tocar **Continuar Recorrido**) ves el recorrido con:
 - **NFC (Android):** toca el botón de la antena y acerca el celular a la etiqueta.
 - **iPhone con etiqueta NFC:** si la etiqueta tiene grabada la dirección del equipo (la que aparece en «Ver QR»), acerca el iPhone y se abre solo el recorrido con ese equipo.
 - **Lector USB o Bluetooth (PC de caseta):** solo pásalo; el campo ya está listo.
-- **Escribiendo:** teclea el ID (por ejemplo `EXT-01`) y oprime Enter.
+- **Escribiendo:** teclea el ID (por ejemplo `EXT-01`): aparece solo, sin Enter.
 
 Si la etiqueta está dañada, abre **Equipos pendientes de revisar** y toca **Revisar** en el equipo.
 

@@ -1,0 +1,2 @@
+{{-- Ronda 8: cualquier otro error 4xx sin vista propia se ve en español (nunca la página genérica en inglés) --}}
+@include('errors.plantilla', ['codigo' => isset($exception) && method_exists($exception, 'getStatusCode') ? $exception->getStatusCode() : 400, 'icono' => 'bi-exclamation-circle', 'color' => '#d97706', 'titulo' => 'No se pudo completar la solicitud', 'mensaje' => 'La solicitud no es válida o llegó incompleta. Regresa a la pantalla anterior y vuelve a intentarlo.', 'accion' => 'inicio'])

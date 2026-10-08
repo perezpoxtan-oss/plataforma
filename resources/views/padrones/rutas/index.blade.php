@@ -79,9 +79,8 @@
 
                     <div class="rutas-sede-acciones">
                         <a href="{{ route('rutas.sede', $sede->id) }}" class="btn-detalle-sede"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Ver Detalles</a>
-                        @if ($r['imprimir'])
-                            <a href="{{ route('rutas.dia', $sede->id) }}" target="_blank" rel="noopener" class="btn-icono imprimir-hoja" title="Imprimir llegadas y salidas de hoy" aria-label="Imprimir la hoja del día de {{ $sede->nombre }}"><i class="bi bi-printer" aria-hidden="true"></i></a>
-                        @endif
+                        {{-- Ronda 8 (RT-07/RT-08): horarios de la semana, de consulta (también el Agente) --}}
+                        <a href="{{ route('rutas.semana', $sede->id) }}" target="_blank" rel="noopener" class="btn-icono imprimir-hoja" title="Imprimir horarios de la semana" aria-label="Imprimir la hoja de horarios de {{ $sede->nombre }}"><i class="bi bi-printer" aria-hidden="true"></i></a>
                     </div>
                 </div>
             @empty

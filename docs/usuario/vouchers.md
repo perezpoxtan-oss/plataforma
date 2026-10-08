@@ -15,7 +15,7 @@ Solo ves los vouchers de los módulos que puedes consultar (por ejemplo, si no t
 
 ## Buscar y filtrar
 
-- **Buscar**: folio, artículo, responsable (nombre o número de empleado) o lo que se escribió en "¿Cómo pasó?". Presiona Enter o **Buscar**.
+- **Buscar**: folio, artículo, responsable (nombre o número de empleado) o lo que se escribió en "¿Cómo pasó?". La búsqueda se aplica sola al dejar de escribir.
 - **Sede**, **Origen** y **Aplica cobro o no** se aplican al elegirlos.
 - **Desde / Hasta**: un rango de fechas.
 - **Quitar filtros** vuelve a mostrar todo.
@@ -79,3 +79,7 @@ Con el filtro **Cualquier estado** puedes ver solo los vigentes, los cancelados 
 ![Voucher impreso con reembolso pendiente](img/ronda-6/18-voucher-impreso-reembolso.png)
 
 Lo hacen quienes pueden editar vouchers y reactivar en el módulo del artículo (Administrador, Jefe de seguridad). El Agente no ve estos botones.
+
+## Ronda 8
+
+Un voucher **Cancelado por recuperación** o **Reembolsado** ya no muestra «Registrar firma en papel»: el artículo apareció o ya se devolvió el dinero, así que no hay nada que firmar.

@@ -20,7 +20,7 @@
         <div class="tarjeta estado-vacio"><p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong>.</p></div>
     @else
         @php $min = fn (?int $v) => $v === null ? '—' : ($v < 60 ? $v.' min' : intdiv($v, 60).' h '.($v % 60).' min'); @endphp
-        <form method="GET" action="{{ route('recepcion.metricas') }}" class="filtros-rh">
+        <form method="GET" data-autoenviar action="{{ route('recepcion.metricas') }}" class="filtros-rh">
             <label class="filtro-fecha"><span>Desde</span><input type="date" name="desde" class="filtro-select" value="{{ $desde }}"></label>
             <label class="filtro-fecha"><span>Hasta</span><input type="date" name="hasta" class="filtro-select" value="{{ $hasta }}"></label>
             @if ($sedes->count() > 1)

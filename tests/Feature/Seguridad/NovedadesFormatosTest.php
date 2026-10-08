@@ -120,7 +120,7 @@ class NovedadesFormatosTest extends PruebaNovedades
         // Solo las opciones de SEGCAT
         $this->guardar($n, ['m_herida' => ['Inventada']])->assertSessionHasErrors(['m_herida.0' => 'Elige una opción válida en «Tipo de Herida».']);
 
-        $firmas = collect(array_keys(AccidenteFirma::ROLES))->mapWithKeys(fn ($rol) => ['f_'.$rol => self::firmaJpeg()])->all();
+        $firmas = collect(array_keys(AccidenteFirma::rolesPara('COLABORADOR')))->mapWithKeys(fn ($rol) => ['f_'.$rol => self::firmaJpeg()])->all();
         $this->guardar($n, [
             'acc_tipo_afectado' => 'COLABORADOR', 'c_id_colaborador' => $rosa->id, 'c_fecha_accidente' => '2026-10-01', 'c_hora_accidente' => '10:15',
             'c_depto_colaborador' => 'LO QUE SEA', 'c_turno_colaborador' => 'matutino', 'c_causa_condicion' => '1', 'c_primera_vez' => '0',
@@ -144,7 +144,7 @@ class NovedadesFormatosTest extends PruebaNovedades
 
         // Las 6 firmas, en el disco privado, nunca en public/
         $guardadas = $this->enEmpresa(fn () => AccidenteFirma::where('novedad_id', $n->id)->get());
-        $this->assertCount(6, $guardadas);
+        $this->assertCount(count(AccidenteFirma::rolesPara('COLABORADOR')), $guardadas); // Ronda 8: firmantes de un colaborador
         foreach ($guardadas as $f) {
             Storage::disk('local')->assertExists($f->ruta);
             $this->assertFileDoesNotExist(public_path($f->ruta));
@@ -153,7 +153,7 @@ class NovedadesFormatosTest extends PruebaNovedades
         $anterior = $guardadas->firstWhere('rol', 'medico')->ruta;
         $this->guardar($n, ['acc_tipo_afectado' => 'COLABORADOR', 'c_id_colaborador' => $rosa->id, 'f_medico' => self::firmaJpeg()])->assertSessionHasNoErrors();
         Storage::disk('local')->assertMissing($anterior);
-        $this->assertSame(6, $this->contar(AccidenteFirma::class, $n->id));
+        $this->assertSame(count(AccidenteFirma::rolesPara('COLABORADOR')), $this->contar(AccidenteFirma::class, $n->id));
 
         // Impresión con las firmas servidas por la ruta protegida
         $this->actingAs($this->admin)->get("/novedades/{$n->id}/imprimir")->assertOk()

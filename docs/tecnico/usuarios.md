@@ -63,3 +63,7 @@ SEGCAT permitía buscar un colaborador para llenar los datos y vincular la cuent
 ## Pruebas
 
 `tests/Feature/Administracion/UsuariosTest.php`, `DesbloqueoUsuariosTest.php` y `UsuariosHomonimosTest.php`
+
+## Ronda 8: ¿el correo es obligatorio en Nuevo Usuario?
+
+Se revisó y **se queda obligatorio**: en SEGCAT `usuarios.correo` es `NOT NULL` y los formularios de alta y edición lo pedían (`required`). Además la plataforma lo usa para los avisos por correo (vouchers con cobro, altas por verificar, procedimientos, pases, autorizaciones) y será el medio para recuperar la contraseña cuando se active; un usuario sin correo se quedaría sin avisos. Sigue siendo único en la plataforma.

@@ -54,7 +54,9 @@
     <div class="hoja-resguardo-tabla-scroll">
         <table class="hoja-resguardo-tabla">
             <thead>
-                <tr><th>Tipo de Activo</th><th>Marca / Modelo</th><th>Núm. Serie (S/N)</th><th>Modalidad</th></tr>
+                {{-- Ronda 8 (RS-04): con devoluciones, cada equipo dice cómo y cuándo regresó --}}
+                @php $conDevolucion = $responsiva->equipos->contains(fn ($f) => $f->devuelto_en !== null); @endphp
+                <tr><th>Tipo de Activo</th><th>Marca / Modelo</th><th>Núm. Serie (S/N)</th><th>Modalidad</th>@if ($conDevolucion)<th>Devolución</th>@endif</tr>
             </thead>
             <tbody>
                 @foreach ($responsiva->equipos as $f)
@@ -63,6 +65,18 @@
                         <td>{{ trim(($f->equipo?->marca ?? '').' '.($f->equipo?->modelo ?? '')) ?: '—' }}</td>
                         <td class="hoja-resguardo-serie">{{ $f->equipo?->numero_serie }}</td>
                         <td>{{ \App\Models\EquipoResponsiva::MODALIDADES_HOJA[$f->modalidad] ?? $f->modalidad }}</td>
+                        @if ($conDevolucion)
+                            <td class="hoja-resguardo-devolucion">
+                                @if ($f->devuelto_en)
+                                    <strong>{{ mb_strtoupper($f->etiquetaDevolucion() ?? '') }}</strong> · @fecha($f->devuelto_en, 'd/m/Y H:i')
+                                    @if ($f->recibio)<br><span>Recibió: {{ $f->recibio->name }}</span>@endif
+                                    @if ($f->nota_devolucion)<br><span>{{ $f->nota_devolucion }}</span>@endif
+                                    @if ($f->voucher)<br><span>Voucher {{ $f->voucher->folio }}</span>@endif
+                                @else
+                                    EN CAMPO
+                                @endif
+                            </td>
+                        @endif
                     </tr>
                 @endforeach
             </tbody>

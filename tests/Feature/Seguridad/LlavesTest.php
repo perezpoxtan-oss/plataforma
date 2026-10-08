@@ -199,7 +199,7 @@ class LlavesTest extends TestCase
         $this->actingAs($this->admin)->post('/llaves', $this->datos(['nomenclatura' => 'B', 'sede_id' => $this->playa->id, 'id_externo' => 'VC-1', 'plataforma_externa' => 'VingCard']))->assertSessionHasNoErrors();
 
         $this->actingAs($this->admin)->post('/llaves', $this->datos(['nomenclatura' => 'C', 'etiqueta_nfc' => 'aa:bb:cc:dd']))
-            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa tarjeta o etiqueta NFC/RFID ya está asignada a la llave «HDC-1».']);
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene la llave «HDC-1». Quítasela primero o usa otra.']);
     }
 
     public function test_lugares_departamento_puesto_y_responsable_se_revalidan_contra_la_sede_y_la_empresa(): void

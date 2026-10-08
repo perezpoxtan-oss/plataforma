@@ -140,3 +140,12 @@ Donde SEGCAT tenía "escáner / QR / NFC" se usa `componentes.lector`: gafete as
 
 - "Pendientes" no tiene "Rechazar": un proveedor que el host no autoriza se queda pendiente (igual que SEGCAT). Propuesta para una versión futura.
 - Unir duplicados mueve también `host_colaborador_id` y `visita_colaborador_id` (`AdministradorColaboradores::REFERENCIAS_ADICIONALES`, revisión funcional FUN-02).
+
+## Ronda 8 (QA AC-05): buscar por acompañante
+
+- **Filtro de las pestañas** (`ConsultaAccesos::filtrar`, usado por Gente en Sitio, Pendientes e Historial): cada palabra también se busca en el **nombre o el gafete de los acompañantes** (`orWhereHas('acompanantes')`). En MySQL (`utf8mb4_unicode_ci`) la comparación ya ignora acentos y mayúsculas.
+- **Filtro en vivo** (navegador): sin acentos ni mayúsculas («sofia mendez» encuentra a «SOFÍA MÉNDEZ»).
+- **Aviso en la tarjeta**: si lo buscado coincide con un acompañante y no con el titular, la tarjeta del registro principal dice «Coincide con **SOFÍA MÉNDEZ**, acompañante de LAURA MÉNDEZ RÍOS» (`ConsultaAccesos::acompananteQueCoincide`, `ConsultaAccesos::normalizar`; el filtro en vivo lo muestra u oculta al teclear).
+- **«Dar Salida»** (`GET /accesos/en-sitio`): ya buscaba acompañantes; ahora cada resultado trae `coincide_acompanante` y la tarjeta lo avisa igual.
+- No se agregaron salidas temporales nuevas (las de acompañantes de proveedor y contratista ya existían).
+- Pruebas: `AjustesRonda8Test::test_ac05_*`.

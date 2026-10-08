@@ -124,7 +124,7 @@ Tabla `menus` (botones de la barra: Estructura, Padrones, Operación) y, en `mod
 
 ## Pantallas de error (`resources/views/errors`)
 
-- **Cuáles:** 403, 404, 419, 429, 500 y 503, en español, con el estilo de la pantalla de acceso y los modos Sol y Noche.
+- **Cuáles:** 403, 404, 405, 413, 419, 429, 500 y 503, más `4xx` y `5xx` para cualquier otro código (Ronda 8: antes un 405 mostraba la página genérica en inglés «Oops! An Error Occurred»), en español, con el estilo de la pantalla de acceso y los modos Sol y Noche.
 - **Sin dependencias:** no usan la base de datos ni la identidad, para verse aunque la base esté caída.
 - **Contenido:** cada una explica qué pasó y ofrece una salida: ir al inicio, volver a entrar o intentar de nuevo.
 
@@ -139,3 +139,35 @@ Varias pantallas recuerdan en el navegador su búsqueda, filtros y píldoras (`s
 - Cada inicio de sesión guarda una marca nueva en la sesión (`marca_filtros`, `SesionController`); el layout la publica en `<body data-usuario-filtros="ID" data-sesion-filtros="marca">`.
 - El bloque «Ajustes Ronda 6» de `plataforma.js` corre antes que las pantallas restauren sus filtros: si la marca de la pestaña no coincide (nueva sesión u otro usuario), borra esas claves; si cambió el usuario, borra también la sede recordada de Accesos.
 - Dentro de la misma sesión se conserva la comodidad (al guardar y volver, el filtro sigue). Las preferencias del equipo (modo Sol/Noche, tamaño de letra de Procedimientos) no se tocan.
+
+## Secciones plegables (Ronda 8, NV-06)
+
+Componente Blade anónimo `resources/views/components/seccion.blade.php`:
+
+```blade
+<x-seccion clave="robo-2" :abierta="false">
+    <x-slot:titulo><i class="bi bi-person me-2" aria-hidden="true"></i>2. Sospechoso</x-slot:titulo>
+    …campos…
+</x-seccion>
+```
+
+- Es un `<details>`/`<summary>` nativo (funciona sin JavaScript y con teclado) con el estilo de los títulos de sección, flecha y 46 px de alto para el dedo.
+- `abierta`: cómo aparece la primera vez (por costumbre, la primera sección del formulario; en Pases de salida y Procedimientos todas, porque todos sus pasos se llenan).
+- Si un campo de la sección trae error de validación, el servidor la abre y le pone «Revisar» (`data-seccion-con-error`); si el navegador encuentra un campo obligatorio vacío en una sección cerrada, la abre.
+- El navegador recuerda qué secciones quedaron abiertas **por usuario y por formulario** (`localStorage`, clave `plataforma_secciones:<usuario>:<acción del formulario>`; los números de la dirección se cambian por `n`).
+- Dónde se usa: formatos de Novedades (Valores a la Vista, Siniestro PC, Lost & Found, Robo), Robo — Seguimiento, Pases de salida, Procedimientos (editor) y el CV del candidato (en el kiosco público todas abiertas).
+- Dónde **no** (decisión): el formato de Accidente (debe quedar idéntico a SEGCAT), Configuración (tarjetas independientes en rejilla, cada una con su botón), Recorridos PC (pantalla de escaneo de un punto a la vez: plegar haría más lento al guardia), el cierre de Lost & Found y los diálogos cortos.
+
+## Filtros que se aplican solos en todas las listas (Ronda 8, NV-06)
+
+Todas las listas con filtros del servidor usan `<form method="GET" data-autoenviar>` (selects y fechas al cambiar; textos al dejar de teclear 0.7 s). Ronda 8 lo agregó en Lost & Found (archivo y auditoría), Robo — Seguimiento, Procedimientos (lista y acuses), Recorridos PC (reporte) y Métricas de recepción. Las listas que filtran en el navegador (Novedades, Préstamos, Responsivas, Llaves…) ya eran en vivo. El botón Buscar/Filtrar se oculta cuando hay JavaScript (`html.filtros-automaticos`) y queda como respaldo sin él; un botón que deba verse lleva `data-mantener-boton`.
+
+## Diálogos con un solo scroll (Ronda 8, RT-04)
+
+Con validación (varios errores arriba) el diálogo de Rutas mostraba dos barras: la de la página de atrás y la del diálogo. CSS genérico (bloque «Ronda 8» de `plataforma.css`):
+
+- `html:has(dialog.dialogo[open])`: la página de atrás no se desplaza mientras hay un diálogo abierto.
+- `.dialogo[open]:has(> .dialogo-cuerpo)`: columna flexible con `max-height: calc(100dvh - 2rem)` (en celular `100dvh`, el alto visible real con la barra del navegador); la cabecera queda fija y **solo `.dialogo-cuerpo` se desplaza**; los botones (`.dialogo-acciones`, sticky) quedan pegados abajo.
+- Dentro de un diálogo, las listas que tenían su propio scroll (`.lista-casillas-circuito`, `.caja-checks`, `.texto-privacidad`) se muestran completas.
+
+Auditado con Playwright a 1366×768 y 390×844 con errores de validación en Rutas, Accesos, Pases, Llaves, Candidatos, Procedimientos, Novedades y Responsivas: un solo contenedor con scroll en todos.

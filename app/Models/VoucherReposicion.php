@@ -69,6 +69,16 @@ class VoucherReposicion extends Model
         return self::ESTADOS[$this->estado ?? 'vigente'] ?? (string) $this->estado;
     }
 
+    /**
+     * Ronda 8: ¿se puede registrar (o cambiar) su firma en papel? Solo con
+     * firma física y si sigue vigente o con reembolso pendiente; uno
+     * «Cancelado por recuperación» o «Reembolsado» ya no se firma.
+     */
+    public function admiteFirmaPapel(): bool
+    {
+        return $this->firma_modo !== 'digital' && in_array($this->estado ?? 'vigente', ['vigente', 'reembolso_pendiente'], true);
+    }
+
     /** ¿Se puede marcar «Recuperado»? Solo un voucher vigente. */
     public function esVigente(): bool
     {

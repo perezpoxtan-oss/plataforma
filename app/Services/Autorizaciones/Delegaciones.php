@@ -123,11 +123,14 @@ class Delegaciones
             throw ValidationException::withMessages(['user_id' => 'Elige un responsable activo de la lista.']);
         }
         $delegado = (int) $d['delegado_id'];
+        // Ronda 8: nadie delega en sí mismo (se revisa antes que la lista para dar el mensaje claro)
+        if ($delegado === $titular) {
+            throw ValidationException::withMessages(['delegado_id' => $titular === $actor->id
+                ? 'No puedes delegar en ti mismo: elige a otra persona que responda por ti.'
+                : 'No puedes delegar en la misma persona que delega: elige a otra.']);
+        }
         if (! in_array($delegado, $validos, true)) {
             throw ValidationException::withMessages(['delegado_id' => 'Elige a un usuario activo que pueda responder autorizaciones.']);
-        }
-        if ($delegado === $titular) {
-            throw ValidationException::withMessages(['delegado_id' => 'No puedes delegar en la misma persona.']);
         }
         $zona = $this->hora->zona();
         $desde = Carbon::createFromFormat('Y-m-d\TH:i', $d['desde'], $zona)->utc();

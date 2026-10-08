@@ -200,12 +200,19 @@ class Accidente extends Formato
         ];
 
         // Firmas: se revisan aquí (imagen real, tamaño) pero se guardan al final, ya validado todo
+        // Ronda 8 (NV-03): solo los firmantes que corresponden al Tipo de Afectado
         $datos['firmas'] = [];
+        $permitidos = AccidenteFirma::rolesPara($tipo);
         foreach (array_keys(AccidenteFirma::ROLES) as $rol) {
             $valor = $entrada['f_'.$rol] ?? null;
-            if ($this->firmas->viene(is_string($valor) ? $valor : null)) {
-                $datos['firmas'][$rol] = $valor;
+            if (! $this->firmas->viene(is_string($valor) ? $valor : null)) {
+                continue;
             }
+            if (! isset($permitidos[$rol])) {
+                $this->error('f_'.$rol, 'La firma de «'.AccidenteFirma::ROLES[$rol].'» no corresponde a un accidente de '
+                    .($tipo === 'HUESPED' ? 'huésped' : 'colaborador').'. Elige otro firmante.');
+            }
+            $datos['firmas'][$rol] = $valor;
         }
 
         return $datos;
@@ -228,7 +235,7 @@ class Accidente extends Formato
         }
 
         foreach ($datos['firmas'] as $rol => $imagen) {
-            $ruta = $this->firmas->guardar($imagen, 'accidentes', 'f_'.$rol, 'la firma de '.AccidenteFirma::ROLES[$rol]);
+            $ruta = $this->firmas->guardar($imagen, 'accidentes', 'f_'.$rol, 'la firma de '.AccidenteFirma::etiqueta($rol, $datos['tipo']));
             $anterior = AccidenteFirma::where('novedad_id', $novedad->id)->where('rol', $rol)->first();
             if ($anterior !== null) {
                 $this->firmas->borrar($anterior->ruta);

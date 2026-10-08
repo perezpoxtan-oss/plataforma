@@ -37,6 +37,13 @@
     </div>
 
     <h3 class="ficha-acceso-nombre">{{ $a->nombre }}@if ($a->habitacion) <span class="badge-hab">Hab. {{ $a->habitacion }}</span>@endif</h3>
+    {{-- Ronda 8 (AC-05): si lo buscado es un acompañante, se avisa de quién viene acompañando (el filtro en vivo las muestra u oculta) --}}
+    @php $coincide = \App\Services\Accesos\ConsultaAccesos::acompananteQueCoincide($a, is_string(request('q')) ? request('q') : null); @endphp
+    @foreach ($a->acompanantes as $ac)
+        <p class="pista-acompanante" data-pista-acompanante="{{ \App\Services\Accesos\ConsultaAccesos::normalizar($ac->nombre.' '.$ac->gafete_texto) }}" @if ($coincide?->id !== $ac->id) hidden @endif>
+            <i class="bi bi-people-fill" aria-hidden="true"></i> Coincide con <strong>{{ $ac->nombreVisible() }}</strong>, acompañante de {{ $a->nombre }}
+        </p>
+    @endforeach
     @if ($a->empresa_procedencia)
         <div class="ficha-acceso-empresa"><i class="bi bi-building me-1" aria-hidden="true"></i>{{ $a->empresa_procedencia }}</div>
     @endif

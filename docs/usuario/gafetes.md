@@ -67,7 +67,7 @@ El **Código Interno** no cambia nunca: es el que va en el QR.
 3. Escribe **¿Cómo pasó?** (ayuda a decidir si se cobra).
 4. Si se le va a cobrar a alguien, marca **Aplica CXC**:
    - **Monto**: el sistema sugiere el último que se cobró por ese tipo de gafete; puedes cambiarlo.
-   - **Colaborador Responsable**: escribe su número de empleado y presiona Enter, o lee su credencial con el lector o la cámara.
+   - **Colaborador Responsable**: escribe su número de empleado (aparece solo, sin Enter), o lee su credencial con el lector o la cámara.
 5. Toca **Generar Voucher y Dar de Baja**.
 
 ![Dar de baja](img/gafetes/baja-voucher-responsable.png)

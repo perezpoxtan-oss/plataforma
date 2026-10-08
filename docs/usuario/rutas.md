@@ -102,3 +102,18 @@ Todo funciona en el celular; los paraderos se acomodan en dos renglones. Con el 
 - En Hotel Demo Centro hay **6 paraderos activos**. «PARADERO DE PRUEBA» aparece como **desactivado**: es el de la práctica de Eliminar definitivamente.
 
 ![Segundo horario con paraderos copiados](img/ronda-6/19-ruta-segundo-horario-con-paraderos.png)
+
+## Ronda 8: hoja de horarios de la semana
+
+- En la pantalla de la sede, **Hoja de horarios** abre la hoja de **toda la semana** (como en SEGCAT): todos los horarios de cada ruta con los días en que opera (L M X J V S D; un punto · = ese día no sale). Así se ven también los horarios alternos, por ejemplo RUTA 1 - REGIÓN 94 sale a las 05:45 de lunes a viernes y a las 06:15 sábado y domingo. Las rutas suspendidas se mencionan al pie.
+- **Hoja del día** sigue disponible (desde la sede o desde la hoja de la semana, eligiendo la fecha). Ahora dice al pie qué horarios **no operan ese día** y qué rutas están **suspendidas**, para que no haya dudas de por qué no aparecen.
+- El **Agente** ya puede abrir e imprimir las dos hojas de su sede.
+
+![Hoja de horarios de la semana](img/ronda-8/13-hoja-horarios-semana.png)
+![Hoja del día con la explicación al pie](img/ronda-8/14-hoja-del-dia-explica.png)
+![Lo que ve el Agente](img/ronda-8/15-agente-rutas-hoja-horarios.png)
+
+Las ventanas (por ejemplo «Configurar Ruta y Horarios» con errores) tienen ahora **una sola barra de desplazamiento**: la página de atrás no se mueve y los botones quedan fijos abajo.
+
+![Ventana con errores, una sola barra](img/ronda-8/12-dialogo-rutas-error-1366.png)
+![En el celular](img/ronda-8/12-dialogo-rutas-error-390.png)

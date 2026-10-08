@@ -9,7 +9,8 @@
         <div class="accordion-body" data-robo data-coincidencias="{{ route('novedades.coincidencias') }}">
             <div class="alert alert-danger py-2 px-3 small mb-3"><i class="bi bi-shield-exclamation me-1" aria-hidden="true"></i>Este formato es para levantar una investigación, no un registro administrativo — entre más preciso el detalle, mejor.</div>
 
-            <h6 class="titulo-seccion-formato"><i class="bi bi-clock-history text-primary me-2" aria-hidden="true"></i>1. Circunstancias</h6>
+            <x-seccion clave="nov-robo-1" :abierta="true">
+                <x-slot:titulo><i class="bi bi-clock-history text-primary me-2" aria-hidden="true"></i>1. Circunstancias</x-slot:titulo>
             <div class="row">
                 <div class="col-md-4"><label class="campo-etiqueta" for="robo_hora_aproximada">Hora aproximada</label><input type="time" id="robo_hora_aproximada" name="robo_hora_aproximada" class="campo" value="{{ $v['robo_hora_aproximada'] }}"></div>
                 <div class="col-md-8"><label class="campo-etiqueta" for="robo_lugar_exacto">Lugar exacto <span class="text-lowercase fw-normal">(si el catálogo de habitación no alcanza a precisarlo)</span></label><input type="text" id="robo_lugar_exacto" name="robo_lugar_exacto" class="campo text-uppercase" maxlength="150" placeholder="Ej. Estacionamiento nivel 2, cajón 14" value="{{ $v['robo_lugar_exacto'] }}"></div>
@@ -36,7 +37,9 @@
                 <div class="resultados-coincidencias mt-2" data-resultados-coincidencias aria-live="polite"></div>
             </div>
 
-            <h6 class="titulo-seccion-formato mt-3"><i class="bi bi-person-bounding-box text-warning me-2" aria-hidden="true"></i>2. Sospechoso</h6>
+            </x-seccion>
+            <x-seccion clave="nov-robo-2" :abierta="false">
+                <x-slot:titulo><i class="bi bi-person-bounding-box text-warning me-2" aria-hidden="true"></i>2. Sospechoso</x-slot:titulo>
             <label class="campo-etiqueta d-block" for="robo_hay_sospechoso">¿Hay algún sospechoso identificado?</label>
             <select id="robo_hay_sospechoso" name="robo_hay_sospechoso" class="campo"><option value="0" {{ $sel($v['robo_hay_sospechoso'], '0') }}>No</option><option value="1" {{ $sel($v['robo_hay_sospechoso'], '1') }}>Sí</option></select>
             <div data-nov-mostrar-si='{"robo_hay_sospechoso":["1"]}' @if ((string) $v['robo_hay_sospechoso'] !== '1') hidden @endif>
@@ -44,7 +47,9 @@
                 <textarea id="robo_descripcion_sospechoso" name="robo_descripcion_sospechoso" class="campo" rows="2" maxlength="5000" placeholder="Características físicas, vestimenta, si es huésped/colaborador/externo, matrícula si aplica...">{{ $v['robo_descripcion_sospechoso'] }}</textarea>
             </div>
 
-            <h6 class="titulo-seccion-formato mt-3"><i class="bi bi-people-fill text-success me-2" aria-hidden="true"></i>3. Testigos</h6>
+            </x-seccion>
+            <x-seccion clave="nov-robo-3" :abierta="false">
+                <x-slot:titulo><i class="bi bi-people-fill text-success me-2" aria-hidden="true"></i>3. Testigos</x-slot:titulo>
             <div data-filas="robo_testigos" data-siguiente="{{ count($testigosRobo) }}">
                 @foreach ($testigosRobo as $i => $t)
                     @include('seguridad.novedades.formatos._fila-testigo', ['campo' => 'robo_testigos', 'i' => $i, 't' => $t, 'declaracion' => true])
@@ -53,7 +58,9 @@
             <template data-plantilla="robo_testigos">@include('seguridad.novedades.formatos._fila-testigo', ['campo' => 'robo_testigos', 'i' => '__i__', 't' => [], 'declaracion' => true])</template>
             <button type="button" class="btn-ver-detalle mb-2" data-agregar-fila="robo_testigos"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar testigo</button>
 
-            <h6 class="titulo-seccion-formato mt-3"><i class="bi bi-send-check-fill text-primary me-2" aria-hidden="true"></i>4. Canalización</h6>
+            </x-seccion>
+            <x-seccion clave="nov-robo-4" :abierta="false">
+                <x-slot:titulo><i class="bi bi-send-check-fill text-primary me-2" aria-hidden="true"></i>4. Canalización</x-slot:titulo>
             <div class="row">
                 <div class="col-md-6">
                     <label class="campo-etiqueta d-block" for="robo_se_dio_parte_policia">¿Se dio parte a la policía?</label>
@@ -70,6 +77,7 @@
             </div>
             <label class="campo-etiqueta mt-2" for="robo_observaciones_investigacion">Observaciones de la investigación</label>
             <textarea id="robo_observaciones_investigacion" name="robo_observaciones_investigacion" class="campo" rows="2" maxlength="5000" placeholder="Seguimiento, acciones tomadas, cámaras revisadas, etc.">{{ $v['robo_observaciones_investigacion'] }}</textarea>
+            </x-seccion>
         </div>
     </div>
 </div>

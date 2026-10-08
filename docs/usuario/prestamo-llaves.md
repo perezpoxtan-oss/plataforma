@@ -26,7 +26,7 @@ En cada ficha ves: el **colaborador** y su **No. Nómina**, el **nombre de la ll
 
 1. Toca **Prestar Llave**. El cursor ya está listo en **Llave a Prestar**.
 2. **Sede**: si solo tienes una, ya viene elegida.
-3. **Escanea la llave**: el QR del llavero con la cámara (botón del código QR), acerca su etiqueta NFC, usa el lector USB o escribe su nombre (por ejemplo `HDC-101`) y presiona Enter.
+3. **Escanea la llave**: el QR del llavero con la cámara (botón del código QR), acerca su etiqueta NFC, usa el lector USB o escribe su nombre (por ejemplo `HDC-101`): aparece solo, sin Enter.
    - Si esa llave **ya está fuera**, o es **de otra sede**, el sistema te avisa en rojo y no la deja elegida.
 4. **Escanea el gafete** del colaborador (o escribe su número de nómina o su nombre).
 5. Elige la **ID Dejada en Garantía**: Gafete interno, INE, Licencia, Pasaporte o **Ninguna (Riesgo)**. Si quieres, escribe el **folio** o un detalle (por ejemplo «Depto Ama de Llaves»).

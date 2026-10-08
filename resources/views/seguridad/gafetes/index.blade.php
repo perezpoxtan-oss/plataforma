@@ -345,7 +345,7 @@
                             </div>
                             @include('componentes.lector', ['id' => 'ga_baja_responsable', 'etiqueta' => 'Colaborador Responsable', 'tipos' => 'colaborador',
                                 'nombre' => 'colaborador_id', 'valor' => $trasError ? old('colaborador_id') : '', 'elegido' => $trasError ? $responsableAnterior : null,
-                                'ayuda' => 'Escribe su número de empleado y presiona Enter, o escanea / acerca su credencial.'])
+                                'ayuda' => 'Escribe su número de empleado (aparece solo, sin Enter) o escanea / acerca su credencial.'])
                         </div>
 
                         <div class="dialogo-acciones">

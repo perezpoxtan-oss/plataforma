@@ -3312,6 +3312,8 @@ document.addEventListener('click', function (e) {
                 if (r.habitacion) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'badge-hab', 'Hab. ' + r.habitacion)); }
                 if (r.fuera_temporal) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'estado-acceso fuera mini', 'FUERA')); }
                 card.appendChild(nombre);
+                // Ronda 8 (AC-05): se encontró por un acompañante
+                if (r.coincide_acompanante) { card.appendChild(elemento('div', 'pista-acompanante', 'Coincide con ' + r.coincide_acompanante + ', acompañante de ' + r.nombre)); }
                 card.appendChild(elemento('div', 'resultado-salida-dato', r.tipo_etiqueta + (r.sede ? ' · ' + r.sede : '')));
                 if (r.placas) { card.appendChild(elemento('div', 'resultado-salida-dato', 'Vehículo: ' + r.placas + (r.zona ? ' · ' + r.zona + (r.zona_descarga ? ' (descarga)' : '') : ''))); }
                 var pedir = [];
@@ -3381,16 +3383,28 @@ document.addEventListener('click', function (e) {
         var tipo = (barra.querySelector('[data-filtro-accesos-tipo]') || {}).value || '';
         var sedeSel = barra.querySelector('[data-filtro-accesos-sede]');
         var sede = sedeSel ? sedeSel.value : '';
-        var palabras = lista(texto.toLowerCase());
-        var compacto = texto.replace(/[\s\-.]+/g, '').toLowerCase();
+        // Ronda 8 (AC-05): sin acentos ni mayúsculas ("sofia mendez" = "SOFÍA MÉNDEZ")
+        var sinAcentos = function (s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
+        var palabras = lista(sinAcentos(texto));
+        var compacto = sinAcentos(texto.replace(/[\s\-.]+/g, ''));
         var fichas = cont.querySelectorAll('[data-acceso-ficha]');
         var visibles = 0;
         fichas.forEach(function (f) {
-            var t = f.dataset.texto || '';
+            var t = sinAcentos(f.dataset.texto || '');
             var porTexto = palabras.every(function (p) { return t.indexOf(p) !== -1; }) || (compacto.length > 1 && t.indexOf(compacto) !== -1);
             var ok = porTexto && (!tipo || f.dataset.tipo === tipo) && (!sede || f.dataset.sede === sede);
             f.style.display = ok ? '' : 'none';
             if (ok) { visibles++; }
+            // «Coincide con X, acompañante de Y» solo si el titular no coincide y ese acompañante sí
+            var titular = sinAcentos((f.querySelector('.ficha-acceso-nombre') || {}).textContent || '');
+            var porTitular = palabras.length > 0 && palabras.every(function (p) { return titular.indexOf(p) !== -1; });
+            var ya = false;
+            f.querySelectorAll('[data-pista-acompanante]').forEach(function (pista) {
+                var suyo = pista.getAttribute('data-pista-acompanante') || '';
+                var muestra = !ya && !porTitular && palabras.length > 0 && palabras.every(function (p) { return suyo.indexOf(p) !== -1; });
+                pista.hidden = !muestra;
+                if (muestra) { ya = true; }
+            });
         });
         var vacio = cont.querySelector('[data-sin-resultados-accesos]');
         if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
@@ -5896,7 +5910,9 @@ document.addEventListener('click', function (e) {
 
     document.addEventListener('change', function (e) {
         if (!e.target.matches || !e.target.matches('[data-firma-modo]')) { return; }
-        sincronizarFirmaPropia(e.target.closest('[data-firma-propia]'));
+        // Ronda 8: los diálogos de baja con voucher también usan data-firma-modo (sin firma propia)
+        var cajaPropia = e.target.closest('[data-firma-propia]');
+        if (cajaPropia) { sincronizarFirmaPropia(cajaPropia); }
     });
 
     // Si toca dibujar la firma propia, no se envía vacía
@@ -8170,3 +8186,177 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Recepción de candidatos y autorizaciones departamentales */
+/* ==========================================================================
+   Ronda 8 de ajustes de QA
+   - NV-03: los firmantes del Accidente dependen del Tipo de Afectado y una
+     firma dibujada sin «Guardar Esta Firma» no se pierde al guardar.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    /* ---------- NV-03: firmantes según huésped o colaborador ---------- */
+    function rolesFirma(selector, tipo) {
+        var todos = {};
+        try { todos = JSON.parse(selector.getAttribute('data-roles-por-tipo') || '{}'); } catch (x) { todos = {}; }
+        return todos[tipo] || todos[''] || [];
+    }
+
+    function sincronizarFirmantes(form) {
+        var tipo = form.querySelector('[name="acc_tipo_afectado"]');
+        var selector = form.querySelector('[data-nov-selector-firma]');
+        if (!tipo || !selector) { return; }
+        var roles = rolesFirma(selector, tipo.value);
+        var validos = roles.map(function (r) { return r[0]; });
+        var actual = selector.value;
+        selector.textContent = '';
+        roles.forEach(function (r) {
+            var op = document.createElement('option');
+            op.value = r[0];
+            op.textContent = r[1];
+            selector.appendChild(op);
+        });
+        if (validos.indexOf(actual) !== -1) { selector.value = actual; }
+        // Las firmas pendientes de un firmante que ya no aplica no se envían
+        var caja = selector.closest('[data-nov-firmas]');
+        if (!caja) { return; }
+        caja.querySelectorAll('input[type="hidden"][id^="val_firma_"]').forEach(function (oculto) {
+            var rol = oculto.id.replace('val_firma_', '');
+            if (validos.indexOf(rol) === -1 && oculto.value) {
+                oculto.value = '';
+                var badge = caja.querySelector('[data-firma-rol="' + rol + '"]');
+                if (badge) { badge.remove(); }
+            }
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches || !e.target.matches('[name="acc_tipo_afectado"]') || !e.target.form) { return; }
+        sincronizarFirmantes(e.target.form);
+    });
+
+    // Al guardar: si quedó una firma dibujada sin «Guardar Esta Firma», se guarda
+    // para el firmante elegido; el recuadro de trabajo no se envía (pesa de más)
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches || !form.matches('[data-form-novedad="expediente"]')) { return; }
+        var caja = form.querySelector('fieldset[data-formato="accidente"]:not([disabled]) [data-nov-firmas]');
+        if (!caja) { return; }
+        var trabajo = caja.querySelector('[data-firma-valor]');
+        var selector = caja.querySelector('[data-nov-selector-firma]');
+        if (trabajo && trabajo.value && selector) {
+            var destino = caja.querySelector('#val_firma_' + selector.value);
+            if (destino && !destino.value) { destino.value = trabajo.value; }
+        }
+        if (trabajo) { trabajo.disabled = true; }
+    }, true);
+
+    /* ---------- NV-06: filtros automáticos (el botón Buscar/Filtrar se oculta) ---------- */
+    document.documentElement.classList.add('filtros-automaticos');
+
+    /* ---------- NV-06: secciones plegables (<x-seccion>) ----------
+       Se recuerda cuáles quedaron abiertas por usuario y por formulario
+       (localStorage). Una sección con error o con un campo obligatorio vacío
+       se abre sola. */
+    function claveSecciones(sec) {
+        var cuerpo = document.body;
+        var usuario = (cuerpo && cuerpo.getAttribute('data-usuario-filtros')) || '0';
+        var form = sec.closest('form');
+        var nombre = (form && (form.getAttribute('data-secciones') || form.getAttribute('action'))) || location.pathname;
+        try { nombre = new URL(nombre, location.href).pathname.replace(/\/\d+(?=\/|$)/g, '/n'); } catch (x) { /* tal cual */ }
+        return 'plataforma_secciones:' + usuario + ':' + nombre;
+    }
+    function leerEstado(clave) {
+        try { return JSON.parse(localStorage.getItem(clave) || '{}') || {}; } catch (x) { return {}; }
+    }
+    function guardarEstado(sec) {
+        var clave = claveSecciones(sec);
+        var estado = leerEstado(clave);
+        estado[sec.getAttribute('data-seccion')] = sec.open ? 1 : 0;
+        try { localStorage.setItem(clave, JSON.stringify(estado)); } catch (x) { /* sin almacenamiento */ }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('details.seccion-plegable[data-seccion]').forEach(function (sec) {
+            if (sec.hasAttribute('data-seccion-con-error')) { sec.open = true; return; }
+            var estado = leerEstado(claveSecciones(sec));
+            var valor = estado[sec.getAttribute('data-seccion')];
+            if (valor === 1 || valor === 0) { sec.open = valor === 1; }
+        });
+        // El usuario abre o cierra: se recuerda (el evento toggle no burbujea)
+        document.addEventListener('toggle', function (e) {
+            if (e.target.matches && e.target.matches('details.seccion-plegable[data-seccion]') && e.isTrusted !== false) { guardarEstado(e.target); }
+        }, true);
+    });
+
+    /* ---------- RS-04: Recibir un equipo del lote (OK, Dañado, Faltante) ---------- */
+    function sincronizarRecibir(form) {
+        var marcado = form.querySelector('[data-recibir-estado]:checked');
+        var estado = marcado ? marcado.value : 'ok';
+        form.querySelectorAll('[data-recibir-solo]').forEach(function (el) {
+            var visible = (el.getAttribute('data-recibir-solo') || '').split(' ').indexOf(estado) !== -1;
+            el.hidden = !visible;
+            // Lo oculto no se envía (sin borrar lo que se escribió)
+            el.querySelectorAll('input, select, textarea').forEach(function (c) { c.disabled = !visible; });
+        });
+        // Dentro de lo visible, una caja oculta por su propia regla tampoco se envía
+        form.querySelectorAll('[data-recibir-solo]:not([hidden]) [data-recibir-solo][hidden] input, [data-recibir-solo]:not([hidden]) [data-recibir-solo][hidden] select').forEach(function (c) { c.disabled = true; });
+        var nota = form.querySelector('[name="nota"]');
+        if (nota) { nota.required = estado !== 'ok'; }
+        var cobro = form.querySelector('[name="aplica_cobro"]');
+        var responsable = form.querySelector('[data-recibir-responsable]');
+        if (responsable) { responsable.value = cobro && cobro.checked && !cobro.disabled ? 'resguardante' : ''; }
+        // Sin voucher, las firmas digitales no se piden
+        var caja = form.querySelector('.caja-voucher-recibir');
+        var fisica = form.querySelector('[data-firma-modo][value="fisica"]');
+        if (caja && caja.hidden && fisica) { fisica.checked = true; }
+        // Que las firmas del voucher sepan si firma también el responsable
+        var modo = form.querySelector('[data-firma-modo]:checked');
+        if (modo) { modo.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-recibir-equipo]');
+        if (!b) { return; }
+        var dialogo = document.getElementById('dialogoRecibirEquipo');
+        var form = dialogo && dialogo.querySelector('form[data-form-recibir-equipo]');
+        if (!form) { return; }
+        form.action = b.getAttribute('data-url');
+        var marca = form.querySelector('[data-campo-dialogo]');
+        if (marca) { marca.value = 'recibir-' + b.getAttribute('data-id'); }
+        [['[data-recibir-equipo-nombre]', 'data-recibir-equipo'], ['[data-recibir-folio]', 'data-folio'], ['[data-recibir-resguardante]', 'data-resguardante']].forEach(function (par) {
+            var el = form.querySelector(par[0]);
+            if (el) { el.textContent = b.getAttribute(par[1]) || ''; }
+        });
+        // Cada equipo empieza en OK, sin nota ni voucher
+        var ok = form.querySelector('[data-recibir-estado][value="ok"]');
+        if (ok) { ok.checked = true; }
+        form.querySelectorAll('textarea, input[type="number"]').forEach(function (c) { c.value = ''; });
+        form.querySelectorAll('input[type="checkbox"]').forEach(function (c) { c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); });
+        sincronizarRecibir(form);
+        if (typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
+    });
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-recibir-equipo]')) { return; }
+        if (e.target.matches('[data-recibir-estado]')) {
+            var motivo = form.querySelector('[name="motivo"]');
+            if (motivo && e.target.value === 'faltante') { motivo.value = 'extraviado'; }
+        }
+        if (e.target.matches('[data-recibir-estado], [name="aplica_cobro"]')) { sincronizarRecibir(form); }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[data-form-recibir-equipo]').forEach(sincronizarRecibir);
+    });
+
+    // Un campo obligatorio vacío dentro de una sección cerrada: se abre para que el navegador lo muestre
+    document.addEventListener('invalid', function (e) {
+        var sec = e.target.closest && e.target.closest('details.seccion-plegable');
+        while (sec) {
+            if (!sec.open) { sec.open = true; }
+            sec = sec.parentElement && sec.parentElement.closest('details.seccion-plegable');
+        }
+    }, true);
+})();
+/* Fin Ronda 8 de ajustes de QA */

@@ -60,3 +60,7 @@ Todas estas pantallas funcionan en los modos de pantalla:
 
 ![Recepción en modo Noche](img/recepcion-y-candidatos/noche-recepcion.png)
 ![Caseta en modo Sol](img/recepcion-y-candidatos/sol-caseta-esperando.png)
+
+## Ronda 8
+
+En **No molestar / delegar** ya no apareces tú en «¿En quién delegas?»: elige a otra persona. Si lo intentas, la ventana te avisa «No puedes delegar en ti mismo».

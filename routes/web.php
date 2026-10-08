@@ -197,6 +197,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/rutas', [RutaController::class, 'store'])->name('rutas.store');
     Route::get('/rutas/sede/{sede}', [RutaController::class, 'sede'])->whereNumber('sede')->name('rutas.sede');
     Route::get('/rutas/sede/{sede}/dia', [RutaController::class, 'dia'])->whereNumber('sede')->name('rutas.dia');
+    // Ronda 8 (RT-07/RT-08): hoja de horarios de la semana (consulta de caseta)
+    Route::get('/rutas/sede/{sede}/semana', [RutaController::class, 'semana'])->whereNumber('sede')->name('rutas.semana');
     Route::post('/rutas/sede/{sede}/paraderos', [RutaController::class, 'guardarParadero'])->whereNumber('sede')->name('rutas.paraderos.store');
     Route::put('/rutas/paraderos/{paradero}', [RutaController::class, 'actualizarParadero'])->whereNumber('paradero')->name('rutas.paraderos.update');
     Route::patch('/rutas/paraderos/{paradero}/estado', [RutaController::class, 'estadoParadero'])->whereNumber('paradero')->name('rutas.paraderos.estado');
@@ -234,6 +236,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/responsivas', [ResponsivaController::class, 'store'])->name('responsivas.store');
     Route::get('/responsivas/equipos/{equipo}/historial', [ResponsivaController::class, 'historial'])->whereNumber('equipo')->name('responsivas.historial');
     Route::patch('/responsivas/{responsiva}/recibir', [ResponsivaController::class, 'recibir'])->whereNumber('responsiva')->name('responsivas.recibir');
+    // Ronda 8 (RS-04): devolución parcial, un equipo a la vez
+    Route::patch('/responsivas/{responsiva}/equipos/{equipo}/recibir', [ResponsivaController::class, 'recibirEquipo'])->whereNumber(['responsiva', 'equipo'])->name('responsivas.recibir-equipo');
     Route::get('/responsivas/{responsiva}/firma', [ResponsivaController::class, 'firma'])->whereNumber('responsiva')->name('responsivas.firma');
     Route::get('/responsivas/{responsiva}/hoja', [ResponsivaController::class, 'hoja'])->whereNumber('responsiva')->name('responsivas.hoja');
     // Fin Padrones: Préstamo de llaves y Responsivas
@@ -247,6 +251,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/novedades/coincidencias', 'coincidencias')->middleware('throttle:60,1')->name('novedades.coincidencias');
         Route::post('/novedades/perdidas/{reporte}/vincular', 'vincularPerdida')->whereNumber('reporte')->name('novedades.perdidas.vincular');
         Route::put('/novedades/{novedad}', 'update')->whereNumber('novedad')->name('novedades.update');
+        // Ronda 8 (NV-03): con GET la dirección del expediente lo abre (antes: 405)
+        Route::get('/novedades/{novedad}', 'mostrar')->whereNumber('novedad')->name('novedades.mostrar');
         Route::post('/novedades/{novedad}/reabrir', 'reabrir')->whereNumber('novedad')->name('novedades.reabrir');
         Route::post('/novedades/{novedad}/vincular-hallazgo', 'vincularRobo')->whereNumber('novedad')->name('novedades.robo.vincular');
         Route::get('/novedades/{novedad}/imprimir', 'imprimir')->whereNumber('novedad')->name('novedades.imprimir');

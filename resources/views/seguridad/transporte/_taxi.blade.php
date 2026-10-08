@@ -91,7 +91,7 @@
             @endif
         </div>
         @include('componentes.lector', ['id' => "taxi_{$i}_pasajero", 'tipos' => 'colaborador', 'nombre' => '', 'etiqueta' => null, 'valor' => null, 'elegido' => null, 'requerido' => false, 'modo' => 'buscar',
-            'ayuda' => 'Escanea el gafete o escribe el número de empleado y presiona Enter. Puedes agregar varios.'])
+            'ayuda' => 'Escanea el gafete o escribe el número de empleado: aparece solo, sin Enter. Puedes agregar varios.'])
         <div class="pasajeros-elegidos" data-pasajeros>
             @foreach ($elegidos as $id)
                 <span class="chip-pasajero" data-id="{{ $id }}">{{ $pasajerosAnteriores[$id] }}<input type="hidden" name="{{ $n }}[pasajeros][]" value="{{ $id }}"><button type="button" data-quitar-pasajero aria-label="Quitar a {{ $pasajerosAnteriores[$id] }}">×</button></span>

@@ -12,7 +12,6 @@ use App\Models\RoboDetalle;
 use App\Models\Sede;
 use App\Models\SiniestroDetalle;
 use App\Models\User;
-use App\Models\UsuarioRol;
 use App\Services\Novedades\Formatos\Accidente;
 use App\Services\Novedades\Formatos\Formato;
 use App\Services\Novedades\Formatos\LostFound;
@@ -27,6 +26,7 @@ use App\Services\Permisos\Autorizador;
 use App\Support\Tenancy\Tenant;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -265,9 +265,14 @@ class AdministradorNovedades
      */
     public function crear(User $actor, array $entrada): Novedad
     {
-        $permitidas = $this->categorias($actor, 'crear');
-        $categoria = in_array($entrada['categoria'] ?? null, $permitidas, true) ? $entrada['categoria'] : $permitidas[0];
-        $v = $this->validarBase($entrada, true);
+        // Ronda 8 (NV-01): el ticket no se despacha sin clasificación (SEGCAT lo
+        // dejaba «Sin clasificar»); quien solo tiene una categoría (Lost & Found) no elige
+        $permitidas = array_values(array_diff($this->categorias($actor, 'crear'), ['sin_clasificar']));
+        if (count($permitidas) === 1) {
+            $entrada['categoria'] = $permitidas[0];
+        }
+        $v = $this->validarBase($entrada, true, $permitidas);
+        $categoria = $v['categoria'];
 
         $sede = $this->sedeValida($actor, (int) $v['sede_id'], $categoria);
         $novedad = new Novedad([
@@ -476,7 +481,7 @@ class AdministradorNovedades
      * @param  array<string, mixed>  $entrada
      * @return array<string, mixed>
      */
-    private function validarBase(array $entrada, bool $alta): array
+    private function validarBase(array $entrada, bool $alta, array $categoriasAlta = []): array
     {
         $entrada = array_map(fn ($v) => is_string($v) ? trim((string) preg_replace('/[ \t]+/u', ' ', $v)) : $v, $entrada);
         $reglas = [
@@ -489,6 +494,7 @@ class AdministradorNovedades
         ];
         $reglas += $alta ? [
             'sede_id' => ['required', 'integer'],
+            'categoria' => ['required', 'string', 'in:'.implode(',', $categoriasAlta)],
             'reportado_por' => ['required', 'string', 'max:150'],
             'reportado_colaborador_id' => ['nullable', 'integer'],
             'ubicacion' => ['required', 'string', 'max:255'],
@@ -503,6 +509,8 @@ class AdministradorNovedades
 
         return Validator::make($entrada, $reglas, [
             'sede_id.required' => 'Elige la sede.',
+            'categoria.required' => 'Elige la clasificación del ticket (Categoría). Si aún no estás seguro, elige la más cercana: se puede corregir al atenderlo.',
+            'categoria.in' => 'Elige la clasificación del ticket (Categoría). Si aún no estás seguro, elige la más cercana: se puede corregir al atenderlo.',
             'reportado_por.required' => 'Escribe quién reporta (o toca «Fui yo quien lo observó»).',
             'ubicacion.required' => 'Escribe la ubicación específica (por ejemplo: Piso 2, cerca del elevador).',
             'descripcion.required' => 'Describe qué sucedió.',
@@ -554,8 +562,51 @@ class AdministradorNovedades
     }
 
     /**
-     * ¿A quién se canaliza?: usuario activo de la empresa con acceso a la sede
-     * (rol en toda la empresa o en esa sede). SEGCAT lo ignoraba en silencio.
+     * Ronda 8 (NV-01): acciones que distinguen al personal de Seguridad en la
+     * Bitácora (atiende: Agente, Supervisor, Jefe; o la supervisa: Director,
+     * Administrador). Lo decide el motor de permisos, no el nombre del rol.
+     */
+    public const ACCIONES_PERSONAL_SEGURIDAD = ['editar', 'reabrir', 'exportar'];
+
+    /**
+     * «¿A quién se canaliza?»: usuarios activos de la empresa con rol de
+     * Seguridad en la Bitácora, en toda la empresa o en alguna de esas sedes
+     * (antes: cualquier usuario, p. ej. Recursos Humanos). Una consulta.
+     *
+     * @param  list<int>  $sedes
+     * @return Collection<int, array{id: int, nombre: string, sedes: string}>
+     */
+    public function personalCanalizable(array $sedes): Collection
+    {
+        $empresaId = app(Tenant::class)->empresaId();
+        $asignaciones = DB::table('usuario_roles as ur')
+            ->join('users as u', 'u.id', '=', 'ur.user_id')
+            ->join('roles as r', 'r.id', '=', 'ur.rol_id')
+            ->where('u.empresa_id', $empresaId)->where('u.activo', true)->where('r.activo', true)
+            ->where(fn ($q) => $q->where('r.empresa_id', $empresaId)->orWhereNull('r.empresa_id'))
+            ->whereExists(fn ($q) => $q->selectRaw('1')->from('rol_permisos as rp')
+                ->join('modulo_acciones as ma', 'ma.id', '=', 'rp.modulo_accion_id')
+                ->join('modulos as m', 'm.id', '=', 'ma.modulo_id')
+                ->join('acciones as a', 'a.id', '=', 'ma.accion_id')
+                ->whereColumn('rp.rol_id', 'r.id')->where('m.clave', 'novedades')
+                ->whereIn('a.clave', self::ACCIONES_PERSONAL_SEGURIDAD))
+            ->get(['u.id', 'u.name', 'ur.sede_id'])
+            ->groupBy('id');
+
+        return $asignaciones->map(function ($filas) {
+            $todas = $filas->contains(fn ($f) => $f->sede_id === null);
+
+            return ['id' => (int) $filas->first()->id, 'nombre' => $filas->first()->name,
+                'sedes' => $todas ? 'todas' : $filas->pluck('sede_id')->unique()->join(' ')];
+        })
+            ->filter(fn ($u) => $u['sedes'] === 'todas' || array_intersect(explode(' ', $u['sedes']), array_map('strval', $sedes)) !== [])
+            ->sortBy('nombre', SORT_NATURAL | SORT_FLAG_CASE)->values();
+    }
+
+    /**
+     * ¿A quién se canaliza?: personal de Seguridad activo de la empresa con
+     * acceso a la sede (rol en toda la empresa o en esa sede). SEGCAT lo
+     * ignoraba en silencio. Quien ya tenía el ticket se conserva.
      */
     private function asignadoValido(mixed $id, int $sedeId, ?int $actual): ?int
     {
@@ -566,10 +617,8 @@ class AdministradorNovedades
         if ($id === (int) $actual) {
             return $id;
         }
-        $usuario = User::where('empresa_id', app(Tenant::class)->empresaId())->where('activo', true)->find($id);
-        $conAcceso = $usuario !== null && UsuarioRol::where('user_id', $id)->where(fn ($q) => $q->whereNull('sede_id')->orWhere('sede_id', $sedeId))->exists();
-        if (! $conAcceso) {
-            throw ValidationException::withMessages(['asignado_a' => 'La persona a quien se canaliza no está activa o no tiene acceso a esa sede.']);
+        if (! $this->personalCanalizable([$sedeId])->contains('id', $id)) {
+            throw ValidationException::withMessages(['asignado_a' => 'Solo se canaliza al personal de Seguridad activo de esa sede (agentes, supervisores, jefes o mandos).']);
         }
 
         return $id;

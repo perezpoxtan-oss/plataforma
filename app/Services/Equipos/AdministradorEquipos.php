@@ -8,10 +8,10 @@ use App\Models\TipoEquipo;
 use App\Models\User;
 use App\Models\VoucherReposicion;
 use App\Services\Inventarios\Vouchers;
+use App\Services\Lector\Identificacion;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
-use App\Support\Lector\Identificable;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
@@ -203,6 +203,19 @@ class AdministradorEquipos
         $this->auditoria->auditar($actor, $asignado ? 'equipos.asignado' : 'equipos.devuelto', $equipo, ['estado' => $esperado], ['estado' => $nuevo]);
     }
 
+    /**
+     * Ronda 8 (RS-04): el equipo regresa dañado de una Responsiva y no se da de
+     * baja: queda EN MANTENIMIENTO (de ASIGNADO, nunca de otro estado).
+     */
+    public function recibirDanadoDeResponsiva(User $actor, Equipo $equipo): void
+    {
+        if ($equipo->estado !== 'asignado') {
+            throw ValidationException::withMessages(['equipo' => "El equipo {$equipo->numero_serie} no está asignado."]);
+        }
+        $equipo->forceFill(['estado' => 'en_mantenimiento'])->save();
+        $this->auditoria->auditar($actor, 'equipos.devuelto', $equipo, ['estado' => 'asignado'], ['estado' => 'en_mantenimiento']);
+    }
+
     // --------------------------------------------------------------- Validación
 
     /**
@@ -349,17 +362,8 @@ class AdministradorEquipos
      */
     private function etiquetaLibre(string $etiqueta, ?Equipo $actual): void
     {
-        foreach (config('lector.tipos', []) as $tipo => $clase) {
-            if (! is_subclass_of($clase, Identificable::class) || ! method_exists($clase, 'etiquetaOcupada')) {
-                continue;
-            }
-            $ocupada = $clase::etiquetaOcupada($etiqueta, $clase === Equipo::class ? $actual?->id : null);
-            if ($ocupada !== null) {
-                $quien = $ocupada->resumenLector()['titulo'];
-                $que = ['vehiculo' => 'Vehículo'][$tipo] ?? ucfirst(str_replace('_', ' ', (string) $tipo));
-                throw ValidationException::withMessages(['etiqueta_nfc' => "Esa etiqueta NFC / RFID ya está asignada a otro registro: {$que} «{$quien}». Usa otra etiqueta o quítasela primero a ese registro."]);
-            }
-        }
+        // Ronda 8: la misma regla y el mismo mensaje que en todos los formularios
+        app(Identificacion::class)->exigirEtiquetaLibre($etiqueta, $actual ?? new Equipo);
     }
 
     // ------------------------------------------------------------------ Lectura

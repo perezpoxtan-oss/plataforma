@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Colaborador;
 use App\Models\Empresa;
 use App\Models\Equipo;
+use App\Models\EquipoResponsiva;
 use App\Models\Responsiva;
 use App\Models\Sede;
 use App\Models\User;
@@ -85,6 +86,8 @@ class ResponsivaController extends Controller
                     'crear' => $puedeCrear && $sedesCrear->isNotEmpty(),
                     'recibir' => $actor->can('responsivas.editar'),
                     'imprimir' => $actor->can('responsivas.imprimir'),
+                    // Ronda 8 (RS-04): un equipo dañado o faltante se da de baja con voucher (como en Equipos)
+                    'voucher' => $actor->can('equipos.eliminar'),
                 ],
             ]);
         });
@@ -113,7 +116,7 @@ class ResponsivaController extends Controller
 
         [$modelo, $regresaron, $total] = $this->tenant->conEmpresa($empresaId, function () use ($request, $responsiva) {
             $modelo = $this->buscarEnAlcance($request->user(), $responsiva, 'responsivas.editar');
-            $total = $modelo->equipos()->count();
+            $total = $modelo->equipos()->whereNull('devuelto_en')->count(); // Ronda 8: solo los que siguen en campo
 
             return [$modelo, $this->responsivas->recibir($request->user(), $modelo), $total];
         });
@@ -122,6 +125,30 @@ class ResponsivaController extends Controller
 
         return redirect()->to(route('responsivas.index').'#responsiva-'.$modelo->id)
             ->with('ok', "Lote {$modelo->folio} recibido: {$regresaron} ".($regresaron === 1 ? 'equipo vuelve' : 'equipos vuelven').' a DISPONIBLE.'.$nota);
+    }
+
+    /**
+     * Ronda 8 (RS-04): «Recibir» un solo equipo del lote (OK, Dañado o Faltante).
+     * Dañado/Faltante pueden generar el voucher de reposición (equipos.eliminar).
+     */
+    public function recibirEquipo(Request $request, int $responsiva, int $equipo): RedirectResponse
+    {
+        Gate::authorize('responsivas.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        [$modelo, $r] = $this->tenant->conEmpresa($empresaId, function () use ($request, $responsiva, $equipo) {
+            $modelo = $this->buscarEnAlcance($request->user(), $responsiva, 'responsivas.editar');
+            $fila = $modelo->equipos()->whereKey($equipo)->first();
+            abort_if($fila === null, 404);
+
+            return [$modelo, $this->responsivas->recibirEquipo($request->user(), $modelo, $fila, $request->all(), $request->user()->can('equipos.eliminar'))];
+        });
+
+        $texto = 'Equipo '.($r['serie'] ?? '').' recibido ('.mb_strtoupper(EquipoResponsiva::ESTADOS_DEVOLUCION[$r['estado']]).')'
+            .($r['voucher'] ? ' y dado de baja con el voucher '.$r['voucher']->folio.($r['voucher']->aplica_cobro ? ' (con cobro de $'.number_format((float) $r['voucher']->monto, 2).')' : '') : '')
+            .'. '.($r['cerrado'] ? "El lote {$modelo->folio} quedó completo y pasa a Historial Devueltos." : "Del lote {$modelo->folio} ".($r['faltan'] === 1 ? 'falta 1 equipo' : "faltan {$r['faltan']} equipos").' por regresar.');
+
+        return redirect()->to(route('responsivas.index').'#responsiva-'.$modelo->id)->with($r['estado'] === 'ok' ? 'ok' : 'aviso', $texto);
     }
 
     /**
@@ -152,7 +179,8 @@ class ResponsivaController extends Controller
         return $this->tenant->conEmpresa($empresaId, function () use ($request, $responsiva, $empresaId) {
             $modelo = $this->buscarEnAlcance($request->user(), $responsiva, 'responsivas.imprimir');
             $modelo->load(['sede:id,nombre', 'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno,puesto_id', 'colaborador.puesto:id,nombre',
-                'entrego:id,name', 'recibio:id,name', 'equipos.equipo:id,tipo_equipo_id,marca,modelo,numero_serie', 'equipos.equipo.tipo:id,nombre']);
+                'entrego:id,name', 'recibio:id,name', 'equipos.equipo:id,tipo_equipo_id,marca,modelo,numero_serie', 'equipos.equipo.tipo:id,nombre',
+                'equipos.recibio:id,name', 'equipos.voucher:id,folio']);
 
             return view('operacion.responsivas.hoja', [
                 'responsiva' => $modelo,
@@ -186,7 +214,7 @@ class ResponsivaController extends Controller
         return $this->responsivas->limitar(Responsiva::query(), $actor, $permiso)->with([
             'sede:id,nombre', 'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno',
             'entrego:id,name', 'recibio:id,name',
-            'equipos:id,responsiva_id,equipo_id,modalidad,estado_devolucion,devuelto_en',
+            'equipos:id,responsiva_id,equipo_id,modalidad,estado_devolucion,nota_devolucion,devuelto_en,recibido_por,voucher_id', 'equipos.recibio:id,name', 'equipos.voucher:id,folio',
             'equipos.equipo:id,tipo_equipo_id,marca,modelo,numero_serie,estado', 'equipos.equipo.tipo:id,nombre',
         ]);
     }

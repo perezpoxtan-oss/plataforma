@@ -273,14 +273,14 @@ class RecorridoPantallasTest extends TestCase
             'equipos.etiqueta', 'equipos.qr', 'pases-salida.equipo', 'responsivas.historial' => array_map(fn ($id) => ['equipo' => $id], $ids([$primero(Equipo::class)])),
             'equipos_pc.etiqueta', 'equipos_pc.qr', 'equipos_pc.ir' => array_map(fn ($id) => ['equipo' => $id], $ids([$primero(EquipoPc::class)])),
             'equipos_pc.anterior.equipo' => array_map(fn ($id) => ['equipo' => $id, 'pantalla' => 'etiqueta'], $ids([$primero(EquipoPc::class)])),
-            'rutas.sede', 'rutas.dia' => array_map(fn ($id) => ['sede' => $id], $ids([
+            'rutas.sede', 'rutas.dia', 'rutas.semana' => array_map(fn ($id) => ['sede' => $id], $ids([
                 $primero(Sede::class), Sede::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
             ])),
             'rutas.itinerario' => array_map(fn ($id) => ['ruta' => $id], $ids([$primero(Ruta::class)])),
             'prestamo_llaves.historial' => array_map(fn ($id) => ['llave' => $id], $ids([$primero(Llave::class)])),
             'vouchers.imprimir' => array_map(fn ($id) => ['voucher' => $id], $ids([$primero(VoucherReposicion::class)])),
             'responsivas.firma', 'responsivas.hoja' => array_map(fn ($id) => ['responsiva' => $id], $ids([$primero(Responsiva::class)])),
-            'novedades.imprimir', 'novedades.acuse' => array_map(fn ($id) => ['novedad' => $id], $ids(
+            'novedades.imprimir', 'novedades.acuse', 'novedades.mostrar' => array_map(fn ($id) => ['novedad' => $id], $ids(
                 collect(array_keys(Novedad::CATEGORIAS))->map(fn ($cat) => $primero(Novedad::class, fn ($q) => $q->where('categoria', $cat)))->all()
             )),
             'novedades.firma' => AccidenteFirma::query()->withoutGlobalScopes()->whereIn('novedad_id', Novedad::withoutGlobalScopes()->where('empresa_id', $e)->select('id'))

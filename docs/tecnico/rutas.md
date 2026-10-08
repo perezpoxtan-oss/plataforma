@@ -6,7 +6,7 @@ Réplica de `modules/transporte/ruta_*` de SEGCAT (`ruta_lista.php`, `sede_gesti
 - Reglas: `app/Services/Rutas/AdministradorRutas.php` (validación, alcance, clonado, paraderos, próximas salidas, auditoría)
 - Modelos: `Ruta`, `RutaHorario`, `RutaParada`, `Paradero` (todos con `PerteneceAEmpresa` y `RegistraAutor`)
 - Migración: `2026_10_09_000500_crear_rutas_de_transporte`
-- Vistas: `resources/views/padrones/rutas/{index,sede,_horario,_paradero,dia,itinerario}.blade.php`
+- Vistas: `resources/views/padrones/rutas/{index,sede,_horario,_paradero,dia,semana,itinerario}.blade.php`
 - JS: bloque "Rutas de transporte" al final de `public/js/plataforma.js` (horarios y paraderos dinámicos, editar)
 - CSS: bloque "Rutas de transporte" al final de `public/css/plataforma.css` y `public/css/modos-pantalla.css`
 - Pruebas: `tests/Feature/Seguridad/RutasTest.php` (21 pruebas)
@@ -33,12 +33,13 @@ Las rutas **no son Identificables** (no llevan QR ni NFC): no se registran en `c
 | PATCH | `/rutas/{ruta}/estado` (`activo=0/1`) | `rutas.estado` | `rutas.eliminar` sobre la ruta |
 | POST | `/rutas/{ruta}/clonar` | `rutas.clonar` | `rutas.crear` en su sede |
 | GET | `/rutas/{ruta}/itinerario` | `rutas.itinerario` | `rutas.imprimir` en su sede |
-| GET | `/rutas/sede/{sede}/dia?fecha=AAAA-MM-DD` | `rutas.dia` | `rutas.imprimir` en la sede |
+| GET | `/rutas/sede/{sede}/dia?fecha=AAAA-MM-DD` | `rutas.dia` | `rutas.ver` en la sede (Ronda 8; antes `rutas.imprimir`) |
+| GET | `/rutas/sede/{sede}/semana` (Ronda 8) | `rutas.semana` | `rutas.ver` en la sede |
 | POST | `/rutas/sede/{sede}/paraderos` | `rutas.paraderos.store` | `rutas.crear` en la sede |
 | PUT | `/rutas/paraderos/{paradero}` | `rutas.paraderos.update` | `rutas.editar` sobre el paradero |
 | PATCH | `/rutas/paraderos/{paradero}/estado` | `rutas.paraderos.estado` | `rutas.eliminar` sobre el paradero |
 
-**Alcance.** Todo es por sede. Solo se ven sedes **activas** dentro de `sedesPermitidas('rutas.ver')`; una sede, ruta o paradero de otra empresa o de una sede que el usuario no ve responde **404**. Dentro de una sede visible, si falta el permiso para esa sede o ese registro responde **403**. "Sobre la ruta / el paradero" usa `Autorizador::puede($usuario, $permiso, $registro)` (tienen `sede_id` y `creado_por`), así que el alcance **propios** limita a lo que el usuario dio de alta. El Supervisor (plantilla) crea y edita en su sede pero no suspende; el Agente solo consulta (ni imprime). El Super Administrador trabaja sobre la empresa elegida en "Empresa de trabajo".
+**Alcance.** Todo es por sede. Solo se ven sedes **activas** dentro de `sedesPermitidas('rutas.ver')`; una sede, ruta o paradero de otra empresa o de una sede que el usuario no ve responde **404**. Dentro de una sede visible, si falta el permiso para esa sede o ese registro responde **403**. "Sobre la ruta / el paradero" usa `Autorizador::puede($usuario, $permiso, $registro)` (tienen `sede_id` y `creado_por`), así que el alcance **propios** limita a lo que el usuario dio de alta. El Supervisor (plantilla) crea y edita en su sede pero no suspende; el Agente solo consulta (Ronda 8: abre e imprime las hojas de horarios de la semana y del día, no el itinerario). El Super Administrador trabaja sobre la empresa elegida en "Empresa de trabajo".
 
 La sede de una ruta se fija al crearla (el diálogo vive en la pantalla de la sede): no se mueve una ruta entre sedes porque turno, transportista y paraderos dependen de la sede. Para otra sede se captura de nuevo.
 
@@ -51,7 +52,8 @@ La sede de una ruta se fija al crearla (el diálogo vive en la pantalla de la se
 - **Clonar**: copia la ruta con sus horarios y paraderos como «NOMBRE (COPIA)», y si ya existe «(COPIA) 2», «(COPIA) 3»…; queda activa y a nombre de quien la clona.
 - **Suspender / reactivar** con el mismo botón; nunca se borra. Desactivar un paradero no cambia las rutas que lo usan: solo deja de sugerirse.
 - **Próximas llegadas / salidas** de cada ficha: las 2 siguientes salidas de rutas activas desde la hora actual **de la sede** (`Sede::zonaHoraria()`), buscando hasta 14 días y respetando los días de cada horario.
-- **Hoja del día**: rutas activas cuyos horarios salen ese día de la semana, por hora; una hoja para Llegadas y otra para Salidas (salto de página al imprimir, carta horizontal), una columna por paradero con su hora, ✓ si para sin hora fija o — si no para. Fecha inválida = hoy.
+- **Hoja de horarios de la semana** (Ronda 8, `rutas.semana`): ver abajo.
+- **Hoja del día**: rutas activas cuyos horarios salen ese día de la semana, por hora (Ronda 8: al pie dice qué horarios no operan ese día y qué rutas están suspendidas); una hoja para Llegadas y otra para Salidas (salto de página al imprimir, carta horizontal), una columna por paradero con su hora, ✓ si para sin hora fija o — si no para. Fecha inválida = hoy.
 - **Itinerario**: datos de la ruta y, por cada horario, sus días, horas y paraderos.
 
 Auditoría: `rutas.creado`, `rutas.actualizado`, `rutas.desactivado`, `rutas.reactivado` (sobre `Ruta` o `Paradero`) y `rutas.clonado`. La foto de la ruta incluye un renglón por horario (`Lunes a viernes · L-V · 05:45-06:40 · REGIÓN 94 05:45, …`). `LectorAuditoria` las muestra como "Ruta de transporte" y "Paradero".
@@ -81,3 +83,11 @@ Auditoría: `rutas.creado`, `rutas.actualizado`, `rutas.desactivado`, `rutas.rea
 - **RT-02 (a)**: el diálogo «Configurar Ruta y Horarios» tiene una sola barra de desplazamiento (el cuerpo): `.rutas-dialogo[open]` es una columna flexible de 92 vh con `overflow: hidden` y el cuerpo es el único que se desplaza; los combos largos (transportista) ya no ensanchan el diálogo.
 - **RT-02 (b)**: «Agregar otro Horario» copia los paraderos (y sus horas) del horario anterior, editables. Antes fallaba en silencio: las horas se convierten a texto de 24 h («Ajustes de captura») y el JS las buscaba como `input[type="time"]`; ahora se buscan por su nombre (`[name$="[hora]"]`). También se acotó el manejador de horarios de Llaves, que reaccionaba al botón de Rutas.
 - **RT-01**: la demo deja 6 paraderos **activos** en Hotel Demo Centro (REGIÓN 94 (CRUCERO), SUPERMANZANA 63 (MERCADO 28), AV. KABAH CON LEONA VICARIO, CHEDRAUI PORTILLO, PLAZA LAS AMÉRICAS y AV. TALLERES). El séptimo era «PARADERO DE PRUEBA», que crea `borradoDemo()` para practicar Eliminar definitivamente (lección 26); `ronda6Demo()` lo deja **desactivado**, así que la tarjeta de la sede dice 6 y la pestaña Paraderos lo muestra como desactivado.
+
+## Ronda 8 (QA RT-07 / RT-08)
+
+- **RT-07 (a) «RUTA 9 no aparece y RUTA 1 no sale a las 06:15»**: no era una falla de filtro, zona horaria ni clonado. En la demo, RUTA 9 - TEMPORADA ALTA está **suspendida** (no opera) y el horario de las **06:15** de RUTA 1 - REGIÓN 94 es el de **fin de semana** (Sábado y domingo); entre semana sale a las 05:45. La Hoja del día ahora lo explica al pie de cada hoja: «No operan este día: RUTA 1 - REGIÓN 94 06:15 (Sábado y domingo)» y «Suspendidas (no operan): RUTA 9 - TEMPORADA ALTA».
+- **RT-07 (b) Hoja de la semana** — `GET /rutas/sede/{sede}/semana` (`rutas.semana`, `RutaController::semana`, vista `padrones/rutas/semana.blade.php`): como `ruta_imprimir_dia.php` de SEGCAT, que era una «vista informativa de la semana». Todos los horarios de las rutas activas de la sede, cada uno con su **mini semana L M X J V S D** (· = no opera) y el patrón corto (L-D, L-V, S-D o letras), así se ven también los horarios alternos (fin de semana o días sueltos) de una misma ruta, con el nombre del horario. Orden de SEGCAT: todos los días, lunes a viernes, días sueltos y fin de semana; dentro de cada grupo por hora. Columnas Sale · Ruta · Llega · Días · un paradero por columna. Una hoja para Llegadas y otra para Salidas (carta horizontal), suspendidas al pie. Desde ahí se abre la Hoja de un día (con fecha) y desde la del día «Semana completa». En la sede: botones «Hoja de horarios» (semana) y «Hoja del día»; en la lista de sedes, la impresora abre la semana.
+- **RT-08**: la hoja de la semana y la del día son de **consulta para caseta**: piden `rutas.ver` (antes la del día pedía `rutas.imprimir`) y el alcance de sede; el Agente las abre e imprime en su sede (otra sede u otra empresa → 404). El itinerario de una ruta sigue con `rutas.imprimir`.
+- Sin consultas por fila: horarios con ruta, turno, transportista y paradas en una sola carga (`horariosDeSede`).
+- Pruebas: `AjustesRonda8Test::test_rt07_*`, `test_rt08_*` y ajustes en `RutasTest` (el Agente ya abre las hojas).

@@ -205,7 +205,7 @@ class GafetesTest extends TestCase
             ->assertSessionHasErrors(['nomenclatura' => 'Ya existe un gafete con la nomenclatura «HOT-CEN-VIP-01» en esta empresa.']);
         // La misma etiqueta en otro gafete (escrita de otra forma): dice quién la tiene
         $this->actingAs($this->admin)->put("/gafetes/{$otro->id}", ['nomenclatura' => $otro->nomenclatura, 'tipo_gafete_id' => $proveedor->id, 'etiqueta_nfc' => '04A23B1C'])
-            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta NFC / RFID ya está asignada al gafete HOT-CEN-VIP-01. Quítasela primero o usa otra.']);
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene el gafete «HOT-CEN-VIP-01». Quítasela primero o usa otra.']);
         // Quitarle la etiqueta
         $this->actingAs($this->admin)->put("/gafetes/{$g->id}", ['nomenclatura' => 'HOT-CEN-VIP-01', 'tipo_gafete_id' => $proveedor->id, 'etiqueta_nfc' => ''])->assertSessionHasNoErrors();
         $this->assertNull($g->fresh()->etiqueta_nfc);
