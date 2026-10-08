@@ -12,6 +12,7 @@ use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\CambioNoPermitido;
 use App\Services\Candidatos\DocumentosCandidato;
 use App\Services\Candidatos\Kiosco;
+use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Support\Csv;
@@ -101,9 +102,9 @@ class CandidatoController extends Controller
             $c->load(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'persona:id,nombre_completo,categoria', 'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno',
                 'acceso:id,sede_id,entrada_at,estado,foto_persona,foto_identificacion,gafete_texto,creado_por', 'acceso.registradoPor:id,name',
                 'documentos.registradoPor:id,name', 'eventos.usuario:id,name', 'autorizaciones.respondidaPor:id,name', 'autorizaciones.departamento:id,nombre',
-                'registradoPor:id,name', 'editadoPor:id,name', 'decisionPor:id,name']);
+                'registradoPor:id,name', 'editadoPor:id,name', 'decisionPor:id,name', 'firmaCapturadaPor:id,name']);
             $enlace = $c->enlaces()->whereNull('revocado_en')->where('expira_en', '>', now())->first();
-            $partes = $this->partirNombre($c->nombre_completo);
+            $partes = $c->partesNombre();
 
             return view('rh.candidatos.show', [
                 'c' => $c,
@@ -198,6 +199,44 @@ class CandidatoController extends Controller
         return redirect()->route('candidatos.index')->with('ok', "Se eliminó la ficha de {$nombre} y sus documentos.");
     }
 
+    // ------------------------------------------------- Solicitud de empleo (lección 36)
+
+    /**
+     * Hoja impresa «Solicitud de empleo» para el expediente: logo, folio,
+     * fecha, foto de caseta, todas las secciones y la firma.
+     */
+    public function solicitud(Request $request, int $candidato): View
+    {
+        Gate::authorize('candidatos.ver');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $candidato, $empresaId) {
+            $c = $this->buscar($request->user(), $candidato, 'candidatos.ver');
+            $c->load(['sede:id,nombre,direccion', 'departamento:id,nombre', 'puesto:id,nombre', 'acceso:id,foto_persona', 'firmaCapturadaPor:id,name']);
+            $empresa = Empresa::whereKey($empresaId)->first(['id', 'nombre_comercial', 'razon_social', 'logo_ruta']);
+            $logo = $empresa->logo_ruta;
+
+            return view('rh.candidatos.solicitud', [
+                'c' => $c,
+                'empresa' => $empresa,
+                'logo' => is_string($logo) && $logo !== '' && ! str_contains($logo, '..') && is_file(public_path($logo)) ? asset($logo) : null,
+            ]);
+        });
+    }
+
+    /** Firma de la solicitud (disco privado): solo con candidatos.ver y dentro del alcance. */
+    public function firma(Request $request, int $candidato): StreamedResponse
+    {
+        Gate::authorize('candidatos.ver');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $candidato) {
+            $c = $this->buscar($request->user(), $candidato, 'candidatos.ver');
+
+            return app(Firmas::class)->respuesta($c->firma_ruta);
+        });
+    }
+
     // ------------------------------------------------------------- Documentos
 
     public function subirDocumento(Request $request, int $candidato): RedirectResponse
@@ -274,17 +313,28 @@ class CandidatoController extends Controller
         $filas = $this->tenant->conEmpresa($empresaId, fn () => $this->filtrar($this->candidatos->limitar(Candidato::query(), $request->user(), 'candidatos.exportar'), $filtros)
             ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre'])->orderByDesc('id')->limit(5000)->get());
 
-        return response()->streamDownload(function () use ($filas, $hora) {
+        // Datos personales sensibles: solo si se piden expresamente (columnas marcadas)
+        $conPersonales = Entrada::texto($request->query('datos')) === 'personales';
+        if ($conPersonales) {
+            app(AdministradorRoles::class)->auditar($request->user(), 'candidatos.exportado_con_datos_personales', Empresa::findOrFail($empresaId), null,
+                ['registros' => $filas->count()]);
+        }
+
+        return response()->streamDownload(function () use ($filas, $hora, $conPersonales) {
             $salida = fopen('php://output', 'w');
             fwrite($salida, "\xEF\xBB\xBF");
-            Csv::fila($salida, ['Folio', 'Sede', 'Nombre', 'Puesto', 'Departamento', 'Etapa', 'Origen', 'Escolaridad', 'Años de experiencia', 'Disponibilidad', 'Llegada', 'Decisión']);
+            $marca = ' [DATO PERSONAL]';
+            Csv::fila($salida, array_merge(['Folio', 'Sede', 'Nombre', 'Puesto', 'Departamento', 'Etapa', 'Origen', 'Escolaridad', 'Años de experiencia', 'Disponibilidad', 'Llegada', 'Decisión'],
+                $conPersonales ? ['Teléfono'.$marca, 'Correo'.$marca, 'CURP'.$marca, 'RFC'.$marca, 'NSS'.$marca, 'Domicilio'.$marca, 'Contacto de emergencia'.$marca] : []));
             foreach ($filas as $c) {
-                Csv::fila($salida, [$c->id, $c->sede?->nombre, $c->nombre_completo, $c->puestoVisible(), $c->departamento?->nombre, $c->etiquetaEtapa(),
+                Csv::fila($salida, array_merge([$c->id, $c->sede?->nombre, $c->nombre_completo, $c->puestoVisible(), $c->departamento?->nombre, $c->etiquetaEtapa(),
                     Candidato::ORIGENES[$c->origen] ?? $c->origen, $c->escolaridadMaxima(), $c->anosExperiencia(), Candidato::DISPONIBILIDAD[$c->disponibilidad] ?? null,
-                    $hora->formatear($c->llegada_en), $hora->formatear($c->decision_en)]);
+                    $hora->formatear($c->llegada_en), $hora->formatear($c->decision_en)],
+                    $conPersonales ? [$c->telefono, $c->correo, $c->curp, $c->rfc, $c->nss, $c->domicilioCompleto(),
+                        trim(($c->emergencia_nombre ?? '').' '.($c->emergencia_telefono ?? ''))] : []));
             }
             fclose($salida);
-        }, 'candidatos-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }, 'candidatos-'.now()->format('Y-m-d').($conPersonales ? '-datos-personales' : '').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     // ------------------------------------------------------------------ Ayudas
@@ -350,23 +400,5 @@ class CandidatoController extends Controller
         abort_if($empresaId === null, 404);
 
         return $empresaId;
-    }
-
-    /**
-     * Sugerencia de nombre y apellidos para el alta como colaborador (RR. HH. lo confirma).
-     *
-     * @return array{nombre: string, paterno: string, materno: string}
-     */
-    private function partirNombre(string $completo): array
-    {
-        $p = preg_split('/\s+/u', trim($completo)) ?: [];
-        if (count($p) >= 3) {
-            $materno = array_pop($p);
-            $paterno = array_pop($p);
-
-            return ['nombre' => implode(' ', $p), 'paterno' => $paterno, 'materno' => $materno];
-        }
-
-        return ['nombre' => $p[0] ?? '', 'paterno' => $p[1] ?? '', 'materno' => ''];
     }
 }

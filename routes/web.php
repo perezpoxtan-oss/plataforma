@@ -488,6 +488,13 @@ Route::middleware('auth')->group(function () {
     });
     // Fin Padrones: Ajustes Ronda 7
 
+    // Padrones: Solicitud de empleo y Vacantes (Recursos Humanos; ver docs/tecnico/vacantes.md)
+    Route::controller(CandidatoController::class)->group(function () {
+        Route::get('/candidatos/{candidato}/solicitud', 'solicitud')->whereNumber('candidato')->name('candidatos.solicitud');
+        Route::get('/candidatos/{candidato}/firma', 'firma')->whereNumber('candidato')->name('candidatos.firma');
+    });
+    // Fin Padrones: Solicitud de empleo y Vacantes
+
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
     Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');

@@ -340,6 +340,12 @@ class RecorridoPantallasTest extends TestCase
             'etiquetas.plantillas.edit', 'etiquetas.plantillas.prueba' => array_map(fn ($id) => ['plantilla' => $id], $ids([
                 $primero(EtiquetaPlantilla::class), $primero(EtiquetaPlantilla::class, fn ($q) => $q->whereNotNull('sede_id')),
             ])),
+            // Solicitud de empleo y Vacantes (lección 36)
+            'candidatos.solicitud' => DB::table('candidatos')->where('empresa_id', $e)->orderBy('id')->limit(4)->pluck('id')->map(fn ($id) => ['candidato' => $id])->all(),
+            'candidatos.firma' => array_map(fn ($id) => ['candidato' => $id], $ids([
+                DB::table('candidatos')->where('empresa_id', $e)->whereNotNull('firma_ruta')->value('id'), DB::table('candidatos')->where('empresa_id', $e)->value('id'),
+            ])),
+            // Fin Solicitud de empleo y Vacantes
             default => null,
         };
 

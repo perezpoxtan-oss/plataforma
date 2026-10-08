@@ -38,6 +38,13 @@
                 <a href="{{ route('recepcion.index') }}" class="btn-secundario-rh"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Recepción</a>
                 @if ($puede['exportar'] && $lista->total() > 0)
                     <a href="{{ route('candidatos.exportar', request()->query()) }}" class="btn-secundario-rh"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
+                    <form method="GET" action="{{ route('candidatos.exportar') }}" class="m-0" data-confirmar="El archivo llevará CURP, RFC, NSS, domicilio y teléfonos (datos personales). Guárdalo en un lugar seguro y no lo compartas. ¿Continuar?">
+                        @foreach (array_filter(['q' => $filtros['q'], 'etapa' => $filtros['etapa'], 'sede' => $filtros['sede'] ?: null, 'departamento' => $filtros['departamento'] ?: null]) as $campo => $v)
+                            <input type="hidden" name="{{ $campo }}" value="{{ $v }}">
+                        @endforeach
+                        <input type="hidden" name="datos" value="personales">
+                        <button type="submit" class="btn-secundario-rh"><i class="bi bi-file-earmark-lock me-1" aria-hidden="true"></i>Con datos personales</button>
+                    </form>
                 @endif
                 @if ($puede['crear'] && $sedesAlta->isNotEmpty())
                     <button type="button" class="btn-verde btn-accion-rh" data-abrir-dialogo="dialogoCandidato"><i class="bi bi-person-plus-fill me-1" aria-hidden="true"></i>Nuevo candidato</button>
@@ -145,7 +152,7 @@
                                 @endforeach
                             </select>
                         @endif
-                        @include('rh.candidatos._cv', ['c' => null, 'id' => 'nuevo_cv', 'kiosco' => false, 'conOld' => $reabrir, 'pidePrivacidad' => true])
+                        @include('rh.candidatos._cv', ['c' => null, 'id' => 'nuevo_cv', 'kiosco' => false, 'conOld' => $reabrir, 'pidePrivacidad' => true, 'pideFirma' => true])
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                             <button type="submit" class="btn-verde">Guardar candidato</button>

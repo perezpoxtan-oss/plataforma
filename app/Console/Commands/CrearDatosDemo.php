@@ -216,6 +216,7 @@ class CrearDatosDemo extends Command
         $paso('recepcionDemo', fn () => $this->recepcionDemo($empresa, $sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'jefe.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('ronda7Demo', fn () => $this->ronda7Demo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('ronda8Demo', fn () => $this->ronda8Demo(User::where('username', 'agente.demo')->firstOrFail()));
+        $paso('vacantesDemo', fn () => $this->vacantesDemo($sedes, User::where('username', 'rh.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -2327,4 +2328,101 @@ class CrearDatosDemo extends Command
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }
     }
+
+    // Solicitud de empleo formal y Vacantes (lección 36)
+
+    /**
+     * Solicitud de empleo de los candidatos demo (datos ficticios con formato
+     * válido) y la bolsa de trabajo: 3 vacantes (publicada, borrador y
+     * cerrada) con postulaciones. Solo la primera vez.
+     */
+    private function vacantesDemo($sedes, User $rh): void
+    {
+        $previo = auth()->user();
+        auth()->setUser($rh);
+        try {
+            $this->solicitudesDemo($rh);
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+
+    private function solicitudesDemo(User $rh): void
+    {
+        if (Candidato::whereNotNull('curp')->exists()) {
+            return;
+        }
+        $firma = function (string $texto): string {
+            $img = imagecreatetruecolor(600, 200);
+            imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+            $tinta = imagecolorallocate($img, 15, 23, 42);
+            imagesetthickness($img, 4);
+            $x = 40;
+            foreach (str_split(substr(md5($texto), 0, 12)) as $i => $c) {
+                $y = 90 + (hexdec($c) - 8) * 6;
+                imageline($img, $x, 120 - ($i % 2) * 40, $x + 40, $y, $tinta);
+                $x += 40;
+            }
+            imageline($img, 40, 160, 560, 150, $tinta);
+            ob_start();
+            imagejpeg($img, null, 80);
+
+            return 'data:image/jpeg;base64,'.base64_encode((string) ob_get_clean());
+        };
+        $comunes = [
+            'nacionalidad' => 'Mexicana', 'municipio' => 'Benito Juárez', 'estado_domicilio' => 'Quintana Roo', 'ciudad' => 'Benito Juárez',
+            'medio_vacante' => 'cartel', 'tiene_familiares' => false, 'trabajo_antes_aqui' => false, 'rolar_turnos' => true, 'puede_viajar' => false,
+            'cambiar_residencia' => false,
+        ];
+        $datos = [
+            'Luis Ángel Chi Canul' => [
+                'nombre' => 'Luis Ángel', 'apellido_paterno' => 'Chi', 'apellido_materno' => 'Canul', 'sexo' => 'hombre', 'fecha_nacimiento' => '1995-03-12',
+                'lugar_nacimiento' => 'Yucatán', 'estado_civil' => 'casado', 'dependientes' => 2, 'curp' => 'CICL950312HYNHNS08', 'rfc' => 'CICL950312KX4',
+                'nss' => '84169512345', 'licencia_tipo' => 'automovilista', 'licencia_vigencia' => now()->addYears(2)->format('Y-m-d'),
+                'calle_numero' => 'Calle 54 Mz 12 Lt 8', 'colonia' => 'Región 102', 'codigo_postal' => '77517', 'tiempo_residencia' => '6 años',
+                'emergencia_nombre' => 'Rosa Canul Pech', 'emergencia_parentesco' => 'Mamá', 'emergencia_telefono' => '9981234500',
+                'escolaridad' => [['nivel' => 'tecnico', 'institucion' => 'CONALEP Cancún II', 'titulo' => 'Electromecánica', 'periodo' => '2010 a 2013', 'documento' => 'titulo', 'concluido' => true]],
+                'experiencia' => [['empresa' => 'Hotel Sol Caribe', 'puesto' => 'Técnico de mantenimiento', 'ingreso' => '2019-02', 'salida' => '2025-06', 'anos' => 6,
+                    'sueldo_final' => 11500, 'jefe' => 'Arturo May', 'jefe_telefono' => '9988887766', 'motivo_salida' => 'Cierre del hotel por remodelación', 'pedir_referencias' => 'si']],
+                'referencias' => [['nombre' => 'Martha Chablé', 'telefono' => '9981112233', 'relacion' => 'Vecina', 'anos_conocerlo' => 8],
+                    ['nombre' => 'Jorge Dzul', 'telefono' => '9982223344', 'relacion' => 'Compadre', 'anos_conocerlo' => 12]],
+                'referencias_laborales' => [['nombre' => 'Arturo May', 'telefono' => '9988887766', 'relacion' => 'Jefe de mantenimiento', 'anos_conocerlo' => 6]],
+                'fecha_inicio_posible' => now()->addWeek()->format('Y-m-d'), 'pretension' => 12000, 'firma' => 'kiosco',
+            ],
+            'Mariela Canché Dzib' => [
+                'nombre' => 'Mariela', 'apellido_paterno' => 'Canché', 'apellido_materno' => 'Dzib', 'sexo' => 'mujer', 'fecha_nacimiento' => '1998-11-05',
+                'lugar_nacimiento' => 'Quintana Roo', 'estado_civil' => 'soltero', 'dependientes' => 0, 'curp' => 'CADM981105MQRNZR04', 'rfc' => 'CADM981105H21',
+                'nss' => '73169845210', 'calle_numero' => 'Av. Kabah 120 Depto 4', 'colonia' => 'Supermanzana 45', 'codigo_postal' => '77506',
+                'tiempo_residencia' => '3 años', 'emergencia_nombre' => 'Jesús Canché', 'emergencia_parentesco' => 'Papá', 'emergencia_telefono' => '9983456789',
+                'medio_vacante' => 'redes',
+                'escolaridad' => [['nivel' => 'licenciatura', 'institucion' => 'Universidad del Caribe', 'titulo' => 'Turismo', 'periodo' => '2016 a 2020', 'documento' => 'cedula', 'concluido' => true]],
+                'experiencia' => [['empresa' => 'Hotel Laguna Azul', 'puesto' => 'Recepcionista', 'ingreso' => '2021-01', 'salida' => '2025-09', 'anos' => 4,
+                    'sueldo_final' => 10500, 'jefe' => 'Paola Ríos', 'jefe_telefono' => '9987776655', 'motivo_salida' => 'Busca crecimiento', 'pedir_referencias' => 'si']],
+                'referencias' => [['nombre' => 'Ana Ek', 'telefono' => '9984443322', 'relacion' => 'Maestra', 'anos_conocerlo' => 7],
+                    ['nombre' => 'Luis Couoh', 'telefono' => '9985554433', 'relacion' => 'Vecino', 'anos_conocerlo' => 3]],
+                'idiomas' => 'Español, inglés avanzado', 'pretension' => 11000, 'firma' => 'rh',
+            ],
+            'Fernanda Ruiz Kú' => [
+                'nombre' => 'Fernanda', 'apellido_paterno' => 'Ruiz', 'apellido_materno' => 'Kú', 'sexo' => 'mujer', 'fecha_nacimiento' => '2000-06-21',
+                'lugar_nacimiento' => 'Campeche', 'estado_civil' => 'union_libre', 'dependientes' => 1, 'curp' => 'RUKF000621MCCZXR02',
+                'calle_numero' => 'Calle Pargo 33', 'colonia' => 'Puerto Juárez', 'codigo_postal' => '77520', 'tiempo_residencia' => '1 año',
+                'emergencia_nombre' => 'Daniel Pech', 'emergencia_parentesco' => 'Pareja', 'emergencia_telefono' => '9986665544',
+            ],
+        ];
+        $candidatos = app(AdministradorCandidatos::class);
+        foreach ($datos as $nombre => $d) {
+            $c = Candidato::where('nombre_completo', $nombre)->first();
+            if ($c === null) {
+                continue;
+            }
+            $medio = $d['firma'] ?? null;
+            unset($d['firma']);
+            $c->forceFill($d + $comunes)->save();
+            if ($medio !== null) {
+                $candidatos->firmar($c, $firma($nombre), $medio, $medio === 'rh' ? $rh : null, true);
+                $c->forceFill(['firma_en' => ($c->autocaptura_en ?? $c->llegada_en ?? now())])->save();
+            }
+        }
+    }
+    // Fin Solicitud de empleo formal y Vacantes
 }

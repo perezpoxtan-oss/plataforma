@@ -1379,3 +1379,10 @@ html.modo-noche .mis-pendientes-numero { background: rgba(217, 119, 6, 0.25); co
 html.modo-noche .mis-pendientes-item.al-dia .mis-pendientes-numero { background: var(--borde); color: var(--texto-suave); }
 html.modo-noche .mis-pendientes-contador { border-color: var(--superficie); }
 /* Fin Menús y Mis pendientes */
+/* Solicitud de empleo formal y Vacantes (lección 36): Sol y Noche */
+html.modo-sol .bloque-firma-solicitud, html.modo-sol .pastilla-sensible { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .firma-solicitud-ficha img { border: 2px solid #000; }
+html.modo-noche .bloque-firma-solicitud { background: rgba(59, 130, 246, 0.1); border-color: #1e40af; color: var(--texto); }
+html.modo-noche .pastilla-sensible { background: rgba(245, 158, 11, 0.18); color: #fde68a; }
+html.modo-noche .firma-solicitud-ficha img { background: #fff; border-color: var(--borde); }
+/* Fin Solicitud de empleo formal y Vacantes */

@@ -3795,3 +3795,47 @@ html.filtros-automaticos form[data-autoenviar] button[type="submit"]:not([data-m
     .mis-pendientes-panel { position: fixed; right: 12px; left: 12px; top: 70px; width: auto; }
 }
 /* Fin Menús y Mis pendientes */
+/* ==========================================================================
+   Solicitud de empleo formal y Vacantes (lección 36)
+   ========================================================================== */
+.subtitulo-solicitud { font-size: 0.82rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--texto-suave); margin: 0.75rem 0 0.35rem; }
+.campo-mayusculas { text-transform: uppercase; }
+.campo-mayusculas::placeholder { text-transform: none; }
+.pregunta-si-no { border: 0; padding: 0; margin: 0; min-width: 0; }
+.pregunta-si-no legend { float: none; font-size: inherit; margin-bottom: 0.3rem; }
+.pregunta-si-no .opciones-cv { margin-bottom: 0.6rem; }
+.bloque-firma-solicitud { border: 2px solid #2563eb; border-radius: 16px; padding: 0.8rem 1rem; margin-bottom: 1rem; background: #eff6ff; }
+.bloque-firma-solicitud .casilla-privacidad { margin-bottom: 0.6rem; }
+.bloque-firma-solicitud .casilla-privacidad input { accent-color: #2563eb; }
+.pastilla-sensible { display: inline-flex; align-items: center; border-radius: 999px; padding: 0.1rem 0.55rem; font-size: 0.65rem; font-weight: 800; background: #fef3c7; color: #92400e; margin-left: 0.35rem; text-transform: none; letter-spacing: 0; }
+.dato-oficial { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.5px; }
+.firma-solicitud-ficha { display: flex; flex-direction: column; gap: 0.35rem; }
+.firma-solicitud-ficha img { max-width: 260px; width: 100%; height: auto; border: 1px solid var(--borde); border-radius: 12px; background: #fff; padding: 0.25rem; }
+/* Hoja impresa «Solicitud de empleo» */
+.hoja-solicitud-fecha { font-size: 0.72rem; color: #475569; }
+.hoja-solicitud .hoja-pase-folio-qr { display: flex; gap: 4mm; align-items: flex-start; }
+.hoja-solicitud-foto { width: 26mm; height: 32mm; border: 1px solid #94a3b8; border-radius: 3px; display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 0.65rem; color: #94a3b8; flex-shrink: 0; }
+.hoja-solicitud-foto img { width: 100%; height: 100%; object-fit: cover; }
+.hoja-solicitud-seccion { break-inside: avoid; page-break-inside: avoid; margin-bottom: 3mm; }
+.hoja-solicitud-seccion h2 { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 1.2mm; background: #0f172a; color: #fff; padding: 1mm 2mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.hoja-solicitud-tabla { width: 100%; border-collapse: collapse; font-size: 0.72rem; table-layout: fixed; }
+.hoja-solicitud-tabla th, .hoja-solicitud-tabla td { border: 1px solid #cbd5e1; padding: 1mm 1.5mm; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.hoja-solicitud-tabla th { background: #f1f5f9; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.3px; color: #334155; width: 18%; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.hoja-solicitud-tabla.lista th { width: auto; }
+.hoja-solicitud-firma { text-align: center; margin-top: 5mm; }
+.hoja-solicitud-declaracion { font-size: 0.75rem; font-weight: 700; margin: 0 0 2mm; }
+.hoja-solicitud-firma-caja { width: 80mm; margin: 0 auto; }
+.hoja-solicitud-firma-caja img { max-height: 20mm; max-width: 100%; object-fit: contain; display: block; margin: 0 auto; }
+.hoja-solicitud-linea { border-top: 1px solid #0f172a; font-size: 0.72rem; font-weight: 700; padding-top: 1mm; margin-top: 12mm; }
+.hoja-solicitud-firma-caja img + .hoja-solicitud-linea { margin-top: 0; }
+.hoja-solicitud-nota { font-size: 0.6rem; color: #475569; margin: 1mm 0 0; }
+@media (max-width: 575.98px) {
+    .hoja-solicitud .hoja-pase-folio-qr { width: 100%; justify-content: space-between; }
+    .hoja-solicitud-tabla th { width: 30%; }
+    .hoja-solicitud-tabla:not(.lista) tr { display: grid; grid-template-columns: 38% 62%; }
+    .hoja-solicitud-tabla:not(.lista) th, .hoja-solicitud-tabla:not(.lista) td { width: auto; }
+    .hoja-solicitud-tabla.lista { display: block; overflow-x: auto; }
+}
+@media print { .hoja-solicitud { page: solicitud-empleo; } }
+@page solicitud-empleo { size: letter; margin: 10mm; }
+/* Fin Solicitud de empleo formal y Vacantes */

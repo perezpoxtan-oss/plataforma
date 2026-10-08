@@ -8442,3 +8442,18 @@ document.addEventListener('click', function (e) {
     };
 })();
 /* Fin Menús y Mis pendientes */
+/* ==========================================================================
+   Solicitud de empleo formal y Vacantes (lección 36)
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    // Solicitud: al abrir, «¿Quién?» (familiares) se muestra solo si contestó «Sí»
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form[data-form-cv]').forEach(function (form) {
+            var campo = form.querySelector('input[name="tiene_familiares"]');
+            if (campo) { campo.dispatchEvent(new Event('change', { bubbles: true })); }
+        });
+    });
+})();
+/* Fin Solicitud de empleo formal y Vacantes */

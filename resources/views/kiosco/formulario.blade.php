@@ -5,7 +5,7 @@
 @section('contenido')
 <section class="tarjeta kiosco-tarjeta">
     <p class="kiosco-saludo">Hola, <strong>{{ $c->nombre_completo }}</strong></p>
-    <p class="small text-muted">Llena tu solicitud para <strong>{{ $empresa }}</strong>. Te toma unos minutos; lo que no sepas, déjalo en blanco. Al final, toca <strong>Enviar mi solicitud</strong>.</p>
+    <p class="small text-muted">Llena tu solicitud para <strong>{{ $empresa }}</strong>. Te toma unos minutos; lo que no sepas, déjalo en blanco. Lo obligatorio lleva <strong>*</strong>. Al final firma con el dedo y toca <strong>Enviar mi solicitud</strong>.</p>
 
     <form action="{{ route('kiosco.guardar', $token) }}" method="POST" enctype="multipart/form-data" autocomplete="on" data-form-cv>
         @csrf

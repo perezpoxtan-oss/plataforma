@@ -101,7 +101,7 @@
                 @endif
             </div>
             @if ($c->etapa === 'revision' && $c->departamento_id === null)
-                <p class="small text-muted mt-2 mb-0"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Para «Aprobar y enviar al departamento», primero indica el departamento en <strong>Editar CV</strong>.</p>
+                <p class="small text-muted mt-2 mb-0"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Para «Aprobar y enviar al departamento», primero indica el departamento en <strong>Editar solicitud</strong>.</p>
             @endif
         @endif
     </section>
@@ -134,50 +134,96 @@
     @endif
 
     <div class="rejilla-ficha-candidato">
-        {{-- CV --}}
+        {{-- Solicitud de empleo (CV) --}}
+        @php
+            $siNoTexto = fn ($v) => $v === null ? '—' : ($v ? 'Sí' : 'No');
+            $mesTexto = fn (?string $m) => $m ? substr($m, 5, 2).'/'.substr($m, 0, 4) : null;
+        @endphp
         <section class="tarjeta p-4">
-            <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
-                <h2 class="h5 fw-bold m-0"><i class="bi bi-file-person me-2 text-success" aria-hidden="true"></i>Currículum</h2>
-                @if ($puede['editar'])
-                    <button type="button" class="btn-secundario-rh" data-abrir-dialogo="dialogoCv"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar CV</button>
-                @endif
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h2 class="h5 fw-bold m-0"><i class="bi bi-file-person me-2 text-success" aria-hidden="true"></i>Solicitud de empleo</h2>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ route('candidatos.solicitud', $c->id) }}" class="btn-secundario-rh" target="_blank" rel="noopener"><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir</a>
+                    @if ($puede['editar'])
+                        <button type="button" class="btn-secundario-rh" data-abrir-dialogo="dialogoCv"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar solicitud</button>
+                    @endif
+                </div>
             </div>
+            <h3 class="subtitulo-cv mt-0">Datos personales</h3>
             <dl class="cv-datos">
                 <dt>Teléfono</dt><dd>{{ $c->telefono ?? '—' }}</dd>
                 <dt>Correo</dt><dd>{{ $c->correo ?? '—' }}</dd>
-                <dt>Nacimiento</dt><dd>{{ $c->fecha_nacimiento?->format('d/m/Y') ?? '—' }}</dd>
-                <dt>Ciudad</dt><dd>{{ $c->ciudad ?? '—' }}</dd>
-                <dt>Disponibilidad</dt><dd>{{ Candidato::DISPONIBILIDAD[$c->disponibilidad] ?? '—' }}{{ $c->disponibilidad_notas ? ' · '.$c->disponibilidad_notas : '' }}</dd>
-                <dt>Pretensión</dt><dd>{{ $c->pretension !== null ? '$'.number_format((float) $c->pretension, 2).' al mes' : '—' }}</dd>
+                <dt>Nacimiento</dt><dd>{{ $c->fecha_nacimiento?->format('d/m/Y') ?? '—' }}{{ $c->lugar_nacimiento ? ' · '.$c->lugar_nacimiento : '' }}</dd>
+                <dt>Sexo</dt><dd>{{ Candidato::SEXOS[$c->sexo] ?? '—' }}</dd>
+                <dt>Nacionalidad</dt><dd>{{ $c->nacionalidad ?? '—' }}</dd>
+                <dt>Estado civil</dt><dd>{{ Candidato::ESTADOS_CIVILES[$c->estado_civil] ?? '—' }}{{ $c->dependientes !== null ? ' · '.$c->dependientes.' dependiente(s)' : '' }}</dd>
+                <dt>Licencia</dt><dd>{{ $c->licencia_tipo ? Candidato::LICENCIAS[$c->licencia_tipo].($c->licencia_vigencia ? ' (vence '.$c->licencia_vigencia->format('d/m/Y').')' : '') : '—' }}</dd>
+            </dl>
+            <h3 class="subtitulo-cv"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Datos oficiales y domicilio <span class="pastilla-sensible">Solo RR. HH.</span></h3>
+            <dl class="cv-datos">
+                <dt>CURP</dt><dd class="dato-oficial">{{ $c->curp ?? '—' }}</dd>
+                <dt>RFC</dt><dd class="dato-oficial">{{ $c->rfc ?? '—' }}</dd>
+                <dt>NSS</dt><dd class="dato-oficial">{{ $c->nss ?? '—' }}</dd>
+                <dt>Domicilio</dt><dd>{{ $c->domicilioCompleto() ?? ($c->ciudad ?? '—') }}{{ $c->tiempo_residencia ? ' · '.$c->tiempo_residencia.' ahí' : '' }}</dd>
+                <dt>Tel. fijo</dt><dd>{{ $c->telefono_fijo ?? '—' }}</dd>
+                <dt>Emergencia</dt><dd>{{ $c->emergencia_nombre ? $c->emergencia_nombre.($c->emergencia_parentesco ? ' ('.$c->emergencia_parentesco.')' : '').($c->emergencia_telefono ? ' · '.$c->emergencia_telefono : '') : '—' }}</dd>
+            </dl>
+            <h3 class="subtitulo-cv">Datos generales</h3>
+            <dl class="cv-datos">
+                <dt>Se enteró por</dt><dd>{{ Candidato::MEDIOS_VACANTE[$c->medio_vacante] ?? '—' }}</dd>
+                <dt>Familiares aquí</dt><dd>{{ $siNoTexto($c->tiene_familiares) }}{{ $c->familiares_nombre ? ' · '.$c->familiares_nombre : '' }}</dd>
+                <dt>Trabajó aquí</dt><dd>{{ $siNoTexto($c->trabajo_antes_aqui) }}</dd>
+                <dt>Rolar turnos</dt><dd>{{ $siNoTexto($c->rolar_turnos) }}</dd>
+                <dt>Viajar</dt><dd>{{ $siNoTexto($c->puede_viajar) }}</dd>
+                <dt>Cambiar de residencia</dt><dd>{{ $siNoTexto($c->cambiar_residencia) }}</dd>
+                <dt>Puede empezar</dt><dd>{{ Candidato::DISPONIBILIDAD[$c->disponibilidad] ?? '—' }}{{ $c->fecha_inicio_posible ? ' · '.$c->fecha_inicio_posible->format('d/m/Y') : '' }}{{ $c->disponibilidad_notas ? ' · '.$c->disponibilidad_notas : '' }}</dd>
+                <dt>Sueldo que espera</dt><dd>{{ $c->pretension !== null ? '$'.number_format((float) $c->pretension, 2).' al mes' : '—' }}</dd>
                 <dt>Idiomas</dt><dd>{{ $c->idiomas ?? '—' }}</dd>
                 <dt>Habilidades</dt><dd>{{ $c->habilidades ?? '—' }}</dd>
             </dl>
             <h3 class="subtitulo-cv">Escolaridad</h3>
             @forelse ((array) $c->escolaridad as $e)
-                <p class="renglon-cv"><strong>{{ Candidato::ESCOLARIDAD[$e['nivel'] ?? ''] ?? '—' }}</strong>{{ ! empty($e['titulo']) ? ' · '.$e['titulo'] : '' }}{{ ! empty($e['institucion']) ? ' — '.$e['institucion'] : '' }} <span class="texto-traza">{{ ! empty($e['concluido']) ? '(terminado)' : '(sin terminar)' }}</span></p>
+                <p class="renglon-cv"><strong>{{ Candidato::ESCOLARIDAD[$e['nivel'] ?? ''] ?? '—' }}</strong>{{ ! empty($e['titulo']) ? ' · '.$e['titulo'] : '' }}{{ ! empty($e['institucion']) ? ' — '.$e['institucion'] : '' }}{{ ! empty($e['periodo']) ? ' · '.$e['periodo'] : '' }}
+                    <span class="texto-traza">({{ ! empty($e['documento']) ? Candidato::DOCUMENTOS_ESTUDIO[$e['documento']] ?? $e['documento'] : (! empty($e['concluido']) ? 'terminado' : 'sin terminar') }})</span></p>
             @empty
                 <p class="renglon-cv text-muted">Sin capturar.</p>
             @endforelse
-            <h3 class="subtitulo-cv">Experiencia laboral</h3>
+            <h3 class="subtitulo-cv">Empleos anteriores</h3>
             @forelse ((array) $c->experiencia as $e)
-                <p class="renglon-cv"><strong>{{ $e['empresa'] ?? '—' }}</strong>{{ ! empty($e['puesto']) ? ' · '.$e['puesto'] : '' }}{{ isset($e['anos']) && $e['anos'] !== null ? ' · '.$e['anos'].' año(s)' : '' }}@if (! empty($e['motivo_salida']))<span class="d-block texto-traza">Salió: {{ $e['motivo_salida'] }}</span>@endif</p>
+                <p class="renglon-cv"><strong>{{ $e['empresa'] ?? '—' }}</strong>{{ ! empty($e['puesto']) ? ' · '.$e['puesto'] : '' }}
+                    @if (! empty($e['ingreso'])) · {{ $mesTexto($e['ingreso']) }} a {{ $mesTexto($e['salida'] ?? null) ?? 'la fecha' }}@endif
+                    {{ isset($e['anos']) && $e['anos'] !== null ? ' · '.$e['anos'].' año(s)' : '' }}
+                    @if (! empty($e['sueldo_final']))<span class="d-block texto-traza">Sueldo final: ${{ number_format((float) $e['sueldo_final'], 2) }}</span>@endif
+                    @if (! empty($e['jefe']))<span class="d-block texto-traza">Jefe: {{ $e['jefe'] }}{{ ! empty($e['jefe_telefono']) ? ' · '.$e['jefe_telefono'] : '' }}{{ ($e['pedir_referencias'] ?? null) === 'no' ? ' · No pedir referencias' : (($e['pedir_referencias'] ?? null) === 'si' ? ' · Sí se pueden pedir referencias' : '') }}</span>@endif
+                    @if (! empty($e['motivo_salida']))<span class="d-block texto-traza">Salió: {{ $e['motivo_salida'] }}</span>@endif</p>
             @empty
                 <p class="renglon-cv text-muted">Sin capturar.</p>
             @endforelse
-            <h3 class="subtitulo-cv">Referencias</h3>
-            @forelse ((array) $c->referencias as $r)
-                <p class="renglon-cv"><strong>{{ $r['nombre'] ?? '—' }}</strong>{{ ! empty($r['relacion']) ? ' · '.$r['relacion'] : '' }}{{ ! empty($r['telefono']) ? ' · '.$r['telefono'] : '' }}</p>
-            @empty
-                <p class="renglon-cv text-muted">Sin capturar.</p>
-            @endforelse
+            @foreach (['referencias' => 'Referencias personales', 'referencias_laborales' => 'Referencias laborales'] as $lista => $tituloLista)
+                <h3 class="subtitulo-cv">{{ $tituloLista }}</h3>
+                @forelse ((array) $c->{$lista} as $r)
+                    <p class="renglon-cv"><strong>{{ $r['nombre'] ?? '—' }}</strong>{{ ! empty($r['relacion']) ? ' · '.$r['relacion'] : '' }}{{ ! empty($r['telefono']) ? ' · '.$r['telefono'] : '' }}{{ isset($r['anos_conocerlo']) && $r['anos_conocerlo'] !== null ? ' · '.$r['anos_conocerlo'].' año(s) de conocerlo' : '' }}</p>
+                @empty
+                    <p class="renglon-cv text-muted">Sin capturar.</p>
+                @endforelse
+            @endforeach
             @if ($c->notas_rh)
                 <h3 class="subtitulo-cv">Notas de RR. HH.</h3>
                 <p class="renglon-cv notas-rh">{{ $c->notas_rh }}</p>
             @endif
+            <h3 class="subtitulo-cv">Declaración y firma</h3>
+            @if ($c->firma_ruta)
+                <div class="firma-solicitud-ficha">
+                    <img src="{{ route('candidatos.firma', $c->id) }}" alt="Firma de {{ $c->nombre_completo }}">
+                    <p class="texto-traza m-0"><i class="bi bi-pen" aria-hidden="true"></i> Declaró que la información es verdadera y firmó {{ Candidato::FIRMAS_MEDIO[$c->firma_medio] ?? '' }} · @fecha($c->firma_en){{ $c->firmaCapturadaPor ? ' · capturó '.$c->firmaCapturadaPor->name : '' }}</p>
+                </div>
+            @else
+                <p class="renglon-cv text-muted">Aún no firma su solicitud.</p>
+            @endif
             <p class="privacidad-aceptada mt-3 mb-0">
                 <i class="bi {{ $c->privacidad_aceptada_en ? 'bi-shield-check' : 'bi-shield-exclamation' }} me-1" aria-hidden="true"></i>
                 @if ($c->privacidad_aceptada_en)
-                    Aviso de privacidad aceptado @fecha($c->privacidad_aceptada_en) ({{ $c->privacidad_medio === 'kiosco' ? 'en el kiosco' : 'con Recursos Humanos' }}) · versión {{ substr((string) $c->privacidad_version, 0, 10) }}
+                    Aviso de privacidad aceptado @fecha($c->privacidad_aceptada_en) ({{ ['kiosco' => 'en el kiosco', 'web' => 'en la bolsa de trabajo'][$c->privacidad_medio] ?? 'con Recursos Humanos' }}) · versión {{ substr((string) $c->privacidad_version, 0, 10) }}
                 @else
                     Aún no acepta el aviso de privacidad: se le pedirá al guardar su CV.
                 @endif
@@ -298,7 +344,7 @@
     @if ($puede['editar'])
         <dialog id="dialogoCv" class="dialogo ancho" aria-labelledby="titulo-cv" @if ($dialogo === 'cv') data-abrir-al-cargar @endif>
             <div class="dialogo-cabecera">
-                <h2 id="titulo-cv"><i class="bi bi-pencil-square me-2 text-success" aria-hidden="true"></i>Editar CV</h2>
+                <h2 id="titulo-cv"><i class="bi bi-pencil-square me-2 text-success" aria-hidden="true"></i>Editar solicitud de empleo</h2>
                 <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
             </div>
             <div class="dialogo-cuerpo">
@@ -311,14 +357,14 @@
                             <ul class="mb-0 ps-3">@foreach ($errors->all() as $m)<li>{{ $m }}</li>@endforeach</ul>
                         </div>
                     @endif
-                    @include('rh.candidatos._cv', ['id' => 'editar_cv', 'kiosco' => false, 'conOld' => $dialogo === 'cv', 'pidePrivacidad' => $c->privacidad_aceptada_en === null])
+                    @include('rh.candidatos._cv', ['id' => 'editar_cv', 'kiosco' => false, 'conOld' => $dialogo === 'cv', 'pidePrivacidad' => $c->privacidad_aceptada_en === null, 'pideFirma' => true])
                     <fieldset class="bloque-cv">
                         <legend><i class="bi bi-journal-text me-2" aria-hidden="true"></i>Notas de Recursos Humanos</legend>
                         <textarea name="notas_rh" class="campo" rows="3" maxlength="3000" aria-label="Notas de Recursos Humanos" placeholder="Solo las ve Recursos Humanos">{{ $dialogo === 'cv' ? old('notas_rh') : $c->notas_rh }}</textarea>
                     </fieldset>
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                        <button type="submit" class="btn-verde">Guardar CV</button>
+                        <button type="submit" class="btn-verde">Guardar solicitud</button>
                     </div>
                 </form>
             </div>
@@ -373,7 +419,7 @@
                     @if ($reabrir && $errors->any())
                         <div class="alert alert-danger small py-2 px-3" role="alert"><ul class="mb-0 ps-3">@foreach ($errors->all() as $m)<li>{{ $m }}</li>@endforeach</ul></div>
                     @endif
-                    <p class="small text-muted">Se dará de alta en <strong>Colaboradores</strong> con los datos de su CV. Confirma nombre y apellidos y escribe su número de empleado.</p>
+                    <p class="small text-muted">Se dará de alta en <strong>Colaboradores</strong> con los datos de su solicitud (CURP, RFC, NSS, nacimiento, nacionalidad, teléfono, correo y domicilio): no hay que volver a escribirlos. Confirma nombre y apellidos y escribe su número de empleado.</p>
                     <label class="campo-etiqueta" for="con_num">Número de empleado *</label>
                     <input type="text" id="con_num" name="num_empleado" class="campo" maxlength="20" required value="{{ $reabrir ? old('num_empleado') : '' }}">
                     <label class="campo-etiqueta" for="con_nombre">Nombre(s) *</label>
