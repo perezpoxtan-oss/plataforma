@@ -28,7 +28,10 @@ class SuperficieDeRutasTest extends TestCase
             ->sort()->values()->all();
 
         // Kiosco de candidatos (ADR-0007): enlace temporal de un solo candidato, con límite de peticiones
-        $this->assertSame(['GET /k', 'GET /k/{token}', 'GET /login', 'GET /sesion/expirada', 'GET /up', 'POST /k', 'POST /k/{token}', 'POST /login', 'POST /sesion/expirada'], $abiertas);
+        // Bolsa de trabajo (lección 36): solo empresas que la encienden, vacantes publicadas, límite de peticiones y campo trampa
+        $this->assertSame(['GET /empleos/{empresa}', 'GET /empleos/{empresa}/gracias', 'GET /empleos/{empresa}/{vacante}', 'GET /empleos/{empresa}/{vacante}/postular',
+            'GET /k', 'GET /k/{token}', 'GET /login', 'GET /sesion/expirada', 'GET /up', 'POST /empleos/{empresa}/{vacante}/postular', 'POST /k', 'POST /k/{token}',
+            'POST /login', 'POST /sesion/expirada'], $abiertas);
     }
 
     /**

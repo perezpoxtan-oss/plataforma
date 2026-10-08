@@ -59,7 +59,7 @@ class MenuSeeder extends Seeder
                     'colaboradores' => 'success',
                 ],
                 'Recepción y candidatos' => [
-                    'recepcion_rh' => 'primary', 'candidatos' => 'success',
+                    'vacantes' => 'warning', 'recepcion_rh' => 'primary', 'candidatos' => 'success',
                 ],
                 'Catálogos' => [
                     'departamentos' => 'warning', 'puestos' => 'info', 'turnos' => 'secondary',

@@ -23,11 +23,13 @@ use App\Http\Controllers\Organizacion\TurnoController;
 use App\Http\Controllers\Padrones\ProveedorController;
 use App\Http\Controllers\Padrones\RutaController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\Publico\EmpleosController;
 use App\Http\Controllers\RecursosHumanos\AutorizacionController;
 use App\Http\Controllers\RecursosHumanos\CandidatoController;
 use App\Http\Controllers\RecursosHumanos\KioscoController;
 use App\Http\Controllers\RecursosHumanos\NotificacionController;
 use App\Http\Controllers\RecursosHumanos\RecepcionController;
+use App\Http\Controllers\RecursosHumanos\VacanteController;
 use App\Http\Controllers\Seguridad\AccesoController;
 use App\Http\Controllers\Seguridad\EquipoController;
 use App\Http\Controllers\Seguridad\EstacionamientoController;
@@ -488,6 +490,22 @@ Route::middleware('auth')->group(function () {
     });
     // Fin Padrones: Ajustes Ronda 7
 
+    // Padrones: Solicitud de empleo y Vacantes (Recursos Humanos; ver docs/tecnico/vacantes.md)
+    Route::controller(CandidatoController::class)->group(function () {
+        Route::get('/candidatos/{candidato}/solicitud', 'solicitud')->whereNumber('candidato')->name('candidatos.solicitud');
+        Route::get('/candidatos/{candidato}/firma', 'firma')->whereNumber('candidato')->name('candidatos.firma');
+    });
+    Route::controller(VacanteController::class)->group(function () {
+        Route::get('/vacantes', 'index')->name('vacantes.index');
+        Route::post('/vacantes', 'store')->name('vacantes.store');
+        Route::put('/vacantes/bolsa', 'ajustes')->name('vacantes.bolsa');
+        Route::put('/vacantes/{vacante}', 'update')->whereNumber('vacante')->name('vacantes.update');
+        Route::patch('/vacantes/{vacante}/estado', 'estado')->whereNumber('vacante')->name('vacantes.estado');
+        Route::delete('/vacantes/{vacante}', 'destroy')->whereNumber('vacante')->name('vacantes.destroy');
+        Route::get('/vacantes/{vacante}/cartel', 'cartel')->whereNumber('vacante')->name('vacantes.cartel');
+    });
+    // Fin Padrones: Solicitud de empleo y Vacantes
+
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
     Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');
@@ -502,3 +520,13 @@ Route::controller(KioscoController::class)->group(function () {
     Route::post('/k/{token}', 'guardar')->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:10,1')->name('kiosco.guardar');
 });
 // Fin Público: Kiosco de auto-registro de candidatos
+
+// Público: Bolsa de trabajo (SIN sesión; solo empresas que la encienden; ver docs/tecnico/vacantes.md)
+Route::controller(EmpleosController::class)->group(function () {
+    Route::get('/empleos/{empresa}', 'index')->where('empresa', '[a-z0-9-]{3,90}')->middleware('throttle:120,1,empleos')->name('empleos.index');
+    Route::get('/empleos/{empresa}/gracias', 'gracias')->where('empresa', '[a-z0-9-]{3,90}')->middleware('throttle:120,1,empleos')->name('empleos.gracias');
+    Route::get('/empleos/{empresa}/{vacante}', 'show')->where(['empresa' => '[a-z0-9-]{3,90}', 'vacante' => '[a-z0-9]{10}'])->middleware('throttle:120,1,empleos')->name('empleos.show');
+    Route::get('/empleos/{empresa}/{vacante}/postular', 'formulario')->where(['empresa' => '[a-z0-9-]{3,90}', 'vacante' => '[a-z0-9]{10}'])->middleware('throttle:120,1,empleos')->name('empleos.postular');
+    Route::post('/empleos/{empresa}/{vacante}/postular', 'postular')->where(['empresa' => '[a-z0-9-]{3,90}', 'vacante' => '[a-z0-9]{10}'])->middleware('throttle:6,1,empleos-postular')->name('empleos.guardar');
+});
+// Fin Público: Bolsa de trabajo

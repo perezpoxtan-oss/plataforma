@@ -19,9 +19,9 @@
         </div>
     @else
         @php
-            $hayFiltros = $filtros['q'] !== '' || $filtros['etapa'] !== '' || $filtros['sede'] > 0 || $filtros['departamento'] > 0;
+            $hayFiltros = $filtros['q'] !== '' || $filtros['etapa'] !== '' || $filtros['sede'] > 0 || $filtros['departamento'] > 0 || $filtros['vacante'] > 0;
             $enProceso = collect(Candidato::ABIERTAS)->sum(fn ($e) => (int) ($conteos[$e] ?? 0));
-            $base = array_filter(['q' => $filtros['q'], 'sede' => $filtros['sede'] ?: null, 'departamento' => $filtros['departamento'] ?: null]);
+            $base = array_filter(['q' => $filtros['q'], 'sede' => $filtros['sede'] ?: null, 'departamento' => $filtros['departamento'] ?: null, 'vacante' => $filtros['vacante'] ?: null]);
             $reabrir = old('_dialogo') === 'candidato';
         @endphp
 
@@ -38,6 +38,13 @@
                 <a href="{{ route('recepcion.index') }}" class="btn-secundario-rh"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Recepción</a>
                 @if ($puede['exportar'] && $lista->total() > 0)
                     <a href="{{ route('candidatos.exportar', request()->query()) }}" class="btn-secundario-rh"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
+                    <form method="GET" action="{{ route('candidatos.exportar') }}" class="m-0" data-confirmar="El archivo llevará CURP, RFC, NSS, domicilio y teléfonos (datos personales). Guárdalo en un lugar seguro y no lo compartas. ¿Continuar?">
+                        @foreach (array_filter(['q' => $filtros['q'], 'etapa' => $filtros['etapa'], 'sede' => $filtros['sede'] ?: null, 'departamento' => $filtros['departamento'] ?: null]) as $campo => $v)
+                            <input type="hidden" name="{{ $campo }}" value="{{ $v }}">
+                        @endforeach
+                        <input type="hidden" name="datos" value="personales">
+                        <button type="submit" class="btn-secundario-rh"><i class="bi bi-file-earmark-lock me-1" aria-hidden="true"></i>Con datos personales</button>
+                    </form>
                 @endif
                 @if ($puede['crear'] && $sedesAlta->isNotEmpty())
                     <button type="button" class="btn-verde btn-accion-rh" data-abrir-dialogo="dialogoCandidato"><i class="bi bi-person-plus-fill me-1" aria-hidden="true"></i>Nuevo candidato</button>
@@ -65,6 +72,16 @@
                     <option value="{{ $d->id }}" @selected($filtros['departamento'] === $d->id)>{{ $d->nombre }}</option>
                 @endforeach
             </select>
+            {{-- Vacantes (lección 36) --}}
+            @if ($vacantesFiltro->isNotEmpty())
+                <select name="vacante" class="filtro-select" aria-label="Filtrar por vacante" data-enviar-al-cambiar>
+                    <option value="">Todas las vacantes</option>
+                    @foreach ($vacantesFiltro as $vf)
+                        <option value="{{ $vf->id }}" @selected($filtros['vacante'] === $vf->id)>{{ $vf->titulo }}{{ $vf->estado !== 'publicada' ? ' ('.\App\Models\Vacante::ESTADOS[$vf->estado].')' : '' }}</option>
+                    @endforeach
+                </select>
+            @endif
+            {{-- Fin Vacantes --}}
             @if ($hayFiltros)
                 <a href="{{ route('candidatos.index') }}" class="btn-limpiar-filtros">Limpiar</a>
             @endif
@@ -91,6 +108,7 @@
                         <h2 class="ficha-title">{{ $c->nombre_completo }}</h2>
                         <div class="datos-candidato">
                             <span><i class="bi bi-briefcase" aria-hidden="true"></i> {{ $c->puestoVisible() ?? 'Puesto sin definir' }}</span>
+                            @if ($c->vacantePublicada)<span class="dato-vacante"><i class="bi bi-megaphone" aria-hidden="true"></i> Vacante: {{ $c->vacantePublicada->titulo }}</span>@endif
                             @if ($c->departamento)<span><i class="bi bi-diagram-2" aria-hidden="true"></i> {{ $c->departamento->nombre }}</span>@endif
                             @if ($sedes->count() > 1)<span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ $c->sede?->nombre }}</span>@endif
                             <span><i class="bi bi-clock" aria-hidden="true"></i> Llegó: @fecha($c->llegada_en ?? $c->created_at) · {{ Candidato::ORIGENES[$c->origen] ?? $c->origen }}</span>
@@ -145,7 +163,7 @@
                                 @endforeach
                             </select>
                         @endif
-                        @include('rh.candidatos._cv', ['c' => null, 'id' => 'nuevo_cv', 'kiosco' => false, 'conOld' => $reabrir, 'pidePrivacidad' => true])
+                        @include('rh.candidatos._cv', ['c' => null, 'id' => 'nuevo_cv', 'kiosco' => false, 'conOld' => $reabrir, 'pidePrivacidad' => true, 'pideFirma' => true])
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                             <button type="submit" class="btn-verde">Guardar candidato</button>

@@ -124,14 +124,15 @@ class Kiosco
     public function guardar(EnlaceKiosco $enlace, array $entrada, array $archivos, string $ip): Candidato
     {
         $candidato = Candidato::findOrFail($enlace->candidato_id);
-        $d = $this->candidatos->validarCv($entrada, true);
+        // Solicitud completa: declaración, firma y 2 referencias personales (lección 36)
+        $d = $this->candidatos->validarCv($entrada, true, true);
         foreach ($archivos as $campo => $archivo) {
             if ($archivo !== null && ! $archivo instanceof UploadedFile) {
                 throw ValidationException::withMessages([$campo => 'No se pudo recibir el archivo.']);
             }
         }
 
-        DB::transaction(function () use ($enlace, $candidato, $d, $ip, $archivos) {
+        DB::transaction(function () use ($enlace, $candidato, $d, $ip, $archivos, $entrada) {
             // Un uso más, solo si el enlace sigue vigente (dos envíos a la vez no pasan del límite)
             $hecho = EnlaceKiosco::withoutGlobalScopes()->whereKey($enlace->id)->whereNull('revocado_en')->where('expira_en', '>', now())
                 ->whereColumn('usos', '<', 'usos_maximos')->update(['usos' => DB::raw('usos + 1'), 'ultimo_uso_en' => now(), 'updated_at' => now()]);
@@ -144,6 +145,7 @@ class Kiosco
             $cv['vacante'] = $cv['vacante'] ?? $candidato->vacante;
             $candidato->fill($cv);
             $this->candidatos->aceptarPrivacidad($candidato, $ip, 'kiosco');
+            $this->candidatos->firmar($candidato, $entrada['firma'], 'kiosco', null, true);
             $candidato->forceFill(['autocaptura_pendiente' => true, 'autocaptura_en' => now()])->save();
 
             $documentos = app(DocumentosCandidato::class);

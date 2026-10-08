@@ -146,7 +146,8 @@ class RecorridoPantallasTest extends TestCase
         $visitas = 0;
 
         foreach ($this->rutasGet() as $ruta) {
-            $conRegistro = $ruta->parameterNames() !== [] && $ruta->getName() !== 'modulos.pendiente';
+            // Lección 36: la bolsa de trabajo (/empleos) es pública a propósito (cualquiera ve las vacantes publicadas)
+            $conRegistro = $ruta->parameterNames() !== [] && $ruta->getName() !== 'modulos.pendiente' && ! str_starts_with((string) $ruta->getName(), 'empleos.');
             foreach ($this->urlsDe($ruta) as [$url, $json]) {
                 $visitas++;
                 $this->app['auth']->forgetGuards();
@@ -340,6 +341,17 @@ class RecorridoPantallasTest extends TestCase
             'etiquetas.plantillas.edit', 'etiquetas.plantillas.prueba' => array_map(fn ($id) => ['plantilla' => $id], $ids([
                 $primero(EtiquetaPlantilla::class), $primero(EtiquetaPlantilla::class, fn ($q) => $q->whereNotNull('sede_id')),
             ])),
+            // Solicitud de empleo y Vacantes (lección 36)
+            'candidatos.solicitud' => DB::table('candidatos')->where('empresa_id', $e)->orderBy('id')->limit(4)->pluck('id')->map(fn ($id) => ['candidato' => $id])->all(),
+            'candidatos.firma' => array_map(fn ($id) => ['candidato' => $id], $ids([
+                DB::table('candidatos')->where('empresa_id', $e)->whereNotNull('firma_ruta')->value('id'), DB::table('candidatos')->where('empresa_id', $e)->value('id'),
+            ])),
+            'vacantes.cartel' => DB::table('vacantes')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['vacante' => $id])->all(),
+            'empleos.index', 'empleos.gracias' => [['empresa' => DB::table('empresas')->where('id', $e)->value('bolsa_slug') ?? 'sin-bolsa-abc123']],
+            'empleos.show', 'empleos.postular' => DB::table('vacantes')->where('empresa_id', $e)->orderBy('id')->limit(3)->pluck('codigo')
+                ->map(fn ($c) => ['empresa' => DB::table('empresas')->where('id', $e)->value('bolsa_slug') ?? 'sin-bolsa-abc123', 'vacante' => $c])->all()
+                ?: [['empresa' => 'sin-bolsa-abc123', 'vacante' => 'abcdefghij']],
+            // Fin Solicitud de empleo y Vacantes
             default => null,
         };
 

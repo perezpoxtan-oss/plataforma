@@ -83,3 +83,7 @@ Otra empresa u otra sede fuera del alcance → **404**.
 ## Qué se corrigió respecto a SEGCAT
 
 SEGCAT no tenía candidatos: el guardia escribía «Recursos Humanos» como motivo y RR. HH. no se enteraba hasta que alguien llamaba por teléfono; el CV se pedía en papel; no había constancia del aviso de privacidad ni de los tiempos de espera.
+
+## Lección 36: solicitud de empleo y vacantes
+
+La ficha y el kiosco llevan la solicitud de empleo formal (datos oficiales, domicilio, referencias, declaración y firma, hoja impresa): ver [solicitud-empleo.md](solicitud-empleo.md). Origen nuevo `web` (bolsa de trabajo) y `vacante_id`: ver [vacantes.md](vacantes.md).

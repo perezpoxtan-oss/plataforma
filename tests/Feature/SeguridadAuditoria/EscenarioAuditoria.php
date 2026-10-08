@@ -125,6 +125,8 @@ trait EscenarioAuditoria
             // Ronda 7: gestor de impresión QR
             'impresion' => 'impresiones_etiquetas',
             'plantilla' => 'etiquetas_plantillas',
+            // Vacantes (lección 36)
+            'vacante' => 'vacantes',
         ][$parametro] ?? null;
     }
 

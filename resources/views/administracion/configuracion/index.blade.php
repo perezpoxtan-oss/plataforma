@@ -102,6 +102,11 @@
             @include('rh.recepcion._ajustes', ['empresa' => $empresa])
         @endif
         {{-- Fin Recepción de candidatos --}}
+        {{-- Vacantes: bolsa de trabajo en internet (lección 36) --}}
+        @if ($empresa && auth()->user()->can('vacantes.configurar'))
+            @include('rh.vacantes._ajustes-bolsa', ['empresa' => $empresa])
+        @endif
+        {{-- Fin Vacantes --}}
 
         @if ($esSuperadmin)
             {{-- ================= Correo saliente (plataforma) ================= --}}

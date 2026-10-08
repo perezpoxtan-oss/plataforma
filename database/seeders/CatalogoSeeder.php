@@ -81,6 +81,7 @@ class CatalogoSeeder extends Seeder
         'recepcion_rh' => 'recepcion.index',
         'candidatos' => 'candidatos.index',
         'autorizaciones' => 'autorizaciones.index',
+        'vacantes' => 'vacantes.index',
     ];
 
     /**
@@ -114,6 +115,8 @@ class CatalogoSeeder extends Seeder
                 'recepcion_rh' => ['Recepción de RR. HH.', 'bi-person-check', [], [], ['ver']],
                 'candidatos' => ['Candidatos', 'bi-person-workspace', ['exportar', 'contratar', 'configurar']],
                 'autorizaciones' => ['Autorizaciones departamentales', 'bi-patch-check', [], [], ['ver', 'responder', 'configurar']],
+                // Bolsa de trabajo (lección 36): «configurar» = bolsa pública por internet
+                'vacantes' => ['Vacantes', 'bi-megaphone', ['configurar']],
             ]],
             // Seguridad: padrones, operación y sus reportes.
             'seguridad' => ['Seguridad', 'bi-shield-lock', [

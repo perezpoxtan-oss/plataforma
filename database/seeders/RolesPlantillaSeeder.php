@@ -76,7 +76,7 @@ class RolesPlantillaSeeder extends Seeder
         // El Agente trabaja en los menús de caseta: Operación y Padrones (no en reportes)
         $deCaseta = fn ($ma) => $deSeguridad($ma) && in_array(self::menuDe($ma->modulo), ['operacion', 'padrones'], true);
 
-        return self::soloAdministradorBorra(self::reglaEtiquetasQr(self::reglaProcedimientos(self::reglaRecepcion([
+        return self::soloAdministradorBorra(self::reglaVacantes(self::reglaEtiquetasQr(self::reglaProcedimientos(self::reglaRecepcion([
             'Administrador' => [10, 'Administra toda su empresa', fn ($ma) => Alcance::Empresa],
             'Director' => [20, 'Consulta y aprueba en toda la empresa', fn ($ma) => in_array($ma->accion->clave, ['ver', 'aprobar', 'exportar', 'imprimir'], true) ? Alcance::Empresa : null],
             'Recursos Humanos' => [25, 'Administra el personal y valida las altas provisionales de la caseta', fn ($ma) => $ma->modulo->area->clave === 'recursos_humanos'
@@ -90,7 +90,7 @@ class RolesPlantillaSeeder extends Seeder
             'Agente' => [60, 'Registra la operación de caseta', fn ($ma) => ($deCaseta($ma)
                 && in_array($ma->accion->clave, self::esPadron($ma->modulo) ? self::ACCIONES_AGENTE_PADRONES : self::ACCIONES_AGENTE_OPERACION, true))
                 || $provisional($ma) ? Alcance::Sede : null],
-        ]))));
+        ])))));
     }
 
     // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
@@ -169,6 +169,42 @@ class RolesPlantillaSeeder extends Seeder
         return $definiciones;
     }
     // Fin Procedimientos
+
+    // Vacantes (lección 36)
+
+    /**
+     * Vacantes (bolsa de trabajo): Recursos Humanos y el Administrador siguen
+     * la regla general (todo); el Director las administra en toda la empresa
+     * (sin configurar la bolsa pública); la caseta y Seguridad las consultan
+     * en su sede (ven las publicadas, imprimen el cartel). rol => [acciones, alcance].
+     */
+    public const VACANTES = [
+        'Director' => [['ver', 'crear', 'editar', 'eliminar'], Alcance::Empresa],
+        'Jefe de seguridad' => [['ver'], Alcance::Sede],
+        'Asistente' => [['ver'], Alcance::Sede],
+        'Supervisor' => [['ver'], Alcance::Sede],
+        'Agente' => [['ver'], Alcance::Sede],
+    ];
+
+    /**
+     * @param  array<string, array{0: int, 1: string, 2: Closure}>  $definiciones
+     * @return array<string, array{0: int, 1: string, 2: Closure}>
+     */
+    private static function reglaVacantes(array $definiciones): array
+    {
+        foreach ($definiciones as $nombre => [$nivel, $descripcion, $regla]) {
+            if (! isset(self::VACANTES[$nombre])) {
+                continue;
+            }
+            [$acciones, $alcance] = self::VACANTES[$nombre];
+            $definiciones[$nombre][2] = fn ($ma) => $ma->modulo->clave === 'vacantes'
+                ? (in_array($ma->accion->clave, $acciones, true) ? $alcance : null)
+                : $regla($ma);
+        }
+
+        return $definiciones;
+    }
+    // Fin Vacantes
 
     // Etiquetas QR (Ronda 7)
 

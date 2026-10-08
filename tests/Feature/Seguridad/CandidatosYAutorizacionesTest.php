@@ -134,6 +134,32 @@ class CandidatosYAutorizacionesTest extends TestCase
         ];
     }
 
+    /**
+     * Lección 36: lo que envía el propio candidato (kiosco) es la solicitud
+     * completa: nombre y apellidos, 2 referencias personales, declaración y firma.
+     *
+     * @return array<string, mixed>
+     */
+    private function cvKiosco(array $extra = []): array
+    {
+        return $this->cv($extra + [
+            'nombre' => 'Ana', 'apellido_paterno' => 'Pool', 'apellido_materno' => 'Canché',
+            'referencias' => [['nombre' => 'Martha Chablé', 'telefono' => '9981112233', 'relacion' => 'Jefa'], ['nombre' => 'Rosa Uc', 'telefono' => '9984445566', 'relacion' => 'Vecina']],
+            'declaracion' => '1', 'firma' => $this->firmaImagen(),
+        ]);
+    }
+
+    private function firmaImagen(): string
+    {
+        $img = imagecreatetruecolor(600, 200);
+        imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+        imageline($img, 40, 150, 560, 40, imagecolorallocate($img, 0, 0, 0));
+        ob_start();
+        imagejpeg($img, null, 70);
+
+        return 'data:image/jpeg;base64,'.base64_encode((string) ob_get_clean());
+    }
+
     // ------------------------------------------------------------------ Caseta → RR. HH.
 
     public function test_la_caseta_registra_un_candidato_con_fotos_y_rh_recibe_el_aviso_y_el_correo(): void
@@ -439,10 +465,10 @@ class CandidatosYAutorizacionesTest extends TestCase
             ->assertSee('noindex', false);
 
         // Sin aceptar el aviso no se guarda
-        $this->post($url, $this->cv())->assertSessionHasErrors('acepta_privacidad');
+        $this->post($url, $this->cvKiosco())->assertSessionHasErrors('acepta_privacidad');
         $this->assertNull($c->fresh()->privacidad_aceptada_en);
 
-        $this->post($url, $this->cv(['acepta_privacidad' => '1', 'departamento_id' => $this->seguridad->id,
+        $this->post($url, $this->cvKiosco(['acepta_privacidad' => '1', 'departamento_id' => $this->seguridad->id,
             'ine' => UploadedFile::fake()->image('ine.jpg', 500, 300), 'cv' => UploadedFile::fake()->createWithContent('cv.pdf', "%PDF-1.4\n")]))
             ->assertRedirect($url)->assertSessionHas('kiosco_enviado');
         $c->refresh();
@@ -468,9 +494,9 @@ class CandidatosYAutorizacionesTest extends TestCase
         $r = $this->enEmpresa(fn () => app(Kiosco::class)->generar($this->rh, $c));
         $url = parse_url($r['url'], PHP_URL_PATH);
 
-        $this->post($url, $this->cv(['acepta_privacidad' => '1']))->assertSessionHas('kiosco_enviado');
+        $this->post($url, $this->cvKiosco(['acepta_privacidad' => '1']))->assertSessionHas('kiosco_enviado');
         // Ya se usó (máximo 1)
-        $this->post($url, $this->cv(['acepta_privacidad' => '1', 'nombre_completo' => 'Cambiado Otra Vez']))->assertNotFound();
+        $this->post($url, $this->cvKiosco(['acepta_privacidad' => '1', 'nombre' => 'Cambiado', 'apellido_paterno' => 'Otra Vez']))->assertNotFound();
         $this->assertSame('Ana Pool Canché', $c->fresh()->nombre_completo);
 
         // Vencido
@@ -514,7 +540,7 @@ class CandidatosYAutorizacionesTest extends TestCase
         $entorno = $this->app['env'];
         $this->app['env'] = 'qa';
         try {
-            $this->post(parse_url($r['url'], PHP_URL_PATH), $this->cv(['acepta_privacidad' => '1']))->assertStatus(302)->assertRedirect('/login');
+            $this->post(parse_url($r['url'], PHP_URL_PATH), $this->cvKiosco(['acepta_privacidad' => '1']))->assertStatus(302)->assertRedirect('/login');
         } finally {
             $this->app['env'] = $entorno;
         }

@@ -76,7 +76,37 @@ class Candidato extends Model
         'inmediata' => 'Inmediata', 'una_semana' => 'En una semana', 'quince_dias' => 'En 15 días', 'un_mes' => 'En un mes o más',
     ];
 
-    public const ORIGENES = ['caseta' => 'Caseta', 'rh' => 'Recursos Humanos', 'kiosco' => 'Kiosco (él mismo)'];
+    public const ORIGENES = ['caseta' => 'Caseta', 'rh' => 'Recursos Humanos', 'kiosco' => 'Kiosco (él mismo)', 'web' => 'Bolsa de trabajo (internet)'];
+
+    // Solicitud de empleo formal (lección 36)
+
+    public const SEXOS = ['mujer' => 'Mujer', 'hombre' => 'Hombre', 'no_decir' => 'Prefiero no decirlo'];
+
+    public const ESTADOS_CIVILES = [
+        'soltero' => 'Soltero(a)', 'casado' => 'Casado(a)', 'union_libre' => 'Unión libre', 'divorciado' => 'Divorciado(a)', 'viudo' => 'Viudo(a)',
+    ];
+
+    public const LICENCIAS = ['automovilista' => 'Automovilista', 'chofer' => 'Chofer', 'motociclista' => 'Motociclista', 'federal' => 'Federal'];
+
+    /** Documento obtenido en cada renglón de escolaridad. */
+    public const DOCUMENTOS_ESTUDIO = ['certificado' => 'Certificado', 'titulo' => 'Título', 'cedula' => 'Cédula profesional', 'trunco' => 'Trunco (sin terminar)'];
+
+    public const MEDIOS_VACANTE = [
+        'bolsa_web' => 'Página de empleos de la empresa', 'redes' => 'Redes sociales', 'recomendacion' => 'Me lo recomendó un conocido',
+        'cartel' => 'Cartel en la entrada', 'periodico' => 'Periódico o bolsa de trabajo', 'otro' => 'Otro',
+    ];
+
+    public const FIRMAS_MEDIO = ['kiosco' => 'en el kiosco', 'web' => 'en la bolsa de trabajo', 'rh' => 'con Recursos Humanos'];
+
+    /**
+     * Datos personales sensibles: solo los ve quien tiene candidatos.ver (Recursos
+     * Humanos). Nunca van a la auditoría (se enmascaran), al resumen del
+     * departamento, a las notificaciones ni a los correos; en el CSV solo si se
+     * pide expresamente (columnas marcadas).
+     */
+    public const SENSIBLES = ['curp', 'rfc', 'nss', 'calle_numero', 'colonia', 'codigo_postal', 'municipio', 'estado_domicilio', 'tiempo_residencia',
+        'telefono_fijo', 'emergencia_nombre', 'emergencia_parentesco', 'emergencia_telefono'];
+    // Fin Solicitud de empleo formal
 
     protected $table = 'candidatos';
 
@@ -87,6 +117,13 @@ class Candidato extends Model
         'nombre_completo', 'telefono', 'correo', 'fecha_nacimiento', 'ciudad',
         'escolaridad', 'experiencia', 'habilidades', 'idiomas', 'disponibilidad', 'disponibilidad_notas', 'pretension', 'referencias',
         'notas_rh', 'origen', 'llegada_en',
+        // Solicitud de empleo formal (lección 36)
+        'nombre', 'apellido_paterno', 'apellido_materno', 'sexo', 'lugar_nacimiento', 'nacionalidad', 'estado_civil', 'dependientes',
+        'curp', 'rfc', 'nss', 'licencia_tipo', 'licencia_vigencia',
+        'calle_numero', 'colonia', 'codigo_postal', 'municipio', 'estado_domicilio', 'tiempo_residencia', 'telefono_fijo',
+        'emergencia_nombre', 'emergencia_parentesco', 'emergencia_telefono', 'referencias_laborales',
+        'medio_vacante', 'tiene_familiares', 'familiares_nombre', 'trabajo_antes_aqui', 'rolar_turnos', 'puede_viajar', 'cambiar_residencia',
+        'fecha_inicio_posible',
     ];
 
     protected function casts(): array
@@ -97,6 +134,10 @@ class Candidato extends Model
             'privacidad_aceptada_en' => 'datetime', 'llegada_en' => 'datetime', 'avisado_rh_en' => 'datetime', 'revision_en' => 'datetime',
             'aprobado_rh_en' => 'datetime', 'enviado_departamento_en' => 'datetime', 'respuesta_departamento_en' => 'datetime',
             'entrevista_en' => 'datetime', 'decision_en' => 'datetime', 'contratado_en' => 'datetime',
+            // Solicitud de empleo formal
+            'referencias_laborales' => 'array', 'licencia_vigencia' => 'date', 'fecha_inicio_posible' => 'date', 'dependientes' => 'integer',
+            'tiene_familiares' => 'boolean', 'trabajo_antes_aqui' => 'boolean', 'rolar_turnos' => 'boolean', 'puede_viajar' => 'boolean',
+            'cambiar_residencia' => 'boolean', 'declaracion_aceptada_en' => 'datetime', 'firma_en' => 'datetime',
         ];
     }
 
@@ -173,6 +214,18 @@ class Candidato extends Model
         return $this->belongsTo(User::class, 'decision_por');
     }
 
+    /** Vacante de la bolsa de trabajo a la que aplica (la columna «vacante» es el texto libre de antes). */
+    public function vacantePublicada(): BelongsTo
+    {
+        return $this->belongsTo(Vacante::class, 'vacante_id');
+    }
+
+    /** Quién de RR. HH. capturó la firma por el candidato (null = firmó él mismo). */
+    public function firmaCapturadaPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'firma_capturada_por');
+    }
+
     // ------------------------------------------------------------------ Ayudas
 
     public function etiquetaEtapa(): string
@@ -215,6 +268,45 @@ class Candidato extends Model
     public function anosExperiencia(): int
     {
         return (int) array_sum(array_map(fn ($f) => is_array($f) ? (int) ($f['anos'] ?? 0) : 0, (array) $this->experiencia));
+    }
+
+    /** Domicilio en una línea (para la hoja impresa y el alta como colaborador). */
+    public function domicilioCompleto(): ?string
+    {
+        $partes = array_filter([
+            $this->calle_numero, $this->colonia ? 'Col. '.$this->colonia : null, $this->codigo_postal ? 'C.P. '.$this->codigo_postal : null,
+            $this->municipio, $this->estado_domicilio,
+        ], fn ($p) => is_string($p) && trim($p) !== '');
+
+        return $partes === [] ? null : implode(', ', $partes);
+    }
+
+    /**
+     * Nombre y apellidos: los capturados por separado o, si solo hay nombre
+     * completo (caseta), una sugerencia partiéndolo (RR. HH. lo confirma).
+     *
+     * @return array{nombre: string, paterno: string, materno: string}
+     */
+    public function partesNombre(): array
+    {
+        if ($this->nombre !== null && $this->nombre !== '') {
+            return ['nombre' => $this->nombre, 'paterno' => (string) $this->apellido_paterno, 'materno' => (string) $this->apellido_materno];
+        }
+        $p = preg_split('/\s+/u', trim((string) $this->nombre_completo)) ?: [];
+        if (count($p) >= 3) {
+            $materno = array_pop($p);
+            $paterno = array_pop($p);
+
+            return ['nombre' => implode(' ', $p), 'paterno' => $paterno, 'materno' => $materno];
+        }
+
+        return ['nombre' => $p[0] ?? '', 'paterno' => $p[1] ?? '', 'materno' => ''];
+    }
+
+    /** ¿Ya firmó la solicitud (declaración aceptada y firma guardada)? */
+    public function solicitudFirmada(): bool
+    {
+        return $this->firma_ruta !== null && $this->declaracion_aceptada_en !== null;
     }
 
     /** Minutos desde que llegó (o se registró) hasta ahora. */

@@ -93,7 +93,7 @@ class MenusReorganizadosTest extends TestCase
         ], $menu['padrones']);
         $this->assertSame([
             'Personal' => ['colaboradores'],
-            'Recepción y candidatos' => ['recepcion_rh', 'candidatos'],
+            'Recepción y candidatos' => ['vacantes', 'recepcion_rh', 'candidatos'], // Vacantes: lección 36
             'Catálogos' => ['departamentos', 'puestos', 'turnos'],
         ], $menu['recursos_humanos']);
         // Identidad de la plataforma es solo del superadministrador
@@ -170,7 +170,8 @@ class MenusReorganizadosTest extends TestCase
         $menu = $this->estructura($jefe);
 
         $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'estructura'], array_keys($menu));
-        $this->assertSame(['Personal' => ['colaboradores']], $menu['recursos_humanos']);
+        // Lección 36: la caseta consulta las vacantes publicadas de su sede
+        $this->assertSame(['Personal' => ['colaboradores'], 'Recepción y candidatos' => ['vacantes']], $menu['recursos_humanos']);
         $this->assertSame(['Accesos y permisos' => ['usuarios']], $menu['estructura']);
     }
 
@@ -198,6 +199,16 @@ class MenusReorganizadosTest extends TestCase
     public function test_la_migracion_reacomoda_una_instalacion_existente_y_se_puede_repetir(): void
     {
         $esperado = $this->acomodo();
+        // Lección 36: antes de esta migración Vacantes no existía; su propia migración la acomoda después
+        $vacantes = Modulo::where('clave', 'vacantes')->value('orden_menu');
+        $sinVacantes = collect($esperado)->reject(fn ($l) => str_contains($l, '|vacantes|'))->map(function ($l) use ($vacantes) {
+            $p = explode('|', $l);
+
+            return count($p) === 5 && $p[0] === 'recursos_humanos' && (int) $p[2] > $vacantes ? implode('|', [$p[0], $p[1], (int) $p[2] - 1, $p[3], $p[4]]) : $l;
+        })->values()->all();
+        Modulo::where('clave', 'vacantes')->update(['menu_id' => null, 'seccion_menu' => null, 'orden_menu' => 0]);
+        $esperadoFinal = $esperado;
+        $esperado = $sinVacantes;
 
         // Como estaba antes (QA/Producción): Estructura primero, vouchers en Padrones, autorizaciones en RH, sin Informes
         Menu::where('clave', 'informes')->delete();
@@ -219,9 +230,14 @@ class MenusReorganizadosTest extends TestCase
         $this->assertSame(1, Menu::where('clave', 'informes')->count());
         $this->assertNull(Modulo::where('clave', 'autorizaciones')->value('menu_id'));
 
+        // La migración de Vacantes (lección 36) la pone primero en «Recepción y candidatos»
+        $vacantesMigracion = require database_path('migrations/2026_10_17_000200_crear_vacantes.php');
+        (fn () => $this->modulo())->call($vacantesMigracion);
+        $this->assertSame($esperadoFinal, $this->acomodo());
+
         // El MenuSeeder después de la migración no mueve nada
         $this->seed(MenuSeeder::class);
-        $this->assertSame($esperado, $this->acomodo());
+        $this->assertSame($esperadoFinal, $this->acomodo());
     }
 
     // ------------------------------------------------------------ Mis pendientes

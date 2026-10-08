@@ -13,9 +13,11 @@ use App\Models\Persona;
 use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\User;
+use App\Models\Vacante;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\Firmas\Firmas;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
@@ -103,6 +105,8 @@ class AdministradorCandidatos
             'departamento_id' => $d['departamento_id'] ?? null, 'puesto_id' => $d['puesto_id'] ?? null, 'vacante' => $d['vacante'] ?? null,
             'nombre_completo' => mb_convert_case(mb_strtolower($acceso->nombre), MB_CASE_TITLE), 'origen' => 'caseta', 'llegada_en' => $acceso->entrada_at ?? now(),
         ]);
+        // Vacantes (lección 36): la vacante publicada que eligió la caseta
+        $candidato->forceFill(['vacante_id' => $d['vacante_id'] ?? null]);
         $candidato->save();
         if ($acceso->persona_id !== null) {
             Persona::whereKey($acceso->persona_id)->where('categoria', 'general')->update(['categoria' => 'prospecto_rrhh']);
@@ -124,10 +128,12 @@ class AdministradorCandidatos
         $d = $this->validarCv($entrada, true);
         $sedeId = $this->sedeValida($actor, $entrada['sede_id'] ?? null, 'candidatos.crear');
 
-        $candidato = DB::transaction(function () use ($actor, $d, $sedeId, $ip) {
+        $candidato = DB::transaction(function () use ($actor, $d, $sedeId, $ip, $entrada) {
             $persona = $this->personaDelPadron($actor, $d['nombre_completo'], $d['telefono'] ?? null);
             $candidato = new Candidato($this->soloCv($d) + ['sede_id' => $sedeId, 'persona_id' => $persona->id, 'origen' => 'rh', 'llegada_en' => now()]);
             $this->aceptarPrivacidad($candidato, $ip, 'rh');
+            $this->firmarSiViene($candidato, $entrada, 'rh', $actor);
+            $this->ligarVacante($candidato, $entrada);
             $candidato->save();
 
             return $candidato;
@@ -154,6 +160,8 @@ class AdministradorCandidatos
         if ($candidato->privacidad_aceptada_en === null) {
             $this->aceptarPrivacidad($candidato, $ip, 'rh');
         }
+        $this->firmarSiViene($candidato, $entrada, 'rh', $actor);
+        $this->ligarVacante($candidato, $entrada);
         $candidato->autocaptura_pendiente = false;
         $candidato->save();
         $this->auditoria->auditar($actor, 'candidatos.actualizado', $candidato, $antes, $this->foto($candidato));
@@ -253,10 +261,14 @@ class AdministradorCandidatos
         if ($candidato->etapa !== 'seleccionado') {
             throw new CambioNoPermitido('Solo se contrata a un candidato «Seleccionado».');
         }
+        // Los datos oficiales de la solicitud pasan al colaborador (RR. HH. no los vuelve a escribir)
         $datos = array_merge([
             'telefono' => $candidato->telefono, 'sede_id' => $candidato->sede_id, 'departamento_id' => $candidato->departamento_id,
             'puesto_id' => $candidato->puesto_id, 'correo_personal' => $candidato->correo,
             'fecha_nacimiento' => $candidato->fecha_nacimiento?->format('Y-m-d'),
+            'nombre' => $candidato->nombre, 'apellido_paterno' => $candidato->apellido_paterno, 'apellido_materno' => $candidato->apellido_materno,
+            'curp' => $candidato->curp, 'rfc' => $candidato->rfc, 'nss' => $candidato->nss, 'lugar_nacimiento' => $candidato->lugar_nacimiento,
+            'nacionalidad' => $candidato->nacionalidad, 'direccion_completa' => $candidato->domicilioCompleto(),
         ], array_intersect_key($entrada, array_flip(['num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'sede_id', 'departamento_id', 'puesto_id', 'telefono'])));
         $datos = array_filter($datos, fn ($v) => $v !== null && $v !== '');
 
@@ -286,6 +298,7 @@ class AdministradorCandidatos
         foreach ($candidato->documentos as $doc) {
             $documentos->borrar($doc->ruta);
         }
+        app(Firmas::class)->borrar($candidato->firma_ruta);
         $candidato->delete();
         $this->auditoria->auditar($actor, 'candidatos.eliminado', $candidato, $antes, null);
     }
@@ -293,32 +306,77 @@ class AdministradorCandidatos
     // ------------------------------------------------------------ Validación CV
 
     /**
-     * Valida y normaliza el CV (mismas reglas en RR. HH. y en el kiosco).
+     * Valida y normaliza la solicitud de empleo (mismas reglas en RR. HH., el
+     * kiosco y la bolsa de trabajo).
+     *
+     * $completa: lo que envía el propio candidato (kiosco o internet) debe
+     * traer nombre y apellido paterno, teléfono, al menos 2 referencias
+     * personales y la declaración «la información es verdadera». RR. HH.
+     * puede capturar por partes.
      *
      * @param  array<string, mixed>  $entrada
      * @return array<string, mixed>
      */
-    public function validarCv(array $entrada, bool $pidePrivacidad): array
+    public function validarCv(array $entrada, bool $pidePrivacidad, bool $completa = false): array
     {
         $entrada = array_map(fn ($v) => is_string($v) && trim($v) === '' ? null : $v, $entrada);
-        foreach (['escolaridad', 'experiencia', 'referencias'] as $lista) {
+        foreach (['escolaridad', 'experiencia', 'referencias', 'referencias_laborales'] as $lista) {
             // Filas sin ningún dato escrito (las que el formulario deja en blanco) se omiten
             $entrada[$lista] = array_values(array_filter(is_array($entrada[$lista] ?? null) ? $entrada[$lista] : [],
-                fn ($f) => is_array($f) && collect($f)->except('concluido')->contains(fn ($v) => is_scalar($v) && trim((string) $v) !== '')));
+                fn ($f) => is_array($f) && collect($f)->except(['concluido', 'pedir_referencias'])->contains(fn ($v) => is_scalar($v) && trim((string) $v) !== '')));
         }
-        if (isset($entrada['telefono']) && is_string($entrada['telefono'])) {
-            $entrada['telefono'] = preg_replace('/\D+/', '', $entrada['telefono']);
+        foreach (['telefono', 'telefono_fijo', 'emergencia_telefono', 'nss', 'codigo_postal'] as $campo) {
+            if (isset($entrada[$campo]) && is_string($entrada[$campo])) {
+                $entrada[$campo] = preg_replace('/[\s\-().]+/', '', $entrada[$campo]);
+            }
         }
-        if (isset($entrada['pretension']) && is_string($entrada['pretension'])) {
-            $entrada['pretension'] = str_replace([',', '$', ' '], '', $entrada['pretension']);
+        foreach (['curp', 'rfc'] as $campo) {
+            if (isset($entrada[$campo]) && is_string($entrada[$campo])) {
+                $entrada[$campo] = mb_strtoupper(str_replace([' ', '-'], '', $entrada[$campo]));
+            }
         }
+        foreach (['pretension', 'dependientes'] as $campo) {
+            if (isset($entrada[$campo]) && is_string($entrada[$campo])) {
+                $entrada[$campo] = str_replace([',', '$', ' '], '', $entrada[$campo]);
+            }
+        }
+        foreach ($entrada['experiencia'] as $i => $f) {
+            if (isset($f['sueldo_final']) && is_string($f['sueldo_final'])) {
+                $entrada['experiencia'][$i]['sueldo_final'] = str_replace([',', '$', ' '], '', $f['sueldo_final']);
+            }
+        }
+        $siNo = ['nullable', 'boolean'];
+        $mes = ['nullable', 'regex:/^(19|20)\d{2}-(0[1-9]|1[0-2])$/'];
 
         $d = Validator::make($entrada, [
-            'nombre_completo' => ['required', 'string', 'min:5', 'max:150'],
-            'telefono' => ['nullable', 'regex:/^\d{10,15}$/'],
+            'nombre_completo' => [isset($entrada['nombre']) ? 'nullable' : 'required', 'string', 'min:5', 'max:150'],
+            'nombre' => [$completa ? 'required' : 'nullable', 'string', 'max:60'],
+            'apellido_paterno' => [$completa || isset($entrada['nombre']) ? 'required' : 'nullable', 'string', 'max:60'],
+            'apellido_materno' => ['nullable', 'string', 'max:60'],
+            'telefono' => [$completa ? 'required' : 'nullable', 'regex:/^\d{10,15}$/'],
             'correo' => ['nullable', 'email:rfc', 'max:150'],
             'fecha_nacimiento' => ['nullable', 'date_format:Y-m-d', 'before:-15 years', 'after:1930-01-01'],
             'ciudad' => ['nullable', 'string', 'max:120'],
+            'sexo' => ['nullable', Rule::in(array_keys(Candidato::SEXOS))],
+            'lugar_nacimiento' => ['nullable', Rule::in(Colaborador::ESTADOS_NACIMIENTO)],
+            'nacionalidad' => ['nullable', 'string', 'max:40'],
+            'estado_civil' => ['nullable', Rule::in(array_keys(Candidato::ESTADOS_CIVILES))],
+            'dependientes' => ['nullable', 'integer', 'min:0', 'max:20'],
+            'curp' => ['nullable', 'regex:'.Colaborador::CURP],
+            'rfc' => ['nullable', 'regex:'.Colaborador::RFC],
+            'nss' => ['nullable', 'regex:'.Colaborador::NSS],
+            'licencia_tipo' => ['nullable', Rule::in(array_keys(Candidato::LICENCIAS))],
+            'licencia_vigencia' => ['nullable', 'date_format:Y-m-d', 'after:2000-01-01', 'before:2100-01-01'],
+            'calle_numero' => ['nullable', 'string', 'max:150'],
+            'colonia' => ['nullable', 'string', 'max:100'],
+            'codigo_postal' => ['nullable', 'regex:/^\d{5}$/'],
+            'municipio' => ['nullable', 'string', 'max:100'],
+            'estado_domicilio' => ['nullable', Rule::in(array_values(array_diff(Colaborador::ESTADOS_NACIMIENTO, ['Extranjero'])))],
+            'tiempo_residencia' => ['nullable', 'string', 'max:40'],
+            'telefono_fijo' => ['nullable', 'regex:/^\d{10}$/'],
+            'emergencia_nombre' => ['nullable', 'string', 'max:150'],
+            'emergencia_parentesco' => ['nullable', 'string', 'max:40'],
+            'emergencia_telefono' => ['nullable', 'regex:/^\d{10,15}$/'],
             'departamento_id' => ['nullable', 'integer'],
             'puesto_id' => ['nullable', 'integer'],
             'vacante' => ['nullable', 'string', 'max:150'],
@@ -326,34 +384,94 @@ class AdministradorCandidatos
             'escolaridad.*.nivel' => ['required', Rule::in(array_keys(Candidato::ESCOLARIDAD))],
             'escolaridad.*.institucion' => ['nullable', 'string', 'max:150'],
             'escolaridad.*.titulo' => ['nullable', 'string', 'max:150'],
+            'escolaridad.*.periodo' => ['nullable', 'string', 'max:40'],
+            'escolaridad.*.documento' => ['nullable', Rule::in(array_keys(Candidato::DOCUMENTOS_ESTUDIO))],
             'escolaridad.*.concluido' => ['nullable', 'boolean'],
             'experiencia' => ['array', 'max:'.self::MAX_FILAS],
             'experiencia.*.empresa' => ['required', 'string', 'max:150'],
             'experiencia.*.puesto' => ['nullable', 'string', 'max:150'],
             'experiencia.*.anos' => ['nullable', 'integer', 'min:0', 'max:60'],
+            'experiencia.*.ingreso' => $mes,
+            'experiencia.*.salida' => $mes,
+            'experiencia.*.sueldo_final' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
+            'experiencia.*.jefe' => ['nullable', 'string', 'max:150'],
+            'experiencia.*.jefe_telefono' => ['nullable', 'string', 'max:20'],
             'experiencia.*.motivo_salida' => ['nullable', 'string', 'max:200'],
+            'experiencia.*.pedir_referencias' => ['nullable', Rule::in(['si', 'no'])],
             'habilidades' => ['nullable', 'string', 'max:1000'],
             'idiomas' => ['nullable', 'string', 'max:255'],
             'disponibilidad' => ['nullable', Rule::in(array_keys(Candidato::DISPONIBILIDAD))],
             'disponibilidad_notas' => ['nullable', 'string', 'max:255'],
             'pretension' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
-            'referencias' => ['array', 'max:'.self::MAX_FILAS],
+            'referencias' => ['array', $completa ? 'min:2' : 'min:0', 'max:'.self::MAX_FILAS],
             'referencias.*.nombre' => ['required', 'string', 'max:150'],
-            'referencias.*.telefono' => ['nullable', 'string', 'max:20'],
+            'referencias.*.telefono' => [$completa ? 'required' : 'nullable', 'string', 'max:20'],
             'referencias.*.relacion' => ['nullable', 'string', 'max:80'],
+            'referencias.*.anos_conocerlo' => ['nullable', 'integer', 'min:0', 'max:90'],
+            'referencias_laborales' => ['array', 'max:'.self::MAX_FILAS],
+            'referencias_laborales.*.nombre' => ['required', 'string', 'max:150'],
+            'referencias_laborales.*.telefono' => ['nullable', 'string', 'max:20'],
+            'referencias_laborales.*.relacion' => ['nullable', 'string', 'max:80'],
+            'referencias_laborales.*.anos_conocerlo' => ['nullable', 'integer', 'min:0', 'max:90'],
+            'medio_vacante' => ['nullable', Rule::in(array_keys(Candidato::MEDIOS_VACANTE))],
+            'tiene_familiares' => $siNo,
+            'familiares_nombre' => ['nullable', 'string', 'max:150'],
+            'trabajo_antes_aqui' => $siNo,
+            'rolar_turnos' => $siNo,
+            'puede_viajar' => $siNo,
+            'cambiar_residencia' => $siNo,
+            'fecha_inicio_posible' => ['nullable', 'date_format:Y-m-d', 'after:2000-01-01', 'before:2100-01-01'],
             'acepta_privacidad' => $pidePrivacidad ? ['accepted'] : ['nullable'],
+            'declaracion' => $completa ? ['accepted'] : ['nullable'],
+            // La firma la guarda firmar(); aquí solo se pide junto con los demás errores
+            'firma' => $completa ? ['required', function (string $atributo, mixed $valor, \Closure $falla) {
+                if (! app(Firmas::class)->viene(is_string($valor) ? $valor : null)) {
+                    $falla('Falta tu firma: firma en el recuadro con el dedo antes de enviar.');
+                }
+            }] : ['nullable'],
         ], [
             'nombre_completo.required' => 'Escribe el nombre completo.',
             'nombre_completo.min' => 'Escribe el nombre completo (nombre y apellidos).',
+            'nombre.required' => 'Escribe tu nombre (o nombres).',
+            'apellido_paterno.required' => 'Escribe el apellido paterno.',
+            'telefono.required' => 'Escribe un teléfono (celular) para poder llamarte.',
             'telefono.regex' => 'El teléfono lleva de 10 a 15 números.',
             'correo.email' => 'Revisa el correo: parece incompleto.',
             'fecha_nacimiento.*' => 'Revisa la fecha de nacimiento.',
+            'sexo.*' => 'Elige una opción de la lista en «Sexo».',
+            'lugar_nacimiento.*' => 'Elige el estado de nacimiento de la lista.',
+            'estado_civil.*' => 'Elige el estado civil de la lista.',
+            'dependientes.*' => 'Dependientes económicos: escribe un número de 0 a 20.',
+            'curp.regex' => 'El CURP no tiene el formato correcto: son 18 letras y números (ej. GOMA850101HQRRRN09).',
+            'rfc.regex' => 'El RFC no tiene el formato correcto: son 12 o 13 letras y números (ej. GOMA850101AB1).',
+            'nss.regex' => 'El NSS (número de seguro social) lleva exactamente 11 números.',
+            'licencia_tipo.*' => 'Elige el tipo de licencia de la lista.',
+            'licencia_vigencia.*' => 'Revisa la fecha de vigencia de la licencia.',
+            'codigo_postal.regex' => 'El código postal lleva exactamente 5 números.',
+            'estado_domicilio.*' => 'Elige el estado de tu domicilio de la lista.',
+            'telefono_fijo.regex' => 'El teléfono fijo lleva 10 números (con lada).',
+            'emergencia_telefono.regex' => 'El teléfono del contacto de emergencia lleva de 10 a 15 números.',
             'escolaridad.*.nivel.*' => 'En escolaridad, elige el nivel de estudios.',
-            'experiencia.*.empresa.required' => 'En experiencia, escribe el nombre de la empresa.',
-            'experiencia.*.anos.*' => 'En experiencia, los años van de 0 a 60.',
-            'referencias.*.nombre.required' => 'En referencias, escribe el nombre de la persona.',
-            'pretension.*' => 'La pretensión económica es un número (sin letras).',
+            'escolaridad.*.documento.*' => 'En escolaridad, elige el documento obtenido de la lista.',
+            'experiencia.*.empresa.required' => 'En empleos anteriores, escribe el nombre de la empresa.',
+            'experiencia.*.anos.*' => 'En empleos anteriores, los años van de 0 a 60.',
+            'experiencia.*.ingreso.*' => 'En empleos anteriores, revisa el mes de ingreso.',
+            'experiencia.*.salida.*' => 'En empleos anteriores, revisa el mes de salida.',
+            'experiencia.*.sueldo_final.*' => 'En empleos anteriores, el sueldo es un número (sin letras).',
+            'experiencia.*.pedir_referencias.*' => 'En empleos anteriores, indica si podemos pedir referencias (sí o no).',
+            'referencias.min' => 'Escribe al menos 2 referencias personales (nombre y teléfono).',
+            'referencias.*.nombre.required' => 'En referencias personales, escribe el nombre de la persona.',
+            'referencias.*.telefono.required' => 'En referencias personales, escribe el teléfono de cada persona.',
+            'referencias.*.anos_conocerlo.*' => 'En referencias, los años de conocerlo son un número.',
+            'referencias_laborales.*.nombre.required' => 'En referencias laborales, escribe el nombre de la persona.',
+            'referencias_laborales.*.anos_conocerlo.*' => 'En referencias, los años de conocerlo son un número.',
+            'medio_vacante.*' => 'Elige de la lista cómo te enteraste de la vacante.',
+            'fecha_inicio_posible.*' => 'Revisa la fecha en que puedes empezar.',
+            'pretension.*' => 'El sueldo que esperas es un número (sin letras).',
             'acepta_privacidad.accepted' => 'Para guardar, marca «Acepto el aviso de privacidad».',
+            'declaracion.accepted' => 'Para enviar, marca «Declaro que la información es verdadera».',
+            'firma.required' => 'Falta tu firma: firma en el recuadro con el dedo antes de enviar.',
+            '*.boolean' => 'Elige «Sí» o «No».',
             '*.max' => 'Ese dato es demasiado largo.',
             '*.array' => 'Revisa la lista.',
         ])->validate();
@@ -366,18 +484,52 @@ class AdministradorCandidatos
             throw ValidationException::withMessages(['puesto_id' => 'Elige un puesto activo de la lista.']);
         }
 
-        $d['nombre_completo'] = mb_convert_case(mb_strtolower((string) preg_replace('/\s+/u', ' ', trim($d['nombre_completo']))), MB_CASE_TITLE);
+        $titulo = fn (?string $v) => $v === null ? null : mb_convert_case(mb_strtolower((string) preg_replace('/\s+/u', ' ', trim($v))), MB_CASE_TITLE);
+        foreach (['nombre', 'apellido_paterno', 'apellido_materno'] as $campo) {
+            $d[$campo] = $titulo($d[$campo] ?? null);
+        }
+        $d['nombre_completo'] = ! empty($d['nombre'])
+            ? implode(' ', array_filter([$d['nombre'], $d['apellido_paterno'] ?? null, $d['apellido_materno'] ?? null]))
+            : $titulo($d['nombre_completo']);
+        if (mb_strlen($d['nombre_completo']) > 150) {
+            throw ValidationException::withMessages(['nombre' => 'El nombre completo es demasiado largo.']);
+        }
+
         $d['escolaridad'] = array_map(fn ($f) => [
             'nivel' => $f['nivel'], 'institucion' => $this->linea($f['institucion'] ?? null), 'titulo' => $this->linea($f['titulo'] ?? null),
-            'concluido' => filter_var($f['concluido'] ?? false, FILTER_VALIDATE_BOOL),
+            'periodo' => $this->linea($f['periodo'] ?? null), 'documento' => $f['documento'] ?? null,
+            'concluido' => isset($f['documento']) ? $f['documento'] !== 'trunco' : filter_var($f['concluido'] ?? false, FILTER_VALIDATE_BOOL),
         ], $d['escolaridad'] ?? []);
-        $d['experiencia'] = array_map(fn ($f) => [
-            'empresa' => $this->linea($f['empresa'] ?? null), 'puesto' => $this->linea($f['puesto'] ?? null),
-            'anos' => isset($f['anos']) ? (int) $f['anos'] : null, 'motivo_salida' => $this->linea($f['motivo_salida'] ?? null),
-        ], $d['experiencia'] ?? []);
-        $d['referencias'] = array_map(fn ($f) => [
-            'nombre' => $this->linea($f['nombre'] ?? null), 'telefono' => $this->linea($f['telefono'] ?? null), 'relacion' => $this->linea($f['relacion'] ?? null),
-        ], $d['referencias'] ?? []);
+        $d['experiencia'] = array_map(function ($f) {
+            $ingreso = $f['ingreso'] ?? null;
+            $salida = $f['salida'] ?? null;
+            if ($ingreso !== null && $salida !== null && $salida < $ingreso) {
+                throw ValidationException::withMessages(['experiencia' => 'En empleos anteriores, el mes de salida no puede ser antes del de ingreso.']);
+            }
+
+            return [
+                'empresa' => $this->linea($f['empresa'] ?? null), 'puesto' => $this->linea($f['puesto'] ?? null),
+                'ingreso' => $ingreso, 'salida' => $salida,
+                // Años: se calculan con las fechas (o se conserva el dato anterior)
+                'anos' => $ingreso !== null ? $this->anosEntre($ingreso, $salida) : (isset($f['anos']) ? (int) $f['anos'] : null),
+                'sueldo_final' => isset($f['sueldo_final']) ? round((float) $f['sueldo_final'], 2) : null,
+                'jefe' => $this->linea($f['jefe'] ?? null), 'jefe_telefono' => $this->linea($f['jefe_telefono'] ?? null),
+                'motivo_salida' => $this->linea($f['motivo_salida'] ?? null), 'pedir_referencias' => $f['pedir_referencias'] ?? null,
+            ];
+        }, $d['experiencia'] ?? []);
+        foreach (['referencias', 'referencias_laborales'] as $lista) {
+            $d[$lista] = array_map(fn ($f) => [
+                'nombre' => $this->linea($f['nombre'] ?? null), 'telefono' => $this->linea($f['telefono'] ?? null), 'relacion' => $this->linea($f['relacion'] ?? null),
+                'anos_conocerlo' => isset($f['anos_conocerlo']) ? (int) $f['anos_conocerlo'] : null,
+            ], $d[$lista] ?? []);
+        }
+        if (! filter_var($d['tiene_familiares'] ?? false, FILTER_VALIDATE_BOOL)) {
+            $d['familiares_nombre'] = null;
+        }
+        // «Ciudad» (lista y resumen) = municipio del domicilio cuando se captura
+        if (! empty($d['municipio'])) {
+            $d['ciudad'] = $d['municipio'];
+        }
 
         return $d;
     }
@@ -389,17 +541,100 @@ class AdministradorCandidatos
     public function soloCv(array $d): array
     {
         $campos = ['nombre_completo', 'telefono', 'correo', 'fecha_nacimiento', 'ciudad', 'departamento_id', 'puesto_id', 'vacante',
-            'escolaridad', 'experiencia', 'habilidades', 'idiomas', 'disponibilidad', 'disponibilidad_notas', 'pretension', 'referencias'];
+            'escolaridad', 'experiencia', 'habilidades', 'idiomas', 'disponibilidad', 'disponibilidad_notas', 'pretension', 'referencias',
+            // Solicitud de empleo formal
+            'nombre', 'apellido_paterno', 'apellido_materno', 'sexo', 'lugar_nacimiento', 'nacionalidad', 'estado_civil', 'dependientes',
+            'curp', 'rfc', 'nss', 'licencia_tipo', 'licencia_vigencia',
+            'calle_numero', 'colonia', 'codigo_postal', 'municipio', 'estado_domicilio', 'tiempo_residencia', 'telefono_fijo',
+            'emergencia_nombre', 'emergencia_parentesco', 'emergencia_telefono', 'referencias_laborales',
+            'medio_vacante', 'tiene_familiares', 'familiares_nombre', 'trabajo_antes_aqui', 'rolar_turnos', 'puede_viajar', 'cambiar_residencia',
+            'fecha_inicio_posible'];
         $r = [];
         foreach ($campos as $c) {
             $v = $d[$c] ?? null;
             $r[$c] = is_string($v) ? trim($v) : $v;
         }
-        $r['escolaridad'] = $r['escolaridad'] ?: null;
-        $r['experiencia'] = $r['experiencia'] ?: null;
-        $r['referencias'] = $r['referencias'] ?: null;
+        foreach (['tiene_familiares', 'trabajo_antes_aqui', 'rolar_turnos', 'puede_viajar', 'cambiar_residencia'] as $c) {
+            $r[$c] = $r[$c] === null ? null : filter_var($r[$c], FILTER_VALIDATE_BOOL);
+        }
+        foreach (['escolaridad', 'experiencia', 'referencias', 'referencias_laborales'] as $lista) {
+            $r[$lista] = $r[$lista] ?: null;
+        }
 
         return $r;
+    }
+
+    /**
+     * Declaración «la información es verdadera» y firma autógrafa (disco
+     * privado). En el kiosco y en internet es obligatoria; RR. HH. la puede
+     * capturar por el candidato (queda quién la capturó).
+     */
+    public function firmar(Candidato $candidato, ?string $firma, string $medio, ?User $capturo, bool $obligatoria): void
+    {
+        $firmas = app(Firmas::class);
+        if (! $firmas->viene($firma)) {
+            if ($obligatoria) {
+                throw ValidationException::withMessages(['firma' => 'Falta tu firma: firma en el recuadro con el dedo antes de enviar.']);
+            }
+
+            return;
+        }
+        $anterior = $candidato->firma_ruta;
+        $ruta = $firmas->guardar($firma, 'candidatos', 'firma', 'la firma de la solicitud');
+        $candidato->forceFill([
+            'firma_ruta' => $ruta, 'firma_en' => now(), 'firma_medio' => $medio, 'firma_capturada_por' => $capturo?->id,
+            'declaracion_aceptada_en' => now(),
+        ]);
+        if ($anterior !== null && $anterior !== $ruta) {
+            $firmas->borrar($anterior);
+        }
+    }
+
+    /**
+     * RR. HH. captura la firma por el candidato (opcional): si trae firma, pide
+     * también la declaración.
+     *
+     * @param  array<string, mixed>  $entrada
+     */
+    private function firmarSiViene(Candidato $candidato, array $entrada, string $medio, User $actor): void
+    {
+        if (! app(Firmas::class)->viene(is_string($entrada['firma'] ?? null) ? $entrada['firma'] : null)) {
+            return;
+        }
+        if (! filter_var($entrada['declaracion'] ?? false, FILTER_VALIDATE_BOOL)) {
+            throw ValidationException::withMessages(['declaracion' => 'Para guardar la firma, marca «Declaro que la información es verdadera».']);
+        }
+        $this->firmar($candidato, $entrada['firma'], $medio, $actor, false);
+    }
+
+    /**
+     * Vacantes (lección 36): RR. HH. liga al candidato con una vacante de la
+     * bolsa (no borradores; la que ya tenía se conserva aunque esté cerrada).
+     *
+     * @param  array<string, mixed>  $entrada
+     */
+    private function ligarVacante(Candidato $candidato, array $entrada): void
+    {
+        if (! array_key_exists('vacante_id', $entrada)) {
+            return;
+        }
+        $id = is_numeric($entrada['vacante_id']) ? (int) $entrada['vacante_id'] : null;
+        if ($id !== null && $id !== $candidato->vacante_id && ! Vacante::whereKey($id)->whereIn('estado', ['publicada', 'pausada'])->exists()) {
+            throw ValidationException::withMessages(['vacante_id' => 'Elige una vacante publicada (o en pausa) de la lista.']);
+        }
+        $candidato->forceFill(['vacante_id' => $id]);
+        if ($id !== null && ($candidato->vacante === null || $candidato->vacante === '') && $candidato->puesto_id === null) {
+            $candidato->vacante = mb_substr((string) Vacante::whereKey($id)->value('titulo'), 0, 150);
+        }
+    }
+
+    /** Años completos entre dos meses «AAAA-MM» (sin salida = hasta hoy). */
+    private function anosEntre(string $ingreso, ?string $salida): int
+    {
+        $fin = $salida ?? now()->format('Y-m');
+        $meses = ((int) substr($fin, 0, 4) - (int) substr($ingreso, 0, 4)) * 12 + ((int) substr($fin, 5, 2) - (int) substr($ingreso, 5, 2));
+
+        return max(0, intdiv($meses, 12));
     }
 
     public function aceptarPrivacidad(Candidato $candidato, string $ip, string $medio): void
@@ -491,6 +726,9 @@ class AdministradorCandidatos
      */
     public function foto(Candidato $c): array
     {
-        return $c->only(['sede_id', 'nombre_completo', 'etapa', 'departamento_id', 'puesto_id', 'vacante', 'origen', 'acceso_id', 'colaborador_id']);
+        // CURP, RFC y NSS solo enmascarados (se sabe que cambiaron, no su valor); domicilio y emergencia nunca
+        return $c->only(['sede_id', 'nombre_completo', 'etapa', 'departamento_id', 'puesto_id', 'vacante', 'vacante_id', 'origen', 'acceso_id', 'colaborador_id'])
+            + array_filter(['curp' => Colaborador::enmascarar($c->curp), 'rfc' => Colaborador::enmascarar($c->rfc), 'nss' => Colaborador::enmascarar($c->nss),
+                'firmada' => $c->firma_ruta !== null ? true : null], fn ($v) => $v !== null);
     }
 }
