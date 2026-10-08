@@ -68,7 +68,7 @@ class EquiposPcTest extends TestCase
     public function test_es_un_modulo_de_padrones_en_inventarios_de_seguridad(): void
     {
         $modulo = Modulo::with('menu', 'area')->where('clave', 'equipos_pc')->firstOrFail();
-        $this->assertSame(['Equipos de Protección Civil', 'seguridad', 'padrones', 'Inventarios de Seguridad', 'equipos_pc.index'],
+        $this->assertSame(['Equipos de Protección Civil', 'seguridad', 'padrones', 'Inventarios', 'equipos_pc.index'],
             [$modulo->nombre, $modulo->area->clave, $modulo->menu->clave, $modulo->seccion_menu, $modulo->ruta]);
         $this->assertEqualsCanonicalizing(['ver', 'crear', 'editar', 'eliminar', 'imprimir', 'borrar'], $modulo->acciones()->pluck('clave')->all());
 
@@ -120,7 +120,7 @@ class EquiposPcTest extends TestCase
         app(Autorizador::class)->olvidar();
 
         $modulo = Modulo::with('menu')->where('clave', 'equipos_pc')->firstOrFail();
-        $this->assertSame(['padrones', 'Inventarios de Seguridad', 'equipos_pc.index'], [$modulo->menu->clave, $modulo->seccion_menu, $modulo->ruta]);
+        $this->assertSame(['padrones', 'Inventarios', 'equipos_pc.index'], [$modulo->menu->clave, $modulo->seccion_menu, $modulo->ruta]);
         $this->assertDatabaseHas('empresa_modulos', ['empresa_id' => $this->empresa->id, 'modulo_id' => $modulo->id, 'activo' => true]);
 
         $efectivos = app(Autorizador::class)->permisosEfectivos($brigadista);

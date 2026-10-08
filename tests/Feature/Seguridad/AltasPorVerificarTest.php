@@ -439,7 +439,7 @@ class AltasPorVerificarTest extends TestCase
         $this->pendiente($this->persona('Pedro Canul'));
 
         $this->actingAs($this->admin)->get('/')->assertOk()->assertSee('3 altas por verificar')
-            ->assertSee('Vehículos')->assertSee('Personas')->assertDontSee('Empresas externas')
+            ->assertSee('Vehículos')->assertSee('Personas')->assertDontSee(route('proveedores.index', ['verificacion' => 'pendiente']), false)
             ->assertSee(route('vehiculos.index', ['verificacion' => 'pendiente']), false);
         $this->actingAs($this->agente)->get('/')->assertOk()->assertDontSee('altas por verificar');
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');

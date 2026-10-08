@@ -1368,3 +1368,14 @@ html.modo-noche .pastilla-devolucion.faltante { background: rgba(239, 68, 68, 0.
 html.modo-sol .mini-semana .no { color: #6b7280; }
 html.modo-sol .rutas-hoja-nota, html.modo-sol .patron-dias { color: #000; }
 /* Fin Ronda 8 de ajustes de QA */
+/* Menús y Mis pendientes (lección 35) */
+html.modo-sol .btn-mis-pendientes, html.modo-sol .mis-pendientes-panel { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .mis-pendientes-contador, html.modo-sol .mis-pendientes-numero { background: #000; color: #facc15; }
+html.modo-sol .mis-pendientes-item, html.modo-sol .mis-pendientes-item > i, html.modo-sol .mis-pendientes-cabeza small { color: #000; }
+html.modo-sol .mis-pendientes-item:hover { background: #facc15; }
+html.modo-noche .btn-mis-pendientes { background: rgba(217, 119, 6, 0.18); border-color: #b45309; color: #fcd34d; }
+html.modo-noche .mis-pendientes-panel { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .mis-pendientes-numero { background: rgba(217, 119, 6, 0.25); color: #fcd34d; }
+html.modo-noche .mis-pendientes-item.al-dia .mis-pendientes-numero { background: var(--borde); color: var(--texto-suave); }
+html.modo-noche .mis-pendientes-contador { border-color: var(--superficie); }
+/* Fin Menús y Mis pendientes */

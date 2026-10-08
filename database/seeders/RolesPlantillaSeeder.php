@@ -44,6 +44,10 @@ class RolesPlantillaSeeder extends Seeder
     /** El Jefe de seguridad ve los usuarios de su sede y los desbloquea. */
     public const USUARIOS_JEFE = ['usuarios.ver', 'usuarios.desbloquear'];
 
+    // Menús (lección 35): catálogos que se ven en otro menú pero siguen siendo padrón para la plantilla
+    public const PADRONES_EN_OTRO_MENU = ['vouchers'];
+    // Fin Menús
+
     /**
      * Un módulo es de Padrones si está en ese menú (los submódulos heredan el
      * menú de su padre). Se decide por el menú, no por nombres de módulo.
@@ -51,6 +55,11 @@ class RolesPlantillaSeeder extends Seeder
     public static function esPadron(Modulo $modulo): bool
     {
         $menu = $modulo->menu ?? $modulo->padre?->menu;
+
+        // Lección 35: Vouchers de reposición pasó al menú Operación, pero sus permisos de plantilla no cambian
+        if (in_array($modulo->clave, self::PADRONES_EN_OTRO_MENU, true)) {
+            return true;
+        }
 
         return $menu?->clave === 'padrones';
     }

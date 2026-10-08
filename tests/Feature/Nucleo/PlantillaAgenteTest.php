@@ -113,6 +113,8 @@ class PlantillaAgenteTest extends TestCase
             ->filter(fn ($p) => in_array(RolesPlantillaSeeder::menuDe($p->moduloAccion->modulo), ['operacion', 'padrones'], true))
             // Procedimientos tiene su propia regla (RolesPlantillaSeeder::PROCEDIMIENTOS y su migración)
             ->reject(fn ($p) => $p->moduloAccion->modulo->clave === 'procedimientos')
+            // Vouchers pasó al menú Operación (lección 35, después de esta migración); su plantilla sigue como padrón
+            ->reject(fn ($p) => in_array($p->moduloAccion->modulo->clave, RolesPlantillaSeeder::PADRONES_EN_OTRO_MENU, true))
             ->pluck('modulo_accion_id')->all();
         $this->assertEqualsCanonicalizing($deCaseta($plantilla), $deCaseta($this->agente()));
     }
