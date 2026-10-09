@@ -57,7 +57,7 @@ No tienes que esperar a guardar para saber si la persona ya existe:
 - **Caja amarilla debajo del nombre:** «Ya hay personas con un nombre parecido. Revisa que no sea la misma antes de registrarla:». Es solo un aviso (dos personas pueden llamarse igual): revisa la lista y, si no es la misma, guarda normalmente.
 - **Verde:** «Folio disponible.»
 
-![Avisos de nombre parecido y folio repetido](img/ronda-5b/personas-folio-y-nombre.png)
+![Avisos de nombre parecido y folio repetido](img/personas/15-folio-y-nombre.png)
 
 ## Cómo registrar al personal de una empresa externa
 
@@ -66,7 +66,7 @@ No tienes que esperar a guardar para saber si la persona ya existe:
 3. Se abre **Registrar Persona** con la empresa ya puesta y el aviso «Registrando personal de …». La empresa queda fija (no se puede cambiar).
 4. Llena el resto de los datos y toca **Guardar en Padrón**.
 
-![Desde la ficha de la empresa externa](img/ronda-5b/ficha-agregar-persona.png)
+![Desde la ficha de la empresa externa](img/personas/16-desde-empresa-externa.png)
 
 **Qué debes ver:** al guardar **o al cerrar** la ventana regresas a la ficha de la empresa, con la persona en su personal.
 

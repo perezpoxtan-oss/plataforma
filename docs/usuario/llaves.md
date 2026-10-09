@@ -65,7 +65,7 @@ resumen: Inventario de llaves, tarjetas y accesos de cada sede, con lo que abren
 
 Alcance **Área específica**: edificio → piso → cuartos de ese piso. Lo que ya marcaste nunca se esconde.
 
-![Área específica en cascada](img/ronda-5/llave-cascada-area.png)
+![Área específica en cascada](img/llaves/14-cascada-area.png)
 
 ### Avisos mientras escribes el nombre
 
