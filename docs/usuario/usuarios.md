@@ -76,6 +76,8 @@ resumen: Dar de alta las cuentas para entrar a la plataforma, vincularlas con su
 
 Si escribes un **Nombre Completo** que ya tiene otra cuenta (sin importar mayúsculas ni acentos), la ventana avisa: «Ya existe un usuario con ese nombre: @… (Agente). ¿Es la misma persona? …».
 
+![Ya existe un usuario con ese nombre](img/usuarios/7-ya-existe.png)
+
 - **Si es la misma persona:** toca **Cancelar** y edita su cuenta en la lista. No hagas una segunda cuenta.
 - **Si de verdad es otra persona:** marca **Sí, es otra persona con el mismo nombre** y registra. Sin esa marca no se guarda y el aviso se repite arriba, en rojo.
 
@@ -108,6 +110,8 @@ Tras **5 intentos fallidos** seguidos, la cuenta se bloquea 15 minutos. Su ficha
 ![Cuenta bloqueada](img/usuarios/10-ficha-bloqueada.png)
 
 **Qué debes ver:** ««Pablo Díaz» desbloqueado; ya puede entrar.» El desbloqueo queda en la [Bitácora de auditoría](auditoria.md). El candado solo aparece si tu rol tiene el permiso **Desbloquear** y la persona es de nivel inferior y está en tu alcance.
+
+![Cuenta desbloqueada](img/usuarios/11-desbloqueado.png)
 
 > Si la persona olvidó su contraseña, además de desbloquearla cámbiale la contraseña con el **lápiz**.
 

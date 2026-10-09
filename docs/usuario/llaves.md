@@ -78,6 +78,8 @@ El nombre es único **dentro de su sede**: dos sedes sí pueden tener una llave 
 
 ![Nombre repetido en la sede](img/llaves/11-nombre-repetido.png)
 
+![Nombre parecido](img/llaves/10-nombre-parecido.png)
+
 ## Cómo editar una llave
 
 1. Toca el **lápiz** (Editar) en la ficha.

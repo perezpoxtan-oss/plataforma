@@ -40,6 +40,8 @@ Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Departame
 
 ![Nombre parecido](img/espacios/7-nombre-parecido.png)
 
+![Ya existe en el mismo lugar](img/espacios/8-ya-existe.png)
+
 ## Cómo agregar pisos
 
 1. En la zona toca **Entrar a Pisos**. Se abre **Pisos de …**.
@@ -80,6 +82,8 @@ Las secciones agrupan habitaciones de una sede, por ejemplo «Vista al mar» o �
 2. Toca **Nueva Sección**, elige la **Sede**, escribe el **Nombre de la Sección** y toca **Crear Sección**.
 3. En la sección toca **Asignar Habitaciones**, marca las que le pertenecen (puedes buscar por número o piso) y guarda.
 4. También puedes elegir la sección al dar de alta o editar cada habitación.
+
+![Secciones](img/espacios/10-secciones.png)
 
 ![Asignar habitaciones](img/espacios/6-asignar-seccion.png)
 
