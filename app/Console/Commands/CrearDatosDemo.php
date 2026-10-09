@@ -98,6 +98,9 @@ class CrearDatosDemo extends Command
         'supervisor.demo' => ['Sergio Supervisor', 'Supervisor', 'CEN'],
         'agente.demo' => ['Andrea Agente', 'Agente', 'CEN'],
         'agente2.demo' => ['Pablo Agente Playa', 'Agente', 'PLA'],
+        // Solicitudes: personal de Recepción que pide pases y su jefa, que los aprueba
+        'solicitante.demo' => ['Sofía Solicitante', 'Solicitante', 'CEN'],
+        'jefedepto.demo' => ['Julieta Jefa de Recepción', 'Jefe de departamento', 'CEN'],
     ];
 
     protected $signature = 'plataforma:demo
@@ -220,6 +223,7 @@ class CrearDatosDemo extends Command
         $paso('ronda7Demo', fn () => $this->ronda7Demo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('ronda8Demo', fn () => $this->ronda8Demo(User::where('username', 'agente.demo')->firstOrFail()));
         $paso('vacantesDemo', fn () => $this->vacantesDemo($sedes, User::where('username', 'rh.demo')->firstOrFail()));
+        $paso('rolesSolicitudesDemo', fn () => $this->rolesSolicitudesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -355,6 +359,52 @@ class CrearDatosDemo extends Command
                 'sede_id' => $sedes['CEN']->id, 'departamento_id' => Departamento::where('nombre', $dep)->value('id'),
             ]);
             $nuevo->forceFill(['provisional' => true, 'creado_por' => $agente->id, 'actualizado_por' => $agente->id])->save();
+        }
+    }
+
+    /**
+     * Roles de solicitudes: solicitante.demo y jefedepto.demo quedan
+     * vinculados a su colaborador de Recepción (Centro) y la jefa queda como
+     * responsable de Recepción en Centro (responde sus autorizaciones).
+     * Idempotente: completa lo que falte en un demo ya creado.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function rolesSolicitudesDemo($sedes, User $admin): void
+    {
+        $recepcion = Departamento::where('nombre', 'Recepción')->first();
+        if ($recepcion === null) {
+            return;
+        }
+
+        // num => [nombre, paterno, materno, departamento, puesto, nacimiento, sexo, estado, usuario]
+        $personas = [
+            '1014' => ['Sofía', 'Solicitante', 'Canché', 'Recepción', 'Recepcionista', '1997-05-16', 'M', 'Yucatán', 'solicitante.demo'],
+            '1015' => ['Julieta', 'Jefa', 'Recepción', 'Recepción', 'Gerente', '1984-10-11', 'M', 'Quintana Roo', 'jefedepto.demo'],
+        ];
+        $n = 13;
+        foreach ($personas as $clave => [$nombre, $paterno, $materno, $dep, $pue, $nacimiento, $sexo, $estado, $usuario]) {
+            $n++;
+            $num = (string) $clave;
+            $colaborador = Colaborador::where('num_empleado', $num)->first();
+            if ($colaborador === null) {
+                [$curp, $rfc] = $this->identificadoresDemo($nombre, $paterno, $materno, $nacimiento, $sexo, $n);
+                $colaborador = Colaborador::create([
+                    'num_empleado' => $num, 'nombre' => $nombre, 'apellido_paterno' => $paterno, 'apellido_materno' => $materno,
+                    'sede_id' => $sedes['CEN']->id, 'departamento_id' => Departamento::where('nombre', $dep)->value('id'), 'puesto_id' => Puesto::where('nombre', $pue)->value('id'),
+                    'telefono' => '998'.str_pad((string) (1000000 + $n * 7919), 7, '0', STR_PAD_LEFT),
+                    'fecha_nacimiento' => $nacimiento, 'lugar_nacimiento' => $estado, 'nacionalidad' => 'Mexicana',
+                    'curp' => $curp, 'rfc' => $rfc, 'nss' => sprintf('%011d', 12345678900 + $n * 101),
+                    'correo_personal' => null, 'direccion_completa' => null, 'activo' => true,
+                ]);
+                $colaborador->forceFill(['creado_por' => $admin->id, 'actualizado_por' => $admin->id])->save();
+            }
+            User::where('username', $usuario)->whereNull('colaborador_id')->update(['colaborador_id' => $colaborador->id, 'numero_colaborador' => $num]);
+        }
+
+        $jefa = User::where('username', 'jefedepto.demo')->first();
+        if ($jefa !== null && ! DepartamentoResponsable::where('departamento_id', $recepcion->id)->where('user_id', $jefa->id)->exists()) {
+            DepartamentoResponsable::create(['departamento_id' => $recepcion->id, 'user_id' => $jefa->id, 'es_suplente' => false, 'sede_id' => $sedes['CEN']->id]);
         }
     }
 

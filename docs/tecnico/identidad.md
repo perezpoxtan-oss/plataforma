@@ -19,7 +19,7 @@ El menú lo muestra en **Estructura → Plataforma**.
 | Nombre | Título del acceso |
 | Nombre corto | Barra superior, cabecera del celular, pestaña |
 | Eslogan | Debajo del nombre en el acceso |
-| Titular | Pie: "© año titular" |
+| Titular | Pie: "© año titular nombre corto". Vacío por defecto: el pie muestra solo el nombre de la plataforma (y el acceso, el nombre corto) |
 | Color principal / acento | Botones, menú activo, enlaces, barra del celular (`--color-primario`, `--color-acento`) |
 | Símbolo | Barra, acceso y vista previa |
 | Ícono de pestaña | `<link rel="icon">` |

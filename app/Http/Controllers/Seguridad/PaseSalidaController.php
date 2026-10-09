@@ -431,6 +431,27 @@ class PaseSalidaController extends Controller
             'sedesDestino' => Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'direccion', 'colonia', 'ciudad', 'telefono'])
                 ->map(fn ($s) => ['id' => $s->id, 'nombre' => $s->nombre, 'direccion' => $direccion($s), 'telefono' => $s->telefono]),
             'proveedores' => Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'direccion', 'telefono']),
+            'solicitanteFijo' => $this->solicitanteFijo(),
+        ];
+    }
+
+    /**
+     * Quien solo pide pases a su nombre (rol Solicitante): su colaborador ya
+     * elegido en el formulario.
+     *
+     * @return array{id: int, texto: string}|null
+     */
+    private function solicitanteFijo(): ?array
+    {
+        $actor = request()->user();
+        if ($actor === null || ! $this->pases->soloASuNombre($actor)) {
+            return null;
+        }
+        $colaborador = Colaborador::where('activo', true)->find((int) ($actor->getAttributes()['colaborador_id'] ?? 0));
+
+        return $colaborador === null ? null : [
+            'id' => (int) $colaborador->id,
+            'texto' => $colaborador->nombreCompleto().($colaborador->num_empleado ? ' · Núm. '.$colaborador->num_empleado : ''),
         ];
     }
 

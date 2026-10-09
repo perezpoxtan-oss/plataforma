@@ -115,9 +115,12 @@ class VacanteController extends Controller
             return $v;
         });
 
-        return redirect()->route('vacantes.index')->with('ok', $vacante->estado === 'publicada'
-            ? "Vacante «{$vacante->titulo}» publicada. Ya aparece en la bolsa de trabajo y puedes imprimir su cartel."
-            : "Vacante «{$vacante->titulo}» guardada como borrador. Publícala cuando esté lista.");
+        return redirect()->route('vacantes.index')->with('ok', match (true) {
+            $vacante->estado === 'publicada' => "Vacante «{$vacante->titulo}» publicada. Ya aparece en la bolsa de trabajo y puedes imprimir su cartel.",
+            // Quien pide vacantes sin poder publicarlas (Jefe de departamento): la revisa Recursos Humanos
+            ! $request->user()->can('vacantes.editar') => "Vacante «{$vacante->titulo}» enviada como borrador: Recursos Humanos la revisará y la publicará.",
+            default => "Vacante «{$vacante->titulo}» guardada como borrador. Publícala cuando esté lista.",
+        });
     }
 
     public function update(Request $request, int $vacante): RedirectResponse

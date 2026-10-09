@@ -32,10 +32,10 @@ class IdentidadTest extends TestCase
             'nombre' => 'Portiq Seguridad',
             'nombre_corto' => 'Portiq',
             'eslogan' => 'Control de accesos',
-            'titular' => 'VDCP',
+            'titular' => 'Grupo Ejemplo',
             'color_primario' => '#0F766E',
             'color_acento' => '#14b8a6',
-            'correo_soporte' => 'soporte@vdcp.com.mx',
+            'correo_soporte' => 'soporte@ejemplo.com.mx',
             'telefono_soporte' => '+52 998 123 4567',
         ], $extra);
     }
@@ -110,5 +110,14 @@ class IdentidadTest extends TestCase
             ->flatMap(fn ($m) => collect($m['secciones'])->flatten(1))->keyBy('clave');
 
         $this->assertSame(route('identidad.edit'), $items['identidad']['url']);
+    }
+
+    public function test_sin_titular_el_pie_muestra_solo_el_nombre_de_la_plataforma(): void
+    {
+        $this->assertSame('', Identidad::VALORES_POR_DEFECTO['titular']);
+        $admin = $this->crearUsuario($this->crearEmpresa(), 'Administrador');
+
+        $this->get('/login')->assertOk()->assertSee('&copy; '.date('Y').' Plataforma', false)->assertDontSee('VDCP');
+        $this->actingAs($admin)->get('/')->assertOk()->assertSee('&copy; '.date('Y').' Plataforma.', false)->assertDontSee('VDCP');
     }
 }

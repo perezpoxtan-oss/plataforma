@@ -38,7 +38,7 @@ class AyudasDeCapturaTest extends TestCase
             ->assertOk()
             ->assertSee('min="11"', false)
             ->assertSeeInOrder(['Tu nivel es', '10', 'Solo puedes crear roles de nivel', '11', 'en adelante'], false)
-            ->assertSee('20 Director, 25 Recursos Humanos, 30 Jefe de seguridad, 40 Asistente, 50 Supervisor, 60 Agente')
+            ->assertSee('20 Director, 25 Recursos Humanos, 30 Jefe de seguridad, 40 Asistente, 45 Jefe de departamento, 50 Supervisor, 60 Agente, 70 Solicitante')
             ->assertSee('data-mensaje-min="Tu nivel es 10: el nivel del rol debe ser 11 o mayor (número mayor = menos autoridad)."', false);
 
         // Con otro nivel, el texto cambia
@@ -48,7 +48,7 @@ class AyudasDeCapturaTest extends TestCase
         $this->actingAs($jefe)->get('/roles')
             ->assertOk()
             ->assertSee('min="31"', false)
-            ->assertSee('40 Asistente, 50 Supervisor, 60 Agente')
+            ->assertSee('40 Asistente, 45 Jefe de departamento, 50 Supervisor, 60 Agente, 70 Solicitante')
             ->assertDontSee('25 Recursos Humanos, 30');
     }
 

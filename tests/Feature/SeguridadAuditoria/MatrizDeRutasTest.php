@@ -160,6 +160,8 @@ class MatrizDeRutasTest extends TestCase
             'agente de Playa' => $this->usuario('agente2.demo'),
             'jefe de seguridad de Playa' => $this->crearUsuario($this->demo, 'Jefe de seguridad', $this->playa),
             'supervisor de Playa' => $this->crearUsuario($this->demo, 'Supervisor', $this->playa),
+            'jefe de departamento de Playa' => $this->crearUsuario($this->demo, 'Jefe de departamento', $this->playa),
+            'solicitante de Playa' => $this->crearUsuario($this->demo, 'Solicitante', $this->playa),
         ];
         $huella = $this->huellaDatos();
         $revisadas = 0;
@@ -213,7 +215,7 @@ class MatrizDeRutasTest extends TestCase
     public function test_los_botones_y_enlaces_visibles_corresponden_a_permisos_que_se_tienen(): void
     {
         $revisados = 0;
-        foreach (['agente.demo', 'agente2.demo', 'supervisor.demo', 'rh.demo', 'director.demo', 'jefe.demo'] as $nombre) {
+        foreach (['agente.demo', 'agente2.demo', 'supervisor.demo', 'rh.demo', 'director.demo', 'jefe.demo', 'solicitante.demo', 'jefedepto.demo'] as $nombre) {
             $usuario = $this->usuario($nombre);
             foreach ($this->paginasVisibles($usuario, $this->centro) as $html) {
                 // Formularios con botón para enviar

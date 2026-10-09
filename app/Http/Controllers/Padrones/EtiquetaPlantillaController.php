@@ -111,7 +111,9 @@ class EtiquetaPlantillaController extends Controller
 
     /**
      * «Hoja de prueba»: una página con etiquetas de ejemplo (sin datos reales
-     * ni registro en el historial) para calibrar la impresora.
+     * ni registro en el historial) para calibrar la impresora. La imprime
+     * quien configura plantillas, también las de toda la empresa que no puede
+     * cambiar (el jefe de una sede).
      */
     public function prueba(Request $request, int $plantilla): View
     {
@@ -119,7 +121,7 @@ class EtiquetaPlantillaController extends Controller
         $empresaId = $this->empresaDeTrabajo($request);
 
         return $this->tenant->conEmpresa($empresaId, function () use ($request, $plantilla, $empresaId) {
-            $modelo = $this->plantillas->paraEditar($request->user(), $plantilla);
+            $modelo = $this->plantillas->paraProbar($request->user(), $plantilla);
             $qr = (string) preg_replace('/^<\?xml[^>]*>\s*/', '', (new Writer(new ImageRenderer(
                 new RendererStyle(160, 1), new SvgImageBackEnd)))->writeString(route('etiquetas.index')));
             $ejemplo = fn (int $i) => [

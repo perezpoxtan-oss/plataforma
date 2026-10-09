@@ -120,6 +120,9 @@ class ConfiguracionTest extends TestCase
         $contenido = gzdecode(file_get_contents($r['ruta']));
         $this->assertStringContainsString('CREATE TABLE', $contenido);
         $this->assertMatchesRegularExpression('/INSERT INTO .users./', $contenido);
+        // Cómo restaurar, sin nombrar herramientas del hospedaje
+        $this->assertStringContainsString(Respaldos::COMO_RESTAURAR, $contenido);
+        $this->assertDoesNotMatchRegularExpression('/cpanel|phpmyadmin|neubox/i', $contenido);
 
         // En SQLite (desarrollo) el respaldo se puede restaurar completo
         if (DB::connection()->getDriverName() === 'sqlite') {
@@ -147,5 +150,13 @@ class ConfiguracionTest extends TestCase
         $respaldos->podar();
         $this->assertFileDoesNotExist($viejo);
         $this->assertGreaterThanOrEqual(3, $respaldos->listar()->count());
+    }
+
+    public function test_textos_de_correo_y_respaldos_sin_nombrar_el_hospedaje(): void
+    {
+        $this->actingAs($this->sa)->get('/configuracion')->assertOk()
+            ->assertSee('Los datos te los da tu proveedor de correo')
+            ->assertSee('pide a tu proveedor de hospedaje o a tu administrador de base de datos que lo importe')
+            ->assertDontSee('cPanel')->assertDontSee('phpMyAdmin');
     }
 }

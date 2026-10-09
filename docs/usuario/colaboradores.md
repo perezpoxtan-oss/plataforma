@@ -80,6 +80,21 @@ Si alguien trabaja en más de una sede (por ejemplo un agente que cubre turnos e
 
 **Qué debes ver:** la ficha en **BAJA**. Ya no aparece al buscarlo desde otros módulos. No se borra a nadie: su historial en bitácoras, pases y responsivas se conserva.
 
+## Cómo ver el código QR y asignar el gafete o tarjeta NFC / RFID
+
+Cada colaborador tiene su propio **código QR** y puede tener una **etiqueta NFC / RFID** (su gafete o tarjeta). Con ellos la caseta lo encuentra al escanear en Accesos, Préstamo de llaves o Pases de salida.
+
+1. En la ficha del colaborador toca el ícono de **QR** (Código QR e identificación). Se abre **Código e identificación** con su nombre, su número de empleado, el QR y la dirección del código (botón **Copiar**).
+2. Si tu rol puede editar colaboradores, abajo aparece **Asignar etiqueta NFC / RFID**: acerca el gafete o la tarjeta al lector USB/Bluetooth o al NFC del celular Android, o escribe su número, y toca **Guardar etiqueta**.
+3. Si ya tenía una etiqueta, se muestra la actual; al guardar otra, la anterior deja de funcionar.
+
+![Código e identificación (ejemplo de la ventana)](img/llaves/13-identificacion.png)
+
+**Qué debes ver:** «Etiqueta … asignada. Ya se puede leer con el lector.» Si esa tarjeta ya es de otra cosa (otro colaborador, una llave, un vehículo…), el aviso te dice de cuál y no se asigna.
+
+- Quien solo consulta colaboradores ve el QR, pero no el apartado para asignar la etiqueta.
+- Las altas provisionales (**POR VALIDAR**) reciben su etiqueta hasta que Recursos Humanos las valida.
+
 ## Cómo registrar un alta provisional (caseta)
 
 Si en la caseta necesitas registrar a alguien que **no aparece** al buscarlo:
@@ -135,6 +150,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | El puesto «…» no aplica en el departamento elegido. | El puesto es de otro departamento. | Elige otro puesto. |
 | Este colaborador ya no está pendiente de validar. | Otra persona ya lo validó o lo unió. | Recarga la página. |
 | Elige un colaborador activo y ya validado. | Al unir elegiste uno inválido. | Elige el colaborador correcto. |
+| No veo el apartado **Asignar etiqueta NFC / RFID**. | Tu rol solo consulta colaboradores, o el colaborador está **POR VALIDAR**. | Pide a Recursos Humanos que lo valide, o el permiso de editar a tu administrador. |
 | No veo los datos legales. | Tu rol no tiene el permiso **Datos personales**. | Pídelo a tu administrador si lo necesitas. |
 
 ## Preguntas frecuentes
@@ -146,6 +162,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 **¿Por qué no aparece un departamento al dar de alta?** Porque no aplica en la sede elegida. Revísalo en [Departamentos y puestos](departamentos-y-puestos.md).
 
 **¿Quién ve el CURP, RFC y NSS?** Solo quien tiene el permiso **Datos personales**. En la bitácora de auditoría se ven ocultos (solo los últimos 4 caracteres).
+
+**¿Para qué sirve su QR si ya tiene gafete?** El QR se lee con la cámara de cualquier celular o tableta; el gafete NFC / RFID con el lector. Los dos llevan a la misma ficha.
 
 **¿Cómo le doy una cuenta para entrar a la plataforma?** En [Usuarios](usuarios.md), vinculando la cuenta con su ficha de colaborador.
 

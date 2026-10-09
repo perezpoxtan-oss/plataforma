@@ -57,7 +57,7 @@ En la misma pantalla están los ajustes de:
 
 ## Cómo configurar el correo de la plataforma (Super Administrador)
 
-1. Pide a tu proveedor de correo los datos de la cuenta desde la que saldrán los avisos (por ejemplo `avisos@tuempresa.com`): servidor, puerto y cifrado.
+1. Pide a tu proveedor de correo los datos de la cuenta desde la que saldrán los avisos (por ejemplo `avisos@tuempresa.com`): servidor de salida, puerto, usuario y contraseña de la cuenta. La pantalla te lo recuerda: «Los datos te los da tu proveedor de correo».
 2. En **Correo de la plataforma** captura **Servidor SMTP**, **Puerto** (normalmente 587 con TLS, o 465 con SSL), **Cifrado**, **Usuario** (la cuenta completa), **Contraseña**, **Correo del remitente** y, si quieres, el **Nombre del remitente**.
 3. Toca **Guardar correo**.
 4. En **Enviar correo de prueba a** escribe tu correo y toca **Enviar prueba**. Revisa tu bandeja de entrada y también la de correo no deseado.
@@ -73,7 +73,8 @@ En la misma pantalla están los ajustes de:
 - **Automáticos:** la plataforma se respalda sola cada día después de las 3:00 y antes de instalar cada versión nueva. Se guardan 14 días.
 - **Respaldar ahora:** crea uno en el momento (por ejemplo antes de un cambio grande). Confirma con **Aceptar**.
 - **Descargar:** con la flecha de cada respaldo. Guárdalo en un lugar seguro: contiene **toda** la información, incluidos datos personales. Cada descarga queda en la [Bitácora de auditoría](auditoria.md).
-- **Restaurar** un respaldo reemplaza toda la información actual: pide ayuda a tu proveedor de hospedaje y hazlo solo si de verdad lo necesitas.
+- **Restaurar** un respaldo reemplaza toda la información actual. Para restaurar: descarga el archivo y pide a tu proveedor de hospedaje o a tu administrador de base de datos que lo importe. Hazlo solo si de verdad lo necesitas.
+- El archivo descargado trae en su primera línea la misma indicación, por si se lo envías a otra persona.
 
 ![Respaldos](img/configuracion/5-respaldos.png)
 
@@ -96,6 +97,8 @@ En la misma pantalla están los ajustes de:
 **¿Los días de Lost & Found se pueden poner por sede?** No; aplican a todas las sedes de la empresa.
 
 **¿Cada cuánto se respalda la plataforma?** Diario y antes de cada actualización; se guardan 14 días.
+
+**¿Puedo restaurar un respaldo yo mismo desde esta pantalla?** No. Descarga el archivo y entrégaselo a tu proveedor de hospedaje o a tu administrador de base de datos para que lo importe.
 
 ## Relacionado
 

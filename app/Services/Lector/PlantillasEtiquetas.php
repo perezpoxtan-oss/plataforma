@@ -144,6 +144,21 @@ class PlantillasEtiquetas
         return $sedes === null || in_array((int) $plantilla->sede_id, array_map('intval', $sedes), true);
     }
 
+    /**
+     * La plantilla para imprimir su «Hoja de prueba»: cualquiera que vea al
+     * configurar (las de toda la empresa y las de sus sedes), aunque no pueda
+     * cambiarla; así un jefe de sede calibra su impresora con las plantillas
+     * de la empresa. Otra sede u otra empresa: 404.
+     */
+    public function paraProbar(User $actor, int $id): EtiquetaPlantilla
+    {
+        abort_unless($actor->can(self::CONFIGURAR), 403);
+        $plantilla = $this->alcance(EtiquetaPlantilla::query(), $this->autorizador->sedesPermitidas($actor, self::CONFIGURAR))->whereKey($id)->first();
+        abort_if($plantilla === null, 404);
+
+        return $plantilla;
+    }
+
     /** La plantilla a su alcance para configurar (otra sede u otra empresa: 404; de toda la empresa sin alcance: 403). */
     public function paraEditar(User $actor, int $id): EtiquetaPlantilla
     {

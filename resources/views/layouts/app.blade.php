@@ -120,7 +120,7 @@
 
     {{-- ===================== Pie (PC) ===================== --}}
     <footer class="pie-pc">
-        <span>&copy; {{ date('Y') }} {{ $identidad->get('titular') }} {{ $identidad->get('nombre_corto') }}. Panel Operativo Autorizado.</span>
+        <span>&copy; {{ date('Y') }} {{ trim($identidad->get('titular').' '.$identidad->get('nombre_corto')) }}. Panel Operativo Autorizado.</span>
         <span><i class="bi bi-shield-shaded opacity-50" aria-hidden="true"></i> Capa de Seguridad Activa SSL</span>
     </footer>
 

@@ -547,6 +547,31 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->assertNull($c->fresh()->privacidad_aceptada_en);
     }
 
+    public function test_kiosco_cada_accion_lleva_su_propio_contador(): void
+    {
+        // En recepción todas las tabletas salen por la misma IP
+        $uno = parse_url($this->enEmpresa(fn () => app(Kiosco::class)->generar($this->rh, $this->candidato()))['url'], PHP_URL_PATH);
+        $dos = parse_url($this->enEmpresa(fn () => app(Kiosco::class)->generar($this->rh, $this->candidato()))['url'], PHP_URL_PATH);
+
+        // Agotar «canjear código» no bloquea abrir ni guardar
+        for ($i = 0; $i < 10; $i++) {
+            $this->post('/k', ['codigo' => 'ZZZZZ'.$i])->assertStatus(302);
+        }
+        $this->post('/k', ['codigo' => 'ZZZZZZ'])->assertStatus(429);
+        $this->get('/k')->assertOk();
+        $this->get($uno)->assertOk();
+        $this->post($uno, [])->assertStatus(302);
+
+        // Agotar «guardar» en una tableta no bloquea la de otro candidato ni abrir
+        for ($i = 0; $i < 9; $i++) {
+            $this->post($uno, [])->assertStatus(302);
+        }
+        $this->post($uno, [])->assertStatus(429);
+        $this->post($dos, [])->assertStatus(302);
+        $this->get($dos)->assertOk();
+        $this->get('/k')->assertOk();
+    }
+
     // ------------------------------------------------------------------ Autorizaciones
 
     public function test_visita_espera_autorizacion_del_responsable_y_la_caseta_ve_la_respuesta(): void

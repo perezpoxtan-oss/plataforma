@@ -83,7 +83,7 @@ Modelos `EtiquetaPlantilla`, `ImpresionEtiquetas`, `ImpresionEtiquetasItem` (tod
 | `GET /etiquetas/plantillas/nueva` · `POST /etiquetas/plantillas` | `etiquetas.plantillas.create` / `.store` | `etiquetas_qr.configurar` |
 | `GET /etiquetas/plantillas/{plantilla}/editar` · `PUT /etiquetas/plantillas/{plantilla}` | `.edit` / `.update` | `etiquetas_qr.configurar` + alcance |
 | `PATCH /etiquetas/plantillas/{plantilla}/estado` (`activo=0\|1`) | `.estado` | ídem |
-| `GET /etiquetas/plantillas/{plantilla}/prueba` | `.prueba` | ídem (no queda en el historial) |
+| `GET /etiquetas/plantillas/{plantilla}/prueba` | `.prueba` | `etiquetas_qr.configurar`; cualquier plantilla a su alcance de **lectura** (las de toda la empresa y las de sus sedes), aunque no pueda editarla: el jefe de sede calibra con las de la empresa (`PlantillasEtiquetas::paraProbar`). No queda en el historial |
 
 `GET /etiquetas` acepta además `desde`, `hasta` (fecha de **alta**, días en la hora local; `EtiquetasMasivas::rangoAlta`), `estado=activos|baja|todos` y `tipo` (también como lista).
 

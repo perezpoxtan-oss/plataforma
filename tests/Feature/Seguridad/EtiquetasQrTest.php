@@ -311,6 +311,28 @@ class EtiquetasQrTest extends TestCase
         $this->actingAs($this->crearUsuario($this->empresa, 'Agente', $this->centro))->get("/etiquetas/plantillas/{$gafete->id}/prueba")->assertForbidden();
     }
 
+    public function test_el_jefe_de_sede_imprime_la_hoja_de_prueba_de_las_plantillas_de_la_empresa(): void
+    {
+        $this->actingAs($this->admin)->get('/etiquetas/plantillas');
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro);
+        $llavero = $this->plantilla('llavero');
+        $dePlaya = $this->enEmpresa(fn () => EtiquetaPlantilla::create($this->datos(['nombre' => 'De Playa', 'sede_id' => $this->playa->id, 'ancho_mm' => 50.8, 'alto_mm' => 25.4, 'qr_mm' => 21])));
+
+        // Ve el botón en las de toda la empresa (aunque no las pueda cambiar) y la hoja abre
+        $this->actingAs($jefe)->get('/etiquetas/plantillas')->assertOk()
+            ->assertSee(route('etiquetas.plantillas.prueba', $llavero->id))
+            ->assertDontSee(route('etiquetas.plantillas.edit', $llavero->id));
+        $this->actingAs($jefe)->get("/etiquetas/plantillas/{$llavero->id}/prueba")->assertOk()->assertSee('EJEMPLO-01');
+        $this->assertSame(0, $this->enEmpresa(fn () => ImpresionEtiquetas::count()));
+
+        // La de otra sede no existe para él; sin «configurar» no hay hoja de prueba
+        $this->actingAs($jefe)->get("/etiquetas/plantillas/{$dePlaya->id}/prueba")->assertNotFound();
+        $this->actingAs($this->crearUsuario($this->empresa, 'Supervisor', $this->centro))->get("/etiquetas/plantillas/{$llavero->id}/prueba")->assertForbidden();
+        // Otra empresa: 404
+        $intruso = $this->crearUsuario($this->crearEmpresa('Hotel Dos'), 'Administrador');
+        $this->actingAs($intruso)->get("/etiquetas/plantillas/{$llavero->id}/prueba")->assertNotFound();
+    }
+
     // ================================================================ Filtros
 
     public function test_filtros_por_fecha_de_alta_tipo_y_estatus(): void

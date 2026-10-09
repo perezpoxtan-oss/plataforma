@@ -35,7 +35,7 @@ resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y 
 
 ## Cómo pedir un pase nuevo
 
-1. Toca **Nuevo Pase**. Si trabajas en una sola sede, la **Sede de Origen** ya viene elegida.
+1. Toca **Nuevo Pase**. Si trabajas en una sola sede, la **Sede de Origen** ya viene elegida. Si tu rol es **Solicitante** o **Jefe de departamento**, tu nombre ya viene como **Solicitante** (solo puedes pedir pases a tu nombre).
 2. En **1. Motivo y Solicitante**: elige el **motivo** (la ventana te dice si el equipo debe regresar). Escanea el gafete del solicitante o escribe su nombre y elígelo. Si no aparece, toca **Nuevo Colaborador**.
 3. En **2. Enviar A**: elige otra sede, un proveedor (si no está, **Nuevo Proveedor**) o un colaborador que se lo lleva. Si el equipo regresa, escribe la **Fecha Tentativa de Regreso**.
 4. En **3. Artículos que Salen**: escanea la etiqueta del equipo del padrón (se llena solo) o escribe cantidad, equipo, marca, modelo, serie y descripción.
@@ -107,6 +107,8 @@ Reglas: los pasos van **en orden**; no puedes aprobar tu propio pase ni firmar d
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
 | «Elige al solicitante: escanea su gafete, busca su nombre o regístralo con «Nuevo Colaborador».» | Falta el solicitante. | Escanea su gafete o búscalo. |
+| «Solo puedes solicitar pases de salida a tu nombre.» | Tu rol pide pases solo para ti. | Deja tu nombre en **Solicitante**; si el pase es de otra persona, que lo pida ella o la caseta. |
+| «Tu usuario no está vinculado a un colaborador: pide a tu administrador que lo vincule en Usuarios para poder solicitar pases.» | Tu cuenta no está ligada a tu ficha de colaborador. | Pide a tu administrador que la vincule en [Usuarios](usuarios.md). |
 | «Agrega al menos un artículo que salga en el pase.» | No hay artículos. | Escanea o escribe al menos uno. |
 | «Eres el solicitante de este pase: no puedes aprobarlo tú.» | No se aprueba lo propio. | Lo aprueba otra persona del circuito. |
 | «Escribe el motivo del rechazo: el solicitante lo verá para corregir su pase.» | El rechazo necesita motivo. | Escribe qué hay que corregir. |

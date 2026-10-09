@@ -523,19 +523,22 @@ Route::middleware('auth')->group(function () {
 
 // Público: Kiosco de auto-registro de candidatos (SIN sesión; enlace temporal de un solo candidato; ver docs/tecnico/candidatos.md)
 Route::controller(KioscoController::class)->group(function () {
-    Route::get('/k', 'codigo')->middleware('throttle:120,1')->name('kiosco.codigo');
-    Route::post('/k', 'canjear')->middleware('throttle:10,1')->name('kiosco.canjear');
-    Route::get('/k/{token}', 'mostrar')->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:120,1')->name('kiosco.mostrar');
-    Route::post('/k/{token}', 'guardar')->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:10,1')->name('kiosco.guardar');
+    // Limitadores con nombre (AppServiceProvider): en recepción todas las tabletas salen por la misma IP,
+    // así que abrir, canjear y guardar llevan contadores separados (guardar, además, por enlace)
+    Route::get('/k', 'codigo')->middleware('throttle:kiosco-ver')->name('kiosco.codigo');
+    Route::post('/k', 'canjear')->middleware('throttle:kiosco-canjear')->name('kiosco.canjear');
+    Route::get('/k/{token}', 'mostrar')->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:kiosco-ver')->name('kiosco.mostrar');
+    Route::post('/k/{token}', 'guardar')->where('token', '[A-Za-z0-9]{1,64}')->middleware('throttle:kiosco-guardar')->name('kiosco.guardar');
 });
 // Fin Público: Kiosco de auto-registro de candidatos
 
 // Público: Bolsa de trabajo (SIN sesión; solo empresas que la encienden; ver docs/tecnico/vacantes.md)
+// Limitadores con nombre (AppServiceProvider): ver y postular llevan contadores separados por IP
 Route::controller(EmpleosController::class)->group(function () {
-    Route::get('/empleos/{empresa}', 'index')->where('empresa', '[a-z0-9-]{3,90}')->middleware('throttle:120,1,empleos')->name('empleos.index');
-    Route::get('/empleos/{empresa}/gracias', 'gracias')->where('empresa', '[a-z0-9-]{3,90}')->middleware('throttle:120,1,empleos')->name('empleos.gracias');
-    Route::get('/empleos/{empresa}/{vacante}', 'show')->where(['empresa' => '[a-z0-9-]{3,90}', 'vacante' => '[a-z0-9]{10}'])->middleware('throttle:120,1,empleos')->name('empleos.show');
-    Route::get('/empleos/{empresa}/{vacante}/postular', 'formulario')->where(['empresa' => '[a-z0-9-]{3,90}', 'vacante' => '[a-z0-9]{10}'])->middleware('throttle:120,1,empleos')->name('empleos.postular');
-    Route::post('/empleos/{empresa}/{vacante}/postular', 'postular')->where(['empresa' => '[a-z0-9-]{3,90}', 'vacante' => '[a-z0-9]{10}'])->middleware('throttle:6,1,empleos-postular')->name('empleos.guardar');
+    Route::get('/empleos/{empresa}', 'index')->where('empresa', '[a-z0-9-]{3,90}')->middleware('throttle:empleos-ver')->name('empleos.index');
+    Route::get('/empleos/{empresa}/gracias', 'gracias')->where('empresa', '[a-z0-9-]{3,90}')->middleware('throttle:empleos-ver')->name('empleos.gracias');
+    Route::get('/empleos/{empresa}/{vacante}', 'show')->where(['empresa' => '[a-z0-9-]{3,90}', 'vacante' => '[a-z0-9]{10}'])->middleware('throttle:empleos-ver')->name('empleos.show');
+    Route::get('/empleos/{empresa}/{vacante}/postular', 'formulario')->where(['empresa' => '[a-z0-9-]{3,90}', 'vacante' => '[a-z0-9]{10}'])->middleware('throttle:empleos-ver')->name('empleos.postular');
+    Route::post('/empleos/{empresa}/{vacante}/postular', 'postular')->where(['empresa' => '[a-z0-9-]{3,90}', 'vacante' => '[a-z0-9]{10}'])->middleware('throttle:empleos-postular')->name('empleos.guardar');
 });
 // Fin Público: Bolsa de trabajo

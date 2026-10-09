@@ -29,6 +29,23 @@ resumen: Quién hizo qué y cuándo en la plataforma, con el antes y el después
 
 **Qué debes ver:** cuántos movimientos hay y la lista con la fecha y hora, el módulo, qué se hizo, sobre qué registro, qué campos cambiaron y quién lo hizo.
 
+### Qué significa cada acción
+
+La columna de lo que se hizo usa palabras sencillas. Las más comunes:
+
+| Verás | Qué pasó |
+|---|---|
+| Alta / Edición / Desactivación / Reactivación | Se registró, se cambió, se dio de baja o se volvió a activar un registro. |
+| Eliminación definitiva | Se borró para siempre un registro de un catálogo (solo el administrador). |
+| Aprobación / Rechazo / Firma | Alguien aprobó, rechazó o firmó un paso (por ejemplo, de un pase de salida o un procedimiento). |
+| Acuse de recibo | Un colaborador firmó «Leí y entendí» un procedimiento. |
+| Registro de salida / Recepción en destino / Salida de regreso / Regreso | Los pasos de caseta de un pase de salida. |
+| Autorización / Negativa de autorización / Respuesta | La respuesta de un departamento a una visita o a un candidato. |
+| Publicación / Pausa / Reanudación / Cierre / Reapertura | Cambios de estado de una vacante. |
+| Postulación / Captura en el kiosco | Un candidato llenó su solicitud por internet o en la tableta de recepción. |
+| Asignación de etiqueta NFC/RFID / Retiro de etiqueta NFC/RFID | Se le dio o se le quitó un gafete o tarjeta a un registro. |
+| Creación de respaldo / Descarga de respaldo | El Super Administrador respaldó o descargó la información. |
+
 ## Cómo ver el detalle de un cambio
 
 1. Toca el **ojo** (Ver detalle) del movimiento.
@@ -58,6 +75,8 @@ Toca **Exportar a Excel**: se descarga un archivo de Excel (CSV) con los mismos 
 **¿Se puede borrar o modificar la bitácora?** No. Nadie puede cambiarla ni borrarla.
 
 **¿Qué significa «Sistema» en el usuario?** Que el movimiento lo hizo la plataforma sola (por ejemplo, una postulación por internet o un aviso automático).
+
+**¿Por qué algunos movimientos de Candidatos no tienen usuario?** Son los que hizo el propio candidato sin sesión: su postulación por internet o su captura en la tableta de recepción. Aparecen como «Sistema».
 
 **¿Queda registro de las exportaciones con datos personales?** Sí. Cada vez que alguien descarga datos personales queda anotado aquí.
 

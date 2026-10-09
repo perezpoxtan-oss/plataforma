@@ -224,7 +224,7 @@ class EscaladaPrivilegiosTest extends TestCase
         $this->actingAs($actor)->put("/permisos/{$agente->id}", ['permisos' => ['llaves' => ['acciones' => ['ver', 'crear'], 'alcance' => 'sede']]])->assertSessionHas('error');
         $this->actingAs($actor)->put("/roles/{$agente->id}", ['nombre' => 'Agente', 'nivel_jerarquia' => 61, 'activo' => '0'])->assertSessionHas('error');
         $this->actingAs($actor)->delete("/roles/{$agente->id}")->assertSessionHas('error');
-        $this->actingAs($actor)->post('/roles', ['nombre' => 'Nuevo', 'nivel_jerarquia' => 70])->assertSessionHas('error');
+        $this->actingAs($actor)->post('/roles', ['nombre' => 'Nuevo', 'nivel_jerarquia' => 75])->assertSessionHas('error');
         $this->assertSame($antes, $agente->permisos()->count());
         $this->assertTrue($agente->fresh()->activo);
         $this->assertFalse(Rol::where('nombre', 'Nuevo')->exists());

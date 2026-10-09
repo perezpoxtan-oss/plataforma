@@ -15,8 +15,9 @@ class Identidad
         'nombre' => 'Plataforma',
         'nombre_corto' => 'Plataforma',
         'eslogan' => 'Sistema de Seguridad e Infraestructura',
-        // Quien opera la plataforma (aparece en el pie: "(c) 2026 VDCP")
-        'titular' => 'VDCP',
+        // Quien opera la plataforma (aparece en el pie: "(c) 2026 Titular Plataforma").
+        // Vacío por defecto: el pie muestra solo el nombre de la plataforma.
+        'titular' => '',
         'logo_claro' => null,
         'logo_oscuro' => null,
         'simbolo' => null,

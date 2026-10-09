@@ -54,7 +54,7 @@ Antes era la pantalla `/lost-found/dias-resguardo` dentro de Lost & Found; ahora
 
 ## Respaldos (`App\Services\Respaldos\Respaldos`, `php artisan plataforma:respaldar`)
 
-- **Cómo se generan:** en PHP, sin `mysqldump` ni `exec`, que Neubox no permite desde la web. Salen en `.sql.gz`, listos para importar en phpMyAdmin.
+- **Cómo se generan:** en PHP, sin `mysqldump` ni `exec`, que Neubox no permite desde la web. Salen en `.sql.gz`, listos para importar con la herramienta de base de datos del hospedaje. La primera línea (`Respaldos::COMO_RESTAURAR`) lo explica sin nombrar herramientas, igual que la pantalla.
 - **Cuándo los llama `desplegar.sh`** (no hace falta otro cron):
   - antes de `migrate`, cuando se instala una versión nueva (`--motivo=antes-de-actualizar`);
   - en cada corrida, con `--si-toca`: hace el respaldo diario si ya pasaron las 3:00 (hora de Cancún) y aún no hay uno de hoy.

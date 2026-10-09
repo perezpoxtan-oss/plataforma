@@ -472,7 +472,7 @@ class ColaboradoresTest extends TestCase
         // Recepción (ADR-0007): el candidato contratado del demo no trae datos personales completos
         $todos = $todos->reject(fn ($c) => $c->num_empleado === '2001');
 
-        $this->assertCount(13, $todos);
+        $this->assertCount(15, $todos);
         $this->assertSame(['1013'], $todos->where('activo', false)->pluck('num_empleado')->values()->all());
         $this->assertSame(2, $todos->pluck('sede_id')->filter()->unique()->count());
         $this->assertCount(1, $todos->filter(fn ($c) => $c->sedesAdicionales->isNotEmpty()));
@@ -501,5 +501,27 @@ class ColaboradoresTest extends TestCase
         $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])->get('/colaboradores')->assertSee('Nuevo Colaborador');
         $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])->post('/colaboradores', $this->datos())->assertSessionHasNoErrors();
         $this->assertSame($this->empresa->id, $this->colaborador('E-100')->empresa_id);
+    }
+
+    public function test_boton_codigo_e_identificacion_en_la_lista(): void
+    {
+        $c = $this->crearColaborador('1001', $this->centro);
+        $this->enEmpresa(fn () => $c->forceFill(['etiqueta_nfc' => 'A1B2C3D4'])->save());
+        $c = $c->fresh();
+        $this->assertNotEmpty($c->codigo_qr);
+
+        $html = $this->actingAs($this->admin)->get('/colaboradores')->assertOk()
+            ->assertSee('data-ver-identificacion', false)->assertSee('id="dialogoIdentificacion"', false)
+            ->assertSee(route('identificacion.qr', ['colaborador', $c->id]))
+            ->assertSee(route('lector.ir', $c->codigo_qr))
+            ->assertSee(route('identificacion.etiqueta', ['colaborador', $c->id]))->getContent();
+        $this->assertStringContainsString('A1B2C3D4', $html);
+        // El QR que abre el diálogo responde
+        $this->actingAs($this->admin)->get(route('identificacion.qr', ['colaborador', $c->id]))->assertOk();
+
+        // Quien solo consulta ve el código pero no asigna la etiqueta
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $this->actingAs($agente)->get('/colaboradores')->assertOk()->assertSee(route('identificacion.qr', ['colaborador', $c->id]))
+            ->assertDontSee(route('identificacion.etiqueta', ['colaborador', $c->id]));
     }
 }
