@@ -22,22 +22,6 @@ class ManualTest extends TestCase
     use CreaDatosNucleo, RefreshDatabase;
 
     /**
-     * TODO(integrador): páginas que reescribe otra rama (feature/manual-paginas). Mientras
-     * no tengan encabezado se toleran aquí; al integrar esa rama, borra esta lista.
-     *
-     * @var array<string, list<string>> página => módulos que cubrirá
-     */
-    private const PENDIENTES_OTRA_RAMA = [
-        'personas' => ['visitantes'], 'proveedores' => ['proveedores'], 'vehiculos' => ['vehiculos'], 'llaves' => ['llaves'],
-        'gafetes' => ['gafetes'], 'equipos' => ['equipos'], 'equipos-pc' => ['equipos_pc'], 'estacionamientos' => ['estacionamientos'],
-        'etiquetas-qr' => ['etiquetas_qr'], 'rutas' => ['rutas'], 'altas-por-verificar' => [], 'colaboradores' => ['colaboradores'],
-        'departamentos-y-puestos' => ['departamentos', 'puestos'], 'turnos' => ['turnos'], 'candidatos' => ['candidatos'],
-        'recepcion-y-autorizaciones' => ['recepcion_rh', 'autorizaciones'], 'solicitud-empleo' => ['candidatos'], 'vacantes' => ['vacantes'],
-        'empresas-y-sedes' => ['empresas', 'sedes'], 'zonas-y-areas' => ['espacios'], 'usuarios' => ['usuarios'],
-        'roles-y-permisos' => ['roles', 'permisos'], 'configuracion' => ['configuracion'], 'identidad' => ['identidad'], 'auditoria' => ['auditoria'],
-    ];
-
-    /**
      * Módulos con pantalla que no necesitan página propia: el propio Manual
      * se explica en las páginas generales (Primeros pasos y Menús).
      */
@@ -306,9 +290,6 @@ class ManualTest extends TestCase
 
         foreach ($manual->archivos() as $slug => $ruta) {
             [$encabezado, $errores] = $manual->leerEncabezado((string) file_get_contents($ruta));
-            if ($encabezado === null && array_key_exists($slug, self::PENDIENTES_OTRA_RAMA)) {
-                continue; // TODO(integrador): quitar al integrar feature/manual-paginas
-            }
             foreach ($errores as $error) {
                 $fallas[] = "{$slug}.md: {$error}";
             }
@@ -328,11 +309,6 @@ class ManualTest extends TestCase
     {
         $manual = new Manual;
         $cubiertos = collect($manual->paginas())->flatMap(fn ($p) => $p->modulos)->all();
-        foreach (self::PENDIENTES_OTRA_RAMA as $slug => $modulos) {
-            if (isset($manual->archivos()[$slug]) && $manual->pagina($slug) === null) {
-                $cubiertos = array_merge($cubiertos, $modulos); // TODO(integrador): quitar al integrar feature/manual-paginas
-            }
-        }
 
         $faltan = Modulo::whereNotNull('ruta')->where('activo', true)->pluck('clave')
             ->reject(fn ($clave) => in_array($clave, $cubiertos, true) || in_array($clave, self::SIN_PAGINA_PROPIA, true))
@@ -378,9 +354,6 @@ class ManualTest extends TestCase
         $fallas = [];
 
         foreach ($manual->archivos() as $slug => $ruta) {
-            if ($manual->pagina($slug) === null && array_key_exists($slug, self::PENDIENTES_OTRA_RAMA)) {
-                continue; // TODO(integrador): quitar al integrar feature/manual-paginas
-            }
             $texto = mb_strtolower((string) file_get_contents($ruta));
             foreach (self::PROHIBIDOS as $prohibido) {
                 if (str_contains($texto, $prohibido)) {
