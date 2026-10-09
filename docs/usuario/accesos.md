@@ -1,168 +1,140 @@
-# Bitácora de accesos (Control de Accesos)
+---
+titulo: Bitácora de accesos
+modulos: [accesos]
+seccion: Operación
+orden: 10
+resumen: Registrar quién entra y sale de la sede, ver quién sigue dentro y autorizar proveedores.
+---
+# Bitácora de accesos
 
-Operación → **Accesos**. Es la pantalla de la caseta: aquí se registra a **todas las personas que entran** a la sede (colaboradores, huéspedes, visitas, proveedores, contratistas y servicios de emergencia), se ve **quién sigue dentro** y se registra su **salida**.
+**¿Para qué sirve?** Es la pantalla principal de la caseta. Aquí registras a **todas las personas que entran** a la sede (colaboradores, huéspedes, visitas, proveedores, contratistas y servicios de emergencia), ves **quién sigue dentro** y registras su **salida**.
 
-Está pensada para trabajar rápido en la PC o en el celular: botones grandes, poco que escribir y el **lector universal** (pistola, cámara o NFC) para gafetes, colaboradores y placas.
+**Antes de empezar:** necesitas que tu rol pueda **ver** y **crear** en Accesos. Si no ves el botón rojo **Nuevo Ingreso**, pide a tu administrador que revise tu rol. Para autorizar proveedores y contratistas se necesita además el permiso **Aprobar** (normalmente supervisores y jefes de seguridad).
 
-## 1. La pantalla
+## Cómo leer la pantalla
 
-Arriba está el botón rojo **Nuevo Ingreso**, la búsqueda y los filtros por **tipo de persona** y **sede** (si solo tienes una sede, ya está elegida). Debajo hay tres pestañas:
+1. Entra a **Operación → Caseta → Bitácora de accesos** (en el celular, el botón **Accesos** de abajo).
+2. Arriba están el botón **Nuevo Ingreso**, el buscador y los filtros de **tipo** y **sede**.
+3. Abajo hay tres pestañas:
 
 | Pestaña | Qué muestra |
 |---|---|
-| **Pendientes de Autorización (n)** | Proveedores y contratistas que esperan que su Host los autorice |
-| **Gente en Sitio (n)** | Todos los que están dentro ahora |
-| **Historial Finalizados** | Los que ya salieron, por páginas, con filtro de fechas |
+| **Pendientes de Autorización** | Proveedores y contratistas que esperan que quien los citó los autorice. |
+| **Gente en Sitio** | Todos los que están dentro ahora. |
+| **Historial Finalizados** | Los que ya salieron, con filtro de fechas. |
 
-Cada tarjeta tiene el color del tipo de persona, el nombre, la sede, el **gafete** que se le prestó (o **S/G** si no lleva) y sus datos: motivo, ID que dejó en caseta, cómo llegó, vehículo, zona de estacionamiento y acompañantes. Abajo dice a qué hora entró y **quién lo registró**.
+![Gente en sitio](img/accesos/gente-en-sitio.png)
 
-![Gente en sitio](img/accesos/01-gente-en-sitio.png)
+**Qué debes ver:** una tarjeta por persona con su tipo (color), nombre, sede, **gafete** (o **S/G** si no lleva), motivo, identificación que dejó, cómo llegó y a qué hora entró y quién la registró.
 
-## 2. Registrar un ingreso
+## Cómo registrar un ingreso
 
-1. Toca **Nuevo Ingreso**. Se abre el **Registro Inteligente de Ingreso**.
-2. Revisa la **Sede** (si tienes una sola, ya viene puesta).
-3. Elige el **Tipo de Persona**. El formulario cambia y solo pide lo que hace falta para ese tipo.
-4. Llena los datos (ver abajo) y toca **Autorizar Ingreso y Guardar Datos**.
-5. Si viene más gente detrás, usa **Guardar y capturar siguiente**: guarda y vuelve a abrir el formulario con la misma sede y el mismo tipo.
+1. Toca **Nuevo Ingreso**. Se abre **Registro Inteligente de Ingreso**.
+2. Revisa la **Sede**. Si solo trabajas en una, ya viene elegida.
+3. Toca el **Tipo de Persona**: Colaborador, Huésped, Personal Externo / Visita, Proveedor, Contratista (Obra) o Servicio de Emergencia. La ventana solo pide lo que hace falta para ese tipo.
+4. Llena los datos (ver abajo por tipo).
+5. Elige la **Forma de Llegada**: **A Pie** o **Vehículo Propio / Moto**. Con vehículo, escribe o escanea las **placas** y, si aplica, elige la zona de estacionamiento.
+6. Si llega con más personas, usa **+** en **Acompañantes** y llena una fila por persona.
+7. Toca **Autorizar Ingreso y Guardar Datos**. Si viene más gente detrás, toca **Guardar y capturar siguiente**: guarda y deja la ventana lista con la misma sede y tipo.
 
-Si falta algo o algo está mal (por ejemplo un gafete que ya está prestado), el aviso en rojo aparece **dentro de la misma ventana** y no se pierde lo capturado.
+![Registro Inteligente de Ingreso](img/accesos/nuevo-ingreso.png)
 
-### Colaborador
+**Qué debes ver:** la ventana se cierra (o se limpia, si elegiste capturar siguiente) y la persona aparece en **Gente en Sitio**.
 
-Escanea su credencial o escribe su nombre o número de empleado y elígelo de la lista. **No lleva gafete.**
+Lo que pide cada tipo:
 
-Si no aparece (por ejemplo, es de nuevo ingreso), toca **«¿No aparece? Darlo de alta provisional»**: se registra como provisional y Recursos Humanos lo valida después.
+- **Colaborador:** escanea su gafete de empleado o escribe su nombre o número y elígelo. No lleva gafete de visita. Si no aparece, toca **¿No aparece? Darlo de alta provisional**: se registra y Recursos Humanos lo valida después.
+- **Personal Externo / Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**.
+- **Proveedor y Contratista (Obra):** además, la **Empresa / Procedencia** y **Host — ¿Quién lo citó?** (obligatorio). Quedan en **Pendientes de Autorización**.
+- **Huésped:** nombre, número de habitación y si tiene reserva. No lleva gafete.
+- **Servicio de Emergencia:** solo lo mínimo para no hacer esperar: unidad, tipo de emergencia y observaciones.
 
-![Ingreso de colaborador](img/accesos/04-ingreso-colaborador.png)
-![Sugerencias al escribir](img/accesos/05-sugerencias-colaborador.png)
+![Ingreso de un proveedor](img/accesos/nuevo-ingreso-proveedor.png)
 
-### Personal Externo / Visita
+Si escribes a mano un nombre que ya existe en el Padrón de personas, al guardar sale el aviso rojo «Ya existe una persona registrada con este nombre…»: toca **Sí, es la misma** para usar su registro, o **No, es alguien distinto** para crear otra persona.
 
-- **Tipo de Gafete** y **Gafete Asignado**: escanéalo o escribe y elige de la lista. Solo salen gafetes **libres** de la sede. Sin gafete queda «S/G».
-- **Nombre**: escribe y elige de la lista del Padrón de personas, o escribe uno nuevo.
-- **ID Custodiada**: la identificación que deja en caseta (INE, licencia o pasaporte).
-- **Motivo de la Visita**: *Recursos Humanos* o *Visita a Colaborador* (en ese caso elige **a quién visita**).
+## Cómo autorizar a un proveedor o contratista
 
-![Visitante con gafete](img/accesos/06-ingreso-visitante-gafetes.png)
-![Visitante del Padrón de personas](img/accesos/07-visitante-padron-personas.png)
+1. Abre la pestaña **Pendientes de Autorización**.
+2. Confirma con quien lo citó (el Host) que lo espera.
+3. Toca **Confirmar Autorización** en su tarjeta.
 
-Si escribes a mano un nombre que ya existe en el Padrón, el sistema pregunta **«¿Es la misma persona?»**: toca **Sí, es la misma** para usar su registro, o **No, es alguien distinto** para crear otra persona.
+![Pendientes de autorización](img/accesos/pendientes.png)
 
-![¿Es la misma persona?](img/accesos/13-misma-persona.png)
+**Qué debes ver:** la tarjeta pasa a **Gente en Sitio** con la hora de autorización. Si no tienes el permiso, la tarjeta dice que tu supervisor confirma la autorización.
 
-### Cómo llegó y acompañantes (para casi todos los tipos)
-
-- **Forma de Llegada**: *A Pie* o *En Vehículo*. Con vehículo escribe o escanea las **placas**: si el vehículo ya está en el Padrón Vehicular se usa ese; si no, se registra solo.
-- **Enviar a**: zona de estacionamiento de la sede. Junto a cada zona se ve cuántos lugares están ocupados; si dice **LLENO** se puede asignar igual.
-- **Acompañantes**: agrega una fila por persona que llega con él. Cada una puede llevar su propio gafete.
-
-![Vehículo y acompañantes](img/accesos/08-visitante-vehiculo-acompanantes.png)
-
-### Proveedor y Contratista (Obra)
-
-Además del gafete, nombre y llegada:
-
-- **Empresa / Procedencia**: elige de Proveedores o escribe una nueva. Una empresa **dada de baja (vetada) no puede entrar**.
-- **Host — ¿Quién lo citó?**: el colaborador que lo espera. **Es obligatorio.**
-- En **Más detalles**: Tipo de Visita, Departamento, Área de Trabajo y Actividad.
-
-El registro queda **Pendiente**: aparece en la pestaña *Pendientes de Autorización* hasta que alguien con permiso toque **Confirmar Autorización**.
-
-![Ingreso de proveedor](img/accesos/09-ingreso-proveedor.png)
-![Más detalles del proveedor](img/accesos/10-proveedor-mas-detalles.png)
-![Pendientes de autorización](img/accesos/02-pendientes.png)
-
-### Huésped
-
-**Nombre**, **Número de Habitación**, **¿Tiene Reserva?** (con reserva el pase siempre es **Estancia**; sin reserva elige *Daypass* o *Nightpass*) y **Agencia Vinculada** si viene por una agencia. Si llegó en taxi o app, escribe el **Conductor**. **No lleva gafete.**
-
-![Ingreso de huésped](img/accesos/11-ingreso-huesped.png)
-
-### Servicio de Emergencia
-
-Lo mínimo para no hacer esperar: nombre o unidad (opcional; si no, queda «UNIDAD DE EMERGENCIA»), tipo de emergencia y observaciones. **No lleva gafete.**
-
-![Ingreso de emergencia](img/accesos/12-ingreso-emergencia.png)
-
-## 3. Dar salida
+## Cómo dar salida
 
 Hay dos formas:
 
-- En la tarjeta de la persona toca **Registrar Salida** (en huéspedes, **Salida Final**) y confirma.
-- Con **Dar Salida** (dentro del Registro de Ingreso): escribe placas, nombre, gafete o habitación, **o escanea el gafete que te devuelven**. La tarjeta te recuerda qué pedir de vuelta (gafetes e identificación).
+1. En la tarjeta de la persona toca **Registrar Salida** (en huéspedes, **Salida Final**) y confirma.
+2. O bien, dentro de **Nuevo Ingreso** toca **Dar Salida**, escribe placas, nombre, gafete o habitación, **o escanea el gafete que te devuelven**, y toca la persona.
 
-Al salir el titular, sus acompañantes que seguían dentro salen con él y su lugar de estacionamiento queda libre. Sus gafetes vuelven a estar disponibles.
+![Dar salida](img/accesos/dar-salida.png)
 
-![Buscar y dar salida](img/accesos/14-dar-salida.png)
+**Qué debes ver:** la persona pasa a **Historial Finalizados**. Sus acompañantes salen con ella, su gafete queda libre y su lugar de estacionamiento se libera. **Recoge el gafete y devuelve la identificación.**
 
-Un **acompañante** puede salir antes con el botón **Salida** de su renglón. En proveedores y contratistas también puede hacer **Temporal** (sale un rato, por ejemplo por material) y luego **Regresó**; mientras está fuera aparece la marca **FUERA** y su gafete sigue reservado.
+Un acompañante puede salir antes con el botón **Salida** de su renglón.
 
-## 4. Cambiar zona
+## Cómo registrar una salida temporal o a tour
 
-En una persona con vehículo, **Cambiar Zona** la manda a otra zona de estacionamiento de la sede, o la libera con «Sin asignar (liberar)».
+1. En huéspedes toca **Salida a Tour**; en proveedores y contratistas autorizados, **Salida Temporal**.
+2. Si quieres, anota placas, marca y conductor. Guarda.
+3. Cuando regrese, toca **Registrar Regreso**.
 
-![Cambiar zona](img/accesos/15-cambiar-zona.png)
+**Qué debes ver:** mientras está fuera, la tarjeta dice **FUERA EN TOUR** (o **FUERA**) y su gafete sigue reservado.
 
-## 5. Salida a tour y regreso (huéspedes) · Salida temporal (proveedores)
+## Cómo cambiar la zona de estacionamiento
 
-- **Salida a Tour**: el huésped sale un rato. Puedes anotar placas, marca y conductor del tour. Su tarjeta cambia a **FUERA EN TOUR** (no se cuenta dos veces).
-- **Registrar Regreso**: cuando vuelve. El vehículo y chofer de regreso pueden ser distintos.
-- En proveedores y contratistas autorizados el botón se llama **Salida Temporal** y funciona igual.
+1. En una persona con vehículo toca **Cambiar Zona**.
+2. Elige otra zona de la sede, o **Sin asignar (liberar)**. Guarda.
 
-![Salida a tour](img/accesos/16-salida-a-tour.png)
-![Regreso de tour](img/accesos/17-regreso-de-tour.png)
+**Qué debes ver:** la tarjeta muestra la zona nueva en **Enviado a**.
 
-## 6. Historial y exportar
+## Cómo buscar y exportar el historial
 
-En **Historial Finalizados** filtra por texto, tipo, sede y fechas (**Desde / Hasta**) y toca **Filtrar**. Con permiso de exportar aparece **Exportar a Excel**, que descarga exactamente lo filtrado.
+1. Abre **Historial Finalizados**.
+2. Escribe en el buscador (nombre, gafete, empresa, placas, host o el nombre de un **acompañante**) y elige tipo, sede y fechas **Desde / Hasta**.
+3. Si tienes permiso, toca **Exportar a Excel** para bajar exactamente lo filtrado.
 
-![Historial](img/accesos/03-historial.png)
+![Historial](img/accesos/historial.png)
 
-La ocupación de las zonas de **Estacionamientos** sale de esta bitácora: cuenta los vehículos que siguen en sitio.
+**Qué debes ver:** solo los registros que coinciden. Si buscas a un acompañante, la tarjeta dice «Coincide con …, acompañante de …».
 
-![Ocupación de estacionamientos](img/accesos/18-ocupacion-estacionamientos.png)
+## En el celular y en los modos Sol y Noche
 
-## 7. Qué puede hacer cada rol
+Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el ancho y los botones de la ventana quedan abajo, a la mano.
 
-| Rol | Ve | Registra ingresos y salidas | Autoriza proveedores | Exporta |
-|---|---|---|---|---|
-| Administrador | Toda la empresa | Sí | Sí | Sí |
-| Jefe de seguridad / Supervisor | Sus sedes | Sí | Sí | Sí |
-| Asistente | Sus sedes | Sí | No | Sí |
-| Agente | Su sede | Sí | No | No |
-| Director | Toda la empresa | No | Sí | Sí |
+![Accesos en el celular](img/accesos/celular-agente.png)
+![Nuevo ingreso en el celular](img/accesos/celular-nuevo-ingreso.png)
+![Modo Noche](img/accesos/noche.png)
+![Modo Sol](img/accesos/sol.png)
 
-El **Agente** ve los pendientes con el aviso «Espera a que el Host autorice; tu supervisor confirma la autorización en el sistema».
+## Si algo sale mal
 
-![Vista del agente](img/accesos/26-agente-pendientes.png)
-
-## 8. Celular, modo Noche y modo Sol
-
-Todo funciona en el celular: el botón **Nuevo Ingreso** ocupa todo el ancho y los botones del formulario quedan siempre a la mano abajo. Con el botón del sol (arriba a la derecha) cambias a **Noche** (pantalla oscura para el turno nocturno) o **Sol** (alto contraste para la caseta a pleno sol).
-
-![Celular](img/accesos/23-celular-en-sitio.png)
-![Ingreso en celular](img/accesos/24-celular-ingreso.png)
-![Modo noche](img/accesos/19-noche.png)
-![Modo sol](img/accesos/21-sol.png)
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| «El gafete … ya está en uso (EN SITIO). Pide que lo devuelvan o elige otro.» | Ese gafete lo tiene alguien que sigue dentro. | Usa otro gafete o da salida a quien lo tiene. |
+| «El gafete … está dado de baja.» | El gafete ya no se usa. | Elige otro. |
+| «Indica quién citó al proveedor/contratista (Host).» | Falta el Host. | Escribe y elige al colaborador que lo espera. |
+| «La empresa «…» está dada de baja (vetada) en Proveedores: no puede ingresar.» | La empresa externa tiene prohibido el acceso. | No lo dejes pasar; avisa a tu supervisor. |
+| «El colaborador elegido no existe, está dado de baja o no pertenece a esta sede.» | El colaborador no trabaja en esa sede. | Revisa la sede o usa el alta provisional. |
+| «Las placas solo llevan letras y números (de 2 a 20).» | Las placas tienen símbolos o están incompletas. | Escríbelas sin guiones ni espacios. |
+| «Este acceso ya no está pendiente de autorización (alguien más lo atendió).» | Otro compañero ya lo autorizó. | Revisa **Gente en Sitio**. |
+| No sale el botón **Confirmar Autorización** | Tu rol no puede aprobar. | Pide a tu supervisor que lo autorice. |
 
 ## Preguntas frecuentes
 
-- **El gafete que escaneé dice que no está disponible.** Lo tiene alguien que sigue dentro o pendiente de autorizar, o está dado de baja. Usa otro o da la salida a quien lo tiene.
-- **¿Por qué el proveedor no aparece en Gente en Sitio?** Está en *Pendientes de Autorización* hasta que lo autoricen.
+- **¿Por qué el proveedor no aparece en Gente en Sitio?** Está en **Pendientes de Autorización** hasta que lo autoricen.
+- **El colaborador no está en la lista.** Usa **¿No aparece? Darlo de alta provisional**; Recursos Humanos lo valida después.
 - **Me equivoqué de zona.** Usa **Cambiar Zona**.
-- **El colaborador no está en la lista.** Usa el alta provisional; RH lo valida después.
+- **¿Cómo sé quién registró a alguien?** En la tarjeta, junto a la hora de ingreso, dice «por …».
+- **¿Puedo usar la cámara del celular para el gafete?** Sí: toca el botón del código QR junto al campo.
 
-## Registro rápido: los avisos informativos se quedan (Ronda 5)
+## Relacionado
 
-Al cerrar y volver a abrir **Registro Rápido de Persona**, el aviso gris «Úsalo solo si la persona **no aparece** al buscarla…» y el aviso amarillo de «pendiente de verificar» siguen ahí. Al cerrar una ventana solo se borran los errores de validación (rojos) y los avisos de «Guardado».
-
-![El aviso gris se conserva](img/ronda-5b/registro-rapido-aviso-se-conserva.png)
-
-## Ronda 8: buscar por el nombre de un acompañante
-
-Escribe el nombre de un acompañante (por ejemplo «sofia») en la búsqueda de **Gente en Sitio**, **Pendientes** o **Historial**, o en **Dar Salida**: aparece la tarjeta de la persona a la que acompaña con el aviso «Coincide con SOFÍA MÉNDEZ, acompañante de LAURA MÉNDEZ RÍOS». No importan los acentos ni las mayúsculas.
-
-![Búsqueda por acompañante](img/ronda-8/07-accesos-busqueda-acompanante.png)
-![Dar Salida encuentra al acompañante](img/ronda-8/08-dar-salida-acompanante.png)
-![Modo Noche](img/ronda-8/21-noche-accesos-acompanante.png)
+- [Préstamo de llaves](prestamo-llaves.md)
+- [Pases de salida](pases-salida.md)
+- [Bitácora de novedades](novedades.md)
+- [Gafetes](gafetes.md)
+- [Padrón de personas](personas.md)

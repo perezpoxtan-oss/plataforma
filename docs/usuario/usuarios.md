@@ -1,128 +1,157 @@
+---
+titulo: Usuarios
+modulos: [usuarios]
+seccion: Estructura
+orden: 30
+resumen: Dar de alta las cuentas para entrar a la plataforma, vincularlas con su colaborador, desactivarlas y desbloquearlas.
+---
+
 # Usuarios
 
-Aquí se dan de alta las cuentas para entrar a la plataforma: **Estructura → Organización Interna → Usuarios**.
+**¿Para qué sirve?** Aquí se dan de alta las **cuentas** para entrar a la plataforma: quién es, en qué sede trabaja, qué **rol** tiene (lo que puede hacer), su usuario, su correo y su contraseña. También se desactivan cuentas y se desbloquean las que tuvieron demasiados intentos fallidos.
 
 ![Usuarios](img/usuarios/1-lista.png)
 
-![Usuarios con una cuenta bloqueada](img/ajustes/1-usuario-bloqueado.png)
+## Antes de empezar
 
-## ¿De qué empresa son?
+- Para ver la pantalla tu rol debe poder consultar *Usuarios*. Si no aparece en el menú, pide el permiso a tu administrador.
+- Solo puedes dar de alta o editar cuentas de **nivel inferior** al tuyo, y solo puedes asignar roles de nivel inferior al tuyo. No puedes editar tu propia cuenta ni la de alguien de tu mismo nivel o superior.
+- Cada usuario pertenece a **una empresa** (debajo del título dice «Usuarios de «…»»). La **sede** solo limita lo que ve dentro de esa empresa. El Super Administrador cambia de empresa con el selector **Empresa de trabajo**.
+- Antes de dar de alta, conviene que la persona ya esté en [Colaboradores](colaboradores.md) para vincular su cuenta.
 
-La plataforma atiende a varias empresas, y cada usuario pertenece a **una**. Debajo del título se ve cuál: "Usuarios de «Hotel Demo»". En el alta y en la edición, arriba de la sede, aparece **Empresa: Hotel Demo**: el usuario se crea en esa empresa y la **sede** solo limita lo que ve dentro de ella.
+## Cómo encontrar una cuenta
 
-El Super Administrador cambia de empresa con el selector **Empresa de trabajo** de arriba.
+1. Entra a **Estructura → Usuarios**. Se abre **Usuarios Operativos**.
+2. Escribe en **Buscar por nombre, correo o rol...**. Si hay varias sedes, usa **Todas las sedes**.
 
-![Alta con la empresa visible](img/ajustes2/01-alta-usuario-con-empresa.png)
+**Qué debes ver:** fichas con el nombre, el usuario (@…), el rol, el correo, si está vinculado a un colaborador, la sede y el último acceso.
 
-## Buscar
+## Cómo dar de alta una cuenta
 
-Escribe en el buscador un nombre, usuario, correo o rol. Si la empresa tiene varias sedes, filtra también por sede. El filtro se mantiene mientras trabajas.
+1. Toca la tarjeta **Nuevo Usuario**. Se abre **Alta de Usuario**.
+2. **Núm. Colaborador (opcional):** escribe el número o parte del nombre del colaborador y elígelo de la lista (ver «Cómo vincular la cuenta con su colaborador»).
+3. Escribe el **Nombre Completo**.
+4. **1. Sede:** la sede donde trabaja, o **Todas las sedes de la empresa** si debe ver todas.
+5. **2. Rol en el Sistema:** solo aparecen los roles que tú puedes asignar.
+6. Escribe el **Usuario** (letras, números, punto, guion y guion bajo; sin espacios), el **Correo** y la **Contraseña** (mínimo 8 caracteres, con letras y números). El ojo muestra lo que escribiste.
+7. Toca **Registrar Usuario**.
 
-## Dar de alta
+![Alta de usuario](img/usuarios/2-alta.png)
 
-1. Toca **Nuevo Usuario**.
-2. Captura:
-   - **Núm. Colaborador:** opcional. Escribe el número o el nombre del colaborador y elígelo de la lista (ver abajo).
-   - **Nombre completo**.
-   - **Sede:** la sede donde trabaja, o *Todas las sedes* si debe ver todas.
-   - **Rol**.
-   - **Usuario**, **correo** y **contraseña:** mínimo 8 caracteres, con letras y números.
-3. Toca **Registrar Usuario**. La persona ya puede entrar con su usuario o su correo.
+**Qué debes ver:** «Usuario creado correctamente.» La persona ya puede entrar con su usuario o su correo.
 
-![Alta](img/usuarios/2-alta.png)
+> Si cierras la ventana (Cancelar, la X o la tecla Esc), al volver a abrirla aparece vacía. Si al registrar hubo un error, la ventana se vuelve a abrir con lo que capturaste para que lo corrijas.
 
-En la lista de roles solo aparecen los que tú puedes asignar, es decir, los de nivel inferior al tuyo.
+### Avisos mientras escribes
 
-Si cierras la ventana (Cancelar, la X o la tecla Esc), al volver a abrirla aparece **vacía**. Si al registrar hubo un error (por ejemplo, un usuario repetido), la ventana se vuelve a abrir con lo que capturaste para que lo corrijas; si en vez de corregir la cierras, la próxima vez abre vacía.
+- **Usuario** y **Correo:** si otra cuenta ya los usa, lo dice al instante («Ese nombre de usuario ya lo usa otra cuenta. Elige otro.»), aunque sea de otra empresa y sin mostrar sus datos. Si está libre: «Nombre de usuario disponible.» / «Correo disponible.»
+- **Nombre Completo:** si ya hay una cuenta con ese nombre, te pide confirmar que es otra persona (ver abajo). Si hay un **colaborador con ese nombre que aún no tiene cuenta**, aparece **Vincular**.
 
-| Regresa con el error | Cerrada y vuelta a abrir |
-|---|---|
-| ![Con error](img/ajustes2/02-alta-con-error-conserva-datos.png) | ![Limpia](img/ajustes2/03-alta-reabierta-limpia.png) |
+![Usuario repetido](img/usuarios/9-usuario-repetido.png)
 
-### Vincular la cuenta con su colaborador (paso a paso)
+## Cómo vincular la cuenta con su colaborador
 
-**¿Qué es "vincular"?** Muchas personas que usan la plataforma también están en **Recursos Humanos → Colaboradores** (el directorio del personal, con su número de empleado). *Vincular* es decirle a la plataforma: «esta cuenta de usuario es de este colaborador». Así no capturas su nombre dos veces, y si Recursos Humanos lo da de baja, en su cuenta aparece un aviso para que la revises.
+**¿Qué es «vincular»?** Decirle a la plataforma «esta cuenta es de este colaborador». Así no capturas su nombre dos veces y, si Recursos Humanos lo da de baja, su cuenta muestra un aviso para que la revises. No es obligatorio: una cuenta de soporte o de un proveedor puede quedarse sin colaborador.
 
-No es obligatorio: una cuenta de soporte o de un proveedor puede quedarse sin colaborador.
+**Ejemplo:** la cuenta de **Daniela Canul May**, colaboradora número **1008**.
 
-**Ejemplo:** vas a crear la cuenta de **Daniela Canul May**, que ya está en Colaboradores con el número **1008**.
+1. En **Núm. Colaborador** escribe su número (`1008`) o parte de su nombre (`dani`). Basta con 2 letras o números.
+2. En la lista que aparece toca **Daniela Canul May · #1008**. Se llenan solos su número y su **Nombre Completo**, y aparece en verde **Vinculado a Colaboradores**.
+3. Otra forma: escribe primero el **Nombre Completo**. Si hay un colaborador con ese nombre sin cuenta, toca **Vincular** en el aviso.
+4. Completa lo demás y toca **Registrar Usuario**.
 
-1. Toca **Nuevo Usuario**.
-2. En el primer campo, **Núm. Colaborador**, escribe su número (`1008`) **o** parte de su nombre (`dani`). Basta con 2 letras o números.
-3. Aparece una lista debajo. Toca **Daniela Canul May · #1008**.
-   - Se llenan solos su **número** y su **Nombre Completo**.
-   - Debajo aparece en verde **«Vinculado a Colaboradores»**: eso confirma el vínculo.
+![Buscar colaborador](img/usuarios/4-num-colaborador.png)
 
-   ![Buscar colaborador](img/usuarios/4-num-colaborador.png)
+![Vinculado](img/usuarios/5-vinculado-a-colaborador.png)
 
-   ![Vinculado](img/usuarios/5-vinculado-a-colaborador.png)
+![Sugerencia para vincular](img/usuarios/6-sugerencia-vincular.png)
 
-4. Otra forma: si empiezas por el **Nombre Completo** y escribes `Daniela Canul May`, la ventana te avisa que hay un colaborador con ese nombre que aún no tiene cuenta. Toca **Vincular con colaborador #1008 Daniela Canul May** y queda vinculado igual.
+**Qué debes ver:** en la lista, su ficha dice **Vinculado a Colaborador (activo)**. Si un día dice **Vinculado a Colaborador (¡inactivo! revisar)**, Recursos Humanos lo dio de baja: revisa si su cuenta también debe desactivarse.
 
-   ![Sugerencia para vincular](img/ajustes4/us-1-sugerencia-vincular.png)
-
-   ![Ya vinculado](img/ajustes4/us-2-vinculado.png)
-
-5. Completa **Sede**, **Rol**, **Usuario**, **Correo** y **Contraseña**, y toca **Registrar Usuario**.
-6. En la lista, la ficha de Daniela dice **Vinculado a Colaborador (activo)**.
-
-   ![Usuario registrado y vinculado](img/ajustes4/us-3-registrado.png)
-
-Cosas que conviene saber:
-
-- **Si ya tiene cuenta**, no aparece en la lista: te avisa «Ese colaborador ya tiene una cuenta de usuario». Búscala en la lista principal y edítala; no hagas otra.
-- **Si borras o cambias el número a mano**, el vínculo se quita (desaparece el texto verde). Vuelve a elegirlo de la lista para vincularlo otra vez.
+- Si cambias o borras el número a mano, el vínculo se quita. Vuelve a elegirlo de la lista.
 - Solo aparecen colaboradores **activos** de tu empresa (y de tus sedes, si tu rol es de una sede).
-- Si un día la ficha dice **Vinculado a Colaborador (¡inactivo! revisar)**, Recursos Humanos lo dio de baja: revisa si su cuenta también debe desactivarse.
-- Para vincular una cuenta que ya existe: toca su **lápiz**, en **Núm. Colaborador** escribe el número o el nombre, elígelo y toca **Guardar Cambios**.
+- Para vincular una cuenta que ya existe: toca su **lápiz**, elige al colaborador en **Núm. Colaborador** y toca **Guardar Cambios**.
 
-### Dos personas con el mismo nombre
+## Cómo registrar a dos personas con el mismo nombre
 
-Si escribes un **Nombre Completo** que ya tiene otra cuenta de tu empresa (sin importar mayúsculas ni acentos), la ventana te avisa en ese momento:
+Si escribes un **Nombre Completo** que ya tiene otra cuenta (sin importar mayúsculas ni acentos), la ventana avisa: «Ya existe un usuario con ese nombre: @… (Agente). ¿Es la misma persona? …».
 
-> Ya existe un usuario con ese nombre: @daniela.canul (Agente). ¿Es la misma persona?
-
-![Ya existe un usuario con ese nombre](img/ajustes4/us-4-ya-existe.png)
+![Ya existe un usuario con ese nombre](img/usuarios/7-ya-existe.png)
 
 - **Si es la misma persona:** toca **Cancelar** y edita su cuenta en la lista. No hagas una segunda cuenta.
-- **Si de verdad es otra persona con el mismo nombre** (pasa): marca **Sí, es otra persona con el mismo nombre** y registra. Sin esa marca la plataforma no la guarda y te lo vuelve a explicar dentro de la ventana:
+- **Si de verdad es otra persona:** marca **Sí, es otra persona con el mismo nombre** y registra. Sin esa marca no se guarda y el aviso se repite arriba, en rojo.
 
-![Falta confirmar](img/ajustes4/us-5-error-sin-confirmar.png)
+![Mismo nombre sin confirmar](img/usuarios/8-error-sin-confirmar.png)
 
-El **usuario** y el **correo** nunca se pueden repetir, aunque el nombre sí. Al editar, el aviso solo te pide confirmar si cambias el nombre por uno que ya tiene otra cuenta.
+El **usuario** y el **correo** nunca se pueden repetir, aunque el nombre sí.
 
-| En el celular | Noche | Sol |
-|---|---|---|
-| ![Celular](img/ajustes4/us-6-celular.png) | ![Noche](img/ajustes4/us-7-noche.png) | ![Sol](img/ajustes4/us-7-sol.png) |
+## Cómo editar una cuenta o cambiar la contraseña
 
-## Editar
+1. Toca el **lápiz** (Editar). Se abre **Editar Usuario**.
+2. Cambia lo necesario. Si dejas la **Contraseña** en blanco, no cambia; si la cambias, la persona tendrá que volver a entrar.
+3. Toca **Guardar Cambios**.
 
-Toca el **lápiz**. Si dejas la contraseña en blanco, no cambia. Si la cambias, la persona tendrá que volver a entrar.
+**Qué debes ver:** «Usuario actualizado correctamente.»
 
-## Desactivar o reactivar
+## Cómo desactivar o reactivar una cuenta
 
-- El botón **⊘** desactiva la cuenta: la persona ya no puede entrar y, si estaba dentro, se le cierra la sesión.
-- El botón verde **↺** la reactiva.
+1. Toca el **círculo con raya** (Desactivar) y confirma. La persona ya no puede entrar y, si estaba dentro, se le cierra la sesión.
+2. Para regresarla, toca la **flecha circular** (Reactivar).
 
 No se borra a nadie, para conservar el historial.
 
-## Desbloquear una cuenta
+## Cómo desbloquear una cuenta
 
-Tras **5 intentos fallidos** seguidos, la cuenta se bloquea 15 minutos. En su ficha aparece la etiqueta **BLOQUEADO hasta HH:MM** (hora de la empresa).
+Tras **5 intentos fallidos** seguidos, la cuenta se bloquea 15 minutos. Su ficha muestra **BLOQUEADO hasta HH:MM**.
 
-![Cuenta bloqueada](img/ajustes/2-ficha-bloqueada.png)
+1. Si la persona ya recordó su contraseña y no puede esperar, toca el **candado** (Desbloquear) de su ficha.
+2. Confirma con **Aceptar**.
 
-Si la persona ya recordó su contraseña y no puede esperar:
+![Cuenta bloqueada](img/usuarios/10-ficha-bloqueada.png)
 
-1. Toca el **candado** de su ficha.
-2. Confirma. Verás «Nombre» desbloqueado; ya puede entrar.
+**Qué debes ver:** ««Pablo Díaz» desbloqueado; ya puede entrar.» El desbloqueo queda en la [Bitácora de auditoría](auditoria.md). El candado solo aparece si tu rol tiene el permiso **Desbloquear** y la persona es de nivel inferior y está en tu alcance.
 
-![Desbloqueada](img/ajustes/3-desbloqueado.png)
-
-El candado solo aparece si tu rol tiene el permiso **Desbloquear** (por omisión: Administrador y Jefe de seguridad), la persona es de nivel inferior al tuyo y está dentro de tu alcance (por ejemplo, de tu sede). El desbloqueo queda registrado en la bitácora de auditoría.
+![Cuenta desbloqueada](img/usuarios/11-desbloqueado.png)
 
 > Si la persona olvidó su contraseña, además de desbloquearla cámbiale la contraseña con el **lápiz**.
 
-No puedes editar tu propia cuenta ni la de alguien de tu mismo nivel o superior.
+## En el celular y en los modos Noche y Sol
 
 ![Celular](img/usuarios/3-celular.png)
+
+![Modo Noche](img/usuarios/12-noche.png)
+
+![Modo Sol](img/usuarios/13-sol.png)
+
+## Si algo sale mal
+
+Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
+
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| Ya existe otro usuario registrado con ese nombre de usuario. | El usuario ya lo usa otra cuenta. | Elige otro (por ejemplo `juan.perez2`). |
+| Ya existe otro usuario registrado con ese correo. | El correo ya está en otra cuenta. | Usa otro correo o edita la cuenta existente. |
+| El nombre de usuario solo puede tener letras, números, punto, guion y guion bajo (sin espacios). | Escribiste espacios o acentos. | Por ejemplo `juan.perez`. |
+| Ya existe un usuario con ese nombre: @… ¿Es la misma persona? | Hay otra cuenta con ese nombre. | Edita la existente o marca **Sí, es otra persona con el mismo nombre**. |
+| Ese colaborador ya tiene una cuenta de usuario: búscala en la lista en vez de crear otra. | El colaborador ya tiene cuenta. | Edita su cuenta. |
+| Ese colaborador está dado de baja. | El colaborador está inactivo. | Pide a Recursos Humanos que lo reingrese o no lo vincules. |
+| Ya existe otro usuario registrado con ese número de colaborador. | Ese número ya está en otra cuenta. | Revisa el número. |
+| Aparece un texto raro como «validation.password.numbers» o «validation.password.letters». | La contraseña no tiene números o letras. | Escribe una de 8 o más caracteres con letras y números. |
+| «…» no está bloqueado; ya puede entrar. | La cuenta ya no estaba bloqueada. | No hace falta hacer nada. |
+| No veo el lápiz en una cuenta. | Es tu cuenta o es de tu mismo nivel o superior. | Pídelo a alguien de nivel superior. |
+
+## Preguntas frecuentes
+
+**¿La persona puede entrar con su correo?** Sí, con su usuario o con su correo.
+
+**¿Por qué no aparece un rol en la lista?** Solo puedes asignar roles de nivel inferior al tuyo.
+
+**¿Qué pasa si desactivo una cuenta?** La persona ya no puede entrar, pero todo lo que registró se conserva.
+
+**¿Cuánto dura el bloqueo?** 15 minutos, o hasta que alguien con permiso la desbloquee.
+
+## Relacionado
+
+- [Roles y permisos](roles-y-permisos.md)
+- [Colaboradores](colaboradores.md)
+- [Bitácora de auditoría](auditoria.md)

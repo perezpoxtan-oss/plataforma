@@ -8,3 +8,4 @@
 - Hosting: Neubox cPanel sin SSH. No usar funciones que dependan de `proc_open`/`exec` en tiempo de ejecución web; las tareas programadas deben correr en proceso.
 - Ramas: `main` = Producción, `develop` = QA, `feature/*` por tarea. Versiones `vMAYOR.MENOR.PARCHE`.
 - Cada módulo se entrega con sus cuatro piezas (código, técnico, usuario, curso) — ver `docs/README.md`.
+- Toda pantalla nueva o cambio visible actualiza su página en docs/usuario/ siguiendo docs/usuario/GUIA.md (el manual que ve el usuario).

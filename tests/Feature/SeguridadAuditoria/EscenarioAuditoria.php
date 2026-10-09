@@ -162,7 +162,11 @@ trait EscenarioAuditoria
             case 'registro':
                 return 'llaves';
             case 'archivo':
-                return 'respaldo.zip';
+                return $ruta === 'manual.imagen' ? 'acceso.png' : 'respaldo.zip';
+            case 'pagina': // Manual (lección 37): páginas e imágenes de docs/usuario (no son de ninguna empresa)
+                return 'primeros-pasos';
+            case 'carpeta':
+                return 'primeros-pasos';
             case 'firma':
                 $pase = $this->consulta('pases_salida', $sede)->pluck('id');
 
@@ -220,7 +224,7 @@ trait EscenarioAuditoria
     {
         $parametros = [];
         foreach ($ruta->parameterNames() as $nombre) {
-            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'pantalla', 'registro', 'tipo', 'parte'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
+            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'pantalla', 'registro', 'tipo', 'parte', 'pagina', 'carpeta'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
             $valor = match (true) {
                 ! $inexistente || $esTexto => $this->valorParametro((string) $ruta->getName(), $nombre, $sede),
                 $nombre === 'codigo' => 'zzzzzzzzzzzzzzzzzzzzzzzz',

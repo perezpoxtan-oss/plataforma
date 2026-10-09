@@ -1,86 +1,75 @@
+---
+titulo: Eliminar definitivamente
+modulos: [departamentos, puestos, turnos, sedes, espacios, colaboradores, roles, proveedores, visitantes, vehiculos, llaves, gafetes, equipos, equipos_pc, estacionamientos, rutas]
+seccion: Primeros pasos
+orden: 40
+resumen: Borrar para siempre algo capturado por error que nadie ha usado.
+---
 # Eliminar definitivamente
 
-A veces se captura algo **por error**: un departamento repetido, un tipo de gafete mal escrito, una persona registrada dos veces. **Dar de baja** lo esconde pero lo deja en la lista de inactivos para siempre. **Eliminar definitivamente** lo borra de la base de datos.
+**¿Para qué sirve?** A veces se captura algo por error: un departamento repetido, un tipo de gafete mal escrito, una persona registrada dos veces. **Dar de baja** lo esconde, pero lo deja en la lista de inactivos. **Eliminar definitivamente** lo borra para siempre, solo si **nadie lo ha usado**.
 
-Solo se puede si **nadie lo usa todavía**. Si ya tiene historial (préstamos, accesos, colaboradores…), la plataforma no lo borra: te dice qué lo usa y te ofrece darlo de baja.
+**Antes de empezar:** necesitas el permiso **Eliminar definitivamente** del módulo. Normalmente solo lo tiene el **Administrador** de la empresa. Si no ves el botón rojo, no lo tienes: pide a tu administrador que lo haga.
 
-> Por omisión solo el **Administrador** de la empresa puede eliminar definitivamente. Agentes, Supervisores, Jefes de seguridad y Recursos Humanos no ven el botón.
+Se puede en: Sedes, Zonas y áreas, Departamentos, Puestos, Turnos, Colaboradores, Roles, Empresas externas, Padrón de personas, Padrón vehicular, Catálogo de llaves, Gafetes, Equipos de seguridad, Equipos de Protección Civil, Estacionamientos y Rutas (con sus paraderos).
 
-## Dónde está
+**Nunca** se borran las bitácoras ni lo que sirve de evidencia: Accesos, Novedades, Préstamo de llaves, Responsivas, Pases de salida, Transporte, Vouchers y la Bitácora de auditoría. Empresas y Usuarios tampoco: esos se dan de baja.
 
-Abre el registro con **Editar** (el lápiz). Al pie de la ventana, debajo de los botones, aparece en rojo **Eliminar definitivamente**.
+## Cómo eliminar algo que nadie usa
 
-![Botón al pie de Editar](img/eliminar-definitivamente/01-boton-en-editar.png)
+1. Entra a la pantalla del registro, por ejemplo **Recursos Humanos → Catálogos → Departamentos**.
+2. Toca el **lápiz** (Editar) del registro equivocado.
+3. Al pie de la ventana, debajo de los botones, toca **Eliminar definitivamente** (en rojo).
 
-Está en: Sedes, Zonas y áreas, Departamentos, Puestos, Turnos, Colaboradores, Roles, Proveedores, Padrón de personas, Padrón vehicular, Catálogo de llaves, Gafetes, Equipos de seguridad, Equipos de Protección Civil, Estacionamientos, Rutas y Paraderos.
+   ![Botón al pie de la ventana Editar](img/eliminar-definitivamente/boton-en-editar.png)
 
-**Nunca** se pueden eliminar las bitácoras ni lo que sirve de evidencia: Accesos, Novedades (Lost & Found, Robo, Accidentes…), Préstamo de llaves, Responsivas, Pases de salida, Transporte, Vouchers y la Bitácora de auditoría. Tampoco Empresas ni Usuarios: esos se dan de baja.
+4. La ventana te recuerda que **Esto no se puede deshacer** y en **Para confirmar escribe:** te pide escribir el nombre o identificador (el nombre del departamento, las placas del vehículo, el número de empleado…). Escríbelo; no importan mayúsculas ni minúsculas.
+5. Cuando coincide, se activa el botón **Eliminar**. Tócalo.
 
-## Eliminar algo que nadie usa
+   ![Confirmar escribiendo el nombre](img/eliminar-definitivamente/confirmar.png)
 
-1. Toca **Eliminar definitivamente**.
-2. La ventana te recuerda que **no se puede deshacer** y te pide escribir el nombre o identificador (el código de la sede, las placas del vehículo, la nomenclatura de la llave, el número de empleado…).
+**Qué debes ver:** regresas a la lista con el aviso «… se eliminó definitivamente» y el registro ya no aparece.
 
-   ![Confirmar](img/eliminar-definitivamente/02-confirmar.png)
+Lo que era parte del registro se va con él: los horarios de una llave, las paradas de una ruta, los permisos de un rol, las sedes donde operaba una empresa externa.
 
-3. Escríbelo. No importan mayúsculas ni minúsculas. El botón **Eliminar** se activa cuando coincide.
+## Cómo saber por qué no se puede eliminar
 
-   ![Escrito](img/eliminar-definitivamente/03-confirmar-escrito.png)
+Si el registro ya se usó (tiene préstamos, accesos, colaboradores…), la ventana te dice **qué lo usa** y no borra nada.
 
-4. Toca **Eliminar**. Regresas a la lista con el aviso «… se eliminó definitivamente».
+![Registro en uso](img/eliminar-definitivamente/en-uso.png)
 
-   ![Eliminado](img/eliminar-definitivamente/08-eliminado.png)
+1. Lee la lista de lo que lo usa.
+2. Si de todos modos ya no debe usarse, toca **Dar de baja**: se desactiva y podrás reactivarlo cuando quieras.
+3. En llaves, gafetes y equipos la baja pide motivo (y a veces voucher): usa **Dar de baja** desde su ficha.
 
-Lo que era parte del registro se va con él: los horarios de una llave y los lugares que abre, los horarios y paradas de una ruta, los permisos de un rol, las sedes donde operaba un proveedor.
+**Qué debes ver:** el registro aparece como inactivo en su lista.
 
-## Cuando ya se usa
+## Cómo borrar tipos de gafete o de equipo mal escritos
 
-Si algo depende del registro, verás por qué y no se borra nada:
+1. Entra a **Padrones → Inventarios → Gafetes** (o **Equipos de seguridad**).
+2. Debajo de los filtros abre **Eliminar tipos de … sin usar**.
+3. Toca el **bote de basura** del tipo y confirma escribiendo su nombre, igual que arriba.
 
-![En uso](img/eliminar-definitivamente/04-en-uso-dar-de-baja.png)
+**Qué debes ver:** el tipo desaparece de la lista de tipos.
 
-- **Dar de baja** lo desactiva en ese momento (igual que el botón de desactivar de la ficha). Podrás reactivarlo cuando quieras.
-- En llaves, gafetes y equipos la baja pide motivo y quizá voucher, así que la ventana te indica usar **Dar de baja** de su ficha.
+## Si algo sale mal
 
-![Llave en uso](img/eliminar-definitivamente/05-llave-en-uso.png)
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| No veo **Eliminar definitivamente** | Tu rol no tiene ese permiso, o es una bitácora. | Pide a tu administrador que lo haga. |
+| «… está en uso» o «Tiene 3 préstamos de llave…: no se puede eliminar; puedes darla de baja» | El registro ya tiene historial. | Usa **Dar de baja**. |
+| El botón **Eliminar** sigue gris | Lo que escribiste no coincide. | Escribe el nombre exacto que muestra la ventana. |
+| No deja eliminar la sede | Es la única sede de la empresa. | Una empresa siempre necesita al menos una sede. |
+| No deja eliminar un rol | Tiene usuarios, es tu rol o es de tu nivel o superior. | Quita a los usuarios del rol o pide ayuda a un administrador. |
 
-Otros casos que no se pueden eliminar:
+## Preguntas frecuentes
 
-- La **única sede** de la empresa.
-- Un **rol** que tiene usuarios, tu propio rol o uno de tu nivel o superior, y las plantillas de la plataforma.
-- Algo de **otra sede** si tu permiso es solo de tu sede.
+- **¿Me equivoqué y lo borré, se puede recuperar?** No desde la pantalla. Pero queda una copia de todos sus datos en la **Bitácora de auditoría** (acción «Eliminado definitivo»); con ella se puede volver a capturar.
+- **¿Qué diferencia hay con «Eliminar» de la Matriz de permisos?** «Eliminar» es dar de baja (se puede reactivar). «Eliminar definitivamente» borra para siempre.
+- **¿El Agente puede eliminar?** No; consulta los padrones pero no ve ese botón.
+- **¿Puedo borrar algo de otra sede?** Solo si tu permiso es de toda la empresa.
 
-## Tipos de gafete y de equipo mal escritos
+## Relacionado
 
-En **Gafetes** y en **Equipos de seguridad**, debajo de los filtros, abre **Eliminar tipos de … sin usar**: aparecen los tipos que ningún gafete o equipo usa. Toca el bote de basura del tipo y confirma igual que arriba.
-
-![Tipos sin usar](img/eliminar-definitivamente/06-tipos-sin-usar.png)
-
-![Confirmar tipo](img/eliminar-definitivamente/07-tipo-confirmar.png)
-
-## ¿Y si me equivoqué?
-
-No se puede deshacer desde la pantalla. Pero queda una **copia completa** en la **Bitácora de auditoría** (módulo del registro, acción «Eliminado definitivo»): ahí están todos sus datos para volver a capturarlo.
-
-![Auditoría](img/eliminar-definitivamente/09-auditoria.png)
-
-## En el celular y en los modos Noche y Sol
-
-En el celular la confirmación sale abajo, con botones grandes.
-
-![Celular: botón](img/eliminar-definitivamente/12-celular-boton.png)
-![Celular: confirmar](img/eliminar-definitivamente/13-celular-confirmar.png)
-![Celular: en uso](img/eliminar-definitivamente/14-celular-en-uso.png)
-
-![Modo Noche](img/eliminar-definitivamente/10-noche.png)
-![Modo Sol](img/eliminar-definitivamente/11-sol.png)
-
-## Lo que ve el Agente
-
-El Agente consulta los padrones pero no ve ningún botón para eliminar.
-
-![Agente](img/eliminar-definitivamente/15-agente-sin-boton.png)
-
-## Permisos
-
-En **Matriz de permisos**, cada módulo de la lista de arriba tiene en «Otras acciones» **Eliminar definitivamente**. Es distinto de **Eliminar** (que en la plataforma es dar de baja). Para catálogos de toda la empresa (departamentos, puestos, turnos, roles, proveedores, personas, vehículos, tipos y sedes) hace falta con alcance **Toda la empresa**.
+- [Primeros pasos](primeros-pasos.md)
+- [Vouchers de reposición](vouchers.md)

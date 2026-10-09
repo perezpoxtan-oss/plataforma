@@ -147,7 +147,9 @@ class RecorridoPantallasTest extends TestCase
 
         foreach ($this->rutasGet() as $ruta) {
             // Lección 36: la bolsa de trabajo (/empleos) es pública a propósito (cualquiera ve las vacantes publicadas)
-            $conRegistro = $ruta->parameterNames() !== [] && $ruta->getName() !== 'modulos.pendiente' && ! str_starts_with((string) $ruta->getName(), 'empleos.');
+            // Lección 37: el Manual (páginas e imágenes de docs/usuario) no es de ninguna empresa
+            $conRegistro = $ruta->parameterNames() !== [] && $ruta->getName() !== 'modulos.pendiente' && ! str_starts_with((string) $ruta->getName(), 'empleos.')
+                && ! str_starts_with((string) $ruta->getName(), 'manual.');
             foreach ($this->urlsDe($ruta) as [$url, $json]) {
                 $visitas++;
                 $this->app['auth']->forgetGuards();
@@ -352,6 +354,10 @@ class RecorridoPantallasTest extends TestCase
                 ->map(fn ($c) => ['empresa' => DB::table('empresas')->where('id', $e)->value('bolsa_slug') ?? 'sin-bolsa-abc123', 'vacante' => $c])->all()
                 ?: [['empresa' => 'sin-bolsa-abc123', 'vacante' => 'abcdefghij']],
             // Fin Solicitud de empleo y Vacantes
+            // Manual (lección 37): páginas generales y de módulo, una imagen real y rutas que intentan salir de docs/usuario/img
+            'manual.ver' => [['pagina' => 'primeros-pasos'], ['pagina' => 'accesos'], ['pagina' => 'usuarios'], ['pagina' => 'guia'], ['pagina' => 'no-existe']],
+            'manual.imagen' => [['carpeta' => 'primeros-pasos', 'archivo' => 'acceso.png'], ['carpeta' => 'primeros-pasos', 'archivo' => '..env'],
+                ['carpeta' => 'img', 'archivo' => 'nada.svg']],
             default => null,
         };
 
@@ -397,6 +403,7 @@ class RecorridoPantallasTest extends TestCase
             'llaves.imprimir' => [[['llaves' => Llave::withoutGlobalScopes()->where('empresa_id', $this->empresa->id)->limit(3)->pluck('id')->all()], false]],
             'prestamo_llaves.index', 'responsivas.index', 'pases-salida.index', 'lost_found.archivo', 'robo.index', 'recorridos_pc.index' => [[['sede' => $sede], false], [['pestana' => 'historial'], false], [['q' => 'a'], false]],
             'usuarios.index', 'roles.index', 'permisos.index' => [[['q' => 'a'], false], [['rol' => 1], false]],
+            'manual.index' => [[['q' => 'llave'], false], [['q' => ['x']], false], [['q' => '<script>'], false]],
             default => [],
         };
     }

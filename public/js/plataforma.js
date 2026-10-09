@@ -8478,3 +8478,52 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Solicitud de empleo formal y Vacantes */
+/* ==========================================================================
+   Manual (lección 37): botón «?» junto al título, búsqueda del índice e
+   índice de la página plegado en el celular
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function normalizar(texto) {
+        return (texto || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // «?» del módulo de la pantalla: se pone al final del título (si la pantalla no tiene título, no aparece)
+        var ayuda = document.querySelector('[data-ayuda-contextual]');
+        var titulo = document.querySelector('.contenido .encabezado-pantalla h1');
+        if (ayuda && titulo) {
+            titulo.appendChild(ayuda);
+            ayuda.hidden = false;
+        }
+
+        // Índice «En esta página»: abierto en la PC, cerrado en el celular
+        var indice = document.querySelector('[data-manual-indice]');
+        if (indice && window.matchMedia('(max-width: 991.98px)').matches) {
+            indice.open = false;
+        }
+    });
+
+    // Búsqueda del índice: filtra títulos y resúmenes al escribir (sin acentos ni mayúsculas)
+    document.addEventListener('input', function (e) {
+        if (!e.target.matches('[data-manual-buscar]')) { return; }
+        var palabras = normalizar(e.target.value).split(/\s+/).filter(Boolean);
+        var secciones = document.querySelectorAll('[data-manual-seccion]');
+        var total = 0;
+        secciones.forEach(function (seccion) {
+            var visibles = 0;
+            seccion.querySelectorAll('[data-manual-pagina]').forEach(function (ficha) {
+                var texto = normalizar(ficha.getAttribute('data-texto'));
+                var coincide = palabras.every(function (p) { return texto.indexOf(p) !== -1; });
+                ficha.hidden = !coincide;
+                if (coincide) { visibles++; }
+            });
+            seccion.hidden = visibles === 0;
+            total += visibles;
+        });
+        var vacio = document.querySelector('[data-manual-sin-resultados]');
+        if (vacio) { vacio.hidden = total > 0 || secciones.length === 0; }
+    });
+})();
+/* Fin Manual */

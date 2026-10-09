@@ -1398,3 +1398,23 @@ html.modo-noche .dato-vacante { color: #fcd34d; }
 html.modo-noche .btn-whatsapp { color: #86efac; border-color: #166534; }
 html.modo-noche .bolsa-ver { color: #86efac; }
 /* Fin Solicitud de empleo formal y Vacantes */
+/* Manual (lección 37): Sol y Noche */
+html.modo-sol .manual-ficha, html.modo-sol .manual-indice-caja, html.modo-sol .manual-vecina, html.modo-sol .ayuda-contextual,
+html.modo-sol a.btn-alto-contraste.btn-manual { background: #fff; color: #000; border: 2px solid #000; box-shadow: none; }
+html.modo-sol .manual-ficha { border-left-width: 6px; }
+html.modo-sol .manual-ficha-resumen, html.modo-sol .manual-seccion-titulo, html.modo-sol .manual-seccion-titulo i, html.modo-sol .manual-migas,
+html.modo-sol .manual-vecina small, html.modo-sol .manual-ayuda, html.modo-sol .manual-indice-caja a { color: #000; }
+html.modo-sol .manual-ayuda { border: 2px dashed #000; }
+html.modo-sol .manual-ficha:hover, html.modo-sol .ayuda-contextual:hover, html.modo-sol .manual-vecina:hover { background: #facc15; }
+html.modo-sol .manual-contenido img, html.modo-sol .manual-contenido table.manual-tabla th, html.modo-sol .manual-contenido table.manual-tabla td { border: 2px solid #000; }
+html.modo-sol .manual-contenido blockquote { background: #fff; border-left: 6px solid #000; }
+html.modo-sol .manual-contenido a, html.modo-sol .manual-migas-regresar { color: #000; text-decoration: underline; }
+html.modo-noche .manual-ficha, html.modo-noche .manual-indice-caja, html.modo-noche .manual-vecina, html.modo-noche .ayuda-contextual { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .manual-ficha { border-left-color: #60a5fa; }
+html.modo-noche .ayuda-contextual { color: #93c5fd; }
+html.modo-noche .manual-indice-caja a, html.modo-noche .manual-vecina span { color: var(--texto); }
+html.modo-noche .manual-contenido blockquote { background: rgba(245, 158, 11, 0.12); color: var(--texto); }
+html.modo-noche .manual-contenido code, html.modo-noche .manual-contenido table.manual-tabla th { background: var(--superficie-2); }
+html.modo-noche .manual-contenido img { border-color: var(--borde); }
+html.modo-noche .manual-contenido a, html.modo-noche .manual-migas-regresar, html.modo-noche .manual-contenido ol > li::marker { color: #93c5fd; }
+/* Fin Manual */

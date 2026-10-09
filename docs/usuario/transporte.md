@@ -1,116 +1,108 @@
+---
+titulo: Bitácora de transporte
+modulos: [transporte]
+seccion: Operación
+orden: 40
+resumen: Anotar las llegadas y salidas del transporte de personal y los taxis cuando la unidad no llega.
+---
 # Bitácora de transporte
 
-Operación → **Bitácora de transporte**. Aquí la caseta anota cada **llegada** y **salida** del transporte de personal, y cuando la unidad **no llega**, los **taxis** que se pagaron con caja chica (con su vale para imprimir).
+**¿Para qué sirve?** Aquí la caseta anota cada **llegada** y **salida** del transporte de personal y, cuando la unidad **no llega**, los **taxis** que se pagaron con caja chica, con su vale para imprimir.
 
-## 1. La lista
+**Antes de empezar:** necesitas que tu rol pueda **ver** y **crear** en Bitácora de transporte. Las rutas y sus horarios se dan de alta antes en [Rutas de transporte](rutas.md). Si no ves **Registrar Movimiento**, pide a tu administrador que revise tu rol.
 
-Al entrar ves los movimientos de **hoy**. Arriba tienes:
+## Cómo leer la lista
 
-- **Fecha Inicio** y **Fecha Fin**, y los atajos **Hoy**, **Ayer** y **Últimos 7 días**.
-- Búsqueda por placas, chofer, ruta o pasajero, y filtros por sede, tipo (llegadas o salidas), estatus y estado (vigentes, anulados o vales sin Vo.Bo.). En el celular están en **Más filtros**.
-- **Exportar Excel** (si tienes permiso) y **Reportes Avanzados**.
-- Un resumen: movimientos, a tiempo, retrasos, taxis y gasto en taxis.
+1. Entra a **Operación → Caseta → Bitácora de transporte**.
+2. Al entrar ves los movimientos de **hoy**. Cambia las fechas con **Fecha Inicio** y **Fecha Fin**, o toca **Hoy**, **Ayer** o **Últimos 7 días**.
+3. Busca por placas, chofer, ruta o pasajero y filtra por sede, tipo, estatus y estado (en el celular, en **Más filtros**).
 
-![Lista de la bitácora](img/transporte/01-lista.png)
+![Lista de la bitácora](img/transporte/lista.png)
 
-Cada tarjeta muestra **LLEGADA** (verde) o **SALIDA** (amarillo), la hora, el folio, la ruta y su hora programada, la sede, la unidad, el chofer y los pasajeros. Las tarjetas **rojas** son taxis: muestran el pago, el destino y si ya tienen el **Vo.Bo.** Una tarjeta gris está **ANULADA**.
+**Qué debes ver:** cada tarjeta dice **LLEGADA** (verde) o **SALIDA** (amarillo), la hora, la ruta, la unidad, el chofer y los pasajeros. Las tarjetas **rojas** son taxis, con su pago, destino y si tienen el **Vo.Bo.** Arriba hay un resumen: movimientos, a tiempo, retrasos y gasto en taxis.
 
-![Tarjeta de un taxi](img/transporte/01b-tarjeta-taxi.png)
-
-Botones de cada tarjeta: ver detalle (ojo), editar (lápiz) y anular (círculo tachado) o reactivar (flecha).
-
-## 2. Registrar una llegada o salida normal
+## Cómo registrar una llegada o salida
 
 1. Toca **Registrar Movimiento**.
-2. Si atiendes una sola sede, ya está elegida. Si no, elige la **Sede**.
-3. **Tipo de Movimiento**: LLEGADA (a la sede) o SALIDA (hacia paraderos). El sistema ya propone el más probable por la hora.
-4. **Estatus del Servicio**: *A Tiempo* o *Con Retraso*.
-5. **Ruta**: ya viene elegida la ruta más cercana a la hora actual. Cámbiala si no es esa. Abajo ves la empresa transportista y el tope por taxi.
-6. **Datos de la Unidad** (todo opcional): placas, chofer y número de pasajeros. Si las placas o el chofer ya están registrados, aparecen en la lista y se llenan solos marca, modelo, número económico, capacidad y teléfono. Si los pasajeros superan la capacidad sale un aviso de **sobrecupo**.
-7. Toca **Guardar Registro Operativo**. Si vas a capturar otra unidad, usa **Registrar y capturar siguiente**: se guarda y la ventana se abre otra vez con la misma sede y tipo.
+2. Revisa la **Sede** (si atiendes una sola, ya viene elegida).
+3. En **Tipo de Movimiento** elige **LLEGADA** o **SALIDA** (ya viene el más probable por la hora).
+4. En **Estatus del Servicio** elige **SERVICIO NORMAL (A Tiempo)** o **SERVICIO NORMAL (Con Retraso)**.
+5. Revisa la **Ruta**: ya viene la más cercana a la hora actual.
+6. Si quieres, escribe placas, chofer y número de pasajeros. Si ya están registrados, aparecen en la lista y se llenan solos los demás datos.
+7. Toca **Guardar Registro Operativo**, o **Registrar y capturar siguiente** si viene otra unidad.
 
-![Alta normal](img/transporte/02-alta-normal.png)
-![Datos de la unidad con autollenado](img/transporte/02b-alta-unidad.png)
+![Registrar un movimiento](img/transporte/registrar.png)
 
-## 3. La unidad no llegó: taxis
+**Qué debes ver:** la tarjeta nueva en la lista. Si los pasajeros pasan la capacidad de la unidad, sale un aviso de **sobrecupo**.
+
+Mientras escribes las placas o el chofer, la ventana te muestra los parecidos del padrón: si es uno de ellos, **tócalo**; si no, sigue escribiendo y se registrará como nuevo (pendiente de verificar).
+
+## Cómo registrar taxis cuando la unidad no llegó
 
 1. En **Estatus del Servicio** elige **FALLA DE FLETERA (Uso de Taxis)**. Aparece el **Taxi 1**.
-2. Captura **Placas**, **Nombre Conductor**, **Monto Vale ($)** y **Destino** (el paradero; si no existe en la lista, se agrega solo).
-3. Si el monto pasa del tope de la ruta, aparece un aviso amarillo y debes escribir la **justificación**.
-4. **Pasajeros de este Taxi**: escanea el gafete del colaborador (o escribe su número de empleado: aparece solo, sin Enter). Se agrega como una ficha; escanea al siguiente. Para quitar a alguien toca la **×**. Si la persona no aparece, toca **¿No aparece? Alta provisional**: Recursos Humanos la validará después.
-5. El conductor firma en **Firma del taxista** y tú en **Firma del guardia** (si tu usuario no firma en pantalla, el vale impreso trae las líneas para firmar a mano).
-6. ¿Fueron varios taxis? Toca **Añadir otro Taxi**. Con el bote de basura quitas uno (siempre queda al menos uno).
-7. Guarda. Se crea **un vale por taxi** y aparecen los botones para **imprimir cada vale**. Si la empresa lo activó, cada vale se envía por correo para su autorización.
+2. Escribe **Placas**, **Nombre Conductor**, **Monto Vale ($)** y **Destino** (el paradero).
+3. Si el monto pasa del tope de la ruta, escribe la **justificación** (aviso amarillo).
+4. En **Pasajeros de este Taxi** escanea el gafete de cada colaborador o escribe su número de empleado. Para quitar a alguien toca la **×**. Si no aparece, toca **¿No aparece? Alta provisional**.
+5. Pide al conductor que firme en **Firma del taxista** y firma tú en **Firma del guardia**.
+6. ¿Fueron varios taxis? Toca **Añadir otro Taxi** y repite.
+7. Guarda.
 
-![Taxi con monto arriba del tope](img/transporte/03-alta-taxi.png)
-![Segundo taxi](img/transporte/03b-segundo-taxi.png)
+![Registrar taxis](img/transporte/taxi.png)
 
-Si falta algo, los avisos aparecen **dentro de la ventana**, taxi por taxi, y no pierdes lo capturado (solo hay que volver a firmar):
+**Qué debes ver:** se crea **un vale por taxi** y aparecen los botones para imprimir cada uno. Si algo falta, el aviso sale **dentro de la ventana**, en el taxi que corresponde (solo tendrás que volver a firmar).
 
-![Errores dentro de la ventana](img/transporte/04-error-en-dialogo.png)
-![Vales registrados](img/transporte/05-vales-registrados.png)
+## Cómo imprimir el vale de caja chica
 
-## 4. Detalle, edición y Vo.Bo.
+1. En la tarjeta del taxi toca el **ojo** (detalle).
+2. Toca **Imprimir Planilla**.
 
-El **ojo** abre el detalle: horario programado, transportista, tope, trazas (quién registró, editó, autorizó o anuló) y las **firmas**.
+![Vale de caja chica](img/transporte/vale.png)
 
-![Detalle de un vale](img/transporte/06-detalle.png)
+**Qué debes ver:** el «VALE DE CAJA CHICA - TAXI DE OPERACIÓN» con tres copias (Contabilidad / Caja chica, Control interno de caseta y Operador de taxi), las firmas y el Vo.Bo. si ya lo tiene.
 
-**Editar** solo corrige: en un servicio normal, el número de pasajeros, *A tiempo / Retraso* y observaciones; en un taxi, el monto, el destino, la justificación, los pasajeros y observaciones. Si se equivocaron de ruta, unidad o chofer, **anula** el registro y captúralo de nuevo.
+## Cómo corregir, anular o autorizar
 
-![Editar un taxi](img/transporte/07-editar.png)
+1. **Corregir:** toca el **lápiz**. En un servicio normal solo se cambian pasajeros, a tiempo / retraso y observaciones; en un taxi, monto, destino, justificación, pasajeros y observaciones.
+2. **Anular:** toca el **círculo tachado** y confirma. El registro queda gris como **ANULADO** (se puede **reactivar**).
+3. **Autorizar un vale:** quien tiene permiso ve **Autorizar (Vo.Bo.)** en los vales pendientes. Un vale autorizado ya no se edita.
 
-Quien autoriza (por ejemplo el Director) ve **Autorizar (Vo.Bo.)** en los vales pendientes. Un vale autorizado ya no se edita. Anular no borra: el registro queda en el historial y se puede **reactivar**.
+**Qué debes ver:** la tarjeta cambia de estado. Si te equivocaste de ruta, unidad o chofer, anula y captura de nuevo.
 
-## 5. Vale de caja chica
+## Cómo sacar reportes
 
-**Imprimir Planilla** abre el «VALE DE CAJA CHICA - TAXI DE OPERACIÓN»: tres copias en una hoja (Contabilidad / Caja chica, Control interno de caseta y Operador de taxi), con las firmas capturadas y el Vo.Bo. si ya lo tiene.
+1. Toca **Reportes Avanzados**.
+2. Filtra por sede, fechas, estatus y proveedor.
+3. Toca **Exportar Excel** para bajar lo mismo en un archivo de Excel (CSV).
 
-![Vale de caja chica](img/transporte/08-vale.png)
+![Reportes avanzados](img/transporte/reportes.png)
 
-## 6. Reportes y exportación
+**Qué debes ver:** los totales solo cuentan registros vigentes (no anulados).
 
-**Reportes Avanzados** filtra por sede, fechas, estatus y proveedor (la empresa transportista de la ruta), con 25 registros por página. Los totales cuentan solo los registros vigentes. **Exportar (mismos filtros)** descarga un archivo que abre en Excel.
+## En el celular
 
-![Reportes](img/transporte/09-reportes.png)
+![Bitácora de transporte en el celular](img/transporte/celular.png)
 
-## 7. A quién le llega el correo de cada vale
+## Si algo sale mal
 
-En Dirección → **Configuración** → *Avisos por correo*, marca **Enviar cada vale de taxi…** y escribe los correos (uno por línea). Si lo dejas vacío, se envía a quienes pueden autorizar vales en esa sede.
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| «Elige el estatus del servicio: A tiempo, Con retraso o No llegó (uso de taxis).» | Falta el estatus. | Toca una de las tres opciones. |
+| «Falta la firma del guardia: firma en el recuadro antes de guardar.» | No firmaste. | Firma en el recuadro y guarda. |
+| «Falta el destino (paradero).» | El taxi no tiene destino. | Escribe o elige el paradero. |
+| «Debe quedar al menos un colaborador registrado.» | El taxi no tiene pasajeros. | Escanea al menos un gafete. |
+| ««…» ya va en el Taxi 1.» | Pusiste a la misma persona en dos taxis. | Quítala de uno. |
+| «Este vale ya tiene el Vo.Bo. de autorización: ya no se puede editar.» | El vale ya se autorizó. | Pide a quien lo autorizó que lo revise. |
+| «En un servicio normal solo se puede corregir entre A TIEMPO y RETRASO…» | Querías cambiar a taxis desde editar. | Anula el registro y captura los taxis. |
 
-![Configuración de avisos](img/transporte/10-configuracion-avisos.png)
+## Preguntas frecuentes
 
-## 8. En el celular, modo Sol y modo Noche
+- **¿Tengo que llenar placas y chofer?** No es obligatorio en un servicio normal, pero ayuda a llevar el control.
+- **¿Qué pasa si el guardia no firma en pantalla?** El vale impreso trae las líneas para firmar a mano.
+- **¿A quién le llega el correo del vale?** A las personas que el administrador puso en **Estructura → Configuración → Avisos por correo**.
+- **¿Puedo borrar un registro?** No; se anula y queda en el historial.
 
-Todo funciona en el celular: botones grandes, el lector abre la cámara para leer el QR del gafete y en Android también lee NFC.
+## Relacionado
 
-![Lista en el celular](img/transporte/11-movil-lista.png)
-![Alta en el celular](img/transporte/12-movil-alta.png)
-![Taxi en el celular](img/transporte/13-movil-taxi.png)
-![Botones en el celular](img/transporte/13b-movil-botones.png)
-![Vale en el celular](img/transporte/14-movil-vale.png)
-
-![Modo Noche](img/transporte/15-noche-lista.png)
-![Modo Sol](img/transporte/15-sol-lista.png)
-![Alta en modo Noche](img/transporte/16-noche-alta.png)
-![Alta en modo Sol](img/transporte/16-sol-alta.png)
-![Reportes en modo Noche](img/transporte/17-noche-reportes.png)
-![Reportes en modo Sol](img/transporte/17-sol-reportes.png)
-
-## 9. Lo que ve un Agente
-
-El Agente ve y registra solo en **su sede**, firma en pantalla y corrige registros; no anula, no autoriza vales ni exporta.
-
-![Vista del Agente](img/transporte/18-agente-lista.png)
-
-## 10. «¿Es alguno de estos?» mientras escribes (Ronda 5)
-
-Al escribir las **Placas** o el **Chofer** (también en cada taxi), si lo que escribes no está tal cual en la lista, la ventana te muestra los parecidos del padrón, igual que en Control de accesos:
-
-![Placas parecidas](img/ronda-5b/transporte-parecidos-placas.png)
-
-![Chofer parecido](img/ronda-5b/transporte-parecidos-chofer.png)
-
-- Si es uno de ellos, **tócalo**: se escribe solo y se llenan marca, modelo y teléfono.
-- Si no es ninguno, **sigue capturando**: al guardar se registra como nuevo y queda **pendiente de verificar**.
-- La tecla **Esc** cierra la lista.
+- [Rutas de transporte](rutas.md)
+- [Colaboradores](colaboradores.md)
+- [Altas por verificar](altas-por-verificar.md)

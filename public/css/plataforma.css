@@ -3912,3 +3912,98 @@ html.filtros-automaticos form[data-autoenviar] button[type="submit"]:not([data-m
 .bolsa-lista-puntos { padding-left: 1.2rem; }
 .campo-trampa { position: absolute !important; left: -10000px !important; width: 1px; height: 1px; overflow: hidden; }
 /* Fin Solicitud de empleo formal y Vacantes */
+/* Manual (lección 37): ayuda dentro de la plataforma */
+a.btn-alto-contraste.btn-manual { text-decoration: none; color: var(--texto-suave); }
+a.btn-alto-contraste.btn-manual:hover, a.btn-alto-contraste.btn-manual.activo { color: var(--color-primario); border-color: var(--color-primario); background: var(--color-primario-suave); }
+/* Con el botón del Manual la barra de la PC ya no cabía (su ancho máximo es 1400 px): menos espacio entre botones y «Mis pendientes» solo con ícono y número */
+@media (min-width: 992px) {
+    .barra-pc-menu { gap: 1.5rem; }
+    .barra-pc-acciones { gap: 0.5rem; }
+    .barra-pc-acciones .mis-pendientes-texto { display: none; }
+}
+.ayuda-contextual { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-left: 0.5rem; vertical-align: middle; border-radius: 50%; border: 1px solid var(--borde); background: #fff; color: var(--color-primario); font-size: 1.1rem; text-decoration: none; position: relative; }
+.ayuda-contextual::after { content: ''; position: absolute; inset: -4px; }
+.ayuda-contextual:hover, .ayuda-contextual:focus-visible { background: var(--color-primario); color: #fff; border-color: var(--color-primario); }
+.pantalla-manual { max-width: 1200px; margin: 0 auto; }
+.manual-buscador { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; max-width: 760px; }
+.manual-buscador .buscador { flex: 1 1 auto; margin: 0; max-width: none; }
+.manual-buscador .buscador input { min-height: 48px; width: 100%; }
+.manual-buscador-boton { min-height: 48px; padding: 0 1.25rem; font-weight: 700; border-radius: 12px; }
+.manual-seccion { margin-bottom: 1.5rem; }
+.manual-seccion-titulo { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--texto-suave); margin: 0 0 0.6rem; display: flex; align-items: center; gap: 0.45rem; }
+.manual-seccion-titulo i { color: var(--color-primario); font-size: 1rem; }
+.manual-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
+.manual-ficha { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; column-gap: 0.75rem; padding: 0.9rem 1rem; min-height: 72px; text-decoration: none; color: var(--texto); border-left: 4px solid var(--color-primario); transition: box-shadow 0.15s ease, border-color 0.15s ease; }
+.manual-ficha:hover, .manual-ficha:focus-visible { box-shadow: 0 12px 24px -12px color-mix(in srgb, var(--color-primario) 35%, transparent); border-color: var(--color-primario); }
+.manual-ficha[hidden], .manual-seccion[hidden] { display: none; }
+.manual-ficha-titulo { font-weight: 800; font-size: 1rem; overflow-wrap: anywhere; }
+.manual-ficha-resumen { grid-column: 1; font-size: 0.85rem; color: var(--texto-suave); line-height: 1.35; overflow-wrap: anywhere; }
+.manual-ficha-flecha { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--texto-tenue); }
+.manual-ayuda { display: flex; gap: 0.75rem; align-items: flex-start; padding: 1rem; margin-top: 1rem; border: 1px dashed var(--borde); border-radius: 14px; color: var(--texto-suave); font-size: 0.9rem; }
+.manual-ayuda > i { font-size: 1.4rem; color: var(--color-primario); }
+.manual-ayuda strong { display: block; color: var(--texto); }
+.manual-ayuda-dato { font-weight: 700; color: var(--texto); overflow-wrap: anywhere; }
+.manual-migas { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--texto-suave); margin-bottom: 0.75rem; }
+.manual-migas-regresar { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; font-weight: 700; color: var(--color-primario); text-decoration: none; }
+.manual-cabeza { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
+.manual-imprimir { min-height: 44px; flex-shrink: 0; font-weight: 700; border-radius: 12px; }
+.manual-cuerpo { display: block; }
+.manual-cuerpo.con-indice { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.manual-indice { position: sticky; top: 90px; }
+.manual-indice-caja { background: #fff; border: 1px solid var(--borde); border-radius: 14px; padding: 0.75rem 1rem; }
+.manual-indice-caja summary { font-weight: 800; font-size: 0.85rem; cursor: pointer; min-height: 32px; display: flex; align-items: center; gap: 0.4rem; }
+.manual-indice-caja ol { margin: 0.5rem 0 0; padding-left: 1.2rem; font-size: 0.88rem; }
+.manual-indice-caja li { margin: 0.15rem 0; }
+.manual-indice-caja a { color: var(--texto); text-decoration: none; display: inline; line-height: 1.9; }
+.manual-indice-caja a:hover { color: var(--color-primario); text-decoration: underline; }
+.manual-contenido { padding: 1.5rem 1.75rem; font-size: 1rem; line-height: 1.65; overflow-wrap: anywhere; min-width: 0; }
+.manual-contenido > :first-child { margin-top: 0; }
+.manual-contenido h2 { font-size: 1.35rem; font-weight: 800; margin: 2rem 0 0.75rem; padding-top: 1rem; border-top: 1px solid var(--borde); scroll-margin-top: 90px; }
+.manual-contenido h3 { font-size: 1.1rem; font-weight: 800; margin: 1.5rem 0 0.5rem; scroll-margin-top: 90px; }
+.manual-contenido p, .manual-contenido ul, .manual-contenido ol { margin-bottom: 0.9rem; }
+.manual-contenido ol > li, .manual-contenido ul > li { margin-bottom: 0.35rem; }
+.manual-contenido ol > li::marker { font-weight: 800; color: var(--color-primario); }
+.manual-contenido strong { font-weight: 800; }
+.manual-contenido a { color: var(--color-primario); font-weight: 600; }
+.manual-contenido img { display: block; max-width: 100%; height: auto; margin: 0.75rem 0 1.25rem; border: 1px solid var(--borde); border-radius: 12px; box-shadow: 0 8px 20px -12px rgba(15, 23, 42, 0.25); }
+.manual-contenido blockquote { margin: 1rem 0; padding: 0.75rem 1rem; border-left: 4px solid #f59e0b; background: #fffbeb; border-radius: 0 10px 10px 0; }
+.manual-contenido blockquote > :last-child { margin-bottom: 0; }
+.manual-contenido code { background: var(--fondo); border: 1px solid var(--borde); border-radius: 6px; padding: 0.05rem 0.35rem; font-size: 0.9em; color: inherit; }
+.manual-contenido table.manual-tabla { display: block; width: 100%; overflow-x: auto; border-collapse: collapse; margin: 0.75rem 0 1.25rem; font-size: 0.92rem; }
+.manual-contenido table.manual-tabla th, .manual-contenido table.manual-tabla td { border: 1px solid var(--borde); padding: 0.5rem 0.65rem; vertical-align: top; min-width: 140px; }
+.manual-contenido table.manual-tabla th { background: var(--fondo); font-weight: 800; text-align: left; }
+.manual-enlace-sin-acceso { font-weight: 600; }
+.manual-vecinas { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1.25rem; }
+.manual-vecina { display: flex; flex-direction: column; padding: 0.8rem 1rem; min-height: 64px; text-decoration: none; color: var(--texto); }
+.manual-vecina small { color: var(--texto-suave); font-weight: 700; }
+.manual-vecina span { font-weight: 800; overflow-wrap: anywhere; }
+.manual-vecina.siguiente { grid-column: 2; text-align: right; }
+@media (max-width: 991.98px) {
+    .manual-cuerpo.con-indice { display: block; }
+    .manual-indice { position: static; margin-bottom: 1rem; }
+    .manual-indice-caja summary { min-height: 44px; }
+}
+@media (max-width: 575.98px) {
+    .manual-cabeza { flex-direction: column; align-items: stretch; }
+    .manual-imprimir { display: none; }
+    .manual-contenido { padding: 1.1rem 1rem; font-size: 1rem; }
+    .manual-contenido h2 { font-size: 1.2rem; }
+    .manual-lista { grid-template-columns: 1fr; }
+    .manual-buscador-boton { display: none; }
+    .manual-vecinas { grid-template-columns: 1fr; }
+    .manual-vecina.siguiente { grid-column: 1; }
+    .ayuda-contextual { width: 40px; height: 40px; }
+}
+@media print {
+    body:has(.pantalla-manual) .barra-pc-contenedor, body:has(.pantalla-manual) .cabecera-movil, body:has(.pantalla-manual) .barra-inferior,
+    body:has(.pantalla-manual) .pie-pc, .pantalla-manual .no-imprimir { display: none !important; }
+    body:has(.pantalla-manual) .contenido { padding: 0 !important; margin: 0 !important; }
+    .pantalla-manual { max-width: 100%; }
+    .manual-cuerpo.con-indice { display: block; }
+    .manual-contenido { border: none; box-shadow: none; padding: 0; font-size: 11pt; }
+    .manual-contenido h2 { break-after: avoid; }
+    .manual-contenido img { max-height: 120mm; width: auto; break-inside: avoid; box-shadow: none; }
+    .manual-contenido table.manual-tabla { display: table; }
+    .manual-contenido a { color: inherit; text-decoration: none; }
+}
+/* Fin Manual */

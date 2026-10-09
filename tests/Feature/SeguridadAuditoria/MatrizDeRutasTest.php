@@ -31,7 +31,9 @@ class MatrizDeRutasTest extends TestCase
     /** Rutas sin datos de nadie, abiertas a toda sesión. */
     private const LIBRES = ['panel', 'sesion.latido',
         // Centro de notificaciones (ADR-0007): solo las del propio usuario
-        'notificaciones.index', 'notificaciones.resumen', 'notificaciones.leer-todas'];
+        'notificaciones.index', 'notificaciones.resumen', 'notificaciones.leer-todas',
+        // Manual (lección 37): toda sesión lo abre; cada página se filtra por los módulos que el usuario puede ver
+        'manual.index', 'manual.ver', 'manual.imagen'];
 
     protected function setUp(): void
     {
@@ -105,7 +107,7 @@ class MatrizDeRutasTest extends TestCase
         foreach ($this->rutasConSesion() as $ruta) {
             $nombre = (string) $ruta->getName();
             // Sin registro en la ruta: parámetros que no son de la empresa (módulo, respaldo de la plataforma)
-            if ($ruta->parameterNames() === [] || in_array($nombre, ['modulos.pendiente', 'configuracion.respaldos.descargar'], true)) {
+            if ($ruta->parameterNames() === [] || in_array($nombre, ['modulos.pendiente', 'configuracion.respaldos.descargar', 'manual.ver', 'manual.imagen'], true)) {
                 continue;
             }
             $real = $this->uri($ruta);

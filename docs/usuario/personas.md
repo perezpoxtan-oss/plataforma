@@ -1,120 +1,134 @@
+---
+titulo: Padrón de personas
+modulos: [visitantes]
+seccion: Padrones
+orden: 20
+resumen: Registrar antes de que lleguen a visitantes, personal de proveedores y contratistas.
+---
+
 # Padrón de personas
 
-El registro previo de las personas externas que entran a la empresa: **Padrones → Padrón de personas**. Aquí están los visitantes (generales, candidatos de Recursos Humanos y familiares), el personal de los proveedores y los contratistas. La caseta los busca aquí para registrar su acceso sin capturar todo cada vez.
+**¿Para qué sirve?** Aquí se registran **antes de que lleguen** las personas externas que entran a la sede: visitantes (generales, candidatos de Recursos Humanos y familiares), el personal de los proveedores y los contratistas. Así, en la caseta solo se buscan y se registra su entrada sin volver a capturar todo.
 
 ![Padrón de personas](img/personas/01-lista.png)
 
-Cada ficha muestra:
+## Antes de empezar
 
-- **Tipo** (arriba a la izquierda): *Visitante general*, *Candidato/Prospecto*, *Familiar/Personal*, *Proveedor* o *Contratista*, cada uno con su color.
-- **ACTIVO** o **BAJA**.
-- **Viene de:** la empresa que representa o de donde viene.
-- **Identificación:** tipo y folio. Si tu rol solo consulta el padrón, el folio se ve oculto (por ejemplo, `INE: ••••H800`).
-- El motivo de la visita y quién la registró o editó, con fecha y hora.
+- Para **ver** el padrón necesitas que tu rol pueda consultar el *Padrón de personas*. Si no lo ves en el menú, pide a tu administrador que te dé ese permiso.
+- Para **registrar**, **editar** o **dar de baja** necesitas además esos permisos. Si no ves el botón **Registrar Persona** o el botón **Editar Perfil**, tu rol solo puede consultar.
+- Si tu rol solo consulta, el folio de la identificación se ve oculto (por ejemplo `INE: ••••1234`). Es normal: protege los datos de la persona.
 
-## Buscar y filtrar
+## Cómo encontrar a una persona
 
-- Escribe en el buscador un nombre, una empresa o un folio.
-- Toca **Visitantes**, **Proveedores** o **Contratistas** para ver solo ese tipo; **Todos** los vuelve a mostrar.
-- Con la lista de categorías ves solo a los *Visitantes generales*, *Candidatos/prospectos* o *Familiares*.
+1. Entra a **Padrones → Padrón de personas**.
+2. Escribe en el buscador **Buscar por nombre, folio o empresa...** parte del nombre, el folio o la empresa.
+3. Si quieres ver solo un tipo, toca **Visitantes**, **Proveedores** o **Contratistas**. **Todos** vuelve a mostrar a todos.
+4. Para los visitantes, usa la lista **Todas las categorías** y elige *Visitante general*, *Candidato/prospecto* o *Familiar/personal*.
+5. El botón **Pendientes de verificar** muestra las personas que la caseta registró al momento y que aún nadie revisa (ver [Altas por verificar](altas-por-verificar.md)).
 
 ![Filtro de contratistas](img/personas/02-filtro-contratistas.png)
 
-## Registrar una persona
+**Qué debes ver:** solo las fichas que coinciden. Cada ficha muestra el **tipo** (con su color), si está **ACTIVO** o en **BAJA**, la identificación, el motivo de la visita y quién la registró o editó, con fecha y hora.
 
-1. Toca **Registrar Persona**.
-2. Escribe el **Nombre Completo** y elige el **Tipo**.
-3. Si es **Visitante**, elige su **Categoría**: visitante general, candidato/prospecto (viene a una entrevista) o familiar/personal.
-4. Si es **Proveedor** o **Contratista**, elige en **Empresa que representa** la empresa del directorio de proveedores. Si no aparece, déjalo en *No está en el directorio* y escribe su nombre en **Empresa de procedencia**.
-5. **Identificación:** elige el tipo (INE, pasaporte, licencia…) y escribe el **folio**. Puedes escribirlo con espacios o guiones: se guardan solos sin ellos.
-6. **Teléfono** (opcional): de 10 a 15 dígitos; puedes escribir espacios, guiones o paréntesis.
-7. **Motivo de la Visita** (opcional).
-8. Toca **Guardar en Padrón**. La lista se recarga y la ficha nueva queda resaltada.
+## Cómo registrar una persona
+
+1. Toca la tarjeta **Registrar Persona** (la primera de la lista).
+2. Escribe el **Nombre Completo**.
+3. Elige el **Tipo**: *Visitante*, *Proveedor* o *Contratista*.
+4. Si es **Visitante**, elige la **Categoría del Visitante**: *Visitante general*, *Candidato/prospecto* (viene a una entrevista) o *Familiar/personal*.
+5. Si es **Proveedor** o **Contratista**, elige en **Empresa que representa** su empresa. La lista cambia según el tipo:
+   - *Contratista*: solo aparecen las empresas registradas como contratistas.
+   - *Proveedor*: aparecen proveedores, transporte, agencias y taxis.
+   - Si la empresa no aparece, deja **-- No está en el directorio de proveedores --** y escribe su nombre en **Empresa de procedencia**.
+6. En **Identificación** elige el documento (INE, Pasaporte, Licencia de conducir, CURP, Cédula profesional, Credencial IMSS u Otra) y escribe el **Folio / Número**. Puedes escribirlo con espacios o guiones: se quitan solos.
+7. **Teléfono** (opcional): de 10 a 15 dígitos. Puedes escribir espacios, guiones o paréntesis.
+8. **Motivo de la Visita** (opcional): por ejemplo «Entrega de mercancía».
+9. Toca **Guardar en Padrón**.
 
 ![Registrar persona](img/personas/03-alta.png)
 
-![Contratista con su empresa](img/personas/04-alta-contratista.png)
+**Qué debes ver:** el mensaje verde «Persona «Juan Pérez» registrada correctamente.» y la ficha nueva resaltada en la lista.
 
-### Si el folio ya existe
+### Avisos mientras escribes
 
-Un folio de identificación no puede repetirse en tu empresa. Si ya lo tiene alguien, el aviso te dice **quién** (por ejemplo, «Laura Méndez Ríos» (Visitante)). Búscala en la lista: probablemente ya está registrada.
+No tienes que esperar a guardar para saber si la persona ya existe:
 
-![Folio repetido](img/personas/06-folio-duplicado.png)
+- **Caja roja debajo del folio:** «Ese folio ya está registrado en la empresa (los espacios y guiones no cuentan). No se puede repetir.» Abajo dice de quién es. No podrás guardar: busca a esa persona en la lista. Si está dada de baja y puedes reactivarla, aparece el botón **Reactivar**: úsalo en lugar de registrarla otra vez.
+- **Caja amarilla debajo del nombre:** «Ya hay personas con un nombre parecido. Revisa que no sea la misma antes de registrarla:». Es solo un aviso (dos personas pueden llamarse igual): revisa la lista y, si no es la misma, guarda normalmente.
+- **Verde:** «Folio disponible.»
 
-## Registrar al personal de un proveedor
+![Avisos de nombre parecido y folio repetido](img/personas/15-folio-y-nombre.png)
 
-Desde la ficha de un proveedor, el botón para agregar personal abre aquí el alta con la empresa y el tipo ya elegidos (contratista o proveedor, según la empresa) y el aviso «Registrando personal de …». La empresa queda **fija** (con un candado: no se puede cambiar por otra). Al guardar **o al cerrar** la ventana regresas a la ficha del proveedor.
+## Cómo registrar al personal de una empresa externa
 
-![Desde la ficha del proveedor](img/personas/07-desde-proveedor.png)
+1. Entra a **Padrones → Empresas externas** y toca **Ficha** en la empresa.
+2. En la parte de personal toca **Agregar persona**.
+3. Se abre **Registrar Persona** con la empresa ya puesta y el aviso «Registrando personal de …». La empresa queda fija (no se puede cambiar).
+4. Llena el resto de los datos y toca **Guardar en Padrón**.
 
-## Editar
+![Desde la ficha de la empresa externa](img/personas/16-desde-empresa-externa.png)
 
-Toca **Editar Perfil** en la ficha, corrige y toca **Actualizar Cambios**. Si tu rol solo puede editar lo que tú registraste, el botón aparece solo en tus fichas.
+**Qué debes ver:** al guardar **o al cerrar** la ventana regresas a la ficha de la empresa, con la persona en su personal.
+
+## Cómo editar una persona
+
+1. Busca la ficha y toca **Editar Perfil**.
+2. Corrige los datos en la ventana **Actualizar Perfil**.
+3. Toca **Actualizar Cambios**.
 
 ![Actualizar perfil](img/personas/05-editar.png)
 
-## Dar de baja y reactivar
+**Qué debes ver:** «Perfil de «Juan Pérez» actualizado correctamente.» Editar nunca cambia si la persona está activa o de baja.
 
-- **⊘** da de baja a la persona (ya no aparece al buscarla en la caseta). No se borra: su historial se conserva.
-- **↺** la reactiva.
+> Si tu rol solo puede editar lo que tú registraste, el botón **Editar Perfil** solo aparece en tus fichas.
 
-Editar el perfil nunca cambia si está activa o de baja.
+## Cómo dar de baja o reactivar a una persona
 
-## Lo que ve cada rol
+1. En la ficha toca el botón rojo de **Dar de baja** (círculo con raya).
+2. Confirma con **Aceptar** el mensaje «¿Dar de baja este registro? Podrás reactivarlo con un clic.».
+3. Para volver a activarla, toca el botón **Reactivar** (flecha circular) y confirma.
 
-| Rol (plantilla) | Puede |
-|---|---|
-| Administrador, Jefe de seguridad | Todo: registrar, editar, dar de baja y reactivar |
-| Asistente | Registrar y editar |
-| Supervisor | Registrar y editar |
-| Director, Agente | Solo consultar (folio oculto) |
+**Qué debes ver:** la ficha cambia a **BAJA**. Ya no aparece al buscarla en la caseta, pero **no se borra**: su historial de entradas se conserva.
 
-![Vista de consulta (Agente)](img/personas/13-agente-consulta.png)
+## En el celular
 
-## En el celular y en modo Noche
+La pantalla se acomoda al celular: los botones son grandes y la ventana de registro ocupa toda la pantalla. También respeta los modos **Sol** (alto contraste) y **Noche**.
 
-La pantalla se acomoda al celular y respeta los modos **Sol** y **Noche**.
+![Celular](img/personas/08-celular.png) ![Registrar en el celular](img/personas/09-celular-alta.png)
 
-![Celular](img/personas/08-celular.png)
-![Alta en el celular](img/personas/09-celular-alta.png)
-![Modo Noche](img/personas/10-noche.png)
-![Editar en modo Noche](img/personas/11-noche-editar.png)
-![Modo Sol](img/personas/12-sol.png)
+## Si algo sale mal
 
-## Avisos mientras escribes (Ronda 5)
+Los mensajes aparecen dentro de la misma ventana, arriba, en rojo. Lo que ya escribiste se conserva.
 
-No tienes que esperar a guardar para saber si alguien ya está registrado:
+![Error dentro de la ventana](img/personas/14-error-en-dialogo.png)
 
-- **Folio / Número**: si ese folio ya lo tiene otra persona de tu empresa, aparece una caja **roja**: «Ese folio ya está registrado en la empresa (los espacios y guiones no cuentan)». Abajo dice de quién es. No se podrá guardar: busca a esa persona en la lista. Si está dada de baja y tú puedes reactivar, toca **Reactivar** en vez de registrarla otra vez.
-- **Nombre completo**: si hay personas con un nombre muy parecido, aparece una caja **amarilla** con sus nombres. Es solo un aviso (dos personas pueden llamarse igual): revisa que no sea la misma antes de guardar.
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| El nombre completo es obligatorio. | Dejaste vacío el nombre. | Escribe nombre y apellidos. |
+| El folio debe tener de 4 a 30 letras o números (los espacios y guiones se quitan solos). | El folio es muy corto, muy largo o tiene signos. | Revisa el folio en la identificación. |
+| El teléfono debe tener de 10 a 15 dígitos. | Faltan o sobran números. | Escribe el teléfono con lada (10 dígitos). |
+| Ya existe otra persona registrada en esta empresa con ese folio de identificación: «…». | Ese folio ya es de otra persona. | Búscala en la lista; si está de baja, reactívala. |
+| «…» no está registrada como Contratista: elige el tipo Proveedor o una empresa contratista. | El tipo y la empresa no coinciden. | Cambia el tipo o elige otra empresa. |
+| «…» está registrada como Contratista: elige el tipo Contratista. | Elegiste *Proveedor* con una empresa contratista. | Cambia el tipo a *Contratista*. |
+| El proveedor no existe en esta empresa o está desactivado. | La empresa se dio de baja mientras capturabas. | Elige otra o pide que la reactiven en Empresas externas. |
+| No veo **Registrar Persona** ni **Editar Perfil**. | Tu rol solo consulta. | Pide el permiso a tu administrador. |
+| El folio se ve con puntos (••••). | Tu rol solo consulta y el folio está protegido. | Es normal; quien puede editar lo ve completo. |
 
-![Avisos de nombre parecido y folio repetido](img/ronda-5b/personas-folio-y-nombre.png)
+## Preguntas frecuentes
 
-En el celular el aviso aparece debajo del teléfono, antes de la nota del folio:
+**¿Se puede borrar a una persona?** No. Se da de baja para que no aparezca en la caseta; su historial se conserva y la puedes reactivar cuando quieras.
 
-![Aviso en el celular](img/ronda-5b/personas-folio-movil.png)
+**¿Por qué no me deja guardar el mismo folio dos veces?** Porque un folio identifica a una sola persona. Si ya existe, usa esa ficha.
 
-Así se ve en modo **Noche**:
+**Dos personas se llaman igual, ¿puedo registrarlas?** Sí. El aviso amarillo solo te pide revisar; si son distintas, guarda normalmente.
 
-![Modo Noche](img/ronda-5b/personas-folio-noche.png)
+**¿Qué pasa con las personas que registra la caseta al momento?** Quedan **pendientes de verificar** hasta que alguien con permiso las revise. Ver [Altas por verificar](altas-por-verificar.md).
 
-## La empresa según el tipo (Ronda 5)
+**¿El folio tiene que llevar guiones?** No. Escríbelo como venga; los espacios y guiones se quitan solos.
 
-La lista **Empresa que representa** cambia según el **Tipo**:
+## Relacionado
 
-- **Contratista**: solo empresas registradas como **Contratista**.
-- **Proveedor**: proveedores, transporte, agencias y taxis (no contratistas).
-
-![Contratista: solo empresas contratistas](img/ronda-5b/personas-empresas-contratista.png)
-
-![Proveedor: el resto de las empresas](img/ronda-5b/personas-empresas-proveedor.png)
-
-Si la empresa no aparece, deja «No está en el directorio de proveedores» y escribe su nombre en **Empresa de procedencia**. Si la empresa está mal clasificada, pide que corrijan su categoría en Padrones → Empresas Externas.
-
-Desde la ficha de una empresa externa la empresa ya viene puesta y no se puede cambiar:
-
-![Desde la ficha de Constructora Maya](img/ronda-5b/ficha-agregar-persona.png)
-
-El **Agente** solo consulta el padrón: no ve el botón de registrar ni los avisos.
-
-![Lo que ve el Agente](img/ronda-5b/personas-agente.png)
+- [Empresas externas](proveedores.md)
+- [Padrón vehicular](vehiculos.md)
+- [Altas por verificar](altas-por-verificar.md)
+- [Bitácora de accesos](accesos.md)

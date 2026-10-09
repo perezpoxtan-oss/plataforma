@@ -1,85 +1,93 @@
+---
+titulo: Vouchers de reposición
+modulos: [vouchers]
+seccion: Operación
+orden: 90
+resumen: Consultar, reimprimir y dar seguimiento a los comprobantes de llaves, gafetes o equipos perdidos.
+---
 # Vouchers de reposición
 
-Padrones → Inventarios de Seguridad → **Vouchers de reposición**. Un voucher es el comprobante que se genera **solo** cuando se da de baja una llave, un gafete o un equipo que se perdió, se dañó o lo robaron. Aquí se consultan y se vuelven a imprimir; no se crean ni se borran a mano.
+**¿Para qué sirve?** Un voucher es el comprobante que se genera **solo** cuando se da de baja una llave, un gafete o un equipo que se perdió, se dañó o lo robaron. Aquí se consultan, se vuelven a imprimir, se registra la firma en papel y se marca si el artículo apareció. No se crean ni se borran a mano.
+
+**Antes de empezar:** necesitas que tu rol pueda **ver** Vouchers de reposición; para imprimir, **imprimir**; para registrar firmas en papel o recuperados, **editar**. Solo ves los vouchers de los módulos que puedes consultar (por ejemplo, si no ves Llaves, no ves los de llaves) y de tus sedes.
+
+## Cómo leer la lista
+
+1. Entra a **Operación → Activos → Vouchers de reposición**.
+2. Cada tarjeta tiene el **folio** (por ejemplo `VR-2610-48213`) y si es **CON COBRO** (rojo) o **SIN COBRO** (verde).
+3. Debajo: el artículo dado de baja, su **Origen** (Llave, Gafete o Equipo), **Motivo**, **Sede**, **Responsable**, el **Monto** (si hay cobro), **¿Cómo pasó?**, quién lo generó y cuándo.
 
 ![Vouchers de reposición](img/vouchers/lista.png)
 
-## Qué ves en cada tarjeta
+**Qué debes ver:** también el estado de la firma: **Firmado digitalmente**, **Firma en papel pendiente** o **Firmado en papel**.
 
-- El **folio** (por ejemplo `VR-2610-48213`) y si es **CON COBRO** (rojo) o **SIN COBRO** (verde).
-- El **artículo** que se dio de baja (nomenclatura del gafete o de la llave, o el equipo).
-- **Origen** (Llave, Gafete o Equipo), **Motivo**, **Sede**, **Responsable** y, si hay cobro, el **Monto**.
-- **¿Cómo pasó?**, quién lo generó y cuándo.
+## Cómo buscar y filtrar
 
-Solo ves los vouchers de los módulos que puedes consultar (por ejemplo, si no tienes Llaves, no ves los de llaves) y de tus sedes.
+1. En **Buscar** escribe el folio, el artículo, el responsable o parte de «¿Cómo pasó?». Se aplica solo al dejar de escribir.
+2. Elige **Sede**, **Origen**, si **aplica cobro** o el estado (**Cualquier estado**, vigentes, recuperados, reembolsos…).
+3. Usa **Desde / Hasta** para un rango de fechas.
+4. **Quitar filtros** vuelve a mostrar todo.
 
-## Buscar y filtrar
+**Qué debes ver:** solo los vouchers que coinciden.
 
-- **Buscar**: folio, artículo, responsable (nombre o número de empleado) o lo que se escribió en "¿Cómo pasó?". La búsqueda se aplica sola al dejar de escribir.
-- **Sede**, **Origen** y **Aplica cobro o no** se aplican al elegirlos.
-- **Desde / Hasta**: un rango de fechas.
-- **Quitar filtros** vuelve a mostrar todo.
+## Cómo imprimir o reimprimir un voucher
 
-![Solo con cobro](img/vouchers/filtro-con-cobro.png)
+1. En la tarjeta toca **Ver / Reimprimir**.
+2. Se abre la hoja con **3 copias**: Seguridad, Recepción y Administración.
+3. Toca **Imprimir Voucher** y recorta por las líneas punteadas. Si hay cobro, anota a mano la referencia de pago.
 
-## Imprimir o reimprimir
+![Voucher de tres copias](img/vouchers/voucher.png)
 
-Toca **Ver / Reimprimir**: se abre una hoja con **3 copias**: **Seguridad, Recepción y Administración**. El colaborador responsable firma, pero **no recibe copia**. Toca **Imprimir Voucher** y recorta por las líneas punteadas. Si hay cobro, anota a mano la **referencia de pago**.
+**Qué debes ver:** las firmas digitales ya salen impresas; si faltan, quedan las líneas para firmar a mano. El colaborador responsable firma, pero **no recibe copia**.
 
-![Voucher de 3 copias](img/ronda-5/voucher-copias.png)
+## Cómo registrar la firma en papel
 
-## Firmas: digital o en papel
+1. Imprime el voucher y pide que firmen a mano.
+2. En la tarjeta toca **Registrar firma en papel**.
+3. Si quieres, sube una foto de la hoja firmada (JPG, PNG o WEBP).
+4. Guarda.
 
-Al dar de baja se elige cómo se firma:
+**Qué debes ver:** la tarjeta dice **Firmado en papel**, con quién lo registró y cuándo. Si subiste la foto, aparece **Ver hoja** (y **Cambiar hoja firmada** para subir otra).
 
-- **Firmado digitalmente**: Seguridad y el responsable firmaron en la pantalla. Las firmas ya salen impresas en las tres copias.
-- **Firma en papel pendiente**: se eligió firma física. Imprime el voucher, que firmen a mano y toca **Registrar firma en papel**. Puedes tomar una foto de la hoja firmada (opcional); se guarda en un lugar privado y aparece **Ver hoja**.
-- **Firmado en papel**: ya se registró, con quién lo registró y cuándo. Con **Cambiar hoja firmada** puedes subir otra foto.
+## Cómo marcar que el artículo apareció (Recuperado)
 
-![Estados de firma](img/ronda-5/vouchers-firmas.png)
-![Registrar firma en papel](img/ronda-5/voucher-firma-papel.png)
-
-## Copias por correo (cuando hay cobro)
-
-Si el voucher es **CON COBRO**, la plataforma envía cada copia por correo: la de Seguridad, la de Recepción y la de Administración, a las listas que el Administrador captura en **Estructura → Configuración → Avisos por correo**. El correo trae un botón para ver e imprimir el voucher (pide entrar). El colaborador no recibe correo.
-
-## Quién puede qué
-
-- **Agente**: consulta los vouchers de su sede, pero no los imprime ni registra la firma en papel.
-- **Asistente, Supervisor, Jefe de seguridad, Director y Administrador**: consultan e imprimen (en sus sedes, o en todas si su alcance es de empresa).
-
-![Lo que ve el Agente](img/vouchers/agente.png)
-
-## En el celular y de noche
-
-Los filtros se acomodan uno debajo de otro y las tarjetas en una columna. El modo **Noche** oscurece todo.
-
-![Celular](img/vouchers/movil.png)
-![Modo Noche](img/vouchers/noche.png)
-
-## Si el artículo aparece: «Recuperado»
-
-Si la llave, el gafete o el equipo de un voucher aparece y lo devuelven:
-
-1. En la tarjeta del voucher toca **Recuperado**.
+1. En la tarjeta toca **Recuperado**.
 2. Lee lo que va a pasar: el artículo se **reactiva** y el voucher queda **Cancelado por recuperación** (no se borra).
-3. Si el voucher tenía **cobro**:
-   - Si **todavía no** se le cobraba al responsable, deja la casilla sin marcar: el cobro se **cancela**.
-   - Si **ya** se le cobró, marca **Ya se le cobró al responsable** y escribe cómo se le devolverá el dinero. El voucher queda **Reembolso pendiente**.
+3. Si el voucher tenía cobro:
+   - Si **todavía no** se le cobraba al responsable, deja la casilla sin marcar: el cobro se cancela.
+   - Si **ya** se le cobró, marca **Ya se le cobró al responsable** y escribe cómo se le devolverá el dinero.
 4. Escribe un comentario (dónde apareció, quién lo entregó) y toca **Confirmar recuperado**.
+5. Cuando ya le devolviste el dinero, toca **Reembolso entregado**.
 
-![Recuperado](img/ronda-6/17-voucher-recuperado-dialogo.png)
+![Marcar como recuperado](img/vouchers/recuperado.png)
 
-Cuando ya le devolviste el dinero, toca **Reembolso entregado** en la tarjeta. Queda **Reembolsado**.
+**Qué debes ver:** el voucher cambia a **Cancelado por recuperación**, **Reembolso pendiente** o **Reembolsado**. La hoja impresa también muestra el estado.
 
-![Estados del voucher](img/ronda-6/16-vouchers.png)
+## En el celular
 
-Con el filtro **Cualquier estado** puedes ver solo los vigentes, los cancelados por recuperación, los que tienen reembolso pendiente o los reembolsados. La hoja impresa también muestra el estado:
+![Vouchers en el celular](img/vouchers/celular.png)
 
-![Voucher impreso con reembolso pendiente](img/ronda-6/18-voucher-impreso-reembolso.png)
+## Si algo sale mal
 
-Lo hacen quienes pueden editar vouchers y reactivar en el módulo del artículo (Administrador, Jefe de seguridad). El Agente no ve estos botones.
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| «Escribe cómo se va a devolver el dinero (por ejemplo: «se reembolsa en nómina»).» | Marcaste que ya se cobró y falta cómo se devuelve. | Escribe cómo se reembolsará. |
+| «Sube la hoja como foto o imagen (JPG, PNG o WEBP).» | El archivo no es una imagen. | Toma una foto de la hoja y súbela. |
+| «La foto de la hoja pesa demasiado (máximo 6 MB).» | La foto es muy pesada. | Toma la foto con menor calidad. |
+| No veo **Ver / Reimprimir** | Tu rol no puede imprimir (por ejemplo, el Agente). | Pide a tu supervisor que lo imprima. |
+| No veo **Recuperado** | Tu rol no puede reactivar ese artículo. | Pide al jefe de seguridad o al administrador. |
+| No sale **Registrar firma en papel** | El voucher está cancelado o reembolsado, o ya se firmó. | No hace falta firmar. |
 
-## Ronda 8
+## Preguntas frecuentes
 
-Un voucher **Cancelado por recuperación** o **Reembolsado** ya no muestra «Registrar firma en papel»: el artículo apareció o ya se devolvió el dinero, así que no hay nada que firmar.
+- **¿Cómo se crea un voucher?** Al dar de baja una llave, gafete o equipo como perdido, dañado o robado, desde su propia pantalla.
+- **¿Quién recibe las copias por correo?** Si el voucher es con cobro, las listas que el administrador puso en **Estructura → Configuración → Avisos por correo**. El colaborador no recibe correo.
+- **¿Puedo borrar un voucher?** No. Si el artículo aparece, márcalo como **Recuperado**.
+- **¿Qué pasa con el cobro si el artículo aparece?** Se cancela; si ya se cobró, queda **Reembolso pendiente** hasta que marques **Reembolso entregado**.
+
+## Relacionado
+
+- [Responsivas](responsivas.md)
+- [Catálogo de llaves](llaves.md)
+- [Gafetes](gafetes.md)
+- [Equipos de seguridad](equipos.md)
