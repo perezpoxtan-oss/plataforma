@@ -34,6 +34,8 @@ class ColaboradorController extends Controller
         'colaboradores.apellido_materno', 'colaboradores.telefono', 'colaboradores.activo', 'colaboradores.creado_por',
         'colaboradores.actualizado_por', 'colaboradores.created_at', 'colaboradores.updated_at',
         'colaboradores.provisional', 'colaboradores.validado_en', 'colaboradores.fusionado_en_id',
+        // Botón «Código e identificación» (QR y etiqueta NFC/RFID del gafete o tarjeta)
+        'colaboradores.codigo_qr', 'colaboradores.etiqueta_nfc',
     ];
 
     public function __construct(

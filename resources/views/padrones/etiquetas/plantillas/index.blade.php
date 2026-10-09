@@ -85,6 +85,9 @@
                             </div>
                         @else
                             <p class="campo-ayuda m-0"><i class="bi bi-lock" aria-hidden="true"></i> De toda la empresa: solo la cambia quien administra toda la empresa. Puedes usarla al imprimir.</p>
+                            <div class="plantilla-qr-acciones">
+                                <a href="{{ route('etiquetas.plantillas.prueba', $pl->id) }}" target="_blank" class="btn-limpiar-filtros"><i class="bi bi-printer me-1" aria-hidden="true"></i>Hoja de prueba</a>
+                            </div>
                         @endif
                     </article>
                 @endforeach

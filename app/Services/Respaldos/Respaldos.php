@@ -22,6 +22,9 @@ use RuntimeException;
  */
 class Respaldos
 {
+    /** Comentario al inicio del archivo: cómo se restaura (texto neutral, sin nombrar herramientas del hospedaje). */
+    public const COMO_RESTAURAR = "-- Para restaurar: descarga el archivo y pide a tu proveedor de hospedaje o a tu administrador de base de datos que lo importe (.sql.gz)\n";
+
     public const DIAS = 14;
 
     public const MINIMO = 3;
@@ -164,7 +167,7 @@ class Respaldos
         $base = DB::connection()->getDatabaseName();
 
         gzwrite($gz, "-- Respaldo de {$base} · ".now()->utc()->toDateTimeString()." UTC\n");
-        gzwrite($gz, "-- Restaurar: phpMyAdmin → base de datos → Importar este archivo (.sql.gz)\n");
+        gzwrite($gz, self::COMO_RESTAURAR);
         gzwrite($gz, "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\nSET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';\nSET time_zone='+00:00';\n\n");
 
         $tablas = collect(DB::select("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'"))
@@ -187,7 +190,7 @@ class Respaldos
     private function volcarSqlite($gz): void
     {
         $pdo = DB::connection()->getPdo();
-        gzwrite($gz, '-- Respaldo SQLite · '.now()->utc()->toDateTimeString()." UTC\nPRAGMA foreign_keys=OFF;\nBEGIN TRANSACTION;\n");
+        gzwrite($gz, '-- Respaldo SQLite · '.now()->utc()->toDateTimeString()." UTC\n".self::COMO_RESTAURAR."PRAGMA foreign_keys=OFF;\nBEGIN TRANSACTION;\n");
         foreach (DB::select("SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'") as $t) {
             gzwrite($gz, "DROP TABLE IF EXISTS \"{$t->name}\";\n{$t->sql};\n");
             $this->volcarFilas($gz, $t->name, fn ($v) => $pdo->quote((string) $v), '"');

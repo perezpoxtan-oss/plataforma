@@ -115,7 +115,7 @@
                     <h2 id="t-correo" class="h5 fw-bold m-0"><i class="bi bi-envelope-at me-2 text-primary" aria-hidden="true"></i>Correo de la plataforma</h2>
                     <span class="etiqueta-estado {{ $correoListo ? 'activo' : 'inactivo' }}">{{ $correoListo ? 'CONFIGURADO' : 'SIN CONFIGURAR' }}</span>
                 </div>
-                <p class="small text-muted mt-2">Cuenta desde la que salen los avisos. Los datos los da tu proveedor de correo (en cPanel: <em>Cuentas de correo → Conectar dispositivos</em>). Solo tú (Super Administrador) ves esta sección.</p>
+                <p class="small text-muted mt-2">Cuenta desde la que salen los avisos. Los datos te los da tu proveedor de correo (servidor de salida, puerto, usuario y contraseña de la cuenta). Solo tú (Super Administrador) ves esta sección.</p>
                 @if ($correo['ultimo_error'])
                     <div class="alert alert-danger small py-2"><i class="bi bi-x-octagon me-1" aria-hidden="true"></i>Último error: {{ $correo['ultimo_error'] }}</div>
                 @elseif ($correo['ultimo_envio'])
@@ -173,7 +173,7 @@
                         <button type="submit" class="btn-azul" style="min-height:44px;border-radius:10px;padding:0 1rem;"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Respaldar ahora</button>
                     </form>
                 </div>
-                <p class="small text-muted mt-2">Se hace uno automático cada día después de las 3:00 y otro antes de instalar cada versión nueva. Se conservan {{ \App\Services\Respaldos\Respaldos::DIAS }} días. Para restaurar: descarga el archivo y en cPanel → phpMyAdmin → tu base → <em>Importar</em>.</p>
+                <p class="small text-muted mt-2">Se hace uno automático cada día después de las 3:00 y otro antes de instalar cada versión nueva. Se conservan {{ \App\Services\Respaldos\Respaldos::DIAS }} días. Para restaurar: descarga el archivo y pide a tu proveedor de hospedaje o a tu administrador de base de datos que lo importe.</p>
 
                 @if ($respaldos->isEmpty())
                     <p class="text-muted small m-0">Todavía no hay respaldos.</p>

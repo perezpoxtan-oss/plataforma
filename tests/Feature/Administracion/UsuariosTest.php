@@ -9,6 +9,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
 use Tests\TestCase;
@@ -200,5 +201,30 @@ class UsuariosTest extends TestCase
 
         $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])
             ->get('/usuarios')->assertSee($this->admin->name);
+    }
+
+    public function test_mensajes_de_la_contrasena_en_espanol(): void
+    {
+        $this->assertSame('es', app()->getLocale());
+
+        $this->actingAs($this->admin)->post('/usuarios', $this->datos(['password' => 'SoloLetras']))
+            ->assertSessionHasErrors(['password' => 'El campo contraseña debe tener al menos un número.']);
+        $this->actingAs($this->admin)->post('/usuarios', $this->datos(['password' => '12345678']))
+            ->assertSessionHasErrors(['password' => 'El campo contraseña debe tener al menos una letra.']);
+        $this->actingAs($this->admin)->post('/usuarios', $this->datos(['password' => 'Ab1']))
+            ->assertSessionHasErrors(['password' => 'El campo contraseña debe tener al menos 8 caracteres.']);
+        $this->actingAs($this->admin)->post('/usuarios', $this->datos(['email' => 'no-es-correo']))
+            ->assertSessionHasErrors(['email' => 'El campo correo debe ser un correo electrónico válido.']);
+
+        // Ningún mensaje estándar quedó en inglés
+        $this->assertSame('El campo :attribute debe tener al menos un símbolo.', __('validation.password.symbols'));
+        $this->assertSame('El campo :attribute debe tener al menos una letra mayúscula y una minúscula.', __('validation.password.mixed'));
+        $this->assertStringContainsString('filtración', __('validation.password.uncompromised'));
+        $this->assertSame('&laquo; Anterior', __('pagination.previous'));
+        $this->assertSame('El usuario o la contraseña no son correctos.', __('auth.failed'));
+        $ingles = require base_path('vendor/laravel/framework/src/Illuminate/Translation/lang/en/validation.php');
+        $espanol = require lang_path('es/validation.php');
+        $faltan = array_keys(array_diff_key(Arr::dot($ingles), Arr::dot($espanol)));
+        $this->assertSame([], array_values(array_filter($faltan, fn ($k) => ! str_starts_with($k, 'custom.') && $k !== 'attributes')));
     }
 }

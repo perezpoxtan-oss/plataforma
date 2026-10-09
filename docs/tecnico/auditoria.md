@@ -13,7 +13,7 @@ Pantalla `GET /auditoria` (módulo `auditoria`, área Dirección). Es de solo co
 
 ## Lectura (`App\Services\Auditoria\LectorAuditoria`)
 
-- **Evento:** `modulo.accion` se muestra como "Módulo · Acción". El módulo sale del catálogo y la acción de un diccionario; por ejemplo, `colaboradores.fusionado` se ve como "Colaboradores · Unión de duplicado".
+- **Evento:** `modulo.accion` se muestra como "Módulo · Acción". El módulo sale del catálogo (o de `LectorAuditoria::MODULOS_EXTRA` para prefijos fuera del catálogo: sesión, kiosco, bolsa…) y la acción del diccionario `LectorAuditoria::ACCIONES`, con acentos; por ejemplo, `colaboradores.fusionado` se ve como "Colaboradores · Unión de duplicado" y `pases_salida.aprobado` como "Pases de salida · Aprobación". **Toda acción nueva que se audite debe agregarse a `ACCIONES`**: `LectorAuditoriaTest` recorre `app/` (segundo argumento de `auditar()`, `'evento' =>`, `AVANCE` y `$evento = match`) y falla si alguna cae en el respaldo (clave con mayúscula inicial y sin guiones bajos).
 - **Registro:** se ve como "Tipo · nombre", por ejemplo "Colaborador · Jorge Méndez Tun". Los nombres se cargan con una consulta por tipo de modelo; si el registro ya no existe dice "#id (ya no existe)".
 - **Detalle:** tabla de antes y después con los campos que cambiaron resaltados. Se dibuja con `textContent`, nunca con `innerHTML`.
 - **Datos personales:** CURP, RFC, NSS y teléfono ya se guardan enmascarados al auditar (ver Colaboradores).
@@ -28,4 +28,4 @@ Pantalla `GET /auditoria` (módulo `auditoria`, área Dirección). Es de solo co
 
 ## Pruebas
 
-`tests/Feature/Direccion/PendientesDireccionTest.php`
+`tests/Feature/Direccion/PendientesDireccionTest.php` y `tests/Feature/Administracion/LectorAuditoriaTest.php`

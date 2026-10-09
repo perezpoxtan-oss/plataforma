@@ -85,7 +85,7 @@
     </div>
 
     <div class="acceso-pie">
-        <i class="bi bi-lock-fill me-1" aria-hidden="true"></i> Entorno de conexión verificado &bull; &copy; {{ date('Y') }} {{ $identidad->get('titular') }}
+        <i class="bi bi-lock-fill me-1" aria-hidden="true"></i> Entorno de conexión verificado &bull; &copy; {{ date('Y') }} {{ $identidad->get('titular') ?: $identidad->get('nombre_corto') }}
     </div>
 </div>
 

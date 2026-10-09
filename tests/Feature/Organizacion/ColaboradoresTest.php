@@ -502,4 +502,26 @@ class ColaboradoresTest extends TestCase
         $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])->post('/colaboradores', $this->datos())->assertSessionHasNoErrors();
         $this->assertSame($this->empresa->id, $this->colaborador('E-100')->empresa_id);
     }
+
+    public function test_boton_codigo_e_identificacion_en_la_lista(): void
+    {
+        $c = $this->crearColaborador('1001', $this->centro);
+        $this->enEmpresa(fn () => $c->forceFill(['etiqueta_nfc' => 'A1B2C3D4'])->save());
+        $c = $c->fresh();
+        $this->assertNotEmpty($c->codigo_qr);
+
+        $html = $this->actingAs($this->admin)->get('/colaboradores')->assertOk()
+            ->assertSee('data-ver-identificacion', false)->assertSee('id="dialogoIdentificacion"', false)
+            ->assertSee(route('identificacion.qr', ['colaborador', $c->id]))
+            ->assertSee(route('lector.ir', $c->codigo_qr))
+            ->assertSee(route('identificacion.etiqueta', ['colaborador', $c->id]))->getContent();
+        $this->assertStringContainsString('A1B2C3D4', $html);
+        // El QR que abre el diálogo responde
+        $this->actingAs($this->admin)->get(route('identificacion.qr', ['colaborador', $c->id]))->assertOk();
+
+        // Quien solo consulta ve el código pero no asigna la etiqueta
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $this->actingAs($agente)->get('/colaboradores')->assertOk()->assertSee(route('identificacion.qr', ['colaborador', $c->id]))
+            ->assertDontSee(route('identificacion.etiqueta', ['colaborador', $c->id]));
+    }
 }

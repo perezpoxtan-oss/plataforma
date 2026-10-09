@@ -36,11 +36,11 @@ class CatalogoYComandosTest extends TestCase
         $hash = Hash::make('ClaveDeSegcat2026');
 
         $this->artisan('plataforma:superadmin', [
-            'email' => 'Soporte@VDCP.com.mx',
+            'email' => 'Soporte@Ejemplo.com.mx',
             '--hash' => $hash,
         ])->assertSuccessful();
 
-        $usuario = User::where('email', 'soporte@vdcp.com.mx')->firstOrFail();
+        $usuario = User::where('email', 'soporte@ejemplo.com.mx')->firstOrFail();
         $this->assertTrue($usuario->es_superadmin);
         $this->assertNull($usuario->empresa_id);
         $this->assertTrue(Hash::check('ClaveDeSegcat2026', $usuario->password));

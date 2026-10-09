@@ -68,7 +68,7 @@ Obligatorio (`acepta_privacidad`) para guardar el CV desde el kiosco y para la c
 | `DELETE /candidatos/{c}` | `candidatos.eliminar` | Borra ficha y archivos (derechos ARCO) |
 | `POST /candidatos/{c}/documentos` · `GET|DELETE …/documentos/{d}` | `editar` · `ver` | Documentos privados (PDF se descarga) |
 | `POST /candidatos/{c}/enlace/revocar` | `candidatos.editar` | Anula el enlace del kiosco |
-| `GET /k?codigo=` · `POST /k` · `GET|POST /k/{token}` | **sin sesión** | Kiosco (límites 120/min al ver, 10/min al enviar) |
+| `GET /k?codigo=` · `POST /k` · `GET|POST /k/{token}` | **sin sesión** | Kiosco. Limitadores con nombre (`AppServiceProvider::limitadoresPublicos`), cada uno con su contador porque en recepción todas las tabletas salen por la misma IP: `kiosco-ver` 120/min por IP + enlace, `kiosco-canjear` 10/min por IP, `kiosco-guardar` 10/min por IP + enlace y 60/min por IP. La bolsa pública usa `empleos-ver` (120/min) y `empleos-postular` (6/min) |
 
 Otra empresa u otra sede fuera del alcance → **404**.
 
