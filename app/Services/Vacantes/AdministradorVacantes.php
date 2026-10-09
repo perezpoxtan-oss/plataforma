@@ -63,8 +63,10 @@ class AdministradorVacantes
 
         return $consulta
             ->when($sedes !== null, fn ($q) => $q->aplicanEn($sedes))
-            // Quien solo consulta (la caseta) ve lo que está publicado
-            ->when(! $actor->can('vacantes.editar'), fn ($q) => $q->where('vacantes.estado', 'publicada'));
+            // Quien solo consulta (la caseta) ve lo que está publicado; quien pide
+            // vacantes sin poder editarlas (Jefe de departamento) ve además las que él pidió
+            ->when(! $actor->can('vacantes.editar'), fn ($q) => $q->where(fn ($e) => $e->where('vacantes.estado', 'publicada')
+                ->when($actor->can('vacantes.crear'), fn ($p) => $p->orWhere('vacantes.creado_por', $actor->id))));
     }
 
     /**

@@ -472,7 +472,7 @@ class ColaboradoresTest extends TestCase
         // Recepción (ADR-0007): el candidato contratado del demo no trae datos personales completos
         $todos = $todos->reject(fn ($c) => $c->num_empleado === '2001');
 
-        $this->assertCount(13, $todos);
+        $this->assertCount(15, $todos);
         $this->assertSame(['1013'], $todos->where('activo', false)->pluck('num_empleado')->values()->all());
         $this->assertSame(2, $todos->pluck('sede_id')->filter()->unique()->count());
         $this->assertCount(1, $todos->filter(fn ($c) => $c->sedesAdicionales->isNotEmpty()));

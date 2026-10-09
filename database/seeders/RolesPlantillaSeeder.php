@@ -76,7 +76,7 @@ class RolesPlantillaSeeder extends Seeder
         // El Agente trabaja en los menús de caseta: Operación y Padrones (no en reportes)
         $deCaseta = fn ($ma) => $deSeguridad($ma) && in_array(self::menuDe($ma->modulo), ['operacion', 'padrones'], true);
 
-        return self::soloAdministradorBorra(self::reglaVacantes(self::reglaEtiquetasQr(self::reglaProcedimientos(self::reglaRecepcion([
+        return self::soloAdministradorBorra(self::reglaVacantes(self::reglaEtiquetasQr(self::reglaProcedimientos(self::reglaRecepcion(self::reglaSolicitudes([
             'Administrador' => [10, 'Administra toda su empresa', fn ($ma) => Alcance::Empresa],
             'Director' => [20, 'Consulta y aprueba en toda la empresa', fn ($ma) => in_array($ma->accion->clave, ['ver', 'aprobar', 'exportar', 'imprimir'], true) ? Alcance::Empresa : null],
             'Recursos Humanos' => [25, 'Administra el personal y valida las altas provisionales de la caseta', fn ($ma) => $ma->modulo->area->clave === 'recursos_humanos'
@@ -90,8 +90,58 @@ class RolesPlantillaSeeder extends Seeder
             'Agente' => [60, 'Registra la operación de caseta', fn ($ma) => ($deCaseta($ma)
                 && in_array($ma->accion->clave, self::esPadron($ma->modulo) ? self::ACCIONES_AGENTE_PADRONES : self::ACCIONES_AGENTE_OPERACION, true))
                 || $provisional($ma) ? Alcance::Sede : null],
-        ])))));
+            // Solicitante y Jefe de departamento: su regla la arma reglaSolicitudes()
+            self::SOLICITANTE => [70, 'Levanta solicitudes (pases de salida) y consulta solo las suyas', fn ($ma) => null],
+            self::JEFE_DEPARTAMENTO => [45, 'Aprueba y responde las solicitudes de su departamento en su sede', fn ($ma) => null],
+        ]))))));
     }
+
+    // Solicitudes: Solicitante y Jefe de departamento
+
+    public const SOLICITANTE = 'Solicitante';
+
+    public const JEFE_DEPARTAMENTO = 'Jefe de departamento';
+
+    /**
+     * Personal de cualquier departamento que no opera la caseta: solo levanta
+     * solicitudes y ve las suyas. «Solo los propios» únicamente donde el
+     * servicio del módulo filtra por quien lo registró (pases de salida); los
+     * procedimientos se ven por sede (lo publicado que le aplica) porque con
+     * «propios» solo vería los que él escribió. Mis pendientes y el Manual no
+     * piden permiso propio.
+     * rol => [módulo => [acciones => alcance]]
+     */
+    public const SOLICITUDES = [
+        self::SOLICITANTE => [
+            'pases_salida' => ['ver' => Alcance::Propios, 'crear' => Alcance::Propios],
+            'procedimientos' => ['ver' => Alcance::Sede],
+        ],
+        // Lo del Solicitante, más: ve los pases de su sede para firmar los de su
+        // gente (el circuito decide qué paso le toca por el departamento del
+        // colaborador vinculado a su usuario), responde las autorizaciones de los
+        // departamentos donde es responsable y pide vacantes (quedan en borrador
+        // para que Recursos Humanos las revise y publique).
+        self::JEFE_DEPARTAMENTO => [
+            'pases_salida' => ['ver' => Alcance::Sede, 'crear' => Alcance::Propios, 'aprobar' => Alcance::Sede, 'imprimir' => Alcance::Sede],
+            'procedimientos' => ['ver' => Alcance::Sede],
+            'autorizaciones' => ['ver' => Alcance::Sede, 'responder' => Alcance::Sede],
+            'vacantes' => ['ver' => Alcance::Sede, 'crear' => Alcance::Propios],
+        ],
+    ];
+
+    /**
+     * @param  array<string, array{0: int, 1: string, 2: Closure}>  $definiciones
+     * @return array<string, array{0: int, 1: string, 2: Closure}>
+     */
+    private static function reglaSolicitudes(array $definiciones): array
+    {
+        foreach (self::SOLICITUDES as $nombre => $mapa) {
+            $definiciones[$nombre][2] = fn ($ma) => $mapa[$ma->modulo->clave][$ma->accion->clave] ?? null;
+        }
+
+        return $definiciones;
+    }
+    // Fin Solicitudes
 
     // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
 
@@ -147,6 +197,9 @@ class RolesPlantillaSeeder extends Seeder
         'Asistente' => [['ver'], Alcance::Sede],
         'Agente' => [['ver'], Alcance::Sede],
         'Recursos Humanos' => [['ver'], Alcance::Empresa],
+        // Solicitudes: consultan lo publicado que aplica a su sede y firman su acuse
+        self::SOLICITANTE => [['ver'], Alcance::Sede],
+        self::JEFE_DEPARTAMENTO => [['ver'], Alcance::Sede],
     ];
 
     /**

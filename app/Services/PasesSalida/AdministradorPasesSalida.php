@@ -141,6 +141,16 @@ class AdministradorPasesSalida
             && $this->circuito->tienePermisoEnSede($actor, 'pases_salida.firmar', $pase, $pase->sedeDelPaso($paso));
     }
 
+    /**
+     * ¿Solo puede pedir pases a su nombre? Quien no consulta colaboradores ni
+     * da altas provisionales (rol Solicitante): el solicitante es el
+     * colaborador vinculado a su usuario.
+     */
+    public function soloASuNombre(User $actor): bool
+    {
+        return ! $actor->es_superadmin && ! $actor->can('colaboradores.ver') && ! $actor->can('colaboradores.provisional');
+    }
+
     /** Quien registró el pase o el propio solicitante (si tiene usuario). */
     public function esDueno(User $actor, PaseSalida $pase): bool
     {
@@ -1139,6 +1149,12 @@ class AdministradorPasesSalida
         $solicitante = Colaborador::where('activo', true)->whereNull('fusionado_en_id')->find((int) $datos['colaborador_id']);
         if ($solicitante === null) {
             throw ValidationException::withMessages(['colaborador_id' => 'Solicitante no válido: búscalo o regístralo antes de continuar.']);
+        }
+        // Quien no puede consultar colaboradores (rol Solicitante) solo pide pases a su nombre
+        if ($this->soloASuNombre($actor) && (int) $solicitante->id !== (int) ($actor->getAttributes()['colaborador_id'] ?? 0)) {
+            throw ValidationException::withMessages(['colaborador_id' => ($actor->getAttributes()['colaborador_id'] ?? null) === null
+                ? 'Tu usuario no está vinculado a un colaborador: pide a tu administrador que lo vincule en Usuarios para poder solicitar pases.'
+                : 'Solo puedes solicitar pases de salida a tu nombre.']);
         }
 
         $destino = ['sede_destino_id' => null, 'proveedor_id' => null, 'colaborador_destino_id' => null];

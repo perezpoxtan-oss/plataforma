@@ -57,8 +57,10 @@ Un selector "Empresa de trabajo" (`EmpresaDeTrabajo`, sesión `empresa_activa_id
 | Director | 20 | Ver, aprobar, exportar e imprimir, toda la empresa |
 | Jefe de seguridad | 30 | Seguridad y Reportes completos, más `usuarios.ver` y `usuarios.desbloquear`; su sede |
 | Asistente | 40 | Seguridad y Reportes (Operación **y** Padrones): ver, crear, editar, imprimir y exportar; sin eliminar, aprobar ni firmar. Su sede |
+| Jefe de departamento | 45 | `pases_salida` ver/aprobar/imprimir (sede) y crear (propios); `autorizaciones` ver/responder (sede); `vacantes` ver (sede) y crear (propios); `procedimientos.ver` (sede) |
 | Supervisor | 50 | Seguridad y Reportes sin eliminar; su sede |
 | Agente | 60 | **Operación**: ver, crear, editar, imprimir y firmar. **Padrones**: solo ver. Su sede |
+| Solicitante | 70 | `pases_salida` ver y crear (propios); `procedimientos.ver` (sede) |
 
 - Padrones u Operación se decide por el **menú** del módulo (`modulos.menu_id`, o el de su padre en submódulos), no por nombres: `RolesPlantillaSeeder::esPadron()`. Por eso `MenuSeeder` corre antes que `RolesPlantillaSeeder` en `DatabaseSeeder`.
 - Las plantillas solo se crean si no existen (no se pisan los cambios). Para bases existentes, la migración `2026_10_05_000200_agente_solo_consulta_padrones` quita crear/editar/imprimir/firmar de los Padrones a los roles "Agente" (plantilla y copias por empresa) **solo si siguen exactamente igual a la plantilla anterior** (ver/crear/editar/imprimir/firmar de todos los módulos de Seguridad, alcance sede, nada más). Un Agente personalizado no se toca; se ajusta a mano en la Matriz de permisos. No tiene reversa.
@@ -81,6 +83,17 @@ SEGCAT tiene "Asistente de Seguridad - Apoyo de Gestión Local" en el nivel 40, 
 - `ProvisionarEmpresa::copiarPlantilla()` copia una plantilla con sus permisos a una empresa (lo usa el alta de empresas) y `copiarPlantillaSiFalta()` lo hace solo si la empresa no tiene ya un rol con ese nombre **ni otro rol en ese nivel**.
 - Migración `2026_10_06_000100_agregar_rol_asistente` (idempotente, sin reversa): crea la plantilla si falta y agrega el Asistente a cada empresa existente que no lo tenga. Si una empresa ya usa el nivel 40 para un rol propio, no se crea (el administrador puede darlo de alta en otro nivel). En una instalación nueva no hace nada: lo crean el seeder y el alta de empresas.
 
+### Solicitante y Jefe de departamento
+
+Personal fuera de la caseta que solo levanta solicitudes (Solicitante) y su jefe, que las aprueba (Jefe de departamento). Reglas en `RolesPlantillaSeeder::SOLICITUDES` (`reglaSolicitudes()`), más sus renglones en `PROCEDIMIENTOS`.
+
+- **Propios solo donde el servicio filtra por `creado_por`.** Revisado contra `app/Services`: `AdministradorPasesSalida::limitar()` y `CircuitoPasesSalida::tienePermisoEnSede()` sí; `AdministradorProcedimientos::limitar()` también, pero con «propios» solo vería los procedimientos que escribió, así que `procedimientos.ver` va con alcance de sede (lo publicado de su sede; el acuse sigue `pendientesDe()`). `AdministradorVacantes::limitar()` no filtra por propios: el Jefe ve por sede y quien crea sin `vacantes.editar` ve además sus borradores (`creado_por`). `Autorizaciones` no usa alcance propios (decide por `DepartamentoResponsable`), por eso no se da al Solicitante. No hay módulo de visitas pre-registradas.
+- **Solo a su nombre:** quien no tiene `colaboradores.ver` ni `colaboradores.provisional` solo registra pases cuyo solicitante es el colaborador vinculado a su usuario (`AdministradorPasesSalida::soloASuNombre()`); el formulario lo trae ya elegido (`PaseSalidaController::solicitanteFijo()`).
+- **Quién firma:** el paso «Jefe de Departamento» del circuito (departamento = `solicitante`) lo firma quien tiene `pases_salida.aprobar` en la sede de origen y cuyo colaborador vinculado es del departamento del solicitante (`CircuitoPasesSalida::cumpleRegla()`).
+- **Vacantes:** sin `vacantes.editar` solo existe «Guardar borrador»; Recursos Humanos edita y publica.
+- Migración `2026_10_18_000100_agregar_roles_solicitante_y_jefe_de_departamento` (idempotente, sin reversa): crea las plantillas y las copia a cada empresa que no tenga ese nombre ni ese nivel.
+- Datos demo: `solicitante.demo` y `jefedepto.demo` (Recepción, Centro), vinculados a los colaboradores 1014 y 1015; la jefa es responsable de Recepción en Centro.
+
 ### Nivel mínimo explicado (QA R-02)
 
 El alta de rol muestra, debajo del nivel, "Tu nivel es N. Solo puedes crear roles de nivel N+1 en adelante (número mayor = menos autoridad: 20 Director, 30 Jefe de seguridad, 40 Asistente…)", armado con el nivel real de quien captura y los roles existentes de la empresa. El aviso del navegador usa `data-mensaje-min` (ver `acceso-y-diseno.md`) y el servidor responde "Tu nivel es N: solo puedes crear o administrar roles de nivel N+1 en adelante…".
@@ -97,4 +110,4 @@ Debajo del título se indica la empresa: "Roles de «Hotel Demo»" (o el texto d
 
 ## Pruebas
 
-`tests/Feature/Administracion/RolesYPermisosTest.php`, `AyudasDeCapturaTest.php` y `tests/Feature/Nucleo/PlantillaAsistenteTest.php`
+`tests/Feature/Administracion/RolesYPermisosTest.php`, `AyudasDeCapturaTest.php`, `tests/Feature/Nucleo/PlantillaAsistenteTest.php` y `tests/Feature/Nucleo/PlantillaSolicitudesTest.php`

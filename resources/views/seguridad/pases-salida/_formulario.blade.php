@@ -75,7 +75,8 @@
             <div class="fila-con-boton" data-pase-colaborador data-para="solicitante">
                 <div class="flex-fill min-w-0">
                     @include('componentes.lector', ['id' => 'ps_solicitante', 'etiqueta' => 'Solicitante (escanea su gafete o busca su nombre)', 'tipos' => 'colaborador',
-                        'nombre' => 'colaborador_id', 'requerido' => true, 'valor' => $previo('colaborador_id'), 'elegido' => $anteriores['colaborador_id'] ?? null])
+                        'nombre' => 'colaborador_id', 'requerido' => true, 'valor' => $previo('colaborador_id', $formulario['solicitanteFijo']['id'] ?? ''),
+                        'elegido' => $anteriores['colaborador_id'] ?? ($formulario['solicitanteFijo']['texto'] ?? null)])
                 </div>
                 @if ($puede['colaborador'])
                     <button type="button" class="btn-atajo-pase" data-abrir-dialogo="dialogoRegistroRapidoColaborador" data-registrar-para="solicitante">
