@@ -1,69 +1,75 @@
-# Entrar y moverse en la plataforma
+---
+titulo: Entrar y salir de la plataforma
+modulos: []
+seccion: Primeros pasos
+orden: 20
+resumen: Cómo entrar con tu usuario, qué hacer si no puedes y cómo se cierra la sesión.
+---
+# Entrar y salir de la plataforma
 
-## Entrar
+**¿Para qué sirve?** Para que solo tú uses tu cuenta. Todo lo que registras queda a tu nombre, por eso nunca compartas tu usuario ni tu contraseña.
 
-1. Abre la dirección de la plataforma en tu navegador o celular.
-2. Escribe tu **usuario o tu correo** y tu **contraseña**. El ojo a la derecha muestra u oculta lo que escribes.
-3. Toca **Autenticar Ingreso**.
+**Antes de empezar:** necesitas tu **usuario** (o tu correo) y tu **contraseña**. Te los da tu administrador de la plataforma.
 
-![Pantalla de acceso](img/acceso/1-acceso-pc.png)
+## Cómo entrar
 
-Si algo sale mal verás un aviso:
+1. Abre **la dirección de tu plataforma** en el navegador de tu computadora o celular.
+2. En **Usuario o Correo** escribe tu usuario (por ejemplo `juan.perez`) o tu correo.
+3. En **Contraseña** escribe tu contraseña. El **ojo** de la derecha muestra u oculta lo que escribes, para revisar que esté bien.
+4. Toca **Autenticar Ingreso**.
 
-| Aviso | Qué significa | Qué hacer |
+![Pantalla para entrar en la computadora](img/inicio/acceso-pc.png)
+
+**Qué debes ver:** la pantalla de **Inicio** con tus menús y tu nombre arriba a la derecha.
+
+En el celular es igual; los botones son grandes para tocarlos con el dedo:
+
+![Pantalla para entrar en el celular](img/inicio/acceso-celular.png)
+
+## Cómo salir
+
+1. En la computadora, toca el botón rojo de **apagar** junto a tu nombre (arriba a la derecha).
+2. En el celular, toca **Menú** (abajo a la derecha) y al final toca **Cerrar Sesión**.
+
+**Qué debes ver:** la pantalla para entrar. Hazlo siempre al terminar tu turno, sobre todo en computadoras compartidas.
+
+## Cómo seguir conectado (cierre automático)
+
+Por seguridad, la sesión se cierra sola después de **20 minutos sin usarla**.
+
+1. Dos minutos antes aparece la ventana **«Tu sesión está por cerrarse»** con una cuenta regresiva.
+2. Si sigues trabajando, toca **Seguir conectado**.
+
+![Aviso antes de cerrar la sesión](img/inicio/sesion-por-cerrar.png)
+
+**Qué debes ver:** la ventana se cierra y sigues en la misma pantalla.
+
+- Mientras escribes o usas la pantalla, la sesión no se cierra.
+- Si tienes varias pestañas abiertas, basta con usar una.
+- Si se cerró, la plataforma te lleva a entrar con el aviso **«Sesión finalizada por seguridad»**. Solo vuelve a entrar.
+
+![Aviso de sesión finalizada](img/inicio/sesion-finalizada.png)
+
+## Si algo sale mal
+
+| Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
-| Datos de acceso incorrectos | Usuario o contraseña equivocados | Revisa mayúsculas y vuelve a intentar |
-| Cuenta bloqueada temporalmente | 5 intentos fallidos seguidos | Espera los minutos que indica (15) o pide a tu administrador o jefe de seguridad que **desbloquee** tu cuenta |
-| Sesión finalizada por seguridad | Pasaron 20 minutos sin actividad | Vuelve a entrar |
-| Tu cuenta no está activa | Tu usuario fue desactivado | Consulta a tu administrador |
+| **Datos de acceso incorrectos.** | El usuario o la contraseña no coinciden. | Revisa mayúsculas y minúsculas con el ojo y vuelve a intentar. |
+| **Demasiados intentos fallidos. Esta cuenta está bloqueada temporalmente…** | Se escribió mal la contraseña 5 veces seguidas. | Espera los minutos que indica o pide a tu administrador o jefe de seguridad que **desbloquee** tu cuenta. |
+| **Sesión finalizada por seguridad.** | Pasaron 20 minutos sin usar la plataforma. | Vuelve a entrar. |
+| **Tu cuenta no está activa. Consulta a tu administrador.** | Tu usuario fue dado de baja. | Habla con tu administrador. |
+| Olvidé mi contraseña | — | Pide a tu administrador que te asigne una nueva. |
 
-## La pantalla principal
+![Aviso de datos incorrectos](img/inicio/acceso-error.png)
 
-**En computadora**, la barra de arriba tiene *Inicio* y los menús **Estructura**, **Padrones** y **Operación**. Solo ves lo que tu rol tiene permitido. A la derecha: el botón de **modo de pantalla**, tu nombre, tu rol y el botón rojo para **cerrar sesión**.
+## Preguntas frecuentes
 
-![Menú de Operación](img/acceso/4-menu-operacion-pc.png)
+- **¿Puedo entrar con mi correo?** Sí, en el mismo campo de usuario.
+- **¿Puedo entrar desde dos equipos a la vez?** Sí, pero cierra la sesión en el que ya no uses.
+- **¿Por qué me sacó si estaba leyendo?** Solo leer no cuenta como actividad después de 20 minutos; toca **Seguir conectado** cuando salga el aviso.
+- **¿La plataforma recuerda el modo Sol o Noche?** Sí, en ese mismo equipo, incluso en la pantalla para entrar.
 
-**En celular**, abajo tienes *Inicio*, *Novedades*, *Accesos* y **Menú**, que abre el menú completo por grupos (Operación primero). Todos los grupos aparecen **cerrados**: toca el que necesites para abrirlo. El grupo de la pantalla en la que estás se ve resaltado en color.
+## Relacionado
 
-![Menú del celular, grupos cerrados](img/ajustes/10-celular-menu-normal.png)
-
-![Panel en celular](img/acceso/8-panel-celular-agente.png) ![Menú en celular](img/acceso/9-menu-celular.png)
-
-## Modo de pantalla: Normal, Sol y Noche
-
-El botón junto a tu nombre (en celular, junto a tus iniciales arriba a la derecha, o en *Menú → Pantalla*) cambia cómo se ve la plataforma. Cada toque pasa al siguiente modo:
-
-| Modo | Botón | Para qué |
-|---|---|---|
-| **Normal** | sol de contorno | Uso en oficina |
-| **Sol** | sol relleno, botón amarillo | Exteriores a pleno sol: blanco y negro, bordes gruesos, letra más marcada |
-| **Noche** | luna, botón morado | Turnos nocturnos: fondo oscuro que no deslumbra |
-
-El modo se recuerda en ese equipo o celular, también en la pantalla de acceso. Si antes usabas el *alto contraste*, ahora entras directo en modo **Sol**.
-
-![Normal](img/ajustes/4-espacios-normal.png)
-![Sol](img/ajustes/5-espacios-sol.png)
-![Noche](img/ajustes/6-espacios-noche.png)
-
-Las ventanas de captura y la pantalla de acceso también se adaptan:
-
-![Ventana en Sol](img/ajustes/8-dialogo-sol.png)
-![Ventana en Noche](img/ajustes/9-dialogo-noche.png)
-![Celular en Sol](img/ajustes/13-celular-sol.png) ![Acceso en Noche](img/ajustes/12-acceso-noche.png)
-
-## Cierre automático
-
-Por seguridad, la sesión se cierra sola tras **20 minutos sin usarla**.
-
-- **2 minutos antes** aparece **"Tu sesión está por cerrarse"** con la cuenta regresiva (por ejemplo «Se cerrará en 1:42»). Toca **Seguir conectado** para continuar.
-- Mientras estés escribiendo o usando la pantalla, la sesión no se cierra.
-- Si tienes **varias pestañas** abiertas, basta con usar una: las demás no te sacan.
-- Si el celular se apagó o cambiaste de app y volviste tarde, al regresar la pantalla te lleva a **Entrar** con el aviso **«Sesión finalizada por seguridad»** y cuántos minutos sin actividad pasaron. Solo vuelve a entrar.
-
-![Aviso antes de cerrar](img/ronda-5/sesion-por-cerrar.png)
-![En el celular](img/ronda-5/sesion-por-cerrar-movil.png)
-![Después del cierre](img/ronda-5/sesion-finalizada.png)
-
-## Módulos en migración
-
-Mientras un módulo se migra, al abrirlo verás el aviso **"Este módulo se está migrando"**. Sigue disponible en el sistema actual.
+- [Primeros pasos](primeros-pasos.md)
+- [Menús, Mis pendientes y modos de pantalla](menus.md)

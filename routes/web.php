@@ -506,6 +506,15 @@ Route::middleware('auth')->group(function () {
     });
     // Fin Padrones: Solicitud de empleo y Vacantes
 
+    // Padrones: Manual (ayuda dentro de la plataforma: toda sesión entra; cada página se filtra por los módulos que el usuario puede ver; ver docs/tecnico/manual.md)
+    Route::controller('App\Http\Controllers\ManualController')->group(function () {
+        Route::get('/manual', 'index')->name('manual.index');
+        Route::get('/manual/img/{carpeta}/{archivo}', 'imagen')->where(['carpeta' => '[a-z0-9-]+', 'archivo' => '[A-Za-z0-9][A-Za-z0-9._-]*'])
+            ->middleware('throttle:600,1')->name('manual.imagen');
+        Route::get('/manual/{pagina}', 'ver')->where('pagina', '[a-z0-9-]+')->name('manual.ver');
+    });
+    // Fin Padrones: Manual
+
     // Lector universal: QR, NFC, RFID y código de barras (ver docs/tecnico/lector.md)
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
     Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');

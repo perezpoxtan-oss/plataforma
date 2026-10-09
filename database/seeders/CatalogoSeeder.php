@@ -82,6 +82,7 @@ class CatalogoSeeder extends Seeder
         'candidatos' => 'candidatos.index',
         'autorizaciones' => 'autorizaciones.index',
         'vacantes' => 'vacantes.index',
+        'manual' => 'manual.index',
     ];
 
     /**
@@ -102,6 +103,9 @@ class CatalogoSeeder extends Seeder
                 'configuracion' => ['Configuración', 'bi-sliders', ['configurar'], [], ['ver', 'editar']],
                 'auditoria' => ['Bitácora de auditoría', 'bi-clipboard-data', ['exportar'], [], ['ver']],
                 'identidad' => ['Identidad de la plataforma', 'bi-palette', [], [], ['ver', 'editar'], Modulo::TIPO_PLATAFORMA],
+                // Manual de usuario (lección 37): toda sesión lo abre sin permiso propio (cada página se filtra por
+                // los módulos que el usuario puede ver); por eso no se contrata ni sale en la matriz de permisos
+                'manual' => ['Manual', 'bi-question-circle', [], [], ['ver'], Modulo::TIPO_PLATAFORMA],
             ]],
             // Recursos Humanos: el personal y sus catálogos (departamentos, puestos
             // y turnos). "aprobar" = validar las altas provisionales que hace la

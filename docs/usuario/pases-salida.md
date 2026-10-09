@@ -1,143 +1,128 @@
+---
+titulo: Pases de salida
+modulos: [pases_salida]
+seccion: Operación
+orden: 30
+resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y su regreso.
+---
 # Pases de salida
 
-Operación → Caseta y Control → **Pases de salida**. Aquí se autoriza y se sigue todo equipo que **sale de la sede**: un préstamo, una venta, una reparación, un traspaso… Cada pase pasa por **aprobaciones** (en orden) y por la **caseta**; si el equipo debe volver, no se cierra hasta que regresa.
+**¿Para qué sirve?** Para autorizar y seguir todo equipo que **sale de la sede**: un préstamo, una venta, una reparación, un traspaso a otra sede. Cada pase pasa por **aprobaciones** (en orden) y por la **caseta**; si el equipo debe volver, el pase no se cierra hasta que regresa.
 
-![Lista de pases](img/pases-salida/01-lista.png)
+**Antes de empezar:** según lo que hagas necesitas un permiso distinto en Pases de salida: **crear** (pedir pases), **aprobar** (firmar aprobaciones), **firmar** (caseta: salida, llegada y regreso) e **imprimir**. Si no ves un botón, tu rol no tiene ese permiso: pide ayuda a tu administrador.
 
-## Cómo se lee una ficha
+## Cómo leer la lista
 
-- **PS-000123**: el folio. A la derecha, la **etiqueta de color** dice en qué va.
-- **Espera tu firma** (azul): te toca a ti. Esa ficha tiene un borde azul.
-- El nombre es el del **solicitante**; abajo, el motivo, cuántos artículos salen y de dónde a dónde va.
-- La **línea de pasos** muestra el avance: **Solicitud → Aprobaciones → Salida → En destino / Fuera → Regreso → Cerrado**.
-  - Verde con palomita: ya se hizo.
-  - Azul con relojito: es el paso que sigue.
-  - Rojo: algo requiere atención (rechazado o vencido).
-- El recuadro azul dice **quién debe actuar ahora**, por ejemplo «Espera la firma de: Contraloría (paso 2 de 3)» o «Caseta de Hotel Demo Centro: registrar la salida».
-- Abajo, las fechas: cuándo se creó, cuándo sale y cuándo debe regresar (en rojo si ya se venció).
+1. Entra a **Operación → Caseta → Pases de salida**.
+2. Cada ficha tiene el **folio** (por ejemplo `PS-000123`), una **etiqueta de color** con el estado, el solicitante, el motivo y la **línea de pasos**: **Solicitud → Aprobaciones → Salida → En destino / Fuera → Regreso → Cerrado**.
+3. El recuadro azul dice **quién debe actuar ahora** (por ejemplo «Espera la firma de: Contraloría (paso 2 de 3)»).
+4. Usa las **píldoras** para filtrar: **Pendientes de mi firma**, **Vencidos**, **Fuera de la propiedad**, etc. En **Buscar** escribe el folio, el solicitante, el equipo o su serie, o escanea el QR de la hoja impresa.
+
+![Lista de pases](img/pases-salida/lista.png)
+
+**Qué debes ver:** los pases que te tocan llevan la etiqueta azul **Espera tu firma** y borde azul.
 
 | Etiqueta | Qué quiere decir |
 |---|---|
-| **Pendiente de Aprobación** (naranja) | Le faltan firmas de aprobación. |
-| **Rechazado — devuelto al solicitante** (rojo) | Alguien lo rechazó: hay que corregirlo y reenviarlo, o cancelarlo. |
-| **Aprobado, listo para salir** (azul) | Ya puede salir; la caseta registra la salida. |
-| **Salió — Espera Regreso** (naranja) | Ya salió y debe volver. |
-| **En destino, espera regreso** (turquesa) | Llegó a la otra sede. |
-| **En tránsito de regreso** (naranja fuerte) | Viene de vuelta. |
-| **Regreso parcial — faltan artículos** (naranja) | Regresó una parte; falta lo demás. |
-| **Salió — Cerrado** / **Regresado / Cerrado** (verde) | Terminó. |
-| **Cerrado con faltantes** (café) | Se cerró aunque algo no regresó (ver la bitácora). |
-| **Cancelado** (gris) | Se canceló antes de aprobarse. |
-| **Vencido — Debió Regresar** (rojo) | Ya pasó su fecha de regreso y no ha vuelto. ¡Hay que dar seguimiento! |
+| **Pendiente de Aprobación** | Le faltan firmas de aprobación. |
+| **Rechazado — devuelto al solicitante** | Hay que corregirlo y reenviarlo, o cancelarlo. |
+| **Aprobado, listo para salir** | La caseta ya puede registrar la salida. |
+| **Salió — Espera Regreso** | Ya salió y debe volver. |
+| **Regreso parcial — faltan artículos** | Regresó una parte; falta lo demás. |
+| **Vencido — Debió Regresar** | Pasó su fecha de regreso y no ha vuelto. ¡Dale seguimiento! |
+| **Regresado / Cerrado** | Terminó. |
+| **Cancelado** | Se canceló antes de aprobarse. |
 
-## Filtros y búsqueda
-
-- Toca una **píldora**: Todos, **Pendientes de mi firma**, Pendientes de Aprobación, Aprobados listos para salir, Fuera de la propiedad, Esperando Regreso, **Vencidos**, Cerrados o Rechazados. El número dice cuántos hay.
-- En **Buscar** escribe el folio, el nombre o número de empleado del solicitante, el equipo o su serie. También puedes **escanear el QR de la hoja impresa** con el lector: aparece ese pase.
-- Si ves varias sedes, elige una en la lista.
-
-![Vencidos](img/pases-salida/03-filtro-vencidos.png)
-
-## Mi bandeja de firmas
-
-Toca **Mi bandeja** (o el aviso de **Inicio**): solo aparecen los pases que esperan **tu** firma — las aprobaciones que te tocan y, si trabajas en caseta, los pases que debes dejar salir o recibir.
-
-![Aviso en Inicio](img/pases-salida/18-inicio-aviso.png)
-![Bandeja](img/pases-salida/02-bandeja-jefe.png)
-
-## Hacer un pase nuevo
+## Cómo pedir un pase nuevo
 
 1. Toca **Nuevo Pase**. Si trabajas en una sola sede, la **Sede de Origen** ya viene elegida.
-2. **1. Motivo y Solicitante**: elige el motivo (el sistema te dice si el equipo debe regresar). Escanea el gafete del solicitante o escribe su nombre y elígelo. ¿No aparece? **Nuevo Colaborador** (alta provisional; Recursos Humanos la revisa).
-3. **2. Enviar A**: otra sede, un proveedor (¿no está? **Nuevo Proveedor**) o un colaborador que se lo lleva. La dirección y el teléfono se llenan solos. Si el equipo regresa, escribe la **Fecha Tentativa de Regreso**: con ella el sistema avisa cuando se venza.
-4. **3. Artículos que Salen**: si es un equipo del padrón, **escanea su etiqueta** y se llena solo. Si no, escribe cantidad, equipo, marca, modelo, serie y descripción.
-5. Toca **Guardar y Enviar a Aprobación** (o **Registrar y capturar siguiente** si vas a hacer otro). Se avisa por correo a quien debe aprobar el primer paso.
+2. En **1. Motivo y Solicitante**: elige el **motivo** (la ventana te dice si el equipo debe regresar). Escanea el gafete del solicitante o escribe su nombre y elígelo. Si no aparece, toca **Nuevo Colaborador**.
+3. En **2. Enviar A**: elige otra sede, un proveedor (si no está, **Nuevo Proveedor**) o un colaborador que se lo lleva. Si el equipo regresa, escribe la **Fecha Tentativa de Regreso**.
+4. En **3. Artículos que Salen**: escanea la etiqueta del equipo del padrón (se llena solo) o escribe cantidad, equipo, marca, modelo, serie y descripción.
+5. Toca **Guardar y Enviar a Aprobación** (o **Registrar y capturar siguiente** si harás otro).
 
-![Nuevo pase](img/pases-salida/04-nuevo-pase.png)
+![Nuevo pase de salida](img/pases-salida/nuevo-pase.png)
 
-## La ficha del pase
+**Qué debes ver:** el pase aparece como **Pendiente de Aprobación** y quien firma el primer paso recibe un aviso. Cada apartado (1, 2, 3) se puede cerrar tocando su título; si falta algo, se abre solo.
 
-Al tocar una ficha se abre su página: arriba los botones de lo que **tú** puedes hacer y, abajo, tres pestañas:
+## Cómo aprobar o rechazar un pase
 
-- **Resumen**: los datos del pase y la lista de **aprobaciones** con quién firmó, cuándo, su comentario y su firma.
-- **Artículos**: lo que sale, si salió verificado (o escaneado) y cuánto ha regresado.
-- **Firmas y bitácora**: todo lo que ha pasado, con quién, cuándo, comentario, firmas e IP. No se puede borrar ni cambiar.
+1. Toca **Mis pendientes** (arriba) o la píldora **Pendientes de mi firma** y abre el pase.
+2. Revisa el **Resumen** y la pestaña **Artículos**.
+3. Toca **Aprobar**. Firma con **Usar mi firma guardada** o **Firmar ahora** en el recuadro (marca «Guardar mi firma» para la próxima vez). Si quieres, escribe un comentario.
+4. Toca **Aprobar y firmar**.
+5. Si no estás de acuerdo, toca **Rechazar** y escribe el **motivo** (obligatorio).
 
-![Ficha del pase](img/pases-salida/05-ficha-pendiente.png)
-![Artículos](img/pases-salida/12-pestana-articulos.png)
-![Bitácora](img/pases-salida/13-pestana-bitacora.png)
+![Ficha del pase](img/pases-salida/ficha.png)
+![Aprobar con firma](img/pases-salida/aprobar.png)
 
-## Aprobar o rechazar
+**Qué debes ver:** el pase pasa al siguiente paso y la siguiente persona recibe su aviso. Si rechazaste, regresa al solicitante con tu motivo en rojo.
 
-1. Abre el pase (desde **Mi bandeja**) y revisa los artículos.
-2. Toca **Aprobar**. Firma con **Usar mi firma guardada** o **Firmar ahora** en el recuadro (marca «Guardar mi firma» para no dibujarla la próxima vez; solo tú puedes usarla). Si quieres, escribe un comentario. Toca **Aprobar y firmar**.
-3. Si no estás de acuerdo, toca **Rechazar** y escribe el **motivo** (obligatorio): el pase regresa al solicitante.
-4. Si un paso es **opcional** y no aplica, puedes tocar **Omitir paso** con un comentario.
+Reglas: los pasos van **en orden**; no puedes aprobar tu propio pase ni firmar dos pasos del mismo pase. Un paso **opcional** que no aplica se puede saltar con **Omitir paso**.
 
-Los pasos van **en orden**: el siguiente aprobador recibe su aviso cuando tú firmas. No puedes aprobar tu propio pase, ni firmar dos pasos del mismo pase. Si no te toca, un recuadro amarillo te dice quién debe firmar.
+## Cómo corregir un pase rechazado
 
-![Aprobar](img/pases-salida/06-aprobar.png)
-![Rechazar](img/pases-salida/07-rechazar.png)
-![Sin permiso de aprobar](img/pases-salida/19-agente-sin-aprobar.png)
+1. Abre el pase: el motivo del rechazo sale en rojo.
+2. Toca **Corregir y reenviar**, cambia lo que te pidieron y escribe qué corregiste.
+3. Toca **Guardar y Reenviar a Aprobación**. Si ya no se necesita, toca **Cancelar pase**.
 
-## Si te rechazan un pase
+**Qué debes ver:** las aprobaciones empiezan otra vez desde el primer paso.
 
-La ficha muestra el motivo en rojo. Toca **Corregir y reenviar**, cambia lo que te pidieron, escribe qué corregiste y toca **Guardar y Reenviar a Aprobación**: las aprobaciones empiezan otra vez desde el primer paso. Si ya no se necesita, toca **Cancelar pase**.
+## Cómo registrar en caseta la salida, la llegada y el regreso
 
-![Rechazado](img/pases-salida/08-ficha-rechazada.png)
-![Corregir y reenviar](img/pases-salida/09-corregir-y-reenviar.png)
+1. Abre el pase (aparece en **Mis pendientes**) y toca el botón de la caseta: **Registrar Salida**, **Confirmar Llegada**, **Autorizar Salida de Regreso** o **Registrar Regreso**.
+2. **Verifica los artículos**: escanea cada equipo del padrón o márcalo con el dedo. Para la salida deben estar **todos**.
+3. Escribe el **nombre** de quien se lleva o entrega el equipo y pídele que **firme** en el recuadro.
+4. Firma tú como Seguridad (con tu firma guardada es un solo toque) y guarda.
+5. En el **regreso**, escribe cuántos regresan de cada artículo. Si lo que falta ya no volverá, marca **Cerrar el pase aunque falten artículos**.
 
-## En la caseta: salida, llegada y regreso
+![Caseta: registrar la salida](img/pases-salida/caseta-salida.png)
 
-1. Abre el pase (aparece en **Mi bandeja**) y toca el botón morado: **Registrar Salida**, **Confirmar Llegada**, **Autorizar Salida de Regreso** o **Registrar Regreso**.
-2. **Verifica los artículos**: escanea cada equipo del padrón (se marca solo) o márcalo con el dedo. Para la salida deben estar **todos**. Si llegó algo diferente, anótalo en el comentario.
-3. Escribe el **nombre** de quien se lleva o entrega el equipo (a veces ya viene) y que **firme** en el recuadro.
-4. Firma tú como **Seguridad** (con tu firma guardada es un solo toque) y guarda.
+**Qué debes ver:** la línea de pasos avanza. Si faltan artículos en el regreso, queda **Regreso parcial** y sigue esperando lo demás.
 
-En el **regreso**, escribe cuántos regresan de cada artículo. Si faltan, se guarda como **regreso parcial** y el pase sigue esperando lo demás (escribe qué pasó). Si lo que falta ya no va a volver, marca **Cerrar el pase aunque falten artículos**.
+## Cómo imprimir y verificar un pase
 
-![Registrar salida](img/pases-salida/10-caseta-salida.png)
-![Regreso parcial](img/pases-salida/11-caseta-regreso-parcial.png)
+1. En la ficha toca **Imprimir Pase**. Sale una hoja carta con el folio, un **código QR**, los artículos y las firmas.
+2. En la caseta, escanea el QR con el celular: se abre una página que dice si el **pase es auténtico** y su estado en ese momento.
 
-| Paso | Quién | Dónde |
+![Hoja impresa del pase](img/pases-salida/imprimir.png)
+
+**Qué debes ver:** las firmas que faltan quedan con línea para firmar a mano.
+
+## Cómo configurar quién aprueba (administrador)
+
+1. Toca **Circuito** en la lista (o **Estructura → Configuración → Pases de salida**).
+2. Para cada paso escribe su **nombre** (por ejemplo «Contraloría») y elige **quién firma**: cualquiera con permiso Aprobar, los usuarios de un **rol**, o **usuarios específicos**.
+3. Indica si es **obligatorio** y a qué **motivos** aplica. Usa las flechas para el orden.
+4. Toca **Guardar circuito**.
+
+**Qué debes ver:** los pases nuevos siguen el circuito nuevo; los que ya están en curso conservan sus pasos.
+
+## En el celular
+
+![Pases en el celular](img/pases-salida/celular.png)
+
+## Si algo sale mal
+
+| Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
-| **Aprobaciones** | Lo que diga el circuito de tu empresa (permiso **Aprobar**) | Sede de origen |
-| **Salida** | Caseta (permiso **Firmar**) | Sede de origen |
-| **Llegada** y **Salida de regreso** | Caseta (permiso **Firmar**) | La otra sede (solo si va a otra sede) |
-| **Regreso** | Caseta (permiso **Firmar**) | Sede de origen |
+| «Elige al solicitante: escanea su gafete, busca su nombre o regístralo con «Nuevo Colaborador».» | Falta el solicitante. | Escanea su gafete o búscalo. |
+| «Agrega al menos un artículo que salga en el pase.» | No hay artículos. | Escanea o escribe al menos uno. |
+| «Eres el solicitante de este pase: no puedes aprobarlo tú.» | No se aprueba lo propio. | Lo aprueba otra persona del circuito. |
+| «Escribe el motivo del rechazo: el solicitante lo verá para corregir su pase.» | El rechazo necesita motivo. | Escribe qué hay que corregir. |
+| «Marca o escanea cada artículo que sale: faltan …» | No verificaste todos los artículos. | Escanea o marca los que faltan. |
+| «Escribe el nombre de quien se lleva el equipo.» | Falta quién recibe. | Escribe su nombre y pide su firma. |
+| Recuadro amarillo «Espera la firma de …» | No te toca firmar este paso. | Espera a que firme la persona indicada. |
 
-## Imprimir y verificar
+## Preguntas frecuentes
 
-Toca **Imprimir Pase**: sale una hoja carta con el logo, el folio, un **código QR**, los artículos y todas las firmas (las que faltan quedan con línea para firmar a mano). En la caseta, escanea el QR con el celular: abre una página que confirma que el **pase es auténtico** y su estado en ese momento («Autorizado para salir», «Aún no está aprobado»…).
+- **¿Cómo sé qué pases me tocan?** Abre **Mis pendientes** o la píldora **Pendientes de mi firma**.
+- **¿Qué pasa si el equipo no regresa a tiempo?** El pase se marca **Vencido — Debió Regresar** y se envía un recordatorio.
+- **¿Puedo hacer el pase desde el celular?** Sí, todo funciona igual.
+- **¿Puedo borrar un pase?** No; si ya no se necesita, se cancela antes de aprobarse.
 
-![Hoja impresa](img/pases-salida/16-impresion.png)
-![Verificar el QR](img/pases-salida/17-verificar-qr.png)
+## Relacionado
 
-## Configurar el circuito (Administrador)
-
-En **Configuración → Pases de salida → Configurar circuito** (o el botón **Circuito** de la lista) decides quién aprueba y en qué orden:
-
-- Cada paso tiene un **nombre** (por ejemplo «Contraloría») y **quién firma**: cualquiera con permiso Aprobar, los usuarios con un **rol**, o **usuarios específicos**.
-- Puedes pedir que sea **del mismo departamento que el solicitante** (el jefe del departamento) o de un departamento en particular.
-- **Obligatorio** u opcional, y a qué **motivos** aplica (por ejemplo, Gerencia solo en Venta).
-- Usa las flechas para cambiar el orden. **Guardar circuito** aplica a los pases nuevos; los que ya están en curso conservan sus pasos.
-- Los avisos por correo del circuito se encienden o apagan en **Configuración → Avisos por correo**.
-
-![Circuito](img/pases-salida/14-circuito.png)
-![Configuración](img/pases-salida/15-configuracion.png)
-
-## En el celular y de noche
-
-Todo funciona igual en el celular. Con el botón del sol eliges **Sol** (alto contraste para exteriores) o **Noche**.
-
-![Celular](img/pases-salida/20-celular-lista.png)
-![Celular, ficha](img/pases-salida/21-celular-ficha.png)
-![Celular, caseta](img/pases-salida/23-celular-caseta-salida.png)
-![Noche](img/pases-salida/26-noche-ficha.png)
-![Sol](img/pases-salida/28-sol-lista.png)
-
-## Ronda 8: pasos que se contraen
-
-Los tres pasos del «Nuevo Pase de Salida» (Motivo y Solicitante, Enviar A, Artículos que Salen) vienen abiertos y se pueden contraer tocando su título; la plataforma recuerda cómo los dejaste. Si falta algo, el paso se abre solo.
-
-![Pase con pasos que se contraen](img/ronda-8/06-pase-con-secciones.png)
+- [Menús, Mis pendientes y modos de pantalla](menus.md)
+- [Equipos de seguridad](equipos.md)
+- [Bitácora de accesos](accesos.md)

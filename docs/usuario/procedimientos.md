@@ -1,130 +1,109 @@
+---
+titulo: Procedimientos
+modulos: [procedimientos]
+seccion: Operación
+orden: 100
+resumen: Consultar el manual de procedimientos, leer y firmar «Leí y entendí», y escribir o aprobar procedimientos.
+---
 # Procedimientos
 
-Operación → Consulta → **Procedimientos**. Es el **manual de procedimientos** de tu empresa: qué hacer ante un robo, un conato de incendio, un huracán, la entrega de turno, la pérdida de una llave… Aquí lo **consultas rápido** (también en el celular), y cuando te toca, lo **lees y firmas «Leí y entendí»**.
+**¿Para qué sirve?** Es el **manual de procedimientos** de tu empresa: qué hacer ante un robo, un conato de incendio, un huracán, la entrega de turno, la pérdida de una llave… Aquí lo **consultas rápido** (también en el celular) y, cuando te toca, lo **lees y firmas «Leí y entendí»**.
 
-![Lista de procedimientos](img/procedimientos/02-lista.png)
+**Antes de empezar:** para consultar y firmar de enterado basta con **ver** Procedimientos. Para escribir necesitas **crear**; para aprobar, **aprobar**; para retirar, **eliminar**. Si no ves un botón, tu rol no tiene ese permiso.
 
-## Cómo se lee una ficha
+## Cómo buscar un procedimiento
 
-- **PRO-SEG-001**: la clave. A la derecha, la **versión** (v2) y el **estado**:
+1. Entra a **Operación → Consulta → Procedimientos**.
+2. Toca una **categoría** (por ejemplo **Emergencias**, que siempre sale primero) o escribe una palabra en **Buscar**: «incendio», «robo», «llave»…
+3. ¿Hay una hoja impresa pegada en la caseta? Toca **Escanear el QR de una hoja impresa** y apunta a su QR.
+4. Toca **Leer** (letra grande) o **Ficha** (todo el detalle).
+
+![Lista de procedimientos](img/procedimientos/lista.png)
+
+**Qué debes ver:** cada ficha con su clave (por ejemplo `PRO-SEG-001`), versión y estado:
 
 | Estado | Qué quiere decir |
 |---|---|
 | **Publicado** (verde) | Es el que rige. Se consulta y se firma. |
-| **En revisión** (naranja) | Ya se escribió y espera que alguien lo apruebe. |
+| **En revisión** (naranja) | Espera que alguien lo apruebe. |
 | **Borrador** (gris) | Se está escribiendo. Solo lo ven quienes lo preparan. |
-| **Retirado (obsoleto)** (rojo) | Ya no se usa. Se conserva su historial. |
+| **Retirado (obsoleto)** (rojo) | Ya no se usa. |
 
-- La **franja de color** y el texto de arriba dicen la **categoría** (Emergencias en rojo, Operación de caseta en azul…). **Emergencias** sale siempre primero.
-- **Por leer y firmar** (azul): te toca leerlo. La ficha tiene un borde azul.
-- Abajo: cuántos **pasos** tiene, cuántos son **críticos** (en rojo) y desde cuándo está vigente.
-- **Acuses** (solo si preparas o apruebas procedimientos): cuántas personas ya firmaron de enterado, con su porcentaje.
-- Botones: **Leer** (modo lectura, letra grande) y **Ficha** (todo el detalle).
+## Cómo leer y firmar «Leí y entendí»
 
-## Buscar rápido (caseta)
+1. Toca **Mis pendientes → Procedimientos por leer**, o el botón **Por leer** de la lista.
+2. Toca **Leer y firmar**. Se abre el **modo lectura**: letra grande, pasos numerados y los **puntos críticos en rojo**. Con **A−** y **A+** cambias el tamaño de la letra.
+3. Lee todo con calma.
+4. Al final, marca **Leí y entendí este procedimiento**, firma en el recuadro (o usa tu firma guardada) y toca **Firmar de enterado**.
 
-- Toca una **categoría** (por ejemplo **Emergencias**) para ver solo esas.
-- En **Buscar** escribe una palabra: «incendio», «robo», «llave»… Busca en la clave, el título, el objetivo y los pasos.
-- ¿Hay una hoja impresa pegada en la caseta? Escanea su **QR** con la cámara del celular o toca **Escanear el QR de una hoja impresa**: se abre el procedimiento en modo lectura.
+![Modo lectura](img/procedimientos/lectura.png)
 
-![Buscar](img/procedimientos/05-busqueda.png)
+**Qué debes ver:** el procedimiento ya no aparece en **Por leer**. Si después se publica una versión nueva, te lo pedirá otra vez.
 
-## Mis procedimientos por leer
-
-En **Inicio** verás «Tienes N procedimientos por leer y firmar». Toca **Leer ahora** (o el botón **Por leer** de la lista).
-
-![Aviso en Inicio](img/procedimientos/23-movil-inicio-agente.png)
-![Por leer](img/procedimientos/24-movil-por-leer.png)
-
-1. Toca **Leer y firmar**. Se abre el **modo lectura**: letra grande, pasos numerados y los **puntos críticos en rojo**. Con **A−** y **A+** cambias el tamaño de la letra.
-2. Lee todo con calma.
-3. Al final, marca **«Leí y entendí este procedimiento»**, firma en el recuadro (o usa **tu firma guardada**) y toca **Firmar de enterado**.
-
-![Modo lectura](img/procedimientos/26-movil-lectura.png)
-![Firmar de enterado](img/procedimientos/27-movil-acuse.png)
-
-Si después se publica una **versión nueva**, te lo pedirá otra vez: algo cambió y hay que leerlo de nuevo.
-
-## Escribir un procedimiento nuevo
-
-(Necesitas el permiso «Crear»; por omisión: Administrador, Director, Jefe de seguridad y Supervisor.)
+## Cómo escribir un procedimiento nuevo
 
 1. Toca **Nuevo Procedimiento**.
-2. **1. Datos generales**: la **clave** (viene una sugerida, por ejemplo `PRO-006`; puedes poner `PRO-SEG-010`), la **categoría**, el **título** y el **objetivo** (para qué sirve). Alcance y responsables son opcionales.
-3. **2. A quién aplica**: **Todas las sedes** o **Sedes elegidas** (si trabajas en una sola sede, ya viene marcada la tuya). Si solo aplica a algunos **departamentos o puestos**, ábrelo y márcalos; si no marcas ninguno, aplica a todo el personal.
-4. **3. Pasos**: uno por renglón, claro y corto. Marca **Punto crítico** lo que nunca debe olvidarse. Con las flechas cambias el orden; con el bote de basura lo quitas; **Agregar paso** pone otro.
-5. **4. Notas y adjuntos** (opcional): teléfonos, aclaraciones y archivos **PDF o imágenes** (máximo 5 MB cada uno), por ejemplo un plano de evacuación.
+2. En **1. Datos generales** escribe la **clave** (viene una sugerida), elige la **categoría** y escribe el **título** y el **objetivo**.
+3. En **2. A quién aplica** elige **Todas las sedes** o **Sedes elegidas**; si solo aplica a algunos departamentos o puestos, márcalos.
+4. En **3. Pasos** escribe un paso por renglón. Marca **Punto crítico** lo que nunca debe olvidarse. **Agregar paso** pone otro; las flechas cambian el orden.
+5. En **4. Notas y adjuntos** (opcional) agrega teléfonos, aclaraciones o archivos PDF o imágenes.
 6. Toca **Guardar borrador** (para seguir después) o **Guardar y enviar a revisión**.
 
-![Nuevo procedimiento](img/procedimientos/06-nuevo-procedimiento.png)
-![Pasos](img/procedimientos/07-nuevo-pasos.png)
-![En el celular](img/procedimientos/33-movil-nuevo-pasos.png)
+![Nuevo procedimiento](img/procedimientos/nuevo.png)
 
-## Revisar y aprobar
+**Qué debes ver:** el procedimiento como **Borrador** o **En revisión**.
 
-(Necesitas el permiso «Aprobar»: Administrador, Director y Jefe de seguridad.) En Inicio verás «N procedimientos esperan tu aprobación».
+## Cómo aprobar o pedir cambios
 
-1. Abre el procedimiento **En revisión**. Revisa el contenido y los pasos.
-2. Si está bien, toca **Aprobar**: firma (o usa tu firma guardada) y toca **Aprobar y publicar**. Queda **Publicado** y se avisa por correo a quien debe leerlo.
-3. Si hay que corregir algo, toca **Pedir cambios** y escribe **qué** hay que corregir (es obligatorio). Regresa a borrador con tu comentario.
+1. Abre el procedimiento **En revisión** y revisa el contenido.
+2. Si está bien, toca **Aprobar**, firma y toca **Aprobar y publicar**.
+3. Si hay que corregir algo, toca **Pedir cambios** y escribe qué corregir.
 
-**No puedes aprobar lo que tú escribiste o enviaste**: lo aprueba otra persona. Si no puedes, la ficha te dice por qué en un recuadro amarillo.
+![Ficha de un procedimiento](img/procedimientos/ficha.png)
 
-![En revisión](img/procedimientos/09-ficha-en-revision.png)
-![Aprobar](img/procedimientos/10-aprobar.png)
-![Pedir cambios](img/procedimientos/11-pedir-cambios.png)
+**Qué debes ver:** al aprobar, queda **Publicado** y se avisa a quien debe leerlo. No puedes aprobar lo que tú escribiste o enviaste.
 
-## Cambiar un procedimiento publicado (versión nueva)
+## Cómo cambiar un procedimiento publicado
 
-Un procedimiento publicado **no se edita directamente**:
+1. En su ficha toca **Nueva versión**. Se crea un borrador copiando todo; la versión anterior sigue rigiendo.
+2. Toca **Editar borrador**, haz los cambios y escribe **qué cambió**.
+3. Toca **Enviar a revisión**. Cuando se aprueba, la versión nueva rige y todos deben firmar otra vez.
+4. Si ya no se necesita el cambio, toca **Descartar borrador**.
 
-1. En su ficha toca **Nueva versión**. Se crea la versión 2 como **borrador**, copiando todo. La versión 1 **sigue rigiendo** mientras tanto.
-2. Toca **Editar borrador**, haz los cambios y escribe **qué cambió** (es obligatorio desde la versión 2).
-3. **Enviar a revisión** → alguien la aprueba → la versión 2 queda vigente, la 1 queda **reemplazada** y todos deben firmar otra vez.
-4. ¿Ya no se necesita el cambio? **Descartar borrador**.
+**Qué debes ver:** en la pestaña **Versiones**, quién escribió, envió y aprobó cada versión.
 
-![Versión 2 en borrador](img/procedimientos/17-ficha-version-2-borrador.png)
-![Editar borrador](img/procedimientos/18-editar-borrador.png)
+## Cómo imprimir, ver acuses y retirar
 
-## La ficha
+1. **Imprimir:** toca **Imprimir**. Sale una hoja con los pasos, quién lo aprobó y un **QR**. Si es un borrador, dice **NO VIGENTE**.
+2. **Acuses:** en la ficha, la pestaña **Acuses** muestra el porcentaje de cumplimiento, quién falta y quién firmó. Toca **Exportar** para bajarlo en Excel (CSV).
+3. **Retirar:** toca **Retirar** y escribe el motivo. Se puede **Reactivar** después.
 
-- **Contenido**: objetivo, a quién aplica, pasos, notas y adjuntos. Con los botones **v1 · v2** ves versiones anteriores.
-- **Versiones**: quién escribió cada versión, quién la envió, **quién la aprobó (con su firma)**, qué cambió y su historial (con comentarios). No se puede borrar.
-- **Acuses** (si preparas o apruebas): el **% de cumplimiento**, quién **falta** y quién **firmó** (fecha y firma). Filtra por sede o departamento y toca **Exportar** para abrirlo en Excel.
+![Hoja impresa](img/procedimientos/hoja.png)
 
-![Ficha](img/procedimientos/12-ficha-publicada.png)
-![Versiones](img/procedimientos/13-versiones.png)
-![Acuses](img/procedimientos/14-acuses.png)
+## En el celular
 
-## Imprimir
+![Procedimientos en el celular](img/procedimientos/celular.png)
 
-Toca **Imprimir**: una hoja carta con el logo, la clave, la versión, los pasos (los críticos resaltados), quién lo aprobó con su firma y un **QR**. Pégala en la caseta: al escanear el QR se abre el procedimiento en el celular. Si imprimes un borrador, la hoja dice **NO VIGENTE**.
+## Si algo sale mal
 
-![Hoja impresa](img/procedimientos/21-hoja-impresa.png)
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| «Marca la casilla «Leí y entendí este procedimiento».» | Falta la casilla. | Márcala y vuelve a firmar. |
+| «No tienes una firma guardada: firma en el recuadro.» | No hay firma guardada. | Firma con el dedo en el recuadro. |
+| «Agrega al menos un paso antes de enviarlo a revisión.» | El procedimiento no tiene pasos. | Escribe al menos un paso. |
+| «La clave solo lleva letras, números y guiones (por ejemplo PRO-SEG-001).» | La clave tiene espacios o símbolos. | Corrige la clave. |
+| «Escribe por qué lo rechazas y qué hay que corregir (es obligatorio).» | Falta el comentario. | Explica qué corregir. |
+| «La versión publicada no se edita: usa «Nueva versión» para proponer cambios.» | Querías editar lo publicado. | Toca **Nueva versión**. |
+| «Los adjuntos solo pueden ser PDF, JPG, PNG o WEBP.» | El archivo no es válido. | Conviértelo a PDF o imagen. |
 
-## Retirar un procedimiento
+## Preguntas frecuentes
 
-Si ya no se usa, toca **Retirar** y escribe el motivo (por ejemplo «Lo sustituye PRO-SEG-010»). Queda **Retirado (obsoleto)**: ya no se pide firmarlo y no aparece para quien solo consulta. Su historial se conserva y se puede **Reactivar**. (Permiso «Eliminar».)
+- **¿Por qué me pide firmar otra vez?** Se publicó una versión nueva; algo cambió.
+- **¿El Agente puede escribir procedimientos?** No; consulta, lee y firma de enterado.
+- **¿Puedo leerlo en el celular?** Sí; el modo lectura está hecho para eso.
+- **¿Se puede borrar un procedimiento?** Uno publicado se **retira**. Solo uno que nunca se publicó se puede eliminar definitivamente (administrador).
 
-Un procedimiento que **nunca se publicó** (borrador capturado por error) se puede **Eliminar definitivamente** (solo el Administrador).
+## Relacionado
 
-![Retirar](img/procedimientos/16-retirar.png)
-
-## Categorías
-
-Toca **Categorías** para cambiar el nombre, el color o el orden, desactivar una o agregar otra. Solo quien edita procedimientos en **toda la empresa** puede cambiarlas.
-
-![Categorías](img/procedimientos/08-categorias.png)
-
-## Modos Noche y Sol
-
-Como en toda la plataforma, el botón del sol cambia a **Sol** (alto contraste, para exteriores) y **Noche** (turnos nocturnos).
-
-![Noche](img/procedimientos/30-movil-lectura-noche.png)
-![Sol](img/procedimientos/34-lista-sol.png)
-
-## Lo que ve un Agente
-
-El Agente **consulta** los procedimientos publicados de su sede (y los de todas las sedes), los **lee** y **firma de enterado**. No ve borradores ni puede crear, aprobar o retirar.
-
-![Agente](img/procedimientos/25-movil-lista-agente.png)
+- [Menús, Mis pendientes y modos de pantalla](menus.md)
+- [Bitácora de novedades](novedades.md)

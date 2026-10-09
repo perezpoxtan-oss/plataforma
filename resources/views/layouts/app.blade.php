@@ -3,6 +3,10 @@
     $menusMovil = collect($menus)->sortBy('orden_movil')->values();
     // Ronda 6 (LL-08): los filtros guardados en el navegador valen solo para esta sesión y este usuario
     $marcaFiltros = session('marca_filtros') ?? tap(\Illuminate\Support\Str::random(16), fn ($m) => session()->put('marca_filtros', $m));
+    // Manual (lección 37): página de ayuda del módulo de esta pantalla (botón «?» junto al título), si existe y el usuario la puede ver
+    $moduloActual = collect($menus)->flatMap(fn ($m) => collect($m['secciones'])->flatten(1))->firstWhere('activo', true);
+    $ayudaManual = $moduloActual ? app(\App\Services\Manual\Manual::class)->paginaDeModulo($moduloActual['clave'], $usuario) : null;
+    // Fin Manual
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -59,6 +63,8 @@
             <div class="barra-pc-acciones">
                 @include('componentes.mis-pendientes'){{-- Mis pendientes (lección 35) --}}
                 @include('componentes.campana'){{-- Centro de notificaciones (ADR-0007) --}}
+                {{-- Manual (lección 37) --}}
+                <a href="{{ route('manual.index') }}" class="btn-alto-contraste btn-manual {{ request()->routeIs('manual.*') ? 'activo' : '' }}" title="Manual" aria-label="Manual de usuario"><i class="bi bi-question-circle" aria-hidden="true"></i></a>
                 <button type="button" class="btn-alto-contraste" data-accion="modo-pantalla" title="Modo de pantalla: Normal" aria-label="Modo de pantalla: Normal. Cambiar a Sol">
                     <i class="bi bi-sun" aria-hidden="true"></i>
                 </button>
@@ -104,6 +110,11 @@
 
     {{-- ===================== Contenido ===================== --}}
     <main class="contenido">
+        {{-- Manual (lección 37): plataforma.js lo coloca junto al título de la pantalla --}}
+        @if ($ayudaManual)
+            <a href="{{ route('manual.ver', $ayudaManual->slug) }}" class="ayuda-contextual no-imprimir" data-ayuda-contextual hidden
+               title="Ayuda: {{ $ayudaManual->titulo }}" aria-label="Ver en el manual: {{ $ayudaManual->titulo }}"><i class="bi bi-question-lg" aria-hidden="true"></i></a>
+        @endif
         @yield('contenido')
     </main>
 
@@ -157,6 +168,10 @@
                     <i class="bi bi-sun" aria-hidden="true"></i> <span data-modo-etiqueta>Modo de pantalla: Normal</span>
                 </button>
             </div>
+
+            {{-- Manual (lección 37) --}}
+            <div class="menu-lateral-grupo mt-4">Ayuda</div>
+            <a href="{{ route('manual.index') }}" class="menu-lateral-item {{ request()->routeIs('manual.*') ? 'activo' : '' }}"><i class="bi bi-question-circle text-primary" aria-hidden="true"></i> Manual</a>
 
             <div class="menu-lateral-grupo mt-4">Sesión</div>
             <form action="{{ route('logout') }}" method="POST" class="m-0">

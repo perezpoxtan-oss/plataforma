@@ -1,107 +1,105 @@
+---
+titulo: Préstamo de llaves
+modulos: [prestamo_llaves]
+seccion: Operación
+orden: 20
+resumen: Prestar una llave a un colaborador con su garantía y recibirla cuando la regresa.
+---
 # Préstamo de llaves
 
-Operación → Caseta y Control → **Préstamo de llaves**. Aquí la caseta anota **quién se lleva una llave**, qué identificación deja **en garantía** y **cuándo la regresa**. Es la "Bitácora de Llaves" de siempre.
+**¿Para qué sirve?** Aquí la caseta anota **quién se lleva una llave**, qué identificación deja **en garantía** y **cuándo la regresa**. Así siempre sabes dónde está cada llave.
 
-Las llaves se dan de alta en el [Catálogo de llaves](llaves.md). Aquí solo se prestan y se reciben.
+**Antes de empezar:** necesitas que tu rol pueda **ver** y **crear** en Préstamo de llaves. Las llaves se dan de alta antes en el [Catálogo de llaves](llaves.md); aquí solo se prestan y se reciben. Si no ves el botón **Prestar Llave**, pide a tu administrador que revise tu rol.
 
-![Llaves en uso](img/prestamo-llaves/01-llaves-en-uso.png)
+## Cómo leer la pantalla
 
-## Las dos pestañas
+1. Entra a **Operación → Caseta → Préstamo de llaves**.
+2. Tienes dos pestañas:
 
 | Pestaña | Qué ves |
 |---|---|
-| **Llaves en Uso (N)** | Las llaves que están **fuera** de la caseta ahora mismo (ficha con borde **ámbar** y la etiqueta **LLAVE FUERA**). El número dice cuántas son. |
+| **Llaves en Uso** | Las llaves que están **fuera** ahora (borde ámbar, **LLAVE FUERA**). |
 | **Historial de Entregas** | Las que ya regresaron (**EN CASETA**, borde verde) y los préstamos **ANULADOS** (gris). |
 
-En cada ficha ves: el **colaborador** y su **No. Nómina**, el **nombre de la llave** en rojo, lo que abre, la **garantía** que dejó y a qué hora **salió** y quién se la entregó.
+![Llaves en uso](img/prestamo-llaves/llaves-en-uso.png)
 
-![Historial de entregas](img/prestamo-llaves/02-historial-entregas.png)
+**Qué debes ver:** en cada ficha, el colaborador y su número de nómina, el nombre de la llave en rojo, lo que abre, la garantía que dejó y a qué hora salió y quién se la entregó.
 
-### Buscar
+## Cómo prestar una llave
 
-- Escribe en **Buscar** el nombre del colaborador, su número de nómina o el nombre de la llave. Busca en la pestaña que tengas abierta.
-- Si trabajas en varias sedes, elige una en **Todas las sedes**.
-
-## Prestar una llave (rápido, con el escáner)
-
-1. Toca **Prestar Llave**. El cursor ya está listo en **Llave a Prestar**.
-2. **Sede**: si solo tienes una, ya viene elegida.
-3. **Escanea la llave**: el QR del llavero con la cámara (botón del código QR), acerca su etiqueta NFC, usa el lector USB o escribe su nombre (por ejemplo `HDC-101`): aparece solo, sin Enter.
-   - Si esa llave **ya está fuera**, o es **de otra sede**, el sistema te avisa en rojo y no la deja elegida.
-4. **Escanea el gafete** del colaborador (o escribe su número de nómina o su nombre).
-5. Elige la **ID Dejada en Garantía**: Gafete interno, INE, Licencia, Pasaporte o **Ninguna (Riesgo)**. Si quieres, escribe el **folio** o un detalle (por ejemplo «Depto Ama de Llaves»).
+1. Toca **Prestar Llave**. El cursor ya está en **Llave a Prestar**.
+2. Revisa la **Sede**; si solo tienes una, ya viene elegida.
+3. **Escanea la llave**: el QR del llavero con la cámara, su etiqueta NFC, el lector USB, o escribe su nombre (por ejemplo `HDC-101`) y elígela.
+4. **Escanea el gafete** del colaborador, o escribe su número de nómina o su nombre y elígelo.
+5. Elige la **ID Dejada en Garantía**: Gafete interno, INE, Licencia, Pasaporte o **Ninguna (Riesgo)**. Si quieres, escribe el folio o un detalle.
 6. Toca **Registrar y Capturar Siguiente**.
 
-![Prestar llave](img/prestamo-llaves/05-prestar-lleno.png)
+![Prestar una llave](img/prestamo-llaves/prestar.png)
 
-El cuadro **no se cierra**: aparece el aviso verde «Llave … entregada a …», la ficha nueva se agrega a **Llaves en Uso** y el cuadro queda limpio para la siguiente persona. Arriba ves cuántos préstamos llevas en esta captura. Cuando termines, toca **Cerrar**.
+**Qué debes ver:** el aviso verde «Llave … entregada a …». La ventana **no se cierra**: queda limpia para la siguiente persona. Cuando termines, toca **Cerrar**. La llave aparece en **Llaves en Uso**.
 
-![Listo para el siguiente](img/prestamo-llaves/06-registrar-y-siguiente.png)
+Reglas: solo se prestan llaves **activas**, de la **sede elegida** y que **no estén fuera**. El colaborador debe estar activo y trabajar en esa sede (un colaborador provisional dado de alta en caseta también puede llevarse una llave).
 
-Si algo no está bien, el aviso rojo sale **dentro del cuadro** y lo que capturaste se queda:
+## Cómo recibir una llave
 
-![Llave ya fuera](img/prestamo-llaves/07-llave-ya-fuera.png)
-![Colaborador de otra sede](img/prestamo-llaves/07b-error-en-dialogo.png)
-
-**Reglas:**
-
-- Solo se prestan llaves **activas**, de la **sede** elegida y que **no estén fuera**.
-- El colaborador debe estar **activo** y trabajar en esa sede (o ser corporativo). Un colaborador provisional que dio de alta la caseta también puede llevarse una llave.
-
-## Recibir una llave
-
-Cuando la regresan:
-
-1. Busca su ficha en **Llaves en Uso**.
+1. Busca su ficha en **Llaves en Uso** (puedes escribir el nombre, la nómina o la llave en **Buscar**).
 2. Toca **Recibir Llave a Caseta** y confirma.
 3. **Devuelve la identificación** que dejó en garantía.
 
-La ficha pasa al **Historial de Entregas** con la hora de regreso y quién la recibió.
+**Qué debes ver:** la ficha pasa a **Historial de Entregas** con la hora de regreso y quién la recibió.
 
-## Anular un préstamo (error de captura)
+![Historial de entregas](img/prestamo-llaves/historial-entregas.png)
 
-Si te equivocaste de llave o de persona, **no se borra**: se anula.
+## Cómo anular un préstamo capturado por error
 
 1. En la ficha, toca el botón gris **⊘** (Anular préstamo) y confirma.
-2. La llave queda **disponible de inmediato** y el préstamo pasa al historial como **ANULADO**.
+2. Si después necesitas deshacerlo, en el historial toca **Reactivar**.
 
-Solo se anula una llave que está **en uso**. Esta opción la tienen el Jefe de seguridad y el Administrador (el Agente no).
+**Qué debes ver:** la llave queda disponible de inmediato y el préstamo aparece como **ANULADO**. Solo se anula una llave **en uso**; esta opción la tienen el Jefe de seguridad y el Administrador.
 
-**Reactivar**: en el historial, un préstamo anulado tiene el botón **Reactivar**. Si mientras tanto esa llave se volvió a prestar, el sistema no lo permite.
+## Cómo ver el historial de una llave
 
-## Historial de una llave
+1. Toca el **reloj** junto al nombre de la llave.
+2. Revisa sus últimos movimientos: quién la usó, quién la entregó y quién la recibió.
 
-Toca el **reloj** junto al nombre de la llave: ves sus últimos 15 movimientos, quién la usó, quién la entregó y la recibió, y si sigue **AÚN EN USO**.
+![Historial de una llave](img/prestamo-llaves/historial-llave.png)
 
-![Historial de la llave](img/prestamo-llaves/03-historial-llave.png)
+**Qué debes ver:** si la llave sigue fuera, dice **AÚN EN USO**.
 
-En el **Catálogo de llaves**, una llave prestada muestra **EN USO** y **Usada por**; el enlace **Historial de préstamos** abre esta misma ventana.
+## Cómo descargar el reporte
 
-![Catálogo: en uso](img/prestamo-llaves/12-catalogo-en-uso.png)
+1. Toca **Excel (Auditoría)**.
+2. Si elegiste una sede en el filtro, solo baja esa sede.
 
-## Excel (Auditoría)
-
-El botón **Excel (Auditoría)** descarga todos los préstamos que puedes ver (si elegiste una sede en el filtro, solo de esa sede): folio, sede, llave, colaborador, garantía, salida, regreso, guardias, estado y anulaciones.
+**Qué debes ver:** un archivo de Excel (CSV) con folio, sede, llave, colaborador, garantía, salida, regreso, guardias y estado.
 
 ## En el celular
 
-La pantalla se acomoda al celular: botones grandes, una ficha por renglón y el cuadro de préstamo a pantalla completa.
+La pantalla se acomoda al celular: una ficha por renglón y la ventana de préstamo a pantalla completa.
 
-![Celular](img/prestamo-llaves/09-movil-agente.png)
-![Prestar en el celular](img/prestamo-llaves/10-movil-prestar.png)
+![Préstamo de llaves en el celular](img/prestamo-llaves/celular.png)
 
-Con el modo **Noche** o **Sol** (botón junto a tu nombre) los colores se adaptan:
+## Si algo sale mal
 
-![Modo noche](img/prestamo-llaves/11-noche.png)
-![Modo sol](img/prestamo-llaves/11-sol.png)
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| «Esa llave ya está fuera — la tiene … en este momento.» | Alguien no la ha regresado. | Pide que la regresen y recíbela antes de prestarla otra vez. |
+| «La llave … es de otra sede. Elige la sede correcta o escanea otra llave.» | La llave no es de la sede elegida. | Cambia la sede o usa otra llave. |
+| «La llave … está dada de baja: no se puede prestar.» | La llave ya no se usa. | Avisa a tu supervisor. |
+| «Escanea el gafete o busca al colaborador que se lleva la llave.» | Falta el colaborador. | Escanea su gafete o búscalo. |
+| «Elige la identificación que deja en garantía (o «Ninguna»).» | Falta la garantía. | Elige una opción de la lista. |
+| «No se puede reactivar — esa llave ya se volvió a prestar…» | La llave ya tiene otro préstamo. | Deja el préstamo anulado. |
+| No veo el botón **⊘** | Tu rol no puede anular. | Pide a tu jefe de seguridad que lo anule. |
 
-## ¿Quién puede hacer qué?
+## Preguntas frecuentes
 
-| Acción | Quién (plantillas) |
-|---|---|
-| Ver la bitácora y el historial | Todos los roles de Seguridad |
-| Prestar y recibir | Administrador, Jefe de seguridad, Asistente, Supervisor y Agente (en su sede) |
-| Anular y reactivar | Administrador y Jefe de seguridad |
-| Excel (Auditoría) | Administrador, Director, Jefe de seguridad, Asistente y Supervisor |
+- **¿Puedo prestar varias llaves seguidas?** Sí: la ventana se queda abierta con **Registrar y Capturar Siguiente**.
+- **¿Qué pasa si el colaborador no deja identificación?** Elige **Ninguna (Riesgo)**; queda anotado.
+- **¿Dónde veo quién tiene una llave desde el catálogo?** En el [Catálogo de llaves](llaves.md) la llave dice **EN USO** y **Usada por**.
+- **¿Puedo borrar un préstamo?** No; se anula para que quede constancia.
 
-Cada quien ve solo los préstamos de **sus sedes**.
+## Relacionado
+
+- [Catálogo de llaves](llaves.md)
+- [Vouchers de reposición](vouchers.md)
+- [Bitácora de accesos](accesos.md)

@@ -1,115 +1,100 @@
+---
+titulo: Recorridos de Protección Civil
+modulos: [recorridos_pc]
+seccion: Operación
+orden: 70
+resumen: Revisar extintores, hidrantes, detectores y botiquines con el celular y reportar lo que falla.
+---
 # Recorridos de Protección Civil
 
-Operación → **Recorridos de Protección Civil**. Aquí la guardia hace la **ronda de inspección** de extintores, hidrantes, detectores, botiquines y demás equipo de Protección Civil: escanea cada equipo, marca lo que está sano y anota lo que falla. Si algo falla, el sistema abre solo un **ticket en la Bitácora de Novedades** para que alguien lo repare.
+**¿Para qué sirve?** Para hacer la **inspección** de extintores, hidrantes, detectores, botiquines y demás equipo de Protección Civil: escaneas cada equipo, marcas lo que está bien y anotas lo que falla. Si algo falla, la plataforma abre sola un **ticket en la Bitácora de novedades** para que alguien lo repare.
 
-Está pensado para hacerse **caminando con el celular**: botones grandes, un equipo a la vez y cada punto se guarda al momento.
+Está pensado para hacerse **caminando con el celular**: botones grandes, un equipo a la vez, y cada equipo se guarda al momento.
 
-## 1. La lista de recorridos
+**Antes de empezar:** necesitas que tu rol pueda **ver** y **crear** en Recorridos de Protección Civil. Los equipos se dan de alta antes en [Equipos de Protección Civil](equipos-pc.md). Si no ves **Nuevo Recorrido**, pide a tu administrador que revise tu rol.
 
-![Lista de recorridos](img/recorridos-pc/01-lista.png)
+## Cómo leer la lista de recorridos
 
-- Cada tarjeta es un recorrido con su número (**Recorrido #00003**), la fecha, la sede, el edificio o zona, quién lo hizo, cuántos equipos se revisaron y cuántos tienen hallazgo.
-- El color de arriba es su **estatus**:
-  - **En Proceso** (azul): todavía se puede continuar.
-  - **Completo** (verde): se finalizó y todo estaba bien.
-  - **Con Hallazgos** (amarillo): se finalizó y algún equipo falló. Dice qué **ticket de seguimiento** generó (tócalo para abrirlo en Novedades).
-- Arriba puedes filtrar por estatus, por sede y buscar por número, guardia o zona.
-- Botones: **Reporte de Auditoría** (para imprimir) y **Nuevo Recorrido**. Los equipos que se revisan se dan de alta en **Padrones → Equipos de Protección Civil** (si puedes verlo, aparece un enlace pequeño debajo del título).
+1. Entra a **Operación → Protección civil → Recorridos de Protección Civil**.
+2. Cada tarjeta es un recorrido con su número (por ejemplo **Recorrido #00003**), la fecha, la sede, la zona, quién lo hizo, cuántos equipos se revisaron y cuántos fallaron.
+3. El color de arriba es su estado: **En Proceso** (azul, se puede continuar), **Completo** (verde, todo bien) o **Con Hallazgos** (amarillo, algo falló; dice qué ticket se abrió).
 
-![Enlace al catálogo](img/equipos-pc/7-recorridos-enlace.png)
+![Lista de recorridos](img/recorridos-pc/lista.png)
 
-En el celular se ve así:
+**Qué debes ver:** puedes filtrar por estado y sede, y buscar por número, guardia o zona.
 
-![Lista en el celular](img/recorridos-pc/20-movil-lista.png)
-
-## 2. Empezar un recorrido
+## Cómo empezar un recorrido
 
 1. Toca **Nuevo Recorrido**.
-2. La **Sede** ya viene elegida si solo trabajas en una.
-3. **Edificio / Zona** es opcional: si lo eliges, el avance cuenta solo los equipos de ese edificio.
+2. Revisa la **Sede** (si trabajas en una sola, ya viene elegida).
+3. Si quieres, elige **Edificio / Zona**: el avance contará solo los equipos de esa zona.
 4. Si quieres, escribe **Observaciones Generales**.
 5. Toca **Iniciar Recorrido**.
 
-![Nuevo recorrido](img/recorridos-pc/02-nuevo-recorrido.png)
+![Nuevo recorrido](img/recorridos-pc/nuevo.png)
 
-## 3. Revisar cada equipo (un punto a la vez)
+**Qué debes ver:** la pantalla del recorrido con el avance («0 de 11 equipos revisados») y el campo para escanear el primer equipo.
 
-Al iniciar (o al tocar **Continuar Recorrido**) ves el recorrido con:
+## Cómo revisar cada equipo
 
-- **El avance:** «2 de 11 equipos revisados», una barra verde, cuántos tienen hallazgo y cuántos faltan.
-- **Punto de Inspección #3:** el campo para escanear.
-
-![Recorrido en curso](img/recorridos-pc/03-recorrido-en-curso.png)
-
-**Para identificar el equipo** usa lo que tengas a la mano:
-
-- **Cámara:** toca el botón del QR y apunta a la etiqueta del equipo (funciona en Android y en iPhone).
-- **NFC (Android):** toca el botón de la antena y acerca el celular a la etiqueta.
-- **iPhone con etiqueta NFC:** si la etiqueta tiene grabada la dirección del equipo (la que aparece en «Ver QR»), acerca el iPhone y se abre solo el recorrido con ese equipo.
-- **Lector USB o Bluetooth (PC de caseta):** solo pásalo; el campo ya está listo.
-- **Escribiendo:** teclea el ID (por ejemplo `EXT-01`): aparece solo, sin Enter.
-
-Si la etiqueta está dañada, abre **Equipos pendientes de revisar** y toca **Revisar** en el equipo.
-
-![Recorrido en el celular](img/recorridos-pc/21-movil-recorrido.png)
-
-**Ya con el equipo en pantalla:**
-
-1. Arriba ves su ID, tipo y ubicación.
-2. Todas las piezas vienen **en verde (sano/presente)**. Toca la pieza que esté **dañada o falte**: se pone **en rojo**.
-3. Revisa también los **Criterios Operativos Universales** (visible, accesible, funcional).
+1. **Identifica el equipo**: toca el botón del **QR** y apunta a la etiqueta; o toca la **antena** y acerca el celular a la etiqueta NFC (Android); o pasa el lector USB; o escribe su ID (por ejemplo `EXT-01`).
+2. Revisa sus piezas: todas vienen **en verde** (bien). Toca la pieza **dañada o que falta**: se pone **en rojo**.
+3. Revisa los **Criterios Operativos Universales** (visible, accesible, funcional).
 4. Si viste algo raro, escríbelo en **Observaciones / Desperfectos Encontrados**.
-5. Abajo el sistema te dice el **Resultado**: *OK* o *FALLA*. Una pieza en rojo **o** una observación = FALLA.
-6. Toca **Guardar y escanear siguiente**. El punto se guarda y vuelves al escáner.
+5. Abajo ves el **Resultado**: *OK* o *FALLA* (una pieza en rojo o una observación = FALLA).
+6. Toca **Guardar y escanear siguiente**.
 
-![Punto de inspección](img/recorridos-pc/04-punto-inspeccion.png)
+![Revisión de un equipo](img/recorridos-pc/punto.png)
 
-En el celular los botones se quedan siempre abajo, a la mano:
+**Qué debes ver:** el avance sube y el campo queda listo para el siguiente equipo.
 
-![Punto en el celular](img/recorridos-pc/22-movil-punto.png)
-![Final del punto en el celular](img/recorridos-pc/22b-movil-punto-final.png)
+- Si la etiqueta está dañada, abre **Equipos pendientes de revisar** y toca **Revisar** en el equipo.
+- Si el equipo no tiene etiqueta o no está en el catálogo, toca **¿No tiene etiqueta o no está en el catálogo? Captúralo a mano**, escribe su ID y elige la **Categoría del Equipo**.
+- Si escaneas un equipo que ya revisaste en este recorrido, sale un aviso amarillo.
 
-> Si escaneas un equipo que ya revisaste en este recorrido, aparece un aviso amarillo. Puedes guardarlo otra vez (queda un segundo registro).
+## Qué pasa cuando algo falla
 
-### ¿Y si el equipo no tiene etiqueta o no está en el catálogo?
+El **primer** equipo con falla abre un ticket de **Siniestro Protección Civil** en la Bitácora de novedades con lo que falló. Los siguientes equipos con falla del mismo recorrido se anotan en ese mismo ticket. Verás un aviso con el número del ticket.
 
-Toca **¿No tiene etiqueta o no está en el catálogo? Captúralo a mano**. Escribe su ID, elige la **Categoría del Equipo** (aparecen sus piezas) y, si quieres, la ubicación. Si el ID sí estaba en el catálogo, el sistema lo reconoce solo.
+## Cómo guardar para después o terminar
 
-![Captura a mano](img/recorridos-pc/05-captura-manual.png)
+1. **Guardar y Continuar Después**: deja el recorrido **En Proceso**. Para seguir, toca **Continuar Recorrido** en la lista.
+2. **Finalizar Recorrido**: confirma y se cierra como **Completo** o **Con Hallazgos**. Después ya no se le agregan equipos.
 
-## 4. Cuando algo falla
+**Qué debes ver:** la tarjeta del recorrido con su estado final en la lista.
 
-El **primer** equipo con falla abre un ticket de **Siniestro Protección Civil** en la Bitácora de Novedades, con la ubicación «Ver detalle en Recorrido PC #00002» y lo que falló. Los siguientes equipos con falla del mismo recorrido se **anotan en ese mismo ticket** (en el Minuto a Minuto). Verás un aviso con el número del ticket.
+## Cómo ver el detalle y el reporte
 
-## 5. Guardar para después o finalizar
+1. En la tarjeta toca **Ver detalle**: ves cada equipo revisado y, en amarillo, los que fallaron con **qué pieza** falló y el ticket que se abrió.
+2. Para el informe, toca **Reporte de Auditoría**, elige **Desde**, **Hasta** y la sede, y toca **Filtrar**. Imprímelo o toca **Exportar Excel**.
 
-Al final de la página:
+![Detalle de un recorrido](img/recorridos-pc/detalle.png)
+![Reporte de Auditoría](img/recorridos-pc/reporte.png)
 
-- **Guardar y Continuar Después:** guarda las observaciones generales y deja el recorrido **En Proceso**. Para seguir, toca **Continuar Recorrido** en la lista. (Cada equipo ya quedó guardado al momento.)
-- **Finalizar Recorrido:** te pide confirmar y lo cierra como **Completo** o **Con Hallazgos**. Necesita al menos un equipo revisado. Después ya no se le pueden agregar equipos.
+## En el celular
 
-## 6. Ver el detalle de un recorrido
+![Recorrido en el celular](img/recorridos-pc/celular.png)
 
-Toca **Ver detalle** en la tarjeta. Ves todos los equipos revisados, en amarillo los que fallaron con **qué pieza** falló, el ticket que se generó y quién finalizó.
+## Si algo sale mal
 
-![Detalle con hallazgos](img/recorridos-pc/06-detalle-con-hallazgos.png)
-![Detalle en el celular](img/recorridos-pc/24-movil-detalle.png)
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| «Escanea el equipo o escribe su Núm. de Serie / ID.» | No identificaste el equipo. | Escanéalo o escribe su ID. |
+| «Ese equipo no es de la sede de este recorrido…» | El equipo es de otra sede. | Revisa la etiqueta o la sede del recorrido. |
+| «Agrega al menos un equipo al recorrido antes de finalizarlo.» | El recorrido está vacío. | Revisa al menos un equipo. |
+| «Elige la Categoría del Equipo.» | En la captura a mano falta la categoría. | Elígela de la lista. |
+| «Este punto tiene un hallazgo y debe abrir un ticket…, pero tu rol no puede crear tickets en esta sede.» | No puedes abrir tickets de novedades. | Avisa a tu supervisor. |
+| La cámara no abre | El navegador no tiene permiso de cámara. | Acepta el permiso de cámara o escribe el ID. |
 
-## 7. Reporte de Auditoría
+## Preguntas frecuentes
 
-**Reporte de Auditoría** abre una hoja para imprimir (o guardar como PDF) con los recorridos de un rango de fechas: cuántos se hicieron, cuántos equipos se revisaron y cuántos hallazgos hubo, y la tabla de cada recorrido. Elige **Desde**, **Hasta** y la sede, y toca **Filtrar**. Con permiso de exportar, **Exportar Excel** baja lo mismo en un archivo.
+- **¿Se pierde lo revisado si se me cierra el celular?** No; cada equipo se guarda al tocar **Guardar y escanear siguiente**.
+- **¿Puedo hacer el recorrido en dos partes?** Sí, con **Guardar y Continuar Después**.
+- **¿Dónde se dan de alta los extintores?** En [Equipos de Protección Civil](equipos-pc.md).
+- **¿Funciona en iPhone?** Sí, con la cámara. La lectura NFC directa solo funciona en Android.
 
-![Reporte de Auditoría](img/recorridos-pc/07-reporte-auditoria.png)
+## Relacionado
 
-## 8. Catálogo de Equipos de Protección Civil
-
-El catálogo (extintores, hidrantes, detectores…) ahora está en **Padrones → Inventarios de Seguridad → Equipos de Protección Civil**. Cómo registrar, editar, dar de baja e imprimir etiquetas: ver la guía [Equipos de Protección Civil](equipos-pc.md).
-
-Si tenías guardada la dirección anterior (`/recorridos-pc/equipos`), te lleva sola a la nueva. Las etiquetas QR ya impresas siguen funcionando igual.
-
-## 9. Modo Sol y modo Noche
-
-Con el botón del sol (junto a tu nombre) cambias a **Sol** (alto contraste, para exteriores) o **Noche** (oscuro, para el turno nocturno).
-
-![Modo Sol](img/recorridos-pc/22-movil-punto-sol.png)
-![Modo Noche](img/recorridos-pc/22-movil-punto-noche.png)
+- [Equipos de Protección Civil](equipos-pc.md)
+- [Bitácora de novedades](novedades.md)
+- [Etiquetas QR](etiquetas-qr.md)
