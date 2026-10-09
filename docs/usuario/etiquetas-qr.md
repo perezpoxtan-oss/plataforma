@@ -1,110 +1,131 @@
+---
+titulo: Etiquetas QR
+modulos: [etiquetas_qr]
+seccion: Padrones
+orden: 100
+resumen: Imprimir de una sola vez las etiquetas QR de llaves, gafetes, equipos, vehículos, colaboradores y más; ver el historial y configurar los tamaños.
+---
+
 # Etiquetas QR
 
-Padrones → Inventarios de Seguridad → **Etiquetas QR**. Aquí imprimes **de una sola vez** las etiquetas con código QR de tus llaves, gafetes, equipos, vehículos, colaboradores, artículos de Lost & Found y más. Pegas la etiqueta y, desde ese momento, la caseta encuentra el registro **escaneándolo** con la cámara del celular o con el lector.
+**¿Para qué sirve?** Aquí imprimes **de una sola vez** las etiquetas con código QR de tus llaves, gafetes, equipos, vehículos, colaboradores, artículos de Lost & Found y procedimientos. Pegas la etiqueta y, desde ese momento, la caseta encuentra el registro **escaneándolo** con la cámara del celular o con el lector. Tiene tres pestañas: **Imprimir**, **Historial** y **Plantillas**.
 
-![Menú Padrones con Etiquetas QR](img/ronda-6/01-menu-padrones-etiquetas.png)
+![Etiquetas QR](img/etiquetas-qr/01-imprimir.png)
 
-Si solo necesitas **una** etiqueta, ábrela desde la ficha del registro con el botón **QR** («Código e identificación» → **Imprimir etiqueta**).
+> Si solo necesitas **una** etiqueta, ábrela desde la ficha del registro con el botón del QR (**Código e identificación** → **Imprimir etiqueta**).
 
-## Paso a paso
+## Antes de empezar
 
-1. Arriba elige el **tipo** (por ejemplo **Llaves**). El número junto a cada tipo dice cuántos hay.
-2. Si quieres, escribe en el buscador (nombre, placas, serie, número…), elige la **sede** y si quieres **Solo activos** o **Activos y de baja**.
-3. Marca las casillas de las etiquetas que quieras, o **Marcar todas**.
-4. Elige el **Tamaño**:
-   - **Llavero pequeño** (40 × 25 mm) para llaveros.
-   - **Etiqueta 50 × 25 mm**, la de las impresoras de etiquetas más comunes.
-   - **Gafete** (86 × 54 mm), tamaño credencial.
-   - **Calcomanía vehicular** (100 × 70 mm) para el parabrisas.
-5. Oprime **Imprimir**: se abre otra pestaña con la hoja lista. Ahí oprime **Imprimir Etiquetas**. En la impresora elige **Tamaño real / 100 %** para que salgan a la medida.
+- Cada tipo de registro aparece solo si puedes **ver** ese módulo y además **imprimir** en él (en Colaboradores y Procedimientos se pide poder **editar**). Si no ves un tipo, pide ese permiso a tu administrador.
+- Si no tienes permiso de imprimir en ningún módulo, verás «No tienes permiso de imprimir etiquetas de ningún módulo.».
+- Solo ves lo de **tus sedes**. Los vehículos y los procedimientos son de toda la empresa: si eliges una sede, no aparecen.
+- La pestaña **Plantillas** solo la ve quien puede configurar las etiquetas (por ejemplo el administrador o el jefe de seguridad).
 
-![Etiquetas QR](img/ronda-6/02-etiquetas-qr.png)
-![Algunas marcadas](img/ronda-6/03-etiquetas-qr-seleccion.png)
+## Cómo imprimir varias etiquetas
 
-Cada etiqueta lleva el **QR**, el **nombre** de lo que identifica (por ejemplo `HDC-101`, `ABC123A` o `Serie: 130TXP1568`) y un **código** en letras para escribirlo a mano si el QR se daña.
+1. Entra a **Padrones → Etiquetas QR**. Se abre la pestaña **Imprimir**.
+2. Arriba toca el **tipo** (por ejemplo **Llaves**). El número junto a cada tipo dice cuántos hay.
+3. Si quieres, escribe en **Nombre, placas, serie, número...**, elige la sede, el estatus (**Solo activos**, **Solo de baja** o **Activos y de baja**) y las fechas **Alta desde** / **hasta**. Toca **Buscar**. **Quitar filtros** los limpia.
+4. Marca las casillas de las etiquetas que quieras, o **Marcar todas**.
+5. Elige la **Plantilla** (el tamaño). Debajo se ve su medida, por ejemplo «40 × 25 mm · rollo térmico, una por página». La plataforma recuerda la última que usaste.
+6. Toca **Imprimir** (muestra cuántas llevas). Se abre otra pestaña: **Etiquetas QR listas**.
+7. Ahí toca **Imprimir Etiquetas**. En la impresora elige **Tamaño real / 100 %** para que salgan a la medida. **Volver a Etiquetas QR** te regresa.
 
-![Hoja de llaveros](img/ronda-6/04-etiquetas-imprimir-llavero.png)
-![Calcomanías vehiculares](img/ronda-6/05-etiquetas-imprimir-calcomania.png)
+![Algunas marcadas](img/etiquetas-qr/02-seleccion.png)
 
-Puedes imprimir hasta **200** etiquetas a la vez. Si marcas más, el botón se apaga y te avisa.
+![Hoja lista para imprimir](img/etiquetas-qr/03-hoja.png)
 
-## ¿Por qué no veo algún tipo?
+**Qué debes ver:** cada etiqueta con su **QR**, el **nombre** de lo que identifica (por ejemplo `HDC-101`, `ABC123A` o `Serie: RAD-8829`) y un **código** en letras para escribirlo a mano si el QR se daña. La impresión queda guardada en el **Historial**.
 
-Cada tipo aparece solo si puedes **ver** ese módulo y además **imprimir** en él (en Colaboradores y Procedimientos, que no tienen «Imprimir», se pide **Editar**). Solo ves lo de **tus sedes**.
+Puedes imprimir hasta **200** etiquetas a la vez.
 
-Por ejemplo, el **Agente** ve **Lost & Found** (imprime las etiquetas de las bolsas), pero no Llaves ni Vehículos, porque en esos padrones solo consulta.
+### Qué plantilla usar
 
-![Vista del Agente](img/ronda-6/27-etiquetas-qr-agente.png)
+- **Llavero pequeño** (40 × 25 mm): llaveros.
+- **Etiqueta 50 × 25 mm**: la de las impresoras de etiquetas más comunes.
+- **Gafete**: tamaño credencial.
+- **Calcomanía vehicular**: para el parabrisas.
 
-## En el celular y de noche
+Con **rollo térmico** (Zebra, Brother…) cada etiqueta sale en su propia página; con **hoja carta o A4** se acomodan en la planilla (por ejemplo 3 columnas × 10 filas).
 
-En el celular la lista es de una columna, con casillas grandes; la barra de **Marcar todas · Tamaño · Imprimir** se queda arriba. Funciona igual en los modos **Sol** y **Noche**.
+## Cómo ver el historial y reimprimir
 
-![En el celular](img/ronda-6/20-etiquetas-qr-movil.png)
-![Modo Noche](img/ronda-6/23-etiquetas-qr-noche.png)
-![Modo Sol](img/ronda-6/25-etiquetas-qr-sol.png)
+1. Toca la pestaña **Historial**. Ves cada impresión: número, fecha, quién la hizo, plantilla y qué etiquetas llevaba.
+2. Para encontrar una, escribe en **Buscar una etiqueta (nombre, placas...)** o usa **Todos los usuarios**, **Todas las plantillas**, **Desde** y **Hasta**. Toca **Buscar**.
+3. **Ver hoja** vuelve a abrir esa misma hoja.
+4. **Reimprimir** abre **Reimprimir impresión núm. …** con sus etiquetas marcadas:
+   - Quita la marca de las que no necesitas (por ejemplo, deja solo la que se dañó).
+   - En **Plantilla** deja **La misma de la impresión original** o elige otra.
+   - Toca **Reimprimir**.
 
-## Novedades de la Ronda 7: plantillas, historial y reimpresión
+![Historial](img/etiquetas-qr/04-historial.png)
 
-Etiquetas QR ahora tiene tres pestañas: **Imprimir**, **Historial** y **Plantillas** (esta última solo la ven el Administrador, el Director y el Jefe de seguridad).
+![Reimprimir solo algunas](img/etiquetas-qr/05-reimprimir.png)
 
-### Imprimir
+**Qué debes ver:** se abre la hoja y se guarda como una impresión nueva, marcada «Reimpresión de la núm. …». Solo ves las impresiones de tus sedes (o las que tú hiciste) y de los tipos que puedes imprimir.
 
-Es igual que antes, pero en lugar de «Tamaño» eliges una **Plantilla**. Debajo de la barra se ve su medida (por ejemplo «40 × 25 mm · rollo térmico, una por página»). La plataforma **recuerda la última plantilla que usaste**.
+## Cómo crear o ajustar una plantilla
 
-Hay filtros nuevos: **tipo de registro**, **estatus** (solo activos, solo de baja, o ambos) y **fecha de alta** (desde / hasta). Cada registro muestra su fecha de alta.
+1. Toca la pestaña **Plantillas**. Ya vienen las de siempre; puedes **Editar** cualquiera o tocar **Nueva plantilla**.
+2. **1. Nombre y lugar:** escribe el **Nombre de la plantilla** (por ejemplo «Zebra 2 × 1 pulgadas») y en **¿Quién la usa?** elige **Toda la empresa** o una sede.
+3. **2. Papel:** elige el **Formato**:
+   - **Rollo térmico (una etiqueta por página):** escribe **Ancho** y **Alto de la etiqueta (mm)**.
+   - **Hoja carta o A4 con planilla de etiquetas:** elige la **Hoja** y escribe columnas, filas, márgenes y separación. 1 pulgada = 25.4 mm.
+4. **3. Contenido:** elige la **Orientación** (QR a la izquierda o arriba), el **Tamaño del QR (mm)** (mínimo 8 mm) y los **Datos visibles** (nombre, código legible, tipo, departamento / sede, fecha de impresión, logo).
+5. Revisa la **Vista previa**: se acomoda mientras escribes y te avisa si algo **no cabe**.
+6. Toca **Crear plantilla** (o **Guardar cambios**).
 
-![Imprimir con plantilla](img/ronda-7/10-etiquetas-imprimir.png)
-![Filtros por tipo, estatus y fecha](img/ronda-7/11-etiquetas-filtros.png)
+![Nueva plantilla](img/etiquetas-qr/07-plantilla-nueva.png)
 
-Al oprimir **Imprimir** se abre la hoja lista y la impresión **queda guardada en el historial** (quién, cuándo, con qué plantilla y cuáles etiquetas).
+**Qué debes ver:** «Plantilla «…» creada. Imprime una hoja de prueba para revisar que las medidas coincidan con tu papel.»
 
-- **Rollo térmico** (Zebra, Brother…): cada etiqueta sale en su propia página del tamaño de la etiqueta. En la impresora elige ese tamaño de papel y «Tamaño real / 100 %».
-- **Hoja carta o A4**: las etiquetas se acomodan en la planilla (por ejemplo 3 columnas × 10 filas).
+![Plantillas](img/etiquetas-qr/06-plantillas.png)
 
-![Hoja de rollo (llaveros)](img/ronda-7/20-hoja-rollo-llavero.png)
-![Planilla carta 3 × 10](img/ronda-7/23-hoja-prueba-planilla-3x10.png)
+- **Hoja de prueba** imprime una página con etiquetas de ejemplo (no se guarda en el historial). Úsala antes de imprimir muchas.
+- **Desactivar** quita la plantilla de la lista al imprimir (se puede volver a **Activar**).
 
-### Historial y Reimprimir
+## Lo que ve el agente de caseta
 
-En **Historial** ves cada impresión: número, fecha, quién la hizo, plantilla y qué etiquetas llevaba. Puedes buscar una etiqueta, filtrar por fechas, por usuario o por plantilla.
+El agente imprime solo lo que puede imprimir (por ejemplo las etiquetas de Lost & Found) y no ve la pestaña Plantillas.
 
-- **Ver hoja** vuelve a abrir esa misma hoja.
-- **Reimprimir** abre una ventana con sus etiquetas marcadas: **quita la marca** de las que no necesitas (por ejemplo, deja solo la que se dañó), elige otra plantilla si quieres y oprime **Reimprimir**. Se guarda como una impresión nueva, marcada «Reimpresión de la núm. …».
+![Vista del agente](img/etiquetas-qr/11-agente.png)
 
-![Historial](img/ronda-7/12-historial.png)
-![Reimprimir solo algunas](img/ronda-7/13-reimprimir.png)
+## En el celular y en los modos Noche y Sol
 
-Solo ves las impresiones de tus sedes (o las que tú hiciste) y solo de los tipos que puedes imprimir.
+![En el celular](img/etiquetas-qr/08-movil.png)
 
-### Plantillas
+![Historial en modo Noche](img/etiquetas-qr/09-historial-noche.png)
 
-Aquí defines el tamaño de cada etiqueta. Ya vienen las **4 de siempre** (Llavero pequeño, Etiqueta 50 × 25 mm, Gafete y Calcomanía vehicular); puedes ajustarlas o agregar las tuyas con **Nueva plantilla**:
+![Modo Sol](img/etiquetas-qr/10-sol.png)
 
-1. **Nombre y lugar**: un nombre que reconozcas («Zebra 2 × 1 pulgadas») y si es para **toda la empresa** o **solo una sede** (el Jefe de seguridad crea plantillas de su sede).
-2. **Papel**: **Rollo térmico** (escribe ancho y alto de tu etiqueta en mm) u **Hoja carta o A4** (además columnas, filas, márgenes y separación entre etiquetas). 1 pulgada = 25.4 mm.
-3. **Contenido**: orientación (QR a la izquierda o arriba), **tamaño del QR** (mínimo 8 mm) y qué datos lleva: nombre, código legible, tipo, departamento / sede, fecha de impresión y logo de la empresa.
+## Si algo sale mal
 
-La **vista previa** se acomoda mientras escribes y te avisa si algo **no cabe** («A lo largo ocupan 292.1 mm y la hoja mide 279.4 mm…»). El servidor revisa lo mismo al guardar.
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| Marca al menos un registro para imprimir sus etiquetas. | Tocaste **Imprimir** sin marcar nada. | Marca las casillas. |
+| Marca al menos una etiqueta para reimprimir. | Quitaste todas las marcas al reimprimir. | Deja marcada al menos una. |
+| El botón **Imprimir** está apagado. | No hay nada marcado, o marcaste más de 200. | Marca de 1 a 200 etiquetas. |
+| No tienes permiso de imprimir etiquetas de ningún módulo. | Tu rol no imprime en ningún módulo. | Pide el permiso «Imprimir» del módulo a tu administrador. |
+| No aparecen los vehículos. | Elegiste una sede y los vehículos son de toda la empresa. | Deja **Todas las sedes**. |
+| Escribe un nombre para la plantilla (por ejemplo «Zebra 2 × 1 pulgadas»). | La plantilla no tiene nombre. | Escribe un nombre. |
+| La etiqueta debe medir al menos 15 mm de ancho. / al menos 10 mm de alto. | La medida es muy pequeña. | Corrige la medida. |
+| La vista previa dice que algo no cabe. | Las etiquetas no caben en la hoja con esas medidas. | Reduce columnas, filas, márgenes o separación. |
+| Es la única plantilla activa de toda la empresa: activa otra antes de desactivar esta (sin plantillas no se podría imprimir). | Intentaste desactivar la última plantilla. | Activa otra primero. |
+| Las etiquetas salen más chicas o más grandes. | La impresora está ajustando el tamaño. | Elige **Tamaño real / 100 %** en la impresora. |
 
-![Plantillas](img/ronda-7/14-plantillas.png)
-![Nueva plantilla](img/ronda-7/15-plantilla-nueva-rollo.png)
-![La planilla no cabe](img/ronda-7/16-plantilla-hoja-no-cabe.png)
+## Preguntas frecuentes
 
-Antes de imprimir muchas, usa **Hoja de prueba**: imprime una página con etiquetas de ejemplo (no se guarda en el historial) para revisar que coincida con tu papel.
+**¿El QR cambia si reimprimo?** No. El QR de cada registro siempre es el mismo; puedes reimprimirlo cuantas veces quieras.
 
-![Hoja de prueba de gafetes](img/ronda-7/21-hoja-prueba-gafete-carta.png)
+**¿El QR lleva datos personales?** No. Solo abre la ficha, y solo con una sesión de tu empresa.
 
-**Desactivar** quita la plantilla de la lista al imprimir (se puede volver a **Activar**). La única plantilla activa de toda la empresa no se puede desactivar.
+**¿Por qué no veo algún tipo de registro?** Porque te falta ver o imprimir en ese módulo. Pide el permiso a tu administrador.
 
-### En el celular, Sol y Noche, y el Agente
+**¿Qué hago si el QR se daña?** Escribe a mano el código en letras que trae la etiqueta, o reimprímela desde el Historial.
 
-![Celular](img/ronda-7/40-movil-etiquetas.png)
-![Historial en el celular](img/ronda-7/41-movil-historial.png)
-![Plantilla en el celular](img/ronda-7/43-movil-plantilla-nueva.png)
-![Noche](img/ronda-7/30-historial-noche.png)
-![Sol](img/ronda-7/32-etiquetas-sol.png)
+## Relacionado
 
-El **Agente** imprime y ve el historial solo de lo que puede imprimir (Lost & Found) y no ve la pestaña Plantillas.
-
-![Vista del Agente](img/ronda-7/50-agente-etiquetas.png)
+- [Catálogo de llaves](llaves.md)
+- [Gafetes](gafetes.md)
+- [Padrón vehicular](vehiculos.md)
+- [Equipos de seguridad](equipos.md)
