@@ -1,98 +1,143 @@
-# Padrón Vehicular
+---
+titulo: Padrón vehicular
+modulos: [vehiculos]
+seccion: Padrones
+orden: 30
+resumen: Registrar los vehículos que entran a la empresa e imprimir su calcomanía con código QR.
+---
 
-Seguridad → Padrones → **Padrón vehicular**. Aquí están todos los vehículos que entran a la empresa: autos de huéspedes, visitantes, familiares y colaboradores, flotillas de proveedores, unidades rentadas, taxis y transporte de personal. Cada uno tiene una **calcomanía con código QR**.
+# Padrón vehicular
 
-![Lista del padrón vehicular](img/vehiculos/v1-lista.png)
+**¿Para qué sirve?** Aquí están todos los vehículos que entran a la empresa: autos de huéspedes, visitantes, familiares y colaboradores, flotillas de proveedores, autos rentados, taxis y transporte de personal. Cada vehículo tiene una **calcomanía con código QR** que la caseta puede leer con el lector.
 
-## Buscar y filtrar
+![Padrón vehicular](img/vehiculos/v1-lista.png)
 
-- Escribe en **Buscar** las placas (con o sin guiones: `ABC-123-A` o `abc123a`), la marca, el color, el número económico, el proveedor o el colaborador.
-- Usa las píldoras **Todos / Propios / Flotillas / Taxis**; el número junto a cada una dice cuántos hay.
-  - **Propios**: de huésped, visitante, familiar o colaborador.
-  - **Flotillas**: agencia de renta, flotilla de un proveedor y transporte de personal.
-- La búsqueda y la píldora se recuerdan mientras la pestaña siga abierta.
+## Antes de empezar
+
+- Para ver la pantalla tu rol debe poder consultar el *Padrón vehicular*. Si no aparece en el menú, pide el permiso a tu administrador.
+- Para registrar, editar, dar de baja o imprimir calcomanías necesitas esos permisos. Si no ves **Registrar Vehículo** ni el lápiz, tu rol solo consulta (como el agente de caseta).
+- Si tu rol solo puede editar «lo propio», solo podrás editar o dar de baja los vehículos que tú registraste.
+
+## Cómo encontrar un vehículo
+
+1. Entra a **Padrones → Padrón vehicular**.
+2. Escribe en **Buscar por placas, marca, color o proveedor...** las placas (con o sin guiones: `ABC-123-A` o `abc123a`), la marca, el color, el número económico, la empresa o el colaborador.
+3. Usa los botones de **Categoría**: **Todos**, **Propios**, **Flotillas** o **Taxis**. El número junto a cada uno dice cuántos hay.
+   - **Propios:** de huésped, visitante, familiar o colaborador.
+   - **Flotillas:** autos rentados, flotillas de empresas y transporte de personal.
+4. Si quieres, elige también un **Tipo / Estilo** (Sedán, SUV, Pick-up…).
 
 ![Solo flotillas](img/vehiculos/v2-flotillas.png)
 
-## Registrar un vehículo
+**Qué debes ver:** solo los vehículos que coinciden. La búsqueda y el filtro se recuerdan mientras la pestaña siga abierta.
 
-1. Toca **Registrar Vehículo**.
-2. Captura las **Placas** como vengan: se guardan en mayúsculas y sin espacios ni guiones. Si ya existen, lo verás de inmediato debajo del campo.
-3. Elige la **Categoría**. Según la que elijas aparecen los campos que aplican:
-   - **Agencia o Empresa Propietaria**: en agencia, flotilla, taxi y transporte de personal. En **Flotilla (Empresa/Proveedor)** es obligatoria.
-   - **Número Económico**: en agencia, flotilla, taxi y transporte de personal.
-   - **Colaborador (dueño del vehículo)**: en Propio Colaborador.
-4. Elige **Tipo / Estilo**. Si es **Otro**, describe cuál (por ejemplo: montacargas, carrito de golf). En autobús, camión ligero o transporte de personal aparece **Capacidad Máxima** (1 a 99 personas).
-5. **Marca** y **Color Físico** son obligatorios; Modelo es opcional.
-6. Toca **Guardar Vehículo**. Ya puedes imprimir su calcomanía.
+## Cómo registrar un vehículo
+
+1. Toca la tarjeta **Registrar Vehículo**. Se abre **Alta de Vehículo**.
+2. Escribe las **Placas (Únicas)** como vengan. Se guardan en mayúsculas y sin espacios ni guiones; debajo verás cómo quedarán («Se guardarán como UVW482B.»).
+3. Elige la **Categoría** (*¿de quién es?*): Propio Huésped, Propio Visitante, Propio Familiar, Propio Colaborador, Agencia (Rentado), Flotilla (Empresa/Proveedor), Taxi / Plataforma (Uber/Didi) o Transporte de Personal.
+4. Según la categoría aparecen otros campos:
+   - **Agencia o Empresa Propietaria:** para agencia, flotilla, taxi y transporte de personal. En *Flotilla (Empresa/Proveedor)* es obligatoria.
+   - **Número Económico:** el número pintado en la unidad (por ejemplo `T-045`).
+   - **Colaborador (dueño del vehículo):** solo en *Propio Colaborador*.
+5. Elige el **Tipo / Estilo** (*su forma*): Sedán, SUV / Camioneta, Pick-up, Autobús, Camión ligero, Motocicleta u Otro.
+   - Con **Otro** escribe en **Describe el Tipo de Vehículo** qué es (por ejemplo «Carrito de golf»).
+   - En autobús, camión ligero o transporte de personal aparece **Capacidad Máxima** (de 1 a 99 personas).
+6. Escribe la **Marca** y el **Color Físico** (obligatorios) y, si lo sabes, el **Modelo**.
+7. Toca **Guardar Vehículo**.
 
 ![Alta de una flotilla](img/vehiculos/v4-alta-flotilla.png)
+
+**Qué debes ver:** «Vehículo UVW482B registrado correctamente. Ya puedes imprimir su calcomanía.»
+
+> **Categoría y Tipo / Estilo no son lo mismo.** La *Categoría* dice **de quién es** (un huésped, una empresa, un taxi). El *Tipo / Estilo* dice **qué forma tiene** (sedán, pick-up…). Por eso «Otro» está en Tipo: un carrito de golf del hotel es Tipo «Otro».
+
 ![Alta del auto de un colaborador](img/vehiculos/v5-alta-colaborador.png)
 
-Si llegaste desde la ficha de un proveedor (botón para agregar un vehículo a su flotilla), la ventana se abre sola con el proveedor y la categoría ya elegidos. La empresa queda **fija** (con un candado) y al guardar **o al cerrar** regresas a la ficha del proveedor.
+### Avisos mientras escribes las placas
 
-## Editar
+- **Verde:** «Se guardarán como …». Puedes seguir.
+- **Rojo:** «Las placas … ya están registradas en el padrón. No se pueden repetir.» Busca ese vehículo en la lista.
+- **Rojo con botón Reactivar:** las placas son de un vehículo dado de baja. Toca **Reactivar** en lugar de registrarlo otra vez.
+- **Amarillo:** «Se parecen a placas ya registradas (la O y el 0, o la I y el 1, se confunden). Revisa que no sea el mismo vehículo:».
 
-Toca el lápiz de la ficha. Si cambias la categoría, los datos que ya no aplican (número económico, proveedor, colaborador, capacidad) se borran al guardar.
+![Placas repetidas](img/vehiculos/v13-placas-repetidas.png)
 
-![Editar un taxi](img/vehiculos/v6-editar-taxi.png)
+### Registrar un vehículo de una empresa externa
 
-## Calcomanía
+En **Padrones → Empresas externas → Ficha → Flotilla** toca **Agregar vehículo**. La ventana dice «Registrando unidad de …» y la empresa ya viene puesta, con candado. Al guardar o al cerrar regresas a la ficha de la empresa.
 
-Toca el botón del **código QR** en la ficha: se abre la ventana **Código e identificación** (sin salir del padrón) con el QR, la dirección para copiar y, si puedes editar, **Asignar etiqueta NFC / RFID** (acerca el tag del vehículo al lector y se guarda solo).
+## Cómo editar un vehículo
 
-![Código e identificación del vehículo](img/ronda-5/identificacion-vehiculo-nfc.png)
+1. En la tarjeta toca el **lápiz** (Editar).
+2. Corrige los datos en **Actualizar Vehículo**.
+3. Toca **Actualizar Datos**.
 
-Para imprimir, toca **Imprimir calcomanía** dentro de esa ventana: se abre la calcomanía en otra pestaña con placas, QR, marca/modelo, color, tipo y categoría. Toca **Imprimir Calcomanía**; los botones no salen en la impresión.
+![Editar un vehículo](img/vehiculos/v6-editar.png)
 
-La misma ventana está en las fichas de **Llaves, Gafetes, Equipos de seguridad, Equipos de Protección Civil, Colaboradores y Lost & Found**.
+**Qué debes ver:** «Vehículo … actualizado correctamente.» Si cambias la categoría, los datos que ya no aplican (número económico, empresa, colaborador, capacidad) se borran al guardar.
 
-Al escanear el QR con un celular que tenga la sesión iniciada, se abre la ficha del vehículo en el padrón. El QR no contiene datos personales y solo funciona dentro de tu empresa.
+## Cómo imprimir la calcomanía y asignar una etiqueta NFC
+
+1. En la tarjeta toca el botón del **código QR**. Se abre **Código e identificación** con el QR y la dirección del vehículo (con botón **Copiar**).
+2. Para imprimir toca **Imprimir calcomanía**: se abre en otra pestaña. Ahí toca **Imprimir Calcomanía** (los botones no salen en la hoja). **Volver al Padrón Vehicular** te regresa.
+3. Para ligar un tag NFC o RFID: en **Asignar etiqueta NFC / RFID** acerca el tag al lector (o escribe su número) y toca **Guardar etiqueta**. Para quitarlo, toca **Quitar etiqueta**.
+
+![Código e identificación](img/vehiculos/v8-identificacion.png)
 
 ![Calcomanía](img/vehiculos/v7-calcomania.png)
 
-## Dar de baja o reactivar
+**Qué debes ver:** «Etiqueta … asignada. Ya se puede leer con el lector.» Al leer el QR con un celular con sesión iniciada se abre la ficha del vehículo. El QR no contiene datos personales.
 
-Toca el círculo rojo para **dar de baja** (la ficha queda marcada **BAJA**); con la flecha verde lo **reactivas**. Nunca se borra: las bitácoras dependen del vehículo. Si intentas registrar unas placas que están dadas de baja, el sistema te pide reactivarlas.
+## Cómo dar de baja o reactivar un vehículo
 
-## Quién puede qué
+1. Toca el botón rojo **Dar de baja** (círculo con raya) y confirma con **Aceptar** («¿Dar de baja este vehículo? Podrás reactivarlo con un clic.»).
+2. Para regresarlo toca **Reactivar** (flecha circular) y confirma.
 
-- **Agente**: consulta el padrón y busca vehículos.
-- **Administrador, Jefe de seguridad** y los roles que tengan el permiso: registran, editan, dan de baja e imprimen calcomanías.
-- Con alcance **"Solo los propios"** solo se editan o dan de baja los vehículos que uno mismo registró.
+**Qué debes ver:** la tarjeta marcada **BAJA**. Nunca se borra: las bitácoras dependen del vehículo.
 
-## En el celular y de noche
+## Lo que ve el agente de caseta
 
-La lista se acomoda en una columna y las ventanas ocupan toda la pantalla. El modo **Noche** (botón del sol/luna) oscurece todo, incluidas las etiquetas de categoría.
+El agente consulta y busca vehículos, pero no ve **Registrar Vehículo** ni los botones de editar o dar de baja.
 
-![Celular](img/vehiculos/v12-celular.png)
-![Modo noche](img/vehiculos/v9-noche.png)
+![Vista del agente](img/vehiculos/v15-agente.png)
 
-## Categoría y Tipo / Estilo: ¿cuál es cuál? (Ronda 5)
+## En el celular y en modo Noche
 
-Son dos preguntas distintas:
+![Celular](img/vehiculos/v12-celular.png) ![Modo Noche](img/vehiculos/v9-noche.png)
 
-- **Categoría** = **¿de quién es o a qué viene?** Propio (huésped, visitante, familiar, colaborador), Agencia, Flotilla de una empresa, **Taxi** / plataforma o Transporte de personal. Según la categoría se piden la empresa propietaria y el número económico.
-- **Tipo / Estilo** = **¿qué forma tiene?** Sedán, SUV, Pick-up, Autobús, Camión ligero, Motocicleta u **Otro**. Con «Otro» se pide que describas el vehículo (por ejemplo, «Carrito de golf»).
+## Si algo sale mal
 
-Por eso **«Otro» está en Tipo / Estilo y no en Categoría**: un carrito de golf del hotel es Tipo «Otro»; un auto que no es de nadie conocido es Categoría «Propio Visitante».
+Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
-En la lista, los dos filtros van **en la misma línea**: las píldoras de **Categoría** y la lista **Tipo / Estilo**. Puedes combinarlos con el buscador.
+![Error dentro de la ventana](img/vehiculos/v14-error-en-dialogo.png)
 
-![Filtros de Categoría y Tipo / Estilo](img/ronda-5b/vehiculos-filtros.png)
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| Las placas son obligatorias. | El campo está vacío. | Escribe las placas. |
+| Revisa las placas: son muy cortas. / son muy largas (máximo 20 caracteres). | Faltan o sobran letras. | Revisa la placa física. |
+| Las placas solo llevan letras y números (los espacios y guiones se quitan solos). | Escribiste signos como `#` o `/`. | Escribe solo letras y números. |
+| Las placas «…» ya están registradas en esta empresa. | Ese vehículo ya existe. | Búscalo; si está dado de baja, reactívalo. |
+| Elige la empresa propietaria de la flotilla. | En *Flotilla* falta la empresa. | Elige la empresa en la lista. |
+| Describe el tipo de vehículo (por ejemplo: montacargas, carrito de golf). | Elegiste «Otro» sin describirlo. | Escribe qué vehículo es. |
+| La capacidad debe ser de 1 a 99 personas. | Número fuera de rango. | Corrige la capacidad. |
+| La empresa propietaria no existe en esta empresa o está desactivada. | La empresa se dio de baja. | Elige otra o pide que la reactiven. |
+| El colaborador no existe en esta empresa o está dado de baja. | El colaborador ya no está activo. | Elige otro colaborador. |
+| No veo el botón **Registrar Vehículo**. | Tu rol solo consulta. | Pide el permiso a tu administrador. |
 
-En el celular los filtros bajan uno debajo de otro:
+## Preguntas frecuentes
 
-![Filtros en el celular](img/ronda-5b/vehiculos-filtros-movil.png)
+**¿Tengo que escribir los guiones de las placas?** No. Escríbelas como quieras; se guardan sin espacios ni guiones.
 
-## Agregar un vehículo desde la ficha de una empresa (Ronda 5)
+**¿Por qué no puedo registrar unas placas?** Porque ya existen. Si están dadas de baja, usa **Reactivar**.
 
-En Padrones → Empresas Externas → Ficha → **Flotilla** → **Agregar vehículo**, la ventana dice «Registrando unidad de …» y la **Agencia o Empresa Propietaria** ya viene puesta, con un candado. Si tocas **Cerrar** o **Cancelar**, regresas a la ficha de la empresa.
+**¿Qué significa «Pendiente de verificar» en una tarjeta?** Que la caseta registró el vehículo al momento y falta que alguien lo revise. Ver [Altas por verificar](altas-por-verificar.md).
 
-![Alta desde la ficha de Constructora Maya](img/ronda-5b/ficha-agregar-vehiculo.png)
+**¿Puedo reimprimir una calcomanía?** Sí, cuantas veces quieras desde **Código e identificación**. Para imprimir muchas a la vez usa [Etiquetas QR](etiquetas-qr.md).
 
-## Ronda 6: placas repetidas o parecidas
+## Relacionado
 
-Al escribir las **Placas** te avisa si ya están registradas (aunque las escribas con guiones o espacios) o si se parecen a otras (la letra O y el cero, o la I y el uno, se confunden). Si el vehículo está de baja, toca **Reactivar**.
-
-![Placas parecidas](img/ronda-6/07-vehiculo-placas-parecidas.png)
+- [Empresas externas](proveedores.md)
+- [Estacionamientos](estacionamientos.md)
+- [Etiquetas QR](etiquetas-qr.md)
+- [Altas por verificar](altas-por-verificar.md)
