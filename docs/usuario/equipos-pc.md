@@ -1,83 +1,124 @@
+---
+titulo: Equipos de Protección Civil
+modulos: [equipos_pc]
+seccion: Padrones
+orden: 70
+resumen: Catálogo de extintores, hidrantes, detectores y demás equipo fijo que se revisa en los recorridos de Protección Civil.
+---
+
 # Equipos de Protección Civil
 
-**Padrones → Inventarios de Seguridad → Equipos de Protección Civil.** Aquí está la lista de extintores, hidrantes, detectores, botiquines, lámparas de emergencia y demás equipo fijo de Protección Civil de cada sede. Son los equipos que la guardia revisa en los [Recorridos de Protección Civil](recorridos-pc.md).
+**¿Para qué sirve?** Es la lista de extintores, hidrantes, detectores, botiquines, lámparas de emergencia y demás equipo **fijo** de Protección Civil de cada sede. Son los equipos que la guardia revisa en los [Recorridos de Protección Civil](recorridos-pc.md). Cada uno tiene su etiqueta con código QR.
 
-![Menú Padrones](img/equipos-pc/2-menu-padrones.png)
+![Catálogo de equipos de Protección Civil](img/equipos-pc/1-lista.png)
 
-> Antes este catálogo se abría con el botón **Catálogo de Equipos** dentro de Recorridos. Ahora está en Padrones, junto a Equipos de seguridad. Si tenías guardada la dirección anterior, te lleva sola a la nueva. Las etiquetas QR que ya imprimiste siguen funcionando.
+## Antes de empezar
 
-## 1. La lista
+- Para ver la pantalla tu rol debe poder consultar *Equipos de Protección Civil*. Si no aparece en el menú, pide el permiso a tu administrador.
+- Para registrar, editar, imprimir o dar de baja necesitas esos permisos. Si no ves **Nuevo Equipo**, tu rol solo consulta.
+- Para elegir la ubicación (zona, piso, área), esos lugares deben existir en [Zonas y áreas](zonas-y-areas.md).
 
-![Lista de equipos](img/equipos-pc/1-lista.png)
+## Cómo encontrar un equipo
 
-- Cada tarjeta es un equipo: su **tipo** (Extintor, Hidrante…), su **Núm. de Serie / ID** (lo que va en la etiqueta, por ejemplo `EXT-01`), la sede, la ubicación y una referencia para encontrarlo.
-- Arriba filtras por **Activos**, **De baja** o **Todos**, por sede, por tipo, o buscas por ID, tipo, ubicación o sede.
-- Si puedes ver los recorridos, el botón **Recorridos PC** te lleva a ellos.
+1. Entra a **Padrones → Equipos de Protección Civil**.
+2. Toca **Activos**, **De baja** o **Todos**.
+3. Si hay varias, elige en **Todas las sedes** o **Todos los tipos**.
+4. Escribe en **Buscar por ID, tipo, ubicación, sede...**.
 
-## 2. Registrar un equipo
+**Qué debes ver:** tarjetas con el tipo (Extintor, Hidrante…), el **Núm. de Serie / ID** (lo que va en la etiqueta, por ejemplo `EXT-01`), la sede, la ubicación y la referencia. El botón **Recorridos PC** te lleva a los recorridos.
 
-Lo hacen el Supervisor, el Jefe de seguridad, el Asistente o el Administrador (el Agente solo consulta).
+## Cómo registrar un equipo
 
-1. Toca **Nuevo Equipo**.
+1. Toca la tarjeta **Nuevo Equipo**. Se abre **Nuevo Equipo de Protección Civil**.
 2. Elige la **Sede** (si solo tienes una, ya viene elegida) y el **Tipo de Equipo**.
-3. Escribe el **Núm. de Serie / ID** que irá en la etiqueta (ej. `EXT-01`). No se puede repetir en la misma sede; en otra sede sí.
-4. Si quieres, elige **Zona / Piso** y **Área Específica**, y escribe una **Referencia** («Junto al elevador de servicio»).
-5. Si la etiqueta trae chip NFC, acércala en **Etiqueta NFC / RFID** (opcional).
-6. Toca **Guardar**, o **Guardar y capturar siguiente** para registrar otro con la misma sede, tipo y ubicación.
+3. Escribe el **Núm. de Serie / ID (para QR)** que irá en la etiqueta (por ejemplo `EXT-01`). No se puede repetir en la misma sede; en otra sede sí.
+4. Si quieres, elige **Zona / Piso** y **Área Específica**, y escribe una **Referencia** (por ejemplo «Junto al elevador de servicio»).
+5. Si la etiqueta trae chip, acércala en **Etiqueta NFC / RFID (opcional)**.
+6. Toca **Guardar**, o **Guardar y capturar siguiente** para registrar otro con la misma sede, tipo y ubicación (ideal cuando capturas un piso completo).
 
 ![Nuevo equipo](img/equipos-pc/3-nuevo.png)
 
-Si algo está mal (por ejemplo, el ID ya existe en esa sede), el mensaje aparece dentro de la misma ventana:
+**Qué debes ver:** «Equipo EXT-50 (Extintor) registrado. Ya puedes imprimir su etiqueta QR.» Con **Guardar y capturar siguiente** la ventana se queda abierta, lista para el siguiente.
 
-![Error en la ventana](img/equipos-pc/13-error-en-dialogo.png)
+### Avisos mientras escribes el ID
 
-En el celular:
+- **Verde:** «ID disponible en esta sede.»
+- **Rojo:** el ID ya existe en esa sede. Si está desactivado y puedes reactivarlo, aparece **Reactivar**.
+- **Amarillo:** «Se parece a un ID ya registrado en esta sede (los guiones y espacios no cuentan):».
+
+![ID ya registrado](img/equipos-pc/14-ya-existe.png)
+
+En el celular la ventana ocupa toda la pantalla:
 
 ![Nuevo equipo en el celular](img/equipos-pc/12-nuevo-celular.png)
 
-## 3. Editar, ver QR, imprimir la etiqueta y dar de baja
+## Cómo editar un equipo
 
-En cada tarjeta:
-
-- **Lápiz:** editar.
-- **QR:** ver su código y la dirección para grabar una etiqueta NFC.
-- **Impresora:** imprimir la etiqueta para pegarla en el equipo.
-- **Círculo tachado:** darlo de baja (ya no aparece en los recorridos). Con la **flecha** se reactiva.
+1. Toca el **lápiz** (Editar) de la tarjeta.
+2. Corrige los datos.
+3. Toca **Guardar Cambios**.
 
 ![Editar](img/equipos-pc/4-editar.png)
-![Ver QR](img/equipos-pc/5-ver-qr.png)
+
+**Qué debes ver:** «Equipo … actualizado correctamente.»
+
+## Cómo ver el QR e imprimir la etiqueta
+
+1. Toca el botón del **código QR** de la tarjeta. Se abre **Código e identificación** con el QR y la dirección (botón **Copiar**). Si puedes editar, también puedes **Asignar etiqueta NFC / RFID**.
+2. Para imprimir toca **Imprimir etiqueta** (o el botón de la **impresora** de la tarjeta). En la pestaña nueva toca **Imprimir Etiqueta**.
+
+![Código e identificación](img/equipos-pc/5-ver-qr.png)
+
 ![Etiqueta](img/equipos-pc/6-etiqueta.png)
 
-## 4. Lo que ve el Agente
+## Cómo dar de baja o reactivar un equipo
 
-El Agente consulta los equipos de su sede y sus QR, pero no ve **Nuevo Equipo**, el lápiz ni la baja:
+1. Toca el **círculo con raya** (Dar de baja) y confirma con **Aceptar**.
+2. Para regresarlo, filtra **De baja** y toca la **flecha circular** (Reactivar).
 
-![Vista del Agente en el celular](img/equipos-pc/8-agente-celular.png)
+**Qué debes ver:** «Equipo … dado de baja: ya no aparece en los recorridos. Puedes reactivarlo con un clic.» Al reactivar: «Equipo … reactivado: vuelve a aparecer en los recorridos.»
 
-En Recorridos, el Agente ve un enlace pequeño al catálogo debajo del título:
+## Lo que ve el agente de caseta
 
-![Recorridos con el enlace](img/equipos-pc/9-agente-recorridos-celular.png)
+El agente consulta los equipos de su sede y sus QR, pero no ve **Nuevo Equipo**, el lápiz ni la baja. En Recorridos tiene un enlace al catálogo debajo del título.
 
-## 5. Modo Noche y modo Sol
+![Vista del agente en el celular](img/equipos-pc/8-agente-celular.png)
+
+## En los modos Noche y Sol
 
 | Noche | Sol |
 |---|---|
 | ![Noche](img/equipos-pc/10-noche.png) | ![Sol](img/equipos-pc/11-sol.png) |
 
-## ¿Quién puede qué?
+## Si algo sale mal
 
-Se decide en **Estructura → Matriz de permisos**, módulo **Equipos de Protección Civil**:
+Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
-| Permiso | Para qué |
-|---|---|
-| Ver | Abrir la lista y ver los QR |
-| Crear | Registrar equipos |
-| Editar | Cambiar sus datos |
-| Eliminar | Dar de baja y reactivar |
-| Imprimir | Imprimir la etiqueta |
+![Error dentro de la ventana](img/equipos-pc/13-error-en-dialogo.png)
 
-Al instalar esta versión, cada rol recibió lo mismo que ya podía hacer: quien veía Recorridos ahora ve el catálogo, y quien podía crear, editar, dar de baja o imprimir en **Equipos de seguridad** puede hacer lo mismo aquí.
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| Elige la sede donde está el equipo. | No elegiste sede. | Elige la sede. |
+| Elige el tipo de equipo. | No elegiste tipo. | Elige el tipo. |
+| El Núm. de Serie / ID es obligatorio (es lo que va en la etiqueta, por ejemplo EXT-01). | Falta el ID. | Escribe el ID. |
+| El Núm. de Serie / ID «…» ya está registrado en esta sede (…). | Ese ID ya existe en la sede. | Usa otro o reactiva el existente. |
+| La ubicación elegida (zona, piso o área) no pertenece a la sede o está desactivada. | Cambiaste de sede o el lugar se desactivó. | Vuelve a elegir la ubicación. |
+| Ya hay otro equipo con el ID «…» en esta sede. | Al reactivar, otro equipo activo ya usa ese ID. | Cambia el ID de uno de los dos. |
+| Elige una sede activa de la lista: esa sede no existe, está desactivada o no está a tu cargo. | La sede no es tuya. | Elige una de tus sedes. |
 
-## Ronda 6
+## Preguntas frecuentes
 
-Al escribir el **Núm. de Serie / ID** te avisa si ya existe en esa sede o si se parece a otro. Al acercar o escribir la **etiqueta NFC** te avisa si ya la tiene otro registro.
+**¿Cuál es la diferencia con Equipos de seguridad?** Aquí está el equipo **fijo** que se revisa en los recorridos (extintores, hidrantes…). En [Equipos de seguridad](equipos.md) está el equipo que la guardia **presta** (radios, lámparas…).
+
+**¿Un equipo de baja aparece en los recorridos?** No. Reactívalo para que vuelva a aparecer.
+
+**¿Puedo usar el mismo ID en dos sedes?** Sí. Solo no se repite dentro de la misma sede.
+
+**¿Las etiquetas que ya imprimí siguen sirviendo?** Sí. El QR no cambia aunque edites el equipo.
+
+## Relacionado
+
+- [Recorridos de Protección Civil](recorridos-pc.md)
+- [Equipos de seguridad](equipos.md)
+- [Zonas y áreas](zonas-y-areas.md)
+- [Etiquetas QR](etiquetas-qr.md)
