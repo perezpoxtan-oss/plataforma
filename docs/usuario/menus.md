@@ -53,7 +53,7 @@ Junto a la campana hay un botón amarillo **Mis pendientes** con un número: es 
    - **Firmas de pases de salida:** pases que esperan tu firma.
    - **Procedimientos por leer:** los que te faltan leer y firmar «Leí y entendí».
    - **Altas por verificar:** lo que la caseta registró y tú revisas.
-3. Toca un renglón para ir directo a resolverlo.
+3. Toca un renglón para ir directo a resolverlo. Si eres jefe de un departamento, en [Pedir y aprobar solicitudes](solicitudes.md) está paso a paso lo que te puede aparecer.
 
 ![Mis pendientes abierto](img/menus/mis-pendientes.png)
 

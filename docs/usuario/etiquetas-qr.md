@@ -82,7 +82,20 @@ Con **rollo térmico** (Zebra, Brother…) cada etiqueta sale en su propia pági
 ![Plantillas](img/etiquetas-qr/06-plantillas.png)
 
 - **Hoja de prueba** imprime una página con etiquetas de ejemplo (no se guarda en el historial). Úsala antes de imprimir muchas.
+- Si eres **jefe de una sede** (por ejemplo, Jefe de seguridad), también ves el botón **Hoja de prueba** en las plantillas de **toda la empresa**, aunque no puedas cambiarlas. Así calibras la impresora de tu sede sin pedir ayuda.
 - **Desactivar** quita la plantilla de la lista al imprimir (se puede volver a **Activar**).
+
+## Cómo imprimir una hoja de prueba
+
+1. Entra a **Padrones → Etiquetas QR** y toca la pestaña **Plantillas**.
+2. Busca la plantilla que vas a usar. Las de toda la empresa dicen «De toda la empresa: solo la cambia quien administra toda la empresa»; las de tu sede traen además **Editar** y **Desactivar**.
+3. Toca **Hoja de prueba**. Se abre una pestaña nueva con etiquetas de ejemplo («EJEMPLO-01», «EJEMPLO-02»…).
+4. Imprime esa página en la impresora de etiquetas, eligiendo **Tamaño real / 100 %**.
+5. Compara con tu papel: si las etiquetas se recorren o no caben, pide a quien administra la plantilla que ajuste las medidas (o ajústala tú si es de tu sede).
+
+![Plantillas](img/etiquetas-qr/06-plantillas.png)
+
+**Qué debes ver:** una página que dice que la hoja de prueba no se guarda en el historial, con una etiqueta de ejemplo en cada lugar de la plantilla.
 
 ## Lo que ve el agente de caseta
 
@@ -111,6 +124,7 @@ El agente imprime solo lo que puede imprimir (por ejemplo las etiquetas de Lost 
 | La etiqueta debe medir al menos 15 mm de ancho. / al menos 10 mm de alto. | La medida es muy pequeña. | Corrige la medida. |
 | La vista previa dice que algo no cabe. | Las etiquetas no caben en la hoja con esas medidas. | Reduce columnas, filas, márgenes o separación. |
 | Es la única plantilla activa de toda la empresa: activa otra antes de desactivar esta (sin plantillas no se podría imprimir). | Intentaste desactivar la última plantilla. | Activa otra primero. |
+| No veo el botón **Hoja de prueba**. | Tu rol no puede configurar etiquetas, o la plantilla es de otra sede. | Pide a tu administrador el permiso «Configurar» de Etiquetas QR. |
 | Las etiquetas salen más chicas o más grandes. | La impresora está ajustando el tamaño. | Elige **Tamaño real / 100 %** en la impresora. |
 
 ## Preguntas frecuentes
@@ -120,6 +134,8 @@ El agente imprime solo lo que puede imprimir (por ejemplo las etiquetas de Lost 
 **¿El QR lleva datos personales?** No. Solo abre la ficha, y solo con una sesión de tu empresa.
 
 **¿Por qué no veo algún tipo de registro?** Porque te falta ver o imprimir en ese módulo. Pide el permiso a tu administrador.
+
+**¿Un jefe de sede puede imprimir la hoja de prueba de una plantilla de toda la empresa?** Sí. Puede imprimirla y usar la plantilla, pero no cambiarla ni desactivarla.
 
 **¿Qué hago si el QR se daña?** Escribe a mano el código en letras que trae la etiqueta, o reimprímela desde el Historial.
 

@@ -136,7 +136,10 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | Ese colaborador ya tiene una cuenta de usuario: búscala en la lista en vez de crear otra. | El colaborador ya tiene cuenta. | Edita su cuenta. |
 | Ese colaborador está dado de baja. | El colaborador está inactivo. | Pide a Recursos Humanos que lo reingrese o no lo vincules. |
 | Ya existe otro usuario registrado con ese número de colaborador. | Ese número ya está en otra cuenta. | Revisa el número. |
-| Aparece un texto raro como «validation.password.numbers» o «validation.password.letters». | La contraseña no tiene números o letras. | Escribe una de 8 o más caracteres con letras y números. |
+| El campo contraseña debe tener al menos un número. | La contraseña solo tiene letras. | Agrega al menos un número (por ejemplo `Hotel2026`). |
+| El campo contraseña debe tener al menos una letra. | La contraseña solo tiene números. | Agrega al menos una letra. |
+| El campo contraseña debe tener al menos 8 caracteres. | La contraseña es muy corta. | Escribe 8 o más caracteres, con letras y números. |
+| El campo correo debe ser un correo electrónico válido. | Al correo le falta la @ o el dominio. | Escribe un correo completo, por ejemplo `juan.perez@hotelcentro.mx`. |
 | «…» no está bloqueado; ya puede entrar. | La cuenta ya no estaba bloqueada. | No hace falta hacer nada. |
 | No veo el lápiz en una cuenta. | Es tu cuenta o es de tu mismo nivel o superior. | Pídelo a alguien de nivel superior. |
 
@@ -145,6 +148,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 **¿La persona puede entrar con su correo?** Sí, con su usuario o con su correo.
 
 **¿Por qué no aparece un rol en la lista?** Solo puedes asignar roles de nivel inferior al tuyo.
+
+**¿Qué rol le doy a alguien de otro departamento que solo pide pases de salida?** El rol **Solicitante**; a su jefe, **Jefe de departamento**. En los dos casos vincula la cuenta con su colaborador. Los pasos están en [Roles y permisos](roles-y-permisos.md).
 
 **¿Qué pasa si desactivo una cuenta?** La persona ya no puede entrar, pero todo lo que registró se conserva.
 
