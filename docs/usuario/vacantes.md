@@ -23,6 +23,8 @@ resumen: Publicar vacantes una sola vez para la bolsa de trabajo por internet, e
 
 1. Entra a **Recursos Humanos → Vacantes** y toca **Nueva vacante**.
 2. En **La vacante** escribe el **Título de la vacante** (por ejemplo «Camarista»), elige el **Puesto (catálogo)** y el **Departamento**, el **Número de plazas** y la **Sede(s)** (si solo tienes una, ya viene marcada; **Todas las sedes** es solo para quien tiene alcance de empresa).
+   - **Número de plazas:** cuántas personas se van a contratar. Cuando el jefe elige a tantas personas como plazas, los demás candidatos de la vacante que seguían con el departamento pasan solos a **Considerar**.
+   - **El jefe puede ver el CV:** márcalo si quien entrevista debe ver el CV en PDF del candidato. Apagado (así viene), solo ve un resumen: escolaridad, experiencia, disponibilidad y sueldo que espera.
 3. Abre las secciones que necesites:
    - **Condiciones:** contrato, jornada, turno, horario y sueldo (o «a tratar»).
    - **Descripción y requisitos:** un requisito o prestación por renglón.
@@ -79,11 +81,15 @@ Al tocar **Postularme** llena la misma [solicitud de empleo](solicitud-empleo.md
 
 ![Formulario para postularse](img/vacantes/empleos-postular-movil.png)
 
-## Cómo ver los candidatos de cada vacante
+## Cómo comparar a los candidatos de una vacante
 
-Cada tarjeta muestra **«N candidatos · M en proceso»**. Tócalo y se abre Candidatos filtrado por esa vacante. En Candidatos también hay un filtro **Todas las vacantes**.
+1. En la tarjeta de la vacante toca **«N candidatos · M en proceso · P plazas»** (si entrevistas candidatos, dice **Candidatos de esta vacante**).
+2. Se abre la tabla **Candidatos de esta vacante** con el nombre, la etapa, el **Promedio RR. HH.**, el **Promedio departamento**, el **Resultado** de su última entrevista y quién lo entrevista. Arriba ves las **Plazas** y cuántos ya están **Elegidos o contratados**.
+3. Toca un nombre para abrir su ficha (o, si eres quien entrevista, su pantalla **Entrevistar**).
 
-![Candidatos de una vacante](img/vacantes/candidatos-por-vacante.png)
+![Candidatos de esta vacante](img/vacantes/candidatos-de-la-vacante.png)
+
+**Qué debes ver:** Recursos Humanos ve a todos los candidatos de la vacante en sus sedes. Quien entrevista ve solo a los que le canalizaron. La caseta no ve esta tabla. En **Candidatos** también hay un filtro **Todas las vacantes**.
 
 ## En la caseta
 
@@ -125,8 +131,11 @@ Los mensajes salen en rojo dentro de la ventana o arriba de la lista.
 
 **¿Puedo reutilizar una vacante cerrada?** Sí, con **Reabrir como borrador**; edítala y publícala de nuevo.
 
+**¿Qué pasa cuando se cubren las plazas?** Al elegir el jefe a tantas personas como plazas, los demás candidatos que seguían con el departamento pasan a «Considerar» y Recursos Humanos recibe el aviso «Vacante cubierta». La vacante sigue publicada hasta que la cierres (como **Cubierta**).
+
 ## Relacionado
 
 - [Candidatos](candidatos.md)
+- [Entrevistar y elegir](entrevistar-y-elegir.md)
 - [Solicitud de empleo](solicitud-empleo.md)
 - [Bitácora de accesos](accesos.md)
