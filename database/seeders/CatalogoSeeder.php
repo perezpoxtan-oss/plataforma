@@ -35,6 +35,8 @@ class CatalogoSeeder extends Seeder
         // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
         'contratar' => 'Contratar',
         'responder' => 'Responder',
+        // Candidatos, fase 2: entrevistar, evaluar y elegir (ADR-0009)
+        'evaluar' => 'Evaluar',
     ];
 
     private const CRUD = ['ver', 'crear', 'editar', 'eliminar'];
@@ -117,7 +119,8 @@ class CatalogoSeeder extends Seeder
                 'turnos' => ['Turnos', 'bi-clock', []],
                 // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
                 'recepcion_rh' => ['Recepción de RR. HH.', 'bi-person-check', [], [], ['ver']],
-                'candidatos' => ['Candidatos', 'bi-person-workspace', ['exportar', 'contratar', 'configurar']],
+                // «evaluar» (fase 2): entrevistar, evaluar y elegir a los candidatos que RR. HH. le canaliza
+                'candidatos' => ['Candidatos', 'bi-person-workspace', ['exportar', 'contratar', 'configurar', 'evaluar']],
                 'autorizaciones' => ['Autorizaciones departamentales', 'bi-patch-check', [], [], ['ver', 'responder', 'configurar']],
                 // Bolsa de trabajo (lección 36): «configurar» = bolsa pública por internet
                 'vacantes' => ['Vacantes', 'bi-megaphone', ['configurar']],
