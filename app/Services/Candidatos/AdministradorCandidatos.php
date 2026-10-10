@@ -92,30 +92,109 @@ class AdministradorCandidatos
     // ------------------------------------------------------------------- Altas
 
     /**
-     * La caseta registró a un candidato en la Bitácora de accesos (Personal
-     * externo → Recursos Humanos → «Viene como candidato»). Se crea su ficha
-     * y se avisa a Recursos Humanos en ese momento.
+     * La caseta registró a alguien que viene a Recursos Humanos por empleo
+     * (Personal externo → Recursos Humanos → ¿A qué viene?: Busca empleo,
+     * Entrevista, Entrega de documentos o Firma de contrato).
      *
-     * @param  array<string, mixed>  $d  departamento_id, puesto_id, vacante (ya validados por el registro)
+     * Una ficha por persona: si ya tiene ficha (por su persona del padrón, su
+     * teléfono o, si viene a una cita, su nombre exacto) no se crea otra; la
+     * visita se liga a su postulación abierta o, si no tiene, a una nueva. Si
+     * dijo que venía a una cita y no se encuentra su ficha, se registra como
+     * «Busca empleo» y queda anotado.
+     *
+     * Avisa a RR. HH. en ese momento, salvo cuando la visita espera su «Que
+     * pase» (ese aviso lo manda Autorizaciones, con los botones).
+     *
+     * @param  array<string, mixed>  $d  viene_a, vacante_id, departamento_id, puesto_id, vacante, esperar_rh (ya validados)
      */
     public function desdeAcceso(User $actor, Acceso $acceso, array $d): Candidato
     {
-        $candidato = new Candidato([
-            'sede_id' => $acceso->sede_id, 'persona_id' => $acceso->persona_id, 'acceso_id' => $acceso->id,
-            'departamento_id' => $d['departamento_id'] ?? null, 'puesto_id' => $d['puesto_id'] ?? null, 'vacante' => $d['vacante'] ?? null,
-            'nombre_completo' => mb_convert_case(mb_strtolower($acceso->nombre), MB_CASE_TITLE), 'origen' => 'caseta', 'llegada_en' => $acceso->entrada_at ?? now(),
-        ]);
-        // Vacantes (lección 36): la vacante publicada que eligió la caseta
-        $candidato->forceFill(['vacante_id' => $d['vacante_id'] ?? null]);
-        $candidato->save();
+        $vieneA = in_array($d['viene_a'] ?? null, ['busca_empleo', ...Acceso::VIENE_CON_FICHA], true) ? $d['viene_a'] : 'busca_empleo';
+        $conCita = in_array($vieneA, Acceso::VIENE_CON_FICHA, true);
+        $ficha = $this->fichaDeLaVisita($acceso, $conCita);
+        $nota = null;
+        if ($ficha === null && $conCita) {
+            $nota = 'Dijo que venía a «'.Acceso::VIENE_A[$vieneA].'», pero no se encontró su ficha: se registró como «Busca empleo».';
+            $vieneA = 'busca_empleo';
+            $conCita = false;
+        }
+        $postulaciones = app(Postulaciones::class);
+        $vacante = ['vacante_id' => $d['vacante_id'] ?? null, 'departamento_id' => $d['departamento_id'] ?? null, 'puesto_id' => $d['puesto_id'] ?? null,
+            'vacante' => $d['vacante'] ?? null];
+        $primeraVez = $ficha === null;
+
+        if ($ficha === null) {
+            $ficha = new Candidato([
+                'sede_id' => $acceso->sede_id, 'persona_id' => $acceso->persona_id, 'acceso_id' => $acceso->id,
+                'nombre_completo' => mb_convert_case(mb_strtolower($acceso->nombre), MB_CASE_TITLE), 'origen' => 'caseta', 'llegada_en' => $acceso->entrada_at ?? now(),
+            ]);
+            $ficha->save();
+            $postulacion = $postulaciones->crear($ficha, $vacante + ['sede_id' => $acceso->sede_id], 'caseta', null);
+            $ficha->refresh();
+            $this->evento($ficha, 'registrado', null, 'registrado', trim('Registrado en caseta por '.$actor->name.'. '.($nota ?? '')), $actor);
+            $this->auditoria->auditar($actor, 'candidatos.creado', $ficha, null, $this->foto($ficha));
+        } else {
+            $postulacion = $postulaciones->abierta($ficha) ?? ($conCita ? $postulaciones->activa($ficha) : null);
+            $nueva = $postulacion === null;
+            if ($nueva) {
+                $postulacion = $postulaciones->crear($ficha, $vacante + ['sede_id' => $acceso->sede_id], 'caseta', $actor);
+            } elseif ($postulacion->vacante_id === null && $vacante['vacante_id'] !== null) {
+                // Ya estaba en proceso «a lo que haya» y hoy dice a qué vacante viene
+                $postulacion->forceFill(array_filter($vacante, fn ($v) => $v !== null))->save();
+                $postulaciones->reflejar($postulacion);
+            }
+            $ficha->forceFill(['acceso_id' => $acceso->id, 'llegada_en' => $acceso->entrada_at ?? now(), 'persona_id' => $ficha->persona_id ?? $acceso->persona_id])->save();
+            $ficha->refresh();
+            $this->evento($ficha, 'visita', null, null, 'Volvió a la caseta: '.Acceso::VIENE_A[$vieneA].($nueva ? ' (nueva postulación'.($postulacion->vacante ? ' a «'.$postulacion->vacante.'»' : '').')' : '').'. Registró '.$actor->name.'.'.($nota ? ' '.$nota : ''), $actor);
+            $this->auditoria->auditar($actor, 'candidatos.visita_ligada', $ficha, null, ['acceso_id' => $acceso->id, 'postulacion_id' => $postulacion->id, 'viene_a' => $vieneA]);
+        }
+
+        $acceso->forceFill(['postulacion_id' => $postulacion->id, 'viene_a' => $vieneA])->saveQuietly();
         if ($acceso->persona_id !== null) {
             Persona::whereKey($acceso->persona_id)->where('categoria', 'general')->update(['categoria' => 'prospecto_rrhh']);
         }
-        $this->evento($candidato, 'registrado', null, 'registrado', 'Registrado en caseta por '.$actor->name.'.', $actor);
-        $this->auditoria->auditar($actor, 'candidatos.creado', $candidato, null, $this->foto($candidato));
-        $this->avisarLlegada($candidato, $actor);
+        if (empty($d['esperar_rh'])) {
+            $this->avisarLlegada($ficha, $actor, $vieneA, $primeraVez, $nota);
+        }
 
-        return $candidato;
+        return $ficha;
+    }
+
+    /**
+     * Ficha de quien llega a la caseta: por su persona del padrón, por el
+     * teléfono que tenga en el padrón y, si viene a una cita (entrevista,
+     * documentos o firma), por su nombre exacto.
+     */
+    public function fichaDeLaVisita(Acceso $acceso, bool $porNombre): ?Candidato
+    {
+        $telefono = $acceso->persona_id !== null ? Persona::whereKey($acceso->persona_id)->value('telefono') : null;
+        $ficha = $this->buscarFicha($acceso->persona_id, $telefono, null);
+        if ($ficha === null && $porNombre) {
+            $ficha = Candidato::whereRaw('LOWER(nombre_completo) = ?', [mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $acceso->nombre)))])
+                ->orderByDesc('id')->first();
+        }
+
+        return $ficha;
+    }
+
+    /**
+     * Ficha existente de la misma empresa (empresa activa) por persona del
+     * padrón, teléfono normalizado o CURP. La más reciente si hubiera varias.
+     */
+    public function buscarFicha(?int $personaId, ?string $telefono, ?string $curp): ?Candidato
+    {
+        $telefono = $telefono === null ? '' : (string) preg_replace('/\D+/', '', $telefono);
+        $curp = $curp === null ? '' : mb_strtoupper(str_replace([' ', '-'], '', $curp));
+        if ($personaId === null && strlen($telefono) < 10 && strlen($curp) !== 18) {
+            return null;
+        }
+
+        return Candidato::where(function ($q) use ($personaId, $telefono, $curp) {
+            $q->whereRaw('1 = 0')
+                ->when($personaId !== null, fn ($x) => $x->orWhere('persona_id', $personaId))
+                ->when(strlen($telefono) >= 10, fn ($x) => $x->orWhere('telefono', $telefono))
+                ->when(strlen($curp) === 18, fn ($x) => $x->orWhere('curp', $curp));
+        })->orderByDesc('id')->first();
     }
 
     /**
@@ -125,8 +204,26 @@ class AdministradorCandidatos
      */
     public function crear(User $actor, array $entrada, string $ip): Candidato
     {
+        return $this->crearOLigar($actor, $entrada, $ip)[0];
+    }
+
+    /**
+     * «Nuevo candidato» de Recursos Humanos. Si la persona ya tiene ficha (mismo
+     * teléfono o CURP) no se crea otra: se usa la suya (solo se completan los
+     * datos que le faltaban) y, si no tiene una postulación abierta, se le
+     * abre una nueva. Devuelve [ficha, ¿ya existía?].
+     *
+     * @param  array<string, mixed>  $entrada
+     * @return array{0: Candidato, 1: bool}
+     */
+    public function crearOLigar(User $actor, array $entrada, string $ip): array
+    {
         $d = $this->validarCv($entrada, true);
         $sedeId = $this->sedeValida($actor, $entrada['sede_id'] ?? null, 'candidatos.crear');
+        $existente = $this->buscarFicha(null, $d['telefono'] ?? null, $d['curp'] ?? null);
+        if ($existente !== null) {
+            return [$this->ligarDesdeRh($actor, $existente, $d, $sedeId, $entrada, $ip), true];
+        }
 
         $candidato = DB::transaction(function () use ($actor, $d, $sedeId, $ip, $entrada) {
             $persona = $this->personaDelPadron($actor, $d['nombre_completo'], $d['telefono'] ?? null);
@@ -135,14 +232,54 @@ class AdministradorCandidatos
             $this->firmarSiViene($candidato, $entrada, 'rh', $actor);
             $this->ligarVacante($candidato, $entrada);
             $candidato->save();
+            app(Postulaciones::class)->crear($candidato, $candidato->only(['sede_id', 'vacante_id', 'departamento_id', 'puesto_id', 'vacante']), 'rh', null);
 
-            return $candidato;
+            return $candidato->refresh();
         });
 
         $this->evento($candidato, 'registrado', null, 'registrado', 'Capturado por Recursos Humanos.', $actor);
         $this->auditoria->auditar($actor, 'candidatos.creado', $candidato, null, $this->foto($candidato));
 
-        return $candidato;
+        return [$candidato, false];
+    }
+
+    /**
+     * «Nuevo candidato» de alguien que ya tiene ficha: no se crea otra.
+     *
+     * @param  array<string, mixed>  $d  datos validados
+     * @param  array<string, mixed>  $entrada
+     */
+    private function ligarDesdeRh(User $actor, Candidato $ficha, array $d, int $sedeId, array $entrada, string $ip): Candidato
+    {
+        $postulaciones = app(Postulaciones::class);
+        $abierta = $postulaciones->abierta($ficha);
+        $visible = $this->limitar(Candidato::query(), $actor, 'candidatos.ver')->whereKey($ficha->id)->exists();
+        if ($abierta !== null && ! $visible) {
+            throw ValidationException::withMessages(['telefono' => 'Esta persona ya tiene una solicitud en proceso en una sede que no tienes a cargo. Pide a Recursos Humanos de esa sede que la atienda.']);
+        }
+
+        DB::transaction(function () use ($ficha, $d, $abierta, $sedeId, $entrada, $actor, $postulaciones, $ip) {
+            // Solo se completa lo que la ficha no tenía (lo capturado antes no se pierde)
+            $faltan = array_filter($this->soloCv($d), fn ($v, $campo) => $v !== null && $v !== [] && ! in_array($campo, Postulaciones::DESDE_FICHA, true)
+                && ($ficha->getAttributes()[$campo] ?? null) === null, ARRAY_FILTER_USE_BOTH);
+            $ficha->fill($faltan);
+            if ($ficha->privacidad_aceptada_en === null) {
+                $this->aceptarPrivacidad($ficha, $ip, 'rh');
+            }
+            $ficha->save();
+            if ($abierta === null) {
+                $vacanteId = is_numeric($entrada['vacante_id'] ?? null) && Vacante::whereKey((int) $entrada['vacante_id'])->whereIn('estado', ['publicada', 'pausada'])->exists()
+                    ? (int) $entrada['vacante_id'] : null;
+                $postulaciones->crear($ficha, ['sede_id' => $sedeId, 'vacante_id' => $vacanteId, 'departamento_id' => $d['departamento_id'] ?? null,
+                    'puesto_id' => $d['puesto_id'] ?? null, 'vacante' => $d['vacante'] ?? ($vacanteId ? Vacante::whereKey($vacanteId)->value('titulo') : null)], 'rh', $actor);
+            }
+        });
+        $ficha->refresh();
+        $this->evento($ficha, 'postulacion', null, $abierta === null ? 'registrado' : null, $abierta === null
+            ? 'Recursos Humanos la volvió a registrar: se abrió una nueva postulación en su misma ficha.'
+            : 'Recursos Humanos la volvió a registrar: sigue con su postulación en proceso.', $actor);
+
+        return $ficha;
     }
 
     /**
@@ -164,6 +301,7 @@ class AdministradorCandidatos
         $this->ligarVacante($candidato, $entrada);
         $candidato->autocaptura_pendiente = false;
         $candidato->save();
+        app(Postulaciones::class)->desdeFicha($candidato); // A qué aplica: lo manda la postulación activa
         $this->auditoria->auditar($actor, 'candidatos.actualizado', $candidato, $antes, $this->foto($candidato));
 
         return $candidato;
@@ -192,20 +330,23 @@ class AdministradorCandidatos
         if (! array_key_exists($etapa, Candidato::ETAPAS) || $etapa === 'contratado' || $etapa === 'registrado') {
             throw new CambioNoPermitido('Elige una etapa válida. Para contratar usa el botón «Contratar».');
         }
-        if (! $candidato->puedePasarA($etapa)) {
-            throw new CambioNoPermitido('Un candidato «'.$candidato->etiquetaEtapa().'» no puede pasar a «'.Candidato::ETAPAS[$etapa].'».');
+        // La que manda es la postulación activa (la ficha es su espejo)
+        $postulaciones = app(Postulaciones::class);
+        $p = $postulaciones->asegurar($candidato);
+        if (! $p->puedePasarA($etapa)) {
+            throw new CambioNoPermitido('Un candidato «'.$p->etiquetaEtapa().'» no puede pasar a «'.Candidato::ETAPAS[$etapa].'».');
         }
         if ($etapa === 'descartado' && $comentario === null) {
             throw ValidationException::withMessages(['comentario' => 'Escribe por qué se descarta (lo verá solo Recursos Humanos).']);
         }
-        if ($etapa === 'aprobado_rh' && $candidato->departamento_id === null) {
+        if ($etapa === 'aprobado_rh' && $p->departamento_id === null) {
             throw ValidationException::withMessages(['comentario' => 'Antes de aprobar, indica en la ficha a qué departamento aplica.']);
         }
 
-        $anterior = $candidato->etapa;
-        $cambios = ['etapa' => $etapa, 'actualizado_por' => $actor->id, 'updated_at' => now()];
+        $anterior = $p->etapa;
+        $cambios = ['etapa' => $etapa];
         $cambios += match ($etapa) {
-            'revision' => $candidato->revision_en === null ? ['revision_en' => now()] : [],
+            'revision' => $p->revision_en === null ? ['revision_en' => now()] : [],
             'aprobado_rh' => ['aprobado_rh_en' => now()],
             'entrevista' => ['entrevista_en' => now()],
             'seleccionado', 'cartera', 'descartado' => ['decision_en' => now(), 'decision_por' => $actor->id],
@@ -213,10 +354,10 @@ class AdministradorCandidatos
         if ($etapa === 'descartado') {
             $cambios['motivo_descarte'] = $comentario;
         }
-        $hecho = Candidato::whereKey($candidato->id)->where('etapa', $anterior)->update($cambios);
-        if ($hecho === 0) {
+        if (! $postulaciones->cambiar($p, $anterior, $cambios, $actor)) {
             throw new CambioNoPermitido('Otra persona acaba de cambiar a este candidato. Revisa su etapa actual.');
         }
+        Candidato::whereKey($candidato->id)->update(['actualizado_por' => $actor->id, 'updated_at' => now()]);
         $candidato->refresh();
 
         $this->evento($candidato, 'etapa', $anterior, $etapa, $comentario, $actor);
@@ -239,11 +380,13 @@ class AdministradorCandidatos
     public function respuestaDepartamento(User $actor, Candidato $candidato, string $estado, ?string $comentario): void
     {
         $nueva = $estado === 'entrevista' ? 'entrevista' : 'cartera';
-        $cambios = ['etapa' => $nueva, 'respuesta_departamento_en' => now(), 'actualizado_por' => $actor->id, 'updated_at' => now()]
+        $cambios = ['etapa' => $nueva, 'respuesta_departamento_en' => now()]
             + ($nueva === 'entrevista' ? ['entrevista_en' => now()] : ['decision_en' => now(), 'decision_por' => $actor->id]);
-        if (Candidato::whereKey($candidato->id)->where('etapa', 'aprobado_rh')->update($cambios) === 0) {
+        $postulaciones = app(Postulaciones::class);
+        if (! $postulaciones->cambiar($postulaciones->asegurar($candidato), 'aprobado_rh', $cambios, $actor)) {
             return;
         }
+        Candidato::whereKey($candidato->id)->update(['actualizado_por' => $actor->id, 'updated_at' => now()]);
         $candidato->refresh();
         $texto = $nueva === 'entrevista' ? 'El departamento pidió bajarlo a entrevista.' : 'El departamento no lo aceptó: queda en cartera.';
         $this->evento($candidato, 'etapa', 'aprobado_rh', $nueva, trim($texto.' '.($comentario ?? '')), $actor);
@@ -258,7 +401,9 @@ class AdministradorCandidatos
      */
     public function contratar(User $actor, Candidato $candidato, array $entrada): Colaborador
     {
-        if ($candidato->etapa !== 'seleccionado') {
+        $postulaciones = app(Postulaciones::class);
+        $postulacion = $postulaciones->asegurar($candidato);
+        if ($postulacion->etapa !== 'seleccionado') {
             throw new CambioNoPermitido('Solo se contrata a un candidato «Seleccionado».');
         }
         // Los datos oficiales de la solicitud pasan al colaborador (RR. HH. no los vuelve a escribir)
@@ -272,15 +417,15 @@ class AdministradorCandidatos
         ], array_intersect_key($entrada, array_flip(['num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'sede_id', 'departamento_id', 'puesto_id', 'telefono'])));
         $datos = array_filter($datos, fn ($v) => $v !== null && $v !== '');
 
-        $colaborador = DB::transaction(function () use ($actor, $candidato, $datos) {
+        $colaborador = DB::transaction(function () use ($actor, $candidato, $datos, $postulaciones, $postulacion) {
             $colaborador = app(AdministradorColaboradores::class)->crear($actor, (int) $candidato->empresa_id, Request::create('/', 'POST', $datos));
-            $hecho = Candidato::whereKey($candidato->id)->where('etapa', 'seleccionado')->update([
-                'etapa' => 'contratado', 'contratado_en' => now(), 'colaborador_id' => $colaborador->id,
-                'decision_en' => $candidato->decision_en ?? now(), 'actualizado_por' => $actor->id, 'updated_at' => now(),
-            ]);
-            if ($hecho === 0) {
+            $hecho = $postulaciones->cambiar($postulacion, 'seleccionado', [
+                'etapa' => 'contratado', 'contratado_en' => now(), 'colaborador_id' => $colaborador->id, 'decision_en' => $postulacion->decision_en ?? now(),
+            ], $actor);
+            if (! $hecho) {
                 throw new CambioNoPermitido('Otra persona acaba de cambiar a este candidato. Revisa su etapa actual.');
             }
+            Candidato::whereKey($candidato->id)->update(['actualizado_por' => $actor->id, 'updated_at' => now()]);
 
             return $colaborador;
         });
@@ -656,24 +801,27 @@ class AdministradorCandidatos
     }
 
     /**
-     * Aviso a Recursos Humanos (campana + correo) en el momento en que llega un candidato.
+     * Aviso a Recursos Humanos (campana + correo) en el momento en que llega un
+     * candidato (o vuelve: entrevista, documentos, firma, otra postulación).
      */
-    public function avisarLlegada(Candidato $candidato, ?User $registro): void
+    public function avisarLlegada(Candidato $candidato, ?User $registro, string $vieneA = 'busca_empleo', bool $primeraVez = true, ?string $nota = null): void
     {
         $candidato->loadMissing(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre']);
         $usuarios = $this->destinatarios->conPermiso((int) $candidato->empresa_id, 'candidatos.editar', (int) $candidato->sede_id)
             ->reject(fn (User $u) => $registro !== null && $u->id === $registro->id);
         $puesto = $candidato->puestoVisible();
-        $texto = trim(($puesto ? 'Aplica a: '.$puesto.'. ' : '').($candidato->departamento ? 'Departamento: '.$candidato->departamento->nombre.'. ' : '')
-            .'Sede: '.$candidato->sede?->nombre.'.');
+        $texto = trim(($vieneA !== 'busca_empleo' ? 'Viene a: '.(Acceso::VIENE_A[$vieneA] ?? $vieneA).'. ' : '')
+            .($puesto ? 'Aplica a: '.$puesto.'. ' : '').($candidato->departamento ? 'Departamento: '.$candidato->departamento->nombre.'. ' : '')
+            .'Sede: '.$candidato->sede?->nombre.'.'.($nota ? ' '.$nota : ''));
+        $titulo = ($primeraVez ? 'Llegó un candidato: ' : 'Volvió a la caseta: ').$candidato->nombre_completo;
         $this->notificaciones->avisar((int) $candidato->empresa_id, $usuarios->pluck('id'), 'candidato_llegada', [
-            'titulo' => 'Llegó un candidato: '.$candidato->nombre_completo,
+            'titulo' => $titulo,
             'texto' => $texto,
             'url' => route('candidatos.show', $candidato->id),
             'referencia_tipo' => 'candidato', 'referencia_id' => $candidato->id,
         ]);
         app(AvisosCorreo::class)->recepcion((int) $candidato->empresa_id, 'candidato_llegada', $usuarios->pluck('email')->filter()->values()->all(),
-            new AvisoRecepcion('Llegó un candidato: '.$candidato->nombre_completo, [$texto, 'Registró: '.($registro?->name ?? 'Kiosco').'.'],
+            new AvisoRecepcion($titulo, [$texto, 'Registró: '.($registro?->name ?? 'Kiosco').'.'],
                 [['Abrir su ficha', route('candidatos.show', $candidato->id)]]));
         $candidato->forceFill(['avisado_rh_en' => now()])->save();
     }

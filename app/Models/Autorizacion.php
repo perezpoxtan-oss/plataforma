@@ -12,7 +12,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *  - visita: la caseta registró a alguien que va a ese departamento y espera
  *    «Esperando autorización» (Autorizar ingreso / Rechazar);
  *  - candidato: Recursos Humanos lo aprobó y el departamento decide
- *    (Bajar a entrevistar / Rechazar).
+ *    (Bajar a entrevistar / Rechazar);
+ *  - recepcion: la caseta registró a alguien que viene con Recursos Humanos y
+ *    la empresa pide que RR. HH. diga «Que pase» (Que pase / Que espere / No
+ *    puede pasar). No es de un departamento (departamento_id = null): la
+ *    responde quien atiende Recepción en esa sede. «Que espere» no la cierra:
+ *    sigue pendiente y el acceso queda con autorizacion = «espera».
  *
  * Estados: pendiente → autorizada | entrevista | rechazada | cancelada.
  */
@@ -20,7 +25,7 @@ class Autorizacion extends Model
 {
     use PerteneceAEmpresa, RegistraAutor;
 
-    public const TIPOS = ['visita' => 'Visita', 'candidato' => 'Candidato'];
+    public const TIPOS = ['visita' => 'Visita', 'candidato' => 'Candidato', 'recepcion' => 'Recepción de RR. HH.'];
 
     public const ESTADOS = [
         'pendiente' => 'Esperando respuesta', 'autorizada' => 'Autorizada', 'entrevista' => 'Bajar a entrevistar',
@@ -31,10 +36,16 @@ class Autorizacion extends Model
     public const RESPUESTAS = [
         'visita' => ['autorizar' => 'autorizada', 'rechazar' => 'rechazada'],
         'candidato' => ['entrevistar' => 'entrevista', 'rechazar' => 'rechazada'],
+        // «Que espere» no cambia el estado: sigue pendiente (ver Autorizaciones::responder)
+        'recepcion' => ['pase' => 'autorizada', 'espere' => 'pendiente', 'no_pasa' => 'rechazada'],
     ];
 
+    /** Respuestas que niegan (botón rojo y confirmación). */
+    public const NEGATIVAS = ['rechazar', 'no_pasa'];
+
     /** Texto de cada botón de respuesta. */
-    public const BOTONES = ['autorizar' => 'Autorizar ingreso', 'entrevistar' => 'Bajar a entrevistar', 'rechazar' => 'Rechazar'];
+    public const BOTONES = ['autorizar' => 'Autorizar ingreso', 'entrevistar' => 'Bajar a entrevistar', 'rechazar' => 'Rechazar',
+        'pase' => 'Que pase', 'espere' => 'Que espere', 'no_pasa' => 'No puede pasar'];
 
     public const MEDIOS = ['plataforma' => 'Plataforma', 'correo' => 'Correo', 'caseta' => 'Caseta', 'rh' => 'Recursos Humanos'];
 
@@ -87,6 +98,10 @@ class Autorizacion extends Model
     /** Nombre de quien espera (visitante o candidato). */
     public function titulo(): string
     {
+        if ($this->tipo === 'recepcion') {
+            return (string) ($this->candidato?->nombre_completo ?? mb_convert_case(mb_strtolower((string) $this->acceso?->nombre), MB_CASE_TITLE));
+        }
+
         return (string) ($this->tipo === 'candidato' ? $this->candidato?->nombre_completo : $this->acceso?->nombre);
     }
 

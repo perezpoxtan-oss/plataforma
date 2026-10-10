@@ -6,6 +6,7 @@
     $c: Candidato|null · $id: prefijo de ids · $kiosco: bool (lo llena el propio candidato: sin departamento ni notas)
     $privacidad: texto del aviso · $pidePrivacidad: bool
     $pideFirma: bool (declaración y firma; obligatoria si $kiosco) · $sinPuesto: bool (la bolsa de trabajo ya sabe la vacante)
+    $duplicado: url|null («Nuevo candidato» de RR. HH.: avisa en vivo si el teléfono o el CURP ya tienen ficha)
     $departamentos, $puestos (RR. HH.: modelos; kiosco: nombres)
     No pide datos de salud, religión, política ni similares (decisión legal y ética).
 --}}
@@ -16,6 +17,7 @@
     $conOld = $conOld ?? false;
     $pideFirma = $pideFirma ?? $kiosco;
     $sinPuesto = $sinPuesto ?? false;
+    $duplicado = $duplicado ?? null;
     $valor = fn (string $campo, $defecto = null) => $conOld ? old($campo, $defecto) : $defecto;
     $filas = fn (string $lista) => array_values((array) ($conOld && is_array(old($lista)) ? old($lista) : ($c?->{$lista} ?? [])));
     $escolaridad = $filas('escolaridad') ?: [['nivel' => '']];
@@ -54,6 +56,7 @@
         <div>
             <label class="campo-etiqueta" for="{{ $id }}_telefono">Teléfono celular{{ $kiosco ? ' *' : '' }}</label>
             <input type="tel" id="{{ $id }}_telefono" name="telefono" class="campo" maxlength="20" inputmode="numeric" autocomplete="tel" @if ($kiosco) required @endif
+                   @if ($duplicado) data-duplicado="{{ $duplicado }}" data-duplicado-min="10" @endif
                    value="{{ $valor('telefono', $c?->telefono) }}" placeholder="10 dígitos">
         </div>
         <div>
@@ -111,6 +114,7 @@
         <div>
             <label class="campo-etiqueta" for="{{ $id }}_curp">CURP</label>
             <input type="text" id="{{ $id }}_curp" name="curp" class="campo campo-mayusculas" maxlength="18" autocapitalize="characters" spellcheck="false" autocomplete="off"
+                   @if ($duplicado) data-duplicado="{{ $duplicado }}" data-duplicado-min="18" @endif
                    value="{{ $valor('curp', $c?->curp) }}" placeholder="18 letras y números">
         </div>
         <div>

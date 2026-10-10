@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Validator;
  * Ajustes de Recepción por empresa (empresas.preferencias['recepcion']):
  *  - aviso de privacidad que el candidato acepta antes de guardar su CV;
  *  - si las visitas a un departamento esperan la autorización de su responsable;
+ *  - si la caseta espera a que RR. HH. diga «Que pase» a quien viene con
+ *    Recursos Humanos (rh_autoriza_paso). Sin el dato = encendido: las
+ *    empresas nuevas lo tienen encendido; a las que ya existían la migración
+ *    de postulaciones lo dejó apagado (su caseta sigue igual hasta que lo enciendan);
  *  - duración y usos del enlace del kiosco.
  *
  * El texto del aviso NO es un texto legal definitivo: el que trae la
@@ -65,6 +69,12 @@ class AjustesRecepcion
         return (bool) ($this->datos($empresa)['visitas_requieren_autorizacion'] ?? false);
     }
 
+    /** ¿La caseta espera a que RR. HH. diga «Que pase»? (por omisión, sí) */
+    public function rhAutorizaPaso(Empresa $empresa): bool
+    {
+        return (bool) ($this->datos($empresa)['rh_autoriza_paso'] ?? true);
+    }
+
     public function horasKiosco(Empresa $empresa): int
     {
         return (int) ($this->datos($empresa)['kiosco_horas'] ?? self::HORAS_KIOSCO);
@@ -85,6 +95,7 @@ class AjustesRecepcion
             'visitas_requieren_autorizacion' => ['nullable', 'boolean'],
             'kiosco_horas' => ['nullable', 'integer', 'min:1', 'max:24'],
             'kiosco_usos' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'rh_autoriza_paso' => ['nullable', 'boolean'],
         ], [
             'aviso_privacidad.max' => 'El aviso de privacidad admite máximo 6000 caracteres.',
             'kiosco_horas.*' => 'El enlace del kiosco dura de 1 a 24 horas.',
@@ -98,6 +109,9 @@ class AjustesRecepcion
             $nuevos['aviso_privacidad'] = $texto === '' ? null : $texto;
             $nuevos['kiosco_horas'] = (int) ($d['kiosco_horas'] ?? self::HORAS_KIOSCO);
             $nuevos['kiosco_usos'] = (int) ($d['kiosco_usos'] ?? self::USOS_KIOSCO);
+            if (array_key_exists('rh_autoriza_paso', $d)) {
+                $nuevos['rh_autoriza_paso'] = (bool) $d['rh_autoriza_paso'];
+            }
         }
         if ($autorizaciones) {
             $nuevos['visitas_requieren_autorizacion'] = (bool) ($d['visitas_requieren_autorizacion'] ?? false);
@@ -109,6 +123,7 @@ class AjustesRecepcion
             'aviso_privacidad' => isset($x['aviso_privacidad']) ? 'versión '.substr(hash('sha256', (string) $x['aviso_privacidad']), 0, 12) : 'borrador de la plataforma',
             'kiosco_horas' => (int) ($x['kiosco_horas'] ?? self::HORAS_KIOSCO),
             'kiosco_usos' => (int) ($x['kiosco_usos'] ?? self::USOS_KIOSCO),
+            'rh_autoriza_paso' => (bool) ($x['rh_autoriza_paso'] ?? true),
         ];
         $this->auditoria->auditar($actor, 'candidatos.configurado', $empresa, $resumen($antes), $resumen($nuevos));
     }

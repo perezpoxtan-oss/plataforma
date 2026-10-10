@@ -19,7 +19,7 @@
         </div>
     @else
         @php
-            $hayFiltros = $filtros['q'] !== '' || $filtros['etapa'] !== '' || $filtros['sede'] > 0 || $filtros['departamento'] > 0 || $filtros['vacante'] > 0;
+            $hayFiltros = $filtros['q'] !== '' || $filtros['etapa'] !== '' || $filtros['sede'] > 0 || $filtros['departamento'] > 0 || $filtros['vacante'] > 0 || $filtros['revisar'];
             $enProceso = collect(Candidato::ABIERTAS)->sum(fn ($e) => (int) ($conteos[$e] ?? 0));
             $base = array_filter(['q' => $filtros['q'], 'sede' => $filtros['sede'] ?: null, 'departamento' => $filtros['departamento'] ?: null, 'vacante' => $filtros['vacante'] ?: null]);
             $reabrir = old('_dialogo') === 'candidato';
@@ -54,6 +54,7 @@
 
         <form method="GET" action="{{ route('candidatos.index') }}" class="filtros-rh" role="search" data-autoenviar>
             <input type="hidden" name="etapa" value="{{ $filtros['etapa'] }}">
+            @if ($filtros['revisar'])<input type="hidden" name="revisar" value="1">@endif
             <div class="buscador">
                 <i class="bi bi-search" aria-hidden="true"></i>
                 <input type="search" name="q" value="{{ $filtros['q'] }}" maxlength="100" placeholder="Buscar por nombre o vacante..." aria-label="Buscar candidato">
@@ -88,8 +89,11 @@
         </form>
 
         <nav class="pildoras-pases" aria-label="Etapas">
-            <a href="{{ route('candidatos.index', $base) }}" class="btn-pill-tipo {{ $filtros['etapa'] === '' ? 'active' : '' }}">Todos ({{ $conteos->sum() }})</a>
-            <a href="{{ route('candidatos.index', $base + ['etapa' => 'en_proceso']) }}" class="btn-pill-tipo {{ $filtros['etapa'] === 'en_proceso' ? 'active' : '' }}">En proceso ({{ $enProceso }})</a>
+            <a href="{{ route('candidatos.index', $base) }}" class="btn-pill-tipo {{ $filtros['etapa'] === '' && ! $filtros['revisar'] ? 'active' : '' }}">Todos ({{ $conteos->sum() }})</a>
+            <a href="{{ route('candidatos.index', $base + ['etapa' => 'en_proceso']) }}" class="btn-pill-tipo {{ $filtros['etapa'] === 'en_proceso' && ! $filtros['revisar'] ? 'active' : '' }}">En proceso ({{ $enProceso }})</a>
+            @if ($porRevisar > 0 || $filtros['revisar'])
+                <a href="{{ route('candidatos.index', $base + ['revisar' => 1]) }}" class="btn-pill-tipo {{ $filtros['revisar'] ? 'active' : '' }}"><i class="bi bi-phone me-1" aria-hidden="true"></i>Solicitudes por revisar ({{ $porRevisar }})</a>
+            @endif
             @foreach (Candidato::ETAPAS as $clave => $texto)
                 <a href="{{ route('candidatos.index', $base + ['etapa' => $clave]) }}" class="btn-pill-tipo {{ $filtros['etapa'] === $clave ? 'active' : '' }}">{{ $texto }} ({{ (int) ($conteos[$clave] ?? 0) }})</a>
             @endforeach
@@ -163,7 +167,7 @@
                                 @endforeach
                             </select>
                         @endif
-                        @include('rh.candidatos._cv', ['c' => null, 'id' => 'nuevo_cv', 'kiosco' => false, 'conOld' => $reabrir, 'pidePrivacidad' => true, 'pideFirma' => true])
+                        @include('rh.candidatos._cv', ['c' => null, 'id' => 'nuevo_cv', 'kiosco' => false, 'conOld' => $reabrir, 'pidePrivacidad' => true, 'pideFirma' => true, 'duplicado' => route('candidatos.duplicado')])
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                             <button type="submit" class="btn-verde">Guardar candidato</button>

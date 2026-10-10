@@ -3435,6 +3435,7 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .btn-respuesta { border: none; border-radius: 10px; min-height: 44px; padding: 0 0.9rem; font-weight: 700; font-size: 0.82rem; cursor: pointer; font-family: inherit; }
 .btn-respuesta.aceptar { background: #16a34a; color: #fff; }
 .btn-respuesta.rechazar { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+.btn-respuesta.esperar { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
 .btn-respuesta.grande { min-height: 52px; font-size: 0.95rem; padding: 0 1.25rem; flex: 1 1 200px; }
 .btn-respuesta.sugerida { outline: 3px solid #fde047; outline-offset: 2px; }
 @media (max-width: 991.98px) { .campana-panel { position: fixed; right: 12px; left: 12px; top: 70px; width: auto; } }
@@ -3649,6 +3650,16 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .linea-autorizacion { font-size: 0.82rem; font-weight: 700; margin: 0.4rem 0; }
 .linea-autorizacion.autorizada { color: #15803d; }
 .linea-autorizacion.rechazada { color: #b91c1c; }
+/* Candidatos fase 1: a qué viene a RR. HH. (tarjeta de caseta y Recepción) y «RR. HH. pide que espere» */
+.linea-viene-a { font-size: 0.82rem; font-weight: 700; color: #1e40af; margin: 0.4rem 0 0; }
+.aviso-esperando-autorizacion.pide-espera { background: #fefce8; border-color: #eab308; color: #713f12; }
+.aviso-esperando-autorizacion.pide-espera > i { animation: none; }
+.viene-a-rh { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 700; color: #1e40af; }
+.fila-recepcion-acciones .btn-otra-respuesta { font-size: 0.78rem; text-decoration: underline; color: inherit; }
+.postulaciones-anteriores { list-style: none; padding: 0; margin: 0; }
+.postulaciones-anteriores li { border-top: 1px solid #e5e7eb; padding: 0.45rem 0; font-size: 0.85rem; }
+.postulaciones-anteriores li:first-child { border-top: none; }
+.enlace-discreto { background: none; border: none; padding: 0; font-size: 0.8rem; color: #64748b; text-decoration: underline; cursor: pointer; font-family: inherit; }
 .fotos-acceso { display: flex; gap: 0.4rem; margin: 0.4rem 0; }
 .btn-foto-acceso { display: inline-flex; align-items: center; min-height: 40px; padding: 0 0.75rem; border: 1px solid var(--borde); border-radius: 10px; font-size: 0.78rem; font-weight: 700; text-decoration: none; color: #334155; background: #fff; }
 

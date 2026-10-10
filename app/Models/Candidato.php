@@ -16,6 +16,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * kiosco. Es dato personal: solo lo ven Recursos Humanos y, en resumen, el
  * responsable del departamento al que aplica.
  *
+ * Una ficha por persona (fase 1): cada vez que aplica nace una POSTULACIÓN
+ * (App\Models\Postulacion), que es la que avanza por etapas. Las columnas de
+ * etapa, vacante, departamento, puesto y fechas de esta tabla son un ESPEJO
+ * de la postulación activa (manda la postulación; ver
+ * App\Services\Candidatos\Postulaciones).
+ *
  * Etapas (ver TRANSICIONES):
  *   Registrado → En revisión RR. HH. → Aprobado por RR. HH. (enviado al departamento)
  *   → Entrevista → Seleccionado → Contratado
@@ -60,7 +66,7 @@ class Candidato extends Model
 
     /** Texto del botón que lleva a cada etapa. */
     public const BOTONES_ETAPA = [
-        'revision' => 'Tomar en revisión', 'aprobado_rh' => 'Aprobar y enviar al departamento', 'entrevista' => 'Pasar a entrevista',
+        'revision' => 'Atender', 'aprobado_rh' => 'Aprobar y enviar al departamento', 'entrevista' => 'Pasar a entrevista',
         'seleccionado' => 'Seleccionar', 'cartera' => 'Guardar en cartera', 'descartado' => 'Descartar',
     ];
 
@@ -171,6 +177,18 @@ class Candidato extends Model
     public function colaborador(): BelongsTo
     {
         return $this->belongsTo(Colaborador::class);
+    }
+
+    /** Todas sus postulaciones, la más reciente primero. */
+    public function postulaciones(): HasMany
+    {
+        return $this->hasMany(Postulacion::class)->orderByDesc('id');
+    }
+
+    /** La postulación activa (la más reciente): la que refleja esta ficha. */
+    public function postulacionActiva(): HasOne
+    {
+        return $this->hasOne(Postulacion::class)->latestOfMany();
     }
 
     public function documentos(): HasMany

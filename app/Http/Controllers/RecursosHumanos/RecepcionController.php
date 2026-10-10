@@ -8,6 +8,7 @@ use App\Models\Autorizacion;
 use App\Models\Candidato;
 use App\Models\Empresa;
 use App\Models\EnlaceKiosco;
+use App\Models\Postulacion;
 use App\Models\Sede;
 use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Autorizaciones\Autorizaciones;
@@ -98,6 +99,8 @@ class RecepcionController extends Controller
             'ver' => $actor->can('candidatos.ver'),
             'kiosco' => $actor->can('candidatos.editar') || $actor->can('accesos.crear'),
             'configurar' => $actor->can('candidatos.configurar'),
+            // «Que pase»: quien atiende Recepción de RR. HH. (cada solicitud lo revisa otra vez por su sede)
+            'responder' => $actor->can('candidatos.editar') || $actor->can('recepcion_rh.ver'),
         ];
     }
 
@@ -171,7 +174,12 @@ class RecepcionController extends Controller
             $this->tenant->conEmpresa($empresaId, function () use ($request, $candidato) {
                 $c = $this->candidatosParaKiosco($request->user())->find($candidato);
                 abort_if($c === null, 404);
-                app(Kiosco::class)->generar($request->user(), $c);
+                // «QR para que llene su solicitud» (ficha): muestra el vigente o crea uno
+                $vigente = $request->boolean('reusar')
+                    && $c->enlaces()->whereNull('revocado_en')->where('expira_en', '>', now())->get()->contains(fn (EnlaceKiosco $e) => $e->vigente());
+                if (! $vigente) {
+                    app(Kiosco::class)->generar($request->user(), $c);
+                }
             });
         } catch (CambioNoPermitido $e) {
             return redirect()->route('recepcion.kiosco')->with('error', $e->getMessage());
@@ -232,7 +240,7 @@ class RecepcionController extends Controller
             return back()->with('error', 'No hubo cambios que guardar.');
         }
 
-        app(AjustesRecepcion::class)->guardar($actor, Empresa::findOrFail($empresaId), $request->only(['aviso_privacidad', 'visitas_requieren_autorizacion', 'kiosco_horas', 'kiosco_usos']), $privacidad, $autorizaciones);
+        app(AjustesRecepcion::class)->guardar($actor, Empresa::findOrFail($empresaId), $request->only(['aviso_privacidad', 'visitas_requieren_autorizacion', 'kiosco_horas', 'kiosco_usos', 'rh_autoriza_paso']), $privacidad, $autorizaciones);
 
         return back()->with('ok', 'Ajustes de Recepción guardados.');
     }
@@ -262,8 +270,10 @@ class RecepcionController extends Controller
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $id, $campo) {
             $acceso = $actor->can('accesos.ver') ? app(ConsultaAccesos::class)->limitar(Acceso::query(), $actor, 'accesos.ver')->find($id) : null;
             if ($acceso === null && $actor->can('candidatos.ver')) {
-                $acceso = Candidato::where('acceso_id', $id)->whereIn('id', app(AdministradorCandidatos::class)->limitar(Candidato::query(), $actor, 'candidatos.ver')->select('id'))
-                    ->exists() ? Acceso::find($id) : null;
+                // Cualquier visita de un candidato de sus sedes (la de su ficha o las ligadas a sus postulaciones)
+                $visibles = app(AdministradorCandidatos::class)->limitar(Candidato::query(), $actor, 'candidatos.ver')->select('candidatos.id');
+                $acceso = Acceso::whereKey($id)->where(fn ($q) => $q->whereIn('id', Candidato::whereIn('id', $visibles)->whereNotNull('acceso_id')->select('acceso_id'))
+                    ->orWhereIn('postulacion_id', Postulacion::whereIn('candidato_id', $visibles)->select('id')))->first();
             }
             if ($acceso === null && $campo === 'foto_persona' && $actor->can('recepcion_rh.ver')) {
                 // El panel de Recepción muestra la foto de la persona (no la de su identificación)

@@ -77,6 +77,24 @@ class Acceso extends Model
 
     public const MOTIVOS = ['rh' => 'Recursos Humanos', 'colaborador' => 'Visita a Colaborador', 'departamento' => 'Visita a Departamento']; // «departamento»: Recepción (ADR-0007)
 
+    /**
+     * Recursos Humanos: ¿a qué viene? (lo elige la caseta). Las tres de en
+     * medio implican que la persona ya tiene ficha de candidato.
+     */
+    public const VIENE_A = [
+        'busca_empleo' => 'Busca empleo', 'entrevista' => 'Entrevista', 'documentos' => 'Entrega de documentos',
+        'firma' => 'Firma de contrato', 'informes' => 'Informes / ver vacantes', 'tramite' => 'Otro trámite de RR. HH.',
+    ];
+
+    /** Texto corto de «Viene a» (panel de Recepción y tarjeta de caseta). */
+    public const VIENE_A_CORTO = [
+        'busca_empleo' => 'Busca empleo', 'entrevista' => 'Entrevista', 'documentos' => 'Documentos', 'firma' => 'Firma',
+        'informes' => 'Informes', 'tramite' => 'Trámite',
+    ];
+
+    /** «¿A qué viene?» que requieren una ficha de candidato existente. */
+    public const VIENE_CON_FICHA = ['entrevista', 'documentos', 'firma'];
+
     public const PASES = ['estancia' => 'Estancia', 'daypass' => 'Daypass', 'nightpass' => 'Nightpass'];
 
     public const TIPOS_VISITA = ['cortesia' => 'Cortesía', 'levantamiento' => 'Levantamiento / Recorrido', 'ejecucion' => 'Ejecución de Trabajo'];
@@ -98,7 +116,7 @@ class Acceso extends Model
         'visita_colaborador_id', 'persona_visita', 'host_colaborador_id', 'identificacion',
         'gafete_id', 'gafete_texto', 'modo_arribo', 'vehiculo_id', 'placas', 'zona_estacionamiento_id',
         'conductor', 'num_acompanantes', 'tiene_reserva', 'numero_reserva', 'tipo_pase', 'habitacion',
-        'tipo_visita', 'departamento_id', 'area_trabajo', 'actividad', 'tipo_emergencia', 'observaciones',
+        'tipo_visita', 'departamento_id', 'viene_a', 'area_trabajo', 'actividad', 'tipo_emergencia', 'observaciones',
         'entrada_at',
     ];
 
@@ -200,6 +218,12 @@ class Acceso extends Model
     public function candidatoRecepcion(): HasOne
     {
         return $this->hasOne(Candidato::class, 'acceso_id');
+    }
+
+    /** Postulación del candidato a la que se ligó esta visita (fase 1 de candidatos). */
+    public function postulacion(): BelongsTo
+    {
+        return $this->belongsTo(Postulacion::class);
     }
 
     /** Solicitud de autorización al departamento (la más reciente). */

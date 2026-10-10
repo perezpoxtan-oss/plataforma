@@ -63,7 +63,7 @@ class VacanteController extends Controller
                 ->when($filtros['sede'] > 0, fn ($q) => $q->aplicanEn([$filtros['sede']]))
                 ->when($filtros['departamento'] > 0, fn ($q) => $q->where('vacantes.departamento_id', $filtros['departamento']))
                 ->with(['sedes:id,nombre', 'puesto:id,nombre', 'departamento:id,nombre', 'turno:id,nombre,hora_inicio,hora_fin', 'registradoPor:id,name', 'editadoPor:id,name'])
-                ->withCount(['candidatos', 'candidatos as en_proceso_count' => fn ($q) => $q->whereIn('etapa', Candidato::ABIERTAS)])
+                ->withCount(['postulaciones as candidatos_count', 'postulaciones as en_proceso_count' => fn ($q) => $q->whereIn('etapa', Candidato::ABIERTAS)])
                 ->orderByRaw("CASE estado WHEN 'publicada' THEN 0 WHEN 'pausada' THEN 1 WHEN 'borrador' THEN 2 ELSE 3 END")
                 ->orderByDesc('id')->paginate(24)->withQueryString();
             $sedesAlta = $actor->can('vacantes.crear') ? $this->vacantes->sedesParaElegir($actor, 'vacantes.crear') : collect();

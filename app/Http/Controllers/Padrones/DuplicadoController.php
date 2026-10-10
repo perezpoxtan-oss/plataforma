@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Padrones;
 
 use App\Http\Controllers\Controller;
+use App\Models\Candidato;
 use App\Models\Colaborador;
 use App\Models\Equipo;
 use App\Models\EquipoPc;
@@ -10,6 +11,7 @@ use App\Models\Gafete;
 use App\Models\Proveedor;
 use App\Models\User;
 use App\Models\Vehiculo;
+use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Lector\Identificacion;
@@ -29,7 +31,7 @@ use Illuminate\Http\Request;
 /**
  * Ronda 6 de ajustes: avisos de duplicado EN VIVO de los padrones que tenían
  * su propio aviso (Proveedores, Vehículos, Colaboradores, Gafetes, Equipos y
- * Equipos de Protección Civil) y de la etiqueta NFC / RFID de cualquier tipo
+ * Equipos de Protección Civil; y Candidatos: teléfono o CURP de otra ficha) y de la etiqueta NFC / RFID de cualquier tipo
  * del lector (GV-03), con el mecanismo único de Ronda 5 (parte 2):
  * <input data-duplicado="URL"> + App\Services\Padrones\AvisoDuplicado.
  * Ver docs/tecnico/avisos-duplicado.md.
@@ -160,6 +162,36 @@ class DuplicadoController extends Controller
                 .'. ¿Es la misma persona? Si lo es, no lo des de alta otra vez: búscalo en la lista.',
                 $mios->map(fn (Colaborador $c) => $this->avisos->coincidencia($c->nombreCompleto(), $this->detalleColaborador($c), false))->values()->all());
         }, ['colaboradores.crear', 'colaboradores.editar', 'colaboradores.aprobar']);
+    }
+
+    // ------------------------------------------------------------- Candidatos
+
+    /**
+     * «Nuevo candidato» de RR. HH. (fase 1: una ficha por persona): teléfono o
+     * CURP que ya tiene otra ficha de la empresa. No se rechaza: al guardar se
+     * usa su ficha. Se ofrece «Abrir su ficha» si está en sus sedes.
+     */
+    public function candidatos(Request $request): JsonResponse
+    {
+        return $this->responder($request, 'candidatos', function (User $actor, string $valor) use ($request) {
+            $campo = Entrada::texto($request->query('campo'));
+            if (! in_array($campo, ['telefono', 'curp'], true)) {
+                return $this->avisos->nada();
+            }
+            $administrador = app(AdministradorCandidatos::class);
+            $ficha = $campo === 'telefono' ? $administrador->buscarFicha(null, $valor, null) : $administrador->buscarFicha(null, null, $valor);
+            if ($ficha === null) {
+                return $this->avisos->nada();
+            }
+            $dato = $campo === 'telefono' ? 'ese teléfono' : 'ese CURP';
+            $visible = $actor->can('candidatos.ver') && $administrador->limitar(Candidato::query(), $actor, 'candidatos.ver')->whereKey($ficha->id)->exists();
+            if (! $visible) {
+                return $this->avisos->parecido("Ya existe la ficha de un candidato con {$dato} en una sede que no tienes a cargo. Al guardar no se crea otra.", []);
+            }
+
+            return $this->avisos->parecido("Ya existe la ficha de «{$ficha->nombre_completo}» con {$dato}. Al guardar no se crea otra: se usa su ficha (si no tiene una postulación en proceso, se le abre una nueva).",
+                [$this->avisos->coincidencia($ficha->nombre_completo, ($ficha->etiquetaEtapa()).' · '.($ficha->sede?->nombre ?? ''), false, null, route('candidatos.show', $ficha->id))]);
+        }, ['candidatos.crear']);
     }
 
     // ---------------------------------------------------------------- Gafetes

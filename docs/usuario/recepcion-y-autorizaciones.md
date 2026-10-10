@@ -3,18 +3,18 @@ titulo: Recepción y autorizaciones
 modulos: [recepcion_rh, autorizaciones]
 seccion: Recursos Humanos
 orden: 30
-resumen: Panel de quién espera a Recursos Humanos, avisos de la campana y respuesta de los departamentos a visitas y candidatos.
+resumen: Panel de quién espera a Recursos Humanos, «Que pase» a quien llega a caseta, avisos de la campana y respuesta de los departamentos a visitas y candidatos.
 ---
 
 # Recepción y autorizaciones
 
-**¿Para qué sirve?** Cuando alguien llega a la caseta y va con **Recursos Humanos**, aparece en el panel de **Recepción** con los minutos que lleva esperando. Cuando alguien viene a ver a un **departamento**, su **responsable** decide si entra; y cuando Recursos Humanos aprueba a un candidato, el departamento decide si lo **baja a entrevistar**. Todo llega como aviso en la **campana** (y por correo) con los botones para responder.
+**¿Para qué sirve?** Cuando alguien llega a la caseta y va con **Recursos Humanos**, aparece en el panel de **Recepción** con **a qué viene** y los minutos que lleva esperando, y Recursos Humanos le dice a la caseta **Que pase**, **Que espere** o **No puede pasar**. Cuando alguien viene a ver a un **departamento**, su **responsable** decide si entra; y cuando Recursos Humanos aprueba a un candidato, el departamento decide si lo **baja a entrevistar**. Todo llega como aviso en la **campana** (y por correo) con los botones para responder.
 
 ![Panel de Recepción](img/recepcion-y-candidatos/recepcion-panel.png)
 
 ## Antes de empezar
 
-- **Recepción:** necesitas poder consultar *Recepción de RR. HH.* (normalmente Recursos Humanos).
+- **Recepción:** necesitas poder consultar *Recepción de RR. HH.* (normalmente Recursos Humanos). Para decir **Que pase** necesitas poder consultar *Recepción de RR. HH.* o editar *Candidatos* en esa sede.
 - **Responder autorizaciones:** necesitas el permiso **Responder** de *Autorizaciones departamentales* y ser **responsable** (o suplente) del departamento. Las autorizaciones no están en el menú: llegan por la **campana** y por **Mis pendientes**.
 - **Ajustes y responsables por departamento:** necesitas el permiso **Configurar** con alcance de empresa.
 
@@ -22,7 +22,7 @@ resumen: Panel de quién espera a Recursos Humanos, avisos de la campana y respu
 
 1. Arriba a la derecha está la **campana**. El número rojo son tus avisos sin leer; se actualiza solo.
 2. Tócala para ver los últimos avisos; toca uno para abrirlo.
-3. Si el aviso pide tu respuesta, trae los botones ahí mismo (por ejemplo **Autorizar ingreso** / **Rechazar**).
+3. Si el aviso pide tu respuesta, trae los botones ahí mismo (por ejemplo **Que pase** / **Que espere** / **No puede pasar**, o **Autorizar ingreso** / **Rechazar**).
 4. **Marcar todas como leídas** las limpia. **Ver todas las notificaciones** abre la lista completa.
 
 ![Campana de Recursos Humanos](img/recepcion-y-candidatos/campana-rh.png)
@@ -33,15 +33,44 @@ Si tienes encendidos los avisos por correo en [Configuración](configuracion.md)
 
 1. Entra a **Recursos Humanos → Recepción de RR. HH.**
 2. Arriba ves cuántos hay **Esperando**, **En revisión**, **Con el departamento** y **En entrevista**. La lista se actualiza sola cada 15 segundos.
-3. Cada persona muestra a qué viene, puesto, departamento, sede, hora de llegada y **minutos esperando**. El borde cambia de color: **verde** recién llegó, **ámbar** más de 10 minutos, **rojo** más de 20, **azul** ya lo atendiste.
-4. Toca **Atender**: el candidato pasa a «En revisión RR. HH.».
-5. Toca **Abrir ficha** para ver su [ficha de candidato](candidatos.md), o **QR** para que llene su solicitud en su celular.
+3. Cada persona muestra **Viene a:** y su puesto, departamento, sede, hora de llegada y **minutos esperando**. El borde cambia de color: **verde** recién llegó, **ámbar** más de 10 minutos, **rojo** más de 20, **azul** ya lo atendiste.
 
-**Qué debes ver:** al tocar **QR**, «Listo: que el candidato escanee el QR con su celular (o escriba el código).»
+| Viene a | Qué significa |
+|---|---|
+| **Busca empleo — primera vez** | Es la primera vez que viene. |
+| **Busca empleo — ya vino antes** | Ya tenía ficha: se usa la misma (no se crea otra). |
+| **Busca empleo — por internet** (o **en el kiosco**, **registrado por RR. HH.**) | Hoy dejó su solicitud sin pasar por la caseta. |
+| **Entrevista**, **Documentos** o **Firma** | Ya tiene ficha y viene a ese paso. |
+| **Informes** o **Trámite** | No es candidato: solo pregunta o hace otro trámite. |
+
+4. Si la persona sigue en caseta (dice «En caseta: espera que digas «Que pase»»), toca **Que pase**. Para pedirle que espere o decir que no puede pasar, toca **Que espere / No puede pasar**.
+5. Cuando la recibas, toca **Atender**: el candidato pasa a «En revisión RR. HH.».
+6. Toca **Abrir ficha** para ver su [ficha de candidato](candidatos.md). El QR para que llene su solicitud está en su ficha y en el **Modo kiosco**.
+
+**Qué debes ver:** al tocar **Que pase**, «Listo: … ya puede pasar. La caseta ya lo ve.» y la tarjeta de la caseta cambia sola.
 
 Botones de arriba: **Modo kiosco** (pantalla para la tableta de la sala de espera), **Tiempos de espera**, **Candidatos** y **Ajustes**.
 
 ![Recepción en el celular](img/recepcion-y-candidatos/movil-recepcion.png)
+
+## Cómo decir «Que pase» a quien llega a la caseta
+
+Si tu empresa tiene encendido el ajuste **La caseta espera a que RR. HH. diga «Que pase»**, todo el que llega a la caseta con motivo **Recursos Humanos** queda **Esperando a RR. HH.** y te llega el aviso «Llegó un candidato: …» (o «Volvió a la caseta: …», o «En caseta para RR. HH.: …» si no es candidato).
+
+1. Responde desde donde te sea más fácil: la **campana**, **Mis pendientes** (renglón **Esperando en Recepción**), el panel de **Recepción** o el botón del **correo**.
+
+![Mis pendientes de Recursos Humanos](img/recepcion-y-candidatos/mis-pendientes-rh.png)
+2. Elige una respuesta:
+   - **Que pase:** la persona entra y pasa a «Gente en Sitio» en la caseta.
+   - **Que espere:** la caseta ve «RR. HH. PIDE QUE ESPERE». El aviso sigue pendiente: cuando puedas recibirla, toca **Que pase**.
+   - **No puede pasar:** la caseta ve «NO AUTORIZADO por Recursos Humanos» y le devuelve su identificación.
+3. Si quieres, escribe un **Comentario (opcional)** (por ejemplo «Que pase a la oficina de RR. HH. en 5 minutos»): la caseta lo ve en su aviso.
+
+![Campana con los botones de respuesta](img/recepcion-y-candidatos/campana-rh.png)
+
+**Qué debes ver:** «Listo: … ya puede pasar. La caseta ya lo ve.», «Listo: la caseta verá que … debe esperar.» o «Respuesta registrada: … no puede pasar. La caseta ya lo ve.»
+
+> Si alguien de Recursos Humanos avisa por teléfono, el supervisor de la caseta puede usar **Confirmar Autorización**: queda anotado «respondida por caseta».
 
 ## Cómo poner la tableta de la sala de espera (Modo kiosco)
 
@@ -118,8 +147,9 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 
 1. En Recepción toca **Ajustes** (también están en [Configuración](configuracion.md)).
 2. Escribe el **Texto del aviso de privacidad**. El texto que trae la plataforma es un borrador: pide a tu abogado que lo revise.
-3. Ajusta **El enlace del kiosco dura (horas)** y **Veces que se puede enviar**.
-4. Toca **Guardar ajustes de Recepción**.
+3. Marca o desmarca **La caseta espera a que RR. HH. diga «Que pase»**. Marcado: quien viene a Recursos Humanos espera en caseta tu respuesta. Desmarcado: pasa directo y solo te llega el aviso.
+4. Ajusta **El enlace del kiosco dura (horas)** y **Veces que se puede enviar**.
+5. Toca **Guardar ajustes de Recepción**.
 
 ![Ajustes de Recepción](img/recepcion-y-candidatos/recepcion-ajustes.png)
 
@@ -144,16 +174,24 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 | El enlace del kiosco dura de 1 a 24 horas. / se puede abrir de 1 a 10 veces. | El ajuste está fuera de rango. | Corrige el número. |
 | No hubo cambios que guardar. | Guardaste sin cambiar nada. | Cambia algo o sal de la pantalla. |
 | La visita no queda «esperando autorización». | El departamento no tiene responsable o la opción está apagada. | Revisa **Responsables por departamento**. |
+| Quien viene a Recursos Humanos pasa directo, sin esperar el «Que pase». | El ajuste **La caseta espera a que RR. HH. diga «Que pase»** está apagado, o nadie atiende Recursos Humanos en esa sede. | Revisa **Ajustes** de Recepción y que alguien de esa sede tenga el permiso. |
+| «Solo quien atiende Recursos Humanos en … puede responder.» | Esa persona llegó a una sede que no tienes a cargo. | Que responda Recursos Humanos de esa sede. |
+| «Esta persona ya no está esperando en caseta. Revisa la lista.» | La caseta ya la dejó pasar o ya se fue. | No hace falta responder. |
+| «Esta solicitud ya fue respondida o cancelada. Revisa la lista.» | Otra persona de Recursos Humanos ya contestó. | Revisa el panel de Recepción. |
 
 ## Preguntas frecuentes
 
 **¿Dónde quedaron las Autorizaciones en el menú?** Ya no están en el menú: te llegan por la campana y por **Mis pendientes**.
 
-**¿Qué pasa si nadie responde?** La persona sigue esperando en la caseta. El supervisor puede usar **Confirmar Autorización** si el responsable avisa por teléfono.
+**¿Qué pasa si nadie responde?** La persona sigue esperando en la caseta. El supervisor puede usar **Confirmar Autorización** si el responsable (o Recursos Humanos) avisa por teléfono.
+
+**¿Ya no está el botón QR en Recepción?** Está en la ficha del candidato (**QR para que llene su solicitud**) y en el **Modo kiosco** de la tableta.
+
+**¿La caseta ve en qué paso va el candidato?** No. Solo ve a qué viene (por ejemplo «Candidato · Entrevista»).
 
 **¿El responsable ve el CV completo?** No, solo un resumen. Los datos personales los guarda Recursos Humanos.
 
-**¿Quién ve el panel de Recepción?** Recursos Humanos y, si tiene el permiso, Dirección (solo el panel y los tiempos, no los CV).
+**¿Quién ve el panel de Recepción?** Recursos Humanos y, si tiene el permiso, Dirección (solo el panel y los tiempos, no los CV). El «Que pase» solo lo dan quienes pueden editar candidatos (Recursos Humanos): a Dirección no le llega ese aviso.
 
 ## Relacionado
 

@@ -30,6 +30,7 @@ use App\Models\Notificacion;
 use App\Models\Novedad;
 use App\Models\PaseSalida;
 use App\Models\Persona;
+use App\Models\Postulacion;
 use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
 use App\Models\Puesto;
@@ -49,6 +50,7 @@ use App\Models\ZonaEstacionamiento;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Kiosco;
+use App\Services\Candidatos\Postulaciones;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Gafetes\AdministradorGafetes;
@@ -224,6 +226,7 @@ class CrearDatosDemo extends Command
         $paso('ronda8Demo', fn () => $this->ronda8Demo(User::where('username', 'agente.demo')->firstOrFail()));
         $paso('vacantesDemo', fn () => $this->vacantesDemo($sedes, User::where('username', 'rh.demo')->firstOrFail()));
         $paso('rolesSolicitudesDemo', fn () => $this->rolesSolicitudesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('postulacionesDemo', fn () => $this->postulacionesDemo($sedes, User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -2216,7 +2219,12 @@ class CrearDatosDemo extends Command
                         $cambios[$campo] = $c->llegada_en->copy()->addMinutes($min);
                     }
                 }
-                $c->forceFill($cambios)->save();
+                // Las fechas de etapa viven en la postulación (la ficha es su espejo); el aviso a RR. HH., en la ficha
+                $c->forceFill(array_intersect_key($cambios, ['avisado_rh_en' => true]))->save();
+                $postulaciones = app(Postulaciones::class);
+                $p = $postulaciones->asegurar($c);
+                $p->forceFill(array_diff_key($cambios, ['avisado_rh_en' => true]) + ['created_at' => $c->llegada_en])->save();
+                $postulaciones->reflejar($p);
             };
 
             // Esperando ahora, con su QR del kiosco
@@ -2451,9 +2459,12 @@ class CrearDatosDemo extends Command
         $vacantes->cambiarEstado($rh, $recepcionista, 'publicada', null, $hoy);
         Vacante::whereKey($recepcionista->id)->update(['publicada_en' => now()->subDays(20), 'fecha_publicacion' => now()->subDays(20)->format('Y-m-d')]);
 
-        // Candidatos de caseta ligados a sus vacantes
-        Candidato::where('nombre_completo', 'Karla Pérez Uc')->update(['vacante_id' => $camarista->id]);
-        Candidato::whereIn('nombre_completo', ['Mariela Canché Dzib', 'Silvia Mena Couoh'])->update(['vacante_id' => $recepcionista->id]);
+        // Candidatos de caseta ligados a sus vacantes (en su postulación y en el espejo de la ficha)
+        foreach ([[['Karla Pérez Uc'], $camarista], [['Mariela Canché Dzib', 'Silvia Mena Couoh'], $recepcionista]] as [$nombres, $vacante]) {
+            $ids = Candidato::whereIn('nombre_completo', $nombres)->pluck('id');
+            Candidato::whereKey($ids)->update(['vacante_id' => $vacante->id]);
+            Postulacion::whereIn('candidato_id', $ids)->update(['vacante_id' => $vacante->id]);
+        }
         $vacantes->cambiarEstado($rh, $recepcionista->fresh(), 'cerrada', 'cubierta', $hoy);
 
         // Postulaciones por internet a «Camarista» (lo mismo que hace /empleos)
@@ -2569,4 +2580,79 @@ class CrearDatosDemo extends Command
         }
     }
     // Fin Solicitud de empleo formal y Vacantes
+
+    // Candidatos, fase 1: postulaciones, «¿A qué viene?» y el «Que pase» de RR. HH.
+
+    /**
+     * Solo la primera vez (o en una base donde el demo ya existía):
+     *  - Jorge Tun Pech vuelve hoy a su entrevista: la caseta lo registra, RR. HH.
+     *    dice «Que pase» y queda en sitio (su ficha tiene dos visitas);
+     *  - Silvia Mena Couoh (en cartera) volvió ayer buscando empleo de Camarista:
+     *    nueva postulación en su misma ficha (la anterior queda en su historial);
+     *  - Martha Ek Chan llegó hace unos minutos y espera a RR. HH. en caseta.
+     */
+    private function postulacionesDemo($sedes, User $rh, User $agente): void
+    {
+        if (Autorizacion::where('tipo', 'recepcion')->exists() || ! Candidato::exists()) {
+            return;
+        }
+        $previo = auth()->user();
+        $candidatos = app(AdministradorCandidatos::class);
+        $autorizaciones = app(Autorizaciones::class);
+        $visita = function (string $nombre, int $minutos, string $vieneA, bool $abierto, ?int $personaId = null) use ($sedes, $agente, $candidatos): Acceso {
+            if ($personaId === null) {
+                // Como las registra la caseta desde Operación (ADR-0006), ya verificadas
+                $nueva = $candidatos->personaDelPadron($agente, $nombre, null);
+                $nueva->forceFill(['origen_alta' => 'accesos', 'sede_alta_id' => $sedes['CEN']->id])->save();
+                $personaId = $nueva->id;
+            }
+            $persona = $personaId;
+            $a = new Acceso(['sede_id' => $sedes['CEN']->id, 'tipo' => 'visitante', 'nombre' => mb_strtoupper($nombre), 'persona_id' => $persona,
+                'motivo_visita' => 'rh', 'viene_a' => $vieneA, 'identificacion' => 'ine', 'modo_arribo' => 'a_pie', 'entrada_at' => now()->subMinutes($minutos)]);
+            $a->forceFill(['estado' => $abierto ? 'en_sitio' : 'finalizado', 'creado_por' => $agente->id, 'actualizado_por' => $agente->id]
+                + ($abierto ? [] : ['salida_at' => now()->subMinutes(max(0, $minutos - 60)), 'salida_por' => $agente->id]))->save();
+
+            return $a;
+        };
+
+        try {
+            auth()->setUser($agente);
+            // Jorge: segunda visita (entrevista) con el «Que pase» de RR. HH.
+            $jorge = Candidato::where('nombre_completo', 'Jorge Tun Pech')->first();
+            if ($jorge !== null) {
+                $a = $visita('Jorge Tun Pech', 40, 'entrevista', true, $jorge->persona_id);
+                $a->forceFill(['estado' => 'pendiente', 'autorizacion' => 'esperando'])->save();
+                $candidatos->desdeAcceso($agente, $a, ['viene_a' => 'entrevista', 'esperar_rh' => true]);
+                $solicitud = $autorizaciones->solicitarRecepcion($agente, $a->fresh(), $jorge->fresh());
+                if ($solicitud !== null) {
+                    auth()->setUser($rh);
+                    $autorizaciones->responder($rh, $solicitud, 'pase', 'Que pase a la sala de juntas de RR. HH.');
+                    $solicitud->forceFill(['solicitada_en' => now()->subMinutes(39), 'respondida_en' => now()->subMinutes(33)])->save();
+                    Acceso::whereKey($a->id)->update(['autorizado_at' => now()->subMinutes(33)]);
+                }
+            }
+
+            // Silvia: volvió ayer buscando empleo (nueva postulación a Camarista)
+            auth()->setUser($agente);
+            $silvia = Candidato::where('nombre_completo', 'Silvia Mena Couoh')->first();
+            $camarista = Vacante::where('titulo', 'Camarista')->first();
+            if ($silvia !== null) {
+                $a = $visita('Silvia Mena Couoh', 60 * 20, 'busca_empleo', false, $silvia->persona_id);
+                $candidatos->desdeAcceso($agente, $a, ['viene_a' => 'busca_empleo'] + ($camarista ? ['vacante_id' => $camarista->id, 'vacante' => $camarista->titulo,
+                    'departamento_id' => $camarista->departamento_id, 'puesto_id' => $camarista->puesto_id] : []));
+                $p = app(Postulaciones::class)->activa($silvia);
+                $p?->forceFill(['created_at' => now()->subMinutes(60 * 20)])->save();
+                Notificacion::where('referencia_tipo', 'candidato')->where('referencia_id', $silvia->id)->update(['leida_en' => now()]);
+            }
+
+            // Martha: espera ahora mismo a que RR. HH. diga «Que pase»
+            $a = $visita('Martha Ek Chan', 4, 'busca_empleo', true);
+            $a->forceFill(['estado' => 'pendiente', 'autorizacion' => 'esperando'])->save();
+            $martha = $candidatos->desdeAcceso($agente, $a, ['viene_a' => 'busca_empleo', 'esperar_rh' => true]);
+            $autorizaciones->solicitarRecepcion($agente, $a->fresh(), $martha);
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
+    // Fin Candidatos, fase 1
 }

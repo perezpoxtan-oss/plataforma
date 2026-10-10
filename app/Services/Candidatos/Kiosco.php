@@ -147,6 +147,7 @@ class Kiosco
             $this->candidatos->aceptarPrivacidad($candidato, $ip, 'kiosco');
             $this->candidatos->firmar($candidato, $entrada['firma'], 'kiosco', null, true);
             $candidato->forceFill(['autocaptura_pendiente' => true, 'autocaptura_en' => now()])->save();
+            app(Postulaciones::class)->desdeFicha($candidato); // A qué aplica: lo manda la postulación activa
 
             $documentos = app(DocumentosCandidato::class);
             foreach (['cv', 'ine', 'comprobante'] as $tipo) {

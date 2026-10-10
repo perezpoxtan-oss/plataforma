@@ -131,3 +131,7 @@ El endpoint `GET /colaboradores/homonimos` se conserva (lo usan pruebas). Para u
 ## Pruebas
 
 `tests/Feature/Seguridad/AjustesRonda5bTest.php`; los padrones de la Ronda 6 y la etiqueta NFC, `AjustesRonda6Test.php`; Llaves, Departamentos, Puestos, Turnos y Usuarios, `AjustesRonda7Test.php` y `tests/Feature/Administracion/UsuariosHomonimosTest.php`.
+
+### Candidatos (fase 1: una ficha por persona)
+
+`GET /candidatos/duplicado` (`candidatos.duplicado`, permiso `candidatos.crear`, en `DuplicadoController::candidatos`). En «Nuevo candidato» de RR. HH., los campos **Teléfono celular** (`data-duplicado-min="10"`) y **CURP** (`data-duplicado-min="18"`) preguntan si otra ficha de la empresa ya los tiene (`AdministradorCandidatos::buscarFicha()`). Responde `parecido` (no `existe`): al guardar no se rechaza, se usa la ficha existente. La coincidencia trae `abrir` (dirección de su ficha) solo si está en las sedes del usuario; el bloque JS lo pinta como botón **Abrir su ficha**. Si la ficha es de una sede que no tiene a cargo, el aviso no muestra nombre ni datos.

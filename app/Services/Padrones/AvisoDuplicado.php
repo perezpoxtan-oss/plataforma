@@ -66,11 +66,14 @@ class AvisoDuplicado
     }
 
     /**
-     * @return array{titulo: string, detalle: ?string, inactivo: bool, reactivar: ?string}
+     * $abrir: dirección del registro que ya existe (botón «Abrir su ficha»).
+     *
+     * @return array{titulo: string, detalle: ?string, inactivo: bool, reactivar: ?string, abrir?: string}
      */
-    public function coincidencia(string $titulo, ?string $detalle = null, bool $inactivo = false, ?string $reactivar = null): array
+    public function coincidencia(string $titulo, ?string $detalle = null, bool $inactivo = false, ?string $reactivar = null, ?string $abrir = null): array
     {
-        return ['titulo' => $titulo, 'detalle' => $detalle, 'inactivo' => $inactivo, 'reactivar' => $inactivo ? $reactivar : null];
+        return ['titulo' => $titulo, 'detalle' => $detalle, 'inactivo' => $inactivo, 'reactivar' => $inactivo ? $reactivar : null]
+            + ($abrir !== null ? ['abrir' => $abrir] : []);
     }
 
     public function nada(): JsonResponse

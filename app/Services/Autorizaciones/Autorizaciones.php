@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\CambioNoPermitido;
+use App\Services\Candidatos\Postulaciones;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
@@ -28,7 +29,11 @@ use Illuminate\Support\Facades\URL;
  *    acceso nace PENDIENTE («Esperando autorización») y se avisa al
  *    responsable; su respuesta lo deja EN SITIO o lo cierra como no autorizado;
  *  - candidato: Recursos Humanos aprueba y el departamento responde
- *    «Bajar a entrevistar» o «Rechazar».
+ *    «Bajar a entrevistar» o «Rechazar»;
+ *  - recepcion: alguien llegó a caseta con Recursos Humanos y la empresa pide
+ *    que RR. HH. diga «Que pase» (Que pase / Que espere / No puede pasar). La
+ *    responde quien atiende candidatos o Recepción en esa sede
+ *    (candidatos.editar: Recursos Humanos), no un departamento.
  *
  * Avisos: campana (con botones) y correo (botones con dirección firmada que
  * pide iniciar sesión y confirmar). Si el responsable delegó («No molestar»),
@@ -90,6 +95,9 @@ class Autorizaciones
      */
     public function puedeResponder(User $usuario, Autorizacion $a): bool
     {
+        if ($a->tipo === 'recepcion') {
+            return $this->atiendeRecepcion($usuario, (int) $a->sede_id);
+        }
         if (! $usuario->can('autorizaciones.responder')) {
             return false;
         }
@@ -114,26 +122,103 @@ class Autorizaciones
         if ($usuario->es_superadmin) {
             return $q;
         }
-        if (! $usuario->can('autorizaciones.ver')) {
-            return $q->whereRaw('1 = 0');
-        }
-        $sedes = $this->autorizador->sedesPermitidas($usuario, 'autorizaciones.ver');
-        $q->when($sedes !== null, fn ($s) => $s->whereIn('autorizaciones.sede_id', $sedes));
-        if ($usuario->can('autorizaciones.configurar')) {
-            return $q;
-        }
-
-        $pares = $this->departamentosQueAtiende($usuario);
-        if ($pares === []) {
+        $verDepartamentos = $usuario->can('autorizaciones.ver');
+        $sedesRecepcion = $this->sedesRecepcion($usuario);
+        if (! $verDepartamentos && $sedesRecepcion === []) {
             return $q->whereRaw('1 = 0');
         }
 
-        return $q->where(function ($w) use ($pares) {
-            foreach ($pares as [$departamento, $sede]) {
-                $w->orWhere(fn ($x) => $x->where('autorizaciones.departamento_id', $departamento)
-                    ->when($sede !== null, fn ($y) => $y->where('autorizaciones.sede_id', $sede)));
+        return $q->where(function ($w) use ($usuario, $verDepartamentos, $sedesRecepcion) {
+            $w->whereRaw('1 = 0');
+            // Recepción de RR. HH.: las de sus sedes
+            if ($sedesRecepcion !== []) {
+                $w->orWhere(fn ($r) => $r->where('autorizaciones.tipo', 'recepcion')
+                    ->when($sedesRecepcion !== null, fn ($x) => $x->whereIn('autorizaciones.sede_id', $sedesRecepcion)));
             }
+            if (! $verDepartamentos) {
+                return;
+            }
+            $w->orWhere(function ($d) use ($usuario) {
+                $d->where('autorizaciones.tipo', '!=', 'recepcion');
+                $sedes = $this->autorizador->sedesPermitidas($usuario, 'autorizaciones.ver');
+                $d->when($sedes !== null, fn ($s) => $s->whereIn('autorizaciones.sede_id', $sedes));
+                if ($usuario->can('autorizaciones.configurar')) {
+                    return;
+                }
+                $pares = $this->departamentosQueAtiende($usuario);
+                if ($pares === []) {
+                    $d->whereRaw('1 = 0');
+
+                    return;
+                }
+                $d->where(function ($x) use ($pares) {
+                    foreach ($pares as [$departamento, $sede]) {
+                        $x->orWhere(fn ($y) => $y->where('autorizaciones.departamento_id', $departamento)
+                            ->when($sede !== null, fn ($z) => $z->where('autorizaciones.sede_id', $sede)));
+                    }
+                });
+            });
         });
+    }
+
+    // ------------------------------------------------------------ Recepción de RR. HH.
+
+    /**
+     * Sedes donde el usuario atiende Recepción de RR. HH. (candidatos.editar:
+     * Recursos Humanos; Dirección solo consulta el panel y no dice «Que pase»):
+     * null = todas; [] = ninguna.
+     *
+     * @return list<int>|null
+     */
+    public function sedesRecepcion(User $usuario): ?array
+    {
+        $todas = [];
+        foreach (['candidatos.editar'] as $permiso) {
+            if (! $usuario->can($permiso)) {
+                continue;
+            }
+            $sedes = $this->autorizador->sedesPermitidas($usuario, $permiso);
+            if ($sedes === null) {
+                return null;
+            }
+            $todas = [...$todas, ...$sedes];
+        }
+
+        return array_values(array_unique(array_map('intval', $todas)));
+    }
+
+    /** ¿Atiende Recepción de RR. HH. en esa sede? (puede decir «Que pase») */
+    public function atiendeRecepcion(User $usuario, int $sedeId): bool
+    {
+        $sedes = $this->sedesRecepcion($usuario);
+
+        return $sedes === null || in_array($sedeId, $sedes, true);
+    }
+
+    /**
+     * A quién avisar que alguien espera a RR. HH. en caseta: usuarios activos
+     * con candidatos.editar (Recursos Humanos) que alcancen esa sede.
+     *
+     * @return Collection<int, User>
+     */
+    public function destinatariosRecepcion(int $empresaId, int $sedeId): Collection
+    {
+        return $this->destinatarios->conPermiso($empresaId, 'candidatos.editar', $sedeId)->values();
+    }
+
+    /**
+     * Accesos que esperan el «Que pase» de RR. HH. en las sedes del usuario
+     * (Recepción y Mis pendientes).
+     *
+     * @return Builder<Acceso>
+     */
+    public function accesosEsperandoRecepcion(User $usuario): Builder
+    {
+        $sedes = $usuario->es_superadmin ? null : $this->sedesRecepcion($usuario);
+
+        return Acceso::query()->where('tipo', 'visitante')->where('motivo_visita', 'rh')->where('estado', 'pendiente')
+            ->whereIn('autorizacion', ['esperando', 'espera'])
+            ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes === [] ? [0] : $sedes));
     }
 
     /**
@@ -179,7 +264,7 @@ class Autorizaciones
     public function relaciones(): array
     {
         return ['sede:id,nombre', 'departamento:id,nombre', 'respondidaPor:id,name', 'registradoPor:id,name',
-            'acceso:id,sede_id,nombre,tipo,motivo_visita,persona_visita,empresa_procedencia,entrada_at,estado,autorizacion,foto_persona,creado_por',
+            'acceso:id,sede_id,nombre,tipo,motivo_visita,viene_a,persona_visita,empresa_procedencia,entrada_at,estado,autorizacion,foto_persona,creado_por',
             'candidato:id,sede_id,nombre_completo,etapa,puesto_id,vacante,escolaridad,experiencia,habilidades,idiomas,disponibilidad,llegada_en,departamento_id',
             'candidato.puesto:id,nombre'];
     }
@@ -205,12 +290,39 @@ class Autorizaciones
     }
 
     /**
+     * Alguien llegó a caseta con Recursos Humanos y espera su «Que pase» (el
+     * acceso ya nació pendiente). El aviso es el de su llegada, con los
+     * botones Que pase / Que espere / No puede pasar.
+     */
+    public function solicitarRecepcion(User $actor, Acceso $acceso, ?Candidato $candidato): ?Autorizacion
+    {
+        $avisar = $this->destinatariosRecepcion((int) $acceso->empresa_id, (int) $acceso->sede_id)->reject(fn (User $u) => $u->id === $actor->id)->values();
+        $a = Autorizacion::create([
+            'sede_id' => $acceso->sede_id, 'departamento_id' => null, 'tipo' => 'recepcion', 'acceso_id' => $acceso->id,
+            'candidato_id' => $candidato?->id, 'solicitada_en' => now(),
+        ]);
+        $a->loadMissing('sede:id,nombre');
+        $vieneA = Acceso::VIENE_A[$acceso->viene_a] ?? 'Recursos Humanos';
+        $nombre = $candidato?->nombre_completo ?? mb_convert_case(mb_strtolower((string) $acceso->nombre), MB_CASE_TITLE);
+        $primeraVez = $candidato === null || $candidato->eventos()->where('evento', 'visita')->doesntExist();
+        $titulo = $candidato === null ? 'En caseta para RR. HH.: '.$nombre : ($primeraVez ? 'Llegó un candidato: ' : 'Volvió a la caseta: ').$nombre;
+        $detalle = 'Viene a: '.$vieneA.'. '.($candidato?->puestoVisible() ? 'Aplica a: '.$candidato->puestoVisible().'. ' : '').'Sede: '.$a->sede?->nombre
+            .'. Está en caseta esperando tu respuesta.';
+        $this->avisarResponsables($a, $avisar, 'autorizacion_recepcion', $titulo, $detalle, $actor);
+        $candidato?->forceFill(['avisado_rh_en' => now()])->save();
+
+        return $a;
+    }
+
+    /**
      * Candidato aprobado por Recursos Humanos: el departamento recibe un resumen y responde.
      */
     public function solicitarCandidato(User $actor, Candidato $candidato): ?Autorizacion
     {
         $avisar = $this->aQuienAvisar((int) $candidato->departamento_id, (int) $candidato->sede_id);
-        $candidato->forceFill(['enviado_departamento_en' => now()])->save();
+        $postulaciones = app(Postulaciones::class);
+        $postulaciones->cambiar($postulaciones->asegurar($candidato), null, ['enviado_departamento_en' => now()], $actor);
+        $candidato->refresh();
         if ($avisar->isEmpty()) {
             app(AdministradorCandidatos::class)->evento($candidato, 'sin_responsable', null, null,
                 'El departamento no tiene responsable registrado: avísale por otro medio o pásalo tú a entrevista.', $actor);
@@ -247,7 +359,8 @@ class Autorizaciones
         $acciones = [];
         foreach (array_keys(Autorizacion::RESPUESTAS[$a->tipo]) as $respuesta) {
             $acciones[] = ['etiqueta' => Autorizacion::BOTONES[$respuesta], 'url' => route('autorizaciones.responder', $a->id),
-                'campos' => ['respuesta' => $respuesta], 'estilo' => $respuesta === 'rechazar' ? 'rechazar' : 'aceptar'];
+                'campos' => ['respuesta' => $respuesta],
+                'estilo' => in_array($respuesta, Autorizacion::NEGATIVAS, true) ? 'rechazar' : ($respuesta === 'espere' ? 'esperar' : 'aceptar')];
         }
         $avisados = $this->notificaciones->avisar((int) $a->empresa_id, $usuarios->pluck('id'), $tipo, [
             'titulo' => $titulo, 'texto' => $texto, 'url' => route('autorizaciones.show', $a->id),
@@ -260,8 +373,8 @@ class Autorizaciones
             $botones[] = [Autorizacion::BOTONES[$respuesta], URL::temporarySignedRoute('autorizaciones.confirmar',
                 now()->addHours(self::HORAS_ENLACE_CORREO), ['autorizacion' => $a->id, 'respuesta' => $respuesta])];
         }
-        app(AvisosCorreo::class)->recepcion((int) $a->empresa_id, 'autorizacion_departamento', $usuarios->pluck('email')->filter()->values()->all(),
-            new AvisoRecepcion($titulo, [$texto, 'Registró: '.$actor->name.'.'], $botones));
+        app(AvisosCorreo::class)->recepcion((int) $a->empresa_id, $a->tipo === 'recepcion' ? 'candidato_llegada' : 'autorizacion_departamento',
+            $usuarios->pluck('email')->filter()->values()->all(), new AvisoRecepcion($titulo, [$texto, 'Registró: '.$actor->name.'.'], $botones));
     }
 
     // --------------------------------------------------------------- Respuestas
@@ -276,9 +389,14 @@ class Autorizaciones
             throw new CambioNoPermitido('Esa respuesta no aplica a esta solicitud.');
         }
         if (! $this->puedeResponder($actor, $a)) {
-            throw new CambioNoPermitido('Solo el responsable del departamento '.($a->departamento?->nombre ?? '').' (o su delegado) puede responder.');
+            throw new CambioNoPermitido($a->tipo === 'recepcion'
+                ? 'Solo quien atiende Recursos Humanos en '.($a->sede?->nombre ?? 'esa sede').' puede responder.'
+                : 'Solo el responsable del departamento '.($a->departamento?->nombre ?? '').' (o su delegado) puede responder.');
         }
         $comentario = $comentario === null || trim($comentario) === '' ? null : mb_substr(trim($comentario), 0, 500);
+        if ($a->tipo === 'recepcion' && $respuesta === 'espere') {
+            return $this->pedirQueEspere($actor, $a, $comentario, $medio);
+        }
 
         DB::transaction(function () use ($actor, $a, $estado, $comentario, $medio) {
             $hecho = Autorizacion::whereKey($a->id)->where('estado', 'pendiente')->update([
@@ -290,7 +408,7 @@ class Autorizaciones
             }
             $a->refresh();
 
-            if ($a->tipo === 'visita' && $a->acceso_id !== null) {
+            if (in_array($a->tipo, ['visita', 'recepcion'], true) && $a->acceso_id !== null) {
                 $this->aplicarAVisita($actor, $a);
             }
         });
@@ -306,10 +424,60 @@ class Autorizaciones
                 'url' => route('accesos.index', $estado === 'autorizada' ? [] : ['pestana' => 'historial']),
             ]);
         }
+        if ($a->tipo === 'recepcion') {
+            $this->avisarCaseta($a, $actor, $estado === 'autorizada' ? 'RR. HH. dice que pase: ' : 'RR. HH.: NO puede pasar ', $comentario,
+                $estado === 'autorizada' ? [] : ['pestana' => 'historial']);
+            if (($ficha = $a->candidato_id ? Candidato::find($a->candidato_id) : null) !== null) {
+                app(AdministradorCandidatos::class)->evento($ficha, 'recepcion', null, null,
+                    ($estado === 'autorizada' ? 'Recursos Humanos le dio el paso' : 'Recursos Humanos no le dio el paso').($comentario ? ': «'.$comentario.'».' : '.'), $actor);
+            }
+        }
         $this->notificaciones->resolver('autorizacion', $a->id);
         $this->auditoria->auditar($actor, 'autorizaciones.respondida', $a, ['estado' => 'pendiente'], ['estado' => $estado, 'medio' => $medio]);
 
         return $a;
+    }
+
+    /**
+     * Recepción: «Que espere». La solicitud sigue pendiente (y su aviso con
+     * botones también); la caseta ve «RR. HH. pide que espere».
+     */
+    private function pedirQueEspere(User $actor, Autorizacion $a, ?string $comentario, string $medio): Autorizacion
+    {
+        if (! $a->pendiente()) {
+            throw new CambioNoPermitido('Esta solicitud ya fue respondida o cancelada. Revisa la lista.');
+        }
+        $hecho = Acceso::whereKey($a->acceso_id)->where('estado', 'pendiente')->whereIn('autorizacion', ['esperando', 'espera'])
+            ->update(['autorizacion' => 'espera', 'actualizado_por' => $actor->id, 'updated_at' => now()]);
+        if ($hecho === 0) {
+            throw new CambioNoPermitido('Esta persona ya no está esperando en caseta. Revisa la lista.');
+        }
+        $a->forceFill(['comentario' => $comentario, 'actualizado_por' => $actor->id])->save();
+        $this->avisarCaseta($a, $actor, 'RR. HH. pide que espere: ', $comentario, ['pestana' => 'pendientes']);
+        if (($ficha = $a->candidato_id ? Candidato::find($a->candidato_id) : null) !== null) {
+            app(AdministradorCandidatos::class)->evento($ficha, 'recepcion', null, null,
+                'Recursos Humanos pidió que espere en caseta'.($comentario ? ': «'.$comentario.'».' : '.'), $actor);
+        }
+        $this->auditoria->auditar($actor, 'autorizaciones.espera', $a, ['estado' => 'pendiente'], ['estado' => 'pendiente', 'acceso' => 'espera', 'medio' => $medio]);
+
+        return $a;
+    }
+
+    /**
+     * Aviso a quien registró en caseta (sin datos del CV).
+     *
+     * @param  array<string, string>  $consulta
+     */
+    private function avisarCaseta(Autorizacion $a, User $actor, string $titulo, ?string $comentario, array $consulta): void
+    {
+        if ($a->acceso?->creado_por === null) {
+            return;
+        }
+        $this->notificaciones->avisar((int) $a->empresa_id, [(int) $a->acceso->creado_por], 'autorizacion_respuesta', [
+            'titulo' => $titulo.$a->acceso->nombre,
+            'texto' => 'Respondió '.$actor->name.($comentario ? ': «'.$comentario.'»' : '.'),
+            'url' => route('accesos.index', $consulta),
+        ]);
     }
 
     /**
@@ -323,7 +491,7 @@ class Autorizaciones
                 'estado' => 'en_sitio', 'autorizacion' => 'autorizada', 'autorizado_at' => $ahora, 'autorizado_por' => $actor->id,
                 'actualizado_por' => $actor->id, 'updated_at' => $ahora,
             ]);
-            $this->auditoria->auditar($actor, 'accesos.autorizado', $a->acceso, ['estado' => 'pendiente'], ['estado' => 'en_sitio', 'por' => 'departamento']);
+            $this->auditoria->auditar($actor, 'accesos.autorizado', $a->acceso, ['estado' => 'pendiente'], ['estado' => 'en_sitio', 'por' => $a->tipo === 'recepcion' ? 'rh' : 'departamento']);
         } else {
             Acceso::whereKey($a->acceso_id)->where('estado', 'pendiente')->update([
                 'estado' => 'finalizado', 'autorizacion' => 'rechazada', 'salida_at' => $ahora, 'salida_por' => $actor->id,
@@ -352,7 +520,7 @@ class Autorizaciones
      */
     public function resueltaEnCaseta(User $actor, Acceso $acceso): void
     {
-        Acceso::whereKey($acceso->id)->where('autorizacion', 'esperando')->update(['autorizacion' => 'autorizada']);
+        Acceso::whereKey($acceso->id)->whereIn('autorizacion', ['esperando', 'espera'])->update(['autorizacion' => 'autorizada']);
         $pendiente = Autorizacion::where('acceso_id', $acceso->id)->where('estado', 'pendiente')->first();
         if ($pendiente === null) {
             return;

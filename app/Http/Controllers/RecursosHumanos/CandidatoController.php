@@ -7,12 +7,14 @@ use App\Models\Candidato;
 use App\Models\CandidatoDocumento;
 use App\Models\Departamento;
 use App\Models\Empresa;
+use App\Models\Postulacion;
 use App\Models\Puesto;
 use App\Models\Vacante;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\CambioNoPermitido;
 use App\Services\Candidatos\DocumentosCandidato;
 use App\Services\Candidatos\Kiosco;
+use App\Services\Candidatos\Postulaciones;
 use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Recepcion\AjustesRecepcion;
@@ -58,6 +60,7 @@ class CandidatoController extends Controller
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $filtros, $empresaId) {
             $base = $this->candidatos->limitar(Candidato::query(), $actor, 'candidatos.ver');
             $conteos = (clone $base)->selectRaw('etapa, COUNT(*) as total')->groupBy('etapa')->pluck('total', 'etapa');
+            $porRevisar = (clone $base)->where('autocaptura_pendiente', true)->count();
             $lista = $this->filtrar(clone $base, $filtros)
                 ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'registradoPor:id,name', 'editadoPor:id,name', 'vacantePublicada:id,titulo,estado'])
                 ->orderByRaw("CASE WHEN etapa IN ('registrado','revision','aprobado_rh','entrevista','seleccionado') THEN 0 ELSE 1 END")
@@ -69,6 +72,7 @@ class CandidatoController extends Controller
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'lista' => $lista,
                 'conteos' => $conteos,
+                'porRevisar' => $porRevisar,
                 'filtros' => $filtros,
                 'sedes' => $sedes,
                 'sedesAlta' => $actor->can('candidatos.crear') ? $this->candidatos->sedesParaElegir($actor, 'candidatos.crear') : collect(),
@@ -91,9 +95,12 @@ class CandidatoController extends Controller
     {
         Gate::authorize('candidatos.crear');
         $empresaId = $this->empresaDeTrabajo($request);
-        $candidato = $this->tenant->conEmpresa($empresaId, fn () => $this->candidatos->crear($request->user(), $request->except(['_token', '_dialogo']), (string) $request->ip()));
+        [$candidato, $yaExistia] = $this->tenant->conEmpresa($empresaId, fn () => $this->candidatos->crearOLigar($request->user(), $request->except(['_token', '_dialogo']), (string) $request->ip()));
 
-        return redirect()->route('candidatos.show', $candidato->id)->with('ok', "Ficha de {$candidato->nombre_completo} creada. Completa su CV y sus documentos.");
+        // Una ficha por persona: si ya tenía, se abre la suya (no se crea otra)
+        return redirect()->route('candidatos.show', $candidato->id)->with('ok', $yaExistia
+            ? "{$candidato->nombre_completo} ya tenía ficha: no se creó otra. Revisa su solicitud y su postulación actual."
+            : "Ficha de {$candidato->nombre_completo} creada. Completa su CV y sus documentos.");
     }
 
     public function show(Request $request, int $candidato): View
@@ -110,9 +117,15 @@ class CandidatoController extends Controller
                 'registradoPor:id,name', 'editadoPor:id,name', 'decisionPor:id,name', 'firmaCapturadaPor:id,name', 'vacantePublicada:id,titulo,estado']);
             $enlace = $c->enlaces()->whereNull('revocado_en')->where('expira_en', '>', now())->first();
             $partes = $c->partesNombre();
+            // Postulaciones: la activa (la que refleja la ficha) y las anteriores
+            $postulaciones = app(Postulaciones::class);
+            $activa = $postulaciones->activa($c)?->load(['vacantePublicada:id,titulo,estado', 'accesos:id,postulacion_id,entrada_at,viene_a']);
+            $anteriores = $postulaciones->anteriores($c, $activa);
 
             return view('rh.candidatos.show', [
                 'c' => $c,
+                'activa' => $activa,
+                'anteriores' => $anteriores,
                 'enlace' => $enlace?->vigente() ? $enlace : null,
                 'departamentos' => Departamento::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
                 'puestos' => Puesto::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
@@ -357,6 +370,8 @@ class CandidatoController extends Controller
             'sede' => (int) Entrada::texto($request->query('sede'), '0'),
             'departamento' => (int) Entrada::texto($request->query('departamento'), '0'),
             'vacante' => (int) Entrada::texto($request->query('vacante'), '0'),
+            // Mis pendientes → «Solicitudes por revisar» (lo que el candidato llenó en el kiosco o por internet)
+            'revisar' => Entrada::texto($request->query('revisar')) === '1',
         ];
     }
 
@@ -374,7 +389,10 @@ class CandidatoController extends Controller
             ->when($f['etapa'] !== '' && $f['etapa'] !== 'en_proceso', fn ($x) => $x->where('candidatos.etapa', $f['etapa']))
             ->when($f['sede'] > 0, fn ($x) => $x->where('candidatos.sede_id', $f['sede']))
             ->when($f['departamento'] > 0, fn ($x) => $x->where('candidatos.departamento_id', $f['departamento']))
-            ->when(($f['vacante'] ?? 0) > 0, fn ($x) => $x->where('candidatos.vacante_id', $f['vacante']));
+            // Vacante: la de cualquiera de sus postulaciones (no solo la activa)
+            ->when(($f['vacante'] ?? 0) > 0, fn ($x) => $x->where(fn ($w) => $w->where('candidatos.vacante_id', $f['vacante'])
+                ->orWhereIn('candidatos.id', Postulacion::where('vacante_id', $f['vacante'])->select('candidato_id'))))
+            ->when($f['revisar'] ?? false, fn ($x) => $x->where('candidatos.autocaptura_pendiente', true));
     }
 
     private function buscar($actor, int $id, string $permiso): Candidato

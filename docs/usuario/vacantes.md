@@ -87,7 +87,7 @@ Cada tarjeta muestra **«N candidatos · M en proceso»**. Tócalo y se abre Can
 
 ## En la caseta
 
-Cuando alguien viene a pedir trabajo, la caseta registra en **Nuevo Ingreso** el motivo **Recursos Humanos**, marca **«Viene como candidato»** y elige **¿A qué vacante viene?** (solo salen las publicadas de esa sede). El puesto y el departamento se toman de la vacante.
+Cuando alguien viene a pedir trabajo, la caseta registra en **Nuevo Ingreso** el motivo **Recursos Humanos**, elige **¿A qué viene?** → **Busca empleo** y, en **¿A qué vacante?**, la vacante (solo salen las publicadas de esa sede) o **-- No sabe / otra --**. El puesto y el departamento se toman de la vacante. Si solo pregunta qué hay, la caseta elige **Informes / ver vacantes** y puede enseñarle la lista.
 
 El agente también puede entrar a **Vacantes** para ver lo publicado e imprimir el cartel, pero no crea ni cambia vacantes.
 

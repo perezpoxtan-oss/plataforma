@@ -19,7 +19,7 @@ resumen: Registrar quién entra y sale de la sede, ver quién sigue dentro y aut
 
 | Pestaña | Qué muestra |
 |---|---|
-| **Pendientes de Autorización** | Proveedores y contratistas que esperan que quien los citó los autorice. |
+| **Pendientes de Autorización** | Proveedores y contratistas que esperan que quien los citó los autorice, visitas que esperan a su departamento y quien espera a Recursos Humanos. |
 | **Gente en Sitio** | Todos los que están dentro ahora. |
 | **Historial Finalizados** | Los que ya salieron, con filtro de fechas. |
 
@@ -44,7 +44,7 @@ resumen: Registrar quién entra y sale de la sede, ver quién sigue dentro y aut
 Lo que pide cada tipo:
 
 - **Colaborador:** escanea su gafete de empleado o escribe su nombre o número y elígelo. No lleva gafete de visita. Si no aparece, toca **¿No aparece? Darlo de alta provisional**: se registra y Recursos Humanos lo valida después.
-- **Personal Externo / Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**.
+- **Personal Externo / Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**. Si el motivo es **Recursos Humanos**, elige además **¿A qué viene?** (ver abajo «Cómo registrar a quien viene a Recursos Humanos»).
 - **Proveedor y Contratista (Obra):** además, la **Empresa / Procedencia** y **Host — ¿Quién lo citó?** (obligatorio). Quedan en **Pendientes de Autorización**.
 - **Huésped:** nombre, número de habitación y si tiene reserva. No lleva gafete.
 - **Servicio de Emergencia:** solo lo mínimo para no hacer esperar: unidad, tipo de emergencia y observaciones.
@@ -52,6 +52,44 @@ Lo que pide cada tipo:
 ![Ingreso de un proveedor](img/accesos/nuevo-ingreso-proveedor.png)
 
 Si escribes a mano un nombre que ya existe en el Padrón de personas, al guardar sale el aviso rojo «Ya existe una persona registrada con este nombre…»: toca **Sí, es la misma** para usar su registro, o **No, es alguien distinto** para crear otra persona.
+
+## Cómo registrar a quien viene a Recursos Humanos
+
+La caseta solo anota **a qué viene** la persona y avisa. Recursos Humanos decide si pasa y se encarga de lo demás (su solicitud, su puesto y su departamento).
+
+1. En **Nuevo Ingreso** toca **Personal Externo / Visita** y llena su nombre, gafete e identificación como siempre.
+2. En **Motivo de la Visita** toca **Recursos Humanos**.
+3. En **¿A qué viene?** elige una opción:
+
+| Opción | Cuándo usarla | Qué pasa |
+|---|---|---|
+| **Busca empleo** | Viene a pedir trabajo o a dejar su solicitud. | Aparece **¿A qué vacante?**: elige la vacante publicada o **-- No sabe / otra --**. |
+| **Entrevista** | Ya vino antes y hoy tiene entrevista. | Se busca su ficha por su nombre. |
+| **Entrega de documentos** | Trae papeles que le pidió Recursos Humanos. | Se busca su ficha por su nombre. |
+| **Firma de contrato** | Viene a firmar su contrato. | Se busca su ficha por su nombre. |
+| **Informes / ver vacantes** | Solo pregunta qué vacantes hay. | No se le abre ficha. Si tu rol puede ver vacantes, toca **Ver las vacantes publicadas** para enseñárselas. |
+| **Otro trámite de RR. HH.** | Cualquier otro asunto con Recursos Humanos. | No se le abre ficha. |
+
+4. Toca **Autorizar Ingreso y Guardar Datos**.
+
+![Ingreso de quien viene a Recursos Humanos](img/recepcion-y-candidatos/caseta-ingreso-candidato.png)
+
+**Qué debes ver:** si tu empresa pide que Recursos Humanos dé el paso, el mensaje «Registro de … guardado: ESPERANDO A RR. HH.» y la tarjeta en **Pendientes de Autorización** con el aviso naranja **ESPERANDO A RR. HH.**. Si tu empresa no lo pide, la persona pasa directo a **Gente en Sitio**.
+
+La tarjeta **cambia sola** cuando Recursos Humanos contesta:
+
+| La tarjeta dice | Qué hacer |
+|---|---|
+| **ESPERANDO A RR. HH.** | Pide a la persona que espere en caseta. |
+| **RR. HH. PIDE QUE ESPERE** | Recursos Humanos ya sabe que llegó, pero aún no puede recibirla. Que siga esperando. |
+| **RR. HH. dijo que pase** (en **Gente en Sitio**) | Indícale cómo llegar a la oficina de Recursos Humanos. |
+| **NO AUTORIZADO por Recursos Humanos** (en el historial) | No puede pasar. Devuélvele su identificación. |
+
+![Caseta esperando a Recursos Humanos](img/recepcion-y-candidatos/caseta-pendientes-esperando.png)
+
+En la tarjeta verás, por ejemplo, **Candidato · Entrevista**. La caseta nunca ve la solicitud de empleo ni en qué paso va el proceso: eso solo lo ve Recursos Humanos.
+
+> Si Recursos Humanos avisa por teléfono que puede pasar, el supervisor usa **Confirmar Autorización** en la tarjeta, como con cualquier visita.
 
 ## Cómo autorizar a un proveedor o contratista
 
@@ -122,10 +160,15 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 | «Las placas solo llevan letras y números (de 2 a 20).» | Las placas tienen símbolos o están incompletas. | Escríbelas sin guiones ni espacios. |
 | «Este acceso ya no está pendiente de autorización (alguien más lo atendió).» | Otro compañero ya lo autorizó. | Revisa **Gente en Sitio**. |
 | No sale el botón **Confirmar Autorización** | Tu rol no puede aprobar. | Pide a tu supervisor que lo autorice. |
+| «Elige a qué viene de la lista.» | La opción de **¿A qué viene?** no es válida. | Vuelve a elegirla de la lista. |
+| «Elige una vacante publicada de esta sede.» | Esa vacante ya no está publicada o es de otra sede. | Elige otra o **-- No sabe / otra --**. |
+| La tarjeta se queda en **ESPERANDO A RR. HH.** mucho tiempo | Nadie de Recursos Humanos ha contestado. | Llama a Recursos Humanos; si autorizan por teléfono, tu supervisor usa **Confirmar Autorización**. |
 
 ## Preguntas frecuentes
 
 - **¿Por qué el proveedor no aparece en Gente en Sitio?** Está en **Pendientes de Autorización** hasta que lo autoricen.
+- **Alguien dice que viene a entrevista, pero es su primera vez.** Elige **Entrevista** de todos modos: si no se encuentra su ficha, Recursos Humanos lo recibe como «Busca empleo» y queda anotado.
+- **¿Tengo que preguntarle el puesto o el departamento?** No. Solo a qué viene y, si busca empleo, a qué vacante (si la sabe). Lo demás lo pone Recursos Humanos.
 - **El colaborador no está en la lista.** Usa **¿No aparece? Darlo de alta provisional**; Recursos Humanos lo valida después.
 - **Me equivoqué de zona.** Usa **Cambiar Zona**.
 - **¿Cómo sé quién registró a alguien?** En la tarjeta, junto a la hora de ingreso, dice «por …».

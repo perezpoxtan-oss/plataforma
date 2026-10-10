@@ -33,6 +33,7 @@ use App\Models\Paradero;
 use App\Models\PaseSalida;
 use App\Models\PaseSalidaPaso;
 use App\Models\Persona;
+use App\Models\Postulacion;
 use App\Models\PrestamoLlave;
 use App\Models\Procedimiento;
 use App\Models\ProcedimientoAcuse;
@@ -113,6 +114,7 @@ class LectorAuditoria
         'exportado_con_datos_personales' => 'Exportación con datos personales', 'configurado' => 'Cambio de configuración',
         'publicada' => 'Publicación', 'pausada' => 'Pausa', 'reanudada' => 'Reanudación', 'cerrada' => 'Cierre', 'reabierta' => 'Reapertura',
         'bolsa_configurada' => 'Configuración de la bolsa de trabajo',
+        'postulacion_creada' => 'Nueva postulación', 'visita_ligada' => 'Visita ligada a su postulación', 'espera' => 'Petición de espera',
         // Configuración
         'avisos' => 'Cambio de avisos por correo', 'correo' => 'Cambio del correo de la plataforma', 'correo_prueba' => 'Correo de prueba',
         'respaldo_creado' => 'Creación de respaldo', 'respaldo_descargado' => 'Descarga de respaldo',
@@ -172,6 +174,7 @@ class LectorAuditoria
         ProcedimientoCategoria::class => ['Categoría de procedimientos', 'nombre'],
         ProcedimientoAcuse::class => ['Acuse de procedimiento', 'nombre'],
         Candidato::class => ['Candidato', 'nombre_completo'],
+        Postulacion::class => ['Postulación', 'vacante'],
         Autorizacion::class => ['Autorización departamental', null],
         Delegacion::class => ['Delegación de autorizaciones', null],
         EtiquetaPlantilla::class => ['Plantilla de etiquetas QR', 'nombre'],

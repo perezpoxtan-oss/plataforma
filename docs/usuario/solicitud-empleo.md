@@ -20,7 +20,7 @@ resumen: La solicitud de empleo completa del candidato (con su firma), cómo la 
 
 ## Cómo la llena el candidato en su celular (kiosco o internet)
 
-1. Recursos Humanos genera su QR en la ficha (**Generar QR del kiosco**) o en Recepción (**QR**). Ver [Candidatos](candidatos.md).
+1. Recursos Humanos abre su QR en la ficha (**QR para que llene su solicitud**) o en la tableta de **Recepción → Modo kiosco**. Ver [Candidatos](candidatos.md).
 2. El candidato escanea el QR (o escribe el código de 6 letras) y abre **Solicitud de empleo**. Las secciones se abren y se cierran:
    1. **Datos personales:** nombre(s) y apellidos por separado, teléfono celular, correo, fecha y lugar de nacimiento, sexo, estado civil y dependientes.
    2. **Documentos oficiales:** CURP, RFC, NSS y licencia de manejo. Si no los trae, los deja en blanco.

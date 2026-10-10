@@ -28,6 +28,7 @@ class CentroNotificaciones
         'candidato_autocaptura' => ['bi-phone', 'info'],
         'autorizacion_visita' => ['bi-door-open-fill', 'alerta'],
         'autorizacion_candidato' => ['bi-person-workspace', 'alerta'],
+        'autorizacion_recepcion' => ['bi-person-check-fill', 'alerta'],
         'autorizacion_respuesta' => ['bi-patch-check-fill', 'exito'],
         'delegacion' => ['bi-person-gear', 'info'],
     ];
