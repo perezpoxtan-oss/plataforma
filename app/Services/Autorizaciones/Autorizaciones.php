@@ -33,7 +33,7 @@ use Illuminate\Support\Facades\URL;
  *  - recepcion: alguien llegó a caseta con Recursos Humanos y la empresa pide
  *    que RR. HH. diga «Que pase» (Que pase / Que espere / No puede pasar). La
  *    responde quien atiende candidatos o Recepción en esa sede
- *    (candidatos.editar o recepcion_rh.ver), no un departamento.
+ *    (candidatos.editar: Recursos Humanos), no un departamento.
  *
  * Avisos: campana (con botones) y correo (botones con dirección firmada que
  * pide iniciar sesión y confirmar). Si el responsable delegó («No molestar»),
@@ -164,15 +164,16 @@ class Autorizaciones
     // ------------------------------------------------------------ Recepción de RR. HH.
 
     /**
-     * Sedes donde el usuario atiende Recepción de RR. HH. (candidatos.editar o
-     * recepcion_rh.ver): null = todas; [] = ninguna.
+     * Sedes donde el usuario atiende Recepción de RR. HH. (candidatos.editar:
+     * Recursos Humanos; Dirección solo consulta el panel y no dice «Que pase»):
+     * null = todas; [] = ninguna.
      *
      * @return list<int>|null
      */
     public function sedesRecepcion(User $usuario): ?array
     {
         $todas = [];
-        foreach (['candidatos.editar', 'recepcion_rh.ver'] as $permiso) {
+        foreach (['candidatos.editar'] as $permiso) {
             if (! $usuario->can($permiso)) {
                 continue;
             }
@@ -196,15 +197,13 @@ class Autorizaciones
 
     /**
      * A quién avisar que alguien espera a RR. HH. en caseta: usuarios activos
-     * con candidatos.editar o recepcion_rh.ver que alcancen esa sede.
+     * con candidatos.editar (Recursos Humanos) que alcancen esa sede.
      *
      * @return Collection<int, User>
      */
     public function destinatariosRecepcion(int $empresaId, int $sedeId): Collection
     {
-        return $this->destinatarios->conPermiso($empresaId, 'candidatos.editar', $sedeId)
-            ->merge($this->destinatarios->conPermiso($empresaId, 'recepcion_rh.ver', $sedeId))
-            ->unique('id')->values();
+        return $this->destinatarios->conPermiso($empresaId, 'candidatos.editar', $sedeId)->values();
     }
 
     /**

@@ -285,7 +285,7 @@ class CandidatosFase1Test extends TestCase
         $a = $this->enEmpresa(fn () => Autorizacion::sole());
         $this->assertSame('recepcion', $a->tipo);
         $this->assertNull($a->departamento_id);
-        $this->assertEqualsCanonicalizing([$this->admin->id, $this->rh->id], $a->avisados, 'Avisa a quien edita candidatos o ve Recepción en esa sede');
+        $this->assertEqualsCanonicalizing([$this->admin->id, $this->rh->id], $a->avisados, 'Avisa solo a quien edita candidatos (RR. HH.) en esa sede');
         $this->assertFalse($this->enEmpresa(fn () => Notificacion::where('tipo', 'candidato_llegada')->exists()), 'Un solo aviso (el de los botones)');
         Mail::assertSent(AvisoRecepcion::class, fn ($m) => $m->hasTo($this->rh->email) && count($m->botones) === 3 && str_contains($m->botones[0][1], 'signature='));
 
@@ -313,6 +313,17 @@ class CandidatosFase1Test extends TestCase
         $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->agente->id)->where('titulo', 'like', 'RR. HH. dice que pase%')->exists()));
         $this->actingAs($this->rh)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.acciones', []);
         $this->assertSame('Respuesta', app(LectorAuditoria::class)->accion('autorizaciones.respondida'));
+    }
+
+    public function test_direccion_ve_el_panel_pero_no_recibe_ni_da_el_que_pase(): void
+    {
+        $director = $this->crearUsuario($this->empresa, 'Director');
+        $this->caseta()->assertSessionHas('ok');
+        $a = $this->enEmpresa(fn () => Autorizacion::sole());
+        $this->assertNotContains($director->id, $a->avisados, 'El «Que pase» lo da Recursos Humanos');
+        $this->actingAs($director)->get('/rh/recepcion')->assertOk();
+        $this->assertContains($this->actingAs($director)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase'])->status(), [403, 404]);
+        $this->assertSame('pendiente', $a->fresh()->estado);
     }
 
     public function test_que_espere_sigue_pendiente_y_no_puede_pasar_lo_cierra(): void

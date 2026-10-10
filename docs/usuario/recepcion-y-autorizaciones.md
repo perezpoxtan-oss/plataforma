@@ -191,7 +191,7 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 
 **¿El responsable ve el CV completo?** No, solo un resumen. Los datos personales los guarda Recursos Humanos.
 
-**¿Quién ve el panel de Recepción?** Recursos Humanos y, si tiene el permiso, Dirección (solo el panel y los tiempos, no los CV).
+**¿Quién ve el panel de Recepción?** Recursos Humanos y, si tiene el permiso, Dirección (solo el panel y los tiempos, no los CV). El «Que pase» solo lo dan quienes pueden editar candidatos (Recursos Humanos): a Dirección no le llega ese aviso.
 
 ## Relacionado
 
