@@ -66,7 +66,7 @@ class Candidato extends Model
 
     /** Texto del botón que lleva a cada etapa. */
     public const BOTONES_ETAPA = [
-        'revision' => 'Tomar en revisión', 'aprobado_rh' => 'Aprobar y enviar al departamento', 'entrevista' => 'Pasar a entrevista',
+        'revision' => 'Atender', 'aprobado_rh' => 'Aprobar y enviar al departamento', 'entrevista' => 'Pasar a entrevista',
         'seleccionado' => 'Seleccionar', 'cartera' => 'Guardar en cartera', 'descartado' => 'Descartar',
     ];
 

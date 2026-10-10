@@ -2,11 +2,14 @@
 
 namespace App\Support\Menu;
 
+use App\Models\Candidato;
 use App\Models\User;
 use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Procedimientos\AdministradorProcedimientos;
+use App\Services\Recepcion\PanelRecepcion;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Container\Attributes\Scoped;
@@ -17,7 +20,8 @@ use Illuminate\Support\Facades\Cache;
  * puede resolver él mismo, con su número y su enlace. Usa los mismos
  * contadores que los avisos de Inicio (PanelController); solo aparecen los
  * renglones que le aplican (por permiso y por su papel: responsable,
- * aprobador, colaborador con procedimientos, verificador de padrones).
+ * aprobador, colaborador con procedimientos, verificador de padrones y
+ * Recursos Humanos: «Esperando en Recepción» y «Solicitudes por revisar»).
  *
  * La pantalla lo calcula fresco al pintarse; la consulta periódica de la
  * campana (cada 30 s) reutiliza el resultado durante unos segundos.
@@ -95,6 +99,15 @@ class MisPendientes
                 (int) array_sum(array_column($grupos, 'total')),
                 // Un solo padrón: directo a su lista; varios: Inicio muestra el desglose por padrón
                 count($grupos) === 1 ? $grupos[0]['ruta'] : route('panel'));
+        }
+
+        // Recursos Humanos (candidatos, fase 1): solo quien puede editar candidatos, en sus sedes
+        if ($actor->can('candidatos.editar')) {
+            $items[] = $this->item('recepcion', 'Esperando en Recepción', 'bi-person-check',
+                app(PanelRecepcion::class)->porAtender($actor), $actor->can('recepcion_rh.ver') ? route('recepcion.index') : route('candidatos.index'));
+            $items[] = $this->item('solicitudes', 'Solicitudes por revisar', 'bi-phone',
+                app(AdministradorCandidatos::class)->limitar(Candidato::query(), $actor, 'candidatos.editar')->where('autocaptura_pendiente', true)->count(),
+                route('candidatos.index', ['revisar' => 1]));
         }
 
         return ['total' => array_sum(array_column($items, 'total')), 'items' => $items];

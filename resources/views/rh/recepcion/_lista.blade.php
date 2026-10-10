@@ -1,4 +1,6 @@
-{{-- Lista del panel de Recepción (se vuelve a pintar cada 15 s). $filas, $puede --}}
+{{-- Lista del panel de Recepción (se vuelve a pintar cada 15 s). $filas, $puede
+     Botones: «Que pase» (si su acceso espera a RR. HH.), «Atender» (= En revisión) y «Abrir ficha». El QR del kiosco
+     vive en la ficha y en el Modo kiosco. --}}
 @forelse ($filas as $f)
     <article class="fila-recepcion espera-{{ $f['espera'] }}">
         <div class="fila-recepcion-foto">
@@ -15,6 +17,7 @@
                 @if ($f['autocaptura'])<span class="pastilla-revisar"><i class="bi bi-phone me-1" aria-hidden="true"></i>Llenó su CV</span>@endif
             </div>
             <div class="datos-candidato">
+                <span class="viene-a-rh"><i class="bi bi-signpost" aria-hidden="true"></i> Viene a: {{ $f['viene_a'] }}</span>
                 @if ($f['puesto'])<span><i class="bi bi-briefcase" aria-hidden="true"></i> {{ $f['puesto'] }}</span>@endif
                 @if ($f['departamento'])<span><i class="bi bi-diagram-2" aria-hidden="true"></i> {{ $f['departamento'] }}</span>@endif
                 <span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ $f['sede'] }}</span>
@@ -26,23 +29,26 @@
             </div>
         </div>
         <div class="fila-recepcion-acciones">
+            @if ($f['autorizacion_id'] && $puede['responder'])
+                <form action="{{ route('autorizaciones.responder', $f['autorizacion_id']) }}" method="POST" class="m-0">
+                    @csrf
+                    <input type="hidden" name="respuesta" value="pase">
+                    <input type="hidden" name="volver" value="recepcion">
+                    <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-door-open-fill me-1" aria-hidden="true"></i>Que pase</button>
+                </form>
+                <a href="{{ route('autorizaciones.show', $f['autorizacion_id']) }}" class="btn-otra-respuesta">Que espere / No puede pasar</a>
+            @endif
             @if ($f['candidato_id'] && $f['etapa'] === 'registrado' && $puede['editar'])
                 <form action="{{ route('candidatos.etapa', $f['candidato_id']) }}" method="POST" class="m-0">
                     @csrf
                     @method('PATCH')
                     <input type="hidden" name="etapa" value="revision">
                     <input type="hidden" name="volver" value="recepcion">
-                    <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-hand-index-thumb me-1" aria-hidden="true"></i>Atender</button>
+                    <button type="submit" class="{{ $f['autorizacion_id'] ? 'btn-secundario-rh' : 'btn-verde btn-accion-rh' }}"><i class="bi bi-hand-index-thumb me-1" aria-hidden="true"></i>Atender</button>
                 </form>
             @endif
             @if ($f['ficha'])
                 <a href="{{ $f['ficha'] }}" class="btn-secundario-rh">Abrir ficha</a>
-            @endif
-            @if ($f['candidato_id'] && $puede['kiosco'] && in_array($f['etapa'], \App\Models\Candidato::ABIERTAS, true))
-                <form action="{{ route('recepcion.kiosco.generar', $f['candidato_id']) }}" method="POST" class="m-0">
-                    @csrf
-                    <button type="submit" class="btn-secundario-rh" title="Que llene su CV en su celular"><i class="bi bi-qr-code me-1" aria-hidden="true"></i>QR</button>
-                </form>
             @endif
         </div>
     </article>

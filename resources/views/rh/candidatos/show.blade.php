@@ -234,28 +234,56 @@
         </section>
 
         <div class="d-flex flex-column gap-3">
-            {{-- Kiosco --}}
+            {{-- Kiosco: un solo botón (muestra el QR vigente o crea uno) --}}
             @if ($puede['kiosco'] && $c->enProceso())
                 <section class="tarjeta p-4">
-                    <h2 class="h6 fw-bold"><i class="bi bi-qr-code me-2 text-primary" aria-hidden="true"></i>Que él mismo llene su CV</h2>
+                    <h2 class="h6 fw-bold"><i class="bi bi-qr-code me-2 text-primary" aria-hidden="true"></i>Que él mismo llene su solicitud</h2>
                     @if ($enlace)
                         <p class="small mb-2">Código vigente: <span class="codigo-kiosco-mini">{{ $enlace->codigo }}</span><br><span class="texto-traza">Vence @fecha($enlace->expira_en, 'H:i') · enviado {{ $enlace->usos }} de {{ $enlace->usos_maximos }} veces</span></p>
-                        <div class="d-flex flex-wrap gap-2">
-                            <a href="{{ route('recepcion.kiosco', ['candidato' => $c->id]) }}" class="btn-azul btn-accion-rh"><i class="bi bi-qr-code me-1" aria-hidden="true"></i>Mostrar QR</a>
-                            <form action="{{ route('candidatos.enlace.revocar', $c->id) }}" method="POST" class="m-0" data-confirmar="¿Anular el enlace? El candidato ya no podrá usarlo.">
-                                @csrf
-                                <button type="submit" class="btn-secundario-rh">Anular enlace</button>
-                            </form>
-                        </div>
                     @else
-                        <p class="small text-muted">Genera un QR para que lo escanee con su celular en la sala de espera. Dura pocas horas y solo sirve para su propia ficha.</p>
-                        <form action="{{ route('recepcion.kiosco.generar', $c->id) }}" method="POST" class="m-0">
+                        <p class="small text-muted">Que escanee el QR con su celular en la sala de espera. Dura pocas horas y solo sirve para su propia ficha.</p>
+                    @endif
+                    <form action="{{ route('recepcion.kiosco.generar', $c->id) }}" method="POST" class="m-0">
+                        @csrf
+                        <input type="hidden" name="reusar" value="1">
+                        <button type="submit" class="btn-azul btn-accion-rh w-100"><i class="bi bi-qr-code me-1" aria-hidden="true"></i>QR para que llene su solicitud</button>
+                    </form>
+                    @if ($enlace)
+                        <form action="{{ route('candidatos.enlace.revocar', $c->id) }}" method="POST" class="m-0 mt-2 text-end" data-confirmar="¿Anular el enlace? El candidato ya no podrá usarlo.">
                             @csrf
-                            <button type="submit" class="btn-azul btn-accion-rh w-100"><i class="bi bi-qr-code me-1" aria-hidden="true"></i>Generar QR del kiosco</button>
+                            <button type="submit" class="enlace-discreto">Anular enlace</button>
                         </form>
                     @endif
                 </section>
             @endif
+
+            {{-- Postulaciones: la activa (la que se ve arriba) y las anteriores --}}
+            <section class="tarjeta p-4">
+                <h2 class="h6 fw-bold"><i class="bi bi-briefcase me-2 text-secondary" aria-hidden="true"></i>Postulaciones</h2>
+                @if ($activa)
+                    <p class="small mb-1"><strong>Actual:</strong> {{ $activa->titulo() }} · <span class="pastilla-etapa etapa-{{ Candidato::COLORES[$activa->etapa] ?? 'gris' }}">{{ $activa->etiquetaEtapa() }}</span></p>
+                    <p class="texto-traza mb-0">{{ Candidato::ORIGENES[$activa->origen] ?? $activa->origen }} · desde @fecha($activa->created_at)</p>
+                    @if ($activa->accesos->isNotEmpty())
+                        <p class="texto-traza mb-0">Visitas a caseta:
+                            {{ $activa->accesos->map(fn ($v) => $hora->formatear($v->entrada_at, 'd/m H:i').' ('.(\App\Models\Acceso::VIENE_A_CORTO[$v->viene_a] ?? 'Recursos Humanos').')')->join(', ') }}</p>
+                    @endif
+                @endif
+                @if ($anteriores->isNotEmpty())
+                    <h3 class="subtitulo-cv">Anteriores</h3>
+                    <ul class="postulaciones-anteriores">
+                        @foreach ($anteriores as $p)
+                            <li>
+                                <strong>{{ $p->titulo() }}</strong> · {{ $p->etiquetaEtapa() }}
+                                <span class="d-block texto-traza">{{ $p->sede?->nombre }} · del {{ $hora->formatear($p->created_at, 'd/m/Y') }}{{ ($p->contratado_en ?? $p->decision_en) ? ' al '.$hora->formatear($p->contratado_en ?? $p->decision_en, 'd/m/Y') : '' }}{{ $p->motivo_descarte ? ' · '.$p->motivo_descarte : '' }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @elseif (! $activa)
+                    <p class="small text-muted mb-0">Sin postulaciones registradas.</p>
+                @else
+                    <p class="texto-traza mt-2 mb-0">Es su primera postulación.</p>
+                @endif
+            </section>
 
             {{-- Evidencia de caseta --}}
             @if ($acceso)

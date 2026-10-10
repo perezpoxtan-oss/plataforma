@@ -284,10 +284,16 @@ class MenusReorganizadosTest extends TestCase
         $html = $this->actingAs($jefe)->get('/')->assertOk()->getContent();
         $this->assertMatchesRegularExpression('/data-mis-pendientes\s+hidden/', $html);
 
-        // Recursos Humanos sin departamento a cargo ni nada que verificar: no aparece
+        // Recursos Humanos (candidatos, fase 1): sus dos renglones en cero; el botón existe pero oculto
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
-        $this->assertSame(['total' => 0, 'items' => []], app(MisPendientes::class)->para($rh));
-        $this->actingAs($rh)->get('/')->assertOk()->assertDontSee('data-mis-pendientes', false);
+        $this->assertSame(['total' => 0, 'claves' => ['recepcion', 'solicitudes']],
+            ['total' => app(MisPendientes::class)->para($rh)['total'], 'claves' => array_column(app(MisPendientes::class)->para($rh)['items'], 'clave')]);
+        $this->assertMatchesRegularExpression('/data-mis-pendientes\s+hidden/', $this->actingAs($rh)->get('/')->assertOk()->getContent());
+
+        // Sin nada que le aplique: no aparece
+        $nadie = $this->crearUsuario($this->empresa);
+        $this->assertSame(['total' => 0, 'items' => []], app(MisPendientes::class)->para($nadie));
+        $this->actingAs($nadie)->get('/')->assertOk()->assertDontSee('data-mis-pendientes', false);
 
         // Superadministrador sin empresa de trabajo
         $this->actingAs($this->crearSuperadmin())->getJson('/notificaciones/resumen')->assertOk()

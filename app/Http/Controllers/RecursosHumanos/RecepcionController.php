@@ -99,6 +99,8 @@ class RecepcionController extends Controller
             'ver' => $actor->can('candidatos.ver'),
             'kiosco' => $actor->can('candidatos.editar') || $actor->can('accesos.crear'),
             'configurar' => $actor->can('candidatos.configurar'),
+            // «Que pase»: quien atiende Recepción de RR. HH. (cada solicitud lo revisa otra vez por su sede)
+            'responder' => $actor->can('candidatos.editar') || $actor->can('recepcion_rh.ver'),
         ];
     }
 
@@ -172,7 +174,12 @@ class RecepcionController extends Controller
             $this->tenant->conEmpresa($empresaId, function () use ($request, $candidato) {
                 $c = $this->candidatosParaKiosco($request->user())->find($candidato);
                 abort_if($c === null, 404);
-                app(Kiosco::class)->generar($request->user(), $c);
+                // «QR para que llene su solicitud» (ficha): muestra el vigente o crea uno
+                $vigente = $request->boolean('reusar')
+                    && $c->enlaces()->whereNull('revocado_en')->where('expira_en', '>', now())->get()->contains(fn (EnlaceKiosco $e) => $e->vigente());
+                if (! $vigente) {
+                    app(Kiosco::class)->generar($request->user(), $c);
+                }
             });
         } catch (CambioNoPermitido $e) {
             return redirect()->route('recepcion.kiosco')->with('error', $e->getMessage());

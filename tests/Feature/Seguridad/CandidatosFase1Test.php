@@ -2,12 +2,14 @@
 
 namespace Tests\Feature\Seguridad;
 
+use App\Console\Commands\CrearDatosDemo;
 use App\Mail\AvisoRecepcion;
 use App\Models\Acceso;
 use App\Models\Auditoria;
 use App\Models\Autorizacion;
 use App\Models\Candidato;
 use App\Models\Empresa;
+use App\Models\EnlaceKiosco;
 use App\Models\Notificacion;
 use App\Models\Persona;
 use App\Models\Postulacion;
@@ -15,15 +17,19 @@ use App\Models\Rol;
 use App\Models\RolPermiso;
 use App\Models\Sede;
 use App\Models\User;
+use App\Models\UsuarioRol;
 use App\Models\Vacante;
 use App\Services\Auditoria\LectorAuditoria;
+use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\Vacantes\AdministradorVacantes;
 use App\Services\Vacantes\BolsaTrabajo;
 use App\Support\CorreoPlataforma;
+use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -116,6 +122,52 @@ class CandidatosFase1Test extends TestCase
     }
 
     // ------------------------------------------------------------------ Una ficha por persona
+
+    public function test_dos_veces_en_caseta_es_una_ficha_con_dos_accesos_y_dos_postulaciones(): void
+    {
+        $this->rhAutorizaPaso(false);
+        $this->caseta()->assertSessionHas('ok');
+        $c = $this->enEmpresa(fn () => Candidato::sole());
+        $primera = $this->enEmpresa(fn () => Acceso::sole());
+        $this->assertSame('en_sitio', $primera->estado, 'Con el ajuste apagado pasa directo');
+        $this->assertSame(1, $this->enEmpresa(fn () => Postulacion::where('candidato_id', $c->id)->count()));
+        $this->salida($primera);
+
+        // Vuelve: el padrón pregunta «¿Es la misma persona?» y la caseta dice que sí
+        $this->caseta(['persona_decision' => 'misma'])->assertSessionHas('ok');
+        $this->assertSame(1, $this->enEmpresa(fn () => Candidato::count()), 'No se crea otra ficha');
+        $accesos = $this->enEmpresa(fn () => Acceso::orderBy('id')->get());
+        $this->assertCount(2, $accesos);
+        // Seguía en proceso (Registrado): la segunda visita se liga a la misma postulación
+        $this->assertSame($accesos[0]->postulacion_id, $accesos[1]->postulacion_id);
+        $this->assertSame($accesos[1]->id, $c->fresh()->acceso_id);
+        $this->assertTrue($this->enEmpresa(fn () => $c->eventos()->where('comentario', 'like', 'Volvió a la caseta: Busca empleo%')->exists()));
+        // Aviso a RR. HH.: «Volvió a la caseta»
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('titulo', 'Volvió a la caseta: Karla Pérez Uc')->exists()));
+
+        // Lo descartan y vuelve otra vez: nueva postulación en la misma ficha
+        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'descartado', 'comentario' => 'No cubre el horario'])->assertSessionHas('ok');
+        $this->salida($accesos[1]);
+        $vacante = $this->vacante();
+        $this->caseta(['persona_decision' => 'misma', 'vacante_id' => $vacante->id])->assertSessionHas('ok');
+        $this->assertSame(1, $this->enEmpresa(fn () => Candidato::count()));
+        $postulaciones = $this->enEmpresa(fn () => Postulacion::where('candidato_id', $c->id)->orderBy('id')->get());
+        $this->assertCount(2, $postulaciones);
+        $this->assertSame(['descartado', 'registrado'], $postulaciones->pluck('etapa')->all());
+        $this->assertSame($vacante->id, $postulaciones[1]->vacante_id);
+        // La ficha refleja la postulación activa (la nueva)
+        $c->refresh();
+        $this->assertSame('registrado', $c->etapa);
+        $this->assertSame($vacante->id, $c->vacante_id);
+        $this->assertNull($c->motivo_descarte);
+
+        // La ficha muestra la activa y las anteriores; la lista, una tarjeta por persona
+        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertOk()->assertSee('Postulaciones')->assertSee('Anteriores')
+            ->assertSee('No cubre el horario');
+        $this->assertSame(1, substr_count((string) $this->actingAs($this->rh)->get('/candidatos')->getContent(), 'class="ficha-card ficha-candidato"'));
+        // La vacante cuenta su postulación
+        $this->actingAs($this->rh)->get('/candidatos?vacante='.$vacante->id)->assertSee('Karla Pérez Uc');
+    }
 
     public function test_internet_y_rh_son_la_misma_ficha_y_rh_ve_el_aviso_de_duplicado(): void
     {
@@ -324,6 +376,89 @@ class CandidatosFase1Test extends TestCase
         $this->assertSame('en_sitio', $this->enEmpresa(fn () => Acceso::where('nombre', 'ROSA POOL')->value('estado')));
     }
 
+    // ------------------------------------------------------------------ Recepción y Mis pendientes
+
+    public function test_panel_de_recepcion_viene_a_que_pase_atender_y_sin_qr(): void
+    {
+        $this->caseta()->assertSessionHas('ok');
+        $this->caseta(['nombre' => 'Mario Ek', 'viene_a' => 'tramite'])->assertSessionHas('ok');
+        $a = $this->enEmpresa(fn () => Autorizacion::whereHas('acceso', fn ($q) => $q->where('nombre', 'KARLA PÉREZ UC'))->sole());
+
+        $panel = $this->actingAs($this->rh)->get('/rh/recepcion')->assertOk()
+            ->assertSee('Viene a: Busca empleo — primera vez')->assertSee('Viene a: Trámite')->assertSee('Que pase')->assertSee('Atender')->assertSee('Abrir ficha')
+            ->assertSee('En caseta: espera que digas «Que pase»');
+        $this->assertStringNotContainsString(route('recepcion.kiosco.generar', 1), (string) $panel->getContent());
+        $this->assertStringNotContainsString('bi-qr-code me-1" aria-hidden="true"></i>QR</button>', (string) $panel->getContent());
+        $this->actingAs($this->rh)->getJson('/rh/recepcion/datos')->assertJsonPath('total', 2)->assertJsonPath('contadores.esperando', 2);
+
+        // «Que pase» desde el panel regresa al panel
+        $this->actingAs($this->rh)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase', 'volver' => 'recepcion'])->assertRedirect('/rh/recepcion');
+        $c = $this->enEmpresa(fn () => Candidato::sole());
+        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'revision', 'volver' => 'recepcion'])->assertRedirect('/rh/recepcion');
+        $this->actingAs($this->rh)->getJson('/rh/recepcion/datos')->assertJsonPath('contadores.esperando', 1);
+
+        // La segunda visita de la misma persona dice «ya vino antes»
+        $this->salida($this->enEmpresa(fn () => Acceso::where('nombre', 'KARLA PÉREZ UC')->sole()));
+        $this->caseta(['persona_decision' => 'misma'])->assertSessionHas('ok');
+        $this->actingAs($this->rh)->get('/rh/recepcion')->assertSee('Viene a: Busca empleo — ya vino antes');
+
+        // En la ficha: «Atender» y un solo botón de QR
+        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertSee('QR para que llene su solicitud')->assertDontSee('Generar QR del kiosco')
+            ->assertDontSee('Mostrar QR')->assertDontSee('Tomar en revisión');
+        $this->actingAs($this->rh)->post("/rh/recepcion/kiosco/{$c->id}", ['reusar' => '1'])->assertRedirect(route('recepcion.kiosco', ['candidato' => $c->id]));
+        $enlace = $this->enEmpresa(fn () => EnlaceKiosco::sole());
+        // Con uno vigente no se crea otro: se muestra el mismo
+        $this->actingAs($this->rh)->post("/rh/recepcion/kiosco/{$c->id}", ['reusar' => '1'])->assertRedirect();
+        $this->assertSame($enlace->id, $this->enEmpresa(fn () => EnlaceKiosco::sole()->id));
+        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertSee('Anular enlace')->assertSee($enlace->codigo);
+    }
+
+    public function test_mis_pendientes_de_rh_esperando_en_recepcion_y_solicitudes_por_revisar(): void
+    {
+        $this->caseta()->assertSessionHas('ok');
+        $this->caseta(['nombre' => 'Mario Ek', 'viene_a' => 'tramite'])->assertSessionHas('ok');
+        // Una solicitud que llenó el candidato y RR. HH. no ha revisado
+        $revisar = $this->enEmpresa(function () {
+            $c = new Candidato(['sede_id' => $this->centro->id, 'nombre_completo' => 'Ana Pool', 'origen' => 'kiosco', 'llegada_en' => now()->subDays(2)]);
+            $c->forceFill(['autocaptura_pendiente' => true, 'created_at' => now()->subDays(2)])->save();
+
+            return $c;
+        });
+
+        Cache::flush();
+        $mios = app(MisPendientes::class)->para($this->rh);
+        $items = collect($mios['items'])->keyBy('clave');
+        $this->assertSame(2, $items['recepcion']['total'], 'Dos accesos esperan el «Que pase» (el candidato se cuenta una vez)');
+        $this->assertSame(route('recepcion.index'), $items['recepcion']['url']);
+        $this->assertSame(1, $items['solicitudes']['total']);
+        $this->assertSame(route('candidatos.index', ['revisar' => 1]), $items['solicitudes']['url']);
+        // La campana suma lo mismo
+        $this->actingAs($this->rh)->getJson('/notificaciones/resumen')->assertJsonPath('pendientes.total', $mios['total']);
+        // La lista filtrada
+        $this->actingAs($this->rh)->get('/candidatos?revisar=1')->assertOk()->assertSee('Ana Pool')->assertDontSee('Karla Pérez Uc')
+            ->assertSee('Solicitudes por revisar (1)');
+
+        // El agente no tiene esos renglones
+        $this->assertFalse(collect(app(MisPendientes::class)->para($this->agente)['items'])->contains('clave', 'recepcion'));
+
+        // RR. HH. limitado a Playa no cuenta lo de Centro ni puede responder
+        $rhPlaya = $this->crearUsuario($this->empresa, 'Recursos Humanos');
+        $rol = Rol::where('empresa_id', $this->empresa->id)->where('nombre', 'Recursos Humanos')->firstOrFail();
+        RolPermiso::where('rol_id', $rol->id)->update(['alcance' => Alcance::Sede]);
+        UsuarioRol::where('user_id', $rhPlaya->id)->update(['sede_id' => $this->playa->id]);
+        app(Autorizador::class)->olvidar();
+        $items = collect(app(MisPendientes::class)->para($rhPlaya)['items'])->keyBy('clave');
+        $this->assertSame(0, $items['recepcion']['total']);
+        $this->assertSame(0, $items['solicitudes']['total']);
+        $a = $this->enEmpresa(fn () => Autorizacion::orderBy('id')->first());
+        $this->assertNotContains($rhPlaya->id, $a->avisados);
+        $this->actingAs($rhPlaya)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase'])->assertNotFound();
+        $this->actingAs($rhPlaya)->get("/autorizaciones/{$a->id}")->assertNotFound();
+        $this->actingAs($rhPlaya)->get('/rh/recepcion')->assertOk()->assertDontSee('Karla Pérez Uc');
+        $this->assertSame('pendiente', $a->fresh()->estado);
+        $this->assertNotNull($revisar->id);
+    }
+
     // ------------------------------------------------------------------ Migración, auditoría y demo
 
     public function test_la_migracion_crea_una_postulacion_por_ficha_y_es_idempotente(): void
@@ -381,5 +516,30 @@ class CandidatosFase1Test extends TestCase
         $this->actingAs($this->admin)->get('/auditoria')->assertOk()->assertSee('Nueva postulación')->assertSee('Postulación');
         // Sin datos personales en la auditoría de la postulación
         $this->assertArrayNotHasKey('telefono', (array) $nueva->despues);
+    }
+
+    public function test_el_demo_trae_un_candidato_con_dos_visitas_y_uno_esperando_a_rh(): void
+    {
+        $this->artisan('plataforma:demo', ['--password' => 'Demo1234!'])->assertSuccessful()->doesntExpectOutputToContain('No se pudo completar');
+        $demo = Empresa::where('nombre_comercial', CrearDatosDemo::EMPRESA)->firstOrFail();
+        app(Tenant::class)->conEmpresa($demo->id, function () {
+            $jorge = Candidato::where('nombre_completo', 'Jorge Tun Pech')->firstOrFail();
+            $this->assertSame(2, Acceso::whereIn('postulacion_id', Postulacion::where('candidato_id', $jorge->id)->select('id'))->count()
+                + (Acceso::whereKey($jorge->getOriginal('acceso_id'))->whereNull('postulacion_id')->count()));
+            $this->assertSame('entrevista', $jorge->etapa);
+            $silvia = Candidato::where('nombre_completo', 'Silvia Mena Couoh')->firstOrFail();
+            $this->assertSame(2, Postulacion::where('candidato_id', $silvia->id)->count());
+            $martha = Candidato::where('nombre_completo', 'Martha Ek Chan')->firstOrFail();
+            $this->assertSame(['pendiente', 'esperando'], [$martha->acceso->estado, $martha->acceso->autorizacion]);
+            $this->assertTrue(Autorizacion::where('tipo', 'recepcion')->where('estado', 'pendiente')->where('acceso_id', $martha->acceso_id)->exists());
+            // Cada ficha tiene su postulación y la refleja
+            foreach (Candidato::all() as $c) {
+                $p = Postulacion::where('candidato_id', $c->id)->orderByDesc('id')->first();
+                $this->assertNotNull($p, "Sin postulación: {$c->nombre_completo}");
+                $this->assertSame($p->etapa, $c->etapa, "Espejo de {$c->nombre_completo}");
+            }
+        });
+        $rh = User::where('username', 'rh.demo')->firstOrFail();
+        $this->actingAs($rh)->get('/rh/recepcion')->assertOk()->assertSee('Martha Ek Chan')->assertSee('Que pase');
     }
 }

@@ -30,7 +30,7 @@ class AvisosInicio
                 $avisos[] = [
                     'icono' => 'bi-person-check',
                     'titulo' => $esperando === 1 ? '1 persona espera a Recursos Humanos' : "{$esperando} personas esperan a Recursos Humanos",
-                    'texto' => 'La caseta ya las registró. Atiéndelas o mándales el QR del kiosco para que llenen su CV.',
+                    'texto' => 'La caseta ya las registró. Dile «Que pase» a quien espera en caseta y atiéndelas desde Recepción.',
                     'ruta' => route('recepcion.index'),
                     'boton' => 'Ir a Recepción',
                 ];

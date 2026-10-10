@@ -60,6 +60,7 @@ class CandidatoController extends Controller
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $filtros, $empresaId) {
             $base = $this->candidatos->limitar(Candidato::query(), $actor, 'candidatos.ver');
             $conteos = (clone $base)->selectRaw('etapa, COUNT(*) as total')->groupBy('etapa')->pluck('total', 'etapa');
+            $porRevisar = (clone $base)->where('autocaptura_pendiente', true)->count();
             $lista = $this->filtrar(clone $base, $filtros)
                 ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'registradoPor:id,name', 'editadoPor:id,name', 'vacantePublicada:id,titulo,estado'])
                 ->orderByRaw("CASE WHEN etapa IN ('registrado','revision','aprobado_rh','entrevista','seleccionado') THEN 0 ELSE 1 END")
@@ -71,6 +72,7 @@ class CandidatoController extends Controller
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'lista' => $lista,
                 'conteos' => $conteos,
+                'porRevisar' => $porRevisar,
                 'filtros' => $filtros,
                 'sedes' => $sedes,
                 'sedesAlta' => $actor->can('candidatos.crear') ? $this->candidatos->sedesParaElegir($actor, 'candidatos.crear') : collect(),
@@ -368,6 +370,8 @@ class CandidatoController extends Controller
             'sede' => (int) Entrada::texto($request->query('sede'), '0'),
             'departamento' => (int) Entrada::texto($request->query('departamento'), '0'),
             'vacante' => (int) Entrada::texto($request->query('vacante'), '0'),
+            // Mis pendientes → «Solicitudes por revisar» (lo que el candidato llenó en el kiosco o por internet)
+            'revisar' => Entrada::texto($request->query('revisar')) === '1',
         ];
     }
 
