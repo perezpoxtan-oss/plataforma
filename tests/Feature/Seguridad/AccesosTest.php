@@ -47,6 +47,9 @@ class AccesosTest extends TestCase
         $this->centro = $this->crearSede($this->empresa, 'CEN');
         $this->playa = $this->crearSede($this->empresa, 'PLA');
         $this->admin = $this->crearUsuario($this->empresa, 'Administrador');
+        // Estas pruebas son de la bitácora: el personal externo que va a RR. HH. pasa directo
+        // (la espera del «Que pase» de RR. HH. se prueba en CandidatosFase1Test)
+        $this->empresa->forceFill(['preferencias' => array_merge($this->empresa->preferencias ?? [], ['recepcion' => ['rh_autoriza_paso' => false]])])->save();
     }
 
     // ------------------------------------------------------------------ Ayudas

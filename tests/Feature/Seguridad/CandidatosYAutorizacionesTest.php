@@ -97,7 +97,7 @@ class CandidatosYAutorizacionesTest extends TestCase
     {
         return $this->actingAs($quien ?? $this->agente)->post('/accesos', $extra + [
             'sede_id' => $this->centro->id, 'tipo' => 'visitante', 'nombre' => 'Karla Pérez Uc', 'motivo_visita' => 'rh',
-            'es_candidato' => '1', 'departamento_id' => $this->cocina->id, 'vacante' => 'Camarista', 'modo_arribo' => 'a_pie', 'identificacion' => 'ine',
+            'viene_a' => 'busca_empleo', 'modo_arribo' => 'a_pie', 'identificacion' => 'ine',
         ]);
     }
 
@@ -175,11 +175,15 @@ class CandidatosYAutorizacionesTest extends TestCase
         $c = $this->enEmpresa(fn () => Candidato::with('acceso', 'persona')->sole());
         $this->assertSame('registrado', $c->etapa);
         $this->assertSame('caseta', $c->origen);
-        $this->assertSame($this->cocina->id, $c->departamento_id);
-        $this->assertSame('Camarista', $c->vacante);
+        // La caseta ya no pone puesto ni departamento: los deduce la vacante o los pone RR. HH.
+        $this->assertNull($c->departamento_id);
+        $this->assertNull($c->vacante);
         $this->assertSame('prospecto_rrhh', $c->persona->categoria);
         $this->assertNotNull($c->avisado_rh_en);
-        $this->assertSame('en_sitio', $c->acceso->estado);
+        // Empresa nueva: la caseta espera a que RR. HH. diga «Que pase»
+        $this->assertSame('pendiente', $c->acceso->estado);
+        $this->assertSame('esperando', $c->acceso->autorizacion);
+        $this->assertSame('busca_empleo', $c->acceso->viene_a);
 
         // Fotos en el disco privado, re-dibujadas y reducidas
         $this->assertStringStartsWith('accesos/'.$this->empresa->id.'/fotos/', $c->acceso->foto_persona);
@@ -188,7 +192,7 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->assertFalse(str_starts_with((string) $c->acceso->foto_persona, 'public'));
 
         // Aviso en la campana de RR. HH. (no al agente) y correo
-        $avisos = $this->enEmpresa(fn () => Notificacion::where('tipo', 'candidato_llegada')->pluck('user_id')->all());
+        $avisos = $this->enEmpresa(fn () => Notificacion::where('tipo', 'autorizacion_recepcion')->pluck('user_id')->all());
         $this->assertContains($this->rh->id, $avisos);
         $this->assertNotContains($this->agente->id, $avisos);
         Mail::assertSent(AvisoRecepcion::class, fn ($m) => $m->hasTo($this->rh->email) && str_contains($m->titulo, 'Karla Pérez Uc'));
@@ -229,6 +233,7 @@ class CandidatosYAutorizacionesTest extends TestCase
 
     public function test_panel_de_recepcion_muestra_a_quien_espera_y_su_json(): void
     {
+        app(AjustesRecepcion::class)->guardar($this->admin, $this->empresa->refresh(), ['rh_autoriza_paso' => '0', 'aviso_privacidad' => ''], true, false);
         $this->registrarEnCaseta()->assertSessionHas('ok');
         $this->actingAs($this->rh)->get('/rh/recepcion')->assertOk()->assertSee('Karla Pérez Uc')->assertSee('Atender');
         $this->actingAs($this->rh)->getJson('/rh/recepcion/datos')->assertOk()->assertJsonPath('total', 1)

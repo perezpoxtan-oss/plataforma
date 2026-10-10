@@ -113,7 +113,9 @@ class AccesoController extends Controller
             : "Ingreso de {$acceso->nombre} registrado correctamente.";
         // Recepción (ADR-0007): visita que espera al responsable del departamento
         if (($acceso->getAttributes()['autorizacion'] ?? null) === 'esperando') {
-            $mensaje = "Registro de {$acceso->nombre} guardado: ESPERANDO AUTORIZACIÓN del departamento. Ya se avisó al responsable; aquí verás su respuesta.";
+            $mensaje = $acceso->motivo_visita === 'rh'
+                ? "Registro de {$acceso->nombre} guardado: ESPERANDO A RR. HH. Ya se avisó a Recursos Humanos; aquí verás cuándo puede pasar."
+                : "Registro de {$acceso->nombre} guardado: ESPERANDO AUTORIZACIÓN del departamento. Ya se avisó al responsable; aquí verás su respuesta.";
         }
         $redireccion = redirect()->route('accesos.index', $acceso->estado === 'pendiente' ? ['pestana' => 'pendientes'] : [])->with('ok', $mensaje);
 

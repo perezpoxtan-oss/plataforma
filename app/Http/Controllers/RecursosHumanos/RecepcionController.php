@@ -233,7 +233,7 @@ class RecepcionController extends Controller
             return back()->with('error', 'No hubo cambios que guardar.');
         }
 
-        app(AjustesRecepcion::class)->guardar($actor, Empresa::findOrFail($empresaId), $request->only(['aviso_privacidad', 'visitas_requieren_autorizacion', 'kiosco_horas', 'kiosco_usos']), $privacidad, $autorizaciones);
+        app(AjustesRecepcion::class)->guardar($actor, Empresa::findOrFail($empresaId), $request->only(['aviso_privacidad', 'visitas_requieren_autorizacion', 'kiosco_horas', 'kiosco_usos', 'rh_autoriza_paso']), $privacidad, $autorizaciones);
 
         return back()->with('ok', 'Ajustes de Recepción guardados.');
     }

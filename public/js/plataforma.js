@@ -2792,8 +2792,10 @@ document.addEventListener('click', function (e) {
         var modo = radio(form, 'modo_arribo');
         var motivo = radio(form, 'motivo_visita');
         var reserva = radio(form, 'tiene_reserva');
+        var vieneA = (form.querySelector('[data-viene-a]') || {}).value || ''; // Candidatos fase 1: Recursos Humanos → ¿A qué viene?
         form.querySelectorAll('[data-condicion]').forEach(function (b) {
             var ok = true;
+            if (b.hasAttribute('data-solo-viene-a')) { ok = ok && lista(b.dataset.soloVieneA).indexOf(vieneA) !== -1; }
             if (b.hasAttribute('data-solo-tipos')) { ok = ok && lista(b.dataset.soloTipos).indexOf(tipo) !== -1; }
             if (b.hasAttribute('data-solo-motivo')) { ok = ok && b.dataset.soloMotivo === motivo; }
             if (b.hasAttribute('data-solo-reserva')) { ok = ok && b.dataset.soloReserva === reserva; }
@@ -7996,8 +7998,9 @@ document.addEventListener('click', function (e) {
             if (n.acciones && n.acciones.length) {
                 var acciones = el('div', 'campana-acciones');
                 n.acciones.forEach(function (a) {
-                    acciones.appendChild(formulario(a.url, a.campos, 'btn-respuesta ' + (a.estilo === 'rechazar' ? 'rechazar' : 'aceptar'), a.etiqueta,
-                        a.estilo === 'rechazar' ? '¿Rechazar? La caseta y Recursos Humanos verán tu respuesta.' : null));
+                    // Candidatos fase 1: «Que espere» (esperar) de Recepción de RR. HH.
+                    acciones.appendChild(formulario(a.url, a.campos, 'btn-respuesta ' + (a.estilo === 'rechazar' ? 'rechazar' : (a.estilo === 'esperar' ? 'esperar' : 'aceptar')), a.etiqueta,
+                        a.estilo === 'rechazar' ? '¿' + a.etiqueta + '? La caseta y Recursos Humanos verán tu respuesta.' : null));
                 });
                 item.appendChild(acciones);
             }
@@ -8070,7 +8073,11 @@ document.addEventListener('click', function (e) {
         var url = esperas[0].getAttribute('data-url-estado') + '?ids=' + encodeURIComponent(ids.join(','));
         cadaTanto(function () {
             pedir(url).then(function (d) {
-                var cambio = ids.some(function (id) { return d.estados && d.estados[id] !== undefined && d.estados[id] !== 'pendiente|esperando'; });
+                // Candidatos fase 1: «RR. HH. pide que espere» (pendiente|espera) también es un estado de espera
+                var cambio = Array.prototype.some.call(esperas, function (e) {
+                    var id = e.getAttribute('data-acceso-esperando');
+                    return d.estados && d.estados[id] !== undefined && d.estados[id] !== (e.getAttribute('data-estado-esperado') || 'pendiente|esperando');
+                });
                 if (!cambio) { return; }
                 // Con un diálogo abierto no se recarga (se perdería lo capturado): se avisa
                 if (document.querySelector('dialog[open]')) {

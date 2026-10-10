@@ -54,7 +54,9 @@ class AutorizacionController extends Controller
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $estado, $empresaId) {
             $porResponder = $this->autorizaciones->pendientesPara($actor);
+            // Las de Recepción de RR. HH. se atienden en Recepción (no son de un departamento)
             $historial = $this->autorizaciones->limitar(Autorizacion::query(), $actor)->with($this->autorizaciones->relaciones())
+                ->where('tipo', '!=', 'recepcion')
                 ->when($estado !== '', fn ($q) => $q->where('estado', $estado))
                 ->orderByDesc('id')->paginate(20)->withQueryString();
             $configura = $actor->can('autorizaciones.configurar');
@@ -80,7 +82,8 @@ class AutorizacionController extends Controller
 
     public function show(Request $request, int $autorizacion): View
     {
-        Gate::authorize('autorizaciones.ver');
+        // Departamentales: autorizaciones.ver; las de Recepción: quien atiende Recepción de RR. HH.
+        abort_unless($this->puedeVerAlguna($request), 403);
         $actor = $request->user();
         $empresaId = $this->empresaDeTrabajo($request);
 
@@ -97,7 +100,7 @@ class AutorizacionController extends Controller
      */
     public function confirmar(Request $request, int $autorizacion): View
     {
-        Gate::authorize('autorizaciones.responder');
+        abort_unless($this->puedeResponderAlguna($request), 403);
         $actor = $request->user();
         $empresaId = $this->empresaDeTrabajo($request);
 
@@ -113,13 +116,14 @@ class AutorizacionController extends Controller
 
     public function responder(Request $request, int $autorizacion): RedirectResponse
     {
-        Gate::authorize('autorizaciones.responder');
+        abort_unless($this->puedeResponderAlguna($request), 403);
         // Primero el registro (otra empresa o fuera de alcance → 404) y después la validación
         $this->tenant->conEmpresa($this->empresaDeTrabajo($request), fn () => $this->buscar($request->user(), $autorizacion));
         $datos = $request->validate([
-            'respuesta' => ['required', Rule::in(['autorizar', 'rechazar', 'entrevistar'])],
+            'respuesta' => ['required', Rule::in(array_keys(Autorizacion::BOTONES))],
             'comentario' => ['nullable', 'string', 'max:500'],
             'medio' => ['nullable', Rule::in(['plataforma', 'correo'])],
+            'volver' => ['nullable', Rule::in(['recepcion'])],
         ], ['respuesta.*' => 'Elige una respuesta.', 'comentario.max' => 'El comentario admite máximo 500 caracteres.']);
         $empresaId = $this->empresaDeTrabajo($request);
 
@@ -130,14 +134,24 @@ class AutorizacionController extends Controller
                 return $this->autorizaciones->responder($request->user(), $a, $datos['respuesta'], $datos['comentario'] ?? null, $datos['medio'] ?? 'plataforma');
             });
         } catch (CambioNoPermitido $e) {
-            return redirect()->route('autorizaciones.show', $autorizacion)->with('error', $e->getMessage());
+            return ($datos['volver'] ?? null) === 'recepcion'
+                ? redirect()->route('recepcion.index')->with('error', $e->getMessage())
+                : redirect()->route('autorizaciones.show', $autorizacion)->with('error', $e->getMessage());
         }
 
-        $mensaje = match ($a->estado) {
-            'autorizada' => "Listo: autorizaste el ingreso de {$a->titulo()}. La caseta ya lo ve.",
-            'entrevista' => "Listo: pediste entrevistar a {$a->titulo()}. Recursos Humanos ya lo sabe.",
+        $mensaje = match (true) {
+            $a->tipo === 'recepcion' && $datos['respuesta'] === 'espere' => "Listo: la caseta verá que {$a->titulo()} debe esperar.",
+            $a->tipo === 'recepcion' && $a->estado === 'autorizada' => "Listo: {$a->titulo()} ya puede pasar. La caseta ya lo ve.",
+            $a->tipo === 'recepcion' => "Respuesta registrada: {$a->titulo()} no puede pasar. La caseta ya lo ve.",
+            $a->estado === 'autorizada' => "Listo: autorizaste el ingreso de {$a->titulo()}. La caseta ya lo ve.",
+            $a->estado === 'entrevista' => "Listo: pediste entrevistar a {$a->titulo()}. Recursos Humanos ya lo sabe.",
             default => "Respuesta registrada: rechazaste a {$a->titulo()}.",
         };
+        if ($a->tipo === 'recepcion') {
+            return $request->user()->can('recepcion_rh.ver')
+                ? redirect()->route('recepcion.index')->with('ok', $mensaje)
+                : redirect()->route('autorizaciones.show', $a->id)->with('ok', $mensaje);
+        }
 
         return redirect()->route('autorizaciones.index')->with('ok', $mensaje);
     }
@@ -234,6 +248,22 @@ class AutorizacionController extends Controller
     }
 
     // ------------------------------------------------------------------ Ayudas
+
+    /** Departamentales (autorizaciones.ver) o de Recepción de RR. HH. (candidatos.editar o recepcion_rh.ver). */
+    private function puedeVerAlguna(Request $request): bool
+    {
+        $u = $request->user();
+
+        return $u->can('autorizaciones.ver') || $u->can('candidatos.editar') || $u->can('recepcion_rh.ver');
+    }
+
+    /** Responder: el responsable (autorizaciones.responder) o quien atiende Recepción de RR. HH. Cada solicitud lo revisa otra vez. */
+    private function puedeResponderAlguna(Request $request): bool
+    {
+        $u = $request->user();
+
+        return $u->can('autorizaciones.responder') || $u->can('candidatos.editar') || $u->can('recepcion_rh.ver');
+    }
 
     private function buscar($actor, int $id): Autorizacion
     {

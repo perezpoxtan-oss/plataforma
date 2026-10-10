@@ -433,11 +433,11 @@ class VacantesTest extends TestCase
         $borrador = $this->vacante('borrador', ['titulo' => 'Jardinero']);
         $registro = fn (array $extra) => $this->actingAs($this->agente)->post('/accesos', $extra + [
             'sede_id' => $this->centro->id, 'tipo' => 'visitante', 'nombre' => 'Karla Pérez Uc', 'motivo_visita' => 'rh',
-            'es_candidato' => '1', 'modo_arribo' => 'a_pie', 'identificacion' => 'ine',
+            'viene_a' => 'busca_empleo', 'modo_arribo' => 'a_pie', 'identificacion' => 'ine',
         ]);
 
         // La lista del registro trae las publicadas y vigentes (la caseta las acota a su sede)
-        $this->actingAs($this->agente)->get('/accesos')->assertOk()->assertSee('¿A qué vacante viene?')->assertSee('Cocinero')->assertDontSee('Jardinero');
+        $this->actingAs($this->agente)->get('/accesos')->assertOk()->assertSee('¿A qué viene?')->assertSee('¿A qué vacante?')->assertSee('Cocinero')->assertDontSee('Jardinero');
 
         $registro(['vacante_id' => $borrador->id])->assertSessionHasErrors(['vacante_id' => 'Elige una vacante publicada de esta sede.']);
         $registro(['vacante_id' => $playa->id])->assertSessionHasErrors('vacante_id');
