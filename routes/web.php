@@ -408,6 +408,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/proveedores/duplicado', 'proveedores')->name('proveedores.duplicado');
         Route::get('/vehiculos/duplicado', 'vehiculos')->name('vehiculos.duplicado');
         Route::get('/colaboradores/duplicado', 'colaboradores')->name('colaboradores.duplicado');
+        Route::get('/candidatos/duplicado', 'candidatos')->name('candidatos.duplicado'); // Candidatos fase 1: una ficha por persona
         Route::get('/gafetes/duplicado', 'gafetes')->name('gafetes.duplicado');
         Route::get('/equipos/duplicado', 'equipos')->name('equipos.duplicado');
         Route::get('/equipos-pc/duplicado', 'equiposPc')->name('equipos_pc.duplicado');

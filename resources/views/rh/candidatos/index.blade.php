@@ -163,7 +163,7 @@
                                 @endforeach
                             </select>
                         @endif
-                        @include('rh.candidatos._cv', ['c' => null, 'id' => 'nuevo_cv', 'kiosco' => false, 'conOld' => $reabrir, 'pidePrivacidad' => true, 'pideFirma' => true])
+                        @include('rh.candidatos._cv', ['c' => null, 'id' => 'nuevo_cv', 'kiosco' => false, 'conOld' => $reabrir, 'pidePrivacidad' => true, 'pideFirma' => true, 'duplicado' => route('candidatos.duplicado')])
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                             <button type="submit" class="btn-verde">Guardar candidato</button>

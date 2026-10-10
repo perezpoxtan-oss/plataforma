@@ -7215,6 +7215,13 @@ document.addEventListener('click', function (e) {
                 b.addEventListener('click', function () { b.disabled = true; reactivar(campo, c.reactivar); });
                 item.appendChild(b);
             }
+            // Candidatos (fase 1): «Abrir su ficha» en lugar de capturarla otra vez
+            if (c.abrir && /^https?:\/\//.test(c.abrir)) {
+                var abrir = nodo('a', 'btn-reactivar-duplicado', 'Abrir su ficha');
+                abrir.href = c.abrir;
+                abrir.setAttribute('aria-label', 'Abrir la ficha de ' + c.titulo);
+                item.appendChild(abrir);
+            }
             caja.appendChild(item);
         });
         caja.hidden = false;

@@ -12,6 +12,7 @@ use App\Models\Vacante;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\DocumentosCandidato;
+use App\Services\Candidatos\Postulaciones;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Recepcion\Destinatarios;
@@ -157,28 +158,51 @@ class BolsaTrabajo
             throw ValidationException::withMessages($errorSede);
         }
 
-        $candidato = DB::transaction(function () use ($vacante, $d, $sedeId, $ip, $entrada, $cv) {
+        // Una ficha por persona: mismo teléfono o CURP = su ficha de siempre (se actualiza con lo que acaba de firmar)
+        $existente = $this->candidatos->buscarFicha(null, $d['telefono'] ?? null, $d['curp'] ?? null);
+        $postulaciones = app(Postulaciones::class);
+        $siguioAbierta = false;
+
+        $candidato = DB::transaction(function () use ($vacante, $d, $sedeId, $ip, $entrada, $cv, $existente, $postulaciones, &$siguioAbierta) {
             $datos = $this->candidatos->soloCv($d);
-            $candidato = new Candidato(array_merge($datos, [
-                'sede_id' => $sedeId, 'departamento_id' => $vacante->departamento_id, 'puesto_id' => $vacante->puesto_id, 'vacante' => mb_substr($vacante->titulo, 0, 150),
-                'origen' => 'web', 'llegada_en' => now(),
-            ]));
-            $candidato->forceFill(['vacante_id' => $vacante->id, 'autocaptura_pendiente' => true, 'autocaptura_en' => now()]);
+            unset($datos['departamento_id'], $datos['puesto_id'], $datos['vacante']);
+            $candidato = $existente ?? new Candidato(['sede_id' => $sedeId, 'origen' => 'web', 'llegada_en' => now()]);
+            // A una ficha que ya existía solo se le actualiza lo que escribió ahora (lo que dejó vacío no borra lo anterior)
+            $candidato->fill($existente === null ? $datos : array_filter($datos, fn ($v) => $v !== null && $v !== []));
+            $candidato->forceFill(['autocaptura_pendiente' => true, 'autocaptura_en' => now(), 'llegada_en' => now()]);
             $this->candidatos->aceptarPrivacidad($candidato, $ip, 'web');
             $this->candidatos->firmar($candidato, is_string($entrada['firma'] ?? null) ? $entrada['firma'] : null, 'web', null, true);
             $candidato->save();
+
+            $aVacante = ['sede_id' => $sedeId, 'vacante_id' => $vacante->id, 'departamento_id' => $vacante->departamento_id, 'puesto_id' => $vacante->puesto_id,
+                'vacante' => mb_substr($vacante->titulo, 0, 150)];
+            $abierta = $existente === null ? null : $postulaciones->abierta($candidato);
+            if ($abierta === null) {
+                $postulaciones->crear($candidato, $aVacante, 'web', null);
+            } else {
+                $siguioAbierta = true;
+                if ($abierta->vacante_id === null) {
+                    // Estaba en proceso «a lo que haya»: ahora dice a qué vacante
+                    $abierta->forceFill(array_diff_key($aVacante, ['sede_id' => true]))->save();
+                    $postulaciones->reflejar($abierta);
+                }
+            }
             if ($cv !== null) {
                 app(DocumentosCandidato::class)->subir($candidato, $cv, 'cv', 'web', 'cv');
             }
 
-            return $candidato;
+            return $candidato->refresh();
         });
 
-        $this->candidatos->evento($candidato, 'postulacion', null, 'registrado', 'Se postuló por internet a «'.$vacante->titulo.'».', null);
+        $this->candidatos->evento($candidato, 'postulacion', null, $siguioAbierta ? null : 'registrado', match (true) {
+            $existente === null => 'Se postuló por internet a «'.$vacante->titulo.'».',
+            $siguioAbierta => 'Se volvió a postular por internet a «'.$vacante->titulo.'» (ya tenía un proceso abierto: sigue en el mismo).',
+            default => 'Se volvió a postular por internet a «'.$vacante->titulo.'»: nueva postulación en su misma ficha.',
+        }, null);
         Auditoria::create([
             'empresa_id' => $empresa->id, 'user_id' => null, 'evento' => 'candidatos.postulacion',
             'auditable_type' => Candidato::class, 'auditable_id' => $candidato->id, 'antes' => null,
-            'despues' => ['origen' => 'web', 'vacante_id' => $vacante->id, 'sede_id' => $sedeId], 'ip' => mb_substr($ip, 0, 45),
+            'despues' => ['origen' => 'web', 'vacante_id' => $vacante->id, 'sede_id' => $sedeId, 'ficha_existente' => $existente !== null], 'ip' => mb_substr($ip, 0, 45),
         ]);
         $this->avisarRh($candidato, $vacante);
 

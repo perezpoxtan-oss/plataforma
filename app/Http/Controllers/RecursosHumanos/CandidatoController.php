@@ -93,9 +93,12 @@ class CandidatoController extends Controller
     {
         Gate::authorize('candidatos.crear');
         $empresaId = $this->empresaDeTrabajo($request);
-        $candidato = $this->tenant->conEmpresa($empresaId, fn () => $this->candidatos->crear($request->user(), $request->except(['_token', '_dialogo']), (string) $request->ip()));
+        [$candidato, $yaExistia] = $this->tenant->conEmpresa($empresaId, fn () => $this->candidatos->crearOLigar($request->user(), $request->except(['_token', '_dialogo']), (string) $request->ip()));
 
-        return redirect()->route('candidatos.show', $candidato->id)->with('ok', "Ficha de {$candidato->nombre_completo} creada. Completa su CV y sus documentos.");
+        // Una ficha por persona: si ya tenía, se abre la suya (no se crea otra)
+        return redirect()->route('candidatos.show', $candidato->id)->with('ok', $yaExistia
+            ? "{$candidato->nombre_completo} ya tenía ficha: no se creó otra. Revisa su solicitud y su postulación actual."
+            : "Ficha de {$candidato->nombre_completo} creada. Completa su CV y sus documentos.");
     }
 
     public function show(Request $request, int $candidato): View

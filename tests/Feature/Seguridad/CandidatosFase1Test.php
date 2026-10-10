@@ -11,6 +11,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\Vacante;
 use App\Services\Vacantes\AdministradorVacantes;
+use App\Services\Vacantes\BolsaTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -99,6 +100,45 @@ class CandidatosFase1Test extends TestCase
         imagejpeg($img, null, 70);
 
         return 'data:image/jpeg;base64,'.base64_encode((string) ob_get_clean());
+    }
+
+    // ------------------------------------------------------------------ Una ficha por persona
+
+    public function test_internet_y_rh_son_la_misma_ficha_y_rh_ve_el_aviso_de_duplicado(): void
+    {
+        $this->rhAutorizaPaso(false);
+        $vacante = $this->vacante();
+        $this->enEmpresa(fn () => app(BolsaTrabajo::class)->postular($this->empresa->refresh(), $vacante->fresh('sedes'), [
+            'nombre' => 'Karla', 'apellido_paterno' => 'Pérez', 'apellido_materno' => 'Uc', 'telefono' => '998 123 4567', 'sede_id' => $this->centro->id,
+            'referencias' => [['nombre' => 'Martha Chablé', 'telefono' => '9981112233'], ['nombre' => 'Rosa Uc', 'telefono' => '9984445566']],
+            'acepta_privacidad' => '1', 'declaracion' => '1', 'firma' => $this->firmaImagen(), 'curp' => 'PEUK970815MQRRCR09',
+        ], null, '187.190.10.20'));
+        $c = $this->enEmpresa(fn () => Candidato::sole());
+        $this->assertSame('web', $c->origen);
+
+        // Se vuelve a postular por internet (mismo teléfono): misma ficha y misma postulación abierta
+        $this->enEmpresa(fn () => app(BolsaTrabajo::class)->postular($this->empresa->refresh(), $vacante->fresh('sedes'), [
+            'nombre' => 'Karla', 'apellido_paterno' => 'Pérez', 'apellido_materno' => 'Uc', 'telefono' => '9981234567', 'sede_id' => $this->centro->id,
+            'referencias' => [['nombre' => 'Martha Chablé', 'telefono' => '9981112233'], ['nombre' => 'Rosa Uc', 'telefono' => '9984445566']],
+            'acepta_privacidad' => '1', 'declaracion' => '1', 'firma' => $this->firmaImagen(),
+        ], null, '187.190.10.20'));
+        $this->assertSame(1, $this->enEmpresa(fn () => Candidato::count()));
+        $this->assertSame(1, $this->enEmpresa(fn () => Postulacion::count()));
+        $this->assertTrue($this->enEmpresa(fn () => $c->eventos()->where('comentario', 'like', 'Se volvió a postular por internet%')->exists()));
+
+        // «Nuevo candidato» de RR. HH.: aviso en vivo con «Abrir su ficha»
+        $this->actingAs($this->rh)->getJson('/candidatos/duplicado?campo=telefono&valor=998-123-4567')->assertOk()
+            ->assertJsonPath('estado', 'parecido')->assertJsonPath('coincidencias.0.titulo', 'Karla Pérez Uc')
+            ->assertJsonPath('coincidencias.0.abrir', route('candidatos.show', $c->id));
+        $this->actingAs($this->rh)->getJson('/candidatos/duplicado?campo=curp&valor=PEUK970815MQRRCR09')->assertJsonPath('estado', 'parecido');
+        $this->actingAs($this->rh)->getJson('/candidatos/duplicado?campo=telefono&valor=9990000000')->assertJsonPath('estado', 'nada');
+        $this->actingAs($this->agente)->getJson('/candidatos/duplicado?campo=telefono&valor=9981234567')->assertForbidden();
+        $this->actingAs($this->rh)->get('/candidatos')->assertSee('data-duplicado="'.route('candidatos.duplicado').'"', false);
+
+        // Y si guarda de todos modos: no se crea otra ficha
+        $this->actingAs($this->rh)->post('/candidatos', ['sede_id' => $this->centro->id, 'nombre_completo' => 'Karla Pérez Uc', 'telefono' => '9981234567',
+            'acepta_privacidad' => '1'])->assertRedirect("/candidatos/{$c->id}")->assertSessionHas('ok', fn ($m) => str_contains($m, 'ya tenía ficha'));
+        $this->assertSame(1, $this->enEmpresa(fn () => Candidato::count()));
     }
 
     // ------------------------------------------------------------------ Migración, auditoría y demo
