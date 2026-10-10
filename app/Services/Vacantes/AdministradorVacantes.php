@@ -246,6 +246,7 @@ class AdministradorVacantes
             'sueldo_max' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
             'sueldo_periodo' => ['nullable', Rule::in(array_keys(Vacante::PERIODOS))],
             'sueldo_a_tratar' => ['nullable', 'boolean'],
+            'jefe_ve_cv' => ['nullable', 'boolean'],
             'descripcion' => ['nullable', 'string', 'max:3000'],
             'requisitos' => ['array', 'max:'.self::MAX_RENGLONES],
             'requisitos.*' => ['string', 'max:200'],
@@ -320,6 +321,7 @@ class AdministradorVacantes
             'tipo_contrato' => $d['tipo_contrato'] ?? null, 'jornada' => $d['jornada'] ?? null, 'turno_id' => $d['turno_id'] ?? null, 'horario' => $d['horario'] ?? null,
             'sueldo_min' => $d['sueldo_min'] ?? null, 'sueldo_max' => $d['sueldo_max'] ?? null, 'sueldo_periodo' => $d['sueldo_periodo'] ?? 'mensual',
             'sueldo_a_tratar' => filter_var($d['sueldo_a_tratar'] ?? false, FILTER_VALIDATE_BOOL),
+            'jefe_ve_cv' => filter_var($d['jefe_ve_cv'] ?? false, FILTER_VALIDATE_BOOL),
             'descripcion' => isset($d['descripcion']) ? trim(str_replace("\r\n", "\n", $d['descripcion'])) : null,
             'requisitos' => $d['requisitos'] ?: null, 'prestaciones' => $d['prestaciones'] ?: null,
             'escolaridad_minima' => $d['escolaridad_minima'] ?? null, 'experiencia' => $d['experiencia'] ?? null,
@@ -375,7 +377,7 @@ class AdministradorVacantes
     /** @return array<string, mixed> */
     public function foto(Vacante $v): array
     {
-        return $v->only(['titulo', 'puesto_id', 'departamento_id', 'plazas', 'todas_las_sedes', 'estado', 'cierre_motivo', 'fecha_publicacion', 'fecha_cierre'])
+        return $v->only(['titulo', 'puesto_id', 'departamento_id', 'plazas', 'jefe_ve_cv', 'todas_las_sedes', 'estado', 'cierre_motivo', 'fecha_publicacion', 'fecha_cierre'])
             + ['sedes' => $v->sedes()->orderBy('sedes.id')->pluck('sedes.id')->all()];
     }
 }

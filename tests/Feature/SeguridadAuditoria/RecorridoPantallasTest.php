@@ -354,6 +354,10 @@ class RecorridoPantallasTest extends TestCase
                 ->map(fn ($c) => ['empresa' => DB::table('empresas')->where('id', $e)->value('bolsa_slug') ?? 'sin-bolsa-abc123', 'vacante' => $c])->all()
                 ?: [['empresa' => 'sin-bolsa-abc123', 'vacante' => 'abcdefghij']],
             // Fin Solicitud de empleo y Vacantes
+            // Candidatos, fase 2: candidatos de cada vacante y la pantalla Entrevistar (canalizada, evaluada y en revisión)
+            'vacantes.candidatos' => DB::table('vacantes')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['vacante' => $id])->all(),
+            'entrevistas.show', 'entrevistas.cv', 'entrevistas.correo' => DB::table('postulaciones')->where('empresa_id', $e)
+                ->whereIn('etapa', ['canalizado', 'evaluado', 'elegido', 'revision'])->orderBy('id')->pluck('id')->map(fn ($id) => ['postulacion' => $id])->all(),
             // Manual (lección 37): páginas generales y de módulo, una imagen real y rutas que intentan salir de docs/usuario/img
             'manual.ver' => [['pagina' => 'primeros-pasos'], ['pagina' => 'accesos'], ['pagina' => 'usuarios'], ['pagina' => 'guia'], ['pagina' => 'no-existe']],
             'manual.imagen' => [['carpeta' => 'primeros-pasos', 'archivo' => 'acceso.png'], ['carpeta' => 'primeros-pasos', 'archivo' => '..env'],
@@ -387,7 +391,8 @@ class RecorridoPantallasTest extends TestCase
             'novedades.index' => [[['categoria' => 'accidente_huesped'], false], [['pestana' => 'resueltas', 'q' => 'a'], false], [['sede' => $sede], false]],
             'novedades.exportar' => [[['pestana' => 'resueltas'], false]],
             'accesos.index' => [[['pestana' => 'historial', 'sede' => $sede], false], [['pestana' => 'pendientes'], false], [['desde' => $hoy, 'hasta' => $hoy], false]],
-            'candidatos.index', 'candidatos.exportar' => [[['etapa' => 'en_proceso'], false], [['q' => 'a', 'sede' => $sede], false], [['etapa' => 'descartado'], false]],
+            'candidatos.index', 'candidatos.exportar' => [[['etapa' => 'en_proceso'], false], [['q' => 'a', 'sede' => $sede], false], [['etapa' => 'rechazado'], false],
+                [['etapa' => 'por_entrevistar'], false], [['etapa' => 'canalizado'], false]],
             'recepcion.metricas' => [[['desde' => now()->subMonth()->toDateString(), 'hasta' => $hoy, 'sede' => $sede], false], [['desde' => 'x', 'hasta' => '2026-99-99'], false]],
             'recepcion.datos', 'notificaciones.resumen' => [[[], true]],
             'recepcion.kiosco' => [[['candidato' => (int) DB::table('candidatos')->where('empresa_id', $this->empresa->id)->value('id')], false]],
