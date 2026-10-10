@@ -39,9 +39,9 @@
     @else
         <div class="contadores-recepcion" data-recepcion-contadores>
             <div class="contador-rh esperando"><strong data-contador="esperando">{{ $contadores['esperando'] }}</strong><span>Esperando</span></div>
-            <div class="contador-rh"><strong data-contador="revision">{{ $contadores['revision'] }}</strong><span>En revisión</span></div>
-            <div class="contador-rh"><strong data-contador="departamento">{{ $contadores['departamento'] }}</strong><span>Con el departamento</span></div>
-            <div class="contador-rh"><strong data-contador="entrevista">{{ $contadores['entrevista'] }}</strong><span>En entrevista</span></div>
+            <div class="contador-rh"><strong data-contador="revision">{{ $contadores['revision'] }}</strong><span>Con RR. HH. (revisión o entrevista)</span></div>
+            <div class="contador-rh"><strong data-contador="departamento">{{ $contadores['departamento'] }}</strong><span>Entrevista con el departamento</span></div>
+            <div class="contador-rh"><strong data-contador="evaluado">{{ $contadores['evaluado'] }}</strong><span>Evaluados por el departamento</span></div>
         </div>
 
         <div class="panel-recepcion" data-recepcion data-url="{{ route('recepcion.datos') }}">

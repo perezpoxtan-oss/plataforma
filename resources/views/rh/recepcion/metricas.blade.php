@@ -37,7 +37,7 @@
         <div class="contadores-recepcion">
             <div class="contador-rh"><strong>{{ $min($m['candidatos']['llegada_a_aviso']) }}</strong><span>De la caseta al aviso a RR. HH.</span></div>
             <div class="contador-rh"><strong>{{ $min($m['candidatos']['llegada_a_atencion']) }}</strong><span>De la caseta a que RR. HH. lo atiende</span></div>
-            <div class="contador-rh"><strong>{{ $min($m['candidatos']['aprobado_a_respuesta']) }}</strong><span>Respuesta del departamento (candidatos)</span></div>
+            <div class="contador-rh"><strong>{{ $min($m['candidatos']['canalizado_a_evaluacion']) }}</strong><span>Del aviso al departamento a su evaluación</span></div>
             <div class="contador-rh"><strong>{{ $min($m['visitas']['promedio']) }}</strong><span>Respuesta a visitas ({{ $m['visitas']['total'] }})</span></div>
         </div>
 
@@ -82,7 +82,7 @@
                 @foreach ($m['candidatos']['por_etapa'] as $e)
                     <div class="renglon-metrica"><span>{{ $e['etapa'] }}</span><strong>{{ $e['total'] }}</strong></div>
                 @endforeach
-                <p class="texto-traza mt-2 mb-0">De la caseta a la entrevista: {{ $min($m['candidatos']['llegada_a_entrevista']) }} en promedio.</p>
+                <p class="texto-traza mt-2 mb-0">De la caseta a la entrevista de RR. HH.: {{ $min($m['candidatos']['llegada_a_entrevista']) }} en promedio.</p>
             </section>
         </div>
     @endif
