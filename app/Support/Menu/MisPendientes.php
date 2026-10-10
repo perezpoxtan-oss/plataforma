@@ -3,9 +3,12 @@
 namespace App\Support\Menu;
 
 use App\Models\Candidato;
+use App\Models\DepartamentoResponsable;
+use App\Models\Postulacion;
 use App\Models\User;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
+use App\Services\Candidatos\Entrevistas;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Procedimientos\AdministradorProcedimientos;
@@ -20,8 +23,10 @@ use Illuminate\Support\Facades\Cache;
  * puede resolver él mismo, con su número y su enlace. Usa los mismos
  * contadores que los avisos de Inicio (PanelController); solo aparecen los
  * renglones que le aplican (por permiso y por su papel: responsable,
- * aprobador, colaborador con procedimientos, verificador de padrones y
- * Recursos Humanos: «Esperando en Recepción» y «Solicitudes por revisar»).
+ * aprobador, colaborador con procedimientos, verificador de padrones,
+ * Recursos Humanos: «Esperando en Recepción», «Solicitudes por revisar»,
+ * «Por entrevistar (RR. HH.)», «Evaluaciones del departamento» y «Elegidos
+ * por contratar»; y quien entrevista: «Entrevistas por evaluar» con su cita).
  *
  * La pantalla lo calcula fresco al pintarse; la consulta periódica de la
  * campana (cada 30 s) reutiliza el resultado durante unos segundos.
@@ -101,13 +106,33 @@ class MisPendientes
                 count($grupos) === 1 ? $grupos[0]['ruta'] : route('panel'));
         }
 
-        // Recursos Humanos (candidatos, fase 1): solo quien puede editar candidatos, en sus sedes
+        // Recursos Humanos (candidatos, fases 1 y 2): solo quien puede editar candidatos, en sus sedes
         if ($actor->can('candidatos.editar')) {
+            $suyos = fn () => app(AdministradorCandidatos::class)->limitar(Candidato::query(), $actor, 'candidatos.editar');
             $items[] = $this->item('recepcion', 'Esperando en Recepción', 'bi-person-check',
                 app(PanelRecepcion::class)->porAtender($actor), $actor->can('recepcion_rh.ver') ? route('recepcion.index') : route('candidatos.index'));
             $items[] = $this->item('solicitudes', 'Solicitudes por revisar', 'bi-phone',
-                app(AdministradorCandidatos::class)->limitar(Candidato::query(), $actor, 'candidatos.editar')->where('autocaptura_pendiente', true)->count(),
-                route('candidatos.index', ['revisar' => 1]));
+                $suyos()->where('autocaptura_pendiente', true)->count(), route('candidatos.index', ['revisar' => 1]));
+            $items[] = $this->item('por_entrevistar', 'Por entrevistar (RR. HH.)', 'bi-chat-square-text',
+                $suyos()->whereIn('etapa', Candidato::POR_ENTREVISTAR)->count(), route('candidatos.index', ['etapa' => 'por_entrevistar']));
+            $items[] = $this->item('evaluaciones_departamento', 'Evaluaciones del departamento', 'bi-clipboard-check',
+                $suyos()->where('etapa', 'evaluado')->count(), route('candidatos.index', ['etapa' => 'evaluado']));
+            $items[] = $this->item('elegidos', 'Elegidos por contratar', 'bi-person-check-fill',
+                $suyos()->where('etapa', 'elegido')->count(), route('candidatos.index', ['etapa' => 'elegido']));
+        }
+
+        // Quien entrevista (candidatos, fase 2): lo que Recursos Humanos le canalizó, con la cita más próxima
+        if ($actor->can('candidatos.evaluar')) {
+            $entrevistas = app(Entrevistas::class);
+            $pendientes = $entrevistas->pendientes($actor)->get(['postulaciones.id', 'postulaciones.cita_en', 'postulaciones.cita_ahora']);
+            $entrevista = $pendientes->isNotEmpty()
+                || Postulacion::where('entrevistador_id', $actor->id)->exists()
+                || DepartamentoResponsable::where('user_id', $actor->id)->exists();
+            if ($entrevista) {
+                $proxima = $pendientes->first();
+                $items[] = $this->item('entrevistas', 'Entrevistas por evaluar'.($proxima ? ' · próxima: '.$entrevistas->textoCita($proxima) : ''), 'bi-calendar-event',
+                    $pendientes->count(), route('entrevistas.index'));
+            }
         }
 
         return ['total' => array_sum(array_column($items, 'total')), 'items' => $items];

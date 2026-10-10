@@ -21,6 +21,7 @@ use App\Services\Permisos\Autorizador;
 use App\Support\CorreoPlataforma;
 use App\Support\HoraLocal;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Mail\Mailable;
 
 use function Illuminate\Support\defer;
 
@@ -285,6 +286,22 @@ class AvisosCorreo
         }
 
         defer(fn () => $this->correo->enviar($destinatarios, $mensaje));
+
+        return true;
+    }
+
+    /**
+     * Candidatos, fase 2: correo al propio candidato (su cita de entrevista).
+     * Lo pide Recursos Humanos con la casilla «Avisar al candidato por
+     * correo»; solo hace falta que la plataforma tenga correo configurado.
+     */
+    public function alCandidato(string $correo, Mailable $mensaje): bool
+    {
+        if (! $this->correo->configurado() || filter_var($correo, FILTER_VALIDATE_EMAIL) === false) {
+            return false;
+        }
+
+        defer(fn () => $this->correo->enviar([$correo], $mensaje));
 
         return true;
     }

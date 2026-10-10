@@ -14,11 +14,14 @@
             <div class="icono"><i class="bi bi-patch-check-fill text-warning" aria-hidden="true"></i></div>
             <div>
                 <h1>Autorizaciones</h1>
-                <p>Visitas y candidatos que esperan la respuesta de su departamento.</p>
+                <p>Visitas que esperan la respuesta de su departamento.</p>
             </div>
         </div>
         @unless ($sinEmpresa)
             <div class="d-flex flex-wrap gap-2">
+                @if ($entrevistas !== null)
+                    <a href="{{ route('entrevistas.index') }}" class="btn-secundario-rh"><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>Entrevistas ({{ $entrevistas }})</a>
+                @endif
                 @if ($puede['responder'])
                     <button type="button" class="btn-secundario-rh" data-abrir-dialogo="dialogoDelegar"><i class="bi bi-moon-stars me-1" aria-hidden="true"></i>No molestar / delegar</button>
                 @endif
