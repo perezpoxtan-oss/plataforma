@@ -6,17 +6,24 @@ Módulo nuevo (no existía en SEGCAT). Decisión: [ADR-0007](../decisiones/ADR-0
 
 | Pieza | Archivo |
 |---|---|
-| Migración | `database/migrations/2026_10_14_000200_crear_candidatos_y_autorizaciones.php` |
-| Modelos | `Candidato`, `CandidatoDocumento`, `CandidatoEvento`, `EnlaceKiosco` |
-| Reglas | `app/Services/Candidatos/AdministradorCandidatos.php` (alta, CV, etapas, contratar, eliminar), `DocumentosCandidato.php` (archivos privados), `Kiosco.php`, `CambioNoPermitido.php` |
+| Migración | `database/migrations/2026_10_14_000200_crear_candidatos_y_autorizaciones.php`, `2026_10_19_000100_crear_postulaciones.php` (fase 1) |
+| Modelos | `Candidato` (ficha), `Postulacion`, `CandidatoDocumento`, `CandidatoEvento`, `EnlaceKiosco` |
+| Reglas | `app/Services/Candidatos/AdministradorCandidatos.php` (alta, ficha única, CV, etapas, contratar, eliminar), `Postulaciones.php` (postulación activa y espejo), `DocumentosCandidato.php` (archivos privados), `Kiosco.php`, `CambioNoPermitido.php` |
 | Controladores | `app/Http/Controllers/RecursosHumanos/CandidatoController.php`, `KioscoController.php` (público) |
 | Vistas | `resources/views/rh/candidatos/` (`index`, `show`, `_cv`, `_fila-*`), `resources/views/kiosco/` |
-| Pruebas | `tests/Feature/Seguridad/CandidatosYAutorizacionesTest.php` |
+| Pruebas | `tests/Feature/Seguridad/CandidatosYAutorizacionesTest.php`, `CandidatosFase1Test.php` |
 
 ## Tablas
 
 ### `candidatos`
 `empresa_id`, `sede_id`, `persona_id` (Padrón de personas), `acceso_id` (registro en caseta), `departamento_id`, `puesto_id`, `vacante` (texto si no está en el catálogo), contacto (`nombre_completo`, `telefono`, `correo`, `fecha_nacimiento`, `ciudad`), CV (`escolaridad`, `experiencia`, `referencias` en JSON —máximo 6 renglones—, `habilidades`, `idiomas`, `disponibilidad`, `disponibilidad_notas`, `pretension`), `notas_rh`, `etapa`, `motivo_descarte`, `origen` (caseta | rh | kiosco), `autocaptura_pendiente`/`autocaptura_en`, privacidad (`privacidad_aceptada_en`, `privacidad_ip`, `privacidad_version` = SHA-256 del texto, `privacidad_medio`), tiempos (`llegada_en`, `avisado_rh_en`, `revision_en`, `aprobado_rh_en`, `enviado_departamento_en`, `respuesta_departamento_en`, `entrevista_en`, `decision_en`/`decision_por`, `contratado_en`), `colaborador_id`, auditoría.
+
+### `postulaciones` (fase 1)
+Cada vez que la persona aplica: `empresa_id`, `sede_id`, `candidato_id`, `vacante_id`, `departamento_id`, `puesto_id`, `vacante` (texto), `etapa`, `origen` (caseta | rh | kiosco | web), `motivo_descarte`, fechas por etapa (`revision_en`, `aprobado_rh_en`, `entrevista_en`, `decision_en`/`decision_por`, `enviado_departamento_en`, `respuesta_departamento_en`, `contratado_en`), `colaborador_id`, auditoría. Una vacante tiene muchas postulaciones; una ficha, varias en el tiempo.
+
+**Qué columna manda.** La postulación. `candidatos.etapa`, `sede_id`, `vacante_id`, `departamento_id`, `puesto_id`, `vacante`, `motivo_descarte`, las fechas de etapa y `colaborador_id` son un **espejo de la postulación activa** (la de mayor `id` de la ficha) para que listas, filtros, contadores, el panel de Recepción, las métricas y la exportación sigan igual. Todo cambio de etapa o de fechas se escribe primero en la postulación (`Postulaciones::cambiar()`, condicionado a la etapa esperada) y se refleja en la ficha (`reflejar()`, solo si es la activa). La única escritura en sentido contrario es cuando RR. HH. edita en la ficha a qué aplica (`desdeFicha()`: departamento, puesto, vacante). Fichas sin postulación (anteriores a la migración y no alcanzadas por ella) reciben una al primer cambio (`asegurar()`). La fase 2 quitará el espejo.
+
+**Una ficha por persona.** `AdministradorCandidatos::buscarFicha(persona_id, teléfono normalizado, CURP)` dentro de la empresa activa. Caseta: persona del padrón y el teléfono que tenga en el padrón; si viene a una cita (entrevista, documentos, firma), también nombre exacto (`fichaDeLaVisita()`). RR. HH. («Nuevo candidato», `crearOLigar()`): teléfono o CURP; si existe, no crea otra (solo completa campos vacíos) y abre una postulación si no tiene una en proceso; si la abierta es de una sede fuera de su alcance, error. Internet (`BolsaTrabajo::postular()`): teléfono o CURP; actualiza la ficha con lo que el candidato acaba de escribir y firmar (lo vacío no borra). En todos los casos: con postulación abierta se usa esa; sin ella se crea otra. Eventos del historial: «Volvió a la caseta: …», «Se volvió a postular por internet …».
 
 ### `candidato_documentos`
 `tipo` (cv, ine, comprobante, otro), `nombre_original`, `ruta` (disco privado `candidatos/<empresa>/<candidato>/<uuid>.<ext>`), `mime`, `bytes`, `origen` (rh | kiosco).
@@ -30,7 +37,7 @@ Historial: `evento`, `etapa_anterior`, `etapa_nueva`, `comentario`, `user_id` (n
 ## Etapas
 
 ```
-Registrado ─▶ En revisión RR. HH. ─▶ Aprobado por RR. HH. ─▶ Entrevista ─▶ Seleccionado ─▶ Contratado
+Registrado ─(Atender)▶ En revisión RR. HH. ─▶ Aprobado por RR. HH. ─▶ Entrevista ─▶ Seleccionado ─▶ Contratado
                      │                      │ (responde el departamento)       │
                      └──── Entrevista ◀─────┘  Bajar a entrevistar → Entrevista; Rechazar → En cartera
 Cualquiera antes de contratar ─▶ En cartera | Descartado (motivo obligatorio)
@@ -38,7 +45,7 @@ En cartera ─▶ En revisión | Descartado      Descartado ─▶ En revisión 
 Aprobado por RR. HH. ─▶ En revisión (RR. HH. lo regresa; la solicitud al departamento se cancela)
 ```
 
-`Candidato::TRANSICIONES` es la fuente. Prohibidas (aviso en rojo, sin tocar nada): saltar etapas (Registrado → Seleccionado…), pasar a «Contratado» sin el botón **Contratar**, volver a «Registrado», cualquier cambio de un **Contratado**, «Aprobar» sin departamento (error de validación), «Descartar» sin motivo. Cada cambio es un `UPDATE … WHERE etapa = <la esperada>` (doble clic o dos personas: el segundo recibe «Otra persona acaba de cambiar…»).
+`Candidato::TRANSICIONES` es la fuente (se evalúa sobre la postulación activa; mismas etapas en la fase 1). El botón a «En revisión» se llama **Atender** en la ficha y en Recepción (`BOTONES_ETAPA`). Prohibidas (aviso en rojo, sin tocar nada): saltar etapas (Registrado → Seleccionado…), pasar a «Contratado» sin el botón **Contratar**, volver a «Registrado», cualquier cambio de un **Contratado**, «Aprobar» sin departamento (error de validación), «Descartar» sin motivo. Cada cambio es un `UPDATE … WHERE etapa = <la esperada>` (doble clic o dos personas: el segundo recibe «Otra persona acaba de cambiar…»).
 
 **Contratar** (solo «Seleccionado», permisos `candidatos.contratar` y `colaboradores.crear`): pide número de empleado y confirma nombre/apellidos (se sugieren partiendo el nombre), sede, departamento y puesto; llama a `AdministradorColaboradores::crear()` (mismas validaciones: número único, sede en el alcance…) y deja el candidato «Contratado» con `colaborador_id`. Todo en una transacción.
 
@@ -48,7 +55,7 @@ Obligatorio (`acepta_privacidad`) para guardar el CV desde el kiosco y para la c
 
 ## Kiosco
 
-- Lo genera quien tiene `candidatos.editar` (sus sedes) o la caseta con `accesos.crear` (solo candidatos registrados en caseta de sus sedes, sin ver su CV): `POST /rh/recepcion/kiosco/{candidato}`. Generar otro anula el anterior. RR. HH. lo puede anular desde la ficha.
+- Lo genera quien tiene `candidatos.editar` (sus sedes) o la caseta con `accesos.crear` (solo candidatos registrados en caseta de sus sedes, sin ver su CV): `POST /rh/recepcion/kiosco/{candidato}`. Generar otro anula el anterior. En la ficha hay un solo botón, **QR para que llene su solicitud**, que manda `reusar=1`: si ya hay uno vigente lo muestra en lugar de crear otro. «Anular enlace» queda como acción discreta si hay uno vigente. El panel de Recepción ya no tiene botón QR.
 - La tableta («Modo kiosco») muestra el QR con `/k?codigo=XXXXXX`. El candidato confirma el código (`POST /k`), recibe un token nuevo para ese enlace y llega a `/k/{token}`.
 - Lo que envía: datos del CV (no el departamento ni el puesto del catálogo), aviso de privacidad, hasta 3 documentos. Cada envío cuenta un uso (actualización condicionada: no se pasa del máximo aunque lleguen dos a la vez). La ficha queda **«Por revisar»** y RR. HH. recibe aviso (campana y correo).
 - Vencido, usado, anulado o inventado → página «Este enlace ya venció / ya se usó / no existe» con estado 404.
@@ -57,8 +64,9 @@ Obligatorio (`acepta_privacidad`) para guardar el CV desde el kiosco y para la c
 
 | Método y ruta | Permiso | Qué hace |
 |---|---|---|
-| `GET /candidatos?q=&etapa=&sede=&departamento=` | `candidatos.ver` | Lista con conteo por etapa |
-| `POST /candidatos` | `candidatos.crear` | Captura de RR. HH. (pide aviso de privacidad) |
+| `GET /candidatos?q=&etapa=&sede=&departamento=&vacante=&revisar=1` | `candidatos.ver` | Lista (una tarjeta por ficha) con conteo por etapa; `vacante` busca en todas sus postulaciones; `revisar=1` = «Solicitudes por revisar» (`autocaptura_pendiente`) |
+| `GET /candidatos/duplicado?campo=telefono\|curp&valor=` | `candidatos.crear` | Aviso de duplicado en vivo (`parecido` + `abrir` = su ficha si está en sus sedes) |
+| `POST /candidatos` | `candidatos.crear` | Captura de RR. HH. (pide aviso de privacidad; si la persona ya tiene ficha, usa la suya) |
 | `GET /candidatos/exportar` | `candidatos.exportar` | CSV (`App\Support\Csv`, sin contacto) |
 | `GET /candidatos/{c}` | `candidatos.ver` | Ficha |
 | `PUT /candidatos/{c}` | `candidatos.editar` | Editar CV y notas |
@@ -74,7 +82,7 @@ Otra empresa u otra sede fuera del alcance → **404**.
 
 ## Auditoría
 
-`candidatos.creado`, `candidatos.actualizado`, `candidatos.etapa`, `candidatos.contratado`, `candidatos.eliminado`, `candidatos.documento_agregado`/`_eliminado`, `candidatos.enlace_kiosco`, `candidatos.enlace_revocado`, `candidatos.autocaptura` (sin usuario, con IP), `candidatos.configurado`, y `visitantes.creado` cuando RR. HH. da de alta a la persona en el padrón. **La foto de auditoría no guarda el CV ni el contacto.**
+`candidatos.creado`, `candidatos.actualizado`, `candidatos.etapa`, `candidatos.postulacion_creada` (registro `Postulacion`), `candidatos.visita_ligada` (la caseta ligó otra visita a su ficha), `candidatos.contratado`, `candidatos.eliminado`, `candidatos.documento_agregado`/`_eliminado`, `candidatos.enlace_kiosco`, `candidatos.enlace_revocado`, `candidatos.autocaptura` (sin usuario, con IP), `candidatos.configurado`, y `visitantes.creado` cuando RR. HH. da de alta a la persona en el padrón. **La foto de auditoría no guarda el CV ni el contacto.**
 
 ## Referencias registradas
 

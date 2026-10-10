@@ -23,7 +23,7 @@ Usa el demo (`plataforma:demo`), contraseña `Demo1234!`. Usuarios: **admin.demo
 
 ## Práctica 2 · El candidato llena su solicitud (celular)
 
-1. En la ficha de **Karla Pérez Uc** toca **Generar QR del kiosco** y escanéalo con tu celular.
+1. En la ficha de **Karla Pérez Uc** toca **QR para que llene su solicitud** y escanéalo con tu celular.
 2. Llena tu nombre y apellidos, 2 referencias personales, marca **Declaro que la información es verdadera** y **firma con el dedo**.
 3. Intenta enviar sin firmar: te dice qué falta y el enlace no se gasta.
 
@@ -44,8 +44,8 @@ Usa el demo (`plataforma:demo`), contraseña `Demo1234!`. Usuarios: **admin.demo
 
 ## Práctica 5 · La caseta (agente.demo, celular)
 
-1. **Accesos → Nuevo Ingreso → Personal externo → Recursos Humanos** → marca **Viene como candidato**.
-2. En **¿A qué vacante viene?** elige **Camarista** y guarda.
+1. **Accesos → Nuevo Ingreso → Personal externo → Recursos Humanos** → en **¿A qué viene?** elige **Busca empleo**.
+2. En **¿A qué vacante?** elige **Camarista** y guarda.
 3. Entra a **Vacantes**: solo ves lo publicado y el botón **Cartel**; no puedes crear ni cambiar.
 
 ## Para recordar

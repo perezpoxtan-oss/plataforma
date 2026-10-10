@@ -6,7 +6,7 @@ Decisión: [ADR-0007](../decisiones/ADR-0007-recepcion-kiosco-y-autorizaciones.m
 
 | Pieza | Archivo |
 |---|---|
-| Modelos | `Notificacion`, `Autorizacion`, `DepartamentoResponsable`, `Delegacion` (+ `Acceso::candidatoRecepcion()`, `autorizacionDepartamento()`) |
+| Modelos | `Notificacion`, `Autorizacion`, `DepartamentoResponsable`, `Delegacion` (+ `Acceso::postulacion()`, `candidatoRecepcion()`, `autorizacionDepartamento()`) |
 | Notificaciones | `app/Services/Notificaciones/CentroNotificaciones.php`, `NotificacionController`, `resources/views/componentes/campana.blade.php` (incluida en `layouts/app.blade.php`) |
 | Recepción | `app/Services/Recepcion/` (`PanelRecepcion`, `RecepcionEnCaseta`, `AjustesRecepcion`, `Destinatarios`, `AvisosInicio`), `RecepcionController`, `resources/views/rh/recepcion/` |
 | Autorizaciones | `app/Services/Autorizaciones/` (`Autorizaciones`, `Delegaciones`), `AutorizacionController`, `resources/views/rh/autorizaciones/` |
@@ -16,23 +16,29 @@ Decisión: [ADR-0007](../decisiones/ADR-0007-recepcion-kiosco-y-autorizaciones.m
 ## Tablas
 
 - **`notificaciones`**: `empresa_id`, `user_id`, `tipo`, `titulo`, `texto`, `url`, `icono`, `nivel` (info | alerta | exito), `referencia_tipo`/`referencia_id`, `acciones` (JSON: `[{etiqueta, url, campos, estilo}]`), `leida_en`. Índice `(user_id, leida_en)`.
-- **`autorizaciones`**: `sede_id`, `departamento_id`, `tipo` (visita | candidato), `acceso_id` o `candidato_id`, `estado` (pendiente → autorizada | entrevista | rechazada | cancelada), `solicitada_en`, `respondida_en`/`respondida_por`, `respuesta_medio` (plataforma | correo | caseta | rh), `comentario`, `avisados` (ids de usuario).
+- **`autorizaciones`**: `sede_id`, `departamento_id` (null en las de tipo `recepcion`), `tipo` (visita | candidato | recepcion), `acceso_id` o `candidato_id`, `estado` (pendiente → autorizada | entrevista | rechazada | cancelada), `solicitada_en`, `respondida_en`/`respondida_por`, `respuesta_medio` (plataforma | correo | caseta | rh), `comentario`, `avisados` (ids de usuario).
 - **`departamento_responsables`**: `departamento_id`, `user_id` (único por departamento), `sede_id` (null = todas las sedes del departamento), `es_suplente`.
 - **`delegaciones`**: `user_id` (responsable), `delegado_id`, `desde`, `hasta` (UTC; se capturan en hora local), `motivo`, `cancelada_en`/`cancelada_por`. Activa = sin cancelar y `desde ≤ ahora ≤ hasta`. Máximo 90 días; no se cruzan dos del mismo responsable.
-- **`accesos`** (columnas nuevas): `foto_persona`, `foto_identificacion` (disco privado) y `autorizacion` (null | esperando | autorizada | rechazada).
-- **`empresas.preferencias.recepcion`**: `visitas_requieren_autorizacion`, `aviso_privacidad`, `kiosco_horas`, `kiosco_usos`.
+- **`accesos`** (columnas nuevas): `foto_persona`, `foto_identificacion` (disco privado), `autorizacion` (null | esperando | espera | autorizada | rechazada; `espera` = RR. HH. pidió que espere), `viene_a` (busca_empleo | entrevista | documentos | firma | informes | tramite; `Acceso::VIENE_A`) y `postulacion_id` (la postulación a la que se ligó la visita).
+- **`empresas.preferencias.recepcion`**: `visitas_requieren_autorizacion`, `rh_autoriza_paso` (sin el dato = encendido; la migración de postulaciones lo dejó en `false` en las empresas que ya existían), `aviso_privacidad`, `kiosco_horas`, `kiosco_usos`.
 
 ## Flujos
 
-**Candidato en caseta.** Personal externo → Recursos Humanos → «Viene como candidato» (+ puesto, departamento, vacante). `RecepcionEnCaseta::preparar()` valida y `despues()` guarda fotos, crea la ficha (`AdministradorCandidatos::desdeAcceso`) y avisa a quien tiene `candidatos.editar` en esa sede (campana + correo `candidato_llegada`).
+**Recursos Humanos en caseta («¿A qué viene?», fase 1).** Personal externo → Recursos Humanos → `viene_a`: Busca empleo (+ «¿A qué vacante?»: vacante publicada y vigente de la sede o «No sabe / otra»; puesto y departamento salen de la vacante), Entrevista, Entrega de documentos, Firma de contrato, Informes / ver vacantes u Otro trámite. Sin `viene_a` (formularios anteriores) se toma `es_candidato` → busca_empleo, si no tramite. `RecepcionEnCaseta::preparar()` valida y `despues()` guarda fotos y `viene_a`; las cuatro primeras llaman a `AdministradorCandidatos::desdeAcceso()` (ficha única: ver [candidatos.md](candidatos.md)); entrevista/documentos/firma sin ficha encontrada se registran como busca_empleo con nota en el historial y en el aviso. Informes y trámite no crean ficha. La caseta solo ve «Candidato · Entrevista» (`_ficha-acceso`): nunca etapas ni CV.
+
+**«Que pase» de RR. HH. (tipo `recepcion`).** Si `rh_autoriza_paso` y hay destinatarios (`Autorizaciones::destinatariosRecepcion()`: usuarios activos con `candidatos.editar` o `recepcion_rh.ver` que alcancen la sede, sin quien registró), el acceso nace PENDIENTE con `autorizacion = esperando` («ESPERANDO A RR. HH.») y `solicitarRecepcion()` crea la `Autorizacion` (sin departamento) y manda UN aviso (`autorizacion_recepcion`, «Llegó un candidato / Volvió a la caseta / En caseta para RR. HH.: …», con **Que pase / Que espere / No puede pasar**) y el correo con botones firmados (aviso por correo `candidato_llegada`). Sin destinatarios o con el ajuste apagado: pasa directo y se avisa como antes (`candidato_llegada`). Respuestas (`Autorizacion::RESPUESTAS['recepcion']`): `pase` → autorizada (EN SITIO, `autorizado_por`); `no_pasa` → rechazada (FINALIZADO, «NO AUTORIZADO por Recursos Humanos»); `espere` no cierra la solicitud: `accesos.autorizacion = espera`, la caseta ve «RR. HH. PIDE QUE ESPERE» y recibe aviso, y el aviso de RR. HH. conserva sus botones (`autorizaciones.espera` en la auditoría). La tarjeta de caseta compara con `data-estado-esperado` (`pendiente|esperando` o `pendiente|espera`) y se recarga al cambiar. «Confirmar Autorización» del supervisor funciona igual que con las visitas (`resueltaEnCaseta`, medio `caseta`).
 
 **Visita a departamento.** Motivo «Visita a Departamento» (o «Visita a Colaborador»: se usa el departamento del colaborador). Si `visitas_requieren_autorizacion` y el departamento tiene responsable en esa sede → el acceso nace PENDIENTE con `autorizacion = esperando`, se crea la `Autorizacion` y se avisa (campana con botones **Autorizar ingreso / Rechazar** y correo con botones firmados). La caseta ve «ESPERANDO AUTORIZACIÓN» y su tarjeta se actualiza sola (`GET /accesos/autorizaciones-estado?ids=` cada 15 s; con un diálogo abierto no recarga, avisa). Autorizada → EN SITIO (`autorizado_por` = quien respondió); rechazada → FINALIZADO «NO AUTORIZADO» (gafete libre); la caseta recibe aviso en su campana. Si la caseta confirma con su botón de siempre, la solicitud queda «respondida por caseta».
 
 **Candidato al departamento.** RR. HH. «Aprobar y enviar al departamento» → `Autorizaciones::solicitarCandidato()`: resumen (puesto, escolaridad máxima, años de experiencia) a los responsables; ellos responden **Bajar a entrevistar** (candidato → Entrevista) o **Rechazar** (→ En cartera) y RR. HH. recibe aviso (`autorizacion_respuesta`). Sin responsable: queda anotado en el historial y RR. HH. lo pasa a entrevista.
 
-**Responder.** Exige `autorizaciones.responder` y ser responsable (titular o suplente) de ese departamento en esa sede, o su delegado activo. El primero que responde gana (`UPDATE … WHERE estado = pendiente`); a los demás se les quitan los botones (`CentroNotificaciones::resolver`).
+**Responder.** Departamentales: exige `autorizaciones.responder` y ser responsable (titular o suplente) de ese departamento en esa sede, o su delegado activo. Recepción: `candidatos.editar` o `recepcion_rh.ver` con alcance en la sede (`atiendeRecepcion()`). `Autorizaciones::limitar()` deja ver las de recepción a quien atiende Recepción en sus sedes; la bandeja «Autorizaciones» no las lista (se atienden en Recepción). El primero que responde gana (`UPDATE … WHERE estado = pendiente`); a los demás se les quitan los botones (`CentroNotificaciones::resolver`).
 
 **Delegación.** «No molestar / delegar» en la bandeja: del responsable a otro usuario con `autorizaciones.responder`. Mientras está activa, `aQuienAvisar()` manda el aviso al delegado. Quien tiene `autorizaciones.configurar` delega por otros y cancela cualquiera. Se avisa al delegado y se audita.
+
+## Mis pendientes (fase 1)
+
+Solo para quien puede `candidatos.editar` (en sus sedes): **Esperando en Recepción** (`PanelRecepcion::porAtender()`: accesos de RR. HH. con `autorizacion` esperando/espera + candidatos «Registrado» de hoy cuyo acceso no está entre esos) → Recepción; **Solicitudes por revisar** (`autocaptura_pendiente`) → `candidatos.index?revisar=1`. La campana trae el mismo total (`/notificaciones/resumen` → `pendientes`).
 
 ## Tiempos (SLA) y métricas
 
@@ -46,16 +52,16 @@ Candidato: `llegada_en` (entrada en caseta) → `avisado_rh_en` → `revision_en
 | `GET /notificaciones/resumen` | (sesión) | JSON de la campana |
 | `POST /notificaciones/{n}/abrir` | (dueño) | Marca leída y lleva al asunto (solo direcciones de la plataforma) |
 | `POST /notificaciones/leer-todas` | (sesión) | Marca todas |
-| `GET /rh/recepcion` · `GET /rh/recepcion/datos` | `recepcion_rh.ver` | Panel y su JSON (HTML ya escapado + contadores) |
+| `GET /rh/recepcion` · `GET /rh/recepcion/datos` | `recepcion_rh.ver` | Panel y su JSON (HTML ya escapado + contadores). Cada fila: «Viene a» (busca empleo — primera vez / ya vino antes, entrevista, documentos, firma, informes, trámite) y botones **Que pase** (si espera a RR. HH.), **Atender** y **Abrir ficha** |
 | `GET /rh/recepcion/metricas` | `recepcion_rh.ver` | Tiempos de espera |
-| `GET /rh/recepcion/kiosco` · `POST /rh/recepcion/kiosco/{c}` | `candidatos.editar` o `accesos.crear` | Modo kiosco / generar QR |
-| `GET|PUT /rh/recepcion/ajustes` | `candidatos.configurar` (empresa) · `autorizaciones.configurar` (interruptor de visitas) | Aviso de privacidad, kiosco, visitas con autorización |
+| `GET /rh/recepcion/kiosco` · `POST /rh/recepcion/kiosco/{c}` | `candidatos.editar` o `accesos.crear` | Modo kiosco / generar QR (`reusar=1`: muestra el vigente) |
+| `GET|PUT /rh/recepcion/ajustes` | `candidatos.configurar` (empresa) · `autorizaciones.configurar` (interruptor de visitas) | Aviso de privacidad, «La caseta espera a que RR. HH. diga «Que pase»» (`rh_autoriza_paso`), kiosco, visitas con autorización |
 | `GET /accesos/{a}/foto-persona` · `/foto-identificacion` | `accesos.ver` (su sede) · `candidatos.ver` (candidato de sus sedes) · `recepcion_rh.ver` y `autorizaciones.ver` (solo la de la persona) | Fotos privadas |
 | `GET /accesos/autorizaciones-estado?ids=` | `accesos.ver` | Estado en vivo para la caseta |
 | `GET /autorizaciones?estado=` | `autorizaciones.ver` | Bandeja «Por responder», delegaciones e historial |
-| `GET /autorizaciones/{a}` | `autorizaciones.ver` + alcance | Detalle (resumen del candidato, sin contacto ni documentos) |
-| `GET /autorizaciones/{a}/confirmar?respuesta=&signature=` | `autorizaciones.responder` + firma | Botón del correo: confirmar |
-| `POST /autorizaciones/{a}/responder` | `autorizaciones.responder` + responsable/delegado | Autorizar / Rechazar / Bajar a entrevistar |
+| `GET /autorizaciones/{a}` | `autorizaciones.ver` (o, las de recepción, `candidatos.editar`/`recepcion_rh.ver`) + alcance | Detalle (resumen del candidato, sin contacto ni documentos) |
+| `GET /autorizaciones/{a}/confirmar?respuesta=&signature=` | `autorizaciones.responder` (o, recepción, `candidatos.editar`/`recepcion_rh.ver`) + firma | Botón del correo: confirmar |
+| `POST /autorizaciones/{a}/responder` | igual + responsable/delegado o quien atiende Recepción en la sede | Autorizar / Rechazar / Bajar a entrevistar / Que pase / Que espere / No puede pasar (`volver=recepcion` regresa al panel) |
 | `GET /autorizaciones/responsables` · `PUT …/responsables/{departamento}` | `autorizaciones.configurar` (empresa para guardar) | Responsables por departamento |
 | `POST /autorizaciones/delegaciones` · `PATCH …/delegaciones/{d}/cancelar` | `autorizaciones.responder` | Delegación |
 
@@ -65,7 +71,7 @@ Módulos nuevos en el área Recursos Humanos (menú Recursos Humanos → «Recep
 
 ## Avisos por correo (Configuración)
 
-`candidato_llegada`, `autorizacion_departamento`, `autorizacion_respuesta` (`Empresa::AVISOS`, encendidos por defecto).
+`candidato_llegada` (también el aviso con botones del «Que pase»), `autorizacion_departamento`, `autorizacion_respuesta` (`Empresa::AVISOS`, encendidos por defecto). En las métricas, las de recepción se agrupan como «Recursos Humanos (caseta)».
 
 ## Qué se corrigió respecto a SEGCAT
 

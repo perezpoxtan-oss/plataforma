@@ -19,7 +19,7 @@ Usa el demo (`plataforma:demo`). Usuarios: **agente.demo** (caseta, sede Centro)
 
 1. **Operación → Control de Accesos → Nuevo Ingreso**.
 2. **Personal Externo / Visita**, nombre «Marco Pech Ucán», motivo **Recursos Humanos**.
-3. Marca **Viene como candidato**; puesto «Mesero», departamento «Alimentos y Bebidas».
+3. En **¿A qué viene?** elige **Busca empleo** y, en **¿A qué vacante?**, **-- No sabe / otra --** (el puesto y el departamento los pone Recursos Humanos).
 4. Abre **Fotos** y toma (o elige) una foto.
 5. **Autorizar Ingreso y Guardar Datos**.
 
@@ -28,12 +28,12 @@ Comprueba: entra a Candidatos: verás «Sin permiso». Es correcto: la caseta no
 ## Práctica 2 · Recursos Humanos atiende (rh.demo)
 
 1. Mira la **campana**: «Llegó un candidato: Marco Pech Ucán».
-2. **Recursos Humanos → Recepción de RR. HH.**: aparece con los minutos que lleva esperando. Toca **Atender**.
+2. **Recursos Humanos → Recepción de RR. HH.**: aparece con **Viene a: Busca empleo — primera vez** y los minutos que lleva esperando. Toca **Que pase** (la caseta lo ve al momento) y luego **Atender**.
 3. Toca **Abrir ficha**: verás su foto de caseta y su CV vacío.
 
 ## Práctica 3 · El kiosco
 
-1. En la ficha toca **Generar QR del kiosco** y luego **Mostrar QR**.
+1. En la ficha toca **QR para que llene su solicitud**.
 2. Con tu celular escanea el QR (o entra a `/k` y escribe el código).
 3. Llena el formulario, marca **Acepto el aviso de privacidad** y envía.
 4. De vuelta en la ficha verás **«Por revisar»**: revisa y toca **Ya lo revisé**.
