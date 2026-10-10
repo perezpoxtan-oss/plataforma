@@ -30,6 +30,7 @@ use App\Models\Notificacion;
 use App\Models\Novedad;
 use App\Models\PaseSalida;
 use App\Models\Persona;
+use App\Models\Postulacion;
 use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
 use App\Models\Puesto;
@@ -49,6 +50,7 @@ use App\Models\ZonaEstacionamiento;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Kiosco;
+use App\Services\Candidatos\Postulaciones;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Gafetes\AdministradorGafetes;
@@ -2216,7 +2218,12 @@ class CrearDatosDemo extends Command
                         $cambios[$campo] = $c->llegada_en->copy()->addMinutes($min);
                     }
                 }
-                $c->forceFill($cambios)->save();
+                // Las fechas de etapa viven en la postulación (la ficha es su espejo); el aviso a RR. HH., en la ficha
+                $c->forceFill(array_intersect_key($cambios, ['avisado_rh_en' => true]))->save();
+                $postulaciones = app(Postulaciones::class);
+                $p = $postulaciones->asegurar($c);
+                $p->forceFill(array_diff_key($cambios, ['avisado_rh_en' => true]) + ['created_at' => $c->llegada_en])->save();
+                $postulaciones->reflejar($p);
             };
 
             // Esperando ahora, con su QR del kiosco
@@ -2451,9 +2458,12 @@ class CrearDatosDemo extends Command
         $vacantes->cambiarEstado($rh, $recepcionista, 'publicada', null, $hoy);
         Vacante::whereKey($recepcionista->id)->update(['publicada_en' => now()->subDays(20), 'fecha_publicacion' => now()->subDays(20)->format('Y-m-d')]);
 
-        // Candidatos de caseta ligados a sus vacantes
-        Candidato::where('nombre_completo', 'Karla Pérez Uc')->update(['vacante_id' => $camarista->id]);
-        Candidato::whereIn('nombre_completo', ['Mariela Canché Dzib', 'Silvia Mena Couoh'])->update(['vacante_id' => $recepcionista->id]);
+        // Candidatos de caseta ligados a sus vacantes (en su postulación y en el espejo de la ficha)
+        foreach ([[['Karla Pérez Uc'], $camarista], [['Mariela Canché Dzib', 'Silvia Mena Couoh'], $recepcionista]] as [$nombres, $vacante]) {
+            $ids = Candidato::whereIn('nombre_completo', $nombres)->pluck('id');
+            Candidato::whereKey($ids)->update(['vacante_id' => $vacante->id]);
+            Postulacion::whereIn('candidato_id', $ids)->update(['vacante_id' => $vacante->id]);
+        }
         $vacantes->cambiarEstado($rh, $recepcionista->fresh(), 'cerrada', 'cubierta', $hoy);
 
         // Postulaciones por internet a «Camarista» (lo mismo que hace /empleos)

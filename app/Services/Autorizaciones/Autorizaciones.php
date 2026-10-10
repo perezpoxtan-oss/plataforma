@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\CambioNoPermitido;
+use App\Services\Candidatos\Postulaciones;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
@@ -210,7 +211,9 @@ class Autorizaciones
     public function solicitarCandidato(User $actor, Candidato $candidato): ?Autorizacion
     {
         $avisar = $this->aQuienAvisar((int) $candidato->departamento_id, (int) $candidato->sede_id);
-        $candidato->forceFill(['enviado_departamento_en' => now()])->save();
+        $postulaciones = app(Postulaciones::class);
+        $postulaciones->cambiar($postulaciones->asegurar($candidato), null, ['enviado_departamento_en' => now()], $actor);
+        $candidato->refresh();
         if ($avisar->isEmpty()) {
             app(AdministradorCandidatos::class)->evento($candidato, 'sin_responsable', null, null,
                 'El departamento no tiene responsable registrado: avísale por otro medio o pásalo tú a entrevista.', $actor);

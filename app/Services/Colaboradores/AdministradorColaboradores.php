@@ -51,6 +51,7 @@ class AdministradorColaboradores
         'lost_found_entregas' => 'colaborador_id',
         'procedimiento_acuses' => 'colaborador_id',
         'candidatos' => 'colaborador_id', // Recepción: el colaborador que resultó de contratar al candidato
+        'postulaciones' => 'colaborador_id', // Candidatos fase 1: la postulación con la que se le contrató
     ];
 
     /**

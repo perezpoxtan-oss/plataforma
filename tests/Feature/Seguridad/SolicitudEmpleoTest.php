@@ -15,6 +15,7 @@ use App\Models\Notificacion;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Candidatos\Kiosco;
+use App\Services\Candidatos\Postulaciones;
 use App\Support\CorreoPlataforma;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -302,7 +303,8 @@ class SolicitudEmpleoTest extends TestCase
     {
         $c = $this->candidato();
         $this->actingAs($this->rh)->put("/candidatos/{$c->id}", $this->solicitud())->assertSessionHas('ok');
-        $c->forceFill(['etapa' => 'seleccionado'])->save();
+        // La etapa vive en la postulación (la ficha es su espejo)
+        $this->enEmpresa(fn () => app(Postulaciones::class)->cambiar(app(Postulaciones::class)->asegurar($c), null, ['etapa' => 'seleccionado'], null));
 
         // El diálogo propone nombre y apellidos tal como los capturó
         $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertSee('value="Ana María"', false)->assertSee('value="Pool"', false);

@@ -93,6 +93,12 @@ class Vacante extends Model
         return $this->hasMany(Candidato::class);
     }
 
+    /** Postulaciones a esta vacante (una persona puede tener varias en el tiempo). */
+    public function postulaciones(): HasMany
+    {
+        return $this->hasMany(Postulacion::class);
+    }
+
     public function registradoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'creado_por');

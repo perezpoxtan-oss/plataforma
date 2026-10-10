@@ -7,12 +7,14 @@ use App\Models\Candidato;
 use App\Models\CandidatoDocumento;
 use App\Models\Departamento;
 use App\Models\Empresa;
+use App\Models\Postulacion;
 use App\Models\Puesto;
 use App\Models\Vacante;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\CambioNoPermitido;
 use App\Services\Candidatos\DocumentosCandidato;
 use App\Services\Candidatos\Kiosco;
+use App\Services\Candidatos\Postulaciones;
 use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Recepcion\AjustesRecepcion;
@@ -110,9 +112,15 @@ class CandidatoController extends Controller
                 'registradoPor:id,name', 'editadoPor:id,name', 'decisionPor:id,name', 'firmaCapturadaPor:id,name', 'vacantePublicada:id,titulo,estado']);
             $enlace = $c->enlaces()->whereNull('revocado_en')->where('expira_en', '>', now())->first();
             $partes = $c->partesNombre();
+            // Postulaciones: la activa (la que refleja la ficha) y las anteriores
+            $postulaciones = app(Postulaciones::class);
+            $activa = $postulaciones->activa($c)?->load(['vacantePublicada:id,titulo,estado', 'accesos:id,postulacion_id,entrada_at,viene_a']);
+            $anteriores = $postulaciones->anteriores($c, $activa);
 
             return view('rh.candidatos.show', [
                 'c' => $c,
+                'activa' => $activa,
+                'anteriores' => $anteriores,
                 'enlace' => $enlace?->vigente() ? $enlace : null,
                 'departamentos' => Departamento::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
                 'puestos' => Puesto::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
@@ -374,7 +382,10 @@ class CandidatoController extends Controller
             ->when($f['etapa'] !== '' && $f['etapa'] !== 'en_proceso', fn ($x) => $x->where('candidatos.etapa', $f['etapa']))
             ->when($f['sede'] > 0, fn ($x) => $x->where('candidatos.sede_id', $f['sede']))
             ->when($f['departamento'] > 0, fn ($x) => $x->where('candidatos.departamento_id', $f['departamento']))
-            ->when(($f['vacante'] ?? 0) > 0, fn ($x) => $x->where('candidatos.vacante_id', $f['vacante']));
+            // Vacante: la de cualquiera de sus postulaciones (no solo la activa)
+            ->when(($f['vacante'] ?? 0) > 0, fn ($x) => $x->where(fn ($w) => $w->where('candidatos.vacante_id', $f['vacante'])
+                ->orWhereIn('candidatos.id', Postulacion::where('vacante_id', $f['vacante'])->select('candidato_id'))))
+            ->when($f['revisar'] ?? false, fn ($x) => $x->where('candidatos.autocaptura_pendiente', true));
     }
 
     private function buscar($actor, int $id, string $permiso): Candidato

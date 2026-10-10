@@ -348,7 +348,7 @@ class CandidatosYAutorizacionesTest extends TestCase
         // Solo desde Seleccionado
         $this->actingAs($this->rh)->post("/candidatos/{$c->id}/contratar", ['num_empleado' => '2001', 'nombre' => 'Ramón', 'apellido_paterno' => 'Ek'])
             ->assertSessionHas('error');
-        $c->forceFill(['etapa' => 'seleccionado'])->save();
+        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'seleccionado'])->assertSessionHas('ok');
 
         // El agente y el director no contratan
         $this->actingAs($this->agente)->post("/candidatos/{$c->id}/contratar", ['num_empleado' => '2001'])->assertForbidden();

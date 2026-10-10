@@ -8,6 +8,7 @@ use App\Models\Autorizacion;
 use App\Models\Candidato;
 use App\Models\Empresa;
 use App\Models\EnlaceKiosco;
+use App\Models\Postulacion;
 use App\Models\Sede;
 use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Autorizaciones\Autorizaciones;
@@ -262,8 +263,10 @@ class RecepcionController extends Controller
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $id, $campo) {
             $acceso = $actor->can('accesos.ver') ? app(ConsultaAccesos::class)->limitar(Acceso::query(), $actor, 'accesos.ver')->find($id) : null;
             if ($acceso === null && $actor->can('candidatos.ver')) {
-                $acceso = Candidato::where('acceso_id', $id)->whereIn('id', app(AdministradorCandidatos::class)->limitar(Candidato::query(), $actor, 'candidatos.ver')->select('id'))
-                    ->exists() ? Acceso::find($id) : null;
+                // Cualquier visita de un candidato de sus sedes (la de su ficha o las ligadas a sus postulaciones)
+                $visibles = app(AdministradorCandidatos::class)->limitar(Candidato::query(), $actor, 'candidatos.ver')->select('candidatos.id');
+                $acceso = Acceso::whereKey($id)->where(fn ($q) => $q->whereIn('id', Candidato::whereIn('id', $visibles)->whereNotNull('acceso_id')->select('acceso_id'))
+                    ->orWhereIn('postulacion_id', Postulacion::whereIn('candidato_id', $visibles)->select('id')))->first();
             }
             if ($acceso === null && $campo === 'foto_persona' && $actor->can('recepcion_rh.ver')) {
                 // El panel de Recepción muestra la foto de la persona (no la de su identificación)

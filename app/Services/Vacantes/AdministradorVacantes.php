@@ -5,6 +5,7 @@ namespace App\Services\Vacantes;
 use App\Models\Candidato;
 use App\Models\Departamento;
 use App\Models\Empresa;
+use App\Models\Postulacion;
 use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\Turno;
@@ -201,7 +202,7 @@ class AdministradorVacantes
         if (! $this->puedeModificar($actor, $vacante, 'vacantes.eliminar')) {
             throw new CambioNoPermitido('Esta vacante también es de otras sedes: solo la elimina quien tiene alcance de empresa.');
         }
-        $postulados = Candidato::where('vacante_id', $vacante->id)->count();
+        $postulados = max(Candidato::where('vacante_id', $vacante->id)->count(), Postulacion::where('vacante_id', $vacante->id)->count());
         if ($postulados > 0) {
             throw new CambioNoPermitido("Tiene {$postulados} candidato(s): ciérrala en lugar de eliminarla (así se conserva su historia).");
         }
