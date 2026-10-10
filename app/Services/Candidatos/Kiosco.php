@@ -50,7 +50,7 @@ class Kiosco
      */
     public function generar(User $actor, Candidato $candidato): array
     {
-        if (in_array($candidato->etapa, ['contratado', 'descartado'], true)) {
+        if (in_array($candidato->etapa, ['contratado', 'rechazado'], true)) {
             throw new CambioNoPermitido('Este candidato ya no está en proceso: no se le puede generar un enlace.');
         }
         $empresa = Empresa::findOrFail($candidato->empresa_id);

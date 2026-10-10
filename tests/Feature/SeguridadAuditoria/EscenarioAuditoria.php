@@ -127,6 +127,8 @@ trait EscenarioAuditoria
             'plantilla' => 'etiquetas_plantillas',
             // Vacantes (lección 36)
             'vacante' => 'vacantes',
+            // Candidatos, fase 2: Entrevistar
+            'postulacion' => 'postulaciones',
         ][$parametro] ?? null;
     }
 
