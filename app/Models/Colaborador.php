@@ -91,6 +91,14 @@ class Colaborador extends Model implements Identificable
         return $this->hasOne(User::class);
     }
 
+    /**
+     * ¿Su cuenta de usuario sigue desactivada por una baja anterior?
+     */
+    public function usuarioDesactivadoPorBaja(): bool
+    {
+        return User::where('colaborador_id', $this->id)->where('activo', false)->whereNotNull('desactivado_por_baja_en')->exists();
+    }
+
     public function nombreCompleto(): string
     {
         return trim(preg_replace('/\s+/u', ' ', $this->nombre.' '.$this->apellido_paterno.' '.($this->apellido_materno ?? '')));

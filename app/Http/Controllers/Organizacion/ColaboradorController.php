@@ -135,16 +135,17 @@ class ColaboradorController extends Controller
         $empresaId = $this->empresaDeTrabajo($request);
         $activo = $request->boolean('activo');
 
-        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $colaborador, $activo) {
+        $cuenta = null;
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $colaborador, $activo, &$cuenta) {
             $modelo = $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.eliminar');
-            $this->colaboradores->cambiarEstado($request->user(), $modelo, $activo);
+            $cuenta = $this->colaboradores->cambiarEstado($request->user(), $modelo, $activo);
 
             return $modelo;
         });
 
         return redirect()->route('colaboradores.index')->with($activo ? 'ok' : 'aviso', $activo
-            ? "Colaborador «{$modelo->nombreCompleto()}» reingresado."
-            : "Colaborador «{$modelo->nombreCompleto()}» dado de baja. Puedes reactivarlo con el mismo botón cuando quieras.");
+            ? "Colaborador «{$modelo->nombreCompleto()}» reingresado.".($modelo->usuarioDesactivadoPorBaja() ? ' Su cuenta de usuario sigue desactivada: reactívala en Usuarios si la necesita.' : '')
+            : "Colaborador «{$modelo->nombreCompleto()}» dado de baja.".($cuenta ? " También se desactivó su cuenta de usuario «@{$cuenta->username}»; puedes reactivarla en Usuarios." : '').' Puedes reactivarlo con el mismo botón cuando quieras.');
     }
 
     public function sedes(Request $request, int $colaborador): RedirectResponse

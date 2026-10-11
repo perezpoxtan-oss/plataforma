@@ -19,7 +19,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /** Mismos valores por defecto que la base de datos (disponibles antes de recargar). */
-    protected $attributes = ['activo' => true, 'es_superadmin' => false, 'intentos_fallidos' => 0];
+    protected $attributes = ['activo' => true, 'es_superadmin' => false, 'intentos_fallidos' => 0, 'debe_cambiar_contrasena' => false];
 
     protected $fillable = [
         'empresa_id', 'name', 'username', 'numero_colaborador', 'colaborador_id', 'email', 'password', 'activo',
@@ -34,8 +34,10 @@ class User extends Authenticatable
             'password' => 'hashed',
             'es_superadmin' => 'boolean',
             'activo' => 'boolean',
+            'debe_cambiar_contrasena' => 'boolean',
             'bloqueado_hasta' => 'datetime',
             'ultimo_acceso_en' => 'datetime',
+            'desactivado_por_baja_en' => 'datetime',
         ];
     }
 
@@ -97,5 +99,15 @@ class User extends Authenticatable
     public function estaBloqueado(): bool
     {
         return $this->bloqueado_hasta !== null && $this->bloqueado_hasta->isFuture();
+    }
+
+    /**
+     * Sede asignada a la cuenta (null = todas las sedes de la empresa).
+     */
+    public function sedeAsignadaId(): ?int
+    {
+        $sede = UsuarioRol::where('user_id', $this->id)->value('sede_id');
+
+        return $sede === null ? null : (int) $sede;
     }
 }

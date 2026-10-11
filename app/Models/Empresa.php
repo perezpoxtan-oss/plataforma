@@ -48,6 +48,8 @@ class Empresa extends Model
         // Candidatos, fase 2: entrevistas con el departamento
         'entrevista_departamento' => ['Candidatos: avisar al entrevistador (o a su delegado) cuando Recursos Humanos le canaliza una entrevista, la reprograma o el candidato llega', true],
         'evaluacion_departamento' => ['Candidatos: avisar a Recursos Humanos cuando el departamento evalúa o elige a un candidato', true],
+        // Cuenta del usuario (seguridad)
+        'cuenta_bloqueada' => ['Seguridad: avisar por correo a quien administra usuarios (y a la persona) cuando una cuenta se bloquea por intentos fallidos', true],
     ];
 
     /** Ronda 5 (LL-04): lista de correos de cada copia del voucher con cobro (Configuración → Avisos por correo). */

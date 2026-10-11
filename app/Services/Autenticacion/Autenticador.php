@@ -3,6 +3,7 @@
 namespace App\Services\Autenticacion;
 
 use App\Models\User;
+use App\Services\Cuenta\AvisosCuenta;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 
@@ -14,10 +15,15 @@ use Illuminate\Support\Facades\Hash;
  *  - Solo cuentas activas de empresas activas (o el Super Administrador).
  *  - N intentos fallidos seguidos bloquean la cuenta M minutos.
  *  - Un acceso correcto reinicia el contador.
+ *  - Al bloquear una cuenta real se avisa (campana y correo) a quien
+ *    administra usuarios de esa sede y a la persona afectada: un aviso por
+ *    bloqueo, no por intento.
  */
 class Autenticador
 {
-    public function intentar(string $identificador, string $contrasena): ResultadoAcceso
+    public function __construct(private readonly AvisosCuenta $avisos) {}
+
+    public function intentar(string $identificador, string $contrasena, ?string $ip = null): ResultadoAcceso
     {
         $identificador = trim($identificador);
 
@@ -40,7 +46,7 @@ class Autenticador
         }
 
         if (! Hash::check($contrasena, $usuario->password)) {
-            return $this->registrarFallo($usuario);
+            return $this->registrarFallo($usuario, $ip);
         }
 
         if (! $usuario->es_superadmin && ($usuario->empresa_id === null || ! $usuario->empresa?->activo)) {
@@ -97,7 +103,7 @@ class Autenticador
         return ResultadoAcceso::credenciales();
     }
 
-    private function registrarFallo(User $usuario): ResultadoAcceso
+    private function registrarFallo(User $usuario, ?string $ip): ResultadoAcceso
     {
         $maximo = (int) config('plataforma.sesion.max_intentos');
         $minutos = (int) config('plataforma.sesion.minutos_bloqueo');
@@ -105,6 +111,7 @@ class Autenticador
 
         if ($intentos >= $maximo) {
             $usuario->forceFill(['intentos_fallidos' => 0, 'bloqueado_hasta' => now()->addMinutes($minutos)])->save();
+            $this->avisos->bloqueo($usuario, $ip, $minutos);
 
             return ResultadoAcceso::bloqueado($minutos);
         }

@@ -3,6 +3,7 @@
 use App\Http\Middleware\CabecerasSeguridad;
 use App\Http\Middleware\ControlarInactividad;
 use App\Http\Middleware\EstablecerEmpresa;
+use App\Http\Middleware\ExigirCambioContrasena;
 use App\Http\Middleware\VerificarHost;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -21,6 +22,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             ControlarInactividad::class,
             EstablecerEmpresa::class,
+            ExigirCambioContrasena::class,
         ]);
         $middleware->redirectUsersTo(fn () => route('panel'));
 

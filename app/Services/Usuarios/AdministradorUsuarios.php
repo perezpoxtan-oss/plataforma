@@ -6,12 +6,15 @@ use App\Models\Rol;
 use App\Models\Sede;
 use App\Models\User;
 use App\Models\UsuarioRol;
+use App\Services\Cuenta\AvisosCuenta;
+use App\Services\Cuenta\RecuperacionContrasena;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Alta, edición y activación de cuentas de una empresa (réplica de
@@ -20,6 +23,11 @@ use Illuminate\Support\Facades\DB;
  *  - solo se asignan roles de nivel inferior al propio;
  *  - solo se administran usuarios de nivel inferior (nunca la propia cuenta aquí);
  *  - todo queda en la bitácora de auditoría.
+ *
+ * La contraseña es de su dueño (docs/criterios-ux.md, regla 6): el alta por
+ * omisión manda un enlace de bienvenida y la cuenta nace con una contraseña
+ * aleatoria que nadie conoce; si el administrador escribe una contraseña (alta
+ * o restablecer), la cuenta queda marcada para cambiarla en el primer acceso.
  */
 class AdministradorUsuarios
 {
@@ -28,20 +36,31 @@ class AdministradorUsuarios
     public function __construct(
         private readonly AdministradorRoles $roles,
         private readonly Autorizador $autorizador,
+        private readonly RecuperacionContrasena $recuperacion,
     ) {}
 
     /**
-     * @param  array{name: string, username: string, numero_colaborador: ?string, colaborador_id?: ?int, email: string, password: string}  $datos
+     * Alta. Con $enlace = true la contraseña es aleatoria (nadie la conoce) y
+     * se envía el enlace de bienvenida; con false se guarda la contraseña que
+     * escribió el administrador y la cuenta queda marcada para cambiarla al
+     * entrar. Devuelve el usuario y si el correo de bienvenida salió.
+     *
+     * @param  array{name: string, username: string, numero_colaborador: ?string, colaborador_id?: ?int, email: string, password?: ?string}  $datos
+     * @return array{0: User, 1: bool}
      */
-    public function crear(User $actor, int $empresaId, array $datos, Rol $rol, ?Sede $sede): User
+    public function crear(User $actor, int $empresaId, array $datos, Rol $rol, ?Sede $sede, bool $enlace = false): array
     {
         $this->exigirRolYSede($actor, $empresaId, $rol, $sede, 'usuarios.crear');
 
-        return DB::transaction(function () use ($actor, $empresaId, $datos, $rol, $sede) {
+        if ($enlace) {
+            $datos['password'] = Str::password(40);
+        }
+
+        $usuario = DB::transaction(function () use ($actor, $empresaId, $datos, $rol, $sede) {
             $usuario = new User;
             $usuario->fill($datos + ['activo' => true]);
             $usuario->empresa_id = $empresaId;
-            $usuario->forceFill(['creado_por' => $actor->id, 'actualizado_por' => $actor->id])->save();
+            $usuario->forceFill(['creado_por' => $actor->id, 'actualizado_por' => $actor->id, 'debe_cambiar_contrasena' => true])->save();
 
             UsuarioRol::create(['user_id' => $usuario->id, 'rol_id' => $rol->id, 'sede_id' => $sede?->id]);
             $this->autorizador->olvidar($usuario);
@@ -50,6 +69,40 @@ class AdministradorUsuarios
 
             return $usuario;
         });
+
+        $enviado = $enlace && $this->recuperacion->enviarEnlace($usuario, RecuperacionContrasena::BIENVENIDA, $actor);
+
+        return [$usuario, $enviado];
+    }
+
+    /**
+     * Restablecer la contraseña de otra cuenta. Con $enlace = true se envía el
+     * enlace de restablecer (60 min) y la contraseña actual deja de servir;
+     * con false se guarda la que escribió el administrador y la persona la
+     * cambia al entrar. En ambos casos se cierran sus sesiones.
+     *
+     * @return bool si el correo salió (solo con enlace)
+     */
+    public function restablecer(User $actor, User $usuario, ?string $contrasena, bool $enlace): bool
+    {
+        $this->exigirPuedeAdministrar($actor, $usuario, 'usuarios.editar');
+        if (! $this->limitarAlcance(User::query()->whereKey($usuario->id), $actor, 'usuarios.editar')->exists()) {
+            throw new AuthorizationException('Ese usuario está fuera de tu alcance.');
+        }
+
+        $usuario->forceFill([
+            'password' => $enlace ? Str::password(40) : (string) $contrasena,
+            'debe_cambiar_contrasena' => true,
+            'actualizado_por' => $actor->id,
+        ])->save();
+        $this->cerrarSesiones($usuario);
+
+        $enviado = $enlace && $this->recuperacion->enviarEnlace($usuario, RecuperacionContrasena::RESTABLECER, $actor);
+        if (! $enlace) {
+            $this->roles->auditar($actor, 'usuarios.actualizado', $usuario, null, ['contrasena' => 'cambiada', 'debe_cambiar_contrasena' => true]);
+        }
+
+        return $enviado;
     }
 
     /**
@@ -68,7 +121,8 @@ class AdministradorUsuarios
             }
 
             $usuario->fill($datos);
-            $usuario->forceFill(['actualizado_por' => $actor->id])->save();
+            // Contraseña escrita por el administrador: la persona la cambia al entrar
+            $usuario->forceFill(['actualizado_por' => $actor->id] + (isset($datos['password']) ? ['debe_cambiar_contrasena' => true] : []))->save();
 
             // Un rol y una sede por cuenta, como en SEGCAT
             UsuarioRol::where('user_id', $usuario->id)->delete();
@@ -92,7 +146,7 @@ class AdministradorUsuarios
     {
         $this->exigirPuedeAdministrar($actor, $usuario, 'usuarios.eliminar');
 
-        $usuario->forceFill(['activo' => $activo, 'actualizado_por' => $actor->id])->save();
+        $usuario->forceFill(['activo' => $activo, 'actualizado_por' => $actor->id] + ($activo ? ['desactivado_por_baja_en' => null] : []))->save();
 
         if (! $activo) {
             $this->cerrarSesiones($usuario);
@@ -195,9 +249,7 @@ class AdministradorUsuarios
      */
     private function cerrarSesiones(User $usuario): void
     {
-        if (config('session.driver') === 'database') {
-            DB::table(config('session.table', 'sessions'))->where('user_id', $usuario->id)->delete();
-        }
+        AvisosCuenta::cerrarSesiones($usuario);
     }
 
     /**

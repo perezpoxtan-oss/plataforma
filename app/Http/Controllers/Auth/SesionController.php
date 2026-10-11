@@ -32,7 +32,7 @@ class SesionController extends Controller
         }
         RateLimiter::hit($llaveIp, 60);
 
-        $resultado = $autenticador->intentar($datos['username'], $datos['password']);
+        $resultado = $autenticador->intentar($datos['username'], $datos['password'], $request->ip());
 
         if (! $resultado->exitoso()) {
             return $this->rechazar($resultado->estado, $resultado->minutos);
