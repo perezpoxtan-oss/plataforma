@@ -44,7 +44,7 @@ Comprueba: la tarjeta de la caseta pasó sola a **Gente en Sitio** con «RR. HH.
 
 ## Práctica 4 · Atender y el QR (rh.demo)
 
-1. En **Recepción**, en Martha toca **Atender**: pasa a «En revisión RR. HH.».
+1. En **Recepción**, en Martha toca **Atender** (o, si espera en caseta, **Que pase y lo atiendo**): pasa a «Con RR. HH.».
 2. Abre su ficha y toca **QR para que llene su solicitud**. Tócalo otra vez: se muestra el mismo código (no se crea otro).
 3. **Anular enlace** aparece abajo, discreto, solo si hay uno vigente.
 4. Revisa **Mis pendientes → Solicitudes por revisar**: lleva a la lista de candidatos filtrada.
