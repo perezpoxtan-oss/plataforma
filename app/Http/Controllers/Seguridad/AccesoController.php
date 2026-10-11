@@ -219,7 +219,7 @@ class AccesoController extends Controller
     public function enSitio(Request $request): JsonResponse
     {
         Gate::authorize('accesos.ver');
-        $datos = $request->validate(['q' => ['nullable', 'string', 'max:100'], 'gafete' => ['nullable', 'integer']]);
+        $datos = $request->validate(['q' => ['nullable', 'string', 'max:200'], 'gafete' => ['nullable', 'integer']]);
         $empresaId = $this->empresa->id($request->user());
         if ($empresaId === null) {
             return response()->json(['resultados' => []]);

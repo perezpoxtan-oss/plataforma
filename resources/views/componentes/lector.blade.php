@@ -19,12 +19,15 @@
       ayuda       texto bajo el campo (opcional)
       duplicado   solo en modo capturar (Ronda 6, GV-03): dirección del aviso en vivo «ya la tiene X»
                   (route('identificacion.etiqueta-duplicado', tipo)); el aviso sale debajo del lector
+      placeholder texto de ayuda dentro del campo (opcional; si no, el de cada modo)
+      camara      true: en modo capturar también se ofrece la cámara (la pantalla decide qué hacer con lo leído,
+                  p. ej. «Dar salida» de la Bitácora de accesos)
 --}}
 @php
     $modo = $modo ?? 'buscar';
     $capturar = $modo === 'capturar';
 @endphp
-<div class="lector" data-lector data-modo="{{ $modo }}" data-tipos="{{ $tipos ?? '' }}"
+<div class="lector" data-lector data-modo="{{ $modo }}" data-tipos="{{ $tipos ?? '' }}" @if ($capturar && ! empty($camara)) data-lector-con-camara @endif
      data-url="{{ route('lector.resolver') }}" data-jsqr="{{ asset('vendor/jsqr/jsQR.js') }}">
     @isset($etiqueta)
         <label class="campo-etiqueta" for="{{ $id }}">{{ $etiqueta }}</label>
@@ -35,7 +38,7 @@
                maxlength="200" enterkeyhint="search"
                @if ($capturar) name="{{ $nombre }}" value="{{ $valor ?? '' }}" @if ($requerido ?? false) required @endif @endif
                @if ($capturar && ! empty($duplicado)) data-duplicado="{{ $duplicado }}" data-duplicado-min="4" data-duplicado-aviso="{{ $id }}_aviso" @endif
-               placeholder="{{ $capturar ? 'Acerca la tarjeta al lector o escribe su número' : 'Escanea, acerca la etiqueta o escribe' }}">
+               placeholder="{{ $placeholder ?? ($capturar ? 'Acerca la tarjeta al lector o escribe su número' : 'Escanea, acerca la etiqueta o escribe') }}">
         <button type="button" class="btn-lector" data-lector-camara hidden title="Leer código QR con la cámara" aria-label="Leer código QR con la cámara"><i class="bi bi-qr-code-scan" aria-hidden="true"></i></button>
         <button type="button" class="btn-lector" data-lector-nfc hidden title="Leer con el NFC del celular" aria-label="Leer con el NFC del celular"><i class="bi bi-broadcast" aria-hidden="true"></i></button>
     </div>

@@ -105,8 +105,18 @@ class Gafete extends Model implements Identificable
         ];
     }
 
+    /**
+     * A dónde lleva escanear el gafete fuera de un formulario (/e/{código}):
+     * si alguien lo tiene ahora (EN SITIO) y quien escanea atiende la
+     * bitácora, a «Dar salida» de esa persona; si no, a su ficha en Gafetes.
+     */
     public function urlLector(): string
     {
+        $actor = auth()->user();
+        if ($actor !== null && $actor->can('accesos.editar') && static::query()->whereKey($this->getKey())->prestados()->exists()) {
+            return route('accesos.index', ['salida' => $this->nomenclatura]);
+        }
+
         return route('gafetes.index').'#gafete-'.$this->id;
     }
 }

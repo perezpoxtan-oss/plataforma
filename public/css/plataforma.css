@@ -1276,6 +1276,21 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .pantalla-accesos .campo:focus, .pantalla-accesos .buscador input:focus, .pantalla-accesos .filtro-select:focus { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.15); outline: none; }
 .btn-nuevo-ingreso { background: #dc3545; color: #fff; border: none; border-radius: 12px; padding: 0.75rem 1.2rem; min-height: 48px; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; }
 .btn-nuevo-ingreso:hover { background: #bb2d3b; }
+/* «Dar salida» a la vista: botón junto a Nuevo Ingreso que enfoca el campo de escaneo, y el campo siempre visible */
+.acciones-bitacora { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.btn-dar-salida { background: #fff; color: #dc3545; border: 2px solid #dc3545; border-radius: 12px; padding: 0.75rem 1.2rem; min-height: 48px; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; }
+.btn-dar-salida:hover, .btn-dar-salida:focus-visible { background: #dc3545; color: #fff; }
+.salida-a-la-vista { background: #fff5f5; border: 1px solid #fecaca; border-radius: 12px; padding: 0.75rem 0.9rem; margin-bottom: 1rem; }
+.salida-a-la-vista .lector { margin: 0; }
+.salida-a-la-vista .lector-entrada { min-height: 48px; font-size: 1rem; }
+.salida-a-la-vista .resultados-salida:not(:empty) { margin-top: 0.6rem; }
+.salida-a-la-vista .resultado-salida { background: #fff; }
+.tarjeta-dar-salida { border: 1px solid #e2e8f0; border-left: 4px solid #ef4444; border-radius: 10px; padding: 0.7rem 0.8rem; margin-bottom: 0.5rem; }
+.tarjeta-dar-salida .ficha-acceso-datos { font-size: 0.85rem; color: #334155; display: flex; flex-direction: column; gap: 0.2rem; }
+.tarjeta-dar-salida .resultado-salida-pedir { margin: 0.5rem 0 0; }
+.btn-rojo-acceso { background: #dc3545; color: #fff; }
+.btn-rojo-acceso:hover { background: #bb2d3b; }
+@media (max-width: 575.98px) { .acciones-bitacora { width: 100%; } .acciones-bitacora > button { flex: 1 1 45%; } }
 .filtros-accesos { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; align-items: stretch; }
 .filtros-accesos .filtro-texto { flex: 1 1 260px; max-width: none; }
 .filtros-accesos .filtro-select { max-width: 240px; min-height: 48px; }

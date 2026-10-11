@@ -675,6 +675,83 @@ class AccesosTest extends TestCase
         $this->actingAs($this->admin)->getJson('/accesos/en-sitio?q=x')->assertExactJson(['resultados' => []]);
     }
 
+    // ------------------------------------------------- «Dar salida» a la vista
+
+    public function test_dar_salida_a_la_vista_campo_siempre_visible_y_boton(): void
+    {
+        $this->actingAs($this->admin)->get('/accesos')->assertOk()
+            ->assertSee('Dar salida')->assertSee('data-enfocar-salida', false)->assertSee('data-salida-vista', false)
+            ->assertSee('id="salida_vista"', false)->assertSee('Escanea el gafete o escribe nombre, placas o habitación')
+            ->assertSee('data-lector-con-camara', false)->assertSee('id="dialogoDarSalida"', false)
+            // Lo que llega del lector universal se busca al cargar
+            ->assertSee('data-salida-inicial=""', false);
+        $this->actingAs($this->admin)->get('/accesos?salida=HOT-CEN-VIS-001')->assertOk()->assertSee('data-salida-inicial="HOT-CEN-VIS-001"', false);
+
+        // Quien solo consulta (sin editar) no ve el campo ni el botón
+        $director = $this->crearUsuario($this->empresa, 'Director');
+        $this->actingAs($director)->get('/accesos')->assertOk()->assertDontSee('data-salida-vista', false)->assertDontSee('data-enfocar-salida', false);
+    }
+
+    public function test_dar_salida_a_la_vista_encuentra_por_gafete_leido_nombre_placas_y_habitacion(): void
+    {
+        $g = $this->gafete();
+        $this->registrar(['tipo' => 'visitante', 'nombre' => 'Ricardo Ortega', 'gafete_id' => $g->id, 'modo_arribo' => 'auto', 'placas' => 'QRR-44-X']);
+        $a = $this->ultimo();
+        $this->registrar(['tipo' => 'huesped', 'nombre' => 'Ayleen Pérez', 'habitacion' => '310']);
+        $huesped = $this->ultimo();
+        $this->enEmpresa(fn () => $g->forceFill(['etiqueta_nfc' => '04A23B1C'])->save());
+
+        $buscar = fn (string $q) => $this->actingAs($this->admin)->getJson('/accesos/en-sitio?q='.urlencode($q))->assertOk();
+        // Lo que entrega el lector: la nomenclatura impresa (pistola), el QR con dirección (cámara) y la etiqueta NFC en cualquiera de sus formas
+        $buscar($g->nomenclatura)->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id)->assertJsonPath('resultados.0.texto_salida', 'Salida');
+        $buscar('https://plataforma.ejemplo/e/'.$g->codigo_qr)->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id);
+        $buscar('04:a2:3b:1c')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id);
+        // Nombre, placas y habitación
+        $buscar('ortega')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id);
+        $buscar('qrr 44')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.placas', 'QRR44X');
+        $buscar('310')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $huesped->id)->assertJsonPath('resultados.0.texto_salida', 'Salida Final');
+        $buscar('nadie con ese nombre')->assertExactJson(['resultados' => []]);
+        // Ya salió: no aparece
+        $this->actingAs($this->admin)->patch("/accesos/{$a->id}/salida");
+        $buscar($g->nomenclatura)->assertExactJson(['resultados' => []]);
+    }
+
+    public function test_dar_salida_a_la_vista_respeta_la_sede_y_ofrece_registrar_regreso(): void
+    {
+        $this->registrar(['tipo' => 'huesped', 'nombre' => 'Mario Playa', 'sede_id' => $this->playa->id, 'habitacion' => '101']);
+        $dePlaya = $this->ultimo();
+        $this->registrar(['tipo' => 'huesped', 'nombre' => 'Mario Centro', 'habitacion' => '202']);
+        $deCentro = $this->ultimo();
+
+        // Alcance de sede: lo de otra sede no aparece aunque coincida
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro);
+        $this->actingAs($jefe)->getJson('/accesos/en-sitio?q=mario')->assertOk()->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $deCentro->id);
+        $this->actingAs($jefe)->getJson('/accesos/en-sitio?q=101')->assertExactJson(['resultados' => []]);
+        $this->assertSame('en_sitio', $dePlaya->fresh()->estado);
+
+        // Fuera en tour: la tarjeta ofrece «Registrar regreso» (y no la salida)
+        $this->actingAs($this->admin)->post("/accesos/{$deCentro->id}/salida-temporal")->assertSessionHas('ok');
+        $this->actingAs($this->admin)->getJson('/accesos/en-sitio?q=202')->assertOk()
+            ->assertJsonPath('resultados.0.fuera_temporal', true)->assertJsonPath('resultados.0.url_regreso', route('accesos.regreso', $deCentro->id));
+        $this->actingAs($this->admin)->patch("/accesos/{$deCentro->id}/regreso")->assertSessionHas('ok', 'Regreso de tour de MARIO CENTRO registrado.');
+        $this->actingAs($this->admin)->getJson('/accesos/en-sitio?q=202')->assertJsonPath('resultados.0.fuera_temporal', false);
+    }
+
+    public function test_el_lector_universal_con_un_gafete_en_uso_ofrece_dar_salida(): void
+    {
+        $g = $this->gafete();
+        // Libre: abre su ficha en Gafetes, como siempre
+        $this->actingAs($this->admin)->get('/e/'.$g->codigo_qr)->assertRedirect(route('gafetes.index').'#gafete-'.$g->id);
+
+        $this->registrar(['tipo' => 'visitante', 'nombre' => 'Con Gafete', 'gafete_id' => $g->id]);
+        // En uso: lleva a la bitácora con la persona lista para «Dar salida»
+        $this->actingAs($this->admin)->get('/e/'.$g->codigo_qr)->assertRedirect(route('accesos.index', ['salida' => $g->nomenclatura]));
+        $this->actingAs($this->admin)->getJson('/lector/resolver?entrada='.$g->nomenclatura.'&tipos=gafete')->assertJsonPath('resultados.0.url', route('accesos.index', ['salida' => $g->nomenclatura]));
+        // Quien no da salidas (solo consulta) sigue yendo a la ficha del gafete
+        $director = $this->crearUsuario($this->empresa, 'Director');
+        $this->actingAs($director)->get('/e/'.$g->codigo_qr)->assertRedirect(route('gafetes.index').'#gafete-'.$g->id);
+    }
+
     public function test_sugerencias_al_escribir_usan_los_padrones(): void
     {
         $this->colaborador('1005');

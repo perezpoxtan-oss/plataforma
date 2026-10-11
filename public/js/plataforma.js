@@ -1794,8 +1794,8 @@ document.addEventListener('click', function (e) {
     function preparar(caja) {
         var c = caja.querySelector('[data-lector-camara]');
         var n = caja.querySelector('[data-lector-nfc]');
-        // Al asignar una tarjeta se lee su número de serie: la cámara no aplica
-        if (c) { c.hidden = !hayCamara || caja.dataset.modo === 'capturar'; }
+        // Al asignar una tarjeta se lee su número de serie: la cámara no aplica (salvo que la pantalla la pida: data-lector-con-camara)
+        if (c) { c.hidden = !hayCamara || (caja.dataset.modo === 'capturar' && !caja.hasAttribute('data-lector-con-camara')); }
         if (n) { n.hidden = !hayNfc; }
     }
 
@@ -3304,30 +3304,36 @@ document.addEventListener('click', function (e) {
 
     function buscarEnSitio(consulta) {
         var cont = document.querySelector('[data-resultados-salida]');
-        if (!cont) { return; }
-        pedirJson(urlDe('urlEnSitio') + '?' + consulta).then(function (d) {
+        if (cont) { pintarEnSitio(consulta, cont, false); }
+    }
+
+    /**
+     * Pinta a las personas en sitio que coinciden. enDialogo: la acción principal abre el
+     * diálogo corto «Dar salida» (campo a la vista); si no, el botón envía directo (vista del formulario).
+     */
+    function pintarEnSitio(consulta, cont, enDialogo, despues) {
+        var url = (salidaVista() && salidaVista().dataset.urlEnSitio) || urlDe('urlEnSitio');
+        pedirJson(url + '?' + consulta).then(function (d) {
             cont.textContent = '';
             var datos = d.resultados || [];
-            if (!datos.length) { cont.appendChild(elemento('p', 'text-muted small p-2 m-0', 'Sin resultados en sitio para esa búsqueda.')); return; }
+            if (!datos.length) { cont.appendChild(elemento('p', 'text-muted small p-2 m-0', 'Nadie en sitio coincide con esa búsqueda.')); return; }
+            if (despues) { despues(datos); }
             datos.forEach(function (r) {
                 var card = elemento('div', 'resultado-salida' + (r.fuera_temporal ? ' fuera' : ''));
                 var nombre = elemento('div', 'resultado-salida-nombre', r.nombre);
                 if (r.habitacion) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'badge-hab', 'Hab. ' + r.habitacion)); }
-                if (r.fuera_temporal) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'estado-acceso fuera mini', 'FUERA')); }
+                if (r.fuera_temporal) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'estado-acceso fuera mini', 'Fuera')); }
                 card.appendChild(nombre);
                 // Ronda 8 (AC-05): se encontró por un acompañante
                 if (r.coincide_acompanante) { card.appendChild(elemento('div', 'pista-acompanante', 'Coincide con ' + r.coincide_acompanante + ', acompañante de ' + r.nombre)); }
                 card.appendChild(elemento('div', 'resultado-salida-dato', r.tipo_etiqueta + (r.sede ? ' · ' + r.sede : '')));
                 if (r.placas) { card.appendChild(elemento('div', 'resultado-salida-dato', 'Vehículo: ' + r.placas + (r.zona ? ' · ' + r.zona + (r.zona_descarga ? ' (descarga)' : '') : ''))); }
-                var pedir = [];
-                if (r.gafete) { pedir.push('gafete ' + r.gafete + ' (titular)'); }
-                (r.acompanantes || []).forEach(function (a) { if (a.gafete) { pedir.push('gafete ' + a.gafete + ' (' + a.nombre + ')'); } });
-                if (r.identificacion) { pedir.push('la identificación (' + r.identificacion + ')'); }
+                var pedir = textoPedir(r);
                 if (pedir.length) { card.appendChild(elemento('div', 'resultado-salida-pedir', 'Pedir de vuelta: ' + pedir.join(', '))); }
-                if (!r.fuera_temporal) {
+                if (!r.fuera_temporal && !enDialogo) {
                     (r.acompanantes || []).forEach(function (a) {
                         var fila = elemento('div', 'resultado-salida-acomp');
-                        fila.appendChild(elemento('span', '', '• ' + a.nombre + (a.gafete ? ' · Gafete ' + a.gafete : '') + (a.fuera_temporal ? ' · FUERA' : '')));
+                        fila.appendChild(elemento('span', '', '• ' + a.nombre + (a.gafete ? ' · Gafete ' + a.gafete : '') + (a.fuera_temporal ? ' · Fuera' : '')));
                         if (!a.fuera_temporal) {
                             fila.appendChild(formularioPatch(a.url_salida, 'Salida', 'btn-acomp salida', '¿Confirmar salida de ' + a.nombre + (a.gafete ? ' y devolver su gafete ' + a.gafete : '') + '?'));
                         }
@@ -3335,7 +3341,12 @@ document.addEventListener('click', function (e) {
                     });
                 }
                 var acciones = elemento('div', 'resultado-salida-acciones');
-                if (r.fuera_temporal) {
+                if (enDialogo) {
+                    var abrir = elemento('button', 'btn-accion-acceso ' + (r.fuera_temporal ? 'regreso' : 'salida'), r.fuera_temporal ? 'Registrar regreso' : (r.tipo === 'huesped' ? 'Dar salida final' : 'Dar salida'));
+                    abrir.type = 'button';
+                    abrir.addEventListener('click', function () { abrirDarSalida(r); });
+                    acciones.appendChild(abrir);
+                } else if (r.fuera_temporal) {
                     acciones.appendChild(botonDialogo('dialogoRegresoAcceso', r.url_regreso, r.id, r.nombre, r.tipo === 'huesped' ? 'Regreso de Tour' : 'Regreso', 'Registrar Regreso', 'btn-accion-acceso regreso'));
                 } else {
                     if (r.salida_temporal) {
@@ -3354,27 +3365,149 @@ document.addEventListener('click', function (e) {
     }
 
     /* ---------- Diálogos de las tarjetas: zona, salida a tour / temporal, regreso ---------- */
-    document.addEventListener('click', function (e) {
-        var b = e.target.closest('[data-accion="acceso-dialogo"]');
-        if (!b) { return; }
-        var d = document.getElementById(b.dataset.dialogo);
+    function abrirDialogoAcceso(datos) {
+        var d = document.getElementById(datos.dialogo);
         var form = d && d.querySelector('[data-form-dialogo-acceso]');
         if (!form) { return; }
-        form.action = b.dataset.url;
+        form.action = datos.url;
         d.querySelectorAll('.alert').forEach(function (n) { n.remove(); });
         var poner = function (sel, valor) { form.querySelectorAll(sel).forEach(function (c) { c.value = valor || ''; }); };
-        poner('[data-dialogo-acceso-id]', b.dataset.id);
-        poner('[data-dialogo-nombre-campo]', b.dataset.nombre);
-        poner('[data-dialogo-titulo-campo]', b.dataset.titulo);
-        d.querySelectorAll('[data-dialogo-nombre]').forEach(function (n) { n.textContent = b.dataset.nombre || ''; });
-        if (b.dataset.titulo) { d.querySelectorAll('[data-dialogo-titulo]').forEach(function (n) { n.textContent = b.dataset.titulo; }); }
+        poner('[data-dialogo-acceso-id]', datos.id);
+        poner('[data-dialogo-nombre-campo]', datos.nombre);
+        poner('[data-dialogo-titulo-campo]', datos.titulo);
+        d.querySelectorAll('[data-dialogo-nombre]').forEach(function (n) { n.textContent = datos.nombre || ''; });
+        if (datos.titulo) { d.querySelectorAll('[data-dialogo-titulo]').forEach(function (n) { n.textContent = datos.titulo; }); }
         var zona = form.querySelector('[data-zona-sede]');
         if (zona) {
-            acotarOpciones(zona, b.dataset.sede, true);
-            zona.value = b.dataset.zona || '';
+            acotarOpciones(zona, datos.sede, true);
+            zona.value = datos.zona || '';
         }
         d.querySelectorAll('[data-sugerir="vehiculo"]').forEach(vigilarPlacas);
         if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="acceso-dialogo"]');
+        if (!b) { return; }
+        abrirDialogoAcceso(b.dataset);
+    });
+
+    /* ---------- «Dar salida» a la vista: campo de escaneo / búsqueda siempre visible ----------
+       Escanear el gafete que devuelven (QR, NFC o pistola) o escribir nombre, placas o habitación
+       muestra la tarjeta de la persona con «Dar salida» (o «Registrar regreso» si está fuera) en un
+       diálogo corto, sin recargar la página. Con un solo resultado el diálogo se abre solo. */
+    function salidaVista() { return document.querySelector('[data-salida-vista]'); }
+
+    function textoPedir(r) {
+        var pedir = [];
+        if (r.gafete) { pedir.push('gafete ' + r.gafete + ' (titular)'); }
+        (r.acompanantes || []).forEach(function (a) { if (a.gafete) { pedir.push('gafete ' + a.gafete + ' (' + a.nombre + ')'); } });
+        if (r.identificacion) { pedir.push('la identificación (' + r.identificacion + ')'); }
+        return pedir;
+    }
+
+    function abrirDarSalida(r) {
+        var d = document.getElementById('dialogoDarSalida');
+        if (!d) { return; }
+        var tarjeta = d.querySelector('[data-salida-tarjeta]');
+        var form = d.querySelector('[data-salida-form]');
+        var boton = d.querySelector('[data-salida-boton]');
+        var regreso = d.querySelector('[data-salida-regreso]');
+        d.querySelector('[data-salida-nombre]').textContent = r.nombre;
+        d.querySelector('[data-salida-titulo]').textContent = r.fuera_temporal ? 'Registrar regreso' : (r.tipo === 'huesped' ? 'Dar salida final' : 'Dar salida');
+        tarjeta.textContent = '';
+        var cabeza = elemento('div', 'ficha-acceso-cabeza');
+        cabeza.appendChild(elemento('span', 'badge-acceso tipo-' + r.tipo, (r.tipo_etiqueta || '').toUpperCase()));
+        cabeza.appendChild(elemento('span', 'estado-acceso ' + (r.fuera_temporal ? 'fuera' : 'en-sitio'), r.fuera_temporal ? 'Fuera' : 'En sitio'));
+        tarjeta.appendChild(cabeza);
+        var datos = elemento('div', 'ficha-acceso-datos');
+        if (r.sede) { datos.appendChild(elemento('div', '', 'Sede: ' + r.sede)); }
+        if (r.habitacion) { datos.appendChild(elemento('div', '', 'Habitación: ' + r.habitacion)); }
+        if (r.gafete) { datos.appendChild(elemento('div', '', 'Gafete: ' + r.gafete)); }
+        if (r.placas) { datos.appendChild(elemento('div', '', 'Vehículo: ' + r.placas + (r.zona ? ' · ' + r.zona + (r.zona_descarga ? ' (descarga)' : '') : ''))); }
+        if (r.coincide_acompanante) { datos.appendChild(elemento('div', 'pista-acompanante', 'Coincide con ' + r.coincide_acompanante + ', acompañante de ' + r.nombre)); }
+        (r.acompanantes || []).forEach(function (a) {
+            datos.appendChild(elemento('div', 'resultado-salida-acomp', '• ' + a.nombre + (a.gafete ? ' · Gafete ' + a.gafete : '') + (a.fuera_temporal ? ' · Fuera' : '') + ' — sale con ' + r.nombre));
+        });
+        tarjeta.appendChild(datos);
+        var pedir = textoPedir(r);
+        if (pedir.length && !r.fuera_temporal) { tarjeta.appendChild(elemento('p', 'resultado-salida-pedir', 'Pide de vuelta: ' + pedir.join(', ') + '.')); }
+        if (r.fuera_temporal) { tarjeta.appendChild(elemento('p', 'text-muted small mb-0', 'Está fuera (' + (r.tipo === 'huesped' ? 'tour' : 'salida temporal') + '). Al registrar su regreso vuelve a En sitio.')); }
+        form.action = r.url_salida || '';
+        boton.hidden = !!r.fuera_temporal;
+        boton.textContent = r.tipo === 'huesped' ? 'Dar salida final' : 'Dar salida';
+        regreso.hidden = !r.fuera_temporal;
+        regreso.dataset.dialogo = 'dialogoRegresoAcceso';
+        regreso.dataset.url = r.url_regreso || '';
+        regreso.dataset.id = r.id;
+        regreso.dataset.nombre = r.nombre;
+        regreso.dataset.titulo = r.tipo === 'huesped' ? 'Regreso de Tour' : 'Regreso';
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+        setTimeout(function () { (r.fuera_temporal ? regreso : boton).focus(); }, 60);
+    }
+
+    document.addEventListener('click', function (e) {
+        var regreso = e.target.closest('[data-salida-regreso]');
+        if (!regreso) { return; }
+        var d = regreso.closest('dialog');
+        if (d) { d.close(); }
+        abrirDialogoAcceso(regreso.dataset);
+    });
+
+    document.addEventListener('submit', function (e) {
+        if (!e.target.matches('[data-salida-form]')) { return; }
+        setTimeout(function () { e.target.querySelectorAll('button[type="submit"]').forEach(function (b) { b.disabled = true; }); }, 0);
+    });
+
+    function limpiarEstadoLector(caja) {
+        var estado = caja && caja.querySelector('[data-lector-estado]');
+        if (estado) { estado.hidden = true; estado.textContent = ''; }
+    }
+
+    function buscarSalidaVista(texto, abrirSiUno) {
+        var caja = salidaVista();
+        var cont = caja && caja.querySelector('[data-resultados-salida-vista]');
+        if (!cont) { return; }
+        texto = (texto || '').trim();
+        if (texto.length < 2) { cont.textContent = ''; return; }
+        pintarEnSitio('q=' + encodeURIComponent(texto), cont, true, function (datos) {
+            if (abrirSiUno && datos.length === 1) { abrirDarSalida(datos[0]); }
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-enfocar-salida]')) { return; }
+        var caja = salidaVista();
+        var entrada = caja && caja.querySelector('[data-lector-entrada]');
+        if (!entrada) { return; }
+        caja.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        entrada.focus();
+        entrada.select();
+    });
+
+    document.addEventListener('input', function (e) {
+        var caja = e.target.closest && e.target.closest('[data-salida-vista]');
+        if (!caja || !e.target.matches('[data-lector-entrada]')) { return; }
+        limpiarEstadoLector(caja);
+        var texto = e.target.value;
+        esperar('salida-vista', function () { buscarSalidaVista(texto, false); }, 300);
+    });
+
+    // Lo que entrega un lector (Enter de la pistola, NFC o cámara): se busca al momento y, si es una sola persona, se abre su tarjeta
+    document.addEventListener('lector:capturado', function (e) {
+        var caja = e.target.closest && e.target.closest('[data-salida-vista]');
+        if (!caja) { return; }
+        clearTimeout(esperas['salida-vista']);
+        limpiarEstadoLector(caja);
+        buscarSalidaVista(e.detail, true);
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var caja = salidaVista();
+        if (!caja || !caja.dataset.salidaInicial) { return; }
+        var entrada = caja.querySelector('[data-lector-entrada]');
+        if (entrada) { entrada.value = caja.dataset.salidaInicial; }
+        buscarSalidaVista(caja.dataset.salidaInicial, true);
     });
 
     /* ---------- Filtro de tarjetas sin recargar (Gente en Sitio y Pendientes) ---------- */

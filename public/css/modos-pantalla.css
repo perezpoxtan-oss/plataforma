@@ -632,7 +632,9 @@ html.modo-sol .opcion-tipo, html.modo-sol .modo-opt, html.modo-sol .btn-contador
 html.modo-sol .btn-accion-acceso.temporal, html.modo-sol .btn-accion-acceso.zona, html.modo-sol .btn-siguiente-ingreso, html.modo-sol .btn-exportar-accesos,
 html.modo-sol .btn-limpiar-accesos, html.modo-sol .btn-decision.distinta { background: #fff; color: #000; border: 1px solid #64748b !important; }
 html.modo-sol .opcion-tipo:has(input:checked), html.modo-sol .modo-opt:has(input:checked), html.modo-sol .btn-nuevo-ingreso, html.modo-sol .btn-guardar-ingreso,
-html.modo-sol .btn-accion-acceso.salida, html.modo-sol .btn-filtrar-accesos { background: #000; color: #fff; border: 1px solid #64748b; }
+html.modo-sol .btn-accion-acceso.salida, html.modo-sol .btn-filtrar-accesos, html.modo-sol .btn-rojo-acceso { background: #000; color: #fff; border: 1px solid #64748b; }
+html.modo-sol .btn-dar-salida { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .salida-a-la-vista, html.modo-sol .tarjeta-dar-salida { background: #fff; color: #000; border: 1px solid #64748b; }
 html.modo-sol .btn-accion-acceso.autorizar, html.modo-sol .btn-decision.misma { background: #14532d; color: #fff; border: 1px solid #64748b; }
 html.modo-sol .btn-accion-acceso.regreso, html.modo-sol .btn-ambar-acceso { background: #fde047; color: #000; border: 1px solid #64748b; }
 html.modo-sol .caja-persona-repetida.alert-danger { background: #fff; color: #000; border: 2px solid #1e293b; }
@@ -663,6 +665,11 @@ html.modo-noche .btn-limpiar-accesos { background: var(--superficie-2); color: #
 html.modo-noche .btn-acomp, html.modo-noche .btn-accion-acceso.temporal, html.modo-noche .btn-accion-acceso.zona, html.modo-noche .btn-salida-rapida,
 html.modo-noche .btn-siguiente-ingreso, html.modo-noche .btn-decision.distinta { background: transparent; }
 html.modo-noche .btn-acomp.salida, html.modo-noche .btn-salida-rapida, html.modo-noche .btn-siguiente-ingreso { color: #fca5a5; border-color: #f87171 !important; }
+html.modo-noche .btn-dar-salida { background: transparent; color: #fca5a5; border-color: #f87171; }
+html.modo-noche .btn-dar-salida:hover, html.modo-noche .btn-dar-salida:focus-visible { background: #dc3545; color: #fff; }
+html.modo-noche .salida-a-la-vista { background: rgba(239, 68, 68, 0.08); border-color: #7f1d1d; }
+html.modo-noche .tarjeta-dar-salida { background: var(--superficie); border-color: var(--borde); border-left-color: #ef4444; }
+html.modo-noche .tarjeta-dar-salida .ficha-acceso-datos { color: var(--texto); }
 html.modo-noche .btn-acomp.temporal, html.modo-noche .btn-accion-acceso.temporal { color: #fcd34d; }
 html.modo-noche .btn-acomp.regreso { color: #86efac; }
 html.modo-noche .btn-accion-acceso.zona { color: #93c5fd; border-color: #60a5fa; }
