@@ -22,11 +22,10 @@ resumen: Publicar vacantes una sola vez para la bolsa de trabajo por internet, e
 ## Cómo crear una vacante
 
 1. Entra a **Recursos Humanos → Vacantes** y toca **Nueva vacante**.
-2. En **La vacante** escribe el **Título de la vacante** (por ejemplo «Camarista»), elige el **Puesto (catálogo)** y el **Departamento**, el **Número de plazas** y la **Sede(s)** (si solo tienes una, ya viene marcada; **Todas las sedes** es solo para quien tiene alcance de empresa).
+2. En **La vacante** solo se pide lo indispensable: elige el **Puesto (catálogo)** (el **Título de la vacante** se llena solo con el nombre del puesto; cámbialo si quieres), el **Departamento**, el **Número de plazas** y la **Sede(s)** (si solo tienes una, ya viene marcada; **Todas las sedes** es solo para quien tiene alcance de empresa).
    - **Número de plazas:** cuántas personas se van a contratar. Cuando el jefe elige a tantas personas como plazas, los demás candidatos de la vacante que seguían con el departamento pasan solos a **Considerar**.
-   - **El jefe puede ver el CV:** márcalo si quien entrevista debe ver el CV en PDF del candidato. Apagado (así viene), solo ve un resumen: escolaridad, experiencia, disponibilidad y sueldo que espera.
-3. Abre las secciones que necesites:
-   - **Condiciones:** contrato, jornada, turno, horario y sueldo (o «a tratar»).
+3. Lo demás viene plegado; ábrelo solo si lo necesitas (también puedes completarlo después con **Editar**):
+   - **Condiciones y quién ve el CV:** contrato, jornada, turno, horario y sueldo (o «a tratar»), y la casilla **El jefe puede ver el CV** (márcala si quien entrevista debe ver el CV en PDF; apagada, solo ve un resumen).
    - **Descripción y requisitos:** un requisito o prestación por renglón.
    - **Fechas y contacto:** fecha de publicación y de cierre, teléfono y correo de contacto.
 4. Toca **Guardar borrador** (para terminarla después) o **Guardar y publicar**.
@@ -34,6 +33,8 @@ resumen: Publicar vacantes una sola vez para la bolsa de trabajo por internet, e
 ![Nueva vacante](img/vacantes/nueva-vacante.png)
 
 **Qué debes ver:** «Vacante «Camarista» publicada. Ya aparece en la bolsa de trabajo y puedes imprimir su cartel.» o «Vacante «…» guardada como borrador. Publícala cuando esté lista.»
+
+Si eres **jefe de departamento** y pides una vacante, queda en borrador («… enviada como borrador: Recursos Humanos la revisará y la publicará») y a Recursos Humanos le llega la campana **Vacante propuesta por …**.
 
 > No puede haber dos vacantes abiertas con el mismo título: si necesitas más personas, edita la que ya existe y sube las plazas.
 
@@ -131,7 +132,7 @@ Los mensajes salen en rojo dentro de la ventana o arriba de la lista.
 
 **¿Puedo reutilizar una vacante cerrada?** Sí, con **Reabrir como borrador**; edítala y publícala de nuevo.
 
-**¿Qué pasa cuando se cubren las plazas?** Al elegir el jefe a tantas personas como plazas, los demás candidatos que seguían con el departamento pasan a «Considerar» y Recursos Humanos recibe el aviso «Vacante cubierta». La vacante sigue publicada hasta que la cierres (como **Cubierta**).
+**¿Qué pasa cuando se cubren las plazas?** Al elegir el jefe a tantas personas como plazas, los demás candidatos que seguían con el departamento pasan a «Considerar» y Recursos Humanos recibe el aviso «Vacante cubierta» con el botón **Cerrar como cubierta**: tócalo en la campana y la vacante se cierra ahí mismo. Si prefieres seguir recibiendo candidatos, ignóralo: la vacante sigue publicada hasta que la cierres.
 
 ## Relacionado
 

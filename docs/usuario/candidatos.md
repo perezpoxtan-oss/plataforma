@@ -25,11 +25,10 @@ Cada persona tiene **una sola ficha** (sus datos, su solicitud, sus documentos y
 
 | Etapa | Qué significa | Quién sigue | Botones |
 |---|---|---|---|
-| **Esperando** | Llegó (caseta, kiosco, internet o lo capturaste tú). | Recursos Humanos | **Atender** |
-| **En revisión RR. HH.** | Ya lo recibiste. | Recursos Humanos | **Entrevistar** |
-| **Entrevista RR. HH.** | Lo estás entrevistando y lo calificas. | Recursos Humanos | **Entrevistar** (calificar) y luego **Canalizar al departamento** |
-| **Entrevista con el departamento** | El jefe tiene su cita. | El jefe | **Reprogramar** · **No se presentó** (si ya pasó la hora) |
-| **Evaluado por el departamento** | El jefe lo calificó y no lo eligió (pidió considerarlo, una segunda entrevista o lo rechazó). | Recursos Humanos | **Segunda entrevista** |
+| **Por atender** | Llegó (caseta, kiosco, internet o lo capturaste tú). | Recursos Humanos | **Atender** (o **Que pase y lo atiendo** desde Recepción) |
+| **Con RR. HH.** | Ya lo recibiste: lo entrevistas y lo calificas cuando quieras, desde la misma etapa. | Recursos Humanos | **Entrevistar** (calificar) y luego **Canalizar al departamento** |
+| **Entrevista con el departamento** | El jefe tiene su cita (o pidió una segunda entrevista y falta ponerle fecha). | El jefe | **Reprogramar** / **Ponle fecha (reprogramar)** · **No se presentó** (si ya pasó la hora) |
+| **Evaluado por el departamento** | El jefe lo calificó y no lo eligió (pidió considerarlo o lo rechazó). | Recursos Humanos | **Segunda entrevista** (si tú quieres darle otra oportunidad) |
 | **Elegido** | El jefe lo eligió. | Recursos Humanos | **Contratar** |
 | **Contratado** | Ya es colaborador. | — | — |
 | **Considerar / cartera** | No ahora, pero se guarda para otra vacante. | Recursos Humanos | **Atender** |
@@ -42,7 +41,8 @@ Cada persona tiene **una sola ficha** (sus datos, su solicitud, sus documentos y
 
 Un candidato aparece en la lista por cualquiera de estos caminos:
 
-- **Caseta:** en la [Bitácora de accesos](accesos.md) registra a la persona con motivo **Recursos Humanos** y elige **¿A qué viene?**: **Busca empleo** (con su vacante, si la sabe), **Entrevista**, **Entrega de documentos** o **Firma de contrato**. Recursos Humanos recibe el aviso en la campana y en [Recepción](recepcion-y-autorizaciones.md), donde le dice **Que pase**.
+- **Caseta:** en la [Bitácora de accesos](accesos.md) registra a la persona con motivo **Recursos Humanos** y elige **¿A qué viene?**: **Busca empleo** (con su vacante, si la sabe) o **Ya tiene cita** (la plataforma deduce si viene a su entrevista, a entregar documentos o a firmar). Recursos Humanos recibe el aviso en la campana y en [Recepción](recepcion-y-autorizaciones.md), donde le dice **Que pase y lo atiendo** o **Que pase**.
+- **Internet (bolsa de trabajo):** se postula con la **solicitud corta** (nombre, teléfono, correo y CV opcional). Su ficha dice **Solicitud incompleta** hasta que llene la solicitud completa con el enlace que recibe por correo o en el kiosco cuando venga (ver [Solicitud de empleo](solicitud-empleo.md)).
 - **Bolsa de trabajo por internet:** se postula desde la página de [Vacantes](vacantes.md).
 - **Recursos Humanos:** con el botón **Nuevo candidato** (ver abajo).
 
@@ -91,8 +91,8 @@ Arriba ves la etapa de su **postulación actual**, los pasos del proceso y los b
 
 ## Cómo atender y entrevistar (Recursos Humanos)
 
-1. Con el candidato en **Esperando**, toca **Atender** y confirma con **Aceptar**. Pasa a **En revisión RR. HH.**
-2. Cuando lo vayas a entrevistar, toca **Entrevistar**. Pasa a **Entrevista RR. HH.** y se abre **Evaluación de RR. HH.**
+1. Con el candidato en **Por atender**, toca **Atender** y confirma con **Aceptar**. Pasa a **Con RR. HH.** (si le diste el paso desde Recepción con **Que pase y lo atiendo**, ya está ahí).
+2. Cuando lo entrevistes, toca **Entrevistar**: se abre **Evaluación de RR. HH.** (no cambia de etapa; puedes cerrarla y volver después).
 3. Al terminar la entrevista, califica cada criterio tocando de **1 a 5 estrellas** (también puedes usar el teclado: tabulador para llegar al criterio y flechas para cambiar la calificación).
 4. Revisa la **Fecha y hora de la entrevista** (ya viene la de ahora).
 5. Elige el **Resultado**:
@@ -106,12 +106,12 @@ Arriba ves la etapa de su **postulación actual**, los pasos del proceso y los b
 
 **Qué debes ver:** con **Canalizar al departamento**, «Evaluación guardada (promedio 4.2). Ahora canalízalo al departamento…» y se abre la ventana para canalizar. Con **Considerar** o **Rechazar**, el candidato queda en esa etapa y **el jefe no recibe ningún aviso**. La evaluación aparece en **Entrevistas y evaluaciones**, con sus estrellas y su promedio.
 
-> Los criterios que se califican los define Recursos Humanos en **Recepción → Ajustes** (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)).
+> Los criterios que se califican los define Recursos Humanos en **Candidatos → Criterios de entrevista** (ver «Cómo cambiar los criterios de entrevista»).
 
 ## Cómo canalizar al departamento
 
 1. Después de guardar la evaluación con **Canalizar al departamento**, se abre la ventana (o toca el botón **Canalizar al departamento**).
-2. Revisa la **Vacante** y el **Departamento** (ya vienen los de su postulación).
+2. La **Vacante** y el **Departamento** ya vienen de su postulación y se muestran como texto: no los vuelvas a capturar. Si hace falta cambiarlos, toca **cambiar vacante o departamento**.
 3. En **¿Quién lo entrevista?** ya viene el **responsable del departamento**. Si el departamento no tiene responsable, elige a otra persona de la lista **Otras personas que pueden entrevistar**.
 4. En **¿Cuándo?** elige **Con cita (fecha y hora)** y escribe la **Fecha** y la **Hora**, o **Ahora, está en sala** si el jefe lo recibe en este momento.
 5. Escribe el **Lugar o notas** (por ejemplo «Oficina de Alimentos y Bebidas, planta baja»).
@@ -145,10 +145,11 @@ Te llega el aviso «El departamento evaluó a …» o «Elegido por el departame
 ![Evaluación del departamento en la ficha](img/recepcion-y-candidatos/candidato-ficha-evaluado.png)
 
 - Si lo **eligió**, el candidato queda **Elegido**: sigue con sus documentos y su contrato y tócale **Contratar** (o **Rechazar** con el motivo, por ejemplo «No entregó documentos»).
-- Si pidió **Segunda entrevista** o **Considerar**, toca **Segunda entrevista** para canalizarlo otra vez (es su 2.ª entrevista: puedes elegir a otra persona), o decide **Considerar** o **Rechazar**.
-- Si lo **rechazó**, el candidato queda **Evaluado por el departamento**: tú cierras el contacto y lo pasas a **Rechazar** (o a **Considerar** si te sirve para otra vacante).
+- Si pidió **Segunda entrevista**, te llega «Pide segunda entrevista: ponle fecha a …». El candidato sigue en **Entrevista con el departamento** con la misma persona (es su 2.ª entrevista) pero **sin fecha**: toca **Ponle fecha (reprogramar)** y elige la cita.
+- Si pidió **Considerar** o lo **rechazó**, el candidato queda **Evaluado por el departamento**: tú cierras el contacto y lo pasas a **Rechazar** o a **Considerar** (cartera, para otra vacante). Si crees que vale otra oportunidad, **Segunda entrevista** lo canaliza otra vez (puedes elegir a otra persona).
+- El jefe tiene **15 minutos** para corregir su evaluación después de guardarla (hasta que tú la atiendas); si lo hace, te llega «Corrigió su evaluación de …». Si la cita era **Ahora, está en sala**, el propio jefe puede marcar **No se presentó** y te llega el aviso.
 
-> Si la vacante tiene **plazas** y el jefe elige a tantas personas como plazas, los demás candidatos de esa vacante que seguían con el departamento pasan solos a **Considerar** con el comentario «Se eligió a otra persona para esta vacante», y te llega el aviso «Vacante cubierta».
+> Si la vacante tiene **plazas** y el jefe elige a tantas personas como plazas, los demás candidatos de esa vacante que seguían con el departamento pasan solos a **Considerar** con el comentario «Se eligió a otra persona para esta vacante», y te llega el aviso «Vacante cubierta» con el botón **Cerrar como cubierta** (ver [Vacantes](vacantes.md)).
 
 ## Cómo considerar o rechazar
 
@@ -183,6 +184,18 @@ Te llega el aviso «El departamento evaluó a …» o «Elegido por el departame
 ![Formulario del candidato en su celular](img/recepcion-y-candidatos/kiosco-formulario.png)
 
 **Qué debes ver:** la ficha marcada **Por revisar** con lo que envió. Si necesitas cancelar el enlace antes de tiempo, toca **Anular enlace**.
+
+Si el candidato tiene correo, también puedes tocar **Enviar enlace por correo**: le llega un enlace que vale 72 horas para llenar la solicitud desde su casa (anula el QR anterior). Es lo normal para quien se postuló por internet con la **solicitud corta** (su ficha dice **Solicitud incompleta**); cuando la llene, la marca desaparece y la ficha queda **Por revisar**.
+
+## Cómo cambiar los criterios de entrevista
+
+1. En **Candidatos** toca **Criterios de entrevista**.
+2. Escribe, uno por renglón, lo que Recursos Humanos y el jefe califican de 1 a 5 estrellas en cada entrevista (hasta 8). Deja vacío el renglón que no uses. De inicio vienen: Presentación, Experiencia para el puesto, Actitud y comunicación, Disponibilidad (turnos, horario, fecha de inicio) y Expectativa económica.
+3. Toca **Guardar criterios**.
+
+![Criterios para calificar las entrevistas](img/recepcion-y-candidatos/recepcion-criterios.png)
+
+**Qué debes ver:** «Criterios de entrevista guardados. Las evaluaciones anteriores conservan los suyos.» Necesitas el permiso **Configurar** de *Candidatos* con alcance de empresa; con alcance de sede solo los consultas.
 
 ## Cómo exportar a Excel
 
@@ -226,7 +239,9 @@ Los mensajes salen en rojo dentro de la ventana o arriba de la ficha.
 
 **¿El jefe ve el CV completo?** No. Ve un resumen (escolaridad, experiencia, disponibilidad y sueldo que espera) y tu evaluación. Ve el CV en PDF solo si la vacante tiene marcado **El jefe puede ver el CV**.
 
-**¿Al candidato le llega algún correo?** Solo si marcas **Avisar al candidato por correo** al canalizar o reprogramar: le llega su cita. Nunca se le envían resultados ni rechazos.
+**¿Al candidato le llega algún correo?** Solo su cita (si marcas **Avisar al candidato por correo** al canalizar o reprogramar) y el enlace para completar su solicitud (al postularse por internet o con **Enviar enlace por correo**). Nunca se le envían resultados ni rechazos.
+
+**¿Qué significa «Solicitud incompleta»?** Que se postuló por internet con la solicitud corta y aún no llena la solicitud completa. Mándale el enlace por correo o muéstrale el QR cuando venga; también puedes capturarla tú con **Editar solicitud**.
 
 **Me equivoqué al rechazar.** Desde **Rechazado** puedes volver a **Atender**.
 

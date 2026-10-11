@@ -69,6 +69,14 @@ Candidato: `llegada_en` (entrada en caseta) → `avisado_rh_en` → `revision_en
 
 Módulos nuevos en el área Recursos Humanos (menú Recursos Humanos → «Recepción y candidatos»): `recepcion_rh` (ver), `candidatos` (ver, crear, editar, eliminar, exportar, contratar, configurar), `autorizaciones` (ver, responder, configurar). Acciones nuevas del catálogo: `contratar`, `responder`. `RolesPlantillaSeeder::RECEPCION` hace las excepciones: Director (recepción y responder, sin CV), Jefe de seguridad y Supervisor (responder en su sede). En una base existente, la migración da los permisos a los roles con `colaboradores.crear` (todo) y con `accesos.aprobar` (ver y responder).
 
+## Una sola pantalla de responsables y esperas (ADR-0010)
+
+`GET /autorizaciones/responsables` (`autorizaciones.configurar`) reúne: responsables y suplentes por departamento, «Las visitas esperan la autorización del responsable», «La caseta espera a que RR. HH. diga «Que pase»» y los minutos de recordatorio y escalamiento («Guardar esperas»). Se llega desde Departamentos (botón «Responsables», `?desde=departamentos`, y el enlace «Nombrar responsable» de la tarjeta sin responsable), desde Recepción → Ajustes (`?desde=recepcion`) y desde Autorizaciones; el enlace «volver» sigue al origen. `AjustesRecepcion::guardar($actor, $empresa, $entrada, $partes)` recibe las partes que manda cada formulario (`privacidad`, `criterios`, `esperas`, `escalamiento`); `RecepcionController::guardarAjustes` decide las partes por los campos presentes y los permisos (`candidatos.configurar` o `autorizaciones.configurar` con alcance de empresa). Recepción → Ajustes queda con el aviso de privacidad y el kiosco (y Configuración incluye la misma vista parcial). No hay permisos nuevos.
+
+## Menú: «Mis entrevistas» y «Autorizaciones»
+
+`ConstructorMenu::conPantallasPersonales` agrega a la sección «Recepción y candidatos» del menú Recursos Humanos dos renglones sin módulo propio: **Mis entrevistas** (`entrevistas.index`) con `candidatos.evaluar`, y **Autorizaciones** (`autorizaciones.index`) con `autorizaciones.responder` y si `Autorizaciones::departamentosQueAtiende()` no está vacío (responsable, suplente o delegado activo). El módulo `autorizaciones` sigue sin `menu_id` (la migración de menús y `MenuSeeder` no cambian).
+
 ## Avisos por correo (Configuración)
 
 `candidato_llegada` (también el aviso con botones del «Que pase»), `autorizacion_departamento` (visitas), y desde la fase 2 `entrevista_departamento` (al entrevistador) y `evaluacion_departamento` (a RR. HH.), que reemplazó a `autorizacion_respuesta` (`Empresa::AVISOS`, encendidos por defecto). En las métricas, las de recepción se agrupan como «Recursos Humanos (caseta)».

@@ -37,36 +37,51 @@ Historial: `evento`, `etapa_anterior`, `etapa_nueva`, `comentario`, `user_id` (n
 ### `enlaces_kiosco`
 `token_hash` (SHA-256; el token nunca se guarda), `codigo` (6 caracteres sin 0/O ni 1/I/L), `expira_en`, `usos_maximos`, `usos`, `ultimo_uso_en`, `revocado_en`.
 
-## Etapas (fase 2)
+## Etapas (fase 2, simplificadas en ADR-0010)
 
 ```
-registrado (Esperando) ─Atender▶ revision ─Entrevistar▶ entrevista_rh ─(evaluación RR. HH. «canalizar»)─ Canalizar al departamento ▶ canalizado
-canalizado ─(el entrevistador evalúa)▶ elegido (Elegir) | evaluado (Considerar · Segunda entrevista · Rechazar)
-evaluado ─Segunda entrevista▶ canalizado (numero_entrevista + 1)      elegido ─Contratar▶ contratado
-canalizado ─Reprogramar▶ canalizado      canalizado ─No se presentó (ya pasó la cita)▶ no_se_presento ─Reprogramar▶ canalizado
-Laterales: considerar (comentario) y rechazado (motivo) desde casi todas; considerar ─Atender▶ revision; rechazado ─Atender▶ revision
+registrado (Por atender) ─Atender / «Que pase y lo atiendo»▶ con_rh ─(evaluación RR. HH. «canalizar»)─ Canalizar al departamento ▶ canalizado
+canalizado ─(el entrevistador evalúa)▶ elegido (Elegir) | canalizado n+1 sin cita (Segunda entrevista) | evaluado (Considerar · Rechazar)
+evaluado ─Segunda entrevista (RR. HH.)▶ canalizado (numero_entrevista + 1)      elegido ─Contratar▶ contratado
+canalizado ─Reprogramar▶ canalizado      canalizado ─No se presentó▶ no_se_presento ─Reprogramar▶ canalizado
+Laterales: considerar (comentario) y rechazado (motivo) desde casi todas; considerar ─Atender▶ con_rh; rechazado ─Atender▶ con_rh
 ```
 
 | Etapa | Etiqueta | Siguientes (`Candidato::TRANSICIONES`) |
 |---|---|---|
-| `registrado` | Esperando | revision, considerar, rechazado |
-| `revision` | En revisión RR. HH. | entrevista_rh, considerar, rechazado |
-| `entrevista_rh` | Entrevista RR. HH. | canalizado, considerar, rechazado |
-| `canalizado` | Entrevista con el departamento | canalizado (reprogramar), evaluado, elegido, no_se_presento, considerar, rechazado |
+| `registrado` | Por atender | con_rh, considerar, rechazado |
+| `con_rh` | Con RR. HH. | canalizado, considerar, rechazado |
+| `canalizado` | Entrevista con el departamento | canalizado (reprogramar / segunda), evaluado, elegido, no_se_presento, considerar, rechazado |
 | `evaluado` | Evaluado por el departamento | canalizado (segunda entrevista), considerar, rechazado |
 | `elegido` | Elegido | contratado, rechazado |
 | `no_se_presento` | No se presentó | canalizado, considerar, rechazado |
-| `considerar` | Considerar / cartera | revision, rechazado |
-| `rechazado` | Rechazado | revision |
+| `considerar` | Considerar / cartera | con_rh, rechazado |
+| `rechazado` | Rechazado | con_rh |
 | `contratado` | Contratado | — |
 
-`Candidato::ETAPAS`, `COLORES`, `RUTA` (avance de la ficha), `LATERALES`, `ABIERTAS` (en proceso: de registrado a elegido, más no_se_presento), `POR_ENTREVISTAR` (revision y entrevista_rh) y `MANUALES` (lo que acepta `PATCH /candidatos/{c}/etapa`: revision, entrevista_rh, considerar, rechazado; considerar y rechazado piden comentario). Lo demás tiene su formulario y su servicio:
+`revision` y `entrevista_rh` ya no existen: la migración `2026_10_22_000100_etapas_simplificadas_con_rh` los traduce a `con_rh` en `postulaciones`, `candidatos` (espejo) y `candidato_eventos` (idempotente). Su `down()` regresa `con_rh` a `entrevista_rh` si la postulación tiene `entrevista_rh_en` y a `revision` si no; el espejo sigue a su postulación más reciente y el historial vuelve a `revision`. Las columnas `revision_en` («RR. HH. lo atendió») y `entrevista_rh_en` (fecha de la primera evaluación de RR. HH.) se conservan.
 
-- **Evaluación de RR. HH.** (`Entrevistas::evaluarRh`): desde revision o entrevista_rh (desde revision la pasa sola a entrevista_rh). Considerar → considerar y Rechazar → rechazado con el comentario como motivo, **sin avisar al departamento**. Canalizar deja lista la canalización (y abre su diálogo).
-- **Canalizar al departamento** (`Entrevistas::canalizar`): desde entrevista_rh (exige la última evaluación de RR. HH. con «canalizar»), evaluado (segunda entrevista: `numero_entrevista + 1`), canalizado o no_se_presento (reprogramar). Pide vacante (publicada o en pausa, o la que ya tenía), departamento (activo en la sede), entrevistador (`Entrevistas::elegibles`: responsables del departamento en esa sede con `candidatos.evaluar`, y las demás personas activas con `candidatos.evaluar` en la sede que no atienden candidatos —`candidatos.editar`—), cuándo (`ahora` o fecha y hora locales, no en el pasado ni a más de 90 días), lugar o notas y la casilla «Avisar al candidato por correo». Avisos: ver abajo.
-- **No se presentó** (`Entrevistas::noSePresento`): solo canalizado con la cita ya pasada (o «ahora»).
-- **Evaluación del departamento** (`Entrevistas::evaluarDepartamento`): solo canalizado y solo el entrevistador asignado o su delegado activo (`Delegacion::activas()`, el mismo «No molestar» de las autorizaciones) con `candidatos.evaluar` en la sede. Elegir → elegido; lo demás → evaluado (Recursos Humanos cierra el contacto).
-- **Plazas** (`Entrevistas::cubrirPlazas`): al elegir, si elegidos + contratados de la vacante ≥ `vacantes.plazas` (por omisión 1), las demás postulaciones de esa vacante en canalizado o evaluado pasan a considerar con «Se eligió a otra persona para esta vacante», se cancela su cita y se avisa a RR. HH. («Vacante cubierta»).
+`Candidato::ETAPAS`, `COLORES`, `RUTA`, `LATERALES`, `ABIERTAS`, `POR_ENTREVISTAR` (`con_rh`) y `MANUALES` (lo que acepta `PATCH /candidatos/{c}/etapa`: con_rh, considerar, rechazado; considerar y rechazado piden comentario). `ETAPAS_ANTERIORES` incluye `revision`/`entrevista_rh → con_rh`. Lo demás tiene su formulario y su servicio:
+
+- **Atender en el «Que pase»** (`Autorizaciones::responder(..., $atender)`): desde el panel de Recepción el botón «Que pase y lo atiendo» manda `atender=1` y, si el candidato sigue `registrado`, lo pasa a `con_rh` con el mismo actor. «Que pase» a secas, la campana y el correo no lo atienden.
+- **Evaluación de RR. HH.** (`Entrevistas::evaluarRh`): solo con `con_rh`; no cambia de etapa (anota `entrevista_rh_en` la primera vez). Considerar → considerar y Rechazar → rechazado con el comentario como motivo, **sin avisar al departamento**. Canalizar deja lista la canalización (y abre su diálogo).
+- **Canalizar al departamento** (`Entrevistas::canalizar`): desde con_rh (exige la última evaluación de RR. HH. con «canalizar»), evaluado (segunda entrevista: `numero_entrevista + 1`), canalizado o no_se_presento (reprogramar). La vista muestra vacante y departamento de la postulación como texto, con «cambiar vacante o departamento» (`<details>`) que abre los selectores (se abre solo si no hay departamento o hay error en esos campos). Pide entrevistador (`Entrevistas::elegibles`), cuándo (`ahora` o fecha y hora locales, no en el pasado ni a más de 90 días), lugar o notas y la casilla «Avisar al candidato por correo».
+- **No se presentó** (`Entrevistas::noSePresento`): RR. HH. con la cita ya pasada; el propio entrevistador (`POST /entrevistas/{p}/no-se-presento`, `$porEntrevistador`) solo con `cita_ahora` y si `puedeEvaluar`; en ese caso se resuelve su aviso y se avisa a RR. HH.
+- **Evaluación del departamento** (`Entrevistas::evaluarDepartamento`): solo canalizado y solo el entrevistador asignado o su delegado activo. Elegir → elegido; **Segunda entrevista → sigue `canalizado` con el mismo entrevistador, `numero_entrevista + 1`, sin cita** (la ficha ofrece «Ponle fecha (reprogramar)» y RR. HH. recibe «Pide segunda entrevista: ponle fecha a …»); Considerar o Rechazar → evaluado.
+- **Corregir la evaluación** (`Entrevistas::puedeCorregir`, `corregirEvaluacion`, `MINUTOS_CORRECCION = 15`): quien la hizo, dentro de 15 minutos, si no hay evaluación posterior y la postulación sigue como la dejó (elegido / canalizado n+1 sin cita / evaluado). Si cambia el resultado se acomoda la postulación; una «Elegir» solo corrige estrellas y comentario. Evento `evaluacion_corregida`, auditoría `candidatos.evaluacion_corregida` y aviso a RR. HH.
+- **Plazas** (`Entrevistas::cubrirPlazas`): al elegir, si elegidos + contratados de la vacante ≥ `vacantes.plazas`, las demás postulaciones de esa vacante en canalizado o evaluado pasan a considerar con «Se eligió a otra persona para esta vacante», se cancela su cita y RR. HH. recibe «Vacante cubierta» (referencia `vacante`) con el botón **Cerrar como cubierta** (`PATCH /vacantes/{v}/estado`, `cierre_motivo=cubierta`); `AdministradorVacantes::cambiarEstado` resuelve los avisos de la vacante al publicarla o cerrarla.
+
+## «¿A qué viene?» en la caseta (ADR-0010)
+
+`Acceso::OPCIONES_CASETA`: `busca_empleo`, `cita` («Ya tiene cita») y `tramite`. Con `cita`, `AdministradorCandidatos::desdeAcceso` busca la ficha (persona, teléfono o nombre exacto) y `deducirCita()` guarda en `accesos.viene_a` lo deducido de la postulación abierta: `canalizado → entrevista`, `elegido → documentos` (o `firma` si ya tiene `ine` y `comprobante`), lo demás → `cita` («Cita con RR. HH.»). Sin ficha queda `busca_empleo` con nota en el historial. **Decisión:** los accesos existentes **no se migran**; `Acceso::VIENE_A` conserva `entrevista`, `documentos`, `firma` e `informes` con su etiqueta, y la caseta sigue aceptando esos valores si un formulario viejo los manda (`informes` ya no, porque no abre ficha y el enlace a las vacantes se muestra siempre).
+
+## Postulación corta por internet (ADR-0010)
+
+`BolsaTrabajo::postularCorta`: nombre completo, teléfono, correo (obligatorio), sede y CV opcional + aviso de privacidad. Crea o reutiliza la ficha por teléfono, con `candidatos.solicitud_corta = true` (migración `2026_10_22_000200`, `down()` quita la columna) salvo que la ficha ya tuviera su solicitud completa. `Kiosco::enviarEnlacePorCorreo` genera un enlace del kiosco de `HORAS_ENLACE_CORREO = 72` horas (anula el anterior) y manda `AvisoSolicitudCandidato`; sin correo configurado solo lo anota en el historial. La marca se quita al guardar en el kiosco o con «Editar solicitud». Desde la ficha, `POST /candidatos/{c}/enlace/correo` (`candidatos.editar`) lo reenvía. `BolsaTrabajo::postular` (solicitud completa) se conserva para los datos demo y pruebas. Referencias personales mínimas de la solicitud completa: `AdministradorCandidatos::REFERENCIAS_MINIMAS = 1` (constante; no hay un ajuste natural por empresa).
+
+## Criterios de entrevista
+
+Pantalla `GET /candidatos/criterios` (`candidatos.configurar`; guarda con alcance de empresa) que envía a `PUT /rh/recepcion/ajustes` solo `criterios[]` (parte «criterios» de `AjustesRecepcion::guardar`). Se quitaron de Recepción → Ajustes.
 
 Cada cambio es un `UPDATE … WHERE etapa = <la esperada>` (doble clic o dos personas: el segundo recibe «Otra persona acaba de cambiar…»).
 
