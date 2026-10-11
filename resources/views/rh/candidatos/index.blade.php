@@ -114,6 +114,8 @@
                             <span class="pastilla-etapa etapa-{{ Candidato::COLORES[$c->etapa] ?? 'gris' }}">{{ $c->etiquetaEtapa() }}</span>
                             @if ($c->autocaptura_pendiente)
                                 <span class="pastilla-revisar"><i class="bi bi-phone me-1" aria-hidden="true"></i>Por revisar</span>
+                            @elseif ($c->solicitud_corta)
+                                <span class="pastilla-revisar"><i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Solicitud incompleta</span>
                             @endif
                         </div>
                         <h2 class="ficha-title">{{ $c->nombre_completo }}</h2>

@@ -386,6 +386,31 @@ class CandidatoController extends Controller
         });
     }
 
+    /**
+     * «Enviar enlace por correo» (ficha): el candidato recibe un enlace del
+     * kiosco de varias horas para llenar su solicitud completa desde su casa
+     * (postulación corta por internet, ADR-0010).
+     */
+    public function enviarEnlace(Request $request, int $candidato): RedirectResponse
+    {
+        Gate::authorize('candidatos.editar');
+
+        return $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request) {
+            if (! $c->enProceso()) {
+                throw new CambioNoPermitido('Este candidato ya no está en proceso: no se le puede mandar el enlace.');
+            }
+            if (! app(CorreoPlataforma::class)->configurado()) {
+                throw new CambioNoPermitido('La plataforma no tiene correo configurado: muéstrale el QR del kiosco o pide al administrador que configure el correo.');
+            }
+            if ($c->correo === null || trim((string) $c->correo) === '') {
+                throw new CambioNoPermitido('No tiene correo capturado: agrégalo en «Editar solicitud» o muéstrale el QR del kiosco.');
+            }
+            app(Kiosco::class)->enviarEnlacePorCorreo($request->user(), $c);
+
+            return "Listo: le mandamos a {$c->correo} el enlace para completar su solicitud (vale ".Kiosco::HORAS_ENLACE_CORREO.' horas).';
+        });
+    }
+
     // ------------------------------------------------------------- Exportar
 
     public function exportar(Request $request, HoraLocal $hora): StreamedResponse

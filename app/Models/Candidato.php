@@ -163,7 +163,7 @@ class Candidato extends Model
     {
         return [
             'escolaridad' => 'array', 'experiencia' => 'array', 'referencias' => 'array', 'pretension' => 'decimal:2',
-            'fecha_nacimiento' => 'date', 'autocaptura_pendiente' => 'boolean', 'autocaptura_en' => 'datetime',
+            'fecha_nacimiento' => 'date', 'autocaptura_pendiente' => 'boolean', 'autocaptura_en' => 'datetime', 'solicitud_corta' => 'boolean',
             'privacidad_aceptada_en' => 'datetime', 'llegada_en' => 'datetime', 'avisado_rh_en' => 'datetime', 'revision_en' => 'datetime',
             'aprobado_rh_en' => 'datetime', 'enviado_departamento_en' => 'datetime', 'respuesta_departamento_en' => 'datetime',
             'entrevista_en' => 'datetime', 'decision_en' => 'datetime', 'contratado_en' => 'datetime',

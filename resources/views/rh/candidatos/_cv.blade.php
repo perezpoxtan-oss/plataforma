@@ -22,7 +22,7 @@
     $filas = fn (string $lista) => array_values((array) ($conOld && is_array(old($lista)) ? old($lista) : ($c?->{$lista} ?? [])));
     $escolaridad = $filas('escolaridad') ?: [['nivel' => '']];
     $experiencia = $filas('experiencia') ?: [[]];
-    $referencias = $filas('referencias') ?: ($kiosco ? [[], []] : [[]]);
+    $referencias = $filas('referencias') ?: ($kiosco ? array_fill(0, max(1, \App\Services\Candidatos\AdministradorCandidatos::REFERENCIAS_MINIMAS), []) : [[]]);
     $laborales = $filas('referencias_laborales') ?: [[]];
     $partes = $c?->partesNombre() ?? ['nombre' => '', 'paterno' => '', 'materno' => ''];
     $maximo = \App\Services\Candidatos\AdministradorCandidatos::MAX_FILAS;
@@ -270,7 +270,8 @@
 <x-seccion clave="cv-6" :abierta="$kiosco" class="bloque-cv">
     <x-slot:titulo><i class="bi bi-telephone me-2" aria-hidden="true"></i>Referencias</x-slot:titulo>
     <div data-filas-cv>
-        <h3 class="subtitulo-solicitud"><i class="bi bi-people me-1" aria-hidden="true"></i>Personales{{ $kiosco ? ' (mínimo 2) *' : '' }}</h3>
+        @php $minimoRef = \App\Services\Candidatos\AdministradorCandidatos::REFERENCIAS_MINIMAS; @endphp
+        <h3 class="subtitulo-solicitud"><i class="bi bi-people me-1" aria-hidden="true"></i>Personales{{ $kiosco ? ' (mínimo '.$minimoRef.') *' : '' }}</h3>
         <p class="campo-ayuda mt-0">Personas que {{ $kiosco ? 'te' : 'lo' }} conozcan y no sean familiares.</p>
         <div class="filas-cv" data-filas-cv-lista>
             @foreach ($referencias as $i => $f)

@@ -465,6 +465,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/candidatos/{candidato}/revisado', 'revisado')->whereNumber('candidato')->name('candidatos.revisado');
         Route::post('/candidatos/{candidato}/contratar', 'contratar')->whereNumber('candidato')->name('candidatos.contratar');
         Route::post('/candidatos/{candidato}/enlace/revocar', 'revocarEnlace')->whereNumber('candidato')->name('candidatos.enlace.revocar');
+        Route::post('/candidatos/{candidato}/enlace/correo', 'enviarEnlace')->whereNumber('candidato')->middleware('throttle:60,1')->name('candidatos.enlace.correo'); // ADR-0010
         Route::post('/candidatos/{candidato}/documentos', 'subirDocumento')->whereNumber('candidato')->name('candidatos.documentos.store');
         Route::get('/candidatos/{candidato}/documentos/{documento}', 'documento')->whereNumber(['candidato', 'documento'])->name('candidatos.documento');
         Route::delete('/candidatos/{candidato}/documentos/{documento}', 'borrarDocumento')->whereNumber(['candidato', 'documento'])->name('candidatos.documentos.destroy');

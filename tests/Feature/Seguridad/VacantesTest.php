@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Seguridad;
 
+use App\Mail\AvisoSolicitudCandidato;
 use App\Models\Auditoria;
 use App\Models\Candidato;
 use App\Models\CandidatoDocumento;
 use App\Models\Departamento;
 use App\Models\Empresa;
+use App\Models\EnlaceKiosco;
 use App\Models\Modulo;
 use App\Models\Notificacion;
 use App\Models\Puesto;
@@ -16,12 +18,15 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\UsuarioRol;
 use App\Models\Vacante;
+use App\Services\Candidatos\Kiosco;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Services\Vacantes\AdministradorVacantes;
+use App\Support\CorreoPlataforma;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
 use Tests\TestCase;
@@ -115,7 +120,8 @@ class VacantesTest extends TestCase
     private function solicitud(array $extra = []): array
     {
         return $extra + [
-            'nombre' => 'Daniela', 'apellido_paterno' => 'Mex', 'apellido_materno' => 'Pech', 'telefono' => '9981230001', 'curp' => 'MEPD970815MYNXCN05',
+            'nombre' => 'Daniela', 'apellido_paterno' => 'Mex', 'apellido_materno' => 'Pech', 'nombre_completo' => 'Daniela Mex Pech', 'correo' => 'daniela@correo.mx',
+            'telefono' => '9981230001', 'curp' => 'MEPD970815MYNXCN05',
             'calle_numero' => 'Calle 20', 'codigo_postal' => '77517', 'emergencia_nombre' => 'Rosa Pech', 'emergencia_telefono' => '9984440000',
             'referencias' => [['nombre' => 'Teresa Can', 'telefono' => '9981110001'], ['nombre' => 'Pedro Dzul', 'telefono' => '9981110002']],
             'acepta_privacidad' => '1', 'declaracion' => '1', 'firma' => $this->firma(),
@@ -346,46 +352,104 @@ class VacantesTest extends TestCase
         $this->assertTrue(Auditoria::where('evento', 'vacantes.bolsa_configurada')->exists());
     }
 
-    public function test_postularse_crea_el_candidato_ligado_privado_y_avisa_a_rh(): void
+    public function test_postularse_es_corto_crea_el_candidato_y_le_manda_el_enlace_para_completar(): void
     {
+        Mail::fake();
+        app(CorreoPlataforma::class)->guardar(['host' => 'mail.ejemplo.com', 'puerto' => 587, 'cifrado' => 'tls', 'usuario' => 'a@ejemplo.com',
+            'remitente_correo' => 'avisos@ejemplo.com', 'remitente_nombre' => 'Avisos'], 'x');
         $v = $this->vacante('publicada', ['titulo' => 'Cocinero', 'departamento_id' => $this->cocina->id, 'puesto_id' => $this->cocinero->id], null, [$this->centro->id, $this->playa->id]);
         $slug = $this->encenderBolsa();
         $url = "/empleos/{$slug}/{$v->codigo}/postular";
-        $this->get($url)->assertOk()->assertSee('Declaro que la información es verdadera')->assertSee('name="sitio_web"', false)->assertSee('name="sede_id"', false);
+        // ADR-0010: primera pantalla corta (nombre, teléfono, correo, sede y CV opcional); la solicitud completa se pide después
+        $this->get($url)->assertOk()->assertSee('name="nombre_completo"', false)->assertSee('name="correo"', false)->assertSee('name="sitio_web"', false)
+            ->assertSee('name="sede_id"', false)->assertDontSee('Declaro que la información es verdadera')->assertDontSee('name="firma"', false);
 
-        // Sin firma ni declaración ni sede: no se crea nada
-        $this->post($url, $this->solicitud(['firma' => '', 'declaracion' => '']))->assertSessionHasErrors(['firma', 'declaracion', 'sede_id']);
+        // Sin correo, sin sede ni aviso de privacidad: no se crea nada
+        $this->post($url, ['nombre_completo' => 'Daniela Mex Pech', 'telefono' => '9981230001'])->assertSessionHasErrors(['correo', 'sede_id', 'acepta_privacidad']);
+        $this->post($url, ['nombre_completo' => 'Dani', 'telefono' => '12', 'correo' => 'no-es-correo', 'sede_id' => $this->playa->id, 'acepta_privacidad' => '1'])
+            ->assertSessionHasErrors(['nombre_completo', 'telefono', 'correo']);
         $this->assertSame(0, $this->enEmpresa(fn () => Candidato::count()));
 
         $cv = UploadedFile::fake()->createWithContent('mi cv.pdf', "%PDF-1.4\n%prueba\n");
-        $this->post($url, $this->solicitud(['sede_id' => $this->playa->id, 'cv' => $cv]))->assertRedirect("/empleos/{$slug}/gracias");
-        $this->get("/empleos/{$slug}/gracias")->assertOk()->assertSee('Recibimos tu solicitud');
+        $this->post($url, ['nombre_completo' => 'Daniela Mex Pech', 'telefono' => '998 123 0001', 'correo' => 'Daniela@Correo.mx', 'sede_id' => $this->playa->id,
+            'acepta_privacidad' => '1', 'cv' => $cv])->assertRedirect("/empleos/{$slug}/gracias");
+        $this->get("/empleos/{$slug}/gracias")->assertOk()->assertSee('Recibimos tu postulación')->assertSee('solicitud de empleo completa');
 
         $c = $this->enEmpresa(fn () => Candidato::sole());
         $this->assertSame(['web', 'registrado', $v->id, $this->playa->id], [$c->origen, $c->etapa, $c->vacante_id, $c->sede_id]);
         $this->assertSame([$this->cocina->id, $this->cocinero->id], [$c->departamento_id, $c->puesto_id]);
-        $this->assertTrue($c->autocaptura_pendiente);
+        $this->assertSame(['Daniela Mex Pech', '9981230001', 'daniela@correo.mx', 'bolsa_web'], [$c->nombre_completo, $c->telefono, $c->correo, $c->medio_vacante]);
+        $this->assertTrue($c->solicitud_corta, 'Queda «Solicitud incompleta» hasta que llene la solicitud completa');
+        $this->assertFalse($c->autocaptura_pendiente, 'No hay nada que revisar todavía');
         $this->assertSame('web', $c->privacidad_medio);
-        $this->assertSame('web', $c->firma_medio);
-        $this->assertSame('bolsa_web', $c->medio_vacante);
-        $this->assertSame('Daniela Mex Pech', $c->nombre_completo);
+        $this->assertNull($c->firma_ruta);
         $this->assertNull($c->persona_id, 'Una postulación por internet no entra sola al Padrón de personas');
-        // Firma y CV en el disco privado
-        $this->assertStringStartsWith('firmas/'.$this->empresa->id.'/candidatos/', $c->firma_ruta);
+        // CV en el disco privado
         $doc = $this->enEmpresa(fn () => CandidatoDocumento::sole());
         $this->assertStringStartsWith('candidatos/'.$this->empresa->id.'/'.$c->id.'/', $doc->ruta);
-        Storage::disk('local')->assertExists([$c->firma_ruta, $doc->ruta]);
+        Storage::disk('local')->assertExists([$doc->ruta]);
         $this->assertFileDoesNotExist(public_path($doc->ruta));
-        // Aviso a RR. HH. sin datos sensibles
+        // Le llega por correo el enlace del kiosco (vale más horas que el de la sala de espera) y queda en su historial
+        Mail::assertSent(AvisoSolicitudCandidato::class, fn (AvisoSolicitudCandidato $m) => $m->hasTo('daniela@correo.mx') && str_contains($m->url, '/k/') && $m->horas === Kiosco::HORAS_ENLACE_CORREO);
+        $enlace = $this->enEmpresa(fn () => EnlaceKiosco::sole());
+        $this->assertTrue($enlace->expira_en->gt(now()->addHours(Kiosco::HORAS_ENLACE_CORREO - 1)));
+        $this->assertTrue($this->enEmpresa(fn () => $c->eventos()->where('comentario', 'like', 'Se le mandó por correo el enlace%')->exists()));
+        $this->assertTrue(Auditoria::where('evento', 'candidatos.enlace_kiosco')->whereNull('user_id')->exists());
+        // Aviso a RR. HH. sin datos sensibles y con la nota de solicitud incompleta
         $aviso = $this->enEmpresa(fn () => Notificacion::where('tipo', 'candidato_postulacion')->where('user_id', $this->rh->id)->sole());
         $this->assertStringContainsString('Cocinero', $aviso->texto);
-        $this->assertStringNotContainsString('MEPD970815', $aviso->titulo.$aviso->texto);
+        $this->assertStringContainsString('Solicitud incompleta', $aviso->texto);
+        $this->assertStringNotContainsString('daniela@correo.mx', $aviso->titulo.$aviso->texto);
         $this->assertTrue(Auditoria::where('evento', 'candidatos.postulacion')->whereNull('user_id')->exists());
 
-        // RR. HH. lo ve en Candidatos filtrado por la vacante y en su ficha
-        $this->actingAs($this->rh)->get("/candidatos?vacante={$v->id}")->assertOk()->assertSee('Daniela Mex Pech')->assertSee('Vacante: Cocinero');
-        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertOk()->assertSee('Bolsa de trabajo (internet)')->assertSee('Por revisar');
+        // RR. HH. lo ve en Candidatos y en su ficha como «Solicitud incompleta», con el botón para mandarle el enlace
+        $this->actingAs($this->rh)->get("/candidatos?vacante={$v->id}")->assertOk()->assertSee('Daniela Mex Pech')->assertSee('Solicitud incompleta');
+        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertOk()->assertSee('Bolsa de trabajo (internet)')->assertSee('Solicitud incompleta')->assertSee('Enviar enlace por correo');
+        $this->actingAs($this->rh)->post("/candidatos/{$c->id}/enlace/correo")->assertRedirect("/candidatos/{$c->id}")->assertSessionHas('ok', fn ($m) => str_contains($m, 'daniela@correo.mx'));
+        $this->assertSame(1, $this->enEmpresa(fn () => EnlaceKiosco::whereNull('revocado_en')->count()), 'El enlace nuevo anula el anterior');
+        Mail::assertSent(AvisoSolicitudCandidato::class, 2);
+        $this->assertTrue(Auditoria::where('evento', 'candidatos.correo_candidato')->where('user_id', $this->rh->id)->exists());
+        $this->actingAs($this->agente)->post("/candidatos/{$c->id}/enlace/correo")->assertForbidden();
+
+        // Con el enlace, el candidato llena la solicitud completa (1 referencia basta) y deja de estar incompleta
+        $token = null;
+        Mail::assertSent(AvisoSolicitudCandidato::class, function (AvisoSolicitudCandidato $m) use (&$token) {
+            $token = basename($m->url);
+
+            return true;
+        });
+        auth()->logout();
+        $this->post('/k/'.$token, ['nombre' => 'Daniela', 'apellido_paterno' => 'Mex', 'apellido_materno' => 'Pech', 'telefono' => '9981230001',
+            'calle_numero' => 'Calle 20', 'codigo_postal' => '77517', 'referencias' => [['nombre' => 'Teresa Can', 'telefono' => '9981110001']],
+            'acepta_privacidad' => '1', 'declaracion' => '1', 'firma' => $this->firma()])->assertSessionHasNoErrors();
+        $c->refresh();
+        $this->assertFalse($c->solicitud_corta);
+        $this->assertTrue($c->autocaptura_pendiente);
+        $this->assertNotNull($c->firma_ruta);
+        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertOk()->assertSee('Por revisar')->assertDontSee('Solicitud incompleta');
+
+        // Se vuelve a postular (mismo teléfono): misma ficha, y no vuelve a quedar incompleta
+        $otra = $this->vacante('publicada', ['titulo' => 'Mesero'], null, [$this->playa->id]);
+        $this->post("/empleos/{$slug}/{$otra->codigo}/postular", ['nombre_completo' => 'Daniela Mex Pech', 'telefono' => '9981230001', 'correo' => 'daniela@correo.mx', 'acepta_privacidad' => '1'])
+            ->assertRedirect("/empleos/{$slug}/gracias");
+        $this->assertSame(1, $this->enEmpresa(fn () => Candidato::count()));
+        $this->assertFalse($c->fresh()->solicitud_corta);
         $this->actingAs($this->rh)->get('/vacantes')->assertSee('1</strong> candidato', false);
+    }
+
+    public function test_sin_correo_configurado_la_postulacion_corta_no_manda_enlace_y_lo_dice(): void
+    {
+        $v = $this->vacante('publicada', ['titulo' => 'Cocinero'], null, [$this->centro->id]);
+        $slug = $this->encenderBolsa();
+        $this->post("/empleos/{$slug}/{$v->codigo}/postular", ['nombre_completo' => 'Daniela Mex Pech', 'telefono' => '9981230001', 'correo' => 'daniela@correo.mx', 'acepta_privacidad' => '1'])
+            ->assertRedirect("/empleos/{$slug}/gracias");
+        $this->get("/empleos/{$slug}/gracias")->assertOk()->assertSee('cuando vayas a tu entrevista');
+        $c = $this->enEmpresa(fn () => Candidato::sole());
+        $this->assertTrue($c->solicitud_corta);
+        $this->assertSame(0, $this->enEmpresa(fn () => EnlaceKiosco::count()));
+        $this->assertTrue($this->enEmpresa(fn () => $c->eventos()->where('comentario', 'like', '%no tiene correo configurado%')->exists()));
+        // Desde la ficha, el botón avisa que falta configurar el correo
+        $this->actingAs($this->rh)->post("/candidatos/{$c->id}/enlace/correo")->assertSessionHas('error', fn ($m) => str_contains($m, 'no tiene correo configurado'));
     }
 
     public function test_campo_trampa_limite_de_peticiones_y_csrf(): void

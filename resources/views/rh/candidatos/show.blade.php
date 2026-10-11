@@ -61,6 +61,7 @@
                     <span class="pastilla-etapa etapa-{{ Candidato::COLORES[$etapa] ?? 'gris' }}">{{ Candidato::ETAPAS[$etapa] ?? $etapa }}</span>
                     <span class="pastilla-origen"><i class="bi bi-signpost me-1" aria-hidden="true"></i>{{ Candidato::ORIGENES[$c->origen] ?? $c->origen }}</span>
                     @if ($c->autocaptura_pendiente)<span class="pastilla-revisar"><i class="bi bi-phone me-1" aria-hidden="true"></i>Por revisar</span>@endif
+                    @if ($c->solicitud_corta)<span class="pastilla-revisar" title="Se postuló por internet con la solicitud corta: falta su solicitud completa"><i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Solicitud incompleta</span>@endif
                 </div>
                 <h1 class="nombre-candidato">{{ $c->nombre_completo }}</h1>
                 <div class="datos-candidato">
@@ -290,11 +291,27 @@
                     @else
                         <p class="small text-muted">Que escanee el QR con su celular en la sala de espera. Dura pocas horas y solo sirve para su propia ficha.</p>
                     @endif
+                    @if ($c->solicitud_corta)
+                        <p class="small text-warning-emphasis mb-2"><i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Se postuló por internet con la solicitud corta: falta su solicitud completa. Mándale el enlace por correo o muéstrale el QR cuando venga.</p>
+                    @endif
                     <form action="{{ route('recepcion.kiosco.generar', $c->id) }}" method="POST" class="m-0">
                         @csrf
                         <input type="hidden" name="reusar" value="1">
                         <button type="submit" class="btn-azul btn-accion-rh w-100"><i class="bi bi-qr-code me-1" aria-hidden="true"></i>QR para que llene su solicitud</button>
                     </form>
+                    @if ($puede['editar'])
+                        {{-- ADR-0010: el enlace del kiosco también se manda por correo (vale varias horas) --}}
+                        <form action="{{ route('candidatos.enlace.correo', $c->id) }}" method="POST" class="m-0 mt-2"
+                              @if ($c->correo && $correoConfigurado) data-confirmar="¿Mandar a {{ $c->correo }} el enlace para que llene su solicitud? Vale {{ \App\Services\Candidatos\Kiosco::HORAS_ENLACE_CORREO }} horas y anula el QR anterior." @endif>
+                            @csrf
+                            <button type="submit" class="btn-secundario-rh w-100" @disabled(! $c->correo || ! $correoConfigurado)><i class="bi bi-envelope me-1" aria-hidden="true"></i>Enviar enlace por correo</button>
+                        </form>
+                        @if (! $c->correo)
+                            <p class="texto-traza mt-1 mb-0">Sin correo capturado: agrégalo en «Editar solicitud».</p>
+                        @elseif (! $correoConfigurado)
+                            <p class="texto-traza mt-1 mb-0">La plataforma no tiene correo configurado.</p>
+                        @endif
+                    @endif
                     @if ($enlace)
                         <form action="{{ route('candidatos.enlace.revocar', $c->id) }}" method="POST" class="m-0 mt-2 text-end" data-confirmar="¿Anular el enlace? El candidato ya no podrá usarlo.">
                             @csrf

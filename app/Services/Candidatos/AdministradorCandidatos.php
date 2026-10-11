@@ -50,6 +50,13 @@ class AdministradorCandidatos
 {
     public const MAX_FILAS = 6;
 
+    /**
+     * Referencias personales obligatorias en la solicitud completa (kiosco y
+     * bolsa). Bajó de 2 a 1 (ADR-0010): no hay un ajuste natural por empresa,
+     * así que es una constante; cambiarla aquí cambia el kiosco y el mensaje.
+     */
+    public const REFERENCIAS_MINIMAS = 1;
+
     public function __construct(
         private readonly Autorizador $autorizador,
         private readonly AdministradorRoles $auditoria,
@@ -339,6 +346,8 @@ class AdministradorCandidatos
         $this->firmarSiViene($candidato, $entrada, 'rh', $actor);
         $this->ligarVacante($candidato, $entrada);
         $candidato->autocaptura_pendiente = false;
+        // Recursos Humanos completó la solicitud de una postulación corta por internet (ADR-0010)
+        $candidato->solicitud_corta = false;
         $candidato->save();
         app(Postulaciones::class)->desdeFicha($candidato); // A qué aplica: lo manda la postulación activa
         $this->auditoria->auditar($actor, 'candidatos.actualizado', $candidato, $antes, $this->foto($candidato));
@@ -471,7 +480,7 @@ class AdministradorCandidatos
      * kiosco y la bolsa de trabajo).
      *
      * $completa: lo que envía el propio candidato (kiosco o internet) debe
-     * traer nombre y apellido paterno, teléfono, al menos 2 referencias
+     * traer nombre y apellido paterno, teléfono, REFERENCIAS_MINIMAS referencias
      * personales y la declaración «la información es verdadera». RR. HH.
      * puede capturar por partes.
      *
@@ -564,7 +573,7 @@ class AdministradorCandidatos
             'disponibilidad' => ['nullable', Rule::in(array_keys(Candidato::DISPONIBILIDAD))],
             'disponibilidad_notas' => ['nullable', 'string', 'max:255'],
             'pretension' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
-            'referencias' => ['array', $completa ? 'min:2' : 'min:0', 'max:'.self::MAX_FILAS],
+            'referencias' => ['array', $completa ? 'min:'.self::REFERENCIAS_MINIMAS : 'min:0', 'max:'.self::MAX_FILAS],
             'referencias.*.nombre' => ['required', 'string', 'max:150'],
             'referencias.*.telefono' => [$completa ? 'required' : 'nullable', 'string', 'max:20'],
             'referencias.*.relacion' => ['nullable', 'string', 'max:80'],
@@ -620,7 +629,8 @@ class AdministradorCandidatos
             'experiencia.*.salida.*' => 'En empleos anteriores, revisa el mes de salida.',
             'experiencia.*.sueldo_final.*' => 'En empleos anteriores, el sueldo es un número (sin letras).',
             'experiencia.*.pedir_referencias.*' => 'En empleos anteriores, indica si podemos pedir referencias (sí o no).',
-            'referencias.min' => 'Escribe al menos 2 referencias personales (nombre y teléfono).',
+            'referencias.min' => self::REFERENCIAS_MINIMAS === 1 ? 'Escribe al menos 1 referencia personal (nombre y teléfono).'
+                : 'Escribe al menos '.self::REFERENCIAS_MINIMAS.' referencias personales (nombre y teléfono).',
             'referencias.*.nombre.required' => 'En referencias personales, escribe el nombre de la persona.',
             'referencias.*.telefono.required' => 'En referencias personales, escribe el teléfono de cada persona.',
             'referencias.*.anos_conocerlo.*' => 'En referencias, los años de conocerlo son un número.',

@@ -2529,6 +2529,11 @@ class CrearDatosDemo extends Command
                 'acepta_privacidad' => '1', 'declaracion' => '1', 'firma' => $firma(),
             ], null, '187.190.10.'.random_int(2, 250));
         }
+        // Postulación corta por internet (ADR-0010): solo nombre, teléfono y correo; su ficha queda «Solicitud incompleta»
+        if (! Candidato::where('telefono', '9981230003')->exists()) {
+            $bolsa->postularCorta($empresa, $camarista->fresh('sedes'), ['nombre_completo' => 'Mariana Ek Balam', 'telefono' => '9981230003',
+                'correo' => 'mariana.ek@correo.mx', 'sede_id' => $sedes['CEN']->id, 'acepta_privacidad' => '1'], null, '187.190.10.'.random_int(2, 250));
+        }
     }
 
     private function solicitudesDemo(User $rh): void

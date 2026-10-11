@@ -121,7 +121,7 @@ class LectorAuditoria
         'evaluado_rh' => 'Evaluación de la entrevista de RR. HH.', 'canalizado' => 'Canalización al departamento',
         'reprogramado' => 'Reprogramación de entrevista', 'no_se_presento' => 'No se presentó a su entrevista',
         'evaluado_departamento' => 'Evaluación de la entrevista del departamento', 'evaluacion_corregida' => 'Corrección de la evaluación del departamento',
-        'correo_candidato' => 'Correo al candidato con su cita',
+        'correo_candidato' => 'Correo al candidato (su cita o el enlace de su solicitud)',
         // Configuración
         'avisos' => 'Cambio de avisos por correo', 'correo' => 'Cambio del correo de la plataforma', 'correo_prueba' => 'Correo de prueba',
         'respaldo_creado' => 'Creación de respaldo', 'respaldo_descargado' => 'Descarga de respaldo',

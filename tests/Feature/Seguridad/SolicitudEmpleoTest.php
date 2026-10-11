@@ -182,9 +182,10 @@ class SolicitudEmpleoTest extends TestCase
         auth()->logout();
 
         $this->post($url, $this->solicitud(['acepta_privacidad' => '1']))->assertSessionHasErrors(['declaracion', 'firma']);
+        // ADR-0010: basta 1 referencia personal (AdministradorCandidatos::REFERENCIAS_MINIMAS); sin ninguna, error
         $this->post($url, $this->solicitud(['acepta_privacidad' => '1', 'declaracion' => '1', 'firma' => $this->firma(),
-            'referencias' => [['nombre' => 'Solo Una', 'telefono' => '9981112233']]]))
-            ->assertSessionHasErrors(['referencias' => 'Escribe al menos 2 referencias personales (nombre y teléfono).']);
+            'referencias' => []]))
+            ->assertSessionHasErrors(['referencias' => 'Escribe al menos 1 referencia personal (nombre y teléfono).']);
         $this->post($url, $this->solicitud(['acepta_privacidad' => '1', 'declaracion' => '1', 'firma' => 'data:image/png;base64,AAAA']))
             ->assertSessionHasErrors('firma');
         $this->assertNull($c->fresh()->firma_ruta);
