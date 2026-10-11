@@ -15,6 +15,8 @@
     $mm = fn ($v) => $p->mm((float) $v).'mm';
     [$anchoPagina, $altoPagina] = $p->pagina();
     $relleno = $texto['relleno'];
+    // Tamaño de letra de cada etiqueta según su texto (nada se parte ni se corta)
+    $tamanos = fn (array $e) => app(\App\Services\Lector\PlantillasEtiquetas::class)->tamanosDeEtiqueta($p, $texto, $e);
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -84,6 +86,7 @@
         <section class="pagina-qr {{ $p->esHoja() ? 'hoja' : 'rollo' }}" aria-label="Página {{ $loop->iteration }}">
             <div class="rejilla-qr">
                 @foreach ($pagina as $e)
+                    @php $t = $tamanos($e); @endphp
                     <div class="etiqueta-qr-r7 {{ $p->orientacion }} {{ $e['activo'] ? '' : 'de-baja' }}">
                         <div class="qr-r7" role="img" aria-label="Código QR de {{ $e['titulo'] }}">{!! $e['qr'] !!}</div>
                         <div class="cuerpo-r7">
@@ -92,11 +95,11 @@
                                     @if ($logo)<img src="{{ $logo }}" alt="Logo de {{ $empresaNombre }}">@else<span>{{ $empresaNombre }}</span>@endif
                                 </div>
                             @endif
-                            @if ($p->mostrar_titulo)<div class="titulo-r7">{{ $e['titulo'] }}</div>@endif
-                            @if ($p->mostrar_tipo)<div class="chico-r7 tipo-r7">{{ $e['tipo_nombre'] }}</div>@endif
-                            @if ($p->mostrar_ubicacion)<div class="chico-r7">{{ $e['ubicacion'] ?? '' }}</div>@endif
+                            @if ($p->mostrar_titulo)<div class="titulo-r7 {{ $t['dos_lineas'] ? 'dos-lineas' : '' }}" style="font-size: {{ $t['titulo'] }}mm">{{ $e['titulo'] }}</div>@endif
+                            @if ($p->mostrar_tipo)<div class="chico-r7 tipo-r7" style="font-size: {{ $t['tipo'] }}mm">{{ $e['tipo_nombre'] }}</div>@endif
+                            @if ($p->mostrar_ubicacion)<div class="chico-r7" style="font-size: {{ $t['ubicacion'] }}mm">{{ $e['ubicacion'] ?? '' }}</div>@endif
                             @if ($p->mostrar_fecha)<div class="chico-r7">@fecha($impresion?->created_at ?? now(), 'd/m/Y')</div>@endif
-                            @if ($p->mostrar_codigo)<div class="chico-r7 codigo-r7">{{ $e['codigo'] }}</div>@endif
+                            @if ($p->mostrar_codigo)<div class="chico-r7 codigo-r7" style="font-size: {{ $t['codigo'] }}mm">{{ $e['codigo'] }}</div>@endif
                             @unless ($e['activo'])<div class="chico-r7 baja-r7">DE BAJA</div>@endunless
                         </div>
                     </div>

@@ -3387,8 +3387,10 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .etiqueta-qr-r7 .qr-r7 svg { display: block; width: 100%; height: 100%; }
 .etiqueta-qr-r7 .cuerpo-r7 { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 0.3mm; overflow: hidden; }
 .etiqueta-qr-r7.vertical .cuerpo-r7 { width: 100%; align-items: center; }
-.etiqueta-qr-r7 .titulo-r7 { font-weight: 900; line-height: 1.05; overflow-wrap: anywhere; max-height: 2.2em; overflow: hidden; }
+.etiqueta-qr-r7 .titulo-r7 { font-weight: 900; line-height: 1.05; white-space: nowrap; overflow: hidden; max-width: 100%; }
+.etiqueta-qr-r7 .titulo-r7.dos-lineas { white-space: normal; overflow-wrap: break-word; max-height: 2.15em; }
 .etiqueta-qr-r7 .chico-r7 { font-weight: 700; color: #334155; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.etiqueta-qr-r7 .codigo-r7 { text-overflow: clip; }
 .etiqueta-qr-r7 .tipo-r7 { text-transform: uppercase; }
 .etiqueta-qr-r7 .codigo-r7 { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 400; letter-spacing: 0.2px; }
 .etiqueta-qr-r7 .baja-r7 { color: #b91c1c; font-weight: 900; }

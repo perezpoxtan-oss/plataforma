@@ -124,8 +124,10 @@ class EtiquetaPlantillaController extends Controller
             $modelo = $this->plantillas->paraProbar($request->user(), $plantilla);
             $qr = (string) preg_replace('/^<\?xml[^>]*>\s*/', '', (new Writer(new ImageRenderer(
                 new RendererStyle(160, 1), new SvgImageBackEnd)))->writeString(route('etiquetas.index')));
+            // Títulos de distinto largo, como los reales (una llave corta, un nombre de persona, un vehículo)
+            $titulos = ['EJEMPLO-01', 'Llave 101', 'María Fernanda Canul Pech', 'ABC-123-D Nissan Versa blanco', 'Gafete visitante 12'];
             $ejemplo = fn (int $i) => [
-                'clave' => 'prueba-'.$i, 'tipo' => 'llave', 'tipo_nombre' => 'Llaves', 'titulo' => 'EJEMPLO-'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+                'clave' => 'prueba-'.$i, 'tipo' => 'llave', 'tipo_nombre' => 'Llaves', 'titulo' => $titulos[($i - 1) % count($titulos)],
                 'detalle' => '', 'activo' => true, 'sede_id' => null, 'codigo' => 'ABCD EFGH JKLM', 'ubicacion' => 'Departamento · Sede', 'qr' => $qr,
             ];
             $etiquetas = collect(range(1, $modelo->porPagina()))->map($ejemplo);

@@ -10,6 +10,7 @@ use App\Models\Llave;
 use App\Models\Sede;
 use App\Models\User;
 use App\Models\Vehiculo;
+use App\Services\Lector\PlantillasEtiquetas;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -305,7 +306,7 @@ class EtiquetasQrTest extends TestCase
         $this->actingAs($this->admin)->get('/etiquetas/plantillas');
         $gafete = $this->plantilla('gafete');
         $html = $this->actingAs($this->admin)->get("/etiquetas/plantillas/{$gafete->id}/prueba")->assertOk()
-            ->assertSee('Hoja de prueba')->assertSee('EJEMPLO-08')->assertSee('no se guardan en el historial')->getContent();
+            ->assertSee('Hoja de prueba')->assertSee('EJEMPLO-01')->assertSee('Llave 101')->assertSee('no se guardan en el historial')->getContent();
         $this->assertSame(8, substr_count($html, 'class="etiqueta-qr-r7'));
         $this->assertSame(0, $this->enEmpresa(fn () => ImpresionEtiquetas::count()));
         $this->actingAs($this->crearUsuario($this->empresa, 'Agente', $this->centro))->get("/etiquetas/plantillas/{$gafete->id}/prueba")->assertForbidden();
@@ -355,5 +356,28 @@ class EtiquetasQrTest extends TestCase
         $this->actingAs($this->admin)->get('/etiquetas?desde=ayer&hasta[]=x')->assertOk()->assertSee('HDC-NUEVA')->assertSee('HDC-VIEJA');
         // La lista muestra la fecha de alta
         $this->actingAs($this->admin)->get('/etiquetas')->assertSee('Alta: 05/10/2026');
+    }
+
+    public function test_el_texto_de_cada_etiqueta_se_ajusta_para_no_partirse_ni_cortarse(): void
+    {
+        $servicio = app(PlantillasEtiquetas::class);
+        $p = new EtiquetaPlantilla(['ancho_mm' => 40, 'alto_mm' => 25, 'qr_mm' => 20, 'orientacion' => 'horizontal',
+            'mostrar_titulo' => true, 'mostrar_codigo' => true, 'mostrar_tipo' => true, 'mostrar_ubicacion' => false, 'mostrar_fecha' => false, 'mostrar_logo' => true]);
+        $texto = $servicio->medidasTexto($p);
+        $ancho = $texto['ancho'];
+
+        $corto = $servicio->tamanosDeEtiqueta($p, $texto, ['titulo' => 'Llave 101', 'codigo' => 'ABCD EFGH JKLM', 'tipo_nombre' => 'Llaves']);
+        $largo = $servicio->tamanosDeEtiqueta($p, $texto, ['titulo' => 'María Fernanda Canul Pech', 'codigo' => 'ABCD EFGH JKLM', 'tipo_nombre' => 'Llaves']);
+        $this->assertFalse($corto['dos_lineas']);
+        $this->assertTrue($largo['dos_lineas'], 'Un nombre largo va en dos renglones');
+        $this->assertLessThanOrEqual($ancho, 0.7 * 9 * $corto['titulo'] - 0.1, 'El título corto cabe en un renglón');
+        $this->assertLessThanOrEqual($ancho, 0.62 * 14 * $corto['codigo'] - 0.1, 'El código completo cabe en un renglón');
+        $this->assertLessThanOrEqual($texto['titulo'], $corto['titulo'], 'Nunca más grande que el máximo de la plantilla');
+        $this->assertGreaterThanOrEqual(1.1, $largo['codigo']);
+        $this->assertFalse($servicio->tamanosDeEtiqueta($p, $texto, ['titulo' => 'EJEMPLO-01', 'codigo' => '', 'tipo_nombre' => ''])['dos_lineas'], 'EJEMPLO-01 no se parte en el guion');
+
+        $this->actingAs($this->admin)->get('/etiquetas/plantillas');
+        $this->actingAs($this->admin)->get('/etiquetas/plantillas/'.$this->plantilla('gafete')->id.'/prueba')
+            ->assertOk()->assertSee('María Fernanda Canul Pech')->assertSee('style="font-size:', false);
     }
 }

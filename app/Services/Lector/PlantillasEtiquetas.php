@@ -375,7 +375,67 @@ class PlantillasEtiquetas
             'chico' => $limitar(min($unidad * 0.85, $ancho / 7.5), 1.2, 3.6),
             'logo' => $limitar(min($unidad * 1.3, $ancho / 3), 2, 9),
             'relleno' => self::RELLENO,
+            'ancho' => round(max(5, $ancho), 2),
+            'alto' => round(max(5, $alto), 2),
         ];
+    }
+
+    /** Ancho aproximado de una letra respecto al tamaño de letra: título (negritas anchas) y renglones chicos / monoespaciada. */
+    private const ANCHO_LETRA_TITULO = 0.7;
+
+    private const ANCHO_LETRA = 0.62;
+
+    /**
+     * Tamaños de letra (mm) de UNA etiqueta según su texto real, para que nada
+     * se parta ni se corte: el título cabe en un renglón o, si es largo, en dos
+     * sin partir palabras; el código legible (para teclearlo) siempre completo
+     * en un renglón; tipo y ubicación en un renglón. Si con todo eso el texto
+     * no cabe a lo alto, se reduce todo en proporción.
+     *
+     * @param  array{titulo: float, chico: float, logo: float, relleno: float, ancho: float, alto: float}  $texto  lo que da medidasTexto()
+     * @param  array<string, mixed>  $e  la etiqueta (titulo, codigo, tipo_nombre, ubicacion)
+     * @return array{titulo: float, codigo: float, tipo: float, ubicacion: float, dos_lineas: bool}
+     */
+    public function tamanosDeEtiqueta(EtiquetaPlantilla $p, array $texto, array $e): array
+    {
+        $ancho = (float) ($texto['ancho'] ?? 20);
+        $cabe = fn (string $t, float $max, float $min, float $letra) => round(max($min, min($max, $ancho / ($letra * max(1, mb_strlen($t))))), 2);
+
+        $titulo = trim((string) ($e['titulo'] ?? ''));
+        $max = (float) $texto['titulo'];
+        $tamTitulo = $cabe($titulo, $max, 0.1, self::ANCHO_LETRA_TITULO);
+        $dosLineas = false;
+        if ($titulo !== '' && $tamTitulo < $max * 0.6) {
+            // Más chico del 80 %: mejor en dos renglones; la línea más larga es la mitad (o la palabra más larga)
+            $palabra = max(array_map('mb_strlen', preg_split('/[\s\-\/·]+/u', $titulo) ?: [$titulo]));
+            $linea = max($palabra, (int) ceil(mb_strlen($titulo) / 2) + 1);
+            $enDos = round(min($max, $ancho / (self::ANCHO_LETRA_TITULO * $linea)), 2);
+            if ($enDos >= $tamTitulo * 1.35) { // solo si de verdad gana tamaño
+                $tamTitulo = $enDos;
+                $dosLineas = true;
+            }
+        }
+        $t = [
+            'titulo' => $p->mostrar_titulo ? max(1.4, $tamTitulo) : 0,
+            'codigo' => $p->mostrar_codigo ? $cabe((string) ($e['codigo'] ?? ''), (float) $texto['chico'], 1.1, self::ANCHO_LETRA) : 0,
+            'tipo' => $p->mostrar_tipo ? $cabe((string) ($e['tipo_nombre'] ?? ''), (float) $texto['chico'], 1.1, self::ANCHO_LETRA) : 0,
+            'ubicacion' => $p->mostrar_ubicacion ? $cabe((string) ($e['ubicacion'] ?? ''), (float) $texto['chico'], 1.1, self::ANCHO_LETRA) : 0,
+        ];
+
+        // A lo alto: renglones del título + renglones chicos + fecha + logo + separaciones
+        $alto = (float) ($texto['alto'] ?? 20);
+        $renglones = ($dosLineas ? 2 : 1) * 1.05 * $t['titulo'] + 1.15 * ($t['codigo'] + $t['tipo'] + $t['ubicacion'])
+            + ($p->mostrar_fecha ? 1.15 * (float) $texto['chico'] : 0) + ($p->mostrar_logo ? (float) $texto['logo'] + 0.3 : 0);
+        $cuantos = (int) $p->mostrar_titulo + (int) $p->mostrar_codigo + (int) $p->mostrar_tipo + (int) $p->mostrar_ubicacion + (int) $p->mostrar_fecha;
+        $renglones += 0.3 * max(0, $cuantos - 1);
+        if ($renglones > $alto && $renglones > 0) {
+            $f = $alto / $renglones;
+            foreach (['titulo', 'codigo', 'tipo', 'ubicacion'] as $k) {
+                $t[$k] = $t[$k] > 0 ? max($k === 'titulo' ? 1.4 : 1.1, $t[$k] * $f) : 0;
+            }
+        }
+
+        return array_map(fn ($v) => round($v, 2), $t) + ['dos_lineas' => $dosLineas];
     }
 
     /**

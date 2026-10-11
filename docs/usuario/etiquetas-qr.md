@@ -82,6 +82,7 @@ Con **rollo térmico** (Zebra, Brother…) cada etiqueta sale en su propia pági
 ![Plantillas](img/etiquetas-qr/06-plantillas.png)
 
 - **Hoja de prueba** imprime una página con etiquetas de ejemplo (no se guarda en el historial). Úsala antes de imprimir muchas.
+- El texto se acomoda solo: el nombre se imprime en un renglón o, si es largo, en dos sin partir palabras; el código para teclear siempre sale completo. Si una etiqueta es muy chica, el texto se hace más pequeño en lugar de cortarse: si no se lee bien, sube **Ancho** o baja el **Tamaño del QR** en la plantilla.
 - Si eres **jefe de una sede** (por ejemplo, Jefe de seguridad), también ves el botón **Hoja de prueba** en las plantillas de **toda la empresa**, aunque no puedas cambiarlas. Así calibras la impresora de tu sede sin pedir ayuda.
 - **Desactivar** quita la plantilla de la lista al imprimir (se puede volver a **Activar**).
 
@@ -89,7 +90,7 @@ Con **rollo térmico** (Zebra, Brother…) cada etiqueta sale en su propia pági
 
 1. Entra a **Padrones → Etiquetas QR** y toca la pestaña **Plantillas**.
 2. Busca la plantilla que vas a usar. Las de toda la empresa dicen «De toda la empresa: solo la cambia quien administra toda la empresa»; las de tu sede traen además **Editar** y **Desactivar**.
-3. Toca **Hoja de prueba**. Se abre una pestaña nueva con etiquetas de ejemplo («EJEMPLO-01», «EJEMPLO-02»…).
+3. Toca **Hoja de prueba**. Se abre una pestaña nueva con etiquetas de ejemplo de distinto largo («EJEMPLO-01», «Llave 101», un nombre de persona, un vehículo…), para que veas cómo se acomoda el texto en cada caso.
 4. Imprime esa página en la impresora de etiquetas, eligiendo **Tamaño real / 100 %**.
 5. Compara con tu papel: si las etiquetas se recorren o no caben, pide a quien administra la plantilla que ajuste las medidas (o ajústala tú si es de tu sede).
 
