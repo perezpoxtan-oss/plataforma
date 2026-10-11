@@ -141,6 +141,8 @@ class Colaborador extends Model implements Identificable
             'detalle' => 'Núm. '.$this->num_empleado.($this->puesto ? ' · '.$this->puesto->nombre : ''),
             'activo' => (bool) $this->activo && $this->fusionado_en_id === null,
             'sede_id' => $this->sede_id,
+            // Bitácora de accesos: el botón «Registrar…» anticipa si la visita a este colaborador esperará a su departamento
+            'departamento_id' => $this->departamento_id,
         ];
     }
 

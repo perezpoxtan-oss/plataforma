@@ -13,6 +13,8 @@ use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Accesos\MovimientoNoPermitido;
 use App\Services\Accesos\MovimientosAccesos;
 use App\Services\Accesos\RegistroAccesos;
+use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Recepcion\AjustesRecepcion;
 use App\Support\Csv;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
@@ -20,6 +22,7 @@ use App\Support\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -83,6 +86,8 @@ class AccesoController extends Controller
                 'zonas' => $this->consulta->zonas($sedesAlta->pluck('id')->merge($sedesEdicion->pluck('id'))->unique()->values()->all()),
                 'tiposGafete' => $puedeCrear ? $this->consulta->tiposGafete() : collect(),
                 'departamentos' => $puedeCrear ? Departamento::with('sedes:sedes.id')->where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'todas_las_sedes']) : collect(),
+                // Botón honesto: con qué tipo y motivo el registro nace pendiente (el servidor decide; esto solo anticipa el texto)
+                'anticipo' => $puedeCrear ? $this->anticipo($empresaId, $sedesAlta) : ['rh_espera_en' => [], 'visitas_esperan' => false, 'departamentos' => []],
                 'previos' => $puedeCrear ? $this->consulta->previos(session()->getOldInput()) : [],
                 'siguiente' => session('siguiente'),
                 'puede' => [
@@ -108,15 +113,7 @@ class AccesoController extends Controller
 
         $acceso = $this->tenant->conEmpresa($empresaId, fn () => $this->registro->registrar($request->user(), $request->except(['_token', '_dialogo', 'siguiente'])));
 
-        $mensaje = $acceso->estado === 'pendiente'
-            ? "Registro de {$acceso->nombre} guardado: queda PENDIENTE hasta que el host confirme la autorización."
-            : "Ingreso de {$acceso->nombre} registrado correctamente.";
-        // Recepción (ADR-0007): visita que espera al responsable del departamento
-        if (($acceso->getAttributes()['autorizacion'] ?? null) === 'esperando') {
-            $mensaje = $acceso->motivo_visita === 'rh'
-                ? "Registro de {$acceso->nombre} guardado: ESPERANDO A RR. HH. Ya se avisó a Recursos Humanos; aquí verás cuándo puede pasar."
-                : "Registro de {$acceso->nombre} guardado: ESPERANDO AUTORIZACIÓN del departamento. Ya se avisó al responsable; aquí verás su respuesta.";
-        }
+        $mensaje = $this->mensajeDeRegistro($acceso, $request->user()->can('accesos.aprobar'));
         $redireccion = redirect()->route('accesos.index', $acceso->estado === 'pendiente' ? ['pestana' => 'pendientes'] : [])->with('ok', $mensaje);
 
         return $request->boolean('siguiente')
@@ -310,6 +307,63 @@ class AccesoController extends Controller
     }
 
     // ------------------------------------------------------------------ Ayudas
+
+    /**
+     * Mensaje de éxito con el siguiente paso (regla 5): en sitio → «¿Otro
+     * ingreso?»; pendiente → a quién esperar.
+     */
+    private function mensajeDeRegistro(Acceso $acceso, bool $puedeAprobar): string
+    {
+        $autorizacion = $acceso->getAttributes()['autorizacion'] ?? null;
+        if ($acceso->estado !== 'pendiente') {
+            return "Registrado y en sitio: {$acceso->nombre}. ¿Otro ingreso? Toca Nuevo Ingreso.";
+        }
+        if ($autorizacion === 'esperando' && $acceso->motivo_visita === 'rh') {
+            return "Registrado: {$acceso->nombre} espera a Recursos Humanos. Ya se avisó; aquí verás cuándo puede pasar.";
+        }
+        if ($autorizacion === 'esperando') {
+            $depto = $acceso->departamento?->nombre;
+            $quien = $acceso->departamento_id
+                ? app(Autorizaciones::class)->aQuienAvisar((int) $acceso->departamento_id, (int) $acceso->sede_id)->pluck('name')->join(', ', ' y ')
+                : '';
+            $quien = $quien !== '' ? $quien.($depto ? " ({$depto})" : '') : ($depto ?? 'su departamento');
+
+            return "Registrado: {$acceso->nombre} espera la autorización de {$quien}. Ya se avisó; esta tarjeta cambia sola con su respuesta.";
+        }
+        $host = $acceso->host?->nombreCompleto();
+        $conHost = 'Confirma con el host'.($host ? " ({$host})" : '');
+
+        return "Registrado: {$acceso->nombre} queda pendiente de autorización. ".($puedeAprobar
+            ? "{$conHost} y toca Confirmar Autorización."
+            : "{$conHost}; tu supervisor confirma la autorización en el sistema.");
+    }
+
+    /**
+     * Lo que el formulario necesita para que el botón diga la verdad antes de
+     * guardar: en qué sedes RR. HH. autoriza el paso, si las visitas esperan
+     * al departamento y qué departamentos tienen responsable (y en qué sedes).
+     *
+     * @param  Collection<int, Sede>  $sedes
+     * @return array{rh_espera_en: list<int>, visitas_esperan: bool, departamentos: array<int, list<int>|null>}
+     */
+    private function anticipo(int $empresaId, Collection $sedes): array
+    {
+        $empresa = Empresa::find($empresaId);
+        $ajustes = app(AjustesRecepcion::class);
+        $autorizaciones = app(Autorizaciones::class);
+        $rhEsperaEn = [];
+        if ($empresa !== null && $ajustes->rhAutorizaPaso($empresa)) {
+            $rhEsperaEn = $sedes->filter(fn (Sede $s) => $autorizaciones->destinatariosRecepcion($empresaId, (int) $s->id)->isNotEmpty())
+                ->map(fn (Sede $s) => (int) $s->id)->values()->all();
+        }
+        $visitasEsperan = $empresa !== null && $ajustes->visitasRequierenAutorizacion($empresa);
+
+        return [
+            'rh_espera_en' => $rhEsperaEn,
+            'visitas_esperan' => $visitasEsperan,
+            'departamentos' => $visitasEsperan ? $autorizaciones->departamentosConResponsable() : [],
+        ];
+    }
 
     /**
      * @return array<string, mixed>

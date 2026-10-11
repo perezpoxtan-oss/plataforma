@@ -120,7 +120,7 @@ class AccesosTest extends TestCase
             ->assertSee('Nuevo Ingreso')->assertSee('Gente en Sitio (0)')->assertSee('Historial Finalizados')
             ->assertDontSee('Pendientes de Autorización')
             ->assertSee('No hay personal en sitio.')
-            ->assertSee('Registro Inteligente de Ingreso')->assertSee('Autorizar Ingreso y Guardar Datos')->assertSee('Guardar y capturar siguiente')
+            ->assertSee('Registro Inteligente de Ingreso')->assertSee('Registrar y dejar pasar')->assertSee('data-boton-registrar', false)->assertSee('Guardar y capturar siguiente')
             ->assertSee('PERSONAL EXTERNO / VISITA')->assertSee('CONTRATISTA (OBRA)')->assertSee('SERVICIO DE EMERGENCIA')
             ->assertSee('Gafete Asignado')->assertSee('Host — ¿Quién lo citó?')->assertSee('ID Custodiada')->assertSee('Enviar a')
             // Donde SEGCAT escaneaba (gafete, colaborador, host, a quién visita, placas) va el lector universal
@@ -143,7 +143,7 @@ class AccesosTest extends TestCase
         $gafete = $this->gafete();
 
         $this->registrar(['tipo' => 'colaborador', 'colaborador_id' => $roberto->id, 'gafete_id' => $gafete->id])
-            ->assertRedirect(route('accesos.index'))->assertSessionHas('ok', 'Ingreso de ROBERTO HERNÁNDEZ CRUZ registrado correctamente.');
+            ->assertRedirect(route('accesos.index'))->assertSessionHas('ok', 'Registrado y en sitio: ROBERTO HERNÁNDEZ CRUZ. ¿Otro ingreso? Toca Nuevo Ingreso.');
 
         $a = $this->ultimo();
         $this->assertSame(['colaborador', 'en_sitio', 'entrada', 'ROBERTO HERNÁNDEZ CRUZ', $roberto->id, null, 'a_pie', $this->admin->id],
@@ -192,7 +192,7 @@ class AccesosTest extends TestCase
                 ['nombre' => '', 'identificacion' => '', 'gafete_id' => ''],
                 ['nombre' => 'niña sin id'],
             ],
-        ])->assertSessionHasNoErrors()->assertSessionHas('ok', 'Ingreso de LAURA MÉNDEZ RÍOS registrado correctamente.');
+        ])->assertSessionHasNoErrors()->assertSessionHas('ok', 'Registrado y en sitio: LAURA MÉNDEZ RÍOS. ¿Otro ingreso? Toca Nuevo Ingreso.');
 
         $a = $this->ultimo();
         $this->assertSame(['LAURA MÉNDEZ RÍOS', 'pasaporte', $g1->nomenclatura, 'ABC123A', $zona->id, 'auto', 3, 'colaborador', 'ANDREA HERNÁNDEZ CRUZ'],
@@ -299,6 +299,21 @@ class AccesosTest extends TestCase
         $this->assertSame('contratista', $this->enEmpresa(fn () => Proveedor::where('nombre', 'Constructora Maya')->value('categoria')));
     }
 
+    public function test_el_mensaje_de_exito_ofrece_el_siguiente_paso(): void
+    {
+        $host = $this->colaborador('2001', null, null, 'Carlos');
+        $datos = ['tipo' => 'proveedor', 'nombre' => 'Jesús Balam Tun', 'empresa_procedencia' => 'Abarrotes del Caribe', 'host_colaborador_id' => $host->id];
+        // Quien puede aprobar: confirma con el host y toca Confirmar Autorización
+        $this->registrar($datos)->assertRedirect(route('accesos.index', ['pestana' => 'pendientes']))
+            ->assertSessionHas('ok', 'Registrado: JESÚS BALAM TUN queda pendiente de autorización. Confirma con el host (Carlos Hernández Cruz) y toca Confirmar Autorización.');
+        // El agente no aprueba: su supervisor confirma
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $this->registrar($datos + ['persona_decision' => 'misma'], $agente)
+            ->assertSessionHas('ok', 'Registrado: JESÚS BALAM TUN queda pendiente de autorización. Confirma con el host (Carlos Hernández Cruz); tu supervisor confirma la autorización en el sistema.');
+        // Entra directo: ¿otro ingreso?
+        $this->registrar(['tipo' => 'emergencia'])->assertSessionHas('ok', 'Registrado y en sitio: UNIDAD DE EMERGENCIA. ¿Otro ingreso? Toca Nuevo Ingreso.');
+    }
+
     public function test_una_empresa_vetada_no_puede_ingresar(): void
     {
         $this->enEmpresa(fn () => Proveedor::create(['nombre' => 'Fletes Rápidos', 'categoria' => 'transportadora', 'activo' => false]));
@@ -403,7 +418,7 @@ class AccesosTest extends TestCase
         $this->registrar(['tipo' => 'emergencia', 'sede_id' => $this->playa->id, 'siguiente' => '1'])
             ->assertSessionHas('siguiente', fn ($s) => $s['sede_id'] === $this->playa->id && $s['tipo'] === 'emergencia');
 
-        $this->actingAs($this->admin)->withSession(['siguiente' => ['sede_id' => $this->playa->id, 'tipo' => 'emergencia', 'mensaje' => 'Ingreso de UNIDAD DE EMERGENCIA registrado correctamente.']])
+        $this->actingAs($this->admin)->withSession(['siguiente' => ['sede_id' => $this->playa->id, 'tipo' => 'emergencia', 'mensaje' => 'Registrado y en sitio: UNIDAD DE EMERGENCIA. ¿Otro ingreso? Toca Nuevo Ingreso.']])
             ->get('/accesos')->assertSee('data-abrir-al-cargar', false)->assertSee('Captura el siguiente.')
             ->assertSee('<option value="'.$this->playa->id.'" selected', false)->assertSee('value="emergencia" checked', false);
     }
@@ -599,6 +614,7 @@ class AccesosTest extends TestCase
     {
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
         $a = $this->proveedorPendiente();
+        $this->flushSession(); // el mensaje de éxito del administrador no es del agente
 
         $this->actingAs($agente)->get('/accesos?pestana=pendientes')->assertOk()->assertSee('JESÚS BALAM TUN')
             ->assertDontSee('Confirmar Autorización')->assertSee('Espera a que el Host autorice');

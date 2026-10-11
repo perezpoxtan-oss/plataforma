@@ -585,7 +585,7 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->responsable($this->seguridad, $this->jefe);
 
         $this->registrarEnCaseta(['nombre' => 'Ingrid Solís', 'motivo_visita' => 'departamento', 'departamento_id' => $this->seguridad->id, 'es_candidato' => null])
-            ->assertRedirect('/accesos?pestana=pendientes')->assertSessionHas('ok', fn ($m) => str_contains($m, 'ESPERANDO AUTORIZACIÓN'));
+            ->assertRedirect('/accesos?pestana=pendientes')->assertSessionHas('ok', 'Registrado: INGRID SOLÍS espera la autorización de '.$this->jefe->name.' (Seguridad). Ya se avisó; esta tarjeta cambia sola con su respuesta.');
         $acceso = $this->enEmpresa(fn () => Acceso::sole());
         $this->assertSame('pendiente', $acceso->estado);
         $this->assertSame('esperando', $acceso->autorizacion);
@@ -621,6 +621,33 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->actingAs($this->jefe)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.acciones', []);
         // Dos veces no
         $this->actingAs($this->jefe)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'rechazar'])->assertSessionHas('error');
+    }
+
+    public function test_el_formulario_de_la_caseta_anticipa_si_el_registro_nace_pendiente(): void
+    {
+        // Sin el ajuste de visitas, el formulario no anticipa esperas por departamento; RR. HH. autoriza el paso por omisión y hay quien atienda
+        $this->actingAs($this->agente)->get('/accesos')->assertOk()
+            ->assertSee('Registrar y dejar pasar')->assertSee('data-visitas-esperan="0"', false)->assertSee('data-rh-espera-en="'.$this->centro->id.'"', false)
+            ->assertSee('data-departamentos-con-responsable="[]"', false);
+        // Con «Que pase» apagado, nadie espera a RR. HH.
+        $this->empresa->refresh()->forceFill(['preferencias' => array_merge($this->empresa->preferencias ?? [], ['recepcion' => ['rh_autoriza_paso' => false]])])->save();
+        $this->actingAs($this->agente)->get('/accesos')->assertSee('data-rh-espera-en=""', false);
+        $this->empresa->refresh()->forceFill(['preferencias' => array_merge($this->empresa->preferencias ?? [], ['recepcion' => ['rh_autoriza_paso' => true]])])->save();
+
+        $this->visitasConAutorizacion();
+        $this->responsable($this->seguridad, $this->jefe);
+        $html = $this->actingAs($this->agente)->get('/accesos')->assertOk()
+            ->assertSee('data-visitas-esperan="1"', false)->assertSee('data-rh-espera-en="'.$this->centro->id.'"', false)->getContent();
+        // Seguridad tiene responsable en todas sus sedes; Cocina no aparece
+        $this->assertStringContainsString('data-departamentos-con-responsable="{&quot;'.$this->seguridad->id.'&quot;:&quot;todas&quot;}"', $html);
+        // Las sugerencias de colaboradores traen su departamento (visita a colaborador)
+        $c = $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => '77', 'nombre' => 'Pablo', 'apellido_paterno' => 'Ek', 'sede_id' => $this->centro->id, 'departamento_id' => $this->seguridad->id]));
+        $this->actingAs($this->agente)->getJson('/accesos/buscar?que=colaborador&q=pablo&sede='.$this->centro->id)->assertJsonPath('resultados.0.departamento_id', $this->seguridad->id);
+        $this->actingAs($this->agente)->getJson('/lector/resolver?entrada=77&tipos=colaborador')->assertJsonPath('resultados.0.departamento_id', $this->seguridad->id);
+        // Responsable solo en una sede
+        $this->enEmpresa(fn () => DepartamentoResponsable::query()->delete());
+        $this->responsable($this->cocina, $this->jefe, false, $this->playa);
+        $this->actingAs($this->agente)->get('/accesos')->assertSee('data-departamentos-con-responsable="{&quot;'.$this->cocina->id.'&quot;:&quot;'.$this->playa->id.'&quot;}"', false);
     }
 
     public function test_visita_rechazada_libera_y_cierra_y_sin_ajuste_o_sin_responsable_entra_directo(): void

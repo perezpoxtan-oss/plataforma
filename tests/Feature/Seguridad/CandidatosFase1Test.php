@@ -279,7 +279,7 @@ class CandidatosFase1Test extends TestCase
         app(CorreoPlataforma::class)->guardar(['host' => 'mail.ejemplo.com', 'puerto' => 587, 'cifrado' => 'tls', 'usuario' => 'a@ejemplo.com',
             'remitente_correo' => 'avisos@ejemplo.com', 'remitente_nombre' => 'Avisos'], 'x');
 
-        $this->caseta()->assertRedirect('/accesos?pestana=pendientes')->assertSessionHas('ok', fn ($m) => str_contains($m, 'ESPERANDO A RR. HH.'));
+        $this->caseta()->assertRedirect('/accesos?pestana=pendientes')->assertSessionHas('ok', fn ($m) => str_contains($m, 'espera a Recursos Humanos'));
         $acceso = $this->enEmpresa(fn () => Acceso::sole());
         $this->assertSame(['pendiente', 'esperando'], [$acceso->estado, $acceso->autorizacion]);
         $a = $this->enEmpresa(fn () => Autorizacion::sole());

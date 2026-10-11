@@ -1424,6 +1424,9 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .acciones-ingreso button { min-height: 48px; border-radius: 12px; font-weight: 700; font-family: inherit; cursor: pointer; padding: 0.7rem; border: none; }
 .btn-guardar-ingreso { background: #dc3545; color: #fff; font-size: 1rem; }
 .btn-guardar-ingreso:hover { background: #bb2d3b; }
+/* Botón honesto: cuando el registro nace pendiente, el botón lo dice (ámbar, como el estado Pendiente) */
+.btn-guardar-ingreso.queda-pendiente { background: #d97706; }
+.btn-guardar-ingreso.queda-pendiente:hover { background: #b45309; }
 .btn-siguiente-ingreso { grid-column: 1 / -1; background: #fff; color: #dc3545; border: 2px solid #dc3545 !important; }
 .btn-siguiente-ingreso:hover { background: #fef2f2; }
 .btn-ambar-acceso { background: #ffc107; color: #212529; }

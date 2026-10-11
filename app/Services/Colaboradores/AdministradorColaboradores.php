@@ -605,6 +605,7 @@ class AdministradorColaboradores
             'nombre_completo' => $c->nombreCompleto(),
             'puesto' => $c->puesto?->nombre,
             'departamento' => $c->departamento?->nombre,
+            'departamento_id' => $c->departamento_id,
             'sede_id' => $c->sede_id,
             'sede' => $c->sede?->nombre,
             'provisional' => (bool) $c->provisional,

@@ -2811,6 +2811,48 @@ document.addEventListener('click', function (e) {
         form.querySelectorAll('[data-etiqueta-tipo]').forEach(function (e) { e.hidden = lista(e.dataset.etiquetaTipo).indexOf(tipo) === -1; });
         sugerirTipoGafete(form, tipo, motivo);
         acotarPorSede(form, sedeDe(form));
+        actualizarBotonRegistrar(form);
+    }
+
+    /* ---------- Botón honesto: dice lo que va a pasar al guardar ----------
+       «Registrar y dejar pasar» cuando entra directo; «Registrar · queda pendiente de autorización»
+       cuando nace pendiente (proveedor, contratista, visita a un departamento con responsable o a un
+       colaborador de ese departamento, y Recursos Humanos con «Que pase» encendido en esa sede).
+       El servidor decide al guardar; aquí solo se anticipa el texto. */
+    function enSede(lista, sede) {
+        if (lista === 'todas') { return true; }
+        return !!sede && String(lista || '').split(',').indexOf(String(sede)) !== -1;
+    }
+
+    function naceraPendiente(form) {
+        var d = dialogoIngreso();
+        if (!d) { return false; }
+        var tipo = radio(form, 'tipo');
+        if (tipo === 'proveedor' || tipo === 'contratista') { return true; }
+        if (tipo !== 'visitante') { return false; }
+        var sede = sedeDe(form);
+        var motivo = radio(form, 'motivo_visita');
+        if (motivo === 'rh') { return enSede(d.dataset.rhEsperaEn || '', sede); }
+        if (d.dataset.visitasEsperan !== '1') { return false; }
+        var deptos = {};
+        try { deptos = JSON.parse(d.dataset.departamentosConResponsable || '{}') || {}; } catch (x) { deptos = {}; }
+        var depto = '';
+        if (motivo === 'departamento') {
+            var sel = form.querySelector('#ingreso_depto_visita');
+            depto = sel ? sel.value : '';
+        } else if (motivo === 'colaborador') {
+            depto = form.dataset.visitaDepartamento || '';
+        }
+        return !!depto && Object.prototype.hasOwnProperty.call(deptos, depto) && enSede(deptos[depto], sede);
+    }
+
+    function actualizarBotonRegistrar(form) {
+        var texto = form.querySelector('[data-texto-registrar]');
+        if (!texto) { return; }
+        var pendiente = naceraPendiente(form);
+        texto.textContent = pendiente ? 'Registrar · queda pendiente de autorización' : 'Registrar y dejar pasar';
+        var boton = texto.closest('button');
+        if (boton) { boton.classList.toggle('queda-pendiente', pendiente); }
     }
 
     // "Tipo de Gafete" se sugiere al cambiar el tipo de persona (el guardia lo puede cambiar)
@@ -2977,7 +3019,7 @@ document.addEventListener('click', function (e) {
                 .then(function (d) {
                     var items = (d.resultados || []).slice(0, 8).map(function (r) {
                         if (que === 'colaborador') {
-                            return { id: r.id, titulo: r.nombre_completo, detalle: (r.num_empleado ? 'Núm. ' + r.num_empleado : 'Alta provisional') + (r.puesto ? ' · ' + r.puesto : '') + (r.sede ? ' · ' + r.sede : ''), activo: true };
+                            return { id: r.id, titulo: r.nombre_completo, detalle: (r.num_empleado ? 'Núm. ' + r.num_empleado : 'Alta provisional') + (r.puesto ? ' · ' + r.puesto : '') + (r.sede ? ' · ' + r.sede : ''), activo: true, departamento_id: r.departamento_id };
                         }
                         return { id: r.id, titulo: r.placas, detalle: [r.descripcion, r.propiedad_etiqueta].filter(Boolean).join(' · '), activo: !!r.activo,
                             placas: r.placas, tipo: r.tipo, marca: r.marca, modelo: r.modelo, color: r.color };
@@ -3015,6 +3057,12 @@ document.addEventListener('click', function (e) {
     document.addEventListener('lector:elegido', function (e) {
         var envoltura = e.target.closest && e.target.closest('[data-sugerir]');
         if (envoltura) { ocultarSugerencias(envoltura); }
+        // «¿A quién visita?»: el departamento del colaborador decide si la visita esperará autorización (botón honesto)
+        var formVisita = e.target.closest && e.target.closest('[data-form-acceso]');
+        if (formVisita && e.target.closest('[data-visita-colaborador]')) {
+            formVisita.dataset.visitaDepartamento = e.detail && e.detail.departamento_id ? String(e.detail.departamento_id) : '';
+            actualizarBotonRegistrar(formVisita);
+        }
         // Dar Salida: el gafete que devuelven dice quién era
         if (e.target.closest && e.target.closest('[data-salida-gafete]')) { buscarEnSitio('gafete=' + encodeURIComponent(e.detail.id)); return; }
         if (!envoltura) { return; }
@@ -3049,6 +3097,11 @@ document.addEventListener('click', function (e) {
     // "Cambiar" en el lector de placas: se olvidan las placas y los datos del vehículo
     document.addEventListener('click', function (e) {
         var limpiar = e.target.closest('[data-lector-limpiar]');
+        var formVisita = limpiar && limpiar.closest('[data-form-acceso]');
+        if (formVisita && limpiar.closest('[data-visita-colaborador]')) {
+            formVisita.dataset.visitaDepartamento = '';
+            actualizarBotonRegistrar(formVisita);
+        }
         var envoltura = limpiar && limpiar.closest('[data-sugerir="vehiculo"]');
         if (!envoltura) { return; }
         var placas = envoltura.querySelector('[data-placas]');
