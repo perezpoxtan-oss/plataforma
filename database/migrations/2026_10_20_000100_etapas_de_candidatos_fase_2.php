@@ -125,6 +125,12 @@ return new class extends Migration
     {
         // Las etapas no se regresan (cada etapa vieja se unió con otra). Solo se quitan las columnas.
         if (Schema::hasColumn('postulaciones', 'entrevistador_id')) {
+            // MariaDB/MySQL usan el índice (vacante_id, etapa) para sostener la llave
+            // foránea de vacante_id (al crearlo descartan el índice implícito de la
+            // llave). Antes de quitarlo se deja un índice simple, como al terminar la fase 1.
+            Schema::table('postulaciones', function (Blueprint $table) {
+                $table->index('vacante_id');
+            });
             Schema::table('postulaciones', function (Blueprint $table) {
                 $table->dropIndex(['empresa_id', 'entrevistador_id', 'etapa']);
                 $table->dropIndex(['vacante_id', 'etapa']);
