@@ -9,3 +9,6 @@
 - Ramas: `main` = Producción, `develop` = QA, `feature/*` por tarea. Versiones `vMAYOR.MENOR.PARCHE`.
 - Cada módulo se entrega con sus cuatro piezas (código, técnico, usuario, curso) — ver `docs/README.md`.
 - Toda pantalla nueva o cambio visible actualiza su página en docs/usuario/ siguiendo docs/usuario/GUIA.md (el manual que ve el usuario).
+- Toda pantalla nueva o cambio de flujo cumple docs/criterios-ux.md (ocho reglas aprobadas).
+- Toda migración tiene `down()` probado; CI ejecuta migrar → revertir → migrar.
+- Todo PR trae un apartado «## Cómo revertir» (lo escribe quien abre el PR; ver docs/tecnico/reversion.md).
