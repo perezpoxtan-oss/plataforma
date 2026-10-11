@@ -3,7 +3,7 @@ titulo: Bitácora de accesos
 modulos: [accesos]
 seccion: Operación
 orden: 10
-resumen: Registrar quién entra y sale de la sede, ver quién sigue dentro y autorizar proveedores.
+resumen: Registrar quién entra y sale de la sede, dar salida con el gafete, ver quién sigue dentro y qué espera autorización.
 ---
 # Bitácora de accesos
 
@@ -14,7 +14,7 @@ resumen: Registrar quién entra y sale de la sede, ver quién sigue dentro y aut
 ## Cómo leer la pantalla
 
 1. Entra a **Operación → Caseta → Bitácora de accesos** (en el celular, el botón **Accesos** de abajo).
-2. Arriba están el botón **Nuevo Ingreso**, el buscador y los filtros de **tipo** y **sede**.
+2. Arriba están los botones **Nuevo Ingreso** y **Dar salida**, el campo **Escanea el gafete o escribe nombre, placas o habitación** (siempre a la vista, para dar salida sin abrir nada), el buscador y los filtros de **tipo** y **sede**.
 3. Abajo hay tres pestañas:
 
 | Pestaña | Qué muestra |
@@ -27,6 +27,15 @@ resumen: Registrar quién entra y sale de la sede, ver quién sigue dentro y aut
 
 **Qué debes ver:** una tarjeta por persona con su tipo (color), nombre, sede, **gafete** (o **S/G** si no lleva), motivo, identificación que dejó, cómo llegó y a qué hora entró y quién la registró.
 
+Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo, un renglón chico con el detalle:
+
+| Pastilla | Qué significa | El renglón de abajo dice, por ejemplo |
+|---|---|---|
+| **PENDIENTE** (ámbar) | Todavía no puede pasar: espera a alguien. | «Espera a: Julieta Ramos (Mantenimiento) · 12 min», «Espera a: Recursos Humanos · 4 min», «RR. HH. pide que espere», «Confirma con el host: Carlos Pérez». |
+| **EN SITIO** (rojo) | Está dentro. | «Autorizado por Mantenimiento», «RR. HH. dijo que pase». |
+| **FUERA** (ámbar) | Salió un rato y va a regresar. | «Fuera en tour», «Fuera temporal». |
+| **FINALIZADO** (gris) | Ya salió, o no ingresó. | «Regreso de tour», «Salida temporal», «No autorizado por Seguridad: no ingresó». |
+
 ## Cómo registrar un ingreso
 
 1. Toca **Nuevo Ingreso**. Se abre **Registro Inteligente de Ingreso**.
@@ -35,11 +44,17 @@ resumen: Registrar quién entra y sale de la sede, ver quién sigue dentro y aut
 4. Llena los datos (ver abajo por tipo).
 5. Elige la **Forma de Llegada**: **A Pie** o **Vehículo Propio / Moto**. Con vehículo, escribe o escanea las **placas** y, si aplica, elige la zona de estacionamiento.
 6. Si llega con más personas, usa **+** en **Acompañantes** y llena una fila por persona.
-7. Toca **Autorizar Ingreso y Guardar Datos**. Si viene más gente detrás, toca **Guardar y capturar siguiente**: guarda y deja la ventana lista con la misma sede y tipo.
+7. Toca el botón grande de abajo. **Dice lo que va a pasar** según el tipo y el motivo que elegiste:
+   - **Registrar y dejar pasar**: la persona entra de inmediato y aparece en **Gente en Sitio**.
+   - **Registrar · queda pendiente de autorización**: la persona espera en caseta (proveedores y contratistas, visitas a un departamento con responsable, o quien viene a Recursos Humanos si tu empresa pide que RR. HH. dé el paso) y aparece en **Pendientes de Autorización**.
+   Si viene más gente detrás, toca **Guardar y capturar siguiente**: guarda y deja la ventana lista con la misma sede y tipo.
 
 ![Registro Inteligente de Ingreso](img/accesos/nuevo-ingreso.png)
+![El botón dice que el registro queda pendiente](img/accesos/nuevo-ingreso-pendiente.png)
 
-**Qué debes ver:** la ventana se cierra (o se limpia, si elegiste capturar siguiente) y la persona aparece en **Gente en Sitio**.
+**Qué debes ver:** la ventana se cierra (o se limpia, si elegiste capturar siguiente) y arriba sale el mensaje verde con el **siguiente paso**: «Registrado y en sitio: … ¿Otro ingreso? Toca Nuevo Ingreso», «Registrado: … espera la autorización de Julieta Ramos (Mantenimiento). Ya se avisó; esta tarjeta cambia sola con su respuesta», «… espera a Recursos Humanos» o «… queda pendiente de autorización. Confirma con el host (…) y toca Confirmar Autorización».
+
+![Mensaje con el siguiente paso](img/accesos/mensaje-registrado-pendiente.png)
 
 Lo que pide cada tipo:
 
@@ -70,26 +85,43 @@ La caseta solo anota **a qué viene** la persona y avisa. Recursos Humanos decid
 | **Informes / ver vacantes** | Solo pregunta qué vacantes hay. | No se le abre ficha. Si tu rol puede ver vacantes, toca **Ver las vacantes publicadas** para enseñárselas. |
 | **Otro trámite de RR. HH.** | Cualquier otro asunto con Recursos Humanos. | No se le abre ficha. |
 
-4. Toca **Autorizar Ingreso y Guardar Datos**.
+4. Toca **Registrar · queda pendiente de autorización** (o **Registrar y dejar pasar**, si tu empresa no pide que Recursos Humanos dé el paso).
 
 ![Ingreso de quien viene a Recursos Humanos](img/recepcion-y-candidatos/caseta-ingreso-candidato.png)
 
-**Qué debes ver:** si tu empresa pide que Recursos Humanos dé el paso, el mensaje «Registro de … guardado: ESPERANDO A RR. HH.» y la tarjeta en **Pendientes de Autorización** con el aviso naranja **ESPERANDO A RR. HH.**. Si tu empresa no lo pide, la persona pasa directo a **Gente en Sitio**.
+**Qué debes ver:** si tu empresa pide que Recursos Humanos dé el paso, el mensaje «Registrado: … espera a Recursos Humanos. Ya se avisó; aquí verás cuándo puede pasar» y la tarjeta en **Pendientes de Autorización** con **PENDIENTE** y «Espera a: Recursos Humanos · 0 min». Si tu empresa no lo pide, la persona pasa directo a **Gente en Sitio**.
 
 La tarjeta **cambia sola** cuando Recursos Humanos contesta:
 
 | La tarjeta dice | Qué hacer |
 |---|---|
-| **ESPERANDO A RR. HH.** | Pide a la persona que espere en caseta. |
-| **RR. HH. PIDE QUE ESPERE** | Recursos Humanos ya sabe que llegó, pero aún no puede recibirla. Que siga esperando. |
-| **RR. HH. dijo que pase** (en **Gente en Sitio**) | Indícale cómo llegar a la oficina de Recursos Humanos. |
-| **NO AUTORIZADO por Recursos Humanos** (en el historial) | No puede pasar. Devuélvele su identificación. |
+| **PENDIENTE** · «Espera a: Recursos Humanos · 5 min» | Pide a la persona que espere en caseta. |
+| **PENDIENTE** · «RR. HH. pide que espere» | Recursos Humanos ya sabe que llegó, pero aún no puede recibirla. Que siga esperando. |
+| **EN SITIO** · «RR. HH. dijo que pase» | Indícale cómo llegar a la oficina de Recursos Humanos. |
+| **FINALIZADO** · «No autorizado por Recursos Humanos: no ingresó» (en el historial) | No puede pasar. Devuélvele su identificación. |
 
 ![Caseta esperando a Recursos Humanos](img/recepcion-y-candidatos/caseta-pendientes-esperando.png)
 
 En la tarjeta verás, por ejemplo, **Candidato · Entrevista**. La caseta nunca ve la solicitud de empleo ni en qué paso va el proceso: eso solo lo ve Recursos Humanos.
 
 > Si Recursos Humanos avisa por teléfono que puede pasar, el supervisor usa **Confirmar Autorización** en la tarjeta, como con cualquier visita.
+
+## Qué pasa mientras alguien espera: reloj, color y escalamiento
+
+Todo lo que espera tiene **reloj, color y suplente**. No tienes que vigilar nada: la plataforma avisa sola.
+
+1. En **Pendientes de Autorización**, el renglón bajo la pastilla dice **a quién espera** y **cuántos minutos lleva**; el reloj avanza solo.
+2. El color cambia con el tiempo de espera que configuró tu empresa (de fábrica, 10 y 20 minutos): **verde** al principio, **ámbar** cuando ya tardó y **rojo** cuando nadie ha contestado.
+3. En ámbar, la plataforma **vuelve a avisar** a quien debe responder (campana y correo).
+4. En rojo, **escala**: avisa a los suplentes del departamento (o a quien los cubre por «No molestar») y al Jefe de seguridad de la sede; si la persona espera a Recursos Humanos, al resto del equipo de RR. HH. y al Jefe de seguridad. La tarjeta agrega **«Se escaló a: …»** y a ti te llega el aviso a la campana.
+5. Cada aviso se manda **una sola vez**; todo queda en la Bitácora de auditoría y en el historial de la autorización.
+
+![Pendientes con reloj y color](img/accesos/pendientes.png)
+![Tarjeta en rojo, ya escalada](img/accesos/tarjeta-espera-escalada.png)
+
+**Qué debes ver:** el renglón pasa de verde a ámbar y a rojo, y, cuando se escaló, la caja de abajo dice «Se escaló a: Sergio Díaz y Julia Torres».
+
+> Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Confirmar Autorización** en la tarjeta. Los minutos se cambian en **Recursos Humanos → Recepción → Ajustes** (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)).
 
 ## Cómo autorizar a un proveedor o contratista
 
@@ -103,14 +135,17 @@ En la tarjeta verás, por ejemplo, **Candidato · Entrevista**. La caseta nunca 
 
 ## Cómo dar salida
 
-Hay dos formas:
+La forma más rápida es con el campo que está **siempre a la vista**, arriba de las tarjetas:
 
-1. En la tarjeta de la persona toca **Registrar Salida** (en huéspedes, **Salida Final**) y confirma.
-2. O bien, dentro de **Nuevo Ingreso** toca **Dar Salida**, escribe placas, nombre, gafete o habitación, **o escanea el gafete que te devuelven**, y toca la persona.
+1. Cuando te devuelvan el gafete, **escanéalo** con la pistola, con la cámara (botón del código QR) o acércalo si es etiqueta NFC; o escribe el **nombre, las placas, el gafete o la habitación**.
+2. Aparece la tarjeta de la persona con el botón **Dar salida**. Tócalo y confirma. Si la persona está fuera un rato (tour o salida temporal), el botón dice **Registrar regreso**.
+3. El botón **Dar salida** de arriba (junto a **Nuevo Ingreso**) solo pone el cursor en ese campo; en el celular funciona igual.
 
-![Dar salida](img/accesos/dar-salida.png)
+![Dar salida con el campo a la vista](img/accesos/dar-salida.png)
 
-**Qué debes ver:** la persona pasa a **Historial Finalizados**. Sus acompañantes salen con ella, su gafete queda libre y su lugar de estacionamiento se libera. **Recoge el gafete y devuelve la identificación.**
+También puedes dar salida desde la tarjeta: toca **Registrar Salida** (en huéspedes, **Salida Final**) y confirma. Y sigue existiendo el camino anterior: dentro de **Nuevo Ingreso** toca **Dar Salida** y busca a la persona.
+
+**Qué debes ver:** la persona pasa a **Historial Finalizados** con la pastilla **FINALIZADO**. Sus acompañantes salen con ella, su gafete queda libre y su lugar de estacionamiento se libera. **Recoge el gafete y devuelve la identificación.**
 
 Un acompañante puede salir antes con el botón **Salida** de su renglón.
 
@@ -120,7 +155,7 @@ Un acompañante puede salir antes con el botón **Salida** de su renglón.
 2. Si quieres, anota placas, marca y conductor. Guarda.
 3. Cuando regrese, toca **Registrar Regreso**.
 
-**Qué debes ver:** mientras está fuera, la tarjeta dice **FUERA EN TOUR** (o **FUERA**) y su gafete sigue reservado.
+**Qué debes ver:** mientras está fuera, la pastilla dice **FUERA** con el detalle «Fuera en tour» o «Fuera temporal», y su gafete sigue reservado. En el historial, la pastilla **FINALIZADO** lleva el detalle «Salida a tour», «Salida temporal», «Regreso de tour» o «Regreso».
 
 ## Cómo cambiar la zona de estacionamiento
 
@@ -144,6 +179,7 @@ Un acompañante puede salir antes con el botón **Salida** de su renglón.
 Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el ancho y los botones de la ventana quedan abajo, a la mano.
 
 ![Accesos en el celular](img/accesos/celular-agente.png)
+![Pendientes en el celular](img/accesos/celular-pendientes.png)
 ![Nuevo ingreso en el celular](img/accesos/celular-nuevo-ingreso.png)
 ![Modo Noche](img/accesos/noche.png)
 ![Modo Sol](img/accesos/sol.png)
@@ -162,7 +198,9 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 | No sale el botón **Confirmar Autorización** | Tu rol no puede aprobar. | Pide a tu supervisor que lo autorice. |
 | «Elige a qué viene de la lista.» | La opción de **¿A qué viene?** no es válida. | Vuelve a elegirla de la lista. |
 | «Elige una vacante publicada de esta sede.» | Esa vacante ya no está publicada o es de otra sede. | Elige otra o **-- No sabe / otra --**. |
-| La tarjeta se queda en **ESPERANDO A RR. HH.** mucho tiempo | Nadie de Recursos Humanos ha contestado. | Llama a Recursos Humanos; si autorizan por teléfono, tu supervisor usa **Confirmar Autorización**. |
+| La tarjeta **PENDIENTE** se pone en rojo | Nadie ha contestado en el tiempo que configuró tu empresa. | La plataforma ya escaló a los suplentes y al Jefe de seguridad (la tarjeta dice «Se escaló a: …»). Si te confirman por teléfono, tu supervisor usa **Confirmar Autorización**. |
+| Escaneo el gafete para dar salida y no sale nadie | Ese gafete no lo tiene nadie en sitio, o la persona está en otra sede. | Busca por nombre o placas; revisa el filtro de sede. |
+| Al dar salida el botón dice **Registrar regreso** | La persona está fuera en tour o en salida temporal. | Tócalo para registrar su regreso; después podrás dar la salida final. |
 
 ## Preguntas frecuentes
 
@@ -172,7 +210,9 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 - **El colaborador no está en la lista.** Usa **¿No aparece? Darlo de alta provisional**; Recursos Humanos lo valida después.
 - **Me equivoqué de zona.** Usa **Cambiar Zona**.
 - **¿Cómo sé quién registró a alguien?** En la tarjeta, junto a la hora de ingreso, dice «por …».
-- **¿Puedo usar la cámara del celular para el gafete?** Sí: toca el botón del código QR junto al campo.
+- **¿Puedo usar la cámara del celular para el gafete?** Sí: toca el botón del código QR junto al campo, tanto al registrar como al dar salida.
+- **¿Por qué el botón de registrar cambia de texto?** Para que sepas qué va a pasar antes de tocarlo: «dejar pasar» o «queda pendiente de autorización».
+- **¿Quién decide los minutos del ámbar y el rojo?** Quien configura Recepción o Autorizaciones en tu empresa, en **Recursos Humanos → Recepción → Ajustes**.
 
 ## Relacionado
 

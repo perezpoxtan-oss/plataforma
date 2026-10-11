@@ -33,7 +33,7 @@ Si tienes encendidos los avisos por correo en [Configuración](configuracion.md)
 
 1. Entra a **Recursos Humanos → Recepción de RR. HH.**
 2. Arriba ves cuántos hay **Esperando**, **Con RR. HH. (revisión o entrevista)**, en **Entrevista con el departamento** y **Evaluados por el departamento**. La lista se actualiza sola cada 15 segundos.
-3. Cada persona muestra **Viene a:** y su puesto, departamento, sede, hora de llegada y **minutos esperando**. El borde cambia de color: **verde** recién llegó, **ámbar** más de 10 minutos, **rojo** más de 20, **azul** ya lo atendiste.
+3. Cada persona muestra **Viene a:** y su puesto, departamento, sede, hora de llegada y **minutos esperando**. El borde cambia de color: **verde** recién llegó, **ámbar** cuando ya tardó, **rojo** cuando nadie ha contestado (con los minutos que configuró tu empresa; de fábrica 10 y 20), **azul** ya lo atendiste.
 
 | Viene a | Qué significa |
 |---|---|
@@ -85,9 +85,10 @@ Si tu empresa tiene encendido el ajuste **La caseta espera a que RR. HH. diga «
 ### Visitas a un departamento
 
 1. La caseta registra la visita con el motivo **Visita a Departamento** (o **Visita a Colaborador**).
-2. Si la empresa lo pide y el departamento tiene responsable, la tarjeta de la caseta queda **ESPERANDO AUTORIZACIÓN** y al responsable le llega el aviso.
-3. El responsable toca **Autorizar ingreso** o **Rechazar** (en la campana, en **Mis pendientes**, en **Autorizaciones** o en el botón del correo).
-4. La tarjeta de la caseta **cambia sola**: autorizado, la persona pasa a «Gente en Sitio»; rechazado, queda «NO AUTORIZADO» en el historial (hay que devolverle su identificación).
+2. Si la empresa lo pide y el departamento tiene responsable, la tarjeta de la caseta queda **PENDIENTE** con «Espera a: (tu nombre) (departamento) · minutos» y a ti te llega el aviso (también a los suplentes del departamento).
+3. Toca **Autorizar ingreso** o **Rechazar** (en la campana, en **Mis pendientes**, en **Autorizaciones** o en el botón del correo).
+4. La tarjeta de la caseta **cambia sola**: autorizado, la persona pasa a «Gente en Sitio» con «Autorizado por (departamento)»; rechazado, queda **FINALIZADO** con «No autorizado por (departamento): no ingresó» en el historial (hay que devolverle su identificación).
+5. Si no contestas, la plataforma te lo **recuerda** a los minutos que configuró tu empresa (de fábrica, 10) con otro aviso en la campana y por correo. Si sigue sin respuesta (de fábrica, a los 20), **escala**: avisa a los suplentes del departamento (o a quien los cubre por «No molestar») y al Jefe de seguridad de la sede, y la caseta ve «Se escaló a: …». Cada aviso se manda una sola vez.
 
 ![Caseta esperando la autorización](img/recepcion-y-candidatos/caseta-pendientes-esperando.png)
 
@@ -151,6 +152,19 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 
 **Qué debes ver:** «Ajustes de Recepción guardados.» Las evaluaciones que ya se hicieron conservan los criterios con los que se calificaron.
 
+## Cómo configurar los tiempos de espera y el escalamiento
+
+Aplica a quien espera en la caseta la autorización de un departamento o el «Que pase» de Recursos Humanos. Lo guarda quien configura Recepción o Autorizaciones con alcance de empresa.
+
+1. En Recepción toca **Ajustes** y baja a **Cuando la autorización tarda: recordatorio y escalamiento**.
+2. En **Recordar a los (minutos)** escribe a los cuántos minutos se vuelve a avisar a quien debe responder (campana y correo). Desde ese minuto la espera se pinta en **ámbar** en la caseta y en el panel de Recepción. De fábrica, 10.
+3. En **Avisar al suplente y al jefe a los (minutos)** escribe a los cuántos minutos, si nadie ha contestado, se avisa a los suplentes del departamento (o a quien los cubre) y al Jefe de seguridad de la sede; si la persona espera a Recursos Humanos, al resto del equipo de RR. HH. y al Jefe de seguridad. Desde ese minuto la espera se pinta en **rojo**. De fábrica, 20. Debe ser mayor que el recordatorio; ambos admiten hasta 240 minutos.
+4. Toca **Guardar escalamiento**.
+
+![Recordatorio y escalamiento](img/recepcion-y-candidatos/recepcion-ajustes-escalamiento.png)
+
+**Qué debes ver:** «Ajustes guardados: las autorizaciones que tarden se recordarán y escalarán con esos minutos.» Cada recordatorio y cada escalamiento quedan en la Bitácora de auditoría y en el detalle de la autorización («Recordatorio enviado …», «Escalado … a …»).
+
 ## En modo Noche
 
 ![Recepción en modo Noche](img/recepcion-y-candidatos/noche-recepcion.png)
@@ -175,13 +189,15 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 | Quien viene a Recursos Humanos pasa directo, sin esperar el «Que pase». | El ajuste **La caseta espera a que RR. HH. diga «Que pase»** está apagado, o nadie atiende Recursos Humanos en esa sede. | Revisa **Ajustes** de Recepción y que alguien de esa sede tenga el permiso. |
 | «Solo quien atiende Recursos Humanos en … puede responder.» | Esa persona llegó a una sede que no tienes a cargo. | Que responda Recursos Humanos de esa sede. |
 | «Esta persona ya no está esperando en caseta. Revisa la lista.» | La caseta ya la dejó pasar o ya se fue. | No hace falta responder. |
+| «El aviso al suplente y al jefe debe ir después del recordatorio.» | Pusiste el segundo tiempo igual o menor que el primero. | Escribe en el segundo campo un número mayor. |
+| Me llegó «Nadie ha respondido: … lleva … min en caseta» y no soy el responsable. | Eres suplente, cubres a alguien por «No molestar» o eres Jefe de seguridad de esa sede: se te escaló la espera. | Si puedes responder, toca el botón; si no, confirma en la caseta con **Confirmar Autorización** cuando te lo autoricen. |
 | «Esta solicitud ya fue respondida o cancelada. Revisa la lista.» | Otra persona de Recursos Humanos ya contestó. | Revisa el panel de Recepción. |
 
 ## Preguntas frecuentes
 
 **¿Dónde quedaron las Autorizaciones en el menú?** Ya no están en el menú: te llegan por la campana y por **Mis pendientes**.
 
-**¿Qué pasa si nadie responde?** La persona sigue esperando en la caseta. El supervisor puede usar **Confirmar Autorización** si el responsable (o Recursos Humanos) avisa por teléfono.
+**¿Qué pasa si nadie responde?** La plataforma recuerda a quien debe responder y después avisa a los suplentes y al Jefe de seguridad de la sede (ver «Cómo configurar los tiempos de espera y el escalamiento»). Mientras tanto la persona sigue esperando en la caseta, y el supervisor puede usar **Confirmar Autorización** si el responsable (o Recursos Humanos) avisa por teléfono.
 
 **¿Ya no está el botón QR en Recepción?** Está en la ficha del candidato (**QR para que llene su solicitud**) y en el **Modo kiosco** de la tableta.
 

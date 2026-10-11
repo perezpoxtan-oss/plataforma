@@ -15,7 +15,8 @@ Réplica de `modules/accesos` de SEGCAT (inventario §4.22). Es la pantalla más
 | Controlador (delgado) | `app/Http/Controllers/Seguridad/AccesoController.php` |
 | Vistas | `resources/views/seguridad/accesos/` (`index`, `_ficha`, `_ingreso`, `_acompanante`, `_dialogos`) |
 | JavaScript / CSS | bloque "Bitácora de accesos" al final de `public/js/plataforma.js`, `public/css/plataforma.css` y `public/css/modos-pantalla.css` |
-| Pruebas | `tests/Feature/Seguridad/AccesosTest.php` |
+| Espera y escalamiento | `app/Services/Autorizaciones/Escalamiento.php`, `app/Console/Commands/EscalarAutorizaciones.php` |
+| Pruebas | `tests/Feature/Seguridad/AccesosTest.php`, `tests/Feature/Seguridad/EscalamientoAutorizacionesTest.php` |
 
 ## Tablas
 
@@ -61,7 +62,30 @@ acompañante:  en sitio ─salida─▶ salió   ·   (proveedor/contratista) en
 
 Transiciones prohibidas (responden con el aviso en rojo, sin tocar nada): autorizar algo que no está pendiente; dar salida a un pendiente o dos veces; salida temporal de un personal externo, colaborador o emergencia, de alguien pendiente o ya fuera; regreso sin salida temporal abierta; cambiar la zona de un acceso sin vehículo o finalizado; salida definitiva de un acompañante que está fuera temporalmente; cualquier movimiento de acompañantes de un titular que ya no está en sitio. Cada cambio es una actualización condicionada al estado esperado (el doble clic no "reabre y cierra" el registro).
 
-Al dar salida al titular: sus acompañantes que seguían dentro salen con él y, si estaba fuera en tour, el tour se cierra. "Gente en Sitio" cuenta ingresos (`movimiento = entrada`): quien está en tour aparece en su tarjeta como **FUERA EN TOUR / FUERA TEMPORAL**, no como otra persona.
+Al dar salida al titular: sus acompañantes que seguían dentro salen con él y, si estaba fuera en tour, el tour se cierra. "Gente en Sitio" cuenta ingresos (`movimiento = entrada`): quien está en tour aparece en su tarjeta como **FUERA** («Fuera en tour» / «Fuera temporal»), no como otra persona.
+
+## Experiencia de uso aprobada (criterios 1, 3, 4 y 5 de `docs/criterios-ux.md`)
+
+### Vocabulario corto de estados en la tarjeta (cambio visual aprobado)
+
+`_ficha.blade.php` calcula `[$pastilla, $clasePastilla, $iconoPastilla, $detalle]` con un solo `match`: cuatro pastillas (`PENDIENTE` ámbar · `EN SITIO` rojo · `FUERA` ámbar · `FINALIZADO` gris, clase `.estado-acceso.finalizado`) y el detalle en el renglón chico `.ficha-acceso-detalle` (`data-estado-detalle`) debajo de la cabecera: «Espera a: Nombre (Departamento) · 12 min», «Espera a: Recursos Humanos · 4 min», «RR. HH. pide que espere», «Confirma con el host: …», «Autorizado por …», «RR. HH. dijo que pase», «Fuera en tour», «Fuera temporal», «Regreso de tour», «Salida temporal», «No autorizado por …: no ingresó» (clase `negado`). En el historial el gafete va en el mismo renglón. Los colores y el estilo de la tarjeta no cambian; los textos en mayúsculas de SEGCAT («ESPERANDO AUTORIZACIÓN», «FUERA EN TOUR», «SALIDA A TOUR», «NO AUTORIZADO por …») se reemplazan por estas pastillas y detalles. `rh/recepcion/_ficha-acceso.blade.php` conserva la caja ámbar de espera (`data-acceso-esperando`, sondeo) con el aviso «Ya se avisó … Esta tarjeta cambia sola con la respuesta» y la línea `data-espera-escalado` («Se escaló a: …»).
+
+### Reloj, color y «Espera a» (`App\Services\Autorizaciones\Escalamiento`)
+
+- `esperasPara(Collection $accesos)` devuelve por acceso pendiente `[texto, nombres, minutos, nivel, desde, escalado]` con **una consulta por par departamento-sede** (`Autorizaciones::aQuienAvisar`, que respeta las delegaciones) y una para los nombres de `escalado_a`. `ConsultaAccesos::pendientes()` carga `autorizacionDepartamento.departamento`; el controlador pasa `esperas` y `umbrales` a la vista (`test_la_pantalla_carga_todo_sin_consultas_por_tarjeta` sigue en pie).
+- Umbrales por empresa (`AjustesRecepcion::recordarMinutos()` / `escalarMinutos()`, guardados en `empresas.preferencias.recepcion.recordar_minutos` / `escalar_minutos`; por omisión `PanelRecepcion::ESPERA_AMBAR = 10` y `ESPERA_ROJA = 20`). Se editan en **Recepción → Ajustes → «Cuando la autorización tarda»** (`PUT /rh/recepcion/ajustes` con `recordar_minutos` y `escalar_minutos`; 1–240, el segundo mayor que el primero; lo guarda quien tiene `candidatos.configurar` **o** `autorizaciones.configurar` con alcance de empresa; auditado como `candidatos.configurado`). El panel de Recepción usa los mismos umbrales.
+- La tarjeta lleva `data-espera-desde` (timestamp), `data-espera-ambar` y `data-espera-roja`: `pintarEsperas()` (JS) avanza el reloj y cambia `espera-normal|ambar|roja` cada 30 s sin pedir nada al servidor. `GET /accesos/autorizaciones-estado` responde además `esperas: {id: {minutos, nivel, escalado}}`; el sondeo (15 s) muestra «Se escaló a: …» sin recargar y recarga solo cuando cambia el estado.
+
+### Escalamiento (nunca dos veces)
+
+- Nivel 1, a los `recordar_minutos`: `Escalamiento::recordar()` reenvía el aviso (campana con botones + correo con botones firmados) a quienes ya fueron avisados (`autorizaciones.avisados`; si está vacío, se recalcula). Marca `recordatorio_en`; auditoría `autorizaciones.recordatorio`.
+- Nivel 2, a los `escalar_minutos`: `escalarUna()` avisa a `aQuienEscalar()`: suplentes del departamento en la sede (o sus delegados) **y** Jefe de seguridad de la sede (`jefesDeSeguridad()`: activos con `accesos.aprobar` que alcancen la sede y rol «Jefe de seguridad»; si la empresa no usa ese rol, quienes pueden aprobar en la sede); para las de tipo `recepcion`, el resto de RR. HH. de la empresa (`candidatos.editar`, sin los ya avisados) y el Jefe de seguridad. Quien puede responder (`puedeResponder`) recibe los botones; los demás, el aviso `autorizacion_escalada` con «usa Confirmar Autorización en la bitácora» y correo. La caseta (quien registró) recibe «Se escaló a …». Marca `escalado_en` y `escalado_a` (ids); auditoría `autorizaciones.escalada` (`sin_a_quien: true` si no había nadie). El detalle de la autorización muestra «Recordatorio enviado …» y «Escalado … a …».
+- Corre **en proceso**: `plataforma:escalar-autorizaciones [--si-toca]` (`App\Console\Commands\EscalarAutorizaciones`), llamado por `despliegue/desplegar.sh` en cada corrida del cron (cada 5 min) como los demás recordatorios; `--si-toca` solo imprime cuando hizo algo. Además `escalarSiToca(empresaId)` se dispara al abrir la pestaña Pendientes y en cada sondeo de estado (hosting sin cron confiable), con candado `Cache::add` de 60 s por empresa y la consulta `queTardan()` (solo pendientes con `recordatorio_en`/`escalado_en` nulos y `solicitada_en` ya vencida); un error de correo se reporta y no tira la pantalla.
+- Migración `2026_10_21_000100_escalamiento_de_autorizaciones` (`recordatorio_en`, `escalado_en`, `escalado_a` JSON en `autorizaciones`; `down()` las quita). Pruebas: `tests/Feature/Seguridad/EscalamientoAutorizacionesTest.php`.
+
+### «Dar salida» a la vista y botón honesto
+
+Ver los apartados «Dar salida a la vista» y «Mensajes» más abajo: el campo de escaneo o búsqueda (`[data-salida-vista]`, `GET /accesos/en-sitio`) está siempre arriba de la bitácora, el botón **Dar salida** lo enfoca y el camino anterior (dentro de Nuevo Ingreso) se conserva. El botón del formulario dice «Registrar y dejar pasar» o «Registrar · queda pendiente de autorización» (`data-texto-registrar`, anticipado con `data-rh-espera-en`, `data-visitas-esperan` y `data-departamentos-con-responsable`; el servidor decide) y el mensaje de éxito (`AccesoController::mensajeDeRegistro`) ofrece el siguiente paso.
 
 ## Reglas del ingreso (`RegistroAccesos::registrar`)
 
@@ -97,7 +121,8 @@ Al dar salida al titular: sus acompañantes que seguían dentro salen con él y,
 | `POST /accesos/{id}/salida-temporal` | `accesos.editar` | Salida a tour / temporal (placas, marca, conductor) |
 | `PATCH /accesos/{id}/regreso` | `accesos.editar` | Regreso (vehículo y conductor del regreso) |
 | `PATCH /accesos/acompanantes/{id}/salida` · `/salida-temporal` · `/regreso` | `accesos.editar` | Movimientos de un acompañante |
-| `GET /accesos/en-sitio?q=` o `?gafete={id}` | `accesos.ver` | JSON para "Dar Salida" (por nombre, placas, gafete o habitación; o el gafete leído con el lector) |
+| `GET /accesos/en-sitio?q=` o `?gafete={id}` | `accesos.ver` | JSON para «Dar salida» (campo a la vista y diálogo de Nuevo Ingreso: por nombre, placas, gafete o habitación; o el gafete leído con el lector, QR con dirección o etiqueta NFC/RFID) |
+| `GET /accesos/autorizaciones-estado?ids=` | `accesos.ver` | Estado en vivo de las tarjetas pendientes (`estados`) y reloj/escalamiento (`esperas`); dispara `escalarSiToca` |
 | `GET /accesos/buscar?que=colaborador\|persona\|vehiculo\|proveedor&q=&sede=&tipo=` | `accesos.crear` | Sugerencias del formulario (reutiliza las búsquedas de cada padrón; no exige administrar el padrón) |
 | `GET /accesos/gafetes?sede=` | `accesos.crear` | Gafetes libres de la sede |
 | `GET /accesos/exportar?...` | `accesos.exportar` | CSV del historial filtrado (BOM para Excel, máx. 10 000 filas) |
@@ -120,7 +145,7 @@ Donde SEGCAT tenía "escáner / QR / NFC" se usa `componentes.lector`: gafete as
 
 ## Auditoría
 
-`accesos.creado`, `accesos.autorizado`, `accesos.salida`, `accesos.zona_cambiada`, `accesos.salida_temporal`, `accesos.regreso`, `accesos.salida_acompanante`, `accesos.salida_temporal_acompanante`, `accesos.regreso_acompanante`; y en los padrones `visitantes.creado`, `vehiculos.creado`/`actualizado`, `proveedores.creado` cuando el ingreso los crea. `AdministradorColaboradores::REFERENCIAS` incluye `accesos.colaborador_id` (unir duplicados mueve los ingresos).
+`accesos.creado`, `accesos.autorizado`, `accesos.salida`, `accesos.zona_cambiada`, `accesos.salida_temporal`, `accesos.regreso`, `accesos.salida_acompanante`, `accesos.salida_temporal_acompanante`, `accesos.regreso_acompanante`; del escalamiento, `autorizaciones.recordatorio` y `autorizaciones.escalada` (sin usuario: los hace la plataforma); y en los padrones `visitantes.creado`, `vehiculos.creado`/`actualizado`, `proveedores.creado` cuando el ingreso los crea. `AdministradorColaboradores::REFERENCIAS` incluye `accesos.colaborador_id` (unir duplicados mueve los ingresos).
 
 ## Qué se corrigió respecto a SEGCAT
 
