@@ -8253,13 +8253,38 @@ document.addEventListener('click', function (e) {
     }
 
     /* ---------- Caseta: visitas que esperan al departamento ---------- */
+    // Reloj y color de cada tarjeta pendiente: avanzan en el navegador (sin pedir nada) con los minutos de la empresa
+    function pintarEsperas() {
+        document.querySelectorAll('[data-espera-desde]').forEach(function (ficha) {
+            var desde = parseInt(ficha.getAttribute('data-espera-desde') || '0', 10);
+            if (!desde) { return; }
+            var minutos = Math.max(0, Math.floor((Date.now() / 1000 - desde) / 60));
+            var nivel = minutos >= parseInt(ficha.getAttribute('data-espera-roja') || '20', 10) ? 'roja'
+                : (minutos >= parseInt(ficha.getAttribute('data-espera-ambar') || '10', 10) ? 'ambar' : 'normal');
+            var num = ficha.querySelector('[data-espera-minutos]');
+            if (num) { num.textContent = String(minutos); }
+            [ficha.querySelector('[data-estado-detalle]'), ficha.querySelector('[data-acceso-esperando]:not(.pide-espera)')].forEach(function (e) {
+                if (!e) { return; }
+                e.classList.remove('espera-normal', 'espera-ambar', 'espera-roja');
+                e.classList.add('espera-' + nivel);
+            });
+        });
+    }
     function vigilarEsperas() {
+        pintarEsperas();
         var esperas = document.querySelectorAll('[data-acceso-esperando]');
         if (!esperas.length) { return; }
         var ids = Array.prototype.map.call(esperas, function (e) { return e.getAttribute('data-acceso-esperando'); });
         var url = esperas[0].getAttribute('data-url-estado') + '?ids=' + encodeURIComponent(ids.join(','));
+        cadaTanto(pintarEsperas, 30000);
         cadaTanto(function () {
             pedir(url).then(function (d) {
+                // Si ya se escaló al suplente o al jefe, la tarjeta lo dice sin recargar
+                esperas.forEach(function (e) {
+                    var id = e.getAttribute('data-acceso-esperando');
+                    var linea = e.querySelector('[data-espera-escalado]');
+                    if (linea && d.esperas && d.esperas[id] && d.esperas[id].escalado) { linea.textContent = d.esperas[id].escalado; linea.hidden = false; }
+                });
                 // Candidatos fase 1: «RR. HH. pide que espere» (pendiente|espera) también es un estado de espera
                 var cambio = Array.prototype.some.call(esperas, function (e) {
                     var id = e.getAttribute('data-acceso-esperando');

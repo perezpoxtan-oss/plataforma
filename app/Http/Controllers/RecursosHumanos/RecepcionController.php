@@ -233,16 +233,21 @@ class RecepcionController extends Controller
         $privacidad = $actor->can('candidatos.configurar') && $autorizador->alcanceDeEmpresa($actor, 'candidatos.configurar');
         $autorizaciones = $actor->can('autorizaciones.configurar') && $autorizador->alcanceDeEmpresa($actor, 'autorizaciones.configurar');
         abort_unless($privacidad || $autorizaciones, 403, 'Estos ajustes son de toda la empresa: hace falta el permiso «configurar» con alcance de empresa.');
-        // Cada formulario manda solo su parte (aviso de privacidad o autorización de visitas)
+        // Cada formulario manda solo su parte (aviso de privacidad, autorización de visitas o escalamiento)
+        $escalamiento = ($privacidad || $autorizaciones) && $request->has('recordar_minutos');
         $privacidad = $privacidad && $request->has('aviso_privacidad');
         $autorizaciones = $autorizaciones && $request->has('visitas_requieren_autorizacion');
-        if (! $privacidad && ! $autorizaciones) {
+        if (! $privacidad && ! $autorizaciones && ! $escalamiento) {
             return back()->with('error', 'No hubo cambios que guardar.');
         }
 
-        app(AjustesRecepcion::class)->guardar($actor, Empresa::findOrFail($empresaId), $request->only(['aviso_privacidad', 'visitas_requieren_autorizacion', 'kiosco_horas', 'kiosco_usos', 'rh_autoriza_paso', 'criterios']), $privacidad, $autorizaciones);
+        app(AjustesRecepcion::class)->guardar($actor, Empresa::findOrFail($empresaId),
+            $request->only(['aviso_privacidad', 'visitas_requieren_autorizacion', 'kiosco_horas', 'kiosco_usos', 'rh_autoriza_paso', 'criterios', 'recordar_minutos', 'escalar_minutos']),
+            $privacidad, $autorizaciones, $escalamiento);
 
-        return back()->with('ok', 'Ajustes de Recepción guardados.');
+        return back()->with('ok', $escalamiento && ! $privacidad && ! $autorizaciones
+            ? 'Ajustes guardados: las autorizaciones que tarden se recordarán y escalarán con esos minutos.'
+            : 'Ajustes de Recepción guardados.');
     }
 
     // -------------------------------------------------------- Fotos de caseta

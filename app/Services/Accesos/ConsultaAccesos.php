@@ -139,7 +139,8 @@ class ConsultaAccesos
     {
         return $this->filtrar($this->limitar(Acceso::query(), $actor, 'accesos.ver'), $filtros)
             ->where('accesos.estado', 'pendiente')
-            ->with($this->relaciones(true))
+            // La solicitud pendiente (a quién espera y si ya se escaló) viene cargada: la tarjeta no consulta
+            ->with([...$this->relaciones(true), 'autorizacionDepartamento.departamento:id,nombre'])
             ->orderBy('accesos.entrada_at')->orderBy('accesos.id')
             ->get();
     }

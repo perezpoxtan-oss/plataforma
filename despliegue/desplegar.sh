@@ -411,6 +411,12 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudieron enviar los recordatorios de procedimientos (revisa despliegue.log)"
 fi
 # --- Fin Procedimientos ---
+# --- Autorizaciones de caseta que tardan: recordatorio y escalamiento (minutos por empresa en Recepción → Ajustes) ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:escalar-autorizaciones'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:escalar-autorizaciones --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudieron escalar las autorizaciones que tardan (revisa despliegue.log)"
+fi
+# --- Fin Autorizaciones ---
 
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
 if [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ] && grep -Eq "EscribeAqui|tu-correo@" "$HOME/qa_inicial.txt"; then

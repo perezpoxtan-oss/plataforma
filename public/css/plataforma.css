@@ -1325,7 +1325,14 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .estado-acceso { display: inline-flex; align-items: center; font-size: 0.68rem; font-weight: 800; padding: 0.3rem 0.6rem; border-radius: 6px; white-space: nowrap; }
 .estado-acceso.en-sitio { background: #dc3545; color: #fff; }
 .estado-acceso.pendiente, .estado-acceso.fuera { background: #ffc107; color: #212529; }
-.estado-acceso.movimiento { background: #e2e8f0; color: #334155; }
+.estado-acceso.movimiento, .estado-acceso.finalizado { background: #e2e8f0; color: #334155; }
+/* Vocabulario corto de estados: la pastilla dice Pendiente · En sitio · Fuera · Finalizado y el detalle va en este renglón chico (ámbar y rojo según los minutos de espera de la empresa) */
+.ficha-acceso-detalle { font-size: 0.8rem; font-weight: 700; color: #475569; margin: -0.3rem 0 0.5rem; overflow-wrap: anywhere; }
+.ficha-acceso-detalle.espera-normal { color: #15803d; }
+.ficha-acceso-detalle.espera-ambar { color: #b45309; }
+.ficha-acceso-detalle.espera-roja { color: #dc2626; }
+.ficha-acceso-detalle.negado { color: #b91c1c; }
+.ficha-acceso-detalle .gafete-mini { font-weight: 700; }
 .estado-acceso.mini { font-size: 0.6rem; padding: 0.1rem 0.35rem; margin-left: 0.25rem; }
 .gafete-mini { font-size: 0.78rem; font-weight: 700; color: #64748b; }
 .ficha-acceso-nombre { font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0; overflow-wrap: anywhere; }
@@ -3665,6 +3672,9 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .aviso-esperando-autorizacion { display: flex; gap: 0.6rem; align-items: flex-start; background: #fff7ed; border: 2px solid #fb923c; color: #7c2d12; border-radius: 12px; padding: 0.6rem 0.75rem; margin: 0.6rem 0; font-size: 0.85rem; }
 .aviso-esperando-autorizacion > i { font-size: 1.3rem; animation: girar-reloj 2.5s linear infinite; }
 .aviso-esperando-autorizacion.respondida { background: #f0fdf4; border-color: #22c55e; color: #14532d; }
+.aviso-esperando-autorizacion.espera-ambar { border-color: #f59e0b; }
+.aviso-esperando-autorizacion.espera-roja { background: #fef2f2; border-color: #dc2626; color: #7f1d1d; }
+.aviso-esperando-autorizacion .texto-escalado { color: #b91c1c; }
 @keyframes girar-reloj { 0%, 80% { transform: rotate(0); } 100% { transform: rotate(180deg); } }
 @media (prefers-reduced-motion: reduce) { .aviso-esperando-autorizacion > i { animation: none; } }
 .linea-autorizacion { font-size: 0.82rem; font-weight: 700; margin: 0.4rem 0; }

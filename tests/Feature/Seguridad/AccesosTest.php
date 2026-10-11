@@ -460,8 +460,8 @@ class AccesosTest extends TestCase
         $tour = $this->ultimo();
         $this->assertSame(['salida_temporal', 'en_sitio', $a->id, 'W2M123', 'GUÍA TOURS', '310'], [$tour->movimiento, $tour->estado, $tour->acceso_origen_id, $tour->placas, $tour->conductor, $tour->habitacion]);
 
-        // Sigue contando como una sola persona en sitio, marcada FUERA EN TOUR
-        $this->actingAs($this->admin)->get('/accesos')->assertSee('Gente en Sitio (1)')->assertSee('FUERA EN TOUR')->assertSee('Registrar Regreso')->assertDontSee('Salida Final');
+        // Sigue contando como una sola persona en sitio, marcada FUERA con el detalle «Fuera en tour» (vocabulario corto de estados)
+        $this->actingAs($this->admin)->get('/accesos')->assertSee('Gente en Sitio (1)')->assertSee('>FUERA <', false)->assertSee('Fuera en tour')->assertDontSee('FUERA EN TOUR')->assertSee('Registrar Regreso')->assertDontSee('Salida Final');
 
         $this->actingAs($this->admin)->post("/accesos/{$a->id}/salida-temporal")->assertSessionHas('error', 'Esta persona ya está fuera: registra primero su regreso.');
 
@@ -472,7 +472,7 @@ class AccesosTest extends TestCase
         $this->assertNotNull($tour->salida_at);
         $this->actingAs($this->admin)->patch("/accesos/{$a->id}/regreso")->assertSessionHas('error', 'Esta persona no tiene una salida temporal abierta (ya regresó).');
 
-        $this->actingAs($this->admin)->get('/accesos?pestana=historial')->assertSee('SALIDA A TOUR')->assertSee('REGRESO DE TOUR');
+        $this->actingAs($this->admin)->get('/accesos?pestana=historial')->assertSee('FINALIZADO')->assertSee('Salida a tour')->assertSee('Regreso de tour');
 
         // Salida final estando fuera en tour: el tour también se cierra
         $this->actingAs($this->admin)->post("/accesos/{$a->id}/salida-temporal");
@@ -499,7 +499,7 @@ class AccesosTest extends TestCase
             ->get('/accesos')->assertSee('action="'.route('accesos.salida-temporal', $a->id).'"', false);
 
         $this->actingAs($this->admin)->post("/accesos/{$a->id}/salida-temporal")->assertSessionHas('ok', 'Salida temporal de JESÚS BALAM TUN registrada.');
-        $this->actingAs($this->admin)->get('/accesos')->assertSee('FUERA TEMPORAL');
+        $this->actingAs($this->admin)->get('/accesos')->assertSee('>FUERA <', false)->assertSee('Fuera temporal');
     }
 
     public function test_acompanantes_salida_individual_y_temporal(): void

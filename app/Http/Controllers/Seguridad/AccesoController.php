@@ -14,6 +14,7 @@ use App\Services\Accesos\MovimientoNoPermitido;
 use App\Services\Accesos\MovimientosAccesos;
 use App\Services\Accesos\RegistroAccesos;
 use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Autorizaciones\Escalamiento;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Support\Csv;
 use App\Support\HoraLocal;
@@ -47,6 +48,7 @@ class AccesoController extends Controller
         private readonly ConsultaAccesos $consulta,
         private readonly RegistroAccesos $registro,
         private readonly MovimientosAccesos $movimientos,
+        private readonly Escalamiento $escalamiento,
     ) {}
 
     public function index(Request $request): View
@@ -63,7 +65,16 @@ class AccesoController extends Controller
         $pestana = in_array($request->query('pestana'), self::PESTANAS, true) ? $request->query('pestana') : 'en_sitio';
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $filtros, $pestana, $empresaId) {
+            // Autorizaciones que ya tardaron: si tocaba recordar o escalar, se hace al refrescar (por si el cron no corre)
+            if ($pestana === 'pendientes') {
+                $this->escalamiento->escalarSiToca($empresaId);
+            }
             $conteos = $this->consulta->conteos($actor);
+            $lista = match ($pestana) {
+                'pendientes' => $this->consulta->pendientes($actor, $filtros),
+                'historial' => $this->consulta->historial($actor, $filtros),
+                default => $this->consulta->enSitio($actor, $filtros),
+            };
             $puedeCrear = $actor->can('accesos.crear');
             $sedesAlta = $puedeCrear ? $this->consulta->sedesParaElegir($actor, 'accesos.crear') : collect();
             $sedesEdicion = $actor->can('accesos.editar') ? $this->consulta->sedesParaElegir($actor, 'accesos.editar') : collect();
@@ -75,11 +86,10 @@ class AccesoController extends Controller
                 'pestana' => $pestana,
                 'filtros' => $filtros,
                 'conteos' => $conteos,
-                'lista' => match ($pestana) {
-                    'pendientes' => $this->consulta->pendientes($actor, $filtros),
-                    'historial' => $this->consulta->historial($actor, $filtros),
-                    default => $this->consulta->enSitio($actor, $filtros),
-                },
+                'lista' => $lista,
+                // Reloj, color y «Espera a» de cada pendiente (una consulta por departamento, no por tarjeta)
+                'esperas' => $pestana === 'pendientes' ? $this->escalamiento->esperasPara($lista) : [],
+                'umbrales' => $this->escalamiento->umbrales(Empresa::find($empresaId)),
                 'sedesFiltro' => Sede::orderBy('nombre')->when($sedesVer !== null, fn ($q) => $q->whereIn('id', $sedesVer))->get(['id', 'nombre']),
                 'sedesAlta' => $sedesAlta,
                 // Zonas de las sedes donde registra o edita, con ocupación en vivo

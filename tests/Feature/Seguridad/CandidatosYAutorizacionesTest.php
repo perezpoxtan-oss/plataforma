@@ -593,8 +593,8 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->assertSame([$this->jefe->id], $a->avisados);
         Mail::assertSent(AvisoRecepcion::class, fn ($m) => $m->hasTo($this->jefe->email) && count($m->botones) === 2 && str_contains($m->botones[0][1], 'signature='));
 
-        // La caseta ve «ESPERANDO AUTORIZACIÓN» y consulta el estado en vivo
-        $this->actingAs($this->agente)->get('/accesos?pestana=pendientes')->assertSee('ESPERANDO AUTORIZACIÓN');
+        // La caseta ve PENDIENTE con «Espera a: Nombre (Departamento) · N min» y consulta el estado en vivo
+        $this->actingAs($this->agente)->get('/accesos?pestana=pendientes')->assertSee('PENDIENTE')->assertSee('Espera a: '.$this->jefe->name.' (Seguridad)')->assertSee('data-espera-minutos', false);
         $this->actingAs($this->agente)->getJson('/accesos/autorizaciones-estado?ids='.$acceso->id)->assertJsonPath('estados.'.$acceso->id, 'pendiente|esperando');
 
         // La notificación del jefe trae los botones
@@ -660,7 +660,7 @@ class CandidatosYAutorizacionesTest extends TestCase
         $acceso = $this->enEmpresa(fn () => Acceso::sole());
         $this->assertSame('finalizado', $acceso->estado);
         $this->assertSame('rechazada', $acceso->autorizacion);
-        $this->actingAs($this->agente)->get('/accesos?pestana=historial')->assertSee('NO AUTORIZADO');
+        $this->actingAs($this->agente)->get('/accesos?pestana=historial')->assertSee('FINALIZADO')->assertSee('No autorizado por Seguridad');
 
         // Departamento sin responsable: entra como siempre
         $this->registrarEnCaseta(['nombre' => 'Elena Vargas', 'motivo_visita' => 'departamento', 'departamento_id' => $this->cocina->id, 'es_candidato' => null]);

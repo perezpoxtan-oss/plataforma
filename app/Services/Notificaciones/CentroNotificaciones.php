@@ -30,6 +30,7 @@ class CentroNotificaciones
         'autorizacion_candidato' => ['bi-person-workspace', 'alerta'],
         'autorizacion_recepcion' => ['bi-person-check-fill', 'alerta'],
         'autorizacion_respuesta' => ['bi-patch-check-fill', 'exito'],
+        'autorizacion_escalada' => ['bi-alarm-fill', 'alerta'],
         'delegacion' => ['bi-person-gear', 'info'],
         // Candidatos, fase 2
         'entrevista_asignada' => ['bi-calendar-event', 'alerta'],

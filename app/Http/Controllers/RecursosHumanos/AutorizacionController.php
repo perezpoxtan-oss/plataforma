@@ -13,6 +13,7 @@ use App\Models\Sede;
 use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Autorizaciones\Delegaciones;
+use App\Services\Autorizaciones\Escalamiento;
 use App\Services\Candidatos\CambioNoPermitido;
 use App\Services\Candidatos\Entrevistas;
 use App\Services\Permisos\Autorizador;
@@ -242,11 +243,21 @@ class AutorizacionController extends Controller
             return response()->json(['estados' => (object) []]);
         }
 
-        $estados = $this->tenant->conEmpresa($empresaId, fn () => app(ConsultaAccesos::class)->limitar(Acceso::query(), $request->user(), 'accesos.ver')
-            ->whereIn('accesos.id', $ids)->get(['accesos.id', 'accesos.estado', 'accesos.autorizacion'])
-            ->mapWithKeys(fn ($a) => [$a->id => $a->estado.'|'.($a->autorizacion ?? '')]));
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $ids, $empresaId) {
+            // Si ya tocaba recordar o escalar alguna, se hace en este mismo sondeo (hosting sin cron confiable)
+            $escalamiento = app(Escalamiento::class);
+            $escalamiento->escalarSiToca($empresaId);
+            $accesos = app(ConsultaAccesos::class)->limitar(Acceso::query(), $request->user(), 'accesos.ver')
+                ->whereIn('accesos.id', $ids)
+                ->with(['autorizacionDepartamento.departamento:id,nombre', 'departamento:id,nombre', 'host:id,nombre,apellido_paterno,apellido_materno'])
+                ->get(['accesos.id', 'accesos.estado', 'accesos.autorizacion', 'accesos.tipo', 'accesos.entrada_at', 'accesos.departamento_id', 'accesos.host_colaborador_id', 'accesos.sede_id']);
+            $estados = $accesos->mapWithKeys(fn ($a) => [$a->id => $a->estado.'|'.($a->autorizacion ?? '')]);
+            // Reloj, color y «Se escaló a» de los que siguen pendientes
+            $esperas = collect($escalamiento->esperasPara($accesos, Empresa::find($empresaId)))
+                ->map(fn ($e) => ['minutos' => $e['minutos'], 'nivel' => $e['nivel'], 'escalado' => $e['escalado']]);
 
-        return response()->json(['estados' => (object) $estados->all()]);
+            return response()->json(['estados' => (object) $estados->all(), 'esperas' => (object) $esperas->all()]);
+        });
     }
 
     // ------------------------------------------------------------------ Ayudas

@@ -654,7 +654,13 @@ html.modo-noche .dato-destacado { color: #93c5fd; }
 html.modo-noche .texto-gafete, html.modo-noche .resultado-salida-pedir { color: #fca5a5; }
 html.modo-noche .texto-devuelta { color: #86efac; }
 html.modo-noche .aviso-fuera, html.modo-noche .aviso-sin-permiso { background: rgba(245,158,11,0.12); border-color: #92400e; color: #fcd34d; }
-html.modo-noche .estado-acceso.movimiento { background: #334155; color: #e2e8f0; }
+html.modo-noche .estado-acceso.movimiento, html.modo-noche .estado-acceso.finalizado { background: #334155; color: #e2e8f0; }
+html.modo-noche .ficha-acceso-detalle { color: #cbd5e1; }
+html.modo-noche .ficha-acceso-detalle.espera-normal { color: #86efac; }
+html.modo-noche .ficha-acceso-detalle.espera-ambar { color: #fcd34d; }
+html.modo-noche .ficha-acceso-detalle.espera-roja, html.modo-noche .aviso-esperando-autorizacion .texto-escalado { color: #fca5a5; }
+html.modo-noche .aviso-esperando-autorizacion.espera-roja { background: rgba(220, 38, 38, 0.14); border-color: #991b1b; color: #fecaca; }
+html.modo-sol .ficha-acceso-detalle { color: #000; }
 html.modo-noche .accesos-pestanas { border-bottom-color: var(--borde); }
 html.modo-noche .accesos-pestana { color: #94a3b8; }
 html.modo-noche .accesos-pestana.activa, html.modo-noche .accesos-pestana:hover { color: #e2e8f0; }

@@ -33,6 +33,14 @@
                     <span><i class="bi bi-stopwatch" aria-hidden="true"></i> {{ $a->pendiente() ? 'Esperando desde hace '.$a->minutosEspera().' min' : 'Respondida en '.$a->minutosEspera().' min' }}</span>
                 </div>
                 <p class="texto-traza mt-1 mb-0">Avisado @fecha($a->solicitada_en) · registró {{ $a->registradoPor?->name ?? '—' }}</p>
+                {{-- Historial del escalamiento: recordatorio y a quién se avisó cuando nadie respondió --}}
+                @if ($a->recordatorio_en)
+                    <p class="texto-traza mb-0"><i class="bi bi-alarm me-1" aria-hidden="true"></i>Recordatorio enviado @fecha($a->recordatorio_en)</p>
+                @endif
+                @if ($a->escalado_en)
+                    @php $escaladoA = \App\Models\User::whereIn('id', (array) ($a->escalado_a ?? []))->orderBy('name')->pluck('name')->join(', ', ' y '); @endphp
+                    <p class="texto-traza mb-0"><i class="bi bi-alarm-fill me-1" aria-hidden="true"></i>Escalado @fecha($a->escalado_en){{ $escaladoA !== '' ? ' a '.$escaladoA : ' (sin suplente ni jefe a quien avisar)' }}</p>
+                @endif
                 @unless ($a->pendiente())
                     <p class="texto-traza mb-0">Respondió {{ $a->respondidaPor?->name ?? '—' }} ({{ Autorizacion::MEDIOS[$a->respuesta_medio] ?? $a->respuesta_medio }}) · @fecha($a->respondida_en){{ $a->comentario ? ' — «'.$a->comentario.'»' : '' }}</p>
                 @endunless

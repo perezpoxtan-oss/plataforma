@@ -22,6 +22,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *    sigue pendiente y el acceso queda con autorizacion = «espera».
  *
  * Estados: pendiente → autorizada | entrevista | rechazada | cancelada.
+ *
+ * Escalamiento (tarea programada plataforma:escalar-autorizaciones): a los X
+ * minutos se reenvía el aviso (recordatorio_en); a los Y se avisa a los
+ * suplentes o al Jefe de seguridad (escalado_en, escalado_a). Ver
+ * App\Services\Autorizaciones\Escalamiento.
  */
 class Autorizacion extends Model
 {
@@ -60,7 +65,8 @@ class Autorizacion extends Model
 
     protected function casts(): array
     {
-        return ['solicitada_en' => 'datetime', 'respondida_en' => 'datetime', 'avisados' => 'array'];
+        return ['solicitada_en' => 'datetime', 'respondida_en' => 'datetime', 'avisados' => 'array',
+            'recordatorio_en' => 'datetime', 'escalado_en' => 'datetime', 'escalado_a' => 'array'];
     }
 
     public function sede(): BelongsTo
