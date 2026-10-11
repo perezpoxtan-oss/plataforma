@@ -79,7 +79,7 @@ Si viene a su **Entrevista** con el departamento, a quien lo entrevista le llega
 
 ## Cómo usar la ficha del candidato
 
-Arriba ves la etapa de su **postulación actual**, los pasos del proceso y los botones de lo que sigue. Debajo, **Entrevistas y evaluaciones** (las calificaciones de cada entrevista y la cita con el departamento) y luego su **Solicitud de empleo**, sus **Postulaciones**, el **Registro en caseta**, sus **Documentos**, los **Tiempos** y el **Historial**.
+Arriba ves la etapa de su **postulación actual**, cuánto lleva en esa etapa (el reloj se pone en ámbar cuando pasa del plazo de tu empresa y en rojo cuando pasa del doble), los pasos del proceso y los botones de lo que sigue. Debajo, **Entrevistas y evaluaciones** (las calificaciones de cada entrevista y la cita con el departamento) y luego su **Solicitud de empleo**, sus **Postulaciones**, el **Registro en caseta**, sus **Documentos**, los **Tiempos** y el **Historial**.
 
 ![Ficha del candidato en revisión](img/recepcion-y-candidatos/candidato-ficha-revision.png)
 
@@ -87,7 +87,7 @@ Arriba ves la etapa de su **postulación actual**, los pasos del proceso y los b
 
 - **Editar solicitud:** abre la solicitud de empleo completa (ver [Solicitud de empleo](solicitud-empleo.md)).
 - **Ya lo revisé:** aparece cuando el candidato llenó o cambió su solicitud en el kiosco o por internet (dice **Por revisar**).
-- **Documentos:** elige qué documento es, elige el archivo y toca **Subir (PDF, JPG o PNG · máx. 5 MB)**. Son privados.
+- **Documentos:** la lista de lo que tu empresa pide para contratar, con lo que ya entregó y lo que falta (ver [Cómo reunir los documentos para contratar](#cómo-reunir-los-documentos-para-contratar)).
 
 ## Cómo atender y entrevistar (Recursos Humanos)
 
@@ -160,16 +160,74 @@ Te llega el aviso «El departamento evaluó a …» o «Elegido por el departame
 
 **Qué debes ver:** la etapa nueva arriba, con el motivo, y un renglón nuevo en el **Historial**. Al candidato **no se le envía ningún aviso** de rechazo. Si estaba con el departamento, su entrevista se cancela y se le avisa a quien lo iba a entrevistar.
 
+## Cómo reunir los documentos para contratar
+
+La tarjeta **Documentos** de la ficha muestra la lista que pide tu empresa (por ejemplo identificación oficial, CURP, número de seguro social, RFC, acta de nacimiento, comprobante de domicilio, certificado de estudios y cartas de recomendación), cuáles ya entregó y cuáles faltan: «Documentos: 5 de 8 obligatorios · Falta: …». Los opcionales no detienen la contratación.
+
+Para cada documento tienes dos caminos:
+
+- **Subirlo escaneado:** en **Agregar documento** elige qué documento es, elige el archivo y toca **Subir (PDF, JPG o PNG · máx. 5 MB)**. Queda privado y marcado como entregado.
+- **Recibirlo en papel:** si la persona te entrega el original y no lo vas a escanear, en **Recibido en papel** elige el documento, la fecha en que lo recibiste y toca **Recibir**. Queda anotado que lo recibiste tú y cuándo.
+
+**Qué debes ver:** el documento con palomita verde en la lista y el contador actualizado. Si te equivocaste, tócale el bote de basura y vuelve a registrarlo.
+
+## Cómo registrar el contrato firmado
+
+1. Con el candidato **Elegido**, toca **Contrato firmado**.
+2. Confirma la **Fecha de la firma** (hoy, por omisión).
+3. Si lo escaneaste, elige el **Archivo del contrato** (opcional; se guarda en privado).
+4. Toca **Guardar**.
+
+**Qué debes ver:** en **Documentos**, «Contrato firmado el … · lo recibió …» y, si ya no falta nada, «El expediente está completo: ya puedes Contratar».
+
 ## Cómo contratar a un candidato
 
 1. Con el candidato **Elegido**, toca **Contratar**.
-2. Revisa **Nombre(s)**, **Apellido paterno** y **Apellido materno**, y la **Sede**, el **Departamento** y el **Puesto**.
-3. Escribe el **Número de empleado**.
-4. Toca **Dar de alta como colaborador**.
+2. Si falta algún documento obligatorio o el contrato, la ventana te lo dice. Puedes cerrar y completarlo, o marcar **Contratar de todos modos** y escribir por qué (por ejemplo, «Entrega el acta la próxima semana»). El motivo queda en el historial y en la bitácora.
+3. Revisa **Nombre(s)**, **Apellido paterno** y **Apellido materno**, y la **Sede**, el **Departamento** y el **Puesto**.
+4. Escribe el **Número de empleado**.
+5. Toca **Dar de alta como colaborador**.
 
 ![Contratar](img/recepcion-y-candidatos/candidato-contratar.png)
 
-**Qué debes ver:** «¡Contratado! … ya está en Colaboradores con el número …». El colaborador nuevo ya lleva los datos de su solicitud (CURP, RFC, NSS, nacimiento, teléfono, correo y domicilio).
+**Qué debes ver:** «¡Contratado! … ya está en Colaboradores con el número …». El colaborador nuevo ya lleva los datos de su solicitud (CURP, RFC, NSS, nacimiento, teléfono, correo y domicilio) y sus documentos pasan a su [expediente](colaboradores.md#cómo-ver-el-expediente-de-un-colaborador).
+
+## Plazos: reloj, color y recordatorios
+
+Nada se queda esperando sin que alguien se entere. Cada paso tiene un plazo (tu empresa lo ajusta en **Documentos y plazos**):
+
+| Qué espera | Plazo por omisión | A quién se le recuerda |
+|---|---|---|
+| Solicitud llenada en el kiosco o por internet sin revisar | 1 día | Recursos Humanos de la sede |
+| Candidato por atender o por entrevistar con Recursos Humanos sin movimiento | 2 días | Recursos Humanos de la sede |
+| Entrevista con el departamento sin evaluación | 2 días hábiles | Quien lo entrevistó (o su delegado) |
+| Elegido sin documentos o sin contrato | 5 días | Recursos Humanos de la sede |
+| Cita vencida sin que la caseta registrara su llegada | 24 horas | Recursos Humanos: la campana propone **Marcar como no se presentó** |
+
+Cuando algo pasa de su plazo, el renglón de **Mis pendientes** se pone en **ámbar** (y en **rojo** si pasa del doble), la ficha lo muestra en su reloj y llega **un recordatorio al día** por campana y correo a quien lo tiene pendiente, hasta que lo atienda (en la campana solo queda el de hoy). Nadie queda marcado solo como «No se presentó»: tú decides con el botón de la campana o desde la ficha.
+
+## Caducidad: archivadas y fichas por caducar
+
+Por privacidad, los datos de quien no fue contratado no se guardan para siempre:
+
+- Las postulaciones en **Considerar** o **Rechazado** se **archivan** a los 6 meses (por omisión): salen de la lista y de los contadores, pero la ficha se conserva. Las ves con el filtro **Archivadas**; **Atender** reabre la postulación.
+- Las fichas sin contratación y sin movimiento se **borran** con sus documentos y su firma a los 12 meses (por omisión). **Quince días antes** llega un aviso a Recursos Humanos de la sede por campana y correo, y la ficha aparece en el filtro **Por caducar** con la fecha en que se borrará.
+- Si aún la necesitas, abre la ficha (o toca el botón de la campana) y elige **Conservar 6 meses más**. Se puede repetir las veces que haga falta.
+- Las fichas de los **contratados nunca se borran**: su expediente ya es del colaborador.
+
+Todo queda en la [Bitácora de auditoría](auditoria.md) sin datos personales.
+
+## Cómo configurar los documentos y los plazos
+
+Necesitas que tu rol pueda **configurar** Candidatos en toda la empresa (si no ves el botón, pide a tu administrador que lo haga).
+
+1. En **Recursos Humanos → Candidatos**, toca **Documentos y plazos**.
+2. En **Documentos para contratar**, escribe un documento por renglón (hasta 15) y marca **Obligatorio** en los que detienen la contratación. Deja vacío el renglón que no uses. El currículum, «Otro documento» y el contrato siempre existen y no van en la lista.
+3. Toca **Guardar lista de documentos**.
+4. En **Plazos de candidatos**, ajusta los días u horas de cada paso y, en **Caducidad y privacidad**, los meses para archivar y para borrar (borrar siempre va después de archivar).
+5. Toca **Guardar plazos**.
+
+**Qué debes ver:** «Lista de documentos guardada…» o «Plazos guardados…». Si quitas un documento de la lista, los que ya se subieron con ese nombre lo conservan.
 
 ## Cómo dejar que el candidato llene su solicitud (kiosco)
 
@@ -219,6 +277,13 @@ Los mensajes salen en rojo dentro de la ventana o arriba de la ficha.
 | Para guardar, marca «Acepto el aviso de privacidad». | No se marcó el aviso de privacidad. | Léelo con el candidato y márcalo. |
 | El archivo pesa más de 5 MB. / El archivo debe ser PDF, JPG o PNG. | El documento no se acepta. | Reduce el archivo o conviértelo a PDF. |
 | «Esta persona ya tiene una solicitud en proceso en una sede que no tienes a cargo.» | Ese teléfono o CURP ya tiene ficha en otra sede, con un proceso abierto. | Pide a Recursos Humanos de esa sede que la atienda. |
+| Todavía no se puede contratar: Falta: … | Faltan documentos obligatorios o el contrato firmado. | Complétalos en **Documentos**, o marca **Contratar de todos modos** y escribe el motivo. |
+| Escribe por qué se contrata sin completar el expediente. | Marcaste **Contratar de todos modos** sin motivo. | Escribe el motivo. |
+| Ese documento ya está marcado como recibido en papel. | Ya lo habías recibido. | No hace falta repetirlo; si fue un error, elimínalo de la lista. |
+| Revisa la fecha de la firma (o de entrega): no puede ser futura. | Pusiste una fecha que no ha llegado. | Corrige la fecha. |
+| El contrato se registra cuando el candidato está «Elegido». | El candidato no está en esa etapa. | Espera a que el departamento lo elija. |
+| La ficha de un contratado no caduca. | Quisiste conservar la ficha de alguien ya contratado. | No hace falta: su expediente ya es del colaborador. |
+| Las fichas se borran después de archivar las postulaciones: pon más meses en «Borrar» que en «Archivar». | En **Documentos y plazos** pusiste borrar antes o igual que archivar. | Sube los meses de **Borrar**. |
 
 ## Preguntas frecuentes
 
@@ -232,7 +297,13 @@ Los mensajes salen en rojo dentro de la ventana o arriba de la ficha.
 
 **La persona ya vino antes. ¿Le hago otra ficha?** No. La plataforma usa su misma ficha y, si hace falta, le abre una postulación nueva.
 
-**¿Dónde veo lo que tengo pendiente?** En **Mis pendientes**: **Esperando en Recepción**, **Solicitudes por revisar**, **Por entrevistar (RR. HH.)**, **Evaluaciones del departamento** y **Elegidos por contratar**.
+**¿Dónde veo lo que tengo pendiente?** En **Mis pendientes**: **Esperando en Recepción**, **Solicitudes por revisar**, **Por entrevistar (RR. HH.)**, **Evaluaciones del departamento** y **Elegidos por contratar**. El renglón se pone en ámbar o rojo cuando algo pasó de su plazo.
+
+**¿Puedo contratar si le falta un documento?** Sí, marcando **Contratar de todos modos** y escribiendo por qué. Queda registrado quién lo decidió y qué faltaba; después puedes subir el documento desde su ficha de candidato.
+
+**¿Por qué ya no veo a un candidato rechazado hace tiempo?** Su postulación se archivó. Búscalo con el filtro **Archivadas**.
+
+**Me avisaron que se borrará una ficha. ¿Qué hago?** Si la necesitas, ábrela y toca **Conservar 6 meses más**. Si no, no hagas nada: se borra sola el día indicado.
 
 ## Relacionado
 

@@ -126,6 +126,15 @@ Si en la caseta necesitas registrar a alguien que **no aparece** al buscarlo:
 
 **Qué debes ver:** ««Beto Hernandez» validado con el número 2047.» o ««Beto Hernandez» se unió con «Roberto Hernández Cruz» (#1005).»
 
+## Cómo ver el expediente de un colaborador
+
+El expediente reúne en una sola pantalla lo que la plataforma sabe de la persona.
+
+1. En **Recursos Humanos → Colaboradores**, busca al colaborador y toca el icono de **carpeta** (**Expediente**) de su renglón. También llegas desde su ficha de candidato, en **Documentos**.
+2. Verás sus **Datos del colaborador** (sede, departamento, puesto, teléfono, cuenta de usuario), sus **Documentos de contratación** (los que entregó como candidato, escaneados o recibidos en papel), **Su paso por Candidatos** (vacante, entrevistas y calificaciones, fecha de contratación y de firma del contrato) y resúmenes con enlace de sus **accesos recientes**, **llaves en uso**, **pases de salida**, **resguardos en campo** y **procedimientos por leer**.
+
+**Qué debes ver:** solo los apartados de los módulos que tu rol puede ver. Los documentos y la ficha de candidato son datos personales: si tu rol no puede consultarlos, el apartado lo indica.
+
 ## En el celular y en modo Noche
 
 ![Celular](img/colaboradores/5-celular.png) ![Alta en el celular](img/colaboradores/6-celular-alta.png)
@@ -156,6 +165,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | No veo los datos legales. | Tu rol no tiene el permiso **Datos personales**. | Pídelo a tu administrador si lo necesitas. |
 
 ## Preguntas frecuentes
+
+**¿Dónde están los documentos que entregó al contratarse?** En su **Expediente** (icono de carpeta en su renglón), si tu rol puede ver datos personales.
 
 **¿Se puede borrar a un colaborador?** No. Se da de baja y se puede reingresar; así se conserva su historial.
 
