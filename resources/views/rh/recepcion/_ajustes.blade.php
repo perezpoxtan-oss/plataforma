@@ -60,3 +60,38 @@
         @endif
     </form>
 </section>
+{{-- Escalamiento: qué pasa cuando una autorización tarda (Bitácora de accesos). Lo guarda quien configura Recepción o Autorizaciones con alcance de empresa. --}}
+@php
+    $puedeGuardarEscalamiento = $puedeGuardarRecepcion || (auth()->user()->can('autorizaciones.configurar')
+        && app(\App\Services\Permisos\Autorizador::class)->alcanceDeEmpresa(auth()->user(), 'autorizaciones.configurar'));
+@endphp
+<section class="tarjeta p-4 mt-3" id="escalamiento" aria-labelledby="t-escalamiento">
+    <h2 id="t-escalamiento" class="h5 fw-bold"><i class="bi bi-alarm me-2 text-warning" aria-hidden="true"></i>Cuando la autorización tarda: recordatorio y escalamiento</h2>
+    <p class="small text-muted">Aplica a quien espera en caseta la autorización de un departamento o el «Que pase» de Recursos Humanos. A los primeros minutos se vuelve a avisar a quien debe responder (campana y correo); después se avisa a los suplentes del departamento (o a quien los cubre) y al Jefe de seguridad de la sede. Para Recursos Humanos se avisa al resto del equipo de RR. HH. y al Jefe de seguridad. La caseta ve en la tarjeta a quién espera, cuántos minutos lleva y a quién se escaló.</p>
+    @unless ($puedeGuardarEscalamiento)
+        <div class="alert alert-secondary small py-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Tu rol solo puede consultar estos ajustes.</div>
+    @endunless
+    <form action="{{ route('recepcion.ajustes.guardar') }}" method="POST">
+        @csrf
+        @method('PUT')
+        <div class="rejilla-cv">
+            <div>
+                <label class="campo-etiqueta" for="recordar_minutos">Recordar a los (minutos)</label>
+                <input type="number" id="recordar_minutos" name="recordar_minutos" class="campo" min="1" max="{{ \App\Services\Recepcion\AjustesRecepcion::MAX_MINUTOS_ESCALAMIENTO }}"
+                       value="{{ old('recordar_minutos', $ajustesRecepcion->recordarMinutos($empresa)) }}" @disabled(! $puedeGuardarEscalamiento)>
+                <p class="campo-ayuda">Se reenvía el aviso al responsable (o a Recursos Humanos). La espera se pinta en ámbar.</p>
+                @error('recordar_minutos')<p class="texto-error-rh">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label class="campo-etiqueta" for="escalar_minutos">Avisar al suplente y al jefe a los (minutos)</label>
+                <input type="number" id="escalar_minutos" name="escalar_minutos" class="campo" min="2" max="{{ \App\Services\Recepcion\AjustesRecepcion::MAX_MINUTOS_ESCALAMIENTO }}"
+                       value="{{ old('escalar_minutos', $ajustesRecepcion->escalarMinutos($empresa)) }}" @disabled(! $puedeGuardarEscalamiento)>
+                <p class="campo-ayuda">Suplentes del departamento y Jefe de seguridad de la sede. Para RR. HH., el resto del equipo y el Jefe de seguridad. La espera se pinta en rojo.</p>
+                @error('escalar_minutos')<p class="texto-error-rh">{{ $message }}</p>@enderror
+            </div>
+        </div>
+        @if ($puedeGuardarEscalamiento)
+            <button type="submit" class="btn-verde btn-accion-rh">Guardar escalamiento</button>
+        @endif
+    </form>
+</section>

@@ -5,10 +5,12 @@ namespace App\Services\Recepcion;
 use App\Models\Acceso;
 use App\Models\Autorizacion;
 use App\Models\Candidato;
+use App\Models\Empresa;
 use App\Models\Postulacion;
 use App\Models\User;
 use App\Services\Permisos\Autorizador;
 use App\Support\HoraLocal;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -23,14 +25,22 @@ use Illuminate\Support\Collection;
  */
 class PanelRecepcion
 {
-    /** Minutos a partir de los cuales la espera se pinta en ámbar y en rojo. */
+    /**
+     * Minutos a partir de los cuales la espera se pinta en ámbar y en rojo (valores
+     * por omisión; cada empresa los cambia en Recepción → Ajustes → Escalamiento).
+     */
     public const ESPERA_AMBAR = 10;
 
     public const ESPERA_ROJA = 20;
 
+    /** @var array{0: int, 1: int} umbrales [ámbar, rojo] de la empresa en curso */
+    private array $umbrales = [self::ESPERA_AMBAR, self::ESPERA_ROJA];
+
     public function __construct(
         private readonly Autorizador $autorizador,
         private readonly HoraLocal $hora,
+        private readonly AjustesRecepcion $ajustes,
+        private readonly Tenant $tenant,
     ) {}
 
     /** @return list<int>|null */
@@ -53,6 +63,8 @@ class PanelRecepcion
             return [];
         }
         $verCv = $actor->can('candidatos.ver');
+        $empresa = Empresa::find($this->tenant->empresaId());
+        $this->umbrales = $empresa ? [$this->ajustes->recordarMinutos($empresa), $this->ajustes->escalarMinutos($empresa)] : [self::ESPERA_AMBAR, self::ESPERA_ROJA];
 
         $accesos = Acceso::with(['sede:id,nombre', 'postulacion.candidato.departamento:id,nombre', 'postulacion.candidato.puesto:id,nombre',
             'candidatoRecepcion.departamento:id,nombre', 'candidatoRecepcion.puesto:id,nombre'])
@@ -126,7 +138,7 @@ class PanelRecepcion
             'llegada' => $this->hora->formatear($llegada, 'H:i'),
             'llegada_ts' => $llegada?->getTimestamp() ?? 0,
             'minutos' => $minutos,
-            'espera' => $atendido ? 'atendido' : ($minutos >= self::ESPERA_ROJA ? 'roja' : ($minutos >= self::ESPERA_AMBAR ? 'ambar' : 'normal')),
+            'espera' => $atendido ? 'atendido' : ($minutos >= $this->umbrales[1] ? 'roja' : ($minutos >= $this->umbrales[0] ? 'ambar' : 'normal')),
             'estado' => match (true) {
                 $esperandoRh && $a->autorizacion === 'espera' => 'En caseta: le pidieron que espere',
                 $esperandoRh => 'En caseta: espera que digas «Que pase»',

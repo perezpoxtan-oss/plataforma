@@ -19,8 +19,15 @@
     $repetida = $trasError && $errors->has('persona_repetida');
     $otrosErrores = collect($errors->getMessages())->except('persona_repetida')->flatten();
 @endphp
+@php
+    // Botón honesto: el texto del botón anticipa si el registro nace pendiente (el servidor decide al guardar)
+    $anticipo = $anticipo ?? ['rh_espera_en' => [], 'visitas_esperan' => false, 'departamentos' => []];
+    $deptosConResponsable = collect($anticipo['departamentos'])->map(fn ($sedes) => $sedes === null ? 'todas' : implode(',', $sedes))->all();
+@endphp
 <dialog id="dialogoIngreso" class="dialogo ancho dialogo-acceso" aria-labelledby="titulo-ingreso" data-dialogo-ingreso
         data-url-buscar="{{ route('accesos.buscar') }}" data-url-gafetes="{{ route('accesos.gafetes') }}" data-url-en-sitio="{{ route('accesos.en-sitio') }}"
+        data-rh-espera-en="{{ implode(',', $anticipo['rh_espera_en']) }}" data-visitas-esperan="{{ $anticipo['visitas_esperan'] ? 1 : 0 }}"
+        data-departamentos-con-responsable="{{ json_encode($deptosConResponsable) }}"
         @if ($trasError || $sig) data-abrir-al-cargar @endif>
     <div class="dialogo-cabecera">
         <h2 id="titulo-ingreso">
@@ -185,7 +192,7 @@
                         <label class="modo-opt"><input type="radio" name="motivo_visita" value="colaborador" @checked($previo('motivo_visita') === 'colaborador') data-acceso-motivo><i class="bi bi-people-fill" aria-hidden="true"></i><span>Visita a Colaborador</span></label>
                         {{-- Recepción (ADR-0007) --}}<label class="modo-opt"><input type="radio" name="motivo_visita" value="departamento" @checked($previo('motivo_visita') === 'departamento') data-acceso-motivo><i class="bi bi-diagram-2-fill" aria-hidden="true"></i><span>Visita a Departamento</span></label>
                     </div>
-                    <div data-condicion data-solo-motivo="colaborador" data-sugerir="colaborador">
+                    <div data-condicion data-solo-motivo="colaborador" data-sugerir="colaborador" data-visita-colaborador>
                         @include('componentes.lector', ['id' => 'ingreso_visita', 'etiqueta' => '¿A quién visita?', 'tipos' => 'colaborador', 'nombre' => 'visita_colaborador_id',
                             'valor' => $previo('visita_colaborador_id'), 'elegido' => $previos['visita_colaborador_id'] ?? null])
                         <div class="acceso-sugerencias" data-sugerencias hidden></div>
@@ -233,7 +240,7 @@
                         <label class="campo-etiqueta" for="ingreso_actividad">Actividad a Realizar</label>
                         <input type="text" id="ingreso_actividad" name="actividad" class="campo" maxlength="500" value="{{ $previo('actividad') }}" placeholder="Describe brevemente la actividad">
                     </details>
-                    <p class="nota-pendiente"><i class="bi bi-info-circle" aria-hidden="true"></i> El registro quedará <strong>Pendiente</strong> — el acceso físico no se autoriza hasta confirmar en el sistema que el Host lo aprobó.</p>
+                    <p class="nota-pendiente"><i class="bi bi-info-circle" aria-hidden="true"></i> El registro queda <strong>Pendiente</strong>: la persona pasa cuando confirmes en el sistema que el Host la autorizó.</p>
                 </div>
 
                 {{-- ID custodiada (personal externo, proveedor y contratista) --}}
@@ -361,7 +368,8 @@
 
                 <div class="acciones-ingreso">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="btn-guardar-ingreso" name="siguiente" value="0"><i class="bi bi-shield-check me-2" aria-hidden="true"></i>Autorizar Ingreso y Guardar Datos</button>
+                    {{-- Botón honesto: dice lo que va a pasar según el tipo y el motivo elegidos (plataforma.js lo actualiza) --}}
+                    <button type="submit" class="btn-guardar-ingreso" name="siguiente" value="0" data-boton-registrar><i class="bi bi-shield-check me-2" aria-hidden="true"></i><span data-texto-registrar>Registrar y dejar pasar</span></button>
                     <button type="submit" class="btn-siguiente-ingreso" name="siguiente" value="1"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Guardar y capturar siguiente</button>
                 </div>
             </form>

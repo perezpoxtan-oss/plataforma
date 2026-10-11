@@ -1794,8 +1794,8 @@ document.addEventListener('click', function (e) {
     function preparar(caja) {
         var c = caja.querySelector('[data-lector-camara]');
         var n = caja.querySelector('[data-lector-nfc]');
-        // Al asignar una tarjeta se lee su número de serie: la cámara no aplica
-        if (c) { c.hidden = !hayCamara || caja.dataset.modo === 'capturar'; }
+        // Al asignar una tarjeta se lee su número de serie: la cámara no aplica (salvo que la pantalla la pida: data-lector-con-camara)
+        if (c) { c.hidden = !hayCamara || (caja.dataset.modo === 'capturar' && !caja.hasAttribute('data-lector-con-camara')); }
         if (n) { n.hidden = !hayNfc; }
     }
 
@@ -2811,6 +2811,48 @@ document.addEventListener('click', function (e) {
         form.querySelectorAll('[data-etiqueta-tipo]').forEach(function (e) { e.hidden = lista(e.dataset.etiquetaTipo).indexOf(tipo) === -1; });
         sugerirTipoGafete(form, tipo, motivo);
         acotarPorSede(form, sedeDe(form));
+        actualizarBotonRegistrar(form);
+    }
+
+    /* ---------- Botón honesto: dice lo que va a pasar al guardar ----------
+       «Registrar y dejar pasar» cuando entra directo; «Registrar · queda pendiente de autorización»
+       cuando nace pendiente (proveedor, contratista, visita a un departamento con responsable o a un
+       colaborador de ese departamento, y Recursos Humanos con «Que pase» encendido en esa sede).
+       El servidor decide al guardar; aquí solo se anticipa el texto. */
+    function enSede(lista, sede) {
+        if (lista === 'todas') { return true; }
+        return !!sede && String(lista || '').split(',').indexOf(String(sede)) !== -1;
+    }
+
+    function naceraPendiente(form) {
+        var d = dialogoIngreso();
+        if (!d) { return false; }
+        var tipo = radio(form, 'tipo');
+        if (tipo === 'proveedor' || tipo === 'contratista') { return true; }
+        if (tipo !== 'visitante') { return false; }
+        var sede = sedeDe(form);
+        var motivo = radio(form, 'motivo_visita');
+        if (motivo === 'rh') { return enSede(d.dataset.rhEsperaEn || '', sede); }
+        if (d.dataset.visitasEsperan !== '1') { return false; }
+        var deptos = {};
+        try { deptos = JSON.parse(d.dataset.departamentosConResponsable || '{}') || {}; } catch (x) { deptos = {}; }
+        var depto = '';
+        if (motivo === 'departamento') {
+            var sel = form.querySelector('#ingreso_depto_visita');
+            depto = sel ? sel.value : '';
+        } else if (motivo === 'colaborador') {
+            depto = form.dataset.visitaDepartamento || '';
+        }
+        return !!depto && Object.prototype.hasOwnProperty.call(deptos, depto) && enSede(deptos[depto], sede);
+    }
+
+    function actualizarBotonRegistrar(form) {
+        var texto = form.querySelector('[data-texto-registrar]');
+        if (!texto) { return; }
+        var pendiente = naceraPendiente(form);
+        texto.textContent = pendiente ? 'Registrar · queda pendiente de autorización' : 'Registrar y dejar pasar';
+        var boton = texto.closest('button');
+        if (boton) { boton.classList.toggle('queda-pendiente', pendiente); }
     }
 
     // "Tipo de Gafete" se sugiere al cambiar el tipo de persona (el guardia lo puede cambiar)
@@ -2977,7 +3019,7 @@ document.addEventListener('click', function (e) {
                 .then(function (d) {
                     var items = (d.resultados || []).slice(0, 8).map(function (r) {
                         if (que === 'colaborador') {
-                            return { id: r.id, titulo: r.nombre_completo, detalle: (r.num_empleado ? 'Núm. ' + r.num_empleado : 'Alta provisional') + (r.puesto ? ' · ' + r.puesto : '') + (r.sede ? ' · ' + r.sede : ''), activo: true };
+                            return { id: r.id, titulo: r.nombre_completo, detalle: (r.num_empleado ? 'Núm. ' + r.num_empleado : 'Alta provisional') + (r.puesto ? ' · ' + r.puesto : '') + (r.sede ? ' · ' + r.sede : ''), activo: true, departamento_id: r.departamento_id };
                         }
                         return { id: r.id, titulo: r.placas, detalle: [r.descripcion, r.propiedad_etiqueta].filter(Boolean).join(' · '), activo: !!r.activo,
                             placas: r.placas, tipo: r.tipo, marca: r.marca, modelo: r.modelo, color: r.color };
@@ -3015,6 +3057,12 @@ document.addEventListener('click', function (e) {
     document.addEventListener('lector:elegido', function (e) {
         var envoltura = e.target.closest && e.target.closest('[data-sugerir]');
         if (envoltura) { ocultarSugerencias(envoltura); }
+        // «¿A quién visita?»: el departamento del colaborador decide si la visita esperará autorización (botón honesto)
+        var formVisita = e.target.closest && e.target.closest('[data-form-acceso]');
+        if (formVisita && e.target.closest('[data-visita-colaborador]')) {
+            formVisita.dataset.visitaDepartamento = e.detail && e.detail.departamento_id ? String(e.detail.departamento_id) : '';
+            actualizarBotonRegistrar(formVisita);
+        }
         // Dar Salida: el gafete que devuelven dice quién era
         if (e.target.closest && e.target.closest('[data-salida-gafete]')) { buscarEnSitio('gafete=' + encodeURIComponent(e.detail.id)); return; }
         if (!envoltura) { return; }
@@ -3049,6 +3097,11 @@ document.addEventListener('click', function (e) {
     // "Cambiar" en el lector de placas: se olvidan las placas y los datos del vehículo
     document.addEventListener('click', function (e) {
         var limpiar = e.target.closest('[data-lector-limpiar]');
+        var formVisita = limpiar && limpiar.closest('[data-form-acceso]');
+        if (formVisita && limpiar.closest('[data-visita-colaborador]')) {
+            formVisita.dataset.visitaDepartamento = '';
+            actualizarBotonRegistrar(formVisita);
+        }
         var envoltura = limpiar && limpiar.closest('[data-sugerir="vehiculo"]');
         if (!envoltura) { return; }
         var placas = envoltura.querySelector('[data-placas]');
@@ -3304,30 +3357,36 @@ document.addEventListener('click', function (e) {
 
     function buscarEnSitio(consulta) {
         var cont = document.querySelector('[data-resultados-salida]');
-        if (!cont) { return; }
-        pedirJson(urlDe('urlEnSitio') + '?' + consulta).then(function (d) {
+        if (cont) { pintarEnSitio(consulta, cont, false); }
+    }
+
+    /**
+     * Pinta a las personas en sitio que coinciden. enDialogo: la acción principal abre el
+     * diálogo corto «Dar salida» (campo a la vista); si no, el botón envía directo (vista del formulario).
+     */
+    function pintarEnSitio(consulta, cont, enDialogo, despues) {
+        var url = (salidaVista() && salidaVista().dataset.urlEnSitio) || urlDe('urlEnSitio');
+        pedirJson(url + '?' + consulta).then(function (d) {
             cont.textContent = '';
             var datos = d.resultados || [];
-            if (!datos.length) { cont.appendChild(elemento('p', 'text-muted small p-2 m-0', 'Sin resultados en sitio para esa búsqueda.')); return; }
+            if (!datos.length) { cont.appendChild(elemento('p', 'text-muted small p-2 m-0', 'Nadie en sitio coincide con esa búsqueda.')); return; }
+            if (despues) { despues(datos); }
             datos.forEach(function (r) {
                 var card = elemento('div', 'resultado-salida' + (r.fuera_temporal ? ' fuera' : ''));
                 var nombre = elemento('div', 'resultado-salida-nombre', r.nombre);
                 if (r.habitacion) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'badge-hab', 'Hab. ' + r.habitacion)); }
-                if (r.fuera_temporal) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'estado-acceso fuera mini', 'FUERA')); }
+                if (r.fuera_temporal) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'estado-acceso fuera mini', 'Fuera')); }
                 card.appendChild(nombre);
                 // Ronda 8 (AC-05): se encontró por un acompañante
                 if (r.coincide_acompanante) { card.appendChild(elemento('div', 'pista-acompanante', 'Coincide con ' + r.coincide_acompanante + ', acompañante de ' + r.nombre)); }
                 card.appendChild(elemento('div', 'resultado-salida-dato', r.tipo_etiqueta + (r.sede ? ' · ' + r.sede : '')));
                 if (r.placas) { card.appendChild(elemento('div', 'resultado-salida-dato', 'Vehículo: ' + r.placas + (r.zona ? ' · ' + r.zona + (r.zona_descarga ? ' (descarga)' : '') : ''))); }
-                var pedir = [];
-                if (r.gafete) { pedir.push('gafete ' + r.gafete + ' (titular)'); }
-                (r.acompanantes || []).forEach(function (a) { if (a.gafete) { pedir.push('gafete ' + a.gafete + ' (' + a.nombre + ')'); } });
-                if (r.identificacion) { pedir.push('la identificación (' + r.identificacion + ')'); }
+                var pedir = textoPedir(r);
                 if (pedir.length) { card.appendChild(elemento('div', 'resultado-salida-pedir', 'Pedir de vuelta: ' + pedir.join(', '))); }
-                if (!r.fuera_temporal) {
+                if (!r.fuera_temporal && !enDialogo) {
                     (r.acompanantes || []).forEach(function (a) {
                         var fila = elemento('div', 'resultado-salida-acomp');
-                        fila.appendChild(elemento('span', '', '• ' + a.nombre + (a.gafete ? ' · Gafete ' + a.gafete : '') + (a.fuera_temporal ? ' · FUERA' : '')));
+                        fila.appendChild(elemento('span', '', '• ' + a.nombre + (a.gafete ? ' · Gafete ' + a.gafete : '') + (a.fuera_temporal ? ' · Fuera' : '')));
                         if (!a.fuera_temporal) {
                             fila.appendChild(formularioPatch(a.url_salida, 'Salida', 'btn-acomp salida', '¿Confirmar salida de ' + a.nombre + (a.gafete ? ' y devolver su gafete ' + a.gafete : '') + '?'));
                         }
@@ -3335,7 +3394,12 @@ document.addEventListener('click', function (e) {
                     });
                 }
                 var acciones = elemento('div', 'resultado-salida-acciones');
-                if (r.fuera_temporal) {
+                if (enDialogo) {
+                    var abrir = elemento('button', 'btn-accion-acceso ' + (r.fuera_temporal ? 'regreso' : 'salida'), r.fuera_temporal ? 'Registrar regreso' : (r.tipo === 'huesped' ? 'Dar salida final' : 'Dar salida'));
+                    abrir.type = 'button';
+                    abrir.addEventListener('click', function () { abrirDarSalida(r); });
+                    acciones.appendChild(abrir);
+                } else if (r.fuera_temporal) {
                     acciones.appendChild(botonDialogo('dialogoRegresoAcceso', r.url_regreso, r.id, r.nombre, r.tipo === 'huesped' ? 'Regreso de Tour' : 'Regreso', 'Registrar Regreso', 'btn-accion-acceso regreso'));
                 } else {
                     if (r.salida_temporal) {
@@ -3354,27 +3418,149 @@ document.addEventListener('click', function (e) {
     }
 
     /* ---------- Diálogos de las tarjetas: zona, salida a tour / temporal, regreso ---------- */
-    document.addEventListener('click', function (e) {
-        var b = e.target.closest('[data-accion="acceso-dialogo"]');
-        if (!b) { return; }
-        var d = document.getElementById(b.dataset.dialogo);
+    function abrirDialogoAcceso(datos) {
+        var d = document.getElementById(datos.dialogo);
         var form = d && d.querySelector('[data-form-dialogo-acceso]');
         if (!form) { return; }
-        form.action = b.dataset.url;
+        form.action = datos.url;
         d.querySelectorAll('.alert').forEach(function (n) { n.remove(); });
         var poner = function (sel, valor) { form.querySelectorAll(sel).forEach(function (c) { c.value = valor || ''; }); };
-        poner('[data-dialogo-acceso-id]', b.dataset.id);
-        poner('[data-dialogo-nombre-campo]', b.dataset.nombre);
-        poner('[data-dialogo-titulo-campo]', b.dataset.titulo);
-        d.querySelectorAll('[data-dialogo-nombre]').forEach(function (n) { n.textContent = b.dataset.nombre || ''; });
-        if (b.dataset.titulo) { d.querySelectorAll('[data-dialogo-titulo]').forEach(function (n) { n.textContent = b.dataset.titulo; }); }
+        poner('[data-dialogo-acceso-id]', datos.id);
+        poner('[data-dialogo-nombre-campo]', datos.nombre);
+        poner('[data-dialogo-titulo-campo]', datos.titulo);
+        d.querySelectorAll('[data-dialogo-nombre]').forEach(function (n) { n.textContent = datos.nombre || ''; });
+        if (datos.titulo) { d.querySelectorAll('[data-dialogo-titulo]').forEach(function (n) { n.textContent = datos.titulo; }); }
         var zona = form.querySelector('[data-zona-sede]');
         if (zona) {
-            acotarOpciones(zona, b.dataset.sede, true);
-            zona.value = b.dataset.zona || '';
+            acotarOpciones(zona, datos.sede, true);
+            zona.value = datos.zona || '';
         }
         d.querySelectorAll('[data-sugerir="vehiculo"]').forEach(vigilarPlacas);
         if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-accion="acceso-dialogo"]');
+        if (!b) { return; }
+        abrirDialogoAcceso(b.dataset);
+    });
+
+    /* ---------- «Dar salida» a la vista: campo de escaneo / búsqueda siempre visible ----------
+       Escanear el gafete que devuelven (QR, NFC o pistola) o escribir nombre, placas o habitación
+       muestra la tarjeta de la persona con «Dar salida» (o «Registrar regreso» si está fuera) en un
+       diálogo corto, sin recargar la página. Con un solo resultado el diálogo se abre solo. */
+    function salidaVista() { return document.querySelector('[data-salida-vista]'); }
+
+    function textoPedir(r) {
+        var pedir = [];
+        if (r.gafete) { pedir.push('gafete ' + r.gafete + ' (titular)'); }
+        (r.acompanantes || []).forEach(function (a) { if (a.gafete) { pedir.push('gafete ' + a.gafete + ' (' + a.nombre + ')'); } });
+        if (r.identificacion) { pedir.push('la identificación (' + r.identificacion + ')'); }
+        return pedir;
+    }
+
+    function abrirDarSalida(r) {
+        var d = document.getElementById('dialogoDarSalida');
+        if (!d) { return; }
+        var tarjeta = d.querySelector('[data-salida-tarjeta]');
+        var form = d.querySelector('[data-salida-form]');
+        var boton = d.querySelector('[data-salida-boton]');
+        var regreso = d.querySelector('[data-salida-regreso]');
+        d.querySelector('[data-salida-nombre]').textContent = r.nombre;
+        d.querySelector('[data-salida-titulo]').textContent = r.fuera_temporal ? 'Registrar regreso' : (r.tipo === 'huesped' ? 'Dar salida final' : 'Dar salida');
+        tarjeta.textContent = '';
+        var cabeza = elemento('div', 'ficha-acceso-cabeza');
+        cabeza.appendChild(elemento('span', 'badge-acceso tipo-' + r.tipo, (r.tipo_etiqueta || '').toUpperCase()));
+        cabeza.appendChild(elemento('span', 'estado-acceso ' + (r.fuera_temporal ? 'fuera' : 'en-sitio'), r.fuera_temporal ? 'Fuera' : 'En sitio'));
+        tarjeta.appendChild(cabeza);
+        var datos = elemento('div', 'ficha-acceso-datos');
+        if (r.sede) { datos.appendChild(elemento('div', '', 'Sede: ' + r.sede)); }
+        if (r.habitacion) { datos.appendChild(elemento('div', '', 'Habitación: ' + r.habitacion)); }
+        if (r.gafete) { datos.appendChild(elemento('div', '', 'Gafete: ' + r.gafete)); }
+        if (r.placas) { datos.appendChild(elemento('div', '', 'Vehículo: ' + r.placas + (r.zona ? ' · ' + r.zona + (r.zona_descarga ? ' (descarga)' : '') : ''))); }
+        if (r.coincide_acompanante) { datos.appendChild(elemento('div', 'pista-acompanante', 'Coincide con ' + r.coincide_acompanante + ', acompañante de ' + r.nombre)); }
+        (r.acompanantes || []).forEach(function (a) {
+            datos.appendChild(elemento('div', 'resultado-salida-acomp', '• ' + a.nombre + (a.gafete ? ' · Gafete ' + a.gafete : '') + (a.fuera_temporal ? ' · Fuera' : '') + ' — sale con ' + r.nombre));
+        });
+        tarjeta.appendChild(datos);
+        var pedir = textoPedir(r);
+        if (pedir.length && !r.fuera_temporal) { tarjeta.appendChild(elemento('p', 'resultado-salida-pedir', 'Pide de vuelta: ' + pedir.join(', ') + '.')); }
+        if (r.fuera_temporal) { tarjeta.appendChild(elemento('p', 'text-muted small mb-0', 'Está fuera (' + (r.tipo === 'huesped' ? 'tour' : 'salida temporal') + '). Al registrar su regreso vuelve a En sitio.')); }
+        form.action = r.url_salida || '';
+        boton.hidden = !!r.fuera_temporal;
+        boton.textContent = r.tipo === 'huesped' ? 'Dar salida final' : 'Dar salida';
+        regreso.hidden = !r.fuera_temporal;
+        regreso.dataset.dialogo = 'dialogoRegresoAcceso';
+        regreso.dataset.url = r.url_regreso || '';
+        regreso.dataset.id = r.id;
+        regreso.dataset.nombre = r.nombre;
+        regreso.dataset.titulo = r.tipo === 'huesped' ? 'Regreso de Tour' : 'Regreso';
+        if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
+        setTimeout(function () { (r.fuera_temporal ? regreso : boton).focus(); }, 60);
+    }
+
+    document.addEventListener('click', function (e) {
+        var regreso = e.target.closest('[data-salida-regreso]');
+        if (!regreso) { return; }
+        var d = regreso.closest('dialog');
+        if (d) { d.close(); }
+        abrirDialogoAcceso(regreso.dataset);
+    });
+
+    document.addEventListener('submit', function (e) {
+        if (!e.target.matches('[data-salida-form]')) { return; }
+        setTimeout(function () { e.target.querySelectorAll('button[type="submit"]').forEach(function (b) { b.disabled = true; }); }, 0);
+    });
+
+    function limpiarEstadoLector(caja) {
+        var estado = caja && caja.querySelector('[data-lector-estado]');
+        if (estado) { estado.hidden = true; estado.textContent = ''; }
+    }
+
+    function buscarSalidaVista(texto, abrirSiUno) {
+        var caja = salidaVista();
+        var cont = caja && caja.querySelector('[data-resultados-salida-vista]');
+        if (!cont) { return; }
+        texto = (texto || '').trim();
+        if (texto.length < 2) { cont.textContent = ''; return; }
+        pintarEnSitio('q=' + encodeURIComponent(texto), cont, true, function (datos) {
+            if (abrirSiUno && datos.length === 1) { abrirDarSalida(datos[0]); }
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-enfocar-salida]')) { return; }
+        var caja = salidaVista();
+        var entrada = caja && caja.querySelector('[data-lector-entrada]');
+        if (!entrada) { return; }
+        caja.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        entrada.focus();
+        entrada.select();
+    });
+
+    document.addEventListener('input', function (e) {
+        var caja = e.target.closest && e.target.closest('[data-salida-vista]');
+        if (!caja || !e.target.matches('[data-lector-entrada]')) { return; }
+        limpiarEstadoLector(caja);
+        var texto = e.target.value;
+        esperar('salida-vista', function () { buscarSalidaVista(texto, false); }, 300);
+    });
+
+    // Lo que entrega un lector (Enter de la pistola, NFC o cámara): se busca al momento y, si es una sola persona, se abre su tarjeta
+    document.addEventListener('lector:capturado', function (e) {
+        var caja = e.target.closest && e.target.closest('[data-salida-vista]');
+        if (!caja) { return; }
+        clearTimeout(esperas['salida-vista']);
+        limpiarEstadoLector(caja);
+        buscarSalidaVista(e.detail, true);
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var caja = salidaVista();
+        if (!caja || !caja.dataset.salidaInicial) { return; }
+        var entrada = caja.querySelector('[data-lector-entrada]');
+        if (entrada) { entrada.value = caja.dataset.salidaInicial; }
+        buscarSalidaVista(caja.dataset.salidaInicial, true);
     });
 
     /* ---------- Filtro de tarjetas sin recargar (Gente en Sitio y Pendientes) ---------- */
@@ -8067,13 +8253,38 @@ document.addEventListener('click', function (e) {
     }
 
     /* ---------- Caseta: visitas que esperan al departamento ---------- */
+    // Reloj y color de cada tarjeta pendiente: avanzan en el navegador (sin pedir nada) con los minutos de la empresa
+    function pintarEsperas() {
+        document.querySelectorAll('[data-espera-desde]').forEach(function (ficha) {
+            var desde = parseInt(ficha.getAttribute('data-espera-desde') || '0', 10);
+            if (!desde) { return; }
+            var minutos = Math.max(0, Math.floor((Date.now() / 1000 - desde) / 60));
+            var nivel = minutos >= parseInt(ficha.getAttribute('data-espera-roja') || '20', 10) ? 'roja'
+                : (minutos >= parseInt(ficha.getAttribute('data-espera-ambar') || '10', 10) ? 'ambar' : 'normal');
+            var num = ficha.querySelector('[data-espera-minutos]');
+            if (num) { num.textContent = String(minutos); }
+            [ficha.querySelector('[data-estado-detalle]'), ficha.querySelector('[data-acceso-esperando]:not(.pide-espera)')].forEach(function (e) {
+                if (!e) { return; }
+                e.classList.remove('espera-normal', 'espera-ambar', 'espera-roja');
+                e.classList.add('espera-' + nivel);
+            });
+        });
+    }
     function vigilarEsperas() {
+        pintarEsperas();
         var esperas = document.querySelectorAll('[data-acceso-esperando]');
         if (!esperas.length) { return; }
         var ids = Array.prototype.map.call(esperas, function (e) { return e.getAttribute('data-acceso-esperando'); });
         var url = esperas[0].getAttribute('data-url-estado') + '?ids=' + encodeURIComponent(ids.join(','));
+        cadaTanto(pintarEsperas, 30000);
         cadaTanto(function () {
             pedir(url).then(function (d) {
+                // Si ya se escaló al suplente o al jefe, la tarjeta lo dice sin recargar
+                esperas.forEach(function (e) {
+                    var id = e.getAttribute('data-acceso-esperando');
+                    var linea = e.querySelector('[data-espera-escalado]');
+                    if (linea && d.esperas && d.esperas[id] && d.esperas[id].escalado) { linea.textContent = d.esperas[id].escalado; linea.hidden = false; }
+                });
                 // Candidatos fase 1: «RR. HH. pide que espere» (pendiente|espera) también es un estado de espera
                 var cambio = Array.prototype.some.call(esperas, function (e) {
                     var id = e.getAttribute('data-acceso-esperando');

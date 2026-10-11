@@ -14,27 +14,47 @@
     $idCustodiada = \App\Models\Acceso::IDENTIFICACIONES[$a->identificacion] ?? null;
     $pedir = $gafetesPorDevolver->merge($idCustodiada ? ['la identificación ('.$idCustodiada.')'] : [])->join(', ', ' y ');
     $confirmarSalida = '¿Confirmar salida de '.$a->nombre.'?'.($pedir !== '' ? ' Pide de vuelta: '.$pedir.'.' : '');
+    // Vocabulario corto de estados (aprobado): cuatro pastillas y el detalle en un renglón chico debajo
+    $espera = ($esperas ?? [])[$a->id] ?? null;
+    $conRh = $a->motivo_visita === 'rh';
+    $quienNego = $conRh ? 'Recursos Humanos' : ($a->departamento?->nombre ?? 'el departamento');
+    [$pastilla, $clasePastilla, $iconoPastilla, $detalle] = match (true) {
+        $modo === 'pendientes' => ['PENDIENTE', 'pendiente', 'bi-hourglass-split', match (true) {
+            $a->autorizacion === 'espera' && $conRh => 'RR. HH. pide que espere',
+            $a->autorizacion === 'espera' => 'Le pidieron que espere',
+            $espera !== null => $espera['texto'],
+            in_array($a->tipo, \App\Models\Acceso::CON_AUTORIZACION, true) => 'Confirma con el host: '.($host ?: '—'),
+            default => 'Espera autorización',
+        }],
+        $modo === 'en_sitio' && $fuera => ['FUERA', 'fuera', 'bi-signpost-split', $a->tipo === 'huesped' ? 'Fuera en tour' : 'Fuera temporal'],
+        $modo === 'en_sitio' => ['EN SITIO', 'en-sitio', 'bi-record-circle', match (true) {
+            $a->autorizacion === 'autorizada' && $conRh => 'RR. HH. dijo que pase',
+            $a->autorizacion === 'autorizada' && $a->departamento !== null => 'Autorizado por '.$a->departamento->nombre,
+            default => null,
+        }],
+        default => ['FINALIZADO', 'finalizado', 'bi-check2-circle', match (true) {
+            $a->movimiento === 'regreso' => $a->tipo === 'huesped' ? 'Regreso de tour' : 'Regreso',
+            $a->movimiento === 'salida_temporal' => $a->tipo === 'huesped' ? 'Salida a tour' : 'Salida temporal',
+            $a->autorizacion === 'rechazada' => 'No autorizado por '.$quienNego.': no ingresó',
+            default => null,
+        }],
+    };
 @endphp
 <article class="ficha-acceso es-{{ $modo }} {{ $fuera ? 'tour-fuera' : '' }} {{ $a->movimiento !== 'entrada' ? 'es-movimiento' : '' }}" id="acceso-{{ $a->id }}"
-         data-acceso-ficha data-tipo="{{ $a->tipo }}" data-sede="{{ $a->sede_id }}" data-texto="{{ \App\Services\Accesos\ConsultaAccesos::textoBusqueda($a) }}">
+         data-acceso-ficha data-tipo="{{ $a->tipo }}" data-sede="{{ $a->sede_id }}" data-texto="{{ \App\Services\Accesos\ConsultaAccesos::textoBusqueda($a) }}"
+         @if ($modo === 'pendientes' && $espera !== null) data-espera-desde="{{ $espera['desde'] }}" data-espera-ambar="{{ ($umbrales ?? [10, 20])[0] }}" data-espera-roja="{{ ($umbrales ?? [10, 20])[1] }}" @endif>
     <div class="ficha-acceso-cabeza">
         <span class="badge-acceso tipo-{{ $a->tipo }}">{{ mb_strtoupper($a->etiquetaTipo()) }}</span>
-        @if ($modo === 'pendientes')
-            <span class="estado-acceso pendiente">PENDIENTE <i class="bi bi-hourglass-split ms-1" aria-hidden="true"></i></span>
-        @elseif ($modo === 'en_sitio')
-            @if ($fuera)
-                <span class="estado-acceso fuera">{{ $a->tipo === 'huesped' ? 'FUERA EN TOUR' : 'FUERA TEMPORAL' }} <i class="bi bi-signpost-split ms-1" aria-hidden="true"></i></span>
-            @else
-                <span class="estado-acceso en-sitio">EN SITIO <i class="bi bi-record-circle ms-1" aria-hidden="true"></i></span>
-            @endif
-        @else
-            @if ($a->movimiento !== 'entrada')
-                <span class="estado-acceso movimiento">{{ $a->movimiento === 'regreso' ? ($a->tipo === 'huesped' ? 'REGRESO DE TOUR' : 'REGRESO') : ($a->tipo === 'huesped' ? 'SALIDA A TOUR' : 'SALIDA TEMPORAL') }}</span>
-            @else
-                <span class="gafete-mini">Gafete: {{ $a->gafeteVisible() }}</span>
-            @endif
-        @endif
+        <span class="estado-acceso {{ $clasePastilla }}" data-estado-pastilla>{{ $pastilla }} <i class="bi {{ $iconoPastilla }} ms-1" aria-hidden="true"></i></span>
     </div>
+    @if ($detalle !== null)
+        <p class="ficha-acceso-detalle {{ $modo === 'pendientes' && $espera !== null && $a->autorizacion !== 'espera' ? 'espera-'.$espera['nivel'] : '' }} {{ $a->autorizacion === 'rechazada' ? 'negado' : '' }}" data-estado-detalle>
+            {{ $detalle }}@if ($modo === 'pendientes' && $espera !== null) · <span data-espera-minutos>{{ $espera['minutos'] }}</span> min @endif
+            @if ($modo === 'historial' && $a->movimiento === 'entrada') <span class="gafete-mini">· Gafete: {{ $a->gafeteVisible() }}</span> @endif
+        </p>
+    @elseif ($modo === 'historial')
+        <p class="ficha-acceso-detalle"><span class="gafete-mini">Gafete: {{ $a->gafeteVisible() }}</span></p>
+    @endif
 
     <h3 class="ficha-acceso-nombre">{{ $a->nombre }}@if ($a->habitacion) <span class="badge-hab">Hab. {{ $a->habitacion }}</span>@endif</h3>
     {{-- Ronda 8 (AC-05): si lo buscado es un acompañante, se avisa de quién viene acompañando (el filtro en vivo las muestra u oculta) --}}

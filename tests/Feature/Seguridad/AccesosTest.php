@@ -120,7 +120,7 @@ class AccesosTest extends TestCase
             ->assertSee('Nuevo Ingreso')->assertSee('Gente en Sitio (0)')->assertSee('Historial Finalizados')
             ->assertDontSee('Pendientes de Autorización')
             ->assertSee('No hay personal en sitio.')
-            ->assertSee('Registro Inteligente de Ingreso')->assertSee('Autorizar Ingreso y Guardar Datos')->assertSee('Guardar y capturar siguiente')
+            ->assertSee('Registro Inteligente de Ingreso')->assertSee('Registrar y dejar pasar')->assertSee('data-boton-registrar', false)->assertSee('Guardar y capturar siguiente')
             ->assertSee('PERSONAL EXTERNO / VISITA')->assertSee('CONTRATISTA (OBRA)')->assertSee('SERVICIO DE EMERGENCIA')
             ->assertSee('Gafete Asignado')->assertSee('Host — ¿Quién lo citó?')->assertSee('ID Custodiada')->assertSee('Enviar a')
             // Donde SEGCAT escaneaba (gafete, colaborador, host, a quién visita, placas) va el lector universal
@@ -143,7 +143,7 @@ class AccesosTest extends TestCase
         $gafete = $this->gafete();
 
         $this->registrar(['tipo' => 'colaborador', 'colaborador_id' => $roberto->id, 'gafete_id' => $gafete->id])
-            ->assertRedirect(route('accesos.index'))->assertSessionHas('ok', 'Ingreso de ROBERTO HERNÁNDEZ CRUZ registrado correctamente.');
+            ->assertRedirect(route('accesos.index'))->assertSessionHas('ok', 'Registrado y en sitio: ROBERTO HERNÁNDEZ CRUZ. ¿Otro ingreso? Toca Nuevo Ingreso.');
 
         $a = $this->ultimo();
         $this->assertSame(['colaborador', 'en_sitio', 'entrada', 'ROBERTO HERNÁNDEZ CRUZ', $roberto->id, null, 'a_pie', $this->admin->id],
@@ -192,7 +192,7 @@ class AccesosTest extends TestCase
                 ['nombre' => '', 'identificacion' => '', 'gafete_id' => ''],
                 ['nombre' => 'niña sin id'],
             ],
-        ])->assertSessionHasNoErrors()->assertSessionHas('ok', 'Ingreso de LAURA MÉNDEZ RÍOS registrado correctamente.');
+        ])->assertSessionHasNoErrors()->assertSessionHas('ok', 'Registrado y en sitio: LAURA MÉNDEZ RÍOS. ¿Otro ingreso? Toca Nuevo Ingreso.');
 
         $a = $this->ultimo();
         $this->assertSame(['LAURA MÉNDEZ RÍOS', 'pasaporte', $g1->nomenclatura, 'ABC123A', $zona->id, 'auto', 3, 'colaborador', 'ANDREA HERNÁNDEZ CRUZ'],
@@ -299,6 +299,21 @@ class AccesosTest extends TestCase
         $this->assertSame('contratista', $this->enEmpresa(fn () => Proveedor::where('nombre', 'Constructora Maya')->value('categoria')));
     }
 
+    public function test_el_mensaje_de_exito_ofrece_el_siguiente_paso(): void
+    {
+        $host = $this->colaborador('2001', null, null, 'Carlos');
+        $datos = ['tipo' => 'proveedor', 'nombre' => 'Jesús Balam Tun', 'empresa_procedencia' => 'Abarrotes del Caribe', 'host_colaborador_id' => $host->id];
+        // Quien puede aprobar: confirma con el host y toca Confirmar Autorización
+        $this->registrar($datos)->assertRedirect(route('accesos.index', ['pestana' => 'pendientes']))
+            ->assertSessionHas('ok', 'Registrado: JESÚS BALAM TUN queda pendiente de autorización. Confirma con el host (Carlos Hernández Cruz) y toca Confirmar Autorización.');
+        // El agente no aprueba: su supervisor confirma
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $this->registrar($datos + ['persona_decision' => 'misma'], $agente)
+            ->assertSessionHas('ok', 'Registrado: JESÚS BALAM TUN queda pendiente de autorización. Confirma con el host (Carlos Hernández Cruz); tu supervisor confirma la autorización en el sistema.');
+        // Entra directo: ¿otro ingreso?
+        $this->registrar(['tipo' => 'emergencia'])->assertSessionHas('ok', 'Registrado y en sitio: UNIDAD DE EMERGENCIA. ¿Otro ingreso? Toca Nuevo Ingreso.');
+    }
+
     public function test_una_empresa_vetada_no_puede_ingresar(): void
     {
         $this->enEmpresa(fn () => Proveedor::create(['nombre' => 'Fletes Rápidos', 'categoria' => 'transportadora', 'activo' => false]));
@@ -403,7 +418,7 @@ class AccesosTest extends TestCase
         $this->registrar(['tipo' => 'emergencia', 'sede_id' => $this->playa->id, 'siguiente' => '1'])
             ->assertSessionHas('siguiente', fn ($s) => $s['sede_id'] === $this->playa->id && $s['tipo'] === 'emergencia');
 
-        $this->actingAs($this->admin)->withSession(['siguiente' => ['sede_id' => $this->playa->id, 'tipo' => 'emergencia', 'mensaje' => 'Ingreso de UNIDAD DE EMERGENCIA registrado correctamente.']])
+        $this->actingAs($this->admin)->withSession(['siguiente' => ['sede_id' => $this->playa->id, 'tipo' => 'emergencia', 'mensaje' => 'Registrado y en sitio: UNIDAD DE EMERGENCIA. ¿Otro ingreso? Toca Nuevo Ingreso.']])
             ->get('/accesos')->assertSee('data-abrir-al-cargar', false)->assertSee('Captura el siguiente.')
             ->assertSee('<option value="'.$this->playa->id.'" selected', false)->assertSee('value="emergencia" checked', false);
     }
@@ -445,8 +460,8 @@ class AccesosTest extends TestCase
         $tour = $this->ultimo();
         $this->assertSame(['salida_temporal', 'en_sitio', $a->id, 'W2M123', 'GUÍA TOURS', '310'], [$tour->movimiento, $tour->estado, $tour->acceso_origen_id, $tour->placas, $tour->conductor, $tour->habitacion]);
 
-        // Sigue contando como una sola persona en sitio, marcada FUERA EN TOUR
-        $this->actingAs($this->admin)->get('/accesos')->assertSee('Gente en Sitio (1)')->assertSee('FUERA EN TOUR')->assertSee('Registrar Regreso')->assertDontSee('Salida Final');
+        // Sigue contando como una sola persona en sitio, marcada FUERA con el detalle «Fuera en tour» (vocabulario corto de estados)
+        $this->actingAs($this->admin)->get('/accesos')->assertSee('Gente en Sitio (1)')->assertSee('>FUERA <', false)->assertSee('Fuera en tour')->assertDontSee('FUERA EN TOUR')->assertSee('Registrar Regreso')->assertDontSee('Salida Final');
 
         $this->actingAs($this->admin)->post("/accesos/{$a->id}/salida-temporal")->assertSessionHas('error', 'Esta persona ya está fuera: registra primero su regreso.');
 
@@ -457,7 +472,7 @@ class AccesosTest extends TestCase
         $this->assertNotNull($tour->salida_at);
         $this->actingAs($this->admin)->patch("/accesos/{$a->id}/regreso")->assertSessionHas('error', 'Esta persona no tiene una salida temporal abierta (ya regresó).');
 
-        $this->actingAs($this->admin)->get('/accesos?pestana=historial')->assertSee('SALIDA A TOUR')->assertSee('REGRESO DE TOUR');
+        $this->actingAs($this->admin)->get('/accesos?pestana=historial')->assertSee('FINALIZADO')->assertSee('Salida a tour')->assertSee('Regreso de tour');
 
         // Salida final estando fuera en tour: el tour también se cierra
         $this->actingAs($this->admin)->post("/accesos/{$a->id}/salida-temporal");
@@ -484,7 +499,7 @@ class AccesosTest extends TestCase
             ->get('/accesos')->assertSee('action="'.route('accesos.salida-temporal', $a->id).'"', false);
 
         $this->actingAs($this->admin)->post("/accesos/{$a->id}/salida-temporal")->assertSessionHas('ok', 'Salida temporal de JESÚS BALAM TUN registrada.');
-        $this->actingAs($this->admin)->get('/accesos')->assertSee('FUERA TEMPORAL');
+        $this->actingAs($this->admin)->get('/accesos')->assertSee('>FUERA <', false)->assertSee('Fuera temporal');
     }
 
     public function test_acompanantes_salida_individual_y_temporal(): void
@@ -599,6 +614,7 @@ class AccesosTest extends TestCase
     {
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
         $a = $this->proveedorPendiente();
+        $this->flushSession(); // el mensaje de éxito del administrador no es del agente
 
         $this->actingAs($agente)->get('/accesos?pestana=pendientes')->assertOk()->assertSee('JESÚS BALAM TUN')
             ->assertDontSee('Confirmar Autorización')->assertSee('Espera a que el Host autorice');
@@ -673,6 +689,83 @@ class AccesosTest extends TestCase
         // El gafete que devuelven (leído con el lector) dice de quién era, aunque sea de un acompañante
         $this->actingAs($this->admin)->getJson('/accesos/en-sitio?gafete='.$g->id)->assertJsonPath('resultados.0.nombre', 'RICARDO ORTEGA');
         $this->actingAs($this->admin)->getJson('/accesos/en-sitio?q=x')->assertExactJson(['resultados' => []]);
+    }
+
+    // ------------------------------------------------- «Dar salida» a la vista
+
+    public function test_dar_salida_a_la_vista_campo_siempre_visible_y_boton(): void
+    {
+        $this->actingAs($this->admin)->get('/accesos')->assertOk()
+            ->assertSee('Dar salida')->assertSee('data-enfocar-salida', false)->assertSee('data-salida-vista', false)
+            ->assertSee('id="salida_vista"', false)->assertSee('Escanea el gafete o escribe nombre, placas o habitación')
+            ->assertSee('data-lector-con-camara', false)->assertSee('id="dialogoDarSalida"', false)
+            // Lo que llega del lector universal se busca al cargar
+            ->assertSee('data-salida-inicial=""', false);
+        $this->actingAs($this->admin)->get('/accesos?salida=HOT-CEN-VIS-001')->assertOk()->assertSee('data-salida-inicial="HOT-CEN-VIS-001"', false);
+
+        // Quien solo consulta (sin editar) no ve el campo ni el botón
+        $director = $this->crearUsuario($this->empresa, 'Director');
+        $this->actingAs($director)->get('/accesos')->assertOk()->assertDontSee('data-salida-vista', false)->assertDontSee('data-enfocar-salida', false);
+    }
+
+    public function test_dar_salida_a_la_vista_encuentra_por_gafete_leido_nombre_placas_y_habitacion(): void
+    {
+        $g = $this->gafete();
+        $this->registrar(['tipo' => 'visitante', 'nombre' => 'Ricardo Ortega', 'gafete_id' => $g->id, 'modo_arribo' => 'auto', 'placas' => 'QRR-44-X']);
+        $a = $this->ultimo();
+        $this->registrar(['tipo' => 'huesped', 'nombre' => 'Ayleen Pérez', 'habitacion' => '310']);
+        $huesped = $this->ultimo();
+        $this->enEmpresa(fn () => $g->forceFill(['etiqueta_nfc' => '04A23B1C'])->save());
+
+        $buscar = fn (string $q) => $this->actingAs($this->admin)->getJson('/accesos/en-sitio?q='.urlencode($q))->assertOk();
+        // Lo que entrega el lector: la nomenclatura impresa (pistola), el QR con dirección (cámara) y la etiqueta NFC en cualquiera de sus formas
+        $buscar($g->nomenclatura)->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id)->assertJsonPath('resultados.0.texto_salida', 'Salida');
+        $buscar('https://plataforma.ejemplo/e/'.$g->codigo_qr)->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id);
+        $buscar('04:a2:3b:1c')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id);
+        // Nombre, placas y habitación
+        $buscar('ortega')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id);
+        $buscar('qrr 44')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.placas', 'QRR44X');
+        $buscar('310')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $huesped->id)->assertJsonPath('resultados.0.texto_salida', 'Salida Final');
+        $buscar('nadie con ese nombre')->assertExactJson(['resultados' => []]);
+        // Ya salió: no aparece
+        $this->actingAs($this->admin)->patch("/accesos/{$a->id}/salida");
+        $buscar($g->nomenclatura)->assertExactJson(['resultados' => []]);
+    }
+
+    public function test_dar_salida_a_la_vista_respeta_la_sede_y_ofrece_registrar_regreso(): void
+    {
+        $this->registrar(['tipo' => 'huesped', 'nombre' => 'Mario Playa', 'sede_id' => $this->playa->id, 'habitacion' => '101']);
+        $dePlaya = $this->ultimo();
+        $this->registrar(['tipo' => 'huesped', 'nombre' => 'Mario Centro', 'habitacion' => '202']);
+        $deCentro = $this->ultimo();
+
+        // Alcance de sede: lo de otra sede no aparece aunque coincida
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro);
+        $this->actingAs($jefe)->getJson('/accesos/en-sitio?q=mario')->assertOk()->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $deCentro->id);
+        $this->actingAs($jefe)->getJson('/accesos/en-sitio?q=101')->assertExactJson(['resultados' => []]);
+        $this->assertSame('en_sitio', $dePlaya->fresh()->estado);
+
+        // Fuera en tour: la tarjeta ofrece «Registrar regreso» (y no la salida)
+        $this->actingAs($this->admin)->post("/accesos/{$deCentro->id}/salida-temporal")->assertSessionHas('ok');
+        $this->actingAs($this->admin)->getJson('/accesos/en-sitio?q=202')->assertOk()
+            ->assertJsonPath('resultados.0.fuera_temporal', true)->assertJsonPath('resultados.0.url_regreso', route('accesos.regreso', $deCentro->id));
+        $this->actingAs($this->admin)->patch("/accesos/{$deCentro->id}/regreso")->assertSessionHas('ok', 'Regreso de tour de MARIO CENTRO registrado.');
+        $this->actingAs($this->admin)->getJson('/accesos/en-sitio?q=202')->assertJsonPath('resultados.0.fuera_temporal', false);
+    }
+
+    public function test_el_lector_universal_con_un_gafete_en_uso_ofrece_dar_salida(): void
+    {
+        $g = $this->gafete();
+        // Libre: abre su ficha en Gafetes, como siempre
+        $this->actingAs($this->admin)->get('/e/'.$g->codigo_qr)->assertRedirect(route('gafetes.index').'#gafete-'.$g->id);
+
+        $this->registrar(['tipo' => 'visitante', 'nombre' => 'Con Gafete', 'gafete_id' => $g->id]);
+        // En uso: lleva a la bitácora con la persona lista para «Dar salida»
+        $this->actingAs($this->admin)->get('/e/'.$g->codigo_qr)->assertRedirect(route('accesos.index', ['salida' => $g->nomenclatura]));
+        $this->actingAs($this->admin)->getJson('/lector/resolver?entrada='.$g->nomenclatura.'&tipos=gafete')->assertJsonPath('resultados.0.url', route('accesos.index', ['salida' => $g->nomenclatura]));
+        // Quien no da salidas (solo consulta) sigue yendo a la ficha del gafete
+        $director = $this->crearUsuario($this->empresa, 'Director');
+        $this->actingAs($director)->get('/e/'.$g->codigo_qr)->assertRedirect(route('gafetes.index').'#gafete-'.$g->id);
     }
 
     public function test_sugerencias_al_escribir_usan_los_padrones(): void

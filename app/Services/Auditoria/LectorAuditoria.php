@@ -95,6 +95,7 @@ class LectorAuditoria
         'reenviado' => 'Reenvío', 'enviado' => 'Envío a revisión', 'firma_guardada' => 'Registro de firma guardada', 'firma_borrada' => 'Eliminación de firma guardada',
         'circuito_actualizado' => 'Cambio del circuito de aprobación', 'circuito_restablecido' => 'Restablecimiento del circuito de aprobación',
         'responsables' => 'Cambio de responsables', 'delegacion_creada' => 'Alta de delegación', 'delegacion_cancelada' => 'Cancelación de delegación',
+        'recordatorio' => 'Recordatorio por tardanza', 'escalada' => 'Escalamiento al suplente o jefe',
         // Movimientos (accesos, pases de salida, préstamos y resguardos)
         'salida' => 'Salida', 'salida_acompanante' => 'Salida de acompañante', 'salida_temporal' => 'Salida temporal',
         'salida_temporal_acompanante' => 'Salida temporal de acompañante', 'regreso' => 'Regreso', 'regreso_acompanante' => 'Regreso de acompañante',

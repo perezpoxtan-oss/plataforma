@@ -80,3 +80,29 @@
         </div>
     </dialog>
 @endforeach
+
+{{--
+    «Dar salida» a la vista: confirmación corta de la persona encontrada con el campo de escaneo o búsqueda
+    (o con «Dar Salida» del formulario). plataforma.js llena la tarjeta y la dirección del envío; si la persona
+    está fuera (salida temporal o tour), ofrece «Registrar regreso» en lugar de la salida.
+--}}
+<dialog id="dialogoDarSalida" class="dialogo dialogo-acceso dialogo-dar-salida" aria-labelledby="titulo-dialogoDarSalida">
+    <div class="dialogo-cabecera">
+        <h2 id="titulo-dialogoDarSalida">
+            <i class="bi bi-box-arrow-right me-2 text-danger" aria-hidden="true"></i><span data-salida-titulo>Dar salida</span> — <span data-salida-nombre></span>
+        </h2>
+        <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+    </div>
+    <div class="dialogo-cuerpo">
+        <div class="tarjeta-dar-salida" data-salida-tarjeta></div>
+        <form method="POST" action="" data-salida-form class="m-0">
+            @csrf
+            @method('PATCH')
+            <div class="dialogo-acciones">
+                <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                <button type="button" class="btn-ambar-acceso" data-salida-regreso hidden>Registrar regreso</button>
+                <button type="submit" class="btn-rojo-acceso" data-salida-boton>Dar salida</button>
+            </div>
+        </form>
+    </div>
+</dialog>

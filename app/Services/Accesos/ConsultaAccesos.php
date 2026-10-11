@@ -19,6 +19,7 @@ use App\Services\Permisos\Autorizador;
 use App\Services\Personas\AdministradorPersonas;
 use App\Services\Vehiculos\AdministradorVehiculos;
 use App\Support\HoraLocal;
+use App\Support\Lector\Etiqueta;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -138,7 +139,8 @@ class ConsultaAccesos
     {
         return $this->filtrar($this->limitar(Acceso::query(), $actor, 'accesos.ver'), $filtros)
             ->where('accesos.estado', 'pendiente')
-            ->with($this->relaciones(true))
+            // La solicitud pendiente (a quién espera y si ya se escaló) viene cargada: la tarjeta no consulta
+            ->with([...$this->relaciones(true), 'autorizacionDepartamento.departamento:id,nombre'])
             ->orderBy('accesos.entrada_at')->orderBy('accesos.id')
             ->get();
     }
@@ -280,7 +282,12 @@ class ConsultaAccesos
 
     /**
      * Personas en sitio (o fuera en tour) por nombre, placas, gafete (del titular
-     * o de un acompañante) o habitación. Para "Dar Salida" desde el formulario.
+     * o de un acompañante) o habitación. Para «Dar salida»: el campo a la vista
+     * de la bitácora y la vista «Dar Salida» del formulario.
+     *
+     * Lo que entrega un lector (el QR del gafete, su etiqueta NFC/RFID o la
+     * nomenclatura impresa) también se reconoce en el texto: se buscan los
+     * gafetes que coinciden con la lectura y se incluye a quien los tiene.
      *
      * @return list<array<string, mixed>>
      */
@@ -294,9 +301,12 @@ class ConsultaAccesos
         $consulta = $this->limitar(Acceso::query(), $actor, 'accesos.ver')
             ->where('accesos.estado', 'en_sitio')->where('accesos.movimiento', 'entrada');
 
+        $gafetes = $gafeteId !== null ? [$gafeteId] : $this->gafetesLeidos($texto);
+        $porGafete = fn ($q) => $q->whereIn('accesos.gafete_id', $gafetes)
+            ->orWhereHas('acompanantes', fn ($ac) => $ac->whereIn('gafete_id', $gafetes)->whereNull('salida_at'));
+
         if ($gafeteId !== null) {
-            $consulta->where(fn ($q) => $q->where('accesos.gafete_id', $gafeteId)
-                ->orWhereHas('acompanantes', fn ($ac) => $ac->where('gafete_id', $gafeteId)->whereNull('salida_at')));
+            $consulta->where($porGafete);
         } else {
             $comodin = '%'.addcslashes(mb_strtolower($texto), '%_\\').'%';
             $normalizadas = Vehiculo::normalizarPlacas($texto);
@@ -304,6 +314,7 @@ class ConsultaAccesos
                 ->orWhereRaw('LOWER(accesos.gafete_texto) LIKE ?', [$comodin])
                 ->orWhereRaw('LOWER(accesos.habitacion) LIKE ?', [$comodin])
                 ->when($normalizadas !== '', fn ($p) => $p->orWhere('accesos.placas', 'like', '%'.addcslashes($normalizadas, '%_\\').'%'))
+                ->when($gafetes !== [], fn ($p) => $p->orWhere($porGafete))
                 ->orWhereHas('acompanantes', fn ($ac) => $ac->whereNull('salida_at')
                     ->where(fn ($x) => $x->whereRaw('LOWER(gafete_texto) LIKE ?', [$comodin])->orWhereRaw('LOWER(nombre) LIKE ?', [$comodin]))));
         }
@@ -312,6 +323,26 @@ class ConsultaAccesos
             ->orderByDesc('accesos.entrada_at')->limit(10)->get()
             ->map(fn (Acceso $a) => $this->resumen($a, $gafeteId === null ? $texto : null))
             ->all();
+    }
+
+    /**
+     * Gafetes de la empresa que corresponden a una lectura (QR con dirección,
+     * etiqueta NFC/RFID en cualquiera de sus formas o la nomenclatura).
+     *
+     * @return list<int>
+     */
+    private function gafetesLeidos(string $texto): array
+    {
+        if ($texto === '' || mb_strlen($texto) > Etiqueta::MAXIMO) {
+            return [];
+        }
+        $codigo = Etiqueta::codigoDeUrl($texto);
+        $candidatos = $codigo !== null ? [] : Etiqueta::candidatos($texto);
+        if ($codigo === null && $candidatos === []) {
+            return [];
+        }
+
+        return Gafete::query()->coincideConLectura($codigo, $candidatos)->limit(5)->pluck('id')->map(fn ($id) => (int) $id)->all();
     }
 
     /**

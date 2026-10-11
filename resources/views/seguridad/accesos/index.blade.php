@@ -34,12 +34,35 @@
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Bitácora de: <strong>{{ $empresaNombre }}</strong></p>
                 </div>
             </div>
-            @if ($puede['crear'])
-                <button type="button" class="btn-nuevo-ingreso" data-abrir-dialogo="dialogoIngreso">
-                    <i class="bi bi-person-plus-fill me-1" aria-hidden="true"></i>Nuevo Ingreso
-                </button>
+            @if ($puede['crear'] || $puede['editar'])
+                <div class="acciones-bitacora">
+                    @if ($puede['crear'])
+                        <button type="button" class="btn-nuevo-ingreso" data-abrir-dialogo="dialogoIngreso">
+                            <i class="bi bi-person-plus-fill me-1" aria-hidden="true"></i>Nuevo Ingreso
+                        </button>
+                    @endif
+                    @if ($puede['editar'])
+                        {{-- «Dar salida»: enfoca el campo de escaneo que está siempre a la vista --}}
+                        <button type="button" class="btn-dar-salida" data-enfocar-salida>
+                            <i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Dar salida
+                        </button>
+                    @endif
+                </div>
             @endif
         </div>
+
+        @if ($puede['editar'])
+            {{-- Dar salida a la vista: escanea el gafete que devuelven (QR, NFC o pistola) o escribe nombre, placas o habitación.
+                 Muestra la tarjeta de la persona con «Dar salida» (o «Registrar regreso») sin recargar la página.
+                 ?salida=… llega del lector universal (/e/{código} de un gafete en uso). --}}
+            <section class="salida-a-la-vista" data-salida-vista data-url-en-sitio="{{ route('accesos.en-sitio') }}"
+                     data-salida-inicial="{{ \App\Support\Entrada::texto(request()->query('salida')) }}" aria-labelledby="titulo-salida-vista">
+                <h2 id="titulo-salida-vista" class="visually-hidden">Dar salida</h2>
+                @include('componentes.lector', ['id' => 'salida_vista', 'modo' => 'capturar', 'nombre' => '', 'camara' => true,
+                    'placeholder' => 'Escanea el gafete o escribe nombre, placas o habitación'])
+                <div class="resultados-salida" data-resultados-salida-vista aria-live="polite"></div>
+            </section>
+        @endif
 
         {{-- Búsqueda y filtro por tipo: en Gente en Sitio y Pendientes filtran al escribir; en el historial, con Filtrar --}}
         <form method="GET" data-autoenviar action="{{ route('accesos.index') }}" class="filtros-accesos {{ $esHistorial ? 'con-fechas' : '' }}" role="search" data-filtros-accesos="{{ $esHistorial ? 'servidor' : 'vivo' }}">

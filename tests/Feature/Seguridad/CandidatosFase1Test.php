@@ -279,7 +279,7 @@ class CandidatosFase1Test extends TestCase
         app(CorreoPlataforma::class)->guardar(['host' => 'mail.ejemplo.com', 'puerto' => 587, 'cifrado' => 'tls', 'usuario' => 'a@ejemplo.com',
             'remitente_correo' => 'avisos@ejemplo.com', 'remitente_nombre' => 'Avisos'], 'x');
 
-        $this->caseta()->assertRedirect('/accesos?pestana=pendientes')->assertSessionHas('ok', fn ($m) => str_contains($m, 'ESPERANDO A RR. HH.'));
+        $this->caseta()->assertRedirect('/accesos?pestana=pendientes')->assertSessionHas('ok', fn ($m) => str_contains($m, 'espera a Recursos Humanos'));
         $acceso = $this->enEmpresa(fn () => Acceso::sole());
         $this->assertSame(['pendiente', 'esperando'], [$acceso->estado, $acceso->autorizacion]);
         $a = $this->enEmpresa(fn () => Autorizacion::sole());
@@ -290,7 +290,7 @@ class CandidatosFase1Test extends TestCase
         Mail::assertSent(AvisoRecepcion::class, fn ($m) => $m->hasTo($this->rh->email) && count($m->botones) === 3 && str_contains($m->botones[0][1], 'signature='));
 
         // La tarjeta de caseta
-        $this->actingAs($this->agente)->get('/accesos?pestana=pendientes')->assertSee('ESPERANDO A RR. HH.')->assertSee('Candidato · Busca empleo');
+        $this->actingAs($this->agente)->get('/accesos?pestana=pendientes')->assertSee('Espera a: Recursos Humanos')->assertSee('Candidato · Busca empleo');
         $this->actingAs($this->agente)->getJson('/accesos/autorizaciones-estado?ids='.$acceso->id)->assertJsonPath('estados.'.$acceso->id, 'pendiente|esperando');
 
         // Campana de RR. HH. con los tres botones
@@ -335,7 +335,7 @@ class CandidatosFase1Test extends TestCase
         $this->actingAs($this->rh)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'espere', 'comentario' => 'Termino una entrevista'])->assertSessionHas('ok');
         $this->assertSame(['pendiente', 'espera'], [$acceso->fresh()->estado, $acceso->fresh()->autorizacion]);
         $this->assertSame('pendiente', $a->fresh()->estado);
-        $this->actingAs($this->agente)->get('/accesos?pestana=pendientes')->assertSee('RR. HH. PIDE QUE ESPERE')->assertSee('data-estado-esperado="pendiente|espera"', false);
+        $this->actingAs($this->agente)->get('/accesos?pestana=pendientes')->assertSee('RR. HH. pide que espere')->assertSee('data-estado-esperado="pendiente|espera"', false);
         $this->actingAs($this->agente)->getJson('/accesos/autorizaciones-estado?ids='.$acceso->id)->assertJsonPath('estados.'.$acceso->id, 'pendiente|espera');
         $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->agente->id)->where('titulo', 'like', 'RR. HH. pide que espere%')->exists()));
         // El aviso de RR. HH. sigue pendiente con sus botones
@@ -346,7 +346,7 @@ class CandidatosFase1Test extends TestCase
         $this->actingAs($this->rh)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'no_pasa'])->assertSessionHas('ok');
         $this->assertSame(['finalizado', 'rechazada'], [$acceso->fresh()->estado, $acceso->fresh()->autorizacion]);
         $this->assertSame('rechazada', $a->fresh()->estado);
-        $this->actingAs($this->agente)->get('/accesos?pestana=historial')->assertSee('NO AUTORIZADO por Recursos Humanos');
+        $this->actingAs($this->agente)->get('/accesos?pestana=historial')->assertSee('No autorizado por Recursos Humanos');
         // Dos veces no
         $this->actingAs($this->rh)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase'])->assertSessionHas('error');
     }

@@ -20,7 +20,12 @@ use Illuminate\Validation\ValidationException;
  *    de postulaciones lo dejó apagado (su caseta sigue igual hasta que lo enciendan);
  *  - duración y usos del enlace del kiosco;
  *  - criterios con los que se califican las entrevistas (fase 2): una lista
- *    editable de hasta MAX_CRITERIOS; sin el dato, CRITERIOS_DEFECTO.
+ *    editable de hasta MAX_CRITERIOS; sin el dato, CRITERIOS_DEFECTO;
+ *  - escalamiento de las autorizaciones que tardan: a los «recordar_minutos»
+ *    se reenvía el aviso a quien debe responder y a los «escalar_minutos» se
+ *    avisa a los suplentes y al Jefe de seguridad de la sede (para RR. HH., al
+ *    resto de Recursos Humanos y al Jefe de seguridad). Sin el dato, los
+ *    umbrales del panel de Recepción (ámbar a los 10, rojo a los 20).
  *
  * El texto del aviso NO es un texto legal definitivo: el que trae la
  * plataforma está marcado como borrador para que la empresa lo valide con
@@ -46,6 +51,9 @@ class AjustesRecepcion
         'Disponibilidad (turnos, horario, fecha de inicio)', 'Expectativa económica'];
 
     public const MAX_CRITERIOS = 8;
+
+    /** Escalamiento: minutos máximos que admite cada umbral (4 horas). */
+    public const MAX_MINUTOS_ESCALAMIENTO = 240;
 
     public function __construct(private readonly AdministradorRoles $auditoria) {}
 
@@ -84,6 +92,18 @@ class AjustesRecepcion
     public function rhAutorizaPaso(Empresa $empresa): bool
     {
         return (bool) ($this->datos($empresa)['rh_autoriza_paso'] ?? true);
+    }
+
+    /** Escalamiento: minutos de espera tras los que se reenvía el aviso a quien debe responder. */
+    public function recordarMinutos(Empresa $empresa): int
+    {
+        return (int) ($this->datos($empresa)['recordar_minutos'] ?? PanelRecepcion::ESPERA_AMBAR);
+    }
+
+    /** Escalamiento: minutos de espera tras los que se avisa al suplente, al Jefe de seguridad o a todo RR. HH. */
+    public function escalarMinutos(Empresa $empresa): int
+    {
+        return (int) ($this->datos($empresa)['escalar_minutos'] ?? PanelRecepcion::ESPERA_ROJA);
     }
 
     public function horasKiosco(Empresa $empresa): int
@@ -152,18 +172,24 @@ class AjustesRecepcion
     /**
      * @param  array<string, mixed>  $entrada
      */
-    public function guardar(User $actor, Empresa $empresa, array $entrada, bool $privacidad, bool $autorizaciones): void
+    public function guardar(User $actor, Empresa $empresa, array $entrada, bool $privacidad, bool $autorizaciones, bool $escalamiento = false): void
     {
+        $maximo = self::MAX_MINUTOS_ESCALAMIENTO;
         $d = Validator::make($entrada, [
             'aviso_privacidad' => ['nullable', 'string', 'max:6000'],
             'visitas_requieren_autorizacion' => ['nullable', 'boolean'],
             'kiosco_horas' => ['nullable', 'integer', 'min:1', 'max:24'],
             'kiosco_usos' => ['nullable', 'integer', 'min:1', 'max:10'],
             'rh_autoriza_paso' => ['nullable', 'boolean'],
+            'recordar_minutos' => [$escalamiento ? 'required' : 'nullable', 'integer', 'min:1', 'max:'.$maximo],
+            'escalar_minutos' => [$escalamiento ? 'required' : 'nullable', 'integer', 'min:2', 'max:'.$maximo, 'gt:recordar_minutos'],
         ], [
             'aviso_privacidad.max' => 'El aviso de privacidad admite máximo 6000 caracteres.',
             'kiosco_horas.*' => 'El enlace del kiosco dura de 1 a 24 horas.',
             'kiosco_usos.*' => 'El enlace del kiosco se puede abrir de 1 a 10 veces.',
+            'recordar_minutos.*' => "«Recordar a los … minutos» va de 1 a {$maximo}.",
+            'escalar_minutos.gt' => 'El aviso al suplente y al jefe debe ir después del recordatorio.',
+            'escalar_minutos.*' => "«Avisar al suplente y al jefe a los … minutos» va de 2 a {$maximo}.",
         ])->validate();
 
         $antes = $this->datos($empresa);
@@ -185,6 +211,10 @@ class AjustesRecepcion
         if ($autorizaciones) {
             $nuevos['visitas_requieren_autorizacion'] = (bool) ($d['visitas_requieren_autorizacion'] ?? false);
         }
+        if ($escalamiento) {
+            $nuevos['recordar_minutos'] = (int) $d['recordar_minutos'];
+            $nuevos['escalar_minutos'] = (int) $d['escalar_minutos'];
+        }
 
         $empresa->forceFill(['preferencias' => array_merge($empresa->preferencias ?? [], ['recepcion' => $nuevos])])->save();
         $resumen = fn (array $x) => [
@@ -194,6 +224,8 @@ class AjustesRecepcion
             'kiosco_usos' => (int) ($x['kiosco_usos'] ?? self::USOS_KIOSCO),
             'rh_autoriza_paso' => (bool) ($x['rh_autoriza_paso'] ?? true),
             'criterios' => is_array($x['criterios'] ?? null) ? $x['criterios'] : self::CRITERIOS_DEFECTO,
+            'recordar_minutos' => (int) ($x['recordar_minutos'] ?? PanelRecepcion::ESPERA_AMBAR),
+            'escalar_minutos' => (int) ($x['escalar_minutos'] ?? PanelRecepcion::ESPERA_ROJA),
         ];
         $this->auditoria->auditar($actor, 'candidatos.configurado', $empresa, $resumen($antes), $resumen($nuevos));
     }

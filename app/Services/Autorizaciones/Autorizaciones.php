@@ -76,6 +76,34 @@ class Autorizaciones
     }
 
     /**
+     * Sedes en las que cada departamento tiene responsable activo (titular o
+     * suplente): departamento_id => null (en todas) o lista de sedes. Una sola
+     * consulta, para que el formulario de la caseta anticipe si la visita
+     * esperará autorización.
+     *
+     * @return array<int, list<int>|null>
+     */
+    public function departamentosConResponsable(): array
+    {
+        $resultado = [];
+        $filas = DepartamentoResponsable::with('usuario:id,activo')->get(['departamento_id', 'sede_id', 'user_id'])
+            ->filter(fn ($r) => $r->usuario?->activo);
+        foreach ($filas as $r) {
+            $d = (int) $r->departamento_id;
+            if (array_key_exists($d, $resultado) && $resultado[$d] === null) {
+                continue;
+            }
+            if ($r->sede_id === null) {
+                $resultado[$d] = null;
+            } else {
+                $resultado[$d] = array_values(array_unique([...($resultado[$d] ?? []), (int) $r->sede_id]));
+            }
+        }
+
+        return $resultado;
+    }
+
+    /**
      * A quién avisar: cada responsable, o su delegado si tiene una delegación activa.
      *
      * @return Collection<int, User>
