@@ -93,7 +93,7 @@ class PanelRecepcion
         $desde = now()->setTimezone($this->hora->zona())->startOfDay()->utc();
         $enLista = $filas->pluck('candidato_id')->filter()->all();
         $sinAcceso = Candidato::with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'postulacionActiva'])
-            ->whereIn('etapa', ['registrado', 'revision'])
+            ->whereIn('etapa', ['registrado', 'con_rh'])
             ->where(fn ($q) => $q->where('llegada_en', '>=', $desde)->orWhere(fn ($x) => $x->whereNull('llegada_en')->where('created_at', '>=', $desde)))
             ->whereNotIn('id', $enLista ?: [0])
             ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))->orderBy('id')->limit(100)->get()
@@ -157,8 +157,8 @@ class PanelRecepcion
     }
 
     /**
-     * Contadores del panel: esperando, con RR. HH. (en revisión o entrevista de
-     * RR. HH.), con el departamento (canalizados) y evaluados por el departamento.
+     * Contadores del panel: esperando, con RR. HH. (atendidos: en entrevista o
+     * por canalizar), con el departamento (canalizados) y evaluados por el departamento.
      *
      * @return array{esperando: int, revision: int, departamento: int, evaluado: int}
      */

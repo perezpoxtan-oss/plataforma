@@ -254,7 +254,7 @@ class SolicitudEmpleoTest extends TestCase
             'remitente_correo' => 'avisos@ejemplo.com', 'remitente_nombre' => 'Avisos'], 'x');
         $chef = $this->crearUsuario($this->empresa, 'Supervisor', $this->centro);
         $this->enEmpresa(fn () => DepartamentoResponsable::create(['departamento_id' => $this->cocina->id, 'user_id' => $chef->id]));
-        $c = $this->candidato('revision');
+        $c = $this->candidato('con_rh');
         $this->actingAs($this->rh)->put("/candidatos/{$c->id}", $this->solicitud())->assertSessionHas('ok');
         $sensibles = ['POCA960410MYNLNN05', 'POCA960410AB1', '12345678901', 'Región 100', 'Calle 10 Mz 2', 'Rosa Canché', '9981110000', '9988801122'];
 

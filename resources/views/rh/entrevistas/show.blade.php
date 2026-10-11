@@ -24,7 +24,7 @@
             <span><i class="bi bi-megaphone" aria-hidden="true"></i> {{ $p->titulo() }}</span>
             @if ($p->departamento)<span><i class="bi bi-diagram-2" aria-hidden="true"></i> {{ $p->departamento->nombre }}</span>@endif
             <span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ $p->sede?->nombre }}</span>
-            <span><i class="bi bi-calendar-event" aria-hidden="true"></i> Cita: {{ $textoCita ?: 'sin fecha' }}{{ $p->cita_lugar ? ' · '.$p->cita_lugar : '' }}</span>
+            <span><i class="bi bi-calendar-event" aria-hidden="true"></i> Cita: {{ $textoCita ?: 'sin fecha (Recursos Humanos te avisará)' }}{{ $p->cita_lugar ? ' · '.$p->cita_lugar : '' }}</span>
         </div>
         @if ($manual)
             <p class="small mt-2 mb-0"><a href="{{ $manual }}"><i class="bi bi-question-circle me-1" aria-hidden="true"></i>¿Cómo entrevistar, evaluar y elegir?</a></p>
@@ -71,7 +71,26 @@
                 @endforelse
             </section>
 
-            @if ($puedeEvaluar)
+            @if ($corregible)
+                <section class="tarjeta p-4" aria-labelledby="t-corregir">
+                    <h2 id="t-corregir" class="h5 fw-bold"><i class="bi bi-pencil-square me-2 text-warning" aria-hidden="true"></i>Corregir tu evaluación</h2>
+                    <form action="{{ route('entrevistas.evaluar', $p->id) }}" method="POST" autocomplete="off" data-form-evaluacion
+                          data-confirmar-elegir="¿Elegir a {{ $c->nombre_completo }}? Recursos Humanos sigue con los documentos y el contrato.">
+                        @csrf
+                        <input type="hidden" name="_dialogo" value="entrevistar">
+                        @if ($reabrir && $errors->any())
+                            <div class="alert alert-danger small py-2 px-3" role="alert"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Revisa tu evaluación:
+                                <ul class="mb-0 ps-3">@foreach ($errors->all() as $m)<li>{{ $m }}</li>@endforeach</ul>
+                            </div>
+                        @endif
+                        <p class="small text-muted">Acabas de guardarla: tienes <strong>{{ $minutosCorreccion }} minutos</strong> para corregir estrellas, comentario{{ $corregible->resultado === 'elegir' ? '' : ' y resultado' }}. Recursos Humanos recibe la versión corregida.{{ $corregible->resultado === 'elegir' ? ' Ya elegiste a esta persona: si cambiaste de opinión, avisa a Recursos Humanos.' : '' }}</p>
+                        @include('rh.candidatos._evaluar-campos', ['tipo' => 'departamento', 'criterios' => $criterios, 'prefijo' => 'depto', 'conOld' => $reabrir, 'previa' => $corregible, 'sinElegir' => $corregible->resultado === 'elegir'])
+                        <div class="dialogo-acciones">
+                            <button type="submit" class="btn-verde">Guardar corrección</button>
+                        </div>
+                    </form>
+                </section>
+            @elseif ($puedeEvaluar)
                 <section class="tarjeta p-4" aria-labelledby="t-evaluar">
                     <h2 id="t-evaluar" class="h5 fw-bold"><i class="bi bi-star-half me-2 text-warning" aria-hidden="true"></i>Tu evaluación</h2>
                     <form action="{{ route('entrevistas.evaluar', $p->id) }}" method="POST" autocomplete="off" data-form-evaluacion
@@ -83,12 +102,19 @@
                                 <ul class="mb-0 ps-3">@foreach ($errors->all() as $m)<li>{{ $m }}</li>@endforeach</ul>
                             </div>
                         @endif
-                        <p class="small text-muted">La decisión de elegir es tuya. <strong>Elegir</strong> lo deja listo para que Recursos Humanos lo contrate; con <strong>Considerar</strong>, <strong>Segunda entrevista</strong> o <strong>Rechazar</strong>, Recursos Humanos decide cómo sigue y habla con el candidato.</p>
+                        <p class="small text-muted">La decisión de elegir es tuya. <strong>Elegir</strong> lo deja listo para que Recursos Humanos lo contrate; con <strong>Segunda entrevista</strong> sigue contigo y Recursos Humanos le pone fecha; con <strong>Considerar</strong> o <strong>Rechazar</strong>, Recursos Humanos decide cómo sigue y habla con el candidato. Después de guardar tienes {{ $minutosCorreccion }} minutos para corregirla.</p>
                         @include('rh.candidatos._evaluar-campos', ['tipo' => 'departamento', 'criterios' => $criterios, 'prefijo' => 'depto', 'conOld' => $reabrir])
                         <div class="dialogo-acciones">
                             <button type="submit" class="btn-verde">Guardar evaluación</button>
                         </div>
                     </form>
+                    @if ($puedeNoSePresento)
+                        <form action="{{ route('entrevistas.no-se-presento', $p->id) }}" method="POST" class="m-0 mt-3 text-end"
+                              data-confirmar="¿Marcar que {{ $c->nombre_completo }} no se presentó? Recursos Humanos lo verá y podrá reprogramar.">
+                            @csrf
+                            <button type="submit" class="btn-etapa peligro"><i class="bi bi-calendar-x me-1" aria-hidden="true"></i>No se presentó</button>
+                        </form>
+                    @endif
                 </section>
             @elseif ($p->etapa === 'canalizado')
                 <p class="small text-muted">Solo la persona asignada (o su delegado) evalúa esta entrevista.</p>

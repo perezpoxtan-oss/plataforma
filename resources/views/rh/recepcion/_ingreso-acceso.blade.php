@@ -1,13 +1,17 @@
 {{--
     Recepción (ADR-0007) dentro del «Registro Inteligente de Ingreso» (Personal externo):
-     - Recursos Humanos → «¿A qué viene?» (candidatos, fase 1): Busca empleo (con «¿A qué vacante?»), Entrevista,
-       Entrega de documentos, Firma de contrato, Informes / ver vacantes u Otro trámite. La caseta solo registra
-       a qué viene y avisa; el puesto y el departamento los deduce la vacante o los pone RR. HH.
+     - Recursos Humanos → «¿A qué viene?» (tres opciones): Busca empleo (con «¿A qué vacante?» si hay vacantes
+       publicadas), Ya tiene cita (la plataforma busca su ficha y deduce si viene a su entrevista, a entregar
+       documentos o a firmar su contrato) u Otro trámite de RR. HH. La caseta solo registra a qué viene y avisa;
+       el puesto y el departamento los deduce la vacante o los pone RR. HH. El enlace a las vacantes publicadas
+       se muestra siempre que haya y la caseta pueda verlas.
      - Visita a Departamento: a qué departamento va (si la empresa lo pide, espera la autorización de su responsable).
     $previo (closure del formulario), $departamentos (con sus sedes)
 --}}
 @php
     $vieneA = (string) ($previo('viene_a') ?: ($previo('es_candidato') ? 'busca_empleo' : ''));
+    // Los valores de antes (entrevista, documentos, firma, informes) se muestran con su opción de hoy
+    $vieneA = in_array($vieneA, ['entrevista', 'documentos', 'firma'], true) ? 'cita' : ($vieneA === 'informes' ? 'tramite' : $vieneA);
     // Vacantes publicadas y vigentes (se acotan a la sede elegida, como los departamentos)
     $empresaVacantes = \App\Models\Empresa::find(app(\App\Support\Tenancy\Tenant::class)->empresaId());
     $vacantesRecepcion = $empresaVacantes === null ? collect() : \App\Models\Vacante::vigentes(\App\Services\Vacantes\AdministradorVacantes::hoy($empresaVacantes))
@@ -18,7 +22,7 @@
     <label class="campo-etiqueta" for="ingreso_viene_a">¿A qué viene? *</label>
     <select id="ingreso_viene_a" name="viene_a" class="campo" data-viene-a required>
         <option value="">-- Seleccionar --</option>
-        @foreach (\App\Models\Acceso::VIENE_A as $clave => $texto)
+        @foreach (\App\Models\Acceso::OPCIONES_CASETA as $clave => $texto)
             <option value="{{ $clave }}" @selected($vieneA === $clave)>{{ $texto }}</option>
         @endforeach
     </select>
@@ -38,16 +42,15 @@
             <p class="campo-ayuda"><i class="bi bi-megaphone" aria-hidden="true"></i> No hay vacantes publicadas: Recursos Humanos anotará a qué puesto aplica.</p>
         @endif
     </div>
-    <div data-condicion data-solo-viene-a="entrevista documentos firma">
-        <p class="campo-ayuda"><i class="bi bi-person-vcard" aria-hidden="true"></i> Ya vino antes: se busca su ficha por su nombre. Si no aparece, Recursos Humanos lo recibe como «Busca empleo».</p>
+    <div data-condicion data-solo-viene-a="cita">
+        <p class="campo-ayuda"><i class="bi bi-person-vcard" aria-hidden="true"></i> Ya vino antes: se busca su ficha y la plataforma anota si viene a su entrevista, a entregar documentos o a firmar. Si no aparece, Recursos Humanos lo recibe como «Busca empleo».</p>
     </div>
-    <div data-condicion data-solo-viene-a="informes">
-        <p class="campo-ayuda"><i class="bi bi-megaphone" aria-hidden="true"></i> Solo quiere informes: no se le abre ficha.
-            @can('vacantes.ver')
-                <a href="{{ route('vacantes.index') }}" target="_blank" rel="noopener">Ver las vacantes publicadas</a>
-            @endcan
-        </p>
-    </div>
+    @if ($vacantesRecepcion->isNotEmpty())
+        @can('vacantes.ver')
+            <p class="campo-ayuda enlace-vacantes-caseta"><i class="bi bi-megaphone" aria-hidden="true"></i> ¿Solo pide informes?
+                <a href="{{ route('vacantes.index') }}" target="_blank" rel="noopener">Ver las vacantes publicadas</a> (sin registrar nada).</p>
+        @endcan
+    @endif
 </div>
 <div data-condicion data-solo-motivo="departamento">
     <label class="campo-etiqueta" for="ingreso_depto_visita">¿A qué departamento va? *</label>

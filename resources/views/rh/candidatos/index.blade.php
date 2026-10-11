@@ -36,6 +36,9 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ route('recepcion.index') }}" class="btn-secundario-rh"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Recepción</a>
+                @can('candidatos.configurar')
+                    <a href="{{ route('candidatos.criterios') }}" class="btn-secundario-rh"><i class="bi bi-star-half me-1" aria-hidden="true"></i>Criterios de entrevista</a>
+                @endcan
                 @if ($puede['exportar'] && $lista->total() > 0)
                     <a href="{{ route('candidatos.exportar', request()->query()) }}" class="btn-secundario-rh"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
                     <form method="GET" action="{{ route('candidatos.exportar') }}" class="m-0" data-confirmar="El archivo llevará CURP, RFC, NSS, domicilio y teléfonos (datos personales). Guárdalo en un lugar seguro y no lo compartas. ¿Continuar?">

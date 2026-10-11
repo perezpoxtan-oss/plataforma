@@ -33,7 +33,8 @@ use Illuminate\Support\Facades\URL;
  *  - recepcion: alguien llegó a caseta con Recursos Humanos y la empresa pide
  *    que RR. HH. diga «Que pase» (Que pase / Que espere / No puede pasar). La
  *    responde quien atiende candidatos o Recepción en esa sede
- *    (candidatos.editar: Recursos Humanos), no un departamento.
+ *    (candidatos.editar: Recursos Humanos), no un departamento. «Que pase»
+ *    también atiende al candidato (pasa a «Con RR. HH.») en el mismo clic.
  *
  * Avisos: campana (con botones) y correo (botones con dirección firmada que
  * pide iniciar sesión y confirmar). Si el responsable delegó («No molestar»),
@@ -379,9 +380,11 @@ class Autorizaciones
     // --------------------------------------------------------------- Respuestas
 
     /**
-     * Responde (el primero gana). $medio: plataforma | correo.
+     * Responde (el primero gana). $medio: plataforma | correo. $atender: en
+     * Recepción, «Que pase y lo atiendo» (el candidato queda «Con RR. HH.» en
+     * el mismo clic); desde la campana y el correo es solo «Que pase».
      */
-    public function responder(User $actor, Autorizacion $a, string $respuesta, ?string $comentario, string $medio = 'plataforma'): Autorizacion
+    public function responder(User $actor, Autorizacion $a, string $respuesta, ?string $comentario, string $medio = 'plataforma', bool $atender = false): Autorizacion
     {
         $estado = Autorizacion::RESPUESTAS[$a->tipo][$respuesta] ?? null;
         if ($estado === null) {
@@ -425,12 +428,32 @@ class Autorizaciones
             if (($ficha = $a->candidato_id ? Candidato::find($a->candidato_id) : null) !== null) {
                 app(AdministradorCandidatos::class)->evento($ficha, 'recepcion', null, null,
                     ($estado === 'autorizada' ? 'Recursos Humanos le dio el paso' : 'Recursos Humanos no le dio el paso').($comentario ? ': «'.$comentario.'».' : '.'), $actor);
+                if ($estado === 'autorizada' && $atender) {
+                    $this->atenderConElPaso($actor, $ficha);
+                }
             }
         }
         $this->notificaciones->resolver('autorizacion', $a->id);
         $this->auditoria->auditar($actor, 'autorizaciones.respondida', $a, ['estado' => 'pendiente'], ['estado' => $estado, 'medio' => $medio]);
 
         return $a;
+    }
+
+    /**
+     * «Que pase y lo atiendo»: si el candidato seguía «Por atender», su
+     * postulación pasa a «Con RR. HH.» con el mismo clic (quien da el paso es
+     * quien lo atiende). Si otra persona lo cambió antes, no pasa nada.
+     */
+    private function atenderConElPaso(User $actor, Candidato $ficha): void
+    {
+        if ($ficha->etapa !== 'registrado') {
+            return;
+        }
+        try {
+            app(AdministradorCandidatos::class)->cambiarEtapa($actor, $ficha, 'con_rh');
+        } catch (CambioNoPermitido) {
+            // Alguien lo atendió (o lo cerró) un instante antes: el paso ya quedó dado
+        }
     }
 
     /**

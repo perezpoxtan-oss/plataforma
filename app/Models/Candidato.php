@@ -22,10 +22,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * de la postulación activa (manda la postulación; ver
  * App\Services\Candidatos\Postulaciones).
  *
- * Etapas de la postulación (fase 2, ver TRANSICIONES y ADR-0009):
- *   Esperando → En revisión RR. HH. → Entrevista RR. HH. → Entrevista con el
- *   departamento (canalizado, con cita y entrevistador) → Evaluado por el
- *   departamento → Elegido (lo decide el jefe) → Contratado
+ * Etapas de la postulación (ADR-0009 y ADR-0010, ver TRANSICIONES):
+ *   Por atender → Con RR. HH. (RR. HH. lo recibe, lo entrevista y lo evalúa
+ *   desde ahí) → Entrevista con el departamento (canalizado, con cita y
+ *   entrevistador) → Evaluado por el departamento → Elegido (lo decide el
+ *   jefe) → Contratado
  *   y a un lado: Considerar / cartera, Rechazado (con motivo) y No se presentó.
  */
 class Candidato extends Model
@@ -33,9 +34,8 @@ class Candidato extends Model
     use PerteneceAEmpresa, RegistraAutor;
 
     public const ETAPAS = [
-        'registrado' => 'Esperando',
-        'revision' => 'En revisión RR. HH.',
-        'entrevista_rh' => 'Entrevista RR. HH.',
+        'registrado' => 'Por atender',
+        'con_rh' => 'Con RR. HH.',
         'canalizado' => 'Entrevista con el departamento',
         'evaluado' => 'Evaluado por el departamento',
         'elegido' => 'Elegido',
@@ -47,55 +47,57 @@ class Candidato extends Model
 
     /** Color de la pastilla de cada etapa. */
     public const COLORES = [
-        'registrado' => 'gris', 'revision' => 'azul', 'entrevista_rh' => 'azul', 'canalizado' => 'indigo', 'evaluado' => 'ambar',
+        'registrado' => 'gris', 'con_rh' => 'azul', 'canalizado' => 'indigo', 'evaluado' => 'ambar',
         'elegido' => 'verde', 'contratado' => 'esmeralda', 'considerar' => 'cian', 'rechazado' => 'rojo', 'no_se_presento' => 'rojo',
     ];
 
     /** Avance normal (la línea de la ficha); las demás son laterales. */
-    public const RUTA = ['registrado', 'revision', 'entrevista_rh', 'canalizado', 'evaluado', 'elegido', 'contratado'];
+    public const RUTA = ['registrado', 'con_rh', 'canalizado', 'evaluado', 'elegido', 'contratado'];
 
     /** Etapas laterales: fuera del avance normal. */
     public const LATERALES = ['considerar', 'rechazado', 'no_se_presento'];
 
     /**
      * A qué etapas se puede pasar desde cada una. Cada cambio tiene su botón:
-     *  - Atender, Entrevistar, Considerar y Rechazar: Recursos Humanos (cambiarEtapa);
-     *  - Canalizar al departamento, Reprogramar, Segunda entrevista y No se
-     *    presentó: Recursos Humanos con cita y entrevistador (Entrevistas);
-     *  - Evaluado y Elegido: solo el entrevistador asignado o su delegado;
+     *  - Atender, Considerar y Rechazar: Recursos Humanos (cambiarEtapa);
+     *    «Entrevistar» abre la evaluación de RR. HH. sin cambiar de etapa;
+     *  - Canalizar al departamento, Reprogramar y No se presentó: Recursos
+     *    Humanos con cita y entrevistador (Entrevistas);
+     *  - Evaluado, Elegido y Segunda entrevista: solo el entrevistador asignado o su delegado;
      *  - Contratado: el botón Contratar (crea el colaborador).
      */
     public const TRANSICIONES = [
-        'registrado' => ['revision', 'considerar', 'rechazado'],
-        'revision' => ['entrevista_rh', 'considerar', 'rechazado'],
-        'entrevista_rh' => ['canalizado', 'considerar', 'rechazado'],
+        'registrado' => ['con_rh', 'considerar', 'rechazado'],
+        'con_rh' => ['canalizado', 'considerar', 'rechazado'],
         'canalizado' => ['canalizado', 'evaluado', 'elegido', 'no_se_presento', 'considerar', 'rechazado'],
         'evaluado' => ['canalizado', 'considerar', 'rechazado'],
         'elegido' => ['contratado', 'rechazado'],
         'no_se_presento' => ['canalizado', 'considerar', 'rechazado'],
-        'considerar' => ['revision', 'rechazado'],
-        'rechazado' => ['revision'],
+        'considerar' => ['con_rh', 'rechazado'],
+        'rechazado' => ['con_rh'],
         'contratado' => [],
     ];
 
     /** Cambios que Recursos Humanos hace con el botón de etapa (los demás tienen su propio formulario). */
-    public const MANUALES = ['revision', 'entrevista_rh', 'considerar', 'rechazado'];
+    public const MANUALES = ['con_rh', 'considerar', 'rechazado'];
 
     /** Texto del botón que lleva a cada etapa. */
     public const BOTONES_ETAPA = [
-        'revision' => 'Atender', 'entrevista_rh' => 'Entrevistar', 'canalizado' => 'Canalizar al departamento',
+        'con_rh' => 'Atender', 'canalizado' => 'Canalizar al departamento',
         'no_se_presento' => 'No se presentó', 'contratado' => 'Contratar', 'considerar' => 'Considerar', 'rechazado' => 'Rechazar',
     ];
 
     /** «Por entrevistar (RR. HH.)» (Mis pendientes): atendidos que esperan su entrevista de filtro o su canalización. */
-    public const POR_ENTREVISTAR = ['revision', 'entrevista_rh'];
+    public const POR_ENTREVISTAR = ['con_rh'];
 
     /** Etapas en las que el candidato sigue «en proceso». */
-    public const ABIERTAS = ['registrado', 'revision', 'entrevista_rh', 'canalizado', 'evaluado', 'elegido', 'no_se_presento'];
+    public const ABIERTAS = ['registrado', 'con_rh', 'canalizado', 'evaluado', 'elegido', 'no_se_presento'];
 
     /** Valores de antes de la fase 2 → etapa nueva (los usa la migración de etapas). */
     public const ETAPAS_ANTERIORES = [
         'aprobado_rh' => 'canalizado', 'entrevista' => 'canalizado', 'seleccionado' => 'elegido', 'cartera' => 'considerar', 'descartado' => 'rechazado',
+        // ADR-0010: «En revisión RR. HH.» y «Entrevista RR. HH.» se fundieron en «Con RR. HH.»
+        'revision' => 'con_rh', 'entrevista_rh' => 'con_rh',
     ];
 
     public const ESCOLARIDAD = [

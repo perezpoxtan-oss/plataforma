@@ -20,10 +20,12 @@ use Illuminate\Http\UploadedFile;
  * Lo que la Bitácora de accesos agrega para Recepción (ADR-0007), en un solo
  * lugar para no mezclarlo con las reglas de SEGCAT de RegistroAccesos:
  *
- *  - Personal externo → Recursos Humanos → «¿A qué viene?»: Busca empleo (con
- *    «¿A qué vacante?»), Entrevista, Entrega de documentos, Firma de contrato,
- *    Informes / ver vacantes u Otro trámite. Las cuatro primeras crean o usan
- *    la ficha del candidato (una por persona); las dos últimas no.
+ *  - Personal externo → Recursos Humanos → «¿A qué viene?» (tres opciones):
+ *    Busca empleo (con «¿A qué vacante?» si hay vacantes publicadas), Ya tiene
+ *    cita (la plataforma busca su ficha y deduce si viene a su entrevista, a
+ *    entregar documentos o a firmar; sin ficha, queda como Busca empleo) u
+ *    Otro trámite de RR. HH. (sin ficha). El enlace a las vacantes publicadas
+ *    se muestra siempre que haya y la caseta pueda verlas.
  *    Si la empresa lo pide (ajuste «La caseta espera a que RR. HH. diga «Que
  *    pase»») y hay quien atienda en esa sede, el acceso nace PENDIENTE
  *    («Esperando autorización» de RR. HH.) y RR. HH. responde Que pase / Que
@@ -69,13 +71,14 @@ class RecepcionEnCaseta
                 // Formularios de antes (casilla «Viene como candidato»)
                 $vieneA = filter_var($entrada['es_candidato'] ?? false, FILTER_VALIDATE_BOOL) ? 'busca_empleo' : 'tramite';
             }
-            if (! array_key_exists($vieneA, Acceso::VIENE_A)) {
+            // Tres opciones en la caseta; los valores de antes (entrevista, documentos, firma) se siguen aceptando
+            if (! array_key_exists($vieneA, Acceso::OPCIONES_CASETA) && ! in_array($vieneA, Acceso::VIENE_CON_FICHA, true)) {
                 $errores['viene_a'] = 'Elige a qué viene de la lista.';
 
                 return $r;
             }
             $r['viene_a'] = $vieneA;
-            $r['candidato'] = $vieneA === 'busca_empleo' || in_array($vieneA, Acceso::VIENE_CON_FICHA, true);
+            $r['candidato'] = in_array($vieneA, Acceso::VIENE_COMO_CANDIDATO, true);
             if ($vieneA === 'busca_empleo') {
                 // La vacante deduce el puesto y el departamento (o los pone RR. HH. después)
                 $r['vacante_datos'] = $this->vacante($entrada['vacante_id'] ?? null, $sedeId, $errores);

@@ -360,7 +360,7 @@ class RecorridoPantallasTest extends TestCase
             // Candidatos, fase 2: candidatos de cada vacante y la pantalla Entrevistar (canalizada, evaluada y en revisión)
             'vacantes.candidatos' => DB::table('vacantes')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['vacante' => $id])->all(),
             'entrevistas.show', 'entrevistas.cv', 'entrevistas.correo' => DB::table('postulaciones')->where('empresa_id', $e)
-                ->whereIn('etapa', ['canalizado', 'evaluado', 'elegido', 'revision'])->orderBy('id')->pluck('id')->map(fn ($id) => ['postulacion' => $id])->all(),
+                ->whereIn('etapa', ['canalizado', 'evaluado', 'elegido', 'con_rh'])->orderBy('id')->pluck('id')->map(fn ($id) => ['postulacion' => $id])->all(),
             // Manual (lección 37): páginas generales y de módulo, una imagen real y rutas que intentan salir de docs/usuario/img
             'manual.ver' => [['pagina' => 'primeros-pasos'], ['pagina' => 'accesos'], ['pagina' => 'usuarios'], ['pagina' => 'guia'], ['pagina' => 'no-existe']],
             'manual.imagen' => [['carpeta' => 'primeros-pasos', 'archivo' => 'acceso.png'], ['carpeta' => 'primeros-pasos', 'archivo' => '..env'],

@@ -457,6 +457,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/candidatos', 'index')->name('candidatos.index');
         Route::post('/candidatos', 'store')->name('candidatos.store');
         Route::get('/candidatos/exportar', 'exportar')->name('candidatos.exportar');
+        Route::get('/candidatos/criterios', 'criterios')->name('candidatos.criterios'); // Criterios de entrevista (ADR-0010)
         Route::get('/candidatos/{candidato}', 'show')->whereNumber('candidato')->name('candidatos.show');
         Route::put('/candidatos/{candidato}', 'update')->whereNumber('candidato')->name('candidatos.update');
         Route::delete('/candidatos/{candidato}', 'destroy')->whereNumber('candidato')->name('candidatos.destroy');
@@ -530,6 +531,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/entrevistas', 'index')->name('entrevistas.index');
         Route::get('/entrevistas/{postulacion}', 'show')->whereNumber('postulacion')->name('entrevistas.show');
         Route::post('/entrevistas/{postulacion}', 'evaluar')->whereNumber('postulacion')->middleware('throttle:60,1')->name('entrevistas.evaluar');
+        Route::post('/entrevistas/{postulacion}/no-se-presento', 'noSePresento')->whereNumber('postulacion')->middleware('throttle:60,1')->name('entrevistas.no-se-presento');
         Route::get('/entrevistas/{postulacion}/cv', 'cv')->whereNumber('postulacion')->name('entrevistas.cv');
         Route::get('/entrevistas/{postulacion}/correo', 'correo')->whereNumber('postulacion')->name('entrevistas.correo');
     });

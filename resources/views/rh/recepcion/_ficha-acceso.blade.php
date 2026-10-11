@@ -9,7 +9,7 @@
 @endphp
 @if ($conRh && $a->viene_a)
     <p class="linea-viene-a"><i class="bi bi-person-vcard me-1" aria-hidden="true"></i>
-        {{ in_array($a->viene_a, ['busca_empleo', 'entrevista', 'documentos', 'firma'], true) ? 'Candidato · '.\App\Models\Acceso::VIENE_A[$a->viene_a] : \App\Models\Acceso::VIENE_A[$a->viene_a] ?? '' }}</p>
+        {{ in_array($a->viene_a, \App\Models\Acceso::VIENE_COMO_CANDIDATO, true) ? 'Candidato · '.\App\Models\Acceso::VIENE_A[$a->viene_a] : \App\Models\Acceso::VIENE_A[$a->viene_a] ?? '' }}</p>
 @endif
 @php $esperaAut = ($esperas ?? [])[$a->id] ?? null; @endphp
 @if (in_array($estadoAut, ['esperando', 'espera'], true) && $a->estado === 'pendiente')

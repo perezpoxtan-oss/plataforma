@@ -18,6 +18,7 @@ use App\Services\Candidatos\Kiosco;
 use App\Services\Candidatos\Postulaciones;
 use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
+use App\Services\Permisos\Autorizador;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Support\CorreoPlataforma;
 use App\Support\Csv;
@@ -181,18 +182,13 @@ class CandidatoController extends Controller
             'volver' => ['nullable', Rule::in(['ficha', 'recepcion'])],
         ], ['etapa.*' => 'Elige una etapa válida. Para canalizar, reprogramar o contratar usa su botón.', 'comentario.max' => 'El comentario admite máximo 500 caracteres.']);
 
-        $hecho = false;
-        $respuesta = $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request, $datos, &$hecho) {
+        return $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request, $datos) {
             $this->candidatos->cambiarEtapa($request->user(), $c, $datos['etapa'], $datos['comentario'] ?? null);
-            $hecho = true;
 
-            return $datos['etapa'] === 'entrevista_rh'
-                ? "Entrevista de RR. HH. con {$c->nombre_completo}: al terminar, califícala y elige el resultado."
+            return $datos['etapa'] === 'con_rh'
+                ? "{$c->nombre_completo} está contigo («Con RR. HH.»). Cuando lo entrevistes, toca «Entrevistar» para calificarlo."
                 : "{$c->nombre_completo} ahora está «".Candidato::ETAPAS[$datos['etapa']].'».';
         }, ($datos['volver'] ?? null) === 'recepcion' ? 'recepcion.index' : null);
-
-        // «Entrevistar» abre de una vez la evaluación de RR. HH.
-        return $datos['etapa'] === 'entrevista_rh' && $hecho ? $respuesta->with('abrir_dialogo', 'evaluacion') : $respuesta;
     }
 
     // ------------------------------------------------ Entrevistas (fase 2)
@@ -491,6 +487,22 @@ class CandidatoController extends Controller
         }
 
         return $destino()->with('ok', $mensaje);
+    }
+
+    /**
+     * Candidatos → Criterios de entrevista (ADR-0010): los criterios con los que
+     * RR. HH. y el jefe califican; se guardan con el mismo formulario de
+     * ajustes de Recepción (parte «criterios»).
+     */
+    public function criterios(Request $request): View
+    {
+        Gate::authorize('candidatos.configurar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return view('rh.candidatos.criterios', [
+            'empresa' => Empresa::findOrFail($empresaId),
+            'puedeGuardar' => app(Autorizador::class)->alcanceDeEmpresa($request->user(), 'candidatos.configurar'),
+        ]);
     }
 
     private function empresaDeTrabajo(Request $request): int

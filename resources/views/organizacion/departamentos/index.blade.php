@@ -31,12 +31,18 @@
                     <p>Áreas operativas de la Empresa.</p>
                 </div>
             </div>
-            @if ($departamentos->count() > 1)
-                <div class="buscador">
-                    <i class="bi bi-search" aria-hidden="true"></i>
-                    <input type="search" placeholder="Buscar departamento..." aria-label="Buscar departamento" data-filtro-texto="departamentos">
-                </div>
-            @endif
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                @if ($puedeResponsables)
+                    {{-- ADR-0010: una sola pantalla de responsables y esperas, también desde Departamentos --}}
+                    <a href="{{ route('autorizaciones.responsables', ['desde' => 'departamentos']) }}" class="btn-secundario-rh"><i class="bi bi-people me-1" aria-hidden="true"></i>Responsables</a>
+                @endif
+                @if ($departamentos->count() > 1)
+                    <div class="buscador">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <input type="search" placeholder="Buscar departamento..." aria-label="Buscar departamento" data-filtro-texto="departamentos">
+                    </div>
+                @endif
+            </div>
         </div>
 
         <div class="fichas-grid" data-fichas="departamentos">
@@ -61,7 +67,14 @@
                                 @endif
                             </div>
                         @endif
-                        <div class="small text-muted"><i class="bi bi-person-badge" aria-hidden="true"></i> {{ $d->puestos_count }} puesto(s) ligado(s)</div>
+                        <div class="small text-muted"><i class="bi bi-person-badge" aria-hidden="true"></i> {{ $d->puestos_count }} puesto(s) ligado(s) · <i class="bi bi-people" aria-hidden="true"></i> {{ $d->colaboradores_count }} colaborador(es) activo(s)</div>
+                        @if ($d->activo && (int) $d->responsables_count === 0)
+                            <p class="aviso-sin-responsable mb-0"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Sin responsable: sus visitas entran sin autorización y nadie entrevista a sus candidatos.
+                                @if ($puedeResponsables)
+                                    <a href="{{ route('autorizaciones.responsables', ['desde' => 'departamentos']) }}#depto-{{ $d->id }}">Nombrar responsable</a>
+                                @endif
+                            </p>
+                        @endif
                         @if ($d->creado_por_nombre)
                             <div class="texto-traza mt-2"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $d->creado_por_nombre }} · @fecha($d->created_at)</div>
                         @endif

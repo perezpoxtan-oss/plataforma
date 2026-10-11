@@ -30,7 +30,7 @@
                 <a href="{{ route('entrevistas.show', $p->id) }}" class="tarjeta fila-entrevista">
                     <div class="cita-fila {{ $p->cita_ahora ? 'ahora' : ($p->cita_en?->isPast() ? 'pasada' : '') }}">
                         <i class="bi {{ $p->cita_ahora ? 'bi-person-check-fill' : 'bi-calendar-event' }}" aria-hidden="true"></i>
-                        @foreach (explode(' ', $textoCita($p), 2) as $parte)<span class="d-block">{{ $parte }}</span>@endforeach
+                        @foreach ($textoCita($p) !== '' ? explode(' ', $textoCita($p), 2) : ['Sin fecha'] as $parte)<span class="d-block">{{ $parte }}</span>@endforeach
                     </div>
                     <div class="flex-grow-1 min-w-0">
                         <strong class="d-block">{{ $p->candidato?->nombre_completo }}</strong>
