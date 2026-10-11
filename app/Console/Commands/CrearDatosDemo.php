@@ -18,6 +18,7 @@ use App\Models\EquipoPc;
 use App\Models\EquipoResponsiva;
 use App\Models\Espacio;
 use App\Models\EtiquetaPlantilla;
+use App\Models\EvaluacionCandidato;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
 use App\Models\ImpresionEtiquetas;
@@ -49,6 +50,7 @@ use App\Models\Vehiculo;
 use App\Models\ZonaEstacionamiento;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
+use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\Kiosco;
 use App\Services\Candidatos\Postulaciones;
 use App\Services\Equipos\AdministradorEquipos;
@@ -227,6 +229,7 @@ class CrearDatosDemo extends Command
         $paso('vacantesDemo', fn () => $this->vacantesDemo($sedes, User::where('username', 'rh.demo')->firstOrFail()));
         $paso('rolesSolicitudesDemo', fn () => $this->rolesSolicitudesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('postulacionesDemo', fn () => $this->postulacionesDemo($sedes, User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
+        $paso('entrevistasDemo', fn () => $this->entrevistasDemo($empresa, $sedes, User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'jefedepto.demo')->firstOrFail()));
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -2204,27 +2207,53 @@ class CrearDatosDemo extends Command
             $mover = function ($c, array $etapas, ?string $comentario = null) use ($rh, $candidatos) {
                 auth()->setUser($rh);
                 foreach ($etapas as $e) {
-                    $candidatos->cambiarEtapa($rh, $c->fresh(), $e, $e === 'descartado' ? $comentario : null);
+                    $candidatos->cambiarEtapa($rh, $c->fresh(), $e, in_array($e, ['considerar', 'rechazado'], true) ? $comentario : null);
                 }
+
+                return $c->fresh();
+            };
+            // Fase 2: entrevista de RR. HH., canalización al departamento y su evaluación
+            $entrevistas = app(Entrevistas::class);
+            $calificar = fn (array $estrellas) => collect($entrevistas->criterios($empresa->id))->values()
+                ->mapWithKeys(fn ($nombre, $i) => [AjustesRecepcion::claveCriterio($nombre) => (string) $estrellas[$i % count($estrellas)]])->all();
+            $canalizar = function ($c, User $quien, array $estrellas, ?string $lugar, ?Carbon $cita = null, ?string $comentarioRh = null) use ($rh, $mover, $entrevistas, $calificar) {
+                $mover($c, ['revision']);
+                $entrevistas->evaluarRh($rh, $c->fresh(), ['criterios' => $calificar($estrellas), 'resultado' => 'canalizar', 'comentario' => $comentarioRh]);
+                $zona = app(HoraLocal::class)->zona();
+                $entrevistas->canalizar($rh, $c->fresh(), ['departamento_id' => $c->departamento_id, 'entrevistador_id' => $quien->id,
+                    'cuando' => $cita ? 'cita' : 'ahora', 'fecha' => $cita?->copy()->setTimezone($zona)->format('Y-m-d'), 'hora' => $cita?->copy()->setTimezone($zona)->format('H:i'),
+                    'lugar' => $lugar]);
+
+                return $c->fresh();
+            };
+            $evaluarDepto = function ($c, User $quien, array $estrellas, string $resultado, ?string $comentario) use ($entrevistas, $calificar) {
+                auth()->setUser($quien);
+                $entrevistas->evaluarDepartamento($quien, app(Postulaciones::class)->activa($c->fresh()),
+                    ['criterios' => $calificar($estrellas), 'resultado' => $resultado, 'comentario' => $comentario]);
 
                 return $c->fresh();
             };
             // Tiempos realistas desde la llegada (minutos después de llegar a caseta); $dias queda por compatibilidad
             $atras = function ($c, int $dias) {
-                $minutos = ['avisado_rh_en' => 1, 'revision_en' => 9, 'aprobado_rh_en' => 35, 'enviado_departamento_en' => 35,
-                    'respuesta_departamento_en' => 52, 'entrevista_en' => 70, 'decision_en' => 110, 'contratado_en' => 1440];
+                $minutos = ['avisado_rh_en' => 1, 'revision_en' => 9, 'entrevista_rh_en' => 15, 'canalizado_en' => 35, 'evaluado_en' => 90, 'elegido_en' => 95,
+                    'decision_en' => 110, 'contratado_en' => 1440];
                 $cambios = [];
+                $p = app(Postulaciones::class)->asegurar($c);
                 foreach ($minutos as $campo => $min) {
-                    if ($c->{$campo} !== null) {
+                    if (($campo === 'avisado_rh_en' ? $c->{$campo} : $p->{$campo}) !== null) {
                         $cambios[$campo] = $c->llegada_en->copy()->addMinutes($min);
                     }
                 }
                 // Las fechas de etapa viven en la postulación (la ficha es su espejo); el aviso a RR. HH., en la ficha
                 $c->forceFill(array_intersect_key($cambios, ['avisado_rh_en' => true]))->save();
                 $postulaciones = app(Postulaciones::class);
-                $p = $postulaciones->asegurar($c);
-                $p->forceFill(array_diff_key($cambios, ['avisado_rh_en' => true]) + ['created_at' => $c->llegada_en])->save();
+                $p->forceFill(array_diff_key($cambios, ['avisado_rh_en' => true]) + ['created_at' => $c->llegada_en]
+                    + ($p->cita_en !== null && ! $p->cita_ahora ? ['cita_en' => $c->llegada_en->copy()->addMinutes(60)] : []))->save();
                 $postulaciones->reflejar($p);
+                foreach (EvaluacionCandidato::where('postulacion_id', $p->id)->get() as $e) {
+                    $cuando = $c->llegada_en->copy()->addMinutes($e->tipo === 'rh' ? 30 : 90);
+                    $e->forceFill(['entrevista_en' => $cuando, 'created_at' => $cuando, 'updated_at' => $cuando])->save();
+                }
             };
 
             // Esperando ahora, con su QR del kiosco
@@ -2262,43 +2291,43 @@ class CrearDatosDemo extends Command
                 $doc->forceFill(['empresa_id' => $empresa->id])->save();
             }
 
-            // Aprobada por RR. HH.: espera a Alimentos y Bebidas (director.demo delegó en admin.demo)
+            // Canalizada a Alimentos y Bebidas, «Ahora, está en sala»: director.demo delegó en admin.demo (el aviso le llega a él)
             $fernanda = $nuevo('Fernanda Ruiz Kú', 95, 'Alimentos y Bebidas', 'Mesero', true);
-            $mover($fernanda, ['revision', 'aprobado_rh']);
+            $canalizar($fernanda, $director, [4, 5, 4, 4, 3], 'Restaurante principal, con el capitán de meseros', null, 'Muy buena actitud de servicio.');
 
-            // Entrevista (el departamento pidió bajarlo)
+            // Entrevista con Seguridad (jefe.demo) con cita: hoy volvió a la caseta para su entrevista
             $jorge = $nuevo('Jorge Tun Pech', 60 * 26, 'Seguridad', 'Agente de Seguridad');
-            $mover($jorge, ['revision', 'aprobado_rh']);
-            $pendienteJorge = Autorizacion::where('candidato_id', $jorge->id)->where('estado', 'pendiente')->first();
-            if ($pendienteJorge) {
-                auth()->setUser($jefe);
-                $autorizaciones->responder($jefe, $pendienteJorge, 'entrevistar', 'Que suba mañana a las 10:00 con su solicitud.');
-            }
+            $canalizar($jorge, $jefe, [4, 3, 4, 5, 4], 'Caseta principal, preguntar por la jefa de seguridad', now()->addMinutes(20)->startOfMinute());
             $atras($jorge->fresh(), 1);
+            app(Postulaciones::class)->activa($jorge->fresh())?->forceFill(['cita_en' => now()->addMinutes(20)->startOfMinute()])->save();
 
-            // Seleccionada
+            // Elegida por el departamento (la entrevistó director.demo)
             $mariela = $nuevo('Mariela Canché Dzib', 60 * 50, 'Recepción', 'Recepcionista');
-            $mover($mariela, ['revision', 'entrevista', 'seleccionado']);
+            $canalizar($mariela, $director, [5, 4, 5, 4, 4], 'Lobby, mostrador de recepción', null, 'Inglés fluido, buena presentación.');
+            $evaluarDepto($mariela, $director, [5, 5, 4, 5, 4], 'elegir', 'Lista para el turno matutino.');
             $atras($mariela->fresh(), 2);
 
             // Contratado: ya es colaborador
             $ramon = $nuevo('Ramón Ek Balam', 60 * 75, 'Mantenimiento', 'Técnico de Mantenimiento');
-            $mover($ramon, ['revision', 'entrevista', 'seleccionado']);
+            $canalizar($ramon, $jefe, [4, 4, 4, 4, 4], 'Taller de mantenimiento');
+            $evaluarDepto($ramon, $jefe, [4, 5, 4, 4, 4], 'elegir', null);
             auth()->setUser($rh);
             $candidatos->contratar($rh, $ramon->fresh(), ['num_empleado' => '2001', 'nombre' => 'Ramón', 'apellido_paterno' => 'Ek', 'apellido_materno' => 'Balam']);
             $atras($ramon->fresh(), 3);
 
-            // En cartera y descartado
+            // Considerar (cartera) y rechazado
             $silvia = $nuevo('Silvia Mena Couoh', 60 * 100, 'Recepción', 'Recepcionista');
-            $mover($silvia, ['revision', 'cartera']);
+            $mover($silvia, ['revision', 'considerar'], 'Buen perfil; por ahora no hay vacante de recepción en su turno.');
             $atras($silvia->fresh(), 4);
             $pedro = $nuevo('Pedro Uicab Noh', 60 * 120, 'Alimentos y Bebidas', null);
-            $mover($pedro, ['revision', 'descartado'], 'No cubre el horario nocturno que pide la vacante.');
+            $mover($pedro, ['revision', 'rechazado'], 'No cubre el horario nocturno que pide la vacante.');
             $atras($pedro->fresh(), 5);
 
             // Los avisos de candidatos de días anteriores ya se leyeron
             Notificacion::where('referencia_tipo', 'candidato')->whereIn('referencia_id', [$jorge->id, $mariela->id, $ramon->id, $silvia->id, $pedro->id])
                 ->update(['leida_en' => now()]);
+            Notificacion::where('referencia_tipo', Entrevistas::REFERENCIA)
+                ->whereIn('referencia_id', Postulacion::whereIn('candidato_id', [$mariela->id, $ramon->id])->select('id'))->update(['leida_en' => now()]);
 
             // ---------- Visita que espera la autorización de jefe.demo ----------
             auth()->setUser($agente);
@@ -2655,4 +2684,90 @@ class CrearDatosDemo extends Command
         }
     }
     // Fin Candidatos, fase 1
+
+    /**
+     * Candidatos, fase 2: la vacante «Recepcionista» (1 plaza, «El jefe puede
+     * ver el CV») con 3 candidatos de RR. HH. en distintas etapas y sus
+     * evaluaciones de ejemplo:
+     *  - Juan Pérez Chan: canalizado a jefedepto.demo con cita hoy (y su CV en PDF);
+     *  - Laura Gómez Poot: evaluada por el departamento («Segunda entrevista»);
+     *  - Miguel Ángel Cauich Pech: en revisión.
+     * Solo la primera vez.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function entrevistasDemo(Empresa $empresa, $sedes, User $rh, User $jefa): void
+    {
+        $recepcion = Departamento::where('nombre', 'Recepción')->first();
+        if ($recepcion === null || Vacante::where('titulo', 'Recepcionista')->exists()) {
+            return;
+        }
+        $previo = auth()->user();
+        try {
+            auth()->setUser($rh);
+            $hoy = AdministradorVacantes::hoy($empresa);
+            $vacantes = app(AdministradorVacantes::class);
+            $vacante = $vacantes->crear($rh, [
+                'titulo' => 'Recepcionista', 'puesto_id' => Puesto::where('nombre', 'Recepcionista')->value('id'), 'departamento_id' => $recepcion->id, 'plazas' => 1,
+                'jefe_ve_cv' => '1', 'todas_las_sedes' => '0', 'sedes' => [$sedes['CEN']->id], 'tipo_contrato' => 'indeterminado', 'jornada' => 'completa',
+                'turno_id' => Turno::where('nombre', 'Vespertino')->value('id'), 'sueldo_min' => '10000', 'sueldo_max' => '11500',
+                'requisitos' => "Bachillerato terminado\nInglés intermedio\nExperiencia en atención a clientes", 'prestaciones' => "Prestaciones de ley\nComedor para empleados",
+                'escolaridad_minima' => 'bachillerato', 'experiencia' => '6 meses en atención a clientes', 'fecha_cierre' => now()->addDays(20)->format('Y-m-d'),
+            ]);
+            $vacantes->cambiarEstado($rh, $vacante, 'publicada', null, $hoy);
+
+            $candidatos = app(AdministradorCandidatos::class);
+            $entrevistas = app(Entrevistas::class);
+            $calificar = fn (array $estrellas) => collect($entrevistas->criterios($empresa->id))->values()
+                ->mapWithKeys(fn ($nombre, $i) => [AjustesRecepcion::claveCriterio($nombre) => (string) $estrellas[$i % count($estrellas)]])->all();
+            $alta = fn (string $nombre, string $telefono, string $correo, string $nivel, array $experiencia, string $pretension) => $candidatos->crear($rh, [
+                'nombre_completo' => $nombre, 'telefono' => $telefono, 'correo' => $correo, 'sede_id' => $sedes['CEN']->id, 'vacante_id' => $vacante->id,
+                'departamento_id' => $recepcion->id, 'puesto_id' => $vacante->puesto_id, 'acepta_privacidad' => '1', 'disponibilidad' => 'inmediata',
+                'escolaridad' => [['nivel' => $nivel, 'institucion' => 'CBTIS 111', 'documento' => 'certificado']], 'experiencia' => [$experiencia],
+                'idiomas' => 'Español, inglés intermedio', 'pretension' => $pretension, 'rolar_turnos' => '1',
+            ], '10.0.0.15');
+            $zona = app(HoraLocal::class)->zona();
+            $citaHoy = now()->setTimezone($zona)->setTime(18, 0);
+            $citaHoy = $citaHoy->isFuture() ? $citaHoy->utc() : now()->addMinutes(30)->startOfMinute();
+
+            // Juan: canalizado a la jefa de Recepción, cita hoy; su CV en PDF (la vacante deja que el jefe lo vea)
+            $juan = $alta('Juan Pérez Chan', '9984560101', 'juan.perez@correo.mx', 'bachillerato',
+                ['empresa' => 'Hotel Sol Caribe', 'puesto' => 'Botones', 'ingreso' => '2022-01', 'salida' => '2025-06'], '10500');
+            $candidatos->cambiarEtapa($rh, $juan->fresh(), 'revision');
+            $entrevistas->evaluarRh($rh, $juan->fresh(), ['criterios' => $calificar([4, 4, 5, 4, 3]), 'resultado' => 'canalizar',
+                'comentario' => 'Buena presentación y trato amable; pide sueldo un poco arriba del rango.']);
+            $entrevistas->canalizar($rh, $juan->fresh(), ['vacante_id' => $vacante->id, 'departamento_id' => $recepcion->id, 'entrevistador_id' => $jefa->id,
+                'cuando' => 'cita', 'fecha' => $citaHoy->copy()->setTimezone($zona)->format('Y-m-d'), 'hora' => $citaHoy->copy()->setTimezone($zona)->format('H:i'),
+                'lugar' => 'Oficina de Recepción, planta baja']);
+            $pdf = "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\n%%EOF\n";
+            $ruta = 'candidatos/'.$empresa->id.'/'.$juan->id.'/'.Str::uuid().'.pdf';
+            Storage::disk('local')->put($ruta, $pdf);
+            $doc = new CandidatoDocumento(['candidato_id' => $juan->id, 'tipo' => 'cv', 'nombre_original' => 'CV Juan Pérez.pdf', 'ruta' => $ruta,
+                'mime' => 'application/pdf', 'bytes' => strlen($pdf), 'origen' => 'rh']);
+            $doc->forceFill(['empresa_id' => $empresa->id])->save();
+
+            // Laura: la jefa ya la entrevistó y pidió una segunda entrevista
+            $laura = $alta('Laura Gómez Poot', '9984560102', 'laura.gomez@correo.mx', 'licenciatura',
+                ['empresa' => 'Hotel Riviera', 'puesto' => 'Recepcionista', 'ingreso' => '2021-03', 'salida' => '2025-09'], '11000');
+            $candidatos->cambiarEtapa($rh, $laura->fresh(), 'revision');
+            $entrevistas->evaluarRh($rh, $laura->fresh(), ['criterios' => $calificar([5, 5, 4, 4, 4]), 'resultado' => 'canalizar',
+                'comentario' => 'Experiencia en recepción y buen inglés.']);
+            $entrevistas->canalizar($rh, $laura->fresh(), ['vacante_id' => $vacante->id, 'departamento_id' => $recepcion->id, 'entrevistador_id' => $jefa->id,
+                'cuando' => 'ahora', 'lugar' => 'Oficina de Recepción']);
+            auth()->setUser($jefa);
+            $entrevistas->evaluarDepartamento($jefa, app(Postulaciones::class)->activa($laura->fresh()), ['criterios' => $calificar([5, 4, 4, 3, 4]),
+                'resultado' => 'segunda_entrevista', 'comentario' => 'Me gustó; quiero que la conozca el gerente de noche antes de decidir.']);
+            auth()->setUser($rh);
+
+            // Miguel: en revisión (falta su entrevista de RR. HH.)
+            $miguel = $alta('Miguel Ángel Cauich Pech', '9984560103', 'miguel.cauich@correo.mx', 'bachillerato',
+                ['empresa' => 'Plaza Las Américas', 'puesto' => 'Cajero', 'ingreso' => '2023-05', 'salida' => null], '9500');
+            $candidatos->cambiarEtapa($rh, $miguel->fresh(), 'revision');
+
+            // Lo de RR. HH. ya se leyó; el aviso de la entrevista de Juan sigue sin leer para la jefa
+            Notificacion::where('referencia_tipo', 'candidato')->whereIn('referencia_id', [$juan->id, $laura->id, $miguel->id])->update(['leida_en' => now()]);
+        } finally {
+            $previo ? auth()->setUser($previo) : auth()->forgetUser();
+        }
+    }
 }

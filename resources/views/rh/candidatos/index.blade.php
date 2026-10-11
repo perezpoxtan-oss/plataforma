@@ -91,6 +91,10 @@
         <nav class="pildoras-pases" aria-label="Etapas">
             <a href="{{ route('candidatos.index', $base) }}" class="btn-pill-tipo {{ $filtros['etapa'] === '' && ! $filtros['revisar'] ? 'active' : '' }}">Todos ({{ $conteos->sum() }})</a>
             <a href="{{ route('candidatos.index', $base + ['etapa' => 'en_proceso']) }}" class="btn-pill-tipo {{ $filtros['etapa'] === 'en_proceso' && ! $filtros['revisar'] ? 'active' : '' }}">En proceso ({{ $enProceso }})</a>
+            @php $porEntrevistar = collect(Candidato::POR_ENTREVISTAR)->sum(fn ($e) => (int) ($conteos[$e] ?? 0)); @endphp
+            @if ($porEntrevistar > 0 || $filtros['etapa'] === 'por_entrevistar')
+                <a href="{{ route('candidatos.index', $base + ['etapa' => 'por_entrevistar']) }}" class="btn-pill-tipo {{ $filtros['etapa'] === 'por_entrevistar' ? 'active' : '' }}"><i class="bi bi-chat-square-text me-1" aria-hidden="true"></i>Por entrevistar ({{ $porEntrevistar }})</a>
+            @endif
             @if ($porRevisar > 0 || $filtros['revisar'])
                 <a href="{{ route('candidatos.index', $base + ['revisar' => 1]) }}" class="btn-pill-tipo {{ $filtros['revisar'] ? 'active' : '' }}"><i class="bi bi-phone me-1" aria-hidden="true"></i>Solicitudes por revisar ({{ $porRevisar }})</a>
             @endif

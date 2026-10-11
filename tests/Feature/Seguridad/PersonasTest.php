@@ -453,10 +453,11 @@ class PersonasTest extends TestCase
             // Ni las altas que la caseta registró desde Operación (ADR-0006)
             ->reject(fn ($p) => $p->origen_alta !== null)->values();
 
-        $this->assertCount(12, $todas);
+        // Candidatos fase 2: los 3 candidatos de «Recepcionista» que capturó RR. HH. también quedan en el padrón
+        $this->assertCount(15, $todas);
         $this->assertSame(['Raúl Domínguez Can'], $todas->where('activo', false)->pluck('nombre_completo')->values()->all());
-        $this->assertSame(['contratista' => 3, 'proveedor' => 3, 'visitante' => 6], $todas->countBy('tipo')->sortKeys()->all());
-        $this->assertSame(['familiar' => 1, 'general' => 9, 'prospecto_rrhh' => 2], $todas->countBy('categoria')->sortKeys()->all());
+        $this->assertSame(['contratista' => 3, 'proveedor' => 3, 'visitante' => 9], $todas->countBy('tipo')->sortKeys()->all());
+        $this->assertSame(['familiar' => 1, 'general' => 9, 'prospecto_rrhh' => 5], $todas->countBy('categoria')->sortKeys()->all());
         $folios = $todas->pluck('folio_identificacion')->filter();
         $this->assertCount(11, $folios->unique());
         foreach ($folios as $folio) {

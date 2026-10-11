@@ -18,7 +18,7 @@ Lección 36. Módulo nuevo `vacantes` (área Recursos Humanos, menú Recursos Hu
 
 ## Tablas
 
-- **`vacantes`**: `empresa_id`, `codigo` (10 caracteres al azar, único: dirección pública), `titulo`, `puesto_id`, `departamento_id`, `plazas`, `todas_las_sedes`, `tipo_contrato`, `jornada`, `turno_id`, `horario`, `sueldo_min`/`sueldo_max`/`sueldo_periodo`/`sueldo_a_tratar`, `descripcion`, `requisitos` y `prestaciones` (JSON, uno por renglón, máx. 15), `escolaridad_minima`, `experiencia`, `fecha_publicacion`, `fecha_cierre`, contacto (`contacto_nombre`, `contacto_telefono`, `contacto_correo`), `estado`, `cierre_motivo`, `publicada_en`, `cerrada_en`, auditoría.
+- **`vacantes`**: `empresa_id`, `codigo` (10 caracteres al azar, único: dirección pública), `titulo`, `puesto_id`, `departamento_id`, `plazas` (por omisión 1; al elegir el jefe a tantas personas como plazas, las demás postulaciones de la vacante con el departamento pasan a «considerar»), `jefe_ve_cv` (fase 2 de candidatos: quien entrevista ve el CV en PDF; apagado por omisión, migración `2026_10_20_000400_vacantes_jefe_ve_cv.php`), `todas_las_sedes`, `tipo_contrato`, `jornada`, `turno_id`, `horario`, `sueldo_min`/`sueldo_max`/`sueldo_periodo`/`sueldo_a_tratar`, `descripcion`, `requisitos` y `prestaciones` (JSON, uno por renglón, máx. 15), `escolaridad_minima`, `experiencia`, `fecha_publicacion`, `fecha_cierre`, contacto (`contacto_nombre`, `contacto_telefono`, `contacto_correo`), `estado`, `cierre_motivo`, `publicada_en`, `cerrada_en`, auditoría.
 - **`sede_vacante`**: sedes de la vacante (si no es de todas).
 - **`candidatos.vacante_id`**: vacante a la que aplica (la columna de texto `vacante` se conserva).
 - **`empresas.bolsa_slug`**: `nombre-de-la-empresa-xxxxxx` (6 al azar). Ajustes en `empresas.preferencias.bolsa_trabajo`: `activa`, `presentacion`, `indexar`.
@@ -65,7 +65,8 @@ Borrador ─▶ Publicada ⇄ Pausada
 
 | Método y ruta | Permiso | Qué hace |
 |---|---|---|
-| `GET /vacantes?q=&estado=&sede=&departamento=` | `vacantes.ver` | Fichas con contador por estado y candidatos por vacante (enlace a `/candidatos?vacante=`) |
+| `GET /vacantes?q=&estado=&sede=&departamento=` | `vacantes.ver` | Fichas con contador por estado y candidatos y plazas por vacante (enlace a la tabla de candidatos) |
+| `GET /vacantes/{v}/candidatos` | `vacantes.ver` + (`candidatos.ver` o `candidatos.evaluar`) | Fase 2: «Candidatos de esta vacante» (nombre, etapa, promedio RR. HH., promedio departamento, resultado, entrevistador; plazas y cubiertas). RR. HH.: todas las postulaciones de sus sedes (`AdministradorCandidatos::limitar`); quien entrevista: solo las suyas (`Entrevistas::limitar`) |
 | `POST /vacantes` (`publicar=1` → «Guardar y publicar») | `vacantes.crear` | Alta (borrador) |
 | `PUT /vacantes/{v}` | `vacantes.editar` + alcance | Editar (un solo diálogo que se llena con `data-accion="editar-registro"`) |
 | `PATCH /vacantes/{v}/estado` | `vacantes.editar` + alcance | Publicar, Pausar, Reanudar, Cerrar (motivo), Reabrir |
@@ -80,6 +81,7 @@ Borrador ─▶ Publicada ⇄ Pausada
 - **Caseta**: «Viene como candidato» → lista «¿A qué vacante viene?» con las vigentes (acotadas a la sede elegida con el mismo filtro `data-depto-recepcion`). El servidor revisa que sea vigente y de esa sede; si la caseta no eligió puesto o departamento, se toman de la vacante.
 - **Candidatos**: filtro por vacante, «Vacante: …» en la ficha y en la lista, columna «Vacante» en el CSV; RR. HH. liga o cambia la vacante en «Editar solicitud» (publicadas o en pausa; la que ya tenía se conserva aunque esté cerrada).
 - **Configuración**: sección «Bolsa de trabajo en internet» (misma vista parcial).
+- **Entrevistas (fase 2)**: «El jefe puede ver el CV» abre `GET /entrevistas/{p}/cv`; las plazas deciden cuándo se cubre la vacante (ver [candidatos.md](candidatos.md)).
 
 ## Auditoría
 
@@ -91,4 +93,4 @@ SEGCAT no tenía vacantes: se pegaban hojas impresas a mano en la entrada, la ca
 
 ## Pendiente (no implementado)
 
-«Solicitud de vacante» del jefe de departamento con aprobación de RR. HH., y que el jefe vea solo las de su departamento: requiere un rol de jefe de departamento que hoy no existe en las plantillas (los responsables están en `departamento_responsables`, ligados a autorizaciones). Hoy el jefe de departamento la ve si su rol tiene `vacantes.ver`.
+«Solicitud de vacante» del jefe de departamento con aprobación de RR. HH., y que el jefe vea solo las de su departamento: requiere un rol de jefe de departamento que hoy no existe en las plantillas (los responsables están en `departamento_responsables`, ligados a autorizaciones). Hoy el jefe de departamento la ve si su rol tiene `vacantes.ver`. Cerrar la vacante como «Cubierta» al cubrir las plazas sigue siendo manual (RR. HH.).

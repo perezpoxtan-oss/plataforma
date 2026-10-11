@@ -22,56 +22,81 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * de la postulación activa (manda la postulación; ver
  * App\Services\Candidatos\Postulaciones).
  *
- * Etapas (ver TRANSICIONES):
- *   Registrado → En revisión RR. HH. → Aprobado por RR. HH. (enviado al departamento)
- *   → Entrevista → Seleccionado → Contratado
- *   y en cualquier momento antes de contratar: Descartado o En cartera.
+ * Etapas de la postulación (fase 2, ver TRANSICIONES y ADR-0009):
+ *   Esperando → En revisión RR. HH. → Entrevista RR. HH. → Entrevista con el
+ *   departamento (canalizado, con cita y entrevistador) → Evaluado por el
+ *   departamento → Elegido (lo decide el jefe) → Contratado
+ *   y a un lado: Considerar / cartera, Rechazado (con motivo) y No se presentó.
  */
 class Candidato extends Model
 {
     use PerteneceAEmpresa, RegistraAutor;
 
     public const ETAPAS = [
-        'registrado' => 'Registrado',
+        'registrado' => 'Esperando',
         'revision' => 'En revisión RR. HH.',
-        'aprobado_rh' => 'Aprobado por RR. HH.',
-        'entrevista' => 'Entrevista',
-        'seleccionado' => 'Seleccionado',
+        'entrevista_rh' => 'Entrevista RR. HH.',
+        'canalizado' => 'Entrevista con el departamento',
+        'evaluado' => 'Evaluado por el departamento',
+        'elegido' => 'Elegido',
         'contratado' => 'Contratado',
-        'cartera' => 'En cartera',
-        'descartado' => 'Descartado',
+        'considerar' => 'Considerar / cartera',
+        'rechazado' => 'Rechazado',
+        'no_se_presento' => 'No se presentó',
     ];
 
     /** Color de la pastilla de cada etapa. */
     public const COLORES = [
-        'registrado' => 'gris', 'revision' => 'azul', 'aprobado_rh' => 'indigo', 'entrevista' => 'ambar',
-        'seleccionado' => 'verde', 'contratado' => 'esmeralda', 'cartera' => 'cian', 'descartado' => 'rojo',
+        'registrado' => 'gris', 'revision' => 'azul', 'entrevista_rh' => 'azul', 'canalizado' => 'indigo', 'evaluado' => 'ambar',
+        'elegido' => 'verde', 'contratado' => 'esmeralda', 'considerar' => 'cian', 'rechazado' => 'rojo', 'no_se_presento' => 'rojo',
     ];
 
+    /** Avance normal (la línea de la ficha); las demás son laterales. */
+    public const RUTA = ['registrado', 'revision', 'entrevista_rh', 'canalizado', 'evaluado', 'elegido', 'contratado'];
+
+    /** Etapas laterales: fuera del avance normal. */
+    public const LATERALES = ['considerar', 'rechazado', 'no_se_presento'];
+
     /**
-     * A qué etapas se puede pasar desde cada una. «Contratado» solo con el
-     * botón Contratar (crea el colaborador); la respuesta del departamento
-     * mueve «Aprobado por RR. HH.» a «Entrevista» o a «En cartera».
+     * A qué etapas se puede pasar desde cada una. Cada cambio tiene su botón:
+     *  - Atender, Entrevistar, Considerar y Rechazar: Recursos Humanos (cambiarEtapa);
+     *  - Canalizar al departamento, Reprogramar, Segunda entrevista y No se
+     *    presentó: Recursos Humanos con cita y entrevistador (Entrevistas);
+     *  - Evaluado y Elegido: solo el entrevistador asignado o su delegado;
+     *  - Contratado: el botón Contratar (crea el colaborador).
      */
     public const TRANSICIONES = [
-        'registrado' => ['revision', 'cartera', 'descartado'],
-        'revision' => ['aprobado_rh', 'entrevista', 'cartera', 'descartado'],
-        'aprobado_rh' => ['entrevista', 'revision', 'cartera', 'descartado'],
-        'entrevista' => ['seleccionado', 'cartera', 'descartado'],
-        'seleccionado' => ['entrevista', 'cartera', 'descartado'],
-        'cartera' => ['revision', 'descartado'],
-        'descartado' => ['revision'],
+        'registrado' => ['revision', 'considerar', 'rechazado'],
+        'revision' => ['entrevista_rh', 'considerar', 'rechazado'],
+        'entrevista_rh' => ['canalizado', 'considerar', 'rechazado'],
+        'canalizado' => ['canalizado', 'evaluado', 'elegido', 'no_se_presento', 'considerar', 'rechazado'],
+        'evaluado' => ['canalizado', 'considerar', 'rechazado'],
+        'elegido' => ['contratado', 'rechazado'],
+        'no_se_presento' => ['canalizado', 'considerar', 'rechazado'],
+        'considerar' => ['revision', 'rechazado'],
+        'rechazado' => ['revision'],
         'contratado' => [],
     ];
 
+    /** Cambios que Recursos Humanos hace con el botón de etapa (los demás tienen su propio formulario). */
+    public const MANUALES = ['revision', 'entrevista_rh', 'considerar', 'rechazado'];
+
     /** Texto del botón que lleva a cada etapa. */
     public const BOTONES_ETAPA = [
-        'revision' => 'Atender', 'aprobado_rh' => 'Aprobar y enviar al departamento', 'entrevista' => 'Pasar a entrevista',
-        'seleccionado' => 'Seleccionar', 'cartera' => 'Guardar en cartera', 'descartado' => 'Descartar',
+        'revision' => 'Atender', 'entrevista_rh' => 'Entrevistar', 'canalizado' => 'Canalizar al departamento',
+        'no_se_presento' => 'No se presentó', 'contratado' => 'Contratar', 'considerar' => 'Considerar', 'rechazado' => 'Rechazar',
     ];
 
+    /** «Por entrevistar (RR. HH.)» (Mis pendientes): atendidos que esperan su entrevista de filtro o su canalización. */
+    public const POR_ENTREVISTAR = ['revision', 'entrevista_rh'];
+
     /** Etapas en las que el candidato sigue «en proceso». */
-    public const ABIERTAS = ['registrado', 'revision', 'aprobado_rh', 'entrevista', 'seleccionado'];
+    public const ABIERTAS = ['registrado', 'revision', 'entrevista_rh', 'canalizado', 'evaluado', 'elegido', 'no_se_presento'];
+
+    /** Valores de antes de la fase 2 → etapa nueva (los usa la migración de etapas). */
+    public const ETAPAS_ANTERIORES = [
+        'aprobado_rh' => 'canalizado', 'entrevista' => 'canalizado', 'seleccionado' => 'elegido', 'cartera' => 'considerar', 'descartado' => 'rechazado',
+    ];
 
     public const ESCOLARIDAD = [
         'primaria' => 'Primaria', 'secundaria' => 'Secundaria', 'bachillerato' => 'Bachillerato / Preparatoria', 'tecnico' => 'Carrera técnica',
@@ -204,12 +229,6 @@ class Candidato extends Model
     public function autorizaciones(): HasMany
     {
         return $this->hasMany(Autorizacion::class)->orderByDesc('id');
-    }
-
-    /** La solicitud al departamento más reciente. */
-    public function ultimaAutorizacion(): HasOne
-    {
-        return $this->hasOne(Autorizacion::class)->latestOfMany();
     }
 
     public function enlaces(): HasMany

@@ -34,6 +34,13 @@ class PermisoController extends Controller
     /** Columnas fijas, como en SEGCAT; el resto va en "Otras acciones". */
     public const BASICAS = ['ver', 'crear', 'editar', 'eliminar'];
 
+    /**
+     * Acciones que NO implican «Ver» el módulo (candidatos, fase 2): quien
+     * entrevista evalúa y elige en su pantalla Entrevistar sin ver la lista ni
+     * los CV completos de Candidatos.
+     */
+    public const SIN_VER = ['candidatos.evaluar'];
+
     public function __construct(
         private readonly AdministradorRoles $administrador,
         private readonly Autorizador $autorizador,
@@ -120,8 +127,9 @@ class PermisoController extends Controller
                 continue;
             }
 
-            // Cualquier acción implica poder ver el módulo
-            if (! in_array('ver', $acciones, true) && in_array('ver', $catalogo[$modulo], true)) {
+            // Cualquier acción implica poder ver el módulo (salvo las de SIN_VER)
+            $implicanVer = array_filter($acciones, fn ($a) => ! in_array("{$modulo}.{$a}", self::SIN_VER, true));
+            if ($implicanVer !== [] && ! in_array('ver', $acciones, true) && in_array('ver', $catalogo[$modulo], true)) {
                 $acciones[] = 'ver';
             }
 

@@ -9,7 +9,7 @@
     $textoAviso = $ajustesRecepcion->textoPrivacidad($empresa);
 @endphp
 <section class="tarjeta p-4" id="recepcion" aria-labelledby="t-recepcion">
-    <h2 id="t-recepcion" class="h5 fw-bold"><i class="bi bi-shield-lock me-2 text-success" aria-hidden="true"></i>Recepción de candidatos: aviso de privacidad, paso a RR. HH. y kiosco</h2>
+    <h2 id="t-recepcion" class="h5 fw-bold"><i class="bi bi-shield-lock me-2 text-success" aria-hidden="true"></i>Recepción de candidatos: aviso de privacidad, paso a RR. HH., kiosco y criterios de entrevista</h2>
     <p class="small text-muted">El candidato debe marcar «Acepto el aviso de privacidad» antes de guardar su CV (en el kiosco o con Recursos Humanos). Se guarda cuándo, desde qué equipo y la versión exacta del texto que aceptó.</p>
     @if ($ajustesRecepcion->esBorrador($empresa))
         <div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i><strong>El texto es un borrador.</strong> Pide a tu abogado que lo revise y escribe aquí el texto definitivo (quita la marca «{{ \App\Services\Recepcion\AjustesRecepcion::MARCA_BORRADOR }}»).</div>
@@ -39,6 +39,22 @@
                 <input type="number" id="kiosco_usos" name="kiosco_usos" class="campo" min="1" max="10" value="{{ old('kiosco_usos', $ajustesRecepcion->usosKiosco($empresa)) }}" @disabled(! $puedeGuardarRecepcion)>
             </div>
         </div>
+        {{-- Candidatos fase 2: criterios con los que se califican las entrevistas (RR. HH. y departamento) --}}
+        @php
+            $criteriosActuales = $ajustesRecepcion->criterios($empresa);
+            $criteriosForm = old('criterios', $criteriosActuales);
+            $criteriosForm = array_pad(array_slice(is_array($criteriosForm) ? array_values($criteriosForm) : [], 0, \App\Services\Recepcion\AjustesRecepcion::MAX_CRITERIOS), \App\Services\Recepcion\AjustesRecepcion::MAX_CRITERIOS, '');
+        @endphp
+        <fieldset class="bloque-cv mt-3" id="criterios-entrevista">
+            <legend><i class="bi bi-star-half me-2" aria-hidden="true"></i>Criterios para calificar las entrevistas</legend>
+            <p class="campo-ayuda mt-0">Recursos Humanos y el jefe califican cada criterio de 1 a 5 estrellas. Hasta {{ \App\Services\Recepcion\AjustesRecepcion::MAX_CRITERIOS }} criterios; deja vacío el renglón que no uses. Si cambias la lista, las evaluaciones anteriores conservan sus criterios.</p>
+            @error('criterios')<p class="texto-error-rh">{{ $message }}</p>@enderror
+            <ol class="lista-criterios">
+                @foreach ($criteriosForm as $i => $criterio)
+                    <li><input type="text" name="criterios[]" class="campo" maxlength="80" value="{{ $criterio }}" aria-label="Criterio {{ $i + 1 }}" @disabled(! $puedeGuardarRecepcion)></li>
+                @endforeach
+            </ol>
+        </fieldset>
         @if ($puedeGuardarRecepcion)
             <button type="submit" class="btn-verde btn-accion-rh">Guardar ajustes de Recepción</button>
         @endif

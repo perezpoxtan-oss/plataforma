@@ -80,6 +80,7 @@ class Postulaciones
         $p->forceFill(array_merge(['empresa_id' => $c->empresa_id, 'creado_por' => $c->creado_por, 'actualizado_por' => $c->actualizado_por],
             $c->only(array_diff(self::ESPEJO, ['sede_id']))));
         $p->etapa ??= 'registrado';
+        $p->etapa = Candidato::ETAPAS_ANTERIORES[$p->etapa] ?? $p->etapa; // fichas con etapas de antes de la fase 2
         $p->save();
 
         return $p;

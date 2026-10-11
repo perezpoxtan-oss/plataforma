@@ -146,14 +146,14 @@ class CandidatosFase1Test extends TestCase
         $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('titulo', 'Volvió a la caseta: Karla Pérez Uc')->exists()));
 
         // Lo descartan y vuelve otra vez: nueva postulación en la misma ficha
-        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'descartado', 'comentario' => 'No cubre el horario'])->assertSessionHas('ok');
+        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'rechazado', 'comentario' => 'No cubre el horario'])->assertSessionHas('ok');
         $this->salida($accesos[1]);
         $vacante = $this->vacante();
         $this->caseta(['persona_decision' => 'misma', 'vacante_id' => $vacante->id])->assertSessionHas('ok');
         $this->assertSame(1, $this->enEmpresa(fn () => Candidato::count()));
         $postulaciones = $this->enEmpresa(fn () => Postulacion::where('candidato_id', $c->id)->orderBy('id')->get());
         $this->assertCount(2, $postulaciones);
-        $this->assertSame(['descartado', 'registrado'], $postulaciones->pluck('etapa')->all());
+        $this->assertSame(['rechazado', 'registrado'], $postulaciones->pluck('etapa')->all());
         $this->assertSame($vacante->id, $postulaciones[1]->vacante_id);
         // La ficha refleja la postulación activa (la nueva)
         $c->refresh();
@@ -479,7 +479,7 @@ class CandidatosFase1Test extends TestCase
             $a = new Acceso(['sede_id' => $this->centro->id, 'tipo' => 'visitante', 'nombre' => 'PEDRO UICAB', 'motivo_visita' => 'rh', 'entrada_at' => now()]);
             $a->forceFill(['estado' => 'finalizado'])->save();
             $c = new Candidato(['sede_id' => $this->centro->id, 'nombre_completo' => 'Pedro Uicab', 'acceso_id' => $a->id, 'vacante' => 'Cocinero', 'origen' => 'caseta']);
-            $c->forceFill(['etapa' => 'descartado', 'motivo_descarte' => 'Sin experiencia', 'vacante_id' => $vacante->id, 'revision_en' => now()->subDay(),
+            $c->forceFill(['etapa' => 'rechazado', 'motivo_descarte' => 'Sin experiencia', 'vacante_id' => $vacante->id, 'revision_en' => now()->subDay(),
                 'decision_en' => now(), 'decision_por' => $this->rh->id])->save();
             $tramite = new Acceso(['sede_id' => $this->centro->id, 'tipo' => 'visitante', 'nombre' => 'MARIO EK', 'motivo_visita' => 'rh', 'entrada_at' => now()]);
             $tramite->save();
@@ -494,7 +494,7 @@ class CandidatosFase1Test extends TestCase
         $migracion->up();
 
         $p = $this->enEmpresa(fn () => Postulacion::where('candidato_id', $ficha->id)->sole());
-        $this->assertSame(['descartado', 'Sin experiencia', $vacante->id, 'Cocinero', 'caseta', $this->rh->id, $this->centro->id],
+        $this->assertSame(['rechazado', 'Sin experiencia', $vacante->id, 'Cocinero', 'caseta', $this->rh->id, $this->centro->id],
             [$p->etapa, $p->motivo_descarte, $p->vacante_id, $p->vacante, $p->origen, $p->decision_por, $p->sede_id]);
         $this->assertNotNull($p->revision_en);
         $acceso->refresh();
@@ -514,7 +514,7 @@ class CandidatosFase1Test extends TestCase
         $this->caseta()->assertSessionHas('ok');
         $c = $this->enEmpresa(fn () => Candidato::sole());
         $this->salida($this->enEmpresa(fn () => Acceso::sole()));
-        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'cartera'])->assertSessionHas('ok');
+        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'considerar', 'comentario' => 'Para la temporada alta'])->assertSessionHas('ok');
         $this->caseta(['persona_decision' => 'misma'])->assertSessionHas('ok');
 
         $nueva = Auditoria::where('evento', 'candidatos.postulacion_creada')->sole();
@@ -537,7 +537,7 @@ class CandidatosFase1Test extends TestCase
             $jorge = Candidato::where('nombre_completo', 'Jorge Tun Pech')->firstOrFail();
             $this->assertSame(2, Acceso::whereIn('postulacion_id', Postulacion::where('candidato_id', $jorge->id)->select('id'))->count()
                 + (Acceso::whereKey($jorge->getOriginal('acceso_id'))->whereNull('postulacion_id')->count()));
-            $this->assertSame('entrevista', $jorge->etapa);
+            $this->assertSame('canalizado', $jorge->etapa);
             $silvia = Candidato::where('nombre_completo', 'Silvia Mena Couoh')->firstOrFail();
             $this->assertSame(2, Postulacion::where('candidato_id', $silvia->id)->count());
             $martha = Candidato::where('nombre_completo', 'Martha Ek Chan')->firstOrFail();

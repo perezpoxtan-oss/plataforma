@@ -31,6 +31,11 @@ class CentroNotificaciones
         'autorizacion_recepcion' => ['bi-person-check-fill', 'alerta'],
         'autorizacion_respuesta' => ['bi-patch-check-fill', 'exito'],
         'delegacion' => ['bi-person-gear', 'info'],
+        // Candidatos, fase 2
+        'entrevista_asignada' => ['bi-calendar-event', 'alerta'],
+        'entrevista_cambio' => ['bi-calendar-x', 'info'],
+        'entrevista_llegada' => ['bi-person-check-fill', 'alerta'],
+        'evaluacion_departamento' => ['bi-clipboard-check', 'exito'],
     ];
 
     public function __construct(private readonly HoraLocal $hora) {}

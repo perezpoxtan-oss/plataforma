@@ -4018,3 +4018,58 @@ a.btn-alto-contraste.btn-manual:hover, a.btn-alto-contraste.btn-manual.activo { 
     .manual-contenido a { color: inherit; text-decoration: none; }
 }
 /* Fin Manual */
+/* ==========================================================================
+   Candidatos, fase 2: entrevistas, evaluaciones (estrellas) y canalización
+   ========================================================================== */
+.aviso-etapa-lateral.etapa-considerar { background: #ecfeff; color: #0e7490; }
+.aviso-etapa-lateral.etapa-rechazado, .aviso-etapa-lateral.etapa-no_se_presento { background: #fef2f2; color: #b91c1c; }
+/* Estrellas: radios con etiqueta (teclado: Tab llega al grupo y las flechas cambian la calificación) */
+.criterio-estrellas { border: none; padding: 0; margin: 0 0 0.6rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 0.75rem; }
+.criterio-estrellas legend { float: left; width: auto; font-size: 0.9rem; font-weight: 700; margin: 0; padding: 0; flex: 1 1 200px; }
+.estrellas { display: inline-flex; gap: 0.1rem; }
+.estrellas input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.estrellas label { cursor: pointer; font-size: 1.6rem; line-height: 1; color: #cbd5e1; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; }
+.estrellas input:checked + label, .estrellas label:has(~ input:checked) { color: #f59e0b; }
+.estrellas:hover label { color: #cbd5e1; }
+.estrellas:hover label:hover, .estrellas:hover label:has(~ label:hover) { color: #fbbf24; }
+.estrellas input:focus-visible + label { outline: 3px solid #2563eb; outline-offset: 1px; }
+.estrellas-lectura { color: #f59e0b; white-space: nowrap; }
+.estrellas-lectura .bi-star { color: #cbd5e1; }
+.opcion-resultado.resultado-rechazar:has(input:checked) { border-color: #dc2626; background: #fef2f2; color: #7f1d1d; }
+.opcion-resultado.resultado-considerar:has(input:checked), .opcion-resultado.resultado-segunda_entrevista:has(input:checked) { border-color: #0891b2; background: #ecfeff; color: #164e63; }
+/* Evaluaciones y cita (ficha y Entrevistar) */
+.linea-entrevistas { margin-bottom: 1rem; }
+.linea-tiempo-entrevistas { list-style: none; padding: 0 0 0 1rem; margin: 0; border-left: 2px solid var(--borde); display: flex; flex-direction: column; gap: 0.75rem; }
+.linea-tiempo-entrevistas > li { position: relative; padding-left: 0.5rem; }
+.linea-tiempo-entrevistas > li::before { content: ''; position: absolute; left: -1.42rem; top: 0.45rem; width: 10px; height: 10px; border-radius: 50%; background: #2563eb; }
+.evaluacion-entrevista { border: 1px solid var(--borde); border-radius: 14px; padding: 0.75rem 0.9rem; background: #fff; margin-bottom: 0.6rem; }
+.evaluacion-entrevista.tipo-departamento { border-color: #c7d2fe; background: #f8faff; }
+.promedio-evaluacion { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 800; color: #92400e; background: #fef3c7; border-radius: 999px; padding: 0.15rem 0.6rem; font-size: 0.8rem; }
+.pastilla-resultado { border-radius: 999px; padding: 0.15rem 0.65rem; font-size: 0.75rem; font-weight: 800; background: #f1f5f9; color: #334155; }
+.pastilla-resultado.resultado-canalizar, .pastilla-resultado.resultado-elegir { background: #dcfce7; color: #15803d; }
+.pastilla-resultado.resultado-considerar, .pastilla-resultado.resultado-segunda_entrevista { background: #cffafe; color: #0e7490; }
+.pastilla-resultado.resultado-rechazar { background: #fee2e2; color: #b91c1c; }
+.criterios-evaluados { list-style: none; padding: 0; margin: 0.35rem 0; font-size: 0.85rem; }
+.criterios-evaluados li { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.15rem 0; border-bottom: 1px dashed var(--borde); }
+.comentario-evaluacion { font-size: 0.88rem; font-style: italic; color: #334155; }
+.cita-entrevista { border: 1px solid #bfdbfe; background: #eff6ff; color: #1e3a8a; border-radius: 14px; padding: 0.75rem 0.9rem; font-size: 0.88rem; }
+.cita-entrevista.no-se-presento { border-color: #fecaca; background: #fef2f2; color: #7f1d1d; }
+/* Mis entrevistas */
+.fila-entrevista { display: flex; align-items: center; gap: 0.9rem; padding: 0.8rem 1rem; margin-bottom: 0.6rem; text-decoration: none; color: inherit; flex-wrap: wrap; }
+.fila-entrevista:hover { border-color: #93c5fd; }
+.fila-entrevista .btn-etapa { display: inline-flex; align-items: center; justify-content: center; }
+.cita-fila { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 120px; font-weight: 800; font-size: 0.85rem; color: #1e3a8a; background: #eff6ff; border-radius: 12px; padding: 0.5rem; text-align: center; }
+.cita-fila.ahora { color: #15803d; background: #f0fdf4; }
+.cita-fila.pasada { color: #92400e; background: #fffbeb; }
+.cita-fila i { font-size: 1.2rem; }
+.tabla-candidatos-vacante td, .tabla-candidatos-vacante th { white-space: nowrap; }
+.tabla-candidatos-vacante td:first-child { white-space: normal; min-width: 160px; }
+.resumen-plazas { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+@media (max-width: 575.98px) {
+    .fila-entrevista .btn-etapa { width: 100%; justify-content: center; }
+    .cita-fila { width: 100%; flex-direction: row; gap: 0.4rem; }
+    .cita-fila .d-block { display: inline !important; }
+}
+/* Fin Candidatos, fase 2 */
+.lista-criterios { padding-left: 1.4rem; margin: 0; display: grid; gap: 0.4rem; }
+.lista-criterios li::marker { font-weight: 700; color: var(--texto-tenue); }

@@ -4,7 +4,6 @@ namespace Tests\Feature\Seguridad;
 
 use App\Mail\AvisoRecepcion;
 use App\Models\Auditoria;
-use App\Models\Autorizacion;
 use App\Models\Candidato;
 use App\Models\Colaborador;
 use App\Models\Departamento;
@@ -12,6 +11,7 @@ use App\Models\DepartamentoResponsable;
 use App\Models\Empresa;
 use App\Models\EnlaceKiosco;
 use App\Models\Notificacion;
+use App\Models\Postulacion;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Candidatos\Kiosco;
@@ -31,7 +31,7 @@ use Tests\TestCase;
  */
 class SolicitudEmpleoTest extends TestCase
 {
-    use CreaDatosNucleo, RefreshDatabase;
+    use AyudasEntrevistas, CreaDatosNucleo, RefreshDatabase;
 
     private Empresa $empresa;
 
@@ -265,10 +265,11 @@ class SolicitudEmpleoTest extends TestCase
         }
         $this->assertStringContainsString('NN05', (string) $foto, 'Se sabe que cambió (enmascarado)');
 
-        // Resumen al departamento (pantalla, campana y correo)
-        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'aprobado_rh'])->assertSessionHas('ok');
-        $a = $this->enEmpresa(fn () => Autorizacion::sole());
-        $resumen = $this->actingAs($chef)->get("/autorizaciones/{$a->id}")->assertOk();
+        // Resumen al departamento (pantalla Entrevistar, campana y correo): RR. HH. lo canaliza
+        $this->evaluarRh($this->rh, $c, 'canalizar', 'Buen perfil')->assertSessionHas('ok');
+        $this->canalizar($this->rh, $c, $chef, $this->cocina->id)->assertSessionHas('ok');
+        $p = $this->enEmpresa(fn () => Postulacion::where('candidato_id', $c->id)->sole());
+        $resumen = $this->actingAs($chef)->get("/entrevistas/{$p->id}")->assertOk()->assertSee('Buen perfil');
         $avisos = $this->enEmpresa(fn () => Notificacion::all()->map(fn ($n) => $n->titulo.' '.$n->texto)->join(' '));
         foreach ($sensibles as $dato) {
             $resumen->assertDontSee($dato);
@@ -304,7 +305,7 @@ class SolicitudEmpleoTest extends TestCase
         $c = $this->candidato();
         $this->actingAs($this->rh)->put("/candidatos/{$c->id}", $this->solicitud())->assertSessionHas('ok');
         // La etapa vive en la postulación (la ficha es su espejo)
-        $this->enEmpresa(fn () => app(Postulaciones::class)->cambiar(app(Postulaciones::class)->asegurar($c), null, ['etapa' => 'seleccionado'], null));
+        $this->enEmpresa(fn () => app(Postulaciones::class)->cambiar(app(Postulaciones::class)->asegurar($c), null, ['etapa' => 'elegido'], null));
 
         // El diálogo propone nombre y apellidos tal como los capturó
         $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertSee('value="Ana María"', false)->assertSee('value="Pool"', false);
@@ -323,10 +324,10 @@ class SolicitudEmpleoTest extends TestCase
         $this->assertSame('Calle 10 Mz 2 Lt 3, Col. Región 100, C.P. 77500, Benito Juárez, Quintana Roo', $col->direccion_completa);
 
         // Un CURP que ya tiene otro colaborador se avisa dentro del diálogo
-        $otro = $this->candidato('seleccionado', ['nombre_completo' => 'Clon Pool', 'curp' => 'POCA960410MYNLNN05']);
+        $otro = $this->candidato('elegido', ['nombre_completo' => 'Clon Pool', 'curp' => 'POCA960410MYNLNN05']);
         $this->actingAs($this->rh)->post("/candidatos/{$otro->id}/contratar", ['num_empleado' => '3002', 'nombre' => 'Clon', 'apellido_paterno' => 'Pool', '_dialogo' => 'contratar'])
             ->assertSessionHasErrors(['curp' => 'Ya existe otro colaborador registrado con ese CURP.']);
-        $this->assertSame('seleccionado', $otro->fresh()->etapa);
+        $this->assertSame('elegido', $otro->fresh()->etapa);
     }
 
     public function test_los_candidatos_anteriores_siguen_funcionando(): void

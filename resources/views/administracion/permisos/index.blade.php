@@ -124,7 +124,7 @@
                                             @forelse ($extras as $accion)
                                                 <label>
                                                     <input type="checkbox" class="chk-permiso" name="{{ $nombreCampo }}" value="{{ $accion }}"
-                                                           data-accion-permiso="{{ $accion }}"
+                                                           data-accion-permiso="{{ $accion }}" @if (in_array($modulo->clave.'.'.$accion, \App\Http\Controllers\Administracion\PermisoController::SIN_VER, true)) data-sin-ver @endif
                                                            @checked($tiene->has($accion)) @disabled(! $puedeTocar($accion))>
                                                     {{ $acciones[$accion] ?? $accion }}
                                                 </label>

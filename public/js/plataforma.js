@@ -240,15 +240,16 @@
         }
 
         // Matriz de permisos: cualquier acción implica "Ver"; quitar "Ver" quita todo
+        // (salvo las acciones data-sin-ver, como «Evaluar» de Candidatos: quien entrevista no ve los CV)
         if (el.matches('[data-accion-permiso]')) {
             var fila = el.closest('[data-fila-permisos]');
             if (!fila) { return; }
             var ver = fila.querySelector('[data-accion-permiso="ver"]');
             if (el.dataset.accionPermiso === 'ver') {
                 if (!el.checked) {
-                    fila.querySelectorAll('[data-accion-permiso]:not(:disabled)').forEach(function (c) { c.checked = false; });
+                    fila.querySelectorAll('[data-accion-permiso]:not(:disabled):not([data-sin-ver])').forEach(function (c) { c.checked = false; });
                 }
-            } else if (el.checked && ver && !ver.disabled) {
+            } else if (el.checked && ver && !ver.disabled && !el.hasAttribute('data-sin-ver')) {
                 ver.checked = true;
             }
         }
@@ -8541,3 +8542,22 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Manual */
+/* ==========================================================================
+   Candidatos, fase 2: evaluación de entrevistas
+   - «Elegir» pide confirmación (form[data-confirmar-elegir]).
+   - Las estrellas son radios con etiqueta (CSS); el comentario obligatorio y
+     la fecha de la cita usan data-requerido-si / data-mostrar-si (genéricos).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches || !form.matches('form[data-confirmar-elegir]')) { return; }
+        var resultado = form.elements.resultado;
+        if (resultado && resultado.value === 'elegir' && !window.confirm(form.getAttribute('data-confirmar-elegir'))) {
+            e.preventDefault();
+        }
+    });
+})();
+/* Fin Candidatos, fase 2 */

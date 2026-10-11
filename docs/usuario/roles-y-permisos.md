@@ -27,7 +27,7 @@ resumen: Los perfiles de usuario (roles), su jerarquía y la matriz que dice qu�
 | Recursos Humanos | 25 | Administra el personal y valida las altas provisionales de la caseta. |
 | Jefe de seguridad | 30 | Opera y supervisa seguridad en su sede; desbloquea usuarios. |
 | Asistente | 40 | Apoyo de gestión de seguridad en su sede: captura, corrige, imprime y exporta; no elimina, no aprueba ni firma. |
-| Jefe de departamento | 45 | Aprueba y responde las solicitudes de su departamento en su sede (pases de salida y autorizaciones) y pide vacantes. |
+| Jefe de departamento | 45 | Aprueba y responde las solicitudes de su departamento en su sede (pases de salida y autorizaciones), entrevista y elige a los candidatos que le canaliza Recursos Humanos y pide vacantes. |
 | Supervisor | 50 | Da seguimiento a la operación de su sede. |
 | Agente | 60 | Registra la operación de caseta; en Padrones solo consulta. |
 | Solicitante | 70 | Personal de cualquier departamento que solo pide pases de salida y ve los suyos. |
@@ -41,7 +41,8 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 | | Solicitante | Jefe de departamento |
 |---|---|---|
 | **Pases de salida** | Pide pases **a su nombre** y ve solo los que él pidió. | Pide pases a su nombre; ve los pases de su sede; **aprueba y firma** el paso «Jefe de Departamento» de los pases de su gente; imprime la hoja del pase. |
-| **Autorizaciones departamentales** | — | Ve y **responde** las visitas y candidatos de los departamentos donde es responsable, en su sede. |
+| **Autorizaciones departamentales** | — | Ve y **responde** las visitas de los departamentos donde es responsable, en su sede. |
+| **Candidatos** | — | Con el permiso **Evaluar**: **entrevista, califica y elige** a los candidatos que Recursos Humanos le canaliza, en su pantalla **Entrevistar**. No ve la lista de candidatos ni sus datos personales. |
 | **Vacantes** | — | Ve las vacantes publicadas de su sede y **pide** vacantes nuevas: quedan en **Borrador** hasta que Recursos Humanos las revisa y las publica. |
 | **Procedimientos** | Lee los publicados que aplican a su sede y firma «Leí y entendí». | Igual que el Solicitante. |
 | **Mis pendientes y Manual** | Sí. | Sí. |
@@ -83,6 +84,16 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 
 ![Editar rol](img/roles/2-editar-rol.png)
 
+### El permiso «Evaluar» de Candidatos
+
+Sirve para **entrevistar, calificar y elegir** a los candidatos que Recursos Humanos canaliza a un departamento. Lo traen **Jefe de departamento** y **Supervisor** (en su sede), **Jefe de seguridad** (en su sede) y **Director** (en toda la empresa). Con **Evaluar**:
+
+- la persona puede aparecer en **¿Quién lo entrevista?** cuando Recursos Humanos canaliza a un candidato de su sede (primero los responsables del departamento);
+- recibe el aviso de la entrevista y la ve en **Mis pendientes → Entrevistas por evaluar**;
+- solo evalúa las entrevistas que le asignaron (o las de quien le delegó sus avisos).
+
+Quien atiende candidatos (Recursos Humanos) no aparece como entrevistador, salvo que sea responsable del departamento: la decisión de elegir es del departamento. Más detalle en [Entrevistar y elegir](entrevistar-y-elegir.md).
+
 ## Cómo dar o quitar permisos
 
 1. Entra a **Estructura → Matriz de permisos**. Se abre **Permisos por Rol**.
@@ -99,7 +110,7 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 
 **Qué debes ver:** «Permisos actualizados correctamente.» El cambio aplica de inmediato a todos los usuarios con ese rol.
 
-- Al marcar cualquier acción se marca **Ver** sola; al quitar **Ver** se quitan las demás.
+- Al marcar cualquier acción se marca **Ver** sola; al quitar **Ver** se quitan las demás. La excepción es **Evaluar** de *Candidatos*: no marca **Ver**, porque quien entrevista solo ve el resumen del candidato en su pantalla **Entrevistar**, no la lista ni los datos personales.
 - Si el rol es de tu nivel o superior, la matriz se abre en modo consulta.
 - En el celular la tabla se desliza de lado.
 
@@ -134,6 +145,8 @@ Arriba aparece **Empresa de trabajo**:
 **¿Cuándo uso «Solo los propios»?** Cuando alguien solo debe corregir lo que él mismo capturó. El rol Solicitante lo usa en Pases de salida: cada quien ve solo lo que pidió.
 
 **¿Qué rol le doy a un gerente de área que pide pases y los aprueba?** **Jefe de departamento**, vinculado a su colaborador. Si además opera la caseta, dale el rol de seguridad que corresponda.
+
+**¿Qué le doy a un jefe para que entreviste candidatos sin ver los CV?** El permiso **Evaluar** de *Candidatos* (sin **Ver**). El rol **Jefe de departamento** ya lo trae.
 
 **¿Cambiar un permiso afecta a quien ya está dentro?** Sí, de inmediato, a todos los que tienen ese rol.
 

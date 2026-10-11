@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Candidato;
 use App\Models\Departamento;
 use App\Models\Empresa;
+use App\Models\Postulacion;
 use App\Models\Puesto;
 use App\Models\Turno;
 use App\Models\Vacante;
+use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\CambioNoPermitido;
+use App\Services\Candidatos\Entrevistas;
 use App\Services\Permisos\Autorizador;
 use App\Services\Vacantes\AdministradorVacantes;
 use App\Services\Vacantes\BolsaTrabajo;
@@ -96,6 +99,7 @@ class VacanteController extends Controller
                     'eliminar' => $actor->can('vacantes.eliminar'),
                     'configurar' => $configura,
                     'candidatos' => $actor->can('candidatos.ver'),
+                    'evaluar' => $actor->can('candidatos.evaluar'),
                 ],
             ]);
         });
@@ -195,6 +199,42 @@ class VacanteController extends Controller
         });
     }
 
+    /**
+     * Candidatos fase 2: «Candidatos de esta vacante» para comparar (etapa,
+     * promedio de RR. HH., promedio del departamento y resultado). Recursos
+     * Humanos ve todas las postulaciones de sus sedes; quien entrevista
+     * (candidatos.evaluar) solo las que le canalizaron o evaluó.
+     */
+    public function candidatos(Request $request, int $vacante): View
+    {
+        Gate::authorize('vacantes.ver');
+        $actor = $request->user();
+        abort_unless($actor->can('candidatos.ver') || $actor->can('candidatos.evaluar'), 403);
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $vacante) {
+            $v = $this->buscar($actor, $vacante, 'vacantes.ver');
+            $v->load(['sedes:id,nombre', 'puesto:id,nombre', 'departamento:id,nombre']);
+            $verFichas = $actor->can('candidatos.ver');
+            $consulta = Postulacion::with(['candidato:id,nombre_completo', 'sede:id,nombre', 'entrevistador:id,name', 'evaluaciones:id,postulacion_id,tipo,promedio,resultado,numero'])
+                ->where('postulaciones.vacante_id', $v->id);
+            $consulta = $verFichas
+                ? $consulta->whereIn('postulaciones.candidato_id', app(AdministradorCandidatos::class)->limitar(Candidato::query(), $actor, 'candidatos.ver')->select('candidatos.id'))
+                : app(Entrevistas::class)->limitar($consulta, $actor);
+            $orden = ['elegido', 'evaluado', 'canalizado', 'entrevista_rh', 'revision', 'registrado', 'no_se_presento', 'considerar', 'contratado', 'rechazado'];
+            $filas = $consulta->orderByRaw('CASE postulaciones.etapa '.collect($orden)->map(fn ($e, $i) => "WHEN '{$e}' THEN {$i}")->join(' ').' ELSE 99 END')
+                ->orderByDesc('postulaciones.id')->limit(300)->get();
+
+            return view('rh.vacantes.candidatos', [
+                'v' => $v,
+                'filas' => $filas,
+                'cubiertas' => Postulacion::where('vacante_id', $v->id)->whereIn('etapa', ['elegido', 'contratado'])->count(),
+                'verFichas' => $verFichas,
+                'titulares' => app(Entrevistas::class)->titularesDe($actor),
+            ]);
+        });
+    }
+
     /** Ajustes de la bolsa de trabajo pública (de toda la empresa). */
     public function ajustes(Request $request): RedirectResponse
     {
@@ -221,7 +261,7 @@ class VacanteController extends Controller
     /** @return array<string, mixed> */
     private function entrada(Request $request): array
     {
-        return $request->only(['titulo', 'puesto_id', 'departamento_id', 'plazas', 'tipo_contrato', 'jornada', 'turno_id', 'horario', 'sueldo_min', 'sueldo_max',
+        return $request->only(['titulo', 'puesto_id', 'departamento_id', 'plazas', 'jefe_ve_cv', 'tipo_contrato', 'jornada', 'turno_id', 'horario', 'sueldo_min', 'sueldo_max',
             'sueldo_periodo', 'sueldo_a_tratar', 'descripcion', 'requisitos', 'prestaciones', 'escolaridad_minima', 'experiencia', 'fecha_publicacion', 'fecha_cierre',
             'contacto_nombre', 'contacto_telefono', 'contacto_correo', 'todas_las_sedes', 'sedes']);
     }

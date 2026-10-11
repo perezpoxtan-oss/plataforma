@@ -12,7 +12,6 @@ use App\Models\User;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\CambioNoPermitido;
-use App\Services\Candidatos\Postulaciones;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
@@ -28,8 +27,9 @@ use Illuminate\Support\Facades\URL;
  *    colaborador de ese departamento) y la empresa pide autorización: el
  *    acceso nace PENDIENTE («Esperando autorización») y se avisa al
  *    responsable; su respuesta lo deja EN SITIO o lo cierra como no autorizado;
- *  - candidato: Recursos Humanos aprueba y el departamento responde
- *    «Bajar a entrevistar» o «Rechazar»;
+ *  - candidato: ya no se crean (candidatos, fase 2): Recursos Humanos
+ *    canaliza la entrevista al departamento con App\Services\Candidatos\Entrevistas;
+ *    las que existían quedan como historial;
  *  - recepcion: alguien llegó a caseta con Recursos Humanos y la empresa pide
  *    que RR. HH. diga «Que pase» (Que pase / Que espere / No puede pasar). La
  *    responde quien atiende candidatos o Recepción en esa sede
@@ -314,35 +314,6 @@ class Autorizaciones
         return $a;
     }
 
-    /**
-     * Candidato aprobado por Recursos Humanos: el departamento recibe un resumen y responde.
-     */
-    public function solicitarCandidato(User $actor, Candidato $candidato): ?Autorizacion
-    {
-        $avisar = $this->aQuienAvisar((int) $candidato->departamento_id, (int) $candidato->sede_id);
-        $postulaciones = app(Postulaciones::class);
-        $postulaciones->cambiar($postulaciones->asegurar($candidato), null, ['enviado_departamento_en' => now()], $actor);
-        $candidato->refresh();
-        if ($avisar->isEmpty()) {
-            app(AdministradorCandidatos::class)->evento($candidato, 'sin_responsable', null, null,
-                'El departamento no tiene responsable registrado: avísale por otro medio o pásalo tú a entrevista.', $actor);
-
-            return null;
-        }
-        $a = $this->nueva('candidato', (int) $candidato->sede_id, (int) $candidato->departamento_id, null, $candidato->id);
-        $candidato->loadMissing('puesto:id,nombre');
-        $partes = array_filter([
-            $candidato->puestoVisible() ? 'Aplica a: '.$candidato->puestoVisible() : null,
-            $candidato->escolaridadMaxima() ? 'Escolaridad: '.$candidato->escolaridadMaxima() : null,
-            $candidato->anosExperiencia() > 0 ? 'Experiencia: '.$candidato->anosExperiencia().' año(s)' : null,
-        ]);
-        $this->avisarResponsables($a, $avisar, 'autorizacion_candidato', 'Recursos Humanos aprobó a '.$candidato->nombre_completo, implode('. ', $partes).'.', $actor);
-        app(AdministradorCandidatos::class)->evento($candidato, 'enviado_departamento', null, null,
-            'Aviso enviado a: '.$avisar->pluck('name')->join(', ', ' y ').'.', $actor);
-
-        return $a;
-    }
-
     private function nueva(string $tipo, int $sedeId, int $departamentoId, ?int $accesoId, ?int $candidatoId): Autorizacion
     {
         return Autorizacion::create([
@@ -413,10 +384,6 @@ class Autorizaciones
             }
         });
 
-        if ($a->tipo === 'candidato' && $a->candidato !== null) {
-            app(AdministradorCandidatos::class)->respuestaDepartamento($actor, $a->candidato, $estado, $comentario);
-            $this->avisarRespuestaCandidato($a, $actor);
-        }
         if ($a->tipo === 'visita' && $a->acceso?->creado_por !== null) {
             $this->notificaciones->avisar((int) $a->empresa_id, [(int) $a->acceso->creado_por], 'autorizacion_respuesta', [
                 'titulo' => ($estado === 'autorizada' ? 'Ingreso autorizado: ' : 'Ingreso NO autorizado: ').$a->acceso->nombre,
@@ -501,19 +468,6 @@ class Autorizaciones
         }
     }
 
-    private function avisarRespuestaCandidato(Autorizacion $a, User $actor): void
-    {
-        $c = $a->candidato;
-        $rh = $this->destinatarios->conPermiso((int) $a->empresa_id, 'candidatos.editar', (int) $a->sede_id)->reject(fn ($u) => $u->id === $actor->id);
-        $titulo = ($a->estado === 'entrevista' ? 'Bajar a entrevistar: ' : 'El departamento rechazó a ').$c->nombre_completo;
-        $texto = $a->departamento?->nombre.' respondió por medio de '.$actor->name.($a->comentario ? ': «'.$a->comentario.'»' : '.');
-        $this->notificaciones->avisar((int) $a->empresa_id, $rh->pluck('id'), 'autorizacion_respuesta', [
-            'titulo' => $titulo, 'texto' => $texto, 'url' => route('candidatos.show', $c->id), 'referencia_tipo' => 'candidato', 'referencia_id' => $c->id,
-        ]);
-        app(AvisosCorreo::class)->recepcion((int) $a->empresa_id, 'autorizacion_respuesta', $rh->pluck('email')->filter()->values()->all(),
-            new AvisoRecepcion($titulo, [$texto], [['Abrir su ficha', route('candidatos.show', $c->id)]]));
-    }
-
     /**
      * La caseta autorizó la visita por su cuenta (botón Autorizar de Accesos):
      * la solicitud queda respondida «por caseta» y los avisos pierden sus botones.
@@ -528,15 +482,5 @@ class Autorizaciones
         $pendiente->forceFill(['estado' => 'autorizada', 'respondida_en' => now(), 'respondida_por' => $actor->id, 'respuesta_medio' => 'caseta'])->save();
         $this->notificaciones->resolver('autorizacion', $pendiente->id);
         $this->auditoria->auditar($actor, 'autorizaciones.respondida', $pendiente, ['estado' => 'pendiente'], ['estado' => 'autorizada', 'medio' => 'caseta']);
-    }
-
-    /** Recursos Humanos decidió otra cosa: lo pendiente con el departamento se cancela. */
-    public function cancelarDeCandidato(User $actor, Candidato $candidato): void
-    {
-        foreach (Autorizacion::where('candidato_id', $candidato->id)->where('estado', 'pendiente')->get() as $a) {
-            $a->forceFill(['estado' => 'cancelada', 'respondida_en' => now(), 'respondida_por' => $actor->id, 'respuesta_medio' => 'rh'])->save();
-            $this->notificaciones->resolver('autorizacion', $a->id);
-            $this->auditoria->auditar($actor, 'autorizaciones.cancelada', $a, ['estado' => 'pendiente'], ['estado' => 'cancelada']);
-        }
     }
 }
