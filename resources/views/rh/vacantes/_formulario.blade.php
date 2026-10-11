@@ -42,9 +42,16 @@
         </div>
         <div>
             <label class="campo-etiqueta" for="{{ $p }}_plazas">Número de plazas *</label>
-            <input type="number" id="{{ $p }}_plazas" name="plazas" class="campo" min="1" max="999" required inputmode="numeric" value="{{ $o('plazas', 1) }}">
+            <input type="number" id="{{ $p }}_plazas" name="plazas" class="campo" min="1" max="999" required inputmode="numeric" value="{{ $o('plazas', 1) }}"
+                   aria-describedby="{{ $p }}_plazas_ayuda">
+            <p class="campo-ayuda" id="{{ $p }}_plazas_ayuda">Al elegir a tantas personas como plazas, los demás candidatos con el departamento pasan a «Considerar».</p>
         </div>
     </div>
+    {{-- Candidatos fase 2: el entrevistador ve el CV en PDF solo si se marca --}}
+    <label class="casilla-candidato mb-3">
+        <input type="checkbox" name="jefe_ve_cv" value="1" @checked($o('jefe_ve_cv'))>
+        <span><strong>El jefe puede ver el CV</strong><br><span class="small text-muted">Quien entrevista verá el CV en PDF del candidato. Apagado: solo ve el resumen (escolaridad, experiencia, disponibilidad y sueldo que espera).</span></span>
+    </label>
     <span class="campo-etiqueta d-block">Sede(s) *</span>
     @if ($todasLasSedes && $sedesForm->count() > 1)
         <input type="hidden" name="todas_las_sedes" value="0">

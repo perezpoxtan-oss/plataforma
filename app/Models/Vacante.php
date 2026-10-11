@@ -17,6 +17,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * internet, los que registra la caseta o los que RR. HH. liga quedan con
  * vacante_id.
  *
+ * Fase 2 de candidatos: «plazas» decide cuándo se cubre (al elegir a tantas
+ * personas como plazas, las demás postulaciones con el departamento pasan a
+ * «Considerar») y «jefe_ve_cv» si quien entrevista ve el CV en PDF.
+ *
  * Estados (ver TRANSICIONES): Borrador → Publicada ⇄ Pausada → Cerrada;
  * Cerrada → Borrador (reabrir). Borrador → Cerrada solo como «cancelada».
  */
@@ -49,10 +53,10 @@ class Vacante extends Model
 
     protected $table = 'vacantes';
 
-    protected $attributes = ['estado' => 'borrador', 'plazas' => 1, 'todas_las_sedes' => false, 'sueldo_periodo' => 'mensual', 'sueldo_a_tratar' => false];
+    protected $attributes = ['estado' => 'borrador', 'plazas' => 1, 'jefe_ve_cv' => false, 'todas_las_sedes' => false, 'sueldo_periodo' => 'mensual', 'sueldo_a_tratar' => false];
 
     protected $fillable = [
-        'empresa_id', 'titulo', 'puesto_id', 'departamento_id', 'plazas', 'todas_las_sedes', 'tipo_contrato', 'jornada', 'turno_id', 'horario',
+        'empresa_id', 'titulo', 'puesto_id', 'departamento_id', 'plazas', 'jefe_ve_cv', 'todas_las_sedes', 'tipo_contrato', 'jornada', 'turno_id', 'horario',
         'sueldo_min', 'sueldo_max', 'sueldo_periodo', 'sueldo_a_tratar', 'descripcion', 'requisitos', 'prestaciones', 'escolaridad_minima', 'experiencia',
         'fecha_publicacion', 'fecha_cierre', 'contacto_nombre', 'contacto_telefono', 'contacto_correo',
     ];
@@ -60,7 +64,7 @@ class Vacante extends Model
     protected function casts(): array
     {
         return [
-            'todas_las_sedes' => 'boolean', 'sueldo_a_tratar' => 'boolean', 'requisitos' => 'array', 'prestaciones' => 'array',
+            'todas_las_sedes' => 'boolean', 'sueldo_a_tratar' => 'boolean', 'jefe_ve_cv' => 'boolean', 'requisitos' => 'array', 'prestaciones' => 'array',
             'sueldo_min' => 'decimal:2', 'sueldo_max' => 'decimal:2', 'plazas' => 'integer',
             'fecha_publicacion' => 'date', 'fecha_cierre' => 'date', 'publicada_en' => 'datetime', 'cerrada_en' => 'datetime',
         ];

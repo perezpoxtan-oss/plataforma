@@ -35,7 +35,7 @@ En SEGCAT ambas pantallas usaban los permisos del módulo `permisos`. Ahora **Ro
 - Nombre y nivel jerárquico son únicos por empresa. Menor número = más privilegios.
 - Nadie crea, edita, sube de nivel ni elimina un rol de **nivel igual o superior al suyo**. Tampoco se toca su propio rol.
 - En la matriz solo se valida **lo que cambia**. Agregar, quitar o ampliar un permiso exige tenerlo con un alcance igual o mayor. Lo que el rol ya tenía, otorgado por alguien de más nivel, se conserva al guardar.
-- Marcar cualquier acción agrega "Ver" (en el navegador y en el servidor). Quitar "Ver" quita las demás acciones del módulo.
+- Marcar cualquier acción agrega "Ver" (en el navegador y en el servidor). Quitar "Ver" quita las demás acciones del módulo. Excepción: `PermisoController::SIN_VER` (`candidatos.evaluar`, fase 2 de candidatos): no implica `candidatos.ver` (casilla con `data-sin-ver`), porque quien entrevista solo usa la pantalla Entrevistar y no debe ver la lista ni los CV.
 - El **alcance** se elige por módulo y aplica a todas sus acciones: *Solo los propios*, *Su sede* o *Toda la empresa*.
 - La matriz muestra solo los módulos **contratados** por la empresa. Los permisos de módulos no visibles se conservan al guardar.
 - Módulos y acciones salen del catálogo de la base de datos: lo que llegue del navegador y no exista en el catálogo se ignora.
@@ -91,6 +91,7 @@ Personal fuera de la caseta que solo levanta solicitudes (Solicitante) y su jefe
 - **Solo a su nombre:** quien no tiene `colaboradores.ver` ni `colaboradores.provisional` solo registra pases cuyo solicitante es el colaborador vinculado a su usuario (`AdministradorPasesSalida::soloASuNombre()`); el formulario lo trae ya elegido (`PaseSalidaController::solicitanteFijo()`).
 - **Quién firma:** el paso «Jefe de Departamento» del circuito (departamento = `solicitante`) lo firma quien tiene `pases_salida.aprobar` en la sede de origen y cuyo colaborador vinculado es del departamento del solicitante (`CircuitoPasesSalida::cumpleRegla()`).
 - **Vacantes:** sin `vacantes.editar` solo existe «Guardar borrador»; Recursos Humanos edita y publica.
+- **Candidatos (fase 2):** el Jefe de departamento tiene `candidatos.evaluar` con alcance de sede (sin `candidatos.ver`): entrevista, evalúa y elige en la pantalla Entrevistar lo que RR. HH. le canaliza. Director (empresa), Jefe de seguridad y Supervisor (sede) también lo tienen por `RECEPCION`. En bases existentes, la migración `2026_10_20_000300_permiso_evaluar_candidatos` lo da con el mismo alcance a cada rol con `autorizaciones.responder`. Recursos Humanos y el Administrador lo tienen por la regla general, pero no se les ofrece como entrevistadores salvo que sean responsables del departamento.
 - Migración `2026_10_18_000100_agregar_roles_solicitante_y_jefe_de_departamento` (idempotente, sin reversa): crea las plantillas y las copia a cada empresa que no tenga ese nombre ni ese nivel.
 - Datos demo: `solicitante.demo` y `jefedepto.demo` (Recepción, Centro), vinculados a los colaboradores 1014 y 1015; la jefa es responsable de Recepción en Centro.
 

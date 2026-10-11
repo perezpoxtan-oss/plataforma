@@ -23,6 +23,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\UsuarioRol;
 use App\Services\Candidatos\Kiosco;
+use App\Services\Candidatos\Postulaciones;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -309,51 +310,48 @@ class CandidatosYAutorizacionesTest extends TestCase
         $c = $this->candidato();
         $ir = fn (string $etapa, ?string $comentario = null) => $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => $etapa, 'comentario' => $comentario]);
 
-        // Prohibidas desde Registrado
-        foreach (['aprobado_rh', 'entrevista', 'seleccionado'] as $prohibida) {
-            $ir($prohibida)->assertSessionHas('error');
+        // Las que tienen su propio formulario (o ya no existen) no se cambian con el botón de etapa
+        foreach (['canalizado', 'evaluado', 'elegido', 'contratado', 'no_se_presento', 'registrado', 'aprobado_rh', 'seleccionado', 'cartera', 'descartado'] as $prohibida) {
+            $ir($prohibida)->assertSessionHasErrors('etapa');
             $this->assertSame('registrado', $c->fresh()->etapa);
         }
-        $ir('contratado')->assertSessionHas('error');
-        $ir('registrado')->assertSessionHas('error');
+        // Desde Esperando no se entrevista sin atender
+        $ir('entrevista_rh')->assertSessionHas('error');
 
         $ir('revision')->assertSessionHas('ok');
-        $ir('aprobado_rh')->assertSessionHas('ok'); // sin responsable: se deja anotado en el historial
-        $this->assertSame('aprobado_rh', $c->fresh()->etapa);
-        $this->assertTrue($this->enEmpresa(fn () => $c->eventos()->where('evento', 'sin_responsable')->exists()));
-        $ir('entrevista')->assertSessionHas('ok');
-        $ir('seleccionado')->assertSessionHas('ok');
-        $this->assertNotNull($c->fresh()->decision_en);
-        $ir('cartera')->assertSessionHas('ok');
-        $ir('entrevista')->assertSessionHas('error'); // de cartera solo a revisión o descartado
-        $ir('descartado')->assertSessionHasErrors('comentario'); // el motivo es obligatorio
-        $ir('descartado', 'No cubre el horario')->assertSessionHas('ok');
+        $this->assertNotNull($c->fresh()->revision_en);
+        $ir('entrevista_rh')->assertSessionHas('ok')->assertSessionHas('abrir_dialogo', 'evaluacion'); // «Entrevistar» abre la evaluación
+        $this->assertSame('entrevista_rh', $c->fresh()->etapa);
+        $ir('considerar')->assertSessionHasErrors('comentario'); // el comentario es obligatorio
+        $ir('considerar', 'Para la temporada alta')->assertSessionHas('ok');
+        $this->assertSame('Para la temporada alta', $c->fresh()->motivo_descarte);
+        $ir('entrevista_rh')->assertSessionHas('error'); // de considerar solo a revisión o rechazado
+        $ir('rechazado')->assertSessionHasErrors('comentario'); // el motivo es obligatorio
+        $ir('rechazado', 'No cubre el horario')->assertSessionHas('ok');
         $this->assertSame('No cubre el horario', $c->fresh()->motivo_descarte);
-        $ir('seleccionado')->assertSessionHas('error');
+        $this->assertNotNull($c->fresh()->decision_en);
+        $ir('considerar', 'x')->assertSessionHas('error');
         $ir('revision')->assertSessionHas('ok'); // se puede reabrir
-
-        // Aprobar sin departamento no se puede
-        $sinDepto = $this->candidato('revision', ['departamento_id' => null]);
-        $this->actingAs($this->rh)->patch("/candidatos/{$sinDepto->id}/etapa", ['etapa' => 'aprobado_rh'])->assertSessionHasErrors('comentario');
+        $this->assertNull($c->fresh()->motivo_descarte);
 
         // Contratado: ya no cambia
         $contratado = $this->candidato('contratado');
-        foreach (array_keys(Candidato::ETAPAS) as $e) {
-            $this->actingAs($this->rh)->patch("/candidatos/{$contratado->id}/etapa", ['etapa' => $e]);
+        foreach (Candidato::MANUALES as $e) {
+            $this->actingAs($this->rh)->patch("/candidatos/{$contratado->id}/etapa", ['etapa' => $e, 'comentario' => 'x']);
             $this->assertSame('contratado', $contratado->fresh()->etapa);
         }
-        $this->assertSame(7, Auditoria::where('evento', 'candidatos.etapa')->where('auditable_id', $c->id)->count());
+        $this->assertSame(5, Auditoria::where('evento', 'candidatos.etapa')->where('auditable_id', $c->id)->count());
     }
 
     public function test_contratar_crea_el_colaborador_con_sus_datos(): void
     {
         $puesto = $this->enEmpresa(fn () => Puesto::create(['nombre' => 'Cocinero', 'tipo' => Puesto::OPERATIVO]));
-        $c = $this->candidato('entrevista', ['telefono' => '9987654321', 'puesto_id' => $puesto->id, 'nombre_completo' => 'Ramón Ek Balam']);
+        $c = $this->candidato('evaluado', ['telefono' => '9987654321', 'puesto_id' => $puesto->id, 'nombre_completo' => 'Ramón Ek Balam']);
 
-        // Solo desde Seleccionado
+        // Solo desde Elegido (lo elige el departamento)
         $this->actingAs($this->rh)->post("/candidatos/{$c->id}/contratar", ['num_empleado' => '2001', 'nombre' => 'Ramón', 'apellido_paterno' => 'Ek'])
             ->assertSessionHas('error');
-        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'seleccionado'])->assertSessionHas('ok');
+        $this->enEmpresa(fn () => app(Postulaciones::class)->cambiar(app(Postulaciones::class)->asegurar($c), null, ['etapa' => 'elegido'], null));
 
         // El agente y el director no contratan
         $this->actingAs($this->agente)->post("/candidatos/{$c->id}/contratar", ['num_empleado' => '2001'])->assertForbidden();
@@ -524,8 +522,8 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->get('/k/'.str_repeat('Z', 48))->assertNotFound();
         $this->get('/k/abc')->assertNotFound();
 
-        // Contratado o descartado: sin enlace
-        $c->forceFill(['etapa' => 'descartado'])->save();
+        // Contratado o rechazado: sin enlace
+        $c->forceFill(['etapa' => 'rechazado'])->save();
         $this->actingAs($this->rh)->post("/rh/recepcion/kiosco/{$c->id}")->assertSessionHas('error');
         // Otra empresa no genera enlaces de esta
         $adminAjeno = $this->crearUsuario($this->crearEmpresa('Otro Hotel'), 'Administrador');
@@ -605,7 +603,8 @@ class CandidatosYAutorizacionesTest extends TestCase
         // Otro usuario (agente) no puede responder
         $this->actingAs($this->agente)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'autorizar'])->assertForbidden();
         // Respuesta que no aplica a una visita
-        $this->actingAs($this->jefe)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'entrevistar'])->assertSessionHas('error');
+        $this->actingAs($this->jefe)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase'])->assertSessionHas('error');
+        $this->actingAs($this->jefe)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'entrevistar'])->assertSessionHasErrors('respuesta'); // ya no existe
 
         $this->actingAs($this->jefe)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'autorizar', 'comentario' => 'Que pase'])->assertSessionHas('ok');
         $acceso->refresh();
@@ -662,54 +661,33 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->assertSame('autorizada', $acceso->fresh()->autorizacion);
     }
 
-    public function test_candidato_aprobado_avisa_al_departamento_que_responde_con_resumen(): void
+    public function test_las_autorizaciones_de_candidato_del_proceso_anterior_son_historial(): void
     {
-        Mail::fake();
-        $this->configurarCorreo();
         $chef = $this->crearUsuario($this->empresa, 'Supervisor', $this->centro);
         $this->responsable($this->cocina, $chef);
-        $c = $this->candidato('revision', ['escolaridad' => [['nivel' => 'tecnico']], 'experiencia' => [['empresa' => 'Hotel Sol', 'anos' => 4]], 'telefono' => '9980000000']);
+        $c = $this->candidato('canalizado');
+        // Una respondida y una que quedó pendiente antes del cambio de proceso
+        $pendiente = $this->enEmpresa(function () use ($c, $chef) {
+            $vieja = Autorizacion::create(['sede_id' => $this->centro->id, 'departamento_id' => $this->cocina->id, 'tipo' => 'candidato', 'candidato_id' => $c->id,
+                'solicitada_en' => now()->subDay()]);
+            $vieja->forceFill(['estado' => 'entrevista', 'respondida_en' => now()->subDay(), 'respondida_por' => $chef->id])->save();
 
-        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'aprobado_rh'])->assertSessionHas('ok');
-        $a = $this->enEmpresa(fn () => Autorizacion::sole());
-        $this->assertSame('candidato', $a->tipo);
-        $this->assertNotNull($c->fresh()->enviado_departamento_en);
-        Mail::assertSent(AvisoRecepcion::class, fn ($m) => $m->hasTo($chef->email) && str_contains(implode(' ', $m->lineas), 'Carrera técnica'));
+            return Autorizacion::create(['sede_id' => $this->centro->id, 'departamento_id' => $this->cocina->id, 'tipo' => 'candidato', 'candidato_id' => $c->id,
+                'solicitada_en' => now()]);
+        });
 
-        // El responsable ve el resumen, sin teléfono ni documentos, y no la ficha completa
-        $this->actingAs($chef)->get("/autorizaciones/{$a->id}")->assertOk()->assertSee('Carrera técnica')->assertSee('Bajar a entrevistar')->assertDontSee('9980000000');
-        $this->actingAs($chef)->get("/candidatos/{$c->id}")->assertForbidden();
-
-        // Botón del correo: dirección firmada que pide sesión y confirmación
-        $firmada = URL::temporarySignedRoute('autorizaciones.confirmar', now()->addDay(), ['autorizacion' => $a->id, 'respuesta' => 'entrevistar']);
-        auth()->logout();
-        $this->get($firmada)->assertRedirect('/login');
-        $this->actingAs($chef)->get($firmada)->assertOk()->assertSee('Confirmar: Bajar a entrevistar');
-        $this->actingAs($chef)->get(str_replace('entrevistar', 'rechazar', $firmada))->assertForbidden(); // alterada
-        $this->actingAs($chef)->get("/autorizaciones/{$a->id}/confirmar?respuesta=entrevistar")->assertForbidden(); // sin firma
-
-        $this->actingAs($chef)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'entrevistar', 'medio' => 'correo', 'comentario' => 'Mañana 10:00'])->assertSessionHas('ok');
-        $c->refresh();
-        $this->assertSame('entrevista', $c->etapa);
-        $this->assertNotNull($c->respuesta_departamento_en);
-        $this->assertNotNull($c->entrevista_en);
-        $this->assertSame('correo', $a->fresh()->respuesta_medio);
-        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('titulo', 'like', 'Bajar a entrevistar%')->exists()));
-
-        // Rechazo del departamento: queda en cartera
-        $otro = $this->candidato('revision', ['nombre_completo' => 'Otro Candidato']);
-        $this->actingAs($this->rh)->patch("/candidatos/{$otro->id}/etapa", ['etapa' => 'aprobado_rh']);
-        $a2 = $this->enEmpresa(fn () => Autorizacion::where('candidato_id', $otro->id)->sole());
-        $this->actingAs($chef)->post("/autorizaciones/{$a2->id}/responder", ['respuesta' => 'rechazar'])->assertSessionHas('ok');
-        $this->assertSame('cartera', $otro->fresh()->etapa);
-
-        // Si RR. HH. decide otra cosa antes de la respuesta, la solicitud se cancela
-        $tercero = $this->candidato('revision', ['nombre_completo' => 'Tercer Candidato']);
-        $this->actingAs($this->rh)->patch("/candidatos/{$tercero->id}/etapa", ['etapa' => 'aprobado_rh']);
-        $this->actingAs($this->rh)->patch("/candidatos/{$tercero->id}/etapa", ['etapa' => 'descartado', 'comentario' => 'Retiró su solicitud']);
-        $a3 = $this->enEmpresa(fn () => Autorizacion::where('candidato_id', $tercero->id)->sole());
-        $this->assertSame('cancelada', $a3->estado);
-        $this->actingAs($chef)->post("/autorizaciones/{$a3->id}/responder", ['respuesta' => 'entrevistar'])->assertSessionHas('error');
+        // Ya no se responden: ni por la plataforma ni con un enlace del correo
+        $this->actingAs($chef)->post("/autorizaciones/{$pendiente->id}/responder", ['respuesta' => 'rechazar'])->assertSessionHas('error');
+        $this->assertSame('pendiente', $pendiente->fresh()->estado);
+        $firmada = URL::temporarySignedRoute('autorizaciones.confirmar', now()->addDay(), ['autorizacion' => $pendiente->id, 'respuesta' => 'rechazar']);
+        $this->actingAs($chef)->get($firmada)->assertNotFound();
+        // El historial se sigue viendo, con su etiqueta del proceso anterior
+        $this->actingAs($chef)->get("/autorizaciones/{$pendiente->id}")->assertOk()->assertSee('Candidato (proceso anterior)')->assertDontSee('Bajar a entrevistar');
+        $this->assertSame([], Autorizacion::RESPUESTAS['candidato']);
+        $this->assertSame('Pidió entrevistarlo (proceso anterior)', Autorizacion::ESTADOS['entrevista']);
+        // RR. HH. ya no tiene «Aprobar y enviar al departamento» ni «Pasar a entrevista»
+        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'aprobado_rh'])->assertSessionHasErrors('etapa');
+        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertOk()->assertDontSee('Aprobar y enviar al departamento')->assertDontSee('Pasar a entrevista');
     }
 
     public function test_delegacion_desvia_los_avisos_y_el_delegado_responde(): void

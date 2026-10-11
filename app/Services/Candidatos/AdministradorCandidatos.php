@@ -14,7 +14,6 @@ use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\User;
 use App\Models\Vacante;
-use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Firmas\Firmas;
@@ -150,6 +149,10 @@ class AdministradorCandidatos
         }
 
         $acceso->forceFill(['postulacion_id' => $postulacion->id, 'viene_a' => $vieneA])->saveQuietly();
+        // Fase 2: viene a su entrevista con el departamento → se avisa a quien lo entrevista
+        if ($vieneA === 'entrevista' && $postulacion->etapa === 'canalizado') {
+            app(Entrevistas::class)->avisarLlegada($actor, $postulacion, $ficha);
+        }
         if ($acceso->persona_id !== null) {
             Persona::whereKey($acceso->persona_id)->where('categoria', 'general')->update(['categoria' => 'prospecto_rrhh']);
         }
@@ -321,14 +324,17 @@ class AdministradorCandidatos
     // ------------------------------------------------------------------- Etapas
 
     /**
-     * Cambia de etapa. «Aprobado por RR. HH.» pide el departamento y avisa a su
-     * responsable; «Descartado» pide el motivo.
+     * Cambios de etapa con su botón (Candidato::MANUALES): Atender, Entrevistar
+     * (Entrevista RR. HH.), Considerar y Rechazar. Considerar y Rechazar piden
+     * el comentario o motivo (lo ve solo Recursos Humanos). Canalizar,
+     * Reprogramar, No se presentó, Evaluar y Elegir tienen su propio
+     * formulario (App\Services\Candidatos\Entrevistas).
      */
     public function cambiarEtapa(User $actor, Candidato $candidato, string $etapa, ?string $comentario = null): Candidato
     {
         $comentario = $comentario === null ? null : (trim($comentario) === '' ? null : mb_substr(trim($comentario), 0, 500));
-        if (! array_key_exists($etapa, Candidato::ETAPAS) || $etapa === 'contratado' || $etapa === 'registrado') {
-            throw new CambioNoPermitido('Elige una etapa válida. Para contratar usa el botón «Contratar».');
+        if (! in_array($etapa, Candidato::MANUALES, true)) {
+            throw new CambioNoPermitido('Elige una etapa válida. Para canalizar, reprogramar o contratar usa su botón.');
         }
         // La que manda es la postulación activa (la ficha es su espejo)
         $postulaciones = app(Postulaciones::class);
@@ -336,24 +342,20 @@ class AdministradorCandidatos
         if (! $p->puedePasarA($etapa)) {
             throw new CambioNoPermitido('Un candidato «'.$p->etiquetaEtapa().'» no puede pasar a «'.Candidato::ETAPAS[$etapa].'».');
         }
-        if ($etapa === 'descartado' && $comentario === null) {
-            throw ValidationException::withMessages(['comentario' => 'Escribe por qué se descarta (lo verá solo Recursos Humanos).']);
+        if ($etapa === 'rechazado' && $comentario === null) {
+            throw ValidationException::withMessages(['comentario' => 'Escribe el motivo del rechazo (lo verá solo Recursos Humanos).']);
         }
-        if ($etapa === 'aprobado_rh' && $p->departamento_id === null) {
-            throw ValidationException::withMessages(['comentario' => 'Antes de aprobar, indica en la ficha a qué departamento aplica.']);
+        if ($etapa === 'considerar' && $comentario === null) {
+            throw ValidationException::withMessages(['comentario' => 'Escribe por qué se queda para considerar (por ejemplo, para qué otra vacante).']);
         }
 
         $anterior = $p->etapa;
         $cambios = ['etapa' => $etapa];
         $cambios += match ($etapa) {
-            'revision' => $p->revision_en === null ? ['revision_en' => now()] : [],
-            'aprobado_rh' => ['aprobado_rh_en' => now()],
-            'entrevista' => ['entrevista_en' => now()],
-            'seleccionado', 'cartera', 'descartado' => ['decision_en' => now(), 'decision_por' => $actor->id],
+            'revision' => ($p->revision_en === null ? ['revision_en' => now()] : []) + ['motivo_descarte' => null],
+            'entrevista_rh' => ['entrevista_rh_en' => now()],
+            'considerar', 'rechazado' => ['decision_en' => now(), 'decision_por' => $actor->id, 'motivo_descarte' => $comentario],
         };
-        if ($etapa === 'descartado') {
-            $cambios['motivo_descarte'] = $comentario;
-        }
         if (! $postulaciones->cambiar($p, $anterior, $cambios, $actor)) {
             throw new CambioNoPermitido('Otra persona acaba de cambiar a este candidato. Revisa su etapa actual.');
         }
@@ -363,34 +365,12 @@ class AdministradorCandidatos
         $this->evento($candidato, 'etapa', $anterior, $etapa, $comentario, $actor);
         $this->auditoria->auditar($actor, 'candidatos.etapa', $candidato, ['etapa' => $anterior], ['etapa' => $etapa]);
 
-        // Lo que estaba pendiente con el departamento deja de esperar si RR. HH. decide otra cosa
-        if ($anterior === 'aprobado_rh' && $etapa !== 'entrevista') {
-            app(Autorizaciones::class)->cancelarDeCandidato($actor, $candidato);
-        }
-        if ($etapa === 'aprobado_rh') {
-            app(Autorizaciones::class)->solicitarCandidato($actor, $candidato);
+        // Si estaba con el departamento, su entrevista se cancela (y se le avisa al entrevistador)
+        if ($anterior === 'canalizado') {
+            app(Entrevistas::class)->citaCancelada($actor, $p->refresh(), 'Recursos Humanos ya no necesita esta entrevista.');
         }
 
         return $candidato;
-    }
-
-    /**
-     * La respuesta del departamento mueve al candidato (lo llama Autorizaciones).
-     */
-    public function respuestaDepartamento(User $actor, Candidato $candidato, string $estado, ?string $comentario): void
-    {
-        $nueva = $estado === 'entrevista' ? 'entrevista' : 'cartera';
-        $cambios = ['etapa' => $nueva, 'respuesta_departamento_en' => now()]
-            + ($nueva === 'entrevista' ? ['entrevista_en' => now()] : ['decision_en' => now(), 'decision_por' => $actor->id]);
-        $postulaciones = app(Postulaciones::class);
-        if (! $postulaciones->cambiar($postulaciones->asegurar($candidato), 'aprobado_rh', $cambios, $actor)) {
-            return;
-        }
-        Candidato::whereKey($candidato->id)->update(['actualizado_por' => $actor->id, 'updated_at' => now()]);
-        $candidato->refresh();
-        $texto = $nueva === 'entrevista' ? 'El departamento pidió bajarlo a entrevista.' : 'El departamento no lo aceptó: queda en cartera.';
-        $this->evento($candidato, 'etapa', 'aprobado_rh', $nueva, trim($texto.' '.($comentario ?? '')), $actor);
-        $this->auditoria->auditar($actor, 'candidatos.etapa', $candidato, ['etapa' => 'aprobado_rh'], ['etapa' => $nueva]);
     }
 
     /**
@@ -403,8 +383,8 @@ class AdministradorCandidatos
     {
         $postulaciones = app(Postulaciones::class);
         $postulacion = $postulaciones->asegurar($candidato);
-        if ($postulacion->etapa !== 'seleccionado') {
-            throw new CambioNoPermitido('Solo se contrata a un candidato «Seleccionado».');
+        if ($postulacion->etapa !== 'elegido') {
+            throw new CambioNoPermitido('Solo se contrata a un candidato «Elegido» por el departamento.');
         }
         // Los datos oficiales de la solicitud pasan al colaborador (RR. HH. no los vuelve a escribir)
         $datos = array_merge([
@@ -419,7 +399,7 @@ class AdministradorCandidatos
 
         $colaborador = DB::transaction(function () use ($actor, $candidato, $datos, $postulaciones, $postulacion) {
             $colaborador = app(AdministradorColaboradores::class)->crear($actor, (int) $candidato->empresa_id, Request::create('/', 'POST', $datos));
-            $hecho = $postulaciones->cambiar($postulacion, 'seleccionado', [
+            $hecho = $postulaciones->cambiar($postulacion, 'elegido', [
                 'etapa' => 'contratado', 'contratado_en' => now(), 'colaborador_id' => $colaborador->id, 'decision_en' => $postulacion->decision_en ?? now(),
             ], $actor);
             if (! $hecho) {
@@ -430,8 +410,8 @@ class AdministradorCandidatos
             return $colaborador;
         });
         $candidato->refresh();
-        $this->evento($candidato, 'contratado', 'seleccionado', 'contratado', 'Alta como colaborador (núm. '.$colaborador->num_empleado.').', $actor);
-        $this->auditoria->auditar($actor, 'candidatos.contratado', $candidato, ['etapa' => 'seleccionado'], ['etapa' => 'contratado', 'colaborador_id' => $colaborador->id]);
+        $this->evento($candidato, 'contratado', 'elegido', 'contratado', 'Alta como colaborador (núm. '.$colaborador->num_empleado.').', $actor);
+        $this->auditoria->auditar($actor, 'candidatos.contratado', $candidato, ['etapa' => 'elegido'], ['etapa' => 'contratado', 'colaborador_id' => $colaborador->id]);
 
         return $colaborador;
     }

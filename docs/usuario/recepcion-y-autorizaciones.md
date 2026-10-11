@@ -3,12 +3,12 @@ titulo: Recepción y autorizaciones
 modulos: [recepcion_rh, autorizaciones]
 seccion: Recursos Humanos
 orden: 30
-resumen: Panel de quién espera a Recursos Humanos, «Que pase» a quien llega a caseta, avisos de la campana y respuesta de los departamentos a visitas y candidatos.
+resumen: Panel de quién espera a Recursos Humanos, «Que pase» a quien llega a caseta, avisos de la campana, autorizaciones de visitas y criterios para calificar entrevistas.
 ---
 
 # Recepción y autorizaciones
 
-**¿Para qué sirve?** Cuando alguien llega a la caseta y va con **Recursos Humanos**, aparece en el panel de **Recepción** con **a qué viene** y los minutos que lleva esperando, y Recursos Humanos le dice a la caseta **Que pase**, **Que espere** o **No puede pasar**. Cuando alguien viene a ver a un **departamento**, su **responsable** decide si entra; y cuando Recursos Humanos aprueba a un candidato, el departamento decide si lo **baja a entrevistar**. Todo llega como aviso en la **campana** (y por correo) con los botones para responder.
+**¿Para qué sirve?** Cuando alguien llega a la caseta y va con **Recursos Humanos**, aparece en el panel de **Recepción** con **a qué viene** y los minutos que lleva esperando, y Recursos Humanos le dice a la caseta **Que pase**, **Que espere** o **No puede pasar**. Cuando alguien viene a ver a un **departamento**, su **responsable** decide si entra. Todo llega como aviso en la **campana** (y por correo) con los botones para responder. Las entrevistas de candidatos con el departamento se explican en [Candidatos](candidatos.md) y en [Entrevistar y elegir](entrevistar-y-elegir.md).
 
 ![Panel de Recepción](img/recepcion-y-candidatos/recepcion-panel.png)
 
@@ -32,7 +32,7 @@ Si tienes encendidos los avisos por correo en [Configuración](configuracion.md)
 ## Cómo atender a quien espera en Recepción
 
 1. Entra a **Recursos Humanos → Recepción de RR. HH.**
-2. Arriba ves cuántos hay **Esperando**, **En revisión**, **Con el departamento** y **En entrevista**. La lista se actualiza sola cada 15 segundos.
+2. Arriba ves cuántos hay **Esperando**, **Con RR. HH. (revisión o entrevista)**, en **Entrevista con el departamento** y **Evaluados por el departamento**. La lista se actualiza sola cada 15 segundos.
 3. Cada persona muestra **Viene a:** y su puesto, departamento, sede, hora de llegada y **minutos esperando**. El borde cambia de color: **verde** recién llegó, **ámbar** más de 10 minutos, **rojo** más de 20, **azul** ya lo atendiste.
 
 | Viene a | Qué significa |
@@ -40,7 +40,7 @@ Si tienes encendidos los avisos por correo en [Configuración](configuracion.md)
 | **Busca empleo — primera vez** | Es la primera vez que viene. |
 | **Busca empleo — ya vino antes** | Ya tenía ficha: se usa la misma (no se crea otra). |
 | **Busca empleo — por internet** (o **en el kiosco**, **registrado por RR. HH.**) | Hoy dejó su solicitud sin pasar por la caseta. |
-| **Entrevista**, **Documentos** o **Firma** | Ya tiene ficha y viene a ese paso. |
+| **Entrevista**, **Documentos** o **Firma** | Ya tiene ficha y viene a ese paso. Si viene a su entrevista con el departamento, a quien lo entrevista le llega el aviso «… ya está en recepción para su entrevista de las …». |
 | **Informes** o **Trámite** | No es candidato: solo pregunta o hace otro trámite. |
 
 4. Si la persona sigue en caseta (dice «En caseta: espera que digas «Que pase»»), toca **Que pase**. Para pedirle que espere o decir que no puede pasar, toca **Que espere / No puede pasar**.
@@ -93,18 +93,11 @@ Si tu empresa tiene encendido el ajuste **La caseta espera a que RR. HH. diga «
 
 > Si el responsable avisa por teléfono, el supervisor puede usar **Confirmar Autorización** en la caseta, como siempre: queda anotado «respondida por caseta».
 
-### Candidatos aprobados por Recursos Humanos
-
-1. Al responsable del departamento le llega el aviso con un **resumen** del candidato (puesto, escolaridad, experiencia).
-2. Toca **Bajar a entrevistar** o **Rechazar**.
-
-![Resumen de un candidato para el departamento](img/recepcion-y-candidatos/autorizacion-detalle-candidato.png)
-
-**Qué debes ver:** «Listo: autorizaste el ingreso de …. La caseta ya lo ve.», «Listo: pediste entrevistar a …. Recursos Humanos ya lo sabe.» o «Respuesta registrada: rechazaste a ….»
+**Qué debes ver:** «Listo: autorizaste el ingreso de …. La caseta ya lo ve.» o «Respuesta registrada: rechazaste a ….»
 
 ### La bandeja «Autorizaciones»
 
-Se abre desde **Mis pendientes** o la campana. Arriba está **Por responder** (con los minutos que lleva esperando), luego tus **Delegaciones** y el **Historial** (filtra por **Todas**, **Autorizada**, **Rechazada**…). Toca **Ver detalle / comentar** para dejar un **Comentario (opcional)** antes de responder.
+Se abre desde **Mis pendientes** o la campana. Arriba está **Por responder** (con los minutos que lleva esperando), luego tus **Delegaciones** y el **Historial** (filtra por **Todas**, **Autorizada**, **Rechazada**…). Toca **Ver detalle / comentar** para dejar un **Comentario (opcional)** antes de responder. Si entrevistas candidatos, el botón **Entrevistas** abre las que Recursos Humanos te canalizó (ver [Entrevistar y elegir](entrevistar-y-elegir.md)). En el historial pueden aparecer avisos «Candidato (proceso anterior)»: son de antes de que existieran las entrevistas con cita y ya no se responden.
 
 ![Bandeja de autorizaciones](img/recepcion-y-candidatos/autorizaciones-bandeja-jefe.png)
 
@@ -121,7 +114,7 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 
 ![Delegar autorizaciones](img/recepcion-y-candidatos/autorizaciones-delegar.png)
 
-**Qué debes ver:** «Delegación guardada: mientras esté activa, los avisos de … le llegan a ….» Cuando regreses, toca **Cancelar** en tu delegación: «Delegación cancelada: los avisos vuelven a llegarle al responsable.»
+**Qué debes ver:** «Delegación guardada: mientras esté activa, los avisos de … le llegan a ….» La delegación también cubre tus **entrevistas** de candidatos: las nuevas le llegan a quien te cubre y esa persona puede evaluarlas. Cuando regreses, toca **Cancelar** en tu delegación: «Delegación cancelada: los avisos vuelven a llegarle al responsable.»
 
 ## Cómo elegir los responsables por departamento
 
@@ -132,14 +125,14 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 
 ![Responsables por departamento](img/recepcion-y-candidatos/autorizaciones-responsables.png)
 
-**Qué debes ver:** «Responsables de … guardados.» Solo aparecen usuarios con permiso para **Responder** autorizaciones; si falta alguien, dale ese permiso en [Roles y permisos](roles-y-permisos.md).
+**Qué debes ver:** «Responsables de … guardados.» Solo aparecen usuarios con permiso para **Responder** autorizaciones; si falta alguien, dale ese permiso en [Roles y permisos](roles-y-permisos.md). El responsable también es quien sale primero en **¿Quién lo entrevista?** cuando Recursos Humanos canaliza a un candidato a su departamento (para eso necesita además el permiso **Evaluar** de *Candidatos*).
 
 ## Cómo ver los tiempos de espera
 
 1. En Recepción toca **Tiempos de espera**.
 2. Elige **Desde** y **Hasta** y toca **Ver**.
 
-**Qué debes ver:** el **Promedio de espera por departamento**, el detalle **Por día** y los **Candidatos por etapa**.
+**Qué debes ver:** el **Promedio de espera por departamento**, el detalle **Por día**, los **Candidatos por etapa** y cuánto tarda el departamento en evaluar (**Del aviso al departamento a su evaluación**).
 
 ![Tiempos de espera](img/recepcion-y-candidatos/recepcion-metricas.png)
 
@@ -149,11 +142,14 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 2. Escribe el **Texto del aviso de privacidad**. El texto que trae la plataforma es un borrador: pide a tu abogado que lo revise.
 3. Marca o desmarca **La caseta espera a que RR. HH. diga «Que pase»**. Marcado: quien viene a Recursos Humanos espera en caseta tu respuesta. Desmarcado: pasa directo y solo te llega el aviso.
 4. Ajusta **El enlace del kiosco dura (horas)** y **Veces que se puede enviar**.
-5. Toca **Guardar ajustes de Recepción**.
+5. En **Criterios para calificar las entrevistas** escribe, uno por renglón, lo que Recursos Humanos y el jefe califican de 1 a 5 estrellas en cada entrevista (hasta 8). Deja vacío el renglón que no uses. De inicio vienen: Presentación, Experiencia para el puesto, Actitud y comunicación, Disponibilidad (turnos, horario, fecha de inicio) y Expectativa económica.
+6. Toca **Guardar ajustes de Recepción**.
 
 ![Ajustes de Recepción](img/recepcion-y-candidatos/recepcion-ajustes.png)
 
-**Qué debes ver:** «Ajustes de Recepción guardados.»
+![Criterios para calificar las entrevistas](img/recepcion-y-candidatos/recepcion-criterios.png)
+
+**Qué debes ver:** «Ajustes de Recepción guardados.» Las evaluaciones que ya se hicieron conservan los criterios con los que se calificaron.
 
 ## En modo Noche
 
@@ -173,6 +169,8 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 | El enlace del correo ya venció o fue alterado. Abre la solicitud desde la plataforma. | El botón del correo pasó de 24 horas. | Responde desde la campana o **Autorizaciones**. |
 | El enlace del kiosco dura de 1 a 24 horas. / se puede abrir de 1 a 10 veces. | El ajuste está fuera de rango. | Corrige el número. |
 | No hubo cambios que guardar. | Guardaste sin cambiar nada. | Cambia algo o sal de la pantalla. |
+| Escribe al menos un criterio para calificar las entrevistas. | Dejaste todos los criterios vacíos. | Escribe al menos uno. |
+| El criterio «…» está repetido. / Máximo 8 criterios. / Cada criterio admite máximo 80 caracteres. | La lista de criterios tiene un error. | Corrige la lista. |
 | La visita no queda «esperando autorización». | El departamento no tiene responsable o la opción está apagada. | Revisa **Responsables por departamento**. |
 | Quien viene a Recursos Humanos pasa directo, sin esperar el «Que pase». | El ajuste **La caseta espera a que RR. HH. diga «Que pase»** está apagado, o nadie atiende Recursos Humanos en esa sede. | Revisa **Ajustes** de Recepción y que alguien de esa sede tenga el permiso. |
 | «Solo quien atiende Recursos Humanos en … puede responder.» | Esa persona llegó a una sede que no tienes a cargo. | Que responda Recursos Humanos de esa sede. |
@@ -189,13 +187,16 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 
 **¿La caseta ve en qué paso va el candidato?** No. Solo ve a qué viene (por ejemplo «Candidato · Entrevista»).
 
-**¿El responsable ve el CV completo?** No, solo un resumen. Los datos personales los guarda Recursos Humanos.
+**¿El jefe que entrevista ve el CV completo?** No, solo un resumen y la evaluación de Recursos Humanos. Ve el CV en PDF solo si la vacante tiene marcado **El jefe puede ver el CV**. Los datos personales los guarda Recursos Humanos.
+
+**¿Cómo llega un candidato al departamento?** Recursos Humanos lo entrevista primero y, si le sirve, lo **canaliza** al departamento con una cita: el jefe lo entrevista y decide en su pantalla **Entrevistar** (ver [Candidatos](candidatos.md)).
 
 **¿Quién ve el panel de Recepción?** Recursos Humanos y, si tiene el permiso, Dirección (solo el panel y los tiempos, no los CV). El «Que pase» solo lo dan quienes pueden editar candidatos (Recursos Humanos): a Dirección no le llega ese aviso.
 
 ## Relacionado
 
 - [Candidatos](candidatos.md)
+- [Entrevistar y elegir](entrevistar-y-elegir.md)
 - [Bitácora de accesos](accesos.md)
 - [Departamentos y puestos](departamentos-y-puestos.md)
 - [Configuración](configuracion.md)

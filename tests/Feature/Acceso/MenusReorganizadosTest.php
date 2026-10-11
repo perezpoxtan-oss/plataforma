@@ -284,9 +284,9 @@ class MenusReorganizadosTest extends TestCase
         $html = $this->actingAs($jefe)->get('/')->assertOk()->getContent();
         $this->assertMatchesRegularExpression('/data-mis-pendientes\s+hidden/', $html);
 
-        // Recursos Humanos (candidatos, fase 1): sus dos renglones en cero; el botón existe pero oculto
+        // Recursos Humanos (candidatos, fases 1 y 2): sus renglones en cero; el botón existe pero oculto
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
-        $this->assertSame(['total' => 0, 'claves' => ['recepcion', 'solicitudes']],
+        $this->assertSame(['total' => 0, 'claves' => ['recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos']],
             ['total' => app(MisPendientes::class)->para($rh)['total'], 'claves' => array_column(app(MisPendientes::class)->para($rh)['items'], 'clave')]);
         $this->assertMatchesRegularExpression('/data-mis-pendientes\s+hidden/', $this->actingAs($rh)->get('/')->assertOk()->getContent());
 

@@ -119,13 +119,15 @@ class RolesPlantillaSeeder extends Seeder
         // Lo del Solicitante, más: ve los pases de su sede para firmar los de su
         // gente (el circuito decide qué paso le toca por el departamento del
         // colaborador vinculado a su usuario), responde las autorizaciones de los
-        // departamentos donde es responsable y pide vacantes (quedan en borrador
-        // para que Recursos Humanos las revise y publique).
+        // departamentos donde es responsable, pide vacantes (quedan en borrador
+        // para que Recursos Humanos las revise y publique) y entrevista, evalúa
+        // y elige a los candidatos que Recursos Humanos le canaliza (fase 2).
         self::JEFE_DEPARTAMENTO => [
             'pases_salida' => ['ver' => Alcance::Sede, 'crear' => Alcance::Propios, 'aprobar' => Alcance::Sede, 'imprimir' => Alcance::Sede],
             'procedimientos' => ['ver' => Alcance::Sede],
             'autorizaciones' => ['ver' => Alcance::Sede, 'responder' => Alcance::Sede],
             'vacantes' => ['ver' => Alcance::Sede, 'crear' => Alcance::Propios],
+            'candidatos' => ['evaluar' => Alcance::Sede],
         ],
     ];
 
@@ -151,13 +153,16 @@ class RolesPlantillaSeeder extends Seeder
     /**
      * Excepciones a la regla general en esos módulos: el Director ve la
      * recepción y las métricas y responde autorizaciones, pero no los CV; el
-     * Jefe de seguridad y el Supervisor responden las de su sede.
+     * Jefe de seguridad y el Supervisor responden las de su sede. Los tres
+     * entrevistan y eligen a los candidatos que RR. HH. les canaliza
+     * (candidatos.evaluar, fase 2) sin ver los CV completos.
      * Recursos Humanos (todo su menú) y el Administrador siguen la regla general.
      */
     public const RECEPCION = [
-        'Director' => ['recepcion_rh' => [['ver'], Alcance::Empresa], 'autorizaciones' => [['ver', 'responder'], Alcance::Empresa]],
-        'Jefe de seguridad' => ['autorizaciones' => [['ver', 'responder'], Alcance::Sede]],
-        'Supervisor' => ['autorizaciones' => [['ver', 'responder'], Alcance::Sede]],
+        'Director' => ['recepcion_rh' => [['ver'], Alcance::Empresa], 'autorizaciones' => [['ver', 'responder'], Alcance::Empresa],
+            'candidatos' => [['evaluar'], Alcance::Empresa]],
+        'Jefe de seguridad' => ['autorizaciones' => [['ver', 'responder'], Alcance::Sede], 'candidatos' => [['evaluar'], Alcance::Sede]],
+        'Supervisor' => ['autorizaciones' => [['ver', 'responder'], Alcance::Sede], 'candidatos' => [['evaluar'], Alcance::Sede]],
     ];
 
     /**

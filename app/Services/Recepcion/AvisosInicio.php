@@ -4,6 +4,7 @@ namespace App\Services\Recepcion;
 
 use App\Models\User;
 use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Candidatos\Entrevistas;
 
 /**
  * Avisos de Recepción en la pantalla de Inicio (mismo formato que los demás
@@ -42,10 +43,24 @@ class AvisosInicio
             $avisos[] = [
                 'icono' => 'bi-patch-check',
                 'titulo' => $porResponder === 1 ? '1 solicitud espera tu autorización' : "{$porResponder} solicitudes esperan tu autorización",
-                'texto' => 'Una visita o un candidato de tu departamento espera tu respuesta. Mientras no contestes, la persona sigue esperando.',
+                'texto' => 'Una visita de tu departamento espera tu respuesta. Mientras no contestes, la persona sigue esperando.',
                 'ruta' => route('autorizaciones.index'),
                 'boton' => 'Responder',
             ];
+        }
+
+        // Candidatos fase 2: entrevistas que Recursos Humanos le canalizó
+        if ($actor->can('candidatos.evaluar')) {
+            $entrevistas = app(Entrevistas::class)->pendientes($actor)->count();
+            if ($entrevistas > 0) {
+                $avisos[] = [
+                    'icono' => 'bi-calendar-event',
+                    'titulo' => $entrevistas === 1 ? '1 entrevista espera tu evaluación' : "{$entrevistas} entrevistas esperan tu evaluación",
+                    'texto' => 'Recursos Humanos te canalizó candidatos: entrevístalos, califícalos y elige.',
+                    'ruta' => route('entrevistas.index'),
+                    'boton' => 'Entrevistar',
+                ];
+            }
         }
 
         return $avisos;

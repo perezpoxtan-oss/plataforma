@@ -112,7 +112,7 @@
                     $mod = $modificables[$v->id] ?? ['editar' => false, 'eliminar' => false];
                     $vencida = $v->estado === 'publicada' && ! $v->vigente($hoy);
                     $valores = [
-                        'titulo' => $v->titulo, 'puesto_id' => $v->puesto_id, 'departamento_id' => $v->departamento_id, 'plazas' => $v->plazas,
+                        'titulo' => $v->titulo, 'puesto_id' => $v->puesto_id, 'departamento_id' => $v->departamento_id, 'plazas' => $v->plazas, 'jefe_ve_cv' => $v->jefe_ve_cv,
                         'todas_las_sedes' => $v->todas_las_sedes, 'sedes' => $v->sedes->pluck('id')->all(), 'tipo_contrato' => $v->tipo_contrato, 'jornada' => $v->jornada,
                         'turno_id' => $v->turno_id, 'horario' => $v->horario, 'sueldo_min' => $v->sueldo_min !== null ? (string) (float) $v->sueldo_min : null,
                         'sueldo_max' => $v->sueldo_max !== null ? (string) (float) $v->sueldo_max : null, 'sueldo_periodo' => $v->sueldo_periodo, 'sueldo_a_tratar' => $v->sueldo_a_tratar,
@@ -138,10 +138,16 @@
                         @if ($vencida)
                             <p class="aviso-vacante-vencida"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Ya pasó su fecha de cierre: no se ve en internet ni en la caseta. Cámbiala en «Editar» o ciérrala.</p>
                         @endif
-                        @if ($puede['candidatos'])
-                            <a href="{{ route('candidatos.index', ['vacante' => $v->id]) }}" class="contador-postulados">
-                                <strong>{{ $v->candidatos_count }}</strong> candidato{{ $v->candidatos_count !== 1 ? 's' : '' }}
-                                <span>· {{ $v->en_proceso_count }} en proceso</span> <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                        @if ($puede['candidatos'] || $puede['evaluar'])
+                            {{-- Candidatos fase 2: tabla «Candidatos de esta vacante» para comparar --}}
+                            <a href="{{ route('vacantes.candidatos', $v->id) }}" class="contador-postulados">
+                                @if ($puede['candidatos'])
+                                    <strong>{{ $v->candidatos_count }}</strong> candidato{{ $v->candidatos_count !== 1 ? 's' : '' }}
+                                    <span>· {{ $v->en_proceso_count }} en proceso · {{ $v->plazas }} plaza{{ $v->plazas !== 1 ? 's' : '' }}</span>
+                                @else
+                                    <strong>Candidatos de esta vacante</strong>
+                                @endif
+                                <i class="bi bi-arrow-right" aria-hidden="true"></i>
                             </a>
                         @endif
                         <div class="texto-traza mt-2"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $v->registradoPor?->name ?? '—' }} · @fecha($v->created_at)</div>

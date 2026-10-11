@@ -1420,3 +1420,15 @@ html.modo-noche .manual-contenido code, html.modo-noche .manual-contenido table.
 html.modo-noche .manual-contenido img { border-color: var(--borde); }
 html.modo-noche .manual-contenido a, html.modo-noche .manual-migas-regresar, html.modo-noche .manual-contenido ol > li::marker { color: #93c5fd; }
 /* Fin Manual */
+/* Candidatos, fase 2: evaluaciones, citas y estrellas */
+html.modo-noche .evaluacion-entrevista, html.modo-noche .fila-entrevista { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .evaluacion-entrevista.tipo-departamento { background: rgba(99, 102, 241, 0.1); border-color: #3730a3; }
+html.modo-noche .cita-entrevista, html.modo-noche .cita-fila { background: rgba(59, 130, 246, 0.12); border-color: #1e40af; color: #bfdbfe; }
+html.modo-noche .cita-entrevista.no-se-presento { background: rgba(239, 68, 68, 0.12); border-color: #991b1b; color: #fecaca; }
+html.modo-noche .comentario-evaluacion { color: var(--texto); }
+html.modo-noche .estrellas label, html.modo-noche .estrellas-lectura .bi-star { color: #475569; }
+html.modo-noche .estrellas input:checked + label, html.modo-noche .estrellas label:has(~ input:checked) { color: #fbbf24; }
+html.modo-sol .estrellas label { color: #64748b; }
+html.modo-sol .estrellas input:checked + label, html.modo-sol .estrellas label:has(~ input:checked), html.modo-sol .estrellas-lectura { color: #000; }
+html.modo-sol .evaluacion-entrevista, html.modo-sol .cita-entrevista { border: 2px solid #000; background: #fff; color: #000; }
+/* Fin Candidatos, fase 2 */

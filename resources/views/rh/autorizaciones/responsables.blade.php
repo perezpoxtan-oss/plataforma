@@ -10,7 +10,7 @@
         <div class="icono"><i class="bi bi-people-fill text-warning" aria-hidden="true"></i></div>
         <div>
             <h1>Responsables por departamento</h1>
-            <p>Quién autoriza las visitas y decide sobre los candidatos de cada departamento (titular y suplentes).</p>
+            <p>Quién autoriza las visitas de cada departamento y quién entrevista a sus candidatos (titular y suplentes).</p>
         </div>
     </div>
 
@@ -56,7 +56,7 @@
                         <p class="renglon-cv mb-1"><i class="bi {{ $r->es_suplente ? 'bi-person' : 'bi-person-fill-check' }} me-1" aria-hidden="true"></i><strong>{{ $r->usuario?->name }}</strong>
                             <span class="texto-traza">{{ $r->es_suplente ? 'Suplente' : 'Titular' }} · {{ $r->sede?->nombre ?? 'Todas sus sedes' }}</span></p>
                     @empty
-                        <p class="small text-muted">Sin responsable: sus visitas entran sin esperar y los candidatos los pasa RR. HH. directo a entrevista.</p>
+                        <p class="small text-muted">Sin responsable: sus visitas entran sin esperar y, al canalizar un candidato, Recursos Humanos elige quién lo entrevista.</p>
                     @endforelse
                 </div>
                 @if ($deEmpresa)

@@ -8,23 +8,38 @@
 @use('App\Models\Autorizacion')
 @php
     $hora = app(\App\Support\HoraLocal::class);
-    $dialogo = old('_dialogo');
-    $ruta = ['registrado', 'revision', 'aprobado_rh', 'entrevista', 'seleccionado', 'contratado'];
-    $posicion = array_search($c->etapa, $ruta, true);
-    $ultima = $c->autorizaciones->first();
+    $dialogo = old('_dialogo') ?? $abrirDialogo;
+    $ruta = Candidato::RUTA;
+    $etapa = $activa?->etapa ?? $c->etapa;
+    $posicion = array_search($etapa, $ruta, true);
     $acceso = $c->acceso;
     $tiempos = array_filter([
         'Llegó a caseta' => $c->llegada_en,
         'Aviso a RR. HH.' => $c->avisado_rh_en,
-        'RR. HH. lo atendió' => $c->revision_en,
-        'Aprobado por RR. HH.' => $c->aprobado_rh_en,
-        'Enviado al departamento' => $c->enviado_departamento_en,
-        'Respuesta del departamento' => $c->respuesta_departamento_en,
-        'Entrevista' => $c->entrevista_en,
-        'Decisión' => $c->decision_en,
-        'Contratado' => $c->contratado_en,
+        'RR. HH. lo atendió' => $activa?->revision_en,
+        'Entrevista RR. HH.' => $activa?->entrevista_rh_en,
+        'Canalizado al departamento' => $activa?->canalizado_en,
+        'Evaluado por el departamento' => $activa?->evaluado_en,
+        'Elegido' => $activa?->elegido_en,
+        'No se presentó' => $activa?->no_se_presento_en,
+        'Decisión' => in_array($etapa, ['considerar', 'rechazado'], true) ? $activa?->decision_en : null,
+        'Contratado' => $activa?->contratado_en,
     ]);
-    $siguientes = array_values(array_filter(Candidato::TRANSICIONES[$c->etapa] ?? [], fn ($e) => ! in_array($e, ['cartera', 'descartado'], true)));
+    $evaluaciones = $activa?->evaluaciones ?? collect();
+    // Botones según la etapa (uno por acción)
+    $rhCanaliza = $etapa === 'entrevista_rh' && $ultimaRh?->resultado === 'canalizar' && (int) $ultimaRh->numero === (int) ($activa?->numero_entrevista ?? 1);
+    $botones = $puede['editar'] ? array_values(array_filter([
+        in_array($etapa, ['registrado', 'considerar', 'rechazado'], true) ? 'atender' : null,
+        in_array($etapa, ['revision', 'entrevista_rh'], true) && ! $rhCanaliza ? 'entrevistar' : null,
+        $rhCanaliza ? 'canalizar' : null,
+        $etapa === 'evaluado' ? 'segunda' : null,
+        in_array($etapa, ['canalizado', 'no_se_presento'], true) ? 'reprogramar' : null,
+        $etapa === 'canalizado' && $activa?->citaPasada() ? 'no_se_presento' : null,
+        $etapa === 'elegido' && $puede['contratar'] ? 'contratar' : null,
+        in_array('considerar', Candidato::TRANSICIONES[$etapa] ?? [], true) ? 'considerar' : null,
+        in_array('rechazado', Candidato::TRANSICIONES[$etapa] ?? [], true) ? 'rechazar' : null,
+    ])) : [];
+    $ultimaDepto = $evaluaciones->where('tipo', 'departamento')->last();
 @endphp
 <div class="pantalla-candidato">
     @include('administracion.partes.avisos')
@@ -42,7 +57,7 @@
             @endif
             <div class="flex-grow-1 min-w-0">
                 <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
-                    <span class="pastilla-etapa etapa-{{ Candidato::COLORES[$c->etapa] ?? 'gris' }}">{{ $c->etiquetaEtapa() }}</span>
+                    <span class="pastilla-etapa etapa-{{ Candidato::COLORES[$etapa] ?? 'gris' }}">{{ Candidato::ETAPAS[$etapa] ?? $etapa }}</span>
                     <span class="pastilla-origen"><i class="bi bi-signpost me-1" aria-hidden="true"></i>{{ Candidato::ORIGENES[$c->origen] ?? $c->origen }}</span>
                     @if ($c->autocaptura_pendiente)<span class="pastilla-revisar"><i class="bi bi-phone me-1" aria-hidden="true"></i>Por revisar</span>@endif
                 </div>
@@ -69,42 +84,72 @@
         {{-- Avance --}}
         <ol class="avance-candidato" aria-label="Avance del candidato">
             @foreach ($ruta as $i => $paso)
-                <li class="{{ $posicion !== false && $i < $posicion ? 'hecho' : ($c->etapa === $paso ? 'actual' : '') }}">
+                <li class="{{ $posicion !== false && $i < $posicion ? 'hecho' : ($etapa === $paso ? 'actual' : '') }}" @if ($etapa === $paso) aria-current="step" @endif>
                     <span class="punto" aria-hidden="true">{{ $posicion !== false && $i < $posicion ? '✓' : $i + 1 }}</span>
                     <span>{{ Candidato::ETAPAS[$paso] }}</span>
                 </li>
             @endforeach
         </ol>
-        @if (in_array($c->etapa, ['cartera', 'descartado'], true))
-            <p class="aviso-etapa-lateral etapa-{{ $c->etapa }}"><i class="bi {{ $c->etapa === 'cartera' ? 'bi-archive' : 'bi-x-octagon' }} me-1" aria-hidden="true"></i>
-                {{ $c->etapa === 'cartera' ? 'En cartera: se guarda para una vacante futura.' : 'Descartado' }}@if ($c->motivo_descarte) — {{ $c->motivo_descarte }}@endif
-                @if ($c->decisionPor) <span class="texto-traza">({{ $c->decisionPor->name }} · @fecha($c->decision_en))</span>@endif</p>
+        @if (in_array($etapa, Candidato::LATERALES, true))
+            <p class="aviso-etapa-lateral etapa-{{ $etapa }}"><i class="bi {{ ['considerar' => 'bi-archive', 'rechazado' => 'bi-x-octagon', 'no_se_presento' => 'bi-calendar-x'][$etapa] }} me-1" aria-hidden="true"></i>
+                {{ ['considerar' => 'Considerar / cartera: se guarda para una vacante futura.', 'rechazado' => 'Rechazado', 'no_se_presento' => 'No se presentó a su entrevista con el departamento.'][$etapa] }}@if ($activa?->motivo_descarte && $etapa !== 'no_se_presento') — {{ $activa->motivo_descarte }}@endif
+                @if ($activa?->decisionPor && $etapa !== 'no_se_presento') <span class="texto-traza">({{ $activa->decisionPor->name }} · @fecha($activa->decision_en))</span>@endif</p>
         @endif
 
-        {{-- Acciones --}}
-        @if ($puede['editar'] && $c->etapa !== 'contratado')
+        {{-- Acciones: un botón por acción --}}
+        @if ($botones !== [])
             <div class="acciones-candidato">
-                @foreach ($siguientes as $etapa)
-                    <form action="{{ route('candidatos.etapa', $c->id) }}" method="POST" class="m-0"
-                          data-confirmar="{{ $etapa === 'aprobado_rh' ? '¿Aprobar y enviar al departamento '.($c->departamento?->nombre ?? '').'? Su responsable recibirá un resumen para decidir.' : '¿'.Candidato::BOTONES_ETAPA[$etapa].'?' }}">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="etapa" value="{{ $etapa }}">
-                        <button type="submit" class="btn-etapa {{ $etapa === 'aprobado_rh' || $etapa === 'seleccionado' ? 'principal' : '' }}">{{ Candidato::BOTONES_ETAPA[$etapa] }}</button>
-                    </form>
+                @foreach ($botones as $b)
+                    @switch($b)
+                        @case('atender')
+                            <form action="{{ route('candidatos.etapa', $c->id) }}" method="POST" class="m-0" data-confirmar="¿Atender a {{ $c->nombre_completo }}? Queda «En revisión RR. HH.».">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="etapa" value="revision">
+                                <button type="submit" class="btn-etapa principal">Atender</button>
+                            </form>
+                            @break
+                        @case('entrevistar')
+                            @if ($etapa === 'revision')
+                                <form action="{{ route('candidatos.etapa', $c->id) }}" method="POST" class="m-0">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="etapa" value="entrevista_rh">
+                                    <button type="submit" class="btn-etapa principal"><i class="bi bi-chat-square-text me-1" aria-hidden="true"></i>Entrevistar</button>
+                                </form>
+                            @else
+                                <button type="button" class="btn-etapa principal" data-abrir-dialogo="dialogoEvaluacion"><i class="bi bi-chat-square-text me-1" aria-hidden="true"></i>Entrevistar</button>
+                            @endif
+                            @break
+                        @case('canalizar')
+                            <button type="button" class="btn-etapa principal" data-abrir-dialogo="dialogoCanalizar"><i class="bi bi-send me-1" aria-hidden="true"></i>Canalizar al departamento</button>
+                            @break
+                        @case('segunda')
+                            <button type="button" class="btn-etapa principal" data-abrir-dialogo="dialogoCanalizar"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Segunda entrevista</button>
+                            @break
+                        @case('reprogramar')
+                            <button type="button" class="btn-etapa {{ $etapa === 'no_se_presento' ? 'principal' : '' }}" data-abrir-dialogo="dialogoCanalizar"><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>Reprogramar</button>
+                            @break
+                        @case('no_se_presento')
+                            <form action="{{ route('candidatos.no-se-presento', $c->id) }}" method="POST" class="m-0" data-confirmar="¿Marcar que {{ $c->nombre_completo }} no se presentó a su entrevista? Se avisa a quien lo iba a entrevistar.">
+                                @csrf
+                                <button type="submit" class="btn-etapa peligro"><i class="bi bi-calendar-x me-1" aria-hidden="true"></i>No se presentó</button>
+                            </form>
+                            @break
+                        @case('contratar')
+                            <button type="button" class="btn-etapa contratar" data-abrir-dialogo="dialogoContratar"><i class="bi bi-person-check-fill me-1" aria-hidden="true"></i>Contratar</button>
+                            @break
+                        @case('considerar')
+                            <button type="button" class="btn-etapa secundario" data-abrir-dialogo="dialogoEtapa" data-etapa-destino="considerar">Considerar</button>
+                            @break
+                        @case('rechazar')
+                            <button type="button" class="btn-etapa peligro" data-abrir-dialogo="dialogoEtapa" data-etapa-destino="rechazado">Rechazar</button>
+                            @break
+                    @endswitch
                 @endforeach
-                @if ($c->etapa === 'seleccionado' && $puede['contratar'])
-                    <button type="button" class="btn-etapa contratar" data-abrir-dialogo="dialogoContratar"><i class="bi bi-person-check-fill me-1" aria-hidden="true"></i>Contratar</button>
-                @endif
-                @if ($c->puedePasarA('cartera'))
-                    <button type="button" class="btn-etapa secundario" data-abrir-dialogo="dialogoEtapa" data-etapa-destino="cartera">Guardar en cartera</button>
-                @endif
-                @if ($c->puedePasarA('descartado'))
-                    <button type="button" class="btn-etapa peligro" data-abrir-dialogo="dialogoEtapa" data-etapa-destino="descartado">Descartar</button>
-                @endif
             </div>
-            @if ($c->etapa === 'revision' && $c->departamento_id === null)
-                <p class="small text-muted mt-2 mb-0"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Para «Aprobar y enviar al departamento», primero indica el departamento en <strong>Editar solicitud</strong>.</p>
+            @if ($etapa === 'evaluado' && $ultimaDepto)
+                <p class="small text-muted mt-2 mb-0"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>El departamento respondió «{{ $ultimaDepto->etiquetaResultado() }}». Tú cierras el contacto con el candidato: pídele una segunda entrevista, guárdalo para considerar o recházalo.</p>
             @endif
         @endif
     </section>
@@ -120,20 +165,30 @@
         </div>
     @endif
 
-    @if ($ultima)
-        <div class="aviso-departamento estado-{{ $ultima->estado }}">
-            <i class="bi {{ $ultima->pendiente() ? 'bi-hourglass-split' : ($ultima->estado === 'rechazada' ? 'bi-x-circle-fill' : 'bi-patch-check-fill') }}" aria-hidden="true"></i>
-            <div>
-                <strong>{{ $ultima->departamento?->nombre }}: {{ Autorizacion::ESTADOS[$ultima->estado] ?? $ultima->estado }}</strong>
-                <span class="d-block small">
-                    @if ($ultima->pendiente())
-                        Se avisó @fecha($ultima->solicitada_en) · esperando desde hace {{ $ultima->minutosEspera() }} min.
-                    @else
-                        Respondió {{ $ultima->respondidaPor?->name ?? '—' }} · @fecha($ultima->respondida_en) ({{ $ultima->minutosEspera() }} min después del aviso){{ $ultima->comentario ? ' — «'.$ultima->comentario.'»' : '' }}
-                    @endif
-                </span>
-            </div>
-        </div>
+    {{-- Línea de tiempo de la postulación: entrevistas, evaluaciones y cita --}}
+    @if ($activa && ($evaluaciones->isNotEmpty() || in_array($etapa, ['entrevista_rh', 'canalizado', 'no_se_presento'], true)))
+        <section class="tarjeta p-4 linea-entrevistas" aria-labelledby="t-entrevistas">
+            <h2 id="t-entrevistas" class="h6 fw-bold"><i class="bi bi-chat-square-text me-2 text-primary" aria-hidden="true"></i>Entrevistas y evaluaciones</h2>
+            <ol class="linea-tiempo-entrevistas">
+                @foreach ($evaluaciones as $e)
+                    <li>@include('rh.candidatos._evaluacion', ['e' => $e])</li>
+                @endforeach
+                @if (in_array($etapa, ['canalizado', 'no_se_presento'], true) && $activa->entrevistador)
+                    <li>
+                        <article class="cita-entrevista {{ $etapa === 'no_se_presento' ? 'no-se-presento' : '' }}">
+                            <strong><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>{{ $etapa === 'no_se_presento' ? 'No se presentó a su cita' : 'Cita con el departamento' }} · {{ $activa->numeroTexto() }} entrevista</strong>
+                            <p class="mb-0">{{ $textoCita }}{{ $activa->cita_lugar ? ' · '.$activa->cita_lugar : '' }}</p>
+                            <p class="texto-traza mb-0">Entrevista: {{ $activa->entrevistador->name }}{{ $activa->departamento ? ' ('.$activa->departamento->nombre.')' : '' }}@if ($activa->canalizadoPor) · canalizó {{ $activa->canalizadoPor->name }} @fecha($activa->canalizado_en)@endif</p>
+                        </article>
+                    </li>
+                @elseif ($etapa === 'canalizado')
+                    <li><p class="small text-danger mb-0"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Sin entrevistador: usa «Reprogramar» para elegir quién lo entrevista y la cita.</p></li>
+                @endif
+                @if ($etapa === 'entrevista_rh' && $evaluaciones->where('tipo', 'rh')->where('numero', (int) $activa->numero_entrevista)->isEmpty())
+                    <li><p class="small text-muted mb-0"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>En entrevista con Recursos Humanos desde @fecha($activa->entrevista_rh_en). Al terminar, toca «Entrevistar» para calificarla.</p></li>
+                @endif
+            </ol>
+        </section>
     @endif
 
     <div class="rejilla-ficha-candidato">
@@ -352,7 +407,7 @@
                 <ol class="historial-candidato">
                     @foreach ($c->eventos as $e)
                         <li>
-                            <strong>{{ $e->etapa_nueva ? (Candidato::ETAPAS[$e->etapa_nueva] ?? $e->etapa_nueva) : ucfirst(str_replace('_', ' ', $e->evento)) }}</strong>
+                            <strong>{{ $e->titulo() }}</strong>
                             @if ($e->comentario)<span class="d-block small">{{ $e->comentario }}</span>@endif
                             <span class="texto-traza">{{ $e->usuario?->name ?? 'Kiosco' }} · @fecha($e->created_at)</span>
                         </li>
@@ -401,10 +456,10 @@
             </div>
         </dialog>
 
-        {{-- ===== Cartera / Descartar ===== --}}
+        {{-- ===== Considerar / Rechazar ===== --}}
         <dialog id="dialogoEtapa" class="dialogo" aria-labelledby="titulo-etapa" @if ($dialogo === 'etapa') data-abrir-al-cargar @endif>
             <div class="dialogo-cabecera">
-                <h2 id="titulo-etapa"><i class="bi bi-signpost-split me-2 text-secondary" aria-hidden="true"></i>Cambiar etapa</h2>
+                <h2 id="titulo-etapa"><i class="bi bi-signpost-split me-2 text-secondary" aria-hidden="true"></i>Considerar o rechazar</h2>
                 <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
             </div>
             <div class="dialogo-cuerpo">
@@ -417,15 +472,16 @@
                     @endif
                     <span class="campo-etiqueta">¿Qué hacemos con {{ $c->nombre_completo }}?</span>
                     <div class="opciones-cv mb-3">
-                        @if ($c->puedePasarA('cartera'))
-                            <label class="opcion-cv"><input type="radio" name="etapa" value="cartera" data-etapa-opcion @checked(old('etapa', 'cartera') === 'cartera')><span>Guardar en cartera (para otra vacante)</span></label>
+                        @if (in_array('considerar', Candidato::TRANSICIONES[$etapa] ?? [], true))
+                            <label class="opcion-cv"><input type="radio" name="etapa" value="considerar" data-etapa-opcion @checked(old('etapa', 'considerar') === 'considerar')><span>Considerar (guardar en cartera para otra vacante)</span></label>
                         @endif
-                        @if ($c->puedePasarA('descartado'))
-                            <label class="opcion-cv"><input type="radio" name="etapa" value="descartado" data-etapa-opcion @checked(old('etapa') === 'descartado')><span>Descartar</span></label>
+                        @if (in_array('rechazado', Candidato::TRANSICIONES[$etapa] ?? [], true))
+                            <label class="opcion-cv"><input type="radio" name="etapa" value="rechazado" data-etapa-opcion @checked(old('etapa') === 'rechazado')><span>Rechazar</span></label>
                         @endif
                     </div>
-                    <label class="campo-etiqueta" for="etapa_comentario">Motivo o comentario (obligatorio para descartar)</label>
-                    <textarea id="etapa_comentario" name="comentario" class="campo" rows="3" maxlength="500" placeholder="Ej. No cubre el horario">{{ $dialogo === 'etapa' ? old('comentario') : '' }}</textarea>
+                    <label class="campo-etiqueta" for="etapa_comentario">Motivo o comentario *</label>
+                    <textarea id="etapa_comentario" name="comentario" class="campo" rows="3" maxlength="500" required placeholder="Ej. No cubre el horario nocturno · No entregó documentos">{{ $dialogo === 'etapa' ? old('comentario') : '' }}</textarea>
+                    <p class="campo-ayuda">Lo ve solo Recursos Humanos. Al candidato no se le envía ningún aviso.@if ($etapa === 'canalizado') Su entrevista con el departamento se cancela y se le avisa a quien lo iba a entrevistar.@endif</p>
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                         <button type="submit" class="btn-azul">Guardar</button>
@@ -433,10 +489,147 @@
                 </form>
             </div>
         </dialog>
+
+        {{-- ===== Evaluación de RR. HH. («Entrevistar») ===== --}}
+        @if (in_array($etapa, ['revision', 'entrevista_rh'], true))
+            @php $reabrir = $dialogo === 'evaluacion'; @endphp
+            <dialog id="dialogoEvaluacion" class="dialogo ancho" aria-labelledby="titulo-evaluacion" @if ($reabrir) data-abrir-al-cargar @endif>
+                <div class="dialogo-cabecera">
+                    <h2 id="titulo-evaluacion"><i class="bi bi-chat-square-text me-2 text-primary" aria-hidden="true"></i>Evaluación de RR. HH.: {{ $c->nombre_completo }}</h2>
+                    <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                </div>
+                <div class="dialogo-cuerpo">
+                    <form action="{{ route('candidatos.evaluacion-rh', $c->id) }}" method="POST" autocomplete="off" data-form-evaluacion>
+                        @csrf
+                        <input type="hidden" name="_dialogo" value="evaluacion">
+                        @if ($reabrir && $errors->any())
+                            <div class="alert alert-danger small py-2 px-3" role="alert"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Revisa la evaluación:
+                                <ul class="mb-0 ps-3">@foreach ($errors->all() as $m)<li>{{ $m }}</li>@endforeach</ul>
+                            </div>
+                        @endif
+                        <p class="small text-muted">Entrevista de filtro: si te sirve, elige <strong>Canalizar al departamento</strong> y en el siguiente paso eliges quién lo entrevista y la cita. Con <strong>Considerar</strong> o <strong>Rechazar</strong> el departamento no recibe ningún aviso.</p>
+                        @include('rh.candidatos._evaluar-campos', ['tipo' => 'rh', 'criterios' => $criterios, 'prefijo' => 'rh', 'conOld' => $reabrir])
+                        <div class="dialogo-acciones">
+                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                            <button type="submit" class="btn-verde">Guardar evaluación</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        @endif
+
+        {{-- ===== Canalizar al departamento · Segunda entrevista · Reprogramar ===== --}}
+        @if ($rhCanaliza || in_array($etapa, ['evaluado', 'canalizado', 'no_se_presento'], true))
+            @php
+                $reabrir = $dialogo === 'canalizar';
+                $reprogramar = in_array($etapa, ['canalizado', 'no_se_presento'], true);
+                $tituloCanalizar = $reprogramar ? 'Reprogramar la entrevista' : ($etapa === 'evaluado' ? 'Segunda entrevista con el departamento' : 'Canalizar al departamento');
+                $zona = $hora->zona();
+                $citaLocal = $reprogramar && $activa?->cita_en && ! $activa->cita_ahora && $activa->cita_en->isFuture() ? $activa->cita_en->copy()->setTimezone($zona) : null;
+                $sugerida = $citaLocal ?? now()->setTimezone($zona)->addHour()->startOfHour();
+                $entrevistadorDefecto = $reprogramar && $activa?->entrevistador_id ? $activa->entrevistador_id : ($elegibles['responsables']->first()?->id);
+                $vOld = fn (string $campo, $defecto) => $reabrir ? old($campo, $defecto) : $defecto;
+                $puedeCorreo = $c->correo && $correoConfigurado;
+            @endphp
+            <dialog id="dialogoCanalizar" class="dialogo" aria-labelledby="titulo-canalizar" @if ($reabrir) data-abrir-al-cargar @endif>
+                <div class="dialogo-cabecera">
+                    <h2 id="titulo-canalizar"><i class="bi bi-send me-2 text-primary" aria-hidden="true"></i>{{ $tituloCanalizar }}</h2>
+                    <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                </div>
+                <div class="dialogo-cuerpo">
+                    <form action="{{ route('candidatos.canalizar', $c->id) }}" method="POST" autocomplete="off" data-form-canalizar>
+                        @csrf
+                        <input type="hidden" name="_dialogo" value="canalizar">
+                        @if ($reabrir && $errors->any())
+                            <div class="alert alert-danger small py-2 px-3" role="alert"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Revisa los datos:
+                                <ul class="mb-0 ps-3">@foreach ($errors->all() as $m)<li>{{ $m }}</li>@endforeach</ul>
+                            </div>
+                        @endif
+                        <p class="small text-muted">{{ $reprogramar ? 'Cambia la cita o quién lo entrevista: se avisa a la persona anterior y a la nueva.' : 'Quien lo entrevista recibe el aviso en la campana, en Mis pendientes y por correo, con el resumen del candidato (sin datos oficiales ni domicilio) y tu evaluación.' }}</p>
+
+                        <label class="campo-etiqueta" for="can_vacante">Vacante</label>
+                        <select id="can_vacante" name="vacante_id" class="campo">
+                            <option value="">-- Sin vacante publicada --</option>
+                            @foreach ($vacantesElegibles as $vac)
+                                <option value="{{ $vac->id }}" @selected((string) $vOld('vacante_id', $activa?->vacante_id) === (string) $vac->id)>{{ $vac->titulo }}{{ $vac->estado !== 'publicada' ? ' ('.\App\Models\Vacante::ESTADOS[$vac->estado].')' : '' }}</option>
+                            @endforeach
+                        </select>
+
+                        <label class="campo-etiqueta" for="can_departamento">Departamento *</label>
+                        <select id="can_departamento" name="departamento_id" class="campo" required>
+                            <option value="">-- Elige --</option>
+                            @foreach ($departamentosSede as $d)
+                                <option value="{{ $d->id }}" @selected((string) $vOld('departamento_id', $departamentoCanalizar) === (string) $d->id)>{{ $d->nombre }}</option>
+                            @endforeach
+                        </select>
+
+                        <label class="campo-etiqueta" for="can_entrevistador">¿Quién lo entrevista? *</label>
+                        @if ($elegibles['responsables']->isEmpty() && $elegibles['otros']->isEmpty())
+                            <p class="texto-error-rh">Nadie puede entrevistar en esta sede: pide al administrador que dé el permiso «Evaluar» de Candidatos al jefe del departamento.</p>
+                        @endif
+                        <select id="can_entrevistador" name="entrevistador_id" class="campo" required aria-describedby="can_entrevistador_ayuda">
+                            <option value="">-- Elige --</option>
+                            @if ($elegibles['responsables']->isNotEmpty())
+                                <optgroup label="Responsables del departamento">
+                                    @foreach ($elegibles['responsables'] as $u)
+                                        <option value="{{ $u->id }}" @selected((string) $vOld('entrevistador_id', $entrevistadorDefecto) === (string) $u->id)>{{ $u->name }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endif
+                            @if ($elegibles['otros']->isNotEmpty())
+                                <optgroup label="Otras personas que pueden entrevistar">
+                                    @foreach ($elegibles['otros'] as $u)
+                                        <option value="{{ $u->id }}" @selected((string) $vOld('entrevistador_id', $entrevistadorDefecto) === (string) $u->id)>{{ $u->name }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endif
+                        </select>
+                        <p class="campo-ayuda" id="can_entrevistador_ayuda">Por omisión, el responsable del departamento (Autorizaciones → Responsables por departamento). Si delegó con «No molestar», el aviso le llega a su delegado.</p>
+
+                        <span class="campo-etiqueta d-block">¿Cuándo? *</span>
+                        <div class="opciones-cv" role="radiogroup" aria-label="Cuándo es la entrevista">
+                            <label class="opcion-cv"><input type="radio" name="cuando" value="cita" required @checked($vOld('cuando', $reprogramar && $activa?->cita_ahora ? 'ahora' : 'cita') === 'cita')><span>Con cita (fecha y hora)</span></label>
+                            <label class="opcion-cv"><input type="radio" name="cuando" value="ahora" required @checked($vOld('cuando', $reprogramar && $activa?->cita_ahora ? 'ahora' : 'cita') === 'ahora')><span>Ahora, está en sala</span></label>
+                        </div>
+                        <div class="rejilla-cv" data-mostrar-si='{"cuando":["cita"]}' @if ($vOld('cuando', $reprogramar && $activa?->cita_ahora ? 'ahora' : 'cita') === 'ahora') hidden @endif>
+                            <div>
+                                <label class="campo-etiqueta" for="can_fecha">Fecha *</label>
+                                <input type="date" id="can_fecha" name="fecha" class="campo" value="{{ $vOld('fecha', $sugerida->format('Y-m-d')) }}" min="{{ now()->setTimezone($zona)->format('Y-m-d') }}" data-requerido-si='{"cuando":["cita"]}'>
+                            </div>
+                            <div>
+                                <label class="campo-etiqueta" for="can_hora">Hora *</label>
+                                <input type="time" id="can_hora" name="hora" class="campo" value="{{ $vOld('hora', $sugerida->format('H:i')) }}" step="300" data-requerido-si='{"cuando":["cita"]}'>
+                            </div>
+                        </div>
+
+                        <label class="campo-etiqueta" for="can_lugar">Lugar o notas</label>
+                        <input type="text" id="can_lugar" name="lugar" class="campo" maxlength="300" value="{{ $vOld('lugar', $reprogramar ? $activa?->cita_lugar : '') }}" placeholder="Ej. Oficina de Alimentos y Bebidas, planta baja · Trae su solicitud impresa">
+
+                        <input type="hidden" name="avisar_candidato" value="0">
+                        <label class="casilla-candidato mt-3">
+                            <input type="checkbox" name="avisar_candidato" value="1" @checked($puedeCorreo && $vOld('avisar_candidato', '1')) @disabled(! $puedeCorreo)>
+                            <span><strong>Avisar al candidato por correo</strong><br><span class="small text-muted">
+                                @if (! $c->correo)
+                                    No tiene correo capturado en su solicitud.
+                                @elseif (! $correoConfigurado)
+                                    La plataforma no tiene correo configurado.
+                                @else
+                                    Se le envía a {{ $c->correo }} la fecha, la hora, el lugar y a quién buscar (solo con cita; nunca resultados).
+                                @endif
+                            </span></span>
+                        </label>
+                        <div class="dialogo-acciones">
+                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                            <button type="submit" class="btn-verde">{{ $reprogramar ? 'Guardar y avisar' : 'Canalizar y avisar' }}</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        @endif
     @endif
 
     {{-- ===== Contratar ===== --}}
-    @if ($puede['contratar'] && $c->etapa === 'seleccionado')
+    @if ($puede['contratar'] && $etapa === 'elegido')
         @php $reabrir = $dialogo === 'contratar'; @endphp
         <dialog id="dialogoContratar" class="dialogo" aria-labelledby="titulo-contratar" @if ($reabrir) data-abrir-al-cargar @endif>
             <div class="dialogo-cabecera">

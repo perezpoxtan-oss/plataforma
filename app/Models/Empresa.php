@@ -44,8 +44,10 @@ class Empresa extends Model
         'voucher_cobro' => ['Vouchers de reposición con cobro (CXC): enviar las copias a Seguridad, Recepción y Administración', true],
         // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
         'candidato_llegada' => ['Recepción: avisar a Recursos Humanos cuando la caseta registre a un candidato (o cuando llene su CV en el kiosco)', true],
-        'autorizacion_departamento' => ['Autorizaciones: avisar al responsable del departamento (o a su delegado) cuando una visita o un candidato espera su respuesta', true],
-        'autorizacion_respuesta' => ['Autorizaciones: avisar a Recursos Humanos cuando el departamento responde por un candidato', true],
+        'autorizacion_departamento' => ['Autorizaciones: avisar al responsable del departamento (o a su delegado) cuando una visita espera su respuesta', true],
+        // Candidatos, fase 2: entrevistas con el departamento
+        'entrevista_departamento' => ['Candidatos: avisar al entrevistador (o a su delegado) cuando Recursos Humanos le canaliza una entrevista, la reprograma o el candidato llega', true],
+        'evaluacion_departamento' => ['Candidatos: avisar a Recursos Humanos cuando el departamento evalúa o elige a un candidato', true],
     ];
 
     /** Ronda 5 (LL-04): lista de correos de cada copia del voucher con cobro (Configuración → Avisos por correo). */

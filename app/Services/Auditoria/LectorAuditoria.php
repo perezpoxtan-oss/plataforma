@@ -19,6 +19,7 @@ use App\Models\Equipo;
 use App\Models\EquipoPc;
 use App\Models\Espacio;
 use App\Models\EtiquetaPlantilla;
+use App\Models\EvaluacionCandidato;
 use App\Models\FirmaUsuario;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
@@ -115,6 +116,10 @@ class LectorAuditoria
         'publicada' => 'Publicación', 'pausada' => 'Pausa', 'reanudada' => 'Reanudación', 'cerrada' => 'Cierre', 'reabierta' => 'Reapertura',
         'bolsa_configurada' => 'Configuración de la bolsa de trabajo',
         'postulacion_creada' => 'Nueva postulación', 'visita_ligada' => 'Visita ligada a su postulación', 'espera' => 'Petición de espera',
+        // Candidatos, fase 2: entrevistas, canalización y elección
+        'evaluado_rh' => 'Evaluación de la entrevista de RR. HH.', 'canalizado' => 'Canalización al departamento',
+        'reprogramado' => 'Reprogramación de entrevista', 'no_se_presento' => 'No se presentó a su entrevista',
+        'evaluado_departamento' => 'Evaluación de la entrevista del departamento', 'correo_candidato' => 'Correo al candidato con su cita',
         // Configuración
         'avisos' => 'Cambio de avisos por correo', 'correo' => 'Cambio del correo de la plataforma', 'correo_prueba' => 'Correo de prueba',
         'respaldo_creado' => 'Creación de respaldo', 'respaldo_descargado' => 'Descarga de respaldo',
@@ -175,6 +180,7 @@ class LectorAuditoria
         ProcedimientoAcuse::class => ['Acuse de procedimiento', 'nombre'],
         Candidato::class => ['Candidato', 'nombre_completo'],
         Postulacion::class => ['Postulación', 'vacante'],
+        EvaluacionCandidato::class => ['Evaluación de entrevista', null],
         Autorizacion::class => ['Autorización departamental', null],
         Delegacion::class => ['Delegación de autorizaciones', null],
         EtiquetaPlantilla::class => ['Plantilla de etiquetas QR', 'nombre'],
@@ -235,7 +241,9 @@ class LectorAuditoria
                 $m = $modelos[$fila->auditable_id] ?? null;
                 $nombre = $m === null ? '#'.$fila->auditable_id.' (ya no existe)'
                     : ($m instanceof Colaborador ? $m->nombreCompleto()
-                        : ($m instanceof Novedad ? $m->folio() : (string) ($columna ? $m->{$columna} : '#'.$m->getKey())));
+                        : ($m instanceof Novedad ? $m->folio()
+                            : ($m instanceof EvaluacionCandidato ? $m->etiquetaTipo().' · '.$m->etiquetaResultado()
+                                : (string) ($columna ? $m->{$columna} : '#'.$m->getKey()))));
                 $resultado[$tipo.'#'.$fila->auditable_id] = $etiqueta.' · '.$nombre;
             }
         }

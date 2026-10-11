@@ -14,6 +14,7 @@ use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Autorizaciones\Delegaciones;
 use App\Services\Candidatos\CambioNoPermitido;
+use App\Services\Candidatos\Entrevistas;
 use App\Services\Permisos\Autorizador;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Support\Entrada;
@@ -27,8 +28,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
- * Autorizaciones departamentales: bandeja «Por responder» (visitas y
- * candidatos), historial, respuesta (también desde el botón del correo, con
+ * Autorizaciones departamentales: bandeja «Por responder» (visitas),
+ * historial (incluye las de candidatos del proceso anterior), respuesta (también desde el botón del correo, con
  * dirección firmada que pide iniciar sesión y confirmar), responsables por
  * departamento, delegaciones («No molestar») y el estado en vivo para la caseta.
  */
@@ -72,6 +73,8 @@ class AutorizacionController extends Controller
                 'delegaciones' => $misDelegaciones,
                 'usuarios' => $actor->can('autorizaciones.responder') ? $this->delegaciones->candidatosAResponsable($empresaId) : collect(),
                 'esResponsable' => DepartamentoResponsable::where('user_id', $actor->id)->exists(),
+                // Candidatos fase 2: las entrevistas que Recursos Humanos le canalizó (pantalla Entrevistar)
+                'entrevistas' => $actor->can('candidatos.evaluar') ? app(Entrevistas::class)->pendientes($actor)->count() : null,
                 'puede' => [
                     'responder' => $actor->can('autorizaciones.responder'),
                     'configurar' => $configura,
@@ -144,7 +147,6 @@ class AutorizacionController extends Controller
             $a->tipo === 'recepcion' && $a->estado === 'autorizada' => "Listo: {$a->titulo()} ya puede pasar. La caseta ya lo ve.",
             $a->tipo === 'recepcion' => "Respuesta registrada: {$a->titulo()} no puede pasar. La caseta ya lo ve.",
             $a->estado === 'autorizada' => "Listo: autorizaste el ingreso de {$a->titulo()}. La caseta ya lo ve.",
-            $a->estado === 'entrevista' => "Listo: pediste entrevistar a {$a->titulo()}. Recursos Humanos ya lo sabe.",
             default => "Respuesta registrada: rechazaste a {$a->titulo()}.",
         };
         if ($a->tipo === 'recepcion') {

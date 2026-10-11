@@ -5,6 +5,7 @@ namespace App\Services\Recepcion;
 use App\Models\Acceso;
 use App\Models\Autorizacion;
 use App\Models\Candidato;
+use App\Models\Postulacion;
 use App\Models\User;
 use App\Services\Permisos\Autorizador;
 use App\Support\HoraLocal;
@@ -144,7 +145,10 @@ class PanelRecepcion
     }
 
     /**
-     * @return array{esperando: int, revision: int, departamento: int, entrevista: int}
+     * Contadores del panel: esperando, con RR. HH. (en revisión o entrevista de
+     * RR. HH.), con el departamento (canalizados) y evaluados por el departamento.
+     *
+     * @return array{esperando: int, revision: int, departamento: int, evaluado: int}
      */
     public function contadores(User $actor, array $filas): array
     {
@@ -153,9 +157,9 @@ class PanelRecepcion
 
         return [
             'esperando' => count(array_filter($filas, fn ($f) => $f['espera'] !== 'atendido')),
-            'revision' => (clone $base)->where('etapa', 'revision')->count(),
-            'departamento' => (clone $base)->where('etapa', 'aprobado_rh')->count(),
-            'entrevista' => (clone $base)->where('etapa', 'entrevista')->count(),
+            'revision' => (clone $base)->whereIn('etapa', Candidato::POR_ENTREVISTAR)->count(),
+            'departamento' => (clone $base)->where('etapa', 'canalizado')->count(),
+            'evaluado' => (clone $base)->where('etapa', 'evaluado')->count(),
         ];
     }
 
@@ -210,7 +214,7 @@ class PanelRecepcion
                 'visitas' => $g->where('tipo', 'visita')->count(),
                 'candidatos' => $g->where('tipo', 'candidato')->count(),
                 'pendientes' => $g->where('estado', 'pendiente')->count(),
-                'autorizadas' => $g->whereIn('estado', ['autorizada', 'entrevista'])->count(),
+                'autorizadas' => $g->whereIn('estado', ['autorizada', 'entrevista'])->count(), // «entrevista»: proceso anterior
                 'rechazadas' => $g->where('estado', 'rechazada')->count(),
                 'promedio' => $respondidas->isEmpty() ? null : (int) round($respondidas->avg(fn ($a) => $a->minutosEspera())),
                 'maximo' => $respondidas->isEmpty() ? null : (int) $respondidas->max(fn ($a) => $a->minutosEspera()),
@@ -224,9 +228,16 @@ class PanelRecepcion
         })->sortKeys()->values()->all();
 
         $cands = $limitar(Candidato::query())->whereBetween('created_at', [$inicio, $fin])->limit(5000)
-            ->get(['id', 'etapa', 'origen', 'llegada_en', 'avisado_rh_en', 'revision_en', 'aprobado_rh_en', 'respuesta_departamento_en', 'entrevista_en', 'created_at']);
-        $promedio = function (string $de, string $a) use ($cands): ?int {
-            $tiempos = $cands->filter(fn ($c) => $c->{$de} && $c->{$a} && $c->{$a}->greaterThanOrEqualTo($c->{$de}))->map(fn ($c) => $c->{$de}->diffInMinutes($c->{$a}));
+            ->get(['id', 'etapa', 'origen', 'llegada_en', 'avisado_rh_en', 'revision_en', 'created_at']);
+        // Fase 2: las fechas de entrevista, canalización y evaluación viven en la postulación
+        $posts = $limitar(Postulacion::query())->whereBetween('created_at', [$inicio, $fin])->limit(5000)
+            ->get(['id', 'candidato_id', 'created_at', 'entrevista_rh_en', 'canalizado_en', 'evaluado_en']);
+        $llegadas = $cands->pluck('llegada_en', 'id');
+        foreach ($posts as $p) {
+            $p->setAttribute('llegada', $llegadas[$p->candidato_id] ?? $p->created_at);
+        }
+        $promedio = function (Collection $filas, string $de, string $a): ?int {
+            $tiempos = $filas->filter(fn ($c) => $c->{$de} && $c->{$a} && $c->{$a}->greaterThanOrEqualTo($c->{$de}))->map(fn ($c) => $c->{$de}->diffInMinutes($c->{$a}));
 
             return $tiempos->isEmpty() ? null : (int) round($tiempos->avg());
         };
@@ -237,10 +248,10 @@ class PanelRecepcion
             'candidatos' => [
                 'total' => $cands->count(),
                 'por_etapa' => collect(Candidato::ETAPAS)->map(fn ($nombre, $clave) => ['etapa' => $nombre, 'total' => $cands->where('etapa', $clave)->count()])->values()->all(),
-                'llegada_a_aviso' => $promedio('llegada_en', 'avisado_rh_en'),
-                'llegada_a_atencion' => $promedio('llegada_en', 'revision_en'),
-                'aprobado_a_respuesta' => $promedio('aprobado_rh_en', 'respuesta_departamento_en'),
-                'llegada_a_entrevista' => $promedio('llegada_en', 'entrevista_en'),
+                'llegada_a_aviso' => $promedio($cands, 'llegada_en', 'avisado_rh_en'),
+                'llegada_a_atencion' => $promedio($cands, 'llegada_en', 'revision_en'),
+                'canalizado_a_evaluacion' => $promedio($posts, 'canalizado_en', 'evaluado_en'),
+                'llegada_a_entrevista' => $promedio($posts, 'llegada', 'entrevista_rh_en'),
             ],
             'visitas' => [
                 'total' => $auts->where('tipo', 'visita')->count(),

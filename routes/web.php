@@ -26,6 +26,7 @@ use App\Http\Controllers\PanelController;
 use App\Http\Controllers\Publico\EmpleosController;
 use App\Http\Controllers\RecursosHumanos\AutorizacionController;
 use App\Http\Controllers\RecursosHumanos\CandidatoController;
+use App\Http\Controllers\RecursosHumanos\EntrevistaController;
 use App\Http\Controllers\RecursosHumanos\KioscoController;
 use App\Http\Controllers\RecursosHumanos\NotificacionController;
 use App\Http\Controllers\RecursosHumanos\RecepcionController;
@@ -506,6 +507,22 @@ Route::middleware('auth')->group(function () {
         Route::get('/vacantes/{vacante}/cartel', 'cartel')->whereNumber('vacante')->name('vacantes.cartel');
     });
     // Fin Padrones: Solicitud de empleo y Vacantes
+
+    // Padrones: Candidatos fase 2 (entrevista de RR. HH., canalizar al departamento, Entrevistar y elegir; ver docs/tecnico/candidatos.md)
+    Route::controller(CandidatoController::class)->group(function () {
+        Route::post('/candidatos/{candidato}/evaluacion-rh', 'evaluacionRh')->whereNumber('candidato')->name('candidatos.evaluacion-rh');
+        Route::post('/candidatos/{candidato}/canalizar', 'canalizar')->whereNumber('candidato')->name('candidatos.canalizar');
+        Route::post('/candidatos/{candidato}/no-se-presento', 'noSePresento')->whereNumber('candidato')->name('candidatos.no-se-presento');
+    });
+    Route::controller(EntrevistaController::class)->group(function () {
+        Route::get('/entrevistas', 'index')->name('entrevistas.index');
+        Route::get('/entrevistas/{postulacion}', 'show')->whereNumber('postulacion')->name('entrevistas.show');
+        Route::post('/entrevistas/{postulacion}', 'evaluar')->whereNumber('postulacion')->middleware('throttle:60,1')->name('entrevistas.evaluar');
+        Route::get('/entrevistas/{postulacion}/cv', 'cv')->whereNumber('postulacion')->name('entrevistas.cv');
+        Route::get('/entrevistas/{postulacion}/correo', 'correo')->whereNumber('postulacion')->name('entrevistas.correo');
+    });
+    Route::get('/vacantes/{vacante}/candidatos', [VacanteController::class, 'candidatos'])->whereNumber('vacante')->name('vacantes.candidatos');
+    // Fin Padrones: Candidatos fase 2
 
     // Padrones: Manual (ayuda dentro de la plataforma: toda sesión entra; cada página se filtra por los módulos que el usuario puede ver; ver docs/tecnico/manual.md)
     Route::controller('App\Http\Controllers\ManualController')->group(function () {

@@ -3,12 +3,12 @@ titulo: Pedir y aprobar solicitudes
 modulos: [pases_salida, autorizaciones]
 seccion: Primeros pasos
 orden: 35
-resumen: Guía para el personal de cualquier departamento (rol Solicitante) y para su jefe (rol Jefe de departamento): pedir pases de salida, aprobarlos, responder autorizaciones y pedir vacantes.
+resumen: Guía para el personal de cualquier departamento (rol Solicitante) y para su jefe (rol Jefe de departamento): pedir pases de salida, aprobarlos, responder visitas, entrevistar candidatos y pedir vacantes.
 ---
 
 # Pedir y aprobar solicitudes
 
-**¿Para qué sirve?** Si no trabajas en la caseta pero necesitas sacar equipo del hotel, aquí ves cómo **pedir un pase de salida** y seguirlo. Si eres **jefe de un departamento**, también cómo **aprobar** los pases de tu gente, **responder** las visitas o candidatos que llegan a tu departamento y **pedir una vacante** a Recursos Humanos.
+**¿Para qué sirve?** Si no trabajas en la caseta pero necesitas sacar equipo del hotel, aquí ves cómo **pedir un pase de salida** y seguirlo. Si eres **jefe de un departamento**, también cómo **aprobar** los pases de tu gente, **responder** las visitas que llegan a tu departamento, **entrevistar y elegir** a los candidatos que Recursos Humanos te canaliza y **pedir una vacante** a Recursos Humanos.
 
 ![Mis pendientes](img/menus/mis-pendientes.png)
 
@@ -16,7 +16,7 @@ resumen: Guía para el personal de cualquier departamento (rol Solicitante) y pa
 
 - Tu cuenta debe tener el rol **Solicitante** (pides y ves lo tuyo) o **Jefe de departamento** (además apruebas lo de tu departamento). Si no ves **Pases de salida** en el menú **Operación**, pide a tu administrador que revise tu rol.
 - Tu cuenta debe estar **vinculada a tu ficha de colaborador**, con tu departamento correcto. Si no lo está, al pedir un pase verás un aviso; tu administrador lo arregla en [Usuarios](usuarios.md).
-- Para responder visitas o candidatos, Recursos Humanos o tu administrador debe registrarte como **responsable** de tu departamento.
+- Para responder visitas y recibir candidatos, Recursos Humanos o tu administrador debe registrarte como **responsable** de tu departamento. Para entrevistar candidatos tu rol necesita además el permiso **Evaluar** (el rol Jefe de departamento ya lo trae).
 
 ## Cómo pedir un pase de salida
 
@@ -57,15 +57,23 @@ resumen: Guía para el personal de cualquier departamento (rol Solicitante) y pa
 - Te tocan los pases de las personas de **tu departamento** que salen de **tu sede**. Los de otros departamentos los firma su propio jefe.
 - No puedes aprobar un pase que pediste tú: lo firma otra persona del circuito.
 
-## Cómo responder una visita o un candidato (Jefe de departamento)
+## Cómo responder una visita (Jefe de departamento)
 
-1. Cuando alguien viene a tu departamento, o Recursos Humanos aprueba a un candidato, te llega un aviso a la **campana**, a **Mis pendientes → Autorizaciones por responder** y a tu correo.
+1. Cuando alguien viene a tu departamento, te llega un aviso a la **campana**, a **Mis pendientes → Autorizaciones por responder** y a tu correo.
 2. Abre el aviso. Revisa quién es y a qué viene.
-3. Toca **Autorizar ingreso** o **Rechazar** (visitas), o **Bajar a entrevistar** o **Rechazar** (candidatos).
+3. Toca **Autorizar ingreso** o **Rechazar**.
 
 ![Autorizaciones por responder](img/recepcion-y-candidatos/autorizaciones-bandeja-jefe.png)
 
-**Qué debes ver:** la caseta o Recursos Humanos ven tu respuesta al momento. Si vas a ausentarte, delega tus autorizaciones como se explica en [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
+**Qué debes ver:** la caseta ve tu respuesta al momento. Si vas a ausentarte, delega tus autorizaciones como se explica en [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
+
+## Cómo entrevistar a un candidato (Jefe de departamento)
+
+1. Cuando Recursos Humanos te canaliza a un candidato, te llega el aviso «Entrevista: …» con su cita a la **campana**, a **Mis pendientes → Entrevistas por evaluar** y a tu correo.
+2. Ábrelo: ves su resumen y la evaluación de Recursos Humanos.
+3. Entrevístalo, califícalo de 1 a 5 estrellas y elige **Elegir**, **Considerar**, **Segunda entrevista** o **Rechazar**.
+
+Todo el detalle, paso a paso, está en [Entrevistar y elegir](entrevistar-y-elegir.md).
 
 ## Cómo pedir una vacante (Jefe de departamento)
 
@@ -96,6 +104,7 @@ resumen: Guía para el personal de cualquier departamento (rol Solicitante) y pa
 | No me aparece **Mis pendientes**. | No tienes nada pendiente. | Es normal: aparece cuando algo espera tu respuesta. |
 | No veo la pantalla **Vacantes** o **Nueva vacante**. | Tu rol no pide vacantes. | Pide a tu administrador el rol de Jefe de departamento. |
 | No me llegan las visitas de mi departamento. | No estás registrado como responsable. | Pide a Recursos Humanos que te agregue en **Responsables por departamento**. |
+| No me llegan las entrevistas de candidatos. | Te falta el permiso **Evaluar** o no eres responsable del departamento. | Pide a tu administrador el permiso y a Recursos Humanos que te agregue como responsable. |
 
 ## Preguntas frecuentes
 
@@ -109,10 +118,13 @@ resumen: Guía para el personal de cualquier departamento (rol Solicitante) y pa
 
 **¿Puedo publicar yo la vacante?** No. La revisa y la publica Recursos Humanos.
 
+**¿Quién decide a qué candidato se contrata?** Tú, en tu pantalla **Entrevistar**, con el resultado **Elegir**. Recursos Humanos se encarga de los documentos y el contrato.
+
 ## Relacionado
 
 - [Pases de salida](pases-salida.md)
 - [Recepción y autorizaciones](recepcion-y-autorizaciones.md)
+- [Entrevistar y elegir](entrevistar-y-elegir.md)
 - [Vacantes](vacantes.md)
 - [Menús, Mis pendientes y modos de pantalla](menus.md)
 - [Roles y permisos](roles-y-permisos.md)

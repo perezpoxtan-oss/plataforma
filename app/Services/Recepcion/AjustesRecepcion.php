@@ -5,7 +5,10 @@ namespace App\Services\Recepcion;
 use App\Models\Empresa;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
+use App\Support\Entrada;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Ajustes de Recepción por empresa (empresas.preferencias['recepcion']):
@@ -15,7 +18,9 @@ use Illuminate\Support\Facades\Validator;
  *    Recursos Humanos (rh_autoriza_paso). Sin el dato = encendido: las
  *    empresas nuevas lo tienen encendido; a las que ya existían la migración
  *    de postulaciones lo dejó apagado (su caseta sigue igual hasta que lo enciendan);
- *  - duración y usos del enlace del kiosco.
+ *  - duración y usos del enlace del kiosco;
+ *  - criterios con los que se califican las entrevistas (fase 2): una lista
+ *    editable de hasta MAX_CRITERIOS; sin el dato, CRITERIOS_DEFECTO.
  *
  * El texto del aviso NO es un texto legal definitivo: el que trae la
  * plataforma está marcado como borrador para que la empresa lo valide con
@@ -35,6 +40,12 @@ class AjustesRecepcion
     public const HORAS_KIOSCO = 2;
 
     public const USOS_KIOSCO = 3;
+
+    /** Criterios de la evaluación de entrevistas (1 a 5 estrellas cada uno). */
+    public const CRITERIOS_DEFECTO = ['Presentación', 'Experiencia para el puesto', 'Actitud y comunicación',
+        'Disponibilidad (turnos, horario, fecha de inicio)', 'Expectativa económica'];
+
+    public const MAX_CRITERIOS = 8;
 
     public function __construct(private readonly AdministradorRoles $auditoria) {}
 
@@ -86,6 +97,59 @@ class AjustesRecepcion
     }
 
     /**
+     * Criterios para calificar las entrevistas (RR. HH. y departamento).
+     *
+     * @return list<string>
+     */
+    public function criterios(Empresa $empresa): array
+    {
+        $lista = $this->datos($empresa)['criterios'] ?? null;
+        $lista = is_array($lista) ? array_values(array_filter($lista, fn ($c) => is_string($c) && trim($c) !== '')) : [];
+
+        return $lista === [] ? self::CRITERIOS_DEFECTO : array_slice($lista, 0, self::MAX_CRITERIOS);
+    }
+
+    /** Clave de un criterio en el formulario («Actitud y comunicación» → actitud_y_comunicacion). */
+    public static function claveCriterio(string $nombre): string
+    {
+        return Str::slug($nombre, '_') ?: 'criterio_'.substr(md5($nombre), 0, 8);
+    }
+
+    /**
+     * Lista capturada en Ajustes → criterios limpios (sin vacíos ni repetidos).
+     *
+     * @return list<string>
+     */
+    private function limpiarCriterios(mixed $entrada): array
+    {
+        $limpios = [];
+        $claves = [];
+        foreach (is_array($entrada) ? $entrada : [] as $c) {
+            $texto = trim((string) preg_replace('/\s+/u', ' ', Entrada::texto($c)));
+            if ($texto === '') {
+                continue;
+            }
+            if (mb_strlen($texto) > 80) {
+                throw ValidationException::withMessages(['criterios' => 'Cada criterio admite máximo 80 caracteres.']);
+            }
+            $clave = self::claveCriterio($texto);
+            if (in_array($clave, $claves, true)) {
+                throw ValidationException::withMessages(['criterios' => "El criterio «{$texto}» está repetido."]);
+            }
+            $claves[] = $clave;
+            $limpios[] = $texto;
+        }
+        if ($limpios === []) {
+            throw ValidationException::withMessages(['criterios' => 'Escribe al menos un criterio para calificar las entrevistas.']);
+        }
+        if (count($limpios) > self::MAX_CRITERIOS) {
+            throw ValidationException::withMessages(['criterios' => 'Máximo '.self::MAX_CRITERIOS.' criterios.']);
+        }
+
+        return $limpios;
+    }
+
+    /**
      * @param  array<string, mixed>  $entrada
      */
     public function guardar(User $actor, Empresa $empresa, array $entrada, bool $privacidad, bool $autorizaciones): void
@@ -112,6 +176,11 @@ class AjustesRecepcion
             if (array_key_exists('rh_autoriza_paso', $d)) {
                 $nuevos['rh_autoriza_paso'] = (bool) $d['rh_autoriza_paso'];
             }
+            if (array_key_exists('criterios', $entrada)) {
+                $criterios = $this->limpiarCriterios($entrada['criterios']);
+                // Los de siempre no se guardan (así, si cambian en la plataforma, la empresa los recibe)
+                $nuevos['criterios'] = $criterios === self::CRITERIOS_DEFECTO ? null : $criterios;
+            }
         }
         if ($autorizaciones) {
             $nuevos['visitas_requieren_autorizacion'] = (bool) ($d['visitas_requieren_autorizacion'] ?? false);
@@ -124,6 +193,7 @@ class AjustesRecepcion
             'kiosco_horas' => (int) ($x['kiosco_horas'] ?? self::HORAS_KIOSCO),
             'kiosco_usos' => (int) ($x['kiosco_usos'] ?? self::USOS_KIOSCO),
             'rh_autoriza_paso' => (bool) ($x['rh_autoriza_paso'] ?? true),
+            'criterios' => is_array($x['criterios'] ?? null) ? $x['criterios'] : self::CRITERIOS_DEFECTO,
         ];
         $this->auditoria->auditar($actor, 'candidatos.configurado', $empresa, $resumen($antes), $resumen($nuevos));
     }

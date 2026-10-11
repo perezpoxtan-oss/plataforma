@@ -11,8 +11,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Solicitud de autorización al responsable de un departamento:
  *  - visita: la caseta registró a alguien que va a ese departamento y espera
  *    «Esperando autorización» (Autorizar ingreso / Rechazar);
- *  - candidato: Recursos Humanos lo aprobó y el departamento decide
- *    (Bajar a entrevistar / Rechazar);
+ *  - candidato: proceso anterior a la fase 2 de candidatos (Recursos Humanos
+ *    lo aprobaba y el departamento respondía «Bajar a entrevistar»). Ya no se
+ *    crean: ahora RR. HH. canaliza la entrevista (App\Services\Candidatos\Entrevistas).
+ *    Las que existen son historial; las pendientes se cancelaron al cambiar de proceso;
  *  - recepcion: la caseta registró a alguien que viene con Recursos Humanos y
  *    la empresa pide que RR. HH. diga «Que pase» (Que pase / Que espere / No
  *    puede pasar). No es de un departamento (departamento_id = null): la
@@ -25,17 +27,18 @@ class Autorizacion extends Model
 {
     use PerteneceAEmpresa, RegistraAutor;
 
-    public const TIPOS = ['visita' => 'Visita', 'candidato' => 'Candidato', 'recepcion' => 'Recepción de RR. HH.'];
+    public const TIPOS = ['visita' => 'Visita', 'candidato' => 'Candidato (proceso anterior)', 'recepcion' => 'Recepción de RR. HH.'];
 
     public const ESTADOS = [
-        'pendiente' => 'Esperando respuesta', 'autorizada' => 'Autorizada', 'entrevista' => 'Bajar a entrevistar',
+        'pendiente' => 'Esperando respuesta', 'autorizada' => 'Autorizada', 'entrevista' => 'Pidió entrevistarlo (proceso anterior)',
         'rechazada' => 'Rechazada', 'cancelada' => 'Cancelada',
     ];
 
     /** Respuestas posibles de cada tipo => estado al que lleva. */
     public const RESPUESTAS = [
         'visita' => ['autorizar' => 'autorizada', 'rechazar' => 'rechazada'],
-        'candidato' => ['entrevistar' => 'entrevista', 'rechazar' => 'rechazada'],
+        // Proceso anterior (historial): ya no se responden
+        'candidato' => [],
         // «Que espere» no cambia el estado: sigue pendiente (ver Autorizaciones::responder)
         'recepcion' => ['pase' => 'autorizada', 'espere' => 'pendiente', 'no_pasa' => 'rechazada'],
     ];
@@ -44,10 +47,10 @@ class Autorizacion extends Model
     public const NEGATIVAS = ['rechazar', 'no_pasa'];
 
     /** Texto de cada botón de respuesta. */
-    public const BOTONES = ['autorizar' => 'Autorizar ingreso', 'entrevistar' => 'Bajar a entrevistar', 'rechazar' => 'Rechazar',
+    public const BOTONES = ['autorizar' => 'Autorizar ingreso', 'rechazar' => 'Rechazar',
         'pase' => 'Que pase', 'espere' => 'Que espere', 'no_pasa' => 'No puede pasar'];
 
-    public const MEDIOS = ['plataforma' => 'Plataforma', 'correo' => 'Correo', 'caseta' => 'Caseta', 'rh' => 'Recursos Humanos'];
+    public const MEDIOS = ['plataforma' => 'Plataforma', 'correo' => 'Correo', 'caseta' => 'Caseta', 'rh' => 'Recursos Humanos', 'sistema' => 'Cambio de proceso'];
 
     protected $table = 'autorizaciones';
 

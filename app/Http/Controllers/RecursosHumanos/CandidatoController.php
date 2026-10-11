@@ -13,11 +13,13 @@ use App\Models\Vacante;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\CambioNoPermitido;
 use App\Services\Candidatos\DocumentosCandidato;
+use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\Kiosco;
 use App\Services\Candidatos\Postulaciones;
 use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Recepcion\AjustesRecepcion;
+use App\Support\CorreoPlataforma;
 use App\Support\Csv;
 use App\Support\Entrada;
 use App\Support\HoraLocal;
@@ -63,7 +65,7 @@ class CandidatoController extends Controller
             $porRevisar = (clone $base)->where('autocaptura_pendiente', true)->count();
             $lista = $this->filtrar(clone $base, $filtros)
                 ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'registradoPor:id,name', 'editadoPor:id,name', 'vacantePublicada:id,titulo,estado'])
-                ->orderByRaw("CASE WHEN etapa IN ('registrado','revision','aprobado_rh','entrevista','seleccionado') THEN 0 ELSE 1 END")
+                ->orderByRaw("CASE WHEN etapa IN ('".implode("','", Candidato::ABIERTAS)."') THEN 0 ELSE 1 END")
                 ->orderByDesc('id')->paginate(24)->withQueryString();
             $sedes = $this->candidatos->sedesParaElegir($actor, 'candidatos.ver');
 
@@ -119,8 +121,13 @@ class CandidatoController extends Controller
             $partes = $c->partesNombre();
             // Postulaciones: la activa (la que refleja la ficha) y las anteriores
             $postulaciones = app(Postulaciones::class);
-            $activa = $postulaciones->activa($c)?->load(['vacantePublicada:id,titulo,estado', 'accesos:id,postulacion_id,entrada_at,viene_a']);
+            $activa = $postulaciones->activa($c)?->load(['vacantePublicada:id,titulo,estado,departamento_id', 'accesos:id,postulacion_id,entrada_at,viene_a',
+                'evaluaciones.evaluador:id,name', 'entrevistador:id,name', 'canalizadoPor:id,name', 'departamento:id,nombre', 'decisionPor:id,name']);
             $anteriores = $postulaciones->anteriores($c, $activa);
+            // Fase 2: evaluaciones, canalizar (entrevistador y cita) y criterios
+            $entrevistas = app(Entrevistas::class);
+            $sedeActiva = (int) ($activa->sede_id ?? $c->sede_id);
+            $departamentoCanalizar = $activa?->departamento_id ?? $activa?->vacantePublicada?->departamento_id;
 
             return view('rh.candidatos.show', [
                 'c' => $c,
@@ -134,6 +141,14 @@ class CandidatoController extends Controller
                 'sedesContratar' => $actor->can('candidatos.contratar') ? $this->candidatos->sedesParaElegir($actor, 'colaboradores.crear') : collect(),
                 'partes' => $partes,
                 'privacidad' => app(AjustesRecepcion::class)->textoPrivacidad(Empresa::findOrFail($empresaId)),
+                'criterios' => $entrevistas->criterios($empresaId),
+                'ultimaRh' => $activa?->evaluaciones->where('tipo', 'rh')->last(),
+                'elegibles' => $actor->can('candidatos.editar') ? $entrevistas->elegibles($empresaId, $sedeActiva, $departamentoCanalizar) : ['responsables' => collect(), 'otros' => collect()],
+                'departamentoCanalizar' => $departamentoCanalizar,
+                'departamentosSede' => Departamento::where('activo', true)->aplicanEn([$sedeActiva])->orderBy('nombre')->get(['id', 'nombre']),
+                'textoCita' => $activa ? $entrevistas->textoCita($activa) : '',
+                'correoConfigurado' => app(CorreoPlataforma::class)->configurado(),
+                'abrirDialogo' => session('abrir_dialogo'),
                 'puede' => [
                     'editar' => $actor->can('candidatos.editar'),
                     'contratar' => $actor->can('candidatos.contratar') && $actor->can('colaboradores.crear'),
@@ -161,18 +176,70 @@ class CandidatoController extends Controller
         // Primero el registro (otra empresa o sede → 404) y después la validación
         $this->existe($request, $candidato, 'candidatos.editar');
         $datos = $request->validate([
-            'etapa' => ['required', Rule::in(array_keys(Candidato::ETAPAS))],
+            'etapa' => ['required', Rule::in(Candidato::MANUALES)],
             'comentario' => ['nullable', 'string', 'max:500'],
             'volver' => ['nullable', Rule::in(['ficha', 'recepcion'])],
-        ], ['etapa.*' => 'Elige una etapa válida.', 'comentario.max' => 'El comentario admite máximo 500 caracteres.']);
+        ], ['etapa.*' => 'Elige una etapa válida. Para canalizar, reprogramar o contratar usa su botón.', 'comentario.max' => 'El comentario admite máximo 500 caracteres.']);
 
-        return $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request, $datos) {
+        $hecho = false;
+        $respuesta = $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request, $datos, &$hecho) {
             $this->candidatos->cambiarEtapa($request->user(), $c, $datos['etapa'], $datos['comentario'] ?? null);
+            $hecho = true;
 
-            return $datos['etapa'] === 'aprobado_rh'
-                ? "{$c->nombre_completo}: aprobado por RR. HH. Se avisó al responsable del departamento."
+            return $datos['etapa'] === 'entrevista_rh'
+                ? "Entrevista de RR. HH. con {$c->nombre_completo}: al terminar, califícala y elige el resultado."
                 : "{$c->nombre_completo} ahora está «".Candidato::ETAPAS[$datos['etapa']].'».';
         }, ($datos['volver'] ?? null) === 'recepcion' ? 'recepcion.index' : null);
+
+        // «Entrevistar» abre de una vez la evaluación de RR. HH.
+        return $datos['etapa'] === 'entrevista_rh' && $hecho ? $respuesta->with('abrir_dialogo', 'evaluacion') : $respuesta;
+    }
+
+    // ------------------------------------------------ Entrevistas (fase 2)
+
+    /** Evaluación de la entrevista de RR. HH. (estrellas, comentario y resultado). */
+    public function evaluacionRh(Request $request, int $candidato): RedirectResponse
+    {
+        Gate::authorize('candidatos.editar');
+        $this->existe($request, $candidato, 'candidatos.editar');
+
+        return $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request) {
+            $e = app(Entrevistas::class)->evaluarRh($request->user(), $c, $request->only(['criterios', 'resultado', 'comentario', 'entrevista_en', 'entrevista_fecha', 'entrevista_hora']));
+            if ($e->resultado === 'canalizar') {
+                session()->flash('abrir_dialogo', 'canalizar'); // sigue: elegir entrevistador y cita
+
+                return "Evaluación guardada (promedio {$e->promedioTexto()}). Ahora canalízalo al departamento: elige quién lo entrevista y la cita.";
+            }
+
+            return "Evaluación guardada: {$c->nombre_completo} quedó «".Candidato::ETAPAS[$c->fresh()->etapa].'». El departamento no recibe aviso.';
+        });
+    }
+
+    /** Canalizar al departamento, Segunda entrevista o Reprogramar (cita y entrevistador). */
+    public function canalizar(Request $request, int $candidato): RedirectResponse
+    {
+        Gate::authorize('candidatos.editar');
+        $this->existe($request, $candidato, 'candidatos.editar');
+
+        return $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request) {
+            $antes = app(Postulaciones::class)->activa($c)?->etapa;
+            $p = app(Entrevistas::class)->canalizar($request->user(), $c, $request->only(['vacante_id', 'departamento_id', 'entrevistador_id', 'cuando', 'fecha', 'hora', 'lugar', 'avisar_candidato']));
+
+            return ($antes === 'canalizado' || $antes === 'no_se_presento' ? 'Entrevista reprogramada' : 'Listo: canalizado al departamento')
+                .": {$p->entrevistador?->name} ya tiene el aviso con la cita ({$c->nombre_completo}).";
+        });
+    }
+
+    /** «No se presentó» (ya pasó la hora de su cita). */
+    public function noSePresento(Request $request, int $candidato): RedirectResponse
+    {
+        Gate::authorize('candidatos.editar');
+
+        return $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request) {
+            app(Entrevistas::class)->noSePresento($request->user(), $c);
+
+            return "{$c->nombre_completo} quedó «No se presentó». Usa «Reprogramar» si vuelve a agendar.";
+        });
     }
 
     public function revisado(Request $request, int $candidato): RedirectResponse
@@ -331,7 +398,8 @@ class CandidatoController extends Controller
         $empresaId = $this->empresaDeTrabajo($request);
         $filtros = $this->filtros($request);
         $filas = $this->tenant->conEmpresa($empresaId, fn () => $this->filtrar($this->candidatos->limitar(Candidato::query(), $request->user(), 'candidatos.exportar'), $filtros)
-            ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'vacantePublicada:id,titulo'])->orderByDesc('id')->limit(5000)->get());
+            ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'vacantePublicada:id,titulo', 'postulacionActiva.evaluaciones:id,postulacion_id,tipo,promedio'])
+            ->orderByDesc('id')->limit(5000)->get());
 
         // Datos personales sensibles: solo si se piden expresamente (columnas marcadas)
         $conPersonales = Entrada::texto($request->query('datos')) === 'personales';
@@ -344,12 +412,14 @@ class CandidatoController extends Controller
             $salida = fopen('php://output', 'w');
             fwrite($salida, "\xEF\xBB\xBF");
             $marca = ' [DATO PERSONAL]';
-            Csv::fila($salida, array_merge(['Folio', 'Sede', 'Nombre', 'Puesto', 'Vacante', 'Departamento', 'Etapa', 'Origen', 'Escolaridad', 'Años de experiencia', 'Disponibilidad', 'Llegada', 'Decisión'],
+            Csv::fila($salida, array_merge(['Folio', 'Sede', 'Nombre', 'Puesto', 'Vacante', 'Departamento', 'Etapa', 'Origen', 'Escolaridad', 'Años de experiencia', 'Disponibilidad', 'Llegada', 'Decisión',
+                'Promedio RR. HH.', 'Promedio departamento'],
                 $conPersonales ? ['Teléfono'.$marca, 'Correo'.$marca, 'CURP'.$marca, 'RFC'.$marca, 'NSS'.$marca, 'Domicilio'.$marca, 'Contacto de emergencia'.$marca] : []));
             foreach ($filas as $c) {
                 Csv::fila($salida, array_merge([$c->id, $c->sede?->nombre, $c->nombre_completo, $c->puestoVisible(), $c->vacantePublicada?->titulo, $c->departamento?->nombre, $c->etiquetaEtapa(),
                     Candidato::ORIGENES[$c->origen] ?? $c->origen, $c->escolaridadMaxima(), $c->anosExperiencia(), Candidato::DISPONIBILIDAD[$c->disponibilidad] ?? null,
-                    $hora->formatear($c->llegada_en), $hora->formatear($c->decision_en)],
+                    $hora->formatear($c->llegada_en), $hora->formatear($c->decision_en),
+                    $c->postulacionActiva?->evaluaciones->where('tipo', 'rh')->last()?->promedioTexto(), $c->postulacionActiva?->evaluaciones->where('tipo', 'departamento')->last()?->promedioTexto()],
                     $conPersonales ? [$c->telefono, $c->correo, $c->curp, $c->rfc, $c->nss, $c->domicilioCompleto(),
                         trim(($c->emergencia_nombre ?? '').' '.($c->emergencia_telefono ?? ''))] : []));
             }
@@ -366,7 +436,7 @@ class CandidatoController extends Controller
 
         return [
             'q' => mb_substr(trim(Entrada::texto($request->query('q'))), 0, 100),
-            'etapa' => array_key_exists($etapa, Candidato::ETAPAS) || $etapa === 'en_proceso' ? $etapa : '',
+            'etapa' => array_key_exists($etapa, Candidato::ETAPAS) || in_array($etapa, ['en_proceso', 'por_entrevistar'], true) ? $etapa : '',
             'sede' => (int) Entrada::texto($request->query('sede'), '0'),
             'departamento' => (int) Entrada::texto($request->query('departamento'), '0'),
             'vacante' => (int) Entrada::texto($request->query('vacante'), '0'),
@@ -386,7 +456,9 @@ class CandidatoController extends Controller
             ->when($f['q'] !== '', fn ($x) => $x->where(fn ($w) => $w->where('candidatos.nombre_completo', 'like', '%'.addcslashes($f['q'], '%_\\').'%')
                 ->orWhere('candidatos.vacante', 'like', '%'.addcslashes($f['q'], '%_\\').'%')))
             ->when($f['etapa'] === 'en_proceso', fn ($x) => $x->whereIn('candidatos.etapa', Candidato::ABIERTAS))
-            ->when($f['etapa'] !== '' && $f['etapa'] !== 'en_proceso', fn ($x) => $x->where('candidatos.etapa', $f['etapa']))
+            // Mis pendientes → «Por entrevistar (RR. HH.)»
+            ->when($f['etapa'] === 'por_entrevistar', fn ($x) => $x->whereIn('candidatos.etapa', Candidato::POR_ENTREVISTAR))
+            ->when($f['etapa'] !== '' && ! in_array($f['etapa'], ['en_proceso', 'por_entrevistar'], true), fn ($x) => $x->where('candidatos.etapa', $f['etapa']))
             ->when($f['sede'] > 0, fn ($x) => $x->where('candidatos.sede_id', $f['sede']))
             ->when($f['departamento'] > 0, fn ($x) => $x->where('candidatos.departamento_id', $f['departamento']))
             // Vacante: la de cualquiera de sus postulaciones (no solo la activa)
