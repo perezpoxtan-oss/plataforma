@@ -169,6 +169,8 @@ class Candidato extends Model
             'referencias_laborales' => 'array', 'licencia_vigencia' => 'date', 'fecha_inicio_posible' => 'date', 'dependientes' => 'integer',
             'tiene_familiares' => 'boolean', 'trabajo_antes_aqui' => 'boolean', 'rolar_turnos' => 'boolean', 'puede_viajar' => 'boolean',
             'cambiar_residencia' => 'boolean', 'declaracion_aceptada_en' => 'datetime', 'firma_en' => 'datetime',
+            // Fase 3: caducidad y recordatorio de solicitud sin revisar
+            'archivada_en' => 'datetime', 'aviso_solicitud_en' => 'datetime', 'aviso_borrado_en' => 'datetime', 'borrar_en' => 'date', 'conservar_hasta' => 'date',
         ];
     }
 
@@ -345,6 +347,21 @@ class Candidato extends Model
     {
         return $this->firma_ruta !== null && $this->declaracion_aceptada_en !== null;
     }
+
+    // Fase 3: caducidad
+
+    /** ¿Ya es colaborador (alguna postulación contratada)? Su expediente ya es del colaborador: la ficha no caduca. */
+    public function contratado(): bool
+    {
+        return $this->colaborador_id !== null || $this->etapa === 'contratado';
+    }
+
+    /** ¿Tiene fecha de borrado avisada y todavía vigente? */
+    public function porBorrar(): bool
+    {
+        return $this->borrar_en !== null && $this->aviso_borrado_en !== null;
+    }
+    // Fin Fase 3
 
     /** Minutos desde que llegó (o se registró) hasta ahora. */
     public function minutosEsperando(): int

@@ -48,6 +48,8 @@ class Empresa extends Model
         // Candidatos, fase 2: entrevistas con el departamento
         'entrevista_departamento' => ['Candidatos: avisar al entrevistador (o a su delegado) cuando Recursos Humanos le canaliza una entrevista, la reprograma o el candidato llega', true],
         'evaluacion_departamento' => ['Candidatos: avisar a Recursos Humanos cuando el departamento evalúa o elige a un candidato', true],
+        // Candidatos, fase 3: plazos y caducidad
+        'plazo_candidato' => ['Candidatos: recordar cada día lo que pasó de su plazo —solicitud sin revisar, evaluación sin registrar, elegido sin documentos, candidato sin atender, cita sin llegada— y avisar 15 días antes de borrar una ficha por caducidad', true],
         // Cuenta del usuario (seguridad)
         'cuenta_bloqueada' => ['Seguridad: avisar por correo a quien administra usuarios (y a la persona) cuando una cuenta se bloquea por intentos fallidos', true],
     ];

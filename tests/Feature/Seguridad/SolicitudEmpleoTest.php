@@ -309,7 +309,7 @@ class SolicitudEmpleoTest extends TestCase
 
         // El diálogo propone nombre y apellidos tal como los capturó
         $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertSee('value="Ana María"', false)->assertSee('value="Pool"', false);
-        $this->actingAs($this->rh)->post("/candidatos/{$c->id}/contratar", ['num_empleado' => '3001', 'nombre' => 'Ana María', 'apellido_paterno' => 'Pool',
+        $this->actingAs($this->rh)->post("/candidatos/{$c->id}/contratar", ['forzar' => '1', 'motivo_forzar' => 'Entrega los documentos la próxima semana', 'num_empleado' => '3001', 'nombre' => 'Ana María', 'apellido_paterno' => 'Pool',
             'apellido_materno' => 'Canché'])->assertSessionHas('ok');
 
         $col = $this->enEmpresa(fn () => Colaborador::where('num_empleado', '3001')->sole());
@@ -325,7 +325,7 @@ class SolicitudEmpleoTest extends TestCase
 
         // Un CURP que ya tiene otro colaborador se avisa dentro del diálogo
         $otro = $this->candidato('elegido', ['nombre_completo' => 'Clon Pool', 'curp' => 'POCA960410MYNLNN05']);
-        $this->actingAs($this->rh)->post("/candidatos/{$otro->id}/contratar", ['num_empleado' => '3002', 'nombre' => 'Clon', 'apellido_paterno' => 'Pool', '_dialogo' => 'contratar'])
+        $this->actingAs($this->rh)->post("/candidatos/{$otro->id}/contratar", ['forzar' => '1', 'motivo_forzar' => 'Entrega los documentos la próxima semana', 'num_empleado' => '3002', 'nombre' => 'Clon', 'apellido_paterno' => 'Pool', '_dialogo' => 'contratar'])
             ->assertSessionHasErrors(['curp' => 'Ya existe otro colaborador registrado con ese CURP.']);
         $this->assertSame('elegido', $otro->fresh()->etapa);
     }

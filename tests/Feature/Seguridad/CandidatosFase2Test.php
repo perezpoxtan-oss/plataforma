@@ -296,7 +296,7 @@ class CandidatosFase2Test extends TestCase
 
         // RR. HH. contrata
         $this->actingAs($this->rh)->get("/candidatos/{$juan->id}")->assertSee('Contratar')->assertSee('Elegir')->assertSee('5.0');
-        $this->actingAs($this->rh)->post("/candidatos/{$juan->id}/contratar", ['num_empleado' => '4001', 'nombre' => 'Juan', 'apellido_paterno' => 'Pérez',
+        $this->actingAs($this->rh)->post("/candidatos/{$juan->id}/contratar", ['forzar' => '1', 'motivo_forzar' => 'Entrega los documentos la próxima semana', 'num_empleado' => '4001', 'nombre' => 'Juan', 'apellido_paterno' => 'Pérez',
             'apellido_materno' => 'Chan'])->assertSessionHas('ok');
         $this->assertSame('contratado', $juan->fresh()->etapa);
 

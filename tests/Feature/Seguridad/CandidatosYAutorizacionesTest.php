@@ -359,10 +359,10 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->actingAs($director)->post("/candidatos/{$c->id}/contratar", ['num_empleado' => '2001'])->assertForbidden();
 
         // Validación de Colaboradores (número obligatorio)
-        $this->actingAs($this->rh)->post("/candidatos/{$c->id}/contratar", ['nombre' => 'Ramón', 'apellido_paterno' => 'Ek', '_dialogo' => 'contratar'])
+        $this->actingAs($this->rh)->post("/candidatos/{$c->id}/contratar", ['forzar' => '1', 'motivo_forzar' => 'Entrega los documentos la próxima semana', 'nombre' => 'Ramón', 'apellido_paterno' => 'Ek', '_dialogo' => 'contratar'])
             ->assertSessionHasErrors('num_empleado');
 
-        $this->actingAs($this->rh)->post("/candidatos/{$c->id}/contratar", ['num_empleado' => '2001', 'nombre' => 'Ramón', 'apellido_paterno' => 'Ek', 'apellido_materno' => 'Balam'])
+        $this->actingAs($this->rh)->post("/candidatos/{$c->id}/contratar", ['forzar' => '1', 'motivo_forzar' => 'Entrega los documentos la próxima semana', 'num_empleado' => '2001', 'nombre' => 'Ramón', 'apellido_paterno' => 'Ek', 'apellido_materno' => 'Balam'])
             ->assertSessionHas('ok');
         $col = $this->enEmpresa(fn () => Colaborador::where('num_empleado', '2001')->sole());
         $this->assertSame('Ramón', $col->nombre);
@@ -376,7 +376,7 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->assertNotNull($c->contratado_en);
         $this->assertTrue(Auditoria::where('evento', 'candidatos.contratado')->exists());
         // Dos veces no
-        $this->actingAs($this->rh)->post("/candidatos/{$c->id}/contratar", ['num_empleado' => '2002', 'nombre' => 'R', 'apellido_paterno' => 'E'])->assertSessionHas('error');
+        $this->actingAs($this->rh)->post("/candidatos/{$c->id}/contratar", ['forzar' => '1', 'motivo_forzar' => 'Entrega los documentos la próxima semana', 'num_empleado' => '2002', 'nombre' => 'R', 'apellido_paterno' => 'E'])->assertSessionHas('error');
     }
 
     // ------------------------------------------------------------------ Documentos

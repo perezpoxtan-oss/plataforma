@@ -8,6 +8,7 @@ use App\Models\AcompananteAcceso;
 use App\Models\Autorizacion;
 use App\Models\Candidato;
 use App\Models\CandidatoDocumento;
+use App\Models\CandidatoEvento;
 use App\Models\Colaborador;
 use App\Models\Delegacion;
 use App\Models\Departamento;
@@ -50,8 +51,10 @@ use App\Models\Vehiculo;
 use App\Models\ZonaEstacionamiento;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
+use App\Services\Candidatos\DocumentosParaContratar;
 use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\Kiosco;
+use App\Services\Candidatos\PlazosCandidatos;
 use App\Services\Candidatos\Postulaciones;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
@@ -2301,17 +2304,41 @@ class CrearDatosDemo extends Command
             $atras($jorge->fresh(), 1);
             app(Postulaciones::class)->activa($jorge->fresh())?->forceFill(['cita_en' => now()->addMinutes(20)->startOfMinute()])->save();
 
-            // Elegida por el departamento (la entrevistó director.demo)
+            // Fase 3: documentos para contratar (archivo de ejemplo o «recibido en papel»)
+            $documentoDemo = function ($c, string $tipo, ?string $archivo, string $recibidoHace = '-1 day') use ($empresa, $imagen, $rh): void {
+                if ($archivo === null) {
+                    $doc = new CandidatoDocumento(['candidato_id' => $c->id, 'tipo' => $tipo, 'nombre_original' => 'Recibido en papel', 'ruta' => null, 'mime' => 'papel',
+                        'bytes' => 0, 'origen' => CandidatoDocumento::ORIGEN_PAPEL, 'recibido_en' => now()->modify($recibidoHace)->toDateString()]);
+                } else {
+                    $contenido = str_ends_with($archivo, '.pdf') ? "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\n%%EOF\n" : $imagen(480, 300, [100, 116, 139], mb_strtoupper($tipo).' (DEMO)');
+                    $ruta = 'candidatos/'.$empresa->id.'/'.$c->id.'/'.Str::uuid().(str_ends_with($archivo, '.pdf') ? '.pdf' : '.jpg');
+                    Storage::disk('local')->put($ruta, $contenido);
+                    $doc = new CandidatoDocumento(['candidato_id' => $c->id, 'tipo' => $tipo, 'nombre_original' => $archivo, 'ruta' => $ruta,
+                        'mime' => str_ends_with($archivo, '.pdf') ? 'application/pdf' : 'image/jpeg', 'bytes' => strlen($contenido), 'origen' => 'rh']);
+                }
+                $doc->forceFill(['empresa_id' => $empresa->id, 'creado_por' => $rh->id, 'actualizado_por' => $rh->id])->save();
+            };
+
+            // Elegida por el departamento (la entrevistó director.demo); su expediente va a medias (fase 3)
             $mariela = $nuevo('Mariela Canché Dzib', 60 * 50, 'Recepción', 'Recepcionista');
             $canalizar($mariela, $director, [5, 4, 5, 4, 4], 'Lobby, mostrador de recepción', null, 'Inglés fluido, buena presentación.');
             $evaluarDepto($mariela, $director, [5, 5, 4, 5, 4], 'elegir', 'Lista para el turno matutino.');
             $atras($mariela->fresh(), 2);
+            auth()->setUser($rh);
+            $documentoDemo($mariela, 'cv', 'CV Mariela Canche.pdf');
+            $documentoDemo($mariela, 'ine', 'INE Mariela.jpg');
+            $documentoDemo($mariela, 'curp', null);
+            $documentoDemo($mariela, 'nss', null);
 
-            // Contratado: ya es colaborador
+            // Contratado: ya es colaborador, con el expediente completo y el contrato firmado (fase 3)
             $ramon = $nuevo('Ramón Ek Balam', 60 * 75, 'Mantenimiento', 'Técnico de Mantenimiento');
             $canalizar($ramon, $jefe, [4, 4, 4, 4, 4], 'Taller de mantenimiento');
             $evaluarDepto($ramon, $jefe, [4, 5, 4, 4, 4], 'elegir', null);
             auth()->setUser($rh);
+            foreach (array_keys(DocumentosParaContratar::DEFECTO) as $i => $tipo) {
+                $documentoDemo($ramon, $tipo, $tipo === 'ine' ? 'INE Ramon.jpg' : null, '-'.(2 + $i % 2).' days');
+            }
+            app(Postulaciones::class)->asegurar($ramon->fresh())->forceFill(['contrato_firmado_en' => now()->subDay(), 'contrato_recibido_por' => $rh->id])->save();
             $candidatos->contratar($rh, $ramon->fresh(), ['num_empleado' => '2001', 'nombre' => 'Ramón', 'apellido_paterno' => 'Ek', 'apellido_materno' => 'Balam']);
             $atras($ramon->fresh(), 3);
 
@@ -2322,6 +2349,22 @@ class CrearDatosDemo extends Command
             $pedro = $nuevo('Pedro Uicab Noh', 60 * 120, 'Alimentos y Bebidas', null);
             $mover($pedro, ['revision', 'rechazado'], 'No cubre el horario nocturno que pide la vacante.');
             $atras($pedro->fresh(), 5);
+
+            // Fase 3 (caducidad): rechazado hace un año, postulación archivada y ficha por borrar en 10 días (RR. HH. ya recibió el aviso)
+            $hugo = $nuevo('Hugo Balam Poot', 60 * 24 * 365, 'Ama de Llaves', null);
+            $mover($hugo, ['revision', 'rechazado'], 'Sin experiencia en limpieza de habitaciones.');
+            $atras($hugo->fresh(), 365);
+            $viejo = now()->subDays(365)->addHours(3);
+            $pHugo = app(Postulaciones::class)->asegurar($hugo->fresh());
+            $pHugo->forceFill(['archivada_en' => now()->subDays(180), 'updated_at' => $viejo])->save();
+            Postulacion::whereKey($pHugo->id)->update(['updated_at' => $viejo]);
+            Candidato::whereKey($hugo->id)->update(['archivada_en' => now()->subDays(180), 'aviso_borrado_en' => now()->subDays(5), 'borrar_en' => now()->addDays(10)->toDateString(),
+                'created_at' => $viejo, 'updated_at' => $viejo]);
+            CandidatoEvento::where('candidato_id', $hugo->id)->update(['created_at' => $viejo, 'updated_at' => $viejo]);
+            Notificacion::create(['user_id' => $rh->id, 'tipo' => 'caducidad_candidato', 'icono' => 'bi-archive', 'nivel' => 'alerta', 'titulo' => 'Se borrará la ficha de Hugo Balam Poot el '.now()->addDays(10)->format('d/m/Y'),
+                'texto' => 'Lleva 12 meses sin movimiento y no fue contratado: por privacidad, su ficha y sus documentos se borrarán ese día. Si aún lo necesitas, consérvalo 6 meses más.',
+                'url' => route('candidatos.show', $hugo->id), 'referencia_tipo' => PlazosCandidatos::REFERENCIA_CADUCIDAD, 'referencia_id' => $hugo->id,
+                'acciones' => [['etiqueta' => 'Conservar 6 meses más', 'url' => route('candidatos.conservar', $hugo->id), 'campos' => [], 'estilo' => 'aceptar']]]);
 
             // Los avisos de candidatos de días anteriores ya se leyeron
             Notificacion::where('referencia_tipo', 'candidato')->whereIn('referencia_id', [$jorge->id, $mariela->id, $ramon->id, $silvia->id, $pedro->id])

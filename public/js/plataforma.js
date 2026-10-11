@@ -8611,7 +8611,8 @@ document.addEventListener('click', function (e) {
     function renglon(item) {
         var li = document.createElement('li');
         var a = document.createElement('a');
-        a.className = 'mis-pendientes-item' + (item.total > 0 ? '' : ' al-dia');
+        a.className = 'mis-pendientes-item' + (item.total > 0 ? '' : ' al-dia') + (item.nivel === 'ambar' || item.nivel === 'roja' ? ' nivel-' + item.nivel : '');
+        if (item.nivel === 'ambar' || item.nivel === 'roja') { a.title = item.nivel === 'roja' ? 'Pasó del doble del plazo' : 'Pasó del plazo'; }
         a.href = item.url;
         var i = document.createElement('i'); i.className = 'bi ' + item.icono; i.setAttribute('aria-hidden', 'true');
         var t = document.createElement('span'); t.textContent = item.titulo;

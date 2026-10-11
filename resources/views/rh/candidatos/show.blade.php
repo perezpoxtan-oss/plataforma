@@ -35,6 +35,7 @@
         $etapa === 'evaluado' ? 'segunda' : null,
         in_array($etapa, ['canalizado', 'no_se_presento'], true) ? 'reprogramar' : null,
         $etapa === 'canalizado' && $activa?->citaPasada() ? 'no_se_presento' : null,
+        $etapa === 'elegido' && ! ($activa?->contratoFirmado()) ? 'contrato' : null, // Fase 3
         $etapa === 'elegido' && $puede['contratar'] ? 'contratar' : null,
         in_array('considerar', Candidato::TRANSICIONES[$etapa] ?? [], true) ? 'considerar' : null,
         in_array('rechazado', Candidato::TRANSICIONES[$etapa] ?? [], true) ? 'rechazar' : null,
@@ -60,6 +61,15 @@
                     <span class="pastilla-etapa etapa-{{ Candidato::COLORES[$etapa] ?? 'gris' }}">{{ Candidato::ETAPAS[$etapa] ?? $etapa }}</span>
                     <span class="pastilla-origen"><i class="bi bi-signpost me-1" aria-hidden="true"></i>{{ Candidato::ORIGENES[$c->origen] ?? $c->origen }}</span>
                     @if ($c->autocaptura_pendiente)<span class="pastilla-revisar"><i class="bi bi-phone me-1" aria-hidden="true"></i>Por revisar</span>@endif
+                    {{-- Fase 3: caducidad --}}
+                    @if ($activa?->archivada())<span class="pastilla-origen"><i class="bi bi-archive me-1" aria-hidden="true"></i>Archivada</span>@endif
+                    @if ($c->porBorrar())<span class="pastilla-revisar"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Se borra el {{ $hora->formatear($c->borrar_en, 'd/m/Y') }}</span>@endif
+                    {{-- Fase 3: reloj y color según los plazos de la empresa (criterio 3) --}}
+                    @if ($reloj && in_array($etapa, Candidato::ABIERTAS, true))
+                        <span class="pastilla-origen reloj-etapa {{ $reloj['nivel'] ? 'nivel-'.$reloj['nivel'] : '' }}" title="{{ $reloj['plazo'] ? 'Plazo de '.$reloj['plazo'] : 'En esta etapa' }}">
+                            <i class="bi bi-clock me-1" aria-hidden="true"></i>{{ $reloj['texto'] }} en esta etapa{{ $reloj['nivel'] ? ' · pasó del plazo' : '' }}
+                        </span>
+                    @endif
                 </div>
                 <h1 class="nombre-candidato">{{ $c->nombre_completo }}</h1>
                 <div class="datos-candidato">
@@ -136,6 +146,10 @@
                                 <button type="submit" class="btn-etapa peligro"><i class="bi bi-calendar-x me-1" aria-hidden="true"></i>No se presentó</button>
                             </form>
                             @break
+                        @case('contrato')
+                            {{-- Fase 3 --}}
+                            <button type="button" class="btn-etapa principal" data-abrir-dialogo="dialogoContrato"><i class="bi bi-pen me-1" aria-hidden="true"></i>Contrato firmado</button>
+                            @break
                         @case('contratar')
                             <button type="button" class="btn-etapa contratar" data-abrir-dialogo="dialogoContratar"><i class="bi bi-person-check-fill me-1" aria-hidden="true"></i>Contratar</button>
                             @break
@@ -154,6 +168,24 @@
         @endif
     </section>
 
+    {{-- Fase 3: aviso de borrado por caducidad con «Conservar» --}}
+    @if ($c->porBorrar() && ! $c->contratado())
+        <div class="aviso-autocaptura aviso-caducidad">
+            <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+            <div class="flex-grow-1"><strong>Esta ficha se borrará el {{ $hora->formatear($c->borrar_en, 'd/m/Y') }}</strong> con sus documentos: lleva mucho tiempo sin movimiento y no fue contratado. Si aún lo necesitas, consérvalo.</div>
+            @if ($puede['editar'])
+                <form action="{{ route('candidatos.conservar', $c->id) }}" method="POST" class="m-0">
+                    @csrf
+                    <button type="submit" class="btn-secundario-rh"><i class="bi bi-shield-check me-1" aria-hidden="true"></i>Conservar {{ $mesesConservar }} meses más</button>
+                </form>
+            @endif
+        </div>
+    @elseif ($c->conservar_hasta && ! $c->contratado())
+        <p class="texto-traza"><i class="bi bi-shield-check me-1" aria-hidden="true"></i>Se conserva hasta el {{ $hora->formatear($c->conservar_hasta, 'd/m/Y') }}.</p>
+    @endif
+    @if ($activa?->archivada())
+        <p class="texto-traza"><i class="bi bi-archive me-1" aria-hidden="true"></i>Postulación archivada el {{ $hora->formatear($activa->archivada_en, 'd/m/Y') }}: ya no aparece en la lista de Candidatos (filtro «Archivadas»). «Atender» la reabre.</p>
+    @endif
     @if ($c->autocaptura_pendiente && $puede['editar'])
         <div class="aviso-autocaptura">
             <i class="bi bi-phone-fill" aria-hidden="true"></i>
@@ -358,16 +390,77 @@
                 </section>
             @endif
 
-            {{-- Documentos --}}
-            <section class="tarjeta p-4">
+            {{-- Documentos (fase 3: lista de documentos para contratar, contrato y expediente) --}}
+            <section class="tarjeta p-4" id="documentos">
                 <h2 class="h6 fw-bold"><i class="bi bi-paperclip me-2 text-secondary" aria-hidden="true"></i>Documentos</h2>
+                @php $faltanTexto = $estadoDocumentos['faltan']; @endphp
+                <p class="resumen-documentos {{ $faltanTexto === [] ? 'completo' : '' }}">
+                    <strong>Documentos: {{ $estadoDocumentos['tiene'] }} de {{ $estadoDocumentos['obligatorios'] }} obligatorios</strong>
+                    @if ($faltanTexto !== [])<span class="d-block small">Falta: {{ implode(', ', $faltanTexto) }}</span>@else<span class="d-block small">Expediente completo.</span>@endif
+                </p>
+                <ul class="lista-checklist" aria-label="Documentos para contratar">
+                    @foreach ($listaDocumentos as $d)
+                        @php
+                            $hay = ($estadoDocumentos['por_tipo'][$d->clave] ?? 0) > 0;
+                            $papel = $c->documentos->first(fn ($x) => $x->tipo === $d->clave && $x->enPapel());
+                        @endphp
+                        <li class="{{ $hay ? 'hecho' : ($d->obligatorio ? 'falta' : 'opcional') }}">
+                            <i class="bi {{ $hay ? 'bi-check-circle-fill' : 'bi-circle' }}" aria-hidden="true"></i>
+                            <span>{{ $d->nombre }}@if ($papel) <small class="text-muted fw-normal text-lowercase">· en papel el {{ $papel->recibido_en?->format('d/m/Y') }}{{ $papel->registradoPor ? ', lo recibió '.$papel->registradoPor->name : '' }}</small>@endif</span>
+                            <small>{{ $hay ? 'entregado' : ($d->obligatorio ? 'obligatorio' : 'opcional') }}</small>
+                        </li>
+                    @endforeach
+                </ul>
+                @if ($puede['editar'] && $etapa !== 'contratado' && $c->documentos->filter(fn ($x) => $x->enPapel())->count() < $listaDocumentos->count())
+                    {{-- Fase 3: «Recibido en papel» (el documento se entregó físico y no se escanea) --}}
+                    <form action="{{ route('candidatos.documentos.papel', $c->id) }}" method="POST" class="formulario-papel mb-3" autocomplete="off">
+                        @csrf
+                        <label class="campo-etiqueta" for="papel_tipo">Recibido en papel</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <select id="papel_tipo" name="tipo" class="campo flex-grow-1" aria-label="Documento recibido en papel">
+                                @foreach ($listaDocumentos as $d)
+                                    @continue($c->documentos->contains(fn ($x) => $x->tipo === $d->clave && $x->enPapel()))
+                                    <option value="{{ $d->clave }}" @selected(old('tipo') === $d->clave)>{{ $d->nombre }}{{ ($estadoDocumentos['por_tipo'][$d->clave] ?? 0) > 0 ? ' (ya entregado)' : '' }}</option>
+                                @endforeach
+                            </select>
+                            <input type="date" name="fecha" class="campo" value="{{ old('fecha', $hora->formatear(now(), 'Y-m-d')) }}" max="{{ $hora->formatear(now(), 'Y-m-d') }}" aria-label="Fecha en que se recibió">
+                            <button type="submit" class="btn-secundario-rh"><i class="bi bi-check2-square me-1" aria-hidden="true"></i>Recibir</button>
+                        </div>
+                        <p class="campo-ayuda">Queda anotado que lo recibiste tú y cuándo; no hay que escanearlo.</p>
+                        @error('tipo')<p class="texto-error-rh">{{ $message }}</p>@enderror
+                        @error('fecha')<p class="texto-error-rh">{{ $message }}</p>@enderror
+                    </form>
+                @endif
+                @if ($etapa === 'elegido' || $etapa === 'contratado' || $activa?->contratoFirmado())
+                    <p class="resumen-contrato {{ $activa?->contratoFirmado() ? 'completo' : '' }}">
+                        <i class="bi {{ $activa?->contratoFirmado() ? 'bi-check-circle-fill' : 'bi-pen' }} me-1" aria-hidden="true"></i>
+                        @if ($activa?->contratoFirmado())
+                            <strong>Contrato firmado</strong> el {{ $hora->formatear($activa->contrato_firmado_en, 'd/m/Y') }}{{ $activa->contratoRecibidoPor ? ' · lo recibió '.$activa->contratoRecibidoPor->name : '' }}
+                            @if ($activa->contratoDocumento) · <a href="{{ route('candidatos.documento', [$c->id, $activa->contratoDocumento->id]) }}">ver archivo</a>@endif
+                        @else
+                            <strong>Contrato: pendiente de firma.</strong> Al firmarlo, regístralo con <strong>Contrato firmado</strong>.
+                        @endif
+                    </p>
+                @endif
+                @if ($puede['expediente'])
+                    <p class="texto-traza"><i class="bi bi-folder2-open me-1" aria-hidden="true"></i>Ya pasaron al <a href="{{ route('colaboradores.expediente', $c->colaborador_id) }}">expediente del colaborador</a>.</p>
+                @endif
                 @forelse ($c->documentos as $doc)
                     <div class="documento-candidato">
+                        @if ($doc->enPapel())
+                            {{-- Fase 3: recibido en papel, sin archivo --}}
+                            <i class="bi bi-journal-check" aria-hidden="true"></i>
+                            <span class="d-grid">
+                                <strong>{{ $nombresDocumento[$doc->tipo] ?? $doc->tipo }}</strong>
+                                <span>Recibido en papel el {{ $doc->recibido_en?->format('d/m/Y') }} · lo recibió {{ $doc->registradoPor?->name ?? '' }}</span>
+                            </span>
+                        @else
                         <i class="bi {{ $doc->esImagen() ? 'bi-file-earmark-image' : 'bi-file-earmark-pdf' }}" aria-hidden="true"></i>
                         <a href="{{ route('candidatos.documento', [$c->id, $doc->id]) }}" @if ($doc->esImagen()) target="_blank" rel="noopener" @endif>
-                            <strong>{{ CandidatoDocumento::TIPOS[$doc->tipo] ?? $doc->tipo }}</strong>
+                            <strong>{{ $nombresDocumento[$doc->tipo] ?? $doc->tipo }}</strong>
                             <span>{{ $doc->nombre_original }} · {{ $doc->tamano() }} · {{ $doc->origen === 'kiosco' ? 'lo subió el candidato' : ($doc->registradoPor?->name ?? '') }}</span>
                         </a>
+                        @endif
                         @if ($puede['editar'])
                             <form action="{{ route('candidatos.documentos.destroy', [$c->id, $doc->id]) }}" method="POST" class="m-0" data-confirmar="¿Eliminar este documento?">
                                 @csrf
@@ -384,12 +477,13 @@
                         @csrf
                         <label class="campo-etiqueta" for="doc_tipo">Agregar documento</label>
                         <select id="doc_tipo" name="tipo" class="campo mb-2">
-                            @foreach (CandidatoDocumento::TIPOS as $clave => $texto)
-                                <option value="{{ $clave }}">{{ $texto }}</option>
+                            @foreach ($opcionesDocumento as $clave => $texto)
+                                <option value="{{ $clave }}" @selected(old('tipo') === $clave)>{{ $texto }}</option>
                             @endforeach
                         </select>
                         <input type="file" name="documento" class="campo mb-2" accept="application/pdf,image/jpeg,image/png" required aria-label="Archivo (PDF, JPG o PNG, máximo 5 MB)">
                         @error('documento')<p class="texto-error-rh">{{ $message }}</p>@enderror
+                        @error('tipo')<p class="texto-error-rh">{{ $message }}</p>@enderror
                         <button type="submit" class="btn-secundario-rh w-100"><i class="bi bi-upload me-1" aria-hidden="true"></i>Subir (PDF, JPG o PNG · máx. 5 MB)</button>
                     </form>
                 @endif
@@ -628,6 +722,36 @@
         @endif
     @endif
 
+    {{-- ===== Contrato firmado (fase 3) ===== --}}
+    @if ($puede['editar'] && $etapa === 'elegido' && ! ($activa?->contratoFirmado()))
+        @php $reabrir = $dialogo === 'contrato'; @endphp
+        <dialog id="dialogoContrato" class="dialogo" aria-labelledby="titulo-contrato" @if ($reabrir) data-abrir-al-cargar @endif>
+            <div class="dialogo-cabecera">
+                <h2 id="titulo-contrato"><i class="bi bi-pen me-2 text-success" aria-hidden="true"></i>Contrato firmado</h2>
+                <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+            <div class="dialogo-cuerpo">
+                <form action="{{ route('candidatos.contrato', $c->id) }}" method="POST" enctype="multipart/form-data" autocomplete="off">
+                    @csrf
+                    <input type="hidden" name="_dialogo" value="contrato">
+                    @if ($reabrir && $errors->any())
+                        <div class="alert alert-danger small py-2 px-3" role="alert"><ul class="mb-0 ps-3">@foreach ($errors->all() as $m)<li>{{ $m }}</li>@endforeach</ul></div>
+                    @endif
+                    <p class="small text-muted">Queda registrado que {{ $c->nombre_completo }} firmó su contrato, la fecha y que lo recibiste tú. Si lo escaneaste, adjunta el archivo (se guarda en privado).</p>
+                    <label class="campo-etiqueta" for="contrato_fecha">Fecha de la firma</label>
+                    <input type="date" id="contrato_fecha" name="fecha" class="campo" max="{{ $hora->formatear(now(), 'Y-m-d') }}" value="{{ $reabrir ? old('fecha') : $hora->formatear(now(), 'Y-m-d') }}">
+                    <label class="campo-etiqueta" for="contrato_archivo">Archivo del contrato (opcional)</label>
+                    <input type="file" id="contrato_archivo" name="archivo" class="campo" accept="application/pdf,image/jpeg,image/png" aria-describedby="contrato_ayuda">
+                    <p id="contrato_ayuda" class="campo-ayuda">PDF, JPG o PNG, máximo 5 MB.</p>
+                    <div class="dialogo-acciones">
+                        <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                        <button type="submit" class="btn-verde">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </dialog>
+    @endif
+
     {{-- ===== Contratar ===== --}}
     @if ($puede['contratar'] && $etapa === 'elegido')
         @php $reabrir = $dialogo === 'contratar'; @endphp
@@ -644,6 +768,25 @@
                         <div class="alert alert-danger small py-2 px-3" role="alert"><ul class="mb-0 ps-3">@foreach ($errors->all() as $m)<li>{{ $m }}</li>@endforeach</ul></div>
                     @endif
                     <p class="small text-muted">Se dará de alta en <strong>Colaboradores</strong> con los datos de su solicitud (CURP, RFC, NSS, nacimiento, nacionalidad, teléfono, correo y domicilio): no hay que volver a escribirlos. Confirma nombre y apellidos y escribe su número de empleado.</p>
+                    {{-- Fase 3: qué falta del expediente y «Contratar de todos modos» --}}
+                    @if ($faltantesContratar !== [])
+                        <div class="alert alert-warning small py-2 px-3" role="alert">
+                            <strong><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Todavía falta en su expediente:</strong>
+                            <ul class="mb-1 ps-3">@foreach ($faltantesContratar as $f)<li>{{ str_replace('Falta: ', '', $f) }}</li>@endforeach</ul>
+                            Puedes completarlo en <a href="#documentos">Documentos</a> o contratar de todos modos explicando por qué (queda en la bitácora).
+                        </div>
+                        <input type="hidden" name="forzar" value="0">
+                        <label class="casilla-candidato mb-2">
+                            <input type="checkbox" name="forzar" value="1" @checked($reabrir && old('forzar')) data-muestra-si-marcado="#motivo_forzar_caja">
+                            <span><strong>Contratar de todos modos</strong></span>
+                        </label>
+                        <div id="motivo_forzar_caja" class="mb-2" @if (! ($reabrir && old('forzar'))) hidden @endif>
+                            <label class="campo-etiqueta" for="motivo_forzar">¿Por qué se contrata sin completar el expediente?</label>
+                            <textarea id="motivo_forzar" name="motivo_forzar" class="campo" rows="2" maxlength="300" data-requerido-si-marcado placeholder="Ej. Entrega el acta de nacimiento la próxima semana; el contrato se firma el lunes">{{ $reabrir ? old('motivo_forzar') : '' }}</textarea>
+                        </div>
+                    @else
+                        <p class="small resumen-documentos completo mb-2"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>Expediente completo y contrato firmado.</p>
+                    @endif
                     <label class="campo-etiqueta" for="con_num">Número de empleado *</label>
                     <input type="text" id="con_num" name="num_empleado" class="campo" maxlength="20" required value="{{ $reabrir ? old('num_empleado') : '' }}">
                     <label class="campo-etiqueta" for="con_nombre">Nombre(s) *</label>

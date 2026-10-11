@@ -386,6 +386,19 @@ class AdministradorCandidatos
         if ($postulacion->etapa !== 'elegido') {
             throw new CambioNoPermitido('Solo se contrata a un candidato «Elegido» por el departamento.');
         }
+        // Fase 3: documentos obligatorios y contrato firmado; se puede forzar con motivo
+        $documentosParaContratar = app(DocumentosParaContratar::class);
+        $faltantes = $documentosParaContratar->faltantesParaContratar($candidato, $postulacion);
+        $forzado = $faltantes !== [] && filter_var($entrada['forzar'] ?? false, FILTER_VALIDATE_BOOL);
+        $motivoForzar = trim((string) ($entrada['motivo_forzar'] ?? ''));
+        if ($faltantes !== [] && ! $forzado) {
+            throw ValidationException::withMessages(['forzar' => 'Todavía no se puede contratar: '.implode('; ', $faltantes).'. Completa el expediente o marca «Contratar de todos modos» y escribe el motivo.']);
+        }
+        if ($forzado && $motivoForzar === '') {
+            throw ValidationException::withMessages(['motivo_forzar' => 'Escribe por qué se contrata sin completar el expediente (queda en la bitácora).']);
+        }
+        $motivoForzar = mb_substr($motivoForzar, 0, 300);
+        // Fin Fase 3
         // Los datos oficiales de la solicitud pasan al colaborador (RR. HH. no los vuelve a escribir)
         $datos = array_merge([
             'telefono' => $candidato->telefono, 'sede_id' => $candidato->sede_id, 'departamento_id' => $candidato->departamento_id,
@@ -397,7 +410,7 @@ class AdministradorCandidatos
         ], array_intersect_key($entrada, array_flip(['num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'sede_id', 'departamento_id', 'puesto_id', 'telefono'])));
         $datos = array_filter($datos, fn ($v) => $v !== null && $v !== '');
 
-        $colaborador = DB::transaction(function () use ($actor, $candidato, $datos, $postulaciones, $postulacion) {
+        $colaborador = DB::transaction(function () use ($actor, $candidato, $datos, $postulaciones, $postulacion, $documentosParaContratar) {
             $colaborador = app(AdministradorColaboradores::class)->crear($actor, (int) $candidato->empresa_id, Request::create('/', 'POST', $datos));
             $hecho = $postulaciones->cambiar($postulacion, 'elegido', [
                 'etapa' => 'contratado', 'contratado_en' => now(), 'colaborador_id' => $colaborador->id, 'decision_en' => $postulacion->decision_en ?? now(),
@@ -406,12 +419,16 @@ class AdministradorCandidatos
                 throw new CambioNoPermitido('Otra persona acaba de cambiar a este candidato. Revisa su etapa actual.');
             }
             Candidato::whereKey($candidato->id)->update(['actualizado_por' => $actor->id, 'updated_at' => now()]);
+            // Fase 3: sus documentos pasan al expediente del colaborador
+            $documentosParaContratar->pasarAlExpediente($candidato, $colaborador);
 
             return $colaborador;
         });
         $candidato->refresh();
-        $this->evento($candidato, 'contratado', 'elegido', 'contratado', 'Alta como colaborador (núm. '.$colaborador->num_empleado.').', $actor);
-        $this->auditoria->auditar($actor, 'candidatos.contratado', $candidato, ['etapa' => 'elegido'], ['etapa' => 'contratado', 'colaborador_id' => $colaborador->id]);
+        $this->evento($candidato, 'contratado', 'elegido', 'contratado', 'Alta como colaborador (núm. '.$colaborador->num_empleado.').'
+            .($forzado ? ' Se contrató sin completar el expediente ('.implode('; ', $faltantes).'). Motivo: '.$motivoForzar : ''), $actor);
+        $this->auditoria->auditar($actor, 'candidatos.contratado', $candidato, ['etapa' => 'elegido'], ['etapa' => 'contratado', 'colaborador_id' => $colaborador->id]
+            + ($forzado ? ['forzado' => true, 'faltantes' => $faltantes, 'motivo' => $motivoForzar] : []));
 
         return $colaborador;
     }

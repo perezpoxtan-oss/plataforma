@@ -536,6 +536,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/vacantes/{vacante}/candidatos', [VacanteController::class, 'candidatos'])->whereNumber('vacante')->name('vacantes.candidatos');
     // Fin Padrones: Candidatos fase 2
 
+    // Padrones: Candidatos fase 3 (documentos para contratar, contrato, plazos, caducidad y expediente del colaborador; ver docs/tecnico/candidatos.md)
+    Route::controller(CandidatoController::class)->group(function () {
+        Route::get('/candidatos/documentos-para-contratar', 'configuracion')->name('candidatos.configuracion');
+        Route::put('/candidatos/documentos-para-contratar', 'guardarDocumentos')->name('candidatos.configuracion.documentos');
+        Route::put('/candidatos/plazos', 'guardarPlazos')->name('candidatos.configuracion.plazos');
+        Route::post('/candidatos/{candidato}/contrato', 'contratoFirmado')->whereNumber('candidato')->name('candidatos.contrato');
+        Route::post('/candidatos/{candidato}/documentos/papel', 'documentoEnPapel')->whereNumber('candidato')->name('candidatos.documentos.papel');
+        Route::post('/candidatos/{candidato}/conservar', 'conservar')->whereNumber('candidato')->name('candidatos.conservar');
+    });
+    Route::controller('App\Http\Controllers\RecursosHumanos\ExpedienteController')->group(function () {
+        Route::get('/colaboradores/{colaborador}/expediente', 'index')->whereNumber('colaborador')->name('colaboradores.expediente');
+        Route::get('/colaboradores/{colaborador}/expediente/{documento}', 'documento')->whereNumber(['colaborador', 'documento'])->name('colaboradores.expediente.documento');
+    });
+    // Fin Padrones: Candidatos fase 3
+
     // Padrones: Manual (ayuda dentro de la plataforma: toda sesión entra; cada página se filtra por los módulos que el usuario puede ver; ver docs/tecnico/manual.md)
     Route::controller('App\Http\Controllers\ManualController')->group(function () {
         Route::get('/manual', 'index')->name('manual.index');

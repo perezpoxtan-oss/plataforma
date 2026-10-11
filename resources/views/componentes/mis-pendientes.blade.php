@@ -23,7 +23,7 @@
             <ul class="mis-pendientes-lista" data-mis-pendientes-lista>
                 @foreach ($misPendientes['items'] as $item)
                     <li>
-                        <a href="{{ $item['url'] }}" class="mis-pendientes-item {{ $item['total'] > 0 ? '' : 'al-dia' }}">
+                        <a href="{{ $item['url'] }}" class="mis-pendientes-item{{ $item['total'] > 0 ? '' : ' al-dia' }}{{ ! empty($item['nivel']) ? ' nivel-'.$item['nivel'] : '' }}"{!! ! empty($item['nivel']) ? ' title="'.($item['nivel'] === 'roja' ? 'Pasó del doble del plazo' : 'Pasó del plazo').'"' : '' !!}>
                             <i class="bi {{ $item['icono'] }}" aria-hidden="true"></i>
                             <span>{{ $item['titulo'] }}</span>
                             <span class="mis-pendientes-numero">{{ $item['total'] }}</span>

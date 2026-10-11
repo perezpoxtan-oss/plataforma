@@ -11,13 +11,17 @@ use App\Models\Postulacion;
 use App\Models\Puesto;
 use App\Models\Vacante;
 use App\Services\Candidatos\AdministradorCandidatos;
+use App\Services\Candidatos\CaducidadCandidatos;
 use App\Services\Candidatos\CambioNoPermitido;
 use App\Services\Candidatos\DocumentosCandidato;
+use App\Services\Candidatos\DocumentosParaContratar;
 use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\Kiosco;
+use App\Services\Candidatos\PlazosCandidatos;
 use App\Services\Candidatos\Postulaciones;
 use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
+use App\Services\Permisos\Autorizador;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Support\CorreoPlataforma;
 use App\Support\Csv;
@@ -58,12 +62,24 @@ class CandidatoController extends Controller
             return view('rh.candidatos.index', ['sinEmpresa' => true]);
         }
         $filtros = $this->filtros($request);
+        // Fase 3: si ya tocaba recordar, archivar o borrar algo en esta empresa, se hace ahora (candado de 60 s)
+        app(PlazosCandidatos::class)->correrSiToca($empresaId);
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $filtros, $empresaId) {
             $base = $this->candidatos->limitar(Candidato::query(), $actor, 'candidatos.ver');
+            // Fase 3: las postulaciones archivadas por caducidad no cuentan ni se listan (salvo el filtro «Archivadas»)
+            $archivadas = (clone $base)->whereNotNull('candidatos.archivada_en')->count();
+            $base->whereNull('candidatos.archivada_en');
             $conteos = (clone $base)->selectRaw('etapa, COUNT(*) as total')->groupBy('etapa')->pluck('total', 'etapa');
             $porRevisar = (clone $base)->where('autocaptura_pendiente', true)->count();
-            $lista = $this->filtrar(clone $base, $filtros)
+            // Fase 3: «Por caducar» = fichas con fecha de borrado avisada, archivadas o no (RR. HH. puede conservarlas)
+            $todas = fn () => $this->candidatos->limitar(Candidato::query(), $actor, 'candidatos.ver');
+            $porCaducar = $todas()->whereNotNull('candidatos.borrar_en')->count();
+            $lista = $this->filtrar(match (true) {
+                $filtros['archivadas'] => $todas()->whereNotNull('candidatos.archivada_en'),
+                $filtros['caducar'] => $todas(),
+                default => clone $base,
+            }, $filtros)
                 ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'registradoPor:id,name', 'editadoPor:id,name', 'vacantePublicada:id,titulo,estado'])
                 ->orderByRaw("CASE WHEN etapa IN ('".implode("','", Candidato::ABIERTAS)."') THEN 0 ELSE 1 END")
                 ->orderByDesc('id')->paginate(24)->withQueryString();
@@ -88,7 +104,10 @@ class CandidatoController extends Controller
                 'puede' => [
                     'crear' => $actor->can('candidatos.crear'),
                     'exportar' => $actor->can('candidatos.exportar'),
+                    'configurar' => $actor->can('candidatos.configurar'), // Fase 3: Documentos y plazos
                 ],
+                'archivadas' => $archivadas, // Fase 3
+                'porCaducar' => $porCaducar, // Fase 3
             ]);
         });
     }
@@ -128,8 +147,23 @@ class CandidatoController extends Controller
             $entrevistas = app(Entrevistas::class);
             $sedeActiva = (int) ($activa->sede_id ?? $c->sede_id);
             $departamentoCanalizar = $activa?->departamento_id ?? $activa?->vacantePublicada?->departamento_id;
+            // Fase 3: documentos para contratar, contrato y caducidad
+            $documentosParaContratar = app(DocumentosParaContratar::class);
+            $activa?->load(['contratoRecibidoPor:id,name', 'contratoDocumento:id,nombre_original,mime,bytes']);
+            $estadoDocumentos = $documentosParaContratar->estado($c, $activa);
+            $empresa = Empresa::findOrFail($empresaId);
+            $plazos = app(PlazosCandidatos::class)->plazos($empresa);
+            $reloj = $activa ? app(PlazosCandidatos::class)->relojDe($empresa, $activa, $c) : null;
 
             return view('rh.candidatos.show', [
+                'estadoDocumentos' => $estadoDocumentos,
+                'listaDocumentos' => $documentosParaContratar->lista($empresaId),
+                'opcionesDocumento' => $documentosParaContratar->opciones($empresaId),
+                'nombresDocumento' => $documentosParaContratar->nombres($empresaId),
+                'faltantesContratar' => $activa && $activa->etapa === 'elegido' ? $documentosParaContratar->faltantesParaContratar($c, $activa) : [],
+                'mesesConservar' => CaducidadCandidatos::MESES_CONSERVAR,
+                'plazoDocumentos' => $plazos['documentos_dias'],
+                'reloj' => $reloj, // Fase 3: cuánto lleva en su etapa y su color según los plazos
                 'c' => $c,
                 'activa' => $activa,
                 'anteriores' => $anteriores,
@@ -154,6 +188,7 @@ class CandidatoController extends Controller
                     'contratar' => $actor->can('candidatos.contratar') && $actor->can('colaboradores.crear'),
                     'eliminar' => $actor->can('candidatos.eliminar'),
                     'kiosco' => $actor->can('candidatos.editar'),
+                    'expediente' => $c->colaborador_id !== null && $actor->can('colaboradores.ver'), // Fase 3
                 ],
             ]);
         });
@@ -330,8 +365,10 @@ class CandidatoController extends Controller
     {
         Gate::authorize('candidatos.editar');
         $this->existe($request, $candidato, 'candidatos.editar');
+        // Fase 3: el tipo es un renglón de «Documentos para contratar» de la empresa (más CV y Otro)
+        $opciones = $this->tenant->conEmpresa($this->empresaDeTrabajo($request), fn () => app(DocumentosParaContratar::class)->opciones($this->empresaDeTrabajo($request)));
         $request->validate([
-            'tipo' => ['required', Rule::in(array_keys(CandidatoDocumento::TIPOS))],
+            'tipo' => ['required', Rule::in(array_keys($opciones))],
             'documento' => ['required', 'file', 'max:'.DocumentosCandidato::MAXIMO_KB, 'mimes:pdf,jpg,jpeg,png'],
         ], [
             'tipo.*' => 'Elige qué documento es.',
@@ -345,8 +382,10 @@ class CandidatoController extends Controller
             $doc = $this->documentos->subir($c, $request->file('documento'), (string) $request->input('tipo'), 'rh');
             app(AdministradorRoles::class)->auditar($request->user(), 'candidatos.documento_agregado', $c, null,
                 ['tipo' => $doc->tipo, 'nombre' => $doc->nombre_original]);
+            // Fase 3: el mensaje dice cuánto falta del expediente
+            $estado = app(DocumentosParaContratar::class)->estado($c->fresh()->load('documentos'), app(Postulaciones::class)->activa($c));
 
-            return 'Documento agregado.';
+            return 'Documento agregado. '.app(DocumentosParaContratar::class)->resumen($estado).($estado['faltan'] === [] ? ': completo.' : '; falta: '.implode(', ', $estado['faltan']).'.');
         });
     }
 
@@ -427,6 +466,97 @@ class CandidatoController extends Controller
         }, 'candidatos-'.now()->format('Y-m-d').($conPersonales ? '-datos-personales' : '').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
+    // ------------------------------------------------- Fase 3: documentos, contrato, plazos y caducidad
+
+    /** Pantalla «Documentos y plazos» (lista de documentos para contratar y plazos de candidatos). */
+    public function configuracion(Request $request): View
+    {
+        Gate::authorize('candidatos.configurar');
+        $actor = $request->user();
+        $empresaId = $this->empresaDeTrabajo($request);
+        $empresa = Empresa::findOrFail($empresaId);
+        $documentos = app(DocumentosParaContratar::class);
+
+        return $this->tenant->conEmpresa($empresaId, fn () => view('rh.candidatos.configuracion', [
+            'empresa' => $empresa,
+            'lista' => $documentos->lista($empresaId),
+            'configurada' => $documentos->configurada($empresaId),
+            'plazos' => app(PlazosCandidatos::class)->plazos($empresa),
+            'limites' => PlazosCandidatos::LIMITES,
+            'defecto' => PlazosCandidatos::DEFECTO,
+            'maxDocumentos' => DocumentosParaContratar::MAX_DOCUMENTOS,
+            'diasAviso' => CaducidadCandidatos::DIAS_AVISO,
+            'puedeGuardar' => app(Autorizador::class)->alcanceDeEmpresa($actor, 'candidatos.configurar'),
+        ]));
+    }
+
+    public function guardarDocumentos(Request $request): RedirectResponse
+    {
+        Gate::authorize('candidatos.configurar');
+        abort_unless(app(Autorizador::class)->alcanceDeEmpresa($request->user(), 'candidatos.configurar'), 403,
+            'La lista de documentos es de toda la empresa: hace falta «configurar» con alcance de empresa.');
+        $empresa = Empresa::findOrFail($this->empresaDeTrabajo($request));
+        $this->tenant->conEmpresa($empresa->id, fn () => app(DocumentosParaContratar::class)->guardar($request->user(), $empresa, $request->only(['documentos'])));
+
+        return redirect()->route('candidatos.configuracion')->with('ok', 'Lista de documentos guardada. Desde ahora cada ficha muestra cuántos obligatorios le faltan.');
+    }
+
+    public function guardarPlazos(Request $request): RedirectResponse
+    {
+        Gate::authorize('candidatos.configurar');
+        abort_unless(app(Autorizador::class)->alcanceDeEmpresa($request->user(), 'candidatos.configurar'), 403,
+            'Los plazos son de toda la empresa: hace falta «configurar» con alcance de empresa.');
+        $empresa = Empresa::findOrFail($this->empresaDeTrabajo($request));
+        app(PlazosCandidatos::class)->guardar($request->user(), $empresa, $request->only(array_keys(PlazosCandidatos::DEFECTO)));
+
+        return redirect()->route('candidatos.configuracion', [], 303)->withFragment('plazos')->with('ok', 'Plazos guardados. Los recordatorios usan estos tiempos desde la próxima revisión.');
+    }
+
+    /** «Contrato firmado» (desde Elegido): fecha, quién lo recibió y el archivo opcional. */
+    public function contratoFirmado(Request $request, int $candidato): RedirectResponse
+    {
+        Gate::authorize('candidatos.editar');
+        $this->existe($request, $candidato, 'candidatos.editar');
+        $request->validate([
+            'fecha' => ['nullable', 'date_format:Y-m-d'],
+            'archivo' => ['nullable', 'file', 'max:'.DocumentosCandidato::MAXIMO_KB, 'mimes:pdf,jpg,jpeg,png'],
+        ], ['fecha.*' => 'Revisa la fecha de la firma.', 'archivo.max' => 'El contrato pesa más de 5 MB.', 'archivo.*' => 'El contrato debe ser PDF, JPG o PNG.']);
+
+        return $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request) {
+            app(DocumentosParaContratar::class)->contratoFirmado($request->user(), $c, $request->only(['fecha']), $request->file('archivo'));
+            $faltan = app(DocumentosParaContratar::class)->faltantesParaContratar($c->fresh()->load('documentos'), app(Postulaciones::class)->activa($c));
+
+            return 'Contrato firmado registrado. '.($faltan === [] ? 'El expediente está completo: ya puedes Contratar.' : 'Todavía falta: '.implode('; ', array_map(fn ($f) => str_replace('Falta: ', '', $f), $faltan)).'.');
+        });
+    }
+
+    /** «Recibido en papel» (checklist de la ficha): el documento se entregó físico y no se escanea. */
+    public function documentoEnPapel(Request $request, int $candidato): RedirectResponse
+    {
+        Gate::authorize('candidatos.editar');
+
+        return $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request) {
+            $servicio = app(DocumentosParaContratar::class);
+            $servicio->recibidoEnPapel($request->user(), $c, $request->only(['tipo', 'fecha']));
+            $estado = $servicio->estado($c->fresh()->load('documentos'), app(Postulaciones::class)->activa($c));
+
+            return 'Documento recibido en papel. '.$servicio->resumen($estado).($estado['faltan'] === [] ? ': completo.' : '; falta: '.implode(', ', $estado['faltan']).'.');
+        });
+    }
+
+    /** «Conservar 6 meses más» (caducidad): desde la ficha o el botón de la campana. */
+    public function conservar(Request $request, int $candidato): RedirectResponse
+    {
+        Gate::authorize('candidatos.editar');
+
+        return $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request) {
+            $hasta = app(CaducidadCandidatos::class)->conservar($request->user(), $c);
+
+            return "La ficha de {$c->nombre_completo} se conservará hasta el ".app(HoraLocal::class)->formatear($hasta, 'd/m/Y').'.';
+        });
+    }
+    // Fin Fase 3
+
     // ------------------------------------------------------------------ Ayudas
 
     /** @return array<string, mixed> */
@@ -442,6 +572,9 @@ class CandidatoController extends Controller
             'vacante' => (int) Entrada::texto($request->query('vacante'), '0'),
             // Mis pendientes → «Solicitudes por revisar» (lo que el candidato llenó en el kiosco o por internet)
             'revisar' => Entrada::texto($request->query('revisar')) === '1',
+            // Fase 3: postulaciones archivadas por caducidad
+            'archivadas' => Entrada::texto($request->query('archivadas')) === '1',
+            'caducar' => Entrada::texto($request->query('caducar')) === '1',
         ];
     }
 
@@ -464,7 +597,9 @@ class CandidatoController extends Controller
             // Vacante: la de cualquiera de sus postulaciones (no solo la activa)
             ->when(($f['vacante'] ?? 0) > 0, fn ($x) => $x->where(fn ($w) => $w->where('candidatos.vacante_id', $f['vacante'])
                 ->orWhereIn('candidatos.id', Postulacion::where('vacante_id', $f['vacante'])->select('candidato_id'))))
-            ->when($f['revisar'] ?? false, fn ($x) => $x->where('candidatos.autocaptura_pendiente', true));
+            ->when($f['revisar'] ?? false, fn ($x) => $x->where('candidatos.autocaptura_pendiente', true))
+            // Fase 3: lista «Por caducar» (con fecha de borrado) y postulaciones archivadas
+            ->when($f['caducar'] ?? false, fn ($x) => $x->whereNotNull('candidatos.borrar_en')->orderBy('candidatos.borrar_en'));
     }
 
     private function buscar($actor, int $id, string $permiso): Candidato

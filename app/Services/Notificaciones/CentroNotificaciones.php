@@ -37,6 +37,9 @@ class CentroNotificaciones
         'entrevista_cambio' => ['bi-calendar-x', 'info'],
         'entrevista_llegada' => ['bi-person-check-fill', 'alerta'],
         'evaluacion_departamento' => ['bi-clipboard-check', 'exito'],
+        // Candidatos, fase 3: plazos (recordatorio único) y caducidad (aviso 15 días antes de borrar)
+        'plazo_candidato' => ['bi-hourglass-split', 'alerta'],
+        'caducidad_candidato' => ['bi-archive', 'alerta'],
         // Cuenta del usuario (docs/criterios-ux.md, reglas 1 y 6)
         'cuenta_contrasena' => ['bi-key-fill', 'exito'],
         'cuenta_bloqueada' => ['bi-lock-fill', 'alerta'],
