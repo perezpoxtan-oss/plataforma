@@ -54,6 +54,7 @@ Junto a la campana hay un botón amarillo **Mis pendientes** con un número: es 
    - **Firmas de pases de salida:** pases que esperan tu firma.
    - **Procedimientos por leer:** los que te faltan leer y firmar «Leí y entendí».
    - **Altas por verificar:** lo que la caseta registró y tú revisas.
+   - **Cuentas por revisar** (quien administra usuarios): cuentas bloqueadas por intentos fallidos y las desactivadas por la baja de su colaborador en los últimos 7 días. Ver [Usuarios](usuarios.md).
    - **Esperando en Recepción** (Recursos Humanos): quien espera en caseta a que digas «Que pase» y los candidatos de hoy que aún no atiendes. Ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
    - **Solicitudes por revisar** (Recursos Humanos): lo que los candidatos llenaron en su celular o por internet y aún no revisas.
    - **Por entrevistar (RR. HH.)**, **Evaluaciones del departamento** y **Elegidos por contratar** (Recursos Humanos): candidatos que esperan tu entrevista, los que el jefe ya evaluó y los que eligió. Ver [Candidatos](candidatos.md).

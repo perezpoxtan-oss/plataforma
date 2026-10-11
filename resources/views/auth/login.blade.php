@@ -48,6 +48,11 @@
                     <i class="bi bi-clock-history me-2" aria-hidden="true"></i> La página estuvo abierta mucho tiempo. Vuelve a intentarlo.
                 </div>
                 @break
+            @case('contrasena_creada')
+                <div class="alert alert-success acceso-aviso" role="status">
+                    <i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i> Tu contraseña nueva quedó guardada. Entra con ella.
+                </div>
+                @break
         @endswitch
 
         @if ($errors->any())
@@ -81,6 +86,8 @@
             <button type="submit" class="acceso-boton">
                 Autenticar Ingreso <i class="bi bi-arrow-right-short fs-5" aria-hidden="true"></i>
             </button>
+
+            <p class="acceso-enlace-ayuda"><a href="{{ route('contrasena.olvide') }}">Olvidé mi contraseña</a></p>
         </form>
     </div>
 

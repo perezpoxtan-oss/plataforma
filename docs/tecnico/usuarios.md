@@ -11,6 +11,7 @@ Réplica de `modules/usuarios/usuario_lista.php`, `usuario_modal_editar.php` y `
 | `PUT /usuarios/{usuario}` | `usuarios.editar` | Edición; la contraseña en blanco se conserva |
 | `PATCH /usuarios/{usuario}/estado` | `usuarios.eliminar` | Desactivar o reactivar (no se borra a nadie) |
 | `PATCH /usuarios/{usuario}/desbloquear` | `usuarios.desbloquear` | Quita el bloqueo por intentos fallidos |
+| `POST /usuarios/{usuario}/restablecer` | `usuarios.editar` | Restablecer contraseña: enlace por correo (60 min) o contraseña escrita que se cambia al entrar |
 | `GET /usuarios/homonimos?nombre=&excluir=` | `usuarios.crear` o `usuarios.editar` | Aviso en vivo de homónimos (JSON, ver abajo) |
 
 ## Reglas
@@ -23,6 +24,36 @@ Réplica de `modules/usuarios/usuario_lista.php`, `usuario_modal_editar.php` y `
 - Contraseña: mínimo 8 caracteres, con letras y números; máximo 72; no puede ser de las más usadas (`App\Rules\ContrasenaSegura`) ni contener el nombre de usuario o el correo.
 - **Desactivar** o **cambiar la contraseña** cierra de inmediato las sesiones abiertas de esa persona: se borran de la tabla `sessions`.
 - Auditoría: `usuarios.creado`, `usuarios.actualizado`, `usuarios.desactivado`, `usuarios.reactivado` y `usuarios.desbloqueado`, con el antes y el después (incluidos rol y sede). Si se cambió la contraseña solo se anota `contrasena: cambiada`; nunca su valor ni su hash.
+- La contraseña la crea su dueño (enlace de bienvenida por omisión); si el administrador la escribe, la persona la cambia en su primer acceso. Ver «La cuenta es de su dueño».
+
+## La cuenta es de su dueño (criterio 6 de docs/criterios-ux.md)
+
+Nadie conoce la contraseña de otra persona: ni quien la da de alta ni quien la restablece. Piezas:
+
+| Pieza | Qué hace |
+|---|---|
+| `App\Services\Cuenta\RecuperacionContrasena` | Enlaces de un solo uso con el *password broker* de Laravel (`password_reset_tokens`, hash del token) **y** firma temporal de la URL (`URL::temporarySignedRoute`). Dos brokers en `config/auth.php`: `users` (restablecer, 60 min, 1 por minuto) y `bienvenida` (24 h). `solicitar()` es la lógica de «Olvidé mi contraseña»: mismo resultado exista o no la cuenta; solo envía si la cuenta está activa (y su empresa), tiene correo válido, la plataforma tiene SMTP (`CorreoPlataforma::configurado()`) y no pasó de **3 solicitudes por hora por cuenta** (`RateLimiter`, clave con hash del identificador). `restablecer()` guarda, limpia `debe_cambiar_contrasena`, `intentos_fallidos` y `bloqueado_hasta`, cierra sesiones, audita y avisa por campana |
+| `App\Http\Controllers\Auth\RecuperacionController` | `GET/POST /olvide-contrasena` (sin sesión; `throttle:5,1` por IP), `GET /restablecer-contrasena/{token}?u=&tipo=&expires=&signature=` (firma válida + token vigente, si no rebota a «Olvidé» con error neutro) y `POST /restablecer-contrasena` (`throttle:10,1`). El tipo de enlace se recuerda en la sesión al abrirlo: el formulario no puede cambiarlo. Sin SMTP la pantalla dice que pida a su administrador, antes de pedir nada |
+| `App\Http\Controllers\Cuenta\MiCuentaController` + `App\Services\Cuenta\CuentaPropia` | **Mi cuenta** (`GET /mi-cuenta`, `PUT /mi-cuenta/contrasena`, `throttle:10,1`): sin permiso; cambia la propia contraseña exigiendo la actual y que sea distinta; cierra las **otras** sesiones; nombre, usuario, correo, rol y sede solo se muestran (los administra Usuarios; el correo es el canal de recuperación y debe seguir verificado por quien administra). Enlace en el nombre del usuario (PC), el avatar (celular) y *Menú → Sesión → Mi cuenta* |
+| `App\Http\Middleware\ExigirCambioContrasena` (grupo `web`, después de `EstablecerEmpresa`) | Con `users.debe_cambiar_contrasena = true` cualquier ruta redirige a Mi cuenta (JSON: 403) salvo `ExigirCambioContrasena::PERMITIDAS` (Mi cuenta, salir, latido/expiración de sesión y el resumen de la campana) |
+| `AdministradorUsuarios::crear(..., $enlace)` | Por omisión (`contrasena_modo=enlace`, solo si hay SMTP) la cuenta nace con una contraseña aleatoria de 40 caracteres que nadie conoce y se envía `BienvenidaUsuario`; con `manual` se guarda la escrita. En ambos casos `debe_cambiar_contrasena = true` (el enlace la limpia al usarse). Devuelve `[User, bool enviado]` |
+| `AdministradorUsuarios::restablecer()` | Mismas dos opciones para una cuenta existente (`usuarios.editar`, nivel inferior, dentro del alcance; nunca la propia). La contraseña anterior deja de servir al instante y se cierran sus sesiones. `actualizar()` con contraseña escrita también marca `debe_cambiar_contrasena` |
+| `App\Services\Cuenta\AvisosCuenta` | Avisos de seguridad: `bloqueo()` (campana a quien tiene `usuarios.editar` con alcance a la sede de la cuenta —`usuariosConPermiso()` con `Autorizador::permisosEfectivos`—, correo a ellos y al afectado si el aviso `cuenta_bloqueada` de la empresa está encendido; **uno por bloqueo**, no por intento; IP recortada `187.190.x.x`), `desactivadaPorBaja()` y `contrasenaCambiada()` (a la propia persona). `cerrarSesiones()` es la única forma de borrar filas de `sessions` |
+| `AdministradorColaboradores::cambiarEstado()` | La **baja** del colaborador desactiva su cuenta vinculada (misma empresa, activa, no Super Administrador): `activo = false`, `desactivado_por_baja_en = now()`, sesiones cerradas, auditoría `usuarios.desactivado_por_baja` y campana. El **reingreso no la reactiva**: el mensaje lo recuerda y se hace en Usuarios (`cambiarEstado(true)` limpia la marca) |
+| `MisPendientes` → «Cuentas por revisar» | Para quien tiene `usuarios.editar`, dentro de su alcance: bloqueadas ahora o desactivadas por baja en los últimos 7 días. La lista de Usuarios las muestra arriba (`?revisar=1` solo sirve de enlace) y en la ficha («Desactivada por la baja de su colaborador», «Creará su contraseña al entrar») |
+
+Correos: `App\Mail\BienvenidaUsuario`, `RestablecerContrasena` y `CuentaBloqueada` (vistas `correos/bienvenida`, `restablecer-contrasena`, `cuenta-bloqueada`), enviados con `defer()` por `CorreoPlataforma`; nunca llevan la contraseña ni el correo en la URL (solo token, id y tipo, firmados).
+
+Auditoría nueva (etiquetas en `LectorAuditoria`): `usuarios.contrasena_cambiada` (con `primer_acceso` y origen), `usuarios.recuperacion_solicitada` (con `correo_enviado`), `usuarios.recuperacion_completada` (tipo bienvenida/restablecer), `usuarios.bienvenida_enviada`, `usuarios.enlace_restablecer_enviado` y `usuarios.desactivado_por_baja`. Jamás se anota un valor ni un hash de contraseña.
+
+Migración `2026_10_21_000100_cuenta_propia_y_recuperacion`: `users.debe_cambiar_contrasena` (boolean, default false: los usuarios existentes **no** quedan marcados) y `users.desactivado_por_baja_en` (timestamp nullable). `down()` quita las dos columnas; no toca índices ni llaves. Si solo se revierte el código, las columnas quedan sin usarse y la versión anterior funciona igual.
+
+Decisiones:
+- El correo no se cambia desde Mi cuenta: es el canal de recuperación y lo mantiene verificado quien administra usuarios (regla 2: un dato en un solo lugar).
+- Sin SMTP configurado, «Olvidé mi contraseña» no pide nada y el alta solo ofrece escribir la contraseña; el administrador la restablece desde Usuarios.
+- El Super Administrador recupera su contraseña por el mismo camino (sin campana, con auditoría); nadie lo restablece desde Usuarios.
+
+Pruebas: `tests/Feature/Seguridad/CuentaTest.php`.
 
 ## Desbloqueo manual (QA A-03)
 
@@ -62,8 +93,8 @@ SEGCAT permitía buscar un colaborador para llenar los datos y vincular la cuent
 
 ## Pruebas
 
-`tests/Feature/Administracion/UsuariosTest.php`, `DesbloqueoUsuariosTest.php` y `UsuariosHomonimosTest.php`
+`tests/Feature/Administracion/UsuariosTest.php`, `DesbloqueoUsuariosTest.php`, `UsuariosHomonimosTest.php` y `tests/Feature/Seguridad/CuentaTest.php`
 
 ## Ronda 8: ¿el correo es obligatorio en Nuevo Usuario?
 
-Se revisó y **se queda obligatorio**: en SEGCAT `usuarios.correo` es `NOT NULL` y los formularios de alta y edición lo pedían (`required`). Además la plataforma lo usa para los avisos por correo (vouchers con cobro, altas por verificar, procedimientos, pases, autorizaciones) y será el medio para recuperar la contraseña cuando se active; un usuario sin correo se quedaría sin avisos. Sigue siendo único en la plataforma.
+Se revisó y **se queda obligatorio**: en SEGCAT `usuarios.correo` es `NOT NULL` y los formularios de alta y edición lo pedían (`required`). Además la plataforma lo usa para los avisos por correo (vouchers con cobro, altas por verificar, procedimientos, pases, autorizaciones) y es el medio para recuperar la contraseña («Olvidé mi contraseña», enlace de bienvenida y restablecer desde Usuarios); un usuario sin correo se quedaría sin avisos y sin recuperación. Sigue siendo único en la plataforma.

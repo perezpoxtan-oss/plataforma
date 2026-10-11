@@ -37,6 +37,10 @@ class CentroNotificaciones
         'entrevista_cambio' => ['bi-calendar-x', 'info'],
         'entrevista_llegada' => ['bi-person-check-fill', 'alerta'],
         'evaluacion_departamento' => ['bi-clipboard-check', 'exito'],
+        // Cuenta del usuario (docs/criterios-ux.md, reglas 1 y 6)
+        'cuenta_contrasena' => ['bi-key-fill', 'exito'],
+        'cuenta_bloqueada' => ['bi-lock-fill', 'alerta'],
+        'cuenta_desactivada' => ['bi-person-x-fill', 'alerta'],
     ];
 
     public function __construct(private readonly HoraLocal $hora) {}

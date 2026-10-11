@@ -3,12 +3,14 @@ titulo: Usuarios
 modulos: [usuarios]
 seccion: Estructura
 orden: 30
-resumen: Dar de alta las cuentas para entrar a la plataforma, vincularlas con su colaborador, desactivarlas y desbloquearlas.
+resumen: Dar de alta las cuentas para entrar a la plataforma, vincularlas con su colaborador, restablecer contraseñas, desactivarlas y desbloquearlas.
 ---
 
 # Usuarios
 
-**¿Para qué sirve?** Aquí se dan de alta las **cuentas** para entrar a la plataforma: quién es, en qué sede trabaja, qué **rol** tiene (lo que puede hacer), su usuario, su correo y su contraseña. También se desactivan cuentas y se desbloquean las que tuvieron demasiados intentos fallidos.
+**¿Para qué sirve?** Aquí se dan de alta las **cuentas** para entrar a la plataforma: quién es, en qué sede trabaja, qué **rol** tiene (lo que puede hacer), su usuario y su correo. También se restablecen contraseñas, se desactivan cuentas y se desbloquean las que tuvieron demasiados intentos fallidos.
+
+La contraseña es de su dueño: por omisión **la persona la crea** con un enlace que le llega por correo, y tú nunca la conoces. Si la escribes tú, la persona tendrá que cambiarla en su primer acceso.
 
 ![Usuarios](img/usuarios/1-lista.png)
 
@@ -33,12 +35,18 @@ resumen: Dar de alta las cuentas para entrar a la plataforma, vincularlas con su
 3. Escribe el **Nombre Completo**.
 4. **1. Sede:** la sede donde trabaja, o **Todas las sedes de la empresa** si debe ver todas.
 5. **2. Rol en el Sistema:** solo aparecen los roles que tú puedes asignar.
-6. Escribe el **Usuario** (letras, números, punto, guion y guion bajo; sin espacios), el **Correo** y la **Contraseña** (mínimo 8 caracteres, con letras y números). El ojo muestra lo que escribiste.
-7. Toca **Registrar Usuario**.
+6. Escribe el **Usuario** (letras, números, punto, guion y guion bajo; sin espacios) y el **Correo**. Al correo le llegará el enlace para crear su contraseña, así que revisa que esté bien.
+7. En **Contraseña** elige cómo la tendrá:
+   - **Enviar enlace de bienvenida por correo** (recomendado, viene marcado): la persona recibe el correo **«Bienvenido a … : crea tu contraseña»** con el botón **Crear mi contraseña**. El enlace vale **24 horas**. Nadie más conoce su contraseña.
+   - **Escribir la contraseña ahora**: escribe una **Contraseña inicial** (mínimo 8 caracteres, con letras y números) y dísela. Al entrar, la plataforma le pedirá cambiarla antes de usar cualquier pantalla.
+8. Toca **Registrar Usuario**.
 
 ![Alta de usuario](img/usuarios/2-alta.png)
 
-**Qué debes ver:** «Usuario creado correctamente.» La persona ya puede entrar con su usuario o su correo.
+**Qué debes ver:** con enlace: «Usuario «…» creado; le enviamos el correo de bienvenida para que cree su contraseña (vale 24 horas). ¿Quieres dar de alta otro? Toca «Nuevo Usuario».» Con contraseña escrita: «Usuario «…» creado; al entrar tendrá que cambiar la contraseña que escribiste…». En su ficha aparece **Creará su contraseña al entrar** hasta que lo haga.
+
+- Si tu plataforma **no tiene correo configurado**, la ventana lo dice y solo puedes escribir la contraseña.
+- Si el correo de bienvenida no se pudo enviar, aparece un aviso amarillo: usa la **llave** (Restablecer contraseña) de su ficha para intentarlo de nuevo o escribirle una contraseña.
 
 > Si cierras la ventana (Cancelar, la X o la tecla Esc), al volver a abrirla aparece vacía. Si al registrar hubo un error, la ventana se vuelve a abrir con lo que capturaste para que lo corrijas.
 
@@ -85,13 +93,29 @@ Si escribes un **Nombre Completo** que ya tiene otra cuenta (sin importar mayús
 
 El **usuario** y el **correo** nunca se pueden repetir, aunque el nombre sí.
 
-## Cómo editar una cuenta o cambiar la contraseña
+## Cómo editar una cuenta
 
 1. Toca el **lápiz** (Editar). Se abre **Editar Usuario**.
-2. Cambia lo necesario. Si dejas la **Contraseña** en blanco, no cambia; si la cambias, la persona tendrá que volver a entrar.
+2. Cambia lo necesario (nombre, colaborador, sede, rol, usuario o correo). Si dejas **Nueva Contraseña** en blanco, no cambia; si la escribes, la persona tendrá que volver a entrar y **cambiarla en su primer acceso**. Para contraseñas, mejor usa la **llave** (ver abajo).
 3. Toca **Guardar Cambios**.
 
 **Qué debes ver:** «Usuario actualizado correctamente.»
+
+## Cómo restablecer la contraseña de alguien
+
+Cuando una persona no recuerda su contraseña, lo primero es que use **Olvidé mi contraseña** en la pantalla para entrar: ella sola recibe el enlace por correo. Si no puede (no tiene correo, no le llega, o la plataforma no tiene correo configurado), restablécela tú:
+
+1. Toca la **llave** (Restablecer contraseña) de su ficha. Se abre **Restablecer contraseña** con el nombre de la cuenta.
+2. Elige **cómo**:
+   - **Enviarle un enlace por correo** (recomendado): le llega **«Crea tu contraseña nueva»**; el enlace vale **60 minutos** y una sola vez.
+   - **Escribir una contraseña**: escribe la **Contraseña nueva** y dísela; tendrá que cambiarla al entrar.
+3. Toca **Guardar**.
+
+**Qué debes ver:** «Le enviamos a «…» un enlace para crear su contraseña nueva (vale 60 minutos). Su contraseña anterior ya no sirve y sus sesiones se cerraron.» o «Contraseña de «…» restablecida; tendrá que cambiarla al entrar. Sus sesiones se cerraron.»
+
+- En los dos casos su contraseña anterior **deja de servir** de inmediato y se cierran sus sesiones abiertas.
+- Tú nunca ves ni puedes ver la contraseña de nadie; la plataforma solo guarda la contraseña cifrada.
+- Queda en la [Bitácora de auditoría](auditoria.md) quién restableció a quién y cuándo (nunca la contraseña).
 
 ## Cómo desactivar o reactivar una cuenta
 
@@ -99,6 +123,12 @@ El **usuario** y el **correo** nunca se pueden repetir, aunque el nombre sí.
 2. Para regresarla, toca la **flecha circular** (Reactivar).
 
 No se borra a nadie, para conservar el historial.
+
+### Cuando Recursos Humanos da de baja al colaborador
+
+Si la cuenta está **vinculada** a un colaborador y Recursos Humanos lo da de baja en [Colaboradores](colaboradores.md), **su cuenta se desactiva sola** en ese momento: ya no puede entrar y se le cierra la sesión. Su ficha dice **Desactivada por la baja de su colaborador** con la fecha, y quien administra usuarios de esa sede recibe un aviso en su **campana** («Cuenta desactivada por baja: …») y lo ve en **Mis pendientes → Cuentas por revisar** durante 7 días.
+
+Si el colaborador **reingresa**, su cuenta **no** se reactiva sola: revísala y, si la necesita, toca la **flecha circular** (Reactivar) de su ficha.
 
 ## Cómo desbloquear una cuenta
 
@@ -111,9 +141,11 @@ Tras **5 intentos fallidos** seguidos, la cuenta se bloquea 15 minutos. Su ficha
 
 **Qué debes ver:** ««Pablo Díaz» desbloqueado; ya puede entrar.» El desbloqueo queda en la [Bitácora de auditoría](auditoria.md). El candado solo aparece si tu rol tiene el permiso **Desbloquear** y la persona es de nivel inferior y está en tu alcance.
 
+Cada bloqueo te avisa: quien puede editar usuarios de esa sede recibe en su **campana** «Cuenta bloqueada: …» (con los minutos y desde qué red se intentó) y, si en **Configuración → Avisos por correo** está encendido «Seguridad: avisar… cuando una cuenta se bloquea», también por correo; la persona afectada recibe un correo. Las cuentas bloqueadas aparecen en **Mis pendientes → Cuentas por revisar** y arriba de la lista de Usuarios. Si los intentos no son de la persona, conviene que cambie su contraseña en cuanto entre.
+
 ![Cuenta desbloqueada](img/usuarios/11-desbloqueado.png)
 
-> Si la persona olvidó su contraseña, además de desbloquearla cámbiale la contraseña con el **lápiz**.
+> Si la persona olvidó su contraseña, ella misma puede usar **Olvidé mi contraseña** en la pantalla para entrar; al guardar la nueva la cuenta se desbloquea sola. Si no puede, usa la **llave** (Restablecer contraseña).
 
 ## En el celular y en los modos Noche y Sol
 
@@ -136,6 +168,9 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | Ese colaborador ya tiene una cuenta de usuario: búscala en la lista en vez de crear otra. | El colaborador ya tiene cuenta. | Edita su cuenta. |
 | Ese colaborador está dado de baja. | El colaborador está inactivo. | Pide a Recursos Humanos que lo reingrese o no lo vincules. |
 | Ya existe otro usuario registrado con ese número de colaborador. | Ese número ya está en otra cuenta. | Revisa el número. |
+| El campo contraseña es obligatorio. | Elegiste **Escribir la contraseña ahora** (o no hay correo configurado) y la dejaste vacía. | Escríbela, o elige **Enviar enlace de bienvenida por correo**. |
+| Usuario «…» creado, pero el correo de bienvenida no se pudo enviar. | La cuenta existe, pero el correo no salió. | Revisa su correo y toca la **llave** para reenviar el enlace o escribirle una contraseña. |
+| El correo de la plataforma no está configurado: por ahora solo puedes escribir la contraseña. | No hay correo saliente configurado. | Escribe la contraseña inicial; pide al Super Administrador configurar el correo en **Configuración**. |
 | El campo contraseña debe tener al menos un número. | La contraseña solo tiene letras. | Agrega al menos un número (por ejemplo `Hotel2026`). |
 | El campo contraseña debe tener al menos una letra. | La contraseña solo tiene números. | Agrega al menos una letra. |
 | El campo contraseña debe tener al menos 8 caracteres. | La contraseña es muy corta. | Escribe 8 o más caracteres, con letras y números. |
@@ -153,10 +188,18 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 **¿Qué pasa si desactivo una cuenta?** La persona ya no puede entrar, pero todo lo que registró se conserva.
 
+**¿Puedo ver la contraseña de alguien?** No, nadie puede. Si la necesita, se le envía un enlace o se le escribe una nueva que cambiará al entrar.
+
+**¿Por qué dice «Creará su contraseña al entrar»?** Porque la cuenta se creó con enlace de bienvenida y aún no lo usa, o porque alguien le escribió la contraseña y todavía no la cambia.
+
+**¿Qué son las «Cuentas por revisar»?** Las bloqueadas por intentos fallidos y las desactivadas por la baja de su colaborador en los últimos 7 días. Aparecen en **Mis pendientes** y arriba de la lista.
+
 **¿Cuánto dura el bloqueo?** 15 minutos, o hasta que alguien con permiso la desbloquee.
 
 ## Relacionado
 
 - [Roles y permisos](roles-y-permisos.md)
 - [Colaboradores](colaboradores.md)
+- [Mi cuenta](mi-cuenta.md)
+- [Entrar y salir de la plataforma](inicio-de-sesion.md)
 - [Bitácora de auditoría](auditoria.md)

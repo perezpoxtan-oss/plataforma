@@ -33,7 +33,9 @@ class MatrizDeRutasTest extends TestCase
         // Centro de notificaciones (ADR-0007): solo las del propio usuario
         'notificaciones.index', 'notificaciones.resumen', 'notificaciones.leer-todas',
         // Manual (lección 37): toda sesión lo abre; cada página se filtra por los módulos que el usuario puede ver
-        'manual.index', 'manual.ver', 'manual.imagen'];
+        'manual.index', 'manual.ver', 'manual.imagen',
+        // Mi cuenta (criterio 6): la propia cuenta, sin permiso
+        'mi-cuenta.index', 'mi-cuenta.contrasena'];
 
     protected function setUp(): void
     {

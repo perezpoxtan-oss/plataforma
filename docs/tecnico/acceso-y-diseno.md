@@ -43,6 +43,8 @@ Causas encontradas y corrección:
 
 - Los mensajes ya no viajan en la URL (`?error=bloqueado&minutos=…`), sino en la sesión: nadie puede fabricar un aviso falso.
 - Límite adicional por equipo (IP): 20 intentos por minuto, sin importar la cuenta.
+- Al bloquear una cuenta por intentos fallidos (`Autenticador::registrarFallo`), `AvisosCuenta::bloqueo()` avisa una vez por bloqueo a quien administra usuarios de esa sede (campana y, si la empresa lo tiene encendido, correo) y por correo a la persona afectada; ver [usuarios.md](usuarios.md).
+- «Olvidé mi contraseña» y «Mi cuenta» (criterio 6): documentados en [usuarios.md](usuarios.md), apartado «La cuenta es de su dueño».
 - Cuando la cuenta no existe se hace igualmente una comprobación de contraseña, para que el tiempo de respuesta no revele qué cuentas existen.
 - Al iniciar sesión solo se regresa a una pantalla del mismo sitio (nunca a otro dominio).
 - Un formulario abierto demasiado tiempo (token vencido) regresa a la pantalla de acceso con aviso, en lugar del error 419.

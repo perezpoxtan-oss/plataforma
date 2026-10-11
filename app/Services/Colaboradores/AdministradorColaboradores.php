@@ -8,6 +8,7 @@ use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Avisos\AvisosCorreo;
+use App\Services\Cuenta\AvisosCuenta;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -327,10 +328,31 @@ class AdministradorColaboradores
         return $colaborador;
     }
 
-    public function cambiarEstado(User $actor, Colaborador $colaborador, bool $activo): void
+    /**
+     * Baja o reingreso. La baja también desactiva la cuenta de usuario
+     * vinculada (criterio 6: una persona que ya no trabaja aquí no entra), con
+     * aviso por campana a quien administra usuarios; el reingreso NO la
+     * reactiva solo: se hace en Usuarios. Devuelve la cuenta desactivada, si hubo.
+     */
+    public function cambiarEstado(User $actor, Colaborador $colaborador, bool $activo): ?User
     {
         $colaborador->forceFill(['activo' => $activo])->save();
         $this->auditoria->auditar($actor, $activo ? 'colaboradores.reactivado' : 'colaboradores.desactivado', $colaborador, ['activo' => ! $activo], ['activo' => $activo]);
+
+        if ($activo) {
+            return null;
+        }
+        $cuenta = User::where('colaborador_id', $colaborador->id)->where('empresa_id', $colaborador->empresa_id)->where('activo', true)->first();
+        if ($cuenta === null || $cuenta->es_superadmin) {
+            return null;
+        }
+
+        $cuenta->forceFill(['activo' => false, 'desactivado_por_baja_en' => now(), 'actualizado_por' => $actor->id])->save();
+        AvisosCuenta::cerrarSesiones($cuenta);
+        $this->auditoria->auditar($actor, 'usuarios.desactivado_por_baja', $cuenta, ['activo' => true], ['activo' => false, 'colaborador_id' => $colaborador->id]);
+        app(AvisosCuenta::class)->desactivadaPorBaja($cuenta, $colaborador, $actor);
+
+        return $cuenta;
     }
 
     /**

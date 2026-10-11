@@ -13,6 +13,7 @@ use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Services\Recepcion\PanelRecepcion;
+use App\Services\Usuarios\AdministradorUsuarios;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Container\Attributes\Scoped;
@@ -26,7 +27,9 @@ use Illuminate\Support\Facades\Cache;
  * aprobador, colaborador con procedimientos, verificador de padrones,
  * Recursos Humanos: «Esperando en Recepción», «Solicitudes por revisar»,
  * «Por entrevistar (RR. HH.)», «Evaluaciones del departamento» y «Elegidos
- * por contratar»; y quien entrevista: «Entrevistas por evaluar» con su cita).
+ * por contratar»; quien entrevista: «Entrevistas por evaluar» con su cita; y
+ * quien edita usuarios: «Cuentas por revisar», bloqueadas hoy o desactivadas
+ * por una baja en los últimos 7 días).
  *
  * La pantalla lo calcula fresco al pintarse; la consulta periódica de la
  * campana (cada 30 s) reutiliza el resultado durante unos segundos.
@@ -133,6 +136,16 @@ class MisPendientes
                 $items[] = $this->item('entrevistas', 'Entrevistas por evaluar'.($proxima ? ' · próxima: '.$entrevistas->textoCita($proxima) : ''), 'bi-calendar-event',
                     $pendientes->count(), route('entrevistas.index'));
             }
+        }
+
+        // Cuentas por revisar (criterio 1): quien edita usuarios, dentro de su alcance
+        if ($actor->can('usuarios.editar')) {
+            $administrador = app(AdministradorUsuarios::class);
+            $cuentas = $administrador->limitarAlcance(User::query()->where('users.empresa_id', $this->empresa->id($actor))->where('users.es_superadmin', false), $actor, 'usuarios.editar')
+                ->where(fn ($q) => $q->where('users.bloqueado_hasta', '>', now())
+                    ->orWhere(fn ($b) => $b->where('users.activo', false)->where('users.desactivado_por_baja_en', '>=', now()->subDays(7))))
+                ->count();
+            $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $cuentas, route('usuarios.index', ['revisar' => 1]));
         }
 
         return ['total' => array_sum(array_column($items, 'total')), 'items' => $items];
