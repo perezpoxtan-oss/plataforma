@@ -9,6 +9,7 @@ use App\Models\Rol;
 use App\Models\Sede;
 use App\Models\User;
 use App\Rules\ContrasenaSegura;
+use App\Services\Cuenta\RecuperacionContrasena;
 use App\Services\Permisos\Autorizador;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Services\Usuarios\HomonimosUsuarios;
@@ -35,6 +36,7 @@ class UsuarioController extends Controller
         private readonly Tenant $tenant,
         private readonly Autorizador $autorizador,
         private readonly HomonimosUsuarios $homonimos,
+        private readonly RecuperacionContrasena $recuperacion,
     ) {}
 
     public function index(Request $request): View
@@ -74,6 +76,13 @@ class UsuarioController extends Controller
             ->orderBy('nivel_jerarquia')
             ->get(['id', 'nombre', 'nivel_jerarquia']);
 
+        // Cuentas por revisar (criterio 1): bloqueadas hoy y desactivadas por baja en los últimos 7 días
+        $porRevisar = ! $actor->can('usuarios.editar') ? collect() : $this->administrador
+            ->limitarAlcance($this->visibles($actor, $empresaId), $actor, 'usuarios.editar')
+            ->where(fn ($q) => $q->where('users.bloqueado_hasta', '>', now())
+                ->orWhere(fn ($b) => $b->where('users.activo', false)->where('users.desactivado_por_baja_en', '>=', now()->subDays(7))))
+            ->orderBy('users.name')->get(['users.id', 'users.name', 'users.bloqueado_hasta', 'users.desactivado_por_baja_en']);
+
         return view('administracion.usuarios.index', [
             'sinEmpresa' => false,
             'usuarios' => $usuarios,
@@ -83,6 +92,8 @@ class UsuarioController extends Controller
             // Seguridad (AZ-01): sedes a las que puede asignar cuentas (null = todas)
             'sedesAsignables' => $actor->es_superadmin ? null : $this->autorizador->sedesPermitidas($actor, $actor->can('usuarios.crear') ? 'usuarios.crear' : 'usuarios.editar'),
             'desbloqueables' => $desbloqueables,
+            'porRevisar' => $porRevisar,
+            'correoListo' => $this->recuperacion->correoConfigurado(),
             'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
             'puede' => [
                 'crear' => $actor->can('usuarios.crear'),
@@ -100,17 +111,67 @@ class UsuarioController extends Controller
         $empresaId = $this->empresa->id($request->user());
         abort_if($empresaId === null, 404);
 
-        $datos = $this->vincularColaborador($this->validar($request, $empresaId), $empresaId);
+        // Por omisión la persona crea su contraseña con el enlace de bienvenida (criterio 6)
+        $enlace = $this->modoEnlace($request);
+        $datos = $this->vincularColaborador($this->validar($request, $empresaId, null, $enlace), $empresaId);
         [$rol, $sede] = $this->rolYSede($datos, $empresaId);
         $this->exigirConfirmacionHomonimo($request, $empresaId, $datos['name']);
 
         try {
-            $this->administrador->crear($request->user(), $empresaId, $this->campos($datos), $rol, $sede);
+            [$usuario, $enviado] = $this->administrador->crear($request->user(), $empresaId, $this->campos($datos), $rol, $sede, $enlace);
         } catch (AuthorizationException $e) {
             return back()->withInput($request->except('password'))->with('error', $e->getMessage());
         }
 
-        return redirect()->route('usuarios.index')->with('ok', 'Usuario creado correctamente.');
+        if ($enlace && ! $enviado) {
+            return redirect()->route('usuarios.index')->with('aviso', "Usuario «{$usuario->name}» creado, pero el correo de bienvenida no se pudo enviar. Usa «Restablecer contraseña» en su ficha para intentarlo de nuevo o para escribirle una contraseña.");
+        }
+
+        return redirect()->route('usuarios.index')->with('ok', $enlace
+            ? "Usuario «{$usuario->name}» creado; le enviamos el correo de bienvenida para que cree su contraseña (vale 24 horas). ¿Quieres dar de alta otro? Toca «Nuevo Usuario»."
+            : "Usuario «{$usuario->name}» creado; al entrar tendrá que cambiar la contraseña que escribiste. ¿Quieres dar de alta otro? Toca «Nuevo Usuario».");
+    }
+
+    /**
+     * Restablecer contraseña desde la ficha: enlace por correo (60 min) o una
+     * contraseña escrita que la persona cambia al entrar.
+     */
+    public function restablecer(Request $request, User $usuario): RedirectResponse
+    {
+        $this->exigirDeLaEmpresa($request, $usuario);
+        Gate::authorize('usuarios.editar');
+        $this->exigirVisible($request, $usuario);
+
+        $enlace = $this->modoEnlace($request);
+        $datos = $request->validate([
+            'password' => [$enlace ? 'nullable' : 'required', 'string', Password::min(8)->letters()->numbers(),
+                new ContrasenaSegura((string) $usuario->username, (string) $usuario->email)],
+        ], [], ['password' => 'contraseña']);
+
+        try {
+            $enviado = $this->administrador->restablecer($request->user(), $usuario, $datos['password'] ?? null, $enlace);
+        } catch (AuthorizationException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        if ($enlace && ! $enviado) {
+            return redirect()->route('usuarios.index')->with('aviso', "No se pudo enviar el enlace a «{$usuario->name}» (revisa su correo o el correo de la plataforma). Su contraseña anterior ya no sirve: escríbele una con «Restablecer contraseña».");
+        }
+
+        return redirect()->route('usuarios.index')->with('ok', $enlace
+            ? "Le enviamos a «{$usuario->name}» un enlace para crear su contraseña nueva (vale 60 minutos). Su contraseña anterior ya no sirve y sus sesiones se cerraron."
+            : "Contraseña de «{$usuario->name}» restablecida; tendrá que cambiarla al entrar. Sus sesiones se cerraron.");
+    }
+
+    /**
+     * ¿Enlace por correo (opción por omisión) o contraseña escrita? Sin correo
+     * de la plataforma solo queda escribirla.
+     */
+    private function modoEnlace(Request $request): bool
+    {
+        $modo = $request->input('contrasena_modo') ?? ($request->filled('password') ? 'manual' : 'enlace');
+
+        return $modo === 'enlace' && $this->recuperacion->correoConfigurado();
     }
 
     public function update(Request $request, User $usuario): RedirectResponse
@@ -224,7 +285,7 @@ class UsuarioController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function validar(Request $request, int $empresaId, ?User $usuario = null): array
+    private function validar(Request $request, int $empresaId, ?User $usuario = null, bool $sinContrasena = false): array
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:150'],
@@ -232,7 +293,7 @@ class UsuarioController extends Controller
             'colaborador_id' => ['nullable', 'integer'],
             'username' => ['required', 'string', 'max:60', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')->ignore($usuario?->id)],
             'email' => ['required', 'email:rfc', 'max:150', Rule::unique('users', 'email')->ignore($usuario?->id)],
-            'password' => [$usuario === null ? 'required' : 'nullable', 'string', Password::min(8)->letters()->numbers(),
+            'password' => [$usuario === null && ! $sinContrasena ? 'required' : 'nullable', 'string', Password::min(8)->letters()->numbers(),
                 new ContrasenaSegura((string) $request->input('username'), (string) $request->input('email'))],
             'rol_id' => ['required', 'integer'],
             'sede_id' => ['nullable', 'integer'],

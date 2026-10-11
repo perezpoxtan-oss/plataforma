@@ -8561,3 +8561,46 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Candidatos, fase 2 */
+
+/* ==========================================================================
+   Cuenta del usuario (docs/criterios-ux.md, regla 6)
+   «Restablecer contraseña» desde la ficha de Usuarios: abre el diálogo con
+   el nombre de la cuenta y la opción por omisión (enlace por correo).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    function sincronizar(form) {
+        form.querySelectorAll('[data-mostrar-si]').forEach(function (caja) {
+            var condiciones = {};
+            try { condiciones = JSON.parse(caja.getAttribute('data-mostrar-si') || '{}'); } catch (x) { condiciones = {}; }
+            var visible = Object.keys(condiciones).some(function (campo) {
+                var el = form.elements[campo];
+                return !!el && condiciones[campo].indexOf(el.value) !== -1;
+            });
+            caja.hidden = !visible;
+            caja.querySelectorAll('input').forEach(function (c) {
+                c.disabled = !visible;
+                c.required = visible && c.hasAttribute('data-requerido-si');
+                if (!visible) { c.value = ''; }
+            });
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion="restablecer-contrasena"]');
+        if (!boton) { return; }
+        var dialogo = document.getElementById('dialogoRestablecer');
+        var form = dialogo && dialogo.querySelector('[data-form-restablecer]');
+        if (!form) { return; }
+        form.action = boton.dataset.url;
+        var marca = form.querySelector('[data-campo-dialogo]');
+        if (marca) { marca.value = 'restablecer-' + boton.dataset.id; }
+        var nombre = form.querySelector('[data-restablecer-nombre]');
+        if (nombre) { nombre.textContent = boton.dataset.nombre || ''; }
+        // Opción por omisión y contraseña en blanco
+        form.querySelectorAll('input[type="radio"][name="contrasena_modo"]').forEach(function (r) { r.checked = r.hasAttribute('data-por-defecto'); });
+        sincronizar(form);
+        if (typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
+    });
+})();

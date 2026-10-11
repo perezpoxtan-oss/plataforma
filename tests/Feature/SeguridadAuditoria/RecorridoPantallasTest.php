@@ -148,8 +148,9 @@ class RecorridoPantallasTest extends TestCase
         foreach ($this->rutasGet() as $ruta) {
             // Lección 36: la bolsa de trabajo (/empleos) es pública a propósito (cualquiera ve las vacantes publicadas)
             // Lección 37: el Manual (páginas e imágenes de docs/usuario) no es de ninguna empresa
+            // Olvidé mi contraseña: el enlace del correo no abre ningún registro (sin sesión; con sesión rebota al panel)
             $conRegistro = $ruta->parameterNames() !== [] && $ruta->getName() !== 'modulos.pendiente' && ! str_starts_with((string) $ruta->getName(), 'empleos.')
-                && ! str_starts_with((string) $ruta->getName(), 'manual.');
+                && ! str_starts_with((string) $ruta->getName(), 'manual.') && ! str_starts_with((string) $ruta->getName(), 'contrasena.');
             foreach ($this->urlsDe($ruta) as [$url, $json]) {
                 $visitas++;
                 $this->app['auth']->forgetGuards();
@@ -338,6 +339,8 @@ class RecorridoPantallasTest extends TestCase
             ])),
             'autorizaciones.show', 'autorizaciones.confirmar' => DB::table('autorizaciones')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['autorizacion' => $id])->all(),
             'kiosco.mostrar' => [['token' => str_repeat('a', 48)]],
+            // Olvidé mi contraseña: enlace sin firma (debe rebotar al formulario, nunca 500)
+            'contrasena.restablecer' => [['token' => str_repeat('a', 64)]],
             // Ronda 7: gestor de impresión QR (hoja de una impresión y plantillas)
             'etiquetas.impresion' => array_map(fn ($id) => ['impresion' => $id], $ids([$primero(ImpresionEtiquetas::class)])),
             'etiquetas.plantillas.edit', 'etiquetas.plantillas.prueba' => array_map(fn ($id) => ['plantilla' => $id], $ids([

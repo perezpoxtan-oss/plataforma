@@ -70,11 +70,14 @@
                 </button>
 
                 <div class="bloque-usuario">
-                    <div class="avatar" aria-hidden="true">{{ $usuario->iniciales() }}</div>
-                    <div class="text-start" style="line-height: 1.2;">
-                        <div class="bloque-usuario-nombre">{{ $usuario->name }}</div>
-                        <div class="bloque-usuario-rol">{{ $rolNombre }}</div>
-                    </div>
+                    {{-- Mi cuenta (criterio 6): el nombre abre la propia cuenta --}}
+                    <a href="{{ route('mi-cuenta.index') }}" class="bloque-usuario-enlace {{ request()->routeIs('mi-cuenta.*') ? 'activo' : '' }}" title="Mi cuenta" aria-label="Mi cuenta: {{ $usuario->name }}">
+                        <div class="avatar" aria-hidden="true">{{ $usuario->iniciales() }}</div>
+                        <div class="text-start" style="line-height: 1.2;">
+                            <div class="bloque-usuario-nombre">{{ $usuario->name }}</div>
+                            <div class="bloque-usuario-rol">{{ $rolNombre }}</div>
+                        </div>
+                    </a>
                     <form action="{{ route('logout') }}" method="POST" class="m-0">
                         @csrf
                         <button type="submit" class="boton-salir" title="Cerrar sesión" aria-label="Cerrar sesión"><i class="bi bi-power" aria-hidden="true"></i></button>
@@ -101,10 +104,10 @@
             <button type="button" class="btn-alto-contraste" data-accion="modo-pantalla" title="Modo de pantalla: Normal" aria-label="Modo de pantalla: Normal. Cambiar a Sol">
                 <i class="bi bi-sun" aria-hidden="true"></i>
             </button>
-            <div class="tarjeta-usuario-movil" title="{{ $usuario->name }} · {{ $rolNombre }}">
+            <a href="{{ route('mi-cuenta.index') }}" class="tarjeta-usuario-movil tarjeta-usuario-movil-enlace" title="Mi cuenta: {{ $usuario->name }} · {{ $rolNombre }}">
                 <div class="avatar" aria-hidden="true">{{ $usuario->iniciales() }}</div>
-                <span class="visually-hidden">{{ $usuario->name }}, {{ $rolNombre }}</span>
-            </div>
+                <span class="visually-hidden">Mi cuenta: {{ $usuario->name }}, {{ $rolNombre }}</span>
+            </a>
         </div>
     </header>
 
@@ -174,6 +177,7 @@
             <a href="{{ route('manual.index') }}" class="menu-lateral-item {{ request()->routeIs('manual.*') ? 'activo' : '' }}"><i class="bi bi-question-circle text-primary" aria-hidden="true"></i> Manual</a>
 
             <div class="menu-lateral-grupo mt-4">Sesión</div>
+            <a href="{{ route('mi-cuenta.index') }}" class="menu-lateral-item {{ request()->routeIs('mi-cuenta.*') ? 'activo' : '' }}"><i class="bi bi-person-circle text-primary" aria-hidden="true"></i> Mi cuenta</a>
             <form action="{{ route('logout') }}" method="POST" class="m-0">
                 @csrf
                 <button type="submit" class="menu-lateral-item menu-lateral-salir"><i class="bi bi-power" aria-hidden="true"></i> Cerrar Sesión</button>

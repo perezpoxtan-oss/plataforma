@@ -93,11 +93,19 @@ return [
     */
 
     'passwords' => [
+        // «Olvidé mi contraseña» y «Restablecer» desde Usuarios: enlace de 60 minutos
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
             'expire' => 60,
             'throttle' => 60,
+        ],
+        // Enlace de bienvenida de un usuario nuevo («crea tu contraseña»): 24 horas
+        'bienvenida' => [
+            'provider' => 'users',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 1440,
+            'throttle' => 0,
         ],
     ],
 

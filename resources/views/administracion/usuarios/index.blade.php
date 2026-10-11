@@ -45,6 +45,20 @@
             </div>
         </div>
 
+        {{-- Cuentas por revisar (criterio 1): bloqueadas hoy y desactivadas por baja en los últimos 7 días --}}
+        @if ($porRevisar->isNotEmpty())
+            <div class="alert alert-warning aviso mb-4" role="status" id="cuentasPorRevisar">
+                <i class="bi bi-person-lock" aria-hidden="true"></i>
+                <div>
+                    <strong>Cuentas por revisar ({{ $porRevisar->count() }}):</strong>
+                    @foreach ($porRevisar as $cuenta)
+                        {{ $cuenta->name }} ({{ $cuenta->bloqueado_hasta?->isFuture() ? 'bloqueada hasta las '.app(\App\Support\HoraLocal::class)->formatear($cuenta->bloqueado_hasta, 'H:i') : 'desactivada por baja el '.app(\App\Support\HoraLocal::class)->formatear($cuenta->desactivado_por_baja_en, 'd/m') }}){{ $loop->last ? '.' : ',' }}
+                    @endforeach
+                    <span class="d-block small">Desbloquéalas con el candado o reactívalas con la flecha de su ficha, si corresponde.</span>
+                </div>
+            </div>
+        @endif
+
         <div class="fichas-grid" id="listaUsuarios">
             @if ($puede['crear'] && $roles->isNotEmpty())
                 <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevoUsuario">
@@ -99,6 +113,12 @@
                                 </span>
                             </div>
                         @endif
+                        @if (! $u->activo && $u->desactivado_por_baja_en)
+                            <div class="texto-traza text-danger"><i class="bi bi-person-x-fill" aria-hidden="true"></i> Desactivada por la baja de su colaborador · @fecha($u->desactivado_por_baja_en)</div>
+                        @endif
+                        @if ($u->activo && $u->debe_cambiar_contrasena)
+                            <div class="texto-traza"><i class="bi bi-key" aria-hidden="true"></i> Creará su contraseña al entrar</div>
+                        @endif
                         @if ($u->creado_por_nombre)
                             <div class="texto-traza"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $u->creado_por_nombre }} · @fecha($u->created_at)</div>
                         @endif
@@ -118,6 +138,10 @@
                                 </form>
                             @endif
                             @if ($puede['editar'] && $administrable)
+                                <button type="button" class="btn-icono restablecer" title="Restablecer contraseña" aria-label="Restablecer la contraseña de {{ $u->name }}"
+                                        data-accion="restablecer-contrasena" data-url="{{ route('usuarios.restablecer', $u->id) }}" data-id="{{ $u->id }}" data-nombre="{{ $u->name }}">
+                                    <i class="bi bi-key-fill" aria-hidden="true"></i>
+                                </button>
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar a {{ $u->name }}"
                                         data-accion="editar-registro" data-dialogo="dialogoEditarUsuario"
                                         data-url="{{ route('usuarios.update', $u->id) }}" data-id="{{ $u->id }}"
@@ -238,14 +262,40 @@
                                 <input type="email" id="{{ $modo }}_correo" name="email" class="campo" maxlength="150" value="{{ $valor('email') }}" required
                                        data-duplicado="{{ route('usuarios.duplicado') }}" data-duplicado-min="5" data-duplicado-aviso="{{ $modo }}_aviso_correo">
                             </div>
-                            <div class="col-md-4">
-                                <label class="campo-etiqueta {{ $esNuevo ? '' : 'text-warning' }}" for="{{ $modo }}_contrasena">
-                                    @unless ($esNuevo)<i class="bi bi-exclamation-triangle" aria-hidden="true"></i>@endunless {{ $esNuevo ? 'Contraseña' : 'Nueva Contraseña' }}
-                                </label>
-                                <input type="password" id="{{ $modo }}_contrasena" name="password" class="campo" autocomplete="new-password"
-                                       placeholder="{{ $esNuevo ? 'Mínimo 8, con letras y números' : 'Dejar en blanco para mantener' }}" @if ($esNuevo) required @endif>
-                            </div>
+                            @unless ($esNuevo)
+                                <div class="col-md-4">
+                                    <label class="campo-etiqueta text-warning" for="{{ $modo }}_contrasena">
+                                        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Nueva Contraseña
+                                    </label>
+                                    <input type="password" id="{{ $modo }}_contrasena" name="password" class="campo" autocomplete="new-password" placeholder="Dejar en blanco para mantener">
+                                    <p class="campo-ayuda">Si la escribes, la persona la cambia al entrar. Mejor usa la <strong>llave</strong> de su ficha para enviarle un enlace.</p>
+                                </div>
+                            @endunless
                         </div>
+                        @if ($esNuevo)
+                            {{-- La contraseña es de su dueño (criterio 6): por omisión la crea la persona con el enlace de bienvenida --}}
+                            @php $modoViejo = $reabrir ? old('contrasena_modo', $correoListo ? 'enlace' : 'manual') : ($correoListo ? 'enlace' : 'manual'); @endphp
+                            <fieldset class="mb-3">
+                                <legend class="campo-etiqueta">Contraseña</legend>
+                                @if ($correoListo)
+                                    <label class="form-check d-flex align-items-start gap-2 mb-2" style="min-height:44px;">
+                                        <input class="form-check-input mt-1" type="radio" name="contrasena_modo" value="enlace" @checked($modoViejo === 'enlace') data-por-defecto>
+                                        <span><strong>Enviar enlace de bienvenida por correo</strong> (recomendado)<span class="d-block small text-muted">La persona crea su propia contraseña con un enlace que vale 24 horas. Nadie más la conoce.</span></span>
+                                    </label>
+                                @else
+                                    <p class="campo-ayuda mb-2"><i class="bi bi-envelope-slash" aria-hidden="true"></i> El correo de la plataforma no está configurado: por ahora solo puedes escribir la contraseña.</p>
+                                @endif
+                                <label class="form-check d-flex align-items-start gap-2 mb-2" style="min-height:44px;">
+                                    <input class="form-check-input mt-1" type="radio" name="contrasena_modo" value="manual" @checked($modoViejo === 'manual') @unless ($correoListo) data-por-defecto @endunless>
+                                    <span><strong>Escribir la contraseña ahora</strong><span class="d-block small text-muted">Se la dices tú; tendrá que cambiarla en su primer acceso.</span></span>
+                                </label>
+                                <div data-mostrar-si='{"contrasena_modo":["manual"]}' @if ($modoViejo !== 'manual') hidden @endif>
+                                    <label class="campo-etiqueta" for="{{ $modo }}_contrasena">Contraseña inicial</label>
+                                    <input type="password" id="{{ $modo }}_contrasena" name="password" class="campo" autocomplete="new-password"
+                                           placeholder="Mínimo 8, con letras y números" data-requerido-si='{"contrasena_modo":["manual"]}' @if ($modoViejo !== 'manual') disabled @else required @endif>
+                                </div>
+                            </fieldset>
+                        @endif
                         {{-- Ronda 7: avisos de usuario y correo repetidos a todo lo ancho --}}
                         <div class="aviso-duplicado" id="{{ $modo }}_aviso_cuenta" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
                         <div class="aviso-duplicado" id="{{ $modo }}_aviso_correo" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
@@ -266,6 +316,52 @@
                 </div>
             </dialog>
         @endforeach
+
+        {{-- ===== Restablecer contraseña (criterio 6: por enlace, o escrita y cambiada al entrar) ===== --}}
+        @if ($puede['editar'])
+            @php
+                $restableciendoId = is_string($dialogo) && str_starts_with($dialogo, 'restablecer-') ? (int) substr($dialogo, 12) : null;
+                $modoRestablecer = $restableciendoId !== null ? old('contrasena_modo', $correoListo ? 'enlace' : 'manual') : ($correoListo ? 'enlace' : 'manual');
+                $nombreRestablecer = $restableciendoId !== null ? ($usuarios->firstWhere('id', $restableciendoId)?->name ?? '') : '';
+            @endphp
+            <dialog id="dialogoRestablecer" class="dialogo" aria-labelledby="titulo-restablecer" @if ($restableciendoId !== null) data-abrir-al-cargar @endif>
+                <div class="dialogo-cabecera">
+                    <h2 id="titulo-restablecer"><i class="bi bi-key-fill me-2 text-danger" aria-hidden="true"></i>Restablecer contraseña</h2>
+                    <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                </div>
+                <div class="dialogo-cuerpo">
+                    <form action="{{ $restableciendoId ? route('usuarios.restablecer', $restableciendoId) : '' }}" method="POST" autocomplete="off" data-formulario-editable data-form-restablecer>
+                        @csrf
+                        <input type="hidden" name="_dialogo" value="{{ $restableciendoId ? 'restablecer-'.$restableciendoId : '' }}" data-campo-dialogo>
+                        <p class="mb-3">Cuenta: <strong data-restablecer-nombre>{{ $nombreRestablecer }}</strong>. Su contraseña actual dejará de servir y sus sesiones abiertas se cerrarán.</p>
+                        <fieldset class="mb-3">
+                            <legend class="campo-etiqueta">¿Cómo?</legend>
+                            @if ($correoListo)
+                                <label class="form-check d-flex align-items-start gap-2 mb-2" style="min-height:44px;">
+                                    <input class="form-check-input mt-1" type="radio" name="contrasena_modo" value="enlace" @checked($modoRestablecer === 'enlace') data-por-defecto>
+                                    <span><strong>Enviarle un enlace por correo</strong> (recomendado)<span class="d-block small text-muted">Crea su propia contraseña con un enlace que vale 60 minutos. Nadie más la conoce.</span></span>
+                                </label>
+                            @else
+                                <p class="campo-ayuda mb-2"><i class="bi bi-envelope-slash" aria-hidden="true"></i> El correo de la plataforma no está configurado: por ahora solo puedes escribir la contraseña.</p>
+                            @endif
+                            <label class="form-check d-flex align-items-start gap-2 mb-2" style="min-height:44px;">
+                                <input class="form-check-input mt-1" type="radio" name="contrasena_modo" value="manual" @checked($modoRestablecer === 'manual') @unless ($correoListo) data-por-defecto @endunless>
+                                <span><strong>Escribir una contraseña</strong><span class="d-block small text-muted">Se la dices tú; tendrá que cambiarla al entrar.</span></span>
+                            </label>
+                            <div data-mostrar-si='{"contrasena_modo":["manual"]}' @if ($modoRestablecer !== 'manual') hidden @endif>
+                                <label class="campo-etiqueta" for="restablecer_contrasena">Contraseña nueva</label>
+                                <input type="password" id="restablecer_contrasena" name="password" class="campo" autocomplete="new-password"
+                                       placeholder="Mínimo 8, con letras y números" data-requerido-si='{"contrasena_modo":["manual"]}' @if ($modoRestablecer !== 'manual') disabled @else required @endif>
+                            </div>
+                        </fieldset>
+                        <div class="dialogo-acciones">
+                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                            <button type="submit" class="btn-rojo">Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        @endif
     @endif
 </div>
 @endsection

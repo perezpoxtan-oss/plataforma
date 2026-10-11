@@ -9,7 +9,9 @@ use App\Http\Controllers\Administracion\PermisoController;
 use App\Http\Controllers\Administracion\RolController;
 use App\Http\Controllers\Administracion\SedeController;
 use App\Http\Controllers\Administracion\UsuarioController;
+use App\Http\Controllers\Auth\RecuperacionController;
 use App\Http\Controllers\Auth\SesionController;
+use App\Http\Controllers\Cuenta\MiCuentaController;
 use App\Http\Controllers\IdentificacionController;
 use App\Http\Controllers\LectorController;
 use App\Http\Controllers\ModuloPendienteController;
@@ -48,6 +50,11 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('guest')->group(function () {
     Route::get('/login', [SesionController::class, 'mostrar'])->name('login');
     Route::post('/login', [SesionController::class, 'iniciar'])->name('login.iniciar');
+    // Olvidé mi contraseña (criterio 6): respuesta uniforme, 5 solicitudes por minuto por equipo, enlace firmado
+    Route::get('/olvide-contrasena', [RecuperacionController::class, 'olvide'])->name('contrasena.olvide');
+    Route::post('/olvide-contrasena', [RecuperacionController::class, 'solicitar'])->middleware('throttle:5,1')->name('contrasena.solicitar');
+    Route::get('/restablecer-contrasena/{token}', [RecuperacionController::class, 'restablecer'])->where('token', '[A-Za-z0-9]+')->name('contrasena.restablecer');
+    Route::post('/restablecer-contrasena', [RecuperacionController::class, 'guardar'])->middleware('throttle:10,1')->name('contrasena.guardar');
 });
 
 // Seguridad: el cierre por inactividad es POST (con token); el GET solo muestra el aviso
@@ -59,6 +66,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/sesion/latido', [SesionController::class, 'latido'])->name('sesion.latido');
 
     Route::get('/', PanelController::class)->name('panel');
+
+    // Mi cuenta (criterio 6): sin permiso propio; cambiar la propia contraseña
+    Route::get('/mi-cuenta', [MiCuentaController::class, 'index'])->name('mi-cuenta.index');
+    Route::put('/mi-cuenta/contrasena', [MiCuentaController::class, 'contrasena'])->middleware('throttle:10,1')->name('mi-cuenta.contrasena');
 
     // Administración: roles y permisos (cada pantalla exige su "modulo.accion")
     Route::post('/empresa-activa', EmpresaActivaController::class)->name('empresa-activa');
@@ -157,6 +168,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/usuarios/{usuario}', [UsuarioController::class, 'update'])->name('usuarios.update');
     Route::patch('/usuarios/{usuario}/estado', [UsuarioController::class, 'estado'])->name('usuarios.estado');
     Route::patch('/usuarios/{usuario}/desbloquear', [UsuarioController::class, 'desbloquear'])->name('usuarios.desbloquear');
+    Route::post('/usuarios/{usuario}/restablecer', [UsuarioController::class, 'restablecer'])->name('usuarios.restablecer');
 
     // Modulos del menu que aun no se migran
     Route::get('/modulos/{clave}', ModuloPendienteController::class)
