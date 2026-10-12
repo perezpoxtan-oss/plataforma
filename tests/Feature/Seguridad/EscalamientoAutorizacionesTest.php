@@ -135,7 +135,10 @@ class EscalamientoAutorizacionesTest extends TestCase
     {
         $ajustes = app(AjustesRecepcion::class);
         $this->assertSame([10, 20], [$ajustes->recordarMinutos($this->empresa), $ajustes->escalarMinutos($this->empresa)]);
-        $this->actingAs($this->rh)->get('/rh/recepcion/ajustes')->assertOk()->assertSee('Cuando la autorización tarda')->assertSee('Guardar escalamiento');
+        // ADR-0010: los minutos viven en Responsables por departamento (una sola pantalla de responsables y esperas)
+        $this->actingAs($this->rh)->get('/autorizaciones/responsables')->assertOk()->assertSee('Cuando la respuesta tarda')->assertSee('Guardar esperas')
+            ->assertSee('name="recordar_minutos"', false);
+        $this->actingAs($this->rh)->get('/rh/recepcion/ajustes')->assertOk()->assertDontSee('name="recordar_minutos"', false)->assertSee('Responsables por departamento y esperas');
 
         // El aviso al suplente debe ir después del recordatorio, y hay topes
         $this->actingAs($this->rh)->put('/rh/recepcion/ajustes', ['recordar_minutos' => 15, 'escalar_minutos' => 15])->assertSessionHasErrors('escalar_minutos');

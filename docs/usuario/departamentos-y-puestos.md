@@ -27,7 +27,13 @@ resumen: Catálogos de áreas (departamentos) y rangos (puestos) que se eligen a
 
 ![Sedes donde aplica](img/departamentos/2-sedes-donde-aplica.png)
 
-**Qué debes ver:** «Departamento «Spa y Bienestar» creado correctamente.» La ficha dice en qué sedes aplica y cuántos puestos tiene ligados.
+**Qué debes ver:** «Departamento «Spa y Bienestar» creado correctamente.» La ficha dice en qué sedes aplica, cuántos puestos tiene ligados y cuántos colaboradores activos tiene.
+
+### Nombrar al responsable del departamento
+
+Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **Sin responsable: sus visitas entran sin autorización y nadie entrevista a sus candidatos**. Toca **Nombrar responsable** (o el botón **Responsables** de arriba) para abrir **Responsables por departamento** y elegir al titular y a sus suplentes; ahí mismo se configura qué espera en la caseta (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)). Necesitas el permiso **Configurar** de *Autorizaciones*.
+
+![Departamento sin responsable](img/departamentos/8-sin-responsable.png)
 
 ### Avisos mientras escribes el nombre
 
@@ -95,6 +101,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 **¿Puedo borrar un departamento?** No; se desactiva para conservar el historial.
 
 **¿Dos departamentos pueden llamarse igual?** No dentro de la misma empresa.
+
+**¿Qué hace el responsable de un departamento?** Autoriza las visitas que llegan a la caseta para su departamento y entrevista a los candidatos que Recursos Humanos le canaliza. Se nombra en **Responsables** (desde Departamentos, Recepción → Ajustes o Autorizaciones).
 
 ## Relacionado
 

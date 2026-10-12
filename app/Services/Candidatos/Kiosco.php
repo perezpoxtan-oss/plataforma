@@ -3,6 +3,7 @@
 namespace App\Services\Candidatos;
 
 use App\Mail\AvisoRecepcion;
+use App\Mail\AvisoSolicitudCandidato;
 use App\Models\Auditoria;
 use App\Models\Candidato;
 use App\Models\Empresa;
@@ -13,6 +14,7 @@ use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\Recepcion\Destinatarios;
+use App\Support\CorreoPlataforma;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -46,28 +48,79 @@ class Kiosco
     ) {}
 
     /**
+     * Horas que vale el enlace cuando se manda por correo (ADR-0010): el
+     * candidato lo abre desde su casa, no en la sala de espera.
+     */
+    public const HORAS_ENLACE_CORREO = 72;
+
+    /**
+     * Genera el enlace (anula el anterior). $actor null = lo generó la
+     * plataforma sola (postulación corta por internet). $horas: cuánto vale;
+     * por omisión, las horas del kiosco de la empresa.
+     *
      * @return array{enlace: EnlaceKiosco, token: string, url: string}
      */
-    public function generar(User $actor, Candidato $candidato): array
+    public function generar(?User $actor, Candidato $candidato, ?int $horas = null): array
     {
         if (in_array($candidato->etapa, ['contratado', 'rechazado'], true)) {
             throw new CambioNoPermitido('Este candidato ya no está en proceso: no se le puede generar un enlace.');
         }
         $empresa = Empresa::findOrFail($candidato->empresa_id);
         $token = Str::random(48);
+        $horas = max(1, $horas ?? $this->ajustes->horasKiosco($empresa));
 
-        $enlace = DB::transaction(function () use ($candidato, $empresa, $token) {
+        $enlace = DB::transaction(function () use ($candidato, $empresa, $token, $horas) {
             EnlaceKiosco::where('candidato_id', $candidato->id)->whereNull('revocado_en')->update(['revocado_en' => now()]);
 
             return EnlaceKiosco::create([
                 'candidato_id' => $candidato->id, 'token_hash' => hash('sha256', $token), 'codigo' => $this->codigoNuevo(),
-                'expira_en' => now()->addHours($this->ajustes->horasKiosco($empresa)), 'usos_maximos' => $this->ajustes->usosKiosco($empresa),
+                'expira_en' => now()->addHours($horas), 'usos_maximos' => $this->ajustes->usosKiosco($empresa),
             ]);
         });
-        $this->auditoria->auditar($actor, 'candidatos.enlace_kiosco', $candidato, null,
-            ['codigo' => $enlace->codigo, 'expira_en' => $enlace->expira_en->toIso8601String(), 'usos_maximos' => $enlace->usos_maximos]);
+        $despues = ['codigo' => $enlace->codigo, 'expira_en' => $enlace->expira_en->toIso8601String(), 'usos_maximos' => $enlace->usos_maximos];
+        if ($actor !== null) {
+            $this->auditoria->auditar($actor, 'candidatos.enlace_kiosco', $candidato, null, $despues);
+        } else {
+            Auditoria::create(['empresa_id' => $candidato->empresa_id, 'user_id' => null, 'evento' => 'candidatos.enlace_kiosco',
+                'auditable_type' => Candidato::class, 'auditable_id' => $candidato->id, 'antes' => null, 'despues' => $despues + ['origen' => 'web']]);
+        }
 
         return ['enlace' => $enlace, 'token' => $token, 'url' => route('kiosco.mostrar', $token)];
+    }
+
+    /**
+     * Le manda al candidato, por correo, un enlace nuevo (HORAS_ENLACE_CORREO)
+     * para que llene su solicitud completa desde su celular o computadora.
+     * Devuelve false si no tiene correo o la plataforma no tiene correo
+     * configurado; en ambos casos queda anotado en su historial.
+     */
+    public function enviarEnlacePorCorreo(?User $actor, Candidato $candidato, ?Empresa $empresa = null): bool
+    {
+        if ($candidato->correo === null || trim((string) $candidato->correo) === '') {
+            $this->candidatos->evento($candidato, 'correo_candidato', null, null, 'No se le pudo mandar el enlace de su solicitud: no tiene correo capturado.', $actor);
+
+            return false;
+        }
+        if (! app(CorreoPlataforma::class)->configurado()) {
+            $this->candidatos->evento($candidato, 'correo_candidato', null, null, 'No se le pudo mandar el enlace de su solicitud: la plataforma no tiene correo configurado.', $actor);
+
+            return false;
+        }
+        $empresa ??= Empresa::findOrFail($candidato->empresa_id);
+        $generado = $this->generar($actor, $candidato, self::HORAS_ENLACE_CORREO);
+        app(AvisosCorreo::class)->alCandidato($candidato->correo, new AvisoSolicitudCandidato(
+            (string) ($candidato->partesNombre()['nombre'] ?: $candidato->nombre_completo),
+            (string) ($empresa->nombre_comercial ?? ''),
+            $generado['url'],
+            self::HORAS_ENLACE_CORREO,
+        ));
+        $this->candidatos->evento($candidato, 'correo_candidato', null, null,
+            'Se le mandó por correo el enlace para completar su solicitud (vale '.self::HORAS_ENLACE_CORREO.' horas).', $actor);
+        if ($actor !== null) {
+            $this->auditoria->auditar($actor, 'candidatos.correo_candidato', $candidato, null, ['enlace_solicitud' => $generado['enlace']->codigo]);
+        }
+
+        return true;
     }
 
     public function revocar(User $actor, Candidato $candidato): int
@@ -124,7 +177,7 @@ class Kiosco
     public function guardar(EnlaceKiosco $enlace, array $entrada, array $archivos, string $ip): Candidato
     {
         $candidato = Candidato::findOrFail($enlace->candidato_id);
-        // Solicitud completa: declaración, firma y 2 referencias personales (lección 36)
+        // Solicitud completa: declaración, firma y las referencias personales mínimas (AdministradorCandidatos::REFERENCIAS_MINIMAS)
         $d = $this->candidatos->validarCv($entrada, true, true);
         foreach ($archivos as $campo => $archivo) {
             if ($archivo !== null && ! $archivo instanceof UploadedFile) {
@@ -146,7 +199,8 @@ class Kiosco
             $candidato->fill($cv);
             $this->candidatos->aceptarPrivacidad($candidato, $ip, 'kiosco');
             $this->candidatos->firmar($candidato, $entrada['firma'], 'kiosco', null, true);
-            $candidato->forceFill(['autocaptura_pendiente' => true, 'autocaptura_en' => now()])->save();
+            // Ya llenó la solicitud completa: deja de estar «Solicitud incompleta» (postulación corta por internet)
+            $candidato->forceFill(['autocaptura_pendiente' => true, 'autocaptura_en' => now(), 'solicitud_corta' => false])->save();
             app(Postulaciones::class)->desdeFicha($candidato); // A qué aplica: lo manda la postulación activa
 
             $documentos = app(DocumentosCandidato::class);

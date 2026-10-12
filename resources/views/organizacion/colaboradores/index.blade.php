@@ -174,6 +174,8 @@
                             {{-- Ronda 5: QR y etiqueta NFC/RFID (gafete o tarjeta del colaborador) en un diálogo --}}
                             @include('componentes.boton-identificacion', ['identTipo' => 'colaborador', 'identRegistro' => $c, 'identTitulo' => $nombreCompleto,
                                 'identDetalle' => 'Núm. '.$c->num_empleado, 'identImprimir' => null, 'identEditable' => $editable && ! $pendiente])
+                            {{-- Candidatos fase 3: expediente del colaborador (ficha de detalle) --}}
+                            <a href="{{ route('colaboradores.expediente', $c->id) }}" class="btn-icono" title="Expediente" aria-label="Expediente de {{ $nombreCompleto }}"><i class="bi bi-folder2-open" aria-hidden="true"></i></a>
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar a {{ $nombreCompleto }}"
                                         data-accion="editar-registro" data-dialogo="dialogoEditarColaborador"

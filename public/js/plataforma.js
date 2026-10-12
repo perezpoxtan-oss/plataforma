@@ -8611,7 +8611,8 @@ document.addEventListener('click', function (e) {
     function renglon(item) {
         var li = document.createElement('li');
         var a = document.createElement('a');
-        a.className = 'mis-pendientes-item' + (item.total > 0 ? '' : ' al-dia');
+        a.className = 'mis-pendientes-item' + (item.total > 0 ? '' : ' al-dia') + (item.nivel === 'ambar' || item.nivel === 'roja' ? ' nivel-' + item.nivel : '');
+        if (item.nivel === 'ambar' || item.nivel === 'roja') { a.title = item.nivel === 'roja' ? 'Pasó del doble del plazo' : 'Pasó del plazo'; }
         a.href = item.url;
         var i = document.createElement('i'); i.className = 'bi ' + item.icono; i.setAttribute('aria-hidden', 'true');
         var t = document.createElement('span'); t.textContent = item.titulo;
@@ -8701,6 +8702,19 @@ document.addEventListener('click', function (e) {
         } else {
             aMano();
         }
+    });
+
+    // Vacantes (ADR-0010): el título se sugiere desde el puesto mientras la persona no haya escrito uno propio
+    document.addEventListener('change', function (e) {
+        var puesto = e.target.closest('select[data-sugiere-titulo]');
+        if (!puesto) { return; }
+        var titulo = document.getElementById(puesto.getAttribute('data-sugiere-titulo'));
+        if (!titulo) { return; }
+        var propio = titulo.value.trim() !== '' && titulo.value !== (titulo.dataset.sugerido || '');
+        if (propio) { return; }
+        var texto = puesto.selectedIndex > 0 ? puesto.options[puesto.selectedIndex].text.trim() : '';
+        titulo.value = texto;
+        titulo.dataset.sugerido = texto;
     });
 })();
 /* Fin Solicitud de empleo formal y Vacantes */

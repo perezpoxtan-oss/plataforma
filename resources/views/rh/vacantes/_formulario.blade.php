@@ -19,12 +19,14 @@
 
 <x-seccion :clave="'vacante-datos-'.$p" :abierta="true" class="bloque-cv">
     <x-slot:titulo><i class="bi bi-briefcase me-2" aria-hidden="true"></i>La vacante</x-slot:titulo>
+    {{-- ADR-0010: alta corta (título, puesto, departamento, plazas y sede); el título se sugiere desde el puesto --}}
     <label class="campo-etiqueta" for="{{ $p }}_titulo">Título de la vacante *</label>
-    <input type="text" id="{{ $p }}_titulo" name="titulo" class="campo" maxlength="150" required value="{{ $o('titulo') }}" placeholder="Ej. Camarista, Cocinero de línea">
+    <input type="text" id="{{ $p }}_titulo" name="titulo" class="campo" maxlength="150" required value="{{ $o('titulo') }}" placeholder="Ej. Camarista, Cocinero de línea" aria-describedby="{{ $p }}_titulo_ayuda">
+    <p class="campo-ayuda mt-0" id="{{ $p }}_titulo_ayuda">Si eliges un puesto del catálogo, el título se llena solo (puedes cambiarlo).</p>
     <div class="rejilla-cv">
         <div>
             <label class="campo-etiqueta" for="{{ $p }}_puesto">Puesto (catálogo)</label>
-            <select id="{{ $p }}_puesto" name="puesto_id" class="campo">
+            <select id="{{ $p }}_puesto" name="puesto_id" class="campo" data-sugiere-titulo="{{ $p }}_titulo">
                 <option value="">-- Sin definir --</option>
                 @foreach ($puestos as $pu)
                     <option value="{{ $pu->id }}" @selected((string) $o('puesto_id') === (string) $pu->id)>{{ $pu->nombre }}</option>
@@ -47,11 +49,6 @@
             <p class="campo-ayuda" id="{{ $p }}_plazas_ayuda">Al elegir a tantas personas como plazas, los demás candidatos con el departamento pasan a «Considerar».</p>
         </div>
     </div>
-    {{-- Candidatos fase 2: el entrevistador ve el CV en PDF solo si se marca --}}
-    <label class="casilla-candidato mb-3">
-        <input type="checkbox" name="jefe_ve_cv" value="1" @checked($o('jefe_ve_cv'))>
-        <span><strong>El jefe puede ver el CV</strong><br><span class="small text-muted">Quien entrevista verá el CV en PDF del candidato. Apagado: solo ve el resumen (escolaridad, experiencia, disponibilidad y sueldo que espera).</span></span>
-    </label>
     <span class="campo-etiqueta d-block">Sede(s) *</span>
     @if ($todasLasSedes && $sedesForm->count() > 1)
         <input type="hidden" name="todas_las_sedes" value="0">
@@ -69,8 +66,14 @@
     </div>
 </x-seccion>
 
-<x-seccion :clave="'vacante-condiciones-'.$p" :abierta="$modo === 'nueva'" class="bloque-cv">
-    <x-slot:titulo><i class="bi bi-cash-coin me-2" aria-hidden="true"></i>Condiciones</x-slot:titulo>
+{{-- Lo demás va plegado (criterio UX 7): se completa al crear o después, desde «Editar» --}}
+<x-seccion :clave="'vacante-condiciones-'.$p" :abierta="false" class="bloque-cv">
+    <x-slot:titulo><i class="bi bi-cash-coin me-2" aria-hidden="true"></i>Condiciones y quién ve el CV</x-slot:titulo>
+    {{-- Candidatos fase 2: el entrevistador ve el CV en PDF solo si se marca --}}
+    <label class="casilla-candidato mb-3">
+        <input type="checkbox" name="jefe_ve_cv" value="1" @checked($o('jefe_ve_cv'))>
+        <span><strong>El jefe puede ver el CV</strong><br><span class="small text-muted">Quien entrevista verá el CV en PDF del candidato. Apagado: solo ve el resumen (escolaridad, experiencia, disponibilidad y sueldo que espera).</span></span>
+    </label>
     <div class="rejilla-cv">
         <div>
             <label class="campo-etiqueta" for="{{ $p }}_contrato">Tipo de contrato</label>
@@ -125,7 +128,7 @@
     </div>
 </x-seccion>
 
-<x-seccion :clave="'vacante-descripcion-'.$p" :abierta="$modo === 'nueva'" class="bloque-cv">
+<x-seccion :clave="'vacante-descripcion-'.$p" :abierta="false" class="bloque-cv">
     <x-slot:titulo><i class="bi bi-card-checklist me-2" aria-hidden="true"></i>Descripción y requisitos</x-slot:titulo>
     <label class="campo-etiqueta" for="{{ $p }}_descripcion">Descripción (qué hará)</label>
     <textarea id="{{ $p }}_descripcion" name="descripcion" class="campo" rows="3" maxlength="3000" placeholder="Ej. Limpieza y arreglo de habitaciones del hotel.">{{ $o('descripcion') }}</textarea>

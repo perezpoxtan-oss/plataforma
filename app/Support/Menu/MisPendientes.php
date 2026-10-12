@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Entrevistas;
+use App\Services\Candidatos\PlazosCandidatos;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Procedimientos\AdministradorProcedimientos;
@@ -31,6 +32,13 @@ use Illuminate\Support\Facades\Cache;
  * quien edita usuarios: «Cuentas por revisar», bloqueadas hoy o desactivadas
  * por una baja en los últimos 7 días).
  *
+ * Candidatos, fase 3: cada renglón de candidatos con pendientes lleva su
+ * `nivel` (ámbar si algo pasó del plazo de la empresa, roja si pasó del
+ * doble) y, en la consulta periódica de la campana de quien edita
+ * candidatos, si en esa empresa ya tocaba recordar, archivar o borrar algo,
+ * se hace ahí (con candado de un minuto), por si el cron del hosting no
+ * corre. El pintado de cada pantalla no lo dispara (no suma consultas).
+ *
  * La pantalla lo calcula fresco al pintarse; la consulta periódica de la
  * campana (cada 30 s) reutiliza el resultado durante unos segundos.
  */
@@ -40,7 +48,7 @@ class MisPendientes
     /** Segundos que la consulta periódica reutiliza el último cálculo. */
     public const SEGUNDOS_CACHE = 25;
 
-    /** @var array<string, array{total: int, items: list<array{clave: string, titulo: string, icono: string, total: int, url: string}>}> */
+    /** @var array<string, array{total: int, items: list<array{clave: string, titulo: string, icono: string, total: int, url: string, nivel: ?string}>}> */
     private array $memoria = [];
 
     public function __construct(
@@ -59,6 +67,9 @@ class MisPendientes
         }
         $llave = "mis-pendientes:{$actor->id}:{$empresaId}";
 
+        if (! $reciente && $actor->can('candidatos.editar')) {
+            app(PlazosCandidatos::class)->correrSiToca($empresaId);
+        }
         if (isset($this->memoria[$llave])) {
             return $this->memoria[$llave];
         }
@@ -66,7 +77,7 @@ class MisPendientes
             return $this->memoria[$llave] = $guardado;
         }
 
-        $resultado = $this->tenant->conEmpresa($empresaId, fn () => $this->calcular($actor));
+        $resultado = $this->tenant->conEmpresa($empresaId, fn () => $this->calcular($actor, $empresaId));
         Cache::put($llave, $resultado, self::SEGUNDOS_CACHE);
 
         return $this->memoria[$llave] = $resultado;
@@ -75,7 +86,7 @@ class MisPendientes
     /**
      * @return array{total: int, items: list<array{clave: string, titulo: string, icono: string, total: int, url: string}>}
      */
-    private function calcular(User $actor): array
+    private function calcular(User $actor, int $empresaId): array
     {
         $items = [];
 
@@ -148,14 +159,24 @@ class MisPendientes
             $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $cuentas, route('usuarios.index', ['revisar' => 1]));
         }
 
+        // Fase 3: color por plazo, solo si algún renglón de candidatos tiene pendientes
+        $conPendientes = array_filter($items, fn ($i) => $i['total'] > 0 && in_array($i['clave'], PlazosCandidatos::RENGLONES, true));
+        if ($conPendientes !== []) {
+            $niveles = app(PlazosCandidatos::class)->nivelesPara($actor, $empresaId, array_column($conPendientes, 'clave'));
+            foreach ($items as &$item) {
+                $item['nivel'] = $item['total'] > 0 ? ($niveles[$item['clave']] ?? null) : null;
+            }
+            unset($item);
+        }
+
         return ['total' => array_sum(array_column($items, 'total')), 'items' => $items];
     }
 
     /**
-     * @return array{clave: string, titulo: string, icono: string, total: int, url: string}
+     * @return array{clave: string, titulo: string, icono: string, total: int, url: string, nivel: ?string}
      */
     private function item(string $clave, string $titulo, string $icono, int $total, string $url): array
     {
-        return compact('clave', 'titulo', 'icono', 'total', 'url');
+        return compact('clave', 'titulo', 'icono', 'total', 'url') + ['nivel' => null];
     }
 }

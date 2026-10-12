@@ -7,6 +7,7 @@ use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\DepartamentoResponsable;
 use App\Models\Empresa;
+use App\Models\Notificacion;
 use App\Models\PaseSalida;
 use App\Models\Rol;
 use App\Models\RolPermiso;
@@ -268,6 +269,11 @@ class PlantillaSolicitudesTest extends TestCase
         $vacante = $this->enEmpresa(fn () => Vacante::where('titulo', 'Recepcionista bilingüe')->firstOrFail());
         // Queda en borrador aunque pida publicar: la publica Recursos Humanos
         $this->assertSame('borrador', $vacante->estado);
+        // ADR-0010: Recursos Humanos recibe la campana «Vacante propuesta por …», que se resuelve al publicarla
+        $aviso = $this->enEmpresa(fn () => Notificacion::where('user_id', $rh->id)->where('tipo', 'vacante_propuesta')->sole());
+        $this->assertSame(['Vacante propuesta por '.$jefa->name.': «Recepcionista bilingüe»', 'vacante', $vacante->id], [$aviso->titulo, $aviso->referencia_tipo, (int) $aviso->referencia_id]);
+        $this->assertStringContainsString('Recepción · 1 plaza(s)', (string) $aviso->texto);
+        $this->assertFalse($this->enEmpresa(fn () => Notificacion::where('user_id', $jefa->id)->where('tipo', 'vacante_propuesta')->exists()));
 
         $this->flushSession();
         $this->actingAs($jefa)->get('/vacantes')->assertOk()->assertSee('Recepcionista bilingüe')->assertSee('Guardar borrador')->assertDontSee('Guardar y publicar');
@@ -278,6 +284,7 @@ class PlantillaSolicitudesTest extends TestCase
         $this->actingAs($rh)->get('/vacantes')->assertOk()->assertSee('Recepcionista bilingüe');
         $this->actingAs($rh)->patch("/vacantes/{$vacante->id}/estado", ['estado' => 'publicada'])->assertSessionHasNoErrors();
         $this->assertSame('publicada', $vacante->fresh()->estado);
+        $this->assertNotNull($aviso->fresh()->leida_en);
         $this->actingAs($otro)->get('/vacantes')->assertOk()->assertSee('Recepcionista bilingüe');
     }
 }

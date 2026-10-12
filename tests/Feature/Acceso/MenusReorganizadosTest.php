@@ -93,7 +93,8 @@ class MenusReorganizadosTest extends TestCase
         ], $menu['padrones']);
         $this->assertSame([
             'Personal' => ['colaboradores'],
-            'Recepción y candidatos' => ['vacantes', 'recepcion_rh', 'candidatos'], // Vacantes: lección 36
+            // Vacantes: lección 36 · «Mis entrevistas» (ADR-0010): para quien tiene candidatos.evaluar, sin módulo propio
+            'Recepción y candidatos' => ['vacantes', 'recepcion_rh', 'candidatos', 'entrevistas'],
             'Catálogos' => ['departamentos', 'puestos', 'turnos'],
         ], $menu['recursos_humanos']);
         // Identidad de la plataforma es solo del superadministrador
@@ -170,8 +171,8 @@ class MenusReorganizadosTest extends TestCase
         $menu = $this->estructura($jefe);
 
         $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'estructura'], array_keys($menu));
-        // Lección 36: la caseta consulta las vacantes publicadas de su sede
-        $this->assertSame(['Personal' => ['colaboradores'], 'Recepción y candidatos' => ['vacantes']], $menu['recursos_humanos']);
+        // Lección 36: la caseta consulta las vacantes publicadas de su sede; ADR-0010: entrevista a quien RR. HH. le canaliza
+        $this->assertSame(['Personal' => ['colaboradores'], 'Recepción y candidatos' => ['vacantes', 'entrevistas']], $menu['recursos_humanos']);
         $this->assertSame(['Accesos y permisos' => ['usuarios']], $menu['estructura']);
     }
 
@@ -250,6 +251,34 @@ class MenusReorganizadosTest extends TestCase
 
             return Autorizacion::create(['sede_id' => $this->sede->id, 'departamento_id' => $depto->id, 'tipo' => 'visita', 'solicitada_en' => now()]);
         });
+    }
+
+    public function test_mis_entrevistas_y_autorizaciones_salen_en_el_menu_de_quien_las_usa(): void
+    {
+        // Jefe de departamento (plantilla de solicitudes): entrevista (candidatos.evaluar), pero Autorizaciones solo cuando es responsable
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de departamento', $this->sede);
+        $this->assertTrue($jefe->can('candidatos.evaluar') && $jefe->can('autorizaciones.responder'));
+        $items = $this->items($jefe);
+        $this->assertSame(['Mis entrevistas', route('entrevistas.index')], [$items['entrevistas']['nombre'], $items['entrevistas']['url']]);
+        $this->assertArrayNotHasKey('autorizaciones', $items);
+
+        $this->autorizacionPendientePara($jefe);
+        $items = $this->items($jefe);
+        $this->assertSame(['Autorizaciones', route('autorizaciones.index')], [$items['autorizaciones']['nombre'], $items['autorizaciones']['url']]);
+        $this->assertSame(['vacantes', 'entrevistas', 'autorizaciones'], $this->estructura($jefe)['recursos_humanos']['Recepción y candidatos']);
+        $html = $this->actingAs($jefe)->get('/entrevistas')->assertOk()->getContent();
+        $this->assertStringContainsString('Mis entrevistas', $html);
+        $this->assertStringContainsString(route('autorizaciones.index'), $html);
+
+        // Recursos Humanos responde «Que pase» desde Recepción, no desde Autorizaciones: no se le agrega al menú
+        $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
+        $this->assertArrayNotHasKey('autorizaciones', $this->items($rh));
+        $this->assertArrayHasKey('entrevistas', $this->items($rh));
+
+        // Sin el permiso de evaluar ni responder: nada
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->sede);
+        $this->assertArrayNotHasKey('entrevistas', $this->items($agente));
+        $this->assertArrayNotHasKey('autorizaciones', $this->items($agente));
     }
 
     public function test_mis_pendientes_cuenta_las_autorizaciones_del_responsable(): void

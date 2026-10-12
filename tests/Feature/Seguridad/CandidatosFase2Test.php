@@ -23,6 +23,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\Vacante;
 use App\Services\Auditoria\LectorAuditoria;
+use App\Services\Candidatos\Entrevistas;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Services\Recepcion\AjustesRecepcion;
@@ -127,7 +128,7 @@ class CandidatosFase2Test extends TestCase
     }
 
     /**
-     * Un candidato capturado por RR. HH. (ya atendido: «En revisión»).
+     * Un candidato capturado por RR. HH. (ya atendido: «Con RR. HH.»).
      *
      * @param  array<string, mixed>  $datos
      */
@@ -138,7 +139,7 @@ class CandidatosFase2Test extends TestCase
             'escolaridad' => [['nivel' => 'bachillerato', 'institucion' => 'CBTIS 111']], 'experiencia' => [['empresa' => 'Hotel Sol', 'puesto' => 'Botones', 'anos' => '3']],
             'disponibilidad' => 'inmediata', 'pretension' => '10,500'])->assertSessionHas('ok');
         $c = $this->enEmpresa(fn () => Candidato::where('nombre_completo', $nombre)->sole());
-        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'revision'])->assertSessionHas('ok');
+        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'con_rh'])->assertSessionHas('ok');
 
         return $c->fresh();
     }
@@ -177,7 +178,7 @@ class CandidatosFase2Test extends TestCase
         $chef = $this->crearUsuario($this->empresa, 'Supervisor', $this->centro);
         $this->responsable($this->cocina, $chef);
         $mapa = ['aprobado_rh' => 'canalizado', 'entrevista' => 'canalizado', 'seleccionado' => 'elegido', 'cartera' => 'considerar', 'descartado' => 'rechazado',
-            'revision' => 'revision'];
+            'revision' => 'con_rh', 'entrevista_rh' => 'con_rh'];
         $ids = [];
         foreach (array_keys($mapa) as $i => $vieja) {
             $ids[$vieja] = $this->enEmpresa(function () use ($vieja, $i) {
@@ -207,6 +208,10 @@ class CandidatosFase2Test extends TestCase
         $migracion = require database_path('migrations/2026_10_20_000100_etapas_de_candidatos_fase_2.php');
         $migracion->up();
         $migracion->up();
+        // ADR-0010: revision y entrevista_rh → con_rh (idempotente y reversible)
+        $conRh = require database_path('migrations/2026_10_22_000100_etapas_simplificadas_con_rh.php');
+        $conRh->up();
+        $conRh->up();
 
         foreach ($mapa as $vieja => $nueva) {
             [$c, $p] = $ids[$vieja];
@@ -229,6 +234,16 @@ class CandidatosFase2Test extends TestCase
         // El canalizado migrado aparece en los pendientes de su entrevistador
         Cache::flush();
         $this->assertSame(2, collect(app(MisPendientes::class)->para($chef)['items'])->firstWhere('clave', 'entrevistas')['total']);
+
+        // Reversión: con_rh regresa a revision (o a entrevista_rh si ya tenía su entrevista de RR. HH.) y se puede volver a migrar
+        DB::table('postulaciones')->where('id', $ids['entrevista_rh'][1])->update(['entrevista_rh_en' => now()]);
+        $conRh->down();
+        $this->assertSame('revision', DB::table('postulaciones')->where('id', $ids['revision'][1])->value('etapa'));
+        $this->assertSame('entrevista_rh', DB::table('postulaciones')->where('id', $ids['entrevista_rh'][1])->value('etapa'));
+        $this->assertSame('entrevista_rh', DB::table('candidatos')->where('id', $ids['entrevista_rh'][0])->value('etapa'));
+        $this->assertSame('revision', DB::table('candidato_eventos')->where('candidato_id', $ids['revision'][0])->value('etapa_nueva'));
+        $conRh->up();
+        $this->assertSame('con_rh', DB::table('candidatos')->where('id', $ids['entrevista_rh'][0])->value('etapa'));
     }
 
     // ------------------------------------------------------------------ Flujo completo
@@ -241,15 +256,16 @@ class CandidatosFase2Test extends TestCase
         $juan = $this->candidato('Juan Pérez Chan', $vacante, ['correo' => 'juan@correo.mx', 'curp' => 'PECJ960410HQRRHN05']);
         $otra = $this->candidato('Laura Gómez Poot', $vacante);
 
-        // Atender → Entrevistar (abre la evaluación) → evaluación de RR. HH.
-        $this->actingAs($this->rh)->get("/candidatos/{$juan->id}")->assertOk()->assertSee('Entrevistar')->assertDontSee('Canalizar al departamento</button>', false);
-        $this->actingAs($this->rh)->patch("/candidatos/{$juan->id}/etapa", ['etapa' => 'entrevista_rh'])->assertSessionHas('abrir_dialogo', 'evaluacion');
-        $this->actingAs($this->rh)->get("/candidatos/{$juan->id}")->assertSee('id="dialogoEvaluacion"', false)->assertSee('Experiencia para el puesto');
+        // Con RR. HH. → «Entrevistar» abre la evaluación sin cambiar de etapa → evaluación de RR. HH.
+        $this->actingAs($this->rh)->get("/candidatos/{$juan->id}")->assertOk()->assertSee('Entrevistar')->assertDontSee('Canalizar al departamento</button>', false)
+            ->assertSee('data-abrir-dialogo="dialogoEvaluacion"', false)->assertSee('id="dialogoEvaluacion"', false)->assertSee('Experiencia para el puesto');
+        $this->assertSame('con_rh', $juan->fresh()->etapa);
         $this->evaluarRh($this->rh, $juan, 'canalizar', 'Buena presentación', [5, 4, 4, 5, 3])->assertSessionHas('ok')->assertSessionHas('abrir_dialogo', 'canalizar');
         $rh = $this->enEmpresa(fn () => EvaluacionCandidato::sole());
         $this->assertSame(['rh', 'canalizar', 4.2, 1], [$rh->tipo, $rh->resultado, (float) $rh->promedio, $rh->numero]);
         $this->assertSame(5, $rh->criterios['Presentación']);
-        $this->assertSame('entrevista_rh', $juan->fresh()->etapa);
+        $this->assertSame('con_rh', $juan->fresh()->etapa);
+        $this->assertNotNull($this->postulacion($juan)->entrevista_rh_en);
         $this->assertFalse($this->enEmpresa(fn () => Notificacion::where('user_id', $this->jefa->id)->exists()), 'Evaluar no avisa al jefe');
 
         // Canalizar: la jefa responsable sale por omisión; aviso por campana, Mis pendientes y correo firmado (sin datos oficiales)
@@ -290,13 +306,20 @@ class CandidatosFase2Test extends TestCase
         $laura = $this->postulacion($otra);
         $this->assertSame(['considerar', 'Se eligió a otra persona para esta vacante'], [$laura->etapa, $laura->motivo_descarte]);
         $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('titulo', 'Elegido por el departamento: Juan Pérez Chan')->exists()));
-        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('titulo', 'Vacante cubierta: «Recepcionista»')->exists()));
+        $cubierta = $this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('titulo', 'Vacante cubierta: «Recepcionista»')->sole());
+        // ADR-0010: el aviso trae el botón «Cerrar como cubierta»; al usarlo la vacante se cierra y el aviso pierde el botón
+        $this->assertSame(['Cerrar como cubierta', route('vacantes.estado', $vacante->id), 'PATCH', 'cubierta'],
+            [$cubierta->acciones[0]['etiqueta'], $cubierta->acciones[0]['url'], $cubierta->acciones[0]['campos']['_method'], $cubierta->acciones[0]['campos']['cierre_motivo']]);
+        $this->actingAs($this->rh)->get('/notificaciones')->assertOk()->assertSee('Cerrar como cubierta');
+        $this->actingAs($this->rh)->post($cubierta->acciones[0]['url'], $cubierta->acciones[0]['campos'])->assertSessionHas('ok', fn ($m) => str_contains($m, 'cubierta'));
+        $this->assertSame(['cerrada', 'cubierta'], [$vacante->fresh()->estado, $vacante->fresh()->cierre_motivo]);
+        $this->assertNull($cubierta->fresh()->acciones);
         // Sus avisos de entrevista ya no tienen pendientes
         $this->assertSame(0, $this->enEmpresa(fn () => Notificacion::where('user_id', $this->jefa->id)->where('referencia_tipo', 'entrevista')->whereNull('leida_en')->count()));
 
         // RR. HH. contrata
         $this->actingAs($this->rh)->get("/candidatos/{$juan->id}")->assertSee('Contratar')->assertSee('Elegir')->assertSee('5.0');
-        $this->actingAs($this->rh)->post("/candidatos/{$juan->id}/contratar", ['num_empleado' => '4001', 'nombre' => 'Juan', 'apellido_paterno' => 'Pérez',
+        $this->actingAs($this->rh)->post("/candidatos/{$juan->id}/contratar", ['forzar' => '1', 'motivo_forzar' => 'Entrega los documentos la próxima semana', 'num_empleado' => '4001', 'nombre' => 'Juan', 'apellido_paterno' => 'Pérez',
             'apellido_materno' => 'Chan'])->assertSessionHas('ok');
         $this->assertSame('contratado', $juan->fresh()->etapa);
 
@@ -314,7 +337,7 @@ class CandidatosFase2Test extends TestCase
         $c = $this->candidato();
         $this->evaluarRh($this->rh, $c, 'rechazar')->assertSessionHasErrors('comentario');
         $this->evaluarRh($this->rh, $c, 'considerar', null, 9)->assertSessionHasErrors(['comentario', 'criterios.presentacion']);
-        $this->assertSame('revision', $c->fresh()->etapa);
+        $this->assertSame('con_rh', $c->fresh()->etapa);
         $this->evaluarRh($this->rh, $c, 'rechazar', 'No tiene disponibilidad de horario')->assertSessionHas('ok');
         $p = $this->postulacion($c);
         $this->assertSame(['rechazado', 'No tiene disponibilidad de horario'], [$p->etapa, $p->motivo_descarte]);
@@ -324,38 +347,104 @@ class CandidatosFase2Test extends TestCase
         $this->assertFalse($this->enEmpresa(fn () => Notificacion::where('user_id', $this->jefa->id)->exists()));
         // No se canaliza sin la evaluación «Canalizar»
         $tercero = $this->candidato('Tercera Persona');
-        $this->actingAs($this->rh)->patch("/candidatos/{$tercero->id}/etapa", ['etapa' => 'entrevista_rh']);
         $this->canalizar($this->rh, $tercero, $this->jefa, $this->recepcion->id)->assertSessionHas('error');
-        $this->assertSame('entrevista_rh', $tercero->fresh()->etapa);
+        $this->assertSame('con_rh', $tercero->fresh()->etapa);
     }
 
     // ------------------------------------------------------------------ Segunda entrevista
 
-    public function test_segunda_entrevista(): void
+    public function test_segunda_entrevista_manda_directo_a_reprogramar(): void
     {
         $c = $this->candidato();
         $this->hastaCanalizado($c)->assertSessionHas('ok');
         $p = $this->postulacion($c);
         $this->evaluarDepartamento($this->jefa, $p->id, 'rechazar')->assertSessionHasErrors('comentario'); // obligatorio para Considerar y Rechazar
         $this->assertSame('canalizado', $p->fresh()->etapa);
-        $this->evaluarDepartamento($this->jefa, $p->id, 'segunda_entrevista', 'Que la conozca el gerente de noche')->assertSessionHas('ok');
-        $this->assertSame('evaluado', $p->fresh()->etapa);
-        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('titulo', 'El departamento evaluó a Juan Pérez Chan')->exists()));
-
-        // RR. HH.: «Segunda entrevista» la regresa a «Entrevista con el departamento» (2.ª)
-        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertSee('Segunda entrevista')->assertSee('Que la conozca el gerente de noche');
-        $gerente = $this->crearUsuario($this->empresa, 'Jefe de departamento', $this->centro);
-        $this->canalizar($this->rh, $c, $gerente, $this->recepcion->id)->assertSessionHas('ok');
+        $this->evaluarDepartamento($this->jefa, $p->id, 'segunda_entrevista', 'Que la conozca el gerente de noche')->assertSessionHas('ok', fn ($m) => str_contains($m, 'segunda entrevista'));
+        // Sigue con el departamento (2.ª), con la misma entrevistadora y sin cita; RR. HH. recibe «ponle fecha»
         $p->refresh();
-        $this->assertSame(['canalizado', 2, $gerente->id], [$p->etapa, $p->numero_entrevista, $p->entrevistador_id]);
-        $this->evaluarDepartamento($this->jefa, $p->id, 'elegir')->assertNotFound(); // ya no es suya
-        $this->evaluarDepartamento($gerente, $p->id, 'rechazar', 'No tiene inglés')->assertSessionHas('ok');
+        $this->assertSame(['canalizado', 2, $this->jefa->id, null, false], [$p->etapa, $p->numero_entrevista, $p->entrevistador_id, $p->cita_en, (bool) $p->cita_ahora]);
+        $this->assertSame(1, $this->enEmpresa(fn () => EvaluacionCandidato::where('tipo', 'departamento')->where('numero', 1)->count()));
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('titulo', 'Pide segunda entrevista: ponle fecha a Juan Pérez Chan')->exists()));
+        $this->actingAs($this->jefa)->get('/entrevistas')->assertOk()->assertSee('Sin fecha');
+
+        // RR. HH.: la ficha pide ponerle fecha; «Reprogramar» conserva el número 2 y avisa a la jefa
+        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertSee('Ponle fecha (reprogramar)')->assertSee('Que la conozca el gerente de noche')
+            ->assertDontSee('Segunda entrevista</button>', false);
+        $this->canalizar($this->rh, $c, $this->jefa, $this->recepcion->id, $this->citaLocal(now()->addDay()->setTime(10, 0)))->assertSessionHas('ok');
+        $p->refresh();
+        $this->assertSame(['canalizado', 2, $this->jefa->id], [$p->etapa, $p->numero_entrevista, $p->entrevistador_id]);
+        $this->assertNotNull($p->cita_en);
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->jefa->id)->where('titulo', 'like', 'Se reprogramó la entrevista: Juan Pérez Chan%')->exists()));
+
+        // La jefa evalúa la segunda: Rechazar deja «Evaluado» y RR. HH. cierra
+        $this->evaluarDepartamento($this->jefa, $p->id, 'rechazar', 'No tiene inglés')->assertSessionHas('ok');
         $p->refresh();
         $this->assertSame('evaluado', $p->etapa, 'Rechazar del jefe: Recursos Humanos cierra');
         $ultima = $this->enEmpresa(fn () => EvaluacionCandidato::where('tipo', 'departamento')->orderByDesc('id')->first());
         $this->assertSame([2, 'rechazar'], [$ultima->numero, $ultima->resultado]);
+        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertSee('Segunda entrevista'); // RR. HH. aún puede pedir otra desde «Evaluado»
         $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'rechazado', 'comentario' => 'El departamento no lo eligió'])->assertSessionHas('ok');
         $this->assertSame('rechazado', $c->fresh()->etapa);
+    }
+
+    public function test_el_jefe_corrige_su_evaluacion_quince_minutos(): void
+    {
+        $c = $this->candidato();
+        $this->hastaCanalizado($c)->assertSessionHas('ok');
+        $p = $this->postulacion($c);
+        $this->evaluarDepartamento($this->jefa, $p->id, 'considerar', 'Le falta experiencia', 3)->assertSessionHas('ok');
+        $this->assertSame('evaluado', $p->fresh()->etapa);
+
+        // Dentro del margen: la pantalla ofrece corregir con los valores guardados
+        $this->actingAs($this->jefa)->get("/entrevistas/{$p->id}")->assertOk()->assertSee('Corregir tu evaluación')->assertSee('Le falta experiencia')
+            ->assertSee('value="3" required checked', false);
+        $this->evaluarDepartamento($this->jefa, $p->id, 'segunda_entrevista', 'Mejor que lo vea el gerente', 4)->assertSessionHas('ok', fn ($m) => str_contains($m, 'corregida'));
+        $e = $this->enEmpresa(fn () => EvaluacionCandidato::where('tipo', 'departamento')->sole());
+        $this->assertSame(['segunda_entrevista', 'Mejor que lo vea el gerente', 4.0], [$e->resultado, $e->comentario, (float) $e->promedio]);
+        $p->refresh();
+        $this->assertSame(['canalizado', 2, null], [$p->etapa, $p->numero_entrevista, $p->cita_en]);
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('titulo', 'Corrigió su evaluación de Juan Pérez Chan')->exists()));
+        $this->assertTrue(Auditoria::where('evento', 'candidatos.evaluacion_corregida')->exists());
+        // De vuelta a «Considerar»: regresa a Evaluado con el número original
+        $this->evaluarDepartamento($this->jefa, $p->id, 'considerar', 'Lo pensé mejor', 3)->assertSessionHas('ok');
+        $p->refresh();
+        $this->assertSame(['evaluado', 1], [$p->etapa, $p->numero_entrevista]);
+        // Ya elegido: solo estrellas y comentario
+        $this->evaluarDepartamento($this->jefa, $p->id, 'elegir', null, 5)->assertSessionHas('ok');
+        $this->assertSame('elegido', $p->fresh()->etapa);
+        $this->evaluarDepartamento($this->jefa, $p->id, 'rechazar', 'x', 2)->assertSessionHasErrors('resultado');
+        $this->evaluarDepartamento($this->jefa, $p->id, 'elegir', 'Excelente', 4)->assertSessionHas('ok');
+        $this->assertSame(['elegido', 'Excelente'], [$p->fresh()->etapa, $this->enEmpresa(fn () => EvaluacionCandidato::where('tipo', 'departamento')->sole()->comentario)]);
+
+        // Pasado el margen ya no se corrige (y otra persona nunca)
+        $this->travelTo(now()->addMinutes(Entrevistas::MINUTOS_CORRECCION + 1));
+        $this->flushSession();
+        $this->actingAs($this->jefa)->get("/entrevistas/{$p->id}")->assertOk()->assertDontSee('Corregir tu evaluación');
+        $this->evaluarDepartamento($this->jefa, $p->id, 'elegir', 'Tarde', 4)->assertSessionHas('error');
+        $this->evaluarDepartamento($this->rh, $p->id, 'elegir', 'Tarde', 4)->assertNotFound();
+    }
+
+    public function test_con_la_cita_ahora_el_jefe_marca_no_se_presento(): void
+    {
+        $c = $this->candidato();
+        $this->hastaCanalizado($c)->assertSessionHas('ok'); // «Ahora, está en sala»
+        $p = $this->postulacion($c);
+        $this->actingAs($this->jefa)->get("/entrevistas/{$p->id}")->assertOk()->assertSee('No se presentó');
+        $this->actingAs($this->jefa)->post("/entrevistas/{$p->id}/no-se-presento")->assertRedirect('/entrevistas')->assertSessionHas('ok');
+        $p->refresh();
+        $this->assertSame('no_se_presento', $p->etapa);
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('titulo', 'No se presentó: Juan Pérez Chan')->exists()));
+        $this->assertTrue($this->enEmpresa(fn () => $c->eventos()->where('comentario', 'like', '%Lo marcó quien lo iba a entrevistar%')->exists()));
+
+        // Con cita (fecha y hora) el jefe no lo marca: eso lo decide RR. HH.
+        $otro = $this->candidato('Laura Gómez Poot');
+        $this->hastaCanalizado($otro, null, now()->addHours(2))->assertSessionHas('ok');
+        $q = $this->postulacion($otro);
+        $this->actingAs($this->jefa)->get("/entrevistas/{$q->id}")->assertOk()->assertDontSee('No se presentó</button>', false);
+        $this->actingAs($this->jefa)->post("/entrevistas/{$q->id}/no-se-presento")->assertSessionHas('error');
+        $this->assertSame('canalizado', $q->fresh()->etapa);
+        $this->actingAs($this->rh)->post("/entrevistas/{$q->id}/no-se-presento")->assertNotFound(); // no es su entrevista
     }
 
     // ------------------------------------------------------------------ No se presentó y reprogramar
@@ -433,8 +522,11 @@ class CandidatosFase2Test extends TestCase
         $e = $this->enEmpresa(fn () => EvaluacionCandidato::where('tipo', 'departamento')->sole());
         $this->assertSame($otroJefe->id, $e->evaluador_id);
         $this->assertSame('evaluado', $p->fresh()->etapa);
-        // Quien evaluó puede volver a verla (solo lectura)
-        $this->actingAs($otroJefe)->get("/entrevistas/{$p->id}")->assertOk()->assertSee('Esta entrevista ya se evaluó');
+        // Quien evaluó puede corregirla unos minutos y después volver a verla (solo lectura)
+        $this->actingAs($otroJefe)->get("/entrevistas/{$p->id}")->assertOk()->assertSee('Corregir tu evaluación');
+        $this->travelTo(now()->addMinutes(Entrevistas::MINUTOS_CORRECCION + 1));
+        $this->flushSession();
+        $this->actingAs($otroJefe)->get("/entrevistas/{$p->id}")->assertOk()->assertSee('Esta entrevista ya se evaluó')->assertDontSee('Corregir tu evaluación');
     }
 
     public function test_el_jefe_no_ve_datos_oficiales_ni_el_cv_sin_la_casilla(): void
@@ -576,7 +668,7 @@ class CandidatosFase2Test extends TestCase
             'viene_a' => 'busca_empleo', 'modo_arribo' => 'a_pie', 'identificacion' => 'ine'])->assertSessionHas('ok');
         $c = $this->enEmpresa(fn () => Candidato::sole());
         $this->enEmpresa(fn () => Acceso::query()->update(['estado' => 'finalizado', 'salida_at' => now()]));
-        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'revision'])->assertSessionHas('ok');
+        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'con_rh'])->assertSessionHas('ok');
         $cita = now()->addMinutes(40)->startOfMinute();
         $this->hastaCanalizado($c, null, $cita)->assertSessionHas('ok');
 
@@ -626,12 +718,15 @@ class CandidatosFase2Test extends TestCase
 
     // ------------------------------------------------------------------ Criterios configurables
 
-    public function test_criterios_configurables_en_los_ajustes_de_recepcion(): void
+    public function test_criterios_configurables_en_candidatos_criterios_de_entrevista(): void
     {
-        $this->actingAs($this->rh)->get('/rh/recepcion/ajustes')->assertOk()->assertSee('Criterios para calificar las entrevistas')
+        // ADR-0010: Candidatos → Criterios de entrevista (misma parte de ajustes, nueva ubicación)
+        $this->actingAs($this->rh)->get('/candidatos')->assertOk()->assertSee('Criterios de entrevista');
+        $this->actingAs($this->rh)->get('/candidatos/criterios')->assertOk()->assertSee('Criterios para calificar las entrevistas')
             ->assertSee('value="Expectativa económica"', false);
-        $guardar = fn (array $criterios) => $this->actingAs($this->rh)->put('/rh/recepcion/ajustes', ['aviso_privacidad' => 'Aviso de prueba.', 'rh_autoriza_paso' => '0',
-            'criterios' => $criterios]);
+        $this->actingAs($this->rh)->get('/rh/recepcion/ajustes')->assertOk()->assertDontSee('Criterios para calificar las entrevistas');
+        $this->actingAs($this->jefa)->get('/candidatos/criterios')->assertForbidden();
+        $guardar = fn (array $criterios) => $this->actingAs($this->rh)->put('/rh/recepcion/ajustes', ['criterios' => $criterios]);
         $guardar(['', ''])->assertSessionHasErrors('criterios');
         $guardar(['Inglés', 'inglés'])->assertSessionHasErrors('criterios');
         $guardar(array_map(fn ($i) => "Criterio {$i}", range(1, 9)))->assertSessionHasErrors('criterios');
@@ -655,8 +750,13 @@ class CandidatosFase2Test extends TestCase
         $guardar(AjustesRecepcion::CRITERIOS_DEFECTO)->assertSessionHas('ok');
         $this->assertSame(AjustesRecepcion::CRITERIOS_DEFECTO, app(AjustesRecepcion::class)->criterios($this->empresa->refresh()));
         $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertSee('Servicio al cliente')->assertSee('Presentación');
+        // Guardar solo los criterios no toca el aviso de privacidad ni el kiosco
+        $this->actingAs($this->rh)->put('/rh/recepcion/ajustes', ['aviso_privacidad' => 'Aviso de prueba.', 'kiosco_horas' => 5])->assertSessionHas('ok');
+        $guardar(['Inglés'])->assertSessionHas('ok');
+        $this->assertSame([5, 'Aviso de prueba.'], [app(AjustesRecepcion::class)->horasKiosco($this->empresa->refresh()), app(AjustesRecepcion::class)->textoPrivacidad($this->empresa->refresh())]);
         // Quien solo consulta no guarda
         $this->actingAs($this->jefa)->put('/rh/recepcion/ajustes', ['aviso_privacidad' => 'x', 'criterios' => ['Uno']])->assertForbidden();
+        $this->actingAs($this->jefa)->put('/rh/recepcion/ajustes', ['criterios' => ['Uno']])->assertForbidden();
     }
 
     // ------------------------------------------------------------------ Vacante, Recepción y permiso
@@ -735,8 +835,11 @@ class CandidatosFase2Test extends TestCase
             $v = Vacante::where('titulo', 'Recepcionista')->firstOrFail();
             $this->assertTrue($v->jefe_ve_cv);
             $etapas = Postulacion::where('vacante_id', $v->id)->with('candidato')->get()->mapWithKeys(fn ($p) => [$p->candidato->nombre_completo => $p->etapa])->all();
-            $this->assertSame(['Juan Pérez Chan' => 'canalizado', 'Laura Gómez Poot' => 'evaluado', 'Miguel Ángel Cauich Pech' => 'revision'], $etapas);
-            $juan = Postulacion::where('vacante_id', $v->id)->where('etapa', 'canalizado')->sole();
+            // Laura: la jefa pidió segunda entrevista → sigue con el departamento (2.ª), sin cita, hasta que RR. HH. le ponga fecha
+            $this->assertSame(['Juan Pérez Chan' => 'canalizado', 'Laura Gómez Poot' => 'canalizado', 'Miguel Ángel Cauich Pech' => 'con_rh'], $etapas);
+            $laura = Postulacion::where('vacante_id', $v->id)->whereHas('candidato', fn ($q) => $q->where('nombre_completo', 'Laura Gómez Poot'))->sole();
+            $this->assertSame([2, null, false], [$laura->numero_entrevista, $laura->cita_en, (bool) $laura->cita_ahora]);
+            $juan = Postulacion::where('vacante_id', $v->id)->where('etapa', 'canalizado')->whereNotNull('cita_en')->sole();
             $this->assertSame($jefa->id, $juan->entrevistador_id);
             $this->assertTrue($juan->cita_en->copy()->setTimezone('America/Cancun')->isSameDay(now()->setTimezone('America/Cancun')) || $juan->cita_en->isFuture());
             $this->assertSame(3, EvaluacionCandidato::whereIn('postulacion_id', Postulacion::where('vacante_id', $v->id)->select('id'))->count());

@@ -31,20 +31,21 @@ Comprueba: la tarjeta de la caseta pasó sola a **Gente en Sitio** con «RR. HH.
 ## Práctica 2 · La caseta registra a qué viene (agente.demo)
 
 1. En **Gente en Sitio** da salida a **Jorge Tun Pech** (ya terminó su entrevista). Luego **Nuevo Ingreso → Personal Externo / Visita**, nombre «Jorge Tun Pech» (elígelo del padrón), motivo **Recursos Humanos**.
-2. En **¿A qué viene?** elige **Firma de contrato** y guarda.
-3. Verás «ESPERANDO A RR. HH.» y, en la tarjeta, **Candidato · Firma de contrato** (nunca la etapa ni su solicitud).
-4. Registra a «Lucía Canul» con **Informes / ver vacantes**: no se le abre ficha; toca **Ver las vacantes publicadas** para enseñárselas.
+2. En **¿A qué viene?** elige **Ya tiene cita** y guarda.
+3. Verás «ESPERANDO A RR. HH.» y, en la tarjeta, **Candidato · Entrevista**: la plataforma lo dedujo de su ficha (nunca muestra la etapa ni su solicitud).
+4. Registra igual a «Mariela Canché Dzib» con **Ya tiene cita**: ya la eligieron y le faltan documentos obligatorios, así que la tarjeta dice **Candidato · Entrega de documentos**.
+5. Registra a «Lucía Canul» con **Otro trámite de RR. HH.**: no se le abre ficha. Si pregunta por trabajo, toca **Ver las vacantes publicadas** para enseñárselas.
 
 ## Práctica 3 · Una sola ficha (rh.demo)
 
 1. En **Candidatos** busca a **Jorge Tun Pech**: sigue habiendo **una** tarjeta.
-2. Ábrela: en **Postulaciones** verás sus visitas a la caseta; en el **Historial**, «Volvió a la caseta: Firma de contrato».
+2. Ábrela: en **Postulaciones** verás sus visitas a la caseta; en el **Historial**, «Volvió a la caseta: Entrevista».
 3. Abre la ficha de **Silvia Mena Couoh**: en **Postulaciones → Anteriores** está la que quedó en cartera.
 4. Toca **Nuevo candidato** y escribe el teléfono de Silvia (cópialo de su ficha): aparece el aviso amarillo con **Abrir su ficha**.
 
 ## Práctica 4 · Atender y el QR (rh.demo)
 
-1. En **Recepción**, en Martha toca **Atender**: pasa a «En revisión RR. HH.».
+1. En **Recepción**, en Martha toca **Atender** (o, si espera en caseta, **Que pase y lo atiendo**): pasa a «Con RR. HH.».
 2. Abre su ficha y toca **QR para que llene su solicitud**. Tócalo otra vez: se muestra el mismo código (no se crea otro).
 3. **Anular enlace** aparece abajo, discreto, solo si hay uno vigente.
 4. Revisa **Mis pendientes → Solicitudes por revisar**: lleva a la lista de candidatos filtrada.

@@ -7,6 +7,7 @@ use App\Models\Concerns\RegistraAutor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * Postulación: cada vez que una persona (su ficha, Candidato) aplica a una
@@ -39,6 +40,9 @@ class Postulacion extends Model
             // Fase 2: entrevistas, canalización y elección
             'cita_en' => 'datetime', 'cita_ahora' => 'boolean', 'numero_entrevista' => 'integer', 'entrevista_rh_en' => 'datetime',
             'canalizado_en' => 'datetime', 'evaluado_en' => 'datetime', 'elegido_en' => 'datetime', 'no_se_presento_en' => 'datetime',
+            // Fase 3: contrato, recordatorios (un sello por plazo) y caducidad
+            'contrato_firmado_en' => 'datetime', 'aviso_evaluacion_en' => 'datetime', 'aviso_documentos_en' => 'datetime',
+            'aviso_por_atender_en' => 'datetime', 'aviso_no_se_presento_en' => 'datetime', 'archivada_en' => 'datetime',
         ];
     }
 
@@ -89,6 +93,49 @@ class Postulacion extends Model
     {
         return $this->belongsTo(User::class, 'canalizado_por');
     }
+
+    // Fase 3: contrato firmado
+    public function contratoRecibidoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'contrato_recibido_por');
+    }
+
+    public function contratoDocumento(): BelongsTo
+    {
+        return $this->belongsTo(CandidatoDocumento::class, 'contrato_documento_id');
+    }
+
+    public function contratoFirmado(): bool
+    {
+        return $this->contrato_firmado_en !== null;
+    }
+
+    public function archivada(): bool
+    {
+        return $this->archivada_en !== null;
+    }
+
+    /**
+     * Desde cuándo está en su etapa actual (para los días en la etapa del
+     * tablero de la vacante y los plazos).
+     */
+    public function enEtapaDesde(): Carbon
+    {
+        $fecha = match ($this->etapa) {
+            // «Con RR. HH.» (ADR-0010): desde que RR. HH. lo atendió; si volvió de Considerar / Rechazado, desde ese regreso
+            'con_rh' => $this->revision_en !== null && ($this->decision_en === null || $this->revision_en->gte($this->decision_en)) ? $this->revision_en : null,
+            'canalizado' => $this->canalizado_en,
+            'evaluado' => $this->evaluado_en,
+            'elegido' => $this->elegido_en,
+            'contratado' => $this->contratado_en,
+            'no_se_presento' => $this->no_se_presento_en,
+            'considerar', 'rechazado' => $this->decision_en,
+            default => null,
+        };
+
+        return $fecha ?? $this->updated_at ?? $this->created_at ?? now();
+    }
+    // Fin Fase 3
 
     /** Evaluaciones de sus entrevistas (RR. HH. y departamento), en orden. */
     public function evaluaciones(): HasMany

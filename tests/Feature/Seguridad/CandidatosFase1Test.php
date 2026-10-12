@@ -8,6 +8,7 @@ use App\Models\Acceso;
 use App\Models\Auditoria;
 use App\Models\Autorizacion;
 use App\Models\Candidato;
+use App\Models\CandidatoDocumento;
 use App\Models\Empresa;
 use App\Models\EnlaceKiosco;
 use App\Models\Notificacion;
@@ -20,6 +21,8 @@ use App\Models\User;
 use App\Models\UsuarioRol;
 use App\Models\Vacante;
 use App\Services\Auditoria\LectorAuditoria;
+use App\Services\Candidatos\DocumentosParaContratar;
+use App\Services\Candidatos\Postulaciones;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Services\Recepcion\AjustesRecepcion;
@@ -232,43 +235,84 @@ class CandidatosFase1Test extends TestCase
 
     // ------------------------------------------------------------------ ¿A qué viene?
 
-    public function test_los_cuatro_viene_a_con_ficha_y_los_que_no_crean_ficha(): void
+    public function test_tres_opciones_en_caseta_y_ya_tiene_cita_se_deduce(): void
     {
         $this->rhAutorizaPaso(false);
-        $this->actingAs($this->agente)->get('/accesos')->assertOk()->assertSee('¿A qué viene?')->assertSee('Firma de contrato')
-            ->assertSee('Informes / ver vacantes')->assertDontSee('Viene como candidato')->assertDontSee('Vacante (si no está en la lista)');
+        $caseta = $this->actingAs($this->agente)->get('/accesos')->assertOk()->assertSee('¿A qué viene?')->assertSee('Ya tiene cita')->assertSee('Otro trámite de RR. HH.');
+        $caseta->assertDontSee('Informes / ver vacantes')->assertDontSee('Entrega de documentos')->assertDontSee('Viene como candidato');
 
-        // Entrevista sin ficha: se registra como «Busca empleo» y queda anotado
-        $this->caseta(['nombre' => 'Luis Chi Canul', 'viene_a' => 'entrevista'])->assertSessionHas('ok');
+        // Ya tiene cita sin ficha: se registra como «Busca empleo» y queda anotado
+        $this->caseta(['nombre' => 'Luis Chi Canul', 'viene_a' => 'cita'])->assertSessionHas('ok');
         $luis = $this->enEmpresa(fn () => Candidato::sole());
         $this->assertSame('busca_empleo', $this->enEmpresa(fn () => Acceso::sole()->viene_a));
-        $this->assertTrue($this->enEmpresa(fn () => $luis->eventos()->where('comentario', 'like', '%no se encontró su ficha%')->exists()));
+        $this->assertTrue($this->enEmpresa(fn () => $luis->eventos()->where('comentario', 'like', 'Registrado en caseta%Dijo que ya tenía cita%no se encontró su ficha%')->exists()));
 
-        // Documentos y firma: se encuentra por su nombre exacto y se liga a su postulación abierta
+        // Vuelve con cita: se encuentra por su nombre exacto y, sin entrevista ni elección, queda «Cita con RR. HH.»
+        $this->enEmpresa(fn () => Acceso::query()->update(['estado' => 'finalizado']));
+        $this->caseta(['nombre' => 'LUIS CHI CANUL', 'viene_a' => 'cita', 'persona_decision' => 'distinta'])->assertSessionHas('ok');
+        $acceso = $this->enEmpresa(fn () => Acceso::orderByDesc('id')->first());
+        $this->assertSame('cita', $acceso->viene_a);
+        $this->assertSame($this->enEmpresa(fn () => Postulacion::sole()->id), $acceso->postulacion_id);
+        $this->assertSame(1, $this->enEmpresa(fn () => Candidato::count()));
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('texto', 'like', 'Viene a: Cita con RR. HH.%')->exists()));
+
+        // Los valores de antes (documentos, firma) se siguen aceptando tal cual
         foreach (['documentos', 'firma'] as $vieneA) {
             $this->enEmpresa(fn () => Acceso::query()->update(['estado' => 'finalizado']));
             $this->caseta(['nombre' => 'LUIS CHI CANUL', 'viene_a' => $vieneA, 'persona_decision' => 'distinta'])->assertSessionHas('ok');
-            $acceso = $this->enEmpresa(fn () => Acceso::orderByDesc('id')->first());
-            $this->assertSame($vieneA, $acceso->viene_a);
-            $this->assertSame($this->enEmpresa(fn () => Postulacion::sole()->id), $acceso->postulacion_id);
+            $this->assertSame($vieneA, $this->enEmpresa(fn () => Acceso::orderByDesc('id')->first()->viene_a));
         }
-        $this->assertSame(1, $this->enEmpresa(fn () => Candidato::count()));
 
-        // Informes y trámite: sin ficha
-        $this->caseta(['nombre' => 'Rosa Pool', 'viene_a' => 'informes'])->assertSessionHas('ok');
+        // Otro trámite: sin ficha. «Informes» ya no es opción (el enlace a las vacantes se muestra siempre)
         $this->caseta(['nombre' => 'Mario Ek', 'viene_a' => 'tramite'])->assertSessionHas('ok');
         $this->assertSame(1, $this->enEmpresa(fn () => Candidato::count()));
-        $this->assertSame(['informes', 'tramite'], $this->enEmpresa(fn () => Acceso::whereIn('nombre', ['ROSA POOL', 'MARIO EK'])->orderBy('id')->pluck('viene_a')->all()));
-        $this->assertNull($this->enEmpresa(fn () => Acceso::where('nombre', 'ROSA POOL')->value('postulacion_id')));
-        // Opción inventada
+        $this->assertSame('tramite', $this->enEmpresa(fn () => Acceso::where('nombre', 'MARIO EK')->value('viene_a')));
+        $this->assertNull($this->enEmpresa(fn () => Acceso::where('nombre', 'MARIO EK')->value('postulacion_id')));
+        $this->caseta(['nombre' => 'Rosa Pool', 'viene_a' => 'informes', '_dialogo' => 'ingreso'])->assertSessionHasErrors('viene_a');
         $this->caseta(['nombre' => 'X', 'viene_a' => 'otra_cosa', '_dialogo' => 'ingreso'])->assertSessionHasErrors('viene_a');
 
-        // La caseta ve «Candidato · Firma» pero nunca etapas ni datos del CV
-        $this->actingAs($this->rh)->patch("/candidatos/{$luis->id}/etapa", ['etapa' => 'revision'])->assertSessionHas('ok');
+        // La caseta ve «Candidato · Firma de contrato» pero nunca etapas ni datos del CV
+        $this->actingAs($this->rh)->patch("/candidatos/{$luis->id}/etapa", ['etapa' => 'con_rh'])->assertSessionHas('ok');
         $this->flushSession();
-        $caseta = $this->actingAs($this->agente)->get('/accesos')->assertOk()->assertSee('Candidato · Firma de contrato')->assertSee('Informes / ver vacantes');
-        $caseta->assertDontSee('En revisión RR. HH.')->assertDontSee('Aplica a:');
+        $caseta = $this->actingAs($this->agente)->get('/accesos')->assertOk()->assertSee('Candidato · Firma de contrato');
+        $caseta->assertDontSee('Con RR. HH.')->assertDontSee('Aplica a:');
         $this->actingAs($this->agente)->get("/candidatos/{$luis->id}")->assertForbidden();
+    }
+
+    public function test_ya_tiene_cita_deduce_entrevista_documentos_o_firma(): void
+    {
+        $this->rhAutorizaPaso(false);
+        $this->caseta(['nombre' => 'Luis Chi Canul'])->assertSessionHas('ok');
+        $luis = $this->enEmpresa(fn () => Candidato::sole());
+        $p = $this->enEmpresa(fn () => Postulacion::sole());
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de departamento', $this->centro);
+        $vuelve = function (string $etapa, array $extra = []) use ($p) {
+            $this->enEmpresa(fn () => app(Postulaciones::class)->cambiar($p->fresh(), null, ['etapa' => $etapa] + $extra, $this->rh));
+            $this->enEmpresa(fn () => Acceso::query()->update(['estado' => 'finalizado']));
+            $this->caseta(['nombre' => 'LUIS CHI CANUL', 'viene_a' => 'cita', 'persona_decision' => 'distinta'])->assertSessionHas('ok');
+
+            return $this->enEmpresa(fn () => Acceso::orderByDesc('id')->first()->viene_a);
+        };
+
+        // Con el departamento (canalizado): viene a su entrevista y se avisa a quien lo entrevista
+        $this->assertSame('entrevista', $vuelve('canalizado', ['entrevistador_id' => $jefe->id, 'cita_ahora' => true]));
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $jefe->id)->where('tipo', 'entrevista_llegada')->exists()));
+        // Elegido sin documentos: viene a entregarlos
+        $this->assertSame('documentos', $vuelve('elegido'));
+        // Elegido con solo identificación y comprobante: le faltan obligatorios de la lista para contratar (fase 3), sigue a entregarlos
+        $doc = fn (array $tipos) => $this->enEmpresa(function () use ($luis, $tipos) {
+            foreach ($tipos as $tipo) {
+                CandidatoDocumento::create(['candidato_id' => $luis->id, 'tipo' => $tipo, 'nombre_original' => $tipo.'.pdf', 'ruta' => 'x/'.$tipo.'.pdf',
+                    'mime' => 'application/pdf', 'bytes' => 10, 'origen' => 'rh']);
+            }
+        });
+        $doc(['ine', 'comprobante']);
+        $this->assertSame('documentos', $vuelve('elegido'));
+        // Con todos los obligatorios de «Documentos para contratar»: viene a firmar
+        $doc(array_diff(array_keys(DocumentosParaContratar::DEFECTO), ['ine', 'comprobante']));
+        $this->assertSame('firma', $vuelve('elegido'));
+        $this->assertSame(1, $this->enEmpresa(fn () => Candidato::count()));
+        $this->actingAs($this->rh)->get('/rh/recepcion')->assertOk()->assertSee('Viene a: Firma');
     }
 
     // ------------------------------------------------------------------ Que pase / Que espere / No
@@ -365,9 +409,16 @@ class CandidatosFase1Test extends TestCase
 
     public function test_con_el_ajuste_apagado_o_sin_quien_atienda_pasa_directo(): void
     {
-        // Ajuste de Recepción (lo guarda quien configura candidatos)
-        $this->actingAs($this->rh)->get('/rh/recepcion/ajustes')->assertOk()->assertSee('La caseta espera a que RR. HH. diga «Que pase»');
-        $this->actingAs($this->rh)->put('/rh/recepcion/ajustes', ['aviso_privacidad' => '', 'kiosco_horas' => 2, 'kiosco_usos' => 3, 'rh_autoriza_paso' => '0'])->assertSessionHas('ok');
+        // El interruptor vive en Responsables por departamento (ADR-0010) y lo guarda quien configura con alcance de empresa
+        $this->actingAs($this->rh)->get('/autorizaciones/responsables')->assertOk()->assertSee('La caseta espera a que RR. HH. diga «Que pase»');
+        $this->actingAs($this->rh)->get('/rh/recepcion/ajustes')->assertOk()->assertDontSee('name="rh_autoriza_paso"', false);
+        $this->actingAs($this->rh)->put('/rh/recepcion/ajustes', ['visitas_requieren_autorizacion' => '0', 'rh_autoriza_paso' => '0', 'recordar_minutos' => 10, 'escalar_minutos' => 20])
+            ->assertSessionHas('ok', 'Esperas guardadas: la caseta ya aplica lo que elegiste.');
+        $this->assertFalse(app(AjustesRecepcion::class)->rhAutorizaPaso($this->empresa->refresh()));
+        // Por compatibilidad, el formulario de privacidad también lo acepta
+        $this->actingAs($this->rh)->put('/rh/recepcion/ajustes', ['aviso_privacidad' => '', 'kiosco_horas' => 2, 'kiosco_usos' => 3, 'rh_autoriza_paso' => '1'])->assertSessionHas('ok');
+        $this->assertTrue(app(AjustesRecepcion::class)->rhAutorizaPaso($this->empresa->refresh()));
+        $this->actingAs($this->rh)->put('/rh/recepcion/ajustes', ['rh_autoriza_paso' => '0'])->assertSessionHas('ok');
         $this->assertFalse(app(AjustesRecepcion::class)->rhAutorizaPaso($this->empresa->refresh()));
         $this->caseta()->assertSessionHas('ok');
         $acceso = $this->enEmpresa(fn () => Acceso::sole());
@@ -395,18 +446,32 @@ class CandidatosFase1Test extends TestCase
         $this->caseta(['nombre' => 'Mario Ek', 'viene_a' => 'tramite'])->assertSessionHas('ok');
         $a = $this->enEmpresa(fn () => Autorizacion::whereHas('acceso', fn ($q) => $q->where('nombre', 'KARLA PÉREZ UC'))->sole());
 
+        // Quien espera el «Que pase» lleva «Que pase y lo atiendo» y «Que pase» a secas, pero no «Atender» suelto
         $panel = $this->actingAs($this->rh)->get('/rh/recepcion')->assertOk()
-            ->assertSee('Viene a: Busca empleo — primera vez')->assertSee('Viene a: Trámite')->assertSee('Que pase')->assertSee('Atender')->assertSee('Abrir ficha')
-            ->assertSee('En caseta: espera que digas «Que pase»');
+            ->assertSee('Viene a: Busca empleo — primera vez')->assertSee('Viene a: Trámite')->assertSee('Que pase y lo atiendo')->assertSee('name="atender" value="0"', false)
+            ->assertDontSee('>Atender<', false)->assertSee('Abrir ficha')->assertSee('En caseta: espera que digas «Que pase»');
         $this->assertStringNotContainsString(route('recepcion.kiosco.generar', 1), (string) $panel->getContent());
         $this->assertStringNotContainsString('bi-qr-code me-1" aria-hidden="true"></i>QR</button>', (string) $panel->getContent());
         $this->actingAs($this->rh)->getJson('/rh/recepcion/datos')->assertJsonPath('total', 2)->assertJsonPath('contadores.esperando', 2);
 
-        // «Que pase» desde el panel regresa al panel
-        $this->actingAs($this->rh)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase', 'volver' => 'recepcion'])->assertRedirect('/rh/recepcion');
+        // «Que pase y lo atiendo» desde el panel regresa al panel y atiende al candidato en el mismo clic («Con RR. HH.»)
+        $this->actingAs($this->rh)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase', 'volver' => 'recepcion', 'atender' => '1'])->assertRedirect('/rh/recepcion')
+            ->assertSessionHas('ok', fn ($m) => str_contains($m, 'Con RR. HH.'));
         $c = $this->enEmpresa(fn () => Candidato::sole());
-        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'revision', 'volver' => 'recepcion'])->assertRedirect('/rh/recepcion');
+        $this->assertSame('con_rh', $c->etapa);
+        $this->assertNotNull($this->enEmpresa(fn () => Postulacion::sole()->revision_en));
+        $this->assertTrue($this->enEmpresa(fn () => $c->eventos()->where('etapa_nueva', 'con_rh')->exists()));
         $this->actingAs($this->rh)->getJson('/rh/recepcion/datos')->assertJsonPath('contadores.esperando', 1);
+        // «Que pase» a secas (como desde la campana) lo deja «Por atender» y el panel ofrece «Atender»
+        $this->caseta(['nombre' => 'Ana Pool'])->assertSessionHas('ok');
+        $b = $this->enEmpresa(fn () => Autorizacion::whereHas('acceso', fn ($q) => $q->where('nombre', 'ANA POOL'))->sole());
+        $this->actingAs($this->rh)->post("/autorizaciones/{$b->id}/responder", ['respuesta' => 'pase', 'volver' => 'recepcion'])->assertRedirect('/rh/recepcion')
+            ->assertSessionHas('ok', fn ($m) => ! str_contains($m, 'Con RR. HH.'));
+        $ana = $this->enEmpresa(fn () => Candidato::where('nombre_completo', 'Ana Pool')->sole());
+        $this->assertSame('registrado', $ana->etapa);
+        $this->actingAs($this->rh)->get('/rh/recepcion')->assertSee('>Atender<', false);
+        $this->actingAs($this->rh)->patch("/candidatos/{$ana->id}/etapa", ['etapa' => 'con_rh', 'volver' => 'recepcion'])->assertRedirect('/rh/recepcion');
+        $this->assertSame('con_rh', $ana->fresh()->etapa);
 
         // La segunda visita de la misma persona dice «ya vino antes»
         $this->salida($this->enEmpresa(fn () => Acceso::where('nombre', 'KARLA PÉREZ UC')->sole()));

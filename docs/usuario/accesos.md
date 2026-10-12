@@ -78,12 +78,11 @@ La caseta solo anota **a qué viene** la persona y avisa. Recursos Humanos decid
 
 | Opción | Cuándo usarla | Qué pasa |
 |---|---|---|
-| **Busca empleo** | Viene a pedir trabajo o a dejar su solicitud. | Aparece **¿A qué vacante?**: elige la vacante publicada o **-- No sabe / otra --**. |
-| **Entrevista** | Ya vino antes y hoy tiene entrevista. | Se busca su ficha por su nombre. |
-| **Entrega de documentos** | Trae papeles que le pidió Recursos Humanos. | Se busca su ficha por su nombre. |
-| **Firma de contrato** | Viene a firmar su contrato. | Se busca su ficha por su nombre. |
-| **Informes / ver vacantes** | Solo pregunta qué vacantes hay. | No se le abre ficha. Si tu rol puede ver vacantes, toca **Ver las vacantes publicadas** para enseñárselas. |
+| **Busca empleo** | Viene a pedir trabajo o a dejar su solicitud. | Si hay vacantes publicadas aparece **¿A qué vacante?**: elige la vacante o **-- No sabe / otra --**. |
+| **Ya tiene cita** | Ya vino antes (o se postuló por internet) y hoy tiene cita: entrevista, entrega de papeles o firma de contrato. | La plataforma busca su ficha y anota sola a qué viene; no tienes que preguntarle. |
 | **Otro trámite de RR. HH.** | Cualquier otro asunto con Recursos Humanos. | No se le abre ficha. |
+
+Si solo pregunta qué vacantes hay, no registres nada: toca **Ver las vacantes publicadas** (aparece debajo de la lista cuando hay vacantes y tu rol puede verlas) y enséñaselas.
 
 4. Toca **Registrar · queda pendiente de autorización** (o **Registrar y dejar pasar**, si tu empresa no pide que Recursos Humanos dé el paso).
 
@@ -102,7 +101,7 @@ La tarjeta **cambia sola** cuando Recursos Humanos contesta:
 
 ![Caseta esperando a Recursos Humanos](img/recepcion-y-candidatos/caseta-pendientes-esperando.png)
 
-En la tarjeta verás, por ejemplo, **Candidato · Entrevista**. La caseta nunca ve la solicitud de empleo ni en qué paso va el proceso: eso solo lo ve Recursos Humanos.
+En la tarjeta verás, por ejemplo, **Candidato · Entrevista** o **Candidato · Firma de contrato** (lo que la plataforma dedujo de su cita). La caseta nunca ve la solicitud de empleo ni en qué paso va el proceso: eso solo lo ve Recursos Humanos.
 
 > Si Recursos Humanos avisa por teléfono que puede pasar, el supervisor usa **Confirmar Autorización** en la tarjeta, como con cualquier visita.
 
@@ -205,7 +204,8 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 ## Preguntas frecuentes
 
 - **¿Por qué el proveedor no aparece en Gente en Sitio?** Está en **Pendientes de Autorización** hasta que lo autoricen.
-- **Alguien dice que viene a entrevista, pero es su primera vez.** Elige **Entrevista** de todos modos: si no se encuentra su ficha, Recursos Humanos lo recibe como «Busca empleo» y queda anotado.
+- **Alguien dice que tiene cita, pero es su primera vez.** Elige **Ya tiene cita** de todos modos: si no se encuentra su ficha, Recursos Humanos lo recibe como «Busca empleo» y queda anotado.
+- **¿Y si viene a entregar papeles o a firmar?** También es **Ya tiene cita**: la plataforma sabe en qué paso va y le dice a Recursos Humanos si viene a su entrevista, a entregar documentos o a firmar.
 - **¿Tengo que preguntarle el puesto o el departamento?** No. Solo a qué viene y, si busca empleo, a qué vacante (si la sabe). Lo demás lo pone Recursos Humanos.
 - **El colaborador no está en la lista.** Usa **¿No aparece? Darlo de alta provisional**; Recursos Humanos lo valida después.
 - **Me equivoqué de zona.** Usa **Cambiar Zona**.

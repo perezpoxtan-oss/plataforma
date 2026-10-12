@@ -19,6 +19,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\Recepcion\Destinatarios;
+use App\Services\Vacantes\AdministradorVacantes;
 use App\Support\Entrada;
 use App\Support\HoraLocal;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,8 +32,9 @@ use Illuminate\Validation\ValidationException;
 /**
  * Entrevistas de la postulación (candidatos, fase 2; ADR-0009):
  *
- *  1. Recursos Humanos entrevista y evalúa (evaluarRh): Canalizar al
- *     departamento, Considerar o Rechazar. En los dos últimos el jefe no se entera.
+ *  1. Recursos Humanos entrevista y evalúa (evaluarRh, con el candidato «Con
+ *     RR. HH.»): Canalizar al departamento, Considerar o Rechazar. En los dos
+ *     últimos el jefe no se entera.
  *  2. Canalizar al departamento (canalizar): vacante, departamento,
  *     entrevistador (por omisión, los responsables del departamento) y cita
  *     («Ahora, está en sala» o fecha y hora). La postulación queda
@@ -41,11 +43,14 @@ use Illuminate\Validation\ValidationException;
  *     firmado. El mismo formulario sirve para Reprogramar (cambia la cita o el
  *     entrevistador: se avisa al anterior y al nuevo) y para la Segunda entrevista.
  *  3. El entrevistador asignado (o su delegado activo) evalúa y decide
- *     (evaluarDepartamento): Elegir → «Elegido»; Considerar, Segunda
- *     entrevista o Rechazar → «Evaluado» (Recursos Humanos cierra el contacto).
+ *     (evaluarDepartamento): Elegir → «Elegido»; Segunda entrevista → sigue
+ *     con el departamento (2.ª) sin cita y RR. HH. le pone fecha; Considerar o
+ *     Rechazar → «Evaluado» (Recursos Humanos cierra el contacto). Puede
+ *     corregir su evaluación durante MINUTOS_CORRECCION (corregirEvaluacion).
  *     Al cubrirse las plazas de la vacante, las demás postulaciones abiertas
  *     de esa vacante con el departamento pasan a «Considerar».
- *  4. No se presentó: cuando ya pasó la hora de la cita; «Reprogramar» lo regresa.
+ *  4. No se presentó: cuando ya pasó la hora de la cita; «Reprogramar» lo
+ *     regresa. Con la cita «Ahora, está en sala» lo marca también el entrevistador.
  *
  * No se usa la tabla de autorizaciones (ver ADR-0009): la respuesta del jefe
  * es una evaluación completa, no un botón, y la decide una persona concreta.
@@ -247,28 +252,29 @@ class Entrevistas
     }
 
     /**
-     * Recursos Humanos registra su entrevista de filtro. Desde «En revisión»
-     * la pasa a «Entrevista RR. HH.»; Considerar y Rechazar cierran ahí
-     * (sin avisar al departamento); Canalizar deja lista la canalización.
+     * Recursos Humanos registra su entrevista de filtro con el candidato «Con
+     * RR. HH.» (no cambia de etapa: solo se anota cuándo fue la entrevista).
+     * Considerar y Rechazar cierran ahí (sin avisar al departamento);
+     * Canalizar deja lista la canalización.
      *
      * @param  array<string, mixed>  $entrada
      */
     public function evaluarRh(User $actor, Candidato $c, array $entrada): EvaluacionCandidato
     {
         $p = $this->postulaciones->asegurar($c);
-        if (! in_array($p->etapa, ['revision', 'entrevista_rh'], true)) {
-            throw new CambioNoPermitido('La evaluación de RR. HH. se registra con el candidato «En revisión» o en «Entrevista RR. HH.» (hoy está «'.$p->etiquetaEtapa().'»).');
+        if ($p->etapa !== 'con_rh') {
+            throw new CambioNoPermitido('La evaluación de RR. HH. se registra con el candidato «Con RR. HH.» (hoy está «'.$p->etiquetaEtapa().'»). Primero toca «Atender».');
         }
         $d = $this->validarEvaluacion((int) $c->empresa_id, 'rh', $entrada);
         $anterior = $p->etapa;
 
-        $e = DB::transaction(function () use ($actor, $p, $d, $anterior) {
-            if ($anterior === 'revision' && ! $this->postulaciones->cambiar($p, 'revision', ['etapa' => 'entrevista_rh', 'entrevista_rh_en' => now()], $actor)) {
+        $e = DB::transaction(function () use ($actor, $p, $d) {
+            if (! $this->postulaciones->cambiar($p, 'con_rh', $p->entrevista_rh_en === null ? ['entrevista_rh_en' => now()] : [], $actor)) {
                 throw new CambioNoPermitido('Otra persona acaba de cambiar a este candidato. Revisa su etapa actual.');
             }
             $e = $this->guardarEvaluacion($p->refresh(), 'rh', $d, $actor);
             $cierre = ['considerar' => 'considerar', 'rechazar' => 'rechazado'][$d['resultado']] ?? null;
-            if ($cierre !== null && ! $this->postulaciones->cambiar($p, 'entrevista_rh', ['etapa' => $cierre, 'decision_en' => now(), 'decision_por' => $actor->id,
+            if ($cierre !== null && ! $this->postulaciones->cambiar($p, 'con_rh', ['etapa' => $cierre, 'decision_en' => now(), 'decision_por' => $actor->id,
                 'motivo_descarte' => mb_substr((string) $d['comentario'], 0, 500)], $actor)) {
                 throw new CambioNoPermitido('Otra persona acaba de cambiar a este candidato. Revisa su etapa actual.');
             }
@@ -284,9 +290,15 @@ class Entrevistas
         return $e;
     }
 
+    /** Minutos durante los que el entrevistador puede corregir la evaluación que acaba de guardar. */
+    public const MINUTOS_CORRECCION = 15;
+
     /**
      * Evalúa el entrevistador asignado (o su delegado). Elegir → «Elegido»;
-     * lo demás → «Evaluado» (Recursos Humanos decide con quién sigue).
+     * Segunda entrevista → sigue «Entrevista con el departamento» con el
+     * mismo entrevistador, número + 1 y sin cita (RR. HH. le pone fecha con
+     * «Reprogramar»); Considerar y Rechazar → «Evaluado» (Recursos Humanos
+     * decide con quién sigue).
      *
      * @param  array<string, mixed>  $entrada
      */
@@ -300,33 +312,125 @@ class Entrevistas
         }
         $d = $this->validarEvaluacion((int) $p->empresa_id, 'departamento', $entrada);
         $elegir = $d['resultado'] === 'elegir';
+        $segunda = $d['resultado'] === 'segunda_entrevista';
+        $numero = max(1, (int) $p->numero_entrevista);
 
-        $e = DB::transaction(function () use ($actor, $p, $d, $elegir) {
-            $cambios = $elegir
-                ? ['etapa' => 'elegido', 'elegido_en' => now(), 'evaluado_en' => now(), 'decision_en' => now(), 'decision_por' => $actor->id]
-                : ['etapa' => 'evaluado', 'evaluado_en' => now()];
+        $e = DB::transaction(function () use ($actor, $p, $d, $elegir, $segunda, $numero) {
+            $cambios = match (true) {
+                $elegir => ['etapa' => 'elegido', 'elegido_en' => now(), 'evaluado_en' => now(), 'decision_en' => now(), 'decision_por' => $actor->id],
+                $segunda => ['etapa' => 'canalizado', 'evaluado_en' => now(), 'numero_entrevista' => $numero + 1, 'cita_en' => null, 'cita_ahora' => false],
+                default => ['etapa' => 'evaluado', 'evaluado_en' => now()],
+            };
+            // La evaluación se guarda con el número de la entrevista que acaba de hacer
+            $e = $this->guardarEvaluacion($p, 'departamento', $d, $actor);
             if (! $this->postulaciones->cambiar($p, 'canalizado', $cambios, $actor)) {
                 throw new CambioNoPermitido('Esta entrevista ya se evaluó o Recursos Humanos la cambió. Revisa la lista.');
             }
 
-            return $this->guardarEvaluacion($p, 'departamento', $d, $actor);
+            return $e;
         });
         $p->refresh()->loadMissing(['candidato', 'departamento:id,nombre', 'vacantePublicada:id,titulo,plazas']);
         Candidato::whereKey($p->candidato_id)->update(['updated_at' => now()]);
         $this->notificaciones->resolver(self::REFERENCIA, $p->id);
         $ficha = $p->candidato;
-        app(AdministradorCandidatos::class)->evento($ficha, 'evaluacion_departamento', 'canalizado', $p->etapa,
+        app(AdministradorCandidatos::class)->evento($ficha, 'evaluacion_departamento', 'canalizado', $segunda ? null : $p->etapa,
             'Evaluación del departamento ('.$e->numero.'.ª entrevista) por '.$actor->name.': promedio '.$e->promedioTexto().' · '.$e->etiquetaResultado().'.'
-            .($e->comentario ? ' «'.$e->comentario.'»' : ''), $actor);
+            .($e->comentario ? ' «'.$e->comentario.'»' : '').($segunda ? ' Sigue con el departamento ('.$p->numeroTexto().' entrevista): falta ponerle fecha.' : ''), $actor);
         $this->auditoria->auditar($actor, 'candidatos.evaluado_departamento', $e, ['etapa' => 'canalizado'], $this->foto($e) + ['etapa' => $p->etapa]);
 
-        // Aviso a Recursos Humanos: siempre (RR. HH. cierra el contacto con el candidato)
-        $titulo = ($elegir ? 'Elegido por el departamento: ' : 'El departamento evaluó a ').$ficha->nombre_completo;
-        $texto = trim(($p->departamento?->nombre ? $p->departamento->nombre.' · ' : '').$actor->name.': '.$e->etiquetaResultado()
-            .' (promedio '.$e->promedioTexto().').'.($e->comentario ? ' «'.$e->comentario.'»' : ''));
-        $this->avisarRh($p, $actor, $titulo, $texto);
+        // Aviso a Recursos Humanos: siempre (RR. HH. cierra el contacto con el candidato o le pone fecha a la segunda entrevista)
+        $this->avisarRhDeLaEvaluacion($p, $actor, $e, $elegir, $segunda);
 
         if ($elegir) {
+            $this->cubrirPlazas($actor, $p);
+        }
+
+        return $e;
+    }
+
+    private function avisarRhDeLaEvaluacion(Postulacion $p, User $actor, EvaluacionCandidato $e, bool $elegir, bool $segunda, bool $correccion = false): void
+    {
+        $ficha = $p->candidato;
+        $titulo = match (true) {
+            $correccion => 'Corrigió su evaluación de '.$ficha->nombre_completo,
+            $segunda => 'Pide segunda entrevista: ponle fecha a '.$ficha->nombre_completo,
+            $elegir => 'Elegido por el departamento: '.$ficha->nombre_completo,
+            default => 'El departamento evaluó a '.$ficha->nombre_completo,
+        };
+        $texto = trim(($p->departamento?->nombre ? $p->departamento->nombre.' · ' : '').$actor->name.': '.$e->etiquetaResultado()
+            .' (promedio '.$e->promedioTexto().').'.($e->comentario ? ' «'.$e->comentario.'»' : '')
+            .($segunda ? ' Sigue con '.$actor->name.' ('.$p->numeroTexto().' entrevista): usa «Reprogramar» para ponerle fecha.' : ''));
+        $this->avisarRh($p, $actor, $titulo, $texto);
+    }
+
+    /**
+     * ¿Puede corregir esta evaluación? La hizo él, hace menos de
+     * MINUTOS_CORRECCION, y la postulación sigue como la dejó (si Recursos
+     * Humanos ya la movió, no). Una evaluación «Elegir» solo corrige estrellas
+     * y comentario: deshacer la elección es decisión de RR. HH.
+     */
+    public function puedeCorregir(User $usuario, Postulacion $p, ?EvaluacionCandidato $e): bool
+    {
+        if ($e === null || $e->tipo !== 'departamento' || (int) $e->evaluador_id !== $usuario->id || $e->created_at === null
+            || $e->created_at->lt(now()->subMinutes(self::MINUTOS_CORRECCION)) || ! $usuario->can('candidatos.evaluar')) {
+            return false;
+        }
+        if ($p->evaluaciones()->where('id', '>', $e->id)->exists()) {
+            return false;
+        }
+
+        return match ($e->resultado) {
+            'elegir' => $p->etapa === 'elegido',
+            'segunda_entrevista' => $p->etapa === 'canalizado' && (int) $p->numero_entrevista === (int) $e->numero + 1 && $p->cita_en === null && ! $p->cita_ahora,
+            default => $p->etapa === 'evaluado',
+        };
+    }
+
+    /**
+     * Corrige la evaluación que acaba de guardar (estrellas, comentario y,
+     * salvo que haya elegido, el resultado). Si el resultado cambia, la
+     * postulación se acomoda como si se hubiera evaluado así desde el inicio.
+     *
+     * @param  array<string, mixed>  $entrada
+     */
+    public function corregirEvaluacion(User $actor, Postulacion $p, EvaluacionCandidato $e, array $entrada): EvaluacionCandidato
+    {
+        if (! $this->puedeCorregir($actor, $p, $e)) {
+            throw new CambioNoPermitido('Ya no se puede corregir esta evaluación: pasaron más de '.self::MINUTOS_CORRECCION.' minutos o Recursos Humanos ya la atendió.');
+        }
+        $d = $this->validarEvaluacion((int) $p->empresa_id, 'departamento', $entrada);
+        if ($e->resultado === 'elegir' && $d['resultado'] !== 'elegir') {
+            throw ValidationException::withMessages(['resultado' => 'Ya elegiste a esta persona: solo puedes corregir las estrellas y el comentario. Si cambiaste de opinión, avisa a Recursos Humanos.']);
+        }
+        $antes = $this->foto($e);
+        $anterior = $e->resultado;
+        $elegir = $d['resultado'] === 'elegir';
+        $segunda = $d['resultado'] === 'segunda_entrevista';
+
+        DB::transaction(function () use ($actor, $p, $e, $d, $anterior, $elegir, $segunda) {
+            $e->forceFill(['criterios' => $d['criterios'], 'promedio' => $d['promedio'], 'comentario' => $d['comentario'], 'resultado' => $d['resultado'],
+                'entrevista_en' => $d['entrevista_en'], 'actualizado_por' => $actor->id])->save();
+            if ($anterior === $d['resultado']) {
+                return;
+            }
+            // Se deshace lo que dejó el resultado anterior y se aplica el nuevo
+            $cambios = match (true) {
+                $elegir => ['etapa' => 'elegido', 'elegido_en' => now(), 'decision_en' => now(), 'decision_por' => $actor->id, 'numero_entrevista' => $e->numero],
+                $segunda => ['etapa' => 'canalizado', 'numero_entrevista' => $e->numero + 1, 'cita_en' => null, 'cita_ahora' => false],
+                default => ['etapa' => 'evaluado', 'numero_entrevista' => $e->numero],
+            };
+            if (! $this->postulaciones->cambiar($p, $p->etapa, $cambios, $actor)) {
+                throw new CambioNoPermitido('Otra persona acaba de cambiar a este candidato. Revisa la lista.');
+            }
+        });
+        $p->refresh()->loadMissing(['candidato', 'departamento:id,nombre', 'vacantePublicada:id,titulo,plazas']);
+        Candidato::whereKey($p->candidato_id)->update(['updated_at' => now()]);
+        app(AdministradorCandidatos::class)->evento($p->candidato, 'evaluacion_corregida', null, null,
+            $actor->name.' corrigió su evaluación ('.$e->numero.'.ª entrevista): promedio '.$e->promedioTexto().' · '.$e->etiquetaResultado().'.'
+            .($e->comentario ? ' «'.$e->comentario.'»' : ''), $actor);
+        $this->auditoria->auditar($actor, 'candidatos.evaluacion_corregida', $e, $antes, $this->foto($e) + ['etapa' => $p->etapa]);
+        $this->avisarRhDeLaEvaluacion($p, $actor, $e, $elegir, $segunda, true);
+        if ($elegir && $anterior !== 'elegir') {
             $this->cubrirPlazas($actor, $p);
         }
 
@@ -363,10 +467,21 @@ class Entrevistas
                 $this->citaCancelada($actor, $o, $motivo.'.', (int) $o->entrevistador_id === $actor->id);
             }
         }
-        if ($movidas !== []) {
-            $this->avisarRh($elegida, $actor, 'Vacante cubierta: «'.$vacante->titulo.'»',
-                'Se eligió a '.$elegida->candidato?->nombre_completo.'. Pasaron a «Considerar»: '.implode(', ', $movidas).'.');
-        }
+        // Aviso «Vacante cubierta» a RR. HH. con el botón «Cerrar como cubierta» (ADR-0010); se resuelve al cerrar o publicar la vacante
+        $rh = $this->destinatarios->conPermiso((int) $elegida->empresa_id, 'candidatos.editar', (int) $elegida->sede_id)->reject(fn (User $u) => $u->id === $actor->id);
+        $this->notificaciones->resolver(AdministradorVacantes::REFERENCIA, $vacante->id);
+        $this->notificaciones->avisar((int) $elegida->empresa_id, $rh->pluck('id'), 'vacante_cubierta', [
+            'titulo' => 'Vacante cubierta: «'.$vacante->titulo.'»',
+            'texto' => 'Se eligió a '.$elegida->candidato?->nombre_completo.'.'.($movidas !== [] ? ' Pasaron a «Considerar»: '.implode(', ', $movidas).'.' : '')
+                .' Si ya no buscas a nadie más, ciérrala.',
+            'url' => route('vacantes.candidatos', $vacante->id),
+            'referencia_tipo' => AdministradorVacantes::REFERENCIA, 'referencia_id' => $vacante->id,
+            'acciones' => [['etiqueta' => 'Cerrar como cubierta', 'url' => route('vacantes.estado', $vacante->id),
+                'campos' => ['_method' => 'PATCH', 'estado' => 'cerrada', 'cierre_motivo' => 'cubierta']]],
+        ]);
+        app(AvisosCorreo::class)->recepcion((int) $elegida->empresa_id, 'evaluacion_departamento', $rh->pluck('email')->filter()->values()->all(),
+            new AvisoRecepcion('Vacante cubierta: «'.$vacante->titulo.'»', ['Se eligió a '.$elegida->candidato?->nombre_completo.'. Si ya no buscas a nadie más, ciérrala como cubierta desde Vacantes.'],
+                [['Ver sus candidatos', route('vacantes.candidatos', $vacante->id)]]));
     }
 
     // -------------------------------------------------------- Canalizar y citas
@@ -382,7 +497,7 @@ class Entrevistas
     {
         $p = $this->postulaciones->asegurar($c);
         $modo = match ($p->etapa) {
-            'entrevista_rh' => 'canalizar',
+            'con_rh' => 'canalizar',
             'evaluado' => 'segunda',
             'canalizado', 'no_se_presento' => 'reprogramar',
             default => throw new CambioNoPermitido('Un candidato «'.$p->etiquetaEtapa().'» no se puede canalizar al departamento.'),
@@ -515,12 +630,17 @@ class Entrevistas
 
     /**
      * «No se presentó»: ya pasó la hora de la cita. «Reprogramar» lo regresa.
+     * Lo marca Recursos Humanos; cuando la cita fue «Ahora, está en sala»,
+     * también el propio entrevistador ($porEntrevistador: se avisa a RR. HH.).
      */
-    public function noSePresento(User $actor, Candidato $c): Postulacion
+    public function noSePresento(User $actor, Candidato $c, bool $porEntrevistador = false): Postulacion
     {
         $p = $this->postulaciones->asegurar($c);
         if ($p->etapa !== 'canalizado') {
             throw new CambioNoPermitido('Solo se marca «No se presentó» cuando el candidato tiene entrevista con el departamento.');
+        }
+        if ($porEntrevistador && (! $p->cita_ahora || ! $this->puedeEvaluar($actor, $p))) {
+            throw new CambioNoPermitido('Solo quien lo iba a entrevistar puede marcar «No se presentó», y solo cuando la cita era «Ahora, está en sala».');
         }
         if (! $p->citaPasada()) {
             throw new CambioNoPermitido('Todavía no es la hora de su cita ('.$this->textoCita($p).').');
@@ -530,9 +650,15 @@ class Entrevistas
         }
         $p->refresh();
         Candidato::whereKey($c->id)->update(['actualizado_por' => $actor->id, 'updated_at' => now()]);
-        app(AdministradorCandidatos::class)->evento($c, 'etapa', 'canalizado', 'no_se_presento', 'No se presentó a su entrevista ('.$this->textoCita($p).').', $actor);
-        $this->auditoria->auditar($actor, 'candidatos.no_se_presento', $c, ['etapa' => 'canalizado'], ['etapa' => 'no_se_presento']);
-        $this->citaCancelada($actor, $p, 'No se presentó a su entrevista.');
+        app(AdministradorCandidatos::class)->evento($c, 'etapa', 'canalizado', 'no_se_presento', 'No se presentó a su entrevista ('.$this->textoCita($p).').'
+            .($porEntrevistador ? ' Lo marcó quien lo iba a entrevistar.' : ''), $actor);
+        $this->auditoria->auditar($actor, 'candidatos.no_se_presento', $c, ['etapa' => 'canalizado'], ['etapa' => 'no_se_presento', 'por' => $porEntrevistador ? 'entrevistador' : 'rh']);
+        if ($porEntrevistador) {
+            $this->notificaciones->resolver(self::REFERENCIA, $p->id);
+            $this->avisarRh($p, $actor, 'No se presentó: '.$c->nombre_completo, $actor->name.' marcó que no se presentó a su entrevista. Usa «Reprogramar» si vuelve a agendar.');
+        } else {
+            $this->citaCancelada($actor, $p, 'No se presentó a su entrevista.');
+        }
 
         return $p;
     }

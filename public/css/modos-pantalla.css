@@ -1445,3 +1445,18 @@ html.modo-sol .estrellas label { color: #64748b; }
 html.modo-sol .estrellas input:checked + label, html.modo-sol .estrellas label:has(~ input:checked), html.modo-sol .estrellas-lectura { color: #000; }
 html.modo-sol .evaluacion-entrevista, html.modo-sol .cita-entrevista { border: 2px solid #000; background: #fff; color: #000; }
 /* Fin Candidatos, fase 2 */
+/* Candidatos, fase 3 */
+html.modo-noche .resumen-documentos { background: rgba(217, 119, 6, 0.15); border-color: #b45309; color: #fcd34d; }
+html.modo-noche .resumen-documentos.completo, html.modo-noche .resumen-contrato.completo { background: rgba(5, 150, 105, 0.15); border-color: #047857; color: #6ee7b7; }
+html.modo-noche .resumen-contrato { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .aviso-caducidad { background: rgba(220, 38, 38, 0.15); border-color: #b91c1c; color: #fecaca; }
+html.modo-noche .reloj-etapa.nivel-ambar { background: rgba(217, 119, 6, 0.2); color: #fcd34d; border-color: #b45309; }
+html.modo-noche .reloj-etapa.nivel-roja { background: rgba(220, 38, 38, 0.2); color: #fecaca; border-color: #b91c1c; }
+html.modo-noche .mis-pendientes-item.nivel-ambar .mis-pendientes-numero { background: #78350f; color: #fde68a; }
+html.modo-noche .mis-pendientes-item.nivel-roja .mis-pendientes-numero { background: #7f1d1d; color: #fecaca; }
+html.modo-noche .pestanas-vacante a, html.modo-noche .tarjeta-tablero, html.modo-noche .columna-tablero > h2 span { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .columna-tablero { background: var(--fondo); border-color: var(--borde); }
+html.modo-sol .resumen-documentos, html.modo-sol .resumen-contrato, html.modo-sol .aviso-caducidad, html.modo-sol .reloj-etapa { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .mis-pendientes-item.nivel-ambar .mis-pendientes-numero, html.modo-sol .mis-pendientes-item.nivel-roja .mis-pendientes-numero { background: #000; color: #fff; }
+html.modo-sol .tarjeta-tablero, html.modo-sol .columna-tablero, html.modo-sol .pestanas-vacante a { border: 2px solid #000; color: #000; background: #fff; }
+/* Fin Candidatos, fase 3 */

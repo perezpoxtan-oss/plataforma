@@ -78,22 +78,33 @@ class Acceso extends Model
     public const MOTIVOS = ['rh' => 'Recursos Humanos', 'colaborador' => 'Visita a Colaborador', 'departamento' => 'Visita a Departamento']; // «departamento»: Recepción (ADR-0007)
 
     /**
-     * Recursos Humanos: ¿a qué viene? (lo elige la caseta). Las tres de en
-     * medio implican que la persona ya tiene ficha de candidato.
+     * Recursos Humanos: ¿a qué viene? La caseta ve TRES opciones
+     * (OPCIONES_CASETA). Con «Ya tiene cita» la plataforma busca su ficha y
+     * deduce sola si viene a su entrevista con el departamento, a entregar
+     * documentos o a firmar su contrato; si no encuentra ficha, lo registra
+     * como «Busca empleo». Aquí están todos los valores que puede traer
+     * accesos.viene_a (los deducidos y los de antes, para poder leerlos).
      */
     public const VIENE_A = [
-        'busca_empleo' => 'Busca empleo', 'entrevista' => 'Entrevista', 'documentos' => 'Entrega de documentos',
-        'firma' => 'Firma de contrato', 'informes' => 'Informes / ver vacantes', 'tramite' => 'Otro trámite de RR. HH.',
+        'busca_empleo' => 'Busca empleo', 'cita' => 'Cita con RR. HH.', 'entrevista' => 'Entrevista', 'documentos' => 'Entrega de documentos',
+        'firma' => 'Firma de contrato', 'tramite' => 'Otro trámite de RR. HH.',
+        'informes' => 'Informes / ver vacantes', // valor de antes: ya no se ofrece (el enlace a las vacantes se muestra siempre)
     ];
+
+    /** Las tres opciones que ve la caseta. */
+    public const OPCIONES_CASETA = ['busca_empleo' => 'Busca empleo', 'cita' => 'Ya tiene cita', 'tramite' => 'Otro trámite de RR. HH.'];
 
     /** Texto corto de «Viene a» (panel de Recepción y tarjeta de caseta). */
     public const VIENE_A_CORTO = [
-        'busca_empleo' => 'Busca empleo', 'entrevista' => 'Entrevista', 'documentos' => 'Documentos', 'firma' => 'Firma',
+        'busca_empleo' => 'Busca empleo', 'cita' => 'Cita', 'entrevista' => 'Entrevista', 'documentos' => 'Documentos', 'firma' => 'Firma',
         'informes' => 'Informes', 'tramite' => 'Trámite',
     ];
 
-    /** «¿A qué viene?» que requieren una ficha de candidato existente. */
-    public const VIENE_CON_FICHA = ['entrevista', 'documentos', 'firma'];
+    /** «¿A qué viene?» que requieren una ficha de candidato existente («cita» se deduce; los demás son valores de antes). */
+    public const VIENE_CON_FICHA = ['cita', 'entrevista', 'documentos', 'firma'];
+
+    /** Los que abren o usan la ficha del candidato (lo demás es un trámite sin ficha). */
+    public const VIENE_COMO_CANDIDATO = ['busca_empleo', 'cita', 'entrevista', 'documentos', 'firma'];
 
     public const PASES = ['estancia' => 'Estancia', 'daypass' => 'Daypass', 'nightpass' => 'Nightpass'];
 

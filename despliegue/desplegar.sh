@@ -417,6 +417,12 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudieron escalar las autorizaciones que tardan (revisa despliegue.log)"
 fi
 # --- Fin Autorizaciones ---
+# --- Candidatos: plazos con recordatorio único, «no se presentó» propuesto y caducidad (archivar y borrar; plazos por empresa en Candidatos → Documentos y plazos) ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:candidatos-pendientes'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:candidatos-pendientes --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudieron revisar los plazos y la caducidad de candidatos (revisa despliegue.log)"
+fi
+# --- Fin Candidatos ---
 
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
 if [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ] && grep -Eq "EscribeAqui|tu-correo@" "$HOME/qa_inicial.txt"; then

@@ -38,7 +38,7 @@ Decisión: [ADR-0007](../decisiones/ADR-0007-recepcion-kiosco-y-autorizaciones.m
 
 ## Mis pendientes (fase 1)
 
-Solo para quien puede `candidatos.editar` (en sus sedes): **Esperando en Recepción** (`PanelRecepcion::porAtender()`: accesos de RR. HH. con `autorizacion` esperando/espera + candidatos «Esperando» de hoy cuyo acceso no está entre esos) → Recepción; **Solicitudes por revisar** (`autocaptura_pendiente`) → `candidatos.index?revisar=1`; fase 2: **Por entrevistar (RR. HH.)** (revision + entrevista_rh) → `?etapa=por_entrevistar`, **Evaluaciones del departamento** (evaluado) → `?etapa=evaluado`, **Elegidos por contratar** (elegido) → `?etapa=elegido`. Quien entrevista (`candidatos.evaluar` y es o fue entrevistador o es responsable de un departamento): **Entrevistas por evaluar · próxima: …** (`Entrevistas::pendientes()`, propias y por delegación) → `entrevistas.index`. La campana trae el mismo total (`/notificaciones/resumen` → `pendientes`). El Inicio muestra además «N entrevistas esperan tu evaluación».
+Solo para quien puede `candidatos.editar` (en sus sedes): **Esperando en Recepción** (`PanelRecepcion::porAtender()`: accesos de RR. HH. con `autorizacion` esperando/espera + candidatos «Por atender» (registrado) de hoy cuyo acceso no está entre esos) → Recepción; **Solicitudes por revisar** (`autocaptura_pendiente`) → `candidatos.index?revisar=1`; fase 2: **Por entrevistar (RR. HH.)** (con_rh) → `?etapa=por_entrevistar`, **Evaluaciones del departamento** (evaluado) → `?etapa=evaluado`, **Elegidos por contratar** (elegido) → `?etapa=elegido`. Quien entrevista (`candidatos.evaluar` y es o fue entrevistador o es responsable de un departamento): **Entrevistas por evaluar · próxima: …** (`Entrevistas::pendientes()`, propias y por delegación) → `entrevistas.index`. La campana trae el mismo total (`/notificaciones/resumen` → `pendientes`). El Inicio muestra además «N entrevistas esperan tu evaluación».
 
 ## Tiempos (SLA) y métricas
 
@@ -68,6 +68,14 @@ Candidato: `llegada_en` (entrada en caseta) → `avisado_rh_en` → `revision_en
 ## Permisos y plantillas
 
 Módulos nuevos en el área Recursos Humanos (menú Recursos Humanos → «Recepción y candidatos»): `recepcion_rh` (ver), `candidatos` (ver, crear, editar, eliminar, exportar, contratar, configurar), `autorizaciones` (ver, responder, configurar). Acciones nuevas del catálogo: `contratar`, `responder`. `RolesPlantillaSeeder::RECEPCION` hace las excepciones: Director (recepción y responder, sin CV), Jefe de seguridad y Supervisor (responder en su sede). En una base existente, la migración da los permisos a los roles con `colaboradores.crear` (todo) y con `accesos.aprobar` (ver y responder).
+
+## Una sola pantalla de responsables y esperas (ADR-0010)
+
+`GET /autorizaciones/responsables` (`autorizaciones.configurar`) reúne: responsables y suplentes por departamento, «Las visitas esperan la autorización del responsable», «La caseta espera a que RR. HH. diga «Que pase»» y los minutos de recordatorio y escalamiento («Guardar esperas»). Se llega desde Departamentos (botón «Responsables», `?desde=departamentos`, y el enlace «Nombrar responsable» de la tarjeta sin responsable), desde Recepción → Ajustes (`?desde=recepcion`) y desde Autorizaciones; el enlace «volver» sigue al origen. `AjustesRecepcion::guardar($actor, $empresa, $entrada, $partes)` recibe las partes que manda cada formulario (`privacidad`, `criterios`, `esperas`, `escalamiento`); `RecepcionController::guardarAjustes` decide las partes por los campos presentes y los permisos (`candidatos.configurar` o `autorizaciones.configurar` con alcance de empresa). Recepción → Ajustes queda con el aviso de privacidad y el kiosco (y Configuración incluye la misma vista parcial). No hay permisos nuevos.
+
+## Menú: «Mis entrevistas» y «Autorizaciones»
+
+`ConstructorMenu::conPantallasPersonales` agrega a la sección «Recepción y candidatos» del menú Recursos Humanos dos renglones sin módulo propio: **Mis entrevistas** (`entrevistas.index`) con `candidatos.evaluar`, y **Autorizaciones** (`autorizaciones.index`) con `autorizaciones.responder` y si `Autorizaciones::departamentosQueAtiende()` no está vacío (responsable, suplente o delegado activo). El módulo `autorizaciones` sigue sin `menu_id` (la migración de menús y `MenuSeeder` no cambian).
 
 ## Avisos por correo (Configuración)
 

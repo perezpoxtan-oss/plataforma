@@ -55,6 +55,7 @@ Modelo `App\Models\Colaborador` (`PerteneceAEmpresa`, `RegistraAutor`); scope `e
 | `PATCH /colaboradores/{id}/estado` | Baja (`activo=0`) o reingreso (`activo=1`) |
 | `PUT /colaboradores/{id}/sedes` | Sedes adicionales (`sedes[]`) |
 | `GET /colaboradores/{id}/datos-personales` | JSON con los datos personales (permiso `datos_personales`) |
+| `GET /colaboradores/{id}/expediente` · `GET …/expediente/{documento}` | Expediente del colaborador (candidatos fase 3, `ExpedienteController`): datos, documentos de contratación (solo con `datos_personales`), su paso por Candidatos (`candidatos.ver`) y resúmenes de accesos, llaves, pases, resguardos y procedimientos según lo que el usuario puede ver; ver [candidatos.md](candidatos.md) |
 | `POST /colaboradores/rapido` | Registro rápido (JSON) |
 | `GET /colaboradores/buscar?q=` | Autocompletar (JSON) |
 

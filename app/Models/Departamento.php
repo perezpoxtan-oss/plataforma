@@ -7,6 +7,7 @@ use App\Models\Concerns\RegistraAutor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Área de trabajo de la empresa (Seguridad, Recepción, Ama de Llaves...).
@@ -28,6 +29,18 @@ class Departamento extends Model
     public function sedes(): BelongsToMany
     {
         return $this->belongsToMany(Sede::class, 'departamento_sede');
+    }
+
+    /** Colaboradores del departamento (para contar los activos en la tarjeta). */
+    public function colaboradores(): HasMany
+    {
+        return $this->hasMany(Colaborador::class);
+    }
+
+    /** Responsables (titular y suplentes) que autorizan sus visitas y entrevistan a sus candidatos. */
+    public function responsables(): HasMany
+    {
+        return $this->hasMany(DepartamentoResponsable::class);
     }
 
     public function puestos(): BelongsToMany

@@ -25,7 +25,9 @@ class Postulaciones
     /** Columnas de la postulación activa que se copian a la ficha. */
     public const ESPEJO = ['sede_id', 'vacante_id', 'departamento_id', 'puesto_id', 'vacante', 'etapa', 'motivo_descarte',
         'revision_en', 'aprobado_rh_en', 'entrevista_en', 'decision_en', 'decision_por', 'enviado_departamento_en',
-        'respuesta_departamento_en', 'contratado_en', 'colaborador_id'];
+        'respuesta_departamento_en', 'contratado_en', 'colaborador_id',
+        'archivada_en', // Fase 3: la ficha refleja si su postulación activa quedó archivada por caducidad
+    ];
 
     /** Lo que se edita desde la ficha y pasa a la postulación activa. */
     public const DESDE_FICHA = ['departamento_id', 'puesto_id', 'vacante', 'vacante_id'];

@@ -457,6 +457,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/candidatos', 'index')->name('candidatos.index');
         Route::post('/candidatos', 'store')->name('candidatos.store');
         Route::get('/candidatos/exportar', 'exportar')->name('candidatos.exportar');
+        Route::get('/candidatos/criterios', 'criterios')->name('candidatos.criterios'); // Criterios de entrevista (ADR-0010)
         Route::get('/candidatos/{candidato}', 'show')->whereNumber('candidato')->name('candidatos.show');
         Route::put('/candidatos/{candidato}', 'update')->whereNumber('candidato')->name('candidatos.update');
         Route::delete('/candidatos/{candidato}', 'destroy')->whereNumber('candidato')->name('candidatos.destroy');
@@ -464,6 +465,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/candidatos/{candidato}/revisado', 'revisado')->whereNumber('candidato')->name('candidatos.revisado');
         Route::post('/candidatos/{candidato}/contratar', 'contratar')->whereNumber('candidato')->name('candidatos.contratar');
         Route::post('/candidatos/{candidato}/enlace/revocar', 'revocarEnlace')->whereNumber('candidato')->name('candidatos.enlace.revocar');
+        Route::post('/candidatos/{candidato}/enlace/correo', 'enviarEnlace')->whereNumber('candidato')->middleware('throttle:60,1')->name('candidatos.enlace.correo'); // ADR-0010
         Route::post('/candidatos/{candidato}/documentos', 'subirDocumento')->whereNumber('candidato')->name('candidatos.documentos.store');
         Route::get('/candidatos/{candidato}/documentos/{documento}', 'documento')->whereNumber(['candidato', 'documento'])->name('candidatos.documento');
         Route::delete('/candidatos/{candidato}/documentos/{documento}', 'borrarDocumento')->whereNumber(['candidato', 'documento'])->name('candidatos.documentos.destroy');
@@ -530,11 +532,27 @@ Route::middleware('auth')->group(function () {
         Route::get('/entrevistas', 'index')->name('entrevistas.index');
         Route::get('/entrevistas/{postulacion}', 'show')->whereNumber('postulacion')->name('entrevistas.show');
         Route::post('/entrevistas/{postulacion}', 'evaluar')->whereNumber('postulacion')->middleware('throttle:60,1')->name('entrevistas.evaluar');
+        Route::post('/entrevistas/{postulacion}/no-se-presento', 'noSePresento')->whereNumber('postulacion')->middleware('throttle:60,1')->name('entrevistas.no-se-presento');
         Route::get('/entrevistas/{postulacion}/cv', 'cv')->whereNumber('postulacion')->name('entrevistas.cv');
         Route::get('/entrevistas/{postulacion}/correo', 'correo')->whereNumber('postulacion')->name('entrevistas.correo');
     });
     Route::get('/vacantes/{vacante}/candidatos', [VacanteController::class, 'candidatos'])->whereNumber('vacante')->name('vacantes.candidatos');
     // Fin Padrones: Candidatos fase 2
+
+    // Padrones: Candidatos fase 3 (documentos para contratar, contrato, plazos, caducidad y expediente del colaborador; ver docs/tecnico/candidatos.md)
+    Route::controller(CandidatoController::class)->group(function () {
+        Route::get('/candidatos/documentos-para-contratar', 'configuracion')->name('candidatos.configuracion');
+        Route::put('/candidatos/documentos-para-contratar', 'guardarDocumentos')->name('candidatos.configuracion.documentos');
+        Route::put('/candidatos/plazos', 'guardarPlazos')->name('candidatos.configuracion.plazos');
+        Route::post('/candidatos/{candidato}/contrato', 'contratoFirmado')->whereNumber('candidato')->name('candidatos.contrato');
+        Route::post('/candidatos/{candidato}/documentos/papel', 'documentoEnPapel')->whereNumber('candidato')->name('candidatos.documentos.papel');
+        Route::post('/candidatos/{candidato}/conservar', 'conservar')->whereNumber('candidato')->name('candidatos.conservar');
+    });
+    Route::controller('App\Http\Controllers\RecursosHumanos\ExpedienteController')->group(function () {
+        Route::get('/colaboradores/{colaborador}/expediente', 'index')->whereNumber('colaborador')->name('colaboradores.expediente');
+        Route::get('/colaboradores/{colaborador}/expediente/{documento}', 'documento')->whereNumber(['colaborador', 'documento'])->name('colaboradores.expediente.documento');
+    });
+    // Fin Padrones: Candidatos fase 3
 
     // Padrones: Manual (ayuda dentro de la plataforma: toda sesión entra; cada página se filtra por los módulos que el usuario puede ver; ver docs/tecnico/manual.md)
     Route::controller('App\Http\Controllers\ManualController')->group(function () {

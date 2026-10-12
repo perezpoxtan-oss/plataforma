@@ -19,7 +19,8 @@
         </div>
     @else
         @php
-            $hayFiltros = $filtros['q'] !== '' || $filtros['etapa'] !== '' || $filtros['sede'] > 0 || $filtros['departamento'] > 0 || $filtros['vacante'] > 0 || $filtros['revisar'];
+            $hayFiltros = $filtros['q'] !== '' || $filtros['etapa'] !== '' || $filtros['sede'] > 0 || $filtros['departamento'] > 0 || $filtros['vacante'] > 0 || $filtros['revisar'] || $filtros['archivadas'] || $filtros['caducar'];
+            $sinEspecial = ! $filtros['revisar'] && ! $filtros['archivadas'] && ! $filtros['caducar'];
             $enProceso = collect(Candidato::ABIERTAS)->sum(fn ($e) => (int) ($conteos[$e] ?? 0));
             $base = array_filter(['q' => $filtros['q'], 'sede' => $filtros['sede'] ?: null, 'departamento' => $filtros['departamento'] ?: null, 'vacante' => $filtros['vacante'] ?: null]);
             $reabrir = old('_dialogo') === 'candidato';
@@ -36,6 +37,11 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ route('recepcion.index') }}" class="btn-secundario-rh"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Recepción</a>
+                {{-- Configuración de Candidatos: criterios de entrevista (ADR-0010) y documentos y plazos (fase 3) --}}
+                @if ($puede['configurar'] ?? false)
+                    <a href="{{ route('candidatos.criterios') }}" class="btn-secundario-rh"><i class="bi bi-star-half me-1" aria-hidden="true"></i>Criterios de entrevista</a>
+                    <a href="{{ route('candidatos.configuracion') }}" class="btn-secundario-rh"><i class="bi bi-folder-check me-1" aria-hidden="true"></i>Documentos y plazos</a>
+                @endif
                 @if ($puede['exportar'] && $lista->total() > 0)
                     <a href="{{ route('candidatos.exportar', request()->query()) }}" class="btn-secundario-rh"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
                     <form method="GET" action="{{ route('candidatos.exportar') }}" class="m-0" data-confirmar="El archivo llevará CURP, RFC, NSS, domicilio y teléfonos (datos personales). Guárdalo en un lugar seguro y no lo compartas. ¿Continuar?">
@@ -55,6 +61,8 @@
         <form method="GET" action="{{ route('candidatos.index') }}" class="filtros-rh" role="search" data-autoenviar>
             <input type="hidden" name="etapa" value="{{ $filtros['etapa'] }}">
             @if ($filtros['revisar'])<input type="hidden" name="revisar" value="1">@endif
+            @if ($filtros['archivadas'])<input type="hidden" name="archivadas" value="1">@endif
+            @if ($filtros['caducar'])<input type="hidden" name="caducar" value="1">@endif
             <div class="buscador">
                 <i class="bi bi-search" aria-hidden="true"></i>
                 <input type="search" name="q" value="{{ $filtros['q'] }}" maxlength="100" placeholder="Buscar por nombre o vacante..." aria-label="Buscar candidato">
@@ -89,8 +97,8 @@
         </form>
 
         <nav class="pildoras-pases" aria-label="Etapas">
-            <a href="{{ route('candidatos.index', $base) }}" class="btn-pill-tipo {{ $filtros['etapa'] === '' && ! $filtros['revisar'] ? 'active' : '' }}">Todos ({{ $conteos->sum() }})</a>
-            <a href="{{ route('candidatos.index', $base + ['etapa' => 'en_proceso']) }}" class="btn-pill-tipo {{ $filtros['etapa'] === 'en_proceso' && ! $filtros['revisar'] ? 'active' : '' }}">En proceso ({{ $enProceso }})</a>
+            <a href="{{ route('candidatos.index', $base) }}" class="btn-pill-tipo {{ $filtros['etapa'] === '' && $sinEspecial ? 'active' : '' }}">Todos ({{ $conteos->sum() }})</a>
+            <a href="{{ route('candidatos.index', $base + ['etapa' => 'en_proceso']) }}" class="btn-pill-tipo {{ $filtros['etapa'] === 'en_proceso' && $sinEspecial ? 'active' : '' }}">En proceso ({{ $enProceso }})</a>
             @php $porEntrevistar = collect(Candidato::POR_ENTREVISTAR)->sum(fn ($e) => (int) ($conteos[$e] ?? 0)); @endphp
             @if ($porEntrevistar > 0 || $filtros['etapa'] === 'por_entrevistar')
                 <a href="{{ route('candidatos.index', $base + ['etapa' => 'por_entrevistar']) }}" class="btn-pill-tipo {{ $filtros['etapa'] === 'por_entrevistar' ? 'active' : '' }}"><i class="bi bi-chat-square-text me-1" aria-hidden="true"></i>Por entrevistar ({{ $porEntrevistar }})</a>
@@ -99,9 +107,19 @@
                 <a href="{{ route('candidatos.index', $base + ['revisar' => 1]) }}" class="btn-pill-tipo {{ $filtros['revisar'] ? 'active' : '' }}"><i class="bi bi-phone me-1" aria-hidden="true"></i>Solicitudes por revisar ({{ $porRevisar }})</a>
             @endif
             @foreach (Candidato::ETAPAS as $clave => $texto)
-                <a href="{{ route('candidatos.index', $base + ['etapa' => $clave]) }}" class="btn-pill-tipo {{ $filtros['etapa'] === $clave ? 'active' : '' }}">{{ $texto }} ({{ (int) ($conteos[$clave] ?? 0) }})</a>
+                <a href="{{ route('candidatos.index', $base + ['etapa' => $clave]) }}" class="btn-pill-tipo {{ $filtros['etapa'] === $clave && $sinEspecial ? 'active' : '' }}">{{ $texto }} ({{ (int) ($conteos[$clave] ?? 0) }})</a>
             @endforeach
+            {{-- Fase 3: caducidad --}}
+            @if ($porCaducar > 0 || $filtros['caducar'])
+                <a href="{{ route('candidatos.index', $base + ['caducar' => 1]) }}" class="btn-pill-tipo {{ $filtros['caducar'] ? 'active' : '' }}" title="Fichas que se borrarán pronto si nadie las conserva"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Por caducar ({{ $porCaducar }})</a>
+            @endif
+            @if ($archivadas > 0 || $filtros['archivadas'])
+                <a href="{{ route('candidatos.index', $base + ['archivadas' => 1]) }}" class="btn-pill-tipo {{ $filtros['archivadas'] ? 'active' : '' }}" title="Postulaciones en Considerar o Rechazado que ya cumplieron el plazo de archivo"><i class="bi bi-archive me-1" aria-hidden="true"></i>Archivadas ({{ $archivadas }})</a>
+            @endif
         </nav>
+        @if ($filtros['caducar'])
+            <p class="small text-muted"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Estas fichas se borrarán con sus documentos el día que muestra cada una (no fueron contratadas y llevan mucho tiempo sin movimiento). Abre la ficha y toca <strong>Conservar 6 meses más</strong> si aún la necesitas.</p>
+        @endif
 
         <div class="fichas-grid fichas-candidatos">
             @forelse ($lista as $c)
@@ -111,6 +129,14 @@
                             <span class="pastilla-etapa etapa-{{ Candidato::COLORES[$c->etapa] ?? 'gris' }}">{{ $c->etiquetaEtapa() }}</span>
                             @if ($c->autocaptura_pendiente)
                                 <span class="pastilla-revisar"><i class="bi bi-phone me-1" aria-hidden="true"></i>Por revisar</span>
+                            @elseif ($c->solicitud_corta)
+                                <span class="pastilla-revisar"><i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Solicitud incompleta</span>
+                            @endif
+                            {{-- Fase 3: caducidad --}}
+                            @if ($c->borrar_en && ! $c->contratado())
+                                <span class="pastilla-revisar"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Se borra el {{ $c->borrar_en->format('d/m/Y') }}</span>
+                            @elseif ($c->archivada_en)
+                                <span class="pastilla-origen"><i class="bi bi-archive me-1" aria-hidden="true"></i>Archivada</span>
                             @endif
                         </div>
                         <h2 class="ficha-title">{{ $c->nombre_completo }}</h2>

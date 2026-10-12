@@ -52,7 +52,9 @@ class DepartamentoController extends Controller
         return $this->tenant->conEmpresa($empresaId, fn () => view('organizacion.departamentos.index', [
             'sinEmpresa' => false,
             'departamentos' => Departamento::with('sedes:id,nombre')
-                ->withCount(['puestos' => fn ($q) => $q->where('activo', true)])
+                ->withCount(['puestos' => fn ($q) => $q->where('activo', true),
+                    // ADR-0010: la tarjeta muestra colaboradores activos y avisa si no hay quien autorice sus visitas
+                    'colaboradores' => fn ($q) => $q->where('activo', true)->whereNull('fusionado_en_id'), 'responsables'])
                 ->when($permitidas !== null, fn ($q) => $q->aplicanEn($permitidas))
                 ->leftJoin('users as uc', 'uc.id', '=', 'departamentos.creado_por')
                 ->leftJoin('users as ua', 'ua.id', '=', 'departamentos.actualizado_por')
@@ -61,6 +63,7 @@ class DepartamentoController extends Controller
                 ->get(),
             'sedes' => Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
             'puede' => $this->permisosCatalogo($actor, 'departamentos'),
+            'puedeResponsables' => $actor->can('autorizaciones.configurar'),
         ]));
     }
 

@@ -51,7 +51,8 @@ class DocumentosCandidato
 
         $nombre = trim((string) preg_replace('/[^\pL\pN ._()-]+/u', '', $archivo->getClientOriginalName())) ?: 'documento.'.$extension;
         $documento = new CandidatoDocumento([
-            'candidato_id' => $candidato->id, 'tipo' => array_key_exists($tipo, CandidatoDocumento::TIPOS) ? $tipo : 'otro',
+            // Fase 3: el tipo es la clave de un renglón de «Documentos para contratar» (o cv, otro, contrato); el controlador ya lo validó
+            'candidato_id' => $candidato->id, 'tipo' => preg_match('/^[a-z0-9_]{1,40}$/', $tipo) ? $tipo : 'otro',
             'nombre_original' => mb_substr($nombre, 0, 150), 'ruta' => $ruta, 'mime' => $mime, 'bytes' => strlen($binario), 'origen' => $origen,
         ]);
         $documento->forceFill(['empresa_id' => $candidato->empresa_id])->save();

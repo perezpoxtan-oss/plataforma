@@ -10,6 +10,7 @@ use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Persona;
+use App\Models\Postulacion;
 use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\User;
@@ -47,6 +48,13 @@ use Illuminate\Validation\ValidationException;
 class AdministradorCandidatos
 {
     public const MAX_FILAS = 6;
+
+    /**
+     * Referencias personales obligatorias en la solicitud completa (kiosco y
+     * bolsa). Bajó de 2 a 1 (ADR-0010): no hay un ajuste natural por empresa,
+     * así que es una constante; cambiarla aquí cambia el kiosco y el mensaje.
+     */
+    public const REFERENCIAS_MINIMAS = 1;
 
     public function __construct(
         private readonly Autorizador $autorizador,
@@ -92,14 +100,16 @@ class AdministradorCandidatos
 
     /**
      * La caseta registró a alguien que viene a Recursos Humanos por empleo
-     * (Personal externo → Recursos Humanos → ¿A qué viene?: Busca empleo,
-     * Entrevista, Entrega de documentos o Firma de contrato).
+     * (Personal externo → Recursos Humanos → ¿A qué viene?: Busca empleo o Ya
+     * tiene cita).
      *
      * Una ficha por persona: si ya tiene ficha (por su persona del padrón, su
      * teléfono o, si viene a una cita, su nombre exacto) no se crea otra; la
-     * visita se liga a su postulación abierta o, si no tiene, a una nueva. Si
-     * dijo que venía a una cita y no se encuentra su ficha, se registra como
-     * «Busca empleo» y queda anotado.
+     * visita se liga a su postulación abierta o, si no tiene, a una nueva.
+     * Con «Ya tiene cita» la plataforma deduce a qué viene (deducirCita):
+     * entrevista con el departamento, entrega de documentos o firma de
+     * contrato. Si dijo que tenía cita y no se encuentra su ficha, se
+     * registra como «Busca empleo» y queda anotado.
      *
      * Avisa a RR. HH. en ese momento, salvo cuando la visita espera su «Que
      * pase» (ese aviso lo manda Autorizaciones, con los botones).
@@ -108,16 +118,21 @@ class AdministradorCandidatos
      */
     public function desdeAcceso(User $actor, Acceso $acceso, array $d): Candidato
     {
-        $vieneA = in_array($d['viene_a'] ?? null, ['busca_empleo', ...Acceso::VIENE_CON_FICHA], true) ? $d['viene_a'] : 'busca_empleo';
+        $vieneA = in_array($d['viene_a'] ?? null, Acceso::VIENE_COMO_CANDIDATO, true) ? $d['viene_a'] : 'busca_empleo';
         $conCita = in_array($vieneA, Acceso::VIENE_CON_FICHA, true);
         $ficha = $this->fichaDeLaVisita($acceso, $conCita);
         $nota = null;
         if ($ficha === null && $conCita) {
-            $nota = 'Dijo que venía a «'.Acceso::VIENE_A[$vieneA].'», pero no se encontró su ficha: se registró como «Busca empleo».';
+            $nota = ($vieneA === 'cita' ? 'Dijo que ya tenía cita' : 'Dijo que venía a «'.Acceso::VIENE_A[$vieneA].'»')
+                .', pero no se encontró su ficha: se registró como «Busca empleo».';
             $vieneA = 'busca_empleo';
             $conCita = false;
         }
         $postulaciones = app(Postulaciones::class);
+        if ($vieneA === 'cita' && $ficha !== null) {
+            // «Ya tiene cita»: la plataforma deduce a qué viene con su postulación en proceso
+            $vieneA = $this->deducirCita($ficha, $postulaciones->abierta($ficha) ?? $postulaciones->activa($ficha));
+        }
         $vacante = ['vacante_id' => $d['vacante_id'] ?? null, 'departamento_id' => $d['departamento_id'] ?? null, 'puesto_id' => $d['puesto_id'] ?? null,
             'vacante' => $d['vacante'] ?? null];
         $primeraVez = $ficha === null;
@@ -178,6 +193,31 @@ class AdministradorCandidatos
         }
 
         return $ficha;
+    }
+
+    /**
+     * «Ya tiene cita» → a qué viene, según su postulación: con el departamento
+     * (canalizado) es su entrevista; elegido, viene a entregar documentos o,
+     * si ya los tiene completos, a firmar su contrato; en cualquier otra etapa
+     * queda «Cita con RR. HH.» (Recursos Humanos sabe de qué se trata).
+     */
+    public function deducirCita(Candidato $ficha, ?Postulacion $p): string
+    {
+        return match ($p?->etapa) {
+            'canalizado' => 'entrevista',
+            'elegido' => $this->documentosCompletos($ficha) ? 'firma' : 'documentos',
+            default => 'cita',
+        };
+    }
+
+    /**
+     * ¿Ya entregó sus documentos? Todos los obligatorios de la lista de
+     * «Documentos para contratar» de su empresa (fase 3, ADR-0011), subidos o
+     * recibidos en papel; aquí solo decide si «viene a firmar» o «a entregar».
+     */
+    public function documentosCompletos(Candidato $ficha): bool
+    {
+        return app(DocumentosParaContratar::class)->estado($ficha->loadMissing('documentos'))['faltan'] === [];
     }
 
     /**
@@ -303,6 +343,8 @@ class AdministradorCandidatos
         $this->firmarSiViene($candidato, $entrada, 'rh', $actor);
         $this->ligarVacante($candidato, $entrada);
         $candidato->autocaptura_pendiente = false;
+        // Recursos Humanos completó la solicitud de una postulación corta por internet (ADR-0010)
+        $candidato->solicitud_corta = false;
         $candidato->save();
         app(Postulaciones::class)->desdeFicha($candidato); // A qué aplica: lo manda la postulación activa
         $this->auditoria->auditar($actor, 'candidatos.actualizado', $candidato, $antes, $this->foto($candidato));
@@ -324,11 +366,12 @@ class AdministradorCandidatos
     // ------------------------------------------------------------------- Etapas
 
     /**
-     * Cambios de etapa con su botón (Candidato::MANUALES): Atender, Entrevistar
-     * (Entrevista RR. HH.), Considerar y Rechazar. Considerar y Rechazar piden
-     * el comentario o motivo (lo ve solo Recursos Humanos). Canalizar,
-     * Reprogramar, No se presentó, Evaluar y Elegir tienen su propio
-     * formulario (App\Services\Candidatos\Entrevistas).
+     * Cambios de etapa con su botón (Candidato::MANUALES): Atender (Con
+     * RR. HH.), Considerar y Rechazar. Considerar y Rechazar piden el
+     * comentario o motivo (lo ve solo Recursos Humanos). «Entrevistar» no
+     * cambia de etapa: abre la evaluación de RR. HH. Canalizar, Reprogramar,
+     * No se presentó, Evaluar y Elegir tienen su propio formulario
+     * (App\Services\Candidatos\Entrevistas).
      */
     public function cambiarEtapa(User $actor, Candidato $candidato, string $etapa, ?string $comentario = null): Candidato
     {
@@ -352,8 +395,7 @@ class AdministradorCandidatos
         $anterior = $p->etapa;
         $cambios = ['etapa' => $etapa];
         $cambios += match ($etapa) {
-            'revision' => ($p->revision_en === null ? ['revision_en' => now()] : []) + ['motivo_descarte' => null],
-            'entrevista_rh' => ['entrevista_rh_en' => now()],
+            'con_rh' => ($p->revision_en === null ? ['revision_en' => now()] : []) + ['motivo_descarte' => null],
             'considerar', 'rechazado' => ['decision_en' => now(), 'decision_por' => $actor->id, 'motivo_descarte' => $comentario],
         };
         if (! $postulaciones->cambiar($p, $anterior, $cambios, $actor)) {
@@ -386,6 +428,19 @@ class AdministradorCandidatos
         if ($postulacion->etapa !== 'elegido') {
             throw new CambioNoPermitido('Solo se contrata a un candidato «Elegido» por el departamento.');
         }
+        // Fase 3: documentos obligatorios y contrato firmado; se puede forzar con motivo
+        $documentosParaContratar = app(DocumentosParaContratar::class);
+        $faltantes = $documentosParaContratar->faltantesParaContratar($candidato, $postulacion);
+        $forzado = $faltantes !== [] && filter_var($entrada['forzar'] ?? false, FILTER_VALIDATE_BOOL);
+        $motivoForzar = trim((string) ($entrada['motivo_forzar'] ?? ''));
+        if ($faltantes !== [] && ! $forzado) {
+            throw ValidationException::withMessages(['forzar' => 'Todavía no se puede contratar: '.implode('; ', $faltantes).'. Completa el expediente o marca «Contratar de todos modos» y escribe el motivo.']);
+        }
+        if ($forzado && $motivoForzar === '') {
+            throw ValidationException::withMessages(['motivo_forzar' => 'Escribe por qué se contrata sin completar el expediente (queda en la bitácora).']);
+        }
+        $motivoForzar = mb_substr($motivoForzar, 0, 300);
+        // Fin Fase 3
         // Los datos oficiales de la solicitud pasan al colaborador (RR. HH. no los vuelve a escribir)
         $datos = array_merge([
             'telefono' => $candidato->telefono, 'sede_id' => $candidato->sede_id, 'departamento_id' => $candidato->departamento_id,
@@ -397,7 +452,7 @@ class AdministradorCandidatos
         ], array_intersect_key($entrada, array_flip(['num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'sede_id', 'departamento_id', 'puesto_id', 'telefono'])));
         $datos = array_filter($datos, fn ($v) => $v !== null && $v !== '');
 
-        $colaborador = DB::transaction(function () use ($actor, $candidato, $datos, $postulaciones, $postulacion) {
+        $colaborador = DB::transaction(function () use ($actor, $candidato, $datos, $postulaciones, $postulacion, $documentosParaContratar) {
             $colaborador = app(AdministradorColaboradores::class)->crear($actor, (int) $candidato->empresa_id, Request::create('/', 'POST', $datos));
             $hecho = $postulaciones->cambiar($postulacion, 'elegido', [
                 'etapa' => 'contratado', 'contratado_en' => now(), 'colaborador_id' => $colaborador->id, 'decision_en' => $postulacion->decision_en ?? now(),
@@ -406,12 +461,16 @@ class AdministradorCandidatos
                 throw new CambioNoPermitido('Otra persona acaba de cambiar a este candidato. Revisa su etapa actual.');
             }
             Candidato::whereKey($candidato->id)->update(['actualizado_por' => $actor->id, 'updated_at' => now()]);
+            // Fase 3: sus documentos pasan al expediente del colaborador
+            $documentosParaContratar->pasarAlExpediente($candidato, $colaborador);
 
             return $colaborador;
         });
         $candidato->refresh();
-        $this->evento($candidato, 'contratado', 'elegido', 'contratado', 'Alta como colaborador (núm. '.$colaborador->num_empleado.').', $actor);
-        $this->auditoria->auditar($actor, 'candidatos.contratado', $candidato, ['etapa' => 'elegido'], ['etapa' => 'contratado', 'colaborador_id' => $colaborador->id]);
+        $this->evento($candidato, 'contratado', 'elegido', 'contratado', 'Alta como colaborador (núm. '.$colaborador->num_empleado.').'
+            .($forzado ? ' Se contrató sin completar el expediente ('.implode('; ', $faltantes).'). Motivo: '.$motivoForzar : ''), $actor);
+        $this->auditoria->auditar($actor, 'candidatos.contratado', $candidato, ['etapa' => 'elegido'], ['etapa' => 'contratado', 'colaborador_id' => $colaborador->id]
+            + ($forzado ? ['forzado' => true, 'faltantes' => $faltantes, 'motivo' => $motivoForzar] : []));
 
         return $colaborador;
     }
@@ -435,7 +494,7 @@ class AdministradorCandidatos
      * kiosco y la bolsa de trabajo).
      *
      * $completa: lo que envía el propio candidato (kiosco o internet) debe
-     * traer nombre y apellido paterno, teléfono, al menos 2 referencias
+     * traer nombre y apellido paterno, teléfono, REFERENCIAS_MINIMAS referencias
      * personales y la declaración «la información es verdadera». RR. HH.
      * puede capturar por partes.
      *
@@ -528,7 +587,7 @@ class AdministradorCandidatos
             'disponibilidad' => ['nullable', Rule::in(array_keys(Candidato::DISPONIBILIDAD))],
             'disponibilidad_notas' => ['nullable', 'string', 'max:255'],
             'pretension' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
-            'referencias' => ['array', $completa ? 'min:2' : 'min:0', 'max:'.self::MAX_FILAS],
+            'referencias' => ['array', $completa ? 'min:'.self::REFERENCIAS_MINIMAS : 'min:0', 'max:'.self::MAX_FILAS],
             'referencias.*.nombre' => ['required', 'string', 'max:150'],
             'referencias.*.telefono' => [$completa ? 'required' : 'nullable', 'string', 'max:20'],
             'referencias.*.relacion' => ['nullable', 'string', 'max:80'],
@@ -584,7 +643,8 @@ class AdministradorCandidatos
             'experiencia.*.salida.*' => 'En empleos anteriores, revisa el mes de salida.',
             'experiencia.*.sueldo_final.*' => 'En empleos anteriores, el sueldo es un número (sin letras).',
             'experiencia.*.pedir_referencias.*' => 'En empleos anteriores, indica si podemos pedir referencias (sí o no).',
-            'referencias.min' => 'Escribe al menos 2 referencias personales (nombre y teléfono).',
+            'referencias.min' => self::REFERENCIAS_MINIMAS === 1 ? 'Escribe al menos 1 referencia personal (nombre y teléfono).'
+                : 'Escribe al menos '.self::REFERENCIAS_MINIMAS.' referencias personales (nombre y teléfono).',
             'referencias.*.nombre.required' => 'En referencias personales, escribe el nombre de la persona.',
             'referencias.*.telefono.required' => 'En referencias personales, escribe el teléfono de cada persona.',
             'referencias.*.anos_conocerlo.*' => 'En referencias, los años de conocerlo son un número.',

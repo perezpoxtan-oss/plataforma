@@ -91,6 +91,13 @@ Borrador ─▶ Publicada ⇄ Pausada
 
 SEGCAT no tenía vacantes: se pegaban hojas impresas a mano en la entrada, la caseta no sabía a qué vacante venía cada persona y RR. HH. no podía medir cuántos llegaban por cada una. Ahora la vacante se publica una vez y aparece en internet, en el cartel con QR y en la lista de la caseta; cada candidato queda ligado a su vacante.
 
+## ADR-0010
+
+- **Vacante propuesta**: si quien guarda no tiene `vacantes.editar` (Jefe de departamento), `AdministradorVacantes::avisarPropuesta` manda la campana `vacante_propuesta` «Vacante propuesta por …» a quien tiene `vacantes.editar` en sus sedes (referencia `vacante`); se resuelve al publicarla o cerrarla.
+- **Vacante cubierta**: el aviso a RR. HH. lleva el botón «Cerrar como cubierta» (ver [candidatos.md](candidatos.md)).
+- **Alta corta**: «La vacante» muestra solo título, puesto, departamento, plazas y sedes; «Condiciones y quién ve el CV» (con `jefe_ve_cv`), «Descripción y requisitos» y «Fechas y contacto» van plegadas. El título se sugiere desde el puesto (`data-sugiere-titulo`, `public/js/plataforma.js`) mientras no se escriba uno propio.
+- **Postulación corta** en `/empleos/{empresa}/{vacante}/postular`: ver [candidatos.md](candidatos.md).
+
 ## Pendiente (no implementado)
 
-«Solicitud de vacante» del jefe de departamento con aprobación de RR. HH., y que el jefe vea solo las de su departamento: requiere un rol de jefe de departamento que hoy no existe en las plantillas (los responsables están en `departamento_responsables`, ligados a autorizaciones). Hoy el jefe de departamento la ve si su rol tiene `vacantes.ver`. Cerrar la vacante como «Cubierta» al cubrir las plazas sigue siendo manual (RR. HH.).
+Que el jefe vea solo las vacantes de su departamento (hoy ve las de su sede con `vacantes.ver`).

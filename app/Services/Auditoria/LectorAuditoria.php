@@ -120,7 +120,13 @@ class LectorAuditoria
         // Candidatos, fase 2: entrevistas, canalización y elección
         'evaluado_rh' => 'Evaluación de la entrevista de RR. HH.', 'canalizado' => 'Canalización al departamento',
         'reprogramado' => 'Reprogramación de entrevista', 'no_se_presento' => 'No se presentó a su entrevista',
-        'evaluado_departamento' => 'Evaluación de la entrevista del departamento', 'correo_candidato' => 'Correo al candidato con su cita',
+        'evaluado_departamento' => 'Evaluación de la entrevista del departamento', 'evaluacion_corregida' => 'Corrección de la evaluación del departamento',
+        'correo_candidato' => 'Correo al candidato (su cita o el enlace de su solicitud)',
+        // Candidatos, fase 3: documentos para contratar, contrato, plazos y caducidad
+        'documentos_configurados' => 'Cambio de la lista de documentos para contratar', 'plazos_configurados' => 'Cambio de plazos de candidatos',
+        'contrato_firmado' => 'Registro del contrato firmado', 'documento_papel' => 'Documento recibido en papel',
+        'plazo' => 'Recordatorio por plazo vencido', 'archivada' => 'Archivo por caducidad', 'aviso_borrado' => 'Aviso de borrado por caducidad',
+        'borrado_por_caducidad' => 'Borrado por caducidad', 'conservada' => 'Conservación de la ficha',
         // Configuración
         'avisos' => 'Cambio de avisos por correo', 'correo' => 'Cambio del correo de la plataforma', 'correo_prueba' => 'Correo de prueba',
         'respaldo_creado' => 'Creación de respaldo', 'respaldo_descargado' => 'Descarga de respaldo',

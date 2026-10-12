@@ -360,7 +360,13 @@ class RecorridoPantallasTest extends TestCase
             // Candidatos, fase 2: candidatos de cada vacante y la pantalla Entrevistar (canalizada, evaluada y en revisión)
             'vacantes.candidatos' => DB::table('vacantes')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['vacante' => $id])->all(),
             'entrevistas.show', 'entrevistas.cv', 'entrevistas.correo' => DB::table('postulaciones')->where('empresa_id', $e)
-                ->whereIn('etapa', ['canalizado', 'evaluado', 'elegido', 'revision'])->orderBy('id')->pluck('id')->map(fn ($id) => ['postulacion' => $id])->all(),
+                ->whereIn('etapa', ['canalizado', 'evaluado', 'elegido', 'con_rh'])->orderBy('id')->pluck('id')->map(fn ($id) => ['postulacion' => $id])->all(),
+            // Candidatos, fase 3: expediente del colaborador (contratado desde Candidatos y uno cualquiera) y sus documentos
+            'colaboradores.expediente' => array_map(fn ($id) => ['colaborador' => $id], $ids([
+                DB::table('candidatos')->where('empresa_id', $e)->whereNotNull('colaborador_id')->value('colaborador_id'), $primero(Colaborador::class),
+            ])),
+            'colaboradores.expediente.documento' => DB::table('candidato_documentos')->where('empresa_id', $e)->whereNotNull('colaborador_id')->limit(2)->get(['colaborador_id', 'id'])
+                ->map(fn ($f) => ['colaborador' => $f->colaborador_id, 'documento' => $f->id])->all() ?: [['colaborador' => (int) $primero(Colaborador::class), 'documento' => 1]],
             // Manual (lección 37): páginas generales y de módulo, una imagen real y rutas que intentan salir de docs/usuario/img
             'manual.ver' => [['pagina' => 'primeros-pasos'], ['pagina' => 'accesos'], ['pagina' => 'usuarios'], ['pagina' => 'guia'], ['pagina' => 'no-existe']],
             'manual.imagen' => [['carpeta' => 'primeros-pasos', 'archivo' => 'acceso.png'], ['carpeta' => 'primeros-pasos', 'archivo' => '..env'],
@@ -394,7 +400,7 @@ class RecorridoPantallasTest extends TestCase
             'novedades.index' => [[['categoria' => 'accidente_huesped'], false], [['pestana' => 'resueltas', 'q' => 'a'], false], [['sede' => $sede], false]],
             'novedades.exportar' => [[['pestana' => 'resueltas'], false]],
             'accesos.index' => [[['pestana' => 'historial', 'sede' => $sede], false], [['pestana' => 'pendientes'], false], [['desde' => $hoy, 'hasta' => $hoy], false]],
-            'candidatos.index', 'candidatos.exportar' => [[['etapa' => 'en_proceso'], false], [['q' => 'a', 'sede' => $sede], false], [['etapa' => 'rechazado'], false],
+            'candidatos.index', 'candidatos.exportar' => [[['etapa' => 'en_proceso'], false], [['q' => 'a', 'sede' => $sede], false], [['etapa' => 'rechazado'], false], [['caducar' => 1], false], [['archivadas' => 1], false],
                 [['etapa' => 'por_entrevistar'], false], [['etapa' => 'canalizado'], false]],
             'recepcion.metricas' => [[['desde' => now()->subMonth()->toDateString(), 'hasta' => $hoy, 'sede' => $sede], false], [['desde' => 'x', 'hasta' => '2026-99-99'], false]],
             'recepcion.datos', 'notificaciones.resumen' => [[[], true]],
