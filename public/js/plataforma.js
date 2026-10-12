@@ -2664,12 +2664,62 @@ document.addEventListener('click', function (e) {
 /* ==========================================================================
    Firma autógrafa (componentes/firma.blade.php): dibuja con dedo, lápiz o
    mouse y deja la imagen (JPEG, ligera) en el campo oculto al soltar.
-   Un formulario con firma obligatoria vacía no se envía.
+   Un formulario con firma obligatoria vacía no se envía. Al enviar, la firma
+   viaja como archivo (ver abajo).
    ========================================================================== */
 (function () {
     'use strict';
 
+    /* ---------- Envío de la firma como ARCHIVO (docs/tecnico/firmas.md) ----------
+       El firewall del hospedaje bloquea o redirige los envíos cuyo cuerpo trae
+       un texto largo «data:image/...;base64,...». Al armar los datos del
+       formulario (evento «formdata»: envío normal, form.submit() y también
+       new FormData(form) de los envíos por fetch), cada firma pasa como archivo
+       «__firmas[]» con el nombre de su campo en «__firmas_campos[]», y su campo
+       original va vacío. El servidor (App\Http\Middleware\FirmasComoArchivo) la
+       regresa a su campo antes de los controladores. Si el navegador no tiene
+       FormDataEvent, se envía como antes (texto). */
+    var PATRON_FIRMA = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+\/=]+)$/;
+    var MULTIPART = 'multipart/form-data';
+    var comoArchivo = typeof window.FormDataEvent === 'function' && typeof window.File === 'function' && typeof window.atob === 'function';
+
+    function aArchivo(dataUrl) {
+        var m = PATRON_FIRMA.exec(dataUrl);
+        if (!m) { return null; }
+        try {
+            var binario = window.atob(m[2]);
+            var bytes = new Uint8Array(binario.length);
+            for (var i = 0; i < binario.length; i++) { bytes[i] = binario.charCodeAt(i); }
+            return new File([bytes], m[1] === 'png' ? 'firma.png' : 'firma.jpg', { type: 'image/' + m[1] });
+        } catch (x) { return null; }
+    }
+
+    // El formulario con firma se envía como multipart (antes de armar sus datos)
+    function multipart(form) {
+        if (comoArchivo && form && form.tagName === 'FORM' && (form.getAttribute('method') || '').toLowerCase() === 'post') {
+            form.setAttribute('enctype', MULTIPART);
+        }
+    }
+
+    document.addEventListener('formdata', function (e) {
+        var form = e.target;
+        if (!comoArchivo || !form || form.tagName !== 'FORM' || form.enctype !== MULTIPART) { return; }
+        var datos = e.formData;
+        var firmas = [];
+        datos.forEach(function (valor, nombre) {
+            if (typeof valor === 'string' && nombre.charAt(0) !== '_' && PATRON_FIRMA.test(valor)) { firmas.push([nombre, valor]); }
+        });
+        firmas.forEach(function (par) {
+            var archivo = aArchivo(par[1]);
+            if (!archivo) { return; }
+            datos.set(par[0], '');
+            datos.append('__firmas[]', archivo);
+            datos.append('__firmas_campos[]', par[0]);
+        });
+    });
+
     function preparar(caja) {
+        multipart(caja.closest('form'));
         var lienzo = caja.querySelector('[data-firma-lienzo]');
         if (!lienzo || lienzo.dataset.listo) { return; }
         lienzo.dataset.listo = '1';
@@ -2735,6 +2785,7 @@ document.addEventListener('click', function (e) {
     });
 
     document.addEventListener('submit', function (e) {
+        if (e.target.querySelector && e.target.querySelector('[data-firma]')) { multipart(e.target); }
         var faltan = Array.prototype.filter.call(e.target.querySelectorAll('[data-firma-requerida]'), function (v) { return !v.value; });
         if (!faltan.length) { return; }
         e.preventDefault();

@@ -128,6 +128,7 @@ Tabla `menus` (botones de la barra: Operación, Padrones, Recursos Humanos, Info
 - **Cuáles:** 403, 404, 405, 413, 419, 429, 500 y 503, más `4xx` y `5xx` para cualquier otro código (Ronda 8: antes un 405 mostraba la página genérica en inglés «Oops! An Error Occurred»), en español, con el estilo de la pantalla de acceso y los modos Sol y Noche.
 - **Sin dependencias:** no usan la base de datos ni la identidad, para verse aunque la base esté caída.
 - **Contenido:** cada una explica qué pasó y ofrece una salida: ir al inicio, volver a entrar o intentar de nuevo.
+- **405 al abrir como página una dirección de envío:** no se muestra; `App\Support\RegresoTrasEnvio` regresa a la pantalla de origen con `?envio=incompleto` y el layout muestra la franja «Tu envío no llegó completo y no se guardó…» (`data-envio-incompleto`, estilo `alert alert-danger`). Ver docs/tecnico/firmas.md, «Envío como archivo».
 
 ## Avisos en el Inicio
 

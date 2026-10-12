@@ -4,6 +4,7 @@ use App\Http\Middleware\CabecerasSeguridad;
 use App\Http\Middleware\ControlarInactividad;
 use App\Http\Middleware\EstablecerEmpresa;
 use App\Http\Middleware\ExigirCambioContrasena;
+use App\Http\Middleware\FirmasComoArchivo;
 use App\Http\Middleware\VerificarHost;
 use App\Support\RegresoTrasEnvio;
 use Illuminate\Foundation\Application;
@@ -19,8 +20,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Cierre por inactividad, empresa activa y cierre de usuarios desactivados
+        // Cierre por inactividad, empresa activa y cierre de usuarios desactivados.
+        // Firmas enviadas como archivo: vuelven a su campo original antes de los
+        // controladores (el firewall del hospedaje bloquea los textos base64 largos).
         $middleware->web(append: [
+            FirmasComoArchivo::class,
             ControlarInactividad::class,
             EstablecerEmpresa::class,
             ExigirCambioContrasena::class,
@@ -49,7 +53,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
                 $destino = RegresoTrasEnvio::destino($request);
                 RegresoTrasEnvio::registrar($request, $destino);
                 if ($destino !== null) {
-                    return redirect()->to($destino);
+                    return redirect()->to(RegresoTrasEnvio::conAviso($destino));
                 }
             }
             if ($e->getStatusCode() === 419 && ! $request->expectsJson()) {

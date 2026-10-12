@@ -29,12 +29,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
+use Tests\Feature\EnviaFirmasComoArchivo;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
 use Tests\TestCase;
 
 class PasesSalidaTest extends TestCase
 {
-    use CreaDatosNucleo, RefreshDatabase;
+    use CreaDatosNucleo, EnviaFirmasComoArchivo, RefreshDatabase;
 
     private Empresa $empresa;
 
@@ -630,6 +631,28 @@ class PasesSalidaTest extends TestCase
         $this->assertFalse($articulos[1]->verificado_con_lector, 'Solo cuenta como escaneado lo que es del padrón');
         $this->assertNotNull($articulos[1]->verificado_salida_en);
         $this->assertSame('2 de 2', $this->recargar($pase)->bitacora->firstWhere('evento', 'salida')->detalle['verificados']);
+    }
+
+    public function test_firmas_de_la_caseta_enviadas_como_archivo(): void
+    {
+        $pase = $this->crearPase();
+        // La aprobación también: su firma va como archivo
+        $actual = $this->actual($pase);
+        $this->actingAs($this->admin)->post("/pases-salida/{$pase->id}/firmas", $this->firmasComoArchivo([
+            'paso' => 'aprobacion', 'aprobacion_id' => $actual?->id, 'firma_modo' => 'nueva', 'firma' => $this->firmaJpeg(),
+        ]))->assertSessionHasNoErrors();
+        $this->aprobarTodo($pase);
+        $pase = $this->recargar($pase);
+        $datos = [
+            'paso' => $pase->pasoFisico(), 'persona_nombre' => 'Juan Pérez', 'firma_persona' => $this->firmaJpeg(2), 'firma_modo' => 'nueva', 'firma' => $this->firmaJpeg(),
+            'verificados' => $pase->articulos->pluck('id')->all(),
+        ];
+
+        // Dos firmas en el mismo envío (quien se lleva el equipo y la caseta), cada una a su campo
+        $this->actingAs($this->admin)->post("/pases-salida/{$pase->id}/firmas", $this->firmasComoArchivo($datos))->assertSessionHasNoErrors();
+        $salida = $this->recargar($pase)->firmas->where('grupo', 'salida');
+        $this->assertEqualsCanonicalizing(['salida_lleva', 'salida_seguridad'], $salida->pluck('rol')->all());
+        $salida->each(fn ($f) => Storage::disk('local')->assertExists($f->firma_ruta));
     }
 
     public function test_recepcion_con_diferencias_pide_comentario(): void

@@ -22,8 +22,10 @@ use App\Models\User;
 use App\Models\VoucherReposicion;
 use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Rutas\AdministradorRutas;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Tests\Feature\EnviaFirmasComoArchivo;
 
 /**
  * Ronda 8 de ajustes de QA: firmas del Accidente (NV-03), canalizar y
@@ -34,6 +36,8 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  */
 class AjustesRonda8Test extends PruebaNovedades
 {
+    use EnviaFirmasComoArchivo;
+
     // ------------------------------------------------------------- NV-03
 
     private function accidente(string $tipo = 'HUESPED'): Novedad
@@ -67,6 +71,29 @@ class AjustesRonda8Test extends PruebaNovedades
         $inicio = strpos($html, 'data-form-novedad="expediente"');
         $fin = strpos($html, '</form>', $inicio);
         $this->assertStringNotContainsString('<form', substr($html, $inicio, $fin - $inicio));
+    }
+
+    public function test_nv03_expediente_con_firmas_enviadas_como_archivo(): void
+    {
+        Storage::fake('local');
+        $n = $this->accidente();
+
+        // Como lo manda el navegador: POST multipart con _method=PUT, cada firma como archivo
+        $datos = $this->firmasComoArchivo(['_method' => 'PUT'] + $this->expediente($n, [
+            'acc_tipo_afectado' => 'HUESPED', 'f_afectado' => self::firmaJpeg(), 'f_testigo' => self::firmaJpeg(), 'firma_en_curso' => '',
+        ]));
+        $this->assertCount(2, $datos['__firmas']);
+        $this->actingAs($this->admin)->post("/novedades/{$n->id}", $datos)
+            ->assertSessionHasNoErrors()->assertRedirect(route('novedades.index').'#novedad-'.$n->id);
+        $firmas = $this->enEmpresa(fn () => AccidenteFirma::where('novedad_id', $n->id)->get());
+        $this->assertEqualsCanonicalizing(['afectado', 'testigo'], $firmas->pluck('rol')->all());
+        $firmas->each(fn ($f) => Storage::disk('local')->assertExists($f->ruta));
+
+        // Un archivo que no es imagen no se toma como firma (no se guarda nada nuevo)
+        $this->actingAs($this->admin)->post("/novedades/{$n->id}", ['_method' => 'PUT', 'f_seguridad' => '',
+            '__firmas' => [UploadedFile::fake()->createWithContent('firma.png', 'GIF89a<script>alert(1)</script>')], '__firmas_campos' => ['f_seguridad'],
+        ] + $this->expediente($n, ['acc_tipo_afectado' => 'HUESPED']))->assertSessionHasNoErrors();
+        $this->assertSame(2, $this->enEmpresa(fn () => AccidenteFirma::where('novedad_id', $n->id)->count()));
     }
 
     public function test_nv03_en_produccion_un_405_muestra_la_pagina_de_error_de_la_plataforma(): void
