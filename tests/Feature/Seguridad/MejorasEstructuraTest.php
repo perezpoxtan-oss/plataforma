@@ -227,7 +227,7 @@ class MejorasEstructuraTest extends TestCase
         $this->actingAs($this->admin)->get('/auditoria?registro=no_existe&id=1')->assertOk()->assertDontSee('Historial de');
     }
 
-    public function test_su_sede_ve_solo_lo_suyo_por_omision_y_los_movimientos_de_su_sede_si_la_empresa_lo_elige(): void
+    public function test_su_sede_ve_los_movimientos_de_su_sede_por_omision_y_solo_lo_suyo_si_la_empresa_lo_elige(): void
     {
         $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro);
         $ma = DB::table('modulo_acciones')->join('modulos', 'modulos.id', '=', 'modulo_acciones.modulo_id')->join('acciones', 'acciones.id', '=', 'modulo_acciones.accion_id')
@@ -240,6 +240,11 @@ class MejorasEstructuraTest extends TestCase
         }
         $this->assertSame($this->centro->id, Auditoria::where('user_id', $agenteCentro->id)->value('sede_id'));
 
+        // Decisión del dueño (mapa de procesos): sin valor guardado, «Su sede» ve los movimientos de su sede
+        $this->actingAs($jefe)->get('/auditoria')->assertSee('Ves los movimientos de tu sede.')
+            ->assertSee($agenteCentro->name)->assertDontSee($agentePlaya->name);
+
+        $this->actingAs($this->admin)->put('/configuracion/auditoria', ['auditoria_sede' => 'propios'])->assertSessionHas('ok');
         $this->actingAs($jefe)->get('/auditoria')->assertSee('Ves solo tus propios movimientos.')->assertDontSee($agenteCentro->name);
 
         $this->actingAs($this->admin)->put('/configuracion/auditoria', ['auditoria_sede' => 'sede'])->assertSessionHas('ok');

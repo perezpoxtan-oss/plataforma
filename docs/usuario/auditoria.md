@@ -15,7 +15,7 @@ resumen: Quién hizo qué y cuándo en la plataforma, con el antes y el después
 ## Antes de empezar
 
 - Para ver la bitácora tu rol debe poder consultar *Bitácora de auditoría*. La traen el **Administrador** y el **Director** (toda la empresa) y el **Jefe de seguridad** (su sede). Para descargarla necesitas el permiso **Exportar**.
-- Si tu rol la ve con alcance **Su sede** (como el Jefe de seguridad), ves únicamente tus propios movimientos; tu empresa puede elegir en **Configuración → Cuentas y seguridad** que veas **los movimientos de tu sede**. Arriba dice cuál de los dos ves.
+- Si tu rol la ve con alcance **Su sede** (como el Jefe de seguridad), ves **los movimientos de tu sede**: lo que se hizo en registros de tu sede y lo que hizo el personal asignado a ella. Tu empresa puede elegir en **Configuración → Cuentas y seguridad** que veas **solo tus propios movimientos**. Arriba dice cuál de los dos ves.
 - Si ves toda la bitácora, te llega a la **campana** un aviso cada vez que alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales. Viene encendido; tu empresa lo puede apagar en [Configuración](configuracion.md).
 
 ## Cómo buscar un movimiento
@@ -92,7 +92,7 @@ Toca **Exportar a Excel**: se descarga un archivo de Excel (CSV) con los mismos 
 
 **¿Queda registro de las exportaciones con datos personales?** Sí. Cada vez que alguien descarga datos personales queda anotado aquí, y quien ve toda la bitácora recibe un aviso en su campana.
 
-**¿Por qué el Jefe de seguridad solo ve sus propios movimientos?** Porque la ve con alcance **Su sede** y tu empresa no ha elegido «Los movimientos de su sede» en [Configuración](configuracion.md). Cuando lo elija, verá lo que se hizo en su sede.
+**¿Qué ve el Jefe de seguridad?** La ve con alcance **Su sede**: los movimientos de su sede. Si tu empresa eligió «Solo sus propios movimientos» en [Configuración](configuracion.md), solo ve lo que él hizo.
 
 ## Relacionado
 

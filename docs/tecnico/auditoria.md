@@ -7,7 +7,7 @@ Pantalla `GET /auditoria` (módulo `auditoria`, área Dirección). Es de solo co
 | Permiso / alcance | Ve |
 |---|---|
 | `auditoria.ver` con alcance de empresa | Todos los movimientos de la empresa de trabajo |
-| `auditoria.ver` con alcance de sede | Sus propios movimientos; los de su sede si la empresa eligió `preferencias.auditoria_sede = sede` (Configuración, ADR-0016) |
+| `auditoria.ver` con alcance de sede | Los movimientos de su sede (registros de sus sedes, personal asignado a ellas y los propios); solo los propios si la empresa guardó `preferencias.auditoria_sede = propios` (Configuración, ADR-0016) |
 | `auditoria.ver` con alcance de propios | Solo sus propios movimientos |
 | Super Administrador sin empresa elegida | Movimientos de la plataforma (`empresa_id` nulo: plantillas, identidad, alta de empresas) |
 | `auditoria.exportar` | Botón "Exportar a Excel": CSV con BOM UTF-8, mismos filtros, máximo 10,000 filas |
@@ -16,7 +16,7 @@ Pantalla `GET /auditoria` (módulo `auditoria`, área Dirección). Es de solo co
 
 - **Plantillas de rol:** Administrador y Director traen `auditoria.ver` con alcance de empresa; **Jefe de seguridad** con alcance de sede (`RolesPlantillaSeeder::AUDITORIA_JEFE`). La migración `2026_10_29_000510_auditoria_jefe_de_seguridad_por_omision` lo agrega solo a la **plantilla** (roles con `empresa_id` nulo): las empresas creadas después lo heredan; los roles de las empresas existentes no cambian. Su `down()` lo quita de la plantilla.
 - **Aviso `movimientos_sensibles`** (`MovimientosSensibles::avisar`, campana a quien ve toda la bitácora): **encendido por omisión** (`Empresa::AVISOS`). `Empresa::aviso()` usa el valor guardado en `preferencias.avisos` y solo si falta aplica el de `AVISOS`: la empresa que ya guardó el formulario de avisos (con la casilla sin marcar) conserva `false`; la que nunca lo guardó pasa a encendido. No hay migración de datos.
-- `auditoria_sede` sigue en `propios` por omisión (`AuditoriaController::SEDE_POR_OMISION`).
+- **«Su sede» = los movimientos de su sede** por omisión: `AuditoriaController::SEDE_POR_OMISION = 'sede'`. Misma regla que el aviso: se usa `preferencias.auditoria_sede` si existe (la empresa que guardó `propios` lo conserva); si falta (empresa nueva o que nunca guardó ese ajuste), aplica `sede`. Sin migración de datos.
 
 ## Lectura (`App\Services\Auditoria\LectorAuditoria`)
 

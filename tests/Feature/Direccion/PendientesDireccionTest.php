@@ -105,6 +105,8 @@ class PendientesDireccionTest extends TestCase
         $gerente = app(AdministradorRoles::class)->crearRol($sa, $this->empresa->id, ['nombre' => 'Gerente', 'nivel_jerarquia' => 35]);
         app(AdministradorRoles::class)->sincronizarPermisos($sa, $gerente, ['auditoria.ver' => Alcance::Sede]);
         $usuario = $this->crearUsuario($this->empresa, 'Gerente', $this->centro);
+        // La empresa eligió «Solo sus propios movimientos» (por omisión es «los de su sede»)
+        $this->empresa->forceFill(['preferencias' => ['auditoria_sede' => 'propios']])->save();
         $this->flushSession();
 
         $this->actingAs($usuario)->get('/auditoria')->assertOk()->assertSee('Ves solo tus propios movimientos')->assertDontSee('Departamento · Seguridad');

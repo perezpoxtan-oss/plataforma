@@ -96,8 +96,24 @@ class DecisionesInformesYAuditoriaTest extends TestCase
         $this->assertSame('sede', $this->alcance($this->rolEmpresa('Jefe de seguridad'), 'auditoria.ver'));
         $this->assertNull($this->alcance($this->rolEmpresa('Jefe de seguridad'), 'auditoria.exportar'));
 
-        // «Su sede» respeta lo que eligió la empresa (por omisión, sus propios movimientos)
+        // «Su sede» por omisión: los movimientos de su sede
+        $this->actingAs($this->jefe)->get('/auditoria')->assertOk()->assertSee('Ves los movimientos de tu sede.');
+    }
+
+    public function test_su_sede_ve_los_movimientos_de_su_sede_salvo_que_la_empresa_haya_guardado_otro_valor(): void
+    {
+        $admin = $this->crearUsuario($this->empresa, 'Administrador');
+        // Empresa nueva o que nunca guardó el ajuste: «Los movimientos de su sede» marcado
+        $this->actingAs($admin)->get('/configuracion')->assertOk()->assertSee('name="auditoria_sede" value="sede" checked', false);
+
+        // La empresa que guardó «Solo sus propios movimientos» lo conserva
+        $this->empresa->forceFill(['preferencias' => ['auditoria_sede' => 'propios']])->save();
         $this->actingAs($this->jefe)->get('/auditoria')->assertOk()->assertSee('Ves solo tus propios movimientos.');
+        $this->actingAs($admin)->get('/configuracion')->assertOk()->assertSee('name="auditoria_sede" value="propios" checked', false);
+
+        // Otros ajustes guardados sin este (valor ausente): aplica el valor por omisión
+        $this->empresa->forceFill(['preferencias' => ['avisos' => ['vale_taxi' => true]]])->save();
+        $this->actingAs($this->jefe)->get('/auditoria')->assertOk()->assertSee('Ves los movimientos de tu sede.');
     }
 
     public function test_la_migracion_solo_cambia_la_plantilla_y_no_los_roles_de_empresas_existentes(): void

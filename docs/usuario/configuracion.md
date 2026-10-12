@@ -53,7 +53,7 @@ Quien ve toda la Bitácora de auditoría (normalmente Administrador y Director) 
 ## Cómo elegir qué ve «Su sede» en la Bitácora de auditoría
 
 1. En la tarjeta **Cuentas y seguridad**, baja a **Bitácora de auditoría: qué ve «Su sede»**.
-2. Elige **Solo sus propios movimientos** (como siempre) o **Los movimientos de su sede** (lo que se hizo en registros de su sede y lo que hizo el personal asignado a ella).
+2. Elige **Los movimientos de su sede** (viene así: lo que se hizo en registros de su sede y lo que hizo el personal asignado a ella) o **Solo sus propios movimientos** (lo que esa persona hizo). Si tu empresa ya había guardado una opción, se conserva.
 3. Toca **Guardar**.
 
 ![Qué ve «Su sede» en la bitácora](img/configuracion/8-auditoria-su-sede.png)
