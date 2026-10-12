@@ -7,7 +7,7 @@ resumen: Dónde está cada pantalla, qué es «Mis pendientes», la campana y lo
 ---
 # Menús, Mis pendientes y modos de pantalla
 
-**¿Para qué sirve?** Para encontrar rápido cada pantalla y saber qué está esperando tu respuesta. Los menús están ordenados como se trabaja en el día: primero la operación de caseta, después los padrones, Recursos Humanos y al final la estructura de la empresa.
+**¿Para qué sirve?** Para encontrar rápido cada pantalla y saber qué está esperando tu respuesta. Los menús están ordenados como se trabaja en el día: primero la operación de caseta, después los padrones, Recursos Humanos, los informes y al final la estructura de la empresa.
 
 **Antes de empezar:** solo ves los menús y pantallas que tu rol permite. Si un menú no tiene nada para ti, no aparece. Si te falta una pantalla que necesitas, pide a tu administrador que revise tu rol.
 
@@ -28,6 +28,7 @@ Los menús y sus grupos:
 | **Operación** | **Caseta:** Bitácora de accesos, Préstamo de llaves, Pases de salida, Bitácora de transporte. **Incidentes:** Novedades, Lost & Found, Robo. **Protección civil:** Recorridos de Protección Civil. **Activos:** Responsivas, Vouchers de reposición. **Consulta:** Procedimientos. |
 | **Padrones** | **Personas y vehículos:** Empresas externas, Padrón de personas, Padrón vehicular. **Inventarios:** Catálogo de llaves, Gafetes, Equipos de seguridad, Equipos de Protección Civil. **Instalaciones:** Estacionamientos y zonas de descarga, Rutas de transporte. **Herramientas:** Etiquetas QR. |
 | **Recursos Humanos** | **Personal:** Colaboradores. **Recepción y candidatos:** Vacantes, Recepción de RR. HH., Candidatos, **Mis entrevistas** (si puedes entrevistar candidatos) y **Autorizaciones** (si eres responsable o suplente de algún departamento). **Catálogos:** Departamentos, Puestos, Turnos. |
+| **Informes** | **Informes:** Tablero, Bitácora del día, Tendencias, Informe ejecutivo (solo si tu rol puede ver alguno). |
 | **Estructura** | **Empresa:** Empresas, Sedes, Zonas y edificios. **Accesos y permisos:** Usuarios, Roles, Matriz de permisos. **Sistema:** Configuración, Bitácora de auditoría. **Plataforma** (solo Super Administrador): Identidad de la plataforma. |
 
 ![Menú Padrones abierto](img/menus/menu-padrones.png)

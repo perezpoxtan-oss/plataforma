@@ -29,7 +29,7 @@ Comprueba: se abre la Matriz de ese rol con el mensaje «…creado con los permi
 1. En la Matriz, con «Coordinador de turno» elegido, en **¿Qué hace este rol?** marca **Agente** y toca **Guardar** → **Aceptar**.
 2. Revisa **Lo que verá**: ya no aparecen las pantallas que solo tenía el Supervisor.
 3. Abre **Avanzado: permiso por permiso**, quita **Ver** de *Préstamo de llaves* y mira cómo **Lo que verá** cambia antes de guardar. No guardes.
-4. Busca *Tablero* en el área Seguridad: dice **Próximamente** y no se puede marcar.
+4. Si un módulo todavía no tiene pantalla, dice **Próximamente** y no se puede marcar (los informes ya tienen pantalla: lección 46).
 5. Abre el rol **Jefe de departamento**: en *Pases de salida* dice «Distinto por acción: Ver: Su sede · Crear: Solo los propios».
 
 ## Práctica 3 · Configuración por módulo (admin.demo)

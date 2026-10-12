@@ -29,6 +29,8 @@ use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\VoucherReposicion;
 use App\Services\Borrado\RegistroBorrado;
+use App\Services\Informes\Tablero;
+use App\Services\Informes\Tendencias;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
@@ -418,6 +420,15 @@ class RecorridoPantallasTest extends TestCase
             'prestamo_llaves.index', 'responsivas.index', 'pases-salida.index', 'lost_found.archivo', 'robo.index', 'recorridos_pc.index' => [[['sede' => $sede], false], [['pestana' => 'historial'], false], [['q' => 'a'], false]],
             'usuarios.index', 'roles.index', 'permisos.index' => [[['q' => 'a'], false], [['rol' => 1], false]],
             'manual.index' => [[['q' => 'llave'], false], [['q' => ['x']], false], [['q' => '<script>'], false]],
+            // Informes (ADR-0017): cada ficha (en el diálogo y en su página), cada periodo y sección, otros días y valores inválidos
+            'tablero.detalle' => array_merge(array_map(fn ($f) => [['ficha' => $f, 'parcial' => 1], true], array_keys(Tablero::FICHAS)),
+                [[['ficha' => 'colaboradores', 'sede' => $sede], false], [['ficha' => 'no_existe'], false]]),
+            'tablero.index' => [[['sede' => $sede], false], [['sede' => 'x'], false]],
+            'tendencias.index' => [[['periodo' => 'mes', 'sedes' => [$sede]], false], [['periodo' => 'anio'], false], [['periodo' => 'trimestre', 'seccion' => 'accesos'], false],
+                [['periodo' => 'personalizado', 'desde' => '2026-02-31', 'hasta' => 'x'], false], [['periodo' => 'personalizado', 'desde' => now()->subYears(5)->toDateString(), 'hasta' => $hoy], false]],
+            'tendencias.exportar' => array_map(fn ($s) => [['seccion' => $s, 'periodo' => 'mes'], false], array_keys(Tendencias::SECCIONES)),
+            'bitacora_dia.index', 'bitacora_dia.imprimir', 'bitacora_dia.exportar' => [[['fecha' => now()->subDays(20)->toDateString(), 'sede' => $sede], false], [['tipo' => 'novedades'], false], [['fecha' => '2026-13-45'], false], [['fecha' => '2999-01-01'], false]],
+            'informe_ejecutivo.index', 'informe_ejecutivo.imprimir', 'informe_ejecutivo.exportar' => [[['sedes' => [$sede], 'fresco' => 1], false], [['sedes' => 'x'], false]],
             default => [],
         };
     }

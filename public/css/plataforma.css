@@ -4360,3 +4360,144 @@ a.btn-alto-contraste.btn-manual:hover, a.btn-alto-contraste.btn-manual.activo { 
 .aviso-contraste { color: #b91c1c; font-weight: 700; font-size: 0.85rem; }
 .vista-previa.contraste-bajo { outline: 3px solid #dc2626; outline-offset: 4px; }
 /* Fin Mejoras estructura */
+/* Mejoras informes */
+/* Informes (ADR-0017): Tablero, Bitácora del día, Tendencias e Informe ejecutivo */
+.pantalla-informes { max-width: 1200px; margin: 0 auto; }
+.informe-encabezado { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
+.acciones-informe, .enlaces-informes { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.boton-informe { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1rem; border-radius: 10px; font-weight: 700; font-size: 0.88rem; text-decoration: none; white-space: nowrap; }
+.filtro-informe { padding: 1rem; margin-bottom: 1rem; }
+.filtro-informe-fila { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: flex-end; }
+.filtro-informe-campo { display: block; min-width: 170px; max-width: 340px; flex: 1 1 170px; }
+.rango-personalizado { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+.rango-personalizado[hidden] { display: none; }
+.filtro-sedes-informe { margin-top: 0.8rem; border: 0; padding: 0; }
+.filtro-sede-opcion { display: inline-flex; align-items: center; gap: 0.4rem; margin-right: 1rem; min-height: 44px; font-weight: 600; }
+.filtro-sede-opcion input { width: 18px; height: 18px; }
+
+/* Fichas del Tablero */
+.fichas-informe { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+.ficha-informe { display: flex; flex-direction: column; gap: 0.2rem; background: var(--superficie, #fff); border: 1px solid var(--borde); border-radius: 16px; padding: 1.1rem; text-decoration: none; color: var(--texto); transition: transform 0.15s ease, box-shadow 0.15s ease; min-height: 170px; }
+.ficha-informe:hover, .ficha-informe:focus-visible { transform: translateY(-3px); box-shadow: 0 14px 24px -12px rgba(15, 23, 42, 0.25); border-color: var(--color-primario); color: var(--texto); }
+.ficha-informe-icono { width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: var(--color-primario-suave); color: var(--color-primario); font-size: 1.15rem; margin-bottom: 0.4rem; }
+.ficha-informe-valor { font-size: 1.9rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ficha-informe-titulo { font-weight: 700; font-size: 0.9rem; }
+.ficha-informe-nota { color: var(--texto-suave); font-size: 0.78rem; }
+.ficha-informe-ver { margin-top: auto; padding-top: 0.5rem; color: var(--color-primario); font-weight: 700; font-size: 0.78rem; }
+.ficha-informe.nivel-alerta .ficha-informe-valor, .cifra-informe.nivel-alerta .cifra-informe-valor { color: #dc2626; }
+.ficha-informe.nivel-positiva .ficha-informe-valor, .cifra-informe.nivel-positiva .cifra-informe-valor { color: #15803d; }
+.cifra-informe.nivel-destacada .cifra-informe-valor { color: #b45309; }
+.dialogo-ficha-informe { width: min(760px, 96vw); }
+.listado-informe { margin-top: 0.75rem; }
+.listado-informe > summary { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1rem; border-radius: 10px; background: var(--fondo); border: 1px solid var(--borde); font-weight: 700; font-size: 0.85rem; cursor: pointer; list-style: none; }
+.listado-informe > summary::-webkit-details-marker { display: none; }
+.listado-informe[open] > summary { margin-bottom: 0.5rem; }
+.tabla-informe { font-size: 0.82rem; margin: 0; }
+.tabla-informe th { white-space: nowrap; }
+
+/* Informe ejecutivo y Tendencias: cifras */
+.bloque-informe { margin-bottom: 1.75rem; }
+.bloque-informe-titulo { font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+.bloque-informe-titulo i { color: var(--color-primario); }
+.cifras-informe { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.8rem; margin-bottom: 0.8rem; }
+.cifra-informe { background: var(--superficie, #fff); border: 1px solid var(--borde); border-radius: 14px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.15rem; }
+.cifra-informe-valor { font-size: 1.6rem; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.cifra-informe-titulo { font-size: 0.78rem; font-weight: 700; color: var(--texto-suave); text-transform: uppercase; letter-spacing: 0.3px; }
+.cifra-informe-nota { font-size: 0.78rem; color: var(--texto-suave); }
+.cifra-informe-enlace { display: inline-flex; align-items: center; gap: 0.3rem; min-height: 44px; font-weight: 700; font-size: 0.85rem; color: var(--color-primario); text-decoration: none; }
+.detalle-informe { background: var(--superficie, #fff); border: 1px solid var(--borde); border-radius: 14px; padding: 1rem; margin-bottom: 0.8rem; }
+.detalle-informe-titulo { font-size: 0.95rem; font-weight: 800; margin-bottom: 0.5rem; }
+.cambio-informe { font-size: 0.8rem; font-weight: 700; color: var(--texto-suave); display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: baseline; font-variant-numeric: tabular-nums; }
+.cambio-informe.sube, .cambio-informe.baja { color: var(--texto); }
+.cambio-informe-antes { font-weight: 500; color: var(--texto-suave); }
+.secciones-informe { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+.chip-informe { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 40px; padding: 0 0.9rem; border-radius: 999px; border: 1px solid var(--borde); background: var(--superficie, #fff); color: var(--texto); font-weight: 700; font-size: 0.82rem; text-decoration: none; }
+.chip-informe.activo { background: var(--color-primario); border-color: var(--color-primario); color: #fff; }
+.seccion-tendencia { padding: 1.1rem; margin-bottom: 1.25rem; }
+.seccion-tendencia-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+.seccion-tendencia-cabecera h2 { font-size: 1.1rem; font-weight: 800; margin: 0; display: flex; gap: 0.5rem; align-items: center; }
+.seccion-tendencia-cabecera h2 i { color: var(--color-primario); }
+.graficas-informe { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 1rem; }
+.grafica-informe h3 { font-size: 0.88rem; font-weight: 800; margin-bottom: 0.35rem; }
+
+/* Gráficas SVG dibujadas en el servidor */
+.grafica { margin: 0; }
+.grafica svg { width: 100%; height: auto; display: block; overflow: visible; }
+.grafica-vacia { padding: 1rem; border: 1px dashed var(--borde); border-radius: 12px; text-align: center; }
+.grafica-barra { fill: var(--color-primario); }
+.grafica-fila:hover .grafica-barra, g:hover > .grafica-barra { fill: var(--color-primario-hover); }
+.grafica-etiqueta, .grafica-eje { fill: var(--texto-suave); font-size: 12px; font-family: var(--fuente); }
+.grafica-valor { fill: var(--texto); font-size: 12px; font-weight: 700; font-family: var(--fuente); }
+.grafica-rejilla { stroke: var(--borde); stroke-width: 1; }
+.grafica-linea-actual { stroke: var(--color-primario); stroke-width: 2; }
+.grafica-linea-anterior { stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 5 4; }
+.grafica-punto { fill: var(--color-primario); stroke: var(--superficie, #fff); stroke-width: 2; }
+.grafica-zona { fill: transparent; }
+g:hover > .grafica-zona { fill: var(--color-primario-suave); }
+.grafica-leyenda { display: flex; gap: 1rem; font-size: 0.78rem; color: var(--texto-suave); margin-bottom: 0.25rem; }
+.grafica-leyenda span::before { content: ''; display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--color-primario); vertical-align: middle; margin-right: 0.35rem; }
+.grafica-leyenda .anterior::before { border-top: 2px dashed #94a3b8; }
+.grafica-datos { margin-top: 0.35rem; font-size: 0.8rem; }
+.grafica-datos > summary { color: var(--color-primario); font-weight: 700; cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; }
+
+/* Bitácora general del día */
+.text-capitalize-first::first-letter { text-transform: uppercase; }
+.conteos-bitacora { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
+.conteo-bitacora { background: var(--fondo); border: 1px solid var(--borde); border-radius: 999px; padding: 0.25rem 0.75rem; font-size: 0.78rem; font-weight: 700; }
+.conteo-bitacora.total { background: #0f172a; color: #fff; border-color: #0f172a; }
+.linea-bitacora { list-style: none; margin: 0; padding: 0; }
+.evento-bitacora { display: grid; grid-template-columns: 52px 128px 1fr; gap: 0.6rem; padding: 0.55rem 0; border-bottom: 1px solid var(--borde); font-size: 0.88rem; align-items: baseline; }
+.evento-bitacora-hora { font-weight: 800; color: var(--texto-suave); font-variant-numeric: tabular-nums; }
+.evento-bitacora-tipo { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; background: #f1f5f9; color: #334155; justify-self: start; }
+.evento-bitacora.tipo-accesos .evento-bitacora-tipo { background: #dbeafe; color: #1e40af; }
+.evento-bitacora.tipo-novedades .evento-bitacora-tipo { background: #fef3c7; color: #92400e; }
+.evento-bitacora.tipo-transporte .evento-bitacora-tipo { background: #dcfce7; color: #166534; }
+.evento-bitacora.tipo-llaves .evento-bitacora-tipo { background: #ede9fe; color: #5b21b6; }
+.evento-bitacora.tipo-pases .evento-bitacora-tipo { background: #fee2e2; color: #991b1b; }
+.evento-bitacora.tipo-recorridos .evento-bitacora-tipo { background: #ffedd5; color: #9a3412; }
+.evento-bitacora-texto a { color: var(--texto); }
+.evento-bitacora-sede { display: block; color: var(--texto-suave); font-size: 0.75rem; }
+.sin-eventos-bitacora { color: var(--texto-suave); font-style: italic; padding: 1rem 0; margin: 0; }
+@media (max-width: 575.98px) {
+    .fichas-informe { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+    .ficha-informe { min-height: 0; padding: 0.8rem; }
+    .ficha-informe-valor { font-size: 1.45rem; }
+    .ficha-informe-nota { display: none; }
+    .cifras-informe { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .evento-bitacora { grid-template-columns: 48px 1fr; }
+    .evento-bitacora-texto { grid-column: 1 / -1; }
+}
+
+/* Hoja imprimible (carta) */
+.pagina-hoja-informe { background: #e2e8f0; margin: 0; font-family: var(--fuente); color: #0f172a; }
+.hoja-informe { max-width: 216mm; margin: 1rem auto; background: #fff; padding: 14mm 12mm; box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.35); }
+.hoja-informe-controles { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; margin-bottom: 1rem; }
+.hoja-informe-encabezado { display: flex; align-items: center; gap: 1rem; border-bottom: 2px solid #0f172a; padding-bottom: 0.6rem; margin-bottom: 1rem; }
+.hoja-informe-logo { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--color-primario); }
+.hoja-informe-logo img { max-width: 64px; max-height: 64px; object-fit: contain; }
+.hoja-informe-empresa { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.4px; }
+.hoja-informe-encabezado h1 { font-size: 1.35rem; font-weight: 800; margin: 0; }
+.hoja-informe-periodo { font-size: 0.85rem; color: #334155; }
+.hoja-informe-fecha { font-size: 0.75rem; text-align: right; color: #475569; }
+.hoja-informe-pie { margin-top: 1.5rem; border-top: 1px solid #cbd5e1; padding-top: 0.4rem; font-size: 0.7rem; color: #64748b; text-align: center; }
+.hoja-informe .cifra-informe, .hoja-informe .detalle-informe { break-inside: avoid; }
+.hoja-informe .bloque-informe-titulo { break-after: avoid; }
+.hoja-informe .grafica-datos { display: none; }
+.hoja-informe .evento-bitacora { break-inside: avoid; font-size: 0.8rem; padding: 0.35rem 0; }
+.firmas-turno { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 3rem; break-inside: avoid; }
+.firmas-turno div { text-align: center; font-size: 0.78rem; color: #334155; }
+.firmas-turno span { display: block; border-top: 1px solid #0f172a; margin-bottom: 0.3rem; }
+@media print {
+    @page { size: letter portrait; margin: 12mm; }
+    .pagina-hoja-informe { background: #fff; }
+    .hoja-informe { margin: 0; padding: 0; box-shadow: none; max-width: none; }
+    .hoja-informe-controles { display: none !important; }
+    .hoja-informe .cifras-informe { grid-template-columns: repeat(4, 1fr); }
+    .hoja-informe .detalle-informe, .hoja-informe .cifra-informe { border-color: #94a3b8; }
+}
+/* Inicio: enlace al Tablero */
+.enlace-tablero-inicio { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; margin-top: 0.5rem; font-weight: 700; font-size: 0.88rem; color: var(--color-primario); text-decoration: none; }
+/* Modo noche: superficies y etiquetas de la línea de tiempo */
+html.modo-noche .evento-bitacora-tipo { filter: brightness(0.85); }
+html.modo-noche .conteo-bitacora.total { background: #e2e8f0; color: #0f172a; }
+/* Fin Mejoras informes */

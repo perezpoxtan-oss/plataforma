@@ -14,6 +14,10 @@ use App\Http\Controllers\Auth\RecuperacionController;
 use App\Http\Controllers\Auth\SesionController;
 use App\Http\Controllers\Cuenta\MiCuentaController;
 use App\Http\Controllers\IdentificacionController;
+use App\Http\Controllers\Informes\BitacoraDelDiaController;
+use App\Http\Controllers\Informes\InformeEjecutivoController;
+use App\Http\Controllers\Informes\TableroController;
+use App\Http\Controllers\Informes\TendenciasController;
 use App\Http\Controllers\LectorController;
 use App\Http\Controllers\ModuloPendienteController;
 use App\Http\Controllers\Operacion\PrestamoLlaveController;
@@ -177,6 +181,19 @@ Route::middleware('auth')->group(function () {
     Route::patch('/usuarios/{usuario}/estado', [UsuarioController::class, 'estado'])->name('usuarios.estado');
     Route::patch('/usuarios/{usuario}/desbloquear', [UsuarioController::class, 'desbloquear'])->name('usuarios.desbloquear');
     Route::post('/usuarios/{usuario}/restablecer', [UsuarioController::class, 'restablecer'])->name('usuarios.restablecer');
+
+    // Informes (ADR-0017): Tablero, Bitácora general del día, Tendencias e Informe ejecutivo (solo lectura)
+    Route::get('/informes/tablero', [TableroController::class, 'index'])->name('tablero.index');
+    Route::get('/informes/tablero/detalle', [TableroController::class, 'detalle'])->name('tablero.detalle');
+    Route::get('/informes/bitacora-del-dia', [BitacoraDelDiaController::class, 'index'])->name('bitacora_dia.index');
+    Route::get('/informes/bitacora-del-dia/imprimir', [BitacoraDelDiaController::class, 'imprimir'])->name('bitacora_dia.imprimir');
+    Route::get('/informes/bitacora-del-dia/exportar', [BitacoraDelDiaController::class, 'exportar'])->name('bitacora_dia.exportar');
+    Route::get('/informes/tendencias', [TendenciasController::class, 'index'])->name('tendencias.index');
+    Route::get('/informes/tendencias/exportar', [TendenciasController::class, 'exportar'])->name('tendencias.exportar');
+    Route::get('/informes/ejecutivo', [InformeEjecutivoController::class, 'index'])->name('informe_ejecutivo.index');
+    Route::get('/informes/ejecutivo/imprimir', [InformeEjecutivoController::class, 'imprimir'])->name('informe_ejecutivo.imprimir');
+    Route::get('/informes/ejecutivo/exportar', [InformeEjecutivoController::class, 'exportar'])->name('informe_ejecutivo.exportar');
+    // Fin Informes
 
     // Modulos del menu que aun no se migran
     Route::get('/modulos/{clave}', ModuloPendienteController::class)

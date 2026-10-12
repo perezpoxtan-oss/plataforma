@@ -446,7 +446,8 @@ class ResponsivasTest extends TestCase
         $this->artisan('plataforma:demo', ['--password' => 'Prueba123!'])->assertSuccessful();
 
         $demo = Empresa::where('nombre_comercial', CrearDatosDemo::EMPRESA)->firstOrFail();
-        $prestamos = $this->enEmpresa(fn () => PrestamoLlave::all(), $demo);
+        // Informes (ADR-0017): la demo agrega préstamos devueltos de semanas anteriores; aquí cuentan los de la última semana
+        $prestamos = $this->enEmpresa(fn () => PrestamoLlave::where('prestado_en', '>=', now()->subDays(8))->get(), $demo);
         $this->assertCount(6, $prestamos);
         $this->assertSame(3, $prestamos->filter->vigente()->count());
         $this->assertSame(1, $prestamos->where('anulado', true)->count());

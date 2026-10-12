@@ -9355,3 +9355,46 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Mejoras estructura */
+/* Mejoras informes */
+/* ==========================================================================
+   Informes (ADR-0017)
+   - Tablero: cada ficha abre su detalle (gráfica, listado y enlace) en un
+     diálogo; sin JavaScript, el enlace abre la página del detalle.
+   - Tendencias: «Desde / Hasta» solo se muestran con «Personalizado».
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    document.addEventListener('click', function (e) {
+        var ficha = e.target.closest('[data-ficha-tablero]');
+        var dialogo = document.getElementById('dialogoFichaTablero');
+        if (!ficha || !dialogo || typeof dialogo.showModal !== 'function' || e.ctrlKey || e.metaKey || e.shiftKey) { return; }
+        e.preventDefault();
+        var cuerpo = dialogo.querySelector('[data-cuerpo-ficha]');
+        var titulo = dialogo.querySelector('h2');
+        titulo.textContent = (ficha.querySelector('.ficha-informe-titulo') || ficha).textContent.trim();
+        cuerpo.innerHTML = '<p class="text-muted small m-0"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Cargando…</p>';
+        if (!dialogo.open) { dialogo.showModal(); }
+        var url = ficha.getAttribute('href') + (ficha.getAttribute('href').indexOf('?') === -1 ? '?' : '&') + 'parcial=1';
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.text(); })
+            .then(function (html) { cuerpo.innerHTML = html; })
+            .catch(function () { window.location.href = ficha.getAttribute('href'); });
+    });
+
+    function rango(form) {
+        var periodo = form.querySelector('[data-periodo-tendencias]');
+        var fechas = form.querySelector('[data-rango-personalizado]');
+        if (!periodo || !fechas) { return; }
+        fechas.hidden = periodo.value !== 'personalizado';
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-periodo-tendencias]')) { rango(e.target.form); }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-filtro-tendencias]').forEach(rango);
+    });
+})();
+/* Fin Mejoras informes */

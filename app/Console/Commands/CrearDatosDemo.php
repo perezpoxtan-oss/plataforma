@@ -233,6 +233,9 @@ class CrearDatosDemo extends Command
         $paso('rolesSolicitudesDemo', fn () => $this->rolesSolicitudesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('postulacionesDemo', fn () => $this->postulacionesDemo($sedes, User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('entrevistasDemo', fn () => $this->entrevistasDemo($empresa, $sedes, User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'jefedepto.demo')->firstOrFail()));
+        // Mejoras informes (ADR-0017): semanas anteriores para que Tendencias tenga con qué comparar
+        $paso('informesDemo', fn () => $this->informesDemo($empresa, $sedes));
+        // Fin Mejoras informes
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -2828,4 +2831,85 @@ class CrearDatosDemo extends Command
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }
     }
+
+    // Mejoras informes (ADR-0017)
+
+    /**
+     * Movimientos de los tres meses anteriores (solo la primera vez), para
+     * que Tendencias e Informe ejecutivo comparen contra el periodo anterior:
+     * visitas ya terminadas, llegadas y salidas de transporte (a tiempo o con
+     * retraso, nunca vales de taxi pendientes), tickets de Reporte General ya
+     * cerrados y préstamos de llaves ya devueltos. Se escriben directo en la
+     * base, sin avisos ni campana, con nombres de ejemplo.
+     *
+     * @param  Collection<string, Sede>  $sedes
+     */
+    private function informesDemo(Empresa $empresa, $sedes): void
+    {
+        // Ya se hizo si hay visitas terminadas en esas semanas (la demo de Recepción solo deja una de hace un año)
+        if (Acceso::whereBetween('entrada_at', [now()->subDays(96), now()->subDays(8)])->count() > 10) {
+            return;
+        }
+        mt_srand(2017);
+        $hoy = CarbonImmutable::now('America/Cancun')->startOfDay();
+        $agentes = [User::where('username', 'agente.demo')->value('id'), User::where('username', 'agente2.demo')->value('id')];
+        $nombres = ['MARTHA RUIZ CEN', 'JORGE PECH BALAM', 'ANA LILIA MAY', 'LUIS ALBERTO CHAN', 'ROSA ISELA UC', 'PEDRO KÚ DZUL', 'CARMEN SOSA LIRA', 'DIEGO TUN CAAMAL'];
+        $tipos = ['colaborador', 'colaborador', 'visitante', 'proveedor', 'huesped', 'contratista'];
+        $deptos = Departamento::pluck('id')->all();
+        $numero = (int) Novedad::max('numero');
+        $utc = fn (CarbonImmutable $c) => $c->utc()->format('Y-m-d H:i:s');
+        $accesos = [];
+        $movimientos = [];
+        $novedades = [];
+        $prestamos = [];
+
+        foreach ($sedes->values() as $s => $sede) {
+            $agente = $agentes[$s] ?? $agentes[0];
+            $plantillaMov = MovimientoTransporte::where('sede_id', $sede->id)->where('anulado', false)->whereIn('estatus', ['a_tiempo', 'retraso'])->toBase()->first();
+            $plantillaPrestamo = PrestamoLlave::where('sede_id', $sede->id)->where('estado', PrestamoLlave::DEVUELTA)->where('anulado', false)->toBase()->first();
+            for ($dias = 95; $dias >= 9; $dias--) {
+                $dia = $hoy->subDays($dias);
+                for ($i = 0, $n = mt_rand(1, 4); $i < $n; $i++) {
+                    $entrada = $dia->setTime(mt_rand(6, 20), mt_rand(0, 59));
+                    $tipo = $tipos[mt_rand(0, count($tipos) - 1)];
+                    $accesos[] = ['empresa_id' => $empresa->id, 'sede_id' => $sede->id, 'tipo' => $tipo, 'movimiento' => 'entrada', 'estado' => 'finalizado',
+                        'nombre' => $nombres[mt_rand(0, count($nombres) - 1)], 'modo_arribo' => ['a_pie', 'auto', 'moto'][mt_rand(0, 2)],
+                        'departamento_id' => in_array($tipo, ['proveedor', 'contratista'], true) && $deptos !== [] ? $deptos[mt_rand(0, count($deptos) - 1)] : null,
+                        'num_acompanantes' => 0, 'entrada_at' => $utc($entrada), 'salida_at' => $utc($entrada->addMinutes(mt_rand(20, 300))), 'salida_por' => $agente,
+                        'creado_por' => $agente, 'actualizado_por' => $agente, 'created_at' => $utc($entrada), 'updated_at' => $utc($entrada)];
+                }
+                if ($plantillaMov !== null) {
+                    foreach (['07:00', '15:30'] as $hora) {
+                        $cuando = $dia->setTimeFromTimeString($hora)->addMinutes(mt_rand(0, 20));
+                        $movimientos[] = array_merge(array_diff_key((array) $plantillaMov, array_flip(['id', 'lote', 'firma_guardia', 'firma_taxista', 'editado_por', 'editado_en',
+                            'autorizado_por', 'autorizado_en', 'anulado_por', 'anulado_en'])), [
+                                'estatus' => mt_rand(1, 6) === 1 ? 'retraso' : 'a_tiempo', 'cantidad_pax' => mt_rand(6, 32), 'monto' => null, 'observaciones' => null,
+                                'fecha' => $cuando->toDateString(), 'created_at' => $utc($cuando), 'updated_at' => $utc($cuando)]);
+                    }
+                }
+                if ($dias % 4 === $s) {
+                    $abierto = $dia->setTime(mt_rand(7, 21), mt_rand(0, 59));
+                    $cerrado = $abierto->addHours(mt_rand(1, 40));
+                    $novedades[] = ['empresa_id' => $empresa->id, 'sede_id' => $sede->id, 'numero' => ++$numero, 'categoria' => 'incidente_general', 'estatus' => Novedad::RESUELTO,
+                        'reportado_por' => 'Recorrido de seguridad', 'ubicacion' => ['Lobby', 'Estacionamiento', 'Alberca', 'Cocina'][mt_rand(0, 3)],
+                        'descripcion' => 'Reporte de rutina registrado por la caseta.', 'resolucion' => 'Se atendió y quedó resuelto.', 'asignado_a' => $agente,
+                        'cerrado_en' => $utc($cerrado), 'cerrado_por' => $agente, 'creado_por' => $agente, 'actualizado_por' => $agente, 'created_at' => $utc($abierto), 'updated_at' => $utc($cerrado)];
+                }
+                if ($plantillaPrestamo !== null && $dias % 3 === 0) {
+                    $prestado = $dia->setTime(mt_rand(7, 18), mt_rand(0, 59));
+                    $prestamos[] = array_merge(array_diff_key((array) $plantillaPrestamo, array_flip(['id', 'llave_en_uso'])), [
+                        'prestado_en' => $utc($prestado), 'devuelto_en' => $utc($prestado->addMinutes(mt_rand(30, 480))), 'created_at' => $utc($prestado), 'updated_at' => $utc($prestado)]);
+                }
+            }
+        }
+
+        DB::transaction(function () use ($accesos, $movimientos, $novedades, $prestamos) {
+            foreach (['accesos' => $accesos, 'movimientos_transporte' => $movimientos, 'novedades' => $novedades, 'prestamos_llaves' => $prestamos] as $tabla => $filas) {
+                foreach (array_chunk($filas, 100) as $bloque) {
+                    DB::table($tabla)->insert($bloque);
+                }
+            }
+        });
+    }
+    // Fin Mejoras informes
 }

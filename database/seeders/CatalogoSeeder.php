@@ -85,6 +85,11 @@ class CatalogoSeeder extends Seeder
         'autorizaciones' => 'autorizaciones.index',
         'vacantes' => 'vacantes.index',
         'manual' => 'manual.index',
+        // Informes (ADR-0017)
+        'dashboard' => 'tablero.index',
+        'bitacora_dia' => 'bitacora_dia.index',
+        'tendencias' => 'tendencias.index',
+        'informe_ejecutivo' => 'informe_ejecutivo.index',
     ];
 
     /**
