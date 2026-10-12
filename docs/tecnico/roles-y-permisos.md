@@ -112,3 +112,5 @@ Debajo del título se indica la empresa: "Roles de «Hotel Demo»" (o el texto d
 ## Pruebas
 
 `tests/Feature/Administracion/RolesYPermisosTest.php`, `AyudasDeCapturaTest.php`, `tests/Feature/Nucleo/PlantillaAsistenteTest.php` y `tests/Feature/Nucleo/PlantillaSolicitudesTest.php`
+
+> Mejoras de 2026-10 (roles sin números, asistente de permisos, configuración por módulo, avisos por persona, historial y varias sedes): ver [estructura-mejoras.md](estructura-mejoras.md) y [ADR-0016](../decisiones/ADR-0016-mejoras-de-estructura.md).

@@ -65,3 +65,5 @@ Botón junto a la campana (PC: «Mis pendientes» + número; celular: ícono + n
 ## Pruebas
 
 `tests/Feature/Acceso/MenusReorganizadosTest.php`: acomodo del Administrador y del superadministrador, nombres cortos, Agente (Operación y Padrones, barra inferior Accesos → Novedades, vouchers solo consulta), Recursos Humanos (sin Autorizaciones en el menú pero con su pantalla), Jefe de seguridad, Informes y módulos sin ruta ocultos (y visibles al tener ruta), migración sobre una instalación con el acomodo anterior (dos veces, y el seeder después), «Mis pendientes» (conteo, visible/oculto/inexistente, JSON del resumen, aislamiento entre empresas, datos demo y número acotado de consultas).
+
+> Mejoras de 2026-10 (roles sin números, asistente de permisos, configuración por módulo, avisos por persona, historial y varias sedes): ver [estructura-mejoras.md](estructura-mejoras.md) y [ADR-0016](../decisiones/ADR-0016-mejoras-de-estructura.md).

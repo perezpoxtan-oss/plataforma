@@ -1,14 +1,14 @@
 ---
-titulo: Pedir y aprobar solicitudes
+titulo: Pedir un pase de salida y aprobarlo (Solicitante y Jefe de departamento)
 modulos: [pases_salida, autorizaciones]
 seccion: Primeros pasos
 orden: 35
 resumen: Guía para el personal de cualquier departamento (rol Solicitante) y para su jefe (rol Jefe de departamento): pedir pases de salida, aprobarlos, responder visitas, entrevistar candidatos y pedir vacantes.
 ---
 
-# Pedir y aprobar solicitudes
+# Pedir un pase de salida y aprobarlo
 
-**¿Para qué sirve?** Si no trabajas en la caseta pero necesitas sacar equipo del hotel, aquí ves cómo **pedir un pase de salida** y seguirlo. Si eres **jefe de un departamento**, también cómo **aprobar** los pases de tu gente, **responder** las visitas que llegan a tu departamento, **entrevistar y elegir** a los candidatos que Recursos Humanos te canaliza y **pedir una vacante** a Recursos Humanos.
+**¿Para qué sirve?** Lo que pides se llama **pase de salida** y está en **Operación → Caseta → Pases de salida** (no hay un menú llamado «Solicitudes»). Si no trabajas en la caseta pero necesitas sacar equipo del hotel, aquí ves cómo **pedir un pase de salida** y seguirlo. Si eres **jefe de un departamento**, también cómo **aprobar** los pases de tu gente, **responder** las visitas que llegan a tu departamento, **entrevistar y elegir** a los candidatos que Recursos Humanos te canaliza y **pedir una vacante** a Recursos Humanos.
 
 ![Mis pendientes](img/menus/mis-pendientes.png)
 

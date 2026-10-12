@@ -30,18 +30,18 @@ La contraseña es de su dueño: por omisión **la persona la crea** con un enlac
 
 ## Cómo dar de alta una cuenta
 
-1. Toca la tarjeta **Nuevo Usuario**. Se abre **Alta de Usuario**.
-2. **Núm. Colaborador (opcional):** escribe el número o parte del nombre del colaborador y elígelo de la lista (ver «Cómo vincular la cuenta con su colaborador»).
+1. Toca la tarjeta **Nuevo Usuario**. Se abre **Alta de Usuario**, en tres pasos: **¿Quién es?**, **¿Qué hace y dónde?** y **¿Cómo entra?**.
+2. **¿Quién es? → Núm. Colaborador (opcional):** escribe el número o parte del nombre del colaborador y elígelo de la lista (ver «Cómo vincular la cuenta con su colaborador»).
 3. Escribe el **Nombre Completo**.
-4. **1. Sede:** la sede donde trabaja, o **Todas las sedes de la empresa** si debe ver todas.
-5. **2. Rol en el Sistema:** solo aparecen los roles que tú puedes asignar.
-6. Escribe el **Usuario** (letras, números, punto, guion y guion bajo; sin espacios) y el **Correo**. Al correo le llegará el enlace para crear su contraseña, así que revisa que esté bien.
+4. **¿Qué hace y dónde? → Rol en el Sistema:** solo aparecen los roles que tú puedes asignar.
+5. **Sede:** la sede donde trabaja, o **Todas las sedes de la empresa** si debe ver todas. Si trabaja en dos o más sedes (por ejemplo, un supervisor de dos hoteles), elige una y abre **¿También atiende otras sedes?** para marcar las demás: verá esas sedes y no toda la empresa.
+6. **¿Cómo entra?** Escribe el **Usuario** (letras, números, punto, guion y guion bajo; sin espacios) y el **Correo**. Al correo le llegará el enlace para crear su contraseña, así que revisa que esté bien.
 7. En **Contraseña** elige cómo la tendrá:
    - **Enviar enlace de bienvenida por correo** (recomendado, viene marcado): la persona recibe el correo **«Bienvenido a … : crea tu contraseña»** con el botón **Crear mi contraseña**. El enlace vale **24 horas**. Nadie más conoce su contraseña.
    - **Escribir la contraseña ahora**: escribe una **Contraseña inicial** (mínimo 8 caracteres, con letras y números) y dísela. Al entrar, la plataforma le pedirá cambiarla antes de usar cualquier pantalla.
 8. Toca **Registrar Usuario**.
 
-![Alta de usuario](img/usuarios/2-alta.png)
+![Alta de usuario en tres pasos](img/usuarios/5-alta-por-pasos.png)
 
 **Qué debes ver:** con enlace: «Usuario «…» creado; le enviamos el correo de bienvenida para que cree su contraseña (vale 24 horas). ¿Quieres dar de alta otro? Toca «Nuevo Usuario».» Con contraseña escrita: «Usuario «…» creado; al entrar tendrá que cambiar la contraseña que escribiste…». En su ficha aparece **Creará su contraseña al entrar** hasta que lo haga.
 
@@ -192,7 +192,11 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 **¿Por qué dice «Creará su contraseña al entrar»?** Porque la cuenta se creó con enlace de bienvenida y aún no lo usa, o porque alguien le escribió la contraseña y todavía no la cambia.
 
-**¿Qué son las «Cuentas por revisar»?** Las bloqueadas por intentos fallidos y las desactivadas por la baja de su colaborador en los últimos 7 días. Aparecen en **Mis pendientes** y arriba de la lista.
+**¿Qué son las «Cuentas por revisar»?** Las bloqueadas por intentos fallidos, las desactivadas por la baja de su colaborador en los últimos 7 días y las que piden pases de salida a su nombre (Solicitante, Jefe de departamento) **sin colaborador vinculado**: así no pueden pedir pases ni firmar los de su departamento. Aparecen en **Mis pendientes** y arriba de la lista; vincúlalas con el **lápiz** de su ficha.
+
+**¿Una cuenta puede trabajar en dos sedes sin ver toda la empresa?** Sí: elige su sede y marca las demás en **¿También atiende otras sedes?**. Su ficha dice, por ejemplo, «Hotel Centro + Hotel Playa». Si tú solo administras una de esas sedes, al editarla las otras se conservan.
+
+**¿Cómo veo todo lo que se le ha hecho a una cuenta?** Toca el **reloj** (Ver historial) de su ficha: abre la Bitácora de auditoría con solo los movimientos de esa cuenta.
 
 **¿Cuánto dura el bloqueo?** 15 minutos, o hasta que alguien con permiso la desbloquee.
 

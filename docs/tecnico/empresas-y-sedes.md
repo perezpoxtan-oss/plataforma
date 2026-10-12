@@ -41,3 +41,5 @@ El nombre de la pantalla sale de la terminología del rubro. Por decisión del c
 - Se guarda en el disco `public` (`storage/app/public/empresas/logos/`). La columna `empresas.logo_ruta` guarda `storage/empresas/logos/<archivo>` y el archivo anterior se borra.
 - Lo usan la ficha de la empresa y las impresiones (gafetes). Queda en la auditoría como `empresas.logo_actualizado`.
 - SEGCAT lo guardaba en `uploads/logos/` con el nombre `logo_<id>_<fecha>`. Ahora el nombre es aleatorio y el archivo queda fuera del código.
+
+> Mejoras de 2026-10 (roles sin números, asistente de permisos, configuración por módulo, avisos por persona, historial y varias sedes): ver [estructura-mejoras.md](estructura-mejoras.md) y [ADR-0016](../decisiones/ADR-0016-mejoras-de-estructura.md).

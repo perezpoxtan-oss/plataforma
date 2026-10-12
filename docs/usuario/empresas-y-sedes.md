@@ -20,7 +20,7 @@ resumen: Los datos de tu empresa (razón social, RFC, zona horaria, logo) y sus 
 
 ## Cómo corregir los datos de tu empresa
 
-1. Entra a **Estructura → Empresas**. Se abre **Mi Empresa**.
+1. Entra a **Estructura → Empresas**. Se abre **Empresas** con la ficha de tu empresa.
 2. Toca el **lápiz** (Editar). Se abre **Editar Empresa**.
 3. Corrige **Nombre Comercial**, **Razón Social**, **RFC** o **Zona Horaria**.
 4. **Logo de la Empresa (opcional):** toca **Elegir archivo** y elige un PNG, JPG o WEBP de hasta 512 KB. Sale en gafetes, vouchers y demás impresiones. Para quitarlo, marca **Quitar el logo actual**.
@@ -32,7 +32,7 @@ resumen: Los datos de tu empresa (razón social, RFC, zona horaria, logo) y sus 
 
 ## Cómo dar de alta una empresa nueva (Super Administrador)
 
-1. Entra a **Estructura → Empresas**. Se abre **Alta Empresas**.
+1. Entra a **Estructura → Empresas**. Se abre **Empresas** con todas las empresas de la plataforma.
 2. Toca la tarjeta **Nueva Empresa**.
 3. Captura **Nombre Comercial**, **Razón Social**, **RFC**, **Rubro** (Hotel, Corporativo / industria, Condominio o Fraccionamiento) y **Zona Horaria**.
 4. Toca **Registrar Empresa**.
@@ -41,9 +41,23 @@ resumen: Los datos de tu empresa (razón social, RFC, zona horaria, logo) y sus 
 
 **Qué debes ver:** «Empresa «…» creada con sus módulos y roles base. Ahora registra sus sedes.» El rubro decide cómo se llaman las cosas (por ejemplo «Habitación» en un hotel, «Oficina» en un corporativo o «Casa» en un fraccionamiento).
 
+## Cómo elegir los módulos de una empresa (Super Administrador)
+
+Cada empresa nueva nace con **todos** los módulos. Si una empresa no usa alguno (por ejemplo, un condominio que no usa Recursos Humanos), quítalo:
+
+1. Entra a **Estructura → Empresas** y, en la ficha de la empresa, toca el ícono de **cuadrícula** (Módulos contratados).
+2. Marca los módulos que usa y quita la marca a los demás. Los de **Dirección** (empresa, sedes, usuarios, roles, permisos, configuración, bitácora) siempre se quedan. Los marcados **Próximamente** todavía no tienen pantalla.
+3. Toca **Guardar** y confirma con **Aceptar**.
+
+![Módulos contratados](img/empresas/6-modulos-contratados.png)
+
+**Qué debes ver:** «Módulos de «…» actualizados: tiene N módulos…». Lo que quitaste deja de verse en el menú, en la Matriz de permisos y en el Manual de sus usuarios; sus datos y permisos se conservan por si lo vuelves a activar.
+
+**¿En qué empresa estoy?** Arriba, junto a **Mis pendientes**, el Super Administrador ve siempre el nombre de su **empresa de trabajo** (o **Plantillas de la plataforma**). Se cambia con el selector **Empresa de trabajo** de las pantallas de Estructura.
+
 ## Cómo registrar una sede
 
-1. Entra a **Estructura → Sedes**. Se abre **Alta Sedes**.
+1. Entra a **Estructura → Sedes**.
 2. Toca la tarjeta **Nueva Sede**.
 3. Captura:
    - **Nombre** y **Código** corto (por ejemplo `CEN`), sin espacios ni acentos.
@@ -54,7 +68,7 @@ resumen: Los datos de tu empresa (razón social, RFC, zona horaria, logo) y sus 
 
 ![Alta de sede](img/empresas/3-alta-sede.png)
 
-**Qué debes ver:** ««Hotel Aeropuerto» registrada correctamente.» Usa **Buscar por nombre, código o ciudad...** y **Todos / Activos / Inactivos** para encontrar una sede.
+**Qué debes ver:** ««Hotel Aeropuerto» registrada correctamente. ¿Qué sigue?» con dos botones: **Capturar sus zonas y edificios** y **Dar de alta a su personal en Usuarios** (solo los que tu rol puede usar). Usa **Buscar por nombre, código o ciudad...** y **Todos / Activos / Inactivos** para encontrar una sede.
 
 ![Sedes](img/empresas/2-sedes.png)
 
@@ -91,6 +105,6 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 ## Relacionado
 
-- [Zonas y áreas](zonas-y-areas.md)
+- [Zonas y edificios](zonas-y-areas.md)
 - [Usuarios](usuarios.md)
 - [Configuración](configuracion.md)

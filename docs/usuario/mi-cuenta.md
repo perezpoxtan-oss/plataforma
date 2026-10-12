@@ -3,7 +3,7 @@ titulo: Mi cuenta
 modulos: []
 seccion: Primeros pasos
 orden: 25
-resumen: Ver tus datos de acceso y cambiar tu contraseña sin depender de nadie.
+resumen: Ver tus datos de acceso, cambiar tu contraseña sin depender de nadie y elegir qué avisos recibes.
 ---
 # Mi cuenta
 
@@ -38,6 +38,16 @@ Si quien te dio de alta escribió tu contraseña inicial (o te restableció una)
 **Qué debes ver:** el aviso desaparece y ya puedes tocar **Inicio** y trabajar normalmente. Desde ese momento, nadie más conoce tu contraseña.
 
 > Si en vez de una contraseña te llegó un **correo de bienvenida**, no necesitas este paso: toca **Crear mi contraseña** en el correo, escríbela dos veces y entra con ella.
+
+## Cómo elegir qué avisos recibo
+
+1. Abre **Mi cuenta** y baja a **Mis avisos**.
+2. En **En la campana** y **Por correo** aparecen, por módulo, los avisos que te pueden llegar. Quita la marca de los que no quieres recibir.
+3. Toca **Guardar**.
+
+![Mis avisos](img/menus/mis-avisos.png)
+
+**Qué debes ver:** «Listo: silenciaste N aviso(s). Lo que espera tu respuesta sigue apareciendo en «Mis pendientes».» Los avisos de tu propia cuenta (por ejemplo, «tu contraseña cambió») siempre llegan. Si tu empresa apagó un aviso para todos en Configuración, no te llega aunque lo tengas marcado.
 
 ## Qué puedo cambiar y qué no
 

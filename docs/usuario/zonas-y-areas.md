@@ -1,30 +1,30 @@
 ---
-titulo: Zonas y áreas
+titulo: Zonas y edificios
 modulos: [espacios]
 seccion: Estructura
 orden: 20
 resumen: La estructura física de cada sede (zonas, pisos, habitaciones, áreas y elementos) y las secciones que agrupan habitaciones.
 ---
 
-# Zonas y áreas
+# Zonas y edificios
 
 **¿Para qué sirve?** Aquí registras la estructura física de cada sede, de lo general a lo particular:
 
 **Zona / Edificio → Piso → Habitación → Áreas de la habitación → Elementos**
 
-Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Departamento o Casa. Estos lugares se usan en otras pantallas: lo que abre cada [llave](llaves.md), la ubicación de los [equipos de Protección Civil](equipos-pc.md) y los recorridos.
+Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Departamento o Casa. La palabra **área** se usa solo para las partes de una habitación (Baño, Terraza, Recámara…). Estos lugares se usan en otras pantallas: lo que abre cada [llave](llaves.md), la ubicación de los [equipos de Protección Civil](equipos-pc.md) y los recorridos.
 
 ![Zonas y edificios](img/espacios/1-zonas.png)
 
 ## Antes de empezar
 
-- Para ver la pantalla tu rol debe poder consultar *Zonas y áreas*. Si no aparece en el menú, pide el permiso a tu administrador.
+- Para ver la pantalla tu rol debe poder consultar *Zonas y edificios*. Si no aparece en el menú, pide el permiso a tu administrador.
 - Para crear, editar o desactivar necesitas esos permisos.
 - La sede debe existir en [Empresas y sedes](empresas-y-sedes.md).
 
 ## Cómo crear una zona o edificio
 
-1. Entra a **Estructura → Zonas y áreas**. Se abre **Zonas / Edificios**.
+1. Entra a **Estructura → Zonas y edificios**.
 2. Toca la tarjeta **Nueva Zona / Edificio**. Se abre **Alta de Zona / Edificio**.
 3. Elige la **Sede** y escribe el **Nombre de la Zona / Edificio**. El **Código** es opcional (por ejemplo `TA`).
 4. Si quieres, elige el **Tipo**.
@@ -41,6 +41,12 @@ Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Departame
 ![Nombre parecido](img/espacios/7-nombre-parecido.png)
 
 ![Ya existe en el mismo lugar](img/espacios/8-ya-existe.png)
+
+### Para no perderte: la ruta de arriba
+
+Arriba de cada pantalla está la ruta completa, con el nombre de cada nivel: **Zonas y edificios › Sede › Zona / Edificio › Piso › Habitación**. Toca cualquier paso para regresar a él. En el celular la ruta se desliza de lado y se queda arriba al bajar.
+
+![Ruta de navegación con el nivel de cada paso](img/espacios/10-migas.png)
 
 ## Cómo agregar pisos
 
@@ -65,6 +71,8 @@ Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Departame
 
 ## Cómo detallar una habitación (áreas y elementos)
 
+Las áreas y los elementos son **opcionales**: captúralos solo si los vas a usar en llaves, equipos de Protección Civil o recorridos. Si no, la habitación ya está lista (la pantalla te lo recuerda arriba).
+
 1. En la habitación toca **Ver detalle**.
 2. Toca **Agregar Área** y elige qué **Es un** (Baño, Recámara, Terraza…). La **Etiqueta** es opcional: si la dejas vacía se usa el tipo y, si se repite, se numera (Baño, Baño 2).
 3. Dentro de cada área toca **Agregar Elemento** (Cama, Lavabo, Caja fuerte…).
@@ -81,7 +89,7 @@ Las secciones agrupan habitaciones de una sede, por ejemplo «Vista al mar» o �
 1. Arriba toca **Secciones**.
 2. Toca **Nueva Sección**, elige la **Sede**, escribe el **Nombre de la Sección** y toca **Crear Sección**.
 3. En la sección toca **Asignar Habitaciones**, marca las que le pertenecen (puedes buscar por número o piso) y guarda.
-4. También puedes elegir la sección al dar de alta o editar cada habitación.
+4. La forma principal es esta pestaña, porque asignas varias a la vez. Para cambiar la sección de una sola habitación también puedes elegirla al darla de alta o editarla.
 
 ![Secciones](img/espacios/10-secciones.png)
 

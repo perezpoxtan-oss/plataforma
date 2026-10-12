@@ -3,14 +3,14 @@ titulo: Configuración
 modulos: [configuracion]
 seccion: Estructura
 orden: 50
-resumen: Avisos por correo de la empresa, días de resguardo de Lost & Found, ajustes de módulos, correo de la plataforma y respaldos.
+resumen: Ordenada por módulo: avisos (con un interruptor por módulo), ajustes de cada módulo, versión instalada, correo de la plataforma y respaldos.
 ---
 
 # Configuración
 
-**¿Para qué sirve?** Aquí se ajusta cómo trabaja la plataforma para tu empresa: qué **avisos por correo** se envían y a quién, cuántos días se guarda cada objeto de **Lost & Found**, y los ajustes de **Pases de salida**, **Recepción** y la **bolsa de trabajo**. El Super Administrador configura además el **correo de la plataforma** y los **respaldos**.
+**¿Para qué sirve?** Aquí se ajusta cómo trabaja la plataforma para tu empresa, **ordenado por módulo**: cada módulo (Cuentas y seguridad, Pases de salida, Procedimientos, Recepción y candidatos…) tiene su tarjeta con sus avisos, un **interruptor general** para encenderlos o apagarlos todos, y sus ajustes. Arriba dice la **versión instalada**. El Super Administrador configura además el **correo de la plataforma** y los **respaldos**.
 
-![Avisos por correo](img/configuracion/2-avisos-empresa.png)
+![Configuración ordenada por módulo](img/configuracion/6-por-modulo.png)
 
 ## Antes de empezar
 
@@ -22,24 +22,46 @@ resumen: Avisos por correo de la empresa, días de resguardo de Lost & Found, aj
 
 ## Cómo elegir los avisos por correo
 
-1. Entra a **Estructura → Configuración**.
-2. En **Avisos por correo de …** marca los avisos que quieres que lleguen. Por ejemplo:
-   - Avisar a Recursos Humanos cuando la caseta registre un alta provisional de colaborador.
-   - Enviar cada vale de taxi de la Bitácora de transporte (escribe en **Correos que lo reciben** uno por línea o separados por coma).
-   - Pases de salida: aprobación, resultado y recordatorio de pases vencidos.
-   - Altas por verificar en Vehículos, Empresas externas o Personas.
-   - Procedimientos publicados y recordatorios.
-   - Vouchers de reposición con cobro (CXC): escribe los correos de **Copia Seguridad**, **Copia Recepción** y **Copia Administración**. Si dejas las tres listas vacías, se envía a los usuarios que pueden imprimir vouchers en esa sede. El colaborador responsable no recibe copia.
-   - Recepción y Autorizaciones de los departamentos.
-3. Toca **Guardar avisos**.
+1. Entra a **Estructura → Configuración**. Arriba están los módulos como botones: toca uno para ir directo a su tarjeta.
+2. En la tarjeta del módulo, el interruptor **Avisos de este módulo encendidos / apagados** enciende o apaga **todos** los avisos de ese módulo de un solo toque (por ejemplo, un condominio que no usa Pases de salida).
+3. Con el interruptor encendido, marca los avisos que quieres que lleguen. Por ejemplo:
+   - **Colaboradores:** avisar a Recursos Humanos cuando la caseta registre un alta provisional.
+   - **Bitácora de transporte:** enviar cada vale de taxi (escribe en **Correos que lo reciben** uno por línea o separados por coma).
+   - **Pases de salida:** aprobación, resultado y recordatorio de pases vencidos.
+   - **Padrones: altas por verificar** en Vehículos, Empresas externas o Personas.
+   - **Procedimientos:** publicados y recordatorios.
+   - **Vouchers de reposición** con cobro (con cargo a la persona responsable): escribe los correos de **Copia Seguridad**, **Copia Recepción** y **Copia Administración**. Si dejas las tres listas vacías, se envía a los usuarios que pueden imprimir vouchers en esa sede. El colaborador responsable no recibe copia.
+   - **Recepción y candidatos** y las autorizaciones de los departamentos.
+   - **Cuentas y seguridad:** cuenta bloqueada y **movimientos sensibles** (ver abajo).
+4. Toca **Guardar avisos** en esa tarjeta (guarda los avisos de todos los módulos).
 
-**Qué debes ver:** «Avisos por correo actualizados.» Los avisos se envían a los usuarios con permiso para atender cada asunto, al correo de su cuenta.
+![Interruptor de avisos de un módulo](img/configuracion/7-interruptor-pases.png)
+
+**Qué debes ver:** «Avisos actualizados.» y, si apagaste alguno, «Apagados por módulo: …». Los avisos se envían a los usuarios con permiso para atender cada asunto, al correo de su cuenta. Si una persona no quiere recibir alguno, lo silencia ella misma en [Mi cuenta](mi-cuenta.md) → **Mis avisos**.
+
+## Cómo recibir avisos de movimientos sensibles
+
+En **Cuentas y seguridad** marca «Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría cuando alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales» y toca **Guardar avisos**. Viene **apagado**. Encendido, quien ve toda la Bitácora de auditoría (normalmente Administrador y Director) recibe en su **campana** cada uno de esos movimientos, con un enlace a su historial. Quien hizo el movimiento no recibe su propio aviso.
+
+## Cómo elegir qué ve «Su sede» en la Bitácora de auditoría
+
+1. En la tarjeta **Cuentas y seguridad**, baja a **Bitácora de auditoría: qué ve «Su sede»**.
+2. Elige **Solo sus propios movimientos** (como siempre) o **Los movimientos de su sede** (lo que se hizo en registros de su sede y lo que hizo el personal asignado a ella).
+3. Toca **Guardar**.
+
+![Qué ve «Su sede» en la bitácora](img/configuracion/8-auditoria-su-sede.png)
+
+**Qué debes ver:** «Listo: quien tiene la bitácora con alcance «Su sede» ahora ve los movimientos de su sede…». Aplica a quien tiene la bitácora con alcance «Su sede» (por ejemplo, un Jefe de seguridad); con «Toda la empresa» siempre se ve todo.
+
+## Qué versión está instalada
+
+Arriba de la pantalla dice **Versión instalada: v…** y desde cuándo. Sirve para saber si ya llegó una mejora o para dárselo a soporte cuando pidas ayuda.
 
 ## Cómo cambiar los días de resguardo de Lost & Found
 
 Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cuántos días puede estar guardado antes de que el semáforo lo marque: **amarillo** al pasar el 70 % de sus días y **rojo (vencido)** al llegar a sus días.
 
-1. Baja a **Lost & Found: días de resguardo** (desde Lost & Found también llegas con el enlace de configuración).
+1. Toca **Lost & Found** arriba o baja a **Lost & Found: días de resguardo** (desde Lost & Found también llegas con el enlace de configuración).
 2. Escribe los días de cada tipo (mínimo 1). Debajo de cada uno dice desde qué día se pone amarillo y rojo.
 3. Toca **Guardar días de resguardo**.
 
@@ -49,7 +71,7 @@ Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cu�
 
 ## Otros ajustes de módulos
 
-En la misma pantalla están los ajustes de:
+Debajo de los avisos de su módulo están sus ajustes; los que se cambian en otra pantalla traen su botón para ir:
 
 - **Pases de salida**: resumen del circuito de firmas y, si tu empresa los cambió, las firmas que pide la caseta y qué pasa al corregir un pase rechazado. Con **Configurar circuito** se cambian. Ver [Pases de salida](pases-salida.md).
 - **Recepción de candidatos:** aviso de privacidad y duración del enlace del kiosco. Ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md).

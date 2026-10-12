@@ -55,32 +55,37 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 1. Revisa que la persona exista en **Recursos Humanos → Colaboradores** con su **departamento** correcto. Para el jefe, el departamento que va a aprobar.
 2. Entra a **Estructura → Usuarios** y toca la tarjeta **Nuevo Usuario** (o el **lápiz** de su cuenta si ya tiene una).
 3. En **Núm. Colaborador** escribe su número o su nombre y elígelo de la lista: debe aparecer en verde **Vinculado a Colaboradores**. Sin este vínculo el Solicitante no puede pedir pases y el jefe no aparece como firmante de su departamento.
-4. En **1. Sede** elige la sede donde trabaja.
-5. En **2. Rol en el Sistema** elige **Solicitante** o **Jefe de departamento**.
+4. En **Rol en el Sistema** elige **Solicitante** o **Jefe de departamento**.
+5. En **Sede** elige la sede donde trabaja.
 6. Escribe **Usuario**, **Correo** y **Contraseña** (si es nueva la cuenta) y toca **Registrar Usuario** (o **Guardar Cambios** si la editaste).
 7. Solo para el jefe que responde visitas o candidatos: entra a **Recursos Humanos → Autorizaciones → Responsables por departamento**, toca **Elegir responsables** en su departamento, agrégalo con su sede y toca **Guardar responsables**.
 8. Solo si el circuito de pases de tu empresa es distinto al de siempre: en **Estructura → Configuración → Pases de salida → Configurar circuito**, revisa que haya un paso con **Cualquier usuario con permiso «Aprobar» en la sede de origen** y **Del mismo departamento que el solicitante (jefe del departamento)**. El circuito de siempre ya lo trae como primer paso («Jefe de Departamento»).
 
 ![Matriz de permisos](img/roles/3-matriz.png)
 
-**Qué debes ver:** al entrar, el Solicitante tiene **Operación → Caseta → Pases de salida** con su nombre ya puesto en **Solicitante**; el jefe ve en **Mis pendientes** las **Firmas de pases de salida** y, si es responsable, las **Autorizaciones por responder**. Más detalle en [Pedir y aprobar solicitudes](solicitudes.md).
+**Qué debes ver:** al entrar, el Solicitante tiene **Operación → Caseta → Pases de salida** con su nombre ya puesto en **Solicitante**; el jefe ve en **Mis pendientes** las **Firmas de pases de salida** y, si es responsable, las **Autorizaciones por responder**. Más detalle en [Pedir un pase de salida y aprobarlo](solicitudes.md).
 
 ## Cómo crear un rol
 
-1. Entra a **Estructura → Roles**. Se abre **Roles y Jerarquía**.
+1. Entra a **Estructura → Roles**. Se abre **Roles y Jerarquía** (la lista va de más autoridad, arriba, a menos autoridad, abajo).
 2. Toca la tarjeta **Nuevo Rol**.
-3. Escribe el **Nombre del Rol**, una **Descripción** y el **Nivel Jerárquico**. Debajo dice tu nivel, desde qué número puedes crear y qué niveles ya se usan. Para meterlo entre dos niveles usa un número intermedio (por ejemplo 35 entre 30 y 40).
-4. Toca **Crear Rol**.
+3. Escribe el **Nombre del Rol** y una **Descripción**.
+4. En **¿Dónde va en la jerarquía?** elige **Debajo de** o **Arriba de** y el rol de referencia. Abajo te dice en qué lugar queda, por ejemplo «Quedará debajo de «Jefe de seguridad» y arriba de «Asistente»». No tienes que inventar números.
+5. En **Permisos iniciales** elige **Los mismos que «…»** para crearlo a partir de otro rol y después ajustar solo lo que cambia, o **Ninguno** para configurarlos tú desde cero. Solo se copian los permisos que tú tienes.
+6. Toca **Crear Rol**.
 
-![Nivel explicado al crear un rol](img/roles/7-nivel-explicado.png)
+![Nuevo rol: debajo de otro rol y con los permisos de otro](img/roles/8-nuevo-rol-posicion.png)
 
-**Qué debes ver:** «Rol creado correctamente. Ya puedes configurarle sus permisos por módulo.»
+**Qué debes ver:** si copiaste permisos, se abre la Matriz de permisos del rol nuevo con «Rol «…» creado con los permisos de «…». Revisa abajo lo que verá…». Si no, «Rol «…» creado con nivel N. Ya puedes configurarle sus permisos: toca «Ver permisos» en su ficha.»
+
+**Avanzado:** si necesitas un número exacto, abre **Avanzado: escribir el número de nivel**. Menor número = más autoridad; si eliges una posición arriba, el número no se usa.
 
 ## Cómo editar, desactivar o eliminar un rol
 
-1. **Lápiz:** se abre **Editar Rol**. Cambia el nombre, la descripción, el nivel o desactívalo, y toca **Guardar Cambios**. Un rol desactivado deja sin permisos a quienes lo tienen.
+1. **Lápiz:** se abre **Editar Rol**. Cambia el nombre, la descripción o desactívalo. Para moverlo en la jerarquía elige **Debajo de** o **Arriba de** otro rol; con **Dejarlo donde está** conserva su lugar. Toca **Guardar Cambios**. Un rol desactivado deja sin permisos a quienes lo tienen.
 2. **Bote de basura:** confirma con **Aceptar** («¿Eliminar el rol «…»? Solo se puede si ningún usuario lo tiene asignado.»). Si está gris, primero reasigna a esas personas.
 3. **Ver permisos:** abre la matriz de ese rol.
+4. **Reloj (Ver historial):** abre la Bitácora de auditoría con todo lo que se le ha hecho a ese rol.
 
 ![Editar rol](img/roles/2-editar-rol.png)
 
@@ -98,19 +103,34 @@ Quien atiende candidatos (Recursos Humanos) no aparece como entrevistador, salvo
 
 1. Entra a **Estructura → Matriz de permisos**. Se abre **Permisos por Rol**.
 2. Arriba toca el rol (la píldora amarilla es el que estás viendo).
-3. Los módulos están agrupados por área (Dirección, Recursos Humanos, Seguridad). Toca el nombre de un área para abrirla o cerrarla; **Expandir todo** y **Contraer todo** las abren o cierran todas.
-4. En cada módulo marca **Ver**, **Crear**, **Editar**, **Eliminar** y, si las tiene, las **Otras acciones** (Aprobar, Firmar, Imprimir, Exportar, Configurar…).
-5. En **Alcance** elige sobre qué registros aplica:
+3. Revisa **Lo que verá una persona con el rol «…»**: los menús y pantallas que tendrá al entrar.
+
+![Lo que verá el rol](img/roles/9-lo-que-vera.png)
+
+4. En **¿Qué hace este rol?** elige el perfil que más se parece (Agente, Supervisor, Recursos Humanos…) o **Igual que otro rol de la empresa**, y toca **Guardar**. Confirma con **Aceptar**: los permisos del rol se reemplazan de un solo golpe.
+
+![¿Qué hace este rol?](img/roles/10-que-hace-este-rol.png)
+
+**Qué debes ver:** «…» ahora tiene los permisos de «…». Revisa los menús que verá; si algo cambia, ajústalo en «Avanzado».
+
+### Ajustar permiso por permiso (Avanzado)
+
+1. Toca **Avanzado: permiso por permiso** para abrir la tabla completa.
+2. Los módulos están agrupados por área (Dirección, Recursos Humanos, Seguridad). Toca el nombre de un área para abrirla o cerrarla; **Expandir todo** y **Contraer todo** las abren o cierran todas.
+3. En cada módulo marca **Ver**, **Crear**, **Editar**, **Eliminar** y, si las tiene, las **Otras acciones** (Aprobar, Firmar, Imprimir, Exportar, Configurar…). Al marcar **Ver**, **Lo que verá** cambia en ese momento.
+4. En **Alcance** elige sobre qué registros aplica:
    - **Solo los propios:** solo lo que esa persona capturó.
    - **Su sede:** lo de las sedes asignadas al usuario.
    - **Toda la empresa:** todo.
-6. Toca **Guardar Permisos de este Rol** y confirma con **Aceptar**.
+5. Toca **Guardar Permisos de este Rol** y confirma con **Aceptar**.
 
-![Matriz de permisos](img/roles/3-matriz.png)
+![Tabla completa en Avanzado](img/roles/11-avanzado.png)
 
-**Qué debes ver:** «Permisos actualizados correctamente.» El cambio aplica de inmediato a todos los usuarios con ese rol.
+**Qué debes ver:** «Permisos de «…» actualizados: ya aplican a todas las personas con ese rol.» El cambio aplica de inmediato.
 
 - Al marcar cualquier acción se marca **Ver** sola; al quitar **Ver** se quitan las demás. La excepción es **Evaluar** de *Candidatos*: no marca **Ver**, porque quien entrevista solo ve el resumen del candidato en su pantalla **Entrevistar**, no la lista ni los datos personales.
+- Algunos roles traen un alcance **distinto por acción** (por ejemplo, el Jefe de departamento ve los pases de su sede pero solo pide los suyos). Debajo del alcance dice «Distinto por acción: …». Se conserva mientras no cambies el alcance de ese módulo; si lo cambias, se usa uno solo para todas sus acciones.
+- Los módulos marcados **Próximamente** todavía no tienen pantalla: no se pueden marcar y lo que ya tenían se conserva.
 - Si el rol es de tu nivel o superior, la matriz se abre en modo consulta.
 - En el celular la tabla se desliza de lado.
 
@@ -130,7 +150,10 @@ Arriba aparece **Empresa de trabajo**:
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
 | Tu nivel es 10: solo puedes crear o administrar roles de nivel 11 en adelante (número mayor = menos autoridad). | Escribiste un nivel igual o superior al tuyo. | Usa un número mayor que tu nivel. |
-| Ya existe un rol con ese nivel jerárquico; cada nivel debe ser único. | Ese nivel ya lo tiene otro rol. | Usa un número intermedio libre. |
+| Ya existe un rol con ese nivel jerárquico; cada nivel debe ser único. | Ese nivel ya lo tiene otro rol. | Usa un número intermedio libre, o mejor elige **Debajo de / Arriba de**. |
+| No hay lugar entre «…» y «…»: elige otra posición o escribe el número en «Avanzado». | Esos dos roles tienen números seguidos. | Elige otra posición o escribe un número libre en **Avanzado**. |
+| No puedes poner un rol arriba de «…»: quedaría a tu nivel o por encima de ti. | Solo puedes crear roles debajo del tuyo. | Elige **Debajo de** tu propio rol o de otro. |
+| «…» ahora tiene los permisos de «…» (sin N que tú no tienes). | El perfil traía permisos que tú no puedes dar. | Pide a alguien de mayor nivel que los agregue si hacen falta. |
 | Ya existe un rol con ese nombre. | El nombre ya se usa. | Usa otro nombre. |
 | El bote de basura está gris. | Hay usuarios con ese rol. | Reasígnalos en [Usuarios](usuarios.md) o desactiva el rol. |
 | No puedo marcar una casilla (está gris). | Tú no tienes ese permiso. | Pídelo a alguien de nivel superior. |
@@ -152,9 +175,13 @@ Arriba aparece **Empresa de trabajo**:
 
 **¿Puedo crear un rol con más autoridad que el mío?** No. Solo roles de nivel inferior al tuyo.
 
+**¿Cómo sé qué verá alguien con un rol sin entrar con su cuenta?** En la Matriz de permisos, arriba, en **Lo que verá una persona con el rol «…»**.
+
+**¿Por qué no puedo dar «Ver: toda la empresa» y «Editar: su sede» en el mismo módulo?** Por ahora el alcance que eliges es uno por módulo. Los roles de la plataforma que ya traen un alcance distinto por acción lo conservan.
+
 ## Relacionado
 
 - [Usuarios](usuarios.md)
-- [Pedir y aprobar solicitudes](solicitudes.md)
+- [Pedir un pase de salida y aprobarlo](solicitudes.md)
 - [Bitácora de auditoría](auditoria.md)
 - [Configuración](configuracion.md)

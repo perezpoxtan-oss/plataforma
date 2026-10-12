@@ -30,6 +30,12 @@ resumen: El nombre, los colores, el símbolo y los datos de soporte que ven todo
 
 **Qué debes ver:** «Identidad actualizada. Los cambios ya se ven en todas las pantallas.» El cambio se ve de inmediato, también en la pantalla de acceso.
 
+### Si el color principal no se lee
+
+El texto de los botones es blanco. Si eliges un color principal claro (por ejemplo amarillo), la **Vista previa** se marca con un borde rojo y abajo de los colores aparece en rojo «El texto blanco casi no se lee sobre este color…». Elige un color más oscuro hasta que el aviso desaparezca.
+
+![Aviso de contraste insuficiente](img/identidad/4-contraste-bajo.png)
+
 ## Cómo volver a lo predeterminado
 
 Debajo de cada imagen marca **Quitar y usar el predeterminado** y toca **Guardar Identidad**.
