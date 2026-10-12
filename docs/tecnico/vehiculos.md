@@ -4,9 +4,9 @@ Réplica de `modules/vehiculos` de SEGCAT (`vehiculo_lista.php`, `vehiculo_modal
 
 - Controlador: `app/Http/Controllers/Seguridad/VehiculoController.php`
 - Reglas: `app/Services/Vehiculos/AdministradorVehiculos.php` (validación, alcance, búsqueda, resumen JSON, auditoría)
-- Modelo: `app/Models/Vehiculo.php` (migración `2026_10_08_000100_crear_padrones`, sin cambios de esquema)
+- Modelo: `app/Models/Vehiculo.php` (migración `2026_10_08_000100_crear_padrones`; `2026_10_29_000310_fundir_categorias_de_vehiculos` agrega `categoria_anterior`, ver «Dos categorías»)
 - Vistas: `resources/views/seguridad/vehiculos/{index,calcomania,_registro-rapido}.blade.php`
-- Pruebas: `tests/Feature/Seguridad/VehiculosTest.php`
+- Pruebas: `tests/Feature/Seguridad/VehiculosTest.php`, `tests/Feature/Seguridad/DosCategoriasVehiculosTest.php`
 
 ## Qué se corrigió respecto a SEGCAT
 
@@ -18,12 +18,12 @@ Réplica de `modules/vehiculos` de SEGCAT (`vehiculo_lista.php`, `vehiculo_modal
 | El mensaje decía "registradas en cualquier empresa" pero la regla era por empresa. | Únicas por empresa (índice `empresa_id + placas`); la misma placa puede existir en otra empresa. |
 | Concatenaba `id_empresa` en SQL y confiaba en `id_empresa` del POST. | Tenant fijo: el filtro de empresa lo pone el modelo; proveedor y colaborador se validan dentro de la empresa. |
 | `id_empresa_ext` ajeno se descartaba en silencio. | Error claro: "La empresa propietaria no existe en esta empresa o está desactivada." |
-| La flotilla de un proveedor podía guardarse sin proveedor. | Proveedor obligatorio para `empresa_proveedor`; opcional para agencia, taxi y transporte de personal; vacío para propios. |
-| El vehículo de un colaborador no se ligaba a él. | `colaborador_id` (solo con "Propio Colaborador"), validado en la empresa; registrado en `AdministradorColaboradores::REFERENCIAS` para la unión de duplicados. |
-| Capacidad para cualquier vehículo; descripción "Otro" opcional. | Capacidad (1–99) solo en autobús, camión ligero o transporte de personal; "Describe el tipo" obligatorio si el tipo es Otro. Lo que no aplica se guarda vacío aunque llegue forzado. |
+| La flotilla de un proveedor podía guardarse sin proveedor. | «De una empresa» (`empresa`) exige empresa propietaria y número económico; «Particular» los guarda vacíos. |
+| El vehículo de un colaborador no se ligaba a él. | `colaborador_id` (opcional, solo con «Particular»), validado en la empresa; registrado en `AdministradorColaboradores::REFERENCIAS` para la unión de duplicados. |
+| Capacidad para cualquier vehículo; descripción "Otro" opcional. | Capacidad (1–99) solo en autobús, camión ligero o vehículos «De una empresa»; "Describe el tipo" obligatorio si el tipo es Otro. Lo que no aplica se guarda vacío aunque llegue forzado. |
 | "Activar" exigía `editar` y "eliminar" `eliminar`; la edición también cambiaba el estatus. | Baja y reactivación con el mismo botón y el permiso `vehiculos.eliminar`; la edición no toca el estado. |
 | Sin bitácora de cambios. | Auditoría `vehiculos.creado`, `vehiculos.actualizado`, `vehiculos.desactivado`, `vehiculos.reactivado`. |
-| La lista solo mostraba los "propios"; flotillas y taxis vivían en la ficha del proveedor. | Una sola lista con píldoras **Propios / Flotillas / Taxis** y contadores; la ficha del proveedor abre el alta ya prellenada (ver contrato). |
+| La lista solo mostraba los "propios"; flotillas y taxis vivían en la ficha del proveedor. | Una sola lista con píldoras **Particulares / De una empresa** y contadores; la ficha del proveedor abre el alta ya prellenada (ver contrato). |
 | Mensajes en la URL (`?msg=creado`), `onclick` y JS en línea. | Mensajes en sesión; JS en `plataforma.js` con atributos `data-*`. |
 
 ## Permisos y alcance
@@ -65,7 +65,7 @@ Por placas (desde el inicio, sin importar guiones ni espacios: `abc-12` encuentr
 
 ```json
 {"resultados": [{"id": 12, "placas": "ABC123A", "descripcion": "NISSAN VERSA · BLANCO",
-  "propiedad": "taxi_app", "propiedad_etiqueta": "Taxi / App", "numero_economico": "T-045",
+  "propiedad": "empresa", "propiedad_etiqueta": "De una empresa", "numero_economico": "T-045",
   "empresa": "Taxis Cancún", "colaborador": null, "codigo_qr": "…", "activo": true}]}
 ```
 
@@ -94,7 +94,7 @@ El botón QR de la ficha ya no abre la calcomanía en otra página: abre el diá
 
 ## Contrato con la ficha de Proveedor
 
-- `/vehiculos?nuevo=1&proveedor={id}` abre sola el **Alta de Vehículo** con ese proveedor elegido y la categoría según su `categoria`: `taxi` → `taxi_app`, `agencia_autos` → `agencia_renta`, `transporte_personal` y `transporte_huespedes` → `transporte_personal`, cualquier otra → `empresa_proveedor` (constante `AdministradorVehiculos::PROPIEDAD_POR_CATEGORIA`). Lleva el campo oculto `volver=proveedor`. Un proveedor inexistente, inactivo o de otra empresa se ignora.
+- `/vehiculos?nuevo=1&proveedor={id}` abre sola el **Alta de Vehículo** con ese proveedor elegido y la categoría «De una empresa» (`empresa`). Antes de fundir las categorías se elegía según la categoría del proveedor (`PROPIEDAD_POR_CATEGORIA`, ya retirada). Lleva el campo oculto `volver=proveedor`. Un proveedor inexistente, inactivo o de otra empresa se ignora.
 - `?volver=proveedor` (sin `nuevo`) pone la misma marca en la edición.
 - Tras guardar o editar con `volver=proveedor` y un `proveedor_id` válido, regresa a `route('proveedores.show', $id)` si esa ruta existe; si no, a `/vehiculos#vehiculo-{id}`. Nunca se acepta una URL del cliente.
 
@@ -111,7 +111,7 @@ El botón QR de la ficha ya no abre la calcomanía en otra página: abre el diá
 
 ## Datos demo
 
-`plataforma:demo` crea 13 vehículos la primera vez (`vehiculosDemo()`, protegido por `Vehiculo::exists()`): huéspedes, visitante, familiar, tres de colaboradores demo (#1003, #1006, #1011), dos taxis, una unidad rentada, un autobús de transporte de personal, un camión ligero de flotilla y un carrito de golf dado de baja. Usa los proveedores demo si ya existen (transporte, taxi, agencia); si no, quedan sin empresa propietaria y la flotilla pasa a transporte de personal.
+`plataforma:demo` crea 13 vehículos la primera vez (`vehiculosDemo()`, protegido por `Vehiculo::exists()`): huéspedes, visitante, familiar, tres de colaboradores demo (#1003, #1006, #1011), dos taxis, una unidad rentada, un autobús de transporte de personal, un camión ligero de flotilla y un carrito de golf dado de baja. Usa los proveedores demo si ya existen (transporte, taxi, agencia); si no, quedan sin empresa propietaria. Todos usan las dos categorías nuevas (`particular` / `empresa`).
 
 ## Altas por verificar
 
@@ -130,12 +130,12 @@ Son **dos preguntas distintas** y por eso van en dos listas:
 
 | Lista | Pregunta | Valores | Qué decide |
 |---|---|---|---|
-| **Categoría** (`propiedad`) | ¿De quién es o a qué viene? | Propio huésped/visitante/familiar/colaborador, Agencia, Flotilla, Taxi/Plataforma, Transporte de personal | Qué campos se piden (empresa propietaria, número económico, colaborador, capacidad), la píldora (Propios / Flotillas / Taxis) y las reglas de Accesos y Transporte |
+| **Categoría** (`propiedad`) | ¿De quién es? | Particular, De una empresa (desde «Dos categorías») | Qué campos se piden (empresa propietaria, número económico, colaborador, capacidad), la píldora (Particulares / De una empresa) y las reglas de Accesos y Transporte |
 | **Tipo / Estilo** (`tipo`) | ¿Qué forma tiene? | Sedán, SUV, Pick-up, Autobús, Camión ligero, Motocicleta, **Otro** | Si se pide la descripción («Otro») y si se pide capacidad (autobús, camión ligero) |
 
-**«Otro» no se agrega a Categoría.** Cada categoría trae reglas; una categoría «Otro» no tendría ninguna y escondería unidades que sí son de alguien. Lo que no encaja en un tipo de vehículo es **Tipo «Otro»** (montacargas, carrito de golf) y quien llega sin relación con el hotel es **Propio Visitante**. En el formulario las etiquetas lo dicen: «Categoría (¿de quién es?)» y «Tipo / Estilo (su forma)».
+**«Otro» no se agrega a Categoría.** Cada categoría trae reglas; una categoría «Otro» no tendría ninguna y escondería unidades que sí son de alguien. Lo que no encaja en un tipo de vehículo es **Tipo «Otro»** (montacargas, carrito de golf) y quien llega sin relación con el hotel es **Particular**. En el formulario las etiquetas lo dicen: «Categoría (¿de quién es?)» y «Tipo / Estilo (su forma)».
 
-Filtros de la lista, **en la misma línea**: píldoras de **Categoría** (Todos, Propios, Flotillas, Taxis, Pendientes de verificar) y la lista **Tipo / Estilo** (`data-filtro-estilo-vehiculo`; cada ficha lleva `data-estilo`). Se combinan con el buscador.
+Filtros de la lista, **en la misma línea**: píldoras de **Categoría** (Todos, Particulares, De una empresa, Pendientes de verificar) y la lista **Tipo / Estilo** (`data-filtro-estilo-vehiculo`; cada ficha lleva `data-estilo`). Se combinan con el buscador.
 
 ### PV-05 · Alta desde la ficha de la empresa
 
@@ -148,3 +148,22 @@ Las placas usan `data-duplicado` → `GET /vehiculos/duplicado` (iguales sin esp
 ## Mejoras padrones (ADR-0015)
 
 Ver [mejoras-padrones.md](mejoras-padrones.md): «¿De quién es?» / «¿Qué forma tiene?», categorías agrupadas (`GRUPOS_PROPIEDAD`), siguiente paso «Imprimir su calcomanía», impresora en la ficha.
+
+## Dos categorías: Particular y De una empresa (mapa de procesos)
+
+Decisión del dueño: las ocho categorías heredadas se funden en dos. Claves en `Vehiculo::PROPIEDADES`:
+
+| Clave | Etiqueta (lista «¿De quién es?») | Pide | No guarda |
+|---|---|---|---|
+| `particular` | Particular (de un colaborador, huésped, visitante, familiar…) | Colaborador dueño **opcional** (`CON_COLABORADOR`) | Empresa propietaria, número económico |
+| `empresa` | De una empresa (flotilla, agencia, taxi, transporte…) | Empresa propietaria (`PROVEEDOR_OBLIGATORIO`) y número económico (`ECONOMICO_OBLIGATORIO`), ambos **obligatorios**; capacidad opcional | Colaborador |
+
+- **Conversión de datos:** migración `2026_10_29_000310_fundir_categorias_de_vehiculos`. Mapa fijo (`Vehiculo::CATEGORIAS_ANTERIORES`): `propio_huesped`, `propio_visitante`, `propio_familiar`, `propio_colaborador` → `particular`; `agencia_renta`, `empresa_proveedor`, `taxi_app`, `transporte_personal` → `empresa`. La original se guarda en `vehiculos.categoria_anterior` (varchar 30, nulo). El valor por omisión de `propiedad` pasa de `propio_visitante` a `particular`. Es idempotente.
+- **`down()`:** regresa `propiedad = categoria_anterior` exacta; los vehículos creados después (sin anterior) van a `propio_colaborador` (particular con colaborador), `propio_visitante` (particular) o `empresa_proveedor` (empresa). Restaura el valor por omisión y borra la columna.
+- **`categoria_anterior` se suelta** (modelo, evento `saving`) si el vehículo cambia a la otra categoría: ya no hay a dónde regresar exacto.
+- **Claves viejas que lleguen** (una pantalla abierta antes de actualizar, una integración) se convierten con `Vehiculo::categoria()` antes de validar.
+- **Registro en la caseta sin pantalla de padrón** (no pasa por la validación; nace «pendiente de verificar» si quien registra no edita el padrón): Accesos — huésped, colaborador, emergencia, personal externo → `particular`; huésped con conductor (taxi) y proveedor/contratista → `empresa` (con la empresa del ingreso en proveedor/contratista). Transporte — unidad de ruta y taxi → `empresa`. Quien verifica completa empresa y número económico en «Verificar Alta Pendiente» (`AltasPorVerificar::CAMPOS_AL_ACEPTAR` ya incluye `proveedor_id` y `numero_economico`).
+- **Sugerencias de la Bitácora de transporte:** «unidades» = `empresa` con empresa propietaria que no es de taxis; «taxis» = `empresa` sin empresa propietaria o con empresa de categoría `taxi` (`AdministradorVehiculos::CATEGORIAS_TAXI`).
+- **Lista:** píldoras `data-grupo="particulares" | "empresas"` (`AdministradorVehiculos::GRUPOS`); insignia `bg-huesped` / `bg-renta`.
+- **Formularios:** alta y edición, registro rápido (`_registro-rapido`, ahora con número económico) y «Verificar Alta Pendiente» usan `OPCIONES_PROPIEDAD`; el diálogo de verificación dispara `change` en `propiedad` al llenarse para mostrar los campos de empresa.
+- Quitados: `GRUPOS_PROPIEDAD` (agrupación en `optgroup`) y `PROPIEDAD_POR_CATEGORIA`.

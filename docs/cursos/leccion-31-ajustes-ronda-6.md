@@ -66,7 +66,7 @@ Entra a QA con **`admin.demo`** (contraseña de la demo). Para el paso 7 usa **`
 
 ### 6. Voucher recuperado
 
-1. Padrones → **Vouchers de reposición**.
+1. Operación → Caseta → **Vouchers de reposición**.
 2. En el voucher del gafete **HOT-CEN-VIS-010** (con cobro de $150.00) toca **Recuperado**.
 3. Deja **sin marcar** «Ya se le cobró al responsable», escribe `Lo entregó Ama de Llaves` y toca **Confirmar recuperado**.
    - El voucher queda **Cancelado por recuperación** y dice **COBRO CANCELADO**. El gafete vuelve a estar activo en Gafetes.

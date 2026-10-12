@@ -205,7 +205,7 @@ class AccesosTest extends TestCase
         $persona = $this->enEmpresa(fn () => Persona::find($a->persona_id));
         $this->assertSame(['Laura Méndez Ríos', 'visitante'], [$persona->nombre_completo, $persona->tipo]);
         $vehiculo = $this->enEmpresa(fn () => Vehiculo::find($a->vehiculo_id));
-        $this->assertSame(['ABC123A', 'propio_visitante', 'suv', 'NISSAN', 'BLANCO'], [$vehiculo->placas, $vehiculo->propiedad, $vehiculo->tipo, $vehiculo->marca, $vehiculo->color]);
+        $this->assertSame(['ABC123A', 'particular', 'suv', 'NISSAN', 'BLANCO'], [$vehiculo->placas, $vehiculo->propiedad, $vehiculo->tipo, $vehiculo->marca, $vehiculo->color]);
         $this->assertTrue(Auditoria::where('evento', 'visitantes.creado')->exists());
         $this->assertTrue(Auditoria::where('evento', 'vehiculos.creado')->exists());
 
@@ -266,7 +266,7 @@ class AccesosTest extends TestCase
         $proveedor = $this->enEmpresa(fn () => Proveedor::find($a->proveedor_id));
         $this->assertSame(['Abarrotes del Caribe', 'proveedor', false, [$this->centro->id]], [$proveedor->nombre, $proveedor->categoria, $proveedor->todas_las_sedes, $this->enEmpresa(fn () => $proveedor->sedes()->pluck('sedes.id')->all())]);
         $vehiculo = $this->enEmpresa(fn () => Vehiculo::find($a->vehiculo_id));
-        $this->assertSame(['empresa_proveedor', $proveedor->id], [$vehiculo->propiedad, $vehiculo->proveedor_id]);
+        $this->assertSame(['empresa', $proveedor->id], [$vehiculo->propiedad, $vehiculo->proveedor_id]);
         $persona = $this->enEmpresa(fn () => Persona::find($a->persona_id));
         $this->assertSame(['proveedor', $proveedor->id], [$persona->tipo, $persona->proveedor_id]);
 
@@ -340,10 +340,10 @@ class AccesosTest extends TestCase
             'modo_arribo' => 'auto', 'placas' => 'BET123', 'conductor' => 'juan uber'])->assertSessionHasNoErrors();
         $b = $this->ultimo();
         $this->assertSame([false, null, 'nightpass', 'JUAN UBER'], [$b->tiene_reserva, $b->numero_reserva, $b->tipo_pase, $b->conductor]);
-        $this->assertSame('taxi_app', $this->enEmpresa(fn () => Vehiculo::find($b->vehiculo_id)->propiedad));
+        $this->assertSame('empresa', $this->enEmpresa(fn () => Vehiculo::find($b->vehiculo_id)->propiedad));
 
         $this->registrar(['tipo' => 'huesped', 'nombre' => 'Ayleen Pérez', 'modo_arribo' => 'auto', 'placas' => 'W2M123'])->assertSessionHasNoErrors();
-        $this->assertSame('propio_huesped', $this->enEmpresa(fn () => Vehiculo::find($this->ultimo()->vehiculo_id)->propiedad));
+        $this->assertSame('particular', $this->enEmpresa(fn () => Vehiculo::find($this->ultimo()->vehiculo_id)->propiedad));
 
         $this->registrar(['tipo' => 'huesped'])->assertSessionHasErrors(['nombre' => 'Escribe el nombre del huésped.']);
 
@@ -361,7 +361,7 @@ class AccesosTest extends TestCase
             ->assertSessionHasNoErrors();
         $b = $this->ultimo();
         $this->assertSame(['CRUZ ROJA UNIDAD 12', 'ambulancia', 'auto', 'CR012', "Paciente en lobby.\nPiso 2."], [$b->nombre, $b->tipo_emergencia, $b->modo_arribo, $b->placas, $b->observaciones]);
-        $this->assertSame('propio_visitante', $this->enEmpresa(fn () => Vehiculo::find($b->vehiculo_id)->propiedad));
+        $this->assertSame('particular', $this->enEmpresa(fn () => Vehiculo::find($b->vehiculo_id)->propiedad));
     }
 
     public function test_misma_persona_del_padron_pregunta_antes_de_duplicar(): void
@@ -772,7 +772,7 @@ class AccesosTest extends TestCase
     {
         $this->colaborador('1005');
         $this->colaborador('3001', $this->playa, null, 'Pablo');
-        $this->enEmpresa(fn () => Vehiculo::create(['placas' => 'ABC123A', 'tipo' => 'suv', 'marca' => 'MAZDA', 'modelo' => 'CX-5', 'color' => 'ROJO', 'propiedad' => 'propio_huesped']));
+        $this->enEmpresa(fn () => Vehiculo::create(['placas' => 'ABC123A', 'tipo' => 'suv', 'marca' => 'MAZDA', 'modelo' => 'CX-5', 'color' => 'ROJO', 'propiedad' => 'particular']));
         $this->enEmpresa(fn () => Proveedor::create(['nombre' => 'Viajes Turquesa', 'categoria' => 'agencia_viajes']));
 
         $this->actingAs($this->admin)->getJson('/accesos/buscar?que=colaborador&q=hern&sede='.$this->centro->id)->assertOk()

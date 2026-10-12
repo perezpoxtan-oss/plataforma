@@ -351,6 +351,8 @@ html.modo-noche .ficha-provisional { background: rgba(245, 158, 11, 0.06) !impor
 html.modo-noche .btn-duplicado-colab { background: transparent; color: #fcd34d; border-color: #b45309; }
 html.modo-noche .caja-parecidos { background: rgba(245, 158, 11, 0.1); border-color: #b45309; color: #e2e8f0; }
 html.modo-noche .opcion-parecido { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+html.modo-sol .confirmar-alta-nuevo { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-noche .confirmar-alta-nuevo { background: rgba(245, 158, 11, 0.12); border-color: #b45309; color: #e2e8f0; }
 /* ==========================================================================
    Padrones: Proveedores / Empresas Externas
    ========================================================================== */

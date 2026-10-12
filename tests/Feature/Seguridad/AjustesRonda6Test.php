@@ -77,7 +77,7 @@ class AjustesRonda6Test extends TestCase
     private function vehiculo(string $placas, array $extra = []): Vehiculo
     {
         return $this->enEmpresa(function () use ($placas, $extra) {
-            $v = new Vehiculo(['placas' => $placas, 'propiedad' => 'propio_huesped', 'tipo' => 'sedan', 'marca' => 'NISSAN', 'modelo' => 'VERSA', 'color' => 'BLANCO']);
+            $v = new Vehiculo(['placas' => $placas, 'propiedad' => 'particular', 'tipo' => 'sedan', 'marca' => 'NISSAN', 'modelo' => 'VERSA', 'color' => 'BLANCO']);
             $v->forceFill($extra)->save();
 
             return $v;

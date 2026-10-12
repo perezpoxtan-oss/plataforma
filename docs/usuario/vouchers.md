@@ -13,7 +13,7 @@ resumen: Consultar, reimprimir y dar seguimiento a los comprobantes de llaves, g
 
 ## Cómo leer la lista
 
-1. Entra a **Operación → Activos → Vouchers de reposición**.
+1. Entra a **Operación → Caseta → Vouchers de reposición** (justo debajo de **Préstamo de llaves**).
 2. Cada tarjeta tiene el **folio** (por ejemplo `VR-2610-48213`) y si es **CON COBRO** (rojo) o **SIN COBRO** (verde).
 3. Debajo: el artículo dado de baja, su **Origen** (Llave, Gafete o Equipo), **Motivo**, **Sede**, **Responsable**, el **Monto** (si hay cobro), **¿Cómo pasó?**, quién lo generó y cuándo.
 

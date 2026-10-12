@@ -369,7 +369,7 @@ class MejorasPadronesTest extends TestCase
         $p = $this->enEmpresa(fn () => Proveedor::create(['nombre' => 'Gas del Sur', 'categoria' => 'proveedor', 'todas_las_sedes' => true, 'activo' => false]));
         $this->actingAs($this->admin)->get('/proveedores')->assertSee('DE BAJA')->assertDontSee('VETADA')->assertDontSee('title="Desactivar"', false);
         $this->actingAs($this->admin)->get("/proveedores/{$p->id}")->assertSee('Ficha de empresa externa')->assertDontSee('Ficha de Proveedor');
-        $this->actingAs($this->admin)->get('/vehiculos')->assertSee('¿De quién es?')->assertSee('¿Qué forma tiene?')->assertSee('<optgroup label="Particular">', false);
+        $this->actingAs($this->admin)->get('/vehiculos')->assertSee('¿De quién es?')->assertSee('¿Qué forma tiene?')->assertSee('<option value="particular"', false);
         $this->actingAs($this->admin)->get('/turnos')->assertDontSee('title="Desactivar"', false);
         $this->actingAs($this->admin)->get('/puestos')->assertSee('es el rango');
 

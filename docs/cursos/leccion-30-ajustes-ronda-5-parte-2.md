@@ -49,7 +49,7 @@ Entra a QA con **`admin.demo`** (contraseña de la demo). Para el paso 6 usa **`
 
 1. Ve a Padrones → **Padrón Vehicular**.
 2. Mira la línea de filtros: **Categoría** (píldoras) y **Tipo / Estilo** (lista).
-3. Elige **Taxis** y luego en Tipo / Estilo elige **SUV / Camioneta**: ves solo los taxis tipo SUV.
+3. Elige **De una empresa** y luego en Tipo / Estilo elige **SUV / Camioneta**: ves solo las camionetas de empresas.
 
 Recuerda: **Categoría = de quién es**; **Tipo / Estilo = qué forma tiene**. «Otro» es un Tipo / Estilo.
 

@@ -139,7 +139,7 @@ Cada resultado es el `resumen` del padrón (el mismo de sus búsquedas) más `ti
 - **Registros rápidos.** Primero se crea y se valida dentro de una transacción. Si hay parecidos y no llegó `confirmar_nuevo=1`, se revierte (`HayParecidos`) y se responde **409** `{ok:false, mensaje, parecidos:[…]}`. Así primero se ven los errores de captura y después los parecidos. Se conservan los 409 de siempre: placas idénticas (`vehiculo`) y folio repetido (`persona`).
 - **JavaScript de los registros rápidos.** Antes de enviar consulta `GET /altas-por-verificar/parecidos` (en fase de captura, antes del manejador de cada padrón). Muestra la lista:
   - «Usar» lanza el evento del padrón (`vehiculo:registrado`, `persona:registrada`, `proveedor:registrado` con `ya_existia`);
-  - «No es ninguno: registrarlo como nuevo» envía con `confirmar_nuevo=1`.
+  - «No es ninguno: registrarlo como nuevo» **no envía**: muestra la doble confirmación (mapa de procesos) `[data-alta-seguro]` «¿Seguro que no es ninguno de los N parecidos? Se creará un registro nuevo pendiente de verificar» con **Volver a revisar** (`[data-alta-volver]`, regresa a la lista sin enviar) y **Sí, registrar nuevo** (`[data-alta-si-nuevo]`, el único que envía con `confirmar_nuevo=1`). Todo en `plataforma.js` (`confirmacionNuevo()`), sin JS en línea. Aplica a Persona, Empresa externa y Vehículo (los tres `form[data-alta-padron]`).
 - **Registro Inteligente de Ingreso.** Si la búsqueda de placas, nombre o empresa dice «sin coincidencias», agrega los parecidos a la misma lista: un toque los elige con el lector universal, la persona o la empresa. La dirección del endpoint va en `[data-alta-sugerencias]` del diálogo.
 
 ## Endpoints

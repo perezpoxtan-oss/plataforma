@@ -21,27 +21,44 @@ class Vehiculo extends Model implements Identificable
     /** Se encuentra también tecleando o escaneando las placas. */
     protected string $columnaLegible = 'placas';
 
-    /** clave => etiqueta (SEGCAT: propiedad_vehiculo) */
+    /**
+     * clave => etiqueta. Decisión del dueño (mapa de procesos): las ocho
+     * categorías de SEGCAT (propiedad_vehiculo) se funden en dos.
+     *  - particular: propio de un colaborador, huésped, visitante, familiar…
+     *    Puede ligarse al colaborador dueño (opcional); no lleva empresa.
+     *  - empresa: flotilla, agencia de renta, taxi, transporte de personal…
+     *    Lleva empresa propietaria y número económico.
+     */
     public const PROPIEDADES = [
-        'propio_huesped' => 'Propio — Huésped',
-        'propio_visitante' => 'Propio — Visitante',
-        'propio_familiar' => 'Propio — Familiar',
-        'propio_colaborador' => 'Propio — Colaborador',
-        'agencia_renta' => 'Agencia de renta',
-        'empresa_proveedor' => 'Empresa / Proveedor',
-        'taxi_app' => 'Taxi / App',
-        'transporte_personal' => 'Transporte de personal',
+        'particular' => 'Particular',
+        'empresa' => 'De una empresa',
     ];
 
     /** Propiedades que llevan número económico (flotillas). */
-    public const CON_NUMERO_ECONOMICO = ['agencia_renta', 'empresa_proveedor', 'taxi_app', 'transporte_personal'];
+    public const CON_NUMERO_ECONOMICO = ['empresa'];
+
+    /**
+     * Categorías anteriores (antes de fundirlas) => la nueva. Sirve para la
+     * conversión de datos y para aceptar una clave vieja que todavía llegue
+     * de una pantalla abierta antes de la actualización.
+     */
+    public const CATEGORIAS_ANTERIORES = [
+        'propio_huesped' => 'particular',
+        'propio_visitante' => 'particular',
+        'propio_familiar' => 'particular',
+        'propio_colaborador' => 'particular',
+        'agencia_renta' => 'empresa',
+        'empresa_proveedor' => 'empresa',
+        'taxi_app' => 'empresa',
+        'transporte_personal' => 'empresa',
+    ];
 
     public const TIPOS = [
         'sedan' => 'Sedán', 'suv' => 'SUV / Camioneta', 'pickup' => 'Pick-up', 'autobus' => 'Autobús',
         'camion_ligero' => 'Camión ligero', 'motocicleta' => 'Motocicleta', 'otro' => 'Otro',
     ];
 
-    protected $attributes = ['activo' => true, 'propiedad' => 'propio_visitante'];
+    protected $attributes = ['activo' => true, 'propiedad' => 'particular'];
 
     protected $fillable = [
         'empresa_id', 'placas', 'tipo', 'descripcion_otro', 'marca', 'modelo', 'color', 'propiedad',
@@ -53,6 +70,18 @@ class Vehiculo extends Model implements Identificable
         return ['activo' => 'boolean', 'capacidad' => 'integer'];
     }
 
+    protected static function booted(): void
+    {
+        // La categoría anterior (de las ocho originales) solo se conserva mientras siga
+        // correspondiendo: si se cambia a la otra categoría, ya no hay a dónde regresar.
+        static::saving(function (Vehiculo $v) {
+            $anterior = $v->getAttribute('categoria_anterior');
+            if ($anterior !== null && $v->isDirty('propiedad') && (self::CATEGORIAS_ANTERIORES[$anterior] ?? null) !== $v->propiedad) {
+                $v->setAttribute('categoria_anterior', null);
+            }
+        });
+    }
+
     public function proveedor(): BelongsTo
     {
         return $this->belongsTo(Proveedor::class);
@@ -61,6 +90,14 @@ class Vehiculo extends Model implements Identificable
     public function colaborador(): BelongsTo
     {
         return $this->belongsTo(Colaborador::class);
+    }
+
+    /**
+     * Clave vigente de una categoría (convierte las ocho anteriores).
+     */
+    public static function categoria(?string $propiedad): ?string
+    {
+        return self::CATEGORIAS_ANTERIORES[$propiedad] ?? $propiedad;
     }
 
     /**

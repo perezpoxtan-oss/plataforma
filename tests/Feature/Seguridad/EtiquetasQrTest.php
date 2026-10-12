@@ -343,7 +343,7 @@ class EtiquetasQrTest extends TestCase
         Carbon::setTestNow('2026-10-05 15:00:00');
         $this->llave('HDC-NUEVA');
         $this->llave('HDC-BAJA', null, ['activo' => false]);
-        $this->enEmpresa(fn () => (new Vehiculo(['placas' => 'ABC123A', 'propiedad' => 'propio_huesped', 'tipo' => 'sedan', 'marca' => 'NISSAN', 'modelo' => 'VERSA', 'color' => 'BLANCO']))->save());
+        $this->enEmpresa(fn () => (new Vehiculo(['placas' => 'ABC123A', 'propiedad' => 'particular', 'tipo' => 'sedan', 'marca' => 'NISSAN', 'modelo' => 'VERSA', 'color' => 'BLANCO']))->save());
         Carbon::setTestNow();
         $this->assertNotNull($vieja);
 
