@@ -132,7 +132,7 @@
                         @elseif ($filtro !== 'todos')
                             No hay casos con este filtro.
                         @else
-                            No hay casos de robo. Se registran desde la Bitácora de Novedades con la categoría <strong>Robo</strong>.
+                            No hay casos de robo. Se registran desde {{ \App\Services\Novedades\AjustesNovedades::bitacoraActualConArticulo() }} con la categoría <strong>Robo</strong>.
                         @endif
                     </p>
                 </div>

@@ -27,6 +27,7 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `agente.demo` (cas
 2. Captura un taxi (placas, conductor, monto, destino y un pasajero). Hay recuadro para el taxista y para ti. Guarda.
 3. Con `director.demo` abre la **campana**: «Vale de taxi por autorizar: #…». Toca **Abrir vale** y luego **Autorizar (Vo.Bo.)**.
 4. Abre **Mis pendientes**: **Vales de taxi por autorizar** bajó en uno y el aviso de la campana quedó leído.
+   Antes de autorizar, mira la tarjeta del vale: junto a **Pendiente de Vo.Bo.** dice desde cuándo espera, por ejemplo **Hace 3 h · a tiempo** (verde). Con más de 24 horas se pone amarillo (**más de 1 día**) y con más de 72 horas rojo (**más de 3 días**); el renglón de Mis pendientes toma el mismo color.
 5. Con `admin.demo`, en **Caseta y activos**, elige **Solo el guardia firma en pantalla** y guarda.
 6. Con `agente.demo` registra otro taxi: ya no aparece el recuadro del taxista. Imprime el vale: arriba dice «El conductor y quien autoriza firman a mano.»
 7. Con `admin.demo` regresa a **Guardia y taxista firman en pantalla (original)**.
@@ -44,7 +45,7 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `agente.demo` (cas
 ## Práctica 4 · Procedimientos por aprobar y por leer (jefe.demo, director.demo, agente.demo y admin.demo)
 
 1. Con `jefe.demo` crea un procedimiento nuevo para **Hotel Demo Centro** y toca **Guardar y enviar a revisión**.
-2. Con `director.demo` (o `admin.demo`) abre la **campana**: «Procedimiento por aprobar: …». También está en **Mis pendientes → Procedimientos por aprobar**.
+2. Con `director.demo` (o `admin.demo`) abre la **campana**: «Procedimiento por aprobar: …». También está en **Mis pendientes → Procedimientos por aprobar**. En la lista de Procedimientos la ficha dice desde cuándo espera (**Hace … · a tiempo**, amarillo con más de 24 horas, rojo con más de 72).
 3. Toca **Pedir cambios** con un comentario. `jefe.demo` recibe «Tu procedimiento … necesita cambios» con el comentario.
 4. `jefe.demo` lo envía otra vez; `director.demo` lo aprueba y firma. `jefe.demo` recibe «Tu procedimiento … se publicó».
 5. Con `agente.demo` abre la campana: «Procedimiento por leer: …». Toca **Leer ahora**, marca la casilla y firma.

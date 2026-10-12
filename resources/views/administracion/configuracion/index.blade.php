@@ -166,31 +166,15 @@
         @if ($lostFound)
             <section class="tarjeta p-4 config-lost-found" id="lost-found" aria-labelledby="t-lost-found">
                 <h2 id="t-lost-found" class="h5 fw-bold"><i class="bi bi-bag-fill me-2 text-warning" aria-hidden="true"></i>Lost &amp; Found: días de resguardo</h2>
-                <p class="small text-muted">Cuántos días puede estar un artículo en resguardo, según su clasificación, antes de que el semáforo lo marque para atención. Aplica a todas las sedes de {{ $empresa->nombre_comercial }}.</p>
+                <p class="small text-muted">Cuántos días puede estar un artículo en resguardo, según su clasificación, antes de que el semáforo lo marque para atención. Aplica a todas las sedes de {{ $empresa->nombre_comercial }}. También se cambian desde el botón <strong>Días de resguardo</strong> del archivo de Lost &amp; Found: es el mismo dato.</p>
                 @unless ($lostFound['puedeEditar'])
                     <div class="alert alert-secondary small py-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Tu rol solo puede consultar esta configuración, no modificarla.</div>
                 @endunless
                 <form action="{{ route('configuracion.lost_found') }}" method="POST">
                     @csrf
                     @method('PUT')
-                    @foreach (\App\Models\LostFoundArticulo::TIPOS_VALOR as $tipo => $nombre)
-                        @php $guardado = $lostFound['guardados'][$tipo] ?? null; $dias = $lostFound['dias'][$tipo]; @endphp
-                        <div class="umbral-card">
-                            <div>
-                                <label class="fw-bold" for="dias_{{ $tipo }}">{{ $nombre }}</label>
-                                <div class="small text-muted">Amarillo a partir del día {{ (int) ceil($dias * 0.7) }}; rojo (vencido) desde el día {{ $dias }}.</div>
-                                @if ($guardado && $guardado->updated_at)
-                                    <div class="texto-traza">Editado por {{ $guardado->editor?->name ?? 'el sistema' }} · @fecha($guardado->updated_at)</div>
-                                @endif
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <input type="number" id="dias_{{ $tipo }}" name="dias[{{ $tipo }}]" class="campo campo-dias-lf" min="1" max="{{ \App\Services\Novedades\ArchivoLostFound::MAX_DIAS }}" inputmode="numeric" required
-                                       value="{{ old('dias.'.$tipo, $dias) }}" @disabled(! $lostFound['puedeEditar'])
-                                       data-mensaje-min="Debe ser al menos 1 día: un artículo no puede vencer el mismo día que se encuentra.">
-                                <span class="text-muted small">día(s)</span>
-                            </div>
-                        </div>
-                    @endforeach
+                    {{-- Los mismos campos que el diálogo «Días de resguardo» del archivo de Lost & Found --}}
+                    @include('seguridad.lost-found._dias-campos', ['dias' => $lostFound['dias'], 'guardados' => $lostFound['guardados'], 'puedeEditar' => $lostFound['puedeEditar'], 'prefijo' => ''])
                     @if ($lostFound['puedeEditar'])
                         <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar días de resguardo</button>
                     @endif

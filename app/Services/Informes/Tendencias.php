@@ -15,6 +15,7 @@ use App\Models\Novedad;
 use App\Models\PaseSalida;
 use App\Models\PrestamoLlave;
 use App\Models\User;
+use App\Services\Novedades\AjustesNovedades;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
@@ -100,7 +101,7 @@ class Tendencias
             return null;
         }
 
-        return ['clave' => $clave, 'titulo' => self::SECCIONES[$clave][0], 'icono' => self::SECCIONES[$clave][1]]
+        return ['clave' => $clave, 'titulo' => $clave === 'novedades' ? AjustesNovedades::nombreActual() : self::SECCIONES[$clave][0], 'icono' => self::SECCIONES[$clave][1]]
             + $datos + ['cifras' => [], 'series' => [], 'desgloses' => [], 'nota' => null];
     }
 

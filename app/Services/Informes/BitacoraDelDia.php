@@ -10,6 +10,7 @@ use App\Models\PaseSalida;
 use App\Models\PrestamoLlave;
 use App\Models\RecorridoPc;
 use App\Models\User;
+use App\Services\Novedades\AjustesNovedades;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Throwable;
@@ -107,6 +108,12 @@ class BitacoraDelDia
     }
 
     /** @return array<string, mixed> */
+    /** Nombre de cada tipo; el de la bitácora es el que la empresa le dio al módulo. */
+    public static function nombreTipo(string $tipo): string
+    {
+        return $tipo === 'novedades' ? AjustesNovedades::nombreActual() : (self::TIPOS[$tipo][0] ?? $tipo);
+    }
+
     private function evento(string $tipo, mixed $momento, string $etiqueta, string $texto, ?string $sede, ?string $enlace = null, int $orden = 0): array
     {
         $utc = CarbonImmutable::parse($momento instanceof \DateTimeInterface ? $momento->format('Y-m-d H:i:s') : (string) $momento, 'UTC');

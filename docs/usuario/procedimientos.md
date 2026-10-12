@@ -25,7 +25,7 @@ resumen: Consultar el manual de procedimientos, leer y firmar «Leí y entendí�
 | Estado | Qué quiere decir |
 |---|---|
 | **Publicado** (verde) | Es el que rige. Se consulta y se firma. |
-| **En revisión** (naranja) | Espera que alguien lo apruebe. |
+| **En revisión** (naranja) | Espera que alguien lo apruebe. En la lista dice desde cuándo espera, por ejemplo **Hace 5 h · a tiempo** (verde, menos de 24 horas), **Hace 2 días · más de 1 día** (amarillo, de 24 a 72 horas) o **Hace 4 días · más de 3 días** (rojo, más de 72 horas). |
 | **Borrador** (gris) | Se está escribiendo. Solo lo ven quienes lo preparan. |
 | **Retirado (obsoleto)** (rojo) | Ya no se usa. |
 

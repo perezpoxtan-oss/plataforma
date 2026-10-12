@@ -53,6 +53,10 @@
                 @if ($sedesObjeto->isNotEmpty())
                     <button type="button" class="btn-nuevo-ticket btn-objeto-lf" data-abrir-dialogo="dialogoObjetoLf"><i class="bi bi-plus-circle-fill me-1" aria-hidden="true"></i>Registrar objeto encontrado</button>
                 @endif
+                {{-- Días de resguardo aquí mismo (mismo dato que Estructura → Configuración) --}}
+                @if ($diasResguardo)
+                    <button type="button" class="btn-accion-novedades" data-abrir-dialogo="dialogoDiasLf"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Días de resguardo</button>
+                @endif
                 @if ($puede['imprimir'])
                     <a href="{{ route('lost_found.auditoria', array_filter(['sede' => $sedeFiltro])) }}" target="_blank" rel="noopener" class="btn-accion-novedades oscuro"><i class="bi bi-clipboard-check-fill" aria-hidden="true"></i> Auditoría</a>
                 @endif
@@ -67,9 +71,6 @@
                     <button type="button" class="btn-lf completar" data-abrir-dialogo="dialogoObjetoLf"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Registrar otro objeto</button>
                 @endif
             </p>
-        @endif
-        @if ($puede['configurar'])
-            <p class="small text-muted mb-3 lf-enlace-config"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Días de resguardo: <a href="{{ route('configuracion.index') }}#lost-found">Configurar en Estructura → Configuración</a>.</p>
         @endif
 
         {{-- Escanear la etiqueta de la bolsa (QR, NFC o el folio tecleado) y abrir su ficha --}}
@@ -182,9 +183,9 @@
                     @else
                         Todavía no hay artículos en Lost &amp; Found.
                         @if ($sedesObjeto->isNotEmpty())
-                            Toca <strong>Registrar objeto encontrado</strong> o despacha un ticket de <strong>Lost &amp; Found</strong> en la Bitácora de Novedades.
+                            Toca <strong>Registrar objeto encontrado</strong> o despacha un ticket de <strong>Lost &amp; Found</strong> en {{ \App\Services\Novedades\AjustesNovedades::bitacoraActualConArticulo() }}.
                         @else
-                            Se registran desde un ticket de <strong>Lost &amp; Found</strong> en la Bitácora de Novedades.
+                            Se registran desde un ticket de <strong>Lost &amp; Found</strong> en {{ \App\Services\Novedades\AjustesNovedades::bitacoraActualConArticulo() }}.
                         @endif
                     @endif
                 </p>
@@ -269,6 +270,9 @@
             @endif
         @endif
         @include('componentes.codigo-identificacion')
+        @if ($diasResguardo)
+            @include('seguridad.lost-found._dialogo-dias', ['diasResguardo' => $diasResguardo])
+        @endif
         @if ($sedesObjeto->isNotEmpty())
             @include('seguridad.lost-found._objeto', ['sedes' => $sedesObjeto, 'ahoraLocal' => $ahoraLocal])
         @endif

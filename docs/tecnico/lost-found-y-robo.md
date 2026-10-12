@@ -48,6 +48,7 @@ Todas llevan `empresa_id` (scope de tenant) y autoría `creado_por` / `actualiza
 | GET | `/lost-found/auditoria?sede=&desde=&hasta=` | `lost_found.auditoria` | `lost_found.imprimir` |
 | GET | `/lost-found/dias-resguardo` (dirección anterior) | `lost_found.umbrales` | `lost_found.ver` → 301 a `/configuracion#lost-found` (o a `/lost-found` si no puede abrir Configuración) |
 | PUT | `/configuracion/lost-found` | `configuracion.lost_found` | `lost_found.configurar` **con alcance de empresa** |
+| PUT | `/lost-found/dias-resguardo` (`dias[…]`, `_dialogo=dias-lf`; 30/min) | `lost_found.umbrales.guardar` | `lost_found.configurar` **con alcance de empresa** (sede → 403). Mismas reglas y auditoría (`ArchivoLostFound::guardarUmbrales()`); éxito → `/lost-found?filtro=urgentes` con «Días de resguardo guardados…»; error → regresa con el diálogo abierto |
 | GET | `/robos?filtro=&q=&sede=&abrir=` | `robo.index` | `robo.ver` (menú «Robo — seguimiento») |
 | PUT | `/robos/{id}` | `robo.update` | `robo.editar` |
 
@@ -100,3 +101,12 @@ Desde Robo se reutilizan los endpoints de Novedades: `novedades.coincidencias` (
 - **Agregar el objeto aquí**: en «Sin artículos capturados aún», un formulario plegado (`novedad_id`) agrega el objeto al ticket sin abrir el expediente; solo para tickets que el usuario puede `editar` (`completables`).
 - **Robo**: «Abrir Expediente» lleva al expediente de la bitácora (`?abrir=ID&volver=robo`) cuando el usuario puede editarlo ahí; el diálogo propio de Robo queda para quien solo tiene el submódulo, con el mismo orden y nombres. Detalle en [Bitácora de novedades](novedades.md#mejoras-de-incidentes-adr-0013).
 
+
+## Días de resguardo desde el archivo (decisión del dueño, 2026-10-12)
+
+- Botón **Días de resguardo** en la cabecera de `/lost-found` para quien tiene `lost_found.configurar` (cualquier alcance). Abre el diálogo `seguridad/lost-found/_dialogo-dias.blade.php`:
+  - con alcance de **empresa** (`ArchivoLostFound::puedeConfigurar()`): formulario a `PUT /lost-found/dias-resguardo` con **Cancelar / Guardar**;
+  - con alcance de **sede**: solo consulta (sin formulario) y el aviso «Los días son de toda la empresa…».
+- Los campos son la vista compartida `seguridad/lost-found/_dias-campos.blade.php` (también la usa Estructura → Configuración, `#lost-found`, con otro prefijo de `id`). Una sola fuente de verdad: tabla `lost_found_umbrales` y `ArchivoLostFound::guardarUmbrales()`; lo guardado en un lugar se ve en el otro con «Editado por … · fecha».
+- `LostFoundController::index()` entrega `diasResguardo = {dias, guardados, puedeEditar}` o `null`.
+- Sin migraciones. Pruebas: `LostFoundRoboTest::test_dias_de_resguardo_se_guardan_desde_el_archivo_y_son_el_mismo_dato_que_configuracion` y los casos de permisos de `test_dias_de_resguardo_solo_con_configurar_en_toda_la_empresa`.

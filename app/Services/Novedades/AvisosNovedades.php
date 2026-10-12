@@ -55,7 +55,7 @@ class AvisosNovedades
         if ($usuario === null) {
             return;
         }
-        $titulo = "Te canalizaron el ticket {$novedad->folio()}";
+        $titulo = "Te canalizaron el ticket {$novedad->folio()}".$this->modulo($novedad);
         $texto = $novedad->etiquetaCategoria().' · '.($novedad->sede?->nombre ?? '').' · '.$novedad->ubicacion.' — lo canalizó '.$actor->name.'.';
         $this->centro->avisar((int) $novedad->empresa_id, [$usuario->id], 'novedad_canalizada', [
             'titulo' => $titulo, 'texto' => $texto,
@@ -63,7 +63,7 @@ class AvisosNovedades
             'referencia_tipo' => 'novedad_canalizada', 'referencia_id' => (int) $novedad->id,
             'acciones' => [['etiqueta' => 'Atender', 'abrir' => true]],
         ]);
-        $this->correo($novedad, 'novedad_canalizada', [$usuario], $titulo, [$texto, 'Ábrelo en la Bitácora para darle seguimiento.']);
+        $this->correo($novedad, 'novedad_canalizada', [$usuario], $titulo, [$texto, 'Ábrelo en '.app(AjustesNovedades::class)->bitacoraConArticulo((int) $novedad->empresa_id).' para darle seguimiento.']);
     }
 
     /** Caso cerrado: quien lo levantó y quien lo tenía canalizado se enteran del resultado. */
@@ -77,7 +77,7 @@ class AvisosNovedades
             return;
         }
         $this->centro->avisar((int) $novedad->empresa_id, User::whereIn('id', $ids)->where('activo', true)->pluck('id'), 'novedad_resuelta', [
-            'titulo' => "Ticket {$novedad->folio()} resuelto",
+            'titulo' => "Ticket {$novedad->folio()} resuelto".$this->modulo($novedad),
             'texto' => 'Lo cerró '.$actor->name.'. Resolución: '.($novedad->resolucion ?? '—'),
             'url' => route('novedades.index', ['abrir' => $novedad->id]),
             'referencia_tipo' => 'novedad_resuelta', 'referencia_id' => (int) $novedad->id,
@@ -94,7 +94,7 @@ class AvisosNovedades
             return;
         }
         $this->centro->avisar((int) $novedad->empresa_id, [(int) $novedad->asignado_a], 'novedad_turno', [
-            'titulo' => "Ticket {$novedad->folio()} pendiente para tu turno",
+            'titulo' => "Ticket {$novedad->folio()} pendiente para tu turno".$this->modulo($novedad),
             'texto' => $actor->name.' lo dejó para '.($turno !== null ? "el turno {$turno}" : 'el siguiente turno').' · '.$novedad->etiquetaCategoria().' · '.$novedad->ubicacion,
             'url' => route('novedades.index', ['abrir' => $novedad->id]),
             'referencia_tipo' => 'novedad_turno', 'referencia_id' => (int) $novedad->id,
@@ -110,7 +110,7 @@ class AvisosNovedades
     public function inicioDeTurno(Novedad $novedad, ?string $turno, ?User $quienLoDejo = null): int
     {
         $usuarios = $this->duenoOPersonal($novedad)->reject(fn (User $u) => $quienLoDejo !== null && (int) $u->id === (int) $quienLoDejo->id)->values();
-        $titulo = "Pendiente de turno: ticket {$novedad->folio()}";
+        $titulo = "Pendiente de turno: ticket {$novedad->folio()}".$this->modulo($novedad);
         $texto = ($turno !== null ? "Empezó el turno {$turno}" : 'Empezó el siguiente turno').' y este ticket sigue esperando: '
             .$novedad->etiquetaCategoria().' · '.$novedad->ubicacion.($novedad->asignado_a === null ? ' (sin dueño: lo puede atender cualquiera del turno).' : '.');
         $this->centro->resolver('novedad_turno', (int) $novedad->id);
@@ -133,7 +133,7 @@ class AvisosNovedades
     public function finDeTurno(Novedad $novedad, ?string $turno): int
     {
         $jefes = $this->destinatarios->conPermiso((int) $novedad->empresa_id, 'novedades.reabrir', (int) $novedad->sede_id);
-        $titulo = "Nadie atendió el ticket {$novedad->folio()}";
+        $titulo = "Nadie atendió el ticket {$novedad->folio()}".$this->modulo($novedad);
         $texto = ($turno !== null ? "Terminó el turno {$turno}" : 'Terminó el turno').' y el ticket sigue «Pendiente de turno»'
             .($novedad->asignado ? ' (dueño: '.$novedad->asignado->name.')' : ' sin dueño').'. '.$novedad->etiquetaCategoria().' · '.$novedad->ubicacion;
         $avisados = $this->centro->avisar((int) $novedad->empresa_id, $jefes->pluck('id'), 'novedad_turno_escalada', [
@@ -180,6 +180,18 @@ class AvisosNovedades
     }
 
     // ------------------------------------------------------------------ Apoyo
+
+    /**
+     * Si la empresa le dio otro nombre al módulo («Incidentes»), los avisos
+     * lo dicen: «Te canalizaron el ticket #00012 · Incidentes». Con el
+     * nombre de siempre, el título queda igual que antes.
+     */
+    private function modulo(Novedad $novedad): string
+    {
+        $ajustes = app(AjustesNovedades::class);
+
+        return $ajustes->nombrePropio((int) $novedad->empresa_id) ? ' · '.$ajustes->nombreMenu((int) $novedad->empresa_id) : '';
+    }
 
     /**
      * @param  Collection<int, User>  $usuarios

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Empresa;
+use App\Services\Novedades\AjustesNovedades;
 
 /**
  * Configuración ordenada por módulo (ADR-0016): a qué módulo pertenece cada
@@ -46,9 +47,12 @@ final class GruposAvisos
      * Avisos de Empresa::AVISOS agrupados por módulo, en el orden de GRUPOS
      * (y «Otros avisos» al final, solo si hay alguno).
      *
+     * Con $empresaId, el grupo de la bitácora lleva el nombre que esa empresa
+     * le dio al módulo («Bitácora de incidentes», etc.).
+     *
      * @return array<string, array{nombre: string, icono: string, modulo: ?string, avisos: array<string, array{0: string, 1: bool}>}>
      */
-    public static function agrupados(): array
+    public static function agrupados(?int $empresaId = null): array
     {
         $resultado = [];
         foreach (self::GRUPOS as $grupo => [$nombre, $icono, $modulo]) {
@@ -58,6 +62,13 @@ final class GruposAvisos
 
         foreach (Empresa::AVISOS as $clave => $definicion) {
             $resultado[self::grupoDe($clave)]['avisos'][$clave] = $definicion;
+        }
+
+        if ($empresaId !== null && ($bitacora = app(AjustesNovedades::class)->bitacora($empresaId)) !== 'Bitácora de novedades') {
+            $resultado['novedades']['nombre'] = $bitacora;
+            foreach ($resultado['novedades']['avisos'] as $clave => $definicion) {
+                $resultado['novedades']['avisos'][$clave][0] = str_replace('Bitácora de novedades', $bitacora, $definicion[0]);
+            }
         }
 
         return array_filter($resultado, fn ($g) => $g['avisos'] !== []);

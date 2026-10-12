@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('titulo', $pagina->titulo.' · Manual')
+@section('titulo', $titulo.' · Manual')
 
 @section('contenido')
 <div class="tema-azul pantalla-manual">
@@ -14,7 +14,7 @@
         <div class="encabezado-pantalla m-0">
             <div class="icono"><i class="bi {{ $icono }} text-primary" aria-hidden="true"></i></div>
             <div>
-                <h1>{{ $pagina->titulo }}</h1>
+                <h1>{{ $titulo }}</h1>
                 <p>{{ $pagina->resumen }}</p>
             </div>
         </div>
@@ -22,6 +22,12 @@
             <i class="bi bi-printer" aria-hidden="true"></i> Imprimir
         </button>
     </div>
+
+    @if ($nombreBitacora)
+        <div class="alert alert-info small py-2 mb-3 no-imprimir" role="note">
+            <i class="bi bi-info-circle me-1" aria-hidden="true"></i>En tu empresa la Bitácora de novedades se llama <strong>{{ $nombreBitacora }}</strong>: donde esta página dice «Novedades», en tu pantalla verás «{{ $nombreBitacora }}». Funciona igual.
+        </div>
+    @endif
 
     <div class="manual-cuerpo {{ count($apartados) > 1 ? 'con-indice' : '' }}">
         @if (count($apartados) > 1)

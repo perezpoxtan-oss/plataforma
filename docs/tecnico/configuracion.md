@@ -22,9 +22,9 @@ Antes era la pantalla `/lost-found/dias-resguardo` dentro de Lost & Found; ahora
 
 - Reglas, mensajes y auditoría sin cambios: `ArchivoLostFound::guardarUmbrales()` (1 a 3650 días por tipo de valor, `lost_found.configurado` sobre la empresa). Al guardar regresa a `/configuracion#lost-found`.
 - Cada tipo muestra cuándo se pone en amarillo (70 %) y en rojo, y «Editado por … · fecha» con `@fecha`.
-- En `/lost-found` se quitó el botón «Configurar Días» / «Días de Resguardo»; queda un enlace pequeño «Días de resguardo: Configurar en Estructura → Configuración» solo para quien puede configurarlos. Los días de cada tipo se siguen viendo en el filtro de tipo de valor y en cada artículo.
+- ~~En `/lost-found` se quitó el botón «Configurar Días»~~ **Decisión del dueño (2026-10-12):** los días también se editan desde el propio archivo de Lost & Found (botón y diálogo «Días de resguardo», `PUT /lost-found/dias-resguardo`, ver docs/tecnico/lost-found-y-robo.md). Una sola fuente de verdad: `lost_found_umbrales` y `ArchivoLostFound::guardarUmbrales()`; los campos de las dos pantallas son la misma vista `seguridad/lost-found/_dias-campos.blade.php`. Los días de cada tipo se siguen viendo en el filtro de tipo de valor y en cada artículo.
 - La sección de Avisos por correo ahora solo se muestra a quien tiene `configuracion.ver`.
-- Se borró la vista `seguridad/lost-found/umbrales.blade.php` y el método `LostFoundController::guardarUmbrales()`.
+- Se borró la vista `seguridad/lost-found/umbrales.blade.php`; `LostFoundController::guardarUmbrales()` regresó (2026-10-12) como acción del diálogo del archivo, con las mismas reglas que Configuración.
 
 ## Correo (`App\Support\CorreoPlataforma`)
 

@@ -70,7 +70,7 @@ class ConfiguracionController extends Controller
             'verConfiguracion' => $actor->can('configuracion.ver'),
             'lostFound' => $this->datosLostFound($actor, $empresaId, $configuraLostFound),
             // Mejoras estructura (ADR-0016): avisos por módulo, versión instalada y bitácora de auditoría
-            'grupos' => GruposAvisos::agrupados(),
+            'grupos' => GruposAvisos::agrupados($empresaId),
             'version' => self::versionInstalada(),
             'auditoriaSede' => $empresaId === null ? null : (Empresa::find($empresaId)?->preferencias['auditoria_sede'] ?? AuditoriaController::SEDE_POR_OMISION),
         ]);
@@ -172,9 +172,9 @@ class ConfiguracionController extends Controller
         $empresaId = $this->empresa->id($request->user());
         abort_if($empresaId === null, 404);
 
-        app(AjustesNovedades::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only(['nombre_menu', 'categoria_hallazgo_pc']));
+        app(AjustesNovedades::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only(['nombre_opcion', 'nombre_menu', 'categoria_hallazgo_pc']));
 
-        return redirect()->to(route('configuracion.index').'#novedades')->with('ok', 'Ajustes de la Bitácora de novedades guardados.');
+        return redirect()->to(route('configuracion.index').'#novedades')->with('ok', 'Ajustes de '.app(AjustesNovedades::class)->bitacoraConArticulo($empresaId).' guardados.');
     }
     // Fin Mejoras Incidentes
 

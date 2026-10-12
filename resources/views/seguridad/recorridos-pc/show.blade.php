@@ -53,7 +53,7 @@
             @if ($r->novedad)
                 <li class="rpc-texto-ticket"><i class="bi bi-link-45deg" aria-hidden="true"></i> Generó ticket de seguimiento
                     @if ($puedeVerTicket)<a href="{{ route('novedades.index', ['abrir' => $r->novedad->id]) }}">{{ $r->novedad->folio() }}</a>@else<strong>{{ $r->novedad->folio() }}</strong>@endif
-                    en la Bitácora de Novedades ({{ $r->novedad->etiquetaEstatus() }})</li>
+                    en {{ \App\Services\Novedades\AjustesNovedades::bitacoraActualConArticulo() }} ({{ $r->novedad->etiquetaEstatus() }})</li>
             @endif
         </ul>
         @if ($puede['imprimir'])

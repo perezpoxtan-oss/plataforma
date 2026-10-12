@@ -1469,10 +1469,15 @@ html.modo-sol .tarjeta-tablero, html.modo-sol .columna-tablero, html.modo-sol .p
 html.modo-noche .aviso-turno-nov, html.modo-noche .caja-objeto-alta { background: rgba(217, 119, 6, 0.15); border-color: #b45309; color: #fcd34d; }
 html.modo-noche .reloj-pase { color: var(--texto-suave); }
 html.modo-noche .reloj-pase.espera-normal { color: #86efac; }
+html.modo-noche .reloj-vobo.espera-normal { background: rgba(22, 163, 74, 0.14); color: #86efac; border-color: #166534; }
+html.modo-noche .reloj-vobo.espera-ambar { background: rgba(217, 119, 6, 0.16); color: #fcd34d; border-color: #92400e; }
+html.modo-noche .reloj-vobo.espera-roja { background: rgba(220, 38, 38, 0.16); color: #fca5a5; border-color: #991b1b; }
 html.modo-noche .reloj-pase.espera-ambar { color: #fcd34d; }
 html.modo-noche .reloj-pase.espera-roja { color: #fca5a5; }
 html.modo-sol .aviso-turno-nov, html.modo-sol .caja-objeto-alta { background: #fff; color: #000; border: 2px solid #000; }
 html.modo-sol .reloj-pase { color: #000; }
+html.modo-sol .reloj-vobo { color: #000; background: #fff; border: 2px solid #000; }
+html.modo-sol .reloj-vobo.espera-roja { border-width: 3px; }
 /* Fin Mejoras incidentes */
 /* Mejoras activos */
 html.modo-noche .recibir-llave-escaneo, html.modo-noche .btn-accion-lector { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
