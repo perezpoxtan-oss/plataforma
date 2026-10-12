@@ -110,6 +110,45 @@ final class Indicadores
         ];
     }
 
+    /** «Subir es bueno» (p. ej. contratados), «subir es malo» (p. ej. incidentes) o neutro (volumen de operación). */
+    public const SUBIR_ES_BUENO = 'bueno';
+
+    public const SUBIR_ES_MALO = 'malo';
+
+    public const NEUTRO = 'neutro';
+
+    /**
+     * Comparación con su lectura (decisión del dueño, mapa de procesos): si el
+     * indicador sabe qué es mejor, la variación se lee como «mejoró 12 %» o
+     * «empeoró 8 %» (estado mejora/empeora → verde/rojo); si es neutro, como
+     * «subió» o «bajó» sin color. La flecha siempre dice hacia dónde se movió
+     * la cifra; el color y el texto, si eso es bueno o malo.
+     *
+     * @return array{valor: float|int, anterior: float|int, cambio: ?float, direccion: string, estado: string, texto: string}
+     */
+    public static function valorar(float|int $actual, float|int $anterior, ?string $sentido): array
+    {
+        $c = self::comparar($actual, $anterior);
+        $sentido = in_array($sentido, [self::SUBIR_ES_BUENO, self::SUBIR_ES_MALO], true) ? $sentido : self::NEUTRO;
+
+        if ($c['direccion'] === 'igual') {
+            return $c + ['estado' => 'igual', 'texto' => 'Sin cambio'];
+        }
+        $estado = $sentido === self::NEUTRO ? 'neutro'
+            : (($c['direccion'] === 'sube') === ($sentido === self::SUBIR_ES_BUENO) ? 'mejora' : 'empeora');
+        $verbo = ['mejora' => 'mejoró', 'empeora' => 'empeoró', 'neutro' => $c['direccion'] === 'sube' ? 'subió' : 'bajó'][$estado];
+        // Antes no hubo nada: no hay porcentaje que calcular
+        $porcentaje = $c['cambio'] === null ? '' : ' '.self::porcentaje(abs($c['cambio']));
+
+        return $c + ['estado' => $estado, 'texto' => $verbo.$porcentaje];
+    }
+
+    /** 12 → «12 %», 12.5 → «12.5 %». */
+    public static function porcentaje(float $valor): string
+    {
+        return (floor($valor) === $valor ? number_format($valor) : number_format($valor, 1)).' %';
+    }
+
     /** Recorta un texto libre para listados e impresiones. */
     public static function corto(?string $texto, int $largo = 90): string
     {

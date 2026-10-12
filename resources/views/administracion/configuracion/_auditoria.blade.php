@@ -1,7 +1,7 @@
 {{--
     Configuración → Cuentas y seguridad → Bitácora de auditoría (ADR-0016): qué
-    ve quien tiene la bitácora con alcance «Su sede». Por omisión, solo sus
-    propios movimientos (como siempre).
+    ve quien tiene la bitácora con alcance «Su sede». Por omisión, los
+    movimientos de su sede (decisión del dueño); la empresa que guardó otro valor lo conserva.
 --}}
 <hr class="my-4">
 <h3 class="h6 fw-bold" id="config-auditoria"><i class="bi bi-clipboard-data me-2 text-primary" aria-hidden="true"></i>Bitácora de auditoría: qué ve «Su sede»</h3>

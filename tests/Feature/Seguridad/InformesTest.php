@@ -235,9 +235,9 @@ class InformesTest extends TestCase
 
         $r = $this->actingAs($this->director)->get(route('tendencias.index', ['seccion' => 'accesos']))->assertOk();
         $accesos = collect($r->viewData('secciones'))->firstWhere('clave', 'accesos');
-        $this->assertSame(['Ingresos registrados', 4, 2, ''], $accesos['cifras'][0]);
+        $this->assertSame(['Ingresos registrados', 4, 2, '', 'neutro'], $accesos['cifras'][0]);
         $this->assertEquals(60, $accesos['desgloses'][2][1]['Personal Externo']); // duración promedio en minutos
-        $r->assertSee('▲', false)->assertSee('+100.0 %')->assertSee('02/10/2026 – 04/10/2026');
+        $r->assertSee('▲', false)->assertSee('subió 100 %')->assertSee('02/10/2026 – 04/10/2026');
 
         // Periodo personalizado: un día sin movimientos contra el anterior con 1
         $s = collect($this->actingAs($this->director)->get(route('tendencias.index', ['periodo' => 'personalizado', 'desde' => '2026-10-03', 'hasta' => '2026-10-03', 'seccion' => 'accesos']))->viewData('secciones'))->first();
@@ -273,7 +273,7 @@ class InformesTest extends TestCase
         $this->assertStringContainsString('text/csv', (string) $r->headers->get('Content-Type'));
         $csv = $this->contenido($r);
         $this->assertStringStartsWith("\xEF\xBB\xBF", $csv);
-        $this->assertStringContainsString('Indicador,"Este periodo","Periodo anterior","Cambio (%)"', $csv);
+        $this->assertStringContainsString('Indicador,"Este periodo","Periodo anterior","Cambio (%)",Lectura', $csv);
         $this->assertStringContainsString('"Ingresos registrados",1,0,', $csv);
 
         $this->quitar('Director', 'tendencias.exportar');

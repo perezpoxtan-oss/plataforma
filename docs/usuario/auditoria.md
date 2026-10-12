@@ -14,8 +14,9 @@ resumen: Quién hizo qué y cuándo en la plataforma, con el antes y el después
 
 ## Antes de empezar
 
-- Para ver la bitácora tu rol debe poder consultar *Bitácora de auditoría* (normalmente el administrador y Dirección). Para descargarla necesitas el permiso **Exportar**.
-- Si tu rol es de una sola sede, ves únicamente tus propios movimientos; tu empresa puede elegir en **Configuración → Cuentas y seguridad** que veas **los movimientos de tu sede**. Arriba dice cuál de los dos ves.
+- Para ver la bitácora tu rol debe poder consultar *Bitácora de auditoría*. La traen el **Administrador** y el **Director** (toda la empresa) y el **Jefe de seguridad** (su sede). Para descargarla necesitas el permiso **Exportar**.
+- Si tu rol la ve con alcance **Su sede** (como el Jefe de seguridad), ves **los movimientos de tu sede**: lo que se hizo en registros de tu sede y lo que hizo el personal asignado a ella. Tu empresa puede elegir en **Configuración → Cuentas y seguridad** que veas **solo tus propios movimientos**. Arriba dice cuál de los dos ves.
+- Si ves toda la bitácora, te llega a la **campana** un aviso cada vez que alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales. Viene encendido; tu empresa lo puede apagar en [Configuración](configuracion.md).
 
 ## Cómo buscar un movimiento
 
@@ -89,10 +90,13 @@ Toca **Exportar a Excel**: se descarga un archivo de Excel (CSV) con los mismos 
 
 **¿Por qué algunos movimientos de Candidatos no tienen usuario?** Son los que hizo el propio candidato sin sesión: su postulación por internet o su captura en la tableta de recepción. Aparecen como «Sistema».
 
-**¿Queda registro de las exportaciones con datos personales?** Sí. Cada vez que alguien descarga datos personales queda anotado aquí.
+**¿Queda registro de las exportaciones con datos personales?** Sí. Cada vez que alguien descarga datos personales queda anotado aquí, y quien ve toda la bitácora recibe un aviso en su campana.
+
+**¿Qué ve el Jefe de seguridad?** La ve con alcance **Su sede**: los movimientos de su sede. Si tu empresa eligió «Solo sus propios movimientos» en [Configuración](configuracion.md), solo ve lo que él hizo.
 
 ## Relacionado
 
 - [Usuarios](usuarios.md)
 - [Roles y permisos](roles-y-permisos.md)
+- [Configuración](configuracion.md)
 - [Altas por verificar](altas-por-verificar.md)

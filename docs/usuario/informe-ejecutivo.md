@@ -9,7 +9,7 @@ resumen: El panorama de la operación para Dirección, con gráficas, listados y
 
 **¿Para qué sirve?** Para que Dirección vea en una sola pantalla cómo está la operación: personal y activos, seguridad física, robos y pases de salida de los últimos 90 días, transporte de los últimos 30 días, candidatos y vacantes, y autorizaciones. Cada bloque trae sus cifras, su gráfica y el listado de registros de donde salen. Se puede imprimir en hoja carta o guardar como PDF.
 
-**Antes de empezar:** necesitas que tu rol pueda **ver** el Informe ejecutivo. Cada ficha aparece solo si además puedes ver su módulo (Colaboradores, Usuarios, Préstamo de llaves, Robo, Pases de salida, Transporte, Candidatos, Vacantes, Autorizaciones…). **Exportar** pide su propio permiso. Si te falta algo, pide a tu administrador que revise tu rol.
+**Antes de empezar:** necesitas que tu rol pueda **ver** el Informe ejecutivo. Cada ficha aparece solo si además puedes ver su módulo (Colaboradores, Usuarios, Préstamo de llaves, Robo, Pases de salida, Transporte, Candidatos, Vacantes, Autorizaciones…). **Imprimir** y **Exportar** piden su propio permiso. Si te falta algo, pide a tu administrador que revise tu rol.
 
 ## Cómo leer el informe
 
@@ -40,7 +40,7 @@ resumen: El panorama de la operación para Dirección, con gráficas, listados y
 
 ## Cómo imprimir o guardar como PDF
 
-1. Toca **Imprimir**. Se abre una hoja carta sin menús, con el logo, la empresa, la fecha y los periodos.
+1. Toca **Imprimir** (solo aparece si tu rol puede imprimir el Informe ejecutivo). Se abre una hoja carta sin menús, con el logo, la empresa, la fecha y los periodos.
 2. Toca **Imprimir o guardar como PDF** y, en la ventana de impresión, elige tu impresora o **Guardar como PDF**.
 
 ![Versión para imprimir](img/informes/ejecutivo-imprimir.png)
@@ -57,6 +57,8 @@ resumen: El panorama de la operación para Dirección, con gráficas, listados y
 | «Tu rol no puede consultar ninguno de los módulos que forman este informe» | Tienes el informe pero ningún módulo de origen. | Pide a tu administrador los permisos de los módulos. |
 | Una cifra no cambió después de capturar algo | Las cifras se guardan 5 minutos para que la pantalla abra rápido. | Toca **Actualizar cifras**. |
 | No aparece **Exportar** | Tu rol no puede exportar este informe. | Pide el permiso **Exportar**. |
+| No aparece **Imprimir** | Tu rol no puede imprimir este informe. | Pide el permiso **Imprimir** del Informe ejecutivo. |
+| «No tienes permiso para ver esto» al abrir la hoja para imprimir | Te quitaron el permiso **Imprimir** o abriste un enlace guardado. | Pide el permiso **Imprimir** a tu administrador. |
 | Falta un bloque | No puedes ver ese módulo, o por un momento no se pudo calcular. | Toca **Actualizar cifras**; si sigue sin salir, pide el permiso. |
 
 ## Preguntas frecuentes

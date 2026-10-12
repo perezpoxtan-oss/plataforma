@@ -55,7 +55,7 @@ Un selector "Empresa de trabajo" (`EmpresaDeTrabajo`, sesión `empresa_activa_id
 |---|---|---|
 | Administrador | 10 | Todo, toda la empresa (incluye `usuarios.desbloquear`) |
 | Director | 20 | Ver, aprobar, exportar e imprimir, toda la empresa |
-| Jefe de seguridad | 30 | Seguridad y Reportes completos, más `usuarios.ver` y `usuarios.desbloquear`; su sede |
+| Jefe de seguridad | 30 | Seguridad y Reportes completos, más `usuarios.ver`, `usuarios.desbloquear` y `auditoria.ver`; su sede |
 | Asistente de seguridad | 40 | Seguridad y Reportes (Operación **y** Padrones): ver, crear, editar, imprimir y exportar; sin eliminar, aprobar ni firmar. Su sede |
 | Jefe de departamento | 45 | `pases_salida` ver/aprobar/imprimir (sede) y crear (propios); `autorizaciones` ver/responder (sede); `vacantes` ver (sede) y crear (propios); `procedimientos.ver` (sede) |
 | Supervisor | 50 | Seguridad y Reportes sin eliminar; su sede |

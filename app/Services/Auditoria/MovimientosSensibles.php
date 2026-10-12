@@ -21,8 +21,9 @@ use Throwable;
  *  - avisar(): los movimientos sensibles (cambios de roles y permisos,
  *    eliminaciones definitivas, exportaciones con datos personales y
  *    módulos contratados) llegan a la campana de quien ve TODA la bitácora,
- *    si la empresa encendió el aviso «movimientos_sensibles» (apagado por
- *    omisión: nadie cambia de comportamiento sin configurarlo). Los bloqueos
+ *    salvo que la empresa apague el aviso «movimientos_sensibles» (encendido
+ *    por omisión desde las decisiones del mapa de procesos; la empresa que ya
+ *    guardó un valor en Configuración lo conserva). Los bloqueos
  *    de cuenta ya avisan por su lado (aviso «cuenta_bloqueada»).
  */
 class MovimientosSensibles
