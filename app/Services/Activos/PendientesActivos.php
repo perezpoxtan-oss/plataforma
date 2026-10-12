@@ -4,8 +4,10 @@ namespace App\Services\Activos;
 
 use App\Models\MovimientoTransporte;
 use App\Models\PrestamoLlave;
+use App\Models\Procedimiento;
 use App\Models\Responsiva;
 use App\Models\User;
+use App\Services\Permisos\Autorizador;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
 use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Services\Responsivas\AdministradorResponsivas;
@@ -28,24 +30,27 @@ class PendientesActivos
     {
         $items = [];
 
-        // Vales de taxi que esperan el Vo.Bo. (dentro del alcance de «Aprobar»)
+        // Vales de taxi que esperan el Vo.Bo. (dentro del alcance de «Aprobar»): una sola consulta
         if ($actor->can('transporte.aprobar') && $actor->can('transporte.ver')) {
-            $vales = app(BitacoraTransporte::class)->limitar(MovimientoTransporte::query(), $actor, 'transporte.aprobar')
+            $fila = app(BitacoraTransporte::class)->limitar(MovimientoTransporte::query(), $actor, 'transporte.aprobar')
                 ->where('movimientos_transporte.estatus', 'no_llego')->where('movimientos_transporte.anulado', false)
-                ->whereNull('movimientos_transporte.autorizado_en');
-            $total = (clone $vales)->count();
-            $desde = $total > 0 ? (string) (clone $vales)->min('movimientos_transporte.fecha') : null;
+                ->whereNull('movimientos_transporte.autorizado_en')->toBase()
+                ->selectRaw('COUNT(*) as total, MIN(movimientos_transporte.fecha) as desde')->first();
+            $total = (int) ($fila->total ?? 0);
+            $desde = $total > 0 && $fila->desde ? substr((string) $fila->desde, 0, 10) : null;
             $items[] = $this->item('vales_taxi', 'Vales de taxi por autorizar', 'bi-taxi-front', $total,
-                route('transporte.index', array_filter(['estado' => 'por_autorizar', 'fecha_inicio' => $desde ? substr($desde, 0, 10) : null])));
+                route('transporte.index', array_filter(['estado' => 'por_autorizar', 'fecha_inicio' => $desde])));
         }
 
         // Procedimientos que esperan su aprobación (no los que uno mismo escribió o envió)
         if ($actor->can('procedimientos.aprobar')) {
             $items[] = $this->item('procedimientos_aprobar', 'Procedimientos por aprobar', 'bi-journal-check',
-                count(app(AdministradorProcedimientos::class)->idsPorAprobar($actor)), route('procedimientos.index', ['filtro' => 'por_aprobar']));
+                $this->procedimientosPorAprobar($actor), route('procedimientos.index', ['filtro' => 'por_aprobar']));
         }
 
-        $ajustes = AjustesCaseta::de($empresaId);
+        // La empresa ya viene cargada con el usuario (EstablecerEmpresa): sin consulta de más
+        $empresa = ! $actor->es_superadmin && (int) $actor->empresa_id === $empresaId && $actor->relationLoaded('empresa') ? $actor->empresa : $empresaId;
+        $ajustes = AjustesCaseta::de($empresa);
 
         // Llaves fuera de tiempo (semáforo configurado)
         if ($actor->can('prestamo_llaves.editar') && AdministradorPrestamosLlaves::conSemaforo($ajustes)) {
@@ -67,6 +72,23 @@ class PendientesActivos
         }
 
         return $items;
+    }
+
+    /**
+     * Como AdministradorProcedimientos::idsPorAprobar() pero con menos
+     * consultas: las aplicaciones de la versión solo hacen falta si el
+     * permiso «Aprobar» del usuario no es de toda la empresa.
+     */
+    private function procedimientosPorAprobar(User $actor): int
+    {
+        $servicio = app(AdministradorProcedimientos::class);
+        $deEmpresa = $actor->es_superadmin || app(Autorizador::class)->sedesPermitidas($actor, 'procedimientos.aprobar') === null;
+
+        return $servicio->limitar(Procedimiento::query(), $actor, 'procedimientos.aprobar')
+            ->where('procedimientos.estado_trabajo', Procedimiento::EN_REVISION)
+            ->with($deEmpresa ? ['trabajo'] : ['trabajo.aplicaciones'])->get()
+            ->filter(fn (Procedimiento $p) => $servicio->motivoNoAprueba($actor, $p, $p->trabajo) === null)
+            ->count();
     }
 
     /**

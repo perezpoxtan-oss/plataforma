@@ -211,7 +211,8 @@ class AdministradorResponsivas
         $pendientes->load('equipo:id,numero_serie');
         $antes = $this->foto($responsiva);
 
-        [$regresaron, $cerrada] = DB::transaction(function () use ($actor, $responsiva, $pendientes) {
+        $porEquipo = $filas !== null; // con casillas, cada equipo guarda quién lo recibió (como «Recibir» por equipo)
+        [$regresaron, $cerrada] = DB::transaction(function () use ($actor, $responsiva, $pendientes, $porEquipo) {
             $regresaron = 0;
             $ahora = now();
             foreach ($pendientes as $fila) {
@@ -223,7 +224,7 @@ class AdministradorResponsivas
                 } elseif ($equipo !== null && $equipo->estado === 'baja') {
                     $estado = 'baja';
                 }
-                $fila->forceFill(['devuelto_en' => $ahora, 'estado_devolucion' => $estado, 'recibido_por' => $actor->id])->save();
+                $fila->forceFill(['devuelto_en' => $ahora, 'estado_devolucion' => $estado] + ($porEquipo ? ['recibido_por' => $actor->id] : []))->save();
             }
             $cerrada = ! $responsiva->equipos()->whereNull('devuelto_en')->exists();
             if ($cerrada) {
