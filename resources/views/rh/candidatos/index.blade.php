@@ -37,8 +37,9 @@
             </div>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ route('recepcion.index') }}" class="btn-secundario-rh"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Recepción</a>
-                {{-- Fase 3: lista de documentos para contratar y plazos --}}
+                {{-- Configuración de Candidatos: criterios de entrevista (ADR-0010) y documentos y plazos (fase 3) --}}
                 @if ($puede['configurar'] ?? false)
+                    <a href="{{ route('candidatos.criterios') }}" class="btn-secundario-rh"><i class="bi bi-star-half me-1" aria-hidden="true"></i>Criterios de entrevista</a>
                     <a href="{{ route('candidatos.configuracion') }}" class="btn-secundario-rh"><i class="bi bi-folder-check me-1" aria-hidden="true"></i>Documentos y plazos</a>
                 @endif
                 @if ($puede['exportar'] && $lista->total() > 0)
@@ -128,6 +129,8 @@
                             <span class="pastilla-etapa etapa-{{ Candidato::COLORES[$c->etapa] ?? 'gris' }}">{{ $c->etiquetaEtapa() }}</span>
                             @if ($c->autocaptura_pendiente)
                                 <span class="pastilla-revisar"><i class="bi bi-phone me-1" aria-hidden="true"></i>Por revisar</span>
+                            @elseif ($c->solicitud_corta)
+                                <span class="pastilla-revisar"><i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Solicitud incompleta</span>
                             @endif
                             {{-- Fase 3: caducidad --}}
                             @if ($c->borrar_en && ! $c->contratado())

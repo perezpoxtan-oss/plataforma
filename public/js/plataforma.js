@@ -8703,6 +8703,19 @@ document.addEventListener('click', function (e) {
             aMano();
         }
     });
+
+    // Vacantes (ADR-0010): el título se sugiere desde el puesto mientras la persona no haya escrito uno propio
+    document.addEventListener('change', function (e) {
+        var puesto = e.target.closest('select[data-sugiere-titulo]');
+        if (!puesto) { return; }
+        var titulo = document.getElementById(puesto.getAttribute('data-sugiere-titulo'));
+        if (!titulo) { return; }
+        var propio = titulo.value.trim() !== '' && titulo.value !== (titulo.dataset.sugerido || '');
+        if (propio) { return; }
+        var texto = puesto.selectedIndex > 0 ? puesto.options[puesto.selectedIndex].text.trim() : '';
+        titulo.value = texto;
+        titulo.dataset.sugerido = texto;
+    });
 })();
 /* Fin Solicitud de empleo formal y Vacantes */
 /* ==========================================================================

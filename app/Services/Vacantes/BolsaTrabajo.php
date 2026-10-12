@@ -12,10 +12,12 @@ use App\Models\Vacante;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\DocumentosCandidato;
+use App\Services\Candidatos\Kiosco;
 use App\Services\Candidatos\Postulaciones;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Recepcion\Destinatarios;
+use App\Support\Entrada;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -209,6 +211,101 @@ class BolsaTrabajo
         return $candidato;
     }
 
+    /**
+     * Postulación corta por internet (ADR-0010): nombre, teléfono, correo, CV
+     * opcional y el aviso de privacidad. Crea (o reutiliza) la ficha y la
+     * postulación, deja la ficha «Solicitud incompleta» (solicitud_corta) y
+     * le manda al candidato, por correo, el enlace del kiosco para que
+     * complete su solicitud cuando pueda. Recursos Humanos recibe el aviso.
+     *
+     * @param  array<string, mixed>  $entrada
+     */
+    public function postularCorta(Empresa $empresa, Vacante $vacante, array $entrada, ?UploadedFile $cv, string $ip): Candidato
+    {
+        $errorSede = null;
+        try {
+            $sedeId = $this->sede($vacante, $entrada['sede_id'] ?? null);
+        } catch (ValidationException $e) {
+            $errorSede = $e->errors();
+        }
+        $entrada = array_map(fn ($v) => is_string($v) && trim($v) === '' ? null : $v, $entrada);
+        if (isset($entrada['telefono']) && is_string($entrada['telefono'])) {
+            $entrada['telefono'] = preg_replace('/[\s\-().]+/', '', $entrada['telefono']);
+        }
+        try {
+            $d = Validator::make($entrada, [
+                'nombre_completo' => ['required', 'string', 'min:5', 'max:150'],
+                'telefono' => ['required', 'regex:/^\d{10,15}$/'],
+                'correo' => ['required', 'email:rfc', 'max:150'],
+                'acepta_privacidad' => ['accepted'],
+            ], [
+                'nombre_completo.required' => 'Escribe tu nombre completo.',
+                'nombre_completo.min' => 'Escribe tu nombre completo (nombre y apellidos).',
+                'telefono.required' => 'Escribe tu teléfono celular.',
+                'telefono.regex' => 'El teléfono lleva de 10 a 15 dígitos, sin letras.',
+                'correo.required' => 'Escribe tu correo: ahí te mandaremos el enlace para completar tu solicitud.',
+                'correo.email' => 'Revisa tu correo: parece incompleto.',
+                'acepta_privacidad.accepted' => 'Para enviar, marca «Acepto el aviso de privacidad».',
+            ])->validate();
+        } catch (ValidationException $e) {
+            throw ValidationException::withMessages(array_merge($e->errors(), $errorSede ?? []));
+        }
+        if ($errorSede !== null) {
+            throw ValidationException::withMessages($errorSede);
+        }
+        $d['nombre_completo'] = Entrada::texto($d['nombre_completo']);
+        $d['correo'] = mb_strtolower(trim((string) $d['correo']));
+
+        $existente = $this->candidatos->buscarFicha(null, $d['telefono'], null);
+        $postulaciones = app(Postulaciones::class);
+        $siguioAbierta = false;
+
+        $candidato = DB::transaction(function () use ($vacante, $d, $sedeId, $ip, $cv, $existente, $postulaciones, &$siguioAbierta) {
+            $candidato = $existente ?? new Candidato(['sede_id' => $sedeId, 'origen' => 'web', 'llegada_en' => now()]);
+            $candidato->fill(['nombre_completo' => $d['nombre_completo'], 'telefono' => $d['telefono'], 'correo' => $d['correo'], 'medio_vacante' => 'bolsa_web']);
+            // Una ficha que ya tenía su solicitud completa no se marca incompleta
+            $candidato->forceFill(['llegada_en' => now(), 'solicitud_corta' => $existente === null || (bool) $existente->solicitud_corta]);
+            $this->candidatos->aceptarPrivacidad($candidato, $ip, 'web');
+            $candidato->save();
+
+            $aVacante = ['sede_id' => $sedeId, 'vacante_id' => $vacante->id, 'departamento_id' => $vacante->departamento_id, 'puesto_id' => $vacante->puesto_id,
+                'vacante' => mb_substr($vacante->titulo, 0, 150)];
+            $abierta = $existente === null ? null : $postulaciones->abierta($candidato);
+            if ($abierta === null) {
+                $postulaciones->crear($candidato, $aVacante, 'web', null);
+            } else {
+                $siguioAbierta = true;
+                if ($abierta->vacante_id === null) {
+                    $abierta->forceFill(array_diff_key($aVacante, ['sede_id' => true]))->save();
+                    $postulaciones->reflejar($abierta);
+                }
+            }
+            if ($cv !== null) {
+                app(DocumentosCandidato::class)->subir($candidato, $cv, 'cv', 'web', 'cv');
+            }
+
+            return $candidato->refresh();
+        });
+
+        $this->candidatos->evento($candidato, 'postulacion', null, $siguioAbierta ? null : 'registrado', match (true) {
+            $existente === null => 'Se postuló por internet a «'.$vacante->titulo.'» con la solicitud corta (falta la solicitud completa).',
+            $siguioAbierta => 'Se volvió a postular por internet a «'.$vacante->titulo.'» (ya tenía un proceso abierto: sigue en el mismo).',
+            default => 'Se volvió a postular por internet a «'.$vacante->titulo.'»: nueva postulación en su misma ficha.',
+        }, null);
+        Auditoria::create([
+            'empresa_id' => $empresa->id, 'user_id' => null, 'evento' => 'candidatos.postulacion',
+            'auditable_type' => Candidato::class, 'auditable_id' => $candidato->id, 'antes' => null,
+            'despues' => ['origen' => 'web', 'corta' => true, 'vacante_id' => $vacante->id, 'sede_id' => $sedeId, 'ficha_existente' => $existente !== null], 'ip' => mb_substr($ip, 0, 45),
+        ]);
+        // El enlace para completar su solicitud le llega por correo (si la plataforma tiene correo configurado)
+        if ($candidato->solicitud_corta) {
+            app(Kiosco::class)->enviarEnlacePorCorreo(null, $candidato, $empresa);
+        }
+        $this->avisarRh($candidato, $vacante, $candidato->solicitud_corta);
+
+        return $candidato;
+    }
+
     /** Sede de la postulación: la única de la vacante o la que eligió (de las de la vacante). */
     private function sede(Vacante $vacante, mixed $elegida): int
     {
@@ -224,12 +321,14 @@ class BolsaTrabajo
     }
 
     /** Campana y correo a quien atiende candidatos en esa sede. Sin datos sensibles. */
-    private function avisarRh(Candidato $candidato, Vacante $vacante): void
+    private function avisarRh(Candidato $candidato, Vacante $vacante, bool $corta = false): void
     {
         $candidato->loadMissing('sede:id,nombre');
         $rh = $this->destinatarios->conPermiso((int) $candidato->empresa_id, 'candidatos.editar', (int) $candidato->sede_id);
         $titulo = 'Nueva postulación por internet: '.$candidato->nombre_completo;
-        $texto = 'Vacante: '.$vacante->titulo.'. Sede: '.$candidato->sede?->nombre.'. Revisa su solicitud y márcala como revisada.';
+        $texto = 'Vacante: '.$vacante->titulo.'. Sede: '.$candidato->sede?->nombre.'. '.($corta
+            ? 'Solicitud incompleta: le mandamos el enlace para completarla; también puedes dárselo desde su ficha.'
+            : 'Revisa su solicitud y márcala como revisada.');
         $this->notificaciones->avisar((int) $candidato->empresa_id, $rh->pluck('id'), 'candidato_postulacion', [
             'titulo' => $titulo, 'texto' => $texto, 'url' => route('candidatos.show', $candidato->id),
             'referencia_tipo' => 'candidato', 'referencia_id' => $candidato->id,

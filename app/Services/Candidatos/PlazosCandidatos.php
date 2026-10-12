@@ -32,8 +32,8 @@ use Illuminate\Validation\ValidationException;
  *  - solicitud_dias: solicitud llenada en el kiosco o por internet sin revisar;
  *  - evaluacion_dias: días HÁBILES desde la cita sin que el departamento registre su evaluación;
  *  - documentos_dias: elegido sin completar documentos o sin contrato firmado;
- *  - por_atender_dias: candidato por atender o por entrevistar con RR. HH.
- *    (registrado, revision, entrevista_rh) sin movimiento;
+ *  - por_atender_dias: candidato «Por atender» (registrado) o «Con RR. HH.»
+ *    (con_rh, ADR-0010) sin movimiento;
  *  - no_se_presento_horas: cita vencida sin registro en caseta → se PROPONE
  *    «Marcar como no se presentó» a RR. HH. (no se marca solo);
  *  - archivar_meses y borrar_meses: caducidad (App\Services\Candidatos\CaducidadCandidatos).
@@ -64,8 +64,8 @@ class PlazosCandidatos
     /** Renglones de Mis pendientes que llevan color por plazo. */
     public const RENGLONES = ['solicitudes', 'recepcion', 'por_entrevistar', 'elegidos', 'entrevistas'];
 
-    /** Etapas en manos de RR. HH. (por atender o por entrevistar): mismo plazo por_atender_dias. */
-    public const ETAPAS_RH = ['registrado', 'revision', 'entrevista_rh'];
+    /** Etapas en manos de RR. HH. («Por atender» y «Con RR. HH.», ADR-0010): mismo plazo por_atender_dias. */
+    public const ETAPAS_RH = ['registrado', 'con_rh'];
 
     public const SEGUNDOS_CANDADO = 60;
 
@@ -128,7 +128,7 @@ class PlazosCandidatos
     {
         return [
             'solicitud_dias' => '«Solicitud sin revisar» (días)', 'evaluacion_dias' => '«Evaluación del departamento sin registrar» (días hábiles)',
-            'documentos_dias' => '«Elegido sin documentos» (días)', 'por_atender_dias' => '«Por atender o entrevistar con RR. HH.» (días)',
+            'documentos_dias' => '«Elegido sin documentos» (días)', 'por_atender_dias' => '«Por atender» o «Con RR. HH.» sin movimiento (días)',
             'no_se_presento_horas' => '«No se presentó» (horas después de la cita)', 'archivar_meses' => '«Archivar» (meses)', 'borrar_meses' => '«Borrar» (meses)',
         ][$clave] ?? $clave;
     }
@@ -353,8 +353,8 @@ class PlazosCandidatos
                 continue;
             }
             $diasEspera = (int) $p->updated_at->diffInDays(now());
-            $n += $this->avisarRh($empresa, $p->candidato, 'por_atender', "Sin atender: {$p->candidato->nombre_completo} lleva {$diasEspera} día".($diasEspera === 1 ? '' : 's').' en «'.$p->etiquetaEtapa().'»',
-                ($p->etapa === 'registrado' ? 'Está registrado como candidato y nadie lo ha atendido (Atender, Considerar o Rechazar).' : 'Recursos Humanos lo atendió y sigue sin entrevista ni canalización (Entrevistar, Canalizar, Considerar o Rechazar).').' Sede: '.($p->sede?->nombre ?? '').'.',
+            $n += $this->avisarRh($empresa, $p->candidato, 'por_atender', ($p->etapa === 'registrado' ? 'Sin atender' : 'Sin canalizar').": {$p->candidato->nombre_completo} lleva {$diasEspera} día".($diasEspera === 1 ? '' : 's').' en «'.$p->etiquetaEtapa().'»',
+                ($p->etapa === 'registrado' ? 'Está «Por atender» y nadie lo ha atendido (Atender, Considerar o Rechazar).' : 'Está «Con RR. HH.» y sigue sin canalizar al departamento (Entrevistar, Canalizar al departamento, Considerar o Rechazar).').' Sede: '.($p->sede?->nombre ?? '').'.',
                 route('candidatos.show', $p->candidato_id), ['postulacion_id' => $p->id, 'dias' => $diasEspera]);
         }
 

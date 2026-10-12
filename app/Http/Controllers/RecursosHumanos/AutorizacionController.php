@@ -128,6 +128,7 @@ class AutorizacionController extends Controller
             'comentario' => ['nullable', 'string', 'max:500'],
             'medio' => ['nullable', Rule::in(['plataforma', 'correo'])],
             'volver' => ['nullable', Rule::in(['recepcion'])],
+            'atender' => ['nullable', 'boolean'], // Recepción: «Que pase y lo atiendo»
         ], ['respuesta.*' => 'Elige una respuesta.', 'comentario.max' => 'El comentario admite máximo 500 caracteres.']);
         $empresaId = $this->empresaDeTrabajo($request);
 
@@ -135,7 +136,8 @@ class AutorizacionController extends Controller
             $a = $this->tenant->conEmpresa($empresaId, function () use ($request, $autorizacion, $datos) {
                 $a = $this->buscar($request->user(), $autorizacion);
 
-                return $this->autorizaciones->responder($request->user(), $a, $datos['respuesta'], $datos['comentario'] ?? null, $datos['medio'] ?? 'plataforma');
+                return $this->autorizaciones->responder($request->user(), $a, $datos['respuesta'], $datos['comentario'] ?? null, $datos['medio'] ?? 'plataforma',
+                    filter_var($datos['atender'] ?? false, FILTER_VALIDATE_BOOL));
             });
         } catch (CambioNoPermitido $e) {
             return ($datos['volver'] ?? null) === 'recepcion'
@@ -145,7 +147,8 @@ class AutorizacionController extends Controller
 
         $mensaje = match (true) {
             $a->tipo === 'recepcion' && $datos['respuesta'] === 'espere' => "Listo: la caseta verá que {$a->titulo()} debe esperar.",
-            $a->tipo === 'recepcion' && $a->estado === 'autorizada' => "Listo: {$a->titulo()} ya puede pasar. La caseta ya lo ve.",
+            $a->tipo === 'recepcion' && $a->estado === 'autorizada' => "Listo: {$a->titulo()} ya puede pasar. La caseta ya lo ve."
+                .($a->candidato_id && $a->candidato?->fresh()?->etapa === 'con_rh' ? ' Queda contigo («Con RR. HH.»): cuando lo entrevistes, califícalo desde su ficha.' : ''),
             $a->tipo === 'recepcion' => "Respuesta registrada: {$a->titulo()} no puede pasar. La caseta ya lo ve.",
             $a->estado === 'autorizada' => "Listo: autorizaste el ingreso de {$a->titulo()}. La caseta ya lo ve.",
             default => "Respuesta registrada: rechazaste a {$a->titulo()}.",

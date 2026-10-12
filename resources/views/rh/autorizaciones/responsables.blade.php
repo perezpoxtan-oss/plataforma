@@ -5,33 +5,66 @@
 @section('contenido')
 <div class="pantalla-responsables">
     @include('administracion.partes.avisos')
-    <a href="{{ route('autorizaciones.index') }}" class="enlace-volver"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Autorizaciones</a>
+    @php
+        $desde = request('desde');
+        [$volverUrl, $volverTexto] = match (true) {
+            $desde === 'departamentos' && auth()->user()->can('departamentos.ver') => [route('departamentos.index'), 'Departamentos'],
+            $desde === 'recepcion' && auth()->user()->can('recepcion_rh.ver') => [route('recepcion.ajustes'), 'Ajustes de Recepción'],
+            default => [route('autorizaciones.index'), 'Autorizaciones'],
+        };
+        $ajustesRecepcion = app(\App\Services\Recepcion\AjustesRecepcion::class);
+        $maximoMinutos = \App\Services\Recepcion\AjustesRecepcion::MAX_MINUTOS_ESCALAMIENTO;
+    @endphp
+    <a href="{{ $volverUrl }}" class="enlace-volver"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>{{ $volverTexto }}</a>
     <div class="encabezado-pantalla mb-3">
         <div class="icono"><i class="bi bi-people-fill text-warning" aria-hidden="true"></i></div>
         <div>
             <h1>Responsables por departamento</h1>
-            <p>Quién autoriza las visitas de cada departamento y quién entrevista a sus candidatos (titular y suplentes).</p>
+            <p>Quién autoriza las visitas de cada departamento y quién entrevista a sus candidatos (titular y suplentes), y qué espera en la caseta.</p>
         </div>
     </div>
 
     @unless ($deEmpresa)
-        <div class="alert alert-secondary small py-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Los responsables son de toda la empresa: con tu alcance solo puedes consultarlos.</div>
+        <div class="alert alert-secondary small py-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Los responsables y las esperas son de toda la empresa: con tu alcance solo puedes consultarlos.</div>
     @endunless
 
-    {{-- Visitas: ¿esperan autorización? --}}
-    <section class="tarjeta p-4 mb-3">
-        <h2 class="h6 fw-bold"><i class="bi bi-door-open me-2 text-primary" aria-hidden="true"></i>Visitas a un departamento</h2>
+    {{-- Esperas (ADR-0010): autorización de visitas, «Que pase» de RR. HH., recordatorio y escalamiento, en un solo lugar --}}
+    <section class="tarjeta p-4 mb-3" id="esperas" aria-labelledby="t-esperas">
+        <h2 id="t-esperas" class="h6 fw-bold"><i class="bi bi-hourglass-split me-2 text-primary" aria-hidden="true"></i>Qué espera en la caseta</h2>
         <form action="{{ route('recepcion.ajustes.guardar') }}" method="POST" class="m-0">
             @csrf
             @method('PUT')
             <input type="hidden" name="visitas_requieren_autorizacion" value="0">
             <label class="casilla-privacidad">
-                <input type="checkbox" name="visitas_requieren_autorizacion" value="1" @checked($requiere) @disabled(! $deEmpresa)>
+                <input type="checkbox" name="visitas_requieren_autorizacion" value="1" @checked(old('visitas_requieren_autorizacion', $requiere)) @disabled(! $deEmpresa)>
                 <span><strong>Las visitas esperan la autorización del responsable</strong><br>
                     <span class="small text-muted">Cuando la caseta registre una visita a un departamento (o a un colaborador de ese departamento) que tenga responsable, la persona queda «Esperando autorización» hasta que él responda. Si el departamento no tiene responsable, entra como siempre.</span></span>
             </label>
+            <input type="hidden" name="rh_autoriza_paso" value="0">
+            <label class="casilla-privacidad mt-2">
+                <input type="checkbox" name="rh_autoriza_paso" value="1" @checked(old('rh_autoriza_paso', $ajustesRecepcion->rhAutorizaPaso($empresa))) @disabled(! $deEmpresa)>
+                <span><strong>La caseta espera a que RR. HH. diga «Que pase»</strong><br>
+                    <span class="small text-muted">Quien viene a Recursos Humanos queda «Esperando a RR. HH.» en caseta hasta que alguien de RR. HH. responda Que pase, Que espere o No puede pasar. Apagado: pasa directo y RR. HH. solo recibe el aviso.</span></span>
+            </label>
+            <p class="small text-muted mt-3 mb-1"><strong>Cuando la respuesta tarda.</strong> A los primeros minutos se vuelve a avisar a quien debe responder (campana y correo); después se avisa a los suplentes (o a quien los cubre) y al Jefe de seguridad de la sede; para Recursos Humanos, al resto del equipo y al Jefe de seguridad. La caseta ve a quién espera, cuántos minutos lleva y a quién se escaló.</p>
+            <div class="rejilla-cv">
+                <div>
+                    <label class="campo-etiqueta" for="recordar_minutos">Recordar a los (minutos)</label>
+                    <input type="number" id="recordar_minutos" name="recordar_minutos" class="campo" min="1" max="{{ $maximoMinutos }}"
+                           value="{{ old('recordar_minutos', $ajustesRecepcion->recordarMinutos($empresa)) }}" @disabled(! $deEmpresa)>
+                    <p class="campo-ayuda">La espera se pinta en ámbar.</p>
+                    @error('recordar_minutos')<p class="texto-error-rh">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="campo-etiqueta" for="escalar_minutos">Avisar al suplente y al jefe a los (minutos)</label>
+                    <input type="number" id="escalar_minutos" name="escalar_minutos" class="campo" min="2" max="{{ $maximoMinutos }}"
+                           value="{{ old('escalar_minutos', $ajustesRecepcion->escalarMinutos($empresa)) }}" @disabled(! $deEmpresa)>
+                    <p class="campo-ayuda">La espera se pinta en rojo.</p>
+                    @error('escalar_minutos')<p class="texto-error-rh">{{ $message }}</p>@enderror
+                </div>
+            </div>
             @if ($deEmpresa)
-                <button type="submit" class="btn-azul btn-accion-rh mt-2">Guardar</button>
+                <button type="submit" class="btn-azul btn-accion-rh mt-2">Guardar esperas</button>
             @endif
         </form>
     </section>

@@ -114,6 +114,9 @@ class VacanteController extends Controller
             $v = $this->vacantes->crear($request->user(), $this->entrada($request));
             if ($publicar && $request->user()->can('vacantes.editar')) {
                 $v = $this->vacantes->cambiarEstado($request->user(), $v, 'publicada', null, AdministradorVacantes::hoy(Empresa::findOrFail($empresaId)));
+            } elseif (! $request->user()->can('vacantes.editar')) {
+                // Jefe de departamento: propone la vacante y Recursos Humanos recibe la campana (ADR-0010)
+                $this->vacantes->avisarPropuesta($request->user(), $v->load('departamento:id,nombre'));
             }
 
             return $v;
@@ -221,7 +224,7 @@ class VacanteController extends Controller
             $consulta = $verFichas
                 ? $consulta->whereIn('postulaciones.candidato_id', app(AdministradorCandidatos::class)->limitar(Candidato::query(), $actor, 'candidatos.ver')->select('candidatos.id'))
                 : app(Entrevistas::class)->limitar($consulta, $actor);
-            $orden = ['elegido', 'evaluado', 'canalizado', 'entrevista_rh', 'revision', 'registrado', 'no_se_presento', 'considerar', 'contratado', 'rechazado'];
+            $orden = ['elegido', 'evaluado', 'canalizado', 'con_rh', 'registrado', 'no_se_presento', 'considerar', 'contratado', 'rechazado'];
             $filas = $consulta->orderByRaw('CASE postulaciones.etapa '.collect($orden)->map(fn ($e, $i) => "WHEN '{$e}' THEN {$i}")->join(' ').' ELSE 99 END')
                 ->orderByDesc('postulaciones.id')->limit(300)->get();
 

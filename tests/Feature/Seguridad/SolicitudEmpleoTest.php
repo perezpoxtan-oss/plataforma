@@ -182,9 +182,10 @@ class SolicitudEmpleoTest extends TestCase
         auth()->logout();
 
         $this->post($url, $this->solicitud(['acepta_privacidad' => '1']))->assertSessionHasErrors(['declaracion', 'firma']);
+        // ADR-0010: basta 1 referencia personal (AdministradorCandidatos::REFERENCIAS_MINIMAS); sin ninguna, error
         $this->post($url, $this->solicitud(['acepta_privacidad' => '1', 'declaracion' => '1', 'firma' => $this->firma(),
-            'referencias' => [['nombre' => 'Solo Una', 'telefono' => '9981112233']]]))
-            ->assertSessionHasErrors(['referencias' => 'Escribe al menos 2 referencias personales (nombre y teléfono).']);
+            'referencias' => []]))
+            ->assertSessionHasErrors(['referencias' => 'Escribe al menos 1 referencia personal (nombre y teléfono).']);
         $this->post($url, $this->solicitud(['acepta_privacidad' => '1', 'declaracion' => '1', 'firma' => 'data:image/png;base64,AAAA']))
             ->assertSessionHasErrors('firma');
         $this->assertNull($c->fresh()->firma_ruta);
@@ -254,7 +255,7 @@ class SolicitudEmpleoTest extends TestCase
             'remitente_correo' => 'avisos@ejemplo.com', 'remitente_nombre' => 'Avisos'], 'x');
         $chef = $this->crearUsuario($this->empresa, 'Supervisor', $this->centro);
         $this->enEmpresa(fn () => DepartamentoResponsable::create(['departamento_id' => $this->cocina->id, 'user_id' => $chef->id]));
-        $c = $this->candidato('revision');
+        $c = $this->candidato('con_rh');
         $this->actingAs($this->rh)->put("/candidatos/{$c->id}", $this->solicitud())->assertSessionHas('ok');
         $sensibles = ['POCA960410MYNLNN05', 'POCA960410AB1', '12345678901', 'Región 100', 'Calle 10 Mz 2', 'Rosa Canché', '9981110000', '9988801122'];
 

@@ -4119,6 +4119,13 @@ a.btn-alto-contraste.btn-manual:hover, a.btn-alto-contraste.btn-manual.activo { 
 /* Fin Candidatos, fase 2 */
 .lista-criterios { padding-left: 1.4rem; margin: 0; display: grid; gap: 0.4rem; }
 .lista-criterios li::marker { font-weight: 700; color: var(--texto-tenue); }
+/* ADR-0010: Canalizar sin recapturar («cambiar» discreto), menú personal y responsables */
+.cambiar-dato > summary { cursor: pointer; list-style: none; display: inline-block; margin-bottom: 0.5rem; }
+.cambiar-dato > summary::-webkit-details-marker { display: none; }
+.cambiar-dato > summary:not(.visually-hidden) { color: var(--texto-suave); text-decoration: underline dotted; }
+.cambiar-dato[open] > summary:not(.visually-hidden) { text-decoration: none; }
+.aviso-sin-responsable { font-size: 0.8rem; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 0.35rem 0.6rem; display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.35rem; }
+.aviso-sin-responsable a { font-weight: 700; color: inherit; }
 /* Candidatos, fase 3: documentos para contratar, contrato, caducidad, plazos en Mis pendientes y tablero de la vacante */
 .resumen-documentos { background: #fef3c7; border: 1px solid #fde68a; color: #92400e; border-radius: 12px; padding: 0.6rem 0.85rem; font-size: 0.88rem; margin-bottom: 0.75rem; }
 .resumen-documentos.completo { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }

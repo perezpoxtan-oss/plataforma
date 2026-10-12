@@ -72,7 +72,7 @@
                 @foreach (['solicitud_dias' => ['Solicitud sin revisar', 'días', 'Llenó su solicitud en el kiosco o por internet y nadie la ha revisado.'],
                     'evaluacion_dias' => ['Evaluación del departamento sin registrar', 'días hábiles', 'Pasó la entrevista y quien entrevistó no ha calificado (se cuentan de lunes a viernes).'],
                     'documentos_dias' => ['Elegido sin documentos o sin contrato', 'días', 'Está elegido y faltan documentos obligatorios o la firma del contrato.'],
-                    'por_atender_dias' => ['Candidato con Recursos Humanos sin movimiento', 'días', 'Está por atender o por entrevistar con Recursos Humanos y nadie lo ha movido (atender, entrevistar, canalizar, considerar o rechazar).'],
+                    'por_atender_dias' => ['Candidato «Por atender» o «Con RR. HH.» sin movimiento', 'días', 'Sigue «Por atender» o «Con RR. HH.» y nadie lo ha movido (atender, canalizar al departamento, considerar o rechazar).'],
                     'no_se_presento_horas' => ['Cita vencida sin llegada a caseta', 'horas', 'Después de este tiempo se propone a RR. HH. marcar «No se presentó».']] as $clave => [$titulo, $unidad, $ayuda])
                     <div>
                         <label class="campo-etiqueta" for="plazo_{{ $clave }}">{{ $titulo }} ({{ $unidad }})</label>

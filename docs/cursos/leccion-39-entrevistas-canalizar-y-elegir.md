@@ -25,7 +25,7 @@ Además, **Fernanda Ruiz Kú** está canalizada a Alimentos y Bebidas «Ahora, e
 ## Práctica 1 · Entrevista de RR. HH. (rh.demo)
 
 1. En **Mis pendientes** toca **Por entrevistar (RR. HH.)**: aparece Miguel.
-2. Abre su ficha y toca **Entrevistar**: pasa a **Entrevista RR. HH.** y se abre **Evaluación de RR. HH.**
+2. Abre su ficha (está **Con RR. HH.**) y toca **Entrevistar**: se abre **Evaluación de RR. HH.** sin cambiar de etapa.
 3. Califica los cinco criterios con estrellas, elige **Canalizar al departamento**, escribe un comentario y toca **Guardar evaluación**.
 4. Se abre **Canalizar al departamento**: deja a **Julieta** (responsable de Recepción) en **¿Quién lo entrevista?**, elige **Con cita**, mañana a las 10:00, lugar «Oficina de Recepción», y toca **Canalizar y avisar**.
 
@@ -50,7 +50,7 @@ Comprueba: Juan está **Elegido**. Como la vacante tiene 1 plaza, **Laura** y **
 
 1. Como **rh.demo**, abre a **Fernanda Ruiz Kú** (con Alimentos y Bebidas, «Ahora, está en sala») y toca **Reprogramar**: cambia a **Julia** (Jefa de Seguridad) y guarda. A quien cubría a Diego le llega «Ya no entrevistas a…» y a Julia la entrevista.
 2. Como **jefe.demo**, evalúala con **Segunda entrevista** y un comentario.
-3. Como **rh.demo**, la ficha dice **Evaluado por el departamento**: toca **Segunda entrevista** y canalízala otra vez «Ahora, está en sala» («2.ª entrevista»).
+3. Como **rh.demo**, llega «Pide segunda entrevista: ponle fecha a …»; la ficha sigue en **Entrevista con el departamento** (2.ª, sin fecha): toca **Ponle fecha (reprogramar)** y elige «Ahora, está en sala». Como **jefe.demo**, en los 15 minutos siguientes a una evaluación verás **Corregir tu evaluación**, y con la cita «Ahora» el botón **No se presentó**.
 4. Como su cita es «ahora», ya aparece **No se presentó**: tócalo; luego **Reprogramar** la regresa a **Entrevista con el departamento**.
 
 ## Práctica 5 · Llegada a la entrevista (agente.demo y jefe.demo)

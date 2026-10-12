@@ -216,18 +216,13 @@ class CandidatoController extends Controller
             'volver' => ['nullable', Rule::in(['ficha', 'recepcion'])],
         ], ['etapa.*' => 'Elige una etapa válida. Para canalizar, reprogramar o contratar usa su botón.', 'comentario.max' => 'El comentario admite máximo 500 caracteres.']);
 
-        $hecho = false;
-        $respuesta = $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request, $datos, &$hecho) {
+        return $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request, $datos) {
             $this->candidatos->cambiarEtapa($request->user(), $c, $datos['etapa'], $datos['comentario'] ?? null);
-            $hecho = true;
 
-            return $datos['etapa'] === 'entrevista_rh'
-                ? "Entrevista de RR. HH. con {$c->nombre_completo}: al terminar, califícala y elige el resultado."
+            return $datos['etapa'] === 'con_rh'
+                ? "{$c->nombre_completo} está contigo («Con RR. HH.»). Cuando lo entrevistes, toca «Entrevistar» para calificarlo."
                 : "{$c->nombre_completo} ahora está «".Candidato::ETAPAS[$datos['etapa']].'».';
         }, ($datos['volver'] ?? null) === 'recepcion' ? 'recepcion.index' : null);
-
-        // «Entrevistar» abre de una vez la evaluación de RR. HH.
-        return $datos['etapa'] === 'entrevista_rh' && $hecho ? $respuesta->with('abrir_dialogo', 'evaluacion') : $respuesta;
     }
 
     // ------------------------------------------------ Entrevistas (fase 2)
@@ -429,6 +424,31 @@ class CandidatoController extends Controller
         });
     }
 
+    /**
+     * «Enviar enlace por correo» (ficha): el candidato recibe un enlace del
+     * kiosco de varias horas para llenar su solicitud completa desde su casa
+     * (postulación corta por internet, ADR-0010).
+     */
+    public function enviarEnlace(Request $request, int $candidato): RedirectResponse
+    {
+        Gate::authorize('candidatos.editar');
+
+        return $this->conCandidato($request, $candidato, 'candidatos.editar', function (Candidato $c) use ($request) {
+            if (! $c->enProceso()) {
+                throw new CambioNoPermitido('Este candidato ya no está en proceso: no se le puede mandar el enlace.');
+            }
+            if (! app(CorreoPlataforma::class)->configurado()) {
+                throw new CambioNoPermitido('La plataforma no tiene correo configurado: muéstrale el QR del kiosco o pide al administrador que configure el correo.');
+            }
+            if ($c->correo === null || trim((string) $c->correo) === '') {
+                throw new CambioNoPermitido('No tiene correo capturado: agrégalo en «Editar solicitud» o muéstrale el QR del kiosco.');
+            }
+            app(Kiosco::class)->enviarEnlacePorCorreo($request->user(), $c);
+
+            return "Listo: le mandamos a {$c->correo} el enlace para completar su solicitud (vale ".Kiosco::HORAS_ENLACE_CORREO.' horas).';
+        });
+    }
+
     // ------------------------------------------------------------- Exportar
 
     public function exportar(Request $request, HoraLocal $hora): StreamedResponse
@@ -626,6 +646,22 @@ class CandidatoController extends Controller
         }
 
         return $destino()->with('ok', $mensaje);
+    }
+
+    /**
+     * Candidatos → Criterios de entrevista (ADR-0010): los criterios con los que
+     * RR. HH. y el jefe califican; se guardan con el mismo formulario de
+     * ajustes de Recepción (parte «criterios»).
+     */
+    public function criterios(Request $request): View
+    {
+        Gate::authorize('candidatos.configurar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return view('rh.candidatos.criterios', [
+            'empresa' => Empresa::findOrFail($empresaId),
+            'puedeGuardar' => app(Autorizador::class)->alcanceDeEmpresa($request->user(), 'candidatos.configurar'),
+        ]);
     }
 
     private function empresaDeTrabajo(Request $request): int

@@ -26,6 +26,7 @@ Cuando Recursos Humanos te canaliza a alguien, te llega el aviso «Entrevista: J
 - **Mis pendientes**, en el renglón **Entrevistas por evaluar** (dice cuál es la próxima cita);
 - un **correo** con el botón **Abrir la entrevista** (pide iniciar sesión; vale 3 días);
 - el aviso de **Inicio** «1 entrevista espera tu evaluación»;
+- el menú **Recursos Humanos → Mis entrevistas** (lo ves siempre que puedas entrevistar);
 - el botón **Entrevistas** de la pantalla **Autorizaciones**.
 
 ![Mis pendientes del jefe](img/recepcion-y-candidatos/mis-pendientes-jefe.png)
@@ -50,22 +51,40 @@ Cuando el candidato llega a la caseta para su entrevista, te llega otro aviso: �
 5. Revisa la **Fecha y hora de la entrevista** (ya viene la de ahora).
 6. Elige el **Resultado**:
    - **Elegir:** te quedas con esta persona.
-   - **Considerar:** te gustó, pero no para ahora.
-   - **Segunda entrevista:** quieres verla otra vez (o que la vea alguien más).
+   - **Considerar:** te gustó, pero no para ahora (queda en cartera para otra vacante).
+   - **Segunda entrevista:** quieres verla otra vez. Sigue contigo y Recursos Humanos le pone fecha a la segunda cita.
    - **Rechazar:** no te sirve.
 7. Escribe un **Comentario**. Es obligatorio para **Considerar** y **Rechazar**; ayuda a Recursos Humanos a explicarle al candidato.
 8. Toca **Guardar evaluación**. Si elegiste **Elegir**, confirma con **Aceptar**.
 
 ![Tu evaluación](img/recepcion-y-candidatos/entrevistar-evaluacion.png)
 
-**Qué debes ver:** «Listo: elegiste a esta persona. Recursos Humanos ya lo sabe y se encarga de los documentos y el contrato.» o «Evaluación guardada (…). Recursos Humanos ya la tiene y se comunica con el candidato.» La entrevista pasa a **Ya evaluadas**.
+**Qué debes ver:** «Listo: elegiste a esta persona. Recursos Humanos ya lo sabe y se encarga de los documentos y el contrato.», «Listo: pediste una segunda entrevista. Recursos Humanos le pondrá fecha y te avisará; te queda en «Por evaluar».» o «Evaluación guardada (…). Recursos Humanos ya la tiene y se comunica con el candidato.» La entrevista pasa a **Ya evaluadas** (la segunda entrevista se queda en **Por evaluar**, con «Sin fecha» hasta que Recursos Humanos la agende).
+
+## Cómo corregir tu evaluación
+
+Después de guardarla tienes **15 minutos** para corregirla (mientras Recursos Humanos no la haya atendido).
+
+1. Vuelve a abrir la entrevista: en vez de «Tu evaluación» verás **Corregir tu evaluación**, con las estrellas, el resultado y el comentario que guardaste.
+2. Cambia lo que haga falta y toca **Guardar corrección**.
+
+**Qué debes ver:** «Evaluación corregida (…). Recursos Humanos ya tiene la versión nueva.» Si habías elegido **Elegir**, solo puedes corregir las estrellas y el comentario: para deshacer una elección, avisa a Recursos Humanos. Pasados los 15 minutos, el formulario desaparece.
+
+## Cómo marcar que no se presentó
+
+Si la cita era **Ahora, está en sala** y la persona no apareció, en la pantalla de la entrevista toca **No se presentó** y confirma con **Aceptar**. Recursos Humanos recibe el aviso y, si vuelve a agendar, te llega la cita nueva. Con una cita de fecha y hora lo marca Recursos Humanos (si pasan 24 horas sin que la caseta registre su llegada, la campana de Recursos Humanos le propone **Marcar como no se presentó**).
+
+## Si se te pasa evaluar
+
+Si pasan **2 días hábiles** desde la cita (o lo que configure tu empresa) sin que guardes tu evaluación, te llega un recordatorio al día por campana y correo hasta que la registres; si delegaste tus avisos («No molestar»), le llega a quien te cubre. En **Mis pendientes**, **Entrevistas por evaluar** se pone en ámbar y en rojo al doble.
 
 ## Qué pasa después de tu evaluación
 
 | Elegiste | Qué pasa |
 |---|---|
-| **Elegir** | El candidato queda **Elegido**. Recursos Humanos le pide sus documentos y lo contrata. Si la vacante ya no tiene plazas, los demás candidatos de esa vacante que seguían contigo pasan a «Considerar» y ya no tienes que evaluarlos. |
-| **Considerar** o **Segunda entrevista** | Recursos Humanos decide: puede mandártelo otra vez (te llega una **2.ª entrevista**) o a otra persona. |
+| **Elegir** | El candidato queda **Elegido**. Recursos Humanos reúne sus documentos y su contrato firmado y lo contrata; sus documentos pasan a su expediente de colaborador. Si la vacante ya no tiene plazas, los demás candidatos de esa vacante que seguían contigo pasan a «Considerar» y ya no tienes que evaluarlos. |
+| **Segunda entrevista** | El candidato sigue contigo como **2.ª entrevista**, sin fecha. Recursos Humanos le pone fecha y te llega la cita. |
+| **Considerar** | Queda en cartera: Recursos Humanos decide si lo guarda para otra vacante o te lo manda otra vez. |
 | **Rechazar** | Recursos Humanos cierra el contacto con el candidato. A él no le llega ningún aviso de rechazo. |
 
 ## Cómo comparar a los candidatos de una vacante
@@ -99,9 +118,9 @@ Si sales de vacaciones, delega tus avisos en **Autorizaciones → No molestar / 
 
 **¿Por qué no veo el teléfono ni el domicilio del candidato?** Son datos personales que solo ve Recursos Humanos. Tú ves lo necesario para decidir.
 
-**¿Puedo cambiar mi evaluación?** No. Si te equivocaste, avisa a Recursos Humanos: puede mandarte una segunda entrevista.
+**¿Puedo cambiar mi evaluación?** Sí, durante los 15 minutos siguientes a guardarla (ver «Cómo corregir tu evaluación»). Después, avisa a Recursos Humanos.
 
-**¿Qué pasa si el candidato no llega?** Recursos Humanos lo marca **No se presentó** y te llega el aviso; si vuelve a agendar, te llega la nueva cita.
+**¿Qué pasa si el candidato no llega?** Si la cita era «Ahora, está en sala», márcalo tú con **No se presentó**; si tenía fecha y hora, lo marca Recursos Humanos y te llega el aviso. Si vuelve a agendar, te llega la nueva cita.
 
 **¿Quién califica con qué criterios?** Recursos Humanos los define para toda la empresa (por ejemplo Presentación, Experiencia para el puesto, Actitud y comunicación). Son los mismos para ti y para Recursos Humanos.
 

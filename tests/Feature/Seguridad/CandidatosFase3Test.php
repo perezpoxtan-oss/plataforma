@@ -22,6 +22,7 @@ use App\Services\Candidatos\DocumentosParaContratar;
 use App\Services\Candidatos\PlazosCandidatos;
 use App\Services\Candidatos\Postulaciones;
 use App\Support\CorreoPlataforma;
+use App\Support\HoraLocal;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -269,7 +270,7 @@ class CandidatosFase3Test extends TestCase
         Mail::fake();
         $this->configurarCorreo();
         // Solicitud sin revisar hace 3 días (plazo 1: roja), elegido hace 6 días (plazo 5: ámbar), cita vencida hace 2 días sin registro en caseta
-        $solicitud = $this->candidato('revision', ['nombre_completo' => 'Karla Pérez Uc']);
+        $solicitud = $this->candidato('con_rh', ['nombre_completo' => 'Karla Pérez Uc']);
         $this->enEmpresa(fn () => Candidato::whereKey($solicitud->id)->update(['autocaptura_pendiente' => true, 'autocaptura_en' => now()->subDays(3)]));
         $elegido = $this->candidato('elegido', ['nombre_completo' => 'Mariela Canché Dzib']);
         $this->enEmpresa(fn () => Postulacion::where('candidato_id', $elegido->id)->update(['elegido_en' => now()->subDays(6)]));
@@ -326,6 +327,29 @@ class CandidatosFase3Test extends TestCase
         Cache::flush();
         app()->forgetInstance(MisPendientes::class);
         $this->assertNull(collect(app(MisPendientes::class)->para($this->rh)['items'])->firstWhere('clave', 'elegidos')['nivel']);
+    }
+
+    public function test_el_plazo_de_rr_hh_usa_las_etapas_por_atender_y_con_rr_hh(): void
+    {
+        // ADR-0010 + fase 3: «Por atender» (registrado) y «Con RR. HH.» (con_rh) comparten el plazo por_atender_dias (2 días)
+        $porAtender = $this->candidato('registrado', ['nombre_completo' => 'Ana Por Atender']);
+        $conRh = $this->candidato('con_rh', ['nombre_completo' => 'Beto Con Rh']);
+        $reciente = $this->candidato('con_rh', ['nombre_completo' => 'Carla Reciente']);
+        $this->enEmpresa(fn () => Postulacion::whereIn('candidato_id', [$porAtender->id, $conRh->id])->update(['updated_at' => now()->subDays(3)]));
+
+        $this->artisan('plataforma:candidatos-pendientes')->assertSuccessful();
+        $avisos = $this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('tipo', 'plazo_candidato')->pluck('titulo'));
+        $this->assertTrue($avisos->contains(fn ($t) => str_starts_with($t, 'Sin atender: Ana Por Atender lleva 3 días en «Por atender»')));
+        $this->assertTrue($avisos->contains(fn ($t) => str_starts_with($t, 'Sin canalizar: Beto Con Rh lleva 3 días en «Con RR. HH.»')));
+        $this->assertFalse($avisos->contains(fn ($t) => str_contains($t, 'Carla Reciente')));
+
+        // Mis pendientes: «Esperando en Recepción» y «Por entrevistar (RR. HH.)» en ámbar (pasaron el plazo, sin llegar al doble)
+        Cache::flush();
+        app()->forgetInstance(MisPendientes::class);
+        $items = collect(app(MisPendientes::class)->para($this->rh)['items'])->keyBy('clave');
+        $this->assertSame('ambar', $items['por_entrevistar']['nivel']);
+        // La ficha muestra el plazo de RR. HH.
+        $this->actingAs($this->rh)->get("/candidatos/{$conRh->id}")->assertOk()->assertSee('Con RR. HH.')->assertSee('Plazo de con Recursos Humanos', false);
     }
 
     public function test_abrir_candidatos_corre_los_recordatorios_si_toca_con_candado(): void
@@ -430,6 +454,8 @@ class CandidatosFase3Test extends TestCase
 
     public function test_el_expediente_del_colaborador_reune_lo_que_cada_usuario_puede_ver(): void
     {
+        // A mediodía local: la fecha en hora universal y la local coinciden (la prueba no falla cerca de la medianoche)
+        $this->travelTo(now(HoraLocal::ZONA_PLATAFORMA)->setTime(12, 0)->utc());
         $c = $this->candidato('elegido', ['nombre_completo' => 'Luis Chi Canul']);
         $this->todoEnPapel($c);
         $this->actingAs($this->rh)->post("/candidatos/{$c->id}/documentos", ['tipo' => 'ine', 'documento' => $this->pdf('ine.pdf')])->assertSessionHas('ok');
@@ -472,7 +498,7 @@ class CandidatosFase3Test extends TestCase
         $c = $this->candidato('elegido');
         $this->todoEnPapel($c);
         $this->actingAs($this->rh)->post("/candidatos/{$c->id}/documentos", ['tipo' => 'certificado_estudios', 'documento' => $this->pdf()])->assertSessionHas('ok');
-        $migracion = require database_path('migrations/2026_10_22_000100_candidatos_fase_3_documentos_plazos_y_caducidad.php');
+        $migracion = require database_path('migrations/2026_10_22_000300_candidatos_fase_3_documentos_plazos_y_caducidad.php');
 
         $migracion->down();
         $this->assertFalse(Schema::hasTable('documentos_para_contratar'));

@@ -6,7 +6,9 @@ use App\Models\Empresa;
 use App\Models\Menu;
 use App\Models\Modulo;
 use App\Models\User;
+use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Permisos\Autorizador;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +26,9 @@ class ConstructorMenu
      * (p. ej. "Habitación" u "Oficina" según el rubro; las sedes siempre se llaman "Sedes").
      */
     private const TERMINOLOGIA = ['sedes' => 'sedes'];
+
+    /** Sección del menú Recursos Humanos donde van «Mis entrevistas» y «Autorizaciones». */
+    public const SECCION_PERSONAL = 'Recepción y candidatos';
 
     /** @var array<int, list<array<string, mixed>>> */
     private array $cache = [];
@@ -101,6 +106,9 @@ class ConstructorMenu
                 ];
             }
 
+            if ($menu->clave === 'recursos_humanos') {
+                $secciones = $this->conPantallasPersonales($usuario, $secciones);
+            }
             if ($secciones === []) {
                 continue;
             }
@@ -116,6 +124,40 @@ class ConstructorMenu
         }
 
         return $resultado;
+    }
+
+    /**
+     * Pantallas «personales» de Recursos Humanos que no son un módulo con
+     * menú propio (ADR-0010): «Mis entrevistas» para quien entrevista
+     * (candidatos.evaluar) y «Autorizaciones» para quien responde las de
+     * algún departamento (autorizaciones.responder y es responsable o
+     * delegado). Antes solo se llegaba a ellas por la campana o Mis pendientes.
+     *
+     * @param  array<string, list<array<string, mixed>>>  $secciones
+     * @return array<string, list<array<string, mixed>>>
+     */
+    private function conPantallasPersonales(User $usuario, array $secciones): array
+    {
+        $extras = [];
+        if (Route::has('entrevistas.index') && $this->autorizador->puede($usuario, 'candidatos.evaluar')) {
+            $extras[] = ['clave' => 'entrevistas', 'nombre' => 'Mis entrevistas', 'icono' => 'bi-chat-square-text', 'color' => 'indigo', 'ruta' => 'entrevistas.index'];
+        }
+        // Responsables y delegaciones son de la empresa activa (o la del usuario); el superadministrador fuera de una empresa no aplica
+        $tenant = app(Tenant::class);
+        $empresaId = $tenant->activo() ? $tenant->empresaId() : $usuario->empresa_id;
+        if (Route::has('autorizaciones.index') && $empresaId !== null && $this->autorizador->puede($usuario, 'autorizaciones.responder')
+            && $tenant->conEmpresa((int) $empresaId, fn () => app(Autorizaciones::class)->departamentosQueAtiende($usuario) !== [])) {
+            $extras[] = ['clave' => 'autorizaciones', 'nombre' => 'Autorizaciones', 'icono' => 'bi-patch-check', 'color' => 'warning', 'ruta' => 'autorizaciones.index'];
+        }
+        foreach ($extras as $item) {
+            $secciones[self::SECCION_PERSONAL][] = $item + [
+                'prefijo' => preg_replace('/\.[^.]+$/', '.', $item['ruta']),
+                'url' => route($item['ruta']),
+                'disponible' => true,
+            ];
+        }
+
+        return $secciones;
     }
 
     /**

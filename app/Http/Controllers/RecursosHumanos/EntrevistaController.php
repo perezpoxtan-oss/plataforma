@@ -72,6 +72,8 @@ class EntrevistaController extends Controller
             $p->load(['candidato', 'vacantePublicada:id,titulo,jefe_ve_cv,plazas', 'puesto:id,nombre', 'departamento:id,nombre', 'sede:id,nombre',
                 'entrevistador:id,name', 'evaluaciones.evaluador:id,name']);
             $c = $p->candidato;
+            $ultima = $p->evaluaciones->where('tipo', 'departamento')->last();
+            $corregible = $this->entrevistas->puedeCorregir($actor, $p, $ultima);
 
             return view('rh.entrevistas.show', [
                 'p' => $p,
@@ -79,6 +81,10 @@ class EntrevistaController extends Controller
                 'evaluaciones' => $p->evaluaciones,
                 'cv' => $this->documentoCv($p),
                 'puedeEvaluar' => $p->etapa === 'canalizado' && $this->entrevistas->puedeEvaluar($actor, $p),
+                // Corregir lo que acaba de guardar (15 minutos) y «No se presentó» cuando la cita era «Ahora, está en sala»
+                'corregible' => $corregible ? $ultima : null,
+                'minutosCorreccion' => Entrevistas::MINUTOS_CORRECCION,
+                'puedeNoSePresento' => $p->etapa === 'canalizado' && $p->cita_ahora && $this->entrevistas->puedeEvaluar($actor, $p),
                 'criterios' => $this->entrevistas->criterios($empresaId),
                 'textoCita' => $this->entrevistas->textoCita($p),
                 'manual' => $this->paginaManual($actor),
@@ -86,26 +92,60 @@ class EntrevistaController extends Controller
         });
     }
 
-    /** Guarda la evaluación del entrevistador (Elegir / Considerar / Segunda entrevista / Rechazar). */
+    /**
+     * Guarda la evaluación del entrevistador (Elegir / Considerar / Segunda
+     * entrevista / Rechazar) o, si acaba de guardarla, la corrige.
+     */
     public function evaluar(Request $request, int $postulacion): RedirectResponse
     {
         Gate::authorize('candidatos.evaluar');
         $actor = $request->user();
         $empresaId = $this->empresaDeTrabajo($request);
         // Primero el registro (otra empresa, otra sede u otro entrevistador → 404): solo evalúa
-        // el entrevistador asignado o su delegado (quien evaluó antes solo consulta)
-        $this->tenant->conEmpresa($empresaId, fn () => abort_unless($this->entrevistas->puedeEvaluar($actor, $this->buscar($actor, $postulacion)), 404));
+        // el entrevistador asignado o su delegado (quien evaluó antes solo consulta, salvo para corregir lo suyo)
+        $this->tenant->conEmpresa($empresaId, function () use ($actor, $postulacion) {
+            $p = $this->buscar($actor, $postulacion);
+            abort_unless($this->entrevistas->puedeEvaluar($actor, $p) || $this->entrevistas->puedeCorregir($actor, $p, $this->ultimaDe($p)), 404);
+        });
+        $entrada = $request->only(['criterios', 'resultado', 'comentario', 'entrevista_en', 'entrevista_fecha', 'entrevista_hora']);
 
         try {
-            $e = $this->tenant->conEmpresa($empresaId, fn () => $this->entrevistas->evaluarDepartamento($actor, $this->buscar($actor, $postulacion),
-                $request->only(['criterios', 'resultado', 'comentario', 'entrevista_en', 'entrevista_fecha', 'entrevista_hora'])));
+            [$e, $corregida] = $this->tenant->conEmpresa($empresaId, function () use ($actor, $postulacion, $entrada) {
+                $p = $this->buscar($actor, $postulacion);
+                $ultima = $this->ultimaDe($p);
+                if ($ultima !== null && $this->entrevistas->puedeCorregir($actor, $p, $ultima)) {
+                    return [$this->entrevistas->corregirEvaluacion($actor, $p, $ultima, $entrada), true];
+                }
+
+                return [$this->entrevistas->evaluarDepartamento($actor, $p, $entrada), false];
+            });
         } catch (CambioNoPermitido $x) {
             return redirect()->route('entrevistas.show', $postulacion)->with('error', $x->getMessage());
         }
 
-        return redirect()->route('entrevistas.index')->with('ok', $e->resultado === 'elegir'
-            ? 'Listo: elegiste a esta persona. Recursos Humanos ya lo sabe y se encarga de los documentos y el contrato.'
-            : 'Evaluación guardada ('.$e->etiquetaResultado().'). Recursos Humanos ya la tiene y se comunica con el candidato.');
+        return redirect()->route('entrevistas.index')->with('ok', match (true) {
+            $corregida => 'Evaluación corregida ('.$e->etiquetaResultado().'). Recursos Humanos ya tiene la versión nueva.',
+            $e->resultado === 'elegir' => 'Listo: elegiste a esta persona. Recursos Humanos ya lo sabe y se encarga de los documentos y el contrato.',
+            $e->resultado === 'segunda_entrevista' => 'Listo: pediste una segunda entrevista. Recursos Humanos le pondrá fecha y te avisará; te queda en «Por evaluar».',
+            default => 'Evaluación guardada ('.$e->etiquetaResultado().'). Recursos Humanos ya la tiene y se comunica con el candidato.',
+        });
+    }
+
+    /** «No se presentó» desde la entrevista: solo cuando la cita era «Ahora, está en sala». */
+    public function noSePresento(Request $request, int $postulacion): RedirectResponse
+    {
+        Gate::authorize('candidatos.evaluar');
+        $actor = $request->user();
+        $empresaId = $this->empresaDeTrabajo($request);
+        $this->tenant->conEmpresa($empresaId, fn () => abort_unless($this->entrevistas->puedeEvaluar($actor, $this->buscar($actor, $postulacion)), 404));
+
+        try {
+            $this->tenant->conEmpresa($empresaId, fn () => $this->entrevistas->noSePresento($actor, $this->buscar($actor, $postulacion)->candidato, true));
+        } catch (CambioNoPermitido $x) {
+            return redirect()->route('entrevistas.show', $postulacion)->with('error', $x->getMessage());
+        }
+
+        return redirect()->route('entrevistas.index')->with('ok', 'Quedó como «No se presentó». Recursos Humanos ya lo sabe y, si vuelve a agendar, te llegará la cita nueva.');
     }
 
     /** CV en PDF: solo si la vacante lo permite («El jefe puede ver el CV»). Disco privado. */
@@ -148,6 +188,11 @@ class EntrevistaController extends Controller
         }
 
         return CandidatoDocumento::where('candidato_id', $p->candidato_id)->where('tipo', 'cv')->where('mime', 'application/pdf')->orderByDesc('id')->first();
+    }
+
+    private function ultimaDe(Postulacion $p): ?EvaluacionCandidato
+    {
+        return EvaluacionCandidato::where('postulacion_id', $p->id)->where('tipo', 'departamento')->orderByDesc('id')->first();
     }
 
     private function buscar($actor, int $id): Postulacion

@@ -27,10 +27,14 @@ Los menús y sus grupos:
 |---|---|
 | **Operación** | **Caseta:** Bitácora de accesos, Préstamo de llaves, Pases de salida, Bitácora de transporte. **Incidentes:** Novedades, Lost & Found, Robo. **Protección civil:** Recorridos de Protección Civil. **Activos:** Responsivas, Vouchers de reposición. **Consulta:** Procedimientos. |
 | **Padrones** | **Personas y vehículos:** Empresas externas, Padrón de personas, Padrón vehicular. **Inventarios:** Catálogo de llaves, Gafetes, Equipos de seguridad, Equipos de Protección Civil. **Instalaciones:** Estacionamientos, Rutas de transporte. **Herramientas:** Etiquetas QR. |
-| **Recursos Humanos** | **Personal:** Colaboradores. **Recepción y candidatos:** Recepción de RR. HH., Candidatos, Vacantes. **Catálogos:** Departamentos, Puestos, Turnos. |
+| **Recursos Humanos** | **Personal:** Colaboradores. **Recepción y candidatos:** Vacantes, Recepción de RR. HH., Candidatos, **Mis entrevistas** (si puedes entrevistar candidatos) y **Autorizaciones** (si eres responsable o suplente de algún departamento). **Catálogos:** Departamentos, Puestos, Turnos. |
 | **Estructura** | **Empresa:** Empresas, Sedes, Zonas y áreas. **Accesos y permisos:** Usuarios, Roles, Matriz de permisos. **Sistema:** Configuración, Identidad de la plataforma, Bitácora de auditoría. |
 
 ![Menú Padrones abierto](img/menus/menu-padrones.png)
+
+> **Mis entrevistas** y **Autorizaciones** no dependen de un módulo: aparecen en el menú **Recursos Humanos** solo a quien las usa (quien entrevista candidatos y quien responde las visitas de su departamento), para que no tengas que esperar a un aviso para llegar a ellas. Ver [Entrevistar y elegir](entrevistar-y-elegir.md) y [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
+
+![Menú Recursos Humanos de un jefe de departamento](img/recepcion-y-candidatos/menu-recursos-humanos-jefe.png)
 
 ## Cómo abrir una pantalla en el celular
 

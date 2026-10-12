@@ -172,8 +172,22 @@ class AjustesRecepcion
     /**
      * @param  array<string, mixed>  $entrada
      */
-    public function guardar(User $actor, Empresa $empresa, array $entrada, bool $privacidad, bool $autorizaciones, bool $escalamiento = false): void
+    /**
+     * Guarda las partes que vienen en $partes (cada formulario manda solo la
+     * suya; ADR-0010): privacidad (aviso y kiosco; por compatibilidad también
+     * el paso de RR. HH. y los criterios si vienen), criterios (Candidatos →
+     * Criterios de entrevista), esperas (Responsables por departamento:
+     * autorización de visitas y «Que pase» de RR. HH.) y escalamiento (minutos).
+     *
+     * @param  array<string, mixed>  $entrada
+     * @param  list<string>  $partes
+     */
+    public function guardar(User $actor, Empresa $empresa, array $entrada, array $partes): void
     {
+        $privacidad = in_array('privacidad', $partes, true);
+        $criterios = in_array('criterios', $partes, true);
+        $esperas = in_array('esperas', $partes, true);
+        $escalamiento = in_array('escalamiento', $partes, true);
         $maximo = self::MAX_MINUTOS_ESCALAMIENTO;
         $d = Validator::make($entrada, [
             'aviso_privacidad' => ['nullable', 'string', 'max:6000'],
@@ -199,16 +213,16 @@ class AjustesRecepcion
             $nuevos['aviso_privacidad'] = $texto === '' ? null : $texto;
             $nuevos['kiosco_horas'] = (int) ($d['kiosco_horas'] ?? self::HORAS_KIOSCO);
             $nuevos['kiosco_usos'] = (int) ($d['kiosco_usos'] ?? self::USOS_KIOSCO);
-            if (array_key_exists('rh_autoriza_paso', $d)) {
-                $nuevos['rh_autoriza_paso'] = (bool) $d['rh_autoriza_paso'];
-            }
-            if (array_key_exists('criterios', $entrada)) {
-                $criterios = $this->limpiarCriterios($entrada['criterios']);
-                // Los de siempre no se guardan (así, si cambian en la plataforma, la empresa los recibe)
-                $nuevos['criterios'] = $criterios === self::CRITERIOS_DEFECTO ? null : $criterios;
-            }
         }
-        if ($autorizaciones) {
+        if (($privacidad || $esperas) && array_key_exists('rh_autoriza_paso', $d)) {
+            $nuevos['rh_autoriza_paso'] = (bool) $d['rh_autoriza_paso'];
+        }
+        if (($privacidad || $criterios) && array_key_exists('criterios', $entrada)) {
+            $lista = $this->limpiarCriterios($entrada['criterios']);
+            // Los de siempre no se guardan (así, si cambian en la plataforma, la empresa los recibe)
+            $nuevos['criterios'] = $lista === self::CRITERIOS_DEFECTO ? null : $lista;
+        }
+        if ($esperas && array_key_exists('visitas_requieren_autorizacion', $d)) {
             $nuevos['visitas_requieren_autorizacion'] = (bool) ($d['visitas_requieren_autorizacion'] ?? false);
         }
         if ($escalamiento) {

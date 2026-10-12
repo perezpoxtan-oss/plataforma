@@ -122,8 +122,8 @@ class Postulacion extends Model
     public function enEtapaDesde(): Carbon
     {
         $fecha = match ($this->etapa) {
-            'revision' => $this->revision_en,
-            'entrevista_rh' => $this->entrevista_rh_en,
+            // «Con RR. HH.» (ADR-0010): desde que RR. HH. lo atendió; si volvió de Considerar / Rechazado, desde ese regreso
+            'con_rh' => $this->revision_en !== null && ($this->decision_en === null || $this->revision_en->gte($this->decision_en)) ? $this->revision_en : null,
             'canalizado' => $this->canalizado_en,
             'evaluado' => $this->evaluado_en,
             'elegido' => $this->elegido_en,

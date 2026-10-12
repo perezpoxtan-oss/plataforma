@@ -17,7 +17,7 @@
         'Llegó a caseta' => $c->llegada_en,
         'Aviso a RR. HH.' => $c->avisado_rh_en,
         'RR. HH. lo atendió' => $activa?->revision_en,
-        'Entrevista RR. HH.' => $activa?->entrevista_rh_en,
+        'Entrevista con RR. HH.' => $activa?->entrevista_rh_en,
         'Canalizado al departamento' => $activa?->canalizado_en,
         'Evaluado por el departamento' => $activa?->evaluado_en,
         'Elegido' => $activa?->elegido_en,
@@ -27,10 +27,11 @@
     ]);
     $evaluaciones = $activa?->evaluaciones ?? collect();
     // Botones según la etapa (uno por acción)
-    $rhCanaliza = $etapa === 'entrevista_rh' && $ultimaRh?->resultado === 'canalizar' && (int) $ultimaRh->numero === (int) ($activa?->numero_entrevista ?? 1);
+    $rhCanaliza = $etapa === 'con_rh' && $ultimaRh?->resultado === 'canalizar' && (int) $ultimaRh->numero === (int) ($activa?->numero_entrevista ?? 1);
+    $sinCita = $etapa === 'canalizado' && ! $activa?->cita_ahora && $activa?->cita_en === null; // el jefe pidió segunda entrevista: falta la fecha
     $botones = $puede['editar'] ? array_values(array_filter([
         in_array($etapa, ['registrado', 'considerar', 'rechazado'], true) ? 'atender' : null,
-        in_array($etapa, ['revision', 'entrevista_rh'], true) && ! $rhCanaliza ? 'entrevistar' : null,
+        $etapa === 'con_rh' && ! $rhCanaliza ? 'entrevistar' : null,
         $rhCanaliza ? 'canalizar' : null,
         $etapa === 'evaluado' ? 'segunda' : null,
         in_array($etapa, ['canalizado', 'no_se_presento'], true) ? 'reprogramar' : null,
@@ -61,6 +62,7 @@
                     <span class="pastilla-etapa etapa-{{ Candidato::COLORES[$etapa] ?? 'gris' }}">{{ Candidato::ETAPAS[$etapa] ?? $etapa }}</span>
                     <span class="pastilla-origen"><i class="bi bi-signpost me-1" aria-hidden="true"></i>{{ Candidato::ORIGENES[$c->origen] ?? $c->origen }}</span>
                     @if ($c->autocaptura_pendiente)<span class="pastilla-revisar"><i class="bi bi-phone me-1" aria-hidden="true"></i>Por revisar</span>@endif
+                    @if ($c->solicitud_corta)<span class="pastilla-revisar" title="Se postuló por internet con la solicitud corta: falta su solicitud completa"><i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Solicitud incompleta</span>@endif
                     {{-- Fase 3: caducidad --}}
                     @if ($activa?->archivada())<span class="pastilla-origen"><i class="bi bi-archive me-1" aria-hidden="true"></i>Archivada</span>@endif
                     @if ($c->porBorrar())<span class="pastilla-revisar"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Se borra el {{ $hora->formatear($c->borrar_en, 'd/m/Y') }}</span>@endif
@@ -112,24 +114,15 @@
                 @foreach ($botones as $b)
                     @switch($b)
                         @case('atender')
-                            <form action="{{ route('candidatos.etapa', $c->id) }}" method="POST" class="m-0" data-confirmar="¿Atender a {{ $c->nombre_completo }}? Queda «En revisión RR. HH.».">
+                            <form action="{{ route('candidatos.etapa', $c->id) }}" method="POST" class="m-0" data-confirmar="¿Atender a {{ $c->nombre_completo }}? Queda «Con RR. HH.».">
                                 @csrf
                                 @method('PATCH')
-                                <input type="hidden" name="etapa" value="revision">
+                                <input type="hidden" name="etapa" value="con_rh">
                                 <button type="submit" class="btn-etapa principal">Atender</button>
                             </form>
                             @break
                         @case('entrevistar')
-                            @if ($etapa === 'revision')
-                                <form action="{{ route('candidatos.etapa', $c->id) }}" method="POST" class="m-0">
-                                    @csrf
-                                    @method('PATCH')
-                                    <input type="hidden" name="etapa" value="entrevista_rh">
-                                    <button type="submit" class="btn-etapa principal"><i class="bi bi-chat-square-text me-1" aria-hidden="true"></i>Entrevistar</button>
-                                </form>
-                            @else
-                                <button type="button" class="btn-etapa principal" data-abrir-dialogo="dialogoEvaluacion"><i class="bi bi-chat-square-text me-1" aria-hidden="true"></i>Entrevistar</button>
-                            @endif
+                            <button type="button" class="btn-etapa principal" data-abrir-dialogo="dialogoEvaluacion"><i class="bi bi-chat-square-text me-1" aria-hidden="true"></i>Entrevistar</button>
                             @break
                         @case('canalizar')
                             <button type="button" class="btn-etapa principal" data-abrir-dialogo="dialogoCanalizar"><i class="bi bi-send me-1" aria-hidden="true"></i>Canalizar al departamento</button>
@@ -138,7 +131,7 @@
                             <button type="button" class="btn-etapa principal" data-abrir-dialogo="dialogoCanalizar"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Segunda entrevista</button>
                             @break
                         @case('reprogramar')
-                            <button type="button" class="btn-etapa {{ $etapa === 'no_se_presento' ? 'principal' : '' }}" data-abrir-dialogo="dialogoCanalizar"><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>Reprogramar</button>
+                            <button type="button" class="btn-etapa {{ $etapa === 'no_se_presento' || $sinCita ? 'principal' : '' }}" data-abrir-dialogo="dialogoCanalizar"><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>{{ $sinCita ? 'Ponle fecha (reprogramar)' : 'Reprogramar' }}</button>
                             @break
                         @case('no_se_presento')
                             <form action="{{ route('candidatos.no-se-presento', $c->id) }}" method="POST" class="m-0" data-confirmar="¿Marcar que {{ $c->nombre_completo }} no se presentó a su entrevista? Se avisa a quien lo iba a entrevistar.">
@@ -198,7 +191,7 @@
     @endif
 
     {{-- Línea de tiempo de la postulación: entrevistas, evaluaciones y cita --}}
-    @if ($activa && ($evaluaciones->isNotEmpty() || in_array($etapa, ['entrevista_rh', 'canalizado', 'no_se_presento'], true)))
+    @if ($activa && ($evaluaciones->isNotEmpty() || in_array($etapa, ['con_rh', 'canalizado', 'no_se_presento'], true)))
         <section class="tarjeta p-4 linea-entrevistas" aria-labelledby="t-entrevistas">
             <h2 id="t-entrevistas" class="h6 fw-bold"><i class="bi bi-chat-square-text me-2 text-primary" aria-hidden="true"></i>Entrevistas y evaluaciones</h2>
             <ol class="linea-tiempo-entrevistas">
@@ -209,15 +202,15 @@
                     <li>
                         <article class="cita-entrevista {{ $etapa === 'no_se_presento' ? 'no-se-presento' : '' }}">
                             <strong><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>{{ $etapa === 'no_se_presento' ? 'No se presentó a su cita' : 'Cita con el departamento' }} · {{ $activa->numeroTexto() }} entrevista</strong>
-                            <p class="mb-0">{{ $textoCita }}{{ $activa->cita_lugar ? ' · '.$activa->cita_lugar : '' }}</p>
+                            <p class="mb-0">{{ $sinCita ? 'Sin fecha: el departamento pidió una segunda entrevista. Ponle fecha con «Reprogramar».' : $textoCita.($activa->cita_lugar ? ' · '.$activa->cita_lugar : '') }}</p>
                             <p class="texto-traza mb-0">Entrevista: {{ $activa->entrevistador->name }}{{ $activa->departamento ? ' ('.$activa->departamento->nombre.')' : '' }}@if ($activa->canalizadoPor) · canalizó {{ $activa->canalizadoPor->name }} @fecha($activa->canalizado_en)@endif</p>
                         </article>
                     </li>
                 @elseif ($etapa === 'canalizado')
                     <li><p class="small text-danger mb-0"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Sin entrevistador: usa «Reprogramar» para elegir quién lo entrevista y la cita.</p></li>
                 @endif
-                @if ($etapa === 'entrevista_rh' && $evaluaciones->where('tipo', 'rh')->where('numero', (int) $activa->numero_entrevista)->isEmpty())
-                    <li><p class="small text-muted mb-0"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>En entrevista con Recursos Humanos desde @fecha($activa->entrevista_rh_en). Al terminar, toca «Entrevistar» para calificarla.</p></li>
+                @if ($etapa === 'con_rh' && $evaluaciones->where('tipo', 'rh')->where('numero', (int) $activa->numero_entrevista)->isEmpty())
+                    <li><p class="small text-muted mb-0"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Con Recursos Humanos desde @fecha($activa->revision_en ?? $activa->updated_at). Al entrevistarlo, toca «Entrevistar» para calificarlo.</p></li>
                 @endif
             </ol>
         </section>
@@ -330,11 +323,27 @@
                     @else
                         <p class="small text-muted">Que escanee el QR con su celular en la sala de espera. Dura pocas horas y solo sirve para su propia ficha.</p>
                     @endif
+                    @if ($c->solicitud_corta)
+                        <p class="small text-warning-emphasis mb-2"><i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Se postuló por internet con la solicitud corta: falta su solicitud completa. Mándale el enlace por correo o muéstrale el QR cuando venga.</p>
+                    @endif
                     <form action="{{ route('recepcion.kiosco.generar', $c->id) }}" method="POST" class="m-0">
                         @csrf
                         <input type="hidden" name="reusar" value="1">
                         <button type="submit" class="btn-azul btn-accion-rh w-100"><i class="bi bi-qr-code me-1" aria-hidden="true"></i>QR para que llene su solicitud</button>
                     </form>
+                    @if ($puede['editar'])
+                        {{-- ADR-0010: el enlace del kiosco también se manda por correo (vale varias horas) --}}
+                        <form action="{{ route('candidatos.enlace.correo', $c->id) }}" method="POST" class="m-0 mt-2"
+                              @if ($c->correo && $correoConfigurado) data-confirmar="¿Mandar a {{ $c->correo }} el enlace para que llene su solicitud? Vale {{ \App\Services\Candidatos\Kiosco::HORAS_ENLACE_CORREO }} horas y anula el QR anterior." @endif>
+                            @csrf
+                            <button type="submit" class="btn-secundario-rh w-100" @disabled(! $c->correo || ! $correoConfigurado)><i class="bi bi-envelope me-1" aria-hidden="true"></i>Enviar enlace por correo</button>
+                        </form>
+                        @if (! $c->correo)
+                            <p class="texto-traza mt-1 mb-0">Sin correo capturado: agrégalo en «Editar solicitud».</p>
+                        @elseif (! $correoConfigurado)
+                            <p class="texto-traza mt-1 mb-0">La plataforma no tiene correo configurado.</p>
+                        @endif
+                    @endif
                     @if ($enlace)
                         <form action="{{ route('candidatos.enlace.revocar', $c->id) }}" method="POST" class="m-0 mt-2 text-end" data-confirmar="¿Anular el enlace? El candidato ya no podrá usarlo.">
                             @csrf
@@ -585,7 +594,7 @@
         </dialog>
 
         {{-- ===== Evaluación de RR. HH. («Entrevistar») ===== --}}
-        @if (in_array($etapa, ['revision', 'entrevista_rh'], true))
+        @if ($etapa === 'con_rh')
             @php $reabrir = $dialogo === 'evaluacion'; @endphp
             <dialog id="dialogoEvaluacion" class="dialogo ancho" aria-labelledby="titulo-evaluacion" @if ($reabrir) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
@@ -641,21 +650,34 @@
                         @endif
                         <p class="small text-muted">{{ $reprogramar ? 'Cambia la cita o quién lo entrevista: se avisa a la persona anterior y a la nueva.' : 'Quien lo entrevista recibe el aviso en la campana, en Mis pendientes y por correo, con el resumen del candidato (sin datos oficiales ni domicilio) y tu evaluación.' }}</p>
 
-                        <label class="campo-etiqueta" for="can_vacante">Vacante</label>
-                        <select id="can_vacante" name="vacante_id" class="campo">
-                            <option value="">-- Sin vacante publicada --</option>
-                            @foreach ($vacantesElegibles as $vac)
-                                <option value="{{ $vac->id }}" @selected((string) $vOld('vacante_id', $activa?->vacante_id) === (string) $vac->id)>{{ $vac->titulo }}{{ $vac->estado !== 'publicada' ? ' ('.\App\Models\Vacante::ESTADOS[$vac->estado].')' : '' }}</option>
-                            @endforeach
-                        </select>
+                        {{-- Vacante y departamento ya se conocen (de la postulación): se muestran como texto y «cambiar» abre la lista (criterio UX 2) --}}
+                        @php
+                            $vacanteConocida = $vacantesElegibles->firstWhere('id', (int) ($vOld('vacante_id', $activa?->vacante_id) ?: 0));
+                            $departamentoConocido = $departamentosSede->firstWhere('id', (int) ($vOld('departamento_id', $departamentoCanalizar) ?: 0));
+                            $sinRecapturar = $departamentoConocido !== null && ! ($reabrir && $errors->hasAny(['vacante_id', 'departamento_id']));
+                        @endphp
+                        @if ($sinRecapturar)
+                            <p class="renglon-cv mb-1"><i class="bi bi-megaphone me-1" aria-hidden="true"></i><strong>Vacante:</strong> {{ $vacanteConocida?->titulo ?? 'Sin vacante publicada' }}</p>
+                            <p class="renglon-cv mb-2"><i class="bi bi-diagram-2 me-1" aria-hidden="true"></i><strong>Departamento:</strong> {{ $departamentoConocido->nombre }}</p>
+                        @endif
+                        <details class="cambiar-dato" @if (! $sinRecapturar) open @endif>
+                            <summary class="small {{ $sinRecapturar ? 'text-muted' : 'visually-hidden' }}"><i class="bi bi-pencil me-1" aria-hidden="true"></i>cambiar vacante o departamento</summary>
+                            <label class="campo-etiqueta" for="can_vacante">Vacante</label>
+                            <select id="can_vacante" name="vacante_id" class="campo">
+                                <option value="">-- Sin vacante publicada --</option>
+                                @foreach ($vacantesElegibles as $vac)
+                                    <option value="{{ $vac->id }}" @selected((string) $vOld('vacante_id', $activa?->vacante_id) === (string) $vac->id)>{{ $vac->titulo }}{{ $vac->estado !== 'publicada' ? ' ('.\App\Models\Vacante::ESTADOS[$vac->estado].')' : '' }}</option>
+                                @endforeach
+                            </select>
 
-                        <label class="campo-etiqueta" for="can_departamento">Departamento *</label>
-                        <select id="can_departamento" name="departamento_id" class="campo" required>
-                            <option value="">-- Elige --</option>
-                            @foreach ($departamentosSede as $d)
-                                <option value="{{ $d->id }}" @selected((string) $vOld('departamento_id', $departamentoCanalizar) === (string) $d->id)>{{ $d->nombre }}</option>
-                            @endforeach
-                        </select>
+                            <label class="campo-etiqueta" for="can_departamento">Departamento *</label>
+                            <select id="can_departamento" name="departamento_id" class="campo" required>
+                                <option value="">-- Elige --</option>
+                                @foreach ($departamentosSede as $d)
+                                    <option value="{{ $d->id }}" @selected((string) $vOld('departamento_id', $departamentoCanalizar) === (string) $d->id)>{{ $d->nombre }}</option>
+                                @endforeach
+                            </select>
+                        </details>
 
                         <label class="campo-etiqueta" for="can_entrevistador">¿Quién lo entrevista? *</label>
                         @if ($elegibles['responsables']->isEmpty() && $elegibles['otros']->isEmpty())

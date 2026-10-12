@@ -234,15 +234,15 @@ class CandidatosYAutorizacionesTest extends TestCase
 
     public function test_panel_de_recepcion_muestra_a_quien_espera_y_su_json(): void
     {
-        app(AjustesRecepcion::class)->guardar($this->admin, $this->empresa->refresh(), ['rh_autoriza_paso' => '0', 'aviso_privacidad' => ''], true, false);
+        app(AjustesRecepcion::class)->guardar($this->admin, $this->empresa->refresh(), ['rh_autoriza_paso' => '0', 'aviso_privacidad' => ''], ['privacidad']);
         $this->registrarEnCaseta()->assertSessionHas('ok');
         $this->actingAs($this->rh)->get('/rh/recepcion')->assertOk()->assertSee('Karla Pérez Uc')->assertSee('Atender');
         $this->actingAs($this->rh)->getJson('/rh/recepcion/datos')->assertOk()->assertJsonPath('total', 1)
             ->assertJsonPath('contadores.esperando', 1);
 
-        // «Atender» pasa a En revisión y deja de contar como esperando
+        // «Atender» pasa a Con RR. HH. y deja de contar como esperando
         $c = $this->enEmpresa(fn () => Candidato::sole());
-        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'revision', 'volver' => 'recepcion'])->assertRedirect('/rh/recepcion');
+        $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => 'con_rh', 'volver' => 'recepcion'])->assertRedirect('/rh/recepcion');
         $this->actingAs($this->rh)->getJson('/rh/recepcion/datos')->assertJsonPath('contadores.esperando', 0);
         $this->assertNotNull($c->fresh()->revision_en);
     }
@@ -311,27 +311,25 @@ class CandidatosYAutorizacionesTest extends TestCase
         $ir = fn (string $etapa, ?string $comentario = null) => $this->actingAs($this->rh)->patch("/candidatos/{$c->id}/etapa", ['etapa' => $etapa, 'comentario' => $comentario]);
 
         // Las que tienen su propio formulario (o ya no existen) no se cambian con el botón de etapa
-        foreach (['canalizado', 'evaluado', 'elegido', 'contratado', 'no_se_presento', 'registrado', 'aprobado_rh', 'seleccionado', 'cartera', 'descartado'] as $prohibida) {
+        foreach (['canalizado', 'evaluado', 'elegido', 'contratado', 'no_se_presento', 'registrado', 'aprobado_rh', 'seleccionado', 'cartera', 'descartado', 'revision', 'entrevista_rh'] as $prohibida) {
             $ir($prohibida)->assertSessionHasErrors('etapa');
             $this->assertSame('registrado', $c->fresh()->etapa);
         }
-        // Desde Esperando no se entrevista sin atender
-        $ir('entrevista_rh')->assertSessionHas('error');
 
-        $ir('revision')->assertSessionHas('ok');
+        $ir('con_rh')->assertSessionHas('ok', fn ($m) => str_contains($m, 'Con RR. HH.'));
         $this->assertNotNull($c->fresh()->revision_en);
-        $ir('entrevista_rh')->assertSessionHas('ok')->assertSessionHas('abrir_dialogo', 'evaluacion'); // «Entrevistar» abre la evaluación
-        $this->assertSame('entrevista_rh', $c->fresh()->etapa);
+        $this->assertSame('con_rh', $c->fresh()->etapa);
+        $ir('con_rh')->assertSessionHas('error'); // ya está con RR. HH.
         $ir('considerar')->assertSessionHasErrors('comentario'); // el comentario es obligatorio
         $ir('considerar', 'Para la temporada alta')->assertSessionHas('ok');
         $this->assertSame('Para la temporada alta', $c->fresh()->motivo_descarte);
-        $ir('entrevista_rh')->assertSessionHas('error'); // de considerar solo a revisión o rechazado
+        $ir('canalizado')->assertSessionHasErrors('etapa'); // de considerar solo a Con RR. HH. o rechazado
         $ir('rechazado')->assertSessionHasErrors('comentario'); // el motivo es obligatorio
         $ir('rechazado', 'No cubre el horario')->assertSessionHas('ok');
         $this->assertSame('No cubre el horario', $c->fresh()->motivo_descarte);
         $this->assertNotNull($c->fresh()->decision_en);
         $ir('considerar', 'x')->assertSessionHas('error');
-        $ir('revision')->assertSessionHas('ok'); // se puede reabrir
+        $ir('con_rh')->assertSessionHas('ok'); // se puede reabrir
         $this->assertNull($c->fresh()->motivo_descarte);
 
         // Contratado: ya no cambia
@@ -340,7 +338,7 @@ class CandidatosYAutorizacionesTest extends TestCase
             $this->actingAs($this->rh)->patch("/candidatos/{$contratado->id}/etapa", ['etapa' => $e, 'comentario' => 'x']);
             $this->assertSame('contratado', $contratado->fresh()->etapa);
         }
-        $this->assertSame(5, Auditoria::where('evento', 'candidatos.etapa')->where('auditable_id', $c->id)->count());
+        $this->assertSame(4, Auditoria::where('evento', 'candidatos.etapa')->where('auditable_id', $c->id)->count());
     }
 
     public function test_contratar_crea_el_colaborador_con_sus_datos(): void
@@ -426,13 +424,13 @@ class CandidatosYAutorizacionesTest extends TestCase
 
         $this->actingAs($rhPlaya)->get('/candidatos')->assertOk()->assertSee('Pedro Uicab')->assertDontSee('Luis Chi Canul');
         $this->actingAs($rhPlaya)->get("/candidatos/{$centro->id}")->assertNotFound();
-        $this->actingAs($rhPlaya)->patch("/candidatos/{$centro->id}/etapa", ['etapa' => 'revision'])->assertNotFound();
+        $this->actingAs($rhPlaya)->patch("/candidatos/{$centro->id}/etapa", ['etapa' => 'con_rh'])->assertNotFound();
         $this->actingAs($rhPlaya)->get("/candidatos/{$playa->id}")->assertOk();
 
         $otra = $this->crearEmpresa('Otro Hotel');
         $adminAjeno = $this->crearUsuario($otra, 'Administrador');
         $this->actingAs($adminAjeno)->get('/candidatos')->assertOk()->assertDontSee('Luis Chi Canul');
-        $this->actingAs($adminAjeno)->patch("/candidatos/{$centro->id}/etapa", ['etapa' => 'revision'])->assertNotFound();
+        $this->actingAs($adminAjeno)->patch("/candidatos/{$centro->id}/etapa", ['etapa' => 'con_rh'])->assertNotFound();
         $this->assertSame('registrado', $centro->fresh()->etapa);
     }
 

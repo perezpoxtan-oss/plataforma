@@ -20,22 +20,34 @@ resumen: La solicitud de empleo completa del candidato (con su firma), cómo la 
 
 ## Cómo la llena el candidato en su celular (kiosco o internet)
 
-1. Recursos Humanos abre su QR en la ficha (**QR para que llene su solicitud**) o en la tableta de **Recepción → Modo kiosco**. Ver [Candidatos](candidatos.md).
-2. El candidato escanea el QR (o escribe el código de 6 letras) y abre **Solicitud de empleo**. Las secciones se abren y se cierran:
+1. Recursos Humanos abre su QR en la ficha (**QR para que llene su solicitud**) o en la tableta de **Recepción → Modo kiosco**, o le manda el enlace con **Enviar enlace por correo** (vale 72 horas). Ver [Candidatos](candidatos.md).
+2. El candidato escanea el QR (o escribe el código de 6 letras, o abre el enlace de su correo) y abre **Solicitud de empleo**. Las secciones se abren y se cierran:
    1. **Datos personales:** nombre(s) y apellidos por separado, teléfono celular, correo, fecha y lugar de nacimiento, sexo, estado civil y dependientes.
    2. **Documentos oficiales:** CURP, RFC, NSS y licencia de manejo. Si no los trae, los deja en blanco.
    3. **Domicilio y contacto de emergencia.**
    4. **Puesto al que aplica.**
    5. **Escolaridad:** nivel, escuela, periodo y documento obtenido (certificado, título, cédula o trunco).
    6. **Empleos anteriores:** empresa, puesto, mes de ingreso y de salida, sueldo, jefe y su teléfono, por qué salió y si podemos pedir referencias.
-   7. **Referencias:** personales (mínimo 2) y laborales.
+   7. **Referencias:** personales (mínimo 1) y laborales.
    8. **Datos generales:** cómo se enteró de la vacante, familiares en la empresa, si ya trabajó aquí, si puede rolar turnos, viajar o cambiar de residencia, cuándo puede empezar y el sueldo que espera.
    9. **Declaración y firma:** marca **Declaro que la información es verdadera** y firma con el dedo.
 3. Al final marca **Acepto el aviso de privacidad** y toca **Enviar mi solicitud**.
 
 ![Solicitud en el celular](img/solicitud-empleo/kiosco-solicitud-movil.png) ![Declaración y firma](img/solicitud-empleo/kiosco-firma-movil.png)
 
-**Qué debes ver:** una pantalla de agradecimiento. En la ficha del candidato aparece **Por revisar**. Quien se postula por internet desde [Vacantes](vacantes.md) llena la misma solicitud.
+**Qué debes ver:** una pantalla de agradecimiento. En la ficha del candidato aparece **Por revisar**.
+
+## Cómo se postula por internet (solicitud corta)
+
+Quien entra a la bolsa de trabajo de tu empresa (ver [Vacantes](vacantes.md)) no llena toda la solicitud de golpe:
+
+1. En la vacante toca **Postularme** y escribe solo su **Nombre completo**, su **Teléfono celular** y su **Correo**; si la vacante es de varias sedes, elige la **sede**; si quiere, adjunta su **CV**; marca **Acepto el aviso de privacidad** y toca **Enviar mi postulación**.
+2. Ve «¡Listo! Recibimos tu postulación» y recibe en su correo el enlace **Llenar mi solicitud** (vale 72 horas) para llenar la solicitud completa cuando pueda.
+3. En Candidatos, su ficha aparece con **Solicitud incompleta** hasta que la llene (o hasta que Recursos Humanos la capture con **Editar solicitud**). Si no la llena desde su casa, la llena en el kiosco cuando venga a su entrevista.
+
+**Qué debes ver:** la campana «Nueva postulación por internet: …» con la nota de solicitud incompleta; en la ficha, el botón **Enviar enlace por correo** para mandárselo otra vez.
+
+![Postulación corta en el celular](img/vacantes/empleos-postular-movil.png) ![Ficha con solicitud incompleta](img/recepcion-y-candidatos/candidato-solicitud-incompleta.png)
 
 ## Cómo la revisa Recursos Humanos
 
@@ -64,7 +76,7 @@ resumen: La solicitud de empleo completa del candidato (con su firma), cómo la 
 
 ## Cómo contratar sin volver a escribir
 
-Al tocar **Contratar** en la ficha, el colaborador nuevo ya lleva su CURP, RFC, NSS, nacimiento, nacionalidad, teléfono, correo y domicilio. Solo escribes el **número de empleado**. Si el CURP ya lo tiene otro colaborador, te avisa en la misma ventana.
+Al tocar **Contratar** en la ficha, el colaborador nuevo ya lleva su CURP, RFC, NSS, nacimiento, nacionalidad, teléfono, correo y domicilio. Solo escribes el **número de empleado**. Si el CURP ya lo tiene otro colaborador, te avisa en la misma ventana. Si aún falta algún documento obligatorio o el contrato firmado, la ventana te lo dice (ver [Candidatos](candidatos.md#cómo-contratar-a-un-candidato)); al contratar, la solicitud y los documentos quedan a la mano en el [expediente del colaborador](colaboradores.md#cómo-ver-el-expediente-de-un-colaborador).
 
 ## Cómo exportar las solicitudes
 
@@ -77,7 +89,8 @@ Al tocar **Contratar** en la ficha, el colaborador nuevo ya lleva su CURP, RFC, 
 |---|---|---|
 | Para enviar, marca «Declaro que la información es verdadera». | Falta la declaración. | Márcala antes de enviar. |
 | Falta tu firma: firma en el recuadro con el dedo antes de enviar. | No se firmó. | Firma con el dedo en el recuadro. |
-| Escribe al menos 2 referencias personales (nombre y teléfono). | Faltan referencias. | Agrega dos personas con su teléfono. |
+| Escribe al menos 1 referencia personal (nombre y teléfono). | Faltan referencias. | Agrega una persona con su teléfono. |
+| Escribe tu correo: ahí te mandaremos el enlace para completar tu solicitud. | Al postularse por internet no escribió su correo. | Escribir el correo; es donde llega el enlace. |
 | Para guardar, marca «Acepto el aviso de privacidad». | No se aceptó el aviso. | Léelo y márcalo. |
 | El CURP no tiene el formato correcto: son 18 letras y números (ej. GOMA850101HQRRRN09). | El CURP está incompleto. | Cópialo de su documento o déjalo vacío. |
 | El RFC no tiene el formato correcto: son 12 o 13 letras y números (ej. GOMA850101AB1). | El RFC está incompleto. | Corrígelo o déjalo vacío. |
@@ -96,6 +109,8 @@ Al tocar **Contratar** en la ficha, el colaborador nuevo ya lleva su CURP, RFC, 
 **¿El jefe del departamento ve el CURP o el domicilio?** No. Solo ve un resumen (puesto, escolaridad, experiencia).
 
 **¿Puedo capturar la solicitud yo si el candidato no tiene celular?** Sí, con **Editar solicitud**, y que firme en tu pantalla.
+
+**¿Por qué la postulación por internet pide tan poco?** Para que nadie abandone a la mitad: con nombre, teléfono y correo ya puedes llamarlo; la solicitud completa se le pide después con el enlace de su correo o en el kiosco.
 
 **¿Qué pasa si el candidato ya tenía ficha de antes?** Se conserva. Al editarla, su nombre aparece separado en nombre y apellidos para que lo confirmes.
 

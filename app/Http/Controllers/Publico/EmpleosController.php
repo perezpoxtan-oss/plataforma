@@ -9,6 +9,7 @@ use App\Models\Vacante;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\Vacantes\AdministradorVacantes;
 use App\Services\Vacantes\BolsaTrabajo;
+use App\Support\CorreoPlataforma;
 use App\Support\Entrada;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
@@ -113,14 +114,17 @@ class EmpleosController extends Controller
             'cv.file' => 'No se pudo recibir el archivo.',
         ]);
 
-        $this->tenant->conEmpresa($e->id, function () use ($request, $e, $vacante) {
+        // Postulación corta (ADR-0010): nombre, teléfono, correo, sede y CV opcional; la solicitud completa se pide después
+        $candidato = $this->tenant->conEmpresa($e->id, function () use ($request, $e, $vacante) {
             $v = $this->bolsa->vacantePublica($e, $vacante);
             abort_if($v === null, 404);
-            $this->bolsa->postular($e, $v, $request->except(['_token', 'cv', self::TRAMPA, 'departamento_id', 'puesto_id', 'vacante', 'vacante_id']),
+
+            return $this->bolsa->postularCorta($e, $v, $request->only(['nombre_completo', 'telefono', 'correo', 'sede_id', 'acepta_privacidad']),
                 $request->file('cv'), (string) $request->ip());
         });
 
-        return redirect()->route('empleos.gracias', $e->bolsa_slug)->with('postulacion_enviada', true);
+        return redirect()->route('empleos.gracias', $e->bolsa_slug)->with('postulacion_enviada', true)
+            ->with('enlace_enviado', $candidato->solicitud_corta && app(CorreoPlataforma::class)->configurado());
     }
 
     public function gracias(string $empresa): Response|RedirectResponse

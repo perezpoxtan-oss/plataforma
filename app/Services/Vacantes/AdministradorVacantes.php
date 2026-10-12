@@ -12,8 +12,10 @@ use App\Models\Turno;
 use App\Models\User;
 use App\Models\Vacante;
 use App\Services\Candidatos\CambioNoPermitido;
+use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Services\Recepcion\Destinatarios;
 use App\Support\Entrada;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -41,10 +43,36 @@ class AdministradorVacantes
 {
     public const MAX_RENGLONES = 15;
 
+    /** Referencia de los avisos de campana que se resuelven al cerrar o publicar la vacante. */
+    public const REFERENCIA = 'vacante';
+
     public function __construct(
         private readonly Autorizador $autorizador,
         private readonly AdministradorRoles $auditoria,
+        private readonly CentroNotificaciones $notificaciones,
+        private readonly Destinatarios $destinatarios,
     ) {}
+
+    /**
+     * Un jefe guardó un borrador (pide la vacante sin poder publicarla,
+     * ADR-0010): campana «Vacante propuesta por …» a quien publica vacantes en
+     * sus sedes. El aviso se resuelve al publicarla o cerrarla.
+     */
+    public function avisarPropuesta(User $actor, Vacante $vacante): void
+    {
+        $sedes = $vacante->todas_las_sedes ? [null] : $vacante->sedes()->pluck('sedes.id')->map(fn ($id) => (int) $id)->all();
+        $rh = collect();
+        foreach ($sedes ?: [null] as $sedeId) {
+            $rh = $rh->merge($this->destinatarios->conPermiso((int) $vacante->empresa_id, 'vacantes.editar', $sedeId));
+        }
+        $rh = $rh->unique('id')->reject(fn (User $u) => $u->id === $actor->id);
+        $this->notificaciones->avisar((int) $vacante->empresa_id, $rh->pluck('id'), 'vacante_propuesta', [
+            'titulo' => 'Vacante propuesta por '.$actor->name.': «'.$vacante->titulo.'»',
+            'texto' => ($vacante->departamento?->nombre ? $vacante->departamento->nombre.' · ' : '').$vacante->plazas.' plaza(s). Está en borrador: revísala y publícala.',
+            'url' => route('vacantes.index', ['estado' => 'borrador']),
+            'referencia_tipo' => self::REFERENCIA, 'referencia_id' => $vacante->id,
+        ]);
+    }
 
     // ------------------------------------------------------------------ Alcance
 
@@ -193,6 +221,10 @@ class AdministradorVacantes
             'borrador' => 'vacantes.reabierta',
         };
         $this->auditoria->auditar($actor, $evento, $vacante, ['estado' => $anterior], ['estado' => $estado] + ($estado === 'cerrada' ? ['cierre_motivo' => $motivo] : []));
+        if (in_array($estado, ['publicada', 'cerrada'], true)) {
+            // «Vacante propuesta» y «Vacante cubierta» (con su botón «Cerrar como cubierta») ya se atendieron
+            $this->notificaciones->resolver(self::REFERENCIA, $vacante->id);
+        }
 
         return $vacante;
     }
