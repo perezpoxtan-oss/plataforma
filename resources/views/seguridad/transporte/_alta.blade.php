@@ -15,7 +15,9 @@
     $estatusElegido = $trasError ? (string) old('estatus', 'a_tiempo') : 'a_tiempo';
     $horarioElegido = $trasError ? (string) old('ruta_horario_id') : (string) ($sugerencia[$tipoElegido] ?? '');
     $taxisAnteriores = $trasError ? array_values(array_filter((array) old('taxis', []), 'is_array')) : [];
-    $conFirmas = $puede['firmar'];
+    // ADR-0014: qué firmas se capturan en pantalla (Configuración → Caseta y activos; por omisión, las dos)
+    $conFirmaGuardia = $puede['firma_guardia'];
+    $conFirmas = $puede['firma_taxista'];
     $altaColaborador = auth()->user()->can('colaboradores.crear') || auth()->user()->can('colaboradores.provisional');
     $anterior = fn (string $campo) => $trasError && is_scalar(old($campo)) ? (string) old($campo) : '';
     $tipoUnidad = $anterior('tipo_unidad') ?: 'autobus';
@@ -81,7 +83,7 @@
 
             <span class="campo-etiqueta">Estatus del Servicio</span>
             <div class="transporte-opciones tres" role="radiogroup" aria-label="Estatus del servicio">
-                @foreach (['a_tiempo' => ['bi-check-circle-fill', 'SERVICIO NORMAL', '(A Tiempo)'], 'retraso' => ['bi-hourglass-split', 'SERVICIO NORMAL', '(Con Retraso)'], 'no_llego' => ['bi-exclamation-triangle-fill', 'FALLA DE FLETERA', '(Uso de Taxis)']] as $clave => [$icono, $texto, $detalle])
+                @foreach (['a_tiempo' => ['bi-check-circle-fill', 'SERVICIO NORMAL', '(A Tiempo)'], 'retraso' => ['bi-hourglass-split', 'SERVICIO NORMAL', '(Con Retraso)'], 'no_llego' => ['bi-exclamation-triangle-fill', 'LA UNIDAD NO LLEGÓ', '(Se usan taxis)']] as $clave => [$icono, $texto, $detalle])
                     <label class="transporte-opcion estatus-{{ str_replace('_', '-', $clave) }}">
                         <input type="radio" name="estatus" value="{{ $clave }}" required @checked($estatusElegido === $clave) @if ($clave === 'a_tiempo') data-por-defecto @endif>
                         <i class="bi {{ $icono }}" aria-hidden="true"></i><strong>{{ $texto }}</strong><small>{{ $detalle }}</small>
@@ -168,8 +170,12 @@
                     <button type="button" class="btn-agregar-taxi" data-agregar-taxi><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Añadir otro Taxi</button>
                 </div>
                 <p class="small text-muted mb-2"><i class="bi bi-info-circle" aria-hidden="true"></i>
-                    @if ($conFirmas)
+                    @if ($conFirmas && $conFirmaGuardia)
                         Cada taxi lleva su vale de caja chica: captura el monto, el destino, los colaboradores que viajan y la firma del conductor.
+                    @elseif ($conFirmas)
+                        Cada taxi lleva su vale de caja chica: captura el monto, el destino, los colaboradores que viajan y la firma del conductor. Seguridad firma a mano en el vale impreso.
+                    @elseif ($conFirmaGuardia)
+                        Cada taxi lleva su vale de caja chica. Tú firmas una vez abajo; el conductor firma a mano en el vale impreso.
                     @else
                         Cada taxi lleva su vale de caja chica. El vale impreso trae los espacios para firmar a mano (Seguridad, Conductor, Autorización).
                     @endif
@@ -181,13 +187,13 @@
                 </div>
             </div>
 
-            @if ($conFirmas)
+            @if ($conFirmaGuardia)
                 @include('componentes.firma', ['id' => 'tr_firma_guardia', 'nombre' => 'firma_guardia', 'etiqueta' => 'Firma del guardia (Seguridad)',
                     'ayuda' => 'Obligatoria cuando se usan taxis; en un servicio normal es opcional.'])
             @endif
 
             <label class="campo-etiqueta" for="tr_observaciones">Observaciones de Caseta <span class="text-lowercase fw-normal">(opcional)</span></label>
-            <input type="text" id="tr_observaciones" name="observaciones" class="campo" maxlength="1000" placeholder="Detalles mecánicos de la fletera, retrasos de tráfico, etc." value="{{ $anterior('observaciones') }}">
+            <input type="text" id="tr_observaciones" name="observaciones" class="campo" maxlength="1000" placeholder="Detalles mecánicos de la unidad, retrasos de tráfico, etc." value="{{ $anterior('observaciones') }}">
 
             <div class="dialogo-acciones transporte-acciones">
                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>

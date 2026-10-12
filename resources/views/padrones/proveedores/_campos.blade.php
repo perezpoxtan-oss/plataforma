@@ -12,7 +12,7 @@
 <input type="text" id="{{ $prefijo }}_nombre" name="nombre" class="campo" maxlength="150" placeholder="Ej: GRUPO BIMBO S.A. DE C.V."
        value="{{ $valor('nombre') }}" @if (! empty($duplicado)) data-duplicado="{{ route('proveedores.duplicado') }}" data-duplicado-min="3" @endif required>
 
-<label class="campo-etiqueta" for="{{ $prefijo }}_categoria">Categoría de Proveedor</label>
+<label class="campo-etiqueta" for="{{ $prefijo }}_categoria">Categoría</label>
 <select id="{{ $prefijo }}_categoria" name="categoria" class="campo" required>
     @foreach (\App\Http\Controllers\Padrones\ProveedorController::ESTILOS as $clave => $estilo)
         <option value="{{ $clave }}" @selected($categoriaActual === $clave) @if ($clave === 'proveedor') data-por-defecto @endif>{{ $estilo[4] }}</option>

@@ -22,10 +22,12 @@ final class GruposAvisos
         'cuentas' => ['Cuentas y seguridad', 'bi-shield-lock', 'usuarios', ['cuenta_bloqueada', 'movimientos_sensibles']],
         'colaboradores' => ['Colaboradores', 'bi-person-badge', 'colaboradores', ['alta_provisional']],
         'padrones' => ['Padrones: altas por verificar', 'bi-patch-question', null, ['alta_por_verificar']],
-        'pases_salida' => ['Pases de salida', 'bi-box-arrow-up-right', 'pases_salida', ['pase_salida_aprobacion', 'pase_salida_resultado', 'pase_salida_vencido']],
+        // Mejoras Incidentes (ADR-0013): sus ajustes (nombre del menú, categoría del hallazgo) van en la misma tarjeta
+        'novedades' => ['Bitácora de novedades', 'bi-headset', 'novedades', ['novedad_canalizada', 'hallazgo_recorrido_pc']],
+        'pases_salida' => ['Pases de salida', 'bi-box-arrow-up-right', 'pases_salida', ['pase_salida_aprobacion', 'pase_salida_resultado', 'pase_salida_vencido', 'pase_salida_espera']],
         'transporte' => ['Bitácora de transporte', 'bi-taxi-front', 'transporte', ['vale_taxi']],
         'vouchers' => ['Vouchers de reposición', 'bi-receipt', 'vouchers', ['voucher_cobro']],
-        'procedimientos' => ['Procedimientos', 'bi-book', 'procedimientos', ['procedimiento_publicado', 'procedimiento_recordatorio']],
+        'procedimientos' => ['Procedimientos', 'bi-book', 'procedimientos', ['procedimiento_publicado', 'procedimiento_recordatorio', 'procedimiento_revision']],
         'candidatos' => ['Recepción y candidatos', 'bi-people', 'candidatos', ['candidato_llegada', 'autorizacion_departamento', 'entrevista_departamento', 'evaluacion_departamento', 'plazo_candidato']],
     ];
 

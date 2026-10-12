@@ -53,9 +53,9 @@ Entra a QA con **`admin.demo`** (contraseña de la demo). Para el paso 6 usa **`
 
 Recuerda: **Categoría = de quién es**; **Tipo / Estilo = qué forma tiene**. «Otro» es un Tipo / Estilo.
 
-### 5. Zonas y áreas
+### 5. Zonas y edificios
 
-1. Ve a Estructura → **Zonas y áreas** → **Nueva Zona / Edificio**.
+1. Ve a Estructura → **Zonas y edificios** → **Nueva Zona / Edificio**.
 2. Escribe el nombre `Torre-A` y el código `t-a`.
    - Las dos cajas amarillas dicen que se parecen a **Torre A (TA)**.
 3. Borra todo y escribe el nombre `Torre Jardín`.

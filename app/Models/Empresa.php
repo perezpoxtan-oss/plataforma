@@ -41,8 +41,10 @@ class Empresa extends Model
         // Procedimientos (acuse «Leí y entendí»)
         'procedimiento_publicado' => ['Procedimientos: avisar al personal cuando se publica una versión que debe leer y firmar', true],
         'procedimiento_recordatorio' => ['Procedimientos: recordar (cada 3 días) los procedimientos que alguien aún no firma de enterado', true],
+        // Mejoras activos (ADR-0014): «Enviar a revisión» avisa a quien aprueba
+        'procedimiento_revision' => ['Procedimientos: avisar a quien puede aprobar cuando un procedimiento se envía a revisión', true],
         // Ronda 5 (LL-04): copias del voucher con cobro
-        'voucher_cobro' => ['Vouchers de reposición con cobro (CXC): enviar las copias a Seguridad, Recepción y Administración', true],
+        'voucher_cobro' => ['Vouchers de reposición con cobro al colaborador: enviar las copias a Seguridad, Recepción y Administración', true],
         // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
         'candidato_llegada' => ['Recepción: avisar a Recursos Humanos cuando la caseta registre a un candidato (o cuando llene su CV en el kiosco)', true],
         'autorizacion_departamento' => ['Autorizaciones: avisar al responsable del departamento (o a su delegado) cuando una visita espera su respuesta', true],
@@ -53,6 +55,11 @@ class Empresa extends Model
         'plazo_candidato' => ['Candidatos: recordar cada día lo que pasó de su plazo —solicitud sin revisar, evaluación sin registrar, elegido sin documentos, candidato sin atender, cita sin llegada— y avisar 15 días antes de borrar una ficha por caducidad', true],
         // Cuenta del usuario (seguridad)
         'cuenta_bloqueada' => ['Seguridad: avisar por correo a quien administra usuarios (y a la persona) cuando una cuenta se bloquea por intentos fallidos', true],
+        // Mejoras Incidentes (ADR-0013): apagados por omisión (la campana avisa siempre)
+        'novedad_canalizada' => ['Bitácora de novedades: avisar por correo a quien se le canaliza un ticket y cuando un ticket «Pendiente de turno» no se atiende', false],
+        'hallazgo_recorrido_pc' => ['Recorridos de Protección Civil: avisar por correo al jefe de seguridad y a quien administra los equipos cuando un recorrido encuentra una falla', false],
+        'pase_salida_espera' => ['Pases de salida: recordar al firmante y avisar al siguiente nivel cuando una firma tarda (según las horas del circuito)', true],
+        // Fin Mejoras Incidentes
         // Mejoras estructura (ADR-0016): campana a quien ve toda la Bitácora de auditoría (apagado por omisión)
         'movimientos_sensibles' => ['Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría cuando alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales', false],
     ];

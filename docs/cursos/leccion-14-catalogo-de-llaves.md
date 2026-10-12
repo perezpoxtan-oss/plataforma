@@ -5,7 +5,7 @@
 ## Antes de empezar
 
 - El catálogo dice **qué llaves existen y qué abren**. El préstamo del día a día va en **Préstamo de llaves**.
-- Los lugares (Torre A, Piso 1, 101, Vista al mar) vienen de **Zonas y áreas** (lección 4). Si un lugar no existe allí, usa el alcance **Otra**.
+- Los lugares (Torre A, Piso 1, 101, Vista al mar) vienen de **Zonas y edificios** (lección 4). Si un lugar no existe allí, usa el alcance **Otra**.
 
 ## Práctica (en QA)
 
@@ -35,7 +35,7 @@
 ## Autoevaluación
 
 1. ¿Dónde se registra que un camarista se llevó la llave del Piso 1? *(En Préstamo de llaves, no en el catálogo)*
-2. ¿Qué alcance uso para el cuarto de bombas que no está en Zonas y áreas? *(Otra)*
+2. ¿Qué alcance uso para el cuarto de bombas que no está en Zonas y edificios? *(Otra)*
 3. ¿Cuándo aparece "Vence pronto"? *(Cuando faltan 30 días o menos para la fecha de caducidad)*
 4. ¿Puedo dar de baja una llave desde Editar? *(No: solo con el círculo rojo, que genera el voucher)*
 5. ¿Qué hace un Agente en el catálogo? *(Consultar las llaves de su sede)*

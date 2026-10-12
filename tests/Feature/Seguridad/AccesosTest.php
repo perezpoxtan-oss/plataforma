@@ -822,7 +822,7 @@ class AccesosTest extends TestCase
     public function test_alta_provisional_de_la_caseta_y_union_con_su_registro(): void
     {
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
-        $this->actingAs($agente)->get('/accesos')->assertSee('¿No aparece? Darlo de alta provisional')->assertSee('Alta Provisional de Colaborador');
+        $this->actingAs($agente)->get('/accesos')->assertSee('¿No aparece? Darlo de alta provisional')->assertSee('Registro Rápido de Colaborador');
 
         $request = Request::create('/', 'POST', ['nombre' => 'Jorge', 'apellido_paterno' => 'Méndez', 'apellido_materno' => 'Tun', 'sede_id' => $this->centro->id]);
         $this->actingAs($agente);

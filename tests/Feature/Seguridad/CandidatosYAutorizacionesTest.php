@@ -616,7 +616,9 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->actingAs($this->agente)->getJson('/accesos/autorizaciones-estado?ids='.$acceso->id)->assertJsonPath('estados.'.$acceso->id, 'en_sitio|autorizada');
         // La caseta recibe el aviso y los botones del jefe desaparecen
         $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->agente->id)->where('titulo', 'like', 'Ingreso autorizado%')->exists()));
-        $this->actingAs($this->jefe)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.acciones', []);
+        // (Mejoras padrones: el jefe también puede tener en su campana el alta por verificar de la persona que registró la caseta)
+        $this->assertSame([], collect($this->actingAs($this->jefe)->getJson('/notificaciones/resumen')->json('lista'))
+            ->reject(fn ($n) => str_starts_with($n['titulo'], 'Alta por verificar'))->first()['acciones']);
         // Dos veces no
         $this->actingAs($this->jefe)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'rechazar'])->assertSessionHas('error');
     }

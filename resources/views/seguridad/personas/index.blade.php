@@ -42,7 +42,8 @@
             </div>
             <div class="barra-filtros justify-content-md-end">
                 {{-- Las personas no tienen sede: el filtro genérico "data-filtro-sede" se usa aquí para la categoría --}}
-                <select class="filtro-select filtro-categoria-persona" aria-label="Filtrar por categoría de visitante" data-filtro-sede="personas">
+                {{-- Mejoras padrones: la categoría solo aplica a visitantes; el filtro se ve solo con «Visitantes» --}}
+                <select class="filtro-select filtro-categoria-persona" aria-label="Filtrar por categoría de visitante" data-filtro-sede="personas" data-solo-con-tipo="visitante" hidden>
                     <option value="">Todas las categorías</option>
                     @foreach ($categoriasUi as $clave => $etiqueta)
                         <option value="{{ $clave }}">{{ $etiqueta }}</option>
@@ -76,6 +77,8 @@
                     [$claseInsignia, $textoInsignia] = $insignia($p);
                     $editable = $puede['editar'] && ($editables === null || in_array($p->id, $editables, true)) && ! $p->estaRechazado();
                     $desactivable = $puede['estado'] && ($desactivables === null || in_array($p->id, $desactivables, true)) && ! $p->estaRechazado();
+                    // Mejoras padrones: unir dos personas verificadas que son la misma (editar + dar de baja)
+                    $unible = $editable && $desactivable && $p->activo && $p->verificacion === 'verificado';
                     $empresaDe = $p->empresaQueRepresenta();
                     $tipoId = \App\Models\Persona::IDENTIFICACIONES[$p->tipo_identificacion] ?? 'Identificación';
                     // El folio completo solo para quien puede editar esta ficha (y solo entonces entra al buscador)
@@ -94,7 +97,7 @@
                     <div>
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                             <span class="insignia-persona {{ $claseInsignia }}"><i class="bi bi-tag-fill me-1" aria-hidden="true"></i>{{ $textoInsignia }}</span>
-                            <span class="estado-persona {{ $p->activo ? 'activo' : 'baja' }}">{{ $p->activo ? 'ACTIVO' : 'BAJA' }}</span>
+                            <span class="estado-persona {{ $p->activo ? 'activo' : 'baja' }}">{{ $p->activo ? 'ACTIVO' : 'DE BAJA' }}</span>
                         </div>
                         @include('padrones.altas-por-verificar._insignia', ['registro' => $p, 'femenino' => true])
                         <h2 class="persona-nombre">{{ $p->nombre_completo }}</h2>
@@ -139,6 +142,12 @@
                             <span></span>
                         @endif
                         @include('padrones.altas-por-verificar._boton', ['registro' => $p])
+                        @if ($unible)
+                            <button type="button" class="btn-icono unir-duplicado" title="Unir con otra ficha (es la misma persona)" aria-label="Unir a {{ $p->nombre_completo }} con otra ficha"
+                                    data-unir-duplicado="{{ json_encode(['id' => $p->id, 'titulo' => $p->nombre_completo, 'url' => route('personas.unir-duplicado', $p->id), 'parecidos' => route('altas_por_verificar.parecidos', ['padron' => 'personas', 'de' => $p->id])], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}">
+                                <i class="bi bi-union" aria-hidden="true"></i>
+                            </button>
+                        @endif
                         @if ($editable)
                             <button type="button" class="btn-editar-perfil" aria-label="Editar el perfil de {{ $p->nombre_completo }}"
                                     data-accion="editar-registro" data-dialogo="dialogoEditarPersona"
@@ -246,17 +255,17 @@
                                 <label class="campo-etiqueta" for="{{ $modo }}_pe_proveedor"><i class="bi bi-building me-1" aria-hidden="true"></i> Empresa que representa</label>
                                 <select id="{{ $modo }}_pe_proveedor" name="proveedor_id" class="campo{{ $reabrir && $errors->has('proveedor_id') ? ' is-invalid' : '' }} mb-1" data-persona-proveedor
                                         data-categorias-por-tipo="{{ $categoriasPorTipo }}">
-                                    <option value="" data-por-defecto>-- No está en el directorio de proveedores --</option>
+                                    <option value="" data-por-defecto>-- Otra empresa (escríbela abajo) --</option>
                                     @foreach ($opcionesProveedor as $prov)
                                         <option value="{{ $prov->id }}" data-categoria="{{ $prov->categoria }}" @selected($valor('proveedor_id') === (string) $prov->id)>{{ $prov->nombre }}{{ $prov->activo ? '' : ' (inactivo)' }}</option>
                                     @endforeach
                                 </select>
-                                <p class="campo-ayuda mt-0" data-ayuda-empresa-tipo>Si la empresa no aparece, déjalo así y escribe su nombre abajo.</p>
+                                <p class="campo-ayuda mt-0" data-ayuda-empresa-tipo>Si la empresa no aparece, déjalo así y escribe su nombre abajo: si ya está en el directorio se liga sola a su ficha.</p>
                             @endif
                         </div>
 
                         <div data-solo-sin-proveedor>
-                            <label class="campo-etiqueta" for="{{ $modo }}_pe_procedencia">Empresa de procedencia <span class="text-lowercase fw-normal">(opcional)</span></label>
+                            <label class="campo-etiqueta" for="{{ $modo }}_pe_procedencia">¿De qué empresa viene? <span class="text-lowercase fw-normal">(opcional)</span></label>
                             <input type="text" id="{{ $modo }}_pe_procedencia" name="empresa_procedencia" class="campo" maxlength="100" placeholder="Ej. Particular, Paquetería del Caribe..." value="{{ $valor('empresa_procedencia') }}">
                         </div>
 
@@ -282,12 +291,17 @@
                         <div class="aviso-duplicado" id="{{ $modo }}_pe_aviso_folio" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
                         <p class="campo-ayuda mt-0"><i class="bi bi-shield-lock" aria-hidden="true"></i> El folio no puede repetirse en la empresa; espacios y guiones no cuentan. Quien solo consulta el padrón lo ve oculto (••••1234).</p>
 
-                        <label class="campo-etiqueta" for="{{ $modo }}_pe_motivo">Motivo de la Visita</label>
-                        <textarea id="{{ $modo }}_pe_motivo" name="motivo_visita" class="campo" rows="2" maxlength="500" placeholder="Ej. Entrega de mercancía, entrevista de trabajo, visita familiar...">{{ $valor('motivo_visita') }}</textarea>
+                        {{-- Mejoras padrones (criterio 8): el motivo de cada visita se captura en el acceso; aquí solo el habitual, plegado --}}
+                        <details class="mas-datos" @if ($valor('motivo_visita') !== '') open @endif data-mas-datos>
+                            <summary>Más datos <span class="text-lowercase fw-normal">(opcional)</span></summary>
+                            <label class="campo-etiqueta" for="{{ $modo }}_pe_motivo">Motivo habitual de sus visitas</label>
+                            <textarea id="{{ $modo }}_pe_motivo" name="motivo_visita" class="campo" rows="2" maxlength="500" placeholder="Ej. Entrega de mercancía, mantenimiento de elevadores...">{{ $valor('motivo_visita') }}</textarea>
+                            <p class="campo-ayuda mt-0">El motivo de cada visita lo captura la caseta en la Bitácora de accesos.</p>
+                        </details>
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-azul">{{ $esNuevo ? 'Guardar en Padrón' : 'Actualizar Cambios' }}</button>
+                            <button type="submit" class="btn-azul">Guardar</button>
                         </div>
                     </form>
                     @unless ($esNuevo)
@@ -297,6 +311,7 @@
             </dialog>
         @endforeach
         @include('padrones.altas-por-verificar._dialogo', ['altas' => $altas])
+        @include('padrones.altas-por-verificar._unir-duplicado', ['padron' => 'personas'])
     @endif
 </div>
 @endsection

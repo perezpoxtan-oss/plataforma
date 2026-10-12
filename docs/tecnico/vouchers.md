@@ -156,3 +156,7 @@ SEGCAT no tenía forma de registrar que el artículo apareció: se reactivaba y 
 ## Ronda 8
 
 «Registrar firma en papel» / «Cambiar hoja firmada» solo aparece (y `POST /vouchers/{id}/papel` solo se acepta) si el voucher tiene firma física y está **Vigente** o con **Reembolso pendiente** (`VoucherReposicion::admiteFirmaPapel()`). Uno «Cancelado por recuperación» o «Reembolsado» ya no se firma: «El voucher VR-… está «Reembolsado»: ya no se registra su firma en papel.»
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): «Reactivar» en la ficha = «Recuperado» (`RecuperacionVouchers::desdeFicha`), `?recuperar=` abre el diálogo, último voucher por artículo para la ficha (`ultimosPorOrigen`), «Se le cobra al colaborador».

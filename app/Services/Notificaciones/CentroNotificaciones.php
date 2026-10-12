@@ -50,6 +50,30 @@ class CentroNotificaciones
         'pase_rechazado' => ['bi-x-octagon-fill', 'alerta'],
         'pase_vencido' => ['bi-exclamation-triangle-fill', 'alerta'],
         'pase_llega' => ['bi-truck', 'info'],
+        // Mejoras Incidentes (ADR-0013): canalizar, cerrar, pendiente de turno, hallazgos de recorrido y firmas de pases que tardan
+        'novedad_canalizada' => ['bi-headset', 'alerta'],
+        'novedad_resuelta' => ['bi-check2-circle', 'exito'],
+        'novedad_turno' => ['bi-hourglass-split', 'alerta'],
+        'novedad_turno_escalada' => ['bi-alarm-fill', 'alerta'],
+        'recorrido_pc_hallazgo' => ['bi-fire', 'alerta'],
+        'pase_firma_recordatorio' => ['bi-alarm', 'alerta'],
+        'pase_firma_escalada' => ['bi-alarm-fill', 'alerta'],
+        // Fin Mejoras Incidentes
+        // Mejoras activos (ADR-0014): Vo.Bo. de vales, procedimientos, llaves fuera y equipos de turno
+        'vale_taxi_por_autorizar' => ['bi-taxi-front', 'alerta'],
+        'procedimiento_revision' => ['bi-journal-check', 'alerta'],
+        'procedimiento_aprobado' => ['bi-check-circle-fill', 'exito'],
+        'procedimiento_rechazado' => ['bi-arrow-counterclockwise', 'alerta'],
+        'procedimiento_publicado' => ['bi-book', 'info'],
+        'llave_fuera' => ['bi-key-fill', 'alerta'],
+        'equipo_turno' => ['bi-broadcast-pin', 'alerta'],
+        // Fin Mejoras activos
+        // Mejoras padrones (ADR-0015): altas por verificar y su resultado a quien la registró
+        'alta_por_verificar' => ['bi-patch-question-fill', 'alerta'],
+        'alta_verificada' => ['bi-patch-check-fill', 'exito'],
+        'alta_unida' => ['bi-union', 'info'],
+        'alta_rechazada' => ['bi-x-octagon-fill', 'alerta'],
+        // Fin Mejoras padrones
         // Mejoras estructura (ADR-0016): movimiento sensible en la bitácora (si la empresa lo enciende)
         'movimiento_sensible' => ['bi-shield-exclamation', 'alerta'],
     ];

@@ -20,7 +20,7 @@ class CatalogoSeeder extends Seeder
         'ver' => 'Ver',
         'crear' => 'Crear',
         'editar' => 'Editar',
-        'eliminar' => 'Eliminar',
+        'eliminar' => 'Dar de baja', // Mejoras padrones: siempre fue la baja reversible (el borrado es «Eliminar definitivamente»)
         'aprobar' => 'Aprobar',
         'firmar' => 'Firmar',
         'imprimir' => 'Imprimir',

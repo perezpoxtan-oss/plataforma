@@ -72,6 +72,9 @@
                             <p class="aviso-sin-responsable mb-0"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Sin responsable: sus visitas entran sin autorización y nadie entrevista a sus candidatos.
                                 @if ($puedeResponsables)
                                     <a href="{{ route('autorizaciones.responsables', ['desde' => 'departamentos']) }}#depto-{{ $d->id }}">Nombrar responsable</a>
+                                @else
+                                    {{-- Mejoras padrones: qué permiso pedir, con el nombre que se ve en la Matriz --}}
+                                    <span class="d-block small">Para nombrarlo se necesita el permiso <strong>Configurar</strong> de <strong>Autorizaciones departamentales</strong> (Matriz de permisos); pídelo a tu administrador.</span>
                                 @endif
                             </p>
                         @endif
@@ -83,8 +86,9 @@
                         @endif
                     </div>
                     <div class="ficha-footer">
-                        <span class="etiqueta-estado {{ $d->activo ? 'activo' : 'inactivo' }}">{{ $d->activo ? 'ACTIVO' : 'INACTIVO' }}</span>
+                        <span class="etiqueta-estado {{ $d->activo ? 'activo' : 'inactivo' }}">{{ $d->activo ? 'ACTIVO' : 'DE BAJA' }}</span>
                         <div class="d-flex gap-2">
+                            @include('componentes.ver-historial', ['registro' => \App\Models\Departamento::class, 'id' => $d->id, 'nombre' => $d->nombre])
                             @if ($puede['editar'])
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar {{ $d->nombre }}"
                                         data-accion="editar-registro" data-dialogo="dialogoEditarDepartamento"
@@ -94,12 +98,12 @@
                             @endif
                             @if ($puede['estado'])
                                 <form action="{{ route('departamentos.estado', $d->id) }}" method="POST" class="m-0"
-                                      data-confirmar="{{ $d->activo ? '¿Desactivar el departamento «'.$d->nombre.'»? Podrás reactivarlo con el mismo botón.' : '¿Reactivar el departamento «'.$d->nombre.'»?' }}">
+                                      data-confirmar="{{ $d->activo ? '¿Dar de baja el departamento «'.$d->nombre.'»? Podrás reactivarlo con el mismo botón.' : '¿Reactivar el departamento «'.$d->nombre.'»?' }}">
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="activo" value="{{ $d->activo ? 0 : 1 }}">
                                     @if ($d->activo)
-                                        <button type="submit" class="btn-icono eliminar" title="Desactivar" aria-label="Desactivar {{ $d->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
+                                        <button type="submit" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja {{ $d->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
                                     @else
                                         <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar {{ $d->nombre }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                                     @endif
@@ -159,7 +163,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-ambar-degradado">{{ $esNuevo ? 'Guardar Departamento' : 'Guardar Cambios' }}</button>
+                            <button type="submit" class="btn-ambar-degradado">Guardar</button>
                         </div>
                     </form>
                     @unless ($esNuevo)

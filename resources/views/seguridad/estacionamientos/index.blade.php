@@ -10,7 +10,7 @@
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-p-square-fill text-primary" aria-hidden="true"></i></div>
-            <div><h1>Estacionamientos y Zonas</h1><p>Cupos por sede.</p></div>
+            <div><h1>Estacionamientos y zonas de descarga</h1><p>Cupos por sede.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
@@ -27,7 +27,7 @@
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-p-square-fill text-primary" aria-hidden="true"></i></div>
                 <div>
-                    <h1>Estacionamientos y Zonas</h1>
+                    <h1>Estacionamientos y zonas de descarga</h1>
                     <p>Cupos por sede — Estacionamiento (cuenta espacios) o Zona de Descarga (Lobby, Almacenes, Andén, Patio de maniobras; capacidad opcional).</p>
                 </div>
             </div>
@@ -91,7 +91,7 @@
                                             <div class="text-muted small">{{ $z->sede->nombre ?? '—' }}</div>
                                         </div>
                                         @unless ($z->activo)
-                                            <span class="etiqueta-inactiva">Inactiva</span>
+                                            <span class="etiqueta-inactiva">De baja</span>
                                         @endunless
                                     </div>
 
@@ -111,6 +111,28 @@
                                         </div>
                                     @endif
 
+                                    {{-- Mejoras padrones: ocupación desfasada (salió sin registrar salida): se le da salida desde aquí --}}
+                                    @php $vehiculosZona = $enZona[$z->id] ?? collect(); @endphp
+                                    @if ($vehiculosZona->isNotEmpty())
+                                        <details class="vehiculos-zona mt-2">
+                                            <summary>¿Quién ocupa? ({{ $vehiculosZona->count() }})</summary>
+                                            <ul class="lista-vehiculos-zona">
+                                                @foreach ($vehiculosZona as $va)
+                                                    <li>
+                                                        <span><strong>{{ $va->placas }}</strong> · {{ $va->nombre }} · desde @fecha($va->entrada_at, 'd/m H:i')</span>
+                                                        <form action="{{ route('estacionamientos.salida', [$z->id, $va->id]) }}" method="POST" class="m-0"
+                                                              data-confirmar="¿Dar salida a {{ $va->placas }} ({{ $va->nombre }})? Úsalo solo si el vehículo ya salió: se registra su salida en la Bitácora de accesos con la hora de ahora.">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit" class="btn-dar-salida-zona"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Dar salida</button>
+                                                        </form>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                            <p class="campo-ayuda m-0">Si un vehículo ya se fue y la caseta no registró su salida, dásela aquí para que el lugar se libere.</p>
+                                        </details>
+                                    @endif
+
                                     @if ($z->actualizado_por_nombre && $z->updated_at?->ne($z->created_at))
                                         <div class="texto-traza mt-2"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $z->actualizado_por_nombre }} · @fecha($z->updated_at)</div>
                                     @elseif ($z->creado_por_nombre)
@@ -120,6 +142,7 @@
 
                                 @if ($editable || $desactivable)
                                     <div class="d-flex gap-2 mt-3 pt-2 border-top justify-content-end pie-zona">
+                                        @include('componentes.ver-historial', ['registro' => \App\Models\ZonaEstacionamiento::class, 'id' => $z->id, 'nombre' => $z->nombre])
                                         @if ($editable)
                                             <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar zona {{ $z->nombre }}"
                                                     data-accion="editar-registro" data-dialogo="dialogoEditarZona"
@@ -129,12 +152,12 @@
                                         @endif
                                         @if ($desactivable)
                                             <form action="{{ route('estacionamientos.estado', $z->id) }}" method="POST" class="m-0"
-                                                  data-confirmar="{{ $z->activo ? '¿Desactivar esta zona? Ya no se podrá asignar en Accesos.' : '¿Reactivar esta zona?' }}">
+                                                  data-confirmar="{{ $z->activo ? '¿Dar de baja esta zona? Ya no se podrá asignar en Accesos.' : '¿Reactivar esta zona?' }}">
                                                 @csrf
                                                 @method('PATCH')
                                                 <input type="hidden" name="activo" value="{{ $z->activo ? 0 : 1 }}">
                                                 @if ($z->activo)
-                                                    <button type="submit" class="btn-icono eliminar" title="Desactivar" aria-label="Desactivar zona {{ $z->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
+                                                    <button type="submit" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja la zona {{ $z->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
                                                 @else
                                                     <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar zona {{ $z->nombre }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                                                 @endif

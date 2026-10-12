@@ -2,6 +2,7 @@
 
 namespace App\Services\RecorridosPc;
 
+use App\Models\Empresa;
 use App\Models\EquipoPc;
 use App\Models\Espacio;
 use App\Models\Novedad;
@@ -10,6 +11,8 @@ use App\Models\RevisionRecorridoPc;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Novedades\AdministradorNovedades;
+use App\Services\Novedades\AjustesNovedades;
+use App\Services\Novedades\AvisosNovedades;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -150,7 +153,7 @@ class AdministradorRecorridosPc
             'criterios' => ['nullable', 'array'],
             'observaciones' => ['nullable', 'string', 'max:2000'],
         ], [
-            'identificador.required_without' => 'Escanea el equipo o escribe su Núm. de Serie / ID.',
+            'identificador.required_without' => 'Escanea el equipo o escribe la clave de su etiqueta.',
             'categoria.required_without' => 'Elige la Categoría del Equipo.',
             'categoria.in' => 'Elige una Categoría del Equipo de la lista.',
             'identificador.max' => 'El identificador admite máximo 100 caracteres.',
@@ -217,6 +220,10 @@ class AdministradorRecorridosPc
                     'finalizado_en' => now(), 'finalizado_por' => $actor->id,
                 ])->save();
                 $this->auditoria->auditar($actor, 'recorridos_pc.finalizado', $recorrido, $antes, $this->foto($recorrido) + ['puntos' => $puntos]);
+                if ($conFalla) {
+                    app(AvisosNovedades::class)->recorridoConHallazgos($recorrido,
+                        $recorrido->revisiones()->where('resultado', RevisionRecorridoPc::FALLA)->count(), $actor);
+                }
             } elseif ($recorrido->isDirty('observaciones_generales')) {
                 $recorrido->save();
                 $this->auditoria->auditar($actor, 'recorridos_pc.actualizado', $recorrido, $antes, $this->foto($recorrido));
@@ -286,6 +293,8 @@ class AdministradorRecorridosPc
             return;
         }
 
+        // Mejoras Incidentes: la empresa elige si el hallazgo abre «Siniestro Protección Civil» (omisión) o «Mantenimiento de equipo PC»
+        $categoria = app(AjustesNovedades::class)->categoriaHallazgoPc(Empresa::find($recorrido->empresa_id));
         $permitidas = $this->novedades->sedes($actor, 'crear', 'proteccion_civil');
         if (! $actor->can('novedades.crear') || ($permitidas !== null && ! in_array((int) $recorrido->sede_id, $permitidas, true))) {
             throw ValidationException::withMessages(['observaciones' => 'Este punto tiene un hallazgo y debe abrir un ticket en la Bitácora de Novedades, pero tu rol no puede crear tickets en esta sede. '
@@ -296,18 +305,20 @@ class AdministradorRecorridosPc
         $edificio = $recorrido->espacio !== null && $recorrido->espacio->activo ? $recorrido->espacio->id : null;
         $ticket = $this->novedades->crear($actor, [
             'sede_id' => $recorrido->sede_id,
-            'categoria' => 'proteccion_civil',
+            'categoria' => $categoria,
             'reportado_por' => mb_substr($actor->name, 0, 150),
             'ubicacion' => 'Ver detalle en Recorrido PC '.$recorrido->folio(),
             'descripcion' => "Hallazgo durante Recorrido de Protección Civil {$recorrido->folio()}:\n".$revision->resumenHallazgo(),
             'area_edificio_id' => $edificio,
             'ocurrio_en' => CarbonImmutable::now($recorrido->sede?->zonaHoraria() ?? config('app.timezone'))->format('Y-m-d\TH:i'),
-        ]);
+        ], $categoria === 'proteccion_civil' ? null : $categoria);
         $this->novedades->anotar($ticket, $actor, "Ticket abierto automáticamente desde el Recorrido de Protección Civil {$recorrido->folio()}.", 'sistema');
 
         $anterior = $recorrido->novedad_id;
         $recorrido->forceFill(['novedad_id' => $ticket->id])->save();
         $this->auditoria->auditar($actor, 'recorridos_pc.ticket_generado', $recorrido, ['novedad_id' => $anterior], ['novedad_id' => $ticket->id, 'ticket' => $ticket->folio()]);
+        // Mejoras Incidentes (criterio 1): el jefe y quien administra los equipos se enteran en la campana
+        app(AvisosNovedades::class)->hallazgo($recorrido, $revision, $ticket, $actor);
     }
 
     /**

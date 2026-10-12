@@ -162,7 +162,7 @@ class ProveedoresTest extends TestCase
         $this->actingAs($this->admin)->patch("/proveedores/{$p->id}/estado", ['activo' => '0'])->assertSessionHas('aviso');
         $this->assertFalse($p->fresh()->activo);
         $this->assertDatabaseHas('auditoria', ['evento' => 'proveedores.desactivado', 'auditable_id' => $p->id]);
-        $this->actingAs($this->admin)->get('/proveedores')->assertSee('BAJA / VETADA')->assertSee('data-estado="0"', false);
+        $this->actingAs($this->admin)->get('/proveedores')->assertSee('DE BAJA')->assertSee('data-estado="0"', false);
         $this->actingAs($this->admin)->patch("/proveedores/{$p->id}/estado", ['activo' => '1'])->assertSessionHas('ok');
         $this->assertTrue($p->fresh()->activo);
         $this->assertDatabaseHas('auditoria', ['evento' => 'proveedores.reactivado', 'auditable_id' => $p->id]);
@@ -239,7 +239,7 @@ class ProveedoresTest extends TestCase
 
         $this->actingAs($this->admin)->get('/proveedores')->assertSee('2 personas · 1 vehículo');
         $this->actingAs($this->admin)->get("/proveedores/{$kinha->id}")->assertOk()
-            ->assertSee('Ficha de Proveedor')->assertSee('Transportes Kin-Ha')->assertSee('Transporte de Personal')->assertSee('TKH0905217T3')
+            ->assertSee('Ficha de empresa externa')->assertSee('Transportes Kin-Ha')->assertSee('Transporte de Personal')->assertSee('TKH0905217T3')
             ->assertSee('Sedes donde opera')->assertSee('Todas las sedes')->assertSee('Personal (2)')->assertSee('Flotilla (1)')
             ->assertSee('Editar Datos Generales')->assertDontSee('JUAN PÉREZ CHAN');
         $this->actingAs($this->admin)->get("/proveedores/{$kinha->id}?tab=personal")->assertOk()

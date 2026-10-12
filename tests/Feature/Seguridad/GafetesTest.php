@@ -108,7 +108,8 @@ class GafetesTest extends TestCase
 
         $this->actingAs($this->admin)->post('/gafetes/lote', ['sede_id' => $this->centro->id, 'tipo_gafete_id' => $visitante->id, 'cantidad' => 3, '_dialogo' => 'lote'])
             ->assertRedirect(route('gafetes.index'))
-            ->assertSessionHas('ok', 'Lote de 3 gafetes generado correctamente (HOT-CEN-VIS-001 a HOT-CEN-VIS-003). Márcalos y presiona «Imprimir».');
+            ->assertSessionHas('ok', 'Lote de 3 gafetes generado correctamente (HOT-CEN-VIS-001 a HOT-CEN-VIS-003).')
+            ->assertSessionHas('siguiente_paso.texto', 'Imprimir este lote');
 
         // "Hotel Ébano" -> HOT; sin acentos ni minúsculas
         $g = $this->gafete('HOT-CEN-VIS-003');
@@ -125,7 +126,7 @@ class GafetesTest extends TestCase
 
         // Cada sede lleva su propia numeración
         $this->actingAs($this->admin)->post('/gafetes/lote', ['sede_id' => $this->playa->id, 'tipo_gafete_id' => $visitante->id, 'cantidad' => 1])
-            ->assertSessionHas('ok', 'Gafete generado correctamente (HOT-PLA-VIS-001). Márcalos y presiona «Imprimir».');
+            ->assertSessionHas('ok', 'Gafete generado correctamente (HOT-PLA-VIS-001).');
 
         $auditoria = Auditoria::where('evento', 'gafetes.lote')->firstOrFail();
         $this->assertSame(['HOT-CEN-VIS-001', 'HOT-CEN-VIS-003', 3], [$auditoria->despues['desde'], $auditoria->despues['hasta'], $auditoria->despues['cantidad']]);
@@ -248,7 +249,7 @@ class GafetesTest extends TestCase
         // La lista ofrece imprimir el voucher recién generado y sugiere el costo para el siguiente
         $this->actingAs($this->admin)->withSession(['voucher_generado' => ['id' => $voucher->id, 'folio' => $voucher->folio]])->get('/gafetes')
             ->assertSee(route('vouchers.imprimir', $voucher->id))->assertSee($voucher->folio)
-            ->assertSee('NO DISPONIBLE')
+            ->assertSee('DE BAJA')
             ->assertSee('&quot;monto&quot;:&quot;150.00&quot;', false);
 
         // Ya dado de baja: no se repite
@@ -289,9 +290,11 @@ class GafetesTest extends TestCase
         $this->actingAs($this->admin)->post("/gafetes/{$g->id}/baja", ['motivo' => 'extraviado'])->assertSessionHas('aviso');
 
         $this->actingAs($this->admin)->patch("/gafetes/{$g->id}/reactivar")
-            ->assertRedirect(route('gafetes.index').'#gafete-'.$g->id)->assertSessionHas('ok', 'Gafete HOT-CEN-VIS-001 reactivado correctamente.');
+            ->assertRedirect(route('gafetes.index').'#gafete-'.$g->id)->assertSessionHas('ok');
         $this->assertTrue($g->fresh()->activo);
+        // Mejoras padrones: el voucher se conserva, pero queda «Cancelado por recuperación» (mismo resultado que «Recuperado»)
         $this->assertSame(1, $this->enEmpresa(fn () => VoucherReposicion::count()));
+        $this->assertSame('cancelado_recuperacion', $this->enEmpresa(fn () => VoucherReposicion::first()->estado));
         $this->assertSame(1, Auditoria::where('evento', 'gafetes.reactivado')->count());
     }
 

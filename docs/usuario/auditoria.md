@@ -48,7 +48,7 @@ La columna de lo que se hizo usa palabras sencillas. Las más comunes:
 
 ## Cómo ver el historial de un registro
 
-1. En la ficha de un usuario, rol, sede, empresa, zona, piso o habitación toca el **reloj** (Ver historial).
+1. En la ficha de un usuario, rol, sede, empresa, zona, piso o habitación, o en la tarjeta de un padrón o catálogo (vehículo, empresa externa, llave, gafete, equipo, equipo de Protección Civil, zona de estacionamiento, ruta, colaborador, departamento, puesto o turno), toca el **reloj** (Ver historial). Solo aparece si tu rol puede ver la Bitácora de auditoría.
 2. Se abre la bitácora con solo los movimientos de ese registro. Arriba dice «Historial de **Rol · Agente**…».
 3. Puedes seguir filtrando por fecha o usuario; **Ver toda la bitácora** quita el filtro del registro.
 

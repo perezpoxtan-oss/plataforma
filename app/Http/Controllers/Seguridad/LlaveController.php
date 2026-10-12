@@ -12,7 +12,9 @@ use App\Models\Llave;
 use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\User;
+use App\Services\Lector\ImpresionDesdePadron;
 use App\Services\Llaves\AdministradorLlaves;
+use App\Services\Vouchers\RecuperacionVouchers;
 use App\Support\Csv;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
@@ -102,6 +104,9 @@ class LlaveController extends Controller
                     'imprimir' => $actor->can('llaves.imprimir'),
                     'exportar' => $actor->can('llaves.exportar'),
                 ],
+                // Mejoras padrones (ADR-0015): motivo y enlace del voucher de las llaves de baja
+                'vouchersBaja' => app(RecuperacionVouchers::class)->ultimosPorOrigen('llave', $lista->where('activo', false)->pluck('id')),
+                'puedeVerVouchers' => $actor->can('vouchers.ver'),
             ]);
         });
     }
@@ -113,8 +118,15 @@ class LlaveController extends Controller
 
         $llave = $this->tenant->conEmpresa($empresaId, fn () => $this->llaves->crear($request->user(), $request->all()));
 
-        return redirect()->to(route('llaves.index').'#llave-'.$llave->id)
-            ->with('ok', "Llave {$llave->nomenclatura} registrada correctamente. Ya puedes imprimir su etiqueta.");
+        $redireccion = redirect()->to(route('llaves.index').'#llave-'.$llave->id)
+            ->with('ok', "Llave {$llave->nomenclatura} registrada correctamente.");
+        // Mejoras padrones (criterio 5): el siguiente paso es su etiqueta
+        if ($request->user()->can('llaves.imprimir')) {
+            $redireccion->with('siguiente_paso', ['texto' => 'Imprimir su etiqueta', 'icono' => 'bi-printer', 'nueva_pestana' => true,
+                'url' => route('llaves.imprimir', ['llaves' => [$llave->id]])]);
+        }
+
+        return $redireccion;
     }
 
     public function update(Request $request, int $llave): RedirectResponse
@@ -156,17 +168,32 @@ class LlaveController extends Controller
         Gate::authorize('llaves.eliminar');
         $empresaId = $this->empresaDeTrabajo($request);
 
-        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $llave) {
+        [$modelo, $resultado, $voucher] = $this->tenant->conEmpresa($empresaId, function () use ($request, $llave) {
             $modelo = $this->buscarEnAlcance($request->user(), $llave, 'llaves.eliminar');
-            $this->llaves->reactivar($request->user(), $modelo);
+            // Mejoras padrones (ADR-0015): reactivar = «Recuperado» de su voucher (un solo camino, mismo resultado)
+            [$resultado, $voucher] = app(RecuperacionVouchers::class)->desdeFicha($request->user(), 'llave', $modelo);
+            if ($resultado === 'sin_voucher') {
+                $this->llaves->reactivar($request->user(), $modelo);
+            }
 
-            return $modelo;
+            return [$modelo, $resultado, $voucher];
         });
 
-        // Ronda 5 (LL-05): al volver se abre su "Código e identificación" (QR, imprimir y NFC/RFID)
+        if ($resultado === 'con_cobro') {
+            return redirect()->to(route('vouchers.index', ['q' => $voucher->folio, 'recuperar' => $voucher->id]).'#voucher-'.$voucher->id)
+                ->with('aviso', "La llave {$modelo->nomenclatura} tiene el voucher {$voucher->folio} con cobro: confirma aquí si ya se le cobró al responsable y se reactivará al guardar.");
+        }
+
+        // Mejoras padrones: ya no se abre solo su «Código e identificación»; se ofrece como siguiente paso
         return redirect()->to(route('llaves.index').'#llave-'.$modelo->id)
-            ->with('ok', "Llave {$modelo->nomenclatura} reactivada correctamente. Revisa su código QR: puedes reimprimir la etiqueta o asignarle otra tarjeta NFC/RFID.")
-            ->with('identificacion', $modelo->id);
+            ->with('ok', "Llave {$modelo->nomenclatura} reactivada correctamente."
+                .match (true) {
+                    $resultado === 'recuperado' => " Su voucher {$voucher->folio} quedó «Cancelado por recuperación».",
+                    $voucher !== null => " Su voucher {$voucher->folio} sigue vigente: márcalo «Recuperado» en Vouchers de reposición.",
+                    default => '',
+                })
+            ->with('siguiente_paso', ['texto' => 'Ver su código QR (reimprimir o cambiar tarjeta)', 'icono' => 'bi-qr-code',
+                'url' => route('llaves.index', ['qr' => $modelo->id]).'#llave-'.$modelo->id]);
     }
 
     /**
@@ -188,6 +215,10 @@ class LlaveController extends Controller
         return $this->tenant->conEmpresa($empresaId, function () use ($request, $ids, $empresaId) {
             $llaves = $this->consulta($request->user(), 'llaves.imprimir')->whereIn('llaves.id', $ids)->orderBy('llaves.nomenclatura')->get();
             abort_if($llaves->isEmpty(), 404);
+            // Mejoras padrones (ADR-0015): si la empresa imprime con plantillas, un solo camino (Etiquetas QR)
+            if ($plantillas = app(ImpresionDesdePadron::class)->redirigir($request->user(), $empresaId, 'llave', $llaves->pluck('id')->map(fn ($id) => (int) $id)->all())) {
+                return $plantillas;
+            }
 
             $escritor = new Writer(new ImageRenderer(new RendererStyle(160, 1), new SvgImageBackEnd));
 

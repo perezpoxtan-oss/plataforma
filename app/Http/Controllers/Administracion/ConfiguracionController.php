@@ -8,6 +8,7 @@ use App\Models\ConfiguracionPlataforma;
 use App\Models\Empresa;
 use App\Models\LostFoundUmbral;
 use App\Models\User;
+use App\Services\Novedades\AjustesNovedades;
 use App\Services\Novedades\ArchivoLostFound;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
@@ -156,6 +157,26 @@ class ConfiguracionController extends Controller
             'puedeEditar' => $configura,
         ]);
     }
+
+    // ----------------------------- Mejoras Incidentes: Bitácora de novedades (empresa)
+
+    /**
+     * Nombre del módulo en el menú y categoría del ticket que abre un hallazgo
+     * de recorrido (ADR-0013). Es de toda la empresa: «configuracion.editar»
+     * con alcance de empresa, como los avisos.
+     */
+    public function novedades(Request $request): RedirectResponse
+    {
+        Gate::authorize('configuracion.editar');
+        abort_unless($this->editaEmpresa($request->user()), 403, 'Estos ajustes son de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa.');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        app(AjustesNovedades::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only(['nombre_menu', 'categoria_hallazgo_pc']));
+
+        return redirect()->to(route('configuracion.index').'#novedades')->with('ok', 'Ajustes de la Bitácora de novedades guardados.');
+    }
+    // Fin Mejoras Incidentes
 
     // --------------------------------------------------------- Correo (plataforma)
 

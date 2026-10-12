@@ -13,7 +13,7 @@
     <div class="opciones-firma-voucher">
         @foreach (\App\Services\Inventarios\Vouchers::FIRMA_MODOS as $clave => $texto)
             <label class="opcion-firma-voucher">
-                <input type="radio" name="firma_modo" value="{{ $clave }}" @checked($modoFirma === $clave) @if ($clave === 'fisica') data-por-defecto @endif data-firma-modo>
+                <input type="radio" name="firma_modo" value="{{ $clave }}" data-valor="{{ $clave }}" @checked($modoFirma === $clave) @if ($clave === 'fisica') data-por-defecto @endif data-firma-modo>
                 <span>{{ $texto }}</span>
             </label>
         @endforeach

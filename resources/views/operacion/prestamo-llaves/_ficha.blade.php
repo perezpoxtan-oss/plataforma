@@ -9,7 +9,11 @@
     $texto = mb_strtolower(implode(' ', array_filter([$nombre, $p->colaborador?->num_empleado, $p->llave?->nomenclatura, $p->llave?->descripcion, $p->sede?->nombre, $p->etiquetaGarantia(), $p->folio_garantia])));
     $esHoy = app(\App\Support\HoraLocal::class)->formatear($p->prestado_en, 'Y-m-d') === $hoy;
 @endphp
-<div class="ficha-card ficha-prestamo fuera" id="prestamo-{{ $p->id }}" data-ficha-prestamo data-sede="{{ $p->sede_id }}" data-texto="{{ $texto }}">
+@php
+    // ADR-0014: semáforo de llaves fuera (solo si la empresa lo configuró): ['horas' => float, 'nivel' => null|ambar|rojo]
+    $semaforoPrestamo = $semaforoPrestamo ?? null;
+@endphp
+<div class="ficha-card ficha-prestamo fuera{{ ! empty($semaforoPrestamo['nivel']) ? ' semaforo-'.$semaforoPrestamo['nivel'] : '' }}" id="prestamo-{{ $p->id }}" data-ficha-prestamo data-sede="{{ $p->sede_id }}" data-texto="{{ $texto }}">
     <div>
         <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
             <span class="badge-prestamo fuera"><i class="bi bi-key-fill me-1" aria-hidden="true"></i>LLAVE FUERA</span>
@@ -31,6 +35,11 @@
             <strong>Salió:</strong> @if ($esHoy) @fecha($p->prestado_en, 'H:i') @else @fecha($p->prestado_en, 'd/m/Y H:i') @endif
             (por {{ $p->entrego?->name ?? '—' }})
         </div>
+        @if ($semaforoPrestamo)
+            <div class="reloj-llave {{ $semaforoPrestamo['nivel'] ? 'nivel-'.$semaforoPrestamo['nivel'] : 'en-tiempo' }}">
+                <i class="bi bi-stopwatch me-1" aria-hidden="true"></i>Fuera hace {{ \App\Services\Activos\CampanaActivos::textoHoras($semaforoPrestamo['horas']) }}{{ $semaforoPrestamo['nivel'] === 'rojo' ? ' · pasó del límite' : ($semaforoPrestamo['nivel'] === 'ambar' ? ' · pide que la regresen' : '') }}
+            </div>
+        @endif
         @if ($variasSedes ?? false)
             <div class="prestamo-sede"><i class="bi bi-geo-alt-fill me-1" aria-hidden="true"></i>{{ $p->sede?->nombre }}</div>
         @endif

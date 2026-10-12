@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Padrones;
 use App\Http\Controllers\Controller;
 use App\Models\Empresa;
 use App\Models\EtiquetaPlantilla;
+use App\Services\Lector\ImpresionDesdePadron;
 use App\Services\Lector\PlantillasEtiquetas;
+use App\Services\Permisos\Autorizador;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
@@ -48,8 +50,33 @@ class EtiquetaPlantillaController extends Controller
                 'plantillas' => $lista,
                 'editables' => $lista->filter(fn (EtiquetaPlantilla $p) => $this->plantillas->puedeEditar($actor, $p))->pluck('id')->all(),
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
+                // Mejoras padrones (ADR-0015): cómo imprimen los padrones (solo quien configura para toda la empresa)
+                'impresionPadrones' => app(ImpresionDesdePadron::class)->modo($empresaId),
+                'configuraEmpresa' => app(Autorizador::class)->alcanceDeEmpresa($actor, PlantillasEtiquetas::CONFIGURAR),
             ]);
         });
+    }
+
+    /**
+     * Mejoras padrones (ADR-0015): ¿los padrones imprimen su hoja propia o
+     * las plantillas de Etiquetas QR? Lo decide quien configura plantillas
+     * para toda la empresa.
+     */
+    public function impresionPadrones(Request $request): RedirectResponse
+    {
+        Gate::authorize(PlantillasEtiquetas::CONFIGURAR);
+        $actor = $request->user();
+        abort_unless(app(Autorizador::class)->alcanceDeEmpresa($actor, PlantillasEtiquetas::CONFIGURAR), 403);
+        $empresaId = $this->empresaDeTrabajo($request);
+        $modo = (string) $request->input('impresion');
+        if (! isset(ImpresionDesdePadron::OPCIONES[$modo])) {
+            return redirect()->route('etiquetas.plantillas')->withErrors(['impresion' => 'Elige una de las dos formas de imprimir.']);
+        }
+        $this->tenant->conEmpresa($empresaId, fn () => app(ImpresionDesdePadron::class)->guardar($actor, Empresa::findOrFail($empresaId), $modo));
+
+        return redirect()->route('etiquetas.plantillas')->with('ok', $modo === ImpresionDesdePadron::PLANTILLAS
+            ? 'Listo: los botones de imprimir de Llaves, Gafetes, Vehículos y Equipos usarán estas plantillas y quedarán en el Historial.'
+            : 'Listo: cada padrón vuelve a imprimir su hoja propia.');
     }
 
     public function create(Request $request): View

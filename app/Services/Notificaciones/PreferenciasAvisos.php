@@ -48,6 +48,27 @@ class PreferenciasAvisos
         'cuenta_bloqueada' => ['Cuentas y seguridad', 'Una cuenta se bloqueó por intentos fallidos', ['usuarios.editar', 'usuarios.desbloquear']],
         'cuenta_desactivada' => ['Cuentas y seguridad', 'Una cuenta se desactivó por la baja del colaborador', ['usuarios.editar']],
         MovimientosSensibles::TIPO => ['Cuentas y seguridad', 'Alguien hizo un movimiento sensible (roles, permisos, eliminaciones, exportaciones)', ['auditoria.ver']],
+        // Mejoras Incidentes (ADR-0013)
+        'novedad_canalizada' => ['Bitácora de novedades', 'Te canalizaron un ticket de la bitácora', ['novedades.editar']],
+        'novedad_resuelta' => ['Bitácora de novedades', 'Se cerró un ticket que levantaste', ['novedades.crear']],
+        'novedad_turno' => ['Bitácora de novedades', 'Un ticket «Pendiente de turno» espera a tu turno', ['novedades.editar']],
+        'novedad_turno_escalada' => ['Bitácora de novedades', 'Un pendiente de turno terminó sin atenderse', ['novedades.editar']],
+        'recorrido_pc_hallazgo' => ['Recorridos de Protección Civil', 'Un recorrido de Protección Civil encontró una falla', ['recorridos_pc.ver', 'equipos_pc.editar']],
+        'pase_firma_recordatorio' => ['Pases de salida', 'Una firma de pase de salida que te toca lleva tiempo esperando', ['pases_salida.aprobar', 'pases_salida.firmar']],
+        'pase_firma_escalada' => ['Pases de salida', 'Una firma de pase de salida tardó y pasó al siguiente nivel', ['pases_salida.aprobar', 'pases_salida.configurar']],
+        // Mejoras activos (ADR-0014)
+        'vale_taxi_por_autorizar' => ['Bitácora de transporte', 'Un vale de taxi espera tu Vo.Bo.', ['transporte.aprobar']],
+        'procedimiento_revision' => ['Procedimientos', 'Un procedimiento se envió a revisión y espera tu aprobación', ['procedimientos.aprobar']],
+        'procedimiento_aprobado' => ['Procedimientos', 'Se aprobó un procedimiento que enviaste a revisión', ['procedimientos.editar']],
+        'procedimiento_rechazado' => ['Procedimientos', 'Pidieron cambios a un procedimiento que enviaste a revisión', ['procedimientos.editar']],
+        'procedimiento_publicado' => ['Procedimientos', 'Se publicó un procedimiento que debes leer y firmar', ['procedimientos.ver']],
+        'llave_fuera' => ['Préstamo de llaves', 'Una llave prestada lleva demasiado tiempo fuera', ['prestamo_llaves.editar']],
+        'equipo_turno' => ['Responsivas', 'Equipos de turno que no regresaron a su hora', ['responsivas.editar']],
+        // Mejoras padrones (ADR-0015)
+        'alta_por_verificar' => ['Padrones: altas por verificar', 'La caseta registró un alta que debes verificar', ['vehiculos.editar', 'proveedores.editar', 'visitantes.editar', 'colaboradores.aprobar']],
+        'alta_verificada' => ['Padrones: altas por verificar', 'Se verificó un alta que registraste', ['accesos.crear']],
+        'alta_unida' => ['Padrones: altas por verificar', 'Un alta que registraste ya existía y se unió con su registro', ['accesos.crear']],
+        'alta_rechazada' => ['Padrones: altas por verificar', 'Se rechazó un alta que registraste', ['accesos.crear']],
     ];
 
     /**

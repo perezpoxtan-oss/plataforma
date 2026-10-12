@@ -89,14 +89,16 @@ class LostFoundController extends Controller
             $dialogo = old('_dialogo');
             $cierreId = is_string($dialogo) && str_starts_with($dialogo, 'cerrar-') ? (int) substr($dialogo, 7) : null;
 
+            $sinArticulos = $f['filtro'] === 'todos' && $this->novedades->puedeModulo($actor, 'ver')
+                ? $this->archivo->ticketsSinArticulos($actor, $f['q'] ?? null, isset($f['sede']) ? (int) $f['sede'] : null)->limit(50)->get() : collect();
+
             return view('seguridad.lost-found.index', [
                 'sinEmpresa' => false,
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'articulos' => $articulos,
                 'paginador' => $paginador,
                 'porMes' => $f['filtro'] === 'urgentes' ? null : $articulos->groupBy(fn (LostFoundArticulo $a) => $hora->formatear($a->created_at, 'Y-m')),
-                'sinArticulos' => $f['filtro'] === 'todos' && $this->novedades->puedeModulo($actor, 'ver')
-                    ? $this->archivo->ticketsSinArticulos($actor, $f['q'] ?? null, isset($f['sede']) ? (int) $f['sede'] : null)->limit(50)->get() : collect(),
+                'sinArticulos' => $sinArticulos,
                 'umbrales' => $umbrales,
                 'filtros' => $f,
                 'conteos' => [
@@ -109,6 +111,10 @@ class LostFoundController extends Controller
                 'imprimibles' => $this->idsCon($actor, 'lost_found.imprimir', $ids),
                 'cierre' => $cierreId !== null ? $this->archivo->limitar(LostFoundArticulo::query(), $actor, 'lost_found.firmar')->find($cierreId) : null,
                 'puede' => $this->puede($actor),
+                // Mejoras Incidentes: «Registrar objeto encontrado» sin pasar por la Bitácora
+                'sedesObjeto' => $this->sedesParaObjeto($actor),
+                'completables' => $this->novedades->puedeModulo($actor, 'editar') ? $sinArticulos->filter(fn ($n) => $this->novedades->permite($actor, 'editar', $n))->pluck('id')->all() : [],
+                'ahoraLocal' => $hora->formatear(now(), 'Y-m-d\TH:i'),
             ]);
         });
     }
@@ -268,7 +274,44 @@ class LostFoundController extends Controller
         });
     }
 
+    /**
+     * Mejoras Incidentes (ADR-0013): «Registrar objeto encontrado» desde el
+     * archivo. Crea por detrás el ticket de Lost & Found con su artículo; con
+     * «novedad_id» agrega el objeto a un ticket que aún no tiene artículos.
+     */
+    public function registrarObjeto(Request $request): RedirectResponse
+    {
+        $actor = $request->user();
+        abort_unless($this->novedades->puedeModulo($actor, $request->filled('novedad_id') ? 'editar' : 'crear'), 403);
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        [$novedad, $articulo] = $this->tenant->conEmpresa($empresaId,
+            fn () => $this->novedades->registrarObjeto($actor, $request->except(['_token', '_dialogo'])));
+
+        $imprimir = $actor->can('lost_found.imprimir') && $this->archivo->permite($actor, 'lost_found.imprimir', $articulo);
+
+        return redirect()->to(route('lost_found.archivo').'#articulo-'.$articulo->id)
+            ->with('ok', "Objeto {$articulo->folio} ({$articulo->objeto}) registrado en resguardo · ticket {$novedad->folio()}.")
+            ->with('siguientePasoLf', ['etiqueta' => $imprimir ? route('lost_found.articulos.etiqueta', $articulo->id) : null]);
+    }
+
     // ------------------------------------------------------------------ Apoyo
+
+    /**
+     * Sedes donde puede registrar un objeto encontrado (crear tickets de Lost & Found), activas.
+     *
+     * @return Collection<int, Sede>
+     */
+    private function sedesParaObjeto($actor): Collection
+    {
+        if (! $this->novedades->puedeModulo($actor, 'crear')) {
+            return collect();
+        }
+        $sedes = $this->novedades->sedes($actor, 'crear', 'lost_found');
+
+        return Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre'])
+            ->filter(fn ($s) => $sedes === null || in_array($s->id, $sedes, true))->values();
+    }
 
     /**
      * @return array<string, bool>

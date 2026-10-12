@@ -1,5 +1,5 @@
 {{--
-    Fila "+ Añadir Equipo" del Nuevo Resguardo: equipo DISPONIBLE (de la sede
+    Fila "+ Añadir Equipo" de la Nueva responsiva: equipo DISPONIBLE (de la sede
     elegida; las demás opciones se ocultan) + modalidad Turno / Fijo + quitar.
     Variables: $indice (número o "__N__" en la plantilla), $seleccionado, $modalidad, $disponibles, $textoEquipo.
 --}}

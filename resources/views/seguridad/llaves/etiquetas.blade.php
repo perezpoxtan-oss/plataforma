@@ -30,6 +30,7 @@
             <button type="button" class="btn-imprimir-calcomania" data-accion="imprimir"><i class="bi bi-printer me-1" aria-hidden="true"></i> Imprimir Etiquetas</button>
             <a href="{{ route('llaves.index') }}" class="btn-cerrar-calcomania"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Volver al Catálogo de Llaves</a>
         </div>
+        @include('componentes.hoja-impresion-ayuda', ['selEtiquetas' => $llaves->map(fn ($l) => 'llave-'.$l->id)->values()->all()])
         <p class="panel-etiquetas-nota"><i class="bi bi-info-circle" aria-hidden="true"></i> Al escanear el QR con la cámara del celular (o acercar el llavero NFC con la dirección grabada) se abre la ficha de la llave. Solo funciona con sesión iniciada en esta empresa.</p>
     </div>
 

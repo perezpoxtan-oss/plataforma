@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\Novedades\Formatos\Accidente;
 use App\Services\Novedades\Formatos\Formato;
 use App\Services\Novedades\Formatos\LostFound;
+use App\Services\Novedades\Formatos\MantenimientoPc;
 use App\Services\Novedades\Formatos\RecorridoPc;
 use App\Services\Novedades\Formatos\ReporteGeneral;
 use App\Services\Novedades\Formatos\Robo;
@@ -54,6 +55,7 @@ class AdministradorNovedades
         'recorrido_pc' => RecorridoPc::class,
         'lost_found' => LostFound::class,
         'robo' => Robo::class,
+        'mantenimiento_pc' => MantenimientoPc::class,
     ];
 
     /** Cuántos casos resueltos se muestran en el historial (el resto, en Exportar). */
@@ -203,9 +205,9 @@ class AdministradorNovedades
         if (! $general && $novedad !== null && $novedad->categoria === 'robo' && $this->permiteRobo($actor, $accion, $novedad)) {
             return ['robo'];
         }
-        // Recorrido PC solo se conserva en los tickets que ya la traían
-        if ($novedad !== null && $novedad->categoria === 'recorrido_pc' && $general) {
-            $lista[] = 'recorrido_pc';
+        // Recorrido PC y Mantenimiento de equipo PC solo se conservan en los tickets que ya la traían
+        if ($novedad !== null && isset(Novedad::CATEGORIAS_AUTOMATICAS[$novedad->categoria]) && $general) {
+            $lista[] = $novedad->categoria;
         }
 
         return $lista;
@@ -263,11 +265,16 @@ class AdministradorNovedades
      *
      * @param  array<string, mixed>  $entrada
      */
-    public function crear(User $actor, array $entrada): Novedad
+    public function crear(User $actor, array $entrada, ?string $categoriaAutomatica = null): Novedad
     {
         // Ronda 8 (NV-01): el ticket no se despacha sin clasificación (SEGCAT lo
         // dejaba «Sin clasificar»); quien solo tiene una categoría (Lost & Found) no elige
         $permitidas = array_values(array_diff($this->categorias($actor, 'crear'), ['sin_clasificar']));
+        // Mejoras Incidentes: la plataforma abre tickets de una categoría que no se elige a mano (hallazgo de recorrido)
+        if ($categoriaAutomatica !== null && isset(Novedad::CATEGORIAS_AUTOMATICAS[$categoriaAutomatica]) && $actor->can('novedades.crear')) {
+            $permitidas[] = $categoriaAutomatica;
+            $entrada['categoria'] = $categoriaAutomatica;
+        }
         if (count($permitidas) === 1) {
             $entrada['categoria'] = $permitidas[0];
         }
@@ -286,18 +293,136 @@ class AdministradorNovedades
         $novedad->setRelation('sede', $sede);
         $this->aplicarComunes($novedad, $v);
 
-        DB::transaction(function () use ($novedad) {
+        // Mejoras Incidentes: el objeto encontrado se captura desde el ticket rápido (no queda un ticket a medias)
+        $objeto = $categoria === 'lost_found' ? $this->objetoDelAlta($entrada) : null;
+
+        DB::transaction(function () use ($novedad, $objeto, $actor) {
             $novedad->numero = $this->siguienteNumero();
             $novedad->save();
             // Robo vive también en su pantalla de seguimiento: el caso existe ahí desde el primer momento
             if ($novedad->categoria === 'robo') {
                 RoboDetalle::create(['novedad_id' => $novedad->id]);
             }
+            if ($objeto !== null) {
+                $this->guardarObjeto($novedad, $objeto, $actor);
+            }
         });
 
         $this->auditoria->auditar($actor, 'novedades.creado', $novedad, null, $this->foto($novedad));
+        app(AvisosNovedades::class)->canalizado($novedad, $actor);
 
         return $novedad;
+    }
+
+    // ----------------------------------------- Mejoras Incidentes: objeto encontrado
+
+    /**
+     * «Registrar objeto encontrado» (Lost & Found): crea por detrás el ticket de
+     * Lost & Found con su artículo en un solo paso. Con «novedad_id», agrega el
+     * objeto a un ticket de Lost & Found que todavía no tiene artículos (los
+     * tickets a medias se completan sin abrir el expediente).
+     *
+     * @param  array<string, mixed>  $entrada  sede_id, objeto, tipo_valor, marca, color, ubicacion, ubicacion_bodega, reportado_por, reportado_colaborador_id, ocurrio_en | novedad_id
+     * @return array{0: Novedad, 1: LostFoundArticulo}
+     */
+    public function registrarObjeto(User $actor, array $entrada): array
+    {
+        if (empty($entrada['novedad_id'])) {
+            // Lo indispensable de una vez (criterio 8), con los mismos mensajes del ticket rápido
+            Validator::make($entrada, [
+                'sede_id' => ['required'], 'lf_objeto' => ['required'], 'ubicacion' => ['required'], 'reportado_por' => ['required'],
+            ], [
+                'sede_id.required' => 'Elige la sede.',
+                'lf_objeto.required' => 'Escribe qué objeto se encontró (por ejemplo: paraguas, cartera, celular).',
+                'ubicacion.required' => 'Escribe dónde se encontró (por ejemplo: Lobby, junto a los sillones).',
+                'reportado_por.required' => 'Escribe quién lo encontró o lo entregó (o toca «Fui yo»).',
+            ])->validate();
+        }
+        $objeto = $this->objetoDelAlta($entrada, true);
+        if (! empty($entrada['novedad_id'])) {
+            $novedad = $this->buscar($actor, (int) $entrada['novedad_id'], 'editar');
+            if ($novedad->categoria !== 'lost_found' || $novedad->resuelto()) {
+                throw ValidationException::withMessages(['objeto' => 'Solo se agregan objetos a un ticket de Lost & Found que siga abierto.']);
+            }
+            $articulo = DB::transaction(function () use ($novedad, $objeto, $actor) {
+                $articulo = $this->guardarObjeto($novedad, $objeto, $actor);
+                $this->anotar($novedad, $actor, "Registró el objeto encontrado {$articulo->folio} ({$articulo->objeto}).", 'sistema');
+
+                return $articulo;
+            });
+        } else {
+            $descripcion = 'Objeto encontrado: '.trim($objeto['objeto'].' '.($objeto['marca'] ?? '').' '.($objeto['color'] ?? '')).'.';
+            $novedad = $this->crear($actor, [
+                'sede_id' => $entrada['sede_id'] ?? null, 'categoria' => 'lost_found',
+                'reportado_por' => $entrada['reportado_por'] ?? null, 'reportado_colaborador_id' => $entrada['reportado_colaborador_id'] ?? null,
+                'ubicacion' => $entrada['ubicacion'] ?? null, 'descripcion' => $descripcion,
+                'ocurrio_en' => $entrada['ocurrio_en'] ?? null,
+                'lf_objeto' => $objeto['objeto'], 'lf_tipo_valor' => $objeto['tipo_valor'], 'lf_marca' => $objeto['marca'],
+                'lf_color' => $objeto['color'], 'lf_ubicacion_bodega' => $objeto['ubicacion_bodega'],
+            ]);
+            $articulo = $novedad->articulos()->latest('id')->firstOrFail();
+        }
+        $this->auditoria->auditar($actor, 'lost_found.objeto_registrado', $articulo, null,
+            ['folio' => $articulo->folio, 'objeto' => $articulo->objeto, 'ticket' => $novedad->folio()]);
+
+        return [$novedad, $articulo];
+    }
+
+    /**
+     * Objeto del alta rápida (lf_objeto, lf_tipo_valor…): null si no se escribió.
+     *
+     * @param  array<string, mixed>  $entrada
+     * @return array{objeto: string, tipo_valor: string, marca: ?string, color: ?string, ubicacion_bodega: ?string}|null
+     */
+    private function objetoDelAlta(array $entrada, bool $obligatorio = false): ?array
+    {
+        $v = Validator::make($entrada, [
+            'lf_objeto' => [$obligatorio ? 'required' : 'nullable', 'string', 'max:150'],
+            'lf_tipo_valor' => ['nullable', 'in:'.implode(',', array_keys(LostFoundArticulo::TIPOS_VALOR))],
+            'lf_marca' => ['nullable', 'string', 'max:100'],
+            'lf_color' => ['nullable', 'string', 'max:50'],
+            'lf_ubicacion_bodega' => ['nullable', 'string', 'max:100'],
+        ], [
+            'lf_objeto.required' => 'Escribe qué objeto se encontró (por ejemplo: paraguas, cartera, celular).',
+            'max' => 'El campo «:attribute» es muy largo (máximo :max caracteres).',
+            'in' => 'Elige un tipo de valor de la lista.',
+        ], [
+            'lf_objeto' => '¿Qué se encontró?', 'lf_marca' => 'Marca', 'lf_color' => 'Color', 'lf_ubicacion_bodega' => 'Ubicación en bodega',
+        ])->validate();
+        $objeto = $this->texto($v['lf_objeto'] ?? null, true);
+        if ($objeto === null) {
+            return null;
+        }
+
+        return [
+            'objeto' => $objeto, 'tipo_valor' => ($v['lf_tipo_valor'] ?? '') ?: 'OTRO',
+            'marca' => $this->texto($v['lf_marca'] ?? null, true), 'color' => $this->texto($v['lf_color'] ?? null, true),
+            'ubicacion_bodega' => $this->texto($v['lf_ubicacion_bodega'] ?? null, true),
+        ];
+    }
+
+    /**
+     * El artículo nace EN RESGUARDO con su folio LF, en la habitación del ticket si la tiene.
+     *
+     * @param  array{objeto: string, tipo_valor: string, marca: ?string, color: ?string, ubicacion_bodega: ?string}  $objeto
+     */
+    private function guardarObjeto(Novedad $novedad, array $objeto, User $actor): LostFoundArticulo
+    {
+        $formato = $this->formato('lost_found');
+        $novedad->load($formato->relaciones());
+        $actuales = $formato->valores($novedad);
+        $filas = array_map(fn (array $a) => ['id' => $a['id'], 'objeto' => $a['objeto'], 'tipo_valor' => $a['tipo_valor'], 'marca' => $a['marca'],
+            'color' => $a['color'], 'area_especifica_id' => $a['area_especifica_id'], 'ubicacion_bodega' => $a['ubicacion_bodega'],
+            'lugar_detalle' => $a['lugar_detalle']], $actuales['lf_articulos']);
+        $filas[] = $objeto + ['id' => null, 'area_especifica_id' => $novedad->area_especifica_id, 'lugar_detalle' => null];
+        $reportes = array_map(fn (array $r) => array_intersect_key($r, array_flip(['id', 'objeto', 'tipo_valor', 'marca', 'color', 'nombre_huesped',
+            'area_especifica_id', 'fecha_aproximada', 'telefono', 'correo', 'descripcion'])), $actuales['rp_reportes']);
+        $formato->guardar($novedad, [
+            'detalle' => ['folio_externo' => $actuales['lf_folio_externo'], 'enlace_externo' => $actuales['lf_enlace_externo']],
+            'articulos' => $filas, 'reportes' => $reportes,
+        ], $actor);
+
+        return $novedad->articulos()->latest('id')->firstOrFail();
     }
 
     /**
@@ -314,6 +439,7 @@ class AdministradorNovedades
         $novedad->loadMissing('sede');
         $antes = $this->foto($novedad);
         $estatusAntes = $novedad->estatus;
+        $asignadoAntes = $novedad->asignado_a;
 
         $permitidas = $this->categorias($actor, 'editar', $novedad);
         $v = $this->validarBase($entrada, false);
@@ -345,6 +471,10 @@ class AdministradorNovedades
                 $novedad->cerrado_en = now();
                 $novedad->cerrado_por = $actor->id;
             }
+            // Mejoras Incidentes: «Pendiente de turno» guarda desde cuándo (reloj y aviso al turno que lo recibe)
+            if ($v['estatus'] === Novedad::PENDIENTE_TURNO && $estatusAntes !== Novedad::PENDIENTE_TURNO) {
+                $novedad->forceFill(['pendiente_turno_en' => now(), 'turno_avisado_en' => null, 'turno_escalado_en' => null]);
+            }
             $novedad->save();
             $formato?->guardar($novedad, $datosFormato, $actor);
 
@@ -366,8 +496,41 @@ class AdministradorNovedades
             $this->auditoria->auditar($actor, $novedad->resuelto() && $estatusAntes !== Novedad::RESUELTO ? 'novedades.resuelto' : 'novedades.actualizado',
                 $novedad, $antes, $despues + ($nota !== null ? ['nota' => $nota] : []));
         }
+        $this->avisarCambios($actor, $novedad, $estatusAntes, $asignadoAntes);
 
         return $novedad;
+    }
+
+    /**
+     * Mejoras Incidentes (criterio 1): canalizar avisa, cerrar avisa a quien lo
+     * levantó y «Pendiente de turno» tiene dueño, hora y aviso.
+     */
+    private function avisarCambios(User $actor, Novedad $novedad, string $estatusAntes, ?int $asignadoAntes): void
+    {
+        $avisos = app(AvisosNovedades::class);
+        if ($novedad->resuelto()) {
+            if ($estatusAntes !== Novedad::RESUELTO) {
+                $avisos->resuelto($novedad, $actor);
+            }
+
+            return;
+        }
+        if ((int) $asignadoAntes !== (int) $novedad->asignado_a) {
+            $avisos->canalizado($novedad, $actor);
+        }
+        if ($novedad->estatus === Novedad::PENDIENTE_TURNO && $estatusAntes !== Novedad::PENDIENTE_TURNO) {
+            $turnos = app(TurnosNovedades::class);
+            $turno = $novedad->sede !== null ? $turnos->siguienteTurno($novedad->sede, now()) : null;
+            if ($turno === null) {
+                // Sin turnos en la sede no hay a qué hora avisar: se avisa ya al dueño o al personal de la sede
+                $avisos->inicioDeTurno($novedad, null, $actor);
+                $novedad->forceFill(['turno_avisado_en' => now()])->saveQuietly();
+            } else {
+                $avisos->pendienteTurno($novedad, $actor, $turno['nombre']);
+            }
+        } elseif ($estatusAntes === Novedad::PENDIENTE_TURNO && $novedad->estatus !== Novedad::PENDIENTE_TURNO) {
+            $avisos->turnoAtendido($novedad);
+        }
     }
 
     /**

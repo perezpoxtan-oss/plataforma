@@ -24,7 +24,7 @@ resumen: Directorio de proveedores, contratistas, agencias, taxis y transportado
 2. Escribe en **Buscar razón social...** parte del nombre (también busca por RFC o teléfono).
 3. Toca una **categoría** para ver solo esa (por ejemplo **Contratistas** o **Taxis**). **Todos** las vuelve a mostrar. En el celular las categorías se deslizan de lado.
 4. Si tienes varias sedes, elige una en **Todas las sedes**.
-5. Usa **Todas**, **Activas** o **Baja / Vetadas** para ver según su estado.
+5. Usa **Todas**, **Activas** o **De baja** para ver según su estado.
 
 ![Filtro por categoría](img/proveedores/02-filtro-categoria.png)
 
@@ -34,24 +34,24 @@ resumen: Directorio de proveedores, contratistas, agencias, taxis y transportado
 
 1. Toca la tarjeta **Registrar Empresa Externa**.
 2. Escribe la **Razón Social o Nombre Comercial**. Mientras escribes te avisa si ya existe (ver abajo).
-3. Elige la **Categoría de Proveedor**.
+3. Elige la **Categoría**.
 4. Si los tienes, escribe:
    - **RFC** (opcional): 12 caracteres para empresa o 13 para persona física. Puedes escribirlo en minúsculas o con guiones; se guarda limpio.
    - **Teléfono** (opcional): solo números, de 7 a 15 dígitos. Si es extranjero, empieza con «+» y el código del país.
    - **Dirección** (opcional).
 5. En **Sedes donde opera** deja marcada **Todas las sedes** (recomendado: incluye las sedes que se abran después) o desmárcala y elige solo algunas.
-6. Toca **Guardar Empresa**.
+6. Toca **Guardar**.
 
 ![Nueva empresa externa](img/proveedores/03-alta.png)
 
-**Qué debes ver:** «Empresa externa «Lavandería Industrial del Sur» registrada correctamente.» y la tarjeta nueva en la lista.
+**Qué debes ver:** «Empresa externa «Lavandería Industrial del Sur» registrada correctamente.» y la tarjeta nueva en la lista. Debajo del mensaje aparece **Siguiente paso** con **Agregar su personal** y **Agregar su flotilla**: te llevan directo a su ficha para registrarlos.
 
 ### Avisos mientras escribes el nombre
 
 - **Verde — «Nombre disponible.»**: puedes guardar.
 - **Amarillo — «Se parece a una empresa que ya está registrada (no cuentan «S.A. de C.V.» ni los signos). Revisa que no sea la misma:»**: revisa la lista. «Abarrotes del Caribe SA» se parece a «Abarrotes del Caribe».
 - **Rojo — «Ya existe «…» en esta empresa. Búscala en la lista para editarla.»**: no se puede guardar otra igual.
-- **Rojo con botón Reactivar — «Ya existe «…», pero está desactivada.»**: toca **Reactivar** en lugar de registrarla otra vez.
+- **Rojo con botón Reactivar — «Ya existe «…», pero está dada de baja.»**: toca **Reactivar** en lugar de registrarla otra vez.
 
 ![Aviso de empresa parecida](img/proveedores/15-ya-existe.png)
 
@@ -65,7 +65,7 @@ La ventana dice «Se registra para *tu sede*». Si otra sede ya tenía registrad
 
 1. En la tarjeta toca el **lápiz** (Editar).
 2. Corrige nombre, categoría, RFC, teléfono o dirección en **Editar Empresa Externa**.
-3. Toca **Actualizar Datos**.
+3. Toca **Guardar**.
 
 ![Editar](img/proveedores/04-editar.png)
 
@@ -74,24 +74,28 @@ La ventana dice «Se registra para *tu sede*». Si otra sede ya tenía registrad
 ## Cómo cambiar las sedes donde opera
 
 1. En la tarjeta toca el botón verde de sedes («Todas las sedes» o «1 de 2 sedes»).
-2. Marca **Todas las sedes** o solo las que correspondan. Si trabajas en una sola sede, solo agregas o quitas **tu** sede.
-3. Toca **Guardar Sedes**.
+2. Marca **Todas las sedes** o solo las que correspondan.
+3. Toca **Guardar**.
+
+**Si trabajas en una sola sede** no se abre ninguna ventana: el botón de sedes dice **Quitar de mi sede** o **Agregar a mi sede**. Tócalo y confirma con **Aceptar**; las demás sedes se quedan como están.
+
+![Quitar de mi sede](img/proveedores/16-una-sede-un-toque.png)
 
 ![Sedes donde opera](img/proveedores/05-sedes.png)
 
 **Qué debes ver:** «Sedes de «…» actualizadas.»
 
-## Cómo dar de baja (vetar) o reactivar una empresa
+## Cómo dar de baja o reactivar una empresa
 
-1. En la tarjeta toca el botón rojo **Desactivar** (círculo con raya) y confirma con **Aceptar**.
-2. La tarjeta queda como **BAJA / VETADA** y ya no se puede elegir en accesos ni en pases de salida.
+1. En la tarjeta toca el botón rojo **Dar de baja** (círculo con raya) y confirma con **Aceptar**.
+2. La tarjeta queda **DE BAJA** y ya no se puede elegir en accesos ni en pases de salida.
 3. Para regresarla, toca **Reactivar** (flecha circular) y confirma.
 
-**Qué debes ver:** «Empresa externa «…» desactivada (baja / vetada). Puedes reactivarla con el mismo botón cuando quieras.» No se borra nada: su personal, su flotilla y su historial se conservan.
+**Qué debes ver:** «Empresa externa «…» dada de baja: ya no se puede elegir en la caseta ni en los pases. Puedes reactivarla con el mismo botón cuando quieras.» No se borra nada: su personal, su flotilla y su historial se conservan.
 
 ## Cómo usar la ficha de la empresa
 
-1. Toca **Ficha** en la tarjeta. Se abre la **Ficha de Proveedor** con tres pestañas:
+1. Toca **Ficha** en la tarjeta. Se abre la **Ficha de empresa externa** con tres pestañas:
    - **Resumen:** sedes donde opera y cuántas personas y vehículos tiene.
    - **Personal (n):** las personas de la empresa (las dadas de baja se ven en gris).
    - **Flotilla (n):** sus vehículos con número económico.
@@ -136,7 +140,7 @@ Los mensajes aparecen en rojo dentro de la misma ventana; lo que escribiste se c
 
 **¿Qué categoría elijo?** La que describe a qué viene: *Contratista* para obras y mantenimiento; *Transporte de personal* para camiones de colaboradores; *Proveedor (Insumos / Alimentos)* para entregas, etc. La categoría decide en qué listas aparece (por ejemplo, el personal de un contratista se registra como *Contratista*).
 
-**¿Qué significa «vetada»?** Que la empresa está dada de baja y la caseta ya no puede usarla. Se puede reactivar cuando quieras.
+**¿Qué significa «De baja»?** Que la empresa ya no se puede usar en la caseta ni en los pases (antes se le decía «vetada»). Se puede reactivar cuando quieras; nada se borra.
 
 **¿Qué son las tarjetas con «Pendiente de verificar»?** Empresas que la caseta registró al momento. Alguien con permiso debe revisarlas con el botón **Verificar**. Ver [Altas por verificar](altas-por-verificar.md).
 

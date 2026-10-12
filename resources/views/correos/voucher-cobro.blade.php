@@ -2,7 +2,7 @@
 @section('cuerpo')
     <p style="margin-top:0;font-size:12px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase;color:#64748b;">{{ $copia }}</p>
     <p style="margin-top:0;font-size:18px;font-weight:bold;">Voucher de reposición {{ $folio }} — con cobro</p>
-    <p>Se dio de baja un artículo ({{ mb_strtolower($origen) }}) y se generó un voucher con cargo (CXC).</p>
+    <p>Se dio de baja un artículo ({{ mb_strtolower($origen) }}) y se generó un voucher con cobro al colaborador responsable.</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;font-size:14px;margin-bottom:12px;">
         <tr><td style="padding:4px 0;color:#64748b;width:140px;">Monto</td><td style="padding:4px 0;font-weight:bold;font-size:18px;">${{ number_format($monto, 2) }} MXN</td></tr>
         <tr><td style="padding:4px 0;color:#64748b;">{{ $origen }}</td><td style="padding:4px 0;">{{ $articulo }}</td></tr>

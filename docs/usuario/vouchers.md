@@ -21,6 +21,8 @@ resumen: Consultar, reimprimir y dar seguimiento a los comprobantes de llaves, g
 
 **Qué debes ver:** también el estado de la firma: **Firmado digitalmente**, **Firma en papel pendiente** o **Firmado en papel**.
 
+> No tienes que venir a buscarlo: en la ficha de una llave, gafete o equipo **DE BAJA** está el enlace **Ver su voucher VR-…**, que abre esta lista justo en ese voucher.
+
 ## Cómo buscar y filtrar
 
 1. En **Buscar** escribe el folio, el artículo, el responsable o parte de «¿Cómo pasó?». Se aplica solo al dejar de escribir.
@@ -63,6 +65,13 @@ resumen: Consultar, reimprimir y dar seguimiento a los comprobantes de llaves, g
 
 **Qué debes ver:** el voucher cambia a **Cancelado por recuperación**, **Reembolso pendiente** o **Reembolsado**. La hoja impresa también muestra el estado.
 
+### Si reactivas el artículo desde su propia ficha
+
+**Reactivar** en Llaves, Gafetes o Equipos de seguridad y **Recuperado** aquí son lo mismo y dejan el mismo resultado:
+
+- Si el voucher **no tiene cobro**, al reactivar desde la ficha el voucher queda **Cancelado por recuperación** solo.
+- Si **tiene cobro**, la ficha te trae aquí con la ventana **Recuperado** ya abierta, para que indiques si ya se le cobró al responsable. Al confirmar se reactiva el artículo.
+
 ## En el celular
 
 ![Vouchers en el celular](img/vouchers/celular.png)
@@ -82,7 +91,7 @@ resumen: Consultar, reimprimir y dar seguimiento a los comprobantes de llaves, g
 
 - **¿Cómo se crea un voucher?** Al dar de baja una llave, gafete o equipo como perdido, dañado o robado, desde su propia pantalla.
 - **¿Quién recibe las copias por correo?** Si el voucher es con cobro, las listas que el administrador puso en **Estructura → Configuración → Avisos por correo**. El colaborador no recibe correo.
-- **¿Puedo borrar un voucher?** No. Si el artículo aparece, márcalo como **Recuperado**.
+- **¿Puedo borrar un voucher?** No. Si el artículo aparece, márcalo como **Recuperado** (o reactívalo desde su ficha: es lo mismo).
 - **¿Qué pasa con el cobro si el artículo aparece?** Se cancela; si ya se cobró, queda **Reembolso pendiente** hasta que marques **Reembolso entregado**.
 
 ## Relacionado

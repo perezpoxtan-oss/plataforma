@@ -39,6 +39,25 @@
                 Antes de imprimir muchas, usa <strong>«Hoja de prueba»</strong> para revisar que todo coincida con tu papel.</p>
         </div>
 
+        {{-- Mejoras padrones (ADR-0015): un solo camino de impresión, a elección de la empresa --}}
+        @if ($configuraEmpresa)
+            <form action="{{ route('etiquetas.plantillas.impresion-padrones') }}" method="POST" class="tarjeta impresion-padrones-qr mb-3">
+                @csrf
+                @method('PUT')
+                <fieldset>
+                    <legend class="campo-etiqueta mb-1"><i class="bi bi-printer me-1" aria-hidden="true"></i>¿Cómo imprimen Llaves, Gafetes, Vehículos y Equipos?</legend>
+                    @foreach (\App\Services\Lector\ImpresionDesdePadron::OPCIONES as $clave => $texto)
+                        <label class="d-block mb-1">
+                            <input type="radio" name="impresion" value="{{ $clave }}" @checked($impresionPadrones === $clave)>
+                            {{ $texto }}
+                        </label>
+                    @endforeach
+                    <p class="campo-ayuda mb-2">Con plantillas, el botón de imprimir de cada padrón abre aquí la hoja con la plantilla de ese tipo (la última que usaste o la de siempre) y la impresión queda en el Historial para reimprimirla.</p>
+                    <button type="submit" class="btn-gafetes btn-sm">Guardar</button>
+                </fieldset>
+            </form>
+        @endif
+
         @if ($plantillas->isEmpty())
             <div class="sin-resultados">
                 <i class="bi bi-rulers d-block mb-2" aria-hidden="true"></i>

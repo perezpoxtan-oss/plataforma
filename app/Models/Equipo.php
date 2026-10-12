@@ -27,7 +27,7 @@ class Equipo extends Model implements Identificable
         'disponible' => 'DISPONIBLE',
         'asignado' => 'ASIGNADO',
         'en_mantenimiento' => 'EN MANTENIMIENTO',
-        'baja' => 'BAJA/PERDIDO',
+        'baja' => 'DE BAJA',
     ];
 
     /** Estados que se eligen al editar. "asignado" lo pone Responsivas y "baja" el botón de baja con voucher. */

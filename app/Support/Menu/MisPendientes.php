@@ -5,13 +5,16 @@ namespace App\Support\Menu;
 use App\Models\Candidato;
 use App\Models\Colaborador;
 use App\Models\DepartamentoResponsable;
+use App\Models\Novedad;
 use App\Models\Postulacion;
 use App\Models\User;
+use App\Services\Activos\PendientesActivos;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\PlazosCandidatos;
 use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Procedimientos\AdministradorProcedimientos;
@@ -92,9 +95,10 @@ class MisPendientes
     {
         $items = [];
 
-        // Mejoras estructura (ADR-0016): lo que Inicio avisaba y aquí faltaba (criterio 1)
+        // Mejoras estructura (ADR-0016): lo que Inicio avisaba y aquí faltaba (criterio 1).
+        // Mejoras padrones (ADR-0015): mismas palabras que las altas de los padrones («por verificar»)
         if ($actor->can('colaboradores.aprobar')) {
-            $items[] = $this->item('altas_provisionales', 'Altas provisionales por validar', 'bi-person-exclamation',
+            $items[] = $this->item('colaboradores_por_verificar', 'Colaboradores por verificar', 'bi-person-exclamation',
                 app(AdministradorColaboradores::class)->limitar(Colaborador::query(), $actor, 'colaboradores.aprobar')
                     ->where('colaboradores.provisional', true)->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id')->count(),
                 route('colaboradores.index', ['registro' => 'provisional']));
@@ -116,8 +120,9 @@ class MisPendientes
 
         // Mejoras estructura (ADR-0016): versiones de procedimientos que esperan la aprobación de quien entra
         if ($actor->can('procedimientos.aprobar')) {
-            $items[] = $this->item('procedimientos_aprobar', 'Procedimientos por aprobar', 'bi-patch-check',
-                count(app(AdministradorProcedimientos::class)->idsPorAprobar($actor)), route('procedimientos.index', ['filtro' => 'por_aprobar']));
+            // Mejoras activos (ADR-0014): el mismo conteo con menos consultas
+            $items[] = $this->item('procedimientos_aprobar', 'Procedimientos por aprobar', 'bi-journal-check',
+                app(PendientesActivos::class)->procedimientosPorAprobar($actor), route('procedimientos.index', ['filtro' => 'por_aprobar']));
         }
         // Fin Mejoras estructura
 
@@ -180,12 +185,39 @@ class MisPendientes
             $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $cuentas, route('usuarios.index', ['revisar' => 1]));
         }
 
+        // Mejoras Incidentes (criterio 1): tickets canalizados a mí y pendientes de turno sin dueño de mis sedes
+        if ($actor->can('novedades.editar')) {
+            $novedades = app(AdministradorNovedades::class);
+            // Una sola consulta para los dos renglones (sin N+1)
+            $conteo = $novedades->limitar(Novedad::query(), $actor, 'editar')
+                ->where('estatus', '!=', Novedad::RESUELTO)
+                ->where(fn ($q) => $q->where('asignado_a', $actor->id)
+                    ->orWhere(fn ($x) => $x->where('estatus', Novedad::PENDIENTE_TURNO)->whereNull('asignado_a')))
+                ->toBase()
+                ->selectRaw('SUM(CASE WHEN asignado_a = ? THEN 1 ELSE 0 END) AS mios', [$actor->id])
+                ->selectRaw('SUM(CASE WHEN asignado_a IS NULL AND estatus = ? THEN 1 ELSE 0 END) AS sin_dueno', [Novedad::PENDIENTE_TURNO])
+                ->first();
+            // Solo aparecen cuando hay algo (la caseta no ve renglones vacíos de la bitácora)
+            if (($mios = (int) ($conteo->mios ?? 0)) > 0) {
+                $items[] = $this->item('novedades_mias', 'Tickets canalizados a mí', 'bi-headset', $mios, route('novedades.index', ['mios' => 1]));
+            }
+            if (($sinDueno = (int) ($conteo->sin_dueno ?? 0)) > 0) {
+                $items[] = $this->item('novedades_turno', 'Pendientes de turno sin dueño', 'bi-hourglass-split', $sinDueno, route('novedades.index'));
+            }
+        }
+        // Fin Mejoras Incidentes
+        // Mejoras activos (ADR-0014): Vo.Bo. de vales, procedimientos por aprobar, llaves y equipos de turno fuera de tiempo
+        foreach (app(PendientesActivos::class)->para($actor, $empresaId) as $pendiente) {
+            $items[] = $pendiente;
+        }
+        // Fin Mejoras activos
+
         // Fase 3: color por plazo, solo si algún renglón de candidatos tiene pendientes
         $conPendientes = array_filter($items, fn ($i) => $i['total'] > 0 && in_array($i['clave'], PlazosCandidatos::RENGLONES, true));
         if ($conPendientes !== []) {
             $niveles = app(PlazosCandidatos::class)->nivelesPara($actor, $empresaId, array_column($conPendientes, 'clave'));
             foreach ($items as &$item) {
-                $item['nivel'] = $item['total'] > 0 ? ($niveles[$item['clave']] ?? null) : null;
+                $item['nivel'] = $item['total'] > 0 ? ($niveles[$item['clave']] ?? $item['nivel']) : null; // Mejoras activos: conserva el color de llaves y equipos de turno
             }
             unset($item);
         }

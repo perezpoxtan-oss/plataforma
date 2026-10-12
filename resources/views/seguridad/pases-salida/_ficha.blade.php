@@ -38,6 +38,10 @@
     @if ($siguiente)
         <p class="siguiente-pase"><i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ $siguiente }}</p>
     @endif
+    {{-- Mejoras Incidentes (criterio 3): cuánto lleva esperando la firma (color solo si la empresa puso horas en el Circuito) --}}
+    @if ($reloj = ($relojes ?? [])[$p->id] ?? null)
+        <p class="reloj-pase {{ $reloj['nivel'] ? 'espera-'.$reloj['nivel'] : '' }}"><i class="bi bi-clock" aria-hidden="true"></i> {{ $reloj['texto'] }}@if ($reloj['escalado']) · {{ $reloj['escalado'] }}@endif</p>
+    @endif
 
     <dl class="fechas-pase">
         <div><dt>Creado</dt><dd>@fecha($p->created_at, 'd/m/Y')</dd></div>

@@ -23,7 +23,7 @@ resumen: Catálogos de áreas (departamentos) y rangos (puestos) que se eligen a
 2. Toca la tarjeta **Nuevo Departamento**. Se abre **Alta Departamento**.
 3. Escribe el **Nombre del Departamento**. Mientras escribes te avisa si ya existe o se parece a otro.
 4. En **Sedes donde aplica** deja **Todas las sedes** (incluye las que abras después) o desmárcala y elige solo algunas (por ejemplo, un *Club de Playa* que solo existe en una sede).
-5. Toca **Guardar Departamento**.
+5. Toca **Guardar**.
 
 ![Sedes donde aplica](img/departamentos/2-sedes-donde-aplica.png)
 
@@ -38,7 +38,7 @@ Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **S
 ### Avisos mientras escribes el nombre
 
 - **Verde:** «Nombre disponible.»
-- **Rojo:** «Ya existe un departamento «…» en esta empresa. No se puede repetir.» Si está desactivado, aparece **Reactivar**: úsalo en lugar de crearlo otra vez.
+- **Rojo:** «Ya existe un departamento «…» en esta empresa. No se puede repetir.» Si está dado de baja, aparece **Reactivar**: úsalo en lugar de crearlo otra vez.
 - **Amarillo:** «Se parece a uno que ya existe (sin contar acentos, mayúsculas ni signos). Revisa que no sea el mismo:». Por ejemplo «Recepcion» y «Recepción».
 
 ![Departamento parecido](img/departamentos/6-parecido.png)
@@ -50,7 +50,7 @@ Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **S
 3. Elige el **Tipo de Puesto**: Operativo o Administrativo.
 4. Escribe el **Nombre del Puesto** (también te avisa si ya existe o se parece).
 5. Si quieres, marca los **Departamentos donde aplica**. Si no marcas ninguno, el puesto sirve para cualquier departamento.
-6. Toca **Guardar Puesto**.
+6. Toca **Guardar**.
 
 ![Puestos](img/departamentos/3-puestos.png)
 
@@ -60,18 +60,18 @@ Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **S
 
 1. Toca el **lápiz** (Editar) de la ficha.
 2. Corrige el nombre, las sedes (departamento) o el tipo y los departamentos (puesto).
-3. Toca **Guardar Cambios**.
+3. Toca **Guardar**.
 
 ![Editar puesto](img/departamentos/4-editar-puesto.png)
 
 **Qué debes ver:** «Departamento «…» actualizado correctamente.» o «Puesto «…» actualizado correctamente.»
 
-## Cómo desactivar o reactivar
+## Cómo dar de baja o reactivar
 
-1. Toca el **círculo rojo** (Desactivar) y confirma con **Aceptar**.
+1. Toca el **círculo rojo** (Dar de baja) y confirma con **Aceptar**.
 2. Para regresarlo, toca la **flecha circular** (Reactivar).
 
-**Qué debes ver:** la ficha en gris. No se borra el historial. Un puesto ligado a un departamento desactivado conserva esa liga: se ve tachada en su ficha.
+**Qué debes ver:** la ficha en gris con **DE BAJA**. No se borra el historial. Un puesto ligado a un departamento dado de baja conserva esa liga: se ve tachada en su ficha.
 
 ## En el celular
 
@@ -90,7 +90,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | Marca al menos una sede o elige «Todas las sedes». | Quitaste todas las sedes. | Marca al menos una sede. |
 | Aparece el globo «Completa este campo». | El nombre está vacío. | Escribe el nombre. |
 | No veo **Nuevo Departamento** ni el lápiz. | Tu rol no tiene alcance de empresa. | Pide el cambio a tu administrador. |
-| Un departamento no aparece al dar de alta a un colaborador. | No aplica en la sede elegida o está desactivado. | Agrégale la sede o reactívalo. |
+| Un departamento no aparece al dar de alta a un colaborador. | No aplica en la sede elegida o está dado de baja. | Agrégale la sede o reactívalo. |
 
 ## Preguntas frecuentes
 
@@ -98,7 +98,11 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 **¿Para qué sirve «Departamentos donde aplica» en un puesto?** Para que al dar de alta a un colaborador solo aparezcan los puestos de su departamento. Los puestos sin departamento salen siempre.
 
-**¿Puedo borrar un departamento?** No; se desactiva para conservar el historial.
+**¿Puedo borrar un departamento?** No; se da de baja para conservar el historial.
+
+**¿Cuál es la diferencia entre puesto y departamento?** El **puesto** es el rango (Agente, Supervisor, Camarista); el **departamento** es el área (Seguridad, Ama de Llaves). La pantalla de Puestos lo recuerda debajo del título.
+
+**No me deja nombrar al responsable de un departamento.** Se necesita el permiso **Configurar** de **Autorizaciones departamentales** en la Matriz de permisos; la tarjeta «Sin responsable» te lo dice si no lo tienes.
 
 **¿Dos departamentos pueden llamarse igual?** No dentro de la misma empresa.
 

@@ -1,10 +1,10 @@
-# Lección 4 — Zonas y áreas
+# Lección 4 — Zonas y edificios
 
 **Para:** Administrador del cliente · **Duración:** 20 minutos
 
 ## Práctica (en QA, como `admin.demo`)
 
-1. Entra a **Estructura → Zonas y áreas**. Verás la *Torre A* de demo.
+1. Entra a **Estructura → Zonas y edificios**. Verás la *Torre A* de demo.
 2. Crea la zona **Torre B** en *Hotel Demo Centro* con código `TB`.
 3. Entra a *Torre B* y usa **Copiar pisos** desde *Torre A*. Deben aparecer Piso 1 y Piso 2.
 4. Entra a *Piso 1* de Torre B y crea por lote del 1 al 6 con prefijo `B1`, con ceros. Deben quedar B101 a B106.

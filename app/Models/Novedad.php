@@ -34,6 +34,8 @@ class Novedad extends Model
         'recorrido_pc' => 'Recorrido Protección Civil',
         'lost_found' => 'Lost & Found',
         'robo' => 'Robo',
+        // Mejoras Incidentes (ADR-0013): hallazgo de un recorrido PC cuando la empresa lo elige así
+        'mantenimiento_pc' => 'Mantenimiento de equipo PC',
     ];
 
     /** Valor que guardaba SEGCAT (para el importador). */
@@ -66,6 +68,12 @@ class Novedad extends Model
         'robo' => 'Robo',
     ];
 
+    /**
+     * Categorías que solo abre la plataforma (no se eligen al despachar): se
+     * conservan en los tickets que ya las traen.
+     */
+    public const CATEGORIAS_AUTOMATICAS = ['recorrido_pc' => 'Recorrido Protección Civil (histórico — ya no se crean aquí)', 'mantenimiento_pc' => 'Mantenimiento de equipo PC'];
+
     public const ABIERTO = 'abierto';
 
     public const PENDIENTE_TURNO = 'pendiente_turno';
@@ -97,6 +105,7 @@ class Novedad extends Model
         return [
             'ocurrio_en' => 'datetime', 'cerrado_en' => 'datetime', 'numero' => 'integer', 'sede_id' => 'integer', 'area_id' => 'integer',
             'area_especifica_id' => 'integer', 'asignado_a' => 'integer', 'creado_por' => 'integer',
+            'pendiente_turno_en' => 'datetime', 'turno_avisado_en' => 'datetime', 'turno_escalado_en' => 'datetime',
         ];
     }
 
@@ -237,6 +246,12 @@ class Novedad extends Model
     public function recorridoPuntos(): HasMany
     {
         return $this->hasMany(RecorridoPcPunto::class)->orderBy('id');
+    }
+
+    /** Recorridos de Protección Civil cuyos hallazgos se anotan en este ticket. */
+    public function recorridosPc(): HasMany
+    {
+        return $this->hasMany(RecorridoPc::class, 'novedad_id')->orderBy('id');
     }
 
     public function lostFound(): HasOne

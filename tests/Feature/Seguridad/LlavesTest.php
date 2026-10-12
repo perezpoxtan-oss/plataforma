@@ -119,7 +119,7 @@ class LlavesTest extends TestCase
             'id_externo' => ' vc-187 ', 'plataforma_externa' => 'VingCard', 'fecha_caducidad' => '2027-01-31',
             'etiqueta_nfc' => '04:a2:3b:1c',
             'horario_nombre' => ['Turno Limpieza', '', 'Nocturno'], 'horario_inicio' => ['08:00', '', '23:00'], 'horario_fin' => ['16:00', '', '07:00'],
-        ]))->assertSessionHasNoErrors()->assertSessionHas('ok', 'Llave LL-CAT-SIT-01 registrada correctamente. Ya puedes imprimir su etiqueta.');
+        ]))->assertSessionHasNoErrors()->assertSessionHas('ok', 'Llave LL-CAT-SIT-01 registrada correctamente.')->assertSessionHas('siguiente_paso.texto', 'Imprimir su etiqueta');
 
         $l = $this->buscar('LL-CAT-SIT-01');
         $this->assertNotNull($l);
@@ -315,9 +315,12 @@ class LlavesTest extends TestCase
         // Dos veces no
         $this->actingAs($this->admin)->post("/llaves/{$l->id}/baja", ['motivo' => 'robado'])->assertSessionHasErrors('motivo');
 
+        // Mejoras padrones: «Reactivar» con voucher con cobro lleva a «Recuperado» del voucher (un solo camino)
         $this->actingAs($this->admin)->patch("/llaves/{$l->id}/reactivar")
-            ->assertSessionHas('ok', 'Llave HDC-BOD-01 reactivada correctamente. Revisa su código QR: puedes reimprimir la etiqueta o asignarle otra tarjeta NFC/RFID.')
-            ->assertSessionHas('identificacion', $l->id);
+            ->assertRedirect(route('vouchers.index', ['q' => $voucher->folio, 'recuperar' => $voucher->id]).'#voucher-'.$voucher->id)
+            ->assertSessionHas('aviso');
+        $this->assertFalse($l->fresh()->activo);
+        $this->actingAs($this->admin)->post(route('vouchers.recuperado', $voucher->id), ['comentario' => 'Apareció en la bodega'])->assertSessionHas('ok');
         $this->assertTrue($l->fresh()->activo);
         $this->assertSame(1, VoucherReposicion::withoutGlobalScopes()->count());
         $this->assertSame(1, Auditoria::where('evento', 'llaves.reactivado')->count());
@@ -359,7 +362,9 @@ class LlavesTest extends TestCase
         $this->actingAs($this->admin)->getJson('/lector/resolver?entrada=0012345678&tipos=llave')->assertJsonPath('resultados.0.id', $l->id);
         $this->actingAs($this->admin)->getJson('/lector/resolver?entrada=ll-cat-sit-01&tipos=llave')->assertJsonPath('resultados.0.id', $l->id);
 
-        $this->actingAs($this->admin)->get('/e/'.$l->codigo_qr)->assertRedirect(route('llaves.index').'#llave-'.$l->id);
+        // ADR-0014: una llave en caseta ofrece «Prestar» a quien presta en su sede; «Solo ver la ficha» abre el catálogo
+        $this->actingAs($this->admin)->get('/e/'.$l->codigo_qr)->assertOk()->assertSee('Llave en caseta')
+            ->assertSee(route('prestamo_llaves.index', ['prestar' => $l->id]), false)->assertSee(route('llaves.index').'#llave-'.$l->id, false);
 
         $otra = $this->crearEmpresa('Hotel Dos');
         $this->actingAs($this->crearUsuario($otra, 'Administrador'))->get('/e/'.$l->codigo_qr)->assertNotFound();

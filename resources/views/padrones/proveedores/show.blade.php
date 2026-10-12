@@ -16,10 +16,11 @@
 @endphp
 <div class="tema-esmeralda pantalla-proveedores ficha-proveedor">
     @include('administracion.partes.avisos')
+    @include('componentes.siguiente-paso')
 
     <div class="d-flex align-items-center gap-2 mb-3">
         <a href="{{ route('proveedores.index') }}" class="btn-icono" aria-label="Regresar a Empresas Externas" title="Regresar a Empresas Externas"><i class="bi bi-arrow-left" aria-hidden="true"></i></a>
-        <h1 class="h5 fw-bold m-0">Ficha de Proveedor</h1>
+        <h1 class="h5 fw-bold m-0">Ficha de empresa externa</h1>
     </div>
 
     <section class="ficha-header-prov" aria-labelledby="nombre-proveedor">
@@ -29,7 +30,7 @@
                 <h2 id="nombre-proveedor" class="ext-title mt-2">{{ $proveedor->nombre }}</h2>
                 <p class="text-muted small m-0">Padrón de {{ $empresaNombre }}</p>
             </div>
-            <span class="etiqueta-estado {{ $proveedor->activo ? 'activo' : 'inactivo' }}">{{ $proveedor->activo ? 'ACTIVA' : 'BAJA / VETADA' }}</span>
+            <span class="etiqueta-estado {{ $proveedor->activo ? 'activo' : 'inactivo' }}">{{ $proveedor->activo ? 'ACTIVA' : 'DE BAJA' }}</span>
         </div>
         <div class="datos-proveedor">
             @if ($proveedor->rfc)<span><i class="bi bi-card-text" aria-hidden="true"></i> RFC: <b>{{ $proveedor->rfc }}</b></span>@endif
@@ -108,7 +109,7 @@
                             @else
                                 {{ $persona->nombre_completo }}
                             @endif
-                            @unless ($persona->activo)<span class="etiqueta-inactiva ms-1">BAJA</span>@endunless
+                            @unless ($persona->activo)<span class="etiqueta-inactiva ms-1">DE BAJA</span>@endunless
                         </h4>
                         <div class="meta">
                             {{ \App\Models\Persona::TIPOS[$persona->tipo] ?? $persona->tipo }}
@@ -137,7 +138,7 @@
                             @else
                                 {{ $vehiculo->placas }}
                             @endif
-                            @unless ($vehiculo->activo)<span class="etiqueta-inactiva ms-1">BAJA</span>@endunless
+                            @unless ($vehiculo->activo)<span class="etiqueta-inactiva ms-1">DE BAJA</span>@endunless
                         </h4>
                         <div class="meta">
                             {{ \App\Models\Vehiculo::PROPIEDADES[$vehiculo->propiedad] ?? $vehiculo->propiedad }}
@@ -170,7 +171,7 @@
                     @include('padrones.proveedores._campos', ['prefijo' => 'ficha_proveedor', 'reabrir' => $reabrir, 'duplicado' => true, 'valores' => $proveedor->only(['nombre', 'categoria', 'rfc', 'telefono', 'direccion'])])
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                        <button type="submit" class="btn-esmeralda">Actualizar Datos</button>
+                        <button type="submit" class="btn-esmeralda">Guardar</button>
                     </div>
                 </form>
                 @include('componentes.borrar', ['registro' => 'proveedores', 'id' => $proveedor->id])

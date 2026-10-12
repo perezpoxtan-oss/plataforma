@@ -45,6 +45,20 @@
             </div>
         </div>
 
+        {{-- Mejoras activos (ADR-0014): recibir una llave escaneándola, sin buscar su ficha (como «Dar salida» en accesos) --}}
+        @if ($puede['recibir'])
+            <form action="{{ route('prestamo_llaves.recibir-escaneada') }}" method="POST" autocomplete="off" class="recibir-llave-escaneo" data-recibir-llave-escaneo>
+                @csrf
+                <div class="flex-fill">
+                    @include('componentes.lector', ['id' => 'recibir_llave', 'modo' => 'capturar', 'nombre' => 'lectura', 'camara' => true,
+                        'etiqueta' => 'Recibir: escanea la llave que te devuelven', 'placeholder' => 'Escanea el llavero o escribe su nombre (HDC-101)',
+                        'ayuda' => 'Con el QR, la etiqueta NFC o el lector se recibe sola. Si la escribes, toca «Recibir».'])
+                </div>
+                <button type="submit" class="btn-recibir-llave btn-recibir-escaneo"><i class="bi bi-box-arrow-in-down me-1" aria-hidden="true"></i>Recibir</button>
+            </form>
+        @endif
+        {{-- Fin Mejoras activos --}}
+
         <div class="pestanas-prestamo" role="tablist" aria-label="Préstamos">
             <button type="button" role="tab" class="activa" aria-selected="true" data-pestana-prestamos="uso">
                 Llaves en Uso (<span data-conteo-en-uso>{{ $enUso->count() }}</span>)
@@ -78,6 +92,7 @@
                     'p' => $p,
                     'puedeRecibir' => $puede['recibir'] && ($recibibles === null || in_array($p->id, $recibibles, true)),
                     'puedeAnular' => $puede['anular'] && ($anulables === null || in_array($p->id, $anulables, true)),
+                    'semaforoPrestamo' => $semaforo[$p->id] ?? null,
                 ])
             @endforeach
         </div>
@@ -138,7 +153,7 @@
 
         {{-- ===== Prestar Llave (Registrar y Capturar Siguiente) ===== --}}
         @if ($puede['prestar'])
-            <dialog id="dialogoPrestarLlave" class="dialogo dialogo-prestar" aria-labelledby="titulo-prestar-llave" @if ($trasError) data-abrir-al-cargar @endif>
+            <dialog id="dialogoPrestarLlave" class="dialogo dialogo-prestar" aria-labelledby="titulo-prestar-llave" @if ($trasError || $llavePrestar) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
                     <h2 id="titulo-prestar-llave"><i class="bi bi-key-fill me-2 text-warning" aria-hidden="true"></i>Prestar Llave <span class="badge-escaner"><i class="bi bi-upc-scan me-1" aria-hidden="true"></i>Escáner Listo</span></h2>
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
@@ -159,13 +174,14 @@
                                 <option value="">-- Seleccionar --</option>
                             @endif
                             @foreach ($sedesPrestar as $s)
-                                <option value="{{ $s->id }}" @selected((string) old('sede_id', $sedeSugerida) === (string) $s->id) @if ($sedeSugerida === $s->id) data-por-defecto @endif>{{ $s->nombre }}</option>
+                                <option value="{{ $s->id }}" @selected((string) old('sede_id', $llavePrestar?->sede_id ?? $sedeSugerida) === (string) $s->id) @if ($sedeSugerida === $s->id) data-por-defecto @endif>{{ $s->nombre }}</option>
                             @endforeach
                         </select>
 
                         <div class="lector-llave-prestamo">
                             @include('componentes.lector', ['id' => 'prestamo_llave', 'etiqueta' => 'Llave a Prestar (Buscar, QR o NFC)',
                                 'tipos' => 'llave', 'nombre' => 'llave_id', 'requerido' => true,
+                                'valor' => $llavePrestar?->id, 'elegido' => $llavePrestar?->nomenclatura,
                                 'ayuda' => 'Escanea el QR del llavero, acerca su etiqueta NFC o escribe su nombre (por ejemplo HDC-101).'])
                         </div>
 
@@ -186,7 +202,8 @@
                             </div>
                             <div class="flex-fill">
                                 <label class="campo-etiqueta" for="prestamo_folio">Folio / Detalles ID (Opcional)</label>
-                                <input type="text" id="prestamo_folio" name="folio_garantia" class="campo" maxlength="80" placeholder="Ej. Depto Ama de Llaves" value="{{ old('folio_garantia') }}">
+                                <input type="text" id="prestamo_folio" name="folio_garantia" class="campo" maxlength="80" placeholder="Ej. Depto Ama de Llaves" value="{{ old('folio_garantia') }}" data-folio-garantia>
+                                <p class="campo-ayuda mt-0" data-ayuda-folio-gafete>Con «Gafete interno» se llena solo con el número del gafete que escaneaste.</p>
                             </div>
                         </div>
 

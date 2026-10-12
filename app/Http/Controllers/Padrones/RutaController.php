@@ -204,7 +204,7 @@ class RutaController extends Controller
 
         return $this->aLaRuta($modelo)->with($activo ? 'ok' : 'aviso', $activo
             ? "Ruta «{$modelo->nombre}» reactivada."
-            : "Ruta «{$modelo->nombre}» suspendida. Puedes reactivarla con el mismo botón cuando quieras.");
+            : "Ruta «{$modelo->nombre}» dada de baja: ya no sale en las próximas salidas ni en la hoja del día. Puedes reactivarla con el mismo botón cuando quieras.");
     }
 
     public function clonar(Request $request, int $ruta): RedirectResponse
@@ -416,7 +416,7 @@ class RutaController extends Controller
 
         return $this->alParadero($modelo)->with($activo ? 'ok' : 'aviso', $activo
             ? "Paradero «{$modelo->nombre}» reactivado."
-            : "Paradero «{$modelo->nombre}» desactivado: ya no se sugiere al capturar rutas. Las rutas que ya lo tenían no cambian.");
+            : "Paradero «{$modelo->nombre}» dado de baja: ya no se sugiere al capturar rutas. Las rutas que ya lo tenían no cambian.");
     }
 
     // ------------------------------------------------------------- Apoyo

@@ -15,6 +15,7 @@
         if ($puedePases) { $indice['t-pases-salida'] = 'Pases de salida'; }
         if ($puedeRecepcion || $puedeBolsa) { $indice['recepcion'] = 'Recepción y candidatos'; }
     }
+    if ($mostrarAvisos) { $indice['caseta'] = 'Caseta y activos'; }
     if ($lostFound) { $indice['lost-found'] = 'Lost & Found'; }
     if ($esSuperadmin) { $indice['t-correo'] = 'Correo de la plataforma'; $indice['t-respaldos'] = 'Respaldos'; }
 @endphp
@@ -109,6 +110,13 @@
                         @endif
                     </div>
 
+                    @if ($grupo === 'novedades')
+            {{-- Mejoras Incidentes: Bitácora de novedades (nombre del menú y hallazgos de recorrido) --}}
+            @if (auth()->user()->can('novedades.ver'))
+                @include('seguridad.novedades._config', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
+            @endif
+            {{-- Fin Mejoras Incidentes --}}
+                    @endif
                     @if ($grupo === 'pases_salida')
             {{-- Pases de salida: circuito de aprobación (ver docs/tecnico/pases-salida.md) --}}
             @if ($empresa && auth()->user()->can('pases_salida.configurar'))
@@ -147,6 +155,12 @@
         @endif
         {{-- Fin Vacantes --}}
         @endif
+
+        {{-- Mejoras activos: ajustes de caseta (ADR-0014): transporte, llaves, responsivas y procedimientos en una sola tarjeta --}}
+        @if ($mostrarAvisos)
+            @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
+        @endif
+        {{-- Fin Mejoras activos --}}
 
         {{-- ================= Lost & Found: días de resguardo (empresa) ================= --}}
         @if ($lostFound)

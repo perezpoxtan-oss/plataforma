@@ -14,6 +14,7 @@ use App\Models\UsuarioRol;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Notificaciones\PreferenciasAvisos;
 use App\Services\Permisos\Autorizador;
+use App\Support\GruposAvisos;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -267,9 +268,9 @@ class MejorasEstructuraTest extends TestCase
         $this->app->forgetScopedInstances();
 
         $vista = app(MisPendientes::class)->para($rh)['vista'];
-        $this->assertSame(['altas_provisionales'], array_column($vista, 'clave'));
+        $this->assertSame(['colaboradores_por_verificar'], array_column($vista, 'clave'));
 
-        $this->actingAs($rh)->get('/')->assertOk()->assertSee('Altas provisionales por validar')->assertSee('1 alta provisional por validar')
+        $this->actingAs($rh)->get('/')->assertOk()->assertSee('Colaboradores por verificar')->assertSee('1 colaborador por verificar')
             ->assertDontSee('Solicitudes por revisar')->assertDontSee('Consola de Monitoreo Central');
         $this->assertSame([], app()->build(MisPendientes::class)->para($this->crearUsuario($this->empresa, 'Agente', $this->centro))['vista'] ?? []);
     }
@@ -309,6 +310,28 @@ class MejorasEstructuraTest extends TestCase
 
         // Los avisos de la propia cuenta no se silencian
         $this->assertSame([$jefe->id], $centro->avisar($this->empresa->id, [$jefe->id], 'cuenta_contrasena', ['titulo' => 'Tu contraseña cambió']));
+    }
+
+    public function test_los_avisos_de_incidentes_activos_y_padrones_se_silencian_y_se_ordenan_por_modulo(): void
+    {
+        // Todo tipo de la campana tiene su nombre en español en «Mis avisos», y todo aviso por correo su módulo
+        $tipos = array_keys((new \ReflectionClassConstant(CentroNotificaciones::class, 'TIPOS'))->getValue());
+        $this->assertSame([], array_values(array_diff($tipos, array_keys(PreferenciasAvisos::CAMPANA), PreferenciasAvisos::NO_SILENCIABLES)));
+        $this->assertSame([], array_values(array_filter(array_keys(Empresa::AVISOS), fn ($a) => GruposAvisos::grupoDe($a) === GruposAvisos::OTROS)));
+        foreach (['novedad_canalizada' => 'novedades', 'hallazgo_recorrido_pc' => 'novedades', 'pase_salida_espera' => 'pases_salida', 'procedimiento_revision' => 'procedimientos'] as $aviso => $grupo) {
+            $this->assertSame($grupo, GruposAvisos::grupoDe($aviso));
+        }
+
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro);
+        $this->actingAs($jefe)->get('/mi-cuenta')->assertOk()->assertSee('Te canalizaron un ticket de la bitácora')->assertSee('Una llave prestada lleva demasiado tiempo fuera');
+        $this->actingAs($jefe)->put('/mi-cuenta/avisos', ['campana' => ['pase_vencido' => 1], 'correo' => []])->assertRedirect();
+        $centro = app(CentroNotificaciones::class);
+        $this->assertSame([], $centro->avisar($this->empresa->id, [$jefe->id], 'novedad_canalizada', ['titulo' => 'Te canalizaron el ticket']));
+        $this->assertSame([], $centro->avisar($this->empresa->id, [$jefe->id], 'llave_fuera', ['titulo' => 'Llave fuera']));
+
+        // El interruptor del módulo apaga el correo nuevo de la bitácora aunque esté marcado
+        $this->empresa->forceFill(['preferencias' => ['avisos' => ['novedad_canalizada' => true], 'avisos_modulos' => ['novedades' => false]]])->save();
+        $this->assertFalse($this->empresa->fresh()->aviso('novedad_canalizada'));
     }
 
     // ------------------------------------------------------------ Usuarios

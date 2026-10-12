@@ -11,6 +11,7 @@ use App\Models\RutaHorario;
 use App\Models\Sede;
 use App\Models\User;
 use App\Models\Vehiculo;
+use App\Services\Activos\CampanaActivos;
 use App\Services\Firmas\Firmas;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Permisos\AdministradorRoles;
@@ -186,24 +187,29 @@ class BitacoraTransporte
      * Registra un movimiento normal o los vales de taxi (uno por taxi).
      *
      * @param  array<string, mixed>  $entrada
-     * @param  bool  $conFirmas  el usuario captura firmas en pantalla (transporte.firmar)
+     * @param  bool|array{guardia: bool, taxista: bool}  $conFirmas  qué firmas se capturan en pantalla: el usuario
+     *                                                               puede firmar (transporte.firmar) y la empresa lo pide (ADR-0014,
+     *                                                               Configuración → Caseta y activos). Un bool aplica a las dos.
      * @param  list<int>|null  $sedesPermitidas  sedes donde puede registrar (null = todas)
      * @return Collection<int, MovimientoTransporte>
      */
-    public function registrar(User $actor, array $entrada, bool $conFirmas, ?array $sedesPermitidas): Collection
+    public function registrar(User $actor, array $entrada, bool|array $conFirmas, ?array $sedesPermitidas): Collection
     {
-        $datos = $this->validarAlta($actor, $entrada, $conFirmas, $sedesPermitidas);
+        $firmas = is_array($conFirmas)
+            ? ['guardia' => (bool) ($conFirmas['guardia'] ?? false), 'taxista' => (bool) ($conFirmas['taxista'] ?? false)]
+            : ['guardia' => $conFirmas, 'taxista' => $conFirmas];
+        $datos = $this->validarAlta($actor, $entrada, $firmas, $sedesPermitidas);
 
         // Las firmas se guardan solo cuando todo lo demás ya es válido
         $guardadas = [];
         try {
             $firmaGuardia = null;
-            if ($conFirmas && $this->firmas->viene($datos['firma_guardia'])) {
+            if ($firmas['guardia'] && $this->firmas->viene($datos['firma_guardia'])) {
                 $guardadas[] = $firmaGuardia = $this->firmas->guardar($datos['firma_guardia'], 'transporte', 'firma_guardia', 'la firma del guardia');
             }
             foreach ($datos['taxis'] as $i => $taxi) {
                 $datos['taxis'][$i]['firma_ruta'] = null;
-                if ($conFirmas) {
+                if ($firmas['taxista']) {
                     $guardadas[] = $datos['taxis'][$i]['firma_ruta'] = $this->firmas->guardar($taxi['firma'], 'transporte', "taxis.{$i}.firma", 'la firma del taxista del Taxi '.($i + 1));
                 }
             }
@@ -220,6 +226,10 @@ class BitacoraTransporte
 
         foreach ($movimientos as $m) {
             $this->auditoria->auditar($actor, 'transporte.creado', $m, null, $this->foto($m));
+            // ADR-0014 (criterio 1): el vale espera el Vo.Bo. → campana y Mis pendientes de quien autoriza
+            if ($m->esTaxi()) {
+                app(CampanaActivos::class)->valePorAutorizar($m, $actor);
+            }
         }
 
         return $movimientos;
@@ -361,7 +371,7 @@ class BitacoraTransporte
      * @param  list<int>|null  $sedesPermitidas
      * @return array<string, mixed>
      */
-    private function validarAlta(User $actor, array $e, bool $conFirmas, ?array $sedesPermitidas): array
+    private function validarAlta(User $actor, array $e, array $firmas, ?array $sedesPermitidas): array
     {
         $errores = [];
         $texto = fn (mixed $v, int $max = 150) => is_string($v) || is_numeric($v) ? mb_substr(trim((string) preg_replace('/\s+/u', ' ', (string) $v)), 0, $max + 1) : '';
@@ -404,10 +414,10 @@ class BitacoraTransporte
         ];
 
         if ($estatus === 'no_llego') {
-            if ($conFirmas && ! $this->firmas->viene($datos['firma_guardia'])) {
+            if ($firmas['guardia'] && ! $this->firmas->viene($datos['firma_guardia'])) {
                 $errores['firma_guardia'][] = 'Falta la firma del guardia: firma en el recuadro antes de guardar.';
             }
-            $datos['taxis'] = $this->validarTaxis($actor, $e['taxis'] ?? null, $horario?->ruta, $sede, $conFirmas, $errores, $texto);
+            $datos['taxis'] = $this->validarTaxis($actor, $e['taxis'] ?? null, $horario?->ruta, $sede, $firmas['taxista'], $errores, $texto);
         } elseif ($estatus !== null) {
             $datos += $this->validarUnidad($e, $errores, $texto);
         }
@@ -716,6 +726,7 @@ class BitacoraTransporte
         }
         $m->forceFill(['anulado' => true, 'anulado_por' => $actor->id, 'anulado_en' => now()])->save();
         $this->auditoria->auditar($actor, 'transporte.anulado', $m, ['anulado' => false], ['anulado' => true]);
+        app(CampanaActivos::class)->resolverVale($m);
     }
 
     public function reactivar(User $actor, MovimientoTransporte $m): void
@@ -726,6 +737,9 @@ class BitacoraTransporte
         $antes = ['anulado' => true, 'anulado_por' => $m->anulado_por, 'anulado_en' => $m->anulado_en?->toIso8601String()];
         $m->forceFill(['anulado' => false, 'anulado_por' => null, 'anulado_en' => null])->save();
         $this->auditoria->auditar($actor, 'transporte.reactivado', $m, $antes, ['anulado' => false]);
+        if ($m->esTaxi() && ! $m->autorizado()) {
+            app(CampanaActivos::class)->valePorAutorizar($m, $actor);
+        }
     }
 
     /**
@@ -745,6 +759,7 @@ class BitacoraTransporte
         }
         $m->forceFill(['autorizado_por' => $actor->id, 'autorizado_en' => now()])->save();
         $this->auditoria->auditar($actor, 'transporte.autorizado', $m, ['autorizado' => false], ['autorizado' => true, 'monto' => $m->monto]);
+        app(CampanaActivos::class)->resolverVale($m);
     }
 
     // ---------------------------------------------------------------- Lectura

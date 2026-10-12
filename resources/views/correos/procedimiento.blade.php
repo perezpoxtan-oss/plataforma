@@ -8,6 +8,14 @@
             <p style="color:#475569;"><strong>Qué cambió:</strong> {{ $resumen }}</p>
         @endif
         <p style="margin-bottom:0;"><a href="{{ $p['enlace'] }}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:bold;">Leer y firmar</a></p>
+    @elseif ($tipo === 'revision')
+        @php $p = $procedimientos[0]; @endphp
+        <p style="margin-top:0;font-size:18px;font-weight:bold;">{{ $p['clave'] }}: {{ $p['titulo'] }}</p>
+        <p>Se envió a revisión la <strong>versión {{ $p['version'] }}</strong> de este procedimiento y tú puedes aprobarla. Revísala y elige <strong>«Aprobar y publicar»</strong> o <strong>«Pedir cambios»</strong>.</p>
+        @if ($resumen)
+            <p style="color:#475569;"><strong>Qué cambió:</strong> {{ $resumen }}</p>
+        @endif
+        <p style="margin-bottom:0;"><a href="{{ $p['enlace'] }}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:bold;">Revisar procedimiento</a></p>
     @else
         <p style="margin-top:0;font-size:18px;font-weight:bold;">Procedimientos por leer y firmar</p>
         <p>Todavía no firmas de enterado {{ count($procedimientos) === 1 ? 'este procedimiento' : 'estos procedimientos' }}:</p>

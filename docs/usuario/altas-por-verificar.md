@@ -14,7 +14,7 @@ resumen: Lo que la caseta registra al momento en los padrones se usa de inmediat
 2. Si no es ninguno, **se registra y se usa de inmediato**, pero queda **pendiente de verificar**.
 3. Quien administra el padrón lo **revisa**: lo acepta, lo une con el registro correcto o lo rechaza.
 
-Aplica al [Padrón vehicular](vehiculos.md), a [Empresas externas](proveedores.md) y al [Padrón de personas](personas.md). Los colaboradores tienen su propia «alta provisional», que valida Recursos Humanos (ver [Colaboradores](colaboradores.md)).
+Aplica al [Padrón vehicular](vehiculos.md), a [Empresas externas](proveedores.md) y al [Padrón de personas](personas.md). Los colaboradores siguen el mismo camino con las mismas palabras: la caseta los registra en **Registro Rápido de Colaborador**, quedan **POR VERIFICAR** y Recursos Humanos los **verifica** o los une con su registro (ver [Colaboradores](colaboradores.md)).
 
 ![Aviso en Inicio](img/altas-por-verificar/01-inicio-aviso-altas-por-verificar.png)
 
@@ -54,7 +54,9 @@ En las ventanas de registro rápido (por ejemplo **Registro Rápido de Persona**
 
 ## Cómo encontrar lo que falta verificar
 
-1. En **Inicio** aparece la tarjeta **«N altas por verificar»**, con un botón por padrón (**Vehículos**, **Empresas externas**, **Personas**). También aparece en **Mis pendientes**.
+1. En cuanto la caseta registra algo nuevo te llega a la **campana** (arriba a la derecha) «Alta por verificar: …», con el botón **Verificar** que te lleva directo a la ficha. También aparece en **Inicio** (la tarjeta **«N altas por verificar»**, con un botón por padrón) y en **Mis pendientes**.
+
+   ![Alta por verificar en la campana](img/altas-por-verificar/30-campana-alta-por-verificar.png)
 2. Toca el botón del padrón. Llegas al padrón con la píldora **Pendientes de verificar** encendida: solo se ven las fichas por revisar. Tócala otra vez para ver todas.
 
 ![Vehículos pendientes](img/altas-por-verificar/02-vehiculos-pendientes-de-verificar.png)
@@ -73,7 +75,7 @@ En las ventanas de registro rápido (por ejemplo **Registro Rápido de Persona**
 
 ![Es correcto](img/altas-por-verificar/03-verificar-vehiculo-es-correcto.png)
 
-**Qué debes ver:** ««XTR901C» quedó verificado en el padrón. Gracias por revisarlo.» Queda como un registro normal.
+**Qué debes ver:** ««XTR901C» quedó verificado en el padrón. Gracias por revisarlo.» Queda como un registro normal. Quien lo registró en la caseta recibe en su campana «Tu alta «XTR901C» quedó verificada».
 
 ### Ya existía
 
@@ -82,7 +84,7 @@ En las ventanas de registro rápido (por ejemplo **Registro Rápido de Persona**
 
 ![Ya existía](img/altas-por-verificar/04-verificar-vehiculo-ya-existia.png)
 
-**Qué debes ver:** ««…» se unió con «…»: todo lo registrado pasó al registro correcto.» Los accesos, movimientos de transporte, entregas, personal o flotilla del alta pasan al registro correcto.
+**Qué debes ver:** ««…» se unió con «…»: todo lo registrado pasó al registro correcto.» Los accesos, movimientos de transporte, entregas, personal o flotilla del alta pasan al registro correcto. Quien la registró recibe en su campana «Tu alta «…» ya existía» con el nombre correcto, para usarlo la próxima vez.
 
 ### Rechazar
 
@@ -91,13 +93,17 @@ En las ventanas de registro rápido (por ejemplo **Registro Rápido de Persona**
 
 ![Rechazar](img/altas-por-verificar/05-verificar-vehiculo-rechazar.png)
 
-**Qué debes ver:** ««…» quedó rechazado: se conserva como historia y ya no se puede usar en la operación.» Lo rechazado no se borra, pero ya no se puede usar, editar ni reactivar.
+**Qué debes ver:** ««…» quedó rechazado: se conserva como historia y ya no se puede usar en la operación.» Lo rechazado no se borra, pero ya no se puede usar, editar ni reactivar. **Quien lo registró recibe en su campana** «Tu alta «…» fue rechazada» con el motivo, sin esperar a intentar usarla de nuevo.
+
+![El rechazo en la campana de la caseta](img/altas-por-verificar/31-campana-alta-rechazada.png)
 
 ![Ficha rechazada](img/altas-por-verificar/06-ficha-rechazada.png)
 
 ### Empresas externas y personas
 
 Funciona igual. En empresas externas reconoce el mismo nombre con o sin «S.A. de C.V.»; en personas, el nombre sin acentos o en otro orden. Al unir personas, si la correcta no tenía identificación, se queda con la que capturó la caseta.
+
+> ¿Dos personas **ya verificadas** son la misma? Únelas desde el [Padrón de personas](personas.md) con **Unir con otra ficha**.
 
 ![Unir empresa](img/altas-por-verificar/08-verificar-empresa-ya-existia.png)
 
@@ -136,7 +142,9 @@ Los mensajes salen en rojo dentro de la ventana.
 
 **¿Puedo deshacer una unión?** No desde la pantalla. En la [Bitácora de auditoría](auditoria.md) queda qué se movió y a dónde.
 
-**¿Quién recibe el correo?** Los usuarios activos que pueden editar ese padrón en la sede donde se registró el alta.
+**¿Quién recibe el aviso?** Los usuarios activos que pueden editar ese padrón en la sede donde se registró el alta: en la campana siempre, y por correo si está encendido en Configuración. En cuanto alguien la verifica, el aviso pierde su botón para todos.
+
+**¿Cómo se entera la caseta del resultado?** Por su campana: «quedó verificada», «ya existía» (con el registro correcto) o «fue rechazada» (con el motivo).
 
 **Si se unió con el correcto, ¿la caseta tiene que hacer algo?** No. Al escribir las mismas placas o el mismo nombre, la plataforma usa el registro correcto.
 

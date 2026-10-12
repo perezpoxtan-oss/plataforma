@@ -178,12 +178,15 @@
         @php
             $dialogoR6 = old('_dialogo');
             $recuperarId = is_string($dialogoR6) && str_starts_with($dialogoR6, 'recuperar-') ? (int) substr($dialogoR6, 10) : null;
+            // Mejoras padrones (ADR-0015): «Reactivar» desde la ficha de una llave, gafete o equipo con voucher con cobro llega aquí con ?recuperar=ID
+            $recuperarDesdeFicha = $recuperarId === null && ctype_digit((string) request()->query('recuperar')) ? (int) request()->query('recuperar') : null;
+            $recuperarId ??= $recuperarDesdeFicha;
             $reembolsoId = is_string($dialogoR6) && str_starts_with($dialogoR6, 'reembolso-') ? (int) substr($dialogoR6, 10) : null;
             $vRecuperar = $recuperarId ? $vouchers->firstWhere('id', $recuperarId) : null;
             $vReembolso = $reembolsoId ? $vouchers->firstWhere('id', $reembolsoId) : null;
         @endphp
         @if ($puedeRecuperar !== [])
-            <dialog id="dialogoRecuperadoVoucher" class="dialogo" aria-labelledby="titulo-recuperado" @if ($vRecuperar && $errors->any()) data-abrir-al-cargar @endif>
+            <dialog id="dialogoRecuperadoVoucher" class="dialogo" aria-labelledby="titulo-recuperado" @if ($vRecuperar && ($errors->any() || ($recuperarDesdeFicha && $vRecuperar->esVigente()))) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
                     <h2 id="titulo-recuperado"><i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true"></i>Recuperado <span data-recuperado-folio>{{ $vRecuperar?->folio }}</span></h2>
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>

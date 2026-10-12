@@ -279,13 +279,13 @@ class AjustesRonda8Test extends PruebaNovedades
         $recibir = fn (Equipo $e, array $datos, ?User $quien = null) => $this->actingAs($quien ?? $this->admin)
             ->patch("/responsivas/{$lote->id}/equipos/{$fila($e)->id}/recibir", $datos + ['_dialogo' => "recibir-{$lote->id}-{$fila($e)->id}"]);
 
-        // Cada equipo en campo tiene su botón «Recibir»; sigue «Recibir Lote Completo (OK)»
-        $this->actingAs($this->admin)->get('/responsivas')->assertOk()->assertSee('Recibir Lote Completo (OK)')
+        // ADR-0014: un solo «Recibir» con casillas; cada equipo en campo tiene «Dañado o falta» (el diálogo de Ronda 8)
+        $this->actingAs($this->admin)->get('/responsivas')->assertOk()->assertSee('Recibir marcados (OK)')->assertSee('Dañado o falta')
             ->assertSee(route('responsivas.recibir-equipo', [$lote->id, $fila($e1)->id]), false)->assertSee('¿Cómo regresa el equipo?');
 
         // 1. OK: vuelve a DISPONIBLE y el lote sigue en campo
         $recibir($e1, ['estado_recepcion' => 'ok'])->assertSessionHasNoErrors()
-            ->assertSessionHas('ok', 'Equipo SN-001 recibido (OK). Del lote '.$lote->folio.' faltan 3 equipos por regresar.');
+            ->assertSessionHas('ok', 'Equipo SN-001 recibido (OK). De la responsiva '.$lote->folio.' faltan 3 equipos por regresar.');
         $this->assertSame('disponible', $this->estadoEquipo($e1));
         $this->assertSame(Responsiva::EN_CAMPO, $this->enEmpresa(fn () => $lote->fresh()->estado));
         // …y no se recibe dos veces
@@ -339,7 +339,7 @@ class AjustesRonda8Test extends PruebaNovedades
 
         // «Recibir Lote Completo (OK)» con un equipo ya recibido: solo el que faltaba
         $this->actingAs($this->admin)->patch("/responsivas/{$lote->id}/recibir")->assertSessionHasNoErrors()
-            ->assertSessionHas('ok', 'Lote '.$lote->folio.' recibido: 1 equipo vuelve a DISPONIBLE.');
+            ->assertSessionHas('ok', 'Responsiva '.$lote->folio.' recibida: 1 equipo vuelve a DISPONIBLE.');
         $this->assertSame(['en_mantenimiento', 'disponible'], [$this->estadoEquipo($e1), $this->estadoEquipo($e2)]);
         $this->assertSame('danado', $this->enEmpresa(fn () => EquipoResponsiva::find($f1->id)->estado_devolucion));
 
@@ -381,7 +381,7 @@ class AjustesRonda8Test extends PruebaNovedades
         $html = $this->actingAs($this->admin)->get(route('rutas.semana', $this->centro->id))->assertOk()
             ->assertSee('Horario de Llegadas')->assertSee('Vista informativa de la semana')
             ->assertSee('Lunes a viernes')->assertSee('Fin de semana')->assertSee('06:15')->assertSee('05:45')
-            ->assertSee('Suspendidas (no operan):')->assertSee('RUTA 9 - TEMPORADA ALTA')
+            ->assertSee('Dadas de baja (no operan):')->assertSee('RUTA 9 - TEMPORADA ALTA')
             ->assertSee('<span class="si">S</span><span class="si">D</span>', false)
             ->getContent();
         $orden = array_map(fn ($t) => strpos($html, $t), ['13:25', '05:45', '04:00', '06:15']);
@@ -392,7 +392,7 @@ class AjustesRonda8Test extends PruebaNovedades
         // Día (domingo): sale el horario alterno de las 06:15 y se explica lo que no sale
         $this->actingAs($this->admin)->get(route('rutas.dia', ['sede' => $this->centro->id, 'fecha' => '2026-10-11']))->assertOk()
             ->assertSee('06:15')->assertSee('No operan este día:')->assertSee('RUTA 1 - REGIÓN 94 05:45 (Lunes a viernes)')
-            ->assertSee('Suspendidas (no operan):')->assertSee(route('rutas.semana', $this->centro->id), false);
+            ->assertSee('Dadas de baja (no operan):')->assertSee(route('rutas.semana', $this->centro->id), false);
         // Lunes: el de lunes a viernes sale; el de fin de semana se menciona como «no opera»
         $this->actingAs($this->admin)->get(route('rutas.dia', ['sede' => $this->centro->id, 'fecha' => '2026-10-05']))->assertOk()
             ->assertSee('RUTA 1 - REGIÓN 94 06:15 (Sábado y domingo)');

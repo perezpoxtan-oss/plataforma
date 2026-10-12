@@ -41,7 +41,7 @@ Comprueba: se abre la Matriz de ese rol con el mensaje «…creado con los permi
 
 ## Práctica 4 · Inicio y Mis pendientes (rh.demo)
 
-1. Entra con `rh.demo`. **Inicio** muestra «Altas provisionales por validar» y «Candidatos» con su desglose por etapa.
+1. Entra con `rh.demo`. **Inicio** muestra «Colaboradores por verificar» y «Candidatos» con su desglose por etapa.
 2. Abre **Mis pendientes**: los mismos renglones, en el mismo orden; los que están en cero no aparecen.
 
 ## Práctica 5 · Mis avisos (jefe.demo)

@@ -80,9 +80,9 @@ Al **reactivar** una llave (flecha verde) esta ventana se abre sola, para reimpr
 
 ---
 
-## Nota para después (Zonas y áreas · Z-08)
+## Nota para después (Zonas y edificios · Z-08)
 
-Las **Secciones** de Zonas y áreas se llamarán **Categoría de habitación** (con un costo por categoría) y en Llaves nacerá la **Sección de llaves** (un grupo de cuartos que abre una maestra, sin importar edificio o piso). Todavía no cambia nada en pantalla.
+Las **Secciones** de Zonas y edificios se llamarán **Categoría de habitación** (con un costo por categoría) y en Llaves nacerá la **Sección de llaves** (un grupo de cuartos que abre una maestra, sin importar edificio o piso). Todavía no cambia nada en pantalla.
 
 ## Repaso
 

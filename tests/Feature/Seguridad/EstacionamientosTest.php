@@ -74,7 +74,7 @@ class EstacionamientosTest extends TestCase
             ->assertSee('Cupos por sede — Estacionamiento (cuenta espacios) o Zona de Descarga (Lobby, Almacenes, Andén, Patio de maniobras; capacidad opcional).')
             ->assertSee('Nueva Zona')->assertSee('ESTACIONAMIENTO')->assertSee('ZONA DE DESCARGA')
             ->assertSee('0 / 40 espacios')->assertSee('0 / 8 espacios')->assertSee('vehículos usando el andén ahora')
-            ->assertSee('cupo-barra', false)->assertSee('Inactiva')
+            ->assertSee('cupo-barra', false)->assertSee('De baja')
             ->assertSee('id="zona-'.$estac->id.'"', false)
             ->assertSee('data-filtro-sede="zonas"', false)->assertSee('data-filtro-tipo="zonas"', false)
             ->assertDontSee('LLENO')
@@ -149,7 +149,7 @@ class EstacionamientosTest extends TestCase
         $zona = $this->zona('Sótano 1A');
 
         $this->actingAs($this->admin)->patch("/estacionamientos/{$zona->id}/estado", ['activo' => 0])
-            ->assertSessionHas('aviso', 'Zona «Sótano 1A» desactivada: ya no se podrá asignar en Accesos, pero puedes reactivarla cuando quieras.');
+            ->assertSessionHas('aviso', 'Zona «Sótano 1A» dada de baja: ya no se podrá asignar en Accesos, pero puedes reactivarla cuando quieras.');
         $this->assertFalse($zona->fresh()->activo);
         // Desactivada también cuenta para el nombre repetido
         $this->actingAs($this->admin)->post('/estacionamientos', $this->datos(['nombre' => 'sótano 1a']))

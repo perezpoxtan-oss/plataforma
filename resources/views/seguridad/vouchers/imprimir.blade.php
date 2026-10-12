@@ -73,7 +73,7 @@
 
                 <div class="voucher-cobro-firmas">
                     <div class="caja-cxc {{ $voucher->aplica_cobro ? 'con-cobro' : 'sin-cobro' }}">
-                        <span class="dato-etiqueta">CXC:</span>
+                        <span class="dato-etiqueta">Cobro al colaborador:</span>
                         <span class="cxc-monto">{{ $voucher->aplica_cobro ? '$'.number_format((float) $voucher->monto, 2).' MXN' : 'NO APLICA' }}</span>
                         @if ($voucher->aplica_cobro && $voucher->estado === 'cancelado_recuperacion')<span class="cxc-cancelado">CANCELADO</span>@endif
                     </div>

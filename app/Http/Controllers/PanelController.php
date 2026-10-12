@@ -16,7 +16,7 @@ class PanelController extends Controller
      * (mismos nombres, mismo orden): clave => [frase en singular, en plural, explicación, botón].
      */
     public const TEXTOS = [
-        'altas_provisionales' => ['1 alta provisional por validar', '%d altas provisionales por validar', 'La caseta registró colaboradores que aún no estaban en el directorio. Valídalos o únelos con su registro correcto.', 'Revisar ahora'],
+        'colaboradores_por_verificar' => ['1 colaborador por verificar', '%d colaboradores por verificar', 'La caseta registró colaboradores que aún no estaban en el directorio. Verifícalos o únelos con su registro correcto.', 'Revisar ahora'],
         'autorizaciones' => ['1 solicitud espera tu autorización', '%d solicitudes esperan tu autorización', 'Una visita de tu departamento espera tu respuesta. Mientras no contestes, la persona sigue esperando.', 'Responder'],
         'pases_salida' => ['1 pase de salida espera tu aprobación', '%d pases de salida esperan tu aprobación', 'Revisa los artículos y firma o rechaza con tus comentarios. El siguiente paso no avanza hasta que firmes.', 'Ir a mi bandeja'],
         'procedimientos_aprobar' => ['1 procedimiento espera tu aprobación', '%d procedimientos esperan tu aprobación', 'Revisa los pasos y apruébalo con tu firma, o recházalo con tus comentarios para que lo corrijan.', 'Revisar'],
@@ -25,6 +25,13 @@ class PanelController extends Controller
         'candidatos' => ['1 asunto de candidatos te espera', '%d asuntos de candidatos te esperan', 'Personas que esperan a Recursos Humanos y candidatos en cada etapa. Toca la etapa para ir directo.', 'Ir a candidatos'],
         'entrevistas' => ['1 entrevista espera tu evaluación', '%d entrevistas esperan tu evaluación', 'Recursos Humanos te canalizó candidatos: entrevístalos, califícalos y elige.', 'Entrevistar'],
         'cuentas' => ['1 cuenta por revisar', '%d cuentas por revisar', 'Cuentas bloqueadas, desactivadas por una baja o que piden pases sin colaborador vinculado.', 'Revisar cuentas'],
+        // Mejoras Incidentes (ADR-0013)
+        'novedades_mias' => ['1 ticket canalizado a ti', '%d tickets canalizados a ti', 'Te toca darles seguimiento en la Bitácora de novedades. Quien los levantó se entera cuando los cierras.', 'Atender'],
+        'novedades_turno' => ['1 pendiente de turno sin dueño', '%d pendientes de turno sin dueño', 'Tickets que el turno anterior dejó pendientes y nadie ha tomado. Ábrelos y atiéndelos o canalízalos.', 'Atender'],
+        // Mejoras activos (ADR-0014)
+        'vales_taxi' => ['1 vale de taxi espera tu Vo.Bo.', '%d vales de taxi esperan tu Vo.Bo.', 'La unidad no llegó y se usaron taxis: revisa el vale y dale tu Vo.Bo.', 'Revisar'],
+        'llaves_fuera' => ['1 llave fuera de tiempo', '%d llaves fuera de tiempo', 'Llaves prestadas que ya pasaron las horas que tu empresa permite. Pide que las regresen o recíbelas.', 'Ver llaves'],
+        'equipos_turno' => ['1 responsiva con equipos de turno sin regresar', '%d responsivas con equipos de turno sin regresar', 'Los equipos de «Turno» debían regresar a su hora. Recíbelos o pregunta por ellos.', 'Ver responsivas'],
     ];
 
     /**

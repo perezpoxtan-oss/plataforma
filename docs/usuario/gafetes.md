@@ -24,7 +24,7 @@ resumen: Inventario de los gafetes de plástico que se prestan en caseta, con su
 - El **Tipo** (Visitante, Proveedor, Contratista o los que agregue tu empresa) y la **Sede**.
 - El **código interno** (lo que lleva el QR) y, si tiene chip, su **NFC / RFID**.
 - Quién lo creó o lo editó y cuándo.
-- Abajo, el estado: **DISPONIBLE** (verde) o **NO DISPONIBLE** (rojo: se perdió, se dañó o lo robaron).
+- Abajo, el estado: **DISPONIBLE** (verde: se puede prestar), **EN USO** (azul: alguien lo tiene ahora en la Bitácora de accesos) o **DE BAJA** con su motivo (rojo, por ejemplo **DE BAJA · EXTRAVIADO**) y el folio de su voucher, que te lleva a [Vouchers de reposición](vouchers.md).
 
 ## Cómo encontrar un gafete
 
@@ -32,7 +32,7 @@ resumen: Inventario de los gafetes de plástico que se prestan en caseta, con su
 2. Escribe en **Buscar nomenclatura...** una parte del nombre (por ejemplo `vis-01`), el tipo o la sede.
 3. Toca un tipo (por ejemplo **Visitante**) para ver solo ese; el número dice cuántos hay. **Todos** los vuelve a mostrar.
 4. Si tienes varias sedes, usa **Todas las sedes**.
-5. Toca **Todos**, **Disponibles** o **No disponibles**.
+5. Toca **Todos**, **Disponibles** o **De baja**.
 
 **Qué debes ver:** solo los gafetes que coinciden. Los filtros se recuerdan mientras la pestaña siga abierta.
 
@@ -46,7 +46,9 @@ resumen: Inventario de los gafetes de plástico que se prestan en caseta, con su
 
 ![Generar gafetes](img/gafetes/generar-lote.png)
 
-**Qué debes ver:** «Lote de 10 gafetes generado correctamente (…). Márcalos y presiona «Imprimir».»
+**Qué debes ver:** «Lote de 10 gafetes generado correctamente (…).» y, debajo, **Siguiente paso: Imprimir este lote**. Tócalo y se abre la hoja con justo esos gafetes, sin marcar casillas.
+
+![Siguiente paso: Imprimir este lote](img/gafetes/siguiente-paso-lote.png)
 
 La nomenclatura se arma sola: **EMPRESA-SEDE-TIPO-número**. Por ejemplo, sede Centro (`CEN`), tipo Visitante: `HOT-CEN-VIS-001`, `HOT-CEN-VIS-002`… Si ya existían hasta el `010`, el siguiente lote empieza en `011`.
 
@@ -56,7 +58,7 @@ La nomenclatura se arma sola: **EMPRESA-SEDE-TIPO-número**. Por ejemplo, sede C
 
 1. Marca la casilla de cada gafete, o toca **Marcar todos** (marca solo los que se ven con el filtro actual; tócalo otra vez para desmarcar).
 2. Toca **Imprimir** (muestra cuántos llevas). Se abre otra pestaña: **Impresión Doble Vista (Libro)**.
-3. Toca **Imprimir Selección**. **Volver al inventario** te regresa.
+3. Lee el recuadro amarillo (en la impresora elige **«Tamaño real»** o **«Escala 100 %»**) y toca **Imprimir Selección**. **Volver al inventario** te regresa. ¿Otra medida? **Imprimir con una plantilla de Etiquetas QR**.
 4. Recorta cada gafete por el borde exterior y **dóblalo por la línea punteada**: de un lado queda el tipo con su color y del otro el QR con la nomenclatura. Mételo en la mica.
 
 Para imprimir uno solo, toca el botón de la **impresora** en su ficha.
@@ -70,7 +72,7 @@ Para imprimir uno solo, toca el botón de la **impresora** en su ficha.
 1. Toca el **lápiz** (Editar nomenclatura, tipo y etiqueta). Se abre **Editar Gafete**.
 2. Puedes cambiar la **Nomenclatura** (no puede repetirse en tu empresa) y el **Tipo de Gafete** (o crear uno nuevo).
 3. El **Código Interno** no cambia nunca: es el que va en el QR.
-4. Toca **Guardar Cambios**.
+4. Toca **Guardar**.
 
 ![Editar](img/gafetes/editar.png)
 
@@ -97,18 +99,26 @@ Para imprimir uno solo, toca el botón de la **impresora** en su ficha.
 1. Toca la **X roja** (Dar de baja) de la ficha. Se abre **Dar de Baja: …**.
 2. Elige el **Motivo**: Extraviado, Dañado o Robado.
 3. Escribe **¿Cómo pasó?** (ayuda a decidir si se cobra).
-4. Si se le va a cobrar a alguien, marca **Aplica CXC (se le cobra al responsable)**:
+4. Si se le va a cobrar a alguien, marca **Se le cobra al colaborador**:
    - **Monto:** se sugiere el último cobrado por ese tipo de gafete; puedes cambiarlo.
    - **Colaborador Responsable:** escribe su número de empleado (aparece solo, sin Enter) o escanea su credencial.
-5. Toca **Generar Voucher y Dar de Baja**.
+5. En **Firmas del voucher** elige **Firma física** (se imprime y se firma a mano) o **Firma digital** (firman en la pantalla Seguridad y, si hay responsable, también él), igual que en Llaves y Equipos.
+6. Toca **Dar de baja**.
 
 ![Dar de baja](img/gafetes/baja-voucher-responsable.png)
 
-**Qué debes ver:** el gafete en **NO DISPONIBLE** y arriba el folio del voucher con el botón **Imprimir voucher**. Todos los vouchers quedan en [Vouchers de reposición](vouchers.md).
+**Qué debes ver:** el gafete **DE BAJA** con su motivo y arriba el folio del voucher con el botón **Imprimir voucher**. Todos los vouchers quedan en [Vouchers de reposición](vouchers.md).
+
+![Gafetes de baja con su motivo y su voucher](img/gafetes/de-baja-con-voucher.png)
 
 ## Cómo reactivar un gafete
 
-Si el gafete aparece, toca la **flecha circular** (Reactivar) de su ficha y confirma con **Aceptar**. Vuelve a **DISPONIBLE**; el voucher no se borra.
+Si el gafete aparece, toca la **flecha circular** (Reactivar) de su ficha y confirma con **Aceptar**. Es lo mismo que marcar **Recuperado** en su voucher:
+
+- Sin cobro: vuelve a **DISPONIBLE** y su voucher queda «Cancelado por recuperación».
+- Con cobro: pasas a [Vouchers de reposición](vouchers.md) con la ventana **Recuperado** abierta para indicar si ya se le cobró; al confirmar, el gafete vuelve a **DISPONIBLE**.
+
+El voucher nunca se borra.
 
 ## Lo que ve el agente de caseta
 
@@ -139,7 +149,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | La nomenclatura es obligatoria. | La dejaste vacía al editar. | Escribe la nomenclatura. |
 | La nomenclatura solo lleva letras, números, guiones, puntos o diagonales. | Escribiste signos o espacios. | Quita los signos. |
 | Ya existe un gafete con la nomenclatura «…» en esta empresa. | Ese nombre ya se usa. | Usa otro o reactiva el existente. |
-| Indica el monto a cobrar. / Elige al responsable al que se le cobrará. | Marcaste *Aplica CXC* sin monto o sin responsable. | Complétalos o desmarca la casilla. |
+| Indica el monto a cobrar. / Elige al responsable al que se le cobrará. | Marcaste *Se le cobra al colaborador* sin monto o sin responsable. | Complétalos o desmarca la casilla. |
 | No marcaste ningún gafete para imprimir. Marca las casillas de los gafetes (o «Marcar todos») y presiona «Imprimir». | Tocaste **Imprimir** sin marcar. | Marca las casillas. |
 
 ## Preguntas frecuentes
@@ -148,7 +158,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 **¿Cambia el QR si cambio la nomenclatura?** No. El QR usa el código interno, que nunca cambia.
 
-**¿Se borra un gafete dado de baja?** No. Queda **NO DISPONIBLE** con su voucher, y lo puedes reactivar si aparece.
+**¿Se borra un gafete dado de baja?** No. Queda **DE BAJA** con su voucher, y lo puedes reactivar si aparece.
 
 **¿Para qué sirve el tipo «+ Nuevo tipo...»?** Para crear tipos de gafete propios de tu empresa (por ejemplo «Capital Humano»). El tipo nuevo queda disponible para los siguientes lotes.
 

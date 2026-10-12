@@ -32,12 +32,12 @@
     @endphp
     <dialog id="dialogoRegistroRapidoColaborador" class="dialogo ancho tema-esmeralda" aria-labelledby="titulo-co-rapido">
         <div class="dialogo-cabecera">
-            <h2 id="titulo-co-rapido"><i class="bi bi-person-plus-fill me-2 text-primary" aria-hidden="true"></i>{{ $provisionalRapido ? 'Alta Provisional de Colaborador' : 'Registro Rápido de Colaborador' }}</h2>
+            <h2 id="titulo-co-rapido"><i class="bi bi-person-plus-fill me-2 text-primary" aria-hidden="true"></i>Registro Rápido de Colaborador</h2>
             <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
         </div>
         <div class="dialogo-cuerpo">
             @if ($provisionalRapido)
-                <div class="alert alert-warning py-2 px-3 small"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Úsalo solo si la persona <strong>no aparece</strong> al buscarla. Podrás usarla de inmediato; <strong>Recursos Humanos</strong> revisará y validará el alta.</div>
+                <div class="alert alert-warning py-2 px-3 small"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Úsalo solo si la persona <strong>no aparece</strong> al buscarla. Podrás usarla de inmediato; queda <strong>por verificar</strong> y Recursos Humanos la verifica.</div>
             @else
                 <div class="alert alert-secondary py-2 px-3 small"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Estos son los datos esenciales. Para más detalle (CURP, RFC, fecha de nacimiento...), complétalo después desde el módulo de Colaboradores.</div>
             @endif
@@ -100,7 +100,7 @@
 
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="btn-registro-rapido" data-texto-original="{{ $provisionalRapido ? 'Registrar provisional' : 'Registrar' }}">{{ $provisionalRapido ? 'Registrar provisional' : 'Registrar' }}</button>
+                    <button type="submit" class="btn-registro-rapido" data-texto-original="Guardar">Guardar</button>
                 </div>
             </form>
         </div>

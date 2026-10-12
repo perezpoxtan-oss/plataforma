@@ -225,13 +225,17 @@ class MenusReorganizadosTest extends TestCase
         $this->assertNotSame($esperado, $this->acomodo());
 
         $migracion = require database_path('migrations/2026_10_16_000100_reorganizar_menus.php');
+        // Mejoras padrones: el nombre «Estacionamientos y zonas de descarga» lo pone su propia migración después
+        $nombres = require database_path('migrations/2026_10_26_000100_mejoras_padrones_nombres.php');
         // Mejoras estructura (ADR-0016): Identidad pasa después a su sección «Plataforma»
         $estructura = require database_path('migrations/2026_10_27_000100_mejoras_de_estructura.php');
         $migracion->up();
+        $nombres->up();
         $estructura->up();
         $this->assertSame($esperado, $this->acomodo());
 
         $migracion->up(); // segunda vez: sin cambios ni duplicados
+        $nombres->up();
         $estructura->up();
         $this->assertSame($esperado, $this->acomodo());
         $this->assertSame(1, Menu::where('clave', 'informes')->count());
@@ -321,8 +325,8 @@ class MenusReorganizadosTest extends TestCase
 
         // Recursos Humanos (candidatos, fases 1 y 2): sus renglones en cero; el botón existe pero oculto
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
-        // Mejoras estructura (ADR-0016): las altas provisionales por validar también están en Mis pendientes
-        $this->assertSame(['total' => 0, 'claves' => ['altas_provisionales', 'recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos']],
+        // Mejoras estructura y padrones: los colaboradores por verificar también están en Mis pendientes (primer renglón)
+        $this->assertSame(['total' => 0, 'claves' => ['colaboradores_por_verificar', 'recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos']],
             ['total' => app(MisPendientes::class)->para($rh)['total'], 'claves' => array_column(app(MisPendientes::class)->para($rh)['items'], 'clave')]);
         $this->assertMatchesRegularExpression('/data-mis-pendientes\s+hidden/', $this->actingAs($rh)->get('/')->assertOk()->getContent());
 
@@ -354,7 +358,8 @@ class MenusReorganizadosTest extends TestCase
 
         $agente = User::where('username', 'agente.demo')->firstOrFail();
         $pendientes = collect(app(MisPendientes::class)->para($agente)['items'])->keyBy('clave');
-        $this->assertSame(['pases_salida', 'procedimientos'], $pendientes->keys()->all());
+        // Mejoras Incidentes: la demo tiene un ticket canalizado al agente y uno pendiente de turno sin dueño
+        $this->assertSame(['pases_salida', 'procedimientos', 'novedades_mias', 'novedades_turno'], $pendientes->keys()->all());
         $this->assertGreaterThan(0, $pendientes['procedimientos']['total']);
         $this->assertSame(route('procedimientos.por-leer'), $pendientes['procedimientos']['url']);
         $this->assertSame(route('pases-salida.pendientes'), $pendientes['pases_salida']['url']);
@@ -365,11 +370,12 @@ class MenusReorganizadosTest extends TestCase
         $altas = collect(app(MisPendientes::class)->para($admin)['items'])->firstWhere('clave', 'altas');
         $this->assertGreaterThan(0, $altas['total']);
 
-        // Un número acotado de consultas (sin N+1)
+        // Un número acotado de consultas (sin N+1): activos dejó 59; los dos renglones de incidentes suman una sola consulta
         $this->app->forgetScopedInstances();
         DB::enableQueryLog();
         app(MisPendientes::class)->para($admin);
-        // Mejoras estructura (ADR-0016): dos renglones más (altas provisionales y procedimientos por aprobar)
-        $this->assertLessThan(75, count(DB::getQueryLog()));
+        // Las cuatro mejoras juntas hacen 61 consultas: colaboradores por verificar y procedimientos por aprobar (un
+        // solo renglón cada uno, con el conteo corto de activos), tickets de incidentes en una consulta y los de activos
+        $this->assertLessThan(66, count(DB::getQueryLog()));
     }
 }

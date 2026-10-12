@@ -51,13 +51,13 @@ Entra a QA con **`admin.demo`** (contraseña de la demo). Para los pasos 6 y 8 u
 
 ![Búsqueda por acompañante](../usuario/img/ronda-8/07-accesos-busqueda-acompanante.png)
 
-### 5. Recibir un equipo de un lote
+### 5. Recibir un equipo de una responsiva
 
-1. Operación → **Responsivas**. El lote **CENRES-000002** ya tiene un equipo **DEVUELTO** y otro en campo.
-2. En **PLARES-000003** toca **Recibir** en el radio, deja **OK** y toca **Recibir Equipo**: «Del lote PLARES-000003 falta 1 equipo por regresar.»
-3. En el chaleco toca **Recibir** → **Faltante** → escribe «No lo regresó» → motivo **Extraviado** → **Recibir Equipo**.
-   - Se genera el voucher de reposición, el chaleco queda de BAJA y el lote pasa a **Historial Devueltos**.
-4. Abre la **Hoja** del lote: la columna **Devolución** dice cómo y cuándo regresó cada equipo.
+1. Operación → **Responsivas**. La responsiva **CENRES-000002** ya tiene un equipo **DEVUELTO** y otro en campo.
+2. En **PLARES-000003** toca **Recibir**, deja marcado solo el radio y toca **Recibir marcados (OK)**: «Responsiva PLARES-000003: 1 equipo vuelve a DISPONIBLE. Falta 1 equipo por regresar.»
+3. Toca **Recibir** otra vez y, en el chaleco, **Dañado o falta** → **Faltante** → escribe «No lo regresó» → motivo **Extraviado** → **Recibir Equipo**.
+   - Se genera el voucher de reposición, el chaleco queda de BAJA y la responsiva pasa a **Historial Devueltos**.
+4. Abre la **Hoja** de la responsiva: la columna **Devolución** dice cómo y cuándo regresó cada equipo.
 
 ![Recibir un equipo](../usuario/img/ronda-8/10-recibir-equipo-faltante.png)
 

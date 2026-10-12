@@ -79,3 +79,7 @@ Las reglas de `RolesPlantillaSeeder` no cambiaron: el módulo es de Seguridad y 
 ## Ronda 6: aviso de duplicado en vivo
 
 El **Núm. de Serie / ID** avisa mientras se escribe si ya existe **en la sede elegida** (`GET /equipos-pc/duplicado`, con `data-duplicado-con="sede_id"`; sin sede no revisa) o si se parece (sin guiones ni espacios), con **Reactivar** si está dado de baja. La etiqueta NFC avisa «ya la tiene X» al leerla (`identificacion.etiqueta-duplicado`). Ver `avisos-duplicado.md`.
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): «Clave de la etiqueta» y última revisión de los recorridos en la tarjeta.
