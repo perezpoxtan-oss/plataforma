@@ -138,3 +138,7 @@ La pantalla de Vouchers y la impresión triple viven en su propio módulo.
 ## Ronda 8: etiqueta NFC/RFID única en todos los formularios
 
 `App\Services\Lector\Identificacion::exigirEtiquetaLibre($etiqueta, $registroActual)` es la **única** regla: la etiqueta (normalizada) no puede estar en otro registro de la empresa de **ningún** tipo de `config/lector.php` (el registro que se edita no choca consigo mismo). La usan el diálogo «Código e identificación» (todos los tipos: colaboradores, vehículos, Lost & Found, procedimientos…) y los formularios propios de Llaves, Gafetes, Equipos y Equipos PC; antes Llaves y Gafetes solo revisaban su propio tipo, así que el aviso en vivo decía «ya la tiene…» pero al guardar se aceptaba. Mensaje único: «Esa etiqueta ya la tiene <la llave / el gafete / el colaborador / el vehículo…> «<nombre>». Quítasela primero o usa otra.» Un tipo nuevo solo necesita estar en `config/lector.php` y en `Identificacion::NOMBRES`.
+
+## Acción más probable al escanear fuera de un formulario (ADR-0014)
+
+`GET /e/{codigo}` consulta `App\Services\Lector\AccionesLector`: con una llave prestada ofrece **Recibir**, con una llave en caseta **Prestar** y con un equipo en una responsiva **Recibir (OK)**, en la vista `lector.acciones` (con «Solo ver la ficha»). Sin acción probable o sin permiso, redirige a `urlLector()` como antes; el gafete en uso sigue yendo directo a «Dar salida». Detalle: [caseta-y-activos.md](caseta-y-activos.md).
