@@ -113,3 +113,7 @@ La confirmación compara sin importar mayúsculas ni espacios de más (`Entrada:
 ## Pruebas
 
 `tests/Feature/Seguridad/EliminarDefinitivoTest.php` (por cada uno de los 19 registros: borra sin dependencias con copia en auditoría y confirmación tecleada; rechaza con una dependencia real; otra empresa 404; sin permiso 403. Además: bitácoras, evidencias, Empresas y Usuarios no registrados; solo el Administrador; migración; alcance de sede; sedes adicionales; tablas puente y propias; varias dependencias; única sede; roles; Super Administrador; sin JavaScript; botón visible solo con permiso). El recorrido de seguridad (`tests/Feature/SeguridadAuditoria`) incluye `/borrar/{registro}/{id}`.
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): la acción `eliminar` se llama «Dar de baja» en la Matriz; el pie de Editar dice «¿Lo capturaste por error y nadie lo ha usado?».

@@ -135,3 +135,7 @@ Cuando un guardia necesita registrar a alguien en un formulario (acceso, présta
 ## Ronda 6: aviso de duplicado en vivo
 
 El **Núm. Empleado** (alta, edición y validación de provisionales) y el **nombre + apellidos** (alta y edición; `data-duplicado-con="apellido_paterno,apellido_materno"`) usan `GET /colaboradores/duplicado` (permiso `colaboradores.crear`, `.editar` o `.aprobar`). Se quitaron `data-numeros-existentes` y la caja de homónimos `data-homonimos` de esta pantalla (el endpoint `/colaboradores/homonimos` se conserva). De otras sedes solo se dice que existe, sin datos. Un colaborador dado de baja ofrece **Reactivar**.
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): «Registro rápido» / «POR VERIFICAR» / «Verificar», campana a Recursos Humanos y resultado a la caseta, renglón en Mis pendientes, correo y dirección en el alta, «Imprimir credencial» hacia Etiquetas QR.

@@ -69,3 +69,7 @@ interface OcupacionEstacionamientos
 - El alta ya no es un botón azul suelto: es la **tarjeta «Nueva Zona»** (`ficha-create`) como en los demás padrones, arriba de las sedes.
 - Demo: «Patio de Maniobras» (Hotel Demo Centro), capacidad 4.
 - Pruebas: `AjustesRonda6Test::test_es02_*` y `EstacionamientosTest` (la descarga ahora guarda su capacidad).
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): «¿Quién ocupa?» y «Dar salida» desde la zona (`estacionamientos.salida`, misma salida de la Bitácora de accesos); menú «Estacionamientos y zonas de descarga».

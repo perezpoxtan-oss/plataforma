@@ -19,7 +19,7 @@ Se puede en: Sedes, Zonas y áreas, Departamentos, Puestos, Turnos, Colaboradore
 
 1. Entra a la pantalla del registro, por ejemplo **Recursos Humanos → Catálogos → Departamentos**.
 2. Toca el **lápiz** (Editar) del registro equivocado.
-3. Al pie de la ventana, debajo de los botones, toca **Eliminar definitivamente** (en rojo).
+3. Al pie de la ventana, debajo de los botones, junto a la pregunta **¿Lo capturaste por error y nadie lo ha usado?**, toca **Eliminar definitivamente** (en rojo).
 
    ![Botón al pie de la ventana Editar](img/eliminar-definitivamente/boton-en-editar.png)
 
@@ -39,10 +39,10 @@ Si el registro ya se usó (tiene préstamos, accesos, colaboradores…), la vent
 ![Registro en uso](img/eliminar-definitivamente/en-uso.png)
 
 1. Lee la lista de lo que lo usa.
-2. Si de todos modos ya no debe usarse, toca **Dar de baja**: se desactiva y podrás reactivarlo cuando quieras.
+2. Si de todos modos ya no debe usarse, toca **Dar de baja**: queda **DE BAJA** y podrás reactivarlo cuando quieras.
 3. En llaves, gafetes y equipos la baja pide motivo (y a veces voucher): usa **Dar de baja** desde su ficha.
 
-**Qué debes ver:** el registro aparece como inactivo en su lista.
+**Qué debes ver:** el registro aparece **DE BAJA** en su lista.
 
 ## Cómo borrar tipos de gafete o de equipo mal escritos
 
@@ -65,7 +65,7 @@ Si el registro ya se usó (tiene préstamos, accesos, colaboradores…), la vent
 ## Preguntas frecuentes
 
 - **¿Me equivoqué y lo borré, se puede recuperar?** No desde la pantalla. Pero queda una copia de todos sus datos en la **Bitácora de auditoría** (acción «Eliminado definitivo»); con ella se puede volver a capturar.
-- **¿Qué diferencia hay con «Eliminar» de la Matriz de permisos?** «Eliminar» es dar de baja (se puede reactivar). «Eliminar definitivamente» borra para siempre.
+- **¿Qué diferencia hay con «Dar de baja» de la Matriz de permisos?** «Dar de baja» esconde el registro y se puede reactivar. «Eliminar definitivamente» borra para siempre.
 - **¿El Agente puede eliminar?** No; consulta los padrones pero no ve ese botón.
 - **¿Puedo borrar algo de otra sede?** Solo si tu permiso es de toda la empresa.
 

@@ -91,3 +91,7 @@ Auditoría: `rutas.creado`, `rutas.actualizado`, `rutas.desactivado`, `rutas.rea
 - **RT-08**: la hoja de la semana y la del día son de **consulta para caseta**: piden `rutas.ver` (antes la del día pedía `rutas.imprimir`) y el alcance de sede; el Agente las abre e imprime en su sede (otra sede u otra empresa → 404). El itinerario de una ruta sigue con `rutas.imprimir`.
 - Sin consultas por fila: horarios con ruta, turno, transportista y paradas en una sola carga (`horariosDeSede`).
 - Pruebas: `AjustesRonda8Test::test_rt07_*`, `test_rt08_*` y ajustes en `RutasTest` (el Agente ya abre las hojas).
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): «Dar de baja» en lugar de «Suspender» / «Desactivar», horarios plegables, paraderos equivalentes sin duplicarse (`paraderoEquivalente`).

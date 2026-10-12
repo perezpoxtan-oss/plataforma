@@ -15,7 +15,7 @@ resumen: Configurar las rutas del transporte de personal de cada sede, con sus h
 ## Antes de empezar
 
 - Para ver la pantalla tu rol debe poder consultar *Rutas de transporte*. Si no aparece en el menú, pide el permiso a tu administrador.
-- Para crear, editar, clonar o suspender rutas necesitas esos permisos. Si no ves **Nueva Llegada**, tu rol solo consulta e imprime.
+- Para crear, editar, clonar o dar de baja rutas necesitas esos permisos. Si no ves **Nueva Llegada**, tu rol solo consulta e imprime.
 - Antes de capturar una ruta deben existir:
   - el **turno** en [Turnos](turnos.md), marcado para esa sede;
   - la **empresa transportista** en [Empresas externas](proveedores.md), activa y operando en esa sede.
@@ -23,7 +23,7 @@ resumen: Configurar las rutas del transporte de personal de cada sede, con sus h
 ## Cómo elegir la sede
 
 1. Entra a **Padrones → Rutas de transporte**.
-2. Cada sede tiene una tarjeta con cuántas **Llegadas**, **Salidas** y **Paraderos** tiene, las **próximas** llegadas y salidas (por ejemplo «Hoy 13:25 · RUTA 2 - KABAH»), las transportistas y un aviso si hay rutas suspendidas.
+2. Cada sede tiene una tarjeta con cuántas **Llegadas**, **Salidas** y **Paraderos** tiene, las **próximas** llegadas y salidas (por ejemplo «Hoy 13:25 · RUTA 2 - KABAH»), las transportistas y un aviso si hay rutas dadas de baja.
 3. Si hay varias sedes, escribe en **Buscar por sede, ruta o transportista...**.
 4. Toca **Ver Detalles** para entrar a la sede (o la impresora para la hoja de la semana).
 
@@ -31,11 +31,11 @@ resumen: Configurar las rutas del transporte de personal de cada sede, con sus h
 
 ![Llegadas de una sede](img/rutas/02-sede-llegadas.png)
 
-Cada ruta muestra su horario, turno, transportista, cuántos paraderos tiene, el tope de taxi y si está **ACTIVA** o **SUSPENDIDA**. Debajo van sus horarios en corto: **L-V** = lunes a viernes, **S-D** = sábado y domingo, **L-D** = todos los días. Un **+1** quiere decir que llega al día siguiente. Puedes buscar en **Buscar ruta, transportista o paradero...** y filtrar **Todas / Activas / Suspendidas**.
+Cada ruta muestra su horario, turno, transportista, cuántos paraderos tiene, el tope de taxi y si está **ACTIVA** o **DE BAJA**. Debajo van sus horarios en corto: **L-V** = lunes a viernes, **S-D** = sábado y domingo, **L-D** = todos los días. Un **+1** quiere decir que llega al día siguiente. Puedes buscar en **Buscar ruta, transportista o paradero...** y filtrar **Todas / Activas / De baja**.
 
 ## Cómo dar de alta una ruta
 
-1. En la pestaña **Llegadas** toca **Nueva Llegada** (o en **Salidas**, **Nueva Salida**). Se abre **Configurar Ruta y Horarios**.
+1. En la pestaña **Llegadas** toca **Nueva Llegada** (o en **Salidas**, **Nueva Salida**). Se abre **Nueva ruta y sus horarios**.
 2. Revisa el **Sentido de la Ruta**: **Llegada a la Sede** o **Salida de la Sede**.
 3. Escribe el **Nombre de la Ruta / Trayecto** (por ejemplo `RUTA 1 - REGIÓN 94`). Se guarda en mayúsculas.
 4. Elige el **Turno Operativo** y la **Empresa Transportista**.
@@ -44,19 +44,22 @@ Cada ruta muestra su horario, turno, transportista, cuántos paraderos tiene, el
    - **Nombre del Horario (opcional)**, por ejemplo «Lunes a viernes».
    - **Hora Inicio del Recorrido** y **Hora de Llegada a Destino**, en 24 horas (por ejemplo `05:30` y `06:40`). Si la llegada es más temprano que el inicio (23:20 a 00:30), se entiende que llega al día siguiente.
    - **Días:** marca los días que sale. Si no marcas ninguno, sale **todos los días**.
-   - **Paraderos:** toca **Agregar paradero**, escribe el nombre (te sugiere los de la sede) y su hora. Si el paradero no existe, se crea solo al guardar.
-7. Si la ruta pasa a otra hora algunos días, toca **Agregar otro Horario (ej. fin de semana distinto)**: se copian los paraderos del anterior y solo ajustas lo que cambie. Con el bote de basura quitas un horario (siempre queda al menos uno).
-8. Toca **Guardar Ruta**.
+   - **Paraderos:** toca **Agregar paradero**, escribe el nombre (te sugiere los de la sede) y su hora. Si lo escribes igual a uno que ya existe pero con otros acentos, guiones o espacios (por ejemplo «Oxxo-Centro»), se usa el del catálogo. Si se parece a uno existente (una o dos letras de diferencia), aparece **¿Es «…»? Usar ese**. Si es nuevo, verás «Paradero nuevo: se agregará al catálogo de la sede al guardar.»
+7. Si la ruta pasa a otra hora algunos días, toca **Agregar otro Horario (ej. fin de semana distinto)**: se copian los paraderos del anterior y solo ajustas lo que cambie. Los horarios anteriores se **pliegan** y muestran su resumen (por ejemplo «05:30 → 06:40 · Lu Ma Mi · 4 paraderos»); toca el título de un horario para desplegarlo o plegarlo.
+
+   ![Horarios plegados](img/rutas/10-horarios-plegados.png)
+ Con el bote de basura quitas un horario (siempre queda al menos uno).
+8. Toca **Guardar**.
 
 ![Alta de una ruta](img/rutas/03-alta-ruta.png)
 
 **Qué debes ver:** «Ruta «RUTA 5 - PUERTO JUÁREZ» creada correctamente.»
 
-## Cómo editar, clonar o suspender una ruta
+## Cómo editar, clonar o dar de baja una ruta
 
-- **Editar** (lápiz): abre **Modificar Ruta y Horarios** con todo lo capturado. Cambia lo necesario y toca **Guardar Cambios**. Verás «Ruta «…» actualizada correctamente.»
+- **Editar** (lápiz): abre **Editar ruta y sus horarios** con todo lo capturado. Cambia lo necesario y toca **Guardar**. Verás «Ruta «…» actualizada correctamente.»
 - **Clonar** (dos hojas): crea una copia llamada «NOMBRE (COPIA)» con los mismos horarios y paraderos. Verás «Ruta clonada como «…». Ajusta los horarios de la copia cuando quieras.»
-- **Suspender** (círculo con raya): la ruta sale de las próximas salidas y de la hoja del día. Verás «Ruta «…» suspendida. Puedes reactivarla con el mismo botón cuando quieras.» Con la **flecha circular** la reactivas.
+- **Dar de baja** (círculo con raya): la ruta sale de las próximas salidas y de la hoja del día. Verás «Ruta «…» dada de baja: ya no sale en las próximas salidas ni en la hoja del día. Puedes reactivarla con el mismo botón cuando quieras.» Con la **flecha circular** la reactivas.
 
 ![Editar ruta](img/rutas/05-editar-ruta.png)
 
@@ -65,7 +68,7 @@ Cada ruta muestra su horario, turno, transportista, cuántos paraderos tiene, el
 1. Toca la pestaña **Paraderos**. Cada paradero dice cuántas rutas activas lo usan.
 2. **Nuevo Paradero:** escribe el **Nombre del Paradero** y toca **Guardar**.
 3. **Editar** (lápiz): si cambias el nombre, todas las rutas que lo usan muestran el nombre nuevo.
-4. **Desactivar** (círculo con raya): deja de sugerirse al capturar; las rutas que ya lo tienen no cambian.
+4. **Dar de baja** (círculo con raya): deja de sugerirse al capturar; las rutas que ya lo tienen no cambian.
 
 ![Paraderos](img/rutas/08-paraderos.png)
 
@@ -73,8 +76,8 @@ Cada ruta muestra su horario, turno, transportista, cuántos paraderos tiene, el
 
 ## Cómo imprimir las hojas de horarios
 
-- **Hoja de horarios** (en la sede, o la impresora de la tarjeta de la sede): todos los horarios de la semana de cada ruta con los días en que opera (L M X J V S D; un punto · = ese día no sale). Las rutas suspendidas se mencionan al pie.
-- **Hoja del día:** las rutas activas que salen ese día, por hora, una hoja para Llegadas y otra para Salidas, con una columna por paradero (hora, ✓ si para sin hora fija, — si no para). Arriba elige otra fecha en **Hoja de un día** y toca **Ver día**. Al pie dice qué horarios no operan ese día y qué rutas están suspendidas.
+- **Hoja de horarios** (en la sede, o la impresora de la tarjeta de la sede): todos los horarios de la semana de cada ruta con los días en que opera (L M X J V S D; un punto · = ese día no sale). Las rutas dadas de baja se mencionan al pie.
+- **Hoja del día:** las rutas activas que salen ese día, por hora, una hoja para Llegadas y otra para Salidas, con una columna por paradero (hora, ✓ si para sin hora fija, — si no para). Arriba elige otra fecha en **Hoja de un día** y toca **Ver día**. Al pie dice qué horarios no operan ese día y qué rutas están dadas de baja.
 - **Itinerario** (impresora de cada ruta): los datos de la ruta y cada horario con sus paraderos.
 
 En cada hoja toca **Imprimir**; **Volver a la sede** te regresa. Salen en hoja carta horizontal y se pueden guardar como PDF.
@@ -105,7 +108,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que capturaste se conserva. 
 |---|---|---|
 | Escribe el nombre de la ruta (por ejemplo: RUTA 1 - CENTRO). | El nombre está vacío. | Escribe el nombre. |
 | Ya existe una ruta de llegada (o salida) llamada «…» en esta sede. | Ese nombre ya se usa en ese sentido. | Usa otro nombre o edita la existente. |
-| … (suspendida): reactívala o usa otro nombre. | La ruta existe pero está suspendida. | Reactívala con la flecha circular. |
+| … (dada de baja): reactívala o usa otro nombre. | La ruta existe pero está dada de baja. | Reactívala con la flecha circular. |
 | Elige el turno de la ruta. / Elige la empresa transportista. | Falta el turno o la transportista. | Elige uno de la lista. |
 | El turno elegido no existe, está desactivado o no se usa en esta sede. Elige otro de la lista. | El turno no aplica a la sede. | Márcalo para la sede en [Turnos](turnos.md) o elige otro. |
 | La empresa transportista no existe, está dada de baja o no opera en esta sede. Elige otra de la lista. | La transportista no opera en la sede. | Agrégale la sede en [Empresas externas](proveedores.md). |
@@ -114,7 +117,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que capturaste se conserva. 
 | Horario 1: la hora de llegada debe ser distinta a la de inicio. | Pusiste la misma hora dos veces. | Corrige una de las horas. |
 | El costo máximo por taxi debe ser un número, por ejemplo 250 o 250.50. | Escribiste letras. | Escribe solo la cantidad. |
 | Ya existe el paradero «…» en esta sede. | Ese paradero ya está. | Usa el existente. |
-| Una ruta no aparece en la hoja del día. | Está suspendida o no opera ese día. | Revisa el pie de la hoja; ahí lo explica. |
+| Una ruta no aparece en la hoja del día. | Está dada de baja o no opera ese día. | Revisa el pie de la hoja; ahí lo explica. |
 
 ## Preguntas frecuentes
 
@@ -122,7 +125,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que capturaste se conserva. 
 
 **¿Cómo capturo una ruta que sale a otra hora el fin de semana?** Con **Agregar otro Horario** en la misma ruta; se copian los paraderos y solo cambias las horas y los días.
 
-**¿Puedo borrar una ruta?** No; se suspende y se puede reactivar. Así se conserva su historial en la bitácora de transporte.
+**¿Puedo borrar una ruta?** No; se da de baja y se puede reactivar. Así se conserva su historial en la bitácora de transporte.
 
 **¿Por qué no aparece mi turno o mi transportista en la lista?** Porque no está activo o no está marcado para esa sede.
 

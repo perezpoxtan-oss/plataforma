@@ -29,7 +29,7 @@ resumen: Avisos por correo de la empresa, días de resguardo de Lost & Found, aj
    - Pases de salida: aprobación, resultado y recordatorio de pases vencidos.
    - Altas por verificar en Vehículos, Empresas externas o Personas.
    - Procedimientos publicados y recordatorios.
-   - Vouchers de reposición con cobro (CXC): escribe los correos de **Copia Seguridad**, **Copia Recepción** y **Copia Administración**. Si dejas las tres listas vacías, se envía a los usuarios que pueden imprimir vouchers en esa sede. El colaborador responsable no recibe copia.
+   - Vouchers de reposición con cobro al colaborador: escribe los correos de **Copia Seguridad**, **Copia Recepción** y **Copia Administración**. Si dejas las tres listas vacías, se envía a los usuarios que pueden imprimir vouchers en esa sede. El colaborador responsable no recibe copia.
    - Recepción y Autorizaciones de los departamentos.
 3. Toca **Guardar avisos**.
 

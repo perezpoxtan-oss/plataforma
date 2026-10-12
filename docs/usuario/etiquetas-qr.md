@@ -12,7 +12,7 @@ resumen: Imprimir de una sola vez las etiquetas QR de llaves, gafetes, equipos, 
 
 ![Etiquetas QR](img/etiquetas-qr/01-imprimir.png)
 
-> Si solo necesitas **una** etiqueta, ábrela desde la ficha del registro con el botón del QR (**Código e identificación** → **Imprimir etiqueta**).
+> Si solo necesitas **una** etiqueta, ábrela desde la ficha del registro con la **impresora** o con el botón del QR (**Código e identificación** → **Imprimir etiqueta**). Las hojas propias de cada padrón (llavero, gafete doble vista, calcomanía) traen el botón **Imprimir con una plantilla de Etiquetas QR**, que te trae aquí con esos mismos registros.
 
 ## Antes de empezar
 
@@ -25,11 +25,13 @@ resumen: Imprimir de una sola vez las etiquetas QR de llaves, gafetes, equipos, 
 
 1. Entra a **Padrones → Etiquetas QR**. Se abre la pestaña **Imprimir**.
 2. Arriba toca el **tipo** (por ejemplo **Llaves**). El número junto a cada tipo dice cuántos hay.
-3. Si quieres, escribe en **Nombre, placas, serie, número...**, elige la sede, el estatus (**Solo activos**, **Solo de baja** o **Activos y de baja**) y las fechas **Alta desde** / **hasta**. Toca **Buscar**. **Quitar filtros** los limpia.
+3. Si quieres, escribe en **Nombre, placas, serie, número...**, elige la sede, el estatus (**Solo activos**, **Solo de baja** o **Activos y de baja**) y las fechas **Alta desde** / **hasta**. Los filtros se aplican solos al elegir o al dejar de escribir, igual que en los padrones (el botón **Buscar** queda por si lo prefieres). **Quitar filtros** los limpia.
 4. Marca las casillas de las etiquetas que quieras, o **Marcar todas**.
 5. Elige la **Plantilla** (el tamaño). Debajo se ve su medida, por ejemplo «40 × 25 mm · rollo térmico, una por página». La plataforma recuerda la última que usaste.
 6. Toca **Imprimir** (muestra cuántas llevas). Se abre otra pestaña: **Etiquetas QR listas**.
-7. Ahí toca **Imprimir Etiquetas**. En la impresora elige **Tamaño real / 100 %** para que salgan a la medida. **Volver a Etiquetas QR** te regresa.
+7. Lee el recuadro amarillo **Antes de imprimir** y toca **Imprimir Etiquetas**. En la ventana de la impresora elige **«Tamaño real»** o **«Escala 100 %»** (no «Ajustar a la página»): es la causa más común de etiquetas mal medidas. **Volver a Etiquetas QR** te regresa.
+
+   ![Recordatorio de escala en la hoja](img/etiquetas-qr/10-hoja-padron-recordatorio.png)
 
 ![Algunas marcadas](img/etiquetas-qr/02-seleccion.png)
 
@@ -63,6 +65,20 @@ Con **rollo térmico** (Zebra, Brother…) cada etiqueta sale en su propia pági
 ![Reimprimir solo algunas](img/etiquetas-qr/05-reimprimir.png)
 
 **Qué debes ver:** se abre la hoja y se guarda como una impresión nueva, marcada «Reimpresión de la núm. …». Solo ves las impresiones de tus sedes (o las que tú hiciste) y de los tipos que puedes imprimir.
+
+## Cómo hacer que los padrones impriman con estas plantillas
+
+Llaves, Gafetes, Vehículos, Equipos de seguridad y Equipos de Protección Civil tienen su propia hoja de impresión (llavero, gafete doble vista, calcomanía…). Quien configura plantillas para **toda la empresa** puede elegir un solo camino:
+
+1. En la pestaña **Plantillas**, busca el recuadro **¿Cómo imprimen Llaves, Gafetes, Vehículos y Equipos?**.
+2. Elige:
+   - **Hoja propia de cada padrón (como siempre)**: cada padrón imprime su hoja de siempre.
+   - **Plantillas de Etiquetas QR (un solo camino, con historial y reimpresión)**: el botón de imprimir de cada padrón abre aquí la hoja con la plantilla de ese tipo (la última que usaste o la de siempre: llavero para llaves, gafete para gafetes, calcomanía para vehículos) y la impresión queda en el **Historial**.
+3. Toca **Guardar**.
+
+![¿Cómo imprimen los padrones?](img/etiquetas-qr/09-impresion-padrones.png)
+
+**Qué debes ver:** «Listo: los botones de imprimir de Llaves, Gafetes, Vehículos y Equipos usarán estas plantillas y quedarán en el Historial.» (o «…cada padrón vuelve a imprimir su hoja propia.»).
 
 ## Cómo crear o ajustar una plantilla
 

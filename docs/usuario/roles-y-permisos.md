@@ -99,7 +99,7 @@ Quien atiende candidatos (Recursos Humanos) no aparece como entrevistador, salvo
 1. Entra a **Estructura → Matriz de permisos**. Se abre **Permisos por Rol**.
 2. Arriba toca el rol (la píldora amarilla es el que estás viendo).
 3. Los módulos están agrupados por área (Dirección, Recursos Humanos, Seguridad). Toca el nombre de un área para abrirla o cerrarla; **Expandir todo** y **Contraer todo** las abren o cierran todas.
-4. En cada módulo marca **Ver**, **Crear**, **Editar**, **Eliminar** y, si las tiene, las **Otras acciones** (Aprobar, Firmar, Imprimir, Exportar, Configurar…).
+4. En cada módulo marca **Ver**, **Crear**, **Editar**, **Dar de baja** (esconde el registro y se puede reactivar; borrar para siempre es la acción aparte **Eliminar definitivamente**) y, si las tiene, las **Otras acciones** (Aprobar, Firmar, Imprimir, Exportar, Configurar…).
 5. En **Alcance** elige sobre qué registros aplica:
    - **Solo los propios:** solo lo que esa persona capturó.
    - **Su sede:** lo de las sedes asignadas al usuario.

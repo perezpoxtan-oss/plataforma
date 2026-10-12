@@ -88,3 +88,7 @@ Ver [altas-por-verificar.md](altas-por-verificar.md) y ADR-0006.
 ## Ronda 6: aviso de duplicado en vivo
 
 La razón social usa el mecanismo único (`data-duplicado` → `GET /proveedores/duplicado`, ver `avisos-duplicado.md`) en el alta, la edición y la ficha; se quitó `data-nombres-existentes`. «Abarrotes del Caribe» ≈ «Abarrotes del Caribe S.A. de C.V.» (no cuentan «S.A.», «S.A. de C.V.», «S. de R.L.», «S.A.P.I.»…). Una desactivada ofrece **Reactivar**. Con alcance de sede, si ya existe se avisa que al guardar solo se agrega a su sede (no se rechaza).
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): «Ficha de empresa externa», «DE BAJA» (antes «BAJA / VETADA»), «Quitar / Agregar a mi sede» de un toque con alcance de una sede, siguiente paso «Agregar su personal / flotilla».
