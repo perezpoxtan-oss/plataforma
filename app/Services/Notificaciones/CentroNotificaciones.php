@@ -50,6 +50,15 @@ class CentroNotificaciones
         'pase_rechazado' => ['bi-x-octagon-fill', 'alerta'],
         'pase_vencido' => ['bi-exclamation-triangle-fill', 'alerta'],
         'pase_llega' => ['bi-truck', 'info'],
+        // Mejoras activos (ADR-0014): Vo.Bo. de vales, procedimientos, llaves fuera y equipos de turno
+        'vale_taxi_por_autorizar' => ['bi-taxi-front', 'alerta'],
+        'procedimiento_revision' => ['bi-journal-check', 'alerta'],
+        'procedimiento_aprobado' => ['bi-check-circle-fill', 'exito'],
+        'procedimiento_rechazado' => ['bi-arrow-counterclockwise', 'alerta'],
+        'procedimiento_publicado' => ['bi-book', 'info'],
+        'llave_fuera' => ['bi-key-fill', 'alerta'],
+        'equipo_turno' => ['bi-broadcast-pin', 'alerta'],
+        // Fin Mejoras activos
     ];
 
     public function __construct(private readonly HoraLocal $hora) {}

@@ -107,6 +107,11 @@
             @include('rh.vacantes._ajustes-bolsa', ['empresa' => $empresa])
         @endif
         {{-- Fin Vacantes --}}
+        {{-- Mejoras activos: ajustes de caseta (ADR-0014) --}}
+        @if ($empresa && $verConfiguracion)
+            @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
+        @endif
+        {{-- Fin Mejoras activos --}}
 
         @if ($esSuperadmin)
             {{-- ================= Correo saliente (plataforma) ================= --}}

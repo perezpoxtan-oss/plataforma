@@ -10,11 +10,11 @@
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-pen-fill text-success" aria-hidden="true"></i></div>
-            <div><h1>Control de Resguardos</h1><p>Lotes de asignación con firma digital y rastreo por Serie.</p></div>
+            <div><h1>Responsivas de equipo</h1><p>Equipo de seguridad entregado con firma y rastreo por número de serie.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
-            <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> para ver sus resguardos.</p>
+            <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> para ver sus responsivas.</p>
         </div>
     @else
         @php
@@ -29,27 +29,27 @@
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-pen-fill text-success" aria-hidden="true"></i></div>
                 <div>
-                    <h1>Control de Resguardos</h1>
-                    <p>Lotes de asignación con firma digital y rastreo por Serie.</p>
-                    <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Resguardos de: <strong>{{ $empresaNombre }}</strong></p>
+                    <h1>Responsivas de equipo</h1>
+                    <p>Equipo de seguridad entregado con firma y rastreo por número de serie.</p>
+                    <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Responsivas de: <strong>{{ $empresaNombre }}</strong></p>
                 </div>
             </div>
             @if ($puede['crear'])
                 <button type="button" class="btn-nuevo-resguardo" data-abrir-dialogo="dialogoNuevoResguardo">
-                    <i class="bi bi-clipboard-plus me-1" aria-hidden="true"></i>Nuevo Resguardo (Lote)
+                    <i class="bi bi-clipboard-plus me-1" aria-hidden="true"></i>Nueva responsiva
                 </button>
             @endif
         </div>
 
-        <div class="pestanas-prestamo pestanas-responsivas" role="tablist" aria-label="Resguardos">
-            <button type="button" role="tab" class="activa" aria-selected="true" data-pestana-prestamos="campo">Equipos en Campo ({{ $enCampo->count() }} Lotes)</button>
-            <button type="button" role="tab" aria-selected="false" data-pestana-prestamos="devueltos">Historial Devueltos ({{ $devueltas->count() }} Lotes)</button>
+        <div class="pestanas-prestamo pestanas-responsivas" role="tablist" aria-label="Responsivas">
+            <button type="button" role="tab" class="activa" aria-selected="true" data-pestana-prestamos="campo">Equipos en Campo ({{ $enCampo->count() }} {{ $enCampo->count() === 1 ? 'responsiva' : 'responsivas' }})</button>
+            <button type="button" role="tab" aria-selected="false" data-pestana-prestamos="devueltos">Historial Devueltos ({{ $devueltas->count() }} {{ $devueltas->count() === 1 ? 'responsiva' : 'responsivas' }})</button>
         </div>
 
         <div class="filtros-prestamo">
             <div class="buscador">
                 <i class="bi bi-search" aria-hidden="true"></i>
-                <input type="search" placeholder="Buscar por folio, colaborador o número de serie..." aria-label="Buscar resguardo" autocomplete="off" data-filtro-prestamos="texto">
+                <input type="search" placeholder="Buscar por folio, colaborador o número de serie..." aria-label="Buscar responsiva" autocomplete="off" data-filtro-prestamos="texto">
             </div>
             @if ($sedesFiltro->count() > 1)
                 <select class="filtro-select" aria-label="Filtrar por sede" data-filtro-prestamos="sede">
@@ -73,19 +73,20 @@
                         $recibible = $activa && $puede['recibir'] && ($recibibles === null || in_array($r->id, $recibibles, true));
                         $imprimible = $puede['imprimir'] && ($imprimibles === null || in_array($r->id, $imprimibles, true));
                     @endphp
-                    <div class="ficha-card ficha-resguardo {{ $activa ? 'activa' : 'devuelta' }}" id="responsiva-{{ $r->id }}" data-ficha-prestamo data-sede="{{ $r->sede_id }}" data-texto="{{ $texto }}">
+                    @php $turno = $activa ? ($turnos[$r->id] ?? null) : null; @endphp
+                    <div class="ficha-card ficha-resguardo {{ $activa ? 'activa' : 'devuelta' }}{{ ! empty($turno['nivel']) ? ' semaforo-'.$turno['nivel'] : '' }}" id="responsiva-{{ $r->id }}" data-ficha-prestamo data-sede="{{ $r->sede_id }}" data-texto="{{ $texto }}">
                         <div>
                             <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                                 @if ($activa)
                                     <span class="badge-resguardo en-campo"><i class="bi bi-box-seam me-1" aria-hidden="true"></i>EN CAMPO</span>
                                 @else
-                                    <span class="badge-resguardo cerrado"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>LOTE CERRADO</span>
+                                    <span class="badge-resguardo cerrado"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>CERRADA</span>
                                 @endif
                                 <span class="folio-resguardo {{ $activa ? '' : 'cerrado' }}">{{ $r->folio }}</span>
                             </div>
 
                             <div class="caja-resguardante">
-                                <div class="rotulo-resguardo">{{ $activa ? 'Resguardante Activo:' : 'Resguardó en su momento:' }}</div>
+                                <div class="rotulo-resguardo">{{ $activa ? 'A cargo de:' : 'Estuvo a cargo de:' }}</div>
                                 <div class="nombre-resguardante"><i class="bi bi-person-badge me-1" aria-hidden="true"></i>{{ $nombre }}</div>
                                 @if ($r->colaborador?->num_empleado)
                                     <div class="nomina-resguardante">No. Nómina: {{ $r->colaborador->num_empleado }}</div>
@@ -94,7 +95,7 @@
 
                             <div class="eq-lista">
                                 @if ($activa)
-                                    <div class="rotulo-resguardo">ACTIVOS VINCULADOS AL RESGUARDO:</div>
+                                    <div class="rotulo-resguardo">EQUIPOS DE LA RESPONSIVA:</div>
                                 @endif
                                 @foreach ($r->equipos as $f)
                                     <div class="eq-item {{ $activa && ! $f->pendiente() ? 'recibido' : '' }}">
@@ -111,14 +112,6 @@
                                                 <small class="eq-devolucion">Recibido @fecha($f->devuelto_en){{ $f->recibio ? ' por '.$f->recibio->name : '' }}{{ $f->voucher ? ' · Voucher '.$f->voucher->folio : '' }}{{ $f->nota_devolucion ? ' · '.$f->nota_devolucion : '' }}</small>
                                             @endif
                                         </div>
-                                        @if ($recibible && $f->pendiente())
-                                            <button type="button" class="btn-recibir-equipo"
-                                                    data-url="{{ route('responsivas.recibir-equipo', [$r->id, $f->id]) }}" data-id="{{ $r->id }}-{{ $f->id }}"
-                                                    data-recibir-equipo="{{ trim(($f->equipo?->tipo?->nombre ?? 'Equipo').' · S/N '.$f->equipo?->numero_serie) }}"
-                                                    data-resguardante="{{ $nombre }}" data-folio="{{ $r->folio }}">
-                                                <i class="bi bi-box-arrow-in-down-left me-1" aria-hidden="true"></i>Recibir
-                                            </button>
-                                        @endif
                                         <button type="button" class="btn-historial-llave" title="Ver Historial del Equipo" aria-label="Ver historial del equipo {{ $f->equipo?->numero_serie }}"
                                                 data-historial-llave="{{ route('responsivas.historial', $f->equipo_id) }}" data-dialogo-historial="dialogoHistorialEquipo">
                                             <i class="bi bi-clock-history" aria-hidden="true"></i>
@@ -127,6 +120,13 @@
                                 @endforeach
                             </div>
 
+                            {{-- ADR-0014: hora de regreso de los equipos «Turno» (solo si la empresa la configuró) --}}
+                            @if ($turno)
+                                <div class="reloj-turno {{ $turno['nivel'] ? 'nivel-'.$turno['nivel'] : 'en-tiempo' }}">
+                                    <i class="bi bi-alarm me-1" aria-hidden="true"></i>{{ $turno['nivel'] ? 'Debía regresar' : 'Debe regresar' }} a las @fecha($turno['debia'], 'H:i') del @fecha($turno['debia'], 'd/m')
+                                    ({{ $turno['equipos'] === 1 ? '1 equipo de turno' : $turno['equipos'].' equipos de turno' }})
+                                </div>
+                            @endif
                             @if ($activa)
                                 <div class="traza-resguardo"><strong>Entregó Caseta:</strong> {{ $r->entrego?->name ?? '—' }}<br>(@fecha($r->entregado_en))</div>
                             @else
@@ -149,18 +149,38 @@
                                 @endif
                             </div>
                             @if ($recibible)
-                                <form action="{{ route('responsivas.recibir', $r->id) }}" method="POST" class="m-0" data-confirmar="¿Confirmar recepción de {{ ($pendientesLote = $r->equipos->filter->pendiente()->count()) === $r->equipos->count() ? 'todos los equipos' : 'los '.$pendientesLote.' equipos que siguen en campo' }} del lote {{ $r->folio }} en estado OK?">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn-recibir-lote"><i class="bi bi-arrow-return-left me-1" aria-hidden="true"></i>Recibir Lote Completo (OK)</button>
-                                </form>
+                                {{-- ADR-0014: un solo «Recibir» con casillas (todos marcados): cubre «todo regresó» y «regresaron 4 de 5» --}}
+                                <details class="recibir-responsiva" @if (old('_dialogo') === 'recibir-responsiva-'.$r->id) open @endif>
+                                    <summary class="btn-recibir-lote"><i class="bi bi-arrow-return-left me-1" aria-hidden="true"></i>Recibir</summary>
+                                    <form action="{{ route('responsivas.recibir', $r->id) }}" method="POST" class="recibir-responsiva-form">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="_dialogo" value="recibir-responsiva-{{ $r->id }}">
+                                        <p class="small mb-2">Marca lo que regresa <strong>bien</strong>. Si algo viene dañado o no regresa, toca <strong>Dañado o falta</strong> en ese equipo.</p>
+                                        @foreach ($r->equipos->filter->pendiente() as $f)
+                                            @php $nombreEquipo = trim(($f->equipo?->tipo?->nombre ?? 'Equipo').' · S/N '.$f->equipo?->numero_serie); @endphp
+                                            <div class="recibir-responsiva-fila">
+                                                <label class="recibir-responsiva-casilla">
+                                                    <input type="checkbox" name="equipos[]" value="{{ $f->id }}" checked>
+                                                    <span>{{ $nombreEquipo }} <span class="pastilla-modalidad {{ $f->modalidad }}">{{ $f->etiquetaModalidad() }}</span></span>
+                                                </label>
+                                                <button type="button" class="btn-recibir-equipo"
+                                                        data-url="{{ route('responsivas.recibir-equipo', [$r->id, $f->id]) }}" data-id="{{ $r->id }}-{{ $f->id }}"
+                                                        data-recibir-equipo="{{ $nombreEquipo }}" data-resguardante="{{ $nombre }}" data-folio="{{ $r->folio }}">
+                                                    <i class="bi bi-tools me-1" aria-hidden="true"></i>Dañado o falta
+                                                </button>
+                                            </div>
+                                        @endforeach
+                                        <button type="submit" class="btn-recibir-lote w-100 mt-2"><i class="bi bi-box-arrow-in-down-left me-1" aria-hidden="true"></i>Recibir marcados (OK)</button>
+                                    </form>
+                                </details>
                             @endif
                         </div>
                     </div>
                 @empty
                     <div class="estado-vacio-prestamo">
                         @if ($vista === 'campo')
-                            <i class="bi bi-check2-circle" aria-hidden="true"></i> No hay equipos prestados actualmente.
+                            <i class="bi bi-check2-circle" aria-hidden="true"></i> No hay equipos en campo.
                         @else
                             <i class="bi bi-inbox" aria-hidden="true"></i> El historial está limpio.
                         @endif
@@ -189,7 +209,7 @@
                         <input type="hidden" name="_dialogo" value="{{ $filaRecibir ? 'recibir-'.$reabrirRecibir->id.'-'.$filaRecibir->id : '' }}" data-campo-dialogo data-prefijo-dialogo="recibir-">
                         <div class="resumen-recibir-equipo">
                             <div class="fw-bold" data-recibir-equipo-nombre>{{ $filaRecibir ? trim(($filaRecibir->equipo?->tipo?->nombre ?? 'Equipo').' · S/N '.$filaRecibir->equipo?->numero_serie) : '' }}</div>
-                            <div class="small text-muted">Lote <span data-recibir-folio>{{ $reabrirRecibir?->folio }}</span> · Resguardante: <span data-recibir-resguardante>{{ $reabrirRecibir?->colaborador?->nombreCompleto() }}</span></div>
+                            <div class="small text-muted">Responsiva <span data-recibir-folio>{{ $reabrirRecibir?->folio }}</span> · A cargo de: <span data-recibir-resguardante>{{ $reabrirRecibir?->colaborador?->nombreCompleto() }}</span></div>
                         </div>
 
                         <span class="campo-etiqueta">¿Cómo regresa el equipo?</span>
@@ -249,11 +269,11 @@
             </dialog>
         @endif
 
-        {{-- ===== Nuevo Resguardo (Lote) ===== --}}
+        {{-- ===== Nueva responsiva ===== --}}
         @if ($puede['crear'])
             <dialog id="dialogoNuevoResguardo" class="dialogo dialogo-resguardo" aria-labelledby="titulo-nuevo-resguardo" @if ($trasError) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
-                    <h2 id="titulo-nuevo-resguardo"><i class="bi bi-journal-arrow-up me-2 text-success" aria-hidden="true"></i>Nuevo Resguardo (Lote)</h2>
+                    <h2 id="titulo-nuevo-resguardo"><i class="bi bi-journal-arrow-up me-2 text-success" aria-hidden="true"></i>Nueva responsiva</h2>
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                 </div>
                 <div class="dialogo-cuerpo">
@@ -283,7 +303,7 @@
 
                         <div class="caja-equipos-lote">
                             <div class="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
-                                <span class="campo-etiqueta m-0 etiqueta-equipos-lote"><i class="bi bi-box-seam me-1" aria-hidden="true"></i>Equipos a Resguardar</span>
+                                <span class="campo-etiqueta m-0 etiqueta-equipos-lote"><i class="bi bi-box-seam me-1" aria-hidden="true"></i>Equipos que se entregan</span>
                                 <button type="button" class="btn-anadir-equipo" data-anadir-equipo><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>+ Añadir Equipo</button>
                             </div>
                             @include('componentes.lector', ['id' => 'resguardo_equipo_lector', 'tipos' => 'equipo', 'nombre' => '_equipo_leido',
@@ -301,7 +321,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-guardar-resguardo">Guardar Lote de Resguardo</button>
+                            <button type="submit" class="btn-guardar-resguardo">Guardar responsiva</button>
                         </div>
                     </form>
                     <template data-plantilla-fila-equipo>

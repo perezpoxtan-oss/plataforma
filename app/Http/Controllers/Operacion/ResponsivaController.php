@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Firmas\Firmas;
 use App\Services\Responsivas\AdministradorResponsivas;
+use App\Support\AjustesCaseta;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Builder;
@@ -67,8 +68,13 @@ class ResponsivaController extends Controller
             $puedeCrear = $actor->can('responsivas.crear') && $actor->can('responsivas.firmar');
             $sedesCrear = $puedeCrear ? $this->responsivas->sedesParaCrear($actor) : collect();
 
+            // ADR-0014: hora de regreso de los equipos «Turno» (sin horas configuradas, nada cambia)
+            $ajustes = AjustesCaseta::de($empresaId);
+            $turnos = $enCampo->mapWithKeys(fn (Responsiva $r) => [$r->id => $this->responsivas->regresoTurno($r, $ajustes)])->filter()->all();
+
             return view('operacion.responsivas.index', [
                 'sinEmpresa' => false,
+                'turnos' => $turnos,
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'enCampo' => $enCampo,
                 'devueltas' => $devueltas,
@@ -103,28 +109,34 @@ class ResponsivaController extends Controller
         $total = $responsiva->equipos()->count();
 
         return redirect()->to(route('responsivas.index').'#responsiva-'.$responsiva->id)
-            ->with('ok', "Resguardo {$responsiva->folio} guardado con {$total} ".($total === 1 ? 'equipo' : 'equipos').'. Ya puedes imprimir la hoja.');
+            ->with('ok', "Responsiva {$responsiva->folio} guardada con {$total} ".($total === 1 ? 'equipo' : 'equipos').'. Ya puedes imprimir la hoja.');
     }
 
     /**
-     * "Recibir Lote Completo (OK)".
+     * «Recibir» en estado OK. ADR-0014: con «equipos[]» (las casillas del
+     * formulario) solo los marcados; sin ellas, todos los que siguen en campo.
      */
     public function recibir(Request $request, int $responsiva): RedirectResponse
     {
         Gate::authorize('responsivas.editar');
         $empresaId = $this->empresaDeTrabajo($request);
+        $filas = $request->has('equipos') ? (array) $request->input('equipos', []) : null;
 
-        [$modelo, $regresaron, $total] = $this->tenant->conEmpresa($empresaId, function () use ($request, $responsiva) {
+        [$modelo, $regresaron, $total, $faltan] = $this->tenant->conEmpresa($empresaId, function () use ($request, $responsiva, $filas) {
             $modelo = $this->buscarEnAlcance($request->user(), $responsiva, 'responsivas.editar');
-            $total = $modelo->equipos()->whereNull('devuelto_en')->count(); // Ronda 8: solo los que siguen en campo
+            // Ronda 8: solo los que siguen en campo
+            $total = $filas === null ? $modelo->equipos()->whereNull('devuelto_en')->count() : count(array_unique(array_filter($filas, 'is_numeric')));
+            $regresaron = $this->responsivas->recibir($request->user(), $modelo, $filas);
 
-            return [$modelo, $this->responsivas->recibir($request->user(), $modelo), $total];
+            return [$modelo, $regresaron, $total, $modelo->equipos()->whereNull('devuelto_en')->count()];
         });
 
         $nota = $regresaron < $total ? ' '.($total - $regresaron).' ya estaba(n) dado(s) de baja y se quedan así.' : '';
+        $inicio = $faltan === 0 ? "Responsiva {$modelo->folio} recibida: " : "Responsiva {$modelo->folio}: ";
+        $sigue = $faltan === 0 ? '' : ' '.($faltan === 1 ? 'Falta 1 equipo' : "Faltan {$faltan} equipos").' por regresar.';
 
         return redirect()->to(route('responsivas.index').'#responsiva-'.$modelo->id)
-            ->with('ok', "Lote {$modelo->folio} recibido: {$regresaron} ".($regresaron === 1 ? 'equipo vuelve' : 'equipos vuelven').' a DISPONIBLE.'.$nota);
+            ->with('ok', $inicio.$regresaron.' '.($regresaron === 1 ? 'equipo vuelve' : 'equipos vuelven').' a DISPONIBLE.'.$nota.$sigue);
     }
 
     /**
@@ -146,7 +158,7 @@ class ResponsivaController extends Controller
 
         $texto = 'Equipo '.($r['serie'] ?? '').' recibido ('.mb_strtoupper(EquipoResponsiva::ESTADOS_DEVOLUCION[$r['estado']]).')'
             .($r['voucher'] ? ' y dado de baja con el voucher '.$r['voucher']->folio.($r['voucher']->aplica_cobro ? ' (con cobro de $'.number_format((float) $r['voucher']->monto, 2).')' : '') : '')
-            .'. '.($r['cerrado'] ? "El lote {$modelo->folio} quedó completo y pasa a Historial Devueltos." : "Del lote {$modelo->folio} ".($r['faltan'] === 1 ? 'falta 1 equipo' : "faltan {$r['faltan']} equipos").' por regresar.');
+            .'. '.($r['cerrado'] ? "La responsiva {$modelo->folio} quedó completa y pasa a Historial Devueltos." : "De la responsiva {$modelo->folio} ".($r['faltan'] === 1 ? 'falta 1 equipo' : "faltan {$r['faltan']} equipos").' por regresar.');
 
         return redirect()->to(route('responsivas.index').'#responsiva-'.$modelo->id)->with($r['estado'] === 'ok' ? 'ok' : 'aviso', $texto);
     }

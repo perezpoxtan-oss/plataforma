@@ -423,6 +423,12 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudieron revisar los plazos y la caducidad de candidatos (revisa despliegue.log)"
 fi
 # --- Fin Candidatos ---
+# --- Mejoras activos: llaves fuera de tiempo y equipos de turno sin regresar (horas por empresa en Configuración → Caseta y activos; ADR-0014) ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:activos-pendientes'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:activos-pendientes --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudieron revisar las llaves y los equipos de turno pendientes (revisa despliegue.log)"
+fi
+# --- Fin Mejoras activos ---
 
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
 if [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ] && grep -Eq "EscribeAqui|tu-correo@" "$HOME/qa_inicial.txt"; then

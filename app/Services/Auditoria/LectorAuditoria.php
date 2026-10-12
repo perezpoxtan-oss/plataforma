@@ -131,6 +131,8 @@ class LectorAuditoria
         // Configuración
         'avisos' => 'Cambio de avisos por correo', 'correo' => 'Cambio del correo de la plataforma', 'correo_prueba' => 'Correo de prueba',
         'respaldo_creado' => 'Creación de respaldo', 'respaldo_descargado' => 'Descarga de respaldo',
+        // Mejoras activos (ADR-0014)
+        'caseta' => 'Cambio de ajustes de caseta y activos',
         // Sesión
         'inicio' => 'Inicio de sesión', 'cierre' => 'Cierre de sesión', 'fallido' => 'Intento fallido', 'bloqueado' => 'Bloqueo',
         // Cuenta del usuario (Mi cuenta, Olvidé mi contraseña, bienvenida, baja)

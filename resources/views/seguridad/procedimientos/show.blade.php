@@ -262,7 +262,11 @@
                             <span class="acuse-icono" aria-hidden="true"><i class="bi bi-check2"></i></span>
                             <div class="min-w-0 flex-fill"><strong>{{ $fila['usuario']->name }}</strong>
                                 <span class="d-block small text-muted">{{ $c?->sede?->nombre ?? 'Corporativo' }}{{ $c?->departamento ? ' · '.$c->departamento->nombre : '' }} · firmó el @fecha($fila['acuse']->leido_en)</span></div>
-                            <img src="{{ route('procedimientos.acuses.firma', [$p->id, $fila['acuse']->id]) }}" alt="Firma de {{ $fila['usuario']->name }}" class="miniatura-firma" loading="lazy">
+                            @if ($fila['acuse']->firma_ruta)
+                                <img src="{{ route('procedimientos.acuses.firma', [$p->id, $fila['acuse']->id]) }}" alt="Firma de {{ $fila['usuario']->name }}" class="miniatura-firma" loading="lazy">
+                            @else
+                                <span class="acuse-casilla"><i class="bi bi-check2-square me-1" aria-hidden="true"></i>Casilla</span>
+                            @endif
                         </li>
                     @endforeach
                     @foreach ($acuses['extra'] as $a)
@@ -270,7 +274,11 @@
                             <span class="acuse-icono" aria-hidden="true"><i class="bi bi-check2"></i></span>
                             <div class="min-w-0 flex-fill"><strong>{{ $a->nombre }}</strong>
                                 <span class="d-block small text-muted">Firmó sin estar en la lista · @fecha($a->leido_en)</span></div>
-                            <img src="{{ route('procedimientos.acuses.firma', [$p->id, $a->id]) }}" alt="Firma de {{ $a->nombre }}" class="miniatura-firma" loading="lazy">
+                            @if ($a->firma_ruta)
+                                <img src="{{ route('procedimientos.acuses.firma', [$p->id, $a->id]) }}" alt="Firma de {{ $a->nombre }}" class="miniatura-firma" loading="lazy">
+                            @else
+                                <span class="acuse-casilla"><i class="bi bi-check2-square me-1" aria-hidden="true"></i>Casilla</span>
+                            @endif
                         </li>
                     @endforeach
                 </ul>

@@ -2,18 +2,23 @@
 
 namespace App\Services\Responsivas;
 
+use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EquipoResponsiva;
 use App\Models\Responsiva;
 use App\Models\Sede;
 use App\Models\User;
 use App\Models\VoucherReposicion;
+use App\Services\Activos\CampanaActivos;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
+use App\Support\AjustesCaseta;
+use App\Support\Tenancy\Tenant;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
@@ -166,7 +171,7 @@ class AdministradorResponsivas
             });
         } catch (UniqueConstraintViolationException) {
             $this->firmas->borrar($firma);
-            throw ValidationException::withMessages(['equipos' => 'Uno de los equipos acaba de entregarse en otro resguardo. Revisa la lista e intenta de nuevo.']);
+            throw ValidationException::withMessages(['equipos' => 'Uno de los equipos acaba de entregarse en otra responsiva. Revisa la lista e intenta de nuevo.']);
         } catch (Throwable $e) {
             $this->firmas->borrar($firma);
             throw $e;
@@ -178,23 +183,38 @@ class AdministradorResponsivas
     }
 
     /**
-     * "Recibir Lote Completo (OK)": todos los equipos vuelven a DISPONIBLE
-     * (SEGCAT: devolver_lote). Un equipo que se dio de baja mientras estaba
-     * en campo se registra como tal y no cambia de estado.
+     * «Recibir» en estado OK (SEGCAT: devolver_lote): los equipos marcados (o
+     * todos los que siguen en campo, sin $filas) vuelven a DISPONIBLE. Un
+     * equipo que se dio de baja mientras estaba en campo se registra como tal y
+     * no cambia de estado. Cuando ya no queda ninguno, la responsiva se cierra.
+     * ADR-0014: un solo «Recibir» con casillas cubre «todo» y «4 de 5».
      *
+     * @param  list<int>|null  $filas  ids de equipos_responsiva marcados; null = todos
      * @return int equipos que regresaron a DISPONIBLE
      */
-    public function recibir(User $actor, Responsiva $responsiva): int
+    public function recibir(User $actor, Responsiva $responsiva, ?array $filas = null): int
     {
         if (! $responsiva->enCampo()) {
-            throw ValidationException::withMessages(['responsiva' => "El resguardo {$responsiva->folio} ya se había recibido."]);
+            throw ValidationException::withMessages(['responsiva' => "La responsiva {$responsiva->folio} ya se había recibido."]);
         }
+        $pendientes = $responsiva->equipos()->whereNull('devuelto_en')->get();
+        if ($filas !== null) {
+            $filas = array_values(array_unique(array_map('intval', array_filter($filas, 'is_numeric'))));
+            if ($filas === []) {
+                throw ValidationException::withMessages(['equipos' => 'Marca al menos un equipo que regresa.']);
+            }
+            if (array_diff($filas, $pendientes->pluck('id')->map(fn ($id) => (int) $id)->all()) !== []) {
+                throw ValidationException::withMessages(['equipos' => 'Uno de los equipos marcados ya se había recibido. Revisa la responsiva e intenta de nuevo.']);
+            }
+            $pendientes = $pendientes->whereIn('id', $filas);
+        }
+        $pendientes->load('equipo:id,numero_serie');
         $antes = $this->foto($responsiva);
 
-        $regresaron = DB::transaction(function () use ($actor, $responsiva) {
+        [$regresaron, $cerrada] = DB::transaction(function () use ($actor, $responsiva, $pendientes) {
             $regresaron = 0;
             $ahora = now();
-            foreach ($responsiva->equipos()->whereNull('devuelto_en')->get() as $fila) {
+            foreach ($pendientes as $fila) {
                 $equipo = Equipo::whereKey($fila->equipo_id)->lockForUpdate()->first();
                 $estado = 'ok';
                 if ($equipo !== null && $equipo->estado === 'asignado') {
@@ -203,14 +223,25 @@ class AdministradorResponsivas
                 } elseif ($equipo !== null && $equipo->estado === 'baja') {
                     $estado = 'baja';
                 }
-                $fila->forceFill(['devuelto_en' => $ahora, 'estado_devolucion' => $estado])->save();
+                $fila->forceFill(['devuelto_en' => $ahora, 'estado_devolucion' => $estado, 'recibido_por' => $actor->id])->save();
             }
-            $responsiva->forceFill(['estado' => Responsiva::DEVUELTA, 'devuelto_en' => $ahora, 'recibido_por' => $actor->id])->save();
+            $cerrada = ! $responsiva->equipos()->whereNull('devuelto_en')->exists();
+            if ($cerrada) {
+                $responsiva->forceFill(['estado' => Responsiva::DEVUELTA, 'devuelto_en' => $ahora, 'recibido_por' => $actor->id])->save();
+            }
 
-            return $regresaron;
+            return [$regresaron, $cerrada];
         });
 
-        $this->auditoria->auditar($actor, 'responsivas.recibido', $responsiva, $antes, $this->foto($responsiva));
+        if ($cerrada) {
+            $this->auditoria->auditar($actor, 'responsivas.recibido', $responsiva, $antes, $this->foto($responsiva));
+        } else {
+            $this->auditoria->auditar($actor, 'responsivas.equipo_recibido', $responsiva, null, [
+                'folio' => $responsiva->folio, 'equipos' => $pendientes->map(fn (EquipoResponsiva $f) => $f->equipo?->numero_serie ?? '#'.$f->equipo_id)->values()->all(),
+                'estado' => 'OK', 'faltan' => $responsiva->equipos()->whereNull('devuelto_en')->count(),
+            ]);
+        }
+        $this->sincronizarTurno($responsiva);
 
         return $regresaron;
     }
@@ -231,7 +262,7 @@ class AdministradorResponsivas
     public function recibirEquipo(User $actor, Responsiva $responsiva, EquipoResponsiva $fila, array $entrada, bool $puedeVoucher): array
     {
         if (! $responsiva->enCampo() || $fila->responsiva_id !== $responsiva->id) {
-            throw ValidationException::withMessages(['estado_recepcion' => "El resguardo {$responsiva->folio} ya se había recibido."]);
+            throw ValidationException::withMessages(['estado_recepcion' => "La responsiva {$responsiva->folio} ya se había recibido."]);
         }
         if (! $fila->pendiente()) {
             throw ValidationException::withMessages(['estado_recepcion' => 'Este equipo ya se había recibido.']);
@@ -291,6 +322,7 @@ class AdministradorResponsivas
         if ($resultado['cerrado']) {
             $this->auditoria->auditar($actor, 'responsivas.recibido', $responsiva, $antes, $this->foto($responsiva));
         }
+        $this->sincronizarTurno($responsiva);
 
         return $resultado;
     }
@@ -317,9 +349,9 @@ class AdministradorResponsivas
             'sede_id.required' => 'Elige la sede de origen.',
             'colaborador_id.required' => 'Escanea el gafete o busca al colaborador responsable.',
             'colaborador_id.integer' => 'Escanea el gafete o busca al colaborador responsable.',
-            'equipos.required' => 'Debe añadir al menos 1 equipo al lote.',
-            'equipos.min' => 'Debe añadir al menos 1 equipo al lote.',
-            'equipos.max' => 'Un resguardo admite hasta '.self::MAX_EQUIPOS.' equipos.',
+            'equipos.required' => 'Agrega al menos 1 equipo a la responsiva.',
+            'equipos.min' => 'Agrega al menos 1 equipo a la responsiva.',
+            'equipos.max' => 'Una responsiva admite hasta '.self::MAX_EQUIPOS.' equipos.',
             'equipos.*.integer' => 'Seleccione un equipo en todas las filas agregadas.',
             'modalidades.*.in' => 'Elige «Turno» o «Fijo» en cada equipo.',
         ])->validate();
@@ -347,7 +379,7 @@ class AdministradorResponsivas
             $filas[$id] = $modalidades[$i] ?? 'prestado';
         }
         if ($filas === []) {
-            throw ValidationException::withMessages(['equipos' => 'Debe añadir al menos 1 equipo al lote.']);
+            throw ValidationException::withMessages(['equipos' => 'Agrega al menos 1 equipo a la responsiva.']);
         }
 
         return $filas;
@@ -371,12 +403,83 @@ class AdministradorResponsivas
                 throw ValidationException::withMessages(['equipos' => "El equipo {$equipo->numero_serie} es de otra sede: solo se resguardan equipos de {$sede->nombre}."]);
             }
             if ($equipo->resguardoActual !== null) {
-                throw ValidationException::withMessages(['equipos' => "El equipo {$equipo->numero_serie} sigue en el resguardo {$equipo->resguardoActual->responsiva?->folio} sin recibir."]);
+                throw ValidationException::withMessages(['equipos' => "El equipo {$equipo->numero_serie} sigue en la responsiva {$equipo->resguardoActual->responsiva?->folio} sin recibir."]);
             }
             if ($equipo->estado !== 'disponible') {
                 throw ValidationException::withMessages(['equipos' => "El equipo {$equipo->numero_serie} no está DISPONIBLE (está ".(Equipo::ESTADOS[$equipo->estado] ?? $equipo->estado).').']);
             }
         }
+    }
+
+    // ------------------------------------------- Equipos de «Turno» (ADR-0014)
+
+    /**
+     * Hora en que deben regresar los equipos «Turno» que siguen en campo
+     * (entrega + horas de Configuración → Caseta y activos) y su color:
+     * null = en tiempo; ambar = ya debían regresar; rojo = pasaron además las
+     * horas de escalamiento. Sin horas configuradas (lo original) o sin
+     * equipos de turno pendientes: null.
+     *
+     * @param  array<string, int|string>  $ajustes  AjustesCaseta::de()
+     * @return array{debia: CarbonImmutable, nivel: ?string, equipos: int}|null
+     */
+    public function regresoTurno(Responsiva $r, array $ajustes, ?\DateTimeInterface $ahora = null): ?array
+    {
+        $horas = (int) $ajustes['responsivas_horas_turno'];
+        if ($horas === 0 || ! $r->enCampo() || $r->entregado_en === null) {
+            return null;
+        }
+        $turno = $r->relationLoaded('equipos')
+            ? $r->equipos->filter(fn (EquipoResponsiva $f) => $f->modalidad === 'prestado' && $f->pendiente())->count()
+            : $r->equipos()->where('modalidad', 'prestado')->whereNull('devuelto_en')->count();
+        if ($turno === 0) {
+            return null;
+        }
+        $debia = CarbonImmutable::instance($r->entregado_en)->addHours($horas);
+        $ahora = CarbonImmutable::instance($ahora ?? now());
+        $escalar = (int) $ajustes['responsivas_horas_escalar'];
+        $nivel = $ahora->lt($debia) ? null : ($escalar > 0 && $ahora->gte($debia->addHours($escalar)) ? 'rojo' : 'ambar');
+
+        return ['debia' => $debia, 'nivel' => $nivel, 'equipos' => $turno];
+    }
+
+    /** Si ya no quedan equipos de turno en campo, sus avisos se resuelven. */
+    public function sincronizarTurno(Responsiva $r): void
+    {
+        if (! $r->equipos()->where('modalidad', 'prestado')->whereNull('devuelto_en')->exists()) {
+            app(CampanaActivos::class)->resolverTurno($r);
+        }
+    }
+
+    /**
+     * Recordatorios en la campana de los equipos de turno que no regresaron
+     * (comando plataforma:activos-pendientes). Uno en ámbar y uno en rojo por responsiva.
+     *
+     * @return int responsivas recordadas
+     */
+    public function recordatoriosTurno(): int
+    {
+        $cuenta = 0;
+        foreach (Empresa::where('activo', true)->get(['id', 'preferencias']) as $empresa) {
+            $ajustes = AjustesCaseta::de($empresa);
+            if ((int) $ajustes['responsivas_horas_turno'] === 0) {
+                continue;
+            }
+            $cuenta += app(Tenant::class)->conEmpresa($empresa->id, function () use ($ajustes) {
+                $n = 0;
+                foreach (Responsiva::where('estado', Responsiva::EN_CAMPO)->with('equipos:id,responsiva_id,modalidad,devuelto_en')->get() as $r) {
+                    $regreso = $this->regresoTurno($r, $ajustes);
+                    if ($regreso === null || $regreso['nivel'] === null) {
+                        continue;
+                    }
+                    $n += app(CampanaActivos::class)->turnoSinRegresar($r, $regreso['nivel'], $regreso['equipos'], $regreso['debia']) > 0 ? 1 : 0;
+                }
+
+                return $n;
+            });
+        }
+
+        return $cuenta;
     }
 
     // ------------------------------------------------------------------ Lectura
@@ -409,7 +512,7 @@ class AdministradorResponsivas
             'folio' => $r->folio,
             'sede_id' => $r->sede_id,
             'colaborador_id' => $r->colaborador_id,
-            'estado' => $r->enCampo() ? 'EN CAMPO' : 'LOTE CERRADO',
+            'estado' => $r->enCampo() ? 'EN CAMPO' : 'CERRADA',
             'equipos' => $r->equipos->map(fn (EquipoResponsiva $f) => ($f->equipo?->numero_serie ?? '#'.$f->equipo_id).' ('.$f->etiquetaModalidad().')'.($f->estado_devolucion ? ' '.mb_strtoupper($f->estado_devolucion) : ''))->all(),
             'entregado_en' => $r->entregado_en?->toIso8601String(),
             'devuelto_en' => $r->devuelto_en?->toIso8601String(),

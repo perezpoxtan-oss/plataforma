@@ -4187,3 +4187,42 @@ a.btn-alto-contraste.btn-manual:hover, a.btn-alto-contraste.btn-manual.activo { 
 .tarjeta-tablero .promedio { font-size: 0.78rem; color: #92400e; }
 .columna-tablero .vacia { font-size: 0.75rem; color: var(--texto-tenue); text-align: center; padding: 0.75rem 0; }
 /* Fin Candidatos, fase 3 */
+/* Mejoras activos */
+/* Configuración → Caseta y activos */
+.config-caseta-titulo { font-size: 0.95rem; font-weight: 800; margin: 1.25rem 0 0.5rem; color: var(--texto); }
+.config-caseta-titulo:first-of-type { margin-top: 0.5rem; }
+.campo-horas-caseta { max-width: 7rem; margin-bottom: 0; }
+.btn-guardar-caseta { min-height: 44px; border-radius: 10px; padding: 0 1.25rem; border: none; font-weight: 700; }
+/* Préstamo de llaves: recibir escaneando y semáforo */
+.recibir-llave-escaneo { display: flex; gap: 0.75rem; align-items: flex-start; flex-wrap: wrap; background: #fff; border: 1px solid var(--borde); border-left: 5px solid #198754; border-radius: 14px; padding: 0.9rem 1rem 0.25rem; margin-bottom: 1rem; }
+.recibir-llave-escaneo .flex-fill { min-width: 15rem; }
+.recibir-llave-escaneo .btn-recibir-escaneo { width: auto; padding: 0 1.25rem; margin-top: 1.7rem; }
+.reloj-llave, .reloj-turno { display: inline-flex; align-items: center; gap: 0.15rem; font-size: 0.8rem; font-weight: 700; border-radius: 999px; padding: 0.2rem 0.65rem; margin-top: 0.5rem; border: 1px solid #bbf7d0; background: #f0fdf4; color: #166534; }
+.reloj-llave.nivel-ambar, .reloj-turno.nivel-ambar { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.reloj-llave.nivel-rojo, .reloj-turno.nivel-rojo { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+.ficha-prestamo.semaforo-ambar, .ficha-resguardo.semaforo-ambar { border-top-color: #d97706; box-shadow: 0 0 0 2px #fde68a; }
+.ficha-prestamo.semaforo-rojo, .ficha-resguardo.semaforo-rojo { border-top-color: #dc2626; box-shadow: 0 0 0 2px #fecaca; }
+/* Responsivas: un solo «Recibir» con casillas */
+.recibir-responsiva > summary { list-style: none; }
+.recibir-responsiva > summary::-webkit-details-marker { display: none; }
+.recibir-responsiva[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.recibir-responsiva-form { border: 1px solid #198754; border-top: none; border-radius: 0 0 10px 10px; padding: 0.75rem; background: #f8fffb; }
+.recibir-responsiva-fila { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.35rem 0; border-bottom: 1px dashed var(--borde); }
+.recibir-responsiva-casilla { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; min-height: 44px; cursor: pointer; flex: 1; min-width: 0; }
+.recibir-responsiva-casilla input { width: 1.25rem; height: 1.25rem; flex-shrink: 0; accent-color: #198754; }
+/* Procedimientos: acuse con solo la casilla */
+.acuse-casilla { font-size: 0.75rem; font-weight: 700; color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 999px; padding: 0.15rem 0.6rem; white-space: nowrap; }
+/* Lector universal: acción más probable al escanear fuera de un formulario */
+.acciones-lector { max-width: 32rem; margin: 0 auto; padding: 1.5rem; }
+.acciones-lector h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.25rem; word-break: break-word; }
+.acciones-lector-tipo { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--texto-suave); margin-bottom: 0.25rem; }
+.acciones-lector-estado { background: #fffbeb; border: 1px solid #fde68a; color: #78350f; border-radius: 10px; padding: 0.6rem 0.8rem; font-size: 0.9rem; }
+.acciones-lector-botones { display: flex; flex-direction: column; gap: 0.25rem; margin-top: 1rem; }
+.btn-accion-lector { width: 100%; min-height: 52px; border-radius: 12px; font-weight: 700; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; font-family: inherit; border: 1px solid var(--borde); background: #fff; color: var(--texto); }
+.btn-accion-lector.principal { background: #198754; border-color: #198754; color: #fff; font-size: 1.1rem; min-height: 60px; }
+.btn-accion-lector.principal:hover { background: #157347; color: #fff; }
+.acciones-lector-ficha { text-align: center; padding: 0.75rem; color: var(--texto-suave); font-weight: 600; }
+@media (max-width: 575.98px) {
+    .recibir-llave-escaneo .btn-recibir-escaneo { width: 100%; margin-top: 0; margin-bottom: 0.75rem; }
+}
+/* Fin Mejoras activos */

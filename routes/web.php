@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Administracion\AjustesCasetaController;
 use App\Http\Controllers\Administracion\AuditoriaController;
 use App\Http\Controllers\Administracion\ConfiguracionController;
 use App\Http\Controllers\Administracion\EmpresaActivaController;
@@ -567,6 +568,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
     Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');
     // Fin Lector universal
+
+    // Mejoras activos (ADR-0014): ajustes de caseta y recibir una llave escaneándola desde la pantalla principal
+    Route::put('/configuracion/caseta', [AjustesCasetaController::class, 'update'])->name('configuracion.caseta');
+    Route::post('/prestamo-llaves/recibir', [PrestamoLlaveController::class, 'recibirEscaneada'])->middleware('throttle:60,1')->name('prestamo_llaves.recibir-escaneada');
+    // Fin Mejoras activos
 });
 
 // Público: Kiosco de auto-registro de candidatos (SIN sesión; enlace temporal de un solo candidato; ver docs/tecnico/candidatos.md)

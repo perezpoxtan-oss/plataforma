@@ -3,13 +3,17 @@
 namespace App\Services\PrestamoLlaves;
 
 use App\Models\Colaborador;
+use App\Models\Empresa;
 use App\Models\Llave;
 use App\Models\PrestamoLlave;
 use App\Models\Sede;
 use App\Models\User;
+use App\Services\Activos\CampanaActivos;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
+use App\Support\AjustesCaseta;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
@@ -165,6 +169,7 @@ class AdministradorPrestamosLlaves
         $antes = $this->foto($prestamo);
         $prestamo->forceFill(['estado' => PrestamoLlave::DEVUELTA, 'devuelto_en' => now(), 'recibido_por' => $actor->id])->save();
         $this->auditoria->auditar($actor, 'prestamo_llaves.recibido', $prestamo, $antes, $this->foto($prestamo));
+        app(CampanaActivos::class)->resolverLlave($prestamo);
     }
 
     /**
@@ -184,6 +189,7 @@ class AdministradorPrestamosLlaves
         $antes = $this->foto($prestamo);
         $prestamo->forceFill(['anulado' => true, 'anulado_en' => now(), 'anulado_por' => $actor->id])->save();
         $this->auditoria->auditar($actor, 'prestamo_llaves.anulado', $prestamo, $antes, $this->foto($prestamo));
+        app(CampanaActivos::class)->resolverLlave($prestamo);
     }
 
     /**
@@ -302,6 +308,64 @@ class AdministradorPrestamosLlaves
         }
 
         return $colaborador;
+    }
+
+    // ------------------------------------------ Semáforo de llaves fuera (ADR-0014)
+
+    /**
+     * Cuánto lleva fuera y su color según Configuración → Caseta y activos:
+     * null = sin semáforo o en tiempo; ambar = recordatorio; rojo = escalado.
+     *
+     * @param  array<string, int|string>  $ajustes  AjustesCaseta::de()
+     * @return array{horas: float, nivel: ?string}
+     */
+    public function semaforo(PrestamoLlave $p, array $ajustes, ?\DateTimeInterface $ahora = null): array
+    {
+        $horas = $p->prestado_en === null ? 0.0 : max(0, $p->prestado_en->diffInMinutes($ahora ?? now(), true)) / 60;
+
+        return ['horas' => $horas, 'nivel' => $p->vigente()
+            ? AjustesCaseta::nivel($horas, (int) $ajustes['llaves_horas_aviso'], (int) $ajustes['llaves_horas_escalar']) : null];
+    }
+
+    /** ¿La empresa usa el semáforo de llaves? */
+    public static function conSemaforo(array $ajustes): bool
+    {
+        return (int) $ajustes['llaves_horas_aviso'] > 0 || (int) $ajustes['llaves_horas_escalar'] > 0;
+    }
+
+    /**
+     * Recordatorios en la campana de las llaves que pasaron sus horas
+     * (comando plataforma:activos-pendientes, en proceso desde desplegar.sh).
+     * Cada préstamo avisa una vez en ámbar (a la caseta) y una en rojo (al jefe).
+     *
+     * @return int préstamos recordados
+     */
+    public function recordatorios(): int
+    {
+        $cuenta = 0;
+        foreach (Empresa::where('activo', true)->get(['id', 'preferencias']) as $empresa) {
+            $ajustes = AjustesCaseta::de($empresa);
+            if (! self::conSemaforo($ajustes)) {
+                continue;
+            }
+            $cuenta += app(Tenant::class)->conEmpresa($empresa->id, function () use ($ajustes) {
+                $n = 0;
+                foreach (PrestamoLlave::vigentes()->orderBy('prestado_en')->get() as $p) {
+                    ['horas' => $horas, 'nivel' => $nivel] = $this->semaforo($p, $ajustes);
+                    if ($nivel === null) {
+                        continue;
+                    }
+                    $campana = app(CampanaActivos::class);
+                    // Si ya pasó directo a rojo, el ámbar no se manda
+                    $avisados = $nivel === 'rojo' ? $campana->llaveFuera($p, 'rojo', $horas) : $campana->llaveFuera($p, 'ambar', $horas);
+                    $n += $avisados > 0 ? 1 : 0;
+                }
+
+                return $n;
+            });
+        }
+
+        return $cuenta;
     }
 
     // ------------------------------------------------------------------ Lectura

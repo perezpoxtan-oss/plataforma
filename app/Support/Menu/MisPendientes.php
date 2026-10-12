@@ -6,6 +6,7 @@ use App\Models\Candidato;
 use App\Models\DepartamentoResponsable;
 use App\Models\Postulacion;
 use App\Models\User;
+use App\Services\Activos\PendientesActivos;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Entrevistas;
@@ -159,12 +160,18 @@ class MisPendientes
             $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $cuentas, route('usuarios.index', ['revisar' => 1]));
         }
 
+        // Mejoras activos (ADR-0014): Vo.Bo. de vales, procedimientos por aprobar, llaves y equipos de turno fuera de tiempo
+        foreach (app(PendientesActivos::class)->para($actor, $empresaId) as $pendiente) {
+            $items[] = $pendiente;
+        }
+        // Fin Mejoras activos
+
         // Fase 3: color por plazo, solo si algún renglón de candidatos tiene pendientes
         $conPendientes = array_filter($items, fn ($i) => $i['total'] > 0 && in_array($i['clave'], PlazosCandidatos::RENGLONES, true));
         if ($conPendientes !== []) {
             $niveles = app(PlazosCandidatos::class)->nivelesPara($actor, $empresaId, array_column($conPendientes, 'clave'));
             foreach ($items as &$item) {
-                $item['nivel'] = $item['total'] > 0 ? ($niveles[$item['clave']] ?? null) : null;
+                $item['nivel'] = $item['total'] > 0 ? ($niveles[$item['clave']] ?? $item['nivel']) : null; // Mejoras activos: conserva el color de llaves y equipos de turno
             }
             unset($item);
         }
