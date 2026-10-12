@@ -12,7 +12,7 @@
             <div class="icono"><i class="bi bi-calendar-day text-info" aria-hidden="true"></i></div>
             <div>
                 <h1>Bitácora general del día</h1>
-                <p>Todo lo que pasó en el día, en una sola línea de tiempo: accesos, novedades, transporte, llaves y más.</p>
+                <p>Todo lo que pasó en el día, en una sola línea de tiempo: accesos, {{ mb_strtolower(\App\Services\Novedades\AjustesNovedades::nombreActual()) }}, transporte, llaves y más.</p>
                 @unless ($sinEmpresa)
                     <p class="texto-padron-de"><i class="bi bi-calendar-event" aria-hidden="true"></i> <span class="text-capitalize-first">{{ $fechaLegible }}</span> · {{ $textoSedes }} · horas de {{ $zonaTexto }}</p>
                 @endunless
@@ -55,7 +55,7 @@
                         <select name="tipo" class="campo mb-0">
                             <option value="">Todo</option>
                             @foreach ($visibles as $clave)
-                                <option value="{{ $clave }}" @selected($tipo === $clave)>{{ \App\Services\Informes\BitacoraDelDia::TIPOS[$clave][0] }}</option>
+                                <option value="{{ $clave }}" @selected($tipo === $clave)>{{ \App\Services\Informes\BitacoraDelDia::nombreTipo($clave) }}</option>
                             @endforeach
                         </select>
                     </label>

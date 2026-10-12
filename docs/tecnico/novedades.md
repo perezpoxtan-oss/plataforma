@@ -147,7 +147,7 @@ Decisión del dueño: lo que una empresa pueda querer distinto es configurable y
 
 - `app/Services/Novedades/AvisosNovedades.php`: campana (siempre) y correo (avisos `novedad_canalizada` y `hallazgo_recorrido_pc`, **apagados por omisión** en `Empresa::AVISOS`).
 - `app/Services/Novedades/TurnosNovedades.php`: siguiente turno de la sede, aviso al iniciar el turno y al jefe al terminar; `revisar()` / `revisarSiToca()`.
-- `app/Services/Novedades/AjustesNovedades.php`: nombre del menú y categoría del hallazgo de recorrido.
+- `app/Services/Novedades/AjustesNovedades.php`: nombre del módulo y categoría del hallazgo de recorrido (ver «Nombre del módulo: Novedades o Incidentes»).
 - `app/Services/Novedades/Formatos/MantenimientoPc.php` + `formatos/mantenimiento-pc.blade.php`: sin campos propios; muestra los equipos con falla de los recorridos ligados (`Novedad::recorridosPc()`).
 - `app/Console/Commands/NovedadesPendientesDeTurno.php` (`plataforma:novedades-pendientes --si-toca`, en `despliegue/desplegar.sh`).
 - Vistas: `_alta` (recuadro «Objeto encontrado»), `_expediente` (área heredada, aviso de pendiente de turno, `_volver=robo`), `index` (reloj y dueño del pendiente de turno, `?mios=1`), `_config` (sección de Configuración), `lost-found/_objeto` y `lost-found/index` («Registrar objeto encontrado», «Agregar el objeto aquí»), `robo/_expediente` (mismo orden y nombres que el expediente de la bitácora).
@@ -189,3 +189,17 @@ Ajustes en `empresas.preferencias['novedades']['categoria_hallazgo_pc']` (`prote
 ### Cómo revertir
 
 Revert del PR. La migración solo agrega columnas vacías (su `down()` las quita). Si una empresa cambió el nombre del menú, al revertir el menú sigue leyendo `empresa_modulos.nombre_visible`: vaciarlo desde la base o antes de revertir dejar el campo vacío en Configuración. Los tickets `mantenimiento_pc` ya creados se ven en la versión anterior con su clave como categoría; si hace falta, cambiarlos a `proteccion_civil`.
+
+## Nombre del módulo: Novedades o Incidentes (decisión del dueño, 2026-10-12)
+
+Cada empresa elige cómo se llama el módulo. **Novedades** es el original y el valor por omisión (es donde va todo lo que acontece en el día, sin importar tipo o naturaleza); **Incidentes** es la alternativa; otro nombre libre queda en «Avanzado».
+
+- **Dato:** el mismo que ya existía, `empresa_modulos.nombre_visible` del módulo `novedades` (nulo = «Novedades»). No hay migración: las empresas que ya lo habían cambiado conservan su nombre; las demás siguen en «Novedades». Elegir «Novedades» guarda nulo.
+- **Configuración** (`_config.blade.php`): selector `nombre_opcion` = `Novedades` | `Incidentes` | `otro` y, plegado en «Avanzado: otro nombre», `nombre_menu` (obligatorio solo con `otro`; máx. 40, letras, números, espacio, punto, guion, «&»). Sin `nombre_opcion` se acepta `nombre_menu` como antes (compatibilidad). Auditoría `novedades.configurado` sin cambios.
+- **API** (`AjustesNovedades`, memoria por petición en `request()->attributes`):
+  - `nombreMenu($empresa)` → «Novedades» | «Incidentes» | otro; `nombrePropio()`; `opcion()`.
+  - `bitacora($empresa)` → «Bitácora de novedades» | «Bitácora de incidentes» | el nombre libre tal cual; `bitacoraConArticulo()` → «la Bitácora de …» | «Despacho» (entre comillas).
+  - Atajos con la empresa de trabajo de la sesión: `nombreActual()`, `bitacoraActual()`, `bitacoraActualConArticulo()`.
+- **Dónde se aplica:** menú y botón inferior del celular (como antes); título de la pestaña y `<h1>` de `/novedades`; textos que remiten a la bitácora en Lost & Found, Robo, Recorridos de PC (vista, aviso al escanear y validación); campana (título con «· Incidentes» solo si la empresa cambió el nombre) y correo («Ábrelo en la Bitácora de incidentes…»); grupos de avisos en Configuración (`GruposAvisos::agrupados($empresaId)`) y en Mi cuenta (`PreferenciasAvisos::opciones()`); Inicio (`PanelController`); informes: Tablero (`Tablero::titulo()`, gráfica y enlace), Tendencias (título de sección y selector), Bitácora del día (`BitacoraDelDia::nombreTipo()` en filtros, conteos, impresión y CSV); manual (`ManualController::ver()`: título de la página `novedades` y nota «En tu empresa la Bitácora de novedades se llama …» en las páginas del módulo).
+- **No cambia:** rutas, permisos (`novedades.*`), claves del catálogo, la sección «Incidentes» del menú Operación ni lo ya capturado.
+- Pruebas: `MejorasIncidentesTest::test_el_nombre_del_menu_es_configurable_sin_cambiar_rutas_ni_permisos` y `test_el_nombre_elegido_llega_a_avisos_informes_pendientes_y_manual`.

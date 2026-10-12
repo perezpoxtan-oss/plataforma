@@ -341,8 +341,10 @@ Route::middleware('auth')->group(function () {
     Route::controller('App\Http\Controllers\Seguridad\LostFoundController')->group(function () {
         Route::get('/lost-found', 'index')->name('lost_found.archivo');
         Route::get('/lost-found/auditoria', 'auditoria')->name('lost_found.auditoria');
-        // Los días de resguardo se configuran en Estructura → Configuración; la dirección anterior redirige (301)
+        // Días de resguardo: se ven en Estructura → Configuración y en el diálogo del archivo; la dirección anterior (GET) redirige (301)
         Route::get('/lost-found/dias-resguardo', 'umbrales')->name('lost_found.umbrales');
+        // Decisión del dueño: los días también se guardan desde el archivo (mismo dato que Configuración)
+        Route::put('/lost-found/dias-resguardo', 'guardarUmbrales')->middleware('throttle:30,1')->name('lost_found.umbrales.guardar');
         Route::get('/lost-found/articulos/{articulo}', 'show')->whereNumber('articulo')->name('lost_found.articulos.show');
         Route::post('/lost-found/articulos/{articulo}/cerrar', 'cerrar')->whereNumber('articulo')->middleware('throttle:60,1')->name('lost_found.articulos.cerrar');
         Route::get('/lost-found/articulos/{articulo}/etiqueta', 'etiqueta')->whereNumber('articulo')->name('lost_found.articulos.etiqueta');

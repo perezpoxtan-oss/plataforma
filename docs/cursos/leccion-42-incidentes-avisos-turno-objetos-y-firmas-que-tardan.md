@@ -56,11 +56,16 @@ Comprueba: en **Mis pendientes** de los agentes aparece **Pendientes de turno si
 2. Con `jefe.demo` mira la campana: «Recorrido #… encontró una falla» con el número del ticket. Al finalizar el recorrido llega «terminó con N hallazgos».
 3. Con `admin.demo` entra a **Estructura → Configuración → Bitácora de novedades** y elige **Mantenimiento de equipo PC**. Repite el paso 1: el ticket nuevo se llama así y muestra los equipos con falla. Regresa la opción a **Siniestro Protección Civil**.
 
-## Práctica 7 · Nombre del menú (admin.demo y agente.demo)
+## Práctica 7 · Nombre del módulo: Novedades o Incidentes (admin.demo y agente.demo)
 
-1. En la misma sección escribe **Incidentes** en **Nombre en el menú** y guarda.
-2. Con `agente.demo` el menú, el botón de abajo del celular y el título de la pantalla dicen **Incidentes**. Los permisos no cambiaron.
-3. Deja el campo vacío para volver a **Novedades**.
+**Novedades** es el nombre de siempre: ahí va todo lo que pasa en el día, sin importar su tipo. Cada empresa puede elegir **Incidentes**.
+
+1. En la misma sección, en **Nombre del módulo**, elige **Incidentes** y toca **Guardar ajustes de la bitácora**. El aviso dice «Ajustes de la Bitácora de incidentes guardados.»
+2. Con `agente.demo` el menú, el botón de abajo del celular y el título de la pantalla dicen **Incidentes**. En **Inicio**, el renglón de tickets canalizados dice «…en la Bitácora de incidentes». Los permisos no cambiaron.
+3. Con `supervisor.demo` canaliza un ticket a `agente.demo`: en su campana llega «Te canalizaron el ticket #… · Incidentes».
+4. Abre **Informes → Tablero**: la ficha dice **Incidentes: tickets abiertos**. Abre el **Manual → Bitácora de novedades**: arriba avisa que en tu empresa se llama **Incidentes**.
+5. Si tu empresa usa otro nombre, elige **Otro nombre** y escríbelo en **Avanzado: otro nombre**.
+6. Vuelve a elegir **Novedades (como siempre)** y guarda.
 
 ## Práctica 8 · Firmas de pases que tardan (admin.demo, jefedepto.demo y director.demo)
 

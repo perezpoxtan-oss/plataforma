@@ -96,6 +96,8 @@
                     <span class="vobo autorizado"><i class="bi bi-patch-check-fill me-1" aria-hidden="true"></i>Vo.Bo.: {{ $m->autorizador?->name ?? '—' }} · @fecha($m->autorizado_en)</span>
                 @elseif (! $m->anulado)
                     <span class="vobo pendiente"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Pendiente de Vo.Bo.</span>
+                    {{-- Cuánto lleva esperando el Vo.Bo. (normal < 24 h, amarillo 24–72 h, rojo > 72 h) --}}
+                    @include('componentes.reloj-vobo', ['desde' => $m->created_at])
                     @if ($autorizable)
                         <form action="{{ route('transporte.autorizar', $m->id) }}" method="POST" class="m-0"
                               data-confirmar="¿Dar el Vo.Bo. a este vale de ${{ number_format((float) $m->monto, 2) }}? Después ya no se podrá editar.">

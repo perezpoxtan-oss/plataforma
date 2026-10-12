@@ -8,7 +8,7 @@ resumen: Ordenada por módulo: avisos (con un interruptor por módulo), ajustes 
 
 # Configuración
 
-**¿Para qué sirve?** Aquí se ajusta cómo trabaja la plataforma para tu empresa, **ordenado por módulo**: cada módulo (Cuentas y seguridad, Bitácora de novedades, Pases de salida, Procedimientos, Recepción y candidatos…) tiene su tarjeta con sus avisos, un **interruptor general** para encenderlos o apagarlos todos, y sus ajustes (por ejemplo, el nombre de la **Bitácora de novedades** en el menú). Aparte están la **caseta y los activos** (firmas de vales de taxi, llaves fuera mucho tiempo, equipos de turno y acuse de procedimientos) y los días de resguardo de **Lost & Found**. Arriba dice la **versión instalada**. El Super Administrador configura además el **correo de la plataforma** y los **respaldos**.
+**¿Para qué sirve?** Aquí se ajusta cómo trabaja la plataforma para tu empresa, **ordenado por módulo**: cada módulo (Cuentas y seguridad, Bitácora de novedades, Pases de salida, Procedimientos, Recepción y candidatos…) tiene su tarjeta con sus avisos, un **interruptor general** para encenderlos o apagarlos todos, y sus ajustes (por ejemplo, si el módulo de la bitácora se llama **Novedades** o **Incidentes**). Aparte están la **caseta y los activos** (firmas de vales de taxi, llaves fuera mucho tiempo, equipos de turno y acuse de procedimientos) y los días de resguardo de **Lost & Found**. Arriba dice la **versión instalada**. El Super Administrador configura además el **correo de la plataforma** y los **respaldos**.
 
 ![Configuración ordenada por módulo](img/configuracion/6-por-modulo.png)
 
@@ -62,7 +62,7 @@ Arriba de la pantalla dice **Versión instalada: v…** y desde cuándo. Sirve p
 
 Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cuántos días puede estar guardado antes de que el semáforo lo marque: **amarillo** al pasar el 70 % de sus días y **rojo (vencido)** al llegar a sus días.
 
-1. Toca **Lost & Found** arriba o baja a **Lost & Found: días de resguardo** (desde Lost & Found también llegas con el enlace de configuración).
+1. Toca **Lost & Found** arriba o baja a **Lost & Found: días de resguardo**. También puedes cambiarlos desde el propio archivo de Lost & Found con el botón **Días de resguardo**: es el mismo dato, lo que guardes en un lugar se ve en el otro.
 2. Escribe los días de cada tipo (mínimo 1). Debajo de cada uno dice desde qué día se pone amarillo y rojo.
 3. Toca **Guardar días de resguardo**.
 
@@ -70,16 +70,19 @@ Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cu�
 
 **Qué debes ver:** «Los días de resguardo de Lost & Found se guardaron correctamente.» Aplica a todas las sedes de la empresa.
 
-## Cómo cambiar el nombre de la Bitácora de novedades en el menú
+## Cómo elegir el nombre del módulo: Novedades o Incidentes
+
+**Novedades** es donde va todo lo que pasa en el día, sin importar su tipo; es el nombre de siempre. Si en tu empresa le dicen **Incidentes**, puedes elegirlo.
 
 1. Baja a la tarjeta **Bitácora de novedades** (debajo de sus avisos).
-2. En **Nombre en el menú** escribe el nombre que usa tu empresa (por ejemplo **Incidentes**). Vacío = **Novedades**, como siempre.
-3. Si quieres, en **Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como** elige **Mantenimiento de equipo PC** (lo normal es **Siniestro Protección Civil**).
-4. Toca **Guardar ajustes de la bitácora**.
+2. En **Nombre del módulo** elige **Novedades (como siempre)** o **Incidentes**.
+3. Si tu empresa usa otro nombre, elige **Otro nombre (escríbelo en Avanzado)**, abre **Avanzado: otro nombre** y escríbelo (máximo 40 letras).
+4. Si quieres, en **Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como** elige **Mantenimiento de equipo PC** (lo normal es **Siniestro Protección Civil**).
+5. Toca **Guardar ajustes de la bitácora**.
 
 ![Ajustes de la Bitácora de novedades](img/configuracion/6-bitacora-novedades.png)
 
-**Qué debes ver:** «Ajustes de la Bitácora de novedades guardados.» El menú, el botón de abajo del celular y el título de la pantalla usan el nombre nuevo; los permisos y lo ya capturado no cambian. La categoría elegida aplica a los tickets que se abran desde ese momento. Solo lo cambia quien edita la Configuración de toda la empresa.
+**Qué debes ver:** «Ajustes de la Bitácora de incidentes guardados.» (o con el nombre que elegiste). El nombre nuevo aparece en el menú, en el botón de abajo del celular, en el título de la pantalla, en los avisos de la campana y del correo, en los informes (Tablero, Tendencias y Bitácora del día), en Inicio y en el manual. Los tickets, los permisos y las direcciones no cambian. Si nunca lo cambias, se queda **Novedades**. Solo lo cambia quien edita la Configuración de toda la empresa.
 
 ## Cómo ajustar la caseta y los activos
 

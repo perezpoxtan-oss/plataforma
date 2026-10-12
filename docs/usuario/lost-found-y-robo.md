@@ -81,7 +81,17 @@ Para abrir un objeto rápido, en **Escanear etiqueta de la bolsa** escanea el QR
 
 **Qué debes ver:** la lista de lo que debería estar en bodega hoy.
 
-Los días que puede estar guardado cada tipo de objeto se cambian en **Estructura → Configuración** (enlace **Configurar en Estructura → Configuración**, solo para quien tiene ese permiso).
+## Cómo cambiar los días de resguardo
+
+Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cuántos días puede estar guardado antes de que el semáforo lo marque: **amarillo** al pasar el 70 % de sus días y **rojo (vencido)** al llegar a sus días.
+
+1. En el archivo de Lost & Found toca **Días de resguardo** (arriba, junto a **Auditoría**). Solo lo ve quien puede configurar Lost & Found.
+2. Escribe los días de cada tipo (mínimo 1). Debajo de cada uno dice desde qué día se pone amarillo y rojo, y quién lo cambió por última vez.
+3. Toca **Guardar**.
+
+**Qué debes ver:** «Días de resguardo guardados: el semáforo ya los usa…» y la lista de **urgentes / vencidos** con los días nuevos. Aplica a todas las sedes de la empresa y es el mismo dato que en **Estructura → Configuración**.
+
+Si tu rol puede configurar Lost & Found solo en tu sede, la ventana te muestra los días pero sin **Guardar**: son de toda la empresa y los cambia tu administrador.
 
 ## Cómo completar un ticket sin artículos
 
@@ -125,6 +135,8 @@ Si tu rol solo trabaja robos (no la Bitácora completa), el expediente se abre a
 | «Escanea el gafete o busca al colaborador que recibe el artículo.» | Falta el colaborador. | Escanea su gafete. |
 | «Este caso ya está Resuelto. Reábrelo antes de vincular un hallazgo.» | El robo está cerrado. | Reábrelo en la Bitácora de novedades. |
 | No veo **Cerrar / Entregar** | Tu rol solo consulta. | Pide a tu supervisor que lo entregue. |
+| «Los días de «Ropa» deben ser al menos 1: un artículo no puede vencer el mismo día que se encuentra.» | Escribiste 0 o dejaste vacío un tipo en **Días de resguardo**. | Escribe 1 o más y toca **Guardar**. |
+| No veo **Días de resguardo** | Tu rol no configura Lost & Found. | Pide a tu administrador que cambie los días. |
 | «Escribe qué objeto se encontró (por ejemplo: paraguas, cartera, celular).» | Falta el objeto. | Escríbelo. |
 | «Escribe dónde se encontró (por ejemplo: Lobby, junto a los sillones).» | Falta el lugar. | Escríbelo. |
 | «Escribe quién lo encontró o lo entregó (o toca «Fui yo»).» | Falta quién lo trajo. | Escribe el nombre o toca **Fui yo**. |

@@ -297,8 +297,8 @@ class AdministradorRecorridosPc
         $categoria = app(AjustesNovedades::class)->categoriaHallazgoPc(Empresa::find($recorrido->empresa_id));
         $permitidas = $this->novedades->sedes($actor, 'crear', 'proteccion_civil');
         if (! $actor->can('novedades.crear') || ($permitidas !== null && ! in_array((int) $recorrido->sede_id, $permitidas, true))) {
-            throw ValidationException::withMessages(['observaciones' => 'Este punto tiene un hallazgo y debe abrir un ticket en la Bitácora de Novedades, pero tu rol no puede crear tickets en esta sede. '
-                .'Pide a tu supervisor el permiso «Bitácora de novedades → Crear».']);
+            throw ValidationException::withMessages(['observaciones' => 'Este punto tiene un hallazgo y debe abrir un ticket en '.app(AjustesNovedades::class)->bitacoraConArticulo((int) $recorrido->empresa_id).', pero tu rol no puede crear tickets en esta sede. '
+                .'Pide a tu supervisor el permiso «'.app(AjustesNovedades::class)->bitacora((int) $recorrido->empresa_id).' → Crear».']);
         }
 
         $recorrido->loadMissing('sede', 'espacio');

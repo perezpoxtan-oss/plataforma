@@ -2,7 +2,7 @@
 @if ($conteos !== [])
     <div class="conteos-bitacora" aria-label="Resumen del día">
         @foreach ($conteos as $clave => $n)
-            <span class="conteo-bitacora tipo-{{ $clave }}"><i class="bi {{ \App\Services\Informes\BitacoraDelDia::TIPOS[$clave][1] }}" aria-hidden="true"></i> {{ \App\Services\Informes\BitacoraDelDia::TIPOS[$clave][0] }}: {{ $n }}</span>
+            <span class="conteo-bitacora tipo-{{ $clave }}"><i class="bi {{ \App\Services\Informes\BitacoraDelDia::TIPOS[$clave][1] }}" aria-hidden="true"></i> {{ \App\Services\Informes\BitacoraDelDia::nombreTipo($clave) }}: {{ $n }}</span>
         @endforeach
         <span class="conteo-bitacora total">Total: {{ count($eventos) }}</span>
     </div>

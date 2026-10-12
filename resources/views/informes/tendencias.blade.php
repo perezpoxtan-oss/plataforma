@@ -67,7 +67,7 @@
                 <a href="{{ route('tendencias.index', $filtrosUrl) }}" class="chip-informe {{ $solo === null ? 'activo' : '' }}" @if ($solo === null) aria-current="page" @endif>Todas</a>
                 @foreach ($visibles as $clave)
                     <a href="{{ route('tendencias.index', $filtrosUrl + ['seccion' => $clave]) }}" class="chip-informe {{ $solo === $clave ? 'activo' : '' }}" @if ($solo === $clave) aria-current="page" @endif>
-                        <i class="bi {{ \App\Services\Informes\Tendencias::SECCIONES[$clave][1] }}" aria-hidden="true"></i> {{ \App\Services\Informes\Tendencias::SECCIONES[$clave][0] }}
+                        <i class="bi {{ \App\Services\Informes\Tendencias::SECCIONES[$clave][1] }}" aria-hidden="true"></i> {{ $clave === 'novedades' ? \App\Services\Novedades\AjustesNovedades::nombreActual() : \App\Services\Informes\Tendencias::SECCIONES[$clave][0] }}
                     </a>
                 @endforeach
             </nav>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Manual\Manual;
+use App\Services\Novedades\AjustesNovedades;
 use App\Support\Entrada;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -49,8 +50,15 @@ class ManualController extends Controller
         $seccion = $this->manual->indice($usuario)[$encontrada->seccion] ?? [];
         $posicion = array_search($encontrada->slug, array_map(fn ($p) => $p->slug, $seccion), true);
 
+        // Manual dinámico: si la empresa le dio otro nombre a la bitácora («Incidentes»), la página lo dice
+        $ajustes = app(AjustesNovedades::class);
+        $empresaId = $ajustes->empresaActual();
+        $nombreBitacora = in_array('novedades', $encontrada->modulos, true) && $ajustes->nombrePropio($empresaId) ? $ajustes->nombreMenu($empresaId) : null;
+
         return view('manual.ver', [
             'pagina' => $encontrada,
+            'titulo' => $nombreBitacora !== null && $encontrada->slug === 'novedades' ? $ajustes->bitacora($empresaId) : $encontrada->titulo,
+            'nombreBitacora' => $nombreBitacora,
             'html' => $contenido['html'],
             'apartados' => $contenido['apartados'],
             'anterior' => $posicion !== false && $posicion > 0 ? $seccion[$posicion - 1] : null,

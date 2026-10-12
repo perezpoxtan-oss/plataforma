@@ -80,7 +80,7 @@ class BitacoraDelDiaController extends Controller
             fwrite($salida, "\xEF\xBB\xBF"); // para que Excel respete los acentos
             Csv::fila($salida, ['Fecha', 'Hora', 'Sede', 'Tipo', 'Qué pasó', 'Detalle']);
             foreach ($datos['eventos'] as $e) {
-                Csv::fila($salida, [$datos['fecha']->format('d/m/Y'), $e['hora'], $e['sede'], BitacoraDelDia::TIPOS[$e['tipo']][0], $e['etiqueta'], $e['texto']]);
+                Csv::fila($salida, [$datos['fecha']->format('d/m/Y'), $e['hora'], $e['sede'], BitacoraDelDia::nombreTipo($e['tipo']), $e['etiqueta'], $e['texto']]);
             }
             fclose($salida);
         }, 'bitacora-del-dia-'.$datos['fecha']->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);

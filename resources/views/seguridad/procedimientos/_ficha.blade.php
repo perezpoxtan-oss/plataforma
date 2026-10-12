@@ -31,6 +31,10 @@
             @if ($p->publicado_en)<span><i class="bi bi-calendar-check" aria-hidden="true"></i> Vigente desde @fecha($p->publicado_en, 'd/m/Y')</span>@endif
         </p>
     @endif
+    {{-- En revisión: cuánto lleva esperando la aprobación (normal < 24 h, amarillo 24–72 h, rojo > 72 h) --}}
+    @if (! $lector && $p->trabajo?->estado === \App\Models\ProcedimientoVersion::EN_REVISION)
+        <p class="mb-1">@include('componentes.reloj-vobo', ['desde' => $p->trabajo->enviado_en])</p>
+    @endif
     @if (! $lector && $p->version_trabajo && $p->estado === \App\Models\Procedimiento::PUBLICADO)
         <p class="siguiente-pase"><i class="bi bi-pencil-square" aria-hidden="true"></i> Versión {{ $p->version_trabajo }} {{ $p->estado_trabajo === 'en_revision' ? 'en revisión' : 'en borrador' }} (la {{ $p->version_vigente }} sigue vigente)</p>
     @endif

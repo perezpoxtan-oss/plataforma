@@ -8,6 +8,7 @@ use App\Models\Empresa;
 use App\Models\EquipoPc;
 use App\Models\Espacio;
 use App\Models\LostFoundArticulo;
+use App\Models\Modulo;
 use App\Models\Notificacion;
 use App\Models\Novedad;
 use App\Models\PaseSalida;
@@ -16,6 +17,7 @@ use App\Models\RecorridoPc;
 use App\Models\RoboDetalle;
 use App\Models\Turno;
 use App\Models\User;
+use App\Services\Notificaciones\PreferenciasAvisos;
 use App\Services\Novedades\TurnosNovedades;
 use App\Services\PasesSalida\CircuitoPasesSalida;
 use App\Services\PasesSalida\EsperaPasesSalida;
@@ -327,25 +329,71 @@ class MejorasIncidentesTest extends PruebaNovedades
     public function test_el_nombre_del_menu_es_configurable_sin_cambiar_rutas_ni_permisos(): void
     {
         $this->actingAs($this->agente)->get('/novedades')->assertOk()->assertSee('Despacho y Novedades');
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Bitácora de novedades')->assertSee('Nombre en el menú');
+        // Selector en Configuración: «Novedades» por omisión, con su explicación corta
+        $config = $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Bitácora de novedades')->assertSee('Nombre del módulo')
+            ->assertSee('es donde va todo lo que pasa en el día, sin importar su tipo')->getContent();
+        $this->assertMatchesRegularExpression('/<option value="Novedades" selected>Novedades \(como siempre\)<\/option>/u', $config);
 
-        $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_menu' => ' Incidentes ', 'categoria_hallazgo_pc' => 'proteccion_civil'])
-            ->assertSessionHasNoErrors()->assertRedirect(route('configuracion.index').'#novedades');
+        $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_opcion' => 'Incidentes', 'nombre_menu' => 'Ignorado', 'categoria_hallazgo_pc' => 'proteccion_civil'])
+            ->assertSessionHasNoErrors()->assertRedirect(route('configuracion.index').'#novedades')
+            ->assertSessionHas('ok', 'Ajustes de la Bitácora de incidentes guardados.');
         $this->assertTrue(Auditoria::where('evento', 'novedades.configurado')->exists());
 
         app()->forgetInstance(ConstructorMenu::class); // en la plataforma cada petición arma su menú
         $pagina = $this->actingAs($this->agente)->get('/novedades')->assertOk()->getContent();
         $this->assertStringContainsString('<h1>Incidentes</h1>', $pagina);
+        $this->assertStringContainsString('<title>Incidentes |', $pagina);
         $this->assertMatchesRegularExpression('/barra-inferior-item[^>]*>\s*<i[^>]*><\/i>\s*<span>Incidentes<\/span>/u', $pagina);
 
-        // Volver a «Novedades» (vacío) lo deja como siempre
-        $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_menu' => '', 'categoria_hallazgo_pc' => 'proteccion_civil'])->assertSessionHasNoErrors();
+        // Otro nombre (Avanzado)
+        $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_opcion' => 'otro', 'nombre_menu' => ' Despacho ', 'categoria_hallazgo_pc' => 'proteccion_civil'])->assertSessionHasNoErrors();
+        app()->forgetInstance(ConstructorMenu::class);
+        $this->actingAs($this->agente)->get('/novedades')->assertSee('<h1>Despacho</h1>', false);
+        $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_opcion' => 'otro', 'nombre_menu' => '', 'categoria_hallazgo_pc' => 'proteccion_civil'])
+            ->assertSessionHasErrors('nombre_menu');
+
+        // Volver a «Novedades» lo deja como siempre (y como antes, sin opción y vacío también)
+        $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_opcion' => 'Novedades', 'categoria_hallazgo_pc' => 'proteccion_civil'])->assertSessionHasNoErrors();
         app()->forgetInstance(ConstructorMenu::class);
         $this->actingAs($this->agente)->get('/novedades')->assertSee('Despacho y Novedades')->assertSee('<span>Novedades</span>', false);
+        $this->assertNull(\DB::table('empresa_modulos')->where('empresa_id', $this->empresa->id)->whereNotNull('nombre_visible')
+            ->whereIn('modulo_id', Modulo::where('clave', 'novedades')->pluck('id'))->value('nombre_visible'));
+        $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_menu' => '', 'categoria_hallazgo_pc' => 'proteccion_civil'])->assertSessionHasNoErrors();
 
-        // Solo con «editar» de Configuración en toda la empresa; nombres raros no
-        $this->actingAs($this->jefe)->put('/configuracion/novedades', ['nombre_menu' => 'X', 'categoria_hallazgo_pc' => 'proteccion_civil'])->assertForbidden();
-        $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_menu' => '<b>x</b>', 'categoria_hallazgo_pc' => 'proteccion_civil'])->assertSessionHasErrors('nombre_menu');
+        // Solo con «editar» de Configuración en toda la empresa; nombres raros u opciones inventadas no
+        $this->actingAs($this->jefe)->put('/configuracion/novedades', ['nombre_opcion' => 'Incidentes', 'categoria_hallazgo_pc' => 'proteccion_civil'])->assertForbidden();
+        $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_opcion' => 'otro', 'nombre_menu' => '<b>x</b>', 'categoria_hallazgo_pc' => 'proteccion_civil'])->assertSessionHasErrors('nombre_menu');
+        $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_opcion' => 'Bitácora', 'categoria_hallazgo_pc' => 'proteccion_civil'])->assertSessionHasErrors('nombre_opcion');
+    }
+
+    public function test_el_nombre_elegido_llega_a_avisos_informes_pendientes_y_manual(): void
+    {
+        $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_opcion' => 'Incidentes', 'categoria_hallazgo_pc' => 'proteccion_civil'])->assertSessionHasNoErrors();
+
+        // Campana: el título dice el nombre del módulo
+        $this->actingAs($this->admin)->post('/novedades', $this->datos(['asignado_a' => $this->agente->id]))->assertSessionHasNoErrors();
+        $n = $this->ultima();
+        $this->assertSame("Te canalizaron el ticket {$n->folio()} · Incidentes", $this->avisos($this->agente, 'novedad_canalizada')->sole()->titulo);
+
+        // Configuración (avisos por módulo) y Mi cuenta (preferencias) con el nombre elegido
+        $this->actingAs($this->admin)->get('/configuracion')->assertSee('Bitácora de incidentes: avisar por correo')->assertDontSee('Bitácora de novedades: avisar');
+        $opciones = app(PreferenciasAvisos::class)->opciones($this->agente);
+        $this->assertArrayHasKey('Bitácora de incidentes', $opciones['campana']);
+        $this->assertArrayNotHasKey('Bitácora de novedades', $opciones['campana']);
+
+        // Inicio (Mis pendientes)
+        $this->actingAs($this->agente)->get('/')->assertSee('en la Bitácora de incidentes')->assertDontSee('en la Bitácora de novedades');
+
+        // Informes: tablero, tendencias y bitácora del día
+        $this->actingAs($this->admin)->get('/informes/tablero/detalle?ficha=novedades')->assertSee('Incidentes: tickets abiertos')->assertSee('Ir a la Bitácora de incidentes');
+        $this->actingAs($this->admin)->get('/informes/bitacora-del-dia')->assertSee('accesos, incidentes, transporte');
+
+        // Manual: la página de la bitácora lo dice
+        $this->actingAs($this->agente)->get(route('manual.ver', 'novedades'))->assertOk()
+            ->assertSee('<h1>Bitácora de incidentes</h1>', false)->assertSee('se llama <strong>Incidentes</strong>', false);
+        // Sin cambiar el nombre, el manual no muestra la nota
+        $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_opcion' => 'Novedades', 'categoria_hallazgo_pc' => 'proteccion_civil']);
+        $this->actingAs($this->agente)->get(route('manual.ver', 'novedades'))->assertOk()->assertDontSee('En tu empresa la Bitácora de novedades se llama');
     }
 
     // ------------------------------------------------------------ Pases de salida que tardan

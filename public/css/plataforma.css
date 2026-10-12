@@ -4204,6 +4204,11 @@ a.btn-alto-contraste.btn-manual:hover, a.btn-alto-contraste.btn-manual.activo { 
 .reloj-pase.espera-normal { color: #15803d; }
 .reloj-pase.espera-ambar { color: #b45309; }
 .reloj-pase.espera-roja { color: #dc2626; }
+/* Vo.Bo. pendiente: reloj y color por tiempo de espera (RelojVoBo), siempre con texto */
+.reloj-vobo { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; font-weight: 600; border-radius: 8px; padding: 3px 8px; border: 1px solid transparent; }
+.reloj-vobo.espera-normal { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+.reloj-vobo.espera-ambar { background: #fffbeb; color: #92400e; border-color: #fcd34d; }
+.reloj-vobo.espera-roja { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
 .fila-espera-circuito { margin-bottom: 0.5rem; }
 .fila-espera-circuito .campo-dias-lf { max-width: 7rem; }
 .fila-espera-circuito select.campo { max-width: 9rem; }

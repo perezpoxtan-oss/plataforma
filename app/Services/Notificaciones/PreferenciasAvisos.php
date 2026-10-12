@@ -6,6 +6,7 @@ use App\Models\Empresa;
 use App\Models\Notificacion;
 use App\Models\User;
 use App\Services\Auditoria\MovimientosSensibles;
+use App\Services\Novedades\AjustesNovedades;
 use App\Support\GruposAvisos;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -140,7 +141,10 @@ class PreferenciasAvisos
         $recibidos = Notificacion::query()->withoutGlobalScopes()->where('user_id', $usuario->id)->distinct()->pluck('tipo')->all();
 
         $campana = [];
+        // El grupo de la bitácora lleva el nombre que la empresa le dio al módulo
+        $bitacora = $usuario->empresa_id !== null ? app(AjustesNovedades::class)->bitacora((int) $usuario->empresa_id) : null;
         foreach (self::CAMPANA as $tipo => [$grupo, $etiqueta, $permisos]) {
+            $grupo = $grupo === 'Bitácora de novedades' && $bitacora !== null ? $bitacora : $grupo;
             if (in_array($tipo, $recibidos, true) || collect($permisos)->contains(fn ($p) => $usuario->can($p))) {
                 $campana[$grupo][$tipo] = $etiqueta;
             }
@@ -151,7 +155,7 @@ class PreferenciasAvisos
         }
 
         $correo = [];
-        foreach (GruposAvisos::agrupados() as $grupo => $def) {
+        foreach (GruposAvisos::agrupados($usuario->empresa_id !== null ? (int) $usuario->empresa_id : null) as $grupo => $def) {
             if (! $this->veGrupo($usuario, $grupo, $def['modulo'])) {
                 continue;
             }
