@@ -146,7 +146,7 @@ Si tu empresa no tiene turnos registrados (Recursos Humanos → Turnos), el avis
 | «Este caso ya está Resuelto. Para editarlo usa «Reabrir Caso para Editar» y escribe el motivo.» | El caso está cerrado. | Reábrelo con el motivo. |
 | «Escribe el motivo antes de continuar: un caso resuelto no se puede reabrir sin justificación.» | Falta el motivo de reapertura. | Explica por qué se reabre. |
 | No deja marcar Resuelto | Falta **Estatus Final / Resolución**. | Escribe cómo se concluyó. |
-| Página «La acción no llegó completa» | Se perdió la conexión al guardar. | Regresa, abre el expediente y revisa si tus cambios ya están. |
+| Página «La acción no llegó completa» | Se perdió la conexión al guardar o se envió de una forma que no se esperaba. | Toca «Ir al inicio» (o «Volver a la plataforma»), abre el expediente y revisa si tus cambios ya están. |
 
 ## Preguntas frecuentes
 

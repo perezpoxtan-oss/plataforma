@@ -92,6 +92,7 @@ resumen: Consultar el manual de procedimientos, leer y firmar «Leí y entendí�
 |---|---|---|
 | «Marca la casilla «Leí y entendí este procedimiento».» | Falta la casilla. | Márcala y vuelve a firmar. |
 | «No tienes una firma guardada: firma en el recuadro.» | No hay firma guardada. | Firma con el dedo en el recuadro. |
+| Después de firmar, al recargar o al volver a la pestaña, regresas a la lectura del procedimiento. | El teléfono volvió a abrir la pantalla del envío. | Revisa arriba de «Leí y entendí»: si dice «Firmaste «Leí y entendí»…», ya quedó; si no, vuelve a firmar. |
 | «Agrega al menos un paso antes de enviarlo a revisión.» | El procedimiento no tiene pasos. | Escribe al menos un paso. |
 | «La clave solo lleva letras, números y guiones (por ejemplo PRO-SEG-001).» | La clave tiene espacios o símbolos. | Corrige la clave. |
 | «Escribe por qué lo rechazas y qué hay que corregir (es obligatorio).» | Falta el comentario. | Explica qué corregir. |
