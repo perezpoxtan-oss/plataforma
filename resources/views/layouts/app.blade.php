@@ -121,7 +121,7 @@
         @endif
         {{-- Un envío que llegó como página (sin sus datos): ver App\Support\RegresoTrasEnvio y docs/tecnico/firmas.md --}}
         @if (request()->query('envio') === 'incompleto')
-            <div class="alert alert-danger small d-flex align-items-start gap-2" role="alert" data-envio-incompleto>
+            <div class="alert alert-danger small d-flex align-items-start gap-2 franja-envio-incompleto" role="alert" data-envio-incompleto>
                 <i class="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true"></i>
                 <span>Tu envío no llegó completo y no se guardó. Revisa los datos y vuelve a guardar. Si se repite, avisa a tu administrador con la hora.</span>
             </div>
