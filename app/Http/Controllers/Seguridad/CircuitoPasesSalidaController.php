@@ -74,7 +74,7 @@ class CircuitoPasesSalidaController extends Controller
         $empresaId = $this->autorizarEdicion($request);
         $this->tenant->conEmpresa($empresaId, fn () => $this->circuito->restablecer($request->user()));
 
-        return redirect()->route('pases-salida.circuito')->with('ok', 'Se restableció la cadena de SEGCAT: Jefe de Departamento, Contraloría y Gerencia, con dos firmas en cada movimiento de caseta y el rechazo desde el primer paso.');
+        return redirect()->route('pases-salida.circuito')->with('ok', 'Se restableció la configuración original: Jefe de Departamento, Contraloría y Gerencia, con dos firmas en cada movimiento de caseta y el rechazo desde el primer paso.');
     }
 
     private function autorizarEdicion(Request $request): int

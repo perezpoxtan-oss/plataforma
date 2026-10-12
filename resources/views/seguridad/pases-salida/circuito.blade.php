@@ -39,7 +39,7 @@
                 <li>Los cambios aplican a los pases nuevos y a los que se reenvíen; los que ya están en curso conservan sus pasos y sus firmas en caseta.</li>
             </ul>
             @unless ($configurado)
-                <p class="small text-primary mt-2 mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> Hoy se usa la cadena de SEGCAT: <strong>Jefe de Departamento → Contraloría → Gerencia</strong>.</p>
+                <p class="small text-primary mt-2 mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> Hoy se usa la cadena original: <strong>Jefe de Departamento → Contraloría → Gerencia</strong>.</p>
             @endunless
         </div>
 
@@ -137,10 +137,10 @@
         </form>
 
         @if ($puedeEditar && $configurado)
-            <form action="{{ route('pases-salida.circuito.destroy') }}" method="POST" class="mt-3" data-confirmar="¿Volver a la cadena de SEGCAT (Jefe de Departamento, Contraloría y Gerencia), con dos firmas en cada movimiento de caseta y el rechazo desde el primer paso?">
+            <form action="{{ route('pases-salida.circuito.destroy') }}" method="POST" class="mt-3" data-confirmar="¿Volver a la configuración original (Jefe de Departamento, Contraloría y Gerencia), con dos firmas en cada movimiento de caseta y el rechazo desde el primer paso?">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="btn-enlace-pase"><i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Restablecer la cadena de SEGCAT</button>
+                <button type="submit" class="btn-enlace-pase"><i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Restablecer la configuración original</button>
             </form>
         @endif
     @endif

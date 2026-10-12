@@ -306,7 +306,7 @@ class PasesSalidaMejorasTest extends TestCase
         $this->paso($pase, null, [], ['persona_nombre', 'firma_persona']);
         $this->paso($pase, null, [], ['persona_nombre', 'firma_persona', 'firma', 'firma_modo'])->assertSessionHasNoErrors();
         $this->actingAs($this->admin)->get("/pases-salida/{$pase->id}/imprimir")->assertOk()
-            ->assertSee('Registró '.$this->admin->name, false);
+            ->assertSee('Registró '.$this->admin->name);
     }
 
     public function test_los_pases_en_curso_conservan_su_configuracion_de_firmas(): void

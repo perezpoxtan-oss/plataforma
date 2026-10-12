@@ -121,6 +121,8 @@ Tu empresa puede pedir menos firmas en algún movimiento. La ventana te lo dice:
 
 Si no cambias nada, todo funciona como siempre: Jefe de Departamento, Contraloría y Gerencia; dos firmas en cada movimiento de caseta; y el rechazo empieza desde el primer paso.
 
+**Para regresar a lo original:** toca **Restablecer la configuración original** al final de la pantalla y confirma. Verás «Se restableció la configuración original…»: vuelven los tres pasos, las dos firmas en caseta y el rechazo desde el primer paso. Los pases que ya están en curso no cambian.
+
 ## Cómo pedir un paso solo según el valor del equipo (administrador)
 
 1. En **Circuito**, en el paso que quieres (por ejemplo «Gerencia»), abre **Condición de valor (avanzado)**.
