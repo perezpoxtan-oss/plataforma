@@ -242,7 +242,7 @@ class BitacoraTransporte
     {
         $ruta = $d['horario']->ruta;
         $vehiculo = $d['placas'] !== null
-            ? $this->vehiculo($actor, $d['placas'], MovimientoTransporte::TIPOS_UNIDAD[$d['tipo_unidad']], 'transporte_personal', $ruta->proveedor_id, $d, (int) $d['sede']->id)
+            ? $this->vehiculo($actor, $d['placas'], MovimientoTransporte::TIPOS_UNIDAD[$d['tipo_unidad']], 'empresa', $ruta->proveedor_id, $d, (int) $d['sede']->id)
             : null;
         $chofer = $d['chofer'] !== null ? $this->chofer($actor, $d['chofer'], $ruta->proveedor_id, $d['chofer_telefono'], (int) $d['sede']->id) : null;
 
@@ -271,7 +271,7 @@ class BitacoraTransporte
 
         foreach ($d['taxis'] as $t) {
             // Taxis de ocasión: unidades externas sin empresa propietaria (como SEGCAT)
-            $vehiculo = $this->vehiculo($actor, $t['placas'], MovimientoTransporte::TIPOS_TAXI[$t['tipo']], 'taxi_app', null, $t, (int) $d['sede']->id);
+            $vehiculo = $this->vehiculo($actor, $t['placas'], MovimientoTransporte::TIPOS_TAXI[$t['tipo']], 'empresa', null, $t, (int) $d['sede']->id);
             $chofer = $this->chofer($actor, $t['chofer'], null, $t['chofer_telefono'], (int) $d['sede']->id);
             $paradero = $this->rutas->paraderoParaRuta($actor, $d['sede'], $t['destino']);
 

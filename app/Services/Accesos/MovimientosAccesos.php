@@ -280,9 +280,9 @@ class MovimientosAccesos
     {
         $vehiculo = null;
         if ($datos['placas'] !== '') {
-            $propiedad = $acceso->tipo === 'huesped' ? 'propio_huesped' : 'empresa_proveedor';
+            $propiedad = $acceso->tipo === 'huesped' ? 'particular' : 'empresa';
             $vehiculo = $this->registro->vehiculo($actor, $datos['placas'], 'sedan', ['marca' => $datos['marca']], $propiedad,
-                $propiedad === 'empresa_proveedor' ? $acceso->proveedor_id : null);
+                $propiedad === 'empresa' ? $acceso->proveedor_id : null);
         }
         $conductor = $datos['conductor'] === null ? null : mb_strtoupper(trim((string) preg_replace('/\s+/u', ' ', $datos['conductor'])));
 

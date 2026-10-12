@@ -8,7 +8,7 @@ resumen: Registrar los vehículos que entran a la empresa e imprimir su calcoman
 
 # Padrón vehicular
 
-**¿Para qué sirve?** Aquí están todos los vehículos que entran a la empresa: autos de huéspedes, visitantes, familiares y colaboradores, flotillas de proveedores, autos rentados, taxis y transporte de personal. Cada vehículo tiene una **calcomanía con código QR** que la caseta puede leer con el lector.
+**¿Para qué sirve?** Aquí están todos los vehículos que entran a la empresa. Solo hay **dos categorías**: **Particular** (el auto de un colaborador, huésped, visitante o familiar) y **De una empresa** (flotillas, autos de agencia, taxis y transporte de personal). Cada vehículo tiene una **calcomanía con código QR** que la caseta puede leer con el lector.
 
 ![Padrón vehicular](img/vehiculos/v1-lista.png)
 
@@ -22,12 +22,10 @@ resumen: Registrar los vehículos que entran a la empresa e imprimir su calcoman
 
 1. Entra a **Padrones → Padrón vehicular**.
 2. Escribe en **Buscar por placas, marca, color o proveedor...** las placas (con o sin guiones: `ABC-123-A` o `abc123a`), la marca, el color, el número económico, la empresa o el colaborador.
-3. Usa los botones de **Categoría**: **Todos**, **Propios**, **Flotillas** o **Taxis**. El número junto a cada uno dice cuántos hay.
-   - **Propios:** de huésped, visitante, familiar o colaborador.
-   - **Flotillas:** autos rentados, flotillas de empresas y transporte de personal.
-4. Si quieres, elige también un **Tipo / Estilo** (Sedán, SUV, Pick-up…).
-
-![Solo flotillas](img/vehiculos/v2-flotillas.png)
+3. Usa los botones de **Categoría**: **Todos**, **Particulares** o **De una empresa**. El número junto a cada uno dice cuántos hay.
+   - **Particulares:** el auto de un colaborador, huésped, visitante o familiar.
+   - **De una empresa:** flotillas, autos de agencia, taxis y transporte de personal.
+4. Si quieres, elige también un **Tipo / Estilo** (Sedán, SUV, Pick-up…). Por ejemplo, **De una empresa** + **Autobús** te deja solo el transporte de personal.
 
 **Qué debes ver:** solo los vehículos que coinciden. La búsqueda y el filtro se recuerdan mientras la pestaña siga abierta.
 
@@ -35,24 +33,20 @@ resumen: Registrar los vehículos que entran a la empresa e imprimir su calcoman
 
 1. Toca la tarjeta **Registrar Vehículo**. Se abre **Alta de Vehículo**.
 2. Escribe las **Placas (Únicas)** como vengan. Se guardan en mayúsculas y sin espacios ni guiones; debajo verás cómo quedarán («Se guardarán como UVW482B.»).
-3. En **¿De quién es?** (la categoría) elige del grupo **Particular** (Propio Huésped, Propio Visitante, Propio Familiar, Propio Colaborador) o del grupo **De una empresa** (Flotilla (Empresa/Proveedor), Agencia (Rentado), Taxi / Plataforma (Uber/Didi), Transporte de Personal).
-4. Según la categoría aparecen otros campos:
-   - **Agencia o Empresa Propietaria:** para agencia, flotilla, taxi y transporte de personal. En *Flotilla (Empresa/Proveedor)* es obligatoria.
-   - **Número Económico:** el número pintado en la unidad (por ejemplo `T-045`).
-   - **Colaborador (dueño del vehículo):** solo en *Propio Colaborador*.
-5. En **¿Qué forma tiene?** (el tipo) elige: Sedán, SUV / Camioneta, Pick-up, Autobús, Camión ligero, Motocicleta u Otro.
+3. En **¿De quién es?** (la categoría) elige una de las dos:
+   - **Particular (de un colaborador, huésped, visitante, familiar…)**: no pide empresa. Si es el auto de un colaborador, elígelo en **Colaborador (dueño del vehículo)**; es opcional.
+   - **De una empresa (flotilla, agencia, taxi, transporte…)**: pide la **Empresa propietaria** (elígela de la lista) y el **Número Económico**, el número pintado en la unidad (por ejemplo `T-045`). Los dos son obligatorios.
+4. En **¿Qué forma tiene?** (el tipo) elige: Sedán, SUV / Camioneta, Pick-up, Autobús, Camión ligero, Motocicleta u Otro.
    - Con **Otro** escribe en **Describe el Tipo de Vehículo** qué es (por ejemplo «Carrito de golf»).
-   - En autobús, camión ligero o transporte de personal aparece **Capacidad Máxima** (de 1 a 99 personas).
-6. Escribe la **Marca** y el **Color Físico** (obligatorios) y, si lo sabes, el **Modelo**.
-7. Toca **Guardar**.
-
-![Alta de una flotilla](img/vehiculos/v4-alta-flotilla.png)
+   - En autobús, camión ligero o un vehículo de una empresa aparece **Capacidad Máxima** (de 1 a 99 personas, opcional).
+5. Escribe la **Marca** y el **Color Físico** (obligatorios) y, si lo sabes, el **Modelo**.
+6. Toca **Guardar**.
 
 **Qué debes ver:** «Vehículo UVW482B registrado correctamente.» y, debajo, **Siguiente paso: Imprimir su calcomanía**. Tócalo y se abre la calcomanía en otra pestaña, lista para imprimir.
 
-> **«¿De quién es?» y «¿Qué forma tiene?» no son lo mismo.** La *Categoría* dice **de quién es** (un huésped, una empresa, un taxi). El *Tipo / Estilo* dice **qué forma tiene** (sedán, pick-up…). Por eso «Otro» está en Tipo: un carrito de golf del hotel es Tipo «Otro».
+> **«¿De quién es?» y «¿Qué forma tiene?» no son lo mismo.** La *Categoría* dice **de quién es** (de una persona o de una empresa). El *Tipo / Estilo* dice **qué forma tiene** (sedán, pick-up…). Por eso «Otro» está en Tipo: un carrito de golf del hotel es Tipo «Otro».
 
-![Alta del auto de un colaborador](img/vehiculos/v5-alta-colaborador.png)
+> **¿Un taxi o un auto rentado?** Son **De una empresa**: elige la empresa de taxis o la agencia y escribe su número económico. Si la empresa todavía no existe, dala de alta primero en [Empresas externas](proveedores.md).
 
 ### Avisos mientras escribes las placas
 
@@ -65,7 +59,7 @@ resumen: Registrar los vehículos que entran a la empresa e imprimir su calcoman
 
 ### Registrar un vehículo de una empresa externa
 
-En **Padrones → Empresas externas → Ficha → Flotilla** toca **Agregar vehículo**. La ventana dice «Registrando unidad de …» y la empresa ya viene puesta, con candado. Al guardar o al cerrar regresas a la ficha de la empresa.
+En **Padrones → Empresas externas → Ficha → Flotilla** toca **Agregar vehículo**. La ventana dice «Registrando unidad de …», la categoría ya dice **De una empresa** y la empresa ya viene puesta, con candado: solo falta el número económico y los datos del vehículo. Al guardar o al cerrar regresas a la ficha de la empresa.
 
 ## Cómo editar un vehículo
 
@@ -120,7 +114,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | Revisa las placas: son muy cortas. / son muy largas (máximo 20 caracteres). | Faltan o sobran letras. | Revisa la placa física. |
 | Las placas solo llevan letras y números (los espacios y guiones se quitan solos). | Escribiste signos como `#` o `/`. | Escribe solo letras y números. |
 | Las placas «…» ya están registradas en esta empresa. | Ese vehículo ya existe. | Búscalo; si está dado de baja, reactívalo. |
-| Elige la empresa propietaria de la flotilla. | En *Flotilla* falta la empresa. | Elige la empresa en la lista. |
+| Un vehículo de una empresa lleva su empresa propietaria: elígela de la lista. | Elegiste *De una empresa* y falta la empresa. | Elige la empresa en la lista; si no está, dala de alta en Empresas externas. |
+| Un vehículo de una empresa lleva su número económico (el que trae pintado la unidad). | Elegiste *De una empresa* y falta el número económico. | Escribe el número pintado en la unidad. |
 | Describe el tipo de vehículo (por ejemplo: montacargas, carrito de golf). | Elegiste «Otro» sin describirlo. | Escribe qué vehículo es. |
 | La capacidad debe ser de 1 a 99 personas. | Número fuera de rango. | Corrige la capacidad. |
 | La empresa propietaria no existe en esta empresa o está desactivada. | La empresa se dio de baja. | Elige otra o pide que la reactiven. |
@@ -128,6 +123,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | No veo el botón **Registrar Vehículo**. | Tu rol solo consulta. | Pide el permiso a tu administrador. |
 
 ## Preguntas frecuentes
+
+**¿Dónde quedaron «Propio Huésped», «Taxi / App» y las demás categorías?** Se juntaron en dos: las cuatro «Propio…» ahora son **Particular**, y Agencia, Flotilla, Taxi y Transporte de personal ahora son **De una empresa**. Los vehículos que ya tenías se acomodaron solos.
 
 **¿Tengo que escribir los guiones de las placas?** No. Escríbelas como quieras; se guardan sin espacios ni guiones.
 

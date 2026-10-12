@@ -233,7 +233,7 @@ class ProveedoresTest extends TestCase
         $this->enEmpresa(function () use ($kinha) {
             Persona::create(['tipo' => 'proveedor', 'proveedor_id' => $kinha->id, 'nombre_completo' => 'JUAN PÉREZ CHAN', 'tipo_identificacion' => 'ine', 'folio_identificacion' => 'PECJ800101']);
             Persona::create(['tipo' => 'proveedor', 'proveedor_id' => $kinha->id, 'nombre_completo' => 'LUIS BAJA', 'activo' => false]);
-            Vehiculo::create(['placas' => 'URV1234', 'proveedor_id' => $kinha->id, 'propiedad' => 'transporte_personal', 'marca' => 'NISSAN', 'modelo' => 'URVAN', 'numero_economico' => 'KH-07']);
+            Vehiculo::create(['placas' => 'URV1234', 'proveedor_id' => $kinha->id, 'propiedad' => 'empresa', 'marca' => 'NISSAN', 'modelo' => 'URVAN', 'numero_economico' => 'KH-07']);
             Persona::create(['nombre_completo' => 'VISITANTE SIN PROVEEDOR']);
         });
 

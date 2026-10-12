@@ -80,7 +80,7 @@ Ruta `PUT /personas/{persona}/unir-duplicado` (`personas.unir-duplicado`) → `A
 ## 9. Otros
 
 - **Llaves**: alta corta; Departamento, Puesto, Responsable, ID externo, Caducidad, Costo, NFC y Horarios en `<details class="mas-datos">` (abierto al editar o si traen datos tras un error). El enlace de préstamos dice «Prestar o ver sus préstamos (Operación → Préstamo de llaves)». Botón de impresora en la ficha.
-- **Vehículos**: «¿De quién es?» y «¿Qué forma tiene?»; las ocho categorías se agrupan en `<optgroup>` «Particular» / «De una empresa» (`AdministradorVehiculos::GRUPOS_PROPIEDAD`; no cambian los datos). Impresora en la ficha.
+- **Vehículos**: «¿De quién es?» y «¿Qué forma tiene?»; las ocho categorías se agrupaban en `<optgroup>` «Particular» / «De una empresa»; después el dueño decidió fundirlas en esas dos (ver [vehiculos.md](vehiculos.md#dos-categorías-particular-y-de-una-empresa-mapa-de-procesos)). Impresora en la ficha.
 - **Empresas externas**: «Ficha de empresa externa», «Categoría». Con alcance de una sola sede el botón de sedes es un toque: **Quitar de mi sede** / **Agregar a mi sede** (mismo `proveedores.sedes`).
 - **Equipos de Protección Civil**: «Clave de la etiqueta»; la tarjeta muestra la última revisión de `recorrido_pc_revisiones` (fecha y si tuvo falla; dos consultas para toda la lista).
 - **Rutas**: los horarios se pliegan (resumen hora → hora · días · paraderos; se despliega solo si un campo obligatorio está vacío). `AdministradorRutas::paraderoParaRuta()` reutiliza el paradero cuyo nombre es igual sin acentos, signos ni espacios; en pantalla, «¿Es «X»? Usar ese» para diferencias de 1–2 letras.

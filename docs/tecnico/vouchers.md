@@ -1,6 +1,6 @@
 # Vouchers de reposición
 
-Réplica de `modules/vouchers` de SEGCAT (`voucher_lista.php`, `voucher_imprimir.php`). Pantalla `/vouchers` (Seguridad → Padrones → Inventarios de Seguridad). **Solo consulta e impresión**: los vouchers nacen de las bajas de Llaves, Gafetes y Equipos con el servicio común `App\Services\Inventarios\Vouchers` (ver [lector.md](lector.md#vouchers-de-reposición-base)) y no se editan ni se borran.
+Réplica de `modules/vouchers` de SEGCAT (`voucher_lista.php`, `voucher_imprimir.php`). Pantalla `/vouchers` (menú **Operación → Caseta**, después de Préstamo de llaves; ver [menus.md](menus.md#vouchers-de-reposición-junto-a-la-caseta-mapa-de-procesos)). **Solo consulta e impresión**: los vouchers nacen de las bajas de Llaves, Gafetes y Equipos con el servicio común `App\Services\Inventarios\Vouchers` (ver [lector.md](lector.md#vouchers-de-reposición-base)) y no se editan ni se borran.
 
 - Controlador: `app/Http/Controllers/Seguridad/VoucherController.php`
 - Visibilidad: `app/Services/Vouchers/ConsultaVouchers.php`

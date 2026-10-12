@@ -571,20 +571,19 @@ class CrearDatosDemo extends Command
 
         // [placas, propiedad, tipo, marca, modelo, color, extra]
         $vehiculos = [
-            ['ABC-123-A', 'propio_huesped', 'sedan', 'NISSAN', 'VERSA', 'BLANCO', []],
-            ['YUC-552-1', 'propio_huesped', 'suv', 'MAZDA', 'CX-5', 'ROJO', []],
-            ['QRR 44 10', 'propio_visitante', 'sedan', 'VOLKSWAGEN', 'JETTA', 'GRIS', []],
-            ['UZX-902-A', 'propio_familiar', 'suv', 'HONDA', 'CR-V', 'AZUL', []],
-            ['URB-1830', 'propio_colaborador', 'sedan', 'CHEVROLET', 'AVEO', 'PLATA', ['colaborador_id' => $colaborador('1003')]],
-            ['N8T-2Z', 'propio_colaborador', 'motocicleta', 'ITALIKA', 'FT150', 'NEGRO', ['colaborador_id' => $colaborador('1011')]],
-            ['VPK-77-12', 'propio_colaborador', 'pickup', 'FORD', 'RANGER', 'BLANCO', ['colaborador_id' => $colaborador('1006')]],
-            ['A-4521-TX', 'taxi_app', 'sedan', 'NISSAN', 'TSURU', 'BLANCO Y VERDE', ['numero_economico' => 'T-045', 'proveedor_id' => $taxi]],
-            ['B-1187-TX', 'taxi_app', 'suv', 'TOYOTA', 'AVANZA', 'BLANCO', ['numero_economico' => 'T-112', 'proveedor_id' => $taxi]],
-            ['TP-07-QR', 'transporte_personal', 'autobus', 'MERCEDES-BENZ', 'SPRINTER', 'BLANCO', ['numero_economico' => 'TP-07', 'capacidad' => 20, 'proveedor_id' => $transporte]],
-            ['RNT-220-B', 'agencia_renta', 'sedan', 'KIA', 'RIO', 'BLANCO', ['numero_economico' => 'R-22', 'proveedor_id' => $agencia]],
-            // La flotilla de un proveedor exige proveedor: sin ninguno, queda como transporte de personal
-            ['UPS-03-CL', $cualquiera ? 'empresa_proveedor' : 'transporte_personal', 'camion_ligero', 'ISUZU', 'ELF 300', 'BLANCO', ['numero_economico' => 'U-03', 'capacidad' => 3, 'proveedor_id' => $cualquiera]],
-            ['DEF-567-8', 'propio_visitante', 'otro', 'CLUB CAR', 'ONWARD', 'BEIGE', ['descripcion_otro' => 'Carrito de golf', 'activo' => false]],
+            ['ABC-123-A', 'particular', 'sedan', 'NISSAN', 'VERSA', 'BLANCO', []],
+            ['YUC-552-1', 'particular', 'suv', 'MAZDA', 'CX-5', 'ROJO', []],
+            ['QRR 44 10', 'particular', 'sedan', 'VOLKSWAGEN', 'JETTA', 'GRIS', []],
+            ['UZX-902-A', 'particular', 'suv', 'HONDA', 'CR-V', 'AZUL', []],
+            ['URB-1830', 'particular', 'sedan', 'CHEVROLET', 'AVEO', 'PLATA', ['colaborador_id' => $colaborador('1003')]],
+            ['N8T-2Z', 'particular', 'motocicleta', 'ITALIKA', 'FT150', 'NEGRO', ['colaborador_id' => $colaborador('1011')]],
+            ['VPK-77-12', 'particular', 'pickup', 'FORD', 'RANGER', 'BLANCO', ['colaborador_id' => $colaborador('1006')]],
+            ['A-4521-TX', 'empresa', 'sedan', 'NISSAN', 'TSURU', 'BLANCO Y VERDE', ['numero_economico' => 'T-045', 'proveedor_id' => $taxi]],
+            ['B-1187-TX', 'empresa', 'suv', 'TOYOTA', 'AVANZA', 'BLANCO', ['numero_economico' => 'T-112', 'proveedor_id' => $taxi]],
+            ['TP-07-QR', 'empresa', 'autobus', 'MERCEDES-BENZ', 'SPRINTER', 'BLANCO', ['numero_economico' => 'TP-07', 'capacidad' => 20, 'proveedor_id' => $transporte]],
+            ['RNT-220-B', 'empresa', 'sedan', 'KIA', 'RIO', 'BLANCO', ['numero_economico' => 'R-22', 'proveedor_id' => $agencia]],
+            ['UPS-03-CL', 'empresa', 'camion_ligero', 'ISUZU', 'ELF 300', 'BLANCO', ['numero_economico' => 'U-03', 'capacidad' => 3, 'proveedor_id' => $cualquiera]],
+            ['DEF-567-8', 'particular', 'otro', 'CLUB CAR', 'ONWARD', 'BEIGE', ['descripcion_otro' => 'Carrito de golf', 'activo' => false]],
         ];
 
         foreach ($vehiculos as [$placas, $propiedad, $tipo, $marca, $modelo, $color, $extra]) {
@@ -1841,7 +1840,7 @@ class CrearDatosDemo extends Command
 
         foreach ([['ABC128A', 'NISSAN', 'VERSA', 'BLANCO'], ['XTR901C', 'KIA', 'SOUL', 'NARANJA']] as [$placas, $marca, $modelo, $color]) {
             if (! Vehiculo::where('placas', $placas)->exists()) {
-                $pendiente(new Vehiculo(['placas' => $placas, 'propiedad' => 'propio_visitante', 'tipo' => 'sedan', 'marca' => $marca, 'modelo' => $modelo, 'color' => $color]));
+                $pendiente(new Vehiculo(['placas' => $placas, 'propiedad' => 'particular', 'tipo' => 'sedan', 'marca' => $marca, 'modelo' => $modelo, 'color' => $color]));
             }
         }
         foreach ([['Abarrotes del Caribe S.A. de C.V.', 'proveedor'], ['Plomería Express Cancún', 'contratista']] as [$nombre, $categoria]) {
@@ -1858,7 +1857,7 @@ class CrearDatosDemo extends Command
         }
         // Uno ya revisado y rechazado: se queda como historia y la caseta ya no lo puede usar
         if (! Vehiculo::where('placas', 'ZZZ000')->exists()) {
-            $pendiente(new Vehiculo(['placas' => 'ZZZ000', 'propiedad' => 'propio_visitante', 'tipo' => 'sedan', 'marca' => 'SIN DATOS', 'color' => 'SIN DATOS']), [
+            $pendiente(new Vehiculo(['placas' => 'ZZZ000', 'propiedad' => 'particular', 'tipo' => 'sedan', 'marca' => 'SIN DATOS', 'color' => 'SIN DATOS']), [
                 'verificacion' => Vehiculo::RECHAZADO, 'activo' => false, 'motivo_rechazo' => 'Placas de prueba capturadas por error: la unidad no existe.',
                 'verificado_por' => $admin->id, 'verificado_en' => now(),
             ]);

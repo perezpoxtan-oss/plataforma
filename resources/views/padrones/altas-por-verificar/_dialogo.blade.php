@@ -50,12 +50,29 @@
                             <input type="text" id="va_placas" name="placas" class="campo campo-placas" maxlength="25" autocapitalize="characters" required>
                         </div>
                         <div class="col-md-7">
-                            <label class="campo-etiqueta" for="va_propiedad">Categoría</label>
+                            <label class="campo-etiqueta" for="va_propiedad">¿De quién es? <span class="text-lowercase fw-normal">(categoría)</span></label>
                             <select id="va_propiedad" name="propiedad" class="campo" required>
                                 @foreach (\App\Services\Vehiculos\AdministradorVehiculos::OPCIONES_PROPIEDAD as $clave => $texto)
                                     <option value="{{ $clave }}">{{ $texto }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                    </div>
+                    {{-- «De una empresa» lleva empresa propietaria y número económico: se completan aquí al verificar --}}
+                    <div class="row" data-mostrar-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::CON_PROVEEDOR) }}}'>
+                        <div class="col-md-8">
+                            <label class="campo-etiqueta" for="va_proveedor">Empresa propietaria</label>
+                            <select id="va_proveedor" name="proveedor_id" class="campo" data-requerido-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::PROVEEDOR_OBLIGATORIO) }}}'>
+                                <option value="">-- Seleccionar del Directorio --</option>
+                                @foreach (\App\Models\Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']) as $prVa)
+                                    <option value="{{ $prVa->id }}">{{ $prVa->nombre }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="campo-etiqueta" for="va_economico">Número económico</label>
+                            <input type="text" id="va_economico" name="numero_economico" class="campo text-uppercase" maxlength="30"
+                                   data-requerido-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::ECONOMICO_OBLIGATORIO) }}}'>
                         </div>
                     </div>
                     <div class="row">

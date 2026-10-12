@@ -16,6 +16,7 @@ use App\Models\Vehiculo;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Firmas\Firmas;
 use App\Services\Transporte\BitacoraTransporte;
+use App\Services\Vehiculos\AdministradorVehiculos;
 use App\Support\AjustesCaseta;
 use App\Support\Csv;
 use App\Support\Entrada;
@@ -374,7 +375,12 @@ class TransporteController extends Controller
             'tipo' => $v->tipo === 'autobus' ? 'autobus' : ($v->tipo === 'sedan' || $v->tipo === 'suv' ? $v->tipo : ($v->descripcion_otro === 'VAN / URVAN' ? 'van' : 'otro')),
             'marca' => $v->marca, 'modelo' => $v->modelo, 'economico' => $v->numero_economico, 'capacidad' => $v->capacidad,
         ], fn ($x) => $x !== null && $x !== '')];
-        $vehiculos = fn (array $propiedades) => Vehiculo::where('activo', true)->whereIn('propiedad', $propiedades)
+        // Vehículos «De una empresa»: los taxis son los que no tienen empresa propietaria o cuya empresa es de taxis
+        $taxis = AdministradorVehiculos::CATEGORIAS_TAXI;
+        $vehiculos = fn (bool $soloTaxis) => Vehiculo::where('activo', true)->whereIn('propiedad', AdministradorVehiculos::CON_PROVEEDOR)
+            ->where(fn ($q) => $soloTaxis
+                ? $q->whereNull('proveedor_id')->orWhereHas('proveedor', fn ($p) => $p->whereIn('categoria', $taxis))
+                : $q->whereHas('proveedor', fn ($p) => $p->whereNotIn('categoria', $taxis)))
             ->orderByDesc('updated_at')->limit(self::SUGERENCIAS)
             ->get(['id', 'placas', 'tipo', 'descripcion_otro', 'marca', 'modelo', 'numero_economico', 'capacidad'])
             ->mapWithKeys($unidad)->sortKeys();
@@ -389,8 +395,8 @@ class TransporteController extends Controller
             'horarios' => $horarios,
             'sugerencias' => $sugerencias,
             // Sugerencias solo para quien puede consultar esos padrones
-            'unidades' => $actor->can('vehiculos.ver') ? $vehiculos(['transporte_personal', 'empresa_proveedor', 'agencia_renta']) : collect(),
-            'taxis' => $actor->can('vehiculos.ver') ? $vehiculos(['taxi_app']) : collect(),
+            'unidades' => $actor->can('vehiculos.ver') ? $vehiculos(false) : collect(),
+            'taxis' => $actor->can('vehiculos.ver') ? $vehiculos(true) : collect(),
             'choferes' => $verTelefono ? $choferes : collect(),
             'paraderos' => $this->paraderos($sedes->pluck('id')->all()),
         ];

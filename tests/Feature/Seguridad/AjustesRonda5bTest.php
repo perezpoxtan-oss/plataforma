@@ -179,8 +179,8 @@ class AjustesRonda5bTest extends TestCase
         $this->assertStringContainsString('<input type="hidden" name="proveedor_id" value="'.$maya->id.'">', $alta);
         $this->assertStringNotContainsString('Otra Empresa', $alta);
         // Solo categorías que llevan empresa propietaria
-        $this->assertStringNotContainsString('value="propio_huesped"', $alta);
-        $this->assertStringContainsString('value="empresa_proveedor"', $alta);
+        $this->assertStringNotContainsString('value="particular"', $alta);
+        $this->assertStringContainsString('value="empresa"', $alta);
 
         // Sin venir de la ficha: la lista completa y sin regreso
         $normal = $this->actingAs($this->admin)->get('/vehiculos')->assertOk()->getContent();
@@ -192,7 +192,7 @@ class AjustesRonda5bTest extends TestCase
 
     public function test_vehiculos_filtra_categoria_y_tipo_estilo_en_la_misma_linea(): void
     {
-        $this->enEmpresa(fn () => Vehiculo::create(['placas' => 'GOLF-01', 'tipo' => 'otro', 'descripcion_otro' => 'Carrito de golf', 'marca' => 'Club Car', 'color' => 'Blanco', 'propiedad' => 'propio_visitante']));
+        $this->enEmpresa(fn () => Vehiculo::create(['placas' => 'GOLF-01', 'tipo' => 'otro', 'descripcion_otro' => 'Carrito de golf', 'marca' => 'Club Car', 'color' => 'Blanco', 'propiedad' => 'particular']));
 
         $html = $this->actingAs($this->admin)->get('/vehiculos')->assertOk()->getContent();
         $this->assertStringContainsString('data-filtro-estilo-vehiculo', $html);
@@ -311,7 +311,7 @@ class AjustesRonda5bTest extends TestCase
         $this->assertStringContainsString('data-parecidos-vivo="personas"', $html);
 
         // El agente (registra en Transporte) recibe los parecidos con origen=transporte
-        $this->enEmpresa(fn () => Vehiculo::create(['placas' => 'ABC-123-A', 'tipo' => 'autobus', 'marca' => 'Volvo', 'color' => 'Blanco', 'propiedad' => 'transporte_personal']));
+        $this->enEmpresa(fn () => Vehiculo::create(['placas' => 'ABC-123-A', 'tipo' => 'autobus', 'marca' => 'Volvo', 'color' => 'Blanco', 'propiedad' => 'empresa']));
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
         $this->actingAs($agente)->getJson('/altas-por-verificar/parecidos?padron=vehiculos&origen=transporte&placas=ABC128A')
             ->assertOk()->assertJsonPath('resultados.0.titulo', 'ABC-123-A');

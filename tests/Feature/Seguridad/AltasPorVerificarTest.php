@@ -60,7 +60,7 @@ class AltasPorVerificarTest extends TestCase
     private function vehiculo(string $placas, array $extra = [], ?Empresa $empresa = null): Vehiculo
     {
         return $this->enEmpresa(fn () => Vehiculo::create(array_merge([
-            'placas' => Vehiculo::normalizarPlacas($placas), 'propiedad' => 'propio_huesped', 'tipo' => 'sedan', 'marca' => 'NISSAN', 'modelo' => 'VERSA', 'color' => 'BLANCO',
+            'placas' => Vehiculo::normalizarPlacas($placas), 'propiedad' => 'particular', 'tipo' => 'sedan', 'marca' => 'NISSAN', 'modelo' => 'VERSA', 'color' => 'BLANCO',
         ], $extra)), $empresa);
     }
 
@@ -93,7 +93,7 @@ class AltasPorVerificarTest extends TestCase
 
     private function datosVehiculo(array $extra = []): array
     {
-        return array_merge(['placas' => 'xtr-901-c', 'propiedad' => 'propio_visitante', 'tipo' => 'sedan', 'marca' => 'kia', 'color' => 'naranja'], $extra);
+        return array_merge(['placas' => 'xtr-901-c', 'propiedad' => 'particular', 'tipo' => 'sedan', 'marca' => 'kia', 'color' => 'naranja'], $extra);
     }
 
     private function configurarCorreo(): void
@@ -311,7 +311,7 @@ class AltasPorVerificarTest extends TestCase
     {
         $alta = $this->pendiente($this->vehiculo('XTR-901-C', ['marca' => 'KIA', 'modelo' => null, 'color' => 'NARANJA']));
 
-        $this->actingAs($this->admin)->putJson("/vehiculos/{$alta->id}/aceptar", ['placas' => 'XTR901C', 'propiedad' => 'propio_visitante', 'tipo' => 'suv', 'marca' => 'kia', 'modelo' => 'soul', 'color' => 'naranja'])
+        $this->actingAs($this->admin)->putJson("/vehiculos/{$alta->id}/aceptar", ['placas' => 'XTR901C', 'propiedad' => 'particular', 'tipo' => 'suv', 'marca' => 'kia', 'modelo' => 'soul', 'color' => 'naranja'])
             ->assertOk()->assertJson(['ok' => true])->assertJsonPath('ir', route('vehiculos.index').'#vehiculo-'.$alta->id);
 
         $alta = $this->fresco($alta);
@@ -391,7 +391,7 @@ class AltasPorVerificarTest extends TestCase
         $correcta = $this->proveedor('Abarrotes del Caribe', $this->playa);
         $alta = $this->pendiente($this->proveedor('Abarrotes Caribe SA', $this->centro));
         $chofer = $this->persona('Jesús Balam', ['tipo' => 'proveedor', 'proveedor_id' => $alta->id]);
-        $camion = $this->vehiculo('UPS-03', ['propiedad' => 'empresa_proveedor', 'proveedor_id' => $alta->id]);
+        $camion = $this->vehiculo('UPS-03', ['propiedad' => 'empresa', 'proveedor_id' => $alta->id]);
 
         $this->actingAs($this->admin)->put("/proveedores/{$alta->id}/unir", ['destino_id' => $correcta->id])->assertRedirect();
         $this->assertSame($correcta->id, $this->fresco($chofer)->proveedor_id);

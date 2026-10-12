@@ -211,7 +211,7 @@ class TransporteTest extends TestCase
         $m = $this->enEmpresa(fn () => MovimientoTransporte::with('vehiculo', 'chofer')->firstOrFail());
         $this->assertSame(['llegada', 'a_tiempo', 18, '2026-10-05'], [$m->tipo_movimiento, $m->estatus, $m->cantidad_pax, $m->fecha->toDateString()]);
         $this->assertSame([$this->centro->id, $this->llegada->ruta_id, $this->llegada->id, $this->admin->id], [$m->sede_id, $m->ruta_id, $m->ruta_horario_id, $m->creado_por]);
-        $this->assertSame(['TKH101', 'transporte_personal', 'autobus', 'MERCEDES-BENZ', 'BOXER', '101', 40, $this->kinha->id],
+        $this->assertSame(['TKH101', 'empresa', 'autobus', 'MERCEDES-BENZ', 'BOXER', '101', 40, $this->kinha->id],
             [$m->vehiculo->placas, $m->vehiculo->propiedad, $m->vehiculo->tipo, $m->vehiculo->marca, $m->vehiculo->modelo, $m->vehiculo->numero_economico, $m->vehiculo->capacidad, $m->vehiculo->proveedor_id]);
         $this->assertSame(['JUAN CARLOS POOT CHAN', 'proveedor', $this->kinha->id, '9981234567'], [$m->chofer->nombre_completo, $m->chofer->tipo, $m->chofer->proveedor_id, $m->chofer->telefono]);
         $this->assertNull($m->monto);
@@ -251,7 +251,7 @@ class TransporteTest extends TestCase
         [$a, $b] = $vales->all();
         $this->assertSame($a->lote, $b->lote);
         $this->assertNotNull($a->lote);
-        $this->assertSame(['no_llego', '180.00', 2, 'TX230', 'taxi_app', null, 'ALBERTO CANCHÉ', 'CHEDRAUI PORTILLO'],
+        $this->assertSame(['no_llego', '180.00', 2, 'TX230', 'empresa', null, 'ALBERTO CANCHÉ', 'CHEDRAUI PORTILLO'],
             [$a->estatus, $a->monto, $a->cantidad_pax, $a->vehiculo->placas, $a->vehiculo->propiedad, $a->vehiculo->proveedor_id, $a->chofer->nombre_completo, $a->paradero->nombre]);
         $this->assertSame([$this->colabs[0]->id, $this->colabs[1]->id], $a->pasajeros->pluck('id')->sort()->values()->all());
         $this->assertSame(['320.00', 'Lluvia intensa.', 'suv', 'PLAZA LAS AMÉRICAS'], [$b->monto, $b->justificacion, $b->vehiculo->tipo, $b->paradero->nombre]);

@@ -7040,14 +7040,54 @@ document.addEventListener('click', function (e) {
         });
         var nuevo = nodo('button', 'btn btn-outline-dark fw-bold mt-2 btn-alta-nuevo', 'No es ninguno: registrarlo como nuevo');
         nuevo.type = 'button';
+        nuevo.setAttribute('data-alta-nuevo', '');
+        // Doble confirmación (decisión del dueño): antes de crear otro registro se pregunta una vez más
+        var seguro = confirmacionNuevo(form, lista.length, nuevo);
         nuevo.addEventListener('click', function () {
+            nuevo.hidden = true;
+            seguro.hidden = false;
+            var si = seguro.querySelector('[data-alta-si-nuevo]');
+            if (si) { si.focus(); }
+        });
+        caja.appendChild(nuevo);
+        caja.appendChild(seguro);
+        caja.hidden = false;
+        caja.scrollIntoView({ block: 'nearest' });
+    }
+
+    function confirmacionNuevo(form, cuantos, nuevo) {
+        var seguro = nodo('div', 'confirmar-alta-nuevo mt-2');
+        seguro.setAttribute('role', 'alertdialog');
+        seguro.setAttribute('data-alta-seguro', '');
+        seguro.hidden = true;
+        var pregunta = nodo('p', 'fw-semibold mb-2', cuantos === 1
+            ? '¿Seguro que no es el registro parecido? Se creará un registro nuevo pendiente de verificar.'
+            : '¿Seguro que no es ninguno de los ' + cuantos + ' parecidos? Se creará un registro nuevo pendiente de verificar.');
+        pregunta.id = 'alta-seguro-' + (form.dataset.altaPadron || 'padron');
+        seguro.setAttribute('aria-labelledby', pregunta.id);
+        seguro.appendChild(pregunta);
+        var acciones = nodo('div', 'acciones-alta-nuevo');
+        var volver = nodo('button', 'btn btn-outline-secondary fw-bold', 'Volver a revisar');
+        volver.type = 'button';
+        volver.setAttribute('data-alta-volver', '');
+        volver.addEventListener('click', function () {
+            seguro.hidden = true;
+            nuevo.hidden = false;
+            var primero = form.querySelector('[data-alta-parecidos] .opcion-parecido:not([disabled])');
+            (primero || nuevo).focus();
+        });
+        var si = nodo('button', 'btn btn-dark fw-bold', 'Sí, registrar nuevo');
+        si.type = 'button';
+        si.setAttribute('data-alta-si-nuevo', '');
+        si.addEventListener('click', function () {
             confirmar(form, '1');
             ocultarParecidos(form);
             form.requestSubmit();
         });
-        caja.appendChild(nuevo);
-        caja.hidden = false;
-        caja.scrollIntoView({ block: 'nearest' });
+        acciones.appendChild(volver);
+        acciones.appendChild(si);
+        seguro.appendChild(acciones);
+        return seguro;
     }
 
     // Fase de captura: se revisa antes que el registro rápido de cada padrón
@@ -7271,8 +7311,11 @@ document.addEventListener('click', function (e) {
         var aceptar = d.querySelector('[data-va-form="aceptar"]');
         Object.keys(actual.valores || {}).forEach(function (campo) {
             var c = aceptar.querySelector('[name="' + campo + '"]');
-            if (c) { c.value = actual.valores[campo] === null ? '' : String(actual.valores[campo]); }
+            if (c) { c.disabled = false; c.value = actual.valores[campo] === null ? '' : String(actual.valores[campo]); }
         });
+        // Campos que dependen de otro (p. ej. empresa propietaria de un vehículo «De una empresa»)
+        var disparador = aceptar.querySelector('[name="propiedad"]');
+        if (disparador) { disparador.dispatchEvent(new Event('change', { bubbles: true })); }
         var parecidos = d.querySelector('[data-va-parecidos]');
         pintarLista(parecidos, [], null);
         parecidos.appendChild(nodo('p', 'campo-ayuda m-0', 'Buscando parecidos...'));

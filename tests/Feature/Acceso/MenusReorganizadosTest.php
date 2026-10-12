@@ -81,10 +81,11 @@ class MenusReorganizadosTest extends TestCase
         $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'informes', 'estructura'], array_keys($menu));
         $this->assertSame(['Informes' => ['dashboard', 'bitacora_dia', 'tendencias', 'informe_ejecutivo']], $menu['informes']);
         $this->assertSame([
-            'Caseta' => ['accesos', 'prestamo_llaves', 'pases_salida', 'transporte'],
+            // Mapa de procesos: Vouchers de reposición junto a lo de la caseta
+            'Caseta' => ['accesos', 'prestamo_llaves', 'vouchers', 'pases_salida', 'transporte'],
             'Incidentes' => ['novedades', 'lost_found', 'robo'],
             'Protección civil' => ['recorridos_pc'],
-            'Activos' => ['responsivas', 'vouchers'],
+            'Activos' => ['responsivas'],
             'Consulta' => ['procedimientos'],
         ], $menu['operacion']);
         $this->assertSame([
@@ -142,7 +143,7 @@ class MenusReorganizadosTest extends TestCase
         $this->assertSame(['operacion', 'padrones'], array_slice(array_keys($menu), 0, 2));
         $this->assertArrayNotHasKey('estructura', $menu);
         $this->assertArrayNotHasKey('informes', $menu);
-        $this->assertContains('vouchers', $menu['operacion']['Activos']);
+        $this->assertContains('vouchers', $menu['operacion']['Caseta']);
 
         $html = $this->actingAs($agente)->get('/')->assertOk()->getContent();
         $barra = substr($html, strpos($html, 'class="barra-inferior"'));
@@ -204,6 +205,10 @@ class MenusReorganizadosTest extends TestCase
 
     public function test_la_migracion_reacomoda_una_instalacion_existente_y_se_puede_repetir(): void
     {
+        // Mapa de procesos: Vouchers de reposición pasa después a la Caseta (su propia migración)
+        $actual = $this->acomodo();
+        $vouchersEnCaseta = require database_path('migrations/2026_10_29_000320_vouchers_en_la_caseta.php');
+        $vouchersEnCaseta->down();
         $esperado = $this->acomodo();
         // Lección 36: antes de esta migración Vacantes no existía; su propia migración la acomoda después
         $vacantes = Modulo::where('clave', 'vacantes')->value('orden_menu');
@@ -248,10 +253,12 @@ class MenusReorganizadosTest extends TestCase
         $vacantesMigracion = require database_path('migrations/2026_10_17_000200_crear_vacantes.php');
         (fn () => $this->modulo())->call($vacantesMigracion);
         $this->assertSame($esperadoFinal, $this->acomodo());
+        $vouchersEnCaseta->up();
+        $this->assertSame($actual, $this->acomodo());
 
         // El MenuSeeder después de la migración no mueve nada
         $this->seed(MenuSeeder::class);
-        $this->assertSame($esperadoFinal, $this->acomodo());
+        $this->assertSame($actual, $this->acomodo());
     }
 
     // ------------------------------------------------------------ Mis pendientes

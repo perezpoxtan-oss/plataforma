@@ -6,10 +6,10 @@ Reorganización de la navegación aprobada por el dueño del proyecto (lección 
 
 | # | Menú (`menus.clave`) | Sección (`seccion_menu`) | Módulos (`modulos.clave` → nombre en el menú) |
 |---|---|---|---|
-| 1 | Operación (`operacion`) | Caseta | `accesos` Bitácora de accesos · `prestamo_llaves` Préstamo de llaves · `pases_salida` Pases de salida · `transporte` Bitácora de transporte |
+| 1 | Operación (`operacion`) | Caseta | `accesos` Bitácora de accesos · `prestamo_llaves` Préstamo de llaves · `vouchers` Vouchers de reposición (mapa de procesos; antes en Activos) · `pases_salida` Pases de salida · `transporte` Bitácora de transporte |
 | | | Incidentes | `novedades` **Novedades** · `lost_found` Lost & Found · `robo` **Robo** |
 | | | Protección civil | `recorridos_pc` Recorridos de Protección Civil |
-| | | Activos | `responsivas` Responsivas · `vouchers` Vouchers de reposición (antes en Padrones) |
+| | | Activos | `responsivas` Responsivas |
 | | | Consulta | `procedimientos` Procedimientos |
 | 2 | Padrones (`padrones`) | Personas y vehículos | `proveedores` **Empresas externas** · `visitantes` Padrón de personas · `vehiculos` Padrón vehicular |
 | | | Inventarios | `llaves` Catálogo de llaves · `gafetes` Gafetes · `equipos` Equipos de seguridad · `equipos_pc` Equipos de Protección Civil |
@@ -67,3 +67,12 @@ Botón junto a la campana (PC: «Mis pendientes» + número; celular: ícono + n
 `tests/Feature/Acceso/MenusReorganizadosTest.php`: acomodo del Administrador y del superadministrador, nombres cortos, Agente (Operación y Padrones, barra inferior Accesos → Novedades, vouchers solo consulta), Recursos Humanos (sin Autorizaciones en el menú pero con su pantalla), Jefe de seguridad, Informes y módulos sin ruta ocultos (y visibles al tener ruta), migración sobre una instalación con el acomodo anterior (dos veces, y el seeder después), «Mis pendientes» (conteo, visible/oculto/inexistente, JSON del resumen, aislamiento entre empresas, datos demo y número acotado de consultas).
 
 > Mejoras de 2026-10 (roles sin números, asistente de permisos, configuración por módulo, avisos por persona, historial y varias sedes): ver [estructura-mejoras.md](estructura-mejoras.md) y [ADR-0016](../decisiones/ADR-0016-mejoras-de-estructura.md).
+
+## Vouchers de reposición junto a la caseta (mapa de procesos)
+
+Decisión del dueño: `vouchers` pasa de **Operación → Activos** a **Operación → Caseta**, después de `prestamo_llaves`. Mismo permiso (`vouchers.*`) y misma ruta (`vouchers.index`); solo cambia `modulos.seccion_menu` y `orden_menu`.
+
+- `MenuSeeder` lo acomoda así en instalaciones nuevas.
+- Migración `2026_10_29_000320_vouchers_en_la_caseta`: en instalaciones existentes lo mueve **solo si sigue en Operación → Activos** (si alguien lo acomodó en otro lugar desde la interfaz, se respeta) y reacomoda `orden_menu` del menú Operación sin huecos. Idempotente. `down()` lo regresa a Activos después de `responsivas` solo si sigue en Caseta.
+- Los menús son globales (tabla `modulos`), así que aplica a todas las empresas a la vez; el nombre visible por empresa (`empresa_modulos.nombre_visible`) no cambia.
+- Pruebas: `tests/Feature/Acceso/VouchersEnLaCasetaTest.php` y `MenusReorganizadosTest`.

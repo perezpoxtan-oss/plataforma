@@ -107,7 +107,7 @@ class AltasPorVerificar
 
     /** Lo que se puede corregir al aceptar, por padrón. */
     public const CAMPOS_AL_ACEPTAR = [
-        'vehiculos' => ['placas', 'propiedad', 'tipo', 'marca', 'modelo', 'color'],
+        'vehiculos' => ['placas', 'propiedad', 'tipo', 'marca', 'modelo', 'color', 'proveedor_id', 'numero_economico'],
         'proveedores' => ['nombre', 'categoria', 'rfc', 'telefono'],
         'personas' => ['nombre_completo', 'tipo', 'tipo_identificacion', 'folio_identificacion', 'telefono'],
     ];

@@ -15,7 +15,7 @@ Usa el demo (`plataforma:demo`), contraseña `Demo1234!`. Usuarios: **admin.demo
 ## Práctica 1 · Recorre los menús (admin.demo, computadora)
 
 1. Abre **Operación**. Verás cinco grupos: Caseta, Incidentes, Protección civil, Activos y Consulta.
-2. Busca **Vouchers de reposición**: ahora está en **Operación → Activos** (antes en Padrones).
+2. Busca **Vouchers de reposición**: está en **Operación → Caseta**, justo debajo de **Préstamo de llaves** (junto a lo que usa la caseta).
 3. Abre **Padrones**: la primera opción es **Empresas externas** (el mismo nombre que dice la pantalla).
 4. Abre **Recursos Humanos**: ya no está «Autorizaciones departamentales».
 5. Fíjate en **Informes**: Tablero, Bitácora del día, Tendencias e Informe ejecutivo (lección 46). A la caseta (Agente) no le aparece.

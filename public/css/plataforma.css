@@ -3159,6 +3159,9 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .opcion-parecido small { font-weight: 500; color: var(--texto-suave); }
 .opcion-parecido[disabled] { opacity: 0.65; cursor: not-allowed; }
 .btn-alta-nuevo { min-height: 44px; width: 100%; }
+.confirmar-alta-nuevo { border: 1px solid #fcd34d; background: #fffbeb; border-radius: 10px; padding: 0.75rem; }
+.confirmar-alta-nuevo .acciones-alta-nuevo { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.confirmar-alta-nuevo .acciones-alta-nuevo .btn { min-height: 44px; flex: 1 1 10rem; }
 .acceso-sugerencia.encabezado-parecidos { cursor: default; background: #fffbeb; color: #92400e; font-weight: 800; font-size: 0.8rem; }
 .acceso-sugerencia.parecido strong::before { content: '≈ '; color: #b45309; }
 .acceso-sugerencia.parecido[disabled] { opacity: 0.6; cursor: not-allowed; }
