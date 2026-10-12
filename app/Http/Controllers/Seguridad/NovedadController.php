@@ -15,8 +15,10 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Services\Firmas\Firmas;
 use App\Services\Novedades\AdministradorNovedades;
+use App\Services\Novedades\AjustesNovedades;
 use App\Services\Novedades\CoincidenciasLostFound;
 use App\Services\Novedades\FichaHechos\FichaDeHechos;
+use App\Services\Novedades\TurnosNovedades;
 use App\Support\Csv;
 use App\Support\Entrada;
 use App\Support\HoraLocal;
@@ -57,12 +59,16 @@ class NovedadController extends Controller
             return view('seguridad.novedades.index', ['sinEmpresa' => true]);
         }
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $empresaId) {
+        // Mejoras Incidentes: «Pendiente de turno» avisa al turno que lo recibe aunque el cron del hospedaje no corra
+        app(TurnosNovedades::class)->revisarSiToca($empresaId);
+        $mios = $request->boolean('mios');
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $empresaId, $mios) {
             $base = fn () => $this->novedades->limitar(Novedad::query(), $actor, 'ver')
-                ->with(['sede:id,nombre', 'area:id,nombre,nivel,padre_id', 'area.padre:id,nombre', 'areaEspecifica:id,nombre',
+                ->with(['sede:id,nombre,zona_horaria,empresa_id', 'area:id,nombre,nivel,padre_id', 'area.padre:id,nombre', 'areaEspecifica:id,nombre',
                     'creador:id,name', 'editor:id,name', 'asignado:id,name', 'cerrador:id,name', 'articulos:id,novedad_id,folio'])
                 ->when($request->routeIs('lost_found.index'), fn ($q) => $q->where('categoria', 'lost_found'));
-            $abiertas = $base()->where('estatus', '!=', Novedad::RESUELTO)->orderByDesc('created_at')->get();
+            $abiertas = $base()->where('estatus', '!=', Novedad::RESUELTO)->when($mios, fn ($q) => $q->where('asignado_a', $actor->id))->orderByDesc('created_at')->get();
             $resueltas = $base()->where('estatus', Novedad::RESUELTO)->orderByDesc('cerrado_en')->orderByDesc('id')->limit(AdministradorNovedades::MAX_RESUELTOS)->get();
 
             $soloLostFound = $this->novedades->soloLostFound($actor);
@@ -101,6 +107,10 @@ class NovedadController extends Controller
                     'crear' => $puedeCrear,
                     'exportar' => $actor->can('novedades.exportar'),
                 ],
+                // Mejoras Incidentes: nombre propio del menú, «canalizados a mí» y de dónde se llegó (Robo)
+                'nombreModulo' => ($ajustes = app(AjustesNovedades::class))->nombrePropio($empresaId) ? $ajustes->nombreMenu($empresaId) : null,
+                'mios' => $mios,
+                'volverRobo' => $request->query('volver') === 'robo' && $actor->can('robo.ver'),
             ]);
         });
     }
@@ -111,9 +121,13 @@ class NovedadController extends Controller
         $empresaId = $this->empresaDeTrabajo($request);
 
         $novedad = $this->tenant->conEmpresa($empresaId, fn () => $this->novedades->crear($request->user(), $request->all()));
+        $objeto = $novedad->categoria === 'lost_found' ? $novedad->articulos()->value('folio') : null;
 
         return redirect()->to(route('novedades.index').'#novedad-'.$novedad->id)
-            ->with('ok', "Ticket {$novedad->folio()} despachado correctamente. Ábrelo con «Abrir Expediente» para darle seguimiento.");
+            ->with('ok', "Ticket {$novedad->folio()} despachado correctamente."
+                .($objeto ? " El objeto quedó en resguardo con el folio {$objeto}." : '')
+                .($novedad->asignado ? " Le avisamos a {$novedad->asignado->name}." : '')
+                .' Ábrelo con «Abrir Expediente» para darle seguimiento.');
     }
 
     /**
@@ -138,10 +152,15 @@ class NovedadController extends Controller
         $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $novedad) {
             $modelo = $this->novedades->buscar($request->user(), $novedad, 'editar');
 
-            return $this->novedades->actualizar($request->user(), $modelo, $request->except(['_token', '_method', '_dialogo']));
+            return $this->novedades->actualizar($request->user(), $modelo, $request->except(['_token', '_method', '_dialogo', '_volver']));
         });
 
-        return redirect()->to(route('novedades.index').'#novedad-'.$modelo->id)->with('ok', "Expediente {$modelo->folio()} guardado correctamente.");
+        // Mejoras Incidentes: si se abrió desde Seguimiento de robos, se regresa ahí
+        $destino = $request->input('_volver') === 'robo' && $modelo->categoria === 'robo' && $request->user()->can('robo.ver')
+            ? route('robo.index').'#robo-'.$modelo->id
+            : route('novedades.index').'#novedad-'.$modelo->id;
+
+        return redirect()->to($destino)->with('ok', "Expediente {$modelo->folio()} guardado correctamente.");
     }
 
     public function reabrir(Request $request, int $novedad): RedirectResponse

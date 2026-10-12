@@ -4,6 +4,7 @@ namespace App\Support\Menu;
 
 use App\Models\Candidato;
 use App\Models\DepartamentoResponsable;
+use App\Models\Novedad;
 use App\Models\Postulacion;
 use App\Models\User;
 use App\Services\Activos\PendientesActivos;
@@ -11,6 +12,7 @@ use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\PlazosCandidatos;
+use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Procedimientos\AdministradorProcedimientos;
@@ -160,6 +162,27 @@ class MisPendientes
             $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $cuentas, route('usuarios.index', ['revisar' => 1]));
         }
 
+        // Mejoras Incidentes (criterio 1): tickets canalizados a mí y pendientes de turno sin dueño de mis sedes
+        if ($actor->can('novedades.editar')) {
+            $novedades = app(AdministradorNovedades::class);
+            // Una sola consulta para los dos renglones (sin N+1)
+            $conteo = $novedades->limitar(Novedad::query(), $actor, 'editar')
+                ->where('estatus', '!=', Novedad::RESUELTO)
+                ->where(fn ($q) => $q->where('asignado_a', $actor->id)
+                    ->orWhere(fn ($x) => $x->where('estatus', Novedad::PENDIENTE_TURNO)->whereNull('asignado_a')))
+                ->toBase()
+                ->selectRaw('SUM(CASE WHEN asignado_a = ? THEN 1 ELSE 0 END) AS mios', [$actor->id])
+                ->selectRaw('SUM(CASE WHEN asignado_a IS NULL AND estatus = ? THEN 1 ELSE 0 END) AS sin_dueno', [Novedad::PENDIENTE_TURNO])
+                ->first();
+            // Solo aparecen cuando hay algo (la caseta no ve renglones vacíos de la bitácora)
+            if (($mios = (int) ($conteo->mios ?? 0)) > 0) {
+                $items[] = $this->item('novedades_mias', 'Tickets canalizados a mí', 'bi-headset', $mios, route('novedades.index', ['mios' => 1]));
+            }
+            if (($sinDueno = (int) ($conteo->sin_dueno ?? 0)) > 0) {
+                $items[] = $this->item('novedades_turno', 'Pendientes de turno sin dueño', 'bi-hourglass-split', $sinDueno, route('novedades.index'));
+            }
+        }
+        // Fin Mejoras Incidentes
         // Mejoras activos (ADR-0014): Vo.Bo. de vales, procedimientos por aprobar, llaves y equipos de turno fuera de tiempo
         foreach (app(PendientesActivos::class)->para($actor, $empresaId) as $pendiente) {
             $items[] = $pendiente;

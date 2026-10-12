@@ -50,6 +50,15 @@ class CentroNotificaciones
         'pase_rechazado' => ['bi-x-octagon-fill', 'alerta'],
         'pase_vencido' => ['bi-exclamation-triangle-fill', 'alerta'],
         'pase_llega' => ['bi-truck', 'info'],
+        // Mejoras Incidentes (ADR-0013): canalizar, cerrar, pendiente de turno, hallazgos de recorrido y firmas de pases que tardan
+        'novedad_canalizada' => ['bi-headset', 'alerta'],
+        'novedad_resuelta' => ['bi-check2-circle', 'exito'],
+        'novedad_turno' => ['bi-hourglass-split', 'alerta'],
+        'novedad_turno_escalada' => ['bi-alarm-fill', 'alerta'],
+        'recorrido_pc_hallazgo' => ['bi-fire', 'alerta'],
+        'pase_firma_recordatorio' => ['bi-alarm', 'alerta'],
+        'pase_firma_escalada' => ['bi-alarm-fill', 'alerta'],
+        // Fin Mejoras Incidentes
         // Mejoras activos (ADR-0014): Vo.Bo. de vales, procedimientos, llaves fuera y equipos de turno
         'vale_taxi_por_autorizar' => ['bi-taxi-front', 'alerta'],
         'procedimiento_revision' => ['bi-journal-check', 'alerta'],

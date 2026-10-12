@@ -136,3 +136,54 @@ Plantillas de rol: el **Agente** (módulo de Operación) despacha, atiende e imp
 - **NV-06 — secciones plegables** en los formatos Valores a la Vista, Siniestro PC, Lost & Found y Robo (también en Robo — Seguimiento): cada título numerado es un `<x-seccion>`; ver [acceso-y-diseno.md](acceso-y-diseno.md#secciones-plegables-ronda-8-nv-06). Accidente se queda idéntico.
 
 Pruebas: `tests/Feature/Seguridad/AjustesRonda8Test.php` (NV-03 y NV-01) y los ajustes en `NovedadesTest` / `NovedadesFormatosTest`.
+
+## Mejoras de Incidentes (ADR-0013)
+
+Decisión del dueño: lo que una empresa pueda querer distinto es configurable y **por omisión todo se ve y funciona como antes**; lo que solo simplifica (avisos en la campana, atajos, heredar datos) se aplica directo.
+
+### Archivos
+
+- `app/Services/Novedades/AvisosNovedades.php`: campana (siempre) y correo (avisos `novedad_canalizada` y `hallazgo_recorrido_pc`, **apagados por omisión** en `Empresa::AVISOS`).
+- `app/Services/Novedades/TurnosNovedades.php`: siguiente turno de la sede, aviso al iniciar el turno y al jefe al terminar; `revisar()` / `revisarSiToca()`.
+- `app/Services/Novedades/AjustesNovedades.php`: nombre del menú y categoría del hallazgo de recorrido.
+- `app/Services/Novedades/Formatos/MantenimientoPc.php` + `formatos/mantenimiento-pc.blade.php`: sin campos propios; muestra los equipos con falla de los recorridos ligados (`Novedad::recorridosPc()`).
+- `app/Console/Commands/NovedadesPendientesDeTurno.php` (`plataforma:novedades-pendientes --si-toca`, en `despliegue/desplegar.sh`).
+- Vistas: `_alta` (recuadro «Objeto encontrado»), `_expediente` (área heredada, aviso de pendiente de turno, `_volver=robo`), `index` (reloj y dueño del pendiente de turno, `?mios=1`), `_config` (sección de Configuración), `lost-found/_objeto` y `lost-found/index` («Registrar objeto encontrado», «Agregar el objeto aquí»), `robo/_expediente` (mismo orden y nombres que el expediente de la bitácora).
+- Pruebas: `tests/Feature/Seguridad/MejorasIncidentesTest.php`.
+
+### Tablas (migración `2026_10_24_000100_incidentes_turno_y_espera_de_pases`)
+
+| Tabla | Columna | Para qué |
+|---|---|---|
+| `novedades` | `pendiente_turno_en` | Cuándo se marcó «Pendiente de turno» (reloj y cálculo del turno que lo recibe). Se reinicia cada vez que vuelve a ese estatus. |
+| `novedades` | `turno_avisado_en` | Ya se avisó al turno que lo recibe (una sola vez). |
+| `novedades` | `turno_escalado_en` | Ya se avisó al jefe porque ese turno terminó sin atenderlo (una sola vez). |
+
+Ajustes en `empresas.preferencias['novedades']['categoria_hallazgo_pc']` (`proteccion_civil` por omisión, no se guarda; `mantenimiento_pc`). El nombre del menú vive en `empresa_modulos.nombre_visible` del módulo `novedades` (el dato que ya leía `ConstructorMenu`); vacío = «Novedades».
+
+### Rutas nuevas
+
+| Método | Ruta | Nombre | Permiso |
+|---|---|---|---|
+| POST | `/lost-found/objetos` | `lost_found.objetos.store` | `crear` en novedades o Lost & Found (sin `novedad_id`); `editar` sobre el ticket (con `novedad_id`) |
+| PUT | `/configuracion/novedades` | `configuracion.novedades` | `configuracion.editar` con alcance de empresa |
+| GET | `/novedades?mios=1` | `novedades.index` | Lista abierta solo con los tickets canalizados al usuario |
+| GET | `/novedades?abrir=ID&volver=robo` | `novedades.index` | El expediente regresa a Seguimiento de robos al guardar (`_volver=robo`, si puede `robo.ver`) |
+
+### Reglas
+
+1. **Canalizar avisa** (criterio 1): al despachar o al cambiar «¿A quién se canaliza?», campana `novedad_canalizada` con botón **Atender** para el canalizado (no si se canaliza a sí mismo); el aviso anterior se resuelve. Al cerrar, `novedad_resuelta` a quien lo levantó y al canalizado (menos quien lo cerró). En Mis pendientes: «Tickets canalizados a mí» y «Pendientes de turno sin dueño» (solo con `novedades.editar` y cuando hay alguno).
+2. **Un dato una vez** (criterio 2): el expediente muestra el Área General del ticket («— del reporte inicial») y deja los combos plegados en «Cambiar edificio o piso». Los formatos ya heredaban edificio/piso; el objeto de Lost & Found capturado en el ticket rápido o con «Registrar objeto encontrado» hereda la habitación del ticket.
+3. **Pendiente de turno con dueño, hora y aviso** (criterios 1 y 3): el dueño es la persona canalizada. Con turnos (Recursos Humanos → Turnos) se calcula el primer turno de la sede que empieza después de `pendiente_turno_en`: al marcarlo se avisa al dueño; al iniciar ese turno, al dueño o (sin dueño) a `personalCanalizable` de la sede; al terminar, a quien tiene `novedades.reabrir` en la sede (jefe de seguridad o supervisor). Sin turnos se avisa al marcarlo (a todos menos a quien lo marcó) y no hay hora límite. La tarea programada y la lista (`revisarSiToca`, una vez por minuto por empresa) lo disparan. Salir del estatus resuelve los avisos.
+4. **Lost & Found sin ticket a medias** (criterio 8): el ticket rápido de Lost & Found pide opcionalmente el objeto (`lf_objeto`, `lf_tipo_valor`, `lf_ubicacion_bodega`) y lo guarda con el formato de Lost & Found en la misma transacción. «Registrar objeto encontrado» crea el ticket por detrás (`AdministradorNovedades::registrarObjeto`, auditoría `lost_found.objeto_registrado`); con `novedad_id` agrega el objeto a un ticket abierto sin artículos. El mensaje de éxito ofrece **Imprimir etiqueta de la bolsa** y **Registrar otro objeto** (criterio 5).
+5. **Una sola ficha de robo**: en Seguimiento de robos, quien puede editar el ticket en la bitácora (o solo consultarlo en ambos lados) abre el expediente de la bitácora; quien solo tiene el submódulo Robo sigue con su diálogo, ahora con el mismo título, orden (formato → Minuto a Minuto → estatus) y botón **Guardar Expediente**.
+6. **Categoría del hallazgo de recorrido**: `AdministradorNovedades::crear(..., $categoriaAutomatica)` admite `mantenimiento_pc` solo cuando la abre la plataforma (no se elige al despachar; se conserva en el expediente como `recorrido_pc`). Ver [Recorridos de Protección Civil](recorridos-pc.md).
+7. **Nombre del menú**: cambia el menú (`ConstructorMenu`), el atajo del celular (`AppServiceProvider`) y el `<h1>` de la bitácora. Las rutas, las claves de permisos y el nombre del módulo en Roles y permisos no cambian.
+
+### Auditoría
+
+`novedades.configurado`, `novedades.turno_avisado`, `novedades.turno_escalado` (sin usuario: tarea programada), `lost_found.objeto_registrado`. Etiquetas en `LectorAuditoria::ACCIONES`.
+
+### Cómo revertir
+
+Revert del PR. La migración solo agrega columnas vacías (su `down()` las quita). Si una empresa cambió el nombre del menú, al revertir el menú sigue leyendo `empresa_modulos.nombre_visible`: vaciarlo desde la base o antes de revertir dejar el campo vacío en Configuración. Los tickets `mantenimiento_pc` ya creados se ven en la versión anterior con su clave como categoría; si hace falta, cambiarlos a `proteccion_civil`.

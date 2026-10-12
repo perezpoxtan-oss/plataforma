@@ -56,6 +56,7 @@ Junto a la campana hay un botón amarillo **Mis pendientes** con un número: es 
    - **Autorizaciones por responder:** visitas a tu departamento.
    - **Entrevistas por evaluar:** candidatos que Recursos Humanos te canalizó, con la próxima cita. Ver [Entrevistar y elegir](entrevistar-y-elegir.md).
    - **Firmas de pases de salida:** pases que esperan tu firma.
+   - **Tickets canalizados a mí** y **Pendientes de turno sin dueño** (personal de Seguridad, solo cuando hay alguno): los tickets de la bitácora que te toca atender. Ver [Bitácora de novedades](novedades.md).
    - **Procedimientos por leer:** los que te faltan leer y firmar «Leí y entendí».
    - **Altas por verificar:** lo que la caseta registró y tú revisas.
    - **Cuentas por revisar** (quien administra usuarios): cuentas bloqueadas por intentos fallidos y las desactivadas por la baja de su colaborador en los últimos 7 días. Ver [Usuarios](usuarios.md).

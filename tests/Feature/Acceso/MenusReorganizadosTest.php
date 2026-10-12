@@ -347,7 +347,8 @@ class MenusReorganizadosTest extends TestCase
 
         $agente = User::where('username', 'agente.demo')->firstOrFail();
         $pendientes = collect(app(MisPendientes::class)->para($agente)['items'])->keyBy('clave');
-        $this->assertSame(['pases_salida', 'procedimientos'], $pendientes->keys()->all());
+        // Mejoras Incidentes: la demo tiene un ticket canalizado al agente y uno pendiente de turno sin dueño
+        $this->assertSame(['pases_salida', 'procedimientos', 'novedades_mias', 'novedades_turno'], $pendientes->keys()->all());
         $this->assertGreaterThan(0, $pendientes['procedimientos']['total']);
         $this->assertSame(route('procedimientos.por-leer'), $pendientes['procedimientos']['url']);
         $this->assertSame(route('pases-salida.pendientes'), $pendientes['pases_salida']['url']);
@@ -358,10 +359,10 @@ class MenusReorganizadosTest extends TestCase
         $altas = collect(app(MisPendientes::class)->para($admin)['items'])->firstWhere('clave', 'altas');
         $this->assertGreaterThan(0, $altas['total']);
 
-        // Un número acotado de consultas (sin N+1)
+        // Un número acotado de consultas (sin N+1): activos dejó 59; los dos renglones de incidentes suman una sola consulta
         $this->app->forgetScopedInstances();
         DB::enableQueryLog();
         app(MisPendientes::class)->para($admin);
-        $this->assertLessThan(60, count(DB::getQueryLog()));
+        $this->assertLessThan(62, count(DB::getQueryLog()));
     }
 }
