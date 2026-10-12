@@ -145,9 +145,12 @@ class AdministradorColaboradores
     /**
      * Catálogos para los formularios (alta, edición, registro rápido).
      *
+     * $conTurnos: solo el alta y la edición de la pantalla llevan el turno
+     * (el registro rápido y la verificación no lo piden).
+     *
      * @return array{sedes: Collection<int, Sede>, sedesPermitidas: list<int>|null, departamentos: Collection<int, Departamento>, puestos: Collection<int, Puesto>, turnos: Collection<int, Turno>}
      */
-    public function catalogos(User $actor, string $permiso): array
+    public function catalogos(User $actor, string $permiso, bool $conTurnos = false): array
     {
         $permitidas = $this->sedesPermitidas($actor, $permiso);
 
@@ -159,7 +162,9 @@ class AdministradorColaboradores
             'departamentos' => Departamento::with('sedes:id')->orderBy('nombre')->get(['id', 'nombre', 'todas_las_sedes', 'activo']),
             'puestos' => Puesto::with('departamentos:id')->orderBy('nombre')->get(['id', 'nombre', 'activo']),
             // Mapa de procesos: turno del colaborador (la vista muestra los que aplican en la sede elegida)
-            'turnos' => Turno::with('sedes:id')->orderBy('hora_inicio')->orderBy('nombre')->get(['id', 'nombre', 'hora_inicio', 'hora_fin', 'todas_las_sedes', 'activo']),
+            'turnos' => $conTurnos
+                ? Turno::with('sedes:id')->orderBy('hora_inicio')->orderBy('nombre')->get(['id', 'nombre', 'hora_inicio', 'hora_fin', 'todas_las_sedes', 'activo'])
+                : collect(),
         ];
     }
 

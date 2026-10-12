@@ -79,8 +79,8 @@ class ColaboradorController extends Controller
                 'turnosFiltro' => Turno::where(fn ($q) => $q->where('activo', true)
                     ->orWhereIn('id', $lista->pluck('turno_id')->filter()->unique()->values()))
                     ->orderBy('hora_inicio')->orderBy('nombre')->get(['id', 'nombre', 'hora_inicio', 'hora_fin']),
-                'alta' => $actor->can('colaboradores.crear') ? $this->colaboradores->catalogos($actor, 'colaboradores.crear') : null,
-                'edicion' => $puedeEditar ? $this->colaboradores->catalogos($actor, 'colaboradores.editar') : null,
+                'alta' => $actor->can('colaboradores.crear') ? $this->colaboradores->catalogos($actor, 'colaboradores.crear', conTurnos: true) : null,
+                'edicion' => $puedeEditar ? $this->colaboradores->catalogos($actor, 'colaboradores.editar', conTurnos: true) : null,
                 'editables' => $this->colaboradores->idsEnAlcance($actor, 'colaboradores.editar'),
                 'desactivables' => $this->colaboradores->idsEnAlcance($actor, 'colaboradores.eliminar'),
                 'sedesEditables' => $puedeEditar ? $sedesActivas->when(
