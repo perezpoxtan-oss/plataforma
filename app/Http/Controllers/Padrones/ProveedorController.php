@@ -115,6 +115,11 @@ class ProveedorController extends Controller
         if ($resultado !== 'creado') {
             $destino->withFragment('proveedor-'.$proveedor->id);
         }
+        // Mejoras padrones (criterio 5): lo siguiente es registrar su personal y su flotilla
+        $destino->with('siguiente_paso', [
+            ['texto' => 'Agregar su personal', 'icono' => 'bi-person-plus', 'url' => route('proveedores.show', ['proveedor' => $proveedor->id, 'tab' => 'personal'])],
+            ['texto' => 'Agregar su flotilla', 'icono' => 'bi-truck', 'url' => route('proveedores.show', ['proveedor' => $proveedor->id, 'tab' => 'flotilla'])],
+        ]);
 
         return $destino->with(...match ($resultado) {
             'creado' => ['ok', "Empresa externa «{$proveedor->nombre}» registrada correctamente."],
@@ -209,7 +214,7 @@ class ProveedorController extends Controller
     }
 
     /**
-     * Desactivar (SEGCAT: "BAJA / VETADA") y reactivar; nunca se borra.
+     * Dar de baja (SEGCAT: "BAJA / VETADA") y reactivar; nunca se borra.
      */
     public function estado(Request $request, int $proveedor): RedirectResponse
     {
@@ -227,7 +232,7 @@ class ProveedorController extends Controller
 
         return $this->volver($request, $modelo)->with($activo ? 'ok' : 'aviso', $activo
             ? "Empresa externa «{$modelo->nombre}» reactivada."
-            : "Empresa externa «{$modelo->nombre}» desactivada (baja / vetada). Puedes reactivarla con el mismo botón cuando quieras.");
+            : "Empresa externa «{$modelo->nombre}» dada de baja: ya no se puede elegir en la caseta ni en los pases. Puedes reactivarla con el mismo botón cuando quieras.");
     }
 
     /**
@@ -313,7 +318,7 @@ class ProveedorController extends Controller
         if (! $proveedor->activo) {
             return response()->json([
                 'ok' => false,
-                'mensaje' => "«{$proveedor->nombre}» ya está registrada pero dada de baja (vetada). Pide a tu administrador que la reactive.",
+                'mensaje' => "«{$proveedor->nombre}» ya está registrada pero dada de baja. Pide a tu administrador que la reactive.",
                 'errores' => ['nombre' => ["«{$proveedor->nombre}» está dada de baja."]],
             ], 422);
         }

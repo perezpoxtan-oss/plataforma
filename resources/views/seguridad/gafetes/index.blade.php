@@ -5,6 +5,7 @@
 @section('contenido')
 <div class="tema-gafetes">
     @include('administracion.partes.avisos')
+    @include('componentes.siguiente-paso')
     @include('administracion.partes.selector-empresa')
 
     @if ($sinEmpresa)
@@ -31,7 +32,7 @@
         @if ($voucherGenerado)
             <div class="aviso-voucher-generado" role="status">
                 <i class="bi bi-receipt" aria-hidden="true"></i>
-                <span>Voucher <strong>{{ $voucherGenerado['folio'] }}</strong> listo para imprimir (3 copias en una hoja: Seguridad, Colaborador y Recepción).</span>
+                <span>Voucher <strong>{{ $voucherGenerado['folio'] }}</strong> listo para imprimir (3 copias en una hoja: Seguridad, Recepción y Administración).</span>
                 <a href="{{ route('vouchers.imprimir', $voucherGenerado['id']) }}" target="_blank" rel="noopener" class="btn-gafetes"><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir voucher</a>
             </div>
         @endif
@@ -79,7 +80,7 @@
         <div class="filtros-estado" role="group" aria-label="Filtrar por estado">
             <button type="button" class="btn btn-dark btn-sm fw-bold" data-filtro-estado="gafetes" data-valor="todas" aria-pressed="true">Todos</button>
             <button type="button" class="btn btn-outline-success btn-sm fw-bold" data-filtro-estado="gafetes" data-valor="1" aria-pressed="false">Disponibles</button>
-            <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-filtro-estado="gafetes" data-valor="0" aria-pressed="false">No disponibles</button>
+            <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-filtro-estado="gafetes" data-valor="0" aria-pressed="false">De baja</button>
         </div>
 
         @if ($hayCasillas)
@@ -132,10 +133,17 @@
                     </div>
 
                     <div class="ficha-footer">
-                        @if ($g->activo)
+                        {{-- Mejoras padrones: «En uso» = prestado ahora en caseta; «De baja» con su motivo y su voucher --}}
+                        @php $voucherG = $g->activo ? null : ($vouchersBaja[$g->id] ?? null); @endphp
+                        @if ($g->activo && in_array($g->id, $prestados, true))
+                            <span class="estado-gafete en-uso" title="Prestado ahora en la Bitácora de accesos">EN USO</span>
+                        @elseif ($g->activo)
                             <span class="estado-gafete disponible">DISPONIBLE</span>
                         @else
-                            <span class="estado-gafete no-disponible" title="Extraviado / Dañado / Robado">NO DISPONIBLE</span>
+                            <span class="estado-gafete no-disponible">DE BAJA{{ $voucherG ? ' · '.mb_strtoupper(\App\Models\VoucherReposicion::MOTIVOS[$voucherG->motivo] ?? $voucherG->motivo) : '' }}</span>
+                            @if ($voucherG && $puedeVerVouchers)
+                                <a href="{{ route('vouchers.index', ['q' => $voucherG->folio]) }}#voucher-{{ $voucherG->id }}" class="enlace-voucher-baja" title="Ver su voucher de reposición"><i class="bi bi-receipt" aria-hidden="true"></i> {{ $voucherG->folio }}</a>
+                            @endif
                         @endif
                         <div class="d-flex gap-2">
                             {{-- Ronda 5: QR y etiqueta NFC/RFID en un diálogo --}}
@@ -163,7 +171,7 @@
                                         <i class="bi bi-x-circle" aria-hidden="true"></i>
                                     </button>
                                 @else
-                                    <form action="{{ route('gafetes.reactivar', $g->id) }}" method="POST" class="m-0" data-confirmar="¿Reactivar el gafete {{ $g->nomenclatura }}? Su voucher se conserva.">
+                                    <form action="{{ route('gafetes.reactivar', $g->id) }}" method="POST" class="m-0" data-confirmar="¿Reactivar el gafete {{ $g->nomenclatura }}? Si apareció, su voucher se marca «Recuperado».">
                                         @csrf
                                         @method('PATCH')
                                         <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar el gafete {{ $g->nomenclatura }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
@@ -297,7 +305,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-gafetes">Guardar Cambios</button>
+                            <button type="submit" class="btn-gafetes">Guardar</button>
                         </div>
                     </form>
                     @include('componentes.borrar', ['registro' => 'gafetes', 'id' => $editandoId])
@@ -320,7 +328,7 @@
                     <form action="{{ $enBaja ? route('gafetes.baja', $enBaja->id) : '' }}" method="POST" autocomplete="off" data-form-gafete>
                         @csrf
                         <input type="hidden" name="_dialogo" value="{{ $enBaja ? 'baja-'.$enBaja->id : '' }}" data-campo-dialogo data-prefijo-dialogo="baja-">
-                        <p class="campo-ayuda mt-0 mb-3">El gafete queda <strong>No disponible</strong> y se genera un <strong>voucher de reposición</strong> para imprimir y firmar.</p>
+                        <p class="campo-ayuda mt-0 mb-3">El gafete queda <strong>De baja</strong> y se genera un <strong>voucher de reposición</strong> para firmar (en papel o en la pantalla).</p>
 
                         <label class="campo-etiqueta" for="ga_baja_motivo">Motivo</label>
                         <select id="ga_baja_motivo" name="motivo" class="campo" required>
@@ -334,7 +342,7 @@
 
                         <label class="casilla-cobro" for="ga_baja_cobro">
                             <input type="checkbox" id="ga_baja_cobro" name="aplica_cobro" value="1" @checked($cobro) data-muestra-si-marcado="#cajaCobroGafete">
-                            Aplica CXC (se le cobra al responsable)
+                            Se le cobra al colaborador
                         </label>
 
                         <div id="cajaCobroGafete" class="caja-cobro" @unless ($cobro) hidden @endunless>
@@ -348,9 +356,12 @@
                                 'ayuda' => 'Escribe su número de empleado (aparece solo, sin Enter) o escanea / acerca su credencial.'])
                         </div>
 
+                        {{-- Mejoras padrones: misma baja que Llaves y Equipos (firma física o digital) --}}
+                        @include('seguridad.vouchers._firmas-baja', ['id' => 'baja_gafete'])
+
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-gafetes">Generar Voucher y Dar de Baja</button>
+                            <button type="submit" class="btn-gafetes">Dar de baja</button>
                         </div>
                     </form>
                 </div>

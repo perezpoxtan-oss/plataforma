@@ -8829,3 +8829,268 @@ document.addEventListener('click', function (e) {
         if (typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
     });
 })();
+/* Mejoras padrones (ver docs/tecnico/mejoras-padrones.md, ADR-0015)
+   1. Personas: el filtro de categoría solo se ve con la píldora «Visitantes».
+   2. «Unir con otra ficha» (dos personas verificadas que son la misma).
+   3. Diálogos de baja con voucher abiertos con data-accion="editar-registro"
+      (Gafetes, Equipos): las firmas del voucher se acomodan al abrir.
+   4. Etiquetas QR: los filtros se aplican solos (al escribir o elegir).
+   5. Vacantes: el título se sugiere con el puesto elegido. */
+(function () {
+    'use strict';
+
+    function el(tag, clase, texto) {
+        var n = document.createElement(tag);
+        if (clase) { n.className = clase; }
+        if (texto !== undefined && texto !== null) { n.textContent = texto; }
+        return n;
+    }
+
+    function json(url) {
+        return fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); });
+    }
+
+    /* ---------- 1. Filtro de categoría solo para visitantes ---------- */
+    function acomodarCategoria() {
+        document.querySelectorAll('[data-solo-con-tipo]').forEach(function (sel) {
+            var clave = sel.getAttribute('data-filtro-sede');
+            var pill = document.querySelector('[data-filtro-tipo="' + clave + '"][aria-pressed="true"]');
+            var visible = !!pill && pill.getAttribute('data-valor') === sel.getAttribute('data-solo-con-tipo');
+            if (!visible && sel.value !== '') {
+                sel.value = '';
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            sel.hidden = !visible;
+        });
+    }
+    document.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('[data-filtro-tipo]')) { setTimeout(acomodarCategoria, 0); }
+    });
+    document.addEventListener('DOMContentLoaded', acomodarCategoria);
+
+    /* ---------- 2. Unir con otra ficha ---------- */
+    var unir = null;
+    var esperaUnir = null;
+
+    function dialogoUnir() { return document.querySelector('[data-dialogo-unir-duplicado]'); }
+
+    function erroresUnir(lista) {
+        var caja = dialogoUnir() && dialogoUnir().querySelector('[data-ud-errores]');
+        if (!caja) { return; }
+        caja.textContent = '';
+        lista.forEach(function (m) { caja.appendChild(el('div', '', m)); });
+        caja.hidden = lista.length === 0;
+    }
+
+    function listaUnir(caja, lista, vacio) {
+        caja.textContent = '';
+        if (!lista.length) { if (vacio) { caja.appendChild(el('p', 'campo-ayuda m-0', vacio)); } return; }
+        lista.forEach(function (r) {
+            var label = el('label', 'opcion-unir');
+            var radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'destino_id';
+            radio.value = r.id;
+            label.appendChild(radio);
+            var texto = el('span', '');
+            texto.appendChild(el('strong', 'd-block', r.titulo));
+            if (r.detalle) { texto.appendChild(el('small', 'd-block', r.detalle)); }
+            label.appendChild(texto);
+            caja.appendChild(label);
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-unir-duplicado]');
+        var d = dialogoUnir();
+        if (!b || !d) { return; }
+        try { unir = JSON.parse(b.getAttribute('data-unir-duplicado')); } catch (x) { return; }
+        d.querySelector('[data-ud-titulo]').textContent = unir.titulo;
+        var form = d.querySelector('[data-ud-form]');
+        form.action = unir.url;
+        var parecidos = d.querySelector('[data-ud-parecidos]');
+        listaUnir(parecidos, [], 'Buscando parecidos...');
+        listaUnir(d.querySelector('[data-ud-resultados]'), [], null);
+        d.querySelector('[data-ud-buscar]').value = '';
+        erroresUnir([]);
+        json(unir.parecidos).then(function (r) {
+            listaUnir(parecidos, r.resultados || [], 'No hay fichas parecidas. Si sabes cuál es, búscala abajo.');
+        }).catch(function () { listaUnir(parecidos, [], 'No se pudieron buscar parecidos: búscala abajo.'); });
+        if (typeof d.showModal === 'function') { d.showModal(); }
+    });
+
+    document.addEventListener('input', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-ud-buscar]')) { return; }
+        var d = dialogoUnir();
+        var caja = d.querySelector('[data-ud-resultados]');
+        var texto = e.target.value.trim();
+        clearTimeout(esperaUnir);
+        if (texto.length < 2) { listaUnir(caja, [], null); return; }
+        esperaUnir = setTimeout(function () {
+            json(d.getAttribute('data-url-buscar') + '?q=' + encodeURIComponent(texto)).then(function (r) {
+                var lista = (r.resultados || []).filter(function (x) {
+                    return x.activo !== false && (x.verificacion || 'verificado') === 'verificado' && unir && String(x.id) !== String(unir.id);
+                }).map(function (x) {
+                    return { id: x.id, titulo: x.placas || x.nombre_completo || x.nombre || '', detalle: [x.tipo_etiqueta, x.empresa, x.folio].filter(Boolean).join(' · ') };
+                });
+                listaUnir(caja, lista.slice(0, 8), 'Sin fichas activas y verificadas con ese texto.');
+            }).catch(function () { listaUnir(caja, [], 'No se pudo buscar en este momento.'); });
+        }, 300);
+    });
+
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches || !form.matches('[data-ud-form]')) { return; }
+        e.preventDefault();
+        if (!form.querySelector('[name="destino_id"]:checked')) {
+            erroresUnir(['Elige con cuál ficha se une (de los parecidos o de la búsqueda).']);
+            return;
+        }
+        var boton = form.querySelector('button[type="submit"]');
+        if (boton) { boton.disabled = true; }
+        fetch(form.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(form)
+        })
+            .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { estado: r.status, datos: d }; }); })
+            .then(function (res) {
+                if (boton) { boton.disabled = false; }
+                if (res.estado === 200 && res.datos.ok) {
+                    var destino = new URL(res.datos.ir, location.href);
+                    if (destino.pathname + destino.search === location.pathname + location.search) { location.hash = destino.hash; location.reload(); return; }
+                    location.href = destino.href;
+                    return;
+                }
+                if (res.estado === 403 || res.estado === 404) { erroresUnir(['No tienes permiso para unir estas fichas o ya no existen. Recarga la pantalla.']); return; }
+                var lista = [];
+                Object.keys(res.datos.errors || {}).forEach(function (k) { lista = lista.concat(res.datos.errors[k]); });
+                erroresUnir(lista.length ? lista : [res.datos.message || 'No se pudo guardar. Intenta de nuevo.']);
+            })
+            .catch(function () {
+                if (boton) { boton.disabled = false; }
+                erroresUnir(['No se pudo guardar en este momento. Revisa tu conexión e intenta de nuevo.']);
+            });
+    });
+
+    /* ---------- 4. Rutas: horarios plegables y paraderos parecidos ---------- */
+    function resumenHorario(fs) {
+        var ini = fs.querySelector('input[name$="[hora_inicio]"]');
+        var fin = fs.querySelector('input[name$="[hora_fin]"]');
+        var dias = Array.prototype.map.call(fs.querySelectorAll('input[name$="[dias][]"]:checked'), function (c) { return c.parentNode.textContent.trim().slice(0, 2); });
+        var paraderos = Array.prototype.filter.call(fs.querySelectorAll('input[name$="[nombre]"][list]'), function (c) { return c.value.trim() !== ''; }).length;
+        var partes = [];
+        if (ini && ini.value) { partes.push(ini.value + (fin && fin.value ? ' → ' + fin.value : '')); }
+        partes.push(dias.length ? dias.join(' ') : 'todos los días');
+        partes.push(paraderos === 1 ? '1 paradero' : paraderos + ' paraderos');
+        return partes.join(' · ');
+    }
+
+    function plegar(fs, plegado) {
+        fs.classList.toggle('plegado', plegado);
+        var b = fs.querySelector('[data-plegar-horario]');
+        if (b) { b.setAttribute('aria-expanded', plegado ? 'false' : 'true'); }
+        var r = fs.querySelector('[data-resumen-horario]');
+        if (r) { r.textContent = plegado ? resumenHorario(fs) : ''; }
+    }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-plegar-horario]');
+        if (b) {
+            var fs = b.closest('[data-horario]');
+            if (fs) { plegar(fs, !fs.classList.contains('plegado')); }
+            return;
+        }
+        var agregar = e.target.closest && e.target.closest('[data-agregar-horario]');
+        var dialogo = agregar && agregar.closest('dialog');
+        if (!dialogo || !dialogo.querySelector('.rutas-horario')) { return; }
+        // Al agregar otro horario, los anteriores se pliegan (se ve su resumen)
+        setTimeout(function () {
+            var bloques = dialogo.querySelectorAll('.rutas-horario[data-horario]');
+            Array.prototype.forEach.call(bloques, function (fs, i) { plegar(fs, i < bloques.length - 1); });
+        }, 0);
+    });
+
+    // Un campo obligatorio dentro de un horario plegado: se despliega para mostrarlo
+    document.addEventListener('invalid', function (e) {
+        var fs = e.target.closest && e.target.closest('.rutas-horario.plegado');
+        if (fs) { plegar(fs, false); }
+    }, true);
+
+    function claveParadero(t) {
+        return (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    }
+
+    function distancia(a, b) {
+        if (Math.abs(a.length - b.length) > 2) { return 99; }
+        var fila = [];
+        for (var j = 0; j <= b.length; j++) { fila[j] = j; }
+        for (var i = 1; i <= a.length; i++) {
+            var previo = fila[0];
+            fila[0] = i;
+            for (var k = 1; k <= b.length; k++) {
+                var temp = fila[k];
+                fila[k] = Math.min(fila[k] + 1, fila[k - 1] + 1, previo + (a[i - 1] === b[k - 1] ? 0 : 1));
+                previo = temp;
+            }
+        }
+        return fila[b.length];
+    }
+
+    // Al escribir un paradero que no está en el catálogo de la sede: «Paradero nuevo» o «¿Es «X»?»
+    document.addEventListener('change', function (e) {
+        var campo = e.target;
+        if (!campo.matches || !campo.matches('input[list="paraderosSede"]')) { return; }
+        var fila = campo.closest('[data-paradero-fila]');
+        var aviso = fila && fila.querySelector('[data-aviso-paradero]');
+        if (fila && !aviso) {
+            aviso = el('div', 'aviso-paradero');
+            aviso.setAttribute('data-aviso-paradero', '');
+            aviso.setAttribute('role', 'status');
+            fila.appendChild(aviso);
+        }
+        if (!aviso) { return; }
+        aviso.textContent = '';
+        var escrito = claveParadero(campo.value);
+        var lista = document.getElementById('paraderosSede');
+        if (!escrito || !lista) { aviso.hidden = true; return; }
+        var opciones = Array.prototype.map.call(lista.options, function (o) { return o.value; });
+        var igual = opciones.filter(function (o) { return claveParadero(o) === escrito; })[0];
+        if (igual) {
+            if (igual !== campo.value) { campo.value = igual; }
+            aviso.hidden = true;
+            return;
+        }
+        var cercano = opciones.filter(function (o) { return escrito.length >= 4 && distancia(claveParadero(o), escrito) <= 2; })[0];
+        aviso.hidden = false;
+        if (cercano) {
+            aviso.appendChild(document.createTextNode('¿Es «' + cercano + '»? '));
+            var usar = el('button', 'btn-usar-paradero', 'Usar ese');
+            usar.type = 'button';
+            usar.addEventListener('click', function () { campo.value = cercano; aviso.hidden = true; aviso.textContent = ''; });
+            aviso.appendChild(usar);
+            aviso.appendChild(document.createTextNode(' Si no, se creará como paradero nuevo al guardar.'));
+        } else {
+            aviso.textContent = 'Paradero nuevo: se agregará al catálogo de la sede al guardar.';
+        }
+    });
+
+    /* ---------- 3. Firmas del voucher al abrir una baja ---------- */
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-accion="editar-registro"][data-dialogo]');
+        if (!b) { return; }
+        setTimeout(function () {
+            var d = document.getElementById(b.getAttribute('data-dialogo'));
+            if (!d || !d.querySelector('[data-firmas-voucher]')) { return; }
+            // El llenado genérico de «editar-registro» vacía el value de los radios: se restaura
+            d.querySelectorAll('[data-firma-modo][data-valor]').forEach(function (r) { r.value = r.getAttribute('data-valor'); });
+            var fisica = d.querySelector('[data-firma-modo][data-por-defecto]');
+            if (fisica) { fisica.checked = true; }
+            var marcado = d.querySelector('[data-firma-modo]:checked');
+            if (marcado) { marcado.dispatchEvent(new Event('change', { bubbles: true })); }
+        }, 0);
+    });
+})();
+/* Fin Mejoras padrones */

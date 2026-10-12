@@ -50,6 +50,12 @@ class CentroNotificaciones
         'pase_rechazado' => ['bi-x-octagon-fill', 'alerta'],
         'pase_vencido' => ['bi-exclamation-triangle-fill', 'alerta'],
         'pase_llega' => ['bi-truck', 'info'],
+        // Mejoras padrones (ADR-0015): altas por verificar y su resultado a quien la registró
+        'alta_por_verificar' => ['bi-patch-question-fill', 'alerta'],
+        'alta_verificada' => ['bi-patch-check-fill', 'exito'],
+        'alta_unida' => ['bi-union', 'info'],
+        'alta_rechazada' => ['bi-x-octagon-fill', 'alerta'],
+        // Fin Mejoras padrones
     ];
 
     public function __construct(private readonly HoraLocal $hora) {}

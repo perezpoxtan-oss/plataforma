@@ -5,6 +5,7 @@
 @section('contenido')
 <div class="tema-indigo pantalla-llaves">
     @include('administracion.partes.avisos')
+    @include('componentes.siguiente-paso')
     @include('administracion.partes.selector-empresa')
 
     @if ($sinEmpresa)
@@ -66,7 +67,7 @@
             <div class="filtros-estado-llaves" role="group" aria-label="Filtrar por estado">
                 <button type="button" class="btn-pill-tipo active" data-filtro-llaves-estado="" aria-pressed="true">Todas</button>
                 <button type="button" class="btn-pill-tipo" data-filtro-llaves-estado="1" aria-pressed="false">Activas</button>
-                <button type="button" class="btn-pill-tipo" data-filtro-llaves-estado="0" aria-pressed="false">Bajas</button>
+                <button type="button" class="btn-pill-tipo" data-filtro-llaves-estado="0" aria-pressed="false">De baja</button>
             </div>
         </div>
 
@@ -125,7 +126,8 @@
                                 @if ($l->enUso())
                                     <span class="etiqueta-estado en-uso">EN USO</span>
                                 @endif
-                                <span class="etiqueta-estado {{ $l->activo ? 'activo' : 'inactivo' }}">{{ $l->activo ? 'ACTIVA' : 'BAJA' }}</span>
+                                @php $voucherL = $l->activo ? null : ($vouchersBaja[$l->id] ?? null); @endphp
+                                <span class="etiqueta-estado {{ $l->activo ? 'activo' : 'inactivo' }}">{{ $l->activo ? 'ACTIVA' : 'DE BAJA' }}{{ $voucherL ? ' · '.mb_strtoupper(\App\Models\VoucherReposicion::MOTIVOS[$voucherL->motivo] ?? $voucherL->motivo) : '' }}</span>
                                 @if ($imprimible)
                                     <label class="chk-llave" title="Marcar para imprimir su etiqueta">
                                         <input type="checkbox" name="llaves[]" value="{{ $l->id }}" form="formEtiquetasLlaves" data-chk-llave>
@@ -144,9 +146,13 @@
                         @if ($l->enUso() && $l->prestamoAbierto?->colaborador)
                             <p class="llave-usada-por"><i class="bi bi-key-fill" aria-hidden="true"></i> Usada por: {{ $l->prestamoAbierto->colaborador->nombreCompleto() }} · desde @fecha($l->prestamoAbierto->prestado_en, 'd/m H:i')</p>
                         @endif
+                        {{-- Mejoras padrones: el préstamo no se hace aquí; el enlace lo dice --}}
                         @can('prestamo_llaves.ver')
-                            <a class="llave-historial-enlace" href="{{ route('prestamo_llaves.index') }}#historial-llave-{{ $l->id }}"><i class="bi bi-clock-history" aria-hidden="true"></i> Historial de préstamos</a>
+                            <a class="llave-historial-enlace" href="{{ route('prestamo_llaves.index') }}#historial-llave-{{ $l->id }}"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Prestar o ver sus préstamos (Operación → Préstamo de llaves)</a>
                         @endcan
+                        @if ($voucherL && $puedeVerVouchers)
+                            <a class="llave-historial-enlace" href="{{ route('vouchers.index', ['q' => $voucherL->folio]) }}#voucher-{{ $voucherL->id }}"><i class="bi bi-receipt" aria-hidden="true"></i> Ver su voucher {{ $voucherL->folio }}</a>
+                        @endif
 
                         <div class="mini-etiqueta" aria-hidden="true">
                             <div class="mini-etiqueta-barra tipo-{{ $l->tipo_dispositivo }}"></div>
@@ -199,7 +205,11 @@
                             @include('componentes.boton-identificacion', ['identTipo' => 'llave', 'identRegistro' => $l, 'identTitulo' => $l->nomenclatura,
                                 'identDetalle' => ($l->sede?->nombre ?? '').' · '.$l->etiquetaTipo(),
                                 'identImprimir' => $imprimible ? route('llaves.imprimir', ['llaves' => [$l->id]]) : null, 'identImprimirTexto' => 'Imprimir etiqueta',
-                                'identEditable' => $editable, 'identAbrir' => (int) session('identificacion') === $l->id])
+                                'identEditable' => $editable, 'identAbrir' => (int) session('identificacion') === $l->id || (int) request()->query('qr') === $l->id])
+                            {{-- Mejoras padrones: botón de impresora en la ficha, como en Gafetes y Equipos --}}
+                            @if ($imprimible)
+                                <a href="{{ route('llaves.imprimir', ['llaves' => [$l->id]]) }}" target="_blank" rel="noopener" class="btn-icono imprimir-qr" title="Imprimir su etiqueta" aria-label="Imprimir la etiqueta de {{ $l->nomenclatura }}"><i class="bi bi-printer" aria-hidden="true"></i></a>
+                            @endif
                             @if ($desactivable)
                                 @if ($l->activo)
                                     <button type="button" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja {{ $l->nomenclatura }}"
@@ -209,7 +219,7 @@
                                         <i class="bi bi-slash-circle" aria-hidden="true"></i>
                                     </button>
                                 @else
-                                    <form action="{{ route('llaves.reactivar', $l->id) }}" method="POST" class="m-0" data-confirmar="¿Reactivar la llave {{ $l->nomenclatura }}?">
+                                    <form action="{{ route('llaves.reactivar', $l->id) }}" method="POST" class="m-0" data-confirmar="¿Reactivar la llave {{ $l->nomenclatura }}? Si apareció, su voucher se marca «Recuperado».">
                                         @csrf
                                         @method('PATCH')
                                         <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar {{ $l->nomenclatura }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
@@ -279,7 +289,7 @@
 
                         <label class="opcion-cobro">
                             <input type="checkbox" name="aplica_cobro" value="1" data-cobro-llave @checked(old('aplica_cobro'))>
-                            Aplica CXC (se le cobra al responsable)
+                            Se le cobra al colaborador
                         </label>
 
                         <div class="caja-cobro" data-caja-cobro-llave @unless (old('aplica_cobro')) hidden @endunless>
@@ -298,7 +308,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-baja-llave">Generar Voucher y Dar de Baja</button>
+                            <button type="submit" class="btn-baja-llave">Dar de baja</button>
                         </div>
                     </form>
                 </div>

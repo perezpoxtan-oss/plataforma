@@ -33,8 +33,8 @@ class PanelController extends Controller
             if ($total > 0) {
                 $pendientes[] = [
                     'icono' => 'bi-person-exclamation',
-                    'titulo' => $total === 1 ? '1 alta provisional por validar' : "{$total} altas provisionales por validar",
-                    'texto' => 'La caseta registró colaboradores que aún no estaban en el directorio. Valídalos o únelos con su registro correcto.',
+                    'titulo' => $total === 1 ? '1 colaborador por verificar' : "{$total} colaboradores por verificar",
+                    'texto' => 'La caseta registró colaboradores que aún no estaban en el directorio. Verifícalos o únelos con su registro correcto.',
                     'ruta' => route('colaboradores.index', ['registro' => 'provisional']),
                     'boton' => 'Revisar ahora',
                 ];

@@ -10,6 +10,7 @@ use App\Models\RutaParada;
 use App\Models\Sede;
 use App\Models\Turno;
 use App\Models\User;
+use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use Carbon\CarbonImmutable;
@@ -333,7 +334,7 @@ class AdministradorRutas
         $repetida = $this->nombreOcupado($sede->id, $validados['sentido'], $validados['nombre'], $actual?->id);
         if ($repetida !== null) {
             throw ValidationException::withMessages(['nombre' => 'Ya existe una ruta de '.mb_strtolower(Ruta::SENTIDOS[$validados['sentido']])
-                ." llamada «{$repetida->nombre}» en esta sede".($repetida->activo ? '.' : ' (suspendida): reactívala o usa otro nombre.')]);
+                ." llamada «{$repetida->nombre}» en esta sede".($repetida->activo ? '.' : ' (dada de baja): reactívala o usa otro nombre.')]);
         }
 
         $turno = Turno::find((int) $validados['turno_id']);
@@ -521,7 +522,8 @@ class AdministradorRutas
      */
     public function paraderoParaRuta(User $actor, Sede $sede, string $nombre): Paradero
     {
-        $paradero = Paradero::where('sede_id', $sede->id)->whereRaw('UPPER(nombre) = ?', [$nombre])->first();
+        $paradero = Paradero::where('sede_id', $sede->id)->whereRaw('UPPER(nombre) = ?', [$nombre])->first()
+            ?? $this->paraderoEquivalente($sede, $nombre);
         if ($paradero === null) {
             $paradero = $this->nuevoParadero($actor, $sede, $nombre);
             $this->auditoria->auditar($actor, 'rutas.creado', $paradero, null, $this->fotoParadero($paradero));
@@ -530,6 +532,23 @@ class AdministradorRutas
         }
 
         return $paradero;
+    }
+
+    /**
+     * Mejoras padrones (ADR-0015): el mismo paradero escrito distinto
+     * («Oxxo  Centro», «OXXO-CENTRO», «Óxxo centro.») no crea otro: se usa el
+     * del catálogo cuyo nombre es igual sin acentos, signos ni espacios.
+     */
+    private function paraderoEquivalente(Sede $sede, string $nombre): ?Paradero
+    {
+        $altas = app(AltasPorVerificar::class);
+        $clave = str_replace(' ', '', $altas->claveNombre($nombre));
+        if ($clave === '') {
+            return null;
+        }
+
+        return Paradero::where('sede_id', $sede->id)->orderByDesc('activo')->orderBy('id')->get()
+            ->first(fn (Paradero $p) => str_replace(' ', '', $altas->claveNombre($p->nombre)) === $clave);
     }
 
     private function nuevoParadero(User $actor, Sede $sede, string $nombre): Paradero

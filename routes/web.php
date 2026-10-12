@@ -206,6 +206,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/estacionamientos', [EstacionamientoController::class, 'store'])->name('estacionamientos.store');
     Route::put('/estacionamientos/{zona}', [EstacionamientoController::class, 'update'])->whereNumber('zona')->name('estacionamientos.update');
     Route::patch('/estacionamientos/{zona}/estado', [EstacionamientoController::class, 'estado'])->whereNumber('zona')->name('estacionamientos.estado');
+    // Mejoras padrones (ADR-0015): dar salida desde la zona a un vehículo que salió sin registrarla
+    Route::patch('/estacionamientos/{zona}/salida/{acceso}', [EstacionamientoController::class, 'salida'])->whereNumber(['zona', 'acceso'])->name('estacionamientos.salida');
     // Fin Padrones: Equipos de seguridad y Estacionamientos
     // Padrones: Rutas de transporte (fichas por sede, pestañas Llegadas / Salidas / Paraderos, hoja del día e itinerario)
     Route::get('/rutas', [RutaController::class, 'index'])->name('rutas.index');
@@ -374,6 +376,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/personas/{persona}/aceptar', 'aceptarPersona')->whereNumber('persona')->name('personas.aceptar');
         Route::put('/personas/{persona}/rechazar', 'rechazarPersona')->whereNumber('persona')->name('personas.rechazar');
         Route::put('/personas/{persona}/unir', 'unirPersona')->whereNumber('persona')->name('personas.unir');
+        // Mejoras padrones (ADR-0015): unir dos personas verificadas que son la misma
+        Route::put('/personas/{persona}/unir-duplicado', 'unirDuplicadoPersona')->whereNumber('persona')->name('personas.unir-duplicado');
     });
     // Fin Padrones: Altas por verificar
     // Padrones: Procedimientos (Operación → Consulta: manual operativo con versiones, aprobación con firma y acuse «Leí y entendí»; ver docs/tecnico/procedimientos.md)
@@ -503,6 +507,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/etiquetas/plantillas/{plantilla}', 'update')->whereNumber('plantilla')->name('etiquetas.plantillas.update');
         Route::patch('/etiquetas/plantillas/{plantilla}/estado', 'estado')->whereNumber('plantilla')->name('etiquetas.plantillas.estado');
         Route::get('/etiquetas/plantillas/{plantilla}/prueba', 'prueba')->whereNumber('plantilla')->name('etiquetas.plantillas.prueba');
+        // Mejoras padrones (ADR-0015): los padrones imprimen su hoja propia o con estas plantillas
+        Route::put('/etiquetas/plantillas/impresion-padrones', 'impresionPadrones')->name('etiquetas.plantillas.impresion-padrones');
     });
     // Fin Padrones: Ajustes Ronda 7
 

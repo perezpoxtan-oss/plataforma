@@ -3,6 +3,7 @@
 namespace App\Support\Menu;
 
 use App\Models\Candidato;
+use App\Models\Colaborador;
 use App\Models\DepartamentoResponsable;
 use App\Models\Postulacion;
 use App\Models\User;
@@ -10,6 +11,7 @@ use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\PlazosCandidatos;
+use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Procedimientos\AdministradorProcedimientos;
@@ -148,6 +150,15 @@ class MisPendientes
                     $pendientes->count(), route('entrevistas.index'));
             }
         }
+
+        // Mejoras padrones: colaboradores que registró la caseta y esperan que Recursos Humanos los verifique
+        if ($actor->can('colaboradores.aprobar')) {
+            $items[] = $this->item('colaboradores_por_verificar', 'Colaboradores por verificar', 'bi-person-exclamation',
+                app(AdministradorColaboradores::class)->limitar(Colaborador::query(), $actor, 'colaboradores.aprobar')
+                    ->where('colaboradores.provisional', true)->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id')->count(),
+                route('colaboradores.index', ['registro' => 'provisional']));
+        }
+        // Fin Mejoras padrones
 
         // Cuentas por revisar (criterio 1): quien edita usuarios, dentro de su alcance
         if ($actor->can('usuarios.editar')) {

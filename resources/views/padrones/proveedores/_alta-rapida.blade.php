@@ -45,7 +45,7 @@
                 <p class="small text-muted"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Si ya está registrada, no se duplica: se usa la existente. Las sedes y demás datos se ajustan después en Empresas Externas.</p>
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="btn-esmeralda" data-texto-original="Guardar Empresa">Guardar Empresa</button>
+                    <button type="submit" class="btn-esmeralda" data-texto-original="Guardar">Guardar</button>
                 </div>
             </form>
         </div>

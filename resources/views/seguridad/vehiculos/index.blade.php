@@ -5,6 +5,7 @@
 @section('contenido')
 <div class="tema-pizarra">
     @include('administracion.partes.avisos')
+    @include('componentes.siguiente-paso')
     @include('administracion.partes.selector-empresa')
 
     @if ($sinEmpresa)
@@ -88,7 +89,7 @@
                     <div>
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
                             <span class="badge-prop {{ $colores[$v->propiedad] ?? 'bg-visitante' }}"><i class="bi bi-info-circle-fill me-1" aria-hidden="true"></i>{{ $etiqueta }}</span>
-                            <span class="etiqueta-estado {{ $v->activo ? 'activo' : 'inactivo' }}">{{ $v->activo ? 'ACTIVO' : 'BAJA' }}</span>
+                            <span class="etiqueta-estado {{ $v->activo ? 'activo' : 'inactivo' }}">{{ $v->activo ? 'ACTIVO' : 'DE BAJA' }}</span>
                         </div>
                         @include('padrones.altas-por-verificar._insignia', ['registro' => $v])
                         <div class="text-center mb-2">
@@ -126,6 +127,10 @@
                             'identImprimir' => $puede['imprimir'] ? route('vehiculos.calcomania', $v->id) : null, 'identImprimirTexto' => 'Imprimir calcomanía',
                             'identEditable' => $editable])
                         <div class="d-flex gap-2">
+                            {{-- Mejoras padrones: botón de impresora en la ficha, como en Gafetes y Equipos --}}
+                            @if ($puede['imprimir'])
+                                <a href="{{ route('vehiculos.calcomania', $v->id) }}" target="_blank" rel="noopener" class="btn-icono imprimir-qr" title="Imprimir su calcomanía" aria-label="Imprimir la calcomanía de {{ $v->placas }}"><i class="bi bi-printer" aria-hidden="true"></i></a>
+                            @endif
                             @include('padrones.altas-por-verificar._boton', ['registro' => $v])
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar vehículo {{ $v->placas }}"
@@ -206,11 +211,17 @@
                                        data-duplicado="{{ route('vehiculos.duplicado') }}" data-duplicado-min="3" data-duplicado-aviso="{{ $modo }}_ve_aviso_placas">
                             </div>
                             <div class="col-md-7">
-                                <label class="campo-etiqueta" for="{{ $modo }}_ve_propiedad">Categoría <span class="text-lowercase fw-normal">(¿de quién es?)</span></label>
+                                {{-- Mejoras padrones: la pregunta en lugar del nombre técnico, y las categorías agrupadas (Particular / De una empresa) --}}
+                                <label class="campo-etiqueta" for="{{ $modo }}_ve_propiedad">¿De quién es? <span class="text-lowercase fw-normal">(categoría)</span></label>
                                 <select id="{{ $modo }}_ve_propiedad" name="propiedad" class="campo" required>
-                                    @foreach (\App\Services\Vehiculos\AdministradorVehiculos::OPCIONES_PROPIEDAD as $clave => $texto)
-                                        @continue ($proveedorFijo && ! in_array($clave, \App\Services\Vehiculos\AdministradorVehiculos::CON_PROVEEDOR, true))
-                                        <option value="{{ $clave }}" @selected($valor('propiedad', 'propio_huesped') === $clave) @if ($clave === 'propio_huesped') data-por-defecto @endif>{{ $texto }}</option>
+                                    @foreach (\App\Services\Vehiculos\AdministradorVehiculos::GRUPOS_PROPIEDAD as $grupoVe => $clavesVe)
+                                        @php $clavesVe = array_values(array_filter($clavesVe, fn ($c) => ! $proveedorFijo || in_array($c, \App\Services\Vehiculos\AdministradorVehiculos::CON_PROVEEDOR, true))); @endphp
+                                        @continue ($clavesVe === [])
+                                        <optgroup label="{{ $grupoVe }}">
+                                            @foreach ($clavesVe as $clave)
+                                                <option value="{{ $clave }}" @selected($valor('propiedad', 'propio_huesped') === $clave) @if ($clave === 'propio_huesped') data-por-defecto @endif>{{ \App\Services\Vehiculos\AdministradorVehiculos::OPCIONES_PROPIEDAD[$clave] }}</option>
+                                            @endforeach
+                                        </optgroup>
                                     @endforeach
                                 </select>
                             </div>
@@ -251,7 +262,7 @@
 
                         <div class="row">
                             <div class="col-md-4">
-                                <label class="campo-etiqueta" for="{{ $modo }}_ve_tipo">Tipo / Estilo <span class="text-lowercase fw-normal">(su forma)</span></label>
+                                <label class="campo-etiqueta" for="{{ $modo }}_ve_tipo">¿Qué forma tiene? <span class="text-lowercase fw-normal">(tipo)</span></label>
                                 <select id="{{ $modo }}_ve_tipo" name="tipo" class="campo" required>
                                     @foreach (\App\Models\Vehiculo::TIPOS as $clave => $texto)
                                         <option value="{{ $clave }}" @selected($valor('tipo', 'sedan') === $clave) @if ($clave === 'sedan') data-por-defecto @endif>{{ $texto }}</option>
@@ -291,7 +302,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-pizarra">{{ $esNuevo ? 'Guardar Vehículo' : 'Actualizar Datos' }}</button>
+                            <button type="submit" class="btn-pizarra">Guardar</button>
                         </div>
                     </form>
                     @unless ($esNuevo)

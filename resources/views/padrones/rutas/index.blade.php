@@ -73,7 +73,7 @@
                             <div class="rutas-transportistas" title="{{ implode(', ', $r['transportistas']) }}"><i class="bi bi-truck me-1" aria-hidden="true"></i>{{ implode(', ', $r['transportistas']) }}</div>
                         @endif
                         @if ($r['suspendidas'] > 0)
-                            <div class="rutas-aviso-suspendidas"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> {{ $r['suspendidas'] === 1 ? 'Con 1 ruta suspendida' : "Con {$r['suspendidas']} rutas suspendidas" }}</div>
+                            <div class="rutas-aviso-suspendidas"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> {{ $r['suspendidas'] === 1 ? 'Con 1 ruta dada de baja' : "Con {$r['suspendidas']} rutas dadas de baja" }}</div>
                         @endif
                     </div>
 

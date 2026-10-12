@@ -8,8 +8,11 @@ use App\Models\Empresa;
 use App\Models\Gafete;
 use App\Models\Sede;
 use App\Models\User;
+use App\Models\VoucherReposicion;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Inventarios\Vouchers;
+use App\Services\Lector\ImpresionDesdePadron;
+use App\Services\Vouchers\RecuperacionVouchers;
 use App\Support\Identidad;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -87,6 +90,10 @@ class GafeteController extends Controller
                 'responsableAnterior' => $this->responsableAnterior($request),
                 'voucherGenerado' => $puede['voucher'] ? session('voucher_generado') : null,
                 'puede' => $puede,
+                // Mejoras padrones (ADR-0015): «En uso» (prestado ahora en caseta) y el voucher de los dados de baja
+                'prestados' => Gafete::query()->prestados()->pluck('gafetes.id')->map(fn ($id) => (int) $id)->all(),
+                'vouchersBaja' => app(RecuperacionVouchers::class)->ultimosPorOrigen('gafete', $lista->where('activo', false)->pluck('id')),
+                'puedeVerVouchers' => $actor->can('vouchers.ver'),
             ]);
         });
     }
@@ -103,7 +110,14 @@ class GafeteController extends Controller
         $total = $gafetes->count();
         $rango = $total === 1 ? $gafetes->first()->nomenclatura : $gafetes->first()->nomenclatura.' a '.$gafetes->last()->nomenclatura;
 
-        return redirect()->route('gafetes.index')->with('ok', ($total === 1 ? 'Gafete generado' : "Lote de {$total} gafetes generado")." correctamente ({$rango}). Márcalos y presiona «Imprimir».");
+        $redireccion = redirect()->route('gafetes.index');
+        // Mejoras padrones (criterio 5): el siguiente paso es imprimir justo ese lote
+        if ($request->user()->can('gafetes.imprimir')) {
+            $redireccion->with('siguiente_paso', ['texto' => $total === 1 ? 'Imprimir este gafete' : 'Imprimir este lote', 'icono' => 'bi-printer', 'nueva_pestana' => true,
+                'url' => route('gafetes.imprimir', ['gafetes' => $gafetes->pluck('id')->all()])]);
+        }
+
+        return $redireccion->with('ok', ($total === 1 ? 'Gafete generado' : "Lote de {$total} gafetes generado")." correctamente ({$rango}).");
     }
 
     public function update(Request $request, int $gafete): RedirectResponse
@@ -144,14 +158,34 @@ class GafeteController extends Controller
         Gate::authorize('gafetes.eliminar');
         $empresaId = $this->empresaDeTrabajo($request);
 
-        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $gafete) {
+        [$modelo, $resultado, $voucher] = $this->tenant->conEmpresa($empresaId, function () use ($request, $gafete) {
             $modelo = $this->buscarEnAlcance($request->user(), $gafete, 'gafetes.eliminar');
-            $this->gafetes->reactivar($request->user(), $modelo);
+            // Mejoras padrones (ADR-0015): reactivar = «Recuperado» de su voucher (un solo camino, mismo resultado)
+            [$resultado, $voucher] = app(RecuperacionVouchers::class)->desdeFicha($request->user(), 'gafete', $modelo);
+            if ($resultado === 'sin_voucher') {
+                $this->gafetes->reactivar($request->user(), $modelo);
+            }
 
-            return $modelo;
+            return [$modelo, $resultado, $voucher];
         });
 
-        return redirect()->to(route('gafetes.index').'#gafete-'.$modelo->id)->with('ok', "Gafete {$modelo->nomenclatura} reactivado correctamente.");
+        return $this->despuesDeReactivar($resultado, $voucher, "Gafete {$modelo->nomenclatura}", 'reactivado',
+            route('gafetes.index').'#gafete-'.$modelo->id);
+    }
+
+    /**
+     * Mejoras padrones (ADR-0015): mensaje y destino después de «Reactivar»
+     * según lo que pasó con su voucher (ver RecuperacionVouchers::desdeFicha).
+     */
+    private function despuesDeReactivar(string $resultado, ?VoucherReposicion $voucher, string $articulo, string $reactivado, string $volver): RedirectResponse
+    {
+        return match ($resultado) {
+            'con_cobro' => redirect()->to(route('vouchers.index', ['q' => $voucher->folio, 'recuperar' => $voucher->id]).'#voucher-'.$voucher->id)
+                ->with('aviso', "{$articulo} tiene el voucher {$voucher->folio} con cobro: confirma aquí si ya se le cobró al responsable; al confirmar se reactiva."),
+            'recuperado' => redirect()->to($volver)->with('ok', "{$articulo} {$reactivado}. Su voucher {$voucher->folio} quedó «Cancelado por recuperación»."),
+            default => redirect()->to($volver)->with('ok', "{$articulo} {$reactivado} correctamente."
+                .($voucher ? " Su voucher {$voucher->folio} sigue vigente: márcalo «Recuperado» en Vouchers de reposición." : '')),
+        };
     }
 
     /**
@@ -177,6 +211,10 @@ class GafeteController extends Controller
                 ->sortBy(fn (Gafete $g) => [$g->sede?->nombre, $g->tipo?->nombre, $g->consecutivo, $g->nomenclatura])
                 ->values();
             abort_if($gafetes->isEmpty(), 404);
+            // Mejoras padrones (ADR-0015): si la empresa imprime con plantillas, un solo camino (Etiquetas QR)
+            if ($plantillas = app(ImpresionDesdePadron::class)->redirigir($request->user(), $empresaId, 'gafete', $gafetes->pluck('id')->map(fn ($id) => (int) $id)->all())) {
+                return $plantillas;
+            }
 
             $escritor = new Writer(new ImageRenderer(new RendererStyle(150, 1), new SvgImageBackEnd));
             $qrs = $gafetes->mapWithKeys(fn (Gafete $g) => [

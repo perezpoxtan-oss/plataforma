@@ -125,7 +125,7 @@ class DepartamentoController extends Controller
 
         return redirect()->route('departamentos.index')->with($activo ? 'ok' : 'aviso', $activo
             ? "Departamento «{$modelo->nombre}» reactivado."
-            : "Departamento «{$modelo->nombre}» desactivado. Puedes reactivarlo con el mismo botón cuando quieras.");
+            : "Departamento «{$modelo->nombre}» dado de baja. Puedes reactivarlo con el mismo botón cuando quieras.");
     }
 
     /**

@@ -93,7 +93,7 @@
                         @endif
                     </div>
                     <div class="ficha-footer">
-                        <span class="etiqueta-estado {{ $t->activo ? 'activo' : 'inactivo' }}">{{ $t->activo ? 'ACTIVO' : 'INACTIVO' }}</span>
+                        <span class="etiqueta-estado {{ $t->activo ? 'activo' : 'inactivo' }}">{{ $t->activo ? 'ACTIVO' : 'DE BAJA' }}</span>
                         <div class="d-flex gap-2">
                             @if ($puede['editar'])
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar {{ $t->nombre }}"
@@ -104,12 +104,12 @@
                             @endif
                             @if ($puede['estado'])
                                 <form action="{{ route('turnos.estado', $t->id) }}" method="POST" class="m-0"
-                                      data-confirmar="{{ $t->activo ? '¿Desactivar el turno «'.$t->nombre.'»? Podrás reactivarlo con el mismo botón.' : '¿Reactivar el turno «'.$t->nombre.'»?' }}">
+                                      data-confirmar="{{ $t->activo ? '¿Dar de baja el turno «'.$t->nombre.'»? Podrás reactivarlo con el mismo botón.' : '¿Reactivar el turno «'.$t->nombre.'»?' }}">
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="activo" value="{{ $t->activo ? 0 : 1 }}">
                                     @if ($t->activo)
-                                        <button type="submit" class="btn-icono eliminar" title="Desactivar" aria-label="Desactivar {{ $t->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
+                                        <button type="submit" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja {{ $t->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
                                     @else
                                         <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar {{ $t->nombre }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                                     @endif
@@ -183,7 +183,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-indigo">{{ $esNuevo ? 'Guardar Turno' : 'Actualizar' }}</button>
+                            <button type="submit" class="btn-indigo">Guardar</button>
                         </div>
                     </form>
                     @unless ($esNuevo)
@@ -238,7 +238,7 @@
                             <div class="dialogo-acciones">
                                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                                 @if ($sedesAsignables->isNotEmpty())
-                                    <button type="submit" class="btn-indigo">Guardar Sedes</button>
+                                    <button type="submit" class="btn-indigo">Guardar</button>
                                 @endif
                             </div>
                         </form>

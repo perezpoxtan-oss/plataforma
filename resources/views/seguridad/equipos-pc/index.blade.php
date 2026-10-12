@@ -6,6 +6,7 @@
 @use('App\Models\EquipoPc')
 <div class="tema-recorridos-pc pantalla-equipos-pc">
     @include('administracion.partes.avisos')
+    @include('componentes.siguiente-paso')
     @include('administracion.partes.selector-empresa')
 
     @if ($sinEmpresa)
@@ -108,7 +109,7 @@
                                 @endif
                             </div>
                         </div>
-                        <div class="rpc-rotulo">NÚM. DE SERIE / ID</div>
+                        <div class="rpc-rotulo">CLAVE DE LA ETIQUETA</div>
                         <div class="rpc-serie">{{ $e->numero_serie }}</div>
                         @if ($sedesFiltro->count() > 1)
                             <div class="small text-success fw-bold mb-1"><i class="bi bi-building me-1" aria-hidden="true"></i>{{ $e->sede?->nombre }}</div>
@@ -123,6 +124,18 @@
                         @unless ($e->activo)
                             <div class="small rpc-texto-hallazgo fw-bold mt-1"><i class="bi bi-slash-circle me-1" aria-hidden="true"></i>DE BAJA</div>
                         @endunless
+                        {{-- Mejoras padrones: cuándo se revisó por última vez en los recorridos (sin ir al reporte) --}}
+                        @php $revision = $ultimasRevisiones[$e->id] ?? null; @endphp
+                        @if ($e->activo)
+                            <div class="small epc-ultima-revision {{ $revision ? ($revision->esFalla() ? 'con-falla' : 'ok') : 'sin-revisar' }}">
+                                <i class="bi {{ $revision ? ($revision->esFalla() ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill') : 'bi-hourglass' }} me-1" aria-hidden="true"></i>
+                                @if ($revision)
+                                    Última revisión: @fecha($revision->created_at, 'd/m/Y') · {{ $revision->esFalla() ? 'con falla' : 'sin falla' }}
+                                @else
+                                    Todavía sin revisar en un recorrido
+                                @endif
+                            </div>
+                        @endif
                         @if ($e->actualizado_por_nombre && $e->updated_at?->ne($e->created_at))
                             <div class="texto-traza mt-2"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $e->actualizado_por_nombre }} · @fecha($e->updated_at)</div>
                         @elseif ($e->creado_por_nombre)
@@ -223,7 +236,7 @@
                             </div>
                         </div>
 
-                        <label class="campo-etiqueta text-primary" for="{{ $modo }}_epc_serie">Núm. de Serie / ID (para QR)</label>
+                        <label class="campo-etiqueta text-primary" for="{{ $modo }}_epc_serie">Clave de la etiqueta <span class="text-lowercase fw-normal">(ej. EXT-01; va en su QR)</span></label>
                         <input type="text" id="{{ $modo }}_epc_serie" name="numero_serie" class="campo text-uppercase fw-bold" maxlength="100" required autocapitalize="characters"
                                placeholder="Ej: EXT-01" value="{{ $trasError ? old('numero_serie') : '' }}"
                                data-duplicado="{{ route('equipos_pc.duplicado') }}" data-duplicado-con="sede_id">
@@ -261,7 +274,7 @@
                             @if ($esNuevo)
                                 <button type="submit" name="_siguiente" value="1" class="btn-rpc-claro">Guardar y capturar siguiente</button>
                             @endif
-                            <button type="submit" class="btn-rpc-verde">{{ $esNuevo ? 'Guardar' : 'Guardar Cambios' }}</button>
+                            <button type="submit" class="btn-rpc-verde">Guardar</button>
                         </div>
                     </form>
                     @unless ($esNuevo)

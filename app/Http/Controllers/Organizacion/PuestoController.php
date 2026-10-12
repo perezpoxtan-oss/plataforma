@@ -120,7 +120,7 @@ class PuestoController extends Controller
 
         return redirect()->route('puestos.index')->with($activo ? 'ok' : 'aviso', $activo
             ? "Puesto «{$modelo->nombre}» reactivado."
-            : "Puesto «{$modelo->nombre}» desactivado. Puedes reactivarlo con el mismo botón cuando quieras.");
+            : "Puesto «{$modelo->nombre}» dado de baja. Puedes reactivarlo con el mismo botón cuando quieras.");
     }
 
     /**

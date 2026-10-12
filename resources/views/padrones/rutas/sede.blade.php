@@ -82,7 +82,7 @@
                 <div class="filtros-estado m-0" role="group" aria-label="Filtrar por estado">
                     <button type="button" class="btn btn-dark btn-sm fw-bold" data-filtro-estado="{{ $clave }}" data-valor="todas" aria-pressed="true">Todas</button>
                     <button type="button" class="btn btn-outline-success btn-sm fw-bold" data-filtro-estado="{{ $clave }}" data-valor="1" aria-pressed="false">Activas</button>
-                    <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-filtro-estado="{{ $clave }}" data-valor="0" aria-pressed="false">Suspendidas</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-filtro-estado="{{ $clave }}" data-valor="0" aria-pressed="false">De baja</button>
                 </div>
             </div>
         @endif
@@ -123,7 +123,7 @@
                             @if ($r->costo_maximo_taxi !== null)
                                 <span title="Costo máximo por taxi"><i class="bi bi-cash-coin" aria-hidden="true"></i> Taxi máx. ${{ number_format((float) $r->costo_maximo_taxi, 2) }}</span>
                             @endif
-                            <span class="etiqueta-estado {{ $r->activo ? 'activo' : 'inactivo' }}">{{ $r->activo ? 'ACTIVA' : 'SUSPENDIDA' }}</span>
+                            <span class="etiqueta-estado {{ $r->activo ? 'activo' : 'inactivo' }}">{{ $r->activo ? 'ACTIVA' : 'DE BAJA' }}</span>
                         </div>
                         <ul class="rutas-fila-horarios" aria-label="Horarios">
                             @foreach ($r->horarios as $h)
@@ -159,12 +159,12 @@
                         @endif
                         @if ($desactivable)
                             <form action="{{ route('rutas.estado', $r->id) }}" method="POST" class="m-0"
-                                  data-confirmar="{{ $r->activo ? '¿Suspender esta ruta? Podrás reactivarla con el mismo botón.' : '¿Reactivar esta ruta?' }}">
+                                  data-confirmar="{{ $r->activo ? '¿Dar de baja esta ruta? Deja de salir en las próximas salidas y en la hoja del día; podrás reactivarla con el mismo botón.' : '¿Reactivar esta ruta?' }}">
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="activo" value="{{ $r->activo ? 0 : 1 }}">
                                 @if ($r->activo)
-                                    <button type="submit" class="btn-icono eliminar" title="Suspender" aria-label="Suspender ruta {{ $r->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
+                                    <button type="submit" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja la ruta {{ $r->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
                                 @else
                                     <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar ruta {{ $r->nombre }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                                 @endif
@@ -238,12 +238,12 @@
                         @endif
                         @if (in_array($p->id, $paraderosDesactivables, true))
                             <form action="{{ route('rutas.paraderos.estado', $p->id) }}" method="POST" class="m-0"
-                                  data-confirmar="{{ $p->activo ? '¿Desactivar este paradero? Las rutas que ya lo tienen no cambian; solo deja de sugerirse al capturar.' : '¿Reactivar este paradero?' }}">
+                                  data-confirmar="{{ $p->activo ? '¿Dar de baja este paradero? Las rutas que ya lo tienen no cambian; solo deja de sugerirse al capturar.' : '¿Reactivar este paradero?' }}">
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="activo" value="{{ $p->activo ? 0 : 1 }}">
                                 @if ($p->activo)
-                                    <button type="submit" class="btn-icono eliminar" title="Desactivar" aria-label="Desactivar paradero {{ $p->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
+                                    <button type="submit" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja el paradero {{ $p->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
                                 @else
                                     <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar paradero {{ $p->nombre }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                                 @endif
@@ -294,7 +294,7 @@
         <dialog id="{{ $esNuevo ? 'dialogoNuevaRuta' : 'dialogoEditarRuta' }}" class="dialogo ancho rutas-dialogo" aria-labelledby="titulo-ruta-{{ $modo }}"
                 @if ($trasError) data-abrir-al-cargar @endif>
             <div class="dialogo-cabecera">
-                <h2 id="titulo-ruta-{{ $modo }}"><i class="bi {{ $esNuevo ? 'bi-node-plus' : 'bi-pencil-square' }} me-2 rutas-icono-titulo" aria-hidden="true"></i>{{ $esNuevo ? 'Configurar Ruta y Horarios' : 'Modificar Ruta y Horarios' }}</h2>
+                <h2 id="titulo-ruta-{{ $modo }}"><i class="bi {{ $esNuevo ? 'bi-node-plus' : 'bi-pencil-square' }} me-2 rutas-icono-titulo" aria-hidden="true"></i>{{ $esNuevo ? 'Nueva ruta y sus horarios' : 'Editar ruta y sus horarios' }}</h2>
                 <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
             </div>
             <div class="dialogo-cuerpo">
@@ -366,7 +366,7 @@
 
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                        <button type="submit" class="btn-rutas">{{ $esNuevo ? 'Guardar Ruta' : 'Guardar Cambios' }}</button>
+                        <button type="submit" class="btn-rutas">Guardar</button>
                     </div>
                 </form>
                 @unless ($esNuevo)

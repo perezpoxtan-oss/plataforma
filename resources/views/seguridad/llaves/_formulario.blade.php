@@ -47,7 +47,7 @@
 <dialog id="{{ $esNueva ? 'dialogoNuevaLlave' : 'dialogoEditarLlave' }}" class="dialogo ancho dialogo-llave" aria-labelledby="titulo-ll-{{ $modo }}"
         @if ($trasError) data-abrir-al-cargar @endif>
     <div class="dialogo-cabecera">
-        <h2 id="titulo-ll-{{ $modo }}"><i class="bi {{ $esNueva ? 'bi-key' : 'bi-pencil-square' }} me-2 text-indigo" aria-hidden="true"></i>{{ $esNueva ? 'Alta Inventario de Llave' : 'Actualizar Llave' }}</h2>
+        <h2 id="titulo-ll-{{ $modo }}"><i class="bi {{ $esNueva ? 'bi-key' : 'bi-pencil-square' }} me-2 text-indigo" aria-hidden="true"></i>{{ $esNueva ? 'Nueva Llave' : 'Editar Llave' }}</h2>
         <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
     </div>
     <div class="dialogo-cuerpo">
@@ -57,44 +57,16 @@
             <input type="hidden" name="_dialogo" value="{{ $esNueva ? 'crear' : ($editandoId ? 'editar-'.$editandoId : '') }}" data-campo-dialogo>
             <p class="linea-empresa mb-3"><i class="bi bi-building-check me-1" aria-hidden="true"></i>Catálogo de: <strong>{{ $empresaNombre }}</strong></p>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <label class="campo-etiqueta" for="{{ $p }}sede">Sede</label>
-                    <select id="{{ $p }}sede" name="sede_id" class="campo" required data-llave-sede>
-                        <option value="">-- Seleccione Sede --</option>
-                        @foreach ($sedesFormulario as $s)
-                            <option value="{{ $s->id }}" @selected($valor('sede_id', $sedePorDefecto) === (string) $s->id) @if ($sedePorDefecto === (string) $s->id) data-por-defecto @endif
-                                    @unless ($s->activo) hidden @endunless>{{ $s->nombre }}{{ $s->activo ? '' : ' (inactiva)' }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="campo-etiqueta" for="{{ $p }}depto">Departamento <span class="text-lowercase fw-normal">(opcional)</span></label>
-                    <select id="{{ $p }}depto" name="departamento_id" class="campo" data-llave-depto>
-                        <option value="">-- Corporativo (Todos) --</option>
-                        @foreach ($catalogos['departamentos'] as $d)
-                            <option value="{{ $d->id }}" @selected($valor('departamento_id') === (string) $d->id)
-                                    data-sedes="{{ $d->todas_las_sedes ? 'todas' : $d->sedes->pluck('id')->join(' ') }}"
-                                    @unless ($d->activo) data-inactivo hidden @endunless>{{ $d->nombre }}{{ $d->activo ? '' : ' (inactivo)' }}</option>
-                        @endforeach
-                    </select>
-                </div>
+            <div>
+                <label class="campo-etiqueta" for="{{ $p }}sede">Sede</label>
+                <select id="{{ $p }}sede" name="sede_id" class="campo" required data-llave-sede>
+                    <option value="">-- Seleccione Sede --</option>
+                    @foreach ($sedesFormulario as $s)
+                        <option value="{{ $s->id }}" @selected($valor('sede_id', $sedePorDefecto) === (string) $s->id) @if ($sedePorDefecto === (string) $s->id) data-por-defecto @endif
+                                @unless ($s->activo) hidden @endunless>{{ $s->nombre }}{{ $s->activo ? '' : ' (inactiva)' }}</option>
+                    @endforeach
+                </select>
             </div>
-
-            <label class="campo-etiqueta" for="{{ $p }}puesto">Puesto Objetivo <span class="text-lowercase fw-normal">(opcional)</span></label>
-            <select id="{{ $p }}puesto" name="puesto_id" class="campo mb-1" data-llave-puesto>
-                <option value="">-- Cualquier Puesto --</option>
-                @foreach ($catalogos['puestos'] as $pu)
-                    <option value="{{ $pu->id }}" @selected($valor('puesto_id') === (string) $pu->id)
-                            data-deps="{{ $pu->departamentos->pluck('id')->join(' ') }}"
-                            @unless ($pu->activo) data-inactivo hidden @endunless>{{ $pu->nombre }}{{ $pu->activo ? '' : ' (inactivo)' }}</option>
-                @endforeach
-            </select>
-            <p class="campo-ayuda mb-3">Se acota según el Departamento elegido (los puestos sin departamento siempre aparecen).</p>
-
-            @include('componentes.lector', ['id' => $p.'responsable', 'etiqueta' => 'Responsable Permanente (opcional)',
-                'tipos' => 'colaborador', 'nombre' => 'colaborador_id', 'valor' => $trasError ? old('colaborador_id') : null, 'elegido' => $responsableTexto,
-                'ayuda' => 'Excepcional: la mayoría de las llaves NO llevan a nadie aquí; el préstamo normal se registra en Préstamo de llaves. Escanea su gafete o escribe su número de empleado.'])
 
             <label class="campo-etiqueta" for="{{ $p }}nomenclatura">Nombre de la Llave (Único en su sede)</label>
             {{-- Ronda 7: aviso único de duplicados; el nombre se revisa en la sede elegida (data-duplicado-con="sede_id") --}}
@@ -191,6 +163,38 @@
                 <input type="text" id="{{ $p }}otra" name="alcance_otro" class="campo mb-0" maxlength="150" placeholder="Ej: Cuarto de máquinas, Reja de mantenimiento..." value="{{ $valor('alcance_otro') }}" data-llave-otra>
             </div>
 
+            {{-- Mejoras padrones (criterio 8): alta corta; lo demás se completa en «Más datos» --}}
+            <details class="mas-datos" data-mas-datos @if (! $esNueva || ($trasError && collect(['departamento_id', 'puesto_id', 'colaborador_id', 'id_externo', 'fecha_caducidad', 'costo_reposicion', 'etiqueta_nfc'])->contains(fn ($c) => filled(old($c))))) open @endif>
+                <summary>Más datos <span class="text-lowercase fw-normal">(departamento, responsable, caducidad, costo, tarjeta y horarios; todo opcional)</span></summary>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="campo-etiqueta" for="{{ $p }}depto">Departamento <span class="text-lowercase fw-normal">(opcional)</span></label>
+                    <select id="{{ $p }}depto" name="departamento_id" class="campo" data-llave-depto>
+                        <option value="">-- Corporativo (Todos) --</option>
+                        @foreach ($catalogos['departamentos'] as $d)
+                            <option value="{{ $d->id }}" @selected($valor('departamento_id') === (string) $d->id)
+                                    data-sedes="{{ $d->todas_las_sedes ? 'todas' : $d->sedes->pluck('id')->join(' ') }}"
+                                    @unless ($d->activo) data-inactivo hidden @endunless>{{ $d->nombre }}{{ $d->activo ? '' : ' (inactivo)' }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <label class="campo-etiqueta" for="{{ $p }}puesto">Puesto Objetivo <span class="text-lowercase fw-normal">(opcional)</span></label>
+            <select id="{{ $p }}puesto" name="puesto_id" class="campo mb-1" data-llave-puesto>
+                <option value="">-- Cualquier Puesto --</option>
+                @foreach ($catalogos['puestos'] as $pu)
+                    <option value="{{ $pu->id }}" @selected($valor('puesto_id') === (string) $pu->id)
+                            data-deps="{{ $pu->departamentos->pluck('id')->join(' ') }}"
+                            @unless ($pu->activo) data-inactivo hidden @endunless>{{ $pu->nombre }}{{ $pu->activo ? '' : ' (inactivo)' }}</option>
+                @endforeach
+            </select>
+            <p class="campo-ayuda mb-3">Se acota según el Departamento elegido (los puestos sin departamento siempre aparecen).</p>
+
+            @include('componentes.lector', ['id' => $p.'responsable', 'etiqueta' => 'Responsable Permanente (opcional)',
+                'tipos' => 'colaborador', 'nombre' => 'colaborador_id', 'valor' => $trasError ? old('colaborador_id') : null, 'elegido' => $responsableTexto,
+                'ayuda' => 'Excepcional: la mayoría de las llaves NO llevan a nadie aquí; el préstamo normal se registra en Préstamo de llaves. Escanea su gafete o escribe su número de empleado.'])
+
             <div class="caja-id-externo" data-mostrar-si='{"tipo_dispositivo":{{ json_encode(\App\Models\Llave::CON_ID_EXTERNO) }}}'>
                 <div class="row">
                     <div class="col-md-6">
@@ -250,9 +254,11 @@
             <button type="button" class="btn-agregar-horario" data-agregar-horario><i class="bi bi-plus-circle" aria-hidden="true"></i> Agregar otro horario</button>
             <p class="campo-ayuda mt-2"><i class="bi bi-info-circle" aria-hidden="true"></i> Sin ningún horario = válida las 24 horas. El nombre es libre, propio de esta llave (no depende del catálogo de Turnos). Si la hora de fin es menor que la de inicio, termina al día siguiente.</p>
 
+            </details>
+
             <div class="dialogo-acciones">
                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                <button type="submit" class="btn-indigo">{{ $esNueva ? 'Guardar e Indexar Llave' : 'Actualizar Registro' }}</button>
+                <button type="submit" class="btn-indigo">Guardar</button>
             </div>
         </form>
         @unless ($esNueva)

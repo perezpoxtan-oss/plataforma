@@ -28,6 +28,8 @@
                 <div>
                     <h1>Puestos</h1>
                     <p>Catálogo de rangos/posiciones, independiente del Departamento.</p>
+                    {{-- Mejoras padrones: la diferencia, en la misma pantalla --}}
+                    <p class="campo-ayuda m-0"><i class="bi bi-lightbulb" aria-hidden="true"></i> El <strong>puesto</strong> es el rango (Agente, Supervisor, Camarista); el <strong>departamento</strong> es el área (Seguridad, Ama de Llaves).</p>
                 </div>
             </div>
             @if ($puestos->count() > 1)
@@ -76,7 +78,7 @@
                         @endif
                     </div>
                     <div class="ficha-footer">
-                        <span class="etiqueta-estado {{ $p->activo ? 'activo' : 'inactivo' }}">{{ $p->activo ? 'ACTIVO' : 'INACTIVO' }}</span>
+                        <span class="etiqueta-estado {{ $p->activo ? 'activo' : 'inactivo' }}">{{ $p->activo ? 'ACTIVO' : 'DE BAJA' }}</span>
                         <div class="d-flex gap-2">
                             @if ($puede['editar'])
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar {{ $p->nombre }}"
@@ -87,12 +89,12 @@
                             @endif
                             @if ($puede['estado'])
                                 <form action="{{ route('puestos.estado', $p->id) }}" method="POST" class="m-0"
-                                      data-confirmar="{{ $p->activo ? '¿Desactivar el puesto «'.$p->nombre.'»? Podrás reactivarlo con el mismo botón.' : '¿Reactivar el puesto «'.$p->nombre.'»?' }}">
+                                      data-confirmar="{{ $p->activo ? '¿Dar de baja el puesto «'.$p->nombre.'»? Podrás reactivarlo con el mismo botón.' : '¿Reactivar el puesto «'.$p->nombre.'»?' }}">
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="activo" value="{{ $p->activo ? 0 : 1 }}">
                                     @if ($p->activo)
-                                        <button type="submit" class="btn-icono eliminar" title="Desactivar" aria-label="Desactivar {{ $p->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
+                                        <button type="submit" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja {{ $p->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
                                     @else
                                         <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar {{ $p->nombre }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                                     @endif
@@ -155,7 +157,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-cian">{{ $esNuevo ? 'Guardar Puesto' : 'Guardar Cambios' }}</button>
+                            <button type="submit" class="btn-cian">Guardar</button>
                         </div>
                     </form>
                     @unless ($esNuevo)

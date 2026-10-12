@@ -43,6 +43,7 @@
         <button type="button" class="btn-imprimir-calcomania" data-accion="imprimir"><i class="bi bi-printer me-1" aria-hidden="true"></i> Imprimir Etiqueta</button>
         <a href="{{ route('equipos.index') }}#equipo-{{ $equipo->id }}" class="btn-cerrar-calcomania"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Volver al Inventario de Equipos</a>
     </div>
+    @include('componentes.hoja-impresion-ayuda', ['selEtiquetas' => ['equipo-'.$equipo->id]])
 </main>
 <script src="{{ $version('js/plataforma.js') }}"></script>
 </body>

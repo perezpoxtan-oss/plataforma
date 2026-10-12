@@ -5,6 +5,7 @@
 @section('contenido')
 <div class="tema-esmeralda pantalla-proveedores">
     @include('administracion.partes.avisos')
+    @include('componentes.siguiente-paso')
     @include('administracion.partes.selector-empresa')
 
     @if ($sinEmpresa)
@@ -25,6 +26,8 @@
             $idsActivas = $sedes->pluck('id');
             $totalSedes = $sedes->count();
             $altas = app(\App\Services\Padrones\AltasPorVerificar::class)->paraLista('proveedores', $proveedores, auth()->user());
+            // Mejoras padrones: alcance de una sola sede = agregar / quitar de su sede con un toque
+            $unaSedePropia = ! $puede['todasLasSedes'] && $sedesAsignables->count() === 1 ? $sedesAsignables->first() : null;
         @endphp
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
@@ -62,7 +65,7 @@
         <div class="filtros-estado" role="group" aria-label="Filtrar por estado">
             <button type="button" class="btn btn-dark btn-sm fw-bold" data-filtro-estado="proveedores" data-valor="todas" aria-pressed="true">Todas</button>
             <button type="button" class="btn btn-outline-success btn-sm fw-bold" data-filtro-estado="proveedores" data-valor="1" aria-pressed="false">Activas</button>
-            <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-filtro-estado="proveedores" data-valor="0" aria-pressed="false">Baja / Vetadas</button>
+            <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-filtro-estado="proveedores" data-valor="0" aria-pressed="false">De baja</button>
         </div>
 
         <div class="fichas-grid" data-fichas="proveedores">
@@ -100,7 +103,20 @@
                             @endif
                             <div><i class="bi bi-people me-2" aria-hidden="true"></i>{{ $p->personas_count }} {{ $p->personas_count === 1 ? 'persona' : 'personas' }} · {{ $p->vehiculos_count }} {{ $p->vehiculos_count === 1 ? 'vehículo' : 'vehículos' }}</div>
                             <div>
-                                @if ($puede['sedes'])
+                                @if ($puede['sedes'] && $unaSedePropia)
+                                    {{-- Mejoras padrones: con una sola sede, agregar o quitar de tu sede es un solo toque (sin ventana aparte) --}}
+                                    @php $enMiSede = $p->todas_las_sedes || $p->sedes->contains('id', $unaSedePropia->id); @endphp
+                                    <form action="{{ route('proveedores.sedes', $p->id) }}" method="POST" class="d-inline m-0"
+                                          data-confirmar="{{ $enMiSede ? '¿Quitar «'.$p->nombre.'» de '.$unaSedePropia->nombre.'? Ya no se podrá elegir en tu caseta.' : '¿Agregar «'.$p->nombre.'» a '.$unaSedePropia->nombre.'?' }}">
+                                        @csrf
+                                        @method('PUT')
+                                        <input type="hidden" name="_volver" value="lista">
+                                        @unless ($enMiSede)<input type="hidden" name="sedes[]" value="{{ $unaSedePropia->id }}">@endunless
+                                        <button type="submit" class="badge-sedes" aria-label="{{ $enMiSede ? 'Quitar de tu sede' : 'Agregar a tu sede' }}: {{ $p->nombre }}">
+                                            <i class="bi bi-signpost-split" aria-hidden="true"></i> {{ $etiquetaSedes }} · {{ $enMiSede ? 'Quitar de mi sede' : 'Agregar a mi sede' }}
+                                        </button>
+                                    </form>
+                                @elseif ($puede['sedes'])
                                     <button type="button" class="badge-sedes" data-abrir-dialogo="dialogoSedesProveedor{{ $p->id }}" aria-label="Sedes donde opera {{ $p->nombre }}: {{ $etiquetaSedes }}">
                                         <i class="bi bi-signpost-split" aria-hidden="true"></i> {{ $etiquetaSedes }}
                                     </button>
@@ -117,7 +133,7 @@
                     </div>
 
                     <div class="ficha-footer">
-                        <span class="etiqueta-estado {{ $p->activo ? 'activo' : 'inactivo' }}">{{ $p->activo ? 'ACTIVA' : 'BAJA / VETADA' }}</span>
+                        <span class="etiqueta-estado {{ $p->activo ? 'activo' : 'inactivo' }}">{{ $p->activo ? 'ACTIVA' : 'DE BAJA' }}</span>
                         <div class="d-flex gap-2">
                             @include('padrones.altas-por-verificar._boton', ['registro' => $p])
                             <a href="{{ route('proveedores.show', $p->id) }}" class="btn-ficha" aria-label="Ficha de {{ $p->nombre }}"><i class="bi bi-person-lines-fill me-1" aria-hidden="true"></i>Ficha</a>
@@ -130,12 +146,12 @@
                             @endif
                             @if ($desactivable)
                                 <form action="{{ route('proveedores.estado', $p->id) }}" method="POST" class="m-0"
-                                      data-confirmar="{{ $p->activo ? '¿Desactivar «'.$p->nombre.'»? Quedará como baja / vetada y podrás reactivarla después con un clic.' : '¿Reactivar «'.$p->nombre.'»?' }}">
+                                      data-confirmar="{{ $p->activo ? '¿Dar de baja «'.$p->nombre.'»? Ya no se podrá elegir en la caseta ni en los pases; podrás reactivarla después con un clic.' : '¿Reactivar «'.$p->nombre.'»?' }}">
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="activo" value="{{ $p->activo ? 0 : 1 }}">
                                     @if ($p->activo)
-                                        <button type="submit" class="btn-icono eliminar" title="Desactivar" aria-label="Desactivar {{ $p->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
+                                        <button type="submit" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja {{ $p->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
                                     @else
                                         <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar {{ $p->nombre }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                                     @endif
@@ -203,7 +219,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-esmeralda">Guardar Empresa</button>
+                            <button type="submit" class="btn-esmeralda">Guardar</button>
                         </div>
                     </form>
                 </div>
@@ -228,7 +244,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-esmeralda">Actualizar Datos</button>
+                            <button type="submit" class="btn-esmeralda">Guardar</button>
                         </div>
                     </form>
                     @include('componentes.borrar', ['registro' => 'proveedores', 'id' => $editandoId])

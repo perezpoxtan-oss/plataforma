@@ -227,7 +227,7 @@ class ColaboradorController extends Controller
             return $this->colaboradores->validarProvisional($request->user(), $empresaId, $modelo, $request);
         });
 
-        return redirect()->route('colaboradores.index')->with('ok', "«{$modelo->nombreCompleto()}» validado con el número {$modelo->num_empleado}.");
+        return redirect()->route('colaboradores.index')->with('ok', "«{$modelo->nombreCompleto()}» verificado con el número {$modelo->num_empleado}.");
     }
 
     /**

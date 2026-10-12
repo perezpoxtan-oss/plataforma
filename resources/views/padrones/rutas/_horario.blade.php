@@ -9,7 +9,12 @@
 @endphp
 <fieldset class="rutas-horario" data-horario data-indice="{{ $h }}" data-siguiente-paradero="{{ count($paraderosBloque) }}">
     <legend class="rutas-horario-cabecera">
-        <span class="rutas-horario-titulo"><i class="bi bi-clock-history me-1" aria-hidden="true"></i><span data-titulo-horario>Horario {{ $numero }}</span></span>
+        {{-- Mejoras padrones: cada horario se pliega (en celular el formulario es largo); plegado muestra su resumen --}}
+        <button type="button" class="btn-plegar-horario" data-plegar-horario aria-expanded="true" title="Plegar o desplegar este horario">
+            <span class="rutas-horario-titulo"><i class="bi bi-clock-history me-1" aria-hidden="true"></i><span data-titulo-horario>Horario {{ $numero }}</span></span>
+            <span class="rutas-horario-resumen" data-resumen-horario></span>
+            <i class="bi bi-chevron-up" aria-hidden="true"></i>
+        </button>
         <button type="button" class="btn-quitar-fila" data-quitar-horario title="Quitar este horario" aria-label="Quitar este horario"><i class="bi bi-trash3" aria-hidden="true"></i></button>
     </legend>
     <input type="hidden" name="horarios[{{ $h }}][id]" value="{{ $datos['id'] ?? '' }}" data-horario-id>

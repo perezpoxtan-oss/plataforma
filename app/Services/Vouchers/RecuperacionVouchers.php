@@ -14,6 +14,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Support\Entrada;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -102,6 +103,56 @@ class RecuperacionVouchers
         ]);
 
         return $voucher;
+    }
+
+    /**
+     * Mejoras padrones (ADR-0015): el último voucher de cada artículo dado de
+     * baja, para que su ficha muestre el motivo y lleve directo al voucher.
+     *
+     * @param  iterable<int>  $ids
+     * @return Collection<int, VoucherReposicion> origen_id => voucher
+     */
+    public function ultimosPorOrigen(string $origenTipo, iterable $ids): Collection
+    {
+        $ids = collect($ids)->map(fn ($id) => (int) $id)->unique()->values();
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        return VoucherReposicion::where('origen_tipo', $origenTipo)->whereIn('origen_id', $ids)->orderBy('id')
+            ->get(['id', 'folio', 'origen_id', 'motivo', 'estado', 'aplica_cobro', 'monto'])->keyBy('origen_id');
+    }
+
+    /**
+     * Mejoras padrones (ADR-0015): «Reactivar» en la ficha de una llave, un
+     * gafete o un equipo es el mismo hecho que «Recuperado» en su voucher, y
+     * deja el mismo resultado:
+     *
+     *  - sin voucher vigente (o sin permiso de marcarlo): «sin_voucher», el
+     *    módulo reactiva como siempre (el voucher vigente, si lo hay, se devuelve
+     *    para avisar que sigue abierto);
+     *  - voucher vigente sin cobro: se marca «Recuperado» aquí mismo (reactiva
+     *    el artículo y cancela el voucher): «recuperado»;
+     *  - voucher vigente con cobro: hay que decir si ya se le cobró, así que no
+     *    se toca nada y el módulo lleva a «Recuperado» del voucher: «con_cobro».
+     *
+     * @return array{0: string, 1: ?VoucherReposicion}
+     */
+    public function desdeFicha(User $actor, string $origenTipo, Model $origen): array
+    {
+        $voucher = VoucherReposicion::where('origen_tipo', $origenTipo)->where('origen_id', $origen->getKey())->latest('id')->first();
+        if ($voucher === null || ! $voucher->esVigente()) {
+            return ['sin_voucher', null];
+        }
+        if (! $this->puedeRecuperar($actor, $voucher)) {
+            return ['sin_voucher', $voucher];
+        }
+        if ($voucher->aplica_cobro && (float) $voucher->monto > 0) {
+            return ['con_cobro', $voucher];
+        }
+        $this->recuperar($actor, $voucher, ['comentario' => 'Reactivado desde la ficha del artículo.']);
+
+        return ['recuperado', $voucher];
     }
 
     /**

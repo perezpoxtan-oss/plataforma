@@ -41,7 +41,7 @@ class Empresa extends Model
         'procedimiento_publicado' => ['Procedimientos: avisar al personal cuando se publica una versión que debe leer y firmar', true],
         'procedimiento_recordatorio' => ['Procedimientos: recordar (cada 3 días) los procedimientos que alguien aún no firma de enterado', true],
         // Ronda 5 (LL-04): copias del voucher con cobro
-        'voucher_cobro' => ['Vouchers de reposición con cobro (CXC): enviar las copias a Seguridad, Recepción y Administración', true],
+        'voucher_cobro' => ['Vouchers de reposición con cobro al colaborador: enviar las copias a Seguridad, Recepción y Administración', true],
         // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
         'candidato_llegada' => ['Recepción: avisar a Recursos Humanos cuando la caseta registre a un candidato (o cuando llene su CV en el kiosco)', true],
         'autorizacion_departamento' => ['Autorizaciones: avisar al responsable del departamento (o a su delegado) cuando una visita espera su respuesta', true],
