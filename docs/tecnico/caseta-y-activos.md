@@ -53,7 +53,7 @@ Solo se guarda lo distinto de la omisión; con todo en la omisión se borra la c
 ## Responsivas
 
 - Un solo término en pantalla, hoja y mensajes: **responsiva** (se retiraron «Resguardo» y «Lote»). Los nombres internos (rutas, clases CSS, `dialogoNuevoResguardo`) no cambian.
-- Un solo «Recibir»: `<details class="recibir-responsiva">` en cada ficha con casillas (todas marcadas) de los equipos en campo y, por equipo, «Dañado o falta» (el diálogo de Ronda 8). `PATCH /responsivas/{id}/recibir` acepta `equipos[]` (ids de `equipos_responsiva`): recibe solo esos en OK; sin el campo, todos (compatibilidad). Vacío → «Marca al menos un equipo que regresa.»; alguno ya recibido → error. Se cierra cuando ya no queda ninguno (audita `responsivas.recibido`); si quedan, audita `responsivas.equipo_recibido` con la lista. Ahora cada equipo guarda `recibido_por`.
+- Un solo «Recibir»: `<details class="recibir-responsiva">` en cada ficha con casillas (todas marcadas) de los equipos en campo y, por equipo, «Dañado o falta» (el diálogo de Ronda 8). `PATCH /responsivas/{id}/recibir` acepta `equipos[]` (ids de `equipos_responsiva`): recibe solo esos en OK; sin el campo, todos (compatibilidad). Vacío → «Marca al menos un equipo que regresa.»; alguno ya recibido → error. Se cierra cuando ya no queda ninguno (audita `responsivas.recibido`); si quedan, audita `responsivas.equipo_recibido` con la lista. Con casillas, cada equipo guarda `recibido_por` (como «Recibir» por equipo); sin `equipos[]` se comporta como antes.
 - Equipos «Turno»: `AdministradorResponsivas::regresoTurno()` = entrega + `responsivas_horas_turno`; nivel ámbar al pasar la hora y rojo al pasar además `responsivas_horas_escalar`. La ficha muestra «Debe/Debía regresar a las …» solo si está configurado. `recordatoriosTurno()` avisa una vez por nivel: ámbar a `responsivas.editar` de la sede; rojo a quienes además tienen `equipos.eliminar` (si no hay, a la caseta). `sincronizarTurno()` resuelve los avisos cuando ya no quedan equipos de turno en campo. Mis pendientes: «Equipos de turno sin regresar».
 
 ## Lector universal
@@ -81,5 +81,8 @@ Corre en cada pasada del cron (desplegar.sh, cada 5 minutos) en proceso. Recorre
 | `equipo_turno` | `responsiva_turno_aviso` / `responsiva_turno_escalada` / responsiva | Ya no quedan equipos de turno en campo |
 
 ## Archivos compartidos que se tocaron
+
+Mis pendientes se calcula en cada pantalla: `PendientesActivos` suma 1 consulta (vales), 1 o 2 (procedimientos por aprobar; las aplicaciones solo si «Aprobar» es por sede) y la de los ajustes solo si la empresa no venía cargada con el usuario; las de llaves y equipos de turno solo con horas configuradas.
+
 
 `routes/web.php` (bloque «Mejoras activos»), `CentroNotificaciones::TIPOS`, `MisPendientes` (renglones y conservar el color propio cuando hay colores de Candidatos), `LectorAuditoria::ACCIONES` (`caseta`), `Empresa::AVISOS` (`procedimiento_revision`), `configuracion/index.blade.php` (include), `despliegue/desplegar.sh`, `plataforma.js` (un mensaje de Responsivas), CSS al final.
