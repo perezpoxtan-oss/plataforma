@@ -8,7 +8,7 @@ resumen: Avisos por correo de la empresa, días de resguardo de Lost & Found, aj
 
 # Configuración
 
-**¿Para qué sirve?** Aquí se ajusta cómo trabaja la plataforma para tu empresa: qué **avisos por correo** se envían y a quién, cuántos días se guarda cada objeto de **Lost & Found**, y los ajustes de **Pases de salida**, **Recepción** y la **bolsa de trabajo**. El Super Administrador configura además el **correo de la plataforma** y los **respaldos**.
+**¿Para qué sirve?** Aquí se ajusta cómo trabaja la plataforma para tu empresa: qué **avisos por correo** se envían y a quién, cuántos días se guarda cada objeto de **Lost & Found**, el nombre de la **Bitácora de novedades** en el menú, y los ajustes de **Pases de salida**, **Recepción** y la **bolsa de trabajo**. El Super Administrador configura además el **correo de la plataforma** y los **respaldos**.
 
 ![Avisos por correo](img/configuracion/2-avisos-empresa.png)
 
@@ -31,6 +31,8 @@ resumen: Avisos por correo de la empresa, días de resguardo de Lost & Found, aj
    - Procedimientos publicados y recordatorios.
    - Vouchers de reposición con cobro (CXC): escribe los correos de **Copia Seguridad**, **Copia Recepción** y **Copia Administración**. Si dejas las tres listas vacías, se envía a los usuarios que pueden imprimir vouchers en esa sede. El colaborador responsable no recibe copia.
    - Recepción y Autorizaciones de los departamentos.
+   - Bitácora de novedades: tickets canalizados y pendientes de turno sin atender; hallazgos de los Recorridos de Protección Civil (vienen **apagados**: la campana avisa siempre).
+   - Pases de salida: recordar al firmante y avisar al siguiente nivel cuando una firma tarda (solo si pusiste tiempos en el Circuito).
 3. Toca **Guardar avisos**.
 
 **Qué debes ver:** «Avisos por correo actualizados.» Los avisos se envían a los usuarios con permiso para atender cada asunto, al correo de su cuenta.
@@ -47,11 +49,22 @@ Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cu�
 
 **Qué debes ver:** «Los días de resguardo de Lost & Found se guardaron correctamente.» Aplica a todas las sedes de la empresa.
 
+## Cómo cambiar el nombre de la Bitácora de novedades en el menú
+
+1. Baja a **Bitácora de novedades**.
+2. En **Nombre en el menú** escribe el nombre que usa tu empresa (por ejemplo **Incidentes**). Vacío = **Novedades**, como siempre.
+3. Si quieres, en **Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como** elige **Mantenimiento de equipo PC** (lo normal es **Siniestro Protección Civil**).
+4. Toca **Guardar ajustes de la bitácora**.
+
+![Ajustes de la Bitácora de novedades](img/configuracion/6-bitacora-novedades.png)
+
+**Qué debes ver:** «Ajustes de la Bitácora de novedades guardados.» El menú, el botón de abajo del celular y el título de la pantalla usan el nombre nuevo; los permisos y lo ya capturado no cambian. La categoría elegida aplica a los tickets que se abran desde ese momento. Solo lo cambia quien edita la Configuración de toda la empresa.
+
 ## Otros ajustes de módulos
 
 En la misma pantalla están los ajustes de:
 
-- **Pases de salida**: resumen del circuito de firmas y, si tu empresa los cambió, las firmas que pide la caseta y qué pasa al corregir un pase rechazado. Con **Configurar circuito** se cambian. Ver [Pases de salida](pases-salida.md).
+- **Pases de salida**: resumen del circuito de firmas y, si tu empresa los cambió, las firmas que pide la caseta, qué pasa al corregir un pase rechazado y los tiempos de **Firmas que tardan**. Con **Configurar circuito** se cambian. Ver [Pases de salida](pases-salida.md).
 - **Recepción de candidatos:** aviso de privacidad y duración del enlace del kiosco. Ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
 - **Bolsa de trabajo en internet.** Ver [Vacantes](vacantes.md).
 

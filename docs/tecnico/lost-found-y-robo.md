@@ -93,3 +93,10 @@ Desde Robo se reutilizan los endpoints de Novedades: `novedades.coincidencias` (
 - Auditoría de Inventario por sede y por rango de fechas, solo con «imprimir», con el alcance del usuario.
 - Robo con su propio permiso (`robo.*`; antes `bitacora.*`) y alcance por sede; el expediente guarda con las mismas reglas que Novedades (antes `fetch` que ignoraba los errores y recargaba).
 - Sin `onclick`, sin HTML inyectado por AJAX, CSRF en todo, consultas con escape de comodines y sin N+1.
+
+## Mejoras de Incidentes (ADR-0013)
+
+- **Registrar objeto encontrado** (`POST /lost-found/objetos`, `lost_found.objetos.store`): diálogo `lost-found/_objeto` con sede, objeto, tipo de valor, marca, color, dónde, bodega, quién y cuándo. Crea el ticket de Lost & Found y su artículo en una transacción (`AdministradorNovedades::registrarObjeto`). Permiso: `crear` en novedades o Lost & Found y sede de su alcance.
+- **Agregar el objeto aquí**: en «Sin artículos capturados aún», un formulario plegado (`novedad_id`) agrega el objeto al ticket sin abrir el expediente; solo para tickets que el usuario puede `editar` (`completables`).
+- **Robo**: «Abrir Expediente» lleva al expediente de la bitácora (`?abrir=ID&volver=robo`) cuando el usuario puede editarlo ahí; el diálogo propio de Robo queda para quien solo tiene el submódulo, con el mismo orden y nombres. Detalle en [Bitácora de novedades](novedades.md#mejoras-de-incidentes-adr-0013).
+

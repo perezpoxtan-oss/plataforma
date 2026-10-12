@@ -16,6 +16,8 @@ resumen: Levantar un ticket por cada incidente, documentarlo en su expediente y 
 
 **Antes de empezar:** necesitas que tu rol pueda **ver** y **crear** en Novedades (para atender, también **editar**). Reabrir casos y exportar son permisos aparte. Si no ves **Nuevo Ticket**, pide a tu administrador que revise tu rol.
 
+En algunas empresas este módulo se llama **Incidentes** en el menú (lo decide el administrador en **Estructura → Configuración → Bitácora de novedades**). Es la misma pantalla y funciona igual.
+
 ## Cómo leer la lista
 
 1. Entra a **Operación → Incidentes → Novedades** (en el celular, el botón **Novedades** de abajo).
@@ -24,7 +26,9 @@ resumen: Levantar un ticket por cada incidente, documentarlo en su expediente y 
 
 ![Lista de tickets](img/novedades/lista.png)
 
-**Qué debes ver:** cada ficha con la categoría, el número (por ejemplo `#00012`), la sede, la ubicación, lo que pasó, quién lo creó y quién le dio seguimiento. Las que dicen **PENDIENTE DE TURNO** las atiende el siguiente turno.
+**Qué debes ver:** cada ficha con la categoría, el número (por ejemplo `#00012`), la sede, la ubicación, lo que pasó, quién lo creó y quién le dio seguimiento. Las que dicen **PENDIENTE DE TURNO** las atiende el siguiente turno: abajo dicen desde hace cuánto, qué turno lo recibe y quién es su **dueño** (o **Sin dueño**).
+
+![Ticket pendiente de turno](img/novedades/pendiente-turno.png)
 
 ## Cómo despachar un ticket rápido
 
@@ -32,24 +36,34 @@ resumen: Levantar un ticket por cada incidente, documentarlo en su expediente y 
 2. Revisa la **Sede**.
 3. Elige la **Categoría** (la más cercana; se puede corregir al atender).
 4. En **¿Quién reporta?** escribe el nombre, **escanea su gafete**, o toca **Fui yo quien lo observó**.
-5. Si ya sabes quién lo atiende, elige **¿A quién se canaliza?** (solo personal de Seguridad de la sede).
+5. Si ya sabes quién lo atiende, elige **¿A quién se canaliza?** (solo personal de Seguridad de la sede). Esa persona recibe el aviso en su **campana** y en **Mis pendientes** («Tickets canalizados a mí»).
 6. Elige el **Área General** (edificio y piso) y escribe la **ubicación específica** (por ejemplo «Piso 2, cerca del elevador»).
 7. Revisa **¿Cuándo sucedió?** (ya trae la hora actual) y escribe **¿Qué sucedió?**.
 8. Toca **Despachar Ticket**.
 
 ![Generar Ticket Rápido](img/novedades/nuevo-ticket.png)
 
-**Qué debes ver:** el ticket nuevo en **Tickets Abiertos / Asignados**. Si falta algo, el aviso sale en rojo **dentro** de la ventana y lo que escribiste se conserva.
+**Qué debes ver:** el ticket nuevo en **Tickets Abiertos / Asignados**. Si lo canalizaste, el mensaje verde dice «Le avisamos a …». Si falta algo, el aviso sale en rojo **dentro** de la ventana y lo que escribiste se conserva.
+
+### Si es un objeto encontrado (Lost & Found)
+
+Al elegir la categoría **Lost & Found (Objetos Perdidos)** aparece el recuadro **Objeto encontrado**: escribe **¿Qué se encontró?**, el **Tipo de valor** y, si ya lo guardaste, la **Ubicación en bodega**. Al despachar, el objeto queda en resguardo con su folio **LF-…** y ya aparece en el archivo de Lost & Found. Si alguien **perdió** algo (no lo encontraron), deja el recuadro vacío y captura el reporte de pérdida en el expediente.
+
+![Ticket rápido con el objeto encontrado](img/novedades/ticket-objeto.png)
+
+Para un objeto sencillo también puedes usar **Registrar objeto encontrado** en el archivo de [Lost & Found](lost-found-y-robo.md).
 
 ## Cómo atender un ticket (Expediente)
 
 1. En la ficha toca **Abrir Expediente** (o **Ver Expediente** si solo puedes consultar).
-2. Arriba está el reporte inicial (no cambia). Revisa y completa las **Preguntas Base**: categoría, a quién se canaliza, área, habitación (si aplica), involucrados, cuándo y cómo sucedió.
+2. Arriba está el reporte inicial (no cambia). Revisa y completa las **Preguntas Base**: categoría, a quién se canaliza, habitación (si aplica), involucrados, cuándo y cómo sucedió. El **Área General** ya viene del reporte inicial («— del reporte inicial»); solo si está mal toca **Cambiar edificio o piso**.
 3. Llena el **formato de la categoría** (ver tabla).
 4. En la línea del **Minuto a Minuto** escribe lo que se hizo.
 5. Toca **Guardar Expediente**.
 
 ![Expediente de una novedad](img/novedades/expediente.png)
+
+![Área General heredada del ticket](img/novedades/area-heredada.png)
 
 **Qué debes ver:** tu nota aparece en el Minuto a Minuto con fecha, hora y tu nombre. Lo escrito ahí **no se puede borrar ni cambiar**.
 
@@ -61,6 +75,7 @@ resumen: Levantar un ticket por cada incidente, documentarlo en su expediente y 
 | **Siniestro Protección Civil** | Tipo de evento, alarma, evacuación, servicios externos, lesionados, daños y causa. Si hubo lesionados, se abre solo un ticket de Accidente ligado. |
 | **Lost & Found (Objetos Perdidos)** | Artículos encontrados (folio LF-…) y reportes de pérdida (folio RP-…). |
 | **Robo** | Circunstancias, qué se llevaron, sospechoso, testigos, policía y canalización. |
+| **Mantenimiento de equipo PC** | Lo abre solo un Recorrido de Protección Civil (si tu empresa lo eligió así): muestra los equipos con falla. Anota en el Minuto a Minuto lo que se reparó. |
 
 En los formatos largos cada apartado se abre o se cierra tocando su título; si tiene un error, se abre solo y dice **Revisar**.
 
@@ -74,6 +89,30 @@ En los formatos largos cada apartado se abre o se cierra tocando su título; si 
 ![Accidente con mapa del cuerpo](img/novedades/accidente.png)
 
 **Qué debes ver:** las firmas guardadas aparecen en el expediente y en la hoja impresa (botón de la impresora, arriba a la derecha).
+
+## Cómo dejar un ticket para el siguiente turno
+
+1. En el expediente, en **¿A quién se canaliza?** elige quién lo atenderá (su **dueño**). Si no sabes, déjalo sin asignar.
+2. En **Estatus Final del Expediente** elige **Pendiente de Turno (lo atiende el siguiente turno)**.
+3. Toca **Guardar Expediente**.
+
+![Aviso al dejarlo pendiente de turno](img/novedades/aviso-turno.png)
+
+**Qué debes ver:** la ficha dice **PENDIENTE DE TURNO**, desde hace cuánto, qué turno lo recibe y su dueño. Esto pasa después, sin que hagas nada más:
+
+- Su dueño recibe el aviso en la campana en ese momento.
+- Al **empezar el siguiente turno** de la sede, la campana le avisa otra vez a su dueño o, si no tiene, a todo el personal de Seguridad de la sede.
+- Si ese turno **termina** y el ticket sigue pendiente, se avisa al jefe de seguridad de la sede.
+
+Si tu empresa no tiene turnos registrados (Recursos Humanos → Turnos), el aviso al personal llega en el momento en que lo dejas pendiente.
+
+## Avisos en la campana
+
+![Avisos de tickets en la campana](img/novedades/campana-canalizado.png)
+
+- **Te canalizaron el ticket #…**: toca **Atender** para abrir el expediente. También aparece en **Mis pendientes → Tickets canalizados a mí**.
+- **Pendiente de turno: ticket #…**: un ticket que se dejó para tu turno.
+- **Ticket #… resuelto**: el caso que levantaste (o que tenías canalizado) se cerró; el aviso dice la resolución.
 
 ## Cómo cerrar o reabrir un caso
 
@@ -95,6 +134,8 @@ En los formatos largos cada apartado se abre o se cierra tocando su título; si 
 
 ![Novedades en el celular](img/novedades/celular.png)
 
+![Pendiente de turno en el celular](img/novedades/pendiente-turno-celular.png)
+
 ## Si algo sale mal
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
@@ -114,6 +155,8 @@ En los formatos largos cada apartado se abre o se cierra tocando su título; si 
 - **¿Quién ve los tickets de Lost & Found?** También quien solo tiene permiso de Lost & Found (por ejemplo, Ama de Llaves).
 - **¿Cómo imprimo el expediente?** Con el botón de la impresora, arriba a la derecha del expediente.
 - **¿Dónde se hacen los recorridos de Protección Civil?** En su propia pantalla: [Recorridos de Protección Civil](recorridos-pc.md).
+- **¿Cómo sé qué tickets me canalizaron?** En **Mis pendientes → Tickets canalizados a mí**: abre la lista solo con los tuyos.
+- **¿Por qué en mi menú dice «Incidentes»?** Tu empresa le cambió el nombre en Configuración; es la misma Bitácora de novedades.
 
 ## Relacionado
 
