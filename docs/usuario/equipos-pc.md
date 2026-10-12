@@ -16,7 +16,7 @@ resumen: Catálogo de extintores, hidrantes, detectores y demás equipo fijo que
 
 - Para ver la pantalla tu rol debe poder consultar *Equipos de Protección Civil*. Si no aparece en el menú, pide el permiso a tu administrador.
 - Para registrar, editar, imprimir o dar de baja necesitas esos permisos. Si no ves **Nuevo Equipo**, tu rol solo consulta.
-- Para elegir la ubicación (zona, piso, área), esos lugares deben existir en [Zonas y áreas](zonas-y-areas.md).
+- Para elegir la ubicación (zona, piso, área), esos lugares deben existir en [Zonas y edificios](zonas-y-areas.md).
 
 ## Cómo encontrar un equipo
 
@@ -25,25 +25,27 @@ resumen: Catálogo de extintores, hidrantes, detectores y demás equipo fijo que
 3. Si hay varias, elige en **Todas las sedes** o **Todos los tipos**.
 4. Escribe en **Buscar por ID, tipo, ubicación, sede...**.
 
-**Qué debes ver:** tarjetas con el tipo (Extintor, Hidrante…), el **Núm. de Serie / ID** (lo que va en la etiqueta, por ejemplo `EXT-01`), la sede, la ubicación y la referencia. El botón **Recorridos PC** te lleva a los recorridos.
+**Qué debes ver:** tarjetas con el tipo (Extintor, Hidrante…), la **Clave de la etiqueta** (lo que va en el QR, por ejemplo `EXT-01`), la sede, la ubicación, la referencia y **cuándo se revisó por última vez** en un recorrido: en verde «Última revisión: 03/10/2026 · sin falla», en rojo si tuvo falla, o en ámbar «Todavía sin revisar en un recorrido».
+
+![Última revisión en la tarjeta](img/equipos-pc/15-ultima-revision.png) El botón **Recorridos PC** te lleva a los recorridos.
 
 ## Cómo registrar un equipo
 
 1. Toca la tarjeta **Nuevo Equipo**. Se abre **Nuevo Equipo de Protección Civil**.
 2. Elige la **Sede** (si solo tienes una, ya viene elegida) y el **Tipo de Equipo**.
-3. Escribe el **Núm. de Serie / ID (para QR)** que irá en la etiqueta (por ejemplo `EXT-01`). No se puede repetir en la misma sede; en otra sede sí.
+3. Escribe la **Clave de la etiqueta** que irá en el QR (por ejemplo `EXT-01`). No se puede repetir en la misma sede; en otra sede sí.
 4. Si quieres, elige **Zona / Piso** y **Área Específica**, y escribe una **Referencia** (por ejemplo «Junto al elevador de servicio»).
 5. Si la etiqueta trae chip, acércala en **Etiqueta NFC / RFID (opcional)**.
 6. Toca **Guardar**, o **Guardar y capturar siguiente** para registrar otro con la misma sede, tipo y ubicación (ideal cuando capturas un piso completo).
 
 ![Nuevo equipo](img/equipos-pc/3-nuevo.png)
 
-**Qué debes ver:** «Equipo EXT-50 (Extintor) registrado. Ya puedes imprimir su etiqueta QR.» Con **Guardar y capturar siguiente** la ventana se queda abierta, lista para el siguiente.
+**Qué debes ver:** «Equipo EXT-50 (Extintor) registrado.» y, debajo, **Siguiente paso: Imprimir su etiqueta**. Con **Guardar y capturar siguiente** la ventana se queda abierta, lista para el siguiente.
 
-### Avisos mientras escribes el ID
+### Avisos mientras escribes la clave
 
 - **Verde:** «ID disponible en esta sede.»
-- **Rojo:** el ID ya existe en esa sede. Si está desactivado y puedes reactivarlo, aparece **Reactivar**.
+- **Rojo:** «La clave «…» ya está registrada en esta sede…». Si el equipo está dado de baja y puedes reactivarlo, aparece **Reactivar**.
 - **Amarillo:** «Se parece a un ID ya registrado en esta sede (los guiones y espacios no cuentan):».
 
 ![ID ya registrado](img/equipos-pc/14-ya-existe.png)
@@ -56,7 +58,7 @@ En el celular la ventana ocupa toda la pantalla:
 
 1. Toca el **lápiz** (Editar) de la tarjeta.
 2. Corrige los datos.
-3. Toca **Guardar Cambios**.
+3. Toca **Guardar**.
 
 ![Editar](img/equipos-pc/4-editar.png)
 
@@ -65,7 +67,7 @@ En el celular la ventana ocupa toda la pantalla:
 ## Cómo ver el QR e imprimir la etiqueta
 
 1. Toca el botón del **código QR** de la tarjeta. Se abre **Código e identificación** con el QR y la dirección (botón **Copiar**). Si puedes editar, también puedes **Asignar etiqueta NFC / RFID**.
-2. Para imprimir toca **Imprimir etiqueta** (o el botón de la **impresora** de la tarjeta). En la pestaña nueva toca **Imprimir Etiqueta**.
+2. Para imprimir toca **Imprimir etiqueta** (o el botón de la **impresora** de la tarjeta). En la pestaña nueva lee el recuadro amarillo (**«Tamaño real»** o **«Escala 100 %»** en la impresora) y toca **Imprimir Etiqueta**. Para otra medida usa **Imprimir con una plantilla de Etiquetas QR**.
 
 ![Código e identificación](img/equipos-pc/5-ver-qr.png)
 
@@ -100,8 +102,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 |---|---|---|
 | Elige la sede donde está el equipo. | No elegiste sede. | Elige la sede. |
 | Elige el tipo de equipo. | No elegiste tipo. | Elige el tipo. |
-| El Núm. de Serie / ID es obligatorio (es lo que va en la etiqueta, por ejemplo EXT-01). | Falta el ID. | Escribe el ID. |
-| El Núm. de Serie / ID «…» ya está registrado en esta sede (…). | Ese ID ya existe en la sede. | Usa otro o reactiva el existente. |
+| La clave de la etiqueta es obligatoria (es lo que va en el QR, por ejemplo EXT-01). | Falta la clave. | Escribe la clave. |
+| La clave «…» ya está registrada en esta sede (…). | Esa clave ya existe en la sede. | Usa otra o reactiva el existente. |
 | La ubicación elegida (zona, piso o área) no pertenece a la sede o está desactivada. | Cambiaste de sede o el lugar se desactivó. | Vuelve a elegir la ubicación. |
 | Ya hay otro equipo con el ID «…» en esta sede. | Al reactivar, otro equipo activo ya usa ese ID. | Cambia el ID de uno de los dos. |
 | Elige una sede activa de la lista: esa sede no existe, está desactivada o no está a tu cargo. | La sede no es tuya. | Elige una de tus sedes. |
@@ -120,5 +122,5 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 - [Recorridos de Protección Civil](recorridos-pc.md)
 - [Equipos de seguridad](equipos.md)
-- [Zonas y áreas](zonas-y-areas.md)
+- [Zonas y edificios](zonas-y-areas.md)
 - [Etiquetas QR](etiquetas-qr.md)

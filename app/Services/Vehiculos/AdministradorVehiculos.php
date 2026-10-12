@@ -48,6 +48,16 @@ class AdministradorVehiculos
         'transporte_personal' => 'Transporte de Personal',
     ];
 
+    /**
+     * Mejoras padrones (ADR-0015): cómo se agrupan las categorías en el
+     * formulario. Las ocho siguen igual (bitácoras, filtros y reportes no
+     * cambian); solo se presentan en dos grupos para elegir más rápido.
+     */
+    public const GRUPOS_PROPIEDAD = [
+        'Particular' => ['propio_huesped', 'propio_visitante', 'propio_familiar', 'propio_colaborador'],
+        'De una empresa' => ['empresa_proveedor', 'agencia_renta', 'taxi_app', 'transporte_personal'],
+    ];
+
     /** Propiedades que se ligan a un proveedor (agencia o empresa propietaria). */
     public const CON_PROVEEDOR = ['agencia_renta', 'empresa_proveedor', 'taxi_app', 'transporte_personal'];
 

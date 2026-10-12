@@ -126,9 +126,9 @@ class PendientesDireccionTest extends TestCase
 
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
         $this->actingAs($agente)->postJson('/colaboradores/rapido', ['nombre' => 'Jorge', 'apellido_paterno' => 'Méndez', 'sede_id' => $this->centro->id])->assertCreated();
-        $this->actingAs($agente)->get('/')->assertDontSee('por validar');
+        $this->actingAs($agente)->get('/')->assertDontSee('por verificar');
 
-        $this->actingAs($rh)->get('/')->assertSee('1 alta provisional por validar')->assertSee('registro=provisional', false);
+        $this->actingAs($rh)->get('/')->assertSee('1 colaborador por verificar')->assertSee('registro=provisional', false);
         $this->assertSame(1, app(Tenant::class)->conEmpresa($this->empresa->id, fn () => Colaborador::where('provisional', true)->count()));
     }
 

@@ -181,7 +181,7 @@ class TurnoController extends Controller
 
         return redirect()->route('turnos.index')->with($activo ? 'ok' : 'aviso', $activo
             ? "Turno «{$modelo->nombre}» reactivado."
-            : "Turno «{$modelo->nombre}» desactivado. Puedes reactivarlo con el mismo botón cuando quieras.");
+            : "Turno «{$modelo->nombre}» dado de baja. Puedes reactivarlo con el mismo botón cuando quieras.");
     }
 
     /**

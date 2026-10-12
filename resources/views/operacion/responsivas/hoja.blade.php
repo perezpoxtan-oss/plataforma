@@ -22,19 +22,19 @@
 </head>
 <body class="pagina-hoja-resguardo">
 <div class="hoja-resguardo-acciones">
-    <button type="button" class="btn-imprimir-resguardo" data-accion="imprimir"><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir Resguardo</button>
-    <a href="{{ route('responsivas.index') }}#responsiva-{{ $responsiva->id }}" class="btn-volver-resguardo"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a Resguardos</a>
+    <button type="button" class="btn-imprimir-resguardo" data-accion="imprimir"><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir responsiva</button>
+    <a href="{{ route('responsivas.index') }}#responsiva-{{ $responsiva->id }}" class="btn-volver-resguardo"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a Responsivas</a>
 </div>
 
 <main class="hoja-resguardo">
     <div class="hoja-resguardo-encabezado">
-        <h1>RESGUARDO MÚLTIPLE DE ACTIVOS DE SEGURIDAD</h1>
+        <h1>RESPONSIVA DE EQUIPO DE SEGURIDAD</h1>
         <h2>{{ $empresaNombre }}</h2>
         <div class="hoja-resguardo-folio">FOLIO: {{ $responsiva->folio }}</div>
     </div>
 
     @unless ($responsiva->enCampo())
-        <div class="hoja-resguardo-cerrado">LOTE CERRADO · Devuelto a caseta el @fecha($responsiva->devuelto_en, 'd/m/Y H:i') ({{ $responsiva->recibio?->name ?? '—' }})</div>
+        <div class="hoja-resguardo-cerrado">CERRADA · Devuelta a caseta el @fecha($responsiva->devuelto_en, 'd/m/Y H:i') ({{ $responsiva->recibio?->name ?? '—' }})</div>
     @endunless
 
     <div class="hoja-resguardo-emision">
@@ -43,7 +43,7 @@
     </div>
 
     <div class="hoja-resguardo-caja">
-        <div class="hoja-resguardo-titulo">Datos del Colaborador Resguardante</div>
+        <div class="hoja-resguardo-titulo">Datos del colaborador responsable</div>
         <div class="hoja-resguardo-nombre">{{ $nombre }}</div>
         <div><strong>No. Nómina / Empleado:</strong> {{ $responsiva->colaborador?->num_empleado ?? 'Provisional' }}</div>
         @if ($responsiva->colaborador?->puesto)

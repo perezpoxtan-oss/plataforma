@@ -3,7 +3,7 @@ titulo: Colaboradores
 modulos: [colaboradores]
 seccion: Recursos Humanos
 orden: 10
-resumen: Directorio del personal de la empresa, sus sedes, altas provisionales de la caseta y su validación por Recursos Humanos.
+resumen: Directorio del personal de la empresa, sus sedes, lo que registra la caseta y su verificación por Recursos Humanos.
 ---
 
 # Colaboradores
@@ -25,9 +25,9 @@ resumen: Directorio del personal de la empresa, sus sedes, altas provisionales d
 1. Entra a **Recursos Humanos → Colaboradores**.
 2. Escribe en **Buscar empleado, número o puesto...** el nombre, el número de empleado, el puesto o el departamento.
 3. Si quieres, elige en **Todas las sedes** (incluye a quienes la tienen como sede adicional) y en **Todos los departamentos**.
-4. Con **Todos los registros / Por validar** ves solo las altas provisionales de la caseta.
+4. Con **Todos los registros / Por verificar** ves solo los que registró la caseta y faltan por verificar.
 
-**Qué debes ver:** las fichas que coinciden, con su número, puesto, departamento, sede y si está **ACTIVO**, **BAJA** o **POR VALIDAR**. El filtro se mantiene mientras trabajas.
+**Qué debes ver:** las fichas que coinciden, con su número, puesto, departamento, sede y si está **ACTIVO**, **DE BAJA** o **POR VERIFICAR**. El filtro se mantiene mientras trabajas.
 
 ## Cómo dar de alta a un colaborador
 
@@ -37,8 +37,8 @@ resumen: Directorio del personal de la empresa, sus sedes, altas provisionales d
 4. **2. Departamento (área):** solo aparecen los que aplican en la sede elegida.
 5. **3. Puesto (rango):** se acota según el departamento. Los puestos sin departamento (por ejemplo *Gerente*) siempre aparecen.
 6. Escribe **Nombre(s)**, **Apellido Paterno**, **Apellido Materno** y, si quieres, el **Teléfono** (10 dígitos; puedes escribir espacios o guiones).
-7. Si tienes el permiso, llena **Datos Legales (Opcionales)**: CURP, RFC, NSS, Fecha de Nacimiento, Estado de Nacimiento y Nacionalidad. El CURP y el RFC se pasan a mayúsculas solos.
-8. Toca **Registrar Colaborador**.
+7. Si tienes el permiso, llena **Datos Legales y de Contacto (Opcionales)**: CURP, RFC, NSS, Fecha de Nacimiento, Estado de Nacimiento, Nacionalidad, **Correo Personal** y **Dirección Completa** (ya no hace falta abrir la ficha otra vez para capturarlos). El CURP y el RFC se pasan a mayúsculas solos.
+8. Toca **Guardar**.
 
 ![Alta](img/colaboradores/2-alta.png)
 
@@ -54,8 +54,8 @@ resumen: Directorio del personal de la empresa, sus sedes, altas provisionales d
 ## Cómo editar a un colaborador
 
 1. Toca el **lápiz** (Editar) de la ficha. Se abre **Editar Colaborador**.
-2. Además de lo del alta, aquí se capturan el **Correo Personal** y la **Dirección Completa** (en **Datos Legales y de Contacto (Opcionales)**).
-3. Toca **Guardar Cambios**.
+2. Corrige lo que haga falta (los mismos datos del alta).
+3. Toca **Guardar**.
 
 ![Editar](img/colaboradores/3-editar.png)
 
@@ -67,7 +67,7 @@ Si alguien trabaja en más de una sede (por ejemplo un agente que cubre turnos e
 
 1. Toca **Gestionar sedes adicionales** en su ficha.
 2. Marca las sedes donde **también** trabaja, además de la principal.
-3. Toca **Guardar Sedes**.
+3. Toca **Guardar**.
 
 ![Sedes adicionales](img/colaboradores/4-sedes-adicionales.png)
 
@@ -78,7 +78,7 @@ Si alguien trabaja en más de una sede (por ejemplo un agente que cubre turnos e
 1. Toca el **círculo rojo** (Dar de baja) y confirma con **Aceptar** («¿Dar de baja a este colaborador? Podrás reactivarlo con el mismo botón.»).
 2. Para regresarlo, toca la **flecha circular** (Reingresar) y confirma.
 
-**Qué debes ver:** la ficha en **BAJA**. Ya no aparece al buscarlo desde otros módulos. No se borra a nadie: su historial en bitácoras, pases y responsivas se conserva.
+**Qué debes ver:** la ficha **DE BAJA**. Ya no aparece al buscarlo desde otros módulos. No se borra a nadie: su historial en bitácoras, pases y responsivas se conserva.
 
 **Si tiene cuenta de usuario:** al darlo de baja **su cuenta se desactiva sola** (ya no puede entrar y se le cierra la sesión). El mensaje lo dice: «También se desactivó su cuenta de usuario «@…»; puedes reactivarla en Usuarios.» Quien administra usuarios de esa sede recibe el aviso en su campana. Al **reingresarlo**, la cuenta **no** se reactiva sola: el mensaje te lo recuerda («Su cuenta de usuario sigue desactivada: reactívala en Usuarios si la necesita») y se hace desde [Usuarios](usuarios.md) con la **flecha circular** de su ficha.
 
@@ -89,38 +89,39 @@ Cada colaborador tiene su propio **código QR** y puede tener una **etiqueta NFC
 1. En la ficha del colaborador toca el ícono de **QR** (Código QR e identificación). Se abre **Código e identificación** con su nombre, su número de empleado, el QR y la dirección del código (botón **Copiar**).
 2. Si tu rol puede editar colaboradores, abajo aparece **Asignar etiqueta NFC / RFID**: acerca el gafete o la tarjeta al lector USB/Bluetooth o al NFC del celular Android, o escribe su número, y toca **Guardar etiqueta**.
 3. Si ya tenía una etiqueta, se muestra la actual; al guardar otra, la anterior deja de funcionar.
+4. Para imprimir su credencial toca **Imprimir credencial**: abre [Etiquetas QR](etiquetas-qr.md) ya filtrado a ese colaborador; marca su casilla, elige la plantilla (por ejemplo **Gafete**) y toca **Imprimir**. Lo ves si puedes editar colaboradores y usar Etiquetas QR.
 
 ![Código e identificación (ejemplo de la ventana)](img/llaves/13-identificacion.png)
 
 **Qué debes ver:** «Etiqueta … asignada. Ya se puede leer con el lector.» Si esa tarjeta ya es de otra cosa (otro colaborador, una llave, un vehículo…), el aviso te dice de cuál y no se asigna.
 
 - Quien solo consulta colaboradores ve el QR, pero no el apartado para asignar la etiqueta.
-- Las altas provisionales (**POR VALIDAR**) reciben su etiqueta hasta que Recursos Humanos las valida.
+- Los registrados en la caseta (**POR VERIFICAR**) reciben su etiqueta hasta que Recursos Humanos los verifica.
 
-## Cómo registrar un alta provisional (caseta)
+## Cómo registrar a un colaborador desde la caseta (queda por verificar)
 
 Si en la caseta necesitas registrar a alguien que **no aparece** al buscarlo:
 
-1. Toca la tarjeta **Alta provisional** (también aparece dentro de los formularios de accesos, préstamos y pases). Se abre **Alta Provisional de Colaborador**.
+1. Toca la tarjeta **Registro rápido** (también aparece dentro de los formularios de accesos, préstamos y pases como «¿No aparece? Darlo de alta provisional»). Se abre **Registro Rápido de Colaborador**.
 2. Escribe **Nombre(s)**, **Apellido Paterno** y elige la **Sede**. El **Número de Empleado** solo si lo sabes.
 3. Si ya hay alguien con ese nombre, la plataforma te lo muestra («Ya hay alguien registrado con ese nombre. Si es la misma persona, úsala; si no, confirma que es otra.»): tócalo para usarlo, o toca **Es otra persona: registrarla**.
-4. Toca **Registrar provisional**.
+4. Toca **Guardar**.
 
-![Alta provisional en la caseta](img/colaboradores/9-caseta-alta-provisional.png)
+![Registro rápido en la caseta](img/colaboradores/9-caseta-alta-provisional.png)
 
-**Qué debes ver:** la persona queda marcada **PROVISIONAL / POR VALIDAR** y ya la puedes usar. Recursos Humanos la revisará después.
+**Qué debes ver:** la persona queda marcada **POR VERIFICAR** y ya la puedes usar. Recursos Humanos la revisará después; cuando la verifique (o la una con su registro) te llega el resultado a la **campana**.
 
-## Cómo validar las altas provisionales (Recursos Humanos)
+## Cómo verificar lo que registró la caseta (Recursos Humanos)
 
-1. En **Inicio** (y en **Mis pendientes**) aparece «N altas provisionales por validar». Tócala y llegas a la lista filtrada. Dentro de Colaboradores también verás el aviso.
-2. Elige **Por validar** en el filtro.
+1. Te llega a la **campana** «Alta por verificar: …» con el botón **Verificar**. También aparece en **Inicio** («N colaboradores por verificar») y en **Mis pendientes** («Colaboradores por verificar»). Tócalo y llegas a la lista filtrada. Dentro de Colaboradores también verás el aviso.
+2. Elige **Por verificar** en el filtro.
 3. En cada ficha elige:
-   - **Validar:** revisa y corrige los datos, asigna su **Núm. Empleado** y toca **Validar Colaborador**. Desde ese momento es un colaborador normal.
-   - **Es un duplicado:** si la persona ya estaba registrada (por ejemplo «Beto Hernandez» es Roberto Hernández), busca y elige el **Colaborador correcto** y toca **Unir registros**. Todo lo que la caseta registró con el provisional pasa a ese colaborador y el provisional queda dado de baja.
+   - **Verificar:** revisa y corrige los datos, asigna su **Núm. Empleado** y toca **Guardar y verificar**. Desde ese momento es un colaborador normal. Verás «… verificado con el número …».
+   - **Es un duplicado:** si la persona ya estaba registrada (por ejemplo «Beto Hernandez» es Roberto Hernández), busca y elige el **Colaborador correcto** y toca **Unir registros**. Todo lo que la caseta registró con esa alta pasa a ese colaborador y el alta queda dada de baja (unida).
 
-![Por validar](img/colaboradores/11-rh-por-validar.png)
+![Por verificar](img/colaboradores/11-rh-por-validar.png)
 
-![Validar](img/colaboradores/12-validar.png)
+![Verificar](img/colaboradores/12-validar.png)
 
 ![Es un duplicado](img/colaboradores/13-es-duplicado.png)
 
@@ -159,9 +160,9 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | Elige una de tus sedes: solo puedes registrar colaboradores en ellas. | Elegiste una sede que no es tuya. | Elige una de tus sedes. |
 | El departamento «…» no aplica en la sede elegida. | Ese departamento no se usa en esa sede. | Elige otro o agrégale la sede en Departamentos. |
 | El puesto «…» no aplica en el departamento elegido. | El puesto es de otro departamento. | Elige otro puesto. |
-| Este colaborador ya no está pendiente de validar. | Otra persona ya lo validó o lo unió. | Recarga la página. |
+| Este colaborador ya no está pendiente de verificar. | Otra persona ya lo verificó o lo unió. | Recarga la página. |
 | Elige un colaborador activo y ya validado. | Al unir elegiste uno inválido. | Elige el colaborador correcto. |
-| No veo el apartado **Asignar etiqueta NFC / RFID**. | Tu rol solo consulta colaboradores, o el colaborador está **POR VALIDAR**. | Pide a Recursos Humanos que lo valide, o el permiso de editar a tu administrador. |
+| No veo el apartado **Asignar etiqueta NFC / RFID**. | Tu rol solo consulta colaboradores, o el colaborador está **POR VERIFICAR**. | Pide a Recursos Humanos que lo verifique, o el permiso de editar a tu administrador. |
 | No veo los datos legales. | Tu rol no tiene el permiso **Datos personales**. | Pídelo a tu administrador si lo necesitas. |
 
 ## Preguntas frecuentes

@@ -2,12 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Colaborador;
-use App\Services\Colaboradores\AdministradorColaboradores;
-use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
-use App\Services\Procedimientos\AdministradorProcedimientos;
-use App\Services\Recepcion\AvisosInicio;
+use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
@@ -16,92 +12,54 @@ use Illuminate\View\View;
 class PanelController extends Controller
 {
     /**
-     * Consola de Monitoreo Central. Las fichas (colaboradores, personas en
-     * sitio, llaves...) se agregan conforme se migra cada modulo; arriba van
-     * los pendientes que requieren atención de quien entra.
+     * Qué se espera de quien entra en cada renglón de «Mis pendientes»
+     * (mismos nombres, mismo orden): clave => [frase en singular, en plural, explicación, botón].
      */
-    public function __invoke(Request $request, EmpresaDeTrabajo $empresa, Tenant $tenant, AdministradorColaboradores $colaboradores): View
+    public const TEXTOS = [
+        'colaboradores_por_verificar' => ['1 colaborador por verificar', '%d colaboradores por verificar', 'La caseta registró colaboradores que aún no estaban en el directorio. Verifícalos o únelos con su registro correcto.', 'Revisar ahora'],
+        'autorizaciones' => ['1 solicitud espera tu autorización', '%d solicitudes esperan tu autorización', 'Una visita de tu departamento espera tu respuesta. Mientras no contestes, la persona sigue esperando.', 'Responder'],
+        'pases_salida' => ['1 pase de salida espera tu aprobación', '%d pases de salida esperan tu aprobación', 'Revisa los artículos y firma o rechaza con tus comentarios. El siguiente paso no avanza hasta que firmes.', 'Ir a mi bandeja'],
+        'procedimientos_aprobar' => ['1 procedimiento espera tu aprobación', '%d procedimientos esperan tu aprobación', 'Revisa los pasos y apruébalo con tu firma, o recházalo con tus comentarios para que lo corrijan.', 'Revisar'],
+        'procedimientos' => ['Tienes 1 procedimiento por leer y firmar', 'Tienes %d procedimientos por leer y firmar', 'Léelos con calma y firma «Leí y entendí». Así sabrás qué hacer en cada situación.', 'Leer ahora'],
+        'altas' => ['1 alta por verificar', '%d altas por verificar', 'La caseta registró desde Operación algo que no estaba en el padrón. Acéptalo, recházalo o únelo con el registro correcto.', 'Revisar ahora'],
+        'candidatos' => ['1 asunto de candidatos te espera', '%d asuntos de candidatos te esperan', 'Personas que esperan a Recursos Humanos y candidatos en cada etapa. Toca la etapa para ir directo.', 'Ir a candidatos'],
+        'entrevistas' => ['1 entrevista espera tu evaluación', '%d entrevistas esperan tu evaluación', 'Recursos Humanos te canalizó candidatos: entrevístalos, califícalos y elige.', 'Entrevistar'],
+        'cuentas' => ['1 cuenta por revisar', '%d cuentas por revisar', 'Cuentas bloqueadas, desactivadas por una baja o que piden pases sin colaborador vinculado.', 'Revisar cuentas'],
+        // Mejoras Incidentes (ADR-0013)
+        'novedades_mias' => ['1 ticket canalizado a ti', '%d tickets canalizados a ti', 'Te toca darles seguimiento en la Bitácora de novedades. Quien los levantó se entera cuando los cierras.', 'Atender'],
+        'novedades_turno' => ['1 pendiente de turno sin dueño', '%d pendientes de turno sin dueño', 'Tickets que el turno anterior dejó pendientes y nadie ha tomado. Ábrelos y atiéndelos o canalízalos.', 'Atender'],
+        // Mejoras activos (ADR-0014)
+        'vales_taxi' => ['1 vale de taxi espera tu Vo.Bo.', '%d vales de taxi esperan tu Vo.Bo.', 'La unidad no llegó y se usaron taxis: revisa el vale y dale tu Vo.Bo.', 'Revisar'],
+        'llaves_fuera' => ['1 llave fuera de tiempo', '%d llaves fuera de tiempo', 'Llaves prestadas que ya pasaron las horas que tu empresa permite. Pide que las regresen o recíbelas.', 'Ver llaves'],
+        'equipos_turno' => ['1 responsiva con equipos de turno sin regresar', '%d responsivas con equipos de turno sin regresar', 'Los equipos de «Turno» debían regresar a su hora. Recíbelos o pregunta por ellos.', 'Ver responsivas'],
+    ];
+
+    /**
+     * Inicio (ADR-0016): lo que espera la respuesta de quien entra, con los
+     * mismos renglones, nombres y orden que «Mis pendientes» (sin renglones
+     * en cero), cada uno con su explicación y su botón.
+     */
+    public function __invoke(Request $request, EmpresaDeTrabajo $empresa, Tenant $tenant): View
     {
         $actor = $request->user();
-        $empresaId = $empresa->id($actor);
         $pendientes = [];
+        $empresaId = $empresa->id($actor);
 
-        // Recursos Humanos: altas provisionales de la caseta por validar
-        if ($empresaId !== null && $actor->can('colaboradores.aprobar')) {
-            $total = $tenant->conEmpresa($empresaId, fn () => $colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.aprobar')
-                ->where('colaboradores.provisional', true)->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id')->count());
-            if ($total > 0) {
-                $pendientes[] = [
-                    'icono' => 'bi-person-exclamation',
-                    'titulo' => $total === 1 ? '1 alta provisional por validar' : "{$total} altas provisionales por validar",
-                    'texto' => 'La caseta registró colaboradores que aún no estaban en el directorio. Valídalos o únelos con su registro correcto.',
-                    'ruta' => route('colaboradores.index', ['registro' => 'provisional']),
-                    'boton' => 'Revisar ahora',
-                ];
-            }
-        }
-
-        // Pases de salida: aprobaciones que esperan la firma de quien entra (bandeja de firmas)
-        if ($empresaId !== null && $actor->can('pases_salida.aprobar')) {
-            $porAprobar = count($tenant->conEmpresa($empresaId, fn () => app(AdministradorPasesSalida::class)->idsPorAprobar($actor)));
-            if ($porAprobar > 0) {
-                $pendientes[] = [
-                    'icono' => 'bi-pen',
-                    'titulo' => $porAprobar === 1 ? '1 pase de salida espera tu aprobación' : "{$porAprobar} pases de salida esperan tu aprobación",
-                    'texto' => 'Revisa los artículos y firma o rechaza con tus comentarios. El siguiente paso no avanza hasta que firmes.',
-                    'ruta' => route('pases-salida.pendientes'),
-                    'boton' => 'Ir a mi bandeja',
-                ];
-            }
-        }
-        // Fin Pases de salida
-        // Altas por verificar: lo que la caseta registró desde Operación en los padrones que el usuario edita (ADR-0006)
         if ($empresaId !== null) {
-            $grupos = $tenant->conEmpresa($empresaId, fn () => app(AltasPorVerificar::class)->pendientesPorPadron($actor));
-            $total = array_sum(array_column($grupos, 'total'));
-            if ($total > 0) {
-                $pendientes[] = [
-                    'icono' => 'bi-patch-question',
-                    'titulo' => $total === 1 ? '1 alta por verificar' : "{$total} altas por verificar",
-                    'texto' => 'La caseta registró desde Operación algo que no estaba en el padrón. Acéptalo, recházalo o únelo con el registro correcto.',
-                    'ruta' => $grupos[0]['ruta'],
-                    'boton' => 'Revisar ahora',
-                    'grupos' => $grupos,
-                ];
+            // Siempre el cálculo fresco (instancia propia, sin lo memorizado en esta petición)
+            foreach (app()->build(MisPendientes::class)->para($actor)['vista'] ?? [] as $item) {
+                [$uno, $varios, $texto, $boton] = self::TEXTOS[$item['clave']] ?? ['', '', '', 'Revisar'];
+                $frase = $item['total'] === 1 ? $uno : sprintf($varios, $item['total']);
+                // Pases: las aprobaciones y las firmas de caseta se cuentan juntas; la frase las separa
+                if ($item['clave'] === 'pases_salida' && $actor->can('pases_salida.aprobar')) {
+                    $aprobar = count($tenant->conEmpresa($empresaId, fn () => app(AdministradorPasesSalida::class)->idsPorAprobar($actor)));
+                    $firmar = $item['total'] - $aprobar;
+                    $frase = trim(($aprobar > 0 ? ($aprobar === 1 ? $uno : sprintf($varios, $aprobar)) : '')
+                        .($firmar > 0 ? ($aprobar > 0 ? ' y ' : '').($firmar === 1 ? '1 espera tu firma en caseta' : "{$firmar} esperan tu firma en caseta") : ''));
+                }
+                $pendientes[] = $item + ['texto' => trim(($frase !== '' ? $frase.'. ' : '').$texto), 'boton' => $boton];
             }
         }
-        // Fin Altas por verificar
-
-        // Procedimientos: versiones por aprobar y procedimientos por leer y firmar («Leí y entendí»)
-        if ($empresaId !== null && $actor->can('procedimientos.ver')) {
-            $procedimientos = app(AdministradorProcedimientos::class);
-            [$porAprobar, $porLeer] = $tenant->conEmpresa($empresaId, fn () => [count($procedimientos->idsPorAprobar($actor)), $procedimientos->pendientesDe($actor)->count()]);
-            if ($porAprobar > 0) {
-                $pendientes[] = [
-                    'icono' => 'bi-patch-check',
-                    'titulo' => $porAprobar === 1 ? '1 procedimiento espera tu aprobación' : "{$porAprobar} procedimientos esperan tu aprobación",
-                    'texto' => 'Revisa los pasos y apruébalo con tu firma, o recházalo con tus comentarios para que lo corrijan.',
-                    'ruta' => route('procedimientos.index', ['filtro' => 'por_aprobar']),
-                    'boton' => 'Revisar',
-                ];
-            }
-            if ($porLeer > 0) {
-                $pendientes[] = [
-                    'icono' => 'bi-book',
-                    'titulo' => $porLeer === 1 ? 'Tienes 1 procedimiento por leer y firmar' : "Tienes {$porLeer} procedimientos por leer y firmar",
-                    'texto' => 'Léelos con calma y firma «Leí y entendí». Así sabrás qué hacer en cada situación.',
-                    'ruta' => route('procedimientos.por-leer'),
-                    'boton' => 'Leer ahora',
-                ];
-            }
-        }
-        // Fin Procedimientos
-
-        // Recepción de candidatos y autorizaciones (ADR-0007): quién espera a RR. HH. y lo que espera tu autorización
-        if ($empresaId !== null) {
-            array_push($pendientes, ...$tenant->conEmpresa($empresaId, fn () => app(AvisosInicio::class)->para($actor)));
-        }
-        // Fin Recepción de candidatos
 
         return view('panel.index', ['pendientes' => $pendientes]);
     }

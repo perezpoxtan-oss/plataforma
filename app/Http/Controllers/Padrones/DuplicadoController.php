@@ -65,7 +65,7 @@ class DuplicadoController extends Controller
             if ($igual !== null && $igual->id !== $excluir) {
                 $coincidencia = $this->avisos->coincidencia($igual->nombre, Proveedor::CATEGORIAS[$igual->categoria] ?? null, ! $igual->activo, $reactivar($igual));
                 if (! $igual->activo) {
-                    return $this->avisos->existe("Ya existe «{$igual->nombre}», pero está desactivada. ¿La reactivas en lugar de registrarla otra vez?", [$coincidencia]);
+                    return $this->avisos->existe("Ya existe «{$igual->nombre}», pero está dada de baja. ¿La reactivas en lugar de registrarla otra vez?", [$coincidencia]);
                 }
                 if ($excluir === null && $mias !== null) {
                     // Con alcance de sede no se rechaza: al guardar se agrega a su sede
@@ -281,8 +281,8 @@ class DuplicadoController extends Controller
             $igual = EquipoPc::where('sede_id', $sedeId)->where('numero_serie', $serie)->when($excluir !== null, fn ($q) => $q->whereKeyNot($excluir))->first();
             if ($igual !== null) {
                 return $this->avisos->existe($igual->activo
-                    ? "El Núm. de Serie / ID «{$serie}» ya está registrado en esta sede. No se puede repetir."
-                    : "El Núm. de Serie / ID «{$serie}» ya está registrado en esta sede, pero está desactivado. ¿Lo reactivas?", [$describir($igual)]);
+                    ? "La clave «{$serie}» ya está registrada en esta sede. No se puede repetir."
+                    : "La clave «{$serie}» ya está registrada en esta sede, pero el equipo está dado de baja. ¿Lo reactivas?", [$describir($igual)]);
             }
             $parecidos = EquipoPc::where('sede_id', $sedeId)->whereRaw($this->sinSignos('numero_serie').' = ?', [$this->avisos->clave($serie)])
                 ->when($excluir !== null, fn ($q) => $q->whereKeyNot($excluir))->limit(3)->get();

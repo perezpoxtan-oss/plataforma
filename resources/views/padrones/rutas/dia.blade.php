@@ -103,7 +103,7 @@
                     {{ $noOperanSentido->map(fn ($h) => $h->ruta->nombre.' '.$h->inicio().' ('.$h->textoDias().')')->join(' · ') }}</p>
             @endif
             @if ($suspendidasSentido->isNotEmpty())
-                <p class="rutas-hoja-nota"><i class="bi bi-pause-circle me-1" aria-hidden="true"></i><strong>Suspendidas (no operan):</strong> {{ $suspendidasSentido->pluck('nombre')->join(', ') }}</p>
+                <p class="rutas-hoja-nota"><i class="bi bi-pause-circle me-1" aria-hidden="true"></i><strong>Dadas de baja (no operan):</strong> {{ $suspendidasSentido->pluck('nombre')->join(', ') }}</p>
             @endif
         </section>
     @endforeach

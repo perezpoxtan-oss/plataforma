@@ -21,13 +21,21 @@
         <div class="mis-pendientes-panel" data-mis-pendientes-panel hidden>
             <div class="mis-pendientes-cabeza"><strong>Mis pendientes</strong><small>Lo que espera tu respuesta</small></div>
             <ul class="mis-pendientes-lista" data-mis-pendientes-lista>
-                @foreach ($misPendientes['items'] as $item)
+                {{-- Mejoras estructura (ADR-0016): solo los renglones con algo; candidatos en un renglón con su desglose --}}
+                @foreach ($misPendientes['vista'] ?? [] as $item)
                     <li>
-                        <a href="{{ $item['url'] }}" class="mis-pendientes-item{{ $item['total'] > 0 ? '' : ' al-dia' }}{{ ! empty($item['nivel']) ? ' nivel-'.$item['nivel'] : '' }}"{!! ! empty($item['nivel']) ? ' title="'.($item['nivel'] === 'roja' ? 'Pasó del doble del plazo' : 'Pasó del plazo').'"' : '' !!}>
+                        <a href="{{ $item['url'] }}" class="mis-pendientes-item{{ ! empty($item['nivel']) ? ' nivel-'.$item['nivel'] : '' }}"{!! ! empty($item['nivel']) ? ' title="'.($item['nivel'] === 'roja' ? 'Pasó del doble del plazo' : 'Pasó del plazo').'"' : '' !!}>
                             <i class="bi {{ $item['icono'] }}" aria-hidden="true"></i>
                             <span>{{ $item['titulo'] }}</span>
                             <span class="mis-pendientes-numero">{{ $item['total'] }}</span>
                         </a>
+                        @if (! empty($item['detalle']))
+                            <ul class="mis-pendientes-detalle">
+                                @foreach ($item['detalle'] as $sub)
+                                    <li><a href="{{ $sub['url'] }}"{!! ! empty($sub['nivel']) ? ' class="nivel-'.$sub['nivel'].'"' : '' !!}><span>{{ $sub['titulo'] }}</span><span class="mis-pendientes-numero">{{ $sub['total'] }}</span></a></li>
+                                @endforeach
+                            </ul>
+                        @endif
                     </li>
                 @endforeach
             </ul>

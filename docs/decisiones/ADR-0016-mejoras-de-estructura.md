@@ -1,0 +1,28 @@
+# ADR-0016 — Mejoras de Estructura y plataforma: roles sin números, asistente de permisos, configuración por módulo, avisos por persona y varias sedes por cuenta
+
+**Fecha:** 2026-10-11 · **Estado:** aceptada · **Detalle técnico:** [docs/tecnico/estructura-mejoras.md](../tecnico/estructura-mejoras.md)
+
+## Contexto
+
+La crítica de uso del área «Estructura y plataforma» marcó como lo más pesado para un dueño no técnico la **Matriz de permisos** (≈40 módulos × 8 acciones), el **nivel jerárquico** como número que hay que inventar, una **Configuración** que mezcla siete cosas, un **Inicio** que dice casi lo mismo que **Mis pendientes** con otros nombres, la falta de avisos por persona y de «Ver historial», y una sola sede por cuenta. Regla del dueño: lo que una empresa pueda querer distinto se vuelve configurable, **por omisión se conserva el diseño original**; los cambios de texto, nombres y atajos que solo simplifican se aplican directo.
+
+## Decisión
+
+1. **Roles sin números**: el nivel se elige «Debajo de / Arriba de» otro rol y se calcula a la mitad entre los vecinos (`PerfilesDeRol::nivelPara`); si no hay lugar, se dice. El número queda en «Avanzado». **Crear a partir de** otro rol copia sus permisos (solo lo que quien crea puede otorgar, con su alcance como máximo).
+2. **Matriz con asistente** «¿Qué hace este rol?»: los perfiles son las **plantillas de la plataforma** (sin catálogo nuevo) u otro rol de la empresa; reemplaza los permisos de un golpe con las mismas reglas contra escalamiento (lo que el rol ya tenía y quien aplica no puede tocar se conserva). La tabla completa queda en «Avanzado» (criterio 7). **Vista previa de menús** calculada con las mismas reglas que `ConstructorMenu` y actualizada en vivo.
+3. **Módulos sin pantalla** (sin ruta: Tablero, Tendencias, Bitácora del día, Informe ejecutivo) salen como **«Próximamente»**: no se pueden marcar y sus permisos se conservan intactos (no se borra nada).
+4. **Alcance distinto por acción: no se habilita en la pantalla.** El modelo (`rol_permisos.alcance` por acción) y el `Autorizador` sí lo soportan, y las plantillas ya lo usan (Jefe de departamento: «ver» de sede, «crear» propios). Pero muchas pantallas autorizan «editar» sin el registro y lo buscan con la consulta limitada por «ver»; con «Ver: empresa / Editar: sede» se podría editar fuera de la sede. Habilitarlo exige revisar módulo por módulo. Lo que sí se hace: la matriz **ya no aplana** los alcances distintos que traen las plantillas (antes, guardar los convertía en uno solo).
+5. **Configuración por módulo** (`GruposAvisos`): cada módulo con sus avisos, un **interruptor general** (`preferencias.avisos_modulos`, encendido por omisión; `Empresa::aviso()` lo respeta) y sus ajustes («Ir a…» cuando se editan en otra pantalla). **Versión instalada** (archivo `VERSION`) visible arriba.
+6. **Inicio = Mis pendientes**: mismos renglones, nombres y orden, sin renglones en cero; los cinco de candidatos en un renglón «Candidatos» con desglose; «Altas por verificar» dice a qué padrón lleva. Mis pendientes gana «Altas provisionales por validar» y «Procedimientos por aprobar» (antes solo en Inicio).
+7. **Avisos por persona** en Mi cuenta (`users.preferencias_avisos`): silenciar tipos de la campana (`CentroNotificaciones::avisar`) y avisos por correo (`AvisosCorreo` en los avisos que van a usuarios con permiso; las listas fijas de correos no). Lo pendiente sigue en Mis pendientes (criterio 1); los avisos de la propia cuenta no se silencian.
+8. **Auditoría**: «Ver historial» (`?registro=<alias>&id=`) en las fichas; `auditoria.sede_id` se llena al guardar con la sede del registro; «Su sede» ve los movimientos de su sede **solo si la empresa lo elige** (`preferencias.auditoria_sede`, por omisión «propios» como antes). **Movimientos sensibles** (roles, permisos, eliminación definitiva, exportación con datos personales, módulos contratados) a la campana de quien ve toda la bitácora, aviso `movimientos_sensibles` **apagado** por omisión.
+9. **Varias sedes por cuenta**: una fila de `usuario_roles` por sede con el mismo rol (la tabla ya lo permitía y el `Autorizador` ya acumula sedes). La sede principal es la primera fila. Quien administra solo algunas sedes no puede agregar otras ni quitar las que no administra (se conservan).
+10. **Módulos contratados por empresa** (Super Administrador) sobre `empresa_modulos.activo`, que el motor ya respetaba; Dirección siempre queda.
+11. Nombres: «Zonas y áreas» → **Zonas y edificios** («área» solo para partes de una habitación); Inicio deja de llamarse «Consola de Monitoreo Central»; Empresas tiene un solo nombre; Identidad pasa a la sección «Plataforma». El rol «Asistente» **no** se renombra: su nombre lo usan migraciones de otros módulos para dar permisos a empresas existentes; cada empresa puede renombrarlo.
+
+## Consecuencias
+
+- Migración `2026_10_27_000100_mejoras_de_estructura`: columna `users.preferencias_avisos`, columna e índice `auditoria.sede_id`, nombre del módulo `espacios` y sección de `identidad`; su `down()` revierte todo.
+- Eventos de auditoría nuevos: `empresas.modulos_actualizados`, `configuracion.auditoria`. Tipo de campana nuevo: `movimiento_sensible`.
+- Ruta nuevas: `permisos.perfil`, `empresas.modulos`, `configuracion.auditoria`, `mi-cuenta.avisos`.
+- Pendiente (decisiones del dueño): encender por omisión «Su sede = movimientos de su sede» y los avisos sensibles; habilitar alcance por acción tras revisar cada módulo; renombrar «Asistente».

@@ -16,6 +16,7 @@ use App\Models\Vehiculo;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Firmas\Firmas;
 use App\Services\Transporte\BitacoraTransporte;
+use App\Support\AjustesCaseta;
 use App\Support\Csv;
 use App\Support\Entrada;
 use App\Support\HoraLocal;
@@ -137,7 +138,9 @@ class TransporteController extends Controller
         $empresaId = $this->empresaDeTrabajo($request);
 
         $movimientos = $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $avisos) {
-            $movimientos = $this->bitacora->registrar($actor, $request->all(), $actor->can('transporte.firmar'), $this->bitacora->sedes($actor, 'transporte.crear'));
+            $puede = $this->permisos($actor);
+            $movimientos = $this->bitacora->registrar($actor, $request->all(), ['guardia' => $puede['firma_guardia'], 'taxista' => $puede['firma_taxista']],
+                $this->bitacora->sedes($actor, 'transporte.crear'));
             foreach ($movimientos->filter->esTaxi() as $vale) {
                 $avisos->valeTaxi($vale, $actor);
             }
@@ -338,7 +341,13 @@ class TransporteController extends Controller
      */
     private function permisos(User $actor): array
     {
+        // ADR-0014: qué firmas pide la empresa en pantalla (por omisión, las dos)
+        $empresaId = $this->empresa->id($actor);
+        $firmar = $actor->can('transporte.firmar');
+
         return [
+            'firma_guardia' => $firmar && AjustesCaseta::firmaEnPantalla($empresaId, 'guardia'),
+            'firma_taxista' => $firmar && AjustesCaseta::firmaEnPantalla($empresaId, 'taxista'),
             'crear' => $actor->can('transporte.crear') && $this->bitacora->sedes($actor, 'transporte.crear') !== [],
             'editar' => $actor->can('transporte.editar'),
             'eliminar' => $actor->can('transporte.eliminar'),

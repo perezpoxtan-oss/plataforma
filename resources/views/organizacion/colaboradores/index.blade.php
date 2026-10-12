@@ -21,12 +21,14 @@
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
             $porValidar = $colaboradores->where('provisional', true)->whereNull('fusionado_en_id')->where('activo', true)->count();
+            // Etiquetas QR imprime colaboradores a quien puede verlos y editarlos (y usar Etiquetas QR)
+            $puedeCredencial = auth()->user()?->can('etiquetas_qr.ver') && auth()->user()?->can('colaboradores.editar');
         @endphp
 
         @if ($porValidar > 0 && $puede['aprobar'])
             <div class="alert alert-warning d-flex align-items-center gap-2 aviso mb-3" role="status">
                 <i class="bi bi-hourglass-split" aria-hidden="true"></i>
-                <span>Hay <strong>{{ $porValidar }}</strong> {{ $porValidar === 1 ? 'alta provisional' : 'altas provisionales' }} de la caseta por validar. Elige «Por validar» en el filtro.</span>
+                <span>Hay <strong>{{ $porValidar }}</strong> {{ $porValidar === 1 ? 'alta' : 'altas' }} de la caseta por verificar. Elige «Por verificar» en el filtro.</span>
             </div>
         @endif
 
@@ -58,7 +60,7 @@
                 @if ($porValidar > 0 || $puede['aprobar'])
                     <select class="filtro-select" aria-label="Filtrar por registro" data-filtro-colab="registro">
                         <option value="">Todos los registros</option>
-                        <option value="provisional">Por validar ({{ $porValidar }})</option>
+                        <option value="provisional">Por verificar ({{ $porValidar }})</option>
                     </select>
                 @endif
                 <div class="buscador">
@@ -79,8 +81,8 @@
             @if ($puede['provisional'])
                 <button type="button" class="ficha-card ficha-create ficha-provisional" data-abrir-dialogo="dialogoRegistroRapidoColaborador">
                     <i class="bi bi-person-plus" aria-hidden="true"></i>
-                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">Alta provisional</span>
-                    <span class="small text-muted mt-1">Para alguien que aún no aparece. Recursos Humanos lo validará.</span>
+                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">Registro rápido</span>
+                    <span class="small text-muted mt-1">Para alguien que aún no aparece: queda por verificar y Recursos Humanos lo verifica.</span>
                 </button>
             @endif
 
@@ -130,7 +132,7 @@
                                 </div>
                             @endif
                             @if ($pendiente)
-                                <div class="small mt-1 texto-provisional"><i class="bi bi-shield-exclamation" aria-hidden="true"></i> Alta provisional de la caseta: Recursos Humanos debe validarla.</div>
+                                <div class="small mt-1 texto-provisional"><i class="bi bi-shield-exclamation" aria-hidden="true"></i> Registrado en la caseta: Recursos Humanos debe verificarlo.</div>
                             @elseif ($c->fusionado_en_id && $c->fusionadoEn)
                                 <div class="small mt-1 text-muted"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Era un duplicado: se unió con #{{ $c->fusionadoEn->num_empleado }} {{ $c->fusionadoEn->nombreCompleto() }}.</div>
                             @elseif ($c->validado_en)
@@ -148,7 +150,7 @@
                                 <button type="button" class="btn-validar-colab"
                                         data-accion="editar-registro" data-dialogo="dialogoValidarColaborador"
                                         data-url="{{ route('colaboradores.validar', $c->id) }}" data-id="{{ $c->id }}" data-valores="{{ $valores }}">
-                                    <i class="bi bi-patch-check" aria-hidden="true"></i> Validar
+                                    <i class="bi bi-patch-check" aria-hidden="true"></i> Verificar
                                 </button>
                                 <button type="button" class="btn-duplicado-colab"
                                         data-accion="editar-registro" data-dialogo="dialogoFusionarColaborador"
@@ -169,13 +171,17 @@
                         @endif
                     </div>
                     <div class="ficha-footer">
-                        <span class="etiqueta-estado {{ $c->activo ? ($pendiente ? 'pendiente' : 'activo') : 'inactivo' }}">{{ $c->activo ? ($pendiente ? 'POR VALIDAR' : 'ACTIVO') : ($c->fusionado_en_id ? 'UNIDO' : 'BAJA') }}</span>
+                        <span class="etiqueta-estado {{ $c->activo ? ($pendiente ? 'pendiente' : 'activo') : 'inactivo' }}">{{ $c->activo ? ($pendiente ? 'POR VERIFICAR' : 'ACTIVO') : ($c->fusionado_en_id ? 'UNIDO' : 'DE BAJA') }}</span>
                         <div class="d-flex gap-2">
                             {{-- Ronda 5: QR y etiqueta NFC/RFID (gafete o tarjeta del colaborador) en un diálogo --}}
                             @include('componentes.boton-identificacion', ['identTipo' => 'colaborador', 'identRegistro' => $c, 'identTitulo' => $nombreCompleto,
-                                'identDetalle' => 'Núm. '.$c->num_empleado, 'identImprimir' => null, 'identEditable' => $editable && ! $pendiente])
+                                'identDetalle' => 'Núm. '.$c->num_empleado,
+                                // Mejoras padrones: la credencial se imprime con Etiquetas QR (ya filtrada a este colaborador)
+                                'identImprimir' => $puedeCredencial && ! $pendiente ? route('etiquetas.index', ['tipo' => 'colaborador', 'q' => $c->num_empleado ?: $nombreCompleto]) : null,
+                                'identImprimirTexto' => 'Imprimir credencial', 'identEditable' => $editable && ! $pendiente])
                             {{-- Candidatos fase 3: expediente del colaborador (ficha de detalle) --}}
                             <a href="{{ route('colaboradores.expediente', $c->id) }}" class="btn-icono" title="Expediente" aria-label="Expediente de {{ $nombreCompleto }}"><i class="bi bi-folder2-open" aria-hidden="true"></i></a>
+                            @include('componentes.ver-historial', ['registro' => \App\Models\Colaborador::class, 'id' => $c->id, 'nombre' => $nombreCompleto])
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar a {{ $nombreCompleto }}"
                                         data-accion="editar-registro" data-dialogo="dialogoEditarColaborador"
@@ -224,7 +230,7 @@
                 $sedesOpciones = $esNuevo
                     ? $cat['sedes']->filter(fn ($s) => $s->activo && ($permitidas === null || in_array($s->id, $permitidas, true)))
                     : $cat['sedes'];
-                $tituloLegales = $esNuevo ? 'Datos Legales (Opcionales)' : 'Datos Legales y de Contacto (Opcionales)';
+                $tituloLegales = 'Datos Legales y de Contacto (Opcionales)';
                 // Al reabrir una edición con errores, un dato personal que no llegó (no se alcanzó a cargar) se deja bloqueado: así no se borra
                 $bloqueado = fn (string $campo) => ! $esNuevo && $reabrir && ! array_key_exists($campo, $previos);
             @endphp
@@ -349,25 +355,24 @@
                                     <input type="text" id="{{ $modo }}_co_nacionalidad" name="nacionalidad" class="campo" maxlength="40" data-dato-personal value="{{ $valor('nacionalidad', $esNuevo ? 'Mexicana' : '') }}" @disabled($bloqueado('nacionalidad'))>
                                 </div>
                             </div>
-                            @unless ($esNuevo)
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <label class="campo-etiqueta" for="editar_co_correo">Correo Personal</label>
-                                        <input type="email" id="editar_co_correo" name="correo_personal" class="campo" maxlength="150" data-dato-personal value="{{ $valor('correo_personal') }}" @disabled($bloqueado('correo_personal'))>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="campo-etiqueta" for="editar_co_direccion">Dirección Completa</label>
-                                        <textarea id="editar_co_direccion" name="direccion_completa" class="campo" rows="2" maxlength="500" data-dato-personal @disabled($bloqueado('direccion_completa'))>{{ $valor('direccion_completa') }}</textarea>
-                                    </div>
+                            {{-- Mejoras padrones: correo y dirección también en el alta (antes solo en Editar) --}}
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label class="campo-etiqueta" for="{{ $modo }}_co_correo">Correo Personal</label>
+                                    <input type="email" id="{{ $modo }}_co_correo" name="correo_personal" class="campo" maxlength="150" data-dato-personal value="{{ $valor('correo_personal') }}" @disabled($bloqueado('correo_personal'))>
                                 </div>
-                            @endunless
+                                <div class="col-md-12">
+                                    <label class="campo-etiqueta" for="{{ $modo }}_co_direccion">Dirección Completa</label>
+                                    <textarea id="{{ $modo }}_co_direccion" name="direccion_completa" class="campo" rows="2" maxlength="500" data-dato-personal @disabled($bloqueado('direccion_completa'))>{{ $valor('direccion_completa') }}</textarea>
+                                </div>
+                            </div>
                         @else
                             <p class="campo-ayuda mt-0"><i class="bi bi-lock-fill" aria-hidden="true"></i> Los datos legales (CURP, RFC, NSS, nacimiento y dirección) solo los ve y captura quien tiene el permiso «Datos personales».</p>
                         @endif
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-esmeralda">{{ $esNuevo ? 'Registrar Colaborador' : 'Guardar Cambios' }}</button>
+                            <button type="submit" class="btn-esmeralda">Guardar</button>
                         </div>
                     </form>
                     @unless ($esNuevo)
@@ -390,7 +395,7 @@
             @endphp
             <dialog id="dialogoValidarColaborador" class="dialogo ancho" aria-labelledby="titulo-co-validar" @if ($reabrirValidar) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
-                    <h2 id="titulo-co-validar"><i class="bi bi-patch-check me-2 text-success" aria-hidden="true"></i>Validar alta provisional</h2>
+                    <h2 id="titulo-co-validar"><i class="bi bi-patch-check me-2 text-success" aria-hidden="true"></i>Verificar alta</h2>
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                 </div>
                 <div class="dialogo-cuerpo">
@@ -444,7 +449,7 @@
                         <input type="tel" inputmode="tel" id="validar_co_tel" name="telefono" class="campo" maxlength="20" value="{{ $v('telefono') }}">
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-esmeralda">Validar Colaborador</button>
+                            <button type="submit" class="btn-esmeralda">Guardar y verificar</button>
                         </div>
                     </form>
                 </div>
@@ -456,7 +461,7 @@
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                 </div>
                 <div class="dialogo-cuerpo">
-                    <p class="small text-muted">Si esta persona ya estaba registrada, elige su registro correcto. Todo lo que la caseta registró con el alta provisional pasa a ese colaborador y el provisional queda dado de baja.</p>
+                    <p class="small text-muted">Si esta persona ya estaba registrada, elige su registro correcto. Todo lo que la caseta registró con esta alta pasa a ese colaborador y el alta queda dada de baja (unida).</p>
                     <form action="" method="POST">
                         @csrf
                         @method('PUT')

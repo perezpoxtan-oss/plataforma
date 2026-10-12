@@ -288,6 +288,25 @@
                     </div>
                 </section>
                 @break
+
+            @case('mantenimiento_pc')
+                {{-- Mejoras Incidentes: equipos con falla de los recorridos que abrieron el ticket --}}
+                <section>
+                    <h3>Detalle: Mantenimiento de equipo PC</h3>
+                    @forelse ($n->recorridosPc as $rec)
+                        <p class="small"><strong>Recorrido {{ $rec->folio() }}</strong> · {{ $rec->etiquetaEstatus() }}</p>
+                        <ul class="small">
+                            @forelse ($rec->revisiones->where('resultado', \App\Models\RevisionRecorridoPc::FALLA) as $falla)
+                                <li>{{ $falla->resumenHallazgo() }}</li>
+                            @empty
+                                <li>Sin equipos con falla.</li>
+                            @endforelse
+                        </ul>
+                    @empty
+                        <p class="text-muted">Sin recorridos ligados.</p>
+                    @endforelse
+                </section>
+                @break
         @endswitch
 
         <section>

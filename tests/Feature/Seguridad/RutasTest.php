@@ -156,7 +156,7 @@ class RutasTest extends TestCase
             ->assertSee('Próx. Llegadas')->assertSee('Hoy 05:45 · RUTA 1 - REGIÓN 94')
             ->assertSee('Hoy 15:10 · RUTA 1')
             ->assertDontSee('RUTA 9 ·', false)
-            ->assertSee('Con 1 ruta suspendida')
+            ->assertSee('Con 1 ruta dada de baja')
             ->assertSee('Transportes Kin-Ha')
             ->assertSee(route('rutas.sede', $this->centro->id))
             ->assertSee(route('rutas.semana', $this->centro->id)) // Ronda 8: la hoja de la semana
@@ -172,7 +172,7 @@ class RutasTest extends TestCase
 
         $this->actingAs($this->admin)->get(route('rutas.sede', $this->centro->id))->assertOk()
             ->assertSee('Llegadas (1)')->assertSee('Salidas (1)')->assertSee('Paraderos (2)')
-            ->assertSee('Nueva Llegada')->assertSee('Configurar Ruta y Horarios')->assertSee('Modificar Ruta y Horarios')
+            ->assertSee('Nueva Llegada')->assertSee('Nueva ruta y sus horarios')->assertSee('Editar ruta y sus horarios')
             ->assertSee('Llegada a la Sede')->assertSee('Salida de la Sede')->assertDontSee('Llegada al Hotel')->assertDontSee('Hotel / Sede')
             ->assertSee('id="ruta-'.$ruta->id.'"', false)
             ->assertSee('RUTA 1 - REGIÓN 94')->assertSee('05:45–06:40')->assertSee('L-V')->assertSee('S-D')
@@ -401,9 +401,9 @@ class RutasTest extends TestCase
         $ruta = $this->crearRuta();
 
         $this->actingAs($this->admin)->patch(route('rutas.estado', $ruta->id), ['activo' => 0])
-            ->assertSessionHas('aviso', 'Ruta «RUTA 1 - REGIÓN 94» suspendida. Puedes reactivarla con el mismo botón cuando quieras.');
+            ->assertSessionHas('aviso', 'Ruta «RUTA 1 - REGIÓN 94» dada de baja: ya no sale en las próximas salidas ni en la hoja del día. Puedes reactivarla con el mismo botón cuando quieras.');
         $this->assertFalse($this->rutaEn(fn () => $ruta->fresh()->activo));
-        $this->actingAs($this->admin)->get(route('rutas.sede', $this->centro->id))->assertSee('SUSPENDIDA')->assertSee('data-estado="0"', false);
+        $this->actingAs($this->admin)->get(route('rutas.sede', $this->centro->id))->assertSee('DE BAJA')->assertSee('data-estado="0"', false);
 
         $this->actingAs($this->admin)->patch(route('rutas.estado', $ruta->id), ['activo' => 1])->assertSessionHas('ok', 'Ruta «RUTA 1 - REGIÓN 94» reactivada.');
         $this->assertTrue($this->rutaEn(fn () => $ruta->fresh()->activo));
@@ -458,7 +458,7 @@ class RutasTest extends TestCase
         // Lunes 5 de octubre de 2026
         $lunes = $this->actingAs($this->admin)->get(route('rutas.dia', ['sede' => $this->centro->id, 'fecha' => '2026-10-05']))->assertOk()
             ->assertSee('Lunes 5 de octubre de 2026')->assertSee('Llegadas del día')->assertSee('Salidas del día')
-            ->assertSee('RUTA 2')->assertSee('NOCTURNA')->assertSee('Suspendidas (no operan):</strong> SUSPENDIDA X', false) // Ronda 8: se explica al pie
+            ->assertSee('RUTA 2')->assertSee('NOCTURNA')->assertSee('Dadas de baja (no operan):</strong> SUSPENDIDA X', false) // Ronda 8: se explica al pie
             ->assertSee('<sup title="Día siguiente">+1</sup>', false)
             ->assertSee('REGIÓN 94 (CRUCERO)')->assertSee('KABAH')
             ->getContent();
@@ -528,7 +528,7 @@ class RutasTest extends TestCase
         $this->actingAs($supervisor)->put(route('rutas.update', $delCentro->id), $this->datos(['nombre' => 'EDITADA']))->assertSessionHas('ok');
         $this->actingAs($supervisor)->patch(route('rutas.estado', $delCentro->id), ['activo' => 0])->assertForbidden();
         $this->actingAs($supervisor)->get(route('rutas.sede', $this->centro->id))->assertOk()
-            ->assertSee('Nueva Llegada')->assertDontSee('title="Suspender"', false);
+            ->assertSee('Nueva Llegada')->assertDontSee('title="Dar de baja"', false);
     }
 
     public function test_alcance_propios_solo_modifica_lo_que_dio_de_alta(): void

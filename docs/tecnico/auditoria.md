@@ -29,3 +29,5 @@ Pantalla `GET /auditoria` (módulo `auditoria`, área Dirección). Es de solo co
 ## Pruebas
 
 `tests/Feature/Direccion/PendientesDireccionTest.php` y `tests/Feature/Administracion/LectorAuditoriaTest.php`
+
+> Mejoras de 2026-10 (roles sin números, asistente de permisos, configuración por módulo, avisos por persona, historial y varias sedes): ver [estructura-mejoras.md](estructura-mejoras.md) y [ADR-0016](../decisiones/ADR-0016-mejoras-de-estructura.md).

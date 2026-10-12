@@ -6,8 +6,11 @@
 --}}
 @php
     $empresaCampana = app(\App\Support\Tenancy\EmpresaDeTrabajo::class)->id($usuario);
-    $noLeidasCampana = $empresaCampana === null ? 0
-        : app(\App\Support\Tenancy\Tenant::class)->conEmpresa($empresaCampana, fn () => app(\App\Services\Notificaciones\CentroNotificaciones::class)->noLeidas($usuario));
+    // La campana se pinta dos veces (computadora y celular): el número se cuenta una sola vez por petición
+    $llaveCampana = 'campana.no_leidas.'.$usuario->id.'.'.$empresaCampana;
+    $noLeidasCampana = $empresaCampana === null ? 0 : request()->attributes->get($llaveCampana)
+        ?? tap(app(\App\Support\Tenancy\Tenant::class)->conEmpresa($empresaCampana, fn () => app(\App\Services\Notificaciones\CentroNotificaciones::class)->noLeidas($usuario)),
+            fn ($n) => request()->attributes->set($llaveCampana, $n));
 @endphp
 <div class="campana" data-campana data-url="{{ route('notificaciones.resumen') }}">
     <button type="button" class="btn-campana" data-campana-boton aria-expanded="false" aria-haspopup="true"

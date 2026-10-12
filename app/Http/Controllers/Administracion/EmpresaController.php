@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Administracion;
 
 use App\Http\Controllers\Controller;
+use App\Models\Area;
 use App\Models\Empresa;
+use App\Models\Modulo;
 use App\Models\Rubro;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
@@ -15,6 +17,8 @@ use App\Support\ZonasHorarias;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -47,7 +51,13 @@ class EmpresaController extends Controller
             ->orderBy('empresas.nombre_comercial')
             ->get();
 
+        // Módulos contratados por empresa (ADR-0016): solo el Super Administrador los cambia
+        $contratados = ! $actor->es_superadmin ? collect() : DB::table('empresa_modulos')->where('activo', true)
+            ->get(['empresa_id', 'modulo_id'])->groupBy('empresa_id')->map(fn ($f) => $f->pluck('modulo_id')->map(fn ($id) => (int) $id)->all());
+
         return view('administracion.empresas.index', [
+            'catalogoModulos' => $actor->es_superadmin ? $this->catalogoContratable() : collect(),
+            'contratados' => $contratados,
             'empresas' => $empresas,
             'rubros' => Rubro::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
             'zonas' => ZonasHorarias::opciones(),
@@ -113,6 +123,72 @@ class EmpresaController extends Controller
         return redirect()->route('empresas.index')->with($activo ? 'ok' : 'aviso', $activo
             ? 'Empresa reactivada correctamente.'
             : 'Empresa desactivada: sus usuarios ya no pueden entrar. Puedes reactivarla con el mismo botón.');
+    }
+
+    /**
+     * Módulos contratados (ADR-0016): el Super Administrador elige qué módulos
+     * tiene cada empresa. Los de Dirección (empresa, sedes, usuarios, roles,
+     * permisos, configuración, auditoría…) siempre quedan. Quitar un módulo
+     * no borra datos ni permisos: solo deja de verse (menú, matriz y manual).
+     */
+    public function modulos(Request $request, Empresa $empresa): RedirectResponse
+    {
+        // Seguridad (AZ-03): otra empresa responde 404 (sin revelar que existe)
+        abort_unless($request->user()->es_superadmin || $empresa->id === (int) $request->user()->empresa_id, 404);
+        abort_unless($request->user()->es_superadmin, 403);
+
+        $elegidos = array_map('intval', (array) $request->validate(['modulos' => ['nullable', 'array'], 'modulos.*' => ['integer']])['modulos'] ?? []);
+        $catalogo = Modulo::query()->where('activo', true)->where('tipo', '!=', Modulo::TIPO_PLATAFORMA)->get(['id', 'clave', 'padre_id', 'area_id']);
+        $direccion = Area::where('clave', 'direccion')->value('id');
+
+        $antes = DB::table('empresa_modulos')->where('empresa_id', $empresa->id)->where('activo', true)->pluck('modulo_id')->map(fn ($id) => (int) $id)->all();
+        $activos = [];
+        DB::transaction(function () use ($catalogo, $elegidos, $direccion, $empresa, &$activos) {
+            foreach ($catalogo as $modulo) {
+                $padreActivo = $modulo->padre_id === null || in_array((int) $modulo->padre_id, $elegidos, true) || (int) $catalogo->firstWhere('id', $modulo->padre_id)?->area_id === (int) $direccion;
+                $activo = (int) $modulo->area_id === (int) $direccion || (in_array((int) $modulo->id, $elegidos, true) && $padreActivo);
+                DB::table('empresa_modulos')->updateOrInsert(
+                    ['empresa_id' => $empresa->id, 'modulo_id' => $modulo->id],
+                    ['activo' => $activo, 'updated_at' => now()],
+                );
+                if ($activo) {
+                    $activos[] = (int) $modulo->id;
+                }
+            }
+        });
+        app(Autorizador::class)->olvidar();
+
+        $claves = fn (array $ids) => $catalogo->whereIn('id', $ids)->pluck('clave')->sort()->values()->all();
+        $this->auditoria->auditar($request->user(), 'empresas.modulos_actualizados', $empresa, ['modulos' => $claves($antes)], ['modulos' => $claves($activos)]);
+        $quitados = count(array_diff($antes, $activos));
+
+        return redirect()->to(route('empresas.index').'#empresa-'.$empresa->id)->with('ok', "Módulos de «{$empresa->nombre_comercial}» actualizados: tiene ".count($activos).' módulos'
+            .($quitados > 0 ? " ({$quitados} quitados: dejan de verse en el menú, la matriz y el manual; sus datos y permisos se conservan)" : '')
+            .'. Revisa sus roles en la Matriz de permisos si hace falta.');
+    }
+
+    /**
+     * Áreas con sus módulos contratables (padres y, debajo, submódulos).
+     *
+     * @return Collection<int, array{area: string, siempre: bool, modulos: list<Modulo>}>
+     */
+    private function catalogoContratable(): Collection
+    {
+        return Area::query()->where('activo', true)->orderBy('orden')
+            ->with(['modulos' => fn ($q) => $q->where('activo', true)->where('tipo', '!=', Modulo::TIPO_PLATAFORMA)->orderBy('orden')])
+            ->get()
+            ->map(function (Area $area) {
+                $ordenados = [];
+                foreach ($area->modulos->whereNull('padre_id') as $padre) {
+                    $ordenados[] = $padre;
+                    foreach ($area->modulos->where('padre_id', $padre->id) as $hijo) {
+                        $ordenados[] = $hijo;
+                    }
+                }
+
+                return ['area' => $area->nombre, 'siempre' => $area->clave === 'direccion', 'modulos' => $ordenados];
+            })
+            ->filter(fn ($a) => $a['modulos'] !== [])->values();
     }
 
     private function editaEmpresa(User $actor): bool

@@ -1,5 +1,5 @@
 ---
-titulo: Estacionamientos
+titulo: Estacionamientos y zonas de descarga
 modulos: [estacionamientos]
 seccion: Padrones
 orden: 80
@@ -20,16 +20,16 @@ La caseta elige estas zonas al registrar la entrada de un vehículo en la [Bitá
 ## Antes de empezar
 
 - Para ver la pantalla tu rol debe poder consultar *Estacionamientos*. Si no aparece en el menú, pide el permiso a tu administrador.
-- Para crear, editar o desactivar zonas necesitas esos permisos. Si no ves **Nueva Zona**, tu rol solo consulta los cupos.
+- Para crear, editar o dar de baja zonas necesitas esos permisos. Si no ves **Nueva Zona**, tu rol solo consulta los cupos.
 - Solo ves las zonas de **tus sedes**.
 
 ## Cómo leer la pantalla
 
-1. Entra a **Padrones → Estacionamientos**.
+1. Entra a **Padrones → Estacionamientos y zonas de descarga**.
 2. Las zonas aparecen **agrupadas por sede**.
 3. En cada estacionamiento ves **ocupados / cupo** (por ejemplo `2 / 40 espacios`) y una barra. Si se llena, la barra se pone **roja** y aparece **LLENO**.
 4. En las zonas de descarga ves cuántos vehículos la están usando (o `0 / 4 vehículos` si tiene capacidad).
-5. Una zona **Inactiva** se ve más clara: ya no se puede asignar en Accesos.
+5. Una zona **De baja** se ve más clara: ya no se puede asignar en Accesos.
 
 Para encontrar una zona escribe en **Buscar zona o sede...**, elige una sede en **Todas las sedes** o toca **Todas**, **Estacionamientos** o **Zonas de descarga**.
 
@@ -70,16 +70,29 @@ Para encontrar una zona escribe en **Buscar zona o sede...**, elige una sede en 
 
 **Qué debes ver:** «Zona «…» actualizada correctamente.»
 
-## Cómo desactivar o reactivar una zona
+## Cómo corregir la ocupación (un vehículo salió sin registrar su salida)
 
-1. Toca el **círculo rojo** (Desactivar) y confirma con **Aceptar** («¿Desactivar esta zona? Ya no se podrá asignar en Accesos.»). Úsalo, por ejemplo, para un estacionamiento en obra.
+Si un vehículo ya se fue pero la caseta no le dio salida, la zona lo sigue contando. Puedes corregirlo aquí mismo, sin buscarlo en la bitácora:
+
+1. En la tarjeta de la zona toca **¿Quién ocupa? (n)**. Se despliegan las placas, el nombre y desde qué hora está.
+   ![¿Quién ocupa?](img/estacionamientos/11-quien-ocupa.png)
+
+2. En el vehículo que ya salió toca **Dar salida** y confirma con **Aceptar** («Úsalo solo si el vehículo ya salió: se registra su salida en la Bitácora de accesos con la hora de ahora.»).
+
+**Qué debes ver:** «Salida de ABC123A registrada: ya no ocupa lugar en «…».» y la ocupación baja un lugar. Es la misma salida de la [Bitácora de accesos](accesos.md) (queda en su historial y en Auditoría).
+
+> Para ver **¿Quién ocupa?** necesitas poder dar salida en la Bitácora de accesos en esa sede (como la caseta).
+
+## Cómo dar de baja o reactivar una zona
+
+1. Toca el **círculo rojo** (Dar de baja) y confirma con **Aceptar** («¿Dar de baja esta zona? Ya no se podrá asignar en Accesos.»). Úsalo, por ejemplo, para un estacionamiento en obra.
 2. Para regresarla, toca la **flecha circular** (Reactivar) y confirma.
 
-**Qué debes ver:** «Zona «…» desactivada: ya no se podrá asignar en Accesos, pero puedes reactivarla cuando quieras.»
+**Qué debes ver:** «Zona «…» dada de baja: ya no se podrá asignar en Accesos, pero puedes reactivarla cuando quieras.»
 
 ## Lo que ve el agente de caseta
 
-El agente consulta los cupos de su sede, sin botones para crear, editar o desactivar.
+El agente consulta los cupos de su sede, sin botones para crear, editar o dar de baja zonas. Sí puede usar **¿Quién ocupa?** y **Dar salida**, porque da salidas en la caseta.
 
 ![Vista del agente](img/estacionamientos/10-agente.png)
 
@@ -114,7 +127,9 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 **¿Qué pasa si la zona está llena?** La barra se pone roja con **LLENO** y la caseta lo ve al registrar la entrada.
 
-**¿Puedo borrar una zona?** No; se desactiva para que ya no se use, y se conserva su historial.
+**¿Puedo borrar una zona?** No; se da de baja para que ya no se use, y se conserva su historial.
+
+**La zona dice LLENO pero hay lugares libres, ¿qué hago?** Abre **¿Quién ocupa?** y da salida a los vehículos que ya se fueron.
 
 **¿Es obligatoria la capacidad de una zona de descarga?** No. Solo escríbela si quieres que te avise cuando se llene.
 

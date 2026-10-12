@@ -23,9 +23,9 @@ resumen: Inventario del equipo de guardia (radios, lámparas, chalecos…), con 
 | Estado | Qué quiere decir |
 |---|---|
 | **DISPONIBLE** (verde) | Está en la caseta, listo para prestarse. |
-| **ASIGNADO** (amarillo) | Lo tiene un colaborador. Lo pone [Responsivas](responsivas.md); la ficha dice **A cargo de** quién. |
+| **ASIGNADO** (amarillo) | Lo tiene un colaborador. Lo pone [Responsivas](responsivas.md); la ficha dice **A cargo de** quién y trae el enlace **Ver responsiva**. |
 | **EN MANTENIMIENTO** (morado) | En reparación o revisión: no se presta. |
-| **BAJA/PERDIDO** (rojo) | Se perdió, se dañó o lo robaron; se dio de baja con un voucher. |
+| **DE BAJA** (rojo) | Se dio de baja con un voucher. La ficha dice el motivo (por ejemplo **DE BAJA · ROBADO**) y trae **Ver su voucher VR-…**. |
 
 ## Cómo encontrar un equipo
 
@@ -46,11 +46,11 @@ resumen: Inventario del equipo de guardia (radios, lámparas, chalecos…), con 
 6. **Costo:** lo que vale el equipo; sirve para el voucher si algún día se pierde. Si ya registraste otro de la misma marca y modelo, aparece sugerido.
 7. **Observaciones** (opcional): la condición del equipo.
 8. **Etiqueta NFC / RFID (opcional):** acerca al lector la etiqueta pegada al equipo, o escribe su número.
-9. Toca **Registrar Equipo**.
+9. Toca **Guardar**.
 
 ![Alta de equipo](img/equipos/02-alta.png)
 
-**Qué debes ver:** «Equipo RAD-8830 registrado correctamente. Ya puedes imprimir su etiqueta QR.» El equipo nace **DISPONIBLE**.
+**Qué debes ver:** «Equipo RAD-8830 registrado correctamente.» y, debajo, **Siguiente paso: Imprimir su etiqueta**. El equipo nace **DISPONIBLE**.
 
 ### Avisos mientras escribes
 
@@ -62,7 +62,7 @@ resumen: Inventario del equipo de guardia (radios, lámparas, chalecos…), con 
 1. Toca el **lápiz** (Editar) de la ficha. Se abre **Editar Equipo**.
 2. Corrige lo que necesites.
 3. En **Estado actual** puedes cambiar entre **DISPONIBLE** y **EN MANTENIMIENTO**. Debajo se explica qué puedes hacer según el estado: si está ASIGNADO o de BAJA, el estado se muestra pero no se cambia aquí.
-4. Toca **Actualizar Equipo**.
+4. Toca **Guardar**.
 
 ![Editar equipo](img/equipos/03-editar.png)
 
@@ -71,7 +71,7 @@ resumen: Inventario del equipo de guardia (radios, lámparas, chalecos…), con 
 ## Cómo ver el QR, imprimir la etiqueta y asignar NFC
 
 1. Toca el botón del **código QR** de la ficha. Se abre **Código e identificación** con el QR y la dirección (botón **Copiar**).
-2. **Imprimir etiqueta** abre la etiqueta en otra pestaña; ahí toca **Imprimir Etiqueta**. **Volver al Inventario de Equipos** te regresa. También puedes usar el botón de la **impresora** de la ficha.
+2. **Imprimir etiqueta** abre la etiqueta en otra pestaña; ahí toca **Imprimir Etiqueta** (en la impresora elige **«Tamaño real»** o **«Escala 100 %»**, como dice el recuadro amarillo). **Volver al Inventario de Equipos** te regresa. También puedes usar el botón de la **impresora** de la ficha, o **Imprimir con una plantilla de Etiquetas QR** para otra medida.
 3. En **Asignar etiqueta NFC / RFID** acerca la etiqueta al lector y toca **Guardar etiqueta**.
 
 ![Código e identificación](img/equipos/05-ver-qr.png)
@@ -87,21 +87,22 @@ Cuando un equipo se pierde, se daña o lo roban:
 1. Toca el botón rojo **Dar de baja** de la ficha. Se abre **Dar de Baja: …**.
 2. Elige el **Motivo**: Extraviado, Dañado o Robado.
 3. Escribe **¿Cómo pasó?** (ayuda a decidir si se cobra).
-4. Si se le cobra a alguien, marca la casilla de cobro (**Aplica CXC**):
+4. Si se le cobra a alguien, marca **Se le cobra al colaborador**:
    - **Monto:** viene con el costo del equipo; puedes ajustarlo.
    - **Colaborador responsable:** escanea su gafete, acerca su tarjeta o escribe su número de empleado (aparece solo, sin Enter).
-5. Toca **Generar Voucher y Dar de Baja**.
+5. En **Firmas del voucher** elige **Firma física** o **Firma digital** (firman en la pantalla Seguridad y, si hay responsable, también él), igual que en Llaves y Gafetes.
+6. Toca **Dar de baja**.
 
 ![Baja con voucher](img/equipos/04-baja.png)
 
-**Qué debes ver:** «Equipo … dado de baja con el voucher VR-…». El equipo queda **BAJA/PERDIDO**.
+**Qué debes ver:** «Equipo … dado de baja con el voucher VR-…». El equipo queda **DE BAJA** con su motivo.
 
 ## Cómo reactivar un equipo que apareció
 
-1. Filtra por **BAJA/PERDIDO**.
-2. Toca el botón verde **Reactivar (se encontró / se recuperó)** y confirma con **Aceptar**.
+1. Filtra por **De baja**.
+2. Toca el botón verde **Reactivar (se encontró / se recuperó)** y confirma con **Aceptar**. Es lo mismo que marcar **Recuperado** en su voucher.
 
-**Qué debes ver:** «Equipo … reactivado: ya vuelve a estar DISPONIBLE.» El voucher no se borra; queda como historial.
+**Qué debes ver:** sin cobro, «Equipo … reactivado: ya vuelve a estar DISPONIBLE. Su voucher VR-… quedó «Cancelado por recuperación».» Con cobro, pasas a [Vouchers de reposición](vouchers.md) con la ventana **Recuperado** abierta: indica si ya se le cobró y confirma; ahí vuelve a **DISPONIBLE**. El voucher no se borra; queda como historial.
 
 ## Lo que ve el agente de caseta
 

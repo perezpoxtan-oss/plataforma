@@ -26,7 +26,12 @@
 <main>
     <div class="controles-impresion">
         <h1>Vale de Caja Chica — Taxi {{ $m->folio() }}</h1>
-        <p>3 copias en una hoja. Recorta por las líneas punteadas.@unless ($m->firma_taxista) Seguridad, el conductor y quien autoriza firman a mano.@endunless</p>
+        @php
+            // ADR-0014: solo se firma a mano lo que no se firmó en pantalla
+            $aMano = array_values(array_filter([$m->firma_guardia ? null : 'Seguridad', $m->firma_taxista ? null : 'el conductor', $m->autorizado() ? null : 'quien autoriza']));
+            $ultima = array_pop($aMano);
+        @endphp
+        <p>3 copias en una hoja. Recorta por las líneas punteadas.@if ($ultima) {{ ucfirst($aMano === [] ? $ultima : implode(', ', $aMano).' y '.$ultima) }} {{ $aMano === [] ? 'firma' : 'firman' }} a mano.@endif</p>
         <div class="acciones">
             <button type="button" class="btn-imprimir-calcomania" data-accion="imprimir"><i class="bi bi-printer me-2" aria-hidden="true"></i>Ejecutar Impresión de Hoja Completa</button>
             <a href="{{ route('transporte.show', $m->id) }}" class="btn-cerrar-calcomania"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Ver el registro</a>

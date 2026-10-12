@@ -23,14 +23,16 @@
                 ? ['lost_found' => 'Lost & Found (Objetos Perdidos)']
                 : ['incidente_general' => 'Reporte General', 'accidente' => 'Accidente / Lesión', 'habitacion' => 'Valores a la Vista',
                     'proteccion_civil' => 'Siniestro Protección Civil', 'recorrido_pc' => 'Recorridos PC (Inspección)',
-                    'lost_found' => 'Lost & Found (Objetos Perdidos)', 'robo' => 'Robo', 'sin_clasificar' => 'Sin Clasificar'];
+                    'lost_found' => 'Lost & Found (Objetos Perdidos)', 'robo' => 'Robo', 'mantenimiento_pc' => 'Mantenimiento de equipo PC', 'sin_clasificar' => 'Sin Clasificar'];
+            $hace = app(\App\Services\Notificaciones\CentroNotificaciones::class);
+            $turnosNov = app(\App\Services\Novedades\TurnosNovedades::class);
         @endphp
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-headset text-danger" aria-hidden="true"></i></div>
                 <div>
-                    <h1>Despacho y Novedades</h1>
+                    <h1>{{ $nombreModulo ?? 'Despacho y Novedades' }}</h1>
                     <p>Levantamiento modular y control operativo.</p>
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Bitácora de: <strong>{{ $empresaNombre }}</strong></p>
                 </div>
@@ -47,6 +49,12 @@
             </div>
         </div>
 
+        @if ($mios)
+            <div class="alert alert-info aviso mb-3" role="status">
+                <i class="bi bi-person-badge" aria-hidden="true"></i>
+                <span>Mostrando los tickets abiertos <strong>canalizados a ti</strong>. <a href="{{ route('novedades.index') }}">Ver todos los tickets</a>.</span>
+            </div>
+        @endif
         @if ($soloLf && ! $soloLostFound)
             <div class="alert alert-warning aviso mb-3" role="status">
                 <i class="bi bi-bag-fill" aria-hidden="true"></i>
@@ -105,6 +113,12 @@
                             </div>
                             @if ($n->estatus === \App\Models\Novedad::PENDIENTE_TURNO)
                                 <span class="pastilla-pendiente-turno"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>PENDIENTE DE TURNO</span>
+                                {{-- Mejoras Incidentes: desde cuándo, quién lo recibe y si tiene dueño --}}
+                                <div class="texto-traza turno-pendiente-nov">
+                                    @if ($n->pendiente_turno_en)<i class="bi bi-clock me-1" aria-hidden="true"></i>{{ $hace->hace($n->pendiente_turno_en) }}@endif
+                                    @if ($t = $turnosNov->textoTurno($n)) · {{ $t }}@endif
+                                    · @if ($n->asignado)Dueño: <strong>{{ $n->asignado->name }}</strong>@else<strong>Sin dueño</strong>: lo atiende quien esté en turno @endif
+                                </div>
                             @endif
                             @if ($variasSedes && $n->sede)
                                 <div class="linea-novedad text-success"><i class="bi bi-building me-1" aria-hidden="true"></i>{{ $n->sede->nombre }}</div>

@@ -20,7 +20,9 @@ resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y 
 
 ![Lista de pases](img/pases-salida/lista.png)
 
-**Qué debes ver:** los pases que te tocan llevan la etiqueta azul **Espera tu firma** y borde azul.
+**Qué debes ver:** los pases que te tocan llevan la etiqueta azul **Espera tu firma** y borde azul. Debajo del recuadro azul, el **reloj** dice cuánto lleva esperando la firma del paso actual (por ejemplo «Esperando firma desde hace 7 h»). Si tu empresa puso tiempos en **Firmas que tardan**, el reloj se pinta en **verde**, **ámbar** (ya se recordó a quien firma) o **rojo** (ya se avisó al siguiente nivel).
+
+![Reloj de la firma que espera](img/pases-salida/reloj-firma.png)
 
 | Etiqueta | Qué quiere decir |
 |---|---|
@@ -151,6 +153,17 @@ Si no cambias nada, todo funciona como siempre: Jefe de Departamento, Contralor�
 
 **Qué debes ver:** los pases nuevos piden esas firmas; los que ya están en curso conservan las que tenían. La revisión de los artículos se pide siempre. En la ficha del pase, el **Resumen** dice qué movimientos piden menos firmas.
 
+## Cómo avisar cuando una firma tarda (administrador)
+
+1. En **Circuito**, baja a **Firmas que tardan**.
+2. En **Recordar a quien debe firmar después de** escribe un número y elige **horas** o **días** (por ejemplo 4 horas).
+3. En **Avisar al siguiente nivel después de** escribe un tiempo mayor (por ejemplo 1 día).
+4. Toca **Guardar circuito**.
+
+![Firmas que tardan](img/pases-salida/circuito-firmas-que-tardan.png)
+
+**Qué debes ver:** cuando un paso lleva ese tiempo sin firma, a quien debe firmarlo le llega otra vez el aviso en la **campana** («Recordatorio: el pase PS-… espera tu firma») y por correo si está encendido. Si sigue sin firma, se avisa a quien firma el **siguiente paso** del circuito o, si era el último, a quien configura los pases en esa sede («Firma atrasada: pase PS-…»). Cada aviso se manda una sola vez por paso y queda en la bitácora del pase. Si dejas los dos campos vacíos (así viene), nadie recibe avisos nuevos; solo se ve el reloj.
+
 ## En el celular
 
 ![Pases en el celular](img/pases-salida/celular.png)
@@ -168,6 +181,8 @@ Si no cambias nada, todo funciona como siempre: Jefe de Departamento, Contralor�
 | «Marca o escanea cada artículo que sale: faltan …» | No verificaste todos los artículos. | Escanea o marca los que faltan. |
 | «Escribe el nombre de quien se lleva el equipo.» | Falta quién recibe. | Escribe su nombre y pide su firma. |
 | Recuadro amarillo «Espera la firma de …» | No te toca firmar este paso. | Espera a que firme la persona indicada. |
+| «El aviso al siguiente nivel debe ir después del recordatorio (más horas o días).» | En **Firmas que tardan** el segundo tiempo es menor o igual al primero. | Escribe un tiempo mayor en **Avisar al siguiente nivel**. |
+| «En «Recordar a quien debe firmar» el máximo es 30 días.» | El tiempo es demasiado largo. | Escribe 30 días o menos. |
 | «En el paso «…», escribe el valor en pesos (solo números, por ejemplo 50000).» | La condición de valor tiene letras. | Escribe solo la cantidad. |
 | «En el paso «…», el valor «menor a» debe ser mayor que el valor «mayor o igual a».» | El tope es menor que el mínimo. | Corrige las cantidades o deja vacío el tope. |
 | «Cada motivo necesita al menos un paso obligatorio sin condición de valor: …» | Ese motivo podría quedar sin aprobaciones. | Deja al menos un paso obligatorio sin condición de valor para ese motivo. |

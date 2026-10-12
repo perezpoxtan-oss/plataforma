@@ -56,6 +56,8 @@
                         @endforeach
                     </div>
                     <p class="campo-ayuda mb-3">Usa colores oscuros o intensos para el principal: el texto de los botones es blanco y debe leerse bien.</p>
+                    {{-- Mejoras estructura (ADR-0016): la vista previa avisa en rojo si el texto blanco no se lee --}}
+                    <p class="aviso-contraste mb-3" data-aviso-contraste role="status" aria-live="polite" hidden></p>
 
                     <h2 class="h6 fw-bold mb-3 mt-2"><i class="bi bi-image me-1 text-primary" aria-hidden="true"></i> Imágenes</h2>
                     @foreach (['simbolo' => ['Símbolo (cuadrado, PNG/JPG/WEBP, máx. 512 KB)', 'Aparece en la barra, en el acceso y como ícono.'], 'favicon' => ['Ícono de pestaña (PNG, máx. 256 KB)', 'El pequeño ícono de la pestaña del navegador.']] as $campo => [$etiqueta, $ayuda])

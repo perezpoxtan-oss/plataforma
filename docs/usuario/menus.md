@@ -26,9 +26,9 @@ Los menús y sus grupos:
 | Menú | Grupos y pantallas |
 |---|---|
 | **Operación** | **Caseta:** Bitácora de accesos, Préstamo de llaves, Pases de salida, Bitácora de transporte. **Incidentes:** Novedades, Lost & Found, Robo. **Protección civil:** Recorridos de Protección Civil. **Activos:** Responsivas, Vouchers de reposición. **Consulta:** Procedimientos. |
-| **Padrones** | **Personas y vehículos:** Empresas externas, Padrón de personas, Padrón vehicular. **Inventarios:** Catálogo de llaves, Gafetes, Equipos de seguridad, Equipos de Protección Civil. **Instalaciones:** Estacionamientos, Rutas de transporte. **Herramientas:** Etiquetas QR. |
+| **Padrones** | **Personas y vehículos:** Empresas externas, Padrón de personas, Padrón vehicular. **Inventarios:** Catálogo de llaves, Gafetes, Equipos de seguridad, Equipos de Protección Civil. **Instalaciones:** Estacionamientos y zonas de descarga, Rutas de transporte. **Herramientas:** Etiquetas QR. |
 | **Recursos Humanos** | **Personal:** Colaboradores. **Recepción y candidatos:** Vacantes, Recepción de RR. HH., Candidatos, **Mis entrevistas** (si puedes entrevistar candidatos) y **Autorizaciones** (si eres responsable o suplente de algún departamento). **Catálogos:** Departamentos, Puestos, Turnos. |
-| **Estructura** | **Empresa:** Empresas, Sedes, Zonas y áreas. **Accesos y permisos:** Usuarios, Roles, Matriz de permisos. **Sistema:** Configuración, Identidad de la plataforma, Bitácora de auditoría. |
+| **Estructura** | **Empresa:** Empresas, Sedes, Zonas y edificios. **Accesos y permisos:** Usuarios, Roles, Matriz de permisos. **Sistema:** Configuración, Bitácora de auditoría. **Plataforma** (solo Super Administrador): Identidad de la plataforma. |
 
 ![Menú Padrones abierto](img/menus/menu-padrones.png)
 
@@ -52,21 +52,26 @@ Los menús y sus grupos:
 Junto a la campana hay un botón amarillo **Mis pendientes** con un número: es lo que **espera tu respuesta**.
 
 1. Toca **Mis pendientes**. Se abre la lista **Lo que espera tu respuesta**.
-2. Revisa los renglones:
+2. Revisa los renglones. Solo aparecen los que tienen algo pendiente:
+   - **Colaboradores por verificar** (Recursos Humanos): colaboradores que la caseta registró y aún no estaban en el directorio. Ver [Colaboradores](colaboradores.md).
    - **Autorizaciones por responder:** visitas a tu departamento.
-   - **Entrevistas por evaluar:** candidatos que Recursos Humanos te canalizó, con la próxima cita. Ver [Entrevistar y elegir](entrevistar-y-elegir.md).
    - **Firmas de pases de salida:** pases que esperan tu firma.
-   - **Procedimientos por leer:** los que te faltan leer y firmar «Leí y entendí».
-   - **Altas por verificar:** lo que la caseta registró y tú revisas.
-   - **Cuentas por revisar** (quien administra usuarios): cuentas bloqueadas por intentos fallidos y las desactivadas por la baja de su colaborador en los últimos 7 días. Ver [Usuarios](usuarios.md).
-   - **Esperando en Recepción** (Recursos Humanos): quien espera en caseta a que digas «Que pase» y los candidatos de hoy que aún no atiendes. Ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
-   - **Solicitudes por revisar** (Recursos Humanos): lo que los candidatos llenaron en su celular o por internet y aún no revisas.
-   - **Por entrevistar (RR. HH.)**, **Evaluaciones del departamento** y **Elegidos por contratar** (Recursos Humanos): candidatos que esperan tu entrevista, los que el jefe ya evaluó y los que eligió. Ver [Candidatos](candidatos.md).
-3. Toca un renglón para ir directo a resolverlo. Si eres jefe de un departamento, en [Pedir y aprobar solicitudes](solicitudes.md) está paso a paso lo que te puede aparecer.
+   - **Procedimientos por aprobar** y **Procedimientos por leer:** los que esperan tu aprobación y los que te faltan leer y firmar «Leí y entendí».
+   - **Altas por verificar:** lo que la caseta registró y tú revisas. Si es de un solo padrón, el renglón dice cuál («Altas por verificar · Vehículos»); si son varios, debajo aparece cada padrón con su número y su enlace.
+   - **Candidatos** (Recursos Humanos): un solo renglón con el total y, debajo, cada etapa con su número: **Esperando en Recepción**, **Solicitudes por revisar**, **Por entrevistar (RR. HH.)**, **Evaluaciones del departamento** y **Elegidos por contratar**. Ver [Candidatos](candidatos.md).
+   - **Entrevistas por evaluar:** candidatos que Recursos Humanos te canalizó, con la próxima cita. Ver [Entrevistar y elegir](entrevistar-y-elegir.md).
+   - **Tickets canalizados a mí** y **Pendientes de turno sin dueño** (personal de Seguridad): los tickets de la bitácora que te toca atender. Ver [Bitácora de novedades](novedades.md).
+   - **Vales de taxi por autorizar** (quien da el Vo.Bo. en la Bitácora de transporte), **Llaves fuera de tiempo** y **Equipos de turno sin regresar** (si tu empresa puso sus horas en Configuración → Caseta y activos; en ámbar o rojo según el tiempo). Ver [Préstamo de llaves](prestamo-llaves.md) y [Responsivas](responsivas.md).
+   - **Cuentas por revisar** (quien administra usuarios): cuentas bloqueadas, desactivadas por la baja de su colaborador en los últimos 7 días o que piden pases sin colaborador vinculado. Ver [Usuarios](usuarios.md).
+3. Toca un renglón para ir directo a resolverlo. Si eres jefe de un departamento, en [Pedir un pase de salida y aprobarlo](solicitudes.md) está paso a paso lo que te puede aparecer.
 
-![Mis pendientes abierto](img/menus/mis-pendientes.png)
+![Mis pendientes con candidatos agrupados](img/menus/mis-pendientes-agrupados.png)
 
 **Qué debes ver:** la pantalla con lo pendiente. El número se actualiza solo cada 30 segundos. Si no tienes nada pendiente, el botón no aparece.
+
+**Inicio** muestra lo mismo que **Mis pendientes**, con los mismos nombres y en el mismo orden, pero en tarjetas con una explicación de qué se espera de ti y su botón. Si no tienes nada pendiente dice «Estás al día».
+
+![Inicio con lo que espera tu respuesta](img/inicio/inicio-pendientes.png)
 
 ## Cómo revisar la campana (avisos)
 
@@ -77,6 +82,12 @@ Junto a la campana hay un botón amarillo **Mis pendientes** con un número: es 
 ![Campana con avisos](img/menus/campana.png)
 
 **Qué debes ver:** el aviso se marca como leído y el número baja.
+
+La campana revisa si hay avisos nuevos cada 30 segundos mientras la pestaña está a la vista; un aviso puede tardar hasta medio minuto en aparecer.
+
+### Elegir qué avisos recibes
+
+Si un tipo de aviso no te sirve, quítalo en [Mi cuenta](mi-cuenta.md) → **Mis avisos** (en la campana o por correo). Lo que espera tu respuesta sigue apareciendo en **Mis pendientes** aunque lo silencies.
 
 ## Cómo cambiar el modo de pantalla (Sol y Noche)
 

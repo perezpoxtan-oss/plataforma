@@ -9,6 +9,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Cuenta\AvisosCuenta;
+use App\Services\Padrones\CampanaPadrones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -205,6 +206,8 @@ class AdministradorColaboradores
 
         $this->auditoria->auditar($actor, 'colaboradores.provisional', $colaborador, null, $this->foto($colaborador));
         app(AvisosCorreo::class)->altaProvisional($colaborador, $actor);
+        // Mejoras padrones (ADR-0015): también en la campana, como las altas por verificar de los padrones
+        app(CampanaPadrones::class)->colaboradorPorVerificar($colaborador, $actor);
 
         return $colaborador;
     }
@@ -216,7 +219,7 @@ class AdministradorColaboradores
     public function validarProvisional(User $actor, int $empresaId, Colaborador $colaborador, Request $request): Colaborador
     {
         if (! $colaborador->provisional || $colaborador->fusionado_en_id !== null) {
-            throw ValidationException::withMessages(['num_empleado' => 'Este colaborador ya no está pendiente de validar.']);
+            throw ValidationException::withMessages(['num_empleado' => 'Este colaborador ya no está pendiente de verificar.']);
         }
 
         $antes = $this->foto($colaborador);
@@ -227,6 +230,7 @@ class AdministradorColaboradores
         ])->save());
 
         $this->auditoria->auditar($actor, 'colaboradores.validado', $colaborador, $antes, $this->foto($colaborador));
+        app(CampanaPadrones::class)->colaboradorResultado($colaborador, 'verificada', $actor);
 
         return $colaborador;
     }
@@ -241,7 +245,7 @@ class AdministradorColaboradores
     public function fusionar(User $actor, Colaborador $provisional, Colaborador $destino): void
     {
         if (! $provisional->provisional || $provisional->fusionado_en_id !== null) {
-            throw ValidationException::withMessages(['destino_id' => 'Este colaborador ya no está pendiente de validar.']);
+            throw ValidationException::withMessages(['destino_id' => 'Este colaborador ya no está pendiente de verificar.']);
         }
         if ($destino->id === $provisional->id || $destino->provisional || ! $destino->activo || $destino->empresa_id !== $provisional->empresa_id) {
             throw ValidationException::withMessages(['destino_id' => 'Elige un colaborador activo y ya validado.']);
@@ -270,6 +274,7 @@ class AdministradorColaboradores
         $this->auditoria->auditar($actor, 'colaboradores.fusionado', $provisional,
             ['provisional' => $provisional->only(['nombre', 'apellido_paterno', 'apellido_materno', 'sede_id'])],
             ['fusionado_en' => $destino->id, 'num_empleado' => $destino->num_empleado, 'referencias' => $movidos]);
+        app(CampanaPadrones::class)->colaboradorResultado($provisional, 'unida', $actor, $destino);
     }
 
     /**

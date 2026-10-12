@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Seguridad;
 
 use App\Http\Controllers\Controller;
+use App\Models\Acceso;
 use App\Models\Empresa;
 use App\Models\User;
 use App\Models\ZonaEstacionamiento;
+use App\Services\Accesos\ConsultaAccesos;
+use App\Services\Accesos\MovimientoNoPermitido;
+use App\Services\Accesos\MovimientosAccesos;
 use App\Services\Estacionamientos\AdministradorEstacionamientos;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -51,8 +55,15 @@ class EstacionamientoController extends Controller
             $puedeCrear = $actor->can('estacionamientos.crear');
             $puedeEditar = $actor->can('estacionamientos.editar');
 
+            // Mejoras padrones (ADR-0015): qué vehículos ocupan cada zona, para «Dar salida» al que salió sin registrarla
+            $enZona = ! $actor->can('accesos.editar') ? collect() : app(ConsultaAccesos::class)->limitar(Acceso::query(), $actor, 'accesos.editar')
+                ->where('accesos.estado', 'en_sitio')->where('accesos.movimiento', 'entrada')
+                ->whereIn('accesos.zona_estacionamiento_id', $lista->pluck('id'))->orderBy('accesos.entrada_at')
+                ->get(['accesos.id', 'accesos.zona_estacionamiento_id', 'accesos.placas', 'accesos.nombre', 'accesos.entrada_at'])->groupBy('zona_estacionamiento_id');
+
             return view('seguridad.estacionamientos.index', [
                 'sinEmpresa' => false,
+                'enZona' => $enZona,
                 'porSede' => $lista->groupBy('sede_id')->sortBy(fn ($zonas) => mb_strtolower($zonas->first()->sede->nombre ?? '')),
                 'total' => $lista->count(),
                 'ocupados' => $this->zonas->ocupados($lista),
@@ -110,7 +121,7 @@ class EstacionamientoController extends Controller
 
         return redirect()->to(route('estacionamientos.index').'#zona-'.$modelo->id)->with($activo ? 'ok' : 'aviso', $activo
             ? "Zona «{$modelo->nombre}» reactivada correctamente."
-            : "Zona «{$modelo->nombre}» desactivada: ya no se podrá asignar en Accesos, pero puedes reactivarla cuando quieras.");
+            : "Zona «{$modelo->nombre}» dada de baja: ya no se podrá asignar en Accesos, pero puedes reactivarla cuando quieras.");
     }
 
     private function empresaDeTrabajo(Request $request): int
@@ -124,6 +135,37 @@ class EstacionamientoController extends Controller
     /**
      * Una zona de otra empresa o fuera del alcance del permiso responde 404.
      */
+    /**
+     * Mejoras padrones (ADR-0015): un vehículo salió sin que la caseta
+     * registrara su salida y la zona lo sigue contando. Desde la tarjeta de
+     * la zona se le da salida igual que en la Bitácora de accesos (mismas
+     * reglas y misma auditoría «accesos.salida»): se necesita poder ver la
+     * zona y dar salida en Accesos (accesos.editar) en esa sede.
+     */
+    public function salida(Request $request, int $zona, int $acceso): RedirectResponse
+    {
+        Gate::authorize('estacionamientos.ver');
+        Gate::authorize('accesos.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        try {
+            [$modelo, $registro] = $this->tenant->conEmpresa($empresaId, function () use ($request, $zona, $acceso) {
+                $modelo = $this->buscarEnAlcance($request->user(), $zona, 'estacionamientos.ver');
+                $registro = app(ConsultaAccesos::class)->limitar(Acceso::query(), $request->user(), 'accesos.editar')
+                    ->where('zona_estacionamiento_id', $modelo->id)->find($acceso);
+                abort_if($registro === null, 404);
+                app(MovimientosAccesos::class)->salida($request->user(), $registro);
+
+                return [$modelo, $registro];
+            });
+        } catch (MovimientoNoPermitido $e) {
+            return redirect()->to(route('estacionamientos.index').'#zona-'.$zona)->with('error', $e->getMessage());
+        }
+
+        return redirect()->to(route('estacionamientos.index').'#zona-'.$modelo->id)
+            ->with('ok', "Salida de {$registro->placas} registrada: ya no ocupa lugar en «{$modelo->nombre}».");
+    }
+
     private function buscarEnAlcance(User $actor, int $id, string $permiso): ZonaEstacionamiento
     {
         $modelo = $this->zonas->limitar(ZonaEstacionamiento::query(), $actor, $permiso)->find($id);

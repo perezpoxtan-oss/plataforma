@@ -417,8 +417,8 @@ class LostFoundRoboTest extends PruebaNovedades
     {
         $robo = $this->robo(['objetos_descripcion' => 'Laptop']);
         $this->actingAs($this->admin)->get('/robos?abrir='.$robo->id)->assertOk()
-            ->assertSee('Robo '.$robo->folio())->assertSee('1. Circunstancias')->assertSee('2. Sospechoso')->assertSee('3. Testigos')->assertSee('4. Canalización')
-            ->assertSee('Buscar Coincidencias en Lost &amp; Found', false)->assertSee(route('novedades.robo.vincular', $robo->id))->assertSee('Guardar Cambios');
+            ->assertSee('Expediente de Novedad')->assertSee($robo->folio())->assertSee('1. Circunstancias')->assertSee('2. Sospechoso')->assertSee('3. Testigos')->assertSee('4. Canalización')
+            ->assertSee('Buscar Coincidencias en Lost &amp; Found', false)->assertSee(route('novedades.robo.vincular', $robo->id))->assertSee('Guardar Expediente');
 
         $datos = ['_dialogo' => 'robo-'.$robo->id, 'estatus' => 'abierto', 'nueva_nota' => 'Se revisaron cámaras.', 'robo_hora_aproximada' => '15:30',
             'robo_lugar_exacto' => 'escritorio', 'robo_objetos_descripcion' => 'Laptop Dell gris', 'robo_valor_estimado' => '18000', 'robo_hay_sospechoso' => '1',
@@ -444,7 +444,7 @@ class LostFoundRoboTest extends PruebaNovedades
         $this->actingAs($this->admin)->put("/robos/{$robo->id}", ['estatus' => 'abierto', 'nueva_nota' => 'Otra'])
             ->assertSessionHasErrors(['estatus' => 'Este caso ya está Resuelto. Para editarlo usa «Reabrir Caso para Editar» y escribe el motivo.']);
         $this->actingAs($this->admin)->get('/robos?abrir='.$robo->id)->assertSee('Este caso está <strong>Resuelto</strong>', false)
-            ->assertSee('Reabrir Caso para Editar')->assertDontSee('Guardar Cambios');
+            ->assertSee('Reabrir Caso para Editar')->assertDontSee('Guardar Expediente');
 
         // Un ticket que no es Robo no se abre ni se guarda aquí
         $otro = $this->novedad(['categoria' => 'incidente_general']);
@@ -463,7 +463,7 @@ class LostFoundRoboTest extends PruebaNovedades
         $this->actingAs($agentePlaya)->put("/robos/{$playa->id}", ['estatus' => 'abierto', 'nueva_nota' => 'Visto'])->assertSessionHasNoErrors();
 
         $director = $this->crearUsuario($this->empresa, 'Director');
-        $this->actingAs($director)->get('/robos?abrir='.$centro->id)->assertOk()->assertSee('Tu rol solo puede consultar este caso, no editarlo.')->assertDontSee('Guardar Cambios');
+        $this->actingAs($director)->get('/robos?abrir='.$centro->id)->assertOk()->assertSee('Tu rol solo puede consultar este caso, no editarlo.')->assertDontSee('Guardar Expediente');
         $this->actingAs($director)->put("/robos/{$centro->id}", ['estatus' => 'abierto'])->assertForbidden();
 
         $this->actingAs($this->crearUsuario($this->crearEmpresa('Hotel Dos'), 'Administrador'))->put("/robos/{$centro->id}", ['estatus' => 'abierto'])->assertNotFound();

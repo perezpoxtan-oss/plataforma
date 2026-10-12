@@ -187,7 +187,10 @@ class ConstructorMenu
             return [];
         }
 
-        $empresa = Empresa::with('rubro')->find($usuario->empresa_id);
+        // La empresa ya viene cargada con el usuario (EstablecerEmpresa): solo falta su rubro
+        $empresa = $usuario->relationLoaded('empresa') && (int) $usuario->empresa?->id === (int) $usuario->empresa_id
+            ? $usuario->empresa : Empresa::find($usuario->empresa_id);
+        $empresa?->loadMissing('rubro');
 
         return $empresa?->rubro?->terminologia ?? [];
     }

@@ -85,3 +85,5 @@ Con el mecanismo genérico [avisos-duplicado.md](avisos-duplicado.md) y `GET /es
 Los avisos se pintan debajo de toda la fila (`data-duplicado-aviso`), no dentro de la columna angosta del código.
 
 Datos demo: `ronda5bDemo()` crea, una sola vez, la zona **Torre Jardín (TJ)** desactivada en Centro para practicar «está desactivado, ¿lo reactivas?».
+
+> Mejoras de 2026-10 (roles sin números, asistente de permisos, configuración por módulo, avisos por persona, historial y varias sedes): ver [estructura-mejoras.md](estructura-mejoras.md) y [ADR-0016](../decisiones/ADR-0016-mejoras-de-estructura.md).

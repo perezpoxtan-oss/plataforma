@@ -31,7 +31,7 @@
     </div>
 
     @unless ($ruta->activo)
-        <div class="calcomania-baja mb-3 text-center">RUTA SUSPENDIDA</div>
+        <div class="calcomania-baja mb-3 text-center">RUTA DADA DE BAJA</div>
     @endunless
 
     <div class="rutas-itinerario-datos">

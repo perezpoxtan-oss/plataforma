@@ -21,7 +21,22 @@
         <button type="submit" class="btn btn-primary manual-buscador-boton">Buscar</button>
     </form>
 
-    @if ($grupos === [])
+    {{-- Mejoras estructura (ADR-0016): resultados en el contenido, cada uno con su apartado --}}
+    @if ($buscar !== '' && $resultados !== [])
+        <section class="manual-seccion" aria-labelledby="manual-resultados">
+            <h2 class="manual-seccion-titulo" id="manual-resultados"><i class="bi bi-search" aria-hidden="true"></i> {{ count($resultados) === 1 ? '1 página' : count($resultados).' páginas' }} con «{{ $buscar }}»</h2>
+            <div class="manual-lista">
+                @foreach ($resultados as $r)
+                    <a href="{{ route('manual.ver', $r['pagina']->slug) }}{{ $r['apartado'] ? '#'.$r['apartado'] : '' }}" class="tarjeta manual-ficha manual-resultado">
+                        <span class="manual-ficha-titulo">{{ $r['pagina']->titulo }}@if ($r['titulo_apartado'] && $r['apartado']) <span class="manual-resultado-apartado">› {{ $r['titulo_apartado'] }}</span>@endif</span>
+                        <span class="manual-ficha-resumen">{{ $r['fragmento'] }}</span>
+                        <i class="bi bi-chevron-right manual-ficha-flecha" aria-hidden="true"></i>
+                    </a>
+                @endforeach
+            </div>
+            <p class="small mt-2"><a href="{{ route('manual.index') }}">Ver todo el manual</a></p>
+        </section>
+    @elseif ($grupos === [])
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-journal-x" aria-hidden="true"></i></div>
             @if ($buscar !== '')
@@ -39,7 +54,7 @@
             </h2>
             <div class="manual-lista">
                 @foreach ($paginas as $pagina)
-                    <a href="{{ route('manual.ver', $pagina->slug) }}" class="tarjeta manual-ficha" data-manual-pagina data-texto="{{ $pagina->titulo }} {{ $pagina->resumen }}">
+                    <a href="{{ route('manual.ver', $pagina->slug) }}" class="tarjeta manual-ficha" data-manual-pagina data-texto="{{ $pagina->titulo }} {{ $pagina->resumen }} {{ $manual->palabras($pagina) }}">
                         <span class="manual-ficha-titulo">{{ $pagina->titulo }}</span>
                         <span class="manual-ficha-resumen">{{ $pagina->resumen }}</span>
                         <i class="bi bi-chevron-right manual-ficha-flecha" aria-hidden="true"></i>

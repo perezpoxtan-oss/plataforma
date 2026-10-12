@@ -22,20 +22,24 @@ resumen: Buscar una página, abrir la ayuda de la pantalla donde estás e imprim
 
 ## Cómo buscar lo que necesitas
 
-1. Escribe en el buscador lo que quieres hacer, por ejemplo «llave», «pase» o «contraseña».
-2. La lista se filtra mientras escribes; no importan los acentos ni las mayúsculas.
-3. Toca la página.
+1. Escribe en el buscador lo que quieres hacer, por ejemplo «desbloquear», «pase» o «contraseña».
+2. La lista se filtra mientras escribes, también con las palabras que están **dentro** de cada página; no importan los acentos ni las mayúsculas.
+3. Toca **Buscar** (o Enter) para ver los resultados con un pedacito del texto donde aparece la palabra.
+4. Toca un resultado: se abre la página **justo en el apartado** donde está (por ejemplo «Usuarios › Cómo desbloquear una cuenta»).
 
-**Qué debes ver:** solo las páginas cuyo título o resumen tienen esas palabras. Si no hay ninguna, sale «No encontramos páginas con esas palabras».
+![Resultados en el contenido](img/manual/buscar-contenido.png)
+
+**Qué debes ver:** las páginas que tienen esas palabras en su título, su resumen o su contenido. Si no hay ninguna, sale «No encontramos páginas con «…»».
 
 ## Cómo abrir la ayuda de la pantalla donde estás
 
 1. Junto al título de la pantalla (por ejemplo **Bitácora de Llaves**) toca el botón redondo **?**.
 2. Se abre la página del manual de esa pantalla.
+3. En algunas ventanas (por ejemplo **Alta de Usuario**, **Nuevo Rol** o **Nueva Sede**) aparece **¿Cómo se hace?**: abre el manual, en otra pestaña, directo en los pasos de esa tarea.
 
 ![Botón de ayuda junto al título](img/primeros-pasos/ayuda-contextual.png)
 
-**Qué debes ver:** la página de esa pantalla. Para regresar, usa el botón **←** del navegador o el menú.
+**Qué debes ver:** la página de esa pantalla. Para regresar, usa el botón **←** del navegador o el menú. Al final de cada página, **¿Esta página no resolvió tu duda?** te dice a quién pedir ayuda.
 
 ## Cómo leer una página
 

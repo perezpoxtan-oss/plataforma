@@ -71,6 +71,7 @@
             <button type="button" class="btn-imprimir-calcomania" data-accion="imprimir"><i class="bi bi-printer me-1" aria-hidden="true"></i> Imprimir Etiquetas</button>
             <a href="{{ $prueba ? route('etiquetas.plantillas') : route('etiquetas.index') }}" class="btn-cerrar-calcomania"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i> {{ $prueba ? 'Volver a Plantillas' : 'Volver a Etiquetas QR' }}</a>
         </div>
+        @include('componentes.hoja-impresion-ayuda', ['selEtiquetas' => []])
         <p class="panel-etiquetas-nota">
             <i class="bi bi-info-circle" aria-hidden="true"></i>
             @if ($p->esHoja())

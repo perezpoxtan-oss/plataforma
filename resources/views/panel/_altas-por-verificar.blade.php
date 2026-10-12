@@ -1,20 +1,19 @@
 {{--
-    Aviso de Inicio "Altas por verificar" (ADR-0006): una sola tarjeta que
-    agrupa por padrón (Vehículos, Empresas externas, Personas) lo que la caseta
-    registró desde Operación. Solo los padrones que el usuario puede editar;
-    cada uno lleva a su lista con la píldora "Pendientes de verificar" encendida.
-    $aviso: entrada de $pendientes con 'grupos'
+    Aviso de Inicio con desglose (ADR-0006 y ADR-0016): una sola tarjeta que
+    agrupa lo pendiente con un enlace directo por parte: altas por verificar
+    por padrón (Vehículos, Empresas externas, Personas) o candidatos por etapa.
+    $aviso: renglón de Mis pendientes con 'detalle'
 --}}
-<section class="aviso-pendiente aviso-altas-verificar mt-3" aria-labelledby="titulo-altas-verificar">
+<section class="aviso-pendiente aviso-altas-verificar mt-3" aria-labelledby="titulo-{{ $aviso['clave'] }}">
     <span class="icono"><i class="bi {{ $aviso['icono'] }}" aria-hidden="true"></i></span>
     <div class="flex-grow-1">
-        <strong class="d-block" id="titulo-altas-verificar">{{ $aviso['titulo'] }}</strong>
+        <strong class="d-block" id="titulo-{{ $aviso['clave'] }}">{{ $aviso['titulo'] }} <span class="conteo-inicio">{{ $aviso['total'] }}</span></strong>
         <span class="small">{{ $aviso['texto'] }}</span>
         <div class="grupos-altas-verificar">
-            @foreach ($aviso['grupos'] as $g)
-                <a href="{{ $g['ruta'] }}" class="grupo-alta-verificar">
+            @foreach ($aviso['detalle'] as $g)
+                <a href="{{ $g['url'] }}" class="grupo-alta-verificar">
                     <i class="bi {{ $g['icono'] }}" aria-hidden="true"></i>
-                    <span>{{ $g['nombre'] }}</span>
+                    <span>{{ $g['titulo'] }}</span>
                     <span class="conteo">{{ $g['total'] }}</span>
                     <i class="bi bi-arrow-right" aria-hidden="true"></i>
                 </a>

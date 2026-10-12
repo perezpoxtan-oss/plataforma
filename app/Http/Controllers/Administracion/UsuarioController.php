@@ -52,7 +52,7 @@ class UsuarioController extends Controller
         }
 
         $usuarios = $this->visibles($actor, $empresaId)
-            ->with(['roles' => fn ($q) => $q->select('roles.id', 'roles.nombre', 'roles.nivel_jerarquia'), 'colaborador:id,activo'])
+            ->with(['roles' => fn ($q) => $q->select('roles.id', 'roles.nombre', 'roles.nivel_jerarquia')->orderBy('usuario_roles.id'), 'colaborador:id,activo'])
             ->leftJoin('users as uc', 'uc.id', '=', 'users.creado_por')
             ->leftJoin('users as ua', 'ua.id', '=', 'users.actualizado_por')
             ->select('users.*', 'uc.name as creado_por_nombre', 'ua.name as actualizado_por_nombre')
@@ -80,8 +80,10 @@ class UsuarioController extends Controller
         $porRevisar = ! $actor->can('usuarios.editar') ? collect() : $this->administrador
             ->limitarAlcance($this->visibles($actor, $empresaId), $actor, 'usuarios.editar')
             ->where(fn ($q) => $q->where('users.bloqueado_hasta', '>', now())
-                ->orWhere(fn ($b) => $b->where('users.activo', false)->where('users.desactivado_por_baja_en', '>=', now()->subDays(7))))
-            ->orderBy('users.name')->get(['users.id', 'users.name', 'users.bloqueado_hasta', 'users.desactivado_por_baja_en']);
+                ->orWhere(fn ($b) => $b->where('users.activo', false)->where('users.desactivado_por_baja_en', '>=', now()->subDays(7)))
+                // Mejoras estructura (ADR-0016): piden pases a su nombre y no tienen colaborador vinculado
+                ->orWhere(fn ($v) => AdministradorUsuarios::sinVinculoQuePidePases($v)))
+            ->orderBy('users.name')->get(['users.id', 'users.name', 'users.bloqueado_hasta', 'users.desactivado_por_baja_en', 'users.colaborador_id', 'users.activo']);
 
         return view('administracion.usuarios.index', [
             'sinEmpresa' => false,
@@ -114,11 +116,11 @@ class UsuarioController extends Controller
         // Por omisión la persona crea su contraseña con el enlace de bienvenida (criterio 6)
         $enlace = $this->modoEnlace($request);
         $datos = $this->vincularColaborador($this->validar($request, $empresaId, null, $enlace), $empresaId);
-        [$rol, $sede] = $this->rolYSede($datos, $empresaId);
+        [$rol, $sede, $otras] = $this->rolYSede($datos, $empresaId);
         $this->exigirConfirmacionHomonimo($request, $empresaId, $datos['name']);
 
         try {
-            [$usuario, $enviado] = $this->administrador->crear($request->user(), $empresaId, $this->campos($datos), $rol, $sede, $enlace);
+            [$usuario, $enviado] = $this->administrador->crear($request->user(), $empresaId, $this->campos($datos), $rol, $sede, $enlace, $otras);
         } catch (AuthorizationException $e) {
             return back()->withInput($request->except('password'))->with('error', $e->getMessage());
         }
@@ -181,13 +183,13 @@ class UsuarioController extends Controller
         $empresaId = $this->exigirVisible($request, $usuario);
 
         $datos = $this->vincularColaborador($this->validar($request, $empresaId, $usuario), $empresaId, $usuario);
-        [$rol, $sede] = $this->rolYSede($datos, $empresaId);
+        [$rol, $sede, $otras] = $this->rolYSede($datos, $empresaId);
         $this->exigirConfirmacionHomonimo($request, $empresaId, $datos['name'], $usuario);
 
         try {
             $this->administrador->actualizar($request->user(), $usuario, $this->campos($datos) + [
                 'activo' => $request->boolean('activo'),
-            ], $rol, $sede);
+            ], $rol, $sede, $otras);
         } catch (AuthorizationException $e) {
             return back()->withInput($request->except('password'))->with('error', $e->getMessage());
         }
@@ -297,6 +299,9 @@ class UsuarioController extends Controller
                 new ContrasenaSegura((string) $request->input('username'), (string) $request->input('email'))],
             'rol_id' => ['required', 'integer'],
             'sede_id' => ['nullable', 'integer'],
+            // Varias sedes por cuenta (ADR-0016)
+            'sedes_extra' => ['nullable', 'array', 'max:50'],
+            'sedes_extra.*' => ['integer'],
         ], [
             'username.unique' => 'Ya existe otro usuario registrado con ese nombre de usuario.',
             'email.unique' => 'Ya existe otro usuario registrado con ese correo.',
@@ -351,7 +356,7 @@ class UsuarioController extends Controller
     }
 
     /**
-     * @return array{0: Rol, 1: ?Sede}
+     * @return array{0: Rol, 1: ?Sede, 2: list<Sede>}
      */
     private function rolYSede(array $datos, int $empresaId): array
     {
@@ -364,7 +369,12 @@ class UsuarioController extends Controller
             abort_if($sede === null, 422, 'La sede no existe en esta empresa.');
         }
 
-        return [$rol, $sede];
+        // Otras sedes que también atiende (solo con una sede elegida; «todas» ya las incluye)
+        $ids = $sede === null ? [] : array_values(array_unique(array_map('intval', $datos['sedes_extra'] ?? [])));
+        $otras = $ids === [] ? [] : $this->tenant->conEmpresa($empresaId, fn () => Sede::whereIn('id', $ids)->get()->all());
+        abort_if(count($otras) !== count($ids), 422, 'Una de las sedes no existe en esta empresa.');
+
+        return [$rol, $sede, $otras];
     }
 
     /**

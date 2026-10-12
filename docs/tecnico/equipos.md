@@ -94,3 +94,7 @@ El «Ver QR» propio (`dialogoQrEquipo`) se reemplazó por el diálogo común «
 - **EQ-04 (claridad)**: el número nunca va sin su rótulo. `Equipo::resumenLector()['titulo']` es «Serie: 130TXP1568» (lector, «Código e identificación», etiquetas, avisos) y Responsivas muestra «Serie: … · Radio …». Al editar, `[data-explicacion-estado]` explica por qué el estado está limitado: DISPONIBLE (puede pasar a En mantenimiento), EN MANTENIMIENTO (solo Disponible o seguir en mantenimiento), ASIGNADO (lo cambia Responsivas) y BAJA con el folio de su voucher («márcalo Recuperado en Vouchers o Reactivar en su ficha»). El folio sale de `vouchersBaja` (una consulta, el último voucher de cada equipo de baja).
 - **Aviso de duplicado en vivo**: el número de serie usa `data-duplicado` (`GET /equipos/duplicado`, ver `avisos-duplicado.md`) en lugar de `data-series-existentes`; la etiqueta NFC avisa «ya la tiene X» al leerla (`identificacion.etiqueta-duplicado`).
 - Un equipo de baja con voucher también se reactiva desde Vouchers → **Recuperado** (ver `vouchers.md`).
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): estado «DE BAJA» con motivo y enlace al voucher, «Ver responsiva», firma digital en la baja, «Guardar», reactivación por el voucher.

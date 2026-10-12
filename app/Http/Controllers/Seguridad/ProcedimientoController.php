@@ -209,6 +209,8 @@ class ProcedimientoController extends Controller
                 'miAcuse' => $miAcuse,
                 'meAplica' => $esVigente && $this->procedimientos->pendientesDe($actor)->contains('id', $p->id),
                 'firmaGuardada' => $this->pases->firmaGuardada($actor) !== null,
+                // ADR-0014: con «solo casilla» no se dibuja la firma
+                'pideFirma' => $esVigente && $this->procedimientos->pideFirmaAcuse($p, $version),
             ]);
         });
     }
@@ -415,7 +417,7 @@ class ProcedimientoController extends Controller
             $actor = $request->user();
             $p = $this->buscarEnAlcance($actor, $procedimiento);
             $registro = ProcedimientoAcuse::whereIn('version_id', ProcedimientoVersion::where('procedimiento_id', $p->id)->select('id'))->find($acuse);
-            abort_if($registro === null, 404);
+            abort_if($registro === null || $registro->firma_ruta === null, 404); // ADR-0014: acuse con solo la casilla
             if ((int) $registro->user_id !== (int) $actor->id) {
                 abort_unless($this->procedimientos->veAcuses($actor), 403);
                 $version = $registro->version()->with('aplicaciones')->first();

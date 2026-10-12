@@ -52,9 +52,9 @@
                 <div>
                     <strong>Cuentas por revisar ({{ $porRevisar->count() }}):</strong>
                     @foreach ($porRevisar as $cuenta)
-                        {{ $cuenta->name }} ({{ $cuenta->bloqueado_hasta?->isFuture() ? 'bloqueada hasta las '.app(\App\Support\HoraLocal::class)->formatear($cuenta->bloqueado_hasta, 'H:i') : 'desactivada por baja el '.app(\App\Support\HoraLocal::class)->formatear($cuenta->desactivado_por_baja_en, 'd/m') }}){{ $loop->last ? '.' : ',' }}
+                        {{ $cuenta->name }} ({{ $cuenta->bloqueado_hasta?->isFuture() ? 'bloqueada hasta las '.app(\App\Support\HoraLocal::class)->formatear($cuenta->bloqueado_hasta, 'H:i') : ($cuenta->activo && $cuenta->colaborador_id === null ? 'sin colaborador vinculado: no puede pedir pases' : 'desactivada por baja el '.app(\App\Support\HoraLocal::class)->formatear($cuenta->desactivado_por_baja_en, 'd/m')) }}){{ $loop->last ? '.' : ',' }}
                     @endforeach
-                    <span class="d-block small">Desbloquéalas con el candado o reactívalas con la flecha de su ficha, si corresponde.</span>
+                    <span class="d-block small">Desbloquéalas con el candado, reactívalas con la flecha o vincúlalas con su colaborador desde el lápiz de su ficha, según corresponda.</span>
                 </div>
             </div>
         @endif
@@ -71,14 +71,17 @@
                 @php
                     $asignacion = $u->roles->first();
                     $sedeId = $asignacion?->pivot->sede_id;
+                    // Varias sedes por cuenta (ADR-0016)
+                    $otrasSedes = $sedeId === null ? collect() : $u->roles->pluck('pivot.sede_id')->filter()->map(fn ($id) => (int) $id)->unique()->reject(fn ($id) => $id === (int) $sedeId)->values();
                     $esPropio = $u->id === auth()->id();
                     $administrable = ! $esPropio && (auth()->user()->es_superadmin || ($asignacion?->nivel_jerarquia ?? 65535) > $nivelPropio);
                     $valoresEdicion = json_encode([
                         'name' => $u->name, 'numero_colaborador' => $u->numero_colaborador, 'colaborador_id' => $u->colaborador_id, 'username' => $u->username,
                         'email' => $u->email, 'rol_id' => $asignacion?->id, 'sede_id' => $sedeId, 'activo' => $u->activo,
+                        'sedes_extra' => $otrasSedes->all(),
                     ]);
                 @endphp
-                <div class="ficha-card" data-usuario data-sede="{{ $sedeId ?? '' }}"
+                <div class="ficha-card" data-usuario data-sede="{{ $sedeId === null ? '' : collect([$sedeId])->merge($otrasSedes)->join(' ') }}"
                      data-texto="{{ mb_strtolower($u->name.' '.$u->username.' '.$u->email.' '.($asignacion?->nombre ?? '').' '.$u->numero_colaborador) }}">
                     <div>
                         <div class="d-flex align-items-center gap-2 mb-2">
@@ -98,7 +101,7 @@
                                 </div>
                             @endif
                             <div class="text-muted small border-top pt-2 mt-1"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
-                                {{ $sedeId ? ($sedes[$sedeId]->nombre ?? 'Sede inactiva') : 'Ve '.$nombreSedes.' de la empresa' }}
+                                {{ $sedeId ? collect([$sedeId])->merge($otrasSedes)->map(fn ($id) => $sedes[$id]->nombre ?? 'Sede inactiva')->join(' + ') : 'Ve '.$nombreSedes.' de la empresa' }}
                             </div>
                             @if ($u->ultimo_acceso_en)
                                 <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Último acceso: @fecha($u->ultimo_acceso_en)</div>
@@ -129,6 +132,7 @@
                     <div class="ficha-footer">
                         <span class="etiqueta-estado {{ $u->activo ? 'activo' : 'inactivo' }}">{{ $u->activo ? 'ACTIVO' : 'INACTIVO' }}</span>
                         <div class="d-flex gap-2">
+                            @include('componentes.ver-historial', ['registro' => \App\Models\User::class, 'id' => $u->id, 'nombre' => $u->name])
                             @if ($puede['desbloquear'] && $administrable && in_array($u->id, $desbloqueables, true))
                                 <form action="{{ route('usuarios.desbloquear', $u->id) }}" method="POST" class="m-0"
                                       data-confirmar="¿Desbloquear a «{{ $u->name }}»? Podrá volver a iniciar sesión de inmediato.">
@@ -191,7 +195,12 @@
                         @csrf
                         @unless ($esNuevo) @method('PUT') @endunless
                         <input type="hidden" name="_dialogo" value="{{ $esNuevo ? 'crear' : ($editandoId ? 'editar-'.$editandoId : '') }}" data-campo-dialogo>
+                        @if ($esNuevo)
+                            @include('componentes.ayuda-apartado', ['pagina' => 'usuarios', 'apartado' => 'Cómo dar de alta una cuenta'])
+                        @endif
 
+                        {{-- Mejoras estructura (ADR-0016): persona → rol y sede → acceso --}}
+                        <h3 class="paso-captura"><span>1</span> ¿Quién es?</h3>
                         <div class="row">
                             <div class="col-md-6">
                                 <label class="campo-etiqueta" for="{{ $modo }}_numero">Núm. Colaborador <span class="text-muted text-lowercase fw-normal">(opcional)</span></label>
@@ -225,10 +234,20 @@
                             <span class="text-muted">· el usuario pertenece a esta empresa; la sede limita lo que ve dentro de ella.</span>
                         </p>
 
+                        <h3 class="paso-captura"><span>2</span> ¿Qué hace y dónde?</h3>
                         <div class="row">
                             <div class="col-md-6">
-                                <label class="campo-etiqueta" for="{{ $modo }}_sede">1. Sede</label>
-                                <select id="{{ $modo }}_sede" name="sede_id" class="campo">
+                                <label class="campo-etiqueta" for="{{ $modo }}_rol">Rol en el Sistema</label>
+                                <select id="{{ $modo }}_rol" name="rol_id" class="campo" required>
+                                    <option value="">-- Selecciona --</option>
+                                    @foreach ($roles as $rol)
+                                        <option value="{{ $rol->id }}" @selected($reabrir && (string) old('rol_id') === (string) $rol->id)>{{ $rol->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="campo-etiqueta" for="{{ $modo }}_sede">Sede</label>
+                                <select id="{{ $modo }}_sede" name="sede_id" class="campo" data-sede-principal>
                                     {{-- Seguridad (AZ-01): con alcance de sede solo se ofrecen sus sedes --}}
                                     @if ($sedesAsignables === null)
                                         <option value="">Todas las sedes de la empresa</option>
@@ -239,18 +258,23 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6">
-                                <label class="campo-etiqueta" for="{{ $modo }}_rol">2. Rol en el Sistema</label>
-                                <select id="{{ $modo }}_rol" name="rol_id" class="campo" required>
-                                    <option value="">-- Selecciona --</option>
-                                    @foreach ($roles as $rol)
-                                        <option value="{{ $rol->id }}" @selected($reabrir && (string) old('rol_id') === (string) $rol->id)>{{ $rol->nombre }} (nivel {{ $rol->nivel_jerarquia }})</option>
-                                    @endforeach
-                                </select>
-                            </div>
                         </div>
-                        <p class="campo-ayuda mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> Solo aparecen los roles que puedes asignar (de nivel inferior al tuyo).</p>
+                        <p class="campo-ayuda mb-2"><i class="bi bi-info-circle" aria-hidden="true"></i> Solo aparecen los roles que puedes asignar (de menos autoridad que el tuyo).</p>
+                        @php $sedesOtras = $sedes->filter(fn ($s) => $sedesAsignables === null || in_array($s->id, $sedesAsignables, true)); @endphp
+                        @if ($sedesOtras->count() > 1)
+                            {{-- Varias sedes por cuenta (ADR-0016): el mismo rol en otras sedes, sin dar «todas» --}}
+                            <details class="otras-sedes mb-3" data-otras-sedes @if ($reabrir && old('sedes_extra')) open @endif>
+                                <summary>¿También atiende otras sedes?</summary>
+                                <p class="campo-ayuda mb-1">Márcalas si la persona trabaja en más de una sede (por ejemplo, un supervisor de dos hoteles). Solo aplica si elegiste una sede arriba.</p>
+                                <div class="lista-otras-sedes">
+                                    @foreach ($sedesOtras as $sede)
+                                        <label class="fila-check"><input type="checkbox" name="sedes_extra[]" value="{{ $sede->id }}" @checked($reabrir && in_array((string) $sede->id, array_map('strval', (array) old('sedes_extra', [])), true))> {{ $sede->nombre }}</label>
+                                    @endforeach
+                                </div>
+                            </details>
+                        @endif
 
+                        <h3 class="paso-captura"><span>3</span> ¿Cómo entra?</h3>
                         <div class="row">
                             <div class="col-md-4">
                                 <label class="campo-etiqueta" for="{{ $modo }}_usuario">Usuario</label>

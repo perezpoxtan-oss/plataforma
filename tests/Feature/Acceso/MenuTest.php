@@ -95,7 +95,7 @@ class MenuTest extends TestCase
 
         $this->actingAs($usuario)->get('/')
             ->assertOk()
-            ->assertSee('Consola de Monitoreo Central')
+            ->assertSee('Lo que espera tu respuesta')
             ->assertSee('Juan Pérez')
             ->assertSee('JP')
             ->assertSee('Agente')

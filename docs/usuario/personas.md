@@ -23,12 +23,12 @@ resumen: Registrar antes de que lleguen a visitantes, personal de proveedores y 
 1. Entra a **Padrones → Padrón de personas**.
 2. Escribe en el buscador **Buscar por nombre, folio o empresa...** parte del nombre, el folio o la empresa.
 3. Si quieres ver solo un tipo, toca **Visitantes**, **Proveedores** o **Contratistas**. **Todos** vuelve a mostrar a todos.
-4. Para los visitantes, usa la lista **Todas las categorías** y elige *Visitante general*, *Candidato/prospecto* o *Familiar/personal*.
+4. Al tocar **Visitantes** aparece la lista **Todas las categorías**: elige *Visitante general*, *Candidato/prospecto* o *Familiar/personal*. Con los demás tipos esa lista se oculta, porque la categoría solo aplica a visitantes.
 5. El botón **Pendientes de verificar** muestra las personas que la caseta registró al momento y que aún nadie revisa (ver [Altas por verificar](altas-por-verificar.md)).
 
 ![Filtro de contratistas](img/personas/02-filtro-contratistas.png)
 
-**Qué debes ver:** solo las fichas que coinciden. Cada ficha muestra el **tipo** (con su color), si está **ACTIVO** o en **BAJA**, la identificación, el motivo de la visita y quién la registró o editó, con fecha y hora.
+**Qué debes ver:** solo las fichas que coinciden. Cada ficha muestra el **tipo** (con su color), si está **ACTIVO** o **DE BAJA**, la identificación, el motivo habitual de sus visitas y quién la registró o editó, con fecha y hora.
 
 ## Cómo registrar una persona
 
@@ -39,11 +39,11 @@ resumen: Registrar antes de que lleguen a visitantes, personal de proveedores y 
 5. Si es **Proveedor** o **Contratista**, elige en **Empresa que representa** su empresa. La lista cambia según el tipo:
    - *Contratista*: solo aparecen las empresas registradas como contratistas.
    - *Proveedor*: aparecen proveedores, transporte, agencias y taxis.
-   - Si la empresa no aparece, deja **-- No está en el directorio de proveedores --** y escribe su nombre en **Empresa de procedencia**.
+   - Si la empresa no aparece, deja **-- Otra empresa (escríbela abajo) --** y escribe su nombre en **¿De qué empresa viene?**. Si lo que escribes es una empresa que **sí** está en el directorio (aunque cambien mayúsculas, acentos o «S.A. de C.V.»), al guardar la persona queda ligada a su ficha sola: así no se crean empresas repetidas.
 6. En **Identificación** elige el documento (INE, Pasaporte, Licencia de conducir, CURP, Cédula profesional, Credencial IMSS u Otra) y escribe el **Folio / Número**. Puedes escribirlo con espacios o guiones: se quitan solos.
 7. **Teléfono** (opcional): de 10 a 15 dígitos. Puedes escribir espacios, guiones o paréntesis.
-8. **Motivo de la Visita** (opcional): por ejemplo «Entrega de mercancía».
-9. Toca **Guardar en Padrón**.
+8. Si quieres anotar el motivo habitual de sus visitas, abre **Más datos** y escríbelo en **Motivo habitual de sus visitas** (opcional; por ejemplo «Mantenimiento de elevadores»). El motivo de **cada** visita lo captura la caseta en la Bitácora de accesos.
+9. Toca **Guardar**.
 
 ![Registrar persona](img/personas/03-alta.png)
 
@@ -64,7 +64,7 @@ No tienes que esperar a guardar para saber si la persona ya existe:
 1. Entra a **Padrones → Empresas externas** y toca **Ficha** en la empresa.
 2. En la parte de personal toca **Agregar persona**.
 3. Se abre **Registrar Persona** con la empresa ya puesta y el aviso «Registrando personal de …». La empresa queda fija (no se puede cambiar).
-4. Llena el resto de los datos y toca **Guardar en Padrón**.
+4. Llena el resto de los datos y toca **Guardar**.
 
 ![Desde la ficha de la empresa externa](img/personas/16-desde-empresa-externa.png)
 
@@ -74,7 +74,7 @@ No tienes que esperar a guardar para saber si la persona ya existe:
 
 1. Busca la ficha y toca **Editar Perfil**.
 2. Corrige los datos en la ventana **Actualizar Perfil**.
-3. Toca **Actualizar Cambios**.
+3. Toca **Guardar**.
 
 ![Actualizar perfil](img/personas/05-editar.png)
 
@@ -88,7 +88,20 @@ No tienes que esperar a guardar para saber si la persona ya existe:
 2. Confirma con **Aceptar** el mensaje «¿Dar de baja este registro? Podrás reactivarlo con un clic.».
 3. Para volver a activarla, toca el botón **Reactivar** (flecha circular) y confirma.
 
-**Qué debes ver:** la ficha cambia a **BAJA**. Ya no aparece al buscarla en la caseta, pero **no se borra**: su historial de entradas se conserva.
+**Qué debes ver:** la ficha cambia a **DE BAJA**. Ya no aparece al buscarla en la caseta, pero **no se borra**: su historial de entradas se conserva.
+
+## Cómo unir dos fichas de la misma persona
+
+A veces la misma persona quedó registrada dos veces (por ejemplo «Ana López Uc» y «Ana Lopez»). Si las dos ya están verificadas, puedes unirlas:
+
+1. Necesitas poder editar **y** dar de baja en el padrón (por ejemplo el Jefe de seguridad o el Administrador).
+2. En la ficha **repetida** (la que va a quedar fuera de uso) toca el botón azul **Unir con otra ficha** (dos círculos).
+3. En la ventana **Unir con otra ficha** elige, de los parecidos, la ficha que se queda. Si no aparece, búscala en **¿No está en la lista? Búscala en el padrón**.
+4. Toca **Guardar unión**.
+
+![Unir con otra ficha](img/personas/17-unir-duplicado.png)
+
+**Qué debes ver:** ««Ana Lopez» se unió con «Ana López Uc»: sus accesos y entregas pasaron al registro correcto y el duplicado quedó fuera de uso (se conserva como historia).» La ficha que se queda toma la identificación o el teléfono que le faltaban. **No se borra nada** y la unión queda en la Bitácora de auditoría; no se puede deshacer desde la pantalla.
 
 ## En el celular
 
@@ -110,8 +123,10 @@ Los mensajes aparecen dentro de la misma ventana, arriba, en rojo. Lo que ya esc
 | Ya existe otra persona registrada en esta empresa con ese folio de identificación: «…». | Ese folio ya es de otra persona. | Búscala en la lista; si está de baja, reactívala. |
 | «…» no está registrada como Contratista: elige el tipo Proveedor o una empresa contratista. | El tipo y la empresa no coinciden. | Cambia el tipo o elige otra empresa. |
 | «…» está registrada como Contratista: elige el tipo Contratista. | Elegiste *Proveedor* con una empresa contratista. | Cambia el tipo a *Contratista*. |
-| El proveedor no existe en esta empresa o está desactivado. | La empresa se dio de baja mientras capturabas. | Elige otra o pide que la reactiven en Empresas externas. |
+| El proveedor no existe en esta empresa o está desactivado (dado de baja). | La empresa se dio de baja mientras capturabas. | Elige otra o pide que la reactiven en Empresas externas. |
 | No veo **Registrar Persona** ni **Editar Perfil**. | Tu rol solo consulta. | Pide el permiso a tu administrador. |
+| Elige con cuál ficha se une (de los parecidos o de la búsqueda). | Tocaste **Guardar unión** sin elegir. | Marca la ficha que se queda. |
+| Elige un registro activo y ya verificado del padrón (no puede ser el mismo). | Elegiste la misma ficha, una de baja o una pendiente. | Elige otra ficha activa y verificada. |
 | El folio se ve con puntos (••••). | Tu rol solo consulta y el folio está protegido. | Es normal; quien puede editar lo ve completo. |
 
 ## Preguntas frecuentes
@@ -123,6 +138,8 @@ Los mensajes aparecen dentro de la misma ventana, arriba, en rojo. Lo que ya esc
 **Dos personas se llaman igual, ¿puedo registrarlas?** Sí. El aviso amarillo solo te pide revisar; si son distintas, guarda normalmente.
 
 **¿Qué pasa con las personas que registra la caseta al momento?** Quedan **pendientes de verificar** hasta que alguien con permiso las revise. Ver [Altas por verificar](altas-por-verificar.md).
+
+**Registré dos veces a la misma persona, ¿cómo lo arreglo?** Con **Unir con otra ficha**: todo lo registrado pasa a la ficha correcta y la repetida queda fuera de uso.
 
 **¿El folio tiene que llevar guiones?** No. Escríbelo como venga; los espacios y guiones se quitan solos.
 

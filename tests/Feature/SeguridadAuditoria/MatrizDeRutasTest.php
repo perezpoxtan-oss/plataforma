@@ -35,7 +35,9 @@ class MatrizDeRutasTest extends TestCase
         // Manual (lección 37): toda sesión lo abre; cada página se filtra por los módulos que el usuario puede ver
         'manual.index', 'manual.ver', 'manual.imagen',
         // Mi cuenta (criterio 6): la propia cuenta, sin permiso
-        'mi-cuenta.index', 'mi-cuenta.contrasena'];
+        'mi-cuenta.index', 'mi-cuenta.contrasena',
+        // Mis avisos (ADR-0016): las preferencias de la propia cuenta
+        'mi-cuenta.avisos'];
 
     protected function setUp(): void
     {
@@ -143,7 +145,8 @@ class MatrizDeRutasTest extends TestCase
         $marcas = ['Hotel Demo', 'Ana Administradora', 'Andrea Agente', 'Roberto Hern'];
 
         foreach ($this->rutasConSesion() as $ruta) {
-            if (! in_array('GET', $ruta->methods(), true) || $ruta->parameterNames() !== []) {
+            // El buscador del Manual busca en el texto de las páginas (ADR-0016), que usa nombres de ejemplo, no datos de empresas
+            if (! in_array('GET', $ruta->methods(), true) || $ruta->parameterNames() !== [] || $ruta->getName() === 'manual.index') {
                 continue;
             }
             $uri = route($ruta->getName(), ['q' => 'Roberto', 'entrada' => 'Roberto', 'texto' => 'Roberto'], false);

@@ -5,6 +5,7 @@
 @section('contenido')
 <div class="tema-pizarra pantalla-equipos">
     @include('administracion.partes.avisos')
+    @include('componentes.siguiente-paso')
     @include('administracion.partes.selector-empresa')
 
     @if ($sinEmpresa)
@@ -61,7 +62,7 @@
 
         <div class="pildoras-tipo" role="group" aria-label="Filtrar por estado">
             <button type="button" class="btn-pill-tipo active" data-filtro-estado-equipo="" aria-pressed="true">Cualquier estado <span class="conteo-pill">{{ $equipos->count() }}</span></button>
-            @foreach (['disponible' => 'Disponible', 'asignado' => 'Asignado', 'en_mantenimiento' => 'En Mantenimiento', 'baja' => 'Baja/Perdido'] as $clave => $texto)
+            @foreach (['disponible' => 'Disponible', 'asignado' => 'Asignado', 'en_mantenimiento' => 'En Mantenimiento', 'baja' => 'De baja'] as $clave => $texto)
                 <button type="button" class="btn-pill-tipo" data-filtro-estado-equipo="{{ $clave }}" aria-pressed="false">{{ $texto }} <span class="conteo-pill">{{ $conteo[$clave] ?? 0 }}</span></button>
             @endforeach
         </div>
@@ -90,7 +91,9 @@
                      data-sede="{{ $e->sede_id }}" data-tipo="{{ $e->tipo_equipo_id }}" data-estado="{{ $e->estado }}" data-texto="{{ $texto }}">
                     <div>
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                            <span class="badge-estado-eq estado-eq-{{ $e->estado }}"><i class="bi bi-circle-fill me-1" aria-hidden="true"></i>{{ $estados[$e->estado] ?? $e->estado }}</span>
+                            @php $voucherE = $e->estado === 'baja' ? ($vouchersInfo[$e->id] ?? null) : null; @endphp
+                            <span class="badge-estado-eq estado-eq-{{ $e->estado }}"><i class="bi bi-circle-fill me-1" aria-hidden="true"></i>{{ $estados[$e->estado] ?? $e->estado }}{{ $voucherE ? ' · '.mb_strtoupper(\App\Models\VoucherReposicion::MOTIVOS[$voucherE->motivo] ?? $voucherE->motivo) : '' }}</span>
+                            @include('componentes.ver-historial', ['registro' => \App\Models\Equipo::class, 'id' => $e->id, 'nombre' => $e->numero_serie])
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar equipo {{ $e->numero_serie }}"
                                         data-accion="editar-registro" data-dialogo="dialogoEditarEquipo"
@@ -111,7 +114,15 @@
                         @endif
                         @if ($e->resguardoActual?->responsiva?->colaborador)
                             {{-- Responsivas: quién lo tiene ahora --}}
-                            <div class="eq-resguardo"><i class="bi bi-person-badge me-1" aria-hidden="true"></i>A cargo de: <strong>{{ $e->resguardoActual->responsiva->colaborador->nombreCompleto() }}</strong> · {{ $e->resguardoActual->etiquetaModalidad() }} · {{ $e->resguardoActual->responsiva->folio }}</div>
+                            <div class="eq-resguardo"><i class="bi bi-person-badge me-1" aria-hidden="true"></i>A cargo de: <strong>{{ $e->resguardoActual->responsiva->colaborador->nombreCompleto() }}</strong> · {{ $e->resguardoActual->etiquetaModalidad() }} · {{ $e->resguardoActual->responsiva->folio }}
+                                {{-- Mejoras padrones: directo a su responsiva --}}
+                                @if ($puedeVerResponsivas)
+                                    <a href="{{ route('responsivas.index') }}#responsiva-{{ $e->resguardoActual->responsiva->id }}" class="enlace-voucher-baja ms-1"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Ver responsiva</a>
+                                @endif
+                            </div>
+                        @endif
+                        @if ($voucherE && $puedeVerVouchers)
+                            <a href="{{ route('vouchers.index', ['q' => $voucherE->folio]) }}#voucher-{{ $voucherE->id }}" class="enlace-voucher-baja"><i class="bi bi-receipt" aria-hidden="true"></i> Ver su voucher {{ $voucherE->folio }}</a>
                         @endif
                         @if ($e->etiqueta_nfc)
                             <div class="eq-nfc"><i class="bi bi-broadcast-pin me-1" aria-hidden="true"></i>Etiqueta NFC / RFID asignada</div>
@@ -138,7 +149,7 @@
                                 @endif
                             </div>
                             @if ($desactivable && $e->estado === 'baja')
-                                <form action="{{ route('equipos.reactivar', $e->id) }}" method="POST" class="m-0" data-confirmar="¿Reactivar este equipo? Volverá a quedar DISPONIBLE.">
+                                <form action="{{ route('equipos.reactivar', $e->id) }}" method="POST" class="m-0" data-confirmar="¿Reactivar este equipo? Volverá a quedar DISPONIBLE y, si apareció, su voucher se marca «Recuperado».">
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit" class="btn-icono reactivar" title="Reactivar (se encontró / se recuperó)" aria-label="Reactivar {{ $e->numero_serie }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
@@ -279,7 +290,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-oscuro">{{ $esNuevo ? 'Registrar Equipo' : 'Actualizar Equipo' }}</button>
+                            <button type="submit" class="btn-oscuro">Guardar</button>
                         </div>
                     </form>
                     @unless ($esNuevo)
@@ -300,7 +311,7 @@
                     <form action="{{ $bajaEquipo ? route('equipos.baja', $bajaEquipo->id) : '' }}" method="POST" autocomplete="off" data-form-baja-equipo>
                         @csrf
                         <input type="hidden" name="_dialogo" value="{{ $bajaEquipo ? 'baja-'.$bajaEquipo->id : '' }}" data-campo-dialogo data-prefijo-dialogo="baja-">
-                        <p class="aviso-baja-eq"><i class="bi bi-receipt me-1" aria-hidden="true"></i>Se generará un <strong>voucher de reposición</strong> y el equipo quedará como <strong>BAJA/PERDIDO</strong>. Si aparece, lo reactivas con un clic.</p>
+                        <p class="aviso-baja-eq"><i class="bi bi-receipt me-1" aria-hidden="true"></i>Se generará un <strong>voucher de reposición</strong> y el equipo quedará <strong>DE BAJA</strong> con su motivo. Si aparece, lo reactivas con un clic.</p>
 
                         <label class="campo-etiqueta" for="baja_eq_motivo">Motivo</label>
                         <select id="baja_eq_motivo" name="motivo" class="campo" required>
@@ -314,7 +325,7 @@
 
                         <label class="casilla-cobro-eq" for="baja_eq_cobro">
                             <input type="checkbox" id="baja_eq_cobro" name="aplica_cobro" value="1" data-muestra-si-marcado="#cajaCobroEquipo" @checked($bajaEquipo && old('aplica_cobro'))>
-                            Aplica CXC (se le cobra al responsable)
+                            Se le cobra al colaborador
                         </label>
 
                         <div id="cajaCobroEquipo" class="caja-cobro-eq" hidden>
@@ -329,9 +340,12 @@
                                 'ayuda' => 'Escanea su gafete o acerca su tarjeta; también puedes escribir su número de empleado o su nombre: aparece solo, sin Enter.'])
                         </div>
 
+                        {{-- Mejoras padrones: misma baja que Llaves y Gafetes (firma física o digital) --}}
+                        @include('seguridad.vouchers._firmas-baja', ['id' => 'baja_equipo'])
+
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-rojo">Generar Voucher y Dar de Baja</button>
+                            <button type="submit" class="btn-rojo">Dar de baja</button>
                         </div>
                     </form>
                 </div>

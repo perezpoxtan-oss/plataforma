@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Padrones;
 
 use App\Http\Controllers\Controller;
+use App\Models\Persona;
 use App\Models\User;
 use App\Services\Padrones\AdministradorProveedores;
 use App\Services\Padrones\AltasPorVerificar;
+use App\Services\Permisos\Autorizador;
+use App\Services\Personas\AdministradorPersonas;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -131,6 +134,15 @@ class AltaPorVerificarController extends Controller
         return $this->unir($request, 'personas', $persona);
     }
 
+    /**
+     * Mejoras padrones (ADR-0015): unir dos personas ya verificadas que son
+     * la misma. Lo hace quien puede editar y dar de baja en el padrón.
+     */
+    public function unirDuplicadoPersona(Request $request, int $persona): JsonResponse|RedirectResponse
+    {
+        return $this->unirDuplicado($request, 'personas', $persona);
+    }
+
     // ------------------------------------------------------------------ Acciones
 
     private function aceptar(Request $request, string $padron, int $id): JsonResponse|RedirectResponse
@@ -177,6 +189,29 @@ class AltaPorVerificarController extends Controller
         });
 
         return $this->responder($request, $padron, $destino, '«'.$this->altas->titulo($padron, $provisional).'» se unió con «'.$this->altas->titulo($padron, $destino).'»: todo lo registrado pasó al registro correcto.');
+    }
+
+    private function unirDuplicado(Request $request, string $padron, int $id): JsonResponse|RedirectResponse
+    {
+        [$actor, $empresaId] = $this->autorizar($request, $padron);
+        $permisoBaja = AltasPorVerificar::PADRONES[$padron]['permiso'].'.eliminar';
+        Gate::authorize($permisoBaja);
+
+        [$duplicado, $destino] = $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $padron, $id, $permisoBaja) {
+            $duplicado = $this->buscarVerificable($actor, $padron, $id);
+            // También debe poder darlo de baja (con el alcance del padrón: «solo los propios» incluido)
+            $puedeBaja = $padron === 'personas'
+                ? app(AdministradorPersonas::class)->limitar(Persona::query(), $actor, $permisoBaja)->whereKey($duplicado->getKey())->exists()
+                : app(Autorizador::class)->puede($actor, $permisoBaja, $duplicado);
+            abort_unless($puedeBaja, 404);
+            $request->validate(['destino_id' => ['required', 'integer']], ['destino_id.required' => 'Elige con cuál registro se une.', 'destino_id.integer' => 'Elige con cuál registro se une.']);
+            $destino = $this->buscarVisible($actor, $padron, (int) $request->input('destino_id'));
+
+            return [$duplicado, $this->altas->unirDuplicado($actor, $padron, $duplicado, $destino)];
+        });
+
+        return $this->responder($request, $padron, $destino, '«'.$this->altas->titulo($padron, $duplicado).'» se unió con «'.$this->altas->titulo($padron, $destino)
+            .'»: sus accesos y entregas pasaron al registro correcto y el duplicado quedó fuera de uso (se conserva como historia).');
     }
 
     // ------------------------------------------------------------------- Ayudas

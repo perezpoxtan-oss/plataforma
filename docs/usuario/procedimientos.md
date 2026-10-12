@@ -31,14 +31,16 @@ resumen: Consultar el manual de procedimientos, leer y firmar «Leí y entendí�
 
 ## Cómo leer y firmar «Leí y entendí»
 
-1. Toca **Mis pendientes → Procedimientos por leer**, o el botón **Por leer** de la lista.
+1. Toca el aviso **Procedimiento por leer** de la **campana** (botón **Leer ahora**), **Mis pendientes → Procedimientos por leer**, o el botón **Por leer** de la lista.
 2. Toca **Leer y firmar**. Se abre el **modo lectura**: letra grande, pasos numerados y los **puntos críticos en rojo**. Con **A−** y **A+** cambias el tamaño de la letra.
 3. Lee todo con calma.
 4. Al final, marca **Leí y entendí este procedimiento**, firma en el recuadro (o usa tu firma guardada) y toca **Firmar de enterado**.
+   - Si tu empresa pide **solo la casilla**, no hay recuadro de firma: marca la casilla y toca **Guardar «Leí y entendí»**. Queda tu nombre, la fecha y la hora.
+   - Si la pide **solo en procedimientos con puntos críticos**, los que tienen pasos en rojo piden firma y los demás solo la casilla.
 
 ![Modo lectura](img/procedimientos/lectura.png)
 
-**Qué debes ver:** el procedimiento ya no aparece en **Por leer**. Si después se publica una versión nueva, te lo pedirá otra vez.
+**Qué debes ver:** el procedimiento ya no aparece en **Por leer** y su aviso de la campana queda leído. Si después se publica una versión nueva, te lo pedirá otra vez.
 
 ## Cómo escribir un procedimiento nuevo
 
@@ -51,11 +53,11 @@ resumen: Consultar el manual de procedimientos, leer y firmar «Leí y entendí�
 
 ![Nuevo procedimiento](img/procedimientos/nuevo.png)
 
-**Qué debes ver:** el procedimiento como **Borrador** o **En revisión**.
+**Qué debes ver:** el procedimiento como **Borrador** o **En revisión**. Al enviarlo a revisión, quienes pueden aprobarlo reciben el aviso en la **campana**, en **Mis pendientes → Procedimientos por aprobar** y por correo. Cuando lo aprueban o piden cambios, **tú** recibes el resultado en tu campana (con el comentario, si piden cambios).
 
 ## Cómo aprobar o pedir cambios
 
-1. Abre el procedimiento **En revisión** y revisa el contenido.
+1. Toca el aviso **Procedimiento por aprobar** de la **campana** (botón **Abrir procedimiento**) o **Mis pendientes → Procedimientos por aprobar**, y revisa el contenido.
 2. Si está bien, toca **Aprobar**, firma y toca **Aprobar y publicar**.
 3. Si hay que corregir algo, toca **Pedir cambios** y escribe qué corregir.
 
@@ -99,6 +101,8 @@ resumen: Consultar el manual de procedimientos, leer y firmar «Leí y entendí�
 ## Preguntas frecuentes
 
 - **¿Por qué me pide firmar otra vez?** Se publicó una versión nueva; algo cambió.
+- **¿Se puede firmar solo con la casilla?** Sí, si tu empresa lo elige en **Estructura → Configuración → Caseta y activos → Procedimientos** (ver [Configuración](configuracion.md)). Por omisión se pide la firma dibujada. En la pestaña **Acuses**, los que se hicieron solo con la casilla dicen **Casilla** en lugar de mostrar la firma.
+- **¿Cómo me entero de que hay algo por aprobar?** Por la campana, **Mis pendientes** y el correo; ya no hace falta entrar a buscar lo que está **En revisión**.
 - **¿El Agente puede escribir procedimientos?** No; consulta, lee y firma de enterado.
 - **¿Puedo leerlo en el celular?** Sí; el modo lectura está hecho para eso.
 - **¿Se puede borrar un procedimiento?** Uno publicado se **retira**. Solo uno que nunca se publicó se puede eliminar definitivamente (administrador).
@@ -106,4 +110,5 @@ resumen: Consultar el manual de procedimientos, leer y firmar «Leí y entendí�
 ## Relacionado
 
 - [Menús, Mis pendientes y modos de pantalla](menus.md)
+- [Configuración](configuracion.md)
 - [Bitácora de novedades](novedades.md)

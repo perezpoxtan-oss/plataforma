@@ -237,3 +237,7 @@ Además, los ingresos y movimientos de transporte demo que registran Agentes dej
 ## Reutilizado por los avisos en vivo (Ronda 5, parte 2)
 
 `similitud()` y `claveNombre()` son públicas: las usa `App\Services\Padrones\AvisoDuplicado` (ver [avisos-duplicado.md](avisos-duplicado.md)). En Transporte, Placas y Chofer consultan `GET /altas-por-verificar/parecidos?origen=transporte` mientras se escribe y muestran «¿Es alguno de estos?» como en Accesos.
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): campana de altas por verificar y su resultado (`CampanaPadrones`), unión de registros verificados (`unirDuplicado`), colaboradores con las mismas palabras («por verificar»).

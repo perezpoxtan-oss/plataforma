@@ -48,7 +48,8 @@ class MenuSeeder extends Seeder
                     'llaves' => 'primary', 'gafetes' => 'warning', 'equipos' => 'dark', 'equipos_pc' => 'danger',
                 ],
                 'Instalaciones' => [
-                    'estacionamientos' => 'primary', 'rutas' => 'info',
+                    // Mejoras padrones: el nombre del menú dice que también administra las zonas de descarga
+                    'estacionamientos' => ['primary', 'Estacionamientos y zonas de descarga'], 'rutas' => 'info',
                 ],
                 'Herramientas' => [
                     'etiquetas_qr' => 'dark',
@@ -79,8 +80,13 @@ class MenuSeeder extends Seeder
                     'usuarios' => 'danger', 'roles' => 'indigo', 'permisos' => 'warning',
                 ],
                 'Sistema' => [
-                    'configuracion' => 'indigo', 'identidad' => 'primary', 'auditoria' => 'indigo',
+                    'configuracion' => 'indigo', 'auditoria' => 'indigo',
                 ],
+                // Mejoras estructura (ADR-0016): lo exclusivo del Super Administrador, aparte
+                'Plataforma' => [
+                    'identidad' => 'primary',
+                ],
+                // Fin Mejoras estructura
             ]],
         ];
     }

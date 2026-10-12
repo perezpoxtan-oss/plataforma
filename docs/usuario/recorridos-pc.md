@@ -54,7 +54,9 @@ Está pensado para hacerse **caminando con el celular**: botones grandes, un equ
 
 ## Qué pasa cuando algo falla
 
-El **primer** equipo con falla abre un ticket de **Siniestro Protección Civil** en la Bitácora de novedades con lo que falló. Los siguientes equipos con falla del mismo recorrido se anotan en ese mismo ticket. Verás un aviso con el número del ticket.
+El **primer** equipo con falla abre un ticket en la Bitácora de novedades con lo que falló: de **Siniestro Protección Civil** o, si tu empresa lo eligió en **Estructura → Configuración → Bitácora de novedades**, de **Mantenimiento de equipo PC** (así un extintor despresurizado no parece una emergencia). Los siguientes equipos con falla del mismo recorrido se anotan en ese mismo ticket. Verás un aviso con el número del ticket.
+
+Además, el **jefe de seguridad** de la sede y quien **administra los equipos de Protección Civil** reciben el aviso en su campana («Recorrido #… encontró una falla») y, al finalizar, el resumen («terminó con N hallazgos»). No tienes que avisarles tú.
 
 ## Cómo guardar para después o terminar
 
@@ -79,7 +81,7 @@ El **primer** equipo con falla abre un ticket de **Siniestro Protección Civil**
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
-| «Escanea el equipo o escribe su Núm. de Serie / ID.» | No identificaste el equipo. | Escanéalo o escribe su ID. |
+| «Escanea el equipo o escribe la clave de su etiqueta.» | No identificaste el equipo. | Escanéalo o escribe la **Clave de la etiqueta** (por ejemplo `EXT-01`). |
 | «Ese equipo no es de la sede de este recorrido…» | El equipo es de otra sede. | Revisa la etiqueta o la sede del recorrido. |
 | «Agrega al menos un equipo al recorrido antes de finalizarlo.» | El recorrido está vacío. | Revisa al menos un equipo. |
 | «Elige la Categoría del Equipo.» | En la captura a mano falta la categoría. | Elígela de la lista. |

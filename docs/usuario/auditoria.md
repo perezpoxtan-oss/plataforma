@@ -15,7 +15,7 @@ resumen: Quién hizo qué y cuándo en la plataforma, con el antes y el después
 ## Antes de empezar
 
 - Para ver la bitácora tu rol debe poder consultar *Bitácora de auditoría* (normalmente el administrador y Dirección). Para descargarla necesitas el permiso **Exportar**.
-- Si tu rol es de una sola sede, ves únicamente tus propios movimientos.
+- Si tu rol es de una sola sede, ves únicamente tus propios movimientos; tu empresa puede elegir en **Configuración → Cuentas y seguridad** que veas **los movimientos de tu sede**. Arriba dice cuál de los dos ves.
 
 ## Cómo buscar un movimiento
 
@@ -46,6 +46,16 @@ La columna de lo que se hizo usa palabras sencillas. Las más comunes:
 | Asignación de etiqueta NFC/RFID / Retiro de etiqueta NFC/RFID | Se le dio o se le quitó un gafete o tarjeta a un registro. |
 | Creación de respaldo / Descarga de respaldo | El Super Administrador respaldó o descargó la información. |
 
+## Cómo ver el historial de un registro
+
+1. En la ficha de un usuario, rol, sede, empresa, zona, piso o habitación, o en la tarjeta de un padrón o catálogo (vehículo, empresa externa, llave, gafete, equipo, equipo de Protección Civil, zona de estacionamiento, ruta, colaborador, departamento, puesto o turno), toca el **reloj** (Ver historial). Solo aparece si tu rol puede ver la Bitácora de auditoría.
+2. Se abre la bitácora con solo los movimientos de ese registro. Arriba dice «Historial de **Rol · Agente**…».
+3. Puedes seguir filtrando por fecha o usuario; **Ver toda la bitácora** quita el filtro del registro.
+
+![Historial de un registro](img/auditoria/4-ver-historial.png)
+
+**Qué debes ver:** todo lo que se le ha hecho a ese registro, del más reciente al más antiguo.
+
 ## Cómo ver el detalle de un cambio
 
 1. Toca el **ojo** (Ver detalle) del movimiento.
@@ -65,7 +75,8 @@ Toca **Exportar a Excel**: se descarga un archivo de Excel (CSV) con los mismos 
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
-| No veo los movimientos de otras personas. | Tu rol es de una sola sede: solo ves los tuyos. | Pide al administrador que revise el movimiento. |
+| No veo los movimientos de otras personas. | Tu rol es de una sola sede y tu empresa eligió «Solo sus propios movimientos». | Pide al administrador que revise el movimiento, o que elija «Los movimientos de su sede» en Configuración. |
+| No aparece el reloj en una ficha. | Tu rol no puede ver la bitácora. | Pídelo a tu administrador. |
 | El CURP, RFC, NSS o teléfono se ven con puntos (••••1234). | Los datos personales se muestran ocultos por privacidad. | Es normal; solo se ven los últimos 4 caracteres. |
 | No aparece **Exportar a Excel**. | Tu rol no tiene el permiso **Exportar**. | Pídelo a tu administrador. |
 | No encuentro un movimiento. | El periodo o los filtros no lo incluyen. | Toca **Limpiar** y amplía las fechas. |

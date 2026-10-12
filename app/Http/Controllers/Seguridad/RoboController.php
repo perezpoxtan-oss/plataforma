@@ -96,6 +96,9 @@ class RoboController extends Controller
                 'sedesFiltro' => $sedesFiltro,
                 'variasSedes' => $sedesFiltro->count() > 1,
                 'editables' => collect($casos->items())->filter(fn (Novedad $n) => ! $n->resuelto() && $this->novedades->permiteRobo($actor, 'editar', $n))->pluck('id')->all(),
+                // Mejoras Incidentes: una sola ficha; quien puede atenderlo en la Bitácora abre ese mismo expediente
+                'fichaUnica' => collect($casos->items())->filter(fn (Novedad $n) => $this->usaFichaUnica($actor, $n))
+                    ->mapWithKeys(fn (Novedad $n) => [$n->id => ! $n->resuelto() && $this->novedades->permite($actor, 'editar', $n)])->all(),
                 'expediente' => $expediente,
                 'puede' => ['tickets' => $this->novedades->puedeModulo($actor, 'ver')],
             ]);
@@ -215,6 +218,18 @@ class RoboController extends Controller
             'puedeImprimir' => $this->novedades->permite($actor, 'imprimir', $novedad),
             'puedeReabrir' => $novedad->resuelto() && $actor->can('novedades.reabrir') && $this->novedades->permite($actor, 'reabrir', $novedad),
             'colaboradores' => $colaboradores,
+            'enBitacora' => $this->novedades->permite($actor, 'ver', $novedad),
         ];
+    }
+
+    /**
+     * El expediente completo de la Bitácora es la ficha del robo para quien lo
+     * puede editar ahí, o para quien solo lo consulta en ambos lados. Quien
+     * solo tiene el submódulo Robo sigue usando su diálogo (con el mismo orden).
+     */
+    private function usaFichaUnica(User $actor, Novedad $n): bool
+    {
+        return $this->novedades->permite($actor, 'editar', $n)
+            || (! $this->novedades->permiteRobo($actor, 'editar', $n) && $this->novedades->permite($actor, 'ver', $n));
     }
 }

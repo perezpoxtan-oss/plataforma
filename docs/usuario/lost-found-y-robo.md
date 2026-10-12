@@ -12,9 +12,23 @@ resumen: Consultar y entregar objetos encontrados, imprimir etiquetas y dar segu
 - **Lost & Found** es el archivo de los objetos encontrados: dónde están guardados, cuántos días llevan y a quién se entregaron.
 - **Robo** reúne los casos de robo para darles seguimiento sin buscarlos entre las demás novedades.
 
-Los objetos y los casos **se registran en la [Bitácora de novedades](novedades.md)** (ticket de Lost & Found o de Robo). Aquí se consultan, se entregan y se imprimen.
+Los casos de robo **se registran en la [Bitácora de novedades](novedades.md)** (ticket de Robo). Un objeto encontrado se registra aquí mismo con **Registrar objeto encontrado** (la plataforma crea su ticket por ti) o desde un ticket de Lost & Found en la Bitácora. Aquí se consultan, se entregan y se imprimen.
 
-**Antes de empezar:** necesitas que tu rol pueda **ver** Lost & Found o Robo. Para entregar un objeto se necesita además **firmar**; para imprimir etiquetas, **imprimir**. Si no ves un botón, pide a tu administrador que revise tu rol.
+**Antes de empezar:** necesitas que tu rol pueda **ver** Lost & Found o Robo. Para registrar un objeto se necesita **crear** tickets en la Bitácora o en Lost & Found; para entregarlo, **firmar**; para imprimir etiquetas, **imprimir**. Si no ves un botón, pide a tu administrador que revise tu rol.
+
+## Cómo registrar un objeto encontrado
+
+1. Entra a **Operación → Incidentes → Lost & Found** y toca **Registrar objeto encontrado**.
+2. Escribe **¿Qué se encontró?** (por ejemplo «Paraguas negro») y elige el **Tipo de valor**. Marca y color son opcionales.
+3. Escribe **¿Dónde se encontró?** y, si ya lo guardaste, la **Ubicación en bodega**.
+4. En **¿Quién lo encontró o lo entregó?** escribe el nombre o toca **Fui yo**. Revisa **¿Cuándo se encontró?** (trae la hora actual).
+5. Toca **Guardar**.
+
+![Registrar objeto encontrado](img/lost-found-y-robo/registrar-objeto.png)
+
+**Qué debes ver:** el mensaje verde con el folio (**LF-…**) y el número de ticket, y dos botones para seguir: **Imprimir etiqueta de la bolsa** y **Registrar otro objeto**. Si hay más datos (habitación, señas, un reporte de pérdida), complétalos después en el expediente del ticket.
+
+![Objeto registrado con el siguiente paso](img/lost-found-y-robo/objeto-registrado.png)
 
 ## Cómo leer el archivo de Lost & Found
 
@@ -69,14 +83,28 @@ Para abrir un objeto rápido, en **Escanear etiqueta de la bolsa** escanea el QR
 
 Los días que puede estar guardado cada tipo de objeto se cambian en **Estructura → Configuración** (enlace **Configurar en Estructura → Configuración**, solo para quien tiene ese permiso).
 
+## Cómo completar un ticket sin artículos
+
+Arriba de la lista, **Sin artículos capturados aún** muestra los tickets de Lost & Found que todavía no tienen objeto.
+
+1. Toca **Agregar el objeto aquí** en el ticket.
+2. Escribe **¿Qué se encontró?**, el **Tipo de valor** y la **Ubicación en bodega**.
+3. Toca **Guardar objeto**.
+
+![Agregar el objeto a un ticket](img/lost-found-y-robo/agregar-objeto.png)
+
+**Qué debes ver:** el objeto aparece en el archivo con su folio y el ticket sale de la lista. Para capturar más (habitación, reporte de pérdida) usa **Completar**, que abre el expediente.
+
 ## Cómo dar seguimiento a un robo
 
 1. Entra a **Operación → Incidentes → Robo**.
 2. Filtra (**Todos**, **Abiertos**, **Sin parte a la policía**, **Con sospechoso**) o busca por objeto, lugar o número de ticket.
-3. Toca **Abrir Expediente** en el caso.
-4. Escribe una **nueva nota** y completa circunstancias, sospechoso, testigos y canalización.
+3. Toca **Abrir Expediente** en el caso. Se abre el **mismo expediente** de la Bitácora de novedades (una sola ficha por robo), con el enlace **Volver a Seguimiento de robos**.
+4. Completa circunstancias, sospechoso, testigos y canalización, y anota el avance en el **Minuto a Minuto**.
 5. Toca **Buscar Coincidencias en Lost & Found**: si ya se encontró algo parecido, tócalo y **Vincular**.
-6. Toca **Guardar Cambios**. Para cerrarlo, elige **Resuelto y Cerrado** y escribe cómo se resolvió.
+6. Toca **Guardar Expediente**: regresas a la lista de robos. Para cerrarlo, elige **Resuelto y Cerrado** y escribe cómo se resolvió.
+
+Si tu rol solo trabaja robos (no la Bitácora completa), el expediente se abre aquí mismo, con el mismo orden y los mismos nombres.
 
 ![Seguimiento de robos](img/lost-found-y-robo/robos.png)
 
@@ -97,13 +125,17 @@ Los días que puede estar guardado cada tipo de objeto se cambian en **Estructur
 | «Escanea el gafete o busca al colaborador que recibe el artículo.» | Falta el colaborador. | Escanea su gafete. |
 | «Este caso ya está Resuelto. Reábrelo antes de vincular un hallazgo.» | El robo está cerrado. | Reábrelo en la Bitácora de novedades. |
 | No veo **Cerrar / Entregar** | Tu rol solo consulta. | Pide a tu supervisor que lo entregue. |
+| «Escribe qué objeto se encontró (por ejemplo: paraguas, cartera, celular).» | Falta el objeto. | Escríbelo. |
+| «Escribe dónde se encontró (por ejemplo: Lobby, junto a los sillones).» | Falta el lugar. | Escríbelo. |
+| «Escribe quién lo encontró o lo entregó (o toca «Fui yo»).» | Falta quién lo trajo. | Escribe el nombre o toca **Fui yo**. |
+| «Solo se agregan objetos a un ticket de Lost & Found que siga abierto.» | El ticket se cerró o no es de Lost & Found. | Registra el objeto como nuevo. |
 
 ## Preguntas frecuentes
 
-- **¿Dónde registro un objeto encontrado?** En la [Bitácora de novedades](novedades.md), ticket de **Lost & Found**.
+- **¿Dónde registro un objeto encontrado?** Aquí, con **Registrar objeto encontrado**, o en la [Bitácora de novedades](novedades.md) con un ticket de **Lost & Found** (el ticket rápido ya pide el objeto).
 - **¿Qué pasa cuando un objeto se vence?** Se pone en rojo; tu supervisor decide si se dona, se destruye o se entrega a beneficencia.
 - **¿Puedo volver a cerrar un objeto ya entregado?** No; un objeto cerrado no se vuelve a cerrar.
-- **¿Qué es «Sin artículos capturados aún»?** Tickets de Lost & Found sin objetos anotados; toca **Completar** para hacerlo.
+- **¿Qué es «Sin artículos capturados aún»?** Tickets de Lost & Found sin objetos anotados; toca **Agregar el objeto aquí** (o **Completar** para abrir el expediente).
 
 ## Relacionado
 

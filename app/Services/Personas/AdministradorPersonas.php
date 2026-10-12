@@ -172,6 +172,12 @@ class AdministradorPersonas
         $categoria = $tipo === 'visitante' ? ($validados['categoria'] ?? 'general') : 'general';
         // Un visitante no representa a un proveedor registrado (SEGCAT lo limpiaba igual)
         $proveedorId = $tipo === 'visitante' ? null : $this->proveedorValido($validados['proveedor_id'] ?? null, $actual, $tipo);
+        // Mejoras padrones (ADR-0015): un solo dato para la empresa. Si escribieron a mano
+        // una empresa que SÍ está en el directorio (y corresponde al tipo), se liga a su ficha
+        // en lugar de quedar como texto suelto que luego genera empresas sin ficha.
+        if ($proveedorId === null && $tipo !== 'visitante' && ! empty($validados['empresa_procedencia'])) {
+            $proveedorId = $this->proveedorPorNombre($validados['empresa_procedencia'], $tipo);
+        }
 
         $folio = $validados['folio_identificacion'] ?? null;
         if ($folio !== null) {
@@ -212,6 +218,28 @@ class AdministradorPersonas
             : '.';
 
         throw FolioDuplicado::de($otra, $mensaje);
+    }
+
+    /**
+     * Empresa activa del directorio cuyo nombre es el escrito (sin importar
+     * mayúsculas, acentos, signos ni «S.A. de C.V.») y que corresponde al tipo.
+     */
+    private function proveedorPorNombre(string $nombre, string $tipo): ?int
+    {
+        $altas = app(AltasPorVerificar::class);
+        if (mb_strlen($altas->claveNombre($nombre)) < 3) {
+            return null;
+        }
+        foreach ($altas->parecidos('proveedores', ['nombre' => $nombre], null, null, 3) as $r) {
+            $proveedor = Proveedor::find($r['id']);
+            if ($proveedor !== null && $proveedor->activo && ! $proveedor->estaRechazado()
+                && in_array($proveedor->categoria, self::categoriasPara($tipo), true)
+                && $altas->mismaEmpresa($nombre, $proveedor->nombre)) {
+                return (int) $proveedor->id;
+            }
+        }
+
+        return null;
     }
 
     private function proveedorValido(mixed $id, ?Persona $actual, string $tipo): ?int

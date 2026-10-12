@@ -3,13 +3,18 @@
 namespace App\Support\Menu;
 
 use App\Models\Candidato;
+use App\Models\Colaborador;
 use App\Models\DepartamentoResponsable;
+use App\Models\Novedad;
 use App\Models\Postulacion;
 use App\Models\User;
+use App\Services\Activos\PendientesActivos;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\PlazosCandidatos;
+use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Procedimientos\AdministradorProcedimientos;
@@ -90,6 +95,16 @@ class MisPendientes
     {
         $items = [];
 
+        // Mejoras estructura (ADR-0016): lo que Inicio avisaba y aquí faltaba (criterio 1).
+        // Mejoras padrones (ADR-0015): mismas palabras que las altas de los padrones («por verificar»)
+        if ($actor->can('colaboradores.aprobar')) {
+            $items[] = $this->item('colaboradores_por_verificar', 'Colaboradores por verificar', 'bi-person-exclamation',
+                app(AdministradorColaboradores::class)->limitar(Colaborador::query(), $actor, 'colaboradores.aprobar')
+                    ->where('colaboradores.provisional', true)->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id')->count(),
+                route('colaboradores.index', ['registro' => 'provisional']));
+        }
+        // Fin Mejoras estructura
+
         // Autorizaciones: solo responsables o delegados de algún departamento
         $autorizaciones = app(Autorizaciones::class);
         if ($actor->can('autorizaciones.responder') && $autorizaciones->departamentosQueAtiende($actor) !== []) {
@@ -103,6 +118,14 @@ class MisPendientes
                 count(app(AdministradorPasesSalida::class)->idsPorFirmar($actor)), route('pases-salida.pendientes'));
         }
 
+        // Mejoras estructura (ADR-0016): versiones de procedimientos que esperan la aprobación de quien entra
+        if ($actor->can('procedimientos.aprobar')) {
+            // Mejoras activos (ADR-0014): el mismo conteo con menos consultas
+            $items[] = $this->item('procedimientos_aprobar', 'Procedimientos por aprobar', 'bi-journal-check',
+                app(PendientesActivos::class)->procedimientosPorAprobar($actor), route('procedimientos.index', ['filtro' => 'por_aprobar']));
+        }
+        // Fin Mejoras estructura
+
         // Procedimientos por leer y firmar «Leí y entendí» (solo si el usuario es colaborador)
         if ($actor->can('procedimientos.ver') && ($actor->getAttributes()['colaborador_id'] ?? null) !== null) {
             $items[] = $this->item('procedimientos', 'Procedimientos por leer', 'bi-book',
@@ -114,10 +137,11 @@ class MisPendientes
         $verifica = collect(array_keys(AltasPorVerificar::PADRONES))->contains(fn (string $p) => $altas->puedeVerificar($actor, $p));
         if ($verifica) {
             $grupos = $altas->pendientesPorPadron($actor);
-            $items[] = $this->item('altas', 'Altas por verificar', 'bi-patch-question',
+            $items[] = $this->item('altas', count($grupos) === 1 ? 'Altas por verificar · '.$grupos[0]['nombre'] : 'Altas por verificar', 'bi-patch-question',
                 (int) array_sum(array_column($grupos, 'total')),
-                // Un solo padrón: directo a su lista; varios: Inicio muestra el desglose por padrón
-                count($grupos) === 1 ? $grupos[0]['ruta'] : route('panel'));
+                // Un solo padrón: directo a su lista; varios: cada padrón con su enlace (Mejoras estructura)
+                count($grupos) === 1 ? $grupos[0]['ruta'] : ($grupos[0]['ruta'] ?? route('panel')))
+                + ['detalle' => count($grupos) > 1 ? array_map(fn ($g) => ['titulo' => $g['nombre'], 'total' => $g['total'], 'url' => $g['ruta'], 'icono' => $g['icono']], $grupos) : []];
         }
 
         // Recursos Humanos (candidatos, fases 1 y 2): solo quien puede editar candidatos, en sus sedes
@@ -154,23 +178,90 @@ class MisPendientes
             $administrador = app(AdministradorUsuarios::class);
             $cuentas = $administrador->limitarAlcance(User::query()->where('users.empresa_id', $this->empresa->id($actor))->where('users.es_superadmin', false), $actor, 'usuarios.editar')
                 ->where(fn ($q) => $q->where('users.bloqueado_hasta', '>', now())
-                    ->orWhere(fn ($b) => $b->where('users.activo', false)->where('users.desactivado_por_baja_en', '>=', now()->subDays(7))))
+                    ->orWhere(fn ($b) => $b->where('users.activo', false)->where('users.desactivado_por_baja_en', '>=', now()->subDays(7)))
+                    // Mejoras estructura (ADR-0016): quien pide pases a su nombre y no tiene colaborador vinculado
+                    ->orWhere(fn ($v) => AdministradorUsuarios::sinVinculoQuePidePases($v)))
                 ->count();
             $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $cuentas, route('usuarios.index', ['revisar' => 1]));
         }
+
+        // Mejoras Incidentes (criterio 1): tickets canalizados a mí y pendientes de turno sin dueño de mis sedes
+        if ($actor->can('novedades.editar')) {
+            $novedades = app(AdministradorNovedades::class);
+            // Una sola consulta para los dos renglones (sin N+1)
+            $conteo = $novedades->limitar(Novedad::query(), $actor, 'editar')
+                ->where('estatus', '!=', Novedad::RESUELTO)
+                ->where(fn ($q) => $q->where('asignado_a', $actor->id)
+                    ->orWhere(fn ($x) => $x->where('estatus', Novedad::PENDIENTE_TURNO)->whereNull('asignado_a')))
+                ->toBase()
+                ->selectRaw('SUM(CASE WHEN asignado_a = ? THEN 1 ELSE 0 END) AS mios', [$actor->id])
+                ->selectRaw('SUM(CASE WHEN asignado_a IS NULL AND estatus = ? THEN 1 ELSE 0 END) AS sin_dueno', [Novedad::PENDIENTE_TURNO])
+                ->first();
+            // Solo aparecen cuando hay algo (la caseta no ve renglones vacíos de la bitácora)
+            if (($mios = (int) ($conteo->mios ?? 0)) > 0) {
+                $items[] = $this->item('novedades_mias', 'Tickets canalizados a mí', 'bi-headset', $mios, route('novedades.index', ['mios' => 1]));
+            }
+            if (($sinDueno = (int) ($conteo->sin_dueno ?? 0)) > 0) {
+                $items[] = $this->item('novedades_turno', 'Pendientes de turno sin dueño', 'bi-hourglass-split', $sinDueno, route('novedades.index'));
+            }
+        }
+        // Fin Mejoras Incidentes
+        // Mejoras activos (ADR-0014): Vo.Bo. de vales, procedimientos por aprobar, llaves y equipos de turno fuera de tiempo
+        foreach (app(PendientesActivos::class)->para($actor, $empresaId) as $pendiente) {
+            $items[] = $pendiente;
+        }
+        // Fin Mejoras activos
 
         // Fase 3: color por plazo, solo si algún renglón de candidatos tiene pendientes
         $conPendientes = array_filter($items, fn ($i) => $i['total'] > 0 && in_array($i['clave'], PlazosCandidatos::RENGLONES, true));
         if ($conPendientes !== []) {
             $niveles = app(PlazosCandidatos::class)->nivelesPara($actor, $empresaId, array_column($conPendientes, 'clave'));
             foreach ($items as &$item) {
-                $item['nivel'] = $item['total'] > 0 ? ($niveles[$item['clave']] ?? null) : null;
+                $item['nivel'] = $item['total'] > 0 ? ($niveles[$item['clave']] ?? $item['nivel']) : null; // Mejoras activos: conserva el color de llaves y equipos de turno
             }
             unset($item);
         }
 
-        return ['total' => array_sum(array_column($items, 'total')), 'items' => $items];
+        return ['total' => array_sum(array_column($items, 'total')), 'items' => $items] + ($items === [] ? [] : ['vista' => self::vista($items)]);
     }
+
+    // Mejoras estructura (ADR-0016): lo que se pinta, sin renglones en cero y con candidatos en un solo renglón
+
+    /** Renglones de Recursos Humanos que se agrupan en «Candidatos». */
+    public const GRUPO_CANDIDATOS = ['recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos'];
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     * @return list<array<string, mixed>>
+     */
+    public static function vista(array $items): array
+    {
+        $vista = [];
+        $candidatos = null;
+        foreach ($items as $item) {
+            if ($item['total'] <= 0) {
+                continue;
+            }
+            if (in_array($item['clave'], self::GRUPO_CANDIDATOS, true)) {
+                if ($candidatos === null) {
+                    $candidatos = count($vista);
+                    $vista[] = ['clave' => 'candidatos', 'titulo' => 'Candidatos', 'icono' => 'bi-people', 'total' => 0, 'url' => $item['url'], 'nivel' => null, 'detalle' => []];
+                }
+                $vista[$candidatos]['total'] += $item['total'];
+                $vista[$candidatos]['detalle'][] = ['titulo' => $item['titulo'], 'total' => $item['total'], 'url' => $item['url'], 'icono' => $item['icono'], 'nivel' => $item['nivel'] ?? null];
+                $nivel = $item['nivel'] ?? null;
+                if ($nivel === 'roja' || ($nivel === 'ambar' && $vista[$candidatos]['nivel'] === null)) {
+                    $vista[$candidatos]['nivel'] = $nivel;
+                }
+
+                continue;
+            }
+            $vista[] = $item + ['detalle' => []];
+        }
+
+        return $vista;
+    }
+    // Fin Mejoras estructura
 
     /**
      * @return array{clave: string, titulo: string, icono: string, total: int, url: string, nivel: ?string}

@@ -18,12 +18,14 @@ use App\Models\ProcedimientoVersion;
 use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\User;
+use App\Services\Activos\CampanaActivos;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Firmas\Firmas;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
+use App\Support\AjustesCaseta;
 use App\Support\Entrada;
 use App\Support\ImagenSegura;
 use App\Support\Tenancy\Tenant;
@@ -662,6 +664,7 @@ class AdministradorProcedimientos
         });
 
         $this->auditoria->auditar($actor, 'procedimientos.enviado', $procedimiento, ['estado' => 'borrador'], ['estado' => 'en_revision', 'version' => $version->numero]);
+        $this->avisarRevision($procedimiento->refresh(), $version->refresh());
     }
 
     /**
@@ -713,6 +716,7 @@ class AdministradorProcedimientos
         $this->auditoria->auditar($actor, 'procedimientos.aprobado', $procedimiento, ['estado' => 'en_revision'],
             ['estado' => 'publicado', 'clave' => $procedimiento->clave, 'version' => $version->numero, 'comentario' => $comentario]);
         $this->avisarPublicado($procedimiento->refresh(), $version);
+        app(CampanaActivos::class)->procedimientoRevisado($procedimiento, $version, true, $comentario, $actor);
 
         return $version;
     }
@@ -751,6 +755,7 @@ class AdministradorProcedimientos
 
         $this->auditoria->auditar($actor, 'procedimientos.rechazado', $procedimiento, ['estado' => 'en_revision'],
             ['estado' => 'borrador', 'version' => $version->numero, 'comentario' => $comentario]);
+        app(CampanaActivos::class)->procedimientoRevisado($procedimiento, $version, false, $comentario, $actor);
     }
 
     /**
@@ -860,7 +865,8 @@ class AdministradorProcedimientos
         if (ProcedimientoAcuse::where('version_id', $vigente->id)->where('user_id', $actor->id)->exists()) {
             throw ValidationException::withMessages(['procedimiento' => "Ya firmaste de enterado la versión {$vigente->numero}."]);
         }
-        [$ruta, $guardar] = $this->firmaDelActor($actor, $entrada, 'firma');
+        // ADR-0014: la empresa puede pedir solo la casilla (con nombre, fecha y hora) en lugar de la firma dibujada
+        [$ruta, $guardar] = $this->pideFirmaAcuse($procedimiento, $vigente) ? $this->firmaDelActor($actor, $entrada, 'firma') : [null, null];
 
         try {
             $acuse = DB::transaction(function () use ($actor, $procedimiento, $vigente, $ruta) {
@@ -881,19 +887,55 @@ class AdministradorProcedimientos
         }
 
         $this->pases->guardarFirmaUsuario($actor, $guardar);
-        $this->auditoria->auditar($actor, 'procedimientos.acuse_firmado', $acuse, null, ['clave' => $procedimiento->clave, 'version' => $vigente->numero]);
+        $this->auditoria->auditar($actor, 'procedimientos.acuse_firmado', $acuse, null, ['clave' => $procedimiento->clave, 'version' => $vigente->numero,
+            'con_firma' => $ruta !== null]);
+        app(CampanaActivos::class)->procedimientoLeido($vigente, $actor);
 
         return $acuse;
     }
 
+    /**
+     * ADR-0014: ¿el acuse de esta versión pide firma dibujada? «firma» (lo
+     * original) siempre; «casilla» nunca; «casilla_criticos» solo si algún
+     * paso es punto crítico.
+     */
+    public function pideFirmaAcuse(Procedimiento $procedimiento, ProcedimientoVersion $version): bool
+    {
+        return match (AjustesCaseta::valor((int) $procedimiento->empresa_id, 'procedimientos_acuse')) {
+            'casilla' => false,
+            'casilla_criticos' => $version->pasos()->where('critico', true)->exists(),
+            default => true,
+        };
+    }
+
     // ================================================================ Avisos
+
+    /**
+     * ADR-0014 (criterio 1): «Enviar a revisión» avisa a quien puede aprobar
+     * (campana, Mis pendientes y correo); nunca a su autor ni a quien lo envió.
+     */
+    private function avisarRevision(Procedimiento $procedimiento, ProcedimientoVersion $version): void
+    {
+        $version->loadMissing('aplicaciones', 'procedimiento');
+        $aprobadores = User::where('empresa_id', $procedimiento->empresa_id)->where('activo', true)->where('es_superadmin', false)->get()
+            ->filter(fn (User $u) => $this->motivoNoAprueba($u, $procedimiento, $version) === null)->values();
+        app(CampanaActivos::class)->procedimientoPorAprobar($procedimiento, $version, $aprobadores);
+        $this->avisos->procedimiento($procedimiento->empresa_id, 'procedimiento_revision', $aprobadores->pluck('email')->filter()->unique()->values()->all(),
+            new AvisoProcedimiento('revision', [[
+                'clave' => $procedimiento->clave, 'titulo' => $version->titulo, 'version' => $version->numero,
+                'enlace' => route('procedimientos.show', $procedimiento->id),
+            ]], $version->numero > 1 ? $version->resumen_cambios : null, route('procedimientos.index', ['filtro' => 'por_aprobar'])));
+    }
 
     /**
      * Correo a quien debe firmar el acuse de la versión recién publicada.
      */
     private function avisarPublicado(Procedimiento $procedimiento, ProcedimientoVersion $version): void
     {
-        $correos = $this->obligados($version)->pluck('email')->filter()->unique()->values()->all();
+        $obligados = $this->obligados($version);
+        // ADR-0014: también en la campana (a quien casi no usa el correo)
+        app(CampanaActivos::class)->procedimientoPorLeer($procedimiento, $version, $obligados);
+        $correos = $obligados->pluck('email')->filter()->unique()->values()->all();
         $this->avisos->procedimiento($procedimiento->empresa_id, 'procedimiento_publicado', $correos, new AvisoProcedimiento('publicado', [[
             'clave' => $procedimiento->clave, 'titulo' => $version->titulo, 'version' => $version->numero,
             'enlace' => route('procedimientos.leer', $procedimiento->id),

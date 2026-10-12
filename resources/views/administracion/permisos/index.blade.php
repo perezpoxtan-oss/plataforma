@@ -39,7 +39,13 @@
             <p class="text-muted small mb-3"><i class="bi bi-clock-history" aria-hidden="true"></i> Última modificación de este rol: {{ $ultimaModificacion->name ?? 'alguien' }} · @fecha($ultimaModificacion->creado_en, 'd/m/Y H:i')</p>
         @endif
 
-        <p class="text-muted small mb-3">
+        {{-- Mejoras estructura (ADR-0016): lo que verá el rol y el asistente «¿Qué hace este rol?» --}}
+        @include('administracion.permisos._asistente')
+
+        <details class="matriz-avanzada" data-matriz-avanzada @if ($avanzadoAbierto) open @endif>
+            <summary><i class="bi bi-sliders2" aria-hidden="true"></i> Avanzado: permiso por permiso <span class="small fw-normal text-muted">(la tabla completa de módulos y acciones)</span></summary>
+
+        <p class="text-muted small mb-3 mt-3">
             <i class="bi bi-info-circle" aria-hidden="true"></i>
             <strong>Alcance:</strong> "Solo los propios" = registros que esa persona capturó; "Su sede" = los de las sedes asignadas al usuario; "Toda la empresa" = todos.
             Marcar cualquier acción activa también "Ver".
@@ -95,13 +101,18 @@
                                     $disponibles = $modulo->acciones->pluck('clave');
                                     $extras = $disponibles->diff($basicas);
                                     // Lo que el actor puede tocar: el Super Administrador todo; los demás, solo lo que tienen
-                                    $puedeTocar = fn (string $accion) => $editable && ($propios === null || isset($propios[$modulo->clave.'.'.$accion]));
+                                    // Próximamente (ADR-0016): sin pantalla todavía; sus permisos se conservan y no se tocan aquí
+                                    $sinPantalla = in_array($modulo->clave, $proximamente, true);
+                                    $puedeTocar = fn (string $accion) => $editable && ! $sinPantalla && ($propios === null || isset($propios[$modulo->clave.'.'.$accion]));
+                                    // Alcance distinto por acción (p. ej. de las plantillas): se conserva mientras no se cambie
+                                    $mixto = $tiene->pluck('alcance')->map(fn ($a) => $a->value)->unique()->count() > 1;
                                     $nombreCampo = 'permisos['.$modulo->clave.'][acciones][]';
                                 @endphp
-                                <tr class="{{ $modulo->padre_id ? 'submodulo' : '' }}" data-fila-permisos>
+                                <tr class="{{ $modulo->padre_id ? 'submodulo' : '' }} {{ $sinPantalla ? 'fila-proximamente' : '' }}" data-fila-permisos data-modulo="{{ $modulo->clave }}">
                                     <td class="modulo">
                                         @if ($modulo->padre_id)<i class="bi bi-arrow-return-right text-muted" aria-hidden="true"></i>@endif
                                         <i class="bi {{ $modulo->icono }} text-{{ $modulo->color_icono ?? 'primary' }}" aria-hidden="true"></i>{{ $modulo->nombre }}
+                                        @if ($sinPantalla)<span class="etiqueta-proximamente" title="Todavía no tiene pantalla: sus permisos se guardan pero no hacen nada">Próximamente</span>@endif
                                     </td>
                                     @foreach ($basicas as $accion)
                                         <td class="celda-casilla">
@@ -111,7 +122,7 @@
                                                        aria-label="{{ $acciones[$accion] }} · {{ $modulo->nombre }}"
                                                        @checked($tiene->has($accion)) @disabled(! $puedeTocar($accion))>
                                                 {{-- Una casilla bloqueada que ya estaba marcada se conserva --}}
-                                                @if (! $puedeTocar($accion) && $tiene->has($accion))
+                                                @if (! $puedeTocar($accion) && $tiene->has($accion) && ! $sinPantalla)
                                                     <input type="hidden" name="{{ $nombreCampo }}" value="{{ $accion }}">
                                                 @endif
                                             @else
@@ -128,7 +139,7 @@
                                                            @checked($tiene->has($accion)) @disabled(! $puedeTocar($accion))>
                                                     {{ $acciones[$accion] ?? $accion }}
                                                 </label>
-                                                @if (! $puedeTocar($accion) && $tiene->has($accion))
+                                                @if (! $puedeTocar($accion) && $tiene->has($accion) && ! $sinPantalla)
                                                     <input type="hidden" name="{{ $nombreCampo }}" value="{{ $accion }}">
                                                 @endif
                                             @empty
@@ -137,7 +148,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <select name="permisos[{{ $modulo->clave }}][alcance]" class="select-alcance" aria-label="Alcance · {{ $modulo->nombre }}" @disabled(! $editable)>
+                                        <select name="permisos[{{ $modulo->clave }}][alcance]" class="select-alcance" aria-label="Alcance · {{ $modulo->nombre }}" @disabled(! $editable || $sinPantalla) @if ($mixto) data-alcance-mixto @endif>
                                             @foreach ($alcances as $alcance)
                                                 <option value="{{ $alcance->value }}" @selected($alcance === $alcanceActual)>{{ $alcance->etiqueta() }}</option>
                                             @endforeach
@@ -145,6 +156,17 @@
                                         @unless ($editable)
                                             <input type="hidden" name="permisos[{{ $modulo->clave }}][alcance]" value="{{ $alcanceActual->value }}">
                                         @endunless
+                                        @if ($mixto && ! $sinPantalla)
+                                            <div class="alcance-mixto small text-muted" data-nota-mixto>
+                                                <i class="bi bi-intersect" aria-hidden="true"></i> Distinto por acción:
+                                                {{ $tiene->map(fn ($p, $a) => ($acciones[$a] ?? $a).': '.$p->alcance->etiqueta())->join(' · ') }}.
+                                                @if ($editable) Si cambias el alcance, se usa uno solo. @endif
+                                            </div>
+                                            <input type="hidden" name="permisos[{{ $modulo->clave }}][mixto]" value="1" data-campo-mixto>
+                                            @foreach ($tiene as $a => $p)
+                                                <input type="hidden" name="permisos[{{ $modulo->clave }}][alcances][{{ $a }}]" value="{{ $p->alcance->value }}" data-campo-mixto>
+                                            @endforeach
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -157,5 +179,6 @@
                 <button type="submit" class="btn-guardar-permisos"><i class="bi bi-save2-fill me-2" aria-hidden="true"></i>Guardar Permisos de este Rol</button>
             @endif
         </form>
+        </details>
     @endif
 @endsection

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('titulo', 'Zonas y áreas')
+@section('titulo', 'Zonas y edificios')
 
 @section('contenido')
 <div class="tema-rojo">
@@ -10,17 +10,17 @@
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-geo-alt-fill text-danger" aria-hidden="true"></i></div>
-            <div><h1>Zonas / Edificios</h1><p>Estructura física de cada sede.</p></div>
+            <div><h1>Zonas y edificios</h1><p>Estructura física de cada sede.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
-            <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> para ver sus zonas y áreas.</p>
+            <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> para ver sus zonas y edificios.</p>
         </div>
     @else
         @php $enSecciones = request('pestana') === 'secciones'; @endphp
 
         <div class="pestanas" role="tablist">
-            <a href="{{ route('espacios.index') }}" class="btn {{ $enSecciones ? 'btn-outline-dark' : 'btn-dark' }}" role="tab" aria-selected="{{ $enSecciones ? 'false' : 'true' }}"><i class="bi bi-building me-1" aria-hidden="true"></i> Zonas y Edificios</a>
+            <a href="{{ route('espacios.index') }}" class="btn {{ $enSecciones ? 'btn-outline-dark' : 'btn-dark' }}" role="tab" aria-selected="{{ $enSecciones ? 'false' : 'true' }}"><i class="bi bi-building me-1" aria-hidden="true"></i> Zonas y edificios</a>
             <a href="{{ route('espacios.index', ['pestana' => 'secciones']) }}" class="btn {{ $enSecciones ? 'btn-dark' : 'btn-outline-dark' }}" role="tab" aria-selected="{{ $enSecciones ? 'true' : 'false' }}"><i class="bi bi-bookmark me-1" aria-hidden="true"></i> Secciones</a>
         </div>
 
@@ -35,8 +35,8 @@
                 <div class="encabezado-pantalla m-0">
                     <div class="icono"><i class="bi bi-geo-alt-fill text-danger" aria-hidden="true"></i></div>
                     <div>
-                        <h1>Zonas / Edificios</h1>
-                        <p>Nivel 1 — entra a una zona para ver sus Pisos y {{ $etiquetas['area_especifica']['plural'] }}.</p>
+                        <h1>Zonas y edificios</h1>
+                        <p>Zona o edificio › Piso › {{ $etiquetas['area_especifica']['singular'] }}. Entra a una zona para ver sus pisos y {{ mb_strtolower($etiquetas['area_especifica']['plural']) }}.</p>
                     </div>
                 </div>
                 <div class="barra-filtros justify-content-md-end">

@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Lector\AccionesLector;
 use App\Services\Lector\Lector;
 use App\Support\Lector\Etiqueta;
 use App\Support\Tenancy\EmpresaDeTrabajo;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 /**
  * Lector universal (QR, NFC, RFID, código de barras). Ver
@@ -42,11 +45,15 @@ class LectorController extends Controller
      * (por ejemplo, el iPhone al acercar una etiqueta, sin app). Abre la
      * pantalla del registro si el usuario puede verlo.
      */
-    public function ir(Request $request, string $codigo): RedirectResponse
+    public function ir(Request $request, string $codigo, AccionesLector $acciones, Tenant $tenant): RedirectResponse|View
     {
-        $encontrado = $this->lector->resolver($request->user(), $this->empresa->id($request->user()), '/e/'.$codigo, null, 1)->first();
+        $empresaId = $this->empresa->id($request->user());
+        $encontrado = $this->lector->resolver($request->user(), $empresaId, '/e/'.$codigo, null, 1)->first();
         abort_if($encontrado === null, 404);
 
-        return redirect()->to($encontrado['url']);
+        // ADR-0014: si hay una acción probable (recibir una llave prestada o un equipo en responsiva, prestar una llave), se ofrece
+        $menu = $tenant->conEmpresa($empresaId, fn () => $acciones->para($request->user(), $encontrado));
+
+        return $menu === null ? redirect()->to($encontrado['url']) : view('lector.acciones', ['menu' => $menu]);
     }
 }

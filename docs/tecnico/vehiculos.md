@@ -144,3 +144,7 @@ Con `/vehiculos?nuevo=1&proveedor={id}` la **Agencia o Empresa Propietaria queda
 ## Ronda 6: aviso de duplicado en vivo
 
 Las placas usan `data-duplicado` → `GET /vehiculos/duplicado` (iguales sin espacios ni guiones = existe; O/0, I/1 o una letra de diferencia = parecido; libre: «Se guardarán como ABC123A.»), con **Reactivar** si el vehículo está de baja. Se quitó `data-placas-existentes` / `data-aviso-placas`; el aviso ocupa toda la fila bajo Placas y Categoría.
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): «¿De quién es?» / «¿Qué forma tiene?», categorías agrupadas (`GRUPOS_PROPIEDAD`), siguiente paso «Imprimir su calcomanía», impresora en la ficha.

@@ -77,7 +77,8 @@ class AppServiceProvider extends ServiceProvider
             $items = collect($menus)->flatMap(fn ($menu) => collect($menu['secciones'])->flatten(1))->keyBy('clave');
             $atajos = collect(['accesos' => ['Accesos', 'bi-journal-text'], 'novedades' => ['Novedades', 'bi-headset']])
                 ->filter(fn ($_, $clave) => $items->has($clave))
-                ->map(fn ($atajo, $clave) => [...$items[$clave], 'nombre' => $atajo[0], 'icono' => $atajo[1]])
+                // Mejoras Incidentes: el botón de la bitácora lleva el nombre que la empresa le dio en el menú (Configuración)
+                ->map(fn ($atajo, $clave) => [...$items[$clave], 'nombre' => $clave === 'novedades' && $items[$clave]['nombre'] !== 'Novedades' ? $items[$clave]['nombre'] : $atajo[0], 'icono' => $atajo[1]])
                 ->values()
                 ->all();
 

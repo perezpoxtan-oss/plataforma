@@ -20,7 +20,7 @@ class CatalogoSeeder extends Seeder
         'ver' => 'Ver',
         'crear' => 'Crear',
         'editar' => 'Editar',
-        'eliminar' => 'Eliminar',
+        'eliminar' => 'Dar de baja', // Mejoras padrones: siempre fue la baja reversible (el borrado es «Eliminar definitivamente»)
         'aprobar' => 'Aprobar',
         'firmar' => 'Firmar',
         'imprimir' => 'Imprimir',
@@ -98,7 +98,8 @@ class CatalogoSeeder extends Seeder
             'direccion' => ['Dirección', 'bi-building-gear', [
                 'empresas' => ['Empresas', 'bi-building', []],
                 'sedes' => ['Sedes', 'bi-geo-alt', []],
-                'espacios' => ['Zonas y áreas', 'bi-grid-3x3-gap', ['imprimir']],
+                // Mejoras estructura (ADR-0016): «área» queda solo para las partes de una habitación
+                'espacios' => ['Zonas y edificios', 'bi-grid-3x3-gap', ['imprimir']],
                 'usuarios' => ['Usuarios', 'bi-person-gear', ['desbloquear']],
                 'roles' => ['Roles', 'bi-person-rolodex', []],
                 'permisos' => ['Matriz de permisos', 'bi-ui-checks-grid', [], [], ['ver', 'editar']],

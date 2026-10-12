@@ -15,6 +15,7 @@ use App\Models\MovimientoTransporte;
 use App\Models\Sede;
 use App\Models\User;
 use App\Models\VoucherReposicion;
+use App\Services\Notificaciones\PreferenciasAvisos;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -48,7 +49,7 @@ class AvisosCorreo
             return;
         }
 
-        $destinatarios = $this->conPermiso($empresa->id, 'colaboradores.aprobar', $colaborador->sede_id);
+        $destinatarios = PreferenciasAvisos::correosQueLoReciben($empresa->id, 'alta_provisional', $this->conPermiso($empresa->id, 'colaboradores.aprobar', $colaborador->sede_id));
         if ($destinatarios === []) {
             return;
         }
@@ -130,6 +131,7 @@ class AvisosCorreo
     {
         $empresa = Empresa::find($empresaId);
         $destinatarios = array_values(array_unique(array_filter($destinatarios)));
+        $destinatarios = PreferenciasAvisos::correosQueLoReciben($empresaId, $clave, $destinatarios); // Mejoras estructura (ADR-0016)
         if ($empresa === null || ! $empresa->aviso($clave) || ! $this->correo->configurado() || $destinatarios === []) {
             return false;
         }
@@ -223,7 +225,7 @@ class AvisosCorreo
         $altas = app(AltasPorVerificar::class);
         $definicion = $altas->definicion($padron);
         $sedeId = $registro->sede_alta_id === null ? null : (int) $registro->sede_alta_id;
-        $destinatarios = $this->conPermiso($empresa->id, $definicion['permiso'].'.editar', $sedeId);
+        $destinatarios = PreferenciasAvisos::correosQueLoReciben($empresa->id, 'alta_por_verificar', $this->conPermiso($empresa->id, $definicion['permiso'].'.editar', $sedeId));
         if ($destinatarios === []) {
             return;
         }
@@ -255,6 +257,7 @@ class AvisosCorreo
     {
         $empresa = Empresa::find($empresaId);
         $destinatarios = array_values(array_unique(array_filter($destinatarios)));
+        $destinatarios = PreferenciasAvisos::correosQueLoReciben($empresaId, $clave, $destinatarios); // Mejoras estructura (ADR-0016)
         if ($empresa === null || ! $empresa->aviso($clave) || ! $this->correo->configurado() || $destinatarios === []) {
             return false;
         }
@@ -281,6 +284,7 @@ class AvisosCorreo
     {
         $empresa = Empresa::find($empresaId);
         $destinatarios = array_values(array_unique(array_filter($destinatarios)));
+        $destinatarios = PreferenciasAvisos::correosQueLoReciben($empresaId, $clave, $destinatarios); // Mejoras estructura (ADR-0016)
         if ($empresa === null || ! $empresa->aviso($clave) || ! $this->correo->configurado() || $destinatarios === []) {
             return false;
         }

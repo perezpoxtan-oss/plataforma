@@ -27,6 +27,8 @@
         </button>
     @else
         <div class="zona-borrar-definitivo">
+            {{-- Mejoras padrones: dice para qué es, sin tener que buscarlo en el manual --}}
+            <span class="ayuda-borrar-definitivo">¿Lo capturaste por error y nadie lo ha usado?</span>
             <button type="button" class="btn-borrar-definitivo" data-borrar-definitivo data-registro="{{ $registro }}"
                     data-id="{{ $id ?? '' }}" data-url="{{ url('borrar/'.$registro) }}">
                 <i class="bi bi-trash3" aria-hidden="true"></i> Eliminar definitivamente

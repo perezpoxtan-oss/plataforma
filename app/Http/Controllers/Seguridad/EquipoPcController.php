@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Empresa;
 use App\Models\EquipoPc;
 use App\Models\RecorridoPc;
+use App\Models\RevisionRecorridoPc;
 use App\Models\User;
+use App\Services\Lector\ImpresionDesdePadron;
 use App\Services\RecorridosPc\AdministradorRecorridosPc;
 use App\Services\RecorridosPc\CatalogoEquiposPc;
 use App\Services\RecorridosPc\Ubicaciones;
@@ -82,8 +84,26 @@ class EquipoPcController extends Controller
                 'desactivables' => $this->catalogo->idsEnAlcance($actor, 'equipos_pc.eliminar'),
                 'siguiente' => session('capturar_siguiente'),
                 'puede' => $puede,
+                // Mejoras padrones (ADR-0015): la última revisión de cada equipo en los recorridos, en su tarjeta
+                'ultimasRevisiones' => $this->ultimasRevisiones($lista->pluck('id')->all()),
             ]);
         });
+    }
+
+    /**
+     * Última revisión (recorridos de Protección Civil) de cada equipo: dos consultas para toda la lista.
+     *
+     * @param  list<int>  $ids
+     * @return array<int, RevisionRecorridoPc>
+     */
+    private function ultimasRevisiones(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $ultimas = RevisionRecorridoPc::query()->whereIn('equipo_pc_id', $ids)->groupBy('equipo_pc_id')->selectRaw('MAX(id) as id')->pluck('id');
+
+        return RevisionRecorridoPc::query()->whereKey($ultimas)->get(['id', 'equipo_pc_id', 'resultado', 'created_at'])->keyBy('equipo_pc_id')->all();
     }
 
     public function store(Request $request): RedirectResponse
@@ -94,7 +114,11 @@ class EquipoPcController extends Controller
         $equipo = $this->tenant->conEmpresa($empresaId, fn () => $this->catalogo->crear($request->user(), $request->all()));
 
         $respuesta = redirect()->to(route('equipos_pc.index').'#equipopc-'.$equipo->id)
-            ->with('ok', "Equipo {$equipo->numero_serie} ({$equipo->etiquetaCategoria()}) registrado. Ya puedes imprimir su etiqueta QR.");
+            ->with('ok', "Equipo {$equipo->numero_serie} ({$equipo->etiquetaCategoria()}) registrado.");
+        // Mejoras padrones (criterio 5): el siguiente paso es su etiqueta
+        if ($request->user()->can('equipos_pc.imprimir')) {
+            $respuesta->with('siguiente_paso', ['texto' => 'Imprimir su etiqueta', 'icono' => 'bi-printer', 'nueva_pestana' => true, 'url' => route('equipos_pc.etiqueta', $equipo->id)]);
+        }
         // «Registrar y capturar siguiente»: se vuelve a abrir el alta con la misma sede, tipo y ubicación
         if ($request->boolean('_siguiente')) {
             $respuesta->with('capturar_siguiente', [
@@ -155,13 +179,17 @@ class EquipoPcController extends Controller
      * aquí mismo y solo lleva la dirección /e/{código} (SEGCAT lo pedía a
      * api.qrserver.com con el número de serie).
      */
-    public function etiqueta(Request $request, int $equipo): View
+    public function etiqueta(Request $request, int $equipo): View|RedirectResponse
     {
         Gate::authorize('equipos_pc.imprimir');
         $empresaId = $this->empresaDeTrabajo($request);
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo, $empresaId) {
             $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos_pc.imprimir');
+            // Mejoras padrones (ADR-0015): si la empresa imprime con plantillas, un solo camino (Etiquetas QR)
+            if ($plantillas = app(ImpresionDesdePadron::class)->redirigir($request->user(), $empresaId, 'equipo_pc', [(int) $modelo->id])) {
+                return $plantillas;
+            }
             $modelo->load(['sede:id,nombre', 'espacio:id,nombre,ruta']);
 
             return view('seguridad.equipos-pc.etiqueta', [

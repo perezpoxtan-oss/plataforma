@@ -36,6 +36,7 @@
             <button type="button" class="btn-imprimir-calcomania" data-accion="imprimir"><i class="bi bi-printer me-2" aria-hidden="true"></i>Imprimir Selección</button>
             <a href="{{ route('gafetes.index') }}" class="btn-cerrar-calcomania"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Volver al inventario</a>
         </div>
+        @include('componentes.hoja-impresion-ayuda', ['selEtiquetas' => $gafetes->map(fn ($g) => 'gafete-'.$g->id)->values()->all()])
     </div>
 
     <div class="hoja-gafetes">

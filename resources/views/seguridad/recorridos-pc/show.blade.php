@@ -124,7 +124,7 @@
                         <input type="hidden" name="categoria" value="{{ $equipo->categoria }}">
                     @else
                         <p class="rpc-ayuda"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Captura a mano un equipo sin etiqueta o que no está en el catálogo. Si su ID sí está en el catálogo de la sede, se liga solo.</p>
-                        <label class="campo-etiqueta" for="rpc_identificador">Lector ID / Núm. de Serie</label>
+                        <label class="campo-etiqueta" for="rpc_identificador">Clave de la etiqueta</label>
                         <input type="text" id="rpc_identificador" name="identificador" class="campo text-uppercase fw-bold" maxlength="100" required autocapitalize="characters"
                                placeholder="Ej. EXT-01" value="{{ old('identificador') }}">
                         <label class="campo-etiqueta" for="rpc_categoria">Categoría del Equipo</label>

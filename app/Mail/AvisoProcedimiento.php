@@ -10,7 +10,8 @@ use Illuminate\Mail\Mailables\Envelope;
 /**
  * Avisos de Procedimientos:
  *  - publicado: se publicó una versión que debes leer y firmar ("Leí y entendí");
- *  - recordatorio: los procedimientos que aún no firmas.
+ *  - recordatorio: los procedimientos que aún no firmas;
+ *  - revision: se envió a revisión una versión que puedes aprobar (ADR-0014).
  * Sin datos personales: clave, título, versión y el enlace al modo lectura.
  */
 class AvisoProcedimiento extends Mailable
@@ -30,7 +31,8 @@ class AvisoProcedimiento extends Mailable
         $primero = $this->procedimientos[0] ?? ['clave' => '', 'titulo' => ''];
         $asunto = $this->tipo === 'publicado'
             ? "Procedimiento {$primero['clave']} — léelo y firma de enterado"
-            : (count($this->procedimientos) === 1 ? 'Tienes 1 procedimiento por leer y firmar' : 'Tienes '.count($this->procedimientos).' procedimientos por leer y firmar');
+            : ($this->tipo === 'revision' ? "Procedimiento {$primero['clave']} por aprobar" : null);
+        $asunto ??= (count($this->procedimientos) === 1 ? 'Tienes 1 procedimiento por leer y firmar' : 'Tienes '.count($this->procedimientos).' procedimientos por leer y firmar');
 
         return new Envelope(subject: $asunto.' · '.app(Identidad::class)->get('nombre_corto'));
     }

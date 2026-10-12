@@ -30,7 +30,7 @@
     </div>
     <p class="text-muted small mb-4">
         <i class="bi bi-info-circle" aria-hidden="true"></i>
-        Los niveles van de menor (más privilegios) a mayor (menos privilegios). El Super Administrador está por encima de todos y no aparece aquí.
+        La lista va de más autoridad (arriba) a menos autoridad (abajo); al crear un rol eliges debajo o arriba de cuál va. El Super Administrador está por encima de todos y no aparece aquí.
         @if ($puede['permisos'])
             Los permisos de cada módulo se configuran desde <a href="{{ route('permisos.index') }}">Permisos</a>.
         @endif
@@ -69,6 +69,7 @@
                         <span></span>
                     @endif
                     <div class="d-flex gap-2">
+                        @include('componentes.ver-historial', ['registro' => \App\Models\Rol::class, 'id' => $r->id, 'nombre' => $r->nombre])
                         @if ($puede['editar'] && $administrable)
                             <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar {{ $r->nombre }}"
                                     data-accion="editar-rol"
@@ -109,6 +110,7 @@
                 <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
             </div>
             <div class="dialogo-cuerpo">
+                @include('componentes.ayuda-apartado', ['pagina' => 'roles-y-permisos', 'apartado' => 'Cómo crear un rol'])
                 <form action="{{ route('roles.store') }}" method="POST" autocomplete="off">
                     @csrf
                     <input type="hidden" name="_dialogo" value="crear">
@@ -119,20 +121,19 @@
                     <label class="campo-etiqueta" for="nuevo_descripcion">Descripción</label>
                     <input type="text" id="nuevo_descripcion" name="descripcion" class="campo" maxlength="255" placeholder="Ej. Supervisa dos hoteles, sin acceso a nómina" value="{{ $dialogo === 'crear' ? old('descripcion') : '' }}">
 
-                    <label class="campo-etiqueta" for="nuevo_nivel">Nivel Jerárquico</label>
-                    <input type="number" id="nuevo_nivel" name="nivel_jerarquia" class="campo" min="{{ $nivelMinimo }}" max="999" step="1" value="{{ $dialogo === 'crear' ? old('nivel_jerarquia') : '' }}" required
-                           aria-describedby="nuevo_nivel_ayuda" data-mensaje-min="{{ $mensajeMinimo }}">
-                    <p class="campo-ayuda mb-1" id="nuevo_nivel_ayuda" data-ayuda-nivel>
-                        <i class="bi bi-info-circle" aria-hidden="true"></i>
-                        @if ($esSuper)
-                            Número menor = más autoridad. {{ $escala !== '' ? 'Escala actual: '.$escala.'.' : '' }}
-                        @else
-                            Tu nivel es <strong>{{ $nivelPropio }}</strong>. Solo puedes crear roles de nivel <strong>{{ $nivelMinimo }}</strong> en adelante (número mayor = menos autoridad{{ $escala !== '' ? ': '.$escala : '' }}).
-                        @endif
-                    </p>
-                    <p class="campo-ayuda mt-1">
-                        Niveles ya usados: {{ $nivelesUsados ? implode(', ', $nivelesUsados) : 'ninguno' }}. Elige un número distinto; entre dos niveles existentes para insertarlo "en medio" (ej. entre 20 y 30, usa 25).
-                    </p>
+                    {{-- Mejoras estructura (ADR-0016): el nivel se elige «debajo de / arriba de» otro rol; el número queda en Avanzado --}}
+                    @include('administracion.roles._posicion', ['prefijo' => 'nuevo', 'esNuevo' => true])
+
+                    @if ($puede['copiar'])
+                        <label class="campo-etiqueta" for="nuevo_copiar_de">Permisos iniciales</label>
+                        <select id="nuevo_copiar_de" name="copiar_de" class="campo">
+                            <option value="">Ninguno (los configuro después)</option>
+                            @foreach ($roles as $r)
+                                <option value="{{ $r->id }}" @selected($dialogo === 'crear' && (string) old('copiar_de') === (string) $r->id)>Los mismos que «{{ $r->nombre }}»</option>
+                            @endforeach
+                        </select>
+                        <p class="campo-ayuda">Crea el rol a partir de otro y después ajusta solo lo que cambia. Solo se copian los permisos que tú tienes.</p>
+                    @endif
 
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
@@ -163,12 +164,7 @@
                     <label class="campo-etiqueta" for="editar_descripcion">Descripción</label>
                     <input type="text" id="editar_descripcion" name="descripcion" class="campo" maxlength="255" value="{{ $editando ? old('descripcion') : '' }}" data-campo="descripcion">
 
-                    <label class="campo-etiqueta" for="editar_nivel">Nivel Jerárquico</label>
-                    <input type="number" id="editar_nivel" name="nivel_jerarquia" class="campo" min="{{ $nivelMinimo }}" max="999" step="1" value="{{ $editando ? old('nivel_jerarquia') : '' }}" data-campo="nivel" required
-                           data-mensaje-min="{{ $mensajeMinimo }}">
-                    <p class="campo-ayuda">
-                        <i class="bi bi-exclamation-triangle text-warning" aria-hidden="true"></i> Cambiar este número reordena a quién puede asignarle este rol a quién, y qué ve en el menú. Solo ajústalo si sabes lo que implica.
-                    </p>
+                    @include('administracion.roles._posicion', ['prefijo' => 'editar', 'esNuevo' => false])
 
                     <input type="hidden" name="activo" value="0">
                     <div class="form-check form-switch mb-3">

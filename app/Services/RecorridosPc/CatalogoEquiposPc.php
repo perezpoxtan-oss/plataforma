@@ -176,8 +176,8 @@ class CatalogoEquiposPc
             'sede_id.required' => 'Elige la sede donde está el equipo.',
             'categoria.required' => 'Elige el tipo de equipo.',
             'categoria.in' => 'Elige un tipo de equipo de la lista.',
-            'numero_serie.required' => 'El Núm. de Serie / ID es obligatorio (es lo que va en la etiqueta, por ejemplo EXT-01).',
-            'numero_serie.max' => 'El Núm. de Serie / ID admite máximo 100 caracteres.',
+            'numero_serie.required' => 'La clave de la etiqueta es obligatoria (es lo que va en el QR, por ejemplo EXT-01).',
+            'numero_serie.max' => 'La clave de la etiqueta admite máximo 100 caracteres.',
             'referencia.max' => 'La referencia admite máximo 150 caracteres.',
             'etiqueta_nfc.max' => 'La etiqueta NFC / RFID admite máximo 64 caracteres.',
         ])->validate();
@@ -188,7 +188,7 @@ class CatalogoEquiposPc
         $existente = EquipoPc::where('sede_id', $sedeId)->where('numero_serie', $serie)
             ->when($actual !== null, fn ($q) => $q->whereKeyNot($actual->id))->first();
         if ($existente !== null) {
-            throw ValidationException::withMessages(['numero_serie' => "El Núm. de Serie / ID «{$serie}» ya está registrado en esta sede ({$existente->etiquetaCategoria()})"
+            throw ValidationException::withMessages(['numero_serie' => "La clave «{$serie}» ya está registrada en esta sede ({$existente->etiquetaCategoria()})"
                 .($existente->activo ? '.' : ', dado de baja: reactívalo en lugar de registrarlo otra vez.')]);
         }
 

@@ -12,6 +12,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Services\Firmas\Firmas;
 use App\Services\PasesSalida\AdministradorPasesSalida;
+use App\Services\PasesSalida\EsperaPasesSalida;
 use App\Services\Permisos\Autorizador;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
@@ -124,6 +125,8 @@ class PaseSalidaController extends Controller
                 'sedesVisibles' => $sedesVisibles,
                 'variasSedes' => $sedesVisibles->count() > 1,
                 'pasesSrv' => $this->pases,
+                // Mejoras Incidentes (criterio 3): reloj (y color, si la empresa puso horas) de cada pase que espera firma
+                'relojes' => $this->relojes(collect($lista->items())),
                 'porFirmar' => $porFirmar,
                 'llegan' => $llegan,
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
@@ -482,6 +485,7 @@ class PaseSalidaController extends Controller
             'vencido' => $vencido,
             'etapas' => $this->pases->etapas($pase, $vencido),
             'siguiente' => $this->pases->siguiente($pase),
+            'reloj' => app(EsperaPasesSalida::class)->relojDe($pase),
             'ronda' => $circuito->rondaActual($pase),
             'rondasAnteriores' => $pase->aprobaciones->where('ronda', '<', $pase->ronda)->groupBy('ronda'),
             'actual' => $actual,
@@ -557,5 +561,23 @@ class PaseSalidaController extends Controller
         abort_if($modelo === null, 404);
 
         return $modelo;
+    }
+
+    /**
+     * Mejoras Incidentes: reloj de cada pase que espera firma (los ajustes se leen una vez).
+     *
+     * @param  Collection<int, PaseSalida>  $pases
+     * @return array<int, array{texto: string, horas: int, nivel: ?string, escalado: ?string}>
+     */
+    private function relojes(Collection $pases): array
+    {
+        $pendientes = $pases->filter(fn (PaseSalida $p) => $p->estado === PaseSalida::PENDIENTE);
+        if ($pendientes->isEmpty()) {
+            return [];
+        }
+        $espera = app(EsperaPasesSalida::class);
+        $ajustes = $this->pases->circuito()->espera();
+
+        return $pendientes->mapWithKeys(fn (PaseSalida $p) => [$p->id => $espera->relojDe($p, $ajustes)])->filter()->all();
     }
 }

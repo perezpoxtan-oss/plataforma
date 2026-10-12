@@ -10,6 +10,8 @@ use App\Models\TipoEquipo;
 use App\Models\User;
 use App\Models\VoucherReposicion;
 use App\Services\Equipos\AdministradorEquipos;
+use App\Services\Lector\ImpresionDesdePadron;
+use App\Services\Vouchers\RecuperacionVouchers;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
@@ -90,6 +92,10 @@ class EquipoController extends Controller
                 'vouchersBaja' => VoucherReposicion::where('origen_tipo', 'equipo')
                     ->whereIn('origen_id', $lista->where('estado', 'baja')->pluck('id'))
                     ->orderBy('id')->pluck('folio', 'origen_id')->all(),
+                // Mejoras padrones (ADR-0015): motivo y enlace del voucher en la tarjeta; enlace a la responsiva
+                'vouchersInfo' => app(RecuperacionVouchers::class)->ultimosPorOrigen('equipo', $lista->where('estado', 'baja')->pluck('id')),
+                'puedeVerVouchers' => $actor->can('vouchers.ver'),
+                'puedeVerResponsivas' => $actor->can('responsivas.ver'),
             ]);
         });
     }
@@ -101,8 +107,14 @@ class EquipoController extends Controller
 
         $equipo = $this->tenant->conEmpresa($empresaId, fn () => $this->equipos->crear($request->user(), $request->all()));
 
-        return redirect()->to(route('equipos.index').'#equipo-'.$equipo->id)
-            ->with('ok', "Equipo {$equipo->numero_serie} registrado correctamente. Ya puedes imprimir su etiqueta QR.");
+        $redireccion = redirect()->to(route('equipos.index').'#equipo-'.$equipo->id)
+            ->with('ok', "Equipo {$equipo->numero_serie} registrado correctamente.");
+        // Mejoras padrones (criterio 5): el siguiente paso es su etiqueta
+        if ($request->user()->can('equipos.imprimir')) {
+            $redireccion->with('siguiente_paso', ['texto' => 'Imprimir su etiqueta', 'icono' => 'bi-printer', 'nueva_pestana' => true, 'url' => route('equipos.etiqueta', $equipo->id)]);
+        }
+
+        return $redireccion;
     }
 
     public function update(Request $request, int $equipo): RedirectResponse
@@ -147,15 +159,25 @@ class EquipoController extends Controller
         Gate::authorize('equipos.eliminar');
         $empresaId = $this->empresaDeTrabajo($request);
 
-        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
+        [$modelo, $resultado, $voucher] = $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
             $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos.eliminar');
-            $this->equipos->reactivar($request->user(), $modelo);
+            // Mejoras padrones (ADR-0015): reactivar = «Recuperado» de su voucher (un solo camino, mismo resultado)
+            [$resultado, $voucher] = app(RecuperacionVouchers::class)->desdeFicha($request->user(), 'equipo', $modelo);
+            if ($resultado === 'sin_voucher') {
+                $this->equipos->reactivar($request->user(), $modelo);
+            }
 
-            return $modelo;
+            return [$modelo, $resultado, $voucher];
         });
+        $volver = route('equipos.index').'#equipo-'.$modelo->id;
 
-        return redirect()->to(route('equipos.index').'#equipo-'.$modelo->id)
-            ->with('ok', "Equipo {$modelo->numero_serie} reactivado: ya vuelve a estar DISPONIBLE.");
+        return match ($resultado) {
+            'con_cobro' => redirect()->to(route('vouchers.index', ['q' => $voucher->folio, 'recuperar' => $voucher->id]).'#voucher-'.$voucher->id)
+                ->with('aviso', "El equipo {$modelo->numero_serie} tiene el voucher {$voucher->folio} con cobro: confirma aquí si ya se le cobró al responsable y se reactivará al guardar."),
+            'recuperado' => redirect()->to($volver)->with('ok', "Equipo {$modelo->numero_serie} reactivado: ya vuelve a estar DISPONIBLE. Su voucher {$voucher->folio} quedó «Cancelado por recuperación»."),
+            default => redirect()->to($volver)->with('ok', "Equipo {$modelo->numero_serie} reactivado: ya vuelve a estar DISPONIBLE."
+                .($voucher ? " Su voucher {$voucher->folio} sigue vigente: márcalo «Recuperado» en Vouchers de reposición." : '')),
+        };
     }
 
     /**
@@ -163,15 +185,19 @@ class EquipoController extends Controller
      * mismo y solo lleva la dirección /e/{código}: SEGCAT lo pedía a
      * api.qrserver.com (un tercero) y sin internet salía sin QR.
      */
-    public function etiqueta(Request $request, int $equipo): View
+    public function etiqueta(Request $request, int $equipo): View|RedirectResponse
     {
         Gate::authorize('equipos.imprimir');
         $empresaId = $this->empresaDeTrabajo($request);
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo, $empresaId) {
             $modelo = $this->equipos->limitar(Equipo::query(), $request->user(), 'equipos.imprimir')
                 ->with(['tipo:id,nombre', 'sede:id,nombre'])->find($equipo);
             abort_if($modelo === null, 404);
+            // Mejoras padrones (ADR-0015): si la empresa imprime con plantillas, un solo camino (Etiquetas QR)
+            if ($plantillas = app(ImpresionDesdePadron::class)->redirigir($request->user(), $empresaId, 'equipo', [(int) $modelo->id])) {
+                return $plantillas;
+            }
 
             return view('seguridad.equipos.etiqueta', [
                 'equipo' => $modelo,

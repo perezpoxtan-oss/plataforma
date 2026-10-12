@@ -159,7 +159,20 @@ La migración `000410` los conserva: les da código de verificación, crea sus 3
 - **Carreras**: el pase se bloquea en cada firma.
 - **Destino obligatorio**, **vencidos con la fecha local de la sede**, **búsqueda** por número de empleado, artículo, serie y QR, lista paginada.
 
+## Firmas que tardan: reloj, color y escalamiento (ADR-0013)
+
+Criterio 3, como las autorizaciones de la caseta (`App\Services\Autorizaciones\Escalamiento`) pero en horas o días.
+
+- **Servicio**: `app/Services/PasesSalida/EsperaPasesSalida.php`. Comando `plataforma:escalar-pases --si-toca` (en `despliegue/desplegar.sh`, en proceso, sin exec).
+- **Reloj**: `relojDe()` calcula desde cuándo espera el paso actual: el `resuelto_en` más reciente de los pasos anteriores de la ronda o el `created_at` del paso (al enviar o reenviar). Se muestra siempre en la lista (`relojes`, una lectura de ajustes por pantalla) y en la ficha.
+- **Ajustes**: `empresas.preferencias['pases_salida']['espera'] = {recordar_horas, escalar_horas}` (1 a 720; la pantalla los pide en horas o días y los guarda en horas). Se guardan con el circuito (`espera[recordar|recordar_unidad|escalar|escalar_unidad]`); `escalar` debe ser mayor que `recordar`. Sin ellos (omisión) no hay color ni avisos nuevos. «Restablecer la configuración original» también los borra.
+- **Color**: `normal` (verde) antes de `recordar`, `ambar` desde `recordar`, `roja` desde `escalar`; sin ajustes, sin clase de color (se ve como hoy).
+- **Recordatorio** (una vez por paso, `pases_salida_aprobaciones.recordatorio_en`): campana `pase_firma_recordatorio` a `CircuitoPasesSalida::aprobadores()` del paso, con referencia `pase_salida_aprobacion` (se resuelve al firmar, omitir o rechazar ese paso, como «Te toca firmar»), correo con el aviso `pase_salida_espera`, renglón «Recordatorio» en la bitácora del pase y auditoría `pases_salida.recordatorio`.
+- **Escalamiento** (una vez por paso, `escalado_en` y `escalado_a`): a los aprobadores del **siguiente paso pendiente** de la ronda que no sean los del paso actual; si no hay (último paso o mismas personas), a quien tiene `pases_salida.configurar` en la sede de origen. Campana `pase_firma_escalada`, correo `pase_salida_espera`, bitácora («Se avisó a …») y auditoría `pases_salida.escalada`. El reloj dice «Se avisó a: …».
+- **Auditoría del ajuste**: `pases_salida.tiempos_espera` (aparte de `ajustes_actualizados`, que sigue cubriendo firmas en caseta y rechazo).
+- **Migración**: `2026_10_24_000100_incidentes_turno_y_espera_de_pases` agrega `recordatorio_en`, `escalado_en` y `escalado_a` a `pases_salida_aprobaciones`.
+
 ## Criterios de experiencia de uso (excepciones anotadas)
 
 - **Regla 4 (verbos):** los botones de caseta de la sede destino se llaman **Confirmar llegada a esta sede** y **Autorizar salida de regreso** por indicación del dueño del proyecto (crítica de uso, octubre de 2026), para que el agente de la sede destino entienda qué hace. Solo cambió el texto.
-- **Regla 3 (reloj, color y suplente):** las aprobaciones de pases aún no tienen reloj ni escalamiento; se recuerdan los vencidos cada mañana. Pendiente para una entrega posterior.
+- **Regla 3 (reloj, color y suplente):** resuelta en ADR-0013 (ver «Firmas que tardan»). El color y los avisos dependen de las horas que configure la empresa; sin ellas solo se ve el reloj (decisión del dueño: por omisión nada cambia).

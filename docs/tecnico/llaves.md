@@ -103,3 +103,7 @@ Migración `2026_10_12_000210_ajustes_ronda_5_llaves_y_vouchers`.
 | Bajas sin auditoría y voucher armado a mano en cada módulo | Servicio común de Vouchers (transacción) y auditoría |
 | `onclick` en línea y JS inyectado por AJAX en el modal de edición | Sin JS en línea; edición con `data-valores` |
 | Sin exportación del catálogo | CSV con los filtros de la pantalla |
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): alta corta con «Más datos», «Guardar», reactivación por el voucher, siguiente paso «Imprimir su etiqueta» / «Ver su código QR», impresora en la ficha.

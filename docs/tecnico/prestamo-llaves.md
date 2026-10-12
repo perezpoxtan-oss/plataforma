@@ -97,3 +97,12 @@ El lector necesita además `llaves.ver` (tipo `llave`) y `colaboradores.ver` (ti
 ## Pendiente / notas para el integrador
 
 - El Catálogo de llaves permite dar de baja una llave que está **EN USO** (no lo bloquea); el préstamo sigue abierto y se recibe normalmente. Conviene decidir si la baja debe pedir recibirla antes.
+
+## Caseta y activos (ADR-0014)
+
+- `POST /prestamo-llaves/recibir` (`prestamo_llaves.recibir-escaneada`, `prestamo_llaves.editar`): recibe la llave escaneada desde la pantalla principal («Recibir: escanea la llave que te devuelven»).
+- Con «Gafete interno», el folio de la garantía se llena con el número del gafete escaneado (JS).
+- Semáforo y avisos de llaves fuera mucho tiempo (horas por empresa; apagado por omisión), comando `plataforma:activos-pendientes`, Mis pendientes «Llaves fuera de tiempo».
+- `?prestar={llave}` abre «Prestar Llave» con la llave elegida (desde el lector).
+
+Detalle: [caseta-y-activos.md](caseta-y-activos.md).

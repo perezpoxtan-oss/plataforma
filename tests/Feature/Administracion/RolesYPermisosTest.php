@@ -214,7 +214,7 @@ class RolesYPermisosTest extends TestCase
                 'llaves' => ['acciones' => ['ver'], 'alcance' => 'propios'],
                 'inventado' => ['acciones' => ['ver'], 'alcance' => 'sede'],
             ],
-        ])->assertRedirect('/permisos?rol='.$agente->id)->assertSessionHas('ok');
+        ])->assertRedirect('/permisos?rol='.$agente->id.'&avanzado=1')->assertSessionHas('ok');
 
         $this->assertSame([
             'accesos.aprobar' => 'empresa',

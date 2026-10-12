@@ -114,3 +114,7 @@ Bloque «Ajustes Ronda 7» al final de `plataforma.js` (descripción de la plant
 ### Pruebas
 
 `tests/Feature/Seguridad/EtiquetasQrTest.php` (plantillas de siempre, permisos por rol, alta/edición/desactivar/reactivar con auditoría, validación de medidas, alcance de sede y empresa, última activa, impresión con historial y `@page`, permisos del historial, reimprimir todas o algunas, hoja de prueba, filtros por fecha, tipo y estatus). `AjustesRonda6Test` pasó a usar el POST.
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): impresión desde los padrones con hoja propia o con plantillas (`ImpresionDesdePadron`, `preferencias.padrones.impresion`), recordatorio de escala en todas las hojas.

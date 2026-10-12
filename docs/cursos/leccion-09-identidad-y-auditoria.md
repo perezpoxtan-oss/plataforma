@@ -12,7 +12,7 @@
    - da de alta el departamento "Spa";
    - abre Estructura → Bitácora de auditoría: arriba aparece "Departamentos · Alta · Departamento · Spa" con tu nombre y tu hora local;
    - toca el ojo y revisa el antes y el después;
-   - filtra por Módulo = Zonas y áreas y luego **Exporta a Excel**.
+   - filtra por Módulo = Zonas y edificios y luego **Exporta a Excel**.
 
 ## Para recordar
 

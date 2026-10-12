@@ -86,3 +86,5 @@ El sistema anterior no tenía ayuda dentro de la aplicación: los instructivos e
 - Las páginas siguen una estructura fija a prueba de errores (para qué sirve, antes de empezar, pasos numerados, qué debes ver, si algo sale mal, preguntas frecuentes).
 - Las pruebas impiden publicar un manual con imágenes rotas, módulos sin página o datos de infraestructura.
 - Las capturas usan usuarios y empresa de ejemplo (sin dominios, usuarios de prueba ni la franja de ambiente).
+
+> Mejoras de 2026-10 (roles sin números, asistente de permisos, configuración por módulo, avisos por persona, historial y varias sedes): ver [estructura-mejoras.md](estructura-mejoras.md) y [ADR-0016](../decisiones/ADR-0016-mejoras-de-estructura.md).

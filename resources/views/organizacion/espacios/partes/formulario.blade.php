@@ -16,6 +16,9 @@
         <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
     </div>
     <div class="dialogo-cuerpo">
+        @if (! $editar && $nivel === 'edificio')
+            @include('componentes.ayuda-apartado', ['pagina' => 'zonas-y-areas', 'apartado' => 'Cómo crear una zona o edificio'])
+        @endif
         <form action="{{ $editar ? ($editId ? route('espacios.update', $editId) : '') : route('espacios.store') }}" method="POST" autocomplete="off">
             @csrf
             @if ($editar) @method('PUT') @endif
@@ -83,7 +86,7 @@
                         <option value="{{ $seccion->id }}" @selected((string) $v('grupo_espacio_id') === (string) $seccion->id)>{{ $seccion->nombre }}</option>
                     @endforeach
                 </select>
-                <p class="campo-ayuda mb-3">Las secciones agrupan {{ mb_strtolower($etiquetas['area_especifica']['plural']) }} (Torre Norte, Villas…). Se crean en Zonas y áreas → pestaña Secciones.</p>
+                <p class="campo-ayuda mb-3">Las secciones agrupan {{ mb_strtolower($etiquetas['area_especifica']['plural']) }} (Torre Norte, Villas…). La forma principal de armarlas es la pestaña «Secciones» de Zonas y edificios (asignas varias a la vez); aquí solo cambias la de esta.</p>
             @endif
 
             <div class="dialogo-acciones">

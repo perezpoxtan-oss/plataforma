@@ -291,6 +291,7 @@ class AltasPorVerificar
                 'verificacion' => Vehiculo::PENDIENTE, 'origen' => $origen, 'sede_id' => $sedeId, 'titulo' => $this->titulo($padron, $registro),
             ]);
             app(AvisosCorreo::class)->altaPorVerificar($padron, $registro, $actor);
+            app(CampanaPadrones::class)->porVerificar($padron, $registro, $actor);
         }
 
         return $pendiente;
@@ -364,6 +365,7 @@ class AltasPorVerificar
         });
 
         $this->auditoria->auditar($actor, $d['permiso'].'.verificado', $registro, ['verificacion' => Vehiculo::PENDIENTE], ['verificacion' => Vehiculo::VERIFICADO]);
+        app(CampanaPadrones::class)->resultado($padron, $registro, 'verificada', $actor);
 
         return $registro;
     }
@@ -391,6 +393,7 @@ class AltasPorVerificar
 
         $this->auditoria->auditar($actor, $d['permiso'].'.rechazado', $registro, ['verificacion' => Vehiculo::PENDIENTE, 'activo' => true],
             ['verificacion' => Vehiculo::RECHAZADO, 'activo' => false, 'motivo_rechazo' => $motivo]);
+        app(CampanaPadrones::class)->resultado($padron, $registro, 'rechazada', $actor);
 
         return $registro;
     }
@@ -439,6 +442,66 @@ class AltasPorVerificar
         $this->auditoria->auditar($actor, $d['permiso'].'.fusionado', $provisional,
             ['verificacion' => Vehiculo::PENDIENTE, 'titulo' => $this->titulo($padron, $provisional)],
             ['fusionado_en' => $destino->id, 'titulo' => $this->titulo($padron, $destino), 'referencias' => $movidos]);
+        app(CampanaPadrones::class)->resultado($padron, $provisional, 'unida', $actor, $destino);
+
+        return $destino;
+    }
+
+    /**
+     * Mejoras padrones (ADR-0015): unir dos registros YA verificados que son
+     * el mismo (p. ej. la misma persona capturada dos veces antes de los
+     * avisos en vivo). Igual que unir un alta pendiente: todo lo registrado
+     * con el duplicado pasa al correcto y el duplicado queda «Unido» (fuera
+     * de uso, solo historia; nada se borra). El correcto se queda con los
+     * datos que le faltaban (identificación, teléfono, empresa).
+     */
+    public function unirDuplicado(User $actor, string $padron, Model $duplicado, Model $destino): Model
+    {
+        $d = $this->definicion($padron);
+        if ($duplicado->estaRechazado() || $duplicado->estaPendiente()) {
+            throw ValidationException::withMessages(['destino_id' => 'Este registro ya no está verificado (pendiente, rechazado o ya unido). Recarga la pantalla.']);
+        }
+        if ($destino->is($duplicado) || ! $destino->activo || $destino->verificacion !== Vehiculo::VERIFICADO
+            || (int) $destino->empresa_id !== (int) $duplicado->empresa_id) {
+            throw ValidationException::withMessages(['destino_id' => 'Elige un registro activo y ya verificado del padrón (no puede ser el mismo).']);
+        }
+        $antes = ['verificacion' => $duplicado->verificacion, 'activo' => (bool) $duplicado->activo, 'titulo' => $this->titulo($padron, $duplicado)];
+
+        $movidos = DB::transaction(function () use ($padron, $duplicado, $destino, $actor) {
+            $movidos = [];
+            foreach (self::REFERENCIAS[$padron] as [$tabla, $columna]) {
+                $movidos["{$tabla}.{$columna}"] = DB::table($tabla)->where($columna, $duplicado->id)->update([$columna => $destino->id]);
+            }
+            if ($padron === 'proveedores' && ! $destino->todas_las_sedes) {
+                $destino->sedes()->syncWithoutDetaching($duplicado->sedes()->pluck('sedes.id')->all());
+            }
+            // Lo que le faltaba al correcto se toma del duplicado (el folio es único: se mueve, no se copia)
+            $completar = [];
+            if ($padron === 'personas') {
+                if ($destino->folio_identificacion === null && $duplicado->folio_identificacion !== null) {
+                    $completar += ['tipo_identificacion' => $duplicado->tipo_identificacion, 'folio_identificacion' => $duplicado->folio_identificacion];
+                    $duplicado->forceFill(['folio_identificacion' => null, 'tipo_identificacion' => null]);
+                }
+                foreach (['telefono', 'proveedor_id', 'empresa_procedencia'] as $campo) {
+                    if (blank($destino->getAttribute($campo)) && ! blank($duplicado->getAttribute($campo))) {
+                        $completar[$campo] = $duplicado->getAttribute($campo);
+                    }
+                }
+            }
+            $duplicado->forceFill([
+                'verificacion' => Vehiculo::RECHAZADO, 'activo' => false, 'fusionado_en_id' => $destino->id,
+                'motivo_rechazo' => mb_substr('Unido con «'.$this->titulo($padron, $destino).'»', 0, 255),
+                'verificado_por' => $actor->id, 'verificado_en' => now(),
+            ])->save();
+            if ($completar !== []) {
+                $destino->forceFill($completar)->save();
+            }
+
+            return $movidos;
+        });
+
+        $this->auditoria->auditar($actor, $d['permiso'].'.fusionado', $duplicado, $antes,
+            ['fusionado_en' => $destino->id, 'titulo' => $this->titulo($padron, $destino), 'referencias' => $movidos, 'duplicado_verificado' => true]);
 
         return $destino;
     }
@@ -676,6 +739,12 @@ class AltasPorVerificar
         $texto = mb_strtolower(strtr((string) $texto, self::SIN_ACENTOS));
 
         return trim((string) preg_replace('/\s+/', ' ', (string) preg_replace('/[^a-z0-9]+/', ' ', $texto)));
+    }
+
+    /** ¿Es el mismo nombre de empresa? (sin mayúsculas, acentos, signos ni «S.A. de C.V.») */
+    public function mismaEmpresa(?string $a, ?string $b): bool
+    {
+        return $this->claveEmpresa($a) !== '' && $this->claveEmpresa($a) === $this->claveEmpresa($b);
     }
 
     /** Como claveNombre, sin "S.A. de C.V." y similares al final. */

@@ -43,6 +43,25 @@
         </article>
     </div>
 
+    {{-- Mejoras estructura (ADR-0016): si la página no resolvió la duda, a quién pedir ayuda --}}
+    @php
+        $correoSoporte = $identidad->get('correo_soporte');
+        $telefonoSoporte = $identidad->get('telefono_soporte');
+    @endphp
+    <div class="manual-ayuda no-imprimir">
+        <i class="bi bi-life-preserver" aria-hidden="true"></i>
+        <div>
+            <strong>¿Esta página no resolvió tu duda?</strong>
+            <span>Busca otra palabra en el <a href="{{ route('manual.index') }}">índice del manual</a> o pregunta a tu supervisor o a tu administrador de la plataforma.
+                @if ($correoSoporte || $telefonoSoporte)
+                    También puedes escribir a soporte:
+                    @if ($correoSoporte)<span class="manual-ayuda-dato">{{ $correoSoporte }}</span>@endif
+                    @if ($telefonoSoporte)<span class="manual-ayuda-dato">{{ $telefonoSoporte }}</span>@endif
+                @endif
+            </span>
+        </div>
+    </div>
+
     @if ($anterior || $siguiente)
         <nav class="manual-vecinas no-imprimir" aria-label="Otras páginas de {{ $pagina->seccion }}">
             @if ($anterior)

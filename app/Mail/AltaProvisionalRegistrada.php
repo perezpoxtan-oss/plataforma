@@ -23,7 +23,7 @@ class AltaProvisionalRegistrada extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "Alta provisional por validar: {$this->nombre} · ".app(Identidad::class)->get('nombre_corto'));
+        return new Envelope(subject: "Colaborador por verificar: {$this->nombre} · ".app(Identidad::class)->get('nombre_corto'));
     }
 
     public function content(): Content

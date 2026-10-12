@@ -61,6 +61,7 @@
             </div>
 
             <div class="barra-pc-acciones">
+                @include('componentes.empresa-de-trabajo'){{-- Mejoras estructura (ADR-0016) --}}
                 @include('componentes.mis-pendientes'){{-- Mis pendientes (lección 35) --}}
                 @include('componentes.campana'){{-- Centro de notificaciones (ADR-0007) --}}
                 {{-- Manual (lección 37) --}}
@@ -177,6 +178,7 @@
             <a href="{{ route('manual.index') }}" class="menu-lateral-item {{ request()->routeIs('manual.*') ? 'activo' : '' }}"><i class="bi bi-question-circle text-primary" aria-hidden="true"></i> Manual</a>
 
             <div class="menu-lateral-grupo mt-4">Sesión</div>
+            @include('componentes.empresa-de-trabajo', ['clase' => 'menu-lateral-item'])
             <a href="{{ route('mi-cuenta.index') }}" class="menu-lateral-item {{ request()->routeIs('mi-cuenta.*') ? 'activo' : '' }}"><i class="bi bi-person-circle text-primary" aria-hidden="true"></i> Mi cuenta</a>
             <form action="{{ route('logout') }}" method="POST" class="m-0">
                 @csrf

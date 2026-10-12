@@ -35,22 +35,22 @@ resumen: Registrar los vehículos que entran a la empresa e imprimir su calcoman
 
 1. Toca la tarjeta **Registrar Vehículo**. Se abre **Alta de Vehículo**.
 2. Escribe las **Placas (Únicas)** como vengan. Se guardan en mayúsculas y sin espacios ni guiones; debajo verás cómo quedarán («Se guardarán como UVW482B.»).
-3. Elige la **Categoría** (*¿de quién es?*): Propio Huésped, Propio Visitante, Propio Familiar, Propio Colaborador, Agencia (Rentado), Flotilla (Empresa/Proveedor), Taxi / Plataforma (Uber/Didi) o Transporte de Personal.
+3. En **¿De quién es?** (la categoría) elige del grupo **Particular** (Propio Huésped, Propio Visitante, Propio Familiar, Propio Colaborador) o del grupo **De una empresa** (Flotilla (Empresa/Proveedor), Agencia (Rentado), Taxi / Plataforma (Uber/Didi), Transporte de Personal).
 4. Según la categoría aparecen otros campos:
    - **Agencia o Empresa Propietaria:** para agencia, flotilla, taxi y transporte de personal. En *Flotilla (Empresa/Proveedor)* es obligatoria.
    - **Número Económico:** el número pintado en la unidad (por ejemplo `T-045`).
    - **Colaborador (dueño del vehículo):** solo en *Propio Colaborador*.
-5. Elige el **Tipo / Estilo** (*su forma*): Sedán, SUV / Camioneta, Pick-up, Autobús, Camión ligero, Motocicleta u Otro.
+5. En **¿Qué forma tiene?** (el tipo) elige: Sedán, SUV / Camioneta, Pick-up, Autobús, Camión ligero, Motocicleta u Otro.
    - Con **Otro** escribe en **Describe el Tipo de Vehículo** qué es (por ejemplo «Carrito de golf»).
    - En autobús, camión ligero o transporte de personal aparece **Capacidad Máxima** (de 1 a 99 personas).
 6. Escribe la **Marca** y el **Color Físico** (obligatorios) y, si lo sabes, el **Modelo**.
-7. Toca **Guardar Vehículo**.
+7. Toca **Guardar**.
 
 ![Alta de una flotilla](img/vehiculos/v4-alta-flotilla.png)
 
-**Qué debes ver:** «Vehículo UVW482B registrado correctamente. Ya puedes imprimir su calcomanía.»
+**Qué debes ver:** «Vehículo UVW482B registrado correctamente.» y, debajo, **Siguiente paso: Imprimir su calcomanía**. Tócalo y se abre la calcomanía en otra pestaña, lista para imprimir.
 
-> **Categoría y Tipo / Estilo no son lo mismo.** La *Categoría* dice **de quién es** (un huésped, una empresa, un taxi). El *Tipo / Estilo* dice **qué forma tiene** (sedán, pick-up…). Por eso «Otro» está en Tipo: un carrito de golf del hotel es Tipo «Otro».
+> **«¿De quién es?» y «¿Qué forma tiene?» no son lo mismo.** La *Categoría* dice **de quién es** (un huésped, una empresa, un taxi). El *Tipo / Estilo* dice **qué forma tiene** (sedán, pick-up…). Por eso «Otro» está en Tipo: un carrito de golf del hotel es Tipo «Otro».
 
 ![Alta del auto de un colaborador](img/vehiculos/v5-alta-colaborador.png)
 
@@ -71,7 +71,7 @@ En **Padrones → Empresas externas → Ficha → Flotilla** toca **Agregar veh�
 
 1. En la tarjeta toca el **lápiz** (Editar).
 2. Corrige los datos en **Actualizar Vehículo**.
-3. Toca **Actualizar Datos**.
+3. Toca **Guardar**.
 
 ![Editar un vehículo](img/vehiculos/v6-editar.png)
 
@@ -79,8 +79,10 @@ En **Padrones → Empresas externas → Ficha → Flotilla** toca **Agregar veh�
 
 ## Cómo imprimir la calcomanía y asignar una etiqueta NFC
 
-1. En la tarjeta toca el botón del **código QR**. Se abre **Código e identificación** con el QR y la dirección del vehículo (con botón **Copiar**).
-2. Para imprimir toca **Imprimir calcomanía**: se abre en otra pestaña. Ahí toca **Imprimir Calcomanía** (los botones no salen en la hoja). **Volver al Padrón Vehicular** te regresa.
+1. Para imprimir, toca la **impresora** de la tarjeta (o, en **Código e identificación**, **Imprimir calcomanía**): se abre en otra pestaña. Ahí toca **Imprimir Calcomanía** (los botones no salen en la hoja). **Volver al Padrón Vehicular** te regresa.
+   - Antes de imprimir lee el recuadro amarillo: en la ventana de la impresora elige **«Tamaño real»** o **«Escala 100 %»** (no «Ajustar a la página»). Si no, la calcomanía sale más chica.
+   - Si necesitas otra medida, toca **Imprimir con una plantilla de Etiquetas QR**. Si tu empresa eligió imprimir siempre con plantillas, el botón te lleva directo a la hoja de [Etiquetas QR](etiquetas-qr.md) y la impresión queda en su historial.
+2. El botón del **código QR** abre **Código e identificación** con el QR y la dirección del vehículo (con botón **Copiar**).
 3. Para ligar un tag NFC o RFID: en **Asignar etiqueta NFC / RFID** acerca el tag al lector (o escribe su número) y toca **Guardar etiqueta**. Para quitarlo, toca **Quitar etiqueta**.
 
 ![Código e identificación](img/vehiculos/v8-identificacion.png)
@@ -94,7 +96,7 @@ En **Padrones → Empresas externas → Ficha → Flotilla** toca **Agregar veh�
 1. Toca el botón rojo **Dar de baja** (círculo con raya) y confirma con **Aceptar** («¿Dar de baja este vehículo? Podrás reactivarlo con un clic.»).
 2. Para regresarlo toca **Reactivar** (flecha circular) y confirma.
 
-**Qué debes ver:** la tarjeta marcada **BAJA**. Nunca se borra: las bitácoras dependen del vehículo.
+**Qué debes ver:** la tarjeta marcada **DE BAJA**. Nunca se borra: las bitácoras dependen del vehículo.
 
 ## Lo que ve el agente de caseta
 

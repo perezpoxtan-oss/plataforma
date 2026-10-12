@@ -66,3 +66,9 @@ Antes era la pantalla `/lost-found/dias-resguardo` dentro de Lost & Found; ahora
 ## Pruebas
 
 `tests/Feature/Direccion/ConfiguracionTest.php`; días de resguardo en `tests/Feature/Seguridad/LostFoundRoboTest.php` (`test_dias_de_resguardo_solo_con_configurar_en_toda_la_empresa`).
+
+## Caseta y activos (ADR-0014)
+
+Sección «Caseta y activos» (`_caseta.blade.php`, `PUT /configuracion/caseta`, `configuracion.editar` con alcance de empresa): firmas de los vales de taxi, semáforo de llaves, hora de regreso de los equipos «Turno» y acuse de procedimientos, en `empresas.preferencias['caseta']` (solo lo distinto de la omisión). Auditoría `configuracion.caseta`. Detalle: [caseta-y-activos.md](caseta-y-activos.md).
+
+> Mejoras de 2026-10 (roles sin números, asistente de permisos, configuración por módulo, avisos por persona, historial y varias sedes): ver [estructura-mejoras.md](estructura-mejoras.md) y [ADR-0016](../decisiones/ADR-0016-mejoras-de-estructura.md).
