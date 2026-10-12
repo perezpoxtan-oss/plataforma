@@ -466,7 +466,7 @@
         if (e.target.matches('[data-filtro-sede]')) { var c = contenedorDe(e.target); if (c) { aplicar(c); } }
     });
 
-    // Píldoras de tipo (Administrativos / Operativos): [data-filtro-tipo="clave"][data-valor]
+    // Píldoras de tipo (p. ej. Propios / Flotillas / Taxis): [data-filtro-tipo="clave"][data-valor]
     document.addEventListener('click', function (e) {
         var b = e.target.closest('[data-filtro-tipo]');
         if (!b) { return; }
@@ -699,6 +699,7 @@ document.addEventListener('click', function (e) {
         var sede = valor('sede');
         var depto = valor('depto');
         var registro = valor('registro');
+        var turno = valor('turno');
         var fichas = cont.querySelectorAll('[data-colaborador]');
         var visibles = 0;
 
@@ -706,14 +707,15 @@ document.addEventListener('click', function (e) {
             var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1)
                 && (sede === '' || lista(f.dataset.sedes).indexOf(sede) !== -1)
                 && (depto === '' || f.dataset.depto === depto)
-                && (registro === '' || f.dataset.registro === registro);
+                && (registro === '' || f.dataset.registro === registro)
+                && (turno === '' || f.dataset.turno === turno);
             f.style.display = ok ? '' : 'none';
             if (ok) { visibles++; }
         });
 
         var vacio = cont.querySelector('[data-sin-resultados-colab]');
         if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
-        try { sessionStorage.setItem(CLAVE_FILTRO, JSON.stringify({ texto: valor('texto'), sede: sede, depto: depto })); } catch (e) { /* sin almacenamiento */ }
+        try { sessionStorage.setItem(CLAVE_FILTRO, JSON.stringify({ texto: valor('texto'), sede: sede, depto: depto, turno: turno })); } catch (e) { /* sin almacenamiento */ }
     }
 
     document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-colab]')) { filtrarColaboradores(); } });
@@ -755,7 +757,21 @@ document.addEventListener('click', function (e) {
             });
             if (depto.selectedOptions[0] && depto.selectedOptions[0].disabled) { depto.value = ''; }
         }
+        acotarTurnos(form);
         acotarPuestos(form);
+    }
+
+    // Mapa de procesos: el turno se acota a los que se usan en la sede elegida (sin sede = todos)
+    function acotarTurnos(form) {
+        var sede = form.querySelector('[data-colab-sede]');
+        var turno = form.querySelector('[data-colab-turno]');
+        if (!turno) { return; }
+        var s = sede ? sede.value : '';
+        Array.prototype.forEach.call(turno.options, function (o) {
+            if (o.value === '') { return; }
+            mostrarOpcion(o, s === '' || o.dataset.todas === '1' || lista(o.dataset.sedes).indexOf(s) !== -1);
+        });
+        if (turno.selectedOptions[0] && turno.selectedOptions[0].disabled) { turno.value = ''; }
     }
 
     // El valor guardado nunca se pierde en silencio: si ya no encaja, se deja visible y el servidor avisa
@@ -834,6 +850,8 @@ document.addEventListener('click', function (e) {
             if (depto) { depto.value = valores.departamento_id ? String(valores.departamento_id) : ''; conservarActual(depto); }
             acotarPuestos(form);
             if (puesto) { puesto.value = valores.puesto_id ? String(valores.puesto_id) : ''; conservarActual(puesto); }
+            var turnoSel = form.querySelector('[data-colab-turno]');
+            if (turnoSel) { turnoSel.value = valores.turno_id ? String(valores.turno_id) : ''; conservarActual(turnoSel); }
             var numero = form.querySelector('[data-numeros-existentes]');
             if (numero) { numero.dataset.original = numero.value; avisarNumero(numero); }
             if (boton.dataset.urlDatos) { cargarDatosPersonales(form, boton.dataset.urlDatos); }
@@ -1037,9 +1055,12 @@ document.addEventListener('click', function (e) {
         document.querySelectorAll('[data-form-colaborador]').forEach(function (form) {
             var depto = form.querySelector('[data-colab-depto]');
             var puesto = form.querySelector('[data-colab-puesto]');
+            var turnoSel = form.querySelector('[data-colab-turno]');
             var d = depto ? depto.value : '';
             var p = puesto ? puesto.value : '';
+            var tu = turnoSel ? turnoSel.value : '';
             acotarDepartamentos(form);
+            if (turnoSel && tu) { turnoSel.value = tu; conservarActual(turnoSel); }
             if (depto && d) { depto.value = d; conservarActual(depto); }
             acotarPuestos(form);
             if (puesto && p) { puesto.value = p; conservarActual(puesto); }
@@ -1055,7 +1076,9 @@ document.addEventListener('click', function (e) {
             if (g && !sedeUrl) {
                 var t = document.querySelector('[data-filtro-colab="texto"]');
                 var dep = document.querySelector('[data-filtro-colab="depto"]');
+                var selTurno = document.querySelector('[data-filtro-colab="turno"]');
                 if (t && g.texto) { t.value = g.texto; }
+                if (selTurno && g.turno && selTurno.querySelector('option[value="' + String(g.turno).replace(/[^0-9a-z]/g, '') + '"]')) { selTurno.value = g.turno; }
                 if (selSede && g.sede) { selSede.value = g.sede; }
                 if (dep && g.depto) { dep.value = g.depto; }
             }
@@ -7040,14 +7063,54 @@ document.addEventListener('click', function (e) {
         });
         var nuevo = nodo('button', 'btn btn-outline-dark fw-bold mt-2 btn-alta-nuevo', 'No es ninguno: registrarlo como nuevo');
         nuevo.type = 'button';
+        nuevo.setAttribute('data-alta-nuevo', '');
+        // Doble confirmación (decisión del dueño): antes de crear otro registro se pregunta una vez más
+        var seguro = confirmacionNuevo(form, lista.length, nuevo);
         nuevo.addEventListener('click', function () {
+            nuevo.hidden = true;
+            seguro.hidden = false;
+            var si = seguro.querySelector('[data-alta-si-nuevo]');
+            if (si) { si.focus(); }
+        });
+        caja.appendChild(nuevo);
+        caja.appendChild(seguro);
+        caja.hidden = false;
+        caja.scrollIntoView({ block: 'nearest' });
+    }
+
+    function confirmacionNuevo(form, cuantos, nuevo) {
+        var seguro = nodo('div', 'confirmar-alta-nuevo mt-2');
+        seguro.setAttribute('role', 'alertdialog');
+        seguro.setAttribute('data-alta-seguro', '');
+        seguro.hidden = true;
+        var pregunta = nodo('p', 'fw-semibold mb-2', cuantos === 1
+            ? '¿Seguro que no es el registro parecido? Se creará un registro nuevo pendiente de verificar.'
+            : '¿Seguro que no es ninguno de los ' + cuantos + ' parecidos? Se creará un registro nuevo pendiente de verificar.');
+        pregunta.id = 'alta-seguro-' + (form.dataset.altaPadron || 'padron');
+        seguro.setAttribute('aria-labelledby', pregunta.id);
+        seguro.appendChild(pregunta);
+        var acciones = nodo('div', 'acciones-alta-nuevo');
+        var volver = nodo('button', 'btn btn-outline-secondary fw-bold', 'Volver a revisar');
+        volver.type = 'button';
+        volver.setAttribute('data-alta-volver', '');
+        volver.addEventListener('click', function () {
+            seguro.hidden = true;
+            nuevo.hidden = false;
+            var primero = form.querySelector('[data-alta-parecidos] .opcion-parecido:not([disabled])');
+            (primero || nuevo).focus();
+        });
+        var si = nodo('button', 'btn btn-dark fw-bold', 'Sí, registrar nuevo');
+        si.type = 'button';
+        si.setAttribute('data-alta-si-nuevo', '');
+        si.addEventListener('click', function () {
             confirmar(form, '1');
             ocultarParecidos(form);
             form.requestSubmit();
         });
-        caja.appendChild(nuevo);
-        caja.hidden = false;
-        caja.scrollIntoView({ block: 'nearest' });
+        acciones.appendChild(volver);
+        acciones.appendChild(si);
+        seguro.appendChild(acciones);
+        return seguro;
     }
 
     // Fase de captura: se revisa antes que el registro rápido de cada padrón
@@ -7271,8 +7334,11 @@ document.addEventListener('click', function (e) {
         var aceptar = d.querySelector('[data-va-form="aceptar"]');
         Object.keys(actual.valores || {}).forEach(function (campo) {
             var c = aceptar.querySelector('[name="' + campo + '"]');
-            if (c) { c.value = actual.valores[campo] === null ? '' : String(actual.valores[campo]); }
+            if (c) { c.disabled = false; c.value = actual.valores[campo] === null ? '' : String(actual.valores[campo]); }
         });
+        // Campos que dependen de otro (p. ej. empresa propietaria de un vehículo «De una empresa»)
+        var disparador = aceptar.querySelector('[name="propiedad"]');
+        if (disparador) { disparador.dispatchEvent(new Event('change', { bubbles: true })); }
         var parecidos = d.querySelector('[data-va-parecidos]');
         pintarLista(parecidos, [], null);
         parecidos.appendChild(nodo('p', 'campo-ayuda m-0', 'Buscando parecidos...'));

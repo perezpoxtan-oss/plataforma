@@ -185,11 +185,13 @@ Route::middleware('auth')->group(function () {
     // Informes (ADR-0017): Tablero, Bitácora general del día, Tendencias e Informe ejecutivo (solo lectura)
     Route::get('/informes/tablero', [TableroController::class, 'index'])->name('tablero.index');
     Route::get('/informes/tablero/detalle', [TableroController::class, 'detalle'])->name('tablero.detalle');
+    Route::get('/informes/tablero/imprimir', [TableroController::class, 'imprimir'])->name('tablero.imprimir');
     Route::get('/informes/bitacora-del-dia', [BitacoraDelDiaController::class, 'index'])->name('bitacora_dia.index');
     Route::get('/informes/bitacora-del-dia/imprimir', [BitacoraDelDiaController::class, 'imprimir'])->name('bitacora_dia.imprimir');
     Route::get('/informes/bitacora-del-dia/exportar', [BitacoraDelDiaController::class, 'exportar'])->name('bitacora_dia.exportar');
     Route::get('/informes/tendencias', [TendenciasController::class, 'index'])->name('tendencias.index');
     Route::get('/informes/tendencias/exportar', [TendenciasController::class, 'exportar'])->name('tendencias.exportar');
+    Route::get('/informes/tendencias/imprimir', [TendenciasController::class, 'imprimir'])->name('tendencias.imprimir');
     Route::get('/informes/ejecutivo', [InformeEjecutivoController::class, 'index'])->name('informe_ejecutivo.index');
     Route::get('/informes/ejecutivo/imprimir', [InformeEjecutivoController::class, 'imprimir'])->name('informe_ejecutivo.imprimir');
     Route::get('/informes/ejecutivo/exportar', [InformeEjecutivoController::class, 'exportar'])->name('informe_ejecutivo.exportar');
@@ -341,8 +343,10 @@ Route::middleware('auth')->group(function () {
     Route::controller('App\Http\Controllers\Seguridad\LostFoundController')->group(function () {
         Route::get('/lost-found', 'index')->name('lost_found.archivo');
         Route::get('/lost-found/auditoria', 'auditoria')->name('lost_found.auditoria');
-        // Los días de resguardo se configuran en Estructura → Configuración; la dirección anterior redirige (301)
+        // Días de resguardo: se ven en Estructura → Configuración y en el diálogo del archivo; la dirección anterior (GET) redirige (301)
         Route::get('/lost-found/dias-resguardo', 'umbrales')->name('lost_found.umbrales');
+        // Decisión del dueño: los días también se guardan desde el archivo (mismo dato que Configuración)
+        Route::put('/lost-found/dias-resguardo', 'guardarUmbrales')->middleware('throttle:30,1')->name('lost_found.umbrales.guardar');
         Route::get('/lost-found/articulos/{articulo}', 'show')->whereNumber('articulo')->name('lost_found.articulos.show');
         Route::post('/lost-found/articulos/{articulo}/cerrar', 'cerrar')->whereNumber('articulo')->middleware('throttle:60,1')->name('lost_found.articulos.cerrar');
         Route::get('/lost-found/articulos/{articulo}/etiqueta', 'etiqueta')->whereNumber('articulo')->name('lost_found.articulos.etiqueta');

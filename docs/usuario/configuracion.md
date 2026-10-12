@@ -8,7 +8,7 @@ resumen: Ordenada por módulo: avisos (con un interruptor por módulo), ajustes 
 
 # Configuración
 
-**¿Para qué sirve?** Aquí se ajusta cómo trabaja la plataforma para tu empresa, **ordenado por módulo**: cada módulo (Cuentas y seguridad, Bitácora de novedades, Pases de salida, Procedimientos, Recepción y candidatos…) tiene su tarjeta con sus avisos, un **interruptor general** para encenderlos o apagarlos todos, y sus ajustes (por ejemplo, el nombre de la **Bitácora de novedades** en el menú). Aparte están la **caseta y los activos** (firmas de vales de taxi, llaves fuera mucho tiempo, equipos de turno y acuse de procedimientos) y los días de resguardo de **Lost & Found**. Arriba dice la **versión instalada**. El Super Administrador configura además el **correo de la plataforma** y los **respaldos**.
+**¿Para qué sirve?** Aquí se ajusta cómo trabaja la plataforma para tu empresa, **ordenado por módulo**: cada módulo (Cuentas y seguridad, Bitácora de novedades, Pases de salida, Procedimientos, Recepción y candidatos…) tiene su tarjeta con sus avisos, un **interruptor general** para encenderlos o apagarlos todos, y sus ajustes (por ejemplo, si el módulo de la bitácora se llama **Novedades** o **Incidentes**). Aparte están la **caseta y los activos** (firmas de vales de taxi, llaves fuera mucho tiempo, equipos de turno y acuse de procedimientos) y los días de resguardo de **Lost & Found**. Arriba dice la **versión instalada**. El Super Administrador configura además el **correo de la plataforma** y los **respaldos**.
 
 ![Configuración ordenada por módulo](img/configuracion/6-por-modulo.png)
 
@@ -40,14 +40,20 @@ resumen: Ordenada por módulo: avisos (con un interruptor por módulo), ajustes 
 
 **Qué debes ver:** «Avisos actualizados.» y, si apagaste alguno, «Apagados por módulo: …». Los avisos se envían a los usuarios con permiso para atender cada asunto, al correo de su cuenta. Si una persona no quiere recibir alguno, lo silencia ella misma en [Mi cuenta](mi-cuenta.md) → **Mis avisos**.
 
-## Cómo recibir avisos de movimientos sensibles
+## Cómo encender o apagar los avisos de movimientos sensibles
 
-En **Cuentas y seguridad** marca «Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría cuando alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales» y toca **Guardar avisos**. Viene **apagado**. Encendido, quien ve toda la Bitácora de auditoría (normalmente Administrador y Director) recibe en su **campana** cada uno de esos movimientos, con un enlace a su historial. Quien hizo el movimiento no recibe su propio aviso.
+Quien ve toda la Bitácora de auditoría (normalmente Administrador y Director) recibe en su **campana** cada vez que alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales, con un enlace a su historial. Quien hizo el movimiento no recibe su propio aviso.
+
+1. En **Cuentas y seguridad** busca «Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría cuando alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales».
+2. Viene **encendido** (marcado). Para apagarlo, quita la marca; para volver a encenderlo, márcala.
+3. Toca **Guardar avisos**.
+
+**Qué debes ver:** «Avisos actualizados.» Si tu empresa ya había guardado sus avisos con esta casilla sin marcar, se respeta lo que eligió: sigue apagado hasta que la marques.
 
 ## Cómo elegir qué ve «Su sede» en la Bitácora de auditoría
 
 1. En la tarjeta **Cuentas y seguridad**, baja a **Bitácora de auditoría: qué ve «Su sede»**.
-2. Elige **Solo sus propios movimientos** (como siempre) o **Los movimientos de su sede** (lo que se hizo en registros de su sede y lo que hizo el personal asignado a ella).
+2. Elige **Los movimientos de su sede** (viene así: lo que se hizo en registros de su sede y lo que hizo el personal asignado a ella) o **Solo sus propios movimientos** (lo que esa persona hizo). Si tu empresa ya había guardado una opción, se conserva.
 3. Toca **Guardar**.
 
 ![Qué ve «Su sede» en la bitácora](img/configuracion/8-auditoria-su-sede.png)
@@ -62,7 +68,7 @@ Arriba de la pantalla dice **Versión instalada: v…** y desde cuándo. Sirve p
 
 Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cuántos días puede estar guardado antes de que el semáforo lo marque: **amarillo** al pasar el 70 % de sus días y **rojo (vencido)** al llegar a sus días.
 
-1. Toca **Lost & Found** arriba o baja a **Lost & Found: días de resguardo** (desde Lost & Found también llegas con el enlace de configuración).
+1. Toca **Lost & Found** arriba o baja a **Lost & Found: días de resguardo**. También puedes cambiarlos desde el propio archivo de Lost & Found con el botón **Días de resguardo**: es el mismo dato, lo que guardes en un lugar se ve en el otro.
 2. Escribe los días de cada tipo (mínimo 1). Debajo de cada uno dice desde qué día se pone amarillo y rojo.
 3. Toca **Guardar días de resguardo**.
 
@@ -70,16 +76,19 @@ Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cu�
 
 **Qué debes ver:** «Los días de resguardo de Lost & Found se guardaron correctamente.» Aplica a todas las sedes de la empresa.
 
-## Cómo cambiar el nombre de la Bitácora de novedades en el menú
+## Cómo elegir el nombre del módulo: Novedades o Incidentes
+
+**Novedades** es donde va todo lo que pasa en el día, sin importar su tipo; es el nombre de siempre. Si en tu empresa le dicen **Incidentes**, puedes elegirlo.
 
 1. Baja a la tarjeta **Bitácora de novedades** (debajo de sus avisos).
-2. En **Nombre en el menú** escribe el nombre que usa tu empresa (por ejemplo **Incidentes**). Vacío = **Novedades**, como siempre.
-3. Si quieres, en **Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como** elige **Mantenimiento de equipo PC** (lo normal es **Siniestro Protección Civil**).
-4. Toca **Guardar ajustes de la bitácora**.
+2. En **Nombre del módulo** elige **Novedades (como siempre)** o **Incidentes**.
+3. Si tu empresa usa otro nombre, elige **Otro nombre (escríbelo en Avanzado)**, abre **Avanzado: otro nombre** y escríbelo (máximo 40 letras).
+4. Si quieres, en **Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como** elige **Mantenimiento de equipo PC** (lo normal es **Siniestro Protección Civil**).
+5. Toca **Guardar ajustes de la bitácora**.
 
 ![Ajustes de la Bitácora de novedades](img/configuracion/6-bitacora-novedades.png)
 
-**Qué debes ver:** «Ajustes de la Bitácora de novedades guardados.» El menú, el botón de abajo del celular y el título de la pantalla usan el nombre nuevo; los permisos y lo ya capturado no cambian. La categoría elegida aplica a los tickets que se abran desde ese momento. Solo lo cambia quien edita la Configuración de toda la empresa.
+**Qué debes ver:** «Ajustes de la Bitácora de incidentes guardados.» (o con el nombre que elegiste). El nombre nuevo aparece en el menú, en el botón de abajo del celular, en el título de la pantalla, en los avisos de la campana y del correo, en los informes (Tablero, Tendencias y Bitácora del día), en Inicio y en el manual. Los tickets, los permisos y las direcciones no cambian. Si nunca lo cambias, se queda **Novedades**. Solo lo cambia quien edita la Configuración de toda la empresa.
 
 ## Cómo ajustar la caseta y los activos
 

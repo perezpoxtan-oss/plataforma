@@ -82,7 +82,7 @@ class EquiposPcTest extends TestCase
     {
         $esperado = [
             // rol => [recorridos_pc.ver, equipos.crear, equipos.editar, equipos.eliminar, equipos.imprimir] copiados a equipos_pc.*
-            'Administrador', 'Director', 'Jefe de seguridad', 'Asistente', 'Supervisor', 'Agente',
+            'Administrador', 'Director', 'Jefe de seguridad', 'Asistente de seguridad', 'Supervisor', 'Agente',
         ];
         foreach ($esperado as $nombre) {
             $usuario = $this->crearUsuario($this->empresa, $nombre, $nombre === 'Administrador' || $nombre === 'Director' ? null : $this->centro);

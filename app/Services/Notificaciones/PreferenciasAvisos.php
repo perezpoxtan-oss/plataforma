@@ -6,6 +6,7 @@ use App\Models\Empresa;
 use App\Models\Notificacion;
 use App\Models\User;
 use App\Services\Auditoria\MovimientosSensibles;
+use App\Services\Novedades\AjustesNovedades;
 use App\Support\GruposAvisos;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -49,7 +50,7 @@ class PreferenciasAvisos
         'pase_vencido' => ['Pases de salida', 'Un pase de salida venció y no ha regresado', ['pases_salida.ver']],
         'pase_llega' => ['Pases de salida', 'Un pase de salida viene a tu sede', ['pases_salida.ver']],
         'cuenta_bloqueada' => ['Cuentas y seguridad', 'Una cuenta se bloqueó por intentos fallidos', ['usuarios.editar', 'usuarios.desbloquear']],
-        'cuenta_desactivada' => ['Cuentas y seguridad', 'Una cuenta se desactivó por la baja del colaborador', ['usuarios.editar']],
+        'cuenta_desactivada' => ['Cuentas y seguridad', 'Una cuenta se dio de baja junto con su colaborador', ['usuarios.editar']],
         MovimientosSensibles::TIPO => ['Cuentas y seguridad', 'Alguien hizo un movimiento sensible (roles, permisos, eliminaciones, exportaciones)', ['auditoria.ver']],
         // Mejoras Incidentes (ADR-0013)
         'novedad_canalizada' => ['Bitácora de novedades', 'Te canalizaron un ticket de la bitácora', ['novedades.editar']],
@@ -140,7 +141,10 @@ class PreferenciasAvisos
         $recibidos = Notificacion::query()->withoutGlobalScopes()->where('user_id', $usuario->id)->distinct()->pluck('tipo')->all();
 
         $campana = [];
+        // El grupo de la bitácora lleva el nombre que la empresa le dio al módulo
+        $bitacora = $usuario->empresa_id !== null ? app(AjustesNovedades::class)->bitacora((int) $usuario->empresa_id) : null;
         foreach (self::CAMPANA as $tipo => [$grupo, $etiqueta, $permisos]) {
+            $grupo = $grupo === 'Bitácora de novedades' && $bitacora !== null ? $bitacora : $grupo;
             if (in_array($tipo, $recibidos, true) || collect($permisos)->contains(fn ($p) => $usuario->can($p))) {
                 $campana[$grupo][$tipo] = $etiqueta;
             }
@@ -151,7 +155,7 @@ class PreferenciasAvisos
         }
 
         $correo = [];
-        foreach (GruposAvisos::agrupados() as $grupo => $def) {
+        foreach (GruposAvisos::agrupados($usuario->empresa_id !== null ? (int) $usuario->empresa_id : null) as $grupo => $def) {
             if (! $this->veGrupo($usuario, $grupo, $def['modulo'])) {
                 continue;
             }

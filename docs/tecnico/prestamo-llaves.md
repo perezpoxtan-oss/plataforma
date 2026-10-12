@@ -55,10 +55,10 @@ SEGCAT usaba `llaves.ver | crear | editar | eliminar`. Ahora el módulo tiene lo
 | Acción | Permiso | Plantillas que lo traen |
 |---|---|---|
 | Ver la bitácora y el historial | `prestamo_llaves.ver` | todas las de Seguridad |
-| Prestar | `prestamo_llaves.crear` | Administrador, Jefe, Asistente, Supervisor, **Agente** |
+| Prestar | `prestamo_llaves.crear` | Administrador, Jefe, Asistente de seguridad, Supervisor, **Agente** |
 | Recibir | `prestamo_llaves.editar` | ídem |
 | Anular / Reactivar | `prestamo_llaves.eliminar` | Administrador, Jefe (el Agente **no** anula) |
-| Excel (Auditoría) | `prestamo_llaves.exportar` | Administrador, Director, Jefe, Asistente, Supervisor |
+| Excel (Auditoría) | `prestamo_llaves.exportar` | Administrador, Director, Jefe, Asistente de seguridad, Supervisor |
 
 El lector necesita además `llaves.ver` (tipo `llave`) y `colaboradores.ver` (tipo `colaborador`), que todas esas plantillas ya tienen.
 

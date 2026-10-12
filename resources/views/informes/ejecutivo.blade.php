@@ -22,7 +22,9 @@
             <div class="acciones-informe">
                 @include('informes._enlaces', ['actual' => 'ejecutivo'])
                 <a href="{{ route('informe_ejecutivo.index', array_filter(['sedes' => $seleccion ?: null, 'fresco' => 1])) }}" class="btn-cancelar boton-informe" title="Las cifras se guardan 5 minutos para que la pantalla abra rápido"><i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Actualizar cifras</a>
-                <a href="{{ route('informe_ejecutivo.imprimir', array_filter(['sedes' => $seleccion ?: null])) }}" class="btn-filtrar boton-informe" target="_blank" rel="noopener"><i class="bi bi-printer me-2" aria-hidden="true"></i>Imprimir</a>
+                @if ($puedeImprimir)
+                    <a href="{{ route('informe_ejecutivo.imprimir', array_filter(['sedes' => $seleccion ?: null])) }}" class="btn-filtrar boton-informe" target="_blank" rel="noopener"><i class="bi bi-printer me-2" aria-hidden="true"></i>Imprimir</a>
+                @endif
                 @if ($puedeExportar)
                     <a href="{{ route('informe_ejecutivo.exportar', array_filter(['sedes' => $seleccion ?: null])) }}" class="btn-exportar boton-informe"><i class="bi bi-file-earmark-excel me-2" aria-hidden="true"></i>Exportar</a>
                 @endif

@@ -452,7 +452,7 @@
                     </p>
                 @endif
                 @if ($puede['expediente'])
-                    <p class="texto-traza"><i class="bi bi-folder2-open me-1" aria-hidden="true"></i>Ya pasaron al <a href="{{ route('colaboradores.expediente', $c->colaborador_id) }}">expediente del colaborador</a>.</p>
+                    <p class="texto-traza"><i class="bi bi-folder2-open me-1" aria-hidden="true"></i>Ya pasaron al <a href="{{ route('colaboradores.expediente', $c->colaborador_id) }}#expediente">expediente del colaborador</a>.</p>
                 @endif
                 @forelse ($c->documentos as $doc)
                     <div class="documento-candidato">

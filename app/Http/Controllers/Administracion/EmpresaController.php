@@ -122,7 +122,7 @@ class EmpresaController extends Controller
 
         return redirect()->route('empresas.index')->with($activo ? 'ok' : 'aviso', $activo
             ? 'Empresa reactivada correctamente.'
-            : 'Empresa desactivada: sus usuarios ya no pueden entrar. Puedes reactivarla con el mismo botón.');
+            : 'Empresa dada de baja: sus usuarios ya no pueden entrar. Puedes reactivarla con el mismo botón.');
     }
 
     /**

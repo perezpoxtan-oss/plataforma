@@ -112,7 +112,7 @@ class SedeController extends Controller
 
         return redirect()->route('sedes.index')->with($activo ? 'ok' : 'aviso', $activo
             ? "«{$modelo->nombre}» reactivada."
-            : "«{$modelo->nombre}» desactivada: ya no aparecerá para nuevas capturas. Su historial se conserva.");
+            : "«{$modelo->nombre}» dada de baja: ya no aparecerá para nuevas capturas. Su historial se conserva. Puedes reactivarla con el mismo botón.");
     }
 
     /**

@@ -16,7 +16,7 @@ La crítica de uso de los padrones encontró la misma acción con nombres distin
 6. **Estacionamientos**: «Dar salida» desde la zona usa la misma salida de la Bitácora de accesos y el permiso de Accesos; no se edita la ocupación a mano.
 7. **Altas cortas** (criterio 8) con «Más datos» plegado (Llaves, Personas) y **siguiente paso** tras guardar (criterio 5).
 
-No se hizo (pide decisión del dueño): una sola categoría «Particular» con subtipo en Vehículos (cambiaría datos, filtros y reportes; se agruparon visualmente), quitar el tipo Operativo/Administrativo de Puestos, ligar Turnos a colaboradores, y la ficha de colaborador con pestañas.
+No se hizo (pide decisión del dueño): una sola categoría «Particular» con subtipo en Vehículos (cambiaría datos, filtros y reportes; se agruparon visualmente — **resuelto después**: el dueño aprobó fundirlas en «Particular» y «De una empresa», ver docs/tecnico/vehiculos.md), quitar el tipo Operativo/Administrativo de Puestos, ligar Turnos a colaboradores, y la ficha de colaborador con pestañas.
 
 ## Consecuencias
 

@@ -52,7 +52,7 @@
                         <h2 class="ficha-title m-0">{{ $r->nombre }}</h2>
                         <span class="badge-nivel">Nivel {{ $r->nivel_jerarquia }}</span>
                     </div>
-                    @unless ($r->activo)<span class="badge-estado mb-2 d-inline-block">Inactivo</span>@endunless
+                    @unless ($r->activo)<span class="badge-estado mb-2 d-inline-block">De baja</span>@endunless
                     <p class="text-muted small mb-2">{{ $r->descripcion ?: 'Sin descripción.' }}</p>
                     <div class="text-muted small"><i class="bi bi-people" aria-hidden="true"></i> {{ $r->total_usuarios }} {{ $r->total_usuarios == 1 ? 'usuario' : 'usuarios' }} con este rol</div>
                     @if ($r->creado_por_nombre)
@@ -169,7 +169,7 @@
                     <input type="hidden" name="activo" value="0">
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" role="switch" id="editar_activo" name="activo" value="1" data-campo="activo" @checked($editando ? old('activo') : true) data-por-defecto>
-                        <label class="form-check-label small fw-semibold" for="editar_activo">Rol activo (si lo desactivas, quienes lo tienen pierden sus permisos)</label>
+                        <label class="form-check-label small fw-semibold" for="editar_activo">Rol activo (si lo das de baja, quienes lo tienen pierden sus permisos)</label>
                     </div>
 
                     <div class="dialogo-acciones">

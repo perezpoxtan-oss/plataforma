@@ -15,11 +15,12 @@ Los cuatro informes del sistema original existían en el catálogo y en la Matri
 5. **Consultas portables**: series con `SUM(CASE …)` por intervalos calculados en PHP en la hora local; sin funciones de fecha del motor. Recorridos de dos columnas con `cursor()` solo donde hace falta (hora del día, duraciones). Cuatro índices por empresa y fecha.
 6. **Caché corta** (5 min) en Tendencias e Informe ejecutivo, con clave por empresa, alcance efectivo, sedes y periodo, y botón «Actualizar cifras». Tablero y Bitácora del día, sin caché.
 7. **Sin datos sensibles**: nunca CURP, RFC, NSS, teléfonos ni CV; candidatos solo como cifras; nombres de personas solo donde el módulo de origen ya los muestra a quien consulta.
-8. La versión imprimible del Informe ejecutivo pide solo `ver` (el módulo no tiene acción «imprimir» y así era en el original); la de la Bitácora del día pide `imprimir`.
+8. La versión imprimible del Informe ejecutivo pide solo `ver` (el módulo no tiene acción «imprimir» y así era en el original); la de la Bitácora del día pide `imprimir`. *(Reemplazado por decisión del dueño: las cuatro hojas piden `imprimir`; ver abajo.)*
 
 ## Consecuencias
 
 - Migración `2026_10_28_000100_informes`: `modulos.ruta` de los cuatro e índices; su `down()` los quita. No hay tablas nuevas ni datos que convertir.
 - Sin eventos de auditoría nuevos (todo es de lectura) ni avisos.
 - `plataforma:demo` agrega semanas anteriores para que Tendencias tenga con qué comparar.
-- Pendiente (decisiones del dueño): agregar la acción «imprimir» al Informe ejecutivo si se quiere separar ese permiso; definir qué cifras son «buenas» cuando suben (hoy la flecha solo dice si subió o bajó, sin color); secciones adicionales del original no migradas (valores a la vista con caja fuerte y aperturas, siniestros de Protección Civil, emergencias).
+- Resuelto (decisiones del dueño, mapa de procesos): «Imprimir» es permiso propio en los cuatro informes (Tablero y Tendencias ganan hoja imprimible; la del Informe ejecutivo deja de pedir solo `ver`), y cada cifra de Tendencias declara si subir es bueno o malo (verde «mejoró» / rojo «empeoró», con flecha y texto). Ver [informes.md](../tecnico/informes.md).
+- Pendiente (decisiones del dueño): secciones adicionales del original no migradas (valores a la vista con caja fuerte y aperturas, siniestros de Protección Civil, emergencias).

@@ -266,7 +266,7 @@ class VehiculoController extends Controller
 
     /**
      * /vehiculos?nuevo=1&proveedor={id} (desde la ficha del proveedor): el
-     * alta se abre sola con ese proveedor y la categoría que le corresponde.
+     * alta se abre sola con ese proveedor y la categoría «De una empresa».
      *
      * @return array{proveedor_id: int, propiedad: string}|null
      */
@@ -277,12 +277,12 @@ class VehiculoController extends Controller
         }
         $proveedor = $request->filled('proveedor') ? Proveedor::where('activo', true)->find((int) $request->query('proveedor')) : null;
         if ($proveedor === null) {
-            return ['proveedor_id' => 0, 'propiedad' => 'propio_visitante'];
+            return ['proveedor_id' => 0, 'propiedad' => 'particular'];
         }
 
         return [
             'proveedor_id' => $proveedor->id,
-            'propiedad' => AdministradorVehiculos::PROPIEDAD_POR_CATEGORIA[$proveedor->categoria] ?? 'empresa_proveedor',
+            'propiedad' => 'empresa',
         ];
     }
 

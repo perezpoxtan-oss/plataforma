@@ -40,7 +40,7 @@ Borrador ─▶ Publicada ⇄ Pausada
 
 ## Alcance y permisos
 
-`vacantes.ver|crear|editar|eliminar|configurar`. Plantillas: Recursos Humanos y Administrador todo (empresa); Director ver, crear, editar y eliminar (empresa, sin configurar la bolsa); Jefe de seguridad, Asistente, Supervisor y Agente solo **ver** (sede). En una base existente la migración da: todo a quien tiene `candidatos.crear`; ver/crear/editar/eliminar a quien tiene `recepcion_rh.ver`; ver a quien tiene `accesos.crear` (mismo alcance).
+`vacantes.ver|crear|editar|eliminar|configurar`. Plantillas: Recursos Humanos y Administrador todo (empresa); Director ver, crear, editar y eliminar (empresa, sin configurar la bolsa); Jefe de seguridad, Asistente de seguridad, Supervisor y Agente solo **ver** (sede). En una base existente la migración da: todo a quien tiene `candidatos.crear`; ver/crear/editar/eliminar a quien tiene `recepcion_rh.ver`; ver a quien tiene `accesos.crear` (mismo alcance).
 
 - Con alcance de sede se ven las vacantes de sus sedes o de «todas las sedes»; se crean y modifican solo las que son **únicamente** de sus sedes («todas» pide alcance de empresa). Su sede viene preseleccionada al crear.
 - Sin `vacantes.editar` (la caseta) solo se ven las **publicadas** y el cartel.

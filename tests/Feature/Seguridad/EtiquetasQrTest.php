@@ -90,7 +90,7 @@ class EtiquetasQrTest extends TestCase
         $director = $this->crearUsuario($this->empresa, 'Director');
         $this->actingAs($director)->get('/etiquetas/plantillas')->assertOk();
         $this->actingAs($this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro))->get('/etiquetas/plantillas')->assertOk();
-        foreach (['Supervisor', 'Asistente', 'Agente'] as $rol) {
+        foreach (['Supervisor', 'Asistente de seguridad', 'Agente'] as $rol) {
             $this->actingAs($this->crearUsuario($this->empresa, $rol, $this->centro))->get('/etiquetas/plantillas')->assertForbidden();
         }
         // La pestaña «Plantillas» solo se ve con el permiso
@@ -343,7 +343,7 @@ class EtiquetasQrTest extends TestCase
         Carbon::setTestNow('2026-10-05 15:00:00');
         $this->llave('HDC-NUEVA');
         $this->llave('HDC-BAJA', null, ['activo' => false]);
-        $this->enEmpresa(fn () => (new Vehiculo(['placas' => 'ABC123A', 'propiedad' => 'propio_huesped', 'tipo' => 'sedan', 'marca' => 'NISSAN', 'modelo' => 'VERSA', 'color' => 'BLANCO']))->save());
+        $this->enEmpresa(fn () => (new Vehiculo(['placas' => 'ABC123A', 'propiedad' => 'particular', 'tipo' => 'sedan', 'marca' => 'NISSAN', 'modelo' => 'VERSA', 'color' => 'BLANCO']))->save());
         Carbon::setTestNow();
         $this->assertNotNull($vieja);
 

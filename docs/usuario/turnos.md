@@ -8,7 +8,7 @@ resumen: Los horarios fijos de la empresa (Matutino, Vespertino, Nocturno…) y 
 
 # Turnos
 
-**¿Para qué sirve?** Los turnos son los **horarios fijos** de la empresa: Matutino, Vespertino, Nocturno… Se usan en otras pantallas, por ejemplo en [Rutas de transporte](rutas.md) (cada ruta lleva su turno).
+**¿Para qué sirve?** Los turnos son los **horarios fijos** de la empresa: Matutino, Vespertino, Nocturno… Se usan en otras pantallas, por ejemplo en [Rutas de transporte](rutas.md) (cada ruta lleva su turno) y en [Colaboradores](colaboradores.md) (el turno que trabaja cada persona).
 
 ![Turnos](img/turnos/1-turnos.png)
 
@@ -82,7 +82,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | Escribe la hora de inicio como HH:MM (24 horas). / Escribe la hora de fin como HH:MM (24 horas). | La hora está mal escrita. | Escribe por ejemplo `07:00`. |
 | Ya existe un turno con ese nombre en esta empresa. | El nombre ya se usa. | Usa el existente o reactívalo. |
 | Marca al menos una sede o elige «Todas las sedes». | Quitaste todas las sedes. | Marca al menos una. |
-| Un turno no aparece al capturar una ruta. | No está marcado para esa sede o está dado de baja. | Agrégale la sede o reactívalo. |
+| Un turno no aparece al capturar una ruta o un colaborador. | No está marcado para esa sede o está dado de baja. | Agrégale la sede o reactívalo. |
 
 ## Preguntas frecuentes
 
@@ -91,6 +91,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 **¿Para qué sirven las sedes del turno?** Para que en cada sede solo aparezcan los turnos que de verdad se usan ahí.
 
 **¿Puedo borrar un turno?** No; se da de baja para conservar el historial.
+
+**¿Qué pasa con los colaboradores si doy de baja su turno?** Lo conservan (su ficha dice «turno desactivado»), pero ya no se ofrece al dar de alta a alguien nuevo. Para ver quién trabaja en cada turno, usa el filtro **Todos los turnos** en [Colaboradores](colaboradores.md).
 
 ## Relacionado
 

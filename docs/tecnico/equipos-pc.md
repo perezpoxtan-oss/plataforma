@@ -40,7 +40,7 @@ Desde QA 4 es un **módulo propio**, `equipos_pc` («Equipos de Protección Civi
 | Administrador | todo, empresa |
 | Director | ver e imprimir, empresa |
 | Jefe de seguridad | todo, sede |
-| Asistente | ver, crear, editar, imprimir, sede |
+| Asistente de seguridad | ver, crear, editar, imprimir, sede |
 | Supervisor | todo menos eliminar, sede |
 | Agente | solo **ver**, sede (Padrones) |
 

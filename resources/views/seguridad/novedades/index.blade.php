@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('titulo', 'Bitácora de Novedades y Despacho')
+@section('titulo', ($nombreModulo ?? null) ?: 'Bitácora de Novedades y Despacho')
 
 @section('contenido')
 <div class="pantalla-novedades">
@@ -14,7 +14,7 @@
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
-            <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> para ver su bitácora de novedades.</p>
+            <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> para ver su bitácora.</p>
         </div>
     @else
         @php

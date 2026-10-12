@@ -15,6 +15,7 @@ use App\Models\Novedad;
 use App\Models\PaseSalida;
 use App\Models\PrestamoLlave;
 use App\Models\User;
+use App\Services\Novedades\AjustesNovedades;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
@@ -31,7 +32,7 @@ use Throwable;
  * alcance, sedes y periodo; «Actualizar cifras» los vuelve a calcular.
  *
  * Cada sección devuelve:
- *  - cifras: [título, actual, anterior (null = sin comparación), unidad]
+ *  - cifras: [título, actual, anterior (null = sin comparación), unidad, sentido (SENTIDOS)]
  *  - series: [título, etiquetas, actual, anterior]
  *  - desgloses: [título, [concepto => total], unidad]
  */
@@ -57,6 +58,30 @@ class Tendencias
         'colaboradores' => ['Colaboradores', 'bi-people-fill', 'colaboradores.ver'],
         'usuarios' => ['Usuarios', 'bi-person-gear', 'usuarios.ver'],
         'candidatos' => ['Candidatos', 'bi-person-workspace', 'candidatos.ver'],
+    ];
+
+    /**
+     * Qué es mejor en cada cifra que se compara (decisión del dueño, mapa de
+     * procesos): sección => [título de la cifra => sentido]. Subir es MALO en
+     * lo que mide problemas (tickets, robos, accidentes, pérdidas, tiempos de
+     * cierre, taxis pagados porque el transporte no llegó) y BUENO en lo que
+     * mide resultados (regresos de pases, candidatos y contratados). El volumen
+     * de operación (ingresos, préstamos, movimientos, altas) es NEUTRO: se dice
+     * si subió o bajó, sin color. Toda cifra comparable debe estar aquí
+     * (TendenciasColorTest lo revisa).
+     */
+    public const SENTIDOS = [
+        'accesos' => ['Ingresos registrados' => Indicadores::NEUTRO],
+        'novedades' => ['Tickets abiertos en el periodo' => Indicadores::SUBIR_ES_MALO, 'Tiempo promedio de cierre' => Indicadores::SUBIR_ES_MALO],
+        'robo' => ['Casos de robo' => Indicadores::SUBIR_ES_MALO, 'Valor estimado' => Indicadores::SUBIR_ES_MALO],
+        'lost_found' => ['Objetos encontrados' => Indicadores::NEUTRO, 'Reportes de pérdida' => Indicadores::SUBIR_ES_MALO],
+        'accidentes' => ['Accidentes y lesiones' => Indicadores::SUBIR_ES_MALO],
+        'llaves' => ['Préstamos de llaves' => Indicadores::NEUTRO],
+        'pases' => ['Pases creados' => Indicadores::NEUTRO, 'Regresaron a la propiedad' => Indicadores::SUBIR_ES_BUENO],
+        'transporte' => ['Movimientos' => Indicadores::NEUTRO, 'Monto pagado en taxis' => Indicadores::SUBIR_ES_MALO, 'Pasajeros' => Indicadores::NEUTRO],
+        'colaboradores' => ['Altas de colaboradores' => Indicadores::NEUTRO],
+        'usuarios' => ['Usuarios dados de alta' => Indicadores::NEUTRO],
+        'candidatos' => ['Candidatos registrados' => Indicadores::SUBIR_ES_BUENO, 'Contratados' => Indicadores::SUBIR_ES_BUENO],
     ];
 
     public function __construct(
@@ -100,8 +125,12 @@ class Tendencias
             return null;
         }
 
-        return ['clave' => $clave, 'titulo' => self::SECCIONES[$clave][0], 'icono' => self::SECCIONES[$clave][1]]
+        $seccion = ['clave' => $clave, 'titulo' => $clave === 'novedades' ? AjustesNovedades::nombreActual() : self::SECCIONES[$clave][0], 'icono' => self::SECCIONES[$clave][1]]
             + $datos + ['cifras' => [], 'series' => [], 'desgloses' => [], 'nota' => null];
+        // El sentido se agrega fuera de la caché: cambiarlo no espera a que venza
+        $seccion['cifras'] = array_map(fn (array $c) => [$c[0], $c[1], $c[2], $c[3], self::SENTIDOS[$clave][$c[0]] ?? Indicadores::NEUTRO], $seccion['cifras']);
+
+        return $seccion;
     }
 
     // ------------------------------------------------------------------ Apoyo

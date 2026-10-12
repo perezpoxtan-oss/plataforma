@@ -3,12 +3,12 @@ titulo: Usuarios
 modulos: [usuarios]
 seccion: Estructura
 orden: 30
-resumen: Dar de alta las cuentas para entrar a la plataforma, vincularlas con su colaborador, restablecer contraseñas, desactivarlas y desbloquearlas.
+resumen: Dar de alta las cuentas para entrar a la plataforma, vincularlas con su colaborador, restablecer contraseñas, darlas de baja, reactivarlas y desbloquearlas.
 ---
 
 # Usuarios
 
-**¿Para qué sirve?** Aquí se dan de alta las **cuentas** para entrar a la plataforma: quién es, en qué sede trabaja, qué **rol** tiene (lo que puede hacer), su usuario y su correo. También se restablecen contraseñas, se desactivan cuentas y se desbloquean las que tuvieron demasiados intentos fallidos.
+**¿Para qué sirve?** Aquí se dan de alta las **cuentas** para entrar a la plataforma: quién es, en qué sede trabaja, qué **rol** tiene (lo que puede hacer), su usuario y su correo. También se restablecen contraseñas, se dan de baja o reactivan cuentas y se desbloquean las que tuvieron demasiados intentos fallidos.
 
 La contraseña es de su dueño: por omisión **la persona la crea** con un enlace que le llega por correo, y tú nunca la conoces. Si la escribes tú, la persona tendrá que cambiarla en su primer acceso.
 
@@ -74,7 +74,7 @@ La contraseña es de su dueño: por omisión **la persona la crea** con un enlac
 
 ![Sugerencia para vincular](img/usuarios/6-sugerencia-vincular.png)
 
-**Qué debes ver:** en la lista, su ficha dice **Vinculado a Colaborador (activo)**. Si un día dice **Vinculado a Colaborador (¡inactivo! revisar)**, Recursos Humanos lo dio de baja: revisa si su cuenta también debe desactivarse.
+**Qué debes ver:** en la lista, su ficha dice **Vinculado a Colaborador (activo)**. Si un día dice **Vinculado a Colaborador (¡dado de baja! revisar)**, Recursos Humanos lo dio de baja: revisa si su cuenta también debe darse de baja.
 
 - Si cambias o borras el número a mano, el vínculo se quita. Vuelve a elegirlo de la lista.
 - Solo aparecen colaboradores **activos** de tu empresa (y de tus sedes, si tu rol es de una sede).
@@ -117,16 +117,16 @@ Cuando una persona no recuerda su contraseña, lo primero es que use **Olvidé m
 - Tú nunca ves ni puedes ver la contraseña de nadie; la plataforma solo guarda la contraseña cifrada.
 - Queda en la [Bitácora de auditoría](auditoria.md) quién restableció a quién y cuándo (nunca la contraseña).
 
-## Cómo desactivar o reactivar una cuenta
+## Cómo dar de baja o reactivar una cuenta
 
-1. Toca el **círculo con raya** (Desactivar) y confirma. La persona ya no puede entrar y, si estaba dentro, se le cierra la sesión.
-2. Para regresarla, toca la **flecha circular** (Reactivar).
+1. Toca el **círculo con raya** (Dar de baja) y confirma con **Aceptar** («¿Dar de baja la cuenta de …? No podrá volver a iniciar sesión hasta que la reactives con el mismo botón.»). La persona ya no puede entrar y, si estaba dentro, se le cierra la sesión. Verás «Usuario dado de baja: …» y su ficha dice **DE BAJA**.
+2. Para regresarla, toca la **flecha circular** (Reactivar) y confirma («¿Reactivar la cuenta de …? Podrá volver a iniciar sesión.»).
 
 No se borra a nadie, para conservar el historial.
 
 ### Cuando Recursos Humanos da de baja al colaborador
 
-Si la cuenta está **vinculada** a un colaborador y Recursos Humanos lo da de baja en [Colaboradores](colaboradores.md), **su cuenta se desactiva sola** en ese momento: ya no puede entrar y se le cierra la sesión. Su ficha dice **Desactivada por la baja de su colaborador** con la fecha, y quien administra usuarios de esa sede recibe un aviso en su **campana** («Cuenta desactivada por baja: …») y lo ve en **Mis pendientes → Cuentas por revisar** durante 7 días.
+Si la cuenta está **vinculada** a un colaborador y Recursos Humanos lo da de baja en [Colaboradores](colaboradores.md), **su cuenta se da de baja sola** en ese momento: ya no puede entrar y se le cierra la sesión. Su ficha dice **Dada de baja junto con su colaborador** con la fecha, y quien administra usuarios de esa sede recibe un aviso en su **campana** («Cuenta dada de baja junto con su colaborador: …») y lo ve en **Mis pendientes → Cuentas por revisar** durante 7 días.
 
 Si el colaborador **reingresa**, su cuenta **no** se reactiva sola: revísala y, si la necesita, toca la **flecha circular** (Reactivar) de su ficha.
 
@@ -166,7 +166,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | El nombre de usuario solo puede tener letras, números, punto, guion y guion bajo (sin espacios). | Escribiste espacios o acentos. | Por ejemplo `juan.perez`. |
 | Ya existe un usuario con ese nombre: @… ¿Es la misma persona? | Hay otra cuenta con ese nombre. | Edita la existente o marca **Sí, es otra persona con el mismo nombre**. |
 | Ese colaborador ya tiene una cuenta de usuario: búscala en la lista en vez de crear otra. | El colaborador ya tiene cuenta. | Edita su cuenta. |
-| Ese colaborador está dado de baja. | El colaborador está inactivo. | Pide a Recursos Humanos que lo reingrese o no lo vincules. |
+| Ese colaborador está dado de baja. | El colaborador está dado de baja. | Pide a Recursos Humanos que lo reingrese o no lo vincules. |
 | Ya existe otro usuario registrado con ese número de colaborador. | Ese número ya está en otra cuenta. | Revisa el número. |
 | El campo contraseña es obligatorio. | Elegiste **Escribir la contraseña ahora** (o no hay correo configurado) y la dejaste vacía. | Escríbela, o elige **Enviar enlace de bienvenida por correo**. |
 | Usuario «…» creado, pero el correo de bienvenida no se pudo enviar. | La cuenta existe, pero el correo no salió. | Revisa su correo y toca la **llave** para reenviar el enlace o escribirle una contraseña. |
@@ -186,13 +186,13 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 **¿Qué rol le doy a alguien de otro departamento que solo pide pases de salida?** El rol **Solicitante**; a su jefe, **Jefe de departamento**. En los dos casos vincula la cuenta con su colaborador. Los pasos están en [Roles y permisos](roles-y-permisos.md).
 
-**¿Qué pasa si desactivo una cuenta?** La persona ya no puede entrar, pero todo lo que registró se conserva.
+**¿Qué pasa si doy de baja una cuenta?** La persona ya no puede entrar, pero todo lo que registró se conserva.
 
 **¿Puedo ver la contraseña de alguien?** No, nadie puede. Si la necesita, se le envía un enlace o se le escribe una nueva que cambiará al entrar.
 
 **¿Por qué dice «Creará su contraseña al entrar»?** Porque la cuenta se creó con enlace de bienvenida y aún no lo usa, o porque alguien le escribió la contraseña y todavía no la cambia.
 
-**¿Qué son las «Cuentas por revisar»?** Las bloqueadas por intentos fallidos, las desactivadas por la baja de su colaborador en los últimos 7 días y las que piden pases de salida a su nombre (Solicitante, Jefe de departamento) **sin colaborador vinculado**: así no pueden pedir pases ni firmar los de su departamento. Aparecen en **Mis pendientes** y arriba de la lista; vincúlalas con el **lápiz** de su ficha.
+**¿Qué son las «Cuentas por revisar»?** Las bloqueadas por intentos fallidos, las dadas de baja junto con su colaborador en los últimos 7 días y las que piden pases de salida a su nombre (Solicitante, Jefe de departamento) **sin colaborador vinculado**: así no pueden pedir pases ni firmar los de su departamento. Aparecen en **Mis pendientes** y arriba de la lista; vincúlalas con el **lápiz** de su ficha.
 
 **¿Una cuenta puede trabajar en dos sedes sin ver toda la empresa?** Sí: elige su sede y marca las demás en **¿También atiende otras sedes?**. Su ficha dice, por ejemplo, «Hotel Centro + Hotel Playa». Si tú solo administras una de esas sedes, al editarla las otras se conservan.
 

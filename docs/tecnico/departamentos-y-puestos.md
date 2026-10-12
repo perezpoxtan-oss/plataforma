@@ -17,13 +17,14 @@ Réplica de `modules/departamentos` y `modules/puestos` de SEGCAT. Las pantallas
 
 - **`departamentos`:** `empresa_id`, `nombre`, `todas_las_sedes`, `activo` y auditoría. Índice único `(empresa_id, nombre)`.
 - **`departamento_sede`:** sedes donde aplica, solo cuando `todas_las_sedes = 0`. El scope `Departamento::aplicanEn($sedeIds)` filtra los departamentos visibles para unas sedes.
-- **`puestos`:** `empresa_id`, `nombre`, `tipo` (`operativo` | `administrativo`), `activo` y auditoría. Índice único `(empresa_id, nombre)`.
+- **`puestos`:** `empresa_id`, `nombre`, `activo` y auditoría. Índice único `(empresa_id, nombre)`.
+- **Sin clasificación Operativo / Administrativo** (decisión del dueño, mapa de procesos): la migración `2026_10_29_001100_quitar_tipo_de_puestos` quita la columna `tipo` y su índice `(empresa_id, tipo)` (la llave foránea de `empresa_id` la sostiene el índice único). Ninguna regla la usaba; se quitaron el campo «Tipo de Puesto», las píldoras «Todos / Administrativos / Operativos», la insignia de la tarjeta y la validación. Un `tipo` enviado por una pantalla anterior se ignora. `down()` regresa la columna con `operativo` para todos (la clasificación anterior no se recupera).
 - **`departamento_puesto`:** relación N:M. Si un puesto no tiene departamentos ligados, aplica en cualquiera.
 
 ## Permisos
 
 - **Consulta:** `departamentos.ver` y `puestos.ver`.
-- **Cambios:** `.crear`, `.editar` y `.eliminar`; este último desactiva o reactiva.
+- **Cambios:** `.crear`, `.editar` y `.eliminar`; este último da de baja o reactiva.
 - **Catálogos de toda la empresa** (`Organizacion\Concerns\CatalogoDeEmpresa`):
   - Para modificar se necesita alcance de **empresa**.
   - Con alcance de sede se ve en modo consulta. En Departamentos solo aparecen los que aplican en sus sedes.
@@ -40,7 +41,7 @@ Réplica de `modules/departamentos` y `modules/puestos` de SEGCAT. Las pantallas
 - **`data-valores` con arreglos:** llena listas de casillas (`name="sedes[]"`).
 - **`data-oculta-si-marcado="#id"`:** una casilla que oculta un bloque mientras está marcada. Se usa en "Todas las sedes".
 - **`data-nombres-existentes` + `data-aviso-nombre`:** aviso en vivo de nombre repetido.
-- **`data-filtro-tipo="clave"`:** píldoras de tipo (Administrativos / Operativos) integradas al filtro genérico de fichas.
+- **`data-filtro-tipo="clave"`:** píldoras de tipo integradas al filtro genérico de fichas (hoy las usan Vehículos, Personas, Gafetes, Empresas externas y Estacionamientos; Puestos ya no).
 
 ## Datos demo
 

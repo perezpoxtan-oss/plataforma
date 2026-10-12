@@ -36,9 +36,10 @@ use Illuminate\Validation\ValidationException;
  *  - la zona debe ser de la sede y estar activa;
  *  - el vehículo, la persona y la empresa externa caen a sus padrones
  *    (se buscan primero para no duplicar), con la propiedad del vehículo
- *    derivada del tipo: Colaborador/Emergencia/Personal externo → propio
- *    visitante; Huésped → propio huésped o taxi/app si trae conductor;
- *    Proveedor/Contratista → flotilla de empresa;
+ *    derivada del tipo: Colaborador/Emergencia/Personal externo/Huésped →
+ *    Particular; Huésped con conductor (taxi) y Proveedor/Contratista →
+ *    De una empresa (el número económico y la empresa los completa quien
+ *    verifica el padrón);
  *  - un mismo nombre en el Padrón de personas pregunta "¿Es la misma
  *    persona?" antes de crear otra (homónimos reales).
  *
@@ -236,13 +237,15 @@ class RegistroAccesos
 
             $vehiculoId = null;
             if ($placas !== '') {
+                // Huésped con conductor (taxi) y proveedor/contratista: «De una empresa»; el resto, «Particular»
                 $propiedad = match (true) {
-                    $tipo === 'huesped' && $conductor !== null => 'taxi_app',
-                    $tipo === 'huesped' => 'propio_huesped',
-                    in_array($tipo, Acceso::CON_AUTORIZACION, true) => 'empresa_proveedor',
-                    default => 'propio_visitante',
+                    $tipo === 'huesped' && $conductor !== null => 'empresa',
+                    $tipo === 'huesped' => 'particular',
+                    in_array($tipo, Acceso::CON_AUTORIZACION, true) => 'empresa',
+                    default => 'particular',
                 };
-                $vehiculoId = $this->vehiculo($actor, $placas, $tipoVehiculo, $d, $propiedad, $propiedad === 'empresa_proveedor' ? $proveedorId : null, $sedeId)->id;
+                $conEmpresa = in_array($tipo, Acceso::CON_AUTORIZACION, true);
+                $vehiculoId = $this->vehiculo($actor, $placas, $tipoVehiculo, $d, $propiedad, $conEmpresa ? $proveedorId : null, $sedeId)->id;
             }
 
             $reserva = $tipo === 'huesped' ? (bool) ($d['tiene_reserva'] ?? true) : null;

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Novedades\AjustesNovedades;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\EmpresaDeTrabajo;
@@ -57,6 +58,8 @@ class PanelController extends Controller
                     $frase = trim(($aprobar > 0 ? ($aprobar === 1 ? $uno : sprintf($varios, $aprobar)) : '')
                         .($firmar > 0 ? ($aprobar > 0 ? ' y ' : '').($firmar === 1 ? '1 espera tu firma en caseta' : "{$firmar} esperan tu firma en caseta") : ''));
                 }
+                // El texto nombra el módulo como lo llama la empresa («Bitácora de incidentes»)
+                $texto = str_replace('la Bitácora de novedades', app(AjustesNovedades::class)->bitacoraConArticulo($empresaId), $texto);
                 $pendientes[] = $item + ['texto' => trim(($frase !== '' ? $frase.'. ' : '').$texto), 'boton' => $boton];
             }
         }

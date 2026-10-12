@@ -32,8 +32,12 @@ class AuditoriaController extends Controller
 {
     private const POR_PAGINA = 50;
 
-    /** «Su sede» en la bitácora: 'propios' (original) o 'sede' (Configuración → Bitácora de auditoría). */
-    public const SEDE_POR_OMISION = 'propios';
+    /**
+     * «Su sede» en la bitácora: 'propios' o 'sede' (Configuración → Bitácora de auditoría).
+     * Decisión del dueño (mapa de procesos): por omisión, los movimientos de su sede.
+     * La empresa que ya guardó un valor lo conserva (preferencias.auditoria_sede).
+     */
+    public const SEDE_POR_OMISION = 'sede';
 
     public function __construct(
         private readonly EmpresaDeTrabajo $empresa,
@@ -125,8 +129,8 @@ class AuditoriaController extends Controller
 
     /**
      * Sedes cuyos movimientos ve quien tiene «Su sede» (ADR-0016). Vacío = solo
-     * los propios: el diseño original, mientras la empresa no elija «sede» en
-     * Configuración → Bitácora de auditoría. «Solo los propios» siempre es vacío.
+     * los propios: si la empresa guardó «propios» en Configuración → Bitácora de
+     * auditoría (por omisión, «sede»). «Solo los propios» siempre es vacío.
      *
      * @return list<int>
      */

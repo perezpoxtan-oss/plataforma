@@ -13,6 +13,7 @@ use App\Models\Novedad;
 use App\Models\PaseSalida;
 use App\Models\PrestamoLlave;
 use App\Models\User;
+use App\Services\Novedades\AjustesNovedades;
 use App\Services\Novedades\ArchivoLostFound;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Support\GraficaSvg;
@@ -75,7 +76,7 @@ class Tablero
         $fichas = [];
         foreach ($this->visibles($actor) as $clave) {
             try {
-                $fichas[] = ['clave' => $clave, 'titulo' => self::FICHAS[$clave][0], 'icono' => self::FICHAS[$clave][1]] + $this->{'resumen'.ucfirst(str_replace('_', '', ucwords($clave, '_')))}($actor, $sedes);
+                $fichas[] = ['clave' => $clave, 'titulo' => self::titulo($clave), 'icono' => self::FICHAS[$clave][1]] + $this->{'resumen'.ucfirst(str_replace('_', '', ucwords($clave, '_')))}($actor, $sedes);
             } catch (Throwable $e) {
                 report($e);
             }
@@ -96,7 +97,7 @@ class Tablero
             return null;
         }
         try {
-            return ['clave' => $clave, 'titulo' => self::FICHAS[$clave][0], 'icono' => self::FICHAS[$clave][1]]
+            return ['clave' => $clave, 'titulo' => self::titulo($clave), 'icono' => self::FICHAS[$clave][1]]
                 + $this->{'detalle'.ucfirst(str_replace('_', '', ucwords($clave, '_')))}($actor, $sedes);
         } catch (Throwable $e) {
             report($e);
@@ -294,6 +295,16 @@ class Tablero
         ];
     }
 
+    /** Título de la ficha; la de la bitácora lleva el nombre que la empresa le dio al módulo. */
+    public static function titulo(string $clave): string
+    {
+        if ($clave === 'novedades' && ($nombre = AjustesNovedades::nombreActual()) !== AjustesNovedades::NOMBRE_OMISION) {
+            return $nombre.': tickets abiertos';
+        }
+
+        return self::FICHAS[$clave][0];
+    }
+
     private function resumenNovedades(User $actor, ?array $sedes): array
     {
         return ['valor' => number_format($this->novedades($actor, $sedes)->count()), 'nota' => 'Tickets sin cerrar', 'enlace' => route('novedades.index')];
@@ -308,10 +319,10 @@ class Tablero
             ->map(fn (Novedad $n) => [$n->folio(), $this->hora->formatear($n->created_at, 'd/m H:i'), $n->etiquetaCategoria(), Novedad::ESTATUS[$n->estatus][1] ?? $n->estatus, $n->ubicacion ?: '—', $n->sede?->nombre ?? '—'])->all();
 
         return [
-            'grafica' => GraficaSvg::barras($porCategoria, 'Novedades abiertas por categoría'),
+            'grafica' => GraficaSvg::barras($porCategoria, AjustesNovedades::nombreActual() === AjustesNovedades::NOMBRE_OMISION ? 'Novedades abiertas por categoría' : 'Tickets abiertos por categoría'),
             'columnas' => ['Folio', 'Abierto', 'Categoría', 'Estatus', 'Ubicación', 'Sede'],
             'filas' => $filas, 'total' => array_sum($porCategoria),
-            'enlace' => route('novedades.index'), 'textoEnlace' => 'Ir a la Bitácora de novedades',
+            'enlace' => route('novedades.index'), 'textoEnlace' => 'Ir a '.AjustesNovedades::bitacoraActualConArticulo(),
         ];
     }
 

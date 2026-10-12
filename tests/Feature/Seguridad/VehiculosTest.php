@@ -47,7 +47,7 @@ class VehiculosTest extends TestCase
     {
         return array_merge([
             'placas' => 'abc-123 a',
-            'propiedad' => 'propio_huesped',
+            'propiedad' => 'particular',
             'tipo' => 'sedan',
             'marca' => 'nissan',
             'modelo' => 'versa',
@@ -99,16 +99,17 @@ class VehiculosTest extends TestCase
 
     public function test_lista_con_fichas_textos_de_segcat_y_filtros(): void
     {
-        $taxi = $this->vehiculo('TX-1', ['propiedad' => 'taxi_app', 'numero_economico' => 'T-045']);
+        $taxi = $this->vehiculo('TX-1', ['propiedad' => 'empresa', 'numero_economico' => 'T-045']);
         $this->vehiculo('ABC123A');
 
         $this->actingAs($this->admin)->get('/vehiculos')->assertOk()
             ->assertSee('Padrón Vehicular')->assertSee('Catálogo de autos, flotillas y unidades registradas.')
             ->assertSee('Registrar Vehículo')->assertSee('Padrón de:')
             ->assertSee('id="vehiculo-'.$taxi->id.'"', false)
-            ->assertSee('data-grupo="taxis"', false)->assertSee('data-grupo="propios"', false)
+            ->assertSee('data-grupo="empresas"', false)->assertSee('data-grupo="particulares"', false)
+            ->assertSee('Particulares')->assertDontSee('data-valor="taxis"', false)
             ->assertSee('data-filtro-tipo="vehiculos"', false)
-            ->assertSee('TX1')->assertSee('T-045')->assertSee('Taxi / App')
+            ->assertSee('TX1')->assertSee('T-045')->assertSee('De una empresa')
             ->assertSee(route('vehiculos.calcomania', $taxi->id));
     }
 
@@ -172,18 +173,25 @@ class VehiculosTest extends TestCase
         $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['placas' => 'BUS1', 'tipo' => 'autobus', 'capacidad' => 120]))
             ->assertSessionHasErrors(['capacidad' => 'La capacidad debe ser de 1 a 99 personas.']);
 
-        // Flotilla de un proveedor: proveedor obligatorio; número económico y capacidad se guardan
-        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['placas' => 'FLT1', 'propiedad' => 'empresa_proveedor']))
-            ->assertSessionHasErrors(['proveedor_id' => 'Elige la empresa propietaria de la flotilla.']);
+        // De una empresa: empresa propietaria y número económico obligatorios; capacidad se guarda
+        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['placas' => 'FLT1', 'propiedad' => 'empresa']))
+            ->assertSessionHasErrors([
+                'proveedor_id' => 'Un vehículo de una empresa lleva su empresa propietaria: elígela de la lista.',
+                'numero_economico' => 'Un vehículo de una empresa lleva su número económico (el que trae pintado la unidad).',
+            ]);
         $proveedor = $this->proveedor('Transportes del Caribe', 'transporte_personal');
         $this->actingAs($this->admin)->post('/vehiculos', $this->datos([
-            'placas' => 'FLT1', 'propiedad' => 'empresa_proveedor', 'tipo' => 'autobus', 'capacidad' => 20, 'numero_economico' => 'u-03', 'proveedor_id' => $proveedor->id,
+            'placas' => 'FLT1', 'propiedad' => 'empresa', 'tipo' => 'autobus', 'capacidad' => 20, 'numero_economico' => 'u-03', 'proveedor_id' => $proveedor->id,
         ]))->assertSessionHasNoErrors();
         $flotilla = $this->buscarPlacas('FLT1');
         $this->assertSame([$proveedor->id, 'U-03', 20], [$flotilla->proveedor_id, $flotilla->numero_economico, $flotilla->capacidad]);
 
-        // Taxi: el proveedor es opcional
-        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['placas' => 'TX1', 'propiedad' => 'taxi_app']))->assertSessionHasNoErrors();
+        // Un taxi también es «De una empresa»: sin número económico no se guarda
+        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['placas' => 'TX1', 'propiedad' => 'empresa', 'proveedor_id' => $proveedor->id]))
+            ->assertSessionHasErrors('numero_economico');
+        // Un particular no pide empresa ni número económico (y no se guardan aunque lleguen)
+        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['placas' => 'PAR1', 'numero_economico' => 'X-1']))->assertSessionHasNoErrors();
+        $this->assertNull($this->buscarPlacas('PAR1')->numero_economico);
 
         // Un auto propio nunca queda ligado a un proveedor
         $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['placas' => 'PRO2', 'proveedor_id' => $proveedor->id]))->assertSessionHasNoErrors();
@@ -198,20 +206,23 @@ class VehiculosTest extends TestCase
         $colabAjeno = $this->colaborador('9001', $otra);
         $colab = $this->colaborador('1003');
 
-        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['propiedad' => 'empresa_proveedor', 'proveedor_id' => $ajeno->id]))
+        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['propiedad' => 'empresa', 'numero_economico' => 'T-1', 'proveedor_id' => $ajeno->id]))
             ->assertSessionHasErrors(['proveedor_id' => 'La empresa propietaria no existe en esta empresa o está desactivada.']);
-        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['propiedad' => 'empresa_proveedor', 'proveedor_id' => $inactivo->id]))
+        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['propiedad' => 'empresa', 'numero_economico' => 'T-1', 'proveedor_id' => $inactivo->id]))
             ->assertSessionHasErrors('proveedor_id');
-        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['propiedad' => 'propio_colaborador', 'colaborador_id' => $colabAjeno->id]))
+        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['propiedad' => 'particular', 'colaborador_id' => $colabAjeno->id]))
             ->assertSessionHasErrors(['colaborador_id' => 'El colaborador no existe en esta empresa o está dado de baja.']);
 
-        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['propiedad' => 'propio_colaborador', 'colaborador_id' => $colab->id]))->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['propiedad' => 'particular', 'colaborador_id' => $colab->id]))->assertSessionHasNoErrors();
         $v = $this->buscarPlacas('ABC123A');
         $this->assertSame($colab->id, $v->colaborador_id);
         $this->actingAs($this->admin)->get('/vehiculos')->assertSee('Andrea Agente');
 
-        // Si deja de ser de un colaborador, el vínculo se quita
-        $this->actingAs($this->admin)->put("/vehiculos/{$v->id}", $this->datos(['propiedad' => 'propio_visitante', 'colaborador_id' => $colab->id]))->assertSessionHasNoErrors();
+        // Si pasa a ser de una empresa, el vínculo con el colaborador se quita
+        $taxis = $this->proveedor('Taxis del Centro', 'taxi');
+        $this->actingAs($this->admin)->put("/vehiculos/{$v->id}", $this->datos([
+            'propiedad' => 'empresa', 'proveedor_id' => $taxis->id, 'numero_economico' => 'T-9', 'colaborador_id' => $colab->id,
+        ]))->assertSessionHasNoErrors();
         $this->assertNull($v->fresh()->colaborador_id);
     }
 
@@ -246,7 +257,7 @@ class VehiculosTest extends TestCase
     public function test_calcomania_con_qr_generado_localmente(): void
     {
         $proveedor = $this->proveedor('Taxis Cancún', 'taxi');
-        $v = $this->vehiculo('TX-45', ['propiedad' => 'taxi_app', 'numero_economico' => 'T-045', 'proveedor_id' => $proveedor->id]);
+        $v = $this->vehiculo('TX-45', ['propiedad' => 'empresa', 'numero_economico' => 'T-045', 'proveedor_id' => $proveedor->id]);
 
         $respuesta = $this->actingAs($this->admin)->get("/vehiculos/{$v->id}/calcomania")->assertOk()
             ->assertSee('TX45')->assertSee('Hotel Uno')->assertSee('NISSAN VERSA')->assertSee('Taxis Cancún')
@@ -285,20 +296,24 @@ class VehiculosTest extends TestCase
 
         $pagina = $html($taxis);
         $this->assertMatchesRegularExpression('/id="dialogoNuevoVehiculo"[^>]*data-abrir-al-cargar/', $pagina);
-        $this->assertMatchesRegularExpression('/<option value="taxi_app"\s+selected/', $pagina);
+        $this->assertMatchesRegularExpression('/<option value="empresa"\s+selected/', $pagina);
+        // Desde la ficha de una empresa solo se ofrece «De una empresa»
+        $alta = substr($pagina, strpos($pagina, 'id="dialogoNuevoVehiculo"'));
+        $alta = substr($alta, 0, strpos($alta, '</dialog>'));
+        $this->assertStringNotContainsString('<option value="particular"', $alta);
         // Ronda 5 (PV-05): la empresa de la ficha queda fija (sin lista para elegir otra)
         $this->assertStringContainsString('<input type="hidden" name="proveedor_id" value="'.$taxis->id.'">', $pagina);
         $this->assertStringContainsString('name="volver" value="proveedor"', $pagina);
 
-        $this->assertMatchesRegularExpression('/<option value="agencia_renta"\s+selected/', $html($agencia));
-        $this->assertMatchesRegularExpression('/<option value="empresa_proveedor"\s+selected/', $html($insumos));
-        $this->assertMatchesRegularExpression('/<option value="transporte_personal"\s+selected/', $html($huespedes));
+        foreach ([$agencia, $insumos, $huespedes] as $p) {
+            $this->assertMatchesRegularExpression('/<option value="empresa"\s+selected/', $html($p));
+        }
 
         // Sin el parámetro, el alta no se abre sola
         $this->assertDoesNotMatchRegularExpression('/id="dialogoNuevoVehiculo"[^>]*data-abrir-al-cargar/', $this->actingAs($this->admin)->get('/vehiculos')->getContent());
 
         // Al guardar regresa a la ficha del proveedor (si existe la pantalla) o al padrón
-        $datos = $this->datos(['propiedad' => 'taxi_app', 'proveedor_id' => $taxis->id, 'volver' => 'proveedor']);
+        $datos = $this->datos(['propiedad' => 'empresa', 'numero_economico' => 'T-1', 'proveedor_id' => $taxis->id, 'volver' => 'proveedor']);
         if (! Route::has('proveedores.show')) {
             $this->actingAs($this->admin)->post('/vehiculos', $datos)->assertRedirect(route('vehiculos.index').'#vehiculo-'.$this->buscarPlacas('ABC123A')->id);
             Route::get('/proveedores/{proveedor}', fn () => 'ficha')->name('proveedores.show');
@@ -318,7 +333,7 @@ class VehiculosTest extends TestCase
     public function test_buscar_por_placas_marca_o_color(): void
     {
         $proveedor = $this->proveedor('Taxis Cancún', 'taxi');
-        $this->vehiculo('ABC-123-A', ['propiedad' => 'taxi_app', 'proveedor_id' => $proveedor->id]);
+        $this->vehiculo('ABC-123-A', ['propiedad' => 'empresa', 'proveedor_id' => $proveedor->id]);
         $this->vehiculo('ABD-999', ['marca' => 'MAZDA', 'modelo' => 'CX-5', 'color' => 'ROJO']);
         $this->vehiculo('ABE-111', ['activo' => false]);
         $otra = $this->crearEmpresa('Hotel Dos');
@@ -330,7 +345,7 @@ class VehiculosTest extends TestCase
         $r = $this->actingAs($this->admin)->getJson('/vehiculos/buscar?q=abc-12')->assertOk()->json('resultados');
         $this->assertCount(1, $r);
         $this->assertSame('NISSAN VERSA · BLANCO', $r[0]['descripcion']);
-        $this->assertSame('Taxi / App', $r[0]['propiedad_etiqueta']);
+        $this->assertSame('De una empresa', $r[0]['propiedad_etiqueta']);
         $this->assertSame('Taxis Cancún', $r[0]['empresa']);
         $this->assertMatchesRegularExpression('/^[a-z0-9]{24}$/', $r[0]['codigo_qr']);
 

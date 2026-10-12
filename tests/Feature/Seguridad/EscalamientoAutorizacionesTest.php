@@ -343,6 +343,8 @@ class EscalamientoAutorizacionesTest extends TestCase
         $a->refresh();
         // Recordatorio a quienes ya estaban avisados; escalamiento a quien falte de RR. HH. y al Jefe de seguridad de la sede
         $this->assertSame(2, $this->notificaciones($this->rh, 'autorizacion_recepcion'));
+        // Pasaron 20 min: la sesión de prueba se renueva para no chocar con el cierre por inactividad (20 min)
+        $this->flushSession();
         $this->actingAs($this->rh)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.titulo', 'Recordatorio: Karla Pérez Uc lleva 20 min esperando tu respuesta')
             ->assertJsonPath('lista.0.acciones.0.etiqueta', 'Que pase');
         $this->assertContains($this->jefeSeguridad->id, $a->escalado_a);

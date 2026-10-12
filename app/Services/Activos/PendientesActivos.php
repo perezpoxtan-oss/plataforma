@@ -13,6 +13,8 @@ use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Services\Transporte\BitacoraTransporte;
 use App\Support\AjustesCaseta;
+use App\Support\RelojVoBo;
+use Illuminate\Support\Carbon;
 
 /**
  * Renglones de «Mis pendientes» de Transporte, Procedimientos, Préstamo de
@@ -35,11 +37,13 @@ class PendientesActivos
             $fila = app(BitacoraTransporte::class)->limitar(MovimientoTransporte::query(), $actor, 'transporte.aprobar')
                 ->where('movimientos_transporte.estatus', 'no_llego')->where('movimientos_transporte.anulado', false)
                 ->whereNull('movimientos_transporte.autorizado_en')->toBase()
-                ->selectRaw('COUNT(*) as total, MIN(movimientos_transporte.fecha) as desde')->first();
+                ->selectRaw('COUNT(*) as total, MIN(movimientos_transporte.fecha) as desde, MIN(movimientos_transporte.created_at) as esperando_desde')->first();
             $total = (int) ($fila->total ?? 0);
             $desde = $total > 0 && $fila->desde ? substr((string) $fila->desde, 0, 10) : null;
+            // Color del renglón por el vale que más lleva esperando (RelojVoBo: amarillo 24–72 h, rojo > 72 h)
+            $nivel = $total > 0 && $fila->esperando_desde ? RelojVoBo::de(Carbon::parse((string) $fila->esperando_desde, 'UTC'))['nivel'] : null;
             $items[] = $this->item('vales_taxi', 'Vales de taxi por autorizar', 'bi-taxi-front', $total,
-                route('transporte.index', array_filter(['estado' => 'por_autorizar', 'fecha_inicio' => $desde])));
+                route('transporte.index', array_filter(['estado' => 'por_autorizar', 'fecha_inicio' => $desde])), $nivel === 'normal' ? null : $nivel);
         }
 
         // «Procedimientos por aprobar» lo pinta MisPendientes en su lugar (ADR-0016) con procedimientosPorAprobar()

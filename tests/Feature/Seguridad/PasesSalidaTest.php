@@ -840,7 +840,7 @@ class PasesSalidaTest extends TestCase
         $this->actingAs($this->admin)->get('/pases-salida/'.$dos->id)->assertSee('Usar mi firma guardada');
         $this->actingAs($this->admin)->get('/pases-salida/mi-firma')->assertOk()->assertHeader('Content-Type', 'image/jpeg');
         $this->actingAs($this->director)->get('/pases-salida/mi-firma')->assertNotFound();
-        $this->actingAs($this->crearUsuario($this->empresa, 'Asistente', $this->centro))->get('/pases-salida/mi-firma')->assertForbidden();
+        $this->actingAs($this->crearUsuario($this->empresa, 'Asistente de seguridad', $this->centro))->get('/pases-salida/mi-firma')->assertForbidden();
 
         // Se copia al pase: si después la borra, la del pase queda
         $this->aprobar($dos, $this->admin, ['firma_modo' => 'guardada', 'firma' => ''])->assertSessionHasNoErrors();
@@ -992,8 +992,8 @@ class PasesSalidaTest extends TestCase
         $this->actingAs($this->crearUsuario($this->empresa, 'Agente', $this->playa))->get('/pases-salida/verificar/'.$alProveedor->codigo_verificacion)->assertNotFound();
 
         // Sin "imprimir" no hay hoja ni botón
-        $sinImprimir = $this->crearUsuario($this->empresa, 'Asistente', $this->centro);
-        $rol = $this->rolId('Asistente');
+        $sinImprimir = $this->crearUsuario($this->empresa, 'Asistente de seguridad', $this->centro);
+        $rol = $this->rolId('Asistente de seguridad');
         $this->enEmpresa(fn () => RolPermiso::where('rol_id', $rol)
             ->whereIn('modulo_accion_id', ModuloAccion::whereHas('modulo', fn ($m) => $m->where('clave', 'pases_salida'))->whereHas('accion', fn ($a) => $a->where('clave', 'imprimir'))->pluck('id'))
             ->delete());

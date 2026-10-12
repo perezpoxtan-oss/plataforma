@@ -6,6 +6,7 @@ use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Puesto;
 use App\Models\Sede;
+use App\Models\Turno;
 use App\Models\User;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Cuenta\AvisosCuenta;
@@ -144,9 +145,12 @@ class AdministradorColaboradores
     /**
      * Catálogos para los formularios (alta, edición, registro rápido).
      *
-     * @return array{sedes: Collection<int, Sede>, sedesPermitidas: list<int>|null, departamentos: Collection<int, Departamento>, puestos: Collection<int, Puesto>}
+     * $conTurnos: solo el alta y la edición de la pantalla llevan el turno
+     * (el registro rápido y la verificación no lo piden).
+     *
+     * @return array{sedes: Collection<int, Sede>, sedesPermitidas: list<int>|null, departamentos: Collection<int, Departamento>, puestos: Collection<int, Puesto>, turnos: Collection<int, Turno>}
      */
-    public function catalogos(User $actor, string $permiso): array
+    public function catalogos(User $actor, string $permiso, bool $conTurnos = false): array
     {
         $permitidas = $this->sedesPermitidas($actor, $permiso);
 
@@ -157,6 +161,10 @@ class AdministradorColaboradores
             'sedesPermitidas' => $permitidas,
             'departamentos' => Departamento::with('sedes:id')->orderBy('nombre')->get(['id', 'nombre', 'todas_las_sedes', 'activo']),
             'puestos' => Puesto::with('departamentos:id')->orderBy('nombre')->get(['id', 'nombre', 'activo']),
+            // Mapa de procesos: turno del colaborador (la vista muestra los que aplican en la sede elegida)
+            'turnos' => $conTurnos
+                ? Turno::with('sedes:id')->orderBy('hora_inicio')->orderBy('nombre')->get(['id', 'nombre', 'hora_inicio', 'hora_fin', 'todas_las_sedes', 'activo'])
+                : collect(),
         ];
     }
 
@@ -411,6 +419,7 @@ class AdministradorColaboradores
             'sede_id' => [$rapido ? 'required' : 'nullable', 'integer'],
             'departamento_id' => ['nullable', 'integer'],
             'puesto_id' => ['nullable', 'integer'],
+            'turno_id' => ['nullable', 'integer'],
         ];
 
         // Datos personales: solo con permiso; al editar, solo los que llegaron
@@ -462,11 +471,15 @@ class AdministradorColaboradores
             'lugar_nacimiento' => 'estado de nacimiento',
             'correo_personal' => 'correo personal',
             'direccion_completa' => 'dirección completa',
+            'turno_id' => 'turno',
         ])->validate();
 
         $sedeId = $this->sedeValida($validados['sede_id'] ?? null, $actor, $permiso, $actual);
         $departamentoId = $this->departamentoValido($validados['departamento_id'] ?? null, $sedeId, $actual);
         $puestoId = $this->puestoValido($validados['puesto_id'] ?? null, $departamentoId, $actual);
+        // El turno es opcional y solo se toca si el formulario lo trae (la verificación y el registro rápido no lo llevan)
+        $conTurno = $actual === null || array_key_exists('turno_id', $entrada);
+        $turnoId = $conTurno ? $this->turnoValido($validados['turno_id'] ?? null, $sedeId, $actual) : null;
 
         $datos = [
             'num_empleado' => $validados['num_empleado'] ?? null,
@@ -478,6 +491,9 @@ class AdministradorColaboradores
             'departamento_id' => $departamentoId,
             'puesto_id' => $puestoId,
         ];
+        if ($conTurno) {
+            $datos['turno_id'] = $turnoId;
+        }
 
         foreach ($personales as $campo) {
             $datos[$campo] = $validados[$campo] ?? null;
@@ -572,6 +588,30 @@ class AdministradorColaboradores
         return $id;
     }
 
+    /**
+     * Turno de la empresa (el filtro de empresa lo pone el modelo), activo y
+     * que se use en la sede elegida. El turno actual se conserva aunque se
+     * haya desactivado, mientras no cambie la sede.
+     */
+    private function turnoValido(mixed $id, ?int $sedeId, ?Colaborador $actual): ?int
+    {
+        if ($id === null) {
+            return null;
+        }
+        $id = (int) $id;
+        $turno = Turno::find($id);
+        $esElActual = $actual !== null && $id === (int) $actual->turno_id;
+        if ($turno === null || (! $turno->activo && ! $esElActual)) {
+            throw ValidationException::withMessages(['turno_id' => 'El turno no existe en esta empresa o está desactivado.']);
+        }
+        $mismaSede = $actual !== null && $sedeId === ($actual->sede_id === null ? null : (int) $actual->sede_id);
+        if ($sedeId !== null && ! ($esElActual && $mismaSede) && ! Turno::whereKey($id)->aplicanEn([$sedeId])->exists()) {
+            throw ValidationException::withMessages(['turno_id' => "El turno «{$turno->nombre}» no se usa en la sede elegida."]);
+        }
+
+        return $id;
+    }
+
     // ------------------------------------------------------------------ Lectura
 
     /**
@@ -648,7 +688,7 @@ class AdministradorColaboradores
      */
     public function foto(Colaborador $c): array
     {
-        return $c->only(['num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'sede_id', 'departamento_id', 'puesto_id', 'activo']) + [
+        return $c->only(['num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'sede_id', 'departamento_id', 'puesto_id', 'turno_id', 'activo']) + [
             'telefono' => Colaborador::enmascarar($c->telefono),
             'curp' => Colaborador::enmascarar($c->curp),
             'rfc' => Colaborador::enmascarar($c->rfc),

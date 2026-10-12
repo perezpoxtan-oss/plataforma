@@ -111,6 +111,12 @@ class LostFoundController extends Controller
                 'imprimibles' => $this->idsCon($actor, 'lost_found.imprimir', $ids),
                 'cierre' => $cierreId !== null ? $this->archivo->limitar(LostFoundArticulo::query(), $actor, 'lost_found.firmar')->find($cierreId) : null,
                 'puede' => $this->puede($actor),
+                // «Días de resguardo» desde el archivo: quien configura Lost & Found (editable solo con alcance de empresa)
+                'diasResguardo' => $actor->can('lost_found.configurar') ? [
+                    'dias' => $umbrales,
+                    'guardados' => LostFoundUmbral::with('editor:id,name')->get()->keyBy('tipo_valor'),
+                    'puedeEditar' => $this->archivo->puedeConfigurar($actor),
+                ] : null,
                 // Mejoras Incidentes: «Registrar objeto encontrado» sin pasar por la Bitácora
                 'sedesObjeto' => $this->sedesParaObjeto($actor),
                 'completables' => $this->novedades->puedeModulo($actor, 'editar') ? $sinArticulos->filter(fn ($n) => $this->novedades->permite($actor, 'editar', $n))->pluck('id')->all() : [],
@@ -256,6 +262,25 @@ class LostFoundController extends Controller
         return $verConfiguracion
             ? redirect()->to(route('configuracion.index').'#lost-found', 301)
             : redirect()->route('lost_found.archivo', [], 301);
+    }
+
+    /**
+     * «Días de resguardo» desde el propio archivo (decisión del dueño,
+     * 2026-10-12). Mismas reglas y mismo dato que Estructura → Configuración
+     * (ArchivoLostFound::guardarUmbrales): son de toda la empresa, así que
+     * hace falta «lost_found.configurar» con alcance de empresa.
+     */
+    public function guardarUmbrales(Request $request): RedirectResponse
+    {
+        Gate::authorize('lost_found.configurar');
+        $actor = $request->user();
+        abort_unless($this->archivo->puedeConfigurar($actor), 403, 'Los días de resguardo son de toda la empresa: hace falta el permiso «configurar» de Lost & Found con alcance de empresa.');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $this->tenant->conEmpresa($empresaId, fn () => $this->archivo->guardarUmbrales($actor, $request->only('dias')));
+
+        return redirect()->route('lost_found.archivo', ['filtro' => 'urgentes'])
+            ->with('ok', 'Días de resguardo guardados: el semáforo ya los usa. Aquí tienes los artículos urgentes o vencidos con los días nuevos.');
     }
 
     /**

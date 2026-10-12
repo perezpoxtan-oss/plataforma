@@ -343,7 +343,7 @@ class CandidatosYAutorizacionesTest extends TestCase
 
     public function test_contratar_crea_el_colaborador_con_sus_datos(): void
     {
-        $puesto = $this->enEmpresa(fn () => Puesto::create(['nombre' => 'Cocinero', 'tipo' => Puesto::OPERATIVO]));
+        $puesto = $this->enEmpresa(fn () => Puesto::create(['nombre' => 'Cocinero']));
         $c = $this->candidato('evaluado', ['telefono' => '9987654321', 'puesto_id' => $puesto->id, 'nombre_completo' => 'Ramón Ek Balam']);
 
         // Solo desde Elegido (lo elige el departamento)

@@ -40,12 +40,6 @@
             @endif
         </div>
 
-        <div class="pildoras-tipo" role="group" aria-label="Filtrar por tipo de puesto">
-            <button type="button" class="btn-pill-tipo active" data-filtro-tipo="puestos" data-valor="" aria-pressed="true">Todos</button>
-            <button type="button" class="btn-pill-tipo" data-filtro-tipo="puestos" data-valor="administrativo" aria-pressed="false"><i class="bi bi-person-badge me-1" aria-hidden="true"></i>Administrativos</button>
-            <button type="button" class="btn-pill-tipo" data-filtro-tipo="puestos" data-valor="operativo" aria-pressed="false"><i class="bi bi-cone-striped me-1" aria-hidden="true"></i>Operativos</button>
-        </div>
-
         <div class="fichas-grid" data-fichas="puestos">
             @if ($puede['crear'])
                 <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevoPuesto">
@@ -55,14 +49,11 @@
             @endif
 
             @forelse ($puestos as $p)
-                @php $valores = json_encode(['nombre' => $p->nombre, 'tipo' => $p->tipo, 'departamentos' => $p->departamentos->pluck('id')]); @endphp
-                <div class="ficha-card" id="puesto-{{ $p->id }}" data-ficha data-estado="{{ $p->activo ? 1 : 0 }}" data-tipo="{{ $p->tipo }}"
+                @php $valores = json_encode(['nombre' => $p->nombre, 'departamentos' => $p->departamentos->pluck('id')]); @endphp
+                <div class="ficha-card" id="puesto-{{ $p->id }}" data-ficha data-estado="{{ $p->activo ? 1 : 0 }}"
                      data-texto="{{ mb_strtolower($p->nombre.' '.$p->departamentos->pluck('nombre')->join(' ')) }}">
                     <div>
-                        <div class="d-flex justify-content-between align-items-start gap-2">
-                            <h2 class="ficha-title m-0">{{ $p->nombre }}</h2>
-                            <span class="{{ $p->tipo === 'administrativo' ? 'badge-tipo-admin' : 'badge-tipo-op' }}">{{ $p->tipo === 'administrativo' ? 'ADMIN' : 'OPERATIVO' }}</span>
-                        </div>
+                        <h2 class="ficha-title m-0">{{ $p->nombre }}</h2>
                         <div class="d-flex flex-wrap gap-1 mt-2">
                             @forelse ($p->departamentos as $dep)
                                 <span class="chip-catalogo {{ $dep->activo ? '' : 'inactivo' }}" @unless ($dep->activo) title="Departamento desactivado" @endunless><i class="bi bi-diagram-3" aria-hidden="true"></i> {{ $dep->nombre }}</span>
@@ -119,7 +110,6 @@
                 $esNuevo = $modo === 'nuevo';
                 $reabrir = $esNuevo ? $dialogo === 'crear' : $editandoId !== null;
                 $marcados = $reabrir ? array_map('intval', (array) old('departamentos', [])) : [];
-                $tipo = $reabrir ? old('tipo', 'operativo') : 'operativo';
             @endphp
             <dialog id="{{ $esNuevo ? 'dialogoNuevoPuesto' : 'dialogoEditarPuesto' }}" class="dialogo" aria-labelledby="titulo-pu-{{ $modo }}" @if ($reabrir) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
@@ -131,13 +121,6 @@
                         @csrf
                         @unless ($esNuevo) @method('PUT') @endunless
                         <input type="hidden" name="_dialogo" value="{{ $esNuevo ? 'crear' : ($editandoId ? 'editar-'.$editandoId : '') }}" data-campo-dialogo>
-
-                        <label class="campo-etiqueta" for="{{ $modo }}_pu_tipo">Tipo de Puesto</label>
-                        <select id="{{ $modo }}_pu_tipo" name="tipo" class="campo" required>
-                            @foreach ($tipos as $clave => $etiqueta)
-                                <option value="{{ $clave }}" @selected($tipo === $clave) @if ($clave === 'operativo') data-por-defecto @endif>{{ $etiqueta }}</option>
-                            @endforeach
-                        </select>
 
                         <label class="campo-etiqueta" for="{{ $modo }}_pu_nombre">Nombre del Puesto</label>
                         <input type="text" id="{{ $modo }}_pu_nombre" name="nombre" class="campo" maxlength="100" placeholder="Ej. Jefe"

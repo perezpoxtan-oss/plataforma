@@ -10,6 +10,7 @@ use App\Models\RecorridoPc;
 use App\Models\RevisionRecorridoPc;
 use App\Models\User;
 use App\Services\Novedades\AdministradorNovedades;
+use App\Services\Novedades\AjustesNovedades;
 use App\Services\RecorridosPc\AdministradorRecorridosPc;
 use App\Services\RecorridosPc\CatalogoEquiposPc;
 use App\Services\RecorridosPc\Ubicaciones;
@@ -175,7 +176,7 @@ class RecorridoPcController extends Controller
             return $destino->with('ok', "{$revision->identificador} revisado: OK. Escanea el siguiente equipo.");
         }
 
-        return $destino->with('aviso', "{$revision->identificador} quedó CON HALLAZGO y se reportó en la Bitácora de Novedades"
+        return $destino->with('aviso', "{$revision->identificador} quedó CON HALLAZGO y se reportó en ".app(AjustesNovedades::class)->bitacoraConArticulo((int) $r->empresa_id)
             .($r->novedad ? " (ticket {$r->novedad->folio()})" : '').'. Escanea el siguiente equipo.');
     }
 

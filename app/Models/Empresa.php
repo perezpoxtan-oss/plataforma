@@ -60,8 +60,9 @@ class Empresa extends Model
         'hallazgo_recorrido_pc' => ['Recorridos de Protección Civil: avisar por correo al jefe de seguridad y a quien administra los equipos cuando un recorrido encuentra una falla', false],
         'pase_salida_espera' => ['Pases de salida: recordar al firmante y avisar al siguiente nivel cuando una firma tarda (según las horas del circuito)', true],
         // Fin Mejoras Incidentes
-        // Mejoras estructura (ADR-0016): campana a quien ve toda la Bitácora de auditoría (apagado por omisión)
-        'movimientos_sensibles' => ['Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría cuando alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales', false],
+        // Mejoras estructura (ADR-0016): campana a quien ve toda la Bitácora de auditoría.
+        // Decisión del dueño (mapa de procesos): encendido por omisión. Las empresas que ya lo guardaron conservan su valor.
+        'movimientos_sensibles' => ['Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría cuando alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales', true],
     ];
 
     /** Ronda 5 (LL-04): lista de correos de cada copia del voucher con cobro (Configuración → Avisos por correo). */

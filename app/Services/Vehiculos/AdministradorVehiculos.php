@@ -29,53 +29,41 @@ use Illuminate\Validation\ValidationException;
  */
 class AdministradorVehiculos
 {
-    /** Grupos de las píldoras de la lista: Propios / Flotillas / Taxis. */
+    /** Grupos de las píldoras de la lista: Particulares / De una empresa. */
     public const GRUPOS = [
-        'propio_huesped' => 'propios', 'propio_visitante' => 'propios', 'propio_familiar' => 'propios', 'propio_colaborador' => 'propios',
-        'agencia_renta' => 'flotillas', 'empresa_proveedor' => 'flotillas', 'transporte_personal' => 'flotillas',
-        'taxi_app' => 'taxis',
-    ];
-
-    /** Textos de la lista "Categoría" del formulario, como en SEGCAT. */
-    public const OPCIONES_PROPIEDAD = [
-        'propio_huesped' => 'Propio Huésped',
-        'propio_visitante' => 'Propio Visitante',
-        'propio_familiar' => 'Propio Familiar',
-        'propio_colaborador' => 'Propio Colaborador',
-        'agencia_renta' => 'Agencia (Rentado)',
-        'empresa_proveedor' => 'Flotilla (Empresa/Proveedor)',
-        'taxi_app' => 'Taxi / Plataforma (Uber/Didi)',
-        'transporte_personal' => 'Transporte de Personal',
+        'particular' => 'particulares',
+        'empresa' => 'empresas',
     ];
 
     /**
-     * Mejoras padrones (ADR-0015): cómo se agrupan las categorías en el
-     * formulario. Las ocho siguen igual (bitácoras, filtros y reportes no
-     * cambian); solo se presentan en dos grupos para elegir más rápido.
+     * Textos de la lista «¿De quién es?» del formulario: las dos categorías
+     * con ejemplos, para elegir sin dudar (decisión del dueño: las ocho
+     * categorías de SEGCAT se funden en dos).
      */
-    public const GRUPOS_PROPIEDAD = [
-        'Particular' => ['propio_huesped', 'propio_visitante', 'propio_familiar', 'propio_colaborador'],
-        'De una empresa' => ['empresa_proveedor', 'agencia_renta', 'taxi_app', 'transporte_personal'],
+    public const OPCIONES_PROPIEDAD = [
+        'particular' => 'Particular (de un colaborador, huésped, visitante, familiar…)',
+        'empresa' => 'De una empresa (flotilla, agencia, taxi, transporte…)',
     ];
 
-    /** Propiedades que se ligan a un proveedor (agencia o empresa propietaria). */
-    public const CON_PROVEEDOR = ['agencia_renta', 'empresa_proveedor', 'taxi_app', 'transporte_personal'];
+    /** Propiedades que se ligan a una empresa propietaria (proveedor). */
+    public const CON_PROVEEDOR = ['empresa'];
 
-    /** Propiedades donde el proveedor es obligatorio. */
-    public const PROVEEDOR_OBLIGATORIO = ['empresa_proveedor'];
+    /** Propiedades donde la empresa propietaria es obligatoria. */
+    public const PROVEEDOR_OBLIGATORIO = ['empresa'];
+
+    /** Propiedades donde el número económico es obligatorio. */
+    public const ECONOMICO_OBLIGATORIO = ['empresa'];
+
+    /** Propiedades que pueden ligarse al colaborador dueño (opcional). */
+    public const CON_COLABORADOR = ['particular'];
 
     /** La capacidad solo tiene sentido en unidades de transporte. */
     public const TIPOS_CON_CAPACIDAD = ['autobus', 'camion_ligero'];
 
-    public const PROPIEDADES_CON_CAPACIDAD = ['transporte_personal'];
+    public const PROPIEDADES_CON_CAPACIDAD = ['empresa'];
 
-    /** Propiedad sugerida al dar de alta desde la ficha de un proveedor, según su categoría. */
-    public const PROPIEDAD_POR_CATEGORIA = [
-        'taxi' => 'taxi_app',
-        'agencia_autos' => 'agencia_renta',
-        'transporte_personal' => 'transporte_personal',
-        'transporte_huespedes' => 'transporte_personal',
-    ];
+    /** Categorías de empresa externa cuyos vehículos son taxis (sugerencias de la Bitácora de transporte). */
+    public const CATEGORIAS_TAXI = ['taxi'];
 
     public function __construct(
         private readonly Autorizador $autorizador,
@@ -196,6 +184,10 @@ class AdministradorVehiculos
     public function validar(array $entrada, int $empresaId, ?Vehiculo $actual): array
     {
         $entrada = $this->normalizar($entrada);
+        // Una pantalla abierta antes de fundir las categorías aún puede mandar la clave vieja
+        if (isset($entrada['propiedad']) && is_string($entrada['propiedad'])) {
+            $entrada['propiedad'] = Vehiculo::categoria($entrada['propiedad']);
+        }
 
         $validados = Validator::make($entrada, [
             'placas' => ['required', 'string', 'min:2', 'max:20', 'regex:/^[A-Z0-9Ñ]+$/u'],
@@ -206,7 +198,7 @@ class AdministradorVehiculos
             'modelo' => ['nullable', 'string', 'max:60'],
             'color' => ['required', 'string', 'max:30'],
             'capacidad' => ['nullable', 'integer', 'min:1', 'max:99'],
-            'numero_economico' => ['nullable', 'string', 'max:30'],
+            'numero_economico' => ['nullable', Rule::requiredIf(in_array($entrada['propiedad'] ?? null, self::ECONOMICO_OBLIGATORIO, true)), 'string', 'max:30'],
             'proveedor_id' => ['nullable', Rule::requiredIf(in_array($entrada['propiedad'] ?? null, self::PROVEEDOR_OBLIGATORIO, true)), 'integer'],
             'colaborador_id' => ['nullable', 'integer'],
         ], [
@@ -219,13 +211,14 @@ class AdministradorVehiculos
             'descripcion_otro.required_if' => 'Describe el tipo de vehículo (por ejemplo: montacargas, carrito de golf).',
             'capacidad.min' => 'La capacidad debe ser de 1 a 99 personas.',
             'capacidad.max' => 'La capacidad debe ser de 1 a 99 personas.',
-            'proveedor_id.required' => 'Elige la empresa propietaria de la flotilla.',
+            'proveedor_id.required' => 'Un vehículo de una empresa lleva su empresa propietaria: elígela de la lista.',
+            'numero_economico.required' => 'Un vehículo de una empresa lleva su número económico (el que trae pintado la unidad).',
         ], [
             'propiedad' => 'categoría',
             'tipo' => 'tipo de vehículo',
             'descripcion_otro' => 'descripción del tipo',
             'numero_economico' => 'número económico',
-            'proveedor_id' => 'agencia o empresa propietaria',
+            'proveedor_id' => 'empresa propietaria',
             'colaborador_id' => 'colaborador',
         ])->validate();
 
@@ -252,7 +245,7 @@ class AdministradorVehiculos
             'capacidad' => $conCapacidad ? ($validados['capacidad'] ?? null) : null,
             'numero_economico' => in_array($propiedad, Vehiculo::CON_NUMERO_ECONOMICO, true) ? ($validados['numero_economico'] ?? null) : null,
             'proveedor_id' => in_array($propiedad, self::CON_PROVEEDOR, true) ? $this->proveedorValido($validados['proveedor_id'] ?? null, $actual) : null,
-            'colaborador_id' => $propiedad === 'propio_colaborador' ? $this->colaboradorValido($validados['colaborador_id'] ?? null, $actual) : null,
+            'colaborador_id' => in_array($propiedad, self::CON_COLABORADOR, true) ? $this->colaboradorValido($validados['colaborador_id'] ?? null, $actual) : null,
         ];
     }
 

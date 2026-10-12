@@ -63,6 +63,11 @@ La primera vez, `plataforma:demo` crea cuatro turnos:
 
 En SEGCAT, Rutas usaba los turnos de la empresa sin mirar `turnos_hoteles`. Rutas ya ofrece y valida solo los turnos activos que `aplicanEn` la sede de la ruta (ver [rutas.md](rutas.md)).
 
+## Colaboradores (mapa de procesos)
+
+Cada colaborador puede tener un turno (`colaboradores.turno_id`, opcional, `nullOnDelete`). En su alta y edición se ofrecen solo los turnos activos que `aplicanEn` su sede, y la lista de Colaboradores filtra por turno (ver [colaboradores.md](colaboradores.md#turno-del-colaborador-mapa-de-procesos)). Dar de baja un turno no se lo quita a quien ya lo tiene; «Eliminar definitivamente» lo impide mientras algún colaborador lo tenga.
+
 ## Pruebas
 
 `tests/Feature/Organizacion/TurnosTest.php`
+`tests/Feature/Organizacion/ColaboradoresTurnoYFichaTest.php` (turno del colaborador)

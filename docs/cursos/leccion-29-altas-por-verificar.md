@@ -71,6 +71,7 @@
 
 - La caseta **nunca** edita los padrones. Lo nuevo lo registra desde su pantalla de trabajo y se usa de inmediato.
 - Antes de registrar, revisa **«¿Es alguno de estos?»**: evita repetidos aunque cambien acentos, guiones o espacios.
+- En las ventanas de registro rápido, **No es ninguno** pide una segunda confirmación (**Sí, registrar nuevo** / **Volver a revisar**) antes de crear otro registro.
 - Verifica quien **edita** el padrón. Tiene tres caminos:
   - **Es correcto**: aceptar, corrigiendo los datos.
   - **Ya existía**: unir; todo pasa al correcto.

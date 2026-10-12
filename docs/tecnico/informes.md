@@ -10,16 +10,26 @@ Los cuatro módulos del área Seguridad que existían en el catálogo sin pantal
 |---|---|---|
 | `GET /informes/tablero` | `tablero.index` | `dashboard.ver` |
 | `GET /informes/tablero/detalle?ficha=&sede=&parcial=1` | `tablero.detalle` | `dashboard.ver` + `ver` del módulo de la ficha (404 si no) |
+| `GET /informes/tablero/imprimir?sede=` | `tablero.imprimir` | `dashboard.ver` + `dashboard.imprimir` |
 | `GET /informes/bitacora-del-dia?fecha=&sede=&tipo=` | `bitacora_dia.index` | `bitacora_dia.ver` |
 | `GET /informes/bitacora-del-dia/imprimir` | `bitacora_dia.imprimir` | `bitacora_dia.imprimir` |
 | `GET /informes/bitacora-del-dia/exportar` | `bitacora_dia.exportar` | `bitacora_dia.exportar` |
 | `GET /informes/tendencias?periodo=&desde=&hasta=&sedes[]=&seccion=&fresco=1` | `tendencias.index` | `tendencias.ver` |
 | `GET /informes/tendencias/exportar?seccion=` | `tendencias.exportar` | `tendencias.exportar` (403 si no ve el módulo de la sección) |
+| `GET /informes/tendencias/imprimir?periodo=&desde=&hasta=&sedes[]=&seccion=` | `tendencias.imprimir` | `tendencias.ver` + `tendencias.imprimir` |
 | `GET /informes/ejecutivo?sedes[]=&fresco=1` | `informe_ejecutivo.index` | `informe_ejecutivo.ver` |
-| `GET /informes/ejecutivo/imprimir` | `informe_ejecutivo.imprimir` | `informe_ejecutivo.ver` (como el original; el módulo no tiene acción «imprimir») |
+| `GET /informes/ejecutivo/imprimir` | `informe_ejecutivo.imprimir` | `informe_ejecutivo.ver` + `informe_ejecutivo.imprimir` |
 | `GET /informes/ejecutivo/exportar` | `informe_ejecutivo.exportar` | `informe_ejecutivo.exportar` |
 
-Los nombres de ruta usan el prefijo de cada módulo (`tablero.`, `bitacora_dia.`…) porque `ConstructorMenu` marca activo el renglón por prefijo. `CatalogoSeeder::RUTAS` y la migración `2026_10_28_000100_informes` ponen `modulos.ruta`; con eso el menú **Informes** aparece y `PermisoController::sinPantalla()` deja de marcarlos «Próximamente» (sin código especial). Por plantilla ven los informes Administrador y Director (empresa), Jefe de seguridad, Asistente y Supervisor (sede); el Agente no (no son de Operación ni Padrones). No se cambió `RolesPlantillaSeeder`.
+Los nombres de ruta usan el prefijo de cada módulo (`tablero.`, `bitacora_dia.`…) porque `ConstructorMenu` marca activo el renglón por prefijo. `CatalogoSeeder::RUTAS` y la migración `2026_10_28_000100_informes` ponen `modulos.ruta`; con eso el menú **Informes** aparece y `PermisoController::sinPantalla()` deja de marcarlos «Próximamente» (sin código especial). Por plantilla ven los informes Administrador y Director (empresa), Jefe de seguridad, Asistente de seguridad y Supervisor (sede); el Agente no (no son de Operación ni Padrones). No se cambió `RolesPlantillaSeeder`.
+
+### Permiso «Imprimir» (decisión del dueño, mapa de procesos)
+
+Los cuatro informes tienen la acción `imprimir` en el catálogo (`CatalogoSeeder`; la Bitácora del día ya la tenía). El botón **Imprimir** de cada pantalla sale solo con `<modulo>.imprimir` (`puedeImprimir` en la vista) y cada hoja exige `ver` **e** `imprimir` (la de la Bitácora del día, solo `imprimir`, como antes). Las plantillas lo reciben por su regla general (todas las acciones de Seguridad para Jefe/Supervisor/Administrador; `imprimir` está en las listas de Director y Asistente).
+
+Migración `2026_10_29_000520_permiso_imprimir_informes`: da de alta `imprimir` en `dashboard`, `informe_ejecutivo` y `tendencias` y lo otorga a **todo rol** (plantillas y roles por empresa) que tenga `ver` en ese módulo, **con el mismo alcance** de su `ver` (nadie pierde la impresión que tenía). `bitacora_dia` no se toca: su hoja ya pedía `imprimir` y otorgarlo a todos los que la ven ampliaría permisos quitados a propósito. `down()` borra la relación módulo-acción de los tres módulos; los `rol_permisos` se van en cascada.
+
+Hojas nuevas: `informes.tablero-imprimir` (fichas sin listados ni diálogos, `_tablero-hoja`) y `informes.tendencias-imprimir` (mismas secciones y gráficas SVG que la pantalla, sin «Exportar»; la parte común está en `_tendencias-secciones`). Ambas usan `informes._hoja`.
 
 ## Alcance (`App\Services\Informes\AlcanceInformes`)
 
@@ -32,6 +42,14 @@ Cada dato respeta **dos** permisos: el del informe y el `ver` del módulo de ori
 - Hora del día, duración de visitas, tiempo de cierre y de respuesta: se recorren **solo dos o tres columnas** con `cursor()` (sin modelos), con tope de 20 000 filas.
 - Listados con límite: 200 (Tablero), 100 (Informe ejecutivo), 500 por tipo (Bitácora del día), con eager loading.
 - Índices nuevos (migración `2026_10_28_000100_informes`): `accesos(empresa_id, entrada_at)`, `novedades(empresa_id, created_at)`, `movimientos_transporte(empresa_id, created_at)`, `pases_salida(empresa_id, created_at)`.
+
+## Mejora o empeora (Tendencias)
+
+`Tendencias::SENTIDOS` dice, por sección y título de cifra, si subir es bueno (`Indicadores::SUBIR_ES_BUENO`), malo (`SUBIR_ES_MALO`) o neutro (`NEUTRO`, volumen de operación). `Tendencias::seccion()` agrega el sentido como quinto elemento de cada cifra **después** de leer la caché (cambiar el mapa no espera a que venza). `Indicadores::valorar(actual, anterior, sentido)` devuelve la comparación más `estado` (`mejora` | `empeora` | `neutro` | `igual`) y `texto` («mejoró 12 %», «empeoró 8 %», «subió 5 %», «Sin cambio»; sin porcentaje si el anterior es 0). La vista pinta `.cambio-informe.mejora` (verde) y `.empeora` (rojo), con variantes para modo Noche; la flecha ▲/▼ sigue marcando la dirección y la frase dice si es bueno o malo (no depende solo del color). El CSV de la sección agrega la columna **Lectura** con el mismo texto. Toda cifra comparable nueva debe declararse en `SENTIDOS` (`DecisionesInformesYAuditoriaTest` lo revisa).
+
+| Sube = malo | Sube = bueno | Neutro |
+|---|---|---|
+| Tickets abiertos, tiempo promedio de cierre, casos de robo, valor estimado, reportes de pérdida, accidentes, monto pagado en taxis | Regresaron a la propiedad, candidatos registrados, contratados | Ingresos registrados, objetos encontrados, préstamos de llaves, pases creados, movimientos, pasajeros, altas de colaboradores y de usuarios |
 
 ## Periodo (`Periodo`)
 
@@ -65,4 +83,4 @@ La CSP solo permite scripts propios y no había Chart.js en `public/vendor` ni a
 
 ## Pruebas
 
-`tests/Feature/Seguridad/InformesTest.php` (IF-01…IF-14): menú y Matriz, alcance por empresa y sede, fichas sin permiso y fichas que fallan, número de consultas, comparación con el periodo anterior, filtro de sedes y caché, CSV, impresión, datos sensibles, bitácora por fecha y zona horaria, superadministrador sin empresa. `RecorridoPantallasTest` recorre todas las fichas, periodos, secciones y fechas inválidas.
+`tests/Feature/Seguridad/InformesTest.php` (IF-01…IF-14), `tests/Feature/Seguridad/DecisionesInformesYAuditoriaTest.php` (permiso Imprimir, su migración, mejora/empeora): menú y Matriz, alcance por empresa y sede, fichas sin permiso y fichas que fallan, número de consultas, comparación con el periodo anterior, filtro de sedes y caché, CSV, impresión, datos sensibles, bitácora por fecha y zona horaria, superadministrador sin empresa. `RecorridoPantallasTest` recorre todas las fichas, periodos, secciones y fechas inválidas.

@@ -70,6 +70,18 @@ Mientras escribes las placas o el chofer, la ventana te muestra los parecidos de
 
 **Qué debes ver:** la tarjeta cambia de estado. Si te equivocaste de ruta, unidad o chofer, anula y captura de nuevo.
 
+### Cuánto lleva esperando un vale su Vo.Bo.
+
+Junto a **Pendiente de Vo.Bo.** cada vale dice desde cuándo espera y cambia de color:
+
+| Lo que dice | Color | Qué quiere decir |
+|---|---|---|
+| **Hace 3 h · a tiempo** | verde | Lleva menos de 24 horas esperando. |
+| **Hace 1 día 6 h · más de 1 día** | amarillo | Lleva entre 24 y 72 horas. Conviene darle el Vo.Bo. hoy. |
+| **Hace 4 días · más de 3 días** | rojo | Lleva más de 72 horas. Atiéndelo primero. |
+
+En **Mis pendientes**, el renglón **Vales de taxi por autorizar** también se pone amarillo o rojo según el vale que más lleva esperando.
+
 ## Cómo sacar reportes
 
 1. Toca **Reportes Avanzados**.

@@ -101,7 +101,7 @@ Todo responde **404** si el procedimiento es de otra empresa o está fuera de su
 ## Permisos y alcance
 
 - Acciones del catálogo: `ver`, `crear`, `editar`, `eliminar` (retirar / reactivar), `aprobar` y `borrar` (Eliminar definitivamente, solo un borrador **nunca publicado**; ver `RegistroBorrado`).
-- **Plantillas** (decisión del dueño del proyecto; `RolesPlantillaSeeder::PROCEDIMIENTOS` y la migración para bases existentes): Administrador todo (empresa, incluido `borrar`); Director todo salvo `borrar` (empresa); Jefe de seguridad todo salvo `borrar` (sede); Supervisor ver, crear y editar (sede); Agente y Asistente ver (sede); Recursos Humanos ver (empresa).
+- **Plantillas** (decisión del dueño del proyecto; `RolesPlantillaSeeder::PROCEDIMIENTOS` y la migración para bases existentes): Administrador todo (empresa, incluido `borrar`); Director todo salvo `borrar` (empresa); Jefe de seguridad todo salvo `borrar` (sede); Supervisor ver, crear y editar (sede); Agente y Asistente de seguridad ver (sede); Recursos Humanos ver (empresa).
 - **Ver**: con alcance de sede, los procedimientos cuya versión vigente o en trabajo aplica a **todas** las sedes o a alguna de las suyas. Quien solo tiene «Ver» (sin crear, editar ni aprobar) ve **solo los publicados** y solo la versión vigente.
 - **Crear / editar / aprobar / retirar**: la versión debe aplicar **solo** a sus sedes; «Todas las sedes» pide alcance de empresa. El formulario de quien tiene alcance de sede no ofrece «Todas las sedes» y trae sus sedes marcadas.
 - «Solo los propios»: además, solo los procedimientos que él creó.

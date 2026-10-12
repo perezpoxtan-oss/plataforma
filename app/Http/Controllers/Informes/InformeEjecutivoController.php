@@ -16,7 +16,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Informes → Informe ejecutivo (ADR-0017): pantalla, versión imprimible
- * (hoja carta; «Guardar como PDF» es el diálogo de impresión del navegador)
+ * (con el permiso «Imprimir»; hoja carta; «Guardar como PDF» es el diálogo de impresión del navegador)
  * y archivo de Excel (CSV) con las cifras.
  */
 class InformeEjecutivoController extends Controller
@@ -33,9 +33,12 @@ class InformeEjecutivoController extends Controller
         return $this->mostrar($request, 'informes.ejecutivo');
     }
 
-    /** Hoja carta sin menús: basta el permiso de ver el informe (como en el sistema original). */
+    /** Hoja carta sin menús: pide además el permiso propio «Imprimir» (decisión del dueño, mapa de procesos). */
     public function imprimir(Request $request): View
     {
+        Gate::authorize(InformeEjecutivo::PERMISO);
+        Gate::authorize('informe_ejecutivo.imprimir');
+
         return $this->mostrar($request, 'informes.ejecutivo-imprimir');
     }
 
@@ -63,6 +66,7 @@ class InformeEjecutivoController extends Controller
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'generado' => now(),
                 'puedeExportar' => $actor->can('informe_ejecutivo.exportar'),
+                'puedeImprimir' => $actor->can('informe_ejecutivo.imprimir'),
             ]);
         });
     }

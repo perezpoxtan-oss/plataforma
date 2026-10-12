@@ -20,14 +20,11 @@
     @else
         @php
             $grupos = \App\Services\Vehiculos\AdministradorVehiculos::GRUPOS;
-            $conteo = $vehiculos->countBy(fn ($v) => $grupos[$v->propiedad] ?? 'propios');
+            $conteo = $vehiculos->countBy(fn ($v) => $grupos[\App\Models\Vehiculo::categoria($v->propiedad)] ?? 'particulares');
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
             $altas = app(\App\Services\Padrones\AltasPorVerificar::class)->paraLista('vehiculos', $vehiculos, auth()->user());
-            $colores = [
-                'agencia_renta' => 'bg-renta', 'empresa_proveedor' => 'bg-proveedor', 'propio_huesped' => 'bg-huesped',
-                'taxi_app' => 'bg-taxi', 'transporte_personal' => 'bg-personal', 'propio_colaborador' => 'bg-colaborador',
-            ];
+            $colores = ['particular' => 'bg-huesped', 'empresa' => 'bg-renta'];
         @endphp
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
@@ -49,9 +46,8 @@
         <div class="pildoras-tipo filtros-vehiculo" role="group" aria-label="Filtrar por categoría">
             <span class="filtro-titulo">Categoría:</span>
             <button type="button" class="btn-pill-tipo active" data-filtro-tipo="vehiculos" data-valor="" aria-pressed="true">Todos <span class="conteo-pill">{{ $vehiculos->count() }}</span></button>
-            <button type="button" class="btn-pill-tipo" data-filtro-tipo="vehiculos" data-valor="propios" aria-pressed="false"><i class="bi bi-person me-1" aria-hidden="true"></i>Propios <span class="conteo-pill">{{ $conteo['propios'] ?? 0 }}</span></button>
-            <button type="button" class="btn-pill-tipo" data-filtro-tipo="vehiculos" data-valor="flotillas" aria-pressed="false"><i class="bi bi-truck me-1" aria-hidden="true"></i>Flotillas <span class="conteo-pill">{{ $conteo['flotillas'] ?? 0 }}</span></button>
-            <button type="button" class="btn-pill-tipo" data-filtro-tipo="vehiculos" data-valor="taxis" aria-pressed="false"><i class="bi bi-taxi-front me-1" aria-hidden="true"></i>Taxis <span class="conteo-pill">{{ $conteo['taxis'] ?? 0 }}</span></button>
+            <button type="button" class="btn-pill-tipo" data-filtro-tipo="vehiculos" data-valor="particulares" aria-pressed="false"><i class="bi bi-person me-1" aria-hidden="true"></i>Particulares <span class="conteo-pill">{{ $conteo['particulares'] ?? 0 }}</span></button>
+            <button type="button" class="btn-pill-tipo" data-filtro-tipo="vehiculos" data-valor="empresas" aria-pressed="false"><i class="bi bi-truck me-1" aria-hidden="true"></i>De una empresa <span class="conteo-pill">{{ $conteo['empresas'] ?? 0 }}</span></button>
             @include('padrones.altas-por-verificar._pildora', ['altas' => $altas])
             <label class="filtro-estilo">
                 <span class="filtro-titulo">Tipo / Estilo:</span>
@@ -85,10 +81,10 @@
                     ])));
                 @endphp
                 <div class="ficha-card {{ $v->activo ? '' : 'inactiva' }}" id="vehiculo-{{ $v->id }}" data-vehiculo
-                     data-grupo="{{ $grupos[$v->propiedad] ?? 'propios' }}" data-estilo="{{ $v->tipo }}" data-texto="{{ $texto }}">
+                     data-grupo="{{ $grupos[\App\Models\Vehiculo::categoria($v->propiedad)] ?? 'particulares' }}" data-estilo="{{ $v->tipo }}" data-texto="{{ $texto }}">
                     <div>
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-                            <span class="badge-prop {{ $colores[$v->propiedad] ?? 'bg-visitante' }}"><i class="bi bi-info-circle-fill me-1" aria-hidden="true"></i>{{ $etiqueta }}</span>
+                            <span class="badge-prop {{ $colores[\App\Models\Vehiculo::categoria($v->propiedad)] ?? 'bg-visitante' }}"><i class="bi bi-info-circle-fill me-1" aria-hidden="true"></i>{{ $etiqueta }}</span>
                             <span class="etiqueta-estado {{ $v->activo ? 'activo' : 'inactivo' }}">{{ $v->activo ? 'ACTIVO' : 'DE BAJA' }}</span>
                         </div>
                         @include('padrones.altas-por-verificar._insignia', ['registro' => $v])
@@ -212,17 +208,12 @@
                                        data-duplicado="{{ route('vehiculos.duplicado') }}" data-duplicado-min="3" data-duplicado-aviso="{{ $modo }}_ve_aviso_placas">
                             </div>
                             <div class="col-md-7">
-                                {{-- Mejoras padrones: la pregunta en lugar del nombre técnico, y las categorías agrupadas (Particular / De una empresa) --}}
+                                {{-- Decisión del dueño: dos categorías (Particular / De una empresa) en lugar de ocho --}}
                                 <label class="campo-etiqueta" for="{{ $modo }}_ve_propiedad">¿De quién es? <span class="text-lowercase fw-normal">(categoría)</span></label>
                                 <select id="{{ $modo }}_ve_propiedad" name="propiedad" class="campo" required>
-                                    @foreach (\App\Services\Vehiculos\AdministradorVehiculos::GRUPOS_PROPIEDAD as $grupoVe => $clavesVe)
-                                        @php $clavesVe = array_values(array_filter($clavesVe, fn ($c) => ! $proveedorFijo || in_array($c, \App\Services\Vehiculos\AdministradorVehiculos::CON_PROVEEDOR, true))); @endphp
-                                        @continue ($clavesVe === [])
-                                        <optgroup label="{{ $grupoVe }}">
-                                            @foreach ($clavesVe as $clave)
-                                                <option value="{{ $clave }}" @selected($valor('propiedad', 'propio_huesped') === $clave) @if ($clave === 'propio_huesped') data-por-defecto @endif>{{ \App\Services\Vehiculos\AdministradorVehiculos::OPCIONES_PROPIEDAD[$clave] }}</option>
-                                            @endforeach
-                                        </optgroup>
+                                    @foreach (\App\Services\Vehiculos\AdministradorVehiculos::OPCIONES_PROPIEDAD as $clave => $texto)
+                                        @continue ($proveedorFijo && ! in_array($clave, \App\Services\Vehiculos\AdministradorVehiculos::CON_PROVEEDOR, true))
+                                        <option value="{{ $clave }}" @selected(\App\Models\Vehiculo::categoria($valor('propiedad', 'particular')) === $clave) @if ($clave === 'particular') data-por-defecto @endif>{{ $texto }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -231,8 +222,7 @@
                         <div class="aviso-duplicado" id="{{ $modo }}_ve_aviso_placas" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
 
                         <div class="caja-propietario" data-mostrar-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::CON_PROVEEDOR) }}}'>
-                            <label class="campo-etiqueta" for="{{ $modo }}_ve_proveedor"><i class="bi bi-building me-1" aria-hidden="true"></i> Agencia o Empresa Propietaria
-                                <span class="text-lowercase fw-normal" data-mostrar-si='{"propiedad":["agencia_renta","taxi_app","transporte_personal"]}'>(opcional)</span></label>
+                            <label class="campo-etiqueta" for="{{ $modo }}_ve_proveedor"><i class="bi bi-building me-1" aria-hidden="true"></i> Empresa propietaria</label>
                             @if ($proveedorFijo)
                                 <input type="hidden" name="proveedor_id" value="{{ $proveedorFijo->id }}">
                                 <p class="campo-fijo mb-0" id="{{ $modo }}_ve_proveedor"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i><strong>{{ $proveedorFijo->nombre }}</strong> <small>(la empresa de la ficha)</small></p>
@@ -250,7 +240,7 @@
                             @endif
                         </div>
 
-                        <div data-mostrar-si='{"propiedad":["propio_colaborador"]}'>
+                        <div data-mostrar-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::CON_COLABORADOR) }}}'>
                             <label class="campo-etiqueta" for="{{ $modo }}_ve_colaborador"><i class="bi bi-person-vcard me-1" aria-hidden="true"></i> Colaborador (dueño del vehículo) <span class="text-lowercase fw-normal">(opcional)</span></label>
                             <select id="{{ $modo }}_ve_colaborador" name="colaborador_id" class="campo">
                                 <option value="">-- Seleccionar colaborador --</option>
@@ -293,7 +283,8 @@
                             </div>
                             <div class="col-md-4" data-mostrar-si='{"propiedad":{{ json_encode(\App\Models\Vehiculo::CON_NUMERO_ECONOMICO) }}}'>
                                 <label class="campo-etiqueta" for="{{ $modo }}_ve_economico">Número Económico</label>
-                                <input type="text" id="{{ $modo }}_ve_economico" name="numero_economico" class="campo text-uppercase" maxlength="30" placeholder="Ej: T-045" value="{{ $valor('numero_economico') }}">
+                                <input type="text" id="{{ $modo }}_ve_economico" name="numero_economico" class="campo text-uppercase" maxlength="30" placeholder="Ej: T-045" value="{{ $valor('numero_economico') }}"
+                                       data-requerido-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::ECONOMICO_OBLIGATORIO) }}}'>
                             </div>
                             <div class="col-md-4" data-mostrar-si='{"tipo":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::TIPOS_CON_CAPACIDAD) }},"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::PROPIEDADES_CON_CAPACIDAD) }}}'>
                                 <label class="campo-etiqueta" for="{{ $modo }}_ve_capacidad">Capacidad Máxima <span class="text-lowercase fw-normal">(opcional)</span></label>

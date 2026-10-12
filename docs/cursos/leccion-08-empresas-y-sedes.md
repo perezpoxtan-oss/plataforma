@@ -17,7 +17,7 @@
 
 - **Una empresa tiene varias sedes.** El Director ve todas; los usuarios de una sede solo la suya.
 - **Zona horaria:** las horas se muestran en la de la sede si el usuario trabaja en una sola sede con zona propia; si no, en la de la empresa.
-- **Desactivar no borra:** el historial se conserva.
+- **Dar de baja no borra:** el historial se conserva y se puede **Reactivar**.
 
 ## Autoevaluación
 

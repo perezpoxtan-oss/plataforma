@@ -123,7 +123,7 @@ class HomonimosUsuarios
     public static function mensaje(Collection $visibles, int $otros): string
     {
         $cuentas = $visibles->map(fn (User $u) => '@'.$u->username.' ('.($u->roles->first()?->nombre ?? 'sin rol').')'
-            .($u->activo ? '' : ', inactivo'))->all();
+            .($u->activo ? '' : ', dado de baja'))->all();
         if ($otros > 0) {
             $cuentas[] = $otros === 1 ? 'otro usuario de una sede que no tienes a cargo' : "{$otros} usuarios de sedes que no tienes a cargo";
         }

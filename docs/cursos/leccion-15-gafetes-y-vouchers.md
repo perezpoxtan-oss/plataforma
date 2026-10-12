@@ -1,6 +1,6 @@
 # Lección 15 — Gafetes y vouchers de reposición
 
-**Para:** Jefe de seguridad, Supervisor, Asistente, Administrador y Agentes · **Duración:** 20 minutos
+**Para:** Jefe de seguridad, Supervisor, Asistente de seguridad, Administrador y Agentes · **Duración:** 20 minutos
 
 ## Lo que vas a aprender
 

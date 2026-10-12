@@ -183,7 +183,8 @@ class MejorasEstructuraTest extends TestCase
     public function test_el_interruptor_por_modulo_apaga_sus_avisos_y_por_omision_todo_sigue_igual(): void
     {
         $this->assertTrue($this->empresa->fresh()->aviso('pase_salida_aprobacion'));
-        $this->assertFalse($this->empresa->fresh()->aviso('movimientos_sensibles'));
+        // Decisión del dueño (mapa de procesos): los movimientos sensibles avisan por omisión
+        $this->assertTrue($this->empresa->fresh()->aviso('movimientos_sensibles'));
 
         $avisos = collect(Empresa::AVISOS)->map(fn ($d) => $d[1] ? 1 : null)->filter()->all();
         $this->actingAs($this->admin)->put('/configuracion/avisos', ['avisos' => $avisos, 'avisos_modulos' => ['pases_salida' => 0, 'cuentas' => 1], '_grupo' => 'pases_salida'])
@@ -226,7 +227,7 @@ class MejorasEstructuraTest extends TestCase
         $this->actingAs($this->admin)->get('/auditoria?registro=no_existe&id=1')->assertOk()->assertDontSee('Historial de');
     }
 
-    public function test_su_sede_ve_solo_lo_suyo_por_omision_y_los_movimientos_de_su_sede_si_la_empresa_lo_elige(): void
+    public function test_su_sede_ve_los_movimientos_de_su_sede_por_omision_y_solo_lo_suyo_si_la_empresa_lo_elige(): void
     {
         $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro);
         $ma = DB::table('modulo_acciones')->join('modulos', 'modulos.id', '=', 'modulo_acciones.modulo_id')->join('acciones', 'acciones.id', '=', 'modulo_acciones.accion_id')
@@ -239,6 +240,11 @@ class MejorasEstructuraTest extends TestCase
         }
         $this->assertSame($this->centro->id, Auditoria::where('user_id', $agenteCentro->id)->value('sede_id'));
 
+        // Decisión del dueño (mapa de procesos): sin valor guardado, «Su sede» ve los movimientos de su sede
+        $this->actingAs($jefe)->get('/auditoria')->assertSee('Ves los movimientos de tu sede.')
+            ->assertSee($agenteCentro->name)->assertDontSee($agentePlaya->name);
+
+        $this->actingAs($this->admin)->put('/configuracion/auditoria', ['auditoria_sede' => 'propios'])->assertSessionHas('ok');
         $this->actingAs($jefe)->get('/auditoria')->assertSee('Ves solo tus propios movimientos.')->assertDontSee($agenteCentro->name);
 
         $this->actingAs($this->admin)->put('/configuracion/auditoria', ['auditoria_sede' => 'sede'])->assertSessionHas('ok');
@@ -246,16 +252,19 @@ class MejorasEstructuraTest extends TestCase
             ->assertSee($agenteCentro->name)->assertDontSee($agentePlaya->name);
     }
 
-    public function test_los_movimientos_sensibles_avisan_solo_si_la_empresa_lo_enciende(): void
+    public function test_los_movimientos_sensibles_avisan_por_omision_salvo_que_la_empresa_lo_apague(): void
     {
         $director = $this->crearUsuario($this->empresa, 'Director');
         $agente = $this->rol('Agente');
         $guardar = fn () => $this->actingAs($this->admin)->put("/permisos/{$agente->id}", ['permisos' => ['accesos' => ['acciones' => ['ver'], 'alcance' => 'sede']]]);
 
+        // La empresa que ya lo guardó apagado lo conserva
+        $this->empresa->forceFill(['preferencias' => ['avisos' => ['movimientos_sensibles' => false]]])->save();
         $guardar();
         $this->assertSame(0, Notificacion::withoutGlobalScopes()->where('tipo', 'movimiento_sensible')->count());
 
-        $this->empresa->forceFill(['preferencias' => ['avisos' => ['movimientos_sensibles' => true]]])->save();
+        // Nunca guardado (valor ausente): aplica el valor por omisión, encendido
+        $this->empresa->forceFill(['preferencias' => ['avisos' => ['vale_taxi' => true]]])->save();
         $guardar();
         $avisados = Notificacion::withoutGlobalScopes()->where('tipo', 'movimiento_sensible')->pluck('user_id')->all();
         $this->assertSame([$director->id], $avisados, 'Llega a quien ve toda la bitácora, nunca a quien lo hizo');

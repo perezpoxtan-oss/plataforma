@@ -22,7 +22,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Informes → Tendencias (ADR-0017): periodo contra el periodo anterior, por
- * sección, con exportación a Excel (CSV) de cada sección.
+ * sección, con exportación a Excel (CSV) de cada sección y hoja imprimible
+ * (permiso «Imprimir»). Cada variación se lee como «mejoró» o «empeoró»
+ * según Tendencias::SENTIDOS.
  */
 class TendenciasController extends Controller
 {
@@ -37,20 +39,40 @@ class TendenciasController extends Controller
     public function index(Request $request): View
     {
         Gate::authorize(Tendencias::PERMISO);
+
+        return $this->mostrar($request, 'informes.tendencias');
+    }
+
+    /**
+     * Hoja carta con las secciones (o la sección elegida) y sus gráficas
+     * (decisión del dueño, mapa de procesos): pide el permiso propio «Imprimir».
+     */
+    public function imprimir(Request $request): View
+    {
+        Gate::authorize(Tendencias::PERMISO);
+        Gate::authorize('tendencias.imprimir');
+
+        return $this->mostrar($request, 'informes.tendencias-imprimir');
+    }
+
+    private function mostrar(Request $request, string $vista): View
+    {
         $actor = $request->user();
         $empresaId = $this->empresa->id($actor);
         if ($empresaId === null) {
-            return view('informes.tendencias', ['sinEmpresa' => true]);
+            abort_if($vista !== 'informes.tendencias', 404);
+
+            return view($vista, ['sinEmpresa' => true]);
         }
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $empresaId) {
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $empresaId, $vista) {
             [$sedes, $seleccion, $periodo] = $this->filtros($request);
             $visibles = $this->tendencias->visibles($actor);
             $solo = Entrada::texto($request->query('seccion'));
             $mostrar = in_array($solo, $visibles, true) ? [$solo] : $visibles;
             $secciones = array_values(array_filter(array_map(fn ($c) => $this->tendencias->seccion($actor, $c, $periodo, $seleccion, $request->boolean('fresco')), $mostrar)));
 
-            return view('informes.tendencias', [
+            return view($vista, [
                 'sinEmpresa' => false,
                 'secciones' => $secciones,
                 'visibles' => $visibles,
@@ -61,6 +83,7 @@ class TendenciasController extends Controller
                 'textoSedes' => $this->textoSedes($sedes, $seleccion),
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'puedeExportar' => $actor->can('tendencias.exportar'),
+                'puedeImprimir' => $actor->can('tendencias.imprimir'),
                 'generado' => now(),
             ]);
         });
@@ -89,10 +112,12 @@ class TendenciasController extends Controller
             Csv::fila($salida, ['Periodo', $periodo->texto(), 'Periodo anterior', $periodo->anterior()->texto()]);
             Csv::fila($salida, ['Sedes', $texto]);
             Csv::fila($salida, []);
-            Csv::fila($salida, ['Indicador', 'Este periodo', 'Periodo anterior', 'Cambio (%)']);
-            foreach ($seccion['cifras'] as [$titulo, $actual, $anterior, $unidad]) {
-                $cambio = $anterior === null || $unidad === 'texto' ? '' : (Indicadores::cambio((float) $actual, (float) $anterior) ?? '');
-                Csv::fila($salida, [$titulo.($unidad !== '' && $unidad !== 'texto' ? " ({$unidad})" : ''), $actual, $anterior ?? '', $cambio]);
+            Csv::fila($salida, ['Indicador', 'Este periodo', 'Periodo anterior', 'Cambio (%)', 'Lectura']);
+            foreach ($seccion['cifras'] as [$titulo, $actual, $anterior, $unidad, $sentido]) {
+                $comparable = $anterior !== null && $unidad !== 'texto';
+                $cambio = $comparable ? (Indicadores::cambio((float) $actual, (float) $anterior) ?? '') : '';
+                $lectura = $comparable ? Indicadores::valorar((float) $actual, (float) $anterior, $sentido)['texto'] : '';
+                Csv::fila($salida, [$titulo.($unidad !== '' && $unidad !== 'texto' ? " ({$unidad})" : ''), $actual, $anterior ?? '', $cambio, $lectura]);
             }
             foreach ($seccion['series'] as [$titulo, $etiquetas, $actual, $anterior]) {
                 Csv::fila($salida, []);

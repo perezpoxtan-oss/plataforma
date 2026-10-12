@@ -48,7 +48,7 @@ Todas llevan `empresa_id` (scope de tenant) y autoría `creado_por` / `actualiza
 | — | Catálogo de equipos (`/equipos-pc`, antes `/recorridos-pc/equipos`, que redirige con 301) | `equipos_pc.*` | ver [equipos-pc.md](equipos-pc.md) |
 
 - **Alcance:** con alcance de **sede** solo se ve y se toca lo de sus sedes (otra sede u otra empresa → 404); con **propios**, lo que él registró. El superadministrador elige la empresa de trabajo.
-- **Catálogo con permisos propios (QA 4).** El catálogo se consulta y administra con `equipos_pc.ver | crear | editar | eliminar | imprimir` (Padrones). El **Agente** lo consulta pero no da de alta equipos; Asistente, Supervisor y Jefe de seguridad sí, en su sede. En la lista de recorridos se quitó el botón «Catálogo de Equipos»; queda un enlace pequeño a Padrones para quien ve el catálogo.
+- **Catálogo con permisos propios (QA 4).** El catálogo se consulta y administra con `equipos_pc.ver | crear | editar | eliminar | imprimir` (Padrones). El **Agente** lo consulta pero no da de alta equipos; Asistente de seguridad, Supervisor y Jefe de seguridad sí, en su sede. En la lista de recorridos se quitó el botón «Catálogo de Equipos»; queda un enlace pequeño a Padrones para quien ve el catálogo.
 - **Plantillas de rol:** el Agente inicia, continúa y finaliza recorridos de su sede e imprime el Reporte de Auditoría; no exporta.
 
 ## Lector universal

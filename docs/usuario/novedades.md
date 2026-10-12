@@ -16,7 +16,7 @@ resumen: Levantar un ticket por cada incidente, documentarlo en su expediente y 
 
 **Antes de empezar:** necesitas que tu rol pueda **ver** y **crear** en Novedades (para atender, también **editar**). Reabrir casos y exportar son permisos aparte. Si no ves **Nuevo Ticket**, pide a tu administrador que revise tu rol.
 
-En algunas empresas este módulo se llama **Incidentes** en el menú (lo decide el administrador en **Estructura → Configuración → Bitácora de novedades**). Es la misma pantalla y funciona igual.
+**Novedades** es donde va todo lo que pasa en el día, sin importar su tipo. Tu empresa puede llamarlo **Incidentes** (lo elige el administrador en **Estructura → Configuración → Bitácora de novedades → Nombre del módulo**); si es así, el menú, los títulos, los avisos, los informes y esta página usan ese nombre. Es la misma pantalla y funciona igual.
 
 ## Cómo leer la lista
 

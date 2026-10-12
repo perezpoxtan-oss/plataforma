@@ -31,7 +31,7 @@
 - Una pieza en rojo **o** una observación = FALLA, y la falla siempre llega a Novedades.
 - Cada equipo se guarda al momento: puedes cerrar la página y continuar después.
 - Para finalizar necesitas al menos un equipo; finalizado ya no se modifica.
-- El Agente revisa; el catálogo lo mantienen Supervisor, Jefe, Asistente o Administrador.
+- El Agente revisa; el catálogo lo mantienen Supervisor, Jefe, Asistente de seguridad o Administrador.
 
 ## Autoevaluación
 

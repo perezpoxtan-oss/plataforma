@@ -19,7 +19,7 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `director.demo`, `
 ## Práctica 1 · Un rol nuevo sin números (admin.demo)
 
 1. **Estructura → Roles → Nuevo Rol**. Nombre «Coordinador de turno».
-2. En **¿Dónde va en la jerarquía?** elige **Debajo de** «Jefe de seguridad». Lee la línea de abajo: «Quedará debajo de «Jefe de seguridad» y arriba de «Asistente» (nivel 35)».
+2. En **¿Dónde va en la jerarquía?** elige **Debajo de** «Jefe de seguridad». Lee la línea de abajo: «Quedará debajo de «Jefe de seguridad» y arriba de «Asistente de seguridad» (nivel 35)».
 3. En **Permisos iniciales** elige **Los mismos que «Supervisor»** y toca **Crear Rol**.
 
 Comprueba: se abre la Matriz de ese rol con el mensaje «…creado con los permisos de «Supervisor»…» y **Lo que verá** muestra Operación, Padrones y Recursos Humanos.
@@ -37,7 +37,7 @@ Comprueba: se abre la Matriz de ese rol con el mensaje «…creado con los permi
 1. **Estructura → Configuración**. Arriba lee la **Versión instalada** y toca el botón **Pases de salida**.
 2. Apaga **Avisos de este módulo** y toca **Guardar avisos**: «Avisos actualizados. Apagados por módulo: Pases de salida.»
 3. Vuelve a encenderlo y guarda.
-4. En **Cuentas y seguridad** revisa **Bitácora de auditoría: qué ve «Su sede»** (déjalo en «Solo sus propios movimientos»).
+4. En **Cuentas y seguridad** revisa **Bitácora de auditoría: qué ve «Su sede»** (viene en «Los movimientos de su sede»; déjalo así).
 
 ## Práctica 4 · Inicio y Mis pendientes (rh.demo)
 
@@ -53,9 +53,9 @@ Comprueba: se abre la Matriz de ese rol con el mensaje «…creado con los permi
 ## Práctica 6 · Historial y avisos sensibles (admin.demo y director.demo)
 
 1. En **Roles**, toca el **reloj** de «Coordinador de turno»: la bitácora muestra solo sus movimientos.
-2. En **Configuración → Cuentas y seguridad** marca el aviso de **movimientos sensibles** y guarda.
+2. En **Configuración → Cuentas y seguridad** revisa que el aviso de **movimientos sensibles** esté marcado (viene encendido; si alguien lo apagó, márcalo y guarda).
 3. Cambia un permiso de «Coordinador de turno». Entra con `director.demo`: su campana dice «Movimiento sensible: Matriz de permisos · Cambio de permisos».
-4. Regresa con `admin.demo` y apaga ese aviso.
+4. Regresa con `admin.demo`: si tu empresa prefiere no recibirlos, quita la marca y toca **Guardar avisos**.
 
 ## Práctica 7 · Varias sedes y módulos (admin.demo y Super Administrador)
 
@@ -66,4 +66,4 @@ Comprueba: se abre la Matriz de ese rol con el mensaje «…creado con los permi
 
 - Los roles se acomodan por posición; el número queda en Avanzado.
 - La matriz completa es «Avanzado»: lo normal es elegir un perfil y revisar **Lo que verá**.
-- Por omisión nada cambia: los interruptores empiezan encendidos, «Su sede» ve lo propio y los avisos sensibles están apagados.
+- Por omisión: los interruptores empiezan encendidos, «Su sede» ve los movimientos de su sede, los avisos sensibles están encendidos y el Jefe de seguridad ve la Bitácora de auditoría de su sede.

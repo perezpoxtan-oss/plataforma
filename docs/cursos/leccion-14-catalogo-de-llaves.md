@@ -1,6 +1,6 @@
 # Lección 14 — Catálogo de llaves y etiquetas de llaveros
 
-**Para:** Jefe de seguridad, Supervisor, Asistente, Administrador y Agentes · **Duración:** 20 minutos
+**Para:** Jefe de seguridad, Supervisor, Asistente de seguridad, Administrador y Agentes · **Duración:** 20 minutos
 
 ## Antes de empezar
 

@@ -134,7 +134,7 @@ Todo responde **404** si el pase es de otra empresa o está fuera de su alcance;
 ## Permisos y alcance
 
 - **Empresa**: todo. **Sede**: los pases que **salen de** o **van a** sus sedes. **Propios**: además, solo los que registró.
-- Plantillas: **Agente** registra y firma la caseta de su sede; no aprueba. **Director** aprueba en toda la empresa; no registra ni firma la caseta. **Asistente** registra e imprime. **Jefe de seguridad** y **Supervisor**: todo en su sede (consultan el circuito). **Administrador**: todo, incluido configurar el circuito.
+- Plantillas: **Agente** registra y firma la caseta de su sede; no aprueba. **Director** aprueba en toda la empresa; no registra ni firma la caseta. **Asistente de seguridad** registra e imprime. **Jefe de seguridad** y **Supervisor**: todo en su sede (consultan el circuito). **Administrador**: todo, incluido configurar el circuito.
 - La migración v2 da `pases_salida.configurar` a los roles **Administrador** existentes con el alcance de su `pases_salida.editar`.
 
 ## Auditoría

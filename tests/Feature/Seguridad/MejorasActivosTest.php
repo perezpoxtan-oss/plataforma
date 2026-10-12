@@ -29,6 +29,7 @@ use App\Services\Rutas\AdministradorRutas;
 use App\Support\AjustesCaseta;
 use App\Support\CorreoPlataforma;
 use App\Support\Menu\MisPendientes;
+use App\Support\RelojVoBo;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -371,6 +372,53 @@ class MejorasActivosTest extends TestCase
         $this->assertNull($avisos[0]->acciones);
         $this->assertNotNull($avisos[1]->leida_en);
         $this->assertSame(0, $this->pendientes($this->director)['vales_taxi']['total']);
+    }
+
+    public function test_vobo_pendiente_muestra_reloj_y_color_con_texto_en_vales_y_procedimientos(): void
+    {
+        // Umbrales claros: normal < 24 h, amarillo 24–72 h, rojo > 72 h, y siempre con texto
+        $base = CarbonImmutable::parse('2026-10-01 12:00:00', 'UTC');
+        $this->assertSame('normal', RelojVoBo::de($base, $base->addHours(23)->addMinutes(59))['nivel']);
+        $this->assertSame('ambar', RelojVoBo::de($base, $base->addHours(24))['nivel']);
+        $this->assertSame('ambar', RelojVoBo::de($base, $base->addHours(72))['nivel']);
+        $this->assertSame('roja', RelojVoBo::de($base, $base->addHours(72)->addMinute())['nivel']);
+        $this->assertSame('Esperando Vo.Bo. hace 3 h (a tiempo)', RelojVoBo::de($base, $base->addHours(3))['texto']);
+        $this->assertSame('Esperando Vo.Bo. hace 4 días 2 h (más de 3 días)', RelojVoBo::de($base, $base->addHours(98))['texto']);
+
+        // Vale de taxi sin Vo.Bo.: en la lista dice desde cuándo espera y cambia de color
+        $h = $this->horario();
+        $this->actingAs($this->agente)->post('/transporte', $this->taxis($h))->assertSessionHasNoErrors();
+        $this->viajar('2026-10-05 18:00:00'); // 3 h después
+        $lista = $this->actingAs($this->director)->get('/transporte?estado=por_autorizar')->assertOk()->getContent();
+        $this->assertStringContainsString('data-reloj-vobo="normal"', $lista);
+        $this->assertMatchesRegularExpression('/Hace 3 h · <strong>a tiempo<\/strong>/u', $lista);
+        $this->assertNull($this->pendientes($this->director)['vales_taxi']['nivel']);
+
+        $this->viajar('2026-10-06 21:00:00'); // 30 h: se llega desde Mis pendientes (lleva la fecha del más antiguo)
+        $lista = $this->actingAs($this->director)->get($this->pendientes($this->director)['vales_taxi']['url'])->assertOk()->getContent();
+        $this->assertStringContainsString('data-reloj-vobo="ambar"', $lista);
+        $this->assertStringContainsString('<strong>más de 1 día</strong>', $lista);
+        $this->assertSame('ambar', $this->pendientes($this->director)['vales_taxi']['nivel']);
+
+        $this->viajar('2026-10-09 15:00:00'); // 96 h
+        $lista = $this->actingAs($this->director)->get($this->pendientes($this->director)['vales_taxi']['url'])->assertOk()->getContent();
+        $this->assertStringContainsString('data-reloj-vobo="roja"', $lista);
+        $this->assertStringContainsString('<strong>más de 3 días</strong>', $lista);
+        $this->assertSame('roja', $this->pendientes($this->director)['vales_taxi']['nivel']);
+
+        // Uno recibe su Vo.Bo.: su reloj desaparece y el otro sigue esperando en rojo
+        $uno = $this->enEmpresa(fn () => MovimientoTransporte::orderBy('id')->firstOrFail());
+        $this->actingAs($this->director)->patch("/transporte/{$uno->id}/autorizar")->assertSessionHasNoErrors();
+        $this->actingAs($this->director)->get('/transporte?estado=por_autorizar&fecha_inicio=2026-10-05')->assertOk()->assertSee('data-reloj-vobo="roja"', false); // el otro sigue esperando
+        $this->assertSame(1, $this->pendientes($this->director)['vales_taxi']['total']);
+
+        // Procedimiento en revisión: el reloj cuenta desde que se envió
+        $p = $this->procedimiento();
+        $this->viajar('2026-10-11 15:00:00'); // 48 h después de enviarlo
+        $this->actingAs($this->director)->get('/procedimientos')->assertOk()
+            ->assertSee('data-reloj-vobo="ambar"', false)->assertSee('Hace 2 días · <strong>más de 1 día</strong>', false);
+        $this->publicar($p);
+        $this->actingAs($this->director)->get('/procedimientos')->assertOk()->assertDontSee('data-reloj-vobo', false);
     }
 
     // ===================================================== Préstamo de llaves

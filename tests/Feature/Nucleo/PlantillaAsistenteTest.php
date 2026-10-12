@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Rol "Asistente" de nivel 40, como en SEGCAT (QA U-02).
+ * Rol «Asistente de seguridad» de nivel 40 (antes «Asistente»).
  */
 class PlantillaAsistenteTest extends TestCase
 {
@@ -24,12 +24,17 @@ class PlantillaAsistenteTest extends TestCase
 
     private function asistente(?Empresa $empresa): ?Rol
     {
-        return Rol::where('empresa_id', $empresa?->id)->where('nombre', 'Asistente')->first();
+        return Rol::where('empresa_id', $empresa?->id)->where('nombre', 'Asistente de seguridad')->first();
     }
 
     private function migrar(): void
     {
         (require database_path('migrations/2026_10_06_000100_agregar_rol_asistente.php'))->up();
+    }
+
+    private function renombrar(): object
+    {
+        return require database_path('migrations/2026_10_29_001200_renombrar_rol_asistente_de_seguridad.php');
     }
 
     /**
@@ -55,7 +60,7 @@ class PlantillaAsistenteTest extends TestCase
     public function test_una_empresa_nueva_recibe_el_asistente(): void
     {
         $empresa = $this->crearEmpresa();
-        $usuario = $this->crearUsuario($empresa, 'Asistente');
+        $usuario = $this->crearUsuario($empresa, 'Asistente de seguridad');
 
         $this->assertSame(40, $this->asistente($empresa)->nivel_jerarquia);
 
@@ -89,7 +94,7 @@ class PlantillaAsistenteTest extends TestCase
 
         $plantilla = $this->asistente(null);
         $this->assertNotNull($plantilla);
-        $this->assertSame(1, Rol::whereNull('empresa_id')->where('nombre', 'Asistente')->count());
+        $this->assertSame(1, Rol::whereNull('empresa_id')->where('nombre', 'Asistente de seguridad')->count());
 
         $copia = $this->asistente($empresa);
         $this->assertNotNull($copia);
@@ -97,7 +102,7 @@ class PlantillaAsistenteTest extends TestCase
         $this->assertSame($this->permisos($plantilla), $this->permisos($copia));
 
         foreach ([$empresa, $conAsistente] as $e) {
-            $this->assertSame(1, Rol::where('empresa_id', $e->id)->where('nombre', 'Asistente')->count());
+            $this->assertSame(1, Rol::where('empresa_id', $e->id)->where('nombre', 'Asistente de seguridad')->count());
         }
     }
 
@@ -120,5 +125,50 @@ class PlantillaAsistenteTest extends TestCase
         $this->sembrarCatalogo();
 
         $this->assertSame($antes, [Rol::count(), RolPermiso::count()]);
+    }
+
+    public function test_la_migracion_renombra_solo_los_roles_con_el_nombre_original_exacto(): void
+    {
+        $original = $this->crearEmpresa('Hotel Original');
+        $renombrado = $this->crearEmpresa('Hotel Renombrado');
+        $minusculas = $this->crearEmpresa('Hotel Minúsculas');
+
+        // Base anterior: la plantilla y los roles se llamaban «Asistente»
+        $this->asistente(null)->update(['nombre' => 'Asistente']);
+        $this->asistente($original)->update(['nombre' => 'Asistente']);
+        $this->asistente($renombrado)->update(['nombre' => 'Apoyo de caseta']);
+        $this->asistente($minusculas)->update(['nombre' => 'asistente']);
+        $permisosAntes = $this->permisos(Rol::where('empresa_id', $original->id)->where('nombre', 'Asistente')->first());
+
+        $this->renombrar()->up();
+
+        $this->assertNotNull($this->asistente(null));
+        $copia = $this->asistente($original);
+        $this->assertNotNull($copia);
+        $this->assertSame($permisosAntes, $this->permisos($copia), 'Mismos permisos: solo cambia el nombre');
+        $this->assertSame('Apoyo de caseta', Rol::where('empresa_id', $renombrado->id)->where('nivel_jerarquia', 40)->value('nombre'));
+        $this->assertSame('asistente', Rol::where('empresa_id', $minusculas->id)->where('nivel_jerarquia', 40)->value('nombre'));
+
+        // down() lo regresa; up() otra vez lo deja igual
+        $this->renombrar()->down();
+        $this->assertSame('Asistente', Rol::where('empresa_id', $original->id)->where('nivel_jerarquia', 40)->value('nombre'));
+        $this->assertSame('Asistente', Rol::whereNull('empresa_id')->where('nivel_jerarquia', 40)->value('nombre'));
+        $this->assertSame('Apoyo de caseta', Rol::where('empresa_id', $renombrado->id)->where('nivel_jerarquia', 40)->value('nombre'));
+
+        $this->renombrar()->up();
+        $this->renombrar()->up(); // idempotente
+        $this->assertSame('Asistente de seguridad', Rol::where('empresa_id', $original->id)->where('nivel_jerarquia', 40)->value('nombre'));
+    }
+
+    public function test_la_migracion_no_choca_con_un_rol_que_ya_se_llama_asi(): void
+    {
+        $empresa = $this->crearEmpresa();
+        // La empresa ya tiene un «Asistente de seguridad» propio y conserva un «Asistente»
+        $this->asistente($empresa)->update(['nombre' => 'Asistente']);
+        app(AdministradorRoles::class)->crearRol($this->crearSuperadmin(), $empresa->id, ['nombre' => 'Asistente de seguridad', 'nivel_jerarquia' => 47]);
+
+        $this->renombrar()->up();
+
+        $this->assertSame(['Asistente', 'Asistente de seguridad'], Rol::where('empresa_id', $empresa->id)->whereIn('nivel_jerarquia', [40, 47])->orderBy('nivel_jerarquia')->pluck('nombre')->all());
     }
 }

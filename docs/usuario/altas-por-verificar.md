@@ -44,7 +44,9 @@ Lo nuevo se registra desde tu pantalla de trabajo:
 En las ventanas de registro rápido (por ejemplo **Registro Rápido de Persona** o **Nueva Empresa Externa**) verás el aviso «Lo que registres aquí se usa **de inmediato** y queda **pendiente de verificar** hasta que quien administra el padrón lo revise.». Al tocar **Registrar**, si hay algo parecido, la ventana pregunta primero **¿Es alguno de estos?**:
 
 - Toca el que corresponde para **usarlo**: la ventana se cierra y queda elegido.
-- Si no es ninguno, toca **No es ninguno: registrarlo como nuevo**.
+- Si no es ninguno, toca **No es ninguno: registrarlo como nuevo**. La ventana te pregunta una vez más: «¿Seguro que no es ninguno de los N parecidos? Se creará un registro nuevo pendiente de verificar».
+  - Toca **Sí, registrar nuevo** para registrarlo.
+  - Toca **Volver a revisar** si quieres mirar otra vez la lista; nada se registra hasta que elijas.
 
 ![¿Es alguno de estos?](img/altas-por-verificar/17-alta-rapida-persona-parecidos.png)
 
@@ -71,6 +73,7 @@ En las ventanas de registro rápido (por ejemplo **Registro Rápido de Persona**
 ### Es correcto
 
 1. Revisa los datos y corrige lo que haga falta (por ejemplo el modelo que la caseta no capturó).
+   - En un vehículo **De una empresa** (por ejemplo un taxi o una unidad de transporte) completa la **Empresa propietaria** y el **Número económico**: son obligatorios. Si es de una persona, cambia **¿De quién es?** a **Particular**.
 2. Toca **Aceptar y verificar**.
 
 ![Es correcto](img/altas-por-verificar/03-verificar-vehiculo-es-correcto.png)
@@ -137,6 +140,8 @@ Los mensajes salen en rojo dentro de la ventana.
 ## Preguntas frecuentes
 
 **¿Puedo usar algo pendiente de verificar?** Sí, desde el momento en que se registra.
+
+**¿Por qué me pregunta dos veces antes de registrar uno nuevo?** Porque un repetido cuesta trabajo después (hay que unirlo). Con la segunda pregunta te aseguras de que de verdad no es ninguno de los parecidos.
 
 **¿Qué pasa con lo ya registrado si rechazo el alta?** Se queda como está: los accesos o movimientos ya capturados no cambian. Solo ya no se podrá usar de nuevo.
 

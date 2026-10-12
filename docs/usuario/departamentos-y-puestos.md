@@ -47,19 +47,18 @@ Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **S
 
 1. Entra a **Recursos Humanos → Puestos**.
 2. Toca la tarjeta **Nuevo Puesto**. Se abre **Alta de Puesto**.
-3. Elige el **Tipo de Puesto**: Operativo o Administrativo.
-4. Escribe el **Nombre del Puesto** (también te avisa si ya existe o se parece).
-5. Si quieres, marca los **Departamentos donde aplica**. Si no marcas ninguno, el puesto sirve para cualquier departamento.
-6. Toca **Guardar**.
+3. Escribe el **Nombre del Puesto** (también te avisa si ya existe o se parece).
+4. Si quieres, marca los **Departamentos donde aplica**. Si no marcas ninguno, el puesto sirve para cualquier departamento.
+5. Toca **Guardar**.
 
 ![Puestos](img/departamentos/3-puestos.png)
 
-**Qué debes ver:** «Puesto «…» creado correctamente.» Para encontrar un puesto usa **Todos / Administrativos / Operativos** y **Buscar puesto o departamento...**.
+**Qué debes ver:** «Puesto «…» creado correctamente.» Para encontrar un puesto usa **Buscar puesto o departamento...**.
 
 ## Cómo editar un departamento o un puesto
 
 1. Toca el **lápiz** (Editar) de la ficha.
-2. Corrige el nombre, las sedes (departamento) o el tipo y los departamentos (puesto).
+2. Corrige el nombre, las sedes (departamento) o los departamentos (puesto).
 3. Toca **Guardar**.
 
 ![Editar puesto](img/departamentos/4-editar-puesto.png)

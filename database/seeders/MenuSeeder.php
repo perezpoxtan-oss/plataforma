@@ -24,8 +24,9 @@ class MenuSeeder extends Seeder
     {
         return [
             'operacion' => ['Operación', 'bi-shield-shaded', 1, [
+                // Decisión del dueño (mapa de procesos): Vouchers de reposición junto a lo de la caseta
                 'Caseta' => [
-                    'accesos' => 'primary', 'prestamo_llaves' => 'info', 'pases_salida' => 'primary', 'transporte' => 'warning',
+                    'accesos' => 'primary', 'prestamo_llaves' => 'info', 'vouchers' => 'danger', 'pases_salida' => 'primary', 'transporte' => 'warning',
                 ],
                 'Incidentes' => [
                     'novedades' => ['danger', 'Novedades'], 'lost_found' => 'warning', 'robo' => ['danger', 'Robo'],
@@ -34,7 +35,7 @@ class MenuSeeder extends Seeder
                     'recorridos_pc' => 'success',
                 ],
                 'Activos' => [
-                    'responsivas' => 'success', 'vouchers' => 'danger',
+                    'responsivas' => 'success',
                 ],
                 'Consulta' => [
                     'procedimientos' => 'primary',

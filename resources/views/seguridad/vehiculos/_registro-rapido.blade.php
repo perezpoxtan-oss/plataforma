@@ -47,22 +47,32 @@
                         <input type="text" id="rapido_ve_placas" name="placas" class="campo campo-placas" maxlength="25" placeholder="Ej: ABC-123-A" autocapitalize="characters" required>
                     </div>
                     <div class="col-md-7">
-                        <label class="campo-etiqueta" for="rapido_ve_propiedad">Categoría</label>
+                        <label class="campo-etiqueta" for="rapido_ve_propiedad">¿De quién es? <span class="text-lowercase fw-normal">(categoría)</span></label>
                         <select id="rapido_ve_propiedad" name="propiedad" class="campo" required>
                             @foreach (\App\Services\Vehiculos\AdministradorVehiculos::OPCIONES_PROPIEDAD as $clave => $texto)
-                                <option value="{{ $clave }}" @if ($clave === 'propio_visitante') selected data-por-defecto @endif>{{ $texto }}</option>
+                                <option value="{{ $clave }}" @if ($clave === 'particular') selected data-por-defecto @endif>{{ $texto }}</option>
                             @endforeach
                         </select>
                     </div>
                 </div>
+                {{-- «De una empresa» lleva empresa propietaria y número económico --}}
                 <div class="caja-propietario" data-mostrar-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::CON_PROVEEDOR) }}}'>
-                    <label class="campo-etiqueta" for="rapido_ve_proveedor">Agencia o Empresa Propietaria</label>
-                    <select id="rapido_ve_proveedor" name="proveedor_id" class="campo mb-0" data-requerido-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::PROVEEDOR_OBLIGATORIO) }}}'>
-                        <option value="">-- Seleccionar del Directorio --</option>
-                        @foreach ($proveedoresRapido as $pr)
-                            <option value="{{ $pr->id }}">{{ $pr->nombre }}</option>
-                        @endforeach
-                    </select>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label class="campo-etiqueta" for="rapido_ve_proveedor">Empresa propietaria</label>
+                            <select id="rapido_ve_proveedor" name="proveedor_id" class="campo mb-0" data-requerido-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::PROVEEDOR_OBLIGATORIO) }}}'>
+                                <option value="">-- Seleccionar del Directorio --</option>
+                                @foreach ($proveedoresRapido as $pr)
+                                    <option value="{{ $pr->id }}">{{ $pr->nombre }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="campo-etiqueta" for="rapido_ve_economico">Número económico</label>
+                            <input type="text" id="rapido_ve_economico" name="numero_economico" class="campo text-uppercase mb-0" maxlength="30" placeholder="Ej: T-045"
+                                   data-requerido-si='{"propiedad":{{ json_encode(\App\Services\Vehiculos\AdministradorVehiculos::ECONOMICO_OBLIGATORIO) }}}'>
+                        </div>
+                    </div>
                 </div>
                 <div class="row">
                     <div class="col-md-4">

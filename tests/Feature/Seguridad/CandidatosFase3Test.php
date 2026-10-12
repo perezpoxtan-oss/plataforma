@@ -469,7 +469,7 @@ class CandidatosFase3Test extends TestCase
 
         // RR. HH.: datos, documentos (archivo y papel), su paso por Candidatos; sin accesos porque no ve ese módulo
         $expediente = $this->actingAs($this->rh)->get("/colaboradores/{$colaborador->id}/expediente")->assertOk();
-        $expediente->assertSee('Expediente de Luis Chi Canul')->assertSee('Documentos de contratación')->assertSee('Contrato firmado')->assertSee('Recibido en papel el')
+        $expediente->assertSee('<h1>Luis Chi Canul</h1>', false)->assertSee('id="pestana-expediente"', false)->assertSee('Documentos de contratación')->assertSee('Contrato firmado')->assertSee('Recibido en papel el')
             ->assertSee('Su paso por Candidatos')->assertSee('contratado el '.now()->format('d/m/Y'))->assertSee('su ficha de candidato')->assertDontSee('Accesos recientes');
         $ine = $this->enEmpresa(fn () => CandidatoDocumento::where('colaborador_id', $colaborador->id)->where('tipo', 'ine')->whereNotNull('ruta')->sole());
         $this->actingAs($this->rh)->get("/colaboradores/{$colaborador->id}/expediente/{$ine->id}")->assertOk()->assertDownload('ine.pdf');
@@ -478,7 +478,9 @@ class CandidatosFase3Test extends TestCase
 
         // El administrador ve además los resúmenes operativos; el agente (consulta de Colaboradores) no ve los documentos ni la ficha de candidato
         $this->actingAs($this->admin)->get("/colaboradores/{$colaborador->id}/expediente")->assertOk()->assertSee('Accesos recientes')->assertSee('Llaves en uso')->assertSee('Pases de salida')->assertSee('Resguardos en campo');
-        $this->actingAs($this->agente)->get("/colaboradores/{$colaborador->id}/expediente")->assertOk()->assertSee('Son datos personales')->assertDontSee('Recibido en papel el')->assertDontSee('Su paso por Candidatos');
+        // Sin el permiso de datos personales la pestaña Expediente no aparece
+        $this->actingAs($this->agente)->get("/colaboradores/{$colaborador->id}/expediente")->assertOk()->assertSee('id="pestana-datos"', false)
+            ->assertDontSee('id="pestana-expediente"', false)->assertDontSee('Documentos de contratación')->assertDontSee('Recibido en papel el')->assertDontSee('Su paso por Candidatos');
         $this->actingAs($this->agente)->get("/colaboradores/{$colaborador->id}/expediente/{$ine->id}")->assertForbidden();
 
         // Otra sede (alcance) y otra empresa: 404 sin revelar que existe

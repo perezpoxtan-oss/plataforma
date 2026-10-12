@@ -419,7 +419,7 @@ class ColaboradoresTest extends TestCase
         // Editar conserva el vínculo aunque el colaborador ya esté de baja; vaciarlo lo quita
         $this->enEmpresa(fn () => $c->forceFill(['activo' => false])->save());
         $this->actingAs($this->admin)->put("/usuarios/{$usuario->id}", $cuenta(['password' => '', 'activo' => '1']))->assertSessionHasNoErrors();
-        $this->actingAs($this->admin)->get('/usuarios')->assertSee('(¡inactivo! revisar)');
+        $this->actingAs($this->admin)->get('/usuarios')->assertSee('(¡dado de baja! revisar)');
         $this->actingAs($this->admin)->put("/usuarios/{$usuario->id}", $cuenta(['password' => '', 'activo' => '1', 'colaborador_id' => '']))->assertSessionHasNoErrors();
         $this->assertNull($usuario->fresh()->colaborador_id);
     }

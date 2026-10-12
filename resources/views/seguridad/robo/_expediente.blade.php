@@ -39,7 +39,7 @@
             <div class="aviso-solo-lectura">
                 <i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Este caso está <strong>Resuelto</strong>@if ($n->cerrado_en) (@fecha($n->cerrado_en) por {{ $n->cerrador?->name ?? '—' }})@endif. Se muestra en solo lectura.
                 @if ($expediente['puedeReabrir'])
-                    <a href="{{ route('novedades.index', ['abrir' => $n->id]) }}" class="fw-bold">Reabrir Caso para Editar</a> (desde la Bitácora de Novedades, con el motivo).
+                    <a href="{{ route('novedades.index', ['abrir' => $n->id]) }}" class="fw-bold">Reabrir Caso para Editar</a> (desde {{ \App\Services\Novedades\AjustesNovedades::bitacoraActualConArticulo() }}, con el motivo).
                 @endif
             </div>
         @elseif (! $editable)
@@ -58,7 +58,7 @@
             @endif
             <fieldset @disabled(! $editable) class="expediente-campos">
                 <div class="accordion expediente-formatos">
-                    @include('seguridad.novedades.formatos.robo', ['textoSinHabitacion' => 'Para la Ficha de Hechos, elige la habitación específica en el expediente de la Bitácora de Novedades.'])
+                    @include('seguridad.novedades.formatos.robo', ['textoSinHabitacion' => 'Para la Ficha de Hechos, elige la habitación específica en el expediente de '.\App\Services\Novedades\AjustesNovedades::bitacoraActualConArticulo().'.'])
                 </div>
 
                 <div class="minuto-a-minuto">

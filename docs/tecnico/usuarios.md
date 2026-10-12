@@ -9,7 +9,7 @@ Réplica de `modules/usuarios/usuario_lista.php`, `usuario_modal_editar.php` y `
 | `GET /usuarios` | `usuarios.ver` | Fichas de usuarios con buscador y filtro por sede |
 | `POST /usuarios` | `usuarios.crear` | Alta: nombre, núm. de colaborador, sede, rol, usuario, correo y contraseña |
 | `PUT /usuarios/{usuario}` | `usuarios.editar` | Edición; la contraseña en blanco se conserva |
-| `PATCH /usuarios/{usuario}/estado` | `usuarios.eliminar` | Desactivar o reactivar (no se borra a nadie) |
+| `PATCH /usuarios/{usuario}/estado` | `usuarios.eliminar` | Dar de baja o reactivar (no se borra a nadie) |
 | `PATCH /usuarios/{usuario}/desbloquear` | `usuarios.desbloquear` | Quita el bloqueo por intentos fallidos |
 | `POST /usuarios/{usuario}/restablecer` | `usuarios.editar` | Restablecer contraseña: enlace por correo (60 min) o contraseña escrita que se cambia al entrar |
 | `GET /usuarios/homonimos?nombre=&excluir=` | `usuarios.crear` o `usuarios.editar` | Aviso en vivo de homónimos (JSON, ver abajo) |
@@ -22,8 +22,8 @@ Réplica de `modules/usuarios/usuario_lista.php`, `usuario_modal_editar.php` y `
 - La lista respeta el **alcance** de `usuarios.ver`: toda la empresa, los usuarios asignados a sus sedes, o solo los que el actor dio de alta.
 - Únicos: el usuario y el correo, en toda la plataforma; el número de colaborador, dentro de cada empresa. El número es opcional, para cuentas de soporte.
 - Contraseña: mínimo 8 caracteres, con letras y números; máximo 72; no puede ser de las más usadas (`App\Rules\ContrasenaSegura`) ni contener el nombre de usuario o el correo.
-- **Desactivar** o **cambiar la contraseña** cierra de inmediato las sesiones abiertas de esa persona: se borran de la tabla `sessions`.
-- Auditoría: `usuarios.creado`, `usuarios.actualizado`, `usuarios.desactivado`, `usuarios.reactivado` y `usuarios.desbloqueado`, con el antes y el después (incluidos rol y sede). Si se cambió la contraseña solo se anota `contrasena: cambiada`; nunca su valor ni su hash.
+- **Dar de baja** o **cambiar la contraseña** cierra de inmediato las sesiones abiertas de esa persona: se borran de la tabla `sessions`.
+- Auditoría: `usuarios.creado`, `usuarios.actualizado`, `usuarios.desactivado`, `usuarios.reactivado` y `usuarios.desbloqueado`, con el antes y el después (incluidos rol y sede); las claves de evento no cambiaron aunque la pantalla diga «Dar de baja» / «DE BAJA» (criterio 4). Si se cambió la contraseña solo se anota `contrasena: cambiada`; nunca su valor ni su hash.
 - La contraseña la crea su dueño (enlace de bienvenida por omisión); si el administrador la escribe, la persona la cambia en su primer acceso. Ver «La cuenta es de su dueño».
 
 ## La cuenta es de su dueño (criterio 6 de docs/criterios-ux.md)
@@ -40,7 +40,7 @@ Nadie conoce la contraseña de otra persona: ni quien la da de alta ni quien la 
 | `AdministradorUsuarios::restablecer()` | Mismas dos opciones para una cuenta existente (`usuarios.editar`, nivel inferior, dentro del alcance; nunca la propia). La contraseña anterior deja de servir al instante y se cierran sus sesiones. `actualizar()` con contraseña escrita también marca `debe_cambiar_contrasena` |
 | `App\Services\Cuenta\AvisosCuenta` | Avisos de seguridad: `bloqueo()` (campana a quien tiene `usuarios.editar` con alcance a la sede de la cuenta —`usuariosConPermiso()` con `Autorizador::permisosEfectivos`—, correo a ellos y al afectado si el aviso `cuenta_bloqueada` de la empresa está encendido; **uno por bloqueo**, no por intento; IP recortada `187.190.x.x`), `desactivadaPorBaja()` y `contrasenaCambiada()` (a la propia persona). `cerrarSesiones()` es la única forma de borrar filas de `sessions` |
 | `AdministradorColaboradores::cambiarEstado()` | La **baja** del colaborador desactiva su cuenta vinculada (misma empresa, activa, no Super Administrador): `activo = false`, `desactivado_por_baja_en = now()`, sesiones cerradas, auditoría `usuarios.desactivado_por_baja` y campana. El **reingreso no la reactiva**: el mensaje lo recuerda y se hace en Usuarios (`cambiarEstado(true)` limpia la marca) |
-| `MisPendientes` → «Cuentas por revisar» | Para quien tiene `usuarios.editar`, dentro de su alcance: bloqueadas ahora o desactivadas por baja en los últimos 7 días. La lista de Usuarios las muestra arriba (`?revisar=1` solo sirve de enlace) y en la ficha («Desactivada por la baja de su colaborador», «Creará su contraseña al entrar») |
+| `MisPendientes` → «Cuentas por revisar» | Para quien tiene `usuarios.editar`, dentro de su alcance: bloqueadas ahora o dadas de baja junto con su colaborador en los últimos 7 días. La lista de Usuarios las muestra arriba (`?revisar=1` solo sirve de enlace) y en la ficha («Desactivada por la baja de su colaborador», «Creará su contraseña al entrar») |
 
 Correos: `App\Mail\BienvenidaUsuario`, `RestablecerContrasena` y `CuentaBloqueada` (vistas `correos/bienvenida`, `restablecer-contrasena`, `cuenta-bloqueada`), enviados con `defer()` por `CorreoPlataforma`; nunca llevan la contraseña ni el correo en la URL (solo token, id y tipo, firmados).
 
