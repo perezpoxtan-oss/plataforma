@@ -1111,7 +1111,15 @@ class CrearDatosDemo extends Command
                 ['nombre' => 'Contraloría', 'tipo' => 'usuarios', 'usuarios' => [$director->id], 'departamento' => 'cualquiera', 'obligatorio' => 1],
                 ['nombre' => 'Gerencia', 'tipo' => 'rol', 'rol_id' => $rol('Administrador'), 'departamento' => 'cualquiera', 'obligatorio' => 1,
                     'motivos' => ['venta', 'traspaso_definitivo', 'consignacion']],
-            ]]);
+            ],
+                // Firmas en caseta (ADR-0012): todo con dos firmas, como siempre; solo el motivo «Devolución»
+                // (ningún pase de ejemplo lo usa) sirve para probar: salida solo Seguridad y regreso sin firma.
+                'rechazo' => 'inicio',
+                'firmas_caseta' => [
+                    'salida' => ['todos' => 'dos', 'motivos' => ['devolucion' => 'seguridad']],
+                    'regreso' => ['todos' => 'dos', 'motivos' => ['devolucion' => 'ninguna']],
+                ],
+            ]);
             $pases->guardarFirmaUsuario($admin, $this->firmaDemo(99));
 
             $hoy = now('America/Cancun');

@@ -1,8 +1,9 @@
 {{--
     Diálogos de la ficha del pase: Aprobar, Rechazar, Omitir paso, paso de
-    caseta (Registrar Salida / Confirmar Llegada / Autorizar Salida de
-    Regreso / Registrar Regreso) y Cancelar. Los errores vuelven DENTRO de su
-    diálogo (old('_dialogo')).
+    caseta (Registrar Salida / Confirmar llegada a esta sede / Autorizar
+    salida de regreso / Registrar Regreso: pide solo las firmas que ese
+    movimiento lleva en este pase) y Cancelar. Los errores vuelven DENTRO de
+    su diálogo (old('_dialogo')).
 --}}
 @php
     $dialogo = old('_dialogo');
@@ -98,6 +99,7 @@
         [$tituloPaso, $botonPaso, , $rolesPaso] = \App\Models\PaseSalida::PASOS_FISICOS[$paso];
         $esRegreso = $paso === 'regreso';
         $rolPersona = array_key_first($rolesPaso);
+        $modoFirma = $pase->modoFirma($paso);
         $previosVerificados = $dialogo === 'paso' ? array_map('intval', (array) old('verificados', [])) : [];
         $ayudas = [
             'salida' => 'Revisa que salga exactamente lo autorizado: escanea cada equipo del padrón o márcalo a mano.',
@@ -167,13 +169,22 @@
                 @endif
 
                 <h3 class="paso-pase"><span class="numero-paso">2</span>{{ $rolesPaso[$rolPersona] }}</h3>
-                <label class="campo-etiqueta" for="persona_nombre">Nombre completo <span class="text-danger" aria-hidden="true">*</span></label>
-                <input type="text" id="persona_nombre" name="persona_nombre" class="campo text-uppercase" maxlength="150" required autocapitalize="characters"
+                <label class="campo-etiqueta" for="persona_nombre">Nombre completo @if ($modoFirma === 'dos')<span class="text-danger" aria-hidden="true">*</span>@else<span class="text-lowercase fw-normal">(opcional)</span>@endif</label>
+                <input type="text" id="persona_nombre" name="persona_nombre" class="campo text-uppercase" maxlength="150" @if ($modoFirma === 'dos') required @endif autocapitalize="characters"
                        value="{{ $dialogo === 'paso' ? old('persona_nombre') : $personaSugerida }}">
-                @include('componentes.firma', ['id' => 'firma_persona_pase', 'nombre' => 'firma_persona', 'etiqueta' => 'Firma de '.mb_strtolower($rolesPaso[$rolPersona]), 'requerido' => true])
+                @if ($modoFirma === 'dos')
+                    @include('componentes.firma', ['id' => 'firma_persona_pase', 'nombre' => 'firma_persona', 'etiqueta' => 'Firma de '.mb_strtolower($rolesPaso[$rolPersona]), 'requerido' => true])
+                @endif
 
                 <h3 class="paso-pase"><span class="numero-paso">3</span>Seguridad</h3>
-                @include('seguridad.pases-salida._firma-propia', ['id' => 'paso', 'etiqueta' => 'Tu firma ('.auth()->user()->name.')'])
+                @if ($modoFirma === 'ninguna')
+                    <p class="small aviso-sin-firma-caseta"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Este movimiento no pide firmas: queda registrado que lo hiciste tú ({{ auth()->user()->name }}), la hora y los artículos revisados.</p>
+                @else
+                    @if ($modoFirma === 'seguridad')
+                        <p class="small text-muted mb-1">En este pase, este movimiento solo pide la firma de Seguridad.</p>
+                    @endif
+                    @include('seguridad.pases-salida._firma-propia', ['id' => 'paso', 'etiqueta' => 'Tu firma ('.auth()->user()->name.')'])
+                @endif
 
                 <label class="campo-etiqueta mt-2" for="paso_comentario">Comentario <span class="text-lowercase fw-normal">{{ $esRegreso ? '(obligatorio si faltan artículos)' : '(obligatorio si algo no coincide)' }}</span></label>
                 <textarea id="paso_comentario" name="comentario" class="campo" rows="2" maxlength="1000">{{ $dialogo === 'paso' ? old('comentario') : '' }}</textarea>

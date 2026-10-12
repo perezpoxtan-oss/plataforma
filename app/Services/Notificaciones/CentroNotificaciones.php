@@ -44,6 +44,12 @@ class CentroNotificaciones
         'cuenta_contrasena' => ['bi-key-fill', 'exito'],
         'cuenta_bloqueada' => ['bi-lock-fill', 'alerta'],
         'cuenta_desactivada' => ['bi-person-x-fill', 'alerta'],
+        // Pases de salida (ADR-0012): firma pendiente, resultado, vencido y «viene a tu sede»
+        'pase_por_firmar' => ['bi-pen-fill', 'alerta'],
+        'pase_aprobado' => ['bi-check-circle-fill', 'exito'],
+        'pase_rechazado' => ['bi-x-octagon-fill', 'alerta'],
+        'pase_vencido' => ['bi-exclamation-triangle-fill', 'alerta'],
+        'pase_llega' => ['bi-truck', 'info'],
     ];
 
     public function __construct(private readonly HoraLocal $hora) {}
@@ -134,6 +140,8 @@ class CentroNotificaciones
 
     /**
      * Botones de la notificación: cada uno es un formulario POST a la ruta del módulo.
+     * Un botón {etiqueta, abrir: true} solo abre el asunto (como tocar la
+     * notificación): sirve cuando responder pide más que un toque (p. ej. una firma).
      *
      * @return list<array{etiqueta: string, url: string, campos: array<string, string>, estilo: string}>
      */
@@ -141,6 +149,11 @@ class CentroNotificaciones
     {
         $lista = [];
         foreach ((array) $n->acciones as $a) {
+            if (is_array($a) && ! empty($a['abrir']) && ! empty($a['etiqueta'])) {
+                $lista[] = ['etiqueta' => (string) $a['etiqueta'], 'url' => route('notificaciones.abrir', $n->id), 'campos' => [], 'estilo' => 'normal'];
+
+                continue;
+            }
             if (! is_array($a) || empty($a['url']) || empty($a['etiqueta'])) {
                 continue;
             }

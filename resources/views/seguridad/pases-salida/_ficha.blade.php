@@ -1,4 +1,4 @@
-{{-- Ficha de un pase en la lista. $p: PaseSalida (con relaciones), $meToca: espera la firma del usuario. --}}
+{{-- Ficha de un pase en la lista. $p: PaseSalida (con relaciones), $meToca: espera la firma del usuario, $llegaAMiSede: viene a una sede donde firma la caseta. --}}
 @php
     $vencido = $pasesSrv->vencido($p);
     [$textoEstado, $claseEstado] = $p->insignia($vencido);
@@ -14,6 +14,16 @@
     </div>
     @if ($meToca)
         <p class="chip-me-toca"><i class="bi bi-pen-fill" aria-hidden="true"></i> Espera tu firma</p>
+    @endif
+    @if ($llegaAMiSede ?? false)
+        <p class="chip-llega-sede"><i class="bi bi-truck" aria-hidden="true"></i>
+            {{ $p->estado === \App\Models\PaseSalida::APROBADO ? 'Viene a '.($p->sedeDestino?->nombre ?? 'tu sede').': aún no sale de '.($p->sede?->nombre ?? 'origen').'.' : 'En camino a '.($p->sedeDestino?->nombre ?? 'tu sede').'.' }}
+            @if ($p->requiere_regreso)
+                Cuando llegue, toca «Confirmar llegada a esta sede».
+            @else
+                Es definitivo: llega sin confirmar en caseta.
+            @endif
+        </p>
     @endif
     <h2 class="ficha-pase-solicitante">{{ $p->solicitante?->nombreCompleto() ?? '—' }}</h2>
     <p class="ficha-pase-motivo">{{ $p->etiquetaMotivo() }} · {{ $p->articulos_count }} {{ $p->articulos_count === 1 ? 'artículo' : 'artículos' }}</p>

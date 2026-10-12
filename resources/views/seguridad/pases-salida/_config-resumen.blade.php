@@ -1,6 +1,11 @@
 {{-- Configuración → sección "Pases de salida": resumen del circuito de aprobación y enlace para cambiarlo. $empresa --}}
 @php
-    $resumenCircuito = app(\App\Support\Tenancy\Tenant::class)->conEmpresa($empresa->id, fn () => app(\App\Services\PasesSalida\CircuitoPasesSalida::class)->resumen());
+    [$resumenCircuito, $resumenAjustes] = app(\App\Support\Tenancy\Tenant::class)->conEmpresa($empresa->id, function () {
+        $circuito = app(\App\Services\PasesSalida\CircuitoPasesSalida::class);
+
+        // Firmas en caseta y rechazo: solo si la empresa los cambió (si no, rige lo de siempre)
+        return [$circuito->resumen(), $circuito->ajustesGuardados() !== [] ? $circuito->resumenAjustes() : []];
+    });
 @endphp
 <section class="tarjeta p-4" aria-labelledby="t-pases-salida">
     <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
@@ -13,4 +18,11 @@
             <li>{{ preg_replace('/^\d+\.\s*/', '', $linea) }}</li>
         @endforeach
     </ol>
+    @if ($resumenAjustes !== [])
+        <ul class="small mb-0 mt-2">
+            @foreach ($resumenAjustes as $linea)
+                <li>{{ $linea }}</li>
+            @endforeach
+        </ul>
+    @endif
 </section>

@@ -22,6 +22,11 @@
         PaseSalidaAprobacion::PENDIENTE => ['Pendiente', 'pendiente', 'bi-hourglass-split'],
     ];
     $pestanaInicial = in_array(old('_pestana'), ['resumen', 'articulos', 'bitacora'], true) ? old('_pestana') : 'resumen';
+    $conValor = $pase->articulos->contains(fn ($a) => $a->valor_unitario !== null);
+    $valorTotal = $pase->valorTotal();
+    // Firmas en caseta distintas de las de siempre (dos firmas): se explican en el Resumen
+    $firmasDistintas = collect($pase->pasosFisicos())->mapWithKeys(fn ($m) => [$m => $pase->modoFirma($m)])
+        ->reject(fn ($modo) => $modo === PaseSalida::FIRMAS_CASETA_OMISION);
 @endphp
 <div class="tema-azul pantalla-pases ficha-detalle-pase">
     @include('administracion.partes.avisos')
@@ -111,6 +116,13 @@
                 @if ($pase->requiere_regreso)
                     <div class="{{ $vencido ? 'texto-vencido' : '' }}"><dt>Regreso tentativo</dt><dd>{{ $tentativa ? app(\App\Support\HoraLocal::class)->formatear($tentativa, 'd/m/Y') : '—' }}{{ $vencido ? ' · Vencido' : '' }}</dd></div>
                 @endif
+                @if ($conValor)
+                    <div><dt>Valor total</dt><dd>{{ $valorTotal !== null ? PaseSalida::pesos($valorTotal).' MXN' : PaseSalida::pesos((float) $pase->articulos->sum(fn ($a) => $a->valorTotal() ?? 0)).' MXN + artículos sin valor' }}</dd></div>
+                @endif
+                @if ($firmasDistintas->isNotEmpty())
+                    <div class="completo"><dt>Firmas en caseta</dt><dd>{{ $firmasDistintas->map(fn ($modo, $m) => PaseSalida::PASOS_FISICOS[$m][1].': '.PaseSalida::FIRMAS_CASETA[$modo])->implode(' · ') }}
+                        <span class="text-muted">(los demás movimientos, dos firmas)</span></dd></div>
+                @endif
                 @if ($pase->salio_en)<div><dt>Salió</dt><dd>@fecha($pase->salio_en)</dd></div>@endif
                 @if ($pase->regreso_en)<div><dt>Regresó</dt><dd>@fecha($pase->regreso_en)</dd></div>@endif
             </dl>
@@ -130,9 +142,9 @@
                     <span class="aprobacion-numero" aria-hidden="true">{{ $a->orden }}</span>
                     <div class="min-w-0 flex-fill">
                         <strong>{{ $a->nombre }}</strong> @unless ($a->obligatorio)<span class="chip-opcional">opcional</span>@endunless
-                        <span class="d-block small text-muted">{{ $a->quienFirma() }}</span>
+                        <span class="d-block small text-muted">{{ $a->quienFirma() }}{{ $a->condicionValor() ? ' · solo con '.$a->condicionValor() : '' }}</span>
                         @if ($a->resolvio)
-                            <span class="texto-traza d-block">{{ $textoA }} por {{ $a->resolvio->name }} · @fecha($a->resuelto_en)</span>
+                            <span class="texto-traza d-block">{{ $textoA }} por {{ $a->resolvio->name }} · @fecha($a->resuelto_en){{ $a->conservada_de_ronda ? ' · firma conservada del envío anterior' : '' }}</span>
                         @elseif ($esActual)
                             <span class="texto-traza d-block text-primary fw-bold">Le toca firmar ahora{{ $sinFirmantes ? ' · nadie cumple la regla: firma cualquiera con permiso «Aprobar» de la sede' : '' }}</span>
                         @endif
@@ -166,6 +178,7 @@
                         <strong>{{ $a->cantidad }}x {{ $a->equipo }}</strong> {{ trim(($a->marca ?? '').' '.($a->modelo ?? '')) }}
                         @if ($a->serie)<span class="d-block small">Serie: <strong>{{ $a->serie }}</strong></span>@endif
                         @if ($a->descripcion)<span class="d-block small text-muted">{{ $a->descripcion }}</span>@endif
+                        @if ($a->valor_unitario !== null)<span class="d-block small">Valor: {{ PaseSalida::pesos($a->valor_unitario) }}{{ $a->cantidad > 1 ? ' c/u · '.PaseSalida::pesos($a->valorTotal()) : '' }}{{ $a->equipo_id ? ' (del padrón)' : '' }}</span>@endif
                     </div>
                     <div class="estado-articulo-pase">
                         @if ($a->equipo_id)<span class="chip-padron" title="Equipo del padrón de Equipos de seguridad"><i class="bi bi-upc-scan" aria-hidden="true"></i> padrón</span>@endif
@@ -194,6 +207,7 @@
                         <span class="texto-traza d-block">{{ $b->usuario_nombre ?? 'Sistema' }} · @fecha($b->created_at){{ $b->ip ? ' · IP '.$b->ip : '' }}</span>
                         @if ($b->comentario)<span class="comentario-pase">«{{ $b->comentario }}»</span>@endif
                         @if (! empty($b->detalle['persona']))<span class="d-block small">Persona: {{ $b->detalle['persona'] }}</span>@endif
+                        @if (! empty($b->detalle['firmas']))<span class="d-block small">Firmas: {{ $b->detalle['firmas'] === 'ninguna' ? 'sin firma (registrado en la plataforma)' : mb_strtolower(PaseSalida::FIRMAS_CASETA[$b->detalle['firmas']] ?? $b->detalle['firmas']) }}</span>@endif
                         @if (! empty($b->detalle['verificados']))<span class="d-block small">Artículos verificados: {{ $b->detalle['verificados'] }}{{ ! empty($b->detalle['con_lector']) ? ' ('.$b->detalle['con_lector'].' con lector)' : '' }}</span>@endif
                         @if (! empty($b->detalle['regresan']))<span class="d-block small">Regresan: {{ implode(', ', $b->detalle['regresan']) }}{{ ! empty($b->detalle['faltan']) ? ' · faltan '.$b->detalle['faltan'] : '' }}</span>@endif
                         @if ($b->firmas->isNotEmpty())

@@ -18,7 +18,8 @@ use Illuminate\View\View;
 
 /**
  * Configuración → Pases de salida: el circuito de aprobación de la empresa
- * (pasos en orden, quién firma cada uno, obligatorio u opcional, motivos).
+ * (pasos en orden, quién firma cada uno, obligatorio u opcional, motivos y
+ * condición de valor), las firmas en caseta y qué pasa al corregir un rechazado.
  * Lo consulta quien tiene "pases_salida.configurar"; lo cambia solo quien lo
  * tiene con alcance de toda la empresa (es una regla de toda la empresa,
  * como los Avisos por correo).
@@ -46,6 +47,8 @@ class CircuitoPasesSalidaController extends Controller
             'pasos' => $this->circuito->pasos(),
             'configurado' => $this->circuito->configurado(),
             'resumen' => $this->circuito->resumen(),
+            'firmasCaseta' => $this->circuito->firmasCaseta(),
+            'rechazo' => $this->circuito->rechazo(),
             'puedeEditar' => $this->editaEmpresa($request->user()),
             'roles' => Rol::where('empresa_id', $empresaId)->where('activo', true)->orderBy('nivel_jerarquia')->get(['id', 'nombre']),
             'departamentos' => Departamento::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
@@ -63,7 +66,7 @@ class CircuitoPasesSalidaController extends Controller
             return redirect()->route('pases-salida.circuito')->withErrors($e->errors())->withInput();
         }
 
-        return redirect()->route('pases-salida.circuito')->with('ok', 'Circuito de aprobación guardado. Los pases nuevos (y los que se reenvíen) usarán estos pasos; los que ya están en curso conservan los suyos.');
+        return redirect()->route('pases-salida.circuito')->with('ok', 'Circuito de aprobación guardado. Los pases nuevos (y los que se reenvíen) usarán estos pasos y estas firmas en caseta; los que ya están en curso conservan los suyos.');
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -71,7 +74,7 @@ class CircuitoPasesSalidaController extends Controller
         $empresaId = $this->autorizarEdicion($request);
         $this->tenant->conEmpresa($empresaId, fn () => $this->circuito->restablecer($request->user()));
 
-        return redirect()->route('pases-salida.circuito')->with('ok', 'Se restableció la cadena de SEGCAT: Jefe de Departamento, Contraloría y Gerencia.');
+        return redirect()->route('pases-salida.circuito')->with('ok', 'Se restableció la configuración original: Jefe de Departamento, Contraloría y Gerencia, con dos firmas en cada movimiento de caseta y el rechazo desde el primer paso.');
     }
 
     private function autorizarEdicion(Request $request): int

@@ -2821,6 +2821,20 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 @media print {
     .hoja-pase-qr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+/* Pases de salida: firmas en caseta, condición de valor y «Llegan a mi sede» (ADR-0012) */
+.chip-llega-sede { align-self: flex-start; margin: 0; font-size: 0.78rem; font-weight: 700; color: #065f46; background: #d1fae5; border-radius: 10px; padding: 0.25rem 0.6rem; }
+.condicion-valor-circuito { margin-top: 0.75rem; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem; }
+.condicion-valor-circuito > summary, .ajustes-circuito details > summary { cursor: pointer; font-weight: 700; font-size: 0.85rem; min-height: 44px; padding: 0.7rem 0; }
+.tabla-firmas-caseta { display: grid; gap: 0.5rem; }
+.fila-firmas-caseta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 0.5rem; align-items: center; }
+.tabla-excepciones-firmas { overflow-x: auto; }
+.tabla-excepciones-firmas table { min-width: 640px; font-size: 0.8rem; }
+.tabla-excepciones-firmas select.campo { min-height: 40px; font-size: 0.8rem; padding: 0.25rem 0.4rem; }
+.aviso-sin-firma-caseta { background: #eff6ff; border-radius: 10px; padding: 0.5rem 0.75rem; }
+.hoja-pase-sin-firma { font-size: 0.8rem; margin: 0 0 0.25rem; }
+@media (max-width: 575.98px) {
+    .fila-firmas-caseta { grid-template-columns: 1fr; gap: 0.25rem; }
+}
 /* Fin Pases de salida v2 */
 /* Eliminar definitivamente (componentes/borrar): botón discreto y diálogo de confirmación */
 .zona-borrar-definitivo { display: flex; justify-content: flex-start; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed #fecaca; }

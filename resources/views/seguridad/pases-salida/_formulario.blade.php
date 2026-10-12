@@ -24,7 +24,9 @@
     $hoy = now(app(\App\Support\HoraLocal::class)->zona())->format('Y-m-d');
     $sedeUnica = $formulario['sedesOrigen']->count() === 1 ? (string) $formulario['sedesOrigen']->first()->id : '';
     $articulosPrevios = $conErrores && is_array(old('articulos')) ? array_values(old('articulos'))
-        : ($corrigiendo ? $paseEditar->articulos->map(fn ($a) => $a->only(['equipo_id', 'cantidad', 'equipo', 'marca', 'modelo', 'serie', 'descripcion']))->all() : [[]]);
+        : ($corrigiendo ? $paseEditar->articulos->map(fn ($a) => $a->only(['equipo_id', 'cantidad', 'equipo', 'marca', 'modelo', 'serie', 'descripcion'])
+            + ['valor' => $a->valor_unitario !== null ? number_format((float) $a->valor_unitario, 2, '.', '') : ''])->all() : [[]]);
+    $pideValor = (bool) ($formulario['pideValor'] ?? false);
     $conRegreso = array_values(array_diff(array_keys(\App\Models\PaseSalida::MOTIVOS), \App\Models\PaseSalida::SIN_REGRESO));
     $buscarNombres = auth()->user()->can('colaboradores.ver') || auth()->user()->can('colaboradores.provisional');
     $idDialogo = $corrigiendo ? 'dialogoCorregirPase' : 'dialogoNuevoPase';
@@ -174,13 +176,16 @@
             @endif
             <div class="articulos-pase" data-articulos-pase data-siguiente="{{ count($articulosPrevios) }}">
                 @foreach ($articulosPrevios as $i => $a)
-                    @include('seguridad.pases-salida._articulo', ['i' => $i, 'a' => is_array($a) ? $a : []])
+                    @include('seguridad.pases-salida._articulo', ['i' => $i, 'a' => is_array($a) ? $a : [], 'pideValor' => $pideValor])
                 @endforeach
             </div>
             <template data-plantilla-articulo>
-                @include('seguridad.pases-salida._articulo', ['i' => '__i__', 'a' => []])
+                @include('seguridad.pases-salida._articulo', ['i' => '__i__', 'a' => [], 'pideValor' => $pideValor])
             </template>
             <button type="button" class="btn-agregar-articulo" data-agregar-articulo><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar artículo</button>
+            @if ($pideValor)
+                <p class="small text-muted mt-2 mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> El valor decide qué aprobaciones necesita el pase. Los equipos del padrón con costo registrado toman ese valor; si no sabes el valor, déjalo vacío y el pase pedirá todas las aprobaciones.</p>
+            @endif
 
             @if ($corrigiendo)
                 <label class="campo-etiqueta mt-2" for="ps_respuesta">Qué corregiste <span class="text-lowercase fw-normal">(opcional, lo verán los aprobadores)</span></label>

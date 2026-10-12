@@ -65,6 +65,7 @@ class AdministradorPasesSalida
         'vencidos' => 'Vencidos',
         'cerrados' => 'Cerrados',
         'rechazados' => 'Rechazados',
+        'llegan' => 'Llegan a mi sede',
     ];
 
     /** paso físico => [estado nuevo, columna de fecha, evento de auditoría, texto de la bitácora] */
@@ -89,6 +90,7 @@ class AdministradorPasesSalida
         private readonly Firmas $firmas,
         private readonly CircuitoPasesSalida $circuito,
         private readonly AvisosCorreo $avisos,
+        private readonly CampanaPasesSalida $campana,
     ) {}
 
     public function circuito(): CircuitoPasesSalida
@@ -225,8 +227,41 @@ class AdministradorPasesSalida
             'cerrados' => $consulta->where(fn ($q) => $q->where('pases_salida.estado', PaseSalida::REGRESADO)
                 ->orWhere(fn ($s) => $s->where('pases_salida.estado', PaseSalida::SALIO)->where('pases_salida.requiere_regreso', false))),
             'rechazados' => $consulta->where('pases_salida.estado', PaseSalida::RECHAZADO),
+            'llegan' => $this->llegan($consulta, $actor),
             default => $consulta,
         };
+    }
+
+    /**
+     * «Llegan a mi sede»: pases aprobados o ya en camino hacia una sede donde
+     * el actor firma la caseta (la que confirmará la llegada).
+     *
+     * @param  Builder<PaseSalida>  $consulta
+     * @return Builder<PaseSalida>
+     */
+    private function llegan(Builder $consulta, ?User $actor): Builder
+    {
+        $sedes = $actor === null ? [] : $this->sedes($actor, 'pases_salida.firmar');
+
+        return $consulta->where('pases_salida.destino_tipo', 'sede')
+            ->where(fn ($q) => $q->where('pases_salida.estado', PaseSalida::APROBADO)
+                ->orWhere(fn ($s) => $s->where('pases_salida.estado', PaseSalida::SALIO)->where('pases_salida.requiere_regreso', true)))
+            ->when($sedes !== null, fn ($q) => $q->whereIn('pases_salida.sede_destino_id', $sedes));
+    }
+
+    /**
+     * Ids de «Llegan a mi sede» (para señalarlos en la lista).
+     *
+     * @return list<int>
+     */
+    public function idsLlegan(User $actor): array
+    {
+        if (! $actor->can('pases_salida.firmar')) {
+            return [];
+        }
+
+        return $this->porFirmar['llegan-'.$actor->id] ??= $this->filtrar($this->limitar(PaseSalida::query(), $actor, 'pases_salida.ver'), 'llegan', $actor)
+            ->pluck('pases_salida.id')->map(fn ($id) => (int) $id)->all();
     }
 
     /**
@@ -323,6 +358,8 @@ class AdministradorPasesSalida
                         'requiere_regreso' => PaseSalida::requiereRegreso($datos['motivo']),
                         'estado' => PaseSalida::PENDIENTE,
                         'ronda' => 1,
+                        // Las firmas de caseta que pedirá, copiadas hoy: un cambio de configuración no lo altera
+                        'firmas_caseta' => $this->circuito->firmasCasetaPara($datos['motivo']),
                     ])->save();
                     foreach ($articulos as $articulo) {
                         $pase->articulos()->create($articulo + ['empresa_id' => $pase->empresa_id]);
@@ -349,7 +386,11 @@ class AdministradorPasesSalida
 
     /**
      * Corregir y reenviar un pase rechazado: se guardan los cambios, empieza
-     * una ronda nueva de aprobaciones (desde el primer paso) y se avisa.
+     * una ronda nueva de aprobaciones y se avisa. Por omisión, desde el primer
+     * paso; si la empresa configuró «Retomar desde el paso que rechazó», las
+     * firmas de la ronda anterior que siguen aplicando se conservan (ver
+     * CircuitoPasesSalida::instanciar). Los pasos se recalculan con el motivo
+     * y el valor corregidos: si ahora aplica uno que nadie había firmado, se pide.
      *
      * @param  array<string, mixed>  $entrada
      */
@@ -364,8 +405,9 @@ class AdministradorPasesSalida
         [$datos, $articulos] = $this->validar($actor, $entrada);
         $respuesta = $this->comentario($entrada['comentario'] ?? null);
         $antes = $this->foto($pase->load('articulos'));
+        $retomar = $this->circuito->rechazo() === 'retomar';
 
-        DB::transaction(function () use ($pase, $datos, $articulos, $actor, $respuesta) {
+        DB::transaction(function () use ($pase, $datos, $articulos, $actor, $respuesta, $retomar) {
             $actual = PaseSalida::query()->lockForUpdate()->findOrFail($pase->id);
             if ($actual->estado !== PaseSalida::RECHAZADO) {
                 throw ValidationException::withMessages(['estado' => 'Este pase ya no está rechazado: recarga la pantalla.']);
@@ -374,18 +416,28 @@ class AdministradorPasesSalida
                 'requiere_regreso' => PaseSalida::requiereRegreso($datos['motivo']),
                 'estado' => PaseSalida::PENDIENTE,
                 'ronda' => $actual->ronda + 1,
+                'firmas_caseta' => $this->circuito->firmasCasetaPara($datos['motivo']),
             ])->save();
             $actual->articulos()->delete();
             foreach ($articulos as $articulo) {
                 $actual->articulos()->create($articulo + ['empresa_id' => $actual->empresa_id]);
             }
-            $this->anotar($actual, $actor, 'reenviado', 'Corrigió y reenvió el pase a aprobación (ronda '.$actual->ronda.')', $respuesta);
-            $this->iniciarRonda($actual);
+            $actual->unsetRelation('articulos');
+            $bitacora = $this->anotar($actual, $actor, 'reenviado', 'Corrigió y reenvió el pase a aprobación (ronda '.$actual->ronda.')', $respuesta,
+                $retomar ? ['retoma' => true] : null);
+            $this->iniciarRonda($actual, $retomar, $bitacora);
         });
 
         $pase->refresh();
-        $this->auditoria->auditar($actor, 'pases_salida.reenviado', $pase, $antes, $this->foto($pase->load('articulos')));
-        $this->avisarSiguiente($pase);
+        $this->auditoria->auditar($actor, 'pases_salida.reenviado', $pase, $antes, $this->foto($pase->load('articulos'))
+            + ['al_reenviar' => CircuitoPasesSalida::RECHAZO[$retomar ? 'retomar' : 'inicio']]);
+        if ($pase->estado === PaseSalida::APROBADO) {
+            $this->auditoria->auditar($actor, 'pases_salida.aprobado', $pase, ['estado' => PaseSalida::ESTADOS[PaseSalida::RECHAZADO][0]],
+                ['folio' => $pase->folio, 'estado' => PaseSalida::ESTADOS[PaseSalida::APROBADO][0]]);
+            $this->avisarResultado($pase, 'aprobado', null, null, $actor);
+        } else {
+            $this->avisarSiguiente($pase);
+        }
     }
 
     /**
@@ -422,6 +474,7 @@ class AdministradorPasesSalida
         }
 
         $this->guardarFirmaUsuario($actor, $guardar);
+        $this->campana->resolverAprobacion((int) $aprobacion->id);
         $pase->refresh();
         $this->auditoria->auditar($actor, 'pases_salida.firmado', $pase, null, [
             'folio' => $pase->folio, 'paso' => $aprobacion->nombre, 'orden' => $aprobacion->orden, 'ronda' => $pase->ronda, 'comentario' => $comentario,
@@ -460,6 +513,7 @@ class AdministradorPasesSalida
             return $this->avanzarSiCompleto($actual);
         });
 
+        $this->campana->resolverAprobacion((int) $aprobacion->id);
         $pase->refresh();
         $this->auditoria->auditar($actor, 'pases_salida.paso_omitido', $pase, null, ['folio' => $pase->folio, 'paso' => $aprobacion->nombre, 'comentario' => $comentario]);
         $this->despuesDeResolver($actor, $pase, $completo);
@@ -498,10 +552,11 @@ class AdministradorPasesSalida
             ])->save();
         });
 
+        $this->campana->resolverAprobacion((int) $aprobacion->id);
         $pase->refresh();
         $this->auditoria->auditar($actor, 'pases_salida.rechazado', $pase, ['estado' => PaseSalida::ESTADOS[PaseSalida::PENDIENTE][0]],
             ['folio' => $pase->folio, 'estado' => PaseSalida::ESTADOS[PaseSalida::RECHAZADO][0], 'paso' => $aprobacion->nombre, 'motivo_rechazo' => $motivo]);
-        $this->avisarResultado($pase, 'rechazado', $aprobacion->nombre, $motivo);
+        $this->avisarResultado($pase, 'rechazado', $aprobacion->nombre, $motivo, $actor);
     }
 
     /**
@@ -520,16 +575,22 @@ class AdministradorPasesSalida
         $motivo = $this->comentario($entrada['motivo_cancelacion'] ?? null);
         $anterior = $pase->estado;
 
-        DB::transaction(function () use ($pase, $actor, $motivo) {
+        $pendientes = DB::transaction(function () use ($pase, $actor, $motivo) {
             $actual = PaseSalida::query()->lockForUpdate()->findOrFail($pase->id);
             if (! in_array($actual->estado, [PaseSalida::PENDIENTE, PaseSalida::RECHAZADO], true)) {
                 throw ValidationException::withMessages(['motivo_cancelacion' => 'Este pase ya se aprobó: no se puede cancelar.']);
             }
+            $pendientes = $actual->aprobaciones()->where('ronda', $actual->ronda)->where('estado', PaseSalidaAprobacion::PENDIENTE)->pluck('id');
             $actual->aprobaciones()->where('ronda', $actual->ronda)->where('estado', PaseSalidaAprobacion::PENDIENTE)
                 ->update(['estado' => PaseSalidaAprobacion::OMITIDO, 'comentario' => 'Pase cancelado', 'updated_at' => now()]);
             $actual->forceFill(['estado' => PaseSalida::CANCELADO, 'cancelado_en' => now(), 'cancelado_por' => $actor->id, 'motivo_cancelacion' => $motivo])->save();
             $this->anotar($actual, $actor, 'cancelado', 'Canceló el pase', $motivo);
+
+            return $pendientes;
         });
+        foreach ($pendientes as $id) {
+            $this->campana->resolverAprobacion((int) $id);
+        }
 
         $pase->refresh();
         $this->auditoria->auditar($actor, 'pases_salida.cancelado', $pase, ['estado' => PaseSalida::ESTADOS[$anterior][0]],
@@ -538,9 +599,11 @@ class AdministradorPasesSalida
 
     /**
      * Paso físico de caseta: salida, recepción en destino, salida de regreso o
-     * regreso. Verifica los artículos (escaneados o marcados), guarda la firma
-     * de la persona que entrega o se lleva el equipo y la de Seguridad.
-     * Devuelve el estado nuevo.
+     * regreso. Verifica los artículos (escaneados o marcados; siempre) y guarda
+     * las firmas que ese movimiento pide en este pase (PaseSalida::modoFirma):
+     * la de la persona que entrega o se lleva el equipo y la de Seguridad
+     * (omisión), solo la de Seguridad, o ninguna (queda el usuario, la hora,
+     * la IP y los artículos verificados en la bitácora). Devuelve el estado nuevo.
      *
      * @param  array<string, mixed>  $entrada  paso, persona_nombre, firma_persona, firma_modo, firma, guardar_firma,
      *                                         verificados[], escaneados[], regresa[id], cerrar_con_faltantes, comentario
@@ -555,8 +618,9 @@ class AdministradorPasesSalida
             throw new AuthorizationException('No tienes permiso para firmar esta parte del pase.');
         }
 
+        $modo = $pase->modoFirma($paso);
         $datos = Validator::make($entrada, [
-            'persona_nombre' => ['required', 'string', 'max:150'],
+            'persona_nombre' => [$modo === 'dos' ? 'required' : 'nullable', 'string', 'max:150'],
             'comentario' => ['nullable', 'string', 'max:1000'],
             'verificados' => ['nullable', 'array'],
             'verificados.*' => ['integer'],
@@ -610,10 +674,11 @@ class AdministradorPasesSalida
             throw ValidationException::withMessages(['comentario' => 'Hay artículos sin marcar: anota en el comentario qué falta o qué llegó diferente.']);
         }
 
-        $persona = mb_strtoupper(trim((string) preg_replace('/\s+/u', ' ', $datos['persona_nombre'])), 'UTF-8');
-        $rutaPersona = $this->firmas->guardar($entrada['firma_persona'] ?? null, 'pases-salida', 'firma_persona', 'la firma de '.($paso === 'salida' || $paso === 'salida_regreso' ? 'quien se lleva el equipo' : 'quien entrega el equipo'));
+        $persona = mb_strtoupper(trim((string) preg_replace('/\s+/u', ' ', (string) ($datos['persona_nombre'] ?? ''))), 'UTF-8');
+        $rutaPersona = $modo !== 'dos' ? null
+            : $this->firmas->guardar($entrada['firma_persona'] ?? null, 'pases-salida', 'firma_persona', 'la firma de '.($paso === 'salida' || $paso === 'salida_regreso' ? 'quien se lleva el equipo' : 'quien entrega el equipo'));
         try {
-            [$rutaSeguridad, $guardar] = $this->firmaDelActor($actor, $entrada);
+            [$rutaSeguridad, $guardar] = $modo === 'ninguna' ? [null, null] : $this->firmaDelActor($actor, $entrada);
         } catch (\Throwable $e) {
             $this->firmas->borrar($rutaPersona);
             throw $e;
@@ -625,14 +690,15 @@ class AdministradorPasesSalida
         }
 
         try {
-            DB::transaction(function () use ($pase, $paso, $actor, $persona, $rutaPersona, $rutaSeguridad, $comentario, $verificados, $escaneados, $regresan, $articulos, $estado, $columna, $texto, $cerrarConFaltantes) {
+            DB::transaction(function () use ($pase, $paso, $modo, $actor, $persona, $rutaPersona, $rutaSeguridad, $comentario, $verificados, $escaneados, $regresan, $articulos, $estado, $columna, $texto, $cerrarConFaltantes) {
                 $actual = PaseSalida::query()->lockForUpdate()->findOrFail($pase->id);
                 if ($actual->pasoFisico() !== $paso) {
                     throw ValidationException::withMessages(['paso' => 'Este pase ya no está en el punto correcto del circuito para esta firma.']);
                 }
                 [$titulo, , , $roles] = PaseSalida::PASOS_FISICOS[$paso];
                 [$rolPersona, $rolSeguridad] = array_keys($roles);
-                $detalle = ['paso' => $paso, 'persona' => $persona];
+                $detalle = array_filter(['paso' => $paso, 'persona' => $persona !== '' ? $persona : null,
+                    'firmas' => $modo !== PaseSalida::FIRMAS_CASETA_OMISION ? $modo : null]);
                 if ($paso === 'regreso') {
                     $detalle['regresan'] = collect($regresan)->map(fn ($c, $id) => $c.'x '.$articulos[$id]->equipo)->values()->all();
                     $detalle['faltan'] = $articulos->sum(fn ($a) => $a->pendientes()) - array_sum($regresan);
@@ -646,8 +712,12 @@ class AdministradorPasesSalida
                     default => $texto,
                 };
                 $bitacora = $this->anotar($actual, $actor, $estado === PaseSalida::REGRESO_PARCIAL ? 'regreso_parcial' : $paso, $tituloBitacora, $comentario, $detalle);
-                $this->crearFirma($actual, $bitacora, $paso, $rolPersona, $persona, null, $roles[$rolPersona], $rutaPersona);
-                $this->crearFirma($actual, $bitacora, $paso, $rolSeguridad, $actor->name, $actor->id, $roles[$rolSeguridad], $rutaSeguridad);
+                if ($rutaPersona !== null) {
+                    $this->crearFirma($actual, $bitacora, $paso, $rolPersona, $persona, null, $roles[$rolPersona], $rutaPersona);
+                }
+                if ($rutaSeguridad !== null) {
+                    $this->crearFirma($actual, $bitacora, $paso, $rolSeguridad, $actor->name, $actor->id, $roles[$rolSeguridad], $rutaSeguridad);
+                }
 
                 if ($paso === 'salida') {
                     foreach ($verificados as $id) {
@@ -676,7 +746,19 @@ class AdministradorPasesSalida
         $this->guardarFirmaUsuario($actor, $guardar);
         $pase->refresh();
         $this->auditoria->auditar($actor, $estado === PaseSalida::REGRESO_PARCIAL ? 'pases_salida.regreso_parcial' : self::AVANCE[$paso][2], $pase,
-            null, ['folio' => $pase->folio, 'estado' => $pase->insignia(false)[0], 'persona' => $persona, 'comentario' => $comentario]);
+            null, ['folio' => $pase->folio, 'estado' => $pase->insignia(false)[0], 'persona' => $persona !== '' ? $persona : null,
+                'firmas' => PaseSalida::FIRMAS_CASETA[$modo], 'comentario' => $comentario]);
+
+        // Campana: la caseta destino sabe que el pase viene; al llegar o regresar se resuelve
+        if ($pase->pasoFisico() === 'recepcion') {
+            $pase->load(['sede:id,nombre', 'sedeDestino:id,nombre'])->loadCount('articulos');
+            $this->campana->llega($pase, $actor);
+        } elseif ($paso === 'recepcion') {
+            $this->campana->resolverLlegada($pase);
+        }
+        if ($estado === PaseSalida::REGRESADO) {
+            $this->campana->resolverVencido($pase);
+        }
 
         return $estado;
     }
@@ -788,8 +870,8 @@ class AdministradorPasesSalida
             PaseSalida::RECHAZADO => 'Devuelto al solicitante: corregir y reenviar, o cancelar.',
             PaseSalida::APROBADO => 'Caseta de '.$sede((int) $pase->sede_id).': registrar la salida.',
             default => match ($pase->pasoFisico()) {
-                'recepcion' => 'Caseta de '.$sede($pase->sede_destino_id).': confirmar la llegada.',
-                'salida_regreso' => 'Caseta de '.$sede($pase->sede_destino_id).': autorizar la salida de regreso.',
+                'recepcion' => 'Caseta de '.$sede($pase->sede_destino_id).' (destino): «Confirmar llegada a esta sede» cuando llegue.',
+                'salida_regreso' => 'Caseta de '.$sede($pase->sede_destino_id).' (destino): «Autorizar salida de regreso» cuando vuelva a '.$sede((int) $pase->sede_id).'.',
                 'regreso' => 'Caseta de '.$sede((int) $pase->sede_id).': registrar el regreso'
                     .($pase->estado === PaseSalida::REGRESO_PARCIAL ? ' de lo que falta.' : '.'),
                 default => null,
@@ -817,19 +899,18 @@ class AdministradorPasesSalida
     /**
      * Recordatorio diario de los pases vencidos (lo llama el comando
      * plataforma:pases-vencidos desde desplegar.sh; corre en proceso, sin exec).
-     * Un recordatorio por pase y por día local de su sede. Con $siToca, solo
+     * Un recordatorio por pase y por día local de su sede, en la campana
+     * siempre y por correo si el aviso está encendido. Con $siToca, solo
      * después de las 8:00 de la sede.
      *
-     * @return int correos enviados
+     * @return int pases recordados
      */
     public function recordatoriosVencidos(bool $siToca = true): int
     {
         $enviados = 0;
         foreach (Empresa::where('activo', true)->get(['id', 'preferencias']) as $empresa) {
-            if (! $empresa->aviso('pase_salida_vencido')) {
-                continue;
-            }
-            $enviados += app(Tenant::class)->conEmpresa($empresa->id, function () use ($siToca) {
+            $conCorreo = $empresa->aviso('pase_salida_vencido');
+            $enviados += app(Tenant::class)->conEmpresa($empresa->id, function () use ($siToca, $conCorreo) {
                 $this->hoy = null;
                 $horas = Sede::withTrashed()->with('empresa:id,zona_horaria')->get(['id', 'empresa_id', 'zona_horaria'])
                     ->mapWithKeys(fn (Sede $s) => [(int) $s->id => (int) now($s->zonaHoraria())->format('G')])->all();
@@ -842,13 +923,17 @@ class AdministradorPasesSalida
                     if ($pase->recordatorio_vencido_en?->format('Y-m-d') === $hoy || ($siToca && ($horas[(int) $pase->sede_id] ?? 0) < 8)) {
                         continue;
                     }
-                    $correos = [...$this->correosDuenos($pase), ...$this->avisos->conPermiso($pase->empresa_id, 'pases_salida.aprobar', $pase->sede_id)];
-                    $enviado = $this->avisos->paseSalida($pase->empresa_id, 'pase_salida_vencido', $correos,
-                        $this->mensaje($pase, 'vencido', null, null), false);
+                    $enviado = false;
+                    if ($conCorreo) {
+                        $correos = [...$this->correosDuenos($pase), ...$this->avisos->conPermiso($pase->empresa_id, 'pases_salida.aprobar', $pase->sede_id)];
+                        $enviado = $this->avisos->paseSalida($pase->empresa_id, 'pase_salida_vencido', $correos,
+                            $this->mensaje($pase, 'vencido', null, null), false);
+                    }
+                    $enCampana = $this->campana->vencido($pase) > 0;
                     $pase->forceFill(['recordatorio_vencido_en' => $hoy])->saveQuietly();
-                    if ($enviado) {
+                    if ($enviado || $enCampana) {
                         $cuenta++;
-                        $this->anotar($pase, null, 'recordatorio', 'Se envió el recordatorio de vencido por correo');
+                        $this->anotar($pase, null, 'recordatorio', 'Se envió el recordatorio de vencido'.($enviado ? ' por correo y en la campana' : ' en la campana'));
                     }
                 }
 
@@ -867,15 +952,18 @@ class AdministradorPasesSalida
         if ($aprobacion === null) {
             return;
         }
-        $correos = $this->circuito->aprobadores($pase, $aprobacion)->pluck('email')->filter()->values()->all();
+        $aprobadores = $this->circuito->aprobadores($pase, $aprobacion);
+        $correos = $aprobadores->pluck('email')->filter()->values()->all();
         $this->avisos->paseSalida($pase->empresa_id, 'pase_salida_aprobacion', $correos, $this->mensaje($pase, 'por_aprobar', $aprobacion->nombre, null));
+        $this->campana->porFirmar($pase, $aprobacion, $aprobadores, $this->circuito->rondaActual($pase)->count());
     }
 
-    private function avisarResultado(PaseSalida $pase, string $tipo, ?string $paso, ?string $comentario): void
+    private function avisarResultado(PaseSalida $pase, string $tipo, ?string $paso, ?string $comentario, ?User $actor = null): void
     {
         $pase->load(['sede:id,nombre', 'sedeDestino:id,nombre', 'proveedor:id,nombre', 'colaboradorDestino:id,nombre,apellido_paterno,apellido_materno',
             'solicitante:id,nombre,apellido_paterno,apellido_materno'])->loadCount('articulos');
         $this->avisos->paseSalida($pase->empresa_id, 'pase_salida_resultado', $this->correosDuenos($pase), $this->mensaje($pase, $tipo, $paso, $comentario));
+        $this->campana->resultado($pase, $tipo, $comentario, $actor);
     }
 
     /**
@@ -907,7 +995,7 @@ class AdministradorPasesSalida
         if ($completo) {
             $this->auditoria->auditar($actor, 'pases_salida.aprobado', $pase, ['estado' => PaseSalida::ESTADOS[PaseSalida::PENDIENTE][0]],
                 ['folio' => $pase->folio, 'estado' => PaseSalida::ESTADOS[PaseSalida::APROBADO][0]]);
-            $this->avisarResultado($pase, 'aprobado', null, null);
+            $this->avisarResultado($pase, 'aprobado', null, null, $actor);
         } else {
             $this->avisarSiguiente($pase);
         }
@@ -931,7 +1019,7 @@ class AdministradorPasesSalida
     /**
      * Datos del equipo escaneado para llenar un renglón de artículos.
      *
-     * @return array{equipo_id: int, equipo: string, marca: ?string, modelo: ?string, serie: string, descripcion: ?string}
+     * @return array{equipo_id: int, equipo: string, marca: ?string, modelo: ?string, serie: string, descripcion: ?string, valor: ?string}
      */
     public function articuloDeEquipo(Equipo $equipo): array
     {
@@ -944,19 +1032,31 @@ class AdministradorPasesSalida
             'modelo' => $equipo->modelo,
             'serie' => $equipo->numero_serie,
             'descripcion' => null,
+            // Costo del padrón: el valor del artículo para las condiciones de valor del circuito
+            'valor' => $equipo->costo !== null ? number_format((float) $equipo->costo, 2, '.', '') : null,
         ];
     }
 
     // ---------------------------------------------------------------- Internos
 
     /**
-     * Copia el circuito al pase; si ningún paso aplica a su motivo, queda aprobado.
+     * Copia el circuito al pase; si ningún paso aplica a su motivo, queda
+     * aprobado. Al retomar, anota qué firmas se conservaron; si ya no falta
+     * ninguna, queda aprobado.
      */
-    private function iniciarRonda(PaseSalida $pase): void
+    private function iniciarRonda(PaseSalida $pase, bool $retomar = false, ?PaseSalidaBitacora $reenvio = null): void
     {
-        if ($this->circuito->instanciar($pase) === 0) {
+        $r = $this->circuito->instanciar($pase, $retomar);
+        if ($r['conservadas'] !== []) {
+            $this->anotar($pase, null, 'firma', 'Se conservan las firmas de la ronda anterior: '.implode(', ', $r['conservadas']),
+                null, ['conservadas' => $r['conservadas'], 'reenvio' => $reenvio?->id]);
+        }
+        if ($r['aplican'] === 0) {
             $pase->forceFill(['estado' => PaseSalida::APROBADO, 'aprobado_en' => now()])->save();
             $this->anotar($pase, null, 'aprobado', 'Sin pasos de aprobación para este motivo: queda aprobado');
+        } elseif ($r['pendientes'] === 0) {
+            $pase->forceFill(['estado' => PaseSalida::APROBADO, 'aprobado_en' => now()])->save();
+            $this->anotar($pase, null, 'aprobado', 'Todas las firmas que aplican ya estaban: queda aprobado');
         }
     }
 
@@ -1111,6 +1211,7 @@ class AdministradorPasesSalida
             'articulos.*.serie' => ['nullable', 'string', 'max:100'],
             'articulos.*.descripcion' => ['nullable', 'string', 'max:500'],
             'articulos.*.equipo_id' => ['nullable', 'integer'],
+            'articulos.*.valor' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
         ], [
             'sede_id.required' => 'Elige la sede de origen (de donde sale el equipo).',
             'motivo.required' => 'Elige el motivo de salida.',
@@ -1137,6 +1238,9 @@ class AdministradorPasesSalida
             'articulos.*.modelo.max' => 'El modelo admite máximo 100 caracteres.',
             'articulos.*.serie.max' => 'El número de serie admite máximo 100 caracteres.',
             'articulos.*.descripcion.max' => 'La descripción de un artículo admite máximo 500 caracteres.',
+            'articulos.*.valor.numeric' => 'Escribe el valor del artículo en pesos (solo números, por ejemplo 12500).',
+            'articulos.*.valor.min' => 'El valor de un artículo no puede ser negativo.',
+            'articulos.*.valor.max' => 'Revisa el valor del artículo: es demasiado alto.',
         ])->validate();
 
         // Sede de origen: activa y dentro de su alcance para crear
@@ -1186,18 +1290,26 @@ class AdministradorPasesSalida
 
         // Equipos escaneados: solo se ligan si son de la empresa (si no, se guarda solo el texto)
         $idsEquipo = collect($datos['articulos'])->pluck('equipo_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
-        $equiposValidos = $idsEquipo === [] ? [] : Equipo::whereIn('id', $idsEquipo)->pluck('id')->map(fn ($id) => (int) $id)->all();
+        // El valor de un equipo del padrón es su costo registrado (si lo tiene); si no, el que escribió el solicitante
+        $costos = $idsEquipo === [] ? [] : Equipo::whereIn('id', $idsEquipo)->pluck('costo', 'id')->all();
+        $equiposValidos = array_map('intval', array_keys($costos));
 
         $limpio = fn ($v) => ($t = trim((string) preg_replace('/\s+/u', ' ', (string) $v))) === '' ? null : $t;
-        $renglones = array_map(fn (array $a) => [
-            'equipo_id' => isset($a['equipo_id']) && in_array((int) $a['equipo_id'], $equiposValidos, true) ? (int) $a['equipo_id'] : null,
-            'cantidad' => (int) $a['cantidad'],
-            'equipo' => $limpio($a['equipo']),
-            'marca' => $limpio($a['marca'] ?? null),
-            'modelo' => $limpio($a['modelo'] ?? null),
-            'serie' => $limpio($a['serie'] ?? null),
-            'descripcion' => isset($a['descripcion']) && trim((string) $a['descripcion']) !== '' ? trim((string) $a['descripcion']) : null,
-        ], $datos['articulos']);
+        $renglones = array_map(function (array $a) use ($equiposValidos, $costos, $limpio) {
+            $equipo = isset($a['equipo_id']) && in_array((int) $a['equipo_id'], $equiposValidos, true) ? (int) $a['equipo_id'] : null;
+            $capturado = isset($a['valor']) && is_numeric($a['valor']) ? round((float) $a['valor'], 2) : null;
+
+            return [
+                'equipo_id' => $equipo,
+                'valor_unitario' => $equipo !== null && $costos[$equipo] !== null ? round((float) $costos[$equipo], 2) : $capturado,
+                'cantidad' => (int) $a['cantidad'],
+                'equipo' => $limpio($a['equipo']),
+                'marca' => $limpio($a['marca'] ?? null),
+                'modelo' => $limpio($a['modelo'] ?? null),
+                'serie' => $limpio($a['serie'] ?? null),
+                'descripcion' => isset($a['descripcion']) && trim((string) $a['descripcion']) !== '' ? trim((string) $a['descripcion']) : null,
+            ];
+        }, $datos['articulos']);
 
         return [[
             'sede_id' => $origen->id,
@@ -1236,6 +1348,8 @@ class AdministradorPasesSalida
             'estado' => $p->estado,
             'ronda' => $p->ronda,
             'articulos' => $p->articulos->map(fn ($a) => $a->resumen())->values()->all(),
+            'valor_total' => $p->valorTotal(),
+            'firmas_caseta' => $p->firmas_caseta,
         ];
     }
 }
