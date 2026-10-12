@@ -6,27 +6,29 @@ Réplica de `modules/pases_salida` de SEGCAT (§4.27 del inventario funcional), 
 
 | Pieza | Archivo |
 |---|---|
-| Migraciones | `2026_10_10_000400_crear_pases_de_salida.php` (base) y `2026_10_10_000410_circuito_de_aprobacion_de_pases_de_salida.php` (v2: circuito, bitácora, firma guardada; conserva los pases existentes) |
+| Migraciones | `2026_10_10_000400_crear_pases_de_salida.php` (base), `2026_10_10_000410_circuito_de_aprobacion_de_pases_de_salida.php` (v2: circuito, bitácora, firma guardada; conserva los pases existentes) y `2026_10_23_000100_pases_salida_firmas_caseta_valor_y_rechazo.php` (ADR-0012: firmas de caseta por pase, valor por artículo, condición de valor por paso, firmas conservadas) |
 | Modelos | `PaseSalida` (estados, pasos físicos), `PaseSalidaArticulo`, `PaseSalidaFirma` (inmutable), `PaseSalidaPaso` (+ `pases_salida_paso_usuarios`), `PaseSalidaAprobacion`, `PaseSalidaBitacora` (inmutable), `FirmaUsuario` |
-| Reglas | `app/Services/PasesSalida/AdministradorPasesSalida.php` (alta, aprobar, rechazar, omitir, cancelar, reenviar, pasos de caseta, avisos, presentación) y `CircuitoPasesSalida.php` (configuración y quién firma cada paso) |
+| Reglas | `app/Services/PasesSalida/AdministradorPasesSalida.php` (alta, aprobar, rechazar, omitir, cancelar, reenviar, pasos de caseta, avisos, presentación), `CircuitoPasesSalida.php` (configuración: pasos, condición de valor, firmas en caseta y rechazo; quién firma cada paso) y `CampanaPasesSalida.php` (avisos en la campana y su resolución) |
 | Controladores | `Seguridad/PaseSalidaController.php`, `Seguridad/CircuitoPasesSalidaController.php` |
 | Vistas | `resources/views/seguridad/pases-salida/`: `index` (fichas y bandeja), `_ficha`, `_pasos` (indicador), `show` (ficha del pase), `_dialogos`, `_firma-propia`, `_formulario` (Nuevo / Corregir), `_articulo`, `imprimir`, `verificar`, `circuito`, `_paso-circuito`, `_config-resumen` (sección en Configuración) |
 | Correo | `app/Mail/AvisoPaseSalida.php` + `resources/views/correos/pase-salida.blade.php`; envío con `AvisosCorreo::paseSalida()` |
 | Comando | `plataforma:pases-vencidos --si-toca` (`app/Console/Commands/RecordarPasesVencidos.php`), llamado por `despliegue/desplegar.sh` |
 | Inicio | Bloque "Pases de salida" en `PanelController` (aviso "N pases de salida esperan tu aprobación") |
 | JS / CSS | bloques "Pases de salida" (formulario) y "Pases de salida v2" al final de `public/js/plataforma.js`, `public/css/plataforma.css` y `public/css/modos-pantalla.css` |
-| Pruebas | `tests/Feature/Seguridad/PasesSalidaTest.php` |
+| Pruebas | `tests/Feature/Seguridad/PasesSalidaTest.php` y `PasesSalidaMejorasTest.php` (ADR-0012: omisión idéntica, firmas en caseta, hoja, valor, rechazo, campana, «Llegan a mi sede») |
 | Demo | `CrearDatosDemo::pasesSalidaDemo()` |
 
 ## Tablas
 
-**`pases_salida`** (SEGCAT: `pases_salida`): `empresa_id`, `sede_id` (origen), `folio_numero` / `folio` (`PS-000123`, consecutivo por empresa), `codigo_verificacion` (20 caracteres, único: lo lleva el QR de la hoja), `motivo`, `requiere_regreso`, `colaborador_id` (solicitante), `destino_tipo` (`sede` · `proveedor` · `colaborador`) con `sede_destino_id` / `proveedor_id` / `colaborador_destino_id`, dirección y teléfono, fechas de salida y regreso tentativo, `estado`, `ronda` (sube al reenviar), rechazo (`motivo_rechazo`, `rechazado_en`, `rechazado_por`), cancelación (`cancelado_en`, `cancelado_por`, `motivo_cancelacion`), fechas de cada paso (`aprobado_en`, `salio_en`, `recibido_destino_en`, `salio_regreso_en`, `regreso_en`), `cerrado_con_faltantes`, `recordatorio_vencido_en`, autoría.
+**`pases_salida`** (SEGCAT: `pases_salida`): `empresa_id`, `sede_id` (origen), `folio_numero` / `folio` (`PS-000123`, consecutivo por empresa), `codigo_verificacion` (20 caracteres, único: lo lleva el QR de la hoja), `motivo`, `requiere_regreso`, `colaborador_id` (solicitante), `destino_tipo` (`sede` · `proveedor` · `colaborador`) con `sede_destino_id` / `proveedor_id` / `colaborador_destino_id`, dirección y teléfono, fechas de salida y regreso tentativo, `estado`, `ronda` (sube al reenviar), rechazo (`motivo_rechazo`, `rechazado_en`, `rechazado_por`), cancelación (`cancelado_en`, `cancelado_por`, `motivo_cancelacion`), fechas de cada paso (`aprobado_en`, `salio_en`, `recibido_destino_en`, `salio_regreso_en`, `regreso_en`), `cerrado_con_faltantes`, `recordatorio_vencido_en`, `firmas_caseta` (JSON `{salida|recepcion|salida_regreso|regreso: dos|seguridad|ninguna}`: copia de la configuración al enviar o reenviar; `null` en pases anteriores = dos firmas), autoría.
 
-**`pases_salida_articulos`**: `cantidad`, `equipo`, `marca`, `modelo`, `serie`, `descripcion`, `equipo_id` (padrón de Equipos), `verificado_salida_en`, `verificado_con_lector`, `cantidad_regresada`.
+**`pases_salida_articulos`**: `cantidad`, `equipo`, `marca`, `modelo`, `serie`, `descripcion`, `equipo_id` (padrón de Equipos), `valor_unitario` (decimal 12,2, opcional: el `costo` del equipo del padrón si lo tiene; si no, lo que capturó el solicitante), `verificado_salida_en`, `verificado_con_lector`, `cantidad_regresada`.
 
-**`pases_salida_pasos`** (circuito de la empresa): `orden`, `nombre`, `tipo` (`permiso` · `rol` · `usuarios`), `rol_id`, `departamento` (`cualquiera` · `solicitante` · `especifico`) + `departamento_id`, `obligatorio`, `motivos` (JSON; vacío = todos), `activo`. **`pases_salida_paso_usuarios`**: los usuarios de un paso "usuarios específicos".
+**`pases_salida_pasos`** (circuito de la empresa): `orden`, `nombre`, `tipo` (`permiso` · `rol` · `usuarios`), `rol_id`, `departamento` (`cualquiera` · `solicitante` · `especifico`) + `departamento_id`, `obligatorio`, `motivos` (JSON; vacío = todos), `valor_minimo` / `valor_maximo` (decimal 14,2; null = sin condición), `activo`. **`pases_salida_paso_usuarios`**: los usuarios de un paso "usuarios específicos".
 
-**`pases_salida_aprobaciones`** (copia del circuito en cada pase): `ronda`, `orden`, `paso_id`, `nombre`, `tipo`, `rol_id`, `departamento_id` (ya resuelto: el del solicitante o el fijo), `usuarios` (JSON), `obligatorio`, `estado` (`pendiente` · `aprobado` · `omitido` · `rechazado`), `resuelto_por`, `resuelto_en`, `comentario`, `firma_id`. Única por `(pase, ronda, orden)`.
+**`pases_salida_aprobaciones`** (copia del circuito en cada pase): `ronda`, `orden`, `paso_id`, `nombre`, `tipo`, `rol_id`, `departamento_id` (ya resuelto: el del solicitante o el fijo), `usuarios` (JSON), `obligatorio`, `valor_minimo` / `valor_maximo` (copia de la condición), `estado` (`pendiente` · `aprobado` · `omitido` · `rechazado`), `resuelto_por`, `resuelto_en`, `comentario`, `firma_id`, `conservada_de_ronda` (al retomar: la firma viene de esa ronda; mismo `firma_id`). Única por `(pase, ronda, orden)`.
+
+**`empresas.preferencias['pases_salida']`** (sin tabla nueva, como los plazos de Candidatos): `rechazo` (`retomar`; ausente = `inicio`) y `firmas_caseta` (`{movimiento: {todos: modo, motivos: {motivo: modo}}}`). Solo se guarda lo distinto de la omisión; sin la clave, todo es como siempre.
 
 **`pases_salida_bitacora`** (inmutable): `evento`, `titulo`, `comentario`, `detalle` (JSON: persona, artículos verificados, lo que regresa), `user_id`, `usuario_nombre`, `ip`, fechas.
 
@@ -53,7 +55,7 @@ salio (venta / traspaso definitivo)        = cerrado ("Salió — Cerrado")
   2. no es el solicitante (usuario ligado a ese colaborador);
   3. cumple la regla del paso (rol / usuario / departamento). Si **nadie** la cumple, firma cualquiera con «Aprobar» en la sede (el pase no se atora);
   4. no firmó otro paso de la misma ronda, salvo que nadie más pueda.
-- **Pasos de caseta** (`pases_salida.firmar`, sede de origen salvo recepción y salida de regreso, que firma la sede **destino**): verifican artículos y guardan dos firmas, la de la persona que entrega o se lleva el equipo y la de Seguridad (usuario en sesión).
+- **Pasos de caseta** (`pases_salida.firmar`, sede de origen salvo recepción y salida de regreso, que firma la sede **destino**): verifican artículos (siempre) y guardan las firmas que el movimiento pide en ESE pase (`PaseSalida::modoFirma()`): `dos` (omisión) = la de la persona que entrega o se lleva el equipo y la de Seguridad (usuario en sesión); `seguridad` = solo la de Seguridad (nombre de la persona opcional); `ninguna` = sin firmas (quedan usuario, hora, IP y artículos verificados en la bitácora, con `detalle.firmas`). Botones: **Registrar Salida**, **Confirmar llegada a esta sede**, **Autorizar salida de regreso**, **Registrar Regreso** (solo cambió el texto; el flujo es el mismo).
   - Salida: cada artículo marcado o escaneado (lector universal, tipo `equipo`); `verificado_con_lector` solo para los del padrón.
   - Recepción y salida de regreso: si falta marcar algo, el comentario es obligatorio.
   - Regreso: cantidad por artículo; si faltan, `regreso_parcial` (comentario obligatorio) o "cerrar con faltantes" (`regresado` + `cerrado_con_faltantes`).
@@ -66,6 +68,26 @@ salio (venta / traspaso definitivo)        = cerrado ("Salió — Cerrado")
 - Máximo 8 pasos; cada motivo necesita al menos un paso obligatorio. Guardar reemplaza el circuito; **los pases en curso conservan su copia**; los nuevos y los reenviados usan el vigente.
 - **Restablecer**: borra la configuración y vuelve a la cadena de SEGCAT: Jefe de Departamento (del departamento del solicitante), Contraloría y Gerencia.
 - Auditoría: `pases_salida.circuito_actualizado` / `pases_salida.circuito_restablecido` con el resumen antes y después.
+
+## Condición de valor, firmas en caseta y rechazo (ADR-0012)
+
+- **Valor total del pase** (`PaseSalida::valorTotal()`) = Σ cantidad × `valor_unitario`; `null` si algún artículo no tiene valor. `PaseSalidaPaso::aplicaA($motivo, $valor)`: el paso aplica si el motivo coincide y `valor ≥ valor_minimo` (si hay) y `valor < valor_maximo` (si hay); **sin valor conocido, aplica** (por seguridad). Al guardar el circuito, cada motivo necesita al menos un paso obligatorio **sin** condición de valor. El formulario del pase muestra «Valor por pieza» solo si algún paso vigente tiene condición (`CircuitoPasesSalida::usaValor()`).
+- **Firmas en caseta**: `CircuitoPasesSalida::firmasCasetaPara($motivo)` (excepción del motivo o «todos») se copia a `pases_salida.firmas_caseta` al **crear** y al **reenviar** (aún no llega a caseta). Venta y traspaso definitivo solo tienen salida. La hoja impresa muestra solo los renglones de firma que aplican (`rolesDeFirma()`); sin firmas, «Sin firma: se registra en la plataforma» con quién y cuándo.
+- **Rechazo** (`CircuitoPasesSalida::rechazo()`, vigente al reenviar): `inicio` (omisión) crea la ronda nueva toda pendiente. `retomar`: se recalculan los pasos con el motivo y el valor corregidos (circuito vigente); cada paso que aplica y que en la ronda anterior quedó **aprobado u omitido** (se reconoce por su **nombre**, porque guardar el circuito recrea los ids) se copia aprobado con la misma firma, quién y cuándo, y `conservada_de_ronda`; el que rechazó y los que ahora aplican sin firma quedan pendientes, en orden. Si no queda ninguno pendiente, el pase queda aprobado («Todas las firmas que aplican ya estaban»). Bitácora: evento `firma` «Se conservan las firmas de la ronda anterior: …». Las firmas conservadas cuentan para «una persona, un paso por ronda».
+- **Restablecer** borra los pasos **y** los ajustes (vuelve todo a la omisión).
+
+## Avisos en la campana
+
+`CampanaPasesSalida` (además del correo; la campana no depende de Configuración → Avisos por correo):
+
+| Tipo | Cuándo | A quién | Se resuelve |
+|---|---|---|---|
+| `pase_por_firmar` «Te toca firmar el pase PS-…» (botón **Abrir pase**: `acciones: [{etiqueta, abrir: true}]` lleva a `notificaciones.abrir`) | Se abre un paso | `CircuitoPasesSalida::aprobadores()` | Al aprobar, omitir o rechazar ese paso, o cancelar el pase (`referencia: pase_salida_aprobacion`, id de la aprobación) |
+| `pase_aprobado` / `pase_rechazado` (con motivo) | Último paso aprobado / rechazo | Quien lo registró y usuarios del solicitante, menos quien resolvió | — |
+| `pase_vencido` «Pase PS-… vencido — debió regresar el …» | Recordatorio diario (`plataforma:pases-vencidos`) | Dueños + «Aprobar» en la sede de origen | El del día anterior queda leído; todos al quedar `regresado` (`pase_salida_vencido`) |
+| `pase_llega` «Un pase viene a tu sede» | Registrar Salida hacia otra sede (espera regreso) | «Firmar» con alcance en la sede destino, menos quien registró | Al confirmar la llegada (`pase_salida_llegada`) |
+
+El recordatorio de vencidos ahora recorre todas las empresas activas: campana siempre, correo solo si `pase_salida_vencido` está encendido; cuenta los pases recordados.
 
 ## Avisos por correo
 
@@ -91,7 +113,7 @@ Claves en `Empresa::AVISOS` (se encienden o apagan en Configuración → Avisos 
 
 | Método y ruta | Permiso | Qué hace |
 |---|---|---|
-| `GET /pases-salida?filtro=&q=&sede=` | `ver` | Fichas (20 por página). Filtros: `todos`, `mi_firma`, `pendientes`, `aprobados`, `fuera`, `espera_regreso`, `vencidos`, `cerrados`, `rechazados`. Búsqueda por folio, solicitante, número de empleado, artículo, serie o código/URL del QR. `?pase=ID` redirige a la ficha; `?nuevo=1` abre el Nuevo Pase |
+| `GET /pases-salida?filtro=&q=&sede=` | `ver` | Fichas (20 por página). Filtros: `todos`, `mi_firma`, `pendientes`, `aprobados`, `fuera`, `espera_regreso`, `vencidos`, `cerrados`, `rechazados`, `llegan` («Llegan a mi sede»: destino sede, `aprobado` o `salio` con regreso, `sede_destino_id` en las sedes con «Firmar»; la píldora solo se muestra a quien tiene «Firmar»). Búsqueda por folio, solicitante, número de empleado, artículo, serie o código/URL del QR. `?pase=ID` redirige a la ficha; `?nuevo=1` abre el Nuevo Pase |
 | `GET /pases-salida/mis-pendientes` | `ver` | Bandeja de firmas (lo que el usuario puede firmar ahora) |
 | `POST /pases-salida` | `crear` | Alta; `siguiente=1` = "Registrar y capturar siguiente" |
 | `GET /pases-salida/{id}` | `ver` | Ficha del pase |
@@ -104,8 +126,8 @@ Claves en `Empresa::AVISOS` (se encienden o apagan en Configuración → Avisos 
 | `GET /pases-salida/{id}/firmas/{firma}` | `ver` (o `imprimir`) | Imagen de una firma del pase |
 | `GET /pases-salida/verificar/{codigo}` | `ver` + alcance | Página del QR: "Pase auténtico", folio y estado. Límite 60/min |
 | `GET`/`DELETE /pases-salida/mi-firma` | `aprobar` o `firmar` | Ver / borrar la firma guardada propia |
-| `GET`/`PUT`/`DELETE /pases-salida/circuito` | `configurar` (cambiar: alcance de empresa) | Circuito de aprobación |
-| `GET /pases-salida/equipos/{equipo}` | `crear` + `equipos.ver` | Datos del equipo escaneado (JSON) |
+| `GET`/`PUT`/`DELETE /pases-salida/circuito` | `configurar` (cambiar: alcance de empresa) | Circuito de aprobación (`pasos[i][…, valor_minimo, valor_maximo]`, `rechazo`, `firmas_caseta[mov][todos|motivos[motivo]]`; sin `rechazo` ni `firmas_caseta` los ajustes no se tocan) |
+| `GET /pases-salida/equipos/{equipo}` | `crear` + `equipos.ver` | Datos del equipo escaneado (JSON; `valor` = costo del padrón o null) |
 
 Todo responde **404** si el pase es de otra empresa o está fuera de su alcance; **403** si le falta el permiso o la regla del circuito no lo deja firmar (la ficha explica por qué en un recuadro amarillo).
 
@@ -117,7 +139,7 @@ Todo responde **404** si el pase es de otra empresa o está fuera de su alcance;
 
 ## Auditoría
 
-`pases_salida.creado`, `.firmado` (cada aprobación), `.aprobado`, `.paso_omitido`, `.rechazado`, `.reenviado`, `.cancelado`, `.salida_registrada`, `.recibido_en_destino`, `.salida_de_regreso`, `.regreso_parcial`, `.regresado`, `.circuito_actualizado`, `.circuito_restablecido`, `.firma_guardada`, `.firma_borrada`. Además, la bitácora propia del pase (pestaña **Firmas y bitácora**) con quién, cuándo, comentario, firmas e IP.
+`pases_salida.creado`, `.firmado` (cada aprobación), `.aprobado`, `.paso_omitido`, `.rechazado`, `.reenviado`, `.cancelado`, `.salida_registrada`, `.recibido_en_destino`, `.salida_de_regreso`, `.regreso_parcial`, `.regresado`, `.circuito_actualizado`, `.circuito_restablecido` (con pasos y ajustes antes/después), `.ajustes_actualizados` (firmas en caseta y rechazo; sujeto: la empresa), `.firma_guardada`, `.firma_borrada`. `.reenviado` guarda `al_reenviar`; los pasos de caseta, `firmas`. Además, la bitácora propia del pase (pestaña **Firmas y bitácora**) con quién, cuándo, comentario, firmas e IP.
 
 ## Pases registrados antes de v2
 
@@ -136,3 +158,8 @@ La migración `000410` los conserva: les da código de verificación, crea sus 3
 - **Folio**: era el id global de la tabla; ahora es consecutivo por empresa, en una sola transacción.
 - **Carreras**: el pase se bloquea en cada firma.
 - **Destino obligatorio**, **vencidos con la fecha local de la sede**, **búsqueda** por número de empleado, artículo, serie y QR, lista paginada.
+
+## Criterios de experiencia de uso (excepciones anotadas)
+
+- **Regla 4 (verbos):** los botones de caseta de la sede destino se llaman **Confirmar llegada a esta sede** y **Autorizar salida de regreso** por indicación del dueño del proyecto (crítica de uso, octubre de 2026), para que el agente de la sede destino entienda qué hace. Solo cambió el texto.
+- **Regla 3 (reloj, color y suplente):** las aprobaciones de pases aún no tienen reloj ni escalamiento; se recuerdan los vencidos cada mañana. Pendiente para una entrega posterior.

@@ -51,7 +51,7 @@ Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cu�
 
 En la misma pantalla están los ajustes de:
 
-- **Pases de salida** (resumen del circuito de firmas). Ver [Pases de salida](pases-salida.md).
+- **Pases de salida**: resumen del circuito de firmas y, si tu empresa los cambió, las firmas que pide la caseta y qué pasa al corregir un pase rechazado. Con **Configurar circuito** se cambian. Ver [Pases de salida](pases-salida.md).
 - **Recepción de candidatos:** aviso de privacidad y duración del enlace del kiosco. Ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
 - **Bolsa de trabajo en internet.** Ver [Vacantes](vacantes.md).
 

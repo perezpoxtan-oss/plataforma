@@ -16,7 +16,7 @@ resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y 
 1. Entra a **Operación → Caseta → Pases de salida**.
 2. Cada ficha tiene el **folio** (por ejemplo `PS-000123`), una **etiqueta de color** con el estado, el solicitante, el motivo y la **línea de pasos**: **Solicitud → Aprobaciones → Salida → En destino / Fuera → Regreso → Cerrado**.
 3. El recuadro azul dice **quién debe actuar ahora** (por ejemplo «Espera la firma de: Contraloría (paso 2 de 3)»).
-4. Usa las **píldoras** para filtrar: **Pendientes de mi firma**, **Vencidos**, **Fuera de la propiedad**, etc. En **Buscar** escribe el folio, el solicitante, el equipo o su serie, o escanea el QR de la hoja impresa.
+4. Usa las **píldoras** para filtrar: **Pendientes de mi firma**, **Vencidos**, **Fuera de la propiedad**, **Llegan a mi sede**, etc. En **Buscar** escribe el folio, el solicitante, el equipo o su serie, o escanea el QR de la hoja impresa.
 
 ![Lista de pases](img/pases-salida/lista.png)
 
@@ -38,16 +38,16 @@ resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y 
 1. Toca **Nuevo Pase**. Si trabajas en una sola sede, la **Sede de Origen** ya viene elegida. Si tu rol es **Solicitante** o **Jefe de departamento**, tu nombre ya viene como **Solicitante** (solo puedes pedir pases a tu nombre).
 2. En **1. Motivo y Solicitante**: elige el **motivo** (la ventana te dice si el equipo debe regresar). Escanea el gafete del solicitante o escribe su nombre y elígelo. Si no aparece, toca **Nuevo Colaborador**.
 3. En **2. Enviar A**: elige otra sede, un proveedor (si no está, **Nuevo Proveedor**) o un colaborador que se lo lleva. Si el equipo regresa, escribe la **Fecha Tentativa de Regreso**.
-4. En **3. Artículos que Salen**: escanea la etiqueta del equipo del padrón (se llena solo) o escribe cantidad, equipo, marca, modelo, serie y descripción.
+4. En **3. Artículos que Salen**: escanea la etiqueta del equipo del padrón (se llena solo) o escribe cantidad, equipo, marca, modelo, serie y descripción. Si tu empresa pide aprobaciones según el valor, verás también **Valor por pieza $ (opcional)**: escríbelo si lo conoces (los equipos del padrón con costo registrado ya traen su valor). Si lo dejas vacío, el pase pedirá todas las aprobaciones.
 5. Toca **Guardar y Enviar a Aprobación** (o **Registrar y capturar siguiente** si harás otro).
 
 ![Nuevo pase de salida](img/pases-salida/nuevo-pase.png)
 
-**Qué debes ver:** el pase aparece como **Pendiente de Aprobación** y quien firma el primer paso recibe un aviso. Cada apartado (1, 2, 3) se puede cerrar tocando su título; si falta algo, se abre solo.
+**Qué debes ver:** el pase aparece como **Pendiente de Aprobación** y quien firma el primer paso recibe un aviso en la **campana** (y por correo). Cada apartado (1, 2, 3) se puede cerrar tocando su título; si falta algo, se abre solo.
 
 ## Cómo aprobar o rechazar un pase
 
-1. Toca **Mis pendientes** (arriba) o la píldora **Pendientes de mi firma** y abre el pase.
+1. Toca el aviso **Te toca firmar el pase PS-…** de la **campana** (botón **Abrir pase**), o **Mis pendientes** (arriba), o la píldora **Pendientes de mi firma**, y abre el pase.
 2. Revisa el **Resumen** y la pestaña **Artículos**.
 3. Toca **Aprobar**. Firma con **Usar mi firma guardada** o **Firmar ahora** en el recuadro (marca «Guardar mi firma» para la próxima vez). Si quieres, escribe un comentario.
 4. Toca **Aprobar y firmar**.
@@ -56,29 +56,50 @@ resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y 
 ![Ficha del pase](img/pases-salida/ficha.png)
 ![Aprobar con firma](img/pases-salida/aprobar.png)
 
-**Qué debes ver:** el pase pasa al siguiente paso y la siguiente persona recibe su aviso. Si rechazaste, regresa al solicitante con tu motivo en rojo.
+**Qué debes ver:** el pase pasa al siguiente paso y la siguiente persona recibe su aviso. El aviso de la campana de los demás que podían firmar ese paso queda leído y sin botón. Si rechazaste, regresa al solicitante con tu motivo en rojo.
 
-Reglas: los pasos van **en orden**; no puedes aprobar tu propio pase ni firmar dos pasos del mismo pase. Un paso **opcional** que no aplica se puede saltar con **Omitir paso**.
+Reglas: los pasos van **en orden**; no puedes aprobar tu propio pase ni firmar dos pasos del mismo pase. Un paso **opcional** que no aplica se puede saltar con **Omitir paso**. Si un paso dice **solo con valor de $50,000.00 o más** (u otra cantidad), se pide solo a los pases de ese valor.
 
 ## Cómo corregir un pase rechazado
 
-1. Abre el pase: el motivo del rechazo sale en rojo.
+1. En la **campana** te llega **Tu pase PS-… fue rechazado** con el motivo. Ábrelo: el motivo del rechazo sale en rojo.
 2. Toca **Corregir y reenviar**, cambia lo que te pidieron y escribe qué corregiste.
 3. Toca **Guardar y Reenviar a Aprobación**. Si ya no se necesita, toca **Cancelar pase**.
 
-**Qué debes ver:** las aprobaciones empiezan otra vez desde el primer paso.
+**Qué debes ver:** según lo que configuró tu empresa:
+
+- **Empezar desde el primer paso** (lo normal): las aprobaciones empiezan otra vez desde el paso 1.
+- **Retomar desde el paso que rechazó**: las firmas que ya tenías se conservan (en la lista dicen «firma conservada del envío anterior») y el pase vuelve al paso que lo rechazó. Si al corregir cambiaste el motivo o el valor y ahora aplica otro paso, también se pide. Si ya no falta ninguna firma, queda **Aprobado, listo para salir**.
+
+Cuando se aprueba el último paso te llega **Tu pase PS-… fue aprobado**.
 
 ## Cómo registrar en caseta la salida, la llegada y el regreso
 
-1. Abre el pase (aparece en **Mis pendientes**) y toca el botón de la caseta: **Registrar Salida**, **Confirmar Llegada**, **Autorizar Salida de Regreso** o **Registrar Regreso**.
-2. **Verifica los artículos**: escanea cada equipo del padrón o márcalo con el dedo. Para la salida deben estar **todos**.
+1. Abre el pase (aparece en **Mis pendientes**) y toca el botón de la caseta: **Registrar Salida** (sede de origen), **Confirmar llegada a esta sede** (sede destino, cuando llega el equipo), **Autorizar salida de regreso** (sede destino, cuando el equipo vuelve a su sede) o **Registrar Regreso** (sede de origen).
+2. **Verifica los artículos**: escanea cada equipo del padrón o márcalo con el dedo. Para la salida deben estar **todos**. Esto se pide siempre.
 3. Escribe el **nombre** de quien se lleva o entrega el equipo y pídele que **firme** en el recuadro.
 4. Firma tú como Seguridad (con tu firma guardada es un solo toque) y guarda.
 5. En el **regreso**, escribe cuántos regresan de cada artículo. Si lo que falta ya no volverá, marca **Cerrar el pase aunque falten artículos**.
 
+Tu empresa puede pedir menos firmas en algún movimiento. La ventana te lo dice:
+
+- «**En este pase, este movimiento solo pide la firma de Seguridad.**»: no hay recuadro para la otra persona; su nombre es opcional.
+- «**Este movimiento no pide firmas**…»: solo revisas los artículos y guardas. Queda registrado que lo hiciste tú, la hora y lo que revisaste.
+
 ![Caseta: registrar la salida](img/pases-salida/caseta-salida.png)
 
 **Qué debes ver:** la línea de pasos avanza. Si faltan artículos en el regreso, queda **Regreso parcial** y sigue esperando lo demás.
+
+## Cómo saber qué pases llegan a tu sede (caseta destino)
+
+1. En **Pases de salida** toca la píldora **Llegan a mi sede**.
+2. Verás los pases aprobados o en camino hacia tu sede. Cada uno dice qué harás: «**Viene a Hotel Playa: aún no sale de Hotel Centro.**» o «**En camino a Hotel Playa.**» y «**Cuando llegue, toca «Confirmar llegada a esta sede».**».
+3. Cuando el pase sale hacia tu sede, te llega a la **campana** el aviso **Un pase viene a tu sede: PS-…**.
+4. Cuando llegue el equipo, abre el pase y toca **Confirmar llegada a esta sede**.
+
+![Llegan a mi sede](img/pases-salida/llegan-a-mi-sede.png)
+
+**Qué debes ver:** al confirmar la llegada, el pase sale de **Llegan a mi sede** y el aviso de la campana queda leído. La píldora solo la ve quien registra la caseta.
 
 ## Cómo imprimir y verificar un pase
 
@@ -87,7 +108,7 @@ Reglas: los pasos van **en orden**; no puedes aprobar tu propio pase ni firmar d
 
 ![Hoja impresa del pase](img/pases-salida/imprimir.png)
 
-**Qué debes ver:** las firmas que faltan quedan con línea para firmar a mano.
+**Qué debes ver:** las firmas que faltan quedan con línea para firmar a mano. Si un movimiento de caseta no pide alguna firma, la hoja no trae ese renglón; si no pide ninguna, dice «**Sin firma: se registra en la plataforma.**» y, ya hecho, quién lo registró y cuándo.
 
 ## Cómo configurar quién aprueba (administrador)
 
@@ -97,6 +118,36 @@ Reglas: los pasos van **en orden**; no puedes aprobar tu propio pase ni firmar d
 4. Toca **Guardar circuito**.
 
 **Qué debes ver:** los pases nuevos siguen el circuito nuevo; los que ya están en curso conservan sus pasos.
+
+Si no cambias nada, todo funciona como siempre: Jefe de Departamento, Contraloría y Gerencia; dos firmas en cada movimiento de caseta; y el rechazo empieza desde el primer paso.
+
+## Cómo pedir un paso solo según el valor del equipo (administrador)
+
+1. En **Circuito**, en el paso que quieres (por ejemplo «Gerencia»), abre **Condición de valor (avanzado)**.
+2. En **Aplica si el valor es mayor o igual a $** escribe la cantidad en pesos, por ejemplo `50000`. Si quieres un tope, escríbelo en **y menor a $**.
+3. Toca **Guardar circuito**.
+
+![Condición de valor de un paso](img/pases-salida/circuito-valor.png)
+
+**Qué debes ver:** el paso dice «solo con valor de $50,000.00 o más». Al pedir un pase aparece **Valor por pieza $** en cada artículo. El valor total del pase es la suma de cantidad × valor. Si algún artículo no tiene valor, el paso **sí** se pide (por seguridad). Cada motivo necesita al menos un paso obligatorio sin condición de valor.
+
+## Cómo elegir qué pasa al corregir un rechazado (administrador)
+
+1. En **Circuito**, en **Al corregir y reenviar un pase rechazado**, elige **Empezar desde el primer paso** (lo normal) o **Retomar desde el paso que rechazó**.
+2. Toca **Guardar circuito**.
+
+**Qué debes ver:** aplica a los pases que se reenvíen desde ese momento.
+
+## Cómo elegir las firmas de la caseta (administrador)
+
+1. En **Circuito**, baja a **Firmas en caseta**.
+2. Para cada movimiento (**Registrar Salida**, **Confirmar llegada a esta sede**, **Autorizar salida de regreso**, **Registrar Regreso**) elige: **Dos firmas (persona y Seguridad)**, **Solo Seguridad** o **Sin firma**.
+3. Si un motivo debe ser distinto, abre **Excepciones por motivo (avanzado)** y elige las firmas en el renglón de ese motivo. Deja **Igual que todos** en lo demás.
+4. Toca **Guardar circuito**.
+
+![Firmas en caseta](img/pases-salida/circuito-firmas-caseta.png)
+
+**Qué debes ver:** los pases nuevos piden esas firmas; los que ya están en curso conservan las que tenían. La revisión de los artículos se pide siempre. En la ficha del pase, el **Resumen** dice qué movimientos piden menos firmas.
 
 ## En el celular
 
@@ -115,11 +166,17 @@ Reglas: los pasos van **en orden**; no puedes aprobar tu propio pase ni firmar d
 | «Marca o escanea cada artículo que sale: faltan …» | No verificaste todos los artículos. | Escanea o marca los que faltan. |
 | «Escribe el nombre de quien se lleva el equipo.» | Falta quién recibe. | Escribe su nombre y pide su firma. |
 | Recuadro amarillo «Espera la firma de …» | No te toca firmar este paso. | Espera a que firme la persona indicada. |
+| «En el paso «…», escribe el valor en pesos (solo números, por ejemplo 50000).» | La condición de valor tiene letras. | Escribe solo la cantidad. |
+| «En el paso «…», el valor «menor a» debe ser mayor que el valor «mayor o igual a».» | El tope es menor que el mínimo. | Corrige las cantidades o deja vacío el tope. |
+| «Cada motivo necesita al menos un paso obligatorio sin condición de valor: …» | Ese motivo podría quedar sin aprobaciones. | Deja al menos un paso obligatorio sin condición de valor para ese motivo. |
+| «El valor de un artículo no puede ser negativo.» | Escribiste un valor menor a cero. | Corrige el valor o déjalo vacío. |
 
 ## Preguntas frecuentes
 
 - **¿Cómo sé qué pases me tocan?** Abre **Mis pendientes** o la píldora **Pendientes de mi firma**.
-- **¿Qué pasa si el equipo no regresa a tiempo?** El pase se marca **Vencido — Debió Regresar** y se envía un recordatorio.
+- **¿Qué pasa si el equipo no regresa a tiempo?** El pase se marca **Vencido — Debió Regresar** y cada mañana llega un recordatorio a la **campana** (y por correo, si está encendido) de quien lo pidió y de quien aprueba en la sede. Al registrar el regreso, el aviso queda leído.
+- **¿Por qué en este pase la caseta no pidió mi firma?** Tu empresa configuró ese movimiento con **Solo Seguridad** o **Sin firma**. Lo ves en el **Resumen** del pase.
+- **¿Si cambian la configuración, cambia mi pase?** No. Cada pase conserva las firmas de caseta que tenía al enviarse.
 - **¿Puedo hacer el pase desde el celular?** Sí, todo funciona igual.
 - **¿Puedo borrar un pase?** No; si ya no se necesita, se cancela antes de aprobarse.
 
