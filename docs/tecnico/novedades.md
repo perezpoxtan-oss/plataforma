@@ -135,6 +135,8 @@ Plantillas de rol: el **Agente** (módulo de Operación) despacha, atiende e imp
 - **NV-01 — clasificación obligatoria al despachar.** SEGCAT dejaba el ticket «Sin clasificar» por omisión; ahora la Categoría es obligatoria al despachar («Elige la clasificación del ticket (Categoría). Si aún no estás seguro, elige la más cercana: se puede corregir al atenderlo.»), sin la opción «Sin clasificar». Quien solo trabaja Lost & Found no elige (su única categoría). Los tickets que ya estaban «Sin clasificar» (o los que se importen de SEGCAT) se siguen atendiendo y se clasifican en el expediente.
 - **NV-06 — secciones plegables** en los formatos Valores a la Vista, Siniestro PC, Lost & Found y Robo (también en Robo — Seguimiento): cada título numerado es un `<x-seccion>`; ver [acceso-y-diseno.md](acceso-y-diseno.md#secciones-plegables-ronda-8-nv-06). Accidente se queda idéntico.
 
+- **NV-03 — causa en el hospedaje.** El envío con las firmas en texto `data:image/...;base64,...` lo cortaba el firewall del hospedaje; desde `fix/firmas-archivo` las firmas viajan como archivo (`__firmas[]`) y el middleware `FirmasComoArchivo` las regresa a `f_<rol>` antes del controlador. Ver docs/tecnico/firmas.md, «Envío como archivo».
+
 Pruebas: `tests/Feature/Seguridad/AjustesRonda8Test.php` (NV-03 y NV-01) y los ajustes en `NovedadesTest` / `NovedadesFormatosTest`.
 
 ## Mejoras de Incidentes (ADR-0013)

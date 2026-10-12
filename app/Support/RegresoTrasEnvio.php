@@ -51,6 +51,20 @@ class RegresoTrasEnvio
         return null;
     }
 
+    /**
+     * Agrega `?envio=incompleto` (antes del `#ancla`): el layout muestra la franja
+     * «Tu envío no llegó completo y no se guardó…». Llegar aquí significa que el
+     * servidor recibió como página (GET) lo que era un envío: lo que se capturó
+     * no llegó (p. ej. el firewall del hospedaje lo cortó o lo redirigió).
+     */
+    public static function conAviso(string $destino): string
+    {
+        [$base, $ancla] = array_pad(explode('#', $destino, 2), 2, null);
+        $base .= (str_contains($base, '?') ? '&' : '?').'envio=incompleto';
+
+        return $ancla !== null ? $base.'#'.$ancla : $base;
+    }
+
     /** Deja constancia para diagnosticar (sin datos del formulario ni del usuario). */
     public static function registrar(Request $request, ?string $destino): void
     {
@@ -61,6 +75,9 @@ class RegresoTrasEnvio
             'regresa_a' => $destino,
             'viene_de' => $referencia !== '' ? parse_url($referencia, PHP_URL_PATH) : null,
             'navegador' => mb_substr((string) $request->userAgent(), 0, 160),
+            // Solo las cabeceras (nunca el cuerpo): ¿llegó algo y de qué tipo?
+            'content_type' => mb_substr((string) $request->headers->get('content-type', ''), 0, 120) ?: null,
+            'content_length' => $request->headers->get('content-length'),
         ]);
     }
 }

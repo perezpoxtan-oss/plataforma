@@ -33,12 +33,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Tests\Feature\EnviaFirmasComoArchivo;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
 use Tests\TestCase;
 
 class TransporteTest extends TestCase
 {
-    use CreaDatosNucleo, RefreshDatabase;
+    use CreaDatosNucleo, EnviaFirmasComoArchivo, RefreshDatabase;
 
     private Empresa $empresa;
 
@@ -272,6 +273,21 @@ class TransporteTest extends TestCase
         $this->actingAs($this->admin)->get('/transporte')->assertSee('NO LLEGO (USO DE TAXIS)')->assertSee('Pago: $320.00')
             ->assertSee('Imprimir Planilla')->assertSee('Justificación de costo:')->assertSee('Pendiente de Vo.Bo.')
             ->assertSee('Roberto Hernández [1005]')->assertSee('Imprime los vales de caja chica');
+    }
+
+    public function test_firmas_anidadas_de_los_taxis_enviadas_como_archivo(): void
+    {
+        // taxis[0][firma] y taxis[1][firma] viajan como archivo y regresan a su lugar
+        $datos = $this->firmasComoArchivo($this->taxis());
+        $this->assertSame(['firma_guardia', 'taxis[0][firma]', 'taxis[1][firma]'], $datos['__firmas_campos']);
+        $this->actingAs($this->admin)->post('/transporte', $datos)->assertSessionHasNoErrors()->assertSessionHas('vales');
+
+        [$a, $b] = $this->enEmpresa(fn () => MovimientoTransporte::orderBy('id')->get())->all();
+        foreach ([$a->firma_guardia, $a->firma_taxista, $b->firma_taxista] as $ruta) {
+            $this->assertStringStartsWith("firmas/{$this->empresa->id}/transporte/", $ruta);
+            Storage::disk('local')->assertExists($ruta);
+        }
+        $this->assertNotSame($a->firma_taxista, $b->firma_taxista);
     }
 
     public function test_sin_lista_de_correos_el_vale_va_a_quien_puede_autorizar_y_se_puede_apagar(): void

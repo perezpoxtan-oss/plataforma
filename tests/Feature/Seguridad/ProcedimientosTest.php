@@ -24,6 +24,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
+use Tests\Feature\EnviaFirmasComoArchivo;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
 use Tests\TestCase;
 
@@ -36,7 +37,7 @@ use Tests\TestCase;
  */
 class ProcedimientosTest extends TestCase
 {
-    use CreaDatosNucleo, RefreshDatabase;
+    use CreaDatosNucleo, EnviaFirmasComoArchivo, RefreshDatabase;
 
     private Empresa $empresa;
 
@@ -448,18 +449,44 @@ class ProcedimientosTest extends TestCase
         $p = $this->publicado();
         // Recargar o restaurar la pestaña después de firmar abre la dirección del envío con GET
         $this->actingAs($this->agente)->get("/procedimientos/{$p->id}/acuse")
-            ->assertRedirect(url("/procedimientos/{$p->id}/leer").'#acuse');
+            ->assertRedirect(url("/procedimientos/{$p->id}/leer").'?envio=incompleto#acuse');
+        // …y ahí una franja avisa que el envío no llegó y no se guardó
+        $this->actingAs($this->agente)->get("/procedimientos/{$p->id}/leer?envio=incompleto")->assertOk()
+            ->assertSee('data-envio-incompleto', false)
+            ->assertSee('Tu envío no llegó completo y no se guardó. Revisa los datos y vuelve a guardar. Si se repite, avisa a tu administrador con la hora.');
+        $this->actingAs($this->agente)->get("/procedimientos/{$p->id}/leer")->assertOk()->assertDontSee('data-envio-incompleto', false);
         // Ya firmado: la lectura dice que ya quedó
         $this->acusar($p, $this->agente)->assertSessionHasNoErrors();
         $this->actingAs($this->agente)->get("/procedimientos/{$p->id}/acuse")->assertRedirect();
         $this->actingAs($this->agente)->get("/procedimientos/{$p->id}/leer")->assertOk()->assertSee('Firmaste «Leí y entendí»', false);
         // Cualquier otra dirección de envío regresa a su pantalla «padre» (nunca a otro sitio)
-        $this->actingAs($this->agente)->get("/procedimientos/{$p->id}/enviar")->assertRedirect(url("/procedimientos/{$p->id}"));
+        $this->actingAs($this->agente)->get("/procedimientos/{$p->id}/enviar")->assertRedirect(url("/procedimientos/{$p->id}").'?envio=incompleto');
         // Sin sesión también: primero la pantalla y luego la de acceso
         auth()->logout();
-        $this->get("/procedimientos/{$p->id}/acuse")->assertRedirect(url("/procedimientos/{$p->id}/leer").'#acuse');
+        $this->get("/procedimientos/{$p->id}/acuse")->assertRedirect(url("/procedimientos/{$p->id}/leer").'?envio=incompleto#acuse');
         // Un envío con otro método sigue siendo 405 con la página de la plataforma
         $this->actingAs($this->agente)->delete("/procedimientos/{$p->id}/acuse")->assertStatus(405);
+    }
+
+    public function test_acuse_con_la_firma_enviada_como_archivo(): void
+    {
+        $p = $this->recargar($this->publicado());
+        $datos = ['version_id' => $p->vigente?->id, 'entendido' => '1', 'firma_modo' => 'nueva', 'firma' => $this->firmaJpeg()];
+
+        // Un archivo que no es imagen o que pasa de 1 MB no se toma: sale el error normal de la firma
+        $this->actingAs($this->agente)->post("/procedimientos/{$p->id}/acuse", ['firma' => '', '__firmas' => [UploadedFile::fake()->createWithContent('firma.jpg', '<?php echo 1;')], '__firmas_campos' => ['firma']] + $datos)
+            ->assertSessionHasErrors('firma');
+        $enorme = UploadedFile::fake()->createWithContent('firma.jpg', base64_decode(substr($this->firmaJpeg(), 23)).str_repeat("\0", 1024 * 1024));
+        $this->actingAs($this->agente)->post("/procedimientos/{$p->id}/acuse", ['firma' => '', '__firmas' => [$enorme], '__firmas_campos' => ['firma']] + $datos)
+            ->assertSessionHasErrors('firma');
+        $this->assertSame(0, $this->enEmpresa(fn () => ProcedimientoAcuse::count()));
+
+        // Como la manda el navegador: archivo + nombre del campo, el campo original vacío
+        $this->actingAs($this->agente)->post("/procedimientos/{$p->id}/acuse", $this->firmasComoArchivo($datos))
+            ->assertSessionHasNoErrors()->assertSessionHas('ok');
+        $acuse = $this->enEmpresa(fn () => ProcedimientoAcuse::sole());
+        Storage::disk('local')->assertExists($acuse->firma_ruta);
+        $this->assertNotFalse(@getimagesizefromstring(Storage::disk('local')->get($acuse->firma_ruta)));
     }
 
     public function test_exportar_acuses_csv_a_prueba_de_formulas(): void

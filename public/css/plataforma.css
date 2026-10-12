@@ -4501,3 +4501,10 @@ g:hover > .grafica-zona { fill: var(--color-primario-suave); }
 html.modo-noche .evento-bitacora-tipo { filter: brightness(0.85); }
 html.modo-noche .conteo-bitacora.total { background: #e2e8f0; color: #0f172a; }
 /* Fin Mejoras informes */
+
+/* Envío que no llegó (App\Support\RegresoTrasEnvio, ?envio=incompleto): la franja
+   queda a la vista aunque la pantalla baje a un #ancla (p. ej. #acuse) */
+.franja-envio-incompleto { position: sticky; top: 0.5rem; z-index: 1010; box-shadow: 0 6px 16px -10px rgba(15, 23, 42, 0.35); }
+@media (max-width: 991.98px) {
+    .franja-envio-incompleto { top: 4.6rem; }
+}
