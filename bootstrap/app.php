@@ -5,6 +5,7 @@ use App\Http\Middleware\ControlarInactividad;
 use App\Http\Middleware\EstablecerEmpresa;
 use App\Http\Middleware\ExigirCambioContrasena;
 use App\Http\Middleware\VerificarHost;
+use App\Support\RegresoTrasEnvio;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -42,6 +43,15 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // Formulario abierto demasiado tiempo (token CSRF vencido): volver a la
         // pantalla de acceso con un aviso, en lugar de la pagina de error 419.
         $exceptions->render(function (HttpException $e, Request $request) {
+            // Una dirección de envío abierta como página (recargar, volver atrás,
+            // pestaña restaurada): regresar a la pantalla de origen, no al error 405.
+            if ($e->getStatusCode() === 405 && $request->isMethodSafe() && ! $request->expectsJson()) {
+                $destino = RegresoTrasEnvio::destino($request);
+                RegresoTrasEnvio::registrar($request, $destino);
+                if ($destino !== null) {
+                    return redirect()->to($destino);
+                }
+            }
             if ($e->getStatusCode() === 419 && ! $request->expectsJson()) {
                 // Ronda 5: el cierre por inactividad con la sesión ya terminada avisa "Sesión finalizada por seguridad"
                 return redirect()->route('login')->with('acceso', $request->is('sesion/expirada') ? 'expirado' : 'pagina_vencida');

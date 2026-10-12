@@ -36,7 +36,8 @@
                 <a href="{{ url()->current() }}" class="acceso-boton d-inline-flex align-items-center justify-content-center gap-2 text-decoration-none"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Intentar de nuevo</a>
                 @break
             @default
-                <a href="{{ url($conSesion ? '/' : '/login') }}" class="acceso-boton d-inline-flex align-items-center justify-content-center gap-2 text-decoration-none"><i class="bi bi-house-door" aria-hidden="true"></i> {{ $conSesion ? 'Ir al inicio' : 'Ir a la pantalla de acceso' }}</a>
+                {{-- Algunas páginas de error se pintan antes de leer la sesión: «Volver a la plataforma» abre el Inicio y, si ya no hay sesión, la pantalla de acceso --}}
+                <a href="{{ url('/') }}" class="acceso-boton d-inline-flex align-items-center justify-content-center gap-2 text-decoration-none"><i class="bi bi-house-door" aria-hidden="true"></i> {{ $conSesion ? 'Ir al inicio' : 'Volver a la plataforma' }}</a>
         @endswitch
         <p class="small text-muted mt-4 mb-0">Si el problema continúa, avisa a tu administrador e indica el código <strong>{{ $codigo }}</strong> y la hora.</p>
     </div>

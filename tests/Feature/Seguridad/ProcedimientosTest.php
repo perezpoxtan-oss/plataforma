@@ -443,6 +443,25 @@ class ProcedimientosTest extends TestCase
         $this->assertNotContains($inactivo->id, $obligados($todos));
     }
 
+    public function test_abrir_la_direccion_del_acuse_como_pagina_regresa_a_la_lectura_y_no_da_405(): void
+    {
+        $p = $this->publicado();
+        // Recargar o restaurar la pestaña después de firmar abre la dirección del envío con GET
+        $this->actingAs($this->agente)->get("/procedimientos/{$p->id}/acuse")
+            ->assertRedirect(url("/procedimientos/{$p->id}/leer").'#acuse');
+        // Ya firmado: la lectura dice que ya quedó
+        $this->acusar($p, $this->agente)->assertSessionHasNoErrors();
+        $this->actingAs($this->agente)->get("/procedimientos/{$p->id}/acuse")->assertRedirect();
+        $this->actingAs($this->agente)->get("/procedimientos/{$p->id}/leer")->assertOk()->assertSee('Firmaste «Leí y entendí»', false);
+        // Cualquier otra dirección de envío regresa a su pantalla «padre» (nunca a otro sitio)
+        $this->actingAs($this->agente)->get("/procedimientos/{$p->id}/enviar")->assertRedirect(url("/procedimientos/{$p->id}"));
+        // Sin sesión también: primero la pantalla y luego la de acceso
+        auth()->logout();
+        $this->get("/procedimientos/{$p->id}/acuse")->assertRedirect(url("/procedimientos/{$p->id}/leer").'#acuse');
+        // Un envío con otro método sigue siendo 405 con la página de la plataforma
+        $this->actingAs($this->agente)->delete("/procedimientos/{$p->id}/acuse")->assertStatus(405);
+    }
+
     public function test_exportar_acuses_csv_a_prueba_de_formulas(): void
     {
         $this->supervisor->forceFill(['name' => '=HYPERLINK("x")'])->save();
