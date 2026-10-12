@@ -51,6 +51,10 @@
         @if ($siguiente)
             <p class="siguiente-pase grande"><i class="bi bi-arrow-right-circle-fill" aria-hidden="true"></i> {{ $siguiente }}</p>
         @endif
+        {{-- Mejoras Incidentes (criterio 3): reloj del paso que espera firma --}}
+        @if ($reloj ?? null)
+            <p class="reloj-pase grande {{ $reloj['nivel'] ? 'espera-'.$reloj['nivel'] : '' }}"><i class="bi bi-clock" aria-hidden="true"></i> {{ $reloj['texto'] }}@if ($reloj['escalado']) · {{ $reloj['escalado'] }}@endif</p>
+        @endif
 
         <div class="acciones-pase">
             @if ($puede['aprobar'])

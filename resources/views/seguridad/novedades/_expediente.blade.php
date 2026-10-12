@@ -17,8 +17,11 @@
     if (! in_array($n->categoria, $categorias, true)) {
         $categorias[] = $n->categoria;
     }
-    $opcionesCategoria = \App\Models\Novedad::OPCIONES_CATEGORIA + ['recorrido_pc' => 'Recorrido Protección Civil (histórico — ya no se crean aquí)'];
+    $opcionesCategoria = \App\Models\Novedad::OPCIONES_CATEGORIA + \App\Models\Novedad::CATEGORIAS_AUTOMATICAS;
     $categoriaActual = $v['categoria'];
+    // Mejoras Incidentes (criterio 2): el Área General se hereda del ticket; cambiarla queda plegado
+    $areaHeredada = $n->area !== null && ! ($expediente['trasError'] && $errors->has('area_edificio_id'));
+    $textoAreaTicket = $n->textoArea(false);
 @endphp
 <dialog id="dialogoExpediente" class="dialogo ancho dialogo-expediente" aria-labelledby="titulo-expediente" data-abrir-al-cargar data-conservar-al-cerrar
         data-expediente="{{ $n->id }}" data-sede="{{ $n->sede_id }}">
@@ -46,17 +49,23 @@
             <div><span class="dato-etiqueta">Sede</span>{{ $n->sede?->nombre }}</div>
             <div><span class="dato-etiqueta">Reportado</span>@fecha($n->created_at) · {{ $n->creador?->name ?? '—' }}</div>
             <div><span class="dato-etiqueta">¿Quién reporta?</span>{{ $n->reportado_por }}</div>
-            <div><span class="dato-etiqueta">Ubicación específica</span>{{ $n->ubicacion }}</div>
+            <div><span class="dato-etiqueta">Ubicación específica</span>{{ $n->ubicacion }}@if ($textoAreaTicket !== '') <span class="text-muted">· {{ $textoAreaTicket }}</span>@endif</div>
             <div class="completo"><span class="dato-etiqueta">¿Qué sucedió?</span>{!! nl2br(e($n->descripcion)) !!}</div>
             @if ($n->origen)
                 <div class="completo"><span class="dato-etiqueta">Generado desde</span><a href="{{ route('novedades.index', ['abrir' => $n->origen->id]) }}">Ticket {{ $n->origen->folio() }} · {{ $n->origen->etiquetaCategoria() }}</a></div>
             @endif
         </div>
 
+        @if ($volverRobo ?? false)
+            <p class="small mb-2"><a href="{{ route('robo.index') }}#robo-{{ $n->id }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a Seguimiento de robos</a></p>
+        @endif
         <form action="{{ route('novedades.update', $n->id) }}" method="POST" autocomplete="off" data-form-novedad="expediente" data-sede="{{ $n->sede_id }}">
             @csrf
             @method('PUT')
             <input type="hidden" name="_dialogo" value="expediente-{{ $n->id }}">
+            @if ($volverRobo ?? false)
+                <input type="hidden" name="_volver" value="robo">
+            @endif
             <fieldset @disabled(! $editable) class="expediente-campos">
                 <div class="preguntas-base">
                     <h3><i class="bi bi-clipboard-data me-2 text-primary" aria-hidden="true"></i>Preguntas Base — se confirman/completan al atender</h3>
@@ -85,6 +94,11 @@
                     <div class="row">
                         <div class="col-md-6">
                             <span class="campo-etiqueta">Área General <span class="text-lowercase fw-normal">(edificio y piso)</span></span>
+                            @if ($areaHeredada)
+                                <p class="area-heredada-nov"><i class="bi bi-geo-alt-fill text-primary me-1" aria-hidden="true"></i><strong>{{ $textoAreaTicket }}</strong> <span class="text-muted">— del reporte inicial</span></p>
+                                <details class="cambiar-area-nov">
+                                    <summary>Cambiar edificio o piso</summary>
+                            @endif
                             <div class="campo-grupo">
                                 <select name="area_edificio_id" class="campo" aria-label="Edificio" data-nov-edificio data-nov-area-parte>
                                     <option value="">-- Edificio --</option>
@@ -99,6 +113,9 @@
                                     @endforeach
                                 </select>
                             </div>
+                            @if ($areaHeredada)
+                                </details>
+                            @endif
                             <label class="campo-etiqueta" for="exp_habitacion">Habitación específica <span class="text-lowercase fw-normal">(opcional — solo si el hecho ocurrió en una habitación concreta)</span></label>
                             <select id="exp_habitacion" name="area_especifica_id" class="campo" data-nov-habitaciones>
                                 <option value="">-- No aplica / sin especificar --</option>
@@ -124,7 +141,7 @@
                         <p class="text-muted text-center p-4 m-0"><i class="bi bi-info-circle me-2" aria-hidden="true"></i>Elige o confirma una categoría arriba para desplegar su formato correspondiente.</p>
                     </fieldset>
                     @foreach (['incidente_general' => 'incidente-general', 'accidente' => 'accidente', 'habitacion' => 'valores-vista', 'proteccion_civil' => 'proteccion-civil',
-                        'recorrido_pc' => 'recorrido-pc', 'lost_found' => 'lost-found', 'robo' => 'robo'] as $clave => $vista)
+                        'recorrido_pc' => 'recorrido-pc', 'lost_found' => 'lost-found', 'robo' => 'robo', 'mantenimiento_pc' => 'mantenimiento-pc'] as $clave => $vista)
                         @continue (! in_array($clave, $categorias, true))
                         <fieldset class="formato-novedad" data-formato="{{ $clave }}" @if ($categoriaActual !== $clave) hidden disabled @endif>
                             @include('seguridad.novedades.formatos.'.$vista)
@@ -154,6 +171,10 @@
                         <option value="{{ $clave }}" @selected($v['estatus'] === $clave)>{{ $texto }}</option>
                     @endforeach
                 </select>
+                {{-- Mejoras Incidentes: «Pendiente de turno» tiene dueño y aviso --}}
+                <p class="aviso-turno-nov" data-nov-mostrar-si='{"estatus":["pendiente_turno"]}' @if ($v['estatus'] !== \App\Models\Novedad::PENDIENTE_TURNO) hidden @endif>
+                    <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Al iniciar el siguiente turno de la sede avisaremos a quien elegiste en «¿A quién se canaliza?»; si no elegiste a nadie, a todo el personal de Seguridad de la sede. Si ese turno termina sin atenderlo, avisaremos al jefe de seguridad.
+                </p>
                 <label class="campo-etiqueta" for="exp_resolucion">Estatus Final / Resolución <span class="text-lowercase fw-normal">(cómo se concluyó el caso — obligatorio para marcar Resuelto)</span></label>
                 <textarea id="exp_resolucion" name="resolucion" class="campo" rows="2" maxlength="5000" data-requerido-si='{"estatus":["resuelto"]}'
                           placeholder="Ej. Se entregó el artículo al huésped, se corrigió la falla eléctrica, se canalizó con gerencia...">{{ $v['resolucion'] }}</textarea>

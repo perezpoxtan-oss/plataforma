@@ -4,12 +4,14 @@ namespace App\Support\Menu;
 
 use App\Models\Candidato;
 use App\Models\DepartamentoResponsable;
+use App\Models\Novedad;
 use App\Models\Postulacion;
 use App\Models\User;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\PlazosCandidatos;
+use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Procedimientos\AdministradorProcedimientos;
@@ -158,6 +160,20 @@ class MisPendientes
                 ->count();
             $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $cuentas, route('usuarios.index', ['revisar' => 1]));
         }
+
+        // Mejoras Incidentes (criterio 1): tickets canalizados a mí y pendientes de turno sin dueño de mis sedes
+        if ($actor->can('novedades.editar')) {
+            $novedades = app(AdministradorNovedades::class);
+            $abiertos = fn () => $novedades->limitar(Novedad::query(), $actor, 'editar')->where('estatus', '!=', Novedad::RESUELTO);
+            // Solo aparecen cuando hay algo (la caseta no ve renglones vacíos de la bitácora)
+            if (($mios = $abiertos()->where('asignado_a', $actor->id)->count()) > 0) {
+                $items[] = $this->item('novedades_mias', 'Tickets canalizados a mí', 'bi-headset', $mios, route('novedades.index', ['mios' => 1]));
+            }
+            if (($sinDueno = $abiertos()->where('estatus', Novedad::PENDIENTE_TURNO)->whereNull('asignado_a')->count()) > 0) {
+                $items[] = $this->item('novedades_turno', 'Pendientes de turno sin dueño', 'bi-hourglass-split', $sinDueno, route('novedades.index'));
+            }
+        }
+        // Fin Mejoras Incidentes
 
         // Fase 3: color por plazo, solo si algún renglón de candidatos tiene pendientes
         $conPendientes = array_filter($items, fn ($i) => $i['total'] > 0 && in_array($i['clave'], PlazosCandidatos::RENGLONES, true));

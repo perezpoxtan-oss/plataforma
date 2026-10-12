@@ -114,7 +114,12 @@
                         <i class="bi bi-person-plus-fill" aria-hidden="true"></i> Creó: {{ $c->creador?->name ?? '—' }} · @fecha($c->created_at)
                         @if ($c->editor && $c->actualizado_por !== $c->creado_por) · <i class="bi bi-person-check-fill" aria-hidden="true"></i> Último en dar seguimiento: {{ $c->editor->name }} · @fecha($c->updated_at)@endif
                     </div>
-                    <a href="{{ route('robo.index', $consulta(['abrir' => $c->id, 'page' => request('page')])) }}" class="btn-abrir-robo {{ $editable ? 'abrir' : 'ver' }}">
+                    @php
+                        $unica = array_key_exists($c->id, $fichaUnica);
+                        $editable = $unica ? $fichaUnica[$c->id] : $editable;
+                    @endphp
+                    {{-- Mejoras Incidentes: el mismo expediente de la Bitácora (una sola ficha por robo) --}}
+                    <a href="{{ $unica ? route('novedades.index', ['abrir' => $c->id, 'volver' => 'robo']) : route('robo.index', $consulta(['abrir' => $c->id, 'page' => request('page')])) }}" class="btn-abrir-robo {{ $editable ? 'abrir' : 'ver' }}">
                         <i class="bi {{ $editable ? 'bi-folder2-open' : 'bi-eye-fill' }} me-1" aria-hidden="true"></i>{{ $editable ? 'Abrir Expediente' : 'Ver Expediente' }}
                     </a>
                 </article>

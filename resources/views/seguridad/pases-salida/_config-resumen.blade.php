@@ -4,7 +4,7 @@
         $circuito = app(\App\Services\PasesSalida\CircuitoPasesSalida::class);
 
         // Firmas en caseta y rechazo: solo si la empresa los cambió (si no, rige lo de siempre)
-        return [$circuito->resumen(), $circuito->ajustesGuardados() !== [] ? $circuito->resumenAjustes() : []];
+        return [$circuito->resumen(), $circuito->ajustesGuardados() !== [] ? [...$circuito->resumenAjustes(), ...$circuito->resumenEspera()] : []];
     });
 @endphp
 <section class="tarjeta p-4" aria-labelledby="t-pases-salida">

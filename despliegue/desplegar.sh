@@ -423,6 +423,17 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudieron revisar los plazos y la caducidad de candidatos (revisa despliegue.log)"
 fi
 # --- Fin Candidatos ---
+# --- Mejoras Incidentes: «Pendiente de turno» avisa al turno que lo recibe y al jefe si nadie lo atendió ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:novedades-pendientes'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:novedades-pendientes --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudieron revisar los tickets pendientes de turno (revisa despliegue.log)"
+fi
+# --- Pases de salida: firmas que tardan (horas por empresa en el Circuito; apagado por omisión) ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:escalar-pases'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:escalar-pases --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudieron recordar las firmas de pases que tardan (revisa despliegue.log)"
+fi
+# --- Fin Mejoras Incidentes ---
 
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
 if [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ] && grep -Eq "EscribeAqui|tu-correo@" "$HOME/qa_inicial.txt"; then

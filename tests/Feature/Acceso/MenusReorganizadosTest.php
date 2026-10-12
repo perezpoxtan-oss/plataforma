@@ -347,7 +347,8 @@ class MenusReorganizadosTest extends TestCase
 
         $agente = User::where('username', 'agente.demo')->firstOrFail();
         $pendientes = collect(app(MisPendientes::class)->para($agente)['items'])->keyBy('clave');
-        $this->assertSame(['pases_salida', 'procedimientos'], $pendientes->keys()->all());
+        // Mejoras Incidentes: la demo tiene un ticket canalizado al agente y uno pendiente de turno sin dueño
+        $this->assertSame(['pases_salida', 'procedimientos', 'novedades_mias', 'novedades_turno'], $pendientes->keys()->all());
         $this->assertGreaterThan(0, $pendientes['procedimientos']['total']);
         $this->assertSame(route('procedimientos.por-leer'), $pendientes['procedimientos']['url']);
         $this->assertSame(route('pases-salida.pendientes'), $pendientes['pases_salida']['url']);

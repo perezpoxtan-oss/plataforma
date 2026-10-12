@@ -69,6 +69,12 @@ class CircuitoPasesSalida
 
     public const RECHAZO_OMISION = 'inicio';
 
+    /** Mejoras Incidentes (ADR-0013): unidades de los tiempos de espera de las firmas. */
+    public const UNIDADES_ESPERA = ['horas' => 'horas', 'dias' => 'días'];
+
+    /** Tope de un tiempo de espera (30 días). */
+    public const MAX_HORAS_ESPERA = 720;
+
     /** Tope de una condición de valor (pesos). */
     public const VALOR_MAXIMO = 9999999999.99;
 
@@ -131,7 +137,7 @@ class CircuitoPasesSalida
      */
     public function guardar(User $actor, array $entrada): void
     {
-        $conAjustes = array_key_exists('firmas_caseta', $entrada) || array_key_exists('rechazo', $entrada);
+        $conAjustes = array_key_exists('firmas_caseta', $entrada) || array_key_exists('rechazo', $entrada) || array_key_exists('espera', $entrada);
         $ajustes = $conAjustes ? $this->validarAjustes($entrada) : null;
 
         $pasos = collect(is_array($entrada['pasos'] ?? null) ? $entrada['pasos'] : [])->filter(fn ($p) => is_array($p))->values()->all();
@@ -220,6 +226,7 @@ class CircuitoPasesSalida
 
         $antes = $this->resumen();
         $ajustesAntes = $this->resumenAjustes();
+        $esperaAntes = $this->resumenEspera();
         DB::transaction(function () use ($limpios, $ajustes) {
             PaseSalidaPaso::query()->delete();
             foreach ($limpios as $p) {
@@ -239,6 +246,9 @@ class CircuitoPasesSalida
         $this->auditoria->auditar($actor, 'pases_salida.circuito_actualizado', $primero, ['pasos' => $antes], ['pasos' => $this->resumen()]);
         if ($ajustes !== null && $ajustesAntes !== ($despues = $this->resumenAjustes())) {
             $this->auditoria->auditar($actor, 'pases_salida.ajustes_actualizados', $this->empresa(), ['ajustes' => $ajustesAntes], ['ajustes' => $despues]);
+        }
+        if ($ajustes !== null && $esperaAntes !== ($esperaDespues = $this->resumenEspera())) {
+            $this->auditoria->auditar($actor, 'pases_salida.tiempos_espera', $this->empresa(), ['espera' => $esperaAntes], ['espera' => $esperaDespues]);
         }
     }
 
@@ -322,6 +332,82 @@ class CircuitoPasesSalida
         return $movimiento === 'salida' || PaseSalida::requiereRegreso($motivo);
     }
 
+    // ------------------------------- Mejoras Incidentes: firmas que tardan (criterio 3)
+
+    /**
+     * Horas para recordar al firmante y para avisar al siguiente nivel (null = apagado, como siempre).
+     *
+     * @return array{recordar: ?int, escalar: ?int}
+     */
+    public function espera(): array
+    {
+        $g = $this->ajustesGuardados()['espera'] ?? [];
+        $horas = fn ($v) => is_numeric($v) && (int) $v >= 1 && (int) $v <= self::MAX_HORAS_ESPERA ? (int) $v : null;
+
+        return ['recordar' => $horas($g['recordar_horas'] ?? null), 'escalar' => $horas($g['escalar_horas'] ?? null)];
+    }
+
+    /** «3 días» o «8 horas» (para pantalla y bitácora). */
+    public static function textoHoras(?int $horas): ?string
+    {
+        if ($horas === null) {
+            return null;
+        }
+
+        return $horas % 24 === 0 ? ($horas / 24).' '.($horas === 24 ? 'día' : 'días') : $horas.' '.($horas === 1 ? 'hora' : 'horas');
+    }
+
+    /**
+     * Tiempos de espera en palabras ([] si están apagados).
+     *
+     * @return list<string>
+     */
+    public function resumenEspera(): array
+    {
+        $e = $this->espera();
+        $lineas = [];
+        if ($e['recordar'] !== null) {
+            $lineas[] = 'Recordar a quien debe firmar después de '.self::textoHoras($e['recordar']);
+        }
+        if ($e['escalar'] !== null) {
+            $lineas[] = 'Avisar al siguiente nivel (o al administrador) después de '.self::textoHoras($e['escalar']);
+        }
+
+        return $lineas;
+    }
+
+    /**
+     * @param  array<string, mixed>  $entrada  espera[recordar|recordar_unidad|escalar|escalar_unidad]
+     * @return array{recordar_horas?: int, escalar_horas?: int}
+     */
+    private function validarEspera(array $entrada): array
+    {
+        $e = is_array($entrada['espera'] ?? null) ? $entrada['espera'] : [];
+        $horas = function (string $campo, string $texto) use ($e): ?int {
+            $valor = $e[$campo] ?? null;
+            if ($valor === null || (is_string($valor) && trim($valor) === '')) {
+                return null;
+            }
+            $unidad = $e[$campo.'_unidad'] ?? 'horas';
+            if (! is_numeric($valor) || (int) $valor < 1 || (string) (int) $valor !== trim((string) $valor) || ! isset(self::UNIDADES_ESPERA[$unidad])) {
+                throw ValidationException::withMessages(["espera.{$campo}" => "En «{$texto}» escribe un número entero de horas o días (por ejemplo 4), o déjalo vacío para no avisar."]);
+            }
+            $total = (int) $valor * ($unidad === 'dias' ? 24 : 1);
+            if ($total > self::MAX_HORAS_ESPERA) {
+                throw ValidationException::withMessages(["espera.{$campo}" => "En «{$texto}» el máximo es 30 días."]);
+            }
+
+            return $total;
+        };
+        $recordar = $horas('recordar', 'Recordar a quien debe firmar');
+        $escalar = $horas('escalar', 'Avisar al siguiente nivel');
+        if ($recordar !== null && $escalar !== null && $escalar <= $recordar) {
+            throw ValidationException::withMessages(['espera.escalar' => 'El aviso al siguiente nivel debe ir después del recordatorio (más horas o días).']);
+        }
+
+        return array_filter(['recordar_horas' => $recordar, 'escalar_horas' => $escalar], fn ($v) => $v !== null);
+    }
+
     /**
      * Ajustes en palabras (bitácora de auditoría y pantalla de Configuración).
      *
@@ -376,7 +462,7 @@ class CircuitoPasesSalida
             }
         }
 
-        return ['rechazo' => $rechazo, 'firmas_caseta' => $firmas];
+        return ['rechazo' => $rechazo, 'firmas_caseta' => $firmas, 'espera' => $this->validarEspera($entrada)];
     }
 
     /**
@@ -392,6 +478,7 @@ class CircuitoPasesSalida
         $limpios = $ajustes === null ? [] : array_filter([
             'rechazo' => $ajustes['rechazo'] !== self::RECHAZO_OMISION ? $ajustes['rechazo'] : null,
             'firmas_caseta' => $ajustes['firmas_caseta'],
+            'espera' => $ajustes['espera'] ?? [],
         ]);
         if ($limpios === []) {
             unset($preferencias['pases_salida']);

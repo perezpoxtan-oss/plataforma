@@ -137,6 +137,10 @@ class LectorAuditoria
         'contrasena_cambiada' => 'Cambio de contraseña propia', 'recuperacion_solicitada' => 'Solicitud de recuperación de contraseña',
         'recuperacion_completada' => 'Recuperación de contraseña', 'bienvenida_enviada' => 'Envío de enlace de bienvenida',
         'enlace_restablecer_enviado' => 'Envío de enlace para restablecer contraseña', 'desactivado_por_baja' => 'Desactivación por baja del colaborador',
+        // Mejoras Incidentes (ADR-0013)
+        'turno_avisado' => 'Aviso al turno que recibe el pendiente', 'turno_escalado' => 'Aviso al jefe: pendiente de turno sin atender',
+        'objeto_registrado' => 'Registro de objeto encontrado', 'tiempos_espera' => 'Cambio de tiempos de espera de las firmas',
+        // Fin Mejoras Incidentes
     ];
 
     /**
