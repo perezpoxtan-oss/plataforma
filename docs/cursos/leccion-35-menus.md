@@ -18,7 +18,7 @@ Usa el demo (`plataforma:demo`), contraseña `Demo1234!`. Usuarios: **admin.demo
 2. Busca **Vouchers de reposición**: ahora está en **Operación → Activos** (antes en Padrones).
 3. Abre **Padrones**: la primera opción es **Empresas externas** (el mismo nombre que dice la pantalla).
 4. Abre **Recursos Humanos**: ya no está «Autorizaciones departamentales».
-5. Fíjate que **Informes** no aparece: se mostrará cuando sus pantallas estén listas.
+5. Fíjate en **Informes**: Tablero, Bitácora del día, Tendencias e Informe ejecutivo (lección 46). A la caseta (Agente) no le aparece.
 
 ## Práctica 2 · Mis pendientes (admin.demo)
 

@@ -30,7 +30,7 @@ En **negritas**, los nombres cortos que cambian respecto al nombre del módulo: 
 ## Reglas
 
 - Un renglón aparece solo si el usuario puede `modulo.ver` **y** el módulo tiene pantalla: `modulos.ruta` no nula y registrada (`Route::has`). Antes, un módulo sin ruta salía con enlace a «en migración»; ahora no sale en ningún menú (PC, celular ni barra inferior). La pantalla `/modulos/{clave}` sigue existiendo.
-- Un menú o sección sin renglones visibles se oculta. Por eso **Informes** no se ve hasta que exista alguna de sus pantallas: basta registrar la ruta en `CatalogoSeeder::RUTAS`.
+- Un menú o sección sin renglones visibles se oculta. **Informes** estuvo oculto hasta que existieron sus pantallas; desde ADR-0017 sus cuatro módulos tienen ruta (`tablero.index`, `bitacora_dia.index`, `tendencias.index`, `informe_ejecutivo.index`, ver [informes.md](informes.md)).
 - Barra inferior del celular: Inicio · Accesos · Novedades · Menú (orden de Operación).
 - Plantillas de rol: `RolesPlantillaSeeder::esPadron()` decide por menú. Para que mover Vouchers a Operación no le dé al Agente crear/editar vouchers, `PADRONES_EN_OTRO_MENU = ['vouchers']` lo sigue tratando como padrón. Se comprobó que los permisos de todas las plantillas y roles quedan idénticos antes y después.
 
