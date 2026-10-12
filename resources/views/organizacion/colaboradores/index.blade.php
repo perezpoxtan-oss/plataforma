@@ -57,6 +57,15 @@
                         @endforeach
                     </select>
                 @endif
+                @if ($turnosFiltro->isNotEmpty())
+                    <select class="filtro-select" aria-label="Filtrar por turno" data-filtro-colab="turno">
+                        <option value="">Todos los turnos</option>
+                        @foreach ($turnosFiltro as $turno)
+                            <option value="{{ $turno->id }}">{{ $turno->nombre }} ({{ $turno->inicio() }}–{{ $turno->fin() }})</option>
+                        @endforeach
+                        <option value="sin">Sin turno</option>
+                    </select>
+                @endif
                 @if ($porValidar > 0 || $puede['aprobar'])
                     <select class="filtro-select" aria-label="Filtrar por registro" data-filtro-colab="registro">
                         <option value="">Todos los registros</option>
@@ -96,7 +105,7 @@
                     $valores = json_encode([
                         'num_empleado' => $c->num_empleado, 'nombre' => $c->nombre, 'apellido_paterno' => $c->apellido_paterno,
                         'apellido_materno' => $c->apellido_materno, 'telefono' => $c->telefono, 'sede_id' => $c->sede_id,
-                        'departamento_id' => $c->departamento_id, 'puesto_id' => $c->puesto_id,
+                        'departamento_id' => $c->departamento_id, 'puesto_id' => $c->puesto_id, 'turno_id' => $c->turno_id,
                     ]);
                 @endphp
                 @php
@@ -104,8 +113,8 @@
                     $validable = $pendiente && $puede['aprobar'] && ($aprobables === null || in_array($c->id, $aprobables, true));
                 @endphp
                 <div class="ficha-card {{ $c->activo ? '' : 'inactiva' }} {{ $pendiente ? 'ficha-pendiente' : '' }}" id="colaborador-{{ $c->id }}" data-colaborador data-registro="{{ $pendiente ? 'provisional' : 'validado' }}"
-                     data-sedes="{{ $todasSusSedes }}" data-depto="{{ $c->departamento_id }}"
-                     data-texto="{{ mb_strtolower($nombreCompleto.' #'.$c->num_empleado.' '.$c->num_empleado.' '.($c->puesto?->nombre ?? '').' '.($c->departamento?->nombre ?? '').' '.($c->sede?->nombre ?? '')) }}">
+                     data-sedes="{{ $todasSusSedes }}" data-depto="{{ $c->departamento_id }}" data-turno="{{ $c->turno_id ?? 'sin' }}"
+                     data-texto="{{ mb_strtolower($nombreCompleto.' #'.$c->num_empleado.' '.$c->num_empleado.' '.($c->puesto?->nombre ?? '').' '.($c->departamento?->nombre ?? '').' '.($c->sede?->nombre ?? '').' '.($c->turno?->nombre ?? '')) }}">
                     <div>
                         <div class="d-flex align-items-center gap-3 mb-3">
                             <div class="avatar-colaborador" aria-hidden="true">{{ $c->iniciales() }}</div>
@@ -123,6 +132,9 @@
                         <div class="ficha-meta">
                             <div><i class="bi bi-briefcase text-success" aria-hidden="true"></i> <strong>Puesto:</strong> {{ $c->puesto?->nombre ?? 'Sin Puesto' }}</div>
                             <div><i class="bi bi-diagram-3 text-warning" aria-hidden="true"></i> <strong>Depto:</strong> {{ $c->departamento?->nombre ?? 'Sin Departamento' }}</div>
+                            @if ($c->turno)
+                                <div><i class="bi bi-clock text-secondary" aria-hidden="true"></i> <strong>Turno:</strong> {{ $c->turno->nombre }} ({{ $c->turno->inicio() }}–{{ $c->turno->fin() }})</div>
+                            @endif
                             <div class="text-muted small border-top pt-2 mt-1"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
                                 {{ $c->sede ? 'Sede: '.$c->sede->nombre : 'Sede: Corporativo (todas las sedes)' }}
                             </div>
@@ -179,8 +191,8 @@
                                 // Mejoras padrones: la credencial se imprime con Etiquetas QR (ya filtrada a este colaborador)
                                 'identImprimir' => $puedeCredencial && ! $pendiente ? route('etiquetas.index', ['tipo' => 'colaborador', 'q' => $c->num_empleado ?: $nombreCompleto]) : null,
                                 'identImprimirTexto' => 'Imprimir credencial', 'identEditable' => $editable && ! $pendiente])
-                            {{-- Candidatos fase 3: expediente del colaborador (ficha de detalle) --}}
-                            <a href="{{ route('colaboradores.expediente', $c->id) }}" class="btn-icono" title="Expediente" aria-label="Expediente de {{ $nombreCompleto }}"><i class="bi bi-folder2-open" aria-hidden="true"></i></a>
+                            {{-- Ficha del colaborador (pestañas Datos, Expediente, Código y etiqueta, Historial) --}}
+                            <a href="{{ route('colaboradores.expediente', $c->id) }}" class="btn-icono" title="Ficha" aria-label="Ficha de {{ $nombreCompleto }}"><i class="bi bi-folder2-open" aria-hidden="true"></i></a>
                             @include('componentes.ver-historial', ['registro' => \App\Models\Colaborador::class, 'id' => $c->id, 'nombre' => $nombreCompleto])
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar a {{ $nombreCompleto }}"
@@ -312,6 +324,19 @@
                             <div class="col-md-6">
                                 <label class="campo-etiqueta" for="{{ $modo }}_co_tel">Teléfono <span class="text-lowercase fw-normal">(opcional)</span></label>
                                 <input type="tel" inputmode="tel" id="{{ $modo }}_co_tel" name="telefono" class="campo" maxlength="20" placeholder="10 dígitos" value="{{ $valor('telefono') }}">
+                            </div>
+                            {{-- Mapa de procesos: turno que trabaja (solo los que se usan en la sede elegida) --}}
+                            <div class="col-md-6">
+                                <label class="campo-etiqueta" for="{{ $modo }}_co_turno">Turno <span class="text-lowercase fw-normal">(opcional)</span></label>
+                                <select id="{{ $modo }}_co_turno" name="turno_id" class="campo" data-colab-turno>
+                                    <option value="">-- Sin turno --</option>
+                                    @foreach ($cat['turnos'] as $tu)
+                                        @continue ($esNuevo && ! $tu->activo)
+                                        <option value="{{ $tu->id }}" data-todas="{{ $tu->todas_las_sedes ? 1 : 0 }}" data-sedes="{{ $tu->sedes->pluck('id')->join(',') }}"
+                                                @selected((string) $valor('turno_id') === (string) $tu->id)>{{ $tu->nombre }} ({{ $tu->inicio() }}–{{ $tu->fin() }}){{ $tu->activo ? '' : ' (inactivo)' }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="campo-ayuda">Solo aparecen los que se usan en la sede elegida.</p>
                             </div>
                         </div>
 
