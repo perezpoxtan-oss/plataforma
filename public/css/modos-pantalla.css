@@ -1101,6 +1101,9 @@ html.modo-sol .pildora-cerrados.activa { background: #15803d; color: #fff; }
 html.modo-sol .pestana-pase.activa { color: #1d4ed8; border-bottom-color: #1d4ed8; }
 html.modo-sol .btn-accion-pase { border: 2px solid #000; }
 html.modo-sol .chip-me-toca, html.modo-sol .chip-verificado, html.modo-sol .chip-regreso, html.modo-sol .chip-opcional { border: 1px solid #64748b; color: #000; }
+html.modo-noche .chip-llega-sede { background: rgba(16, 185, 129, 0.22); color: #a7f3d0; }
+html.modo-noche .aviso-sin-firma-caseta { background: rgba(59, 130, 246, 0.18); }
+html.modo-sol .chip-llega-sede, html.modo-sol .aviso-sin-firma-caseta { border: 1px solid #64748b; color: #000; background: #fff; }
 /* Fin Pases de salida v2 */
 /* Eliminar definitivamente: Noche y Sol */
 html.modo-noche .zona-borrar-definitivo { border-top-color: #7f1d1d; }

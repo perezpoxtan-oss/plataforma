@@ -1,4 +1,4 @@
-{{-- Renglón de "Artículos que Salen". $i: índice (o "__i__" en la plantilla); $a: valores anteriores. --}}
+{{-- Renglón de "Artículos que Salen". $i: índice (o "__i__" en la plantilla); $a: valores anteriores; $pideValor: el circuito usa el valor. --}}
 <div class="articulo-fila" data-articulo-fila>
     <input type="hidden" name="articulos[{{ $i }}][equipo_id]" value="{{ $a['equipo_id'] ?? '' }}" data-articulo="equipo_id">
     <button type="button" class="btn-quitar-articulo" data-quitar-articulo title="Quitar artículo" aria-label="Quitar artículo"><i class="bi bi-trash" aria-hidden="true"></i></button>
@@ -27,10 +27,17 @@
             <label class="campo-etiqueta" for="art_{{ $i }}_serie">Número de Serie</label>
             <input type="text" id="art_{{ $i }}_serie" name="articulos[{{ $i }}][serie]" class="campo" maxlength="100" value="{{ $a['serie'] ?? '' }}" data-articulo="serie">
         </div>
-        <div class="col-md-8">
+        <div class="{{ ($pideValor ?? false) ? 'col-md-5' : 'col-md-8' }}">
             <label class="campo-etiqueta" for="art_{{ $i }}_descripcion">Descripción</label>
             <input type="text" id="art_{{ $i }}_descripcion" name="articulos[{{ $i }}][descripcion]" class="campo" maxlength="500" placeholder="Estado, características..."
                    value="{{ $a['descripcion'] ?? '' }}" data-articulo="descripcion">
         </div>
+        @if ($pideValor ?? false)
+            <div class="col-md-3">
+                <label class="campo-etiqueta" for="art_{{ $i }}_valor">Valor por pieza $ <span class="text-lowercase fw-normal">(opcional)</span></label>
+                <input type="number" id="art_{{ $i }}_valor" name="articulos[{{ $i }}][valor]" class="campo" min="0" max="9999999999.99" step="0.01" inputmode="decimal"
+                       placeholder="Ej: 12500" value="{{ $a['valor'] ?? '' }}" data-articulo="valor">
+            </div>
+        @endif
     </div>
 </div>

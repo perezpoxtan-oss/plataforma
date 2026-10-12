@@ -15,6 +15,9 @@
     $porRol = $pase->firmas->groupBy('rol')->map->last();
     // Firmas de caseta de pases anteriores al circuito v2 (las aprobaciones ya salen arriba)
     $anteriores = $pase->firmas->filter(fn ($f) => isset(PaseSalida::ROLES_ANTERIORES[$f->rol]) && $f->grupo !== 'aprobacion');
+    // Movimiento de caseta sin firma: la última anotación de ese paso en la bitácora (quién y cuándo)
+    $registroPaso = fn (string $p) => $pase->bitacora->filter(fn ($b) => ($b->detalle['paso'] ?? null) === $p)->last();
+    $valorTotal = $pase->valorTotal();
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -73,6 +76,9 @@
             @if ($pase->destino_direccion)<div class="dato-doble"><div class="dato-etiqueta">Dirección de destino</div><div class="dato-valor normal">{{ $pase->destino_direccion }}</div></div>@endif
             @if ($pase->destino_telefono)<div><div class="dato-etiqueta">Teléfono</div><div class="dato-valor">{{ $pase->destino_telefono }}</div></div>@endif
             <div><div class="dato-etiqueta">Fecha de salida programada</div><div class="dato-valor">{{ $pase->fecha_salida_programada ? $hora->formatear(PaseSalida::dia($pase->fecha_salida_programada), 'd/m/Y') : '—' }}</div></div>
+            @if ($pase->articulos->contains(fn ($a) => $a->valor_unitario !== null))
+                <div><div class="dato-etiqueta">Valor total</div><div class="dato-valor">{{ $valorTotal !== null ? PaseSalida::pesos($valorTotal).' MXN' : 'Incompleto (artículos sin valor)' }}</div></div>
+            @endif
             @if ($pase->requiere_regreso)
                 <div><div class="dato-etiqueta">Regreso tentativo</div><div class="dato-valor">{{ $tentativa ? $hora->formatear($tentativa, 'd/m/Y') : '—' }}{{ $vencido ? ' (VENCIDO)' : '' }}</div></div>
             @endif
@@ -114,9 +120,17 @@
         </section>
 
         @foreach ($pase->pasosFisicos() as $p)
-            @php [$tituloPaso, , , $roles] = PaseSalida::PASOS_FISICOS[$p]; @endphp
+            @php
+                $tituloPaso = PaseSalida::PASOS_FISICOS[$p][0];
+                // Solo los renglones de firma que este movimiento pide en este pase
+                $roles = $pase->rolesDeFirma($p);
+            @endphp
             <section class="hoja-pase-grupo">
                 <h2>{{ $tituloPaso }}</h2>
+                @if ($roles === [])
+                    @php $registro = $registroPaso($p); @endphp
+                    <p class="hoja-pase-sin-firma">Sin firma: se registra en la plataforma.@if ($registro) Registró {{ $registro->usuario_nombre ?? '—' }} · @fecha($registro->created_at){{ ! empty($registro->detalle['verificados']) ? ' · artículos revisados: '.$registro->detalle['verificados'] : '' }}.@endif</p>
+                @endif
                 <div class="hoja-pase-firmas">
                     @foreach ($roles as $rol => $textoRol)
                         @php $f = $porRol[$rol] ?? null; @endphp

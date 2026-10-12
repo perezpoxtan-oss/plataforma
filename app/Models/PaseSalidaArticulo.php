@@ -21,7 +21,7 @@ class PaseSalidaArticulo extends Model
 
     protected $attributes = ['cantidad_regresada' => 0, 'verificado_con_lector' => false];
 
-    protected $fillable = ['empresa_id', 'pase_salida_id', 'equipo_id', 'cantidad', 'equipo', 'marca', 'modelo', 'serie', 'descripcion'];
+    protected $fillable = ['empresa_id', 'pase_salida_id', 'equipo_id', 'cantidad', 'equipo', 'marca', 'modelo', 'serie', 'descripcion', 'valor_unitario'];
 
     protected function casts(): array
     {
@@ -30,12 +30,19 @@ class PaseSalidaArticulo extends Model
             'cantidad_regresada' => 'integer',
             'verificado_con_lector' => 'boolean',
             'verificado_salida_en' => 'datetime',
+            'valor_unitario' => 'float',
         ];
     }
 
     public function pase(): BelongsTo
     {
         return $this->belongsTo(PaseSalida::class, 'pase_salida_id');
+    }
+
+    /** Cantidad × valor unitario (null si no tiene valor). */
+    public function valorTotal(): ?float
+    {
+        return $this->valor_unitario === null ? null : round($this->cantidad * (float) $this->valor_unitario, 2);
     }
 
     /** Cuántos faltan por regresar. */

@@ -4735,7 +4735,7 @@ document.addEventListener('click', function (e) {
                     if (!fila && f.querySelector('[data-articulo="equipo"]').value.trim() === '') { fila = f; }
                 });
                 fila = fila || agregarArticulo(form);
-                ['equipo_id', 'equipo', 'marca', 'modelo', 'serie', 'descripcion'].forEach(function (c) {
+                ['equipo_id', 'equipo', 'marca', 'modelo', 'serie', 'descripcion', 'valor'].forEach(function (c) {
                     var campo = fila.querySelector('[data-articulo="' + c + '"]');
                     if (campo) { campo.value = datos[c] === null || datos[c] === undefined ? '' : String(datos[c]); }
                 });

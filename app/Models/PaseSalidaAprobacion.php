@@ -28,7 +28,7 @@ class PaseSalidaAprobacion extends Model
 
     protected $attributes = ['estado' => self::PENDIENTE, 'obligatorio' => true, 'ronda' => 1];
 
-    protected $fillable = ['empresa_id', 'pase_salida_id', 'ronda', 'orden', 'paso_id', 'nombre', 'tipo', 'rol_id', 'departamento_id', 'usuarios', 'obligatorio'];
+    protected $fillable = ['empresa_id', 'pase_salida_id', 'ronda', 'orden', 'paso_id', 'nombre', 'tipo', 'rol_id', 'departamento_id', 'usuarios', 'obligatorio', 'valor_minimo', 'valor_maximo'];
 
     protected function casts(): array
     {
@@ -38,6 +38,9 @@ class PaseSalidaAprobacion extends Model
             'resuelto_en' => 'datetime',
             'ronda' => 'integer',
             'orden' => 'integer',
+            'valor_minimo' => 'float',
+            'valor_maximo' => 'float',
+            'conservada_de_ronda' => 'integer',
         ];
     }
 
@@ -87,6 +90,12 @@ class PaseSalidaAprobacion extends Model
         }
 
         return implode(', ', array_filter(array_map(fn ($id) => $memoria[(int) $id] ?? null, $ids)));
+    }
+
+    /** "solo con valor de $50,000.00 o más" o null. */
+    public function condicionValor(): ?string
+    {
+        return PaseSalidaPaso::textoCondicionValor($this->valor_minimo, $this->valor_maximo);
     }
 
     /** Quién debe firmar este paso, en palabras. */

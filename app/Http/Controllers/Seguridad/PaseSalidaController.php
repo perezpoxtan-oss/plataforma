@@ -111,6 +111,7 @@ class PaseSalidaController extends Controller
             $puedeCrear = $actor->can('pases_salida.crear');
             $sedesOrigen = $puedeCrear ? $this->pases->sedesOrigen($actor) : collect();
             $porFirmar = $this->pases->idsPorFirmar($actor);
+            $llegan = $this->pases->idsLlegan($actor);
 
             return view('seguridad.pases-salida.index', [
                 'sinEmpresa' => false,
@@ -124,6 +125,7 @@ class PaseSalidaController extends Controller
                 'variasSedes' => $sedesVisibles->count() > 1,
                 'pasesSrv' => $this->pases,
                 'porFirmar' => $porFirmar,
+                'llegan' => $llegan,
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'puede' => [
                     'crear' => $puedeCrear && $sedesOrigen->isNotEmpty(),
@@ -131,6 +133,7 @@ class PaseSalidaController extends Controller
                     'proveedor' => $actor->can('proveedores.crear') || $actor->can('pases_salida.crear'), // Altas por verificar (ADR-0006)
                     'equipos' => $actor->can('equipos.ver'),
                     'configurar' => $actor->can('pases_salida.configurar'),
+                    'firmar' => $actor->can('pases_salida.firmar'),
                 ],
                 'formulario' => $puedeCrear && $sedesOrigen->isNotEmpty() ? $this->formulario($sedesOrigen) : null,
                 'anteriores' => $this->colaboradoresAnteriores(),
@@ -432,6 +435,8 @@ class PaseSalidaController extends Controller
                 ->map(fn ($s) => ['id' => $s->id, 'nombre' => $s->nombre, 'direccion' => $direccion($s), 'telefono' => $s->telefono]),
             'proveedores' => Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'direccion', 'telefono']),
             'solicitanteFijo' => $this->solicitanteFijo(),
+            // Solo si algún paso depende del valor se pide el valor de cada artículo (por omisión, el formulario de siempre)
+            'pideValor' => $this->pases->circuito()->usaValor(),
         ];
     }
 

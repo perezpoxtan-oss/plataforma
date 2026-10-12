@@ -5,6 +5,9 @@
     $motivos = array_map('strval', (array) ($f['motivos'] ?? []));
     $elegidos = array_map('intval', (array) ($f['usuarios'] ?? []));
     $obligatorio = filter_var($f['obligatorio'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    $monto = fn ($v) => $v === null || $v === '' ? '' : (is_numeric($v) ? rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.') : (string) $v);
+    $minimo = $monto($f['valor_minimo'] ?? null);
+    $maximo = $monto($f['valor_maximo'] ?? null);
 @endphp
 <section class="paso-circuito" data-paso-circuito>
     <div class="paso-circuito-cabecera">
@@ -73,4 +76,18 @@
             <label><input type="checkbox" name="pasos[{{ $i }}][motivos][]" value="{{ $clave }}" @checked(in_array($clave, $motivos, true))> {{ $texto }}</label>
         @endforeach
     </div>
+    <details class="condicion-valor-circuito" @if ($minimo !== '' || $maximo !== '') open @endif>
+        <summary>Condición de valor <span class="text-muted fw-normal">(avanzado)</span>{{ $minimo !== '' || $maximo !== '' ? '' : ' · sin condición: aplica a cualquier valor' }}</summary>
+        <p class="small text-muted mb-2">Pide este paso solo según el valor total del pase (pesos). Si el pase no tiene el valor de todos sus artículos, el paso se pide.</p>
+        <div class="row">
+            <div class="col-sm-6">
+                <label class="campo-etiqueta" for="paso_{{ $i }}_valor_minimo">Aplica si el valor es mayor o igual a $</label>
+                <input type="text" id="paso_{{ $i }}_valor_minimo" name="pasos[{{ $i }}][valor_minimo]" class="campo" inputmode="decimal" maxlength="20" placeholder="Ej: 50000" value="{{ $minimo }}">
+            </div>
+            <div class="col-sm-6">
+                <label class="campo-etiqueta" for="paso_{{ $i }}_valor_maximo">y menor a $ <span class="text-lowercase fw-normal">(opcional)</span></label>
+                <input type="text" id="paso_{{ $i }}_valor_maximo" name="pasos[{{ $i }}][valor_maximo]" class="campo" inputmode="decimal" maxlength="20" placeholder="Sin límite" value="{{ $maximo }}">
+            </div>
+        </div>
+    </details>
 </section>

@@ -40,11 +40,12 @@ class PaseSalidaPaso extends Model
 
     protected $attributes = ['tipo' => 'permiso', 'departamento' => 'cualquiera', 'obligatorio' => true, 'activo' => true];
 
-    protected $fillable = ['empresa_id', 'orden', 'nombre', 'tipo', 'rol_id', 'departamento', 'departamento_id', 'obligatorio', 'motivos', 'activo'];
+    protected $fillable = ['empresa_id', 'orden', 'nombre', 'tipo', 'rol_id', 'departamento', 'departamento_id', 'obligatorio', 'motivos', 'valor_minimo', 'valor_maximo', 'activo'];
 
     protected function casts(): array
     {
-        return ['obligatorio' => 'boolean', 'activo' => 'boolean', 'motivos' => 'array', 'orden' => 'integer'];
+        return ['obligatorio' => 'boolean', 'activo' => 'boolean', 'motivos' => 'array', 'orden' => 'integer',
+            'valor_minimo' => 'float', 'valor_maximo' => 'float'];
     }
 
     public function rol(): BelongsTo
@@ -63,8 +64,42 @@ class PaseSalidaPaso extends Model
             ->withPivot('empresa_id')->withTimestamps();
     }
 
-    public function aplicaA(string $motivo): bool
+    /**
+     * ¿Aplica al pase? Por motivo y, si el paso tiene condición de valor, por
+     * el valor total del pase. Sin valor conocido ($valor null) la condición
+     * se cumple: por seguridad, el paso se pide.
+     */
+    public function aplicaA(string $motivo, ?float $valor = null): bool
     {
-        return empty($this->motivos) || in_array($motivo, $this->motivos, true);
+        return (empty($this->motivos) || in_array($motivo, $this->motivos, true))
+            && self::cumpleValor($this->valor_minimo, $this->valor_maximo, $valor);
+    }
+
+    public function tieneCondicionDeValor(): bool
+    {
+        return $this->valor_minimo !== null || $this->valor_maximo !== null;
+    }
+
+    public static function cumpleValor(?float $minimo, ?float $maximo, ?float $valor): bool
+    {
+        if ($minimo === null && $maximo === null) {
+            return true;
+        }
+        if ($valor === null) {
+            return true;
+        }
+
+        return ($minimo === null || $valor >= $minimo) && ($maximo === null || $valor < $maximo);
+    }
+
+    /** "valor de $50,000.00 o más", "valor menor a $5,000.00", "valor de $5,000.00 a menos de $50,000.00". */
+    public static function textoCondicionValor(?float $minimo, ?float $maximo): ?string
+    {
+        return match (true) {
+            $minimo !== null && $maximo !== null => 'valor de '.PaseSalida::pesos($minimo).' a menos de '.PaseSalida::pesos($maximo),
+            $minimo !== null => 'valor de '.PaseSalida::pesos($minimo).' o más',
+            $maximo !== null => 'valor menor a '.PaseSalida::pesos($maximo),
+            default => null,
+        };
     }
 }

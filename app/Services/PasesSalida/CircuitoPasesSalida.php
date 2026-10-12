@@ -3,6 +3,7 @@
 namespace App\Services\PasesSalida;
 
 use App\Models\Departamento;
+use App\Models\Empresa;
 use App\Models\PaseSalida;
 use App\Models\PaseSalidaAprobacion;
 use App\Models\PaseSalidaPaso;
@@ -35,6 +36,16 @@ use Illuminate\Validation\ValidationException;
  *  4. no firmó ya otro paso de la misma ronda, salvo que no haya nadie más
  *     que pueda firmarlo.
  * Los pasos van en orden: solo se firma el primero pendiente.
+ *
+ * Ajustes de la empresa (empresas.preferencias['pases_salida'], ADR-0012):
+ *  - firmas_caseta: qué firmas pide cada movimiento de caseta (dos, solo
+ *    Seguridad o ninguna), para todos los motivos con excepciones por motivo.
+ *    Se copia al pase al enviarlo (los pases en curso conservan la suya).
+ *  - rechazo: al corregir y reenviar, empezar desde el primer paso (omisión,
+ *    como siempre) o retomar desde el paso que rechazó.
+ * Cada paso puede pedirse solo según el valor total del pase (valor_minimo /
+ * valor_maximo); sin valor conocido, el paso se pide.
+ * Sin configurar, todo se comporta como el circuito original.
  */
 class CircuitoPasesSalida
 {
@@ -49,6 +60,17 @@ class CircuitoPasesSalida
         ['nombre' => 'Contraloría', 'tipo' => 'permiso', 'departamento' => 'cualquiera'],
         ['nombre' => 'Gerencia', 'tipo' => 'permiso', 'departamento' => 'cualquiera'],
     ];
+
+    /** Al corregir y reenviar un pase rechazado. */
+    public const RECHAZO = [
+        'inicio' => 'Empezar desde el primer paso',
+        'retomar' => 'Retomar desde el paso que rechazó',
+    ];
+
+    public const RECHAZO_OMISION = 'inicio';
+
+    /** Tope de una condición de valor (pesos). */
+    public const VALOR_MAXIMO = 9999999999.99;
 
     /** @var array<string, Collection<int, User>> usuarios con "aprobar" por sede */
     private array $candidatos = [];
@@ -76,7 +98,13 @@ class CircuitoPasesSalida
 
     public function configurado(): bool
     {
-        return PaseSalidaPaso::where('activo', true)->exists();
+        return PaseSalidaPaso::where('activo', true)->exists() || $this->ajustesGuardados() !== [];
+    }
+
+    /** ¿Algún paso vigente depende del valor? (el formulario pide entonces el valor de cada artículo) */
+    public function usaValor(): bool
+    {
+        return $this->pasos()->contains(fn (PaseSalidaPaso $p) => $p->tieneCondicionDeValor());
     }
 
     /**
@@ -96,10 +124,16 @@ class CircuitoPasesSalida
      * Guarda el circuito completo (reemplaza al anterior). Los pases en curso
      * conservan su copia.
      *
-     * @param  array<string, mixed>  $entrada  pasos[i][nombre|tipo|rol_id|usuarios[]|departamento|departamento_id|obligatorio|motivos[]]
+     * Si trae firmas_caseta o rechazo, guarda también esos ajustes.
+     *
+     * @param  array<string, mixed>  $entrada  pasos[i][nombre|tipo|rol_id|usuarios[]|departamento|departamento_id|obligatorio|motivos[]|valor_minimo|valor_maximo],
+     *                                         firmas_caseta[movimiento][todos|motivos[motivo]], rechazo
      */
     public function guardar(User $actor, array $entrada): void
     {
+        $conAjustes = array_key_exists('firmas_caseta', $entrada) || array_key_exists('rechazo', $entrada);
+        $ajustes = $conAjustes ? $this->validarAjustes($entrada) : null;
+
         $pasos = collect(is_array($entrada['pasos'] ?? null) ? $entrada['pasos'] : [])->filter(fn ($p) => is_array($p))->values()->all();
 
         $datos = Validator::make(['pasos' => $pasos], [
@@ -114,6 +148,8 @@ class CircuitoPasesSalida
             'pasos.*.obligatorio' => ['nullable'],
             'pasos.*.motivos' => ['nullable', 'array'],
             'pasos.*.motivos.*' => [Rule::in(array_keys(PaseSalida::MOTIVOS))],
+            'pasos.*.valor_minimo' => ['nullable'], // se revisan abajo: admiten «$50,000»
+            'pasos.*.valor_maximo' => ['nullable'],
         ], [
             'pasos.required' => 'El circuito necesita al menos un paso de aprobación.',
             'pasos.min' => 'El circuito necesita al menos un paso de aprobación.',
@@ -149,9 +185,15 @@ class CircuitoPasesSalida
                 throw ValidationException::withMessages(["pasos.{$i}.departamento_id" => 'Elige un departamento activo de la empresa.']);
             }
             $motivos = array_values(array_unique($p['motivos'] ?? []));
+            $nombre = trim((string) preg_replace('/\s+/u', ' ', $p['nombre']));
+            $minimo = $this->valor($p['valor_minimo'] ?? null, "pasos.{$i}.valor_minimo", $nombre);
+            $maximo = $this->valor($p['valor_maximo'] ?? null, "pasos.{$i}.valor_maximo", $nombre);
+            if ($minimo !== null && $maximo !== null && $maximo <= $minimo) {
+                throw ValidationException::withMessages(["pasos.{$i}.valor_maximo" => "En el paso «{$nombre}», el valor «menor a» debe ser mayor que el valor «mayor o igual a»."]);
+            }
             $limpios[] = [
                 'orden' => $i + 1,
-                'nombre' => trim((string) preg_replace('/\s+/u', ' ', $p['nombre'])),
+                'nombre' => $nombre,
                 'tipo' => $tipo,
                 'rol_id' => $tipo === 'rol' ? (int) $p['rol_id'] : null,
                 'departamento' => $departamento,
@@ -159,6 +201,8 @@ class CircuitoPasesSalida
                 // Sin motivos marcados, o con todos marcados, aplica a todos
                 'motivos' => $motivos === [] || count($motivos) === count(PaseSalida::MOTIVOS) ? null : $motivos,
                 'obligatorio' => filter_var($p['obligatorio'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'valor_minimo' => $minimo,
+                'valor_maximo' => $maximo,
                 'usuarios' => $usuarios,
             ];
         }
@@ -168,10 +212,15 @@ class CircuitoPasesSalida
             if ($obligatorios === []) {
                 throw ValidationException::withMessages(['pasos' => 'Cada motivo necesita al menos un paso obligatorio: «'.PaseSalida::MOTIVOS[$motivo].'» no tiene ninguno.']);
             }
+            // Un paso que depende del valor puede no aplicar: cada motivo necesita uno que siempre aplique
+            if (array_filter($obligatorios, fn ($p) => $p['valor_minimo'] === null && $p['valor_maximo'] === null) === []) {
+                throw ValidationException::withMessages(['pasos' => 'Cada motivo necesita al menos un paso obligatorio sin condición de valor: «'.PaseSalida::MOTIVOS[$motivo].'» solo tiene pasos que dependen del valor.']);
+            }
         }
 
         $antes = $this->resumen();
-        DB::transaction(function () use ($limpios) {
+        $ajustesAntes = $this->resumenAjustes();
+        DB::transaction(function () use ($limpios, $ajustes) {
             PaseSalidaPaso::query()->delete();
             foreach ($limpios as $p) {
                 $usuarios = $p['usuarios'];
@@ -181,10 +230,16 @@ class CircuitoPasesSalida
                     $paso->usuarios()->attach($id, ['empresa_id' => $paso->empresa_id]);
                 }
             }
+            if ($ajustes !== null) {
+                $this->escribirAjustes($ajustes);
+            }
         });
 
         $primero = PaseSalidaPaso::orderBy('orden')->first();
         $this->auditoria->auditar($actor, 'pases_salida.circuito_actualizado', $primero, ['pasos' => $antes], ['pasos' => $this->resumen()]);
+        if ($ajustes !== null && $ajustesAntes !== ($despues = $this->resumenAjustes())) {
+            $this->auditoria->auditar($actor, 'pases_salida.ajustes_actualizados', $this->empresa(), ['ajustes' => $ajustesAntes], ['ajustes' => $despues]);
+        }
     }
 
     /**
@@ -192,12 +247,182 @@ class CircuitoPasesSalida
      */
     public function restablecer(User $actor): void
     {
-        $antes = $this->resumen();
+        $antes = ['pasos' => $this->resumen(), 'ajustes' => $this->resumenAjustes()];
         $primero = PaseSalidaPaso::orderBy('orden')->first();
-        PaseSalidaPaso::query()->delete();
-        if ($primero !== null) {
-            $this->auditoria->auditar($actor, 'pases_salida.circuito_restablecido', $primero, ['pasos' => $antes], ['pasos' => $this->resumen()]);
+        $conAjustes = $this->ajustesGuardados() !== [];
+        DB::transaction(function () {
+            PaseSalidaPaso::query()->delete();
+            $this->escribirAjustes(null);
+        });
+        if ($primero !== null || $conAjustes) {
+            $this->auditoria->auditar($actor, 'pases_salida.circuito_restablecido', $primero ?? $this->empresa(), $antes,
+                ['pasos' => $this->resumen(), 'ajustes' => $this->resumenAjustes()]);
         }
+    }
+
+    // --------------------------------------------- Firmas en caseta y rechazo
+
+    /**
+     * Ajustes guardados de la empresa de trabajo (vacío = los de omisión).
+     *
+     * @return array{rechazo?: string, firmas_caseta?: array<string, array{todos?: string, motivos?: array<string, string>}>}
+     */
+    public function ajustesGuardados(): array
+    {
+        $guardados = $this->empresa()?->preferencias['pases_salida'] ?? [];
+
+        return is_array($guardados) ? $guardados : [];
+    }
+
+    /** ¿Al reenviar un rechazado se retoma desde el paso que rechazó? */
+    public function rechazo(): string
+    {
+        $valor = $this->ajustesGuardados()['rechazo'] ?? null;
+
+        return isset(self::RECHAZO[$valor]) ? $valor : self::RECHAZO_OMISION;
+    }
+
+    /**
+     * Firmas en caseta configuradas: movimiento => [todos => modo, motivos => [motivo => modo]].
+     *
+     * @return array<string, array{todos: string, motivos: array<string, string>}>
+     */
+    public function firmasCaseta(): array
+    {
+        $guardadas = $this->ajustesGuardados()['firmas_caseta'] ?? [];
+        $tabla = [];
+        foreach (array_keys(PaseSalida::PASOS_FISICOS) as $movimiento) {
+            $g = is_array($guardadas[$movimiento] ?? null) ? $guardadas[$movimiento] : [];
+            $todos = isset(PaseSalida::FIRMAS_CASETA[$g['todos'] ?? null]) ? $g['todos'] : PaseSalida::FIRMAS_CASETA_OMISION;
+            $motivos = [];
+            foreach ((array) ($g['motivos'] ?? []) as $motivo => $modo) {
+                if (isset(PaseSalida::MOTIVOS[$motivo]) && isset(PaseSalida::FIRMAS_CASETA[$modo]) && self::movimientoAplica($movimiento, $motivo)) {
+                    $motivos[$motivo] = $modo;
+                }
+            }
+            $tabla[$movimiento] = ['todos' => $todos, 'motivos' => $motivos];
+        }
+
+        return $tabla;
+    }
+
+    /**
+     * Lo que se copia al pase: movimiento => modo, para su motivo.
+     *
+     * @return array<string, string>
+     */
+    public function firmasCasetaPara(string $motivo): array
+    {
+        return collect($this->firmasCaseta())->map(fn (array $f) => $f['motivos'][$motivo] ?? $f['todos'])->all();
+    }
+
+    /** ¿Ese movimiento de caseta existe para ese motivo? (venta y traspaso definitivo solo tienen salida) */
+    public static function movimientoAplica(string $movimiento, string $motivo): bool
+    {
+        return $movimiento === 'salida' || PaseSalida::requiereRegreso($motivo);
+    }
+
+    /**
+     * Ajustes en palabras (bitácora de auditoría y pantalla de Configuración).
+     *
+     * @return list<string>
+     */
+    public function resumenAjustes(): array
+    {
+        $lineas = [];
+        foreach ($this->firmasCaseta() as $movimiento => $f) {
+            $lineas[] = 'Firmas en caseta · '.PaseSalida::PASOS_FISICOS[$movimiento][1].': '.PaseSalida::FIRMAS_CASETA[$f['todos']]
+                .collect($f['motivos'])->map(fn ($modo, $motivo) => ' · '.PaseSalida::MOTIVOS[$motivo].': '.PaseSalida::FIRMAS_CASETA[$modo])->implode('');
+        }
+        $lineas[] = 'Al corregir y reenviar un rechazado: '.self::RECHAZO[$this->rechazo()];
+
+        return $lineas;
+    }
+
+    /**
+     * @param  array<string, mixed>  $entrada
+     * @return array{rechazo: string, firmas_caseta: array<string, array{todos?: string, motivos?: array<string, string>}>}
+     */
+    private function validarAjustes(array $entrada): array
+    {
+        $rechazo = $entrada['rechazo'] ?? self::RECHAZO_OMISION;
+        if (! is_string($rechazo) || ! isset(self::RECHAZO[$rechazo])) {
+            throw ValidationException::withMessages(['rechazo' => 'Elige qué pasa al corregir y reenviar un pase rechazado.']);
+        }
+
+        $entradaFirmas = is_array($entrada['firmas_caseta'] ?? null) ? $entrada['firmas_caseta'] : [];
+        $firmas = [];
+        foreach (array_keys(PaseSalida::PASOS_FISICOS) as $movimiento) {
+            $e = is_array($entradaFirmas[$movimiento] ?? null) ? $entradaFirmas[$movimiento] : [];
+            $todos = $e['todos'] ?? PaseSalida::FIRMAS_CASETA_OMISION;
+            if (! is_string($todos) || ! isset(PaseSalida::FIRMAS_CASETA[$todos])) {
+                throw ValidationException::withMessages(["firmas_caseta.{$movimiento}.todos" => 'Elige las firmas de «'.PaseSalida::PASOS_FISICOS[$movimiento][1].'».']);
+            }
+            $motivos = [];
+            foreach ((is_array($e['motivos'] ?? null) ? $e['motivos'] : []) as $motivo => $modo) {
+                if ($modo === null || $modo === '') {
+                    continue; // «Igual que todos los motivos»
+                }
+                if (! is_string($modo) || ! isset(PaseSalida::FIRMAS_CASETA[$modo]) || ! isset(PaseSalida::MOTIVOS[$motivo])) {
+                    throw ValidationException::withMessages(["firmas_caseta.{$movimiento}.motivos" => 'Elige las firmas de «'.PaseSalida::PASOS_FISICOS[$movimiento][1].'» para cada motivo.']);
+                }
+                if ($modo !== $todos && self::movimientoAplica($movimiento, (string) $motivo)) {
+                    $motivos[$motivo] = $modo;
+                }
+            }
+            // Se guarda solo lo distinto de la omisión: sin cambios no queda nada
+            if ($todos !== PaseSalida::FIRMAS_CASETA_OMISION || $motivos !== []) {
+                $firmas[$movimiento] = array_filter(['todos' => $todos, 'motivos' => $motivos]);
+            }
+        }
+
+        return ['rechazo' => $rechazo, 'firmas_caseta' => $firmas];
+    }
+
+    /**
+     * @param  array{rechazo: string, firmas_caseta: array<string, mixed>}|null  $ajustes  null = volver a la omisión
+     */
+    private function escribirAjustes(?array $ajustes): void
+    {
+        $empresa = Empresa::query()->lockForUpdate()->find(app(Tenant::class)->empresaId());
+        if ($empresa === null) {
+            return;
+        }
+        $preferencias = is_array($empresa->preferencias) ? $empresa->preferencias : [];
+        $limpios = $ajustes === null ? [] : array_filter([
+            'rechazo' => $ajustes['rechazo'] !== self::RECHAZO_OMISION ? $ajustes['rechazo'] : null,
+            'firmas_caseta' => $ajustes['firmas_caseta'],
+        ]);
+        if ($limpios === []) {
+            unset($preferencias['pases_salida']);
+        } else {
+            $preferencias['pases_salida'] = $limpios;
+        }
+        $empresa->forceFill(['preferencias' => $preferencias === [] ? null : $preferencias])->save();
+    }
+
+    /** La empresa de trabajo (se lee cada vez: los ajustes pueden cambiar en la misma petición). */
+    private function empresa(): ?Empresa
+    {
+        $id = app(Tenant::class)->empresaId();
+
+        return $id === null ? null : Empresa::find($id);
+    }
+
+    /**
+     * Un monto en pesos escrito por el administrador ("50,000", "$ 50000.50"); vacío = sin condición.
+     */
+    private function valor(mixed $texto, string $campo, string $paso): ?float
+    {
+        if ($texto === null || (is_string($texto) && trim($texto) === '')) {
+            return null;
+        }
+        $limpio = is_scalar($texto) ? str_replace(['$', ',', ' '], '', (string) $texto) : '';
+        if (! is_numeric($limpio) || (float) $limpio < 0 || (float) $limpio > self::VALOR_MAXIMO) {
+            throw ValidationException::withMessages([$campo => "En el paso «{$paso}», escribe el valor en pesos (solo números, por ejemplo 50000)."]);
+        }
+
+        return round((float) $limpio, 2);
     }
 
     /**
@@ -209,7 +434,8 @@ class CircuitoPasesSalida
     {
         return $this->pasos()->map(fn (PaseSalidaPaso $p) => $p->orden.'. '.$p->nombre.' — '.$this->quienFirma($p)
             .($p->obligatorio ? '' : ' (opcional)')
-            .($p->motivos ? ' · solo '.implode(', ', array_map(fn ($m) => PaseSalida::MOTIVOS[$m] ?? $m, $p->motivos)) : ''))->values()->all();
+            .($p->motivos ? ' · solo '.implode(', ', array_map(fn ($m) => PaseSalida::MOTIVOS[$m] ?? $m, $p->motivos)) : '')
+            .(($v = PaseSalidaPaso::textoCondicionValor($p->valor_minimo, $p->valor_maximo)) !== null ? ' · solo con '.$v : ''))->values()->all();
     }
 
     public function quienFirma(PaseSalidaPaso $p): string
@@ -230,14 +456,26 @@ class CircuitoPasesSalida
     // ------------------------------------------------- Aprobaciones de un pase
 
     /**
-     * Copia el circuito vigente al pase (ronda actual). Devuelve cuántos pasos aplican.
+     * Copia el circuito vigente al pase (ronda actual): los pasos que aplican
+     * a su motivo y a su valor. Con $retomar (rechazo configurado «Retomar
+     * desde el paso que rechazó»), los pasos que ya se habían aprobado u
+     * omitido en la ronda anterior y siguen aplicando conservan esa firma; el
+     * que rechazó y los que ahora aplican de nuevo quedan pendientes.
+     *
+     * @return array{aplican: int, pendientes: int, conservadas: list<string>}
      */
-    public function instanciar(PaseSalida $pase): int
+    public function instanciar(PaseSalida $pase, bool $retomar = false): array
     {
         $pase->loadMissing('solicitante:id,departamento_id');
+        $valor = $pase->valorTotal();
+        $previas = ! $retomar ? collect() : PaseSalidaAprobacion::where('pase_salida_id', $pase->id)->where('ronda', $pase->ronda - 1)
+            ->whereIn('estado', [PaseSalidaAprobacion::APROBADO, PaseSalidaAprobacion::OMITIDO])->orderBy('orden')->get()
+            ->unique(fn (PaseSalidaAprobacion $a) => self::claveDePaso($a->nombre))->keyBy(fn (PaseSalidaAprobacion $a) => self::claveDePaso($a->nombre));
         $orden = 0;
+        $pendientes = 0;
+        $conservadas = [];
         foreach ($this->pasos() as $paso) {
-            if (! $paso->aplicaA($pase->motivo)) {
+            if (! $paso->aplicaA($pase->motivo, $valor)) {
                 continue;
             }
             $departamento = match ($paso->departamento) {
@@ -245,7 +483,7 @@ class CircuitoPasesSalida
                 'especifico' => $paso->departamento_id,
                 default => null,
             };
-            PaseSalidaAprobacion::create([
+            $aprobacion = PaseSalidaAprobacion::create([
                 'empresa_id' => $pase->empresa_id,
                 'pase_salida_id' => $pase->id,
                 'ronda' => $pase->ronda,
@@ -257,10 +495,29 @@ class CircuitoPasesSalida
                 'departamento_id' => $departamento,
                 'usuarios' => $paso->tipo === 'usuarios' ? $paso->usuarios->pluck('id')->map(fn ($id) => (int) $id)->values()->all() : null,
                 'obligatorio' => $paso->obligatorio,
+                'valor_minimo' => $paso->valor_minimo,
+                'valor_maximo' => $paso->valor_maximo,
             ]);
+            $previa = $previas->pull(self::claveDePaso($paso->nombre));
+            if ($previa !== null) {
+                $aprobacion->forceFill([
+                    'estado' => $previa->estado, 'resuelto_por' => $previa->resuelto_por, 'resuelto_en' => $previa->resuelto_en,
+                    'comentario' => $previa->comentario, 'firma_id' => $previa->firma_id,
+                    'conservada_de_ronda' => $previa->conservada_de_ronda ?? $previa->ronda,
+                ])->save();
+                $conservadas[] = $paso->nombre;
+            } else {
+                $pendientes++;
+            }
         }
 
-        return $orden;
+        return ['aplican' => $orden, 'pendientes' => $pendientes, 'conservadas' => $conservadas];
+    }
+
+    /** El mismo paso entre rondas: por su nombre (el circuito se guarda de nuevo con otros ids). */
+    private static function claveDePaso(string $nombre): string
+    {
+        return mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $nombre)), 'UTF-8');
     }
 
     /**

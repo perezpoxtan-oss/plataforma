@@ -993,7 +993,7 @@ class PasesSalidaTest extends TestCase
         $radio = $this->enEmpresa(fn () => Equipo::create(['sede_id' => $this->centro->id, 'tipo_equipo_id' => $tipo->id, 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'numero_serie' => '752TSFQ505']));
         $this->actingAs($this->admin)->getJson('/lector/resolver?entrada=752tsfq505&tipos=equipo')->assertJsonPath('resultados.0.id', $radio->id);
         $this->actingAs($this->admin)->getJson('/pases-salida/equipos/'.$radio->id)->assertOk()
-            ->assertExactJson(['equipo_id' => $radio->id, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505', 'descripcion' => null]);
+            ->assertExactJson(['equipo_id' => $radio->id, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505', 'descripcion' => null, 'valor' => null]);
 
         $pase = $this->crearPase(['articulos' => [['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'serie' => '752TSFQ505', 'equipo_id' => $radio->id]]]);
         $this->assertSame($radio->id, $pase->articulos->first()->equipo_id);
@@ -1033,6 +1033,10 @@ class PasesSalidaTest extends TestCase
         $this->assertCount(12, $pases);
         $this->assertEqualsCanonicalizing(array_keys(PaseSalida::ESTADOS), $pases->pluck('estado')->unique()->values()->all());
         $this->assertSame(3, $this->enEmpresa(fn () => PaseSalidaPaso::count(), $demo));
+        // Los pases de ejemplo piden dos firmas en caseta; solo «Devolución» tiene una excepción para probar
+        $this->assertTrue($pases->every(fn (PaseSalida $p) => collect($p->firmas_caseta)->every(fn ($modo) => $modo === 'dos')));
+        $this->assertSame(['salida' => 'seguridad', 'recepcion' => 'dos', 'salida_regreso' => 'dos', 'regreso' => 'ninguna'],
+            $this->enEmpresa(fn () => app(CircuitoPasesSalida::class)->firmasCasetaPara('devolucion'), $demo));
 
         // Aprobaciones pendientes para jefe.demo y admin.demo
         foreach (['jefe.demo', 'admin.demo'] as $usuario) {

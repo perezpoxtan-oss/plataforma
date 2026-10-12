@@ -95,16 +95,29 @@ class PaseSalida extends Model
         'salida' => ['Salida física', 'Registrar Salida', 'origen', [
             'salida_lleva' => 'Quien se lleva el equipo', 'salida_seguridad' => 'Seguridad (salida)',
         ]],
-        'recepcion' => ['Recepción en destino', 'Confirmar Llegada', 'destino', [
+        'recepcion' => ['Recepción en destino', 'Confirmar llegada a esta sede', 'destino', [
             'destino_entrega' => 'Quien entrega en destino', 'destino_seguridad' => 'Seguridad (destino)',
         ]],
-        'salida_regreso' => ['Salida de regreso (desde destino)', 'Autorizar Salida de Regreso', 'destino', [
+        'salida_regreso' => ['Salida de regreso (desde destino)', 'Autorizar salida de regreso', 'destino', [
             'retorno_lleva' => 'Quien lo trae de vuelta', 'retorno_seguridad' => 'Seguridad (salida de regreso)',
         ]],
         'regreso' => ['Regreso a origen', 'Registrar Regreso', 'origen', [
             'regreso_entrega' => 'Quien lo entrega al regresar', 'regreso_seguridad' => 'Seguridad (regreso)',
         ]],
     ];
+
+    /**
+     * Firmas que pide un movimiento de caseta (Configuración → Pases de
+     * salida → Firmas en caseta). Por omisión, dos firmas, como siempre. La
+     * verificación de artículos se pide en los tres casos.
+     */
+    public const FIRMAS_CASETA = [
+        'dos' => 'Dos firmas (persona y Seguridad)',
+        'seguridad' => 'Solo Seguridad',
+        'ninguna' => 'Sin firma',
+    ];
+
+    public const FIRMAS_CASETA_OMISION = 'dos';
 
     /**
      * Roles de firma de SEGCAT (pases registrados antes del circuito v2): se
@@ -132,6 +145,7 @@ class PaseSalida extends Model
             'requiere_regreso' => 'boolean',
             'cerrado_con_faltantes' => 'boolean',
             'ronda' => 'integer',
+            'firmas_caseta' => 'array',
             'fecha_salida_programada' => 'date',
             'fecha_tentativa_regreso' => 'date',
             'recordatorio_vencido_en' => 'date',
@@ -273,8 +287,9 @@ class PaseSalida extends Model
             $this->estado === self::PENDIENTE => 'Ver / Aprobar',
             $this->estado === self::RECHAZADO => 'Ver / Corregir',
             $this->estado === self::APROBADO => 'Ver / Registrar Salida',
-            $this->estado === self::SALIO && $this->requiere_regreso => 'Ver / Confirmar Llegada o Regreso',
-            $this->estado === self::EN_DESTINO => 'Ver / Autorizar Salida de Regreso',
+            $this->estado === self::SALIO && $this->requiere_regreso && $this->destino_tipo === 'sede' => 'Ver / Confirmar llegada a destino',
+            $this->estado === self::SALIO && $this->requiere_regreso => 'Ver / Registrar Regreso',
+            $this->estado === self::EN_DESTINO => 'Ver / Autorizar salida de regreso',
             in_array($this->estado, [self::EN_TRANSITO_REGRESO, self::REGRESO_PARCIAL], true) => 'Ver / Confirmar Regreso',
             default => 'Ver Detalle',
         };
@@ -316,6 +331,54 @@ class PaseSalida extends Model
         }
 
         return $this->destino_tipo === 'sede' ? ['salida', 'recepcion', 'salida_regreso', 'regreso'] : ['salida', 'regreso'];
+    }
+
+    /**
+     * Firmas que pide un movimiento de caseta en ESTE pase (la copia que se
+     * guardó al enviarlo; los pases anteriores piden dos firmas).
+     */
+    public function modoFirma(string $paso): string
+    {
+        $modo = is_array($this->firmas_caseta) ? ($this->firmas_caseta[$paso] ?? null) : null;
+
+        return isset(self::FIRMAS_CASETA[$modo]) ? $modo : self::FIRMAS_CASETA_OMISION;
+    }
+
+    /**
+     * Firmas (rol => texto) que se piden en un movimiento de caseta de este
+     * pase: las dos, solo Seguridad o ninguna.
+     *
+     * @return array<string, string>
+     */
+    public function rolesDeFirma(string $paso): array
+    {
+        $roles = self::PASOS_FISICOS[$paso][3] ?? [];
+
+        return match ($this->modoFirma($paso)) {
+            'seguridad' => array_slice($roles, 1, 1, true),
+            'ninguna' => [],
+            default => $roles,
+        };
+    }
+
+    /**
+     * Valor total del pase (suma de cantidad × valor de cada artículo), o null
+     * si algún artículo no tiene valor (una condición de valor entonces aplica).
+     */
+    public function valorTotal(): ?float
+    {
+        $articulos = $this->relationLoaded('articulos') ? $this->articulos : $this->articulos()->get();
+        if ($articulos->isEmpty() || $articulos->contains(fn (PaseSalidaArticulo $a) => $a->valor_unitario === null)) {
+            return null;
+        }
+
+        return round((float) $articulos->sum(fn (PaseSalidaArticulo $a) => $a->valorTotal()), 2);
+    }
+
+    /** "$12,500.00" (MXN). */
+    public static function pesos(?float $valor): string
+    {
+        return $valor === null ? '—' : '$'.number_format($valor, 2, '.', ',');
     }
 
     /** Texto de una firma por su rol (circuito actual o el de SEGCAT). */

@@ -20,7 +20,7 @@
         @php
             $consulta = fn (array $extra) => array_filter(array_merge(['filtro' => $filtro, 'q' => $texto, 'sede' => $sedeFiltro], $extra), fn ($v) => $v !== null && $v !== '' && $v !== 'todos');
             $iconosFiltro = ['todos' => 'bi-grid', 'mi_firma' => 'bi-pen', 'pendientes' => 'bi-hourglass-split', 'aprobados' => 'bi-check2-circle',
-                'fuera' => 'bi-box-arrow-right', 'espera_regreso' => 'bi-arrow-return-left', 'vencidos' => 'bi-exclamation-triangle-fill', 'cerrados' => 'bi-archive', 'rechazados' => 'bi-x-octagon'];
+                'fuera' => 'bi-box-arrow-right', 'espera_regreso' => 'bi-arrow-return-left', 'vencidos' => 'bi-exclamation-triangle-fill', 'cerrados' => 'bi-archive', 'rechazados' => 'bi-x-octagon', 'llegan' => 'bi-truck'];
             $misFirmas = $conteos['mi_firma'];
         @endphp
 
@@ -58,6 +58,8 @@
 
         <nav class="pildoras-pases" aria-label="Filtrar pases">
             @foreach (\App\Services\PasesSalida\AdministradorPasesSalida::FILTROS as $clave => $nombre)
+                {{-- «Llegan a mi sede»: solo para quien firma la caseta (la que confirma la llegada) --}}
+                @continue($clave === 'llegan' && ! $puede['firmar'])
                 @php $activo = $filtro === $clave; @endphp
                 <a href="{{ $clave === 'mi_firma' ? route('pases-salida.pendientes', array_filter(['q' => $texto, 'sede' => $sedeFiltro])) : route('pases-salida.index', $consulta(['filtro' => $clave])) }}"
                    class="pildora-pase pildora-{{ $clave }} {{ $activo ? 'activa' : '' }} {{ $conteos[$clave] === 0 && ! $activo ? 'vacia' : '' }}" @if ($activo) aria-current="page" @endif>
@@ -89,11 +91,14 @@
 
         <div class="fichas-pases" data-lista-pases>
             @forelse ($pases as $p)
-                @include('seguridad.pases-salida._ficha', ['p' => $p, 'meToca' => in_array($p->id, $porFirmar, true)])
+                @include('seguridad.pases-salida._ficha', ['p' => $p, 'meToca' => in_array($p->id, $porFirmar, true), 'llegaAMiSede' => in_array($p->id, $llegan, true)])
             @empty
                 <div class="tarjeta estado-vacio fichas-pases-vacio">
                     <div class="icono"><i class="bi {{ $filtro === 'mi_firma' ? 'bi-check2-all' : 'bi-box-arrow-up-right' }}" aria-hidden="true"></i></div>
-                    @if ($filtro === 'mi_firma' && $texto === '')
+                    @if ($filtro === 'llegan' && $texto === '')
+                        <p class="fw-semibold mb-1">No viene ningún pase a tu sede.</p>
+                        <p class="text-muted small m-0">Aquí aparecen los pases aprobados o en camino hacia tu sede. Cuando llegue el equipo, abre el pase y toca «Confirmar llegada a esta sede».</p>
+                    @elseif ($filtro === 'mi_firma' && $texto === '')
                         <p class="fw-semibold mb-1">Nada pendiente: no hay pases que esperen tu firma.</p>
                         <p class="text-muted small m-0">Aquí aparecen los pases que debes aprobar y, en caseta, los que debes dejar salir o recibir.</p>
                     @else
