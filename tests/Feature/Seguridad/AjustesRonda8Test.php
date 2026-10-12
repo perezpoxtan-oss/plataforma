@@ -381,7 +381,7 @@ class AjustesRonda8Test extends PruebaNovedades
         $html = $this->actingAs($this->admin)->get(route('rutas.semana', $this->centro->id))->assertOk()
             ->assertSee('Horario de Llegadas')->assertSee('Vista informativa de la semana')
             ->assertSee('Lunes a viernes')->assertSee('Fin de semana')->assertSee('06:15')->assertSee('05:45')
-            ->assertSee('Suspendidas (no operan):')->assertSee('RUTA 9 - TEMPORADA ALTA')
+            ->assertSee('Dadas de baja (no operan):')->assertSee('RUTA 9 - TEMPORADA ALTA')
             ->assertSee('<span class="si">S</span><span class="si">D</span>', false)
             ->getContent();
         $orden = array_map(fn ($t) => strpos($html, $t), ['13:25', '05:45', '04:00', '06:15']);
@@ -392,7 +392,7 @@ class AjustesRonda8Test extends PruebaNovedades
         // Día (domingo): sale el horario alterno de las 06:15 y se explica lo que no sale
         $this->actingAs($this->admin)->get(route('rutas.dia', ['sede' => $this->centro->id, 'fecha' => '2026-10-11']))->assertOk()
             ->assertSee('06:15')->assertSee('No operan este día:')->assertSee('RUTA 1 - REGIÓN 94 05:45 (Lunes a viernes)')
-            ->assertSee('Suspendidas (no operan):')->assertSee(route('rutas.semana', $this->centro->id), false);
+            ->assertSee('Dadas de baja (no operan):')->assertSee(route('rutas.semana', $this->centro->id), false);
         // Lunes: el de lunes a viernes sale; el de fin de semana se menciona como «no opera»
         $this->actingAs($this->admin)->get(route('rutas.dia', ['sede' => $this->centro->id, 'fecha' => '2026-10-05']))->assertOk()
             ->assertSee('RUTA 1 - REGIÓN 94 06:15 (Sábado y domingo)');

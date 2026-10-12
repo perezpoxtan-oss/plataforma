@@ -121,7 +121,8 @@ class VehiculosTest extends TestCase
         $v = $this->buscarPlacas('ABC123A');
         $this->assertNotNull($v);
         $respuesta->assertRedirect(route('vehiculos.index').'#vehiculo-'.$v->id)
-            ->assertSessionHas('ok', 'Vehículo ABC123A registrado correctamente. Ya puedes imprimir su calcomanía.');
+            ->assertSessionHas('ok', 'Vehículo ABC123A registrado correctamente.')
+            ->assertSessionHas('siguiente_paso.url', route('vehiculos.calcomania', $v->id));
         $this->assertSame(['NISSAN', 'VERSA', 'BLANCO'], [$v->marca, $v->modelo, $v->color]);
         $this->assertSame($this->empresa->id, $v->empresa_id);
         $this->assertSame($this->admin->id, $v->creado_por);

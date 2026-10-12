@@ -489,7 +489,7 @@ class ColaboradoresTest extends TestCase
     {
         // La caseta consulta su sede y solo hace altas provisionales
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
-        $this->actingAs($agente)->get('/colaboradores')->assertOk()->assertSee('Alta provisional')->assertDontSee('Nuevo Colaborador');
+        $this->actingAs($agente)->get('/colaboradores')->assertOk()->assertSee('Registro rápido')->assertDontSee('Nuevo Colaborador');
         $this->actingAs($agente)->post('/colaboradores', $this->datos())->assertForbidden();
         $this->actingAs($this->crearUsuario($this->empresa))->get('/colaboradores')->assertForbidden();
 

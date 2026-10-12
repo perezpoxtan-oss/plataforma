@@ -223,10 +223,14 @@ class MenusReorganizadosTest extends TestCase
         $this->assertNotSame($esperado, $this->acomodo());
 
         $migracion = require database_path('migrations/2026_10_16_000100_reorganizar_menus.php');
+        // Mejoras padrones: el nombre «Estacionamientos y zonas de descarga» lo pone su propia migración después
+        $nombres = require database_path('migrations/2026_10_26_000100_mejoras_padrones_nombres.php');
         $migracion->up();
+        $nombres->up();
         $this->assertSame($esperado, $this->acomodo());
 
         $migracion->up(); // segunda vez: sin cambios ni duplicados
+        $nombres->up();
         $this->assertSame($esperado, $this->acomodo());
         $this->assertSame(1, Menu::where('clave', 'informes')->count());
         $this->assertNull(Modulo::where('clave', 'autorizaciones')->value('menu_id'));
@@ -315,7 +319,7 @@ class MenusReorganizadosTest extends TestCase
 
         // Recursos Humanos (candidatos, fases 1 y 2): sus renglones en cero; el botón existe pero oculto
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
-        $this->assertSame(['total' => 0, 'claves' => ['recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos']],
+        $this->assertSame(['total' => 0, 'claves' => ['recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos', 'colaboradores_por_verificar']],
             ['total' => app(MisPendientes::class)->para($rh)['total'], 'claves' => array_column(app(MisPendientes::class)->para($rh)['items'], 'clave')]);
         $this->assertMatchesRegularExpression('/data-mis-pendientes\s+hidden/', $this->actingAs($rh)->get('/')->assertOk()->getContent());
 

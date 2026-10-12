@@ -99,7 +99,7 @@ class EquiposTest extends TestCase
             ->assertSee('id="equipo-'.$radio->id.'"', false)
             ->assertSee('752TSFQ504')->assertSee('MOTOROLA DEP 450')->assertSee('Sede CEN')->assertSee('Sede PLA')
             ->assertSee('estado-eq-disponible', false)->assertSee('estado-eq-en_mantenimiento', false)
-            ->assertSee('EN MANTENIMIENTO')->assertSee('Baja/Perdido')
+            ->assertSee('EN MANTENIMIENTO')->assertSee('De baja')
             ->assertSee('data-filtro-equipos="sede"', false)->assertSee('data-filtro-estado-equipo="asignado"', false)
             ->assertSee(route('equipos.etiqueta', $radio->id))->assertSee(route('identificacion.qr', ['equipo', $radio->id]))
             // Etiqueta NFC al dar de alta y responsable de la baja con el lector universal
@@ -123,7 +123,7 @@ class EquiposTest extends TestCase
         $e = $this->buscarSerie('752TSFQ504');
         $this->assertNotNull($e);
         $respuesta->assertRedirect(route('equipos.index').'#equipo-'.$e->id)
-            ->assertSessionHas('ok', 'Equipo 752TSFQ504 registrado correctamente. Ya puedes imprimir su etiqueta QR.');
+            ->assertSessionHas('ok', 'Equipo 752TSFQ504 registrado correctamente.');
         $this->assertSame(['MOTOROLA', 'DEP 450', 'disponible', '4800.00'], [$e->marca, $e->modelo, $e->estado, $e->costo]);
         $this->assertSame([$this->empresa->id, $this->centro->id, $this->admin->id], [$e->empresa_id, $e->sede_id, $e->creado_por]);
         $this->assertMatchesRegularExpression('/^[a-z0-9]{24}$/', $e->codigo_qr);
@@ -272,15 +272,17 @@ class EquiposTest extends TestCase
 
         // Ya de baja: no se repite; aparece el botón de reactivar
         $this->actingAs($this->admin)->post("/equipos/{$e->id}/baja", ['motivo' => 'robado'])->assertSessionHasErrors('motivo');
-        $this->actingAs($this->admin)->get('/equipos')->assertSee(route('equipos.reactivar', $e->id))->assertSee('BAJA/PERDIDO');
+        $this->actingAs($this->admin)->get('/equipos')->assertSee(route('equipos.reactivar', $e->id))->assertSee('DE BAJA');
 
         // El costo cobrado se recuerda para el mismo MARCA|MODELO
         $otro = $this->equipo('752TSFQ505', ['costo' => 4800]);
         $this->assertSame('4500.00', $this->enEmpresa(fn () => app(AdministradorEquipos::class)->costoSugerido($otro)));
 
-        // Reactivar: vuelve a DISPONIBLE y el voucher se conserva
+        // Reactivar: con voucher con cobro lleva a «Recuperado» del voucher (Mejoras padrones); ahí vuelve a DISPONIBLE y el voucher se conserva
         $this->actingAs($this->admin)->patch("/equipos/{$e->id}/reactivar")
-            ->assertSessionHas('ok', 'Equipo 752TSFQ504 reactivado: ya vuelve a estar DISPONIBLE.');
+            ->assertRedirect(route('vouchers.index', ['q' => $voucher->folio, 'recuperar' => $voucher->id]).'#voucher-'.$voucher->id);
+        $this->assertSame('baja', $e->fresh()->estado);
+        $this->actingAs($this->admin)->post(route('vouchers.recuperado', $voucher->id), ['comentario' => 'Apareció en la caseta'])->assertSessionHas('ok');
         $this->assertSame('disponible', $e->fresh()->estado);
         $this->assertSame(1, VoucherReposicion::withoutGlobalScopes()->count());
         $this->assertDatabaseHas('auditoria', ['evento' => 'equipos.reactivado', 'auditable_id' => $e->id]);

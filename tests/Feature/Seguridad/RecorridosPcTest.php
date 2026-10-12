@@ -142,7 +142,7 @@ class RecorridosPcTest extends TestCase
         $this->actingAs($this->admin)->post('/equipos-pc', ['sede_id' => $this->centro->id, 'categoria' => 'COHETE', 'numero_serie' => 'X'])
             ->assertSessionHasErrors(['categoria' => 'Elige un tipo de equipo de la lista.']);
         $this->actingAs($this->admin)->post('/equipos-pc', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'ext-01'])
-            ->assertSessionHasErrors(['numero_serie' => 'El Núm. de Serie / ID «EXT-01» ya está registrado en esta sede (Extintor).']);
+            ->assertSessionHasErrors(['numero_serie' => 'La clave «EXT-01» ya está registrada en esta sede (Extintor).']);
         // Ubicación de otra sede
         $this->actingAs($this->admin)->post('/equipos-pc', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-02', 'zona_id' => $otraTorre->id])
             ->assertSessionHasErrors('zona_id');

@@ -370,10 +370,14 @@ class AjustesRonda5Test extends TestCase
     public function test_reactivar_una_llave_abre_su_codigo_e_identificacion(): void
     {
         $l = $this->llave('HDP-MANT-02', $this->playa, ['activo' => false]);
-        $this->actingAs($this->admin)->patch("/llaves/{$l->id}/reactivar")->assertSessionHas('identificacion', $l->id);
+        // Mejoras padrones: ya no se abre solo; se ofrece como siguiente paso («Ver su código QR»)
+        $this->actingAs($this->admin)->patch("/llaves/{$l->id}/reactivar")
+            ->assertSessionHas('siguiente_paso.url', route('llaves.index', ['qr' => $l->id]).'#llave-'.$l->id);
         $this->assertTrue($l->fresh()->activo);
+        $this->actingAs($this->admin)->get(route('llaves.index', ['qr' => $l->id]))->assertSee('data-abrir-identificacion', false);
 
         $this->actingAs($this->admin)->withSession(['identificacion' => $l->id])->get('/llaves')->assertSee('data-abrir-identificacion', false);
+        $this->flushSession();
         $this->actingAs($this->admin)->get('/llaves')->assertDontSee('data-abrir-identificacion', false);
     }
 

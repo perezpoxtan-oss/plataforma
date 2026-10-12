@@ -115,7 +115,7 @@ class ColaboradoresProvisionalesTest extends TestCase
 
         // Ya se puede buscar y usar, marcado como provisional
         $this->actingAs($this->agente)->getJson('/colaboradores/buscar?q=jorge')->assertOk()->assertJsonPath('resultados.0.provisional', true);
-        $this->actingAs($this->agente)->get('/colaboradores')->assertSee('POR VALIDAR')->assertDontSee('Validar Colaborador');
+        $this->actingAs($this->agente)->get('/colaboradores')->assertSee('POR VERIFICAR')->assertDontSee('Guardar y verificar');
     }
 
     public function test_si_ya_existe_alguien_con_ese_nombre_lo_propone_antes_de_duplicar(): void
@@ -139,7 +139,7 @@ class ColaboradoresProvisionalesTest extends TestCase
         $jorge = $this->enEmpresa(fn () => Colaborador::where('nombre', 'Jorge')->firstOrFail());
         $this->nuevo(['num_empleado' => '2000', 'nombre' => 'Ya', 'apellido_paterno' => 'Existe']);
 
-        $this->actingAs($this->rh)->get('/colaboradores')->assertSee('alta provisional de la caseta por validar', false)->assertSee('Validar Colaborador');
+        $this->actingAs($this->rh)->get('/colaboradores')->assertSee('alta de la caseta por verificar', false)->assertSee('Guardar y verificar');
 
         $datos = ['nombre' => 'Jorge Luis', 'apellido_paterno' => 'Méndez', 'apellido_materno' => 'Tun', 'sede_id' => $this->centro->id, '_dialogo' => "validar-{$jorge->id}"];
         $this->actingAs($this->rh)->put("/colaboradores/{$jorge->id}/validar", $datos)->assertSessionHasErrors('num_empleado');
@@ -149,7 +149,7 @@ class ColaboradoresProvisionalesTest extends TestCase
         $this->actingAs($this->agente)->put("/colaboradores/{$jorge->id}/validar", $datos + ['num_empleado' => '2001'])->assertForbidden();
 
         $this->actingAs($this->rh)->put("/colaboradores/{$jorge->id}/validar", $datos + ['num_empleado' => '2001'])
-            ->assertSessionHas('ok', '«Jorge Luis Méndez Tun» validado con el número 2001.');
+            ->assertSessionHas('ok', '«Jorge Luis Méndez Tun» verificado con el número 2001.');
         $jorge->refresh();
         $this->assertFalse($jorge->provisional);
         $this->assertSame($this->rh->id, $jorge->validado_por);
