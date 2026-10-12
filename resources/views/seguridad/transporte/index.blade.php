@@ -92,7 +92,7 @@
                     <option value="">Todos los estatus</option>
                     <option value="a_tiempo" @selected($filtros['estatus'] === 'a_tiempo')>A Tiempo</option>
                     <option value="retraso" @selected($filtros['estatus'] === 'retraso')>Retraso</option>
-                    <option value="no_llego" @selected($filtros['estatus'] === 'no_llego')>Uso de Taxis</option>
+                    <option value="no_llego" @selected($filtros['estatus'] === 'no_llego')>La unidad no llegó (taxis)</option>
                 </select>
                 <select name="estado" class="filtro-select" aria-label="Filtrar por estado">
                     <option value="">Vigentes y anulados</option>

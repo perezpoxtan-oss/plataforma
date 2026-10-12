@@ -37,7 +37,7 @@ Réplica de `modules/transporte/bitacora_*` de SEGCAT (`bitacora_transporte.php`
 | GET | `/transporte/reportes?…&proveedor` | `transporte.reportes` | `transporte.ver` |
 | GET | `/transporte/exportar?…` | `transporte.exportar` | `transporte.exportar` |
 
-- **`transporte.firmar`**: con este permiso el alta muestra los recuadros de firma (guardia y taxista) y son obligatorios en los vales; sin él, el vale impreso trae las líneas para firmar a mano (como SEGCAT con la firma "en pausa").
+- **`transporte.firmar`**: con este permiso el alta muestra los recuadros de firma (guardia y taxista) y son obligatorios en los vales; sin él, el vale impreso trae las líneas para firmar a mano (como SEGCAT con la firma "en pausa"). La empresa puede pedir en pantalla solo una de las dos (ver «Caseta y activos» abajo).
 - **Alcance.** Movimiento de otra empresa o fuera del alcance de `transporte.ver` (sede o, con "propios", autor) → **404**. Visible pero sin alcance del permiso de la acción → **403**. El alta solo acepta sedes activas dentro de `transporte.crear`. Superadmin: empresa de trabajo.
 - **Plantillas de rol.** Transporte está en el menú Operación: el Agente ve, registra, edita y firma en su sede; no anula, no autoriza ni exporta. Director autoriza y exporta en toda la empresa. Asistente registra y exporta pero no firma (sus vales salen para firma a mano).
 
@@ -80,3 +80,11 @@ Auditoría: `transporte.creado`, `transporte.actualizado`, `transporte.anulado`,
 ## Ronda 5 de ajustes (parte 2): «¿Es alguno de estos?» en vivo
 
 Al escribir **Placas** o **Chofer** (servicio normal y cada taxi) la pantalla consulta `GET /altas-por-verificar/parecidos?padron=vehiculos|personas&origen=transporte` (el endpoint de las altas por verificar; el agente puede usarlo por su permiso `transporte.crear`) y, si lo escrito no está tal cual en la lista de conocidos, muestra **¿Es alguno de estos? (parecidos en el padrón)** con el mismo aspecto que Accesos. Tocar uno lo escribe en el campo y dispara el autollenado (marca, modelo, económico, capacidad o teléfono). Si no es ninguno se sigue igual: al guardar se registra como nuevo y queda pendiente de verificar (eso ya lo hacía el servidor). Atributos: `data-parecidos-vivo="vehiculos|personas"`, `data-parecidos-url`, `data-parecidos-origen="transporte"`; bloque «Ronda 5 de ajustes (parte 2)» de `plataforma.js`. Escape cierra la lista.
+
+## Caseta y activos (ADR-0014)
+
+- **«LA UNIDAD NO LLEGÓ (Se usan taxis)»** en lugar de «FALLA DE FLETERA (Uso de Taxis)»; «Transportista» en lugar de «Proveedor (Fletera)». La clave `no_llego` y la etiqueta del modelo no cambian.
+- **Firmas configurables** (Configuración → Caseta y activos, `transporte_firmas`; omisión: las dos): `permisos()` expone `firma_guardia` y `firma_taxista` (= `transporte.firmar` ∧ lo que pide la empresa) y `BitacoraTransporte::registrar()` recibe `bool|array{guardia, taxista}`. El vale lista solo a quien debe firmar a mano.
+- **Vo.Bo. en la campana y Mis pendientes** («Vale de taxi por autorizar», «Vales de taxi por autorizar»), resuelto al autorizar o anular.
+
+Detalle: [caseta-y-activos.md](caseta-y-activos.md).

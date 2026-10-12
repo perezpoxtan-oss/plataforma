@@ -398,7 +398,7 @@ class RecorridosPcTest extends TestCase
         $this->punto($r, $baja)->assertSessionHasErrors('equipo_pc_id');
         $this->actingAs($this->admin)->get("/recorridos-pc/{$r->id}?equipo={$dePlaya->id}")->assertSee('Ese equipo no es de');
         $this->actingAs($this->admin)->post("/recorridos-pc/{$r->id}/revisiones", ['_punto' => 'manual'])
-            ->assertSessionHasErrors(['identificador' => 'Escanea el equipo o escribe su Núm. de Serie / ID.', 'categoria' => 'Elige la Categoría del Equipo.']);
+            ->assertSessionHasErrors(['identificador' => 'Escanea el equipo o escribe la clave de su etiqueta.', 'categoria' => 'Elige la Categoría del Equipo.']);
 
         // «Guardar y Continuar Después» deja En Proceso
         $this->punto($r, $ext)->assertSessionHasNoErrors();

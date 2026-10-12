@@ -92,6 +92,11 @@
                 </form>
             </section>
         @endif
+        {{-- Mejoras Incidentes: Bitácora de novedades (nombre del menú y hallazgos de recorrido) --}}
+        @if ($empresa && $verConfiguracion && auth()->user()->can('novedades.ver'))
+            @include('seguridad.novedades._config', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
+        @endif
+        {{-- Fin Mejoras Incidentes --}}
         {{-- Pases de salida: circuito de aprobación (ver docs/tecnico/pases-salida.md) --}}
         @if ($empresa && auth()->user()->can('pases_salida.configurar'))
             @include('seguridad.pases-salida._config-resumen', ['empresa' => $empresa])
@@ -107,6 +112,11 @@
             @include('rh.vacantes._ajustes-bolsa', ['empresa' => $empresa])
         @endif
         {{-- Fin Vacantes --}}
+        {{-- Mejoras activos: ajustes de caseta (ADR-0014) --}}
+        @if ($empresa && $verConfiguracion)
+            @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
+        @endif
+        {{-- Fin Mejoras activos --}}
 
         @if ($esSuperadmin)
             {{-- ================= Correo saliente (plataforma) ================= --}}

@@ -3980,7 +3980,7 @@ document.addEventListener('click', function (e) {
         var lista = [];
         if (!form.querySelector('[name="colaborador_id"]').value) { lista.push('Escanea el gafete o busca al colaborador responsable.'); }
         var filas = filasEquipos(form);
-        if (!filas.length) { lista.push('Debe añadir al menos 1 equipo al lote.'); }
+        if (!filas.length) { lista.push('Agrega al menos 1 equipo a la responsiva.'); }
         if (Array.prototype.some.call(filas, function (f) { return !f.querySelector('[data-equipo-lote]').value; })) {
             lista.push('Seleccione un equipo en todas las filas agregadas (o quite la fila vacía).');
         }
@@ -8829,6 +8829,64 @@ document.addEventListener('click', function (e) {
         if (typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
     });
 })();
+/* Mejoras activos */
+/* ==========================================================================
+   Mejoras activos (ADR-0014)
+   - Préstamo de llaves: «Recibir: escanea la llave que te devuelven» se envía
+     solo con lo que entrega el lector (QR, NFC o la pistola con Enter).
+   - Prestar Llave: con «Gafete interno» el folio de la garantía se llena con
+     el número del gafete escaneado (si la persona no escribió otro).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    document.addEventListener('lector:capturado', function (e) {
+        var form = e.target.closest && e.target.closest('form[data-recibir-llave-escaneo]');
+        if (!form || !String(e.detail || '').trim()) { return; }
+        var boton = form.querySelector('button[type="submit"]');
+        if (boton) { boton.disabled = true; }
+        form.submit();
+    });
+
+    function numeroGafete(detalle) {
+        var m = /N[uú]m\.\s*([A-Za-z0-9-]+)/.exec(detalle || '');
+        return m ? m[1] : '';
+    }
+
+    function llenarFolio(form) {
+        var tipo = form.querySelector('[name="tipo_garantia"]');
+        var folio = form.querySelector('[data-folio-garantia]');
+        if (!tipo || !folio) { return; }
+        var autollenado = folio.dataset.autollenado || '';
+        var libre = folio.value.trim() === '' || folio.value === autollenado;
+        if (!libre) { return; }
+        var texto = tipo.value === 'gafete_interno' && form.dataset.numeroGafete ? 'GAFETE NÚM. ' + form.dataset.numeroGafete : '';
+        folio.value = texto;
+        folio.dataset.autollenado = texto;
+    }
+
+    document.addEventListener('lector:elegido', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-prestamo]');
+        if (!form) { return; }
+        var caja = e.target.closest('[data-lector]');
+        var oculto = caja && caja.querySelector('[data-lector-id]');
+        if (!oculto || oculto.name !== 'colaborador_id') { return; }
+        form.dataset.numeroGafete = numeroGafete((e.detail || {}).detalle);
+        llenarFolio(form);
+    });
+
+    document.addEventListener('change', function (e) {
+        var form = e.target.form;
+        if (!form || !form.matches('[data-form-prestamo]') || e.target.name !== 'tipo_garantia') { return; }
+        llenarFolio(form);
+    });
+
+    document.addEventListener('input', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-folio-garantia]')) { return; }
+        e.target.dataset.autollenado = ''; // lo escribió la persona: ya no se toca
+    });
+})();
+/* Fin Mejoras activos */
 /* Mejoras padrones (ver docs/tecnico/mejoras-padrones.md, ADR-0015)
    1. Personas: el filtro de categoría solo se ve con la píldora «Visitantes».
    2. «Unir con otra ficha» (dos personas verificadas que son la misma).

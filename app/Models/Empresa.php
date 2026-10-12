@@ -40,6 +40,8 @@ class Empresa extends Model
         // Procedimientos (acuse «Leí y entendí»)
         'procedimiento_publicado' => ['Procedimientos: avisar al personal cuando se publica una versión que debe leer y firmar', true],
         'procedimiento_recordatorio' => ['Procedimientos: recordar (cada 3 días) los procedimientos que alguien aún no firma de enterado', true],
+        // Mejoras activos (ADR-0014): «Enviar a revisión» avisa a quien aprueba
+        'procedimiento_revision' => ['Procedimientos: avisar a quien puede aprobar cuando un procedimiento se envía a revisión', true],
         // Ronda 5 (LL-04): copias del voucher con cobro
         'voucher_cobro' => ['Vouchers de reposición con cobro al colaborador: enviar las copias a Seguridad, Recepción y Administración', true],
         // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
@@ -52,6 +54,11 @@ class Empresa extends Model
         'plazo_candidato' => ['Candidatos: recordar cada día lo que pasó de su plazo —solicitud sin revisar, evaluación sin registrar, elegido sin documentos, candidato sin atender, cita sin llegada— y avisar 15 días antes de borrar una ficha por caducidad', true],
         // Cuenta del usuario (seguridad)
         'cuenta_bloqueada' => ['Seguridad: avisar por correo a quien administra usuarios (y a la persona) cuando una cuenta se bloquea por intentos fallidos', true],
+        // Mejoras Incidentes (ADR-0013): apagados por omisión (la campana avisa siempre)
+        'novedad_canalizada' => ['Bitácora de novedades: avisar por correo a quien se le canaliza un ticket y cuando un ticket «Pendiente de turno» no se atiende', false],
+        'hallazgo_recorrido_pc' => ['Recorridos de Protección Civil: avisar por correo al jefe de seguridad y a quien administra los equipos cuando un recorrido encuentra una falla', false],
+        'pase_salida_espera' => ['Pases de salida: recordar al firmante y avisar al siguiente nivel cuando una firma tarda (según las horas del circuito)', true],
+        // Fin Mejoras Incidentes
     ];
 
     /** Ronda 5 (LL-04): lista de correos de cada copia del voucher con cobro (Configuración → Avisos por correo). */

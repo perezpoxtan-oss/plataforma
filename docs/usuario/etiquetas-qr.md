@@ -120,6 +120,28 @@ El agente imprime solo lo que puede imprimir (por ejemplo las etiquetas de Lost 
 
 ![Vista del agente](img/etiquetas-qr/11-agente.png)
 
+## Qué pasa al escanear una etiqueta con la cámara del celular
+
+Si escaneas el QR **con la cámara del celular, fuera de la plataforma** (sin abrir antes ninguna pantalla), la plataforma te ofrece **lo que probablemente vas a hacer**:
+
+| Escaneas… | Te ofrece |
+|---|---|
+| Una **llave prestada** | **Recibir** (y te dice quién la tiene y qué garantía devolver). |
+| Una **llave en caseta** | **Prestar**: abre «Prestar Llave» con esa llave ya elegida; solo escaneas el gafete. |
+| Un **equipo en una responsiva** | **Recibir (OK)**, o **Viene dañado o falta: abrir la responsiva**. |
+| Un **gafete en uso** | Te lleva directo a **Dar salida** en la Bitácora de accesos. |
+| Cualquier otra cosa | Abre su ficha, como siempre. |
+
+Siempre puedes tocar **Solo ver la ficha**. Si tu rol no puede hacer esa acción (por ejemplo, no recibe llaves en esa sede), se abre la ficha.
+
+![Acción al escanear una llave prestada](img/etiquetas-qr/12-escanear-llave.png)
+
+## Qué celulares leen NFC
+
+- **Android con Chrome:** lee el **QR con la cámara** y también las etiquetas **NFC** (botón de la antena).
+- **iPhone:** lee el **QR con la cámara**, pero **no** las etiquetas NFC desde la plataforma. Para NFC en una caseta con iPhone, usa un **lector USB o Bluetooth** que «escribe como teclado».
+- **Recomendación al comprar equipo para la caseta:** si van a usar etiquetas NFC, elige celulares **Android** o un lector USB/Bluetooth; si solo usarán QR, cualquier celular con cámara sirve. Pega en la caseta una nota con lo que usa cada equipo.
+
 ## En el celular y en los modos Noche y Sol
 
 ![En el celular](img/etiquetas-qr/08-movil.png)
@@ -154,11 +176,15 @@ El agente imprime solo lo que puede imprimir (por ejemplo las etiquetas de Lost 
 
 **¿Un jefe de sede puede imprimir la hoja de prueba de una plantilla de toda la empresa?** Sí. Puede imprimirla y usar la plantilla, pero no cambiarla ni desactivarla.
 
+**¿Por qué en el iPhone no aparece el botón de la antena?** Porque el iPhone no deja leer NFC desde el navegador. Usa la cámara (QR) o un lector USB o Bluetooth.
+
 **¿Qué hago si el QR se daña?** Escribe a mano el código en letras que trae la etiqueta, o reimprímela desde el Historial.
 
 ## Relacionado
 
 - [Catálogo de llaves](llaves.md)
+- [Préstamo de llaves](prestamo-llaves.md)
+- [Responsivas](responsivas.md)
 - [Gafetes](gafetes.md)
 - [Padrón vehicular](vehiculos.md)
 - [Equipos de seguridad](equipos.md)

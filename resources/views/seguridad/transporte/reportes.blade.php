@@ -51,10 +51,10 @@
                         <option value="">Todos</option>
                         <option value="a_tiempo" @selected($filtros['estatus'] === 'a_tiempo')>A Tiempo</option>
                         <option value="retraso" @selected($filtros['estatus'] === 'retraso')>Retraso</option>
-                        <option value="no_llego" @selected($filtros['estatus'] === 'no_llego')>Uso de Taxis</option>
+                        <option value="no_llego" @selected($filtros['estatus'] === 'no_llego')>La unidad no llegó (taxis)</option>
                     </select>
                 </label>
-                <label><span class="campo-etiqueta">Proveedor (Fletera)</span>
+                <label><span class="campo-etiqueta">Transportista</span>
                     <select name="proveedor" class="campo">
                         <option value="">Todos</option>
                         @foreach ($proveedores as $p)

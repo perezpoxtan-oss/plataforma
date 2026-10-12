@@ -112,3 +112,11 @@ El lector necesita `equipos.ver` (tipo `equipo`) y `colaboradores.ver`; la lista
 - **Auditoría**: `responsivas.equipo_recibido` (folio, serie, estado, nota, voucher, cuántos faltan) y, al cerrar el lote, `responsivas.recibido`; más `equipos.devuelto` o `equipos.desactivado` (baja con voucher).
 - **Demo** (`ronda8Demo()`): el lote CENRES-000002 tiene un equipo ya devuelto (OK) y otro en campo.
 - Pruebas: `AjustesRonda8Test::test_rs04_*`.
+
+## Caseta y activos (ADR-0014)
+
+- Un solo término en pantalla y hoja: **responsiva** (sin «Resguardo» ni «Lote»).
+- Un solo **Recibir** con casillas: `PATCH /responsivas/{id}/recibir` acepta `equipos[]` (filas de `equipos_responsiva`) para recibir solo esos en OK; sin el campo, todos. «Dañado o falta» abre el diálogo de recepción por equipo.
+- Hora de regreso de los equipos «Turno», semáforo y avisos (horas por empresa; apagado por omisión), Mis pendientes «Equipos de turno sin regresar».
+
+Detalle: [caseta-y-activos.md](caseta-y-activos.md).

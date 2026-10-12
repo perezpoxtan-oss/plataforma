@@ -93,3 +93,9 @@ Todas llevan `empresa_id` (scope de tenant) y autoría `creado_por` / `actualiza
 - **Permisos:** todo se hacía con `bitacora.*`. Ahora el recorrido usa `recorridos_pc.*` y el catálogo sus propios permisos `equipos_pc.*` (Padrones): el Agente ya no puede dar de alta o editar extintores.
 - **Exportación** a CSV con los mismos filtros del reporte (no existía).
 - Sin `onclick` ni JavaScript en la página; mensajes de validación en español dentro del punto o del diálogo; modos Sol y Noche.
+
+## Mejoras de Incidentes (ADR-0013)
+
+- **Categoría del ticket de hallazgo**: `AjustesNovedades::categoriaHallazgoPc()` (Configuración → Bitácora de novedades). Por omisión `proteccion_civil` (como siempre); con `mantenimiento_pc` el ticket se abre como «Mantenimiento de equipo PC» (formato `MantenimientoPc`, que muestra los equipos con falla de `recorridosPc`). Los tickets existentes no cambian.
+- **Avisos de hallazgos** (criterio 1): en la primera falla (`AvisosNovedades::hallazgo`) y al finalizar con hallazgos (`recorridoConHallazgos`) llega a la campana de quien tiene `novedades.reabrir` o `equipos_pc.editar` en la sede (menos quien recorre), con enlace al ticket. Correo con el aviso `hallazgo_recorrido_pc` (apagado por omisión). Referencia `recorrido_pc_hallazgo` (id del recorrido); el aviso de la primera falla se resuelve al llegar el resumen.
+

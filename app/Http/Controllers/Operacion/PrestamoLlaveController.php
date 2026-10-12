@@ -9,9 +9,13 @@ use App\Models\Llave;
 use App\Models\PrestamoLlave;
 use App\Models\Sede;
 use App\Models\User;
+use App\Services\Lector\Lector;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
+use App\Support\AjustesCaseta;
 use App\Support\Csv;
+use App\Support\Entrada;
 use App\Support\HoraLocal;
+use App\Support\Lector\Etiqueta;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Builder;
@@ -55,14 +59,20 @@ class PrestamoLlaveController extends Controller
         if ($empresaId === null) {
             return view('operacion.prestamo-llaves.index', ['sinEmpresa' => true]);
         }
+        $prestar = is_numeric($request->query('prestar')) ? (int) $request->query('prestar') : null;
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId) {
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $prestar) {
             $enUso = $this->consulta($actor, 'prestamo_llaves.ver')->vigentes()
                 ->orderByDesc('prestamos_llaves.prestado_en')->orderByDesc('prestamos_llaves.id')->get();
             $historial = $this->consulta($actor, 'prestamo_llaves.ver')
                 ->where(fn ($q) => $q->where('prestamos_llaves.estado', PrestamoLlave::DEVUELTA)->orWhere('prestamos_llaves.anulado', true))
                 ->orderByDesc('prestamos_llaves.prestado_en')->orderByDesc('prestamos_llaves.id')->limit(self::HISTORIAL)->get();
             $todos = $enUso->concat($historial);
+
+            // ADR-0014: semáforo de llaves fuera (Configuración → Caseta y activos; apagado por omisión)
+            $ajustes = AjustesCaseta::de($empresaId);
+            $semaforo = AdministradorPrestamosLlaves::conSemaforo($ajustes)
+                ? $enUso->mapWithKeys(fn (PrestamoLlave $p) => [$p->id => $this->prestamos->semaforo($p, $ajustes)])->all() : null;
 
             $puedePrestar = $actor->can('prestamo_llaves.crear');
             $sedesPrestar = $puedePrestar ? $this->prestamos->sedesParaPrestar($actor) : collect();
@@ -80,6 +90,11 @@ class PrestamoLlaveController extends Controller
                 'recibibles' => $this->prestamos->idsEnAlcance($actor, 'prestamo_llaves.editar', $enUso),
                 'anulables' => $this->prestamos->idsEnAlcance($actor, 'prestamo_llaves.eliminar', $todos),
                 'hoy' => Carbon::now(app(HoraLocal::class)->zona())->format('Y-m-d'),
+                'semaforo' => $semaforo,
+                // ADR-0014: «Prestar» desde el lector (QR de una llave en caseta): el diálogo abre con la llave elegida
+                'llavePrestar' => $prestar !== null && $puedePrestar
+                    ? Llave::where('activo', true)->whereIn('sede_id', $sedesPrestar->pluck('id'))->whereNotIn('id', $enUso->pluck('llave_id'))->find($prestar)
+                    : null,
                 'puede' => [
                     'prestar' => $puedePrestar && $sedesPrestar->isNotEmpty(),
                     'recibir' => $actor->can('prestamo_llaves.editar'),
@@ -133,6 +148,47 @@ class PrestamoLlaveController extends Controller
         $modelo = $this->accion($request, $prestamo, 'prestamo_llaves.editar', fn (PrestamoLlave $p) => $this->prestamos->recibir($request->user(), $p));
 
         return redirect()->route('prestamo_llaves.index')->with('ok', "Llave «{$modelo->llave?->nomenclatura}» recibida de vuelta correctamente. Devuelve la identificación en garantía.");
+    }
+
+    /**
+     * ADR-0014: «Escanea la llave que te devuelven» en la pantalla principal
+     * (como «Dar salida» de accesos): QR, NFC, lector USB o la nomenclatura.
+     * Encuentra el préstamo vigente de esa llave dentro del alcance y lo recibe.
+     */
+    public function recibirEscaneada(Request $request, Lector $lector): RedirectResponse
+    {
+        Gate::authorize('prestamo_llaves.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $lectura = trim(Entrada::texto($request->input('lectura')));
+        if ($lectura === '' || mb_strlen($lectura) > Etiqueta::MAXIMO) {
+            throw ValidationException::withMessages(['lectura' => 'Escanea la llave que te devuelven o escribe su nombre (por ejemplo HDC-101).']);
+        }
+        $actor = $request->user();
+
+        $prestamo = $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $lectura, $lector) {
+            $llaves = $lector->resolver($actor, $empresaId, $lectura, ['llave'], 10)->pluck('id')->all();
+            if ($llaves === []) {
+                throw ValidationException::withMessages(['lectura' => "No encontré ninguna llave con «{$lectura}». Revisa la etiqueta o escribe su nombre completo."]);
+            }
+            $vigentes = $this->prestamos->limitar(PrestamoLlave::query(), $actor, 'prestamo_llaves.editar')->vigentes()
+                ->whereIn('prestamos_llaves.llave_id', $llaves)->with('llave:id,nomenclatura', 'colaborador:id,nombre,apellido_paterno,apellido_materno')->get();
+            if ($vigentes->isEmpty()) {
+                $fuera = PrestamoLlave::vigentes()->whereIn('llave_id', $llaves)->exists();
+                throw ValidationException::withMessages(['lectura' => $fuera
+                    ? 'Esa llave está prestada en una sede donde no puedes recibir llaves.'
+                    : 'Esa llave no está prestada: ya está en caseta.']);
+            }
+            if ($vigentes->count() > 1) {
+                throw ValidationException::withMessages(['lectura' => 'Varias llaves prestadas coinciden con «'.$lectura.'»: escanea su QR o escribe su nombre completo.']);
+            }
+            $p = $vigentes->first();
+            $this->prestamos->recibir($actor, $p);
+
+            return $p;
+        });
+
+        return redirect()->route('prestamo_llaves.index')->with('ok', "Llave «{$prestamo->llave?->nomenclatura}» recibida de {$prestamo->colaborador?->nombreCompleto()}. "
+            .($prestamo->tipo_garantia === 'ninguna' ? 'No dejó identificación en garantía.' : 'Devuelve su garantía: '.$prestamo->textoGarantia().'.').' Escanea la siguiente si hay más.');
     }
 
     public function anular(Request $request, int $prestamo): RedirectResponse

@@ -131,3 +131,11 @@ SEGCAT no tenía manual de procedimientos: los procedimientos vivían en papel o
 ## Pruebas
 
 `tests/Feature/Seguridad/ProcedimientosTest.php`: alta, validación en español dentro del diálogo, clave única por empresa, edición de borradores, circuito completo con firma privada, el autor (o quien envía) no aprueba, no se aprueba dos veces, rechazo con comentario obligatorio, versiones y nuevo acuse, descartar / retirar / reactivar, acuse con casilla y firma guardada, a quién aplica (sedes, sede adicional, departamentos o puestos), CSV, correos y recordatorio en proceso, avisos de Inicio, adjuntos privados y validados, Agente (lee y firma, no crea ni ve borradores), alcance de sede, otra empresa (404), categorías, lector universal, Eliminar definitivamente y datos demo. Además entra solo en `tests/Feature/SeguridadAuditoria` y en `EliminarDefinitivoTest`.
+
+## Caseta y activos (ADR-0014)
+
+- «Enviar a revisión» avisa a quien puede aprobar (campana `procedimiento_revision`, Mis pendientes «Procedimientos por aprobar» y correo con el aviso de empresa `procedimiento_revision`); el autor se entera del resultado.
+- La publicación también llega a la campana (`procedimiento_publicado`, «Leer ahora»).
+- Acuse configurable (`procedimientos_acuse`: firma —omisión—, casilla, casilla salvo puntos críticos); migración `2026_10_25_000100` deja `procedimiento_acuses.firma_ruta` nulo cuando es solo casilla.
+
+Detalle: [caseta-y-activos.md](caseta-y-activos.md).

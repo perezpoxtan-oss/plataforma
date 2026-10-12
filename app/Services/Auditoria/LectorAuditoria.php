@@ -131,12 +131,18 @@ class LectorAuditoria
         // Configuración
         'avisos' => 'Cambio de avisos por correo', 'correo' => 'Cambio del correo de la plataforma', 'correo_prueba' => 'Correo de prueba',
         'respaldo_creado' => 'Creación de respaldo', 'respaldo_descargado' => 'Descarga de respaldo',
+        // Mejoras activos (ADR-0014)
+        'caseta' => 'Cambio de ajustes de caseta y activos',
         // Sesión
         'inicio' => 'Inicio de sesión', 'cierre' => 'Cierre de sesión', 'fallido' => 'Intento fallido', 'bloqueado' => 'Bloqueo',
         // Cuenta del usuario (Mi cuenta, Olvidé mi contraseña, bienvenida, baja)
         'contrasena_cambiada' => 'Cambio de contraseña propia', 'recuperacion_solicitada' => 'Solicitud de recuperación de contraseña',
         'recuperacion_completada' => 'Recuperación de contraseña', 'bienvenida_enviada' => 'Envío de enlace de bienvenida',
         'enlace_restablecer_enviado' => 'Envío de enlace para restablecer contraseña', 'desactivado_por_baja' => 'Desactivación por baja del colaborador',
+        // Mejoras Incidentes (ADR-0013)
+        'turno_avisado' => 'Aviso al turno que recibe el pendiente', 'turno_escalado' => 'Aviso al jefe: pendiente de turno sin atender',
+        'objeto_registrado' => 'Registro de objeto encontrado', 'tiempos_espera' => 'Cambio de tiempos de espera de las firmas',
+        // Fin Mejoras Incidentes
     ];
 
     /**

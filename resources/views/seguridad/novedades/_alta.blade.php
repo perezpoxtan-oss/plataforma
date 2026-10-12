@@ -47,6 +47,32 @@
                 </div>
             </div>
 
+            {{-- Mejoras Incidentes: el objeto encontrado se captura aquí mismo (el ticket no queda a medias) --}}
+            @if (in_array('lost_found', $clasificaciones, true))
+                @php $esLf = $val('categoria', count($clasificaciones) === 1 ? $clasificaciones[0] : '') === 'lost_found'; @endphp
+                <div class="caja-objeto-alta" data-nov-mostrar-si='{"categoria":["lost_found"]}' @unless ($esLf) hidden @endunless>
+                    <p class="small fw-bold mb-1"><i class="bi bi-bag-fill text-warning me-1" aria-hidden="true"></i>Objeto encontrado <span class="fw-normal text-muted">(opcional: si alguien perdió algo, déjalo vacío y captura el reporte de pérdida en el expediente)</span></p>
+                    <div class="row">
+                        <div class="col-md-5">
+                            <label class="campo-etiqueta" for="alta_lf_objeto">¿Qué se encontró?</label>
+                            <input type="text" id="alta_lf_objeto" name="lf_objeto" class="campo text-uppercase @error('lf_objeto') is-invalid @enderror" maxlength="150" placeholder="Ej: Paraguas negro, cartera café" value="{{ $val('lf_objeto') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="campo-etiqueta" for="alta_lf_tipo">Tipo de valor</label>
+                            <select id="alta_lf_tipo" name="lf_tipo_valor" class="campo">
+                                @foreach (\App\Models\LostFoundArticulo::TIPOS_VALOR as $claveTipo => $textoTipo)
+                                    <option value="{{ $claveTipo }}" @selected($val('lf_tipo_valor', 'OTRO') === $claveTipo)>{{ $textoTipo }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="campo-etiqueta" for="alta_lf_bodega">Ubicación en bodega <span class="text-lowercase fw-normal">(opcional)</span></label>
+                            <input type="text" id="alta_lf_bodega" name="lf_ubicacion_bodega" class="campo text-uppercase" maxlength="100" placeholder="Ej: Anaquel 3, Caja B" value="{{ $val('lf_ubicacion_bodega') }}">
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <label class="campo-etiqueta" for="alta_reporta">¿Quién reporta? <span class="text-lowercase fw-normal">(buscar colaborador o escribir)</span></label>
             <div class="campo-con-boton">
                 <input type="text" id="alta_reporta" name="reportado_por" class="campo text-uppercase" maxlength="150" list="novColaboradores" required

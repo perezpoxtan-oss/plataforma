@@ -121,20 +121,21 @@ class ResponsivasTest extends TestCase
         $this->actingAs($this->admin)->patch("/responsivas/{$cerrado->id}/recibir");
 
         $this->actingAs($this->admin)->get('/responsivas')->assertOk()
-            ->assertSee('Control de Resguardos')->assertSee('Lotes de asignación con firma digital y rastreo por Serie.')
-            ->assertSee('Nuevo Resguardo (Lote)')->assertSee('Equipos en Campo (1 Lotes)')->assertSee('Historial Devueltos (1 Lotes)')
+            ->assertSee('Responsivas de equipo')->assertSee('Equipo de seguridad entregado con firma y rastreo por número de serie.')
+            ->assertSee('Nueva responsiva')->assertSee('Equipos en Campo (1 responsiva)')->assertSee('Historial Devueltos (1 responsiva)')
             ->assertSee('id="responsiva-'.$abierto->id.'"', false)->assertSee('EN CAMPO')->assertSee('CENRES-000001')
-            ->assertSee('Resguardante Activo:')->assertSee('ACTIVOS VINCULADOS AL RESGUARDO:')->assertSee('S/N: 752TSFQ504')
-            ->assertSee('Entregó Caseta:')->assertSee('Recibir Lote Completo (OK)')->assertSee('Firma')->assertSee('Hoja')
-            ->assertSee('LOTE CERRADO')->assertSee('Resguardó en su momento:')->assertSee('Devuelto a Caseta:')->assertSee('Archivo')
-            ->assertSee('+ Añadir Equipo')->assertSee('Firma Digital del Colaborador')->assertSee('Guardar Lote de Resguardo')
+            ->assertSee('A cargo de:')->assertSee('EQUIPOS DE LA RESPONSIVA:')->assertSee('S/N: 752TSFQ504')
+            ->assertSee('Entregó Caseta:')->assertSee('Recibir marcados (OK)')->assertSee('Dañado o falta')->assertSee('Firma')->assertSee('Hoja')
+            ->assertSee('CERRADA')->assertSee('Estuvo a cargo de:')->assertSee('Devuelto a Caseta:')->assertSee('Archivo')
+            ->assertSee('+ Añadir Equipo')->assertSee('Firma Digital del Colaborador')->assertSee('Guardar responsiva')
+            ->assertDontSeeText('Lote')->assertDontSeeText('Resguardo')
             ->assertSee('Sede de Origen')->assertDontSee('Hotel de Origen')->assertDontSee('onclick');
     }
 
     public function test_sin_resguardos_muestra_los_estados_vacios(): void
     {
         $this->actingAs($this->admin)->get('/responsivas')->assertOk()
-            ->assertSee('No hay equipos prestados actualmente.')->assertSee('El historial está limpio.');
+            ->assertSee('No hay equipos en campo.')->assertSee('El historial está limpio.');
     }
 
     public function test_el_dialogo_usa_el_lector_universal_la_firma_y_solo_equipos_disponibles(): void
@@ -163,7 +164,7 @@ class ResponsivasTest extends TestCase
         $chaleco = $this->equipo('CH-001');
 
         $this->actingAs($this->admin)->post('/responsivas', $this->datos($c, [$radio, $chaleco], ['prestado', 'asignado']))
-            ->assertSessionHasNoErrors()->assertSessionHas('ok', 'Resguardo CENRES-000001 guardado con 2 equipos. Ya puedes imprimir la hoja.');
+            ->assertSessionHasNoErrors()->assertSessionHas('ok', 'Responsiva CENRES-000001 guardada con 2 equipos. Ya puedes imprimir la hoja.');
 
         $r = $this->enEmpresa(fn () => Responsiva::with('equipos')->firstOrFail());
         $this->assertSame(['CENRES-000001', 1, Responsiva::EN_CAMPO, $this->centro->id, $c->id, $this->admin->id],
@@ -198,7 +199,7 @@ class ResponsivasTest extends TestCase
         $radio = $this->equipo('RAD-1');
 
         $this->actingAs($this->admin)->post('/responsivas', ['sede_id' => $this->centro->id, 'colaborador_id' => $c->id, 'firma' => $this->firma()])
-            ->assertSessionHasErrors(['equipos' => 'Debe añadir al menos 1 equipo al lote.']);
+            ->assertSessionHasErrors(['equipos' => 'Agrega al menos 1 equipo a la responsiva.']);
         $this->actingAs($this->admin)->post('/responsivas', $this->datos($c, [], [], ['equipos' => [$radio->id, '']]))
             ->assertSessionHasErrors(['equipos' => 'Seleccione un equipo en todas las filas agregadas (o quite la fila vacía).']);
         $this->actingAs($this->admin)->post('/responsivas', $this->datos($c, [$radio, $radio]))
@@ -236,7 +237,7 @@ class ResponsivasTest extends TestCase
         $primero = $this->crearLote($this->admin, $c, [$radio]);
 
         $this->actingAs($this->admin)->post('/responsivas', $this->datos($c, [$radio]))
-            ->assertSessionHasErrors(['equipos' => 'El equipo RAD-1 sigue en el resguardo CENRES-000001 sin recibir.']);
+            ->assertSessionHasErrors(['equipos' => 'El equipo RAD-1 sigue en la responsiva CENRES-000001 sin recibir.']);
 
         // Aunque lo hayan dado de baja y reactivado mientras estaba en campo
         $equipos = app(AdministradorEquipos::class);
@@ -246,7 +247,7 @@ class ResponsivasTest extends TestCase
             $equipos->reactivar($this->admin, $modelo);
         });
         $this->actingAs($this->admin)->post('/responsivas', $this->datos($c, [$radio]))
-            ->assertSessionHasErrors(['equipos' => 'El equipo RAD-1 sigue en el resguardo CENRES-000001 sin recibir.']);
+            ->assertSessionHasErrors(['equipos' => 'El equipo RAD-1 sigue en la responsiva CENRES-000001 sin recibir.']);
         $this->assertSame(1, $this->enEmpresa(fn () => EquipoResponsiva::where('equipo_id', $radio->id)->count()));
         $this->assertTrue($this->enEmpresa(fn () => Responsiva::findOrFail($primero->id))->enCampo());
     }
@@ -261,7 +262,7 @@ class ResponsivasTest extends TestCase
         $r = $this->crearLote($this->admin, $c, [$radio, $lampara]);
 
         $this->actingAs($this->admin)->patch("/responsivas/{$r->id}/recibir")
-            ->assertSessionHas('ok', 'Lote CENRES-000001 recibido: 2 equipos vuelven a DISPONIBLE.');
+            ->assertSessionHas('ok', 'Responsiva CENRES-000001 recibida: 2 equipos vuelven a DISPONIBLE.');
         $r = $this->enEmpresa(fn () => Responsiva::with('equipos')->findOrFail($r->id));
         $this->assertSame([Responsiva::DEVUELTA, $this->admin->id], [$r->estado, $r->recibido_por]);
         $this->assertNotNull($r->devuelto_en);
@@ -270,7 +271,7 @@ class ResponsivasTest extends TestCase
         $this->assertTrue(Auditoria::where('evento', 'responsivas.recibido')->where('auditable_id', $r->id)->exists());
         $this->assertSame(2, Auditoria::where('evento', 'equipos.devuelto')->count());
 
-        $this->actingAs($this->admin)->patch("/responsivas/{$r->id}/recibir")->assertSessionHasErrors(['responsiva' => 'El resguardo CENRES-000001 ya se había recibido.']);
+        $this->actingAs($this->admin)->patch("/responsivas/{$r->id}/recibir")->assertSessionHasErrors(['responsiva' => 'La responsiva CENRES-000001 ya se había recibido.']);
 
         // Ya devueltos, se pueden resguardar otra vez
         $this->crearLote($this->admin, $c, [$radio]);
@@ -286,7 +287,7 @@ class ResponsivasTest extends TestCase
             ['motivo' => 'extraviado', 'descripcion' => 'Se perdió en el rondín', 'aplica_cobro' => false]));
 
         $this->actingAs($this->admin)->patch("/responsivas/{$r->id}/recibir")
-            ->assertSessionHas('ok', 'Lote CENRES-000001 recibido: 1 equipo vuelve a DISPONIBLE. 1 ya estaba(n) dado(s) de baja y se quedan así.');
+            ->assertSessionHas('ok', 'Responsiva CENRES-000001 recibida: 1 equipo vuelve a DISPONIBLE. 1 ya estaba(n) dado(s) de baja y se quedan así.');
         $this->assertSame(['disponible', 'baja'], [$this->estado($radio), $this->estado($perdido)]);
         $this->assertSame('baja', $this->enEmpresa(fn () => EquipoResponsiva::where('equipo_id', $perdido->id)->value('estado_devolucion')));
     }
@@ -324,8 +325,8 @@ class ResponsivasTest extends TestCase
         $r = $this->crearLote($this->admin, $this->colaborador('1005', $this->centro), [$this->equipo('RAD-1'), $this->equipo('CH-1')]);
 
         $this->actingAs($this->admin)->get("/responsivas/{$r->id}/hoja")->assertOk()
-            ->assertSee('RESGUARDO MÚLTIPLE DE ACTIVOS DE SEGURIDAD')->assertSee('FOLIO: CENRES-000001')
-            ->assertSee('Ubicación Emisión:')->assertSee('Datos del Colaborador Resguardante')->assertSee('No. Nómina / Empleado:')
+            ->assertSee('RESPONSIVA DE EQUIPO DE SEGURIDAD')->assertSee('FOLIO: CENRES-000001')
+            ->assertSee('Ubicación Emisión:')->assertSee('Datos del colaborador responsable')->assertSee('No. Nómina / Empleado:')
             ->assertSee('S/N')->assertSee('RAD-1')->assertSee('Préstamo de Turno')->assertSee('Cláusula de Daños y Extravío:')
             ->assertSee('FIRMA DE CONFORMIDAD')->assertSee('ENTREGADO POR (CASETA)')
             ->assertSee(route('responsivas.firma', $r->id), false)->assertDontSee('onclick');
@@ -398,7 +399,7 @@ class ResponsivasTest extends TestCase
         $c = $this->colaborador('1003', $this->centro);
         $radio = $this->equipo('RAD-1');
 
-        $this->actingAs($agente)->get('/responsivas')->assertOk()->assertSee('Nuevo Resguardo (Lote)');
+        $this->actingAs($agente)->get('/responsivas')->assertOk()->assertSee('Nueva responsiva');
         $r = $this->crearLote($agente, $c, [$radio]);
         $this->actingAs($agente)->get("/responsivas/{$r->id}/firma")->assertOk();
         $this->actingAs($agente)->get("/responsivas/{$r->id}/hoja")->assertOk();
@@ -414,7 +415,7 @@ class ResponsivasTest extends TestCase
         $asistente = $this->crearUsuario($this->empresa, 'Asistente', $this->centro);
         $r = $this->crearLote($this->admin, $this->colaborador('1005', $this->centro), [$this->equipo('RAD-1')]);
 
-        $this->actingAs($asistente)->get('/responsivas')->assertOk()->assertDontSee('Nuevo Resguardo (Lote)')->assertDontSee('dialogoNuevoResguardo"', false);
+        $this->actingAs($asistente)->get('/responsivas')->assertOk()->assertDontSee('Nueva responsiva')->assertDontSee('dialogoNuevoResguardo"', false);
         $this->actingAs($asistente)->post('/responsivas', $this->datos($this->colaborador('1006', $this->centro), [$this->equipo('RAD-2')]))->assertForbidden();
         $this->actingAs($asistente)->patch("/responsivas/{$r->id}/recibir")->assertSessionHasNoErrors();
     }

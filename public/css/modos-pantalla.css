@@ -1463,3 +1463,23 @@ html.modo-sol .resumen-documentos, html.modo-sol .resumen-contrato, html.modo-so
 html.modo-sol .mis-pendientes-item.nivel-ambar .mis-pendientes-numero, html.modo-sol .mis-pendientes-item.nivel-roja .mis-pendientes-numero { background: #000; color: #fff; }
 html.modo-sol .tarjeta-tablero, html.modo-sol .columna-tablero, html.modo-sol .pestanas-vacante a { border: 2px solid #000; color: #000; background: #fff; }
 /* Fin Candidatos, fase 3 */
+/* Mejoras incidentes */
+html.modo-noche .aviso-turno-nov, html.modo-noche .caja-objeto-alta { background: rgba(217, 119, 6, 0.15); border-color: #b45309; color: #fcd34d; }
+html.modo-noche .reloj-pase { color: var(--texto-suave); }
+html.modo-noche .reloj-pase.espera-normal { color: #86efac; }
+html.modo-noche .reloj-pase.espera-ambar { color: #fcd34d; }
+html.modo-noche .reloj-pase.espera-roja { color: #fca5a5; }
+html.modo-sol .aviso-turno-nov, html.modo-sol .caja-objeto-alta { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .reloj-pase { color: #000; }
+/* Fin Mejoras incidentes */
+/* Mejoras activos */
+html.modo-noche .recibir-llave-escaneo, html.modo-noche .btn-accion-lector { background: var(--superficie); border-color: var(--borde); color: var(--texto); }
+html.modo-noche .recibir-llave-escaneo { border-left-color: #22c55e; }
+html.modo-noche .recibir-responsiva-form { background: var(--superficie-2); }
+html.modo-noche .reloj-llave, html.modo-noche .reloj-turno, html.modo-noche .acuse-casilla { background: rgba(5, 150, 105, 0.15); border-color: #047857; color: #6ee7b7; }
+html.modo-noche .reloj-llave.nivel-ambar, html.modo-noche .reloj-turno.nivel-ambar, html.modo-noche .acciones-lector-estado { background: rgba(217, 119, 6, 0.2); color: #fcd34d; border-color: #b45309; }
+html.modo-noche .reloj-llave.nivel-rojo, html.modo-noche .reloj-turno.nivel-rojo { background: rgba(220, 38, 38, 0.2); color: #fecaca; border-color: #b91c1c; }
+html.modo-noche .btn-accion-lector.principal { background: #198754; border-color: #198754; color: #fff; }
+html.modo-sol .recibir-llave-escaneo, html.modo-sol .reloj-llave, html.modo-sol .reloj-turno, html.modo-sol .acuse-casilla, html.modo-sol .acciones-lector-estado, html.modo-sol .btn-accion-lector { background: #fff; color: #000; border: 2px solid #000; }
+html.modo-sol .btn-accion-lector.principal { background: #000; color: #fff; }
+/* Fin Mejoras activos */

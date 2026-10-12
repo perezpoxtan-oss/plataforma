@@ -49,11 +49,25 @@
                 @if ($puede['tickets'])
                     <a href="{{ route('lost_found.index') }}" class="btn-accion-novedades"><i class="bi bi-arrow-left" aria-hidden="true"></i> Novedades</a>
                 @endif
+                {{-- Mejoras Incidentes: un objeto simple se registra aquí mismo (el ticket se crea por detrás) --}}
+                @if ($sedesObjeto->isNotEmpty())
+                    <button type="button" class="btn-nuevo-ticket btn-objeto-lf" data-abrir-dialogo="dialogoObjetoLf"><i class="bi bi-plus-circle-fill me-1" aria-hidden="true"></i>Registrar objeto encontrado</button>
+                @endif
                 @if ($puede['imprimir'])
                     <a href="{{ route('lost_found.auditoria', array_filter(['sede' => $sedeFiltro])) }}" target="_blank" rel="noopener" class="btn-accion-novedades oscuro"><i class="bi bi-clipboard-check-fill" aria-hidden="true"></i> Auditoría</a>
                 @endif
             </div>
         </div>
+        @if (session('siguientePasoLf'))
+            <p class="siguiente-paso-lf">
+                @if (session('siguientePasoLf')['etiqueta'])
+                    <a href="{{ session('siguientePasoLf')['etiqueta'] }}" target="_blank" rel="noopener" class="btn-lf completar"><i class="bi bi-tag-fill me-1" aria-hidden="true"></i>Imprimir etiqueta de la bolsa</a>
+                @endif
+                @if ($sedesObjeto->isNotEmpty())
+                    <button type="button" class="btn-lf completar" data-abrir-dialogo="dialogoObjetoLf"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Registrar otro objeto</button>
+                @endif
+            </p>
+        @endif
         @if ($puede['configurar'])
             <p class="small text-muted mb-3 lf-enlace-config"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Días de resguardo: <a href="{{ route('configuracion.index') }}#lost-found">Configurar en Estructura → Configuración</a>.</p>
         @endif
@@ -119,6 +133,33 @@
                                 @fecha($h->created_at, 'd/m/Y') · Reportó: {{ $h->reportado_por }}@if ($variasSedes) · {{ $h->sede?->nombre }}@endif
                             </div>
                             <div class="small text-muted mt-1">Este ticket ya existe en Bitácora pero todavía no tiene ningún objeto capturado aquí.</div>
+                            {{-- Mejoras Incidentes: se completa aquí mismo, sin abrir el expediente --}}
+                            @if (in_array($h->id, $completables, true))
+                            <details class="agregar-objeto-lf" @if (old('novedad_id') == $h->id) open @endif>
+                                <summary><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar el objeto aquí</summary>
+                                <form action="{{ route('lost_found.objetos.store') }}" method="POST" autocomplete="off" class="form-objeto-ticket-lf">
+                                    @csrf
+                                    <input type="hidden" name="novedad_id" value="{{ $h->id }}">
+                                    <div class="row">
+                                        <div class="col-md-5"><label class="campo-etiqueta" for="obj_{{ $h->id }}">¿Qué se encontró?</label>
+                                            <input type="text" id="obj_{{ $h->id }}" name="lf_objeto" class="campo text-uppercase" maxlength="150" required placeholder="Ej: Paraguas negro" value="{{ old('novedad_id') == $h->id ? old('lf_objeto') : '' }}"></div>
+                                        <div class="col-md-3"><label class="campo-etiqueta" for="tipo_{{ $h->id }}">Tipo de valor</label>
+                                            <select id="tipo_{{ $h->id }}" name="lf_tipo_valor" class="campo">
+                                                @foreach (LostFoundArticulo::TIPOS_VALOR as $claveTipo => $nombreTipo)
+                                                    <option value="{{ $claveTipo }}">{{ $nombreTipo }}</option>
+                                                @endforeach
+                                            </select></div>
+                                        <div class="col-md-4"><label class="campo-etiqueta" for="bod_{{ $h->id }}">Ubicación en bodega</label>
+                                            <input type="text" id="bod_{{ $h->id }}" name="lf_ubicacion_bodega" class="campo text-uppercase" maxlength="100" placeholder="Ej: Anaquel 3"></div>
+                                    </div>
+                                    @if (old('novedad_id') == $h->id)
+                                        @error('lf_objeto')<p class="text-danger small mb-1">{{ $message }}</p>@enderror
+                                        @error('objeto')<p class="text-danger small mb-1">{{ $message }}</p>@enderror
+                                    @endif
+                                    <button type="submit" class="btn-lf completar"><i class="bi bi-save me-1" aria-hidden="true"></i>Guardar objeto</button>
+                                </form>
+                            </details>
+                            @endif
                         </div>
                         <div class="fila-articulo-acciones">
                             <a href="{{ route('novedades.index', ['abrir' => $h->id]) }}" class="btn-lf completar"><i class="bi bi-pencil-fill me-1" aria-hidden="true"></i>Completar</a>
@@ -139,7 +180,12 @@
                     @elseif ($filtro !== 'todos' || $hayFiltros)
                         No hay artículos con este filtro.
                     @else
-                        Todavía no hay artículos en Lost &amp; Found. Se registran desde un ticket de <strong>Lost &amp; Found</strong> en la Bitácora de Novedades.
+                        Todavía no hay artículos en Lost &amp; Found.
+                        @if ($sedesObjeto->isNotEmpty())
+                            Toca <strong>Registrar objeto encontrado</strong> o despacha un ticket de <strong>Lost &amp; Found</strong> en la Bitácora de Novedades.
+                        @else
+                            Se registran desde un ticket de <strong>Lost &amp; Found</strong> en la Bitácora de Novedades.
+                        @endif
                     @endif
                 </p>
             </div>
@@ -223,6 +269,9 @@
             @endif
         @endif
         @include('componentes.codigo-identificacion')
+        @if ($sedesObjeto->isNotEmpty())
+            @include('seguridad.lost-found._objeto', ['sedes' => $sedesObjeto, 'ahoraLocal' => $ahoraLocal])
+        @endif
     @endif
 </div>
 @endsection

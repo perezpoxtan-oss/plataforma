@@ -41,6 +41,10 @@ class PaseSalidaAprobacion extends Model
             'valor_minimo' => 'float',
             'valor_maximo' => 'float',
             'conservada_de_ronda' => 'integer',
+            // Mejoras Incidentes: firmas que tardan
+            'recordatorio_en' => 'datetime',
+            'escalado_en' => 'datetime',
+            'escalado_a' => 'array',
         ];
     }
 

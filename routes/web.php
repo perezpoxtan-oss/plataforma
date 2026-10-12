@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Administracion\AjustesCasetaController;
 use App\Http\Controllers\Administracion\AuditoriaController;
 use App\Http\Controllers\Administracion\ConfiguracionController;
 use App\Http\Controllers\Administracion\EmpresaActivaController;
@@ -322,6 +323,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/lost-found/articulos/{articulo}/cerrar', 'cerrar')->whereNumber('articulo')->middleware('throttle:60,1')->name('lost_found.articulos.cerrar');
         Route::get('/lost-found/articulos/{articulo}/etiqueta', 'etiqueta')->whereNumber('articulo')->name('lost_found.articulos.etiqueta');
         Route::get('/lost-found/entregas/{entrega}/firma', 'firma')->whereNumber('entrega')->name('lost_found.entregas.firma');
+        // Mejoras Incidentes: «Registrar objeto encontrado» (crea el ticket por detrás)
+        Route::post('/lost-found/objetos', 'registrarObjeto')->middleware('throttle:60,1')->name('lost_found.objetos.store');
     });
     Route::get('/robos', ['App\Http\Controllers\Seguridad\RoboController', 'index'])->name('robo.index');
     Route::put('/robos/{novedad}', ['App\Http\Controllers\Seguridad\RoboController', 'update'])->whereNumber('novedad')->name('robo.update');
@@ -363,6 +366,8 @@ Route::middleware('auth')->group(function () {
     // Padrones: Ajustes QA 4 (homónimos en Usuarios y Colaboradores; días de resguardo de Lost & Found en Configuración)
     Route::get('/colaboradores/homonimos', [ColaboradorController::class, 'homonimos'])->middleware('throttle:120,1')->name('colaboradores.homonimos');
     Route::put('/configuracion/lost-found', [ConfiguracionController::class, 'lostFound'])->name('configuracion.lost_found');
+    // Mejoras Incidentes: nombre del menú y categoría del hallazgo de recorrido (Configuración → Bitácora de novedades)
+    Route::put('/configuracion/novedades', [ConfiguracionController::class, 'novedades'])->name('configuracion.novedades');
     // Fin Padrones: Ajustes QA 4
     // Padrones: Altas por verificar (vehículos, empresas externas y personas registrados desde Operación; ver docs/tecnico/altas-por-verificar.md)
     Route::controller('App\Http\Controllers\Padrones\AltaPorVerificarController')->group(function () {
@@ -573,6 +578,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/lector/resolver', [LectorController::class, 'resolver'])->middleware('throttle:120,1')->name('lector.resolver');
     Route::get('/e/{codigo}', [LectorController::class, 'ir'])->where('codigo', '[A-Za-z0-9]{8,32}')->name('lector.ir');
     // Fin Lector universal
+
+    // Mejoras activos (ADR-0014): ajustes de caseta y recibir una llave escaneándola desde la pantalla principal
+    Route::put('/configuracion/caseta', [AjustesCasetaController::class, 'update'])->name('configuracion.caseta');
+    Route::post('/prestamo-llaves/recibir', [PrestamoLlaveController::class, 'recibirEscaneada'])->middleware('throttle:60,1')->name('prestamo_llaves.recibir-escaneada');
+    // Fin Mejoras activos
 });
 
 // Público: Kiosco de auto-registro de candidatos (SIN sesión; enlace temporal de un solo candidato; ver docs/tecnico/candidatos.md)

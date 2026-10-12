@@ -8,7 +8,7 @@ resumen: Avisos por correo de la empresa, días de resguardo de Lost & Found, aj
 
 # Configuración
 
-**¿Para qué sirve?** Aquí se ajusta cómo trabaja la plataforma para tu empresa: qué **avisos por correo** se envían y a quién, cuántos días se guarda cada objeto de **Lost & Found**, y los ajustes de **Pases de salida**, **Recepción** y la **bolsa de trabajo**. El Super Administrador configura además el **correo de la plataforma** y los **respaldos**.
+**¿Para qué sirve?** Aquí se ajusta cómo trabaja la plataforma para tu empresa: qué **avisos por correo** se envían y a quién, cuántos días se guarda cada objeto de **Lost & Found**, el nombre de la **Bitácora de novedades** en el menú, y los ajustes de **Pases de salida**, **Recepción**, la **bolsa de trabajo** y la **caseta y los activos** (firmas de vales de taxi, llaves fuera mucho tiempo, equipos de turno y acuse de procedimientos). El Super Administrador configura además el **correo de la plataforma** y los **respaldos**.
 
 ![Avisos por correo](img/configuracion/2-avisos-empresa.png)
 
@@ -28,9 +28,11 @@ resumen: Avisos por correo de la empresa, días de resguardo de Lost & Found, aj
    - Enviar cada vale de taxi de la Bitácora de transporte (escribe en **Correos que lo reciben** uno por línea o separados por coma).
    - Pases de salida: aprobación, resultado y recordatorio de pases vencidos.
    - Altas por verificar en Vehículos, Empresas externas o Personas.
-   - Procedimientos publicados y recordatorios.
+   - Procedimientos publicados, recordatorios y procedimientos enviados a revisión (a quien puede aprobarlos).
    - Vouchers de reposición con cobro al colaborador: escribe los correos de **Copia Seguridad**, **Copia Recepción** y **Copia Administración**. Si dejas las tres listas vacías, se envía a los usuarios que pueden imprimir vouchers en esa sede. El colaborador responsable no recibe copia.
    - Recepción y Autorizaciones de los departamentos.
+   - Bitácora de novedades: tickets canalizados y pendientes de turno sin atender; hallazgos de los Recorridos de Protección Civil (vienen **apagados**: la campana avisa siempre).
+   - Pases de salida: recordar al firmante y avisar al siguiente nivel cuando una firma tarda (solo si pusiste tiempos en el Circuito).
 3. Toca **Guardar avisos**.
 
 **Qué debes ver:** «Avisos por correo actualizados.» Los avisos se envían a los usuarios con permiso para atender cada asunto, al correo de su cuenta.
@@ -47,11 +49,42 @@ Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cu�
 
 **Qué debes ver:** «Los días de resguardo de Lost & Found se guardaron correctamente.» Aplica a todas las sedes de la empresa.
 
+## Cómo cambiar el nombre de la Bitácora de novedades en el menú
+
+1. Baja a **Bitácora de novedades**.
+2. En **Nombre en el menú** escribe el nombre que usa tu empresa (por ejemplo **Incidentes**). Vacío = **Novedades**, como siempre.
+3. Si quieres, en **Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como** elige **Mantenimiento de equipo PC** (lo normal es **Siniestro Protección Civil**).
+4. Toca **Guardar ajustes de la bitácora**.
+
+![Ajustes de la Bitácora de novedades](img/configuracion/6-bitacora-novedades.png)
+
+**Qué debes ver:** «Ajustes de la Bitácora de novedades guardados.» El menú, el botón de abajo del celular y el título de la pantalla usan el nombre nuevo; los permisos y lo ya capturado no cambian. La categoría elegida aplica a los tickets que se abran desde ese momento. Solo lo cambia quien edita la Configuración de toda la empresa.
+
+## Cómo ajustar la caseta y los activos
+
+Sin cambiar nada, todo funciona como siempre. Si tu empresa quiere trabajar distinto:
+
+1. Baja a **Caseta y activos**.
+2. Ajusta lo que necesites (en las horas, **0 = apagado**):
+
+| Apartado | Qué decides | Por omisión |
+|---|---|---|
+| **Bitácora de transporte: firmas del vale de taxi** | Quién firma en la pantalla: los dos, **solo el guardia**, **solo el taxista** o nadie. Quien no firma en pantalla firma a mano en el vale impreso. | Guardia y taxista firman en pantalla. |
+| **Préstamo de llaves: llaves fuera mucho tiempo** | A cuántas horas fuera la ficha se pone **ámbar** y avisa a la caseta, y a cuántas se pone **roja** y avisa al jefe de seguridad (ejemplo: 8 y 12). | Apagado. |
+| **Responsivas: equipos de «Turno»** | Cuántas horas después de la entrega deben regresar los equipos de Turno y cuántas horas más esperar antes de avisar al supervisor (ejemplo: 8 y 2). | Apagado: sin hora de regreso. |
+| **Procedimientos: cómo se firma «Leí y entendí»** | Casilla y firma dibujada, **solo la casilla**, o solo la casilla salvo en procedimientos con puntos críticos. | Casilla y firma dibujada. |
+
+3. Toca **Guardar ajustes de caseta**.
+
+![Caseta y activos](img/configuracion/caseta-y-activos.png)
+
+**Qué debes ver:** «Ajustes de caseta y activos guardados.» Si dejas todo como estaba, dice «Ajustes de caseta guardados: todo funciona como el diseño original.» Aplica a todas las sedes de la empresa y lo cambia quien edita Configuración en toda la empresa.
+
 ## Otros ajustes de módulos
 
 En la misma pantalla están los ajustes de:
 
-- **Pases de salida**: resumen del circuito de firmas y, si tu empresa los cambió, las firmas que pide la caseta y qué pasa al corregir un pase rechazado. Con **Configurar circuito** se cambian. Ver [Pases de salida](pases-salida.md).
+- **Pases de salida**: resumen del circuito de firmas y, si tu empresa los cambió, las firmas que pide la caseta, qué pasa al corregir un pase rechazado y los tiempos de **Firmas que tardan**. Con **Configurar circuito** se cambian. Ver [Pases de salida](pases-salida.md).
 - **Recepción de candidatos:** aviso de privacidad y duración del enlace del kiosco. Ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
 - **Bolsa de trabajo en internet.** Ver [Vacantes](vacantes.md).
 
@@ -88,6 +121,8 @@ En la misma pantalla están los ajustes de:
 | No se pudo crear el respaldo: … | Hubo un problema al respaldar. | Intenta de nuevo; si sigue, avisa a soporte. |
 | Los avisos son de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa. | Tu rol no puede cambiar los avisos. | Pídelo a tu administrador. |
 | Los días de resguardo son de toda la empresa: hace falta el permiso «configurar» de Lost & Found con alcance de empresa. | Tu rol no puede cambiar los días. | Pídelo a tu administrador. |
+| Las horas para avisar al jefe deben ser más que las del recordatorio a la caseta. | En llaves pusiste el rojo antes que el ámbar. | Pon más horas en el rojo (o 0 para apagarlo). |
+| Escribe un número entero de horas, de 0 a … (0 = apagado). | Las horas no son válidas. | Escribe un número entero dentro del rango. |
 | No llegan los correos. | El correo de la plataforma no está configurado o el aviso está apagado. | Revisa el aviso amarillo y las casillas; revisa el correo no deseado. |
 
 ## Preguntas frecuentes
@@ -95,6 +130,8 @@ En la misma pantalla están los ajustes de:
 **¿A quién le llegan los avisos?** A los usuarios activos con permiso para atender ese asunto en la sede correspondiente, al correo de su cuenta (salvo donde escribes correos fijos).
 
 **¿Los días de Lost & Found se pueden poner por sede?** No; aplican a todas las sedes de la empresa.
+
+**¿Los ajustes de Caseta y activos cambian lo que ya se registró?** No. Los vales y acuses que ya existen se quedan como se capturaron; el semáforo de llaves y la hora de regreso de los equipos de Turno se calculan con los ajustes de hoy.
 
 **¿Cada cuánto se respalda la plataforma?** Diario y antes de cada actualización; se guardan 14 días.
 
@@ -106,3 +143,7 @@ En la misma pantalla están los ajustes de:
 - [Recepción y autorizaciones](recepcion-y-autorizaciones.md)
 - [Vacantes](vacantes.md)
 - [Altas por verificar](altas-por-verificar.md)
+- [Bitácora de transporte](transporte.md)
+- [Préstamo de llaves](prestamo-llaves.md)
+- [Responsivas](responsivas.md)
+- [Procedimientos](procedimientos.md)

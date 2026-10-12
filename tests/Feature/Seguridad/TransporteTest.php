@@ -178,7 +178,7 @@ class TransporteTest extends TestCase
             ->assertSee('Bitácora de Transporte')->assertSee('Registro operativo e incidencias multi-taxi en tiempo real.')
             ->assertSee('Registrar Movimiento')->assertSee('Registrar Bitácora Logística')
             ->assertSee('LLEGADA')->assertSee('(A la Sede)')->assertSee('(Hacia Paraderos)')
-            ->assertSee('SERVICIO NORMAL')->assertSee('FALLA DE FLETERA')->assertSee('Despacho de Unidades de Emergencia (Taxis)')
+            ->assertSee('SERVICIO NORMAL')->assertSee('LA UNIDAD NO LLEGÓ')->assertDontSee('FLETERA')->assertSee('Despacho de Unidades de Emergencia (Taxis)')
             ->assertSee('Añadir otro Taxi')->assertSee('Datos de la Unidad')->assertSee('Registrar y capturar siguiente')
             ->assertSee('No se encontraron registros en este periodo.')
             ->assertSee('Exportar Excel')->assertSee('Reportes Avanzados')

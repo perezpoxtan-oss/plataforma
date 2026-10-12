@@ -362,7 +362,9 @@ class LlavesTest extends TestCase
         $this->actingAs($this->admin)->getJson('/lector/resolver?entrada=0012345678&tipos=llave')->assertJsonPath('resultados.0.id', $l->id);
         $this->actingAs($this->admin)->getJson('/lector/resolver?entrada=ll-cat-sit-01&tipos=llave')->assertJsonPath('resultados.0.id', $l->id);
 
-        $this->actingAs($this->admin)->get('/e/'.$l->codigo_qr)->assertRedirect(route('llaves.index').'#llave-'.$l->id);
+        // ADR-0014: una llave en caseta ofrece «Prestar» a quien presta en su sede; «Solo ver la ficha» abre el catálogo
+        $this->actingAs($this->admin)->get('/e/'.$l->codigo_qr)->assertOk()->assertSee('Llave en caseta')
+            ->assertSee(route('prestamo_llaves.index', ['prestar' => $l->id]), false)->assertSee(route('llaves.index').'#llave-'.$l->id, false);
 
         $otra = $this->crearEmpresa('Hotel Dos');
         $this->actingAs($this->crearUsuario($otra, 'Administrador'))->get('/e/'.$l->codigo_qr)->assertNotFound();

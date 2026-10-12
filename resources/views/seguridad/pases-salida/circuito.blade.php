@@ -125,6 +125,43 @@
                     </details>
                 </section>
 
+                {{-- ===== Mejoras Incidentes (criterio 3): firmas que tardan ===== --}}
+                @php
+                    $esperaPrevia = old('espera') !== null ? (array) old('espera') : [];
+                    $enUnidad = function (?int $horas, string $campo) use ($esperaPrevia): array {
+                        if ($esperaPrevia !== []) {
+                            return [$esperaPrevia[$campo] ?? '', $esperaPrevia[$campo.'_unidad'] ?? 'horas'];
+                        }
+                        if ($horas === null) {
+                            return ['', 'horas'];
+                        }
+
+                        return $horas % 24 === 0 ? [(string) ($horas / 24), 'dias'] : [(string) $horas, 'horas'];
+                    };
+                    $tiemposEspera = ['recordar' => ['Recordar a quien debe firmar después de', 'Le llega de nuevo el aviso (campana y correo) y el pase se pinta en ámbar.'],
+                        'escalar' => ['Avisar al siguiente nivel después de', 'Se avisa a quien firma el siguiente paso; si es el último, a quien configura los pases en esa sede. El pase se pinta en rojo.']];
+                @endphp
+                <section class="tarjeta p-3 mt-3 ajustes-circuito" aria-labelledby="t-espera-circuito">
+                    <h2 id="t-espera-circuito" class="h6 fw-bold"><i class="bi bi-alarm me-2 text-primary" aria-hidden="true"></i>Firmas que tardan</h2>
+                    <p class="small text-muted">Cada pase muestra cuánto lleva esperando la firma del paso actual. Déjalo vacío para no recordar ni avisar a nadie (así funciona hoy). Cada aviso se manda una sola vez por paso.</p>
+                    @foreach ($tiemposEspera as $campo => [$etiquetaEspera, $ayudaEspera])
+                        @php [$valorEspera, $unidadEspera] = $enUnidad($espera[$campo] ?? null, $campo); @endphp
+                        <div class="fila-espera-circuito">
+                            <label class="campo-etiqueta" for="espera_{{ $campo }}">{{ $etiquetaEspera }}</label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <input type="number" id="espera_{{ $campo }}" name="espera[{{ $campo }}]" class="campo campo-dias-lf mb-0" min="1" max="720" inputmode="numeric" value="{{ $valorEspera }}" placeholder="—">
+                                <select name="espera[{{ $campo }}_unidad]" class="campo mb-0" aria-label="Unidad">
+                                    @foreach (\App\Services\PasesSalida\CircuitoPasesSalida::UNIDADES_ESPERA as $claveUnidad => $textoUnidad)
+                                        <option value="{{ $claveUnidad }}" @selected($unidadEspera === $claveUnidad)>{{ $textoUnidad }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @error('espera.'.$campo)<p class="text-danger small mb-1">{{ $message }}</p>@enderror
+                            <p class="campo-ayuda mt-1">{{ $ayudaEspera }}</p>
+                        </div>
+                    @endforeach
+                </section>
+
                 <template data-plantilla-paso-circuito>
                     @include('seguridad.pases-salida._paso-circuito', ['i' => '__i__', 'f' => ['tipo' => 'permiso', 'departamento' => 'cualquiera', 'obligatorio' => true, 'motivos' => [], 'usuarios' => []]])
                 </template>
