@@ -125,6 +125,8 @@ class MejorasEstructuraTest extends TestCase
 
     public function test_el_asistente_aplica_un_perfil_y_la_matriz_muestra_menus_y_proximamente(): void
     {
+        // Informes (ADR-0017): el Tablero ya tiene pantalla; aquí se simula un módulo que todavía no la tiene
+        Modulo::where('clave', 'dashboard')->update(['ruta' => null]);
         $rol = Rol::create(['empresa_id' => $this->empresa->id, 'nombre' => 'Caseta nocturna', 'nivel_jerarquia' => 65]);
         $plantilla = Rol::whereNull('empresa_id')->where('nombre', 'Agente')->firstOrFail();
 
@@ -146,6 +148,8 @@ class MejorasEstructuraTest extends TestCase
 
     public function test_los_modulos_sin_pantalla_conservan_sus_permisos_y_no_se_otorgan_desde_la_matriz(): void
     {
+        // Informes (ADR-0017): el Tablero ya tiene pantalla; aquí se simula un módulo que todavía no la tiene
+        Modulo::where('clave', 'dashboard')->update(['ruta' => null]);
         $director = $this->rol('Director');
         $antes = collect($this->permisosDe($director))->filter(fn ($v, $k) => str_starts_with($k, 'dashboard.'))->all();
         $this->assertNotEmpty($antes);

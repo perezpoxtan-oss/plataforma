@@ -77,7 +77,9 @@ class MenusReorganizadosTest extends TestCase
     {
         $menu = $this->estructura($this->crearUsuario($this->empresa, 'Administrador'));
 
-        $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'estructura'], array_keys($menu));
+        // Informes (ADR-0017): con sus cuatro pantallas, el menú Informes aparece antes de Estructura
+        $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'informes', 'estructura'], array_keys($menu));
+        $this->assertSame(['Informes' => ['dashboard', 'bitacora_dia', 'tendencias', 'informe_ejecutivo']], $menu['informes']);
         $this->assertSame([
             'Caseta' => ['accesos', 'prestamo_llaves', 'pases_salida', 'transporte'],
             'Incidentes' => ['novedades', 'lost_found', 'robo'],
@@ -126,9 +128,10 @@ class MenusReorganizadosTest extends TestCase
         $this->assertSame('Proveedores', Modulo::where('clave', 'proveedores')->value('nombre'));
 
         $this->actingAs($admin)->get('/')->assertOk()
-            ->assertSeeInOrder(['Operación', 'Padrones', 'Recursos Humanos', 'Estructura'])
+            ->assertSeeInOrder(['Operación', 'Padrones', 'Recursos Humanos', 'Informes', 'Estructura'])
             ->assertSee('Empresas externas')->assertSee('Vouchers de reposición')
-            ->assertDontSee('Informe ejecutivo')->assertDontSee('Autorizaciones departamentales');
+            // Informes (ADR-0017): ya tienen pantalla
+            ->assertSee('Informe ejecutivo')->assertSee('Bitácora del día')->assertDontSee('Autorizaciones departamentales');
     }
 
     public function test_el_agente_ve_operacion_y_padrones_y_su_barra_inferior_empieza_con_accesos(): void
@@ -172,31 +175,31 @@ class MenusReorganizadosTest extends TestCase
         $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->sede);
         $menu = $this->estructura($jefe);
 
-        $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'estructura'], array_keys($menu));
+        // Informes (ADR-0017): el Jefe de seguridad consulta los informes de su sede
+        $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'informes', 'estructura'], array_keys($menu));
         // Lección 36: la caseta consulta las vacantes publicadas de su sede; ADR-0010: entrevista a quien RR. HH. le canaliza
         $this->assertSame(['Personal' => ['colaboradores'], 'Recepción y candidatos' => ['vacantes', 'entrevistas']], $menu['recursos_humanos']);
         $this->assertSame(['Accesos y permisos' => ['usuarios']], $menu['estructura']);
     }
 
-    public function test_informes_y_los_modulos_sin_pantalla_no_aparecen_en_ningun_menu(): void
+    public function test_informes_aparece_solo_con_las_pantallas_que_existen(): void
     {
         $super = $this->crearSuperadmin();
         $items = $this->items($super);
 
-        $this->assertArrayNotHasKey('informes', $this->estructura($super));
-        foreach (['dashboard', 'bitacora_dia', 'tendencias', 'informe_ejecutivo'] as $clave) {
-            $this->assertArrayNotHasKey($clave, $items);
-        }
+        // Informes (ADR-0017): las cuatro pantallas ya existen
+        $this->assertSame(['Informes' => ['dashboard', 'bitacora_dia', 'tendencias', 'informe_ejecutivo']], $this->estructura($super)['informes']);
         $this->assertTrue(collect($items)->every(fn ($i) => $i['disponible'] && ! str_contains($i['url'], '/modulos/')));
 
-        // Un módulo cuya ruta todavía no existe tampoco se muestra
+        // Un módulo cuya ruta todavía no existe no se muestra
         Modulo::where('clave', 'accesos')->update(['ruta' => 'accesos.no_existe']);
         $this->assertArrayNotHasKey('accesos', $this->items($super));
 
-        // Cuando una pantalla de Informes exista, el menú aparece solo con ella
-        Modulo::where('clave', 'dashboard')->update(['ruta' => 'panel']);
+        // Y si ningún informe tuviera pantalla, el menú Informes se oculta
+        Modulo::whereIn('clave', ['dashboard', 'bitacora_dia', 'tendencias', 'informe_ejecutivo'])->update(['ruta' => null]);
+        $this->assertArrayNotHasKey('informes', $this->estructura($super));
+        Modulo::where('clave', 'dashboard')->update(['ruta' => 'tablero.index']);
         $this->assertSame(['Informes' => ['dashboard']], $this->estructura($super)['informes']);
-        $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'informes', 'estructura'], array_keys($this->estructura($super)));
     }
 
     public function test_la_migracion_reacomoda_una_instalacion_existente_y_se_puede_repetir(): void
