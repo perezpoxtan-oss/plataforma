@@ -15,7 +15,14 @@
                 <p>Las cifras de este momento. Toca una ficha para ver su gráfica, el listado y el enlace al módulo.</p>
             </div>
         </div>
-        @unless ($sinEmpresa)<div class="acciones-informe">@include('informes._enlaces', ['actual' => 'tablero'])</div>@endunless
+        @unless ($sinEmpresa)
+            <div class="acciones-informe">
+                @include('informes._enlaces', ['actual' => 'tablero'])
+                @if ($puedeImprimir)
+                    <a href="{{ route('tablero.imprimir', array_filter(['sede' => $sede])) }}" class="btn-filtrar boton-informe" target="_blank" rel="noopener"><i class="bi bi-printer me-2" aria-hidden="true"></i>Imprimir</a>
+                @endif
+            </div>
+        @endunless
     </div>
 
     @if ($sinEmpresa)

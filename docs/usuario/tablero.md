@@ -3,13 +3,13 @@ titulo: Tablero (Consola de Monitoreo)
 modulos: [dashboard]
 seccion: Informes
 orden: 10
-resumen: Las cifras del momento en fichas: gente en sitio, llaves en uso, novedades abiertas, pases vencidos y más.
+resumen: Las cifras del momento en fichas: gente en sitio, llaves en uso, novedades abiertas, pases vencidos y más, con hoja para imprimir.
 ---
 # Tablero (Consola de Monitoreo)
 
 **¿Para qué sirve?** Para saber de un vistazo cómo está la operación **en este momento**: cuántas personas hay en sitio, cuántas llaves están prestadas, cuántas novedades siguen abiertas, qué objetos de Lost & Found están por vencer y qué pases de salida no han regresado. Cada ficha abre su gráfica, el listado de registros y un enlace al módulo ya filtrado.
 
-**Antes de empezar:** necesitas que tu rol pueda **ver** el Tablero. Cada ficha aparece solo si además puedes **ver** el módulo de donde sale el dato (por ejemplo, «Personas en sitio ahora» pide ver la Bitácora de accesos). Las cifras son de tu sede o de toda la empresa, según tu permiso. Si no ves el Tablero o falta una ficha, pide a tu administrador que revise tu rol.
+**Antes de empezar:** necesitas que tu rol pueda **ver** el Tablero. Cada ficha aparece solo si además puedes **ver** el módulo de donde sale el dato (por ejemplo, «Personas en sitio ahora» pide ver la Bitácora de accesos). Las cifras son de tu sede o de toda la empresa, según tu permiso. **Imprimir** pide su propio permiso. Si no ves el Tablero o falta una ficha, pide a tu administrador que revise tu rol.
 
 ## Cómo abrir el Tablero
 
@@ -50,6 +50,16 @@ En el celular las fichas salen de dos en dos:
 
 ![Tablero en el celular](img/informes/tablero-movil.png)
 
+## Cómo imprimir o guardar como PDF
+
+1. Si trabajas en varias sedes, elige primero la **Sede** (o deja **Todas mis sedes**).
+2. Toca **Imprimir** (arriba, junto a los otros informes; solo aparece si tu rol puede imprimir el Tablero). Se abre una hoja carta sin menús, con el logo, la empresa, las sedes y la hora.
+3. Toca **Imprimir o guardar como PDF** y, en la ventana de impresión, elige tu impresora o **Guardar como PDF**.
+
+![Hoja del Tablero para imprimir](img/informes/tablero-imprimir.png)
+
+**Qué debes ver:** una tarjeta por ficha con su número, su nombre y su nota; en rojo lo que pide atención. La hoja no trae los listados ni las gráficas de cada ficha: para eso abre la ficha en pantalla.
+
 ## Si algo sale mal
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
@@ -58,6 +68,8 @@ En el celular las fichas salen de dos en dos:
 | Falta una ficha | No puedes ver el módulo de donde sale ese dato, o por un momento no se pudo calcular. | Vuelve a abrir la pantalla; si sigue sin salir, pide el permiso del módulo. |
 | Las cifras no coinciden con las de otra sede | Solo ves tus sedes. | Es correcto: cada quien ve lo de su alcance. |
 | «Elige arriba la empresa de trabajo» | Eres Super Administrador y no elegiste empresa. | Elige la empresa en **Empresa de trabajo**. |
+| No aparece **Imprimir** | Tu rol no puede imprimir el Tablero. | Pide el permiso **Imprimir** del Tablero. |
+| «No tienes permiso para ver esto» al abrir la hoja para imprimir | Te quitaron el permiso **Imprimir** o abriste un enlace guardado. | Pide el permiso **Imprimir** a tu administrador. |
 
 ## Preguntas frecuentes
 

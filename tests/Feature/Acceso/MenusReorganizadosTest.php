@@ -179,7 +179,8 @@ class MenusReorganizadosTest extends TestCase
         $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'informes', 'estructura'], array_keys($menu));
         // Lección 36: la caseta consulta las vacantes publicadas de su sede; ADR-0010: entrevista a quien RR. HH. le canaliza
         $this->assertSame(['Personal' => ['colaboradores'], 'Recepción y candidatos' => ['vacantes', 'entrevistas']], $menu['recursos_humanos']);
-        $this->assertSame(['Accesos y permisos' => ['usuarios']], $menu['estructura']);
+        // Decisión del dueño (mapa de procesos): consulta la Bitácora de auditoría de su sede
+        $this->assertSame(['Accesos y permisos' => ['usuarios'], 'Sistema' => ['auditoria']], $menu['estructura']);
     }
 
     public function test_informes_aparece_solo_con_las_pantallas_que_existen(): void

@@ -25,7 +25,7 @@ resumen: Los perfiles de usuario (roles), su jerarquía y la matriz que dice qu�
 | Administrador | 10 | Administra toda su empresa. |
 | Director | 20 | Consulta y aprueba en toda la empresa. |
 | Recursos Humanos | 25 | Administra el personal y valida las altas provisionales de la caseta. |
-| Jefe de seguridad | 30 | Opera y supervisa seguridad en su sede; desbloquea usuarios. |
+| Jefe de seguridad | 30 | Opera y supervisa seguridad en su sede; desbloquea usuarios y consulta la Bitácora de auditoría de su sede. |
 | Asistente | 40 | Apoyo de gestión de seguridad en su sede: captura, corrige, imprime y exporta; no elimina, no aprueba ni firma. |
 | Jefe de departamento | 45 | Aprueba y responde las solicitudes de su departamento en su sede (pases de salida y autorizaciones), entrevista y elige a los candidatos que le canaliza Recursos Humanos y pide vacantes. |
 | Supervisor | 50 | Da seguimiento a la operación de su sede. |
@@ -130,6 +130,7 @@ Quien atiende candidatos (Recursos Humanos) no aparece como entrevistador, salvo
 
 - Al marcar cualquier acción se marca **Ver** sola; al quitar **Ver** se quitan las demás. La excepción es **Evaluar** de *Candidatos*: no marca **Ver**, porque quien entrevista solo ve el resumen del candidato en su pantalla **Entrevistar**, no la lista ni los datos personales.
 - Algunos roles traen un alcance **distinto por acción** (por ejemplo, el Jefe de departamento ve los pases de su sede pero solo pide los suyos). Debajo del alcance dice «Distinto por acción: …». Se conserva mientras no cambies el alcance de ese módulo; si lo cambias, se usa uno solo para todas sus acciones.
+- En los informes (**Tablero**, **Bitácora general del día**, **Tendencias** e **Informe ejecutivo**) **Imprimir** es una acción aparte de **Ver**: sin ella la persona consulta el informe en pantalla pero no ve el botón **Imprimir**. Los roles que ya veían un informe conservan la impresión con el mismo alcance.
 - Los módulos marcados **Próximamente** todavía no tienen pantalla: no se pueden marcar y lo que ya tenían se conserva.
 - Si el rol es de tu nivel o superior, la matriz se abre en modo consulta.
 - En el celular la tabla se desliza de lado.

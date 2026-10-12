@@ -154,9 +154,10 @@ class CatalogoSeeder extends Seeder
                 'rutas' => ['Rutas de transporte', 'bi-signpost-split', ['imprimir']],
                 'transporte' => ['Bitácora de transporte', 'bi-bus-front', ['aprobar', 'firmar', 'exportar']],
                 'procedimientos' => ['Procedimientos', 'bi-book', ['aprobar']],
-                'dashboard' => ['Tablero', 'bi-speedometer2', [], [], ['ver']],
-                'informe_ejecutivo' => ['Informe ejecutivo', 'bi-file-earmark-bar-graph', ['exportar'], [], ['ver']],
-                'tendencias' => ['Tendencias', 'bi-graph-up', ['exportar'], [], ['ver']],
+                // Decisión del dueño (mapa de procesos): «Imprimir» es permiso propio en los cuatro informes
+                'dashboard' => ['Tablero', 'bi-speedometer2', ['imprimir'], [], ['ver']],
+                'informe_ejecutivo' => ['Informe ejecutivo', 'bi-file-earmark-bar-graph', ['exportar', 'imprimir'], [], ['ver']],
+                'tendencias' => ['Tendencias', 'bi-graph-up', ['exportar', 'imprimir'], [], ['ver']],
                 'bitacora_dia' => ['Bitácora general del día', 'bi-calendar-day', ['exportar', 'imprimir'], [], ['ver']],
                 // Ronda 6 (LL-06): impresión masiva de etiquetas QR; cada tipo pide además su propio permiso
                 // Ronda 7: «configurar» = sub-pantalla Plantillas del gestor de impresión

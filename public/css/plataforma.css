@@ -4410,6 +4410,11 @@ a.btn-alto-contraste.btn-manual:hover, a.btn-alto-contraste.btn-manual.activo { 
 .cambio-informe { font-size: 0.8rem; font-weight: 700; color: var(--texto-suave); display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: baseline; font-variant-numeric: tabular-nums; }
 .cambio-informe.sube, .cambio-informe.baja { color: var(--texto); }
 .cambio-informe-antes { font-weight: 500; color: var(--texto-suave); }
+/* Tendencias: verde si mejoró y rojo si empeoró (según si subir es bueno o malo); el texto lo dice también */
+.cambio-informe.mejora { color: #15803d; }
+.cambio-informe.empeora { color: #b91c1c; }
+html.modo-noche .cambio-informe.mejora { color: #4ade80; }
+html.modo-noche .cambio-informe.empeora { color: #f87171; }
 .secciones-informe { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
 .chip-informe { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 40px; padding: 0 0.9rem; border-radius: 999px; border: 1px solid var(--borde); background: var(--superficie, #fff); color: var(--texto); font-weight: 700; font-size: 0.82rem; text-decoration: none; }
 .chip-informe.activo { background: var(--color-primario); border-color: var(--color-primario); color: #fff; }
