@@ -609,7 +609,7 @@ class ProcedimientosTest extends TestCase
         $this->assertTrue($this->supervisor->can('procedimientos.editar'));
         $this->assertFalse($this->supervisor->can('procedimientos.aprobar'));
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
-        $asistente = $this->crearUsuario($this->empresa, 'Asistente', $this->centro);
+        $asistente = $this->crearUsuario($this->empresa, 'Asistente de seguridad', $this->centro);
         foreach ([$this->agente, $rh, $asistente] as $u) {
             $this->assertTrue($u->can('procedimientos.ver'));
             $this->assertFalse($u->can('procedimientos.crear'));

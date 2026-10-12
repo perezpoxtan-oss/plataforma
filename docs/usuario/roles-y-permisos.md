@@ -26,7 +26,7 @@ resumen: Los perfiles de usuario (roles), su jerarquía y la matriz que dice qu�
 | Director | 20 | Consulta y aprueba en toda la empresa. |
 | Recursos Humanos | 25 | Administra el personal y valida las altas provisionales de la caseta. |
 | Jefe de seguridad | 30 | Opera y supervisa seguridad en su sede; desbloquea usuarios. |
-| Asistente | 40 | Apoyo de gestión de seguridad en su sede: captura, corrige, imprime y exporta; no elimina, no aprueba ni firma. |
+| Asistente de seguridad | 40 | Apoyo de gestión de seguridad en su sede: captura, corrige, imprime y exporta; no elimina, no aprueba ni firma. |
 | Jefe de departamento | 45 | Aprueba y responde las solicitudes de su departamento en su sede (pases de salida y autorizaciones), entrevista y elige a los candidatos que le canaliza Recursos Humanos y pide vacantes. |
 | Supervisor | 50 | Da seguimiento a la operación de su sede. |
 | Agente | 60 | Registra la operación de caseta; en Padrones solo consulta. |
@@ -70,7 +70,7 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 1. Entra a **Estructura → Roles**. Se abre **Roles y Jerarquía** (la lista va de más autoridad, arriba, a menos autoridad, abajo).
 2. Toca la tarjeta **Nuevo Rol**.
 3. Escribe el **Nombre del Rol** y una **Descripción**.
-4. En **¿Dónde va en la jerarquía?** elige **Debajo de** o **Arriba de** y el rol de referencia. Abajo te dice en qué lugar queda, por ejemplo «Quedará debajo de «Jefe de seguridad» y arriba de «Asistente»». No tienes que inventar números.
+4. En **¿Dónde va en la jerarquía?** elige **Debajo de** o **Arriba de** y el rol de referencia. Abajo te dice en qué lugar queda, por ejemplo «Quedará debajo de «Jefe de seguridad» y arriba de «Asistente de seguridad»». No tienes que inventar números.
 5. En **Permisos iniciales** elige **Los mismos que «…»** para crearlo a partir de otro rol y después ajustar solo lo que cambia, o **Ninguno** para configurarlos tú desde cero. Solo se copian los permisos que tú tienes.
 6. Toca **Crear Rol**.
 
@@ -80,9 +80,9 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 
 **Avanzado:** si necesitas un número exacto, abre **Avanzado: escribir el número de nivel**. Menor número = más autoridad; si eliges una posición arriba, el número no se usa.
 
-## Cómo editar, desactivar o eliminar un rol
+## Cómo editar, dar de baja o eliminar un rol
 
-1. **Lápiz:** se abre **Editar Rol**. Cambia el nombre, la descripción o desactívalo. Para moverlo en la jerarquía elige **Debajo de** o **Arriba de** otro rol; con **Dejarlo donde está** conserva su lugar. Toca **Guardar Cambios**. Un rol desactivado deja sin permisos a quienes lo tienen.
+1. **Lápiz:** se abre **Editar Rol**. Cambia el nombre, la descripción o dalo de baja apagando **Rol activo**. Para moverlo en la jerarquía elige **Debajo de** o **Arriba de** otro rol; con **Dejarlo donde está** conserva su lugar. Toca **Guardar Cambios**. Un rol dado de baja (su ficha dice **De baja**) deja sin permisos a quienes lo tienen.
 2. **Bote de basura:** confirma con **Aceptar** («¿Eliminar el rol «…»? Solo se puede si ningún usuario lo tiene asignado.»). Si está gris, primero reasigna a esas personas.
 3. **Ver permisos:** abre la matriz de ese rol.
 4. **Reloj (Ver historial):** abre la Bitácora de auditoría con todo lo que se le ha hecho a ese rol.
@@ -155,7 +155,7 @@ Arriba aparece **Empresa de trabajo**:
 | No puedes poner un rol arriba de «…»: quedaría a tu nivel o por encima de ti. | Solo puedes crear roles debajo del tuyo. | Elige **Debajo de** tu propio rol o de otro. |
 | «…» ahora tiene los permisos de «…» (sin N que tú no tienes). | El perfil traía permisos que tú no puedes dar. | Pide a alguien de mayor nivel que los agregue si hacen falta. |
 | Ya existe un rol con ese nombre. | El nombre ya se usa. | Usa otro nombre. |
-| El bote de basura está gris. | Hay usuarios con ese rol. | Reasígnalos en [Usuarios](usuarios.md) o desactiva el rol. |
+| El bote de basura está gris. | Hay usuarios con ese rol. | Reasígnalos en [Usuarios](usuarios.md) o da de baja el rol. |
 | No puedo marcar una casilla (está gris). | Tú no tienes ese permiso. | Pídelo a alguien de nivel superior. |
 | Un usuario no ve una pantalla que le di. | Falta **Ver**, o el alcance no incluye su sede. | Revisa **Ver** y el **Alcance** del módulo. |
 | El Jefe de departamento no ve los pases de su gente en **Mis pendientes**. | Su usuario no está vinculado a un colaborador de ese departamento, o su sede no es la sede de origen del pase. | Vincúlalo en [Usuarios](usuarios.md) y revisa su sede. |

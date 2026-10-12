@@ -39,7 +39,7 @@ Réplica de `modules/transporte/bitacora_*` de SEGCAT (`bitacora_transporte.php`
 
 - **`transporte.firmar`**: con este permiso el alta muestra los recuadros de firma (guardia y taxista) y son obligatorios en los vales; sin él, el vale impreso trae las líneas para firmar a mano (como SEGCAT con la firma "en pausa"). La empresa puede pedir en pantalla solo una de las dos (ver «Caseta y activos» abajo).
 - **Alcance.** Movimiento de otra empresa o fuera del alcance de `transporte.ver` (sede o, con "propios", autor) → **404**. Visible pero sin alcance del permiso de la acción → **403**. El alta solo acepta sedes activas dentro de `transporte.crear`. Superadmin: empresa de trabajo.
-- **Plantillas de rol.** Transporte está en el menú Operación: el Agente ve, registra, edita y firma en su sede; no anula, no autoriza ni exporta. Director autoriza y exporta en toda la empresa. Asistente registra y exporta pero no firma (sus vales salen para firma a mano).
+- **Plantillas de rol.** Transporte está en el menú Operación: el Agente ve, registra, edita y firma en su sede; no anula, no autoriza ni exporta. Director autoriza y exporta en toda la empresa. Asistente de seguridad registra y exporta pero no firma (sus vales salen para firma a mano).
 
 ## Reglas
 

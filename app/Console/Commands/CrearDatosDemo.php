@@ -261,18 +261,18 @@ class CrearDatosDemo extends Command
         $club->sedes()->sync([$playa->id]);
 
         $puestos = [
-            'Agente de Seguridad' => [Puesto::OPERATIVO, ['Seguridad']],
-            'Supervisor de Seguridad' => [Puesto::OPERATIVO, ['Seguridad']],
-            'Jefe de Seguridad' => [Puesto::ADMINISTRATIVO, ['Seguridad']],
-            'Recepcionista' => [Puesto::OPERATIVO, ['Recepción']],
-            'Camarista' => [Puesto::OPERATIVO, ['Ama de Llaves']],
-            'Técnico de Mantenimiento' => [Puesto::OPERATIVO, ['Mantenimiento']],
-            'Mesero' => [Puesto::OPERATIVO, ['Alimentos y Bebidas']],
-            'Gerente' => [Puesto::ADMINISTRATIVO, []],
-            'Auxiliar Administrativo' => [Puesto::ADMINISTRATIVO, ['Recursos Humanos', 'Recepción']],
+            'Agente de Seguridad' => ['Seguridad'],
+            'Supervisor de Seguridad' => ['Seguridad'],
+            'Jefe de Seguridad' => ['Seguridad'],
+            'Recepcionista' => ['Recepción'],
+            'Camarista' => ['Ama de Llaves'],
+            'Técnico de Mantenimiento' => ['Mantenimiento'],
+            'Mesero' => ['Alimentos y Bebidas'],
+            'Gerente' => [],
+            'Auxiliar Administrativo' => ['Recursos Humanos', 'Recepción'],
         ];
-        foreach ($puestos as $nombre => [$tipo, $de]) {
-            Puesto::create(['nombre' => $nombre, 'tipo' => $tipo])->departamentos()->sync(collect($de)->map(fn ($d) => $deptos[$d]->id)->all());
+        foreach ($puestos as $nombre => $de) {
+            Puesto::create(['nombre' => $nombre])->departamentos()->sync(collect($de)->map(fn ($d) => $deptos[$d]->id)->all());
         }
     }
 
@@ -1777,7 +1777,7 @@ class CrearDatosDemo extends Command
         auth()->setUser($admin);
         try {
             Departamento::create(['nombre' => 'Compras (duplicado)']);
-            Puesto::create(['nombre' => 'Puesto de prueba', 'tipo' => Puesto::OPERATIVO]);
+            Puesto::create(['nombre' => 'Puesto de prueba']);
             $tipoGafete::create(['nombre' => 'VIP (prueba)']);
             $paradero::create(['sede_id' => $sedes['CEN']->id, 'nombre' => 'PARADERO DE PRUEBA']);
         } finally {

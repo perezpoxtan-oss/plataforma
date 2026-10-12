@@ -12,6 +12,7 @@ use App\Services\Permisos\Alcance;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
 use Tests\TestCase;
 
@@ -101,25 +102,30 @@ class DepartamentosYPuestosTest extends TestCase
 
     // ---------------------------------------------------------------- Puestos
 
-    public function test_puesto_con_tipo_y_departamentos_de_la_misma_empresa(): void
+    public function test_puesto_sin_clasificacion_y_con_departamentos_de_la_misma_empresa(): void
     {
         $this->actingAs($this->admin)->post('/departamentos', ['nombre' => 'Seguridad']);
         $seg = $this->depto('Seguridad');
         $otraEmpresa = $this->crearEmpresa('Hotel Dos');
         $ajeno = app(Tenant::class)->conEmpresa($otraEmpresa->id, fn () => Departamento::create(['nombre' => 'Ajeno']));
 
-        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'Jefe de Seguridad', 'tipo' => 'administrativo', 'departamentos' => [$seg->id, $ajeno->id]])
+        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'Jefe de Seguridad', 'departamentos' => [$seg->id, $ajeno->id]])
             ->assertSessionHas('ok', 'Puesto «Jefe de Seguridad» creado correctamente.');
         $jefe = $this->puesto('Jefe de Seguridad');
-        $this->assertSame('administrativo', $jefe->tipo);
+        // Sin clasificación Operativo / Administrativo (decisión del dueño)
+        $this->assertFalse(Schema::hasColumn('puestos', 'tipo'));
+        $this->assertArrayNotHasKey('tipo', $jefe->getAttributes());
         $this->assertSame([$seg->id], $this->enEmpresa(fn () => $jefe->departamentos()->pluck('departamentos.id')->all()));
 
-        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'Gerente', 'tipo' => 'operativo'])->assertSessionHasNoErrors();
-        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'X', 'tipo' => 'directivo'])->assertSessionHasErrors('tipo');
-        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'JEFE DE SEGURIDAD', 'tipo' => 'operativo'])->assertSessionHasErrors('nombre');
+        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'Gerente'])->assertSessionHasNoErrors();
+        // Un «tipo» enviado por una pantalla vieja se ignora
+        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'Mesero', 'tipo' => 'directivo'])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'JEFE DE SEGURIDAD'])->assertSessionHasErrors('nombre');
 
         $this->actingAs($this->admin)->get('/puestos')->assertOk()
-            ->assertSee('Administrativos')->assertSee('ADMIN')->assertSee('Aplica en cualquier departamento')->assertSee('Seguridad');
+            ->assertSee('Aplica en cualquier departamento')->assertSee('Seguridad')
+            ->assertDontSee('Administrativos')->assertDontSee('Operativos')->assertDontSee('Tipo de Puesto')
+            ->assertDontSee('name="tipo"', false)->assertDontSee('badge-tipo-admin', false);
     }
 
     public function test_editar_un_puesto_conserva_departamentos_desactivados(): void
@@ -128,12 +134,12 @@ class DepartamentosYPuestosTest extends TestCase
         $this->actingAs($this->admin)->post('/departamentos', ['nombre' => 'Bodega']);
         $seg = $this->depto('Seguridad');
         $bodega = $this->depto('Bodega');
-        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'Vigilante', 'tipo' => 'operativo', 'departamentos' => [$seg->id, $bodega->id]]);
+        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'Vigilante', 'departamentos' => [$seg->id, $bodega->id]]);
         $this->actingAs($this->admin)->patch("/departamentos/{$bodega->id}/estado", ['activo' => '0']);
 
         $vigilante = $this->puesto('Vigilante');
         // La lista del formulario ya no muestra Bodega: solo llega Seguridad
-        $this->actingAs($this->admin)->put("/puestos/{$vigilante->id}", ['nombre' => 'Vigilante', 'tipo' => 'operativo', 'departamentos' => [$seg->id]])->assertSessionHas('ok');
+        $this->actingAs($this->admin)->put("/puestos/{$vigilante->id}", ['nombre' => 'Vigilante', 'departamentos' => [$seg->id]])->assertSessionHas('ok');
 
         $ids = $this->enEmpresa(fn () => $vigilante->departamentos()->orderBy('departamentos.id')->pluck('departamentos.id')->all());
         $this->assertSame([$seg->id, $bodega->id], $ids);
@@ -147,7 +153,7 @@ class DepartamentosYPuestosTest extends TestCase
     public function test_aislamiento_entre_empresas(): void
     {
         $this->actingAs($this->admin)->post('/departamentos', ['nombre' => 'Vigilancia Nocturna']);
-        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'Agente', 'tipo' => 'operativo']);
+        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'Agente']);
         $ajeno = $this->crearUsuario($this->crearEmpresa('Hotel Dos'), 'Administrador');
 
         $this->actingAs($ajeno)->get('/departamentos')->assertOk()->assertDontSee('Vigilancia Nocturna');

@@ -19,7 +19,7 @@ Los cuatro módulos del área Seguridad que existían en el catálogo sin pantal
 | `GET /informes/ejecutivo/imprimir` | `informe_ejecutivo.imprimir` | `informe_ejecutivo.ver` (como el original; el módulo no tiene acción «imprimir») |
 | `GET /informes/ejecutivo/exportar` | `informe_ejecutivo.exportar` | `informe_ejecutivo.exportar` |
 
-Los nombres de ruta usan el prefijo de cada módulo (`tablero.`, `bitacora_dia.`…) porque `ConstructorMenu` marca activo el renglón por prefijo. `CatalogoSeeder::RUTAS` y la migración `2026_10_28_000100_informes` ponen `modulos.ruta`; con eso el menú **Informes** aparece y `PermisoController::sinPantalla()` deja de marcarlos «Próximamente» (sin código especial). Por plantilla ven los informes Administrador y Director (empresa), Jefe de seguridad, Asistente y Supervisor (sede); el Agente no (no son de Operación ni Padrones). No se cambió `RolesPlantillaSeeder`.
+Los nombres de ruta usan el prefijo de cada módulo (`tablero.`, `bitacora_dia.`…) porque `ConstructorMenu` marca activo el renglón por prefijo. `CatalogoSeeder::RUTAS` y la migración `2026_10_28_000100_informes` ponen `modulos.ruta`; con eso el menú **Informes** aparece y `PermisoController::sinPantalla()` deja de marcarlos «Próximamente» (sin código especial). Por plantilla ven los informes Administrador y Director (empresa), Jefe de seguridad, Asistente de seguridad y Supervisor (sede); el Agente no (no son de Operación ni Padrones). No se cambió `RolesPlantillaSeeder`.
 
 ## Alcance (`App\Services\Informes\AlcanceInformes`)
 

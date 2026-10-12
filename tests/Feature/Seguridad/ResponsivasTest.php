@@ -412,7 +412,7 @@ class ResponsivasTest extends TestCase
     public function test_sin_permiso_de_firmar_no_se_crea_el_resguardo(): void
     {
         // El Asistente captura y edita pero no firma
-        $asistente = $this->crearUsuario($this->empresa, 'Asistente', $this->centro);
+        $asistente = $this->crearUsuario($this->empresa, 'Asistente de seguridad', $this->centro);
         $r = $this->crearLote($this->admin, $this->colaborador('1005', $this->centro), [$this->equipo('RAD-1')]);
 
         $this->actingAs($asistente)->get('/responsivas')->assertOk()->assertDontSee('Nueva responsiva')->assertDontSee('dialogoNuevoResguardo"', false);

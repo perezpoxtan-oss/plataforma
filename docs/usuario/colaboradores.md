@@ -80,7 +80,7 @@ Si alguien trabaja en más de una sede (por ejemplo un agente que cubre turnos e
 
 **Qué debes ver:** la ficha **DE BAJA**. Ya no aparece al buscarlo desde otros módulos. No se borra a nadie: su historial en bitácoras, pases y responsivas se conserva.
 
-**Si tiene cuenta de usuario:** al darlo de baja **su cuenta se desactiva sola** (ya no puede entrar y se le cierra la sesión). El mensaje lo dice: «También se desactivó su cuenta de usuario «@…»; puedes reactivarla en Usuarios.» Quien administra usuarios de esa sede recibe el aviso en su campana. Al **reingresarlo**, la cuenta **no** se reactiva sola: el mensaje te lo recuerda («Su cuenta de usuario sigue desactivada: reactívala en Usuarios si la necesita») y se hace desde [Usuarios](usuarios.md) con la **flecha circular** de su ficha.
+**Si tiene cuenta de usuario:** al darlo de baja **su cuenta se da de baja sola** (ya no puede entrar y se le cierra la sesión). El mensaje lo dice: «También se dio de baja su cuenta de usuario «@…»; puedes reactivarla en Usuarios.» Quien administra usuarios de esa sede recibe el aviso en su campana. Al **reingresarlo**, la cuenta **no** se reactiva sola: el mensaje te lo recuerda («Su cuenta de usuario sigue dada de baja: reactívala en Usuarios si la necesita») y se hace desde [Usuarios](usuarios.md) con la **flecha circular** de su ficha.
 
 ## Cómo ver el código QR y asignar el gafete o tarjeta NFC / RFID
 

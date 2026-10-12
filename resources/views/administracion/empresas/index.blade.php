@@ -17,7 +17,7 @@
             <div>
                 {{-- Mejoras estructura (ADR-0016): un solo nombre para el módulo --}}
                 <h1>Empresas</h1>
-                <p>{{ $esSuperadmin ? 'Las empresas de la plataforma: alta, módulos que tiene cada una y activar o desactivar.' : 'Los datos de tu empresa: razón social, RFC, zona horaria y logo para las impresiones.' }}</p>
+                <p>{{ $esSuperadmin ? 'Las empresas de la plataforma: alta, módulos que tiene cada una, dar de baja y reactivar.' : 'Los datos de tu empresa: razón social, RFC, zona horaria y logo para las impresiones.' }}</p>
             </div>
         </div>
         @if ($empresas->count() > 1)
@@ -32,7 +32,7 @@
         <div class="filtros-estado" role="group" aria-label="Filtrar por estado">
             <button type="button" class="btn btn-dark btn-sm fw-bold" data-filtro-estado="empresas" data-valor="todas" aria-pressed="true">Todas</button>
             <button type="button" class="btn btn-outline-success btn-sm fw-bold" data-filtro-estado="empresas" data-valor="1" aria-pressed="false">Activas</button>
-            <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-filtro-estado="empresas" data-valor="0" aria-pressed="false">Inactivas</button>
+            <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-filtro-estado="empresas" data-valor="0" aria-pressed="false">De baja</button>
         </div>
     @endif
 
@@ -78,7 +78,7 @@
                                     @if ($puede['sedes'] && ! $esSuperadmin)
                                         <a href="{{ route('sedes.index') }}#sede-{{ $s->id }}" class="small text-decoration-none"><i class="bi bi-arrow-right-short" aria-hidden="true"></i> {{ $s->nombre }}</a>
                                     @else
-                                        <span class="small"><i class="bi bi-arrow-right-short" aria-hidden="true"></i> {{ $s->nombre }}@unless ($s->activo) <span class="text-muted">(inactiva)</span>@endunless</span>
+                                        <span class="small"><i class="bi bi-arrow-right-short" aria-hidden="true"></i> {{ $s->nombre }}@unless ($s->activo) <span class="text-muted">(de baja)</span>@endunless</span>
                                     @endif
                                 @endforeach
                                 @if ($emp->sedes->count() > 5)
@@ -98,7 +98,7 @@
                     <div class="small text-muted mt-2"><i class="bi bi-grid-3x3-gap me-1" aria-hidden="true"></i>{{ count($contratados[$emp->id] ?? []) }} módulos contratados</div>
                 @endif
                 <div class="ficha-footer">
-                    <span class="etiqueta-estado {{ $emp->activo ? 'activo' : 'inactivo' }}">{{ $emp->activo ? 'ACTIVA' : 'INACTIVA' }}</span>
+                    <span class="etiqueta-estado {{ $emp->activo ? 'activo' : 'inactivo' }}">{{ $emp->activo ? 'ACTIVA' : 'DE BAJA' }}</span>
                     <div class="d-flex gap-2">
                         @include('componentes.ver-historial', ['registro' => \App\Models\Empresa::class, 'id' => $emp->id, 'nombre' => $emp->nombre_comercial])
                         @if ($esSuperadmin)
@@ -115,12 +115,12 @@
                         @endif
                         @if ($puede['estado'])
                             <form action="{{ route('empresas.estado', $emp->id) }}" method="POST" class="m-0"
-                                  data-confirmar="{{ $emp->activo ? '¿Desactivar esta empresa? Sus usuarios ya no podrán entrar. Podrás reactivarla después con el mismo botón.' : '¿Reactivar esta empresa?' }}">
+                                  data-confirmar="{{ $emp->activo ? '¿Dar de baja la empresa «'.$emp->nombre_comercial.'»? Sus usuarios ya no podrán entrar. Podrás reactivarla después con el mismo botón.' : '¿Reactivar la empresa «'.$emp->nombre_comercial.'»?' }}">
                                 @csrf
                                 @method('PATCH')
                                 <input type="hidden" name="activo" value="{{ $emp->activo ? 0 : 1 }}">
                                 @if ($emp->activo)
-                                    <button type="submit" class="btn-icono eliminar" title="Desactivar" aria-label="Desactivar {{ $emp->nombre_comercial }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
+                                    <button type="submit" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja {{ $emp->nombre_comercial }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
                                 @else
                                     <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar {{ $emp->nombre_comercial }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                                 @endif

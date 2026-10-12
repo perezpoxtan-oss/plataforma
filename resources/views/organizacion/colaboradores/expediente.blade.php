@@ -32,7 +32,7 @@
                     <dt>Puesto</dt><dd>{{ $c->puesto?->nombre ?? '—' }}</dd>
                     <dt>Teléfono</dt><dd>{{ $c->telefono ?: '—' }}</dd>
                     <dt>Alta en la plataforma</dt><dd>@fecha($c->created_at, 'd/m/Y')</dd>
-                    <dt>Cuenta de usuario</dt><dd>{{ $c->usuario ? $c->usuario->username.($c->usuario->activo ? '' : ' (desactivada)') : 'Sin cuenta' }}</dd>
+                    <dt>Cuenta de usuario</dt><dd>{{ $c->usuario ? $c->usuario->username.($c->usuario->activo ? '' : ' (dada de baja)') : 'Sin cuenta' }}</dd>
                 </dl>
                 <p class="texto-traza mb-0"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Los datos se editan desde <a href="{{ route('colaboradores.index', ['q' => $c->num_empleado]) }}">Colaboradores</a>.</p>
             </section>

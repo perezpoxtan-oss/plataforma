@@ -95,7 +95,7 @@ Cuando un guardia necesita registrar a alguien en un formulario (acceso, présta
 
 | Paso | Quién | Permiso | Qué pasa |
 |---|---|---|---|
-| Alta provisional | Caseta: Jefe de seguridad, Asistente, Supervisor, Agente | `colaboradores.provisional` (su sede) | `POST /colaboradores/rapido`. Sin `colaboradores.crear` el alta es provisional: el número de empleado es opcional y la sede es una de las suyas. Queda con `provisional = 1` y se puede usar de inmediato |
+| Alta provisional | Caseta: Jefe de seguridad, Asistente de seguridad, Supervisor, Agente | `colaboradores.provisional` (su sede) | `POST /colaboradores/rapido`. Sin `colaboradores.crear` el alta es provisional: el número de empleado es opcional y la sede es una de las suyas. Queda con `provisional = 1` y se puede usar de inmediato |
 | Evitar duplicados | — | — | Si hay alguien activo con el mismo nombre y apellidos (sin importar mayúsculas ni acentos), responde **409** con `parecidos` y el diálogo ofrece usarlo. Para registrarla de todos modos se reenvía con `confirmar_nuevo=1` |
 | Validar | Recursos Humanos, Administrador, Director | `colaboradores.aprobar` | `PUT /colaboradores/{id}/validar`: corrige los datos y asigna el **número de empleado** (obligatorio, único). Guarda `validado_por` y `validado_en` |
 | Es un duplicado | Mismo permiso | `colaboradores.aprobar` | `PUT /colaboradores/{id}/fusionar` con `destino_id`: todo lo que se registró con el provisional pasa al colaborador correcto (`AdministradorColaboradores::REFERENCIAS`). El provisional queda de baja con `fusionado_en_id` |

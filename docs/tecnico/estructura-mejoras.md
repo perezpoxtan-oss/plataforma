@@ -45,7 +45,7 @@ Componentes de vista nuevos: `componentes/ver-historial`, `componentes/ayuda-apa
 
 - **Alcance distinto por acción en la pantalla**: el modelo y el `Autorizador` lo permiten, pero varias pantallas autorizan `x.editar` sin el registro y lo buscan con la consulta limitada por `x.ver`; con «Ver: empresa / Editar: sede» se podría editar fuera de la sede. Para habilitarlo hay que revisar cada controlador (pasar el registro a `Gate::authorize` o limitar la búsqueda por el permiso de la acción).
 - **Avisos en vivo** (sin esperar 30 s): el hospedaje compartido no permite procesos permanentes (websockets).
-- **Renombrar «Asistente»**: las migraciones de otros módulos lo buscan por nombre.
+- **Renombrar «Asistente»**: se hizo después, como «Asistente de seguridad» (ver [roles-y-permisos.md](roles-y-permisos.md)); las migraciones anteriores que lo buscan por nombre corren antes del cambio.
 
 ## Pruebas
 

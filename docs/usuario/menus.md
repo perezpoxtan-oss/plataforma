@@ -63,7 +63,7 @@ Junto a la campana hay un botón amarillo **Mis pendientes** con un número: es 
    - **Entrevistas por evaluar:** candidatos que Recursos Humanos te canalizó, con la próxima cita. Ver [Entrevistar y elegir](entrevistar-y-elegir.md).
    - **Tickets canalizados a mí** y **Pendientes de turno sin dueño** (personal de Seguridad): los tickets de la bitácora que te toca atender. Ver [Bitácora de novedades](novedades.md).
    - **Vales de taxi por autorizar** (quien da el Vo.Bo. en la Bitácora de transporte), **Llaves fuera de tiempo** y **Equipos de turno sin regresar** (si tu empresa puso sus horas en Configuración → Caseta y activos; en ámbar o rojo según el tiempo). Ver [Préstamo de llaves](prestamo-llaves.md) y [Responsivas](responsivas.md).
-   - **Cuentas por revisar** (quien administra usuarios): cuentas bloqueadas, desactivadas por la baja de su colaborador en los últimos 7 días o que piden pases sin colaborador vinculado. Ver [Usuarios](usuarios.md).
+   - **Cuentas por revisar** (quien administra usuarios): cuentas bloqueadas, dadas de baja junto con su colaborador en los últimos 7 días o que piden pases sin colaborador vinculado. Ver [Usuarios](usuarios.md).
 3. Toca un renglón para ir directo a resolverlo. Si eres jefe de un departamento, en [Pedir un pase de salida y aprobarlo](solicitudes.md) está paso a paso lo que te puede aparecer.
 
 ![Mis pendientes con candidatos agrupados](img/menus/mis-pendientes-agrupados.png)

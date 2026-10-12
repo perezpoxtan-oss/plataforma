@@ -90,7 +90,7 @@ class EtiquetasQrTest extends TestCase
         $director = $this->crearUsuario($this->empresa, 'Director');
         $this->actingAs($director)->get('/etiquetas/plantillas')->assertOk();
         $this->actingAs($this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro))->get('/etiquetas/plantillas')->assertOk();
-        foreach (['Supervisor', 'Asistente', 'Agente'] as $rol) {
+        foreach (['Supervisor', 'Asistente de seguridad', 'Agente'] as $rol) {
             $this->actingAs($this->crearUsuario($this->empresa, $rol, $this->centro))->get('/etiquetas/plantillas')->assertForbidden();
         }
         // La pestaña «Plantillas» solo se ve con el permiso

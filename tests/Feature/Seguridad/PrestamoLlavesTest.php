@@ -458,7 +458,7 @@ class PrestamoLlavesTest extends TestCase
 
     public function test_el_asistente_presta_y_exporta_pero_no_anula(): void
     {
-        $asistente = $this->crearUsuario($this->empresa, 'Asistente', $this->centro);
+        $asistente = $this->crearUsuario($this->empresa, 'Asistente de seguridad', $this->centro);
         $p = $this->prestamo($this->llave('HDC-1'), $this->colaborador('1007', $this->centro));
 
         $this->actingAs($asistente)->get('/prestamo-llaves')->assertOk()->assertSee('Excel (Auditoría)')->assertSee('Prestar Llave');

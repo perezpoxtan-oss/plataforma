@@ -39,7 +39,7 @@ En SEGCAT ambas pantallas usaban los permisos del módulo `permisos`. Ahora **Ro
 - El **alcance** se elige por módulo y aplica a todas sus acciones: *Solo los propios*, *Su sede* o *Toda la empresa*.
 - La matriz muestra solo los módulos **contratados** por la empresa. Los permisos de módulos no visibles se conservan al guardar.
 - Módulos y acciones salen del catálogo de la base de datos: lo que llegue del navegador y no exista en el catálogo se ignora.
-- Desactivar un rol retira de inmediato sus permisos a quienes lo tienen; el motor ignora roles inactivos.
+- Dar de baja un rol (interruptor «Rol activo» en Editar Rol; la ficha dice «De baja») retira de inmediato sus permisos a quienes lo tienen; el motor ignora roles dados de baja.
 - Roles y Matriz son de **toda la empresa** (un rol lo usan todas las sedes): crearlos, editarlos, borrarlos o cambiar sus permisos exige `roles.*` / `permisos.editar` con **alcance de empresa**. Con "Solo los propios", solo los roles que él dio de alta. Con alcance de sede se consultan (auditoría AZ-02).
 - "Solo los propios" **nunca** cuenta como toda la empresa, aunque la asignación no tenga sede: use `Autorizador::alcanceDeEmpresa()` (no `sedesPermitidas() === null`) para decidir si alguien puede cambiar algo de toda la empresa, y `Autorizador::soloPropios()` para acotar a lo que dio de alta (auditoría AZ-04).
 - Quien da de alta o edita usuarios con alcance de sede solo asigna sus sedes (nunca "Todas las sedes") (auditoría AZ-01).
@@ -56,7 +56,7 @@ Un selector "Empresa de trabajo" (`EmpresaDeTrabajo`, sesión `empresa_activa_id
 | Administrador | 10 | Todo, toda la empresa (incluye `usuarios.desbloquear`) |
 | Director | 20 | Ver, aprobar, exportar e imprimir, toda la empresa |
 | Jefe de seguridad | 30 | Seguridad y Reportes completos, más `usuarios.ver` y `usuarios.desbloquear`; su sede |
-| Asistente | 40 | Seguridad y Reportes (Operación **y** Padrones): ver, crear, editar, imprimir y exportar; sin eliminar, aprobar ni firmar. Su sede |
+| Asistente de seguridad | 40 | Seguridad y Reportes (Operación **y** Padrones): ver, crear, editar, imprimir y exportar; sin eliminar, aprobar ni firmar. Su sede |
 | Jefe de departamento | 45 | `pases_salida` ver/aprobar/imprimir (sede) y crear (propios); `autorizaciones` ver/responder (sede); `vacantes` ver (sede) y crear (propios); `procedimientos.ver` (sede) |
 | Supervisor | 50 | Seguridad y Reportes sin eliminar; su sede |
 | Agente | 60 | **Operación**: ver, crear, editar, imprimir y firmar. **Padrones**: solo ver. Su sede |
@@ -72,16 +72,17 @@ Un selector "Empresa de trabajo" (`EmpresaDeTrabajo`, sesión `empresa_activa_id
   - consultar Sedes, Departamentos, Puestos y Turnos.
 - **No tiene** permisos de Seguridad.
 
-La caseta (Jefe de seguridad, Asistente, Supervisor y Agente) recibe `colaboradores.ver` y `colaboradores.provisional` de su sede: consulta al personal de su sede y da altas provisionales.
+La caseta (Jefe de seguridad, Asistente de seguridad, Supervisor y Agente) recibe `colaboradores.ver` y `colaboradores.provisional` de su sede: consulta al personal de su sede y da altas provisionales.
 
-### Asistente (QA U-02)
+### Asistente de seguridad (QA U-02)
 
-SEGCAT tiene "Asistente de Seguridad - Apoyo de Gestión Local" en el nivel 40, entre el Jefe (30) y el Supervisor (50). La plantilla `Asistente` usa `RolesPlantillaSeeder::ACCIONES_ASISTENTE`.
+SEGCAT tiene "Asistente de Seguridad - Apoyo de Gestión Local" en el nivel 40, entre el Jefe (30) y el Supervisor (50). La plantilla `Asistente de seguridad` (`RolesPlantillaSeeder::ASISTENTE`) usa `RolesPlantillaSeeder::ACCIONES_ASISTENTE`.
 
-- **Decisión:** a diferencia del Agente, el Asistente **sí captura y corrige en Padrones** (llaves, gafetes, vehículos…), porque su función en SEGCAT es mantener los catálogos de su sede. No elimina, no aprueba ni firma (eso queda en Jefe y Supervisor) y no administra usuarios. Las acciones que un módulo no tenga (p. ej. `exportar` en Gafetes) simplemente no se otorgan.
+- **Decisión:** a diferencia del Agente, el Asistente de seguridad **sí captura y corrige en Padrones** (llaves, gafetes, vehículos…), porque su función en SEGCAT es mantener los catálogos de su sede. No elimina, no aprueba ni firma (eso queda en Jefe y Supervisor) y no administra usuarios. Las acciones que un módulo no tenga (p. ej. `exportar` en Gafetes) simplemente no se otorgan.
 - `RolesPlantillaSeeder::definiciones()` concentra las reglas de todas las plantillas y `asegurarPlantilla($nombre)` crea una sola si falta (devuelve `null` si el catálogo está vacío o su nivel ya lo ocupa otra plantilla).
 - `ProvisionarEmpresa::copiarPlantilla()` copia una plantilla con sus permisos a una empresa (lo usa el alta de empresas) y `copiarPlantillaSiFalta()` lo hace solo si la empresa no tiene ya un rol con ese nombre **ni otro rol en ese nivel**.
 - Migración `2026_10_06_000100_agregar_rol_asistente` (idempotente, sin reversa): crea la plantilla si falta y agrega el Asistente a cada empresa existente que no lo tenga. Si una empresa ya usa el nivel 40 para un rol propio, no se crea (el administrador puede darlo de alta en otro nivel). En una instalación nueva no hace nada: lo crean el seeder y el alta de empresas.
+- **Nombre (2026-10, decisión del dueño):** el rol se llamaba «Asistente»; pasó a «Asistente de seguridad» porque hay muchos puestos «asistente» en otras áreas. Mismos permisos. Migración `2026_10_29_001200_renombrar_rol_asistente_de_seguridad`: renombra la plantilla y el rol de cada empresa **solo** si conserva el nombre exacto «Asistente» (comparación sensible a mayúsculas y acentos; los renombrados por el cliente no se tocan) y si en esa empresa no existe ya un «Asistente de seguridad». `down()` regresa a «Asistente» los que se llaman exactamente «Asistente de seguridad». `RolesPlantillaSeeder::asegurarPlantilla('Asistente')` (la migración de 2026-10-06) se traduce al nombre nuevo. Migraciones nuevas que busquen el rol por nombre deben usar `RolesPlantillaSeeder::ASISTENTE`.
 
 ### Solicitante y Jefe de departamento
 
@@ -97,7 +98,7 @@ Personal fuera de la caseta que solo levanta solicitudes (Solicitante) y su jefe
 
 ### Nivel mínimo explicado (QA R-02)
 
-El alta de rol muestra, debajo del nivel, "Tu nivel es N. Solo puedes crear roles de nivel N+1 en adelante (número mayor = menos autoridad: 20 Director, 30 Jefe de seguridad, 40 Asistente…)", armado con el nivel real de quien captura y los roles existentes de la empresa. El aviso del navegador usa `data-mensaje-min` (ver `acceso-y-diseno.md`) y el servidor responde "Tu nivel es N: solo puedes crear o administrar roles de nivel N+1 en adelante…".
+El alta de rol muestra, debajo del nivel, "Tu nivel es N. Solo puedes crear roles de nivel N+1 en adelante (número mayor = menos autoridad: 20 Director, 30 Jefe de seguridad, 40 Asistente de seguridad…)", armado con el nivel real de quien captura y los roles existentes de la empresa. El aviso del navegador usa `data-mensaje-min` (ver `acceso-y-diseno.md`) y el servidor responde "Tu nivel es N: solo puedes crear o administrar roles de nivel N+1 en adelante…".
 
 Debajo del título se indica la empresa: "Roles de «Hotel Demo»" (o el texto de plantillas si el Super Administrador no eligió empresa).
 

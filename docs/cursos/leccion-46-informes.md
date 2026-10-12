@@ -1,6 +1,6 @@
 # Lección 46 · Informes: Tablero, Bitácora del día, Tendencias e Informe ejecutivo
 
-**Duración:** 30 minutos · **Para:** Director, Administrador, Jefe de seguridad, Supervisor y Asistente.
+**Duración:** 30 minutos · **Para:** Director, Administrador, Jefe de seguridad, Supervisor y Asistente de seguridad.
 
 Aprenderás:
 

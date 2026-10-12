@@ -62,7 +62,7 @@ class VacantesTest extends TestCase
         $this->playa = $this->crearSede($this->empresa, 'PLA');
         $this->rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
         $this->agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
-        [$this->cocina, $this->cocinero] = $this->enEmpresa(fn () => [Departamento::create(['nombre' => 'Cocina']), Puesto::create(['nombre' => 'Cocinero', 'tipo' => Puesto::OPERATIVO])]);
+        [$this->cocina, $this->cocinero] = $this->enEmpresa(fn () => [Departamento::create(['nombre' => 'Cocina']), Puesto::create(['nombre' => 'Cocinero'])]);
     }
 
     // ------------------------------------------------------------------ Ayudas

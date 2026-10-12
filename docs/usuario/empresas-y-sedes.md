@@ -68,15 +68,23 @@ Cada empresa nueva nace con **todos** los módulos. Si una empresa no usa alguno
 
 ![Alta de sede](img/empresas/3-alta-sede.png)
 
-**Qué debes ver:** ««Hotel Aeropuerto» registrada correctamente. ¿Qué sigue?» con dos botones: **Capturar sus zonas y edificios** y **Dar de alta a su personal en Usuarios** (solo los que tu rol puede usar). Usa **Buscar por nombre, código o ciudad...** y **Todos / Activos / Inactivos** para encontrar una sede.
+**Qué debes ver:** ««Hotel Aeropuerto» registrada correctamente. ¿Qué sigue?» con dos botones: **Capturar sus zonas y edificios** y **Dar de alta a su personal en Usuarios** (solo los que tu rol puede usar). Usa **Buscar por nombre, código o ciudad...** y **Todos / Activos / De baja** para encontrar una sede.
 
 ![Sedes](img/empresas/2-sedes.png)
 
-## Cómo editar o desactivar una sede
+## Cómo editar, dar de baja o reactivar una sede
 
 1. **Editar** (lápiz): corrige los datos y toca **Guardar Cambios**. Verás ««…» actualizada correctamente.»
-2. **Desactivar** (círculo rojo): confirma con **Aceptar**. La sede deja de aparecer para nuevas capturas, pero su historial se conserva: ««…» desactivada: ya no aparecerá para nuevas capturas. Su historial se conserva.»
-3. **Reactivar** (flecha circular): la vuelve a activar.
+2. **Dar de baja** (círculo rojo): confirma con **Aceptar** («¿Dar de baja «…»? Ya no aparecerá para nuevas capturas; su historial se conserva. Podrás reactivarla con el mismo botón.»). La sede deja de aparecer para nuevas capturas, pero su historial se conserva: ««…» dada de baja: ya no aparecerá para nuevas capturas. Su historial se conserva. Puedes reactivarla con el mismo botón.» Su ficha dice **DE BAJA**.
+3. **Reactivar** (flecha circular): confirma con **Aceptar** y la sede vuelve a estar **ACTIVO**.
+
+## Cómo dar de baja o reactivar una empresa (Super Administrador)
+
+1. Entra a **Estructura → Empresas**.
+2. En la ficha de la empresa toca el **círculo rojo** (Dar de baja) y confirma con **Aceptar** («¿Dar de baja la empresa «…»? Sus usuarios ya no podrán entrar. Podrás reactivarla después con el mismo botón.»).
+3. Para regresarla, toca la **flecha circular** (Reactivar) y confirma.
+
+**Qué debes ver:** «Empresa dada de baja: sus usuarios ya no pueden entrar. Puedes reactivarla con el mismo botón.» y la ficha dice **DE BAJA**. Usa **Todas / Activas / De baja** para encontrarla.
 
 ## Si algo sale mal
 
@@ -99,9 +107,9 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 **¿Cuándo cambio la zona horaria de una sede?** Solo si esa sede está en otro horario que la empresa (por ejemplo, otra región del país). Las bitácoras registran la hora local de cada sede.
 
-**¿Puedo borrar una sede?** No; se desactiva para conservar su historial.
+**¿Puedo borrar una sede?** No; se da de baja para conservar su historial y se puede reactivar.
 
-**¿Qué pasa si desactivo la empresa?** Sus usuarios ya no pueden entrar. Solo lo hace el Super Administrador.
+**¿Qué pasa si doy de baja la empresa?** Sus usuarios ya no pueden entrar. Solo lo hace el Super Administrador.
 
 ## Relacionado
 

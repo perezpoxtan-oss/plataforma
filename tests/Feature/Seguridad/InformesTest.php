@@ -119,7 +119,7 @@ class InformesTest extends TestCase
     public function test_if01_menu_informes_visible_para_los_roles_de_consulta_y_no_para_el_agente(): void
     {
         $menu = fn (User $u) => collect(app(ConstructorMenu::class)->para($u))->firstWhere('clave', 'informes');
-        foreach (['Administrador', 'Director', 'Asistente', 'Supervisor'] as $rol) {
+        foreach (['Administrador', 'Director', 'Asistente de seguridad', 'Supervisor'] as $rol) {
             $u = $this->crearUsuario($this->empresa, $rol, in_array($rol, ['Administrador', 'Director'], true) ? null : $this->centro);
             $this->assertSame(['dashboard', 'bitacora_dia', 'tendencias', 'informe_ejecutivo'], collect($menu($u)['secciones'])->flatten(1)->pluck('clave')->all(), $rol);
         }

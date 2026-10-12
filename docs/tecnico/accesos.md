@@ -135,7 +135,7 @@ Otra empresa u otra sede fuera del alcance → **404**. Superadministrador: elig
 |---|---|---|---|---|---|
 | Administrador | toda la empresa | ✔ | ✔ | ✔ | ✔ |
 | Jefe de seguridad / Supervisor | su sede | ✔ | ✔ | ✔ | ✔ |
-| Asistente | su sede | ✔ | ✔ | — | ✔ |
+| Asistente de seguridad | su sede | ✔ | ✔ | — | ✔ |
 | Agente | su sede | ✔ | ✔ | — | — |
 | Director | toda la empresa | — | — | ✔ | ✔ |
 

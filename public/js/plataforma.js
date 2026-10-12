@@ -466,7 +466,7 @@
         if (e.target.matches('[data-filtro-sede]')) { var c = contenedorDe(e.target); if (c) { aplicar(c); } }
     });
 
-    // Píldoras de tipo (Administrativos / Operativos): [data-filtro-tipo="clave"][data-valor]
+    // Píldoras de tipo (p. ej. Propios / Flotillas / Taxis): [data-filtro-tipo="clave"][data-valor]
     document.addEventListener('click', function (e) {
         var b = e.target.closest('[data-filtro-tipo]');
         if (!b) { return; }

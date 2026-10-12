@@ -32,7 +32,16 @@ class RolesPlantillaSeeder extends Seeder
     public const ACCIONES_ASISTENTE = ['ver', 'crear', 'editar', 'imprimir', 'exportar'];
 
     /**
-     * La caseta (Jefe, Asistente, Supervisor y Agente) consulta a los
+     * Nombre del rol de sistema (antes «Asistente»: había muchos puestos
+     * «asistente» en otras áreas y el rol es de seguridad).
+     */
+    public const ASISTENTE = 'Asistente de seguridad';
+
+    /** Nombre anterior: la migración de datos solo renombra los roles que aún lo conservan exacto. */
+    public const ASISTENTE_ANTERIOR = 'Asistente';
+
+    /**
+     * La caseta (Jefe, Asistente de seguridad, Supervisor y Agente) consulta a los
      * colaboradores de su sede y da de alta provisionales cuando la persona aún
      * no existe; Recursos Humanos los valida.
      */
@@ -84,7 +93,7 @@ class RolesPlantillaSeeder extends Seeder
                 : (in_array($ma->modulo->clave, self::CONSULTA_RH, true) && $ma->accion->clave === 'ver' ? Alcance::Empresa : null)],
             'Jefe de seguridad' => [30, 'Opera y supervisa seguridad en su sede', fn ($ma) => $deSeguridad($ma) || $provisional($ma)
                 || in_array($ma->clave(), self::USUARIOS_JEFE, true) ? Alcance::Sede : null],
-            'Asistente' => [40, 'Apoyo de gestión de seguridad en su sede', fn ($ma) => ($deSeguridad($ma)
+            self::ASISTENTE => [40, 'Apoyo de gestión de seguridad en su sede', fn ($ma) => ($deSeguridad($ma)
                 && in_array($ma->accion->clave, self::ACCIONES_ASISTENTE, true)) || $provisional($ma) ? Alcance::Sede : null],
             'Supervisor' => [50, 'Da seguimiento a la operación de su sede', fn ($ma) => ($deSeguridad($ma) && $ma->accion->clave !== 'eliminar') || $provisional($ma) ? Alcance::Sede : null],
             'Agente' => [60, 'Registra la operación de caseta', fn ($ma) => ($deCaseta($ma)
@@ -199,7 +208,7 @@ class RolesPlantillaSeeder extends Seeder
         'Director' => [['ver', 'crear', 'editar', 'eliminar', 'aprobar'], Alcance::Empresa],
         'Jefe de seguridad' => [['ver', 'crear', 'editar', 'eliminar', 'aprobar'], Alcance::Sede],
         'Supervisor' => [['ver', 'crear', 'editar'], Alcance::Sede],
-        'Asistente' => [['ver'], Alcance::Sede],
+        self::ASISTENTE => [['ver'], Alcance::Sede],
         'Agente' => [['ver'], Alcance::Sede],
         'Recursos Humanos' => [['ver'], Alcance::Empresa],
         // Solicitudes: consultan lo publicado que aplica a su sede y firman su acuse
@@ -239,7 +248,7 @@ class RolesPlantillaSeeder extends Seeder
     public const VACANTES = [
         'Director' => [['ver', 'crear', 'editar', 'eliminar'], Alcance::Empresa],
         'Jefe de seguridad' => [['ver'], Alcance::Sede],
-        'Asistente' => [['ver'], Alcance::Sede],
+        self::ASISTENTE => [['ver'], Alcance::Sede],
         'Supervisor' => [['ver'], Alcance::Sede],
         'Agente' => [['ver'], Alcance::Sede],
     ];
@@ -330,6 +339,10 @@ class RolesPlantillaSeeder extends Seeder
      */
     public static function asegurarPlantilla(string $nombre, ?Collection $todos = null): ?Rol
     {
+        // Migraciones anteriores lo piden con su nombre de entonces
+        if ($nombre === self::ASISTENTE_ANTERIOR) {
+            $nombre = self::ASISTENTE;
+        }
         $definicion = self::definiciones()[$nombre] ?? null;
         if ($definicion === null) {
             return null;

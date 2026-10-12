@@ -1,6 +1,6 @@
 # Lección 16 — Equipos de seguridad y estacionamientos
 
-**Para:** Jefe de seguridad, Asistente, Administrador y Agentes · **Duración:** 20 minutos
+**Para:** Jefe de seguridad, Asistente de seguridad, Administrador y Agentes · **Duración:** 20 minutos
 
 ## Práctica (en QA)
 

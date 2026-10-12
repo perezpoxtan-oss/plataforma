@@ -47,7 +47,7 @@ Los valores inválidos se ignoran. Los selectores y las fechas envían el formul
 | Lista | `vouchers.ver` + `<origen>.ver` |
 | Ver / Reimprimir | `vouchers.imprimir` (+ lo anterior) |
 
-Plantillas: el **Agente** consulta (Padrones = solo `ver`) pero no imprime; Asistente, Supervisor, Jefe, Director y Administrador imprimen.
+Plantillas: el **Agente** consulta (Padrones = solo `ver`) pero no imprime; Asistente de seguridad, Supervisor, Jefe, Director y Administrador imprimen.
 
 ## Rutas
 

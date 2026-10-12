@@ -76,7 +76,7 @@ class PendientesDireccionTest extends TestCase
     public function test_la_bitacora_muestra_lo_de_la_empresa_legible_y_filtrable(): void
     {
         $this->actingAs($this->admin)->post('/departamentos', ['nombre' => 'Seguridad']);
-        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'Vigilante', 'tipo' => 'operativo']);
+        $this->actingAs($this->admin)->post('/puestos', ['nombre' => 'Vigilante']);
         // Algo de otra empresa no debe verse
         $otro = $this->crearUsuario($this->crearEmpresa('Hotel Dos'), 'Administrador');
         $this->actingAs($otro)->post('/departamentos', ['nombre' => 'Secreto de otra empresa']);

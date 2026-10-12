@@ -77,7 +77,7 @@ Por seguridad, la sesión se cierra sola después de **20 minutos sin usarla**.
 | Olvidé mi contraseña | — | Toca **Olvidé mi contraseña** y sigue los pasos de arriba. Si tu plataforma no tiene correo configurado, pide a tu administrador que la restablezca. |
 | **El enlace ya no sirve (venció o ya se usó). Pide uno nuevo aquí.** | Pasaron más de 60 minutos (24 horas si era el correo de bienvenida) o ya lo usaste. | Pide otro enlace con **Olvidé mi contraseña**. |
 | Al entrar me manda a **Mi cuenta** con «Crea tu propia contraseña para continuar». | Entraste con una contraseña que escribió tu administrador. | Cámbiala ahí mismo; después ya puedes usar todo. Ver [Mi cuenta](mi-cuenta.md). |
-| **Tu cuenta no está activa** y acabo de causar baja o reingresar. | Al dar de baja a un colaborador su cuenta se desactiva sola. | Pide a tu administrador que la reactive en **Usuarios**. |
+| **Tu cuenta no está activa** y acabo de causar baja o reingresar. | Al dar de baja a un colaborador su cuenta se da de baja sola. | Pide a tu administrador que la reactive en **Usuarios**. |
 
 ![Aviso de datos incorrectos](img/inicio/acceso-error.png)
 

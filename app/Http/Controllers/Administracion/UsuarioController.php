@@ -213,7 +213,7 @@ class UsuarioController extends Controller
 
         return redirect()->route('usuarios.index')->with($activo ? 'ok' : 'aviso', $activo
             ? 'Usuario reactivado: ya puede iniciar sesión de nuevo.'
-            : 'Usuario desactivado: ya no puede iniciar sesión y su sesión abierta se cerró. Puedes reactivarlo con el mismo botón.');
+            : 'Usuario dado de baja: ya no puede iniciar sesión y su sesión abierta se cerró. Puedes reactivarlo con el mismo botón.');
     }
 
     public function desbloquear(Request $request, User $usuario): RedirectResponse

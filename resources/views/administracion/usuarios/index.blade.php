@@ -52,7 +52,7 @@
                 <div>
                     <strong>Cuentas por revisar ({{ $porRevisar->count() }}):</strong>
                     @foreach ($porRevisar as $cuenta)
-                        {{ $cuenta->name }} ({{ $cuenta->bloqueado_hasta?->isFuture() ? 'bloqueada hasta las '.app(\App\Support\HoraLocal::class)->formatear($cuenta->bloqueado_hasta, 'H:i') : ($cuenta->activo && $cuenta->colaborador_id === null ? 'sin colaborador vinculado: no puede pedir pases' : 'desactivada por baja el '.app(\App\Support\HoraLocal::class)->formatear($cuenta->desactivado_por_baja_en, 'd/m')) }}){{ $loop->last ? '.' : ',' }}
+                        {{ $cuenta->name }} ({{ $cuenta->bloqueado_hasta?->isFuture() ? 'bloqueada hasta las '.app(\App\Support\HoraLocal::class)->formatear($cuenta->bloqueado_hasta, 'H:i') : ($cuenta->activo && $cuenta->colaborador_id === null ? 'sin colaborador vinculado: no puede pedir pases' : 'dada de baja junto con su colaborador el '.app(\App\Support\HoraLocal::class)->formatear($cuenta->desactivado_por_baja_en, 'd/m')) }}){{ $loop->last ? '.' : ',' }}
                     @endforeach
                     <span class="d-block small">Desbloquéalas con el candado, reactívalas con la flecha o vincúlalas con su colaborador desde el lápiz de su ficha, según corresponda.</span>
                 </div>
@@ -97,11 +97,11 @@
                             <div class="text-muted small"><i class="bi bi-envelope" aria-hidden="true"></i> {{ $u->email }}</div>
                             @if ($u->colaborador)
                                 <div class="{{ $u->colaborador->activo ? 'text-success' : 'text-danger' }}" style="font-size: 0.75rem;">
-                                    <i class="bi bi-link-45deg" aria-hidden="true"></i> Vinculado a Colaborador {{ $u->colaborador->activo ? '(activo)' : '(¡inactivo! revisar)' }}
+                                    <i class="bi bi-link-45deg" aria-hidden="true"></i> Vinculado a Colaborador {{ $u->colaborador->activo ? '(activo)' : '(¡dado de baja! revisar)' }}
                                 </div>
                             @endif
                             <div class="text-muted small border-top pt-2 mt-1"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
-                                {{ $sedeId ? collect([$sedeId])->merge($otrasSedes)->map(fn ($id) => $sedes[$id]->nombre ?? 'Sede inactiva')->join(' + ') : 'Ve '.$nombreSedes.' de la empresa' }}
+                                {{ $sedeId ? collect([$sedeId])->merge($otrasSedes)->map(fn ($id) => $sedes[$id]->nombre ?? 'Sede dada de baja')->join(' + ') : 'Ve '.$nombreSedes.' de la empresa' }}
                             </div>
                             @if ($u->ultimo_acceso_en)
                                 <div class="text-muted" style="font-size: 0.72rem;"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Último acceso: @fecha($u->ultimo_acceso_en)</div>
@@ -117,7 +117,7 @@
                             </div>
                         @endif
                         @if (! $u->activo && $u->desactivado_por_baja_en)
-                            <div class="texto-traza text-danger"><i class="bi bi-person-x-fill" aria-hidden="true"></i> Desactivada por la baja de su colaborador · @fecha($u->desactivado_por_baja_en)</div>
+                            <div class="texto-traza text-danger"><i class="bi bi-person-x-fill" aria-hidden="true"></i> Dada de baja junto con su colaborador · @fecha($u->desactivado_por_baja_en)</div>
                         @endif
                         @if ($u->activo && $u->debe_cambiar_contrasena)
                             <div class="texto-traza"><i class="bi bi-key" aria-hidden="true"></i> Creará su contraseña al entrar</div>
@@ -130,7 +130,7 @@
                         @endif
                     </div>
                     <div class="ficha-footer">
-                        <span class="etiqueta-estado {{ $u->activo ? 'activo' : 'inactivo' }}">{{ $u->activo ? 'ACTIVO' : 'INACTIVO' }}</span>
+                        <span class="etiqueta-estado {{ $u->activo ? 'activo' : 'inactivo' }}">{{ $u->activo ? 'ACTIVO' : 'DE BAJA' }}</span>
                         <div class="d-flex gap-2">
                             @include('componentes.ver-historial', ['registro' => \App\Models\User::class, 'id' => $u->id, 'nombre' => $u->name])
                             @if ($puede['desbloquear'] && $administrable && in_array($u->id, $desbloqueables, true))
@@ -155,12 +155,12 @@
                             @endif
                             @if ($puede['eliminar'] && $administrable)
                                 <form action="{{ route('usuarios.estado', $u->id) }}" method="POST" class="m-0"
-                                      data-confirmar="{{ $u->activo ? '¿Desactivar esta cuenta? No podrá volver a iniciar sesión hasta que la reactives con el mismo botón.' : '¿Reactivar esta cuenta? Podrá volver a iniciar sesión.' }}">
+                                      data-confirmar="{{ $u->activo ? '¿Dar de baja la cuenta de '.$u->name.'? No podrá volver a iniciar sesión hasta que la reactives con el mismo botón.' : '¿Reactivar la cuenta de '.$u->name.'? Podrá volver a iniciar sesión.' }}">
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="activo" value="{{ $u->activo ? 0 : 1 }}">
                                     @if ($u->activo)
-                                        <button type="submit" class="btn-icono desactivar" title="Desactivar" aria-label="Desactivar a {{ $u->name }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
+                                        <button type="submit" class="btn-icono desactivar" title="Dar de baja" aria-label="Dar de baja a {{ $u->name }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
                                     @else
                                         <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar a {{ $u->name }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                                     @endif
@@ -328,7 +328,7 @@
                             <input type="hidden" name="activo" value="0">
                             <div class="form-check form-switch mb-2">
                                 <input class="form-check-input" type="checkbox" role="switch" id="editar_activo" name="activo" value="1" @checked(! $reabrir || old('activo')) data-por-defecto>
-                                <label class="form-check-label small fw-semibold" for="editar_activo">Cuenta activa (si la apagas, no podrá iniciar sesión)</label>
+                                <label class="form-check-label small fw-semibold" for="editar_activo">Cuenta activa (si la das de baja, no podrá iniciar sesión)</label>
                             </div>
                         @endunless
 

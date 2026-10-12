@@ -532,7 +532,7 @@ class CuentaTest extends TestCase
         $this->actingAs($this->admin)->patch("/colaboradores/{$colaborador->id}/estado", ['activo' => 0])
             ->assertRedirect('/colaboradores')->assertSessionHas('aviso');
         // Con el driver «database» el store de la petición es otro: se lee el que usó la petición
-        $this->assertStringContainsString('También se desactivó su cuenta de usuario «@agente1»', (string) app('session.store')->get('aviso'));
+        $this->assertStringContainsString('También se dio de baja su cuenta de usuario «@agente1»', (string) app('session.store')->get('aviso'));
 
         $this->agente->refresh();
         $this->assertFalse($this->agente->activo);
@@ -540,7 +540,7 @@ class CuentaTest extends TestCase
         $this->assertDatabaseMissing('sessions', ['id' => 'sesion-agente']);
         $this->assertDatabaseHas('auditoria', ['evento' => 'usuarios.desactivado_por_baja', 'auditable_id' => $this->agente->id, 'user_id' => $this->admin->id]);
         $aviso = Notificacion::withoutGlobalScopes()->where('user_id', $this->admin->id)->where('tipo', 'cuenta_desactivada')->firstOrFail();
-        $this->assertStringContainsString('Se desactivó la cuenta de '.$this->agente->name.' (@agente1) por la baja del colaborador Laura Gómez; reactívala en Usuarios si es necesario.', $aviso->texto);
+        $this->assertStringContainsString('Se dio de baja la cuenta de '.$this->agente->name.' (@agente1) junto con el colaborador Laura Gómez; reactívala en Usuarios si es necesario.', $aviso->texto);
 
         // Ya no entra
         auth()->logout();
@@ -548,7 +548,7 @@ class CuentaTest extends TestCase
 
         // El reingreso del colaborador NO reactiva la cuenta sola; se hace en Usuarios y se limpia la marca
         $this->actingAs($this->admin)->patch("/colaboradores/{$colaborador->id}/estado", ['activo' => 1])->assertSessionHas('ok');
-        $this->assertStringContainsString('Su cuenta de usuario sigue desactivada', (string) app('session.store')->get('ok'));
+        $this->assertStringContainsString('Su cuenta de usuario sigue dada de baja', (string) app('session.store')->get('ok'));
         $this->assertFalse($this->agente->fresh()->activo);
         $this->actingAs($this->admin)->patch("/usuarios/{$this->agente->id}/estado", ['activo' => 1])->assertSessionHas('ok');
         $this->agente->refresh();
@@ -575,7 +575,7 @@ class CuentaTest extends TestCase
 
         $this->actingAs($this->admin)->get('/usuarios?revisar=1')->assertOk()
             ->assertSee('Cuentas por revisar (2)')->assertSee('Bruno Bloqueado')->assertSee('Berta Baja')
-            ->assertSee('Desactivada por la baja de su colaborador');
+            ->assertSee('Dada de baja junto con su colaborador');
     }
 
     public function test_el_super_administrador_tambien_recupera_su_contrasena_con_el_correo_de_la_plataforma(): void

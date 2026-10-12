@@ -54,7 +54,7 @@ Reglas al guardar (`App\Services\Personas\AdministradorPersonas`):
 - **Editar / dar de baja:** con alcance **empresa** o **sede** (las personas no tienen sede) → todo el padrón; con **propios** → solo las personas que él registró (`creado_por`). Fuera de alcance responde **404**.
 - **Crear:** cualquier alcance permite registrar.
 - **Folio en la lista:** completo solo en las fichas que el usuario puede editar (y solo entonces entra en `data-texto`, así el buscador de la pantalla encuentra por folio). Para las demás, `••••` + últimos 4 y fuera del buscador.
-- **Plantillas:** Administrador (todo, empresa); Jefe de seguridad (todo, sede = todo el padrón); Asistente (ver, crear, editar); Supervisor (todo menos eliminar); Director (solo ver); **Agente: solo ver** (Padrones es consulta para la caseta, QA M-01): ve el folio enmascarado y busca, pero no registra. Si la Bitácora de accesos requiere que la caseta registre personas nuevas, se le da `visitantes.crear` en la Matriz de permisos.
+- **Plantillas:** Administrador (todo, empresa); Jefe de seguridad (todo, sede = todo el padrón); Asistente de seguridad (ver, crear, editar); Supervisor (todo menos eliminar); Director (solo ver); **Agente: solo ver** (Padrones es consulta para la caseta, QA M-01): ve el folio enmascarado y busca, pero no registra. Si la Bitácora de accesos requiere que la caseta registre personas nuevas, se le da `visitantes.crear` en la Matriz de permisos.
 - El aviso de folio repetido muestra el nombre de quien lo tiene porque quien registra también ve el padrón (`visitantes.ver`); sin ese permiso el mensaje no dice el nombre.
 
 ## Rutas

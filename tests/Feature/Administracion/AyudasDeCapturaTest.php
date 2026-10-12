@@ -51,7 +51,7 @@ class AyudasDeCapturaTest extends TestCase
             ->assertSee('min="31"', false)
             ->assertSee('Tu nivel es 30: usa 31 o más.')
             // Como referencia solo se ofrecen su propio rol y los de menos autoridad
-            ->assertSee('>Asistente</option>', false)
+            ->assertSee('>Asistente de seguridad</option>', false)
             ->assertDontSee('>Recursos Humanos</option>', false);
     }
 

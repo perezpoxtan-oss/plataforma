@@ -87,8 +87,8 @@ class AvisosCuenta
         }
 
         $this->campana->avisar($empresaId, $destinatarios, 'cuenta_desactivada', [
-            'titulo' => 'Cuenta desactivada por baja: '.$usuario->name,
-            'texto' => sprintf('Se desactivó la cuenta de %s (@%s) por la baja del colaborador %s; reactívala en Usuarios si es necesario.',
+            'titulo' => 'Cuenta dada de baja junto con su colaborador: '.$usuario->name,
+            'texto' => sprintf('Se dio de baja la cuenta de %s (@%s) junto con el colaborador %s; reactívala en Usuarios si es necesario.',
                 $usuario->name, $usuario->username, $colaborador->nombreCompleto()),
             'url' => route('usuarios.index', ['revisar' => 1]),
             'referencia_tipo' => 'usuario_baja',

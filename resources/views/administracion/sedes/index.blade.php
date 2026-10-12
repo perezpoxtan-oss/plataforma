@@ -45,7 +45,7 @@
             <div class="filtros-estado" role="group" aria-label="Filtrar por estado">
                 <button type="button" class="btn btn-dark btn-sm fw-bold" data-filtro-estado="sedes" data-valor="todas" aria-pressed="true">Todos</button>
                 <button type="button" class="btn btn-outline-success btn-sm fw-bold" data-filtro-estado="sedes" data-valor="1" aria-pressed="false">Activos</button>
-                <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-filtro-estado="sedes" data-valor="0" aria-pressed="false">Inactivos</button>
+                <button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-filtro-estado="sedes" data-valor="0" aria-pressed="false">De baja</button>
             </div>
         @endif
 
@@ -89,7 +89,7 @@
                         @endif
                     </div>
                     <div class="ficha-footer">
-                        <span class="etiqueta-estado {{ $s->activo ? 'activo' : 'inactivo' }}">{{ $s->activo ? 'ACTIVO' : 'INACTIVO' }}</span>
+                        <span class="etiqueta-estado {{ $s->activo ? 'activo' : 'inactivo' }}">{{ $s->activo ? 'ACTIVO' : 'DE BAJA' }}</span>
                         <div class="d-flex gap-2">
                             @include('componentes.ver-historial', ['registro' => \App\Models\Sede::class, 'id' => $s->id, 'nombre' => $s->nombre])
                             @if ($puede['editar'])
@@ -101,12 +101,12 @@
                             @endif
                             @if ($puede['estado'])
                                 <form action="{{ route('sedes.estado', $s->id) }}" method="POST" class="m-0"
-                                      data-confirmar="{{ $s->activo ? '¿Desactivar «'.$s->nombre.'»? Ya no aparecerá para nuevas capturas; su historial se conserva.' : '¿Reactivar «'.$s->nombre.'»?' }}">
+                                      data-confirmar="{{ $s->activo ? '¿Dar de baja «'.$s->nombre.'»? Ya no aparecerá para nuevas capturas; su historial se conserva. Podrás reactivarla con el mismo botón.' : '¿Reactivar «'.$s->nombre.'»?' }}">
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="activo" value="{{ $s->activo ? 0 : 1 }}">
                                     @if ($s->activo)
-                                        <button type="submit" class="btn-icono eliminar" title="Desactivar" aria-label="Desactivar {{ $s->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
+                                        <button type="submit" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja {{ $s->nombre }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
                                     @else
                                         <button type="submit" class="btn-icono reactivar" title="Reactivar" aria-label="Reactivar {{ $s->nombre }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                                     @endif

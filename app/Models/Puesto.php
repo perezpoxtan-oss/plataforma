@@ -13,17 +13,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  */
 class Puesto extends Model
 {
-    public const OPERATIVO = 'operativo';
-
-    public const ADMINISTRATIVO = 'administrativo';
-
-    public const TIPOS = [self::OPERATIVO => 'Operativo', self::ADMINISTRATIVO => 'Administrativo'];
-
     use PerteneceAEmpresa, RegistraAutor;
 
-    protected $attributes = ['activo' => true, 'tipo' => self::OPERATIVO];
+    protected $attributes = ['activo' => true];
 
-    protected $fillable = ['empresa_id', 'nombre', 'tipo', 'activo'];
+    protected $fillable = ['empresa_id', 'nombre', 'activo'];
 
     protected function casts(): array
     {

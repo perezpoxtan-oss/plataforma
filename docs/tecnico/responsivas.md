@@ -56,9 +56,9 @@ SEGCAT usaba `equipos.ver | crear | editar`. Ahora:
 | Acción | Permiso | Plantillas |
 |---|---|---|
 | Ver, ver la firma, historial | `responsivas.ver` | todas las de Seguridad |
-| Nuevo resguardo | `responsivas.crear` + `responsivas.firmar` (la firma del colaborador es obligatoria) | Administrador, Jefe, Supervisor, **Agente** (el Asistente no firma) |
-| Recibir el lote | `responsivas.editar` | Administrador, Jefe, Asistente, Supervisor, Agente |
-| Hoja / Archivo | `responsivas.imprimir` | Administrador, Director, Jefe, Asistente, Supervisor, Agente |
+| Nuevo resguardo | `responsivas.crear` + `responsivas.firmar` (la firma del colaborador es obligatoria) | Administrador, Jefe, Supervisor, **Agente** (el Asistente de seguridad no firma) |
+| Recibir el lote | `responsivas.editar` | Administrador, Jefe, Asistente de seguridad, Supervisor, Agente |
+| Hoja / Archivo | `responsivas.imprimir` | Administrador, Director, Jefe, Asistente de seguridad, Supervisor, Agente |
 
 El lector necesita `equipos.ver` (tipo `equipo`) y `colaboradores.ver`; la lista de equipos disponibles respeta el alcance de `equipos.ver`.
 

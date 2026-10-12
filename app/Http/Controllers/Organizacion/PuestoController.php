@@ -15,7 +15,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -57,7 +56,6 @@ class PuestoController extends Controller
                 ->orderBy('puestos.nombre')
                 ->get(),
             'departamentos' => Departamento::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
-            'tipos' => Puesto::TIPOS,
             'puede' => $this->permisosCatalogo($actor, 'puestos'),
         ]));
     }
@@ -145,12 +143,10 @@ class PuestoController extends Controller
         $request->merge(['nombre' => $this->normalizarNombre(Entrada::texto($request->input('nombre')))]);
 
         $datos = $request->validate([
-            'tipo' => ['required', Rule::in(array_keys(Puesto::TIPOS))],
             'nombre' => ['required', 'string', 'max:100', $this->nombreLibre('puestos', $empresaId, $puesto?->id, 'Ya existe un puesto con ese nombre en esta empresa.')],
             'departamentos' => ['nullable', 'array'],
             'departamentos.*' => ['integer'],
-        ], [
-        ], ['tipo' => 'tipo de puesto']);
+        ]);
 
         // Solo departamentos de esta empresa (el filtro de empresa aplica solo)
         $departamentos = Departamento::whereIn('id', array_map('intval', $datos['departamentos'] ?? []))->pluck('id')->all();
@@ -159,7 +155,7 @@ class PuestoController extends Controller
             $departamentos = array_values(array_unique([...$departamentos, ...$puesto->departamentos()->where('departamentos.activo', false)->pluck('departamentos.id')->all()]));
         }
 
-        return [['nombre' => $datos['nombre'], 'tipo' => $datos['tipo']], $departamentos];
+        return [['nombre' => $datos['nombre']], $departamentos];
     }
 
     /**
@@ -167,6 +163,6 @@ class PuestoController extends Controller
      */
     private function foto(Puesto $p): array
     {
-        return $p->only(['nombre', 'tipo', 'activo']) + ['departamentos' => $p->departamentos()->pluck('departamentos.id')->all()];
+        return $p->only(['nombre', 'activo']) + ['departamentos' => $p->departamentos()->pluck('departamentos.id')->all()];
     }
 }

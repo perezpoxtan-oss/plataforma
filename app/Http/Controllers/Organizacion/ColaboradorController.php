@@ -144,8 +144,8 @@ class ColaboradorController extends Controller
         });
 
         return redirect()->route('colaboradores.index')->with($activo ? 'ok' : 'aviso', $activo
-            ? "Colaborador «{$modelo->nombreCompleto()}» reingresado.".($modelo->usuarioDesactivadoPorBaja() ? ' Su cuenta de usuario sigue desactivada: reactívala en Usuarios si la necesita.' : '')
-            : "Colaborador «{$modelo->nombreCompleto()}» dado de baja.".($cuenta ? " También se desactivó su cuenta de usuario «@{$cuenta->username}»; puedes reactivarla en Usuarios." : '').' Puedes reactivarlo con el mismo botón cuando quieras.');
+            ? "Colaborador «{$modelo->nombreCompleto()}» reingresado.".($modelo->usuarioDesactivadoPorBaja() ? ' Su cuenta de usuario sigue dada de baja: reactívala en Usuarios si la necesita.' : '')
+            : "Colaborador «{$modelo->nombreCompleto()}» dado de baja.".($cuenta ? " También se dio de baja su cuenta de usuario «@{$cuenta->username}»; puedes reactivarla en Usuarios." : '').' Puedes reactivarlo con el mismo botón cuando quieras.');
     }
 
     public function sedes(Request $request, int $colaborador): RedirectResponse
