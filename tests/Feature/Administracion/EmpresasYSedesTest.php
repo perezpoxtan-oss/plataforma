@@ -88,7 +88,7 @@ class EmpresasYSedesTest extends TestCase
         $otra = $this->crearEmpresa('Hotel Dos');
         $rubroOriginal = $this->empresa->rubro_id;
 
-        $this->actingAs($admin)->get('/empresas')->assertOk()->assertSee('Mi Empresa')->assertSee('Hotel Uno')->assertDontSee('Hotel Dos')->assertDontSee('Nueva Empresa');
+        $this->actingAs($admin)->get('/empresas')->assertOk()->assertSee('Los datos de tu empresa')->assertSee('Hotel Uno')->assertDontSee('Hotel Dos')->assertDontSee('Nueva Empresa');
 
         $this->actingAs($admin)->put("/empresas/{$this->empresa->id}", $this->empresaDatos([
             'nombre_comercial' => 'Hotel Uno Renovado', 'rubro_id' => Rubro::where('clave', 'condominio')->value('id'),

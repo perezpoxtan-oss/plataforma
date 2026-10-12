@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Administracion;
 
 use App\Http\Controllers\Controller;
 use App\Models\Auditoria;
+use App\Models\Empresa;
 use App\Models\User;
 use App\Services\Auditoria\LectorAuditoria;
 use App\Services\Permisos\Autorizador;
@@ -13,6 +14,7 @@ use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -29,6 +31,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class AuditoriaController extends Controller
 {
     private const POR_PAGINA = 50;
+
+    /** «Su sede» en la bitácora: 'propios' (original) o 'sede' (Configuración → Bitácora de auditoría). */
+    public const SEDE_POR_OMISION = 'propios';
 
     public function __construct(
         private readonly EmpresaDeTrabajo $empresa,
@@ -59,7 +64,10 @@ class AuditoriaController extends Controller
             'filtros' => $filtros,
             'lector' => $this->lector,
             'zona' => $this->hora->etiqueta(),
-            'soloPropios' => ! $this->autorizador->alcanceDeEmpresa($actor, 'auditoria.ver'),
+            'soloPropios' => ! $this->autorizador->alcanceDeEmpresa($actor, 'auditoria.ver') && $this->sedesDeLaBitacora($actor, $this->empresa->id($actor)) === [],
+            'deSuSede' => ! $this->autorizador->alcanceDeEmpresa($actor, 'auditoria.ver') && $this->sedesDeLaBitacora($actor, $this->empresa->id($actor)) !== [],
+            'historialDe' => $filtros['registro'] ? $this->lector->nombreDe($filtros['registro'], $filtros['id']) : null,
+            'aliasRegistro' => LectorAuditoria::alias($filtros['registro']),
             'puedeExportar' => $actor->can('auditoria.exportar'),
         ]);
     }
@@ -100,14 +108,40 @@ class AuditoriaController extends Controller
 
         // Seguridad (AZ-04): con alcance de sede o "solo los propios" (aunque sea en todas las sedes), solo lo suyo
         if (! $this->autorizador->alcanceDeEmpresa($actor, 'auditoria.ver')) {
-            $consulta->where('user_id', $actor->id);
+            $sedes = $this->sedesDeLaBitacora($actor, $empresaId);
+            if ($sedes === []) {
+                $consulta->where('user_id', $actor->id);
+            } else {
+                // Mejoras estructura (ADR-0016): si la empresa lo eligió, «Su sede» = los movimientos de su sede:
+                // los de registros de esas sedes y los que hizo el personal asignado a ellas (y los propios)
+                $consulta->where(fn ($q) => $q->where('user_id', $actor->id)
+                    ->orWhereIn('sede_id', $sedes)
+                    ->orWhereIn('user_id', DB::table('usuario_roles')->whereIn('sede_id', $sedes)->select('user_id')));
+            }
         }
 
         return $consulta;
     }
 
     /**
-     * @return array{desde: ?string, hasta: ?string, usuario: ?int, modulo: ?string, texto: ?string}
+     * Sedes cuyos movimientos ve quien tiene «Su sede» (ADR-0016). Vacío = solo
+     * los propios: el diseño original, mientras la empresa no elija «sede» en
+     * Configuración → Bitácora de auditoría. «Solo los propios» siempre es vacío.
+     *
+     * @return list<int>
+     */
+    private function sedesDeLaBitacora(User $actor, ?int $empresaId): array
+    {
+        if ($empresaId === null || $this->autorizador->soloPropios($actor, 'auditoria.ver')
+            || (Empresa::find($empresaId)?->preferencias['auditoria_sede'] ?? self::SEDE_POR_OMISION) !== 'sede') {
+            return [];
+        }
+
+        return $this->autorizador->sedesPermitidas($actor, 'auditoria.ver') ?? [];
+    }
+
+    /**
+     * @return array{desde: ?string, hasta: ?string, usuario: ?int, modulo: ?string, texto: ?string, registro: ?string, id: ?int}
      */
     private function filtros(Request $request): array
     {
@@ -117,7 +151,11 @@ class AuditoriaController extends Controller
             'usuario' => ['nullable', 'integer'],
             'modulo' => ['nullable', 'string', 'max:60', 'regex:/^[a-z_]+$/'],
             'texto' => ['nullable', 'string', 'max:60'],
+            // «Ver historial» desde la ficha de un registro (ADR-0016)
+            'registro' => ['nullable', 'string', 'max:60', 'regex:/^[a-z_]+$/'],
+            'id' => ['nullable', 'integer', 'min:1'],
         ]);
+        $clase = LectorAuditoria::claseDeAlias($datos['registro'] ?? null);
 
         return [
             'desde' => $datos['desde'] ?? null,
@@ -125,6 +163,8 @@ class AuditoriaController extends Controller
             'usuario' => isset($datos['usuario']) ? (int) $datos['usuario'] : null,
             'modulo' => $datos['modulo'] ?? null,
             'texto' => isset($datos['texto']) ? trim($datos['texto']) : null,
+            'registro' => $clase !== null && isset($datos['id']) ? $clase : null,
+            'id' => $clase !== null && isset($datos['id']) ? (int) $datos['id'] : null,
         ];
     }
 
@@ -142,6 +182,7 @@ class AuditoriaController extends Controller
             ->when($f['desde'], fn ($q, $d) => $q->where('creado_en', '>=', Carbon::parse($d, $zona)->startOfDay()->utc()))
             ->when($f['hasta'], fn ($q, $d) => $q->where('creado_en', '<=', Carbon::parse($d, $zona)->endOfDay()->utc()))
             ->when($f['usuario'], fn ($q, $u) => $q->where('user_id', $u))
+            ->when($f['registro'], fn ($q, $r) => $q->where('auditable_type', $r)->where('auditable_id', $f['id']))
             // Seguridad: prefijo exacto "modulo." sin LIKE (el "_" del nombre es comodín en LIKE)
             ->when($f['modulo'], fn ($q, $m) => $q->whereRaw('SUBSTR(evento, 1, ?) = ?', [mb_strlen($m) + 1, $m.'.']))
             ->when($f['texto'], fn ($q, $t) => $q->where(fn ($w) => $w->where('ip', 'like', '%'.addcslashes($t, '%_\\').'%')

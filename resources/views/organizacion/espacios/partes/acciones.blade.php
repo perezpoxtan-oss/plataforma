@@ -1,5 +1,6 @@
 {{-- Editar y desactivar/reactivar un espacio. Parámetros: $e (espacio), $dialogo (id del diálogo de edición), $valores (array), $puede --}}
 <div class="d-flex gap-1">
+    @include('componentes.ver-historial', ['registro' => \App\Models\Espacio::class, 'id' => $e->id, 'nombre' => $e->nombre]){{-- Mejoras estructura (ADR-0016) --}}
     @if ($puede['editar'] && isset($dialogo))
         <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar {{ $e->nombre }}"
                 data-accion="editar-registro" data-dialogo="{{ $dialogo }}"

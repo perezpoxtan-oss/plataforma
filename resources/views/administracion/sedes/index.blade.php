@@ -91,6 +91,7 @@
                     <div class="ficha-footer">
                         <span class="etiqueta-estado {{ $s->activo ? 'activo' : 'inactivo' }}">{{ $s->activo ? 'ACTIVO' : 'INACTIVO' }}</span>
                         <div class="d-flex gap-2">
+                            @include('componentes.ver-historial', ['registro' => \App\Models\Sede::class, 'id' => $s->id, 'nombre' => $s->nombre])
                             @if ($puede['editar'])
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar {{ $s->nombre }}"
                                         data-accion="editar-registro" data-dialogo="dialogoEditarSede"
@@ -136,6 +137,9 @@
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                 </div>
                 <div class="dialogo-cuerpo">
+                    @if ($esNueva)
+                        @include('componentes.ayuda-apartado', ['pagina' => 'empresas-y-sedes', 'apartado' => 'Cómo registrar una sede'])
+                    @endif
                     <form action="{{ $esNueva ? route('sedes.store') : ($editandoId ? route('sedes.update', $editandoId) : '') }}" method="POST" autocomplete="off">
                         @csrf
                         @unless ($esNueva) @method('PUT') @endunless

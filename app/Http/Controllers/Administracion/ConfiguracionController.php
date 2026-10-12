@@ -14,10 +14,12 @@ use App\Services\Permisos\Autorizador;
 use App\Services\Respaldos\Respaldos;
 use App\Support\CorreoPlataforma;
 use App\Support\Entrada;
+use App\Support\GruposAvisos;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -66,7 +68,55 @@ class ConfiguracionController extends Controller
             'puedeEditar' => $this->editaEmpresa($actor),
             'verConfiguracion' => $actor->can('configuracion.ver'),
             'lostFound' => $this->datosLostFound($actor, $empresaId, $configuraLostFound),
+            // Mejoras estructura (ADR-0016): avisos por módulo, versión instalada y bitácora de auditoría
+            'grupos' => GruposAvisos::agrupados(),
+            'version' => self::versionInstalada(),
+            'auditoriaSede' => $empresaId === null ? null : (Empresa::find($empresaId)?->preferencias['auditoria_sede'] ?? AuditoriaController::SEDE_POR_OMISION),
         ]);
+    }
+
+    /**
+     * Versión instalada (primer renglón del archivo VERSION que deja la
+     * instalación) y cuándo se instaló. Sin archivo: «sin versión» (desarrollo).
+     *
+     * @return array{numero: ?string, instalada: ?Carbon}
+     */
+    public static function versionInstalada(): array
+    {
+        $archivo = base_path('VERSION');
+        if (! is_file($archivo)) {
+            return ['numero' => null, 'instalada' => null];
+        }
+        $numero = trim((string) strtok((string) file_get_contents($archivo), "\n"));
+
+        return [
+            'numero' => preg_match('/^v?\d+\.\d+\.\d+[0-9A-Za-z.+-]*$/', $numero) ? $numero : null,
+            'instalada' => ($fecha = @filemtime($archivo)) ? Carbon::createFromTimestamp($fecha) : null,
+        ];
+    }
+
+    // ------------------------------------------------- Bitácora de auditoría (empresa)
+
+    /**
+     * Qué ve en la Bitácora de auditoría quien tiene el permiso con alcance
+     * «Su sede» (ADR-0016): solo sus movimientos (original) o los de su sede.
+     */
+    public function auditoria(Request $request): RedirectResponse
+    {
+        Gate::authorize('configuracion.editar');
+        abort_unless($this->editaEmpresa($request->user()), 403, 'Este ajuste es de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa.');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        $valor = $request->validate(['auditoria_sede' => ['required', Rule::in(['propios', 'sede'])]])['auditoria_sede'];
+        $empresa = Empresa::findOrFail($empresaId);
+        $antes = $empresa->preferencias['auditoria_sede'] ?? AuditoriaController::SEDE_POR_OMISION;
+        $empresa->forceFill(['preferencias' => array_merge($empresa->preferencias ?? [], ['auditoria_sede' => $valor])])->save();
+        $this->auditoria->auditar($request->user(), 'configuracion.auditoria', $empresa, ['auditoria_sede' => $antes], ['auditoria_sede' => $valor]);
+
+        return redirect()->to(route('configuracion.index').'#config-cuentas')->with('ok', $valor === 'sede'
+            ? 'Listo: quien tiene la bitácora con alcance «Su sede» ahora ve los movimientos de su sede. Puedes revisarlo en la Bitácora de auditoría.'
+            : 'Listo: quien tiene la bitácora con alcance «Su sede» ve solo sus propios movimientos.');
     }
 
     // ------------------------------------------- Lost & Found: días de resguardo
@@ -176,11 +226,22 @@ class ConfiguracionController extends Controller
         $avisos = collect(Empresa::AVISOS)->mapWithKeys(fn ($v, $clave) => [$clave => $request->boolean("avisos.{$clave}")])->all();
         // Avisos con lista de correos (p. ej. vales de taxi): uno por línea o separados por coma
         $destinatarios = $this->destinatariosAvisos($request);
-        $empresa->forceFill(['preferencias' => array_merge($empresa->preferencias ?? [], ['avisos' => $avisos, 'avisos_destinatarios' => $destinatarios])])->save();
+        // Interruptor general por módulo (ADR-0016): solo los que vienen en el formulario; los demás se conservan
+        $modulosAntes = $empresa->preferencias['avisos_modulos'] ?? [];
+        $modulos = $modulosAntes;
+        foreach (array_keys(GruposAvisos::agrupados()) as $grupo) {
+            if ($request->has("avisos_modulos.{$grupo}")) {
+                $modulos[$grupo] = $request->boolean("avisos_modulos.{$grupo}");
+            }
+        }
+        $empresa->forceFill(['preferencias' => array_merge($empresa->preferencias ?? [], ['avisos' => $avisos, 'avisos_destinatarios' => $destinatarios, 'avisos_modulos' => $modulos])])->save();
 
-        $this->auditoria->auditar($request->user(), 'configuracion.avisos', $empresa, ['avisos' => $antes], ['avisos' => $avisos, 'avisos_destinatarios' => $destinatarios]);
+        $this->auditoria->auditar($request->user(), 'configuracion.avisos', $empresa, ['avisos' => $antes, 'avisos_modulos' => $modulosAntes], ['avisos' => $avisos, 'avisos_destinatarios' => $destinatarios, 'avisos_modulos' => $modulos]);
 
-        return redirect()->route('configuracion.index')->with('ok', 'Avisos por correo actualizados.');
+        $apagados = collect($modulos)->filter(fn ($v) => $v === false)->keys()->map(fn ($g) => GruposAvisos::GRUPOS[$g][0] ?? $g);
+
+        return redirect()->to(route('configuracion.index').($request->filled('_grupo') && preg_match('/^[a-z_]+$/', (string) $request->input('_grupo')) ? '#config-'.$request->input('_grupo') : ''))
+            ->with('ok', 'Avisos actualizados.'.($apagados->isNotEmpty() ? ' Apagados por módulo: '.$apagados->join(', ').'.' : ''));
     }
 
     // ------------------------------------------------------ Respaldos (plataforma)

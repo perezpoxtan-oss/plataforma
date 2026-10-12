@@ -70,6 +70,8 @@ Route::middleware('auth')->group(function () {
     // Mi cuenta (criterio 6): sin permiso propio; cambiar la propia contraseña
     Route::get('/mi-cuenta', [MiCuentaController::class, 'index'])->name('mi-cuenta.index');
     Route::put('/mi-cuenta/contrasena', [MiCuentaController::class, 'contrasena'])->middleware('throttle:10,1')->name('mi-cuenta.contrasena');
+    // Mejoras estructura (ADR-0016): cada persona silencia los avisos que no quiere recibir
+    Route::put('/mi-cuenta/avisos', [MiCuentaController::class, 'avisos'])->name('mi-cuenta.avisos');
 
     // Administración: roles y permisos (cada pantalla exige su "modulo.accion")
     Route::post('/empresa-activa', EmpresaActivaController::class)->name('empresa-activa');
@@ -79,6 +81,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/roles/{rol}', [RolController::class, 'destroy'])->name('roles.destroy');
     Route::get('/permisos', [PermisoController::class, 'index'])->name('permisos.index');
     Route::put('/permisos/{rol}', [PermisoController::class, 'update'])->name('permisos.update');
+    // Mejoras estructura (ADR-0016): asistente «¿Qué hace este rol?», módulos contratados y ajustes de la auditoría
+    Route::put('/permisos/{rol}/perfil', [PermisoController::class, 'perfil'])->name('permisos.perfil');
+    Route::put('/empresas/{empresa}/modulos', [EmpresaController::class, 'modulos'])->name('empresas.modulos');
+    Route::put('/configuracion/auditoria', [ConfiguracionController::class, 'auditoria'])->name('configuracion.auditoria');
+    // Fin Mejoras estructura
     Route::get('/empresas', [EmpresaController::class, 'index'])->name('empresas.index');
     Route::post('/empresas', [EmpresaController::class, 'store'])->name('empresas.store');
     Route::put('/empresas/{empresa}', [EmpresaController::class, 'update'])->name('empresas.update');

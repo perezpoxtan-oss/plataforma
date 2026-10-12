@@ -37,8 +37,9 @@ class AyudasDeCapturaTest extends TestCase
         $this->actingAs($this->admin)->get('/roles')
             ->assertOk()
             ->assertSee('min="11"', false)
-            ->assertSeeInOrder(['Tu nivel es', '10', 'Solo puedes crear roles de nivel', '11', 'en adelante'], false)
-            ->assertSee('20 Director, 25 Recursos Humanos, 30 Jefe de seguridad, 40 Asistente, 45 Jefe de departamento, 50 Supervisor, 60 Agente, 70 Solicitante')
+            // Mejoras estructura (ADR-0016): se elige «debajo de / arriba de»; el número queda en Avanzado
+            ->assertSeeInOrder(['¿Dónde va en la jerarquía?', 'Debajo de', 'Arriba de', 'Director', 'Solicitante'], false)
+            ->assertSeeInOrder(['Avanzado: escribir el número de nivel', 'Tu nivel es 10: usa 11 o más.'], false)
             ->assertSee('data-mensaje-min="Tu nivel es 10: el nivel del rol debe ser 11 o mayor (número mayor = menos autoridad)."', false);
 
         // Con otro nivel, el texto cambia
@@ -48,8 +49,10 @@ class AyudasDeCapturaTest extends TestCase
         $this->actingAs($jefe)->get('/roles')
             ->assertOk()
             ->assertSee('min="31"', false)
-            ->assertSee('40 Asistente, 45 Jefe de departamento, 50 Supervisor, 60 Agente, 70 Solicitante')
-            ->assertDontSee('25 Recursos Humanos, 30');
+            ->assertSee('Tu nivel es 30: usa 31 o más.')
+            // Como referencia solo se ofrecen su propio rol y los de menos autoridad
+            ->assertSee('>Asistente</option>', false)
+            ->assertDontSee('>Recursos Humanos</option>', false);
     }
 
     public function test_el_servidor_explica_por_que_rechaza_un_nivel_superior(): void
@@ -63,7 +66,7 @@ class AyudasDeCapturaTest extends TestCase
         $this->actingAs($this->admin)->get('/usuarios')
             ->assertOk()
             ->assertSee('Usuarios de «Hotel Demo»', false)
-            ->assertSeeInOrder(['Alta de Usuario', 'Empresa:', 'Hotel Demo', '1. Sede'], false);
+            ->assertSeeInOrder(['Alta de Usuario', '¿Quién es?', 'Empresa:', 'Hotel Demo', '¿Qué hace y dónde?', 'Rol en el Sistema', 'Sede', '¿Cómo entra?'], false);
     }
 
     public function test_el_superadmin_ve_la_empresa_elegida_en_usuarios_y_roles(): void

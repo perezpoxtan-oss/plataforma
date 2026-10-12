@@ -1,6 +1,15 @@
 {{-- Resultado de la última operación (mensajes en sesión, nunca en la URL) --}}
 @if (session('ok'))
-    <div class="alert alert-success aviso mb-3" role="status"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> {{ session('ok') }}</div>
+    <div class="alert alert-success aviso mb-3" role="status"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> {{ session('ok') }}
+        {{-- Mejoras estructura (ADR-0016, criterio 5): siguientes pasos con su botón ([texto, dirección, ícono]) --}}
+        @if (is_array(session('siguientes')) && session('siguientes') !== [])
+            <span class="siguientes-pasos">
+                @foreach (session('siguientes') as [$textoSiguiente, $urlSiguiente, $iconoSiguiente])
+                    <a href="{{ $urlSiguiente }}" class="btn btn-sm btn-success fw-bold"><i class="bi {{ $iconoSiguiente }} me-1" aria-hidden="true"></i>{{ $textoSiguiente }}</a>
+                @endforeach
+            </span>
+        @endif
+    </div>
 @endif
 @if (session('aviso'))
     <div class="alert alert-warning aviso mb-3" role="status"><i class="bi bi-info-circle-fill" aria-hidden="true"></i> {{ session('aviso') }}</div>

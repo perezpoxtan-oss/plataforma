@@ -2,59 +2,150 @@
 
 @section('titulo', 'Configuración')
 
+@php
+    // Mejoras estructura (ADR-0016): ordenada por módulo, con un interruptor general de avisos por módulo
+    $mostrarAvisos = $empresa && $verConfiguracion;
+    $puedePases = $empresa && auth()->user()->can('pases_salida.configurar');
+    $puedeRecepcion = $empresa && auth()->user()->can('candidatos.configurar');
+    $puedeBolsa = $empresa && auth()->user()->can('vacantes.configurar');
+    $indice = [];
+    if ($mostrarAvisos) {
+        foreach ($grupos as $g => $def) { $indice['config-'.$g] = $def['nombre']; }
+    } else {
+        if ($puedePases) { $indice['t-pases-salida'] = 'Pases de salida'; }
+        if ($puedeRecepcion || $puedeBolsa) { $indice['recepcion'] = 'Recepción y candidatos'; }
+    }
+    if ($lostFound) { $indice['lost-found'] = 'Lost & Found'; }
+    if ($esSuperadmin) { $indice['t-correo'] = 'Correo de la plataforma'; $indice['t-respaldos'] = 'Respaldos'; }
+@endphp
+
 @section('contenido')
 <div class="tema-azul">
     @include('administracion.partes.avisos')
     @include('administracion.partes.selector-empresa')
 
-    <div class="encabezado-pantalla mb-4">
+    <div class="encabezado-pantalla mb-3">
         <div class="icono"><i class="bi bi-sliders text-primary" aria-hidden="true"></i></div>
         <div>
             <h1>Configuración</h1>
-            <p>Correo, avisos, respaldos y ajustes de los módulos.</p>
+            <p>Ordenada por módulo: sus avisos y sus ajustes. Lo que se cambia en otra pantalla trae su botón «Ir a…».</p>
         </div>
     </div>
 
+    {{-- Versión instalada (ADR-0016) --}}
+    <div class="version-instalada mb-3">
+        <i class="bi bi-box-seam" aria-hidden="true"></i>
+        <span>Versión instalada: <strong>{{ $version['numero'] ?? 'sin número (equipo de desarrollo)' }}</strong>@if ($version['instalada']) · desde el @fecha($version['instalada'], 'd/m/Y H:i')@endif</span>
+    </div>
+
+    @if (count($indice) > 1)
+        <nav class="indice-config mb-3" aria-label="Módulos de la configuración">
+            @foreach ($indice as $ancla => $nombre)
+                <a href="#{{ $ancla }}" class="chip-config">{{ $nombre }}</a>
+            @endforeach
+        </nav>
+    @endif
+
+    @if ($mostrarAvisos)
+        {{-- Un solo formulario de avisos; sus casillas viven en la tarjeta de cada módulo (atributo form) --}}
+        <form action="{{ route('configuracion.avisos') }}" method="POST" id="formAvisos" class="d-none">
+            @csrf
+            @method('PUT')
+        </form>
+        @unless ($correoListo)
+            <div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>El correo de la plataforma aún no está configurado: los avisos por correo se activarán cuando el Super Administrador lo configure. Los de la campana sí llegan.</div>
+        @endunless
+    @endif
+
     <div class="secciones-config">
-        {{-- ================= Avisos por correo (empresa) ================= --}}
-        @if ($empresa && $verConfiguracion)
-            <section class="tarjeta p-4" aria-labelledby="t-avisos">
-                <h2 id="t-avisos" class="h5 fw-bold"><i class="bi bi-bell me-2 text-primary" aria-hidden="true"></i>Avisos por correo de {{ $empresa->nombre_comercial }}</h2>
-                <p class="small text-muted">Se envían a los usuarios con permiso para atender cada asunto, al correo de su cuenta.</p>
-                @unless ($correoListo)
-                    <div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>El correo de la plataforma aún no está configurado: los avisos se activarán cuando el Super Administrador lo configure.</div>
-                @endunless
-                <form action="{{ route('configuracion.avisos') }}" method="POST">
-                    @csrf
-                    @method('PUT')
-                    @foreach ($avisos as $clave => [$etiqueta, $porDefecto])
-                        <label class="opcion-todas">
-                            <input type="checkbox" name="avisos[{{ $clave }}]" value="1" @checked($empresa->aviso($clave)) @disabled(! $puedeEditar)>
-                            <span>{{ $etiqueta }}</span>
-                        </label>
-                        @if (in_array($clave, \App\Models\Empresa::AVISOS_CON_DESTINATARIOS, true))
-                            <div class="ms-4 mb-3">
-                                <label class="campo-etiqueta" for="dest_{{ $clave }}">Correos que lo reciben <span class="text-lowercase fw-normal">(uno por línea o separados por coma)</span></label>
-                                <textarea id="dest_{{ $clave }}" name="destinatarios[{{ $clave }}]" class="campo mb-1" rows="2" maxlength="3500" placeholder="finanzas@tuempresa.com" @disabled(! $puedeEditar)>{{ old("destinatarios.$clave", implode("\n", $empresa->destinatariosAviso($clave))) }}</textarea>
-                                <p class="campo-ayuda mt-0">Si lo dejas vacío, se envía a los usuarios que pueden autorizar vales de taxi en esa sede.</p>
+        @if ($mostrarAvisos)
+            @foreach ($grupos as $grupo => $def)
+                @php $encendido = \App\Support\GruposAvisos::encendido($empresa, $grupo); @endphp
+                <section class="config-modulo" id="config-{{ $grupo }}" aria-labelledby="t-config-{{ $grupo }}">
+                    <div class="tarjeta p-4" data-modulo-avisos>
+                        <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                            <h2 id="t-config-{{ $grupo }}" class="h5 fw-bold m-0"><i class="bi {{ $def['icono'] }} me-2 text-primary" aria-hidden="true"></i>{{ $def['nombre'] }}</h2>
+                            <div class="form-check form-switch interruptor-modulo m-0">
+                                <input type="hidden" name="avisos_modulos[{{ $grupo }}]" value="0" form="formAvisos" @disabled(! $puedeEditar)>
+                                <input class="form-check-input" type="checkbox" role="switch" id="mod_{{ $grupo }}" name="avisos_modulos[{{ $grupo }}]" value="1" form="formAvisos"
+                                       data-interruptor-modulo @checked($encendido) @disabled(! $puedeEditar)>
+                                <label class="form-check-label small fw-bold" for="mod_{{ $grupo }}">Avisos de este módulo <span data-interruptor-texto>{{ $encendido ? 'encendidos' : 'apagados' }}</span></label>
                             </div>
+                        </div>
+                        <p class="small text-muted mt-2 mb-2">Se envían a quienes pueden atender cada asunto, al correo de su cuenta. Si apagas el interruptor, no sale ninguno de este módulo aunque esté marcado.</p>
+                        <div class="avisos-del-modulo {{ $encendido ? '' : 'apagado' }}" data-avisos-del-modulo>
+                            @foreach ($def['avisos'] as $clave => [$etiqueta, $porDefecto])
+                                <label class="opcion-todas">
+                                    <input type="checkbox" name="avisos[{{ $clave }}]" value="1" form="formAvisos" @checked($empresa->preferencias['avisos'][$clave] ?? $porDefecto) @disabled(! $puedeEditar)>
+                                    <span>{{ $etiqueta }}</span>
+                                </label>
+                                @if (in_array($clave, \App\Models\Empresa::AVISOS_CON_DESTINATARIOS, true))
+                                    <div class="ms-4 mb-3">
+                                        <label class="campo-etiqueta" for="dest_{{ $clave }}">Correos que lo reciben <span class="text-lowercase fw-normal">(uno por línea o separados por coma)</span></label>
+                                        <textarea id="dest_{{ $clave }}" name="destinatarios[{{ $clave }}]" form="formAvisos" class="campo mb-1" rows="2" maxlength="3500" placeholder="finanzas@tuempresa.com" @disabled(! $puedeEditar)>{{ old("destinatarios.$clave", implode("\n", $empresa->destinatariosAviso($clave))) }}</textarea>
+                                        <p class="campo-ayuda mt-0">Si lo dejas vacío, se envía a los usuarios que pueden autorizar vales de taxi en esa sede.</p>
+                                    </div>
+                                @endif
+                                {{-- Ronda 5 (LL-04): una lista por copia del voucher con cobro --}}
+                                @if ($clave === 'voucher_cobro')
+                                    <div class="ms-4 mb-3 destinatarios-voucher">
+                                        @foreach (\App\Models\Empresa::DESTINATARIOS_VOUCHER as $dest => $copia)
+                                            <label class="campo-etiqueta" for="dest_{{ $dest }}">{{ $copia }} <span class="text-lowercase fw-normal">(correos, uno por línea o separados por coma)</span></label>
+                                            <textarea id="dest_{{ $dest }}" name="destinatarios[{{ $dest }}]" form="formAvisos" class="campo mb-2" rows="2" maxlength="3500" placeholder="{{ \Illuminate\Support\Str::after($dest, 'voucher_') }}@tuempresa.com" @disabled(! $puedeEditar)>{{ old("destinatarios.$dest", implode("\n", $empresa->destinatariosAviso($dest))) }}</textarea>
+                                        @endforeach
+                                        <p class="campo-ayuda mt-0">El colaborador responsable no recibe copia. Si dejas las tres listas vacías, se envía a los usuarios que pueden imprimir vouchers en esa sede.</p>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                        @if ($puedeEditar)
+                            <button type="submit" form="formAvisos" name="_grupo" value="{{ $grupo }}" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar avisos</button>
+                        @else
+                            <p class="small text-muted mb-0 mt-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Tu rol solo puede consultar los avisos.</p>
                         @endif
-                        {{-- Ronda 5 (LL-04): una lista por copia del voucher con cobro --}}
-                        @if ($clave === 'voucher_cobro')
-                            <div class="ms-4 mb-3 destinatarios-voucher">
-                                @foreach (\App\Models\Empresa::DESTINATARIOS_VOUCHER as $dest => $copia)
-                                    <label class="campo-etiqueta" for="dest_{{ $dest }}">{{ $copia }} <span class="text-lowercase fw-normal">(correos, uno por línea o separados por coma)</span></label>
-                                    <textarea id="dest_{{ $dest }}" name="destinatarios[{{ $dest }}]" class="campo mb-2" rows="2" maxlength="3500" placeholder="{{ \Illuminate\Support\Str::after($dest, 'voucher_') }}@tuempresa.com" @disabled(! $puedeEditar)>{{ old("destinatarios.$dest", implode("\n", $empresa->destinatariosAviso($dest))) }}</textarea>
-                                @endforeach
-                                <p class="campo-ayuda mt-0">El colaborador responsable no recibe copia. Si dejas las tres listas vacías, se envía a los usuarios que pueden imprimir vouchers en esa sede.</p>
-                            </div>
+
+                        @if ($grupo === 'cuentas')
+                            @include('administracion.configuracion._auditoria')
                         @endif
-                    @endforeach
-                    @if ($puedeEditar)
-                        <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar avisos</button>
+                    </div>
+
+                    @if ($grupo === 'pases_salida')
+            {{-- Pases de salida: circuito de aprobación (ver docs/tecnico/pases-salida.md) --}}
+            @if ($empresa && auth()->user()->can('pases_salida.configurar'))
+                @include('seguridad.pases-salida._config-resumen', ['empresa' => $empresa])
+            @endif
+            {{-- Fin Pases de salida --}}
                     @endif
-                </form>
-            </section>
+                    @if ($grupo === 'candidatos')
+            {{-- Recepción de candidatos: aviso de privacidad y kiosco (ADR-0007) --}}
+            @if ($empresa && auth()->user()->can('candidatos.configurar'))
+                @include('rh.recepcion._ajustes', ['empresa' => $empresa])
+            @endif
+            {{-- Fin Recepción de candidatos --}}
+            {{-- Vacantes: bolsa de trabajo en internet (lección 36) --}}
+            @if ($empresa && auth()->user()->can('vacantes.configurar'))
+                @include('rh.vacantes._ajustes-bolsa', ['empresa' => $empresa])
+            @endif
+            {{-- Fin Vacantes --}}
+                    @endif
+                </section>
+            @endforeach
+        @else
+        {{-- Pases de salida: circuito de aprobación (ver docs/tecnico/pases-salida.md) --}}
+        @if ($empresa && auth()->user()->can('pases_salida.configurar'))
+            @include('seguridad.pases-salida._config-resumen', ['empresa' => $empresa])
+        @endif
+        {{-- Fin Pases de salida --}}
+        {{-- Recepción de candidatos: aviso de privacidad y kiosco (ADR-0007) --}}
+        @if ($empresa && auth()->user()->can('candidatos.configurar'))
+            @include('rh.recepcion._ajustes', ['empresa' => $empresa])
+        @endif
+        {{-- Fin Recepción de candidatos --}}
+        {{-- Vacantes: bolsa de trabajo en internet (lección 36) --}}
+        @if ($empresa && auth()->user()->can('vacantes.configurar'))
+            @include('rh.vacantes._ajustes-bolsa', ['empresa' => $empresa])
+        @endif
+        {{-- Fin Vacantes --}}
         @endif
 
         {{-- ================= Lost & Found: días de resguardo (empresa) ================= --}}
@@ -92,22 +183,6 @@
                 </form>
             </section>
         @endif
-        {{-- Pases de salida: circuito de aprobación (ver docs/tecnico/pases-salida.md) --}}
-        @if ($empresa && auth()->user()->can('pases_salida.configurar'))
-            @include('seguridad.pases-salida._config-resumen', ['empresa' => $empresa])
-        @endif
-        {{-- Fin Pases de salida --}}
-        {{-- Recepción de candidatos: aviso de privacidad y kiosco (ADR-0007) --}}
-        @if ($empresa && auth()->user()->can('candidatos.configurar'))
-            @include('rh.recepcion._ajustes', ['empresa' => $empresa])
-        @endif
-        {{-- Fin Recepción de candidatos --}}
-        {{-- Vacantes: bolsa de trabajo en internet (lección 36) --}}
-        @if ($empresa && auth()->user()->can('vacantes.configurar'))
-            @include('rh.vacantes._ajustes-bolsa', ['empresa' => $empresa])
-        @endif
-        {{-- Fin Vacantes --}}
-
         @if ($esSuperadmin)
             {{-- ================= Correo saliente (plataforma) ================= --}}
             <section class="tarjeta p-4" aria-labelledby="t-correo">

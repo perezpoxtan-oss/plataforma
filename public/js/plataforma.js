@@ -330,7 +330,7 @@
 
         lista.querySelectorAll('[data-usuario]').forEach(function (ficha) {
             var ok = (texto === '' || ficha.dataset.texto.indexOf(texto) !== -1)
-                && (sede === '' || ficha.dataset.sede === sede);
+                && (sede === '' || (' ' + ficha.dataset.sede + ' ').indexOf(' ' + sede + ' ') !== -1);
             ficha.style.display = ok ? '' : 'none';
             if (ok) { visibles++; }
         });
@@ -8619,6 +8619,18 @@ document.addEventListener('click', function (e) {
         var n = document.createElement('span'); n.className = 'mis-pendientes-numero'; n.textContent = String(item.total);
         a.appendChild(i); a.appendChild(t); a.appendChild(n);
         li.appendChild(a);
+        // Mejoras estructura (ADR-0016): desglose (candidatos, altas por padrón)
+        if (Array.isArray(item.detalle) && item.detalle.length) {
+            var ul = document.createElement('ul'); ul.className = 'mis-pendientes-detalle';
+            item.detalle.forEach(function (sub) {
+                var sli = document.createElement('li'); var sa = document.createElement('a'); sa.href = sub.url;
+                if (sub.nivel === 'ambar' || sub.nivel === 'roja') { sa.className = 'nivel-' + sub.nivel; }
+                var st = document.createElement('span'); st.textContent = sub.titulo;
+                var sn = document.createElement('span'); sn.className = 'mis-pendientes-numero'; sn.textContent = String(sub.total);
+                sa.appendChild(st); sa.appendChild(sn); sli.appendChild(sa); ul.appendChild(sli);
+            });
+            li.appendChild(ul);
+        }
         return li;
     }
 
@@ -8633,7 +8645,7 @@ document.addEventListener('click', function (e) {
             var lista = c.querySelector('[data-mis-pendientes-lista]');
             if (cont) { cont.textContent = total > 99 ? '99+' : String(total); }
             if (boton) { boton.setAttribute('aria-label', 'Mis pendientes: ' + total); }
-            if (lista) { lista.textContent = ''; datos.items.forEach(function (item) { lista.appendChild(renglon(item)); }); }
+            if (lista) { lista.textContent = ''; (Array.isArray(datos.vista) ? datos.vista : datos.items.filter(function (it) { return it.total > 0; })).forEach(function (item) { lista.appendChild(renglon(item)); }); }
         });
     }
 
@@ -8829,3 +8841,194 @@ document.addEventListener('click', function (e) {
         if (typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
     });
 })();
+/* Mejoras estructura */
+/* ==========================================================================
+   Mejoras de Estructura y plataforma (ADR-0016)
+   - Roles: «Debajo de / Arriba de» otro rol dice en vivo en qué nivel queda.
+   - Matriz: vista previa de los menús que verá el rol al marcar «Ver»; el
+     alcance distinto por acción se conserva hasta que se cambia el del módulo.
+   - Configuración: el interruptor de avisos del módulo atenúa sus casillas.
+   - Identidad: aviso en rojo si el texto blanco no se lee sobre el color principal.
+   - Usuarios: «¿También atiende otras sedes?» solo con una sede elegida.
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    // ---------------------------------------------------------------- Roles
+    function nivelPara(caja) {
+        var relacion = caja.querySelector('[data-posicion-relacion]');
+        var referencia = caja.querySelector('[data-posicion-referencia]');
+        var ayuda = caja.querySelector('[data-posicion-resultado]');
+        if (!relacion || !referencia || !ayuda) { return; }
+        if (!ayuda.dataset.original) { ayuda.dataset.original = ayuda.textContent; }
+        if (!referencia.value) { ayuda.textContent = ayuda.dataset.original; ayuda.classList.remove('text-danger'); return; }
+
+        var roles = [];
+        try { roles = JSON.parse(caja.dataset.niveles || '[]'); } catch (e) { roles = []; }
+        var excluir = String(caja.dataset.excluir || '');
+        roles = roles.filter(function (r) { return String(r.id) !== excluir; }).sort(function (a, b) { return a.nivel - b.nivel; });
+        var ref = roles.filter(function (r) { return String(r.id) === referencia.value; })[0];
+        if (!ref) { return; }
+        var propio = Number(caja.dataset.nivelPropio || 0);
+        var nivel = null; var vecino = null; var error = '';
+
+        if (relacion.value === 'debajo') {
+            vecino = roles.filter(function (r) { return r.nivel > ref.nivel; })[0] || null;
+            if (!vecino) { nivel = Math.min(999, ref.nivel + 10); if (nivel <= ref.nivel) { error = 'No hay lugar debajo de «' + ref.nombre + '».'; } }
+            else if (vecino.nivel - ref.nivel >= 2) { nivel = Math.floor((ref.nivel + vecino.nivel) / 2); }
+            else { error = 'No hay lugar entre «' + ref.nombre + '» y «' + vecino.nombre + '»: elige otra posición.'; }
+        } else {
+            var anteriores = roles.filter(function (r) { return r.nivel < ref.nivel; });
+            vecino = anteriores.length ? anteriores[anteriores.length - 1] : null;
+            var limite = Math.max(vecino ? vecino.nivel : 0, propio);
+            if (ref.nivel - limite >= 2) { nivel = (!vecino && propio === 0 && ref.nivel > 10) ? ref.nivel - 10 : Math.floor((limite + ref.nivel) / 2); }
+            else { error = limite === propio && propio > 0 ? 'No puedes ponerlo arriba de «' + ref.nombre + '»: quedaría a tu nivel o por encima de ti.' : 'No hay lugar arriba de «' + ref.nombre + '»: elige otra posición.'; }
+        }
+
+        ayuda.classList.toggle('text-danger', !!error);
+        if (error) { ayuda.textContent = error; return; }
+        var entre = relacion.value === 'debajo'
+            ? ('debajo de «' + ref.nombre + '»' + (vecino ? ' y arriba de «' + vecino.nombre + '»' : ', al final'))
+            : ('arriba de «' + ref.nombre + '»' + (vecino ? ' y debajo de «' + vecino.nombre + '»' : ''));
+        ayuda.textContent = 'Quedará ' + entre + ' (nivel ' + nivel + ').';
+    }
+
+    document.addEventListener('change', function (e) {
+        var caja = e.target.closest('[data-posicion-rol]');
+        if (caja) { nivelPara(caja); }
+    });
+
+    // Al abrir «Editar rol»: posición en «Dejarlo donde está» y sin contar el propio rol
+    document.addEventListener('click', function (e) {
+        var editar = e.target.closest('[data-accion="editar-rol"]');
+        if (!editar) { return; }
+        var caja = document.querySelector('#dialogoEditarRol [data-posicion-rol]');
+        if (!caja) { return; }
+        caja.dataset.excluir = editar.dataset.id || '';
+        var referencia = caja.querySelector('[data-posicion-referencia]');
+        if (referencia) {
+            referencia.value = '';
+            Array.prototype.forEach.call(referencia.options, function (o) { o.hidden = o.value !== '' && o.value === editar.dataset.id; });
+        }
+        nivelPara(caja);
+    }, true);
+
+    // ---------------------------------------------------------------- Matriz
+    var vista = document.querySelector('[data-vista-menus]');
+    function pintarMenus() {
+        if (!vista) { return; }
+        var mapa = {};
+        try { mapa = JSON.parse(vista.dataset.mapa || '{}'); } catch (e) { mapa = {}; }
+        var marcados = {};
+        document.querySelectorAll('tr[data-modulo]').forEach(function (fila) {
+            var clave = fila.dataset.modulo;
+            var ver = fila.querySelector('[data-accion-permiso="ver"]');
+            if (ver && ver.checked) { marcados[clave] = true; }
+            var evaluar = fila.querySelector('[data-accion-permiso="evaluar"]');
+            if (clave === 'candidatos' && evaluar && evaluar.checked) { marcados.entrevistas = true; }
+        });
+        var menus = []; var porMenu = {};
+        Object.keys(mapa).forEach(function (clave) {
+            if (!marcados[clave]) { return; }
+            var m = mapa[clave];
+            if (!porMenu[m[0]]) { porMenu[m[0]] = []; menus.push(m[0]); }
+            porMenu[m[0]].push(m[2]);
+        });
+        var lista = vista.querySelector('[data-vista-menus-lista]');
+        if (!lista) { return; }
+        lista.textContent = '';
+        if (!menus.length) {
+            var p = document.createElement('p'); p.className = 'small text-muted m-0';
+            p.textContent = 'Ningún menú: solo verá Inicio, Mis pendientes, la campana y el Manual.';
+            lista.appendChild(p);
+            return;
+        }
+        menus.forEach(function (nombre) {
+            var div = document.createElement('div'); div.className = 'vista-menu';
+            var b = document.createElement('strong'); b.textContent = nombre;
+            var s = document.createElement('span'); s.textContent = porMenu[nombre].join(' · ');
+            div.appendChild(b); div.appendChild(s); lista.appendChild(div);
+        });
+    }
+    if (vista && document.querySelector('tr[data-modulo]')) {
+        document.addEventListener('change', function (e) {
+            if (e.target.matches('[data-accion-permiso]')) { window.setTimeout(pintarMenus, 0); }
+        });
+    }
+
+    // Alcance distinto por acción: al cambiar el del módulo, se usa uno solo
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches('select[data-alcance-mixto]')) { return; }
+        var celda = e.target.closest('td');
+        if (!celda) { return; }
+        celda.querySelectorAll('[data-campo-mixto]').forEach(function (c) { c.disabled = true; });
+        var nota = celda.querySelector('[data-nota-mixto]');
+        if (nota) { nota.hidden = true; }
+    });
+
+    // ---------------------------------------------------------- Configuración
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches('[data-interruptor-modulo]')) { return; }
+        var tarjeta = e.target.closest('[data-modulo-avisos]');
+        if (!tarjeta) { return; }
+        var avisos = tarjeta.querySelector('[data-avisos-del-modulo]');
+        if (avisos) { avisos.classList.toggle('apagado', !e.target.checked); }
+        var texto = tarjeta.querySelector('[data-interruptor-texto]');
+        if (texto) { texto.textContent = e.target.checked ? 'encendidos' : 'apagados'; }
+    });
+
+    // --------------------------------------------------------------- Identidad
+    function luminancia(hex) {
+        var c = [1, 3, 5].map(function (i) {
+            var v = parseInt(hex.substr(i, 2), 16) / 255;
+            return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    }
+    function revisarContraste() {
+        var campo = document.getElementById('color_primario');
+        var aviso = document.querySelector('[data-aviso-contraste]');
+        if (!campo || !aviso) { return; }
+        var valor = (campo.value || '').trim();
+        if (!/^#[0-9a-fA-F]{6}$/.test(valor)) { aviso.hidden = true; return; }
+        var contraste = 1.05 / (luminancia(valor) + 0.05);
+        var bajo = contraste < 4.5;
+        aviso.hidden = !bajo;
+        aviso.textContent = bajo ? 'El texto blanco casi no se lee sobre este color (contraste ' + contraste.toFixed(1) + ' a 1; hace falta al menos 4.5 a 1). Elige un color más oscuro.' : '';
+        var previa = document.getElementById('vistaPrevia');
+        if (previa) { previa.classList.toggle('contraste-bajo', bajo); }
+    }
+    document.addEventListener('input', function (e) {
+        if (e.target.id === 'color_primario' || e.target.matches('[data-color-de="color_primario"]')) { window.setTimeout(revisarContraste, 0); }
+    });
+
+    // ---------------------------------------------------------------- Usuarios
+    function sincronizarSedes(form) {
+        var principal = form.querySelector('[data-sede-principal]');
+        var otras = form.querySelector('[data-otras-sedes]');
+        if (!principal || !otras) { return; }
+        var hay = principal.value !== '';
+        otras.hidden = !hay;
+        otras.querySelectorAll('input[type="checkbox"]').forEach(function (c) {
+            var esPrincipal = c.value === principal.value;
+            c.closest('label').hidden = esPrincipal;
+            if (esPrincipal || !hay) { c.checked = false; }
+            c.disabled = !hay || esPrincipal;
+        });
+    }
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-sede-principal]')) { sincronizarSedes(e.target.form); }
+    });
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-accion="editar-registro"], [data-abrir-dialogo]')) {
+            window.setTimeout(function () { document.querySelectorAll('form').forEach(function (f) { if (f.querySelector('[data-otras-sedes]')) { sincronizarSedes(f); } }); }, 0);
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-posicion-rol]').forEach(nivelPara);
+        revisarContraste();
+        document.querySelectorAll('form').forEach(function (f) { if (f.querySelector('[data-otras-sedes]')) { sincronizarSedes(f); } });
+    });
+})();
+/* Fin Mejoras estructura */

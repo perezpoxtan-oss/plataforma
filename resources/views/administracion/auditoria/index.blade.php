@@ -12,7 +12,7 @@
             <div class="icono"><i class="bi bi-clipboard-data text-primary" aria-hidden="true"></i></div>
             <div>
                 <h1>Bitácora de auditoría</h1>
-                <p>Quién hizo qué y cuándo. Horas de {{ $zona }}.@if ($soloPropios) Ves solo tus propios movimientos.@endif</p>
+                <p>Quién hizo qué y cuándo. Horas de {{ $zona }}.@if ($soloPropios) Ves solo tus propios movimientos.@elseif ($deSuSede) Ves los movimientos de tu sede.@endif</p>
             </div>
         </div>
         @if ($puedeExportar && $pagina->total() > 0)
@@ -20,7 +20,20 @@
         @endif
     </div>
 
+    {{-- Mejoras estructura (ADR-0016): «Ver historial» desde la ficha de un registro --}}
+    @if ($historialDe)
+        <div class="historial-registro mb-3" role="status">
+            <i class="bi bi-clock-history" aria-hidden="true"></i>
+            <span>Historial de <strong>{{ $historialDe }}</strong>: todo lo que se le ha hecho, del más reciente al más antiguo.</span>
+            <a href="{{ route('auditoria.index') }}">Ver toda la bitácora</a>
+        </div>
+    @endif
+
     <form method="GET" data-autoenviar action="{{ route('auditoria.index') }}" class="tarjeta p-3 mb-3 filtros-auditoria" role="search">
+        @if ($historialDe)
+            <input type="hidden" name="registro" value="{{ $aliasRegistro }}">
+            <input type="hidden" name="id" value="{{ $filtros['id'] }}">
+        @endif
         <div>
             <label class="campo-etiqueta" for="aud_desde">Desde</label>
             <input type="date" id="aud_desde" name="desde" class="campo mb-0" value="{{ $filtros['desde'] }}">

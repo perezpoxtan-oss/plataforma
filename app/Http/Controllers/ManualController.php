@@ -24,17 +24,16 @@ class ManualController extends Controller
         $buscar = Str::limit(trim(Entrada::texto($request->query('q'))), 80, '');
         $grupos = $this->manual->indice($usuario);
 
-        // Sin JavaScript la búsqueda también funciona (?q=…); con JavaScript filtra al escribir
-        if ($buscar !== '') {
-            $aguja = Str::lower(Str::ascii($buscar));
-            $grupos = array_filter(array_map(fn (array $paginas) => array_values(array_filter($paginas,
-                fn ($p) => str_contains(Str::lower(Str::ascii($p->titulo.' '.$p->resumen)), $aguja))), $grupos));
-        }
+        // Con JavaScript el índice se filtra al escribir (título, resumen y palabras del contenido);
+        // al buscar (?q=…) se busca en todo el contenido y cada resultado lleva a su apartado (ADR-0016)
+        $resultados = $buscar === '' ? [] : $this->manual->buscar($usuario, $buscar);
 
         return view('manual.index', [
-            'grupos' => $grupos,
+            'grupos' => $buscar === '' ? $grupos : [],
+            'resultados' => $resultados,
             'buscar' => $buscar,
             'iconos' => Manual::ICONOS,
+            'manual' => $this->manual,
         ]);
     }
 

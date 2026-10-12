@@ -15,8 +15,9 @@
         <div class="encabezado-pantalla m-0">
             <div class="icono"><i class="bi bi-building-fill text-primary" aria-hidden="true"></i></div>
             <div>
-                <h1>{{ $esSuperadmin ? 'Alta Empresas' : 'Mi Empresa' }}</h1>
-                <p>Directorio de Entidades Fiscales y Consorcios.</p>
+                {{-- Mejoras estructura (ADR-0016): un solo nombre para el módulo --}}
+                <h1>Empresas</h1>
+                <p>{{ $esSuperadmin ? 'Las empresas de la plataforma: alta, módulos que tiene cada una y activar o desactivar.' : 'Los datos de tu empresa: razón social, RFC, zona horaria y logo para las impresiones.' }}</p>
             </div>
         </div>
         @if ($empresas->count() > 1)
@@ -93,9 +94,18 @@
                         <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $emp->actualizado_por_nombre }} · @fecha($emp->updated_at)</div>
                     @endif
                 </div>
+                @if ($esSuperadmin)
+                    <div class="small text-muted mt-2"><i class="bi bi-grid-3x3-gap me-1" aria-hidden="true"></i>{{ count($contratados[$emp->id] ?? []) }} módulos contratados</div>
+                @endif
                 <div class="ficha-footer">
                     <span class="etiqueta-estado {{ $emp->activo ? 'activo' : 'inactivo' }}">{{ $emp->activo ? 'ACTIVA' : 'INACTIVA' }}</span>
                     <div class="d-flex gap-2">
+                        @include('componentes.ver-historial', ['registro' => \App\Models\Empresa::class, 'id' => $emp->id, 'nombre' => $emp->nombre_comercial])
+                        @if ($esSuperadmin)
+                            <button type="button" class="btn-icono editar" title="Módulos contratados" aria-label="Módulos contratados de {{ $emp->nombre_comercial }}" data-abrir-dialogo="dialogoModulos{{ $emp->id }}">
+                                <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+                            </button>
+                        @endif
                         @if ($puede['editar'])
                             <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar {{ $emp->nombre_comercial }}"
                                     data-accion="editar-registro" data-dialogo="dialogoEditarEmpresa"
@@ -121,6 +131,42 @@
             </div>
         @endforeach
     </div>
+    {{-- ===== Módulos contratados (ADR-0016, solo Super Administrador) ===== --}}
+    @if ($esSuperadmin)
+        @php $sinPantalla = \App\Http\Controllers\Administracion\PermisoController::sinPantalla(); @endphp
+        @foreach ($empresas as $emp)
+            @php $activos = $contratados[$emp->id] ?? []; @endphp
+            <dialog id="dialogoModulos{{ $emp->id }}" class="dialogo ancho" aria-labelledby="titulo-modulos-{{ $emp->id }}">
+                <div class="dialogo-cabecera">
+                    <h2 id="titulo-modulos-{{ $emp->id }}"><i class="bi bi-grid-3x3-gap me-2 text-primary" aria-hidden="true"></i>Módulos de «{{ $emp->nombre_comercial }}»</h2>
+                    <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                </div>
+                <div class="dialogo-cuerpo">
+                    <p class="small text-muted">Marca lo que la empresa usa. Lo que quites deja de verse en el menú, en la Matriz de permisos y en el Manual de sus usuarios; sus datos y permisos se conservan por si lo vuelves a activar.</p>
+                    <form action="{{ route('empresas.modulos', $emp->id) }}" method="POST" data-confirmar="¿Guardar los módulos de «{{ $emp->nombre_comercial }}»? Sus usuarios lo verán al recargar la pantalla.">
+                        @csrf
+                        @method('PUT')
+                        @foreach ($catalogoModulos as $grupo)
+                            <fieldset class="modulos-contratados">
+                                <legend class="small fw-bold">{{ $grupo['area'] }}@if ($grupo['siempre']) <span class="text-muted fw-normal">(siempre incluidos)</span>@endif</legend>
+                                @foreach ($grupo['modulos'] as $m)
+                                    <label class="fila-check {{ $m->padre_id ? 'ms-4' : '' }}">
+                                        <input type="checkbox" name="modulos[]" value="{{ $m->id }}" @checked($grupo['siempre'] || in_array($m->id, $activos, true)) @disabled($grupo['siempre'])>
+                                        {{ $m->nombre }}@if (in_array($m->clave, $sinPantalla, true)) <span class="etiqueta-proximamente">Próximamente</span>@endif
+                                    </label>
+                                @endforeach
+                            </fieldset>
+                        @endforeach
+                        <div class="dialogo-acciones">
+                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                            <button type="submit" class="btn-azul">Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        @endforeach
+    @endif
+
     <p class="text-muted text-center p-4" data-sin-resultados="empresas" hidden><i class="bi bi-inbox me-2" aria-hidden="true"></i>No se encontraron empresas con ese criterio.</p>
 
     {{-- ===== Alta y edición ===== --}}

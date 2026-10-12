@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\RegistraAutor;
+use App\Support\GruposAvisos;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -52,6 +53,8 @@ class Empresa extends Model
         'plazo_candidato' => ['Candidatos: recordar cada día lo que pasó de su plazo —solicitud sin revisar, evaluación sin registrar, elegido sin documentos, candidato sin atender, cita sin llegada— y avisar 15 días antes de borrar una ficha por caducidad', true],
         // Cuenta del usuario (seguridad)
         'cuenta_bloqueada' => ['Seguridad: avisar por correo a quien administra usuarios (y a la persona) cuando una cuenta se bloquea por intentos fallidos', true],
+        // Mejoras estructura (ADR-0016): campana a quien ve toda la Bitácora de auditoría (apagado por omisión)
+        'movimientos_sensibles' => ['Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría cuando alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales', false],
     ];
 
     /** Ronda 5 (LL-04): lista de correos de cada copia del voucher con cobro (Configuración → Avisos por correo). */
@@ -66,6 +69,11 @@ class Empresa extends Model
 
     public function aviso(string $clave): bool
     {
+        // Mejoras estructura (ADR-0016): el interruptor general del módulo apaga todos sus avisos
+        if (! GruposAvisos::encendido($this, GruposAvisos::grupoDe($clave))) {
+            return false;
+        }
+
         return (bool) ($this->preferencias['avisos'][$clave] ?? (self::AVISOS[$clave][1] ?? false));
     }
 

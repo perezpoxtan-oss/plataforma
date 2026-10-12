@@ -79,8 +79,13 @@ class MenuSeeder extends Seeder
                     'usuarios' => 'danger', 'roles' => 'indigo', 'permisos' => 'warning',
                 ],
                 'Sistema' => [
-                    'configuracion' => 'indigo', 'identidad' => 'primary', 'auditoria' => 'indigo',
+                    'configuracion' => 'indigo', 'auditoria' => 'indigo',
                 ],
+                // Mejoras estructura (ADR-0016): lo exclusivo del Super Administrador, aparte
+                'Plataforma' => [
+                    'identidad' => 'primary',
+                ],
+                // Fin Mejoras estructura
             ]],
         ];
     }

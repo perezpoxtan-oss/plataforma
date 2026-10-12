@@ -105,7 +105,9 @@ class MenusReorganizadosTest extends TestCase
         ], $menu['estructura']);
 
         $super = $this->estructura($this->crearSuperadmin());
-        $this->assertSame(['configuracion', 'identidad', 'auditoria'], $super['estructura']['Sistema']);
+        // Mejoras estructura (ADR-0016): lo exclusivo del Super Administrador va en su propia sección
+        $this->assertSame(['configuracion', 'auditoria'], $super['estructura']['Sistema']);
+        $this->assertSame(['identidad'], $super['estructura']['Plataforma']);
         // El celular usa el mismo orden
         $this->assertSame([1, 2, 3, 4, 5], Menu::orderBy('orden')->pluck('orden_movil')->all());
     }
@@ -223,10 +225,14 @@ class MenusReorganizadosTest extends TestCase
         $this->assertNotSame($esperado, $this->acomodo());
 
         $migracion = require database_path('migrations/2026_10_16_000100_reorganizar_menus.php');
+        // Mejoras estructura (ADR-0016): Identidad pasa después a su sección «Plataforma»
+        $estructura = require database_path('migrations/2026_10_27_000100_mejoras_de_estructura.php');
         $migracion->up();
+        $estructura->up();
         $this->assertSame($esperado, $this->acomodo());
 
         $migracion->up(); // segunda vez: sin cambios ni duplicados
+        $estructura->up();
         $this->assertSame($esperado, $this->acomodo());
         $this->assertSame(1, Menu::where('clave', 'informes')->count());
         $this->assertNull(Modulo::where('clave', 'autorizaciones')->value('menu_id'));
@@ -315,7 +321,8 @@ class MenusReorganizadosTest extends TestCase
 
         // Recursos Humanos (candidatos, fases 1 y 2): sus renglones en cero; el botón existe pero oculto
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
-        $this->assertSame(['total' => 0, 'claves' => ['recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos']],
+        // Mejoras estructura (ADR-0016): las altas provisionales por validar también están en Mis pendientes
+        $this->assertSame(['total' => 0, 'claves' => ['altas_provisionales', 'recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos']],
             ['total' => app(MisPendientes::class)->para($rh)['total'], 'claves' => array_column(app(MisPendientes::class)->para($rh)['items'], 'clave')]);
         $this->assertMatchesRegularExpression('/data-mis-pendientes\s+hidden/', $this->actingAs($rh)->get('/')->assertOk()->getContent());
 
@@ -362,6 +369,7 @@ class MenusReorganizadosTest extends TestCase
         $this->app->forgetScopedInstances();
         DB::enableQueryLog();
         app(MisPendientes::class)->para($admin);
-        $this->assertLessThan(60, count(DB::getQueryLog()));
+        // Mejoras estructura (ADR-0016): dos renglones más (altas provisionales y procedimientos por aprobar)
+        $this->assertLessThan(75, count(DB::getQueryLog()));
     }
 }

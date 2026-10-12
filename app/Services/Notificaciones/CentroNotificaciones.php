@@ -50,6 +50,8 @@ class CentroNotificaciones
         'pase_rechazado' => ['bi-x-octagon-fill', 'alerta'],
         'pase_vencido' => ['bi-exclamation-triangle-fill', 'alerta'],
         'pase_llega' => ['bi-truck', 'info'],
+        // Mejoras estructura (ADR-0016): movimiento sensible en la bitácora (si la empresa lo enciende)
+        'movimiento_sensible' => ['bi-shield-exclamation', 'alerta'],
     ];
 
     public function __construct(private readonly HoraLocal $hora) {}
@@ -65,7 +67,8 @@ class CentroNotificaciones
     {
         [$icono, $nivel] = self::TIPOS[$tipo] ?? ['bi-bell', 'info'];
         $avisados = [];
-        foreach (collect($usuarios)->map(fn ($id) => (int) $id)->filter()->unique() as $userId) {
+        // Mejoras estructura (ADR-0016): sin quienes silenciaron este tipo en «Mi cuenta» (Mis pendientes no cambia)
+        foreach (PreferenciasAvisos::quienesLoReciben($usuarios, $tipo) as $userId) {
             $n = new Notificacion([
                 'user_id' => $userId,
                 'tipo' => $tipo,

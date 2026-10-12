@@ -78,7 +78,14 @@ class SedeController extends Controller
         $sede = $this->tenant->conEmpresa($empresaId, fn () => Sede::create($datos));
         $this->auditoria->auditar($request->user(), 'sedes.creada', $sede, null, $sede->only(self::CAMPOS));
 
-        return redirect()->route('sedes.index')->with('ok', "«{$sede->nombre}» registrada correctamente.");
+        // Mejoras estructura (ADR-0016, criterio 5): los siguientes pasos naturales, con su botón
+        $siguientes = array_values(array_filter([
+            $request->user()->can('espacios.crear') ? ['Capturar sus zonas y edificios', route('espacios.index'), 'bi-geo-alt'] : null,
+            $request->user()->can('usuarios.crear') ? ['Dar de alta a su personal en Usuarios', route('usuarios.index'), 'bi-person-plus'] : null,
+        ]));
+
+        return redirect()->route('sedes.index')->with('ok', "«{$sede->nombre}» registrada correctamente.".($siguientes !== [] ? ' ¿Qué sigue?' : ''))
+            ->with('siguientes', $siguientes);
     }
 
     public function update(Request $request, int $sede): RedirectResponse

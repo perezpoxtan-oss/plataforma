@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Empresa;
 use App\Models\Rol;
 use App\Services\Permisos\AdministradorRoles;
+use App\Services\Permisos\PerfilesDeRol;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Query\Builder;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -24,6 +26,7 @@ class RolController extends Controller
     public function __construct(
         private readonly AdministradorRoles $administrador,
         private readonly EmpresaDeTrabajo $empresa,
+        private readonly PerfilesDeRol $perfiles,
     ) {}
 
     public function index(Request $request): View
@@ -58,6 +61,8 @@ class RolController extends Controller
                 'editar' => $usuario->can('roles.editar'),
                 'eliminar' => $usuario->can('roles.eliminar'),
                 'permisos' => $usuario->can('permisos.ver'),
+                // «Crear a partir de» otro rol (ADR-0016): copiar permisos exige poder editarlos
+                'copiar' => $usuario->can('permisos.editar'),
             ],
         ]);
     }
@@ -69,13 +74,32 @@ class RolController extends Controller
         $empresaId = $this->empresa->id($request->user());
         $datos = $this->validar($request, $empresaId);
 
+        // «Crear a partir de»: los permisos de otro rol de la misma empresa (o de las plantillas)
+        $origen = $request->filled('copiar_de')
+            ? Rol::query()->when($empresaId === null, fn ($q) => $q->whereNull('empresa_id'), fn ($q) => $q->where('empresa_id', $empresaId))->find((int) $request->input('copiar_de'))
+            : null;
+        if ($request->filled('copiar_de') && $origen === null) {
+            throw ValidationException::withMessages(['copiar_de' => 'El rol del que quieres copiar los permisos no existe.']);
+        }
+
         try {
-            $this->administrador->crearRol($request->user(), $empresaId, $datos);
+            $rol = DB::transaction(function () use ($request, $empresaId, $datos, $origen) {
+                $rol = $this->administrador->crearRol($request->user(), $empresaId, $datos);
+
+                return [$rol, $origen === null ? null : $this->perfiles->copiar($request->user(), $origen, $rol)];
+            });
         } catch (AuthorizationException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
+        [$rol, $copia] = $rol;
 
-        return redirect()->route('roles.index')->with('ok', 'Rol creado correctamente. Ya puedes configurarle sus permisos por módulo.');
+        if ($copia === null) {
+            return redirect()->route('roles.index')->with('ok', "Rol «{$rol->nombre}» creado con nivel {$rol->nivel_jerarquia}. Ya puedes configurarle sus permisos: toca «Ver permisos» en su ficha.");
+        }
+
+        return redirect()->route('permisos.index', ['rol' => $rol->id])->with('ok', "Rol «{$rol->nombre}» creado con los permisos de «{$origen->nombre}»"
+            .($copia['omitidos'] > 0 ? " (sin {$copia['omitidos']} que tú no tienes)" : '')
+            .'. Revisa abajo lo que verá y ajusta lo que haga falta.');
     }
 
     public function update(Request $request, Rol $rol): RedirectResponse
@@ -92,7 +116,7 @@ class RolController extends Controller
             return back()->withInput()->with('error', $e->getMessage());
         }
 
-        return redirect()->route('roles.index')->with('ok', 'Rol actualizado correctamente.');
+        return redirect()->route('roles.index')->with('ok', "Rol «{$datos['nombre']}» actualizado (nivel {$datos['nivel_jerarquia']}).");
     }
 
     public function destroy(Request $request, Rol $rol): RedirectResponse
@@ -111,10 +135,15 @@ class RolController extends Controller
     }
 
     /**
+     * El nivel se elige como «Debajo de / Arriba de» otro rol (ADR-0016); el
+     * número directo queda en «Avanzado». Si se elige una posición, manda ella.
+     *
      * @return array{nombre: string, descripcion: ?string, nivel_jerarquia: int, activo: bool}
      */
     private function validar(Request $request, ?int $empresaId, ?Rol $rol = null): array
     {
+        $this->nivelDesdePosicion($request, $empresaId, $rol);
+
         $deEmpresa = fn ($regla) => $empresaId === null
             ? $regla->whereNull('empresa_id')
             : $regla->where('empresa_id', $empresaId);
@@ -127,6 +156,7 @@ class RolController extends Controller
         ], [
             'nombre.unique' => 'Ya existe un rol con ese nombre.',
             'nivel_jerarquia.unique' => 'Ya existe un rol con ese nivel jerárquico; cada nivel debe ser único.',
+            'nivel_jerarquia.required' => 'Elige dónde va el rol en la jerarquía (debajo o arriba de otro rol).',
         ], [
             'nivel_jerarquia' => 'nivel jerárquico',
         ]);
@@ -137,6 +167,29 @@ class RolController extends Controller
             'nivel_jerarquia' => (int) $datos['nivel_jerarquia'],
             'activo' => $request->boolean('activo', $rol?->activo ?? true),
         ];
+    }
+
+    /**
+     * «Debajo de / Arriba de» → nivel_jerarquia (a la mitad entre los vecinos).
+     */
+    private function nivelDesdePosicion(Request $request, ?int $empresaId, ?Rol $rol): void
+    {
+        if (! $request->filled('posicion_rol')) {
+            return;
+        }
+        $relacion = $request->input('posicion_relacion') === 'arriba' ? 'arriba' : 'debajo';
+        $roles = Rol::query()->when($empresaId === null, fn ($q) => $q->whereNull('empresa_id'), fn ($q) => $q->where('empresa_id', $empresaId))->get();
+        $referencia = $roles->firstWhere('id', (int) $request->input('posicion_rol'));
+        if ($referencia === null || ($rol !== null && $referencia->id === $rol->id)) {
+            throw ValidationException::withMessages(['posicion_rol' => 'Elige otro rol como referencia.']);
+        }
+
+        try {
+            $nivel = $this->perfiles->nivelPara($roles, $relacion, $referencia, $request->user()->nivelJerarquia(), $rol?->id);
+        } catch (\DomainException $e) {
+            throw ValidationException::withMessages(['posicion_rol' => $e->getMessage()]);
+        }
+        $request->merge(['nivel_jerarquia' => $nivel]);
     }
 
     private function consultaRoles(?int $empresaId): Builder

@@ -57,6 +57,7 @@ use App\Models\VoucherReposicion;
 use App\Models\ZonaEstacionamiento;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
  * Traduce la bitácora técnica (evento "modulo.accion", modelo e id, antes y
@@ -137,6 +138,9 @@ class LectorAuditoria
         'contrasena_cambiada' => 'Cambio de contraseña propia', 'recuperacion_solicitada' => 'Solicitud de recuperación de contraseña',
         'recuperacion_completada' => 'Recuperación de contraseña', 'bienvenida_enviada' => 'Envío de enlace de bienvenida',
         'enlace_restablecer_enviado' => 'Envío de enlace para restablecer contraseña', 'desactivado_por_baja' => 'Desactivación por baja del colaborador',
+        // Mejoras estructura (ADR-0016)
+        'modulos_actualizados' => 'Cambio de módulos contratados', 'auditoria' => 'Cambio de ajustes de la bitácora',
+        // Fin Mejoras estructura
     ];
 
     /**
@@ -207,6 +211,41 @@ class LectorAuditoria
         FirmaUsuario::class => ['Firma guardada', null],
         ConfiguracionPlataforma::class => ['Configuración de la plataforma', 'clave'],
     ];
+
+    // Mejoras estructura (ADR-0016): «Ver historial» desde la ficha de cada registro
+
+    /**
+     * Nombre corto del tipo de registro para la dirección (p. ej. «rol», «sede»).
+     */
+    public static function alias(?string $tipo): ?string
+    {
+        return $tipo === null || ! isset(self::REGISTROS[$tipo]) ? null : Str::snake(class_basename($tipo));
+    }
+
+    /**
+     * Clase del registro a partir de su nombre corto (solo los conocidos).
+     */
+    public static function claseDeAlias(?string $alias): ?string
+    {
+        foreach (array_keys(self::REGISTROS) as $tipo) {
+            if (self::alias($tipo) === $alias) {
+                return $tipo;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Qué es un registro y cómo se llama («Rol · Agente»), para el título del historial.
+     */
+    public function nombreDe(string $tipo, int $id): string
+    {
+        $fila = new Auditoria(['auditable_type' => $tipo, 'auditable_id' => $id]);
+
+        return $this->registros(collect([$fila]))[$tipo.'#'.$id] ?? (self::REGISTROS[$tipo][0] ?? 'Registro').' #'.$id;
+    }
+    // Fin Mejoras estructura
 
     /** Módulos que registran algo en la bitácora, para el filtro. */
     public function modulos(Builder $consulta): Collection

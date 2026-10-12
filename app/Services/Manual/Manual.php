@@ -212,6 +212,164 @@ class Manual
         return ['html' => (string) $html, 'apartados' => $convertida['apartados']];
     }
 
+    // Mejoras estructura (ADR-0016): buscar en el contenido y ayuda directa al apartado
+
+    /**
+     * Apartados (## …) de una página: [id, texto], en orden.
+     *
+     * @return list<array{id: string, texto: string}>
+     */
+    public function apartados(PaginaManual $pagina): array
+    {
+        $ruta = $this->archivos()[$pagina->slug] ?? null;
+        if ($ruta === null) {
+            return [];
+        }
+        $clave = 'manual.pagina.'.md5(self::VERSION.'|'.$ruta.'|'.@filemtime($ruta).'|'.@filesize($ruta));
+
+        return Cache::rememberForever($clave, fn () => $this->convertir((string) file_get_contents($ruta)))['apartados'];
+    }
+
+    /**
+     * Dirección de un apartado de una página («Cómo dar de alta una cuenta»)
+     * si el usuario puede ver la página; sin el apartado, la página completa.
+     */
+    public function enlaceApartado(User $usuario, string $slug, string $apartado): ?string
+    {
+        $pagina = $this->pagina($slug);
+        if ($pagina === null || ! $this->puedeVer($usuario, $pagina)) {
+            return null;
+        }
+        $buscado = Str::lower(Str::ascii($apartado));
+        foreach ($this->apartados($pagina) as $a) {
+            if (Str::lower(Str::ascii($a['texto'])) === $buscado) {
+                return route('manual.ver', $pagina->slug).'#'.$a['id'];
+            }
+        }
+
+        return route('manual.ver', $pagina->slug);
+    }
+
+    /**
+     * Texto simple de cada apartado de una página (para buscar en el contenido).
+     *
+     * @return list<array{id: ?string, titulo: ?string, texto: string}>
+     */
+    public function textoPorApartado(PaginaManual $pagina): array
+    {
+        $ruta = $this->archivos()[$pagina->slug] ?? null;
+        if ($ruta === null) {
+            return [];
+        }
+        $clave = 'manual.texto.'.md5(self::VERSION.'|'.$ruta.'|'.@filemtime($ruta).'|'.@filesize($ruta));
+
+        return Cache::rememberForever($clave, function () use ($ruta, $pagina) {
+            $texto = preg_replace('/\A---\r?\n.*?\r?\n---\r?\n/s', '', (string) file_get_contents($ruta)) ?? '';
+            $apartados = $this->apartados($pagina);
+            $partes = [['id' => null, 'titulo' => null, 'texto' => '']];
+            $n = 0;
+            $enCodigo = false;
+            foreach (preg_split('/\r?\n/', $texto) ?: [] as $linea) {
+                if (str_starts_with(ltrim($linea), '```')) {
+                    $enCodigo = ! $enCodigo;
+
+                    continue;
+                }
+                if (! $enCodigo && preg_match('/^##\s+(.+)$/', $linea, $m)) {
+                    $a = $apartados[$n++] ?? null;
+                    $partes[] = ['id' => $a['id'] ?? null, 'titulo' => $a['texto'] ?? trim($m[1]), 'texto' => ''];
+
+                    continue;
+                }
+                $partes[count($partes) - 1]['texto'] .= ' '.$this->sinMarcas($linea);
+            }
+
+            return array_values(array_map(fn ($p) => ['id' => $p['id'], 'titulo' => $p['titulo'], 'texto' => trim(preg_replace('/\s+/', ' ', $p['texto']) ?? '')], $partes));
+        });
+    }
+
+    /**
+     * Palabras de la página (sin acentos ni repetidas) para el filtro en vivo del índice.
+     */
+    public function palabras(PaginaManual $pagina): string
+    {
+        $texto = Str::lower(Str::ascii(implode(' ', array_map(fn ($p) => ($p['titulo'] ?? '').' '.$p['texto'], $this->textoPorApartado($pagina)))));
+        preg_match_all('/[a-z0-9]{4,}/', $texto, $m);
+
+        return implode(' ', array_keys(array_flip($m[0])));
+    }
+
+    /**
+     * Busca en el título, el resumen y el contenido de las páginas que el
+     * usuario puede ver. Cada resultado lleva al apartado donde aparece.
+     *
+     * @return list<array{pagina: PaginaManual, apartado: ?string, titulo_apartado: ?string, fragmento: string}>
+     */
+    public function buscar(User $usuario, string $consulta): array
+    {
+        $palabras = array_values(array_filter(preg_split('/\s+/', Str::lower(Str::ascii($consulta))) ?: []));
+        if ($palabras === []) {
+            return [];
+        }
+        $contiene = fn (string $t) => collect($palabras)->every(fn ($w) => str_contains($t, $w));
+
+        $resultados = [];
+        foreach ($this->paginas() as $pagina) {
+            if (! $this->puedeVer($usuario, $pagina)) {
+                continue;
+            }
+            $partes = $this->textoPorApartado($pagina);
+            $enTitulo = $contiene(Str::lower(Str::ascii($pagina->titulo.' '.$pagina->resumen)));
+            $todo = Str::lower(Str::ascii($pagina->titulo.' '.$pagina->resumen.' '.implode(' ', array_map(fn ($p) => ($p['titulo'] ?? '').' '.$p['texto'], $partes))));
+            if (! $enTitulo && ! $contiene($todo)) {
+                continue;
+            }
+            // El primer apartado donde están todas las palabras (si no, el primero con alguna)
+            $elegido = null;
+            foreach ($partes as $p) {
+                if ($p['id'] !== null && $contiene(Str::lower(Str::ascii(($p['titulo'] ?? '').' '.$p['texto'])))) {
+                    $elegido = $p;
+                    break;
+                }
+            }
+            $elegido ??= collect($partes)->first(fn ($p) => $p['id'] !== null && str_contains(Str::lower(Str::ascii(($p['titulo'] ?? '').' '.$p['texto'])), $palabras[0]));
+            $resultados[] = [
+                'pagina' => $pagina,
+                'apartado' => $enTitulo && $elegido === null ? null : $elegido['id'] ?? null,
+                'titulo_apartado' => $elegido['titulo'] ?? null,
+                'fragmento' => $elegido === null ? $pagina->resumen : $this->fragmento($elegido['texto'], $palabras[0]),
+                'peso' => $enTitulo ? 0 : 1,
+            ];
+        }
+        usort($resultados, fn ($a, $b) => $a['peso'] <=> $b['peso']);
+
+        return array_map(fn ($r) => array_diff_key($r, ['peso' => true]), $resultados);
+    }
+
+    private function fragmento(string $texto, string $palabra): string
+    {
+        $plano = Str::lower(Str::ascii($texto));
+        $pos = strpos($plano, $palabra);
+        if ($pos === false || mb_strlen($texto) <= 160) {
+            return Str::limit($texto, 160);
+        }
+        // Str::ascii puede cambiar la longitud: se recorta sobre el texto original con un margen
+        $inicio = max(0, $pos - 60);
+
+        return ($inicio > 0 ? '…' : '').Str::limit(mb_substr($texto, $inicio, 200), 160);
+    }
+
+    private function sinMarcas(string $linea): string
+    {
+        $linea = preg_replace('/!\[[^\]]*\]\([^)]*\)/', '', $linea) ?? $linea;       // imágenes
+        $linea = preg_replace('/\[([^\]]*)\]\([^)]*\)/', '$1', $linea) ?? $linea;    // enlaces
+        $linea = preg_replace('/^\s*(#{1,6}|[-*]|\d+\.|>)\s*/', '', $linea) ?? $linea; // títulos, listas, citas
+        $linea = str_replace(['**', '__', '`', '|'], ['', '', '', ' '], $linea);
+
+        return preg_match('/^\s*:?-{3,}/', $linea) ? '' : $linea;
+    }
+    // Fin Mejoras estructura
+
     /**
      * Ruta real de una imagen del manual, solo si está dentro de docs/usuario/img
      * y es de un tipo de imagen permitido.

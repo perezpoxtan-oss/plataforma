@@ -48,21 +48,22 @@ class AdministradorUsuarios
      * @param  array{name: string, username: string, numero_colaborador: ?string, colaborador_id?: ?int, email: string, password?: ?string}  $datos
      * @return array{0: User, 1: bool}
      */
-    public function crear(User $actor, int $empresaId, array $datos, Rol $rol, ?Sede $sede, bool $enlace = false): array
+    public function crear(User $actor, int $empresaId, array $datos, Rol $rol, ?Sede $sede, bool $enlace = false, array $otrasSedes = []): array
     {
-        $this->exigirRolYSede($actor, $empresaId, $rol, $sede, 'usuarios.crear');
+        $this->exigirRolYSede($actor, $empresaId, $rol, $sede, 'usuarios.crear', $otrasSedes);
 
         if ($enlace) {
             $datos['password'] = Str::password(40);
         }
 
-        $usuario = DB::transaction(function () use ($actor, $empresaId, $datos, $rol, $sede) {
+        $usuario = DB::transaction(function () use ($actor, $empresaId, $datos, $rol, $sede, $otrasSedes) {
             $usuario = new User;
             $usuario->fill($datos + ['activo' => true]);
             $usuario->empresa_id = $empresaId;
             $usuario->forceFill(['creado_por' => $actor->id, 'actualizado_por' => $actor->id, 'debe_cambiar_contrasena' => true])->save();
 
             UsuarioRol::create(['user_id' => $usuario->id, 'rol_id' => $rol->id, 'sede_id' => $sede?->id]);
+            $this->asignarOtrasSedes($usuario, $rol, $sede, $otrasSedes);
             $this->autorizador->olvidar($usuario);
 
             $this->roles->auditar($actor, 'usuarios.creado', $usuario, null, $this->foto($usuario));
@@ -108,14 +109,21 @@ class AdministradorUsuarios
     /**
      * @param  array{name: string, username: string, numero_colaborador: ?string, colaborador_id?: ?int, email: string, password?: ?string, activo: bool}  $datos
      */
-    public function actualizar(User $actor, User $usuario, array $datos, Rol $rol, ?Sede $sede): User
+    public function actualizar(User $actor, User $usuario, array $datos, Rol $rol, ?Sede $sede, array $otrasSedes = []): User
     {
         $this->exigirPuedeAdministrar($actor, $usuario, 'usuarios.editar');
-        $this->exigirRolYSede($actor, (int) $usuario->empresa_id, $rol, $sede, 'usuarios.editar');
+        $this->exigirRolYSede($actor, (int) $usuario->empresa_id, $rol, $sede, 'usuarios.editar', $otrasSedes);
 
         $antes = $this->foto($usuario);
 
-        DB::transaction(function () use ($actor, $usuario, $datos, $rol, $sede) {
+        // Varias sedes (ADR-0016): las sedes que el actor no administra se conservan tal cual
+        $permitidas = $actor->es_superadmin ? null : $this->autorizador->sedesPermitidas($actor, 'usuarios.editar');
+        if ($permitidas !== null && $sede !== null) {
+            $fuera = UsuarioRol::where('user_id', $usuario->id)->whereNotNull('sede_id')->whereNotIn('sede_id', $permitidas)->pluck('sede_id')->all();
+            $otrasSedes = [...$otrasSedes, ...Sede::withoutGlobalScopes()->where('empresa_id', $usuario->empresa_id)->whereIn('id', $fuera)->get()->all()];
+        }
+
+        DB::transaction(function () use ($actor, $usuario, $datos, $rol, $sede, $otrasSedes) {
             if (empty($datos['password'])) {
                 unset($datos['password']);
             }
@@ -124,9 +132,10 @@ class AdministradorUsuarios
             // Contraseña escrita por el administrador: la persona la cambia al entrar
             $usuario->forceFill(['actualizado_por' => $actor->id] + (isset($datos['password']) ? ['debe_cambiar_contrasena' => true] : []))->save();
 
-            // Un rol y una sede por cuenta, como en SEGCAT
+            // Un rol por cuenta; una sede (o todas) y, si hace falta, otras sedes que también atiende (ADR-0016)
             UsuarioRol::where('user_id', $usuario->id)->delete();
             UsuarioRol::create(['user_id' => $usuario->id, 'rol_id' => $rol->id, 'sede_id' => $sede?->id]);
+            $this->asignarOtrasSedes($usuario, $rol, $sede, $otrasSedes);
         });
 
         $this->autorizador->olvidar($usuario);
@@ -201,6 +210,28 @@ class AdministradorUsuarios
         };
     }
 
+    /**
+     * Mejoras estructura (ADR-0016): cuentas activas sin colaborador vinculado
+     * cuyo rol pide pases de salida a su nombre («crear» con «Solo los
+     * propios», como Solicitante o Jefe de departamento). Sin el vínculo no
+     * pueden pedir pases ni firmar los de su departamento.
+     *
+     * @param  Builder<User>  $consulta
+     * @return Builder<User>
+     */
+    public static function sinVinculoQuePidePases(Builder $consulta): Builder
+    {
+        return $consulta->where('users.activo', true)->whereNull('users.colaborador_id')
+            ->whereExists(fn ($q) => $q->selectRaw('1')->from('usuario_roles as ur')
+                ->join('roles as r', 'r.id', '=', 'ur.rol_id')
+                ->join('rol_permisos as rp', 'rp.rol_id', '=', 'ur.rol_id')
+                ->join('modulo_acciones as ma', 'ma.id', '=', 'rp.modulo_accion_id')
+                ->join('modulos as m', 'm.id', '=', 'ma.modulo_id')
+                ->join('acciones as a', 'a.id', '=', 'ma.accion_id')
+                ->whereColumn('ur.user_id', 'users.id')->where('r.activo', true)
+                ->where('m.clave', 'pases_salida')->where('a.clave', 'crear')->where('rp.alcance', Alcance::Propios->value));
+    }
+
     public function exigirPuedeAdministrar(User $actor, User $usuario, string $permiso): void
     {
         if ($usuario->id === $actor->id) {
@@ -218,8 +249,33 @@ class AdministradorUsuarios
         $this->roles->exigirPuedeAdministrarUsuario($actor, $usuario);
     }
 
-    private function exigirRolYSede(User $actor, int $empresaId, Rol $rol, ?Sede $sede, string $permiso): void
+    /**
+     * Otras sedes que la cuenta también atiende (ADR-0016): el mismo rol en
+     * cada sede. Con «todas las sedes» no hacen falta.
+     *
+     * @param  list<Sede>  $otrasSedes
+     */
+    private function asignarOtrasSedes(User $usuario, Rol $rol, ?Sede $sede, array $otrasSedes): void
     {
+        if ($sede === null) {
+            return;
+        }
+        foreach (collect($otrasSedes)->unique('id')->reject(fn (Sede $s) => $s->id === $sede->id) as $otra) {
+            UsuarioRol::firstOrCreate(['user_id' => $usuario->id, 'rol_id' => $rol->id, 'sede_id' => $otra->id]);
+        }
+    }
+
+    /**
+     * @param  list<Sede>  $otrasSedes
+     */
+    private function exigirRolYSede(User $actor, int $empresaId, Rol $rol, ?Sede $sede, string $permiso, array $otrasSedes = []): void
+    {
+        foreach ($otrasSedes as $otra) {
+            if ((int) $otra->empresa_id !== $empresaId) {
+                throw new AuthorizationException('La sede pertenece a otra empresa.');
+            }
+        }
+
         if ((int) $rol->empresa_id !== $empresaId) {
             throw new AuthorizationException('El rol pertenece a otra empresa.');
         }
@@ -242,6 +298,11 @@ class AdministradorUsuarios
         if ($sedes !== null && ($sede === null || ! in_array((int) $sede->id, $sedes, true))) {
             throw new AuthorizationException('Solo puedes asignar cuentas a tus sedes: elige una de ellas.');
         }
+        foreach ($otrasSedes as $otra) {
+            if ($sedes !== null && ! in_array((int) $otra->id, $sedes, true)) {
+                throw new AuthorizationException('Solo puedes asignar cuentas a tus sedes: «'.$otra->nombre.'» no es una de ellas.');
+            }
+        }
     }
 
     /**
@@ -257,11 +318,13 @@ class AdministradorUsuarios
      */
     private function foto(User $usuario): array
     {
-        $asignacion = UsuarioRol::where('user_id', $usuario->id)->first(['rol_id', 'sede_id']);
+        $asignaciones = UsuarioRol::where('user_id', $usuario->id)->orderBy('id')->get(['rol_id', 'sede_id']);
+        $asignacion = $asignaciones->first();
+        $otras = $asignaciones->slice(1)->pluck('sede_id')->filter()->map(fn ($id) => (int) $id)->values()->all();
 
         return $usuario->only(self::CAMPOS_AUDITADOS) + [
             'rol_id' => $asignacion?->rol_id,
             'sede_id' => $asignacion?->sede_id,
-        ];
+        ] + ($otras === [] ? [] : ['otras_sedes' => $otras]);
     }
 }
