@@ -55,7 +55,7 @@ Modelo `App\Models\Colaborador` (`PerteneceAEmpresa`, `RegistraAutor`); scope `e
 | `PATCH /colaboradores/{id}/estado` | Baja (`activo=0`) o reingreso (`activo=1`) |
 | `PUT /colaboradores/{id}/sedes` | Sedes adicionales (`sedes[]`) |
 | `GET /colaboradores/{id}/datos-personales` | JSON con los datos personales (permiso `datos_personales`) |
-| `GET /colaboradores/{id}/expediente` · `GET …/expediente/{documento}` | Expediente del colaborador (candidatos fase 3, `ExpedienteController`): datos, documentos de contratación (solo con `datos_personales`), su paso por Candidatos (`candidatos.ver`) y resúmenes de accesos, llaves, pases, resguardos y procedimientos según lo que el usuario puede ver; ver [candidatos.md](candidatos.md) |
+| `GET /colaboradores/{id}/expediente` · `GET …/expediente/{documento}` | **Ficha del colaborador** en pestañas (`ExpedienteController`; nació como expediente en candidatos fase 3, ver [candidatos.md](candidatos.md)). Ver «Ficha del colaborador en pestañas» abajo |
 | `POST /colaboradores/rapido` | Registro rápido (JSON) |
 | `GET /colaboradores/buscar?q=` | Autocompletar (JSON) |
 
@@ -139,3 +139,30 @@ El **Núm. Empleado** (alta, edición y validación de provisionales) y el **nom
 ## Mejoras padrones (ADR-0015)
 
 Ver [mejoras-padrones.md](mejoras-padrones.md): «Registro rápido» / «POR VERIFICAR» / «Verificar», campana a Recursos Humanos y resultado a la caseta, renglón en Mis pendientes, correo y dirección en el alta, «Imprimir credencial» hacia Etiquetas QR.
+
+## Turno del colaborador (mapa de procesos)
+
+- **Migración `2026_10_29_000200_turno_de_colaboradores`:** `colaboradores.turno_id` (nullable) con índice `colaboradores_turno_id_index` y llave foránea `colaboradores_turno_id_foreign` → `turnos.id` **`nullOnDelete`**. El índice se crea antes de la llave para que MariaDB lo use como soporte; `down()` quita la llave, luego el índice y al final la columna (probado migrar → revertir → migrar). «Eliminar definitivamente» de un turno ya cuenta a sus colaboradores como dependencia (lee las llaves foráneas).
+- **Modelo:** `Colaborador::turno()` (`belongsTo`), `turno_id` en `$fillable`.
+- **Catálogo del formulario:** `AdministradorColaboradores::catalogos()` agrega `turnos` (de la empresa de trabajo por el filtro automático, con `sedes:id`, ordenados por hora de inicio). En el alta solo se listan los activos; en la edición también los desactivados con «(inactivo)», como departamentos y puestos.
+- **Combo dependiente:** `[data-colab-turno]` se acota con la sede elegida (`data-todas`, `data-sedes`; sin sede = corporativo = todos), en `acotarTurnos()` de `plataforma.js`. El valor guardado que ya no encaja se deja visible (`conservarActual`).
+- **Validación (`turnoValido`)**: el turno debe existir en la empresa, estar activo (salvo que sea el que ya tiene) y usarse en la sede elegida (`Turno::aplicanEn`), salvo que no cambien ni el turno ni la sede. Mensajes: «El turno no existe en esta empresa o está desactivado.» y «El turno «…» no se usa en la sede elegida.». El campo solo se escribe si llega en la petición (o en un alta): verificar un alta provisional o el registro rápido no lo borran.
+- **Bitácora:** `turno_id` va en la foto de `colaboradores.creado/actualizado`.
+- **Lista:** cada ficha lleva `data-turno="{id|sin}"` y la línea «Turno: Nombre (hh:mm–hh:mm)» si tiene; el filtro `[data-filtro-colab="turno"]` (turnos activos más los que ya tiene alguien, y «Sin turno») se recuerda con los demás filtros. El nombre del turno también entra en la búsqueda por texto.
+
+## Ficha del colaborador en pestañas
+
+`GET /colaboradores/{id}/expediente` (permiso `colaboradores.ver` con su alcance; otra empresa u otra sede → 404). Vista `organizacion/colaboradores/expediente.blade.php` con las pestañas en `$pestanas` (`clave => [título, ícono, ¿se muestra?]`) y una vista por pestaña en `organizacion/colaboradores/ficha/_<clave>.blade.php`:
+
+| Pestaña (`#clave`) | Contenido | Se muestra |
+|---|---|---|
+| Datos (`#datos`) | Estado, número, sede y sedes adicionales, departamento, puesto, **turno**, teléfono, alta, cuenta de usuario; llaves en uso, resguardos en campo y procedimientos por leer | Siempre (cada bloque con `<modulo>.ver`) |
+| Expediente (`#expediente`) | Datos legales y de contacto + documentos de contratación (`#documentos` se conserva) | Solo con `colaboradores.datos_personales` dentro de su alcance |
+| Código y etiqueta (`#codigo`) | QR (`identificacion.qr`), dirección `/e/{código}`, etiqueta NFC/RFID; botón que abre el diálogo «Código e identificación» (asignar etiqueta con `colaboradores.editar` en alcance y no provisional) e «Imprimir credencial» (`etiquetas_qr.ver` + `colaboradores.editar`) | Si tiene `codigo_qr` |
+| Historial (`#historial`) | Movimientos del registro (`ExpedienteController::MOVIMIENTOS`: alta, provisional, verificado, unido, baja, reingreso, edición, sedes, etiqueta asignada/quitada; solo qué, quién y cuándo, sin `antes/despues`), trazas creado/editado/validado/unido, su paso por Candidatos (`candidatos.ver`), accesos recientes (`accesos.ver`), pases de salida (`pases_salida.ver`); enlace a la Bitácora de auditoría con `auditoria.ver` | Siempre |
+
+- **Accesibilidad:** `role="tablist"`, cada pestaña `role="tab"` con `aria-selected`, `aria-controls` y `tabindex` móvil (0 en la activa, -1 en las demás); paneles `role="tabpanel"` con `aria-labelledby` y `tabindex="0"`. Flechas izquierda/derecha, Inicio y Fin cambian de pestaña. En el celular la barra (`.pestanas-pase`, los mismos estilos de la ficha del pase) se desliza horizontalmente y la pestaña elegida se lleva a la vista.
+- **Ancla:** `#clave` abre esa pestaña al cargar y al cambiar el `hash`; un `#id` de algo dentro de un panel (p. ej. `#documentos`) abre su pestaña. Al cambiar de pestaña la dirección se actualiza con `history.replaceState`. La ficha del candidato enlaza a `…/expediente#expediente`.
+- **JavaScript:** `public/js/pestanas.js` (genérico: `[data-pestanas]`, `[data-pestana]`, `[data-panel]`), cargado con `@push('scripts')`; nada en línea (CSP `script-src 'self'`).
+- **Agregar una pestaña** (p. ej. «Credencial»): una entrada en `$pestanas` con su condición de permiso y la vista `ficha/_credencial.blade.php`; el JS no cambia.
+- **Pruebas:** `tests/Feature/Organizacion/ColaboradoresTurnoYFichaTest.php` y `tests/Feature/Seguridad/CandidatosFase3Test.php`.

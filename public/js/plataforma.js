@@ -699,6 +699,7 @@ document.addEventListener('click', function (e) {
         var sede = valor('sede');
         var depto = valor('depto');
         var registro = valor('registro');
+        var turno = valor('turno');
         var fichas = cont.querySelectorAll('[data-colaborador]');
         var visibles = 0;
 
@@ -706,14 +707,15 @@ document.addEventListener('click', function (e) {
             var ok = (texto === '' || (f.dataset.texto || '').indexOf(texto) !== -1)
                 && (sede === '' || lista(f.dataset.sedes).indexOf(sede) !== -1)
                 && (depto === '' || f.dataset.depto === depto)
-                && (registro === '' || f.dataset.registro === registro);
+                && (registro === '' || f.dataset.registro === registro)
+                && (turno === '' || f.dataset.turno === turno);
             f.style.display = ok ? '' : 'none';
             if (ok) { visibles++; }
         });
 
         var vacio = cont.querySelector('[data-sin-resultados-colab]');
         if (vacio) { vacio.hidden = visibles !== 0 || fichas.length === 0; }
-        try { sessionStorage.setItem(CLAVE_FILTRO, JSON.stringify({ texto: valor('texto'), sede: sede, depto: depto })); } catch (e) { /* sin almacenamiento */ }
+        try { sessionStorage.setItem(CLAVE_FILTRO, JSON.stringify({ texto: valor('texto'), sede: sede, depto: depto, turno: turno })); } catch (e) { /* sin almacenamiento */ }
     }
 
     document.addEventListener('input', function (e) { if (e.target.matches('[data-filtro-colab]')) { filtrarColaboradores(); } });
@@ -755,7 +757,21 @@ document.addEventListener('click', function (e) {
             });
             if (depto.selectedOptions[0] && depto.selectedOptions[0].disabled) { depto.value = ''; }
         }
+        acotarTurnos(form);
         acotarPuestos(form);
+    }
+
+    // Mapa de procesos: el turno se acota a los que se usan en la sede elegida (sin sede = todos)
+    function acotarTurnos(form) {
+        var sede = form.querySelector('[data-colab-sede]');
+        var turno = form.querySelector('[data-colab-turno]');
+        if (!turno) { return; }
+        var s = sede ? sede.value : '';
+        Array.prototype.forEach.call(turno.options, function (o) {
+            if (o.value === '') { return; }
+            mostrarOpcion(o, s === '' || o.dataset.todas === '1' || lista(o.dataset.sedes).indexOf(s) !== -1);
+        });
+        if (turno.selectedOptions[0] && turno.selectedOptions[0].disabled) { turno.value = ''; }
     }
 
     // El valor guardado nunca se pierde en silencio: si ya no encaja, se deja visible y el servidor avisa
@@ -834,6 +850,8 @@ document.addEventListener('click', function (e) {
             if (depto) { depto.value = valores.departamento_id ? String(valores.departamento_id) : ''; conservarActual(depto); }
             acotarPuestos(form);
             if (puesto) { puesto.value = valores.puesto_id ? String(valores.puesto_id) : ''; conservarActual(puesto); }
+            var turnoSel = form.querySelector('[data-colab-turno]');
+            if (turnoSel) { turnoSel.value = valores.turno_id ? String(valores.turno_id) : ''; conservarActual(turnoSel); }
             var numero = form.querySelector('[data-numeros-existentes]');
             if (numero) { numero.dataset.original = numero.value; avisarNumero(numero); }
             if (boton.dataset.urlDatos) { cargarDatosPersonales(form, boton.dataset.urlDatos); }
@@ -1037,9 +1055,12 @@ document.addEventListener('click', function (e) {
         document.querySelectorAll('[data-form-colaborador]').forEach(function (form) {
             var depto = form.querySelector('[data-colab-depto]');
             var puesto = form.querySelector('[data-colab-puesto]');
+            var turnoSel = form.querySelector('[data-colab-turno]');
             var d = depto ? depto.value : '';
             var p = puesto ? puesto.value : '';
+            var tu = turnoSel ? turnoSel.value : '';
             acotarDepartamentos(form);
+            if (turnoSel && tu) { turnoSel.value = tu; conservarActual(turnoSel); }
             if (depto && d) { depto.value = d; conservarActual(depto); }
             acotarPuestos(form);
             if (puesto && p) { puesto.value = p; conservarActual(puesto); }
@@ -1055,7 +1076,9 @@ document.addEventListener('click', function (e) {
             if (g && !sedeUrl) {
                 var t = document.querySelector('[data-filtro-colab="texto"]');
                 var dep = document.querySelector('[data-filtro-colab="depto"]');
+                var selTurno = document.querySelector('[data-filtro-colab="turno"]');
                 if (t && g.texto) { t.value = g.texto; }
+                if (selTurno && g.turno && selTurno.querySelector('option[value="' + String(g.turno).replace(/[^0-9a-z]/g, '') + '"]')) { selTurno.value = g.turno; }
                 if (selSede && g.sede) { selSede.value = g.sede; }
                 if (dep && g.depto) { dep.value = g.depto; }
             }

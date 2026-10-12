@@ -15,8 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * Persona que trabaja para la empresa (réplica de la tabla colaboradores de
  * SEGCAT). Tiene una sede física (o ninguna = corporativo), sedes
- * adicionales donde también tiene presencia, un departamento (área) y un
- * puesto (rango), que se eligen por separado.
+ * adicionales donde también tiene presencia, un departamento (área), un
+ * puesto (rango) y, opcional, el turno que trabaja; se eligen por separado.
  */
 class Colaborador extends Model implements Identificable
 {
@@ -50,7 +50,7 @@ class Colaborador extends Model implements Identificable
     protected $attributes = ['activo' => true, 'provisional' => false, 'nacionalidad' => 'Mexicana'];
 
     protected $fillable = [
-        'empresa_id', 'sede_id', 'departamento_id', 'puesto_id', 'num_empleado', 'nombre', 'apellido_paterno',
+        'empresa_id', 'sede_id', 'departamento_id', 'puesto_id', 'turno_id', 'num_empleado', 'nombre', 'apellido_paterno',
         'apellido_materno', 'telefono', 'fecha_nacimiento', 'lugar_nacimiento', 'nacionalidad', 'curp', 'rfc',
         'nss', 'correo_personal', 'direccion_completa', 'etiqueta_nfc', 'activo',
     ];
@@ -84,6 +84,12 @@ class Colaborador extends Model implements Identificable
     public function puesto(): BelongsTo
     {
         return $this->belongsTo(Puesto::class);
+    }
+
+    /** Turno (horario) que trabaja; opcional. */
+    public function turno(): BelongsTo
+    {
+        return $this->belongsTo(Turno::class);
     }
 
     public function usuario(): HasOne

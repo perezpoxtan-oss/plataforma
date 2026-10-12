@@ -15,6 +15,9 @@
 5. Abre **Gestionar sedes adicionales** de Mariana, marca *Hotel Demo Playa* y guarda.
 6. Da de baja a Mariana con **⊘** y reingrésala con **↺**.
 7. Abre **Usuarios → Nuevo Usuario** y escribe "dan" en **Núm. Colaborador**. Elige a Daniela Canul: se llenan su número y su nombre.
+8. Edita a Mariana y en **Turno** elige *Matutino (07:00–15:00)*. Cambia la sede a *Hotel Demo Playa*: ahora también aparece *Mixto Playa*; regresa a Centro y desaparece. Guarda. En la lista, filtra con **Todos los turnos → Matutino** y luego con **Sin turno**.
+9. Toca la **carpeta** (Ficha) de Mariana. Recorre las pestañas **Datos** (su turno), **Expediente** (datos legales y documentos), **Código y etiqueta** (QR y etiqueta NFC/RFID) e **Historial** (verás su baja y su reingreso del paso 6). Prueba con el teclado: enfoca una pestaña y usa las flechas.
+10. Copia la dirección de la ficha estando en **Historial** y ábrela en otra pestaña del navegador: abre directo en **Historial**.
 
 ## Para recordar
 
@@ -22,6 +25,8 @@
 - El número de empleado no se repite dentro de tu empresa (otra empresa puede usar el mismo).
 - Los datos legales son confidenciales: solo los ve quien tiene el permiso **Datos personales**.
 - Dar de baja no borra: se conserva el historial.
+- El turno es opcional y solo se ofrecen los que se usan en la sede del colaborador.
+- La ficha reúne todo en pestañas; **Expediente** solo aparece con el permiso **Datos personales**.
 
 ## Autoevaluación
 
@@ -29,3 +34,5 @@
 2. Un supervisor de la sede Centro, ¿puede registrar un colaborador en Playa? *(No: con alcance de sede solo registra en sus sedes)*
 3. ¿Quién ve el CURP de un colaborador? *(Quien tiene el permiso Datos personales; por omisión, el Administrador)*
 4. ¿Qué pasa en Usuarios con un colaborador que ya tiene cuenta? *(No aparece al buscarlo; se avisa que ya tiene una cuenta)*
+5. ¿Por qué un supervisor no ve la pestaña Expediente en la ficha? *(Su rol no tiene el permiso Datos personales)*
+6. ¿Dónde veo cuándo se dio de baja y reingresó alguien? *(En su ficha, pestaña Historial)*

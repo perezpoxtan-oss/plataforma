@@ -2697,6 +2697,11 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .pestana-pase:hover { color: #0f172a; }
 .pestana-pase.activa { color: #1d4ed8; border-bottom-color: #2563eb; }
 .panel-pase { margin-bottom: 1rem; }
+/* Ficha del colaborador (pestanas.js): foco visible con el teclado */
+.pestana-pase:focus-visible { outline: 3px solid #f59e0b; outline-offset: -3px; }
+.panel-pase:focus-visible { outline: 2px solid #f59e0b; outline-offset: 4px; border-radius: 4px; }
+.acciones-ficha { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.acciones-ficha > a, .acciones-ficha > button { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; padding: 0.6rem 1.1rem; border-radius: 12px; font-weight: 600; font-family: inherit; border: none; text-decoration: none; cursor: pointer; }
 .panel-pase[hidden] { display: none; }
 
 .datos-pase { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem 1.25rem; margin: 0; }

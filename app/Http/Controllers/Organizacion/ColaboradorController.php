@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Sede;
+use App\Models\Turno;
 use App\Models\User;
 use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Colaboradores\ColaboradorParecido;
@@ -30,7 +31,7 @@ class ColaboradorController extends Controller
     /** Columnas de la lista: nunca los datos personales. */
     private const COLUMNAS_LISTA = [
         'colaboradores.id', 'colaboradores.empresa_id', 'colaboradores.sede_id', 'colaboradores.departamento_id',
-        'colaboradores.puesto_id', 'colaboradores.num_empleado', 'colaboradores.nombre', 'colaboradores.apellido_paterno',
+        'colaboradores.puesto_id', 'colaboradores.turno_id', 'colaboradores.num_empleado', 'colaboradores.nombre', 'colaboradores.apellido_paterno',
         'colaboradores.apellido_materno', 'colaboradores.telefono', 'colaboradores.activo', 'colaboradores.creado_por',
         'colaboradores.actualizado_por', 'colaboradores.created_at', 'colaboradores.updated_at',
         'colaboradores.provisional', 'colaboradores.validado_en', 'colaboradores.fusionado_en_id',
@@ -56,7 +57,7 @@ class ColaboradorController extends Controller
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor) {
             $lista = $this->colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.ver')
-                ->with(['sede:id,nombre', 'sedesAdicionales:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'fusionadoEn:id,num_empleado,nombre,apellido_paterno,apellido_materno'])
+                ->with(['sede:id,nombre', 'sedesAdicionales:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'turno:id,nombre,hora_inicio,hora_fin', 'fusionadoEn:id,num_empleado,nombre,apellido_paterno,apellido_materno'])
                 ->leftJoin('users as uc', 'uc.id', '=', 'colaboradores.creado_por')
                 ->leftJoin('users as ua', 'ua.id', '=', 'colaboradores.actualizado_por')
                 ->select([...self::COLUMNAS_LISTA, 'uc.name as creado_por_nombre', 'ua.name as actualizado_por_nombre'])
@@ -74,6 +75,10 @@ class ColaboradorController extends Controller
                 'departamentosFiltro' => Departamento::where(fn ($q) => $q->where('activo', true)
                     ->orWhereIn('id', $lista->pluck('departamento_id')->filter()->unique()->values()))
                     ->orderBy('nombre')->get(['id', 'nombre']),
+                // Mapa de procesos: filtro por turno (los activos y los que ya tiene alguien)
+                'turnosFiltro' => Turno::where(fn ($q) => $q->where('activo', true)
+                    ->orWhereIn('id', $lista->pluck('turno_id')->filter()->unique()->values()))
+                    ->orderBy('hora_inicio')->orderBy('nombre')->get(['id', 'nombre', 'hora_inicio', 'hora_fin']),
                 'alta' => $actor->can('colaboradores.crear') ? $this->colaboradores->catalogos($actor, 'colaboradores.crear') : null,
                 'edicion' => $puedeEditar ? $this->colaboradores->catalogos($actor, 'colaboradores.editar') : null,
                 'editables' => $this->colaboradores->idsEnAlcance($actor, 'colaboradores.editar'),
