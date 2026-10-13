@@ -78,7 +78,7 @@ class LectorAuditoria
         'eliminado' => 'Eliminación', 'eliminada' => 'Eliminación', 'eliminado_definitivo' => 'Eliminación definitiva',
         'desbloqueado' => 'Desbloqueo', 'rol_asignado' => 'Asignación de rol',
         'rol_actualizado' => 'Cambio de permisos', 'sedes' => 'Cambio de sedes', 'sedes_actualizadas' => 'Cambio de sedes', 'sede_agregada' => 'Alta de sede',
-        'lote' => 'Alta por lote', 'pisos_copiados' => 'Copia de pisos', 'seccion_creada' => 'Alta de sección',
+        'lote' => 'Alta por lote', 'pisos_copiados' => 'Copia de pisos', 'movido' => 'Cambio de lugar', 'seccion_creada' => 'Alta de sección',
         'seccion_asignada' => 'Asignación a sección', 'tipo_creado' => 'Alta de tipo', 'clonado' => 'Copia',
         'logo_actualizado' => 'Cambio de logotipo',
         // Altas provisionales y verificación de padrones

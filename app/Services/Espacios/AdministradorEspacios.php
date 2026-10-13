@@ -2,12 +2,17 @@
 
 namespace App\Services\Espacios;
 
+use App\Models\Empresa;
 use App\Models\Espacio;
 use App\Models\GrupoEspacio;
 use App\Models\Sede;
 use App\Models\TipoEspacio;
 use App\Models\User;
+use App\Services\Borrado\BorradoSeguro;
+use App\Services\Borrado\RegistroBorrado;
 use App\Services\Permisos\AdministradorRoles;
+use App\Support\Espacios\Etiquetas;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -17,14 +22,26 @@ use Illuminate\Validation\ValidationException;
  *  - padre, sede, tipo y sección pertenecen a la misma empresa y sede;
  *  - no hay dos hermanos con el mismo nombre;
  *  - la ruta materializada se calcula al crear;
- *  - desactivar o reactivar arrastra a todo lo que cuelga del nodo.
+ *  - desactivar o reactivar arrastra a todo lo que cuelga del nodo;
+ *  - mover cambia el lugar (padre, ruta y profundidad) sin cambiar el id,
+ *    así llaves, equipos, recorridos e historial siguen apuntando a él;
+ *  - eliminar varias usa el mismo borrado seguro que el botón individual.
  */
 class AdministradorEspacios
 {
     /** Tope por lote (más suele ser un error de captura). */
     public const MAX_LOTE = 500;
 
-    public function __construct(private readonly AdministradorRoles $auditoria) {}
+    /** Tope de "Eliminar definitivamente las marcadas" por envío. */
+    public const MAX_ELIMINAR = 200;
+
+    /** Tope de lugares que se ofrecen en "Mover a…". */
+    public const MAX_DESTINOS = 3000;
+
+    public function __construct(
+        private readonly AdministradorRoles $auditoria,
+        private readonly BorradoSeguro $borrado,
+    ) {}
 
     /**
      * @param  array{nombre: string, codigo?: ?string, tipo_espacio_id?: ?int, grupo_espacio_id?: ?int}  $datos
@@ -221,6 +238,212 @@ class AdministradorEspacios
         $this->auditoria->auditar($actor, 'espacios.seccion_asignada', $grupo, ['espacios' => $antes], ['espacios' => $validos]);
 
         return count($validos);
+    }
+
+    /**
+     * Lugares a los que se puede mover el espacio: activos, de su misma sede,
+     * del nivel permitido (Espacio::PADRES), sin él, sin lo que tiene dentro y
+     * sin su lugar actual. Cada uno con su ruta legible ("Torre A › Piso 2").
+     *
+     * @return list<array{id: int, nombre: string}>
+     */
+    public function destinos(Espacio $espacio): array
+    {
+        $niveles = array_values(array_filter(Espacio::PADRES[$espacio->nivel] ?? []));
+        if ($espacio->padre_id === null || $niveles === []) {
+            return [];
+        }
+
+        $candidatos = Espacio::where('sede_id', $espacio->sede_id)
+            ->whereIn('nivel', $niveles)
+            ->where('activo', true)
+            ->whereKeyNot($espacio->id)
+            ->whereKeyNot($espacio->padre_id)
+            ->where('ruta', 'not like', $espacio->ruta.'%')
+            ->limit(self::MAX_DESTINOS)
+            ->get(['id', 'nombre', 'ruta']);
+
+        $nombres = $this->nombresDeAncestros($candidatos);
+
+        return $candidatos
+            ->map(fn (Espacio $e) => ['id' => (int) $e->id, 'nombre' => $this->rutaLegible($e, $nombres)])
+            ->sortBy('nombre', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Mover un espacio (con todo lo que tiene dentro) a otro lugar de su misma sede.
+     */
+    public function mover(User $actor, Espacio $espacio, Espacio $destino): Espacio
+    {
+        $etiquetas = Etiquetas::para(Empresa::with('rubro')->find($espacio->empresa_id));
+
+        if ($espacio->padre_id === null) {
+            throw ValidationException::withMessages(['destino_id' => 'Una zona o edificio no se mueve: depende directamente de la sede.']);
+        }
+        if ((int) $destino->sede_id !== (int) $espacio->sede_id || (int) $destino->empresa_id !== (int) $espacio->empresa_id) {
+            throw ValidationException::withMessages(['destino_id' => 'Solo se puede mover dentro de la misma sede.']);
+        }
+        if ((int) $destino->id === (int) $espacio->id || str_starts_with((string) $destino->ruta, (string) $espacio->ruta)) {
+            throw ValidationException::withMessages(['destino_id' => "No se puede mover «{$espacio->nombre}» dentro de sí mismo ni dentro de lo que tiene adentro."]);
+        }
+        if (! in_array($destino->nivel, Espacio::PADRES[$espacio->nivel] ?? [], true)) {
+            $permitidos = collect(Espacio::PADRES[$espacio->nivel] ?? [])->filter()
+                ->map(fn ($n) => mb_strtolower($etiquetas[$n]['singular']))->implode(' o ');
+            throw ValidationException::withMessages(['destino_id' => "«{$espacio->nombre}» solo puede ir dentro de: {$permitidos}."]);
+        }
+        if (! $destino->activo) {
+            throw ValidationException::withMessages(['destino_id' => "«{$destino->nombre}» está desactivado: reactívalo o elige otro lugar."]);
+        }
+        if ((int) $destino->id === (int) $espacio->padre_id) {
+            throw ValidationException::withMessages(['destino_id' => "«{$espacio->nombre}» ya está en «{$destino->nombre}»."]);
+        }
+
+        $donde = $this->demostrativo($etiquetas[$destino->nivel]['singular']);
+        $hermanos = Espacio::where('sede_id', $destino->sede_id)->where('padre_id', $destino->id)->get(['id', 'nombre', 'codigo', 'nivel']);
+        if ($hermanos->contains(fn ($h) => mb_strtolower(trim($h->nombre)) === mb_strtolower(trim($espacio->nombre)))) {
+            throw ValidationException::withMessages(['destino_id' => "Ya existe «{$espacio->nombre}» en {$donde}."]);
+        }
+        if ($espacio->codigo !== null && $hermanos->contains(fn ($h) => $h->nivel === $espacio->nivel && $h->codigo !== null
+            && mb_strtoupper($h->codigo) === mb_strtoupper($espacio->codigo))) {
+            throw ValidationException::withMessages(['destino_id' => "Ya existe el código «{$espacio->codigo}» en {$donde}."]);
+        }
+
+        $antes = ['padre_id' => $espacio->padre_id, 'lugar' => $this->lugar($espacio)];
+        $rutaVieja = (string) $espacio->ruta;
+        $rutaNueva = $destino->ruta.$espacio->id.'/';
+        $diferencia = ($destino->profundidad + 1) - $espacio->profundidad;
+
+        DB::transaction(function () use ($actor, $espacio, $destino, $rutaVieja, $rutaNueva, $diferencia) {
+            Espacio::where('ruta', 'like', $rutaVieja.'%')->whereKeyNot($espacio->id)->orderBy('id')
+                ->get(['id', 'ruta', 'profundidad'])
+                ->each(fn (Espacio $d) => Espacio::whereKey($d->id)->update([
+                    'ruta' => $rutaNueva.substr((string) $d->ruta, strlen($rutaVieja)),
+                    'profundidad' => $d->profundidad + $diferencia,
+                ]));
+
+            $espacio->forceFill([
+                'padre_id' => $destino->id,
+                'ruta' => $rutaNueva,
+                'profundidad' => $destino->profundidad + 1,
+                'actualizado_por' => $actor->id,
+            ])->save();
+        });
+
+        $espacio->unsetRelation('padre');
+        $this->auditoria->auditar($actor, 'espacios.movido', $espacio, $antes, ['padre_id' => $destino->id, 'lugar' => $this->lugar($espacio)]);
+
+        return $espacio;
+    }
+
+    /**
+     * "Eliminar definitivamente" varios espacios que cuelgan de $padre. Cada
+     * uno se borra con todo lo que tiene dentro (de lo más profundo hacia
+     * arriba) usando BorradoSeguro, con su copia en la auditoría; si él o algo
+     * de lo que tiene dentro está en uso, no se borra nada de ese espacio y se
+     * dice por qué.
+     *
+     * @param  list<int>  $ids
+     * @return array{eliminadas: list<string>, fallidas: list<string>}
+     */
+    public function eliminarVarios(User $actor, Espacio $padre, array $ids): array
+    {
+        $definicion = RegistroBorrado::de('espacios');
+        $espacios = Espacio::whereIn('id', array_slice(array_values(array_unique($ids)), 0, self::MAX_ELIMINAR))
+            ->where('padre_id', $padre->id)->orderBy('nombre')->get();
+
+        $resultado = ['eliminadas' => [], 'fallidas' => []];
+        foreach ($espacios as $espacio) {
+            if (! $actor->can('espacios.borrar', $espacio)) {
+                $resultado['fallidas'][] = "{$espacio->nombre}: está fuera de tu alcance";
+
+                continue;
+            }
+
+            $actual = $espacio;
+            try {
+                DB::transaction(function () use ($actor, $definicion, $espacio, &$actual) {
+                    $dentro = Espacio::where('ruta', 'like', $espacio->ruta.'%')->whereKeyNot($espacio->id)
+                        ->orderByDesc('profundidad')->orderBy('id')->get();
+                    foreach ([...$dentro->all(), $espacio] as $nodo) {
+                        $actual = $nodo;
+                        $this->borrado->eliminar($actor, $definicion, $nodo);
+                    }
+                });
+                $resultado['eliminadas'][] = $espacio->nombre;
+            } catch (\DomainException $e) {
+                $resultado['fallidas'][] = $this->motivo($espacio, $actual, $e->getMessage());
+            }
+        }
+
+        return $resultado;
+    }
+
+    /**
+     * "101: tiene 1 llave que la abre (HDC-101)" o, si lo que se usa está
+     * dentro, "101: dentro, «Baño» tiene 1 llave que la abre (HDC-101)".
+     */
+    private function motivo(Espacio $espacio, Espacio $usado, string $mensaje): string
+    {
+        $razon = preg_replace('/: no se puede eliminar.*$/u', '', $mensaje);
+        $razon = mb_strtolower(mb_substr($razon, 0, 1)).mb_substr($razon, 1);
+
+        $llaves = DB::table('espacio_llave')->join('llaves', 'llaves.id', '=', 'espacio_llave.llave_id')
+            ->where('espacio_llave.espacio_id', $usado->id)->orderBy('llaves.nomenclatura')->limit(3)->pluck('llaves.nomenclatura');
+        if ($llaves->isNotEmpty()) {
+            $razon .= ' ('.$llaves->implode(', ').')';
+        }
+
+        return $usado->is($espacio)
+            ? "{$espacio->nombre}: {$razon}"
+            : "{$espacio->nombre}: dentro, «{$usado->nombre}» {$razon}";
+    }
+
+    /**
+     * "Torre A › Piso 2 › 101" (sin la sede).
+     */
+    private function lugar(Espacio $espacio): string
+    {
+        $padre = $espacio->padre_id === null ? null : Espacio::find($espacio->padre_id, ['id', 'nombre', 'ruta']);
+        if ($padre === null) {
+            return '';
+        }
+
+        return $this->rutaLegible($padre, $this->nombresDeAncestros(collect([$padre])));
+    }
+
+    /**
+     * @param  Collection<int, Espacio>  $espacios
+     * @return array<int, string>
+     */
+    private function nombresDeAncestros($espacios): array
+    {
+        $ids = $espacios->flatMap(fn (Espacio $e) => $e->idsAncestros())->unique()->values()->all();
+
+        return $ids === [] ? [] : Espacio::whereIn('id', $ids)->pluck('nombre', 'id')->all();
+    }
+
+    /**
+     * @param  array<int, string>  $nombres
+     */
+    private function rutaLegible(Espacio $espacio, array $nombres): string
+    {
+        $partes = array_map(fn ($id) => $nombres[$id] ?? '…', $espacio->idsAncestros());
+        $partes[] = $espacio->nombre;
+
+        return implode(' › ', $partes);
+    }
+
+    /**
+     * "ese piso", "esa habitación", "esa zona / edificio".
+     */
+    private function demostrativo(string $singular): string
+    {
+        $palabra = mb_strtolower(explode(' ', $singular)[0]);
+        $femenino = preg_match('/(a|ón|ad)$/u', $palabra) === 1 || $palabra === 'área';
+
+        return ($femenino ? 'esa ' : 'ese ').mb_strtolower($singular);
     }
 
     private function validarUbicacion(Sede $sede, ?Espacio $padre, string $nivel): void

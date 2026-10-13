@@ -271,7 +271,7 @@ class RecorridoPantallasTest extends TestCase
             'proveedores.show' => array_map(fn ($id) => ['proveedor' => $id], $ids([$primero(Proveedor::class)])),
             'vehiculos.calcomania' => array_map(fn ($id) => ['vehiculo' => $id], $ids([$primero(Vehiculo::class)])),
             'vehiculos.qr' => array_map(fn ($c) => ['codigo' => $c], array_filter([Vehiculo::withoutGlobalScopes()->where('empresa_id', $e)->value('codigo_qr')])),
-            'espacios.show' => array_map(fn ($id) => ['espacio' => $id], $ids([
+            'espacios.show', 'espacios.destinos' => array_map(fn ($id) => ['espacio' => $id], $ids([
                 $primero(Espacio::class),
                 $primero(Espacio::class, fn ($q) => $q->whereNotNull('padre_id')),
                 Espacio::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),

@@ -51,8 +51,10 @@ Rutas:
 - `POST /espacios`, `PUT /espacios/{id}`, `PATCH /espacios/{id}/estado`.
 - `POST /espacios/{id}/lote`, `POST /espacios/{id}/copiar-pisos`.
 - `POST /espacios/tipos`, `POST /espacios/secciones`, `PUT /espacios/secciones/{id}` (asignar habitaciones).
+- `GET /espacios/{id}/destinos` (JSON) y `PATCH /espacios/{id}/mover` («Mover a…»).
+- `DELETE /espacios/{id}/eliminar-varias` («Eliminar definitivamente las marcadas» de los hijos de `{id}`).
 
-Permisos: `espacios.ver`, `espacios.crear`, `espacios.editar` y `espacios.eliminar` (desactivar o reactivar). Con alcance de sede, el usuario solo ve y toca las sedes asignadas.
+Permisos: `espacios.ver`, `espacios.crear`, `espacios.editar` (también «Mover a…»), `espacios.eliminar` (dar de baja o reactivar) y `espacios.borrar` (eliminar definitivamente, uno o varios). Con alcance de sede, el usuario solo ve y toca las sedes asignadas.
 
 ## Interfaz
 
@@ -61,9 +63,31 @@ Permisos: `espacios.ver`, `espacios.crear`, `espacios.editar` y `espacios.elimin
 - **JavaScript:** `data-abrir-dialogo` acepta `data-padre` y `data-padre-nombre`, para usar un solo diálogo "Agregar Elemento" en todas las áreas. El filtro genérico de fichas acepta `data-filtro-sede`.
 - **Datos demo:** `plataforma:demo` crea Torre A con 2 pisos, 8 habitaciones, la sección "Vista al mar" y el detalle de la 101.
 
+## Mover a… y eliminar varias (2026-10)
+
+**Mover a…** (`AdministradorEspacios::mover`, botón en `partes/acciones` → `partes/mover`, diálogo único por página):
+
+- Cualquier espacio con padre (las zonas / edificios no se mueven). El destino debe ser del nivel permitido por `Espacio::PADRES`, de la misma sede y empresa, activo, distinto de su lugar actual y fuera de su propio subárbol (`ruta`).
+- Nombre repetido entre los hijos del destino (sin importar mayúsculas) o mismo `codigo` en el mismo nivel: «Ya existe «101» en ese piso.».
+- En una transacción se actualizan `padre_id`, `ruta` y `profundidad` del espacio y se reescribe el prefijo de `ruta` (y la profundidad) de todo lo que cuelga. El `id` no cambia: `espacio_llave`, equipos, recorridos, novedades y auditoría siguen apuntando a él.
+- Auditoría `espacios.movido` (en la Bitácora: «Cambio de lugar») con `padre_id` y `lugar` («Torre A › Piso 1») antes y después.
+- `destinos()` arma la lista (tope `MAX_DESTINOS` = 3000) con la ruta legible de cada lugar; la pide `public/js/espacios.js`.
+- Permiso `espacios.editar`, revisado también sobre el registro (alcance de sede y «solo los propios»).
+
+**Eliminar definitivamente las marcadas** (`AdministradorEspacios::eliminarVarios`, `partes/eliminar-varias`, en las listas de habitaciones de un piso y de pisos de una zona):
+
+- Permiso `espacios.borrar` (el mismo del botón individual `componentes.borrar`); sin él no se ven casillas ni botón y el servidor responde 403. Cada espacio se revisa además con `can('espacios.borrar', $espacio)` (alcance).
+- Confirmación: la cantidad marcada o `ELIMINAR` (sin importar mayúsculas). Tope `MAX_ELIMINAR` = 200 por envío. Solo se toman los ids que son hijos directos del espacio de la URL (de otra empresa o sede: 404).
+- Cada espacio se borra **con todo lo que tiene dentro**: en una transacción por espacio se llama a `BorradoSeguro::eliminar` para cada descendiente (de lo más profundo hacia arriba) y al final para él; cada uno deja su `espacios.eliminado_definitivo` con la copia de sus datos. Si él o algo de lo que tiene dentro está en uso (llave, equipo, recorrido, registro…), se revierte todo ese espacio y el resultado lo explica: «101: tiene 1 llave que la abre (HDC-101)» o «102: dentro, «Terraza» tiene 1 llave que la abre (HDC-102T)».
+- Diferencia con el botón individual: el individual sigue tratando a los hijos como dependencia («Tiene 2 zonas o áreas dentro»); el borrado por lote, aprobado por el dueño, se lleva los hijos que nadie usó.
+
+**Interfaz:** sin JavaScript en línea; todo en `public/js/espacios.js` (cargado con `@pushOnce`). El botón círculo rojo dice «Dar de baja» en `title` y `aria-label`.
+
+**Excepción de vocabulario (criterios UX, regla 4), aprobada por el dueño:** los textos «Mover a…» y «Eliminar definitivamente las marcadas». El botón de envío del diálogo de mover dice **Guardar**.
+
 ## Pruebas
 
-`tests/Feature/Organizacion/EspaciosTest.php`
+`tests/Feature/Organizacion/EspaciosTest.php` y `tests/Feature/Organizacion/EspaciosMoverEliminarTest.php` (mover: éxito con subárbol y auditoría, nivel inválido, descendiente, destino inactivo, nombre repetido, otra sede, otra empresa, sin permiso; eliminar varias: mezcla de usadas y libres con sus motivos, confirmación, sin permiso 403, otra empresa 404, ids de otro padre, tope).
 
 ## Pendiente (nota del dueño, Ronda 5 · Z-08)
 

@@ -172,6 +172,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/espacios/{espacio}/estado', [EspacioController::class, 'estado'])->whereNumber('espacio')->name('espacios.estado');
     Route::post('/espacios/{espacio}/lote', [EspacioController::class, 'lote'])->whereNumber('espacio')->name('espacios.lote');
     Route::post('/espacios/{espacio}/copiar-pisos', [EspacioController::class, 'copiarPisos'])->whereNumber('espacio')->name('espacios.copiar');
+    Route::get('/espacios/{espacio}/destinos', [EspacioController::class, 'destinos'])->whereNumber('espacio')->name('espacios.destinos');
+    Route::patch('/espacios/{espacio}/mover', [EspacioController::class, 'mover'])->whereNumber('espacio')->name('espacios.mover');
+    Route::delete('/espacios/{espacio}/eliminar-varias', [EspacioController::class, 'eliminarVarios'])->whereNumber('espacio')->name('espacios.eliminar_varias');
 
     Route::get('/identidad', [IdentidadController::class, 'edit'])->name('identidad.edit');
     Route::put('/identidad', [IdentidadController::class, 'update'])->name('identidad.update');
