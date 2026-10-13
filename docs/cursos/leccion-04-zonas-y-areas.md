@@ -13,15 +13,20 @@
 7. Agrega un tipo de elemento propio, **Jacuzzi**, y úsalo en el baño.
 8. En **Secciones**, crea "Torre B frente" y asígnale B101 a B103.
 9. Desactiva *Piso 1* de Torre B y comprueba que sus habitaciones también quedan inactivas. Luego reactívalo.
+10. En *Piso 1* de Torre B toca **Mover a…** en *B106*, elige *Torre B › Piso 2* y toca **Guardar**. El aviso ofrece **Ir a Piso 2**, donde ya aparece B106.
+11. Crea por lote B110 a B112 en *Piso 1*, márcalas, toca **Eliminar definitivamente las marcadas**, escribe `3` y toca **Eliminar**. Deben desaparecer las tres.
 
 ## Para recordar
 
 - Construye de arriba hacia abajo: zona → piso → habitación → áreas → elementos.
 - El lote y la copia de pisos nunca duplican: puedes repetirlos sin miedo.
 - Desactivar arrastra todo lo de abajo; reactivar se hace de arriba hacia abajo.
+- Si algo quedó en el lugar equivocado, **muévelo**: conserva llaves, equipos e historial.
+- **Eliminar definitivamente** solo borra lo que nadie usó; lo usado se da de baja.
 
 ## Autoevaluación
 
 1. ¿Qué pasa si dejas vacía la etiqueta de un área? *(Toma el nombre del tipo y, si se repite, lo numera)*
 2. ¿Por qué no puedes reactivar una habitación? *(Su piso o su zona siguen inactivos)*
 3. ¿Quién ve un tipo de elemento que agregaste? *(Solo tu empresa)*
+4. ¿Por qué no se eliminó una habitación marcada? *(Alguien la usó: por ejemplo, una llave la abre. Se puede dar de baja)*

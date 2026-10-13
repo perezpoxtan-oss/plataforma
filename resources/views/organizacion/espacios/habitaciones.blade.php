@@ -28,6 +28,10 @@
         @endif
     </div>
 
+    @if ($puede['borrar'] && $habitaciones->isNotEmpty())
+        @include('organizacion.espacios.partes.eliminar-varias', ['padre' => $nodo, 'plural' => mb_strtolower($plur), 'total' => $habitaciones->count()])
+    @endif
+
     <div class="fichas-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));" data-fichas="habitaciones">
         @if ($puede['crear'] && $nodo->activo)
             <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevaHabitacion">
@@ -43,8 +47,8 @@
         @forelse ($habitaciones as $h)
             <div class="ficha-card ficha-compacta" data-ficha data-estado="{{ $h->activo ? 1 : 0 }}" data-texto="{{ mb_strtolower($h->nombre.' '.$h->grupo?->nombre) }}" @unless ($h->activo) style="opacity:.6" @endunless>
                 <div>
-                    <div class="d-flex justify-content-between align-items-start gap-2">
-                        <h2 class="h6 fw-bold m-0"><i class="bi bi-door-closed me-1" style="color:#b45309" aria-hidden="true"></i>{{ $h->nombre }}
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                        <h2 class="h6 fw-bold m-0 d-flex align-items-center text-nowrap">@if ($puede['borrar'])<input type="checkbox" class="form-check-input me-2" name="espacios[]" value="{{ $h->id }}" form="formEliminarVarias" aria-label="Marcar {{ $h->nombre }}" data-marcar-espacio>@endif<i class="bi bi-door-closed me-1" style="color:#b45309" aria-hidden="true"></i>{{ $h->nombre }}
                             @unless ($h->activo)<span class="etiqueta-inactiva ms-1">INACTIVA</span>@endunless
                         </h2>
                         @include('organizacion.espacios.partes.acciones', ['e' => $h, 'dialogo' => 'dialogoEditarHabitacion', 'valores' => $h->only(['nombre', 'tipo_espacio_id', 'grupo_espacio_id'])])

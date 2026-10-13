@@ -19,7 +19,8 @@ Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Departame
 ## Antes de empezar
 
 - Para ver la pantalla tu rol debe poder consultar *Zonas y edificios*. Si no aparece en el menú, pide el permiso a tu administrador.
-- Para crear, editar o desactivar necesitas esos permisos.
+- Para crear, editar, mover o dar de baja necesitas esos permisos.
+- Para eliminar definitivamente necesitas el permiso **Eliminar definitivamente** de *Zonas y edificios*.
 - La sede debe existir en [Empresas y sedes](empresas-y-sedes.md).
 
 ## Cómo crear una zona o edificio
@@ -97,9 +98,42 @@ Las secciones agrupan habitaciones de una sede, por ejemplo «Vista al mar» o �
 
 **Qué debes ver:** «Sección «Vista al mar»: 4 asignada(s).»
 
-## Cómo desactivar o reactivar un espacio
+## Cómo mover un espacio
 
-1. Toca el **círculo rojo** (Desactivar). Se desactiva el espacio **y todo lo que tiene dentro**: si desactivas un piso, se desactivan sus habitaciones. El historial se conserva.
+Sirve cuando capturaste una habitación en el piso equivocado, o cuando un piso pertenece a otra zona. Funciona con pisos, habitaciones, áreas y elementos; las zonas y edificios no se mueven.
+
+1. Entra a la lista donde está; por ejemplo, las habitaciones del piso.
+2. En su tarjeta toca **Mover a…** (las flechas en cruz, junto al lápiz).
+3. En **Nuevo lugar** elige a dónde va. Solo aparecen los lugares activos de la misma sede donde puede ir: una habitación va dentro de un piso (o directo en una zona), un piso dentro de una zona o edificio, y un área dentro de una habitación.
+4. Toca **Guardar**.
+
+![Mover a otro lugar](img/espacios/11-mover.png)
+
+**Qué debes ver:** ««101» se movió a «Piso 2» con todo lo que tiene dentro.» y el botón **Ir a Piso 2**.
+
+Se mueve con todo lo que tiene dentro (sus áreas y elementos). Sus llaves, equipos, recorridos e historial se conservan, y el cambio queda en la Bitácora de auditoría con el lugar de antes y el de después.
+
+## Cómo eliminar varias habitaciones
+
+Úsalo para limpiar lo que capturaste por error (por ejemplo, un lote con el rango equivocado). Solo se borra lo que **nadie ha usado**.
+
+1. En el piso toca **Entrar a Habitaciones**.
+2. Marca la casilla junto al nombre de cada habitación, o toca **Marcar todas**. Si usaste el buscador, **Marcar todas** solo marca las que se ven.
+3. Toca **Eliminar definitivamente las marcadas**.
+4. Escribe la cantidad marcada (por ejemplo `5`) o la palabra `ELIMINAR` y toca **Eliminar**.
+
+![Eliminar varias habitaciones](img/espacios/12-eliminar-varias.png)
+
+**Qué debes ver:** «Se eliminaron 5. Solo queda su copia en la Bitácora de auditoría.» Si alguna está en uso, no se borra y el aviso dice cuál y por qué, por ejemplo: «Se eliminaron 3; 2 no se pudieron: 101: tiene 1 llave que la abre (HDC-101); …». Esas puedes darlas de baja.
+
+- Cada habitación se borra **con todo lo que tiene dentro** (áreas y elementos), siempre que nada de eso esté en uso.
+- Puedes eliminar hasta 200 a la vez.
+- En **Pisos de …** funciona igual para eliminar varios pisos.
+- Para una sola, también está **Eliminar definitivamente** en su ventana de edición. Ver [Eliminar definitivamente](eliminar-definitivamente.md).
+
+## Cómo dar de baja o reactivar un espacio
+
+1. Toca el **círculo rojo** (Dar de baja). Se desactiva el espacio **y todo lo que tiene dentro**: si lo das de baja en un piso, se desactivan sus habitaciones. El historial se conserva.
 2. Para reactivar usa la **flecha circular**. Primero reactiva lo de arriba: no puedes reactivar una habitación si su piso sigue inactivo.
 
 ## En el celular
@@ -119,12 +153,21 @@ Las secciones agrupan habitaciones de una sede, por ejemplo «Vista al mar» o �
 | Escribe al menos un nombre. / Indica desde qué número. / Indica hasta qué número. | Falta información en **Crear por Lote**. | Completa el rango o la lista. |
 | Solo se pueden copiar pisos entre edificios de la misma empresa. | El edificio de origen no es válido. | Elige un edificio de tu empresa. |
 | Ya existe la sección «…» en …. | Esa sección ya existe en la sede. | Usa la existente. |
+| Ya existe «101» en ese piso. | En el lugar elegido ya hay uno con el mismo nombre (o el mismo código). | Cambia antes el nombre de uno de los dos o elige otro lugar. |
+| «…» solo puede ir dentro de: piso o zona / edificio. | El lugar elegido no es del nivel correcto. | Elige un lugar de los que aparecen en la lista. |
+| No se puede mover «…» dentro de sí mismo ni dentro de lo que tiene adentro. | Elegiste un lugar que está dentro del mismo espacio. | Elige un lugar fuera de él. |
+| «…» está desactivado: reactívalo o elige otro lugar. | El lugar elegido está dado de baja. | Reactívalo primero o elige otro. |
+| No hay otro lugar activo del nivel correcto en esta sede. | En **Mover a…** no hay a dónde llevarlo. | Crea primero el piso o la zona de destino. |
+| Para confirmar escribe 5 (la cantidad marcada) o ELIMINAR. | Lo que escribiste no coincide. | Escribe la cantidad marcada o `ELIMINAR`. |
+| … no se pudieron: 101: tiene 1 llave que la abre … | Esa habitación (o algo dentro de ella) está en uso. | Dala de baja con el círculo rojo; su historial se conserva. |
 
 ## Preguntas frecuentes
 
 **¿Tengo que capturar todas las habitaciones?** Solo las que necesites para llaves, recorridos o equipos. Con **Crear por Lote** es rápido.
 
-**¿Puedo borrar un espacio?** No; se desactiva para conservar el historial.
+**¿Puedo borrar un espacio?** Sí, con **Eliminar definitivamente**, siempre que nadie lo haya usado (ninguna llave lo abre, no tiene equipos, recorridos ni registros). Si ya se usó, dalo de baja con el círculo rojo: así se conserva el historial.
+
+**Capturé una habitación en el piso equivocado, ¿la borro y la creo otra vez?** No hace falta: usa **Mover a…**. Conserva sus llaves, equipos e historial.
 
 **¿Por qué «TB» y «T-B» se consideran iguales?** Porque los espacios y guiones no cuentan en el código, para evitar duplicados.
 
@@ -133,5 +176,6 @@ Las secciones agrupan habitaciones de una sede, por ejemplo «Vista al mar» o �
 ## Relacionado
 
 - [Empresas y sedes](empresas-y-sedes.md)
+- [Eliminar definitivamente](eliminar-definitivamente.md)
 - [Catálogo de llaves](llaves.md)
 - [Equipos de Protección Civil](equipos-pc.md)

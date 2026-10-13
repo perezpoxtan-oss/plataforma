@@ -184,6 +184,84 @@ class EspacioController extends Controller
     }
 
     /**
+     * "Mover a…": lugares válidos para el espacio (JSON para el diálogo).
+     */
+    public function destinos(Request $request, int $espacio): JsonResponse
+    {
+        Gate::authorize('espacios.editar');
+        [$nodo, $empresaId] = $this->buscar($request, $espacio);
+        Gate::authorize('espacios.editar', $nodo);
+
+        return response()->json([
+            'nombre' => $nodo->nombre,
+            'destinos' => $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->destinos($nodo)),
+        ]);
+    }
+
+    /**
+     * "Mover a…": cambia el lugar del espacio dentro de su misma sede, con todo lo que tiene dentro.
+     */
+    public function mover(Request $request, int $espacio): RedirectResponse
+    {
+        Gate::authorize('espacios.editar');
+        [$nodo, $empresaId] = $this->buscar($request, $espacio);
+        Gate::authorize('espacios.editar', $nodo); // alcance sobre el registro ("solo los propios")
+        $destinoId = (int) $request->validate(['destino_id' => ['required', 'integer']], ['destino_id.required' => 'Elige a dónde moverlo.'])['destino_id'];
+        [$destino] = $this->buscar($request, $destinoId);
+
+        $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->mover($request->user(), $nodo, $destino));
+
+        return back()->with('ok', "«{$nodo->nombre}» se movió a «{$destino->nombre}» con todo lo que tiene dentro.")
+            ->with('siguientes', [['Ir a '.$destino->nombre, route('espacios.show', $this->visible($destino)->id), 'bi-box-arrow-in-right']]);
+    }
+
+    /**
+     * "Eliminar definitivamente las marcadas": solo las que nadie usó (mismo
+     * criterio que el botón individual); de las demás se dice por qué no.
+     */
+    public function eliminarVarios(Request $request, int $espacio): RedirectResponse
+    {
+        Gate::authorize('espacios.borrar');
+        [$padre, $empresaId] = $this->buscar($request, $espacio);
+
+        $datos = $request->validate([
+            'espacios' => ['required', 'array', 'max:'.AdministradorEspacios::MAX_ELIMINAR],
+            'espacios.*' => ['integer'],
+            'confirmacion' => ['required', 'string', 'max:20'],
+        ], [
+            'espacios.required' => 'Marca al menos uno.',
+            'espacios.max' => 'Puedes eliminar hasta '.AdministradorEspacios::MAX_ELIMINAR.' a la vez.',
+            'confirmacion.required' => 'Para confirmar escribe la cantidad marcada o ELIMINAR.',
+        ]);
+        $ids = array_values(array_unique(array_map('intval', $datos['espacios'])));
+        $confirmacion = mb_strtoupper(trim(Entrada::texto($datos['confirmacion'])));
+        if ($confirmacion !== 'ELIMINAR' && $confirmacion !== (string) count($ids)) {
+            return back()->with('error', 'Para confirmar escribe '.count($ids).' (la cantidad marcada) o ELIMINAR.');
+        }
+
+        $r = $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->eliminarVarios($request->user(), $padre, $ids));
+        $ok = count($r['eliminadas']);
+        $mal = count($r['fallidas']);
+        if ($ok === 0 && $mal === 0) {
+            return $this->volver($padre)->with('error', 'Ninguno de los marcados está en esta lista: no se eliminó nada.');
+        }
+        $partes = [];
+        if ($ok > 0 || $mal === 0) {
+            $partes[] = "Se eliminaron {$ok}";
+        }
+        if ($mal > 0) {
+            $motivos = array_slice($r['fallidas'], 0, 10);
+            $mas = $mal > 10 ? ' y '.($mal - 10).' más' : '';
+            $partes[] = ($mal === 1 ? '1 no se pudo' : "{$mal} no se pudieron").': '.implode('; ', $motivos).$mas
+                .'. Lo que está en uso puedes darlo de baja.';
+        }
+        $mensaje = implode('; ', $partes).($mal === 0 ? '. Solo queda su copia en la Bitácora de auditoría.' : '');
+        $mensaje = $ok === 0 && $mal > 0 ? ucfirst($mensaje) : $mensaje;
+
+        return $this->volver($padre)->with($mal === 0 ? 'ok' : ($ok > 0 ? 'aviso' : 'error'), $mensaje);
+    }
+
+    /**
      * Crear habitaciones por lote: rango numérico o lista de nombres.
      */
     public function lote(Request $request, int $espacio): RedirectResponse
@@ -475,6 +553,18 @@ class EspacioController extends Controller
     }
 
     /**
+     * Pantalla donde se ve el espacio (áreas y elementos se ven en su habitación).
+     */
+    private function visible(Espacio $nodo): Espacio
+    {
+        while (in_array($nodo->nivel, [Espacio::SUBAREA, Espacio::ELEMENTO], true) && $nodo->padre !== null) {
+            $nodo = $nodo->padre;
+        }
+
+        return $nodo;
+    }
+
+    /**
      * @return list<string>
      */
     private function nombresPorRango(int $desde, int $hasta, string $prefijo, bool $ceros): array
@@ -490,7 +580,7 @@ class EspacioController extends Controller
     }
 
     /**
-     * @return array{crear: bool, editar: bool, estado: bool}
+     * @return array{crear: bool, editar: bool, estado: bool, borrar: bool}
      */
     private function puede(Request $request): array
     {
@@ -498,6 +588,7 @@ class EspacioController extends Controller
             'crear' => $request->user()->can('espacios.crear'),
             'editar' => $request->user()->can('espacios.editar'),
             'estado' => $request->user()->can('espacios.eliminar'),
+            'borrar' => $request->user()->can('espacios.borrar'),
         ];
     }
 }
