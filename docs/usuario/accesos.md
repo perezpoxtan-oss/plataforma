@@ -9,7 +9,7 @@ resumen: Registrar quién entra y sale de la sede, dar salida con el gafete, ver
 
 **¿Para qué sirve?** Es la pantalla principal de la caseta. Aquí registras a **todas las personas que entran** a la sede (colaboradores, huéspedes, visitas, proveedores, contratistas y servicios de emergencia), ves **quién sigue dentro** y registras su **salida**.
 
-**Antes de empezar:** necesitas que tu rol pueda **ver** y **crear** en Accesos. Si no ves el botón rojo **Nuevo Ingreso**, pide a tu administrador que revise tu rol. Para autorizar proveedores y contratistas se necesita además el permiso **Aprobar** (normalmente supervisores y jefes de seguridad).
+**Antes de empezar:** necesitas que tu rol pueda **ver** y **crear** en Accesos. Si no ves el botón rojo **Nuevo Ingreso**, pide a tu administrador que revise tu rol. Para autorizar proveedores y contratistas (o dejarlos pasar **por excepción**) se necesita además el permiso **Aprobar** (normalmente supervisores y jefes de seguridad).
 
 ## Cómo leer la pantalla
 
@@ -19,7 +19,7 @@ resumen: Registrar quién entra y sale de la sede, dar salida con el gafete, ver
 
 | Pestaña | Qué muestra |
 |---|---|
-| **Pendientes de Autorización** | Proveedores y contratistas que esperan que quien los citó los autorice, visitas que esperan a su departamento y quien espera a Recursos Humanos. |
+| **Pendientes de Autorización** | Visitas, proveedores y contratistas que esperan la autorización de su departamento, quien espera a Recursos Humanos y, si tu empresa no lo pide al departamento, proveedores y contratistas que esperan la confirmación de quien los citó. |
 | **Gente en Sitio** | Todos los que están dentro ahora. |
 | **Historial Finalizados** | Los que ya salieron, con filtro de fechas. |
 
@@ -31,8 +31,8 @@ Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo,
 
 | Pastilla | Qué significa | El renglón de abajo dice, por ejemplo |
 |---|---|---|
-| **PENDIENTE** (ámbar) | Todavía no puede pasar: espera a alguien. | «Espera a: Julieta Ramos (Mantenimiento) · 12 min», «Espera a: Recursos Humanos · 4 min», «RR. HH. pide que espere», «Confirma con el host: Carlos Pérez». |
-| **EN SITIO** (rojo) | Está dentro. | «Autorizado por Mantenimiento», «RR. HH. dijo que pase». |
+| **PENDIENTE** (ámbar) | Todavía no puede pasar: espera a alguien. | «Espera a: Julieta Ramos (Mantenimiento) · 12 min», «Espera a: Recursos Humanos · 4 min», «RR. HH. pide que espere», «Sin responsable en Mantenimiento: se autoriza por excepción», «Confirma con el host: Carlos Pérez». |
+| **EN SITIO** (rojo) | Está dentro. | «Autorizado por Mantenimiento», «RR. HH. dijo que pase», «Autorizado por excepción (Urgencia operativa, Sergio Díaz)». |
 | **FUERA** (ámbar) | Salió un rato y va a regresar. | «Fuera en tour», «Fuera temporal». |
 | **FINALIZADO** (gris) | Ya salió, o no ingresó. | «Regreso de tour», «Salida temporal», «No autorizado por Seguridad: no ingresó». |
 
@@ -52,7 +52,7 @@ Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo,
 ![Registro Inteligente de Ingreso](img/accesos/nuevo-ingreso.png)
 ![El botón dice que el registro queda pendiente](img/accesos/nuevo-ingreso-pendiente.png)
 
-**Qué debes ver:** la ventana se cierra (o se limpia, si elegiste capturar siguiente) y arriba sale el mensaje verde con el **siguiente paso**: «Registrado y en sitio: … ¿Otro ingreso? Toca Nuevo Ingreso», «Registrado: … espera la autorización de Julieta Ramos (Mantenimiento). Ya se avisó; esta tarjeta cambia sola con su respuesta», «… espera a Recursos Humanos» o «… queda pendiente de autorización. Confirma con el host (…) y toca Confirmar Autorización».
+**Qué debes ver:** la ventana se cierra (o se limpia, si elegiste capturar siguiente) y arriba sale el mensaje verde con el **siguiente paso**: «Registrado y en sitio: … ¿Otro ingreso? Toca Nuevo Ingreso», «Registrado: … espera la autorización de Julieta Ramos (Mantenimiento). Ya se avisó; esta tarjeta cambia sola con su respuesta», «… espera a Recursos Humanos», «… queda pendiente. Mantenimiento no tiene responsable en esta sede: confirma con el host y toca Autorizar por excepción» o, si tu empresa no pide la autorización del departamento para ese tipo, «… queda pendiente de autorización. Confirma con el host (…) y toca Confirmar Autorización».
 
 ![Mensaje con el siguiente paso](img/accesos/mensaje-registrado-pendiente.png)
 
@@ -60,7 +60,7 @@ Lo que pide cada tipo:
 
 - **Colaborador:** escanea su gafete de empleado o escribe su nombre o número y elígelo. No lleva gafete de visita. Si no aparece, toca **¿No aparece? Darlo de alta provisional**: se registra y Recursos Humanos lo valida después.
 - **Personal Externo / Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**. Si el motivo es **Recursos Humanos**, elige además **¿A qué viene?** (ver abajo «Cómo registrar a quien viene a Recursos Humanos»).
-- **Proveedor y Contratista (Obra):** además, la **Empresa / Procedencia** y **Host — ¿Quién lo citó?** (obligatorio). Quedan en **Pendientes de Autorización**.
+- **Proveedor y Contratista (Obra):** además, la **Empresa / Procedencia**, **Host — ¿Quién lo citó?** (obligatorio) y **¿A qué departamento viene?** (obligatorio si tu empresa pide la autorización del departamento; el asterisco te lo indica). Quedan en **Pendientes de Autorización**: el responsable de ese departamento recibe el aviso y autoriza o rechaza (ver abajo «Cómo autorizar a un proveedor o contratista»).
 - **Huésped:** nombre, número de habitación y si tiene reserva. No lleva gafete.
 - **Servicio de Emergencia:** solo lo mínimo para no hacer esperar: unidad, tipo de emergencia y observaciones.
 
@@ -120,9 +120,35 @@ Todo lo que espera tiene **reloj, color y suplente**. No tienes que vigilar nada
 
 **Qué debes ver:** el renglón pasa de verde a ámbar y a rojo, y, cuando se escaló, la caja de abajo dice «Se escaló a: Sergio Díaz y Julia Torres».
 
-> Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Confirmar Autorización** en la tarjeta. Los minutos se cambian en **Recursos Humanos → Recepción → Ajustes** (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)).
+> Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Confirmar Autorización** en la tarjeta de la visita; en la de un proveedor o contratista, **Autorizar por excepción**. Los minutos se cambian en **Recursos Humanos → Recepción → Ajustes** (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)).
 
 ## Cómo autorizar a un proveedor o contratista
+
+Si tu empresa lo pide (de fábrica, sí), el proveedor o contratista **espera la autorización del responsable del departamento** al que viene, igual que una visita. La caseta no tiene que llamar a nadie.
+
+1. Al registrarlo, elige **¿A qué departamento viene?** (el Host se sigue anotando).
+2. Si el departamento tiene responsable en tu sede, le llega el aviso a su **campana** y a su **correo** con **Autorizar ingreso** y **Rechazar**. La tarjeta dice «Espera a: … (departamento)» con su reloj.
+3. Cuando responde, **la tarjeta cambia sola**: pasa a **Gente en Sitio** («Autorizado por …») o al historial («No autorizado por …: no ingresó»; devuélvele su identificación). También te llega el aviso a la campana.
+
+**Qué debes ver:** la tarjeta en **Pendientes de Autorización** con «Espera a: …» y, al responder el departamento, la persona en **Gente en Sitio**.
+
+### Si no puede esperar: Autorizar por excepción
+
+Solo quien tiene el permiso **Aprobar** (supervisor o Jefe de seguridad). Siempre se pide el motivo y queda anotado con tu nombre.
+
+1. En la tarjeta, toca **Autorizar por excepción**.
+2. Elige el **Motivo**. La lista solo trae los que aplican:
+   - **El departamento no tiene responsable en esta sede** (no se pudo avisar a nadie).
+   - **El responsable no contestó a tiempo** (ya se escaló o pasó el tiempo de espera de tu empresa).
+   - **El responsable autorizó por teléfono**, **Urgencia operativa** u **Otro** (siempre disponibles).
+3. Escribe el **Detalle** si ayuda (por ejemplo, «lo autorizó Juan Pérez a las 10:15»). Con **Otro** es obligatorio.
+4. Toca **Autorizar por excepción** y confirma.
+
+**Qué debes ver:** el mensaje verde «Autorizado por excepción — … ya puede ingresar (motivo)». La tarjeta pasa a **Gente en Sitio** con «Autorizado por excepción (motivo, tu nombre)». El responsable del departamento recibe el aviso en su campana y la solicitud se cierra para él.
+
+### Si tu empresa no pide la autorización del departamento
+
+Si en tu empresa la casilla **Proveedor** o **Contratista** no está marcada (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)), funciona como antes:
 
 1. Abre la pestaña **Pendientes de Autorización**.
 2. Confirma con quien lo citó (el Host) que lo espera.
@@ -190,6 +216,10 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 | «El gafete … ya está en uso (EN SITIO). Pide que lo devuelvan o elige otro.» | Ese gafete lo tiene alguien que sigue dentro. | Usa otro gafete o da salida a quien lo tiene. |
 | «El gafete … está dado de baja.» | El gafete ya no se usa. | Elige otro. |
 | «Indica quién citó al proveedor/contratista (Host).» | Falta el Host. | Escribe y elige al colaborador que lo espera. |
+| «Indica a qué departamento viene.» | Tu empresa pide la autorización del departamento y no elegiste uno. | Elige el departamento en **¿A qué departamento viene?**. |
+| «Este acceso espera la autorización del departamento. Si no puede esperar, toca «Autorizar por excepción» y elige el motivo.» | El proveedor o contratista espera a su departamento. | Espera la respuesta o usa **Autorizar por excepción**. |
+| «Elige el motivo de la excepción.» / «Con «Otro» escribe el motivo de la excepción.» | Falta el motivo o su detalle. | Elige un motivo; con **Otro**, escribe cuál. |
+| «Ese motivo no aplica a este acceso: elige uno de la lista.» | Por ejemplo, el departamento sí tiene responsable o aún no pasa el tiempo de espera. | Elige otro motivo de la lista. |
 | «La empresa «…» está dada de baja (vetada) en Proveedores: no puede ingresar.» | La empresa externa tiene prohibido el acceso. | No lo dejes pasar; avisa a tu supervisor. |
 | «El colaborador elegido no existe, está dado de baja o no pertenece a esta sede.» | El colaborador no trabaja en esa sede. | Revisa la sede o usa el alta provisional. |
 | «Las placas solo llevan letras y números (de 2 a 20).» | Las placas tienen símbolos o están incompletas. | Escríbelas sin guiones ni espacios. |
@@ -203,7 +233,8 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 
 ## Preguntas frecuentes
 
-- **¿Por qué el proveedor no aparece en Gente en Sitio?** Está en **Pendientes de Autorización** hasta que lo autoricen.
+- **¿Por qué el proveedor no aparece en Gente en Sitio?** Está en **Pendientes de Autorización** hasta que lo autorice su departamento (o tu supervisor por excepción).
+- **El jefe del departamento me autorizó por teléfono, ¿qué hago?** Pide a tu supervisor que toque **Autorizar por excepción** con el motivo «El responsable autorizó por teléfono». Así queda anotado quién y por qué.
 - **Alguien dice que tiene cita, pero es su primera vez.** Elige **Ya tiene cita** de todos modos: si no se encuentra su ficha, Recursos Humanos lo recibe como «Busca empleo» y queda anotado.
 - **¿Y si viene a entregar papeles o a firmar?** También es **Ya tiene cita**: la plataforma sabe en qué paso va y le dice a Recursos Humanos si viene a su entrevista, a entregar documentos o a firmar.
 - **¿Tengo que preguntarle el puesto o el departamento?** No. Solo a qué viene y, si busca empleo, a qué vacante (si la sabe). Lo demás lo pone Recursos Humanos.
@@ -221,3 +252,4 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 - [Bitácora de novedades](novedades.md)
 - [Gafetes](gafetes.md)
 - [Padrón de personas](personas.md)
+- [Recepción y autorizaciones](recepcion-y-autorizaciones.md)

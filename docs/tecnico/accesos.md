@@ -39,7 +39,8 @@ Réplica de `modules/accesos` de SEGCAT (inventario §4.22). Es la pantalla más
 | `modo_arribo`, `vehiculo_id`, `placas`, `zona_estacionamiento_id`, `conductor` | Llegada, vehículo (padrón), zona y conductor del huésped (taxi/app) |
 | `num_acompanantes` | Cuántos llegaron con él (aunque no se capturen sus datos) |
 | `tiene_reserva`, `numero_reserva`, `tipo_pase`, `habitacion` | Huésped |
-| `tipo_visita`, `departamento_id`, `area_trabajo`, `actividad` | Proveedor / contratista |
+| `tipo_visita`, `departamento_id`, `area_trabajo`, `actividad` | Proveedor / contratista (`departamento_id`: «¿A qué departamento viene?», obligatorio si su tipo espera al departamento) |
+| `autorizacion`, `motivo_excepcion` | Espera de autorización (ADR-0007): `esperando`/`espera`/`autorizada`/`rechazada`; proveedor/contratista además `sin_resp` (su departamento no tiene responsable en la sede) y `excepcion` (pasó con «Autorizar por excepción»; el texto del motivo en `motivo_excepcion`, máx. 300) |
 | `tipo_emergencia`, `observaciones` | Emergencia |
 | `entrada_at`, `autorizado_at`/`autorizado_por`, `salida_at`/`salida_por` | Tiempos (UTC) y quién hizo cada paso |
 | `creado_por`, `actualizado_por`, `created_at`, `updated_at` | Auditoría |
@@ -53,7 +54,11 @@ Réplica de `modules/accesos` de SEGCAT (inventario §4.22). Es la pantalla más
 ## Estados y movimientos
 
 ```
-proveedor / contratista:  PENDIENTE ──autorizar (accesos.aprobar)──▶ EN SITIO ──salida──▶ FINALIZADO
+proveedor / contratista (su tipo espera al departamento, por omisión):
+    PENDIENTE (esperando) ──responsable autoriza──▶ EN SITIO   ·   ──rechaza──▶ FINALIZADO (no ingresó)
+    PENDIENTE (esperando | sin_resp) ──«Autorizar por excepción» (accesos.aprobar + motivo)──▶ EN SITIO (excepcion)
+proveedor / contratista (casilla desmarcada, como antes):
+    PENDIENTE ──autorizar (accesos.aprobar)──▶ EN SITIO ──salida──▶ FINALIZADO
 demás tipos:              EN SITIO ──salida──▶ FINALIZADO
 huésped / proveedor / contratista en sitio:
     salida temporal ─▶ fila "salida_temporal" EN SITIO ─regreso─▶ esa fila FINALIZADA + fila "regreso" FINALIZADA
@@ -115,7 +120,8 @@ Ver los apartados «Dar salida a la vista» y «Mensajes» más abajo: el campo 
 |---|---|---|
 | `GET /accesos?pestana=en_sitio\|pendientes\|historial&q=&tipo=&sede=&desde=&hasta=&page=` | `accesos.ver` | Pantalla (historial paginado de 24) |
 | `POST /accesos` | `accesos.crear` | Registro Inteligente de Ingreso |
-| `PATCH /accesos/{id}/autorizar` | `accesos.aprobar` | Pendiente → En sitio |
+| `PATCH /accesos/{id}/autorizar` | `accesos.aprobar` | Pendiente → En sitio («Confirmar Autorización»; no aplica a un proveedor/contratista que espera al departamento) |
+| `PATCH /accesos/{id}/excepcion` (`motivo_excepcion`, `detalle_excepcion`) | `accesos.aprobar` | «Autorizar por excepción» de un proveedor/contratista que espera al departamento (ver abajo) |
 | `PATCH /accesos/{id}/salida` | `accesos.editar` | Salida |
 | `PATCH /accesos/{id}/zona` | `accesos.editar` | Cambiar / liberar zona |
 | `POST /accesos/{id}/salida-temporal` | `accesos.editar` | Salida a tour / temporal (placas, marca, conductor) |
@@ -128,6 +134,16 @@ Ver los apartados «Dar salida a la vista» y «Mensajes» más abajo: el campo 
 | `GET /accesos/exportar?...` | `accesos.exportar` | CSV del historial filtrado (BOM para Excel, máx. 10 000 filas) |
 
 Otra empresa u otra sede fuera del alcance → **404**. Superadministrador: elige la empresa de trabajo.
+
+## Proveedor y contratista esperan al departamento
+
+Decisión del dueño (2026-10-14): «Proveedor y contratista deberían pasar cuando el responsable autorice, pero puede haber excepciones».
+
+- **Ajuste por empresa y tipo** (`empresas.preferencias.recepcion`, pantalla Responsables por departamento → «Qué espera en la caseta»): `visitas_requieren_autorizacion`, `proveedores_requieren_autorizacion`, `contratistas_requieren_autorizacion` (`AjustesRecepcion::ESPERAN_DEPARTAMENTO`, `esperaAlDepartamento($empresa, $tipo)`). Sin el dato = sí. La migración `2026_10_30_000700_proveedores_esperan_al_departamento` guardó `visitas_requieren_autorizacion = false` en las empresas que no lo tenían (conservan su comportamiento) y agregó `accesos.motivo_excepcion`.
+- **Registro** (`RecepcionEnCaseta::proveedor()`): con el tipo marcado, `departamento_id` es obligatorio («Indica a qué departamento viene.»; el selector «¿A qué departamento viene?» sale de «Más detalles» y conserva el filtro por sede). Con responsable en la sede (`Autorizaciones::tieneResponsables`) → `autorizacion = esperando` y `Autorizaciones::solicitarVisita()` crea la solicitud tipo `visita` (campana `autorizacion_visita` con Autorizar ingreso / Rechazar, correo firmado, recordatorio y escalamiento de `Escalamiento` sin cambios). El aviso dice «Proveedor para (departamento). Lo citó: (host). Actividad: …». La respuesta aplica igual que en una visita (`aplicarAVisita`). Sin responsable → `autorizacion = sin_resp`, sin solicitud; la tarjeta dice «Sin responsable en (departamento): se autoriza por excepción». El host se sigue pidiendo y guardando.
+- **Excepción** (`App\Services\Autorizaciones\Excepciones`): `Acceso::esperaAlDepartamento()` (proveedor/contratista pendiente con `esperando|espera|sin_resp`) quita «Confirmar Autorización» (el `PATCH …/autorizar` responde «Este acceso espera la autorización del departamento…») y muestra «Autorizar por excepción» (un `<details>` con su formulario, sin JavaScript nuevo). Motivos (`Excepciones::MOTIVOS`): `sin_responsable` (solo sin solicitud y sin responsable), `sin_respuesta` (solo si la solicitud tiene `escalado_en` o lleva `escalar_minutos`), y la lista corta `telefono`, `urgencia`, `otro` (con detalle obligatorio). Al autorizar: acceso EN SITIO con `autorizacion = excepcion`, `motivo_excepcion`, `autorizado_por`; la solicitud pendiente queda `autorizada`, `respuesta_medio = caseta`, comentario «Por excepción: …», sus avisos se resuelven; auditoría `accesos.autorizado_excepcion` (con el motivo) y `autorizaciones.respondida` (medio caseta); campana `autorizacion_excepcion` al responsable (o su delegado). La tarjeta muestra «Autorizado por excepción (motivo, quién)» en Gente en sitio y en el historial.
+- Tipo desmarcado: como antes (departamento opcional, «Confirma con el host», «Confirmar Autorización»).
+- Pruebas: `tests/Feature/Seguridad/ProveedoresEsperanAlDepartamentoTest.php`.
 
 ## Permisos por rol (plantillas)
 

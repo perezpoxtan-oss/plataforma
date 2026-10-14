@@ -24,7 +24,8 @@ use Illuminate\Support\Facades\URL;
 /**
  * Autorizaciones departamentales:
  *  - visita: la caseta registra a alguien que va a un departamento (o a un
- *    colaborador de ese departamento) y la empresa pide autorización: el
+ *    colaborador de ese departamento), o a un proveedor o contratista que
+ *    viene a un departamento, y la empresa pide autorización para ese tipo: el
  *    acceso nace PENDIENTE («Esperando autorización») y se avisa al
  *    responsable; su respuesta lo deja EN SITIO o lo cierra como no autorizado;
  *  - candidato: ya no se crean (candidatos, fase 2): Recursos Humanos
@@ -311,8 +312,14 @@ class Autorizaciones
         }
         $a = $this->nueva('visita', (int) $acceso->sede_id, $departamentoId, $acceso->id, null);
         $a->loadMissing('departamento:id,nombre', 'sede:id,nombre');
-        $detalle = trim(($acceso->persona_visita ? 'Visita a: '.$acceso->persona_visita.'. ' : 'Visita al departamento '.$a->departamento?->nombre.'. ')
-            .($acceso->empresa_procedencia ? 'Viene de: '.$acceso->empresa_procedencia.'. ' : '').'Sede: '.$a->sede?->nombre.'.');
+        $detalle = trim(match (true) {
+            // Proveedor y contratista: de qué empresa, quién lo citó y a qué viene
+            in_array($acceso->tipo, Acceso::CON_AUTORIZACION, true) => $acceso->etiquetaTipo().' para '.$a->departamento?->nombre.'. '
+                .($acceso->host?->nombreCompleto() ? 'Lo citó: '.$acceso->host->nombreCompleto().'. ' : '')
+                .($acceso->actividad ? 'Actividad: '.$acceso->actividad.'. ' : ''),
+            (bool) $acceso->persona_visita => 'Visita a: '.$acceso->persona_visita.'. ',
+            default => 'Visita al departamento '.$a->departamento?->nombre.'. ',
+        }.($acceso->empresa_procedencia ? 'Viene de: '.$acceso->empresa_procedencia.'. ' : '').'Sede: '.$a->sede?->nombre.'.');
         $this->avisarResponsables($a, $avisar, 'autorizacion_visita', 'Espera tu autorización: '.$acceso->nombre, $detalle, $actor);
 
         return $a;

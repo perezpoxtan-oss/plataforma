@@ -48,8 +48,11 @@ class AccesosTest extends TestCase
         $this->playa = $this->crearSede($this->empresa, 'PLA');
         $this->admin = $this->crearUsuario($this->empresa, 'Administrador');
         // Estas pruebas son de la bitácora: el personal externo que va a RR. HH. pasa directo
-        // (la espera del «Que pase» de RR. HH. se prueba en CandidatosFase1Test)
-        $this->empresa->forceFill(['preferencias' => array_merge($this->empresa->preferencias ?? [], ['recepcion' => ['rh_autoriza_paso' => false]])])->save();
+        // (la espera del «Que pase» de RR. HH. se prueba en CandidatosFase1Test) y, como en una empresa que
+        // ya existía, nadie espera al departamento: el proveedor y el contratista se confirman con el host
+        // (la espera al departamento se prueba en ProveedoresEsperanAlDepartamentoTest y CandidatosYAutorizacionesTest)
+        $this->empresa->forceFill(['preferencias' => array_merge($this->empresa->preferencias ?? [], ['recepcion' => ['rh_autoriza_paso' => false,
+            'visitas_requieren_autorizacion' => false, 'proveedores_requieren_autorizacion' => false, 'contratistas_requieren_autorizacion' => false]])])->save();
     }
 
     // ------------------------------------------------------------------ Ayudas

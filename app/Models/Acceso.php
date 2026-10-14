@@ -57,6 +57,16 @@ class Acceso extends Model
     /** Nacen pendientes: el acceso físico se autoriza cuando el host confirma. */
     public const CON_AUTORIZACION = ['proveedor', 'contratista'];
 
+    /**
+     * Proveedor o contratista que espera al departamento pero el departamento
+     * no tiene responsable en la sede (accesos.autorizacion): la caseta lo
+     * pasa con «Autorizar por excepción».
+     */
+    public const SIN_RESPONSABLE = 'sin_resp';
+
+    /** Pasó con «Autorizar por excepción» (el motivo queda en motivo_excepcion). */
+    public const POR_EXCEPCION = 'excepcion';
+
     /** Pueden salir un rato y volver sin cerrar su visita (tour / salida temporal). */
     public const CON_SALIDA_TEMPORAL = ['huesped', 'proveedor', 'contratista'];
 
@@ -254,6 +264,17 @@ class Acceso extends Model
     public function llevaGafete(): bool
     {
         return ! in_array($this->tipo, self::SIN_GAFETE, true);
+    }
+
+    /**
+     * Proveedor o contratista pendiente que espera al departamento (con o sin
+     * responsable): la caseta no lo confirma con el host; si no puede
+     * esperar, lo pasa con «Autorizar por excepción».
+     */
+    public function esperaAlDepartamento(): bool
+    {
+        return $this->estado === 'pendiente' && in_array($this->tipo, self::CON_AUTORIZACION, true)
+            && in_array($this->getAttributes()['autorizacion'] ?? null, ['esperando', 'espera', self::SIN_RESPONSABLE], true);
     }
 
     public function admiteSalidaTemporal(): bool

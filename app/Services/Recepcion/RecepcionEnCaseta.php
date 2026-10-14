@@ -33,6 +33,9 @@ use Illuminate\Http\UploadedFile;
  *  - Personal externo → Visita a Departamento (o a un colaborador): si la
  *    empresa lo pide y el departamento tiene responsable, el acceso nace
  *    PENDIENTE («Esperando autorización») y se avisa al responsable.
+ *  - Proveedor y contratista: «¿A qué departamento viene?»; si la empresa lo
+ *    pide para ese tipo, espera al responsable igual que una visita (sin
+ *    responsable en la sede, la caseta lo pasa con «Autorizar por excepción»).
  *  - Foto de la persona y de su identificación (opcionales, privadas).
  */
 class RecepcionEnCaseta
@@ -47,11 +50,12 @@ class RecepcionEnCaseta
      *
      * @param  array<string, mixed>  $entrada  lo que llegó del formulario (incluye archivos)
      * @param  array<string, string>  $errores  se agregan aquí los mensajes
-     * @return array{candidato: bool, viene_a: ?string, vacante_datos: array<string, mixed>, departamento_id: ?int, esperar: bool, esperar_rh: bool, fotos: array<string, UploadedFile>}
+     * @return array{candidato: bool, viene_a: ?string, vacante_datos: array<string, mixed>, departamento_id: ?int, esperar: bool, esperar_rh: bool, sin_responsable: bool, fotos: array<string, UploadedFile>}
      */
     public function preparar(string $tipo, ?string $motivo, array $entrada, int $sedeId, ?Colaborador $visita, array &$errores): array
     {
-        $r = ['candidato' => false, 'viene_a' => null, 'vacante_datos' => [], 'departamento_id' => null, 'esperar' => false, 'esperar_rh' => false, 'fotos' => []];
+        $r = ['candidato' => false, 'viene_a' => null, 'vacante_datos' => [], 'departamento_id' => null, 'esperar' => false, 'esperar_rh' => false,
+            'sin_responsable' => false, 'fotos' => []];
 
         foreach (['foto_persona', 'foto_identificacion'] as $campo) {
             $archivo = $entrada[$campo] ?? null;
@@ -60,6 +64,9 @@ class RecepcionEnCaseta
             } elseif ($archivo !== null && $archivo !== '') {
                 $errores[$campo] = 'No se pudo recibir la foto. Tómala de nuevo.';
             }
+        }
+        if (in_array($tipo, Acceso::CON_AUTORIZACION, true)) {
+            return $this->proveedor($tipo, $entrada, $sedeId, $r, $errores);
         }
         if ($tipo !== 'visitante') {
             return $r;
@@ -114,7 +121,7 @@ class RecepcionEnCaseta
      * Después de guardar el acceso: fotos, ficha del candidato y la solicitud
      * de autorización (a RR. HH. o al departamento).
      *
-     * @param  array{candidato: bool, viene_a: ?string, vacante_datos: array<string, mixed>, departamento_id: ?int, esperar: bool, esperar_rh: bool, fotos: array<string, UploadedFile>}  $r
+     * @param  array{candidato: bool, viene_a: ?string, vacante_datos: array<string, mixed>, departamento_id: ?int, esperar: bool, esperar_rh: bool, sin_responsable: bool, fotos: array<string, UploadedFile>}  $r
      */
     public function despues(User $actor, Acceso $acceso, array $r): void
     {
@@ -125,6 +132,8 @@ class RecepcionEnCaseta
         }
         if ($r['esperar']) {
             $cambios['autorizacion'] = 'esperando';
+        } elseif ($r['sin_responsable']) {
+            $cambios['autorizacion'] = Acceso::SIN_RESPONSABLE; // Proveedor/contratista: la caseta lo pasa por excepción
         }
         if ($r['viene_a'] !== null) {
             $cambios['viene_a'] = $r['viene_a'];
@@ -147,6 +156,40 @@ class RecepcionEnCaseta
         } elseif ($r['esperar']) {
             $this->autorizaciones->solicitarVisita($actor, $acceso, (int) $r['departamento_id']);
         }
+    }
+
+    /**
+     * Proveedor y contratista: si la empresa pide que esperen al departamento
+     * (por tipo), «¿A qué departamento viene?» es obligatorio. Con responsable
+     * en esa sede, la solicitud va al departamento (como una visita); sin
+     * responsable, queda pendiente para «Autorizar por excepción». Si el tipo
+     * no espera al departamento, sigue como siempre (se confirma con el host).
+     *
+     * @param  array<string, mixed>  $entrada
+     * @param  array<string, mixed>  $r
+     * @param  array<string, string>  $errores
+     * @return array<string, mixed>
+     */
+    private function proveedor(string $tipo, array $entrada, int $sedeId, array $r, array &$errores): array
+    {
+        $empresa = Empresa::find(app(Tenant::class)->empresaId());
+        if ($empresa === null || ! $this->ajustes->esperaAlDepartamento($empresa, $tipo)) {
+            return $r;
+        }
+        $departamento = $this->departamento($entrada['departamento_id'] ?? null, $sedeId);
+        if ($departamento === null) {
+            // Un departamento que no aplica ya lo marca el registro («Elige un departamento activo de la lista.»)
+            if (empty($entrada['departamento_id'])) {
+                $errores['departamento_id'] = 'Indica a qué departamento viene.';
+            }
+
+            return $r;
+        }
+        $r['departamento_id'] = (int) $departamento->id;
+        $r['esperar'] = $this->autorizaciones->tieneResponsables($r['departamento_id'], $sedeId);
+        $r['sin_responsable'] = ! $r['esperar'];
+
+        return $r;
     }
 
     // Vacantes (lección 36)

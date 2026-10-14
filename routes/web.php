@@ -264,6 +264,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/accesos/buscar', [AccesoController::class, 'buscar'])->middleware('throttle:240,1')->name('accesos.buscar');
     Route::get('/accesos/gafetes', [AccesoController::class, 'gafetes'])->name('accesos.gafetes');
     Route::patch('/accesos/{acceso}/autorizar', [AccesoController::class, 'autorizar'])->whereNumber('acceso')->name('accesos.autorizar');
+    Route::patch('/accesos/{acceso}/excepcion', [AccesoController::class, 'excepcion'])->whereNumber('acceso')->name('accesos.excepcion');
     Route::patch('/accesos/{acceso}/salida', [AccesoController::class, 'salida'])->whereNumber('acceso')->name('accesos.salida');
     Route::patch('/accesos/{acceso}/zona', [AccesoController::class, 'zona'])->whereNumber('acceso')->name('accesos.zona');
     Route::post('/accesos/{acceso}/salida-temporal', [AccesoController::class, 'salidaTemporal'])->whereNumber('acceso')->name('accesos.salida-temporal');

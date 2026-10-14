@@ -22,6 +22,7 @@
 @php
     // Botón honesto: el texto del botón anticipa si el registro nace pendiente (el servidor decide al guardar)
     $anticipo = $anticipo ?? ['rh_espera_en' => [], 'visitas_esperan' => false, 'departamentos' => []];
+    $esperanDepto = $anticipo['esperan_departamento'] ?? []; // proveedor / contratista que esperan al departamento
     $deptosConResponsable = collect($anticipo['departamentos'])->map(fn ($sedes) => $sedes === null ? 'todas' : implode(',', $sedes))->all();
 @endphp
 <dialog id="dialogoIngreso" class="dialogo ancho dialogo-acceso" aria-labelledby="titulo-ingreso" data-dialogo-ingreso
@@ -213,7 +214,15 @@
                             'valor' => $previo('host_colaborador_id'), 'elegido' => $previos['host_colaborador_id'] ?? null, 'requerido' => true])
                         <div class="acceso-sugerencias" data-sugerencias hidden></div>
                     </div>
-                    <details class="mas-detalles" @if ($previo('departamento_id') || $previo('area_trabajo') || $previo('actividad') || ($previo('tipo_visita', 'cortesia') !== 'cortesia')) open @endif>
+                    {{-- «¿A qué departamento viene?»: su responsable autoriza el ingreso (obligatorio si la empresa lo pide para el tipo) --}}
+                    <label class="campo-etiqueta" for="ingreso_departamento">¿A qué departamento viene?@foreach ($esperanDepto as $t)<span data-etiqueta-tipo="{{ $t }}"> *</span>@endforeach</label>
+                    <select id="ingreso_departamento" name="departamento_id" class="campo" data-departamento-sede>
+                        <option value="">-- Seleccionar --</option>
+                        @foreach ($departamentos as $dep)
+                            <option value="{{ $dep->id }}" data-todas="{{ $dep->todas_las_sedes ? 1 : 0 }}" data-sedes="{{ $dep->sedes->pluck('id')->join(',') }}" @selected((string) $previo('departamento_id') === (string) $dep->id)>{{ $dep->nombre }}</option>
+                        @endforeach
+                    </select>
+                    <details class="mas-detalles" @if ($previo('area_trabajo') || $previo('actividad') || ($previo('tipo_visita', 'cortesia') !== 'cortesia')) open @endif>
                         <summary class="campo-etiqueta">Más detalles <span class="text-lowercase fw-normal">(opcional)</span></summary>
                         <span class="campo-etiqueta mt-2">Tipo de Visita</span>
                         <div class="modo-toggle tres">
@@ -222,25 +231,20 @@
                                     <i class="bi {{ ['cortesia' => 'bi-cup-hot', 'levantamiento' => 'bi-clipboard-data', 'ejecucion' => 'bi-tools'][$clave] }}" aria-hidden="true"></i><span>{{ $texto }}</span></label>
                             @endforeach
                         </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label class="campo-etiqueta" for="ingreso_departamento">Departamento</label>
-                                <select id="ingreso_departamento" name="departamento_id" class="campo" data-departamento-sede>
-                                    <option value="">-- Seleccionar --</option>
-                                    @foreach ($departamentos as $dep)
-                                        <option value="{{ $dep->id }}" data-todas="{{ $dep->todas_las_sedes ? 1 : 0 }}" data-sedes="{{ $dep->sedes->pluck('id')->join(',') }}" @selected((string) $previo('departamento_id') === (string) $dep->id)>{{ $dep->nombre }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="campo-etiqueta" for="ingreso_area">Área de Trabajo Específica</label>
-                                <input type="text" id="ingreso_area" name="area_trabajo" class="campo" maxlength="150" value="{{ $previo('area_trabajo') }}" placeholder="Ej: Cuarto de máquinas, Alberca...">
-                            </div>
-                        </div>
+                        <label class="campo-etiqueta" for="ingreso_area">Área de Trabajo Específica</label>
+                        <input type="text" id="ingreso_area" name="area_trabajo" class="campo" maxlength="150" value="{{ $previo('area_trabajo') }}" placeholder="Ej: Cuarto de máquinas, Alberca...">
                         <label class="campo-etiqueta" for="ingreso_actividad">Actividad a Realizar</label>
                         <input type="text" id="ingreso_actividad" name="actividad" class="campo" maxlength="500" value="{{ $previo('actividad') }}" placeholder="Describe brevemente la actividad">
                     </details>
-                    <p class="nota-pendiente"><i class="bi bi-info-circle" aria-hidden="true"></i> El registro queda <strong>Pendiente</strong>: la persona pasa cuando confirmes en el sistema que el Host la autorizó.</p>
+                    @foreach (Acceso::CON_AUTORIZACION as $t)
+                        <p class="nota-pendiente" data-etiqueta-tipo="{{ $t }}"><i class="bi bi-info-circle" aria-hidden="true"></i>
+                            @if (in_array($t, $esperanDepto, true))
+                                El registro queda <strong>Pendiente</strong>: el responsable del departamento recibe el aviso y autoriza (esta tarjeta cambia sola). Si el departamento no tiene responsable o no contesta a tiempo, quien supervisa la caseta lo pasa con <strong>Autorizar por excepción</strong>.
+                            @else
+                                El registro queda <strong>Pendiente</strong>: la persona pasa cuando confirmes en el sistema que el Host la autorizó.
+                            @endif
+                        </p>
+                    @endforeach
                 </div>
 
                 {{-- ID custodiada (personal externo, proveedor y contratista) --}}

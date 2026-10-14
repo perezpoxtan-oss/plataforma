@@ -3,12 +3,12 @@ titulo: Recepción y autorizaciones
 modulos: [recepcion_rh, autorizaciones]
 seccion: Recursos Humanos
 orden: 30
-resumen: Panel de quién espera a Recursos Humanos, «Que pase» a quien llega a caseta, avisos de la campana, autorizaciones de visitas y responsables por departamento.
+resumen: Panel de quién espera a Recursos Humanos, «Que pase» a quien llega a caseta, avisos de la campana, autorizaciones de visitas, proveedores y contratistas, y responsables por departamento.
 ---
 
 # Recepción y autorizaciones
 
-**¿Para qué sirve?** Cuando alguien llega a la caseta y va con **Recursos Humanos**, aparece en el panel de **Recepción** con **a qué viene** y los minutos que lleva esperando, y Recursos Humanos le dice a la caseta **Que pase**, **Que espere** o **No puede pasar**. Cuando alguien viene a ver a un **departamento**, su **responsable** decide si entra. Todo llega como aviso en la **campana** (y por correo) con los botones para responder. Las entrevistas de candidatos con el departamento se explican en [Candidatos](candidatos.md) y en [Entrevistar y elegir](entrevistar-y-elegir.md).
+**¿Para qué sirve?** Cuando alguien llega a la caseta y va con **Recursos Humanos**, aparece en el panel de **Recepción** con **a qué viene** y los minutos que lleva esperando, y Recursos Humanos le dice a la caseta **Que pase**, **Que espere** o **No puede pasar**. Cuando una visita, un proveedor o un contratista viene a un **departamento**, su **responsable** decide si entra. Todo llega como aviso en la **campana** (y por correo) con los botones para responder. Las entrevistas de candidatos con el departamento se explican en [Candidatos](candidatos.md) y en [Entrevistar y elegir](entrevistar-y-elegir.md).
 
 ![Panel de Recepción](img/recepcion-y-candidatos/recepcion-panel.png)
 
@@ -88,9 +88,9 @@ Si tu empresa tiene encendido el ajuste **La caseta espera a que RR. HH. diga «
 
 ## Cómo responder una autorización
 
-### Visitas a un departamento
+### Visitas, proveedores y contratistas que vienen a un departamento
 
-1. La caseta registra la visita con el motivo **Visita a Departamento** (o **Visita a Colaborador**).
+1. La caseta registra la visita con el motivo **Visita a Departamento** (o **Visita a Colaborador**), o al proveedor o contratista con **¿A qué departamento viene?**.
 2. Si la empresa lo pide y el departamento tiene responsable, la tarjeta de la caseta queda **PENDIENTE** con «Espera a: (tu nombre) (departamento) · minutos» y a ti te llega el aviso (también a los suplentes del departamento).
 3. Toca **Autorizar ingreso** o **Rechazar** (en la campana, en **Mis pendientes**, en **Autorizaciones** o en el botón del correo).
 4. La tarjeta de la caseta **cambia sola**: autorizado, la persona pasa a «Gente en Sitio» con «Autorizado por (departamento)»; rechazado, queda **FINALIZADO** con «No autorizado por (departamento): no ingresó» en el historial (hay que devolverle su identificación).
@@ -98,7 +98,19 @@ Si tu empresa tiene encendido el ajuste **La caseta espera a que RR. HH. diga «
 
 ![Caseta esperando la autorización](img/recepcion-y-candidatos/caseta-pendientes-esperando.png)
 
-> Si el responsable avisa por teléfono, el supervisor puede usar **Confirmar Autorización** en la caseta, como siempre: queda anotado «respondida por caseta».
+> Si el responsable avisa por teléfono, el supervisor puede usar **Confirmar Autorización** en la caseta (en un proveedor o contratista, **Autorizar por excepción** con el motivo «El responsable autorizó por teléfono»): queda anotado «respondida por caseta».
+
+El aviso de un proveedor o contratista dice de qué empresa viene, quién lo citó y a qué viene (por ejemplo «Proveedor para Mantenimiento. Lo citó: Carlos Pérez. Actividad: Recarga de tanque. Viene de: GAS DEL SUR.»).
+
+### Cuando la caseta lo deja pasar por excepción
+
+Si el departamento no tiene responsable en esa sede, nadie contestó a tiempo o hubo una urgencia, el supervisor de la caseta puede dejar pasar al proveedor o contratista con **Autorizar por excepción**, siempre con un motivo. Entonces:
+
+1. Te llega a la **campana** el aviso «Pasó por excepción: …» con el motivo y quién lo autorizó.
+2. La solicitud se cierra: sus botones desaparecen y en **Autorizaciones** queda como autorizada «por caseta», con el comentario «Por excepción: (motivo)».
+3. Todo queda en la Bitácora de auditoría.
+
+**Qué debes ver:** el aviso en tu campana y, en la caseta, la tarjeta con «Autorizado por excepción (motivo, quién)».
 
 **Qué debes ver:** «Listo: autorizaste el ingreso de …. La caseta ya lo ve.» o «Respuesta registrada: rechazaste a ….»
 
@@ -128,7 +140,7 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 Todo lo que tiene que ver con quién responde y qué espera está en una sola pantalla: **Responsables por departamento**. Llegas a ella desde **Recursos Humanos → Departamentos** (botón **Responsables**), desde **Recepción → Ajustes** o desde **Autorizaciones**.
 
 1. En **Qué espera en la caseta**:
-   - Enciende o apaga **Las visitas esperan la autorización del responsable**.
+   - En **Esperan la autorización del responsable del departamento**, marca quién espera: **Visita**, **Proveedor** y **Contratista** (de fábrica, las tres). Marcada: la caseta elige a qué departamento viene la persona y, si ese departamento tiene responsable en la sede, queda «Esperando autorización» hasta que él responda; si no tiene responsable, la visita entra como siempre y el proveedor o contratista lo pasa el supervisor con **Autorizar por excepción**. **Proveedor** o **Contratista** sin marcar: se confirman con quien los citó (el Host) y **Confirmar Autorización**, como antes.
    - Enciende o apaga **La caseta espera a que RR. HH. diga «Que pase»**. Encendido: quien viene a Recursos Humanos espera en caseta tu respuesta. Apagado: pasa directo y solo te llega el aviso.
    - En **Recordar a los (minutos)** escribe a los cuántos minutos se vuelve a avisar a quien debe responder (campana y correo). Desde ese minuto la espera se pinta en **ámbar**. De fábrica, 10.
    - En **Avisar al suplente y al jefe a los (minutos)** escribe a los cuántos minutos, si nadie ha contestado, se avisa a los suplentes del departamento (o a quien los cubre) y al Jefe de seguridad de la sede; si la persona espera a Recursos Humanos, al resto del equipo de RR. HH. y al Jefe de seguridad. Desde ese minuto la espera se pinta en **rojo**. De fábrica, 20. Debe ser mayor que el recordatorio; ambos admiten hasta 240 minutos.
@@ -185,6 +197,8 @@ Aquí solo quedan el aviso de privacidad y el kiosco. Lo que espera en la caseta
 | Escribe al menos un criterio para calificar las entrevistas. | Dejaste todos los criterios vacíos. | Escribe al menos uno. |
 | El criterio «…» está repetido. / Máximo 8 criterios. / Cada criterio admite máximo 80 caracteres. | La lista de criterios tiene un error. | Corrige la lista. |
 | La visita no queda «esperando autorización». | El departamento no tiene responsable o la opción está apagada. | Revisa **Responsables por departamento**. |
+| El proveedor o contratista dice «Sin responsable en …: se autoriza por excepción». | Su departamento no tiene responsable en esa sede. | Nombra responsable en **Responsables por departamento**; mientras, el supervisor lo pasa con **Autorizar por excepción**. |
+| El proveedor o contratista no pide departamento y dice «Confirma con el host». | La casilla **Proveedor** o **Contratista** está sin marcar. | Márcala en **Qué espera en la caseta** si quieres que espere al departamento. |
 | Quien viene a Recursos Humanos pasa directo, sin esperar el «Que pase». | El ajuste **La caseta espera a que RR. HH. diga «Que pase»** está apagado, o nadie atiende Recursos Humanos en esa sede. | Revisa **Responsables por departamento** (sección **Qué espera en la caseta**) y que alguien de esa sede tenga el permiso. |
 | «Solo quien atiende Recursos Humanos en … puede responder.» | Esa persona llegó a una sede que no tienes a cargo. | Que responda Recursos Humanos de esa sede. |
 | «Esta persona ya no está esperando en caseta. Revisa la lista.» | La caseta ya la dejó pasar o ya se fue. | No hace falta responder. |
@@ -196,7 +210,9 @@ Aquí solo quedan el aviso de privacidad y el kiosco. Lo que espera en la caseta
 
 **¿Dónde quedaron las Autorizaciones en el menú?** Ya no están en el menú: te llegan por la campana y por **Mis pendientes**.
 
-**¿Qué pasa si nadie responde?** La plataforma recuerda a quien debe responder y después avisa a los suplentes y al Jefe de seguridad de la sede (ver «Cómo elegir los responsables por departamento y qué espera en la caseta»). Mientras tanto la persona sigue esperando en la caseta, y el supervisor puede usar **Confirmar Autorización** si el responsable (o Recursos Humanos) avisa por teléfono.
+**¿Qué pasa si nadie responde?** La plataforma recuerda a quien debe responder y después avisa a los suplentes y al Jefe de seguridad de la sede (ver «Cómo elegir los responsables por departamento y qué espera en la caseta»). Mientras tanto la persona sigue esperando en la caseta, y el supervisor puede usar **Confirmar Autorización** si el responsable (o Recursos Humanos) avisa por teléfono; en un proveedor o contratista, **Autorizar por excepción** con su motivo.
+
+**¿Me entero si la caseta deja pasar a un proveedor sin mi respuesta?** Sí: te llega a la campana «Pasó por excepción: …» con el motivo y quién lo autorizó.
 
 **¿Ya no está el botón QR en Recepción?** Está en la ficha del candidato (**QR para que llene su solicitud**) y en el **Modo kiosco** de la tableta.
 

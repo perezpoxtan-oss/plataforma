@@ -1383,6 +1383,11 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .btn-accion-acceso.salida:hover { background: #bb2d3b; }
 .btn-accion-acceso.autorizar { background: #198754; color: #fff; }
 .btn-accion-acceso.autorizar:hover { background: #157347; }
+/* «Autorizar por excepción» (proveedor/contratista que espera al departamento): se despliega con su motivo */
+.btn-accion-acceso.excepcion { background: #b45309; color: #fff; }
+.btn-accion-acceso.excepcion:hover { background: #92400e; }
+.excepcion-acceso > summary { list-style: none; display: flex; align-items: center; justify-content: center; }
+.excepcion-acceso > summary::-webkit-details-marker { display: none; }
 .btn-accion-acceso.regreso { background: #ffc107; color: #212529; }
 .btn-accion-acceso.temporal { background: #fff; color: #b45309; border-color: #f59e0b; width: auto; }
 .btn-accion-acceso.temporal:hover { background: #f59e0b; color: #212529; }
