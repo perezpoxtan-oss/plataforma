@@ -48,15 +48,16 @@ class RutaHorario extends Model
         return substr((string) $this->hora_inicio, 0, 5);
     }
 
+    /** "07:30" o "" si no tiene hora de fin (opcional en las salidas). */
     public function fin(): string
     {
-        return substr((string) $this->hora_fin, 0, 5);
+        return $this->hora_fin ? substr((string) $this->hora_fin, 0, 5) : '';
     }
 
     /** Llega al día siguiente (p. ej. 23:30 a 00:40). */
     public function cruzaMedianoche(): bool
     {
-        return $this->fin() < $this->inicio();
+        return $this->fin() !== '' && $this->fin() < $this->inicio();
     }
 
     /** "L-V", "S-D", "L-D" o las letras sueltas ("L,X,V"). */

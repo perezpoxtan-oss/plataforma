@@ -241,6 +241,25 @@ class RutasTest extends TestCase
             ->assertSee('23:20–00:30')->assertSee('title="Llega al día siguiente"', false);
     }
 
+    public function test_la_salida_puede_no_tener_hora_de_fin_y_la_llegada_si_la_exige(): void
+    {
+        $this->actingAs($this->admin)->post('/rutas', $this->datos(['sentido' => 'salida', 'nombre' => 'Salida sin fin', 'horarios' => [
+            ['hora_inicio' => '15:10', 'hora_fin' => ''],
+        ]]))->assertSessionHasNoErrors();
+        $h = $this->rutaEn(fn () => RutaHorario::firstOrFail());
+        $this->assertNull($h->hora_fin);
+        $this->assertSame('', $h->fin());
+        $this->assertFalse($h->cruzaMedianoche());
+
+        $this->actingAs($this->admin)->get(route('rutas.sede', ['sede' => $this->centro->id, 'tab' => 'salidas']))->assertOk()->assertSee('15:10');
+        $this->actingAs($this->admin)->get(route('rutas.semana', ['sede' => $this->centro->id]))->assertOk()->assertSee('15:10');
+        $this->actingAs($this->admin)->get(route('rutas.itinerario', ['ruta' => $h->ruta_id]))->assertOk()->assertSee('sin hora de fin');
+
+        $this->actingAs($this->admin)->post('/rutas', $this->datos(['sentido' => 'llegada', 'nombre' => 'Llegada sin fin', 'horarios' => [
+            ['hora_inicio' => '06:00', 'hora_fin' => ''],
+        ]]))->assertSessionHasErrors(['horarios' => 'Horario 1: falta la hora de llegada a destino.']);
+    }
+
     public function test_validaciones_con_mensajes_claros(): void
     {
         $this->actingAs($this->admin)->post('/rutas', $this->datos(['horarios' => []]))

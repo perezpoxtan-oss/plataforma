@@ -45,7 +45,7 @@
         <section class="rutas-itinerario-horario">
             <div class="rutas-itinerario-destacado">
                 <div class="rutas-itinerario-etiqueta">{{ mb_strtolower($h->nombre) === mb_strtolower($h->textoDias()) ? $h->textoDias() : $h->nombre.' · '.$h->textoDias() }}</div>
-                <div class="rutas-itinerario-hora">{{ $h->inicio() }} — {{ $h->fin() }}@if ($h->cruzaMedianoche()) <small>(día siguiente)</small>@endif</div>
+                <div class="rutas-itinerario-hora">{{ $h->inicio() }}@if ($h->fin() !== '') — {{ $h->fin() }}@else <small>(sin hora de fin)</small>@endif @if ($h->cruzaMedianoche()) <small>(día siguiente)</small>@endif</div>
             </div>
             @if ($h->paradas->isNotEmpty())
                 <table class="rutas-itinerario-tabla">

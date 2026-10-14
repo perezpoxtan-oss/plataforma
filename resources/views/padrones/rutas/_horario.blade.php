@@ -28,8 +28,8 @@
             <input type="time" id="{{ $prefijo }}_h{{ $h }}_inicio" name="horarios[{{ $h }}][hora_inicio]" class="campo" value="{{ $datos['hora_inicio'] ?? '' }}" required>
         </div>
         <div class="flex-fill">
-            <label class="campo-etiqueta" for="{{ $prefijo }}_h{{ $h }}_fin">Hora de Llegada a Destino</label>
-            <input type="time" id="{{ $prefijo }}_h{{ $h }}_fin" name="horarios[{{ $h }}][hora_fin]" class="campo" value="{{ $datos['hora_fin'] ?? '' }}" required>
+            <label class="campo-etiqueta" for="{{ $prefijo }}_h{{ $h }}_fin">Hora de Llegada a Destino <span class="text-lowercase fw-normal">(opcional en salidas)</span></label>
+            <input type="time" id="{{ $prefijo }}_h{{ $h }}_fin" name="horarios[{{ $h }}][hora_fin]" class="campo" value="{{ $datos['hora_fin'] ?? '' }}">
         </div>
     </div>
     <p class="campo-ayuda rutas-ayuda"><i class="bi bi-moon-stars" aria-hidden="true"></i> Si la llegada es más temprano que el inicio (ej. 23:30 a 00:40), se entiende que llega al día siguiente.</p>
