@@ -96,6 +96,8 @@ class EscalamientoAutorizacionesTest extends TestCase
     /** @param array<string, mixed> $extra */
     private function visitaAMantenimiento(array $extra = []): Acceso
     {
+        // Tras avanzar el reloj, la sesión de prueba se renueva para no chocar con el cierre por inactividad
+        $this->flushSession();
         $this->actingAs($this->agente)->post('/accesos', $extra + [
             'sede_id' => $this->centro->id, 'tipo' => 'visitante', 'nombre' => 'Ingrid Solís', 'motivo_visita' => 'departamento',
             'departamento_id' => $this->mantenimiento->id, 'modo_arribo' => 'a_pie', 'identificacion' => 'ine',
