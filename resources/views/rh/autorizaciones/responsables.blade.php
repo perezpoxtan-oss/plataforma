@@ -34,12 +34,17 @@
         <form action="{{ route('recepcion.ajustes.guardar') }}" method="POST" class="m-0">
             @csrf
             @method('PUT')
-            <input type="hidden" name="visitas_requieren_autorizacion" value="0">
-            <label class="casilla-privacidad">
-                <input type="checkbox" name="visitas_requieren_autorizacion" value="1" @checked(old('visitas_requieren_autorizacion', $requiere)) @disabled(! $deEmpresa)>
-                <span><strong>Las visitas esperan la autorización del responsable</strong><br>
-                    <span class="small text-muted">Cuando la caseta registre una visita a un departamento (o a un colaborador de ese departamento) que tenga responsable, la persona queda «Esperando autorización» hasta que él responda. Si el departamento no tiene responsable, entra como siempre.</span></span>
-            </label>
+            {{-- Una casilla por tipo de persona: visita, proveedor y contratista --}}
+            <p class="mb-1"><strong>Esperan la autorización del responsable del departamento</strong></p>
+            <div class="d-flex flex-wrap column-gap-4">
+                @foreach (\App\Services\Recepcion\AjustesRecepcion::ESPERAN_DEPARTAMENTO as $tipoEspera => [$claveEspera, $textoEspera])
+                    <input type="hidden" name="{{ $claveEspera }}" value="0">
+                    <label class="casilla-concluido mb-1">
+                        <input type="checkbox" name="{{ $claveEspera }}" value="1" @checked(old($claveEspera, $ajustesRecepcion->esperaAlDepartamento($empresa, $tipoEspera))) @disabled(! $deEmpresa)> {{ $textoEspera }}
+                    </label>
+                @endforeach
+            </div>
+            <p class="small text-muted mb-2">La caseta elige a qué departamento viene la persona. Si ese departamento tiene responsable en la sede, la persona queda «Esperando autorización» hasta que él responda (una visita a un colaborador espera al responsable de su departamento). Si no tiene responsable, la visita entra como siempre y el proveedor o contratista lo pasa quien supervisa la caseta con <strong>Autorizar por excepción</strong>. Proveedor o contratista sin marcar: se confirma con el host, como antes.</p>
             <input type="hidden" name="rh_autoriza_paso" value="0">
             <label class="casilla-privacidad mt-2">
                 <input type="checkbox" name="rh_autoriza_paso" value="1" @checked(old('rh_autoriza_paso', $ajustesRecepcion->rhAutorizaPaso($empresa))) @disabled(! $deEmpresa)>

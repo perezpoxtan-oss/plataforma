@@ -30,6 +30,7 @@ class PreferenciasAvisos
         'autorizacion_visita' => ['Autorizaciones', 'Una visita a tu departamento espera tu autorización', ['autorizaciones.responder']],
         'autorizacion_candidato' => ['Autorizaciones', 'Un candidato espera tu autorización', ['autorizaciones.responder']],
         'autorizacion_escalada' => ['Autorizaciones', 'Una autorización pasó al suplente o al jefe por tardanza', ['autorizaciones.responder', 'accesos.ver']],
+        'autorizacion_excepcion' => ['Autorizaciones', 'La caseta dejó pasar por excepción a alguien que esperaba tu autorización', ['autorizaciones.responder']],
         'delegacion' => ['Autorizaciones', 'Te delegaron las autorizaciones de un departamento', ['autorizaciones.responder']],
         'autorizacion_respuesta' => ['Bitácora de accesos', 'Respondieron una autorización que pidió la caseta', ['accesos.ver']],
         'autorizacion_recepcion' => ['Bitácora de accesos', 'Recursos Humanos dice «Que pase» a quien espera en caseta', ['accesos.ver']],

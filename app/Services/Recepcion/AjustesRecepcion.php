@@ -13,7 +13,10 @@ use Illuminate\Validation\ValidationException;
 /**
  * Ajustes de Recepción por empresa (empresas.preferencias['recepcion']):
  *  - aviso de privacidad que el candidato acepta antes de guardar su CV;
- *  - si las visitas a un departamento esperan la autorización de su responsable;
+ *  - quién espera la autorización del responsable del departamento: visita,
+ *    proveedor y contratista (ESPERAN_DEPARTAMENTO). Sin el dato = sí; a las
+ *    empresas que ya existían la migración les dejó guardado su valor de
+ *    visitas de antes (era «no» sin el dato);
  *  - si la caseta espera a que RR. HH. diga «Que pase» a quien viene con
  *    Recursos Humanos (rh_autoriza_paso). Sin el dato = encendido: las
  *    empresas nuevas lo tienen encendido; a las que ya existían la migración
@@ -83,9 +86,27 @@ class AjustesRecepcion
         return str_contains($this->textoPrivacidad($empresa), self::MARCA_BORRADOR);
     }
 
+    /**
+     * Tipos de persona que pueden esperar la autorización del departamento:
+     * tipo de acceso => [clave del ajuste, texto de la casilla].
+     */
+    public const ESPERAN_DEPARTAMENTO = [
+        'visitante' => ['visitas_requieren_autorizacion', 'Visita'],
+        'proveedor' => ['proveedores_requieren_autorizacion', 'Proveedor'],
+        'contratista' => ['contratistas_requieren_autorizacion', 'Contratista'],
+    ];
+
     public function visitasRequierenAutorizacion(Empresa $empresa): bool
     {
-        return (bool) ($this->datos($empresa)['visitas_requieren_autorizacion'] ?? false);
+        return $this->esperaAlDepartamento($empresa, 'visitante');
+    }
+
+    /** ¿Este tipo de persona espera la autorización del responsable del departamento? (por omisión, sí) */
+    public function esperaAlDepartamento(Empresa $empresa, string $tipo): bool
+    {
+        $clave = self::ESPERAN_DEPARTAMENTO[$tipo][0] ?? null;
+
+        return $clave !== null && (bool) ($this->datos($empresa)[$clave] ?? true);
     }
 
     /** ¿La caseta espera a que RR. HH. diga «Que pase»? (por omisión, sí) */
@@ -192,6 +213,8 @@ class AjustesRecepcion
         $d = Validator::make($entrada, [
             'aviso_privacidad' => ['nullable', 'string', 'max:6000'],
             'visitas_requieren_autorizacion' => ['nullable', 'boolean'],
+            'proveedores_requieren_autorizacion' => ['nullable', 'boolean'],
+            'contratistas_requieren_autorizacion' => ['nullable', 'boolean'],
             'kiosco_horas' => ['nullable', 'integer', 'min:1', 'max:24'],
             'kiosco_usos' => ['nullable', 'integer', 'min:1', 'max:10'],
             'rh_autoriza_paso' => ['nullable', 'boolean'],
@@ -222,8 +245,10 @@ class AjustesRecepcion
             // Los de siempre no se guardan (así, si cambian en la plataforma, la empresa los recibe)
             $nuevos['criterios'] = $lista === self::CRITERIOS_DEFECTO ? null : $lista;
         }
-        if ($esperas && array_key_exists('visitas_requieren_autorizacion', $d)) {
-            $nuevos['visitas_requieren_autorizacion'] = (bool) ($d['visitas_requieren_autorizacion'] ?? false);
+        foreach (self::ESPERAN_DEPARTAMENTO as [$clave]) {
+            if ($esperas && array_key_exists($clave, $d)) {
+                $nuevos[$clave] = (bool) ($d[$clave] ?? false);
+            }
         }
         if ($escalamiento) {
             $nuevos['recordar_minutos'] = (int) $d['recordar_minutos'];
@@ -232,7 +257,9 @@ class AjustesRecepcion
 
         $empresa->forceFill(['preferencias' => array_merge($empresa->preferencias ?? [], ['recepcion' => $nuevos])])->save();
         $resumen = fn (array $x) => [
-            'visitas_requieren_autorizacion' => (bool) ($x['visitas_requieren_autorizacion'] ?? false),
+            'visitas_requieren_autorizacion' => (bool) ($x['visitas_requieren_autorizacion'] ?? true),
+            'proveedores_requieren_autorizacion' => (bool) ($x['proveedores_requieren_autorizacion'] ?? true),
+            'contratistas_requieren_autorizacion' => (bool) ($x['contratistas_requieren_autorizacion'] ?? true),
             'aviso_privacidad' => isset($x['aviso_privacidad']) ? 'versión '.substr(hash('sha256', (string) $x['aviso_privacidad']), 0, 12) : 'borrador de la plataforma',
             'kiosco_horas' => (int) ($x['kiosco_horas'] ?? self::HORAS_KIOSCO),
             'kiosco_usos' => (int) ($x['kiosco_usos'] ?? self::USOS_KIOSCO),

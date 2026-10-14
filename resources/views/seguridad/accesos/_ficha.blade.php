@@ -28,6 +28,7 @@
         }],
         $modo === 'en_sitio' && $fuera => ['FUERA', 'fuera', 'bi-signpost-split', $a->tipo === 'huesped' ? 'Fuera en tour' : 'Fuera temporal'],
         $modo === 'en_sitio' => ['EN SITIO', 'en-sitio', 'bi-record-circle', match (true) {
+            $a->autorizacion === \App\Models\Acceso::POR_EXCEPCION => 'Autorizado por excepción ('.($a->motivo_excepcion ?: 'sin motivo').', '.($a->autorizadoPor?->name ?? '—').')',
             $a->autorizacion === 'autorizada' && $conRh => 'RR. HH. dijo que pase',
             $a->autorizacion === 'autorizada' && $a->departamento !== null => 'Autorizado por '.$a->departamento->nombre,
             default => null,
@@ -36,6 +37,7 @@
             $a->movimiento === 'regreso' => $a->tipo === 'huesped' ? 'Regreso de tour' : 'Regreso',
             $a->movimiento === 'salida_temporal' => $a->tipo === 'huesped' ? 'Salida a tour' : 'Salida temporal',
             $a->autorizacion === 'rechazada' => 'No autorizado por '.$quienNego.': no ingresó',
+            $a->autorizacion === \App\Models\Acceso::POR_EXCEPCION => 'Autorizado por excepción ('.($a->motivo_excepcion ?: 'sin motivo').', '.($a->autorizadoPor?->name ?? '—').')',
             default => null,
         }],
     };
@@ -202,7 +204,32 @@
 
     @include('rh.recepcion._ficha-acceso'){{-- Recepción: autorización del departamento y fotos (ADR-0007) --}}
 
-    @if ($modo === 'pendientes' && $puede['aprobar'])
+    @if ($modo === 'pendientes' && $puede['aprobar'] && $a->esperaAlDepartamento())
+        {{-- Proveedor/contratista que espera al departamento: sin «Confirmar Autorización»; si no puede esperar, por excepción y con motivo --}}
+        @php $motivosExcepcion = app(\App\Services\Autorizaciones\Excepciones::class)->motivosPara($a); @endphp
+        <div class="ficha-acceso-acciones">
+        <details class="excepcion-acceso w-100">
+            <summary class="btn-accion-acceso excepcion"><i class="bi bi-shield-exclamation me-1" aria-hidden="true"></i>Autorizar por excepción</summary>
+            <form action="{{ route('accesos.excepcion', $a->id) }}" method="POST" class="m-0 mt-2"
+                  data-confirmar="¿Dejar pasar a {{ $a->nombre }} sin la autorización del departamento? Quedará anotado con tu nombre y se avisará al responsable.">
+                @csrf
+                @method('PATCH')
+                <label class="campo-etiqueta" for="motivo_excepcion_{{ $a->id }}">Motivo *</label>
+                <select id="motivo_excepcion_{{ $a->id }}" name="motivo_excepcion" class="campo" required>
+                    <option value="">-- Seleccionar --</option>
+                    @foreach ($motivosExcepcion as $claveMotivo => $textoMotivo)
+                        <option value="{{ $claveMotivo }}">{{ $textoMotivo }}</option>
+                    @endforeach
+                </select>
+                <label class="campo-etiqueta" for="detalle_excepcion_{{ $a->id }}">Detalle <span class="text-lowercase fw-normal">(obligatorio con «Otro»)</span></label>
+                <input type="text" id="detalle_excepcion_{{ $a->id }}" name="detalle_excepcion" class="campo" maxlength="250" placeholder="Ej: lo autorizó Juan Pérez a las 10:15">
+                <button type="submit" class="btn-accion-acceso excepcion mt-2"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Autorizar por excepción</button>
+            </form>
+        </details>
+        </div>
+    @elseif ($modo === 'pendientes' && $a->esperaAlDepartamento())
+        <p class="aviso-sin-permiso"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Espera la autorización del departamento; si no puede esperar, tu supervisor lo autoriza por excepción.</p>
+    @elseif ($modo === 'pendientes' && $puede['aprobar'])
         <div class="ficha-acceso-acciones">
             <form action="{{ route('accesos.autorizar', $a->id) }}" method="POST" class="m-0 w-100"
                   data-confirmar="{{ in_array($a->autorizacion, ['esperando', 'espera'], true) ? ($a->motivo_visita === 'rh' ? '¿Recursos Humanos ya autorizó (por teléfono o en persona)? Al confirmar, la persona podrá ingresar.' : '¿El responsable del departamento ya autorizó (por teléfono o en persona)? Al confirmar, la persona podrá ingresar.') : '¿El Host confirmó la autorización de este acceso? Al confirmar, la persona podrá ingresar.' }}">

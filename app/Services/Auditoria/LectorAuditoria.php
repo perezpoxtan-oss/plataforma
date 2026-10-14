@@ -91,7 +91,7 @@ class LectorAuditoria
         // Aprobaciones, firmas y respuestas
         'aprobado' => 'Aprobación', 'aprobada' => 'Aprobación', 'rechazado' => 'Rechazo', 'rechazada' => 'Rechazo',
         'firmado' => 'Firma', 'firmado_papel' => 'Firma en papel', 'acuse' => 'Acuse de recibo', 'acuse_firmado' => 'Acuse de recibo',
-        'autorizado' => 'Autorización', 'no_autorizado' => 'Negativa de autorización', 'respondida' => 'Respuesta',
+        'autorizado' => 'Autorización', 'autorizado_excepcion' => 'Autorización por excepción', 'no_autorizado' => 'Negativa de autorización', 'respondida' => 'Respuesta',
         'cancelado' => 'Cancelación', 'cancelada' => 'Cancelación', 'anulado' => 'Anulación', 'paso_omitido' => 'Omisión de paso',
         'reenviado' => 'Reenvío', 'enviado' => 'Envío a revisión', 'firma_guardada' => 'Registro de firma guardada', 'firma_borrada' => 'Eliminación de firma guardada',
         'circuito_actualizado' => 'Cambio del circuito de aprobación', 'circuito_restablecido' => 'Restablecimiento del circuito de aprobación',

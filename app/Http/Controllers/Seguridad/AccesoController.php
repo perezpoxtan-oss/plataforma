@@ -15,6 +15,7 @@ use App\Services\Accesos\MovimientosAccesos;
 use App\Services\Accesos\RegistroAccesos;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Autorizaciones\Escalamiento;
+use App\Services\Autorizaciones\Excepciones;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Support\Csv;
 use App\Support\HoraLocal;
@@ -97,7 +98,7 @@ class AccesoController extends Controller
                 'tiposGafete' => $puedeCrear ? $this->consulta->tiposGafete() : collect(),
                 'departamentos' => $puedeCrear ? Departamento::with('sedes:sedes.id')->where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'todas_las_sedes']) : collect(),
                 // Botón honesto: con qué tipo y motivo el registro nace pendiente (el servidor decide; esto solo anticipa el texto)
-                'anticipo' => $puedeCrear ? $this->anticipo($empresaId, $sedesAlta) : ['rh_espera_en' => [], 'visitas_esperan' => false, 'departamentos' => []],
+                'anticipo' => $puedeCrear ? $this->anticipo($empresaId, $sedesAlta) : ['rh_espera_en' => [], 'visitas_esperan' => false, 'departamentos' => [], 'esperan_departamento' => []],
                 'previos' => $puedeCrear ? $this->consulta->previos(session()->getOldInput()) : [],
                 'siguiente' => session('siguiente'),
                 'puede' => [
@@ -139,6 +140,21 @@ class AccesoController extends Controller
             $this->movimientos->autorizar($request->user(), $a);
 
             return "Acceso autorizado — {$a->nombre} ya puede ingresar.";
+        }, 'pendientes');
+    }
+
+    /**
+     * «Autorizar por excepción»: proveedor o contratista que espera al
+     * departamento y no puede esperar (siempre con motivo; ver Excepciones).
+     */
+    public function excepcion(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.aprobar');
+
+        return $this->mover($request, $acceso, 'accesos.aprobar', function (Acceso $a) use ($request) {
+            $motivo = app(Excepciones::class)->autorizar($request->user(), $a, $request->input('motivo_excepcion'), $request->input('detalle_excepcion'));
+
+            return "Autorizado por excepción — {$a->nombre} ya puede ingresar ({$motivo}).".($a->departamento_id ? ' Avisamos al responsable del departamento.' : '');
         }, 'pendientes');
     }
 
@@ -331,6 +347,13 @@ class AccesoController extends Controller
         if ($autorizacion === 'esperando' && $acceso->motivo_visita === 'rh') {
             return "Registrado: {$acceso->nombre} espera a Recursos Humanos. Ya se avisó; aquí verás cuándo puede pasar.";
         }
+        if ($autorizacion === Acceso::SIN_RESPONSABLE) {
+            $depto = $acceso->departamento?->nombre ?? 'El departamento';
+
+            return "Registrado: {$acceso->nombre} queda pendiente. {$depto} no tiene responsable en esta sede: ".($puedeAprobar
+                ? 'confirma con el host y toca Autorizar por excepción.'
+                : 'confirma con el host; tu supervisor lo autoriza por excepción.');
+        }
         if ($autorizacion === 'esperando') {
             $depto = $acceso->departamento?->nombre;
             $quien = $acceso->departamento_id
@@ -354,7 +377,7 @@ class AccesoController extends Controller
      * al departamento y qué departamentos tienen responsable (y en qué sedes).
      *
      * @param  Collection<int, Sede>  $sedes
-     * @return array{rh_espera_en: list<int>, visitas_esperan: bool, departamentos: array<int, list<int>|null>}
+     * @return array{rh_espera_en: list<int>, visitas_esperan: bool, departamentos: array<int, list<int>|null>, esperan_departamento: list<string>}
      */
     private function anticipo(int $empresaId, Collection $sedes): array
     {
@@ -372,6 +395,8 @@ class AccesoController extends Controller
             'rh_espera_en' => $rhEsperaEn,
             'visitas_esperan' => $visitasEsperan,
             'departamentos' => $visitasEsperan ? $autorizaciones->departamentosConResponsable() : [],
+            // Proveedor y contratista: ¿esperan al departamento? («¿A qué departamento viene?» obligatorio)
+            'esperan_departamento' => collect(Acceso::CON_AUTORIZACION)->filter(fn ($t) => $empresa !== null && $ajustes->esperaAlDepartamento($empresa, $t))->values()->all(),
         ];
     }
 

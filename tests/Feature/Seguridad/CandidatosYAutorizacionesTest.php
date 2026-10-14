@@ -625,7 +625,9 @@ class CandidatosYAutorizacionesTest extends TestCase
 
     public function test_el_formulario_de_la_caseta_anticipa_si_el_registro_nace_pendiente(): void
     {
-        // Sin el ajuste de visitas, el formulario no anticipa esperas por departamento; RR. HH. autoriza el paso por omisión y hay quien atienda
+        // Sin el ajuste de visitas (empresa que ya existía: «no» guardado), el formulario no anticipa esperas por departamento;
+        // RR. HH. autoriza el paso por omisión y hay quien atienda
+        $this->visitasConAutorizacion(false);
         $this->actingAs($this->agente)->get('/accesos')->assertOk()
             ->assertSee('Registrar y dejar pasar')->assertSee('data-visitas-esperan="0"', false)->assertSee('data-rh-espera-en="'.$this->centro->id.'"', false)
             ->assertSee('data-departamentos-con-responsable="[]"', false);

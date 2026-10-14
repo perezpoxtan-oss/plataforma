@@ -238,7 +238,7 @@ class RecepcionController extends Controller
         $partes = array_keys(array_filter([
             'privacidad' => $privacidad && $request->has('aviso_privacidad'),
             'criterios' => $privacidad && $request->has('criterios'),
-            'esperas' => ($privacidad || $autorizaciones) && $request->hasAny(['visitas_requieren_autorizacion', 'rh_autoriza_paso']),
+            'esperas' => ($privacidad || $autorizaciones) && $request->hasAny(['visitas_requieren_autorizacion', 'proveedores_requieren_autorizacion', 'contratistas_requieren_autorizacion', 'rh_autoriza_paso']),
             'escalamiento' => ($privacidad || $autorizaciones) && $request->has('recordar_minutos'),
         ]));
         if ($partes === []) {
@@ -246,7 +246,7 @@ class RecepcionController extends Controller
         }
 
         app(AjustesRecepcion::class)->guardar($actor, Empresa::findOrFail($empresaId),
-            $request->only(['aviso_privacidad', 'visitas_requieren_autorizacion', 'kiosco_horas', 'kiosco_usos', 'rh_autoriza_paso', 'criterios', 'recordar_minutos', 'escalar_minutos']),
+            $request->only(['aviso_privacidad', 'visitas_requieren_autorizacion', 'proveedores_requieren_autorizacion', 'contratistas_requieren_autorizacion', 'kiosco_horas', 'kiosco_usos', 'rh_autoriza_paso', 'criterios', 'recordar_minutos', 'escalar_minutos']),
             $partes);
 
         return back()->with('ok', match (true) {

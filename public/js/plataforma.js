@@ -8223,6 +8223,8 @@ document.addEventListener('click', function (e) {
    Recepción de candidatos y autorizaciones departamentales (ADR-0007)
    - Centro de notificaciones (campana): contador cada 30 s con la pestaña
      visible; la lista se pide al abrir. Sin websockets (hosting compartido).
+     Con los avisos del navegador activos, la consulta sigue cada 60 s con la
+     pestaña oculta y muestra un aviso del sistema por cada notificación nueva.
    - Panel «Recepción» de RR. HH.: se vuelve a pintar cada 15 s.
    - Caseta: las visitas «Esperando autorización» se actualizan solas.
    - CV: agregar y quitar renglones (escolaridad, experiencia, referencias).
@@ -8238,8 +8240,11 @@ document.addEventListener('click', function (e) {
         if (texto !== undefined && texto !== null) { e.textContent = texto; }
         return e;
     }
-    function pedir(url) {
-        return fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+    function pedir(url, segundoPlano) {
+        var cabeceras = { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+        // La consulta automática con la pestaña oculta no cuenta como actividad (ControlarInactividad)
+        if (segundoPlano) { cabeceras['X-Segundo-Plano'] = '1'; }
+        return fetch(url, { credentials: 'same-origin', headers: cabeceras })
             .then(function (r) {
                 if (r.status === 401 || r.status === 419) { throw new Error('sesion'); }
                 if (!r.ok) { throw new Error(String(r.status)); }
@@ -8312,11 +8317,13 @@ document.addEventListener('click', function (e) {
         });
     }
 
-    function actualizarCampanas(conLista) {
+    function actualizarCampanas(conLista, segundoPlano) {
         if (!campanas.length) { return; }
-        pedir(campanas[0].dataset.url).then(function (d) {
+        pedir(campanas[0].dataset.url, segundoPlano).then(function (d) {
             ultimoResumen = d;
             pintarContador(d.no_leidas || 0);
+            compartirNoLeidas(d.no_leidas || 0);
+            revisarNuevas(d);
             campanas.forEach(function (c) { if (conLista || !c.querySelector('[data-campana-panel]').hidden) { pintarLista(c, d); } });
         }).catch(function () { /* sin red o sesión cerrada: decide el aviso de sesión */ });
     }
@@ -8349,6 +8356,172 @@ document.addEventListener('click', function (e) {
         if (!e.target.closest('[data-campana-panel]')) { cerrarCampanas(null); }
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrarCampanas(null); } });
+
+    /* ---------- Avisos del navegador (Notification API; sin servicios externos) ----------
+       Mientras haya una pestaña de la plataforma abierta con sesión (aunque
+       esté en segundo plano o minimizada), una notificación NUEVA sin leer se
+       muestra como aviso del sistema. Solo una pestaña avisa: el último id
+       avisado y la hora de la última consulta se comparten en localStorage.
+       El permiso se pide solo con el botón (gesto de la persona); la
+       preferencia es de este navegador. Con el navegador cerrado no hay avisos
+       (eso sería Web Push: fase 2, ver docs/tecnico/avisos-navegador.md). */
+    var PREF_AVISOS = 'plataforma_avisos_navegador';  // 'si' | 'no'
+    var OCULTA_MS = 60000;
+    var VISIBLE_MS = 30000;
+    var MAX_AVISOS = 3;
+    var tituloBase = document.title;
+    var noLeidasActual = 0;
+    var relojCampana = null;
+
+    function leer(clave) { try { return localStorage.getItem(clave); } catch (x) { return null; } }
+    function escribir(clave, valor) { try { localStorage.setItem(clave, valor); } catch (x) { /* sin almacenamiento */ } }
+    function clave(nombre) { return 'plataforma_' + nombre + '_' + (campanas[0] ? campanas[0].dataset.usuario || '' : ''); }
+    function esMovil() {
+        var ua = navigator.userAgent || '';
+        return /Android|iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    }
+    // En celulares el navegador solo muestra avisos con un service worker (fase 2)
+    function compatible() { return 'Notification' in window && window.isSecureContext !== false && !esMovil(); }
+    function permiso() { return compatible() ? Notification.permission : 'no-compatible'; }
+    function avisosActivos() { return permiso() === 'granted' && leer(PREF_AVISOS) === 'si'; }
+
+    function pintarEstadoAvisos() {
+        var p = permiso();
+        var activos = avisosActivos();
+        var texto;
+        if (p === 'no-compatible') {
+            texto = esMovil()
+                ? 'En celulares y tabletas estos avisos todavía no están disponibles: revisa la campana.'
+                : 'Este navegador no puede mostrar avisos. Usa Chrome, Edge o Firefox actualizados, o revisa la campana.';
+        } else if (p === 'denied') {
+            texto = 'Los avisos están bloqueados en este navegador. Para permitirlos, toca el candado junto a la dirección, en «Notificaciones» elige «Permitir» y vuelve a cargar la página.';
+        } else if (activos) {
+            texto = 'Avisos activos en este navegador: te avisamos aunque estés en otra pestaña, mientras la plataforma siga abierta.';
+        } else {
+            texto = 'Recibe un aviso de tu computadora cuando llegue una notificación, aunque estés en otra pestaña.';
+        }
+        document.querySelectorAll('[data-avisos-navegador]').forEach(function (caja) {
+            caja.hidden = false;
+            caja.classList.toggle('activos', activos);
+            caja.querySelector('[data-avisos-estado]').textContent = texto;
+            caja.querySelector('[data-avisos-activar]').hidden = activos || p === 'no-compatible' || p === 'denied';
+            caja.querySelector('[data-avisos-apagar]').hidden = !activos;
+        });
+    }
+
+    function abrirNotificacion(url) {
+        var f = formulario(url, {}, '', '');
+        f.hidden = true;
+        document.body.appendChild(f);
+        f.submit();
+    }
+
+    function mostrarAviso(datos) {
+        var opciones = { body: datos.texto || '', tag: 'plataforma-' + datos.id, requireInteraction: !!datos.urgente };
+        var icono = campanas[0] && campanas[0].dataset.avisoIcono;
+        if (icono) { opciones.icon = icono; }
+        try {
+            var aviso = new Notification(datos.titulo, opciones);
+            aviso.onclick = function (e) {
+                if (e && e.preventDefault) { e.preventDefault(); }
+                window.focus();
+                aviso.close();
+                if (datos.abrir) { abrirNotificacion(datos.abrir); } else if (datos.ir) { window.location.href = datos.ir; }
+            };
+        } catch (x) { /* el navegador no permite avisos desde la página */ }
+    }
+
+    /* Avisa de las no leídas con id mayor al último avisado (en cualquier pestaña). */
+    function revisarNuevas(d) {
+        var sinLeer = (d.lista || []).filter(function (n) { return !n.leida && n.id; });
+        var llave = clave('aviso_ultimo');
+        var previo = leer(llave);
+        var ultimo = parseInt(previo || '0', 10) || 0;
+        var nuevas = sinLeer.filter(function (n) { return n.id > ultimo; }).sort(function (a, b) { return a.id - b.id; });
+        if (!nuevas.length) { return; }
+        escribir(llave, String(nuevas[nuevas.length - 1].id));
+        // La primera vez solo se toma la referencia; con la plataforma a la vista avisa la campana
+        var aLaVista = !document.hidden && document.hasFocus();
+        var actividad = parseInt(leer('plataforma_ultima_actividad') || '0', 10) || 0;
+        if (previo === null || aLaVista || Date.now() - actividad < 10000 || !avisosActivos()) { return; }
+        if (nuevas.length > MAX_AVISOS) {
+            var todas = campanas[0].querySelector('.campana-ver-todas');
+            mostrarAviso({ id: 'varias', titulo: 'Tienes ' + nuevas.length + ' notificaciones nuevas', texto: 'Toca para verlas.', urgente: nuevas.some(function (n) { return n.urgente; }), ir: todas ? todas.href : null });
+            return;
+        }
+        nuevas.forEach(mostrarAviso);
+    }
+
+    /* Contador en el título de la pestaña: «(3) Bitácora…» con la pestaña oculta. */
+    function pintarTitulo() {
+        var n = noLeidasActual;
+        document.title = (document.hidden && n > 0 ? '(' + (n > 99 ? '99+' : n) + ') ' : '') + tituloBase;
+    }
+    function compartirNoLeidas(n) {
+        noLeidasActual = n;
+        escribir(clave('campana_no_leidas'), String(n));
+        pintarTitulo();
+    }
+
+    /* Consulta de la campana: 30 s a la vista; 60 s oculta si los avisos están activos
+       (los navegadores espacian solos los relojes en segundo plano). Con la pestaña
+       oculta consulta una sola pestaña: las demás toman el número del almacenamiento. */
+    function consultarCampana() {
+        var oculta = document.hidden;
+        if (oculta && Date.now() - (parseInt(leer(clave('campana_consulta')) || '0', 10) || 0) < OCULTA_MS * 0.75) { return; }
+        escribir(clave('campana_consulta'), String(Date.now()));
+        actualizarCampanas(false, oculta);
+    }
+    function programarCampana() {
+        clearTimeout(relojCampana);
+        var ms = document.hidden ? (avisosActivos() ? OCULTA_MS : 0) : VISIBLE_MS;
+        if (ms) { relojCampana = setTimeout(function () { consultarCampana(); programarCampana(); }, ms); }
+    }
+
+    function iniciarCampana() {
+        var cont = campanas[0].querySelector('[data-campana-contador]');
+        noLeidasActual = cont && !cont.hidden ? (parseInt(cont.textContent, 10) || 0) : 0;
+        pintarEstadoAvisos();
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) { consultarCampana(); pintarEstadoAvisos(); }
+            pintarTitulo();
+            programarCampana();
+        });
+        window.addEventListener('storage', function (e) {
+            if (e.key === clave('campana_no_leidas')) {
+                noLeidasActual = parseInt(e.newValue || '0', 10) || 0;
+                pintarContador(noLeidasActual);
+                pintarTitulo();
+            } else if (e.key === PREF_AVISOS) {
+                pintarEstadoAvisos();
+                programarCampana();
+            }
+        });
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('[data-avisos-apagar]')) {
+                escribir(PREF_AVISOS, 'no');
+                pintarEstadoAvisos();
+                programarCampana();
+                return;
+            }
+            if (!e.target.closest('[data-avisos-activar]') || !compatible()) { return; }
+            var hecho = false;
+            var listo = function (r) {
+                if (hecho) { return; }
+                hecho = true;
+                if (r === 'granted') {
+                    escribir(PREF_AVISOS, 'si');
+                    mostrarAviso({ id: 'prueba', titulo: 'Avisos activos', texto: 'Así te avisaremos cuando llegue una notificación nueva.' });
+                }
+                pintarEstadoAvisos();
+                programarCampana();
+            };
+            var promesa = null;
+            try { promesa = Notification.requestPermission(listo); } catch (x) { promesa = null; }
+            if (promesa && typeof promesa.then === 'function') { promesa.then(listo); }
+        });
+        programarCampana();
+    }
 
     /* ---------- Panel de Recepción ---------- */
     function actualizarRecepcion(panel) {
@@ -8522,7 +8695,7 @@ document.addEventListener('click', function (e) {
 
     document.addEventListener('DOMContentLoaded', function () {
         campanas = Array.prototype.slice.call(document.querySelectorAll('[data-campana]'));
-        if (campanas.length) { cadaTanto(function () { actualizarCampanas(false); }, 30000); }
+        if (campanas.length) { iniciarCampana(); }
         document.querySelectorAll('[data-recepcion]').forEach(function (panel) { cadaTanto(function () { actualizarRecepcion(panel); }, 15000); });
         vigilarEsperas();
         document.querySelectorAll('[data-form-acceso]').forEach(acotarDeptos);
