@@ -77,7 +77,7 @@ Cada ruta muestra su horario, turno, transportista, cuántos paraderos tiene, el
 ## Cómo imprimir las hojas de horarios
 
 - **Hoja de horarios** (en la sede, o la impresora de la tarjeta de la sede): todos los horarios de la semana de cada ruta con los días en que opera (L M X J V S D; un punto · = ese día no sale). Las rutas dadas de baja se mencionan al pie.
-- **Hoja del día:** las rutas activas que salen ese día, por hora, una hoja para Llegadas y otra para Salidas, con una columna por paradero (hora, ✓ si para sin hora fija, — si no para). Arriba elige otra fecha en **Hoja de un día** y toca **Ver día**. Al pie dice qué horarios no operan ese día y qué rutas están dadas de baja.
+- **Hoja del día:** las rutas activas que salen ese día, por hora, una hoja para Llegadas y otra para Salidas, con una columna por paradero **en el orden del recorrido** (de izquierda a derecha, como avanza la unidad). En cada celda ves la hora de paso; si ese paradero no tiene hora fija, ves el número de parada (1.ª, 2.ª…); — si no para ahí. Las horas de cada paradero son opcionales: captura solo las que conozcas. Arriba elige otra fecha en **Hoja de un día** y toca **Ver día**. Al pie dice qué horarios no operan ese día y qué rutas están dadas de baja.
 - **Itinerario** (impresora de cada ruta): los datos de la ruta y cada horario con sus paraderos.
 
 En cada hoja toca **Imprimir**; **Volver a la sede** te regresa. Salen en hoja carta horizontal y se pueden guardar como PDF.

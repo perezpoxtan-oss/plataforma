@@ -2,7 +2,7 @@
     Hoja del día para caseta (SEGCAT: ruta_imprimir_dia.php). Página propia,
     sin menús, horizontal: una hoja para Llegadas y otra para Salidas, con las
     rutas activas que salen ese día ordenadas por hora y una columna por
-    paradero (hora tentativa, ✓ si para sin hora, — si no para ahí).
+    paradero (hora tentativa, número de parada si no tiene hora, — si no para ahí).
 --}}
 @php
     $version = fn (string $archivo) => asset($archivo).'?v='.(@filemtime(public_path($archivo)) ?: '1');
@@ -74,7 +74,7 @@
                         </thead>
                         <tbody>
                             @foreach ($hoja['filas'] as $h)
-                                @php $paradas = $h->paradas->keyBy('paradero_id'); @endphp
+                                @php $paradas = $h->paradas->keyBy('paradero_id'); $numero = $h->paradas->sortBy('orden')->pluck('paradero_id')->unique()->values()->flip()->map(fn ($i) => $i + 1); @endphp
                                 <tr>
                                     <td class="col-hora">{{ $h->inicio() }}</td>
                                     <td class="col-ruta">
@@ -85,7 +85,7 @@
                                     <td class="col-hora">{{ $h->fin() }}@if ($h->cruzaMedianoche())<sup title="Día siguiente">+1</sup>@endif</td>
                                     @foreach ($hoja['columnas'] as $paraderoId => $nombreParadero)
                                         @php $parada = $paradas->get($paraderoId); @endphp
-                                        <td class="col-paradero {{ $parada ? 'con-parada' : '' }}">{{ $parada === null ? '—' : ($parada->horaCorta() ?: '✓') }}</td>
+                                        <td class="col-paradero {{ $parada ? 'con-parada' : '' }}">@if ($parada === null)—@elseif ($parada->horaCorta() !== ''){{ $parada->horaCorta() }}@else<span title="Parada {{ $numero[$paraderoId] }} del recorrido, sin hora fija">{{ $numero[$paraderoId] }}.ª</span>@endif</td>
                                     @endforeach
                                 </tr>
                             @endforeach
@@ -108,7 +108,7 @@
         </section>
     @endforeach
 
-    <div class="rutas-hoja-pie">Generado el @fecha($generado) · {{ $identidad->get('nombre_corto') }} · ✓ = para ahí sin hora fija · — = no para ahí</div>
+    <div class="rutas-hoja-pie">Generado el @fecha($generado) · {{ $identidad->get('nombre_corto') }} · 1.ª, 2.ª… = número de parada en el recorrido, sin hora fija · columnas en el orden del recorrido · — = no para ahí</div>
 </main>
 <script src="{{ $version('js/plataforma.js') }}"></script>
 </body>

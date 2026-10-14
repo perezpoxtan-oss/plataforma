@@ -6,7 +6,7 @@
     qué días opera (mini semana L M X J V S D), así se ven también los
     horarios alternos (fin de semana o días sueltos). Orden de SEGCAT: todos
     los días, lunes a viernes, días sueltos y fin de semana; luego por hora.
-    Una columna por paradero (hora tentativa, ✓ si para sin hora, — si no
+    Una columna por paradero (hora tentativa, número de parada si no tiene hora, — si no
     para ahí). La «Hoja del día» sigue disponible para una fecha.
 --}}
 @php
@@ -75,7 +75,7 @@
                         <tbody>
                             @foreach ($hoja['filas'] as $h)
                                 @php
-                                    $paradas = $h->paradas->keyBy('paradero_id');
+                                    $paradas = $h->paradas->keyBy('paradero_id'); $numero = $h->paradas->sortBy('orden')->pluck('paradero_id')->unique()->values()->flip()->map(fn ($i) => $i + 1);
                                     $diasHorario = $h->listaDias();
                                 @endphp
                                 <tr>
@@ -92,7 +92,7 @@
                                     </td>
                                     @foreach ($hoja['columnas'] as $paraderoId => $nombreParadero)
                                         @php $parada = $paradas->get($paraderoId); @endphp
-                                        <td class="col-paradero {{ $parada ? 'con-parada' : '' }}">{{ $parada === null ? '—' : ($parada->horaCorta() ?: '✓') }}</td>
+                                        <td class="col-paradero {{ $parada ? 'con-parada' : '' }}">@if ($parada === null)—@elseif ($parada->horaCorta() !== ''){{ $parada->horaCorta() }}@else<span title="Parada {{ $numero[$paraderoId] }} del recorrido, sin hora fija">{{ $numero[$paraderoId] }}.ª</span>@endif</td>
                                     @endforeach
                                 </tr>
                             @endforeach
@@ -107,7 +107,7 @@
         </section>
     @endforeach
 
-    <div class="rutas-hoja-pie">Generado el @fecha($generado) · {{ $identidad->get('nombre_corto') }} · Días: L M X J V S D (· = no opera) · ✓ = para ahí sin hora fija · — = no para ahí</div>
+    <div class="rutas-hoja-pie">Generado el @fecha($generado) · {{ $identidad->get('nombre_corto') }} · Días: L M X J V S D (· = no opera) · 1.ª, 2.ª… = número de parada en el recorrido, sin hora fija · columnas en el orden del recorrido · — = no para ahí</div>
 </main>
 <script src="{{ $version('js/plataforma.js') }}"></script>
 </body>

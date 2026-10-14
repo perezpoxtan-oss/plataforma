@@ -336,7 +336,13 @@ class RutaController extends Controller
     }
 
     /**
-     * Llegadas y Salidas, cada una con sus filas y una columna por paradero (en el orden en que aparecen).
+     * Llegadas y Salidas, cada una con sus filas y una columna por paradero.
+     *
+     * Las columnas siguen el recorrido de las rutas (no el orden en que
+     * aparecen): cada horario aporta su secuencia de paraderos y se unen en un
+     * solo orden en el que, para cada ruta, sus paradas quedan de izquierda a
+     * derecha. Si dos rutas recorren los mismos paraderos en sentido contrario,
+     * desempata la posición promedio en el recorrido (y después el nombre).
      *
      * @param  Collection<int, RutaHorario>  $horarios
      * @return array<string, array{titulo: string, filas: Collection<int, RutaHorario>, columnas: array<int, ?string>}>
@@ -346,16 +352,64 @@ class RutaController extends Controller
         $hojas = [];
         foreach (array_keys(Ruta::SENTIDOS) as $sentido) {
             $filas = $horarios->filter(fn ($h) => $h->ruta->sentido === $sentido)->values();
-            $columnas = [];
-            foreach ($filas as $h) {
-                foreach ($h->paradas as $p) {
-                    $columnas[$p->paradero_id] ??= $p->paradero?->nombre;
-                }
-            }
-            $hojas[$sentido] = ['titulo' => $sentido === 'llegada' ? 'Llegadas' : 'Salidas', 'filas' => $filas, 'columnas' => $columnas];
+            $hojas[$sentido] = ['titulo' => $sentido === 'llegada' ? 'Llegadas' : 'Salidas', 'filas' => $filas, 'columnas' => self::columnasEnOrdenDeRecorrido($filas)];
         }
 
         return $hojas;
+    }
+
+    /**
+     * Orden de columnas que respeta el recorrido de cada horario (orden
+     * topológico de «el paradero A va antes que B»), con desempate por la
+     * posición promedio de cada paradero en sus recorridos (0 = primera
+     * parada, 1 = última).
+     *
+     * @param  Collection<int, RutaHorario>  $filas
+     * @return array<int, ?string> paradero_id => nombre
+     */
+    public static function columnasEnOrdenDeRecorrido(Collection $filas): array
+    {
+        $nombres = [];
+        $posiciones = [];
+        $antesDe = [];   // id => [ids que van después]
+        $entradas = [];  // id => cuántos van antes
+        foreach ($filas as $h) {
+            $ids = $h->paradas->sortBy('orden')->pluck('paradero_id')->unique()->values()->all();
+            $n = count($ids);
+            foreach ($ids as $i => $id) {
+                $nombres[$id] ??= $h->paradas->firstWhere('paradero_id', $id)?->paradero?->nombre;
+                $posiciones[$id][] = $n > 1 ? $i / ($n - 1) : 0.0;
+                $entradas[$id] ??= 0;
+                $antesDe[$id] ??= [];
+                if ($i > 0 && ! isset($antesDe[$ids[$i - 1]][$id])) {
+                    $antesDe[$ids[$i - 1]][$id] = true;
+                    $entradas[$id]++;
+                }
+            }
+        }
+        $promedio = array_map(fn (array $p) => array_sum($p) / count($p), $posiciones);
+        $comparar = fn ($a, $b) => [$promedio[$a], (string) $nombres[$a]] <=> [$promedio[$b], (string) $nombres[$b]];
+
+        $orden = [];
+        $pendientes = $entradas;
+        while ($pendientes !== []) {
+            $listos = array_keys(array_filter($pendientes, fn ($e) => $e === 0));
+            if ($listos === []) {
+                // Recorridos en sentido contrario (ciclo): sigue el de menor posición promedio
+                $listos = array_keys($pendientes);
+            }
+            usort($listos, $comparar);
+            $id = $listos[0];
+            $orden[$id] = $nombres[$id];
+            unset($pendientes[$id]);
+            foreach (array_keys($antesDe[$id]) as $siguiente) {
+                if (isset($pendientes[$siguiente])) {
+                    $pendientes[$siguiente]--;
+                }
+            }
+        }
+
+        return $orden;
     }
 
     /**
