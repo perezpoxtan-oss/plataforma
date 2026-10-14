@@ -11,8 +11,11 @@
     $noLeidasCampana = $empresaCampana === null ? 0 : request()->attributes->get($llaveCampana)
         ?? tap(app(\App\Support\Tenancy\Tenant::class)->conEmpresa($empresaCampana, fn () => app(\App\Services\Notificaciones\CentroNotificaciones::class)->noLeidas($usuario)),
             fn ($n) => request()->attributes->set($llaveCampana, $n));
+    // Avisos del navegador: ícono de la plataforma (Identidad)
+    $iconoAviso = $identidad->get('favicon') ?: $identidad->get('simbolo');
 @endphp
-<div class="campana" data-campana data-url="{{ route('notificaciones.resumen') }}">
+<div class="campana" data-campana data-url="{{ route('notificaciones.resumen') }}" data-usuario="{{ $usuario->id }}"
+     @if ($iconoAviso) data-aviso-icono="{{ asset($iconoAviso) }}" @endif>
     <button type="button" class="btn-campana" data-campana-boton aria-expanded="false" aria-haspopup="true"
             title="Notificaciones" aria-label="Notificaciones: {{ $noLeidasCampana }} sin leer">
         <i class="bi {{ $noLeidasCampana > 0 ? 'bi-bell-fill' : 'bi-bell' }}" aria-hidden="true"></i>
@@ -29,6 +32,7 @@
         <div class="campana-lista" data-campana-lista aria-live="polite">
             <p class="campana-vacia" data-campana-cargando>Cargando…</p>
         </div>
+        @include('componentes.avisos-navegador', ['enCampana' => true])
         <a href="{{ route('notificaciones.index') }}" class="campana-ver-todas">Ver todas las notificaciones <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
     </div>
 </div>

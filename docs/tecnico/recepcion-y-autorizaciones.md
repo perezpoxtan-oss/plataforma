@@ -49,7 +49,7 @@ Candidato: `llegada_en` (entrada en caseta) → `avisado_rh_en` → `revision_en
 | Método y ruta | Permiso | Qué hace |
 |---|---|---|
 | `GET /notificaciones?filtro=no_leidas` | (sesión; solo las propias) | Lista |
-| `GET /notificaciones/resumen` | (sesión) | JSON de la campana |
+| `GET /notificaciones/resumen` | (sesión) | JSON de la campana (con `X-Segundo-Plano: 1` no cuenta como actividad; ver [avisos-navegador.md](avisos-navegador.md)) |
 | `POST /notificaciones/{n}/abrir` | (dueño) | Marca leída y lleva al asunto (solo direcciones de la plataforma) |
 | `POST /notificaciones/leer-todas` | (sesión) | Marca todas |
 | `GET /rh/recepcion` · `GET /rh/recepcion/datos` | `recepcion_rh.ver` | Panel y su JSON (HTML ya escapado + contadores). Cada fila: «Viene a» (busca empleo — primera vez / ya vino antes, entrevista, documentos, firma, informes, trámite) y botones **Que pase** (si espera a RR. HH.), **Atender** y **Abrir ficha** |

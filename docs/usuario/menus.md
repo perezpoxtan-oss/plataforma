@@ -84,7 +84,7 @@ Junto a la campana hay un botón amarillo **Mis pendientes** con un número: es 
 
 **Qué debes ver:** el aviso se marca como leído y el número baja.
 
-La campana revisa si hay avisos nuevos cada 30 segundos mientras la pestaña está a la vista; un aviso puede tardar hasta medio minuto en aparecer.
+La campana revisa si hay avisos nuevos cada 30 segundos mientras la pestaña está a la vista; un aviso puede tardar hasta medio minuto en aparecer. Si quieres que tu computadora te avise aunque estés en otra pestaña, toca **Activar avisos en este navegador** al final de la lista de la campana (ver [Mi cuenta](mi-cuenta.md#cómo-activar-los-avisos-en-este-navegador)).
 
 ### Elegir qué avisos recibes
 

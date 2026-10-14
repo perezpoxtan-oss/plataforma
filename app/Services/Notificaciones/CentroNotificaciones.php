@@ -22,6 +22,12 @@ class CentroNotificaciones
     /** Cuántas muestra la campana. */
     public const EN_CAMPANA = 8;
 
+    /**
+     * Tipos que esperan una respuesta inmediata (autorizaciones de visita,
+     * recepción y escalamiento): el aviso del navegador no se cierra solo.
+     */
+    public const URGENTES = ['autorizacion_visita', 'autorizacion_candidato', 'autorizacion_recepcion', 'autorizacion_escalada'];
+
     /** Tipos de notificación => [icono, nivel]. */
     public const TIPOS = [
         'candidato_llegada' => ['bi-person-plus-fill', 'info'],
@@ -162,6 +168,8 @@ class CentroNotificaciones
             'fecha' => $this->hora->formatear($n->created_at),
             'abrir' => route('notificaciones.abrir', $n->id),
             'acciones' => $this->acciones($n),
+            // Avisos del navegador: los urgentes se quedan en pantalla hasta que se tocan
+            'urgente' => in_array($n->tipo, self::URGENTES, true),
         ];
     }
 

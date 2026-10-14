@@ -35,8 +35,20 @@ class ControlarInactividad
             return redirect()->route('login')->with('acceso', 'expirado');
         }
 
-        $request->session()->put('ultima_actividad', $ahora);
+        // La campana sigue consultando con la pestaña en segundo plano (avisos del
+        // navegador): esa consulta automática no cuenta como actividad de la persona.
+        if (! $this->esConsultaEnSegundoPlano($request)) {
+            $request->session()->put('ultima_actividad', $ahora);
+        }
 
         return $next($request);
+    }
+
+    /** Cabecera que pone plataforma.js cuando la consulta ocurre con la pestaña oculta. */
+    public const CABECERA_SEGUNDO_PLANO = 'X-Segundo-Plano';
+
+    private function esConsultaEnSegundoPlano(Request $request): bool
+    {
+        return $request->headers->get(self::CABECERA_SEGUNDO_PLANO) === '1';
     }
 }

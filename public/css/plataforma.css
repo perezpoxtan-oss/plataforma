@@ -3504,6 +3504,16 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .btn-respuesta.grande { min-height: 52px; font-size: 0.95rem; padding: 0 1.25rem; flex: 1 1 200px; }
 .btn-respuesta.sugerida { outline: 3px solid #fde047; outline-offset: 2px; }
 @media (max-width: 991.98px) { .campana-panel { position: fixed; right: 12px; left: 12px; top: 70px; width: auto; } }
+/* Avisos del navegador (campana y Mi cuenta) */
+.avisos-navegador-estado { margin: 0 0 0.5rem; font-size: 0.82rem; color: var(--texto-suave); }
+.avisos-navegador-botones { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.avisos-navegador-activar { border: none; border-radius: 10px; min-height: 44px; padding: 0 1rem; font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit; background: var(--color-primario); color: #fff; }
+.avisos-navegador-apagar { background: none; border: 1px solid var(--borde); border-radius: 10px; min-height: 44px; padding: 0 0.9rem; font-size: 0.8rem; font-weight: 600; color: var(--texto-suave); cursor: pointer; font-family: inherit; }
+.avisos-navegador.activos .avisos-navegador-estado { color: #15803d; font-weight: 600; }
+.avisos-navegador.en-campana { padding: 0.75rem 1rem; border-top: 1px solid var(--borde); background: #f8fafc; }
+.avisos-navegador.en-campana .avisos-navegador-estado { font-size: 0.76rem; }
+.avisos-navegador.en-campana .avisos-navegador-activar { width: 100%; }
+.avisos-navegador.en-campana .avisos-navegador-apagar { min-height: 36px; font-size: 0.74rem; }
 
 /* ---------- Página de notificaciones ---------- */
 .lista-notificaciones { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
