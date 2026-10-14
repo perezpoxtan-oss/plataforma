@@ -357,7 +357,7 @@ class AdministradorRutas
             'costo_maximo_taxi' => $validados['costo_maximo_taxi'] === null ? null : round((float) $validados['costo_maximo_taxi'], 2),
         ];
 
-        return [$datos, $this->leerHorarios($validados['horarios'], $actual)];
+        return [$datos, $this->leerHorarios($validados['horarios'], $actual, $validados['sentido'])];
     }
 
     /**
@@ -367,7 +367,7 @@ class AdministradorRutas
      * @param  array<mixed>  $bloques
      * @return list<array<string, mixed>>
      */
-    private function leerHorarios(array $bloques, ?Ruta $actual): array
+    private function leerHorarios(array $bloques, ?Ruta $actual, string $sentido = 'llegada'): array
     {
         $idsActuales = $actual ? $actual->horarios()->pluck('id')->map(fn ($id) => (int) $id)->all() : [];
         $horarios = [];
@@ -396,9 +396,10 @@ class AdministradorRutas
             } elseif (! preg_match(self::HORA, $inicio)) {
                 $errores[] = $etiqueta.'escribe la hora de inicio como HH:MM (24 horas).';
             }
-            if ($fin === '') {
+            if ($fin === '' && $sentido !== 'salida') {
+                // En las salidas la hora de fin es opcional: se sabe a qué hora sale de la sede, no siempre a qué hora termina
                 $errores[] = $etiqueta.'falta la hora de llegada a destino.';
-            } elseif (! preg_match(self::HORA, $fin)) {
+            } elseif ($fin !== '' && ! preg_match(self::HORA, $fin)) {
                 $errores[] = $etiqueta.'escribe la hora de llegada como HH:MM (24 horas).';
             }
             if ($inicio !== '' && $fin !== '' && substr($inicio, 0, 5) === substr($fin, 0, 5)) {
@@ -419,7 +420,7 @@ class AdministradorRutas
                 // Ningún día marcado = opera todos los días (como en SEGCAT), pero se guarda explícito
                 'dias' => implode(',', $dias === [] ? array_keys(Ruta::DIAS) : $dias),
                 'hora_inicio' => substr($inicio, 0, 5).':00',
-                'hora_fin' => substr($fin, 0, 5).':00',
+                'hora_fin' => $fin === '' ? null : substr($fin, 0, 5).':00',
                 'paradas' => $paradas,
             ];
         }

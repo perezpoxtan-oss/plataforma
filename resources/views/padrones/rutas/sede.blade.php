@@ -114,7 +114,7 @@
                     <div class="rutas-fila-info">
                         <h2 class="rutas-fila-nombre">{{ $r->nombre }}</h2>
                         <div class="rutas-fila-meta">
-                            <span><i class="bi bi-clock" aria-hidden="true"></i> {{ substr((string) $r->hora_inicio, 0, 5) }}–{{ substr((string) $r->hora_fin, 0, 5) }}</span>
+                            <span><i class="bi bi-clock" aria-hidden="true"></i> {{ substr((string) $r->hora_inicio, 0, 5) }}@if ($r->hora_fin)–{{ substr((string) $r->hora_fin, 0, 5) }}@endif</span>
                             <span><i class="bi bi-clock-history" aria-hidden="true"></i> {{ $r->turno?->nombre ?? '—' }}</span>
                             <span><i class="bi bi-truck" aria-hidden="true"></i> {{ $r->proveedor?->nombre ?? '—' }}</span>
                             @if ($totalParaderos > 0)

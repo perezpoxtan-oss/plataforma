@@ -42,7 +42,7 @@ Cada ruta muestra su horario, turno, transportista, cuántos paraderos tiene, el
 5. **Costo Máximo por Taxi (opcional):** si un vale de taxi de esta ruta pasa de ese monto, la caseta tendrá que justificarlo. Déjalo vacío si no hay tope.
 6. Llena el **Horario 1**:
    - **Nombre del Horario (opcional)**, por ejemplo «Lunes a viernes».
-   - **Hora Inicio del Recorrido** y **Hora de Llegada a Destino**, en 24 horas (por ejemplo `05:30` y `06:40`). Si la llegada es más temprano que el inicio (23:20 a 00:30), se entiende que llega al día siguiente.
+   - **Hora Inicio del Recorrido** y **Hora de Llegada a Destino**, en 24 horas (por ejemplo `05:30` y `06:40`). Si la llegada es más temprano que el inicio (23:20 a 00:30), se entiende que llega al día siguiente. En las rutas de **Salida** la hora de llegada es **opcional**: si no sabes a qué hora termina el recorrido, déjala vacía (en la hoja aparece —).
    - **Días:** marca los días que sale. Si no marcas ninguno, sale **todos los días**.
    - **Paraderos:** toca **Agregar paradero**, escribe el nombre (te sugiere los de la sede) y su hora. Si lo escribes igual a uno que ya existe pero con otros acentos, guiones o espacios (por ejemplo «Oxxo-Centro»), se usa el del catálogo. Si se parece a uno existente (una o dos letras de diferencia), aparece **¿Es «…»? Usar ese**. Si es nuevo, verás «Paradero nuevo: se agregará al catálogo de la sede al guardar.»
 7. Si la ruta pasa a otra hora algunos días, toca **Agregar otro Horario (ej. fin de semana distinto)**: se copian los paraderos del anterior y solo ajustas lo que cambie. Los horarios anteriores se **pliegan** y muestran su resumen (por ejemplo «05:30 → 06:40 · Lu Ma Mi · 4 paraderos»); toca el título de un horario para desplegarlo o plegarlo.
@@ -77,7 +77,7 @@ Cada ruta muestra su horario, turno, transportista, cuántos paraderos tiene, el
 ## Cómo imprimir las hojas de horarios
 
 - **Hoja de horarios** (en la sede, o la impresora de la tarjeta de la sede): todos los horarios de la semana de cada ruta con los días en que opera (L M X J V S D; un punto · = ese día no sale). Las rutas dadas de baja se mencionan al pie.
-- **Hoja del día:** las rutas activas que salen ese día, por hora, una hoja para Llegadas y otra para Salidas, con una columna por paradero **en el orden del recorrido** (de izquierda a derecha, como avanza la unidad). En cada celda ves la hora de paso; si ese paradero no tiene hora fija, ves el número de parada (1.ª, 2.ª…); — si no para ahí. Las horas de cada paradero son opcionales: captura solo las que conozcas. Arriba elige otra fecha en **Hoja de un día** y toca **Ver día**. Al pie dice qué horarios no operan ese día y qué rutas están dadas de baja.
+- **Hoja del día:** las rutas activas que salen ese día, por hora, una hoja para Llegadas y otra para Salidas, con una columna por paradero **en el orden del recorrido** (de izquierda a derecha, como avanza la unidad). En cada celda ves la hora de paso; ✓ si para ahí sin hora fija; — si no para ahí. Las horas de cada paradero son opcionales: captura solo las que conozcas. Arriba elige otra fecha en **Hoja de un día** y toca **Ver día**. Al pie dice qué horarios no operan ese día y qué rutas están dadas de baja.
 - **Itinerario** (impresora de cada ruta): los datos de la ruta y cada horario con sus paraderos.
 
 En cada hoja toca **Imprimir**; **Volver a la sede** te regresa. Salen en hoja carta horizontal y se pueden guardar como PDF.
@@ -112,7 +112,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que capturaste se conserva. 
 | Elige el turno de la ruta. / Elige la empresa transportista. | Falta el turno o la transportista. | Elige uno de la lista. |
 | El turno elegido no existe, está desactivado o no se usa en esta sede. Elige otro de la lista. | El turno no aplica a la sede. | Márcalo para la sede en [Turnos](turnos.md) o elige otro. |
 | La empresa transportista no existe, está dada de baja o no opera en esta sede. Elige otra de la lista. | La transportista no opera en la sede. | Agrégale la sede en [Empresas externas](proveedores.md). |
-| Horario 1: falta la hora de llegada a destino. | Un horario está incompleto. | Escribe las dos horas. |
+| Horario 1: falta la hora de llegada a destino. | En una ruta de **Llegada** falta la hora en que llega a la sede. | Escríbela (en las de Salida es opcional). |
 | Horario 1: escribe la hora de inicio como HH:MM (24 horas). | La hora está mal escrita. | Escribe por ejemplo `05:30`. |
 | Horario 1: la hora de llegada debe ser distinta a la de inicio. | Pusiste la misma hora dos veces. | Corrige una de las horas. |
 | El costo máximo por taxi debe ser un número, por ejemplo 250 o 250.50. | Escribiste letras. | Escribe solo la cantidad. |
