@@ -572,7 +572,7 @@ class EliminarDefinitivoTest extends TestCase
     {
         $this->fila('tipos_gafete', ['nombre' => 'VIP por error']);
         $this->fila('proveedores', ['nombre' => 'Limpieza Total']);
-        $paginas = ['/sedes', '/espacios', '/departamentos', '/puestos', '/turnos', '/colaboradores', '/roles', '/proveedores',
+        $paginas = ['/sedes', '/espacios/sede/'.$this->centro->id, '/departamentos', '/puestos', '/turnos', '/colaboradores', '/roles', '/proveedores',
             '/personas', '/vehiculos', '/llaves', '/gafetes', '/equipos', '/equipos-pc', '/estacionamientos', '/rutas/sede/'.$this->centro->id];
         foreach ($paginas as $pagina) {
             $this->actingAs($this->admin)->get($pagina)->assertOk()

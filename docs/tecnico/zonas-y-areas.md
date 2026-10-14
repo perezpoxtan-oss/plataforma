@@ -46,7 +46,8 @@ Réplica de `modules/ubicaciones` de SEGCAT. Se conservan las mismas cuatro pant
 ## Rutas y permisos
 
 Rutas:
-- `GET /espacios`, con `?pestana=secciones` para la pestaña de Secciones.
+- `GET /espacios` (`espacios.index`): tarjetas de las sedes visibles (`sedesVisibles()`, alcance de `espacios.ver`) con conteos por sede (zonas / edificios y pisos, todos; habitaciones activas; secciones). Con **una sola** sede visible redirige a `espacios.sede` conservando `?pestana=secciones`, así los enlaces viejos siguen funcionando.
+- `GET /espacios/sede/{sede}` (`espacios.sede`), con `?pestana=secciones`: zonas / edificios, secciones y «Asignar habitaciones» solo de esa sede. Sede inactiva, fuera del alcance o de otra empresa: 404; sin `espacios.ver`: 403.
 - `GET /espacios/{id}`: muestra pisos, habitaciones o detalle según el nivel. Un área o un elemento redirige a su habitación.
 - `POST /espacios`, `PUT /espacios/{id}`, `PATCH /espacios/{id}/estado`.
 - `POST /espacios/{id}/lote`, `POST /espacios/{id}/copiar-pisos`.
@@ -58,7 +59,9 @@ Permisos: `espacios.ver`, `espacios.crear`, `espacios.editar` (también «Mover 
 
 ## Interfaz
 
-- **Plantillas:** vistas en `resources/views/organizacion/espacios/`, con partes compartidas: `migas`, `acciones` y `formulario`. El formulario sirve para alta y edición de cualquier nivel.
+- **Plantillas:** vistas en `resources/views/organizacion/espacios/` (`index` = tarjetas de sedes, `sede` = zonas y secciones de una sede, `pisos`, `habitaciones`, `detalle`), con partes compartidas: `migas`, `acciones` y `formulario`. El formulario sirve para alta y edición de cualquier nivel; en la pantalla de la sede la alta de zona y de sección llevan la sede fija en un campo oculto.
+- **Ruta de arriba (migas):** Zonas y edificios (`espacios.index`, tarjetas) › Sede (`espacios.sede`) › Zona / Edificio › Piso › Habitación.
+- **Regresos:** crear, editar, dar de baja y reactivar una zona / edificio regresan a `espacios.sede` de su sede (`volver($padre, $sedeId)`); crear o asignar secciones, a `espacios.sede?pestana=secciones`; el resto de niveles, a su contenedor como antes. «Eliminar definitivamente» (`RegistroBorrado`, `volver` como closure) regresa al contenedor o, si es una zona, a su sede. Tras dar de alta una sede, el siguiente paso «Capturar sus zonas y edificios» abre la pantalla de esa sede.
 - **Colores:** `tema-rojo` en zonas y detalle, `tema-ambar` en pisos y habitaciones, como en SEGCAT.
 - **JavaScript:** `data-abrir-dialogo` acepta `data-padre` y `data-padre-nombre`, para usar un solo diálogo "Agregar Elemento" en todas las áreas. El filtro genérico de fichas acepta `data-filtro-sede`.
 - **Datos demo:** `plataforma:demo` crea Torre A con 2 pisos, 8 habitaciones, la sección "Vista al mar" y el detalle de la 101.
@@ -87,7 +90,7 @@ Permisos: `espacios.ver`, `espacios.crear`, `espacios.editar` (también «Mover 
 
 ## Pruebas
 
-`tests/Feature/Organizacion/EspaciosTest.php` y `tests/Feature/Organizacion/EspaciosMoverEliminarTest.php` (mover: éxito con subárbol y auditoría, nivel inválido, descendiente, destino inactivo, nombre repetido, otra sede, otra empresa, sin permiso; eliminar varias: mezcla de usadas y libres con sus motivos, confirmación, sin permiso 403, otra empresa 404, ids de otro padre, tope).
+`tests/Feature/Organizacion/EspaciosPorSedeTest.php` (tarjetas con conteos, una sola sede entra directo, pantalla de sede sin mezclar zonas ni secciones, sede no visible o ajena 404, regresos a la sede), `tests/Feature/Organizacion/EspaciosTest.php` y `tests/Feature/Organizacion/EspaciosMoverEliminarTest.php` (mover: éxito con subárbol y auditoría, nivel inválido, descendiente, destino inactivo, nombre repetido, otra sede, otra empresa, sin permiso; eliminar varias: mezcla de usadas y libres con sus motivos, confirmación, sin permiso 403, otra empresa 404, ids de otro padre, tope).
 
 ## Pendiente (nota del dueño, Ronda 5 · Z-08)
 

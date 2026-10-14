@@ -80,7 +80,7 @@ class SedeController extends Controller
 
         // Mejoras estructura (ADR-0016, criterio 5): los siguientes pasos naturales, con su botón
         $siguientes = array_values(array_filter([
-            $request->user()->can('espacios.crear') ? ['Capturar sus zonas y edificios', route('espacios.index'), 'bi-geo-alt'] : null,
+            $request->user()->can('espacios.crear') ? ['Capturar sus zonas y edificios', route('espacios.sede', $sede->id), 'bi-geo-alt'] : null,
             $request->user()->can('usuarios.crear') ? ['Dar de alta a su personal en Usuarios', route('usuarios.index'), 'bi-person-plus'] : null,
         ]));
 

@@ -4,8 +4,8 @@
 
 ## Práctica (en QA, como `admin.demo`)
 
-1. Entra a **Estructura → Zonas y edificios**. Verás la *Torre A* de demo.
-2. Crea la zona **Torre B** en *Hotel Demo Centro* con código `TB`.
+1. Entra a **Estructura → Zonas y edificios**. Verás una tarjeta por sede con sus conteos; toca **Entrar a la sede** en *Hotel Demo Centro*. Verás la *Torre A* de demo y, arriba, la ruta **Zonas y edificios › Hotel Demo Centro**.
+2. Crea la zona **Torre B** con código `TB` (no se pide la sede: queda en la que estás).
 3. Entra a *Torre B* y usa **Copiar pisos** desde *Torre A*. Deben aparecer Piso 1 y Piso 2.
 4. Entra a *Piso 1* de Torre B y crea por lote del 1 al 6 con prefijo `B1`, con ceros. Deben quedar B101 a B106.
 5. Repite el mismo lote: el aviso debe decir que se omitieron 6.
@@ -18,6 +18,7 @@
 
 ## Para recordar
 
+- Primero eliges la sede (tarjeta); ahí ves solo sus zonas y secciones. Con una sola sede se entra directo.
 - Construye de arriba hacia abajo: zona → piso → habitación → áreas → elementos.
 - El lote y la copia de pisos nunca duplican: puedes repetirlos sin miedo.
 - Desactivar arrastra todo lo de abajo; reactivar se hace de arriba hacia abajo.
@@ -29,4 +30,5 @@
 1. ¿Qué pasa si dejas vacía la etiqueta de un área? *(Toma el nombre del tipo y, si se repite, lo numera)*
 2. ¿Por qué no puedes reactivar una habitación? *(Su piso o su zona siguen inactivos)*
 3. ¿Quién ve un tipo de elemento que agregaste? *(Solo tu empresa)*
-4. ¿Por qué no se eliminó una habitación marcada? *(Alguien la usó: por ejemplo, una llave la abre. Se puede dar de baja)*
+4. ¿Cómo cambias de sede sin salir del módulo? *(Toca «Zonas y edificios» en la ruta de arriba y elige otra tarjeta)*
+5. ¿Por qué no se eliminó una habitación marcada? *(Alguien la usó: por ejemplo, una llave la abre. Se puede dar de baja)*

@@ -37,9 +37,10 @@ class EspacioController extends Controller
     ) {}
 
     /**
-     * Nivel 1: Zonas / Edificios (y pestaña de Secciones).
+     * Paso previo: tarjetas de las sedes visibles. Con una sola sede se entra
+     * directo a ella (los enlaces viejos a /espacios siguen funcionando).
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         Gate::authorize('espacios.ver');
         $empresaId = $this->empresa->id($request->user());
@@ -49,37 +50,86 @@ class EspacioController extends Controller
         }
 
         return $this->tenant->conEmpresa($empresaId, function () use ($request, $empresaId) {
-            $empresa = Empresa::with('rubro')->findOrFail($empresaId);
             $sedes = $this->sedesVisibles($request);
+            if ($sedes->count() === 1) {
+                return redirect()->route('espacios.sede', array_filter([
+                    'sede' => $sedes->first()->id,
+                    'pestana' => $request->query('pestana') === 'secciones' ? 'secciones' : null,
+                ]));
+            }
+            $empresa = Empresa::with('rubro')->findOrFail($empresaId);
             $sedeIds = $sedes->pluck('id');
+
+            // Conteos por sede y nivel: zonas/edificios y pisos (todos), habitaciones activas
+            $porNivel = Espacio::whereIn('sede_id', $sedeIds)
+                ->whereIn('nivel', [Espacio::EDIFICIO, Espacio::AREA, Espacio::AREA_ESPECIFICA])
+                ->where(fn ($q) => $q->where('nivel', '!=', Espacio::AREA_ESPECIFICA)->orWhere('activo', true))
+                ->selectRaw('sede_id, nivel, COUNT(*) as total')->groupBy('sede_id', 'nivel')
+                ->get()->groupBy('sede_id');
+            $secciones = GrupoEspacio::whereIn('sede_id', $sedeIds)
+                ->selectRaw('sede_id, COUNT(*) as total')->groupBy('sede_id')->pluck('total', 'sede_id');
+
+            $resumen = $sedes->mapWithKeys(function (Sede $sede) use ($porNivel, $secciones) {
+                $niveles = $porNivel->get($sede->id, collect())->pluck('total', 'nivel');
+
+                return [$sede->id => [
+                    'zonas' => (int) ($niveles[Espacio::EDIFICIO] ?? 0),
+                    'pisos' => (int) ($niveles[Espacio::AREA] ?? 0),
+                    'habitaciones' => (int) ($niveles[Espacio::AREA_ESPECIFICA] ?? 0),
+                    'secciones' => (int) ($secciones[$sede->id] ?? 0),
+                ]];
+            });
+
+            return view('organizacion.espacios.index', [
+                'sinEmpresa' => false,
+                'empresa' => $empresa,
+                'sedes' => $sedes,
+                'resumen' => $resumen,
+                'etiquetas' => Etiquetas::para($empresa),
+            ]);
+        });
+    }
+
+    /**
+     * Nivel 1 de una sede: sus Zonas / Edificios (y pestaña de Secciones).
+     */
+    public function sede(Request $request, int $sede): View
+    {
+        Gate::authorize('espacios.ver');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $empresaId, $sede) {
+            $sedes = $this->sedesVisibles($request);
+            $modelo = $sedes->firstWhere('id', $sede);
+            abort_if($modelo === null, 404);
+            $empresa = Empresa::with('rubro')->findOrFail($empresaId);
 
             $edificios = Espacio::with('tipo:id,nombre')
                 ->withCount(['hijos as pisos_count' => fn ($q) => $q->where('nivel', Espacio::AREA)])
                 ->where('nivel', Espacio::EDIFICIO)
-                ->whereIn('sede_id', $sedeIds)
+                ->where('espacios.sede_id', $modelo->id)
                 ->leftJoin('users as ua', 'ua.id', '=', 'espacios.actualizado_por')
                 ->addSelect('ua.name as actualizado_por_nombre')
                 ->orderBy('espacios.nombre')
                 ->get();
 
-            $secciones = GrupoEspacio::whereIn('sede_id', $sedeIds)
+            $secciones = GrupoEspacio::where('sede_id', $modelo->id)
                 ->withCount(['espacios as total' => fn ($q) => $q->where('activo', true)])
                 ->orderBy('nombre')
-                ->get()
-                ->groupBy('sede_id');
+                ->get();
 
             // Para "Asignar habitaciones" en la pestaña Secciones
             $porAsignar = $request->query('pestana') === 'secciones'
                 ? Espacio::with('padre:id,nombre,padre_id,nivel', 'padre.padre:id,nombre')
-                    ->where('nivel', Espacio::AREA_ESPECIFICA)->where('activo', true)->whereIn('sede_id', $sedeIds)
-                    ->orderBy('nombre')->get(['id', 'sede_id', 'padre_id', 'nombre', 'grupo_espacio_id'])->groupBy('sede_id')
+                    ->where('nivel', Espacio::AREA_ESPECIFICA)->where('activo', true)->where('sede_id', $modelo->id)
+                    ->orderBy('nombre')->get(['id', 'sede_id', 'padre_id', 'nombre', 'grupo_espacio_id'])
                 : collect();
 
-            return view('organizacion.espacios.index', [
-                'sinEmpresa' => false,
+            return view('organizacion.espacios.sede', [
                 'porAsignar' => $porAsignar,
                 'empresa' => $empresa,
-                'sedes' => $sedes,
+                'sede' => $modelo,
                 'edificios' => $edificios,
                 'secciones' => $secciones,
                 'tiposEdificio' => TipoEspacio::disponiblesPara($empresaId, Espacio::EDIFICIO)->get(['id', 'nombre']),
@@ -152,7 +202,7 @@ class EspacioController extends Controller
         [$sede, $padre, $empresaId] = $this->ubicacion($request, $datos);
         $nodo = $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->crear($request->user(), $sede, $padre, $datos['nivel'], $datos));
 
-        return $this->volver($nodo->padre ?? null)->with('ok', "«{$nodo->nombre}» agregado correctamente.");
+        return $this->volver($nodo->padre ?? null, $nodo->sede_id)->with('ok', "«{$nodo->nombre}» agregado correctamente.");
     }
 
     public function update(Request $request, int $espacio): RedirectResponse
@@ -164,7 +214,7 @@ class EspacioController extends Controller
 
         $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->actualizar($request->user(), $nodo, $datos));
 
-        return $this->volver($nodo->nivel === Espacio::AREA_ESPECIFICA && $request->boolean('desde_detalle') ? $nodo : $nodo->padre)
+        return $this->volver($nodo->nivel === Espacio::AREA_ESPECIFICA && $request->boolean('desde_detalle') ? $nodo : $nodo->padre, $nodo->sede_id)
             ->with('ok', "«{$nodo->nombre}» actualizado correctamente.");
     }
 
@@ -178,7 +228,7 @@ class EspacioController extends Controller
         $afectados = $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->cambiarEstado($request->user(), $nodo, $activo));
         $extra = $afectados > 1 ? ' junto con '.($afectados - 1).' espacio(s) que dependen de él' : '';
 
-        return $this->volver($nodo->padre)->with($activo ? 'ok' : 'aviso', $activo
+        return $this->volver($nodo->padre, $nodo->sede_id)->with($activo ? 'ok' : 'aviso', $activo
             ? "«{$nodo->nombre}» reactivado{$extra}."
             : "«{$nodo->nombre}» desactivado{$extra}. Su historial se conserva y puedes reactivarlo con el mismo botón.");
     }
@@ -338,7 +388,7 @@ class EspacioController extends Controller
 
         $grupo = $this->tenant->conEmpresa($sede->empresa_id, fn () => $this->administrador->crearGrupo($request->user(), $sede, $datos['nombre']));
 
-        return redirect()->route('espacios.index', ['pestana' => 'secciones'])->with('ok', "Sección «{$grupo->nombre}» creada.");
+        return redirect()->route('espacios.sede', ['sede' => $sede->id, 'pestana' => 'secciones'])->with('ok', "Sección «{$grupo->nombre}» creada.");
     }
 
     /**
@@ -358,7 +408,7 @@ class EspacioController extends Controller
         $ids = array_map('intval', $datos['espacios'] ?? []);
         $total = $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->asignarGrupo($request->user(), $seccion, $ids));
 
-        return redirect()->route('espacios.index', ['pestana' => 'secciones'])->with('ok', "Sección «{$seccion->nombre}»: {$total} asignada(s).");
+        return redirect()->route('espacios.sede', ['sede' => $seccion->sede_id, 'pestana' => 'secciones'])->with('ok', "Sección «{$seccion->nombre}»: {$total} asignada(s).");
     }
 
     /**
@@ -538,10 +588,13 @@ class EspacioController extends Controller
         return $datos;
     }
 
-    private function volver(?Espacio $nodo): RedirectResponse
+    /**
+     * Sin contenedor (zonas / edificios) se regresa a la pantalla de su sede.
+     */
+    private function volver(?Espacio $nodo, ?int $sedeId = null): RedirectResponse
     {
         if ($nodo === null) {
-            return redirect()->route('espacios.index');
+            return $sedeId !== null ? redirect()->route('espacios.sede', $sedeId) : redirect()->route('espacios.index');
         }
 
         // Áreas y elementos se muestran en su habitación: se va directo para no perder el aviso

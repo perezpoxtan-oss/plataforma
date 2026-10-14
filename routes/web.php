@@ -163,6 +163,7 @@ Route::middleware('auth')->group(function () {
 
     // Zonas y áreas (árbol de espacios)
     Route::get('/espacios', [EspacioController::class, 'index'])->name('espacios.index');
+    Route::get('/espacios/sede/{sede}', [EspacioController::class, 'sede'])->whereNumber('sede')->name('espacios.sede');
     Route::post('/espacios', [EspacioController::class, 'store'])->name('espacios.store');
     Route::post('/espacios/tipos', [EspacioController::class, 'tipo'])->name('espacios.tipo');
     Route::post('/espacios/secciones', [EspacioController::class, 'seccion'])->name('espacios.seccion');

@@ -86,7 +86,10 @@ class RegistroBorrado
                 'alcance' => 'sede',
                 'cuentan' => ['espacio_llave'],
                 'baja' => $estado('espacios.estado', 'espacios.eliminar'),
-                'volver' => 'espacios.index',
+                // Regresa a su contenedor o, si es una zona / edificio, a la pantalla de su sede
+                'volver' => fn (Espacio $m) => $m->padre_id !== null
+                    ? route('espacios.show', $m->padre_id)
+                    : route('espacios.sede', $m->sede_id),
             ],
             'departamentos' => [
                 'modulo' => 'departamentos', 'modelo' => Departamento::class, 'tipo' => ['departamento', 'm'],
