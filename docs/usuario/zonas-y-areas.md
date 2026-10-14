@@ -14,7 +14,9 @@ resumen: La estructura física de cada sede (zonas, pisos, habitaciones, áreas 
 
 Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Departamento o Casa. La palabra **área** se usa solo para las partes de una habitación (Baño, Terraza, Recámara…). Estos lugares se usan en otras pantallas: lo que abre cada [llave](llaves.md), la ubicación de los [equipos de Protección Civil](equipos-pc.md) y los recorridos.
 
-![Zonas y edificios](img/espacios/1-zonas.png)
+Cada sede tiene su propia pantalla: primero eliges la sede con su tarjeta y ahí ves solo sus zonas, edificios y secciones, sin mezclarse con las de otras sedes.
+
+![Zonas y edificios de una sede](img/espacios/1-zonas.png)
 
 ## Antes de empezar
 
@@ -23,15 +25,27 @@ Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Departame
 - Para eliminar definitivamente necesitas el permiso **Eliminar definitivamente** de *Zonas y edificios*.
 - La sede debe existir en [Empresas y sedes](empresas-y-sedes.md).
 
-## Cómo crear una zona o edificio
+## Cómo elegir la sede
 
 1. Entra a **Estructura → Zonas y edificios**.
+2. Verás una tarjeta por cada sede que puedes consultar, con cuántas zonas o edificios, pisos, habitaciones en uso y secciones tiene. Si son muchas, escribe parte del nombre o del código en **Buscar sede...**.
+3. Toca **Entrar a la sede** en la tarjeta de tu sede.
+
+**Qué debes ver:** la pantalla de esa sede, con su nombre arriba y sus pestañas **Zonas y edificios** y **Secciones**.
+
+Si solo tienes acceso a una sede, entras directo a su pantalla: no verás las tarjetas.
+
+![Elige una sede](img/espacios/0-sedes.png)
+
+## Cómo crear una zona o edificio
+
+1. Entra a **Estructura → Zonas y edificios** y toca la tarjeta de tu sede (**Entrar a la sede**).
 2. Toca la tarjeta **Nueva Zona / Edificio**. Se abre **Alta de Zona / Edificio**.
-3. Elige la **Sede** y escribe el **Nombre de la Zona / Edificio**. El **Código** es opcional (por ejemplo `TA`).
+3. Escribe el **Nombre de la Zona / Edificio**. No tienes que elegir la sede: se guarda en la sede en la que estás. El **Código** es opcional (por ejemplo `TA`).
 4. Si quieres, elige el **Tipo**.
 5. Toca **Registrar Zona**.
 
-**Qué debes ver:** ««Torre B» agregado correctamente.» Para seguir bajando toca **Entrar a Pisos**.
+**Qué debes ver:** ««Torre B» agregado correctamente.» y sigues en la pantalla de tu sede. Para seguir bajando toca **Entrar a Pisos**.
 
 ### Avisos mientras escribes
 
@@ -45,7 +59,7 @@ Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Departame
 
 ### Para no perderte: la ruta de arriba
 
-Arriba de cada pantalla está la ruta completa, con el nombre de cada nivel: **Zonas y edificios › Sede › Zona / Edificio › Piso › Habitación**. Toca cualquier paso para regresar a él. En el celular la ruta se desliza de lado y se queda arriba al bajar.
+Arriba de cada pantalla está la ruta completa, con el nombre de cada nivel: **Zonas y edificios › Sede › Zona / Edificio › Piso › Habitación**. Toca cualquier paso para regresar a él: **Sede** te lleva a la pantalla de esa sede y **Zonas y edificios**, a las tarjetas para elegir otra sede. En el celular la ruta se desliza de lado y se queda arriba al bajar.
 
 ![Ruta de navegación con el nivel de cada paso](img/espacios/10-migas.png)
 
@@ -87,9 +101,9 @@ Las áreas y los elementos son **opcionales**: captúralos solo si los vas a usa
 
 Las secciones agrupan habitaciones de una sede, por ejemplo «Vista al mar» o «Torre Norte». Las llaves pueden abrir una sección completa.
 
-1. Arriba toca **Secciones**.
-2. Toca **Nueva Sección**, elige la **Sede**, escribe el **Nombre de la Sección** y toca **Crear Sección**.
-3. En la sección toca **Asignar Habitaciones**, marca las que le pertenecen (puedes buscar por número o piso) y guarda.
+1. Entra a **Estructura → Zonas y edificios**, toca la tarjeta de tu sede (**Entrar a la sede**) y arriba toca **Secciones**. Solo verás las secciones de esa sede.
+2. Toca **Nueva Sección**, escribe el **Nombre de la Sección** y toca **Crear Sección**. Se crea en la sede en la que estás.
+3. En la sección toca **Asignar Habitaciones**, marca las que le pertenecen (solo aparecen las de esta sede; puedes buscar por número o piso) y toca **Guardar**.
 4. La forma principal es esta pestaña, porque asignas varias a la vez. Para cambiar la sección de una sola habitación también puedes elegirla al darla de alta o editarla.
 
 ![Secciones](img/espacios/10-secciones.png)
@@ -144,6 +158,7 @@ Se mueve con todo lo que tiene dentro (sus áreas y elementos). Sus llaves, equi
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
+| No ves la tarjeta de una sede, o al abrirla aparece «No encontrado». | Tu rol no tiene acceso a esa sede, o la sede está dada de baja. | Pide a tu administrador que te dé acceso a esa sede. |
 | Ya existe «…» en este mismo lugar. | Ese nombre ya está en ese nivel. | Usa otro nombre o edita el existente. |
 | Escribe un nombre o elige un tipo. | El nombre está vacío. | Escribe el nombre. |
 | El código solo puede tener letras, números y guiones (sin espacios ni acentos). | El código tiene espacios o acentos. | Corrige el código. |
@@ -162,6 +177,8 @@ Se mueve con todo lo que tiene dentro (sus áreas y elementos). Sus llaves, equi
 | … no se pudieron: 101: tiene 1 llave que la abre … | Esa habitación (o algo dentro de ella) está en uso. | Dala de baja con el círculo rojo; su historial se conserva. |
 
 ## Preguntas frecuentes
+
+**¿Por qué ya no veo las zonas de todas las sedes juntas?** Para que no se mezclen: cada sede tiene su pantalla. Toca **Zonas y edificios** en la ruta de arriba para volver a las tarjetas y elegir otra sede.
 
 **¿Tengo que capturar todas las habitaciones?** Solo las que necesites para llaves, recorridos o equipos. Con **Crear por Lote** es rápido.
 

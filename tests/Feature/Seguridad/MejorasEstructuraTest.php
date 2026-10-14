@@ -416,7 +416,7 @@ class MejorasEstructuraTest extends TestCase
     public function test_tras_crear_una_sede_se_ofrecen_los_siguientes_pasos(): void
     {
         $this->actingAs($this->admin)->post('/sedes', ['nombre' => 'Hotel Norte', 'codigo' => 'NOR', 'ciudad' => 'Mérida', 'entidad' => 'Yucatán'])
-            ->assertSessionHas('siguientes', fn ($s) => array_column($s, 1) === [route('espacios.index'), route('usuarios.index')]);
+            ->assertSessionHas('siguientes', fn ($s) => array_column($s, 1) === [route('espacios.sede', Sede::withoutGlobalScopes()->where('codigo', 'NOR')->value('id')), route('usuarios.index')]);
         $this->actingAs($this->admin)->followingRedirects()->post('/sedes', ['nombre' => 'Hotel Sur', 'codigo' => 'SUR', 'ciudad' => 'Mérida', 'entidad' => 'Yucatán'])
             ->assertSee('Capturar sus zonas y edificios')->assertSee('Dar de alta a su personal en Usuarios');
     }

@@ -244,7 +244,7 @@ class AjustesRonda5bTest extends TestCase
         $this->assertTrue($torre->fresh()->activo);
 
         // El formulario conecta nombre y código al aviso
-        $this->actingAs($this->admin)->get('/espacios')->assertSee('data-duplicado="'.route('espacios.duplicado').'" data-duplicado-con="nivel,padre_id,sede_id"', false);
+        $this->actingAs($this->admin)->get("/espacios/sede/{$this->centro->id}")->assertSee('data-duplicado="'.route('espacios.duplicado').'" data-duplicado-con="nivel,padre_id,sede_id"', false);
     }
 
     public function test_zonas_dentro_de_un_contenedor_tipos_propios_y_secciones(): void

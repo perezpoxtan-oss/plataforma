@@ -70,7 +70,7 @@ class EspaciosTest extends TestCase
         $this->assertSame("/{$torre->id}/{$piso->id}/{$hab->id}/", $hab->ruta);
         $this->assertSame(2, $hab->profundidad);
 
-        $this->actingAs($this->admin)->get('/espacios')->assertOk()->assertSee('Torre A')->assertSee('1 Piso(s) registrado(s)', false);
+        $this->actingAs($this->admin)->get("/espacios/sede/{$this->sede->id}")->assertOk()->assertSee('Torre A')->assertSee('1 Piso(s) registrado(s)', false);
         $this->actingAs($this->admin)->get("/espacios/{$torre->id}")->assertOk()->assertSee('Piso 1');
         $this->actingAs($this->admin)->get("/espacios/{$piso->id}")->assertOk()->assertSee('Habitaciones')->assertSee('Crear por Lote');
         $this->actingAs($this->admin)->get("/espacios/{$hab->id}")->assertOk()->assertSee('Áreas de esta Habitación')->assertSee('Agregar Área');
@@ -170,12 +170,12 @@ class EspaciosTest extends TestCase
         $this->actingAs($this->admin)->post('/espacios/secciones', ['sede_id' => $this->sede->id, 'nombre' => 'torre norte'])->assertSessionHasErrors('nombre');
         $seccion = GrupoEspacio::withoutGlobalScopes()->where('nombre', 'Torre Norte')->firstOrFail();
         // Con secciones dadas de alta, la pestaña de zonas sigue abriendo (antes daba error 500)
-        $this->actingAs($this->admin)->get('/espacios')->assertOk()->assertSee('Torre A');
+        $this->actingAs($this->admin)->get("/espacios/sede/{$this->sede->id}")->assertOk()->assertSee('Torre A');
 
         $this->actingAs($this->admin)->put("/espacios/{$hab->id}", ['nombre' => '101', 'grupo_espacio_id' => $seccion->id, 'desde_detalle' => '1'])
             ->assertRedirect("/espacios/{$hab->id}");
         $this->assertSame($seccion->id, $hab->fresh()->grupo_espacio_id);
-        $this->actingAs($this->admin)->get('/espacios?pestana=secciones')->assertSee('Torre Norte')->assertSee('1 Habitación');
+        $this->actingAs($this->admin)->get("/espacios/sede/{$this->sede->id}?pestana=secciones")->assertSee('Torre Norte')->assertSee('1 Habitación');
 
         // Asignar varias de golpe: las desmarcadas salen y las de otra sede se ignoran
         $this->actingAs($this->admin)->post("/espacios/{$piso->id}/lote", ['modo' => 'lista', 'lista_nombres' => '102,103']);
@@ -183,7 +183,7 @@ class EspaciosTest extends TestCase
         $otraSede = $this->crearSede($this->empresa, 'PLA');
         $this->actingAs($this->admin)->post('/espacios', ['nivel' => 'edificio', 'sede_id' => $otraSede->id, 'nombre' => 'Villas']);
         $this->actingAs($this->admin)->post('/espacios', ['nivel' => 'area_especifica', 'padre_id' => $this->espacio('Villas')->id, 'nombre' => 'V1']);
-        $this->actingAs($this->admin)->get('/espacios?pestana=secciones')->assertSee('Asignar Habitaciones')->assertSee('Torre A · Piso 1');
+        $this->actingAs($this->admin)->get("/espacios/sede/{$this->sede->id}?pestana=secciones")->assertSee('Asignar Habitaciones')->assertSee('Torre A · Piso 1');
         $this->actingAs($this->admin)->put("/espacios/secciones/{$seccion->id}", ['espacios' => [$h102->id, $this->espacio('V1')->id]])
             ->assertSessionHas('ok', 'Sección «Torre Norte»: 1 asignada(s).');
         $this->assertNull($hab->fresh()->grupo_espacio_id);
@@ -221,7 +221,7 @@ class EspaciosTest extends TestCase
         $usuario = $this->crearUsuario($this->empresa, 'Gerente', $this->sede);
         $this->flushSession(); // sin el aviso «Villas Playa agregado» del alta anterior
 
-        $this->actingAs($usuario)->get('/espacios')->assertSee('Torre A')->assertDontSee('Villas Playa')->assertDontSee('Nueva Zona / Edificio');
+        $this->actingAs($usuario)->followingRedirects()->get('/espacios')->assertSee('Torre A')->assertDontSee('Villas Playa')->assertDontSee('Nueva Zona / Edificio');
         $this->actingAs($usuario)->get('/espacios/'.$this->espacio('Villas Playa')->id)->assertNotFound();
         $this->actingAs($usuario)->post('/espacios', ['nivel' => 'edificio', 'sede_id' => $this->sede->id, 'nombre' => 'X'])->assertForbidden();
     }
@@ -232,6 +232,6 @@ class EspaciosTest extends TestCase
 
         $sa = $this->crearSuperadmin();
         $this->actingAs($sa)->get('/espacios')->assertSee('Elige arriba la');
-        $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])->get('/espacios')->assertSee('Nueva Zona / Edificio');
+        $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])->followingRedirects()->get('/espacios')->assertSee('Nueva Zona / Edificio');
     }
 }
