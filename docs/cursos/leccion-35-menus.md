@@ -39,8 +39,17 @@ Usa el demo (`plataforma:demo`), contraseña `Demo1234!`. Usuarios: **admin.demo
 1. Abre **Recursos Humanos**: Personal, Recepción y candidatos, Catálogos.
 2. Como no tienes nada pendiente, **Mis pendientes** no aparece. Es correcto.
 
+## Práctica 5 · Avisos en este navegador (jefedepto.demo, computadora)
+
+1. Toca la **campana** y, al final de la lista, **Activar avisos en este navegador**. Elige **Permitir** cuando el navegador pregunte: llega el aviso de prueba «Avisos activos».
+2. Cambia a otra pestaña (o minimiza la ventana) y pide a un compañero en caseta (agente.demo) que registre una visita para tu departamento.
+3. En menos de un minuto tu computadora muestra el aviso de la visita y no se quita solo; el título de la pestaña muestra «(1) …».
+4. Toca el aviso: vuelves a la plataforma en el asunto y la notificación queda leída.
+5. En **Mi cuenta → Avisos en este navegador** toca **Apagar avisos en este navegador**.
+
 ## Recuerda
 
 - Solo ves lo que tu rol permite; si un menú no tiene nada para ti, no aparece.
 - Mis pendientes se actualiza solo cada 30 segundos, junto con la campana.
+- Los avisos del navegador llegan mientras la plataforma siga abierta en alguna pestaña; en el celular, usa la campana.
 - Ninguna pantalla cambió: solo su lugar en el menú.

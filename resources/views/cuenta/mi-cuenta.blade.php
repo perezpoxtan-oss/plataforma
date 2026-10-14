@@ -72,6 +72,13 @@
         </div>
     </div>
 
+    {{-- Avisos del navegador: avisos del sistema aunque la pestaña esté en segundo plano --}}
+    <section class="tarjeta p-4 mt-4" id="avisos-navegador" aria-labelledby="t-avisos-navegador">
+        <h2 id="t-avisos-navegador" class="h5 fw-bold mb-1"><i class="bi bi-window-stack me-2 text-primary" aria-hidden="true"></i>Avisos en este navegador</h2>
+        <p class="small text-muted mb-3">Con la plataforma abierta en una pestaña (aunque estés en otra pestaña u otro programa), tu computadora te muestra un aviso cuando llega una notificación nueva. Se activa en cada navegador por separado.</p>
+        @include('componentes.avisos-navegador')
+    </section>
+
     {{-- Mejoras estructura (ADR-0016): cada persona elige qué avisos recibe --}}
     @if ($opcionesAvisos['campana'] !== [] || $opcionesAvisos['correo'] !== [])
         <section class="tarjeta p-4 mt-4" id="mis-avisos" aria-labelledby="t-mis-avisos">
