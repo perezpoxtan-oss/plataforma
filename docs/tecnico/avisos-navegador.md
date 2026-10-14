@@ -11,7 +11,7 @@ Petición del dueño: «si lo usamos desde navegador, que el navegador emita un 
 |---|---|
 | Datos del aviso | `CentroNotificaciones::paraLista()` agrega `urgente` (bool) a cada renglón del resumen; `CentroNotificaciones::URGENTES` = `autorizacion_visita`, `autorizacion_candidato`, `autorizacion_recepcion`, `autorizacion_escalada`. El resto (`id`, `titulo`, `texto`, `leida`, `abrir`) ya existía. |
 | Consulta en segundo plano | `GET /notificaciones/resumen` con la cabecera `X-Segundo-Plano: 1`. `ControlarInactividad` **no** actualiza `ultima_actividad` con esa cabecera: la consulta automática no alarga la sesión. El cierre por inactividad sigue aplicando (devuelve 401 y la pestaña va al aviso de sesión). |
-| Interfaz | `resources/views/componentes/avisos-navegador.blade.php` (estado + **Activar avisos en este navegador** / **Desactivar avisos en este navegador**), incluido al final del panel de la campana y en Mi cuenta (`#avisos-navegador`). Oculto hasta que el JS pinta el estado (sin JS no se ve). |
+| Interfaz | `resources/views/componentes/avisos-navegador.blade.php` (estado + **Activar avisos en este navegador** / **Apagar avisos en este navegador**), incluido al final del panel de la campana y en Mi cuenta (`#avisos-navegador`). Oculto hasta que el JS pinta el estado (sin JS no se ve). |
 | Ícono | `data-aviso-icono` en `componentes/campana.blade.php`: `favicon` de Identidad o, si no hay, `simbolo`. Sin ninguno, el navegador usa su ícono. |
 | JS | `public/js/plataforma.js`, bloque «Recepción de candidatos y autorizaciones departamentales», sección «Avisos del navegador». Sin JS en línea; la CSP (`CabecerasSeguridad`) no cambia: la Notification API no la regula, el ícono es `'self'` y la consulta es `connect-src 'self'`. |
 
@@ -25,13 +25,13 @@ Petición del dueño: «si lo usamos desde navegador, que el navegador emita un 
 - **Urgentes:** `requireInteraction: true` (no se cierran solos).
 - **Al tocar el aviso:** `window.focus()`, cierra el aviso y envía el formulario POST a `abrir` (marca leída y redirige al asunto, mismo camino que la campana).
 - **Título de la pestaña:** «(N) título» con la pestaña oculta y N > 0; se restaura al volver.
-- **Permiso:** nunca al cargar. Solo con el clic en **Activar avisos en este navegador** (`Notification.requestPermission`, admite la forma de callback de navegadores viejos). Al concederse se guarda `localStorage['plataforma_avisos_navegador'] = 'si'` (por navegador, no por usuario) y se muestra el aviso de prueba «Avisos activos». **Desactivar** guarda `'no'`; el permiso del navegador se queda (lo quita la persona en el candado si quiere).
+- **Permiso:** nunca al cargar. Solo con el clic en **Activar avisos en este navegador** (`Notification.requestPermission`, admite la forma de callback de navegadores viejos). Al concederse se guarda `localStorage['plataforma_avisos_navegador'] = 'si'` (por navegador, no por usuario) y se muestra el aviso de prueba «Avisos activos». **Apagar** guarda `'no'`; el permiso del navegador se queda (lo quita la persona en el candado si quiere).
 - **Estados mostrados:** activos · bloqueados (`denied`, con instrucción: candado → Notificaciones → Permitir → recargar) · no compatible.
 - **No compatible:** sin `Notification`, contexto no seguro (http) o **celular/tableta** (Android, iPhone, iPad, incluido iPad en modo escritorio). En Android Chrome `new Notification()` lanza error (exige `ServiceWorkerRegistration.showNotification`) y en iOS solo hay avisos por Web Push en la app instalada; ambos casos son fase 2. El texto lo dice honestamente y remite a la campana.
 
 ## Verbos (criterios UX, regla 4)
 
-«Activar» / «Desactivar» no están en la lista de diez verbos: el texto «Activar avisos en este navegador» lo pidió el dueño literalmente; «Desactivar» es su contrario. Excepción anotada aquí conforme al punto 4 de «Cómo se aplica».
+«Activar» / «Apagar» no están en la lista de diez verbos: el texto «Activar avisos en este navegador» lo pidió el dueño literalmente; «Apagar» es su contrario (no «Desactivar», reservado: ver VocabularioDarDeBajaTest). Excepción anotada aquí conforme al punto 4 de «Cómo se aplica».
 
 ## Pruebas
 

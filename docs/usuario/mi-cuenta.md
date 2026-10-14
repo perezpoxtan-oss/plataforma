@@ -59,7 +59,7 @@ Con los avisos activos, tu computadora te muestra un aviso (en la esquina de la 
 
 ![Avisos en este navegador](img/mi-cuenta/avisos-navegador.png)
 
-**Qué debes ver:** un aviso de prueba «Avisos activos» y, en la pantalla, el texto en verde «Avisos activos en este navegador…» con el botón **Desactivar avisos en este navegador**.
+**Qué debes ver:** un aviso de prueba «Avisos activos» y, en la pantalla, el texto en verde «Avisos activos en este navegador…» con el botón **Apagar avisos en este navegador**.
 
 **Qué esperar después:**
 
@@ -70,7 +70,7 @@ Con los avisos activos, tu computadora te muestra un aviso (en la esquina de la 
 - Aunque tengas varias pestañas abiertas, cada notificación se avisa una sola vez.
 - Puede tardar hasta un minuto en llegar el aviso con la pestaña en segundo plano.
 
-**Para apagarlos:** toca **Desactivar avisos en este navegador** (en Mi cuenta o en la campana). La campana sigue funcionando igual.
+**Para apagarlos:** toca **Apagar avisos en este navegador** (en Mi cuenta o en la campana). La campana sigue funcionando igual.
 
 > Los avisos se activan **en cada navegador por separado**: si usas otra computadora, actívalos también ahí.
 

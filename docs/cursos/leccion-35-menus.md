@@ -45,7 +45,7 @@ Usa el demo (`plataforma:demo`), contraseña `Demo1234!`. Usuarios: **admin.demo
 2. Cambia a otra pestaña (o minimiza la ventana) y pide a un compañero en caseta (agente.demo) que registre una visita para tu departamento.
 3. En menos de un minuto tu computadora muestra el aviso de la visita y no se quita solo; el título de la pestaña muestra «(1) …».
 4. Toca el aviso: vuelves a la plataforma en el asunto y la notificación queda leída.
-5. En **Mi cuenta → Avisos en este navegador** toca **Desactivar avisos en este navegador**.
+5. En **Mi cuenta → Avisos en este navegador** toca **Apagar avisos en este navegador**.
 
 ## Recuerda
 
