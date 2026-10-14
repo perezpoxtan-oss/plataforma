@@ -267,6 +267,9 @@ class CandidatosFase3Test extends TestCase
 
     public function test_los_plazos_recuerdan_una_sola_vez_y_colorean_mis_pendientes(): void
     {
+        // Un lunes fijo: la cita «hace 2 días» cae en fin de semana y no cumple aún 2 días hábiles
+        // (de martes a viernes sí los cumple y el resultado dependía del día en que corría la prueba)
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-12 10:00:00'));
         Mail::fake();
         $this->configurarCorreo();
         // Solicitud sin revisar hace 3 días (plazo 1: roja), elegido hace 6 días (plazo 5: ámbar), cita vencida hace 2 días sin registro en caseta
@@ -309,7 +312,7 @@ class CandidatosFase3Test extends TestCase
         $this->assertSame(3, $hoy->whereNull('leida_en')->count());
         $this->assertTrue($hoy->whereNull('leida_en')->contains(fn ($n) => str_starts_with($n->titulo, 'Solicitud sin revisar: Karla Pérez Uc lleva 4 días')));
         $this->assertSame(1, $hoy->whereNull('leida_en')->filter(fn ($n) => str_starts_with($n->titulo, '¿No se presentó?') && $n->acciones !== null)->count());
-        $this->travelBack();
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-12 10:00:00'));
 
         // Mis pendientes: color según el plazo (roja al doble, ámbar al pasarlo)
         Cache::flush();
