@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- App móvil: sin sesión, la app abre la pantalla de acceso y no la página de planes (aunque esté publicada). `PortadaPublica` omite la portada cuando la petición viene de la app (`AppMovil::es`). Sin migraciones.
 - **Agregado: Importar desde Excel** (petición del dueño, prioridad antes de Producción). Carga masiva de **Colaboradores**, **Padrón de personas**, **Empresas externas**, **Padrón vehicular** y **Zonas y edificios** (zona → piso → habitación) desde archivo. Ver `docs/tecnico/importacion.md`.
   - Botón **Importar** en cada lista (permiso nuevo `modulo.importar`). Flujo en tres pasos: **Descargar plantilla** (CSV con encabezados en español, fila de ejemplo y «Qué va en cada columna»), **Revisar archivo** (vista previa: cada fila **Nueva**, **Ya existe** o **Con error** con el motivo en la celda, conteos que filtran; **nada se guarda**) y **Guardar** (lo que ya existe se omite o se actualiza, a elección; una celda vacía no borra datos).
   - Archivos: CSV en UTF-8 o Windows-1252 con separador `,` `;` o tabulador (autodetectado) y XLSX con lector propio (`ZipArchive` + `SimpleXML`: primera hoja, textos compartidos, números y fechas), sin dependencias nuevas. Máximo 2,000 filas y 5 MB por archivo.

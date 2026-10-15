@@ -13,6 +13,7 @@ use App\Models\Suscripcion;
 use App\Models\User;
 use App\Services\Comercial\AjustesComerciales;
 use App\Services\Comercial\Calculadora;
+use App\Support\AppMovil;
 use App\Support\CorreoPlataforma;
 use Database\Seeders\CatalogoComercialSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -124,6 +125,14 @@ class CatalogoComercialTest extends TestCase
         $this->get('/planes')->assertOk()->assertSee('Planes y precios');
         $this->get('/contratar?plan=corporativo&sedes=2')->assertOk()->assertSee('Contratar o solicitar información')
             ->assertSee('Este plan se contrata desde')->assertHeader('Cache-Control', 'no-store, private');
+    }
+
+    public function test_en_la_app_movil_la_raiz_lleva_al_acceso_aunque_este_publicada(): void
+    {
+        $this->publicar();
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0 (Linux; Android 15) '.AppMovil::MARCA_AGENTE.'1.0')
+            ->get('/')->assertRedirect(route('login'));
     }
 
     public function test_con_sesion_la_raiz_sigue_siendo_el_inicio(): void
