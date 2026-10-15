@@ -11,6 +11,7 @@ Etapa 1, sin pagos: la plataforma se puede **instalar desde el navegador** (PWA)
 | Service worker | código en `public/js/sw.js`, servido en `GET /sw.js` → `PwaController::trabajador` | En la raíz para que su alcance sea `/`. `Cache-Control: no-cache` (el navegador siempre revisa si cambió), `Service-Worker-Allowed: /`. `__VERSION__` se sustituye por la huella del archivo: al cambiar el código, la caché vieja se borra sola. |
 | Sin conexión | `GET /sin-conexion` → vista `publico/sin-conexion.blade.php` | Página propia sin datos de nadie; botón **Reintentar** = enlace a `/` (sin JS). |
 | Registro | `public/js/pwa.js` (cargado con `defer` en `layouts/partes/cabeza.blade.php` y en la página pública de planes) | Sin JS en línea. No registra el service worker dentro de la app de Android. |
+| Portada de planes | `PortadaPublica` no la muestra dentro de la app (`AppMovil::es`): sin sesión, la app abre directo la pantalla de acceso. |
 | Cabeceras HTML | `cabeza.blade.php` y `publico/planes/plantilla.blade.php` | `<link rel="manifest">`, `<link rel="apple-touch-icon">`; `theme-color` ya existía (color principal de Identidad). |
 
 Las tres rutas van **sin el grupo `web`** (`Route::withoutMiddleware('web')` en `routes/web.php`): no abren sesión, no envían cookies, no pasan por el cierre por inactividad ni por «solo consulta». Sí pasan por los middleware globales (`VerificarHost`, `CabecerasSeguridad`). Son GET: la prueba «toda ruta que cambia datos exige CSRF» no se afecta.
