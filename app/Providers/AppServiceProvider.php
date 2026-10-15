@@ -113,5 +113,12 @@ class AppServiceProvider extends ServiceProvider
         // Bolsa de trabajo pública: consultar y postular no comparten contador
         RateLimiter::for('empleos-ver', fn (Request $r) => Limit::perMinute(120)->by('ver|'.$ip($r)));
         RateLimiter::for('empleos-postular', fn (Request $r) => Limit::perMinute(6)->by('postular|'.$ip($r)));
+
+        // Página pública de planes: consultar y enviar la solicitud de compra no comparten contador
+        RateLimiter::for('comercial-ver', fn (Request $r) => Limit::perMinute(120)->by('comercial-ver|'.$ip($r)));
+        RateLimiter::for('comercial-contratar', fn (Request $r) => [
+            Limit::perMinute(5)->by('comercial-contratar|'.$ip($r)),
+            Limit::perDay(30)->by('comercial-contratar-dia|'.$ip($r)),
+        ]);
     }
 }

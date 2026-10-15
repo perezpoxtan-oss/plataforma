@@ -74,6 +74,8 @@ class PreferenciasAvisos
         'alta_verificada' => ['Padrones: altas por verificar', 'Se verificó un alta que registraste', ['accesos.crear']],
         'alta_unida' => ['Padrones: altas por verificar', 'Un alta que registraste ya existía y se unió con su registro', ['accesos.crear']],
         'alta_rechazada' => ['Padrones: altas por verificar', 'Se rechazó un alta que registraste', ['accesos.crear']],
+        // Catálogo comercial (solo Super Administrador)
+        'solicitud_compra' => ['Catálogo comercial', 'Llegó una solicitud desde la página de planes', ['catalogo_comercial.ver']],
     ];
 
     /**

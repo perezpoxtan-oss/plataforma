@@ -83,6 +83,8 @@ class CentroNotificaciones
         // Fin Mejoras padrones
         // Mejoras estructura (ADR-0016): movimiento sensible en la bitácora (si la empresa lo enciende)
         'movimiento_sensible' => ['bi-shield-exclamation', 'alerta'],
+        // Catálogo comercial: llegó una solicitud de la página pública (aviso de la plataforma, sin empresa)
+        'solicitud_compra' => ['bi-cart-check-fill', 'alerta'],
     ];
 
     public function __construct(private readonly HoraLocal $hora) {}
@@ -113,6 +115,41 @@ class CentroNotificaciones
                 'acciones' => $datos['acciones'] ?? null,
             ]);
             $n->forceFill(['empresa_id' => $empresaId])->save();
+            $avisados[] = $userId;
+        }
+
+        return $avisados;
+    }
+
+    /**
+     * Aviso de la PLATAFORMA (sin empresa) para el Super Administrador, por
+     * ejemplo una solicitud de la página pública de planes. Su campana lo ve
+     * con o sin empresa de trabajo elegida (Notificacion::scopeDe).
+     *
+     * @param  iterable<int>  $usuarios  ids de Super Administradores
+     * @param  array{titulo: string, texto?: ?string, url?: ?string, referencia_tipo?: ?string, referencia_id?: ?int}  $datos
+     * @return list<int>
+     */
+    public function avisarPlataforma(iterable $usuarios, string $tipo, array $datos): array
+    {
+        [$icono, $nivel] = self::TIPOS[$tipo] ?? ['bi-bell', 'info'];
+        $superadmins = User::query()->whereIn('id', collect($usuarios)->all())->where('es_superadmin', true)->pluck('id');
+        $avisados = [];
+        foreach (PreferenciasAvisos::quienesLoReciben($superadmins, $tipo) as $userId) {
+            Notificacion::query()->withoutGlobalScopes()->insert([
+                'empresa_id' => null,
+                'user_id' => $userId,
+                'tipo' => $tipo,
+                'titulo' => mb_substr($datos['titulo'], 0, 150),
+                'texto' => isset($datos['texto']) ? mb_substr((string) $datos['texto'], 0, 500) : null,
+                'url' => $datos['url'] ?? null,
+                'icono' => $icono,
+                'nivel' => $nivel,
+                'referencia_tipo' => $datos['referencia_tipo'] ?? null,
+                'referencia_id' => $datos['referencia_id'] ?? null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
             $avisados[] = $userId;
         }
 
@@ -207,7 +244,9 @@ class CentroNotificaciones
     public function marcarLeida(Notificacion $n): void
     {
         if ($n->leida_en === null) {
-            $n->forceFill(['leida_en' => now()])->save();
+            // Sin pasar por el guardado del modelo: un aviso de la plataforma (sin empresa) no toma la empresa de trabajo
+            Notificacion::query()->withoutGlobalScopes()->whereKey($n->id)->update(['leida_en' => now(), 'updated_at' => now()]);
+            $n->leida_en = now();
         }
     }
 

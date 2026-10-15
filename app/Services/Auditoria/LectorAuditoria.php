@@ -81,6 +81,11 @@ class LectorAuditoria
         'lote' => 'Alta por lote', 'pisos_copiados' => 'Copia de pisos', 'movido' => 'Cambio de lugar', 'seccion_creada' => 'Alta de sección',
         'seccion_asignada' => 'Asignación a sección', 'tipo_creado' => 'Alta de tipo', 'clonado' => 'Copia',
         'logo_actualizado' => 'Cambio de logotipo',
+        // Catálogo comercial (productos, planes, paquetes, ajustes y solicitudes de la página pública)
+        'producto_creado' => 'Alta de producto', 'producto_actualizado' => 'Edición de producto', 'producto_dado_de_baja' => 'Baja de producto', 'producto_reactivado' => 'Reactivación de producto',
+        'plan_creado' => 'Alta de plan', 'plan_actualizado' => 'Edición de plan', 'plan_dado_de_baja' => 'Baja de plan', 'plan_reactivado' => 'Reactivación de plan',
+        'paquete_creado' => 'Alta de paquete', 'paquete_actualizado' => 'Edición de paquete', 'paquete_dado_de_baja' => 'Baja de paquete', 'paquete_reactivado' => 'Reactivación de paquete',
+        'ajustes_actualizados' => 'Cambio de ajustes', 'solicitud_atendida' => 'Solicitud atendida',
         // Altas provisionales y verificación de padrones
         'provisional' => 'Alta provisional', 'validado' => 'Validación', 'verificado' => 'Verificación', 'fusionado' => 'Unión de duplicado',
         // Identificación (QR y etiqueta NFC/RFID) e impresión de etiquetas

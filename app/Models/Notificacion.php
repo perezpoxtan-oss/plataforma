@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
+use App\Support\Tenancy\EmpresaScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,6 +38,12 @@ class Notificacion extends Model
     /** @param  Builder<Notificacion>  $q */
     public function scopeDe(Builder $q, User $usuario): Builder
     {
+        // Catálogo comercial: el Super Administrador ve todos SUS avisos (también los de la plataforma, sin empresa),
+        // elija o no una empresa de trabajo. Siempre limitados a su propio usuario.
+        if ($usuario->es_superadmin) {
+            $q->withoutGlobalScope(EmpresaScope::class);
+        }
+
         return $q->where('notificaciones.user_id', $usuario->id);
     }
 

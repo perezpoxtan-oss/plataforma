@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Administracion\AjustesCasetaController;
 use App\Http\Controllers\Administracion\AuditoriaController;
+use App\Http\Controllers\Administracion\CatalogoComercialController;
 use App\Http\Controllers\Administracion\ConfiguracionController;
 use App\Http\Controllers\Administracion\EmpresaActivaController;
 use App\Http\Controllers\Administracion\EmpresaController;
@@ -31,6 +32,8 @@ use App\Http\Controllers\Padrones\ProveedorController;
 use App\Http\Controllers\Padrones\RutaController;
 use App\Http\Controllers\PanelController;
 use App\Http\Controllers\Publico\EmpleosController;
+use App\Http\Controllers\Publico\PagoWebhookController;
+use App\Http\Controllers\Publico\PlanesController;
 use App\Http\Controllers\RecursosHumanos\AutorizacionController;
 use App\Http\Controllers\RecursosHumanos\CandidatoController;
 use App\Http\Controllers\RecursosHumanos\EntrevistaController;
@@ -49,6 +52,7 @@ use App\Http\Controllers\Seguridad\ProcedimientoController;
 use App\Http\Controllers\Seguridad\TransporteController;
 use App\Http\Controllers\Seguridad\VehiculoController;
 use App\Http\Controllers\Seguridad\VoucherController;
+use App\Http\Middleware\PortadaPublica;
 use Illuminate\Support\Facades\Route;
 
 // Acceso
@@ -66,11 +70,12 @@ Route::middleware('guest')->group(function () {
 Route::get('/sesion/expirada', [SesionController::class, 'avisoExpirada'])->name('sesion.expirada');
 Route::post('/sesion/expirada', [SesionController::class, 'expirada'])->name('sesion.expirada.cerrar');
 
+// Inicio: con sesión, el panel; sin sesión, la página pública de planes si está publicada (si no, al acceso, como siempre)
+Route::get('/', PanelController::class)->middleware([PortadaPublica::class, 'auth'])->name('panel');
+
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [SesionController::class, 'cerrar'])->name('logout');
     Route::get('/sesion/latido', [SesionController::class, 'latido'])->name('sesion.latido');
-
-    Route::get('/', PanelController::class)->name('panel');
 
     // Mi cuenta (criterio 6): sin permiso propio; cambiar la propia contraseña
     Route::get('/mi-cuenta', [MiCuentaController::class, 'index'])->name('mi-cuenta.index');
@@ -179,6 +184,20 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/identidad', [IdentidadController::class, 'edit'])->name('identidad.edit');
     Route::put('/identidad', [IdentidadController::class, 'update'])->name('identidad.update');
+    // Catálogo comercial (solo Super Administrador): productos, planes, paquetes, ajustes y solicitudes de la página pública
+    Route::controller(CatalogoComercialController::class)->prefix('catalogo-comercial')->name('catalogo-comercial.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/vista-previa', 'vistaPrevia')->name('vista-previa');
+        Route::put('/ajustes', 'ajustes')->name('ajustes');
+        Route::get('/solicitudes/{id}', 'solicitud')->whereNumber('id')->name('solicitudes.show');
+        Route::put('/solicitudes/{id}', 'atender')->whereNumber('id')->name('solicitudes.atender');
+        Route::get('/{tipo}/nuevo', 'crear')->whereIn('tipo', ['productos', 'planes', 'paquetes'])->name('crear');
+        Route::post('/{tipo}', 'guardar')->whereIn('tipo', ['productos', 'planes', 'paquetes'])->name('guardar');
+        Route::get('/{tipo}/{id}/editar', 'editar')->whereIn('tipo', ['productos', 'planes', 'paquetes'])->whereNumber('id')->name('editar');
+        Route::put('/{tipo}/{id}', 'guardar')->whereIn('tipo', ['productos', 'planes', 'paquetes'])->whereNumber('id')->name('actualizar');
+        Route::patch('/{tipo}/{id}/estado', 'estado')->whereIn('tipo', ['productos', 'planes', 'paquetes'])->whereNumber('id')->name('estado');
+        Route::patch('/{tipo}/{id}/mover', 'mover')->whereIn('tipo', ['productos', 'planes', 'paquetes'])->whereNumber('id')->name('mover');
+    });
     Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
     Route::post('/usuarios', [UsuarioController::class, 'store'])->name('usuarios.store');
     Route::put('/usuarios/{usuario}', [UsuarioController::class, 'update'])->name('usuarios.update');
@@ -639,3 +658,16 @@ Route::controller(EmpleosController::class)->group(function () {
     Route::post('/empleos/{empresa}/{vacante}/postular', 'postular')->where(['empresa' => '[a-z0-9-]{3,90}', 'vacante' => '[a-z0-9]{10}'])->middleware('throttle:empleos-postular')->name('empleos.guardar');
 });
 // Fin Público: Bolsa de trabajo
+
+// Público: página de planes (SIN sesión; solo si está publicada; ver docs/tecnico/catalogo-comercial.md)
+// Limitadores con nombre (AppServiceProvider): consultar y enviar la solicitud llevan contadores separados por IP
+Route::controller(PlanesController::class)->middleware('throttle:comercial-ver')->group(function () {
+    Route::get('/planes', 'planes')->name('planes.index');
+    Route::get('/contratar', 'contratar')->name('planes.contratar');
+    Route::get('/contratar/gracias', 'gracias')->name('planes.gracias');
+    Route::get('/aviso-de-privacidad', 'privacidad')->name('planes.privacidad');
+});
+Route::post('/contratar', [PlanesController::class, 'guardar'])->middleware('throttle:comercial-contratar')->name('planes.guardar');
+// Reservada para avisos de pago de una pasarela en línea: APAGADA (404) mientras config('comercial.webhooks_habilitados') sea falso
+Route::post('/pagos/webhook/{pasarela}', PagoWebhookController::class)->where('pasarela', '[a-z0-9_]{2,30}')->middleware('throttle:60,1')->name('pagos.webhook');
+// Fin Público: página de planes

@@ -61,3 +61,4 @@ Debajo de cada imagen marca **Quitar y usar el predeterminado** y toca **Guardar
 
 - [Empresas y sedes](empresas-y-sedes.md)
 - [Configuración](configuracion.md)
+- [Catálogo comercial y página de planes](catalogo-comercial.md)

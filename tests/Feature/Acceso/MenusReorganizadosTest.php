@@ -110,7 +110,7 @@ class MenusReorganizadosTest extends TestCase
         $super = $this->estructura($this->crearSuperadmin());
         // Mejoras estructura (ADR-0016): lo exclusivo del Super Administrador va en su propia sección
         $this->assertSame(['configuracion', 'auditoria'], $super['estructura']['Sistema']);
-        $this->assertSame(['identidad'], $super['estructura']['Plataforma']);
+        $this->assertSame(['identidad', 'catalogo_comercial'], $super['estructura']['Plataforma']);
         // El celular usa el mismo orden
         $this->assertSame([1, 2, 3, 4, 5], Menu::orderBy('orden')->pluck('orden_movil')->all());
     }

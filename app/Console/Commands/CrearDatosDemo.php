@@ -32,6 +32,7 @@ use App\Models\Notificacion;
 use App\Models\Novedad;
 use App\Models\PaseSalida;
 use App\Models\Persona;
+use App\Models\Plan;
 use App\Models\Postulacion;
 use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
@@ -41,6 +42,7 @@ use App\Models\Rol;
 use App\Models\Rubro;
 use App\Models\Ruta;
 use App\Models\Sede;
+use App\Models\SolicitudCompra;
 use App\Models\TipoEquipo;
 use App\Models\TipoEspacio;
 use App\Models\Turno;
@@ -56,6 +58,7 @@ use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\Kiosco;
 use App\Services\Candidatos\PlazosCandidatos;
 use App\Services\Candidatos\Postulaciones;
+use App\Services\Comercial\Calculadora;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Gafetes\AdministradorGafetes;
@@ -82,6 +85,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -236,6 +240,8 @@ class CrearDatosDemo extends Command
         // Mejoras informes (ADR-0017): semanas anteriores para que Tendencias tenga con qué comparar
         $paso('informesDemo', fn () => $this->informesDemo($empresa, $sedes));
         // Fin Mejoras informes
+        // Catálogo comercial: solicitudes de ejemplo de la página pública (datos de la plataforma, sin empresa)
+        $paso('catalogoComercialDemo', fn () => $this->catalogoComercialDemo());
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -243,6 +249,38 @@ class CrearDatosDemo extends Command
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Catálogo comercial: dos solicitudes de ejemplo (una nueva y una cotizada),
+     * calculadas como las calcula la página pública. Solo si aún no hay ninguna.
+     */
+    private function catalogoComercialDemo(): void
+    {
+        if (! Schema::hasTable('solicitudes_compra') || SolicitudCompra::exists()) {
+            return;
+        }
+        $plan = Plan::where('slug', 'profesional')->first() ?? Plan::orderBy('orden')->first();
+        if ($plan === null) {
+            return;
+        }
+        $calc = app(Calculadora::class);
+        $peso = fn (int $c) => number_format($c / 100, 2, '.', '');
+        foreach ([
+            ['SC-DEMO-0001', 'Laura Méndez', 'Hotel Laguna', 'laura.mendez@ejemplo.com', 2, 'nueva', 'Queremos empezar con dos hoteles.', 3],
+            ['SC-DEMO-0002', 'Carlos Ruiz', 'Plaza Norte', 'carlos.ruiz@ejemplo.com', 4, 'cotizada', null, 30],
+        ] as [$folio, $nombre, $empresa, $correo, $sedes, $estado, $mensaje, $horas]) {
+            $r = $calc->calcular($plan, $sedes, collect());
+            $s = SolicitudCompra::create([
+                'folio' => $folio, 'nombre' => $nombre, 'empresa' => $empresa, 'correo' => $correo, 'telefono' => '998 000 0000',
+                'sedes' => $sedes, 'mensaje' => $mensaje, 'plan_id' => $plan->id, 'moneda' => $r['moneda'], 'iva_porcentaje' => $r['iva_porcentaje'],
+                'mensual_subtotal' => $peso($r['mensual']['subtotal']), 'mensual_iva' => $peso($r['mensual']['iva']), 'mensual_total' => $peso($r['mensual']['total']),
+                'requiere_cotizacion' => $r['requiere_cotizacion'], 'detalle' => ['sedes_cobradas' => $r['sedes_cobradas'], 'renglones' => $r['renglones']],
+                'estado' => $estado, 'pasarela' => 'manual', 'acepta_privacidad' => true, 'privacidad_aceptada_en' => now()->subHours($horas),
+                'atendida_en' => $estado === 'nueva' ? null : now()->subHours($horas - 2),
+            ]);
+            $s->forceFill(['created_at' => now()->subHours($horas), 'updated_at' => now()->subHours($horas)])->save();
+        }
     }
 
     /**

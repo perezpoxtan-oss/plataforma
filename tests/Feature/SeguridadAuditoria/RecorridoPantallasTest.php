@@ -373,6 +373,11 @@ class RecorridoPantallasTest extends TestCase
             'manual.ver' => [['pagina' => 'primeros-pasos'], ['pagina' => 'accesos'], ['pagina' => 'usuarios'], ['pagina' => 'guia'], ['pagina' => 'no-existe']],
             'manual.imagen' => [['carpeta' => 'primeros-pasos', 'archivo' => 'acceso.png'], ['carpeta' => 'primeros-pasos', 'archivo' => '..env'],
                 ['carpeta' => 'img', 'archivo' => 'nada.svg']],
+            // Catálogo comercial (plataforma, sin empresa): cada tipo y su primer registro, y las solicitudes
+            'catalogo-comercial.crear' => [['tipo' => 'productos'], ['tipo' => 'planes'], ['tipo' => 'paquetes']],
+            'catalogo-comercial.editar' => collect(['productos', 'planes', 'paquetes'])->map(fn ($t) => ['tipo' => $t, 'id' => DB::table($t)->orderBy('id')->value('id')])
+                ->filter(fn ($j) => $j['id'] !== null)->values()->all(),
+            'catalogo-comercial.solicitudes.show' => DB::table('solicitudes_compra')->orderBy('id')->limit(2)->pluck('id')->map(fn ($id) => ['id' => $id])->all(),
             default => null,
         };
 

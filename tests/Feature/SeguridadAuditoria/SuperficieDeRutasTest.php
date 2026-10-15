@@ -30,9 +30,11 @@ class SuperficieDeRutasTest extends TestCase
         // Kiosco de candidatos (ADR-0007): enlace temporal de un solo candidato, con límite de peticiones
         // Bolsa de trabajo (lección 36): solo empresas que la encienden, vacantes publicadas, límite de peticiones y campo trampa
         // Olvidé mi contraseña (criterio 6): respuesta uniforme, límite por equipo y por cuenta, enlace firmado de un solo uso
-        $this->assertSame(['GET /empleos/{empresa}', 'GET /empleos/{empresa}/gracias', 'GET /empleos/{empresa}/{vacante}', 'GET /empleos/{empresa}/{vacante}/postular',
-            'GET /k', 'GET /k/{token}', 'GET /login', 'GET /olvide-contrasena', 'GET /restablecer-contrasena/{token}', 'GET /sesion/expirada', 'GET /up',
-            'POST /empleos/{empresa}/{vacante}/postular', 'POST /k', 'POST /k/{token}', 'POST /login', 'POST /olvide-contrasena', 'POST /restablecer-contrasena',
+        // Página pública de planes (Catálogo comercial): 404 mientras no esté publicada, límite de peticiones, campo trampa;
+        // la ruta de avisos de pago está reservada y apagada (404)
+        $this->assertSame(['GET /aviso-de-privacidad', 'GET /contratar', 'GET /contratar/gracias', 'GET /empleos/{empresa}', 'GET /empleos/{empresa}/gracias', 'GET /empleos/{empresa}/{vacante}', 'GET /empleos/{empresa}/{vacante}/postular',
+            'GET /k', 'GET /k/{token}', 'GET /login', 'GET /olvide-contrasena', 'GET /planes', 'GET /restablecer-contrasena/{token}', 'GET /sesion/expirada', 'GET /up',
+            'POST /contratar', 'POST /empleos/{empresa}/{vacante}/postular', 'POST /k', 'POST /k/{token}', 'POST /login', 'POST /olvide-contrasena', 'POST /pagos/webhook/{pasarela}', 'POST /restablecer-contrasena',
             'POST /sesion/expirada'], $abiertas);
     }
 
