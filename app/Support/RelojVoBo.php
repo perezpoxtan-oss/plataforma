@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use App\Models\Empresa;
+use App\Models\User;
+use App\Support\Tenancy\EmpresaDeTrabajo;
 use DateTimeInterface;
 
 /**
@@ -14,7 +17,9 @@ use DateTimeInterface;
  *  - más de HORAS_ROJO             → rojo («más de 3 días»)
  *
  * El color nunca va solo: siempre lleva el texto del tiempo y del nivel
- * (accesibilidad). Para cambiar los umbrales, cambia estas constantes.
+ * (accesibilidad). Las constantes son los valores originales; cada empresa
+ * puede cambiarlos en Configuración → General (AjustesCaseta: vobo_horas_*).
+ * Lo que no es de una empresa (Catálogo comercial) usa los originales.
  */
 final class RelojVoBo
 {
@@ -32,34 +37,98 @@ final class RelojVoBo
     ];
 
     /**
+     * @param  array{0: int, 1: int}|null  $umbrales  [horas amarillo, horas rojo]; null = los originales
      * @return array{minutos: int, hace: string, nivel: string, etiqueta: string, texto: string}|null
      */
-    public static function de(?DateTimeInterface $desde, ?DateTimeInterface $ahora = null): ?array
+    public static function de(?DateTimeInterface $desde, ?DateTimeInterface $ahora = null, ?array $umbrales = null): ?array
     {
         if ($desde === null) {
             return null;
         }
         $ahora ??= now();
         $minutos = (int) max(0, intdiv($ahora->getTimestamp() - $desde->getTimestamp(), 60));
-        $nivel = self::nivel($minutos);
+        $nivel = self::nivel($minutos, $umbrales);
         $hace = 'hace '.self::duracion($minutos);
+        $etiqueta = self::etiqueta($nivel, $umbrales);
 
         return [
             'minutos' => $minutos,
             'hace' => $hace,
             'nivel' => $nivel,
-            'etiqueta' => self::NIVELES[$nivel],
-            'texto' => 'Esperando Vo.Bo. '.$hace.' ('.self::NIVELES[$nivel].')',
+            'etiqueta' => $etiqueta,
+            'texto' => 'Esperando Vo.Bo. '.$hace.' ('.$etiqueta.')',
         ];
     }
 
-    public static function nivel(int $minutos): string
+    /** Igual que de(), con los umbrales de la empresa (sin empresa: los originales). */
+    public static function deEmpresa(?DateTimeInterface $desde, Empresa|int|null $empresa, ?DateTimeInterface $ahora = null): ?array
     {
+        return self::de($desde, $ahora, self::umbrales($empresa));
+    }
+
+    /**
+     * Umbrales [amarillo, rojo] en horas de la empresa.
+     *
+     * @return array{0: int, 1: int}
+     */
+    public static function umbrales(Empresa|int|null $empresa): array
+    {
+        $ajustes = AjustesCaseta::de($empresa);
+
+        return [(int) $ajustes['vobo_horas_amarillo'], (int) $ajustes['vobo_horas_rojo']];
+    }
+
+    /** Umbrales de la empresa de trabajo de la sesión (para las pantallas). */
+    public static function umbralesActuales(): array
+    {
+        $usuario = auth()->user();
+        $empresaId = $usuario instanceof User ? app(EmpresaDeTrabajo::class)->id($usuario) : null;
+        if ($empresaId === null) {
+            return [self::HORAS_AMARILLO, self::HORAS_ROJO];
+        }
+        $memoria = request()->attributes;
+        $clave = 'reloj_vobo.umbrales.'.$empresaId;
+        if (! $memoria->has($clave)) {
+            $empresa = $usuario->relationLoaded('empresa') && (int) $usuario->empresa?->id === $empresaId ? $usuario->empresa : $empresaId;
+            $memoria->set($clave, self::umbrales($empresa));
+        }
+
+        return $memoria->get($clave);
+    }
+
+    public static function nivel(int $minutos, ?array $umbrales = null): string
+    {
+        [$amarillo, $rojo] = $umbrales ?? [self::HORAS_AMARILLO, self::HORAS_ROJO];
+
         return match (true) {
-            $minutos > self::HORAS_ROJO * 60 => 'roja',
-            $minutos >= self::HORAS_AMARILLO * 60 => 'ambar',
+            $minutos > $rojo * 60 => 'roja',
+            $minutos >= $amarillo * 60 => 'ambar',
             default => 'normal',
         };
+    }
+
+    /** Texto que acompaña al color: «a tiempo», «más de 1 día», «más de 36 h»… */
+    public static function etiqueta(string $nivel, ?array $umbrales = null): string
+    {
+        [$amarillo, $rojo] = $umbrales ?? [self::HORAS_AMARILLO, self::HORAS_ROJO];
+
+        return match ($nivel) {
+            'ambar' => 'más de '.self::horas($amarillo),
+            'roja' => 'más de '.self::horas($rojo),
+            default => self::NIVELES['normal'],
+        };
+    }
+
+    /** «1 día», «3 días», «36 h». */
+    public static function horas(int $horas): string
+    {
+        if ($horas >= 24 && $horas % 24 === 0) {
+            $dias = intdiv($horas, 24);
+
+            return $dias.' '.($dias === 1 ? 'día' : 'días');
+        }
+
+        return $horas.' h';
     }
 
     /** «25 min», «5 h», «2 días 3 h». */

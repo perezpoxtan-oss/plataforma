@@ -8,16 +8,24 @@ use App\Models\ConfiguracionPlataforma;
 use App\Models\Empresa;
 use App\Models\LostFoundUmbral;
 use App\Models\User;
+use App\Services\Candidatos\DocumentosParaContratar;
+use App\Services\Candidatos\PlazosCandidatos;
+use App\Services\Lector\ImpresionDesdePadron;
+use App\Services\Lector\PlantillasEtiquetas;
 use App\Services\Novedades\AjustesNovedades;
 use App\Services\Novedades\ArchivoLostFound;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\Respaldos\Respaldos;
+use App\Support\AjustesCaseta;
 use App\Support\CorreoPlataforma;
 use App\Support\Entrada;
 use App\Support\GruposAvisos;
+use App\Support\NombresMenu;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
+use App\Support\ZonasHorarias;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -30,11 +38,15 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
 /**
- * Configuración. Crece por secciones conforme se necesitan:
- *  - Plataforma (solo Super Administrador): Correo saliente y Respaldos.
- *  - Empresa (configuracion.editar): Avisos por correo.
- *  - Lost & Found: días de resguardo (lost_found.configurar con alcance de
- *    empresa; antes estaba en la pantalla de Lost & Found).
+ * Configuración, ordenada por secciones con índice (docs/tecnico/configuracion.md
+ * y el inventario completo en docs/tecnico/configuracion-inventario.md):
+ * General, Caseta y accesos, Recepción y RR. HH., Novedades, Activos,
+ * Transporte, Pases de salida, Avisos por correo, Cuentas y seguridad y
+ * Plataforma (solo Super Administrador: correo, respaldos y enlaces).
+ *  - Empresa (configuracion.editar con alcance de empresa): avisos, ajustes
+ *    de caseta y activos, nombres del menú, bitácora, auditoría.
+ *  - Lost & Found: días de resguardo (lost_found.configurar con alcance de empresa).
+ *  - Lo que vive en otro módulo se muestra con su enlace «Configurar en …».
  */
 class ConfiguracionController extends Controller
 {
@@ -73,7 +85,164 @@ class ConfiguracionController extends Controller
             'grupos' => GruposAvisos::agrupados($empresaId),
             'version' => self::versionInstalada(),
             'auditoriaSede' => $empresaId === null ? null : (Empresa::find($empresaId)?->preferencias['auditoria_sede'] ?? AuditoriaController::SEDE_POR_OMISION),
+            // Configuración por secciones: resúmenes de lo que se configura en otra pantalla (enlace «Configurar en …»)
+            'enOtras' => $empresaId === null ? [] : $this->ajustesEnOtrasPantallas($actor, Empresa::find($empresaId)),
         ]);
+    }
+
+    /**
+     * Ajustes por empresa cuya pantalla natural es otro módulo: aquí solo se
+     * muestran (valor vigente y original) con su enlace «Configurar en …».
+     * Una sola fuente de verdad: el formulario vive en su módulo. Solo se
+     * listan los que el rol puede abrir.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function ajustesEnOtrasPantallas(User $actor, ?Empresa $empresa): array
+    {
+        if ($empresa === null) {
+            return [];
+        }
+        $r = [];
+        $recepcion = app(AjustesRecepcion::class);
+        if ($actor->can('empresas.ver')) {
+            $r['empresa'] = ['zona' => ZonasHorarias::etiqueta($empresa->zona_horaria), 'url' => route('empresas.index').'#empresa-'.$empresa->id,
+                'puedeEditar' => $actor->can('empresas.editar')];
+        }
+        if ($actor->can('autorizaciones.configurar')) {
+            $r['esperas'] = [
+                'tipos' => collect(AjustesRecepcion::ESPERAN_DEPARTAMENTO)->map(fn ($d, $tipo) => [$d[1], $recepcion->esperaAlDepartamento($empresa, $tipo)])->values()->all(),
+                'rh' => $recepcion->rhAutorizaPaso($empresa),
+                'recordar' => $recepcion->recordarMinutos($empresa), 'escalar' => $recepcion->escalarMinutos($empresa),
+                'url' => route('autorizaciones.responsables'),
+            ];
+        }
+        if ($actor->can('candidatos.configurar')) {
+            $plazos = app(PlazosCandidatos::class)->plazos($empresa);
+            $r['plazos'] = [
+                'lista' => collect($plazos)->map(fn ($v, $k) => [PlazosCandidatos::etiqueta($k), $v, PlazosCandidatos::DEFECTO[$k]])->values()->all(),
+                'documentos' => $this->tenant->conEmpresa($empresa->id, fn () => app(DocumentosParaContratar::class)->lista($empresa->id)->count()),
+                'url' => route('candidatos.configuracion'),
+            ];
+            $criterios = $recepcion->criterios($empresa);
+            $r['criterios'] = ['lista' => $criterios, 'propios' => $criterios !== AjustesRecepcion::CRITERIOS_DEFECTO, 'url' => route('candidatos.criterios')];
+        }
+        if ($actor->can(PlantillasEtiquetas::CONFIGURAR)) {
+            $modo = app(ImpresionDesdePadron::class)->modo($empresa->id);
+            $r['impresion'] = ['texto' => ImpresionDesdePadron::OPCIONES[$modo], 'original' => $modo === ImpresionDesdePadron::MODULO, 'url' => route('etiquetas.plantillas')];
+        }
+
+        return $r;
+    }
+
+    // ------------------------------------------- Nombres en el menú (empresa)
+
+    /**
+     * Configuración → General → Avanzado: cómo se llama cada módulo en el
+     * menú de la empresa (empresa_modulos.nombre_visible). Vacío = el de siempre.
+     */
+    public function menu(Request $request): RedirectResponse
+    {
+        Gate::authorize('configuracion.editar');
+        abort_unless($this->editaEmpresa($request->user()), 403, 'Estos ajustes son de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa.');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        $empresa = Empresa::findOrFail($empresaId);
+        $entrada = $request->input('nombres');
+        [$antes, $despues] = NombresMenu::guardar($empresa, is_array($entrada) ? $entrada : []);
+        $this->autorizador->olvidar();
+        if ($antes !== $despues) {
+            $this->auditoria->auditar($request->user(), 'configuracion.menu', $empresa, ['nombres' => $antes], ['nombres' => $despues]);
+        }
+
+        return redirect()->to(route('configuracion.index').'#cfg-menu')->with('ok', 'Nombres del menú guardados. Revisa el menú: ya aparecen con el nombre nuevo.');
+    }
+
+    // --------------------------------------------- Restablecer valor original
+
+    /** Tarjeta => [texto para el mensaje «Listo: … a su valor original.», ancla]. */
+    public const RESTABLECIBLES = [
+        'transporte' => ['las firmas del vale de taxi volvieron', 'cfg-transporte'],
+        'llaves' => ['el semáforo de llaves volvió', 'cfg-llaves'],
+        'responsivas' => ['las horas de los equipos de «Turno» volvieron', 'cfg-responsivas'],
+        'procedimientos' => ['los ajustes de Procedimientos volvieron', 'cfg-procedimientos'],
+        'vobo' => ['el reloj del visto bueno volvió', 'cfg-vobo'],
+        'menu' => ['los nombres del menú volvieron', 'cfg-menu'],
+        'novedades' => ['el nombre de la bitácora y la categoría del hallazgo volvieron', 'novedades'],
+        'lost_found' => ['los días de resguardo de Lost & Found volvieron', 'lost-found'],
+        'auditoria' => ['lo que ve «Su sede» en la Bitácora de auditoría volvió', 'config-auditoria'],
+        'avisos' => ['los avisos por correo volvieron', 'sec-avisos'],
+    ];
+
+    /**
+     * «Restablecer valor original» de una tarjeta: regresa sus ajustes al
+     * valor con el que nace la plataforma (lo que se usa sin configurar).
+     * Cada tarjeta pide el mismo permiso que su botón «Guardar».
+     */
+    public function restablecer(Request $request): RedirectResponse
+    {
+        $actor = $request->user();
+        // Primero el permiso (sin rol: 403, nunca una validación que delate la ruta)
+        if ($request->input('ajuste') === 'lost_found') {
+            Gate::authorize('lost_found.configurar');
+            abort_unless($this->lostFound->puedeConfigurar($actor), 403, 'Los días de resguardo son de toda la empresa: hace falta el permiso «configurar» de Lost & Found con alcance de empresa.');
+        } else {
+            Gate::authorize('configuracion.editar');
+            abort_unless($this->editaEmpresa($actor), 403, 'Estos ajustes son de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa.');
+        }
+        $ajuste = $request->validate(['ajuste' => ['required', Rule::in(array_keys(self::RESTABLECIBLES))]])['ajuste'];
+        $empresaId = $this->empresa->id($actor);
+        abort_if($empresaId === null, 404);
+        $empresa = Empresa::findOrFail($empresaId);
+
+        match ($ajuste) {
+            'transporte', 'llaves', 'responsivas', 'procedimientos', 'vobo' => $this->restablecerCaseta($actor, $empresa, AjustesCaseta::GRUPOS[$ajuste]),
+            'menu' => $this->restablecerMenu($actor, $empresa),
+            'novedades' => app(AjustesNovedades::class)->guardar($actor, $empresa, ['nombre_opcion' => AjustesNovedades::NOMBRE_OMISION, 'categoria_hallazgo_pc' => AjustesNovedades::CATEGORIA_HALLAZGO_OMISION]),
+            'lost_found' => $this->tenant->conEmpresa($empresaId, fn () => $this->lostFound->guardarUmbrales($actor, ['dias' => LostFoundUmbral::POR_OMISION])),
+            'auditoria', 'avisos' => $this->restablecerPreferencias($actor, $empresa, $ajuste === 'auditoria' ? ['auditoria_sede'] : ['avisos', 'avisos_modulos']),
+        };
+
+        [$texto, $ancla] = self::RESTABLECIBLES[$ajuste];
+
+        return redirect()->to(route('configuracion.index').'#'.$ancla)->with('ok', "Listo: {$texto} a su valor original.".($ajuste === 'avisos' ? ' Los correos que capturaste se conservan.' : ''));
+    }
+
+    /** @param  list<string>  $claves */
+    private function restablecerCaseta(User $actor, Empresa $empresa, array $claves): void
+    {
+        $antes = AjustesCaseta::de($empresa);
+        $preferencias = $empresa->preferencias ?? [];
+        $guardados = array_diff_key(is_array($preferencias[AjustesCaseta::CLAVE] ?? null) ? $preferencias[AjustesCaseta::CLAVE] : [], array_flip($claves));
+        if ($guardados === []) {
+            unset($preferencias[AjustesCaseta::CLAVE]);
+        } else {
+            $preferencias[AjustesCaseta::CLAVE] = $guardados;
+        }
+        $empresa->forceFill(['preferencias' => $preferencias])->save();
+        $this->auditoria->auditar($actor, 'configuracion.restablecido', $empresa, array_intersect_key($antes, array_flip($claves)),
+            array_intersect_key(AjustesCaseta::de($empresa->refresh()), array_flip($claves)));
+    }
+
+    private function restablecerMenu(User $actor, Empresa $empresa): void
+    {
+        $antes = collect(NombresMenu::de($empresa))->flatten(1)->filter(fn ($m) => $m['propio'] !== null)->mapWithKeys(fn ($m) => [$m['clave'] => $m['propio']])->all();
+        NombresMenu::restablecer($empresa);
+        $this->autorizador->olvidar();
+        $this->auditoria->auditar($actor, 'configuracion.restablecido', $empresa, ['nombres' => $antes], ['nombres' => []]);
+    }
+
+    /** @param  list<string>  $claves  claves de empresas.preferencias que vuelven a no existir (= valor original) */
+    private function restablecerPreferencias(User $actor, Empresa $empresa, array $claves): void
+    {
+        $preferencias = $empresa->preferencias ?? [];
+        $antes = array_intersect_key($preferencias, array_flip($claves));
+        foreach ($claves as $clave) {
+            unset($preferencias[$clave]);
+        }
+        $empresa->forceFill(['preferencias' => $preferencias === [] ? null : $preferencias])->save();
+        $this->auditoria->auditar($actor, 'configuracion.restablecido', $empresa, $antes, array_fill_keys($claves, 'original'));
     }
 
     /**

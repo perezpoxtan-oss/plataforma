@@ -945,7 +945,8 @@ class AdministradorProcedimientos
     /**
      * Recordatorio de acuses pendientes (comando plataforma:procedimientos-pendientes,
      * en proceso desde desplegar.sh). Cada usuario recibe uno cada
-     * RECORDATORIO_CADA_DIAS días como máximo, con las versiones publicadas
+     * N días como máximo (AjustesCaseta procedimientos_recordatorio_dias;
+     * RECORDATORIO_CADA_DIAS es el valor original), con las versiones publicadas
      * antes de hoy. Con $siToca, solo después de las 8:00 de la empresa.
      *
      * @return int correos enviados
@@ -962,13 +963,15 @@ class AdministradorProcedimientos
                 continue;
             }
             $hoy = $ahora->format('Y-m-d');
-            $enviados += app(Tenant::class)->conEmpresa($empresa->id, function () use ($empresa, $ahora, $hoy) {
+            // Cada cuántos días como máximo (Configuración → Caseta y accesos; 3 por omisión)
+            $cadaDias = (int) AjustesCaseta::valor($empresa, 'procedimientos_recordatorio_dias');
+            $enviados += app(Tenant::class)->conEmpresa($empresa->id, function () use ($empresa, $ahora, $hoy, $cadaDias) {
                 $cuenta = 0;
                 $inicioHoy = $ahora->copy()->startOfDay()->utc();
                 $ultimos = ProcedimientoRecordatorio::pluck('ultimo_envio', 'user_id');
                 foreach ($this->personal() as $usuario) {
                     $ultimo = $ultimos[$usuario->id] ?? null;
-                    if ($usuario->email === null || ($ultimo !== null && $ultimo->format('Y-m-d') > $ahora->copy()->subDays(self::RECORDATORIO_CADA_DIAS)->format('Y-m-d'))) {
+                    if ($usuario->email === null || ($ultimo !== null && $ultimo->format('Y-m-d') > $ahora->copy()->subDays($cadaDias)->format('Y-m-d'))) {
                         continue;
                     }
                     $pendientes = $this->pendientesDe($usuario)->filter(fn (Procedimiento $p) => $p->publicado_en !== null && $p->publicado_en->lt($inicioHoy));

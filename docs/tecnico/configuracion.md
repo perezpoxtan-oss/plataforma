@@ -1,8 +1,43 @@
 # Configuración
 
-Pantalla `GET /configuracion` (módulo `configuracion`, área Dirección). Crece por secciones conforme se necesitan.
+Pantalla `GET /configuracion` (módulo `configuracion`, área Dirección), **ordenada por secciones con índice** (petición del dueño, 2026-10-15). El inventario completo de ajustes (por empresa, de plataforma, `.env` y constantes revisadas) está en [configuracion-inventario.md](configuracion-inventario.md).
 
 Entra quien tiene `configuracion.ver` **o** quien configura los días de resguardo de Lost & Found (`lost_found.configurar` con alcance de empresa); este último solo ve su sección.
+
+## Secciones (anclas del índice)
+
+| Ancla | Sección | Tarjetas | Quién edita |
+|---|---|---|---|
+| `#sec-general` | General | «Configura tu empresa» (`#configura-tu-empresa`: Mostrar u Ocultar en Inicio, ver [configura-tu-empresa.md](configura-tu-empresa.md)), Datos de la empresa (enlace a Empresas), **Reloj del visto bueno** (`#cfg-vobo`), **Nombres en el menú** (`#cfg-menu`, Avanzado) | `configuracion.editar` empresa; Empresas: `empresas.editar` |
+| `#caseta` | Caseta y accesos | Esperas del departamento (`#cfg-esperas`, enlace), Impresión desde padrones (`#cfg-impresion`, enlace), Procedimientos (`#cfg-procedimientos`), avisos de Colaboradores, Altas por verificar y Procedimientos | `configuracion.editar` empresa; enlaces: su permiso `configurar` |
+| `#sec-rh` | Recepción y RR. HH. | Avisos, aviso de privacidad y kiosco (`#recepcion`), Plazos y documentos (`#cfg-plazos`, enlace), Criterios (`#cfg-criterios`, enlace), Bolsa de trabajo (`#bolsa-trabajo`) | `candidatos.configurar` / `vacantes.configurar` empresa |
+| `#sec-novedades` | (nombre de la bitácora de la empresa) | Avisos, nombre y hallazgo (`#novedades`), Lost & Found (`#lost-found`) | `configuracion.editar` empresa; LF: `lost_found.configurar` empresa |
+| `#sec-activos` | Activos | Llaves (`#cfg-llaves`), Responsivas (`#cfg-responsivas`), avisos de Vouchers | `configuracion.editar` empresa |
+| `#sec-transporte` | Transporte | Firmas del vale (`#cfg-transporte`), avisos del vale de taxi | ídem |
+| `#sec-pases` | Pases de salida | Resumen del circuito («Configurar circuito»), avisos | `pases_salida.configurar`; avisos: `configuracion.editar` |
+| `#sec-avisos` | Avisos por correo | Estado del correo, resumen encendido/apagado por módulo con enlace a cada tarjeta, «Otros avisos», enlace a Mi cuenta | `configuracion.editar` empresa |
+| `#sec-cuentas` | Cuentas y seguridad | Avisos, qué ve «Su sede» (`#config-auditoria`), cierre por inactividad (solo lectura, `#cfg-sesion`) | `configuracion.editar` empresa |
+| `#sec-plataforma` | Plataforma (solo SA) | Enlaces a Identidad, Catálogo comercial (Ajustes y Clientes: suscripciones) y Empresas (módulos); Correo de la plataforma; Respaldos | Super Administrador |
+
+- Cada sección se muestra si alguna de sus tarjetas aplica al rol. Las tarjetas de avisos (`_avisos-grupo.blade.php`, ancla `#config-<grupo>`) se pintan **todas** cuando hay `configuracion.ver` (el formulario único `#formAvisos` manda todas las casillas); un grupo nuevo de `GruposAvisos` que no esté mapeado a una sección cae en «Avisos por correo».
+- **Una sola fuente de verdad:** lo que vive en otro módulo (esperas y escalamiento, plazos, documentos, criterios, impresión desde padrones, circuito de pases, datos de la empresa) se muestra con su valor y su enlace «Configurar en …» (`ConfiguracionController::ajustesEnOtrasPantallas()`, solo si el rol tiene el permiso de esa pantalla). Los formularios compartidos (privacidad y kiosco, bolsa, días de Lost & Found) son la misma vista y la misma ruta en los dos lugares.
+- **Valor original:** cada ajuste muestra «Valor original: …» (`.valor-original`).
+- **Restablecer valor original** (`PUT /configuracion/restablecer`, `ajuste` ∈ `ConfiguracionController::RESTABLECIBLES`, 30 por minuto): un botón por tarjeta, con confirmación, solo si la tarjeta tiene algo distinto del original y el rol puede guardarla. `transporte|llaves|responsivas|procedimientos|vobo` quitan sus claves de `preferencias.caseta`; `menu` deja `nombre_visible` en nulo (salvo la bitácora); `novedades` regresa a «Novedades» y Siniestro PC; `lost_found` guarda `LostFoundUmbral::POR_OMISION` (`lost_found.configurar` empresa); `auditoria` quita `auditoria_sede`; `avisos` quita `avisos` y `avisos_modulos` (**conserva** `avisos_destinatarios`). Auditoría `configuracion.restablecido` («Ajuste regresado a su valor original»). «Restablecer» no está en los diez verbos (criterio 4): excepción pedida por el dueño en esta petición.
+- **Ajustes de caseta por tarjeta:** cada tarjeta manda `_tarjeta` y solo sus campos; `AjustesCasetaController` hace `array_merge(vigentes, recibidos)` antes de validar, así una tarjeta no borra las demás. Regresa a `#cfg-<tarjeta>` (sin `_tarjeta`, a `#caseta`).
+
+### Ajustes nuevos (antes solo en código o en la base de datos)
+
+| Ajuste | Clave | Límites | Original | Dónde se aplica |
+|---|---|---|---|---|
+| Reloj del visto bueno: amarillo / rojo | `preferencias.caseta.vobo_horas_amarillo` / `vobo_horas_rojo` | 1–168 / 2–720, rojo > amarillo | 24 / 72 | `RelojVoBo::umbralesActuales()` en `componentes/reloj-vobo` (transporte y procedimientos) y `PendientesActivos` (Mis pendientes). El texto se arma con los umbrales («más de 36 h», «más de 3 días»). El Catálogo comercial (sin empresa) usa las constantes. |
+| Recordar procedimientos cada N días | `preferencias.caseta.procedimientos_recordatorio_dias` | 1–30 | 3 | `AdministradorProcedimientos::recordatorios()` por empresa |
+| Nombres en el menú | `empresa_modulos.nombre_visible` | 40 letras, `[\pL\pN .&-]` | vacío | `App\Support\NombresMenu` (`PUT /configuracion/menu`, `configuracion.editar` empresa, auditoría `configuracion.menu`). Excluye `novedades` (tiene su ajuste). Lo leen el menú y «Lo que verá» de la Matriz. |
+
+### Pruebas
+
+`tests/Feature/Direccion/ConfiguracionSeccionesTest.php` (secciones e índice por rol, Plataforma solo SA, Vo.Bo. y recordatorio se guardan y se aplican, tarjetas que no se pisan, nombres del menú, restablecer de cada tarjeta, rol que solo consulta y rol sin permiso).
+
+## Tabla anterior (referencia)
 
 | Sección | Quién | Dónde se guarda |
 |---|---|---|
@@ -69,6 +104,6 @@ Antes era la pantalla `/lost-found/dias-resguardo` dentro de Lost & Found; ahora
 
 ## Caseta y activos (ADR-0014)
 
-Sección «Caseta y activos» (`_caseta.blade.php`, `PUT /configuracion/caseta`, `configuracion.editar` con alcance de empresa): firmas de los vales de taxi, semáforo de llaves, hora de regreso de los equipos «Turno» y acuse de procedimientos, en `empresas.preferencias['caseta']` (solo lo distinto de la omisión). Auditoría `configuracion.caseta`. Detalle: [caseta-y-activos.md](caseta-y-activos.md).
+Ajustes de caseta y activos (`_caseta.blade.php` con `$tarjeta`, `PUT /configuracion/caseta`, `configuracion.editar` con alcance de empresa): firmas de los vales de taxi (Transporte), semáforo de llaves y equipos «Turno» (Activos), acuse y recordatorio de procedimientos (Caseta y accesos) y reloj del visto bueno (General), en `empresas.preferencias['caseta']` (solo lo distinto de la omisión). Auditoría `configuracion.caseta`. Detalle: [caseta-y-activos.md](caseta-y-activos.md).
 
 > Mejoras de 2026-10 (roles sin números, asistente de permisos, configuración por módulo, avisos por persona, historial y varias sedes): ver [estructura-mejoras.md](estructura-mejoras.md) y [ADR-0016](../decisiones/ADR-0016-mejoras-de-estructura.md).
