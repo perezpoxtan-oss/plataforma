@@ -13,6 +13,7 @@ Petición del dueño: «si lo usamos desde navegador, que el navegador emita un 
 | Consulta en segundo plano | `GET /notificaciones/resumen` con la cabecera `X-Segundo-Plano: 1`. `ControlarInactividad` **no** actualiza `ultima_actividad` con esa cabecera: la consulta automática no alarga la sesión. El cierre por inactividad sigue aplicando (devuelve 401 y la pestaña va al aviso de sesión). |
 | Interfaz | `resources/views/componentes/avisos-navegador.blade.php` (estado + **Activar avisos en este navegador** / **Apagar avisos en este navegador**), incluido al final del panel de la campana y en Mi cuenta (`#avisos-navegador`). Oculto hasta que el JS pinta el estado (sin JS no se ve). |
 | Ícono | `data-aviso-icono` en `componentes/campana.blade.php`: `favicon` de Identidad o, si no hay, `simbolo`. Sin ninguno, el navegador usa su ícono. |
+| App de Android | Dentro de la app (`App\Support\AppMovil::es()`) el componente y el bloque de Mi cuenta no se muestran: no aplican en el WebView (ver `app-movil.md`). |
 | JS | `public/js/plataforma.js`, bloque «Recepción de candidatos y autorizaciones departamentales», sección «Avisos del navegador». Sin JS en línea; la CSP (`CabecerasSeguridad`) no cambia: la Notification API no la regula, el ícono es `'self'` y la consulta es `connect-src 'self'`. |
 
 ## Comportamiento (plataforma.js)

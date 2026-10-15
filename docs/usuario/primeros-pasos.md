@@ -83,6 +83,33 @@ Mientras escribes un nombre, debajo del campo puede salir un aviso:
 | **Se parece** (amarillo) | Hay uno muy parecido. | Revisa que no sea el mismo antes de guardar. |
 | **Disponible** (verde) | No hay otro igual. | Puedes guardar. |
 
+## Cómo instalar la plataforma en tu celular o computadora
+
+Puedes dejar la plataforma como un ícono en tu celular o en tu computadora, igual que una aplicación: se abre en su propia ventana, sin barra de direcciones. No ocupa espacio ni se actualiza aparte: siempre es la misma plataforma.
+
+**En un celular Android (Chrome):**
+
+1. Abre **la dirección de tu plataforma** en Chrome.
+2. Toca el menú **⋮** (arriba a la derecha).
+3. Toca **Instalar app** o **Agregar a la pantalla principal**.
+4. Confirma con **Instalar**.
+
+**En un iPhone o iPad (Safari):**
+
+1. Abre **la dirección de tu plataforma** en Safari.
+2. Toca el botón **Compartir** (el cuadro con la flecha hacia arriba).
+3. Toca **Agregar a inicio** y luego **Agregar**.
+
+**En una computadora (Chrome o Edge):**
+
+1. Abre **la dirección de tu plataforma**.
+2. Toca el ícono de **Instalar** que aparece al final de la barra de direcciones (una pantalla con una flecha), o el menú **⋮** → **Transmitir, guardar y compartir** → **Instalar**.
+3. Confirma con **Instalar**.
+
+**Qué debes ver:** el ícono de la plataforma (un escudo) en tu pantalla de inicio o en tu escritorio. Al tocarlo se abre la pantalla para entrar o, si tu sesión sigue abierta, tu inicio.
+
+Si te quedas sin internet, en lugar de un error verás la pantalla **Sin conexión** con el botón **Reintentar**. Lo que no alcanzaste a guardar no se envió: cuando regrese la señal, vuelve a guardarlo.
+
 ## Cómo pedir ayuda
 
 1. Busca primero en este manual (botón **?**).
@@ -97,10 +124,14 @@ Mientras escribes un nombre, debajo del campo puede salir un aviso:
 | «No tienes permiso para ver esto» | Tu rol no tiene acceso a esa pantalla o a ese registro. | Pide a tu supervisor que lo haga o a tu administrador que te dé el permiso. |
 | «No encontramos lo que buscas» | La página o el registro no existe o es de otra sede. | Regresa a **Inicio** y entra desde el menú. |
 | La pantalla te regresa a **Entrar** | Se cerró la sesión por no usarla. | Vuelve a entrar. |
+| Sale la pantalla **Sin conexión** | Tu celular o computadora no tiene internet en ese momento. | Revisa tus datos o el wifi y toca **Reintentar**. |
+| No aparece la opción **Instalar** | Tu navegador no lo permite o ya está instalada. | Usa Chrome (Android, computadora) o Safari (iPhone); revisa si ya tienes el ícono. |
 
 ## Preguntas frecuentes
 
-- **¿Puedo usar la plataforma en mi celular?** Sí. Funciona en el navegador del celular, igual que en la computadora.
+- **¿Puedo usar la plataforma en mi celular?** Sí. Funciona en el navegador del celular, igual que en la computadora, y puedes instalarla como ícono (ver arriba).
+- **¿La plataforma instalada funciona sin internet?** No. Necesita internet para guardar y consultar; sin señal solo muestra **Sin conexión**.
+- **¿Cómo la quito?** Como cualquier aplicación: mantén presionado el ícono y elige **Desinstalar** o **Eliminar**. Tus datos no se borran: siguen en la plataforma.
 - **¿Se pierde lo que capturé si me sale un error?** No. La ventana se queda abierta con tus datos; solo corrige lo que está en rojo.
 - **¿Por qué no veo todas las sedes?** Solo ves las sedes donde trabajas.
 - **¿Puedo cambiar los colores de la pantalla?** Sí, con el botón del sol: modo **Sol** para exteriores y **Noche** para el turno nocturno.

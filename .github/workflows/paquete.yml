@@ -76,6 +76,7 @@ jobs:
             --exclude=./.git --exclude=./.github --exclude=./tests "${FUERA_DOCS[@]}" --exclude=./docs/usuario/GUIA.md \
             --exclude=./storage --exclude=./node_modules --exclude=./.env \
             --exclude=./database/database.sqlite --exclude=./phpunit.xml --exclude=./junit.xml \
+            --exclude=./movil \
             .
           ls -lh "$RUNNER_TEMP/paquete.tar.gz"
           sha256sum "$RUNNER_TEMP/paquete.tar.gz"

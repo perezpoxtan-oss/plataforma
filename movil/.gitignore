@@ -1,0 +1,5 @@
+node_modules/
+# Firma de la app para Google Play: nunca en el repositorio
+*.jks
+*.keystore
+keystore.properties
