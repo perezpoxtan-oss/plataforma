@@ -32,6 +32,10 @@ class PendientesActivos
     {
         $items = [];
 
+        // La empresa ya viene cargada con el usuario (EstablecerEmpresa): sin consulta de más
+        $empresa = ! $actor->es_superadmin && (int) $actor->empresa_id === $empresaId && $actor->relationLoaded('empresa') ? $actor->empresa : $empresaId;
+        $ajustes = AjustesCaseta::de($empresa);
+
         // Vales de taxi que esperan el Vo.Bo. (dentro del alcance de «Aprobar»): una sola consulta
         if ($actor->can('transporte.aprobar') && $actor->can('transporte.ver')) {
             $fila = app(BitacoraTransporte::class)->limitar(MovimientoTransporte::query(), $actor, 'transporte.aprobar')
@@ -40,17 +44,14 @@ class PendientesActivos
                 ->selectRaw('COUNT(*) as total, MIN(movimientos_transporte.fecha) as desde, MIN(movimientos_transporte.created_at) as esperando_desde')->first();
             $total = (int) ($fila->total ?? 0);
             $desde = $total > 0 && $fila->desde ? substr((string) $fila->desde, 0, 10) : null;
-            // Color del renglón por el vale que más lleva esperando (RelojVoBo: amarillo 24–72 h, rojo > 72 h)
-            $nivel = $total > 0 && $fila->esperando_desde ? RelojVoBo::de(Carbon::parse((string) $fila->esperando_desde, 'UTC'))['nivel'] : null;
+            // Color del renglón por el vale que más lleva esperando (RelojVoBo con los umbrales de la empresa)
+            $nivel = $total > 0 && $fila->esperando_desde
+                ? RelojVoBo::de(Carbon::parse((string) $fila->esperando_desde, 'UTC'), null, [(int) $ajustes['vobo_horas_amarillo'], (int) $ajustes['vobo_horas_rojo']])['nivel'] : null;
             $items[] = $this->item('vales_taxi', 'Vales de taxi por autorizar', 'bi-taxi-front', $total,
                 route('transporte.index', array_filter(['estado' => 'por_autorizar', 'fecha_inicio' => $desde])), $nivel === 'normal' ? null : $nivel);
         }
 
         // «Procedimientos por aprobar» lo pinta MisPendientes en su lugar (ADR-0016) con procedimientosPorAprobar()
-
-        // La empresa ya viene cargada con el usuario (EstablecerEmpresa): sin consulta de más
-        $empresa = ! $actor->es_superadmin && (int) $actor->empresa_id === $empresaId && $actor->relationLoaded('empresa') ? $actor->empresa : $empresaId;
-        $ajustes = AjustesCaseta::de($empresa);
 
         // Llaves fuera de tiempo (semáforo configurado)
         if ($actor->can('prestamo_llaves.editar') && AdministradorPrestamosLlaves::conSemaforo($ajustes)) {

@@ -3,21 +3,36 @@
 @section('titulo', 'Configuración')
 
 @php
-    // Mejoras estructura (ADR-0016): ordenada por módulo, con un interruptor general de avisos por módulo
+    // Configuración por secciones (petición del dueño, 2026-10-15): cada sección junta los ajustes de un tema,
+    // con sus avisos por correo (ADR-0016) y, si un ajuste vive en otro módulo, su enlace «Configurar en …».
+    // Inventario completo: docs/tecnico/configuracion-inventario.md
+    $u = auth()->user();
     $mostrarAvisos = $empresa && $verConfiguracion;
-    $puedePases = $empresa && auth()->user()->can('pases_salida.configurar');
-    $puedeRecepcion = $empresa && auth()->user()->can('candidatos.configurar');
-    $puedeBolsa = $empresa && auth()->user()->can('vacantes.configurar');
-    $indice = [];
-    if ($mostrarAvisos) {
-        foreach ($grupos as $g => $def) { $indice['config-'.$g] = $def['nombre']; }
-    } else {
-        if ($puedePases) { $indice['t-pases-salida'] = 'Pases de salida'; }
-        if ($puedeRecepcion || $puedeBolsa) { $indice['recepcion'] = 'Recepción y candidatos'; }
-    }
-    if ($mostrarAvisos) { $indice['caseta'] = 'Caseta y activos'; }
-    if ($lostFound) { $indice['lost-found'] = 'Lost & Found'; }
-    if ($esSuperadmin) { $indice['t-correo'] = 'Correo de la plataforma'; $indice['t-respaldos'] = 'Respaldos'; }
+    $nombreBitacora = $empresa ? app(\App\Services\Novedades\AjustesNovedades::class)->nombreMenu($empresa->id) : 'Novedades';
+    // Grupo de avisos => sección donde se muestra (los que no estén aquí van en «Avisos por correo»)
+    $seccionDeGrupo = ['cuentas' => 'sec-cuentas', 'colaboradores' => 'caseta', 'padrones' => 'caseta', 'procedimientos' => 'caseta',
+        'novedades' => 'sec-novedades', 'pases_salida' => 'sec-pases', 'transporte' => 'sec-transporte', 'vouchers' => 'sec-activos', 'candidatos' => 'sec-rh'];
+    $gruposEn = fn (string $seccion) => $mostrarAvisos
+        ? array_filter($grupos, fn ($g) => ($seccionDeGrupo[$g] ?? 'sec-avisos') === $seccion, ARRAY_FILTER_USE_KEY) : [];
+    $verPases = $empresa && $u->can('pases_salida.configurar');
+    $verRecepcion = $empresa && $u->can('candidatos.configurar');
+    $verBolsa = $empresa && $u->can('vacantes.configurar');
+    $verNovedades = $mostrarAvisos && $u->can('novedades.ver');
+    $plataforma = $esSuperadmin;
+    // [ancla, nombre, icono, ¿se muestra?]
+    $secciones = [
+        ['sec-general', 'General', 'bi-sliders', $mostrarAvisos],
+        ['caseta', 'Caseta y accesos', 'bi-door-open', $mostrarAvisos || isset($enOtras['esperas']) || isset($enOtras['impresion'])],
+        ['sec-rh', 'Recepción y RR. HH.', 'bi-people', $mostrarAvisos || $verRecepcion || $verBolsa],
+        ['sec-novedades', $nombreBitacora, 'bi-headset', $mostrarAvisos || $lostFound],
+        ['sec-activos', 'Activos', 'bi-key', $mostrarAvisos],
+        ['sec-transporte', 'Transporte', 'bi-taxi-front', $mostrarAvisos],
+        ['sec-pases', 'Pases de salida', 'bi-box-arrow-up-right', $mostrarAvisos || $verPases],
+        ['sec-avisos', 'Avisos por correo', 'bi-envelope', $mostrarAvisos],
+        ['sec-cuentas', 'Cuentas y seguridad', 'bi-shield-lock', $mostrarAvisos],
+        ['sec-plataforma', 'Plataforma', 'bi-hdd-network', $plataforma],
+    ];
+    $visibles = array_values(array_filter($secciones, fn ($s) => $s[3]));
 @endphp
 
 @section('contenido')
@@ -29,7 +44,7 @@
         <div class="icono"><i class="bi bi-sliders text-primary" aria-hidden="true"></i></div>
         <div>
             <h1>Configuración</h1>
-            <p>Ordenada por módulo: sus avisos y sus ajustes. Lo que se cambia en otra pantalla trae su botón «Ir a…».</p>
+            <p>Ordenada por secciones: cada una junta sus ajustes y sus avisos. Cada ajuste dice su valor original; lo que se configura en otra pantalla trae su botón «Configurar en …».</p>
         </div>
     </div>
 
@@ -39,10 +54,10 @@
         <span>Versión instalada: <strong>{{ $version['numero'] ?? 'sin número (equipo de desarrollo)' }}</strong>@if ($version['instalada']) · desde el @fecha($version['instalada'], 'd/m/Y H:i')@endif</span>
     </div>
 
-    @if (count($indice) > 1)
-        <nav class="indice-config mb-3" aria-label="Módulos de la configuración">
-            @foreach ($indice as $ancla => $nombre)
-                <a href="#{{ $ancla }}" class="chip-config">{{ $nombre }}</a>
+    @if (count($visibles) > 1)
+        <nav class="indice-config mb-3" aria-label="Secciones de la configuración">
+            @foreach ($visibles as [$ancla, $nombre, $icono])
+                <a href="#{{ $ancla }}" class="chip-config"><i class="bi {{ $icono }} me-1" aria-hidden="true"></i>{{ $nombre }}</a>
             @endforeach
         </nav>
     @endif
@@ -53,135 +68,233 @@
             @csrf
             @method('PUT')
         </form>
-        @unless ($correoListo)
-            <div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>El correo de la plataforma aún no está configurado: los avisos por correo se activarán cuando el Super Administrador lo configure. Los de la campana sí llegan.</div>
-        @endunless
     @endif
 
     <div class="secciones-config">
-        @if ($mostrarAvisos)
-            @foreach ($grupos as $grupo => $def)
-                @php $encendido = \App\Support\GruposAvisos::encendido($empresa, $grupo); @endphp
-                <section class="config-modulo" id="config-{{ $grupo }}" aria-labelledby="t-config-{{ $grupo }}">
-                    <div class="tarjeta p-4" data-modulo-avisos>
-                        <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
-                            <h2 id="t-config-{{ $grupo }}" class="h5 fw-bold m-0"><i class="bi {{ $def['icono'] }} me-2 text-primary" aria-hidden="true"></i>{{ $def['nombre'] }}</h2>
-                            <div class="form-check form-switch interruptor-modulo m-0">
-                                <input type="hidden" name="avisos_modulos[{{ $grupo }}]" value="0" form="formAvisos" @disabled(! $puedeEditar)>
-                                <input class="form-check-input" type="checkbox" role="switch" id="mod_{{ $grupo }}" name="avisos_modulos[{{ $grupo }}]" value="1" form="formAvisos"
-                                       data-interruptor-modulo @checked($encendido) @disabled(! $puedeEditar)>
-                                <label class="form-check-label small fw-bold" for="mod_{{ $grupo }}">Avisos de este módulo <span data-interruptor-texto>{{ $encendido ? 'encendidos' : 'apagados' }}</span></label>
-                            </div>
-                        </div>
-                        <p class="small text-muted mt-2 mb-2">Se envían a quienes pueden atender cada asunto, al correo de su cuenta. Si apagas el interruptor, no sale ninguno de este módulo aunque esté marcado.</p>
-                        <div class="avisos-del-modulo {{ $encendido ? '' : 'apagado' }}" data-avisos-del-modulo>
-                            @foreach ($def['avisos'] as $clave => [$etiqueta, $porDefecto])
-                                <label class="opcion-todas">
-                                    <input type="checkbox" name="avisos[{{ $clave }}]" value="1" form="formAvisos" @checked($empresa->preferencias['avisos'][$clave] ?? $porDefecto) @disabled(! $puedeEditar)>
-                                    <span>{{ $etiqueta }}</span>
-                                </label>
-                                @if (in_array($clave, \App\Models\Empresa::AVISOS_CON_DESTINATARIOS, true))
-                                    <div class="ms-4 mb-3">
-                                        <label class="campo-etiqueta" for="dest_{{ $clave }}">Correos que lo reciben <span class="text-lowercase fw-normal">(uno por línea o separados por coma)</span></label>
-                                        <textarea id="dest_{{ $clave }}" name="destinatarios[{{ $clave }}]" form="formAvisos" class="campo mb-1" rows="2" maxlength="3500" placeholder="finanzas@tuempresa.com" @disabled(! $puedeEditar)>{{ old("destinatarios.$clave", implode("\n", $empresa->destinatariosAviso($clave))) }}</textarea>
-                                        <p class="campo-ayuda mt-0">Si lo dejas vacío, se envía a los usuarios que pueden autorizar vales de taxi en esa sede.</p>
-                                    </div>
-                                @endif
-                                {{-- Ronda 5 (LL-04): una lista por copia del voucher con cobro --}}
-                                @if ($clave === 'voucher_cobro')
-                                    <div class="ms-4 mb-3 destinatarios-voucher">
-                                        @foreach (\App\Models\Empresa::DESTINATARIOS_VOUCHER as $dest => $copia)
-                                            <label class="campo-etiqueta" for="dest_{{ $dest }}">{{ $copia }} <span class="text-lowercase fw-normal">(correos, uno por línea o separados por coma)</span></label>
-                                            <textarea id="dest_{{ $dest }}" name="destinatarios[{{ $dest }}]" form="formAvisos" class="campo mb-2" rows="2" maxlength="3500" placeholder="{{ \Illuminate\Support\Str::after($dest, 'voucher_') }}@tuempresa.com" @disabled(! $puedeEditar)>{{ old("destinatarios.$dest", implode("\n", $empresa->destinatariosAviso($dest))) }}</textarea>
-                                        @endforeach
-                                        <p class="campo-ayuda mt-0">El colaborador responsable no recibe copia. Si dejas las tres listas vacías, se envía a los usuarios que pueden imprimir vouchers en esa sede.</p>
-                                    </div>
-                                @endif
-                            @endforeach
-                        </div>
-                        @if ($puedeEditar)
-                            <button type="submit" form="formAvisos" name="_grupo" value="{{ $grupo }}" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar avisos</button>
-                        @else
-                            <p class="small text-muted mb-0 mt-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Tu rol solo puede consultar los avisos.</p>
-                        @endif
-
-                        @if ($grupo === 'cuentas')
-                            @include('administracion.configuracion._auditoria')
-                        @endif
+        {{-- ============================== General ============================== --}}
+        @if ($secciones[0][3])
+            <section class="seccion-config" id="sec-general" aria-labelledby="t-sec-general">
+                <h2 id="t-sec-general" class="titulo-seccion-config"><i class="bi bi-sliders" aria-hidden="true"></i>General</h2>
+                @isset($enOtras['empresa'])
+                    <div class="tarjeta p-4 tarjeta-enlace-config">
+                        <h3 class="h6 fw-bold"><i class="bi bi-building me-2 text-primary" aria-hidden="true"></i>Datos de la empresa</h3>
+                        <p class="small mb-1">Zona horaria: <strong>{{ $enOtras['empresa']['zona'] }}</strong> <span class="valor-original">· Valor original: {{ \App\Support\ZonasHorarias::etiqueta('America/Mexico_City') }}</span>. Cada sede puede tener la suya (en Sedes).</p>
+                        <p class="small text-muted mb-2">Nombre, razón social, RFC, logo y zona horaria se cambian en Empresas.</p>
+                        <a href="{{ $enOtras['empresa']['url'] }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Empresas</a>
                     </div>
-
-                    @if ($grupo === 'novedades')
-            {{-- Mejoras Incidentes: Bitácora de novedades (nombre del menú y hallazgos de recorrido) --}}
-            @if (auth()->user()->can('novedades.ver'))
-                @include('seguridad.novedades._config', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
-            @endif
-            {{-- Fin Mejoras Incidentes --}}
-                    @endif
-                    @if ($grupo === 'pases_salida')
-            {{-- Pases de salida: circuito de aprobación (ver docs/tecnico/pases-salida.md) --}}
-            @if ($empresa && auth()->user()->can('pases_salida.configurar'))
-                @include('seguridad.pases-salida._config-resumen', ['empresa' => $empresa])
-            @endif
-            {{-- Fin Pases de salida --}}
-                    @endif
-                    @if ($grupo === 'candidatos')
-            {{-- Recepción de candidatos: aviso de privacidad y kiosco (ADR-0007) --}}
-            @if ($empresa && auth()->user()->can('candidatos.configurar'))
-                @include('rh.recepcion._ajustes', ['empresa' => $empresa])
-            @endif
-            {{-- Fin Recepción de candidatos --}}
-            {{-- Vacantes: bolsa de trabajo en internet (lección 36) --}}
-            @if ($empresa && auth()->user()->can('vacantes.configurar'))
-                @include('rh.vacantes._ajustes-bolsa', ['empresa' => $empresa])
-            @endif
-            {{-- Fin Vacantes --}}
-                    @endif
-                </section>
-            @endforeach
-        @else
-        {{-- Pases de salida: circuito de aprobación (ver docs/tecnico/pases-salida.md) --}}
-        @if ($empresa && auth()->user()->can('pases_salida.configurar'))
-            @include('seguridad.pases-salida._config-resumen', ['empresa' => $empresa])
-        @endif
-        {{-- Fin Pases de salida --}}
-        {{-- Recepción de candidatos: aviso de privacidad y kiosco (ADR-0007) --}}
-        @if ($empresa && auth()->user()->can('candidatos.configurar'))
-            @include('rh.recepcion._ajustes', ['empresa' => $empresa])
-        @endif
-        {{-- Fin Recepción de candidatos --}}
-        {{-- Vacantes: bolsa de trabajo en internet (lección 36) --}}
-        @if ($empresa && auth()->user()->can('vacantes.configurar'))
-            @include('rh.vacantes._ajustes-bolsa', ['empresa' => $empresa])
-        @endif
-        {{-- Fin Vacantes --}}
-        @endif
-
-        {{-- Mejoras activos: ajustes de caseta (ADR-0014): transporte, llaves, responsivas y procedimientos en una sola tarjeta --}}
-        @if ($mostrarAvisos)
-            @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
-        @endif
-        {{-- Fin Mejoras activos --}}
-
-        {{-- ================= Lost & Found: días de resguardo (empresa) ================= --}}
-        @if ($lostFound)
-            <section class="tarjeta p-4 config-lost-found" id="lost-found" aria-labelledby="t-lost-found">
-                <h2 id="t-lost-found" class="h5 fw-bold"><i class="bi bi-bag-fill me-2 text-warning" aria-hidden="true"></i>Lost &amp; Found: días de resguardo</h2>
-                <p class="small text-muted">Cuántos días puede estar un artículo en resguardo, según su clasificación, antes de que el semáforo lo marque para atención. Aplica a todas las sedes de {{ $empresa->nombre_comercial }}. También se cambian desde el botón <strong>Días de resguardo</strong> del archivo de Lost &amp; Found: es el mismo dato.</p>
-                @unless ($lostFound['puedeEditar'])
-                    <div class="alert alert-secondary small py-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Tu rol solo puede consultar esta configuración, no modificarla.</div>
-                @endunless
-                <form action="{{ route('configuracion.lost_found') }}" method="POST">
-                    @csrf
-                    @method('PUT')
-                    {{-- Los mismos campos que el diálogo «Días de resguardo» del archivo de Lost & Found --}}
-                    @include('seguridad.lost-found._dias-campos', ['dias' => $lostFound['dias'], 'guardados' => $lostFound['guardados'], 'puedeEditar' => $lostFound['puedeEditar'], 'prefijo' => ''])
-                    @if ($lostFound['puedeEditar'])
-                        <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar días de resguardo</button>
-                    @endif
-                </form>
+                @endisset
+                @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'vobo'])
+                @include('administracion.configuracion._menu', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
             </section>
         @endif
+
+        {{-- ========================== Caseta y accesos ========================== --}}
+        @if ($secciones[1][3])
+            <section class="seccion-config" id="caseta" aria-labelledby="t-sec-caseta">
+                <h2 id="t-sec-caseta" class="titulo-seccion-config"><i class="bi bi-door-open" aria-hidden="true"></i>Caseta y accesos</h2>
+                @isset($enOtras['esperas'])
+                    @php $e = $enOtras['esperas']; @endphp
+                    <div class="tarjeta p-4 tarjeta-enlace-config" id="cfg-esperas">
+                        <h3 class="h6 fw-bold"><i class="bi bi-hourglass-split me-2 text-primary" aria-hidden="true"></i>Quién espera autorización del departamento</h3>
+                        <ul class="small mb-2">
+                            @foreach ($e['tipos'] as [$tipo, $espera])
+                                <li>{{ $tipo }}: <strong>{{ $espera ? 'espera la autorización' : 'pasa sin esperar' }}</strong></li>
+                            @endforeach
+                            <li>Quien viene con Recursos Humanos: <strong>{{ $e['rh'] ? 'la caseta espera el «Que pase»' : 'pasa sin esperar' }}</strong></li>
+                            <li>Recordar a los <strong>{{ $e['recordar'] }} min</strong> y avisar al suplente y al jefe a los <strong>{{ $e['escalar'] }} min</strong></li>
+                        </ul>
+                        <p class="small text-muted mb-2"><span class="valor-original">Valor original: todos esperan la autorización; recordar a los {{ \App\Services\Recepcion\PanelRecepcion::ESPERA_AMBAR }} min y avisar a los {{ \App\Services\Recepcion\PanelRecepcion::ESPERA_ROJA }} min.</span> Quién autoriza en cada departamento y sus suplentes también se eligen ahí.</p>
+                        <a href="{{ $e['url'] }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Responsables por departamento</a>
+                    </div>
+                @endisset
+                @isset($enOtras['impresion'])
+                    <div class="tarjeta p-4 tarjeta-enlace-config" id="cfg-impresion">
+                        <h3 class="h6 fw-bold"><i class="bi bi-printer me-2 text-primary" aria-hidden="true"></i>Imprimir etiquetas desde los padrones</h3>
+                        <p class="small mb-1">Hoy: <strong>{{ $enOtras['impresion']['texto'] }}</strong></p>
+                        <p class="small text-muted mb-2"><span class="valor-original">Valor original: hoja propia de cada padrón.</span></p>
+                        <a href="{{ $enOtras['impresion']['url'] }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Etiquetas QR → Plantillas</a>
+                    </div>
+                @endisset
+                @if ($mostrarAvisos)
+                    @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'procedimientos'])
+                @endif
+                @foreach ($gruposEn('caseta') as $grupo => $def)
+                    @include('administracion.configuracion._avisos-grupo')
+                @endforeach
+            </section>
+        @endif
+
+        {{-- ========================= Recepción y RR. HH. ========================= --}}
+        @if ($secciones[2][3])
+            <section class="seccion-config" id="sec-rh" aria-labelledby="t-sec-rh">
+                <h2 id="t-sec-rh" class="titulo-seccion-config"><i class="bi bi-people" aria-hidden="true"></i>Recepción y RR. HH.</h2>
+                @foreach ($gruposEn('sec-rh') as $grupo => $def)
+                    @include('administracion.configuracion._avisos-grupo')
+                @endforeach
+                {{-- Recepción de candidatos: aviso de privacidad y kiosco (ADR-0007) --}}
+                @if ($verRecepcion)
+                    @include('rh.recepcion._ajustes', ['empresa' => $empresa])
+                @endif
+                @isset($enOtras['plazos'])
+                    <div class="tarjeta p-4 tarjeta-enlace-config" id="cfg-plazos">
+                        <h3 class="h6 fw-bold"><i class="bi bi-calendar-check me-2 text-primary" aria-hidden="true"></i>Candidatos: plazos y documentos para contratar</h3>
+                        <ul class="small mb-2">
+                            @foreach ($enOtras['plazos']['lista'] as [$etiqueta, $vigente, $original])
+                                <li>{{ $etiqueta }}: <strong>{{ $vigente }}</strong> <span class="valor-original">· original {{ $original }}</span></li>
+                            @endforeach
+                            <li>Documentos para contratar: <strong>{{ $enOtras['plazos']['documentos'] }}</strong></li>
+                        </ul>
+                        <a href="{{ $enOtras['plazos']['url'] }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Candidatos → Documentos y plazos</a>
+                    </div>
+                @endisset
+                @isset($enOtras['criterios'])
+                    <div class="tarjeta p-4 tarjeta-enlace-config" id="cfg-criterios">
+                        <h3 class="h6 fw-bold"><i class="bi bi-star me-2 text-primary" aria-hidden="true"></i>Criterios para calificar las entrevistas</h3>
+                        <p class="small mb-1">{{ implode(' · ', $enOtras['criterios']['lista']) }}</p>
+                        <p class="small text-muted mb-2"><span class="valor-original">{{ $enOtras['criterios']['propios'] ? 'Tu empresa cambió la lista original.' : 'Es la lista original.' }}</span></p>
+                        <a href="{{ $enOtras['criterios']['url'] }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Candidatos → Criterios de entrevista</a>
+                    </div>
+                @endisset
+                {{-- Vacantes: bolsa de trabajo en internet (lección 36) --}}
+                @if ($verBolsa)
+                    @include('rh.vacantes._ajustes-bolsa', ['empresa' => $empresa])
+                @endif
+            </section>
+        @endif
+
+        {{-- ============================ Novedades / Incidentes ============================ --}}
+        @if ($secciones[3][3])
+            <section class="seccion-config" id="sec-novedades" aria-labelledby="t-sec-novedades">
+                <h2 id="t-sec-novedades" class="titulo-seccion-config"><i class="bi bi-headset" aria-hidden="true"></i>{{ $nombreBitacora }}</h2>
+                @foreach ($gruposEn('sec-novedades') as $grupo => $def)
+                    @include('administracion.configuracion._avisos-grupo')
+                @endforeach
+                {{-- Mejoras Incidentes: Bitácora de novedades (nombre del menú y hallazgos de recorrido) --}}
+                @if ($verNovedades)
+                    @include('seguridad.novedades._config', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
+                @endif
+                {{-- Lost & Found: días de resguardo (empresa) --}}
+                @if ($lostFound)
+                    <div class="tarjeta p-4 config-lost-found" id="lost-found">
+                        <h3 id="t-lost-found" class="h6 fw-bold"><i class="bi bi-bag-fill me-2 text-warning" aria-hidden="true"></i>Lost &amp; Found: días de resguardo</h3>
+                        <p class="small text-muted">Cuántos días puede estar un artículo en resguardo, según su clasificación, antes de que el semáforo lo marque para atención. Aplica a todas las sedes de {{ $empresa->nombre_comercial }}. También se cambian desde el botón <strong>Días de resguardo</strong> del archivo de Lost &amp; Found: es el mismo dato.</p>
+                        @unless ($lostFound['puedeEditar'])
+                            <div class="alert alert-secondary small py-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Tu rol solo puede consultar esta configuración, no modificarla.</div>
+                        @endunless
+                        <form action="{{ route('configuracion.lost_found') }}" method="POST">
+                            @csrf
+                            @method('PUT')
+                            {{-- Los mismos campos que el diálogo «Días de resguardo» del archivo de Lost & Found --}}
+                            @include('seguridad.lost-found._dias-campos', ['dias' => $lostFound['dias'], 'guardados' => $lostFound['guardados'], 'puedeEditar' => $lostFound['puedeEditar'], 'prefijo' => ''])
+                            @if ($lostFound['puedeEditar'])
+                                <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar días de resguardo</button>
+                            @endif
+                        </form>
+                        @if ($lostFound['puedeEditar'] && $lostFound['dias'] !== array_replace($lostFound['dias'], \App\Models\LostFoundUmbral::POR_OMISION))
+                            @include('administracion.configuracion._restablecer', ['ajuste' => 'lost_found', 'que' => 'los días de resguardo de Lost & Found'])
+                        @endif
+                    </div>
+                @endif
+            </section>
+        @endif
+
+        {{-- =============================== Activos =============================== --}}
+        @if ($secciones[4][3])
+            <section class="seccion-config" id="sec-activos" aria-labelledby="t-sec-activos">
+                <h2 id="t-sec-activos" class="titulo-seccion-config"><i class="bi bi-key" aria-hidden="true"></i>Activos</h2>
+                @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'llaves'])
+                @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'responsivas'])
+                @foreach ($gruposEn('sec-activos') as $grupo => $def)
+                    @include('administracion.configuracion._avisos-grupo')
+                @endforeach
+            </section>
+        @endif
+
+        {{-- ============================== Transporte ============================== --}}
+        @if ($secciones[5][3])
+            <section class="seccion-config" id="sec-transporte" aria-labelledby="t-sec-transporte">
+                <h2 id="t-sec-transporte" class="titulo-seccion-config"><i class="bi bi-taxi-front" aria-hidden="true"></i>Transporte</h2>
+                @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'transporte'])
+                @foreach ($gruposEn('sec-transporte') as $grupo => $def)
+                    @include('administracion.configuracion._avisos-grupo')
+                @endforeach
+            </section>
+        @endif
+
+        {{-- =========================== Pases de salida =========================== --}}
+        @if ($secciones[6][3])
+            <section class="seccion-config" id="sec-pases" aria-labelledby="t-sec-pases">
+                <h2 id="t-sec-pases" class="titulo-seccion-config"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>Pases de salida</h2>
+                {{-- Pases de salida: circuito de aprobación (ver docs/tecnico/pases-salida.md) --}}
+                @if ($verPases)
+                    @include('seguridad.pases-salida._config-resumen', ['empresa' => $empresa])
+                @endif
+                @foreach ($gruposEn('sec-pases') as $grupo => $def)
+                    @include('administracion.configuracion._avisos-grupo')
+                @endforeach
+            </section>
+        @endif
+
+        {{-- =========================== Avisos por correo =========================== --}}
+        @if ($secciones[7][3])
+            <section class="seccion-config" id="sec-avisos" aria-labelledby="t-sec-avisos">
+                <h2 id="t-sec-avisos" class="titulo-seccion-config"><i class="bi bi-envelope" aria-hidden="true"></i>Avisos por correo</h2>
+                <div class="tarjeta p-4">
+                    @unless ($correoListo)
+                        <div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>El correo de la plataforma aún no está configurado: los avisos por correo se activarán cuando el Super Administrador lo configure. Los de la campana sí llegan.</div>
+                    @endunless
+                    <p class="small text-muted">Cada sección de arriba tiene sus avisos con un interruptor general. Aquí ves todos de un vistazo; toca uno para ir a sus casillas. Por omisión todos están encendidos, salvo los que dicen «Valor original: apagado».</p>
+                    <ul class="lista-avisos-config small mb-2">
+                        @foreach ($grupos as $grupo => $def)
+                            @php $encendido = \App\Support\GruposAvisos::encendido($empresa, $grupo); @endphp
+                            <li><a href="#config-{{ $grupo }}">{{ $def['nombre'] }}</a>: <strong>{{ $encendido ? 'encendidos' : 'apagados' }}</strong></li>
+                        @endforeach
+                    </ul>
+                    <p class="small text-muted mb-0">Cada persona puede silenciar los avisos que no quiere recibir en <a href="{{ route('mi-cuenta.index') }}">Mi cuenta → Mis avisos</a>.</p>
+                    @if ($puedeEditar)
+                        @include('administracion.configuracion._restablecer', ['ajuste' => 'avisos', 'que' => 'todos los avisos por correo (los correos que capturaste se conservan)'])
+                    @endif
+                </div>
+                @foreach ($gruposEn('sec-avisos') as $grupo => $def)
+                    @include('administracion.configuracion._avisos-grupo')
+                @endforeach
+            </section>
+        @endif
+
+        {{-- ========================= Cuentas y seguridad ========================= --}}
+        @if ($secciones[8][3])
+            <section class="seccion-config" id="sec-cuentas" aria-labelledby="t-sec-cuentas">
+                <h2 id="t-sec-cuentas" class="titulo-seccion-config"><i class="bi bi-shield-lock" aria-hidden="true"></i>Cuentas y seguridad</h2>
+                @foreach ($gruposEn('sec-cuentas') as $grupo => $def)
+                    @include('administracion.configuracion._avisos-grupo')
+                @endforeach
+                <div class="tarjeta p-4" id="cfg-sesion">
+                    <h3 class="h6 fw-bold"><i class="bi bi-hourglass-bottom me-2 text-primary" aria-hidden="true"></i>Cierre de sesión por inactividad</h3>
+                    <p class="small mb-0">La sesión se cierra sola tras <strong>{{ (int) config('plataforma.sesion.inactividad_minutos') }} minutos</strong> sin actividad, en todas las empresas. <span class="valor-original">Valor original: 20 minutos.</span> Es un ajuste de la plataforma: si necesitas otro tiempo, pídelo a quien administra la plataforma.</p>
+                </div>
+            </section>
+        @endif
+
+        {{-- ============================== Plataforma ============================== --}}
         @if ($esSuperadmin)
+            <div class="seccion-config" id="sec-plataforma">
+                <h2 id="t-sec-plataforma" class="titulo-seccion-config"><i class="bi bi-hdd-network" aria-hidden="true"></i>Plataforma</h2>
+                <div class="tarjeta p-4 tarjeta-enlace-config">
+                    <h3 class="h6 fw-bold"><i class="bi bi-gear-wide-connected me-2 text-primary" aria-hidden="true"></i>Ajustes de toda la plataforma</h3>
+                    <p class="small text-muted">Solo tú (Super Administrador) ves esta sección. No son de una empresa: aplican a todas.</p>
+                    <ul class="lista-enlaces-config small mb-0">
+                        @if (auth()->user()->can('identidad.ver'))
+                            <li><a href="{{ route('identidad.edit') }}">Identidad de la plataforma</a>: nombre, logotipo y colores.</li>
+                        @endif
+                        @if (auth()->user()->can('catalogo_comercial.ver'))
+                            <li><a href="{{ route('catalogo-comercial.index', ['pestana' => 'ajustes']) }}">Catálogo comercial → Ajustes</a>: moneda, IVA, página pública y suscripciones (días de prueba, días de gracia, descuento anual y avisos de vencimiento).</li>
+                            <li><a href="{{ route('catalogo-comercial.index', ['pestana' => 'clientes']) }}">Catálogo comercial → Clientes</a>: plan, sedes, usuarios y excepciones de cada cliente.</li>
+                        @endif
+                        <li><a href="{{ route('empresas.index') }}">Empresas</a>: módulos contratados de cada empresa (botón de la cuadrícula).</li>
+                        <li>Correo de la plataforma y respaldos: aquí abajo.</li>
+                    </ul>
+                </div>
+            </div>
             {{-- ================= Correo saliente (plataforma) ================= --}}
             <section class="tarjeta p-4" aria-labelledby="t-correo">
                 <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">

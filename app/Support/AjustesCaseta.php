@@ -24,6 +24,13 @@ use Illuminate\Validation\ValidationException;
  *  - procedimientos_acuse: cómo se firma «Leí y entendí» (firma = original;
  *    casilla; casilla_criticos = casilla salvo procedimientos con puntos
  *    críticos, que piden firma).
+ *  - procedimientos_recordatorio_dias: cada cuántos días como máximo se
+ *    recuerda a cada persona los procedimientos sin «Leí y entendí» (3 =
+ *    original; antes AdministradorProcedimientos::RECORDATORIO_CADA_DIAS).
+ *  - vobo_horas_amarillo / vobo_horas_rojo: reloj de lo que espera un visto
+ *    bueno (vales de taxi y procedimientos en revisión): amarillo desde las
+ *    24 h y rojo después de las 72 h (originales; antes constantes de
+ *    RelojVoBo). Configuración → General.
  */
 class AjustesCaseta
 {
@@ -50,20 +57,45 @@ class AjustesCaseta
         'responsivas_horas_turno' => 0,
         'responsivas_horas_escalar' => 0,
         'procedimientos_acuse' => 'firma',
+        'procedimientos_recordatorio_dias' => 3,
+        'vobo_horas_amarillo' => 24,
+        'vobo_horas_rojo' => 72,
     ];
 
-    /** Límites de las horas (para validar y para el formulario). */
+    /** Límites de los números (para validar y para el formulario). */
     public const MAX_HORAS = [
         'llaves_horas_aviso' => 72,
         'llaves_horas_escalar' => 168,
         'responsivas_horas_turno' => 24,
         'responsivas_horas_escalar' => 48,
+        'procedimientos_recordatorio_dias' => 30,
+        'vobo_horas_amarillo' => 168,
+        'vobo_horas_rojo' => 720,
+    ];
+
+    /** Mínimos de los números que no se pueden apagar (los demás admiten 0 = apagado). */
+    public const MIN = [
+        'procedimientos_recordatorio_dias' => 1,
+        'vobo_horas_amarillo' => 1,
+        'vobo_horas_rojo' => 2,
+    ];
+
+    /**
+     * Grupos de ajustes por tarjeta de Configuración: cada formulario manda
+     * solo los suyos y «Restablecer valor original» regresa solo esos.
+     */
+    public const GRUPOS = [
+        'transporte' => ['transporte_firmas'],
+        'llaves' => ['llaves_horas_aviso', 'llaves_horas_escalar'],
+        'responsivas' => ['responsivas_horas_turno', 'responsivas_horas_escalar'],
+        'procedimientos' => ['procedimientos_acuse', 'procedimientos_recordatorio_dias'],
+        'vobo' => ['vobo_horas_amarillo', 'vobo_horas_rojo'],
     ];
 
     /**
      * Ajustes vigentes de una empresa (sin empresa: los originales).
      *
-     * @return array{transporte_firmas: string, llaves_horas_aviso: int, llaves_horas_escalar: int, responsivas_horas_turno: int, responsivas_horas_escalar: int, procedimientos_acuse: string}
+     * @return array{transporte_firmas: string, llaves_horas_aviso: int, llaves_horas_escalar: int, responsivas_horas_turno: int, responsivas_horas_escalar: int, procedimientos_acuse: string, procedimientos_recordatorio_dias: int, vobo_horas_amarillo: int, vobo_horas_rojo: int}
      */
     public static function de(Empresa|int|null $empresa): array
     {
@@ -75,7 +107,7 @@ class AjustesCaseta
         foreach (self::OMISION as $clave => $omision) {
             $valor = is_array($guardado) ? ($guardado[$clave] ?? null) : null;
             if (is_int($omision)) {
-                $ajustes[$clave] = is_numeric($valor) ? max(0, min(self::MAX_HORAS[$clave], (int) $valor)) : $omision;
+                $ajustes[$clave] = is_numeric($valor) ? max(self::MIN[$clave] ?? 0, min(self::MAX_HORAS[$clave], (int) $valor)) : $omision;
             } else {
                 $opciones = $clave === 'transporte_firmas' ? self::FIRMAS_TRANSPORTE : self::ACUSES;
                 $ajustes[$clave] = is_string($valor) && isset($opciones[$valor]) ? $valor : $omision;
@@ -115,8 +147,13 @@ class AjustesCaseta
                 if ($valor === '' || $valor === null) {
                     $valor = 0;
                 }
-                if (! is_numeric($valor) || (int) $valor != $valor || (int) $valor < 0 || (int) $valor > self::MAX_HORAS[$clave]) {
-                    $errores[$clave] = 'Escribe un número entero de horas, de 0 a '.self::MAX_HORAS[$clave].' (0 = apagado).';
+                $minimo = self::MIN[$clave] ?? 0;
+                if (! is_numeric($valor) || (int) $valor != $valor || (int) $valor < $minimo || (int) $valor > self::MAX_HORAS[$clave]) {
+                    $errores[$clave] = match ($clave) {
+                        'procedimientos_recordatorio_dias' => 'Escribe un número entero de días, de 1 a '.self::MAX_HORAS[$clave].'.',
+                        'vobo_horas_amarillo', 'vobo_horas_rojo' => 'Escribe un número entero de horas, de '.$minimo.' a '.self::MAX_HORAS[$clave].'.',
+                        default => 'Escribe un número entero de horas, de 0 a '.self::MAX_HORAS[$clave].' (0 = apagado).',
+                    };
 
                     continue;
                 }
@@ -135,6 +172,11 @@ class AjustesCaseta
             && ($limpio['llaves_horas_escalar'] ?? 0) > 0 && ($limpio['llaves_horas_aviso'] ?? 0) > 0
             && $limpio['llaves_horas_escalar'] <= $limpio['llaves_horas_aviso']) {
             $errores['llaves_horas_escalar'] = 'Las horas para avisar al jefe deben ser más que las del recordatorio a la caseta.';
+        }
+        if (! isset($errores['vobo_horas_amarillo'], $errores['vobo_horas_rojo'])
+            && isset($limpio['vobo_horas_amarillo'], $limpio['vobo_horas_rojo'])
+            && $limpio['vobo_horas_rojo'] <= $limpio['vobo_horas_amarillo']) {
+            $errores['vobo_horas_rojo'] = 'Las horas para el rojo deben ser más que las del amarillo.';
         }
         if ($errores !== []) {
             throw ValidationException::withMessages($errores);

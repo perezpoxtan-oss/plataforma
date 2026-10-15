@@ -13,9 +13,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 /**
- * Configuración → «Caseta y activos» (ADR-0014): firmas de los vales de taxi,
- * semáforo de llaves fuera, hora de regreso de los equipos «Turno» y cómo se
- * firma el acuse de procedimientos. Son de toda la empresa: hace falta
+ * Configuración → ajustes de caseta y activos (ADR-0014): firmas de los vales
+ * de taxi, semáforo de llaves fuera, hora de regreso de los equipos «Turno»,
+ * acuse y recordatorio de procedimientos y reloj del visto bueno. Desde la
+ * Configuración por secciones cada tarjeta manda solo sus campos
+ * (AjustesCaseta::GRUPOS); lo que no llega conserva su valor. Son de toda la empresa: hace falta
  * «configuracion.editar» con alcance de empresa (como los avisos por correo).
  */
 class AjustesCasetaController extends Controller
@@ -37,7 +39,8 @@ class AjustesCasetaController extends Controller
 
         $empresa = Empresa::findOrFail($empresaId);
         $antes = AjustesCaseta::de($empresa);
-        $guardar = AjustesCaseta::validar($request->only(array_keys(AjustesCaseta::OMISION)));
+        // Configuración por secciones: cada tarjeta manda solo sus campos; los demás se conservan
+        $guardar = AjustesCaseta::validar(array_merge($antes, $request->only(array_keys(AjustesCaseta::OMISION))));
         $preferencias = $empresa->preferencias ?? [];
         if ($guardar === []) {
             unset($preferencias[AjustesCaseta::CLAVE]);
@@ -48,7 +51,11 @@ class AjustesCasetaController extends Controller
 
         $this->auditoria->auditar($actor, 'configuracion.caseta', $empresa, $antes, AjustesCaseta::de($empresa->refresh()));
 
-        return redirect()->to(route('configuracion.index').'#caseta')
+        // Regresa a la tarjeta desde la que se guardó (Configuración por secciones)
+        $tarjeta = $request->input('_tarjeta');
+        $ancla = is_string($tarjeta) && isset(AjustesCaseta::GRUPOS[$tarjeta]) ? 'cfg-'.$tarjeta : 'caseta';
+
+        return redirect()->to(route('configuracion.index').'#'.$ancla)
             ->with('ok', $guardar === [] ? 'Ajustes de caseta guardados: todo funciona como el diseño original.' : 'Ajustes de caseta y activos guardados.');
     }
 }

@@ -15,9 +15,12 @@
     </label>
     <label class="opcion-todas">
         <input type="radio" name="auditoria_sede" value="sede" @checked($auditoriaSede === 'sede') @disabled(! $puedeEditar)>
-        <span><strong>Los movimientos de su sede</strong><br><span class="small text-muted">Lo que se hizo en registros de su sede y lo que hizo el personal asignado a ella.</span></span>
+        <span><strong>Los movimientos de su sede</strong> <span class="valor-original">(valor original)</span><br><span class="small text-muted">Lo que se hizo en registros de su sede y lo que hizo el personal asignado a ella.</span></span>
     </label>
     @if ($puedeEditar)
         <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar</button>
     @endif
 </form>
+@if ($puedeEditar && $auditoriaSede !== \App\Http\Controllers\Administracion\AuditoriaController::SEDE_POR_OMISION)
+    @include('administracion.configuracion._restablecer', ['ajuste' => 'auditoria', 'que' => 'lo que ve «Su sede» en la Bitácora de auditoría'])
+@endif

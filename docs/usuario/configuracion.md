@@ -3,120 +3,172 @@ titulo: Configuración
 modulos: [configuracion]
 seccion: Estructura
 orden: 50
-resumen: Ordenada por módulo: avisos (con un interruptor por módulo), ajustes de cada módulo, versión instalada, correo de la plataforma y respaldos.
+resumen: Todos los ajustes de tu empresa ordenados por secciones (General, Caseta y accesos, Recepción y RR. HH., Novedades, Activos, Transporte, Pases de salida, Avisos por correo, Cuentas y seguridad) y, para el Super Administrador, la Plataforma.
 ---
 
 # Configuración
 
-**¿Para qué sirve?** Aquí se ajusta cómo trabaja la plataforma para tu empresa, **ordenado por módulo**: cada módulo (Cuentas y seguridad, Bitácora de novedades, Pases de salida, Procedimientos, Recepción y candidatos…) tiene su tarjeta con sus avisos, un **interruptor general** para encenderlos o apagarlos todos, y sus ajustes (por ejemplo, si el módulo de la bitácora se llama **Novedades** o **Incidentes**). Aparte están la **caseta y los activos** (firmas de vales de taxi, llaves fuera mucho tiempo, equipos de turno y acuse de procedimientos) y los días de resguardo de **Lost & Found**. Arriba dice la **versión instalada**. El Super Administrador configura además el **correo de la plataforma** y los **respaldos**.
+**¿Para qué sirve?** Aquí está **todo lo que tu empresa puede ajustar**, ordenado por **secciones**: General, Caseta y accesos, Recepción y RR. HH., Novedades (o como se llame tu bitácora), Activos, Transporte, Pases de salida, Avisos por correo y Cuentas y seguridad. Cada sección junta sus ajustes y sus avisos por correo. Cada ajuste dice su **valor original** y, si lo cambiaste, tiene un botón **Restablecer valor original**. Lo que se configura en otra pantalla aparece con su valor y un botón **Configurar en …** que te lleva directo. El Super Administrador ve además la sección **Plataforma**.
 
-![Configuración ordenada por módulo](img/configuracion/6-por-modulo.png)
+![Configuración por secciones](img/configuracion/secciones-indice.png)
 
 ## Antes de empezar
 
-- Para ver la pantalla tu rol debe poder consultar *Configuración*.
-- Los avisos de la empresa los cambia quien tiene el permiso **editar** de Configuración con alcance de empresa (normalmente el administrador).
-- Los días de Lost & Found los cambia quien tiene el permiso **Configurar** de Lost & Found en toda la empresa.
-- **Correo de la plataforma** y **Respaldos** solo los ve el Super Administrador.
-- Si el correo de la plataforma aún no está configurado, verás el aviso «El correo de la plataforma aún no está configurado: los avisos se activarán cuando el Super Administrador lo configure.»
+- Para ver la pantalla tu rol debe poder consultar *Configuración*. Si tu rol solo consulta, verás los valores pero no los botones **Guardar** ni **Restablecer valor original**.
+- Los ajustes de la empresa los cambia quien tiene el permiso **editar** de Configuración con alcance de **toda la empresa** (normalmente el administrador). Con alcance de una sede solo se consultan.
+- Algunas tarjetas piden además el permiso de su módulo: los días de Lost & Found (**Configurar** de Lost & Found), el aviso de privacidad y los plazos de candidatos (**Configurar** de Candidatos), la bolsa de trabajo (**Configurar** de Vacantes), las esperas (**Configurar** de Autorizaciones departamentales), la impresión desde padrones (**Configurar** de Etiquetas QR) y el circuito de pases (**Configurar** de Pases de salida). Si no tienes ese permiso, la tarjeta no aparece.
+- **Plataforma** (correo de la plataforma, respaldos y enlaces a Identidad y Catálogo comercial) solo la ve el Super Administrador.
 
-## Cómo elegir los avisos por correo
+## Cómo moverte por las secciones
 
-1. Entra a **Estructura → Configuración**. Arriba están los módulos como botones: toca uno para ir directo a su tarjeta.
-2. En la tarjeta del módulo, el interruptor **Avisos de este módulo encendidos / apagados** enciende o apaga **todos** los avisos de ese módulo de un solo toque (por ejemplo, un condominio que no usa Pases de salida).
-3. Con el interruptor encendido, marca los avisos que quieres que lleguen. Por ejemplo:
-   - **Colaboradores:** avisar a Recursos Humanos cuando la caseta registre un alta provisional.
-   - **Bitácora de transporte:** enviar cada vale de taxi (escribe en **Correos que lo reciben** uno por línea o separados por coma).
-   - **Pases de salida:** aprobación, resultado, recordatorio de pases vencidos y, si pusiste tiempos en el Circuito, recordar al firmante y avisar al siguiente nivel cuando una firma tarda.
-   - **Padrones: altas por verificar** en Vehículos, Empresas externas o Personas.
-   - **Bitácora de novedades:** tickets canalizados y pendientes de turno sin atender; hallazgos de los Recorridos de Protección Civil (vienen **apagados**: la campana avisa siempre).
-   - **Procedimientos:** publicados, recordatorios y procedimientos enviados a revisión (a quien puede aprobarlos).
-   - **Vouchers de reposición** con cobro al colaborador: escribe los correos de **Copia Seguridad**, **Copia Recepción** y **Copia Administración**. Si dejas las tres listas vacías, se envía a los usuarios que pueden imprimir vouchers en esa sede. El colaborador responsable no recibe copia.
-   - **Recepción y candidatos** y las autorizaciones de los departamentos.
-   - **Cuentas y seguridad:** cuenta bloqueada y **movimientos sensibles** (ver abajo).
-4. Toca **Guardar avisos** en esa tarjeta (guarda los avisos de todos los módulos).
+1. Entra a **Estructura → Configuración**.
+2. Arriba dice la **Versión instalada** y, debajo, un botón por sección. Toca una sección para ir directo a ella.
+3. Dentro de cada sección hay tarjetas. Las que dicen **Configurar en …** se cambian en su pantalla; toca el botón y llegas ahí.
 
-![Interruptor de avisos de un módulo](img/configuracion/7-interruptor-pases.png)
+**Qué debes ver:** la sección elegida, con su título subrayado y sus tarjetas. Debajo de cada campo dice el **Valor original** (el que trae la plataforma).
 
-**Qué debes ver:** «Avisos actualizados.» y, si apagaste alguno, «Apagados por módulo: …». Los avisos se envían a los usuarios con permiso para atender cada asunto, al correo de su cuenta. Si una persona no quiere recibir alguno, lo silencia ella misma en [Mi cuenta](mi-cuenta.md) → **Mis avisos**.
+## Cómo cambiar un ajuste y regresarlo a su valor original
 
-## Cómo encender o apagar los avisos de movimientos sensibles
+1. Busca la tarjeta en su sección (por ejemplo **Activos → Préstamo de llaves: llaves fuera mucho tiempo**).
+2. Cambia el valor y toca **Guardar** en esa tarjeta. Solo se guarda esa tarjeta; las demás no cambian.
+3. Para regresar al valor original, toca **Restablecer valor original** en la misma tarjeta y confirma con **Aceptar**. El botón solo aparece si esa tarjeta tiene algo distinto del original.
 
-Quien ve toda la Bitácora de auditoría (normalmente Administrador y Director) recibe en su **campana** cada vez que alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales, con un enlace a su historial. Quien hizo el movimiento no recibe su propio aviso.
+![Restablecer valor original](img/configuracion/restablecer.png)
 
-1. En **Cuentas y seguridad** busca «Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría cuando alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales».
-2. Viene **encendido** (marcado). Para apagarlo, quita la marca; para volver a encenderlo, márcala.
-3. Toca **Guardar avisos**.
+**Qué debes ver:** al guardar, «Ajustes de caseta y activos guardados.» (o el mensaje de esa tarjeta); al restablecer, «Listo: … volvieron a su valor original.»
 
-**Qué debes ver:** «Avisos actualizados.» Si tu empresa ya había guardado sus avisos con esta casilla sin marcar, se respeta lo que eligió: sigue apagado hasta que la marques.
+## General
 
-## Cómo elegir qué ve «Su sede» en la Bitácora de auditoría
+### Datos de la empresa
+Muestra la **zona horaria** de tu empresa. El nombre, la razón social, el RFC, el logo y la zona horaria se cambian con **Configurar en Empresas**. Cada sede puede tener su propia zona horaria en **Sedes**.
 
-1. En la tarjeta **Cuentas y seguridad**, baja a **Bitácora de auditoría: qué ve «Su sede»**.
-2. Elige **Los movimientos de su sede** (viene así: lo que se hizo en registros de su sede y lo que hizo el personal asignado a ella) o **Solo sus propios movimientos** (lo que esa persona hizo). Si tu empresa ya había guardado una opción, se conserva.
+### Cómo cambiar el reloj del visto bueno
+Lo que espera un visto bueno (vales de taxi sin Vo.Bo. en la Bitácora de transporte y procedimientos en revisión) muestra cuánto lleva esperando y cambia de color.
+
+1. En **General → Reloj del visto bueno**, escribe en **Amarillo desde las** cuántas horas de espera lo ponen amarillo y en **Rojo después de las** cuántas lo ponen rojo.
+2. Toca **Guardar**.
+
+![Reloj del visto bueno](img/configuracion/general-vobo.png)
+
+**Qué debes ver:** «Ajustes de caseta y activos guardados.» Valor original: **24** y **72** horas. El color siempre va con su texto, por ejemplo «más de 1 día» o «más de 36 h».
+
+### Cómo cambiar el nombre de un módulo en el menú
+Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en el menú.
+
+1. En **General → Nombres en el menú**, abre **Avanzado: cambiar nombres del menú**.
+2. Junto al nombre de siempre, escribe el nombre que quieres (máximo 40 letras). Deja vacío el que no quieras cambiar.
 3. Toca **Guardar**.
 
-![Qué ve «Su sede» en la bitácora](img/configuracion/8-auditoria-su-sede.png)
+![Nombres en el menú](img/configuracion/nombres-menu.png)
 
-**Qué debes ver:** «Listo: quien tiene la bitácora con alcance «Su sede» ahora ve los movimientos de su sede…». Aplica a quien tiene la bitácora con alcance «Su sede» (por ejemplo, un Jefe de seguridad); con «Toda la empresa» siempre se ve todo.
+**Qué debes ver:** «Nombres del menú guardados. Revisa el menú: ya aparecen con el nombre nuevo.» Solo cambia el nombre en el menú: la pantalla, los permisos y las direcciones son los mismos. El nombre de la bitácora (Novedades o Incidentes) se cambia en su propia sección.
 
-## Qué versión está instalada
+## Caseta y accesos
 
-Arriba de la pantalla dice **Versión instalada: v…** y desde cuándo. Sirve para saber si ya llegó una mejora o para dárselo a soporte cuando pidas ayuda.
+| Tarjeta | Qué decides | Valor original | Dónde se cambia |
+|---|---|---|---|
+| **Quién espera autorización del departamento** | Si visitas, proveedores y contratistas esperan la autorización; si la caseta espera el «Que pase» de RR. HH.; a los cuántos minutos se recuerda y se avisa al suplente y al jefe. | Todos esperan; 10 y 20 minutos. | **Configurar en Responsables por departamento** |
+| **Imprimir etiquetas desde los padrones** | Hoja propia de cada padrón o plantillas de Etiquetas QR. | Hoja propia de cada padrón. | **Configurar en Etiquetas QR → Plantillas** |
+| **Procedimientos: acuse «Leí y entendí» y recordatorio** | Cómo se firma el acuse y **cada cuántos días** se recuerda a quien no ha firmado. | Casilla y firma dibujada; cada 3 días. | Aquí, con **Guardar** |
+| Avisos de **Colaboradores**, **Altas por verificar** y **Procedimientos** | Ver «Avisos por correo». | Encendidos. | Aquí |
 
-## Cómo cambiar los días de resguardo de Lost & Found
+![Procedimientos en Caseta y accesos](img/configuracion/caseta-procedimientos.png)
+
+## Recepción y RR. HH.
+
+- **Avisos** de Recepción y candidatos.
+- **Aviso de privacidad y kiosco**: el texto que acepta el candidato y cuánto dura el enlace del kiosco (valor original: 2 horas y 3 veces; el aviso original es un borrador para que lo revise tu abogado). Es el mismo formulario de **Recepción → Ajustes**. Ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
+- **Candidatos: plazos y documentos para contratar**: muestra cada plazo con su valor original. Se cambia con **Configurar en Candidatos → Documentos y plazos**.
+- **Criterios para calificar las entrevistas**: se cambian con **Configurar en Candidatos → Criterios de entrevista**.
+- **Bolsa de trabajo en internet**. Ver [Vacantes](vacantes.md).
+
+## Novedades (o el nombre de tu bitácora)
+
+### Cómo elegir el nombre del módulo: Novedades o Incidentes
+
+**Novedades** es donde va todo lo que pasa en el día, sin importar su tipo; es el nombre de siempre. Si en tu empresa le dicen **Incidentes**, puedes elegirlo.
+
+1. En la sección de la bitácora, busca la tarjeta **…: nombre y hallazgos**.
+2. En **Nombre del módulo** elige **Novedades (como siempre)** o **Incidentes**.
+3. Si tu empresa usa otro nombre, elige **Otro nombre (escríbelo en Avanzado)**, abre **Avanzado: otro nombre** y escríbelo (máximo 40 letras).
+4. Si quieres, en **Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como** elige **Mantenimiento de equipo PC** (valor original: **Siniestro Protección Civil**).
+5. Toca **Guardar ajustes de la bitácora**.
+
+![Ajustes de la Bitácora de novedades](img/configuracion/6-bitacora-novedades.png)
+
+**Qué debes ver:** «Ajustes de la Bitácora de incidentes guardados.» (o con el nombre que elegiste). El nombre nuevo aparece en el menú, en el botón de abajo del celular, en los títulos, en los avisos, en los informes, en Inicio y en el manual. Los tickets, los permisos y las direcciones no cambian.
+
+### Cómo cambiar los días de resguardo de Lost & Found
 
 Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cuántos días puede estar guardado antes de que el semáforo lo marque: **amarillo** al pasar el 70 % de sus días y **rojo (vencido)** al llegar a sus días.
 
-1. Toca **Lost & Found** arriba o baja a **Lost & Found: días de resguardo**. También puedes cambiarlos desde el propio archivo de Lost & Found con el botón **Días de resguardo**: es el mismo dato, lo que guardes en un lugar se ve en el otro.
-2. Escribe los días de cada tipo (mínimo 1). Debajo de cada uno dice desde qué día se pone amarillo y rojo.
+1. Baja a **Lost & Found: días de resguardo**. También puedes cambiarlos desde el archivo de Lost & Found con el botón **Días de resguardo**: es el mismo dato.
+2. Escribe los días de cada tipo (mínimo 1). Debajo de cada uno dice desde qué día se pone amarillo y rojo, y su **valor original**.
 3. Toca **Guardar días de resguardo**.
 
 ![Días de resguardo](img/configuracion/4-lost-found.png)
 
 **Qué debes ver:** «Los días de resguardo de Lost & Found se guardaron correctamente.» Aplica a todas las sedes de la empresa.
 
-## Cómo elegir el nombre del módulo: Novedades o Incidentes
+## Activos
 
-**Novedades** es donde va todo lo que pasa en el día, sin importar su tipo; es el nombre de siempre. Si en tu empresa le dicen **Incidentes**, puedes elegirlo.
-
-1. Baja a la tarjeta **Bitácora de novedades** (debajo de sus avisos).
-2. En **Nombre del módulo** elige **Novedades (como siempre)** o **Incidentes**.
-3. Si tu empresa usa otro nombre, elige **Otro nombre (escríbelo en Avanzado)**, abre **Avanzado: otro nombre** y escríbelo (máximo 40 letras).
-4. Si quieres, en **Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como** elige **Mantenimiento de equipo PC** (lo normal es **Siniestro Protección Civil**).
-5. Toca **Guardar ajustes de la bitácora**.
-
-![Ajustes de la Bitácora de novedades](img/configuracion/6-bitacora-novedades.png)
-
-**Qué debes ver:** «Ajustes de la Bitácora de incidentes guardados.» (o con el nombre que elegiste). El nombre nuevo aparece en el menú, en el botón de abajo del celular, en el título de la pantalla, en los avisos de la campana y del correo, en los informes (Tablero, Tendencias y Bitácora del día), en Inicio y en el manual. Los tickets, los permisos y las direcciones no cambian. Si nunca lo cambias, se queda **Novedades**. Solo lo cambia quien edita la Configuración de toda la empresa.
-
-## Cómo ajustar la caseta y los activos
-
-Sin cambiar nada, todo funciona como siempre. Si tu empresa quiere trabajar distinto:
-
-1. Baja a **Caseta y activos** (o tócalo en los botones de arriba).
-2. Ajusta lo que necesites (en las horas, **0 = apagado**):
-
-| Apartado | Qué decides | Por omisión |
+| Tarjeta | Qué decides | Valor original |
 |---|---|---|
-| **Bitácora de transporte: firmas del vale de taxi** | Quién firma en la pantalla: los dos, **solo el guardia**, **solo el taxista** o nadie. Quien no firma en pantalla firma a mano en el vale impreso. | Guardia y taxista firman en pantalla. |
-| **Préstamo de llaves: llaves fuera mucho tiempo** | A cuántas horas fuera la ficha se pone **ámbar** y avisa a la caseta, y a cuántas se pone **roja** y avisa al jefe de seguridad (ejemplo: 8 y 12). | Apagado. |
-| **Responsivas: equipos de «Turno»** | Cuántas horas después de la entrega deben regresar los equipos de Turno y cuántas horas más esperar antes de avisar al supervisor (ejemplo: 8 y 2). | Apagado: sin hora de regreso. |
-| **Procedimientos: cómo se firma «Leí y entendí»** | Casilla y firma dibujada, **solo la casilla**, o solo la casilla salvo en procedimientos con puntos críticos. | Casilla y firma dibujada. |
+| **Préstamo de llaves: llaves fuera mucho tiempo** | A cuántas horas fuera la ficha se pone **ámbar** y avisa a la caseta, y a cuántas se pone **roja** y avisa al jefe de seguridad (ejemplo: 8 y 12). **0 = apagado.** | Apagado. |
+| **Responsivas: equipos de «Turno»** | Cuántas horas después de la entrega deben regresar y cuántas horas más esperar antes de avisar al supervisor (ejemplo: 8 y 2). | Apagado: sin hora de regreso. |
+| Avisos de **Vouchers de reposición** con cobro | Correos de **Copia Seguridad**, **Copia Recepción** y **Copia Administración**. Si dejas las tres vacías, se envía a quien puede imprimir vouchers en esa sede. | Encendido. |
 
-3. Toca **Guardar ajustes de caseta**.
+![Llaves fuera mucho tiempo](img/configuracion/caseta-y-activos.png)
 
-![Caseta y activos](img/configuracion/caseta-y-activos.png)
+## Transporte
 
-**Qué debes ver:** «Ajustes de caseta y activos guardados.» Si dejas todo como estaba, dice «Ajustes de caseta guardados: todo funciona como el diseño original.» Aplica a todas las sedes de la empresa y lo cambia quien edita Configuración en toda la empresa.
+- **Firmas del vale de taxi**: quién firma en la pantalla (los dos, solo el guardia, solo el taxista o nadie). Quien no firma en pantalla firma a mano en el vale impreso. Valor original: guardia y taxista firman en pantalla.
+- **Avisos** del vale de taxi: en **Correos que lo reciben** escribe uno por línea o separados por coma; si lo dejas vacío, se envía a quien puede autorizar vales en esa sede.
 
-## Otros ajustes de módulos
+## Pases de salida
 
-Debajo de los avisos de su módulo están sus ajustes; los que se cambian en otra pantalla traen su botón para ir:
+- **Circuito de aprobación**: resumen de quién firma y en qué orden; con **Configurar circuito** se cambia. Ver [Pases de salida](pases-salida.md).
+- **Avisos**: aprobación, resultado, recordatorio de pases vencidos y firmas que tardan.
 
-- **Pases de salida**: resumen del circuito de firmas y, si tu empresa los cambió, las firmas que pide la caseta, qué pasa al corregir un pase rechazado y los tiempos de **Firmas que tardan**. Con **Configurar circuito** se cambian. Ver [Pases de salida](pases-salida.md).
-- **Recepción de candidatos:** aviso de privacidad y duración del enlace del kiosco. Ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
-- **Bolsa de trabajo en internet.** Ver [Vacantes](vacantes.md).
+![Avisos de Pases de salida](img/configuracion/7-interruptor-pases.png)
+
+## Cómo elegir los avisos por correo
+
+1. En cada sección, la tarjeta **…: avisos por correo** tiene un interruptor **Avisos de este módulo encendidos / apagados** que enciende o apaga todos los avisos de ese módulo de un solo toque.
+2. Con el interruptor encendido, marca los avisos que quieres que lleguen. Los que dicen **Valor original: apagado** vienen apagados de origen.
+3. Toca **Guardar avisos** en esa tarjeta (guarda los avisos de todas las secciones).
+4. En la sección **Avisos por correo** ves todos los módulos con **encendidos** o **apagados**; toca uno para ir a sus casillas. Ahí está también **Restablecer valor original** para regresar todos los avisos a como vienen de origen (los correos que capturaste se conservan).
+
+![Resumen de avisos por correo](img/configuracion/avisos-resumen.png)
+
+**Qué debes ver:** «Avisos actualizados.» y, si apagaste alguno, «Apagados por módulo: …». Si el correo de la plataforma aún no está configurado, verás «El correo de la plataforma aún no está configurado…»; los avisos de la campana sí llegan. Cada persona puede silenciar los avisos que no quiere en [Mi cuenta](mi-cuenta.md) → **Mis avisos**.
+
+## Cuentas y seguridad
+
+### Cómo encender o apagar los avisos de movimientos sensibles
+Quien ve toda la Bitácora de auditoría recibe en su **campana** cuando alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales.
+
+1. En **Cuentas y seguridad** busca «Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría…».
+2. Viene **encendido**. Quita o pon la marca.
+3. Toca **Guardar avisos**.
+
+### Cómo elegir qué ve «Su sede» en la Bitácora de auditoría
+1. En **Cuentas y seguridad**, baja a **Bitácora de auditoría: qué ve «Su sede»**.
+2. Elige **Los movimientos de su sede** (valor original) o **Solo sus propios movimientos**.
+3. Toca **Guardar**.
+
+![Qué ve «Su sede» en la bitácora](img/configuracion/8-auditoria-su-sede.png)
+
+**Qué debes ver:** «Listo: quien tiene la bitácora con alcance «Su sede» ahora ve los movimientos de su sede…».
+
+### Cierre de sesión por inactividad
+La tarjeta dice tras cuántos minutos sin actividad se cierra la sesión (valor original: 20). Es igual para todas las empresas; si necesitas otro tiempo, pídelo a quien administra la plataforma.
+
+## Plataforma (Super Administrador)
+
+Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logotipo y colores), **Catálogo comercial → Ajustes** (moneda, IVA, página pública y suscripciones: días de prueba, días de gracia, descuento anual y avisos de vencimiento), **Catálogo comercial → Clientes** y **Empresas** (módulos contratados). Debajo están el correo de la plataforma y los respaldos.
+
+![Sección Plataforma](img/configuracion/plataforma.png)
 
 ## Cómo configurar el correo de la plataforma (Super Administrador)
 
@@ -145,6 +197,8 @@ Debajo de los avisos de su módulo están sus ajustes; los que se cambian en otr
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
+| No veo los botones **Guardar** ni **Restablecer valor original**. | Tu rol solo puede consultar la Configuración (o tiene alcance de una sede). | Pídelo a tu administrador. |
+| No veo una tarjeta (por ejemplo, plazos o esperas). | Tu rol no tiene el permiso de ese módulo. | Pídelo a tu administrador. |
 | Escribe solo el nombre del servidor (ej. mail.tudominio.com), sin https:// ni espacios. | El servidor está mal escrito. | Escribe solo el nombre del servidor. |
 | Usa un puerto de correo: … | El puerto no es de correo. | Usa 587 (TLS) o 465 (SSL). |
 | Primero guarda la configuración del correo. | Tocaste **Enviar prueba** sin guardar. | Toca **Guardar correo** y luego prueba. |
@@ -152,28 +206,36 @@ Debajo de los avisos de su módulo están sus ajustes; los que se cambian en otr
 | Los avisos son de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa. | Tu rol no puede cambiar los avisos. | Pídelo a tu administrador. |
 | Los días de resguardo son de toda la empresa: hace falta el permiso «configurar» de Lost & Found con alcance de empresa. | Tu rol no puede cambiar los días. | Pídelo a tu administrador. |
 | Las horas para avisar al jefe deben ser más que las del recordatorio a la caseta. | En llaves pusiste el rojo antes que el ámbar. | Pon más horas en el rojo (o 0 para apagarlo). |
+| Las horas para el rojo deben ser más que las del amarillo. | En el reloj del visto bueno el rojo quedó antes que el amarillo. | Pon más horas en el rojo. |
+| Escribe un número entero de días, de 1 a 30. | El recordatorio de procedimientos no es válido. | Escribe un número de 1 a 30. |
 | Escribe un número entero de horas, de 0 a … (0 = apagado). | Las horas no son válidas. | Escribe un número entero dentro del rango. |
+| «…»: máximo 40 letras; solo letras, números, espacios, punto, guion y «&». | El nombre del menú tiene signos no permitidos o es muy largo. | Escríbelo más corto y sin signos. |
 | No llegan los correos. | El correo de la plataforma no está configurado o el aviso está apagado. | Revisa el aviso amarillo y las casillas; revisa el correo no deseado. |
 
 ## Preguntas frecuentes
 
+**¿Qué pasa si toco «Restablecer valor original»?** Esa tarjeta regresa a como viene de origen. Solo esa tarjeta: las demás no cambian. En los avisos, los correos que capturaste se conservan.
+
+**¿Por qué algunos ajustes dicen «Configurar en …»?** Porque se cambian en la pantalla de su módulo; así hay un solo lugar para cada dato. Aquí ves su valor actual.
+
 **¿A quién le llegan los avisos?** A los usuarios activos con permiso para atender ese asunto en la sede correspondiente, al correo de su cuenta (salvo donde escribes correos fijos).
 
+**¿Los ajustes cambian lo que ya se registró?** No. Los vales, acuses y tickets que ya existen se quedan como se capturaron; los relojes y semáforos se calculan con los ajustes de hoy.
+
 **¿Los días de Lost & Found se pueden poner por sede?** No; aplican a todas las sedes de la empresa.
-
-**¿Los ajustes de Caseta y activos cambian lo que ya se registró?** No. Los vales y acuses que ya existen se quedan como se capturaron; el semáforo de llaves y la hora de regreso de los equipos de Turno se calculan con los ajustes de hoy.
-
-**¿Cada cuánto se respalda la plataforma?** Diario y antes de cada actualización; se guardan 14 días.
 
 **¿Puedo restaurar un respaldo yo mismo desde esta pantalla?** No. Descarga el archivo y entrégaselo a tu proveedor de hospedaje o a tu administrador de base de datos para que lo importe.
 
 ## Relacionado
 
-- [Lost & Found y robo](lost-found-y-robo.md)
+- [Empresas y sedes](empresas-y-sedes.md)
 - [Recepción y autorizaciones](recepcion-y-autorizaciones.md)
 - [Vacantes](vacantes.md)
-- [Altas por verificar](altas-por-verificar.md)
+- [Lost & Found y robo](lost-found-y-robo.md)
 - [Bitácora de transporte](transporte.md)
 - [Préstamo de llaves](prestamo-llaves.md)
 - [Responsivas](responsivas.md)
 - [Procedimientos](procedimientos.md)
+- [Pases de salida](pases-salida.md)
+- [Etiquetas QR](etiquetas-qr.md)
+- [Mi cuenta](mi-cuenta.md)

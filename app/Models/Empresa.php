@@ -40,7 +40,7 @@ class Empresa extends Model
         'alta_por_verificar' => ['Avisar a quien administra Vehículos, Empresas externas o Personas cuando la caseta registre un alta pendiente de verificar', true],
         // Procedimientos (acuse «Leí y entendí»)
         'procedimiento_publicado' => ['Procedimientos: avisar al personal cuando se publica una versión que debe leer y firmar', true],
-        'procedimiento_recordatorio' => ['Procedimientos: recordar (cada 3 días) los procedimientos que alguien aún no firma de enterado', true],
+        'procedimiento_recordatorio' => ['Procedimientos: recordar (cada 3 días, o lo que elijas en «Recordar cada») los procedimientos que alguien aún no firma de enterado', true],
         // Mejoras activos (ADR-0014): «Enviar a revisión» avisa a quien aprueba
         'procedimiento_revision' => ['Procedimientos: avisar a quien puede aprobar cuando un procedimiento se envía a revisión', true],
         // Ronda 5 (LL-04): copias del voucher con cobro
