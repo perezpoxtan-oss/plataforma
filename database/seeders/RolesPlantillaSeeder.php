@@ -94,7 +94,8 @@ class RolesPlantillaSeeder extends Seeder
 
         return self::soloAdministradorBorra(self::reglaVacantes(self::reglaEtiquetasQr(self::reglaProcedimientos(self::reglaRecepcion(self::reglaSolicitudes([
             'Administrador' => [10, 'Administra toda su empresa', fn ($ma) => Alcance::Empresa],
-            'Director' => [20, 'Consulta y aprueba en toda la empresa', fn ($ma) => in_array($ma->accion->clave, ['ver', 'aprobar', 'exportar', 'imprimir'], true) ? Alcance::Empresa : null],
+            // Exportar TODOS los datos de la empresa (empresas.exportar) queda solo para el Administrador
+            'Director' => [20, 'Consulta y aprueba en toda la empresa', fn ($ma) => in_array($ma->accion->clave, ['ver', 'aprobar', 'exportar', 'imprimir'], true) && $ma->clave() !== 'empresas.exportar' ? Alcance::Empresa : null],
             'Recursos Humanos' => [25, 'Administra el personal y valida las altas provisionales de la caseta', fn ($ma) => $ma->modulo->area->clave === 'recursos_humanos'
                 ? Alcance::Empresa
                 : (in_array($ma->modulo->clave, self::CONSULTA_RH, true) && $ma->accion->clave === 'ver' ? Alcance::Empresa : null)],

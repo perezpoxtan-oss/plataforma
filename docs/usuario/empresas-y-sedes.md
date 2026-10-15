@@ -86,6 +86,14 @@ Cada empresa nueva nace con **todos** los módulos. Si una empresa no usa alguno
 
 **Qué debes ver:** «Empresa dada de baja: sus usuarios ya no pueden entrar. Puedes reactivarla con el mismo botón.» y la ficha dice **DE BAJA**. Usa **Todas / Activas / De baja** para encontrarla.
 
+## Cómo exportar los datos de una empresa
+
+1. Entra a **Estructura → Empresas**.
+2. En la ficha de la empresa toca la **flecha hacia abajo** (Exportar datos). La ve el Super Administrador y quien tiene el permiso **Exportar** de Empresas con alcance de empresa (de origen, el Administrador), solo para su empresa.
+3. Toca **Exportar datos**, confirma con **Aceptar** y, cuando esté lista, toca **Descargar**.
+
+**Qué debes ver:** «Exportación lista (…). Descárgala abajo y guárdala en un lugar seguro.» El archivo trae todos los datos de la empresa, hojas de Excel (CSV) de lo principal y sus fotos, documentos y firmas, sin contraseñas. El paso a paso completo está en [Respaldos y traslado a otro servidor](respaldos-y-traslado.md).
+
 ## Si algo sale mal
 
 Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
@@ -116,3 +124,4 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 - [Zonas y edificios](zonas-y-areas.md)
 - [Usuarios](usuarios.md)
 - [Configuración](configuracion.md)
+- [Respaldos y traslado a otro servidor](respaldos-y-traslado.md)

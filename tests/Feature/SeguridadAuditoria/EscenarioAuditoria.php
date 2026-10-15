@@ -140,6 +140,11 @@ trait EscenarioAuditoria
     {
         $sede ??= $this->centro;
 
+        // Respaldos y traslado: un trabajo que no existe (solo el Super Administrador o quien exporta la empresa avanza los suyos)
+        if ($ruta === 'traslado.continuar') {
+            return '0123456789abcdef';
+        }
+
         // Catálogo comercial: registros de la plataforma (sin empresa); solo el Super Administrador los abre
         if (str_starts_with($ruta, 'catalogo-comercial.')) {
             // Suscripciones: clientes (suscripciones), sus excepciones y las promociones

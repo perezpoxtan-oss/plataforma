@@ -446,6 +446,12 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudieron revisar las suscripciones (revisa despliegue.log)"
 fi
 # --- Fin Suscripciones ---
+# --- Respaldos y traslado: termina los paquetes que quedaron a medias y, si está encendido, el paquete semanal (base + archivos) ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:traslado'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:traslado --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudieron avanzar los paquetes de traslado (revisa despliegue.log)"
+fi
+# --- Fin Respaldos y traslado ---
 
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
 if [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ] && grep -Eq "EscribeAqui|tu-correo@" "$HOME/qa_inicial.txt"; then

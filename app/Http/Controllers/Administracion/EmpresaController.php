@@ -80,6 +80,8 @@ class EmpresaController extends Controller
                 'editar' => $this->editaEmpresa($actor),
                 'estado' => $actor->es_superadmin,
                 'sedes' => $actor->can('sedes.ver'),
+                // Exportar datos (portabilidad): Super Administrador, o «empresas.exportar» con alcance de empresa para la suya
+                'exportar' => $actor->es_superadmin || ($actor->can('empresas.exportar') && app(Autorizador::class)->alcanceDeEmpresa($actor, 'empresas.exportar')),
             ],
         ]);
     }

@@ -62,6 +62,7 @@ Antes era la pantalla `/lost-found/dias-resguardo` dentro de Lost & Found; ahora
 - **Qué no lleva:** las tablas `sessions`, `cache`, `cache_locks` y `password_reset_tokens` se respaldan solo con su estructura (son datos temporales que no deben viajar en un archivo descargable). La carpeta queda en `700` y el archivo es `600` desde que se empieza a escribir.
 - **Descarga:** solo el Super Administrador, y cada descarga queda en la bitácora (`configuracion.respaldo_descargado`). El nombre del archivo se valida contra el patrón del servicio para evitar rutas arbitrarias.
 - **Restaurar:** de forma manual en phpMyAdmin (Importar). La plataforma no restaura desde la web, a propósito: es una operación destructiva.
+- **Archivos y traslado:** fotos, documentos y firmas van en el **paquete de traslado** (base + archivos + manifest con SHA-256) y su restauración por consola; ver `traslado.md`.
 
 ## Pruebas
 
