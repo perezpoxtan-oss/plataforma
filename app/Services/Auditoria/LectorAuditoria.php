@@ -86,6 +86,11 @@ class LectorAuditoria
         'plan_creado' => 'Alta de plan', 'plan_actualizado' => 'Edición de plan', 'plan_dado_de_baja' => 'Baja de plan', 'plan_reactivado' => 'Reactivación de plan',
         'paquete_creado' => 'Alta de paquete', 'paquete_actualizado' => 'Edición de paquete', 'paquete_dado_de_baja' => 'Baja de paquete', 'paquete_reactivado' => 'Reactivación de paquete',
         'ajustes_actualizados' => 'Cambio de ajustes', 'solicitud_atendida' => 'Solicitud atendida',
+        // Suscripciones (clientes, promociones y excepciones)
+        'promocion_creada' => 'Alta de promoción', 'promocion_actualizada' => 'Edición de promoción', 'promocion_dada_de_baja' => 'Baja de promoción',
+        'promocion_reactivada' => 'Reactivación de promoción', 'activada' => 'Activación', 'plan_cambiado' => 'Cambio de plan',
+        'pago_registrado' => 'Pago recibido', 'suspendida' => 'Baja a solo consulta', 'revisada' => 'Revisión',
+        'excepcion_agregada' => 'Alta de excepción', 'excepcion_quitada' => 'Baja de excepción', 'promocion_aplicada' => 'Promoción aplicada',
         // Altas provisionales y verificación de padrones
         'provisional' => 'Alta provisional', 'validado' => 'Validación', 'verificado' => 'Verificación', 'fusionado' => 'Unión de duplicado',
         // Identificación (QR y etiqueta NFC/RFID) e impresión de etiquetas
@@ -166,6 +171,7 @@ class LectorAuditoria
         'empleos' => 'Bolsa de trabajo',
         'etiquetas' => 'Etiquetas QR',
         'borrado' => 'Eliminar definitivamente',
+        'suscripciones' => 'Suscripciones',
     ];
 
     /** Qué es cada registro y cómo se llama. */

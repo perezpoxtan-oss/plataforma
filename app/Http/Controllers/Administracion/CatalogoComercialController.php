@@ -9,10 +9,13 @@ use App\Models\Paquete;
 use App\Models\Plan;
 use App\Models\Producto;
 use App\Models\SolicitudCompra;
+use App\Models\Suscripcion;
 use App\Services\Comercial\AjustesComerciales;
 use App\Services\Comercial\CatalogoPublico;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
+use App\Services\Suscripciones\Aprovisionamiento;
+use App\Services\Suscripciones\ListaClientes;
 use App\Support\Entrada;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
@@ -34,9 +37,13 @@ class CatalogoComercialController extends Controller
 {
     public const PESTANAS = [
         'solicitudes' => ['Solicitudes', 'bi-inbox'],
+        // Suscripciones: clientes, los nuevos por revisar y las promociones
+        'clientes' => ['Clientes', 'bi-people'],
+        'revisar' => ['Por revisar', 'bi-person-check'],
         'planes' => ['Planes', 'bi-layers'],
         'paquetes' => ['Paquetes', 'bi-boxes'],
         'productos' => ['Productos', 'bi-grid'],
+        'promociones' => ['Promociones', 'bi-ticket-perforated'],
         'ajustes' => ['Ajustes', 'bi-sliders'],
     ];
 
@@ -52,13 +59,14 @@ class CatalogoComercialController extends Controller
         private readonly AdministradorRoles $auditoria,
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request, ListaClientes $clientes): View
     {
         Gate::authorize('catalogo_comercial.ver');
         $pestana = Entrada::texto($request->query('pestana'), 'solicitudes');
         $estado = Entrada::texto($request->query('estado'), 'abiertas');
 
         $solicitudes = SolicitudCompra::query()
+            ->when($estado === 'pruebas', fn ($q) => $q->where('tipo', 'prueba')->whereNull('activada_en')->whereIn('estado', ['nueva', 'contactada', 'cotizada']))
             ->when($estado === 'abiertas', fn ($q) => $q->whereIn('estado', ['nueva', 'contactada', 'cotizada']))
             ->when(isset(SolicitudCompra::ESTADOS[$estado]), fn ($q) => $q->where('estado', $estado))
             ->orderByRaw("CASE WHEN estado = 'nueva' THEN 0 ELSE 1 END")->orderByDesc('id')
@@ -70,11 +78,12 @@ class CatalogoComercialController extends Controller
             'planes' => Plan::query()->with('productos:id,nombre')->orderBy('orden')->orderBy('id')->get(),
             'paquetes' => Paquete::query()->with(['productos:id,nombre', 'planes:id,nombre'])->orderBy('orden')->orderBy('id')->get(),
             'solicitudes' => $solicitudes,
-            'estado' => $estado === 'todas' || $estado === 'abiertas' || isset(SolicitudCompra::ESTADOS[$estado]) ? $estado : 'abiertas',
+            'estado' => in_array($estado, ['todas', 'abiertas', 'pruebas'], true) || isset(SolicitudCompra::ESTADOS[$estado]) ? $estado : 'abiertas',
             'nuevas' => SolicitudCompra::where('estado', 'nueva')->count(),
+            'pruebasPorAprobar' => SolicitudCompra::where('tipo', 'prueba')->whereNull('activada_en')->whereIn('estado', ['nueva', 'contactada', 'cotizada'])->count(),
             'ajustes' => $this->ajustes->todos(),
             'puedeEditar' => $request->user()->can('catalogo_comercial.editar'),
-        ]);
+        ] + $clientes->datos($request));
     }
 
     public function vistaPrevia(CatalogoPublico $catalogo): View
@@ -204,11 +213,20 @@ class CatalogoComercialController extends Controller
             'correos_solicitudes' => ['nullable', 'string', 'max:600'],
             'texto_legal' => ['nullable', 'string', 'max:1000'],
             'aviso_privacidad' => ['nullable', 'string', 'max:20000'],
+            // Suscripciones
+            'prueba_habilitada' => ['nullable', 'boolean'],
+            'dias_prueba' => ['nullable', 'integer', 'min:1', 'max:90'],
+            'dias_gracia' => ['nullable', 'integer', 'min:0', 'max:90'],
+            'descuento_anual_porcentaje' => ['nullable', 'numeric', 'min:0', 'max:90'],
+            'avisos_dias_antes' => ['nullable', 'string', 'max:40', 'regex:/^[0-9,\s]*$/'],
+            'contacto_suscripciones' => ['nullable', 'string', 'max:200'],
         ], [
+            'avisos_dias_antes.regex' => 'Escribe los días separados por comas, por ejemplo 7, 1.',
             'iva_porcentaje.max' => 'El IVA es un porcentaje entre 0 y 100.',
             'portada_titulo.required' => 'Escribe el título de la portada.',
         ], [
             'iva_porcentaje' => 'IVA', 'portada_titulo' => 'título de la portada', 'correos_solicitudes' => 'correos que reciben las solicitudes',
+            'dias_prueba' => 'días de prueba', 'dias_gracia' => 'días de gracia', 'descuento_anual_porcentaje' => 'descuento por pago anual',
         ]);
 
         $correos = collect(preg_split('/[\s,;]+/', (string) ($datos['correos_solicitudes'] ?? '')))->map(fn ($c) => mb_strtolower(trim($c)))->filter()->unique()->values();
@@ -231,6 +249,14 @@ class CatalogoComercialController extends Controller
             'correos_solicitudes' => $correos->take(10)->all(),
             'texto_legal' => trim((string) ($datos['texto_legal'] ?? '')),
             'aviso_privacidad' => trim((string) ($datos['aviso_privacidad'] ?? '')),
+            // Suscripciones (lo que no llega se queda como estaba)
+            'prueba_habilitada' => $request->has('dias_prueba') ? $request->boolean('prueba_habilitada') : $antes['prueba_habilitada'],
+            'dias_prueba' => (int) ($datos['dias_prueba'] ?? $antes['dias_prueba']),
+            'dias_gracia' => (int) ($datos['dias_gracia'] ?? $antes['dias_gracia']),
+            'descuento_anual_porcentaje' => round((float) ($datos['descuento_anual_porcentaje'] ?? $antes['descuento_anual_porcentaje']), 2),
+            'avisos_dias_antes' => array_key_exists('avisos_dias_antes', $datos) && trim((string) $datos['avisos_dias_antes']) !== ''
+                ? array_map('intval', preg_split('/[\s,]+/', trim((string) $datos['avisos_dias_antes'])) ?: []) : $antes['avisos_dias_antes'],
+            'contacto_suscripciones' => array_key_exists('contacto_suscripciones', $datos) ? trim((string) $datos['contacto_suscripciones']) : $antes['contacto_suscripciones'],
         ]);
         $registro = ConfiguracionPlataforma::where('clave', AjustesComerciales::CLAVE)->first();
         if ($registro !== null) {
@@ -255,13 +281,18 @@ class CatalogoComercialController extends Controller
     {
         Gate::authorize('catalogo_comercial.ver');
 
+        $s = SolicitudCompra::with('plan:id,nombre')->findOrFail($id);
+
         return view('administracion.catalogo-comercial.solicitud', [
-            's' => SolicitudCompra::with('plan:id,nombre')->findOrFail($id),
+            's' => $s,
             'puedeEditar' => auth()->user()->can('catalogo_comercial.editar'),
+            'suscripcion' => $s->empresa_id !== null ? Suscripcion::with('empresa:id,nombre_comercial')->where('empresa_id', $s->empresa_id)->first() : null,
+            'diasPrueba' => $this->ajustes->get('dias_prueba'),
+            'diasGracia' => $this->ajustes->get('dias_gracia'),
         ]);
     }
 
-    public function atender(Request $request, int $id, CentroNotificaciones $centro): RedirectResponse
+    public function atender(Request $request, int $id, CentroNotificaciones $centro, Aprovisionamiento $aprovisionamiento): RedirectResponse
     {
         Gate::authorize('catalogo_comercial.editar');
         $s = SolicitudCompra::findOrFail($id);
@@ -271,8 +302,10 @@ class CatalogoComercialController extends Controller
             'notas_internas' => ['nullable', 'string', 'max:5000'],
         ]);
         $antes = $s->only(['estado', 'referencia_pago', 'notas_internas']);
+        // Suscripciones: «Pagada» activa al cliente (o registra el pago del que ya existe) por el mismo camino que usará la pasarela
+        $pagar = $datos['estado'] === 'pagada' && $s->activada_en === null;
         $s->fill([
-            'estado' => $datos['estado'],
+            'estado' => $pagar ? $s->estado : $datos['estado'],
             'referencia_pago' => trim((string) ($datos['referencia_pago'] ?? '')) ?: null,
             'notas_internas' => trim((string) ($datos['notas_internas'] ?? '')) ?: null,
         ]);
@@ -284,7 +317,27 @@ class CatalogoComercialController extends Controller
         if ($s->estado !== 'nueva') {
             $centro->resolver('solicitud_compra', $s->id);
         }
+        if ($pagar) {
+            try {
+                $suscripcion = $aprovisionamiento->confirmarPago($s, $request->user(), $s->referencia_pago);
+            } catch (\DomainException $e) {
+                return back()->withInput()->with('error', $e->getMessage());
+            }
+            $s->refresh();
+        }
         $this->auditoria->auditar($request->user(), 'catalogo_comercial.solicitud_atendida', $s, $antes, $s->only(['estado', 'referencia_pago', 'notas_internas']));
+        if ($pagar) {
+            $nuevo = $suscripcion->revisado_en === null && $suscripcion->solicitud_compra_id === $s->id;
+            $alta = $nuevo ? $suscripcion->historial()->where('evento', 'activada')->first() : null;
+            $bienvenida = ($alta?->datos['bienvenida_enviada'] ?? false)
+                ? 'le enviamos el correo de bienvenida para que cree su contraseña'
+                : 'el correo de bienvenida no salió: revisa el historial y envíaselo desde Usuarios';
+
+            return redirect()->route('catalogo-comercial.clientes.show', $suscripcion->id)
+                ->with('ok', $nuevo
+                    ? "Solicitud {$s->folio} pagada: «{$suscripcion->empresa?->nombre_comercial}» quedó activo con sus módulos, su sede principal y su Administrador ({$bienvenida}). Revisa sus datos y guárdalo como revisado."
+                    : "Solicitud {$s->folio} pagada: el pago quedó registrado en la suscripción de «{$suscripcion->empresa?->nombre_comercial}».");
+        }
 
         $siguiente = SolicitudCompra::where('estado', 'nueva')->whereKeyNot($s->id)->orderBy('id')->first();
         $siguientes = $siguiente !== null

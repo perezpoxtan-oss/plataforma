@@ -19,6 +19,14 @@ use Illuminate\Support\Collection;
  *  - IVA = redondeo(subtotal × IVA % / 100), por separado para lo mensual y lo único.
  *  - Plan «Cotizar»: sin precio; el resultado marca requiere_cotizacion y el plan no suma.
  *  - Un paquete que no se puede sumar al plan elegido se rechaza (no se ignora en silencio).
+ *
+ * Periodicidad y descuentos (suscripciones; solo sobre lo mensual, nunca sobre el pago único):
+ *  - Mensual: el periodo es 1 mes. Anual: 12 meses con el descuento anual de Ajustes
+ *    (descuento por mes = redondeo(mensual × % anual / 100); mes con descuento = mensual − eso).
+ *  - Promoción: porcentaje → redondeo(mes con descuento × % / 100); monto fijo → el menor
+ *    entre el monto y el mes. Se aplica a los primeros N meses del periodo (todos si no
+ *    tiene límite; en el anual, hasta 12).
+ *  - Periodo = mes con descuento × meses − descuento de la promoción. IVA sobre el periodo.
  */
 class Calculadora
 {
@@ -42,7 +50,7 @@ class Calculadora
      *     renglones: list<array<string, mixed>>, incompatibles: list<string>,
      *     mensual: array{subtotal: int, iva: int, total: int}, unico: array{subtotal: int, iva: int, total: int}}
      */
-    public function calcular(?Plan $plan, int $sedes, Collection $paquetes): array
+    public function calcular(?Plan $plan, int $sedes, Collection $paquetes, string $periodicidad = 'mensual', ?array $promocion = null): array
     {
         $sedes = max(1, min(999, $sedes));
         $cobradas = max($sedes, (int) ($plan?->sedes_minimas ?? 1));
@@ -91,6 +99,46 @@ class Calculadora
             'incompatibles' => $incompatibles,
             'mensual' => self::totales($mensual, $iva),
             'unico' => self::totales($unico, $iva),
+        ] + self::periodo($mensual, $periodicidad, $this->ajustes->descuentoAnualCentesimas(), $promocion, $iva);
+    }
+
+    /**
+     * Periodo de cobro con el descuento anual y la promoción (mismo cálculo que landing-calculo.js).
+     *
+     * @param  array{id?: int, nombre: string, codigo?: ?string, tipo: string, valor: int, meses: ?int}|null  $promocion
+     * @return array{periodicidad: string, meses: int, descuento_anual: int, descuento_promocion: int, promocion: ?array<string, mixed>,
+     *     periodo: array{subtotal: int, iva: int, total: int}, periodo_regular: array{subtotal: int, iva: int, total: int}}
+     */
+    public static function periodo(int $mensual, string $periodicidad, int $anualCentesimas, ?array $promocion, int $ivaCentesimas): array
+    {
+        $anual = $periodicidad === 'anual';
+        $meses = $anual ? 12 : 1;
+        $descuentoMes = $anual ? intdiv($mensual * $anualCentesimas + 5000, 10000) : 0;
+        $mes = $mensual - $descuentoMes;
+        $regular = $mes * $meses;
+        $promo = null;
+        $descuentoPromocion = 0;
+        if ($promocion !== null && $mes > 0) {
+            $porMes = $promocion['tipo'] === 'porcentaje'
+                ? intdiv($mes * (int) $promocion['valor'] + 5000, 10000)
+                : min((int) $promocion['valor'], $mes);
+            $mesesPromo = $promocion['meses'] === null ? $meses : min($meses, (int) $promocion['meses']);
+            $descuentoPromocion = $porMes * $mesesPromo;
+            $promo = [
+                'id' => $promocion['id'] ?? null, 'nombre' => $promocion['nombre'], 'codigo' => $promocion['codigo'] ?? null,
+                'tipo' => $promocion['tipo'], 'valor' => (int) $promocion['valor'], 'meses' => $promocion['meses'],
+                'por_mes' => $porMes, 'meses_aplicados' => $mesesPromo,
+            ];
+        }
+
+        return [
+            'periodicidad' => $anual ? 'anual' : 'mensual',
+            'meses' => $meses,
+            'descuento_anual' => $descuentoMes * $meses,
+            'descuento_promocion' => $descuentoPromocion,
+            'promocion' => $promo,
+            'periodo' => self::totales($regular - $descuentoPromocion, $ivaCentesimas),
+            'periodo_regular' => self::totales($regular, $ivaCentesimas),
         ];
     }
 
@@ -117,6 +165,7 @@ class Calculadora
         return [
             'moneda' => $this->ajustes->get('moneda'),
             'iva' => $this->ajustes->ivaCentesimas(),
+            'anual' => $this->ajustes->descuentoAnualCentesimas(),
             'leyenda' => $this->ajustes->get('leyenda_iva'),
             'planes' => $planes->map(fn (Plan $p) => [
                 'id' => $p->id, 'nombre' => $p->nombre, 'precio' => $p->cotizar ? 0 : self::centavos($p->precio_por_sede_mensual),

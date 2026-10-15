@@ -440,6 +440,12 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudieron revisar las llaves y los equipos de turno pendientes (revisa despliegue.log)"
 fi
 # --- Fin Mejoras activos ---
+# --- Suscripciones: estado por fechas y avisos (antes de vencer, al vencer, mitad de la gracia, solo consulta), una vez al día después de las 8:00 ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:suscripciones'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:suscripciones --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudieron revisar las suscripciones (revisa despliegue.log)"
+fi
+# --- Fin Suscripciones ---
 
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
 if [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ] && grep -Eq "EscribeAqui|tu-correo@" "$HOME/qa_inicial.txt"; then

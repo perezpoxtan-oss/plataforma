@@ -8,7 +8,7 @@ resumen: Los productos, planes, paquetes y precios que se ofrecen en la página 
 
 # Catálogo comercial y página de planes
 
-**¿Para qué sirve?** Aquí decides **qué se ofrece y a qué precio** en la página pública de planes: los **productos** (módulos de la plataforma), los **planes** que se cobran **por sede al mes**, los **paquetes** que se suman (al mes o en un solo pago), la moneda y el IVA. También aquí llegan las **solicitudes** de quienes llenan el formulario «Contratar».
+**¿Para qué sirve?** Aquí decides **qué se ofrece y a qué precio** en la página pública de planes: los **productos** (módulos de la plataforma), los **planes** que se cobran **por sede al mes** (o al año, con descuento), los **paquetes** que se suman (al mes o en un solo pago), la moneda y el IVA. También aquí llegan las **solicitudes** de quienes llenan el formulario «Contratar» o piden una **prueba gratis**. Los clientes, sus vencimientos y las promociones se manejan en las pestañas **Clientes**, **Por revisar** y **Promociones** (ver [Suscripciones de los clientes](suscripciones.md)).
 
 ![Página pública de planes](img/catalogo-comercial/pagina-publica.png)
 
@@ -60,6 +60,14 @@ resumen: Los productos, planes, paquetes y precios que se ofrecen en la página 
 
 **Qué debes ver:** el paquete en la lista con su cobro, su precio y «Se suma a».
 
+## Qué ve el visitante: prueba gratis, pago anual y códigos
+
+- **Probar gratis 14 días**: botón en la portada (se enciende o apaga en **Ajustes → Suscripciones**, con los días de prueba). La solicitud llega como **Prueba gratis** y tú la apruebas.
+- **¿Cómo quieres pagar?**: **Mensual** o **Anual** (con el **Descuento por pago anual** de **Ajustes**). Las tarjetas de los planes muestran también el precio al mes pagando el año.
+- **¿Tienes un código de promoción?**: el visitante lo escribe y el descuento aparece en el desglose. Las promociones se dan de alta en la pestaña **Promociones**.
+
+![Calculadora con pago anual](img/suscripciones/calculadora-anual.png)
+
 ## Cómo cambiar el orden o dar de baja
 
 1. En **Planes**, **Paquetes** o **Productos** usa las flechas **Subir** y **Bajar**: el orden de la lista es el de la página.
@@ -99,7 +107,7 @@ Cuando alguien envía el formulario **Contratar**, te llega un aviso a la **camp
 2. Las **Nuevas** muestran cuánto llevan esperando: verde (a tiempo), amarillo (más de 1 día) y rojo (más de 3 días).
 3. Toca **Atender** en la solicitud.
 4. Revisa los datos, lo que pidió y el **Desglose** (calculado con los precios del momento en que llegó).
-5. Cambia el **Estado**: **Contactada** (ya le hablaste), **Cotizada** (le enviaste la propuesta), **Pagada** o **Cancelada**.
+5. Cambia el **Estado**: **Contactada** (ya le hablaste), **Cotizada** (le enviaste la propuesta), **Pagada** o **Cancelada**. Al guardar **Pagada**, el cliente **se activa solo** (empresa, sede, Administrador y módulos de su plan) y se abre su ficha; si ya era cliente, se registra su pago. Ver [Suscripciones de los clientes](suscripciones.md).
 6. Si ya pagó, escribe la **Referencia del pago**. Usa **Notas internas** para lo que hablaron (la persona no las ve).
 7. Toca **Guardar**.
 
@@ -125,6 +133,8 @@ Cuando alguien envía el formulario **Contratar**, te llega un aviso a la **camp
 
 ## Preguntas frecuentes
 
+**¿Qué pasa con una solicitud de prueba gratis?** No se activa sola: en la solicitud aparece el botón **Aprobar prueba gratis**. Ver [Suscripciones de los clientes](suscripciones.md).
+
 **¿Se cobra en línea?** Todavía no. La página registra la solicitud y te avisa; tú acuerdas el pago y lo anotas en la solicitud. La plataforma está preparada para conectar un cobro en línea más adelante.
 
 **¿Si cambio un precio, cambian las solicitudes que ya llegaron?** No. Cada solicitud guarda el precio y el desglose del momento en que llegó.
@@ -137,6 +147,7 @@ Cuando alguien envía el formulario **Contratar**, te llega un aviso a la **camp
 
 ## Relacionado
 
+- [Suscripciones de los clientes](suscripciones.md)
 - [Identidad de la plataforma](identidad.md)
 - [Configuración](configuracion.md)
 - [Menús, Mis pendientes y modos de pantalla](menus.md)

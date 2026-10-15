@@ -126,6 +126,7 @@
                 <span>Tu envío no llegó completo y no se guardó. Revisa los datos y vuelve a guardar. Si se repite, avisa a tu administrador con la hora.</span>
             </div>
         @endif
+        @include('componentes.franja-suscripcion'){{-- Suscripciones: gracia o solo consulta --}}
         @yield('contenido')
     </main>
 

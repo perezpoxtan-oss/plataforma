@@ -378,6 +378,9 @@ class RecorridoPantallasTest extends TestCase
             'catalogo-comercial.editar' => collect(['productos', 'planes', 'paquetes'])->map(fn ($t) => ['tipo' => $t, 'id' => DB::table($t)->orderBy('id')->value('id')])
                 ->filter(fn ($j) => $j['id'] !== null)->values()->all(),
             'catalogo-comercial.solicitudes.show' => DB::table('solicitudes_compra')->orderBy('id')->limit(2)->pluck('id')->map(fn ($id) => ['id' => $id])->all(),
+            // Suscripciones (plataforma): los clientes de ejemplo y las promociones
+            'catalogo-comercial.clientes.show' => DB::table('suscripciones')->orderBy('id')->limit(3)->pluck('id')->map(fn ($id) => ['id' => $id])->all(),
+            'catalogo-comercial.promociones.editar' => DB::table('promociones')->orderBy('id')->limit(1)->pluck('id')->map(fn ($id) => ['id' => $id])->all(),
             default => null,
         };
 

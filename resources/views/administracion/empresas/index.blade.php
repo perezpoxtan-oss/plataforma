@@ -36,6 +36,10 @@
         </div>
     @endif
 
+    @if ($suscripcion)
+        @include('administracion.empresas._tu-suscripcion')
+    @endif
+
     <div class="fichas-grid" data-fichas="empresas">
         @if ($puede['crear'])
             <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevaEmpresa">
@@ -96,6 +100,12 @@
                 </div>
                 @if ($esSuperadmin)
                     <div class="small text-muted mt-2"><i class="bi bi-grid-3x3-gap me-1" aria-hidden="true"></i>{{ count($contratados[$emp->id] ?? []) }} módulos contratados</div>
+                    {{-- Suscripciones: sin suscripción = sin límites ni vencimiento --}}
+                    @if ($sus = $suscripciones[$emp->id] ?? null)
+                        <a href="{{ route('catalogo-comercial.clientes.show', $sus->id) }}" class="small d-inline-block mt-1"><i class="bi bi-calendar2-check me-1" aria-hidden="true"></i>Suscripción: {{ $sus->estadoTexto($sus->estadoEfectivo()) }}, vence el {{ $sus->vence_en->format('d/m/Y') }}</a>
+                    @else
+                        <div class="small text-muted mt-1"><i class="bi bi-infinity me-1" aria-hidden="true"></i>Sin suscripción: sin límites ni vencimiento</div>
+                    @endif
                 @endif
                 <div class="ficha-footer">
                     <span class="etiqueta-estado {{ $emp->activo ? 'activo' : 'inactivo' }}">{{ $emp->activo ? 'ACTIVA' : 'DE BAJA' }}</span>

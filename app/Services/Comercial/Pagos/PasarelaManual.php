@@ -44,7 +44,9 @@ class PasarelaManual implements PasarelaPago
         $solicitud->forceFill(['pasarela' => $this->clave()])->save();
         $this->avisar($solicitud);
 
-        return new ResultadoCobro('pendiente', mensaje: 'Recibimos tu solicitud. Te contactaremos para confirmar tu plan y la forma de pago.');
+        return new ResultadoCobro('pendiente', mensaje: $solicitud->esPrueba()
+            ? 'Recibimos tu solicitud de prueba gratis. La revisamos y te enviamos tu acceso por correo.'
+            : 'Recibimos tu solicitud. Te contactaremos para confirmar tu plan y la forma de pago.');
     }
 
     /** La Manual no recibe avisos de pago. */
@@ -59,8 +61,14 @@ class PasarelaManual implements PasarelaPago
         $resumen = $this->resumen($s);
 
         // Campana: avisos de la plataforma (sin empresa)
+        $quien = $s->nombre.($s->empresa ? " ({$s->empresa})" : '');
+        $titulo = match ($s->tipo) {
+            'prueba' => "Prueba gratis por aprobar {$s->folio}: {$quien}",
+            'renovacion', 'ampliacion' => "{$s->tipoTexto()}: {$quien}, solicitud {$s->folio}",
+            default => "Nueva solicitud {$s->folio}: {$quien}",
+        };
         $this->tenant->conEmpresa(null, fn () => $this->centro->avisarPlataforma($superadmins->pluck('id'), 'solicitud_compra', [
-            'titulo' => "Nueva solicitud {$s->folio}: {$s->nombre}".($s->empresa ? " ({$s->empresa})" : ''),
+            'titulo' => $titulo,
             'texto' => $resumen,
             'url' => route('catalogo-comercial.solicitudes.show', $s->id),
             'referencia_tipo' => 'solicitud_compra',
@@ -81,10 +89,16 @@ class PasarelaManual implements PasarelaPago
     {
         $plan = collect($s->detalle['renglones'] ?? [])->firstWhere('tipo', 'plan');
         $partes = [($plan['nombre'] ?? 'Sin plan').', '.$s->sedes.' '.($s->sedes === 1 ? 'sede' : 'sedes')];
+        if ($s->esPrueba()) {
+            $partes[] = 'prueba gratis de '.$this->ajustes->get('dias_prueba').' días';
+        }
         if ($s->requiere_cotizacion) {
             $partes[] = 'pide cotización';
-        } elseif ($s->mensual_total > 0) {
-            $partes[] = Calculadora::formato(Calculadora::centavos($s->mensual_total), $s->moneda).' al mes con IVA';
+        } elseif ($s->periodo_total > 0) {
+            $partes[] = ($s->esPrueba() ? 'después ' : '').Calculadora::formato(Calculadora::centavos($s->periodo_total), $s->moneda).' '.$s->periodoTexto().' con IVA';
+        }
+        if ($s->codigo_promocion) {
+            $partes[] = 'código '.$s->codigo_promocion;
         }
         if ($s->unico_total > 0) {
             $partes[] = Calculadora::formato(Calculadora::centavos($s->unico_total), $s->moneda).' de pago único con IVA';

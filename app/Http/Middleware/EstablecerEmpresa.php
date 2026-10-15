@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Suscripcion;
 use App\Support\Tenancy\Tenant;
 use Closure;
 use Illuminate\Http\Request;
@@ -24,7 +25,9 @@ class EstablecerEmpresa
             return $next($request);
         }
 
-        $usuario->loadMissing('empresa');
+        // Suscripciones: en la misma consulta, si la empresa tiene suscripción (las que no, no gastan otra consulta)
+        $usuario->loadMissing(['empresa' => fn ($q) => $q->select('empresas.*')
+            ->addSelect(['suscripcion_id' => Suscripcion::query()->select('id')->whereColumn('suscripciones.empresa_id', 'empresas.id')->limit(1)])]);
 
         if (! $usuario->activo || ($usuario->empresa_id !== null && ! $usuario->empresa?->activo)) {
             Auth::logout();

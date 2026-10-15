@@ -1,5 +1,8 @@
 {{-- Tarjetas de planes: precio por sede al mes + IVA y lo que incluyen; el destacado resaltado --}}
-@php use App\Services\Comercial\Calculadora; @endphp
+@php
+    use App\Services\Comercial\Calculadora;
+    $descuentoAnual = (int) round(((float) ($ajustes['descuento_anual_porcentaje'] ?? 0)) * 100);
+@endphp
 <section class="lp-seccion" id="planes" aria-labelledby="titulo-planes">
     <div class="lp-envoltura">
         <div class="lp-encabezado">
@@ -22,6 +25,10 @@
                             @else
                                 <span class="lp-precio-cifra">{{ Calculadora::precioCorto(Calculadora::centavos($plan->precio_por_sede_mensual)) }}</span>
                                 <span class="lp-precio-unidad">por sede al mes {{ $ajustes['leyenda_iva'] }}</span>
+                                @if ($descuentoAnual > 0)
+                                    @php $c = Calculadora::centavos($plan->precio_por_sede_mensual); @endphp
+                                    <span class="lp-plan-anual">o {{ Calculadora::precioCorto($c - intdiv($c * $descuentoAnual + 5000, 10000)) }} al mes pagando el año</span>
+                                @endif
                             @endif
                         </div>
                         <ul class="lp-plan-datos">

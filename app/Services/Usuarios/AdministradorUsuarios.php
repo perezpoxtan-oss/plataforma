@@ -11,6 +11,7 @@ use App\Services\Cuenta\RecuperacionContrasena;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
+use App\Services\Suscripciones\Limites;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,8 @@ class AdministradorUsuarios
     public function crear(User $actor, int $empresaId, array $datos, Rol $rol, ?Sede $sede, bool $enlace = false, array $otrasSedes = []): array
     {
         $this->exigirRolYSede($actor, $empresaId, $rol, $sede, 'usuarios.crear', $otrasSedes);
+        // Suscripciones: no más usuarios activos que los contratados (sin suscripción, sin límite)
+        app(Limites::class)->exigirUsuario($empresaId);
 
         if ($enlace) {
             $datos['password'] = Str::password(40);
@@ -115,6 +118,9 @@ class AdministradorUsuarios
         $this->exigirRolYSede($actor, (int) $usuario->empresa_id, $rol, $sede, 'usuarios.editar', $otrasSedes);
 
         $antes = $this->foto($usuario);
+        if (! empty($datos['activo']) && ! $usuario->activo) {
+            app(Limites::class)->exigirUsuario((int) $usuario->empresa_id);
+        }
 
         // Varias sedes (ADR-0016): las sedes que el actor no administra se conservan tal cual
         $permitidas = $actor->es_superadmin ? null : $this->autorizador->sedesPermitidas($actor, 'usuarios.editar');
@@ -154,6 +160,9 @@ class AdministradorUsuarios
     public function cambiarEstado(User $actor, User $usuario, bool $activo): void
     {
         $this->exigirPuedeAdministrar($actor, $usuario, 'usuarios.eliminar');
+        if ($activo && ! $usuario->activo) {
+            app(Limites::class)->exigirUsuario((int) $usuario->empresa_id);
+        }
 
         $usuario->forceFill(['activo' => $activo, 'actualizado_por' => $actor->id] + ($activo ? ['desactivado_por_baja_en' => null] : []))->save();
 

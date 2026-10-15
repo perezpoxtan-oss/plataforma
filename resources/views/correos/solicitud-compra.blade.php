@@ -7,11 +7,11 @@
 @section('cuerpo')
     @if ($interno)
         <p style="margin-top:0;font-size:18px;font-weight:bold;">Nueva solicitud {{ $s->folio }}</p>
-        <p><strong>{{ $s->nombre }}</strong>{{ $s->empresa ? ' de '.$s->empresa : '' }} pidió información desde la página de planes.</p>
+        <p><strong>{{ $s->nombre }}</strong>{{ $s->empresa ? ' de '.$s->empresa : '' }} {{ match ($s->tipo) { 'prueba' => 'pidió una prueba gratis: apruébala desde la solicitud para crear su acceso.', 'renovacion' => 'pidió renovar su suscripción.', 'ampliacion' => 'pidió ampliar o cambiar su plan.', default => 'pidió información desde la página de planes.' } }}</p>
         <p>Correo: {{ $s->correo }}@if ($s->telefono)<br>Teléfono: {{ $s->telefono }}@endif</p>
     @else
         <p style="margin-top:0;font-size:18px;font-weight:bold;">Recibimos tu solicitud</p>
-        <p>Hola, {{ $s->nombre }}. Tu folio es <strong>{{ $s->folio }}</strong>. Te contactaremos para confirmar tu plan y la forma de pago.</p>
+        <p>Hola, {{ $s->nombre }}. Tu folio es <strong>{{ $s->folio }}</strong>. {{ $s->esPrueba() ? 'Revisamos tu solicitud de prueba gratis y te enviamos por correo el acceso para el Administrador de tu empresa.' : 'Te contactaremos para confirmar tu plan y la forma de pago.' }}</p>
     @endif
     <p>{{ $resumen }}</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:14px;">
@@ -22,9 +22,13 @@
             </tr>
         @endforeach
         @if ($s->mensual_subtotal > 0)
-            <tr><td style="padding:6px 0;">Al mes, antes de IVA</td><td style="padding:6px 0;text-align:right;">{{ $dinero($s->mensual_subtotal) }}</td></tr>
-            <tr><td style="padding:6px 0;">IVA {{ rtrim(rtrim(number_format((float) $s->iva_porcentaje, 2), '0'), '.') }} %</td><td style="padding:6px 0;text-align:right;">{{ $dinero($s->mensual_iva) }}</td></tr>
-            <tr><td style="padding:6px 0;font-weight:bold;">Total al mes</td><td style="padding:6px 0;text-align:right;font-weight:bold;">{{ $dinero($s->mensual_total) }}</td></tr>
+            @php $periodo = $s->periodo_total > 0 || $s->descuento > 0; @endphp
+            @if ($s->descuento > 0)
+                <tr><td style="padding:6px 0;">Descuentos ({{ $s->periodicidad === 'anual' ? 'pago anual' : '' }}{{ $s->periodicidad === 'anual' && $s->codigo_promocion ? ' y ' : '' }}{{ $s->codigo_promocion ? 'código '.$s->codigo_promocion : '' }})</td><td style="padding:6px 0;text-align:right;">−{{ $dinero($s->descuento) }}</td></tr>
+            @endif
+            <tr><td style="padding:6px 0;">{{ $s->periodicidad === 'anual' ? 'Al año' : 'Al mes' }}, antes de IVA</td><td style="padding:6px 0;text-align:right;">{{ $dinero($periodo ? $s->periodo_subtotal : $s->mensual_subtotal) }}</td></tr>
+            <tr><td style="padding:6px 0;">IVA {{ rtrim(rtrim(number_format((float) $s->iva_porcentaje, 2), '0'), '.') }} %</td><td style="padding:6px 0;text-align:right;">{{ $dinero($periodo ? $s->periodo_iva : $s->mensual_iva) }}</td></tr>
+            <tr><td style="padding:6px 0;font-weight:bold;">Total {{ $s->periodoTexto() }}</td><td style="padding:6px 0;text-align:right;font-weight:bold;">{{ $dinero($periodo ? $s->periodo_total : $s->mensual_total) }}</td></tr>
         @endif
         @if ($s->unico_subtotal > 0)
             <tr><td style="padding:6px 0;font-weight:bold;">Pago único con IVA</td><td style="padding:6px 0;text-align:right;font-weight:bold;">{{ $dinero($s->unico_total) }}</td></tr>

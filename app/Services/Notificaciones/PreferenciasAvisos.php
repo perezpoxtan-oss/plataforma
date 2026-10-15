@@ -76,6 +76,8 @@ class PreferenciasAvisos
         'alta_rechazada' => ['Padrones: altas por verificar', 'Se rechazó un alta que registraste', ['accesos.crear']],
         // Catálogo comercial (solo Super Administrador)
         'solicitud_compra' => ['Catálogo comercial', 'Llegó una solicitud desde la página de planes', ['catalogo_comercial.ver']],
+        'cliente_por_revisar' => ['Catálogo comercial', 'Un cliente nuevo se activó al pagar y espera tu revisión', ['catalogo_comercial.ver']],
+        'suscripcion_aviso' => ['Suscripción', 'Tu suscripción está por vencer, venció o pasó a solo consulta', ['empresas.editar', 'catalogo_comercial.ver']],
     ];
 
     /**

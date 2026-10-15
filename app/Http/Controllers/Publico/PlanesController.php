@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Publico;
 
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
+use App\Models\Promocion;
 use App\Services\Comercial\AjustesComerciales;
 use App\Services\Comercial\CatalogoPublico;
 use App\Support\Entrada;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
 
 /**
  * Página pública de planes (SIN sesión): «/» para visitantes cuando está
@@ -49,15 +51,22 @@ class PlanesController extends Controller
     {
         $this->visibleOFallar($request);
         $datos = $this->catalogo->pagina();
-        [$plan, , $calculo] = $this->eleccion($request, $datos);
+        [$plan, , $calculo, $promocion, $errorCodigo, $codigo] = $this->eleccion($request, $datos);
+        // Prueba gratis: «Probar gratis N días» (si está encendida en Ajustes)
+        $prueba = $request->query('prueba') === '1' && $this->ajustes->get('prueba_habilitada');
 
         return $this->pagina('publico.planes.contratar', $datos + [
             'eleccion' => [
                 'plan_id' => $plan?->id,
                 'sedes' => $calculo['sedes'],
                 'paquetes' => collect($calculo['renglones'])->where('tipo', 'paquete')->pluck('id')->all(),
+                'periodicidad' => $calculo['periodicidad'],
+                'codigo_promocion' => $codigo,
             ],
             'calculo' => $calculo,
+            'promocion' => $promocion,
+            'errorCodigo' => $errorCodigo,
+            'prueba' => $prueba,
         ], conFormulario: true);
     }
 
@@ -80,7 +89,11 @@ class PlanesController extends Controller
             'paquetes.*' => ['integer', 'min:1'],
             'mensaje' => ['nullable', 'string', 'max:1000'],
             'acepta_privacidad' => ['accepted'],
+            'tipo' => ['nullable', Rule::in($this->ajustes->get('prueba_habilitada') ? ['compra', 'prueba'] : ['compra'])],
+            'periodicidad' => ['nullable', Rule::in(['mensual', 'anual'])],
+            'codigo_promocion' => ['nullable', 'string', 'max:40'],
         ], [
+            'tipo.in' => 'La prueba gratis no está disponible por ahora: envía tu solicitud para contratar.',
             'nombre.required' => 'Escribe tu nombre.',
             'nombre.min' => 'Escribe tu nombre completo.',
             'correo.required' => 'Escribe tu correo para poder contestarte.',
@@ -104,6 +117,9 @@ class PlanesController extends Controller
             'mensaje' => $limpio($datos['mensaje'] ?? null),
             'plan_id' => isset($datos['plan_id']) ? (int) $datos['plan_id'] : null,
             'paquetes' => array_values(array_unique(array_map('intval', $datos['paquetes'] ?? []))),
+            'tipo' => $datos['tipo'] ?? 'compra',
+            'periodicidad' => $datos['periodicidad'] ?? 'mensual',
+            'codigo_promocion' => $datos['codigo_promocion'] ?? null,
         ], (string) $request->ip());
 
         // Pasarela en línea (más adelante): enviar al interesado a pagar
@@ -112,7 +128,7 @@ class PlanesController extends Controller
         }
 
         return redirect()->route('planes.gracias')->with('solicitud_enviada', [
-            'folio' => $solicitud->folio, 'mensaje' => $resultado->mensaje, 'correo' => $solicitud->correo,
+            'folio' => $solicitud->folio, 'mensaje' => $resultado->mensaje, 'correo' => $solicitud->correo, 'prueba' => $solicitud->esPrueba(),
         ]);
     }
 
@@ -150,10 +166,10 @@ class PlanesController extends Controller
     }
 
     /**
-     * Lo elegido en la dirección (?plan=ID|slug&sedes=N&paquetes[]=ID), calculado por el servidor.
+     * Lo elegido en la dirección (?plan=ID|slug&sedes=N&paquetes[]=ID&periodicidad=anual&codigo=X), calculado por el servidor.
      *
      * @param  array<string, mixed>  $datos
-     * @return array{0: ?Plan, 1: mixed, 2: array<string, mixed>}
+     * @return array{0: ?Plan, 1: mixed, 2: array<string, mixed>, 3: ?Promocion, 4: ?string, 5: string}
      */
     private function eleccion(Request $request, array $datos): array
     {
@@ -162,14 +178,16 @@ class PlanesController extends Controller
             ?? $datos['planes']->firstWhere('destacado', true) ?? $datos['planes']->first();
         $sedes = max(1, min(999, (int) Entrada::texto($request->query('sedes'), '1')));
         $paquetes = collect((array) $request->query('paquetes', []))->filter(fn ($v) => is_scalar($v))->map(fn ($v) => (int) $v)->filter()->unique()->take(20)->values()->all();
+        $periodicidad = $request->query('periodicidad') === 'anual' ? 'anual' : 'mensual';
+        $codigo = mb_substr(Promocion::normalizarCodigo(Entrada::texto($request->query('codigo'))), 0, 40);
         // Los que no se pueden sumar al plan se quitan de la sugerencia (la persona puede elegir otro plan)
-        [$p, $q, $calculo] = $this->catalogo->cotizar($plan?->id, $sedes, $paquetes);
+        [$p, $q, $calculo, $promocion, $error] = $this->catalogo->cotizarConCodigo($plan?->id, $sedes, $paquetes, $periodicidad, $codigo);
         if ($calculo['incompatibles'] !== []) {
             $q = $q->reject(fn ($x) => in_array($x->nombre, $calculo['incompatibles'], true))->values();
-            [$p, $q, $calculo] = $this->catalogo->cotizar($plan?->id, $sedes, $q->pluck('id')->all());
+            [$p, $q, $calculo, $promocion, $error] = $this->catalogo->cotizarConCodigo($plan?->id, $sedes, $q->pluck('id')->all(), $periodicidad, $codigo);
         }
 
-        return [$p, $q, $calculo];
+        return [$p, $q, $calculo, $promocion, $error, $codigo];
     }
 
     /**
