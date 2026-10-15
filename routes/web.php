@@ -36,6 +36,7 @@ use App\Http\Controllers\PanelController;
 use App\Http\Controllers\Publico\EmpleosController;
 use App\Http\Controllers\Publico\PagoWebhookController;
 use App\Http\Controllers\Publico\PlanesController;
+use App\Http\Controllers\Publico\PwaController;
 use App\Http\Controllers\RecursosHumanos\AutorizacionController;
 use App\Http\Controllers\RecursosHumanos\CandidatoController;
 use App\Http\Controllers\RecursosHumanos\EntrevistaController;
@@ -71,6 +72,13 @@ Route::middleware('guest')->group(function () {
 // Seguridad: el cierre por inactividad es POST (con token); el GET solo muestra el aviso
 Route::get('/sesion/expirada', [SesionController::class, 'avisoExpirada'])->name('sesion.expirada');
 Route::post('/sesion/expirada', [SesionController::class, 'expirada'])->name('sesion.expirada.cerrar');
+
+// Plataforma instalable (PWA): sin el grupo «web» (sin sesión ni cookies), ver docs/tecnico/app-movil.md
+Route::withoutMiddleware('web')->controller(PwaController::class)->group(function () {
+    Route::get('/manifest.webmanifest', 'manifest')->name('pwa.manifest');
+    Route::get('/sw.js', 'trabajador')->name('pwa.trabajador');
+    Route::get('/sin-conexion', 'sinConexion')->name('pwa.sin-conexion');
+});
 
 // Inicio: con sesión, el panel; sin sesión, la página pública de planes si está publicada (si no, al acceso, como siempre)
 Route::get('/', PanelController::class)->middleware([PortadaPublica::class, 'auth'])->name('panel');

@@ -13,6 +13,10 @@
 @if ($identidad->get('favicon'))
     <link rel="icon" href="{{ asset($identidad->get('favicon')) }}">
 @endif
+{{-- Plataforma instalable (PWA): ver docs/tecnico/app-movil.md --}}
+<link rel="manifest" href="{{ url('/manifest.webmanifest') }}">
+<link rel="apple-touch-icon" href="{{ asset('iconos/apple-touch-icon.png') }}">
+<script src="{{ $version('js/pwa.js') }}" defer></script>
 <link href="{{ $version('vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
 <link href="{{ $version('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
 <link href="{{ $version('css/plataforma.css') }}" rel="stylesheet">
