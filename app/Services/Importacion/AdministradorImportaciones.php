@@ -278,7 +278,11 @@ class AdministradorImportaciones
      */
     public function procesar(User $actor, int $empresaId, Importador $importador, array $filas, ?string $existentes, bool $guardar): array
     {
-        @set_time_limit(600);
+        // Más tiempo en la web si el hospedaje lo permite (en consola no hay límite: no se toca)
+        $limite = (int) ini_get('max_execution_time');
+        if ($limite > 0 && $limite < 600) {
+            @set_time_limit(600);
+        }
         $estado = ['vistas' => [], 'puedeCrear' => $actor->can($importador->modulo().'.crear'),
             'puedeEditar' => $importador->actualizable() && $actor->can($importador->modulo().'.editar')];
 
