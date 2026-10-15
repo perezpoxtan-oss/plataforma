@@ -81,6 +81,8 @@ Migración `2026_10_31_000300_crear_suscripciones` (InnoDB, auditoría `creado_p
 
 En el grupo `web` después de `ExigirCambioContrasena`. Para un usuario **de empresa** (no Super Administrador) cuya suscripción `soloConsulta()`: toda petición que no sea segura (POST, PUT, PATCH, DELETE) se rechaza — redirección atrás con `error` (franja) o JSON **423** `{ok: false, mensaje}`. Permitidas: `logout`, `sesion.*`, `mi-cuenta.contrasena`, `mi-cuenta.avisos`, `notificaciones.leer-todas|abrir|resumen` y `mi-suscripcion.solicitar` (para poder renovar). Ver y exportar (GET) siguen. Las tareas automáticas no pasan por el middleware.
 
+Consultas: `EstablecerEmpresa` trae en la misma consulta de la empresa una subconsulta `suscripcion_id`; una empresa sin suscripción no gasta ninguna consulta extra (franja ni middleware).
+
 Franja: `componentes/franja-suscripcion` (incluida en `layouts/app` antes del contenido) con `EstadoCliente::franja()`: roja en solo consulta («Tu suscripción venció el …; tienes acceso de solo consulta: puedes ver y exportar, pero no registrar ni cambiar nada. Contacta a …»), ámbar en gracia, con enlace «Ver mi suscripción» si puede ver Empresas.
 
 ## Tarea diaria

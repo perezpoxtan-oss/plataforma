@@ -20,6 +20,11 @@ class EstadoCliente
         if ($usuario === null || $usuario->es_superadmin || $usuario->empresa_id === null) {
             return null;
         }
+        // EstablecerEmpresa ya trajo si la empresa tiene suscripción: sin suscripción, sin otra consulta
+        $empresa = $usuario->relationLoaded('empresa') ? $usuario->empresa : null;
+        if ($empresa !== null && array_key_exists('suscripcion_id', $empresa->getAttributes()) && $empresa->getAttributes()['suscripcion_id'] === null) {
+            return null;
+        }
 
         return Suscripcion::query()->where('empresa_id', $usuario->empresa_id)->first();
     }
