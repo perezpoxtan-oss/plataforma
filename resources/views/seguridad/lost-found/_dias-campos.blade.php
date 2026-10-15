@@ -9,7 +9,7 @@
     <div class="umbral-card">
         <div>
             <label class="fw-bold" for="{{ $prefijo }}dias_{{ $tipo }}">{{ $nombre }}</label>
-            <div class="small text-muted">Amarillo a partir del día {{ (int) ceil($diasTipo * 0.7) }}; rojo (vencido) desde el día {{ $diasTipo }}.</div>
+            <div class="small text-muted">Amarillo a partir del día {{ (int) ceil($diasTipo * 0.7) }}; rojo (vencido) desde el día {{ $diasTipo }}. <span class="valor-original">Valor original: {{ \App\Models\LostFoundUmbral::POR_OMISION[$tipo] ?? $diasTipo }} días.</span></div>
             @if ($guardado && $guardado->updated_at)
                 <div class="texto-traza">Editado por {{ $guardado->editor?->name ?? 'el sistema' }} · @fecha($guardado->updated_at)</div>
             @endif

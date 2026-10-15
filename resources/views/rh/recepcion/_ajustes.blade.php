@@ -33,6 +33,7 @@
                 <input type="number" id="kiosco_usos" name="kiosco_usos" class="campo" min="1" max="10" value="{{ old('kiosco_usos', $ajustesRecepcion->usosKiosco($empresa)) }}" @disabled(! $puedeGuardarRecepcion)>
             </div>
         </div>
+        <p class="campo-ayuda mt-0"><span class="valor-original">Valor original: {{ \App\Services\Recepcion\AjustesRecepcion::HORAS_KIOSCO }} horas y {{ \App\Services\Recepcion\AjustesRecepcion::USOS_KIOSCO }} veces. El aviso de privacidad original es un borrador para que lo revise tu abogado.</span></p>
         @if ($puedeGuardarRecepcion)
             <button type="submit" class="btn-verde btn-accion-rh">Guardar ajustes de Recepción</button>
         @endif

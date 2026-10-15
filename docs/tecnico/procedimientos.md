@@ -67,7 +67,7 @@ Procedimiento: publicado --retirar (motivo)--> retirado --reactivar--> publicado
 | Clave (`Empresa::AVISOS`) | Cuándo | A quién |
 |---|---|---|
 | `procedimiento_publicado` | Se aprueba una versión | Quienes deben firmarla |
-| `procedimiento_recordatorio` | Comando diario (en proceso) | Cada usuario con acuses pendientes de versiones publicadas **antes de hoy**, como máximo cada **3 días** (`RECORDATORIO_CADA_DIAS`), después de las 8:00 de la empresa (`--si-toca`) |
+| `procedimiento_recordatorio` | Comando diario (en proceso) | Cada usuario con acuses pendientes de versiones publicadas **antes de hoy**, como máximo cada **N días** (por empresa en Configuración → Caseta y accesos, `preferencias.caseta.procedimientos_recordatorio_dias`; original **3**, `RECORDATORIO_CADA_DIAS`), después de las 8:00 de la empresa (`--si-toca`) |
 
 Se encienden o apagan en Configuración → Avisos por correo (activos por defecto). Solo salen si el correo de la plataforma está configurado. El de publicación se envía después de responder (`defer`).
 

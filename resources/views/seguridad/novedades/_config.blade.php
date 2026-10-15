@@ -6,7 +6,7 @@
     $trasErrorNov = $errors->hasAny(['nombre_opcion', 'nombre_menu', 'categoria_hallazgo_pc']);
 @endphp
 <section class="tarjeta p-4" id="novedades" aria-labelledby="t-novedades">
-    <h2 id="t-novedades" class="h5 fw-bold"><i class="bi bi-headset me-2 text-danger" aria-hidden="true"></i>{{ $ajustesNov->bitacora($empresa->id) }}</h2>
+    <h3 id="t-novedades" class="h6 fw-bold"><i class="bi bi-headset me-2 text-danger" aria-hidden="true"></i>{{ $ajustesNov->bitacora($empresa->id) }}: nombre y hallazgos</h3>
     <p class="small text-muted">Ajustes de {{ $empresa->nombre_comercial }}. Si no cambias nada, todo se ve y funciona como siempre.</p>
     @unless ($puedeEditar)
         <div class="alert alert-secondary small py-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Tu rol solo puede consultar esta configuración, no modificarla.</div>
@@ -41,9 +41,13 @@
                 <option value="{{ $clave }}" @selected(($trasErrorNov ? old('categoria_hallazgo_pc') : $categoriaActual) === $clave)>{{ $texto }}</option>
             @endforeach
         </select>
-        <p class="campo-ayuda mt-0">«Mantenimiento de equipo PC» evita que un extintor despresurizado parezca una emergencia real. Los tickets que ya existen no cambian.</p>
+        <p class="campo-ayuda mt-0">«Mantenimiento de equipo PC» evita que un extintor despresurizado parezca una emergencia real. Los tickets que ya existen no cambian. <span class="valor-original">Valor original: Siniestro Protección Civil.</span></p>
         @if ($puedeEditar)
             <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar ajustes de la bitácora</button>
         @endif
     </form>
+    {{-- Configuración por secciones: «Restablecer valor original» (Novedades y Siniestro Protección Civil) --}}
+    @if ($puedeEditar && ($ajustesNov->nombrePropio($empresa->id) || $categoriaActual !== \App\Services\Novedades\AjustesNovedades::CATEGORIA_HALLAZGO_OMISION))
+        @include('administracion.configuracion._restablecer', ['ajuste' => 'novedades', 'que' => 'el nombre del módulo y la categoría del hallazgo'])
+    @endif
 </section>

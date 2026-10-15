@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
  * Recordatorio de los procedimientos que alguien aún no firma de enterado
  * («Leí y entendí»). Lo llama desplegar.sh en cada corrida del cron (cada 5
  * minutos), junto al de pases vencidos: corre en proceso, sin exec ni
- * proc_open. Cada usuario recibe uno cada 3 días como máximo.
+ * proc_open. Cada usuario recibe uno cada 3 días como máximo (configurable por empresa).
  *   --si-toca  solo después de las 8:00 de la empresa (para no avisar de madrugada)
  */
 class RecordarProcedimientosPendientes extends Command

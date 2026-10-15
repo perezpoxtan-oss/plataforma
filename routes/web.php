@@ -462,6 +462,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/configuracion/lost-found', [ConfiguracionController::class, 'lostFound'])->name('configuracion.lost_found');
     // Mejoras Incidentes: nombre del menú y categoría del hallazgo de recorrido (Configuración → Bitácora de novedades)
     Route::put('/configuracion/novedades', [ConfiguracionController::class, 'novedades'])->name('configuracion.novedades');
+    // Configuración por secciones: nombres del menú (Avanzado) y «Restablecer valor original» de cada tarjeta
+    Route::put('/configuracion/menu', [ConfiguracionController::class, 'menu'])->name('configuracion.menu');
+    Route::put('/configuracion/restablecer', [ConfiguracionController::class, 'restablecer'])->middleware('throttle:30,1')->name('configuracion.restablecer');
     // Fin Padrones: Ajustes QA 4
     // Padrones: Altas por verificar (vehículos, empresas externas y personas registrados desde Operación; ver docs/tecnico/altas-por-verificar.md)
     Route::controller('App\Http\Controllers\Padrones\AltaPorVerificarController')->group(function () {

@@ -269,8 +269,9 @@ class MejorasActivosTest extends TestCase
     {
         $this->assertSame(AjustesCaseta::OMISION, AjustesCaseta::de($this->empresa));
         $this->actingAs($this->admin)->get('/configuracion')->assertOk()
-            ->assertSee('Caseta y activos')->assertSee('Guardia y taxista firman en pantalla (original)')
-            ->assertSee('Casilla «Leí y entendí» y firma dibujada en cada versión (original)')->assertSee('Guardar ajustes de caseta');
+            // Configuración por secciones: las tarjetas de caseta y activos van en su sección (Caseta y accesos, Activos, Transporte)
+            ->assertSee('Caseta y accesos')->assertSee('Activos')->assertSee('Guardia y taxista firman en pantalla (original)')
+            ->assertSee('Casilla «Leí y entendí» y firma dibujada en cada versión (original)')->assertSee('id="cfg-llaves"', false);
 
         $llave = $this->llave('HDC-101');
         $this->prestamo($llave, $this->colaborador('1005'), '-30 hours');
