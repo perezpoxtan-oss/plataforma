@@ -10,10 +10,12 @@ use App\Http\Controllers\Administracion\IdentidadController;
 use App\Http\Controllers\Administracion\PermisoController;
 use App\Http\Controllers\Administracion\RolController;
 use App\Http\Controllers\Administracion\SedeController;
+use App\Http\Controllers\Administracion\SuscripcionesController;
 use App\Http\Controllers\Administracion\UsuarioController;
 use App\Http\Controllers\Auth\RecuperacionController;
 use App\Http\Controllers\Auth\SesionController;
 use App\Http\Controllers\Cuenta\MiCuentaController;
+use App\Http\Controllers\Cuenta\MiSuscripcionController;
 use App\Http\Controllers\IdentificacionController;
 use App\Http\Controllers\Informes\BitacoraDelDiaController;
 use App\Http\Controllers\Informes\InformeEjecutivoController;
@@ -198,6 +200,25 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{tipo}/{id}/estado', 'estado')->whereIn('tipo', ['productos', 'planes', 'paquetes'])->whereNumber('id')->name('estado');
         Route::patch('/{tipo}/{id}/mover', 'mover')->whereIn('tipo', ['productos', 'planes', 'paquetes'])->whereNumber('id')->name('mover');
     });
+    // Suscripciones (solo Super Administrador): clientes, por revisar, prueba gratis por aprobar y promociones
+    Route::controller(SuscripcionesController::class)->prefix('catalogo-comercial')->name('catalogo-comercial.')->group(function () {
+        Route::get('/clientes/{id}', 'show')->whereNumber('id')->name('clientes.show');
+        Route::put('/clientes/{id}/plan', 'plan')->whereNumber('id')->name('clientes.plan');
+        Route::post('/clientes/{id}/pago', 'pago')->whereNumber('id')->name('clientes.pago');
+        Route::put('/clientes/{id}/revision', 'revision')->whereNumber('id')->name('clientes.revision');
+        Route::patch('/clientes/{id}/estado', 'estado')->whereNumber('id')->name('clientes.estado');
+        Route::post('/clientes/{id}/excepciones', 'excepcion')->whereNumber('id')->name('clientes.excepciones.store');
+        Route::patch('/clientes/{id}/excepciones/{excepcion}/baja', 'bajaExcepcion')->whereNumber(['id', 'excepcion'])->name('clientes.excepciones.baja');
+        Route::put('/clientes/{id}/promocion', 'promocion')->whereNumber('id')->name('clientes.promocion');
+        Route::post('/solicitudes/{id}/aprobar-prueba', 'aprobarPrueba')->whereNumber('id')->name('solicitudes.aprobar-prueba');
+        Route::get('/promociones/nueva', 'crearPromocion')->name('promociones.crear');
+        Route::post('/promociones', 'guardarPromocion')->name('promociones.guardar');
+        Route::get('/promociones/{id}/editar', 'editarPromocion')->whereNumber('id')->name('promociones.editar');
+        Route::put('/promociones/{id}', 'guardarPromocion')->whereNumber('id')->name('promociones.actualizar');
+        Route::patch('/promociones/{id}/estado', 'estadoPromocion')->whereNumber('id')->name('promociones.estado');
+    });
+    // Suscripciones: el Administrador del cliente pide ampliar o renovar desde Empresas → Tu suscripción (permitido en solo consulta)
+    Route::post('/mi-suscripcion/solicitar', [MiSuscripcionController::class, 'solicitar'])->middleware('throttle:10,1')->name('mi-suscripcion.solicitar');
     Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
     Route::post('/usuarios', [UsuarioController::class, 'store'])->name('usuarios.store');
     Route::put('/usuarios/{usuario}', [UsuarioController::class, 'update'])->name('usuarios.update');

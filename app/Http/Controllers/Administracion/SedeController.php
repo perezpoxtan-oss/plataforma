@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
+use App\Services\Suscripciones\Limites;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -75,6 +76,8 @@ class SedeController extends Controller
         abort_if($empresaId === null, 404);
 
         $datos = $this->validar($request, $empresaId);
+        // Suscripciones: no más sedes activas que las contratadas (sin suscripción, sin límite)
+        app(Limites::class)->exigirSede($empresaId);
         $sede = $this->tenant->conEmpresa($empresaId, fn () => Sede::create($datos));
         $this->auditoria->auditar($request->user(), 'sedes.creada', $sede, null, $sede->only(self::CAMPOS));
 
@@ -107,6 +110,9 @@ class SedeController extends Controller
         [$modelo, $empresaId] = $this->buscar($request, $sede);
 
         $activo = $request->boolean('activo');
+        if ($activo && ! $modelo->activo) {
+            app(Limites::class)->exigirSede($empresaId);
+        }
         $this->tenant->conEmpresa($empresaId, fn () => $modelo->forceFill(['activo' => $activo])->save());
         $this->auditoria->auditar($request->user(), $activo ? 'sedes.reactivada' : 'sedes.desactivada', $modelo, ['activo' => ! $activo], ['activo' => $activo]);
 

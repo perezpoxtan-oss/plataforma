@@ -6,6 +6,7 @@ use App\Http\Middleware\EstablecerEmpresa;
 use App\Http\Middleware\ExigirCambioContrasena;
 use App\Http\Middleware\FirmasComoArchivo;
 use App\Http\Middleware\PortadaPublica;
+use App\Http\Middleware\SoloConsulta;
 use App\Http\Middleware\VerificarHost;
 use App\Support\RegresoTrasEnvio;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
@@ -30,6 +31,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
             ControlarInactividad::class,
             EstablecerEmpresa::class,
             ExigirCambioContrasena::class,
+            // Suscripciones: empresa vencida (después de la gracia), suspendida o dada de baja = solo consulta
+            SoloConsulta::class,
         ]);
         $middleware->redirectUsersTo(fn () => route('panel'));
         // Catálogo comercial: la portada pública de «/» decide antes que «auth» (sin sesión y publicada, se muestra)

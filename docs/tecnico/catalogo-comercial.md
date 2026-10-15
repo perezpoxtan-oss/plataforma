@@ -1,5 +1,7 @@
 # Catálogo comercial y página pública de planes
 
+> Suscripciones (prueba gratis, activación al pagar, vencimiento, gracia, solo consulta, pago anual, excepciones y promociones): ver [suscripciones.md](suscripciones.md). Marcar una solicitud **Pagada** ya no solo cambia su estado: activa al cliente o registra su pago (`Aprovisionamiento::confirmarPago()`), igual que lo hará el webhook.
+
 Petición del dueño: una página pública con los productos disponibles por suscripción o venta directa, planes y paquetes configurables, costos configurables y los pagos en línea «preparados» para después.
 
 Decisiones del dueño: la página vive **dentro de la plataforma** (mismo dominio, la administra el Super Administrador); la suscripción se cobra **por sede al mes**; el catálogo inicial es la plataforma por módulos; precios en **MXN más IVA** (moneda e IVA configurables).
@@ -15,7 +17,7 @@ Decisiones del dueño: la página vive **dentro de la plataforma** (mismo domini
 | `GET /contratar/gracias` | Público | Folio y siguiente paso (solo después de enviar; si no, regresa al formulario). |
 | `GET /aviso-de-privacidad` | Público | El aviso de Ajustes; 404 si está vacío. |
 | `POST /pagos/webhook/{pasarela}` | Pasarela | **Reservada y apagada**: 404 mientras `config('comercial.webhooks_habilitados')` sea falso o la pasarela no exista. |
-| `GET /catalogo-comercial` | Super Administrador | Pestañas Solicitudes, Planes, Paquetes, Productos y Ajustes (`?pestana=`). |
+| `GET /catalogo-comercial` | Super Administrador | Pestañas Solicitudes, Clientes, Por revisar, Planes, Paquetes, Productos, Promociones y Ajustes (`?pestana=`). Clientes, Por revisar y Promociones: ver [Suscripciones](suscripciones.md). |
 | `GET /catalogo-comercial/vista-previa` | Super Administrador | La portada aunque no esté publicada, con la franja «Vista previa». |
 | `GET /catalogo-comercial/{tipo}/nuevo`, `POST /catalogo-comercial/{tipo}` | Super Administrador | Alta (`tipo` = productos, planes, paquetes). |
 | `GET /catalogo-comercial/{tipo}/{id}/editar`, `PUT /catalogo-comercial/{tipo}/{id}` | Super Administrador | Edición. |

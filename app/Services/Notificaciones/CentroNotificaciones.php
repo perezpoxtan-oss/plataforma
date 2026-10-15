@@ -85,6 +85,9 @@ class CentroNotificaciones
         'movimiento_sensible' => ['bi-shield-exclamation', 'alerta'],
         // Catálogo comercial: llegó una solicitud de la página pública (aviso de la plataforma, sin empresa)
         'solicitud_compra' => ['bi-cart-check-fill', 'alerta'],
+        // Suscripciones: cliente nuevo que se activó al pagar (Super Administrador) y avisos de vencimiento (cliente y plataforma)
+        'cliente_por_revisar' => ['bi-person-check-fill', 'alerta'],
+        'suscripcion_aviso' => ['bi-calendar2-check', 'alerta'],
     ];
 
     public function __construct(private readonly HoraLocal $hora) {}

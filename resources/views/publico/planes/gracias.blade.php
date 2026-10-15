@@ -7,7 +7,7 @@
 <div class="lp-envoltura">
     <section class="lp-tarjeta-simple" aria-labelledby="titulo-gracias">
         <div class="lp-icono-listo"><i class="bi bi-check2-circle" aria-hidden="true"></i></div>
-        <h1 id="titulo-gracias">Recibimos tu solicitud</h1>
+        <h1 id="titulo-gracias">{{ ! empty($enviada['prueba']) ? 'Recibimos tu solicitud de prueba gratis' : 'Recibimos tu solicitud' }}</h1>
         @if (! empty($enviada['folio']))
             <span class="lp-folio">{{ $enviada['folio'] }}</span>
             <p>Guarda este folio. {{ $enviada['mensaje'] ?? '' }}</p>

@@ -54,9 +54,16 @@
         var poner = function (clave, valor) {
             ambito.querySelectorAll('[data-resumen="' + clave + '"]').forEach(function (el) { el.textContent = valor; });
         };
-        poner('mensual-subtotal', C.formato(r.mensual.subtotal));
-        poner('mensual-iva', C.formato(r.mensual.iva));
-        poner('mensual-total', C.formato(r.mensual.total));
+        poner('base', C.formato(r.mensual.subtotal * r.meses));
+        poner('descuento-anual', '−' + C.formato(r.descuento_anual));
+        poner('descuento-promocion', '−' + C.formato(r.descuento_promocion));
+        poner('promocion-nombre', r.promocion ? r.promocion.nombre : '');
+        poner('promocion-meses', r.promocion && r.promocion.meses !== null ? ' (primeros ' + r.promocion.meses + (r.promocion.meses === 1 ? ' mes)' : ' meses)') : '');
+        poner('periodo-iva', C.formato(r.periodo.iva));
+        poner('periodo-total', C.formato(r.periodo.total));
+        poner('regular-total', C.formato(r.periodo_regular.total));
+        ambito.querySelectorAll('[data-resumen-texto="base"]').forEach(function (el) { el.textContent = r.meses === 12 ? '12 meses' : 'Al mes'; });
+        ambito.querySelectorAll('[data-resumen-texto="periodo"]').forEach(function (el) { el.textContent = r.meses === 12 ? 'al año' : 'al mes'; });
         poner('unico-subtotal', C.formato(r.unico.subtotal));
         poner('unico-iva', C.formato(r.unico.iva));
         poner('unico-total', C.formato(r.unico.total));
@@ -68,6 +75,13 @@
         mostrar('cotizar', r.requiere_cotizacion);
         mostrar('minimas', r.sedes_cobradas > r.sedes);
         mostrar('mensual', !r.requiere_cotizacion || r.mensual.subtotal > 0);
+        mostrar('anual', r.descuento_anual > 0);
+        mostrar('promocion', r.descuento_promocion > 0);
+        mostrar('regular', r.periodo.total !== r.periodo_regular.total);
+    }
+
+    function normalizarCodigo(valor) {
+        return String(valor || '').replace(/\s+/g, '').toUpperCase();
     }
 
     function iniciar(ambito) {
@@ -75,6 +89,24 @@
         try { catalogo = JSON.parse(ambito.getAttribute('data-catalogo') || '{}'); } catch (x) { return; }
         if (!catalogo.planes) { return; }
         var sedes = ambito.querySelector('[data-sedes]');
+        // Promoción validada por el servidor (al abrir /contratar con su código); si cambian el código, se confirma al enviar
+        var promocion = null;
+        try { promocion = JSON.parse(ambito.getAttribute('data-promocion') || 'null'); } catch (x) { promocion = null; }
+        var campoCodigo = ambito.querySelector('[data-codigo]');
+        var ayudaCodigo = ambito.querySelector('[data-codigo-ayuda]');
+        var codigoValidado = campoCodigo ? normalizarCodigo(campoCodigo.value) : '';
+
+        function periodicidad() {
+            var marcada = ambito.querySelector('input[name="periodicidad"]:checked');
+            return marcada ? marcada.value : 'mensual';
+        }
+
+        function promocionVigente(planId) {
+            if (!promocion || !campoCodigo || normalizarCodigo(campoCodigo.value) !== codigoValidado) { return null; }
+            if (promocion.periodicidad && promocion.periodicidad !== 'ambas' && promocion.periodicidad !== periodicidad()) { return null; }
+            if (promocion.planes && promocion.planes.length > 0 && promocion.planes.indexOf(planId) === -1) { return null; }
+            return promocion;
+        }
 
         function planElegido() {
             var marcado = ambito.querySelector('input[name="plan_id"]:checked');
@@ -102,7 +134,19 @@
             });
             var ids = [];
             ambito.querySelectorAll('input[name="paquetes[]"]:checked').forEach(function (c) { ids.push(c.value); });
-            pintar(ambito, catalogo, C.calcular(catalogo, planId, sedes ? sedes.value : 1, ids));
+            pintar(ambito, catalogo, C.calcular(catalogo, planId, sedes ? sedes.value : 1, ids, periodicidad(), promocionVigente(planId)));
+        }
+
+        if (campoCodigo && ayudaCodigo) {
+            campoCodigo.addEventListener('input', function () {
+                if (normalizarCodigo(campoCodigo.value) !== codigoValidado) {
+                    campoCodigo.removeAttribute('aria-invalid');
+                    ayudaCodigo.textContent = campoCodigo.value.trim() === ''
+                        ? 'Si tienes uno, escríbelo: el descuento se confirma al enviar.'
+                        : 'El descuento de este código se confirma al enviar.';
+                }
+                recalcular();
+            });
         }
 
         ambito.addEventListener('change', recalcular);

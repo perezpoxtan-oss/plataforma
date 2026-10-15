@@ -35,15 +35,15 @@
         @foreach ($pestanas as $clave => [$titulo, $icono])
             <button type="button" role="tab" id="pestana-{{ $clave }}" class="pestana-pase {{ $clave === $pestana ? 'activa' : '' }}"
                     aria-selected="{{ $clave === $pestana ? 'true' : 'false' }}" aria-controls="panel-{{ $clave }}" tabindex="{{ $clave === $pestana ? '0' : '-1' }}"
-                    data-pestana="{{ $clave }}"><i class="bi {{ $icono }}" aria-hidden="true"></i> {{ $titulo }}@if ($clave === 'solicitudes' && $nuevas > 0) <span class="badge text-bg-danger ms-1">{{ $nuevas }}</span>@endif</button>
+                    data-pestana="{{ $clave }}"><i class="bi {{ $icono }}" aria-hidden="true"></i> {{ $titulo }}@if ($clave === 'solicitudes' && $nuevas > 0) <span class="badge text-bg-danger ms-1">{{ $nuevas }}</span>@endif @if ($clave === 'revisar' && $porRevisar->isNotEmpty()) <span class="badge text-bg-danger ms-1">{{ $porRevisar->count() }}</span>@endif</button>
         @endforeach
     </div>
 
     {{-- ===== Solicitudes ===== --}}
     <section id="panel-solicitudes" class="panel-pase" role="tabpanel" aria-labelledby="pestana-solicitudes" tabindex="0" data-panel="solicitudes" @if ($pestana !== 'solicitudes') hidden @endif>
         <div class="filtros-estado mb-3" role="group" aria-label="Filtrar solicitudes">
-            @foreach (['abiertas' => 'Por atender', 'nueva' => 'Nuevas', 'pagada' => 'Pagadas', 'cancelada' => 'Canceladas', 'todas' => 'Todas'] as $valor => $texto)
-                <a href="{{ route('catalogo-comercial.index', ['pestana' => 'solicitudes', 'estado' => $valor]) }}" class="btn btn-sm fw-bold {{ $estado === $valor ? 'btn-dark' : 'btn-outline-secondary' }}" @if ($estado === $valor) aria-current="true" @endif>{{ $texto }}</a>
+            @foreach (['abiertas' => 'Por atender', 'nueva' => 'Nuevas', 'pruebas' => 'Pruebas por aprobar', 'pagada' => 'Pagadas', 'cancelada' => 'Canceladas', 'todas' => 'Todas'] as $valor => $texto)
+                <a href="{{ route('catalogo-comercial.index', ['pestana' => 'solicitudes', 'estado' => $valor]) }}" class="btn btn-sm fw-bold {{ $estado === $valor ? 'btn-dark' : 'btn-outline-secondary' }}" @if ($estado === $valor) aria-current="true" @endif>{{ $texto }}@if ($valor === 'pruebas' && $pruebasPorAprobar > 0) <span class="badge text-bg-danger ms-1">{{ $pruebasPorAprobar }}</span>@endif</a>
             @endforeach
         </div>
         @if ($solicitudes->isEmpty())
@@ -54,16 +54,17 @@
         @else
             <div class="tabla-scroll">
                 <table class="table align-middle mb-0 bg-white">
-                    <thead><tr><th>Folio</th><th>Interesado</th><th>Lo que pidió</th><th class="text-end">Total al mes</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
+                    <thead><tr><th>Folio</th><th>Interesado</th><th>Lo que pidió</th><th class="text-end">Total del periodo</th><th>Estado</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
                     <tbody>
                         @foreach ($solicitudes as $s)
                             @php $plan = collect($s->detalle['renglones'] ?? [])->firstWhere('tipo', 'plan'); @endphp
                             <tr>
                                 <td class="fw-bold text-nowrap">{{ $s->folio }}<div class="small text-muted fw-normal">@fecha($s->created_at)</div></td>
-                                <td>{{ $s->nombre }}@if ($s->empresa)<div class="small text-muted">{{ $s->empresa }}</div>@endif</td>
+                                <td>{{ $s->nombre }}@if ($s->empresa)<div class="small text-muted">{{ $s->empresa }}</div>@endif
+                                    @if ($s->tipo !== 'compra')<span class="badge {{ $s->tipo === 'prueba' ? 'text-bg-info' : 'text-bg-secondary' }}">{{ $s->tipoTexto() }}</span>@endif</td>
                                 <td>{{ $plan['nombre'] ?? 'Sin plan' }}, {{ $s->sedes }} {{ $s->sedes === 1 ? 'sede' : 'sedes' }}
                                     @if (count($s->detalle['renglones'] ?? []) > 1)<div class="small text-muted">+ {{ count($s->detalle['renglones']) - ($plan ? 1 : 0) }} paquete(s)</div>@endif</td>
-                                <td class="text-end text-nowrap">{{ $s->requiere_cotizacion ? 'A cotizar' : $dinero($s->mensual_total) }}</td>
+                                <td class="text-end text-nowrap">{{ $s->requiere_cotizacion ? 'A cotizar' : $dinero($s->periodo_total > 0 ? $s->periodo_total : $s->mensual_total) }}@if ($s->periodicidad === 'anual')<div class="small text-muted">al año</div>@endif</td>
                                 <td>
                                     <span class="etiqueta-estado {{ in_array($s->estado, ['pagada'], true) ? 'activo' : ($s->estado === 'cancelada' ? 'inactivo' : 'pendiente') }}">{{ $s->estadoTexto() }}</span>
                                     @if ($s->estado === 'nueva' && ($reloj = \App\Support\RelojVoBo::de($s->created_at)))
@@ -78,6 +79,14 @@
             </div>
             <div class="mt-3">{{ $solicitudes->links() }}</div>
         @endif
+    </section>
+
+    {{-- ===== Clientes, Por revisar (suscripciones) ===== --}}
+    <section id="panel-clientes" class="panel-pase" role="tabpanel" aria-labelledby="pestana-clientes" tabindex="0" data-panel="clientes" @if ($pestana !== 'clientes') hidden @endif>
+        @include('administracion.catalogo-comercial._clientes')
+    </section>
+    <section id="panel-revisar" class="panel-pase" role="tabpanel" aria-labelledby="pestana-revisar" tabindex="0" data-panel="revisar" @if ($pestana !== 'revisar') hidden @endif>
+        @include('administracion.catalogo-comercial._clientes', ['clientes' => $porRevisar, 'soloPorRevisar' => true])
     </section>
 
     {{-- ===== Planes ===== --}}
@@ -158,6 +167,11 @@
                 </tbody>
             </table>
         </div>
+    </section>
+
+    {{-- ===== Promociones ===== --}}
+    <section id="panel-promociones" class="panel-pase" role="tabpanel" aria-labelledby="pestana-promociones" tabindex="0" data-panel="promociones" @if ($pestana !== 'promociones') hidden @endif>
+        @include('administracion.catalogo-comercial._promociones')
     </section>
 
     {{-- ===== Ajustes ===== --}}

@@ -142,8 +142,16 @@ trait EscenarioAuditoria
 
         // Catálogo comercial: registros de la plataforma (sin empresa); solo el Super Administrador los abre
         if (str_starts_with($ruta, 'catalogo-comercial.')) {
-            return $parametro === 'tipo' ? 'planes'
-                : DB::table(str_starts_with($ruta, 'catalogo-comercial.solicitudes.') ? 'solicitudes_compra' : 'planes')->orderBy('id')->value('id');
+            // Suscripciones: clientes (suscripciones), sus excepciones y las promociones
+            $tabla = match (true) {
+                $parametro === 'excepcion' => 'suscripcion_excepciones',
+                str_starts_with($ruta, 'catalogo-comercial.solicitudes.') => 'solicitudes_compra',
+                str_starts_with($ruta, 'catalogo-comercial.clientes.') => 'suscripciones',
+                str_starts_with($ruta, 'catalogo-comercial.promociones.') => 'promociones',
+                default => 'planes',
+            };
+
+            return $parametro === 'tipo' ? 'planes' : (DB::table($tabla)->orderBy('id')->value('id') ?? 1);
         }
 
         switch ($parametro) {

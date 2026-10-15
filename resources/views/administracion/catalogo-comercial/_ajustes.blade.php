@@ -31,6 +31,43 @@
             </div>
         </div>
 
+        <h2 class="h6 fw-bold mb-3 mt-2"><i class="bi bi-calendar2-check me-1 text-primary" aria-hidden="true"></i> Suscripciones</h2>
+        <div class="form-check form-switch mb-1">
+            <input class="form-check-input" type="checkbox" role="switch" id="prueba_habilitada" name="prueba_habilitada" value="1" @checked(old('prueba_habilitada', $ajustes['prueba_habilitada']))>
+            <label class="form-check-label fw-bold" for="prueba_habilitada">Ofrecer prueba gratis en la página</label>
+        </div>
+        <p class="campo-ayuda">Muestra el botón «Probar gratis». Cada prueba la apruebas tú desde Solicitudes (no se activa sola).</p>
+        <div class="row">
+            <div class="col-md-4">
+                <label class="campo-etiqueta" for="dias_prueba">Días de prueba gratis</label>
+                <input type="number" id="dias_prueba" name="dias_prueba" class="campo" min="1" max="90" value="{{ $v('dias_prueba', $ajustes['dias_prueba']) }}">
+            </div>
+            <div class="col-md-4">
+                <label class="campo-etiqueta" for="dias_gracia">Días de gracia al vencer</label>
+                <input type="number" id="dias_gracia" name="dias_gracia" class="campo" min="0" max="90" value="{{ $v('dias_gracia', $ajustes['dias_gracia']) }}">
+                <p class="campo-ayuda mt-0">Después, el cliente queda en solo consulta hasta que pague.</p>
+            </div>
+            <div class="col-md-4">
+                <label class="campo-etiqueta" for="descuento_anual_porcentaje">Descuento por pago anual (%)</label>
+                <input type="number" id="descuento_anual_porcentaje" name="descuento_anual_porcentaje" class="campo" min="0" max="90" step="0.01" value="{{ $v('descuento_anual_porcentaje', $ajustes['descuento_anual_porcentaje']) }}">
+            </div>
+        </div>
+        <details class="mb-3">
+            <summary class="fw-bold small">Avanzado: avisos de vencimiento y contacto</summary>
+            <div class="row mt-2">
+                <div class="col-md-4">
+                    <label class="campo-etiqueta" for="avisos_dias_antes">Avisar antes de vencer (días)</label>
+                    <input type="text" id="avisos_dias_antes" name="avisos_dias_antes" class="campo" maxlength="40" value="{{ $v('avisos_dias_antes', implode(', ', $ajustes['avisos_dias_antes'])) }}" placeholder="7, 1">
+                    <p class="campo-ayuda mt-0">Separados por comas. También se avisa al vencer, a la mitad de la gracia y al pasar a solo consulta.</p>
+                </div>
+                <div class="col-md-8">
+                    <label class="campo-etiqueta" for="contacto_suscripciones">A quién contactar para pagar</label>
+                    <input type="text" id="contacto_suscripciones" name="contacto_suscripciones" class="campo" maxlength="200" value="{{ $v('contacto_suscripciones', $ajustes['contacto_suscripciones']) }}" placeholder="cobranza@tuempresa.com o 998 000 0000">
+                    <p class="campo-ayuda mt-0">Sale en la franja de solo consulta y en los avisos. Vacío: los correos que reciben las solicitudes.</p>
+                </div>
+            </div>
+        </details>
+
         <h2 class="h6 fw-bold mb-3 mt-2"><i class="bi bi-type me-1 text-primary" aria-hidden="true"></i> Portada</h2>
         <label class="campo-etiqueta" for="portada_titulo">Título</label>
         <input type="text" id="portada_titulo" name="portada_titulo" class="campo" maxlength="120" required value="{{ $v('portada_titulo', $ajustes['portada_titulo']) }}">

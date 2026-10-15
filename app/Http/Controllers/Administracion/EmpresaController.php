@@ -6,11 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\Area;
 use App\Models\Empresa;
 use App\Models\Modulo;
+use App\Models\Paquete;
+use App\Models\Plan;
 use App\Models\Rubro;
+use App\Models\Suscripcion;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\ProvisionarEmpresa;
+use App\Services\Suscripciones\Limites;
 use App\Support\Entrada;
 use App\Support\ImagenSegura;
 use App\Support\ZonasHorarias;
@@ -55,7 +59,16 @@ class EmpresaController extends Controller
         $contratados = ! $actor->es_superadmin ? collect() : DB::table('empresa_modulos')->where('activo', true)
             ->get(['empresa_id', 'modulo_id'])->groupBy('empresa_id')->map(fn ($f) => $f->pluck('modulo_id')->map(fn ($id) => (int) $id)->all());
 
+        // Suscripciones: el cliente ve «Tu suscripción»; el Super Administrador, el estado de cada una (sin suscripción = sin límites)
+        $suscripcion = ! $actor->es_superadmin && $actor->empresa_id !== null ? Suscripcion::with(['plan:id,nombre', 'paquetes:id,nombre'])->where('empresa_id', $actor->empresa_id)->first() : null;
+
         return view('administracion.empresas.index', [
+            'suscripcion' => $suscripcion,
+            'limitesSuscripcion' => $suscripcion !== null ? app(Limites::class)->de((int) $actor->empresa_id) : null,
+            'puedePedirCambio' => $suscripcion !== null && $this->editaEmpresa($actor),
+            'planesSuscripcion' => $suscripcion !== null ? Plan::query()->where('activo', true)->where(fn ($q) => $q->where('publicado', true)->orWhere('id', $suscripcion->plan_id))->orderBy('orden')->get(['id', 'nombre', 'cotizar']) : collect(),
+            'paquetesSuscripcion' => $suscripcion !== null ? Paquete::query()->where('activo', true)->where('modalidad', Paquete::SUSCRIPCION)->where(fn ($q) => $q->where('publicado', true)->orWhereIn('id', $suscripcion->paquetes->pluck('id')))->orderBy('orden')->get(['id', 'nombre']) : collect(),
+            'suscripciones' => $actor->es_superadmin ? Suscripcion::query()->get()->keyBy('empresa_id') : collect(),
             'catalogoModulos' => $actor->es_superadmin ? $this->catalogoContratable() : collect(),
             'contratados' => $contratados,
             'empresas' => $empresas,

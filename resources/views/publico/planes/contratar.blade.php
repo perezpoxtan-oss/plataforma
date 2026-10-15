@@ -1,17 +1,26 @@
 @extends('publico.planes.plantilla')
 
-@section('titulo', 'Contratar o solicitar información')
+@section('titulo', $prueba ? 'Probar gratis '.$ajustes['dias_prueba'].' días' : 'Contratar o solicitar información')
 @section('sin-indexar', '1')
 
 @section('contenido')
 <div class="lp-envoltura lp-pagina-titulo">
-    <h1>Contratar o solicitar información</h1>
-    <p>Déjanos tus datos y lo que te interesa. Te contactamos para confirmar tu plan y la forma de pago; todavía no se cobra nada en línea.</p>
+    @if ($prueba)
+        <h1>Probar gratis {{ $ajustes['dias_prueba'] }} días</h1>
+        <p>Elige el plan que quieres probar y déjanos tus datos. Revisamos tu solicitud y te enviamos por correo el acceso para el Administrador de tu empresa. No pagas nada durante la prueba.
+            <a href="{{ route('planes.contratar', array_filter(['plan' => $eleccion['plan_id'], 'sedes' => $eleccion['sedes'], 'periodicidad' => $eleccion['periodicidad']])) }}">Prefiero contratar</a></p>
+    @else
+        <h1>Contratar o solicitar información</h1>
+        <p>Déjanos tus datos y lo que te interesa. Te contactamos para confirmar tu plan y la forma de pago; todavía no se cobra nada en línea.
+            @if ($ajustes['prueba_habilitada'])<a href="{{ route('planes.contratar', ['prueba' => 1]) }}">Prefiero probar gratis {{ $ajustes['dias_prueba'] }} días</a>@endif</p>
+    @endif
 </div>
 <section class="lp-seccion">
     <div class="lp-envoltura">
-        <form action="{{ route('planes.guardar') }}" method="POST" class="lp-calculo" data-calculadora data-catalogo="{{ json_encode($calculadora) }}" novalidate>
+        <form action="{{ route('planes.guardar') }}" method="POST" class="lp-calculo" data-calculadora data-catalogo="{{ json_encode($calculadora) }}"
+              data-promocion="{{ $promocion ? json_encode($promocion->paraNavegador()) : '' }}" novalidate>
             @csrf
+            <input type="hidden" name="tipo" value="{{ old('tipo', $prueba ? 'prueba' : 'compra') }}">
             <div>
                 @if ($errors->any())
                     <div class="lp-errores" role="alert" tabindex="-1" id="errores">
@@ -48,10 +57,12 @@
                     </div>
                 </fieldset>
 
-                @include('publico.planes._seleccion', ['prefijo' => 'c', 'eleccion' => [
+                @include('publico.planes._seleccion', ['prefijo' => 'c', 'campoCodigo' => 'codigo_promocion', 'eleccion' => [
                     'plan_id' => old('plan_id', $eleccion['plan_id']),
                     'sedes' => old('sedes', $eleccion['sedes']),
                     'paquetes' => array_map('intval', (array) old('paquetes', $eleccion['paquetes'])),
+                    'periodicidad' => old('periodicidad', $eleccion['periodicidad']),
+                    'codigo_promocion' => old('codigo_promocion', $eleccion['codigo_promocion']),
                 ]])
 
                 <div class="lp-bloque">
@@ -70,7 +81,7 @@
                         y que me contacten sobre esta solicitud. *</span>
                 </label>
             </div>
-            @include('publico.planes._resumen', ['prefijo' => 'c', 'calculo' => $calculo, 'boton' => 'Enviar solicitud'])
+            @include('publico.planes._resumen', ['prefijo' => 'c', 'calculo' => $calculo, 'boton' => $prueba ? 'Solicitar mi prueba gratis' : 'Enviar solicitud', 'prueba' => $prueba])
         </form>
     </div>
 </section>

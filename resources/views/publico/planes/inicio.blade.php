@@ -10,7 +10,11 @@
             @if ($ajustes['portada_subtitulo'])<p class="lp-portada-subtitulo">{{ $ajustes['portada_subtitulo'] }}</p>@endif
             <div class="lp-portada-botones">
                 <a href="#planes" class="lp-boton lp-boton-principal">Ver planes y precios</a>
-                <a href="{{ route('planes.contratar') }}" class="lp-boton lp-boton-borde">Solicitar información</a>
+                @if ($ajustes['prueba_habilitada'])
+                    <a href="{{ route('planes.contratar', ['prueba' => 1]) }}" class="lp-boton lp-boton-borde">Probar gratis {{ $ajustes['dias_prueba'] }} días</a>
+                @else
+                    <a href="{{ route('planes.contratar') }}" class="lp-boton lp-boton-borde">Solicitar información</a>
+                @endif
             </div>
             @if ($ajustes['beneficios'] !== [])
                 <ul class="lp-beneficios">

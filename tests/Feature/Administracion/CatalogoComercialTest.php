@@ -9,6 +9,7 @@ use App\Models\Paquete;
 use App\Models\Plan;
 use App\Models\Producto;
 use App\Models\SolicitudCompra;
+use App\Models\Suscripcion;
 use App\Models\User;
 use App\Services\Comercial\AjustesComerciales;
 use App\Services\Comercial\Calculadora;
@@ -441,8 +442,12 @@ class CatalogoComercialTest extends TestCase
 
         $this->actingAs($this->sa)->get('/catalogo-comercial')->assertOk()->assertSee($s->folio)->assertSee('Sin atender');
         $this->actingAs($this->sa)->get("/catalogo-comercial/solicitudes/{$s->id}")->assertOk()->assertSee('Juan Pérez')->assertSee('Tenemos tres hoteles.');
-        $this->actingAs($this->sa)->put("/catalogo-comercial/solicitudes/{$s->id}", ['estado' => 'pagada', 'referencia_pago' => 'TRANSF-123', 'notas_internas' => 'Pagó por transferencia.'])
-            ->assertSessionHas('ok', "Solicitud {$s->folio} guardada como «Pagada».");
+        $this->actingAs($this->sa)->put("/catalogo-comercial/solicitudes/{$s->id}", ['estado' => 'contactada'])
+            ->assertSessionHas('ok', "Solicitud {$s->folio} guardada como «Contactada».");
+        // «Pagada» activa al cliente (ver SuscripcionesTest) y lleva a su ficha
+        $respuesta = $this->actingAs($this->sa)->put("/catalogo-comercial/solicitudes/{$s->id}", ['estado' => 'pagada', 'referencia_pago' => 'TRANSF-123', 'notas_internas' => 'Pagó por transferencia.']);
+        $suscripcion = Suscripcion::where('solicitud_compra_id', $s->id)->firstOrFail();
+        $respuesta->assertRedirect(route('catalogo-comercial.clientes.show', $suscripcion->id))->assertSessionHas('ok');
         $s->refresh();
         $this->assertSame('pagada', $s->estado);
         $this->assertSame('TRANSF-123', $s->referencia_pago);

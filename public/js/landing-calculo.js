@@ -7,6 +7,9 @@
      - Paquete: precio × (sedes cobradas si es por sede; si no, 1); al mes o pago único.
      - IVA = redondeo(subtotal × IVA / 100), con el IVA en centésimas de punto.
      - Un paquete que no se suma al plan elegido no se cuenta y se informa.
+     - Periodicidad: anual = 12 meses con el descuento anual (por mes, redondeado);
+       la promoción (% o monto fijo al mes) cubre los primeros N meses del periodo.
+       Solo sobre lo mensual; el pago único no lleva descuentos.
    Funciona en el navegador (window.CalculoPlanes) y en Node (module.exports).
    ========================================================================== */
 (function (raiz, fabrica) {
@@ -36,10 +39,40 @@
         return paquete.planes.length === 0 || (plan !== null && paquete.planes.indexOf(plan.id) !== -1);
     }
 
+    /** Igual que Calculadora::periodo() del servidor. */
+    function periodo(mensual, periodicidad, anualCentesimas, promocion, iva) {
+        var anual = periodicidad === 'anual';
+        var meses = anual ? 12 : 1;
+        var descuentoMes = anual ? Math.floor((mensual * (anualCentesimas || 0) + 5000) / 10000) : 0;
+        var mes = mensual - descuentoMes;
+        var regular = mes * meses;
+        var promo = null;
+        var descuentoPromocion = 0;
+        if (promocion && mes > 0) {
+            var porMes = promocion.tipo === 'porcentaje'
+                ? Math.floor((mes * promocion.valor + 5000) / 10000)
+                : Math.min(promocion.valor, mes);
+            var mesesPromo = promocion.meses === null || promocion.meses === undefined ? meses : Math.min(meses, promocion.meses);
+            descuentoPromocion = porMes * mesesPromo;
+            promo = { id: promocion.id || null, nombre: promocion.nombre, codigo: promocion.codigo || null, tipo: promocion.tipo, valor: promocion.valor,
+                meses: promocion.meses === undefined ? null : promocion.meses, por_mes: porMes, meses_aplicados: mesesPromo };
+        }
+        return {
+            periodicidad: anual ? 'anual' : 'mensual',
+            meses: meses,
+            descuento_anual: descuentoMes * meses,
+            descuento_promocion: descuentoPromocion,
+            promocion: promo,
+            periodo: totales(regular - descuentoPromocion, iva),
+            periodo_regular: totales(regular, iva)
+        };
+    }
+
     /**
-     * catalogo: {moneda, iva, planes: [{id, nombre, precio, minimas, cotizar}], paquetes: [{id, nombre, modalidad, precio, porSede, planes}]}
+     * catalogo: {moneda, iva, anual, planes: [{id, nombre, precio, minimas, cotizar}], paquetes: [{id, nombre, modalidad, precio, porSede, planes}]}
+     * periodicidad: 'mensual' | 'anual'; promocion: {nombre, codigo, tipo, valor, meses} o null (el servidor la valida)
      */
-    function calcular(catalogo, planId, sedes, paquetesIds) {
+    function calcular(catalogo, planId, sedes, paquetesIds, periodicidad, promocion) {
         var plan = planId ? buscar(catalogo.planes, parseInt(planId, 10)) : null;
         var pedidas = entero(sedes, 1, 999);
         var cobradas = Math.max(pedidas, plan ? plan.minimas : 1);
@@ -67,7 +100,7 @@
             renglones.push({ tipo: 'paquete', id: paquete.id, nombre: paquete.nombre, modalidad: paquete.modalidad, precio: paquete.precio, cantidad: cantidad, importe: importe, cotizar: false });
         });
 
-        return {
+        var resultado = {
             sedes: pedidas,
             sedes_cobradas: cobradas,
             requiere_cotizacion: plan ? plan.cotizar : false,
@@ -76,6 +109,9 @@
             mensual: totales(mensual, catalogo.iva),
             unico: totales(unico, catalogo.iva)
         };
+        var p = periodo(mensual, periodicidad || 'mensual', catalogo.anual || 0, promocion || null, catalogo.iva);
+        Object.keys(p).forEach(function (k) { resultado[k] = p[k]; });
+        return resultado;
     }
 
     /** 123450 → "$1,234.50" */
@@ -87,5 +123,5 @@
         return (negativo ? '-' : '') + '$' + enteros + '.' + (resto.length < 2 ? '0' + resto : resto);
     }
 
-    return { calcular: calcular, formato: formato, compatible: compatible };
+    return { calcular: calcular, periodo: periodo, formato: formato, compatible: compatible };
 }));

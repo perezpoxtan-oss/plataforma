@@ -41,6 +41,13 @@ class AjustesComerciales
         'correos_solicitudes' => [],
         'texto_legal' => 'Precios en la moneda indicada, antes de impuestos. Sujetos a cambio sin previo aviso. La contratación se formaliza con la cotización y el contrato de servicio.',
         'aviso_privacidad' => '',
+        // Suscripciones (ver docs/tecnico/suscripciones.md)
+        'prueba_habilitada' => true,        // botón «Probar gratis N días» en la página pública
+        'dias_prueba' => 14,
+        'dias_gracia' => 15,                // después de vencer, para normalizar el pago; luego solo consulta
+        'descuento_anual_porcentaje' => 10.0, // pago anual: descuento sobre 12 mensualidades
+        'avisos_dias_antes' => [7, 1],      // avisos antes de vencer (al cliente y al Super Administrador)
+        'contacto_suscripciones' => '',     // «Contacta a …» en la franja de solo consulta y en los avisos
         'sembrado_en' => null,
     ];
 
@@ -68,6 +75,14 @@ class AjustesComerciales
             fn ($p) => is_array($p) && count($p) === 2 && is_string($p[0]) && is_string($p[1])));
         $valores['correos_solicitudes'] = array_values(array_filter((array) $valores['correos_solicitudes'],
             fn ($c) => is_string($c) && filter_var($c, FILTER_VALIDATE_EMAIL) !== false));
+        $valores['prueba_habilitada'] = (bool) $valores['prueba_habilitada'];
+        $valores['dias_prueba'] = max(1, min(90, (int) $valores['dias_prueba']));
+        $valores['dias_gracia'] = max(0, min(90, (int) $valores['dias_gracia']));
+        $valores['descuento_anual_porcentaje'] = max(0.0, min(90.0, round((float) $valores['descuento_anual_porcentaje'], 2)));
+        $dias = array_values(array_unique(array_filter(array_map('intval', (array) $valores['avisos_dias_antes']), fn ($d) => $d >= 1 && $d <= 60)));
+        rsort($dias);
+        $valores['avisos_dias_antes'] = array_slice($dias, 0, 5);
+        $valores['contacto_suscripciones'] = trim((string) $valores['contacto_suscripciones']);
 
         return $this->valores = $valores;
     }
@@ -88,6 +103,30 @@ class AjustesComerciales
     public function ivaCentesimas(): int
     {
         return (int) round($this->todos()['iva_porcentaje'] * 100);
+    }
+
+    /** Descuento del pago anual en centésimas de punto (10 % = 1000). */
+    public function descuentoAnualCentesimas(): int
+    {
+        return (int) round($this->todos()['descuento_anual_porcentaje'] * 100);
+    }
+
+    /** Días antes de vencer en que la suscripción se marca «por vencer» (el mayor de los avisos). */
+    public function diasPorVencer(): int
+    {
+        return $this->todos()['avisos_dias_antes'][0] ?? 7;
+    }
+
+    /** A quién contactar para pagar (Ajustes, o los correos que reciben las solicitudes). */
+    public function contacto(): string
+    {
+        $contacto = $this->todos()['contacto_suscripciones'];
+        if ($contacto !== '') {
+            return $contacto;
+        }
+        $correos = $this->todos()['correos_solicitudes'];
+
+        return $correos !== [] ? implode(', ', $correos) : 'quien administra la plataforma';
     }
 
     /**

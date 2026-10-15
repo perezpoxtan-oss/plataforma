@@ -35,6 +35,7 @@ use App\Models\Persona;
 use App\Models\Plan;
 use App\Models\Postulacion;
 use App\Models\PrestamoLlave;
+use App\Models\Promocion;
 use App\Models\Proveedor;
 use App\Models\Puesto;
 use App\Models\Responsiva;
@@ -43,6 +44,7 @@ use App\Models\Rubro;
 use App\Models\Ruta;
 use App\Models\Sede;
 use App\Models\SolicitudCompra;
+use App\Models\Suscripcion;
 use App\Models\TipoEquipo;
 use App\Models\TipoEspacio;
 use App\Models\Turno;
@@ -59,6 +61,7 @@ use App\Services\Candidatos\Kiosco;
 use App\Services\Candidatos\PlazosCandidatos;
 use App\Services\Candidatos\Postulaciones;
 use App\Services\Comercial\Calculadora;
+use App\Services\Comercial\CatalogoPublico;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Gafetes\AdministradorGafetes;
@@ -74,6 +77,7 @@ use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\RecorridosPc\AdministradorRecorridosPc;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Services\Rutas\AdministradorRutas;
+use App\Services\Suscripciones\Aprovisionamiento;
 use App\Services\Transporte\BitacoraTransporte;
 use App\Services\Vacantes\AdministradorVacantes;
 use App\Services\Vacantes\BolsaTrabajo;
@@ -242,6 +246,8 @@ class CrearDatosDemo extends Command
         // Fin Mejoras informes
         // Catálogo comercial: solicitudes de ejemplo de la página pública (datos de la plataforma, sin empresa)
         $paso('catalogoComercialDemo', fn () => $this->catalogoComercialDemo());
+        // Suscripciones: clientes de ejemplo en distintos estados (empresas aparte; Hotel Demo sigue sin suscripción)
+        $paso('suscripcionesDemo', fn () => $this->suscripcionesDemo());
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
@@ -249,6 +255,73 @@ class CrearDatosDemo extends Command
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Suscripciones: tres clientes de ejemplo (empresas nuevas, aparte de Hotel
+     * Demo, que sigue sin suscripción) y una prueba gratis por aprobar, más la
+     * promoción BIENVENIDA15. Una sola vez (si ya existe SC-DEMO-0003, no hace nada).
+     *  - Hotel Laguna (laguna.demo): Profesional, 2 sedes, pagada hoy, por revisar.
+     *  - Plaza Norte (plaza.demo): prueba gratis de Esencial que ya venció: en periodo de gracia.
+     *  - Torre Centro (centro.demo): Esencial vencida hace más de la gracia: solo consulta.
+     *  - SC-DEMO-0006 Grupo Sol: prueba gratis por aprobar.
+     */
+    private function suscripcionesDemo(): void
+    {
+        if (! Schema::hasTable('suscripciones') || SolicitudCompra::where('folio', 'SC-DEMO-0003')->exists()) {
+            return;
+        }
+        $catalogo = app(CatalogoPublico::class);
+        $aprovisionamiento = app(Aprovisionamiento::class);
+        $aprovisionamiento->enviarBienvenida = false; // cuentas de ejemplo: sin correo de bienvenida
+        $profesional = Plan::where('slug', 'profesional')->first();
+        $esencial = Plan::where('slug', 'esencial')->first();
+        if ($profesional === null || $esencial === null) {
+            return;
+        }
+        Promocion::firstOrCreate(['codigo' => 'BIENVENIDA15'], ['nombre' => 'Bienvenida 15 %', 'tipo' => 'porcentaje', 'valor' => 15, 'meses' => 3, 'usos_maximos' => 100]);
+        $hash = User::where('username', 'admin.demo')->value('password');
+        $sa = User::where('es_superadmin', true)->where('activo', true)->orderBy('id')->first();
+
+        $nueva = function (string $folio, array $datos) use ($catalogo): SolicitudCompra {
+            [$s] = $catalogo->registrar($datos + ['sedes' => 1, 'paquetes' => []], '127.0.0.1', conPasarela: false);
+            $s->forceFill(['folio' => $folio, 'pasarela' => 'manual'])->save();
+
+            return $s;
+        };
+        $cuenta = function (Suscripcion $s, string $usuario) use ($hash): void {
+            $u = User::where('empresa_id', $s->empresa_id)->where('username', $usuario)->first();
+            if ($u !== null && $hash !== null) {
+                DB::table('users')->where('id', $u->id)->update(['password' => $hash, 'debe_cambiar_contrasena' => false]);
+            }
+        };
+
+        // Activa por pago, por revisar
+        $laguna = $aprovisionamiento->confirmarPago($nueva('SC-DEMO-0003', ['nombre' => 'Laura Méndez', 'empresa' => 'Hotel Laguna',
+            'correo' => 'laguna.demo@cliente.demo.local', 'sedes' => 2, 'plan_id' => $profesional->id]), $sa, 'DEMO-TRANSF-1');
+        $cuenta($laguna, 'laguna.demo');
+
+        // Prueba vencida: en gracia
+        $plaza = $nueva('SC-DEMO-0004', ['tipo' => 'prueba', 'nombre' => 'Mario Ruiz', 'empresa' => 'Plaza Norte', 'correo' => 'plaza.demo@cliente.demo.local', 'plan_id' => $esencial->id]);
+        $plaza = $sa !== null ? $aprovisionamiento->activarPrueba($plaza, $sa) : $aprovisionamiento->confirmarPago($plaza, null);
+        $hoy = Suscripcion::hoy();
+        $plaza->forceFill(['inicio_en' => $hoy->copy()->subDays(20), 'vence_en' => $hoy->copy()->subDays(6), 'gracia_hasta' => $hoy->copy()->addDays(9)])->save();
+        $aprovisionamiento->sincronizarEstado($plaza);
+        $cuenta($plaza, 'plaza.demo');
+
+        // Vencida y sin pago después de la gracia: solo consulta
+        $centro = $aprovisionamiento->confirmarPago($nueva('SC-DEMO-0005', ['nombre' => 'Carmen Ortiz', 'empresa' => 'Torre Centro',
+            'correo' => 'centro.demo@cliente.demo.local', 'plan_id' => $esencial->id]), $sa, 'DEMO-TRANSF-2');
+        $centro->forceFill(['inicio_en' => $hoy->copy()->subDays(70), 'vence_en' => $hoy->copy()->subDays(40), 'gracia_hasta' => $hoy->copy()->subDays(25)])->save();
+        $aprovisionamiento->sincronizarEstado($centro);
+        if ($sa !== null) {
+            $aprovisionamiento->marcarRevisado($centro, $sa, 'Cliente de ejemplo.');
+        }
+        $cuenta($centro, 'centro.demo');
+
+        // Prueba gratis por aprobar
+        $nueva('SC-DEMO-0006', ['tipo' => 'prueba', 'nombre' => 'Sofía Gómez', 'empresa' => 'Grupo Sol', 'correo' => 'sol.demo@cliente.demo.local',
+            'sedes' => 3, 'plan_id' => $profesional->id, 'mensaje' => 'Queremos probar en el hotel principal.']);
     }
 
     /**
