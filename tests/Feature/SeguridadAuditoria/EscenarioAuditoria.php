@@ -43,6 +43,11 @@ trait EscenarioAuditoria
         $this->centro = Sede::withoutGlobalScopes()->where('empresa_id', $this->demo->id)->where('codigo', 'CEN')->firstOrFail();
         $this->playa = Sede::withoutGlobalScopes()->where('empresa_id', $this->demo->id)->where('codigo', 'PLA')->firstOrFail();
 
+        // Importar desde Excel: una vista previa de la demo (sin archivo) para las rutas con {importacion}
+        DB::table('importaciones')->insert(['empresa_id' => $this->demo->id, 'tipo' => 'vehiculos', 'archivo_nombre' => 'vehiculos.csv',
+            'archivo_ruta' => 'importaciones/'.$this->demo->id.'/no-existe.csv', 'formato' => 'csv', 'total_filas' => 0, 'estado' => 'vista_previa',
+            'filas' => '[]', 'resumen' => '{}', 'created_at' => now(), 'updated_at' => now()]);
+
         $this->intrusa = $this->crearEmpresa('Hotel Intruso');
         $this->crearSede($this->intrusa, 'INT');
         $this->adminIntruso = $this->crearUsuario($this->intrusa, 'Administrador');
@@ -129,6 +134,8 @@ trait EscenarioAuditoria
             'vacante' => 'vacantes',
             // Candidatos, fase 2: Entrevistar
             'postulacion' => 'postulaciones',
+            // Importar desde Excel
+            'importacion' => 'importaciones',
         ][$parametro] ?? null;
     }
 

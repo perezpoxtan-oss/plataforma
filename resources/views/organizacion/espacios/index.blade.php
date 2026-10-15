@@ -26,12 +26,15 @@
                     <p>Elige una sede para ver sus zonas, edificios y secciones.</p>
                 </div>
             </div>
-            @if ($sedes->count() > 1)
-                <div class="buscador">
-                    <i class="bi bi-search" aria-hidden="true"></i>
-                    <input type="search" placeholder="Buscar sede..." aria-label="Buscar sede" data-filtro-texto="espacios-sedes">
-                </div>
-            @endif
+            <div class="barra-filtros justify-content-md-end">
+                @if ($sedes->count() > 1)
+                    <div class="buscador">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <input type="search" placeholder="Buscar sede..." aria-label="Buscar sede" data-filtro-texto="espacios-sedes">
+                    </div>
+                @endif
+                @include('importaciones._boton', ['tipo' => 'zonas', 'modulo' => 'espacios'])
+            </div>
         </div>
 
         @if ($sedes->isEmpty())

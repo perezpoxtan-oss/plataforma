@@ -51,6 +51,7 @@
                     <i class="bi bi-search" aria-hidden="true"></i>
                     <input type="search" placeholder="Buscar razón social..." aria-label="Buscar empresa externa" data-filtro-texto="proveedores">
                 </div>
+                @include('importaciones._boton', ['tipo' => 'proveedores', 'modulo' => 'proveedores'])
             </div>
         </div>
 

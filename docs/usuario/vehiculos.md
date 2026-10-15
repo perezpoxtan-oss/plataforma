@@ -61,6 +61,14 @@ resumen: Registrar los vehículos que entran a la empresa e imprimir su calcoman
 
 En **Padrones → Empresas externas → Ficha → Flotilla** toca **Agregar vehículo**. La ventana dice «Registrando unidad de …», la categoría ya dice **De una empresa** y la empresa ya viene puesta, con candado: solo falta el número económico y los datos del vehículo. Al guardar o al cerrar regresas a la ficha de la empresa.
 
+## Cómo cargar muchos vehículos desde Excel
+
+1. Toca **Importar** (arriba, junto al buscador).
+2. Toca **Descargar plantilla** y llénala: **Placas**, **Categoría** («Particular» o «De una empresa»), **Tipo**, **Marca** y **Color** son obligatorios. Los de una empresa llevan **Número económico** y **Empresa propietaria** (que ya debe estar en Empresas externas).
+3. Toca **Elegir archivo**, elige tu archivo, toca **Revisar archivo**, revisa la vista previa y toca **Guardar**.
+
+**Qué debes ver:** el resultado de cada fila. Si dos filas traen las mismas placas, la segunda sale «Repetido en el archivo»; si las placas ya están en el padrón, sale **Ya existe**. Ver [Importar desde Excel](importar-desde-excel.md).
+
 ## Cómo editar un vehículo
 
 1. En la tarjeta toca el **lápiz** (Editar).
@@ -140,3 +148,4 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 - [Estacionamientos](estacionamientos.md)
 - [Etiquetas QR](etiquetas-qr.md)
 - [Altas por verificar](altas-por-verificar.md)
+- [Importar desde Excel](importar-desde-excel.md)

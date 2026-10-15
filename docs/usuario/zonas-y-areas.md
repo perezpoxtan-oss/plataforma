@@ -84,6 +84,16 @@ Arriba de cada pantalla está la ruta completa, con el nombre de cada nivel: **Z
 
 ![Crear por lote](img/espacios/3-lote.png)
 
+## Cómo cargar zonas, pisos y habitaciones desde Excel
+
+Si tu sede tiene muchas habitaciones (u oficinas), cárgalas desde un archivo:
+
+1. Toca **Importar** (arriba, junto al buscador).
+2. Toca **Descargar plantilla** y llénala: una fila por lugar con **Sede**, **Zona o edificio**, **Piso** y **Habitación** (por ejemplo «Sede Centro, Torre A, Piso 1, 101»). Deja vacío el piso si la habitación va directo en la zona.
+3. Toca **Elegir archivo**, elige tu archivo, toca **Revisar archivo**, revisa la vista previa y toca **Guardar**.
+
+**Qué debes ver:** la zona y el piso se crean una sola vez aunque se repitan en muchas filas; lo que ya existe se usa tal cual y una fila cuyo lugar ya existe completo sale **Ya existe** y se omite. Ver [Importar desde Excel](importar-desde-excel.md).
+
 ## Cómo detallar una habitación (áreas y elementos)
 
 Las áreas y los elementos son **opcionales**: captúralos solo si los vas a usar en llaves, equipos de Protección Civil o recorridos. Si no, la habitación ya está lista (la pantalla te lo recuerda arriba).
@@ -196,3 +206,4 @@ Se mueve con todo lo que tiene dentro (sus áreas y elementos). Sus llaves, equi
 - [Eliminar definitivamente](eliminar-definitivamente.md)
 - [Catálogo de llaves](llaves.md)
 - [Equipos de Protección Civil](equipos-pc.md)
+- [Importar desde Excel](importar-desde-excel.md)
