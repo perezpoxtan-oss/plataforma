@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Accion;
 use App\Models\Modulo;
 use App\Models\ModuloAccion;
 use App\Models\Rol;
@@ -92,7 +93,7 @@ class RolesPlantillaSeeder extends Seeder
         // El Agente trabaja en los menús de caseta: Operación y Padrones (no en reportes)
         $deCaseta = fn ($ma) => $deSeguridad($ma) && in_array(self::menuDe($ma->modulo), ['operacion', 'padrones'], true);
 
-        return self::soloAdministradorBorra(self::reglaVacantes(self::reglaEtiquetasQr(self::reglaProcedimientos(self::reglaRecepcion(self::reglaSolicitudes([
+        return self::importarComoCrear(self::soloAdministradorBorra(self::reglaVacantes(self::reglaEtiquetasQr(self::reglaProcedimientos(self::reglaRecepcion(self::reglaSolicitudes([
             'Administrador' => [10, 'Administra toda su empresa', fn ($ma) => Alcance::Empresa],
             // Exportar TODOS los datos de la empresa (empresas.exportar) queda solo para el Administrador
             'Director' => [20, 'Consulta y aprueba en toda la empresa', fn ($ma) => in_array($ma->accion->clave, ['ver', 'aprobar', 'exportar', 'imprimir'], true) && $ma->clave() !== 'empresas.exportar' ? Alcance::Empresa : null],
@@ -110,7 +111,7 @@ class RolesPlantillaSeeder extends Seeder
             // Solicitante y Jefe de departamento: su regla la arma reglaSolicitudes()
             self::SOLICITANTE => [70, 'Levanta solicitudes (pases de salida) y consulta solo las suyas', fn ($ma) => null],
             self::JEFE_DEPARTAMENTO => [45, 'Aprueba y responde las solicitudes de su departamento en su sede', fn ($ma) => null],
-        ]))))));
+        ])))))));
     }
 
     // Solicitudes: Solicitante y Jefe de departamento
@@ -319,6 +320,34 @@ class RolesPlantillaSeeder extends Seeder
 
         return $definiciones;
     }
+
+    // Importar desde Excel
+
+    /**
+     * «Importar» (carga masiva desde archivo) lo recibe quien da de alta en
+     * ese módulo, con el mismo alcance que su «crear» (misma regla que la
+     * migración que la agrega a los roles existentes).
+     *
+     * @param  array<string, array{0: int, 1: string, 2: Closure}>  $definiciones
+     * @return array<string, array{0: int, 1: string, 2: Closure}>
+     */
+    private static function importarComoCrear(array $definiciones): array
+    {
+        foreach ($definiciones as $nombre => [$nivel, $descripcion, $regla]) {
+            $definiciones[$nombre][2] = function ($ma) use ($regla) {
+                if ($ma->accion->clave !== 'importar') {
+                    return $regla($ma);
+                }
+                $crear = clone $ma;
+                $crear->setRelation('accion', new Accion(['clave' => 'crear', 'nombre' => 'Crear']));
+
+                return $regla($crear);
+            };
+        }
+
+        return $definiciones;
+    }
+    // Fin Importar desde Excel
 
     /**
      * Clave del menú donde aparece el módulo (los submódulos heredan el de su padre).

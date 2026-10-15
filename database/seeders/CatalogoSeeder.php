@@ -37,6 +37,8 @@ class CatalogoSeeder extends Seeder
         'responder' => 'Responder',
         // Candidatos, fase 2: entrevistar, evaluar y elegir (ADR-0009)
         'evaluar' => 'Evaluar',
+        // Importar desde Excel (docs/tecnico/importacion.md): carga masiva desde archivo
+        'importar' => 'Importar',
     ];
 
     private const CRUD = ['ver', 'crear', 'editar', 'eliminar'];
@@ -106,7 +108,7 @@ class CatalogoSeeder extends Seeder
                 'empresas' => ['Empresas', 'bi-building', ['exportar']],
                 'sedes' => ['Sedes', 'bi-geo-alt', []],
                 // Mejoras estructura (ADR-0016): «área» queda solo para las partes de una habitación
-                'espacios' => ['Zonas y edificios', 'bi-grid-3x3-gap', ['imprimir']],
+                'espacios' => ['Zonas y edificios', 'bi-grid-3x3-gap', ['imprimir', 'importar']],
                 'usuarios' => ['Usuarios', 'bi-person-gear', ['desbloquear']],
                 'roles' => ['Roles', 'bi-person-rolodex', []],
                 'permisos' => ['Matriz de permisos', 'bi-ui-checks-grid', [], [], ['ver', 'editar']],
@@ -123,7 +125,7 @@ class CatalogoSeeder extends Seeder
             // y turnos). "aprobar" = validar las altas provisionales que hace la
             // caseta; "provisional" = darlas de alta.
             'recursos_humanos' => ['Recursos Humanos', 'bi-people-fill', [
-                'colaboradores' => ['Colaboradores', 'bi-people', ['exportar', 'datos_personales', 'aprobar', 'provisional']],
+                'colaboradores' => ['Colaboradores', 'bi-people', ['exportar', 'datos_personales', 'aprobar', 'provisional', 'importar']],
                 'departamentos' => ['Departamentos', 'bi-diagram-2', []],
                 'puestos' => ['Puestos', 'bi-person-badge', []],
                 'turnos' => ['Turnos', 'bi-clock', []],
@@ -152,9 +154,9 @@ class CatalogoSeeder extends Seeder
                 'responsivas' => ['Responsivas', 'bi-pen', ['firmar', 'imprimir']],
                 'estacionamientos' => ['Estacionamientos', 'bi-p-square', []],
                 'pases_salida' => ['Pases de salida', 'bi-box-arrow-right', ['aprobar', 'firmar', 'imprimir', 'configurar']],
-                'visitantes' => ['Padrón de personas', 'bi-person-lines-fill', []],
-                'vehiculos' => ['Padrón vehicular', 'bi-car-front', ['imprimir']],
-                'proveedores' => ['Proveedores', 'bi-truck', []],
+                'visitantes' => ['Padrón de personas', 'bi-person-lines-fill', ['importar']],
+                'vehiculos' => ['Padrón vehicular', 'bi-car-front', ['imprimir', 'importar']],
+                'proveedores' => ['Proveedores', 'bi-truck', ['importar']],
                 'rutas' => ['Rutas de transporte', 'bi-signpost-split', ['imprimir']],
                 'transporte' => ['Bitácora de transporte', 'bi-bus-front', ['aprobar', 'firmar', 'exportar']],
                 'procedimientos' => ['Procedimientos', 'bi-book', ['aprobar']],

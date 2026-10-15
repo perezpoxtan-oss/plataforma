@@ -29,6 +29,7 @@ use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\VoucherReposicion;
 use App\Services\Borrado\RegistroBorrado;
+use App\Services\Importacion\AdministradorImportaciones;
 use App\Services\Informes\Tablero;
 use App\Services\Informes\Tendencias;
 use App\Support\Tenancy\EmpresaDeTrabajo;
@@ -152,7 +153,9 @@ class RecorridoPantallasTest extends TestCase
             // Lección 37: el Manual (páginas e imágenes de docs/usuario) no es de ninguna empresa
             // Olvidé mi contraseña: el enlace del correo no abre ningún registro (sin sesión; con sesión rebota al panel)
             $conRegistro = $ruta->parameterNames() !== [] && $ruta->getName() !== 'modulos.pendiente' && ! str_starts_with((string) $ruta->getName(), 'empleos.')
-                && ! str_starts_with((string) $ruta->getName(), 'manual.') && ! str_starts_with((string) $ruta->getName(), 'contrasena.');
+                && ! str_starts_with((string) $ruta->getName(), 'manual.') && ! str_starts_with((string) $ruta->getName(), 'contrasena.')
+                // Importar desde Excel: {tipo} es el módulo (colaboradores, zonas…), no un registro
+                && ! in_array($ruta->getName(), ['importaciones.create', 'importaciones.plantilla'], true);
             foreach ($this->urlsDe($ruta) as [$url, $json]) {
                 $visitas++;
                 $this->app['auth']->forgetGuards();
@@ -383,6 +386,10 @@ class RecorridoPantallasTest extends TestCase
             // Suscripciones (plataforma): los clientes de ejemplo y las promociones
             'catalogo-comercial.clientes.show' => DB::table('suscripciones')->orderBy('id')->limit(3)->pluck('id')->map(fn ($id) => ['id' => $id])->all(),
             'catalogo-comercial.promociones.editar' => DB::table('promociones')->orderBy('id')->limit(1)->pluck('id')->map(fn ($id) => ['id' => $id])->all(),
+            // Importar desde Excel: cada módulo y las importaciones de la demo (si hay)
+            'importaciones.create', 'importaciones.plantilla' => array_map(fn ($t) => ['tipo' => $t], array_keys(AdministradorImportaciones::TIPOS)),
+            'importaciones.show', 'importaciones.original', 'importaciones.resultado' => DB::table('importaciones')->where('empresa_id', $e)->orderBy('id')->limit(2)
+                ->pluck('id')->map(fn ($id) => ['importacion' => $id])->all(),
             default => null,
         };
 
