@@ -78,6 +78,8 @@ Route::withoutMiddleware('web')->controller(PwaController::class)->group(functio
     Route::get('/manifest.webmanifest', 'manifest')->name('pwa.manifest');
     Route::get('/sw.js', 'trabajador')->name('pwa.trabajador');
     Route::get('/sin-conexion', 'sinConexion')->name('pwa.sin-conexion');
+    // App Links de la app de Android: 404 mientras no haya huella de la llave de firma (config/app_movil.php)
+    Route::get('/.well-known/assetlinks.json', 'assetlinks')->name('pwa.assetlinks');
 });
 
 // Inicio: con sesión, el panel; sin sesión, la página pública de planes si está publicada (si no, al acceso, como siempre)

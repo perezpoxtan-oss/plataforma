@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.nfc.NfcAdapter;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -21,12 +22,23 @@ import com.getcapacitor.BridgeActivity;
  *  - «Atrás» de Android regresa en la página; en la primera pantalla pregunta antes de salir.
  *  - Descargas (PDF / Excel): se bajan con la sesión de la app a la carpeta Descargas.
  *  - La sesión se guarda en disco al salir de la app (no se pierde si Android la cierra).
+ *  - Etiquetas NFC con la app cerrada o en segundo plano (y enlaces /e/… si se verifican los App Links):
+ *    Android abre la app con esa dirección y aquí se carga dentro de la app, solo si es del propio servidor.
+ *    Con la app abierta, las etiquetas las lee LectorNfcPlugin (no llegan aquí).
  */
 public class MainActivity extends BridgeActivity {
 
+    // Marca la dirección entrante ya abierta (para no volver a abrirla si Android recrea la pantalla)
+    private static final String EXTRA_ATENDIDA = "mx.smartcentinel.app.DIRECCION_ATENDIDA";
+
+    private boolean restaurada = false;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Antes de super.onCreate: ahí Capacitor ya entrega la dirección con la que se abrió la app (onNewIntent)
+        restaurada = savedInstanceState != null;
         registerPlugin(AppNativaPlugin.class);
+        registerPlugin(LectorNfcPlugin.class);
         super.onCreate(savedInstanceState);
         if (bridge == null) {
             return;
@@ -52,6 +64,46 @@ public class MainActivity extends BridgeActivity {
         super.onPause();
         // Guarda la cookie de sesión: el cierre por inactividad lo sigue decidiendo la plataforma
         CookieManager.getInstance().flush();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        abrirDireccionEntrante(intent);
+    }
+
+    /** Etiqueta NFC (o enlace) con una dirección del propio servidor: se abre dentro de la app. */
+    private void abrirDireccionEntrante(Intent intent) {
+        if (bridge == null || intent == null || restaurada || intent.getBooleanExtra(EXTRA_ATENDIDA, false)) {
+            restaurada = false;
+            return;
+        }
+        // Abierta desde «Recientes»: la dirección es la de aquella vez, no una etiqueta nueva
+        if ((intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) {
+            return;
+        }
+        String accion = intent.getAction();
+        if (!NfcAdapter.ACTION_NDEF_DISCOVERED.equals(accion) && !Intent.ACTION_VIEW.equals(accion)) {
+            return;
+        }
+        Uri destino = intent.getData();
+        if (!esDelServidor(destino)) {
+            return;
+        }
+        intent.putExtra(EXTRA_ATENDIDA, true);
+        bridge.getWebView().loadUrl(destino.toString());
+    }
+
+    private boolean esDelServidor(Uri destino) {
+        String servidor = bridge.getServerUrl();
+        if (destino == null || servidor == null) {
+            return false;
+        }
+        Uri base = Uri.parse(servidor);
+        return "https".equalsIgnoreCase(destino.getScheme())
+            && base.getHost() != null
+            && base.getHost().equalsIgnoreCase(destino.getHost())
+            && base.getPort() == destino.getPort();
     }
 
     private void preguntarSalir() {

@@ -13,6 +13,7 @@ Decisión y razones: [ADR-0005](../decisiones/ADR-0005-lector-universal-nfc-rfid
 | Tipos registrados | `config/lector.php` |
 | Endpoints | `app/Http/Controllers/LectorController.php` |
 | Componente | `resources/views/componentes/lector.blade.php` + bloque "Lector universal" en `public/js/plataforma.js` |
+| NFC dentro de la app de Android | `public/js/nfc-app.js` (`NDEFReader` sobre el plugin nativo `LectorNfc`; solo con el user-agent de la app). Ver [app-movil.md → NFC en la app](app-movil.md#nfc-en-la-app) |
 | Lectura de QR sin `BarcodeDetector` | `public/vendor/jsqr/jsQR.js` (jsQR 1.4.0, Apache-2.0; se carga solo al abrir la cámara) |
 | Bajas con voucher | `app/Services/Inventarios/Vouchers.php`, `app/Models/VoucherReposicion.php` |
 

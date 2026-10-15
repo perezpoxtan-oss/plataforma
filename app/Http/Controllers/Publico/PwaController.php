@@ -9,7 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
 /**
- * Plataforma instalable (PWA). Las tres rutas van SIN el grupo «web»:
+ * Plataforma instalable (PWA) y App Links de la app de Android. Las rutas van SIN el grupo «web»:
  * no abren sesión, no envían cookies y no dependen del usuario (ver routes/web.php).
  */
 class PwaController extends Controller
@@ -74,5 +74,44 @@ class PwaController extends Controller
     {
         return response()->view('publico.sin-conexion')
             ->header('Cache-Control', 'no-cache');
+    }
+
+    /**
+     * App Links de la app de Android: Android revisa este archivo para abrir los enlaces /e/… en la app.
+     * Solo se publica si hay huella de la llave de firma (config/app_movil.php); si no, 404.
+     */
+    public function assetlinks(): JsonResponse
+    {
+        $huellas = self::huellas((string) config('app_movil.huellas_sha256'));
+        $paquete = trim((string) config('app_movil.paquete'));
+        abort_if($huellas === [] || $paquete === '', 404);
+
+        return response()->json([[
+            'relation' => ['delegate_permission/common.handle_all_urls'],
+            'target' => [
+                'namespace' => 'android_app',
+                'package_name' => $paquete,
+                'sha256_cert_fingerprints' => $huellas,
+            ],
+        ]], 200, ['Cache-Control' => 'public, max-age=3600'], JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * Huellas SHA-256 separadas por coma, en el formato que pide Android (AA:BB:… en mayúsculas).
+     * Se aceptan con o sin «:»; las que no miden 32 bytes se ignoran.
+     *
+     * @return list<string>
+     */
+    public static function huellas(string $texto): array
+    {
+        $huellas = [];
+        foreach (explode(',', $texto) as $huella) {
+            $hex = strtoupper((string) preg_replace('/[^0-9A-Fa-f]/', '', $huella));
+            if (strlen($hex) === 64 && preg_match('/^[0-9A-F:\s]+$/i', trim($huella))) {
+                $huellas[] = implode(':', str_split($hex, 2));
+            }
+        }
+
+        return array_values(array_unique($huellas));
     }
 }

@@ -743,6 +743,7 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .lector-estado.ok { color: #15803d; }
 .lector-estado.aviso { color: #b45309; }
 .lector-estado.error { color: #b91c1c; }
+.lector-estado .lector-ajustes-nfc { color: var(--color-primario); font-size: 0.85rem; }
 .dialogo-camara video { width: 100%; max-height: 60vh; border-radius: 14px; background: #000; display: block; object-fit: cover; }
 .lector .campo-ayuda { margin: 0.4rem 0 0; }
 /* Fin Lector universal */
