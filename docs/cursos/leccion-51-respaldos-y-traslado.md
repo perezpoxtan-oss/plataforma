@@ -1,4 +1,4 @@
-# Lección 49 · Respaldos y traslado a otro servidor
+# Lección 51 · Respaldos y traslado a otro servidor
 
 **Duración:** 25 minutos · **Para:** Super Administrador de la plataforma (prácticas 1 a 5) y Administrador del cliente (práctica 6).
 
