@@ -32,8 +32,9 @@ class SuperficieDeRutasTest extends TestCase
         // Olvidé mi contraseña (criterio 6): respuesta uniforme, límite por equipo y por cuenta, enlace firmado de un solo uso
         // Página pública de planes (Catálogo comercial): 404 mientras no esté publicada, límite de peticiones, campo trampa;
         // la ruta de avisos de pago está reservada y apagada (404)
+        // Plataforma instalable (app-movil.md): manifest, service worker y «Sin conexión», sin sesión ni datos de nadie
         $this->assertSame(['GET /aviso-de-privacidad', 'GET /contratar', 'GET /contratar/gracias', 'GET /empleos/{empresa}', 'GET /empleos/{empresa}/gracias', 'GET /empleos/{empresa}/{vacante}', 'GET /empleos/{empresa}/{vacante}/postular',
-            'GET /k', 'GET /k/{token}', 'GET /login', 'GET /olvide-contrasena', 'GET /planes', 'GET /restablecer-contrasena/{token}', 'GET /sesion/expirada', 'GET /up',
+            'GET /k', 'GET /k/{token}', 'GET /login', 'GET /manifest.webmanifest', 'GET /olvide-contrasena', 'GET /planes', 'GET /restablecer-contrasena/{token}', 'GET /sesion/expirada', 'GET /sin-conexion', 'GET /sw.js', 'GET /up',
             'POST /contratar', 'POST /empleos/{empresa}/{vacante}/postular', 'POST /k', 'POST /k/{token}', 'POST /login', 'POST /olvide-contrasena', 'POST /pagos/webhook/{pasarela}', 'POST /restablecer-contrasena',
             'POST /sesion/expirada'], $abiertas);
     }
