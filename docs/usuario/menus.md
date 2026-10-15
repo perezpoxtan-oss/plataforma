@@ -29,7 +29,7 @@ Los menús y sus grupos:
 | **Padrones** | **Personas y vehículos:** Empresas externas, Padrón de personas, Padrón vehicular. **Inventarios:** Catálogo de llaves, Gafetes, Equipos de seguridad, Equipos de Protección Civil. **Instalaciones:** Estacionamientos y zonas de descarga, Rutas de transporte. **Herramientas:** Etiquetas QR. |
 | **Recursos Humanos** | **Personal:** Colaboradores. **Recepción y candidatos:** Vacantes, Recepción de RR. HH., Candidatos, **Mis entrevistas** (si puedes entrevistar candidatos) y **Autorizaciones** (si eres responsable o suplente de algún departamento). **Catálogos:** Departamentos, Puestos, Turnos. |
 | **Informes** | **Informes:** Tablero, Bitácora del día, Tendencias, Informe ejecutivo (solo si tu rol puede ver alguno). |
-| **Estructura** | **Empresa:** Empresas, Sedes, Zonas y edificios. **Accesos y permisos:** Usuarios, Roles, Matriz de permisos. **Sistema:** Configuración, Bitácora de auditoría. **Plataforma** (solo Super Administrador): Identidad de la plataforma. |
+| **Estructura** | **Empresa:** Empresas, Sedes, Zonas y edificios. **Accesos y permisos:** Usuarios, Roles, Matriz de permisos. **Sistema:** Configuración, Bitácora de auditoría. **Plataforma** (solo Super Administrador): Identidad de la plataforma, Catálogo comercial. |
 
 ![Menú Padrones abierto](img/menus/menu-padrones.png)
 

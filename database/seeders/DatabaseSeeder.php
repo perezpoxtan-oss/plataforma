@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
             MenuSeeder::class,
             RolesPlantillaSeeder::class,
             TiposEspacioSeeder::class,
+            // Catálogo comercial con precios de ejemplo (una sola vez; la página nace sin publicar)
+            CatalogoComercialSeeder::class,
         ]);
     }
 }

@@ -57,6 +57,7 @@ class CatalogoSeeder extends Seeder
         'permisos' => 'permisos.index',
         'usuarios' => 'usuarios.index',
         'identidad' => 'identidad.edit',
+        'catalogo_comercial' => 'catalogo-comercial.index',
         'auditoria' => 'auditoria.index',
         'configuracion' => 'configuracion.index',
         'proveedores' => 'proveedores.index',
@@ -111,6 +112,8 @@ class CatalogoSeeder extends Seeder
                 'configuracion' => ['Configuración', 'bi-sliders', ['configurar'], [], ['ver', 'editar']],
                 'auditoria' => ['Bitácora de auditoría', 'bi-clipboard-data', ['exportar'], [], ['ver']],
                 'identidad' => ['Identidad de la plataforma', 'bi-palette', [], [], ['ver', 'editar'], Modulo::TIPO_PLATAFORMA],
+                // Catálogo comercial: productos, planes, paquetes y la página pública de planes (solo Super Administrador)
+                'catalogo_comercial' => ['Catálogo comercial', 'bi-shop', [], [], ['ver', 'editar'], Modulo::TIPO_PLATAFORMA],
                 // Manual de usuario (lección 37): toda sesión lo abre sin permiso propio (cada página se filtra por
                 // los módulos que el usuario puede ver); por eso no se contrata ni sale en la matriz de permisos
                 'manual' => ['Manual', 'bi-question-circle', [], [], ['ver'], Modulo::TIPO_PLATAFORMA],

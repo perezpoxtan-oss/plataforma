@@ -140,6 +140,12 @@ trait EscenarioAuditoria
     {
         $sede ??= $this->centro;
 
+        // Catálogo comercial: registros de la plataforma (sin empresa); solo el Super Administrador los abre
+        if (str_starts_with($ruta, 'catalogo-comercial.')) {
+            return $parametro === 'tipo' ? 'planes'
+                : DB::table(str_starts_with($ruta, 'catalogo-comercial.solicitudes.') ? 'solicitudes_compra' : 'planes')->orderBy('id')->value('id');
+        }
+
         switch ($parametro) {
             case 'empresa':
                 return $this->demo->id;

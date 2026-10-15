@@ -8,7 +8,8 @@
     $empresaCampana = app(\App\Support\Tenancy\EmpresaDeTrabajo::class)->id($usuario);
     // La campana se pinta dos veces (computadora y celular): el número se cuenta una sola vez por petición
     $llaveCampana = 'campana.no_leidas.'.$usuario->id.'.'.$empresaCampana;
-    $noLeidasCampana = $empresaCampana === null ? 0 : request()->attributes->get($llaveCampana)
+    // Catálogo comercial: el Super Administrador sin empresa de trabajo cuenta sus avisos de la plataforma
+    $noLeidasCampana = $empresaCampana === null && ! $usuario->es_superadmin ? 0 : request()->attributes->get($llaveCampana)
         ?? tap(app(\App\Support\Tenancy\Tenant::class)->conEmpresa($empresaCampana, fn () => app(\App\Services\Notificaciones\CentroNotificaciones::class)->noLeidas($usuario)),
             fn ($n) => request()->attributes->set($llaveCampana, $n));
     // Avisos del navegador: ícono de la plataforma (Identidad)

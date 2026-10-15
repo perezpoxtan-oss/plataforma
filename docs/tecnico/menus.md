@@ -21,7 +21,8 @@ Reorganización de la navegación aprobada por el dueño del proyecto (lección 
 | 4 | Informes (`informes`, nuevo, `bi-graph-up`) | Informes | `dashboard` Tablero · `bitacora_dia` **Bitácora del día** · `tendencias` · `informe_ejecutivo` |
 | 5 | Estructura (`estructura`) | Empresa | `empresas` · `sedes` · `espacios` Zonas y áreas |
 | | | Accesos y permisos | `usuarios` · `roles` · `permisos` Matriz de permisos |
-| | | Sistema | `configuracion` · `identidad` (solo superadministrador) · `auditoria` Bitácora de auditoría |
+| | | Sistema | `configuracion` · `auditoria` Bitácora de auditoría |
+| | | Plataforma (solo superadministrador) | `identidad` · `catalogo_comercial` Catálogo comercial |
 
 En **negritas**, los nombres cortos que cambian respecto al nombre del módulo: se guardan en la columna nueva `modulos.nombre_menu` (el nombre del módulo en la Matriz de permisos no cambia). Prioridad del nombre visible: `empresa_modulos.nombre_visible` → terminología del rubro → `nombre_menu` → `nombre`.
 

@@ -5,8 +5,10 @@ use App\Http\Middleware\ControlarInactividad;
 use App\Http\Middleware\EstablecerEmpresa;
 use App\Http\Middleware\ExigirCambioContrasena;
 use App\Http\Middleware\FirmasComoArchivo;
+use App\Http\Middleware\PortadaPublica;
 use App\Http\Middleware\VerificarHost;
 use App\Support\RegresoTrasEnvio;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -30,6 +32,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
             ExigirCambioContrasena::class,
         ]);
         $middleware->redirectUsersTo(fn () => route('panel'));
+        // Catálogo comercial: la portada pública de «/» decide antes que «auth» (sin sesión y publicada, se muestra)
+        $middleware->prependToPriorityList(AuthenticatesRequests::class, PortadaPublica::class);
 
         // Seguridad: dominio verificado (enlaces sin Host falso)
         $middleware->prepend(VerificarHost::class);

@@ -85,7 +85,7 @@ class MenuSeeder extends Seeder
                 ],
                 // Mejoras estructura (ADR-0016): lo exclusivo del Super Administrador, aparte
                 'Plataforma' => [
-                    'identidad' => 'primary',
+                    'identidad' => 'primary', 'catalogo_comercial' => 'success',
                 ],
                 // Fin Mejoras estructura
             ]],

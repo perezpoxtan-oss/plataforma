@@ -31,14 +31,16 @@ class NotificacionController extends Controller
     {
         $actor = $request->user();
         $empresaId = $this->empresa->id($actor);
-        $lista = $empresaId === null ? null : $this->tenant->conEmpresa($empresaId, fn () => Notificacion::de($actor)
+        // Catálogo comercial: el Super Administrador sin empresa de trabajo ve sus avisos de la plataforma
+        $ve = $empresaId !== null || $actor->es_superadmin;
+        $lista = ! $ve ? null : $this->tenant->conEmpresa($empresaId, fn () => Notificacion::de($actor)
             ->when($request->query('filtro') === 'no_leidas', fn ($q) => $q->noLeidas())
             ->orderByDesc('id')->paginate(25)->withQueryString());
 
         return view('rh.notificaciones.index', [
             'lista' => $lista,
             'filtro' => $request->query('filtro') === 'no_leidas' ? 'no_leidas' : 'todas',
-            'noLeidas' => $empresaId === null ? 0 : $this->tenant->conEmpresa($empresaId, fn () => $this->centro->noLeidas($actor)),
+            'noLeidas' => ! $ve ? 0 : $this->tenant->conEmpresa($empresaId, fn () => $this->centro->noLeidas($actor)),
         ]);
     }
 
@@ -48,7 +50,10 @@ class NotificacionController extends Controller
         $actor = $request->user();
         $empresaId = $this->empresa->id($actor);
         if ($empresaId === null) {
-            return response()->json(['no_leidas' => 0, 'lista' => [], 'pendientes' => ['total' => 0, 'items' => []]]);
+            // Catálogo comercial: el Super Administrador sin empresa de trabajo recibe sus avisos de la plataforma
+            $avisos = $actor->es_superadmin ? $this->tenant->conEmpresa(null, fn () => $this->centro->resumen($actor)) : ['no_leidas' => 0, 'lista' => []];
+
+            return response()->json([...$avisos, 'pendientes' => ['total' => 0, 'items' => []]]);
         }
 
         // Mis pendientes: viaja en la misma consulta de la campana (sin un segundo reloj)
@@ -62,7 +67,7 @@ class NotificacionController extends Controller
     {
         $actor = $request->user();
         $empresaId = $this->empresa->id($actor);
-        abort_if($empresaId === null, 404);
+        abort_if($empresaId === null && ! $actor->es_superadmin, 404);
 
         $url = $this->tenant->conEmpresa($empresaId, function () use ($actor, $notificacion) {
             $n = Notificacion::de($actor)->find($notificacion);
@@ -82,7 +87,7 @@ class NotificacionController extends Controller
     {
         $actor = $request->user();
         $empresaId = $this->empresa->id($actor);
-        $total = $empresaId === null ? 0 : $this->tenant->conEmpresa($empresaId, fn () => $this->centro->marcarTodas($actor));
+        $total = $empresaId === null && ! $actor->es_superadmin ? 0 : $this->tenant->conEmpresa($empresaId, fn () => $this->centro->marcarTodas($actor));
 
         if ($request->expectsJson()) {
             return response()->json(['ok' => true, 'marcadas' => $total]);
