@@ -139,8 +139,26 @@ Siempre puedes tocar **Solo ver la ficha**. Si tu rol no puede hacer esa acción
 ## Qué celulares leen NFC
 
 - **Android con Chrome:** lee el **QR con la cámara** y también las etiquetas **NFC** (botón de la antena).
+- **App de la plataforma para Android:** lee el **QR** y las etiquetas **NFC** igual que Chrome, **sin pedir permisos del navegador**. Mientras la app está abierta, acercar una etiqueta **no te saca de la app**: la lee la pantalla en la que estás. Ver «Cómo leer una etiqueta NFC con la app de Android».
 - **iPhone:** lee el **QR con la cámara**, pero **no** las etiquetas NFC desde la plataforma. Para NFC en una caseta con iPhone, usa un **lector USB o Bluetooth** que «escribe como teclado».
 - **Recomendación al comprar equipo para la caseta:** si van a usar etiquetas NFC, elige celulares **Android** o un lector USB/Bluetooth; si solo usarán QR, cualquier celular con cámara sirve. Pega en la caseta una nota con lo que usa cada equipo.
+
+## Cómo leer una etiqueta NFC con la app de Android
+
+**Antes de empezar:** el **NFC del teléfono debe estar encendido**. En **Ajustes → Conexiones** (o **Dispositivos conectados**) activa **NFC**. En teléfonos Samsung el interruptor se llama **NFC y pagos sin contacto**.
+
+**Con la app abierta (en una pantalla con lector):**
+
+1. Toca el botón de la antena junto al campo de búsqueda.
+2. Acerca la etiqueta a la **parte trasera** del teléfono, a la altura de la cámara, y no la muevas hasta que se lea.
+
+**Qué debes ver:** el registro de la etiqueta queda elegido en el campo (o se guarda la etiqueta, si la estás asignando). No se abre el navegador ni otra app.
+
+Si acercas una etiqueta de la plataforma **sin tocar la antena**, la app abre la ficha o la acción de ese registro ahí mismo, como si la hubieras escaneado.
+
+**Con la app cerrada o en segundo plano:** acerca la etiqueta al teléfono desbloqueado. Se abre **la app** directamente en la ficha o en la acción de ese registro (si te pide entrar, entra y te lleva ahí).
+
+Mientras la app está abierta, el teléfono no paga con NFC: si necesitas pagar con el celular, sal de la app primero.
 
 ## En el celular y en los modos Noche y Sol
 
@@ -165,6 +183,10 @@ Siempre puedes tocar **Solo ver la ficha**. Si tu rol no puede hacer esa acción
 | Es la única plantilla activa de toda la empresa: activa otra antes de desactivar esta (sin plantillas no se podría imprimir). | Intentaste desactivar la última plantilla. | Activa otra primero. |
 | No veo el botón **Hoja de prueba**. | Tu rol no puede configurar etiquetas, o la plantilla es de otra sede. | Pide a tu administrador el permiso «Configurar» de Etiquetas QR. |
 | Las etiquetas salen más chicas o más grandes. | La impresora está ajustando el tamaño. | Elige **Tamaño real / 100 %** en la impresora. |
+| Enciende el NFC del teléfono y vuelve a tocar el botón de NFC. | En la app de Android, el NFC está apagado. | Toca **Abrir ajustes de NFC**, enciende **NFC** (en Samsung, **NFC y pagos sin contacto**), regresa a la app y toca otra vez la antena. |
+| Este teléfono no tiene NFC. | El teléfono no puede leer etiquetas NFC. | Usa la cámara (QR) o un lector USB o Bluetooth. |
+| Actualiza la app para leer etiquetas NFC. | Tu app de Android es anterior a la lectura de NFC. | Pide a tu administrador la versión nueva de la app e instálala. |
+| Al acercar una etiqueta con la app cerrada se abre el navegador. | El NFC está apagado o la app no es la más reciente. | Revisa que el NFC esté encendido y que tengas la versión nueva de la app. |
 
 ## Preguntas frecuentes
 
@@ -177,6 +199,10 @@ Siempre puedes tocar **Solo ver la ficha**. Si tu rol no puede hacer esa acción
 **¿Un jefe de sede puede imprimir la hoja de prueba de una plantilla de toda la empresa?** Sí. Puede imprimirla y usar la plantilla, pero no cambiarla ni desactivarla.
 
 **¿Por qué en el iPhone no aparece el botón de la antena?** Porque el iPhone no deja leer NFC desde el navegador. Usa la cámara (QR) o un lector USB o Bluetooth.
+
+**¿La app de Android me pide permiso para usar el NFC?** No. Solo necesita que el NFC del teléfono esté encendido.
+
+**¿Por qué al acercar una etiqueta ya no se abre el navegador?** Porque, con la app abierta, la app lee todas las etiquetas para que no te saque de la pantalla en la que estás.
 
 **¿Qué hago si el QR se daña?** Escribe a mano el código en letras que trae la etiqueta, o reimprímela desde el Historial.
 

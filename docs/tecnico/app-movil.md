@@ -42,6 +42,8 @@ Capacitor **8.5.3** (estable), solo Android por ahora. La app abre la plataforma
 | `movil/android/` | Proyecto de Android Studio (plantilla oficial de Capacitor 8.5.3 + ajustes). Va en el repositorio sin artefactos de compilación (`.gitignore`). |
 | `android/app/src/main/java/mx/smartcentinel/app/MainActivity.java` | Botón «atrás», descargas, guardado de la sesión. |
 | `android/app/src/main/java/mx/smartcentinel/app/AppNativaPlugin.java` | `imprimir()` y `reintentar()`, que la web llama por `Capacitor.Plugins.AppNativa`. |
+| `android/app/src/main/java/mx/smartcentinel/app/LectorNfcPlugin.java` | NFC del teléfono (ver «NFC en la app»): modo lector en primer plano, evento `lectura`, `disponible()`, `abrirAjustesNfc()`. |
+| `public/js/nfc-app.js` (en la plataforma) | `NDEFReader` mínimo dentro de la app sobre `Capacitor.Plugins.LectorNfc`. Solo se incluye con el user-agent de la app. |
 
 ### La dirección del servidor
 
@@ -70,15 +72,74 @@ Capacitor **8.5.3** (estable), solo Android por ahora. La app abre la plataforma
 | **Imprimir** | Abre el diálogo de impresión de Android (impresoras de la red o «Guardar como PDF»). | `window.print()` no hace nada en el WebView; `pwa.js` lo cambia por `AppNativa.imprimir()`. |
 | Avisos del navegador | No se ofrecen (ver arriba). Las notificaciones siguen en la campana. | Siguiente paso: push (FCM). |
 | Lector por cable (serial/HID) | No disponible. | Web Serial / WebHID no existen en el WebView. La cámara sí. |
+| **NFC** (botón de la antena del lector universal) | Lo lee la app (plugin nativo `LectorNfc`), sin permisos del navegador. Con la app abierta ninguna etiqueta sale de la app. | Web NFC (`NDEFReader`) no funciona en el WebView. Ver «NFC en la app». |
 
 ### Preparado para el siguiente paso (sin activar)
 
 - **Avisos push (FCM):** el archivo `google-services.json` de Firebase va en `movil/android/app/google-services.json`; está en `.gitignore` (**nunca** se sube al repositorio). `app/build.gradle` ya aplica el plugin de Google Services solo si el archivo existe, y el `classpath` está en `android/build.gradle`. Faltará: `npm install @capacitor/push-notifications`, `npx cap sync android`, registrar el token por usuario en la plataforma y enviar desde `CentroNotificaciones` (misma idea que la fase 2 de `avisos-navegador.md`).
-- **NFC (gafetes) y biometría (entrar con huella):** permisos comentados en `AndroidManifest.xml`; se agregan junto con su plugin de Capacitor (p. ej. uno de NFC de la comunidad y `@aparajita/capacitor-biometric-auth`), y la web los usa por `Capacitor.Plugins` como hoy `AppNativa`.
+- **Biometría (entrar con huella):** permiso comentado en `AndroidManifest.xml`; se agrega junto con su plugin de Capacitor (p. ej. `@aparajita/capacitor-biometric-auth`), y la web lo usa por `Capacitor.Plugins` como hoy `AppNativa`. (El NFC ya está activo: ver «NFC en la app».)
+- **App Links verificados** para las etiquetas `/e/…`: listos del lado de la app y del servidor; se encienden con la huella de la llave de firma (ver «NFC en la app → App Links»).
+
+## NFC en la app
+
+**Problema que resuelve:** en el teléfono con la app instalada, al acercar una etiqueta NFC con una dirección de la plataforma (`https://…/e/…`), Android la abría por su cuenta en el navegador y sacaba a la persona de la app; el botón de la antena decía «No se pudo activar el NFC…». Causa: el lector universal (`plataforma.js`, «NFC del celular») usa **Web NFC** (`NDEFReader`), que el WebView de Android **no** ofrece; y sin un lector en primer plano el sistema despacha la etiqueta a otra app.
+
+### Cómo funciona
+
+| Situación | Qué pasa | Pieza |
+|---|---|---|
+| **App abierta** (cualquier pantalla) | El NFC queda en **modo lector** (`NfcAdapter.enableReaderMode` en `handleOnResume`, se apaga en `handleOnPause`; banderas NFC-A/B/F/V, **sin** `FLAG_READER_SKIP_NDEF_CHECK` para leer el mensaje NDEF). **Ninguna** etiqueta abre el navegador ni otra app. | `LectorNfcPlugin.java` |
+| App abierta, **lector esperando** (se tocó la antena) | La lectura llega al lector universal exactamente como con Web NFC: busca el registro por la dirección/texto o, al asignar una etiqueta, guarda el número de serie. | `nfc-app.js` → `plataforma.js` (sin cambios en su lógica) |
+| App abierta, **nadie leyendo** | Si la etiqueta trae una dirección **del mismo origen** que la página, se abre dentro de la app (`location.assign`) → acción probable o ficha (`LectorController::ir`). Otras direcciones o etiquetas sin dirección se ignoran. | `nfc-app.js` |
+| **App cerrada o en segundo plano** | Android entrega la etiqueta a la app por el `intent-filter` `NDEF_DISCOVERED` (https + host del servidor + `pathPrefix /e/`). `MainActivity.onNewIntent` (también en el arranque: Capacitor lo llama desde `load()`) carga esa dirección en el WebView **solo si es del propio servidor** (esquema https, mismo host y puerto que `server.url`). Sin sesión, la plataforma pide entrar y regresa a esa dirección. | `AndroidManifest.xml`, `MainActivity.java` |
+| Teléfono **bloqueado** o NFC apagado | Android no lee etiquetas. | — |
+
+Detalles:
+- **Evento al JS:** `lectura` con `serialNumber` (id de la etiqueta en hex minúsculas separado por «:», como Web NFC) y `records[]` con `recordType` (`url`, `absolute-url`, `text`, `mime`, `smart-poster`, `empty`, tipo externo o `unknown`), `mediaType` (solo `mime`), `encoding` y `lang` (solo `text`), `datos` (base64) y `texto` (decodificado). La URI se entrega **completa con su prefijo** (`NdefRecord.toUri()`); el texto se entrega ya decodificado y **siempre en UTF-8** (aunque la etiqueta esté en UTF-16), con su idioma en `lang`. Etiquetas sin NDEF (gafetes Mifare, por ejemplo) llegan con `records` vacío: el lector usa el número de serie. Si la etiqueta se aleja a media lectura: evento `lecturaError` → `onreadingerror`.
+- Se lee primero el mensaje que Android ya trae en caché (`Ndef.getCachedNdefMessage()`); si no hay, `connect()` + `getNdefMessage()` en el hilo del lector (nunca en el de la pantalla). Los avisos a la página salen en el hilo de la pantalla.
+- **Métodos JS** (`Capacitor.Plugins.LectorNfc`): `disponible()` → `{ nfc, encendido }`; `abrirAjustesNfc()` (ajustes de NFC; si el teléfono no los tiene, los de conexiones inalámbricas).
+- **Polyfill** (`public/js/nfc-app.js`): define `window.NDEFReader` dentro de la app (aunque el WebView declare uno que no funciona). `scan({signal})` resuelve si hay NFC encendido; si no, rechaza con `NotAllowedError` «Enciende el NFC del teléfono.» (`codigo: 'nfc-apagado'`), `NotSupportedError` «Este teléfono no tiene NFC.» (`sin-nfc`) o «Actualiza la app para leer etiquetas NFC.» (`sin-plugin`, una app instalada antes de este cambio). `onreading` / `onreadingerror` / `addEventListener('reading')` con `{serialNumber, message: {records: [{recordType, mediaType, data (DataView), encoding, lang}]}}`. El `abort()` de la señal deja de entregar lecturas a ese lector.
+  - Se incluye en `layouts/partes/cabeza.blade.php` **solo** cuando `AppMovil::es()` y **sin `defer`**: debe existir antes de que `plataforma.js` revise `'NDEFReader' in window`. Archivo propio, sin JS en línea: la CSP no cambia.
+  - En `plataforma.js` solo cambió el `catch` de `leerNfc`: si el error trae `codigo`, se muestra su mensaje; con `nfc-apagado`, «Enciende el NFC del teléfono y vuelve a tocar el botón de NFC.» con el botón **Abrir ajustes de NFC**. En el navegador el mensaje genérico no cambia.
+- **Grabar etiquetas (`write()`): decisión — no se implementa.** La plataforma no graba etiquetas en ninguna pantalla (el lector solo usa `scan()`), y escribir NDEF desde la app (con `NdefFormatable`) arriesga dejar etiquetas a medio formatear. `write()` y `makeReadOnly()` rechazan con `NotSupportedError` «Para grabar etiquetas usa una app de grabación de NFC: esta app solo las lee.». Si algún día se necesita, se agrega `escribir()` al plugin con `Ndef.writeNdefMessage`.
+- **Efecto secundario:** mientras la app está en primer plano el modo lector también apaga el pago con el teléfono (emulación de tarjeta). Al salir de la app vuelve.
+
+### La dirección de las etiquetas en el manifest
+
+El `intent-filter` usa los marcadores `${servidorHost}` y `${servidorRutaEtiquetas}`. `app/build.gradle` los calcula de `server.url` leyendo `src/main/assets/capacitor.config.json`, el archivo que **`npx cap sync android` escribe** con la dirección que resolvió `capacitor.config.js` (desde `app.config.json` / `SERVIDOR`). Es decir: **la misma dirección de la app, sin escribirla dos veces**. Si la dirección tuviera una carpeta (`https://dominio/plataforma`), la ruta queda `/plataforma/e/`. Sin ese archivo (no se hizo el `sync`) la app compila con un host de relleno (`sin-configurar.invalid`) y avisa en Gradle: las etiquetas con la app cerrada abrirían el navegador. Cada **Run** vuelve a leer el archivo; después de cambiar `servidor` basta `npx cap sync android` y **Run**.
+
+### App Links (preparado, apagado)
+
+La app también declara un `intent-filter` `VIEW` con `android:autoVerify="true"` para `https://<host>/e/…`. Android solo lo considera **verificado** (abre la app sin preguntar al tocar un enlace `/e/…` en WhatsApp, correo, la cámara…) si el servidor publica `/.well-known/assetlinks.json` con la huella SHA-256 de la llave con la que se firmó la app.
+
+- Ruta `GET /.well-known/assetlinks.json` → `PwaController::assetlinks` (sin el grupo `web`: sin sesión ni cookies). `config/app_movil.php`: `APP_MOVIL_PAQUETE` (por omisión `mx.smartcentinel.app`, el `appId`) y `APP_MOVIL_HUELLAS_SHA256` (**vacía por omisión → 404**; varias separadas por coma; con o sin «:»; las que no miden 32 bytes se ignoran).
+- `public/.htaccess` ya deja pasar `/.well-known/` (no fuerza https para la validación del certificado y no lo bloquea como archivo oculto); como el archivo no existe en disco, lo atiende Laravel.
+- **Cuándo encenderlo:** al tener la llave de firma de publicación. Con Google Play App Signing la huella está en Play Console → **Prueba y lanzamiento → Configuración → Integridad de la app → Firma de apps** («Certificado de la clave de firma de apps», SHA-256). Para la app de prueba (llave de depuración de la computadora): `keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android -keypass android` (SHA256). Escríbela en el `.env` del servidor (`APP_MOVIL_HUELLAS_SHA256=AA:BB:…`), limpia la caché de configuración y reinstala la app (Android verifica al instalar). Revisar: `adb shell pm get-app-links mx.smartcentinel.app` debe decir `verified`.
+- Mientras no esté verificado: en Android 12+ los enlaces `/e/…` siguen abriendo el navegador (la persona puede activarlo a mano en **Ajustes → Apps → Smart Centinel → Abrir de forma predeterminada**); en Android 11 o anterior, Android puede preguntar con qué abrirlo. **Las etiquetas NFC no dependen de esto** (usan `NDEF_DISCOVERED`).
+
+### Samsung (y otros teléfonos)
+
+- El NFC debe estar encendido: **Ajustes → Conexiones → NFC y pagos sin contacto** (en Samsung es un solo interruptor que enciende el NFC; «Pagos sin contacto» dentro de él es solo para pagar y no afecta la lectura).
+- La pantalla debe estar **desbloqueada**: Android no lee etiquetas con el teléfono bloqueado.
+- La antena está a la mitad de la parte trasera (cerca de la cámara en la mayoría); fundas gruesas o con metal estorban.
+
+### Cómo probarlo
+
+1. En Android Studio: `npx cap sync android`, **Run** en el teléfono.
+2. **App abierta:** en **Préstamo de llaves → Prestar llave**, toca la antena del campo de la llave y acerca la etiqueta (o el gafete): se elige el registro y no se abre el navegador.
+3. **App abierta sin tocar la antena:** acerca una etiqueta con dirección `/e/…`: se abre la acción o la ficha dentro de la app.
+4. **NFC apagado:** apágalo, toca la antena: «Enciende el NFC del teléfono…» con **Abrir ajustes de NFC** → abre los ajustes.
+5. **App cerrada:** cierra la app (deslízala desde Recientes), acerca la etiqueta con el teléfono desbloqueado: se abre la app en esa dirección (no el navegador).
+6. Para ver lo que llega: **Logcat** filtrado por `LectorNfc` y `Capacitor`; en Chrome de la computadora `chrome://inspect` (con la app de depuración) → consola de la página.
+
+### Verificado aquí (sin teléfono)
+
+- Java (`LectorNfcPlugin`, `MainActivity`, `AppNativaPlugin`) compilado con `javac --release 21` contra `android.jar` de la API 36 y con clases de Capacitor 8.5.3 reducidas a las firmas reales usadas (no hay SDK de Android completo en el equipo de desarrollo: la compilación real es la de Android Studio).
+- Navegador (Playwright/Chromium, user-agent de la app, `Capacitor` simulado como lo inyecta la app): el botón de la antena aparece; una lectura simulada con `https://…/e/<código>` elige la llave en **Prestar llave** sin salir de la pantalla; NFC apagado → aviso y **Abrir ajustes de NFC** llama a `abrirAjustesNfc()`; sin NFC → «Este teléfono no tiene NFC.»; registro de texto con idioma y «ñ»; `write()` rechaza; sin lector activo, la dirección propia se abre y la de otro sitio no; sin errores de JS ni de CSP; en el navegador normal `nfc-app.js` no se carga.
 
 ### Excepciones de vocabulario (criterios UX, regla 4)
 
-«Reintentar» (pantallas sin conexión) y «Salir» / «Cancelar» (diálogo nativo de Android) no están en los diez verbos: son textos de sistema fuera de las pantallas de la plataforma. Anotado aquí conforme al punto 4 de «Cómo se aplica».
+«Reintentar» (pantallas sin conexión) y «Salir» / «Cancelar» (diálogo nativo de Android) no están en los diez verbos: son textos de sistema fuera de las pantallas de la plataforma. «Abrir ajustes de NFC» (aviso del lector universal, solo dentro de la app con el NFC apagado) tampoco: abre los ajustes del teléfono, no es una acción de la plataforma. Anotado aquí conforme al punto 4 de «Cómo se aplica».
 
 ## Guía paso a paso para el dueño (Windows primero; Mac al final de cada paso)
 
@@ -172,6 +233,10 @@ y ejecuta `npx cap sync android`. Para una sola compilación sin tocar el archiv
 | «Could not find … capacitor-android» o «capacitor-cordova-android-plugins» | Faltó `npm install` y `npx cap sync android` dentro de `movil`. |
 | La app abre en blanco o «Sin conexión» | El celular no tiene internet o la dirección de `app.config.json` está mal; revisa y repite `npx cap sync android`. |
 | La dirección del servidor «debe empezar con https://» | La app no acepta conexiones sin cifrar. Usa la dirección `https://`. |
+| Aviso de Gradle «Falta src/main/assets/capacitor.config.json» | Faltó `npx cap sync android` en `movil`: hazlo y vuelve a **Run**. Sin él, las etiquetas NFC con la app cerrada abren el navegador. |
+| «Attribute data@host at AndroidManifest.xml requires a placeholder substitution but no value for <servidorHost> is provided» | El `app/build.gradle` no es el del repositorio (se perdió la línea `manifestPlaceholders`). Trae la versión del repositorio (GitHub Desktop → descartar cambios en ese archivo). |
+| Al acercar una etiqueta con la app abierta se abre el navegador | La app instalada es anterior al NFC: vuelve a instalarla con **Run** (o el APK nuevo). Revisa que el NFC esté encendido. |
+| El botón de la antena dice «Actualiza la app para leer etiquetas NFC.» | La plataforma ya es la nueva pero la app instalada no: instala la versión nueva. |
 
 ### Para publicar en Google Play (después)
 
@@ -187,6 +252,6 @@ Requiere una **Mac con Xcode** y cuenta de **Apple Developer** (pago anual). En 
 
 ## Pruebas
 
-- `tests/Feature/Nucleo/AppMovilPwaTest.php`: manifest con su tipo, íconos con sus medidas, nombre y color de Identidad, sin cookies; service worker en la raíz con `no-cache`, `Service-Worker-Allowed`, versión sustituida, solo GET y sin guardar pantallas, sin cookies aun con sesión; «Sin conexión» sin sesión; CSP sin cambios; cabeceras HTML con manifest, ícono y `pwa.js` sin JS en línea; dentro de la app no se ofrecen los avisos del navegador; la app no cambia el cierre por inactividad.
-- Navegador (Playwright): ver «Verificado en navegador».
+- `tests/Feature/Nucleo/AppMovilPwaTest.php`: `assetlinks.json` 404 sin huella (o con huellas inválidas) y JSON correcto con huellas normalizadas, sin cookies; `nfc-app.js` solo con el user-agent de la app, sin `defer` y antes de `plataforma.js`; `NDEFReader` de la app ejecutado con Node y el plugin simulado (lectura con la forma de Web NFC, apertura solo de direcciones propias, NFC apagado / sin NFC, `write()` rechaza); manifest con su tipo, íconos con sus medidas, nombre y color de Identidad, sin cookies; service worker en la raíz con `no-cache`, `Service-Worker-Allowed`, versión sustituida, solo GET y sin guardar pantallas, sin cookies aun con sesión; «Sin conexión» sin sesión; CSP sin cambios; cabeceras HTML con manifest, ícono y `pwa.js` sin JS en línea; dentro de la app no se ofrecen los avisos del navegador; la app no cambia el cierre por inactividad.
+- Navegador (Playwright): ver «Verificado en navegador» y «NFC en la app → Verificado aquí».
 - La app de Android no se compila en la integración continua (requiere el SDK de Android).

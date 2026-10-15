@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Support\AppMovil;
 use App\Support\Identidad;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\Process\ExecutableFinder;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 /**
@@ -150,5 +152,127 @@ class AppMovilPwaTest extends TestCase
             ->withSession(['ultima_actividad' => now()->subMinutes($limite + 1)->getTimestamp()])
             ->get('/mi-cuenta')->assertRedirect(route('login'));
         $this->assertGuest();
+    }
+
+    public function test_sin_huella_no_se_publica_assetlinks(): void
+    {
+        config(['app_movil.huellas_sha256' => '']);
+        $this->get('/.well-known/assetlinks.json')->assertNotFound();
+
+        // Una huella mal escrita tampoco publica nada
+        config(['app_movil.huellas_sha256' => 'no-es-una-huella, 12:34']);
+        $this->get('/.well-known/assetlinks.json')->assertNotFound();
+    }
+
+    public function test_con_huella_assetlinks_publica_la_app_sin_sesion(): void
+    {
+        $huella = implode(':', str_split(str_repeat('ab12', 16), 2));
+        config([
+            'app_movil.paquete' => 'mx.smartcentinel.app',
+            // Con o sin «:», minúsculas, varias separadas por coma, repetidas y una inválida
+            'app_movil.huellas_sha256' => strtolower($huella).', '.str_repeat('AB12', 16).', '.str_repeat('0F', 32).', xyz',
+        ]);
+
+        $r = $this->get('/.well-known/assetlinks.json')->assertOk();
+
+        $this->assertStringStartsWith('application/json', (string) $r->headers->get('Content-Type'));
+        $this->assertEmpty($r->headers->getCookies(), 'assetlinks.json no abre sesión ni envía cookies');
+        $this->assertSame([[
+            'relation' => ['delegate_permission/common.handle_all_urls'],
+            'target' => [
+                'namespace' => 'android_app',
+                'package_name' => 'mx.smartcentinel.app',
+                'sha256_cert_fingerprints' => [strtoupper($huella), implode(':', str_split(str_repeat('0F', 32), 2))],
+            ],
+        ]], $r->json());
+    }
+
+    public function test_el_nfc_de_la_app_solo_se_carga_dentro_de_la_app(): void
+    {
+        $usuario = $this->usuario();
+
+        $this->actingAs($usuario)->get('/mi-cuenta')->assertOk()->assertDontSee('js/nfc-app.js', false);
+
+        $html = (string) $this->actingAs($usuario)->withHeader('User-Agent', self::AGENTE_APP)->get('/mi-cuenta')->assertOk()->getContent();
+        $this->assertStringContainsString('js/nfc-app.js', $html);
+        // Antes que plataforma.js y sin defer: el lector universal debe encontrar NDEFReader al cargar
+        $this->assertMatchesRegularExpression('#<script src="[^"]*js/nfc-app\.js[^"]*"></script>#', $html);
+        $this->assertLessThan(strpos($html, 'js/plataforma.js'), strpos($html, 'js/nfc-app.js'));
+        $this->assertFileExists(public_path('js/nfc-app.js'));
+    }
+
+    /**
+     * NDEFReader de la app (public/js/nfc-app.js) con el plugin nativo simulado: entrega las lecturas con la
+     * misma forma que Web NFC (lo que usa el lector universal), avisa NFC apagado / sin NFC, write() rechaza y,
+     * sin lectura activa, abre dentro de la app solo las direcciones de la propia plataforma.
+     * (La prueba con el lector universal completo en Chromium está en docs/tecnico/app-movil.md.)
+     */
+    public function test_el_ndefreader_de_la_app_entrega_las_lecturas_como_web_nfc(): void
+    {
+        $node = (new ExecutableFinder)->find('node');
+        if ($node === null) {
+            $this->markTestSkipped('Node no está instalado: no se puede ejecutar nfc-app.js.');
+        }
+
+        $script = <<<'JS'
+            const fs = require('fs'), vm = require('vm');
+            const oyentes = {}, navegado = [];
+            let estado = { nfc: true, encendido: true };
+            const emitir = (ev, d) => (oyentes[ev] || []).forEach(cb => cb(d));
+            const b64 = t => Buffer.from(t, 'utf8').toString('base64');
+            const ctx = {
+                navigator: { userAgent: 'Mozilla/5.0 (Linux; Android 14; wv) SmartCentinelApp/1' },
+                document: { addEventListener() {} }, DOMException, Event, URL, atob,
+                location: { href: 'https://plataforma.example/prestamo-llaves', origin: 'https://plataforma.example', assign: u => navegado.push(u) },
+                Capacitor: { Plugins: { LectorNfc: {
+                    addListener: (ev, cb) => { (oyentes[ev] = oyentes[ev] || []).push(cb); return { remove() {} }; },
+                    disponible: () => Promise.resolve(estado),
+                    abrirAjustesNfc: () => Promise.resolve(),
+                } } },
+            };
+            ctx.window = ctx;
+            vm.createContext(ctx);
+            vm.runInContext(fs.readFileSync(process.argv[1], 'utf8'), ctx);
+            const motivo = p => p.then(() => 'resolvió', e => e.name + '|' + (e.codigo || '') + '|' + e.message);
+            (async () => {
+                const salida = {};
+                const url = 'https://plataforma.example/e/abc12345XYZ';
+                const lector = new ctx.NDEFReader(), control = new AbortController();
+                const leido = new Promise(fin => {
+                    // Igual que el lector universal (plataforma.js): texto o dirección; si no, número de serie
+                    lector.onreading = ev => {
+                        const reg = ev.message.records.find(r => ['text', 'url', 'absolute-url'].includes(r.recordType));
+                        fin({ serie: ev.serialNumber, tipo: reg.recordType, texto: new TextDecoder(reg.encoding || 'utf-8').decode(reg.data) });
+                    };
+                });
+                await lector.scan({ signal: control.signal });
+                emitir('lectura', { serialNumber: '04:a2:3b', records: [{ recordType: 'url', texto: url, datos: b64(url) }] });
+                salida.lectura = await leido;
+                control.abort();
+
+                // Sin lectura activa: solo la propia plataforma se abre dentro de la app
+                emitir('lectura', { serialNumber: '04:a2', records: [{ recordType: 'url', texto: 'https://otro.example/e/abc12345XYZ', datos: '' }] });
+                emitir('lectura', { serialNumber: '04:a2', records: [{ recordType: 'url', texto: url, datos: b64(url) }] });
+                salida.navegado = navegado;
+
+                estado = { nfc: true, encendido: false };
+                salida.apagado = await motivo(new ctx.NDEFReader().scan());
+                estado = { nfc: false, encendido: false };
+                salida.sinNfc = await motivo(new ctx.NDEFReader().scan());
+                salida.escribir = await motivo(new ctx.NDEFReader().write('x'));
+                salida.ajustes = typeof ctx.LectorNfcApp.abrirAjustes;
+                process.stdout.write(JSON.stringify(salida));
+            })();
+            JS;
+        $proceso = new Process([$node, '-e', $script, public_path('js/nfc-app.js')]);
+        $proceso->mustRun();
+        $r = json_decode($proceso->getOutput(), true);
+
+        $this->assertSame(['serie' => '04:a2:3b', 'tipo' => 'url', 'texto' => 'https://plataforma.example/e/abc12345XYZ'], $r['lectura']);
+        $this->assertSame(['https://plataforma.example/e/abc12345XYZ'], $r['navegado']);
+        $this->assertSame('NotAllowedError|nfc-apagado|Enciende el NFC del teléfono.', $r['apagado']);
+        $this->assertSame('NotSupportedError|sin-nfc|Este teléfono no tiene NFC.', $r['sinNfc']);
+        $this->assertStringStartsWith('NotSupportedError|solo-lectura|Para grabar etiquetas', $r['escribir']);
+        $this->assertSame('function', $r['ajustes']);
     }
 }

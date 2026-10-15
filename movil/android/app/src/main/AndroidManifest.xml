@@ -23,6 +23,32 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Etiqueta NFC con una dirección /e/… del propio servidor y la app cerrada o en segundo plano:
+                 Android abre la APP (no el navegador). Con la app abierta las lee LectorNfcPlugin.
+                 servidorHost y servidorRutaEtiquetas salen de server.url (app/build.gradle). -->
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:scheme="https"
+                    android:host="${servidorHost}"
+                    android:pathPrefix="${servidorRutaEtiquetas}" />
+            </intent-filter>
+
+            <!-- App Links (enlaces /e/… abiertos desde otras apps). Android solo los da por verificados cuando el
+                 servidor publica /.well-known/assetlinks.json con la huella de la llave de firma
+                 (APP_MOVIL_HUELLAS_SHA256 en el .env); mientras tanto esos enlaces siguen abriendo el navegador.
+                 Ver docs/tecnico/app-movil.md. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="${servidorHost}"
+                    android:pathPrefix="${servidorRutaEtiquetas}" />
+            </intent-filter>
+
         </activity>
 
         <provider
@@ -42,10 +68,12 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
-    <!-- Siguiente paso (sin activar): NFC para leer gafetes y biometría para entrar con huella.
-         Se agregan junto con su plugin; ver docs/tecnico/app-movil.md.
+    <!-- NFC para leer gafetes y etiquetas (LectorNfcPlugin). No es obligatorio: la app se instala en teléfonos sin NFC -->
     <uses-permission android:name="android.permission.NFC" />
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
+
+    <!-- Siguiente paso (sin activar): biometría para entrar con huella. Se agrega junto con su plugin;
+         ver docs/tecnico/app-movil.md.
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     -->
 </manifest>

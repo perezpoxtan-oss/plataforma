@@ -17,6 +17,10 @@
 <link rel="manifest" href="{{ url('/manifest.webmanifest') }}">
 <link rel="apple-touch-icon" href="{{ asset('iconos/apple-touch-icon.png') }}">
 <script src="{{ $version('js/pwa.js') }}" defer></script>
+@if (\App\Support\AppMovil::es())
+    {{-- Dentro de la app: NFC del teléfono para el lector universal (antes de plataforma.js, sin defer) --}}
+    <script src="{{ $version('js/nfc-app.js') }}"></script>
+@endif
 <link href="{{ $version('vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
 <link href="{{ $version('vendor/bootstrap-icons/bootstrap-icons.min.css') }}" rel="stylesheet">
 <link href="{{ $version('css/plataforma.css') }}" rel="stylesheet">

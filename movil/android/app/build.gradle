@@ -4,6 +4,27 @@ apply plugin: 'com.android.application'
 // El appId (applicationId) es permanente una vez publicada la app en Google Play.
 def appConfig = new groovy.json.JsonSlurper().parse(rootProject.file('../app.config.json'))
 
+// Dirección del servidor para las etiquetas NFC con la app cerrada (AndroidManifest: servidorHost, servidorRutaEtiquetas).
+// Sale de server.url, el MISMO valor que usa la app: «npx cap sync android» lo escribe en
+// src/main/assets/capacitor.config.json (calculado por capacitor.config.js desde app.config.json).
+// Sin ese archivo (falta el «sync») la app compila igual, pero las etiquetas con la app cerrada abren el navegador.
+def servidorHost = 'sin-configurar.invalid'
+def servidorRutaEtiquetas = '/e/'
+def capConfigArchivo = file('src/main/assets/capacitor.config.json')
+if (capConfigArchivo.exists()) {
+    def capConfig = new groovy.json.JsonSlurper().parse(capConfigArchivo)
+    def servidorUrl = capConfig?.server?.url
+    if (servidorUrl) {
+        def servidorUri = new URI(servidorUrl.toString())
+        if (servidorUri.host) {
+            servidorHost = servidorUri.host
+            servidorRutaEtiquetas = (servidorUri.path ?: '').replaceAll('/+$', '') + '/e/'
+        }
+    }
+} else {
+    logger.warn('Falta src/main/assets/capacitor.config.json: ejecuta «npx cap sync android» en la carpeta movil.')
+}
+
 android {
     namespace = "mx.smartcentinel.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -14,6 +35,7 @@ android {
         applicationId appConfig.appId
         resValue "string", "app_name", appConfig.appName
         resValue "string", "title_activity_main", appConfig.appName
+        manifestPlaceholders = [servidorHost: servidorHost, servidorRutaEtiquetas: servidorRutaEtiquetas]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

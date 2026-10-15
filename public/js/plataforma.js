@@ -1807,10 +1807,32 @@ document.addEventListener('click', function (e) {
                 if (texto) { resolver(caja, texto); } else { estado(caja, 'La etiqueta no trae datos legibles.', 'error'); }
             };
             lector.onreadingerror = function () { estado(caja, 'No se pudo leer la etiqueta. Intenta de nuevo sin moverla.', 'error'); };
-        }).catch(function () {
+        }).catch(function (err) {
+            // Dentro de la app (nfc-app.js) el motivo es preciso: NFC apagado, teléfono sin NFC o app por actualizar
+            if (err && err.codigo === 'nfc-apagado' && window.LectorNfcApp) { avisoNfcApagado(caja); return; }
+            if (err && err.codigo && err.message) { estado(caja, err.message, 'error'); return; }
             estado(caja, 'No se pudo activar el NFC: revisa que esté encendido y que la página tenga permiso.', 'error');
         });
         setTimeout(function () { control.abort(); }, 30000);
+    }
+
+    // App de Android con el NFC apagado: aviso con botón a los ajustes del teléfono
+    function avisoNfcApagado(caja) {
+        estado(caja, 'Enciende el NFC del teléfono y vuelve a tocar el botón de NFC.', 'error');
+        var e = partes(caja).estado;
+        if (!e) { return; }
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'lector-cambiar lector-ajustes-nfc';
+        b.setAttribute('data-lector-ajustes-nfc', '');
+        b.textContent = 'Abrir ajustes de NFC';
+        b.addEventListener('click', function () {
+            window.LectorNfcApp.abrirAjustes().catch(function () {
+                estado(caja, 'No se pudieron abrir los ajustes. Enciende el NFC desde los ajustes del teléfono.', 'error');
+            });
+        });
+        e.appendChild(document.createTextNode(' '));
+        e.appendChild(b);
     }
 
     /* ---------- Conexión con la página ---------- */
