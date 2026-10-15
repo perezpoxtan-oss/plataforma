@@ -63,6 +63,13 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 
 **Qué debes ver:** «Nombres del menú guardados. Revisa el menú: ya aparecen con el nombre nuevo.» Solo cambia el nombre en el menú: la pantalla, los permisos y las direcciones son los mismos. El nombre de la bitácora (Novedades o Incidentes) se cambia en su propia sección.
 
+### Cómo volver a mostrar «Configura tu empresa» en Inicio
+
+1. En **General**, en la tarjeta **Configura tu empresa**, ves cuántos pasos llevas y si se ve en Inicio.
+2. Toca **Mostrar en Inicio** (o **Ocultar de Inicio**).
+
+**Qué debes ver:** «Listo: «Configura tu empresa» ya se ve en Inicio.» Aplica a toda la empresa. Ver [Configura tu empresa](configura-tu-empresa.md).
+
 ## Caseta y accesos
 
 | Tarjeta | Qué decides | Valor original | Dónde se cambia |
@@ -239,3 +246,4 @@ Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logo
 - [Pases de salida](pases-salida.md)
 - [Etiquetas QR](etiquetas-qr.md)
 - [Mi cuenta](mi-cuenta.md)
+- [Configura tu empresa](configura-tu-empresa.md)

@@ -1,4 +1,4 @@
-# Lección 49 · Configuración por secciones
+# Lección 50 · Configuración por secciones
 
 **Duración:** 25 minutos · **Para:** Administradores, Directores y Super Administrador.
 
@@ -18,6 +18,8 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `director.demo` (D
 
 1. **Estructura → Configuración**. Lee la **Versión instalada** y los botones de sección: General, Caseta y accesos, Recepción y RR. HH., Novedades, Activos, Transporte, Pases de salida, Avisos por correo y Cuentas y seguridad.
 2. Toca **Avisos por correo**: ves cada módulo con «encendidos» o «apagados». Toca **Pases de salida** en esa lista y llegas a sus casillas.
+
+3. En **General** está la tarjeta **Configura tu empresa** (lección 49): con **Mostrar en Inicio** / **Ocultar de Inicio** decides si la guía se ve en Inicio.
 
 Comprueba: cada sección tiene su título subrayado y sus tarjetas; debajo de cada campo dice **Valor original**.
 

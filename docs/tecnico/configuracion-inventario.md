@@ -19,6 +19,7 @@ Convenciones:
 | Zona horaria de la empresa | `empresas.zona_horaria` | Estructura → Empresas (enlace en General) | `empresas.editar` empresa | `America/Mexico_City` |
 | Zona horaria de cada sede | `sedes.zona_horaria` | Estructura → Sedes | `sedes.editar` | la de la empresa |
 | Rubro (terminología y módulos sugeridos) | `empresas.rubro_id` | Estructura → Empresas | SA | el del alta |
+| «Configura tu empresa» visible en Inicio | pref. `configura_tu_empresa` (`visible` / `oculto`) | Configuración → General (botón **Mostrar en Inicio** / **Ocultar de Inicio**, `PUT /configura-tu-empresa`) y **Ya terminé** en Inicio | `configuracion.editar` | `visible` en empresas nuevas; sin dato: se muestra solo si la empresa está casi vacía (2 pasos o menos) |
 | Módulos contratados | `empresa_modulos.activo` | Estructura → Empresas → cuadrícula (enlace en Plataforma) | SA | los del plan |
 | 🆕 Nombres en el menú (cada módulo salvo la bitácora) | `empresa_modulos.nombre_visible` | Configuración → General → Avanzado (antes **solo en la base de datos**) | `configuracion.editar` empresa | vacío = nombre de siempre |
 | 🆕 Reloj del visto bueno (vales de taxi y procedimientos en revisión) | pref. `caseta.vobo_horas_amarillo` / `vobo_horas_rojo` | Configuración → General (antes **constantes** de `RelojVoBo`) | `configuracion.editar` empresa | 24 h / 72 h |

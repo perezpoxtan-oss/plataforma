@@ -70,6 +70,14 @@ No tienes que esperar a guardar para saber si la persona ya existe:
 
 **Qué debes ver:** al guardar **o al cerrar** la ventana regresas a la ficha de la empresa, con la persona en su personal.
 
+## Cómo cargar muchas personas desde Excel
+
+1. Toca **Importar** (arriba, junto al buscador).
+2. Toca **Descargar plantilla** y llénala en Excel: **Tipo** (Visitante, Proveedor o Contratista) y **Nombre completo** son obligatorios; el **Folio de identificación** sirve para reconocer a quien ya está en el padrón.
+3. Toca **Elegir archivo**, elige tu archivo, toca **Revisar archivo**, revisa la vista previa y toca **Guardar**.
+
+**Qué debes ver:** el resultado con cada fila **Creada**, **Actualizada**, **Omitida (ya existía)** o **Con error**. Si escribes la **Empresa que representa** y ya está en Empresas externas, la persona queda ligada a ella. Ver [Importar desde Excel](importar-desde-excel.md).
+
 ## Cómo editar una persona
 
 1. Busca la ficha y toca **Editar Perfil**.
@@ -149,3 +157,4 @@ Los mensajes aparecen dentro de la misma ventana, arriba, en rojo. Lo que ya esc
 - [Padrón vehicular](vehiculos.md)
 - [Altas por verificar](altas-por-verificar.md)
 - [Bitácora de accesos](accesos.md)
+- [Importar desde Excel](importar-desde-excel.md)

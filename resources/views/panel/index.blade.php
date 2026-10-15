@@ -14,6 +14,10 @@
         @endcan
     </div>
 
+    @if (! empty($asistente))
+        @include('panel._configura-tu-empresa', ['asistente' => $asistente])
+    @endif
+
     @forelse ($pendientes as $p)
         @if (! empty($p['detalle']))
             @include('panel._altas-por-verificar', ['aviso' => $p])

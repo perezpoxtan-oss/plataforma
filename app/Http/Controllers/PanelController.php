@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Arranque\AsistenteArranque;
 use App\Services\Novedades\AjustesNovedades;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Support\Menu\MisPendientes;
@@ -64,6 +65,9 @@ class PanelController extends Controller
             }
         }
 
-        return view('panel.index', ['pendientes' => $pendientes]);
+        // «Configura tu empresa» (docs/tecnico/configura-tu-empresa.md): solo empresa nueva o casi vacía
+        $asistente = app(AsistenteArranque::class)->tarjeta($actor, $empresaId);
+
+        return view('panel.index', ['pendientes' => $pendientes, 'asistente' => $asistente]);
     }
 }

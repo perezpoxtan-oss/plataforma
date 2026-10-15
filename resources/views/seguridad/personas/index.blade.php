@@ -53,6 +53,7 @@
                     <i class="bi bi-search" aria-hidden="true"></i>
                     <input type="search" placeholder="Buscar por nombre, folio o empresa..." aria-label="Buscar persona" data-filtro-texto="personas">
                 </div>
+                @include('importaciones._boton', ['tipo' => 'personas', 'modulo' => 'visitantes'])
             </div>
         </div>
 

@@ -8,7 +8,7 @@ Entra quien tiene `configuracion.ver` **o** quien configura los días de resguar
 
 | Ancla | Sección | Tarjetas | Quién edita |
 |---|---|---|---|
-| `#sec-general` | General | Datos de la empresa (enlace a Empresas), **Reloj del visto bueno** (`#cfg-vobo`), **Nombres en el menú** (`#cfg-menu`, Avanzado) | `configuracion.editar` empresa; Empresas: `empresas.editar` |
+| `#sec-general` | General | «Configura tu empresa» (`#configura-tu-empresa`: Mostrar u Ocultar en Inicio, ver [configura-tu-empresa.md](configura-tu-empresa.md)), Datos de la empresa (enlace a Empresas), **Reloj del visto bueno** (`#cfg-vobo`), **Nombres en el menú** (`#cfg-menu`, Avanzado) | `configuracion.editar` empresa; Empresas: `empresas.editar` |
 | `#caseta` | Caseta y accesos | Esperas del departamento (`#cfg-esperas`, enlace), Impresión desde padrones (`#cfg-impresion`, enlace), Procedimientos (`#cfg-procedimientos`), avisos de Colaboradores, Altas por verificar y Procedimientos | `configuracion.editar` empresa; enlaces: su permiso `configurar` |
 | `#sec-rh` | Recepción y RR. HH. | Avisos, aviso de privacidad y kiosco (`#recepcion`), Plazos y documentos (`#cfg-plazos`, enlace), Criterios (`#cfg-criterios`, enlace), Bolsa de trabajo (`#bolsa-trabajo`) | `candidatos.configurar` / `vacantes.configurar` empresa |
 | `#sec-novedades` | (nombre de la bitácora de la empresa) | Avisos, nombre y hallazgo (`#novedades`), Lost & Found (`#lost-found`) | `configuracion.editar` empresa; LF: `lost_found.configurar` empresa |

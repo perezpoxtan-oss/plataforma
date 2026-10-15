@@ -17,6 +17,7 @@ use App\Models\SuscripcionExcepcion;
 use App\Models\SuscripcionHistorial;
 use App\Models\User;
 use App\Models\UsuarioRol;
+use App\Services\Arranque\AsistenteArranque;
 use App\Services\Comercial\AjustesComerciales;
 use App\Services\Comercial\Calculadora;
 use App\Services\Comercial\CatalogoPublico;
@@ -132,6 +133,7 @@ class Aprovisionamiento
         $rubro = Rubro::where('clave', 'hotel')->where('activo', true)->first() ?? Rubro::where('activo', true)->orderBy('id')->firstOrFail();
         $nombre = trim((string) ($s->empresa ?: $s->nombre));
         $empresa = $this->provisionar->crear($rubro, ['nombre_comercial' => mb_substr($nombre, 0, 150), 'razon_social' => mb_substr($nombre, 0, 200)], []);
+        AsistenteArranque::marcarNueva($empresa); // «Configura tu empresa» aparece en su Inicio
 
         $hoy = Suscripcion::hoy();
         $diasPrueba = (int) $this->ajustes->get('dias_prueba');

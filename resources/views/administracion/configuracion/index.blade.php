@@ -75,6 +75,10 @@
         @if ($secciones[0][3])
             <section class="seccion-config" id="sec-general" aria-labelledby="t-sec-general">
                 <h2 id="t-sec-general" class="titulo-seccion-config"><i class="bi bi-sliders" aria-hidden="true"></i>General</h2>
+                {{-- «Configura tu empresa»: volver a mostrarla (u ocultarla) en Inicio --}}
+                @if ($u->can('configuracion.editar'))
+                    @include('administracion.configuracion._configura-tu-empresa', ['empresa' => $empresa])
+                @endif
                 @isset($enOtras['empresa'])
                     <div class="tarjeta p-4 tarjeta-enlace-config">
                         <h3 class="h6 fw-bold"><i class="bi bi-building me-2 text-primary" aria-hidden="true"></i>Datos de la empresa</h3>

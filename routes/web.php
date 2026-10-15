@@ -669,6 +669,19 @@ Route::middleware('auth')->group(function () {
     Route::put('/configuracion/caseta', [AjustesCasetaController::class, 'update'])->name('configuracion.caseta');
     Route::post('/prestamo-llaves/recibir', [PrestamoLlaveController::class, 'recibirEscaneada'])->middleware('throttle:60,1')->name('prestamo_llaves.recibir-escaneada');
     // Fin Mejoras activos
+
+    // Importar desde Excel y «Configura tu empresa» (ver docs/tecnico/importacion.md y docs/tecnico/configura-tu-empresa.md)
+    Route::controller('App\Http\Controllers\ImportacionController')->group(function () {
+        Route::get('/importar/{tipo}', 'create')->where('tipo', '[a-z0-9_]{1,20}')->name('importaciones.create');
+        Route::get('/importar/{tipo}/plantilla', 'plantilla')->where('tipo', '[a-z0-9_]{1,20}')->name('importaciones.plantilla');
+        Route::post('/importar/{tipo}', 'store')->where('tipo', '[a-z0-9_]{1,20}')->name('importaciones.store');
+        Route::get('/importaciones/{importacion}', 'show')->whereNumber('importacion')->name('importaciones.show');
+        Route::post('/importaciones/{importacion}/guardar', 'aplicar')->whereNumber('importacion')->name('importaciones.aplicar');
+        Route::get('/importaciones/{importacion}/original', 'original')->whereNumber('importacion')->name('importaciones.original');
+        Route::get('/importaciones/{importacion}/resultado', 'resultado')->whereNumber('importacion')->name('importaciones.resultado');
+    });
+    Route::put('/configura-tu-empresa', 'App\Http\Controllers\AsistenteArranqueController')->name('asistente.visibilidad');
+    // Fin Importar desde Excel
 });
 
 // Público: Kiosco de auto-registro de candidatos (SIN sesión; enlace temporal de un solo candidato; ver docs/tecnico/candidatos.md)
