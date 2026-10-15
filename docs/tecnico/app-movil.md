@@ -80,57 +80,81 @@ Capacitor **8.5.3** (estable), solo Android por ahora. La app abre la plataforma
 
 «Reintentar» (pantallas sin conexión) y «Salir» / «Cancelar» (diálogo nativo de Android) no están en los diez verbos: son textos de sistema fuera de las pantallas de la plataforma. Anotado aquí conforme al punto 4 de «Cómo se aplica».
 
-## Guía paso a paso para el dueño (Windows o Mac)
+## Guía paso a paso para el dueño (Windows primero; Mac al final de cada paso)
+
+Rutas usadas en esta guía (Windows). Son **cortas y sin acentos, espacios ni símbolos** a propósito: Gradle y el SDK de Android fallan con rutas como la carpeta de usuario `C:\Users\Marc´l` (el «´» rompe la compilación). Por eso **nada** de la app vive dentro de la carpeta de usuario:
+
+| Qué | Dónde |
+|---|---|
+| Proyecto | `C:\dev\plataforma` |
+| Android SDK | `C:\Android\Sdk` |
+| Caché de Gradle | `C:\gradle` (variable de usuario `GRADLE_USER_HOME`) |
 
 ### 1. Instala los programas (una sola vez)
 
-1. **Git**: <https://git-scm.com/downloads> (en Mac ya viene; si no, el sistema lo ofrece al escribir `git` en Terminal).
-2. **Node.js LTS** (versión 22 o más nueva): <https://nodejs.org> → botón **LTS**. Acepta todo lo que propone el instalador.
-3. **Android Studio**: <https://developer.android.com/studio>. Al abrirlo la primera vez elige **Standard**: descarga el SDK de Android y Java (tarda; déjalo terminar).
+1. **GitHub Desktop** (incluye Git): <https://desktop.github.com>. Entra con tu cuenta.
+2. **Node.js 24 LTS**: <https://nodejs.org> → botón **LTS** (24.x). Acepta todo lo que propone el instalador.
+3. **Android Studio**: <https://developer.android.com/studio>. Al abrirlo la primera vez elige **Custom** (no Standard) y, en la pantalla **SDK Components Setup**, cambia **Android SDK Location** a `C:\Android\Sdk` (crea la carpeta si no existe). Deja que descargue todo.
+   - Si ya lo habías instalado con el SDK en tu carpeta de usuario: **File → Settings → Languages & Frameworks → Android SDK** → **Edit** junto a «Android SDK Location» → `C:\Android\Sdk` → Next (lo descarga ahí).
+4. **Variable `GRADLE_USER_HOME`** (para que Gradle no use tu carpeta de usuario):
+   1. Crea la carpeta `C:\gradle`.
+   2. Menú Inicio → escribe **variables de entorno** → **Editar las variables de entorno de esta cuenta**.
+   3. En «Variables de usuario» → **Nueva…** → Nombre `GRADLE_USER_HOME`, Valor `C:\gradle` → Aceptar.
+   4. Agrega también `ANDROID_HOME` = `C:\Android\Sdk`.
+   5. **Cierra y vuelve a abrir** PowerShell y Android Studio para que tomen el cambio.
 
-Comprueba en una terminal (Windows: **PowerShell**; Mac: **Terminal**): `git --version` y `node --version` deben responder con un número.
+Comprueba en **PowerShell**: `node --version` (debe decir v24…), `npm --version` y `echo $env:GRADLE_USER_HOME` (debe decir `C:\gradle`).
 
-### 2. Descarga el proyecto y prepara la app
+*Mac:* Node LTS desde nodejs.org, Android Studio con la opción Standard; las rutas de usuario en Mac no suelen dar problema.
+
+### 2. Descarga el proyecto (GitHub Desktop)
+
+1. GitHub Desktop → **File → Clone repository** → elige el repositorio de la plataforma.
+2. En **Local path** escribe `C:\dev` (GitHub Desktop crea `C:\dev\plataforma`). Toca **Clone**.
+3. Arriba, en **Current branch**, elige `develop` (o la rama que te indiquen).
+
+### 3. Prepara la app
+
+En PowerShell:
 
 ```
-git clone <dirección del repositorio>
-cd <carpeta del repositorio>
-git checkout develop
-cd movil
+cd C:\dev\plataforma\movil
 npm install
 npx cap sync android
 ```
 
-`npm install` baja Capacitor (solo dentro de `movil/`); `npx cap sync android` deja lista la carpeta `android` con la configuración (dirección del servidor, nombre, appId). **Repite `npx cap sync android` cada vez que cambies `app.config.json`** o actualices el repositorio.
+`npm install` baja Capacitor (solo dentro de `movil/`); `npx cap sync android` deja lista la carpeta `android` con la configuración (dirección del servidor, nombre, appId). **Repite `npx cap sync android` cada vez que cambies `app.config.json`** o traigas cambios con **Fetch/Pull** en GitHub Desktop.
 
-### 3. Abre el proyecto en Android Studio
+### 4. Abre el proyecto en Android Studio
 
-`npx cap open android`, o en Android Studio: **Open** → elige la carpeta `movil/android`. Espera a que termine **Gradle sync** (barra de abajo; la primera vez tarda varios minutos).
+`npx cap open android`, o en Android Studio: **Open** → `C:\dev\plataforma\movil\android`. Espera a que termine **Gradle sync** (barra de abajo; la primera vez tarda varios minutos).
 
-### 4. Conecta tu celular
+Android Studio crea solo el archivo `movil\android\local.properties` con `sdk.dir=C\:\\Android\\Sdk`. Ese archivo es **de tu equipo**: está en `.gitignore` y **no se sube** al repositorio (si GitHub Desktop lo muestra como cambio, no lo incluyas).
+
+### 5. Conecta tu celular
 
 1. En el celular: **Ajustes → Acerca del teléfono** → toca 7 veces **Número de compilación** (se activan las «Opciones de desarrollador»).
 2. **Ajustes → Sistema → Opciones de desarrollador** → activa **Depuración por USB**.
 3. Conecta el cable USB; en el celular acepta **Permitir depuración USB** (marca «Permitir siempre desde esta computadora»).
 4. En Android Studio, arriba, aparece el nombre de tu celular en la lista de dispositivos.
 
-### 5. Instala y abre la app
+### 6. Instala y abre la app
 
 Toca **▶ Run** (triángulo verde). La app se instala y se abre en el celular con la plataforma de la dirección de QA.
 
-### 6. Genera un APK de prueba para compartir
+### 7. Genera un APK de prueba para compartir
 
-**Build → Build App Bundle(s) / APK(s) → Build APK(s)**. Al terminar, toca **locate** en el aviso: el archivo es `movil/android/app/build/outputs/apk/debug/app-debug.apk`. Pásalo por WhatsApp, correo o USB; en el otro celular hay que permitir **Instalar apps desconocidas** para la app con la que se abre. Es una versión de prueba (firmada con la llave de depuración de tu computadora): no sirve para Google Play.
+**Build → Build App Bundle(s) / APK(s) → Build APK(s)**. Al terminar, toca **locate** en el aviso: el archivo es `C:\dev\plataforma\movil\android\app\build\outputs\apk\debug\app-debug.apk`. Pásalo por WhatsApp, correo o USB; en el otro celular hay que permitir **Instalar apps desconocidas** para la app con la que se abre. Es una versión de prueba (firmada con la llave de depuración de tu computadora): no sirve para Google Play.
 
-### 7. Cambiar la dirección (QA / Producción) o el appId
+### 8. Cambiar la dirección (QA / Producción) o el appId
 
-Edita `movil/app.config.json`:
+Edita `movil\app.config.json`:
 
 ```json
 { "appId": "mx.smartcentinel.app", "appName": "Smart Centinel", "servidor": "produccion" }
 ```
 
-y ejecuta `npx cap sync android`. Para una sola compilación sin tocar el archivo: `SERVIDOR=produccion npx cap sync android` (Mac) o `$env:SERVIDOR="produccion"; npx cap sync android` (PowerShell).
+y ejecuta `npx cap sync android`. Para una sola compilación sin tocar el archivo (PowerShell): `$env:SERVIDOR="produccion"; npx cap sync android` (en Mac: `SERVIDOR=produccion npx cap sync android`). Cierra PowerShell después para que la variable no se quede.
 
 - `appId` es el identificador de la app en Android y Google Play. **Se puede cambiar libremente mientras sea de prueba; una vez publicada en Google Play es permanente.** Al cambiarlo, el teléfono la trata como otra app (desinstala la anterior). El paquete interno del código (`mx.smartcentinel.app` en `java/`) no necesita cambiar.
 - `appName` es el nombre bajo el ícono.
@@ -139,11 +163,13 @@ y ejecuta `npx cap sync android`. Para una sola compilación sin tocar el archiv
 
 | Síntoma | Qué hacer |
 |---|---|
-| «SDK location not found» / «Android SDK not found» | Android Studio → **Settings → Languages & Frameworks → Android SDK**: instala la versión que pide (API 36) y vuelve a abrir el proyecto. Si sigue, crea `movil/android/local.properties` con `sdk.dir=` y la ruta del SDK que muestra esa pantalla (en Windows con `\\`). |
-| «JAVA_HOME is not set» o versión de Java incorrecta (se necesita 21) | Usa el Java que trae Android Studio: **Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK** = «jbr-21» (Embedded JDK). Desde terminal: Windows `C:\Program Files\Android\Android Studio\jbr`; Mac `/Applications/Android Studio.app/Contents/jbr/Contents/Home`. |
-| El celular no aparece o dice «unauthorized» | Desconecta y conecta; acepta el aviso en el celular; prueba otro cable (algunos solo cargan); en Windows instala el controlador USB del fabricante. En Opciones de desarrollador: **Revocar autorizaciones de depuración USB** y vuelve a conectar. |
-| Gradle tarda mucho o falla al descargar | La primera vez descarga mucho; usa una red estable y espera. Si falla: **File → Invalidate Caches → Invalidate and Restart** y vuelve a hacer **Sync Project with Gradle Files**. |
-| «Could not find … capacitor-android» o «capacitor-cordova-android-plugins» | Faltó `npm install` y `npx cap sync android` dentro de `movil/`. |
+| Errores raros de Gradle o del SDK con rutas como `C:\Users\Marc´l\…` («Could not create service», «Invalid path», «illegal character», archivos que «no existen» aunque sí estén) | Son las **rutas con acentos, «´», «ñ» o espacios**: Gradle, el SDK y algunas herramientas de Java no las aceptan. Revisa que nada esté bajo tu carpeta de usuario: proyecto en `C:\dev\plataforma`, SDK en `C:\Android\Sdk`, `GRADLE_USER_HOME=C:\gradle` (paso 1). Después: cierra Android Studio, borra la carpeta `movil\android\.gradle` y vuelve a abrir. Si el error menciona `AppData\Local\Temp`, agrega también la variable de usuario `TMP` y `TEMP` = `C:\tmp` (crea la carpeta). |
+| «SDK location not found» / «Android SDK not found» | **File → Settings → Languages & Frameworks → Android SDK**: confirma `C:\Android\Sdk` e instala la versión que pide (API 36). Si sigue, revisa que `movil\android\local.properties` diga `sdk.dir=C\:\\Android\\Sdk` (con esas barras dobles) y no lo subas al repositorio. |
+| «JAVA_HOME is not set» o versión de Java incorrecta (se necesita 21) | Usa el Java que trae Android Studio: **File → Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK** = «jbr-21» (Embedded JDK). Para la terminal: variable de usuario `JAVA_HOME` = `C:\Program Files\Android\Android Studio\jbr` (Mac: `/Applications/Android Studio.app/Contents/jbr/Contents/Home`). |
+| El celular no aparece o dice «unauthorized» | Desconecta y conecta; acepta el aviso en el celular; prueba otro cable (algunos solo cargan); instala el controlador USB del fabricante. En Opciones de desarrollador: **Revocar autorizaciones de depuración USB** y vuelve a conectar. |
+| Gradle tarda mucho o falla al descargar | La primera vez descarga mucho; usa una red estable y espera. Si falla: **File → Invalidate Caches → Invalidate and Restart** y vuelve a hacer **Sync Project with Gradle Files**. Si un antivirus revisa `C:\gradle` y `C:\dev`, agrégalas como exclusión (acelera mucho). |
+| «npx no se reconoce» o «la ejecución de scripts está deshabilitada» en PowerShell | Cierra y abre PowerShell tras instalar Node. Si dice que los scripts están deshabilitados: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` y responde «S». |
+| «Could not find … capacitor-android» o «capacitor-cordova-android-plugins» | Faltó `npm install` y `npx cap sync android` dentro de `movil`. |
 | La app abre en blanco o «Sin conexión» | El celular no tiene internet o la dirección de `app.config.json` está mal; revisa y repite `npx cap sync android`. |
 | La dirección del servidor «debe empezar con https://» | La app no acepta conexiones sin cifrar. Usa la dirección `https://`. |
 
