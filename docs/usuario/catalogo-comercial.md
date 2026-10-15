@@ -151,3 +151,5 @@ Cuando alguien envía el formulario **Contratar**, te llega un aviso a la **camp
 - [Identidad de la plataforma](identidad.md)
 - [Configuración](configuracion.md)
 - [Menús, Mis pendientes y modos de pantalla](menus.md)
+
+**¿Y en la app del celular?** La app no muestra la página de planes: si no hay sesión abierta, abre directo la pantalla para entrar.

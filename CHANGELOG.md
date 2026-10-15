@@ -3,6 +3,7 @@
 Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PARCHE.
 
 ## [Sin publicar]
+- App móvil: sin sesión, la app abre la pantalla de acceso y no la página de planes (aunque esté publicada). `PortadaPublica` omite la portada cuando la petición viene de la app (`AppMovil::es`). Sin migraciones.
 - **Corregido: NFC en la app de Android** (reporte del dueño, Samsung S24). Al acercar una etiqueta con la app abierta, Android la abría en el navegador y sacaba a la persona de la app, y la antena del lector decía «No se pudo activar el NFC…»: el lector universal usa Web NFC, que el WebView no tiene. Ver `docs/tecnico/app-movil.md` («NFC en la app»).
   - **Plugin nativo `LectorNfc`** (`movil/android/.../LectorNfcPlugin.java`, registrado en `MainActivity` como `AppNativa`): modo lector (`enableReaderMode`, NFC-A/B/F/V, con lectura NDEF) mientras la app está en primer plano, así **ninguna etiqueta sale de la app**; evento `lectura` con número de serie (hex con «:») y registros NDEF (URI completa con su prefijo, texto con su idioma, MIME…); `disponible()` y `abrirAjustesNfc()`. Permiso `NFC` (sin exigir NFC para instalar).
   - **Puente en la plataforma** `public/js/nfc-app.js` (solo dentro de la app, en `<head>` sin `defer`): `NDEFReader` con la forma de Web NFC (`scan`, `onreading`, `addEventListener('reading')`), así el lector universal funciona sin cambios en su lógica; sin lector activo, una etiqueta con dirección de la propia plataforma se abre dentro de la app. `write()` rechaza con mensaje claro (la plataforma no graba etiquetas).
