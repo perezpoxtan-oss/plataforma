@@ -143,6 +143,12 @@ class LectorAuditoria
         // Configuración
         'avisos' => 'Cambio de avisos por correo', 'correo' => 'Cambio del correo de la plataforma', 'correo_prueba' => 'Correo de prueba',
         'respaldo_creado' => 'Creación de respaldo', 'respaldo_descargado' => 'Descarga de respaldo',
+        // Respaldos y traslado a otro servidor; exportación de una empresa
+        'traslado_generado' => 'Generación del paquete de traslado', 'traslado_descargado' => 'Descarga del paquete de traslado',
+        'traslado_verificado' => 'Verificación de paquete', 'traslado_restaurado' => 'Restauración de paquete de traslado',
+        'traslado_borrado' => 'Borrado de paquete de traslado', 'traslado_ajustes' => 'Cambio del paquete automático semanal',
+        'exportada' => 'Exportación de los datos de la empresa', 'exportacion_descargada' => 'Descarga de la exportación de la empresa',
+        'exportacion_borrada' => 'Borrado de la exportación de la empresa',
         // Mejoras activos (ADR-0014)
         'caseta' => 'Cambio de ajustes de caseta y activos',
         // Configuración por secciones: nombres del menú y «Restablecer valor original»

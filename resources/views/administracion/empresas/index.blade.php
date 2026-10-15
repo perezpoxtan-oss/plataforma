@@ -111,6 +111,9 @@
                     <span class="etiqueta-estado {{ $emp->activo ? 'activo' : 'inactivo' }}">{{ $emp->activo ? 'ACTIVA' : 'DE BAJA' }}</span>
                     <div class="d-flex gap-2">
                         @include('componentes.ver-historial', ['registro' => \App\Models\Empresa::class, 'id' => $emp->id, 'nombre' => $emp->nombre_comercial])
+                        @if ($puede['exportar'])
+                            <a href="{{ route('empresas.exportaciones', $emp->id) }}" class="btn-icono editar" title="Exportar datos" aria-label="Exportar datos de {{ $emp->nombre_comercial }}"><i class="bi bi-box-arrow-down" aria-hidden="true"></i></a>
+                        @endif
                         @if ($esSuperadmin)
                             <button type="button" class="btn-icono editar" title="Módulos contratados" aria-label="Módulos contratados de {{ $emp->nombre_comercial }}" data-abrir-dialogo="dialogoModulos{{ $emp->id }}">
                                 <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>

@@ -38,6 +38,22 @@ class Respaldos
      */
     public const TABLAS_SIN_FILAS = ['sessions', 'cache', 'cache_locks', 'password_reset_tokens'];
 
+    /**
+     * Filas escritas por tabla en el último respaldo (el paquete de traslado
+     * las anota en su manifest para comprobar la restauración).
+     *
+     * @var array<string, int>
+     */
+    private array $conteos = [];
+
+    /**
+     * @return array<string, int>
+     */
+    public function ultimosConteos(): array
+    {
+        return $this->conteos;
+    }
+
     public function carpeta(): string
     {
         $carpeta = storage_path('app/private/respaldos');
@@ -113,6 +129,7 @@ class Respaldos
             $momento->addSecond();
         } while (file_exists($ruta));
         $temporal = $ruta.'.parcial';
+        $this->conteos = [];
 
         $gz = gzopen($temporal, 'wb6');
         if ($gz === false) {
@@ -203,6 +220,7 @@ class Respaldos
      */
     private function volcarFilas($gz, string $tabla, callable $citar, string $comilla): void
     {
+        $this->conteos[$tabla] = 0;
         if (in_array($tabla, self::TABLAS_SIN_FILAS, true)) {
             gzwrite($gz, "-- {$tabla}: solo estructura (datos temporales)\n\n");
 
@@ -213,6 +231,7 @@ class Respaldos
         $columnas = null;
         foreach (DB::table($tabla)->cursor() as $fila) {
             $fila = (array) $fila;
+            $this->conteos[$tabla]++;
             $columnas ??= implode(', ', array_map(fn ($c) => $comilla.$c.$comilla, array_keys($fila)));
             $lote[] = '('.implode(', ', array_map(fn ($v) => $v === null ? 'NULL' : (is_int($v) || is_float($v) ? (string) $v : $citar($v)), $fila)).')';
             if (count($lote) >= self::FILAS_POR_INSERT) {

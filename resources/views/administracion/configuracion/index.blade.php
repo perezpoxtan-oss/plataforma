@@ -380,6 +380,8 @@
                     </div>
                 @endif
                 <p class="campo-ayuda mt-2 mb-0"><i class="bi bi-shield-exclamation" aria-hidden="true"></i> Un respaldo contiene TODA la información (incluidos datos personales). Guárdalo en un lugar seguro; cada descarga queda en la Bitácora de auditoría.</p>
+                {{-- Respaldos y traslado: base + fotos, documentos y firmas en un solo paquete --}}
+                <a href="{{ route('traslado.index') }}" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-truck me-1" aria-hidden="true"></i>Respaldos y traslado a otro servidor</a>
             </section>
         @elseif (! $empresa)
             <div class="tarjeta estado-vacio"><p class="text-muted small m-0">Elige arriba la empresa de trabajo.</p></div>

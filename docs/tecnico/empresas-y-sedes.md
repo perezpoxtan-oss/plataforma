@@ -10,6 +10,7 @@ Réplica de `modules/empresas/empresa_lista.php` y `modules/hoteles/hotel_lista.
 | Dar de alta | Solo el Super Administrador: usa `ProvisionarEmpresa`, que activa los módulos y copia los roles base |
 | Editar | `empresas.editar`: nombre comercial, razón social, RFC y zona horaria. El rubro solo lo cambia el Super Administrador |
 | Dar de baja o reactivar | Solo el Super Administrador; al dar de baja, sus usuarios quedan fuera en la siguiente petición |
+| Exportar datos | Super Administrador (todas) o `empresas.exportar` con alcance de empresa (la suya): ZIP con JSON por tabla, CSV y archivos; ver `traslado.md` |
 
 - **RFC:** obligatorio, se guarda en mayúsculas y es único en la plataforma. Formato: 12 caracteres para persona moral y 13 para persona física.
 - **Zona horaria:** se elige de una lista con México primero (`App\Support\ZonasHorarias`) y se valida con `timezone:all`.

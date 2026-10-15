@@ -104,7 +104,8 @@ class CatalogoSeeder extends Seeder
             // Dirección: la estructura de la empresa y su gobierno. Es la base que
             // toda empresa tiene, contrate o no los demás módulos.
             'direccion' => ['Dirección', 'bi-building-gear', [
-                'empresas' => ['Empresas', 'bi-building', []],
+                // «exportar»: todos los datos de la empresa en un archivo (portabilidad; ver docs/tecnico/traslado.md)
+                'empresas' => ['Empresas', 'bi-building', ['exportar']],
                 'sedes' => ['Sedes', 'bi-geo-alt', []],
                 // Mejoras estructura (ADR-0016): «área» queda solo para las partes de una habitación
                 'espacios' => ['Zonas y edificios', 'bi-grid-3x3-gap', ['imprimir', 'importar']],

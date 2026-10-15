@@ -11,6 +11,7 @@ use App\Http\Controllers\Administracion\PermisoController;
 use App\Http\Controllers\Administracion\RolController;
 use App\Http\Controllers\Administracion\SedeController;
 use App\Http\Controllers\Administracion\SuscripcionesController;
+use App\Http\Controllers\Administracion\TrasladoController;
 use App\Http\Controllers\Administracion\UsuarioController;
 use App\Http\Controllers\Auth\RecuperacionController;
 use App\Http\Controllers\Auth\SesionController;
@@ -119,6 +120,16 @@ Route::middleware('auth')->group(function () {
     Route::put('/configuracion/avisos', [ConfiguracionController::class, 'avisos'])->name('configuracion.avisos');
     Route::post('/configuracion/respaldos', [ConfiguracionController::class, 'respaldar'])->middleware('throttle:3,1')->name('configuracion.respaldos');
     Route::get('/configuracion/respaldos/{archivo}', [ConfiguracionController::class, 'descargar'])->where('archivo', '[A-Za-z0-9_.-]+')->name('configuracion.respaldos.descargar');
+    // Respaldos y traslado a otro servidor (Super Administrador) y exportación de una empresa (ver docs/tecnico/traslado.md)
+    Route::get('/configuracion/traslado', [TrasladoController::class, 'index'])->name('traslado.index');
+    Route::post('/configuracion/traslado', [TrasladoController::class, 'generar'])->middleware('throttle:3,1')->name('traslado.generar');
+    Route::put('/configuracion/traslado/ajustes', [TrasladoController::class, 'ajustes'])->name('traslado.ajustes');
+    Route::post('/configuracion/traslado/verificar', [TrasladoController::class, 'verificar'])->middleware('throttle:5,1')->name('traslado.verificar');
+    Route::post('/configuracion/traslado/trabajos/{id}', [TrasladoController::class, 'continuar'])->where('id', '[a-f0-9]{16}')->middleware('throttle:30,1')->name('traslado.continuar');
+    Route::get('/configuracion/traslado/descargar/{archivo}', [TrasladoController::class, 'descargar'])->where('archivo', '[A-Za-z0-9_.-]+')->name('traslado.descargar'); // enlace firmado: lo revisa el controlador
+    Route::delete('/configuracion/traslado/{archivo}', [TrasladoController::class, 'borrar'])->where('archivo', '[A-Za-z0-9_.-]+')->name('traslado.borrar');
+    Route::get('/empresas/{empresa}/exportaciones', [TrasladoController::class, 'exportaciones'])->name('empresas.exportaciones');
+    Route::post('/empresas/{empresa}/exportar', [TrasladoController::class, 'exportar'])->name('empresas.exportar');
     Route::get('/auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index');
     Route::get('/auditoria/exportar', [AuditoriaController::class, 'exportar'])->name('auditoria.exportar');
     Route::get('/sedes', [SedeController::class, 'index'])->name('sedes.index');

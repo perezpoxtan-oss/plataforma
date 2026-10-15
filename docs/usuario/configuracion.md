@@ -195,6 +195,7 @@ Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logo
 - **Automáticos:** la plataforma se respalda sola cada día después de las 3:00 y antes de instalar cada versión nueva. Se guardan 14 días.
 - **Respaldar ahora:** crea uno en el momento (por ejemplo antes de un cambio grande). Confirma con **Aceptar**.
 - **Descargar:** con la flecha de cada respaldo. Guárdalo en un lugar seguro: contiene **toda** la información, incluidos datos personales. Cada descarga queda en la [Bitácora de auditoría](auditoria.md).
+- **Fotos, documentos y firmas** no van en este respaldo: para mudar la plataforma completa usa el botón **Respaldos y traslado a otro servidor** (ver [Respaldos y traslado a otro servidor](respaldos-y-traslado.md)).
 - **Restaurar** un respaldo reemplaza toda la información actual. Para restaurar: descarga el archivo y pide a tu proveedor de hospedaje o a tu administrador de base de datos que lo importe. Hazlo solo si de verdad lo necesitas.
 - El archivo descargado trae en su primera línea la misma indicación, por si se lo envías a otra persona.
 
