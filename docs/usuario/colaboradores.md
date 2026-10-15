@@ -53,6 +53,17 @@ resumen: Directorio del personal de la empresa, sus sedes, lo que registra la ca
 
 ![Número y nombre repetidos](img/colaboradores/14-numero-y-nombre.png)
 
+## Cómo dar de alta a muchos colaboradores desde Excel
+
+Si vas a cargar toda tu plantilla de personal, no la captures uno por uno:
+
+1. Toca **Importar** (arriba, junto al buscador).
+2. Toca **Descargar plantilla**, llénala en Excel (una fila por colaborador; el **Número de empleado**, el **Nombre(s)** y el **Apellido paterno** son obligatorios) y guárdala.
+3. Toca **Elegir archivo**, elige tu archivo y toca **Revisar archivo**.
+4. Revisa la vista previa (**Nueva**, **Ya existe** o **Con error**, con el motivo en la celda) y toca **Guardar**.
+
+**Qué debes ver:** «Listo: 120 nuevos.» con los botones **Ir a Colaboradores** y **Descargar resultado**. Los que ya existían (mismo número de empleado) se dejan como están o se actualizan, según lo que elijas. El CURP, RFC y NSS solo se toman si tu rol ve datos personales. Paso a paso, con la hoja de instrucciones, en [Importar desde Excel](importar-desde-excel.md).
+
 ## Cómo editar a un colaborador
 
 1. Toca el **lápiz** (Editar) de la ficha. Se abre **Editar Colaborador**.
@@ -204,3 +215,4 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 - [Turnos](turnos.md)
 - [Usuarios](usuarios.md)
 - [Altas por verificar](altas-por-verificar.md)
+- [Importar desde Excel](importar-desde-excel.md)

@@ -36,6 +36,7 @@
                     <i class="bi bi-search" aria-hidden="true"></i>
                     <input type="search" placeholder="Buscar zona o edificio..." aria-label="Buscar zonas" data-filtro-texto="zonas">
                 </div>
+                @include('importaciones._boton', ['tipo' => 'zonas', 'modulo' => 'espacios'])
             </div>
         </div>
 

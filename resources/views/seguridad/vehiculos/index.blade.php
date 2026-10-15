@@ -36,9 +36,12 @@
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Padrón de: <strong>{{ $empresaNombre }}</strong></p>
                 </div>
             </div>
-            <div class="buscador">
-                <i class="bi bi-search" aria-hidden="true"></i>
-                <input type="search" placeholder="Buscar por placas, marca, color o proveedor..." aria-label="Buscar vehículo" data-filtro-vehiculos>
+            <div class="barra-filtros justify-content-md-end">
+                <div class="buscador">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input type="search" placeholder="Buscar por placas, marca, color o proveedor..." aria-label="Buscar vehículo" data-filtro-vehiculos>
+                </div>
+                @include('importaciones._boton', ['tipo' => 'vehiculos', 'modulo' => 'vehiculos'])
             </div>
         </div>
 

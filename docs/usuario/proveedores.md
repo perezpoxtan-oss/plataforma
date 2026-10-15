@@ -61,6 +61,14 @@ La ventana dice «Se registra para *tu sede*». Si otra sede ya tenía registrad
 
 ![Alta desde una sede](img/proveedores/14-supervisor-alta.png)
 
+## Cómo cargar muchas empresas desde Excel
+
+1. Toca **Importar** (arriba, junto al buscador).
+2. Toca **Descargar plantilla** y llénala: **Razón social o nombre comercial** y **Categoría** son obligatorias; en **Sedes donde opera** escribe «Todas» o los nombres de las sedes separados por coma.
+3. Toca **Elegir archivo**, elige tu archivo, toca **Revisar archivo**, revisa la vista previa y toca **Guardar**.
+
+**Qué debes ver:** el resultado de cada fila. Una empresa que ya existe (mismo nombre) se deja como está o se actualizan sus datos; sus sedes no cambian (se ajustan en su ficha). Importa las empresas **antes** que sus vehículos. Ver [Importar desde Excel](importar-desde-excel.md).
+
 ## Cómo editar una empresa
 
 1. En la tarjeta toca el **lápiz** (Editar).
@@ -152,3 +160,4 @@ Los mensajes aparecen en rojo dentro de la misma ventana; lo que escribiste se c
 - [Padrón vehicular](vehiculos.md)
 - [Altas por verificar](altas-por-verificar.md)
 - [Pases de salida](pases-salida.md)
+- [Importar desde Excel](importar-desde-excel.md)

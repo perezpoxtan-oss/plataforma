@@ -63,6 +63,7 @@ Un selector "Empresa de trabajo" (`EmpresaDeTrabajo`, sesión `empresa_activa_id
 | Solicitante | 70 | `pases_salida` ver y crear (propios); `procedimientos.ver` (sede) |
 
 - Padrones u Operación se decide por el **menú** del módulo (`modulos.menu_id`, o el de su padre en submódulos), no por nombres: `RolesPlantillaSeeder::esPadron()`. Por eso `MenuSeeder` corre antes que `RolesPlantillaSeeder` en `DatabaseSeeder`.
+- **Importar desde Excel** (`importar`, en `colaboradores`, `visitantes`, `proveedores`, `vehiculos` y `espacios`): cada plantilla la recibe donde tiene `crear`, con el mismo alcance (`RolesPlantillaSeeder::importarComoCrear`); para bases existentes, la migración `2026_11_03_000200_accion_importar_en_padrones` hace lo mismo con los roles que ya existen (su `down()` la quita). Ver `docs/tecnico/importacion.md`.
 - Las plantillas solo se crean si no existen (no se pisan los cambios). Para bases existentes, la migración `2026_10_05_000200_agente_solo_consulta_padrones` quita crear/editar/imprimir/firmar de los Padrones a los roles "Agente" (plantilla y copias por empresa) **solo si siguen exactamente igual a la plantilla anterior** (ver/crear/editar/imprimir/firmar de todos los módulos de Seguridad, alcance sede, nada más). Un Agente personalizado no se toca; se ajusta a mano en la Matriz de permisos. No tiene reversa.
 
 ### Recursos Humanos (nivel 25)

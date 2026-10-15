@@ -11,6 +11,7 @@ use App\Models\Plan;
 use App\Models\Rubro;
 use App\Models\Suscripcion;
 use App\Models\User;
+use App\Services\Arranque\AsistenteArranque;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\ProvisionarEmpresa;
@@ -94,6 +95,7 @@ class EmpresaController extends Controller
 
         $empresa = $provisionar->crear($rubro, collect($datos)->except(['rubro_id', 'logo', 'quitar_logo'])->all());
         $this->guardarLogo($request, $empresa);
+        AsistenteArranque::marcarNueva($empresa); // «Configura tu empresa» aparece en su Inicio
         $this->auditoria->auditar($request->user(), 'empresas.creada', $empresa, null, $empresa->only(self::CAMPOS));
 
         return redirect()->route('empresas.index')->with('ok', "Empresa «{$empresa->nombre_comercial}» creada con sus módulos y roles base. Ahora registra sus sedes.");

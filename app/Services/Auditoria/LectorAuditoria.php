@@ -23,6 +23,7 @@ use App\Models\EvaluacionCandidato;
 use App\Models\FirmaUsuario;
 use App\Models\Gafete;
 use App\Models\GrupoEspacio;
+use App\Models\Importacion;
 use App\Models\ImpresionEtiquetas;
 use App\Models\Llave;
 use App\Models\LostFoundArticulo;
@@ -157,6 +158,8 @@ class LectorAuditoria
         // Mejoras estructura (ADR-0016)
         'modulos_actualizados' => 'Cambio de módulos contratados', 'auditoria' => 'Cambio de ajustes de la bitácora',
         // Fin Mejoras estructura
+        // Importar desde Excel y «Configura tu empresa»
+        'importado' => 'Importación desde archivo', 'configura_tu_empresa' => 'Cambio de «Configura tu empresa»',
     ];
 
     /**
@@ -227,6 +230,7 @@ class LectorAuditoria
         PaseSalidaPaso::class => ['Circuito de pases de salida', 'nombre'],
         FirmaUsuario::class => ['Firma guardada', null],
         ConfiguracionPlataforma::class => ['Configuración de la plataforma', 'clave'],
+        Importacion::class => ['Importación desde archivo', 'archivo_nombre'],
     ];
 
     // Mejoras estructura (ADR-0016): «Ver historial» desde la ficha de cada registro

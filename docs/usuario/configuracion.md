@@ -60,6 +60,13 @@ Quien ve toda la Bitácora de auditoría (normalmente Administrador y Director) 
 
 **Qué debes ver:** «Listo: quien tiene la bitácora con alcance «Su sede» ahora ve los movimientos de su sede…». Aplica a quien tiene la bitácora con alcance «Su sede» (por ejemplo, un Jefe de seguridad); con «Toda la empresa» siempre se ve todo.
 
+## Cómo volver a mostrar «Configura tu empresa» en Inicio
+
+1. Arriba de la pantalla, en la tarjeta **Configura tu empresa**, ves cuántos pasos llevas y si se ve en Inicio.
+2. Toca **Mostrar en Inicio** (o **Ocultar de Inicio**).
+
+**Qué debes ver:** «Listo: «Configura tu empresa» ya se ve en Inicio.» Ver [Configura tu empresa](configura-tu-empresa.md).
+
 ## Qué versión está instalada
 
 Arriba de la pantalla dice **Versión instalada: v…** y desde cuándo. Sirve para saber si ya llegó una mejora o para dárselo a soporte cuando pidas ayuda.
@@ -177,3 +184,4 @@ Debajo de los avisos de su módulo están sus ajustes; los que se cambian en otr
 - [Préstamo de llaves](prestamo-llaves.md)
 - [Responsivas](responsivas.md)
 - [Procedimientos](procedimientos.md)
+- [Configura tu empresa](configura-tu-empresa.md)

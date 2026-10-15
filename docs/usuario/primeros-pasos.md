@@ -142,3 +142,5 @@ Si te quedas sin internet, en lugar de un error verás la pantalla **Sin conexi�
 - [Entrar y salir de la plataforma](inicio-de-sesion.md)
 - [Menús, Mis pendientes y modos de pantalla](menus.md)
 - [Bitácora de accesos](accesos.md)
+- [Configura tu empresa](configura-tu-empresa.md) (si administras una empresa nueva)
+- [Importar desde Excel](importar-desde-excel.md)
