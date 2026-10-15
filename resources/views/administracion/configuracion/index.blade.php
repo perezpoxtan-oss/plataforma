@@ -39,6 +39,11 @@
         <span>Versión instalada: <strong>{{ $version['numero'] ?? 'sin número (equipo de desarrollo)' }}</strong>@if ($version['instalada']) · desde el @fecha($version['instalada'], 'd/m/Y H:i')@endif</span>
     </div>
 
+    {{-- «Configura tu empresa»: volver a mostrarla (u ocultarla) en Inicio --}}
+    @if ($empresa && auth()->user()->can('configuracion.editar'))
+        @include('administracion.configuracion._configura-tu-empresa', ['empresa' => $empresa])
+    @endif
+
     @if (count($indice) > 1)
         <nav class="indice-config mb-3" aria-label="Módulos de la configuración">
             @foreach ($indice as $ancla => $nombre)

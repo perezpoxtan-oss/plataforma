@@ -76,6 +76,7 @@
                     <i class="bi bi-search" aria-hidden="true"></i>
                     <input type="search" placeholder="Buscar empleado, número o puesto..." aria-label="Buscar colaborador" data-filtro-colab="texto">
                 </div>
+                @include('importaciones._boton', ['tipo' => 'colaboradores', 'modulo' => 'colaboradores'])
             </div>
         </div>
 
