@@ -149,7 +149,8 @@ class ReservaController extends Controller
                 'puedeReservar' => $this->reservas->puedeReservarEn($actor, $sede), 'zona' => $zona, 'migas' => $migas,
                 'configurarAqui' => $configurarAqui,
                 'eliminar' => $configurarAqui ? app(CatalogosReservas::class)->resumenParaEliminar($nivel) : [],
-                'opciones' => $configurarAqui ? app(CatalogosReservas::class)->opcionesParaAgregar([$sede], Empresa::find($empresaId)) : collect(),
+                // La lista para «Agregar área reservable» se pide al abrir el diálogo
+                'opciones' => $configurarAqui && session('errors')?->has('espacio_id') ? app(CatalogosReservas::class)->opcionesParaAgregar([$sede], Empresa::find($empresaId)) : null,
             ]);
         });
     }

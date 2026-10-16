@@ -10,6 +10,7 @@ use App\Models\ReservaArea;
 use App\Models\ReservaMontaje;
 use App\Models\ReservaServicio;
 use App\Models\ReservaTipoUso;
+use App\Models\Sede;
 use App\Models\User;
 use App\Services\Permisos\Autorizador;
 use App\Services\Reservas\AjustesReservas;
@@ -44,6 +45,32 @@ class ConfiguracionReservasController extends Controller
         private readonly AjustesReservas $ajustes,
         private readonly Autorizador $autorizador,
     ) {}
+
+    /**
+     * Contenido del diálogo «Agregar área reservable», pedido al abrirlo: con miles
+     * de habitaciones la lista pesa megas y no debe viajar en cada pantalla.
+     * ?sede= limita a una sede (debe estar en su alcance de reservas.configurar).
+     */
+    public function opcionesAgregar(Request $request): View
+    {
+        Gate::authorize('reservas.configurar');
+        $actor = $request->user();
+        $empresaId = $this->empresa->id($actor);
+        abort_if($empresaId === null, 404);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $empresaId) {
+            $sedes = $this->autorizador->sedesPermitidas($actor, 'reservas.configurar');
+            $sedeId = $request->integer('sede') ?: null;
+            if ($sedeId !== null) {
+                abort_unless(Sede::whereKey($sedeId)->exists() && ($sedes === null || in_array($sedeId, $sedes, true)), 403);
+            }
+
+            return view('operacion.reservas._opciones-agregar', [
+                'opciones' => $this->catalogos->opcionesParaAgregar($sedeId !== null ? [$sedeId] : $sedes, Empresa::find($empresaId)),
+                'sedeId' => $sedeId,
+            ]);
+        });
+    }
 
     public function index(Request $request): View
     {
@@ -84,7 +111,8 @@ class ConfiguracionReservasController extends Controller
                 'rutas' => self::rutas($areas),
                 'interiores' => $this->conteoInteriores($areas),
                 'eliminar' => $this->catalogos->resumenParaEliminar($areas->where('reservable', true)->values()),
-                'opciones' => $this->catalogos->opcionesParaAgregar($sedes, Empresa::find($empresaId)),
+                // La lista para «Agregar área reservable» se pide al abrir el diálogo (opcionesAgregar)
+                'opciones' => session('errors')?->has('espacio_id') ? $this->catalogos->opcionesParaAgregar($sedes, Empresa::find($empresaId)) : null,
                 'empresaCompleta' => $empresaCompleta,
                 'montajes' => $catalogos['montajes'],
                 'tipos' => $catalogos['tipos'],

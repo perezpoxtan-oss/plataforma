@@ -179,6 +179,27 @@
 
     function abrir(dialogo) {
         if (dialogo && typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
+        if (dialogo) { cargarBajoDemanda(dialogo); }
+    }
+
+    /* Contenido pesado de un diálogo (p. ej. miles de espacios para «Agregar área
+       reservable»): se pide al abrirlo, una sola vez. Contenedor: data-cargar-url. */
+    function cargarBajoDemanda(dialogo) {
+        dialogo.querySelectorAll('[data-cargar-url]:not([data-cargado])').forEach(function (c) {
+            c.setAttribute('data-cargado', '1');
+            fetch(c.getAttribute('data-cargar-url'), { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' } })
+                .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.text(); })
+                .then(function (html) {
+                    c.innerHTML = html;
+                    var buscar = c.querySelector('input[type="search"]');
+                    if (buscar) { buscar.focus(); }
+                })
+                .catch(function () {
+                    c.removeAttribute('data-cargado');
+                    var aviso = c.querySelector('p');
+                    if (aviso) { aviso.textContent = 'No se pudo cargar la lista. Cierra y vuelve a abrir.'; }
+                });
+        });
     }
 
     document.addEventListener('click', function (evento) {

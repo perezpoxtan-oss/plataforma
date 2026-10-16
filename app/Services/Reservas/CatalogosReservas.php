@@ -445,10 +445,18 @@ class CatalogosReservas
             $recorrer((int) $raiz->id, 1);
         }
         $nombres = $espacios->pluck('nombre', 'id');
+        // Espacios interiores de cada espacio en una sola pasada (cada uno suma a sus
+        // ancestros): compararlos todos contra todos tardaba minutos con miles de habitaciones
+        $interioresDe = [];
+        foreach ($espacios as $o) {
+            foreach ($o->idsAncestros() as $ancestro) {
+                $interioresDe[$ancestro] = ($interioresDe[$ancestro] ?? 0) + 1;
+            }
+        }
 
-        return collect($orden)->map(function (array $par) use ($espacios, $areas, $etiquetas, $nombres) {
+        return collect($orden)->map(function (array $par) use ($areas, $etiquetas, $nombres, $interioresDe) {
             [$e, $sangria] = $par;
-            $interiores = $espacios->filter(fn ($o) => $o->id !== $e->id && str_starts_with($o->ruta, $e->ruta))->count();
+            $interiores = $interioresDe[(int) $e->id] ?? 0;
             $area = $areas->get($e->id);
 
             return [
