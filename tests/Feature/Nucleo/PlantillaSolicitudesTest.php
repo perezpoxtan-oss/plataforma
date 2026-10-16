@@ -119,11 +119,14 @@ class PlantillaSolicitudesTest extends TestCase
 
         $this->assertSame(70, $solicitante->nivel_jerarquia);
         $this->assertSame(45, $jefe->nivel_jerarquia);
-        $this->assertSame(['pases_salida.crear:propios', 'pases_salida.ver:propios', 'procedimientos.ver:sede'], $this->permisos($solicitante));
+        // Reservas de áreas: reserva e imprime las suyas; el Jefe de departamento además aprueba en su sede
+        $this->assertSame(['pases_salida.crear:propios', 'pases_salida.ver:propios', 'procedimientos.ver:sede',
+            'reservas.crear:propios', 'reservas.imprimir:propios', 'reservas.ver:propios'], $this->permisos($solicitante));
         $this->assertSame([
             'autorizaciones.responder:sede', 'autorizaciones.ver:sede', 'candidatos.evaluar:sede',
             'pases_salida.aprobar:sede', 'pases_salida.crear:propios', 'pases_salida.imprimir:sede', 'pases_salida.ver:sede',
-            'procedimientos.ver:sede', 'vacantes.crear:propios', 'vacantes.ver:sede',
+            'procedimientos.ver:sede', 'reservas.aprobar:sede', 'reservas.crear:sede', 'reservas.imprimir:sede', 'reservas.ver:sede',
+            'vacantes.crear:propios', 'vacantes.ver:sede',
         ], $this->permisos($jefe));
     }
 

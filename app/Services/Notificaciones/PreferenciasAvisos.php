@@ -82,6 +82,16 @@ class PreferenciasAvisos
         'solicitud_compra' => ['Catálogo comercial', 'Llegó una solicitud desde la página de planes', ['catalogo_comercial.ver']],
         'cliente_por_revisar' => ['Catálogo comercial', 'Un cliente nuevo se activó al pagar y espera tu revisión', ['catalogo_comercial.ver']],
         'suscripcion_aviso' => ['Suscripción', 'Tu suscripción está por vencer, venció o pasó a solo consulta', ['empresas.editar', 'catalogo_comercial.ver']],
+        // Reservas de áreas (docs/tecnico/reservas.md)
+        'reserva_por_aprobar' => ['Reservas de áreas', 'Una reserva espera tu aprobación (área o servicios de tu departamento)', ['reservas.ver', 'reservas.crear', 'reservas.aprobar']],
+        'reserva_recordatorio' => ['Reservas de áreas', 'Una reserva que te toca aprobar lleva tiempo esperando', ['reservas.ver', 'reservas.crear', 'reservas.aprobar']],
+        'reserva_escalada' => ['Reservas de áreas', 'Una aprobación de reserva tardó y pasó al responsable general', ['reservas.aprobar', 'reservas.configurar']],
+        'reserva_confirmada' => ['Reservas de áreas', 'Tu reserva quedó confirmada', ['reservas.crear']],
+        'reserva_rechazada' => ['Reservas de áreas', 'Tu reserva se rechazó', ['reservas.crear']],
+        'reserva_cambio' => ['Reservas de áreas', 'Piden un cambio en tu reserva', ['reservas.crear']],
+        'reserva_cancelada' => ['Reservas de áreas', 'Se canceló una reserva que te tocaba aprobar o atender', ['reservas.ver', 'reservas.crear']],
+        'reserva_orden' => ['Reservas de áreas', 'Llegó, cambió o se canceló una orden de servicio de tu departamento', ['reservas.ver', 'reservas.crear']],
+        'reserva_orden_lista' => ['Reservas de áreas', 'Un departamento tiene listo su servicio para una reserva', ['reservas.crear']],
     ];
 
     /**

@@ -30,6 +30,8 @@ final class GruposAvisos
         'vouchers' => ['Vouchers de reposición', 'bi-receipt', 'vouchers', ['voucher_cobro']],
         'procedimientos' => ['Procedimientos', 'bi-book', 'procedimientos', ['procedimiento_publicado', 'procedimiento_recordatorio', 'procedimiento_revision']],
         'candidatos' => ['Recepción y candidatos', 'bi-people', 'candidatos', ['candidato_llegada', 'autorizacion_departamento', 'entrevista_departamento', 'evaluacion_departamento', 'plazo_candidato']],
+        // Reservas de áreas (docs/tecnico/reservas.md)
+        'reservas' => ['Reservas de áreas', 'bi-calendar-check', 'reservas', ['reserva_aprobacion', 'reserva_resultado', 'reserva_orden']],
     ];
 
     public static function grupoDe(string $aviso): string

@@ -40,6 +40,10 @@ class MenuSeeder extends Seeder
                 'Consulta' => [
                     'procedimientos' => 'primary',
                 ],
+                // Reservas de áreas (docs/tecnico/reservas.md): salones y salas de la sede
+                'Reservas' => [
+                    'reservas' => 'success',
+                ],
             ]],
             'padrones' => ['Padrones', 'bi-folder2-open', 2, [
                 'Personas y vehículos' => [

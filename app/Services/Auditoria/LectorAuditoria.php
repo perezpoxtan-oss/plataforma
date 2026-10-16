@@ -43,6 +43,11 @@ use App\Models\ProcedimientoCategoria;
 use App\Models\Proveedor;
 use App\Models\Puesto;
 use App\Models\RecorridoPc;
+use App\Models\Reserva;
+use App\Models\ReservaArea;
+use App\Models\ReservaMontaje;
+use App\Models\ReservaServicio;
+use App\Models\ReservaTipoUso;
 use App\Models\Responsiva;
 use App\Models\Rol;
 use App\Models\Ruta;
@@ -168,6 +173,11 @@ class LectorAuditoria
         // Fin Mejoras estructura
         // Importar desde Excel y «Configura tu empresa»
         'importado' => 'Importación desde archivo', 'configura_tu_empresa' => 'Cambio de «Configura tu empresa»',
+        // Reservas de áreas (docs/tecnico/reservas.md)
+        'modificada' => 'Modificación', 'confirmada' => 'Confirmación', 'cambio_pedido' => 'Petición de cambio', 'costo_ajustado' => 'Ajuste de costo',
+        'orden_lista' => 'Orden de servicio lista', 'area_reservable' => 'Área marcada como reservable', 'area_no_reservable' => 'Área ya no reservable',
+        'area_configurada' => 'Cambio de la configuración del área', 'catalogo_creado' => 'Alta en el catálogo', 'catalogo_actualizado' => 'Edición en el catálogo',
+        'catalogo_baja' => 'Baja en el catálogo', 'catalogo_reactivado' => 'Reactivación en el catálogo',
         // Verificación en dos pasos (docs/tecnico/dos-pasos.md)
         'dos_pasos' => 'Cambio de a quién se exige la verificación en dos pasos', 'dos_pasos_activada' => 'Verificación en dos pasos activada',
         'dos_pasos_desactivada' => 'Verificación en dos pasos quitada', 'dos_pasos_codigos' => 'Códigos de respaldo nuevos',
@@ -252,6 +262,12 @@ class LectorAuditoria
         FirmaUsuario::class => ['Firma guardada', null],
         ConfiguracionPlataforma::class => ['Configuración de la plataforma', 'clave'],
         Importacion::class => ['Importación desde archivo', 'archivo_nombre'],
+        // Reservas de áreas
+        Reserva::class => ['Reserva de área', 'folio'],
+        ReservaArea::class => ['Área reservable', null],
+        ReservaMontaje::class => ['Montaje de reservas', 'nombre'],
+        ReservaTipoUso::class => ['Tipo de uso de reservas', 'nombre'],
+        ReservaServicio::class => ['Servicio de reservas', 'nombre'],
     ];
 
     // Mejoras estructura (ADR-0016): «Ver historial» desde la ficha de cada registro

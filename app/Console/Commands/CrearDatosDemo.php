@@ -38,6 +38,11 @@ use App\Models\PrestamoLlave;
 use App\Models\Promocion;
 use App\Models\Proveedor;
 use App\Models\Puesto;
+use App\Models\ReservaAprobacion;
+use App\Models\ReservaArea;
+use App\Models\ReservaMontaje;
+use App\Models\ReservaOrden;
+use App\Models\ReservaTipoUso;
 use App\Models\Responsiva;
 use App\Models\Rol;
 use App\Models\Rubro;
@@ -78,6 +83,11 @@ use App\Services\Privacidad\AvisosPrivacidad;
 use App\Services\Privacidad\SolicitudesArco;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\RecorridosPc\AdministradorRecorridosPc;
+use App\Services\Reservas\AdministradorReservas;
+use App\Services\Reservas\AjustesReservas;
+use App\Services\Reservas\CatalogosReservas;
+use App\Services\Reservas\FlujoReservas;
+use App\Services\Reservas\ResponsablesReservas;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Services\Rutas\AdministradorRutas;
 use App\Services\Suscripciones\Aprovisionamiento;
@@ -244,6 +254,8 @@ class CrearDatosDemo extends Command
         $paso('rolesSolicitudesDemo', fn () => $this->rolesSolicitudesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('postulacionesDemo', fn () => $this->postulacionesDemo($sedes, User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('entrevistasDemo', fn () => $this->entrevistasDemo($empresa, $sedes, User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'jefedepto.demo')->firstOrFail()));
+        // Reservas de áreas (docs/tecnico/reservas.md): salón de eventos, sala de juntas, servicios con departamento y reservas en distintos estados
+        $paso('reservasDemo', fn () => $this->reservasDemo($empresa, $sedes));
         // Mejoras informes (ADR-0017): semanas anteriores para que Tendencias tenga con qué comparar
         $paso('informesDemo', fn () => $this->informesDemo($empresa, $sedes));
         // Fin Mejoras informes
@@ -260,6 +272,148 @@ class CrearDatosDemo extends Command
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Reservas de áreas, solo la primera vez (si ya hay áreas reservables, no
+     * hace nada): en Hotel Demo Centro, «Salón Maya» (montajes con su aforo,
+     * horario, montaje y desmontaje, tarifas; lo aprueba la responsable
+     * general, Julieta, con Ana de suplente) y «Sala de juntas Ceiba»
+     * (confirmación inmediata); departamentos Cocina y Sistemas con sus
+     * responsables; servicios con su departamento, y reservas: una sala
+     * confirmada al momento, una capacitación por aprobar (área, Cocina y
+     * Sistemas) y un congreso para un cliente ya confirmado con sus órdenes de
+     * servicio (Sistemas ya marcó «Listo»).
+     */
+    private function reservasDemo(Empresa $empresa, $sedes): void
+    {
+        if (ReservaArea::exists()) {
+            return;
+        }
+        $u = fn (string $usuario) => User::where('username', $usuario)->firstOrFail();
+        $admin = $u('admin.demo');
+        // Al terminar no se queda nadie «en sesión» (lo que se cree después no debe llevar a Ana como autora)
+        $previo = auth()->user();
+        try {
+            $this->reservasDemoComo($empresa, $sedes, $u, $admin);
+        } finally {
+            $previo !== null ? auth()->setUser($previo) : auth()->forgetGuards();
+            app(Autorizador::class)->olvidar();
+        }
+    }
+
+    private function reservasDemoComo(Empresa $empresa, $sedes, \Closure $u, User $admin): void
+    {
+        auth()->setUser($admin);
+        $centro = $sedes['CEN'];
+
+        // Departamentos que atienden servicios (los que falten) y sus responsables
+        $depto = fn (string $nombre) => Departamento::firstOrCreate(['nombre' => $nombre]);
+        $responsable = function (string $nombre, User $quien, ?int $sede = null) use ($depto): void {
+            $d = $depto($nombre);
+            if (! DepartamentoResponsable::where('departamento_id', $d->id)->exists()) {
+                DepartamentoResponsable::create(['departamento_id' => $d->id, 'user_id' => $quien->id, 'es_suplente' => false, 'sede_id' => $sede]);
+            }
+        };
+        $responsable('Cocina', $u('supervisor.demo'), $centro->id);
+        $responsable('Sistemas', $u('jefe.demo'));
+        $responsable('Mantenimiento', $u('jefe.demo'));
+        $responsable('Alimentos y Bebidas', $u('director.demo'));
+
+        app(AjustesReservas::class)->guardar($admin, $empresa->refresh(), [
+            'responsable_id' => $u('jefedepto.demo')->id, 'suplente_id' => $admin->id, 'iva_aplica' => '1', 'iva_porcentaje' => 16, 'recordar_horas' => 4, 'escalar_horas' => 24,
+        ]);
+        $catalogos = app(CatalogosReservas::class);
+        $catalogos->asegurar();
+
+        // Las áreas salen de Zonas y edificios
+        $espacios = app(AdministradorEspacios::class);
+        $torre = Espacio::where('sede_id', $centro->id)->where('nivel', Espacio::EDIFICIO)->orderBy('id')->first()
+            ?? $espacios->crear($admin, $centro, null, Espacio::EDIFICIO, ['nombre' => 'Torre A'], false);
+        $planta = Espacio::where('padre_id', $torre->id)->where('nombre', 'Planta baja')->first()
+            ?? $espacios->crear($admin, $centro, $torre, Espacio::AREA, ['nombre' => 'Planta baja'], false);
+        $salon = $espacios->crear($admin, $centro, $planta, Espacio::AREA_ESPECIFICA, ['nombre' => 'Salón Maya'], false);
+        $sala = $espacios->crear($admin, $centro, $planta, Espacio::AREA_ESPECIFICA, ['nombre' => 'Sala de juntas Ceiba'], false);
+
+        $montaje = fn (string $nombre) => ReservaMontaje::where('nombre', $nombre)->value('id');
+        $todos = fn (string $desde, string $hasta) => collect(range(1, 7))->mapWithKeys(fn ($d) => [$d => ['abierto' => '1', 'desde' => $desde, 'hasta' => $hasta]])->all();
+        $areaSalon = $catalogos->marcarReservable($admin, $salon);
+        $catalogos->guardarArea($admin, $areaSalon, [
+            'aforo_maximo' => 120, 'montaje_minutos' => 60, 'desmontaje_minutos' => 30, 'con_horario' => '1', 'horario' => $todos('08:00', '23:00'),
+            'tarifa_hora' => 1500, 'tarifa_medio_dia' => 5000, 'tarifa_dia' => 9000, 'tarifa_evento' => 12000,
+            'descripcion' => 'Salón principal con vista a la alberca, pantalla fija, aire acondicionado y acceso independiente.',
+            'montajes' => [
+                $montaje('Auditorio') => ['usar' => '1', 'aforo' => 120], $montaje('Escuela') => ['usar' => '1', 'aforo' => 60],
+                $montaje('Herradura (U)') => ['usar' => '1', 'aforo' => 30], $montaje('Banquete') => ['usar' => '1', 'aforo' => 80],
+                $montaje('Cóctel') => ['usar' => '1', 'aforo' => 120],
+            ],
+        ]);
+        $areaSala = $catalogos->marcarReservable($admin, $sala);
+        $semana = collect(range(1, 5))->mapWithKeys(fn ($d) => [$d => ['abierto' => '1', 'desde' => '08:00', 'hasta' => '20:00']])->all() + [6 => [], 7 => []];
+        $catalogos->guardarArea($admin, $areaSala, [
+            'aforo_maximo' => 12, 'confirmacion_inmediata' => '1', 'con_horario' => '1', 'horario' => $semana,
+            'descripcion' => 'Mesa para 12 personas, pantalla y videoconferencia.',
+            'montajes' => [$montaje('Libre') => ['usar' => '1', 'aforo' => 12], $montaje('Herradura (U)') => ['usar' => '1', 'aforo' => 10]],
+        ]);
+
+        // Servicios con el departamento que los aprueba y los atiende
+        $servicios = [];
+        foreach ([
+            ['Coffee break', 'alimentos', 'persona', 85, 'Cocina', true], ['Comida tipo bufé', 'alimentos', 'persona', 320, 'Cocina', true],
+            ['Agua embotellada', 'bebidas', 'persona', 15, 'Alimentos y Bebidas', true], ['Barra de café', 'bebidas', 'evento', 1200, 'Alimentos y Bebidas', true],
+            ['Proyector y pantalla', 'audio_video', 'evento', 800, 'Sistemas', true], ['Micrófono inalámbrico', 'audio_video', 'pieza', 250, 'Sistemas', false],
+            ['Internet dedicado', 'red', 'evento', 500, 'Sistemas', true], ['Computadora portátil', 'computo', 'pieza', 300, 'Sistemas', true],
+            ['Extensiones eléctricas', 'mobiliario', 'pieza', null, 'Mantenimiento', false], ['Mesas y sillas adicionales', 'mobiliario', 'pieza', 50, 'Mantenimiento', true],
+        ] as [$nombre, $categoria, $unidad, $costo, $departamento, $aprueba]) {
+            $servicios[$nombre] = $catalogos->guardarCatalogo($admin, 'servicios', null, ['nombre' => $nombre, 'categoria' => $categoria, 'unidad' => $unidad,
+                'costo' => $costo, 'departamento_id' => $depto($departamento)->id, 'requiere_aprobacion' => $aprueba ? '1' : '0'])->id;
+        }
+
+        // Reservas de ejemplo (fechas futuras, en días hábiles y dentro del horario)
+        $reservas = app(AdministradorReservas::class);
+        $flujo = app(FlujoReservas::class);
+        $zona = $centro->zonaHoraria();
+        $habil = function (int $dias) use ($zona): string {
+            $d = now($zona)->addDays($dias);
+            while ($d->isWeekend()) {
+                $d = $d->addDay();
+            }
+
+            return $d->toDateString();
+        };
+        $como = function (User $quien, callable $fn) {
+            auth()->setUser($quien);
+            app(Autorizador::class)->olvidar();
+
+            return $fn();
+        };
+
+        $como($u('solicitante.demo'), fn () => $reservas->crear($u('solicitante.demo'), [
+            'reserva_area_id' => $areaSala->id, 'fecha' => $habil(1), 'hora_inicio' => '10:00', 'hora_fin' => '11:00',
+            'titulo' => 'Junta semanal de Recepción', 'tipo_uso_id' => ReservaTipoUso::where('nombre', 'Reunión')->value('id'), 'asistentes' => 8, 'para_cliente' => '0',
+        ]));
+        $como($u('rh.demo'), fn () => $reservas->crear($u('rh.demo'), [
+            'reserva_area_id' => $areaSalon->id, 'fecha' => $habil(8), 'hora_inicio' => '09:00', 'hora_fin' => '14:00',
+            'titulo' => 'Capacitación anual de servicio al huésped', 'tipo_uso_id' => ReservaTipoUso::where('nombre', 'Trabajo')->value('id'),
+            'asistentes' => 50, 'montaje_id' => $montaje('Escuela'), 'para_cliente' => '0',
+            'servicios' => [$servicios['Coffee break'] => ['cantidad' => 50, 'notas' => 'A las 11:00'], $servicios['Proyector y pantalla'] => ['cantidad' => 1]],
+        ]));
+        $congreso = $como($admin, fn () => $reservas->crear($admin, [
+            'reserva_area_id' => $areaSalon->id, 'fecha' => $habil(15), 'hora_inicio' => '16:00', 'hora_fin' => '21:00',
+            'titulo' => 'Congreso regional de agencias de viaje', 'tipo_uso_id' => ReservaTipoUso::where('nombre', 'Evento especial')->value('id'),
+            'asistentes' => 100, 'montaje_id' => $montaje('Auditorio'), 'para_cliente' => '1', 'tarifa' => 'evento',
+            'cliente_nombre' => 'Laura Castillo', 'cliente_empresa' => 'Agencias Unidas del Caribe', 'cliente_correo' => 'eventos@ejemplo.com', 'cliente_telefono' => '998 000 0000',
+            'servicios' => [$servicios['Agua embotellada'] => ['cantidad' => 100], $servicios['Proyector y pantalla'] => ['cantidad' => 1],
+                $servicios['Micrófono inalámbrico'] => ['cantidad' => 2], $servicios['Mesas y sillas adicionales'] => ['cantidad' => 10, 'notas' => 'Registro a la entrada']],
+        ]));
+        foreach (ReservaAprobacion::where('reserva_id', $congreso->id)->where('vigente', true)->get() as $a) {
+            $quien = $a->tipo === 'area' ? $u('jefedepto.demo') : User::find(app(ResponsablesReservas::class)->designados($a, $congreso->fresh(['area']))[0] ?? $admin->id);
+            $como($quien, fn () => $flujo->responder($quien, $a, 'aprobar', null));
+        }
+        $sistemas = ReservaOrden::where('reserva_id', $congreso->id)->where('departamento_id', $depto('Sistemas')->id)->first();
+        if ($sistemas !== null) {
+            $como($u('jefe.demo'), fn () => $flujo->marcarLista($u('jefe.demo'), $sistemas, 'Proyector probado'));
+        }
     }
 
     /**

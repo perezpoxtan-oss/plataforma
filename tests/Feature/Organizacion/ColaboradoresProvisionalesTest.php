@@ -64,7 +64,8 @@ class ColaboradoresProvisionalesTest extends TestCase
 
     public function test_tres_areas_y_recursos_humanos_con_su_menu_y_rol_base(): void
     {
-        $this->assertSame(['direccion', 'recursos_humanos', 'seguridad'], Area::orderBy('orden')->pluck('clave')->all());
+        // Reservas de áreas agregó el área «Servicios» (docs/tecnico/reservas.md)
+        $this->assertSame(['direccion', 'recursos_humanos', 'seguridad', 'servicios'], Area::orderBy('orden')->pluck('clave')->all());
 
         $area = fn (string $modulo) => Modulo::with('area')->where('clave', $modulo)->firstOrFail()->area->clave;
         foreach (['empresas', 'sedes', 'espacios', 'usuarios', 'roles', 'permisos'] as $m) {

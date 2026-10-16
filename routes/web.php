@@ -723,6 +723,9 @@ Route::middleware('auth')->group(function () {
     });
     Route::put('/configura-tu-empresa', 'App\Http\Controllers\AsistenteArranqueController')->name('asistente.visibilidad');
     // Fin Importar desde Excel
+
+    // Reservas de áreas (docs/tecnico/reservas.md)
+    require __DIR__.'/reservas.php';
 });
 
 // Público: Kiosco de auto-registro de candidatos (SIN sesión; enlace temporal de un solo candidato; ver docs/tecnico/candidatos.md)

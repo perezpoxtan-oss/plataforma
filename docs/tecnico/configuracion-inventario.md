@@ -78,6 +78,20 @@ Convenciones:
 | Firmas en caseta, rechazo, tiempos de espera | pref. `pases_salida.*` | ídem | ídem | dos firmas; empezar desde el primer paso; sin tiempos |
 | Avisos de pases | pref. `avisos.*` | Configuración → Pases de salida | `configuracion.editar` empresa | encendidos |
 
+### Reservas de áreas
+
+Sección **Configuración → Reservas de áreas** (al final del índice). Ver [reservas.md](reservas.md).
+
+| Ajuste | Dónde se guarda | Pantalla | Quién | Por omisión |
+|---|---|---|---|---|
+| 🆕 Responsable general de reservas y su suplente | pref. `reservas.responsable_id` / `suplente_id` | Configuración → Reservas de áreas y Reservas → Configuración (mismo formulario, `PUT /reservas/ajustes`) | `reservas.configurar` empresa | sin responsable (aprueba quien tenga `reservas.aprobar` en la sede) |
+| 🆕 Recordar y avisar al responsable general (horas) | pref. `reservas.recordar_horas` / `escalar_horas` | ídem | ídem | 4 / 24 |
+| 🆕 IVA de las reservas para clientes | pref. `reservas.iva_aplica` / `iva_porcentaje` | ídem | ídem | sí, 16 % |
+| Moneda de las cotizaciones | `empresas.moneda` | — (columna de la empresa; se usa aquí) | — | `MXN` |
+| 🆕 Áreas reservables (aforo, montajes con aforo, horario, montaje y desmontaje, tarifas, foto, responsable y suplente, confirmación inmediata) | `reserva_areas`, `reserva_area_montajes` | Reservas → Configuración (enlace en Configuración) | `reservas.configurar` (su sede) | ninguna; sin datos: cualquier hora, sin costo, aprueba el responsable general |
+| 🆕 Catálogos: montajes, tipos de uso, servicios con su departamento | `reserva_montajes`, `reserva_tipos_uso`, `reserva_servicios` | Reservas → Configuración (enlace) | `reservas.configurar` empresa | 7 montajes y 3 tipos de uso; sin servicios |
+| 🆕 Avisos de reservas (aprobación, resultado, orden de servicio) | pref. `avisos.reserva_*` | Configuración → Reservas de áreas | `configuracion.editar` empresa | encendidos |
+
 ### Avisos por correo y Cuentas y seguridad
 
 | Ajuste | Dónde se guarda | Pantalla | Quién | Por omisión |

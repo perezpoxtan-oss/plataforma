@@ -1,0 +1,135 @@
+/* Reservas de áreas (docs/tecnico/reservas.md). Solo clases propias (res-*). */
+.res-encabezado { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.res-btn-nueva { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 18px; border-radius: 10px; background: #15803d; color: #fff; font-weight: 700; text-decoration: none; border: 0; }
+.res-btn-nueva:hover, .res-btn-nueva:focus { background: #166534; color: #fff; }
+.res-nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; scrollbar-width: thin; }
+.res-nav a { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 40px; padding: 6px 14px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-weight: 600; font-size: .9rem; text-decoration: none; }
+.res-nav a.activa { background: #0f172a; border-color: #0f172a; color: #fff; }
+.res-nav .res-conteo { background: #dc2626; color: #fff; border-radius: 999px; padding: 0 7px; font-size: .75rem; }
+.res-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.res-filtros select, .res-filtros input { min-height: 40px; }
+.res-vistas { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; }
+.res-vistas a { padding: 8px 14px; text-decoration: none; color: #334155; font-weight: 600; background: #fff; }
+.res-vistas a.activa { background: #2563eb; color: #fff; }
+.res-navegar { display: inline-flex; align-items: center; gap: 6px; }
+.res-navegar a { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #cbd5e1; border-radius: 10px; color: #334155; text-decoration: none; background: #fff; }
+.res-titulo-periodo { font-weight: 700; font-size: 1.05rem; margin: 0 6px; }
+
+/* Calendario */
+.res-semana { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.res-mes { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.res-mes-cabecera { font-weight: 700; font-size: .8rem; text-align: center; color: #64748b; padding: 4px 0; }
+.res-dia { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 8px; min-height: 120px; display: flex; flex-direction: column; gap: 6px; }
+.res-mes .res-dia { min-height: 96px; border-radius: 8px; padding: 6px; }
+.res-dia.hoy { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, .15); }
+.res-dia.otro-mes { opacity: .55; }
+.res-dia-titulo { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: .85rem; color: #334155; }
+.res-dia-titulo a.res-reservar-aqui { font-size: .78rem; font-weight: 600; text-decoration: none; color: #15803d; }
+.res-evento { display: block; border-radius: 8px; padding: 5px 8px; font-size: .8rem; line-height: 1.25; text-decoration: none; border-left: 4px solid #2563eb; background: #eff6ff; color: #0f172a; }
+.res-evento .res-hora { font-weight: 700; }
+.res-evento .res-area { display: block; color: #475569; font-size: .75rem; }
+.res-evento.estado-por_aprobar, .res-evento.estado-cambio_pedido { border-left-color: #d97706; background: #fffbeb; }
+.res-evento.estado-confirmada { border-left-color: #15803d; background: #f0fdf4; }
+.res-evento.ajena { border-left-color: #94a3b8; background: #f1f5f9; color: #475569; }
+.res-leyenda { display: flex; flex-wrap: wrap; gap: 12px; font-size: .8rem; color: #475569; margin-top: 10px; }
+.res-leyenda span::before { content: ''; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; background: var(--res-color, #94a3b8); }
+.res-dia-lista .res-area-dia { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+
+/* Estados */
+.res-estado { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: .78rem; font-weight: 700; }
+.res-estado.estado-por_aprobar { background: #fef3c7; color: #92400e; }
+.res-estado.estado-cambio_pedido { background: #ffedd5; color: #9a3412; }
+.res-estado.estado-confirmada { background: #dcfce7; color: #166534; }
+.res-estado.estado-terminada { background: #e2e8f0; color: #334155; }
+.res-estado.estado-rechazada, .res-estado.estado-cancelada { background: #fee2e2; color: #991b1b; }
+.res-estado.estado-aprobada, .res-estado.estado-lista { background: #dcfce7; color: #166534; }
+.res-estado.estado-pendiente { background: #fef3c7; color: #92400e; }
+.res-estado.estado-cambio { background: #ffedd5; color: #9a3412; }
+
+/* Fichas y listas */
+.res-lista { display: grid; gap: 10px; }
+.res-tarjeta { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; }
+.res-tarjeta h2, .res-tarjeta h3 { font-size: 1rem; font-weight: 700; margin: 0 0 6px; }
+.res-tarjeta-fila { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.res-meta { color: #475569; font-size: .88rem; }
+.res-ficha { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.res-ficha > div { align-content: start; }
+.res-datos { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px 16px; }
+.res-dato-etiqueta { font-size: .75rem; text-transform: uppercase; letter-spacing: .03em; color: #64748b; font-weight: 700; }
+.res-dato-valor { font-weight: 600; color: #0f172a; }
+.res-tabla { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.res-tabla th, .res-tabla td { padding: 6px 8px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
+.res-tabla td.num, .res-tabla th.num { text-align: right; white-space: nowrap; }
+.res-tabla tfoot td { font-weight: 700; }
+.res-aprobacion { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
+.res-aprobacion:last-child { border-bottom: 0; }
+.res-avance { height: 10px; border-radius: 999px; background: #e2e8f0; overflow: hidden; margin: 6px 0; }
+.res-avance span { display: block; height: 100%; background: #15803d; }
+.res-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.res-acciones .btn-azul, .res-acciones .btn-rojo, .res-acciones .btn-verde, .res-acciones a, .res-acciones button { min-height: 44px; }
+.res-boton { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; font-weight: 600; text-decoration: none; }
+.res-boton.verde { background: #15803d; border-color: #15803d; color: #fff; }
+.res-boton.rojo { background: #fff; border-color: #dc2626; color: #b91c1c; }
+.res-historial { list-style: none; padding: 0; margin: 0; font-size: .86rem; }
+.res-historial li { padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
+.res-historial time { color: #64748b; font-size: .78rem; display: block; }
+
+/* Formulario */
+.res-form { display: grid; gap: 16px; max-width: 980px; }
+.res-bloque { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; }
+.res-bloque > h2 { font-size: 1rem; font-weight: 700; margin: 0 0 12px; }
+.res-rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.res-opciones { display: flex; flex-wrap: wrap; gap: 10px; }
+.res-opcion { display: flex; gap: 8px; align-items: center; border: 2px solid #e2e8f0; border-radius: 12px; padding: 10px 14px; cursor: pointer; min-height: 44px; }
+.res-opcion:has(input:checked) { border-color: #2563eb; background: #eff6ff; }
+.res-ocupado { font-size: .85rem; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 8px 10px; }
+.res-ocupado ul { margin: 4px 0 0; padding-left: 18px; }
+.res-servicio { display: grid; grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr); gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+.res-servicio .res-meta { font-size: .78rem; }
+.res-total { font-size: 1.1rem; font-weight: 800; }
+.res-foto { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; }
+.res-horario-dia { display: grid; grid-template-columns: 120px 110px 110px; gap: 8px; align-items: center; padding: 4px 0; }
+.res-cifras { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.res-cifra { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; }
+.res-cifra strong { display: block; font-size: 1.4rem; }
+.res-barra { height: 8px; background: #e2e8f0; border-radius: 999px; min-width: 80px; overflow: hidden; }
+.res-barra span { display: block; height: 100%; background: #2563eb; }
+
+@media (max-width: 900px) {
+    .res-ficha { grid-template-columns: 1fr; }
+    .res-semana { grid-template-columns: 1fr; }
+    .res-semana .res-dia { min-height: 0; }
+    .res-servicio { grid-template-columns: 1fr 100px; }
+    .res-servicio .res-servicio-notas { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+    .res-mes { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+    .res-mes .res-dia { min-height: 56px; padding: 3px; font-size: .7rem; }
+    .res-mes .res-evento .res-area, .res-mes .res-evento .res-titulo { display: none; }
+    .res-mes .res-evento { padding: 2px 3px; border-left-width: 3px; font-size: .68rem; }
+    .res-horario-dia { grid-template-columns: 1fr 1fr 1fr; }
+    .res-tabla { font-size: .82rem; }
+}
+
+/* Hoja impresa (orden de evento / cotización) */
+.res-hoja { max-width: 820px; margin: 0 auto; background: #fff; color: #0f172a; padding: 28px; font-size: .92rem; }
+.res-hoja-encabezado { display: flex; justify-content: space-between; gap: 16px; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px; }
+.res-hoja h1 { font-size: 1.3rem; font-weight: 800; margin: 0; }
+.res-hoja h2 { font-size: 1rem; font-weight: 700; margin: 16px 0 6px; }
+.res-hoja .res-firmas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 40px; text-align: center; font-size: .8rem; }
+.res-hoja .res-firmas div { border-top: 1px solid #0f172a; padding-top: 4px; }
+.res-controles-impresion { max-width: 820px; margin: 16px auto; display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+@media print {
+    .res-controles-impresion { display: none !important; }
+    .res-hoja { padding: 0; max-width: none; }
+    body { background: #fff !important; }
+}
+
+/* Modo noche (modos-pantalla.js pone la clase en <html>) */
+html.modo-noche .res-dia, html.modo-noche .res-tarjeta, html.modo-noche .res-bloque, html.modo-noche .res-cifra,
+html.modo-noche .res-nav a, html.modo-noche .res-vistas a, html.modo-noche .res-navegar a, html.modo-noche .res-boton { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+html.modo-noche .res-dato-valor, html.modo-noche .res-evento { color: #e2e8f0; }
+html.modo-noche .res-evento { background: #172554; }
+html.modo-noche .res-evento.estado-confirmada { background: #14532d; }
+html.modo-noche .res-evento.estado-por_aprobar, html.modo-noche .res-evento.estado-cambio_pedido { background: #451a03; }
+html.modo-noche .res-nav a.activa, html.modo-noche .res-vistas a.activa { background: #2563eb; border-color: #2563eb; color: #fff; }

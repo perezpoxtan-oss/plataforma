@@ -392,6 +392,9 @@ class RecorridoPantallasTest extends TestCase
             'importaciones.create', 'importaciones.plantilla' => array_map(fn ($t) => ['tipo' => $t], array_keys(AdministradorImportaciones::TIPOS)),
             'importaciones.show', 'importaciones.original', 'importaciones.resultado' => DB::table('importaciones')->where('empresa_id', $e)->orderBy('id')->limit(2)
                 ->pluck('id')->map(fn ($id) => ['importacion' => $id])->all(),
+            // Reservas de áreas: cada reserva de la demo (confirmada al momento, por aprobar y con cliente), su hoja, edición y las áreas
+            'reservas.show', 'reservas.edit', 'reservas.imprimir' => DB::table('reservas')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['reserva' => $id])->all(),
+            'reservas.configuracion.area', 'reservas.foto' => DB::table('reserva_areas')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['area' => $id])->all(),
             // Privacidad: la solicitud ARCO de la demo (sin archivo exportado) y las versiones del aviso
             'arco.show' => DB::table('solicitudes_arco')->where('empresa_id', $e)->orderBy('id')->limit(2)->pluck('id')->map(fn ($id) => ['solicitud' => $id])->all(),
             'arco.descargar' => [],

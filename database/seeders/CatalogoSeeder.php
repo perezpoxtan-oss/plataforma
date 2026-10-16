@@ -93,6 +93,8 @@ class CatalogoSeeder extends Seeder
         'bitacora_dia' => 'bitacora_dia.index',
         'tendencias' => 'tendencias.index',
         'informe_ejecutivo' => 'informe_ejecutivo.index',
+        // Reservas de áreas (docs/tecnico/reservas.md)
+        'reservas' => 'reservas.index',
     ];
 
     /**
@@ -169,6 +171,10 @@ class CatalogoSeeder extends Seeder
                 // Ronda 6 (LL-06): impresión masiva de etiquetas QR; cada tipo pide además su propio permiso
                 // Ronda 7: «configurar» = sub-pantalla Plantillas del gestor de impresión
                 'etiquetas_qr' => ['Etiquetas QR', 'bi-qr-code', ['configurar'], [], ['ver']],
+            ]],
+            // Servicios: lo que la sede ofrece a su personal y a sus clientes (Reservas de áreas)
+            'servicios' => ['Servicios', 'bi-calendar-check', [
+                'reservas' => ['Reservas de áreas', 'bi-calendar-check', ['aprobar', 'configurar', 'exportar', 'imprimir'], [], ['ver', 'crear']],
             ]],
         ];
     }

@@ -11,7 +11,7 @@
     $nombreBitacora = $empresa ? app(\App\Services\Novedades\AjustesNovedades::class)->nombreMenu($empresa->id) : 'Novedades';
     // Grupo de avisos => sección donde se muestra (los que no estén aquí van en «Avisos por correo»)
     $seccionDeGrupo = ['cuentas' => 'sec-cuentas', 'colaboradores' => 'caseta', 'padrones' => 'caseta', 'procedimientos' => 'caseta',
-        'novedades' => 'sec-novedades', 'pases_salida' => 'sec-pases', 'transporte' => 'sec-transporte', 'vouchers' => 'sec-activos', 'candidatos' => 'sec-rh'];
+        'novedades' => 'sec-novedades', 'pases_salida' => 'sec-pases', 'transporte' => 'sec-transporte', 'vouchers' => 'sec-activos', 'candidatos' => 'sec-rh', 'reservas' => 'sec-reservas'];
     $gruposEn = fn (string $seccion) => $mostrarAvisos
         ? array_filter($grupos, fn ($g) => ($seccionDeGrupo[$g] ?? 'sec-avisos') === $seccion, ARRAY_FILTER_USE_KEY) : [];
     $verPases = $empresa && $u->can('pases_salida.configurar');
@@ -32,6 +32,8 @@
         ['sec-cuentas', 'Cuentas y seguridad', 'bi-shield-lock', $mostrarAvisos],
         ['sec-privacidad', 'Privacidad', 'bi-person-lock', $privacidad !== null],
         ['sec-plataforma', 'Plataforma', 'bi-hdd-network', $plataforma],
+        // Reservas de áreas (docs/tecnico/reservas.md): al final para no mover las demás secciones
+        ['sec-reservas', 'Reservas de áreas', 'bi-calendar-check', $mostrarAvisos || ($empresa && $u->can('reservas.configurar'))],
     ];
     $visibles = array_values(array_filter($secciones, fn ($s) => $s[3]));
 @endphp
@@ -235,6 +237,26 @@
                     @include('seguridad.pases-salida._config-resumen', ['empresa' => $empresa])
                 @endif
                 @foreach ($gruposEn('sec-pases') as $grupo => $def)
+                    @include('administracion.configuracion._avisos-grupo')
+                @endforeach
+            </section>
+        @endif
+
+        {{-- ========================= Reservas de áreas ========================= --}}
+        @if (collect($secciones)->firstWhere(0, 'sec-reservas')[3])
+            <section class="seccion-config" id="sec-reservas" aria-labelledby="t-sec-reservas">
+                <h2 id="t-sec-reservas" class="titulo-seccion-config"><i class="bi bi-calendar-check" aria-hidden="true"></i>Reservas de áreas</h2>
+                @if ($u->can('reservas.configurar'))
+                    @push('estilos')<link href="{{ asset('css/reservas.css') }}" rel="stylesheet">@endpush
+                    @include('operacion.reservas._ajustes', ['empresa' => $empresa, 'desde' => 'configuracion',
+                        'editable' => app(\App\Services\Permisos\Autorizador::class)->alcanceDeEmpresa($u, 'reservas.configurar')])
+                    <div class="tarjeta p-4 tarjeta-enlace-config">
+                        <h3 class="h6 fw-bold"><i class="bi bi-door-open me-2 text-primary" aria-hidden="true"></i>Áreas reservables y catálogos</h3>
+                        <p class="small text-muted mb-2">Qué salones y salas se reservan (aforo, montajes, horario, tarifas, responsable), montajes, tipos de uso y servicios con su departamento.</p>
+                        <a href="{{ route('reservas.configuracion') }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Reservas de áreas</a>
+                    </div>
+                @endif
+                @foreach ($gruposEn('sec-reservas') as $grupo => $def)
                     @include('administracion.configuracion._avisos-grupo')
                 @endforeach
             </section>
