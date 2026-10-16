@@ -25,7 +25,7 @@ resumen: Apartar un salón, sala o terraza de la sede, pedir servicios y seguir 
 5. En la esquina de la ficha están los botones de ícono:
    - **Calendario del área**: lo que está ocupado por día, semana o mes.
    - **Reservar toda la zona** (calendario con +): solo en una zona que se reserva completa y además tiene espacios interiores.
-   - **Configurar** y **Quitar de reservas**: solo si administras las reservas (ver [Configurar las reservas](reservas-configuracion.md)).
+   - **Editar** (lápiz) y **Eliminar de reservas** (bote de basura): solo si administras las reservas (ver [Configurar las reservas](reservas-configuracion.md)). Son los mismos íconos que en Zonas y edificios.
 
 ![Fichas de las áreas](img/reservas/areas.png)
 

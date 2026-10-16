@@ -26,11 +26,23 @@ resumen: Qué áreas se reservan y cómo, los catálogos de montajes, tipos y se
 
 **Qué debes ver:** el aviso verde «… ya se puede reservar …» y las fichas nuevas. Con un solo espacio se abre directo su configuración.
 
+Si el espacio ya estuvo en reservas y lo eliminaste cuando tenía reservas pasadas, aparece con «Se quitó · vuelve con su configuración»: al marcarlo vuelve con todo lo que tenía.
+
 Nada cambia en **Zonas y edificios**: ahí solo se crean los lugares; aquí solo se dice cómo se reservan.
 
-## Cómo configurar un área
+## Cómo editar un área
 
-1. En su ficha toca **Configurar** (deslizadores).
+En cada ficha de área, arriba a la derecha, hay tres botones de ícono (los mismos que en Zonas y edificios):
+
+| Ícono | Botón | Qué hace |
+|---|---|---|
+| Reloj | **Historial** | Quién cambió qué y cuándo. |
+| Lápiz | **Editar** | Abre la configuración del área para cambiar sus datos. |
+| Bote de basura | **Eliminar de reservas** | Deja de ofrecerla para reservar (ver «Cómo eliminar un área de reservas»). |
+
+![Fichas de Configuración con Editar y Eliminar](img/reservas/configuracion.png)
+
+1. En su ficha toca **Editar** (lápiz). También está en las fichas de cada sede o zona en **Áreas**.
 2. Todo es opcional; toca **Guardar** al terminar:
    - **Aforo máximo** y **Responsable de aprobación** con su **Suplente** (vacío = el responsable general).
    - **Confirmación inmediata**: la reserva se confirma al momento si no lleva servicios ni costo (ideal para salas de juntas).
@@ -45,29 +57,51 @@ Nada cambia en **Zonas y edificios**: ahí solo se crean los lugares; aquí solo
 
 **Qué debes ver:** «Configuración del área guardada.» con el botón **Reservar esta área**.
 
-## Cómo quitar un área de reservas
+## Cómo eliminar un área de reservas
 
-1. En la ficha del área toca **Quitar de reservas** (círculo tachado) y confirma.
-2. Según lo que tenga:
-   - **Sin ninguna reserva**: deja de ofrecerse y se borra solo su configuración de reserva.
-   - **Con reservas que ya pasaron**: deja de ofrecerse, se conserva **QUITADA** con su configuración y su historial.
-   - **Con reservas próximas** (por aprobar, con cambio pedido o confirmadas): **no se quita**. Cancélalas o cámbialas de horario primero.
-   - Una **zona por sus espacios interiores** se quita junto con sus espacios.
+Úsalo cuando ya no quieres ofrecer un área ni tenerla a la vista. **Nunca** se borra de Zonas y edificios: ahí sigue existiendo.
 
-![No se quitó porque tiene reservas próximas](img/reservas/quitar-bloqueado.png)
+1. En la ficha del área toca **Eliminar de reservas** (bote de basura).
+2. Lee el mensaje: te dice exactamente qué va a pasar con esa área. Toca **Aceptar** para continuar.
+3. Según sus reservas:
+   - **Nunca se ha reservado**: se borra su configuración de reserva (aforo, montajes, horario, tarifas y foto) y la ficha desaparece.
+   - **Solo tiene reservas que ya pasaron**: deja de ofrecerse y **deja de verse**, pero guardamos su historial y su configuración. La puedes ver con **Mostrar quitadas** (ver abajo).
+   - **Tiene reservas próximas** (por aprobar, con cambio pedido o confirmadas): **no se elimina**. Aparece el aviso rojo con el botón **Ver su calendario** para que las canceles o las cambies de horario primero.
+   - Una **zona por sus espacios interiores** se elimina junto con sus espacios.
 
-**Qué debes ver:** el aviso verde «… ya no se ofrece para reservar. Sigue en Zonas y edificios.» El espacio **nunca** se borra de Zonas y edificios.
+![Aviso al eliminar un área con reservas pasadas](img/reservas/eliminada-archivada.png)
 
-Para volver a ofrecerla, toca **Reactivar** en su ficha (en **Configuración**) o márcala de nuevo en **Agregar área reservable** («Se quitó · vuelve con su configuración»).
+**Qué debes ver:** el aviso verde «… se eliminó de reservas. Sigue en Zonas y edificios.» Si tenía reservas pasadas, el aviso trae el botón **Ver áreas quitadas**.
+
+![No se eliminó porque tiene reservas próximas](img/reservas/eliminar-bloqueado.png)
+
+## Cómo ver y reactivar lo quitado o dado de baja
+
+Por omisión, cada sección de Configuración muestra **solo lo activo**: las áreas quitadas y los montajes, tipos de uso o servicios dados de baja no estorban.
+
+1. Junto al título de la sección (**Áreas reservables**, **Montajes**, **Tipos de uso** o **Servicios y requerimientos**) toca **Mostrar quitadas (N)** o **Mostrar dados de baja (N)**. El número dice cuántos hay. Si no hay ninguno, el botón no aparece.
+2. Aparecen atenuados, con la etiqueta **QUITADA** o **DE BAJA**. Puedes:
+   - Tocar **Editar** (lápiz) para cambiar sus datos sin volver a ofrecerlos.
+   - Tocar **Reactivar** (flecha circular) para que vuelvan a ofrecerse con su configuración.
+3. Toca **Ocultar quitadas** u **Ocultar dados de baja** para volver a ver solo lo activo.
+
+![Mostrar las áreas quitadas](img/reservas/mostrar-quitadas.png)
+
+**Qué debes ver:** al reactivar, el aviso verde «… se puede reservar de nuevo.» y la ficha vuelve a la lista normal.
 
 ## Cómo editar los catálogos
 
 ![Configuración de reservas](img/reservas/configuracion.png)
 
-1. **Montajes**, **Tipos de uso** y **Servicios y requerimientos** son fichas, como los Departamentos. Para agregar toca la ficha **Nuevo montaje**, **Nuevo tipo de uso** o **Nuevo servicio**; para cambiar uno toca **Editar** (lápiz) en su ficha. **Dar de baja** lo quita de las reservas nuevas.
-2. Un servicio pide: nombre, **Categoría**, **Se cobra / se pide** (por pieza, por persona, por hora o por evento), **Costo para clientes**, **Departamento que lo atiende** y si **El departamento lo aprueba antes de confirmar**. Toca **Guardar**.
+1. **Montajes**, **Tipos de uso** y **Servicios y requerimientos** son fichas, como los Departamentos. Para agregar toca la ficha **Nuevo montaje**, **Nuevo tipo de uso** o **Nuevo servicio**; para cambiar uno toca **Editar** (lápiz) en su ficha.
+2. Para dejar de usar uno tienes dos botones:
+   - **Dar de baja** (círculo tachado): ya no se ofrece en las reservas nuevas; las reservas que ya lo usan lo conservan. Lo ves con **Mostrar dados de baja** y lo puedes **Reactivar**.
+   - **Eliminar** (bote de basura): lo borra para siempre, **solo si nunca se ha usado** en una reserva (ni, los montajes, en un área). Si ya se usó, el mensaje te explica por qué no se puede borrar y te ofrece **darlo de baja** en su lugar.
+3. Un servicio pide: nombre, **Categoría**, **Se cobra / se pide** (por pieza, por persona, por hora o por evento), **Costo para clientes**, **Departamento que lo atiende** y si **El departamento lo aprueba antes de confirmar**. Toca **Guardar**.
 
 ![Editar un servicio](img/reservas/dialogo-servicio.png)
+
+![Montaje dado de baja con Mostrar dados de baja](img/reservas/catalogos-baja.png)
 
 Los responsables de cada departamento son los de **Recursos Humanos → Departamentos → Responsables**.
 
@@ -91,7 +125,9 @@ En la pestaña **Informes** elige las fechas y la sede: **Ocupación por área**
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
-| «No se quitó «…»: Tiene 2 reservas próximas; cancélalas o reprográmalas primero.» | El área todavía tiene reservas por venir. | Cancélalas o modifícalas a otra área y vuelve a tocar **Quitar de reservas**. |
+| «No se eliminó «…» de reservas: tiene 2 reservas próximas; cancélalas o reprográmalas primero.» | El área todavía tiene reservas por venir. | Toca **Ver su calendario**, cancélalas o cámbialas a otra área y vuelve a tocar **Eliminar de reservas**. |
+| «No se eliminó «…»: ya se usó en 3 reservas. Para conservar ese historial no se elimina: dalo de baja y dejará de ofrecerse.» | Ese montaje, tipo de uso o servicio ya aparece en reservas (o en un área). | Toca **Dar de baja** en su ficha. |
+| Ya no veo un área o un montaje | Se eliminó con historial o se dio de baja; por omisión solo se ve lo activo. | Toca **Mostrar quitadas** o **Mostrar dados de baja** en esa sección. |
 | «Elige un espacio de tu sede.» | Marcaste un espacio de una sede donde no configuras reservas. | Pide a quien configura esa sede que lo agregue. |
 | «Marca al menos un espacio.» | Tocaste **Guardar** sin casillas marcadas. | Marca uno o varios espacios. |
 | «El aforo de un montaje no puede ser mayor que el aforo máximo del área.» | Un montaje dice más personas que el área. | Corrige el aforo del montaje o el del área. |
@@ -106,7 +142,11 @@ En la pestaña **Informes** elige las fechas y la sede: **Ocupación por área**
 
 **¿Puedo reservar un salón completo y también sus partes?** Sí. Agrega la zona como **Toda la zona como un solo espacio** y agrega también sus salas. Si alguien reserva la zona completa, sus salas quedan ocupadas en ese horario, y al revés.
 
-**¿Quitar un área borra sus reservas?** No. Si ya tuvo reservas se conserva desactivada con su historial; si tiene reservas próximas no se puede quitar.
+**¿Eliminar un área borra sus reservas?** No. Si ya tuvo reservas se guarda con su historial (la ves con **Mostrar quitadas**); si tiene reservas próximas no se puede eliminar.
+
+**¿Eliminar un área la borra de Zonas y edificios?** No, nunca. Solo deja de ofrecerse para reservar.
+
+**¿Cuál es la diferencia entre Dar de baja y Eliminar en los catálogos?** Dar de baja lo oculta y se puede reactivar; Eliminar lo borra para siempre y solo se puede si nunca se usó.
 
 **¿Qué pasa si nadie es responsable?** Aprueba quien tenga permiso de **aprobar** reservas en esa sede.
 

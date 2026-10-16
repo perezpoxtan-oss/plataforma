@@ -59,7 +59,7 @@
                     <div class="d-flex gap-2">
                         <a href="{{ route('reservas.show', $r->id) }}" class="btn-icono ver" title="Ver" aria-label="Ver {{ $r->titulo }}"><i class="bi bi-eye" aria-hidden="true"></i></a>
                         @if ($r->activa() && ! $r->yaEmpezo())
-                            <a href="{{ route('reservas.edit', $r->id) }}" class="btn-icono editar" title="Modificar" aria-label="Modificar {{ $r->titulo }}"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
+                            <a href="{{ route('reservas.edit', $r->id) }}" class="btn-icono editar" title="Modificar" aria-label="Modificar {{ $r->titulo }}"><i class="bi bi-pencil" aria-hidden="true"></i></a>
                         @endif
                         <a href="{{ route('reservas.imprimir', $r->id) }}" class="btn-icono imprimir-hoja" target="_blank" rel="noopener" title="Imprimir" aria-label="Imprimir {{ $r->titulo }}"><i class="bi bi-printer" aria-hidden="true"></i></a>
                     </div>

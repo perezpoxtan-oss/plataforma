@@ -112,3 +112,8 @@ html.modo-noche .res-dato-valor, html.modo-noche .res-evento { color: #e2e8f0; }
 html.modo-noche .res-evento { background: #172554; }
 html.modo-noche .res-evento.estado-confirmada { background: #14532d; }
 html.modo-noche .res-evento.estado-por_aprobar, html.modo-noche .res-evento.estado-cambio_pedido { background: #451a03; }
+
+/* «Mostrar quitadas / dados de baja (N)»: píldora discreta junto al título de cada sección de Configuración */
+.res-ver-ocultas { padding: 0.3rem 0.85rem; font-size: 0.8rem; text-decoration: none; }
+.tema-verde .res-ver-ocultas.active { background: #16a34a; border-color: #16a34a; color: #fff; }
+html.modo-noche .tema-verde .res-ver-ocultas.active { background: #15803d; border-color: #15803d; color: #fff; }

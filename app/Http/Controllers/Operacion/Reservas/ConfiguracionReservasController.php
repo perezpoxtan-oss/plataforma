@@ -34,6 +34,9 @@ use Illuminate\View\View;
  */
 class ConfiguracionReservasController extends Controller
 {
+    /** Secciones de Configuración con «Mostrar quitadas / dadas de baja». */
+    public const SECCIONES = ['areas', 'montajes', 'tipos', 'servicios'];
+
     public function __construct(
         private readonly EmpresaDeTrabajo $empresa,
         private readonly Tenant $tenant,
@@ -51,28 +54,63 @@ class ConfiguracionReservasController extends Controller
             return view('operacion.reservas.sedes', ['sinEmpresa' => true]);
         }
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId) {
+        // «Mostrar quitadas / dadas de baja»: por omisión cada sección solo muestra lo activo
+        $ver = collect((array) $request->query('ver', []))->filter(fn ($v) => is_string($v))
+            ->intersect(self::SECCIONES)->unique()->values()->all();
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $ver) {
             $this->catalogos->asegurar();
             $sedes = $this->autorizador->sedesPermitidas($actor, 'reservas.configurar');
-            $areas = ReservaArea::with(['espacio:id,nombre,activo,nivel,ruta', 'sede:id,nombre', 'responsable:id,name', 'montajes'])
+            $todas = ReservaArea::with(['espacio:id,nombre,activo,nivel,ruta', 'sede:id,nombre', 'responsable:id,name', 'montajes'])
                 ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))->get()
                 ->sortBy(fn ($a) => $a->sede?->nombre.' '.$a->espacio?->ruta)->values();
+            $areas = in_array('areas', $ver, true) ? $todas : $todas->where('reservable', true)->values();
+            $catalogos = [
+                'montajes' => ReservaMontaje::orderBy('orden')->orderBy('nombre')->get(),
+                'tipos' => ReservaTipoUso::orderBy('orden')->orderBy('nombre')->get(),
+                'servicios' => ReservaServicio::with('departamento:id,nombre')->orderBy('categoria')->orderBy('orden')->orderBy('nombre')->get(),
+            ];
+            $ocultas = ['areas' => $todas->where('reservable', false)->count()]
+                + array_map(fn ($lista) => $lista->where('activo', false)->count(), $catalogos);
+            foreach ($catalogos as $clave => $lista) {
+                if (! in_array($clave, $ver, true)) {
+                    $catalogos[$clave] = $lista->where('activo', true)->values();
+                }
+            }
+            $empresaCompleta = $this->autorizador->alcanceDeEmpresa($actor, 'reservas.configurar');
 
             return view('operacion.reservas.configuracion', [
                 'areas' => $areas,
                 'rutas' => self::rutas($areas),
                 'interiores' => $this->conteoInteriores($areas),
+                'eliminar' => $this->catalogos->resumenParaEliminar($areas->where('reservable', true)->values()),
                 'opciones' => $this->catalogos->opcionesParaAgregar($sedes, Empresa::find($empresaId)),
-                'empresaCompleta' => $this->autorizador->alcanceDeEmpresa($actor, 'reservas.configurar'),
-                'montajes' => ReservaMontaje::orderBy('orden')->orderBy('nombre')->get(),
-                'tipos' => ReservaTipoUso::orderBy('orden')->orderBy('nombre')->get(),
-                'servicios' => ReservaServicio::with('departamento:id,nombre')->orderBy('categoria')->orderBy('orden')->orderBy('nombre')->get(),
+                'empresaCompleta' => $empresaCompleta,
+                'montajes' => $catalogos['montajes'],
+                'tipos' => $catalogos['tipos'],
+                'servicios' => $catalogos['servicios'],
+                'usados' => $empresaCompleta ? $this->catalogos->usados() : [],
+                'ver' => $ver,
+                'ocultas' => $ocultas,
                 'departamentos' => Departamento::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
                 'empresa' => Empresa::find($empresaId),
                 'puede' => ['crear' => $actor->can('reservas.crear'), 'ver' => $actor->can('reservas.ver'), 'aprobar' => $actor->can('reservas.aprobar'),
                     'configurar' => true, 'exportar' => $actor->can('reservas.exportar')],
             ]);
         });
+    }
+
+    /**
+     * Dirección de Configuración que muestra (o deja de mostrar) lo quitado o
+     * dado de baja de una sección, conservando las demás.
+     *
+     * @param  list<string>  $ver
+     */
+    public static function urlVer(array $ver, string $seccion, string $ancla): string
+    {
+        $nuevo = in_array($seccion, $ver, true) ? array_values(array_diff($ver, [$seccion])) : [...$ver, $seccion];
+
+        return route('reservas.configuracion', $nuevo === [] ? [] : ['ver' => $nuevo]).'#'.$ancla;
     }
 
     /**
@@ -112,13 +150,16 @@ class ConfiguracionReservasController extends Controller
             $texto .= ' con '.$hecho['interiores'].($hecho['interiores'] === 1 ? ' espacio interior' : ' espacios interiores').' (cada uno empieza con la configuración de su zona)';
         }
 
-        return redirect()->to($volver)->with('ok', $texto.'. Completa su aforo, horario y tarifas desde el botón Configurar de cada ficha.')
-            ->with('siguientes', [['Configurar '.$areas[0]->nombre(), route('reservas.configuracion.area', $areas[0]->id), 'bi-sliders']]);
+        return redirect()->to($volver)->with('ok', $texto.'. Completa su aforo, horario y tarifas desde el botón Editar (lápiz) de cada ficha.')
+            ->with('siguientes', [['Editar '.$areas[0]->nombre(), route('reservas.configuracion.area', $areas[0]->id), 'bi-pencil']]);
     }
 
     /**
-     * «Quitar de reservas»: no borra el espacio de Zonas y edificios ni el
-     * historial (ver CatalogosReservas::quitar). Con reservas próximas no se quita.
+     * «Eliminar de reservas» (botón del bote de basura en las fichas de áreas).
+     * Nunca toca Zonas y edificios (ver CatalogosReservas::quitar): con
+     * reservas próximas no se elimina; sin ninguna reserva se borra su
+     * configuración; con solo reservas pasadas se archiva con su historial y
+     * deja de verse (se ve con «Mostrar quitadas»).
      */
     public function quitar(Request $request, int $area): RedirectResponse
     {
@@ -130,18 +171,22 @@ class ConfiguracionReservasController extends Controller
         try {
             $r = $this->catalogos->quitar($request->user(), $area);
         } catch (ValidationException $e) {
-            return redirect()->to($volver)->with('error', "No se quitó «{$nombre}»: ".$e->validator->errors()->first('quitar'));
+            return redirect()->to($volver)->with('error', "No se eliminó «{$nombre}» de reservas: ".lcfirst((string) $e->validator->errors()->first('quitar')))
+                ->with('siguiente_paso', ['texto' => 'Ver su calendario', 'url' => route('reservas.calendario', ['area' => $area->id, 'sede' => $sede]), 'icono' => 'bi-calendar3']);
         }
         $detalle = match (true) {
-            $r['desactivadas'] > 0 && $r['borradas'] > 0 => ' Las que tienen reservas pasadas se conservan desactivadas.',
-            $r['desactivadas'] > 0 => ' Como ya tiene reservas pasadas, se conserva desactivada con su historial.',
+            $r['desactivadas'] > 0 && $r['borradas'] > 0 => ' Los espacios con reservas pasadas se guardaron con su historial; los ves con «Mostrar quitadas».',
+            $r['desactivadas'] > 0 => ' Como tiene reservas pasadas, se guardó con su historial y su configuración; la ves con «Mostrar quitadas» y puedes reactivarla.',
             default => '',
         };
         $total = $r['desactivadas'] + $r['borradas'];
+        $siguientes = $r['desactivadas'] > 0
+            ? [['Ver áreas quitadas', self::urlVer([], 'areas', 'areas'), 'bi-eye']]
+            : [['Agregar área reservable', route('reservas.configuracion').'#areas', 'bi-plus-circle']];
 
         return redirect()->to($volver)
-            ->with('ok', "«{$nombre}»".($total > 1 ? ' y sus espacios interiores' : '').' ya no se ofrece para reservar. Sigue en Zonas y edificios.'.$detalle)
-            ->with('siguientes', [['Volver a agregarla', route('reservas.configuracion').'#areas', 'bi-plus-circle']]);
+            ->with('ok', "«{$nombre}»".($total > 1 ? ' y sus espacios interiores se eliminaron' : ' se eliminó').' de reservas. Sigue en Zonas y edificios.'.$detalle)
+            ->with('siguientes', $siguientes);
     }
 
     public function area(Request $request, int $area): View
@@ -213,6 +258,25 @@ class ConfiguracionReservasController extends Controller
 
         return redirect()->to(route('reservas.configuracion').'#cat-'.$catalogo)
             ->with('ok', $activo ? "«{$registro->nombre}» reactivado." : "«{$registro->nombre}» dado de baja: ya no se ofrece en las reservas nuevas.");
+    }
+
+    /**
+     * «Eliminar» definitivo de un montaje, tipo de uso o servicio: solo si
+     * nunca se usó en una reserva ni (los montajes) en un área; si se usó,
+     * explica por qué y ofrece darlo de baja.
+     */
+    public function eliminarCatalogo(Request $request, string $catalogo, int $id): RedirectResponse
+    {
+        $this->exigirEmpresa($request);
+        $registro = CatalogosReservas::CATALOGOS[$catalogo][0]::findOrFail($id);
+        $volver = route('reservas.configuracion').'#cat-'.$catalogo;
+        try {
+            $this->catalogos->eliminarCatalogo($request->user(), $catalogo, $registro);
+        } catch (ValidationException $e) {
+            return redirect()->to($volver)->with('error', "No se eliminó «{$registro->nombre}»: ".$e->validator->errors()->first('eliminar'));
+        }
+
+        return redirect()->to($volver)->with('ok', CatalogosReservas::CATALOGOS[$catalogo][1]." «{$registro->nombre}» eliminado.");
     }
 
     /** Ajustes generales (mismo formulario en Configuración → Reservas de áreas). */

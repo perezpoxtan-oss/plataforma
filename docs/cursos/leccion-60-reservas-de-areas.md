@@ -71,22 +71,36 @@ Comprueba: los departamentos reciben «Se canceló la reserva» y el horario que
 1. **Informes**: elige el mes. Revisa ocupación, tipos e ingresos; **Descargar en Excel**.
 2. **Estructura → Configuración → Reservas de áreas**: cambia el responsable general y las horas de recordatorio.
 
-## Práctica 7 · Zonas con espacios interiores y quitar áreas (Administrador y quien reserva)
+## Práctica 7 · Zonas con espacios interiores y eliminar áreas (Administrador y quien reserva)
 
 1. En **Estructura → Zonas y edificios** revisa que exista una zona con salas dentro (por ejemplo «Centro de negocios › Nivel 1 › Sala Cozumel, Sala Holbox y Sala Bacalar»). No cambies nada ahí.
 2. En **Reservas de áreas**, entra a la sede y toca **Agregar área reservable**. Marca «Centro de negocios», elige **Por sus espacios interiores** y toca **Guardar**.
 3. Comprueba: la ficha del Centro de negocios dice «3 espacios reservables» y tiene **Entrar a sus espacios**. Entra: hay una ficha por sala, con la configuración de la zona. Arriba, la ruta te regresa a la sede.
-4. Toca **Configurar** en el Centro de negocios, pon aforo 8, marca **Copiar esta configuración a sus 3 espacios interiores** y **Guardar**: las tres salas quedan con aforo 8.
+4. Toca **Editar** (lápiz) en el Centro de negocios, pon aforo 8, marca **Copiar esta configuración a sus 3 espacios interiores** y **Guardar**: las tres salas quedan con aforo 8.
 5. Como quien reserva: **Nueva reserva** → **Zona o área**: Centro de negocios → **Espacio**: «Nivel 1 › Sala Holbox». Reserva de 10:00 a 11:00.
 6. Bloqueo cruzado: agrega «Torre A» como **Toda la zona como un solo espacio** y también una de sus salas. Reserva la sala de 10:00 a 11:00 e intenta reservar **Toda la zona** a las 10:30: el mensaje dice que comparte lugar con esta área. Al revés pasa lo mismo.
-7. Quitar: en la ficha de una sala con una reserva próxima toca **Quitar de reservas** → «Tiene 1 reserva próxima; cancélala o reprográmala primero.». Cancela la reserva y vuelve a quitarla: queda **QUITADA** (tiene historial). En **Configuración** tócale **Reactivar**: vuelve con su configuración.
+7. Eliminar con reservas próximas: en la ficha de una sala con una reserva próxima toca **Eliminar de reservas** (bote de basura). El mensaje avisa que tiene reservas próximas; al aceptar aparece «No se eliminó «…» de reservas: tiene 1 reserva próxima; cancélala o reprográmala primero.» con el botón **Ver su calendario**.
+8. Eliminar con historial: cancela esa reserva y vuelve a tocar **Eliminar de reservas**. El mensaje dice que ya tiene reservas pasadas y que se guarda su historial. Al aceptar, la ficha **desaparece**. En **Configuración** toca **Mostrar quitadas (1)**: la sala aparece atenuada como **QUITADA**; tócale **Reactivar** y vuelve con su configuración.
+9. Eliminar sin reservas: en una sala que nunca se reservó toca **Eliminar de reservas**: la ficha desaparece y se borra solo su configuración de reserva.
 
 Comprueba: en Zonas y edificios siguen todos los espacios; nada se borró.
+
+## Práctica 8 · Catálogos: editar, dar de baja y eliminar (Administrador)
+
+1. En **Configuración**, sección **Tipos de uso**, toca **Nuevo tipo de uso**, escribe «Capacitación» y **Guardar**.
+2. En su ficha toca **Editar** (lápiz), cámbiale el nombre a «Capacitación interna» y **Guardar**.
+3. Toca **Eliminar** (bote de basura) y acepta: como nunca se usó, desaparece para siempre.
+4. En **Montajes**, toca **Eliminar** en uno que ya se usó (por ejemplo «Auditorio»): el mensaje explica que ya se usó y ofrece **darlo de baja**. Acepta: deja de verse.
+5. Toca **Mostrar dados de baja (1)**: aparece atenuado como **DE BAJA**. Tócale **Reactivar**.
+
+Comprueba: las reservas que ya usaban ese montaje lo siguen mostrando.
 
 ## Para recordar
 
 - Una zona se reserva **completa** o **por sus espacios interiores**; si ambas existen, una ocupa a la otra en ese horario.
-- **Quitar de reservas** nunca borra el lugar de Zonas y edificios ni el historial, y no deja quitar un área con reservas próximas.
+- **Editar** es siempre el lápiz y **Eliminar** el bote de basura, como en Zonas y edificios.
+- **Eliminar de reservas** nunca borra el lugar de Zonas y edificios ni el historial, y no deja eliminar un área con reservas próximas. Lo quitado o dado de baja no estorba: se ve con **Mostrar quitadas / dados de baja**.
+- En los catálogos, **Eliminar** solo borra lo que nunca se usó; lo usado se **da de baja**.
 
 - Lo de cada quien llega a su campana y a Mis pendientes: nadie tiene que buscar.
 - Modificar solo vuelve a pedir lo que cambió.

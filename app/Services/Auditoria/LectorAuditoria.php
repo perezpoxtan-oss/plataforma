@@ -176,8 +176,8 @@ class LectorAuditoria
         // Reservas de áreas (docs/tecnico/reservas.md)
         'modificada' => 'Modificación', 'confirmada' => 'Confirmación', 'cambio_pedido' => 'Petición de cambio', 'costo_ajustado' => 'Ajuste de costo',
         'orden_lista' => 'Orden de servicio lista', 'area_reservable' => 'Área marcada como reservable', 'area_no_reservable' => 'Área ya no reservable',
-        'area_configurada' => 'Cambio de la configuración del área', 'area_modo' => 'Cambio de cómo se reserva la zona', 'area_quitada' => 'Área quitada de reservas', 'catalogo_creado' => 'Alta en el catálogo', 'catalogo_actualizado' => 'Edición en el catálogo',
-        'catalogo_baja' => 'Baja en el catálogo', 'catalogo_reactivado' => 'Reactivación en el catálogo',
+        'area_configurada' => 'Cambio de la configuración del área', 'area_modo' => 'Cambio de cómo se reserva la zona', 'area_quitada' => 'Área eliminada de reservas', 'catalogo_creado' => 'Alta en el catálogo', 'catalogo_actualizado' => 'Edición en el catálogo',
+        'catalogo_baja' => 'Baja en el catálogo', 'catalogo_reactivado' => 'Reactivación en el catálogo', 'catalogo_eliminado' => 'Eliminación en el catálogo',
         // Verificación en dos pasos (docs/tecnico/dos-pasos.md)
         'dos_pasos' => 'Cambio de a quién se exige la verificación en dos pasos', 'dos_pasos_activada' => 'Verificación en dos pasos activada',
         'dos_pasos_desactivada' => 'Verificación en dos pasos quitada', 'dos_pasos_codigos' => 'Códigos de respaldo nuevos',
