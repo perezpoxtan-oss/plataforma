@@ -854,6 +854,7 @@ class AccesosTest extends TestCase
         $this->actingAs($this->admin)->get('/accesos')->assertOk()->assertSee('Gente en Sitio (6)');
         $consultas = count(\DB::getQueryLog());
         \DB::disableQueryLog();
-        $this->assertLessThan(60, $consultas, "La pantalla hizo {$consultas} consultas.");
+        // 61: el encabezado suma una consulta fija (Mis pendientes → «Solicitudes ARCO por atender» del Administrador); las tarjetas siguen sin consultas propias
+        $this->assertLessThan(61, $consultas, "La pantalla hizo {$consultas} consultas.");
     }
 }
