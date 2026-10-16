@@ -26,6 +26,10 @@
         ? 'Esta zona se reserva por sus espacios interiores. Lo que guardes aquí es la configuración inicial de sus espacios; puedes copiarla a todos.'
         : 'Cómo se reserva esta área. Todo es opcional: sin datos, se reserva a cualquier hora, sin costo y la aprueba el responsable general.', 'icono' => $area->porInteriores() ? 'bi-building' : 'bi-door-open', 'actual' => 'configuracion', 'puede' => $navPuede])
 
+    @unless ($area->reservable)
+        <div class="alert alert-warning aviso mb-3" role="status"><i class="bi bi-info-circle-fill" aria-hidden="true"></i> Esta área está quitada de reservas: puedes editar sus datos, pero no se ofrece para reservar. Para volver a ofrecerla, usa <strong>Reactivar</strong> en su ficha de Configuración de reservas (con «Mostrar quitadas»).</div>
+    @endunless
+
     <form method="POST" action="{{ route('reservas.configuracion.area.guardar', $area->id) }}" class="res-form" enctype="multipart/form-data" autocomplete="off">
         @csrf
         @method('PUT')

@@ -148,6 +148,7 @@ class ReservaController extends Controller
                 'sede' => $sedes->firstWhere('id', $sede), 'variasSedes' => $sedes->count() > 1, 'fichas' => $fichas, 'puede' => $puede,
                 'puedeReservar' => $this->reservas->puedeReservarEn($actor, $sede), 'zona' => $zona, 'migas' => $migas,
                 'configurarAqui' => $configurarAqui,
+                'eliminar' => $configurarAqui ? app(CatalogosReservas::class)->resumenParaEliminar($nivel) : [],
                 'opciones' => $configurarAqui ? app(CatalogosReservas::class)->opcionesParaAgregar([$sede], Empresa::find($empresaId)) : collect(),
             ]);
         });

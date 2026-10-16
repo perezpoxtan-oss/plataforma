@@ -48,6 +48,7 @@ Route::prefix('reservas')->name('reservas.')->group(function () {
         Route::patch('/configuracion/areas/{area}/estado', 'estadoArea')->whereNumber('area')->name('configuracion.area.estado');
         Route::post('/configuracion/catalogo', 'crearCatalogo')->name('configuracion.catalogo.crear');
         Route::put('/configuracion/catalogo/{catalogo}/{id}', 'actualizarCatalogo')->where('catalogo', 'montajes|tipos|servicios')->whereNumber('id')->name('configuracion.catalogo.actualizar');
+        Route::delete('/configuracion/catalogo/{catalogo}/{id}', 'eliminarCatalogo')->where('catalogo', 'montajes|tipos|servicios')->whereNumber('id')->name('configuracion.catalogo.eliminar');
         Route::patch('/configuracion/catalogo/{catalogo}/{id}/estado', 'estadoCatalogo')->where('catalogo', 'montajes|tipos|servicios')->whereNumber('id')->name('configuracion.catalogo.estado');
         Route::put('/ajustes', 'ajustes')->name('ajustes');
     });

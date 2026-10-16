@@ -288,13 +288,13 @@ class ReservasPorNivelesTest extends TestCase
 
         $this->flushSession();
         $this->actingAs($this->admin)->delete("/reservas/configuracion/areas/{$sala->id}")
-            ->assertRedirect(route('reservas.configuracion'))->assertSessionHas('error', fn ($t) => str_contains($t, 'Tiene 2 reservas próximas; cancélalas o reprográmalas primero.'));
+            ->assertRedirect(route('reservas.configuracion'))->assertSessionHas('error', fn ($t) => str_contains($t, 'tiene 2 reservas próximas; cancélalas o reprográmalas primero.'));
         $this->assertTrue($sala->refresh()->reservable);
 
         // Pasan las reservas: ya es historial. Quitar la desactiva y conserva su configuración
         $this->travelTo(CarbonImmutable::parse('2026-11-10 15:00:00', 'UTC'));
         $this->flushSession();
-        $this->actingAs($this->admin)->delete("/reservas/configuracion/areas/{$sala->id}")->assertSessionHas('ok', fn ($t) => str_contains($t, 'se conserva desactivada'));
+        $this->actingAs($this->admin)->delete("/reservas/configuracion/areas/{$sala->id}")->assertSessionHas('ok', fn ($t) => str_contains($t, 'se guardó con su historial'));
         $this->assertFalse($sala->refresh()->reservable);
         $this->assertSame(2, $this->enEmpresa(fn () => Reserva::where('reserva_area_id', $sala->id)->count()));
         $this->flushSession();
@@ -315,7 +315,7 @@ class ReservasPorNivelesTest extends TestCase
         $this->reservar($this->rita, $this->area($this->h201), '10:00', '11:00')->assertSessionHasNoErrors();
 
         $this->flushSession();
-        $this->actingAs($this->admin)->delete("/reservas/configuracion/areas/{$zona->id}")->assertSessionHas('error', fn ($t) => str_contains($t, 'Tiene 1 reserva próxima'));
+        $this->actingAs($this->admin)->delete("/reservas/configuracion/areas/{$zona->id}")->assertSessionHas('error', fn ($t) => str_contains($t, 'tiene 1 reserva próxima'));
         $this->assertNotNull($this->area($this->h101));
 
         $r = $this->enEmpresa(fn () => Reserva::firstOrFail());
@@ -339,7 +339,7 @@ class ReservasPorNivelesTest extends TestCase
             return app(CatalogosReservas::class)->marcarReservable($this->admin, $this->h101);
         });
         auth()->forgetGuards();
-        $this->actingAs($this->rita)->get('/reservas')->assertOk()->assertDontSee('Agregar área reservable')->assertDontSee('title="Quitar de reservas"', false);
+        $this->actingAs($this->rita)->get('/reservas')->assertOk()->assertDontSee('Agregar área reservable')->assertDontSee('title="Eliminar de reservas"', false);
         $this->post('/reservas/configuracion/areas', ['espacios' => [$this->h102->id]])->assertForbidden();
         $this->delete("/reservas/configuracion/areas/{$sala->id}")->assertForbidden();
 

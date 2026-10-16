@@ -20,7 +20,10 @@
 
     {{-- ===================== Áreas reservables ===================== --}}
     <section class="mb-4" id="areas" aria-labelledby="t-areas">
-        <h2 id="t-areas" class="h5 fw-bold m-0">Áreas reservables</h2>
+        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+            <h2 id="t-areas" class="h5 fw-bold m-0">Áreas reservables</h2>
+            @include('operacion.reservas._ver-ocultas', ['seccion' => 'areas', 'ancla' => 'areas', 'n' => $ocultas['areas'], 'texto' => 'quitadas'])
+        </div>
         <p class="text-muted small">Las áreas salen de <strong>Zonas y edificios</strong>: agrega salones, salas, terrazas o habitaciones que ya existan. Una zona puede reservarse completa o por sus espacios interiores.</p>
 
         <div class="fichas-grid mt-2" data-fichas="reservas-config-areas">
@@ -41,15 +44,10 @@
                             </h3>
                             <div class="d-flex gap-1">
                                 @include('componentes.ver-historial', ['registro' => ReservaArea::class, 'id' => $a->id, 'nombre' => $a->nombre()])
-                                <a href="{{ route('reservas.configuracion.area', $a->id) }}" class="btn-icono editar" title="Configurar" aria-label="Configurar {{ $a->nombre() }}"><i class="bi bi-sliders" aria-hidden="true"></i></a>
                                 @if ($a->reservable)
-                                    <form method="POST" action="{{ route('reservas.configuracion.area.quitar', $a->id) }}" class="m-0"
-                                          data-confirmar="¿Quitar «{{ $a->nombre() }}»{{ $a->porInteriores() ? ' y sus espacios interiores' : '' }} de reservas? Sigue existiendo en Zonas y edificios. Si ya tiene reservas pasadas se conserva desactivada con su historial; si tiene reservas próximas no se quita.">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn-icono eliminar" title="Quitar de reservas" aria-label="Quitar {{ $a->nombre() }} de reservas"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
-                                    </form>
+                                    @include('operacion.reservas._acciones-area', ['a' => $a, 'resumen' => $eliminar[$a->id] ?? null])
                                 @else
+                                    <a href="{{ route('reservas.configuracion.area', $a->id) }}" class="btn-icono editar" title="Editar" aria-label="Editar {{ $a->nombre() }}"><i class="bi bi-pencil" aria-hidden="true"></i></a>
                                     <form method="POST" action="{{ route('reservas.configuracion.area.estado', $a->id) }}" class="m-0" data-confirmar="¿Volver a ofrecer «{{ $a->nombre() }}» para reservar? Conserva su configuración.">
                                         @csrf
                                         @method('PATCH')
@@ -89,7 +87,10 @@
         @foreach (['montajes' => ['Montajes', 'Formas de acomodar el área (cada área dice cuántas personas caben en cada una).', $montajes, 'bi-grid-3x3-gap', 'Nuevo montaje'],
                    'tipos' => ['Tipos de uso', 'Para qué se reserva (sirve para el informe de reservas por tipo).', $tipos, 'bi-tags', 'Nuevo tipo de uso']] as $clave => [$tituloCat, $ayuda, $lista, $iconoCat, $nuevo])
             <section class="mb-4" id="cat-{{ $clave }}" aria-labelledby="t-{{ $clave }}">
-                <h2 id="t-{{ $clave }}" class="h5 fw-bold m-0">{{ $tituloCat }}</h2>
+                <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                    <h2 id="t-{{ $clave }}" class="h5 fw-bold m-0">{{ $tituloCat }}</h2>
+                    @include('operacion.reservas._ver-ocultas', ['seccion' => $clave, 'ancla' => 'cat-'.$clave, 'n' => $ocultas[$clave], 'texto' => 'dados de baja'])
+                </div>
                 <p class="text-muted small">{{ $ayuda }}</p>
                 <div class="fichas-grid mt-2">
                     <button type="button" class="ficha-card ficha-create ficha-compacta" data-abrir-dialogo="dialogoNuevo-{{ $clave }}">
@@ -97,11 +98,11 @@
                         <span class="h6 fw-bold m-0 mt-2 titulo-crear">{{ $nuevo }}</span>
                     </button>
                     @foreach ($lista as $item)
-                        <div class="ficha-card ficha-compacta" id="{{ $clave }}-{{ $item->id }}" @unless ($item->activo) style="opacity:.6" @endunless>
+                        <div class="ficha-card ficha-compacta {{ $item->activo ? '' : 'inactiva' }}" id="{{ $clave }}-{{ $item->id }}">
                             <h3 class="h6 fw-bold m-0"><i class="bi {{ $iconoCat }} text-success me-1" aria-hidden="true"></i>{{ $item->nombre }}</h3>
                             <div class="ficha-footer">
                                 <span class="etiqueta-estado {{ $item->activo ? 'activo' : 'inactivo' }}">{{ $item->activo ? 'ACTIVO' : 'DE BAJA' }}</span>
-                                @include('operacion.reservas._acciones-catalogo', ['clave' => $clave, 'item' => $item, 'valores' => ['nombre' => $item->nombre]])
+                                @include('operacion.reservas._acciones-catalogo', ['clave' => $clave, 'item' => $item, 'usado' => isset($usados[$clave][$item->id]), 'valores' => ['nombre' => $item->nombre]])
                             </div>
                         </div>
                     @endforeach
@@ -111,7 +112,10 @@
         @endforeach
 
         <section class="mb-4" id="cat-servicios" aria-labelledby="t-servicios">
-            <h2 id="t-servicios" class="h5 fw-bold m-0">Servicios y requerimientos</h2>
+            <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                <h2 id="t-servicios" class="h5 fw-bold m-0">Servicios y requerimientos</h2>
+                @include('operacion.reservas._ver-ocultas', ['seccion' => 'servicios', 'ancla' => 'cat-servicios', 'n' => $ocultas['servicios'], 'texto' => 'dados de baja'])
+            </div>
             <p class="text-muted small">Lo que se puede pedir con una reserva. El <strong>departamento</strong> lo aprueba (si lo marcas) y recibe su orden de servicio al confirmarse. Sus responsables son los de <strong>Departamentos → Responsables</strong>.</p>
             <div class="fichas-grid mt-2">
                 <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevo-servicios">
@@ -119,7 +123,7 @@
                     <span class="h6 fw-bold m-0 mt-2 titulo-crear">Nuevo servicio</span>
                 </button>
                 @foreach ($servicios as $s)
-                    <div class="ficha-card" id="servicios-{{ $s->id }}" @unless ($s->activo) style="opacity:.6" @endunless>
+                    <div class="ficha-card {{ $s->activo ? '' : 'inactiva' }}" id="servicios-{{ $s->id }}">
                         <div>
                             <h3 class="ficha-title"><i class="bi bi-cup-hot text-success me-2" aria-hidden="true"></i>{{ $s->nombre }}</h3>
                             <div class="ficha-subtitulo">{{ ReservaServicio::CATEGORIAS[$s->categoria] ?? 'Otro' }}</div>
@@ -131,7 +135,7 @@
                         </div>
                         <div class="ficha-footer">
                             <span class="etiqueta-estado {{ $s->activo ? 'activo' : 'inactivo' }}">{{ $s->activo ? 'ACTIVO' : 'DE BAJA' }}</span>
-                            @include('operacion.reservas._acciones-catalogo', ['clave' => 'servicios', 'item' => $s, 'valores' => [
+                            @include('operacion.reservas._acciones-catalogo', ['clave' => 'servicios', 'item' => $s, 'usado' => isset($usados['servicios'][$s->id]), 'valores' => [
                                 'nombre' => $s->nombre, 'categoria' => $s->categoria, 'unidad' => $s->unidad, 'costo' => $s->costo,
                                 'departamento_id' => $s->departamento_id, 'requiere_aprobacion' => $s->requiere_aprobacion,
                             ]])

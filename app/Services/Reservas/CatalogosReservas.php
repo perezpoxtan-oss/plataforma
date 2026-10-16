@@ -9,11 +9,13 @@ use App\Models\Reserva;
 use App\Models\ReservaArea;
 use App\Models\ReservaMontaje;
 use App\Models\ReservaServicio;
+use App\Models\ReservaServicioItem;
 use App\Models\ReservaTipoUso;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
 use App\Support\Espacios\Etiquetas;
 use App\Support\ImagenSegura;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -38,6 +40,9 @@ class CatalogosReservas
     /** Marca en empresas.preferencias: la empresa ya tiene (o tuvo) áreas reservables (Mis pendientes no consulta si no). */
     public const EN_USO = 'reservas_en_uso';
 
+    /** Marca en empresas.preferencias: la empresa ya recibió sus montajes y tipos de uso iniciales (si los elimina, no vuelven). */
+    public const INICIALES = 'reservas_catalogos_iniciales';
+
     /** Niveles de Zonas y edificios que se pueden reservar (salones, salas, terrazas…). */
     public const NIVELES = [Espacio::EDIFICIO, Espacio::AREA, Espacio::AREA_ESPECIFICA, Espacio::SUBAREA];
 
@@ -51,10 +56,15 @@ class CatalogosReservas
 
     /**
      * La primera vez, la empresa recibe los montajes y tipos de uso de siempre
-     * (los puede cambiar). Idempotente.
+     * (los puede cambiar). Idempotente; queda marcado en la empresa para que
+     * lo que se elimine después no vuelva a aparecer.
      */
     public function asegurar(): void
     {
+        $empresa = ($id = app(Tenant::class)->empresaId()) !== null ? Empresa::find($id) : null;
+        if (! empty($empresa?->preferencias[self::INICIALES])) {
+            return;
+        }
         if (! ReservaMontaje::exists()) {
             foreach (ReservaMontaje::DEFECTO as $i => $nombre) {
                 ReservaMontaje::create(['nombre' => $nombre, 'orden' => $i + 1]);
@@ -65,6 +75,7 @@ class CatalogosReservas
                 ReservaTipoUso::create(['nombre' => $nombre, 'orden' => $i + 1]);
             }
         }
+        $empresa?->forceFill(['preferencias' => array_merge($empresa->preferencias ?? [], [self::INICIALES => true])])->save();
     }
 
     // ------------------------------------------------------------ Catálogos
@@ -119,6 +130,61 @@ class CatalogosReservas
         $antes = (bool) $registro->activo;
         $registro->update(['activo' => $activo]);
         $this->auditoria->auditar($actor, $activo ? 'reservas.catalogo_reactivado' : 'reservas.catalogo_baja', $registro, ['activo' => $antes], ['activo' => $activo]);
+    }
+
+    /**
+     * Ids de cada catálogo que ya se usaron: en alguna reserva (de cualquier
+     * estado, también canceladas) o, los montajes, en la configuración de un
+     * área. Lo usado no se elimina: se da de baja.
+     *
+     * @return array<string, array<int, true>> catálogo => [id => true]
+     */
+    public function usados(): array
+    {
+        $montajes = ReservaMontaje::pluck('id');
+
+        return [
+            'montajes' => Reserva::whereNotNull('montaje_id')->distinct()->pluck('montaje_id')
+                ->merge(DB::table('reserva_area_montajes')->whereIn('reserva_montaje_id', $montajes)->distinct()->pluck('reserva_montaje_id'))
+                ->mapWithKeys(fn ($id) => [(int) $id => true])->all(),
+            'tipos' => Reserva::whereNotNull('tipo_uso_id')->distinct()->pluck('tipo_uso_id')->mapWithKeys(fn ($id) => [(int) $id => true])->all(),
+            'servicios' => ReservaServicioItem::whereNotNull('servicio_id')->distinct()->pluck('servicio_id')->mapWithKeys(fn ($id) => [(int) $id => true])->all(),
+        ];
+    }
+
+    /**
+     * Por qué no se puede eliminar un registro de catálogo (null = nunca se usó).
+     */
+    public function motivoParaNoEliminar(string $catalogo, Model $registro): ?string
+    {
+        $id = (int) $registro->getKey();
+        $reservas = match ($catalogo) {
+            'montajes' => Reserva::where('montaje_id', $id)->count(),
+            'tipos' => Reserva::where('tipo_uso_id', $id)->count(),
+            'servicios' => ReservaServicioItem::where('servicio_id', $id)->distinct()->count('reserva_id'),
+        };
+        $areas = $catalogo === 'montajes' ? DB::table('reserva_area_montajes')->where('reserva_montaje_id', $id)->count() : 0;
+        $partes = array_filter([
+            $reservas > 0 ? ($reservas === 1 ? '1 reserva' : "{$reservas} reservas") : null,
+            $areas > 0 ? ($areas === 1 ? 'la configuración de 1 área' : "la configuración de {$areas} áreas") : null,
+        ]);
+
+        return $partes === [] ? null : 'ya se usó en '.implode(' y en ', $partes).'. Para conservar ese historial no se elimina: dalo de baja y dejará de ofrecerse.';
+    }
+
+    /**
+     * «Eliminar» definitivo de un montaje, tipo de uso o servicio que nunca se
+     * usó. Si ya se usó, no se borra (ValidationException con el motivo).
+     */
+    public function eliminarCatalogo(User $actor, string $catalogo, Model $registro): void
+    {
+        $motivo = $this->motivoParaNoEliminar($catalogo, $registro);
+        if ($motivo !== null) {
+            throw ValidationException::withMessages(['eliminar' => $motivo]);
+        }
+        $antes = $registro->only(['nombre', 'activo']);
+        $registro->delete();
+        $this->auditoria->auditar($actor, 'reservas.catalogo_eliminado', $registro, $antes, ['catalogo' => self::CATALOGOS[$catalogo][1], 'nombre' => $antes['nombre']]);
     }
 
     // ---------------------------------------------------- Áreas reservables
@@ -259,7 +325,44 @@ class CatalogosReservas
     }
 
     /**
-     * «Quitar de reservas». Nunca borra el espacio de Zonas y edificios ni el
+     * Qué pasaría al eliminar cada área de reservas, para la confirmación de su
+     * botón: cuántas reservas próximas tiene (lo impiden) y si tiene historial
+     * (se archiva en vez de borrarse). Una zona «por sus espacios interiores»
+     * cuenta también los de sus espacios. Tres consultas para todas.
+     *
+     * @param  Collection<int, ReservaArea>  $areas
+     * @return array<int, array{proximas: int, historial: bool}>
+     */
+    public function resumenParaEliminar(Collection $areas): array
+    {
+        if ($areas->isEmpty()) {
+            return [];
+        }
+        $todas = $areas->contains(fn ($a) => $a->porInteriores())
+            ? ReservaArea::with('espacio:id,ruta')->get(['id', 'espacio_id']) : collect();
+        $grupos = $areas->mapWithKeys(function (ReservaArea $a) use ($todas) {
+            $ids = [(int) $a->id];
+            $ruta = $a->porInteriores() ? ($a->espacio?->ruta ?? Espacio::whereKey($a->espacio_id)->value('ruta')) : null;
+            if ($ruta) {
+                $ids = array_merge($ids, $todas->filter(fn ($o) => (int) $o->espacio_id !== (int) $a->espacio_id
+                    && $o->espacio !== null && str_starts_with((string) $o->espacio->ruta, $ruta))->pluck('id')->map(fn ($id) => (int) $id)->all());
+            }
+
+            return [(int) $a->id => $ids];
+        });
+        $ids = $grupos->flatten()->unique()->values()->all();
+        $proximas = Reserva::ocupan()->whereIn('reserva_area_id', $ids)->where('fin', '>', now())
+            ->selectRaw('reserva_area_id, COUNT(*) AS total')->groupBy('reserva_area_id')->pluck('total', 'reserva_area_id');
+        $historial = Reserva::whereIn('reserva_area_id', $ids)->distinct()->pluck('reserva_area_id')->mapWithKeys(fn ($id) => [(int) $id => true]);
+
+        return $grupos->map(fn (array $g) => [
+            'proximas' => (int) collect($g)->sum(fn ($id) => (int) ($proximas[$id] ?? 0)),
+            'historial' => collect($g)->contains(fn ($id) => $historial->has($id)),
+        ])->all();
+    }
+
+    /**
+     * «Eliminar de reservas» (antes «Quitar de reservas»). Nunca borra el espacio de Zonas y edificios ni el
      * historial:
      *  - con reservas próximas no se quita (se cancelan o reprograman antes);
      *  - con reservas pasadas se desactiva (reservable = false) y conserva su

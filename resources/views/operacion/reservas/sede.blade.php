@@ -75,14 +75,7 @@
                                 <a href="{{ route('reservas.calendario', ['area' => $a->id, 'sede' => $a->sede_id]) }}" class="btn-icono ver" title="Calendario del área" aria-label="Calendario de {{ $a->nombre() }}"><i class="bi bi-calendar3" aria-hidden="true"></i></a>
                             @endif
                             @if ($configurarAqui)
-                                <a href="{{ route('reservas.configuracion.area', $a->id) }}" class="btn-icono editar" title="Configurar" aria-label="Configurar {{ $a->nombre() }}"><i class="bi bi-sliders" aria-hidden="true"></i></a>
-                                <form method="POST" action="{{ route('reservas.configuracion.area.quitar', $a->id) }}" class="m-0"
-                                      data-confirmar="¿Quitar «{{ $a->nombre() }}»{{ $a->porInteriores() ? ' y sus espacios interiores' : '' }} de reservas? Sigue existiendo en Zonas y edificios. Si ya tiene reservas pasadas se conserva desactivada con su historial; si tiene reservas próximas no se quita.">
-                                    @csrf
-                                    @method('DELETE')
-                                    <input type="hidden" name="volver" value="sede">
-                                    <button type="submit" class="btn-icono eliminar" title="Quitar de reservas" aria-label="Quitar {{ $a->nombre() }} de reservas"><i class="bi bi-slash-circle" aria-hidden="true"></i></button>
-                                </form>
+                                @include('operacion.reservas._acciones-area', ['a' => $a, 'resumen' => $eliminar[$a->id] ?? null, 'volver' => 'sede'])
                             @endif
                         </div>
                     </div>

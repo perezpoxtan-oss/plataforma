@@ -8,7 +8,7 @@
     @php $id = ($modo === 'nuevo' ? 'dialogoNuevo-' : 'dialogoEditar-').$clave; $p = $modo.'-'.$clave; @endphp
     <dialog id="{{ $id }}" class="dialogo" aria-labelledby="t-{{ $id }}">
         <div class="dialogo-cabecera">
-            <h2 id="t-{{ $id }}"><i class="bi {{ $modo === 'nuevo' ? 'bi-plus-circle' : 'bi-pencil-square' }} me-2 text-success" aria-hidden="true"></i>{{ $tituloDialogo }}</h2>
+            <h2 id="t-{{ $id }}"><i class="bi {{ $modo === 'nuevo' ? 'bi-plus-circle' : 'bi-pencil' }} me-2 text-success" aria-hidden="true"></i>{{ $tituloDialogo }}</h2>
             <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
         </div>
         <div class="dialogo-cuerpo">
