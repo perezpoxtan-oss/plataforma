@@ -5,6 +5,7 @@ namespace App\Services\Recepcion;
 use App\Models\Empresa;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
+use App\Services\Privacidad\AvisosPrivacidad;
 use App\Support\Entrada;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -269,5 +270,9 @@ class AjustesRecepcion
             'escalar_minutos' => (int) ($x['escalar_minutos'] ?? PanelRecepcion::ESPERA_ROJA),
         ];
         $this->auditoria->auditar($actor, 'candidatos.configurado', $empresa, $resumen($antes), $resumen($nuevos));
+        // Privacidad (docs/tecnico/privacidad.md): un texto distinto del aviso queda como versión nueva, con su autor
+        if ($privacidad && ($antes['aviso_privacidad'] ?? null) !== ($nuevos['aviso_privacidad'] ?? null)) {
+            app(AvisosPrivacidad::class)->registrarCambio($actor, $empresa);
+        }
     }
 }

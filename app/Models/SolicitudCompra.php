@@ -42,7 +42,7 @@ class SolicitudCompra extends Model
         'promocion_id', 'empresa_id', 'activada_en', 'nombre', 'empresa', 'correo', 'telefono', 'sedes', 'mensaje', 'plan_id',
         'moneda', 'iva_porcentaje', 'mensual_subtotal', 'mensual_iva', 'mensual_total',
         'unico_subtotal', 'unico_iva', 'unico_total', 'requiere_cotizacion', 'detalle',
-        'estado', 'pasarela', 'referencia_pago', 'notas_internas', 'acepta_privacidad', 'privacidad_aceptada_en', 'ip', 'atendida_en',
+        'estado', 'pasarela', 'referencia_pago', 'notas_internas', 'acepta_privacidad', 'privacidad_aceptada_en', 'aviso_privacidad_id', 'ip', 'atendida_en',
     ];
 
     protected function casts(): array

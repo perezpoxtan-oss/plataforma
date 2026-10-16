@@ -120,5 +120,15 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(5)->by('comercial-contratar|'.$ip($r)),
             Limit::perDay(30)->by('comercial-contratar-dia|'.$ip($r)),
         ]);
+
+        // Privacidad (docs/tecnico/privacidad.md): consultar el aviso, enviar una solicitud ARCO y confirmar el correo
+        RateLimiter::for('privacidad-ver', fn (Request $r) => Limit::perMinute(60)->by('privacidad-ver|'.$ip($r)));
+        RateLimiter::for('privacidad-enviar', fn (Request $r) => [
+            Limit::perMinute(3)->by('privacidad-enviar|'.$ip($r)),
+            Limit::perDay(20)->by('privacidad-enviar-dia|'.$ip($r)),
+        ]);
+        // Verificación en dos pasos en Mi cuenta: activar, códigos nuevos y quitarla (piden contraseña o código), por cuenta
+        RateLimiter::for('dos-pasos-cuenta', fn (Request $r) => Limit::perMinute(10)->by('dos-pasos-cuenta|'.($r->user()?->getAuthIdentifier() ?? $ip($r))));
+        RateLimiter::for('privacidad-confirmar', fn (Request $r) => Limit::perMinute(10)->by('privacidad-confirmar|'.$ip($r)));
     }
 }

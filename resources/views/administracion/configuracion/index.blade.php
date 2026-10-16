@@ -30,6 +30,7 @@
         ['sec-pases', 'Pases de salida', 'bi-box-arrow-up-right', $mostrarAvisos || $verPases],
         ['sec-avisos', 'Avisos por correo', 'bi-envelope', $mostrarAvisos],
         ['sec-cuentas', 'Cuentas y seguridad', 'bi-shield-lock', $mostrarAvisos],
+        ['sec-privacidad', 'Privacidad', 'bi-person-lock', $privacidad !== null],
         ['sec-plataforma', 'Plataforma', 'bi-hdd-network', $plataforma],
     ];
     $visibles = array_values(array_filter($secciones, fn ($s) => $s[3]));
@@ -272,10 +273,22 @@
                 @foreach ($gruposEn('sec-cuentas') as $grupo => $def)
                     @include('administracion.configuracion._avisos-grupo')
                 @endforeach
+                {{-- Verificación en dos pasos: a quién se exige (docs/tecnico/dos-pasos.md) --}}
+                @if ($dosPasos)
+                    @include('administracion.configuracion._dos-pasos', ['dosPasos' => $dosPasos, 'puedeEditar' => $puedeEditar])
+                @endif
                 <div class="tarjeta p-4" id="cfg-sesion">
                     <h3 class="h6 fw-bold"><i class="bi bi-hourglass-bottom me-2 text-primary" aria-hidden="true"></i>Cierre de sesión por inactividad</h3>
                     <p class="small mb-0">La sesión se cierra sola tras <strong>{{ (int) config('plataforma.sesion.inactividad_minutos') }} minutos</strong> sin actividad, en todas las empresas. <span class="valor-original">Valor original: 20 minutos.</span> Es un ajuste de la plataforma: si necesitas otro tiempo, pídelo a quien administra la plataforma.</p>
                 </div>
+            </section>
+        @endif
+
+        {{-- ============================== Privacidad ============================== --}}
+        @if ($privacidad)
+            <section class="seccion-config" id="sec-privacidad" aria-labelledby="t-sec-privacidad">
+                <h2 id="t-sec-privacidad" class="titulo-seccion-config"><i class="bi bi-person-lock" aria-hidden="true"></i>Privacidad</h2>
+                @include('administracion.configuracion._privacidad', ['p' => $privacidad, 'empresa' => $empresa])
             </section>
         @endif
 

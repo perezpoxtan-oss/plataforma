@@ -43,6 +43,7 @@ use App\Models\Rol;
 use App\Models\Rubro;
 use App\Models\Ruta;
 use App\Models\Sede;
+use App\Models\SolicitudArco;
 use App\Models\SolicitudCompra;
 use App\Models\Suscripcion;
 use App\Models\TipoEquipo;
@@ -73,6 +74,8 @@ use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
+use App\Services\Privacidad\AvisosPrivacidad;
+use App\Services\Privacidad\SolicitudesArco;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\RecorridosPc\AdministradorRecorridosPc;
 use App\Services\Responsivas\AdministradorResponsivas;
@@ -244,6 +247,8 @@ class CrearDatosDemo extends Command
         // Mejoras informes (ADR-0017): semanas anteriores para que Tendencias tenga con qué comparar
         $paso('informesDemo', fn () => $this->informesDemo($empresa, $sedes));
         // Fin Mejoras informes
+        // Privacidad (docs/tecnico/privacidad.md): versión 1 del aviso y una solicitud ARCO por atender
+        $paso('privacidadDemo', fn () => $this->privacidadDemo($empresa));
         // Catálogo comercial: solicitudes de ejemplo de la página pública (datos de la plataforma, sin empresa)
         $paso('catalogoComercialDemo', fn () => $this->catalogoComercialDemo());
         // Suscripciones: clientes de ejemplo en distintos estados (empresas aparte; Hotel Demo sigue sin suscripción)
@@ -255,6 +260,23 @@ class CrearDatosDemo extends Command
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Privacidad: la versión 1 del aviso (el borrador) y una solicitud ARCO de
+     * Acceso ya confirmada, por atender (folio ARCO-DEMO-0001). Una sola vez.
+     */
+    private function privacidadDemo(Empresa $empresa): void
+    {
+        app(AvisosPrivacidad::class)->vigente($empresa);
+        app(AvisosPrivacidad::class)->codigoPublico($empresa);
+        if (SolicitudArco::withoutGlobalScopes()->where('empresa_id', $empresa->id)->where('folio', 'ARCO-DEMO-0001')->exists()) {
+            return;
+        }
+        $s = new SolicitudArco(['folio' => 'ARCO-DEMO-0001', 'derecho' => 'acceso', 'estado' => SolicitudArco::PENDIENTE, 'nombre' => 'Laura Visitante Ejemplo',
+            'correo' => 'laura.visitante@ejemplo.com', 'relacion' => 'visitante', 'detalle' => 'Visité el hotel el mes pasado y quiero saber qué datos y fotos tienen de mí.']);
+        $s->forceFill(['empresa_id' => $empresa->id, 'verificada_en' => now()->subDays(3), 'verificada_como' => 'correo',
+            'vence_en' => SolicitudesArco::venceEn(now()->subDays(3))->toDateString()])->save();
     }
 
     /**

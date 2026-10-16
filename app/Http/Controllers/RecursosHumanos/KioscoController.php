@@ -8,6 +8,7 @@ use App\Models\Empresa;
 use App\Models\Puesto;
 use App\Services\Candidatos\CambioNoPermitido;
 use App\Services\Candidatos\Kiosco;
+use App\Services\Privacidad\AvisosPrivacidad;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Support\Entrada;
 use App\Support\Tenancy\Tenant;
@@ -70,6 +71,8 @@ class KioscoController extends Controller
                 'enlace' => $enlace,
                 'empresa' => $empresa->nombre_comercial,
                 'privacidad' => app(AjustesRecepcion::class)->textoPrivacidad($empresa),
+                // Privacidad: enlace a la página de derechos ARCO de la empresa
+                'arcoUrl' => route('privacidad.aviso', app(AvisosPrivacidad::class)->codigoPublico($empresa)),
                 'puestos' => Puesto::where('activo', true)->orderBy('nombre')->pluck('nombre'),
             ]));
         });

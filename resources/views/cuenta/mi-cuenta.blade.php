@@ -72,6 +72,50 @@
         </div>
     </div>
 
+    {{-- Verificación en dos pasos (docs/tecnico/dos-pasos.md) --}}
+    <section class="tarjeta p-4 mt-4" id="dos-pasos" aria-labelledby="t-dos-pasos">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+            <h2 id="t-dos-pasos" class="h5 fw-bold m-0"><i class="bi bi-phone-vibrate me-2 text-primary" aria-hidden="true"></i>Verificación en dos pasos</h2>
+            <span class="estado-dos-pasos {{ $dosPasos['activa'] ? 'activa' : 'inactiva' }}"><i class="bi {{ $dosPasos['activa'] ? 'bi-shield-check' : 'bi-shield' }}" aria-hidden="true"></i>{{ $dosPasos['activa'] ? 'Activa' : 'Sin activar' }}</span>
+        </div>
+        @if (! $dosPasos['activa'])
+            <p class="small text-muted mb-3">Además de tu contraseña, al entrar te pediremos un código de tu teléfono (Google Authenticator, Microsoft Authenticator u otra app compatible). Así nadie entra a tu cuenta aunque conozca tu contraseña.@if ($dosPasos['exigida']) <strong>Tu cuenta la necesita.</strong>@endif</p>
+            <a href="{{ route('mi-cuenta.dos-pasos') }}" class="btn-azul d-inline-flex align-items-center" style="min-height:44px;border-radius:10px;padding:0 1.25rem;text-decoration:none;"><i class="bi bi-shield-lock me-1" aria-hidden="true"></i>Activar la verificación en dos pasos</a>
+        @else
+            <p class="small text-muted mb-3">Activa desde el @fecha($dosPasos['desde'], 'd/m/Y'). Te quedan <strong>{{ $dosPasos['restantes'] }}</strong> código(s) de respaldo.@if ($dosPasos['restantes'] <= 3) Crea códigos nuevos para no quedarte sin forma de entrar si pierdes tu teléfono.@endif</p>
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <h3 class="h6 fw-bold">Códigos de respaldo nuevos</h3>
+                    <p class="small text-muted">Los anteriores dejan de servir. Escribe tu contraseña para confirmar.</p>
+                    <form action="{{ route('mi-cuenta.dos-pasos.codigos') }}" method="POST" autocomplete="off">
+                        @csrf
+                        <label class="campo-etiqueta" for="codigos_contrasena">Tu contraseña</label>
+                        <input type="password" id="codigos_contrasena" name="contrasena_actual" class="campo" required autocomplete="current-password">
+                        <button type="submit" class="btn btn-outline-primary mt-2" style="min-height:44px;border-radius:10px;"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Restablecer códigos de respaldo</button>
+                    </form>
+                </div>
+                <div class="col-lg-6">
+                    @if ($dosPasos['exigida'])
+                        <h3 class="h6 fw-bold">Quitar la verificación</h3>
+                        <p class="small text-muted mb-0"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>{{ $cuenta->es_superadmin ? 'El Super Administrador siempre la necesita.' : 'Tu empresa la exige para tu cuenta.' }} Si cambiaste de teléfono, entra con un código de respaldo y vuelve a activarla, o pide a tu administrador que la restablezca.</p>
+                    @else
+                        <h3 class="h6 fw-bold">Quitar la verificación</h3>
+                        <p class="small text-muted">Al entrar ya solo se pedirá tu contraseña. Confirma con tu contraseña y un código de la app.</p>
+                        <form action="{{ route('mi-cuenta.dos-pasos.desactivar') }}" method="POST" autocomplete="off" data-confirmar="¿Quitar la verificación en dos pasos? Tu cuenta quedará protegida solo con tu contraseña.">
+                            @csrf
+                            @method('DELETE')
+                            <label class="campo-etiqueta" for="quitar_contrasena">Tu contraseña</label>
+                            <input type="password" id="quitar_contrasena" name="contrasena_actual" class="campo mb-2" required autocomplete="current-password">
+                            <label class="campo-etiqueta" for="quitar_codigo">Código de la app (o uno de respaldo)</label>
+                            <input type="text" id="quitar_codigo" name="codigo" class="campo" inputmode="numeric" autocomplete="one-time-code" maxlength="20" required>
+                            <button type="submit" class="btn btn-outline-danger mt-2" style="min-height:44px;border-radius:10px;"><i class="bi bi-shield-x me-1" aria-hidden="true"></i>Dar de baja la verificación</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        @endif
+    </section>
+
     {{-- Avisos del navegador: avisos del sistema aunque la pestaña esté en segundo plano (no aplica dentro de la app de Android) --}}
     @unless (\App\Support\AppMovil::es())
     <section class="tarjeta p-4 mt-4" id="avisos-navegador" aria-labelledby="t-avisos-navegador">

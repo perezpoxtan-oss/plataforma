@@ -112,7 +112,8 @@ class CatalogoSeeder extends Seeder
                 'usuarios' => ['Usuarios', 'bi-person-gear', ['desbloquear']],
                 'roles' => ['Roles', 'bi-person-rolodex', []],
                 'permisos' => ['Matriz de permisos', 'bi-ui-checks-grid', [], [], ['ver', 'editar']],
-                'configuracion' => ['Configuración', 'bi-sliders', ['configurar'], [], ['ver', 'editar']],
+                // «datos_personales»: Privacidad y solicitudes ARCO (conservación, versiones del aviso, bandeja; docs/tecnico/privacidad.md)
+                'configuracion' => ['Configuración', 'bi-sliders', ['configurar', 'datos_personales'], [], ['ver', 'editar']],
                 'auditoria' => ['Bitácora de auditoría', 'bi-clipboard-data', ['exportar'], [], ['ver']],
                 'identidad' => ['Identidad de la plataforma', 'bi-palette', [], [], ['ver', 'editar'], Modulo::TIPO_PLATAFORMA],
                 // Catálogo comercial: productos, planes, paquetes y la página pública de planes (solo Super Administrador)

@@ -83,6 +83,10 @@ trait EscenarioAuditoria
         if ($parametro === 'equipo') {
             return str_starts_with($ruta, 'equipos_pc.') ? 'equipos_pc' : 'equipos';
         }
+        // Privacidad: versiones del aviso (el parámetro se llama igual que el de Procedimientos)
+        if ($ruta === 'privacidad.aviso.version') {
+            return 'avisos_privacidad';
+        }
         // Eliminar definitivamente (/borrar/{registro}/{id}): se recorre con llaves (registro de una sede)
         if ($parametro === 'id' && (str_starts_with($ruta, 'borrar.') || str_starts_with($ruta, 'identificacion.'))) {
             return 'llaves';
@@ -136,6 +140,8 @@ trait EscenarioAuditoria
             'postulacion' => 'postulaciones',
             // Importar desde Excel
             'importacion' => 'importaciones',
+            // Privacidad: solicitudes ARCO
+            'solicitud' => 'solicitudes_arco',
         ][$parametro] ?? null;
     }
 

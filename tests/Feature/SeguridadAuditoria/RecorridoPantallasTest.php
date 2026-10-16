@@ -154,6 +154,8 @@ class RecorridoPantallasTest extends TestCase
             // Olvidé mi contraseña: el enlace del correo no abre ningún registro (sin sesión; con sesión rebota al panel)
             $conRegistro = $ruta->parameterNames() !== [] && $ruta->getName() !== 'modulos.pendiente' && ! str_starts_with((string) $ruta->getName(), 'empleos.')
                 && ! str_starts_with((string) $ruta->getName(), 'manual.') && ! str_starts_with((string) $ruta->getName(), 'contrasena.')
+                // Privacidad: el aviso de cada empresa y su formulario ARCO son públicos a propósito (como la bolsa de trabajo)
+                && ! in_array($ruta->getName(), ['privacidad.aviso', 'privacidad.empresa.solicitud'], true)
                 // Importar desde Excel: {tipo} es el módulo (colaboradores, zonas…), no un registro
                 && ! in_array($ruta->getName(), ['importaciones.create', 'importaciones.plantilla'], true);
             foreach ($this->urlsDe($ruta) as [$url, $json]) {
@@ -390,6 +392,12 @@ class RecorridoPantallasTest extends TestCase
             'importaciones.create', 'importaciones.plantilla' => array_map(fn ($t) => ['tipo' => $t], array_keys(AdministradorImportaciones::TIPOS)),
             'importaciones.show', 'importaciones.original', 'importaciones.resultado' => DB::table('importaciones')->where('empresa_id', $e)->orderBy('id')->limit(2)
                 ->pluck('id')->map(fn ($id) => ['importacion' => $id])->all(),
+            // Privacidad: la solicitud ARCO de la demo (sin archivo exportado) y las versiones del aviso
+            'arco.show' => DB::table('solicitudes_arco')->where('empresa_id', $e)->orderBy('id')->limit(2)->pluck('id')->map(fn ($id) => ['solicitud' => $id])->all(),
+            'arco.descargar' => [],
+            'privacidad.verificar' => [], // enlace de un solo uso: se prueba en PrivacidadArcoTest
+            'privacidad.aviso', 'privacidad.empresa.solicitud' => array_map(fn ($c) => ['codigo' => $c], array_filter([DB::table('empresas')->where('id', $e)->value('privacidad_codigo')])),
+            'privacidad.aviso.version' => DB::table('avisos_privacidad')->where('empresa_id', $e)->orderBy('id')->limit(2)->pluck('id')->map(fn ($id) => ['version' => $id])->all(),
             default => null,
         };
 

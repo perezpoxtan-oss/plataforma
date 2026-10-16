@@ -48,6 +48,16 @@
                     <i class="bi bi-clock-history me-2" aria-hidden="true"></i> La página estuvo abierta mucho tiempo. Vuelve a intentarlo.
                 </div>
                 @break
+            @case('dos_pasos_intentos')
+                <div class="alert alert-danger acceso-aviso" role="alert">
+                    <i class="bi bi-shield-lock-fill me-2" aria-hidden="true"></i> Demasiados códigos equivocados. Espera 15 minutos y vuelve a entrar; si perdiste tu teléfono, usa un código de respaldo o pide a tu administrador que restablezca tu verificación en dos pasos.
+                </div>
+                @break
+            @case('dos_pasos_vencido')
+                <div class="alert alert-warning acceso-aviso" role="alert">
+                    <i class="bi bi-clock-history me-2" aria-hidden="true"></i> Pasó mucho tiempo sin escribir el código. Vuelve a entrar.
+                </div>
+                @break
             @case('contrasena_creada')
                 <div class="alert alert-success acceso-aviso" role="status">
                     <i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i> Tu contraseña nueva quedó guardada. Entra con ella.

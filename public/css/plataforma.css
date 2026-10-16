@@ -4610,3 +4610,36 @@ html.modo-noche .btn-importar, html.modo-noche .conteo-importar { background: tr
 html.modo-noche .tabla-importar .celda-error { background: rgba(185, 28, 28, 0.18); }
 html.modo-noche .pasos-configura li.hecho { background: rgba(22, 163, 74, 0.12); border-color: rgba(22, 163, 74, 0.4); }
 /* Fin Importar desde Excel */
+
+/* Verificación en dos pasos y Privacidad (docs/tecnico/dos-pasos.md, docs/tecnico/privacidad.md) */
+.acceso-recordar { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.85rem; color: var(--texto-suave); cursor: pointer; }
+.acceso-recordar input { margin-top: 0.2rem; width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
+.dos-pasos-pasos { padding-left: 1.2rem; }
+.dos-pasos-pasos li { margin-bottom: 0.75rem; }
+.dos-pasos-qr { display: inline-block; background: #fff; padding: 0.75rem; border-radius: 12px; border: 1px solid #e2e8f0; line-height: 0; }
+.dos-pasos-qr svg { width: 200px; height: 200px; }
+.dos-pasos-clave { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.05rem; letter-spacing: 0.08em; background: #f1f5f9; border-radius: 8px; padding: 0.5rem 0.75rem; display: inline-block; word-break: break-all; }
+.codigos-respaldo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; max-width: 26rem; padding: 0; list-style: none; }
+.codigos-respaldo li { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.05rem; letter-spacing: 0.06em; background: #f8fafc; border: 1px dashed #94a3b8; border-radius: 8px; padding: 0.5rem; text-align: center; }
+.estado-dos-pasos { display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 999px; padding: 0.3rem 0.8rem; font-weight: 700; font-size: 0.8rem; }
+.estado-dos-pasos.activa { background: #d1e7dd; color: #166534; }
+.estado-dos-pasos.inactiva { background: #f1f5f9; color: #475569; }
+.reloj-arco { display: inline-flex; align-items: center; gap: 0.3rem; border-radius: 999px; padding: 0.25rem 0.7rem; font-weight: 700; font-size: 0.75rem; white-space: nowrap; }
+.reloj-arco.verde { background: #dcfce7; color: #166534; }
+.reloj-arco.ambar { background: #fef3c7; color: #92400e; }
+.reloj-arco.roja { background: #fee2e2; color: #b91c1c; }
+.reloj-arco.gris { background: #f1f5f9; color: #475569; }
+.lista-arco { list-style: none; padding: 0; margin: 0; }
+.lista-arco > li { border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.9rem 1rem; margin-bottom: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; justify-content: space-between; }
+.coincidencias-arco fieldset { border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.6rem 0.9rem; margin-bottom: 0.75rem; }
+.coincidencias-arco legend { font-size: 0.85rem; font-weight: 700; float: none; width: auto; padding: 0 0.3rem; margin: 0; }
+.historial-aviso td, .historial-aviso th { font-size: 0.85rem; }
+@media print {
+    body.imprimiendo-codigos * { visibility: hidden; }
+    body.imprimiendo-codigos #codigos-respaldo, body.imprimiendo-codigos #codigos-respaldo * { visibility: visible; }
+    body.imprimiendo-codigos #codigos-respaldo { position: absolute; top: 0; left: 0; }
+}
+html.modo-noche .dos-pasos-clave, html.modo-noche .codigos-respaldo li { background: rgba(148, 163, 184, 0.12); color: inherit; }
+html.modo-noche .lista-arco > li, html.modo-noche .coincidencias-arco fieldset { border-color: rgba(148, 163, 184, 0.3); }
+/* Fin Verificación en dos pasos y Privacidad */
+.chip-config.activo { border-color: var(--color-primario); background: var(--color-primario); color: #fff; }

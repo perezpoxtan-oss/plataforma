@@ -3,7 +3,7 @@ titulo: Mi cuenta
 modulos: []
 seccion: Primeros pasos
 orden: 25
-resumen: Ver tus datos de acceso, cambiar tu contraseña sin depender de nadie, elegir qué avisos recibes y activar los avisos del navegador.
+resumen: Ver tus datos de acceso, cambiar tu contraseña sin depender de nadie, activar la verificación en dos pasos, elegir qué avisos recibes y activar los avisos del navegador.
 ---
 # Mi cuenta
 
@@ -16,7 +16,7 @@ resumen: Ver tus datos de acceso, cambiar tu contraseña sin depender de nadie, 
 1. En la computadora, toca tu **nombre** (arriba a la derecha, junto al botón de apagar).
 2. En el celular, toca tu **avatar** (el círculo con tus iniciales arriba a la derecha) o abre **Menú** y, en **Sesión**, toca **Mi cuenta**.
 
-**Qué debes ver:** la pantalla **Mi cuenta** con dos tarjetas: **Mis datos** y **Cambiar mi contraseña**.
+**Qué debes ver:** la pantalla **Mi cuenta** con las tarjetas **Mis datos** y **Cambiar mi contraseña** y, debajo, **Verificación en dos pasos**.
 
 ## Cómo cambiar mi contraseña
 
@@ -38,6 +38,44 @@ Si quien te dio de alta escribió tu contraseña inicial (o te restableció una)
 **Qué debes ver:** el aviso desaparece y ya puedes tocar **Inicio** y trabajar normalmente. Desde ese momento, nadie más conoce tu contraseña.
 
 > Si en vez de una contraseña te llegó un **correo de bienvenida**, no necesitas este paso: toca **Crear mi contraseña** en el correo, escríbela dos veces y entra con ella.
+
+## Cómo activar la verificación en dos pasos
+
+Con la verificación en dos pasos, al entrar te pedimos tu contraseña **y** un código de 6 números que cambia cada 30 segundos en tu teléfono. Aunque alguien conozca tu contraseña, sin tu teléfono no puede entrar.
+
+1. En tu teléfono instala una app de autenticación gratuita: **Google Authenticator** o **Microsoft Authenticator** (búscala en la tienda de tu teléfono).
+2. En **Mi cuenta**, baja a **Verificación en dos pasos** y toca **Activar la verificación en dos pasos**.
+3. En la app de tu teléfono toca **+** y **Escanear código QR**, y apunta la cámara al código de la pantalla.
+   - Si estás en el mismo teléfono o no puedes escanear, en la app elige **Ingresar una clave de configuración** y escribe la clave de letras y números que aparece junto al código (tipo «Basada en el tiempo»).
+4. En **Código de la app** escribe los 6 números que te muestra la app y toca **Guardar**.
+5. Aparecen tus **10 códigos de respaldo**. Toca **Imprimir** o cópialos en un lugar seguro. **Es la única vez que los verás.** Después toca **Ya los guardé: volver al inicio**.
+
+![Activar la verificación en dos pasos](img/mi-cuenta/dos-pasos-activar.png)
+
+**Qué debes ver:** «Listo: la verificación en dos pasos quedó activa…» y, en **Mi cuenta**, la etiqueta verde **Activa** con cuántos códigos de respaldo te quedan. En tu **campana** llega «Activaste la verificación en dos pasos».
+
+> Si tu empresa la exige para tu cuenta (o eres Super Administrador), al entrar la plataforma te lleva directo a esta pantalla con el aviso «Tu cuenta necesita la verificación en dos pasos». Hasta activarla solo puedes usar **Mi cuenta** y salir.
+
+## Cómo entrar si perdí o cambié mi teléfono
+
+- **Con tus códigos de respaldo:** en la pantalla del código escribe uno de ellos (por ejemplo `ABCD-EF23`) en vez del código de la app. Cada uno sirve **una sola vez**. Ya dentro, entra a **Mi cuenta** y vuelve a activar la verificación con tu teléfono nuevo (primero quítala o pide que la restablezcan).
+- **Sin códigos de respaldo:** pide a tu administrador que **restablezca tu verificación en dos pasos** desde **Usuarios**. Te llega un aviso; entras solo con tu contraseña y la activas otra vez con tu teléfono nuevo.
+
+## Cómo crear códigos de respaldo nuevos
+
+Hazlo si ya usaste varios o si crees que alguien los vio.
+
+1. En **Mi cuenta → Verificación en dos pasos**, en **Códigos de respaldo nuevos**, escribe tu contraseña.
+2. Toca **Restablecer códigos de respaldo**.
+
+**Qué debes ver:** «Códigos nuevos listos: los anteriores ya no sirven…» y los 10 códigos nuevos (una sola vez). Guárdalos o imprímelos.
+
+## Cómo quitar la verificación en dos pasos
+
+1. En **Mi cuenta → Verificación en dos pasos**, en **Quitar la verificación**, escribe tu contraseña y un código de la app (o uno de respaldo).
+2. Toca **Dar de baja la verificación** y confirma con **Aceptar**.
+
+**Qué debes ver:** «Quitaste la verificación en dos pasos: ya solo se pide tu contraseña…». Si tu empresa la exige para tu cuenta, o eres Super Administrador, en lugar del formulario verás que **no se puede quitar**.
 
 ## Cómo elegir qué avisos recibo
 
@@ -76,7 +114,7 @@ Con los avisos activos, tu computadora te muestra un aviso (en la esquina de la 
 
 ## Qué puedo cambiar y qué no
 
-- **Sí:** tu contraseña.
+- **Sí:** tu contraseña y tu verificación en dos pasos (activarla, códigos de respaldo nuevos y quitarla si tu empresa no la exige).
 - **No (lo administra quien da de alta usuarios):** tu nombre, tu usuario, tu correo, tu rol y tu sede. Si tu correo está mal o cambió, pide a tu administrador que lo corrija en **Usuarios**; es el correo donde llegan los enlaces para recuperar tu contraseña.
 
 ## Si algo sale mal
@@ -89,6 +127,11 @@ Con los avisos activos, tu computadora te muestra un aviso (en la esquina de la 
 | **La contraseña nueva no puede contener el nombre de usuario ni el correo.** | Tu contraseña incluye tu usuario o la parte de tu correo antes de la @. | Elige otra que no los incluya. |
 | **Esa contraseña nueva es de las más usadas y fácil de adivinar; elige otra.** | Es una contraseña muy común. | Combina palabras, números y signos que solo tú recuerdes. |
 | **El campo contraseña nueva debe tener al menos 8 caracteres.** | Es muy corta. | Escribe 8 o más caracteres, con letras y números. |
+| **El código no coincide. Revisa que la hora de tu teléfono sea automática…** | Al activar, el código no corresponde a la clave de la pantalla. | En los ajustes de tu teléfono activa **Fecha y hora automáticas**, espera a que cambie el código y escríbelo de nuevo. Si escaneaste otro código antes, borra esa cuenta de la app y vuelve a escanear. |
+| **La contraseña no es correcta.** (al crear códigos nuevos o quitar la verificación) | La contraseña que escribiste no es la de tu cuenta. | Escríbela de nuevo con cuidado. |
+| **El código no es correcto.** | El código ya cambió o es de otra cuenta de la app. | Escribe el que se ve ahora para esta plataforma. |
+| **Tu empresa exige la verificación en dos pasos para tu cuenta: no se puede quitar.** | Tu empresa la pide a tu tipo de cuenta. | Déjala activa. Si cambiaste de teléfono, usa un código de respaldo o pide que la restablezcan. |
+| **Antes de continuar, activa la verificación en dos pasos…** | Tu cuenta la necesita y aún no la activas. | Actívala en esa misma pantalla; toma un minuto. |
 | **Antes de continuar, crea tu propia contraseña…** | Entraste con una contraseña que te dio otra persona. | Cámbiala aquí; después ya podrás usar todo. |
 | **Los avisos están bloqueados en este navegador…** | Alguna vez elegiste **Bloquear** cuando el navegador preguntó. | Toca el candado junto a la dirección de la plataforma, en **Notificaciones** elige **Permitir** y vuelve a cargar la página. |
 | **En celulares y tabletas estos avisos todavía no están disponibles…** | Tu celular o tableta (iPhone, iPad o Android) no muestra este tipo de aviso desde una página. | Revisa la **campana** y **Mis pendientes**. |
@@ -101,6 +144,10 @@ Con los avisos activos, tu computadora te muestra un aviso (en la esquina de la 
 - **¿Qué pasa con mis otras sesiones al cambiar la contraseña?** Se cierran en todos los demás equipos; en el que estás sigues conectado.
 - **¿Mi administrador puede ver mi contraseña?** No. La plataforma solo guarda la contraseña cifrada y nunca la muestra. Si alguien la restablece, tú la vuelves a crear.
 - **¿Cada cuánto debo cambiarla?** No hay un plazo obligatorio, pero cámbiala si crees que alguien la conoce o si recibes un aviso de bloqueo que no fuiste tú.
+
+- **¿Necesito internet en el teléfono para el código?** No. La app calcula el código sola; solo necesita que la hora del teléfono sea correcta (automática).
+- **¿Puedo usar la verificación en dos pasos en la app de la plataforma en mi celular?** Sí, funciona igual: después de tu contraseña te pide el código. Si la app de autenticación está en el mismo teléfono, cambia de app, copia el código y regresa.
+- **¿Qué hago si cambio de teléfono?** Antes de cambiarlo, quita la cuenta de la app vieja solo después de agregarla en la nueva: entra con un código de respaldo, quita la verificación y vuelve a activarla con el teléfono nuevo. Si ya no tienes el teléfono viejo, usa un código de respaldo o pide a tu administrador que la restablezca.
 
 - **¿Me llegan avisos con el navegador cerrado?** No. Por ahora necesitas tener la plataforma abierta en alguna pestaña (puede estar minimizada o detrás de otras). Si cierras el navegador o tu sesión termina por inactividad, los avisos se detienen; lo que llegó mientras tanto te espera en la campana.
 - **¿Por qué en mi iPhone no aparece el botón para activarlos?** Los celulares y tabletas no muestran estos avisos desde una página abierta. En el celular usa la campana y Mis pendientes.

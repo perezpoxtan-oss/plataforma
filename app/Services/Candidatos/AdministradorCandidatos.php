@@ -22,6 +22,7 @@ use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
+use App\Services\Privacidad\AvisosPrivacidad;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\Recepcion\Destinatarios;
 use App\Support\Tenancy\Tenant;
@@ -828,6 +829,8 @@ class AdministradorCandidatos
         $candidato->forceFill([
             'privacidad_aceptada_en' => now(), 'privacidad_ip' => mb_substr($ip, 0, 45),
             'privacidad_version' => $empresa ? $this->ajustes->versionPrivacidad($empresa) : null, 'privacidad_medio' => $medio,
+            // Privacidad (docs/tecnico/privacidad.md): número de versión del aviso que aceptó
+            'aviso_privacidad_id' => $empresa ? app(AvisosPrivacidad::class)->vigente($empresa)?->id : null,
         ]);
     }
 

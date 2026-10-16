@@ -119,6 +119,9 @@
                         @if (! $u->activo && $u->desactivado_por_baja_en)
                             <div class="texto-traza text-danger"><i class="bi bi-person-x-fill" aria-hidden="true"></i> Dada de baja junto con su colaborador · @fecha($u->desactivado_por_baja_en)</div>
                         @endif
+                        @if ($u->two_factor_confirmado_en)
+                            <div class="texto-traza text-success"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i> Verificación en dos pasos activa</div>
+                        @endif
                         @if ($u->activo && $u->debe_cambiar_contrasena)
                             <div class="texto-traza"><i class="bi bi-key" aria-hidden="true"></i> Creará su contraseña al entrar</div>
                         @endif
@@ -139,6 +142,14 @@
                                     @csrf
                                     @method('PATCH')
                                     <button type="submit" class="btn-icono desbloquear" title="Desbloquear" aria-label="Desbloquear a {{ $u->name }}"><i class="bi bi-unlock-fill" aria-hidden="true"></i></button>
+                                </form>
+                            @endif
+                            @if ($puede['desbloquear'] && $administrable && in_array($u->id, $restablecibles2p ?? [], true))
+                                <form action="{{ route('usuarios.dos-pasos', $u->id) }}" method="POST" class="m-0"
+                                      data-confirmar="¿Restablecer la verificación en dos pasos de «{{ $u->name }}»? Úsalo si perdió o cambió su teléfono: cerraremos sus sesiones, le avisaremos y al entrar la activará de nuevo.">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn-icono desbloquear" title="Restablecer verificación en dos pasos" aria-label="Restablecer la verificación en dos pasos de {{ $u->name }}"><i class="bi bi-phone-vibrate" aria-hidden="true"></i></button>
                                 </form>
                             @endif
                             @if ($puede['editar'] && $administrable)

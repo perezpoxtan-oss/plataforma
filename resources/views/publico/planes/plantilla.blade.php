@@ -81,6 +81,8 @@
                 @if (trim((string) $ajustes['aviso_privacidad']) !== '')
                     <a href="{{ route('planes.privacidad') }}">Aviso de privacidad</a>
                 @endif
+                {{-- Privacidad: formulario de derechos ARCO (docs/tecnico/privacidad.md) --}}
+                <p><a href="{{ route('privacidad.solicitud') }}">Derechos ARCO sobre tus datos personales</a></p>
                 @if ($identidad->get('correo_soporte'))
                     <p><a href="mailto:{{ $identidad->get('correo_soporte') }}">{{ $identidad->get('correo_soporte') }}</a></p>
                 @endif

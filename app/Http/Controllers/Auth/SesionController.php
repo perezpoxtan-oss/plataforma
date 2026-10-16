@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\ExigirDosPasos;
+use App\Models\User;
 use App\Services\Autenticacion\Autenticador;
+use App\Services\DosPasos\VerificacionDosPasos;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +22,7 @@ class SesionController extends Controller
         return view('auth.login');
     }
 
-    public function iniciar(Request $request, Autenticador $autenticador): RedirectResponse
+    public function iniciar(Request $request, Autenticador $autenticador, VerificacionDosPasos $dosPasos): RedirectResponse
     {
         $datos = $request->validate([
             'username' => ['required', 'string', 'max:150'],
@@ -38,20 +41,47 @@ class SesionController extends Controller
             return $this->rechazar($resultado->estado, $resultado->minutos);
         }
 
-        Auth::login($resultado->usuario);
+        // Verificación en dos pasos: con ella activa (y sin dispositivo recordado) se pide el código antes de entrar
+        $usuario = $resultado->usuario;
+        if ($usuario->tieneDosPasos() && ! $dosPasos->dispositivoRecordado($request, $usuario)) {
+            $request->session()->regenerate();
+            $request->session()->put(DosPasosController::PENDIENTE, ['id' => $usuario->id, 'desde' => now()->getTimestamp()]);
+
+            return redirect()->route('login.dos-pasos');
+        }
+
+        return $this->completarInicio($request, $usuario, $dosPasos);
+    }
+
+    /**
+     * Abre la sesión (contraseña correcta y, si aplica, código correcto). Si
+     * la cuenta debe tener la verificación en dos pasos y no la tiene (Super
+     * Administrador, o la política de su empresa), se le guía a activarla.
+     */
+    public static function completarInicio(Request $request, User $usuario, VerificacionDosPasos $dosPasos): RedirectResponse
+    {
+        Auth::login($usuario);
         $request->session()->regenerate();
         $request->session()->put('ultima_actividad', now()->getTimestamp());
         // Ronda 6 (LL-08): marca nueva en cada inicio de sesión; con ella el navegador olvida los filtros guardados antes
         $request->session()->put('marca_filtros', Str::random(16));
 
-        return redirect()->to($this->destinoSeguro($request));
+        if (! $usuario->tieneDosPasos() && $dosPasos->exigida($usuario)) {
+            $request->session()->put(ExigirDosPasos::MARCA, true);
+
+            return redirect()->route('mi-cuenta.dos-pasos')->with('aviso', $usuario->es_superadmin
+                ? 'Como Super Administrador necesitas la verificación en dos pasos. Actívala ahora: toma un minuto.'
+                : 'Tu empresa pide la verificación en dos pasos para tu cuenta. Actívala ahora: toma un minuto.');
+        }
+
+        return redirect()->to(self::destinoSeguro($request));
     }
 
     /**
      * Pantalla que el usuario intentaba abrir, solo si es de este mismo sitio
      * (nunca otro dominio, ni "//otro-sitio").
      */
-    private function destinoSeguro(Request $request): string
+    public static function destinoSeguro(Request $request): string
     {
         $destino = (string) $request->session()->pull('url.intended', '');
         $partes = parse_url($destino);

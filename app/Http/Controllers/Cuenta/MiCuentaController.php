@@ -7,6 +7,7 @@ use App\Models\Sede;
 use App\Models\UsuarioRol;
 use App\Rules\ContrasenaSegura;
 use App\Services\Cuenta\CuentaPropia;
+use App\Services\DosPasos\VerificacionDosPasos;
 use App\Services\Notificaciones\PreferenciasAvisos;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
@@ -51,6 +52,13 @@ class MiCuentaController extends Controller
             'opcionesAvisos' => $usuario->empresa_id === null ? ['campana' => [], 'correo' => []]
                 : $this->tenant->conEmpresa((int) $usuario->empresa_id, fn () => $this->preferencias->opciones($usuario)),
             'silenciados' => PreferenciasAvisos::silenciados($usuario),
+            // Verificación en dos pasos (docs/tecnico/dos-pasos.md)
+            'dosPasos' => [
+                'activa' => $usuario->tieneDosPasos(),
+                'desde' => $usuario->two_factor_confirmado_en,
+                'restantes' => app(VerificacionDosPasos::class)->codigosRestantes($usuario),
+                'exigida' => app(VerificacionDosPasos::class)->exigida($usuario),
+            ],
         ]);
     }
 

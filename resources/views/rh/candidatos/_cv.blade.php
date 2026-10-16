@@ -376,6 +376,9 @@
         <details>
             <summary><i class="bi bi-shield-lock me-1" aria-hidden="true"></i>Leer el aviso de privacidad</summary>
             <div class="texto-privacidad">{{ $privacidad }}</div>
+            @isset($arcoUrl)
+                <p class="small mt-2 mb-0"><a href="{{ $arcoUrl }}" target="_blank" rel="noopener">Consultar el aviso completo y ejercer tus derechos ARCO</a> (acceso, rectificación, cancelación u oposición).</p>
+            @endisset
         </details>
         <label class="casilla-privacidad">
             <input type="checkbox" name="acepta_privacidad" value="1" required @checked($conOld && old('acepta_privacidad'))>

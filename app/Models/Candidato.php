@@ -220,6 +220,12 @@ class Candidato extends Model
         return $this->hasOne(Postulacion::class)->latestOfMany();
     }
 
+    /** Versión del aviso de privacidad que aceptó (docs/tecnico/privacidad.md). */
+    public function avisoPrivacidad(): BelongsTo
+    {
+        return $this->belongsTo(AvisoPrivacidad::class, 'aviso_privacidad_id');
+    }
+
     public function documentos(): HasMany
     {
         return $this->hasMany(CandidatoDocumento::class)->orderBy('id');
