@@ -41,6 +41,7 @@ Route::prefix('reservas')->name('reservas.')->group(function () {
     });
     Route::controller(ConfiguracionReservasController::class)->group(function () {
         Route::get('/configuracion', 'index')->name('configuracion');
+        Route::get('/configuracion/opciones-agregar', 'opcionesAgregar')->name('configuracion.opciones');
         Route::post('/configuracion/areas', 'marcar')->name('configuracion.marcar');
         Route::get('/configuracion/areas/{area}', 'area')->whereNumber('area')->name('configuracion.area');
         Route::put('/configuracion/areas/{area}', 'guardarArea')->whereNumber('area')->name('configuracion.area.guardar');

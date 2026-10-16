@@ -258,7 +258,7 @@ class ReservasPorNivelesTest extends TestCase
 
         // El diálogo muestra el árbol con casillas y las ya agregadas
         $this->flushSession();
-        $this->actingAs($this->admin)->get('/reservas/configuracion')->assertOk()->assertSee('name="espacios[]"', false)
+        $this->actingAs($this->admin)->get(route('reservas.configuracion.opciones', ['sede' => $this->centro->id]))->assertOk()->assertSee('name="espacios[]"', false)
             ->assertSee('Ya se reserva')->assertSee('Por sus espacios interiores')->assertSee('3 espacios interiores');
 
         $this->delete("/reservas/configuracion/areas/{$sala->id}", ['volver' => 'sede'])
@@ -302,7 +302,7 @@ class ReservasPorNivelesTest extends TestCase
 
         // Volver a agregarla: se reactiva con su configuración
         $this->flushSession();
-        $this->actingAs($this->admin)->get('/reservas/configuracion')->assertOk()->assertSee('Se quitó · vuelve con su configuración');
+        $this->actingAs($this->admin)->get(route('reservas.configuracion.opciones'))->assertOk()->assertSee('Se quitó · vuelve con su configuración');
         $this->post('/reservas/configuracion/areas', ['espacios' => [$this->h101->id]])->assertRedirect();
         $this->assertTrue($sala->refresh()->reservable);
         $this->assertSame(8, $sala->aforo_maximo);
@@ -360,7 +360,10 @@ class ReservasPorNivelesTest extends TestCase
         $this->assertNotNull($this->area($this->club));
         // Su diálogo solo ofrece espacios de la playa
         $this->flushSession();
-        $this->actingAs($eventos)->get('/reservas/configuracion')->assertOk()->assertSee('Club de playa')->assertDontSee('Sala 102');
+        $this->actingAs($eventos)->get(route('reservas.configuracion.opciones'))->assertOk()->assertSee('No quedan espacios por agregar')->assertDontSee('Sala 102');
+        // ...y no puede pedir la lista de otra sede
+        $this->get(route('reservas.configuracion.opciones', ['sede' => $this->centro->id]))->assertForbidden();
+        $this->get(route('reservas.configuracion.opciones', ['sede' => $this->playa->id]))->assertOk()->assertDontSee('Sala 102');
 
         // Otra empresa: los espacios y las áreas no existen para ella
         $otra = $this->crearEmpresa('Hotel Otro');
@@ -368,7 +371,31 @@ class ReservasPorNivelesTest extends TestCase
         $this->flushSession();
         $this->actingAs($ajeno)->post('/reservas/configuracion/areas', ['espacios' => [$this->h102->id]])->assertSessionHasErrors('espacio_id');
         $this->delete("/reservas/configuracion/areas/{$sala->id}")->assertNotFound();
+        $this->get(route('reservas.configuracion.opciones', ['sede' => $this->centro->id]))->assertForbidden();
+        $this->get(route('reservas.configuracion.opciones'))->assertOk()->assertDontSee('Sala 102');
         $this->assertNotNull($this->area($this->h101));
+    }
+
+    public function test_la_lista_para_agregar_se_pide_al_abrir_el_dialogo_y_cuenta_bien_los_interiores(): void
+    {
+        // Las pantallas solo llevan el diálogo vacío con la dirección de su lista (no miles de espacios)
+        $this->actingAs($this->admin)->post('/reservas/configuracion/areas', ['espacios' => [$this->salon->id]])->assertRedirect();
+        $this->flushSession();
+        $this->actingAs($this->admin)->get('/reservas?sede='.$this->centro->id)->assertOk()
+            ->assertSee('data-cargar-url="'.e(route('reservas.configuracion.opciones', ['sede' => $this->centro->id])).'"', false)
+            ->assertDontSee('name="espacios[]"', false)->assertDontSee('Sala 201');
+        $this->get('/reservas/configuracion')->assertOk()->assertSee('data-cargar-url=', false)->assertDontSee('name="espacios[]"', false);
+
+        // La lista: Torre A tiene Piso 1, Piso 2, 101, 102, Baño 102 y 201 (6); Piso 1 tiene 101, 102 y Baño 102 (3)
+        $lista = $this->get(route('reservas.configuracion.opciones', ['sede' => $this->centro->id]))->assertOk()
+            ->assertSee('name="espacios[]"', false)->assertDontSee('Club de playa')->getContent();
+        $this->assertMatchesRegularExpression('/Torre A<\/strong>.*?6 espacios interiores/s', $lista);
+        $this->assertMatchesRegularExpression('/Piso 1<\/strong>.*?3 espacios interiores/s', $lista);
+        $this->assertMatchesRegularExpression('/Sala 102<\/strong>.*?1 espacio interior/s', $lista);
+
+        // Sin permiso de configurar no hay lista
+        $this->flushSession();
+        $this->actingAs($this->rita)->get(route('reservas.configuracion.opciones'))->assertForbidden();
     }
 
     // ------------------------------------------------------------ Migración

@@ -201,7 +201,9 @@ class ReservasDeAreasTest extends TestCase
         $nuevo = $this->enEmpresa(fn () => app(AdministradorEspacios::class)->crear($this->admin, $this->centro,
             Espacio::where('nombre', 'Torre A')->first(), Espacio::AREA_ESPECIFICA, ['nombre' => 'Terraza Sol'], false));
 
-        $this->actingAs($this->admin)->get('/reservas/configuracion')->assertOk()->assertSee('Terraza Sol')->assertSee('Agregar área reservable');
+        $this->actingAs($this->admin)->get('/reservas/configuracion')->assertOk()->assertSee('Agregar área reservable')->assertDontSee('Terraza Sol');
+        // La lista se pide al abrir el diálogo
+        $this->get(route('reservas.configuracion.opciones'))->assertOk()->assertSee('Terraza Sol');
         $this->post('/reservas/configuracion/areas', ['espacio_id' => $nuevo->id])->assertRedirect();
         $area = $this->enEmpresa(fn () => ReservaArea::where('espacio_id', $nuevo->id)->firstOrFail());
         $this->assertTrue($area->reservable);

@@ -229,7 +229,7 @@ class ReservasEditarEliminarTest extends TestCase
         $this->flushSession();
         $this->actingAs($this->admin)->delete(route('reservas.configuracion.area.quitar', $sala->id))->assertSessionHas('ok');
 
-        $this->config()->assertSee('Se quitó · vuelve con su configuración');
+        $this->get(route('reservas.configuracion.opciones'))->assertOk()->assertSee('Se quitó · vuelve con su configuración');
         $this->post('/reservas/configuracion/areas', ['espacios' => [$this->h101->id]])->assertRedirect();
         $this->assertTrue($sala->refresh()->reservable);
         $this->assertSame(7, $sala->aforo_maximo);
