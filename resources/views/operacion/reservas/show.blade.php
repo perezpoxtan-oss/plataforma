@@ -27,7 +27,7 @@
             <div>
                 <span class="res-estado estado-{{ $estadoClase }}">{{ $reserva->estadoTexto() }}</span>
                 <h2 class="mt-2 mb-1">{{ $reserva->titulo }}</h2>
-                <div class="res-meta"><i class="bi bi-door-open" aria-hidden="true"></i> {{ $reserva->area->nombre() }} · {{ $reserva->sede?->nombre }} · <strong>{{ $textos->cuando($reserva) }}</strong></div>
+                <div class="res-meta"><i class="bi bi-door-open" aria-hidden="true"></i> {{ $reserva->area->rutaTexto() }} · {{ $reserva->sede?->nombre }} · <strong>{{ $textos->cuando($reserva) }}</strong></div>
                 @if ($reserva->estado === Reserva::CAMBIO_PEDIDO)
                     <div class="alert alert-warning small mt-2 mb-0" role="status"><i class="bi bi-arrow-repeat" aria-hidden="true"></i>
                         Piden un cambio: {{ $vigentes->firstWhere('estado', ReservaAprobacion::CAMBIO)?->comentario }}.
@@ -37,18 +37,18 @@
                     <div class="res-meta mt-2">Cancelada por {{ $reserva->canceladaPor?->name ?? '—' }} el @fecha($reserva->cancelada_en): {{ $reserva->motivo_cancelacion }}</div>
                 @endif
             </div>
-            <div class="res-acciones">
+            <div class="d-flex flex-wrap gap-2">
                 @if ($puede['modificar'])
-                    <a href="{{ route('reservas.edit', $reserva->id) }}" class="res-boton"><i class="bi bi-pencil" aria-hidden="true"></i>Modificar</a>
+                    <a href="{{ route('reservas.edit', $reserva->id) }}" class="btn-secundario-rh"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Modificar</a>
                 @endif
                 @if ($puede['imprimir'])
-                    <a href="{{ route('reservas.imprimir', $reserva->id) }}" class="res-boton" target="_blank" rel="noopener"><i class="bi bi-printer" aria-hidden="true"></i>Imprimir</a>
+                    <a href="{{ route('reservas.imprimir', $reserva->id) }}" class="btn-secundario-rh" target="_blank" rel="noopener"><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir</a>
                 @endif
                 @if ($puede['costo'])
-                    <button type="button" class="res-boton" data-abrir-dialogo="dialogoCosto"><i class="bi bi-cash-coin" aria-hidden="true"></i>Ajustar costo</button>
+                    <button type="button" class="btn-secundario-rh" data-abrir-dialogo="dialogoCosto"><i class="bi bi-cash-coin me-1" aria-hidden="true"></i>Ajustar costo</button>
                 @endif
                 @if ($puede['cancelar'])
-                    <button type="button" class="res-boton rojo" data-abrir-dialogo="dialogoCancelar"><i class="bi bi-calendar-x" aria-hidden="true"></i>Cancelar reserva</button>
+                    <button type="button" class="btn-rojo btn-accion-rh" data-abrir-dialogo="dialogoCancelar"><i class="bi bi-calendar-x me-1" aria-hidden="true"></i>Cancelar reserva</button>
                 @endif
             </div>
         </div>
@@ -134,13 +134,13 @@
                         <div class="text-end">
                             <span class="res-estado estado-{{ $a->estado }}">{{ ReservaAprobacion::ESTADOS[$a->estado] }}</span>
                             @if (in_array($a->id, $responder, true))
-                                <div class="res-acciones mt-2 justify-content-end">
+                                <div class="d-flex flex-wrap gap-2 mt-2 justify-content-end">
                                     <form method="POST" action="{{ route('reservas.aprobaciones.responder', $a->id) }}" class="m-0">
                                         @csrf
                                         <input type="hidden" name="respuesta" value="aprobar">
-                                        <button type="submit" class="res-boton verde"><i class="bi bi-check2-circle" aria-hidden="true"></i>Aprobar</button>
+                                        <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Aprobar</button>
                                     </form>
-                                    <button type="button" class="res-boton rojo" data-abrir-dialogo="dialogoRechazar{{ $a->id }}"><i class="bi bi-x-octagon" aria-hidden="true"></i>Rechazar</button>
+                                    <button type="button" class="btn-rojo btn-accion-rh" data-abrir-dialogo="dialogoRechazar{{ $a->id }}"><i class="bi bi-x-octagon me-1" aria-hidden="true"></i>Rechazar</button>
                                 </div>
                             @endif
                         </div>
@@ -168,7 +168,7 @@
                                     <form method="POST" action="{{ route('reservas.ordenes.listo', $o->id) }}" class="mt-2">
                                         @csrf
                                         <input type="hidden" name="volver" value="reserva">
-                                        <button type="submit" class="res-boton verde"><i class="bi bi-check2-all" aria-hidden="true"></i>Listo</button>
+                                        <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-check2-all me-1" aria-hidden="true"></i>Listo</button>
                                     </form>
                                 @endif
                             </div>

@@ -229,6 +229,8 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .ficha-title { font-size: 1.15rem; font-weight: 800; color: var(--texto); margin-bottom: 0.2rem; }
 .ficha-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--borde); }
 .ficha-footer a { font-size: 0.8rem; font-weight: 700; color: #6366f1; text-decoration: none; }
+/* Un botón de ícono que es enlace conserva el tamaño del ícono (como los botones) */
+.ficha-footer a.btn-icono { font-size: 1rem; }
 .btn-icono { background: #f1f5f9; border: none; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
 .btn-icono.editar { color: #6366f1; }
 .btn-icono.editar:hover { background: #6366f1; color: #fff; }
@@ -353,6 +355,9 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .tema-verde .btn-icono.editar:hover { background: #16a34a; color: #fff; }
 .tema-verde .campo:focus, .tema-verde .buscador input:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.15); outline: none; }
 .btn-verde { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; }
+.tema-verde .btn-entrar { background: #dcfce7; color: #15803d; }
+.tema-verde .btn-entrar:hover { background: #bbf7d0; color: #166534; }
+.tema-verde .opcion-asignar:has(input:checked) { border-color: #86efac; background: #f0fdf4; }
 
 /* ---------- Tema azul (Empresas) ---------- */
 .tema-azul .ficha-card:hover { box-shadow: 0 12px 24px -10px rgba(37,99,235,0.15); border-color: rgba(37,99,235,0.3); }

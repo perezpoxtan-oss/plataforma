@@ -24,19 +24,19 @@
             $q = fn (array $extra) => array_filter(array_merge(['vista' => $vista, 'fecha' => $fecha->toDateString(), 'sede' => $sede, 'area' => $area], $extra), fn ($v) => $v !== null && $v !== '');
         @endphp
 
-        <form method="GET" action="{{ route('reservas.calendario') }}" class="res-filtros" role="search">
+        <form method="GET" action="{{ route('reservas.calendario') }}" class="filtros-rh" role="search">
             <input type="hidden" name="vista" value="{{ $vista }}">
             <input type="hidden" name="fecha" value="{{ $fecha->toDateString() }}">
-            <div class="res-vistas" role="group" aria-label="Vista del calendario">
+            <div class="d-flex flex-wrap gap-2" role="group" aria-label="Vista del calendario">
                 @foreach (\App\Http\Controllers\Operacion\Reservas\ReservaController::VISTAS as $clave => $nombre)
-                    <a href="{{ route('reservas.calendario', $q(['vista' => $clave])) }}" class="{{ $vista === $clave ? 'activa' : '' }}" @if ($vista === $clave) aria-current="true" @endif>{{ $nombre }}</a>
+                    <a href="{{ route('reservas.calendario', $q(['vista' => $clave])) }}" class="btn {{ $vista === $clave ? 'btn-dark' : 'btn-outline-dark' }} fw-bold d-inline-flex align-items-center" style="min-height:44px;border-radius:10px" @if ($vista === $clave) aria-current="true" @endif>{{ $nombre }}</a>
                 @endforeach
             </div>
-            <div class="res-navegar">
-                <a href="{{ route('reservas.calendario', $q(['fecha' => $navegar['anterior']])) }}" aria-label="Anterior"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
-                <a href="{{ route('reservas.calendario', $q(['fecha' => $hoy])) }}" class="px-3">Hoy</a>
-                <a href="{{ route('reservas.calendario', $q(['fecha' => $navegar['siguiente']])) }}" aria-label="Siguiente"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
-                <span class="res-titulo-periodo">{{ $navegar['titulo'] }}</span>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <a href="{{ route('reservas.calendario', $q(['fecha' => $navegar['anterior']])) }}" class="btn-secundario-rh" aria-label="Anterior"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+                <a href="{{ route('reservas.calendario', $q(['fecha' => $hoy])) }}" class="btn-secundario-rh">Hoy</a>
+                <a href="{{ route('reservas.calendario', $q(['fecha' => $navegar['siguiente']])) }}" class="btn-secundario-rh" aria-label="Siguiente"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+                <span class="fw-bold ms-1">{{ $navegar['titulo'] }}</span>
             </div>
             @if ($sedes->count() > 1)
                 <select name="sede" class="filtro-select" aria-label="Sede" data-enviar-al-cambiar>
@@ -56,9 +56,9 @@
                 <p class="fw-semibold mb-1">Todavía no hay áreas que se puedan reservar.</p>
                 <p class="text-muted small m-0">
                     @if ($puede['configurar'])
-                        En <a href="{{ route('reservas.configuracion') }}">Configuración</a> marca como «Reservable» un salón o sala de Zonas y edificios.
+                        En <a href="{{ route('reservas.configuracion') }}">Configuración</a> toca <strong>Agregar área reservable</strong> y elige salones, salas o habitaciones de Zonas y edificios.
                     @else
-                        Pide a quien administra las reservas que marque como «Reservable» un salón o sala.
+                        Pide a quien administra las reservas que agregue un salón, sala o habitación como área reservable.
                     @endif
                 </p>
             </div>
@@ -71,7 +71,7 @@
                         <div class="res-tarjeta-fila mb-2">
                             <h2 class="h6 fw-bold m-0"><i class="bi bi-door-open me-1 text-success" aria-hidden="true"></i>{{ $a->nombre() }} <span class="res-meta fw-normal">· {{ $a->sede?->nombre }}@if ($a->aforo_maximo) · hasta {{ $a->aforo_maximo }} personas @endif</span></h2>
                             @if (in_array($a->id, $puedeReservar, true) && $dia['fecha']->toDateString() >= $hoy)
-                                <a href="{{ route('reservas.create', ['area' => $a->id, 'fecha' => $dia['fecha']->toDateString()]) }}" class="res-boton"><i class="bi bi-calendar-plus" aria-hidden="true"></i>Reservar aquí</a>
+                                <a href="{{ route('reservas.create', ['area' => $a->id, 'fecha' => $dia['fecha']->toDateString()]) }}" class="btn-secundario-rh"><i class="bi bi-calendar-plus me-1" aria-hidden="true"></i>Reservar aquí</a>
                             @endif
                         </div>
                         @forelse ($suyos as $e)

@@ -201,7 +201,7 @@ class ReservasDeAreasTest extends TestCase
         $nuevo = $this->enEmpresa(fn () => app(AdministradorEspacios::class)->crear($this->admin, $this->centro,
             Espacio::where('nombre', 'Torre A')->first(), Espacio::AREA_ESPECIFICA, ['nombre' => 'Terraza Sol'], false));
 
-        $this->actingAs($this->admin)->get('/reservas/configuracion')->assertOk()->assertSee('Terraza Sol')->assertSee('Marcar como reservable');
+        $this->actingAs($this->admin)->get('/reservas/configuracion')->assertOk()->assertSee('Terraza Sol')->assertSee('Agregar área reservable');
         $this->post('/reservas/configuracion/areas', ['espacio_id' => $nuevo->id])->assertRedirect();
         $area = $this->enEmpresa(fn () => ReservaArea::where('espacio_id', $nuevo->id)->firstOrFail());
         $this->assertTrue($area->reservable);
@@ -709,14 +709,15 @@ class ReservasDeAreasTest extends TestCase
             ->assertSee('data-fichas="reservas-areas"', false)->assertSee('Salón Maya')->assertSee('Sala Ceiba')
             ->assertSee('Hasta 120 personas')->assertSee('Auditorio, Herradura (U)')->assertSee('Por hora $1,000.00 MXN')->assertSee('Sin costo')
             ->assertSee('Aprueba '.$this->julieta->name)->assertSee('Hoy: 1')->assertSee('Próxima: Lunes 02/11 15:00')
-            ->assertSee('title="Reservar"', false)->assertSee('title="Calendario del área"', false)->assertSee('title="Configurar"', false)
+            ->assertSee('aria-label="Reservar Salón Maya"', false)->assertSee('class="btn-entrar"', false)->assertSee('title="Calendario del área"', false)
+            ->assertSee('title="Configurar"', false)->assertSee('title="Quitar de reservas"', false)->assertSee('Agregar área reservable')
             ->assertSee(route('reservas.calendario', ['area' => $this->salon->id, 'sede' => $this->centro->id]))
             ->assertDontSee('Terraza Coral');
 
         // Con una sola sede visible se entra directo a sus fichas; sin «configurar» no hay botón Configurar
         $this->flushSession();
         $this->actingAs($this->rita)->get('/reservas')->assertOk()->assertSee('Salón Maya')->assertDontSee('Entrar a la sede')
-            ->assertDontSee('title="Configurar"', false)->assertSee('Nueva reserva');
+            ->assertDontSee('title="Configurar"', false)->assertDontSee('title="Quitar de reservas"', false)->assertDontSee('Agregar área reservable')->assertSee('Nueva reserva');
         $this->get('/reservas/calendario?area='.$this->salon->id)->assertOk()->assertSee('Calendario de reservas');
 
         // Mis reservas, Por aprobar y Órdenes: fichas con botones de ícono
@@ -725,7 +726,7 @@ class ReservasDeAreasTest extends TestCase
         $this->actingAs($this->sergio)->get('/reservas/por-aprobar')->assertOk()->assertSee('data-fichas="reservas-aprobar"', false)
             ->assertSee('title="Aprobar"', false)->assertSee('title="Rechazar o pedir cambio"', false)->assertSee('Esperando desde');
         $this->flushSession();
-        $this->actingAs($this->admin)->get('/reservas/configuracion')->assertOk()->assertSee('Marcar como reservable')
+        $this->actingAs($this->admin)->get('/reservas/configuracion')->assertOk()->assertSee('Agregar área reservable')
             ->assertSee('dialogoEditar-servicios')->assertSee('RESERVABLE');
     }
 

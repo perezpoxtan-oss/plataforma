@@ -1,5 +1,8 @@
 /*
  * Reservas de áreas (docs/tecnico/reservas.md): formulario de reserva.
+ *  - Cascada: primero la zona (o el área) y después el espacio final (una
+ *    habitación o sala de la zona, o «Toda la zona»). Si la zona tiene un solo
+ *    espacio se elige solo.
  *  - Al elegir el área: montajes con su aforo, tarifas, horario, montaje y
  *    desmontaje, foto y descripción.
  *  - Al elegir área y día: horarios ocupados (incluye montaje y desmontaje).
@@ -34,12 +37,33 @@
     var cajaCliente = form.querySelector('[data-res-cliente]');
     var cajaCosto = form.querySelector('[data-res-resumen-costo]');
     var textoCosto = form.querySelector('[data-res-costo]');
+    var selZona = form.querySelector('[data-res-zona]');
+    var campoEspacio = form.querySelector('[data-res-espacio-campo]');
+    var opcionesEspacio = Array.prototype.slice.call(selArea.querySelectorAll('option[data-zona]'));
     var nombresTarifa = { hora: 'Por hora (cada hora o fracción)', medio_dia: 'Medio día', dia: 'Día completo', evento: 'Por evento' };
 
     function area() {
         var id = parseInt(selArea.value, 10);
         for (var i = 0; i < areas.length; i++) { if (areas[i].id === id) { return areas[i]; } }
         return null;
+    }
+
+    // Deja en «Espacio» solo los de la zona elegida (sin JavaScript se ven todos)
+    function pintarZona() {
+        if (!selZona) { return; }
+        selZona.required = true;
+        var zona = selZona.value;
+        var previo = selArea.value;
+        var suyas = opcionesEspacio.filter(function (o) { return o.getAttribute('data-zona') === zona; });
+        while (selArea.options.length > 1) { selArea.remove(1); }
+        selArea.querySelectorAll('optgroup').forEach(function (g) { g.remove(); });
+        suyas.forEach(function (o) { selArea.appendChild(o); });
+        if (suyas.length === 1) {
+            selArea.value = suyas[0].value;
+        } else {
+            selArea.value = suyas.some(function (o) { return o.value === previo; }) ? previo : '';
+        }
+        campoEspacio.hidden = suyas.length <= 1;
     }
 
     function paraCliente() {
@@ -138,7 +162,8 @@
                 var ul = document.createElement('ul');
                 datos.ocupado.forEach(function (o) {
                     var li = document.createElement('li');
-                    li.textContent = 'Ocupado de ' + o.desde + ' a ' + o.hasta + (o.desde !== o.inicio || o.hasta !== o.fin ? ' (evento de ' + o.inicio + ' a ' + o.fin + ' más montaje y desmontaje)' : '');
+                    li.textContent = 'Ocupado de ' + o.desde + ' a ' + o.hasta + (o.desde !== o.inicio || o.hasta !== o.fin ? ' (evento de ' + o.inicio + ' a ' + o.fin + ' más montaje y desmontaje)' : '')
+                        + (o.otro ? ' · reservado «' + o.otro + '», que comparte lugar con este espacio' : '');
                     ul.appendChild(li);
                 });
                 cajaOcupado.appendChild(ul);
@@ -190,11 +215,15 @@
     });
 
     selArea.addEventListener('change', function () { pintarArea(); pintarOcupado(); calcular(); });
+    if (selZona) {
+        selZona.addEventListener('change', function () { pintarZona(); pintarArea(); pintarOcupado(); calcular(); });
+    }
     fecha.addEventListener('change', pintarOcupado);
     [inicio, fin, selTarifa].forEach(function (el) { el.addEventListener('change', calcular); });
     form.addEventListener('input', function (e) { if (e.target.closest('[data-res-servicio]')) { calcular(); } });
     form.querySelectorAll('[data-res-para]').forEach(function (r) { r.addEventListener('change', pintarCliente); });
 
+    pintarZona();
     pintarArea();
     pintarOcupado();
     pintarCliente();

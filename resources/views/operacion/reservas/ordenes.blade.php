@@ -43,7 +43,7 @@
                         <form method="POST" action="{{ route('reservas.ordenes.listo', $o->id) }}" class="d-flex gap-2 align-items-center w-100 m-0">
                             @csrf
                             <label class="visually-hidden" for="comentario{{ $o->id }}">Comentario (opcional)</label>
-                            <input type="text" id="comentario{{ $o->id }}" name="comentario" class="campo" maxlength="500" placeholder="Comentario (opcional)">
+                            <input type="text" id="comentario{{ $o->id }}" name="comentario" class="campo mb-0" maxlength="500" placeholder="Comentario (opcional)">
                             <button type="submit" class="btn-icono reactivar" title="Listo" aria-label="Marcar como listo: {{ $o->departamento?->nombre }}, {{ $r->titulo }}"><i class="bi bi-check2-all" aria-hidden="true"></i></button>
                             <a href="{{ route('reservas.show', $r->id) }}" class="btn-icono ver" title="Ver" aria-label="Ver {{ $r->titulo }}"><i class="bi bi-eye" aria-hidden="true"></i></a>
                         </form>

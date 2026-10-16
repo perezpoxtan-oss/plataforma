@@ -2,6 +2,7 @@
 
 namespace App\Services\Reservas;
 
+use App\Models\Espacio;
 use App\Models\Reserva;
 use App\Models\ReservaArea;
 use App\Models\Sede;
@@ -18,6 +19,21 @@ use Illuminate\Validation\ValidationException;
  */
 class Disponibilidad
 {
+    public function __construct(private readonly NivelesReservas $niveles) {}
+
+    /**
+     * Espacios que comparten lugar con el área: ella, la zona que la contiene
+     * y sus espacios interiores (bloqueo cruzado).
+     *
+     * @return list<int>
+     */
+    public function espaciosRelacionados(ReservaArea $area): array
+    {
+        $espacio = $area->relationLoaded('espacio') && $area->espacio !== null ? $area->espacio : Espacio::find($area->espacio_id);
+
+        return $espacio === null ? [(int) $area->espacio_id] : $this->niveles->espaciosRelacionados($espacio);
+    }
+
     /** Zona horaria de la sede del área. */
     public function zona(ReservaArea $area): string
     {
@@ -61,13 +77,17 @@ class Disponibilidad
     }
 
     /**
-     * Reservas activas del área que se cruzan con ese bloqueo.
+     * Reservas activas que se cruzan con ese bloqueo en el área o en un lugar
+     * que comparte espacio con ella: si se reservó la zona completa, sus
+     * espacios interiores están ocupados; si se reservó un espacio interior,
+     * la zona completa no se puede reservar a esa hora. Cada reserva ya trae
+     * su montaje y desmontaje en bloqueo_desde / bloqueo_hasta.
      *
      * @return Collection<int, Reserva>
      */
     public function choques(ReservaArea $area, CarbonImmutable $desde, CarbonImmutable $hasta, ?int $excepto = null): Collection
     {
-        return Reserva::ocupan()->where('espacio_id', $area->espacio_id)
+        return Reserva::ocupan()->with('area.espacio:id,nombre')->whereIn('espacio_id', $this->espaciosRelacionados($area))
             ->where('bloqueo_desde', '<', $hasta)->where('bloqueo_hasta', '>', $desde)
             ->when($excepto !== null, fn ($q) => $q->whereKeyNot($excepto))
             ->orderBy('inicio')->get();
@@ -119,6 +139,9 @@ class Disponibilidad
         if (! $area->reservable || ! $area->espacio?->activo) {
             throw ValidationException::withMessages(['reserva_area_id' => 'Esta área ya no se puede reservar.']);
         }
+        if ($area->porInteriores()) {
+            throw ValidationException::withMessages(['reserva_area_id' => 'Esta zona se reserva por sus espacios interiores: elige uno de ellos.']);
+        }
         if ($exigirFuturo && $inicio->lessThanOrEqualTo(now())) {
             throw ValidationException::withMessages(['hora_inicio' => 'La reserva debe empezar más tarde que ahora.']);
         }
@@ -139,6 +162,10 @@ class Disponibilidad
             $zona = $this->zona($area);
             $texto = $choque->bloqueo_desde->setTimezone($zona)->format('H:i').' a '.$choque->bloqueo_hasta->setTimezone($zona)->format('H:i');
             $extra = ((int) $area->montaje_minutos + (int) $area->desmontaje_minutos) > 0 ? ' (incluye montaje y desmontaje)' : '';
+            if ((int) $choque->espacio_id !== (int) $area->espacio_id) {
+                $otro = $choque->area?->nombre() ?? 'otro espacio';
+                throw ValidationException::withMessages(['hora_inicio' => "«{$otro}» está reservado de {$texto} y comparte lugar con esta área (la zona completa o uno de sus espacios interiores). Elige otro horario u otra área."]);
+            }
             throw ValidationException::withMessages(['hora_inicio' => "El área está ocupada de {$texto}{$extra}. Elige otro horario u otra área."]);
         }
 
@@ -148,7 +175,7 @@ class Disponibilidad
     /**
      * Bloques ocupados de un día local (para el formulario y el calendario).
      *
-     * @return list<array{desde: string, hasta: string, inicio: string, fin: string, id: int}>
+     * @return list<array{desde: string, hasta: string, inicio: string, fin: string, id: int, otro: string|null}>
      */
     public function ocupadoEl(ReservaArea $area, string $fecha, ?int $excepto = null): array
     {
@@ -162,6 +189,8 @@ class Disponibilidad
                 'hasta' => $r->bloqueo_hasta->setTimezone($zona)->format('H:i'),
                 'inicio' => $r->inicio->setTimezone($zona)->format('H:i'),
                 'fin' => $r->fin->setTimezone($zona)->format('H:i'),
+                // Reserva de la zona completa o de un espacio interior que también ocupa esta área
+                'otro' => (int) $r->espacio_id !== (int) $area->espacio_id ? $r->area?->nombre() : null,
             ])->values()->all();
     }
 }

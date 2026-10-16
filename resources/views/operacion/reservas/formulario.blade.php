@@ -15,7 +15,7 @@
     @include('administracion.partes.avisos')
     @include('operacion.reservas._nav', [
         'titulo' => $reserva ? 'Modificar reserva '.$reserva->folioTexto() : 'Nueva reserva',
-        'descripcion' => $reserva ? 'Si cambias el área, el horario o los servicios, se vuelve a pedir la aprobación de lo que cambió.' : 'Lo indispensable: área, día, horario y para qué. Lo demás es opcional.',
+        'descripcion' => $reserva ? 'Si cambias el área, el horario o los servicios, se vuelve a pedir la aprobación de lo que cambió.' : 'Lo indispensable: dónde, día, horario y para qué. Lo demás es opcional.',
         'icono' => 'bi-calendar-plus', 'actual' => $reserva ? 'mias' : 'calendario',
     ])
 
@@ -23,7 +23,7 @@
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-door-closed" aria-hidden="true"></i></div>
             <p class="fw-semibold mb-1">No hay áreas que puedas reservar en tus sedes.</p>
-            <p class="text-muted small m-0">Pide a quien administra las reservas que marque como «Reservable» un salón o sala.</p>
+            <p class="text-muted small m-0">Pide a quien administra las reservas que agregue un salón, sala o habitación como área reservable.</p>
         </div>
     @else
     <form method="POST" action="{{ $reserva ? route('reservas.update', $reserva->id) : route('reservas.store') }}" class="res-form" autocomplete="off"
@@ -36,14 +36,33 @@
         <section class="res-bloque" aria-labelledby="t-cuando">
             <h2 id="t-cuando"><i class="bi bi-calendar-event me-1 text-success" aria-hidden="true"></i>¿Dónde y cuándo?</h2>
             <div class="res-rejilla">
+                @php
+                    $elegida = (int) $v('reserva_area_id');
+                    $zonaInicial = $areas->firstWhere('id', $elegida)['zona'] ?? (int) request('zona');
+                @endphp
+                {{-- Cascada: primero la zona (o el área) y después el espacio final --}}
                 <div>
-                    <label class="campo-etiqueta" for="reserva_area_id">Área <span class="text-danger" aria-hidden="true">*</span></label>
+                    <label class="campo-etiqueta" for="res_zona">Zona o área <span class="text-danger" aria-hidden="true">*</span></label>
+                    <select id="res_zona" class="campo" data-res-zona>
+                        <option value="">Elige dónde…</option>
+                        @foreach ($areas->groupBy('sede') as $sedeNombre => $grupo)
+                            <optgroup label="{{ $sedeNombre }}">
+                                @foreach ($grupo->unique('zona') as $a)
+                                    @php $cuantos = $areas->where('zona', $a['zona'])->count(); @endphp
+                                    <option value="{{ $a['zona'] }}" @selected($zonaInicial === $a['zona'])>{{ $a['zona_nombre'] }}{{ $cuantos > 1 ? ' ('.$cuantos.' espacios)' : '' }}</option>
+                                @endforeach
+                            </optgroup>
+                        @endforeach
+                    </select>
+                </div>
+                <div data-res-espacio-campo>
+                    <label class="campo-etiqueta" for="reserva_area_id">Espacio <span class="text-danger" aria-hidden="true">*</span></label>
                     <select id="reserva_area_id" name="reserva_area_id" class="campo" required data-res-area>
-                        <option value="">Elige un área…</option>
+                        <option value="">Elige un espacio…</option>
                         @foreach ($areas->groupBy('sede') as $sedeNombre => $grupo)
                             <optgroup label="{{ $sedeNombre }}">
                                 @foreach ($grupo as $a)
-                                    <option value="{{ $a['id'] }}" @selected((int) $v('reserva_area_id') === $a['id'])>{{ $a['nombre'] }}{{ $a['aforo'] ? ' (hasta '.$a['aforo'].')' : '' }}</option>
+                                    <option value="{{ $a['id'] }}" data-zona="{{ $a['zona'] }}" @selected($elegida === $a['id'])>{{ $a['texto'] }}{{ $a['aforo'] ? ' (hasta '.$a['aforo'].')' : '' }}</option>
                                 @endforeach
                             </optgroup>
                         @endforeach
@@ -167,9 +186,9 @@
             <p class="res-meta mt-2 mb-0">Es un cálculo previo: el total definitivo queda en la reserva{{ $puedeAjustar ? ' (ahí puedes aplicar un descuento o cortesía con su motivo)' : '' }}.</p>
         </section>
 
-        <div class="res-acciones">
-            <button type="submit" class="btn-verde"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Guardar reserva</button>
-            <a href="{{ $reserva ? route('reservas.show', $reserva->id) : route('reservas.index') }}" class="btn-cancelar">Cancelar</a>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Guardar reserva</button>
+            <a href="{{ $reserva ? route('reservas.show', $reserva->id) : route('reservas.index') }}" class="btn-secundario-rh">Cancelar</a>
         </div>
     </form>
     @endif

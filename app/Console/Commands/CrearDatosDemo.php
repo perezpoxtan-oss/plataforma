@@ -256,6 +256,8 @@ class CrearDatosDemo extends Command
         $paso('entrevistasDemo', fn () => $this->entrevistasDemo($empresa, $sedes, User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'jefedepto.demo')->firstOrFail()));
         // Reservas de áreas (docs/tecnico/reservas.md): salón de eventos, sala de juntas, servicios con departamento y reservas en distintos estados
         $paso('reservasDemo', fn () => $this->reservasDemo($empresa, $sedes));
+        // Reservas por niveles: una zona que se reserva por sus espacios interiores (salas de un centro de negocios)
+        $paso('reservasNivelesDemo', fn () => $this->reservasNivelesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         // Mejoras informes (ADR-0017): semanas anteriores para que Tendencias tenga con qué comparar
         $paso('informesDemo', fn () => $this->informesDemo($empresa, $sedes));
         // Fin Mejoras informes
@@ -272,6 +274,46 @@ class CrearDatosDemo extends Command
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Reservas por niveles, solo la primera vez (si ya hay una zona «por sus
+     * espacios interiores», no hace nada): en Hotel Demo Centro, la zona
+     * «Centro de negocios» (Nivel 1 › salas Cozumel, Holbox y Bacalar) se
+     * reserva por sus espacios interiores; cada sala recibe la configuración
+     * de la zona (aforo 10, confirmación inmediata, de lunes a viernes).
+     */
+    private function reservasNivelesDemo($sedes, User $admin): void
+    {
+        if (ReservaArea::where('modo', ReservaArea::INTERIORES)->exists()) {
+            return;
+        }
+        $previo = auth()->user();
+        try {
+            auth()->setUser($admin);
+            $centro = $sedes['CEN'];
+            $espacios = app(AdministradorEspacios::class);
+            $catalogos = app(CatalogosReservas::class);
+            $catalogos->asegurar();
+            $zona = Espacio::where('sede_id', $centro->id)->where('nivel', Espacio::EDIFICIO)->where('nombre', 'Centro de negocios')->first()
+                ?? $espacios->crear($admin, $centro, null, Espacio::EDIFICIO, ['nombre' => 'Centro de negocios'], false);
+            $nivel = Espacio::where('padre_id', $zona->id)->where('nombre', 'Nivel 1')->first()
+                ?? $espacios->crear($admin, $centro, $zona, Espacio::AREA, ['nombre' => 'Nivel 1'], false);
+            foreach (['Sala Cozumel', 'Sala Holbox', 'Sala Bacalar'] as $sala) {
+                if (! Espacio::where('padre_id', $nivel->id)->where('nombre', $sala)->exists()) {
+                    $espacios->crear($admin, $centro, $nivel, Espacio::AREA_ESPECIFICA, ['nombre' => $sala], false);
+                }
+            }
+            $area = $catalogos->marcarReservable($admin, $zona);
+            $semana = collect(range(1, 5))->mapWithKeys(fn ($d) => [$d => ['abierto' => '1', 'desde' => '08:00', 'hasta' => '20:00']])->all() + [6 => [], 7 => []];
+            $catalogos->guardarArea($admin, $area, ['aforo_maximo' => 10, 'confirmacion_inmediata' => '1', 'con_horario' => '1', 'horario' => $semana,
+                'descripcion' => 'Salas privadas para juntas y videollamadas.',
+                'montajes' => [ReservaMontaje::where('nombre', 'Libre')->value('id') => ['usar' => '1', 'aforo' => 10]]]);
+            $catalogos->marcarReservable($admin, $zona, ReservaArea::INTERIORES);
+        } finally {
+            $previo !== null ? auth()->setUser($previo) : auth()->forgetGuards();
+            app(Autorizador::class)->olvidar();
+        }
     }
 
     /**

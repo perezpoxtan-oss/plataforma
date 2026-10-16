@@ -9,20 +9,18 @@
     @include('administracion.partes.avisos')
     @include('operacion.reservas._nav', ['titulo' => 'Informes de reservas', 'descripcion' => 'Ocupación por área, reservas por tipo e ingresos de eventos para clientes (solo reservas confirmadas).', 'icono' => 'bi-bar-chart', 'actual' => 'informes'])
 
-    <form method="GET" action="{{ route('reservas.informes') }}" class="res-filtros">
-        <label class="small fw-semibold" for="desde">Del</label>
-        <input type="date" id="desde" name="desde" class="campo" style="max-width: 170px" value="{{ $desde->toDateString() }}">
-        <label class="small fw-semibold" for="hasta">al</label>
-        <input type="date" id="hasta" name="hasta" class="campo" style="max-width: 170px" value="{{ $hasta->toDateString() }}">
+    <form method="GET" action="{{ route('reservas.informes') }}" class="filtros-rh">
+        <label class="filtro-fecha"><span>Del</span><input type="date" id="desde" name="desde" value="{{ $desde->toDateString() }}"></label>
+        <label class="filtro-fecha"><span>al</span><input type="date" id="hasta" name="hasta" value="{{ $hasta->toDateString() }}"></label>
         @if ($sedes->count() > 1)
             <select name="sede" class="filtro-select" aria-label="Sede">
                 <option value="">Todas las sedes</option>
                 @foreach ($sedes as $s)<option value="{{ $s->id }}" @selected($sede === $s->id)>{{ $s->nombre }}</option>@endforeach
             </select>
         @endif
-        <button type="submit" class="res-boton"><i class="bi bi-funnel" aria-hidden="true"></i>Ver</button>
+        <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-funnel me-1" aria-hidden="true"></i>Ver</button>
         @if ($puede['exportar'])
-            <a href="{{ route('reservas.informes.exportar', array_filter(['desde' => $desde->toDateString(), 'hasta' => $hasta->toDateString(), 'sede' => $sede])) }}" class="res-boton"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>Descargar en Excel</a>
+            <a href="{{ route('reservas.informes.exportar', array_filter(['desde' => $desde->toDateString(), 'hasta' => $hasta->toDateString(), 'sede' => $sede])) }}" class="btn-secundario-rh"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Descargar en Excel</a>
         @endif
     </form>
 

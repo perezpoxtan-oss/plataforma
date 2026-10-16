@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operacion\Reservas;
 
 use App\Http\Controllers\Controller;
 use App\Models\Empresa;
+use App\Models\Espacio;
 use App\Models\Reserva;
 use App\Models\ReservaAprobacion;
 use App\Models\ReservaArea;
@@ -17,6 +18,7 @@ use App\Services\Reservas\CatalogosReservas;
 use App\Services\Reservas\Cotizador;
 use App\Services\Reservas\Disponibilidad;
 use App\Services\Reservas\EsperaReservas;
+use App\Services\Reservas\NivelesReservas;
 use App\Services\Reservas\ResponsablesReservas;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -69,8 +71,9 @@ class ReservaController extends Controller
         }
         app(EsperaReservas::class)->escalarSiToca($empresaId);
         $elegida = $request->integer('sede') ?: null;
+        $zonaElegida = $request->integer('zona') ?: null;
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $elegida) {
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $elegida, $zonaElegida) {
             $areas = $this->areasVisibles($actor);
             $sedes = Sede::whereIn('id', $areas->pluck('sede_id')->unique())->orderBy('nombre')->get(['id', 'nombre', 'codigo', 'zona_horaria', 'empresa_id']);
             $zona = Empresa::whereKey($empresaId)->value('zona_horaria') ?: 'America/Mexico_City';
@@ -86,36 +89,66 @@ class ReservaController extends Controller
                 $porAprobar = Reserva::whereIn('reserva_area_id', $areas->pluck('id'))->whereIn('estado', [Reserva::POR_APROBAR, Reserva::CAMBIO_PEDIDO])
                     ->selectRaw('sede_id, COUNT(*) AS total')->groupBy('sede_id')->pluck('total', 'sede_id');
                 $resumen = $sedes->mapWithKeys(fn ($s) => [$s->id => [
-                    'areas' => $areas->where('sede_id', $s->id)->count(), 'hoy' => (int) ($hoy[$s->id] ?? 0), 'por_aprobar' => (int) ($porAprobar[$s->id] ?? 0),
+                    'areas' => $areas->where('sede_id', $s->id)->reject(fn ($a) => $a->porInteriores())->count(), 'hoy' => (int) ($hoy[$s->id] ?? 0), 'por_aprobar' => (int) ($porAprobar[$s->id] ?? 0),
                 ]])->all();
 
                 return view('operacion.reservas.sedes', ['sinEmpresa' => false, 'sedes' => $sedes, 'resumen' => $resumen, 'puede' => $puede]);
             }
 
-            // Fichas de las áreas de la sede: próxima reserva y cuántas hay hoy (dos consultas)
+            // Fichas por niveles, como Zonas y edificios: primer nivel de la sede
+            // y, al entrar a una zona con espacios interiores, sus espacios.
             $enSede = $areas->where('sede_id', $sede)->values();
+            $niveles = app(NivelesReservas::class);
+            $padres = $niveles->padres($enSede);
+            $zona = $zonaElegida !== null ? $enSede->firstWhere('id', $zonaElegida) : null;
+            $nivel = $niveles->hijas($enSede, $padres, $zona?->id);
+            $porId = $enSede->keyBy('id');
+            $finales = fn (int $id) => collect($niveles->descendientes($padres, $id))->reject(fn ($d) => $porId[$d]->porInteriores())->values();
+
+            // Próxima reserva y cuántas hay hoy (dos consultas para toda la sede)
             $proximas = Reserva::ocupan()->whereIn('reserva_area_id', $enSede->pluck('id'))->where('fin', '>', now())
                 ->orderBy('inicio')->get(['id', 'reserva_area_id', 'inicio', 'fin'])->groupBy('reserva_area_id');
-            $titulares = $enSede->mapWithKeys(fn ($a) => [$a->id => $this->responsables->delArea($a)[0]]);
+            $titulares = $nivel->mapWithKeys(fn ($a) => [$a->id => $this->responsables->delArea($a)[0]]);
             $nombres = User::whereIn('id', $titulares->filter()->unique())->pluck('name', 'id');
             $local = fn ($fecha, $area) => $fecha->copy()->setTimezone($this->disponibilidad->zona($area));
             $moneda = (string) (Empresa::whereKey($empresaId)->value('moneda') ?: 'MXN');
-            $fichas = $enSede->map(function (ReservaArea $a) use ($proximas, $titulares, $nombres, $local, $hoyDesde, $hoyHasta, $moneda) {
-                $suyas = $proximas->get($a->id, collect());
+            // Dónde está cada ficha dentro de la zona («Piso 1»), para agruparlas
+            $ancestros = $nivel->flatMap(fn ($a) => $a->espacio?->idsAncestros() ?? [])->unique()->values();
+            $nombresEspacio = $ancestros->isEmpty() ? collect() : Espacio::whereIn('id', $ancestros)->pluck('nombre', 'id');
+            $fichas = $nivel->map(function (ReservaArea $a) use ($proximas, $titulares, $nombres, $local, $hoyDesde, $hoyHasta, $moneda, $finales, $zona, $nombresEspacio) {
+                $dentro = $finales((int) $a->id);
+                $ids = $dentro->push((int) $a->id);
+                $suyas = $ids->flatMap(fn ($id) => $proximas->get($id, collect()))->sortBy('inicio')->values();
                 $proxima = $suyas->first(fn ($r) => $r->inicio->greaterThanOrEqualTo(now())) ?? $suyas->first();
                 $tarifas = $a->tarifas();
+                $antes = $a->espacio?->idsAncestros() ?? [];
+                if ($zona !== null && ($i = array_search((int) $zona->espacio_id, $antes, true)) !== false) {
+                    $antes = array_slice($antes, $i + 1);
+                }
 
                 return [
                     'area' => $a, 'responsable' => $titulares[$a->id] ? ($nombres[$titulares[$a->id]] ?? null) : null,
                     'hoy' => $suyas->filter(fn ($r) => $r->inicio->lessThan($hoyHasta) && $r->fin->greaterThan($hoyDesde))->count(),
                     'proxima' => $proxima === null ? null : ReservaController::diaTexto($local($proxima->inicio, $a)).' '.$local($proxima->inicio, $a)->format('d/m H:i'),
                     'tarifa' => $tarifas === [] ? null : collect($tarifas)->map(fn ($v, $k) => ReservaArea::TARIFAS[$k][1].' '.Cotizador::dinero($v, $moneda))->first(),
+                    'dentro' => $dentro->count() - 1,
+                    'grupo' => $zona === null ? '' : collect($antes)->map(fn ($id) => $nombresEspacio[$id] ?? null)->filter()->join(' › '),
                 ];
-            });
+            })->sortBy(fn ($f) => $f['grupo'].' '.mb_strtolower($f['area']->nombre()))->values();
+
+            // Migas: Sede › zonas que contienen a la actual › zona actual
+            $migas = [];
+            for ($z = $zona; $z !== null; $z = ($padres[$z->id] ?? null) !== null ? $porId[$padres[$z->id]] : null) {
+                array_unshift($migas, $z);
+            }
+            $sedesConfigurar = $actor->can('reservas.configurar') ? $this->reservas->sedes($actor, 'reservas.configurar') : [];
+            $configurarAqui = $sedesConfigurar === null || in_array($sede, $sedesConfigurar, true);
 
             return view('operacion.reservas.sede', [
                 'sede' => $sedes->firstWhere('id', $sede), 'variasSedes' => $sedes->count() > 1, 'fichas' => $fichas, 'puede' => $puede,
-                'puedeReservar' => $this->reservas->puedeReservarEn($actor, $sede),
+                'puedeReservar' => $this->reservas->puedeReservarEn($actor, $sede), 'zona' => $zona, 'migas' => $migas,
+                'configurarAqui' => $configurarAqui,
+                'opciones' => $configurarAqui ? app(CatalogosReservas::class)->opcionesParaAgregar([$sede], Empresa::find($empresaId)) : collect(),
             ]);
         });
     }
@@ -148,7 +181,8 @@ class ReservaController extends Controller
         };
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $filtros, $vista, $fecha, $desde, $hasta, $zona) {
-            $areas = $this->areasVisibles($actor);
+            // Una zona «por sus espacios interiores» no se reserva: no tiene calendario propio
+            $areas = $this->areasVisibles($actor)->reject(fn (ReservaArea $a) => $a->porInteriores())->values();
             $sedes = Sede::whereIn('id', $areas->pluck('sede_id')->unique())->orderBy('nombre')->get(['id', 'nombre']);
             $sede = isset($filtros['sede']) && $sedes->contains('id', (int) $filtros['sede']) ? (int) $filtros['sede'] : null;
             $enSede = $areas->when($sede !== null, fn ($c) => $c->where('sede_id', $sede))->values();
@@ -236,7 +270,7 @@ class ReservaController extends Controller
             }
         }
 
-        return ReservaArea::with(['espacio:id,nombre,activo', 'sede:id,nombre,zona_horaria,empresa_id', 'montajes'])
+        return ReservaArea::with(['espacio:id,nombre,activo,nivel,ruta,padre_id', 'sede:id,nombre,zona_horaria,empresa_id', 'montajes'])
             ->where('reservable', true)->whereHas('espacio', fn ($q) => $q->where('activo', true))
             ->when(! $todas, fn ($q) => $q->whereIn('sede_id', array_unique($sedes)))
             ->get()->sortBy(fn ($a) => $a->sede?->nombre.' '.$a->nombre())->values();
@@ -346,13 +380,21 @@ class ReservaController extends Controller
     private function formulario(User $actor, int $empresaId, ?Reserva $reserva, Request $request): View
     {
         app(CatalogosReservas::class)->asegurar();
-        $areas = $this->areasVisibles($actor, 'crear')->filter(fn ($a) => $this->reservas->puedeReservarEn($actor, (int) $a->sede_id))->values();
-        if ($reserva !== null && ! $areas->contains('id', $reserva->reserva_area_id)) {
+        $todas = $this->areasVisibles($actor, 'crear')->filter(fn ($a) => $this->reservas->puedeReservarEn($actor, (int) $a->sede_id))->values();
+        if ($reserva !== null && ! $todas->contains('id', $reserva->reserva_area_id)) {
             $actual = ReservaArea::with(['espacio', 'sede', 'montajes'])->find($reserva->reserva_area_id);
             if ($actual !== null) {
-                $areas->push($actual);
+                $todas->push($actual);
             }
         }
+        // Cascada: zona (primer nivel de la sede) y luego el espacio final. Una
+        // zona «por sus espacios interiores» solo agrupa; no se reserva.
+        $niveles = app(NivelesReservas::class);
+        $padres = $niveles->padres($todas);
+        $porId = $todas->keyBy('id');
+        $ancestros = $todas->flatMap(fn ($a) => $a->espacio?->idsAncestros() ?? [])->unique()->values();
+        $nombresEspacio = $ancestros->isEmpty() ? collect() : Espacio::whereIn('id', $ancestros)->pluck('nombre', 'id');
+        $areas = $todas->reject(fn (ReservaArea $a) => $a->porInteriores())->values();
         $ajustes = $this->ajustes->de($empresaId);
         $zonaDe = fn (ReservaArea $a) => $this->disponibilidad->zona($a);
         $valores = $reserva === null ? [
@@ -374,13 +416,24 @@ class ReservaController extends Controller
 
         return view('operacion.reservas.formulario', [
             'reserva' => $reserva, 'valores' => $valores, 'ajustes' => $ajustes,
-            'areas' => $areas->map(fn (ReservaArea $a) => [
-                'id' => $a->id, 'nombre' => $a->nombre(), 'sede' => $a->sede?->nombre, 'aforo' => $a->aforo_maximo,
-                'montajes' => $a->montajes->map(fn ($m) => ['id' => $m->id, 'nombre' => $m->nombre, 'aforo' => $m->pivot->aforo])->values()->all(),
-                'tarifas' => $a->tarifas(), 'montaje' => (int) $a->montaje_minutos, 'desmontaje' => (int) $a->desmontaje_minutos,
-                'inmediata' => (bool) $a->confirmacion_inmediata, 'horario' => $this->horarioTexto($a), 'descripcion' => $a->descripcion,
-                'foto' => $a->foto ? route('reservas.foto', $a->id) : null,
-            ])->values(),
+            'areas' => $areas->map(function (ReservaArea $a) use ($niveles, $padres, $porId, $nombresEspacio) {
+                $raiz = $porId[$niveles->raiz($padres, (int) $a->id)];
+                $dentro = $raiz->id !== $a->id;
+                // Dónde está dentro de su zona: «Piso 1 › 101» (o «Toda la zona»)
+                $antes = $a->espacio?->idsAncestros() ?? [];
+                $i = array_search((int) $raiz->espacio_id, $antes, true);
+                $camino = $dentro && $i !== false ? collect(array_slice($antes, $i + 1))->map(fn ($id) => $nombresEspacio[$id] ?? null)->filter()->join(' › ') : '';
+
+                return [
+                    'id' => $a->id, 'nombre' => $a->nombre(), 'sede' => $a->sede?->nombre, 'aforo' => $a->aforo_maximo,
+                    'zona' => (int) $raiz->id, 'zona_nombre' => $raiz->nombre(),
+                    'texto' => $dentro ? trim(($camino !== '' ? $camino.' › ' : '').$a->nombre()) : ($niveles->descendientes($padres, (int) $a->id) !== [] ? 'Toda la zona' : $a->nombre()),
+                    'montajes' => $a->montajes->map(fn ($m) => ['id' => $m->id, 'nombre' => $m->nombre, 'aforo' => $m->pivot->aforo])->values()->all(),
+                    'tarifas' => $a->tarifas(), 'montaje' => (int) $a->montaje_minutos, 'desmontaje' => (int) $a->desmontaje_minutos,
+                    'inmediata' => (bool) $a->confirmacion_inmediata, 'horario' => $this->horarioTexto($a), 'descripcion' => $a->descripcion,
+                    'foto' => $a->foto ? route('reservas.foto', $a->id) : null,
+                ];
+            })->values(),
             'tipos' => ReservaTipoUso::where('activo', true)->orderBy('orden')->orderBy('nombre')->get(['id', 'nombre']),
             'servicios' => ReservaServicio::with('departamento:id,nombre')->where('activo', true)->orderBy('categoria')->orderBy('orden')->orderBy('nombre')->get()
                 ->groupBy('categoria'),

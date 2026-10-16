@@ -1,6 +1,6 @@
 # Lección 60 · Reservas de áreas
 
-**Duración:** 30 minutos · **Para:** Administrador del cliente (prácticas 1 y 6), quien reserva (2 y 5), quien aprueba (3) y los departamentos (4).
+**Duración:** 45 minutos · **Para:** Administrador del cliente (prácticas 1, 6 y 7), quien reserva (2 y 5), quien aprueba (3) y los departamentos (4).
 
 Aprenderás:
 
@@ -10,6 +10,7 @@ Aprenderás:
 4. A atender una orden de servicio y marcarla «Listo».
 5. A modificar y cancelar.
 6. A leer los informes.
+7. A reservar una zona por sus espacios interiores (habitaciones o salas), a entender el bloqueo entre la zona completa y sus espacios, y a quitar un área de reservas sin perder su historial.
 
 ## Antes de empezar
 
@@ -26,7 +27,7 @@ Usa la empresa de prueba con varias cuentas: el **Administrador**, una persona q
 ## Práctica 1 · Configurar un salón (Administrador)
 
 1. **Operación → Reservas → Reservas de áreas → Configuración**.
-2. Toca la ficha **Marcar como reservable**, elige «Salón Maya» y toca **Guardar**.
+2. Toca la ficha **Agregar área reservable**, marca la casilla de «Salón Maya» y toca **Guardar**.
 3. Pon aforo 120, marca **Auditorio** (120) y **Herradura (U)** (30), 60 minutos de montaje y 30 de desmontaje, y una tarifa **Por evento**. **Guardar**.
 4. En **Servicios y requerimientos** agrega «Coffee break», por persona, con **Departamento que lo atiende: Cocina**.
 
@@ -70,7 +71,22 @@ Comprueba: los departamentos reciben «Se canceló la reserva» y el horario que
 1. **Informes**: elige el mes. Revisa ocupación, tipos e ingresos; **Descargar en Excel**.
 2. **Estructura → Configuración → Reservas de áreas**: cambia el responsable general y las horas de recordatorio.
 
+## Práctica 7 · Zonas con espacios interiores y quitar áreas (Administrador y quien reserva)
+
+1. En **Estructura → Zonas y edificios** revisa que exista una zona con salas dentro (por ejemplo «Centro de negocios › Nivel 1 › Sala Cozumel, Sala Holbox y Sala Bacalar»). No cambies nada ahí.
+2. En **Reservas de áreas**, entra a la sede y toca **Agregar área reservable**. Marca «Centro de negocios», elige **Por sus espacios interiores** y toca **Guardar**.
+3. Comprueba: la ficha del Centro de negocios dice «3 espacios reservables» y tiene **Entrar a sus espacios**. Entra: hay una ficha por sala, con la configuración de la zona. Arriba, la ruta te regresa a la sede.
+4. Toca **Configurar** en el Centro de negocios, pon aforo 8, marca **Copiar esta configuración a sus 3 espacios interiores** y **Guardar**: las tres salas quedan con aforo 8.
+5. Como quien reserva: **Nueva reserva** → **Zona o área**: Centro de negocios → **Espacio**: «Nivel 1 › Sala Holbox». Reserva de 10:00 a 11:00.
+6. Bloqueo cruzado: agrega «Torre A» como **Toda la zona como un solo espacio** y también una de sus salas. Reserva la sala de 10:00 a 11:00 e intenta reservar **Toda la zona** a las 10:30: el mensaje dice que comparte lugar con esta área. Al revés pasa lo mismo.
+7. Quitar: en la ficha de una sala con una reserva próxima toca **Quitar de reservas** → «Tiene 1 reserva próxima; cancélala o reprográmala primero.». Cancela la reserva y vuelve a quitarla: queda **QUITADA** (tiene historial). En **Configuración** tócale **Reactivar**: vuelve con su configuración.
+
+Comprueba: en Zonas y edificios siguen todos los espacios; nada se borró.
+
 ## Para recordar
+
+- Una zona se reserva **completa** o **por sus espacios interiores**; si ambas existen, una ocupa a la otra en ese horario.
+- **Quitar de reservas** nunca borra el lugar de Zonas y edificios ni el historial, y no deja quitar un área con reservas próximas.
 
 - Lo de cada quien llega a su campana y a Mis pendientes: nadie tiene que buscar.
 - Modificar solo vuelve a pedir lo que cambió.
