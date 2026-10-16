@@ -6,6 +6,7 @@ Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PA
 Bajo «## [Sin publicar]»:
 
 ### Agregado
+- **Diagnóstico de velocidad** (`MedirTiempos`, sin cambios visibles). Separa el tiempo de cada visita en espera del servidor, arranque, base de datos (con número de consultas) y código. El Super Administrador lo ve en el navegador con la cabecera `Server-Timing` (F12 → Network → Timing), con las 3 consultas más lentas sin valores; las visitas de 1.5 s o más (`PLATAFORMA_LENTO_MS`) se anotan en `storage/logs/lentas-AAAA-MM-DD.log`. Ver `docs/tecnico/velocidad.md`.
 - **Reservas: editar, eliminar y ocultar lo quitado** (cambio visible aprobado por el dueño). Ver `docs/tecnico/reservas.md`, «Editar, eliminar y ocultar».
   - Fichas de áreas (Configuración y fichas por sede/zona): **Editar** con lápiz (`bi-pencil`) y **Eliminar de reservas** con bote de basura (`bi-trash3`), como en Zonas y edificios. El bote reemplaza al tachado «Quitar» (un solo botón) y su confirmación dice qué pasará: sin reservas se borra su configuración y desaparece; con solo reservas pasadas se archiva con su historial y **deja de verse**; con reservas próximas no se elimina (aviso con **Ver su calendario**). Nunca toca Zonas y edificios.
   - **Mostrar quitadas / dados de baja (N)** en cada sección de Configuración (áreas, montajes, tipos de uso, servicios): por omisión solo se ve lo activo; desde ahí se edita o se reactiva. Editar un área archivada avisa que no se ofrece.

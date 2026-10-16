@@ -118,3 +118,7 @@ Revisados en la auditoría del 2026-10-06 (`docs/seguridad/auditoria-2026-10-06-
 - **Candado de corrida.** Guarda el número de proceso; solo se retira si ese proceso ya terminó (o tras 3 horas).
 - **Regreso automático.** Al regresar a la versión anterior también se restauran sus archivos públicos (`.htaccess`, css, js).
 - **`.env`.** Se escribe con permisos `600` desde el inicio y se conservan solo los 3 respaldos más recientes (`.env.respaldo.*`).
+
+## Velocidad
+
+Para saber dónde se va el tiempo de una pantalla lenta (espera del hospedaje, arranque, base de datos o código), ver [velocidad.md](velocidad.md): el Super Administrador lo ve en F12 → Network → Timing y las visitas lentas quedan en `shared/storage/logs/lentas-AAAA-MM-DD.log`.

@@ -6,6 +6,7 @@ use App\Http\Middleware\EstablecerEmpresa;
 use App\Http\Middleware\ExigirCambioContrasena;
 use App\Http\Middleware\ExigirDosPasos;
 use App\Http\Middleware\FirmasComoArchivo;
+use App\Http\Middleware\MedirTiempos;
 use App\Http\Middleware\PortadaPublica;
 use App\Http\Middleware\SoloConsulta;
 use App\Http\Middleware\VerificarHost;
@@ -43,6 +44,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         // Seguridad: dominio verificado (enlaces sin Host falso)
         $middleware->prepend(VerificarHost::class);
+        // Diagnóstico de velocidad: el primero de todos, para medir la visita completa
+        $middleware->prepend(MedirTiempos::class);
         // Seguridad: cabeceras (CSP, clickjacking, nosniff, HSTS, sin caché con sesión) en toda respuesta
         $middleware->append(CabecerasSeguridad::class);
     })
