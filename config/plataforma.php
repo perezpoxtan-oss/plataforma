@@ -30,4 +30,13 @@ return [
         ]))),
     ],
 
+    /*
+    | Diagnóstico de velocidad (App\Http\Middleware\MedirTiempos): las visitas
+    | que tardan al menos estos milisegundos en el servidor se anotan en
+    | storage/logs/lentas-AAAA-MM-DD.log. 0 = anotar todas.
+    */
+    'velocidad' => [
+        'lento_ms' => (int) env('PLATAFORMA_LENTO_MS', 1500),
+    ],
+
 ];
