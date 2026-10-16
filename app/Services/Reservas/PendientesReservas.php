@@ -4,6 +4,7 @@ namespace App\Services\Reservas;
 
 use App\Models\Delegacion;
 use App\Models\DepartamentoResponsable;
+use App\Models\Empresa;
 use App\Models\Reserva;
 use App\Models\ReservaAprobacion;
 use App\Models\ReservaOrden;
@@ -72,6 +73,11 @@ class PendientesReservas
      */
     public function para(User $actor, int $empresaId): array
     {
+        // Empresa que nunca marcó un área como reservable: ninguna consulta (la empresa ya viene cargada con el usuario)
+        $empresa = $actor->relationLoaded('empresa') && (int) $actor->empresa?->id === $empresaId ? $actor->empresa : Empresa::find($empresaId);
+        if (empty($empresa?->preferencias[CatalogosReservas::EN_USO])) {
+            return [];
+        }
         $aprobaciones = DB::table('reserva_aprobaciones as a')->join('reservas as r', 'r.id', '=', 'a.reserva_id')
             ->join('reserva_areas as ra', 'ra.id', '=', 'r.reserva_area_id')
             ->where('a.empresa_id', $empresaId)->where('a.estado', ReservaAprobacion::PENDIENTE)->where('a.vigente', true)
@@ -84,7 +90,6 @@ class PendientesReservas
         $items = [];
 
         if ($aprobaciones->isNotEmpty() || $ordenes->isNotEmpty()) {
-            $empresa = $actor->relationLoaded('empresa') && (int) $actor->empresa?->id === $empresaId ? $actor->empresa : $empresaId;
             $ajustes = app(AjustesReservas::class)->de($empresa);
             $generales = array_values(array_unique(array_filter([$ajustes['responsable_id'], $ajustes['suplente_id']])));
             $deptos = $aprobaciones->pluck('departamento_id')->merge($ordenes->pluck('departamento_id'))->filter()->unique()->values();

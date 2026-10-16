@@ -3,6 +3,7 @@
 namespace App\Services\Reservas;
 
 use App\Models\Departamento;
+use App\Models\Empresa;
 use App\Models\Espacio;
 use App\Models\ReservaArea;
 use App\Models\ReservaMontaje;
@@ -30,6 +31,9 @@ class CatalogosReservas
         'tipos' => [ReservaTipoUso::class, 'Tipo de uso'],
         'servicios' => [ReservaServicio::class, 'Servicio'],
     ];
+
+    /** Marca en empresas.preferencias: la empresa ya tiene (o tuvo) áreas reservables (Mis pendientes no consulta si no). */
+    public const EN_USO = 'reservas_en_uso';
 
     /** Niveles de Zonas y edificios que se pueden reservar (salones, salas, terrazas…). */
     public const NIVELES = [Espacio::EDIFICIO, Espacio::AREA, Espacio::AREA_ESPECIFICA, Espacio::SUBAREA];
@@ -128,6 +132,10 @@ class CatalogosReservas
             return $area;
         }
         $area = ReservaArea::create(['sede_id' => $espacio->sede_id, 'espacio_id' => $espacio->id, 'reservable' => true]);
+        $empresa = Empresa::find($area->empresa_id);
+        if ($empresa !== null && empty($empresa->preferencias[self::EN_USO])) {
+            $empresa->forceFill(['preferencias' => array_merge($empresa->preferencias ?? [], [self::EN_USO => true])])->save();
+        }
         $this->auditoria->auditar($actor, 'reservas.area_reservable', $area, null, ['espacio' => $espacio->nombre]);
 
         return $area;
