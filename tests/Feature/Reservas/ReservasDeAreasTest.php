@@ -298,8 +298,8 @@ class ReservasDeAreasTest extends TestCase
     {
         $herradura = $this->enEmpresa(fn () => ReservaMontaje::where('nombre', 'Herradura (U)')->value('id'));
         $this->reservar($this->rita, ['asistentes' => 40, 'montaje_id' => $herradura])
-            ->assertSessionHasErrors(['asistentes' => 'Son más personas que el aforo del montaje Herradura (U): máximo 30.']);
-        $this->reservar($this->rita, ['asistentes' => 130])->assertSessionHasErrors(['asistentes' => 'Son más personas que el aforo del área: máximo 120.']);
+            ->assertSessionHasErrors(['motivo_excepcion_aforo' => 'Son 40 personas y el aforo del montaje Herradura (U) es de 30: escribe el motivo de la excepción (lo verá quien aprueba).']);
+        $this->reservar($this->rita, ['asistentes' => 130])->assertSessionHasErrors(['motivo_excepcion_aforo' => 'Son 130 personas y el aforo del área es de 120: escribe el motivo de la excepción (lo verá quien aprueba).']);
         $this->reservar($this->rita, ['asistentes' => 40])->assertSessionHasNoErrors();
         $cocteles = $this->enEmpresa(fn () => ReservaMontaje::where('nombre', 'Cóctel')->value('id'));
         $this->reservar($this->rita, ['montaje_id' => $cocteles, 'fecha' => '2026-11-05'])->assertSessionHasErrors('montaje_id');

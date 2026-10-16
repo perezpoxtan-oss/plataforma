@@ -61,49 +61,60 @@
                 <div class="res-datos">
                     <div><div class="res-dato-etiqueta">Área</div><div class="res-dato-valor">{{ $reserva->area->nombre() }}</div></div>
                     <div><div class="res-dato-etiqueta">Cuándo</div><div class="res-dato-valor">{{ $textos->cuando($reserva) }}</div></div>
+                    <div><div class="res-dato-etiqueta">Montaje y desmontaje</div><div class="res-dato-valor">{{ $textos->tiemposMontaje($reserva) }}</div></div>
                     <div><div class="res-dato-etiqueta">El área queda ocupada</div><div class="res-dato-valor">{{ $local($reserva->bloqueo_desde, 'H:i') }} a {{ $local($reserva->bloqueo_hasta, 'H:i') }}</div></div>
-                    <div><div class="res-dato-etiqueta">Personas</div><div class="res-dato-valor">{{ $reserva->asistentes }}</div></div>
+                    <div><div class="res-dato-etiqueta">Personas</div><div class="res-dato-valor">{{ $aforo ? $reserva->asistentes.' de '.$aforo.' permitidos' : $reserva->asistentes }}
+                        @if ($reserva->excede_aforo)<span class="res-estado estado-cambio_pedido ms-1">Excede aforo</span>@endif</div></div>
                     <div><div class="res-dato-etiqueta">Montaje</div><div class="res-dato-valor">{{ $reserva->montaje?->nombre ?? 'Sin montaje especial' }}</div></div>
                     <div><div class="res-dato-etiqueta">Tipo de uso</div><div class="res-dato-valor">{{ $reserva->tipoUso?->nombre ?? '—' }}</div></div>
                     <div><div class="res-dato-etiqueta">Para</div><div class="res-dato-valor">{{ $reserva->para_cliente ? 'Cliente: '.trim($reserva->cliente_nombre.($reserva->cliente_empresa ? ' · '.$reserva->cliente_empresa : '')) : 'Uso interno (sin costo)' }}</div></div>
                     @if ($reserva->para_cliente && ($reserva->cliente_correo || $reserva->cliente_telefono))
                         <div><div class="res-dato-etiqueta">Contacto del cliente</div><div class="res-dato-valor">{{ collect([$reserva->cliente_correo, $reserva->cliente_telefono])->filter()->join(' · ') }}</div></div>
                     @endif
-                    <div><div class="res-dato-etiqueta">Reservó</div><div class="res-dato-valor">{{ $reserva->solicitante?->name ?? '—' }} <span class="res-meta fw-normal">· @fecha($reserva->created_at)</span></div></div>
+                    <div><div class="res-dato-etiqueta">Solicitado por</div><div class="res-dato-valor">{{ $reserva->solicitadoPorTexto() }}</div></div>
+                    <div><div class="res-dato-etiqueta">Fecha de solicitud</div><div class="res-dato-valor">@fecha($reserva->created_at)</div></div>
                 </div>
+                @if ($reserva->excede_aforo)
+                    <div class="res-excepcion mt-3" role="note"><i class="bi bi-exclamation-triangle-fill text-warning me-1" aria-hidden="true"></i><strong>Excepción de aforo:</strong> {{ $reserva->motivo_excepcion_aforo }}</div>
+                @endif
+                @if ($reserva->indicaciones_montaje)
+                    <div class="res-indicaciones mt-3" role="note"><i class="bi bi-megaphone-fill me-1" aria-hidden="true"></i>{{ $reserva->indicaciones_montaje }}</div>
+                @endif
                 @if ($reserva->notas)<p class="res-meta mt-3 mb-0"><strong>Notas:</strong> {{ $reserva->notas }}</p>@endif
             </section>
 
             <section class="res-tarjeta" aria-labelledby="t-servicios">
-                <h3 id="t-servicios">Servicios y costo</h3>
+                <h3 id="t-servicios">Servicios por departamento{{ $reserva->para_cliente ? ' y costo' : '' }}</h3>
                 @if ($reserva->items->isEmpty() && ! $reserva->para_cliente)
                     <p class="res-meta m-0">Sin servicios. Uso interno, sin costo.</p>
                 @else
                     <div class="table-responsive">
                         <table class="res-tabla">
-                            <thead><tr><th>Concepto</th><th>Lo atiende</th><th class="num">Cantidad</th>@if ($reserva->para_cliente)<th class="num">Precio</th><th class="num">Importe</th>@endif</tr></thead>
+                            <thead><tr><th>Concepto</th><th class="num">Cantidad</th>@if ($reserva->para_cliente)<th class="num">Precio</th><th class="num">Importe</th>@endif</tr></thead>
                             <tbody>
                                 @if ($reserva->para_cliente)
-                                    <tr><td>Área: {{ $reserva->area->nombre() }} <span class="res-meta">({{ \App\Models\ReservaArea::TARIFAS[$reserva->tarifa][1] ?? 'sin tarifa' }}{{ $reserva->importe_area_manual !== null ? ', importe fijado' : '' }})</span></td><td>—</td><td class="num">1</td><td class="num"></td><td class="num">{{ Cotizador::dinero($reserva->importe_area, $reserva->moneda) }}</td></tr>
+                                    <tr><td>Área: {{ $reserva->area->nombre() }} <span class="res-meta">({{ \App\Models\ReservaArea::TARIFAS[$reserva->tarifa][1] ?? 'sin tarifa' }}{{ $reserva->importe_area_manual !== null ? ', importe fijado' : '' }})</span></td><td class="num">1</td><td class="num"></td><td class="num">{{ Cotizador::dinero($reserva->importe_area, $reserva->moneda) }}</td></tr>
                                 @endif
-                                @foreach ($reserva->items as $i)
-                                    <tr>
-                                        <td>{{ $i->nombre }}@if ($i->notas)<div class="res-meta">{{ $i->notas }}</div>@endif</td>
-                                        <td>{{ $i->departamento?->nombre ?? '—' }}</td>
-                                        <td class="num">{{ $i->cantidadTexto() }} {{ ReservaServicio::UNIDADES[$i->unidad][1] ?? '' }}</td>
-                                        @if ($reserva->para_cliente)<td class="num">{{ Cotizador::dinero($i->costo_unitario, $reserva->moneda) }}</td><td class="num">{{ Cotizador::dinero($i->importe, $reserva->moneda) }}</td>@endif
-                                    </tr>
+                                @foreach ($porDepartamento as $depto => $renglones)
+                                    <tr class="res-tabla-grupo"><th colspan="{{ $reserva->para_cliente ? 4 : 2 }}">{{ $depto }}</th></tr>
+                                    @foreach ($renglones as $i)
+                                        <tr>
+                                            <td><i class="bi bi-check2-square text-success me-1" aria-hidden="true"></i>{{ $i->nombre }}@if ($i->notas) <span class="res-nota">{{ $i->notas }}</span>@endif</td>
+                                            <td class="num">{{ $i->cantidadTexto() }} {{ ReservaServicio::UNIDADES[$i->unidad][1] ?? '' }}</td>
+                                            @if ($reserva->para_cliente)<td class="num">{{ Cotizador::dinero($i->costo_unitario, $reserva->moneda) }}</td><td class="num">{{ Cotizador::dinero($i->importe, $reserva->moneda) }}</td>@endif
+                                        </tr>
+                                    @endforeach
                                 @endforeach
                             </tbody>
                             @if ($reserva->para_cliente)
                                 <tfoot>
                                     @if ((float) $reserva->descuento > 0)
-                                        <tr><td colspan="4">{{ $reserva->cortesia ? 'Cortesía' : 'Descuento' }}{{ $reserva->ajuste_motivo ? ': '.$reserva->ajuste_motivo : '' }}</td><td class="num">− {{ Cotizador::dinero($reserva->descuento, $reserva->moneda) }}</td></tr>
+                                        <tr><td colspan="3">{{ $reserva->cortesia ? 'Cortesía' : 'Descuento' }}{{ $reserva->ajuste_motivo ? ': '.$reserva->ajuste_motivo : '' }}</td><td class="num">− {{ Cotizador::dinero($reserva->descuento, $reserva->moneda) }}</td></tr>
                                     @endif
                                     @if ((float) $reserva->iva_porcentaje > 0)
-                                        <tr><td colspan="4">IVA {{ rtrim(rtrim(number_format((float) $reserva->iva_porcentaje, 2), '0'), '.') }} %</td><td class="num">{{ Cotizador::dinero($reserva->iva, $reserva->moneda) }}</td></tr>
+                                        <tr><td colspan="3">IVA {{ rtrim(rtrim(number_format((float) $reserva->iva_porcentaje, 2), '0'), '.') }} %</td><td class="num">{{ Cotizador::dinero($reserva->iva, $reserva->moneda) }}</td></tr>
                                     @endif
-                                    <tr><td colspan="4">Total</td><td class="num">{{ Cotizador::dinero($reserva->total, $reserva->moneda) }}</td></tr>
+                                    <tr><td colspan="3">Total</td><td class="num">{{ Cotizador::dinero($reserva->total, $reserva->moneda) }}</td></tr>
                                 </tfoot>
                             @endif
                         </table>

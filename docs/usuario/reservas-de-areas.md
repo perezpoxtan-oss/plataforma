@@ -54,18 +54,37 @@ En el celular las fichas se acomodan una debajo de otra.
 
 ## Cómo reservar
 
+La reserva sigue el formato de una **orden de evento**: dónde, cuándo, cuántas personas, quién la pide y qué tiene que preparar cada departamento.
+
 1. Toca la ficha **Nueva reserva**, el botón **Reservar** de un área o **Reservar** en el día del calendario.
 2. En **¿Dónde y cuándo?** elige primero la **Zona o área** y después el **Espacio** (la habitación o sala; si la zona se reserva completa verás «Toda la zona»). Si la zona tiene un solo espacio se elige solo. Luego elige el **Día** y las horas **De** y **A**. Abajo aparecen los horarios ya ocupados de ese día y el horario en que el área se puede reservar.
-3. En **¿Para qué?** escribe el **Nombre del evento o reunión**, el número de **Personas** y, si quieres, el **Tipo de uso** y el **Montaje** (auditorio, escuela, herradura…). Cada montaje dice cuántas personas caben.
-4. En **¿Para quién es?** elige:
+3. Si necesitas el lugar todo el día, marca **Día completo**: las horas se llenan solas con el horario del área ese día (o de 00:00 a 23:59 si el área no tiene horario).
+4. **Montaje antes** y **Desmontaje después** ya traen los minutos del área. Si tu evento necesita más (o menos) tiempo para acomodar o recoger, cámbialos: el área queda ocupada ese tiempo antes y después. En **Indicaciones para el montaje** escribe lo que debe resaltar en la hoja, por ejemplo «Tener montaje listo 30 min antes».
+
+![¿Dónde y cuándo? con día completo, montaje y desmontaje](img/reservas/orden-cuando.png)
+
+5. En **¿Para qué?** escribe el **Nombre del evento o motivo** y el **Número de personas**. Debajo verás en verde cuántas caben, por ejemplo «20 de 25 permitidos» (cuenta el aforo del **Tipo de montaje** que elijas, o el del área).
+6. **Departamento que solicita** ya trae tu departamento; cámbialo si pides para otro (por ejemplo, Capacitación). La fecha de solicitud se guarda sola.
+7. Si son **más personas que el aforo**, el texto se pone ámbar («30 de 25 permitidos: excede el aforo») y aparece **Excepción de aforo**: escribe por qué se necesitan más personas. Sin motivo no se guarda. Quien aprueba el área verá la excepción, aunque el área sea de confirmación inmediata.
+
+![Excepción de aforo con su motivo](img/reservas/orden-excepcion-aforo.png)
+
+8. En **¿Para quién es?** elige:
    - **Uso interno**: no tiene costo.
-   - **Para un cliente de la sede**: escribe el nombre del cliente (y, si quieres, su empresa, correo y teléfono) y elige la **Tarifa del área**. Abajo verás el **Costo estimado** con IVA.
-5. Si necesitas servicios, abre **Servicios y requerimientos** y escribe la **cantidad** de cada uno. Al tocar la cantidad vacía se sugiere sola: por persona, el número de personas; por hora, las horas del evento; por evento o pieza, 1. Puedes agregar **Indicaciones** (por ejemplo «A las 11:00»).
-6. Toca **Guardar reserva**.
+   - **Para un cliente de la sede**: escribe el nombre del cliente (y, si quieres, su empresa, correo y teléfono) y elige la **Tarifa del área**. Con **Día completo** se propone la tarifa de día. Abajo verás el **Costo estimado** con IVA.
+9. En **Servicios por departamento** hay una tarjeta por departamento (Steward, Alimentos y bebidas, Cocina, Mantenimiento…). Marca la casilla de lo que necesitas: aparecen la **cantidad** (se sugiere sola: por persona, el número de personas; por hora, las horas del evento; por evento o pieza, 1) y una **nota** corta, por ejemplo «Agua» junto a Bebidas.
+10. Si tu empresa lo configuró, el **Tipo de montaje** (Tipo U, Escuela, Auditorio, Banquete…) está dentro de la tarjeta del departamento que monta (por ejemplo Steward). Si no, está en **¿Para qué?**.
+11. ¿Falta algo en la lista? Toca **+ Otro servicio** en la tarjeta del departamento que lo debe atender y escribe qué es y una nota. En la tarjeta **Otros** también eliges el departamento.
 
-![Formulario de reserva](img/reservas/formulario.png)
+![Servicios por departamento](img/reservas/orden-servicios.png)
 
-**Qué debes ver:** el aviso verde «Reserva RES-… enviada. Te avisaremos en la campana cuando la aprueben.» con los botones **Imprimir la hoja** y **Hacer otra reserva**. Si el área es de **confirmación inmediata** y no pediste servicios ni es para un cliente, el aviso dice que ya quedó **confirmada**.
+12. Toca **Guardar reserva**.
+
+En el celular las tarjetas de los departamentos se acomodan una debajo de otra.
+
+![Servicios por departamento en el celular](img/reservas/orden-celular.png)
+
+**Qué debes ver:** el aviso verde «Reserva RES-… enviada. Te avisaremos en la campana cuando la aprueben.» con los botones **Imprimir la hoja** y **Hacer otra reserva**. Si el área es de **confirmación inmediata**, no pediste servicios, no es para un cliente y no pasaste el aforo, el aviso dice que ya quedó **confirmada**.
 
 ## Cómo seguir tu reserva
 
@@ -75,9 +94,9 @@ En el celular las fichas se acomodan una debajo de otra.
 
 ![Mis reservas](img/reservas/mias.png)
 
-En la ficha de la reserva ves sus **Aprobaciones** (quién aprueba y cuánto lleva esperando), sus **Órdenes de servicio** (avance del montaje) y su **Historial**.
+En la ficha de la reserva ves sus **Datos** (con **Solicitado por** y su departamento, la **Fecha de solicitud**, las personas contra el aforo, el montaje y desmontaje, las indicaciones resaltadas y, si la hay, la excepción de aforo), los **Servicios por departamento**, sus **Aprobaciones** (quién aprueba y cuánto lleva esperando), sus **Órdenes de servicio** (avance del montaje) y su **Historial**.
 
-![Ficha de la reserva](img/reservas/ficha.png)
+![Ficha de la reserva](img/reservas/orden-ficha.png)
 
 | Estado | Qué quiere decir |
 |---|---|
@@ -93,7 +112,7 @@ En la ficha de la reserva ves sus **Aprobaciones** (quién aprueba y cuánto lle
 1. En la ficha toca **Modificar**.
 2. Cambia lo que necesites y toca **Guardar reserva**.
 
-**Qué debes ver:** si cambiaste el área, el día, la hora, las personas, el montaje o los servicios, se vuelve a pedir la aprobación **solo de lo que cambió** (por ejemplo, si cambias el coffee break, solo Cocina aprueba de nuevo). Si solo cambiaste el nombre o las notas, sigue confirmada.
+**Qué debes ver:** si cambiaste el área, el día, la hora, las personas, el montaje, los minutos de montaje o desmontaje o los servicios (también sus notas), se vuelve a pedir la aprobación **solo de lo que cambió** (por ejemplo, si cambias la nota del coffee break, solo ese departamento aprueba de nuevo). Si solo cambiaste el nombre o las notas para quien aprueba, sigue confirmada.
 
 Solo se modifica antes de que empiece.
 
@@ -104,9 +123,17 @@ Solo se modifica antes de que empiece.
 
 **Qué debes ver:** la reserva queda **Cancelada**, el horario libre, y se avisa a quien la iba a aprobar y a los departamentos que ya tenían su orden.
 
-## Cómo imprimir la hoja
+## Cómo imprimir la orden de evento
 
-En la ficha toca **Imprimir**. Se abre la **Orden de evento** (y, si es para un cliente, la **Cotización** con el desglose: área + servicios − descuento + IVA). Toca **Imprimir**.
+1. En la ficha toca **Imprimir**. Se abre la **Orden de evento** en hoja carta:
+   - Arriba: **Lugar donde se realizará**, **Núm. de pax** (y cuántos se permiten), **Fecha del evento**, **Horario del evento**, **Solicitado por** con su departamento, **Fecha de solicitud** y el montaje y desmontaje.
+   - Resaltadas: las **indicaciones para el montaje** y, si la hay, la **excepción de aforo** con su motivo.
+   - Después, una sección por departamento con sus casillas: ☒ lo que se pidió, con su cantidad y su nota.
+   - Si es para un cliente, la **Cotización** con el desglose (área + servicios − descuento + IVA), y al final las aprobaciones y las firmas.
+2. Por omisión solo salen los departamentos con algo pedido. Toca **Mostrar hoja completa** si quieres también las casillas vacías (por ejemplo, para llenarla a mano). **Solo lo pedido** regresa a la hoja corta.
+3. Toca **Imprimir**.
+
+![Orden de evento impresa](img/reservas/orden-impresion.png)
 
 ## Si algo sale mal
 
@@ -116,7 +143,10 @@ En la ficha toca **Imprimir**. Se abre la **Orden de evento** (y, si es para un 
 | «… está reservado de 09:00 a 12:30 y comparte lugar con esta área (la zona completa o uno de sus espacios interiores).» | Alguien reservó la zona completa (y con eso ocupa sus salas) o una sala de la zona (y con eso la zona completa ya no está libre). | Elige otro horario u otro espacio. Debajo de la fecha verás qué espacio lo ocupa. |
 | «Esta zona se reserva por sus espacios interiores: elige uno de ellos.» | Esa zona solo agrupa sus salas o habitaciones. | En **Espacio** elige la sala o habitación. |
 | «Fuera del horario del área. El sábado esta área no se reserva.» | El área solo se reserva ciertos días y horas. | Elige otro día u horario dentro del que se indica. |
-| «Son más personas que el aforo del montaje Herradura (U): máximo 30.» | En ese acomodo no caben tantas personas. | Elige otro montaje o un área más grande. |
+| «Son 30 personas y el aforo del montaje Tipo U es de 25: escribe el motivo de la excepción (lo verá quien aprueba).» | En ese acomodo no caben tantas personas. | Elige otro montaje o un área más grande, o escribe el motivo en **Excepción de aforo**. |
+| «Ese día el área no se reserva: elige otro día.» | Marcaste **Día completo** un día en que el área no abre. | Elige otro día. |
+| «Los minutos van de 0 a 1440 (24 horas).» | El montaje o desmontaje tiene un número fuera de rango. | Corrige los minutos. |
+| «Elige un departamento de tu empresa.» | El departamento que solicita (o el de un otro servicio) ya no existe. | Elige otro de la lista. |
 | «La reserva debe empezar más tarde que ahora.» | La hora de inicio ya pasó. | Revisa el día y la hora. |
 | «Escribe el nombre del cliente (persona de contacto).» | Elegiste «Para un cliente» sin su nombre. | Escribe el nombre o cambia a «Uso interno». |
 | «No puedes reservar en esa sede.» | Tu rol no reserva en la sede de esa área. | Pide a tu administrador que te dé permiso en esa sede. |
@@ -129,6 +159,10 @@ En la ficha toca **Imprimir**. Se abre la **Orden de evento** (y, si es para un 
 **¿Cómo me entero?** Te llega a la **campana** (y por correo, si tu empresa lo tiene encendido). Si te piden un cambio, aparece en **Mis pendientes** como «Reservas con cambio pedido».
 
 **¿Se cobra el uso interno?** No. Solo las reservas «Para un cliente de la sede» llevan costo.
+
+**¿Por qué mi reserva pide aprobación si el área se confirma al momento?** Porque pasaste el aforo: toda excepción la revisa el responsable del área.
+
+**¿El «otro servicio» también se aprueba?** Sí: lo aprueba y lo atiende el departamento de la tarjeta donde lo agregaste. Si lo dejaste sin departamento, solo queda anotado en la hoja.
 
 **¿Puedo reservar todas las semanas a la misma hora?** Por ahora cada reserva se hace por separado.
 

@@ -45,6 +45,7 @@ class FlujoReservas
         private readonly CentroNotificaciones $centro,
         private readonly AvisosCorreo $correo,
         private readonly TextosReservas $textos,
+        private readonly AjustesReservas $ajustes,
     ) {}
 
     // ---------------------------------------------------- Partes que aprueban
@@ -59,7 +60,8 @@ class FlujoReservas
         $reserva->loadMissing(['area', 'items.servicio']);
         $items = $reserva->items;
         $partes = [];
-        if (! ($reserva->area->confirmacion_inmediata && $items->isEmpty() && ! $reserva->para_cliente)) {
+        // Pasar el aforo por excepción siempre lo revisa el responsable del área
+        if (! ($reserva->area->confirmacion_inmediata && $items->isEmpty() && ! $reserva->para_cliente && ! $reserva->excede_aforo)) {
             $partes['area'] = ['tipo' => 'area', 'departamento_id' => null, 'huella' => $this->huellaArea($reserva)];
         }
         $porDepto = $items->filter(fn (ReservaServicioItem $i) => $i->departamento_id !== null && ($i->servicio?->requiere_aprobacion ?? true))
@@ -74,8 +76,17 @@ class FlujoReservas
 
     public function huellaArea(Reserva $r): string
     {
-        return hash('sha256', json_encode([(int) $r->espacio_id, $r->inicio?->toIso8601String(), $r->fin?->toIso8601String(),
-            $r->montaje_id, (int) $r->asistentes, (bool) $r->para_cliente, $r->tarifa]));
+        $base = [(int) $r->espacio_id, $r->inicio?->toIso8601String(), $r->fin?->toIso8601String(),
+            $r->montaje_id, (int) $r->asistentes, (bool) $r->para_cliente, $r->tarifa];
+        // Orden de evento: solo cuenta si se usa (las reservas de antes conservan su huella)
+        if ($r->excede_aforo) {
+            $base[] = ['excepcion_aforo' => (string) $r->motivo_excepcion_aforo];
+        }
+        if ($r->montaje_minutos !== null || $r->desmontaje_minutos !== null) {
+            $base[] = ['montaje' => [$r->montaje_minutos, $r->desmontaje_minutos]];
+        }
+
+        return hash('sha256', json_encode($base));
     }
 
     public function huellaDepartamento(Reserva $r, int $departamentoId): string
@@ -84,7 +95,28 @@ class FlujoReservas
             ->map(fn ($i) => [$i->servicio_id, $i->nombre, number_format((float) $i->cantidad, 2, '.', ''), (string) $i->notas])
             ->sortBy(fn ($x) => json_encode($x))->values()->all();
 
-        return hash('sha256', json_encode([(int) $r->espacio_id, $r->inicio?->toIso8601String(), $r->fin?->toIso8601String(), $r->montaje_id, $renglones]));
+        $base = [(int) $r->espacio_id, $r->inicio?->toIso8601String(), $r->fin?->toIso8601String(), $r->montaje_id, $renglones];
+        // Cuándo debe estar listo y cómo: solo cuenta si se usa (las reservas de antes conservan su huella)
+        if ($r->montaje_minutos !== null || $r->desmontaje_minutos !== null || $r->indicaciones_montaje !== null) {
+            $base[] = ['montaje' => [$r->montaje_minutos, $r->desmontaje_minutos, (string) $r->indicaciones_montaje]];
+        }
+
+        return hash('sha256', json_encode($base));
+    }
+
+    /**
+     * Departamento que hace el montaje (Ajustes de reservas), si la reserva
+     * pide un tipo de montaje: recibe su orden de servicio aunque no se le
+     * pida otro servicio.
+     */
+    public function departamentoMontaje(Reserva $r): ?int
+    {
+        if ($r->montaje_id === null) {
+            return null;
+        }
+        $id = $this->ajustes->de((int) $r->empresa_id)['departamento_montaje_id'];
+
+        return $id !== null && Departamento::whereKey($id)->exists() ? $id : null;
     }
 
     /**
@@ -250,7 +282,8 @@ class FlujoReservas
     public function sincronizarOrdenes(User $actor, Reserva $reserva): void
     {
         $reserva->load('items');
-        $deptos = $reserva->items->whereNotNull('departamento_id')->pluck('departamento_id')->map(fn ($d) => (int) $d)->unique()->values();
+        $deptos = $reserva->items->whereNotNull('departamento_id')->pluck('departamento_id')->map(fn ($d) => (int) $d)
+            ->push($this->departamentoMontaje($reserva))->filter()->unique()->values();
         $existentes = ReservaOrden::where('reserva_id', $reserva->id)->get()->keyBy('departamento_id');
         foreach ($existentes as $depto => $orden) {
             if (! $deptos->contains((int) $depto) && $orden->estado !== ReservaOrden::CANCELADA) {

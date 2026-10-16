@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Operacion\Reservas;
 
 use App\Http\Controllers\Controller;
+use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Espacio;
 use App\Models\Reserva;
 use App\Models\ReservaAprobacion;
 use App\Models\ReservaArea;
 use App\Models\ReservaServicio;
+use App\Models\ReservaServicioItem;
 use App\Models\ReservaTipoUso;
 use App\Models\Sede;
 use App\Models\User;
@@ -29,6 +31,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -404,7 +407,10 @@ class ReservaController extends Controller
             'fecha' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $request->query('fecha')) ? $request->query('fecha') : '',
             'hora_inicio' => '', 'hora_fin' => '', 'titulo' => '', 'tipo_uso_id' => '', 'montaje_id' => '', 'asistentes' => '',
             'para_cliente' => false, 'cliente_nombre' => '', 'cliente_empresa' => '', 'cliente_correo' => '', 'cliente_telefono' => '',
-            'tarifa' => '', 'notas' => '', 'servicios' => [],
+            'tarifa' => '', 'notas' => '', 'servicios' => [], 'otros' => [],
+            // Orden de evento: el departamento se propone con el del colaborador del usuario
+            'departamento_solicitante_id' => $this->reservas->departamentoDe($actor) ?? '', 'dia_completo' => false,
+            'montaje_minutos' => '', 'desmontaje_minutos' => '', 'indicaciones_montaje' => '', 'motivo_excepcion_aforo' => '',
         ] : [
             'reserva_area_id' => (int) $reserva->reserva_area_id,
             'fecha' => $reserva->inicio->copy()->setTimezone($zonaDe($reserva->area))->toDateString(),
@@ -413,8 +419,16 @@ class ReservaController extends Controller
             'titulo' => $reserva->titulo, 'tipo_uso_id' => $reserva->tipo_uso_id, 'montaje_id' => $reserva->montaje_id, 'asistentes' => $reserva->asistentes,
             'para_cliente' => $reserva->para_cliente, 'cliente_nombre' => $reserva->cliente_nombre, 'cliente_empresa' => $reserva->cliente_empresa,
             'cliente_correo' => $reserva->cliente_correo, 'cliente_telefono' => $reserva->cliente_telefono, 'tarifa' => $reserva->tarifa, 'notas' => $reserva->notas,
-            'servicios' => $reserva->items->whereNotNull('servicio_id')->mapWithKeys(fn ($i) => [(int) $i->servicio_id => ['cantidad' => $i->cantidadTexto(), 'notas' => $i->notas]])->all(),
+            'servicios' => $reserva->items->whereNotNull('servicio_id')->mapWithKeys(fn ($i) => [(int) $i->servicio_id => ['usar' => '1', 'cantidad' => $i->cantidadTexto(), 'notas' => $i->notas]])->all(),
+            'otros' => $reserva->items->whereNull('servicio_id')->map(fn ($i) => ['departamento_id' => $i->departamento_id, 'nombre' => $i->nombre, 'notas' => $i->notas, 'cantidad' => $i->cantidadTexto()])->values()->all(),
+            'departamento_solicitante_id' => $reserva->departamento_solicitante_id ?? '', 'dia_completo' => (bool) $reserva->dia_completo,
+            'montaje_minutos' => $reserva->minutosMontaje(), 'desmontaje_minutos' => $reserva->minutosDesmontaje(),
+            'indicaciones_montaje' => $reserva->indicaciones_montaje, 'motivo_excepcion_aforo' => $reserva->motivo_excepcion_aforo,
         ];
+        $departamentos = Departamento::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+        $deptoMontaje = $ajustes['departamento_montaje_id'] !== null && $departamentos->contains('id', $ajustes['departamento_montaje_id']) ? $ajustes['departamento_montaje_id'] : null;
+        $servicios = ReservaServicio::with('departamento:id,nombre')->where('activo', true)->orderBy('orden')->orderBy('nombre')->get();
+        $otros = collect(old('otros', $valores['otros']))->filter(fn ($f) => is_array($f))->values();
 
         return view('operacion.reservas.formulario', [
             'reserva' => $reserva, 'valores' => $valores, 'ajustes' => $ajustes,
@@ -433,14 +447,46 @@ class ReservaController extends Controller
                     'montajes' => $a->montajes->map(fn ($m) => ['id' => $m->id, 'nombre' => $m->nombre, 'aforo' => $m->pivot->aforo])->values()->all(),
                     'tarifas' => $a->tarifas(), 'montaje' => (int) $a->montaje_minutos, 'desmontaje' => (int) $a->desmontaje_minutos,
                     'inmediata' => (bool) $a->confirmacion_inmediata, 'horario' => $this->horarioTexto($a), 'descripcion' => $a->descripcion,
+                    // Ventanas por día (1 = lunes) para «Día completo»; null = cualquier hora
+                    'ventanas' => is_array($a->horario) && $a->horario !== [] ? $a->horario : null,
                     'foto' => $a->foto ? route('reservas.foto', $a->id) : null,
                 ];
             })->values(),
             'tipos' => ReservaTipoUso::where('activo', true)->orderBy('orden')->orderBy('nombre')->get(['id', 'nombre']),
-            'servicios' => ReservaServicio::with('departamento:id,nombre')->where('activo', true)->orderBy('categoria')->orderBy('orden')->orderBy('nombre')->get()
-                ->groupBy('categoria'),
+            'servicios' => $servicios,
+            'grupos' => $this->gruposPorDepartamento($servicios, $departamentos, $deptoMontaje, $otros),
+            'departamentos' => $departamentos,
+            'deptoMontaje' => $deptoMontaje,
+            'otros' => $otros,
             'puedeAjustar' => $actor->can('reservas.aprobar'),
         ]);
+    }
+
+    /**
+     * Tarjetas «Servicios por departamento» (formato de orden de evento): el
+     * departamento que hace el montaje primero, después los demás por nombre y
+     * al final «Otros» (servicios sin departamento y otros servicios libres).
+     *
+     * @param  Collection<int, ReservaServicio>  $servicios
+     * @param  Collection<int, Departamento>  $departamentos
+     * @param  Collection<int, array<string, mixed>>  $otros
+     * @return list<array{id: ?int, nombre: string, servicios: Collection<int, ReservaServicio>, montaje: bool}>
+     */
+    private function gruposPorDepartamento(Collection $servicios, Collection $departamentos, ?int $deptoMontaje, Collection $otros): array
+    {
+        $porDepto = $servicios->groupBy(fn ($s) => (int) ($s->departamento_id ?? 0));
+        $ids = $porDepto->keys()->map(fn ($k) => (int) $k)
+            ->merge($otros->pluck('departamento_id')->filter(fn ($d) => is_numeric($d))->map(fn ($d) => (int) $d))
+            ->push((int) $deptoMontaje)->filter()->unique();
+        $grupos = $departamentos->filter(fn ($d) => $ids->contains((int) $d->id))
+            ->sortBy(fn ($d) => ((int) $d->id === $deptoMontaje ? '0' : '1').Str::lower(Str::ascii($d->nombre)))
+            ->map(fn ($d) => ['id' => (int) $d->id, 'nombre' => $d->nombre, 'servicios' => $porDepto->get((int) $d->id, collect()), 'montaje' => (int) $d->id === $deptoMontaje])
+            ->values()->all();
+        // Servicios cuyo departamento ya no está activo también van en «Otros»
+        $sueltos = $servicios->filter(fn ($s) => $s->departamento_id === null || ! $departamentos->contains('id', $s->departamento_id))->values();
+        $grupos[] = ['id' => null, 'nombre' => 'Otros', 'servicios' => $sueltos, 'montaje' => false];
+
+        return $grupos;
     }
 
     /**
@@ -489,7 +535,7 @@ class ReservaController extends Controller
     {
         $actor = $request->user();
         $reserva = $this->cargar($reserva);
-        $reserva->load(['area.espacio', 'area.sede', 'area.montajes', 'sede:id,nombre', 'tipoUso:id,nombre', 'montaje:id,nombre', 'solicitante:id,name,email',
+        $reserva->load(['area.espacio', 'area.sede', 'area.montajes', 'sede:id,nombre', 'tipoUso:id,nombre', 'montaje:id,nombre', 'solicitante:id,name,email', 'departamentoSolicitante:id,nombre',
             'items.departamento:id,nombre', 'aprobaciones.departamento:id,nombre', 'aprobaciones.respondidaPor:id,name', 'ordenes.departamento:id,nombre',
             'ordenes.listaPor:id,name', 'eventos.usuario:id,name', 'canceladaPor:id,name']);
         $vigentes = $reserva->aprobaciones->where('vigente', true)->values();
@@ -510,6 +556,8 @@ class ReservaController extends Controller
             'relojes' => $vigentes->mapWithKeys(fn ($a) => [$a->id => $espera->reloj($a, $umbrales)])->all(),
             'ordenes' => $ordenes, 'atiende' => $atiende, 'textos' => $this->reservas->textos(),
             'zona' => $this->disponibilidad->zona($reserva->area),
+            'aforo' => $reserva->area->aforoPara($reserva->montaje_id),
+            'porDepartamento' => self::porDepartamento($reserva),
             'puede' => [
                 'modificar' => $this->reservas->puedeModificar($actor, $reserva), 'cancelar' => $this->reservas->puedeCancelar($actor, $reserva),
                 'costo' => $this->reservas->puedeAjustarCosto($actor, $reserva), 'imprimir' => $this->puedeImprimir($actor, $reserva),
@@ -557,13 +605,78 @@ class ReservaController extends Controller
     {
         $reserva = $this->cargar($reserva);
         abort_unless($this->puedeImprimir($request->user(), $reserva), 403);
-        $reserva->load(['area.espacio', 'area.sede', 'sede', 'tipoUso:id,nombre', 'montaje:id,nombre', 'solicitante:id,name',
+        $reserva->load(['area.espacio', 'area.sede', 'area.montajes', 'sede', 'tipoUso:id,nombre', 'montaje:id,nombre', 'solicitante:id,name', 'departamentoSolicitante:id,nombre',
             'items.departamento:id,nombre', 'aprobaciones.departamento:id,nombre', 'aprobaciones.respondidaPor:id,name', 'ordenes.departamento:id,nombre']);
+        $completa = $request->boolean('completa');
+        $deptoMontaje = $this->ajustes->de((int) $reserva->empresa_id)['departamento_montaje_id'];
 
         return view('operacion.reservas.imprimir', [
             'reserva' => $reserva, 'textos' => $this->reservas->textos(), 'zona' => $this->disponibilidad->zona($reserva->area),
             'empresa' => Empresa::find($reserva->empresa_id),
+            'completa' => $completa,
+            'secciones' => $this->seccionesHoja($reserva, $completa, $deptoMontaje),
+            'aforo' => $reserva->area->aforoPara($reserva->montaje_id),
         ]);
+    }
+
+    /**
+     * Renglones de la reserva agrupados por departamento (los sin departamento
+     * al final, en «Otros»): [nombre => renglones].
+     *
+     * @return Collection<string, Collection<int, ReservaServicioItem>>
+     */
+    public static function porDepartamento(Reserva $reserva): Collection
+    {
+        return $reserva->items->sortBy(fn ($i) => ($i->departamento ? '0'.Str::lower(Str::ascii($i->departamento->nombre)) : '1').'|'.$i->id)
+            ->groupBy(fn ($i) => $i->departamento?->nombre ?? 'Otros');
+    }
+
+    /**
+     * Secciones de la orden de evento impresa, como la hoja del hotel: una por
+     * departamento con sus casillas (☒ lo pedido, con cantidad y nota). Solo
+     * los departamentos con algo pedido o, con «hoja completa», también los
+     * servicios activos del catálogo sin marcar y los montajes del área.
+     *
+     * @return list<array{nombre: string, montaje: ?array{elegido: ?string, opciones: list<string>}, renglones: list<array{marcado: bool, nombre: string, detalle: string}>}>
+     */
+    private function seccionesHoja(Reserva $reserva, bool $completa, ?int $deptoMontaje): array
+    {
+        $secciones = [];
+        $agregar = function (?int $id, string $nombre) use (&$secciones) {
+            $clave = $id === null ? 'otros' : (string) $id;
+            $secciones[$clave] ??= ['id' => $id, 'nombre' => $nombre, 'montaje' => null, 'renglones' => []];
+
+            return $clave;
+        };
+        if ($deptoMontaje !== null && ($d = Departamento::find($deptoMontaje)) !== null && ($reserva->montaje_id !== null || $completa)) {
+            $clave = $agregar((int) $d->id, $d->nombre);
+            $secciones[$clave]['montaje'] = [
+                'elegido' => $reserva->montaje?->nombre,
+                'opciones' => $completa ? $reserva->area->montajes->pluck('nombre')->all() : [],
+            ];
+        }
+        $pedidos = [];
+        foreach ($reserva->items->sortBy('id') as $i) {
+            $clave = $agregar($i->departamento_id !== null ? (int) $i->departamento_id : null, $i->departamento?->nombre ?? 'Otros');
+            $unidad = ReservaServicio::UNIDADES[$i->unidad][1] ?? '';
+            $detalle = trim(((float) $i->cantidad !== 1.0 || $i->unidad === 'persona' ? $i->cantidadTexto().' '.$unidad : '').($i->notas ? ' '.$i->notas : ''));
+            $secciones[$clave]['renglones'][] = ['marcado' => true, 'nombre' => $i->nombre, 'detalle' => $detalle];
+            if ($i->servicio_id !== null) {
+                $pedidos[(int) $i->servicio_id] = true;
+            }
+        }
+        if ($completa) {
+            $catalogo = ReservaServicio::with('departamento:id,nombre')->where('activo', true)->orderBy('orden')->orderBy('nombre')->get();
+            foreach ($catalogo as $s) {
+                if (isset($pedidos[(int) $s->id])) {
+                    continue;
+                }
+                $clave = $agregar($s->departamento_id !== null && $s->departamento ? (int) $s->departamento_id : null, $s->departamento?->nombre ?? 'Otros');
+                $secciones[$clave]['renglones'][] = ['marcado' => false, 'nombre' => $s->nombre, 'detalle' => ''];
+            }
+        }
+
+        return collect($secciones)->sortBy(fn ($s) => ($s['montaje'] !== null ? '0' : ($s['id'] === null ? '2' : '1')).Str::lower(Str::ascii($s['nombre'])))->values()->all();
     }
 
     public function foto(Request $request, int $area): StreamedResponse

@@ -41,6 +41,7 @@
                         <span class="etiqueta-estado {{ $clase }} text-nowrap">{{ $r->estadoTexto() }}</span>
                     </div>
                     <div class="ficha-subtitulo">{{ $r->folioTexto() }}</div>
+                    @if ($r->excede_aforo)<span class="etiqueta-estado pendiente res-insignia-aforo mt-1"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Excede aforo</span>@endif
                     <ul class="list-unstyled small text-muted mt-2 pt-2 border-top m-0">
                         <li><i class="bi bi-door-open me-1" aria-hidden="true"></i> {{ $r->area->nombre() }} · {{ $r->area->sede?->nombre }}</li>
                         <li><i class="bi bi-calendar-event me-1" aria-hidden="true"></i> {{ $textos->cuando($r) }}</li>

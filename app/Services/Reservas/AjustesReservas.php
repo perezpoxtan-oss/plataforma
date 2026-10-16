@@ -2,6 +2,7 @@
 
 namespace App\Services\Reservas;
 
+use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
@@ -20,6 +21,10 @@ use Illuminate\Validation\ValidationException;
  *    empresa, empresas.moneda).
  *  - recordar_horas / escalar_horas: reloj y color de las aprobaciones que
  *    esperan (ámbar y recordatorio; rojo y aviso al responsable general).
+ *  - departamento_montaje_id: departamento que hace el montaje (opcional; en
+ *    un hotel, Steward). Si se elige, el «Tipo de montaje» se muestra dentro
+ *    de su tarjeta en el formulario y en la orden de evento, y recibe la orden
+ *    de servicio del montaje aunque no se le pida otro servicio.
  */
 class AjustesReservas
 {
@@ -30,12 +35,13 @@ class AjustesReservas
         'iva_porcentaje' => 16.0,
         'recordar_horas' => 4,
         'escalar_horas' => 24,
+        'departamento_montaje_id' => null,
     ];
 
     public function __construct(private readonly AdministradorRoles $auditoria) {}
 
     /**
-     * @return array{responsable_id: ?int, suplente_id: ?int, iva_aplica: bool, iva_porcentaje: float, recordar_horas: int, escalar_horas: int, moneda: string}
+     * @return array{responsable_id: ?int, suplente_id: ?int, iva_aplica: bool, iva_porcentaje: float, recordar_horas: int, escalar_horas: int, departamento_montaje_id: ?int, moneda: string}
      */
     public function de(Empresa|int|null $empresa): array
     {
@@ -50,6 +56,7 @@ class AjustesReservas
             'iva_porcentaje' => (float) $v['iva_porcentaje'],
             'recordar_horas' => max(1, (int) $v['recordar_horas']),
             'escalar_horas' => max(1, (int) $v['escalar_horas']),
+            'departamento_montaje_id' => $v['departamento_montaje_id'] === null || $v['departamento_montaje_id'] === '' ? null : (int) $v['departamento_montaje_id'],
             'moneda' => (string) ($empresa?->moneda ?: 'MXN'),
         ];
     }
@@ -79,6 +86,11 @@ class AjustesReservas
         if ($escalar <= $recordar) {
             throw ValidationException::withMessages(['escalar_horas' => 'Avisar al responsable general debe ser después del recordatorio.']);
         }
+        // Si el formulario no lo trae, se conserva el que ya tenía
+        $montaje = array_key_exists('departamento_montaje_id', $entrada) ? $id($entrada['departamento_montaje_id']) : $this->de($empresa)['departamento_montaje_id'];
+        if ($montaje !== null && ! Departamento::withoutGlobalScopes()->where('empresa_id', $empresa->id)->whereKey($montaje)->exists()) {
+            throw ValidationException::withMessages(['departamento_montaje_id' => 'Elige un departamento de la empresa.']);
+        }
         $iva = (float) ($entrada['iva_porcentaje'] ?? self::DEFECTO['iva_porcentaje']);
         if ($iva < 0 || $iva > 30) {
             throw ValidationException::withMessages(['iva_porcentaje' => 'El IVA va de 0 a 30 %.']);
@@ -88,7 +100,7 @@ class AjustesReservas
         $nuevo = [
             'responsable_id' => $responsable, 'suplente_id' => $suplente,
             'iva_aplica' => filter_var($entrada['iva_aplica'] ?? false, FILTER_VALIDATE_BOOLEAN), 'iva_porcentaje' => round($iva, 2),
-            'recordar_horas' => $recordar, 'escalar_horas' => $escalar,
+            'recordar_horas' => $recordar, 'escalar_horas' => $escalar, 'departamento_montaje_id' => $montaje,
         ];
         $empresa->forceFill(['preferencias' => array_merge($empresa->preferencias ?? [], ['reservas' => $nuevo])])->save();
         $this->auditoria->auditar($actor, 'reservas.configurado', $empresa, $antes, $nuevo);

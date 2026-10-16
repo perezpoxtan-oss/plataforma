@@ -38,7 +38,7 @@ class PendientesReservas
      */
     public function aprobacionesPara(User $actor, bool $todasLasQuePuede = false): Collection
     {
-        return ReservaAprobacion::with(['reserva.area.espacio', 'reserva.sede:id,nombre', 'reserva.solicitante:id,name', 'departamento:id,nombre'])
+        return ReservaAprobacion::with(['reserva.area.espacio', 'reserva.area.montajes', 'reserva.sede:id,nombre', 'reserva.solicitante:id,name', 'reserva.departamentoSolicitante:id,nombre', 'departamento:id,nombre'])
             ->where('estado', ReservaAprobacion::PENDIENTE)->where('vigente', true)
             ->whereHas('reserva', fn ($q) => $q->whereIn('estado', [Reserva::POR_APROBAR, Reserva::CAMBIO_PEDIDO]))
             ->orderBy('solicitada_en')->limit(500)->get()
