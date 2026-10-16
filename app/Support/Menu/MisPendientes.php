@@ -5,8 +5,10 @@ namespace App\Support\Menu;
 use App\Models\Candidato;
 use App\Models\Colaborador;
 use App\Models\DepartamentoResponsable;
+use App\Models\Empresa;
 use App\Models\Novedad;
 use App\Models\Postulacion;
+use App\Models\SolicitudArco;
 use App\Models\User;
 use App\Services\Activos\PendientesActivos;
 use App\Services\Autorizaciones\Autorizaciones;
@@ -17,10 +19,14 @@ use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
+use App\Services\Permisos\Autorizador;
+use App\Services\Privacidad\ConservacionDatos;
+use App\Services\Privacidad\SolicitudesArco;
 use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Services\Recepcion\PanelRecepcion;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Support\Tenancy\EmpresaDeTrabajo;
+use App\Support\Tenancy\EmpresaScope;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Container\Attributes\Scoped;
 use Illuminate\Support\Facades\Cache;
@@ -183,6 +189,19 @@ class MisPendientes
                     ->orWhere(fn ($v) => AdministradorUsuarios::sinVinculoQuePidePases($v)))
                 ->count();
             $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $cuentas, route('usuarios.index', ['revisar' => 1]));
+        }
+
+        // Privacidad (criterios 1 y 3): solicitudes ARCO abiertas, con el color de su plazo legal
+        if ($actor->can(SolicitudesArco::PERMISO) && app(Autorizador::class)->alcanceDeEmpresa($actor, SolicitudesArco::PERMISO)) {
+            $abiertas = SolicitudArco::query()->withoutGlobalScope(EmpresaScope::class)->where('empresa_id', $empresaId)
+                ->whereIn('estado', [SolicitudArco::POR_VERIFICAR, SolicitudArco::PENDIENTE])->get(['id', 'estado', 'vence_en']);
+            if ($abiertas->isNotEmpty()) {
+                $empresa = Empresa::find($empresaId);
+                $recordar = $empresa ? app(ConservacionDatos::class)->ajustes($empresa)['arco_recordar_dias'] : ConservacionDatos::RECORDAR_ARCO;
+                $niveles = $abiertas->map(fn ($x) => SolicitudesArco::nivel($x, $recordar))->filter();
+                $nivel = $niveles->contains('roja') ? 'roja' : ($niveles->contains('ambar') ? 'ambar' : null);
+                $items[] = ['nivel' => $nivel] + $this->item('arco', 'Solicitudes ARCO por atender', 'bi-person-vcard', $abiertas->count(), route('arco.index'));
+            }
         }
 
         // Mejoras Incidentes (criterio 1): tickets canalizados a mí y pendientes de turno sin dueño de mis sedes

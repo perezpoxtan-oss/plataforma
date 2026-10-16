@@ -25,7 +25,8 @@ class User extends Authenticatable
         'empresa_id', 'name', 'username', 'numero_colaborador', 'colaborador_id', 'email', 'password', 'activo',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    /** Verificación en dos pasos: la clave y las huellas de los códigos nunca salen en JSON ni en arreglos. */
+    protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'];
 
     protected function casts(): array
     {
@@ -38,6 +39,11 @@ class User extends Authenticatable
             'bloqueado_hasta' => 'datetime',
             'ultimo_acceso_en' => 'datetime',
             'desactivado_por_baja_en' => 'datetime',
+            // Verificación en dos pasos (docs/tecnico/dos-pasos.md): la clave va cifrada con la llave de la aplicación
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'array',
+            'two_factor_confirmado_en' => 'datetime',
+            'two_factor_ultimo_paso' => 'integer',
         ];
     }
 
@@ -94,6 +100,14 @@ class User extends Authenticatable
         }
 
         return $this->roles()->where('roles.activo', true)->orderBy('nivel_jerarquia')->value('nombre') ?? 'Personal';
+    }
+
+    /** ¿Tiene activa la verificación en dos pasos? */
+    public function tieneDosPasos(): bool
+    {
+        $atributos = $this->getAttributes();
+
+        return ($atributos['two_factor_confirmado_en'] ?? null) !== null && ! empty($atributos['two_factor_secret'] ?? null);
     }
 
     public function estaBloqueado(): bool

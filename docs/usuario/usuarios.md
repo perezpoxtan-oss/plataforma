@@ -147,6 +147,20 @@ Cada bloqueo te avisa: quien puede editar usuarios de esa sede recibe en su **ca
 
 > Si la persona olvidó su contraseña, ella misma puede usar **Olvidé mi contraseña** en la pantalla para entrar; al guardar la nueva la cuenta se desbloquea sola. Si no puede, usa la **llave** (Restablecer contraseña).
 
+## Cómo restablecer la verificación en dos pasos de alguien
+
+Cuando una persona **perdió o cambió su teléfono** y no tiene sus códigos de respaldo, no puede entrar. Tú le quitas la verificación para que la active otra vez con su teléfono nuevo.
+
+1. Busca su cuenta. Su ficha dice **Verificación en dos pasos activa**.
+2. Toca el **teléfono** (Restablecer verificación en dos pasos) de su ficha.
+3. Lee el mensaje y confirma con **Aceptar**.
+
+**Qué debes ver:** «Listo: quitamos la verificación en dos pasos de «…» y cerramos sus sesiones. Le avisamos; al entrar con su contraseña la activará con su teléfono nuevo.» La persona recibe un aviso en su campana y por correo, y el cambio queda en la [Bitácora de auditoría](auditoria.md).
+
+- El botón solo aparece si tu rol tiene el permiso **Desbloquear** de Usuarios y la persona es de nivel inferior y está en tu alcance (igual que desbloquear).
+- Confirma antes que de verdad es la persona quien lo pide (por teléfono o en persona): con esto, quien tenga su contraseña podría entrar.
+- Si tu empresa exige la verificación a esa cuenta, al entrar se le pedirá activarla de nuevo.
+
 ## En el celular y en los modos Noche y Sol
 
 ![Celular](img/usuarios/3-celular.png)
@@ -175,6 +189,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | El campo contraseña debe tener al menos una letra. | La contraseña solo tiene números. | Agrega al menos una letra. |
 | El campo contraseña debe tener al menos 8 caracteres. | La contraseña es muy corta. | Escribe 8 o más caracteres, con letras y números. |
 | El campo correo debe ser un correo electrónico válido. | Al correo le falta la @ o el dominio. | Escribe un correo completo, por ejemplo `juan.perez@hotelcentro.mx`. |
+| «…» no tiene activa la verificación en dos pasos. | Ya se había restablecido o nunca la activó. | No hace falta hacer nada: entra solo con su contraseña. |
 | «…» no está bloqueado; ya puede entrar. | La cuenta ya no estaba bloqueada. | No hace falta hacer nada. |
 | No veo el lápiz en una cuenta. | Es tu cuenta o es de tu mismo nivel o superior. | Pídelo a alguien de nivel superior. |
 
@@ -197,6 +212,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 **¿Una cuenta puede trabajar en dos sedes sin ver toda la empresa?** Sí: elige su sede y marca las demás en **¿También atiende otras sedes?**. Su ficha dice, por ejemplo, «Hotel Centro + Hotel Playa». Si tú solo administras una de esas sedes, al editarla las otras se conservan.
 
 **¿Cómo veo todo lo que se le ha hecho a una cuenta?** Toca el **reloj** (Ver historial) de su ficha: abre la Bitácora de auditoría con solo los movimientos de esa cuenta.
+
+**¿Puedo ver o copiar el código de la verificación en dos pasos de alguien?** No. Solo la persona lo ve en su teléfono. Tú solo puedes restablecerla para que la active de nuevo.
 
 **¿Cuánto dura el bloqueo?** 15 minutos, o hasta que alguien con permiso la desbloquee.
 

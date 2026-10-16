@@ -87,6 +87,19 @@ Convenciones:
 | Qué ve «Su sede» en la Bitácora de auditoría | pref. `auditoria_sede` | Configuración → Cuentas y seguridad | `configuracion.editar` empresa | `sede` |
 | Movimientos sensibles a la campana | pref. `avisos.movimientos_sensibles` | Configuración → Cuentas y seguridad | ídem | encendido |
 | Cierre de sesión por inactividad | `.env` `PLATAFORMA_INACTIVIDAD_MINUTOS` | Solo se **muestra** en Cuentas y seguridad (es de plataforma) | quien administra el servidor | 20 min |
+| 🆕 Exigir la verificación en dos pasos a: nadie / administradores / todos ([dos-pasos.md](dos-pasos.md)) | pref. `dos_pasos` | Configuración → Cuentas y seguridad (`PUT /configuracion/dos-pasos`, Restablecer valor original) | `configuracion.editar` empresa | `nadie` (el Super Administrador siempre la necesita, no es configurable) |
+| 🆕 Verificación en dos pasos de cada cuenta | `users.two_factor_*` | Mi cuenta → Verificación en dos pasos (restablecer: Usuarios) | cada persona / `usuarios.desbloquear` | sin activar |
+
+### 🆕 Privacidad ([privacidad.md](privacidad.md))
+
+| Ajuste | Dónde se guarda | Pantalla | Quién | Por omisión |
+|---|---|---|---|---|
+| Quitar automáticamente los datos vencidos (tarea de conservación) | pref. `privacidad.conservacion_activa` | Configuración → Privacidad (`PUT /configuracion/privacidad`) | `configuracion.datos_personales` empresa | **encendida** en empresas nuevas; **apagada** en las que ya existían (la migración la guardó en `false`) |
+| Días: fotos de la persona / fotos de la identificación / datos de visitantes externos en registros cerrados | pref. `privacidad.fotos_persona_dias`, `fotos_identificacion_dias`, `visitantes_dias` | ídem | ídem | 90 / 90 / 365 |
+| Candidatos no contratados: borrar a los N meses | pref. `recepcion.plazos.borrar_meses` (ya existía) | Enlace en Privacidad → Candidatos → Documentos y plazos | `candidatos.configurar` empresa | 12 meses |
+| Solicitudes ARCO: recordar cuando falten N días hábiles | pref. `privacidad.arco_recordar_dias` | Configuración → Privacidad | `configuracion.datos_personales` empresa | 5 |
+| Aviso de privacidad (versiones) | `avisos_privacidad` + pref. `recepcion.aviso_privacidad` (texto vigente) | Configuración → Privacidad (publicar versión) y Recepción → Ajustes (mismo texto, también crea versión) | `configuracion.datos_personales` / `candidatos.configurar` empresa | borrador para el abogado |
+| Plazo legal de respuesta ARCO | constante `SolicitudesArco::DIAS_HABILES` | — (es de la ley) | — | 20 días hábiles |
 
 ## 2. Ajustes de plataforma (Super Administrador)
 
@@ -98,6 +111,8 @@ Convenciones:
 | Catálogo comercial: moneda, IVA, página pública, textos, correos de solicitudes, texto legal | `configuracion_plataforma` clave `comercial` | Catálogo comercial → Ajustes (enlace en Plataforma) | MXN, 16 %, sin publicar |
 | Suscripciones: prueba gratis, días de prueba, días de gracia, descuento anual, avisos antes de vencer, contacto | ídem (`prueba_habilitada`, `dias_prueba`, `dias_gracia`, `descuento_anual_porcentaje`, `avisos_dias_antes`, `contacto_suscripciones`) | Catálogo comercial → Ajustes (enlace) | sí, 14, 15, 10 %, 7 y 1 |
 | Plan, sedes, usuarios y excepciones de cada cliente | `suscripciones*` | Catálogo comercial → Clientes (enlace) | — |
+| 🆕 Aviso de privacidad de la página pública (con versiones) | `configuracion_plataforma` `comercial.aviso_privacidad` + `avisos_privacidad` (empresa nula) | Catálogo comercial → Ajustes | vacío |
+| 🆕 Verificación en dos pasos del Super Administrador | — | Siempre obligatoria; se restablece con `php artisan plataforma:dos-pasos` | obligatoria |
 
 ## 3. Variables del servidor (`.env`)
 
@@ -128,6 +143,9 @@ No se cambian desde la plataforma; las administra quien instala.
 | `Llave::DIAS_AVISO_CADUCIDAD` | 30 | Se queda en código (aviso «vence pronto» de la llave; nadie lo ha pedido). |
 | `Entrevistas/Kiosco::HORAS_ENLACE_CORREO`, `Autorizaciones::HORAS_ENLACE_CORREO` | 72 / 24 | Se quedan (seguridad de los enlaces de un solo uso). |
 | `Delegaciones::MAX_DIAS` | 90 | Se queda (tope de seguridad). |
+| 🆕 `VerificacionDosPasos::INTENTOS`, `MINUTOS_PENDIENTE`, `DIAS_RECORDAR`, `CODIGOS_RESPALDO` | 5 (cada 15 min) / 10 min / 30 días / 10 | Se quedan en código (seguridad). |
+| 🆕 `SolicitudesArco::HORAS_ENLACE` | 72 | Se queda (enlace de un solo uso). |
+| 🆕 `ConservacionDatos::LOTE` | 500 | Límite técnico por corrida. |
 | `Respaldos::DIAS` | 14 | Fuera de alcance (bloque de Respaldos a cargo de otro equipo). |
 | Lost & Found: amarillo al 70 % de los días | 70 % | Se queda: los días ya son configurables. |
 | Límites técnicos (`MAX_*`, `POR_PAGINA`, tamaños de archivo, cachés) | — | No son ajustes de negocio. |

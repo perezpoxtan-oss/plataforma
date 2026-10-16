@@ -452,6 +452,12 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudieron avanzar los paquetes de traslado (revisa despliegue.log)"
 fi
 # --- Fin Respaldos y traslado ---
+# --- Privacidad: conservación de datos personales (solo empresas que la encendieron) y plazos de solicitudes ARCO, una vez al día después de las 2:00 ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:privacidad'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:privacidad --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudo revisar la conservación de datos y las solicitudes ARCO (revisa despliegue.log)"
+fi
+# --- Fin Privacidad ---
 
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
 if [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ] && grep -Eq "EscribeAqui|tu-correo@" "$HOME/qa_inicial.txt"; then

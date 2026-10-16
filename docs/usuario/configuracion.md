@@ -3,12 +3,12 @@ titulo: Configuración
 modulos: [configuracion]
 seccion: Estructura
 orden: 50
-resumen: Todos los ajustes de tu empresa ordenados por secciones (General, Caseta y accesos, Recepción y RR. HH., Novedades, Activos, Transporte, Pases de salida, Avisos por correo, Cuentas y seguridad) y, para el Super Administrador, la Plataforma.
+resumen: Todos los ajustes de tu empresa ordenados por secciones (General, Caseta y accesos, Recepción y RR. HH., Novedades, Activos, Transporte, Pases de salida, Avisos por correo, Cuentas y seguridad, Privacidad) y, para el Super Administrador, la Plataforma.
 ---
 
 # Configuración
 
-**¿Para qué sirve?** Aquí está **todo lo que tu empresa puede ajustar**, ordenado por **secciones**: General, Caseta y accesos, Recepción y RR. HH., Novedades (o como se llame tu bitácora), Activos, Transporte, Pases de salida, Avisos por correo y Cuentas y seguridad. Cada sección junta sus ajustes y sus avisos por correo. Cada ajuste dice su **valor original** y, si lo cambiaste, tiene un botón **Restablecer valor original**. Lo que se configura en otra pantalla aparece con su valor y un botón **Configurar en …** que te lleva directo. El Super Administrador ve además la sección **Plataforma**.
+**¿Para qué sirve?** Aquí está **todo lo que tu empresa puede ajustar**, ordenado por **secciones**: General, Caseta y accesos, Recepción y RR. HH., Novedades (o como se llame tu bitácora), Activos, Transporte, Pases de salida, Avisos por correo, Cuentas y seguridad y Privacidad. Cada sección junta sus ajustes y sus avisos por correo. Cada ajuste dice su **valor original** y, si lo cambiaste, tiene un botón **Restablecer valor original**. Lo que se configura en otra pantalla aparece con su valor y un botón **Configurar en …** que te lleva directo. El Super Administrador ve además la sección **Plataforma**.
 
 ![Configuración por secciones](img/configuracion/secciones-indice.png)
 
@@ -17,6 +17,7 @@ resumen: Todos los ajustes de tu empresa ordenados por secciones (General, Caset
 - Para ver la pantalla tu rol debe poder consultar *Configuración*. Si tu rol solo consulta, verás los valores pero no los botones **Guardar** ni **Restablecer valor original**.
 - Los ajustes de la empresa los cambia quien tiene el permiso **editar** de Configuración con alcance de **toda la empresa** (normalmente el administrador). Con alcance de una sede solo se consultan.
 - Algunas tarjetas piden además el permiso de su módulo: los días de Lost & Found (**Configurar** de Lost & Found), el aviso de privacidad y los plazos de candidatos (**Configurar** de Candidatos), la bolsa de trabajo (**Configurar** de Vacantes), las esperas (**Configurar** de Autorizaciones departamentales), la impresión desde padrones (**Configurar** de Etiquetas QR) y el circuito de pases (**Configurar** de Pases de salida). Si no tienes ese permiso, la tarjeta no aparece.
+- **Privacidad** (conservación de datos, aviso de privacidad y solicitudes ARCO) la ve quien tiene el permiso **Datos personales** de Configuración con alcance de toda la empresa (normalmente el administrador).
 - **Plataforma** (correo de la plataforma, respaldos y enlaces a Identidad y Catálogo comercial) solo la ve el Super Administrador.
 
 ## Cómo moverte por las secciones
@@ -168,8 +169,49 @@ Quien ve toda la Bitácora de auditoría recibe en su **campana** cuando alguien
 
 **Qué debes ver:** «Listo: quien tiene la bitácora con alcance «Su sede» ahora ve los movimientos de su sede…».
 
+### Cómo exigir la verificación en dos pasos
+Con la verificación en dos pasos, al entrar se pide la contraseña y un código del teléfono de cada persona (ver [Mi cuenta](mi-cuenta.md)).
+
+1. En **Cuentas y seguridad**, busca la tarjeta **Verificación en dos pasos**. Dice cuántas cuentas de tu empresa ya la tienen activa.
+2. En **Exigir la verificación en dos pasos a:** elige:
+   - **Nadie** (valor original): cada persona decide si la activa.
+   - **Administradores**: quien puede dar de alta o editar usuarios, roles, permisos o la configuración.
+   - **Todos**: toda cuenta de tu empresa.
+3. Toca **Guardar**.
+
+![Verificación en dos pasos en Configuración](img/configuracion/dos-pasos-politica.png)
+
+**Qué debes ver:** «Listo: …» con a quién le aplica. Quien la necesite y no la tenga, la activa **la próxima vez que entre** (la plataforma lo lleva a Mi cuenta y no lo deja seguir hasta activarla). Avisa antes a tu personal que tenga su teléfono a la mano. El **Super Administrador** siempre la necesita, sin importar este ajuste. Si alguien pierde su teléfono, restablécela en [Usuarios](usuarios.md).
+
 ### Cierre de sesión por inactividad
 La tarjeta dice tras cuántos minutos sin actividad se cierra la sesión (valor original: 20). Es igual para todas las empresas; si necesitas otro tiempo, pídelo a quien administra la plataforma.
+
+## Privacidad
+
+Aquí cuidas los datos personales de quien visita tus sedes, publicas tu aviso de privacidad y llegas a las solicitudes ARCO. El detalle está en [Privacidad y solicitudes ARCO](privacidad-y-arco.md).
+
+### Cómo elegir cuántos días se conservan los datos personales
+1. En **Privacidad → Conservación de datos personales** escribe los días para:
+   - **Fotos de la persona (caseta)** — valor original: 90 días.
+   - **Fotos de la identificación (caseta)** — valor original: 90 días.
+   - **Datos de visitantes externos en registros cerrados** (visita, huésped, proveedor, contratista) — valor original: 365 días.
+2. Revisa el recuadro gris: dice cuántas fotos y registros se quitarían **hoy** con esos días.
+3. Marca **Quitar automáticamente los datos que pasaron sus días** para encender la tarea. Si tu empresa ya existía antes de esta función, viene **apagada**: nada se quita hasta que tú la enciendas.
+4. Toca **Guardar** y confirma con **Aceptar**.
+
+![Conservación de datos personales](img/configuracion/privacidad-conservacion.png)
+
+**Qué debes ver:** «Listo: la conservación quedó encendida…». Cada noche se quitan los datos que pasaron sus días: **el registro de la bitácora se queda** (fecha, sede, gafete, quién lo registró), pero sin foto, identificación ni datos de la persona; en lugar del nombre dice «Datos eliminados por conservación». El resumen queda en la [Bitácora de auditoría](auditoria.md).
+
+- Los **candidatos no contratados** tienen su propio plazo (se borran a los 12 meses sin movimiento, con aviso 15 días antes); se cambia en **Candidatos → Documentos y plazos**, con el botón de la misma tarjeta.
+- Los registros de **colaboradores** y de **unidades de emergencia** conservan sus datos; solo pierden las fotos al pasar sus días.
+
+### Cómo publicar una versión nueva del aviso de privacidad
+1. En **Privacidad → Aviso de privacidad** revisa el texto. Si dice «Borrador — validar con su abogado», pide a tu abogado el texto definitivo.
+2. Escribe o pega el texto nuevo.
+3. Toca **Guardar como versión nueva**.
+
+**Qué debes ver:** «Versión N del aviso publicada…». Desde ese momento es el que aceptan las personas en el kiosco, la solicitud de empleo y la bolsa de trabajo, y cada persona queda con **la versión que aceptó**. En **Historial de versiones** ves todas (con **Ver texto**). La tarjeta también tiene la dirección de la **página pública** de tu aviso, con el botón para que las personas ejerzan sus derechos ARCO.
 
 ## Plataforma (Super Administrador)
 
@@ -219,6 +261,10 @@ Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logo
 | Escribe un número entero de horas, de 0 a … (0 = apagado). | Las horas no son válidas. | Escribe un número entero dentro del rango. |
 | «…»: máximo 40 letras; solo letras, números, espacios, punto, guion y «&». | El nombre del menú tiene signos no permitidos o es muy largo. | Escríbelo más corto y sin signos. |
 | No llegan los correos. | El correo de la plataforma no está configurado o el aviso está apagado. | Revisa el aviso amarillo y las casillas; revisa el correo no deseado. |
+| Este ajuste es de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa. | Tu rol no puede cambiar a quién se exige la verificación en dos pasos. | Pídelo a tu administrador. |
+| «Fotos de la persona (caseta)» va de 7 a 3650 días. (o el de otro tipo) | Los días están fuera del rango permitido. | Escribe un número dentro del rango que dice el mensaje. |
+| Es el mismo texto de la versión N: cambia algo para publicar una nueva. | El aviso no cambió. | Si no hay cambios, no hace falta publicar. |
+| No veo la sección **Privacidad**. | Tu rol no tiene el permiso **Datos personales** de Configuración con alcance de toda la empresa. | Pídelo a tu administrador. |
 
 ## Preguntas frecuentes
 
@@ -231,6 +277,8 @@ Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logo
 **¿Los ajustes cambian lo que ya se registró?** No. Los vales, acuses y tickets que ya existen se quedan como se capturaron; los relojes y semáforos se calculan con los ajustes de hoy.
 
 **¿Los días de Lost & Found se pueden poner por sede?** No; aplican a todas las sedes de la empresa.
+
+**¿Si enciendo la conservación, se puede deshacer?** No: lo que se quita ya no regresa. Por eso, antes de encenderla, revisa los días y el recuadro de «hoy se quitarían». Si la apagas, ya no se quita nada más.
 
 **¿Puedo restaurar un respaldo yo mismo desde esta pantalla?** No. Descarga el archivo y entrégaselo a tu proveedor de hospedaje o a tu administrador de base de datos para que lo importe.
 
@@ -247,4 +295,5 @@ Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logo
 - [Pases de salida](pases-salida.md)
 - [Etiquetas QR](etiquetas-qr.md)
 - [Mi cuenta](mi-cuenta.md)
+- [Privacidad y solicitudes ARCO](privacidad-y-arco.md)
 - [Configura tu empresa](configura-tu-empresa.md)

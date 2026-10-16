@@ -37,7 +37,9 @@ class MatrizDeRutasTest extends TestCase
         // Mi cuenta (criterio 6): la propia cuenta, sin permiso
         'mi-cuenta.index', 'mi-cuenta.contrasena',
         // Mis avisos (ADR-0016): las preferencias de la propia cuenta
-        'mi-cuenta.avisos'];
+        'mi-cuenta.avisos',
+        // Verificación en dos pasos (dos-pasos.md): activar, códigos y quitarla, de la propia cuenta
+        'mi-cuenta.dos-pasos', 'mi-cuenta.dos-pasos.activar', 'mi-cuenta.dos-pasos.codigos', 'mi-cuenta.dos-pasos.desactivar'];
 
     protected function setUp(): void
     {

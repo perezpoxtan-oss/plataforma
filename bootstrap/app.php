@@ -4,6 +4,7 @@ use App\Http\Middleware\CabecerasSeguridad;
 use App\Http\Middleware\ControlarInactividad;
 use App\Http\Middleware\EstablecerEmpresa;
 use App\Http\Middleware\ExigirCambioContrasena;
+use App\Http\Middleware\ExigirDosPasos;
 use App\Http\Middleware\FirmasComoArchivo;
 use App\Http\Middleware\PortadaPublica;
 use App\Http\Middleware\SoloConsulta;
@@ -31,6 +32,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
             ControlarInactividad::class,
             EstablecerEmpresa::class,
             ExigirCambioContrasena::class,
+            // Verificación en dos pasos obligatoria (Super Administrador o política de la empresa): primero activarla
+            ExigirDosPasos::class,
             // Suscripciones: empresa vencida (después de la gracia), suspendida o dada de baja = solo consulta
             SoloConsulta::class,
         ]);
@@ -45,7 +48,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Seguridad: contraseñas (de usuario o del correo SMTP) nunca se guardan en la sesión al fallar una validación
-        $exceptions->dontFlash(['password', 'password_confirmation', 'current_password', 'contrasena', 'contrasena_actual']);
+        $exceptions->dontFlash(['password', 'password_confirmation', 'current_password', 'contrasena', 'contrasena_actual', 'codigo']);
 
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),

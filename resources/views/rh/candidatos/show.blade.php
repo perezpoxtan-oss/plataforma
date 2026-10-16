@@ -306,7 +306,7 @@
             <p class="privacidad-aceptada mt-3 mb-0">
                 <i class="bi {{ $c->privacidad_aceptada_en ? 'bi-shield-check' : 'bi-shield-exclamation' }} me-1" aria-hidden="true"></i>
                 @if ($c->privacidad_aceptada_en)
-                    Aviso de privacidad aceptado @fecha($c->privacidad_aceptada_en) ({{ ['kiosco' => 'en el kiosco', 'web' => 'en la bolsa de trabajo'][$c->privacidad_medio] ?? 'con Recursos Humanos' }}) · versión {{ substr((string) $c->privacidad_version, 0, 10) }}
+                    Aviso de privacidad aceptado @fecha($c->privacidad_aceptada_en) ({{ ['kiosco' => 'en el kiosco', 'web' => 'en la bolsa de trabajo'][$c->privacidad_medio] ?? 'con Recursos Humanos' }}) · versión {{ $c->avisoPrivacidad?->numero ?? substr((string) $c->privacidad_version, 0, 10) }}
                 @else
                     Aún no acepta el aviso de privacidad: se le pedirá al guardar su CV.
                 @endif

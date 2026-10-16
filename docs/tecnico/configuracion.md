@@ -108,3 +108,8 @@ Antes era la pantalla `/lost-found/dias-resguardo` dentro de Lost & Found; ahora
 Ajustes de caseta y activos (`_caseta.blade.php` con `$tarjeta`, `PUT /configuracion/caseta`, `configuracion.editar` con alcance de empresa): firmas de los vales de taxi (Transporte), semáforo de llaves y equipos «Turno» (Activos), acuse y recordatorio de procedimientos (Caseta y accesos) y reloj del visto bueno (General), en `empresas.preferencias['caseta']` (solo lo distinto de la omisión). Auditoría `configuracion.caseta`. Detalle: [caseta-y-activos.md](caseta-y-activos.md).
 
 > Mejoras de 2026-10 (roles sin números, asistente de permisos, configuración por módulo, avisos por persona, historial y varias sedes): ver [estructura-mejoras.md](estructura-mejoras.md) y [ADR-0016](../decisiones/ADR-0016-mejoras-de-estructura.md).
+
+## Verificación en dos pasos y Privacidad
+
+- **Cuentas y seguridad → Verificación en dos pasos** (`PUT /configuracion/dos-pasos`, `configuracion.editar` empresa; restablecible `dos_pasos`): a quién se exige. Ver [dos-pasos.md](dos-pasos.md).
+- **Privacidad** (`#sec-privacidad`, acción `configuracion.datos_personales` con alcance de empresa): conservación de datos (`PUT /configuracion/privacidad`), aviso con versiones (`POST /configuracion/privacidad/aviso`) y enlace a la bandeja ARCO. Ver [privacidad.md](privacidad.md).

@@ -10,6 +10,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Rules\ContrasenaSegura;
 use App\Services\Cuenta\RecuperacionContrasena;
+use App\Services\DosPasos\VerificacionDosPasos;
 use App\Services\Permisos\Autorizador;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Services\Usuarios\HomonimosUsuarios;
@@ -69,6 +70,12 @@ class UsuarioController extends Controller
             ->where('users.bloqueado_hasta', '>', now())
             ->pluck('users.id')
             ->all();
+        // Verificación en dos pasos: cuentas con ella activa que puede restablecer (mismo permiso y alcance)
+        $restablecibles2p = ! $puedeDesbloquear ? [] : $this->administrador
+            ->limitarAlcance($this->visibles($actor, $empresaId), $actor, 'usuarios.desbloquear')
+            ->whereNotNull('users.two_factor_confirmado_en')
+            ->pluck('users.id')
+            ->all();
 
         $roles = Rol::where('empresa_id', $empresaId)
             ->where('activo', true)
@@ -94,6 +101,7 @@ class UsuarioController extends Controller
             // Seguridad (AZ-01): sedes a las que puede asignar cuentas (null = todas)
             'sedesAsignables' => $actor->es_superadmin ? null : $this->autorizador->sedesPermitidas($actor, $actor->can('usuarios.crear') ? 'usuarios.crear' : 'usuarios.editar'),
             'desbloqueables' => $desbloqueables,
+            'restablecibles2p' => $restablecibles2p,
             'porRevisar' => $porRevisar,
             'correoListo' => $this->recuperacion->correoConfigurado(),
             'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
@@ -233,6 +241,26 @@ class UsuarioController extends Controller
         }
 
         return redirect()->route('usuarios.index')->with('ok', "«{$usuario->name}» desbloqueado; ya puede entrar.");
+    }
+
+    /**
+     * Verificación en dos pasos: quien perdió su teléfono pide a su
+     * administrador que la restablezca; al entrar la activa de nuevo. Mismo
+     * permiso, alcance y jerarquía que desbloquear; se audita y se avisa a la persona.
+     */
+    public function restablecerDosPasos(Request $request, User $usuario): RedirectResponse
+    {
+        $this->exigirDeLaEmpresa($request, $usuario);
+        Gate::authorize('usuarios.desbloquear');
+        $this->exigirVisible($request, $usuario);
+
+        try {
+            app(VerificacionDosPasos::class)->restablecer($request->user(), $usuario);
+        } catch (AuthorizationException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('usuarios.index')->with('ok', "Listo: quitamos la verificación en dos pasos de «{$usuario->name}» y cerramos sus sesiones. Le avisamos; al entrar con su contraseña la activará con su teléfono nuevo.");
     }
 
     /**
