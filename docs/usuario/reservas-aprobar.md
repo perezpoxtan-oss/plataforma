@@ -21,8 +21,8 @@ resumen: Dar el visto bueno a una reserva como responsable del área o de los se
 ## Cómo revisar lo que te toca
 
 1. Entra a **Operación → Reservas → Reservas de áreas** → pestaña **Por aprobar** (o toca **Reservas por aprobar** en **Mis pendientes**).
-2. En **Te toca a ti** está cada reserva con lo que se pide y un **reloj**: cuánto lleva esperando y su color (**a tiempo**, **ámbar** cuando ya se recordó, **rojo** cuando ya se avisó al responsable general).
-3. Toca **Aprobar**, o **Rechazar o pedir cambio** para abrir la reserva.
+2. Cada reserva que espera es una **ficha** con la parte que te toca (Área, Cocina, Sistemas…), el día, las personas, lo que piden y un **reloj**: cuánto lleva esperando y su color (**a tiempo**, **ámbar** cuando ya se recordó, **rojo** cuando ya se avisó al responsable general). Si apruebas reservas en la sede, filtra con **Te toca a ti** u **Otras de tus sedes**.
+3. En la esquina de la ficha: **Aprobar** (palomita), **Rechazar o pedir cambio** (tache: abre la reserva) y **Ver** (ojo).
 
 ![Bandeja Por aprobar](img/reservas/por-aprobar.png)
 

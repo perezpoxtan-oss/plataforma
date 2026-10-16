@@ -38,7 +38,7 @@ class OrdenServicioController extends Controller
         $actor = $request->user();
         $empresaId = $this->empresa->id($actor);
         if ($empresaId === null) {
-            return view('operacion.reservas.index', ['sinEmpresa' => true]);
+            return view('operacion.reservas.sedes', ['sinEmpresa' => true]);
         }
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor) {

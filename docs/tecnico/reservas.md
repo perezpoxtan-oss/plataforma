@@ -74,11 +74,23 @@ Módulo `reservas` (área Servicios): `ver`, `crear`, `aprobar`, `configurar`, `
 
 Calendario: quien puede reservar ve los horarios ocupados de otros como «Ocupado» sin abrirlos.
 
+## Formato de fichas (decisión del dueño: «conservar el formato de FICHAS»)
+
+Las pantallas siguen los patrones de la plataforma, sin estilos propios para la navegación ni las listas:
+
+- **Entrada** (`GET /reservas`): tarjetas de **sedes** como Zonas y edificios y Rutas (`fichas-grid` + `ficha-card` + `btn-entrar`, buscador `data-filtro-texto`), con áreas reservables, reservas de hoy y por aprobar (dos consultas agrupadas). Con una sola sede visible se entra directo. `GET /reservas?sede=` = **fichas de áreas** de la sede (foto opcional, aforo, montajes, tarifa o «Sin costo», responsable, «Próxima: …», insignia «Hoy: N» o «Libre hoy») con botones de ícono **Reservar**, **Calendario del área** y **Configurar** (con permiso), y ficha `ficha-create` «Nueva reserva». Migas «Reservas de áreas › Sede» como Zonas y edificios.
+- **Calendario**: vista secundaria, `GET /reservas/calendario` (ruta nueva; los enlaces anteriores `/reservas?vista=|fecha=|area=` siguen abriendo el calendario).
+- **Mis reservas, Por aprobar y Órdenes de servicio**: `fichas-grid` con insignia `etiqueta-estado` (y `reloj-vobo` en las aprobaciones), datos clave en lista y botones de ícono (`btn-icono` ver / editar / imprimir-hoja / reactivar = Aprobar o «Listo» / eliminar = Rechazar o pedir cambio); filtros en píldoras `pildoras-tipo` + `btn-pill-tipo` (enlaces en Mis reservas; `data-filtro-tipo` en Por aprobar y Órdenes) y buscador de fichas.
+- **Navegación entre vistas**: componente `.pestanas` (botones `btn-dark` / `btn-outline-dark`) de Zonas y edificios, con el número de pendientes en `badge`.
+- **Configuración**: fichas de áreas (insignia RESERVABLE / DE BAJA, Configurar, Dar de baja / Reactivar, historial) con `ficha-create` «Marcar como reservable» (diálogo); montajes, tipos de uso y servicios en fichas como Departamentos, con alta y edición en diálogos (`data-accion="editar-registro"` de plataforma.js). El alta de catálogo es `POST /reservas/configuracion/catalogo` (sin cambios).
+- `public/css/reservas.css` conserva solo lo propio del calendario, el formulario, la ficha de la reserva y la hoja impresa (más `.res-foto-ficha`).
+
 ## Pantallas y rutas (`routes/reservas.php`)
 
 | Ruta | Permiso | Qué |
 |---|---|---|
-| `GET /reservas?vista=dia|semana|mes&fecha=&sede=&area=` | ver o crear | Calendario |
+| `GET /reservas` · `GET /reservas?sede=` | ver o crear | Tarjetas de sedes · fichas de áreas de la sede |
+| `GET /reservas/calendario?vista=dia|semana|mes&fecha=&sede=&area=` | ver o crear | Calendario (vista secundaria) |
 | `GET /reservas/mis-reservas` | crear o ver | Mis reservas |
 | `GET /reservas/nueva` · `POST /reservas` | crear (en la sede del área) | Reservar |
 | `GET /reservas/disponibilidad?area=&fecha=&excepto=` | crear o ver | JSON de bloques ocupados y horario del día |

@@ -1,11 +1,4 @@
 /* Reservas de áreas (docs/tecnico/reservas.md). Solo clases propias (res-*). */
-.res-encabezado { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
-.res-btn-nueva { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 18px; border-radius: 10px; background: #15803d; color: #fff; font-weight: 700; text-decoration: none; border: 0; }
-.res-btn-nueva:hover, .res-btn-nueva:focus { background: #166534; color: #fff; }
-.res-nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; scrollbar-width: thin; }
-.res-nav a { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; min-height: 40px; padding: 6px 14px; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-weight: 600; font-size: .9rem; text-decoration: none; }
-.res-nav a.activa { background: #0f172a; border-color: #0f172a; color: #fff; }
-.res-nav .res-conteo { background: #dc2626; color: #fff; border-radius: 999px; padding: 0 7px; font-size: .75rem; }
 .res-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
 .res-filtros select, .res-filtros input { min-height: 40px; }
 .res-vistas { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; }
@@ -46,8 +39,8 @@
 .res-estado.estado-pendiente { background: #fef3c7; color: #92400e; }
 .res-estado.estado-cambio { background: #ffedd5; color: #9a3412; }
 
-/* Fichas y listas */
-.res-lista { display: grid; gap: 10px; }
+/* Ficha de área (foto opcional arriba de la ficha) y ficha de la reserva */
+.res-foto-ficha { width: 100%; height: 140px; object-fit: cover; border-radius: 14px; display: block; }
 .res-tarjeta { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; }
 .res-tarjeta h2, .res-tarjeta h3 { font-size: 1rem; font-weight: 700; margin: 0 0 6px; }
 .res-tarjeta-fila { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: flex-start; }
@@ -127,9 +120,9 @@
 
 /* Modo noche (modos-pantalla.js pone la clase en <html>) */
 html.modo-noche .res-dia, html.modo-noche .res-tarjeta, html.modo-noche .res-bloque, html.modo-noche .res-cifra,
-html.modo-noche .res-nav a, html.modo-noche .res-vistas a, html.modo-noche .res-navegar a, html.modo-noche .res-boton { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+html.modo-noche .res-vistas a, html.modo-noche .res-navegar a, html.modo-noche .res-boton { background: #1e293b; color: #e2e8f0; border-color: #334155; }
 html.modo-noche .res-dato-valor, html.modo-noche .res-evento { color: #e2e8f0; }
 html.modo-noche .res-evento { background: #172554; }
 html.modo-noche .res-evento.estado-confirmada { background: #14532d; }
 html.modo-noche .res-evento.estado-por_aprobar, html.modo-noche .res-evento.estado-cambio_pedido { background: #451a03; }
-html.modo-noche .res-nav a.activa, html.modo-noche .res-vistas a.activa { background: #2563eb; border-color: #2563eb; color: #fff; }
+html.modo-noche .res-vistas a.activa { background: #2563eb; border-color: #2563eb; color: #fff; }

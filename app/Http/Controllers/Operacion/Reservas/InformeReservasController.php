@@ -37,7 +37,7 @@ class InformeReservasController extends Controller
         $actor = $request->user();
         $empresaId = $this->empresa->id($actor);
         if ($empresaId === null) {
-            return view('operacion.reservas.index', ['sinEmpresa' => true]);
+            return view('operacion.reservas.sedes', ['sinEmpresa' => true]);
         }
         [$desde, $hasta, $sede, $sedes] = $this->filtros($request, $empresaId);
 

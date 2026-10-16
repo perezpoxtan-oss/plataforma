@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('reservas')->name('reservas.')->group(function () {
     Route::controller(ReservaController::class)->group(function () {
         Route::get('/', 'index')->name('index');
+        Route::get('/calendario', 'calendario')->name('calendario');
         Route::get('/mis-reservas', 'mias')->name('mias');
         Route::get('/nueva', 'create')->name('create');
         Route::post('/', 'store')->middleware('throttle:60,1')->name('store');

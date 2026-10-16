@@ -14,7 +14,7 @@ resumen: Qué áreas se reservan y cómo, los catálogos de montajes, tipos y se
 ## Cómo marcar un área como reservable
 
 1. Entra a **Operación → Reservas → Reservas de áreas** → pestaña **Configuración**.
-2. En **Áreas reservables** elige el espacio (por ejemplo «Torre A › Planta baja › Salón Maya») y toca **Marcar como reservable**.
+2. En **Áreas reservables** toca la ficha **Marcar como reservable**, elige el espacio (por ejemplo «Torre A › Planta baja › Salón Maya») y toca **Guardar**.
 3. Se abre la configuración del área. Todo es opcional; toca **Guardar** al terminar:
    - **Aforo máximo** y **Responsable de aprobación** con su **Suplente** (vacío = el responsable general).
    - **Confirmación inmediata**: la reserva se confirma al momento si no lleva servicios ni costo (ideal para salas de juntas).
@@ -28,14 +28,16 @@ resumen: Qué áreas se reservan y cómo, los catálogos de montajes, tipos y se
 
 **Qué debes ver:** «Configuración del área guardada.» con el botón **Reservar esta área**.
 
-Para dejar de ofrecer un área toca **Dar de baja** en su tarjeta; sus reservas ya hechas se conservan. **Reactivar** la vuelve a ofrecer.
+Cada área es una ficha con su insignia **RESERVABLE** o **DE BAJA** y sus botones: **Configurar** (deslizadores), **Dar de baja** (círculo tachado; sus reservas ya hechas se conservan) o **Reactivar**.
 
 ## Cómo editar los catálogos
 
 ![Configuración de reservas](img/reservas/configuracion.png)
 
-1. En **Montajes** y **Tipos de uso** cambia el nombre y toca **Guardar**, o escribe uno nuevo y toca **Agregar**. **Dar de baja** lo quita de las reservas nuevas.
-2. En **Servicios y requerimientos** toca un servicio para editarlo o **Agregar servicio**: nombre, **Categoría**, **Se cobra / se pide** (por pieza, por persona, por hora o por evento), **Costo para clientes**, **Departamento que lo atiende** y si **El departamento lo aprueba antes de confirmar**. Toca **Guardar**.
+1. **Montajes**, **Tipos de uso** y **Servicios y requerimientos** son fichas, como los Departamentos. Para agregar toca la ficha **Nuevo montaje**, **Nuevo tipo de uso** o **Nuevo servicio**; para cambiar uno toca **Editar** (lápiz) en su ficha. **Dar de baja** lo quita de las reservas nuevas.
+2. Un servicio pide: nombre, **Categoría**, **Se cobra / se pide** (por pieza, por persona, por hora o por evento), **Costo para clientes**, **Departamento que lo atiende** y si **El departamento lo aprueba antes de confirmar**. Toca **Guardar**.
+
+![Editar un servicio](img/reservas/dialogo-servicio.png)
 
 Los responsables de cada departamento son los de **Recursos Humanos → Departamentos → Responsables**.
 
