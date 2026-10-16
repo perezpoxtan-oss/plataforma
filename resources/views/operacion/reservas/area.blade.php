@@ -15,7 +15,16 @@
 <div class="tema-verde">
     @include('administracion.partes.avisos')
     @include('componentes.siguiente-paso')
-    @include('operacion.reservas._nav', ['titulo' => $area->nombre(), 'descripcion' => 'Cómo se reserva esta área. Todo es opcional: sin datos, se reserva a cualquier hora, sin costo y la aprueba el responsable general.', 'icono' => 'bi-door-open', 'actual' => 'configuracion', 'puede' => $navPuede])
+    <nav class="migas migas-espacios" aria-label="Ubicación">
+        <a href="{{ route('reservas.configuracion') }}"><i class="bi bi-gear" aria-hidden="true"></i> Configuración de reservas</a>
+        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        <a href="{{ route('reservas.index', ['sede' => $area->sede_id]) }}"><small>Sede</small>{{ $area->sede?->nombre }}</a>
+        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        <span class="actual" aria-current="page"><small>Área</small>{{ $area->rutaTexto() }}</span>
+    </nav>
+    @include('operacion.reservas._nav', ['titulo' => $area->nombre(), 'descripcion' => $area->porInteriores()
+        ? 'Esta zona se reserva por sus espacios interiores. Lo que guardes aquí es la configuración inicial de sus espacios; puedes copiarla a todos.'
+        : 'Cómo se reserva esta área. Todo es opcional: sin datos, se reserva a cualquier hora, sin costo y la aprueba el responsable general.', 'icono' => $area->porInteriores() ? 'bi-building' : 'bi-door-open', 'actual' => 'configuracion', 'puede' => $navPuede])
 
     <form method="POST" action="{{ route('reservas.configuracion.area.guardar', $area->id) }}" class="res-form" enctype="multipart/form-data" autocomplete="off">
         @csrf
@@ -119,9 +128,18 @@
             </div>
         </details>
 
-        <div class="res-acciones">
-            <button type="submit" class="btn-verde"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Guardar</button>
-            <a href="{{ route('reservas.configuracion') }}" class="btn-cancelar">Cancelar</a>
+        @if ($interiores > 0)
+            <section class="res-bloque" aria-labelledby="t-interiores">
+                <h2 id="t-interiores">Espacios interiores</h2>
+                <p class="res-meta">{{ $area->porInteriores() ? 'Esta zona se reserva por sus espacios interiores' : 'Además de toda la zona, se reservan sus espacios interiores' }}: {{ $interiores }} {{ $interiores === 1 ? 'espacio' : 'espacios' }}. Si se reserva la zona completa, sus espacios quedan ocupados en ese horario, y al revés.</p>
+                <label class="d-flex gap-2 align-items-center"><input type="checkbox" name="copiar_interiores" value="1" @checked(old('copiar_interiores'))>
+                    <span><strong>Copiar esta configuración a sus {{ $interiores }} espacios interiores</strong> <span class="res-meta">— reemplaza el aforo, horario, responsable, montajes, tarifas y minutos de montaje de cada uno</span></span></label>
+            </section>
+        @endif
+
+        <div class="d-flex flex-wrap gap-2">
+            <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Guardar</button>
+            <a href="{{ route('reservas.index', ['sede' => $area->sede_id]) }}" class="btn-secundario-rh">Cancelar</a>
         </div>
     </form>
 </div>

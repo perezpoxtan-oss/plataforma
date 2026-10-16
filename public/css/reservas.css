@@ -1,12 +1,5 @@
-/* Reservas de áreas (docs/tecnico/reservas.md). Solo clases propias (res-*). */
-.res-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-.res-filtros select, .res-filtros input { min-height: 40px; }
-.res-vistas { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; }
-.res-vistas a { padding: 8px 14px; text-decoration: none; color: #334155; font-weight: 600; background: #fff; }
-.res-vistas a.activa { background: #2563eb; color: #fff; }
-.res-navegar { display: inline-flex; align-items: center; gap: 6px; }
-.res-navegar a { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #cbd5e1; border-radius: 10px; color: #334155; text-decoration: none; background: #fff; }
-.res-titulo-periodo { font-weight: 700; font-size: 1.05rem; margin: 0 6px; }
+/* Reservas de áreas (docs/tecnico/reservas.md). Solo clases propias (res-*) para el calendario, la ficha
+   de la reserva y la hoja impresa. Los botones, filtros y fichas usan los componentes de la plataforma. */
 
 /* Calendario */
 .res-semana { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
@@ -58,11 +51,6 @@
 .res-aprobacion:last-child { border-bottom: 0; }
 .res-avance { height: 10px; border-radius: 999px; background: #e2e8f0; overflow: hidden; margin: 6px 0; }
 .res-avance span { display: block; height: 100%; background: #15803d; }
-.res-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
-.res-acciones .btn-azul, .res-acciones .btn-rojo, .res-acciones .btn-verde, .res-acciones a, .res-acciones button { min-height: 44px; }
-.res-boton { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; font-weight: 600; text-decoration: none; }
-.res-boton.verde { background: #15803d; border-color: #15803d; color: #fff; }
-.res-boton.rojo { background: #fff; border-color: #dc2626; color: #b91c1c; }
 .res-historial { list-style: none; padding: 0; margin: 0; font-size: .86rem; }
 .res-historial li { padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
 .res-historial time { color: #64748b; font-size: .78rem; display: block; }
@@ -119,10 +107,8 @@
 }
 
 /* Modo noche (modos-pantalla.js pone la clase en <html>) */
-html.modo-noche .res-dia, html.modo-noche .res-tarjeta, html.modo-noche .res-bloque, html.modo-noche .res-cifra,
-html.modo-noche .res-vistas a, html.modo-noche .res-navegar a, html.modo-noche .res-boton { background: #1e293b; color: #e2e8f0; border-color: #334155; }
+html.modo-noche .res-dia, html.modo-noche .res-tarjeta, html.modo-noche .res-bloque, html.modo-noche .res-cifra { background: #1e293b; color: #e2e8f0; border-color: #334155; }
 html.modo-noche .res-dato-valor, html.modo-noche .res-evento { color: #e2e8f0; }
 html.modo-noche .res-evento { background: #172554; }
 html.modo-noche .res-evento.estado-confirmada { background: #14532d; }
 html.modo-noche .res-evento.estado-por_aprobar, html.modo-noche .res-evento.estado-cambio_pedido { background: #451a03; }
-html.modo-noche .res-vistas a.activa { background: #2563eb; border-color: #2563eb; color: #fff; }

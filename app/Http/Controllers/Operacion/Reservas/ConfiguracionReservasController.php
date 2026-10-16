@@ -14,12 +14,14 @@ use App\Models\User;
 use App\Services\Permisos\Autorizador;
 use App\Services\Reservas\AjustesReservas;
 use App\Services\Reservas\CatalogosReservas;
+use App\Services\Reservas\NivelesReservas;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -54,17 +56,13 @@ class ConfiguracionReservasController extends Controller
             $sedes = $this->autorizador->sedesPermitidas($actor, 'reservas.configurar');
             $areas = ReservaArea::with(['espacio:id,nombre,activo,nivel,ruta', 'sede:id,nombre', 'responsable:id,name', 'montajes'])
                 ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))->get()
-                ->sortBy(fn ($a) => $a->sede?->nombre.' '.$a->nombre())->values();
-            $espacios = Espacio::with('sede:id,nombre')->where('activo', true)->whereIn('nivel', CatalogosReservas::NIVELES)
-                ->whereNotIn('id', $areas->pluck('espacio_id'))
-                ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))
-                ->orderBy('sede_id')->orderBy('ruta')->limit(2000)->get(['id', 'sede_id', 'nombre', 'nivel', 'ruta', 'padre_id']);
-            $nombres = Espacio::whereIn('id', $espacios->flatMap(fn ($e) => $e->idsAncestros())->unique())->pluck('nombre', 'id');
+                ->sortBy(fn ($a) => $a->sede?->nombre.' '.$a->espacio?->ruta)->values();
 
             return view('operacion.reservas.configuracion', [
                 'areas' => $areas,
-                'espacios' => $espacios->map(fn ($e) => ['id' => $e->id, 'sede' => $e->sede?->nombre,
-                    'texto' => collect($e->idsAncestros())->map(fn ($id) => $nombres[$id] ?? null)->filter()->push($e->nombre)->join(' › ')])->values(),
+                'rutas' => self::rutas($areas),
+                'interiores' => $this->conteoInteriores($areas),
+                'opciones' => $this->catalogos->opcionesParaAgregar($sedes, Empresa::find($empresaId)),
                 'empresaCompleta' => $this->autorizador->alcanceDeEmpresa($actor, 'reservas.configurar'),
                 'montajes' => ReservaMontaje::orderBy('orden')->orderBy('nombre')->get(),
                 'tipos' => ReservaTipoUso::orderBy('orden')->orderBy('nombre')->get(),
@@ -77,18 +75,73 @@ class ConfiguracionReservasController extends Controller
         });
     }
 
+    /**
+     * «Agregar área reservable»: uno o varios espacios de Zonas y edificios
+     * (casillas espacios[]; espacio_id sigue sirviendo para uno solo) y, para
+     * las zonas con espacios interiores, el modo (toda la zona o por sus
+     * espacios interiores). Cada espacio pide reservas.configurar en su sede.
+     */
     public function marcar(Request $request): RedirectResponse
     {
         Gate::authorize('reservas.configurar');
         abort_if(! $this->tenant->activo(), 404);
-        $espacio = Espacio::find((int) $request->input('espacio_id'));
-        if ($espacio === null || ! $request->user()->can('reservas.configurar', $espacio)) {
-            return back()->withErrors(['espacio_id' => 'Elige un espacio de tu sede.']);
+        $ids = collect((array) $request->input('espacios', []))->push($request->input('espacio_id'))
+            ->filter(fn ($v) => is_numeric($v))->map(fn ($v) => (int) $v)->unique()->take(500)->values();
+        if ($ids->isEmpty()) {
+            return back()->withErrors(['espacio_id' => 'Marca al menos un espacio.'])->withInput();
         }
-        $area = $this->catalogos->marcarReservable($request->user(), $espacio);
+        $espacios = Espacio::whereIn('id', $ids)->get();
+        if ($espacios->count() !== $ids->count() || $espacios->contains(fn ($e) => ! $request->user()->can('reservas.configurar', $e))) {
+            return back()->withErrors(['espacio_id' => 'Elige un espacio de tu sede.'])->withInput();
+        }
+        $modo = $request->input('modo') === ReservaArea::INTERIORES ? ReservaArea::INTERIORES : ReservaArea::COMPLETA;
+        $hecho = $this->catalogos->marcarVarios($request->user(), $espacios, $modo);
+        $areas = $hecho['areas'];
+        $sede = $request->integer('sede') ?: null;
+        $volver = $sede !== null ? route('reservas.index', ['sede' => $sede]) : route('reservas.configuracion');
 
-        return redirect()->route('reservas.configuracion.area', $area->id)
-            ->with('ok', "«{$espacio->nombre}» ya se puede reservar. Completa su aforo, montajes, horario y tarifas (todo es opcional).");
+        if (count($areas) === 1 && $hecho['interiores'] === 0) {
+            $area = $areas[0];
+
+            return redirect()->route('reservas.configuracion.area', $area->id)
+                ->with('ok', "«{$area->nombre()}» ya se puede reservar. Completa su aforo, montajes, horario y tarifas (todo es opcional).")
+                ->with('siguientes', [['Volver a las áreas', $volver, 'bi-arrow-left']]);
+        }
+        $texto = count($areas) === 1 ? '«'.$areas[0]->nombre().'» ya se puede reservar' : count($areas).' áreas ya se pueden reservar';
+        if ($hecho['interiores'] > 0) {
+            $texto .= ' con '.$hecho['interiores'].($hecho['interiores'] === 1 ? ' espacio interior' : ' espacios interiores').' (cada uno empieza con la configuración de su zona)';
+        }
+
+        return redirect()->to($volver)->with('ok', $texto.'. Completa su aforo, horario y tarifas desde el botón Configurar de cada ficha.')
+            ->with('siguientes', [['Configurar '.$areas[0]->nombre(), route('reservas.configuracion.area', $areas[0]->id), 'bi-sliders']]);
+    }
+
+    /**
+     * «Quitar de reservas»: no borra el espacio de Zonas y edificios ni el
+     * historial (ver CatalogosReservas::quitar). Con reservas próximas no se quita.
+     */
+    public function quitar(Request $request, int $area): RedirectResponse
+    {
+        $area = $this->cargarArea($request, $area);
+        $area->load('espacio');
+        $nombre = $area->nombre();
+        $sede = (int) $area->sede_id;
+        $volver = $request->input('volver') === 'sede' ? route('reservas.index', ['sede' => $sede]) : route('reservas.configuracion');
+        try {
+            $r = $this->catalogos->quitar($request->user(), $area);
+        } catch (ValidationException $e) {
+            return redirect()->to($volver)->with('error', "No se quitó «{$nombre}»: ".$e->validator->errors()->first('quitar'));
+        }
+        $detalle = match (true) {
+            $r['desactivadas'] > 0 && $r['borradas'] > 0 => ' Las que tienen reservas pasadas se conservan desactivadas.',
+            $r['desactivadas'] > 0 => ' Como ya tiene reservas pasadas, se conserva desactivada con su historial.',
+            default => '',
+        };
+        $total = $r['desactivadas'] + $r['borradas'];
+
+        return redirect()->to($volver)
+            ->with('ok', "«{$nombre}»".($total > 1 ? ' y sus espacios interiores' : '').' ya no se ofrece para reservar. Sigue en Zonas y edificios.'.$detalle)
+            ->with('siguientes', [['Volver a agregarla', route('reservas.configuracion').'#areas', 'bi-plus-circle']]);
     }
 
     public function area(Request $request, int $area): View
@@ -98,6 +151,7 @@ class ConfiguracionReservasController extends Controller
 
         return view('operacion.reservas.area', [
             'area' => $area->load(['espacio', 'sede', 'montajes']),
+            'interiores' => $this->catalogos->interioresDe($area)->where('reservable', true)->count(),
             'montajes' => ReservaMontaje::where('activo', true)->orWhereIn('id', $area->montajes->pluck('id'))->orderBy('orden')->orderBy('nombre')->get(),
             'usuarios' => $this->usuarios((int) $area->empresa_id),
             'general' => $this->ajustes->de((int) $area->empresa_id),
@@ -110,8 +164,10 @@ class ConfiguracionReservasController extends Controller
         $area = $this->cargarArea($request, $area);
         $request->validate(['foto' => ['nullable', 'file', 'max:5120']], ['foto.max' => 'La foto debe pesar menos de 5 MB.']);
         $this->catalogos->guardarArea($request->user(), $area, $request->except('foto'), $request->file('foto'));
+        $copiadas = $request->boolean('copiar_interiores') ? $this->catalogos->copiarAInteriores($request->user(), $area->refresh()) : 0;
 
-        return redirect()->route('reservas.configuracion.area', $area->id)->with('ok', 'Configuración del área guardada.')
+        return redirect()->route('reservas.configuracion.area', $area->id)
+            ->with('ok', 'Configuración del área guardada.'.($copiadas > 0 ? " También se copió a sus {$copiadas} espacios interiores." : ''))
             ->with('siguientes', [
                 ['Reservar esta área', route('reservas.create', ['area' => $area->id]), 'bi-calendar-plus'],
                 ['Volver a la configuración', route('reservas.configuracion'), 'bi-arrow-left'],
@@ -180,6 +236,35 @@ class ConfiguracionReservasController extends Controller
         abort_unless($request->user()->can('reservas.configurar', $area), 403);
 
         return $area;
+    }
+
+    /**
+     * Dónde está cada área («Torre A › Piso 1»), con una sola consulta.
+     *
+     * @param  Collection<int, ReservaArea>  $areas
+     * @return array<int, string>
+     */
+    public static function rutas(Collection $areas): array
+    {
+        $ids = $areas->flatMap(fn ($a) => $a->espacio?->idsAncestros() ?? [])->unique()->values();
+        $nombres = $ids->isEmpty() ? collect() : Espacio::whereIn('id', $ids)->pluck('nombre', 'id');
+
+        return $areas->mapWithKeys(fn ($a) => [(int) $a->id => collect($a->espacio?->idsAncestros() ?? [])->map(fn ($id) => $nombres[$id] ?? null)->filter()->join(' › ')])->all();
+    }
+
+    /**
+     * Cuántas áreas reservables tiene dentro cada área (0 = ninguna).
+     *
+     * @param  Collection<int, ReservaArea>  $areas
+     * @return array<int, int>
+     */
+    private function conteoInteriores(Collection $areas): array
+    {
+        $niveles = app(NivelesReservas::class);
+        $activas = $areas->where('reservable', true)->values();
+        $padres = $niveles->padres($activas);
+
+        return $activas->mapWithKeys(fn ($a) => [(int) $a->id => count($niveles->descendientes($padres, (int) $a->id))])->all();
     }
 
     private function exigirEmpresa(Request $request): void

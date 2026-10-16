@@ -275,6 +275,7 @@ html.modo-noche .btn-outline-dark:hover { background: #e2e8f0; color: #0f172a; }
 html.modo-noche .btn-entrar { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
 html.modo-noche .btn-entrar:hover { background: rgba(245, 158, 11, 0.25); color: #fcd34d; }
 html.modo-noche .tema-rojo .btn-entrar { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+html.modo-noche .tema-verde .btn-entrar { background: rgba(34, 197, 94, 0.15); color: #86efac; }
 html.modo-noche .btn-agregar-elemento { border-color: #7f1d1d; color: #f87171; }
 html.modo-noche .btn-agregar-elemento:hover { background: rgba(239, 68, 68, 0.12); }
 html.modo-noche .rol-tab { background: var(--superficie); color: #cbd5e1; }
@@ -300,6 +301,7 @@ html.modo-noche .dialogo-acciones { background: var(--superficie); }
 html.modo-noche .dialogo::backdrop { background: rgba(2, 6, 23, 0.75); }
 html.modo-noche .aviso-solo-lectura { background: rgba(234, 179, 8, 0.1); color: #fde68a; }
 html.modo-noche .opcion-asignar:has(input:checked) { background: rgba(239, 68, 68, 0.12); border-color: #7f1d1d; }
+html.modo-noche .tema-verde .opcion-asignar:has(input:checked) { background: rgba(34, 197, 94, 0.12); border-color: #14532d; }
 html.modo-noche .ficha-resaltada { box-shadow: 0 0 0 3px #4ade80 !important; }
 
 /* Departamentos y Puestos */

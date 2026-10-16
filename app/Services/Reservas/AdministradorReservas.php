@@ -124,7 +124,7 @@ class AdministradorReservas
         }
 
         $reserva = DB::transaction(function () use ($actor, $area, $datos) {
-            ReservaArea::whereKey($area->id)->lockForUpdate()->first(); // dos personas no ganan el mismo horario
+            $this->bloquear($area); // dos personas no ganan el mismo horario (ni en la zona y su espacio interior)
             $valores = $this->valores($area, $datos, null);
             $reserva = Reserva::create($valores['reserva'] + ['solicitante_id' => $actor->id, 'estado' => Reserva::POR_APROBAR]);
             $reserva->forceFill(['folio' => 'RES-'.str_pad((string) $reserva->id, 6, '0', STR_PAD_LEFT)])->save();
@@ -158,7 +158,7 @@ class AdministradorReservas
         $antes = $this->foto($reserva->load('items'));
 
         DB::transaction(function () use ($area, $datos, $reserva) {
-            ReservaArea::whereKey($area->id)->lockForUpdate()->first();
+            $this->bloquear($area);
             $valores = $this->valores($area, $datos, $reserva);
             $reserva->update($valores['reserva']);
             $reserva->items()->delete();
@@ -357,6 +357,15 @@ class AdministradorReservas
     }
 
     // ------------------------------------------------------------- Apoyo
+
+    /**
+     * Bloquea (en orden de id, para no trabarse) las áreas que comparten lugar
+     * con ésta: la zona completa y sus espacios interiores.
+     */
+    private function bloquear(ReservaArea $area): void
+    {
+        ReservaArea::whereIn('espacio_id', $this->disponibilidad->espaciosRelacionados($area))->orderBy('id')->lockForUpdate()->get(['id']);
+    }
 
     public function textos(): TextosReservas
     {

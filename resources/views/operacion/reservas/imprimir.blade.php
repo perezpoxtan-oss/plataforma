@@ -26,9 +26,9 @@
 <main>
     <div class="res-controles-impresion">
         <div><strong>{{ $reserva->para_cliente ? 'Orden de evento y cotización' : 'Orden de evento' }}</strong> · una hoja carta</div>
-        <div class="res-acciones">
-            <button type="button" class="res-boton verde" data-accion="imprimir"><i class="bi bi-printer" aria-hidden="true"></i>Imprimir</button>
-            <a href="{{ route('reservas.show', $reserva->id) }}" class="res-boton">Volver a la reserva</a>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn-verde btn-accion-rh" data-accion="imprimir"><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir</button>
+            <a href="{{ route('reservas.show', $reserva->id) }}" class="btn-secundario-rh">Volver a la reserva</a>
         </div>
     </div>
 

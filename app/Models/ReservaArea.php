@@ -29,12 +29,25 @@ class ReservaArea extends Model
         'dia' => ['tarifa_dia', 'Día completo'], 'evento' => ['tarifa_evento', 'Por evento'],
     ];
 
+    /** Cómo se reserva una zona con espacios interiores (migración 2026_11_06_000100). */
+    public const COMPLETA = 'completa';
+
+    public const INTERIORES = 'interiores';
+
+    public const MODOS = [self::COMPLETA => 'Toda la zona como un solo espacio', self::INTERIORES => 'Por sus espacios interiores'];
+
+    /** Configuración que un espacio interior recibe de su zona como valores iniciales. */
+    public const HEREDABLES = [
+        'aforo_maximo', 'confirmacion_inmediata', 'montaje_minutos', 'desmontaje_minutos', 'horario',
+        'tarifa_hora', 'tarifa_medio_dia', 'tarifa_dia', 'tarifa_evento', 'responsable_id', 'suplente_id',
+    ];
+
     protected $table = 'reserva_areas';
 
-    protected $attributes = ['reservable' => true, 'confirmacion_inmediata' => false, 'montaje_minutos' => 0, 'desmontaje_minutos' => 0];
+    protected $attributes = ['reservable' => true, 'modo' => self::COMPLETA, 'confirmacion_inmediata' => false, 'montaje_minutos' => 0, 'desmontaje_minutos' => 0];
 
     protected $fillable = [
-        'empresa_id', 'sede_id', 'espacio_id', 'reservable', 'aforo_maximo', 'confirmacion_inmediata', 'montaje_minutos', 'desmontaje_minutos',
+        'empresa_id', 'sede_id', 'espacio_id', 'reservable', 'modo', 'aforo_maximo', 'confirmacion_inmediata', 'montaje_minutos', 'desmontaje_minutos',
         'horario', 'tarifa_hora', 'tarifa_medio_dia', 'tarifa_dia', 'tarifa_evento', 'descripcion', 'foto', 'responsable_id', 'suplente_id',
     ];
 
@@ -76,6 +89,34 @@ class ReservaArea extends Model
     public function nombre(): string
     {
         return (string) ($this->espacio?->nombre ?? 'Área');
+    }
+
+    /** La zona solo agrupa: se reservan sus espacios interiores. */
+    public function porInteriores(): bool
+    {
+        return $this->modo === self::INTERIORES;
+    }
+
+    /** @var array<int, string>|null */
+    private ?array $nombresRuta = null;
+
+    /**
+     * «Torre A › Piso 1 › 101»: dónde está el espacio (sus ancestros en Zonas
+     * y edificios y él mismo). Una consulta por área, solo cuando se pide.
+     */
+    public function rutaTexto(string $separador = ' › '): string
+    {
+        $espacio = $this->espacio;
+        if ($espacio === null) {
+            return $this->nombre();
+        }
+        if ($this->nombresRuta === null) {
+            $ids = $espacio->idsAncestros();
+            $nombres = $ids === [] ? collect() : Espacio::whereIn('id', $ids)->pluck('nombre', 'id');
+            $this->nombresRuta = collect($ids)->map(fn ($id) => $nombres[$id] ?? null)->filter()->values()->all();
+        }
+
+        return implode($separador, [...$this->nombresRuta, $espacio->nombre]);
     }
 
     /**

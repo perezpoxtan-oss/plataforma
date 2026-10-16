@@ -26,9 +26,9 @@
                 <p class="fw-semibold mb-1">Todavía no hay áreas que se puedan reservar.</p>
                 <p class="text-muted small m-0">
                     @if ($puede['configurar'])
-                        En <a href="{{ route('reservas.configuracion') }}">Configuración</a> marca como «Reservable» un salón o sala de Zonas y edificios.
+                        En <a href="{{ route('reservas.configuracion') }}">Configuración</a> toca <strong>Agregar área reservable</strong> y elige salones, salas o habitaciones de Zonas y edificios.
                     @else
-                        Pide a quien administra las reservas que marque como «Reservable» un salón o sala.
+                        Pide a quien administra las reservas que agregue un salón, sala o habitación como área reservable.
                     @endif
                 </p>
             </div>

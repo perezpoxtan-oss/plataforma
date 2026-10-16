@@ -49,7 +49,7 @@
             </div>
             <p class="small text-muted mt-2 mb-2"><span class="valor-original">Valor original: sin responsable general, recordar a las {{ $defecto['recordar_horas'] }} h, avisar a las {{ $defecto['escalar_horas'] }} h, IVA {{ (int) $defecto['iva_porcentaje'] }} % cobrado. Moneda: la de la empresa ({{ $ajustesRes['moneda'] }}).</span></p>
             @if ($editable)
-                <button type="submit" class="btn-verde"><i class="bi bi-check2 me-1" aria-hidden="true"></i>Guardar</button>
+                <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-check2 me-1" aria-hidden="true"></i>Guardar</button>
             @else
                 <p class="small text-muted m-0">Solo quien configura reservas en toda la empresa cambia estos ajustes.</p>
             @endif
