@@ -50,6 +50,7 @@ Constantes del modelo (antes eran catálogos `cat_tipos_llave` y `cat_alcances` 
 | `PATCH /llaves/{id}/reactivar` | `llaves.reactivar` | `llaves.eliminar` | Reactivación (el voucher se conserva) |
 | `GET /llaves/etiquetas?llaves[]=…` | `llaves.imprimir` | `llaves.imprimir` | "Etiquetas de Llaveros Listas", hasta 120 por hoja |
 | `GET /llaves/exportar?sede=&tipo=&estado=&caducidad=&q=` | `llaves.exportar` | `llaves.exportar` | CSV (UTF-8 con BOM) con los mismos filtros de la pantalla |
+| `GET /llaves/lugares?modo=nueva\|editar` | `llaves.lugares` | `llaves.ver` + `llaves.crear` (nueva) o `llaves.editar` (editar) | Lugares del diálogo (vista parcial `_lugares`), pedidos al abrirlo |
 
 - Todo corre con la empresa de trabajo fijada en el Tenant. Una llave de otra empresa o fuera del alcance responde **404**.
 - **Alcance:** con alcance de sede se ven, registran, editan, imprimen y exportan solo las llaves de sus sedes; con "propios", además, solo las que dio de alta (`AdministradorLlaves::limitar()`).
@@ -107,3 +108,15 @@ Migración `2026_10_12_000210_ajustes_ronda_5_llaves_y_vouchers`.
 ## Mejoras padrones (ADR-0015)
 
 Ver [mejoras-padrones.md](mejoras-padrones.md): alta corta con «Más datos», «Guardar», reactivación por el voucher, siguiente paso «Imprimir su etiqueta» / «Ver su código QR», impresora en la ficha.
+
+## Lugares bajo demanda (hoteles grandes)
+
+Con miles de habitaciones, los lugares de los diálogos «Nueva Llave» y «Editar Llave» (casillas de edificios, pisos y cuartos, píldoras de la cascada y secciones) pesaban ~1.3 MB **cada uno** y viajaban en cada visita a `/llaves` (3 MB con 3,000 habitaciones). Ahora:
+
+- `_formulario` solo lleva un contenedor `data-cargar-url="…/llaves/lugares?modo=nueva|editar"` (con `data-cargar-sin-enfocar` y la caja «Cargando lugares…», que se ve solo si el alcance usa lugares). `plataforma.js` (`cargarBajoDemanda`, el mismo mecanismo de Reservas) la pide **una vez** al abrir el diálogo, también al abrirlo con el lápiz de una ficha (`editar-registro`).
+- `LlaveController::lugares` arma la vista parcial `seguridad/llaves/_lugares` con **las mismas sedes y los mismos lugares** que antes armaba la pantalla (`sedesDelFormulario` + `lugaresDelFormulario`: activas permitidas para crear o editar, más las de las llaves visibles; los lugares desactivados solo si alguna llave visible los tiene). Pide `llaves.ver` y `llaves.crear` o `llaves.editar` según el modo (403 si no); otra empresa no ve nada de esta. Las casillas llegan **sin marcar**.
+- Al llegar se lanza `contenido-cargado`: el bloque «Catálogo de llaves» marca los `espacios`/`grupos` de la llave que se edita (guardados en `data-seleccion` si se abrió antes de que llegara la lista; si ya estaba, los marca el llenado genérico como siempre) y vuelve a acomodar sede, alcance, búsqueda y cascada.
+- Si se pulsa **Guardar** antes de que llegue la lista, se espera y se envía al llegar (así nunca se guarda una edición sin sus lugares). Si falla la carga: «No se pudo cargar la lista. Cierra y vuelve a abrir.» y no se envía.
+- **Con error de validación** (`_dialogo` = `crear` o `editar-{id}`), ese diálogo trae los lugares ya armados con lo marcado (`old()`), como antes; el otro diálogo los sigue pidiendo al abrir.
+- Medido con 3,000 habitaciones: `/llaves` 3,006 KB → 199 KB (≈0.7 s → 0.16 s de servidor); la lista de cada diálogo ~1.1 MB, solo cuando se abre. Pruebas en `LlavesTest` («Lugares bajo demanda») y `AjustesRonda5Test` (cascada).
+

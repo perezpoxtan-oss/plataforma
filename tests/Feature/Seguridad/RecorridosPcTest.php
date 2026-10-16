@@ -476,4 +476,70 @@ class RecorridosPcTest extends TestCase
         $this->assertSame('recorridos_pc.index', Modulo::where('clave', 'recorridos_pc')->value('ruta'));
         $this->assertSame(RevisionRecorridoPc::OK, 'ok');
     }
+
+    // ------------------------------- Ubicaciones bajo demanda (hoteles grandes)
+
+    public function test_el_catalogo_no_trae_las_ubicaciones_y_el_dialogo_las_pide_al_abrirlo(): void
+    {
+        $torre = $this->espacio($this->centro, Espacio::EDIFICIO, 'Torre A');
+        $piso = $this->espacio($this->centro, Espacio::AREA, 'Piso 1', $torre);
+        $cocina = $this->espacio($this->centro, Espacio::AREA_ESPECIFICA, 'Cocina', $piso);
+        $this->espacio($this->playa, Espacio::EDIFICIO, 'Torre Playa');
+        $e = $this->equipo('EXT-01', 'EXTINTOR', null, ['espacio_id' => $cocina->id]);
+
+        // La pantalla: ficha con su ubicación y valores de edición, pero sin las listas
+        $pagina = $this->actingAs($this->admin)->get('/equipos-pc')->assertOk()->assertSee('Torre A · Piso 1 · Cocina')
+            ->assertSee('data-cargar-url="'.e(route('equipos_pc.ubicaciones', ['modo' => 'nuevo'])).'"', false)
+            ->assertSee('data-cargar-url="'.e(route('equipos_pc.ubicaciones', ['modo' => 'editar'])).'"', false)
+            ->assertDontSee('name="zona_id"', false)->assertDontSee('name="area_especifica_id"', false)->getContent();
+        $this->assertStringContainsString('"zona_id":'.$piso->id.',"area_especifica_id":'.$cocina->id, html_entity_decode($pagina));
+
+        // Las listas: zonas con su texto completo y áreas con sus ancestros; nada elegido
+        $listas = $this->get(route('equipos_pc.ubicaciones', ['modo' => 'editar']))->assertOk()
+            ->assertSee('id="editar_epc_zona"', false)->assertSee('id="editar_epc_area"', false)
+            ->assertSee('Torre A · Piso 1')->assertSee('Torre Playa')->assertDontSee('<html', false)->getContent();
+        $this->assertStringContainsString('value="'.$cocina->id.'" data-sede="'.$this->centro->id.'" data-ancestros="'.$torre->id.' '.$piso->id.'"', $listas);
+        $this->assertStringNotContainsString(' selected', $listas);
+        $this->get(route('equipos_pc.ubicaciones', ['modo' => 'nuevo']))->assertOk()->assertSee('id="nuevo_epc_zona"', false);
+        $this->assertNotNull($e);
+    }
+
+    public function test_las_ubicaciones_respetan_permiso_alcance_de_sede_y_empresa(): void
+    {
+        $this->espacio($this->centro, Espacio::EDIFICIO, 'Torre Centro');
+        $this->espacio($this->playa, Espacio::EDIFICIO, 'Torre Playa');
+
+        $supervisor = $this->crearUsuario($this->empresa, 'Supervisor', $this->centro);
+        $this->actingAs($supervisor)->get(route('equipos_pc.ubicaciones', ['modo' => 'nuevo']))->assertOk()->assertSee('Torre Centro')->assertDontSee('Torre Playa');
+
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $this->actingAs($agente)->get(route('equipos_pc.ubicaciones', ['modo' => 'nuevo']))->assertForbidden();
+        $this->get(route('equipos_pc.ubicaciones', ['modo' => 'editar']))->assertForbidden();
+        $this->actingAs($this->crearUsuario($this->empresa, 'Recursos Humanos'))->get(route('equipos_pc.ubicaciones'))->assertForbidden();
+
+        $ajeno = $this->crearUsuario($this->crearEmpresa('Hotel Otro'), 'Administrador');
+        $this->actingAs($ajeno)->get(route('equipos_pc.ubicaciones', ['modo' => 'nuevo']))->assertOk()->assertDontSee('Torre Centro')->assertDontSee('Torre Playa');
+    }
+
+    public function test_con_error_o_al_capturar_el_siguiente_el_dialogo_conserva_la_ubicacion(): void
+    {
+        $torre = $this->espacio($this->centro, Espacio::EDIFICIO, 'Torre A');
+        $piso = $this->espacio($this->centro, Espacio::AREA, 'Piso 1', $torre);
+        $cocina = $this->espacio($this->centro, Espacio::AREA_ESPECIFICA, 'Cocina', $piso);
+
+        // Error al guardar: las listas vienen armadas con lo elegido
+        $this->actingAs($this->admin)->from('/equipos-pc')->post('/equipos-pc', ['_dialogo' => 'crear', 'sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR',
+            'numero_serie' => '', 'zona_id' => $piso->id, 'area_especifica_id' => $cocina->id])->assertSessionHasErrors('numero_serie');
+        $pagina = $this->get('/equipos-pc')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/id="nuevo_epc_zona".*value="'.$piso->id.'"[^>]* selected/s', $pagina);
+        $this->assertMatchesRegularExpression('/id="nuevo_epc_area".*value="'.$cocina->id.'"[^>]* selected/s', $pagina);
+        $this->assertStringContainsString('data-cargar-url="'.e(route('equipos_pc.ubicaciones', ['modo' => 'editar'])).'"', $pagina);
+
+        // «Guardar y capturar siguiente»: el diálogo pide sus listas y elige la ubicación del anterior al llegar
+        $this->post('/equipos-pc', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-01',
+            'zona_id' => $piso->id, 'area_especifica_id' => $cocina->id, '_siguiente' => '1'])->assertSessionHasNoErrors();
+        $pagina = $this->get('/equipos-pc')->assertOk()->assertSee('Capturando el siguiente')->getContent();
+        $this->assertStringContainsString('data-seleccion="'.e(json_encode(['zona_id' => $piso->id, 'area_especifica_id' => $cocina->id])).'"', $pagina);
+        $this->assertStringNotContainsString('name="area_especifica_id"', $pagina);
+    }
 }

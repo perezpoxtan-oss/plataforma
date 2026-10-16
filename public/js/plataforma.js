@@ -183,7 +183,14 @@
     }
 
     /* Contenido pesado de un diálogo (p. ej. miles de espacios para «Agregar área
-       reservable»): se pide al abrirlo, una sola vez. Contenedor: data-cargar-url. */
+       reservable», los lugares de una llave o las ubicaciones de un equipo): se
+       pide al abrirlo, una sola vez. Contenedor: data-cargar-url.
+       - Al terminar queda data-listo y se lanza «contenido-cargado» (burbujea)
+         para que cada pantalla marque lo elegido (p. ej. al editar), que puede
+         venir en data-seleccion del contenedor.
+       - data-cargar-sin-enfocar: no mueve el cursor al buscador de lo cargado.
+       - Si se pulsa Guardar antes de que termine, se espera y se envía al cargar
+         (para no guardar sin la lista, que borraría lo ya asignado). */
     function cargarBajoDemanda(dialogo) {
         dialogo.querySelectorAll('[data-cargar-url]:not([data-cargado])').forEach(function (c) {
             c.setAttribute('data-cargado', '1');
@@ -191,16 +198,32 @@
                 .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.text(); })
                 .then(function (html) {
                     c.innerHTML = html;
-                    var buscar = c.querySelector('input[type="search"]');
+                    c.setAttribute('data-listo', '1');
+                    c.dispatchEvent(new CustomEvent('contenido-cargado', { bubbles: true }));
+                    var buscar = c.hasAttribute('data-cargar-sin-enfocar') ? null : c.querySelector('input[type="search"]');
                     if (buscar) { buscar.focus(); }
+                    var form = c.closest('form');
+                    if (form && form._enviarAlCargar && !form.querySelector('[data-cargar-url]:not([data-listo])')) {
+                        var boton = form._enviarAlCargar;
+                        form._enviarAlCargar = null;
+                        // Después de que cada pantalla marque lo elegido
+                        setTimeout(function () {
+                            if (typeof form.requestSubmit === 'function') { form.requestSubmit(boton instanceof HTMLElement ? boton : undefined); } else { form.submit(); }
+                        }, 0);
+                    }
                 })
                 .catch(function () {
                     c.removeAttribute('data-cargado');
+                    var form = c.closest('form');
+                    if (form) { form._enviarAlCargar = null; }
                     var aviso = c.querySelector('p');
                     if (aviso) { aviso.textContent = 'No se pudo cargar la lista. Cierra y vuelve a abrir.'; }
+                    var caja = aviso && aviso.closest('[hidden]');
+                    if (caja && c.contains(caja)) { caja.hidden = false; }
                 });
         });
     }
+    window.cargarBajoDemanda = cargarBajoDemanda;
 
     document.addEventListener('click', function (evento) {
         var abrirEn = evento.target.closest('[data-abrir-dialogo]');
@@ -249,7 +272,15 @@
     // Confirmación antes de enviar formularios sensibles
     document.addEventListener('submit', function (evento) {
         var mensaje = evento.target.getAttribute('data-confirmar');
-        if (mensaje && !window.confirm(mensaje)) { evento.preventDefault(); }
+        if (mensaje && !window.confirm(mensaje)) { evento.preventDefault(); return; }
+        // Su lista todavía se está cargando (data-cargar-url): se envía en cuanto llegue
+        var pendiente = evento.target.querySelector && evento.target.querySelector('[data-cargar-url]:not([data-listo])');
+        if (pendiente) {
+            evento.preventDefault();
+            evento.target._enviarAlCargar = evento.submitter || true;
+            var dialogo = evento.target.closest('dialog');
+            if (dialogo && !pendiente.hasAttribute('data-cargado')) { cargarBajoDemanda(dialogo); }
+        }
     });
 
     document.addEventListener('change', function (evento) {
@@ -336,6 +367,8 @@
         });
 
         if (typeof dialogo.showModal === 'function') { dialogo.showModal(); }
+        // Contenido que se pide al abrir (data-cargar-url): cada pantalla marca lo elegido al llegar
+        if (typeof window.cargarBajoDemanda === 'function') { window.cargarBajoDemanda(dialogo); }
     });
 
     // Filtro de usuarios por texto y sede; se recuerda en la pestaña tras guardar
@@ -2061,6 +2094,11 @@ document.addEventListener('click', function (e) {
             if (buscar) { buscar.hidden = deLaSede < 8; }
         });
 
+        // Lugares que todavía se están pidiendo (data-cargar-url): «Cargando lugares…» si el alcance los usa
+        form.querySelectorAll('[data-lugares-cargando]').forEach(function (caja) {
+            caja.hidden = ['zona', 'piso', 'area', 'seccion'].indexOf(alcance) === -1;
+        });
+
         var otra = form.querySelector('[data-llave-otra]');
         if (otra) { otra.required = alcance === 'otra'; }
     }
@@ -2120,6 +2158,9 @@ document.addEventListener('click', function (e) {
         if (!form) { return; }
         var valores = leer(boton.dataset.valores);
         rellenarHorarios(form, valores.horarios);
+        // Lugares que todavía se están pidiendo: se marcan los de esta llave en cuanto lleguen
+        var pendientes = form.querySelector('[data-cargar-url]:not([data-listo])');
+        if (pendientes) { pendientes.dataset.seleccion = JSON.stringify({ espacios: valores.espacios || [], grupos: valores.grupos || [] }); }
         var lector = form.querySelector('[data-lector][data-modo="buscar"]');
         if (lector && window.Lector) {
             if (valores.colaborador_id) {
@@ -2128,6 +2169,19 @@ document.addEventListener('click', function (e) {
                 window.Lector.limpiar(lector);
             }
         }
+        acomodarTodo(form);
+    });
+
+    /* ---------- Lugares recién cargados (data-cargar-url): marcar los de la llave ---------- */
+    document.addEventListener('contenido-cargado', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-llave]');
+        if (!form) { return; }
+        var seleccion = leer(e.target.dataset.seleccion || '{}') || {};
+        delete e.target.dataset.seleccion;
+        ['espacios', 'grupos'].forEach(function (campo) {
+            var lista = (seleccion[campo] || []).map(String);
+            form.querySelectorAll('input[name="' + campo + '[]"]').forEach(function (c) { c.checked = lista.indexOf(c.value) !== -1; });
+        });
         acomodarTodo(form);
     });
 
@@ -5817,8 +5871,25 @@ document.addEventListener('click', function (e) {
             ['zona_id', 'area_especifica_id'].forEach(function (n) {
                 if (form.elements[n]) { form.elements[n].value = valores[n] === null || valores[n] === undefined ? '' : String(valores[n]); }
             });
+            // Listas que todavía se están pidiendo: se eligen en cuanto lleguen
+            var pendientes = form.querySelector('[data-cargar-url]:not([data-listo])');
+            if (pendientes) { pendientes.dataset.seleccion = JSON.stringify({ zona_id: valores.zona_id, area_especifica_id: valores.area_especifica_id }); }
             acomodarUbicaciones(form);
         }
+    });
+
+    // Zona y área recién cargadas (data-cargar-url): se elige lo del equipo (o lo del anterior al capturar el siguiente)
+    document.addEventListener('contenido-cargado', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-epc]');
+        if (!form) { return; }
+        var seleccion = {};
+        try { seleccion = JSON.parse(e.target.dataset.seleccion || '{}') || {}; } catch (x) { /* sin selección */ }
+        delete e.target.dataset.seleccion;
+        ['zona_id', 'area_especifica_id'].forEach(function (n) {
+            var v = seleccion[n];
+            if (form.elements[n] && v !== null && v !== undefined && v !== '') { form.elements[n].value = String(v); }
+        });
+        acomodarUbicaciones(form);
     });
 
     document.addEventListener('input', function (e) {
@@ -6670,6 +6741,11 @@ document.addEventListener('click', function (e) {
         if (!form) { return; }
         reiniciarCascada(form);
         acomodarLlave(form);
+    });
+    // Lugares que llegan al abrir el diálogo (data-cargar-url): su cascada se acomoda igual
+    document.addEventListener('contenido-cargado', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-llave]');
+        if (form) { acomodarLlave(form); }
     });
 
     /* ---------- Baja de llave: costo fijo o variable ---------- */

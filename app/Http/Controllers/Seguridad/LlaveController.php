@@ -60,7 +60,7 @@ class LlaveController extends Controller
             return view('seguridad.llaves.index', ['sinEmpresa' => true]);
         }
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId) {
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $empresaId) {
             $lista = $this->consulta($actor, 'llaves.ver')
                 ->leftJoin('users as uc', 'uc.id', '=', 'llaves.creado_por')
                 ->leftJoin('users as ua', 'ua.id', '=', 'llaves.actualizado_por')
@@ -77,10 +77,11 @@ class LlaveController extends Controller
             $verSedes = $this->llaves->sedes($actor, 'llaves.ver');
             $crearSedes = $this->llaves->sedes($actor, 'llaves.crear');
             $editarSedes = $this->llaves->sedes($actor, 'llaves.editar');
-            $sedesFormulario = $this->unirSedes($crearSedes, $editarSedes);
-            // Sedes del formulario: las activas permitidas y las de las llaves que ya se ven
-            $idsFormulario = $sedes->filter(fn ($s) => ($sedesFormulario === null || in_array($s->id, $sedesFormulario, true)) && $s->activo)->pluck('id')
-                ->merge($lista->pluck('sede_id'))->unique()->values()->all();
+            $idsFormulario = $this->sedesDelFormulario($actor, $sedes, $lista);
+            // Los lugares (miles con un hotel grande) se piden al abrir el diálogo (lugares());
+            // solo vienen ya armados cuando un formulario regresa con errores
+            $dialogo = $request->old('_dialogo');
+            $trasError = $dialogo === 'crear' || (is_string($dialogo) && str_starts_with($dialogo, 'editar-'));
 
             return view('seguridad.llaves.index', [
                 'sinEmpresa' => false,
@@ -90,7 +91,7 @@ class LlaveController extends Controller
                     ->filter(fn ($s) => $s->activo || $lista->contains('sede_id', $s->id))->values(),
                 'sedesAlta' => $sedes->filter(fn ($s) => $s->activo && ($crearSedes === null || in_array($s->id, $crearSedes, true)))->values(),
                 'sedesEdicion' => $sedes->filter(fn ($s) => $editarSedes === null || in_array($s->id, $editarSedes, true))->values(),
-                'catalogos' => $conFormulario ? $this->catalogos($idsFormulario, $lista) : null,
+                'catalogos' => $conFormulario ? $this->catalogos($idsFormulario, $lista, $trasError) : null,
                 'editables' => $this->llaves->idsEnAlcance($actor, 'llaves.editar'),
                 'desactivables' => $this->llaves->idsEnAlcance($actor, 'llaves.eliminar'),
                 'imprimibles' => $this->llaves->idsEnAlcance($actor, 'llaves.imprimir'),
@@ -107,6 +108,36 @@ class LlaveController extends Controller
                 // Mejoras padrones (ADR-0015): motivo y enlace del voucher de las llaves de baja
                 'vouchersBaja' => app(RecuperacionVouchers::class)->ultimosPorOrigen('llave', $lista->where('activo', false)->pluck('id')),
                 'puedeVerVouchers' => $actor->can('vouchers.ver'),
+            ]);
+        });
+    }
+
+    /**
+     * Lugares del diálogo «Nueva Llave» o «Editar Llave» (edificios, pisos,
+     * cuartos y secciones de Zonas y edificios), pedidos al abrirlo: con miles
+     * de habitaciones pesan megas y no deben viajar en cada visita. Mismo
+     * permiso y mismas sedes que el formulario de la pantalla; las casillas
+     * llegan sin marcar y el diálogo de edición marca las de la llave.
+     */
+    public function lugares(Request $request): View
+    {
+        Gate::authorize('llaves.ver');
+        $modo = $request->query('modo') === 'editar' ? 'editar' : 'nueva';
+        Gate::authorize($modo === 'editar' ? 'llaves.editar' : 'llaves.crear');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $actor = $request->user();
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $modo) {
+            // Solo lo que el formulario usa de las llaves visibles: su sede y sus lugares (también los ya desactivados)
+            $lista = $this->llaves->limitar(Llave::query(), $actor, 'llaves.ver')
+                ->with(['espacios:espacios.id', 'grupos:grupos_espacio.id'])->get(['llaves.id', 'llaves.sede_id']);
+            $sedes = Sede::orderBy('nombre')->get(['id', 'nombre', 'activo']);
+
+            return view('seguridad.llaves._lugares', [
+                'p' => $modo.'_ll_',
+                'lugares' => $this->lugaresDelFormulario($this->sedesDelFormulario($actor, $sedes, $lista), $lista),
+                'marcados' => [],
+                'gruposMarcados' => [],
             ]);
         });
     }
@@ -315,14 +346,31 @@ class LlaveController extends Controller
     }
 
     /**
-     * Opciones del formulario: departamentos, puestos, y lugares de Zonas y
-     * áreas y secciones de las sedes del formulario.
+     * Sedes del formulario: las activas permitidas para crear o editar y las
+     * de las llaves que ya se ven.
+     *
+     * @param  \Illuminate\Support\Collection<int, Sede>  $sedes
+     * @param  Collection<int, Llave>  $lista
+     * @return list<int>
+     */
+    private function sedesDelFormulario(User $actor, \Illuminate\Support\Collection $sedes, Collection $lista): array
+    {
+        $sedesFormulario = $this->unirSedes($this->llaves->sedes($actor, 'llaves.crear'), $this->llaves->sedes($actor, 'llaves.editar'));
+
+        return $sedes->filter(fn ($s) => ($sedesFormulario === null || in_array($s->id, $sedesFormulario, true)) && $s->activo)->pluck('id')
+            ->merge($lista->pluck('sede_id'))->unique()->values()->all();
+    }
+
+    /**
+     * Opciones del formulario: departamentos y puestos; con $conLugares,
+     * también los lugares (solo cuando el formulario regresa con errores: si
+     * no, se piden al abrir el diálogo con lugares()).
      *
      * @param  list<int>  $sedes
      * @param  Collection<int, Llave>  $lista
      * @return array<string, mixed>
      */
-    private function catalogos(array $sedes, Collection $lista): array
+    private function catalogos(array $sedes, Collection $lista, bool $conLugares): array
     {
         $usados = fn (string $campo) => $lista->pluck($campo)->filter()->unique()->values();
 
@@ -333,6 +381,21 @@ class LlaveController extends Controller
             'puestos' => Puesto::with('departamentos:departamentos.id')
                 ->where(fn ($q) => $q->where('activo', true)->orWhereIn('id', $usados('puesto_id')))
                 ->orderBy('nombre')->get(['id', 'nombre', 'activo']),
+            'lugares' => $conLugares ? $this->lugaresDelFormulario($sedes, $lista) : null,
+        ];
+    }
+
+    /**
+     * Lugares de Zonas y edificios y secciones de las sedes del formulario
+     * (los activos y los desactivados que ya tiene alguna llave visible).
+     *
+     * @param  list<int>  $sedes
+     * @param  Collection<int, Llave>  $lista
+     * @return array<string, mixed>
+     */
+    private function lugaresDelFormulario(array $sedes, Collection $lista): array
+    {
+        return [
             'espacios' => Espacio::with(['padre:id,nombre,padre_id,nivel', 'padre.padre:id,nombre'])->whereIn('sede_id', $sedes)
                 ->whereIn('nivel', array_values(Llave::NIVEL_DEL_ALCANCE))
                 ->where(fn ($q) => $q->where('activo', true)->orWhereIn('id', $lista->flatMap(fn ($l) => $l->espacios->pluck('id'))->unique()->values()))

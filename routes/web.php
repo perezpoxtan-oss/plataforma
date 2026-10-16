@@ -299,6 +299,7 @@ Route::middleware('auth')->group(function () {
 
     // Padrones: Llaves (catálogo; el préstamo vive en Operación)
     Route::get('/llaves', [LlaveController::class, 'index'])->name('llaves.index');
+    Route::get('/llaves/lugares', [LlaveController::class, 'lugares'])->name('llaves.lugares');
     Route::post('/llaves', [LlaveController::class, 'store'])->name('llaves.store');
     Route::get('/llaves/exportar', [LlaveController::class, 'exportar'])->name('llaves.exportar');
     Route::get('/llaves/etiquetas', [LlaveController::class, 'imprimir'])->name('llaves.imprimir');
@@ -475,6 +476,7 @@ Route::middleware('auth')->group(function () {
     // Padrones: Equipos de Protección Civil (Padrones → Inventarios de Seguridad; ver docs/tecnico/equipos-pc.md)
     Route::controller('App\Http\Controllers\Seguridad\EquipoPcController')->group(function () {
         Route::get('/equipos-pc', 'index')->name('equipos_pc.index');
+        Route::get('/equipos-pc/ubicaciones', 'ubicaciones')->name('equipos_pc.ubicaciones');
         Route::post('/equipos-pc', 'store')->name('equipos_pc.store');
         Route::put('/equipos-pc/{equipo}', 'update')->whereNumber('equipo')->name('equipos_pc.update');
         Route::patch('/equipos-pc/{equipo}/desactivar', 'desactivar')->whereNumber('equipo')->name('equipos_pc.desactivar');

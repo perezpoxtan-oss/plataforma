@@ -50,7 +50,7 @@ class EquipoPcController extends Controller
             return view('seguridad.equipos-pc.index', ['sinEmpresa' => true]);
         }
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId) {
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $empresaId) {
             $lista = $this->catalogo->limitar(EquipoPc::query(), $actor, 'equipos_pc.ver')
                 ->with('sede:id,nombre')
                 ->leftJoin('users as uc', 'uc.id', '=', 'equipos_pc.creado_por')
@@ -68,8 +68,11 @@ class EquipoPcController extends Controller
             $sedesAlta = $puede['crear'] ? $this->catalogo->sedesParaElegir($actor, 'equipos_pc.crear') : collect();
             $sedesEdicion = $puede['editar'] ? $this->catalogo->sedesParaElegir($actor, 'equipos_pc.editar') : collect();
             $sedesFiltro = $lista->pluck('sede')->filter()->unique('id')->sortBy('nombre')->values();
-            // Ubicaciones: las de las sedes que se ven o se pueden elegir (una sola consulta)
+            // Ubicaciones: las de las sedes que se ven o se pueden elegir (una sola consulta). Las listas
+            // «Zona / Piso» y «Área Específica» de los diálogos se piden al abrirlos (ubicaciones());
+            // solo vienen ya armadas cuando el formulario regresa con errores.
             $nodos = $this->ubicaciones->nodos($sedesFiltro->pluck('id')->merge($sedesAlta->pluck('id'))->merge($sedesEdicion->pluck('id'))->unique()->values()->all());
+            $dialogo = $request->old('_dialogo');
 
             return view('seguridad.equipos-pc.index', [
                 'sinEmpresa' => false,
@@ -80,12 +83,41 @@ class EquipoPcController extends Controller
                 'sedesAlta' => $sedesAlta,
                 'sedesEdicion' => $sedesEdicion,
                 'nodos' => $nodos,
+                'conUbicaciones' => ['nuevo' => $dialogo === 'crear', 'editar' => is_string($dialogo) && str_starts_with($dialogo, 'editar-')],
                 'editables' => $this->catalogo->idsEnAlcance($actor, 'equipos_pc.editar'),
                 'desactivables' => $this->catalogo->idsEnAlcance($actor, 'equipos_pc.eliminar'),
                 'siguiente' => session('capturar_siguiente'),
                 'puede' => $puede,
                 // Mejoras padrones (ADR-0015): la última revisión de cada equipo en los recorridos, en su tarjeta
                 'ultimasRevisiones' => $this->ultimasRevisiones($lista->pluck('id')->all()),
+            ]);
+        });
+    }
+
+    /**
+     * Listas «Zona / Piso» y «Área Específica» del diálogo «Nuevo Equipo» o
+     * «Editar Equipo», pedidas al abrirlo: con miles de habitaciones pesan
+     * cientos de KB y no deben viajar en cada visita. Mismo permiso y mismas
+     * sedes que la pantalla; llegan sin elegir y el diálogo elige después.
+     */
+    public function ubicaciones(Request $request): View
+    {
+        Gate::authorize('equipos_pc.ver');
+        $modo = $request->query('modo') === 'editar' ? 'editar' : 'nuevo';
+        Gate::authorize($modo === 'editar' ? 'equipos_pc.editar' : 'equipos_pc.crear');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $actor = $request->user();
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $modo) {
+            $sedes = $this->catalogo->limitar(EquipoPc::query(), $actor, 'equipos_pc.ver')->distinct()->pluck('equipos_pc.sede_id')
+                ->merge($this->catalogo->sedesParaElegir($actor, 'equipos_pc.crear')->pluck('id'))
+                ->merge($this->catalogo->sedesParaElegir($actor, 'equipos_pc.editar')->pluck('id'))
+                ->map(fn ($id) => (int) $id)->unique()->values()->all();
+
+            return view('seguridad.equipos-pc._ubicaciones', [
+                'modo' => $modo,
+                'nodos' => $this->ubicaciones->nodos($sedes),
+                'valor' => fn (string $campo) => '',
             ]);
         });
     }
