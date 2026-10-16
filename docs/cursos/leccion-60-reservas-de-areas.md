@@ -26,7 +26,7 @@ Usa la empresa de prueba con varias cuentas: el **Administrador**, una persona q
 ## Práctica 1 · Configurar un salón (Administrador)
 
 1. **Operación → Reservas → Reservas de áreas → Configuración**.
-2. Elige «Salón Maya» y toca **Marcar como reservable**.
+2. Toca la ficha **Marcar como reservable**, elige «Salón Maya» y toca **Guardar**.
 3. Pon aforo 120, marca **Auditorio** (120) y **Herradura (U)** (30), 60 minutos de montaje y 30 de desmontaje, y una tarifa **Por evento**. **Guardar**.
 4. En **Servicios y requerimientos** agrega «Coffee break», por persona, con **Departamento que lo atiende: Cocina**.
 
@@ -34,7 +34,7 @@ Comprueba: el área aparece con su aforo, montajes, tarifa y «aprueba el respon
 
 ## Práctica 2 · Reservar con servicios
 
-1. **Nueva reserva** → Salón Maya, un día de la próxima semana, de 10:00 a 12:00.
+1. **Operación → Reservas → Reservas de áreas** → tarjeta de la sede → **Entrar a la sede** → en la ficha de Salón Maya toca **Reservar**; un día de la próxima semana, de 10:00 a 12:00.
 2. «Capacitación», 25 personas, montaje **Herradura (U)**.
 3. **Servicios y requerimientos** → toca la cantidad de **Coffee break**: se llena con 25. Agrega **Proyector**.
 4. **Guardar reserva**.

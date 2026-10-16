@@ -11,23 +11,37 @@ resumen: Apartar un salón, sala o terraza de la sede, pedir servicios y seguir 
 
 **Antes de empezar:** necesitas que tu rol pueda **crear** en Reservas de áreas. Si no ves el botón **Nueva reserva**, pide ayuda a tu administrador. Si no aparece ningún área, pide a quien administra las reservas que marque como «Reservable» el salón o la sala (ver [Configurar las reservas](reservas-configuracion.md)).
 
-## Cómo ver qué está libre
+## Cómo elegir el área
 
 1. Entra a **Operación → Reservas → Reservas de áreas**.
-2. Elige la vista **Día**, **Semana** o **Mes** y muévete con las flechas o con **Hoy**.
-3. Si quieres ver una sola área, elígela en **Todas las áreas**.
+2. Si tu empresa tiene varias sedes, aparece una **tarjeta por sede** con cuántas áreas se reservan, cuántas reservas hay **hoy** y cuántas esperan aprobación. Toca **Entrar a la sede**. (Con una sola sede entras directo.)
+
+![Tarjetas de sedes](img/reservas/sedes.png)
+
+3. Cada área es una **ficha** con su foto (si tiene), el aforo, los montajes, la tarifa o «Sin costo», quién la aprueba, la **Próxima** reserva y la insignia **Hoy: N** (o «Libre hoy»). Escribe en **Buscar área…** para encontrarla.
+4. En la esquina de la ficha están sus botones:
+   - **Reservar** (calendario con +): abre la reserva con esa área elegida.
+   - **Calendario del área**: lo que está ocupado por día, semana o mes.
+   - **Configurar** (solo si administras las reservas).
+
+![Fichas de las áreas](img/reservas/areas.png)
+
+En el celular las fichas se acomodan una debajo de otra.
+
+![Fichas en el celular](img/reservas/movil-areas.png)
+
+## Cómo ver qué está libre (calendario)
+
+1. Toca **Calendario** arriba (o **Calendario del área** en su ficha).
+2. Elige **Día**, **Semana** o **Mes**, muévete con las flechas o con **Hoy**, y elige la sede o el área.
 
 ![Calendario de reservas](img/reservas/calendario.png)
 
-**Qué debes ver:** cada reserva con su horario. En **verde** las confirmadas; en **ámbar** las que esperan aprobación o un cambio; en **gris** «Ocupado» (reservas de otras personas que no puedes abrir). Recuerda que el área también queda ocupada mientras se **monta** y se **desmonta**.
-
-En el celular, la vista **Mes** muestra solo las horas; toca un día para verlo completo.
-
-![Vista de mes en el celular](img/reservas/movil-mes.png)
+**Qué debes ver:** cada reserva con su horario. En **verde** las confirmadas; en **ámbar** las que esperan aprobación o un cambio; en **gris** «Ocupado» (reservas de otras personas que no puedes abrir). El área también queda ocupada mientras se **monta** y se **desmonta**.
 
 ## Cómo reservar
 
-1. Toca **Nueva reserva** (o **Reservar** en el día que quieras).
+1. Toca la ficha **Nueva reserva**, el botón **Reservar** de un área o **Reservar** en el día del calendario.
 2. En **¿Dónde y cuándo?** elige el **Área**, el **Día** y las horas **De** y **A**. Abajo aparecen los horarios ya ocupados de ese día y el horario en que el área se puede reservar.
 3. En **¿Para qué?** escribe el **Nombre del evento o reunión**, el número de **Personas** y, si quieres, el **Tipo de uso** y el **Montaje** (auditorio, escuela, herradura…). Cada montaje dice cuántas personas caben.
 4. En **¿Para quién es?** elige:
@@ -42,9 +56,13 @@ En el celular, la vista **Mes** muestra solo las horas; toca un día para verlo 
 
 ## Cómo seguir tu reserva
 
-1. Entra a **Mis reservas** (pestaña de Reservas de áreas).
-2. Cada reserva dice su estado y qué falta: «Falta aprobar: área, Cocina…» o «Servicios listos: 1 de 2».
-3. Toca una reserva para ver su ficha: **Aprobaciones** (quién aprueba y cuánto lleva esperando), **Órdenes de servicio** (avance del montaje) e **Historial**.
+1. Toca **Mis reservas** arriba.
+2. Cada reserva es una ficha con su **insignia de estado**, el área, el día y lo que falta («Falta aprobar: área, Cocina…» o «Servicios listos: 1 de 2»). Filtra con **Próximas**, **Por aprobar**, **Cambio pedido**, **Confirmada** o **Pasadas**.
+3. En la esquina: **Ver** (ojo), **Modificar** (lápiz, antes de que empiece) e **Imprimir**.
+
+![Mis reservas](img/reservas/mias.png)
+
+En la ficha de la reserva ves sus **Aprobaciones** (quién aprueba y cuánto lleva esperando), sus **Órdenes de servicio** (avance del montaje) y su **Historial**.
 
 ![Ficha de la reserva](img/reservas/ficha.png)
 

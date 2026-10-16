@@ -21,6 +21,7 @@ use App\Services\Reservas\ResponsablesReservas;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,13 +50,87 @@ class ReservaController extends Controller
 
     // ------------------------------------------------------------ Calendario
 
+    /**
+     * Entrada (formato de fichas, como Zonas y edificios y Rutas): tarjetas de
+     * SEDES con sus conteos → fichas de las ÁREAS reservables de la sede (con
+     * una sola sede se entra directo). Los enlaces anteriores con vista, fecha
+     * o área abren el calendario.
+     */
     public function index(Request $request): View
+    {
+        $actor = $request->user();
+        abort_unless($actor->can('reservas.ver') || $actor->can('reservas.crear'), 403);
+        if ($request->hasAny(['vista', 'fecha', 'area'])) {
+            return $this->calendario($request);
+        }
+        $empresaId = $this->empresa->id($actor);
+        if ($empresaId === null) {
+            return view('operacion.reservas.sedes', ['sinEmpresa' => true]);
+        }
+        app(EsperaReservas::class)->escalarSiToca($empresaId);
+        $elegida = $request->integer('sede') ?: null;
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $elegida) {
+            $areas = $this->areasVisibles($actor);
+            $sedes = Sede::whereIn('id', $areas->pluck('sede_id')->unique())->orderBy('nombre')->get(['id', 'nombre', 'codigo', 'zona_horaria', 'empresa_id']);
+            $zona = Empresa::whereKey($empresaId)->value('zona_horaria') ?: 'America/Mexico_City';
+            $hoyDesde = now($zona)->startOfDay()->utc();
+            $hoyHasta = now($zona)->startOfDay()->addDay()->utc();
+            $sede = $elegida !== null && $sedes->contains('id', $elegida) ? $elegida : ($sedes->count() === 1 ? (int) $sedes->first()->id : null);
+            $puede = $this->permisosGenerales($actor);
+
+            if ($sede === null) {
+                // Conteos por sede en dos consultas
+                $hoy = Reserva::ocupan()->whereIn('reserva_area_id', $areas->pluck('id'))->where('inicio', '<', $hoyHasta)->where('fin', '>', $hoyDesde)
+                    ->selectRaw('sede_id, COUNT(*) AS total')->groupBy('sede_id')->pluck('total', 'sede_id');
+                $porAprobar = Reserva::whereIn('reserva_area_id', $areas->pluck('id'))->whereIn('estado', [Reserva::POR_APROBAR, Reserva::CAMBIO_PEDIDO])
+                    ->selectRaw('sede_id, COUNT(*) AS total')->groupBy('sede_id')->pluck('total', 'sede_id');
+                $resumen = $sedes->mapWithKeys(fn ($s) => [$s->id => [
+                    'areas' => $areas->where('sede_id', $s->id)->count(), 'hoy' => (int) ($hoy[$s->id] ?? 0), 'por_aprobar' => (int) ($porAprobar[$s->id] ?? 0),
+                ]])->all();
+
+                return view('operacion.reservas.sedes', ['sinEmpresa' => false, 'sedes' => $sedes, 'resumen' => $resumen, 'puede' => $puede]);
+            }
+
+            // Fichas de las áreas de la sede: próxima reserva y cuántas hay hoy (dos consultas)
+            $enSede = $areas->where('sede_id', $sede)->values();
+            $proximas = Reserva::ocupan()->whereIn('reserva_area_id', $enSede->pluck('id'))->where('fin', '>', now())
+                ->orderBy('inicio')->get(['id', 'reserva_area_id', 'inicio', 'fin'])->groupBy('reserva_area_id');
+            $titulares = $enSede->mapWithKeys(fn ($a) => [$a->id => $this->responsables->delArea($a)[0]]);
+            $nombres = User::whereIn('id', $titulares->filter()->unique())->pluck('name', 'id');
+            $local = fn ($fecha, $area) => $fecha->copy()->setTimezone($this->disponibilidad->zona($area));
+            $moneda = (string) (Empresa::whereKey($empresaId)->value('moneda') ?: 'MXN');
+            $fichas = $enSede->map(function (ReservaArea $a) use ($proximas, $titulares, $nombres, $local, $hoyDesde, $hoyHasta, $moneda) {
+                $suyas = $proximas->get($a->id, collect());
+                $proxima = $suyas->first(fn ($r) => $r->inicio->greaterThanOrEqualTo(now())) ?? $suyas->first();
+                $tarifas = $a->tarifas();
+
+                return [
+                    'area' => $a, 'responsable' => $titulares[$a->id] ? ($nombres[$titulares[$a->id]] ?? null) : null,
+                    'hoy' => $suyas->filter(fn ($r) => $r->inicio->lessThan($hoyHasta) && $r->fin->greaterThan($hoyDesde))->count(),
+                    'proxima' => $proxima === null ? null : ReservaController::diaTexto($local($proxima->inicio, $a)).' '.$local($proxima->inicio, $a)->format('d/m H:i'),
+                    'tarifa' => $tarifas === [] ? null : collect($tarifas)->map(fn ($v, $k) => ReservaArea::TARIFAS[$k][1].' '.Cotizador::dinero($v, $moneda))->first(),
+                ];
+            });
+
+            return view('operacion.reservas.sede', [
+                'sede' => $sedes->firstWhere('id', $sede), 'variasSedes' => $sedes->count() > 1, 'fichas' => $fichas, 'puede' => $puede,
+                'puedeReservar' => $this->reservas->puedeReservarEn($actor, $sede),
+            ]);
+        });
+    }
+
+    /**
+     * Calendario por área (día, semana, mes): vista secundaria, desde la ficha
+     * del área o el botón «Calendario».
+     */
+    public function calendario(Request $request): View
     {
         $actor = $request->user();
         abort_unless($actor->can('reservas.ver') || $actor->can('reservas.crear'), 403);
         $empresaId = $this->empresa->id($actor);
         if ($empresaId === null) {
-            return view('operacion.reservas.index', ['sinEmpresa' => true]);
+            return view('operacion.reservas.sedes', ['sinEmpresa' => true]);
         }
         app(EsperaReservas::class)->escalarSiToca($empresaId);
 
@@ -92,7 +167,7 @@ class ReservaController extends Controller
                 $dias[$clave] = ['fecha' => $d, 'eventos' => $eventos->filter(fn ($e) => $e['dia'] === $clave)->values()];
             }
 
-            return view('operacion.reservas.index', [
+            return view('operacion.reservas.calendario', [
                 'sinEmpresa' => false, 'vista' => $vista, 'fecha' => $fecha, 'desde' => $desde, 'hasta' => $hasta, 'dias' => $dias,
                 'areas' => $enSede, 'mostrar' => $mostrar, 'sedes' => $sedes, 'sede' => $sede, 'area' => $area,
                 'navegar' => $this->navegacion($vista, $fecha), 'hoy' => now($zona)->toDateString(),
@@ -134,7 +209,7 @@ class ReservaController extends Controller
         return ['anterior' => $anterior->toDateString(), 'siguiente' => $siguiente->toDateString(), 'titulo' => $titulo];
     }
 
-    public static function diaTexto(CarbonImmutable $fecha): string
+    public static function diaTexto(CarbonInterface $fecha): string
     {
         return ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][$fecha->dayOfWeekIso];
     }
@@ -186,7 +261,7 @@ class ReservaController extends Controller
         abort_unless($actor->can('reservas.crear') || $actor->can('reservas.ver'), 403);
         $empresaId = $this->empresa->id($actor);
         if ($empresaId === null) {
-            return view('operacion.reservas.index', ['sinEmpresa' => true]);
+            return view('operacion.reservas.sedes', ['sinEmpresa' => true]);
         }
         $estado = array_key_exists((string) $request->query('estado'), Reserva::ESTADOS) ? (string) $request->query('estado') : null;
         $pasadas = $request->boolean('pasadas');
@@ -216,7 +291,7 @@ class ReservaController extends Controller
         abort_unless($actor->can('reservas.crear'), 403);
         $empresaId = $this->empresa->id($actor);
         if ($empresaId === null) {
-            return view('operacion.reservas.index', ['sinEmpresa' => true]);
+            return view('operacion.reservas.sedes', ['sinEmpresa' => true]);
         }
 
         return $this->tenant->conEmpresa($empresaId, fn () => $this->formulario($actor, $empresaId, null, $request));

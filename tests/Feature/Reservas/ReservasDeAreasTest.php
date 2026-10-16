@@ -387,7 +387,7 @@ class ReservasDeAreasTest extends TestCase
         $this->responder($this->crearUsuario($this->empresa), $this->aprobacion($r, 'departamento:'.$this->sistemas->id), 'aprobar')->assertForbidden();
         // Bandeja «Por aprobar»
         $this->flushSession();
-        $this->actingAs($this->julia)->get('/reservas/por-aprobar')->assertOk()->assertSee('Junta de jefes')->assertSee('Servicios de Sistemas');
+        $this->actingAs($this->julia)->get('/reservas/por-aprobar')->assertOk()->assertSee('Junta de jefes')->assertSee('Piden: Proyector');
 
         $this->responder($this->julieta, $this->aprobacion($r, 'area'), 'aprobar')->assertSessionHas('ok');
         $this->responder($this->sergio, $this->aprobacion($r, 'departamento:'.$this->cocina->id), 'aprobar');
@@ -599,7 +599,7 @@ class ReservasDeAreasTest extends TestCase
         $this->flushSession();
         $this->actingAs($this->solicitante)->get("/reservas/{$suya->id}")->assertOk();
         $this->get("/reservas/{$r->id}")->assertForbidden();
-        $this->get('/reservas')->assertOk()->assertSee('Ocupado');
+        $this->get('/reservas/calendario')->assertOk()->assertSee('Ocupado');
         $this->get('/reservas/mis-reservas')->assertOk()->assertSee('Junta de jefes', false);
         // Solo puede cancelar la suya
         $this->post("/reservas/{$r->id}/cancelar", ['motivo' => 'No es mía'])->assertForbidden();
@@ -684,6 +684,50 @@ class ReservasDeAreasTest extends TestCase
     }
 
     // ---------------------------------------------------- Pantallas e informes
+
+    public function test_la_entrada_son_fichas_de_sedes_y_luego_fichas_de_areas(): void
+    {
+        $this->reservaConServicios(['fecha' => '2026-11-02', 'hora_inicio' => '15:00', 'hora_fin' => '16:00']);
+        $this->enEmpresa(function () {
+            $this->actingAs($this->admin);
+            $espacios = app(AdministradorEspacios::class);
+            $torre = $espacios->crear($this->admin, $this->playa, null, Espacio::EDIFICIO, ['nombre' => 'Club'], false);
+            app(CatalogosReservas::class)->marcarReservable($this->admin, $espacios->crear($this->admin, $this->playa, $torre, Espacio::AREA_ESPECIFICA, ['nombre' => 'Terraza Coral'], false));
+        });
+        auth()->forgetGuards();
+
+        // Varias sedes: tarjetas de sedes con sus conteos (áreas, reservas de hoy y por aprobar)
+        $this->flushSession();
+        $sedes = $this->actingAs($this->admin)->get('/reservas')->assertOk()
+            ->assertSee('Elige una sede para ver sus áreas reservables.')->assertSee('Sede CEN')->assertSee('Sede PLA')
+            ->assertSee('2 áreas reservables')->assertSee('1 reserva hoy')->assertSee('1 por aprobar')->assertSee('Entrar a la sede')
+            ->assertSee('data-fichas="reservas-sedes"', false)->assertDontSee('Salón Maya');
+        $sedes->assertSee('class="pestanas"', false);
+
+        // La sede: fichas de áreas con aforo, montajes, tarifa o «Sin costo», responsable, próxima y hoy, y botones de ícono
+        $this->get('/reservas?sede='.$this->centro->id)->assertOk()
+            ->assertSee('data-fichas="reservas-areas"', false)->assertSee('Salón Maya')->assertSee('Sala Ceiba')
+            ->assertSee('Hasta 120 personas')->assertSee('Auditorio, Herradura (U)')->assertSee('Por hora $1,000.00 MXN')->assertSee('Sin costo')
+            ->assertSee('Aprueba '.$this->julieta->name)->assertSee('Hoy: 1')->assertSee('Próxima: Lunes 02/11 15:00')
+            ->assertSee('title="Reservar"', false)->assertSee('title="Calendario del área"', false)->assertSee('title="Configurar"', false)
+            ->assertSee(route('reservas.calendario', ['area' => $this->salon->id, 'sede' => $this->centro->id]))
+            ->assertDontSee('Terraza Coral');
+
+        // Con una sola sede visible se entra directo a sus fichas; sin «configurar» no hay botón Configurar
+        $this->flushSession();
+        $this->actingAs($this->rita)->get('/reservas')->assertOk()->assertSee('Salón Maya')->assertDontSee('Entrar a la sede')
+            ->assertDontSee('title="Configurar"', false)->assertSee('Nueva reserva');
+        $this->get('/reservas/calendario?area='.$this->salon->id)->assertOk()->assertSee('Calendario de reservas');
+
+        // Mis reservas, Por aprobar y Órdenes: fichas con botones de ícono
+        $this->get('/reservas/mis-reservas')->assertOk()->assertSee('data-fichas="reservas-mias"', false)->assertSee('title="Ver"', false);
+        $this->flushSession();
+        $this->actingAs($this->sergio)->get('/reservas/por-aprobar')->assertOk()->assertSee('data-fichas="reservas-aprobar"', false)
+            ->assertSee('title="Aprobar"', false)->assertSee('title="Rechazar o pedir cambio"', false)->assertSee('Esperando desde');
+        $this->flushSession();
+        $this->actingAs($this->admin)->get('/reservas/configuracion')->assertOk()->assertSee('Marcar como reservable')
+            ->assertSee('dialogoEditar-servicios')->assertSee('RESERVABLE');
+    }
 
     public function test_calendario_mis_reservas_informes_y_exportar(): void
     {

@@ -18,24 +18,24 @@
             <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> para ver sus reservas.</p>
         </div>
     @else
-        @include('operacion.reservas._nav', ['titulo' => 'Reservas de áreas', 'descripcion' => 'Elige un área y un horario libre; quien la aprueba y los departamentos se enteran solos.', 'actual' => 'calendario'])
+        @include('operacion.reservas._nav', ['titulo' => 'Calendario de reservas', 'descripcion' => 'Qué está ocupado por día, semana o mes; elige un área para verla sola.', 'icono' => 'bi-calendar3', 'actual' => 'calendario'])
 
         @php
             $q = fn (array $extra) => array_filter(array_merge(['vista' => $vista, 'fecha' => $fecha->toDateString(), 'sede' => $sede, 'area' => $area], $extra), fn ($v) => $v !== null && $v !== '');
         @endphp
 
-        <form method="GET" action="{{ route('reservas.index') }}" class="res-filtros" role="search">
+        <form method="GET" action="{{ route('reservas.calendario') }}" class="res-filtros" role="search">
             <input type="hidden" name="vista" value="{{ $vista }}">
             <input type="hidden" name="fecha" value="{{ $fecha->toDateString() }}">
             <div class="res-vistas" role="group" aria-label="Vista del calendario">
                 @foreach (\App\Http\Controllers\Operacion\Reservas\ReservaController::VISTAS as $clave => $nombre)
-                    <a href="{{ route('reservas.index', $q(['vista' => $clave])) }}" class="{{ $vista === $clave ? 'activa' : '' }}" @if ($vista === $clave) aria-current="true" @endif>{{ $nombre }}</a>
+                    <a href="{{ route('reservas.calendario', $q(['vista' => $clave])) }}" class="{{ $vista === $clave ? 'activa' : '' }}" @if ($vista === $clave) aria-current="true" @endif>{{ $nombre }}</a>
                 @endforeach
             </div>
             <div class="res-navegar">
-                <a href="{{ route('reservas.index', $q(['fecha' => $navegar['anterior']])) }}" aria-label="Anterior"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
-                <a href="{{ route('reservas.index', $q(['fecha' => $hoy])) }}" class="px-3">Hoy</a>
-                <a href="{{ route('reservas.index', $q(['fecha' => $navegar['siguiente']])) }}" aria-label="Siguiente"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+                <a href="{{ route('reservas.calendario', $q(['fecha' => $navegar['anterior']])) }}" aria-label="Anterior"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+                <a href="{{ route('reservas.calendario', $q(['fecha' => $hoy])) }}" class="px-3">Hoy</a>
+                <a href="{{ route('reservas.calendario', $q(['fecha' => $navegar['siguiente']])) }}" aria-label="Siguiente"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
                 <span class="res-titulo-periodo">{{ $navegar['titulo'] }}</span>
             </div>
             @if ($sedes->count() > 1)
@@ -94,7 +94,7 @@
                     @endphp
                     <div class="res-dia {{ $clave === $hoy ? 'hoy' : '' }} {{ $otroMes ? 'otro-mes' : '' }}">
                         <div class="res-dia-titulo">
-                            <a href="{{ route('reservas.index', $q(['vista' => 'dia', 'fecha' => $clave])) }}" class="text-reset text-decoration-none" aria-label="Ver el {{ \App\Http\Controllers\Operacion\Reservas\ReservaController::diaTexto($dia['fecha']) }} {{ $dia['fecha']->format('d/m') }}">
+                            <a href="{{ route('reservas.calendario', $q(['vista' => 'dia', 'fecha' => $clave])) }}" class="text-reset text-decoration-none" aria-label="Ver el {{ \App\Http\Controllers\Operacion\Reservas\ReservaController::diaTexto($dia['fecha']) }} {{ $dia['fecha']->format('d/m') }}">
                                 @if ($vista === 'mes'){{ $dia['fecha']->day }}@else{{ \App\Http\Controllers\Operacion\Reservas\ReservaController::diaTexto($dia['fecha']) }} {{ $dia['fecha']->format('d/m') }}@endif
                             </a>
                             @if ($reservable && $vista !== 'mes')

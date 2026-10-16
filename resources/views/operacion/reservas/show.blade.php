@@ -113,7 +113,7 @@
         </div>
 
         <div class="d-grid gap-3 align-content-start">
-            <section class="res-tarjeta" aria-labelledby="t-aprobaciones">
+            <section class="res-tarjeta" id="aprobaciones" aria-labelledby="t-aprobaciones">
                 <h3 id="t-aprobaciones">Aprobaciones</h3>
                 @if ($vigentes->isEmpty())
                     <p class="res-meta m-0"><i class="bi bi-lightning-charge" aria-hidden="true"></i> Confirmación inmediata: esta reserva no necesitó aprobación.</p>
@@ -128,8 +128,7 @@
                             @endif
                             @if ($relojes[$a->id] ?? null)
                                 @php $r = $relojes[$a->id]; @endphp
-                                <span class="reloj-vobo espera-{{ $r['nivel'] }} mt-1"><i class="bi {{ $r['nivel'] === 'normal' ? 'bi-clock' : 'bi-exclamation-triangle-fill' }}" aria-hidden="true"></i>
-                                    Esperando desde {{ $r['hace'] }} · <strong>{{ $r['etiqueta'] }}</strong></span>
+                                <span class="reloj-vobo espera-{{ $r['nivel'] }} mt-1"><i class="bi {{ $r['nivel'] === 'normal' ? 'bi-clock' : 'bi-exclamation-triangle-fill' }}" aria-hidden="true"></i> <span>Esperando desde {{ $r['hace'] }} · <strong>{{ $r['etiqueta'] }}</strong></span></span>
                             @endif
                         </div>
                         <div class="text-end">
