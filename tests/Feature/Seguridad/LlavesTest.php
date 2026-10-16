@@ -452,4 +452,86 @@ class LlavesTest extends TestCase
     {
         $this->actingAs($this->admin)->get('/')->assertOk()->assertSee(route('llaves.index'));
     }
+
+    // ------------------------------------- Lugares bajo demanda (hoteles grandes)
+
+    public function test_la_pantalla_no_trae_los_lugares_y_el_dialogo_los_pide_al_abrirlo(): void
+    {
+        $torre = $this->espacio($this->centro, Espacio::EDIFICIO, 'Torre A');
+        $piso = $this->espacio($this->centro, Espacio::AREA, 'Piso 3', $torre);
+        $cuarto = $this->espacio($this->centro, Espacio::AREA_ESPECIFICA, 'Cuarto 305', $piso);
+        $viejo = $this->espacio($this->centro, Espacio::AREA_ESPECIFICA, 'Cuarto 399', $piso);
+        $olvidado = $this->espacio($this->centro, Espacio::AREA_ESPECIFICA, 'Cuarto 398', $piso);
+        $this->espacio($this->playa, Espacio::EDIFICIO, 'Torre Playa');
+        $this->enEmpresa(fn () => GrupoEspacio::create(['sede_id' => $this->centro->id, 'nombre' => 'Ala norte']));
+        $l = $this->llave('HDC-399', ['alcance' => 'area']);
+        $this->enEmpresa(function () use ($l, $viejo, $olvidado) {
+            $l->espacios()->attach($viejo->id);
+            Espacio::whereKey([$viejo->id, $olvidado->id])->update(['activo' => false]);
+        });
+
+        // La pantalla solo lleva la dirección de los lugares de cada diálogo (no miles de casillas)
+        $pagina = $this->actingAs($this->admin)->get('/llaves')->assertOk()
+            ->assertSee('data-cargar-url="'.e(route('llaves.lugares', ['modo' => 'nueva'])).'"', false)
+            ->assertSee('data-cargar-url="'.e(route('llaves.lugares', ['modo' => 'editar'])).'"', false)
+            ->assertSee('Cargando lugares…')
+            ->assertDontSee('name="espacios[]"', false)->assertDontSee('name="grupos[]"', false)->assertDontSee('Cuarto 305')->getContent();
+        // La edición sigue llevando los lugares de cada llave para marcarlos al cargar
+        $this->assertStringContainsString('"espacios":['.$viejo->id.']', html_entity_decode($pagina));
+
+        // Los lugares: mismas casillas, cascada y secciones; sin marcar; los desactivados solo si alguna llave los tiene
+        $lugares = $this->get(route('llaves.lugares', ['modo' => 'nueva']))->assertOk()
+            ->assertSee('id="nueva_ll_buscar_area"', false)->assertSee('1. Zona / Edificio')->assertSee('3. Cuartos / áreas')
+            ->assertSee('Cuarto 305 (Torre A / Piso 3)')->assertSee('Cuarto 399 (Torre A / Piso 3) (desactivado)')->assertDontSee('Cuarto 398')
+            ->assertSee('Torre Playa')->assertSee('Ala norte')->assertSee('name="grupos[]"', false)
+            ->assertDontSee('<html', false)->getContent();
+        $this->assertStringContainsString('data-edificio="'.$torre->id.'" data-piso="'.$piso->id.'"', $lugares);
+        $this->assertStringNotContainsString(' checked', $lugares);
+        $this->get(route('llaves.lugares', ['modo' => 'editar']))->assertOk()->assertSee('id="editar_ll_buscar_area"', false)->assertDontSee('id="nueva_ll_buscar_area"', false);
+        $this->assertSame(1, substr_count($lugares, 'value="'.$cuarto->id.'"'));
+    }
+
+    public function test_los_lugares_respetan_permiso_alcance_de_sede_y_empresa(): void
+    {
+        $this->espacio($this->centro, Espacio::EDIFICIO, 'Torre Centro');
+        $this->espacio($this->playa, Espacio::EDIFICIO, 'Torre Playa');
+
+        // Alcance de sede: solo los lugares de su sede
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro);
+        $this->actingAs($jefe)->get(route('llaves.lugares', ['modo' => 'nueva']))->assertOk()->assertSee('Torre Centro')->assertDontSee('Torre Playa');
+        $this->get(route('llaves.lugares', ['modo' => 'editar']))->assertOk()->assertSee('Torre Centro')->assertDontSee('Torre Playa');
+
+        // Quien solo consulta no recibe la lista; sin permiso de llaves, tampoco
+        $this->actingAs($this->crearUsuario($this->empresa, 'Agente', $this->centro))->get(route('llaves.lugares', ['modo' => 'nueva']))->assertForbidden();
+        $this->get(route('llaves.lugares', ['modo' => 'editar']))->assertForbidden();
+        $this->actingAs($this->crearUsuario($this->empresa))->get(route('llaves.lugares'))->assertForbidden();
+
+        // Otra empresa: nunca ve los lugares de esta
+        $ajeno = $this->crearUsuario($this->crearEmpresa('Hotel Otro'), 'Administrador');
+        $this->actingAs($ajeno)->get(route('llaves.lugares', ['modo' => 'nueva']))->assertOk()->assertDontSee('Torre Centro')->assertDontSee('Torre Playa');
+    }
+
+    public function test_con_error_el_dialogo_vuelve_con_sus_lugares_marcados(): void
+    {
+        $torre = $this->espacio($this->centro, Espacio::EDIFICIO, 'Torre A');
+        $piso = $this->espacio($this->centro, Espacio::AREA, 'Piso 3', $torre);
+        $cuarto = $this->espacio($this->centro, Espacio::AREA_ESPECIFICA, 'Cuarto 305', $piso);
+
+        // Nueva: la lista viene armada con lo elegido; Editar sigue pidiéndola al abrir
+        $this->actingAs($this->admin)->from('/llaves')->post('/llaves', $this->datos(['_dialogo' => 'crear', 'descripcion' => '', 'alcance' => 'area', 'espacios' => [$cuarto->id]]))
+            ->assertRedirect('/llaves')->assertSessionHasErrors('descripcion');
+        $pagina = $this->get('/llaves')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/id="dialogoNuevaLlave"[^>]*data-abrir-al-cargar/', $pagina);
+        $this->assertMatchesRegularExpression('/id="nueva_ll_buscar_area".*name="espacios\[\]" value="'.$cuarto->id.'" checked/s', $pagina);
+        $this->assertStringContainsString('data-cargar-url="'.e(route('llaves.lugares', ['modo' => 'editar'])).'"', $pagina);
+        $this->assertStringNotContainsString('data-cargar-url="'.e(route('llaves.lugares', ['modo' => 'nueva'])).'"', $pagina);
+
+        // Editar: igual, con la llave que se estaba editando
+        $l = $this->llave('HDC-305', ['alcance' => 'area']);
+        $this->from('/llaves')->put("/llaves/{$l->id}", $this->datos(['_dialogo' => 'editar-'.$l->id, 'nomenclatura' => 'HDC-305', 'descripcion' => '', 'alcance' => 'area', 'espacios' => [$cuarto->id]]))
+            ->assertSessionHasErrors('descripcion');
+        $pagina = $this->get('/llaves')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/id="editar_ll_buscar_area".*name="espacios\[\]" value="'.$cuarto->id.'" checked/s', $pagina);
+        $this->assertStringContainsString('data-cargar-url="'.e(route('llaves.lugares', ['modo' => 'nueva'])).'"', $pagina);
+    }
 }

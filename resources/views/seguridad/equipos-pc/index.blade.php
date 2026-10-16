@@ -23,8 +23,6 @@
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
             $conteoActivos = $equipos->where('activo', true)->count();
-            $zonas = $nodos->whereIn('nivel', [\App\Models\Espacio::EDIFICIO, \App\Models\Espacio::AREA]);
-            $areas = $nodos->where('nivel', \App\Models\Espacio::AREA_ESPECIFICA);
         @endphp
 
         <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
@@ -242,26 +240,24 @@
                                placeholder="Ej: EXT-01" value="{{ $trasError ? old('numero_serie') : '' }}"
                                data-duplicado="{{ route('equipos_pc.duplicado') }}" data-duplicado-con="sede_id">
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label class="campo-etiqueta" for="{{ $modo }}_epc_zona">Zona / Piso <span class="text-lowercase fw-normal">(opcional)</span></label>
-                                <select id="{{ $modo }}_epc_zona" name="zona_id" class="campo" data-epc-zona>
-                                    <option value="" data-por-defecto>-- Elige sede primero --</option>
-                                    @foreach ($zonas as $n)
-                                        <option value="{{ $n['id'] }}" data-sede="{{ $n['sede_id'] }}" @selected($valor('zona_id') === (string) $n['id']) @unless ($n['activo']) data-inactivo @endunless>{{ $n['texto'] }}{{ $n['activo'] ? '' : ' (desactivada)' }}</option>
-                                    @endforeach
-                                </select>
+                        @if ($conUbicaciones[$modo])
+                            @include('seguridad.equipos-pc._ubicaciones', ['modo' => $modo, 'nodos' => $nodos, 'valor' => $valor])
+                        @else
+                            {{-- Las listas se piden al abrir el diálogo (miles de habitaciones no viajan en cada visita) --}}
+                            <div data-cargar-url="{{ route('equipos_pc.ubicaciones', ['modo' => $modo]) }}" data-cargar-sin-enfocar
+                                 @if ($previo !== []) data-seleccion="{{ json_encode(['zona_id' => $previo['zona_id'] ?? null, 'area_especifica_id' => $previo['area_especifica_id'] ?? null]) }}" @endif>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="campo-etiqueta" for="{{ $modo }}_epc_zona">Zona / Piso <span class="text-lowercase fw-normal">(opcional)</span></label>
+                                        <select id="{{ $modo }}_epc_zona" class="campo" disabled><option>Cargando…</option></select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="campo-etiqueta" for="{{ $modo }}_epc_area">Área Específica <span class="text-lowercase fw-normal">(opcional)</span></label>
+                                        <select id="{{ $modo }}_epc_area" class="campo" disabled><option>Cargando…</option></select>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="campo-etiqueta" for="{{ $modo }}_epc_area">Área Específica <span class="text-lowercase fw-normal">(opcional)</span></label>
-                                <select id="{{ $modo }}_epc_area" name="area_especifica_id" class="campo" data-epc-area>
-                                    <option value="" data-por-defecto>-- Opcional --</option>
-                                    @foreach ($areas as $n)
-                                        <option value="{{ $n['id'] }}" data-sede="{{ $n['sede_id'] }}" data-ancestros="{{ implode(' ', $n['ancestros']) }}" @selected($valor('area_especifica_id') === (string) $n['id']) @unless ($n['activo']) data-inactivo @endunless>{{ $n['nombre'] }}{{ $n['activo'] ? '' : ' (desactivada)' }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
+                        @endif
 
                         <label class="campo-etiqueta" for="{{ $modo }}_epc_ref">Referencia <span class="text-lowercase fw-normal">(opcional, para encontrarlo rápido)</span></label>
                         <input type="text" id="{{ $modo }}_epc_ref" name="referencia" class="campo" maxlength="150" placeholder="Ej: Junto al elevador de servicio" value="{{ $trasError ? old('referencia') : '' }}">

@@ -2,6 +2,8 @@
     Alta y edición de llave (SEGCAT: dialogLlave / llave_modal_editar.php).
     La edición se llena con data-valores (editar-registro) y el bloque
     "Catálogo de llaves" de plataforma.js: horarios, responsable, lugares.
+    Los lugares (_lugares) se piden al abrir el diálogo (data-cargar-url); solo
+    vienen ya armados cuando el formulario regresa con errores.
 --}}
 @php
     $esNueva = $modo === 'nueva';
@@ -20,29 +22,6 @@
         $horarios[] = ['nombre' => '', 'inicio' => '', 'fin' => ''];
     }
     $responsableTexto = $trasError && $responsableAnterior ? $responsableAnterior->nombreCompleto().' · Núm. '.$responsableAnterior->num_empleado : null;
-    $etiquetaLugar = function ($e) {
-        return match ($e->nivel) {
-            \App\Models\Espacio::AREA => $e->nombre.($e->padre ? ' ('.$e->padre->nombre.')' : ''),
-            \App\Models\Espacio::AREA_ESPECIFICA => $e->nombre.($e->padre ? ' ('.trim(($e->padre->padre?->nombre ? $e->padre->padre->nombre.' / ' : '').$e->padre->nombre).')' : ''),
-            default => $e->nombre,
-        };
-    };
-    $cajas = [
-        'zona' => ['Edificio(s) / Zona(s)', '(cada uno completo)', \App\Models\Espacio::EDIFICIO],
-        'piso' => ['Piso(s)', '(pueden ser de distintos edificios)', \App\Models\Espacio::AREA],
-        'area' => ['Área Específica / Cuarto(s)', '(cualquiera, sin importar edificio o piso)', \App\Models\Espacio::AREA_ESPECIFICA],
-    ];
-    // Ronda 5 (LL-02): selección en cascada Zona/Edificio → Piso → Área específica (como las píldoras de SEGCAT)
-    $edificios = $catalogos['espacios']->where('nivel', \App\Models\Espacio::EDIFICIO)->where('activo', true);
-    $pisos = $catalogos['espacios']->where('nivel', \App\Models\Espacio::AREA)->where('activo', true);
-    $cascada = function ($e) {
-        $padre = $e->padre;
-        return match (true) {
-            $padre === null => ['', ''],
-            $padre->nivel === \App\Models\Espacio::AREA => [(string) ($padre->padre_id ?? ''), (string) $padre->id],
-            default => [(string) $padre->id, ''],
-        };
-    };
 @endphp
 <dialog id="{{ $esNueva ? 'dialogoNuevaLlave' : 'dialogoEditarLlave' }}" class="dialogo ancho dialogo-llave" aria-labelledby="titulo-ll-{{ $modo }}"
         @if ($trasError) data-abrir-al-cargar @endif>
@@ -100,64 +79,16 @@
             <div class="caja-lugares" data-llave-lugares="global" hidden>
                 <p class="campo-ayuda m-0"><i class="bi bi-globe2" aria-hidden="true"></i> Llave maestra: abre todo en la sede elegida.</p>
             </div>
-            @foreach ($cajas as $alcance => [$titulo, $nota, $nivel])
-                <div class="caja-lugares" data-llave-lugares="{{ $alcance }}" hidden>
-                    <label class="campo-etiqueta" for="{{ $p }}buscar_{{ $alcance }}">{{ $titulo }} <span class="text-lowercase fw-normal">{{ $nota }}</span></label>
-                    <p class="campo-ayuda mb-2" data-lugares-sin-sede><i class="bi bi-info-circle" aria-hidden="true"></i> Elige la Sede arriba primero.</p>
-                    @if ($alcance !== 'zona')
-                        <div class="cascada-lugares" data-cascada>
-                            <div class="cascada-paso" data-cascada-paso="edificio">
-                                <span class="cascada-titulo">1. Zona / Edificio <span class="fw-normal">(toca uno o varios para ver solo sus {{ $alcance === 'piso' ? 'pisos' : 'pisos y cuartos' }})</span></span>
-                                <div class="cascada-pildoras">
-                                    @foreach ($edificios as $ed)
-                                        <label class="pildora-cascada" data-pildora-edificio data-sede="{{ $ed->sede_id }}">
-                                            <input type="checkbox" value="{{ $ed->id }}"> {{ $ed->nombre }}
-                                        </label>
-                                    @endforeach
-                                </div>
-                            </div>
-                            @if ($alcance === 'area')
-                                <div class="cascada-paso" data-cascada-paso="piso">
-                                    <span class="cascada-titulo">2. Piso <span class="fw-normal">(opcional: acota todavía más)</span></span>
-                                    <div class="cascada-pildoras">
-                                        @foreach ($pisos as $pi)
-                                            <label class="pildora-cascada" data-pildora-piso data-sede="{{ $pi->sede_id }}" data-edificio="{{ $pi->padre_id }}">
-                                                <input type="checkbox" value="{{ $pi->id }}"> {{ $pi->nombre }}@if ($pi->padre) <span class="text-muted fw-normal">({{ $pi->padre->nombre }})</span>@endif
-                                            </label>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endif
-                            <span class="cascada-titulo">{{ $alcance === 'area' ? '3. Cuartos / áreas' : '2. Pisos' }} <span class="fw-normal">(marca los que abre)</span></span>
-                        </div>
-                    @endif
-                    <input type="search" id="{{ $p }}buscar_{{ $alcance }}" class="campo campo-buscar-lugar mb-2" placeholder="Buscar por nombre..." data-buscar-lugar>
-                    <div class="caja-checks lista-lugares">
-                        @foreach ($catalogos['espacios']->where('nivel', $nivel) as $e)
-                            @php [$deEdificio, $dePiso] = $cascada($e); @endphp
-                            <label class="fila-check" data-lugar data-sede="{{ $e->sede_id }}" data-nombre="{{ mb_strtolower($etiquetaLugar($e)) }}" @unless ($e->activo) data-inactivo @endunless
-                                   data-edificio="{{ $deEdificio }}" data-piso="{{ $dePiso }}">
-                                <input type="checkbox" name="espacios[]" value="{{ $e->id }}" @checked(in_array($e->id, $marcados, true))>
-                                {{ $etiquetaLugar($e) }}{{ $e->activo ? '' : ' (desactivado)' }}
-                            </label>
-                        @endforeach
-                        <p class="campo-ayuda m-0 p-1" data-lugares-vacio hidden><i class="bi bi-info-circle" aria-hidden="true"></i> Esta sede no tiene lugares de este tipo en <strong>Zonas y edificios</strong>. Agrégalos ahí o elige el alcance «Otra».</p>
+            @if ($catalogos['lugares'] !== null && $trasError)
+                @include('seguridad.llaves._lugares', ['lugares' => $catalogos['lugares']])
+            @else
+                {{-- Los lugares se piden al abrir el diálogo (miles de habitaciones no viajan en cada visita) --}}
+                <div data-cargar-url="{{ route('llaves.lugares', ['modo' => $esNueva ? 'nueva' : 'editar']) }}" data-cargar-sin-enfocar>
+                    <div class="caja-lugares" data-lugares-cargando hidden>
+                        <p class="campo-ayuda m-0"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Cargando lugares…</p>
                     </div>
                 </div>
-            @endforeach
-            <div class="caja-lugares" data-llave-lugares="seccion" hidden>
-                <span class="campo-etiqueta">Sección(es) <span class="text-lowercase fw-normal">(grupos ya armados en Zonas y edificios)</span></span>
-                <p class="campo-ayuda mb-2" data-lugares-sin-sede><i class="bi bi-info-circle" aria-hidden="true"></i> Elige la Sede arriba primero.</p>
-                <div class="caja-checks lista-lugares">
-                    @foreach ($catalogos['grupos'] as $g)
-                        <label class="fila-check" data-lugar data-sede="{{ $g->sede_id }}" data-nombre="{{ mb_strtolower($g->nombre) }}" @unless ($g->activo) data-inactivo @endunless>
-                            <input type="checkbox" name="grupos[]" value="{{ $g->id }}" @checked(in_array($g->id, $gruposMarcados, true))>
-                            {{ $g->nombre }} <span class="text-muted small">({{ $g->espacios_count }} hab.)</span>{{ $g->activo ? '' : ' (desactivada)' }}
-                        </label>
-                    @endforeach
-                    <p class="campo-ayuda m-0 p-1" data-lugares-vacio hidden><i class="bi bi-info-circle" aria-hidden="true"></i> Esta sede no tiene secciones. Créalas en <strong>Zonas y edificios</strong>, pestaña Secciones.</p>
-                </div>
-            </div>
+            @endif
             <div class="caja-lugares" data-llave-lugares="otra" hidden>
                 <label class="campo-etiqueta" for="{{ $p }}otra">Especificar Espacio <span class="text-lowercase fw-normal">(no catalogado en Zonas y edificios)</span></label>
                 <input type="text" id="{{ $p }}otra" name="alcance_otro" class="campo mb-0" maxlength="150" placeholder="Ej: Cuarto de máquinas, Reja de mantenimiento..." value="{{ $valor('alcance_otro') }}" data-llave-otra>

@@ -126,7 +126,10 @@ class AjustesRonda5Test extends TestCase
         $pisoB = $this->espacio(Espacio::AREA, 'Piso 1', $torreB);
         $hab = $this->espacio(Espacio::AREA_ESPECIFICA, 'A201', $piso2);
 
-        $pagina = $this->actingAs($this->admin)->get('/llaves')->assertOk()
+        // Los lugares se piden al abrir el diálogo (llaves.lugares); la pantalla solo lleva su dirección
+        $this->actingAs($this->admin)->get('/llaves')->assertOk()->assertSee('data-cargar-url="'.e(route('llaves.lugares', ['modo' => 'nueva'])).'"', false)
+            ->assertDontSee('1. Zona / Edificio');
+        $pagina = $this->actingAs($this->admin)->get(route('llaves.lugares', ['modo' => 'nueva']))->assertOk()
             ->assertSee('1. Zona / Edificio')->assertSee('2. Piso')->assertSee('3. Cuartos / áreas')
             ->getContent();
         // Píldoras: edificios de la sede y pisos con su edificio; cada lugar sabe su edificio y su piso

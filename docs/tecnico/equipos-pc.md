@@ -23,6 +23,7 @@ Desde QA 4 es un **módulo propio**, `equipos_pc` («Equipos de Protección Civi
 | POST | `/equipos-pc` (`_siguiente=1`: «Guardar y capturar siguiente») | `equipos_pc.store` | `equipos_pc.crear` (sede de su alcance) |
 | PUT | `/equipos-pc/{id}` | `equipos_pc.update` | `equipos_pc.editar` |
 | PATCH | `/equipos-pc/{id}/desactivar` · `/reactivar` | `equipos_pc.desactivar` · `.reactivar` | `equipos_pc.eliminar` |
+| GET | `/equipos-pc/ubicaciones?modo=nuevo\|editar` | `equipos_pc.ubicaciones` | `equipos_pc.ver` + `equipos_pc.crear` (nuevo) o `equipos_pc.editar` (editar); listas «Zona / Piso» y «Área Específica» del diálogo |
 | GET | `/equipos-pc/{id}/etiqueta` | `equipos_pc.etiqueta` | `equipos_pc.imprimir` |
 | GET | `/equipos-pc/{id}/qr` (SVG) | `equipos_pc.qr` | `equipos_pc.ver` |
 | GET | `/equipos-pc/{id}/ir` | `equipos_pc.ir` | `equipos_pc.ver` (a dónde lleva el QR / la etiqueta NFC) |
@@ -83,3 +84,15 @@ El **Núm. de Serie / ID** avisa mientras se escribe si ya existe **en la sede e
 ## Mejoras padrones (ADR-0015)
 
 Ver [mejoras-padrones.md](mejoras-padrones.md): «Clave de la etiqueta» y última revisión de los recorridos en la tarjeta.
+
+## Ubicaciones bajo demanda (hoteles grandes)
+
+Con miles de habitaciones, las listas «Zona / Piso» y «Área Específica» de «Nuevo Equipo» y «Editar Equipo» pesaban ~480 KB **cada diálogo** (la de áreas ~450 KB) y viajaban en cada visita a `/equipos-pc` (1.1 MB con 3,000 habitaciones). Ahora:
+
+- Cada diálogo trae un contenedor `data-cargar-url="…/equipos-pc/ubicaciones?modo=nuevo|editar"` con las dos listas deshabilitadas («Cargando…»); `plataforma.js` (`cargarBajoDemanda`, el mismo mecanismo de Reservas y Llaves) pide la vista parcial `seguridad/equipos-pc/_ubicaciones` **una vez** al abrirlo.
+- `EquipoPcController::ubicaciones` usa las mismas sedes que la pantalla (las de los equipos visibles y las que puede elegir para crear o editar) y `Ubicaciones::nodos`; pide `equipos_pc.ver` y `equipos_pc.crear` o `equipos_pc.editar` según el modo (403 si no). Nada llega elegido.
+- Al llegar (`contenido-cargado`) se elige la zona y el área del equipo que se edita (de sus `data-valores`, guardados en `data-seleccion` si la lista aún no llegaba) o, en «Guardar y capturar siguiente», las del anterior (el servidor las pone en `data-seleccion`), y se acomoda la cascada sede → zona → área como siempre.
+- Guardar antes de que llegue la lista espera y envía al llegar (para no borrar la ubicación de un equipo). Con **error de validación**, ese diálogo trae las listas ya armadas con `old()`, como antes.
+- La pantalla sigue calculando las ubicaciones para el texto de cada tarjeta y sus valores de edición (`Ubicaciones::nodos`, una consulta, sin búsquedas cuadráticas).
+- Medido con 3,000 habitaciones: `/equipos-pc` 1,134 KB → 173 KB; cada lista ~330 KB, solo al abrir el diálogo. Pruebas en `RecorridosPcTest` («Ubicaciones bajo demanda»).
+
