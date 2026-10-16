@@ -452,6 +452,12 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudieron avanzar los paquetes de traslado (revisa despliegue.log)"
 fi
 # --- Fin Respaldos y traslado ---
+# --- Privacidad: conservación de datos personales (solo empresas que la encendieron) y plazos de solicitudes ARCO, una vez al día después de las 2:00 ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:privacidad'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:privacidad --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudo revisar la conservación de datos y las solicitudes ARCO (revisa despliegue.log)"
+fi
+# --- Fin Privacidad ---
 # --- Reservas de áreas: aprobaciones que tardan (recordatorio y aviso al responsable general; horas por empresa en Configuración → Reservas de áreas) ---
 if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:reservas-pendientes'); then
   (cd "$APP/actual" && "${P[@]}" artisan plataforma:reservas-pendientes --si-toca >> "$LOG" 2>&1) \

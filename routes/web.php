@@ -8,13 +8,17 @@ use App\Http\Controllers\Administracion\EmpresaActivaController;
 use App\Http\Controllers\Administracion\EmpresaController;
 use App\Http\Controllers\Administracion\IdentidadController;
 use App\Http\Controllers\Administracion\PermisoController;
+use App\Http\Controllers\Administracion\PrivacidadController;
 use App\Http\Controllers\Administracion\RolController;
 use App\Http\Controllers\Administracion\SedeController;
+use App\Http\Controllers\Administracion\SolicitudesArcoController;
 use App\Http\Controllers\Administracion\SuscripcionesController;
 use App\Http\Controllers\Administracion\TrasladoController;
 use App\Http\Controllers\Administracion\UsuarioController;
+use App\Http\Controllers\Auth\DosPasosController;
 use App\Http\Controllers\Auth\RecuperacionController;
 use App\Http\Controllers\Auth\SesionController;
+use App\Http\Controllers\Cuenta\DosPasosController as CuentaDosPasosController;
 use App\Http\Controllers\Cuenta\MiCuentaController;
 use App\Http\Controllers\Cuenta\MiSuscripcionController;
 use App\Http\Controllers\IdentificacionController;
@@ -37,6 +41,7 @@ use App\Http\Controllers\PanelController;
 use App\Http\Controllers\Publico\EmpleosController;
 use App\Http\Controllers\Publico\PagoWebhookController;
 use App\Http\Controllers\Publico\PlanesController;
+use App\Http\Controllers\Publico\PrivacidadController as PublicoPrivacidadController;
 use App\Http\Controllers\Publico\PwaController;
 use App\Http\Controllers\RecursosHumanos\AutorizacionController;
 use App\Http\Controllers\RecursosHumanos\CandidatoController;
@@ -68,6 +73,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/olvide-contrasena', [RecuperacionController::class, 'solicitar'])->middleware('throttle:5,1')->name('contrasena.solicitar');
     Route::get('/restablecer-contrasena/{token}', [RecuperacionController::class, 'restablecer'])->where('token', '[A-Za-z0-9]+')->name('contrasena.restablecer');
     Route::post('/restablecer-contrasena', [RecuperacionController::class, 'guardar'])->middleware('throttle:10,1')->name('contrasena.guardar');
+    // Verificación en dos pasos (docs/tecnico/dos-pasos.md): el código después de la contraseña; límite por equipo y por cuenta
+    Route::get('/login/verificacion', [DosPasosController::class, 'mostrar'])->name('login.dos-pasos');
+    Route::post('/login/verificacion', [DosPasosController::class, 'verificar'])->middleware('throttle:10,1')->name('login.dos-pasos.verificar');
+    Route::post('/login/verificacion/cancelar', [DosPasosController::class, 'cancelar'])->name('login.dos-pasos.cancelar');
 });
 
 // Seguridad: el cierre por inactividad es POST (con token); el GET solo muestra el aviso
@@ -95,6 +104,11 @@ Route::middleware('auth')->group(function () {
     Route::put('/mi-cuenta/contrasena', [MiCuentaController::class, 'contrasena'])->middleware('throttle:10,1')->name('mi-cuenta.contrasena');
     // Mejoras estructura (ADR-0016): cada persona silencia los avisos que no quiere recibir
     Route::put('/mi-cuenta/avisos', [MiCuentaController::class, 'avisos'])->name('mi-cuenta.avisos');
+    // Verificación en dos pasos (docs/tecnico/dos-pasos.md): activar, códigos de respaldo y quitarla (la propia cuenta, sin permiso)
+    Route::get('/mi-cuenta/dos-pasos', [CuentaDosPasosController::class, 'mostrar'])->name('mi-cuenta.dos-pasos');
+    Route::post('/mi-cuenta/dos-pasos', [CuentaDosPasosController::class, 'activar'])->middleware('throttle:dos-pasos-cuenta')->name('mi-cuenta.dos-pasos.activar');
+    Route::post('/mi-cuenta/dos-pasos/codigos', [CuentaDosPasosController::class, 'codigos'])->middleware('throttle:dos-pasos-cuenta')->name('mi-cuenta.dos-pasos.codigos');
+    Route::delete('/mi-cuenta/dos-pasos', [CuentaDosPasosController::class, 'desactivar'])->middleware('throttle:dos-pasos-cuenta')->name('mi-cuenta.dos-pasos.desactivar');
 
     // Administración: roles y permisos (cada pantalla exige su "modulo.accion")
     Route::post('/empresa-activa', EmpresaActivaController::class)->name('empresa-activa');
@@ -108,6 +122,20 @@ Route::middleware('auth')->group(function () {
     Route::put('/permisos/{rol}/perfil', [PermisoController::class, 'perfil'])->name('permisos.perfil');
     Route::put('/empresas/{empresa}/modulos', [EmpresaController::class, 'modulos'])->name('empresas.modulos');
     Route::put('/configuracion/auditoria', [ConfiguracionController::class, 'auditoria'])->name('configuracion.auditoria');
+    // Privacidad (docs/tecnico/privacidad.md): conservación, versiones del aviso y bandeja de solicitudes ARCO
+    Route::put('/configuracion/privacidad', [PrivacidadController::class, 'conservacion'])->name('privacidad.conservacion');
+    Route::post('/configuracion/privacidad/aviso', [PrivacidadController::class, 'publicarAviso'])->name('privacidad.aviso.publicar');
+    Route::get('/configuracion/privacidad/aviso/{version}', [PrivacidadController::class, 'version'])->whereNumber('version')->name('privacidad.aviso.version');
+    Route::get('/solicitudes-arco', [SolicitudesArcoController::class, 'index'])->name('arco.index');
+    Route::get('/solicitudes-arco/{solicitud}', [SolicitudesArcoController::class, 'show'])->whereNumber('solicitud')->name('arco.show');
+    Route::patch('/solicitudes-arco/{solicitud}/verificar', [SolicitudesArcoController::class, 'verificar'])->whereNumber('solicitud')->name('arco.verificar');
+    Route::post('/solicitudes-arco/{solicitud}/exportar', [SolicitudesArcoController::class, 'exportar'])->whereNumber('solicitud')->name('arco.exportar');
+    Route::get('/solicitudes-arco/{solicitud}/descargar', [SolicitudesArcoController::class, 'descargar'])->whereNumber('solicitud')->name('arco.descargar');
+    Route::post('/solicitudes-arco/{solicitud}/eliminar', [SolicitudesArcoController::class, 'eliminar'])->whereNumber('solicitud')->name('arco.eliminar');
+    Route::post('/solicitudes-arco/{solicitud}/responder', [SolicitudesArcoController::class, 'responder'])->whereNumber('solicitud')->name('arco.responder');
+    Route::patch('/solicitudes-arco/{solicitud}/canalizar', [SolicitudesArcoController::class, 'canalizar'])->whereNumber('solicitud')->name('arco.canalizar');
+    // Cuentas y seguridad: a quién se exige la verificación en dos pasos
+    Route::put('/configuracion/dos-pasos', [ConfiguracionController::class, 'dosPasos'])->name('configuracion.dos-pasos');
     // Fin Mejoras estructura
     Route::get('/empresas', [EmpresaController::class, 'index'])->name('empresas.index');
     Route::post('/empresas', [EmpresaController::class, 'store'])->name('empresas.store');
@@ -245,6 +273,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/usuarios/{usuario}', [UsuarioController::class, 'update'])->name('usuarios.update');
     Route::patch('/usuarios/{usuario}/estado', [UsuarioController::class, 'estado'])->name('usuarios.estado');
     Route::patch('/usuarios/{usuario}/desbloquear', [UsuarioController::class, 'desbloquear'])->name('usuarios.desbloquear');
+    // Verificación en dos pasos: restablecerla a quien perdió su teléfono (mismo permiso y alcance que desbloquear)
+    Route::patch('/usuarios/{usuario}/dos-pasos', [UsuarioController::class, 'restablecerDosPasos'])->name('usuarios.dos-pasos');
     Route::post('/usuarios/{usuario}/restablecer', [UsuarioController::class, 'restablecer'])->name('usuarios.restablecer');
 
     // Informes (ADR-0017): Tablero, Bitácora general del día, Tendencias e Informe ejecutivo (solo lectura)
@@ -719,6 +749,19 @@ Route::controller(EmpleosController::class)->group(function () {
     Route::post('/empleos/{empresa}/{vacante}/postular', 'postular')->where(['empresa' => '[a-z0-9-]{3,90}', 'vacante' => '[a-z0-9]{10}'])->middleware('throttle:empleos-postular')->name('empleos.guardar');
 });
 // Fin Público: Bolsa de trabajo
+
+// Público: privacidad (SIN sesión; ver docs/tecnico/privacidad.md): aviso de cada empresa con su versión,
+// formulario ARCO con campo trampa y límite por equipo, y confirmación del correo con enlace de un solo uso (72 h)
+Route::controller(PublicoPrivacidadController::class)->group(function () {
+    Route::get('/privacidad/solicitud', 'formulario')->middleware('throttle:privacidad-ver')->name('privacidad.solicitud');
+    Route::post('/privacidad/solicitud', 'guardar')->middleware('throttle:privacidad-enviar')->name('privacidad.solicitud.guardar');
+    Route::get('/privacidad/verificar/{token}', 'verificar')->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:privacidad-ver')->name('privacidad.verificar');
+    Route::post('/privacidad/verificar/{token}', 'confirmar')->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:privacidad-confirmar')->name('privacidad.verificar.confirmar');
+    Route::get('/privacidad/{codigo}', 'aviso')->where('codigo', '[a-z0-9]{12}')->middleware('throttle:privacidad-ver')->name('privacidad.aviso');
+    Route::get('/privacidad/{codigo}/solicitud', 'formulario')->where('codigo', '[a-z0-9]{12}')->middleware('throttle:privacidad-ver')->name('privacidad.empresa.solicitud');
+    Route::post('/privacidad/{codigo}/solicitud', 'guardar')->where('codigo', '[a-z0-9]{12}')->middleware('throttle:privacidad-enviar')->name('privacidad.empresa.solicitud.guardar');
+});
+// Fin Público: privacidad
 
 // Público: página de planes (SIN sesión; solo si está publicada; ver docs/tecnico/catalogo-comercial.md)
 // Limitadores con nombre (AppServiceProvider): consultar y enviar la solicitud llevan contadores separados por IP

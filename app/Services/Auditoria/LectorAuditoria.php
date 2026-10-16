@@ -178,6 +178,17 @@ class LectorAuditoria
         'orden_lista' => 'Orden de servicio lista', 'area_reservable' => 'Área marcada como reservable', 'area_no_reservable' => 'Área ya no reservable',
         'area_configurada' => 'Cambio de la configuración del área', 'catalogo_creado' => 'Alta en el catálogo', 'catalogo_actualizado' => 'Edición en el catálogo',
         'catalogo_baja' => 'Baja en el catálogo', 'catalogo_reactivado' => 'Reactivación en el catálogo',
+        // Verificación en dos pasos (docs/tecnico/dos-pasos.md)
+        'dos_pasos' => 'Cambio de a quién se exige la verificación en dos pasos', 'dos_pasos_activada' => 'Verificación en dos pasos activada',
+        'dos_pasos_desactivada' => 'Verificación en dos pasos quitada', 'dos_pasos_codigos' => 'Códigos de respaldo nuevos',
+        'dos_pasos_fallido' => 'Código de verificación equivocado', 'dos_pasos_respaldo_usado' => 'Entrada con código de respaldo',
+        'dos_pasos_restablecida' => 'Verificación en dos pasos restablecida',
+        // Privacidad (docs/tecnico/privacidad.md)
+        'aviso_publicado' => 'Versión nueva del aviso de privacidad', 'conservacion' => 'Cambio de días de conservación',
+        'conservacion_aplicada' => 'Datos quitados por conservación', 'arco_recibida' => 'Solicitud ARCO recibida',
+        'arco_verificada' => 'Solicitud ARCO verificada', 'arco_exportado' => 'Datos exportados (ARCO)', 'arco_descargado' => 'Descarga de datos (ARCO)',
+        'arco_eliminado' => 'Datos eliminados (ARCO)', 'arco_atendida' => 'Solicitud ARCO atendida', 'arco_rechazada' => 'Solicitud ARCO rechazada',
+        'arco_canalizada' => 'Solicitud ARCO canalizada',
     ];
 
     /**
@@ -193,6 +204,8 @@ class LectorAuditoria
         'etiquetas' => 'Etiquetas QR',
         'borrado' => 'Eliminar definitivamente',
         'suscripciones' => 'Suscripciones',
+        'cuenta' => 'Mi cuenta',
+        'privacidad' => 'Privacidad',
     ];
 
     /** Qué es cada registro y cómo se llama. */

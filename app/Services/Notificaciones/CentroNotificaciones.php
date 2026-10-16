@@ -51,6 +51,12 @@ class CentroNotificaciones
         'cuenta_contrasena' => ['bi-key-fill', 'exito'],
         'cuenta_bloqueada' => ['bi-lock-fill', 'alerta'],
         'cuenta_desactivada' => ['bi-person-x-fill', 'alerta'],
+        // Verificación en dos pasos (docs/tecnico/dos-pasos.md): avisos a la propia cuenta
+        'cuenta_dos_pasos' => ['bi-shield-lock-fill', 'alerta'],
+        // Privacidad (docs/tecnico/privacidad.md): solicitudes ARCO y conservación de datos
+        'arco_solicitud' => ['bi-person-vcard-fill', 'alerta'],
+        'arco_plazo' => ['bi-hourglass-split', 'alerta'],
+        'privacidad_conservacion' => ['bi-shield-check', 'info'],
         // Pases de salida (ADR-0012): firma pendiente, resultado, vencido y «viene a tu sede»
         'pase_por_firmar' => ['bi-pen-fill', 'alerta'],
         'pase_aprobado' => ['bi-check-circle-fill', 'exito'],

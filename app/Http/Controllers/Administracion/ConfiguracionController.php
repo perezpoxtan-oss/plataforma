@@ -10,12 +10,14 @@ use App\Models\LostFoundUmbral;
 use App\Models\User;
 use App\Services\Candidatos\DocumentosParaContratar;
 use App\Services\Candidatos\PlazosCandidatos;
+use App\Services\DosPasos\VerificacionDosPasos;
 use App\Services\Lector\ImpresionDesdePadron;
 use App\Services\Lector\PlantillasEtiquetas;
 use App\Services\Novedades\AjustesNovedades;
 use App\Services\Novedades\ArchivoLostFound;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Services\Privacidad\ConservacionDatos;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\Respaldos\Respaldos;
 use App\Support\AjustesCaseta;
@@ -87,6 +89,9 @@ class ConfiguracionController extends Controller
             'auditoriaSede' => $empresaId === null ? null : (Empresa::find($empresaId)?->preferencias['auditoria_sede'] ?? AuditoriaController::SEDE_POR_OMISION),
             // Configuración por secciones: resúmenes de lo que se configura en otra pantalla (enlace «Configurar en …»)
             'enOtras' => $empresaId === null ? [] : $this->ajustesEnOtrasPantallas($actor, Empresa::find($empresaId)),
+            // Verificación en dos pasos (docs/tecnico/dos-pasos.md) y Privacidad (docs/tecnico/privacidad.md)
+            'dosPasos' => $empresaId === null ? null : $this->datosDosPasos(Empresa::find($empresaId)),
+            'privacidad' => $empresaId === null ? null : app(ConservacionDatos::class)->paraConfiguracion($actor, Empresa::find($empresaId)),
         ]);
     }
 
@@ -135,6 +140,17 @@ class ConfiguracionController extends Controller
         return $r;
     }
 
+    /** @return array{politica: string, activas: int, total: int}|null */
+    private function datosDosPasos(?Empresa $empresa): ?array
+    {
+        if ($empresa === null) {
+            return null;
+        }
+        $servicio = app(VerificacionDosPasos::class);
+
+        return ['politica' => $servicio->politica($empresa)] + $servicio->conteo($empresa);
+    }
+
     // ------------------------------------------- Nombres en el menú (empresa)
 
     /**
@@ -172,6 +188,7 @@ class ConfiguracionController extends Controller
         'novedades' => ['el nombre de la bitácora y la categoría del hallazgo volvieron', 'novedades'],
         'lost_found' => ['los días de resguardo de Lost & Found volvieron', 'lost-found'],
         'auditoria' => ['lo que ve «Su sede» en la Bitácora de auditoría volvió', 'config-auditoria'],
+        'dos_pasos' => ['a quién se exige la verificación en dos pasos volvió', 'cfg-dos-pasos'],
         'avisos' => ['los avisos por correo volvieron', 'sec-avisos'],
     ];
 
@@ -202,6 +219,7 @@ class ConfiguracionController extends Controller
             'novedades' => app(AjustesNovedades::class)->guardar($actor, $empresa, ['nombre_opcion' => AjustesNovedades::NOMBRE_OMISION, 'categoria_hallazgo_pc' => AjustesNovedades::CATEGORIA_HALLAZGO_OMISION]),
             'lost_found' => $this->tenant->conEmpresa($empresaId, fn () => $this->lostFound->guardarUmbrales($actor, ['dias' => LostFoundUmbral::POR_OMISION])),
             'auditoria', 'avisos' => $this->restablecerPreferencias($actor, $empresa, $ajuste === 'auditoria' ? ['auditoria_sede'] : ['avisos', 'avisos_modulos']),
+            'dos_pasos' => $this->restablecerPreferencias($actor, $empresa, ['dos_pasos']),
         };
 
         [$texto, $ancla] = self::RESTABLECIBLES[$ajuste];
@@ -287,6 +305,30 @@ class ConfiguracionController extends Controller
         return redirect()->to(route('configuracion.index').'#config-cuentas')->with('ok', $valor === 'sede'
             ? 'Listo: quien tiene la bitácora con alcance «Su sede» ahora ve los movimientos de su sede. Puedes revisarlo en la Bitácora de auditoría.'
             : 'Listo: quien tiene la bitácora con alcance «Su sede» ve solo sus propios movimientos.');
+    }
+
+    // ------------------------------------- Verificación en dos pasos (empresa)
+
+    /**
+     * Cuentas y seguridad: a quién se exige la verificación en dos pasos
+     * (nadie —original—, administradores o todos). El Super Administrador
+     * siempre la necesita, sin importar este ajuste.
+     */
+    public function dosPasos(Request $request): RedirectResponse
+    {
+        Gate::authorize('configuracion.editar');
+        abort_unless($this->editaEmpresa($request->user()), 403, 'Este ajuste es de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa.');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+        $valor = $request->validate(['dos_pasos' => ['required', Rule::in(array_keys(VerificacionDosPasos::POLITICAS))]], [], ['dos_pasos' => 'a quién se exige'])['dos_pasos'];
+
+        app(VerificacionDosPasos::class)->guardarPolitica($request->user(), Empresa::findOrFail($empresaId), $valor);
+
+        return redirect()->to(route('configuracion.index').'#cfg-dos-pasos')->with('ok', match ($valor) {
+            'nadie' => 'Listo: cada persona decide si activa la verificación en dos pasos en Mi cuenta.',
+            'administradores' => 'Listo: quien administra usuarios, roles, permisos o la configuración la activará la próxima vez que entre. Avísales que tengan a la mano su teléfono.',
+            default => 'Listo: todas las cuentas la activarán la próxima vez que entren. Avisa a tu personal que tenga a la mano su teléfono.',
+        });
     }
 
     // ------------------------------------------- Lost & Found: días de resguardo

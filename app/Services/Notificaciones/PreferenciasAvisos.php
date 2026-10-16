@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
 class PreferenciasAvisos
 {
     /** Avisos de la propia cuenta que no se pueden silenciar (seguridad). */
-    public const NO_SILENCIABLES = ['cuenta_contrasena'];
+    public const NO_SILENCIABLES = ['cuenta_contrasena', 'cuenta_dos_pasos'];
 
     /** Tipo de la campana => [módulo para agrupar, qué avisa, permisos de quien lo recibe]. */
     public const CAMPANA = [
@@ -52,6 +52,10 @@ class PreferenciasAvisos
         'pase_llega' => ['Pases de salida', 'Un pase de salida viene a tu sede', ['pases_salida.ver']],
         'cuenta_bloqueada' => ['Cuentas y seguridad', 'Una cuenta se bloqueó por intentos fallidos', ['usuarios.editar', 'usuarios.desbloquear']],
         'cuenta_desactivada' => ['Cuentas y seguridad', 'Una cuenta se dio de baja junto con su colaborador', ['usuarios.editar']],
+        // Privacidad (docs/tecnico/privacidad.md)
+        'arco_solicitud' => ['Privacidad', 'Llegó una solicitud ARCO (acceso, rectificación, cancelación u oposición)', ['configuracion.datos_personales']],
+        'arco_plazo' => ['Privacidad', 'Una solicitud ARCO está por vencer o venció', ['configuracion.datos_personales']],
+        'privacidad_conservacion' => ['Privacidad', 'La revisión de cada noche quitó datos personales vencidos', ['configuracion.datos_personales']],
         MovimientosSensibles::TIPO => ['Cuentas y seguridad', 'Alguien hizo un movimiento sensible (roles, permisos, eliminaciones, exportaciones)', ['auditoria.ver']],
         // Mejoras Incidentes (ADR-0013)
         'novedad_canalizada' => ['Bitácora de novedades', 'Te canalizaron un ticket de la bitácora', ['novedades.editar']],

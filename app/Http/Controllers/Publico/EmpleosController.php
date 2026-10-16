@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Empresa;
 use App\Models\Sede;
 use App\Models\Vacante;
+use App\Services\Privacidad\AvisosPrivacidad;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\Vacantes\AdministradorVacantes;
 use App\Services\Vacantes\BolsaTrabajo;
@@ -95,6 +96,7 @@ class EmpleosController extends Controller
                 'v' => $v,
                 'sedes' => $v->todas_las_sedes ? Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']) : $v->sedes->values(),
                 'privacidad' => app(AjustesRecepcion::class)->textoPrivacidad($e),
+                'arcoUrl' => route('privacidad.aviso', app(AvisosPrivacidad::class)->codigoPublico($e)),
             ]), $e, conFormulario: true);
         });
     }

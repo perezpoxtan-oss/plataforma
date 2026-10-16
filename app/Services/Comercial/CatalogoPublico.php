@@ -9,6 +9,7 @@ use App\Models\Promocion;
 use App\Models\SolicitudCompra;
 use App\Services\Comercial\Pagos\Pasarelas;
 use App\Services\Comercial\Pagos\ResultadoCobro;
+use App\Services\Privacidad\AvisosPrivacidad;
 use App\Services\Suscripciones\Promociones;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -167,6 +168,8 @@ class CatalogoPublico
             'estado' => 'nueva',
             'acepta_privacidad' => true,
             'privacidad_aceptada_en' => now(),
+            // Privacidad (docs/tecnico/privacidad.md): versión del aviso de la plataforma que aceptó
+            'aviso_privacidad_id' => app(AvisosPrivacidad::class)->vigente(null)?->id,
             'ip' => mb_substr($ip, 0, 45),
         ]));
 

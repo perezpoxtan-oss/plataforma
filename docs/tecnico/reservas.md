@@ -13,7 +13,7 @@ Módulo nuevo (decisiones del dueño, 2026-10-15): reservar salones, salas y ter
 - **Choques:** solo entre reservas del mismo espacio. Un salón y una sala que estén uno dentro del otro en Zonas y edificios no se bloquean entre sí (siguiente paso si el dueño lo pide).
 - **Una reserva es de un solo día** (inicio y fin el mismo día local) cuando el área tiene horario.
 
-## Tablas (migración `2026_11_04_000100_crear_reservas_de_areas`)
+## Tablas (migración `2026_11_05_000100_crear_reservas_de_areas`)
 
 | Tabla | Para qué |
 |---|---|
@@ -70,7 +70,7 @@ Ocupan el horario: Por aprobar, Cambio pedido y Confirmada (`Reserva::OCUPAN`).
 
 ## Permisos
 
-Módulo `reservas` (área Servicios): `ver`, `crear`, `aprobar`, `configurar`, `exportar`, `imprimir`. Alcance: `ver` limita el calendario y las fichas a sus sedes (o a las propias); `crear` dónde puede reservar; catálogos y ajustes piden `configurar` con alcance de empresa; las áreas, el de su sede. Plantillas (`RolesPlantillaSeeder::RESERVAS` y la migración `2026_11_04_000200_modulo_y_permisos_de_reservas`, que las aplica por nombre de rol a plantillas y copias): Administrador todo (empresa); Director ver (empresa); Jefe de departamento ver, crear, imprimir y aprobar (sede); Solicitante ver, crear, imprimir (propios); Recursos Humanos, Jefe de seguridad, Asistente de seguridad, Supervisor y Agente ver, crear, imprimir (sede). La migración activa el módulo en todas las empresas existentes. El catálogo comercial no lo incluye en ningún producto: para clientes con suscripción se agrega como «módulo agregado» (siguiente paso: producto «Reservas»).
+Módulo `reservas` (área Servicios): `ver`, `crear`, `aprobar`, `configurar`, `exportar`, `imprimir`. Alcance: `ver` limita el calendario y las fichas a sus sedes (o a las propias); `crear` dónde puede reservar; catálogos y ajustes piden `configurar` con alcance de empresa; las áreas, el de su sede. Plantillas (`RolesPlantillaSeeder::RESERVAS` y la migración `2026_11_05_000200_modulo_y_permisos_de_reservas`, que las aplica por nombre de rol a plantillas y copias): Administrador todo (empresa); Director ver (empresa); Jefe de departamento ver, crear, imprimir y aprobar (sede); Solicitante ver, crear, imprimir (propios); Recursos Humanos, Jefe de seguridad, Asistente de seguridad, Supervisor y Agente ver, crear, imprimir (sede). La migración activa el módulo en todas las empresas existentes. El catálogo comercial no lo incluye en ningún producto: para clientes con suscripción se agrega como «módulo agregado» (siguiente paso: producto «Reservas»).
 
 Calendario: quien puede reservar ve los horarios ocupados de otros como «Ocupado» sin abrirlos.
 

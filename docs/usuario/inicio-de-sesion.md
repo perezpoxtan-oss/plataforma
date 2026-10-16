@@ -26,6 +26,24 @@ En el celular es igual; los botones son grandes para tocarlos con el dedo:
 
 ![Pantalla para entrar en el celular](img/inicio/acceso-celular.png)
 
+## Cómo entrar con la verificación en dos pasos
+
+Si activaste la verificación en dos pasos (o tu empresa la exige), después de tu contraseña aparece la pantalla **Verificación en dos pasos**.
+
+1. Abre tu app de autenticación (Google Authenticator, Microsoft Authenticator u otra) y busca la cuenta de tu plataforma.
+2. En **Código** escribe los 6 números que ves. Cambian cada 30 segundos: si están por cambiar, espera al siguiente.
+3. Si estás en **tu** computadora o teléfono personal, marca **Recordar este dispositivo 30 días**: durante ese tiempo, en ese equipo solo te pediremos la contraseña. **Nunca la marques en un equipo compartido o de la caseta.**
+4. Toca **Entrar**.
+
+![Pantalla del código](img/inicio/dos-pasos-codigo.png)
+
+**Qué debes ver:** la pantalla de **Inicio**. Si no tienes tu teléfono, escribe en **Código** uno de tus **códigos de respaldo** (ver [Mi cuenta](mi-cuenta.md)). Si entras con uno, la plataforma te dice cuántos te quedan.
+
+- Si tu cuenta **necesita** la verificación y aún no la activas, al entrar te lleva a **Mi cuenta → Verificación en dos pasos** para activarla. El Super Administrador siempre la necesita.
+- Tienes **10 minutos** para escribir el código después de la contraseña; si pasan, vuelve a entrar.
+- Después de **5 códigos equivocados**, espera **15 minutos** para intentar de nuevo.
+- Si no eres tú o quieres entrar con otra cuenta, toca **Volver a entrar con otra cuenta**.
+
 ## Cómo recuperar mi contraseña (Olvidé mi contraseña)
 
 No necesitas pedírsela a nadie: la plataforma te manda un enlace a tu correo para crear una nueva.
@@ -74,6 +92,10 @@ Por seguridad, la sesión se cierra sola después de **20 minutos sin usarla**.
 | **Demasiados intentos fallidos. Esta cuenta está bloqueada temporalmente…** | Se escribió mal la contraseña 5 veces seguidas. | Espera los minutos que indica o pide a tu administrador o jefe de seguridad que **desbloquee** tu cuenta. Quien administra usuarios recibe un aviso en su campana y tú un correo; si no fuiste tú, cambia tu contraseña en cuanto entres. |
 | **Sesión finalizada por seguridad.** | Pasaron 20 minutos sin usar la plataforma. | Vuelve a entrar. |
 | **Tu cuenta no está activa. Consulta a tu administrador.** | Tu usuario fue dado de baja. | Habla con tu administrador. |
+| **El código no es correcto. Escribe el que se ve ahora en tu app…** | El código ya cambió, es de otra cuenta de la app o ya lo usaste. | Escribe el código que se ve ahora (cada código sirve una sola vez). Revisa que la hora de tu teléfono sea automática. |
+| **Demasiados códigos equivocados. Espera 15 minutos…** | Se escribió mal el código 5 veces. | Espera 15 minutos y vuelve a entrar. Si perdiste tu teléfono, usa un código de respaldo o pide a tu administrador que restablezca tu verificación. |
+| **Pasó mucho tiempo sin escribir el código. Vuelve a entrar.** | Pasaron más de 10 minutos desde la contraseña. | Vuelve a escribir tu usuario y contraseña. |
+| Perdí mi teléfono y no tengo códigos de respaldo | — | Pide a tu administrador que **restablezca tu verificación en dos pasos** en **Usuarios**; después la activas con tu teléfono nuevo. |
 | Olvidé mi contraseña | — | Toca **Olvidé mi contraseña** y sigue los pasos de arriba. Si tu plataforma no tiene correo configurado, pide a tu administrador que la restablezca. |
 | **El enlace ya no sirve (venció o ya se usó). Pide uno nuevo aquí.** | Pasaron más de 60 minutos (24 horas si era el correo de bienvenida) o ya lo usaste. | Pide otro enlace con **Olvidé mi contraseña**. |
 | Al entrar me manda a **Mi cuenta** con «Crea tu propia contraseña para continuar». | Entraste con una contraseña que escribió tu administrador. | Cámbiala ahí mismo; después ya puedes usar todo. Ver [Mi cuenta](mi-cuenta.md). |

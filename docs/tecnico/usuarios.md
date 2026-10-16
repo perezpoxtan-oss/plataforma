@@ -100,3 +100,7 @@ SEGCAT permitía buscar un colaborador para llenar los datos y vincular la cuent
 Se revisó y **se queda obligatorio**: en SEGCAT `usuarios.correo` es `NOT NULL` y los formularios de alta y edición lo pedían (`required`). Además la plataforma lo usa para los avisos por correo (vouchers con cobro, altas por verificar, procedimientos, pases, autorizaciones) y es el medio para recuperar la contraseña («Olvidé mi contraseña», enlace de bienvenida y restablecer desde Usuarios); un usuario sin correo se quedaría sin avisos y sin recuperación. Sigue siendo único en la plataforma.
 
 > Mejoras de 2026-10 (roles sin números, asistente de permisos, configuración por módulo, avisos por persona, historial y varias sedes): ver [estructura-mejoras.md](estructura-mejoras.md) y [ADR-0016](../decisiones/ADR-0016-mejoras-de-estructura.md).
+
+## Verificación en dos pasos
+
+Cada cuenta puede activar la verificación en dos pasos en Mi cuenta; quien tiene `usuarios.desbloquear` la **restablece** (`PATCH /usuarios/{usuario}/dos-pasos`, mismo alcance y jerarquía que desbloquear, auditoría `usuarios.dos_pasos_restablecida`, aviso a la persona). La ficha muestra «Verificación en dos pasos activa». Detalle en [dos-pasos.md](dos-pasos.md).
