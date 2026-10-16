@@ -51,6 +51,7 @@ Route::prefix('reservas')->name('reservas.')->group(function () {
         Route::put('/configuracion/catalogo/{catalogo}/{id}', 'actualizarCatalogo')->where('catalogo', 'montajes|tipos|servicios')->whereNumber('id')->name('configuracion.catalogo.actualizar');
         Route::delete('/configuracion/catalogo/{catalogo}/{id}', 'eliminarCatalogo')->where('catalogo', 'montajes|tipos|servicios')->whereNumber('id')->name('configuracion.catalogo.eliminar');
         Route::patch('/configuracion/catalogo/{catalogo}/{id}/estado', 'estadoCatalogo')->where('catalogo', 'montajes|tipos|servicios')->whereNumber('id')->name('configuracion.catalogo.estado');
+        Route::post('/configuracion/sugeridos-hotel', 'sugeridosHotel')->name('configuracion.sugeridos');
         Route::put('/ajustes', 'ajustes')->name('ajustes');
     });
 });

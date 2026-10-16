@@ -29,11 +29,16 @@
                         <h2 class="ficha-title"><a href="{{ route('reservas.show', $r->id) }}" class="text-reset text-decoration-none">{{ $r->titulo }}</a></h2>
                         <span class="etiqueta-estado pendiente text-nowrap">{{ $a->tipo === 'area' ? 'Área' : $a->departamento?->nombre }}</span>
                     </div>
-                    <div class="ficha-subtitulo">{{ $r->folioTexto() }} · reservó {{ $r->solicitante?->name ?? '—' }}</div>
+                    <div class="ficha-subtitulo">{{ $r->folioTexto() }} · solicita {{ $r->solicitadoPorTexto() }} · @fecha($r->created_at)</div>
+                    @if ($r->excede_aforo)
+                        <span class="etiqueta-estado pendiente res-insignia-aforo mt-1" title="{{ $r->motivo_excepcion_aforo }}"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Excede aforo</span>
+                    @endif
                     <ul class="list-unstyled small text-muted mt-2 pt-2 border-top m-0">
                         <li><i class="bi bi-door-open me-1" aria-hidden="true"></i> {{ $r->area->nombre() }} · {{ $r->sede?->nombre }}</li>
                         <li><i class="bi bi-calendar-event me-1" aria-hidden="true"></i> {{ $textos->cuando($r) }}</li>
-                        <li><i class="bi bi-people me-1" aria-hidden="true"></i> {{ $r->asistentes }} personas · {{ $r->para_cliente ? 'Cliente' : 'Uso interno' }}</li>
+                        @php $aforoR = $r->area->aforoPara($r->montaje_id); @endphp
+                        <li><i class="bi bi-people me-1" aria-hidden="true"></i> {{ $r->asistentes }}{{ $aforoR ? ' de '.$aforoR.' permitidos' : ' personas' }} · {{ $r->para_cliente ? 'Cliente' : 'Uso interno' }}</li>
+                        @if ($r->excede_aforo)<li class="text-warning-emphasis"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i> Motivo de la excepción: {{ $r->motivo_excepcion_aforo }}</li>@endif
                         @if ($a->tipo === 'departamento')<li><i class="bi bi-cup-hot me-1" aria-hidden="true"></i> Piden: {{ $textos->serviciosDe($r, (int) $a->departamento_id) }}</li>@endif
                     </ul>
                     @if ($reloj)

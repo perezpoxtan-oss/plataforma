@@ -2,6 +2,8 @@
 
 namespace App\Services\Reservas;
 
+use App\Models\Colaborador;
+use App\Models\Departamento;
 use App\Models\Reserva;
 use App\Models\ReservaArea;
 use App\Models\ReservaServicio;
@@ -125,7 +127,7 @@ class AdministradorReservas
 
         $reserva = DB::transaction(function () use ($actor, $area, $datos) {
             $this->bloquear($area); // dos personas no ganan el mismo horario (ni en la zona y su espacio interior)
-            $valores = $this->valores($area, $datos, null);
+            $valores = $this->valores($actor, $area, $datos, null);
             $reserva = Reserva::create($valores['reserva'] + ['solicitante_id' => $actor->id, 'estado' => Reserva::POR_APROBAR]);
             $reserva->forceFill(['folio' => 'RES-'.str_pad((string) $reserva->id, 6, '0', STR_PAD_LEFT)])->save();
             $this->guardarItems($reserva, $valores['items']);
@@ -157,9 +159,9 @@ class AdministradorReservas
         }
         $antes = $this->foto($reserva->load('items'));
 
-        DB::transaction(function () use ($area, $datos, $reserva) {
+        DB::transaction(function () use ($actor, $area, $datos, $reserva) {
             $this->bloquear($area);
-            $valores = $this->valores($area, $datos, $reserva);
+            $valores = $this->valores($actor, $area, $datos, $reserva);
             $reserva->update($valores['reserva']);
             $reserva->items()->delete();
             $this->guardarItems($reserva, $valores['items']);
@@ -179,7 +181,8 @@ class AdministradorReservas
     private const CAMPOS = [
         'area' => 'área', 'inicio' => 'inicio', 'fin' => 'fin', 'titulo' => 'título', 'tipo_uso' => 'tipo de uso', 'montaje' => 'montaje',
         'asistentes' => 'personas', 'para_cliente' => 'para quién', 'cliente' => 'cliente', 'tarifa' => 'tarifa', 'servicios' => 'servicios',
-        'notas' => 'notas', 'total' => 'total',
+        'notas' => 'notas', 'total' => 'total', 'departamento' => 'departamento que solicita', 'excepcion_aforo' => 'excepción de aforo',
+        'dia_completo' => 'día completo', 'montaje_minutos' => 'tiempo de montaje', 'desmontaje_minutos' => 'tiempo de desmontaje', 'indicaciones' => 'indicaciones de montaje',
     ];
 
     /**
@@ -191,8 +194,11 @@ class AdministradorReservas
             'area' => (int) $r->reserva_area_id, 'inicio' => $r->inicio?->toIso8601String(), 'fin' => $r->fin?->toIso8601String(),
             'titulo' => $r->titulo, 'tipo_uso' => $r->tipo_uso_id, 'montaje' => $r->montaje_id, 'asistentes' => (int) $r->asistentes,
             'para_cliente' => (bool) $r->para_cliente, 'cliente' => trim($r->cliente_nombre.' '.$r->cliente_empresa) ?: null, 'tarifa' => $r->tarifa,
-            'servicios' => $r->items->map(fn ($i) => $i->nombre.' × '.$i->cantidadTexto())->join(', '), 'notas' => $r->notas,
+            'servicios' => $r->items->map(fn ($i) => $i->nombre.' × '.$i->cantidadTexto().($i->notas ? ' ('.$i->notas.')' : ''))->join(', '), 'notas' => $r->notas,
             'total' => number_format((float) $r->total, 2, '.', ''),
+            'departamento' => $r->departamento_solicitante_id, 'excepcion_aforo' => $r->excede_aforo ? $r->motivo_excepcion_aforo : null,
+            'dia_completo' => (bool) $r->dia_completo, 'montaje_minutos' => $r->montaje_minutos, 'desmontaje_minutos' => $r->desmontaje_minutos,
+            'indicaciones' => $r->indicaciones_montaje,
         ];
     }
 
@@ -215,11 +221,11 @@ class AdministradorReservas
      * @param  array<string, mixed>  $datos
      * @return array{reserva: array<string, mixed>, items: list<array<string, mixed>>}
      */
-    private function valores(ReservaArea $area, array $datos, ?Reserva $actual): array
+    private function valores(User $actor, ReservaArea $area, array $datos, ?Reserva $actual): array
     {
         $titulo = trim((string) ($datos['titulo'] ?? ''));
         if ($titulo === '') {
-            throw ValidationException::withMessages(['titulo' => 'Escribe para qué es la reserva.']);
+            throw ValidationException::withMessages(['titulo' => 'Escribe el nombre del evento o el motivo de la reserva.']);
         }
         $asistentes = (int) ($datos['asistentes'] ?? 0);
         if ($asistentes < 1 || $asistentes > 100000) {
@@ -230,12 +236,39 @@ class AdministradorReservas
         if ($tipoUso !== null && ! ReservaTipoUso::whereKey($tipoUso)->exists()) {
             throw ValidationException::withMessages(['tipo_uso_id' => 'Elige un tipo de uso del catálogo.']);
         }
-        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($datos['fecha'] ?? '')) || ! preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', (string) ($datos['hora_inicio'] ?? ''))
-            || ! preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', (string) ($datos['hora_fin'] ?? ''))) {
+        $departamento = $this->departamentoSolicitante($actor, $datos, $actual);
+
+        // Horario: por horas o día completo (el horario del área ese día)
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($datos['fecha'] ?? ''))) {
+            throw ValidationException::withMessages(['fecha' => 'Indica la fecha y las horas de inicio y fin.']);
+        }
+        $diaCompleto = filter_var($datos['dia_completo'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($diaCompleto) {
+            $ventana = $this->disponibilidad->diaCompleto($area, (string) $datos['fecha']);
+            if ($ventana === null) {
+                throw ValidationException::withMessages(['fecha' => 'Ese día el área no se reserva: elige otro día.']);
+            }
+            [$datos['hora_inicio'], $datos['hora_fin']] = $ventana;
+        }
+        if (! preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', (string) ($datos['hora_inicio'] ?? '')) || ! preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', (string) ($datos['hora_fin'] ?? ''))) {
             throw ValidationException::withMessages(['fecha' => 'Indica la fecha y las horas de inicio y fin.']);
         }
         [$inicio, $fin] = $this->disponibilidad->aUtc($area, (string) $datos['fecha'], (string) $datos['hora_inicio'], (string) $datos['hora_fin']);
-        [$desde, $hasta] = $this->disponibilidad->validar($area, $inicio, $fin, $montajeId, $asistentes, $actual?->id);
+
+        // Montaje antes y desmontaje después: el del área salvo que se ajuste para esta reserva
+        $montajeMin = $this->minutos($datos, 'montaje_minutos', (int) $area->montaje_minutos, $actual?->montaje_minutos);
+        $desmontajeMin = $this->minutos($datos, 'desmontaje_minutos', (int) $area->desmontaje_minutos, $actual?->desmontaje_minutos);
+        $indicaciones = array_key_exists('indicaciones_montaje', $datos)
+            ? (($t = trim((string) $datos['indicaciones_montaje'])) === '' ? null : mb_substr($t, 0, 255))
+            : $actual?->indicaciones_montaje;
+
+        // Aforo: pasarlo es una excepción con motivo (lo ve quien aprueba)
+        [$aforo, $excede, $deQue] = $this->disponibilidad->aforo($area, $montajeId, $asistentes);
+        $motivoAforo = mb_substr(trim((string) ($datos['motivo_excepcion_aforo'] ?? '')), 0, 255);
+        if ($excede && mb_strlen($motivoAforo) < 3) {
+            throw ValidationException::withMessages(['motivo_excepcion_aforo' => "Son {$asistentes} personas y el aforo {$deQue} es de {$aforo}: escribe el motivo de la excepción (lo verá quien aprueba)."]);
+        }
+        [$desde, $hasta] = $this->disponibilidad->validar($area, $inicio, $fin, $montajeId, $asistentes, $actual?->id, true, $excede, $montajeMin, $desmontajeMin);
 
         $paraCliente = filter_var($datos['para_cliente'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $cliente = ['cliente_nombre' => null, 'cliente_empresa' => null, 'cliente_correo' => null, 'cliente_telefono' => null];
@@ -254,26 +287,14 @@ class AdministradorReservas
             }
         }
 
-        // Servicios: solo los activos del catálogo, con cantidad mayor a cero
-        $pedidos = collect((array) ($datos['servicios'] ?? []))
-            ->filter(fn ($f) => is_array($f) && (float) ($f['cantidad'] ?? 0) > 0);
-        $catalogo = ReservaServicio::where('activo', true)->whereIn('id', $pedidos->keys()->map(fn ($k) => (int) $k))->get()->keyBy('id');
-        $items = [];
-        foreach ($pedidos as $id => $fila) {
-            $servicio = $catalogo[(int) $id] ?? null;
-            if ($servicio === null) {
-                continue;
-            }
-            $cantidad = min(100000, round((float) $fila['cantidad'], 2));
-            $items[] = [
-                'servicio_id' => $servicio->id, 'departamento_id' => $servicio->departamento_id, 'nombre' => $servicio->nombre, 'unidad' => $servicio->unidad,
-                'cantidad' => $cantidad, 'costo_unitario' => $paraCliente ? (float) ($servicio->costo ?? 0) : 0.0,
-                'notas' => mb_substr(trim((string) ($fila['notas'] ?? '')), 0, 255) ?: null,
-            ];
-        }
+        $items = $this->items($datos, $paraCliente, $asistentes, Cotizador::horasCobradas($inicio, $fin));
 
         $ajustes = $this->ajustes->de((int) $area->empresa_id);
         $tarifa = isset($datos['tarifa']) && array_key_exists($datos['tarifa'], ReservaArea::TARIFAS) ? (string) $datos['tarifa'] : null;
+        // Día completo con tarifa de día: se propone esa tarifa si no se eligió otra
+        if ($tarifa === null && $diaCompleto && isset($area->tarifas()['dia'])) {
+            $tarifa = 'dia';
+        }
         // Los ajustes de costo (descuento, cortesía, importe del área) los conserva una modificación
         $sigueCliente = $paraCliente && $actual?->para_cliente;
         $costo = $this->cotizador->calcular($area, $paraCliente, $tarifa, $inicio, $fin, $items, $ajustes,
@@ -286,12 +307,120 @@ class AdministradorReservas
         return ['reserva' => [
             'sede_id' => $area->sede_id, 'reserva_area_id' => $area->id, 'espacio_id' => $area->espacio_id,
             'titulo' => mb_substr($titulo, 0, 150), 'tipo_uso_id' => $tipoUso, 'montaje_id' => $montajeId, 'asistentes' => $asistentes,
-            'inicio' => $inicio, 'fin' => $fin, 'bloqueo_desde' => $desde, 'bloqueo_hasta' => $hasta,
+            'excede_aforo' => $excede, 'motivo_excepcion_aforo' => $excede ? $motivoAforo : null,
+            'departamento_solicitante_id' => $departamento,
+            'inicio' => $inicio, 'fin' => $fin, 'dia_completo' => $diaCompleto, 'bloqueo_desde' => $desde, 'bloqueo_hasta' => $hasta,
+            'montaje_minutos' => $montajeMin, 'desmontaje_minutos' => $desmontajeMin, 'indicaciones_montaje' => $indicaciones,
             'para_cliente' => $paraCliente, 'tarifa' => $costo['tarifa'],
             'importe_area' => $costo['importe_area'], 'importe_servicios' => $costo['importe_servicios'], 'descuento' => $costo['descuento'],
             'iva_porcentaje' => $costo['iva_porcentaje'], 'iva' => $costo['iva'], 'total' => $costo['total'], 'moneda' => $ajustes['moneda'],
             'notas' => ($n = trim((string) ($datos['notas'] ?? ''))) === '' ? null : mb_substr($n, 0, 2000),
         ] + $cliente + ($paraCliente ? [] : ['importe_area_manual' => null, 'cortesia' => false, 'ajuste_motivo' => null]), 'items' => $items];
+    }
+
+    /**
+     * Departamento que solicita: el que se eligió (de la empresa), o al crear
+     * sin indicarlo, el del colaborador del usuario; al modificar sin indicarlo,
+     * el que ya tenía.
+     *
+     * @param  array<string, mixed>  $datos
+     */
+    private function departamentoSolicitante(User $actor, array $datos, ?Reserva $actual): ?int
+    {
+        if (! array_key_exists('departamento_solicitante_id', $datos)) {
+            return $actual !== null ? $actual->departamento_solicitante_id : $this->departamentoDe($actor);
+        }
+        $id = $datos['departamento_solicitante_id'];
+        if ($id === null || $id === '') {
+            return null;
+        }
+        // Scope de la empresa: un departamento de otra empresa no existe aquí
+        if (! is_numeric($id) || ! Departamento::whereKey((int) $id)->exists()) {
+            throw ValidationException::withMessages(['departamento_solicitante_id' => 'Elige un departamento de tu empresa.']);
+        }
+
+        return (int) $id;
+    }
+
+    /** Departamento del colaborador vinculado al usuario (si lo tiene y es de la empresa). */
+    public function departamentoDe(User $actor): ?int
+    {
+        // La sesión puede traer al usuario con pocas columnas: se consulta su colaborador
+        $colaborador = User::whereKey($actor->id)->value('colaborador_id');
+        $id = $colaborador ? Colaborador::withoutGlobalScopes()->whereKey($colaborador)->value('departamento_id') : null;
+
+        return $id !== null && Departamento::whereKey((int) $id)->exists() ? (int) $id : null;
+    }
+
+    /**
+     * Minutos de montaje o desmontaje de la reserva: null si son los del área.
+     *
+     * @param  array<string, mixed>  $datos
+     */
+    private function minutos(array $datos, string $campo, int $delArea, ?int $actual): ?int
+    {
+        if (! array_key_exists($campo, $datos)) {
+            return $actual;
+        }
+        $valor = $datos[$campo];
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+        if (! is_numeric($valor) || (int) $valor < 0 || (int) $valor > 1440) {
+            throw ValidationException::withMessages([$campo => 'Los minutos van de 0 a 1440 (24 horas).']);
+        }
+
+        return (int) $valor === $delArea ? null : (int) $valor;
+    }
+
+    /**
+     * Renglones de servicios: los del catálogo marcados (casilla «usar» o con
+     * cantidad) y los «otros servicios» libres por departamento (sin
+     * servicio_id). Sin cantidad se sugiere: por persona = las personas; por
+     * hora = las horas; por pieza o evento = 1.
+     *
+     * @param  array<string, mixed>  $datos
+     * @return list<array<string, mixed>>
+     */
+    private function items(array $datos, bool $paraCliente, int $asistentes, int $horas): array
+    {
+        $pedidos = collect((array) ($datos['servicios'] ?? []))
+            ->filter(fn ($f) => is_array($f) && (filter_var($f['usar'] ?? false, FILTER_VALIDATE_BOOLEAN) || (float) ($f['cantidad'] ?? 0) > 0));
+        $catalogo = ReservaServicio::where('activo', true)->whereIn('id', $pedidos->keys()->map(fn ($k) => (int) $k))->get()->keyBy('id');
+        $items = [];
+        foreach ($pedidos as $id => $fila) {
+            $servicio = $catalogo[(int) $id] ?? null;
+            if ($servicio === null) {
+                continue;
+            }
+            $cantidad = (float) ($fila['cantidad'] ?? 0) > 0 ? min(100000, round((float) $fila['cantidad'], 2))
+                : (float) match ($servicio->unidad) {
+                    'persona' => $asistentes, 'hora' => $horas, default => 1
+                };
+            $items[] = [
+                'servicio_id' => $servicio->id, 'departamento_id' => $servicio->departamento_id, 'nombre' => $servicio->nombre, 'unidad' => $servicio->unidad,
+                'cantidad' => $cantidad, 'costo_unitario' => $paraCliente ? (float) ($servicio->costo ?? 0) : 0.0,
+                'notas' => mb_substr(trim((string) ($fila['notas'] ?? '')), 0, 255) ?: null,
+            ];
+        }
+
+        // «+ Otro servicio» de cada departamento: nombre y nota libres
+        $otros = collect((array) ($datos['otros'] ?? []))->filter(fn ($f) => is_array($f) && trim((string) ($f['nombre'] ?? '')) !== '')->take(30);
+        $deptos = $otros->pluck('departamento_id')->filter(fn ($d) => is_numeric($d))->map(fn ($d) => (int) $d)->unique()->values();
+        $validos = $deptos->isEmpty() ? collect() : Departamento::whereIn('id', $deptos)->pluck('id')->map(fn ($d) => (int) $d);
+        foreach ($otros as $fila) {
+            $depto = is_numeric($fila['departamento_id'] ?? null) ? (int) $fila['departamento_id'] : null;
+            if ($depto !== null && ! $validos->contains($depto)) {
+                throw ValidationException::withMessages(['otros' => 'Elige un departamento de tu empresa para cada servicio adicional.']);
+            }
+            $items[] = [
+                'servicio_id' => null, 'departamento_id' => $depto, 'nombre' => mb_substr(trim((string) $fila['nombre']), 0, 80), 'unidad' => 'pieza',
+                'cantidad' => (float) ($fila['cantidad'] ?? 0) > 0 ? min(100000, round((float) $fila['cantidad'], 2)) : 1.0, 'costo_unitario' => 0.0,
+                'notas' => mb_substr(trim((string) ($fila['notas'] ?? '')), 0, 255) ?: null,
+            ];
+        }
+
+        return $items;
     }
 
     /**

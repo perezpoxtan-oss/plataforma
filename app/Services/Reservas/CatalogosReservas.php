@@ -21,6 +21,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -568,5 +569,113 @@ class CatalogosReservas
             $area->montajes()->sync($montajes);
         });
         $this->auditoria->auditar($actor, 'reservas.area_configurada', $area, $antes, $area->only(array_keys($valores)) + ['montajes' => $montajes]);
+    }
+
+    // ------------------------------------------- Lista sugerida para hoteles
+
+    /**
+     * Servicios de la hoja «orden de evento» de un hotel, por departamento:
+     * grupo => [alias del departamento (sin acentos ni mayúsculas), servicios
+     * [nombre, categoría, unidad]]. Sin costo. «Otro servicio» no va: es el
+     * botón «+ Otro servicio» de cada departamento al reservar.
+     */
+    public const SUGERIDOS_HOTEL = [
+        'Steward' => [['steward', 'stewards', 'stewarding'], [
+            ['Mantelería', 'mobiliario', 'evento'], ['Rotafolio', 'mobiliario', 'pieza'], ['Podium', 'mobiliario', 'pieza'],
+        ]],
+        'Alimentos y bebidas' => [['alimentos y bebidas', 'ayb', 'a y b', 'alimentos bebidas'], [
+            ['Bebidas', 'bebidas', 'persona'], ['Tipo de servicio', 'alimentos', 'evento'], ['Coffee break', 'alimentos', 'persona'],
+        ]],
+        'Cocina' => [['cocina'], [
+            ['Desayuno', 'alimentos', 'persona'], ['Comida', 'alimentos', 'persona'], ['Cena', 'alimentos', 'persona'],
+            ['Bocadillos', 'alimentos', 'persona'], ['Pastel', 'alimentos', 'pieza'], ['Pan', 'alimentos', 'evento'],
+        ]],
+        'Mantenimiento' => [['mantenimiento'], [
+            ['Iluminación', 'otro', 'evento'], ['Aire acondicionado', 'otro', 'evento'], ['T.V.', 'audio_video', 'pieza'],
+            ['Extensión', 'otro', 'pieza'], ['Colocación de pantalla', 'audio_video', 'evento'],
+        ]],
+        'Áreas públicas' => [['areas publicas', 'area publica'], [
+            ['Bote de basura', 'otro', 'pieza'], ['Aromatizar', 'otro', 'evento'], ['Limpieza antes y después', 'otro', 'evento'],
+            ['Planchado de mantelería', 'otro', 'evento'],
+        ]],
+        'Animación' => [['animacion'], [
+            ['Video o cañón', 'audio_video', 'evento'], ['Show', 'otro', 'evento'], ['Música / bocina', 'audio_video', 'evento'],
+            ['Micrófono', 'audio_video', 'pieza'], ['MC Animador', 'otro', 'evento'], ['Pantalla', 'audio_video', 'pieza'],
+        ]],
+        'Capacitación' => [['capacitacion'], [
+            ['Cañón', 'audio_video', 'pieza'], ['Proyector', 'audio_video', 'pieza'], ['Lista de asistencia', 'otro', 'evento'],
+        ]],
+        'Sistemas' => [['sistemas'], [
+            ['Laptop', 'computo', 'pieza'], ['Internet', 'red', 'evento'],
+        ]],
+    ];
+
+    /** Montajes de la hoja; no se crean si ya hay uno con ese nombre (o con el de la segunda columna). */
+    public const MONTAJES_HOTEL = [
+        'Tipo U' => ['tipo u', 'u', 'herradura', 'herradura (u)'],
+        'Tipo Escuela' => ['tipo escuela', 'escuela'],
+        'Tipo Auditorio' => ['tipo auditorio', 'auditorio'],
+        'Tipo Banquete' => ['tipo banquete', 'banquete'],
+    ];
+
+    /** «Áreas Públicas» → «areas publicas». */
+    public static function clave(string $texto): string
+    {
+        return trim((string) preg_replace('/\s+/u', ' ', mb_strtolower(Str::ascii($texto))));
+    }
+
+    /**
+     * «Cargar servicios sugeridos de hotel» (solo al pulsar el botón; nunca
+     * en automático, para no revivir lo que la empresa eliminó). Idempotente:
+     * no duplica por nombre (aunque esté dado de baja). Asigna el
+     * departamento de la empresa cuyo nombre coincide; no crea departamentos.
+     *
+     * @return array{servicios: int, montajes: int, sin_departamento: int, grupos_sin_departamento: list<string>}
+     */
+    public function cargarSugeridosHotel(User $actor): array
+    {
+        return DB::transaction(function () use ($actor) {
+            $existentes = ReservaServicio::pluck('nombre')->map(fn ($n) => self::clave((string) $n))->flip();
+            $departamentos = Departamento::where('activo', true)->get(['id', 'nombre'])->mapWithKeys(fn ($d) => [self::clave($d->nombre) => (int) $d->id]);
+            $orden = (int) ReservaServicio::max('orden');
+            $creados = 0;
+            $sinDepto = 0;
+            $gruposSin = [];
+            foreach (self::SUGERIDOS_HOTEL as $grupo => [$alias, $lista]) {
+                $depto = collect($alias)->map(fn ($a) => $departamentos[$a] ?? null)->first(fn ($id) => $id !== null);
+                foreach ($lista as [$nombre, $categoria, $unidad]) {
+                    if ($existentes->has(self::clave($nombre))) {
+                        continue;
+                    }
+                    ReservaServicio::create(['nombre' => $nombre, 'categoria' => $categoria, 'unidad' => $unidad, 'costo' => null,
+                        'departamento_id' => $depto, 'requiere_aprobacion' => true, 'orden' => ++$orden]);
+                    $existentes[self::clave($nombre)] = true;
+                    $creados++;
+                    if ($depto === null) {
+                        $sinDepto++;
+                        $gruposSin[$grupo] = true;
+                    }
+                }
+            }
+
+            $montajes = ReservaMontaje::pluck('nombre')->map(fn ($n) => self::clave((string) $n))->flip();
+            $ordenM = (int) ReservaMontaje::max('orden');
+            $nuevosM = 0;
+            foreach (self::MONTAJES_HOTEL as $nombre => $alias) {
+                if (collect($alias)->contains(fn ($a) => $montajes->has($a))) {
+                    continue;
+                }
+                ReservaMontaje::create(['nombre' => $nombre, 'orden' => ++$ordenM]);
+                $nuevosM++;
+            }
+
+            $resultado = ['servicios' => $creados, 'montajes' => $nuevosM, 'sin_departamento' => $sinDepto, 'grupos_sin_departamento' => array_keys($gruposSin)];
+            $empresa = Empresa::find(app(Tenant::class)->empresaId());
+            if ($empresa !== null) {
+                $this->auditoria->auditar($actor, 'reservas.sugeridos_hotel', $empresa, null, $resultado);
+            }
+
+            return $resultado;
+        });
     }
 }

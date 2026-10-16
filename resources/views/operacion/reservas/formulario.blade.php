@@ -5,7 +5,11 @@
 @php
     $v = fn (string $campo) => old($campo, $valores[$campo] ?? '');
     $paraCliente = filter_var(old('para_cliente', $valores['para_cliente'] ? '1' : '0'), FILTER_VALIDATE_BOOLEAN);
-    $conServicios = collect(old('servicios', $valores['servicios']))->contains(fn ($f) => (float) ($f['cantidad'] ?? 0) > 0);
+    $pedidos = collect(old('servicios', $valores['servicios']));
+    $marcado = fn (int $id) => filter_var($pedidos[$id]['usar'] ?? false, FILTER_VALIDATE_BOOLEAN) || (float) ($pedidos[$id]['cantidad'] ?? 0) > 0;
+    $diaCompleto = filter_var(old('dia_completo', $valores['dia_completo'] ? '1' : '0'), FILTER_VALIDATE_BOOLEAN);
+    $conExcepcion = $errors->has('motivo_excepcion_aforo') || trim((string) old('motivo_excepcion_aforo', $valores['motivo_excepcion_aforo'] ?? '')) !== '';
+    $siguienteOtro = $otros->count();
     $puede = ['crear' => true, 'ver' => auth()->user()->can('reservas.ver'), 'aprobar' => auth()->user()->can('reservas.aprobar'),
         'configurar' => auth()->user()->can('reservas.configurar'), 'exportar' => false];
 @endphp
@@ -74,13 +78,34 @@
                 </div>
                 <div>
                     <label class="campo-etiqueta" for="hora_inicio">De <span class="text-danger" aria-hidden="true">*</span></label>
-                    <input type="time" id="hora_inicio" name="hora_inicio" class="campo" required value="{{ $v('hora_inicio') }}" step="900" data-res-inicio>
+                    <input type="time" id="hora_inicio" name="hora_inicio" class="campo" @unless ($diaCompleto) required @endunless value="{{ $v('hora_inicio') }}" step="900" data-res-inicio>
                 </div>
                 <div>
                     <label class="campo-etiqueta" for="hora_fin">A <span class="text-danger" aria-hidden="true">*</span></label>
-                    <input type="time" id="hora_fin" name="hora_fin" class="campo" required value="{{ $v('hora_fin') }}" step="900" data-res-fin>
+                    <input type="time" id="hora_fin" name="hora_fin" class="campo" @unless ($diaCompleto) required @endunless value="{{ $v('hora_fin') }}" step="900" data-res-fin>
                 </div>
             </div>
+            <label class="res-interruptor mt-3">
+                <input type="hidden" name="dia_completo" value="0">
+                <input type="checkbox" name="dia_completo" value="1" @checked($diaCompleto) data-res-dia-completo>
+                <span><strong>Día completo</strong> <span class="res-meta">· todo el horario del área ese día</span></span>
+            </label>
+            <div class="res-meta mt-1" data-res-dia-nota aria-live="polite"></div>
+            <div class="res-rejilla mt-3">
+                <div>
+                    <label class="campo-etiqueta" for="montaje_minutos">Montaje antes (minutos)</label>
+                    <input type="number" id="montaje_minutos" name="montaje_minutos" class="campo" min="0" max="1440" step="5" value="{{ $v('montaje_minutos') }}" placeholder="El del área" data-res-montaje-min>
+                </div>
+                <div>
+                    <label class="campo-etiqueta" for="desmontaje_minutos">Desmontaje después (minutos)</label>
+                    <input type="number" id="desmontaje_minutos" name="desmontaje_minutos" class="campo" min="0" max="1440" step="5" value="{{ $v('desmontaje_minutos') }}" placeholder="El del área" data-res-desmontaje-min>
+                </div>
+                <div class="res-ancho-2">
+                    <label class="campo-etiqueta" for="indicaciones_montaje">Indicaciones para el montaje</label>
+                    <input type="text" id="indicaciones_montaje" name="indicaciones_montaje" class="campo" maxlength="255" value="{{ $v('indicaciones_montaje') }}" placeholder="Ej. Tener montaje listo 30 min antes">
+                </div>
+            </div>
+            <p class="res-meta mt-1 mb-0">Se proponen los tiempos del área; si los cambias, el área queda ocupada ese tiempo antes y después del evento.</p>
             <div class="res-ocupado mt-3" data-res-ocupado aria-live="polite">
                 <span class="res-meta">Elige el área y el día para ver los horarios ocupados.</span>
             </div>
@@ -90,8 +115,8 @@
         <section class="res-bloque" aria-labelledby="t-que">
             <h2 id="t-que"><i class="bi bi-people me-1 text-success" aria-hidden="true"></i>¿Para qué?</h2>
             <div class="res-rejilla">
-                <div style="grid-column: span 2">
-                    <label class="campo-etiqueta" for="titulo">Nombre del evento o reunión <span class="text-danger" aria-hidden="true">*</span></label>
+                <div class="res-ancho-2">
+                    <label class="campo-etiqueta" for="titulo">Nombre del evento o motivo <span class="text-danger" aria-hidden="true">*</span></label>
                     <input type="text" id="titulo" name="titulo" class="campo" required maxlength="150" value="{{ $v('titulo') }}" placeholder="Ej. Junta de jefes de departamento">
                 </div>
                 <div>
@@ -102,15 +127,26 @@
                     </select>
                 </div>
                 <div>
-                    <label class="campo-etiqueta" for="asistentes">Personas <span class="text-danger" aria-hidden="true">*</span></label>
-                    <input type="number" id="asistentes" name="asistentes" class="campo" required min="1" max="100000" value="{{ $v('asistentes') }}" data-res-asistentes>
+                    <label class="campo-etiqueta" for="departamento_solicitante_id">Departamento que solicita</label>
+                    <select id="departamento_solicitante_id" name="departamento_solicitante_id" class="campo">
+                        <option value="">Sin departamento</option>
+                        @foreach ($departamentos as $d)<option value="{{ $d->id }}" @selected((int) $v('departamento_solicitante_id') === $d->id)>{{ $d->nombre }}</option>@endforeach
+                    </select>
+                    <p class="res-meta mb-0 mt-1">Solicita: {{ $reserva?->solicitante?->name ?? auth()->user()->name }} · {{ $reserva ? 'el '.$reserva->created_at->copy()->setTimezone(config('app.timezone'))->format('d/m/Y') : 'hoy' }}</p>
                 </div>
                 <div>
-                    <label class="campo-etiqueta" for="montaje_id">Montaje</label>
-                    <select id="montaje_id" name="montaje_id" class="campo" data-res-montaje data-valor="{{ $v('montaje_id') }}">
-                        <option value="">Sin montaje especial</option>
-                    </select>
+                    <label class="campo-etiqueta" for="asistentes">Número de personas <span class="text-danger" aria-hidden="true">*</span></label>
+                    <input type="number" id="asistentes" name="asistentes" class="campo" required min="1" max="100000" value="{{ $v('asistentes') }}" data-res-asistentes aria-describedby="res-aforo">
+                    <div class="res-aforo mt-1" id="res-aforo" data-res-aforo aria-live="polite"></div>
                 </div>
+                @unless ($deptoMontaje)
+                    @include('operacion.reservas._campo-montaje')
+                @endunless
+            </div>
+            <div class="res-excepcion mt-3" data-res-excepcion @unless ($conExcepcion) hidden @endunless>
+                <label class="campo-etiqueta" for="motivo_excepcion_aforo"><i class="bi bi-exclamation-triangle-fill text-warning me-1" aria-hidden="true"></i>Excepción de aforo: ¿por qué se necesitan más personas? <span class="text-danger" aria-hidden="true">*</span></label>
+                <input type="text" id="motivo_excepcion_aforo" name="motivo_excepcion_aforo" class="campo" maxlength="255" value="{{ $v('motivo_excepcion_aforo') }}" placeholder="Ej. Se agregan sillas; autorizado por Protección Civil" data-res-motivo-aforo>
+                <p class="res-meta mb-0 mt-1">Quien aprueba el área verá la excepción y su motivo; también sale en la orden de evento.</p>
             </div>
 
             <fieldset class="mt-3">
@@ -144,35 +180,53 @@
             </div>
         </section>
 
-        {{-- ===== Servicios (opcional, plegado) ===== --}}
-        <details class="res-bloque" @if ($conServicios) open @endif>
-            <summary class="fw-bold"><i class="bi bi-cup-hot me-1 text-success" aria-hidden="true"></i>Servicios y requerimientos <span class="res-meta fw-normal">(opcional: alimentos, bebidas, proyector, internet, mobiliario…)</span></summary>
-            @if ($servicios->isEmpty())
-                <p class="res-meta mt-3 mb-0">Tu empresa todavía no tiene servicios en su catálogo.</p>
-            @else
-                <p class="res-meta mt-3">Escribe la cantidad de lo que necesitas. Cada departamento aprueba lo suyo y, al confirmarse, recibe su orden de servicio.</p>
-                @foreach ($servicios as $categoria => $grupo)
-                    <h3 class="h6 fw-bold mt-3 mb-1">{{ \App\Models\ReservaServicio::CATEGORIAS[$categoria] ?? 'Otro' }}</h3>
-                    @foreach ($grupo as $s)
-                        <div class="res-servicio">
-                            <div>
-                                <label for="servicio_{{ $s->id }}" class="fw-semibold">{{ $s->nombre }}</label>
-                                <div class="res-meta">
-                                    {{ \App\Models\ReservaServicio::UNIDADES[$s->unidad][0] }}
-                                    @if ($s->costo !== null)<span data-res-solo-cliente @if (! $paraCliente) hidden @endif> · {{ \App\Services\Reservas\Cotizador::dinero($s->costo, $ajustes['moneda']) }}</span>@endif
-                                    @if ($s->departamento) · lo atiende {{ $s->departamento->nombre }}@endif
+        {{-- ===== Servicios por departamento (formato de orden de evento) ===== --}}
+        <section class="res-bloque" aria-labelledby="t-servicios">
+            <h2 id="t-servicios"><i class="bi bi-clipboard-check me-1 text-success" aria-hidden="true"></i>Servicios por departamento <span class="res-meta fw-normal">(opcional)</span></h2>
+            <p class="res-meta">Marca lo que necesitas; aparecen la cantidad y una nota corta (ej. «Agua»). Cada departamento aprueba lo suyo y, al confirmarse, recibe su orden de servicio.</p>
+            <div class="res-deptos">
+                @foreach ($grupos as $g)
+                    @php $otrosDepto = $otros->filter(fn ($f) => (is_numeric($f['departamento_id'] ?? null) ? (int) $f['departamento_id'] : null) === $g['id']); @endphp
+                    <fieldset class="res-depto" data-res-depto="{{ $g['id'] ?? '' }}">
+                        <legend class="res-depto-titulo">{{ $g['nombre'] }}</legend>
+                        @if ($g['montaje'])
+                            @include('operacion.reservas._campo-montaje', ['enTarjeta' => true])
+                        @endif
+                        @foreach ($g['servicios'] as $s)
+                            @php $fila = $pedidos[$s->id] ?? []; @endphp
+                            <div class="res-item" data-res-item>
+                                <label class="res-item-check">
+                                    <input type="checkbox" name="servicios[{{ $s->id }}][usar]" value="1" @checked($marcado($s->id)) data-res-usar>
+                                    <span>{{ $s->nombre }}
+                                        <span class="res-meta">· {{ \App\Models\ReservaServicio::UNIDADES[$s->unidad][0] }}@if ($s->costo !== null)<span data-res-solo-cliente @if (! $paraCliente) hidden @endif> · {{ \App\Services\Reservas\Cotizador::dinero($s->costo, $ajustes['moneda']) }}</span>@endif</span>
+                                    </span>
+                                </label>
+                                <div class="res-item-extra" data-res-extra>
+                                    <input type="number" id="servicio_{{ $s->id }}" name="servicios[{{ $s->id }}][cantidad]" class="campo" min="0" step="0.5" max="100000"
+                                           value="{{ $fila['cantidad'] ?? '' }}" placeholder="Cant." aria-label="Cantidad de {{ $s->nombre }}"
+                                           data-res-servicio data-unidad="{{ $s->unidad }}" data-costo="{{ (float) ($s->costo ?? 0) }}">
+                                    <input type="text" name="servicios[{{ $s->id }}][notas]" class="campo" maxlength="255"
+                                           value="{{ $fila['notas'] ?? '' }}" placeholder="Nota (opcional)" aria-label="Nota para {{ $s->nombre }}">
                                 </div>
                             </div>
-                            <input type="number" id="servicio_{{ $s->id }}" name="servicios[{{ $s->id }}][cantidad]" class="campo" min="0" step="0.5" max="100000"
-                                   value="{{ old('servicios.'.$s->id.'.cantidad', $valores['servicios'][$s->id]['cantidad'] ?? '') }}" placeholder="Cantidad"
-                                   aria-label="Cantidad de {{ $s->nombre }}" data-res-servicio data-unidad="{{ $s->unidad }}" data-costo="{{ (float) ($s->costo ?? 0) }}">
-                            <input type="text" name="servicios[{{ $s->id }}][notas]" class="campo res-servicio-notas" maxlength="255"
-                                   value="{{ old('servicios.'.$s->id.'.notas', $valores['servicios'][$s->id]['notas'] ?? '') }}" placeholder="Indicaciones (opcional)" aria-label="Indicaciones para {{ $s->nombre }}">
+                        @endforeach
+                        <div data-res-otros>
+                            @foreach ($otrosDepto as $n => $f)
+                                @include('operacion.reservas._otro-servicio', ['n' => $n, 'f' => $f, 'grupo' => $g])
+                            @endforeach
                         </div>
-                    @endforeach
+                        @if ($g['servicios']->isEmpty() && $otrosDepto->isEmpty() && ! $g['montaje'])
+                            <p class="res-meta mb-1" data-res-vacio>{{ $g['id'] === null ? 'Algo que no está en la lista: agrégalo aquí y elige quién lo atiende.' : 'Sin servicios en el catálogo.' }}</p>
+                        @endif
+                        <template data-res-plantilla-otro>
+                            @include('operacion.reservas._otro-servicio', ['n' => '__N__', 'f' => [], 'grupo' => $g])
+                        </template>
+                        <button type="button" class="res-agregar-otro" data-res-agregar-otro hidden><i class="bi bi-plus-lg" aria-hidden="true"></i> Otro servicio</button>
+                    </fieldset>
                 @endforeach
-            @endif
-        </details>
+            </div>
+            <input type="hidden" data-res-siguiente-otro value="{{ $siguienteOtro }}">
+        </section>
 
         <details class="res-bloque" @if ($v('notas')) open @endif>
             <summary class="fw-bold"><i class="bi bi-sliders me-1 text-success" aria-hidden="true"></i>Avanzado <span class="res-meta fw-normal">(notas para quien aprueba)</span></summary>

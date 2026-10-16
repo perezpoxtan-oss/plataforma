@@ -307,6 +307,32 @@ class ConfiguracionReservasController extends Controller
         return redirect()->to($volver)->with('ok', CatalogosReservas::CATALOGOS[$catalogo][1]." «{$registro->nombre}» eliminado.");
     }
 
+    /**
+     * «Cargar servicios sugeridos de hotel»: los servicios de la hoja de orden
+     * de evento por departamento y los montajes Tipo U, Escuela, Auditorio y
+     * Banquete. Solo al pulsar el botón; idempotente; no crea departamentos.
+     */
+    public function sugeridosHotel(Request $request): RedirectResponse
+    {
+        $this->exigirEmpresa($request);
+        $r = $this->catalogos->cargarSugeridosHotel($request->user());
+        $volver = route('reservas.configuracion').'#cat-servicios';
+        if ($r['servicios'] === 0 && $r['montajes'] === 0) {
+            return redirect()->to($volver)->with('ok', 'Tu catálogo ya tenía todos los servicios y montajes sugeridos: no se agregó nada.');
+        }
+        $texto = 'Se agregaron '.$r['servicios'].($r['servicios'] === 1 ? ' servicio' : ' servicios').' y '.$r['montajes'].($r['montajes'] === 1 ? ' montaje' : ' montajes').' sugeridos, sin costo.';
+        if ($r['sin_departamento'] > 0) {
+            $texto .= ' Asigna el departamento de '.$r['sin_departamento'].($r['sin_departamento'] === 1 ? ' servicio' : ' servicios')
+                .' (no encontramos: '.implode(', ', $r['grupos_sin_departamento']).'): toca el lápiz de cada uno.';
+        }
+        if ($r['montajes'] > 0) {
+            $texto .= ' Para ofrecer los montajes nuevos, márcalos en cada área con su aforo.';
+        }
+
+        return redirect()->to($volver)->with('ok', $texto)
+            ->with('siguientes', [['Ver los servicios', $volver, 'bi-cup-hot'], ['Configurar las áreas', route('reservas.configuracion').'#areas', 'bi-door-open']]);
+    }
+
     /** Ajustes generales (mismo formulario en Configuración → Reservas de áreas). */
     public function ajustes(Request $request): RedirectResponse
     {

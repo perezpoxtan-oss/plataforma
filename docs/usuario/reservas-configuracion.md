@@ -105,13 +105,38 @@ Por omisión, cada sección de Configuración muestra **solo lo activo**: las á
 
 Los responsables de cada departamento son los de **Recursos Humanos → Departamentos → Responsables**.
 
+## Cómo cargar la lista sugerida para hoteles
+
+Si tu empresa es un hotel, puedes llenar el catálogo de una vez con los servicios de una **orden de evento**, sin costo:
+
+1. En **Configuración**, sección **Servicios y requerimientos**, toca **Cargar servicios sugeridos de hotel** y confirma.
+2. Se agregan, por departamento:
+   - **Steward**: Mantelería, Rotafolio, Podium.
+   - **Alimentos y bebidas**: Bebidas, Tipo de servicio, Coffee break.
+   - **Cocina**: Desayuno, Comida, Cena, Bocadillos, Pastel, Pan.
+   - **Mantenimiento**: Iluminación, Aire acondicionado, T.V., Extensión, Colocación de pantalla.
+   - **Áreas públicas**: Bote de basura, Aromatizar, Limpieza antes y después, Planchado de mantelería.
+   - **Animación**: Video o cañón, Show, Música / bocina, Micrófono, MC Animador, Pantalla.
+   - **Capacitación**: Cañón, Proyector, Lista de asistencia.
+   - **Sistemas**: Laptop, Internet.
+   - Y los montajes **Tipo U, Tipo Escuela, Tipo Auditorio y Tipo Banquete** si no tienes uno parecido.
+3. Cada grupo se asigna al departamento de tu empresa que se llama igual (sin importar acentos ni mayúsculas). **No se crean departamentos**: si no tienes alguno, el aviso dice «Asigna el departamento de N servicios»; toca el lápiz de cada uno y elige quién lo atiende.
+4. Lo que ya tengas con el mismo nombre no se duplica, aunque lo hayas dado de baja. Puedes tocar el botón otra vez sin problema.
+
+![Botón Cargar servicios sugeridos de hotel](img/reservas/servicios-sugeridos.png)
+
+**Qué debes ver:** el aviso verde «Se agregaron N servicios y M montajes sugeridos, sin costo.». Para ofrecer un montaje nuevo, márcalo en cada área con su aforo (**Editar** el área).
+
 ## Cómo elegir quién aprueba, los tiempos y el IVA
 
 1. En **Quién aprueba, tiempos e IVA** (o en **Estructura → Configuración → Reservas de áreas**, es el mismo formulario):
    - **Responsable general de reservas** (regularmente el asistente de gerencia) y su **Suplente**.
    - **Recordar a las (horas)** y **Avisar al responsable general a las (horas)**.
+   - **Departamento que hace el montaje** (opcional; en un hotel, Steward): el **Tipo de montaje** aparece dentro de su tarjeta al reservar y en la orden de evento, y ese departamento recibe la orden de servicio del montaje aunque no se le pida otra cosa.
    - **IVA de las reservas para clientes** y **Cobrar IVA en las cotizaciones**.
 2. Toca **Guardar**.
+
+![Departamento que hace el montaje](img/reservas/ajustes-montaje.png)
 
 En **Estructura → Configuración → Reservas de áreas** también se encienden o apagan los **avisos por correo** de reservas.
 
@@ -133,6 +158,7 @@ En la pestaña **Informes** elige las fechas y la sede: **Ocupación por área**
 | «El aforo de un montaje no puede ser mayor que el aforo máximo del área.» | Un montaje dice más personas que el área. | Corrige el aforo del montaje o el del área. |
 | «Revisa el horario del lunes: la hora de cierre debe ser después de la de apertura.» | El horario de ese día está al revés. | Corrige las horas. |
 | «Ya existe «…» en el catálogo.» | Ese nombre ya está. | Usa el que existe o cámbiale el nombre. |
+| «Asigna el departamento de 11 servicios…» | Cargaste la lista sugerida y tu empresa no tiene algún departamento con ese nombre. | Toca el lápiz de esos servicios y elige el departamento que los atiende, o dalos de baja si no los usas. |
 | «El suplente debe ser otra persona.» | Elegiste a la misma persona dos veces. | Elige otro suplente. |
 | No ves Catálogos ni Ajustes | Tu permiso de configurar es solo de tu sede. | Pide a quien configura en toda la empresa que los cambie. |
 
@@ -147,6 +173,8 @@ En la pestaña **Informes** elige las fechas y la sede: **Ocupación por área**
 **¿Eliminar un área la borra de Zonas y edificios?** No, nunca. Solo deja de ofrecerse para reservar.
 
 **¿Cuál es la diferencia entre Dar de baja y Eliminar en los catálogos?** Dar de baja lo oculta y se puede reactivar; Eliminar lo borra para siempre y solo se puede si nunca se usó.
+
+**¿La lista sugerida se carga sola?** No. Solo cuando tocas el botón; si eliminas algo de la lista, no vuelve a aparecer a menos que lo toques otra vez.
 
 **¿Qué pasa si nadie es responsable?** Aprueba quien tenga permiso de **aprobar** reservas en esa sede.
 

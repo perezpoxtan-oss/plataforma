@@ -68,12 +68,56 @@ class Disponibilidad
 
     /**
      * Bloqueo del área: del inicio menos el montaje al fin más el desmontaje.
+     * Los minutos son los de la reserva si los trae (null = los del área).
      *
      * @return array{0: CarbonImmutable, 1: CarbonImmutable}
      */
-    public function bloqueo(ReservaArea $area, CarbonImmutable $inicio, CarbonImmutable $fin): array
+    public function bloqueo(ReservaArea $area, CarbonImmutable $inicio, CarbonImmutable $fin, ?int $montaje = null, ?int $desmontaje = null): array
     {
-        return [$inicio->subMinutes((int) $area->montaje_minutos), $fin->addMinutes((int) $area->desmontaje_minutos)];
+        return [$inicio->subMinutes($montaje ?? (int) $area->montaje_minutos), $fin->addMinutes($desmontaje ?? (int) $area->desmontaje_minutos)];
+    }
+
+    /**
+     * Ventana de «Día completo» para una fecha local: el horario del área de
+     * ese día (si tiene varias ventanas, la más larga) o 00:00–23:59 si el
+     * área no tiene horario. null = ese día el área no se reserva.
+     *
+     * @return array{0: string, 1: string}|null
+     */
+    public function diaCompleto(ReservaArea $area, string $fecha): ?array
+    {
+        if (! is_array($area->horario) || $area->horario === []) {
+            return ['00:00', '23:59'];
+        }
+        $dia = CarbonImmutable::createFromFormat('Y-m-d', $fecha, $this->zona($area))->dayOfWeekIso;
+        $ventanas = collect((array) ($area->horario[(string) $dia] ?? []))
+            ->filter(fn ($v) => is_array($v) && count($v) === 2)
+            ->sortByDesc(fn ($v) => self::minutos((string) $v[1]) - self::minutos((string) $v[0]));
+
+        return $ventanas->isEmpty() ? null : array_values($ventanas->first());
+    }
+
+    /** «13:30» → 810. */
+    private static function minutos(string $hora): int
+    {
+        [$h, $m] = array_map('intval', explode(':', $hora) + [0, 0]);
+
+        return $h * 60 + $m;
+    }
+
+    /**
+     * Aforo que aplica (el del montaje elegido o el del área) y si las personas
+     * lo pasan: [aforo, excede, texto «del montaje Tipo U» / «del área»].
+     *
+     * @return array{0: ?int, 1: bool, 2: string}
+     */
+    public function aforo(ReservaArea $area, ?int $montajeId, int $asistentes): array
+    {
+        $aforo = $area->aforoPara($montajeId);
+        $montaje = $montajeId !== null ? $area->montajes->firstWhere('id', $montajeId) : null;
+        $texto = $montaje !== null && $montaje->pivot->aforo !== null ? 'del montaje '.$montaje->nombre : 'del área';
+
+        return [$aforo, $aforo !== null && $asistentes > $aforo, $texto];
     }
 
     /**
@@ -131,10 +175,13 @@ class Disponibilidad
 
     /**
      * Todas las reglas juntas. Lanza el mensaje que la persona entiende.
+     * Pasar el aforo se permite solo como excepción con motivo
+     * ($excepcionAforo, ya validada por quien llama).
      *
      * @return array{0: CarbonImmutable, 1: CarbonImmutable} bloqueo
      */
-    public function validar(ReservaArea $area, CarbonImmutable $inicio, CarbonImmutable $fin, ?int $montajeId, int $asistentes, ?int $excepto = null, bool $exigirFuturo = true): array
+    public function validar(ReservaArea $area, CarbonImmutable $inicio, CarbonImmutable $fin, ?int $montajeId, int $asistentes, ?int $excepto = null, bool $exigirFuturo = true,
+        bool $excepcionAforo = false, ?int $montajeMinutos = null, ?int $desmontajeMinutos = null): array
     {
         if (! $area->reservable || ! $area->espacio?->activo) {
             throw ValidationException::withMessages(['reserva_area_id' => 'Esta área ya no se puede reservar.']);
@@ -151,17 +198,16 @@ class Disponibilidad
         if ($montajeId !== null && ! $area->montajes->contains('id', $montajeId)) {
             throw ValidationException::withMessages(['montaje_id' => 'Ese montaje no está disponible en esta área.']);
         }
-        $aforo = $area->aforoPara($montajeId);
-        if ($aforo !== null && $asistentes > $aforo) {
-            $montaje = $montajeId !== null ? $area->montajes->firstWhere('id', $montajeId)?->nombre : null;
-            throw ValidationException::withMessages(['asistentes' => 'Son más personas que el aforo'.($montaje ? ' del montaje '.$montaje : ' del área').": máximo {$aforo}."]);
+        [$aforo, $excede, $deQue] = $this->aforo($area, $montajeId, $asistentes);
+        if ($excede && ! $excepcionAforo) {
+            throw ValidationException::withMessages(['asistentes' => "Son más personas que el aforo {$deQue}: máximo {$aforo}."]);
         }
-        [$desde, $hasta] = $this->bloqueo($area, $inicio, $fin);
+        [$desde, $hasta] = $this->bloqueo($area, $inicio, $fin, $montajeMinutos, $desmontajeMinutos);
         $choque = $this->choques($area, $desde, $hasta, $excepto)->first();
         if ($choque !== null) {
             $zona = $this->zona($area);
             $texto = $choque->bloqueo_desde->setTimezone($zona)->format('H:i').' a '.$choque->bloqueo_hasta->setTimezone($zona)->format('H:i');
-            $extra = ((int) $area->montaje_minutos + (int) $area->desmontaje_minutos) > 0 ? ' (incluye montaje y desmontaje)' : '';
+            $extra = (($montajeMinutos ?? (int) $area->montaje_minutos) + ($desmontajeMinutos ?? (int) $area->desmontaje_minutos)) > 0 ? ' (incluye montaje y desmontaje)' : '';
             if ((int) $choque->espacio_id !== (int) $area->espacio_id) {
                 $otro = $choque->area?->nombre() ?? 'otro espacio';
                 throw ValidationException::withMessages(['hora_inicio' => "«{$otro}» está reservado de {$texto} y comparte lugar con esta área (la zona completa o uno de sus espacios interiores). Elige otro horario u otra área."]);

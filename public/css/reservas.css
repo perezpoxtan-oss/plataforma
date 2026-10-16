@@ -117,3 +117,83 @@ html.modo-noche .res-evento.estado-por_aprobar, html.modo-noche .res-evento.esta
 .res-ver-ocultas { padding: 0.3rem 0.85rem; font-size: 0.8rem; text-decoration: none; }
 .tema-verde .res-ver-ocultas.active { background: #16a34a; border-color: #16a34a; color: #fff; }
 html.modo-noche .tema-verde .res-ver-ocultas.active { background: #15803d; border-color: #15803d; color: #fff; }
+
+/* Orden de evento (formulario): día completo, aforo en vivo, excepción y servicios por departamento */
+.res-ancho-2 { grid-column: span 2; }
+.res-interruptor { display: inline-flex; gap: 10px; align-items: center; border: 2px solid #e2e8f0; border-radius: 12px; padding: 8px 14px; min-height: 44px; cursor: pointer; }
+.res-interruptor:has(input:checked) { border-color: #15803d; background: #f0fdf4; }
+.res-interruptor input { width: 20px; height: 20px; }
+.res-aforo { font-size: .85rem; font-weight: 700; }
+.res-aforo.dentro { color: #166534; }
+.res-aforo.excede { color: #b45309; }
+.res-excepcion { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 10px 12px; }
+.res-deptos { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-items: start; }
+.res-depto { border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px 12px 12px; margin: 0; min-width: 0; background: #fff; }
+.res-depto-titulo { float: left; width: 100%; font-size: .8rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #fff; background: #15803d;
+    margin: -10px -12px 8px; padding: 6px 12px; border-radius: 11px 11px 0 0; width: calc(100% + 24px); }
+.res-depto-titulo + * { clear: both; }
+.res-item { padding: 6px 0; border-bottom: 1px solid #f1f5f9; }
+.res-item:last-of-type { border-bottom: 0; }
+.res-item-check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; min-height: 32px; font-weight: 600; }
+.res-item-check input { width: 20px; height: 20px; margin-top: 2px; flex: none; }
+.res-item-check .res-meta { font-weight: 400; font-size: .78rem; }
+.res-item-extra { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 6px; margin: 6px 0 2px 30px; }
+.res-item-extra[hidden] { display: none; }
+.res-montaje-tarjeta { padding-bottom: 8px; margin-bottom: 4px; border-bottom: 1px solid #f1f5f9; }
+.res-otro { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
+.res-otro select { grid-column: 1; grid-row: 1; }
+.res-otro input[name$="[nombre]"] { grid-column: 1; }
+.res-otro input[name$="[notas]"] { grid-column: 1; }
+.res-otro .btn-icono { grid-column: 2; grid-row: 1; }
+.res-agregar-otro { background: none; border: 1px dashed #15803d; color: #15803d; border-radius: 10px; padding: 6px 12px; font-weight: 600; font-size: .85rem; margin-top: 6px; min-height: 36px; }
+.res-agregar-otro:hover { background: #f0fdf4; }
+@media (max-width: 600px) {
+    .res-ancho-2 { grid-column: auto; }
+    .res-deptos { grid-template-columns: 1fr; }
+}
+html.modo-noche .res-depto { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+html.modo-noche .res-item, html.modo-noche .res-montaje-tarjeta { border-color: #334155; }
+html.modo-noche .res-excepcion { background: #451a03; border-color: #92400e; color: #fde68a; }
+html.modo-noche .res-interruptor:has(input:checked) { background: #14532d; }
+html.modo-noche .res-agregar-otro { color: #86efac; border-color: #86efac; }
+
+/* Ficha: indicaciones de montaje y servicios agrupados por departamento */
+.res-indicaciones { background: #fef9c3; border: 2px solid #facc15; border-radius: 12px; padding: 8px 12px; font-weight: 800; text-transform: uppercase; color: #713f12; }
+.res-tabla tr.res-tabla-grupo th { background: #f0fdf4; color: #166534; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+.res-nota { display: inline-block; background: #f1f5f9; border-radius: 6px; padding: 0 6px; font-size: .8rem; font-weight: 600; color: #334155; }
+html.modo-noche .res-indicaciones { background: #422006; color: #fde68a; border-color: #a16207; }
+html.modo-noche .res-tabla tr.res-tabla-grupo th { background: #14532d; color: #bbf7d0; }
+html.modo-noche .res-nota { background: #334155; color: #e2e8f0; }
+
+/* Hoja «Orden de evento» (carta) */
+.res-orden { font-size: .84rem; }
+.res-orden h2.res-orden-evento { font-size: 1.1rem; margin: 6px 0 8px; }
+.res-orden-cabecera { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0 0 8px; border: 1px solid #0f172a; }
+.res-orden-cabecera > div { border: 1px solid #94a3b8; padding: 4px 6px; margin: -1px 0 0 -1px; }
+.res-orden-cabecera dt { font-size: .66rem; text-transform: uppercase; letter-spacing: .03em; color: #475569; font-weight: 700; }
+.res-orden-cabecera dd { margin: 0; font-weight: 700; }
+.res-orden-resaltado { background: #fef08a; border: 2px solid #0f172a; font-weight: 800; text-transform: uppercase; text-align: center; padding: 4px 8px; margin: 6px 0 8px;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.res-orden-excepcion { border: 2px dashed #b45309; padding: 4px 8px; margin: 6px 0 8px; }
+.res-orden-rejilla { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.res-orden-seccion { border: 1px solid #0f172a; break-inside: avoid; }
+.res-orden-seccion h3 { font-size: .74rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; margin: 0; padding: 3px 6px; background: #0f172a; color: #fff;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.res-orden-renglon { display: flex; gap: 6px; align-items: baseline; padding: 2px 6px; border-bottom: 1px solid #e2e8f0; line-height: 1.25; }
+.res-orden-renglon:last-child { border-bottom: 0; }
+.res-orden-opcion { padding-left: 22px; color: #475569; }
+.res-casilla { font-size: 1rem; line-height: 1; flex: none; }
+.res-orden-nota { font-weight: 700; text-transform: uppercase; border-bottom: 1px solid #0f172a; padding: 0 2px; }
+.res-orden-linea { display: inline-block; min-width: 90px; border-bottom: 1px solid #0f172a; }
+.res-orden .res-firmas { margin-top: 28px; }
+@media (max-width: 700px) {
+    .res-orden-cabecera { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .res-orden-rejilla { grid-template-columns: 1fr; }
+}
+@media print {
+    @page { size: letter; margin: 12mm; }
+    .res-orden-cabecera { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .res-orden-rejilla { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.res-insignia-aforo { display: inline-block; font-size: .72rem; }
+.res-ancho-4 { grid-column: 1 / -1; }

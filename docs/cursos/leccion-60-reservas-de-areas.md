@@ -95,12 +95,34 @@ Comprueba: en Zonas y edificios siguen todos los espacios; nada se borró.
 
 Comprueba: las reservas que ya usaban ese montaje lo siguen mostrando.
 
+## Práctica 9 · Orden de evento (Administrador y quien reserva)
+
+Preparación (Administrador):
+
+1. En **Configuración → Servicios y requerimientos** toca **Cargar servicios sugeridos de hotel** y confirma. Lee el aviso: si dice «Asigna el departamento de N servicios», edita esos servicios y elige su departamento. Vuelve a tocar el botón: el aviso dice que no se agregó nada (no duplica).
+2. En **Quién aprueba, tiempos e IVA** elige **Departamento que hace el montaje**: Steward (si no existe, créalo antes en Departamentos) y **Guardar**.
+3. Edita la «Sala de capacitación» (o la sala que uses): aforo 25, montaje 30 min, y marca el montaje **Tipo U** (o «Herradura (U)») con aforo 25.
+
+Reserva igual a la hoja (quien reserva):
+
+4. **Nueva reserva** → Sala de capacitación, el próximo **jueves** de 9:00 a 13:30. Comprueba que **Montaje antes** ya dice 30. En **Indicaciones para el montaje** escribe «Tener montaje listo 30 min antes».
+5. **Nombre del evento o motivo**: «Capacitación de inducción». **Departamento que solicita**: Capacitación (si tu colaborador es de Capacitación, ya viene elegido).
+6. Escribe 30 en **Número de personas**: aparece «30 de 25 permitidos: excede el aforo» y el campo **Excepción de aforo**. Cámbialo a 20: vuelve a verde y la excepción desaparece.
+7. En **Servicios por departamento**: en **Steward** elige **Tipo de montaje** Tipo U; en **Alimentos y bebidas** marca **Bebidas** con la nota «Agua» y **Coffee break**; en **Cocina**, **Pan**; en **Áreas públicas**, **Bote de basura**, **Aromatizar** y **Limpieza antes y después**; en **Capacitación**, **Proyector** y **Lista de asistencia**. En Steward toca **+ Otro servicio** y escribe «Mesa para registro» con la nota «A la entrada».
+8. **Guardar reserva**. En la ficha revisa **Solicitado por** (tu nombre — Capacitación), **Fecha de solicitud**, «20 de 25 permitidos», el montaje y desmontaje y la indicación resaltada. Los servicios aparecen agrupados por departamento.
+9. Toca **Imprimir**: la **Orden de evento** trae el encabezado de la hoja y una sección por departamento con ☒ y sus notas, en una hoja carta. Toca **Mostrar hoja completa** para ver también las casillas vacías.
+10. Como responsable del área, abre **Por aprobar**: todavía no hay excepción. Ahora modifica la reserva a 28 personas con el motivo «Se agregan sillas»: en **Por aprobar** aparece la insignia **Excede aforo** con el motivo, y la hoja impresa lo muestra.
+11. **Día completo**: haz otra reserva de la sala para el viernes marcando **Día completo**: las horas se llenan con el horario del área.
+
+Comprueba: después de aprobar, cada departamento (también Steward, por el tipo de montaje) tiene su orden en **Órdenes de servicio**.
+
 ## Para recordar
 
 - Una zona se reserva **completa** o **por sus espacios interiores**; si ambas existen, una ocupa a la otra en ese horario.
 - **Editar** es siempre el lápiz y **Eliminar** el bote de basura, como en Zonas y edificios.
 - **Eliminar de reservas** nunca borra el lugar de Zonas y edificios ni el historial, y no deja eliminar un área con reservas próximas. Lo quitado o dado de baja no estorba: se ve con **Mostrar quitadas / dados de baja**.
 - En los catálogos, **Eliminar** solo borra lo que nunca se usó; lo usado se **da de baja**.
+- La reserva es una **orden de evento**: quién la pide y de qué departamento, personas contra el aforo (con excepción y motivo), horario o día completo, montaje antes y desmontaje después, y lo que prepara cada departamento.
 
 - Lo de cada quien llega a su campana y a Mis pendientes: nadie tiene que buscar.
 - Modificar solo vuelve a pedir lo que cambió.

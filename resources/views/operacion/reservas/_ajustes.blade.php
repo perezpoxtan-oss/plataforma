@@ -7,6 +7,7 @@
     $ajustesRes = app(\App\Services\Reservas\AjustesReservas::class)->de($empresa);
     $usuariosRes = \App\Models\User::where('empresa_id', $empresa->id)->where('activo', true)->where('es_superadmin', false)->orderBy('name')->get(['id', 'name']);
     $defecto = \App\Services\Reservas\AjustesReservas::DEFECTO;
+    $deptosRes = \App\Models\Departamento::withoutGlobalScopes()->where('empresa_id', $empresa->id)->where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
 @endphp
 <div class="tarjeta p-4" id="ajustes">
     <h3 class="h6 fw-bold"><i class="bi bi-calendar-check me-2 text-success" aria-hidden="true"></i>Reservas de áreas</h3>
@@ -42,12 +43,20 @@
                     <p class="small text-muted mb-0">Se pone roja y se avisa al responsable general y a su suplente.</p>
                 </div>
                 <div>
+                    <label class="campo-etiqueta" for="res_depto_montaje">Departamento que hace el montaje</label>
+                    <select id="res_depto_montaje" name="departamento_montaje_id" class="campo">
+                        <option value="">Ninguno (el montaje se elige con los datos del evento)</option>
+                        @foreach ($deptosRes as $d)<option value="{{ $d->id }}" @selected($ajustesRes['departamento_montaje_id'] === $d->id)>{{ $d->nombre }}</option>@endforeach
+                    </select>
+                    <p class="small text-muted mb-0">Opcional (en un hotel, Steward). El tipo de montaje aparece en su tarjeta de servicios y recibe la orden de servicio del montaje.</p>
+                </div>
+                <div>
                     <label class="campo-etiqueta" for="res_iva">IVA de las reservas para clientes (%)</label>
                     <input type="number" id="res_iva" name="iva_porcentaje" class="campo" min="0" max="30" step="0.01" value="{{ $ajustesRes['iva_porcentaje'] }}">
                     <label class="d-flex gap-2 align-items-center mt-2 small"><input type="checkbox" name="iva_aplica" value="1" @checked($ajustesRes['iva_aplica'])> Cobrar IVA en las cotizaciones</label>
                 </div>
             </div>
-            <p class="small text-muted mt-2 mb-2"><span class="valor-original">Valor original: sin responsable general, recordar a las {{ $defecto['recordar_horas'] }} h, avisar a las {{ $defecto['escalar_horas'] }} h, IVA {{ (int) $defecto['iva_porcentaje'] }} % cobrado. Moneda: la de la empresa ({{ $ajustesRes['moneda'] }}).</span></p>
+            <p class="small text-muted mt-2 mb-2"><span class="valor-original">Valor original: sin responsable general, recordar a las {{ $defecto['recordar_horas'] }} h, avisar a las {{ $defecto['escalar_horas'] }} h, IVA {{ (int) $defecto['iva_porcentaje'] }} % cobrado, sin departamento de montaje. Moneda: la de la empresa ({{ $ajustesRes['moneda'] }}).</span></p>
             @if ($editable)
                 <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-check2 me-1" aria-hidden="true"></i>Guardar</button>
             @else

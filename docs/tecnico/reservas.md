@@ -36,6 +36,38 @@ El dueño reportó que las fichas de áreas «no se ven editables ni eliminables
 - **Catálogos iniciales una sola vez**: `asegurar()` marca `empresas.preferencias.reservas_catalogos_iniciales` (`CatalogosReservas::INICIALES`); si la empresa elimina todos sus montajes o tipos, ya no vuelven a aparecer.
 - **Verbo «Eliminar»** (fuera de los diez del criterio 4): texto aprobado por el dueño, igual que «Eliminar definitivamente» del borrado controlado.
 
+## Orden de evento (decisión del dueño, 2026-10-16)
+
+El dueño usa una hoja de «orden de evento» de hotel (lugar, núm. de pax, fecha, solicitado por + departamento, horario, «TENER MONTAJE LISTO 30 MIN ANTES» y secciones por departamento con casillas y notas). Se cubrieron solo los huecos; lo demás ya existía y se reutilizó.
+
+**Ya existía:** `titulo` (nombre del evento), área y espacio, `inicio`/`fin`, `asistentes` con aforo del área y por montaje (`reserva_area_montajes.aforo`), `montaje_id`, `bloqueo_desde/hasta` con los minutos del área, `solicitante_id` y `created_at`, servicios del catálogo con `departamento_id` y `requiere_aprobacion`, renglones con `notas`, renglones sin `servicio_id` (tabla), aprobaciones y órdenes por departamento, tarifas (incluida `tarifa_dia`) y la hoja impresa.
+
+**Se agregó** (migración `2026_11_07_000100_orden_de_evento_en_reservas`, solo columnas opcionales en `reservas`; `down()` quita la llave foránea y las columnas, probado en `ReservasOrdenDeEventoTest`):
+
+| Columna | Para qué |
+|---|---|
+| `departamento_solicitante_id` (FK `departamentos`, `nullOnDelete`) | Departamento que pide. Se propone con el del colaborador del usuario (`AdministradorReservas::departamentoDe`: `users.colaborador_id` → `colaboradores.departamento_id`, solo si es de la empresa). Editable; se valida con el scope de tenant («Elige un departamento de tu empresa.»). Al modificar sin el campo se conserva. `Reserva::solicitadoPorTexto()` = «Nombre — Departamento». |
+| `excede_aforo`, `motivo_excepcion_aforo` | Pasar el aforo **ya no es error**: `Disponibilidad::aforo()` da [aforo, excede, «del montaje X» / «del área»]; si excede sin motivo (≥ 3 caracteres) → error en `motivo_excepcion_aforo` «Son N personas y el aforo … es de M: escribe el motivo de la excepción (lo verá quien aprueba).». Con motivo se guarda y `Disponibilidad::validar(..., excepcionAforo: true)` no bloquea. Dentro del aforo el motivo se descarta. |
+| `dia_completo` | `Disponibilidad::diaCompleto($area, $fecha)`: ventana más larga del horario del área ese día; sin horario 00:00–23:59; día cerrado → «Ese día el área no se reserva: elige otro día.». Las horas del formulario se ignoran. Si es para cliente sin tarifa elegida y el área tiene `tarifa_dia`, se usa `dia`. |
+| `montaje_minutos`, `desmontaje_minutos` (null = los del área) | El formulario propone los del área; si llegan **iguales** a los del área se guarda `null` (así una modificación sin cambios no altera huellas). `Disponibilidad::bloqueo()` y `validar()` reciben los de la reserva; `Reserva::minutosMontaje()/minutosDesmontaje()` resuelven el valor. El bloqueo cruzado por niveles usa `bloqueo_desde/hasta` ya calculados, así que respeta los minutos de cada reserva. 0–1440. |
+| `indicaciones_montaje` (255) | Texto corto resaltado en la ficha y la hoja. **Decisión:** columna propia y no `notas`, porque `notas` es «para quien aprueba» y no se imprime resaltado; las indicaciones son para quien monta. |
+
+**Aprobaciones y órdenes:**
+- `FlujoReservas::requeridas`: una reserva con `excede_aforo` siempre pide la parte **área** (aunque el área sea de confirmación inmediata).
+- Huellas: se agregan datos **solo si se usan** (excepción de aforo y minutos propios en la del área; minutos propios e indicaciones en la de cada departamento), para que las reservas de antes conserven su huella y no se vuelvan a pedir aprobaciones por la migración. La nota de un renglón ya era parte de la huella del departamento.
+- «+ Otro servicio» = renglón con `servicio_id` null y el departamento de su tarjeta (en «Otros» se elige o queda sin departamento). Al no tener servicio, `requiere_aprobacion` se toma como `true` (comportamiento existente): su departamento aprueba y recibe orden. Sin departamento solo se anota en la hoja.
+- **Departamento que hace el montaje** (`preferencias.reservas.departamento_montaje_id`, `AjustesReservas`; validado contra la empresa; si el formulario no lo trae se conserva): en el formulario el `<select name="montaje_id">` se pinta dentro de su tarjeta (`_campo-montaje`) y `FlujoReservas::departamentoMontaje()` lo suma a las órdenes cuando la reserva tiene `montaje_id` (orden «Montaje Tipo U» aunque no tenga renglones). No pide aprobación propia: el montaje ya lo aprueba el área.
+
+**Formulario** (`formulario.blade.php`, `_campo-montaje`, `_otro-servicio`, `public/js/reservas.js`, sin JS en línea): «Día completo» (interruptor), minutos de montaje/desmontaje e indicaciones en «¿Dónde y cuándo?»; departamento que solicita y «N de M permitidos» en vivo en «¿Para qué?» con el bloque de excepción (visible sin JS si hay error o motivo); **Servicios por departamento** = `fieldset.res-depto` por departamento (`ReservaController::gruposPorDepartamento`: el que monta primero, luego por nombre sin acentos, «Otros» al final con los sin departamento o de departamentos inactivos), cada servicio con casilla `servicios[id][usar]` y, al marcarla, cantidad (sugerida por unidad) y nota; `<template>` por tarjeta para «+ Otro servicio» (`otros[n][departamento_id|nombre|notas|cantidad]`). El servidor acepta un servicio marcado con `usar` **o** con cantidad > 0 (compatibilidad); sin cantidad la sugiere (persona → personas, hora → horas, otro → 1). Rejilla `auto-fill minmax(280px)` (2–3 columnas en escritorio, una en celular).
+
+**Hoja impresa** (`imprimir.blade.php`, `ReservaController::seccionesHoja`): encabezado en rejilla (lugar con su ruta, pax «de N permitidos», fecha y horario —«Día completo»—, solicitado por + departamento, fecha de solicitud, montaje/desmontaje, ocupación, tipo de uso, para quién), indicaciones resaltadas, excepción de aforo, rejilla de 3 columnas de secciones por departamento con ☒ y nota (cantidad cuando no es 1 o es por persona); por omisión solo departamentos con algo pedido; `?completa=1` agrega los servicios activos sin marcar (☐), los montajes del área y «Otro servicio: ____». Carta (`@page letter`); la hoja de ejemplo cabe en una página. Cotización, aprobaciones y firmas se conservan.
+
+**Ficha, Por aprobar y Mis reservas:** «Solicitado por», «Fecha de solicitud», «20 de 25 permitidos», montaje y desmontaje, indicaciones, servicios agrupados por departamento (`ReservaController::porDepartamento`); insignia **Excede aforo** con el motivo en Por aprobar y Mis reservas; el resumen de los avisos dice «(excede el aforo: motivo)».
+
+**Lista sugerida de hotel** (`POST /reservas/configuracion/sugeridos-hotel`, ruta `reservas.configuracion.sugeridos`, `reservas.configurar` con alcance de empresa; `CatalogosReservas::cargarSugeridosHotel`, constantes `SUGERIDOS_HOTEL` y `MONTAJES_HOTEL`): solo al pulsar el botón (no en `asegurar()`, para respetar los catálogos iniciales que no vuelven); idempotente por nombre normalizado (`CatalogosReservas::clave`, sin acentos ni mayúsculas, incluye dados de baja); sin costo; asigna el departamento con nombre (o alias) coincidente y **no crea departamentos**; montajes «Tipo U/Escuela/Auditorio/Banquete» solo si no hay uno equivalente (p. ej. «Herradura (U)», «Escuela»). Auditoría `reservas.sugeridos_hotel` («Carga de servicios sugeridos de hotel»).
+
+**Criterios de experiencia de uso:** (2) el departamento y los minutos se proponen, la cantidad se sugiere; (4) verbos existentes («Guardar», «Imprimir»); «+ Otro servicio», «Mostrar hoja completa», «Solo lo pedido» y «Cargar servicios sugeridos de hotel» son textos pedidos por el dueño; (5) el aviso de la lista sugerida ofrece «Ver los servicios» y «Configurar las áreas»; (7) cantidad y nota aparecen solo al marcar; la hoja completa es opcional; (8) lo indispensable sigue siendo área, día, horario, nombre y personas.
+
 ## Tablas (migración `2026_11_05_000100_crear_reservas_de_areas`)
 
 | Tabla | Para qué |
@@ -77,7 +109,7 @@ Ocupan el horario: Por aprobar, Cambio pedido y Confirmada (`Reserva::OCUPAN`).
 
 ## Reglas
 
-- **Disponibilidad** (`Disponibilidad::validar`): área reservable, que no sea zona `interiores`, y espacio activo; inicio en el futuro; dentro del horario del día (hora local de la sede); montaje disponible en el área; asistentes ≤ aforo del montaje (o del área); sin cruce de bloqueos con otras reservas que ocupan el mismo espacio, la zona que lo contiene o sus espacios interiores. Se guarda dentro de una transacción con `lockForUpdate` sobre esas áreas.
+- **Disponibilidad** (`Disponibilidad::validar`): área reservable, que no sea zona `interiores`, y espacio activo; inicio en el futuro; dentro del horario del día (hora local de la sede); montaje disponible en el área; asistentes ≤ aforo del montaje (o del área) **salvo excepción con motivo** (ver «Orden de evento»); sin cruce de bloqueos con otras reservas que ocupan el mismo espacio, la zona que lo contiene o sus espacios interiores. Se guarda dentro de una transacción con `lockForUpdate` sobre esas áreas.
 - **Costo** (`Cotizador`): uso interno = todo en cero. Cliente = tarifa (hora: cada hora o fracción; medio día; día; evento; o `importe_area_manual`) + Σ cantidad × costo − descuento (cortesía = todo) + IVA de la empresa. Ajustar costo (`PUT /reservas/{r}/costo`) pide `reservas.aprobar` y motivo; no vuelve a pedir aprobación; una modificación conserva el ajuste mientras siga siendo para cliente.
 - **Aprobaciones** (`FlujoReservas::requeridas/sincronizar`): parte «área» salvo confirmación inmediata sin servicios ni cliente; una parte por departamento de los servicios con `requiere_aprobacion`. Huella del área: espacio, inicio, fin, montaje, asistentes, para cliente, tarifa. Huella del departamento: espacio, inicio, fin, montaje y sus renglones. Al modificar, una parte aprobada o pendiente con la misma huella se conserva (sin aviso nuevo); las demás se retiran (`vigente = false`, pendientes → `cancelada`) y se piden de nuevo. Responder: el primero gana (`UPDATE … WHERE estado = pendiente`); rechazar o pedir cambio exigen motivo. Al aprobar la última, `confirmada`.
 - **Órdenes** (`FlujoReservas::sincronizarOrdenes`): al confirmarse, una por departamento con renglones (aprueben o no). Si cambia la huella del departamento, vuelve a `pendiente` con aviso «Cambió la orden»; sin renglones, `cancelada`. Al cancelar la reserva, todas se cancelan con aviso.
@@ -123,7 +155,7 @@ Las pantallas usan los componentes de la plataforma, sin estilos propios para bo
 | `GET /reservas/{r}/editar` · `PUT /reservas/{r}` | quien reservó o configurar | Modificar |
 | `POST /reservas/{r}/cancelar` | ver arriba | Cancelar |
 | `PUT /reservas/{r}/costo` | aprobar | Descuento, cortesía, importe del área |
-| `GET /reservas/{r}/imprimir` | imprimir | Orden de evento / cotización |
+| `GET /reservas/{r}/imprimir[?completa=1]` | imprimir | Orden de evento por departamento / cotización (hoja completa con casillas vacías) |
 | `GET /reservas/por-aprobar` · `POST /reservas/aprobaciones/{a}/responder` | designación o aprobar | Bandeja y respuesta (`respuesta` = aprobar, rechazar, cambio; `comentario`) |
 | `GET /reservas/ordenes` · `POST /reservas/ordenes/{o}/listo` | responsable del departamento o configurar | Órdenes y «Listo» |
 | `GET /reservas/informes` · `/informes/exportar` | ver · exportar | Ocupación, por tipo, ingresos; CSV |
@@ -132,6 +164,7 @@ Las pantallas usan los componentes de la plataforma, sin estilos propios para bo
 | `DELETE /reservas/configuracion/areas/{area}` | configurar (sede del área) | Eliminar de reservas (`volver=sede` regresa a las fichas) |
 | `GET /reservas/configuracion?ver[]=…` | configurar | Mostrar también lo quitado / dado de baja de esa sección |
 | `DELETE /reservas/configuracion/catalogo/{catalogo}/{id}` | configurar (empresa) | Eliminar un montaje, tipo de uso o servicio que nunca se usó |
+| `POST /reservas/configuracion/sugeridos-hotel` | configurar (empresa) | Cargar servicios sugeridos de hotel (idempotente) |
 | `PUT /reservas/ajustes` | configurar (empresa) | Ajustes (también desde Configuración → Reservas de áreas, `desde=configuracion`) |
 | `GET /reservas/areas/{area}/foto` | ver, crear o configurar | Foto del área (disco privado) |
 
@@ -139,12 +172,13 @@ Los identificadores se cargan dentro de la empresa de trabajo (otra empresa o si
 
 ## Piezas
 
+- Vistas parciales nuevas: `_campo-montaje`, `_otro-servicio`.
 - Modelos: `Reserva`, `ReservaArea`, `ReservaMontaje`, `ReservaTipoUso`, `ReservaServicio`, `ReservaServicioItem`, `ReservaAprobacion`, `ReservaOrden`, `ReservaEvento`.
 - Servicios (`app/Services/Reservas`): `AjustesReservas`, `CatalogosReservas`, `NivelesReservas` (jerarquía de áreas por la ruta de espacios, espacios relacionados e interiores), `Disponibilidad`, `Cotizador`, `ResponsablesReservas`, `FlujoReservas`, `AdministradorReservas`, `EsperaReservas`, `PendientesReservas`, `InformesReservas`, `TextosReservas`.
 - Controladores (`app/Http/Controllers/Operacion/Reservas`), vistas (`resources/views/operacion/reservas`), `public/css/reservas.css`, `public/js/reservas.js` (formulario; sin JS en línea).
 - Comando `plataforma:reservas-pendientes`. Datos demo: `CrearDatosDemo::reservasDemo` y `reservasNivelesDemo`.
 - Archivos compartidos tocados (cambios localizados): `CatalogoSeeder`, `MenuSeeder`, `RolesPlantillaSeeder`, `MisPendientes`, `CentroNotificaciones`, `PreferenciasAvisos`, `Empresa::AVISOS`, `GruposAvisos`, `LectorAuditoria`, `routes/web.php` (un `require`), `configuracion/index.blade.php` (sección al final del índice), `despliegue/desplegar.sh`.
-- Pruebas: `tests/Feature/Reservas/ReservasDeAreasTest.php`, `ReservasEditarEliminarTest.php` (lápiz y bote en Configuración y por sede, confirmación por caso, eliminar sin reservas / con pasadas / con próximas, mostrar quitadas y reactivar, catálogos con eliminar solo si nunca se usó, catálogos iniciales que no vuelven, permisos por sede y otra empresa) y `ReservasPorNivelesTest.php` (modo y herencia, bloqueo cruzado con montaje, fichas por niveles y cascada, agregar varias, quitar con y sin reservas, permisos por sede y otra empresa, migración con `down()`); las matrices de seguridad (`EscenarioAuditoria`, `RecorridoPantallasTest`) ya resuelven los parámetros `reserva`, `aprobacion`, `orden`, `area` y `catalogo`.
+- Pruebas: `tests/Feature/Reservas/ReservasOrdenDeEventoTest.php` (departamento que solicita, excepción de aforo, día completo, montaje por reserva y choques entre niveles, servicios por departamento y otro servicio con aprobación y orden, departamento que monta, lista sugerida, hoja impresa, migración con `down()`), `ReservasDeAreasTest.php`, `ReservasEditarEliminarTest.php` (lápiz y bote en Configuración y por sede, confirmación por caso, eliminar sin reservas / con pasadas / con próximas, mostrar quitadas y reactivar, catálogos con eliminar solo si nunca se usó, catálogos iniciales que no vuelven, permisos por sede y otra empresa) y `ReservasPorNivelesTest.php` (modo y herencia, bloqueo cruzado con montaje, fichas por niveles y cascada, agregar varias, quitar con y sin reservas, permisos por sede y otra empresa, migración con `down()`); las matrices de seguridad (`EscenarioAuditoria`, `RecorridoPantallasTest`) ya resuelven los parámetros `reserva`, `aprobacion`, `orden`, `area` y `catalogo`.
 - Quien usa Reservas pero ya no es responsable (lo quitaron con la pantalla abierta) recibe «Ya no te toca responder…» / «Ya no atiendes este departamento…» en lugar de 403; sin acceso a Reservas, 403.
 
 ## Datos demo (Hotel Demo Centro)

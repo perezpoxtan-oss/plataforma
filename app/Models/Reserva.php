@@ -48,6 +48,8 @@ class Reserva extends Model
     protected $fillable = [
         'empresa_id', 'sede_id', 'reserva_area_id', 'espacio_id', 'folio', 'titulo', 'tipo_uso_id', 'montaje_id', 'asistentes',
         'inicio', 'fin', 'bloqueo_desde', 'bloqueo_hasta', 'estado', 'solicitante_id',
+        // Orden de evento (migración 2026_11_07_000100)
+        'departamento_solicitante_id', 'excede_aforo', 'motivo_excepcion_aforo', 'dia_completo', 'montaje_minutos', 'desmontaje_minutos', 'indicaciones_montaje',
         'para_cliente', 'cliente_nombre', 'cliente_empresa', 'cliente_correo', 'cliente_telefono',
         'tarifa', 'importe_area', 'importe_area_manual', 'importe_servicios', 'descuento', 'cortesia', 'ajuste_motivo',
         'iva_porcentaje', 'iva', 'total', 'moneda', 'notas',
@@ -59,6 +61,7 @@ class Reserva extends Model
             'inicio' => 'datetime', 'fin' => 'datetime', 'bloqueo_desde' => 'datetime', 'bloqueo_hasta' => 'datetime',
             'confirmada_en' => 'datetime', 'cancelada_en' => 'datetime',
             'para_cliente' => 'boolean', 'cortesia' => 'boolean', 'asistentes' => 'integer',
+            'excede_aforo' => 'boolean', 'dia_completo' => 'boolean', 'montaje_minutos' => 'integer', 'desmontaje_minutos' => 'integer',
             'importe_area' => 'decimal:2', 'importe_area_manual' => 'decimal:2', 'importe_servicios' => 'decimal:2', 'descuento' => 'decimal:2',
             'iva_porcentaje' => 'decimal:2', 'iva' => 'decimal:2', 'total' => 'decimal:2',
         ];
@@ -92,6 +95,30 @@ class Reserva extends Model
     public function solicitante(): BelongsTo
     {
         return $this->belongsTo(User::class, 'solicitante_id');
+    }
+
+    /** Departamento que pide el evento («Solicitado por: … — Capacitación»). */
+    public function departamentoSolicitante(): BelongsTo
+    {
+        return $this->belongsTo(Departamento::class, 'departamento_solicitante_id');
+    }
+
+    /** Minutos de montaje de esta reserva (los suyos o, si no tiene, los del área). */
+    public function minutosMontaje(): int
+    {
+        return $this->montaje_minutos ?? (int) ($this->area?->montaje_minutos ?? 0);
+    }
+
+    /** Minutos de desmontaje de esta reserva (los suyos o, si no tiene, los del área). */
+    public function minutosDesmontaje(): int
+    {
+        return $this->desmontaje_minutos ?? (int) ($this->area?->desmontaje_minutos ?? 0);
+    }
+
+    /** «Juan Pérez — Capacitación». */
+    public function solicitadoPorTexto(): string
+    {
+        return trim(($this->solicitante?->name ?? '—').($this->departamentoSolicitante ? ' — '.$this->departamentoSolicitante->nombre : ''));
     }
 
     public function canceladaPor(): BelongsTo
