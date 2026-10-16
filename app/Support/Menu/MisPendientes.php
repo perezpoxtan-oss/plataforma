@@ -19,6 +19,7 @@ use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Services\Recepcion\PanelRecepcion;
+use App\Services\Reservas\PendientesReservas;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -211,6 +212,13 @@ class MisPendientes
             $items[] = $pendiente;
         }
         // Fin Mejoras activos
+        // Reservas de áreas (docs/tecnico/reservas.md): por aprobar, órdenes de servicio y cambios pedidos
+        if ($actor->can('reservas.ver') || $actor->can('reservas.crear') || DepartamentoResponsable::where('user_id', $actor->id)->exists()) {
+            foreach (app(PendientesReservas::class)->para($actor, $empresaId) as $pendiente) {
+                $items[] = $pendiente;
+            }
+        }
+        // Fin Reservas de áreas
 
         // Fase 3: color por plazo, solo si algún renglón de candidatos tiene pendientes
         $conPendientes = array_filter($items, fn ($i) => $i['total'] > 0 && in_array($i['clave'], PlazosCandidatos::RENGLONES, true));

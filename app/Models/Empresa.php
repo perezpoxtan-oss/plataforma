@@ -63,6 +63,10 @@ class Empresa extends Model
         // Mejoras estructura (ADR-0016): campana a quien ve toda la Bitácora de auditoría.
         // Decisión del dueño (mapa de procesos): encendido por omisión. Las empresas que ya lo guardaron conservan su valor.
         'movimientos_sensibles' => ['Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría cuando alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales', true],
+        // Reservas de áreas (docs/tecnico/reservas.md)
+        'reserva_aprobacion' => ['Reservas de áreas: avisar al responsable del área y a cada departamento cuando una reserva espera su aprobación (y recordarlo si tarda)', true],
+        'reserva_resultado' => ['Reservas de áreas: avisar a quien reservó cuando su reserva se confirma, se rechaza o le piden un cambio', true],
+        'reserva_orden' => ['Reservas de áreas: enviar a cada departamento su orden de servicio cuando la reserva se confirma, cambia o se cancela', true],
     ];
 
     /** Ronda 5 (LL-04): lista de correos de cada copia del voucher con cobro (Configuración → Avisos por correo). */

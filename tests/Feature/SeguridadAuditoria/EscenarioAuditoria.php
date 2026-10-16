@@ -87,6 +87,10 @@ trait EscenarioAuditoria
         if ($parametro === 'id' && (str_starts_with($ruta, 'borrar.') || str_starts_with($ruta, 'identificacion.'))) {
             return 'llaves';
         }
+        // Reservas de áreas: catálogos (/reservas/configuracion/catalogo/{catalogo}/{id}) con montajes
+        if ($parametro === 'id' && str_starts_with($ruta, 'reservas.configuracion.catalogo.')) {
+            return 'reserva_montajes';
+        }
 
         return [
             'acompanante' => 'acompanantes_acceso',
@@ -136,6 +140,11 @@ trait EscenarioAuditoria
             'postulacion' => 'postulaciones',
             // Importar desde Excel
             'importacion' => 'importaciones',
+            // Reservas de áreas
+            'reserva' => 'reservas',
+            'aprobacion' => 'reserva_aprobaciones',
+            'orden' => 'reserva_ordenes',
+            'area' => 'reserva_areas',
         ][$parametro] ?? null;
     }
 
@@ -195,6 +204,8 @@ trait EscenarioAuditoria
                 return 'primeros-pasos';
             case 'carpeta':
                 return 'primeros-pasos';
+            case 'catalogo': // Reservas de áreas
+                return 'montajes';
             case 'firma':
                 $pase = $this->consulta('pases_salida', $sede)->pluck('id');
 
@@ -252,7 +263,7 @@ trait EscenarioAuditoria
     {
         $parametros = [];
         foreach ($ruta->parameterNames() as $nombre) {
-            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'pantalla', 'registro', 'tipo', 'parte', 'pagina', 'carpeta'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
+            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'pantalla', 'registro', 'tipo', 'parte', 'pagina', 'carpeta', 'catalogo'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
             $valor = match (true) {
                 ! $inexistente || $esTexto => $this->valorParametro((string) $ruta->getName(), $nombre, $sede),
                 $nombre === 'codigo' => 'zzzzzzzzzzzzzzzzzzzzzzzz',

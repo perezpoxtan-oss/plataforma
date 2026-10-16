@@ -452,6 +452,12 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudieron avanzar los paquetes de traslado (revisa despliegue.log)"
 fi
 # --- Fin Respaldos y traslado ---
+# --- Reservas de áreas: aprobaciones que tardan (recordatorio y aviso al responsable general; horas por empresa en Configuración → Reservas de áreas) ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:reservas-pendientes'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:reservas-pendientes --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudieron recordar las aprobaciones de reservas que tardan (revisa despliegue.log)"
+fi
+# --- Fin Reservas de áreas ---
 
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
 if [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ] && grep -Eq "EscribeAqui|tu-correo@" "$HOME/qa_inicial.txt"; then

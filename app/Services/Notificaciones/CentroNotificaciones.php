@@ -88,6 +88,16 @@ class CentroNotificaciones
         // Suscripciones: cliente nuevo que se activó al pagar (Super Administrador) y avisos de vencimiento (cliente y plataforma)
         'cliente_por_revisar' => ['bi-person-check-fill', 'alerta'],
         'suscripcion_aviso' => ['bi-calendar2-check', 'alerta'],
+        // Reservas de áreas (docs/tecnico/reservas.md): aprobación, recordatorio, escalamiento, resultado y órdenes de servicio
+        'reserva_por_aprobar' => ['bi-calendar-check', 'alerta'],
+        'reserva_recordatorio' => ['bi-alarm', 'alerta'],
+        'reserva_escalada' => ['bi-alarm-fill', 'alerta'],
+        'reserva_confirmada' => ['bi-calendar-check-fill', 'exito'],
+        'reserva_rechazada' => ['bi-calendar-x-fill', 'alerta'],
+        'reserva_cambio' => ['bi-arrow-repeat', 'alerta'],
+        'reserva_cancelada' => ['bi-calendar-x', 'info'],
+        'reserva_orden' => ['bi-clipboard-check', 'alerta'],
+        'reserva_orden_lista' => ['bi-check2-all', 'exito'],
     ];
 
     public function __construct(private readonly HoraLocal $hora) {}

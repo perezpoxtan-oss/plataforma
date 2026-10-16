@@ -93,7 +93,7 @@ class RolesPlantillaSeeder extends Seeder
         // El Agente trabaja en los menús de caseta: Operación y Padrones (no en reportes)
         $deCaseta = fn ($ma) => $deSeguridad($ma) && in_array(self::menuDe($ma->modulo), ['operacion', 'padrones'], true);
 
-        return self::importarComoCrear(self::soloAdministradorBorra(self::reglaVacantes(self::reglaEtiquetasQr(self::reglaProcedimientos(self::reglaRecepcion(self::reglaSolicitudes([
+        return self::reglaReservas(self::importarComoCrear(self::soloAdministradorBorra(self::reglaVacantes(self::reglaEtiquetasQr(self::reglaProcedimientos(self::reglaRecepcion(self::reglaSolicitudes([
             'Administrador' => [10, 'Administra toda su empresa', fn ($ma) => Alcance::Empresa],
             // Exportar TODOS los datos de la empresa (empresas.exportar) queda solo para el Administrador
             'Director' => [20, 'Consulta y aprueba en toda la empresa', fn ($ma) => in_array($ma->accion->clave, ['ver', 'aprobar', 'exportar', 'imprimir'], true) && $ma->clave() !== 'empresas.exportar' ? Alcance::Empresa : null],
@@ -111,7 +111,7 @@ class RolesPlantillaSeeder extends Seeder
             // Solicitante y Jefe de departamento: su regla la arma reglaSolicitudes()
             self::SOLICITANTE => [70, 'Levanta solicitudes (pases de salida) y consulta solo las suyas', fn ($ma) => null],
             self::JEFE_DEPARTAMENTO => [45, 'Aprueba y responde las solicitudes de su departamento en su sede', fn ($ma) => null],
-        ])))))));
+        ]))))))));
     }
 
     // Solicitudes: Solicitante y Jefe de departamento
@@ -348,6 +348,49 @@ class RolesPlantillaSeeder extends Seeder
         return $definiciones;
     }
     // Fin Importar desde Excel
+
+    // Reservas de áreas (docs/tecnico/reservas.md)
+
+    /**
+     * Reservas de áreas: el Administrador todo, el Director consulta y los
+     * demás reservan e imprimen su hoja; el Jefe de departamento además
+     * aprueba en su sede. Quien es responsable de un área o de un
+     * departamento aprueba lo suyo sin necesidad de «aprobar» (lo designa
+     * quien configura). Misma tabla que la migración que lo agrega a los
+     * roles existentes. rol => [acciones, alcance].
+     */
+    public const RESERVAS = [
+        'Administrador' => [['ver', 'crear', 'aprobar', 'configurar', 'exportar', 'imprimir'], Alcance::Empresa],
+        'Director' => [['ver'], Alcance::Empresa],
+        'Recursos Humanos' => [['ver', 'crear', 'imprimir'], Alcance::Sede],
+        'Jefe de seguridad' => [['ver', 'crear', 'imprimir'], Alcance::Sede],
+        self::ASISTENTE => [['ver', 'crear', 'imprimir'], Alcance::Sede],
+        'Supervisor' => [['ver', 'crear', 'imprimir'], Alcance::Sede],
+        'Agente' => [['ver', 'crear', 'imprimir'], Alcance::Sede],
+        self::JEFE_DEPARTAMENTO => [['ver', 'crear', 'imprimir', 'aprobar'], Alcance::Sede],
+        self::SOLICITANTE => [['ver', 'crear', 'imprimir'], Alcance::Propios],
+    ];
+
+    /**
+     * @param  array<string, array{0: int, 1: string, 2: Closure}>  $definiciones
+     * @return array<string, array{0: int, 1: string, 2: Closure}>
+     */
+    private static function reglaReservas(array $definiciones): array
+    {
+        foreach ($definiciones as $nombre => [$nivel, $descripcion, $regla]) {
+            $definiciones[$nombre][2] = function ($ma) use ($nombre, $regla) {
+                if ($ma->modulo->clave !== 'reservas') {
+                    return $regla($ma);
+                }
+                [$acciones, $alcance] = self::RESERVAS[$nombre] ?? [[], null];
+
+                return in_array($ma->accion->clave, $acciones, true) ? $alcance : null;
+            };
+        }
+
+        return $definiciones;
+    }
+    // Fin Reservas de áreas
 
     /**
      * Clave del menú donde aparece el módulo (los submódulos heredan el de su padre).

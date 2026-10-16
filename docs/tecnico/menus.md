@@ -11,6 +11,7 @@ Reorganización de la navegación aprobada por el dueño del proyecto (lección 
 | | | Protección civil | `recorridos_pc` Recorridos de Protección Civil |
 | | | Activos | `responsivas` Responsivas |
 | | | Consulta | `procedimientos` Procedimientos |
+| | | Reservas | `reservas` Reservas de áreas (ver [reservas.md](reservas.md)) |
 | 2 | Padrones (`padrones`) | Personas y vehículos | `proveedores` **Empresas externas** · `visitantes` Padrón de personas · `vehiculos` Padrón vehicular |
 | | | Inventarios | `llaves` Catálogo de llaves · `gafetes` Gafetes · `equipos` Equipos de seguridad · `equipos_pc` Equipos de Protección Civil |
 | | | Instalaciones | `estacionamientos` Estacionamientos · `rutas` Rutas de transporte |

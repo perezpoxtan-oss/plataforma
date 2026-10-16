@@ -87,6 +87,8 @@ class MenusReorganizadosTest extends TestCase
             'Protección civil' => ['recorridos_pc'],
             'Activos' => ['responsivas'],
             'Consulta' => ['procedimientos'],
+            // Reservas de áreas (docs/tecnico/reservas.md): sección propia al final de Operación
+            'Reservas' => ['reservas'],
         ], $menu['operacion']);
         $this->assertSame([
             'Personas y vehículos' => ['proveedores', 'visitantes', 'vehiculos'],
@@ -387,6 +389,8 @@ class MenusReorganizadosTest extends TestCase
         app(MisPendientes::class)->para($admin);
         // Las cuatro mejoras juntas hacen 61 consultas: colaboradores por verificar y procedimientos por aprobar (un
         // solo renglón cada uno, con el conteo corto de activos), tickets de incidentes en una consulta y los de activos
-        $this->assertLessThan(66, count(DB::getQueryLog()));
+        // Reservas de áreas suma 6 sin relaciones ni N+1 (aprobaciones, órdenes, empresa —en la pantalla ya viene cargada—,
+        // responsables de los departamentos involucrados, delegaciones hacia el usuario y cambios pedidos)
+        $this->assertLessThan(70, count(DB::getQueryLog()));
     }
 }
