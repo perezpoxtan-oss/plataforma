@@ -6,6 +6,11 @@ Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PA
 Bajo «## [Sin publicar]»:
 
 ### Agregado
+- **Pases de salida: «Recorrido del pase» con lo programado contra lo real** (cambio visible aprobado por el dueño). Ver `docs/tecnico/pases-salida.md`, «Recorrido del pase» y «Reglas de coherencia de fechas».
+  - En el Resumen, un bloque **Recorrido del pase** (tabla; en celular, tarjetas) con Momento | Programado | Real: «Sale de {origen}», «Llega a {destino}» y «Sale de regreso de {destino}» (solo hacia otra sede), «Regresa a {origen}» (solo si espera regreso); notas «N días después/antes de lo programado», «Parcial: N de M», «Pendiente · Vencido (debía regresar el …)» y la leyenda «Salida definitiva, no espera regreso». También en la hoja impresa y en la verificación por QR.
+  - Nombres unificados: «Salida programada» y «Regreso programado» (formulario, lista, correo de vencido, Informe ejecutivo); «Salió de …» / «Regresó a …» en la Bitácora del día; se quitan «Fecha de salida», «Regreso tentativo», «Salió» y «Regresó» sueltos.
+  - Reglas: si al dar salida el regreso programado ya pasó, la caseta captura un **nuevo regreso programado** (≥ hoy) y el cambio queda en la bitácora y la auditoría; el regreso programado no puede ser antes de la salida programada; las marcas reales nunca quedan antes del movimiento anterior.
+  - Datos demo con marcas reales escalonadas en días y horas lógicos (dos pases nuevos: recorrido completo a otra sede y uno que pide nuevo regreso). Pruebas en `PasesSalidaRecorridoTest`. Manual (`pases-salida.md`, capturas nuevas) y lección 21 (prácticas 9 y 10). Sin migraciones.
 - **Reservas con formato de «orden de evento»** (cambio visible aprobado por el dueño). Ver `docs/tecnico/reservas.md`, «Orden de evento».
   - **Departamento que solicita** (propuesto con el del colaborador del usuario, editable) y **fecha de solicitud** en la ficha, la hoja y Por aprobar («Solicitado por: Nombre — Departamento»).
   - **Personas contra el aforo en vivo** («20 de 25 permitidos», del montaje o del área). Pasar el aforo ya no se bloquea: es una **excepción con motivo obligatorio**, que pide la aprobación del área (aun con confirmación inmediata), muestra la insignia **Excede aforo** en Por aprobar y Mis reservas y sale en la hoja.

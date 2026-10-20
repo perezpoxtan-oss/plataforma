@@ -10,7 +10,6 @@
 @php
     [$textoEstado, $claseEstado] = $pase->insignia($vencido);
     $tentativa = PaseSalida::dia($pase->fecha_tentativa_regreso);
-    $salidaProgramada = PaseSalida::dia($pase->fecha_salida_programada);
     $solicitante = $pase->solicitante;
     $tipoDestino = ['sede' => 'otra sede', 'proveedor' => 'proveedor', 'colaborador' => 'colaborador se lo lleva'][$pase->destino_tipo] ?? '';
     $pasoInfo = $paso ? PaseSalida::PASOS_FISICOS[$paso] : null;
@@ -109,17 +108,12 @@
         <div class="tarjeta p-3 mb-3">
             <dl class="datos-pase">
                 <div><dt>Motivo de salida</dt><dd>{{ $pase->etiquetaMotivo() }}</dd></div>
-                <div><dt>¿Regresa?</dt><dd>{{ $pase->requiere_regreso ? 'Sí, espera regreso' : 'No (sale definitivo)' }}</dd></div>
                 <div class="completo"><dt>Solicitante</dt><dd>{{ $solicitante?->nombreCompleto() ?? '—' }}
                     @if ($solicitante)<span class="text-muted">({{ $solicitante->num_empleado ? 'Núm. '.$solicitante->num_empleado : 'provisional' }}{{ $solicitante->departamento ? ' · '.$solicitante->departamento->nombre : '' }}{{ $solicitante->puesto ? ' · '.$solicitante->puesto->nombre : '' }})</span>@endif</dd></div>
-                <div><dt>Sale de</dt><dd>{{ $pase->sede?->nombre }}</dd></div>
+                <div><dt>Sede de origen</dt><dd>{{ $pase->sede?->nombre }}</dd></div>
                 <div><dt>Enviar a</dt><dd>{{ $pase->nombreDestino() }} <span class="text-muted">({{ $tipoDestino }})</span></dd></div>
                 @if ($pase->destino_direccion)<div class="completo"><dt>Dirección de destino</dt><dd>{{ $pase->destino_direccion }}</dd></div>@endif
                 @if ($pase->destino_telefono)<div><dt>Teléfono</dt><dd>{{ $pase->destino_telefono }}</dd></div>@endif
-                <div><dt>Fecha de salida</dt><dd>{{ $salidaProgramada ? app(\App\Support\HoraLocal::class)->formatear($salidaProgramada, 'd/m/Y') : '—' }}</dd></div>
-                @if ($pase->requiere_regreso)
-                    <div class="{{ $vencido ? 'texto-vencido' : '' }}"><dt>Regreso tentativo</dt><dd>{{ $tentativa ? app(\App\Support\HoraLocal::class)->formatear($tentativa, 'd/m/Y') : '—' }}{{ $vencido ? ' · Vencido' : '' }}</dd></div>
-                @endif
                 @if ($conValor)
                     <div><dt>Valor total</dt><dd>{{ $valorTotal !== null ? PaseSalida::pesos($valorTotal).' MXN' : PaseSalida::pesos((float) $pase->articulos->sum(fn ($a) => $a->valorTotal() ?? 0)).' MXN + artículos sin valor' }}</dd></div>
                 @endif
@@ -127,9 +121,11 @@
                     <div class="completo"><dt>Firmas en caseta</dt><dd>{{ $firmasDistintas->map(fn ($modo, $m) => PaseSalida::PASOS_FISICOS[$m][1].': '.PaseSalida::FIRMAS_CASETA[$modo])->implode(' · ') }}
                         <span class="text-muted">(los demás movimientos, dos firmas)</span></dd></div>
                 @endif
-                @if ($pase->salio_en)<div><dt>Salió</dt><dd>@fecha($pase->salio_en)</dd></div>@endif
-                @if ($pase->regreso_en)<div><dt>Regresó</dt><dd>@fecha($pase->regreso_en)</dd></div>@endif
             </dl>
+        </div>
+
+        <div class="tarjeta p-3 mb-3">
+            @include('seguridad.pases-salida._recorrido')
         </div>
 
         <h2 class="titulo-seccion-pase"><i class="bi bi-diagram-3 me-2 text-primary" aria-hidden="true"></i>Aprobaciones @if ($pase->ronda > 1)<span class="normal">(ronda {{ $pase->ronda }})</span>@endif</h2>
@@ -187,10 +183,10 @@
                     <div class="estado-articulo-pase">
                         @if ($a->equipo_id)<span class="chip-padron" title="Equipo del padrón de Equipos de seguridad"><i class="bi bi-upc-scan" aria-hidden="true"></i> padrón</span>@endif
                         @if ($a->verificado_salida_en)
-                            <span class="chip-verificado"><i class="bi bi-check2" aria-hidden="true"></i> Salió{{ $a->verificado_con_lector ? ' (escaneado)' : '' }}</span>
+                            <span class="chip-verificado"><i class="bi bi-check2" aria-hidden="true"></i> Revisado al salir{{ $a->verificado_con_lector ? ' (escaneado)' : '' }}</span>
                         @endif
                         @if ($pase->requiere_regreso && $a->verificado_salida_en)
-                            <span class="chip-regreso {{ $a->pendientes() === 0 ? 'completo' : '' }}">Regresó {{ $a->cantidad_regresada }} de {{ $a->cantidad }}</span>
+                            <span class="chip-regreso {{ $a->pendientes() === 0 ? 'completo' : '' }}">Regresaron {{ $a->cantidad_regresada }} de {{ $a->cantidad }}</span>
                         @endif
                     </div>
                 </div>

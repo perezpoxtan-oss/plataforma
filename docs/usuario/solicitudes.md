@@ -24,7 +24,7 @@ resumen: Guía para el personal de cualquier departamento (rol Solicitante) y pa
 2. Toca **Nuevo Pase**. Se abre **Nuevo Pase de Salida**.
 3. Revisa la **Sede de Origen** (de donde sale el equipo). Si trabajas en una sola sede ya viene elegida.
 4. En **1. Motivo y Solicitante** elige el **Motivo de Salida**. Tu nombre ya viene como **Solicitante**: déjalo así.
-5. En **2. Enviar A** elige a dónde va: otra sede o un proveedor. Si el equipo debe regresar, escribe la **Fecha Tentativa de Regreso**.
+5. En **2. Enviar A** elige a dónde va: otra sede o un proveedor. Si el equipo debe regresar, escribe el **Regreso programado**.
 6. En **3. Artículos que Salen** escribe la cantidad, el equipo, la marca, el modelo, la serie y una descripción. Agrega un renglón por cada artículo.
 7. Toca **Guardar y Enviar a Aprobación**.
 

@@ -118,7 +118,7 @@ class LectorAuditoria
         'salida' => 'Salida', 'salida_acompanante' => 'Salida de acompañante', 'salida_temporal' => 'Salida temporal',
         'salida_temporal_acompanante' => 'Salida temporal de acompañante', 'regreso' => 'Regreso', 'regreso_acompanante' => 'Regreso de acompañante',
         'zona_cambiada' => 'Cambio de zona de estacionamiento', 'salida_registrada' => 'Registro de salida', 'recibido_en_destino' => 'Recepción en destino',
-        'salida_de_regreso' => 'Salida de regreso', 'regresado' => 'Regreso', 'regreso_parcial' => 'Regreso parcial',
+        'salida_de_regreso' => 'Salida de regreso', 'regresado' => 'Regreso', 'regreso_parcial' => 'Regreso parcial', 'regreso_reprogramado' => 'Cambio del regreso programado',
         'recibido' => 'Recepción', 'equipo_recibido' => 'Recepción de equipo', 'asignado' => 'Asignación', 'devuelto' => 'Devolución',
         'recuperado' => 'Recuperación', 'reembolsado' => 'Reembolso',
         // Novedades, Lost & Found y recorridos

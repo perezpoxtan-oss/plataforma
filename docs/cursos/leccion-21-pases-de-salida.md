@@ -15,7 +15,9 @@ Un pase de salida es el permiso para que un equipo **salga** de la sede. Primero
 5. **`agente2.demo`** (Playa): en **Mi bandeja** aparece `PS-000001`: toca **Confirmar llegada a esta sede**. Después, **Autorizar salida de regreso**. (La píldora **Llegan a mi sede** le muestra lo que viene; ver la [lección 41](leccion-41-pases-firmas-valor-rechazo-y-campana.md).)
 6. **`agente.demo`**: abre `PS-000010` (radios con regreso parcial) y toca **Registrar Regreso**: deja 1 de 2 y escribe un comentario. El pase sigue en **Regreso parcial**. Vuelve a registrar el que falta: queda **Regresado / Cerrado**.
 7. **`admin.demo`**: abre `PS-000003` (rechazado por Contraloría). Lee el motivo, toca **Corregir y reenviar**, cambia la descripción y reenvía: las aprobaciones empiezan desde el paso 1 (ronda 2).
-8. Toca **Imprimir Pase** en cualquier pase y escanea el **QR** con tu celular (con sesión iniciada): verás «Pase auténtico» y su estado.
+8. Toca **Imprimir Pase** en cualquier pase y escanea el **QR** con tu celular (con sesión iniciada): verás «Pase auténtico», su estado y su **Recorrido del pase**.
+9. **`admin.demo`**: abre `PS-000013` (bocinas a Playa) y, en **Resumen**, lee el **Recorrido del pase**: **Sale de Hotel Demo Centro**, **Llega a Hotel Demo Playa**, **Sale de regreso de Hotel Demo Playa** y **Regresa a Hotel Demo Centro**, cada uno con su **Programado** y su **Real**. Compáralo con `PS-000012` (vencido: «Pendiente · Vencido (debía regresar el …)»), `PS-000011` (salió «1 día después de lo programado») y `PS-000006` (salida definitiva).
+10. **`agente.demo`**: abre `PS-000014` (aprobado; su regreso programado ya pasó) y toca **Registrar Salida**: la ventana pide el **Nuevo regreso programado**. Intenta guardar sin él: no te deja. Escribe una fecha de la próxima semana, termina la salida y revisa en **Firmas y bitácora** «Cambió el regreso programado: … → …».
 
 ## Para recordar
 
@@ -23,5 +25,7 @@ Un pase de salida es el permiso para que un equipo **salga** de la sede. Primero
 - **Rechazar** pide un motivo y regresa el pase al solicitante; **cancelar** solo se puede antes de que se apruebe.
 - **Aprobar** pide el permiso «Aprobar»; la caseta, «Firmar». La sede destino confirma la llegada y autoriza la salida de regreso.
 - Para la **salida** se verifica **cada** artículo. En el **regreso** se puede registrar una parte.
-- La **Fecha Tentativa de Regreso** marca los **Vencidos**: escríbela siempre que el equipo deba volver. Cada mañana se envía un recordatorio por correo de los vencidos.
+- Al pedir el pase se escriben la **Salida programada** y el **Regreso programado** (no puede ser antes de la salida). El **Regreso programado** marca los **Vencidos**: escríbelo siempre que el equipo deba volver. Cada mañana se envía un recordatorio de los vencidos.
+- En la ficha, el **Recorrido del pase** compara lo **Programado** con lo **Real** (lo que registró la caseta) en cada momento, con el nombre del lugar: **Sale de Hotel Centro**, **Llega a Hotel Playa** y **Sale de regreso de Hotel Playa** (solo si va a otra sede), **Regresa a Hotel Centro** (solo si debe regresar). En una salida definitiva solo hay «Sale de …» y la leyenda «Salida definitiva, no espera regreso».
+- Si al dar salida el **Regreso programado** ya pasó, la caseta escribe un **Nuevo regreso programado** (hoy o después) antes de dejarlo salir; el cambio queda en la bitácora.
 - Tu **firma guardada** es privada: solo tú la usas, y puedes borrarla desde la ficha de un pase.

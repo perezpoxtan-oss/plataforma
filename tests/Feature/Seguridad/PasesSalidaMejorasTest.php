@@ -145,6 +145,19 @@ class PasesSalidaMejorasTest extends TestCase
     }
 
     /** Paso de caseta con todo lo que se puede mandar; $sin quita campos. */
+    /**
+     * Da salida hace unos días, cuando su regreso programado aún no pasaba
+     * (hoy ya no podría salir sin capturar un nuevo regreso programado).
+     */
+    private function salidaHaceDias(PaseSalida $pase, ?User $actor = null, int $dias = 3): void
+    {
+        $this->travel(-$dias)->days();
+        $this->flushSession();
+        $this->paso($pase, $actor)->assertSessionHasNoErrors();
+        $this->travel($dias)->days();
+        $this->flushSession();
+    }
+
     private function paso(PaseSalida $pase, ?User $actor = null, array $extra = [], array $sin = []): TestResponse
     {
         $pase = $this->recargar($pase);
@@ -495,7 +508,7 @@ class PasesSalidaMejorasTest extends TestCase
         $this->assertSame('Tu pase PS-000001 fue aprobado', $this->notificaciones($agente, 'pase_aprobado')->sole()->titulo);
 
         // 4. «Un pase viene a tu sede» a la caseta destino al salir; se resuelve al confirmar la llegada
-        $this->paso($pase, $agente)->assertSessionHasNoErrors();
+        $this->salidaHaceDias($pase, $agente);
         $llega = $this->notificaciones($agentePlaya, 'pase_llega')->sole();
         $this->assertSame('Un pase viene a tu sede: PS-000001', $llega->titulo);
         $this->assertStringContainsString('«Confirmar llegada a esta sede»', $llega->texto);
@@ -523,7 +536,7 @@ class PasesSalidaMejorasTest extends TestCase
         $pase = $this->crearPase(['destino_tipo' => 'proveedor', 'proveedor_id' => $this->proveedor->id, 'sede_destino_id' => null,
             'fecha_salida_programada' => $hoy->copy()->subDays(5)->format('Y-m-d'), 'fecha_tentativa_regreso' => $hoy->copy()->subDay()->format('Y-m-d')]);
         $this->aprobarTodo($pase);
-        $this->paso($pase);
+        $this->salidaHaceDias($pase);
 
         $this->artisan('plataforma:pases-vencidos')->expectsOutput('Recordatorios de pases vencidos enviados: 1.')->assertSuccessful();
         $this->assertCount(1, $this->notificaciones($this->admin, 'pase_vencido'));

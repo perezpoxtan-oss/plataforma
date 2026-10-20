@@ -31,7 +31,7 @@ resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y 
 | **Aprobado, listo para salir** | La caseta ya puede registrar la salida. |
 | **Salió — Espera Regreso** | Ya salió y debe volver. |
 | **Regreso parcial — faltan artículos** | Regresó una parte; falta lo demás. |
-| **Vencido — Debió Regresar** | Pasó su fecha de regreso y no ha vuelto. ¡Dale seguimiento! |
+| **Vencido — Debió Regresar** | Pasó su **regreso programado** y no ha vuelto. ¡Dale seguimiento! |
 | **Regresado / Cerrado** | Terminó. |
 | **Cancelado** | Se canceló antes de aprobarse. |
 
@@ -39,7 +39,9 @@ resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y 
 
 1. Toca **Nuevo Pase**. Si trabajas en una sola sede, la **Sede de Origen** ya viene elegida. Si tu rol es **Solicitante** o **Jefe de departamento**, tu nombre ya viene como **Solicitante** (solo puedes pedir pases a tu nombre).
 2. En **1. Motivo y Solicitante**: elige el **motivo** (la ventana te dice si el equipo debe regresar). Escanea el gafete del solicitante o escribe su nombre y elígelo. Si no aparece, toca **Nuevo Colaborador**.
-3. En **2. Enviar A**: elige otra sede, un proveedor (si no está, **Nuevo Proveedor**) o un colaborador que se lo lleva. Si el equipo regresa, escribe la **Fecha Tentativa de Regreso**.
+3. En **2. Enviar A**: elige otra sede, un proveedor (si no está, **Nuevo Proveedor**) o un colaborador que se lo lleva. Escribe la **Salida programada** (el día en que planeas que salga) y, si el equipo regresa, el **Regreso programado** (el día en que debe volver). El regreso programado no puede ser antes de la salida programada.
+
+   ![Salida programada y Regreso programado](img/pases-salida/fechas-programadas.png)
 4. En **3. Artículos que Salen**: escanea la etiqueta del equipo del padrón (se llena solo) o escribe cantidad, equipo, marca, modelo, serie y descripción. Si tu empresa pide aprobaciones según el valor, verás también **Valor por pieza $ (opcional)**: escríbelo si lo conoces (los equipos del padrón con costo registrado ya traen su valor). Si lo dejas vacío, el pase pedirá todas las aprobaciones.
 5. Toca **Guardar y Enviar a Aprobación** (o **Registrar y capturar siguiente** si harás otro).
 
@@ -75,6 +77,41 @@ Reglas: los pasos van **en orden**; no puedes aprobar tu propio pase ni firmar d
 
 Cuando se aprueba el último paso te llega **Tu pase PS-… fue aprobado**.
 
+## Cómo leer el recorrido del pase
+
+En la ficha del pase, pestaña **Resumen**, el apartado **Recorrido del pase** junta en un solo lugar todo lo que le pasa al equipo, con el nombre del lugar:
+
+| Momento | Cuándo aparece |
+|---|---|
+| **Sale de Hotel Centro** | Siempre (la sede de donde sale). |
+| **Llega a Hotel Playa** | Solo si va a otra sede de la empresa: la caseta de esa sede confirma la llegada. |
+| **Sale de regreso de Hotel Playa** | Solo si va a otra sede: la caseta de esa sede autoriza que vuelva. |
+| **Regresa a Hotel Centro** | Solo si el equipo debe regresar. |
+
+Cada momento tiene dos columnas:
+
+- **Programado**: la fecha que se escribió al pedir el pase (**Salida programada** y **Regreso programado**).
+- **Real**: la fecha y la hora que registró la caseta. Si todavía no ocurre dice **Pendiente**.
+
+1. Abre el pase y quédate en la pestaña **Resumen**.
+2. Baja a **Recorrido del pase**.
+
+![Recorrido de un pase a otra sede](img/pases-salida/recorrido.png)
+
+**Qué debes ver:**
+
+- Un punto **verde** en lo que ya ocurrió, **gris** en lo pendiente, **ámbar** si regresó solo una parte y **rojo** si está vencido.
+- Si salió otro día del programado, una nota como «**1 día después de lo programado**».
+- Si regresó una parte: «**Parcial: 2 de 4 · el último, 19/10/2026 17:10**».
+- Si ya pasó su regreso programado y no ha vuelto: «**Pendiente · Vencido (debía regresar el 17/10/2026)**».
+- En una venta o un traspaso definitivo, solo **Sale de …** y la leyenda «**Salida definitiva, no espera regreso**».
+
+![Recorrido de un pase vencido](img/pases-salida/recorrido-vencido.png)
+
+En el celular, cada momento se ve como una tarjeta con su **Programado** y su **Real**:
+
+![Recorrido en el celular](img/pases-salida/recorrido-celular.png)
+
 ## Cómo registrar en caseta la salida, la llegada y el regreso
 
 1. Abre el pase (aparece en **Mis pendientes**) y toca el botón de la caseta: **Registrar Salida** (sede de origen), **Confirmar llegada a esta sede** (sede destino, cuando llega el equipo), **Autorizar salida de regreso** (sede destino, cuando el equipo vuelve a su sede) o **Registrar Regreso** (sede de origen).
@@ -90,7 +127,19 @@ Tu empresa puede pedir menos firmas en algún movimiento. La ventana te lo dice:
 
 ![Caseta: registrar la salida](img/pases-salida/caseta-salida.png)
 
-**Qué debes ver:** la línea de pasos avanza. Si faltan artículos en el regreso, queda **Regreso parcial** y sigue esperando lo demás.
+**Qué debes ver:** la línea de pasos avanza y el **Recorrido del pase** muestra la fecha y la hora reales. Si faltan artículos en el regreso, queda **Regreso parcial** y sigue esperando lo demás.
+
+### Si el regreso programado ya pasó al dar salida
+
+Un pase no puede salir con un regreso que «ya debió ocurrir». Si al tocar **Registrar Salida** el **regreso programado** ya pasó:
+
+1. Arriba de la ventana verás «**El regreso programado (19/10/2026) ya pasó.** Pregunta cuándo regresa y escribe la nueva fecha antes de dar salida.»
+2. Pregunta a quien se lleva el equipo cuándo regresa y escríbelo en **Nuevo regreso programado** (hoy o después).
+3. Sigue con la revisión de artículos y las firmas, y toca **Registrar Salida**.
+
+![Caseta: nuevo regreso programado](img/pases-salida/caseta-nuevo-regreso.png)
+
+**Qué debes ver:** el pase sale con el regreso programado nuevo. En **Firmas y bitácora** queda «**Cambió el regreso programado: 19/10/2026 → 25/10/2026**». El pase se marca **Vencido** solo si pasa también la fecha nueva. Quien aprueba un pase así ve el aviso «El regreso programado (…) ya pasó: al dar salida, la caseta pedirá un nuevo regreso programado.»
 
 ## Cómo saber qué pases llegan a tu sede (caseta destino)
 
@@ -105,8 +154,8 @@ Tu empresa puede pedir menos firmas en algún movimiento. La ventana te lo dice:
 
 ## Cómo imprimir y verificar un pase
 
-1. En la ficha toca **Imprimir Pase**. Sale una hoja carta con el folio, un **código QR**, los artículos y las firmas.
-2. En la caseta, escanea el QR con el celular: se abre una página que dice si el **pase es auténtico** y su estado en ese momento.
+1. En la ficha toca **Imprimir Pase**. Sale una hoja carta con el folio, un **código QR**, el **Recorrido del pase** (programado y real), los artículos y las firmas.
+2. En la caseta, escanea el QR con el celular: se abre una página que dice si el **pase es auténtico**, su estado en ese momento y su **Recorrido del pase**.
 
 ![Hoja impresa del pase](img/pases-salida/imprimir.png)
 
@@ -178,6 +227,10 @@ Si no cambias nada, todo funciona como siempre: Jefe de Departamento, Contralor�
 | «Agrega al menos un artículo que salga en el pase.» | No hay artículos. | Escanea o escribe al menos uno. |
 | «Eres el solicitante de este pase: no puedes aprobarlo tú.» | No se aprueba lo propio. | Lo aprueba otra persona del circuito. |
 | «Escribe el motivo del rechazo: el solicitante lo verá para corregir su pase.» | El rechazo necesita motivo. | Escribe qué hay que corregir. |
+| «El regreso programado (…) ya pasó: escribe el nuevo regreso programado antes de dar salida.» | El pase debía regresar antes de hoy y aún no sale. | Pregunta cuándo regresa y escribe el **Nuevo regreso programado**. |
+| «El nuevo regreso programado no puede ser antes de hoy (…).» | Escribiste una fecha pasada. | Escribe hoy o una fecha posterior. |
+| «El regreso programado no puede ser antes de la salida programada.» | Al pedir el pase, el regreso quedó antes de la salida. | Corrige alguna de las dos fechas. |
+| «La hora de este movimiento quedaría antes del movimiento anterior del pase (…).» | La hora del equipo no coincide con la del movimiento anterior. | Espera un momento e intenta de nuevo; si sigue, avisa a tu administrador. |
 | «Marca o escanea cada artículo que sale: faltan …» | No verificaste todos los artículos. | Escanea o marca los que faltan. |
 | «Escribe el nombre de quien se lleva el equipo.» | Falta quién recibe. | Escribe su nombre y pide su firma. |
 | Recuadro amarillo «Espera la firma de …» | No te toca firmar este paso. | Espera a que firme la persona indicada. |
@@ -191,6 +244,7 @@ Si no cambias nada, todo funciona como siempre: Jefe de Departamento, Contralor�
 ## Preguntas frecuentes
 
 - **¿Cómo sé qué pases me tocan?** Abre **Mis pendientes** o la píldora **Pendientes de mi firma**.
+- **¿Qué diferencia hay entre «Programado» y «Real»?** Lo programado es lo que se escribió al pedir el pase (**Salida programada**, **Regreso programado**). Lo real es la fecha y la hora que registró la caseta en cada momento (**Sale de …**, **Llega a …**, **Sale de regreso de …**, **Regresa a …**).
 - **¿Qué pasa si el equipo no regresa a tiempo?** El pase se marca **Vencido — Debió Regresar** y cada mañana llega un recordatorio a la **campana** (y por correo, si está encendido) de quien lo pidió y de quien aprueba en la sede. Al registrar el regreso, el aviso queda leído.
 - **¿Por qué en este pase la caseta no pidió mi firma?** Tu empresa configuró ese movimiento con **Solo Seguridad** o **Sin firma**. Lo ves en el **Resumen** del pase.
 - **¿Si cambian la configuración, cambia mi pase?** No. Cada pase conserva las firmas de caseta que tenía al enviarse.

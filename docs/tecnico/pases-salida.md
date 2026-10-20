@@ -15,12 +15,12 @@ Réplica de `modules/pases_salida` de SEGCAT (§4.27 del inventario funcional), 
 | Comando | `plataforma:pases-vencidos --si-toca` (`app/Console/Commands/RecordarPasesVencidos.php`), llamado por `despliegue/desplegar.sh` |
 | Inicio | Bloque "Pases de salida" en `PanelController` (aviso "N pases de salida esperan tu aprobación") |
 | JS / CSS | bloques "Pases de salida" (formulario) y "Pases de salida v2" al final de `public/js/plataforma.js`, `public/css/plataforma.css` y `public/css/modos-pantalla.css` |
-| Pruebas | `tests/Feature/Seguridad/PasesSalidaTest.php` y `PasesSalidaMejorasTest.php` (ADR-0012: omisión idéntica, firmas en caseta, hoja, valor, rechazo, campana, «Llegan a mi sede») |
+| Pruebas | `tests/Feature/Seguridad/PasesSalidaTest.php`, `PasesSalidaMejorasTest.php` (ADR-0012: omisión idéntica, firmas en caseta, hoja, valor, rechazo, campana, «Llegan a mi sede») y `PasesSalidaRecorridoTest.php` (Recorrido del pase, nuevo regreso programado, orden de marcas, demo coherente) |
 | Demo | `CrearDatosDemo::pasesSalidaDemo()` |
 
 ## Tablas
 
-**`pases_salida`** (SEGCAT: `pases_salida`): `empresa_id`, `sede_id` (origen), `folio_numero` / `folio` (`PS-000123`, consecutivo por empresa), `codigo_verificacion` (20 caracteres, único: lo lleva el QR de la hoja), `motivo`, `requiere_regreso`, `colaborador_id` (solicitante), `destino_tipo` (`sede` · `proveedor` · `colaborador`) con `sede_destino_id` / `proveedor_id` / `colaborador_destino_id`, dirección y teléfono, fechas de salida y regreso tentativo, `estado`, `ronda` (sube al reenviar), rechazo (`motivo_rechazo`, `rechazado_en`, `rechazado_por`), cancelación (`cancelado_en`, `cancelado_por`, `motivo_cancelacion`), fechas de cada paso (`aprobado_en`, `salio_en`, `recibido_destino_en`, `salio_regreso_en`, `regreso_en`), `cerrado_con_faltantes`, `recordatorio_vencido_en`, `firmas_caseta` (JSON `{salida|recepcion|salida_regreso|regreso: dos|seguridad|ninguna}`: copia de la configuración al enviar o reenviar; `null` en pases anteriores = dos firmas), autoría.
+**`pases_salida`** (SEGCAT: `pases_salida`): `empresa_id`, `sede_id` (origen), `folio_numero` / `folio` (`PS-000123`, consecutivo por empresa), `codigo_verificacion` (20 caracteres, único: lo lleva el QR de la hoja), `motivo`, `requiere_regreso`, `colaborador_id` (solicitante), `destino_tipo` (`sede` · `proveedor` · `colaborador`) con `sede_destino_id` / `proveedor_id` / `colaborador_destino_id`, dirección y teléfono, `fecha_salida_programada` y `fecha_tentativa_regreso` (en pantalla: **Salida programada** y **Regreso programado**; lo que captura el solicitante), `estado`, `ronda` (sube al reenviar), rechazo (`motivo_rechazo`, `rechazado_en`, `rechazado_por`), cancelación (`cancelado_en`, `cancelado_por`, `motivo_cancelacion`), fechas de cada paso (`aprobado_en`, `salio_en`, `recibido_destino_en`, `salio_regreso_en`, `regreso_en`), `cerrado_con_faltantes`, `recordatorio_vencido_en`, `firmas_caseta` (JSON `{salida|recepcion|salida_regreso|regreso: dos|seguridad|ninguna}`: copia de la configuración al enviar o reenviar; `null` en pases anteriores = dos firmas), autoría.
 
 **`pases_salida_articulos`**: `cantidad`, `equipo`, `marca`, `modelo`, `serie`, `descripcion`, `equipo_id` (padrón de Equipos), `valor_unitario` (decimal 12,2, opcional: el `costo` del equipo del padrón si lo tiene; si no, lo que capturó el solicitante), `verificado_salida_en`, `verificado_con_lector`, `cantidad_regresada`.
 
@@ -60,7 +60,33 @@ salio (venta / traspaso definitivo)        = cerrado ("Salió — Cerrado")
   - Recepción y salida de regreso: si falta marcar algo, el comentario es obligatorio.
   - Regreso: cantidad por artículo; si faltan, `regreso_parcial` (comentario obligatorio) o "cerrar con faltantes" (`regresado` + `cerrado_con_faltantes`).
 - Todo cambio de estado va en una transacción con el pase bloqueado (`lockForUpdate`).
-- **Vencido**: fuera de la propiedad, espera regreso y `fecha_tentativa_regreso` < hoy en la zona de la sede de origen. La insignia "Vencido — Debió Regresar" manda sobre todas.
+- **Vencido**: fuera de la propiedad, espera regreso y `fecha_tentativa_regreso` (el regreso programado **vigente**: si la caseta lo cambió al dar salida, cuenta el nuevo) < hoy en la zona de la sede de origen. La insignia "Vencido — Debió Regresar" manda sobre todas.
+
+## Recorrido del pase: programado contra real
+
+`AdministradorPasesSalida::recorrido($pase)` arma el bloque **«Recorrido del pase»** que comparten la ficha (`_recorrido.blade.php`, pestaña Resumen), la hoja impresa y la verificación por QR. Un renglón por cada paso físico que aplica (`PaseSalida::pasosFisicos()`), con el lugar real:
+
+| Renglón | Programado | Real (`PaseSalida::MARCAS_REALES`) |
+|---|---|---|
+| «Sale de {sede origen}» | `fecha_salida_programada` | `salio_en` (+ «N días después/antes de lo programado» si el día local difiere) |
+| «Llega a {destino}» (solo destino sede con regreso) | — | `recibido_destino_en` |
+| «Sale de regreso de {destino}» (ídem) | — | `salio_regreso_en` |
+| «Regresa a {sede origen}» (solo `requiere_regreso`) | `fecha_tentativa_regreso` | `regreso_en`, «Pendiente», «Pendiente · Vencido (debía regresar el …)» o «Parcial: N de M · el último, …» (fecha de la última bitácora `regreso_parcial`); cerrado con faltantes agrega la nota |
+
+{destino} = `nombreDestino()` (sede, proveedor o colaborador; los renglones de destino solo existen para sede, así que la verificación por QR nunca muestra el nombre de un colaborador). Salida definitiva: solo el primer renglón y la leyenda «Salida definitiva, no espera regreso». Estado del renglón (`hecho`, `pendiente`, `parcial`, `vencido`, `cancelado`) = color del punto. En celular la tabla se apila en tarjetas (CSS, sin JS).
+
+Nombres unificados: lo que se captura es **programado** («Salida programada», «Regreso programado»); lo que registra la caseta es lo real («Salió de …», «Llegó a …», «Salió de regreso de …», «Regresó a …» en la Bitácora del día). Ya no existen «Fecha de salida», «Regreso tentativo», «Salió» ni «Regresó» sueltos. Las insignias de estado («Salió — Espera Regreso», etc.) no cambian.
+
+## Reglas de coherencia de fechas
+
+- **Regreso programado ≥ salida programada** al crear y al corregir (`validar()`: «El regreso programado no puede ser antes de la salida programada.»).
+- **Nuevo regreso programado al dar salida** (`pideNuevoRegreso()`): si el pase espera regreso y su `fecha_tentativa_regreso` < hoy local de la sede de origen, el paso `salida` exige `nuevo_regreso` (Y-m-d, ≥ hoy). Mensajes: «El regreso programado (dd/mm/aaaa) ya pasó: escribe el nuevo regreso programado antes de dar salida.», «El nuevo regreso programado no puede ser antes de hoy (…).», «El nuevo regreso programado no es una fecha válida.». En la misma transacción de la salida se guarda la fecha nueva y la bitácora `regreso_reprogramado` («Cambió el regreso programado: antes → después», `detalle.antes/despues`), antes del renglón de la salida; auditoría `pases_salida.regreso_reprogramado`. El campo aparece en el diálogo de caseta solo en ese caso. Al **aprobar** no se bloquea (la salida puede cambiar todavía): el diálogo avisa «la caseta pedirá un nuevo regreso programado» (`regresoProgramadoPasado()`).
+- **Marcas reales en orden**: el estado ya impide un paso fuera de turno («Este pase ya no está en el punto correcto…»). Además, dentro de la transacción, la hora del movimiento (`now()`) no puede ser anterior a la marca previa (`PaseSalida::marcaAnterior()`: salida → recepción → salida de regreso → regreso; sin destino, salida → regreso): «La hora de este movimiento quedaría antes del movimiento anterior del pase (…).»
+- `hoyPorSede()` se recuerda por hora (no por proceso), para que una tarea larga o el demo con reloj movido no usen el día anterior.
+
+## Datos de ejemplo coherentes
+
+`CrearDatosDemo::pasesSalidaDemo()` mueve el reloj (`Carbon::setTestNow`, restaurado en `finally`) a cada momento de los pases 6–14: se crean y aprueban el día anterior a su salida programada; salen ese día (el 11, un día después, para mostrar la nota) a horas de oficina; llegan, salen de regreso y regresan horas o días después. Nunca salida y regreso en el mismo minuto; solo el 12 (taller) está vencido. Nuevos: 13 (recorrido completo a otra sede) y 14 (aprobado con el regreso programado ya pasado: la caseta pide la nueva fecha). Los pases 1–5 (pendientes, rechazado, cancelado, aprobado) se crean en el momento actual.
 
 ## Circuito de aprobación (Configuración → Pases de salida)
 

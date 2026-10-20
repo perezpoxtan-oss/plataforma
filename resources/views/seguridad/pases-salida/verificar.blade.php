@@ -29,5 +29,8 @@
         <p class="small text-muted m-0">{{ $pase->articulos_count }} {{ $pase->articulos_count === 1 ? 'artículo' : 'artículos' }} · sale de {{ $pase->sede?->nombre }} · consultado @fecha(now())</p>
         <a href="{{ route('pases-salida.show', $pase->id) }}" class="btn-accion-pase aprobar mt-3"><i class="bi bi-folder2-open" aria-hidden="true"></i> Abrir el pase</a>
     </div>
+    <div class="tarjeta p-3 mt-3 verificacion-recorrido">
+        @include('seguridad.pases-salida._recorrido')
+    </div>
 </div>
 @endsection

@@ -24,6 +24,7 @@ use App\Support\Tenancy\Tenant;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -80,6 +81,8 @@ class AdministradorPasesSalida
 
     /** @var array<int, string>|null fecha local "Y-m-d" de cada sede */
     private ?array $hoy = null;
+
+    private ?string $hoyClave = null;
 
     /** @var array<string, list<int>> */
     private array $porFirmar = [];
@@ -183,6 +186,12 @@ class AdministradorPasesSalida
      */
     public function hoyPorSede(): array
     {
+        // La memoria vale por hora (un proceso largo, como la tarea programada, no se queda con el día anterior)
+        $clave = now()->format('Y-m-d H');
+        if ($this->hoyClave !== $clave) {
+            [$this->hoy, $this->hoyClave] = [null, $clave];
+        }
+
         return $this->hoy ??= Sede::withTrashed()->with('empresa:id,zona_horaria')->get(['id', 'empresa_id', 'zona_horaria'])
             ->mapWithKeys(fn (Sede $s) => [(int) $s->id => now($s->zonaHoraria())->format('Y-m-d')])->all();
     }
@@ -195,6 +204,55 @@ class AdministradorPasesSalida
     public function vencido(PaseSalida $pase): bool
     {
         return $pase->vencido($this->hoyDe($pase));
+    }
+
+    /**
+     * Espera regreso y su regreso programado ya pasó en la fecha local de su
+     * sede de origen (esté o no fuera de la propiedad).
+     */
+    public function regresoProgramadoPasado(PaseSalida $pase): bool
+    {
+        return $pase->requiere_regreso && $pase->fecha_tentativa_regreso !== null
+            && $pase->fecha_tentativa_regreso->format('Y-m-d') < $this->hoyDe($pase);
+    }
+
+    /**
+     * Al dar salida en caseta, ¿hay que capturar un nuevo regreso programado?
+     * Sí cuando el pase espera regreso y el que tiene ya pasó: no puede salir
+     * algo que «ya debió regresar».
+     */
+    public function pideNuevoRegreso(PaseSalida $pase): bool
+    {
+        return $pase->pasoFisico() === 'salida' && $this->regresoProgramadoPasado($pase);
+    }
+
+    /**
+     * Nuevo regreso programado ("Y-m-d", hoy o después) cuando la salida lo
+     * pide; null cuando no hace falta.
+     *
+     * @param  array<string, mixed>  $entrada
+     */
+    private function validarNuevoRegreso(PaseSalida $pase, array $entrada): ?string
+    {
+        if (! $this->pideNuevoRegreso($pase)) {
+            return null;
+        }
+        $hoy = $this->hoyDe($pase);
+        $formato = fn (string $f) => Carbon::createFromFormat('Y-m-d', $f)->format('d/m/Y');
+        $texto = is_string($entrada['nuevo_regreso'] ?? null) ? trim($entrada['nuevo_regreso']) : '';
+        if ($texto === '') {
+            throw ValidationException::withMessages(['nuevo_regreso' => 'El regreso programado ('.$formato($pase->fecha_tentativa_regreso->format('Y-m-d'))
+                .') ya pasó: escribe el nuevo regreso programado antes de dar salida.']);
+        }
+        $fecha = \DateTime::createFromFormat('!Y-m-d', $texto);
+        if ($fecha === false || $fecha->format('Y-m-d') !== $texto) {
+            throw ValidationException::withMessages(['nuevo_regreso' => 'El nuevo regreso programado no es una fecha válida.']);
+        }
+        if ($texto < $hoy) {
+            throw ValidationException::withMessages(['nuevo_regreso' => 'El nuevo regreso programado no puede ser antes de hoy ('.$formato($hoy).').']);
+        }
+
+        return $texto;
     }
 
     // ------------------------------------------------------------------- Lista
@@ -645,6 +703,7 @@ class AdministradorPasesSalida
         $escaneados = array_values(array_intersect(array_map('intval', $datos['escaneados'] ?? []), $verificados, $delPadron));
         $regresan = [];
         $cerrarConFaltantes = false;
+        $nuevoRegreso = null;
 
         if ($paso === 'regreso') {
             foreach ($articulos as $id => $a) {
@@ -665,6 +724,7 @@ class AdministradorPasesSalida
                 throw ValidationException::withMessages(['comentario' => 'Faltan artículos por regresar: anota en el comentario qué pasó con ellos.']);
             }
         } elseif ($paso === 'salida') {
+            $nuevoRegreso = $this->validarNuevoRegreso($pase, $entrada);
             $faltan = $articulos->count() - count($verificados);
             if ($faltan > 0) {
                 throw ValidationException::withMessages(['verificados' => $faltan === 1
@@ -690,10 +750,26 @@ class AdministradorPasesSalida
         }
 
         try {
-            DB::transaction(function () use ($pase, $paso, $modo, $actor, $persona, $rutaPersona, $rutaSeguridad, $comentario, $verificados, $escaneados, $regresan, $articulos, $estado, $columna, $texto, $cerrarConFaltantes) {
+            $reprogramado = DB::transaction(function () use ($pase, $paso, $modo, $actor, $persona, $rutaPersona, $rutaSeguridad, $comentario, $verificados, $escaneados, $regresan, $articulos, $estado, $columna, $texto, $cerrarConFaltantes, $nuevoRegreso) {
                 $actual = PaseSalida::query()->lockForUpdate()->findOrFail($pase->id);
                 if ($actual->pasoFisico() !== $paso) {
                     throw ValidationException::withMessages(['paso' => 'Este pase ya no está en el punto correcto del circuito para esta firma.']);
+                }
+                // Las marcas reales van en orden: este movimiento nunca queda antes del anterior
+                $momento = now();
+                $anterior = $actual->marcaAnterior($paso);
+                if ($anterior !== null && $momento->lt($anterior)) {
+                    throw ValidationException::withMessages(['paso' => 'La hora de este movimiento quedaría antes del movimiento anterior del pase ('
+                        .app(HoraLocal::class)->formatear($anterior).'). Revisa la hora del equipo e intenta de nuevo.']);
+                }
+                // Regreso programado vencido al dar salida: queda el cambio (antes → después) en la bitácora
+                $reprogramado = null;
+                if ($nuevoRegreso !== null) {
+                    $antes = $actual->fecha_tentativa_regreso?->format('Y-m-d');
+                    $reprogramado = ['antes' => $antes, 'despues' => $nuevoRegreso];
+                    $formato = fn (?string $f) => $f === null ? '—' : Carbon::createFromFormat('Y-m-d', $f)->format('d/m/Y');
+                    $this->anotar($actual, $actor, 'regreso_reprogramado',
+                        'Cambió el regreso programado: '.$formato($antes).' → '.$formato($nuevoRegreso), null, $reprogramado);
                 }
                 [$titulo, , , $roles] = PaseSalida::PASOS_FISICOS[$paso];
                 [$rolPersona, $rolSeguridad] = array_keys($roles);
@@ -730,12 +806,17 @@ class AdministradorPasesSalida
 
                 $cambios = ['estado' => $estado];
                 if ($estado !== PaseSalida::REGRESO_PARCIAL) {
-                    $cambios[$columna] = now();
+                    $cambios[$columna] = $momento;
                 }
                 if ($cerrarConFaltantes) {
                     $cambios['cerrado_con_faltantes'] = true;
                 }
+                if ($nuevoRegreso !== null) {
+                    $cambios['fecha_tentativa_regreso'] = $nuevoRegreso;
+                }
                 $actual->forceFill($cambios)->save();
+
+                return $reprogramado;
             });
         } catch (\Throwable $e) {
             $this->firmas->borrar($rutaPersona);
@@ -745,6 +826,10 @@ class AdministradorPasesSalida
 
         $this->guardarFirmaUsuario($actor, $guardar);
         $pase->refresh();
+        if ($reprogramado !== null) {
+            $this->auditoria->auditar($actor, 'pases_salida.regreso_reprogramado', $pase,
+                ['folio' => $pase->folio, 'regreso_programado' => $reprogramado['antes']], ['folio' => $pase->folio, 'regreso_programado' => $reprogramado['despues']]);
+        }
         $this->auditoria->auditar($actor, $estado === PaseSalida::REGRESO_PARCIAL ? 'pases_salida.regreso_parcial' : self::AVANCE[$paso][2], $pase,
             null, ['folio' => $pase->folio, 'estado' => $pase->insignia(false)[0], 'persona' => $persona !== '' ? $persona : null,
                 'firmas' => PaseSalida::FIRMAS_CASETA[$modo], 'comentario' => $comentario]);
@@ -877,6 +962,83 @@ class AdministradorPasesSalida
                 default => null,
             },
         };
+    }
+
+    /**
+     * «Recorrido del pase»: cada momento físico que aplica a este pase, en
+     * orden, con lo programado (lo que capturó quien lo pidió) y lo real (lo
+     * que registró la caseta). Los nombres dicen el lugar: «Sale de Hotel
+     * Centro», «Llega a Hotel Playa», «Sale de regreso de Hotel Playa»,
+     * «Regresa a Hotel Centro». La salida definitiva solo tiene el primero.
+     *
+     * estado: hecho | pendiente | parcial | vencido | cancelado
+     *
+     * @return array{definitivo: bool, renglones: list<array{clave: string, momento: string, programado: ?string, real: ?string, texto: ?string, nota: ?string, estado: string}>}
+     */
+    public function recorrido(PaseSalida $pase, ?bool $vencido = null): array
+    {
+        $vencido ??= $this->vencido($pase);
+        $hora = app(HoraLocal::class);
+        $origen = $pase->sede?->nombre ?? 'la sede de origen';
+        $destino = $pase->nombreDestino() !== '—' ? $pase->nombreDestino() : 'el destino';
+        $dia = fn (?Carbon $f) => $f === null ? null : $hora->formatear(PaseSalida::dia($f), 'd/m/Y');
+        $real = fn (?Carbon $f) => $f === null ? null : $hora->formatear($f);
+        $cancelado = $pase->estado === PaseSalida::CANCELADO;
+        $momentos = [
+            'salida' => 'Sale de '.$origen,
+            'recepcion' => 'Llega a '.$destino,
+            'salida_regreso' => 'Sale de regreso de '.$destino,
+            'regreso' => 'Regresa a '.$origen,
+        ];
+
+        $renglones = [];
+        foreach ($pase->pasosFisicos() as $paso) {
+            $marca = $pase->{PaseSalida::MARCAS_REALES[$paso]};
+            $renglon = ['clave' => $paso, 'momento' => $momentos[$paso], 'programado' => null, 'real' => $real($marca),
+                'texto' => null, 'nota' => null, 'estado' => $marca !== null ? 'hecho' : ($cancelado ? 'cancelado' : 'pendiente')];
+
+            if ($paso === 'salida') {
+                $renglon['programado'] = $dia($pase->fecha_salida_programada);
+                if ($marca !== null && $pase->fecha_salida_programada !== null) {
+                    $diferencia = (int) Carbon::parse($pase->fecha_salida_programada->format('Y-m-d'))
+                        ->diffInDays(Carbon::parse($marca->copy()->setTimezone($hora->zona())->format('Y-m-d')), false);
+                    if ($diferencia !== 0) {
+                        $n = abs($diferencia);
+                        $renglon['nota'] = $n.' '.($n === 1 ? 'día' : 'días').' '.($diferencia > 0 ? 'después' : 'antes').' de lo programado';
+                    }
+                }
+            }
+
+            if ($paso === 'regreso') {
+                $renglon['programado'] = $dia($pase->fecha_tentativa_regreso);
+                $articulos = $pase->relationLoaded('articulos') ? $pase->articulos : $pase->articulos()->get();
+                $total = (int) $articulos->sum('cantidad');
+                $regresaron = (int) $articulos->sum('cantidad_regresada');
+                if ($marca === null && $pase->estado === PaseSalida::REGRESO_PARCIAL) {
+                    $ultimo = $pase->relationLoaded('bitacora')
+                        ? $pase->bitacora->where('evento', 'regreso_parcial')->sortBy('id')->last()
+                        : $pase->bitacora()->where('evento', 'regreso_parcial')->reorder()->orderByDesc('id')->first();
+                    $renglon['estado'] = 'parcial';
+                    $renglon['real'] = null;
+                    $renglon['texto'] = "Parcial: {$regresaron} de {$total}".($ultimo ? ' · el último, '.$real($ultimo->created_at) : '');
+                } elseif ($marca !== null && $pase->cerrado_con_faltantes) {
+                    $renglon['nota'] = "Cerrado con faltantes: regresaron {$regresaron} de {$total}";
+                }
+                if ($marca === null && $vencido) {
+                    $renglon['estado'] = 'vencido';
+                    $renglon['texto'] = ($renglon['texto'] ?? 'Pendiente').' · Vencido (debía regresar el '.$renglon['programado'].')';
+                }
+            }
+
+            $renglon['texto'] ??= match ($renglon['estado']) {
+                'cancelado' => 'No ocurrió (pase cancelado)',
+                'pendiente' => 'Pendiente',
+                default => null,
+            };
+            $renglones[] = $renglon;
+        }
+
+        return ['definitivo' => ! $pase->requiere_regreso, 'renglones' => $renglones];
     }
 
     /**
@@ -1224,9 +1386,9 @@ class AdministradorPasesSalida
             'colaborador_destino_id.required_if' => 'Elige el colaborador que se lleva el equipo.',
             'destino_direccion.max' => 'La dirección de destino admite máximo 255 caracteres.',
             'destino_telefono.regex' => 'Revisa el teléfono: solo números (7 a 20), con "+" si es de otro país.',
-            'fecha_salida_programada.date_format' => 'La fecha de salida programada no es válida.',
-            'fecha_tentativa_regreso.date_format' => 'La fecha tentativa de regreso no es válida.',
-            'fecha_tentativa_regreso.after_or_equal' => 'La fecha tentativa de regreso no puede ser antes de la fecha de salida.',
+            'fecha_salida_programada.date_format' => 'La salida programada no es una fecha válida.',
+            'fecha_tentativa_regreso.date_format' => 'El regreso programado no es una fecha válida.',
+            'fecha_tentativa_regreso.after_or_equal' => 'El regreso programado no puede ser antes de la salida programada.',
             'articulos.required' => 'Agrega al menos un artículo que salga en el pase.',
             'articulos.max' => 'Un pase admite máximo '.self::MAX_ARTICULOS.' artículos.',
             'articulos.*.cantidad.required' => 'Escribe la cantidad de cada artículo.',
