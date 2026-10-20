@@ -45,9 +45,9 @@
 
     <dl class="fechas-pase">
         <div><dt>Creado</dt><dd>@fecha($p->created_at, 'd/m/Y')</dd></div>
-        @if ($salida)<div><dt>Sale</dt><dd>@fecha($salida, 'd/m/Y')</dd></div>@endif
+        @if ($salida)<div><dt>Salida programada</dt><dd>@fecha($salida, 'd/m/Y')</dd></div>@endif
         @if ($tentativa && $p->requiere_regreso)
-            <div class="{{ $vencido ? 'texto-vencido' : '' }}"><dt>{{ $vencido ? 'Debió regresar' : 'Regresa (tentativo)' }}</dt><dd>@if ($vencido)<i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> @endif @fecha($tentativa, 'd/m/Y')</dd></div>
+            <div class="{{ $vencido ? 'texto-vencido' : '' }}"><dt>{{ $vencido ? 'Debió regresar' : 'Regreso programado' }}</dt><dd>@if ($vencido)<i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> @endif @fecha($tentativa, 'd/m/Y')</dd></div>
         @endif
     </dl>
 

@@ -209,10 +209,10 @@ class BitacoraDelDia
         $columnas = ['pases_salida.id', 'pases_salida.sede_id', 'folio', 'motivo', 'salio_en', 'regreso_en'];
         $eventos = [];
         foreach ($this->delDia($base, 'pases_salida.salio_en')->orderBy('pases_salida.salio_en')->limit(self::MAX_POR_TIPO)->get($columnas) as $p) {
-            $eventos[] = $this->evento('pases', $p->salio_en, 'Salió', $p->folio.' · '.$p->etiquetaMotivo(), $p->sede?->nombre, route('pases-salida.show', $p->id));
+            $eventos[] = $this->evento('pases', $p->salio_en, 'Salió de '.($p->sede?->nombre ?? 'origen'), $p->folio.' · '.$p->etiquetaMotivo(), $p->sede?->nombre, route('pases-salida.show', $p->id));
         }
         foreach ($this->delDia($base, 'pases_salida.regreso_en')->orderBy('pases_salida.regreso_en')->limit(self::MAX_POR_TIPO)->get($columnas) as $p) {
-            $eventos[] = $this->evento('pases', $p->regreso_en, 'Regresó', $p->folio.' · '.$p->etiquetaMotivo(), $p->sede?->nombre, route('pases-salida.show', $p->id), 1);
+            $eventos[] = $this->evento('pases', $p->regreso_en, 'Regresó a '.($p->sede?->nombre ?? 'origen'), $p->folio.' · '.$p->etiquetaMotivo(), $p->sede?->nombre, route('pases-salida.show', $p->id), 1);
         }
 
         return $eventos;

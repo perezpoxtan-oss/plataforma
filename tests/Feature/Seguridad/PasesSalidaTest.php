@@ -26,6 +26,7 @@ use App\Support\CorreoPlataforma;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
@@ -70,6 +71,9 @@ class PasesSalidaTest extends TestCase
         $this->otroColaborador = $this->colaborador('1005', 'Roberto', 'Hernández', $this->centro);
         $this->proveedor = $this->enEmpresa(fn () => Proveedor::create(['nombre' => 'Constructora Maya', 'categoria' => 'contratista',
             'direccion' => 'Calle 20 Sur 110, Cancún', 'telefono' => '9981234567', 'todas_las_sedes' => true]));
+        // Las fechas de ejemplo (salida programada 05/10/2026, regreso programado 12/10/2026)
+        // quedan en el futuro: un pase cuyo regreso programado ya pasó no sale sin capturar uno nuevo
+        $this->travelTo(Carbon::parse('2026-10-04 10:00', 'America/Cancun'));
     }
 
     private function enEmpresa(callable $fn, ?Empresa $empresa = null): mixed
@@ -163,6 +167,19 @@ class PasesSalidaTest extends TestCase
             'verificados' => $pase->articulos->pluck('id')->all(),
             'regresa' => $pase->articulos->mapWithKeys(fn ($a) => [$a->id => $a->pendientes()])->all(),
         ], $extra));
+    }
+
+    /**
+     * Da salida hace unos días, cuando su regreso programado aún no pasaba
+     * (hoy ya no podría salir sin capturar un nuevo regreso programado).
+     */
+    private function salidaHaceDias(PaseSalida $pase, ?User $actor = null, int $dias = 3): void
+    {
+        $this->travel(-$dias)->days();
+        $this->flushSession();
+        $this->paso($pase, $actor)->assertSessionHasNoErrors();
+        $this->travel($dias)->days();
+        $this->flushSession();
     }
 
     private function configurarCorreo(): void
@@ -268,7 +285,7 @@ class PasesSalidaTest extends TestCase
             [['sede_destino_id' => null], 'sede_destino_id', 'Elige la sede destino.'],
             [['destino_tipo' => 'proveedor'], 'proveedor_id', 'Elige el proveedor destino (o regístralo con «Nuevo Proveedor»).'],
             [['destino_tipo' => 'colaborador'], 'colaborador_destino_id', 'Elige el colaborador que se lleva el equipo.'],
-            [['fecha_tentativa_regreso' => '2026-10-01'], 'fecha_tentativa_regreso', 'La fecha tentativa de regreso no puede ser antes de la fecha de salida.'],
+            [['fecha_tentativa_regreso' => '2026-10-01'], 'fecha_tentativa_regreso', 'El regreso programado no puede ser antes de la salida programada.'],
             [['destino_telefono' => 'abc'], 'destino_telefono', 'Revisa el teléfono: solo números (7 a 20), con "+" si es de otro país.'],
             [['motivo' => 'regalo'], 'motivo', 'Motivo de salida no válido.'],
             [['articulos' => [['cantidad' => 0, 'equipo' => 'Laptop']]], 'articulos.0.cantidad', 'La cantidad mínima es 1.'],
@@ -886,7 +903,7 @@ class PasesSalidaTest extends TestCase
         $pase = $this->crearPase(['destino_tipo' => 'proveedor', 'proveedor_id' => $this->proveedor->id, 'sede_destino_id' => null,
             'fecha_salida_programada' => $hoy->copy()->subDays(5)->format('Y-m-d'), 'fecha_tentativa_regreso' => $hoy->copy()->subDay()->format('Y-m-d')]);
         $this->aprobarTodo($pase);
-        $this->paso($pase);
+        $this->salidaHaceDias($pase);
         Mail::fake();
 
         $this->artisan('plataforma:pases-vencidos')->expectsOutput('Recordatorios de pases vencidos enviados: 1.')->assertSuccessful();
@@ -927,7 +944,7 @@ class PasesSalidaTest extends TestCase
         $pendiente = $this->crearPase(['fecha_salida_programada' => $hoy->copy()->subDays(5)->format('Y-m-d'), 'fecha_tentativa_regreso' => $hoy->copy()->subDay()->format('Y-m-d')]);
         foreach ([$vencido, $alDia] as $p) {
             $this->aprobarTodo($p);
-            $this->paso($p);
+            $this->salidaHaceDias($p);
         }
 
         $this->actingAs($this->admin)->get('/pases-salida?filtro=vencidos')->assertOk()
@@ -1053,7 +1070,7 @@ class PasesSalidaTest extends TestCase
 
         $demo = Empresa::where('nombre_comercial', CrearDatosDemo::EMPRESA)->firstOrFail();
         $pases = $this->enEmpresa(fn () => PaseSalida::orderBy('id')->get(), $demo);
-        $this->assertCount(12, $pases);
+        $this->assertCount(14, $pases);
         $this->assertEqualsCanonicalizing(array_keys(PaseSalida::ESTADOS), $pases->pluck('estado')->unique()->values()->all());
         $this->assertSame(3, $this->enEmpresa(fn () => PaseSalidaPaso::count(), $demo));
         // Los pases de ejemplo piden dos firmas en caseta; solo «Devolución» tiene una excepción para probar

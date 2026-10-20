@@ -1413,7 +1413,10 @@ class CrearDatosDemo extends Command
      * pase en cada estado: pendiente en el paso 1 (bandeja de jefe.demo),
      * pendiente en Gerencia (bandeja de admin.demo), rechazado, cancelado,
      * aprobado, salió cerrado, en camino a la otra sede, en destino, en
-     * tránsito de regreso, regreso parcial, regresado y uno vencido. Se
+     * tránsito de regreso, regreso parcial, regresado, uno vencido, uno con el
+     * recorrido completo a otra sede y uno aprobado cuyo regreso programado
+     * ya pasó (la caseta pedirá la nueva fecha). Las marcas reales quedan
+     * escalonadas en días y horas lógicos respecto de lo programado. Se
      * registran y firman con las mismas reglas de la pantalla; las firmas son
      * trazos de ejemplo. admin.demo deja guardada su firma.
      *
@@ -1434,6 +1437,7 @@ class CrearDatosDemo extends Command
 
         $pases = app(AdministradorPasesSalida::class);
         $previo = auth()->user();
+        $relojPrevio = Carbon::getTestNow();
         try {
             auth()->setUser($admin);
             $rol = fn (string $nombre) => Rol::where('empresa_id', $admin->empresa_id)->where('nombre', $nombre)->value('id');
@@ -1523,63 +1527,127 @@ class CrearDatosDemo extends Command
                 [['cantidad' => 1, 'equipo' => 'Taladro rotomartillo', 'marca' => 'DEWALT', 'modelo' => 'DCD996', 'serie' => 'DW-778120', 'descripcion' => 'No gira el mandril']]);
             $aprobar($listo, 2);
 
-            // 6. Traspaso definitivo: salió y quedó cerrado
+            // Del 6 en adelante: cada movimiento ocurre en su día y a una hora razonable (el reloj
+            // de la plataforma «viaja» a ese momento), para que lo real sea coherente con lo
+            // programado: sale el día programado (o cerca), llega después, regresa después.
+            $en = function (int $dias, string $hora) use ($hoy) {
+                Carbon::setTestNow(Carbon::parse($hoy->copy()->addDays($dias)->format('Y-m-d').' '.$hora, $hoy->getTimezone())->utc());
+            };
+            $haceHoras = function (float $horas) use ($hoy) {
+                Carbon::setTestNow($hoy->copy()->subMinutes((int) round($horas * 60))->utc());
+            };
+
+            // 6. Traspaso definitivo: salió el día programado y quedó cerrado
+            $en(-3, '10:15');
             $traspaso = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'traspaso_definitivo', 'colaborador_id' => $colaborador('1009'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
                 'fecha_salida_programada' => $dia(-2)],
                 [['cantidad' => 1, 'equipo' => 'Lavadora industrial', 'marca' => 'SPEED QUEEN', 'modelo' => 'SC40', 'serie' => 'SQ-40-1187', 'descripcion' => 'Pasa a la lavandería de Playa']]);
+            $en(-3, '12:40');
             $aprobar($traspaso, 3);
+            $en(-2, '09:40');
             $paso($traspaso, $agente, 'GUADALUPE CHAN EK');
 
-            // 7. Salió hacia Playa: falta confirmar la llegada (radio escaneado del padrón)
+            // 7. Salió hacia Playa hace un par de horas: falta confirmar la llegada (radio escaneado del padrón)
+            $salidaEnCamino = $hoy->copy()->subHours(2);
+            $haceHoras(26);
             $enCamino = $crear($agente, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1005'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
-                'fecha_salida_programada' => $dia(-1), 'fecha_tentativa_regreso' => $dia(5)],
+                'fecha_salida_programada' => $salidaEnCamino->format('Y-m-d'), 'fecha_tentativa_regreso' => $dia(5)],
                 [$radio ? ['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505', 'equipo_id' => $radio->id, 'descripcion' => 'Con cargador']
                     : ['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505']]);
+            $haceHoras(24);
             $aprobar($enCamino, 2);
+            $haceHoras(2);
             $paso($enCamino, $agente, 'ROBERTO HERNÁNDEZ CRUZ');
 
-            // 8. En destino (Centro recibió las aspiradoras de Playa)
+            // 8. En destino: salió de Playa el día programado y Centro lo recibió una hora después
+            $en(-5, '10:00');
             $enDestino = $crear($admin, ['sede_id' => $sedes['PLA']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1008'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['CEN']->id,
                 'fecha_salida_programada' => $dia(-4), 'fecha_tentativa_regreso' => $dia(3)],
                 [['cantidad' => 2, 'equipo' => 'Aspiradora', 'marca' => 'KÄRCHER', 'modelo' => 'NT 30/1', 'descripcion' => 'Apoyo por la limpieza profunda de Centro']]);
+            $en(-5, '12:00');
             $aprobar($enDestino, 2);
+            $en(-4, '09:30');
             $paso($enDestino, $admin, 'DANIELA CANUL MAY');
+            $en(-4, '10:45');
             $paso($enDestino, $agente, 'DANIELA CANUL MAY');
 
-            // 9. En tránsito de regreso (consignación: 3 aprobaciones)
+            // 9. En tránsito de regreso (consignación: 3 aprobaciones): salió hace 6 días, vuelve hoy
+            $en(-7, '09:00');
             $transito = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'consignacion', 'colaborador_id' => $colaborador('1007'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
                 'fecha_salida_programada' => $dia(-6), 'fecha_tentativa_regreso' => $dia(1)],
                 [['cantidad' => 1, 'equipo' => 'Carpa plegable 3x3', 'marca' => 'TRUPER', 'descripcion' => 'Color blanco, con bolsa'], ['cantidad' => 6, 'equipo' => 'Silla plegable', 'descripcion' => 'Negras']]);
+            $en(-7, '11:30');
             $aprobar($transito, 3);
+            $en(-6, '08:45');
             $paso($transito, $agente, 'MARIANA LÓPEZ PECH');
+            $en(-6, '10:05');
             $paso($transito, $admin, 'MARIANA LÓPEZ PECH');
+            $haceHoras(1);
             $paso($transito, $admin, 'MARIANA LÓPEZ PECH');
 
-            // 10. Regreso parcial: regresaron 2 de 4 radios portátiles
+            // 10. Regreso parcial: salió hace 3 días; ayer regresaron 2 de 4 radios portátiles
+            $en(-4, '09:30');
             $parcial = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
                 'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'fecha_salida_programada' => $dia(-3), 'fecha_tentativa_regreso' => $dia(4)],
                 [['cantidad' => 4, 'equipo' => 'Radio portátil', 'marca' => 'KENWOOD', 'modelo' => 'TK-3402', 'descripcion' => 'Para la obra de la alberca']]);
+            $en(-4, '11:10');
             $aprobar($parcial, 2);
+            $en(-3, '10:20');
             $paso($parcial, $agente, 'CARLOS PÉREZ GÓMEZ');
             $parcial->refresh()->load('articulos');
+            $en(-1, '17:10');
             $paso($parcial, $agente, 'CARLOS PÉREZ GÓMEZ', ['regresa' => [$parcial->articulos->first()->id => 2],
                 'comentario' => 'El proveedor regresa los otros 2 el viernes.']);
 
-            // 11. Regresado y cerrado (laptop bajo resguardo de un colaborador)
+            // 11. Regresado y cerrado (laptop bajo resguardo de un colaborador): salió un día después de lo programado
+            $en(-10, '12:00');
             $regresado = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'colaborador', 'colaborador_destino_id' => $colaborador('1005'),
                 'fecha_salida_programada' => $dia(-9), 'fecha_tentativa_regreso' => $dia(-2)],
                 [['cantidad' => 1, 'equipo' => 'Laptop', 'marca' => 'LENOVO', 'modelo' => 'L14', 'serie' => 'ABC123LATCAT', 'descripcion' => 'Bajo resguardo de Sistemas, para home office']]);
+            $en(-10, '16:30');
             $aprobar($regresado, 2);
+            $en(-8, '08:30');
             $paso($regresado, $agente, 'ROBERTO HERNÁNDEZ CRUZ');
+            $en(-3, '18:05');
             $paso($regresado, $agente, 'ROBERTO HERNÁNDEZ CRUZ');
 
-            // 12. Vencido: debió regresar del taller hace 3 días
+            // 12. Vencido: salió al taller el día programado y debió regresar hace 3 días
+            $en(-11, '09:00');
             $vencido = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
                 'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(-10), 'fecha_tentativa_regreso' => $dia(-3)],
                 [['cantidad' => 1, 'equipo' => 'Puerta corrediza de cristal', 'marca' => 'MITEL', 'modelo' => '989484', 'descripcion' => 'Riel dañado; la reparan en el taller del proveedor']]);
+            $en(-11, '13:20');
             $aprobar($vencido, 2);
+            $en(-10, '11:15');
             $paso($vencido, $agente, 'CARLOS PÉREZ GÓMEZ');
+
+            // 13. Recorrido completo a otra sede: salió, llegó a Playa, salió de regreso y regresó a Centro
+            $en(-9, '16:00');
+            $completo = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1007'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
+                'fecha_salida_programada' => $dia(-8), 'fecha_tentativa_regreso' => $dia(-5)],
+                [['cantidad' => 2, 'equipo' => 'Bocina amplificada', 'marca' => 'JBL', 'modelo' => 'EON 712', 'descripcion' => 'Para el evento en el jardín de Playa']]);
+            $en(-9, '17:45');
+            $aprobar($completo, 2);
+            $en(-8, '09:10');
+            $paso($completo, $agente, 'MARIANA LÓPEZ PECH');
+            $en(-8, '10:25');
+            $paso($completo, $admin, 'MARIANA LÓPEZ PECH');
+            $en(-5, '15:40');
+            $paso($completo, $admin, 'MARIANA LÓPEZ PECH');
+            $en(-5, '16:55');
+            $paso($completo, $agente, 'MARIANA LÓPEZ PECH');
+
+            // 14. Aprobado pero nunca salió y su regreso programado ya pasó: al dar salida, la caseta
+            //     pide el nuevo regreso programado
+            $en(-6, '10:30');
+            $atrasado = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1011') ?? $colaborador('1006'), 'destino_tipo' => 'proveedor',
+                'proveedor_id' => $proveedor('Constructora Maya'), 'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567',
+                'fecha_salida_programada' => $dia(-5), 'fecha_tentativa_regreso' => $dia(-1)],
+                [['cantidad' => 1, 'equipo' => 'Desbrozadora', 'marca' => 'STIHL', 'modelo' => 'FS 55', 'serie' => 'ST-55-3310', 'descripcion' => 'Cambio de cabezal']]);
+            $en(-6, '12:15');
+            $aprobar($atrasado, 2);
         } finally {
+            Carbon::setTestNow($relojPrevio);
             $previo ? auth()->setUser($previo) : auth()->forgetUser();
         }
     }

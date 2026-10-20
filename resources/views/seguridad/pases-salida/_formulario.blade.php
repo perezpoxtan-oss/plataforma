@@ -155,11 +155,11 @@
             </div>
             <div class="row">
                 <div class="col-md-6">
-                    <label class="campo-etiqueta" for="ps_fecha_salida">Fecha de Salida Programada</label>
+                    <label class="campo-etiqueta" for="ps_fecha_salida">Salida programada</label>
                     <input type="date" id="ps_fecha_salida" name="fecha_salida_programada" class="campo" value="{{ $previo('fecha_salida_programada', $hoy) }}">
                 </div>
                 <div class="col-md-6" data-mostrar-si='{"motivo":{{ json_encode($conRegreso) }}}'>
-                    <label class="campo-etiqueta" for="ps_fecha_regreso">Fecha Tentativa de Regreso <span class="text-lowercase fw-normal">(para dar seguimiento)</span></label>
+                    <label class="campo-etiqueta" for="ps_fecha_regreso">Regreso programado <span class="text-lowercase fw-normal">(para dar seguimiento)</span></label>
                     <input type="date" id="ps_fecha_regreso" name="fecha_tentativa_regreso" class="campo" value="{{ $previo('fecha_tentativa_regreso') }}">
                 </div>
             </div>

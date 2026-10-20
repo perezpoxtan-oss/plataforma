@@ -284,7 +284,8 @@ class PaseSalidaController extends Controller
                 'pase' => $modelo,
                 'empresa' => $empresa,
                 'logo' => is_string($logo) && $logo !== '' && ! str_contains($logo, '..') && is_file(public_path($logo)) ? asset($logo) : null,
-                'vencido' => $this->pases->vencido($modelo),
+                'vencido' => $vencido = $this->pases->vencido($modelo),
+                'recorrido' => $this->pases->recorrido($modelo, $vencido),
                 'aprobaciones' => $this->pases->circuito()->rondaActual($modelo),
                 'qr' => (string) preg_replace('/^<\?xml[^>]*>\s*/', '', (new Writer(new ImageRenderer(new RendererStyle(150, 1), new SvgImageBackEnd)))->writeString($url)),
                 'urlVerificar' => $url,
@@ -304,12 +305,15 @@ class PaseSalidaController extends Controller
 
         return $this->tenant->conEmpresa($empresaId, function () use ($request, $codigo) {
             $modelo = $this->pases->limitar(PaseSalida::query(), $request->user(), 'pases_salida.ver')
-                ->with('sede:id,nombre')->withCount('articulos')->where('codigo_verificacion', mb_strtoupper($codigo))->first();
+                ->with(['sede:id,nombre', 'sedeDestino:id,nombre', 'proveedor:id,nombre', 'colaboradorDestino:id,nombre,apellido_paterno,apellido_materno', 'articulos'])
+                ->withCount('articulos')->where('codigo_verificacion', mb_strtoupper($codigo))->first();
             abort_if($modelo === null, 404);
+            $vencido = $this->pases->vencido($modelo);
 
             return view('seguridad.pases-salida.verificar', [
                 'pase' => $modelo,
-                'vencido' => $this->pases->vencido($modelo),
+                'vencido' => $vencido,
+                'recorrido' => $this->pases->recorrido($modelo, $vencido),
             ]);
         });
     }
@@ -483,6 +487,10 @@ class PaseSalidaController extends Controller
         return [
             'pase' => $pase,
             'vencido' => $vencido,
+            'recorrido' => $this->pases->recorrido($pase, $vencido),
+            'pideNuevoRegreso' => $this->pases->pideNuevoRegreso($pase),
+            'regresoPasado' => $this->pases->regresoProgramadoPasado($pase),
+            'hoySede' => $this->pases->hoyDe($pase),
             'etapas' => $this->pases->etapas($pase, $vencido),
             'siguiente' => $this->pases->siguiente($pase),
             'reloj' => app(EsperaPasesSalida::class)->relojDe($pase),

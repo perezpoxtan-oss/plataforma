@@ -248,7 +248,9 @@ class PaseSalida extends Model
     }
 
     /**
-     * Fuera de la propiedad, espera regreso y su fecha tentativa ya pasó
+     * Fuera de la propiedad, espera regreso y su regreso programado
+     * (fecha_tentativa_regreso, la vigente: si la caseta lo cambió al dar
+     * salida, cuenta el nuevo) ya pasó
      * ($hoy = fecha local de la sede de origen, "Y-m-d").
      */
     public function vencido(string $hoy): bool
@@ -331,6 +333,32 @@ class PaseSalida extends Model
         }
 
         return $this->destino_tipo === 'sede' ? ['salida', 'recepcion', 'salida_regreso', 'regreso'] : ['salida', 'regreso'];
+    }
+
+    /** paso físico => columna con la hora real en que la caseta lo registró. */
+    public const MARCAS_REALES = [
+        'salida' => 'salio_en',
+        'recepcion' => 'recibido_destino_en',
+        'salida_regreso' => 'salio_regreso_en',
+        'regreso' => 'regreso_en',
+    ];
+
+    /**
+     * Hora real del movimiento de caseta anterior a $paso en este pase (la
+     * marca más reciente ya registrada antes de él), o null si es el primero.
+     * Sirve para que las marcas reales siempre queden en orden.
+     */
+    public function marcaAnterior(string $paso): ?Carbon
+    {
+        $anterior = null;
+        foreach ($this->pasosFisicos() as $p) {
+            if ($p === $paso) {
+                break;
+            }
+            $anterior = $this->{self::MARCAS_REALES[$p]} ?? $anterior;
+        }
+
+        return $anterior;
     }
 
     /**

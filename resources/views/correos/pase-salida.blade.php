@@ -20,12 +20,13 @@
             <p>El pase se rechazó{{ $paso ? ' en el paso «'.$paso.'»' : '' }} y regresó al solicitante. Corrígelo y reenvíalo, o cancélalo.</p>
             @break
         @default
-            <p>El equipo debió regresar{{ $fecha ? ' el '.$fecha : '' }} y aún no vuelve. Da seguimiento.</p>
+            <p>El equipo debía regresar{{ $sede ? ' a '.$sede : '' }}{{ $fecha ? ' el '.$fecha.' (regreso programado)' : '' }} y aún no vuelve. Da seguimiento.</p>
     @endswitch
     <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;font-size:14px;margin-bottom:12px;">
         <tr><td style="padding:4px 0;color:#64748b;width:140px;">Motivo</td><td style="padding:4px 0;font-weight:bold;">{{ $motivo }}</td></tr>
         @if ($solicitante)<tr><td style="padding:4px 0;color:#64748b;">Solicitante</td><td style="padding:4px 0;">{{ $solicitante }}</td></tr>@endif
-        @if ($sede)<tr><td style="padding:4px 0;color:#64748b;">Sale de</td><td style="padding:4px 0;">{{ $sede }}</td></tr>@endif
+        @if ($sede)<tr><td style="padding:4px 0;color:#64748b;">Sede de origen</td><td style="padding:4px 0;">{{ $sede }}</td></tr>@endif
+        @if ($fecha && $tipo === 'vencido')<tr><td style="padding:4px 0;color:#b91c1c;">Regreso programado</td><td style="padding:4px 0;font-weight:bold;">{{ $fecha }}</td></tr>@endif
         <tr><td style="padding:4px 0;color:#64748b;">Destino</td><td style="padding:4px 0;">{{ $destino }}</td></tr>
         <tr><td style="padding:4px 0;color:#64748b;">Artículos</td><td style="padding:4px 0;">{{ $articulos }}</td></tr>
         @if ($comentario)<tr><td style="padding:4px 0;color:#b91c1c;">Comentario</td><td style="padding:4px 0;">{{ $comentario }}</td></tr>@endif

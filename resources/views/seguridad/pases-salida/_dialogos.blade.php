@@ -35,6 +35,9 @@
                 <input type="hidden" name="aprobacion_id" value="{{ $actual->id }}">
                 @if ($dialogo === 'aprobar'){!! $erroresDentro() !!}@endif
                 <p class="small">Firmas el paso <strong>{{ $actual->orden }} de {{ $totalRonda }}</strong> del pase {{ $pase->folio }}: {{ $pase->articulos->count() }} {{ $pase->articulos->count() === 1 ? 'artículo' : 'artículos' }} hacia {{ $pase->nombreDestino() }}.</p>
+                @if ($regresoPasado ?? false)
+                    <p class="small aviso-sin-firma-caseta"><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>El regreso programado ({{ app(\App\Support\HoraLocal::class)->formatear(\App\Models\PaseSalida::dia($pase->fecha_tentativa_regreso), 'd/m/Y') }}) ya pasó: al dar salida, la caseta pedirá un nuevo regreso programado.</p>
+                @endif
                 @include('seguridad.pases-salida._firma-propia', ['id' => 'aprobar', 'etiqueta' => 'Tu firma ('.auth()->user()->name.')'])
                 <label class="campo-etiqueta" for="aprobar_comentario">Comentario <span class="text-lowercase fw-normal">(opcional)</span></label>
                 <textarea id="aprobar_comentario" name="comentario" class="campo" rows="2" maxlength="1000">{{ $dialogo === 'aprobar' ? old('comentario') : '' }}</textarea>
@@ -119,6 +122,17 @@
                 <input type="hidden" name="_dialogo" value="paso">
                 <input type="hidden" name="paso" value="{{ $paso }}">
                 @if ($dialogo === 'paso'){!! $erroresDentro() !!}@endif
+
+                @if ($pideNuevoRegreso ?? false)
+                    {{-- Regla de coherencia: no sale algo cuyo regreso programado ya pasó --}}
+                    <div class="nuevo-regreso-pase" role="group" aria-labelledby="titulo-nuevo-regreso">
+                        <p id="titulo-nuevo-regreso" class="m-0"><i class="bi bi-calendar-event me-1" aria-hidden="true"></i><strong>El regreso programado ({{ app(\App\Support\HoraLocal::class)->formatear(\App\Models\PaseSalida::dia($pase->fecha_tentativa_regreso), 'd/m/Y') }}) ya pasó.</strong>
+                            Pregunta cuándo regresa y escribe la nueva fecha antes de dar salida.</p>
+                        <label class="campo-etiqueta" for="nuevo_regreso">Nuevo regreso programado <span class="text-danger" aria-hidden="true">*</span></label>
+                        <input type="date" id="nuevo_regreso" name="nuevo_regreso" class="campo" required min="{{ $hoySede }}"
+                               value="{{ $dialogo === 'paso' ? old('nuevo_regreso') : '' }}">
+                    </div>
+                @endif
 
                 <h3 class="paso-pase"><span class="numero-paso">1</span>{{ $esRegreso ? 'Lo que regresa' : 'Verifica los artículos' }}</h3>
                 <p class="small text-muted">{{ $ayudas[$paso] }}</p>

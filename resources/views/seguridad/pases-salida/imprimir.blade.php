@@ -8,7 +8,6 @@
 @php
     $version = fn (string $archivo) => asset($archivo).'?v='.(@filemtime(public_path($archivo)) ?: '1');
     [$textoEstado, $claseEstado] = $pase->insignia($vencido);
-    $tentativa = PaseSalida::dia($pase->fecha_tentativa_regreso);
     $solicitante = $pase->solicitante;
     $hora = app(\App\Support\HoraLocal::class);
     // Firmas de caseta (circuito actual) por rol: la más reciente de cada uno
@@ -71,21 +70,30 @@
             <div class="dato-completo"><div class="dato-etiqueta">Solicitante</div>
                 <div class="dato-valor">{{ $solicitante?->nombreCompleto() ?? '—' }}
                     <span class="normal">{{ $solicitante ? ($solicitante->num_empleado ? '· Núm. '.$solicitante->num_empleado : '· provisional') : '' }}{{ $solicitante?->departamento ? ' · '.$solicitante->departamento->nombre : '' }}{{ $solicitante?->puesto ? ' · '.$solicitante->puesto->nombre : '' }}</span></div></div>
-            <div><div class="dato-etiqueta">Sale de</div><div class="dato-valor">{{ $pase->sede?->nombre }}</div></div>
+            <div><div class="dato-etiqueta">Sede de origen</div><div class="dato-valor">{{ $pase->sede?->nombre }}</div></div>
             <div class="dato-doble"><div class="dato-etiqueta">Enviar a</div><div class="dato-valor">{{ $pase->nombreDestino() }} <span class="normal">({{ ['sede' => 'otra sede', 'proveedor' => 'proveedor', 'colaborador' => 'colaborador'][$pase->destino_tipo] ?? '' }})</span></div></div>
             @if ($pase->destino_direccion)<div class="dato-doble"><div class="dato-etiqueta">Dirección de destino</div><div class="dato-valor normal">{{ $pase->destino_direccion }}</div></div>@endif
             @if ($pase->destino_telefono)<div><div class="dato-etiqueta">Teléfono</div><div class="dato-valor">{{ $pase->destino_telefono }}</div></div>@endif
-            <div><div class="dato-etiqueta">Fecha de salida programada</div><div class="dato-valor">{{ $pase->fecha_salida_programada ? $hora->formatear(PaseSalida::dia($pase->fecha_salida_programada), 'd/m/Y') : '—' }}</div></div>
             @if ($pase->articulos->contains(fn ($a) => $a->valor_unitario !== null))
                 <div><div class="dato-etiqueta">Valor total</div><div class="dato-valor">{{ $valorTotal !== null ? PaseSalida::pesos($valorTotal).' MXN' : 'Incompleto (artículos sin valor)' }}</div></div>
             @endif
-            @if ($pase->requiere_regreso)
-                <div><div class="dato-etiqueta">Regreso tentativo</div><div class="dato-valor">{{ $tentativa ? $hora->formatear($tentativa, 'd/m/Y') : '—' }}{{ $vencido ? ' (VENCIDO)' : '' }}</div></div>
-            @endif
+        </section>
+
+        <section class="hoja-pase-grupo hoja-pase-recorrido">
+            <h2>Recorrido del pase{{ $recorrido['definitivo'] ? ' · Salida definitiva, no espera regreso' : '' }}</h2>
+            <table class="hoja-pase-articulos">
+                <thead><tr><th>Momento</th><th>Programado</th><th>Real</th></tr></thead>
+                <tbody>
+                    @foreach ($recorrido['renglones'] as $r)
+                        <tr><td><strong>{{ $r['momento'] }}</strong></td><td>{{ $r['programado'] ?? '—' }}</td>
+                            <td>{{ collect([$r['real'], $r['texto'], $r['nota']])->filter()->implode(' · ') }}</td></tr>
+                    @endforeach
+                </tbody>
+            </table>
         </section>
 
         <table class="hoja-pase-articulos">
-            <thead><tr><th>Cant.</th><th>Equipo</th><th>Marca</th><th>Modelo</th><th>Serie</th><th>Descripción</th>@if ($pase->salio_en)<th>Salió</th>@endif @if ($pase->requiere_regreso && $pase->salio_en)<th>Regresó</th>@endif</tr></thead>
+            <thead><tr><th>Cant.</th><th>Equipo</th><th>Marca</th><th>Modelo</th><th>Serie</th><th>Descripción</th>@if ($pase->salio_en)<th>Revisado</th>@endif @if ($pase->requiere_regreso && $pase->salio_en)<th>Regresaron</th>@endif</tr></thead>
             <tbody>
                 @foreach ($pase->articulos as $a)
                     <tr><td>{{ $a->cantidad }}</td><td>{{ $a->equipo }}</td><td>{{ $a->marca ?? '—' }}</td><td>{{ $a->modelo ?? '—' }}</td><td>{{ $a->serie ?? '—' }}</td><td>{{ $a->descripcion }}</td>

@@ -4648,3 +4648,36 @@ html.modo-noche .dos-pasos-clave, html.modo-noche .codigos-respaldo li { backgro
 html.modo-noche .lista-arco > li, html.modo-noche .coincidencias-arco fieldset { border-color: rgba(148, 163, 184, 0.3); }
 /* Fin Verificación en dos pasos y Privacidad */
 .chip-config.activo { border-color: var(--color-primario); background: var(--color-primario); color: #fff; }
+
+/* Pases de salida: «Recorrido del pase» (Programado | Real por momento; en celular, tarjetas apiladas) */
+.recorrido-pase-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.75rem; }
+.chip-recorrido { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.7rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; background: #eff6ff; color: #1d4ed8; }
+.chip-recorrido.definitivo { background: #f1f5f9; color: #334155; }
+.tabla-recorrido { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.92rem; }
+.tabla-recorrido thead th { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--texto-suave); padding: 0 0.75rem 0.4rem; border-bottom: 2px solid var(--borde); text-align: left; }
+.tabla-recorrido tbody th, .tabla-recorrido tbody td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--borde); vertical-align: top; text-align: left; }
+.tabla-recorrido tbody th { font-weight: 700; width: 42%; }
+.tabla-recorrido tbody td:nth-child(2) { width: 22%; white-space: nowrap; }
+.recorrido-punto { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 0.55rem; background: #cbd5e1; border: 2px solid #cbd5e1; vertical-align: -1px; }
+.recorrido-hecho .recorrido-punto { background: #16a34a; border-color: #16a34a; }
+.recorrido-parcial .recorrido-punto { background: #fff; border-color: #d97706; }
+.recorrido-vencido .recorrido-punto { background: #dc2626; border-color: #dc2626; }
+.recorrido-pendiente .recorrido-punto, .recorrido-cancelado .recorrido-punto { background: #fff; }
+.recorrido-texto { display: block; font-weight: 600; color: #475569; }
+.recorrido-parcial .recorrido-texto { color: #b45309; }
+.recorrido-vencido .recorrido-texto { color: #b91c1c; font-weight: 700; }
+.recorrido-nota { display: block; font-size: 0.8rem; color: #b45309; }
+.recorrido-ayuda { font-size: 0.78rem; color: var(--texto-suave); margin: 0.6rem 0 0; }
+.nuevo-regreso-pase { background: #fff7ed; border: 1px solid #fdba74; border-radius: 12px; padding: 0.75rem 0.9rem; margin-bottom: 1rem; }
+.nuevo-regreso-pase .campo { max-width: 260px; margin-bottom: 0; }
+.verificacion-recorrido { max-width: 640px; margin-left: auto; margin-right: auto; text-align: left; }
+.hoja-pase-recorrido td { width: auto; }
+@media (max-width: 575.98px) {
+    .tabla-recorrido thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .tabla-recorrido, .tabla-recorrido tbody, .tabla-recorrido tr, .tabla-recorrido th, .tabla-recorrido td { display: block; width: 100% !important; }
+    .tabla-recorrido tbody tr { border: 1px solid var(--borde); border-radius: 12px; padding: 0.6rem 0.75rem; margin-bottom: 0.5rem; }
+    .tabla-recorrido tbody th, .tabla-recorrido tbody td { border: none; padding: 0.15rem 0; white-space: normal !important; }
+    .tabla-recorrido tbody th { margin-bottom: 0.25rem; }
+    .tabla-recorrido tbody td::before { content: attr(data-etiqueta) ": "; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--texto-suave); }
+    .tabla-recorrido tbody td { padding-left: 1.4rem; }
+}

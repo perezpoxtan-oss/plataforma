@@ -274,7 +274,7 @@ class InformeEjecutivo
             $this->ficha('Pases creados', number_format(array_sum($porMotivo)), [
                 'nivel' => 'destacada',
                 'grafica' => GraficaSvg::barras($porMotivo, 'Pases de salida por motivo'),
-                'columnas' => ['Folio', 'Motivo', 'Estatus', 'Solicitante', 'Creado', 'Regreso tentativo'], 'filas' => $filas, 'enlace' => route('pases-salida.index'),
+                'columnas' => ['Folio', 'Motivo', 'Estatus', 'Solicitante', 'Creado', 'Regreso programado'], 'filas' => $filas, 'enlace' => route('pases-salida.index'),
             ]),
             $this->ficha('Fuera de la propiedad ahora', number_format($fuera), ['enlace' => route('pases-salida.index', ['filtro' => 'fuera'])]),
             $this->ficha('Vencidos sin regresar', number_format($vencidos), ['nivel' => $vencidos > 0 ? 'alerta' : 'positiva', 'enlace' => route('pases-salida.index', ['filtro' => 'vencidos'])]),
