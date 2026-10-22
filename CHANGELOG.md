@@ -6,6 +6,10 @@ Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PA
 Bajo «## [Sin publicar]»:
 
 ### Agregado
+- **Compatibilidad con PHP 8.5** (sin cambios visibles). Ver `docs/tecnico/despliegue.md`, «Versión de PHP (8.4 y 8.5)».
+  - CI: la suite completa (con migrar → revertir → migrar en MariaDB) corre en PHP 8.4 y 8.5; nuevo paso que falla si el código propio produce avisos de deprecación (`.github/scripts/revisar-deprecaciones.php`). El paquete y `composer.lock` siguen armándose con 8.4 (la versión más baja en uso).
+  - `desplegar.sh`: busca el PHP del cron igual al que cPanel asignó al sitio (8.5 u 8.4), exige 8.4.1+ (antes aceptaba 8.3, que las librerías ya no soportan), muestra «PHP del cron» en el archivo de estado y **conserva el bloque de versión de MultiPHP Manager** del `.htaccess` del subdominio (antes cada instalación lo borraba y el sitio volvía a la versión por omisión). Pruebas en `DesplegarScriptTest`.
+  - Pasos para cambiar QA y luego Producción a 8.5 en cPanel, y para regresar a 8.4. Nota sobre PHP2Shell (corregida en 8.5.12, 8.4.27, 8.3.36 y 8.2.35).
 - **Pases de salida: «Recorrido del pase» con lo programado contra lo real** (cambio visible aprobado por el dueño). Ver `docs/tecnico/pases-salida.md`, «Recorrido del pase» y «Reglas de coherencia de fechas».
   - En el Resumen, un bloque **Recorrido del pase** (tabla; en celular, tarjetas) con Momento | Programado | Real: «Sale de {origen}», «Llega a {destino}» y «Sale de regreso de {destino}» (solo hacia otra sede), «Regresa a {origen}» (solo si espera regreso); notas «N días después/antes de lo programado», «Parcial: N de M», «Pendiente · Vencido (debía regresar el …)» y la leyenda «Salida definitiva, no espera regreso». También en la hoja impresa y en la verificación por QR.
   - Nombres unificados: «Salida programada» y «Regreso programado» (formulario, lista, correo de vencido, Informe ejecutivo); «Salió de …» / «Regresó a …» en la Bitácora del día; se quitan «Fecha de salida», «Regreso tentativo», «Salió» y «Regresó» sueltos.
