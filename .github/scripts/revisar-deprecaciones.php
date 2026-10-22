@@ -12,7 +12,7 @@ $archivo = $argv[1] ?? 'storage/logs/laravel.log';
 $raiz = rtrim((string) realpath(getcwd()), '/').'/';
 
 if (! is_file($archivo)) {
-    echo "Sin avisos de deprecación (no se creó {$archivo}).\n";
+    printf("::notice title=Deprecaciones (PHP %s)::Ninguna (no se creó %s)\n", PHP_VERSION, $archivo);
     exit(0);
 }
 
@@ -42,5 +42,6 @@ foreach ($propios as [$relativa, $linea, $mensaje]) {
     echo "::error file={$relativa},line={$linea},title=Deprecación en código propio::".$escapar(substr($mensaje, 0, 500))."\n";
 }
 
+printf("::notice title=Deprecaciones (PHP %s)::%d en código propio, %d librerías con avisos (%d anotaciones revisadas en %s)\n", PHP_VERSION, count($propios), count($librerias), count($avisos), $archivo);
 printf("PHP %s: %d avisos de deprecación en código propio, %d librerías con avisos.\n", PHP_VERSION, count($propios), count($librerias));
 exit($propios === [] ? 0 : 1);
