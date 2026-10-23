@@ -391,6 +391,8 @@ class MenusReorganizadosTest extends TestCase
         // solo renglón cada uno, con el conteo corto de activos), tickets de incidentes en una consulta y los de activos
         // Reservas de áreas suma 6 sin relaciones ni N+1 (aprobaciones, órdenes, empresa —en la pantalla ya viene cargada—,
         // responsables de los departamentos involucrados, delegaciones hacia el usuario y cambios pedidos)
-        $this->assertLessThan(70, count(DB::getQueryLog()));
+        // El paso «Jefe del departamento del solicitante» de Pases de salida suma 2 fijas (responsables de la empresa
+        // y delegaciones activas, una vez por petición, sin importar cuántos pases o departamentos)
+        $this->assertLessThan(75, count(DB::getQueryLog()));
     }
 }

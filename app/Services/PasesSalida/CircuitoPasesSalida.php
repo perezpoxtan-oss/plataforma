@@ -4,13 +4,13 @@ namespace App\Services\PasesSalida;
 
 use App\Models\Delegacion;
 use App\Models\Departamento;
+use App\Models\DepartamentoResponsable;
 use App\Models\Empresa;
 use App\Models\PaseSalida;
 use App\Models\PaseSalidaAprobacion;
 use App\Models\PaseSalidaPaso;
 use App\Models\Rol;
 use App\Models\User;
-use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -104,6 +104,12 @@ class CircuitoPasesSalida
 
     /** @var array<string, array<string, array{0: Collection<int, int>, 1: Collection<int, int>}>> responsables por departamento y sede */
     private array $responsables = [];
+
+    /** @var Collection<int, DepartamentoResponsable>|null responsables activos de la empresa (una lectura por petición) */
+    private ?Collection $responsablesEmpresa = null;
+
+    /** @var Collection<int, Collection<int, int>>|null delegados activos por usuario que delega */
+    private ?Collection $delegacionesActivas = null;
 
     public function __construct(
         private readonly Autorizador $autorizador,
@@ -767,12 +773,20 @@ class CircuitoPasesSalida
         $sede = $pase->sede_id !== null ? (int) $pase->sede_id : null;
 
         return $this->responsables[$pase->empresa_id.'-'.$departamentoId.'-'.$sede] ??= (function () use ($departamentoId, $sede) {
-            $responsables = app(Autorizaciones::class)->responsablesDe($departamentoId, $sede);
+            // Una sola lectura de responsables y de delegaciones activas por petición (Mis pendientes revisa muchos pases)
+            $this->responsablesEmpresa ??= DepartamentoResponsable::query()
+                ->join('users', 'users.id', '=', 'departamento_responsables.user_id')->where('users.activo', true)
+                ->orderBy('departamento_responsables.es_suplente')->orderBy('departamento_responsables.id')
+                ->get(['departamento_responsables.id', 'departamento_responsables.departamento_id', 'departamento_responsables.user_id',
+                    'departamento_responsables.sede_id', 'departamento_responsables.es_suplente']);
+            $this->delegacionesActivas ??= Delegacion::activas()->get(['user_id', 'delegado_id'])
+                ->groupBy(fn ($d) => (int) $d->user_id)->map(fn ($g) => $g->pluck('delegado_id')->map(fn ($id) => (int) $id));
+            $responsables = $this->responsablesEmpresa->filter(fn ($r) => (int) $r->departamento_id === $departamentoId
+                && ($r->sede_id === null || ($sede !== null && (int) $r->sede_id === $sede)));
             $niveles = [];
             foreach (['titular' => false, 'suplente' => true] as $como => $suplente) {
-                $ids = $responsables->filter(fn ($r) => (bool) $r->es_suplente === $suplente)->pluck('user_id')->map(fn ($id) => (int) $id)->values();
-                $delegados = $ids->isEmpty() ? collect()
-                    : Delegacion::activas()->whereIn('user_id', $ids->all())->pluck('delegado_id')->map(fn ($id) => (int) $id)->values();
+                $ids = $responsables->filter(fn ($r) => (bool) $r->es_suplente === $suplente)->pluck('user_id')->map(fn ($id) => (int) $id)->unique()->values();
+                $delegados = $ids->flatMap(fn (int $id) => $this->delegacionesActivas->get($id, collect()))->unique()->values();
                 $niveles[$como] = [$ids, $delegados];
             }
 
