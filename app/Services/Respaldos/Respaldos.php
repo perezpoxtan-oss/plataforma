@@ -3,9 +3,11 @@
 namespace App\Services\Respaldos;
 
 use App\Support\HoraLocal;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
 /**
@@ -212,6 +214,11 @@ class Respaldos
             gzwrite($gz, "DROP TABLE IF EXISTS \"{$t->name}\";\n{$t->sql};\n");
             $this->volcarFilas($gz, $t->name, fn ($v) => $pdo->quote((string) $v), '"');
         }
+        // Índices (únicos incluidos) después de los datos: sin ellos la base
+        // restaurada perdería reglas como «un préstamo vigente por llave»
+        foreach (DB::select("SELECT sql FROM sqlite_master WHERE type = 'index' AND sql IS NOT NULL AND name NOT LIKE 'sqlite_%'") as $indice) {
+            gzwrite($gz, "{$indice->sql};\n");
+        }
         gzwrite($gz, "COMMIT;\n");
     }
 
@@ -227,12 +234,15 @@ class Respaldos
             return;
         }
 
+        // Las columnas generadas (p. ej. prestamos_llaves.llave_en_uso) no se
+        // escriben en el INSERT: la base las recalcula al importar y tanto
+        // MySQL/MariaDB como SQLite rechazan un valor explícito para ellas.
+        $nombres = self::columnasConDatos($tabla);
+        $columnas = implode(', ', array_map(fn ($c) => $comilla.$c.$comilla, $nombres));
         $lote = [];
-        $columnas = null;
-        foreach (DB::table($tabla)->cursor() as $fila) {
+        foreach (DB::table($tabla)->select($nombres)->cursor() as $fila) {
             $fila = (array) $fila;
             $this->conteos[$tabla]++;
-            $columnas ??= implode(', ', array_map(fn ($c) => $comilla.$c.$comilla, array_keys($fila)));
             $lote[] = '('.implode(', ', array_map(fn ($v) => $v === null ? 'NULL' : (is_int($v) || is_float($v) ? (string) $v : $citar($v)), $fila)).')';
             if (count($lote) >= self::FILAS_POR_INSERT) {
                 gzwrite($gz, "INSERT INTO {$comilla}{$tabla}{$comilla} ({$columnas}) VALUES\n".implode(",\n", $lote).";\n");
@@ -243,5 +253,35 @@ class Respaldos
             gzwrite($gz, "INSERT INTO {$comilla}{$tabla}{$comilla} ({$columnas}) VALUES\n".implode(",\n", $lote).";\n");
         }
         gzwrite($gz, "\n");
+    }
+
+    /**
+     * Columnas de la tabla que guardan datos (sin las generadas), en su orden.
+     *
+     * @return list<string>
+     */
+    public static function columnasConDatos(string $tabla, ?Connection $conexion = null): array
+    {
+        $esquema = $conexion?->getSchemaBuilder() ?? Schema::getFacadeRoot();
+
+        return array_values(array_map(
+            fn (array $c) => $c['name'],
+            array_filter($esquema->getColumns($tabla), fn (array $c) => empty($c['generation'])),
+        ));
+    }
+
+    /**
+     * Columnas generadas de la tabla (se omiten en el volcado).
+     *
+     * @return list<string>
+     */
+    public static function columnasGeneradas(string $tabla, ?Connection $conexion = null): array
+    {
+        $esquema = $conexion?->getSchemaBuilder() ?? Schema::getFacadeRoot();
+
+        return array_values(array_map(
+            fn (array $c) => $c['name'],
+            array_filter($esquema->getColumns($tabla), fn (array $c) => ! empty($c['generation'])),
+        ));
     }
 }

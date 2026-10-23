@@ -71,6 +71,8 @@ Enlaces al aviso/formulario: kiosco y solicitud de empleo (`_cv.blade.php`, `$ar
 4. **Eliminar definitivamente** (`POST …/eliminar`, casilla de confirmación): bitácora anonimizada con «Datos eliminados por solicitud ARCO»; padrón anónimo y de baja (y sus registros de bitácora); ficha de candidato borrada con documentos y firma (contratados se omiten). Colaboradores nunca.
 5. **Responder** (`POST …/responder`): **Atender** o **Rechazar** con texto (10–5,000).
 
+**Folios** (únicos por empresa, índice `solicitudes_arco_empresa_folio_unico` de la migración `2026_11_08_000100_folio_unico_de_solicitudes_arco`): `ARCO-AAAA-NNNN` en la empresa y `ARCO-P-AAAA-NNNN` en las de la página de la plataforma; el número es el mayor del prefijo + 1 (no el conteo). Al canalizar se conserva el folio (la persona ya lo recibió por correo) y no choca con los de la empresa; el contador `ARCO-P` cuenta también las ya canalizadas. La migración renumera los repetidos que ya existían (se queda con su folio la más antigua).
+
 **Auditoría** (folio, derecho y conteos; nunca el nombre ni el correo): `privacidad.arco_recibida`, `_verificada`, `_exportado`, `_descargado`, `_eliminado`, `_atendida`, `_rechazada`, `_canalizada`. El historial de la solicitud (`acciones`) guarda lo mismo.
 
 ## 3. Aviso de privacidad con versiones (`AvisosPrivacidad`)

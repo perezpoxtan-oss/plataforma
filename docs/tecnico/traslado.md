@@ -66,6 +66,15 @@ php artisan plataforma:restaurar-traslado paquete.zip [--solo-verificar] [--impo
 4. `--importar-base`: solo si el motor coincide (mysql/mariadb o sqlite) y la base de destino **no tiene ninguna tabla**; pide confirmación (`--forzar` para scripts). `ImportadorSql` lee por bloques y separa sentencias respetando textos (en MySQL/MariaDB escapes con `\`, en SQLite comillas duplicadas; comentarios `--` al inicio de sentencia). Después compara filas por tabla con el manifest y borra el `.sql.gz` extraído.
 5. Bitácora (`configuracion.traslado_restaurado`) en la base de destino, si existe la tabla.
 
+### Columnas generadas
+
+El esquema tiene dos columnas generadas (`storedAs`), que sostienen reglas de unicidad: `prestamos_llaves.llave_en_uso` (un préstamo vigente por llave) y `equipos_responsiva.equipo_en_campo` (un equipo en un solo resguardo abierto).
+
+- **Volcado** (`Respaldos::volcarFilas`, mismo código para respaldos diarios/manuales y para el paquete): solo selecciona e inserta las columnas con datos (`Respaldos::columnasConDatos`, que descarta las que traen `generation` en `Schema::getColumns`). El `CREATE TABLE` sí declara la columna generada, así que la base de destino la recalcula. MySQL/MariaDB y SQLite rechazan un valor explícito en una columna generada; antes el volcado las incluía y la importación se detenía.
+- **SQLite**: el volcado escribe además los índices (`sqlite_master` tipo `index`) después de los datos; sin ellos la base restaurada perdía los únicos.
+- **Respaldos anteriores** que sí traen la columna: `ImportadorSql` detecta en el `CREATE TABLE` una columna generada (`GENERATED ALWAYS` / `… STORED|VIRTUAL|PERSISTENT`), consulta la tabla recién creada y quita esa columna y su valor de cada renglón de sus `INSERT` (respetando textos con comas y paréntesis).
+- Si se agrega otra columna generada, no hay que tocar el volcado; la prueba `test_las_columnas_generadas_no_se_vuelcan_y_la_base_restaurada_las_recalcula` lista las del esquema y avisa para revisarla. La CI repite el ciclo respaldo → importación en MariaDB (`.github/scripts/respaldo-mariadb.php`).
+
 Prueba de punta a punta: `tests/Feature/Direccion/TrasladoTest::test_genera_el_paquete_y_lo_restaura_en_base_y_storage_vacios` (genera con datos y archivos de ejemplo → restaura en otra base SQLite vacía y otro storage → mismos conteos y archivos, incluido un texto con `;`, saltos, comillas, `\` y `--`).
 
 ## Exportar una empresa (portabilidad)
@@ -120,4 +129,4 @@ Prueba de punta a punta: `tests/Feature/Direccion/TrasladoTest::test_genera_el_p
 
 ## Pruebas
 
-`tests/Feature/Direccion/TrasladoTest.php` (punta a punta, por partes y reanudación, la parte que se corta pasa a la tarea, JSON de avance, permisos y enlace firmado, retención, verificar subido/alterado/ajeno, nombres peligrosos, semanal, exportación de empresa sin contraseñas ni datos ajenos, permiso del Administrador/Director, migración, CSV) y `ImportadorSqlTest.php` (separación de sentencias con cortes de lectura de 1 byte en adelante).
+`tests/Feature/Direccion/TrasladoTest.php` (punta a punta, por partes y reanudación, la parte que se corta pasa a la tarea, JSON de avance, permisos y enlace firmado, retención, verificar subido/alterado/ajeno, nombres peligrosos, semanal, exportación de empresa sin contraseñas ni datos ajenos, permiso del Administrador/Director, migración, CSV) columnas generadas (volcado → restauración y respaldo con el formato anterior) y `ImportadorSqlTest.php` (separación de sentencias con cortes de lectura de 1 byte en adelante). En MariaDB: `.github/scripts/respaldo-mariadb.php` en la CI.

@@ -1,6 +1,6 @@
 # Módulo Manual (ayuda dentro de la plataforma)
 
-El manual de usuario (`docs/usuario/*.md`) se publica dentro de la plataforma. Cada usuario ve **solo las páginas de lo que puede usar**: una página se muestra si el usuario puede `ver` alguno de los módulos de su encabezado, o si es general (`modulos: []`).
+El manual de usuario (`docs/usuario/*.md`) se publica dentro de la plataforma. Cada usuario ve **solo las páginas de lo que puede usar**: una página se muestra si el usuario puede `ver` alguno de los módulos de su encabezado (o la acción exacta, si la entrada es `modulo.accion`), o si es general (`modulos: []`).
 
 ## Piezas
 
@@ -29,7 +29,7 @@ resumen: Registrar quién entra y sale de la sede.
 ---
 ```
 
-- `modulos`: claves del catálogo (`modulos.clave`). `[]` = página general para todos.
+- `modulos`: claves del catálogo (`modulos.clave`) o acciones exactas `modulo.accion` (del catálogo `modulo_acciones`) cuando la pantalla no se abre solo con `ver` (p. ej. `reservas.configurar`, `colaboradores.importar`, `departamentos.borrar`, `configuracion.datos_personales`). `[]` = página general para todos. El «?» de una pantalla busca por la clave del módulo (sin la acción) y solo ofrece la página si el usuario la puede ver.
 - `seccion`: `Primeros pasos`, `Operación`, `Padrones`, `Recursos Humanos`, `Informes` o `Estructura` (en ese orden en el índice).
 - Las claves son exactamente esas cinco; el lector es estricto (no hay `symfony/yaml` en el proyecto). Una página sin encabezado válido **no se muestra**.
 - El slug es el nombre del archivo (`[a-z0-9-]+`). `GUIA.md` se excluye.

@@ -1,6 +1,6 @@
 ---
 titulo: Configurar las reservas
-modulos: [reservas]
+modulos: [reservas.configurar]
 seccion: Operación
 orden: 63
 resumen: Qué áreas se reservan y cómo, los catálogos de montajes, tipos y servicios, y quién aprueba.

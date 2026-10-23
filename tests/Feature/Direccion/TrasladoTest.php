@@ -10,10 +10,13 @@ use App\Models\RolPermiso;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Permisos\Autorizador;
+use App\Services\Respaldos\Respaldos;
 use App\Services\Traslado\ExportacionEmpresa;
+use App\Services\Traslado\ImportadorSql;
 use App\Services\Traslado\Paquetes;
 use App\Services\Traslado\VerificadorPaquete;
 use App\Services\Traslado\ZipPorPartes;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
@@ -133,6 +136,85 @@ class TrasladoTest extends TestCase
         }
         // El .sql.gz extraído se borra al importar
         $this->assertSame([], glob(storage_path('app/private/traslados/restaurar/*.sql.gz')) ?: []);
+    }
+
+    public function test_las_columnas_generadas_no_se_vuelcan_y_la_base_restaurada_las_recalcula(): void
+    {
+        // Todas las columnas generadas del esquema (si aparece otra, esta prueba avisa)
+        $generadas = [];
+        foreach (DB::select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'") as $t) {
+            foreach (Respaldos::columnasGeneradas($t->name) as $c) {
+                $generadas[] = "{$t->name}.{$c}";
+            }
+        }
+        $this->assertEqualsCanonicalizing(['prestamos_llaves.llave_en_uso', 'equipos_responsiva.equipo_en_campo'], $generadas);
+
+        $ahora = now();
+        $base = ['empresa_id' => $this->empresa->id, 'created_at' => $ahora, 'updated_at' => $ahora];
+        $colaborador = DB::table('colaboradores')->insertGetId($base + ['nombre' => 'Raúl', 'apellido_paterno' => 'Can']);
+        $llaves = [];
+        foreach ([1, 2] as $i) {
+            $llaves[$i] = DB::table('llaves')->insertGetId($base + ['sede_id' => $this->centro->id, 'nomenclatura' => "LL-{$i}", 'descripcion' => "Llave {$i}",
+                'tipo_dispositivo' => 'llave', 'alcance' => 'zona', 'codigo_qr' => "qrgenerada{$i}"]);
+        }
+        $prestamo = ['sede_id' => $this->centro->id, 'colaborador_id' => $colaborador, 'tipo_garantia' => 'ninguna', 'prestado_en' => $ahora];
+        DB::table('prestamos_llaves')->insert([
+            $base + $prestamo + ['llave_id' => $llaves[1], 'estado' => 'en_uso', 'devuelto_en' => null],
+            $base + $prestamo + ['llave_id' => $llaves[2], 'estado' => 'devuelta', 'devuelto_en' => $ahora],
+        ]);
+        $tipo = DB::table('tipos_equipo')->insertGetId($base + ['nombre' => 'Radio']);
+        $equipo = DB::table('equipos')->insertGetId($base + ['sede_id' => $this->centro->id, 'tipo_equipo_id' => $tipo, 'numero_serie' => 'R-1', 'codigo_qr' => 'qrgeneradaeq']);
+        $responsiva = DB::table('responsivas')->insertGetId($base + ['sede_id' => $this->centro->id, 'colaborador_id' => $colaborador, 'numero' => 1,
+            'folio' => 'CENRES-000001', 'firma_ruta' => 'firmas/r.png', 'entregado_en' => $ahora]);
+        DB::table('equipos_responsiva')->insert($base + ['responsiva_id' => $responsiva, 'equipo_id' => $equipo, 'modalidad' => 'prestado']);
+
+        // El respaldo no escribe las columnas generadas en los INSERT
+        $respaldo = app(Respaldos::class)->crear('manual');
+        $sql = gzdecode(file_get_contents($respaldo['ruta']));
+        foreach (['prestamos_llaves' => 'llave_en_uso', 'equipos_responsiva' => 'equipo_en_campo'] as $tabla => $columna) {
+            $this->assertSame(1, preg_match_all('/INSERT INTO "'.$tabla.'" \(([^)]*)\)/', $sql, $m), "{$tabla} debe tener sus filas");
+            $this->assertStringNotContainsString($columna, $m[1][0], "{$tabla}.{$columna} no debe ir en el INSERT");
+        }
+
+        // Paquete de traslado → restauración en base vacía: importa y la base recalcula
+        $this->actingAs($this->sa)->post('/configuracion/traslado');
+        $paquete = $this->terminarYTomar();
+        $copia = $this->temporal.'/paquete.zip';
+        copy($paquete['ruta'], $copia);
+        $this->usarStorage($this->temporal.'/destino');
+        $this->conexionDestino();
+
+        $codigo = Artisan::call('plataforma:restaurar-traslado', ['paquete' => $copia, '--importar-base' => true, '--forzar' => true, '--conexion' => 'destino']);
+        $salida = Artisan::output();
+        $this->assertSame(0, $codigo, $salida);
+        $this->assertStringContainsString('mismos registros', $salida);
+        $destino = DB::connection('destino');
+        $this->assertSame([$llaves[1]], $destino->table('prestamos_llaves')->whereNotNull('llave_en_uso')->pluck('llave_en_uso')->map(fn ($v) => (int) $v)->all());
+        $this->assertSame($equipo, (int) $destino->table('equipos_responsiva')->value('equipo_en_campo'));
+        // La regla «un préstamo vigente por llave» sigue viva en la base restaurada
+        $this->expectException(QueryException::class);
+        $destino->table('prestamos_llaves')->insert($base + $prestamo + ['llave_id' => $llaves[1], 'estado' => 'en_uso']);
+    }
+
+    public function test_un_respaldo_anterior_con_columnas_generadas_tambien_se_importa(): void
+    {
+        $this->conexionDestino();
+        $sql = "PRAGMA foreign_keys=OFF;\nBEGIN TRANSACTION;\n"
+            .'CREATE TABLE "prueba_gen" ("id" integer primary key autoincrement not null, "estado" varchar not null, "nota" varchar, "llave_id" integer, '
+            ."\"llave_en_uso\" integer as (CASE WHEN estado = 'en_uso' THEN llave_id ELSE NULL END) stored);\n"
+            .'INSERT INTO "prueba_gen" ("id", "estado", "nota", "llave_id", "llave_en_uso") VALUES'."\n"
+            ."(1, 'en_uso', 'dice, (algo) ''raro''', 7, 7),\n(2, 'devuelta', NULL, 8, NULL);\nCOMMIT;\n";
+        File::ensureDirectoryExists($this->temporal);
+        $ruta = $this->temporal.'/anterior.sql.gz';
+        file_put_contents($ruta, gzencode($sql));
+
+        $n = (new ImportadorSql(7))->importar($ruta, DB::connection('destino'));
+
+        $this->assertSame(5, $n);
+        $filas = DB::connection('destino')->table('prueba_gen')->orderBy('id')->get();
+        $this->assertSame("dice, (algo) 'raro'", $filas[0]->nota);
+        $this->assertSame(7, (int) $filas[0]->llave_en_uso);
+        $this->assertNull($filas[1]->llave_en_uso);
     }
 
     public function test_restaurar_sin_importar_explica_como_y_no_toca_una_base_con_datos(): void

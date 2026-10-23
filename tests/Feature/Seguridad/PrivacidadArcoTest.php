@@ -25,9 +25,11 @@ use App\Support\CorreoPlataforma;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\EmpresaScope;
 use App\Support\Tenancy\Tenant;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
@@ -230,7 +232,7 @@ class PrivacidadArcoTest extends TestCase
         $this->assertSame(SolicitudArco::POR_VERIFICAR, $s->estado);
         $this->assertSame('rosa@ejemplo.mx', $s->correo);
         $this->assertSame('9991234567', $s->telefono);
-        $this->assertSame('ARCO-2026-0001', $s->folio);
+        $this->assertSame('ARCO-'.now()->format('Y').'-0001', $s->folio);
         $enlace = null;
         Mail::assertSent(AvisoGeneral::class, function ($m) use (&$enlace) {
             $enlace = $m->botones[0][1] ?? null;
@@ -290,6 +292,16 @@ class PrivacidadArcoTest extends TestCase
         $zip->close();
         $this->actingAs($this->admin)->get('/solicitudes-arco/'.$s->id.'/descargar')->assertOk();
         $this->assertTrue(Auditoria::where('evento', 'privacidad.arco_exportado')->exists());
+        // Con otra búsqueda (la que viaja oculta en el formulario), al exportar regresa con esos
+        // resultados, lo marcado sigue marcado y «Descargar el archivo» está a la vista
+        $this->actingAs($this->admin)->get('/solicitudes-arco/'.$s->id.'?nombre=Rosa')->assertSee('name="criterios[nombre]" value="Rosa"', false);
+        $criterios = ['nombre' => 'Rosa', 'correo' => '', 'telefono' => '', 'folio' => ''];
+        $destino = route('arco.show', [$s->id] + $criterios);
+        $this->actingAs($this->admin)->post('/solicitudes-arco/'.$s->id.'/exportar', ['seleccion' => $seleccion, 'criterios' => $criterios])->assertRedirect($destino);
+        $this->actingAs($this->admin)->get($destino)->assertOk()->assertSee('Descargar el archivo')
+            ->assertSee('value="'.$persona->id.'" checked', false)->assertSee('value="'.$acceso->id.'" checked', false);
+        // Sin resultados en la búsqueda, el archivo ya exportado se sigue pudiendo descargar
+        $this->actingAs($this->admin)->get('/solicitudes-arco/'.$s->id.'?nombre=zzzzz&correo=nadie@ejemplo.mx&telefono=1')->assertSee('No encontramos registros')->assertSee('Descargar el archivo');
         $this->assertTrue(Auditoria::where('evento', 'privacidad.arco_descargado')->exists());
 
         // Eliminar: pide confirmación; anonimiza padrón y bitácora, borra la ficha del candidato
@@ -400,6 +412,53 @@ class PrivacidadArcoTest extends TestCase
         // La landing y su aviso enlazan el formulario
         app(AjustesComerciales::class)->guardar(['aviso_privacidad' => 'Aviso de la plataforma (borrador).']);
         $this->actingAs($this->sa)->get('/aviso-de-privacidad')->assertOk()->assertSee(route('privacidad.solicitud'), false);
+    }
+
+    public function test_los_folios_no_se_repiten_al_canalizar_solicitudes_de_la_plataforma(): void
+    {
+        $this->conCorreo();
+        $arco = app(SolicitudesArco::class);
+        $anio = now()->format('Y');
+        $datos = fn (string $n) => ['derecho' => 'acceso', 'nombre' => "Persona {$n} Ejemplo", 'correo' => "p{$n}@ejemplo.mx", 'detalle' => 'Quiero saber qué datos tienen de mí.', 'acepta' => '1'];
+
+        [$propia] = $arco->crear($this->empresa, $datos('1'), '10.0.0.1');
+        [$plataforma1] = $arco->crear(null, $datos('2'), '10.0.0.2');
+        $this->assertSame("ARCO-{$anio}-0001", $propia->folio);
+        $this->assertSame("ARCO-P-{$anio}-0001", $plataforma1->folio);
+
+        $this->actingAs($this->sa)->patch('/solicitudes-arco/'.$plataforma1->id.'/canalizar', ['empresa_id' => $this->empresa->id])->assertRedirect();
+        // Conserva el folio que la persona conoce y no choca con los de la empresa
+        $this->assertSame("ARCO-P-{$anio}-0001", $plataforma1->refresh()->folio);
+
+        // El contador de la plataforma no vuelve a empezar después de canalizar
+        [$plataforma2] = $arco->crear(null, $datos('3'), '10.0.0.3');
+        $this->assertSame("ARCO-P-{$anio}-0002", $plataforma2->folio);
+        [$propia2] = $arco->crear($this->empresa, $datos('4'), '10.0.0.4');
+        $this->assertSame("ARCO-{$anio}-0002", $propia2->folio);
+
+        $folios = SolicitudArco::withoutGlobalScopes()->where('empresa_id', $this->empresa->id)->pluck('folio');
+        $this->assertSame($folios->count(), $folios->unique()->count());
+        // La base tampoco admite un folio repetido en la misma empresa
+        $this->expectException(QueryException::class);
+        SolicitudArco::withoutGlobalScopes()->whereKey($propia2->id)->update(['folio' => "ARCO-{$anio}-0001"]);
+    }
+
+    public function test_migracion_del_folio_unico_renumera_los_repetidos(): void
+    {
+        $migracion = require database_path('migrations/2026_11_08_000100_folio_unico_de_solicitudes_arco.php');
+        $migracion->down();
+        $base = ['derecho' => 'acceso', 'estado' => SolicitudArco::PENDIENTE, 'nombre' => 'X', 'correo' => 'x@ejemplo.mx', 'detalle' => 'x', 'created_at' => '2026-10-01 10:00:00', 'updated_at' => now()];
+        $a = DB::table('solicitudes_arco')->insertGetId($base + ['empresa_id' => $this->empresa->id, 'folio' => 'ARCO-2026-0001']);
+        $b = DB::table('solicitudes_arco')->insertGetId($base + ['empresa_id' => $this->empresa->id, 'folio' => 'ARCO-2026-0001']);
+        $c = DB::table('solicitudes_arco')->insertGetId($base + ['empresa_id' => $this->empresa->id, 'folio' => 'ARCO-2026-0001']);
+        $d = DB::table('solicitudes_arco')->insertGetId($base + ['empresa_id' => null, 'folio' => 'ARCO-2026-0001']);
+        $e = DB::table('solicitudes_arco')->insertGetId($base + ['empresa_id' => null, 'folio' => 'ARCO-2026-0001']);
+
+        $migracion->up();
+
+        $folio = fn ($id) => DB::table('solicitudes_arco')->where('id', $id)->value('folio');
+        $this->assertSame(['ARCO-2026-0001', 'ARCO-2026-0002', 'ARCO-2026-0003'], [$folio($a), $folio($b), $folio($c)]);
+        $this->assertSame(['ARCO-2026-0001', 'ARCO-P-2026-0001'], [$folio($d), $folio($e)]);
     }
 
     // ------------------------------------------------------- Aviso con versiones
