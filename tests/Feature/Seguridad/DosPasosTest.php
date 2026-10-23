@@ -222,6 +222,8 @@ class DosPasosTest extends TestCase
         $this->entrar('agente1', 'Secreta123!');
         $this->post('/login/verificacion', ['codigo' => strtolower($codigos[0])])->assertRedirect('/')->assertSessionHas('aviso');
         $this->assertAuthenticatedAs($this->agente);
+        // Inicio muestra el aviso (antes se perdía porque Inicio no pintaba los avisos)
+        $this->get('/')->assertOk()->assertSee('Entraste con un código de respaldo; ya no sirve otra vez. Te quedan 9.');
         $this->assertSame(9, app(VerificacionDosPasos::class)->codigosRestantes($this->agente->refresh()));
         $this->assertTrue(Auditoria::where('evento', 'cuenta.dos_pasos_respaldo_usado')->exists());
 

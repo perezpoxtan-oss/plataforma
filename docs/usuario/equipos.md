@@ -126,6 +126,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
+| Falta la firma de Seguridad: firma en el recuadro o elige «Firma física». | Elegiste **Firma digital** y no firmaste (el recuadro se pone rojo). | Firma en el recuadro o cambia a **Firma física**. |
+| Falta la firma del responsable: que firme en el recuadro o elige «Firma física». | Hay responsable y no firmó. | Que firme o cambia a **Firma física**. |
 | Elige la sede donde está el equipo. | No elegiste sede. | Elige la sede. |
 | Elige el tipo de equipo (o «+ Nuevo tipo...»). | No elegiste tipo. | Elige uno o crea uno nuevo. |
 | Escribe el nombre del nuevo tipo de equipo. | Elegiste «+ Nuevo tipo...» sin nombre. | Escribe el nombre. |

@@ -451,6 +451,34 @@ class MejorasActivosTest extends TestCase
         $this->assertTrue(Auditoria::where('evento', 'prestamo_llaves.recibido')->where('user_id', $agentePlaya->id)->exists());
     }
 
+    public function test_una_llave_que_ya_estaba_en_rojo_avisa_a_la_caseta_y_al_jefe(): void
+    {
+        $this->configurar(['llaves_horas_aviso' => '1', 'llaves_horas_escalar' => '2']);
+        $p = $this->prestamo($this->llave('HDC-MASTER-01'), $this->colaborador('1005'), '-210 minutes');
+
+        $this->artisan('plataforma:activos-pendientes')->assertSuccessful()->expectsOutputToContain('Llaves fuera de tiempo avisadas: 1.');
+        // La caseta se entera aunque se haya saltado el ámbar; el jefe recibe el rojo
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->agente->id)->where('referencia_tipo', 'prestamo_llave_aviso')->where('referencia_id', $p->id)->exists()));
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->jefe->id)->where('referencia_tipo', 'prestamo_llave_escalada')->where('referencia_id', $p->id)->exists()));
+        $this->assertCount(1, $this->avisos($this->agente, 'llave_fuera'));
+        // Una sola vez
+        $this->artisan('plataforma:activos-pendientes')->assertSuccessful()->expectsOutputToContain('Llaves fuera de tiempo avisadas: 0.');
+        $this->assertCount(1, $this->avisos($this->agente, 'llave_fuera'));
+    }
+
+    public function test_equipos_de_turno_que_ya_estaban_en_rojo_avisan_a_la_caseta_y_al_supervisor(): void
+    {
+        $this->configurar(['responsivas_horas_turno' => '1', 'responsivas_horas_escalar' => '1']);
+        $supervisor = $this->crearUsuario($this->empresa, 'Supervisor', $this->centro);
+        $r = $this->responsiva([$this->equipo('RAD-9')], ['prestado']);
+        $this->viajar('2026-10-05 18:00:00'); // 3 h después: ya en rojo
+
+        $this->artisan('plataforma:activos-pendientes')->assertSuccessful()->expectsOutputToContain('Responsivas con equipos de turno sin regresar avisadas: 1.');
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->agente->id)->where('referencia_tipo', 'responsiva_turno_aviso')->where('referencia_id', $r->id)->exists()));
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $supervisor->id)->where('referencia_tipo', 'responsiva_turno_escalada')->where('referencia_id', $r->id)->exists()));
+        $this->artisan('plataforma:activos-pendientes')->assertSuccessful()->expectsOutputToContain('Responsivas con equipos de turno sin regresar avisadas: 0.');
+    }
+
     public function test_folio_de_garantia_se_llena_con_el_gafete_escaneado(): void
     {
         $this->actingAs($this->agente)->get('/prestamo-llaves')->assertOk()
@@ -620,16 +648,19 @@ class MejorasActivosTest extends TestCase
         $this->assertSame("Responsiva {$r->folio}: 1 equipo de turno sin regresar", $this->avisos($supervisor, 'equipo_turno')[0]->titulo);
         $this->assertSame('ambar', $this->pendientes($supervisor)['equipos_turno']['nivel']);
 
-        $this->viajar('2026-10-06 02:30:00'); // 20:30 local: rojo, al jefe de seguridad (da de baja equipos)
+        $this->viajar('2026-10-06 02:30:00'); // 20:30 local: rojo, al supervisor (y al jefe), como dice Configuración
         $this->artisan('plataforma:activos-pendientes')->assertSuccessful();
         $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->jefe->id)->where('referencia_tipo', 'responsiva_turno_escalada')->exists()));
-        $this->assertCount(1, $this->avisos($supervisor, 'equipo_turno')); // el supervisor no da de baja equipos: el rojo va al jefe
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $supervisor->id)->where('referencia_tipo', 'responsiva_turno_escalada')->exists()));
+        $this->assertCount(2, $this->avisos($supervisor, 'equipo_turno'));
+        // la caseta (Agente) no recibe el rojo
+        $this->assertFalse($this->enEmpresa(fn () => Notificacion::where('user_id', $this->agente->id)->where('referencia_tipo', 'responsiva_turno_escalada')->exists()));
         $this->assertSame('roja', $this->pendientes($supervisor)['equipos_turno']['nivel']);
 
         // Regresa el radio de turno: el fijo se queda y los avisos se resuelven
         $turno = $r->equipos->firstWhere('modalidad', 'prestado');
         $this->actingAs($this->admin)->patch("/responsivas/{$r->id}/recibir", ['equipos' => [$turno->id]])->assertSessionHasNoErrors();
-        $this->assertNotNull($this->avisos($supervisor, 'equipo_turno')[0]->leida_en);
+        $this->assertNull(collect($this->avisos($supervisor, 'equipo_turno'))->firstWhere('leida_en', null));
         $this->assertNull(collect($this->avisos($this->jefe, 'equipo_turno'))->firstWhere('leida_en', null));
         $this->assertSame(0, $this->pendientes($supervisor)['equipos_turno']['total']);
         $this->actingAs($this->admin)->get('/responsivas')->assertDontSee('regresar a las');

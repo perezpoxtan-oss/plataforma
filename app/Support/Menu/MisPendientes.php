@@ -174,7 +174,8 @@ class MisPendientes
                 || Postulacion::where('entrevistador_id', $actor->id)->exists()
                 || DepartamentoResponsable::where('user_id', $actor->id)->exists();
             if ($entrevista) {
-                $proxima = $pendientes->first();
+                // La cita más próxima que sí tenga fecha (o «Ahora»); sin ninguna, no se dice «próxima»
+                $proxima = $pendientes->first(fn (Postulacion $p) => $entrevistas->textoCita($p) !== '');
                 $items[] = $this->item('entrevistas', 'Entrevistas por evaluar'.($proxima ? ' · próxima: '.$entrevistas->textoCita($proxima) : ''), 'bi-calendar-event',
                     $pendientes->count(), route('entrevistas.index'));
             }

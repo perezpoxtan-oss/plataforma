@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CabecerasSeguridad;
+use App\Http\Middleware\ConservarAvisos;
 use App\Http\Middleware\ControlarInactividad;
 use App\Http\Middleware\EstablecerEmpresa;
 use App\Http\Middleware\ExigirCambioContrasena;
@@ -29,6 +30,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // Firmas enviadas como archivo: vuelven a su campo original antes de los
         // controladores (el firewall del hospedaje bloquea los textos base64 largos).
         $middleware->web(append: [
+            // Las consultas en segundo plano de una pantalla no gastan los avisos del envío anterior
+            ConservarAvisos::class,
             FirmasComoArchivo::class,
             ControlarInactividad::class,
             EstablecerEmpresa::class,

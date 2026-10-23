@@ -74,6 +74,9 @@
             <p class="aviso-regreso" data-mostrar-si='{"motivo":{{ json_encode($conRegreso) }}}'><i class="bi bi-arrow-return-left me-1" aria-hidden="true"></i>Este motivo espera que el equipo regrese — se habilitará el circuito de regreso.</p>
             <p class="aviso-regreso" data-mostrar-si='{"motivo":{{ json_encode(\App\Models\PaseSalida::SIN_REGRESO) }}}'><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Este motivo no espera regreso del equipo.</p>
 
+            @if (! empty($formulario['sinVinculo']))
+                <div class="alert alert-danger small py-2 px-3" role="alert"><i class="bi bi-person-x-fill me-1" aria-hidden="true"></i>Tu usuario no está vinculado a un colaborador: pide a tu administrador que lo vincule en Usuarios para poder solicitar pases.</div>
+            @endif
             <div class="fila-con-boton" data-pase-colaborador data-para="solicitante">
                 <div class="flex-fill min-w-0">
                     @include('componentes.lector', ['id' => 'ps_solicitante', 'etiqueta' => 'Solicitante (escanea su gafete o busca su nombre)', 'tipos' => 'colaborador',

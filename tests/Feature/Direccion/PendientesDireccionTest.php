@@ -71,6 +71,15 @@ class PendientesDireccionTest extends TestCase
         $this->actingAs($agente)->get('/una-pagina-que-no-existe')->assertNotFound()->assertSee('No encontramos lo que buscas');
     }
 
+    public function test_las_paginas_de_error_ofrecen_ir_al_inicio_con_y_sin_sesion(): void
+    {
+        // Una dirección que no existe se pinta antes de leer la sesión: el botón dice lo mismo que dentro de las pantallas
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $this->actingAs($agente)->get('/algo-que-no-existe')->assertNotFound()->assertSee('Ir al inicio')->assertDontSee('Volver a la plataforma');
+        $this->post('/logout');
+        $this->get('/algo-que-no-existe')->assertNotFound()->assertSee('Ir al inicio')->assertDontSee('Volver a la plataforma');
+    }
+
     // ------------------------------------------------------ Bitácora de auditoría
 
     public function test_la_bitacora_muestra_lo_de_la_empresa_legible_y_filtrable(): void
