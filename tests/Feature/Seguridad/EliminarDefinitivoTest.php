@@ -182,7 +182,7 @@ class EliminarDefinitivoTest extends TestCase
             ],
             'rutas' => [
                 $ruta,
-                fn (int $id) => $this->fila('movimientos_transporte', ['sede_id' => $this->centro->id, 'ruta_id' => $id, 'tipo_movimiento' => 'entrada', 'estatus' => 'llegada', 'fecha' => now()->toDateString()]),
+                fn (int $id) => $this->fila('movimientos_transporte', ['sede_id' => $this->centro->id, 'ruta_id' => $id, 'tipo_movimiento' => 'llegada', 'estatus' => 'a_tiempo', 'fecha' => now()->toDateString()]),
                 '1 movimiento de transporte',
             ],
             'procedimientos' => [
@@ -464,7 +464,7 @@ class EliminarDefinitivoTest extends TestCase
             'turno_id' => $this->fila('turnos', ['nombre' => 'Tarde', 'hora_inicio' => '15:00', 'hora_fin' => '22:00']),
             'proveedor_id' => $this->fila('proveedores', ['nombre' => 'Autobuses del Este'])]);
         $this->fila('movimientos_transporte', ['sede_id' => $this->centro->id, 'ruta_id' => $otraRuta, 'ruta_horario_id' => $horario2,
-            'tipo_movimiento' => 'entrada', 'estatus' => 'llegada', 'fecha' => now()->toDateString()]);
+            'tipo_movimiento' => 'llegada', 'estatus' => 'a_tiempo', 'fecha' => now()->toDateString()]);
         $this->getJson("/borrar/rutas/{$ruta2}")->assertJsonPath('mensaje', 'Tiene 1 movimiento de transporte: no se puede eliminar; puedes darla de baja.');
     }
 

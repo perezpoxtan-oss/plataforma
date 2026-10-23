@@ -91,8 +91,13 @@ $origen = env('DB_DATABASE');
 if ($contar($origen, $checks) < 15 || $contar('plataforma_ci_destino', $checks) !== $contar($origen, $checks)) {
     falla('la base restaurada no tiene los mismos CHECK ('.$contar('plataforma_ci_destino', $checks).' de '.$contar($origen, $checks).')');
 }
-if ($contar('plataforma_ci_destino', $restrict) !== $contar($origen, $restrict) || $contar($origen, $restrict) < 95) {
-    falla('la base restaurada no tiene las mismas llaves restrict');
+$llaves = fn (string $base) => $root->query("SELECT CONCAT(table_name, '.', constraint_name, ' ', delete_rule) FROM information_schema.referential_constraints WHERE constraint_schema = '{$base}' ORDER BY 1")->fetchAll(PDO::FETCH_COLUMN);
+$diferencia = array_merge(
+    array_map(fn ($l) => "solo en origen: {$l}", array_diff($llaves($origen), $llaves('plataforma_ci_destino'))),
+    array_map(fn ($l) => "solo en destino: {$l}", array_diff($llaves('plataforma_ci_destino'), $llaves($origen))),
+);
+if ($diferencia !== [] || $contar($origen, $restrict) < 95) {
+    falla('la base restaurada no tiene las mismas llaves foráneas ('.$contar($origen, $restrict).' restrict en origen): '.implode('; ', array_slice($diferencia, 0, 20)));
 }
 try {
     $destino->table('prestamos_llaves')->where('id', 2)->update(['estado' => 'inventado']);

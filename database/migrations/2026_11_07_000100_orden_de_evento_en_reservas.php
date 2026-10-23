@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\BaseDatos\Restricciones;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -26,7 +27,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('reservas', function (Blueprint $table) {
-            $table->foreignId('departamento_solicitante_id')->nullable()->after('solicitante_id')->constrained('departamentos')->nullOnDelete();
+            $table->foreignId('departamento_solicitante_id')->nullable()->after('solicitante_id');
             $table->boolean('excede_aforo')->default(false)->after('asistentes');
             $table->string('motivo_excepcion_aforo', 255)->nullable()->after('excede_aforo');
             $table->boolean('dia_completo')->default(false)->after('fin');
@@ -34,12 +35,16 @@ return new class extends Migration
             $table->unsignedSmallInteger('desmontaje_minutos')->nullable()->after('montaje_minutos');
             $table->string('indicaciones_montaje', 255)->nullable()->after('desmontaje_minutos');
         });
+        // La llave aparte: en SQLite, sin reconstruir la tabla (sus hijos tienen llave restrict, docs/tecnico/integridad-bd.md)
+        Restricciones::agregarForanea('reservas', 'departamento_solicitante_id', 'departamentos', 'set null');
     }
 
     public function down(): void
     {
+        // Sin reconstruir la tabla en SQLite: sus hijos (aprobaciones, eventos…) tienen llave restrict (docs/tecnico/integridad-bd.md)
+        Restricciones::quitarForanea('reservas', 'departamento_solicitante_id');
         Schema::table('reservas', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('departamento_solicitante_id');
+            $table->dropColumn('departamento_solicitante_id');
         });
         Schema::table('reservas', function (Blueprint $table) {
             $table->dropColumn(['excede_aforo', 'motivo_excepcion_aforo', 'dia_completo', 'montaje_minutos', 'desmontaje_minutos', 'indicaciones_montaje']);

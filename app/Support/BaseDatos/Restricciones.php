@@ -98,6 +98,52 @@ final class Restricciones
         }
     }
 
+    /**
+     * Agrega la llave foránea de una columna que ya existe. En SQLite edita el
+     * esquema (ver quitarForanea()); en MariaDB/MySQL es el foreign() de Laravel.
+     */
+    public static function agregarForanea(string $tabla, string $columna, string $referencia, string $accion): void
+    {
+        if (self::foranea($tabla, $columna) !== null) {
+            return;
+        }
+        $accion = self::normalizarAccion($accion);
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            Schema::table($tabla, fn (Blueprint $t) => $t->foreign($columna)->references('id')->on($referencia)->onDelete($accion));
+
+            return;
+        }
+        self::editarEsquemaSqlite($tabla, fn (string $sql): string => substr(rtrim($sql), 0, -1)
+            .', foreign key("'.$columna.'") references "'.$referencia.'"("id") on delete '.$accion.')');
+    }
+
+    /**
+     * Quita la llave foránea de una columna (no la columna). En SQLite edita
+     * el esquema en lugar de reconstruir la tabla: reconstruirla hace un
+     * DELETE implícito que falla si la tabla tiene hijos con llave restrict
+     * (y que antes, con cascade, los borraba en silencio).
+     */
+    public static function quitarForanea(string $tabla, string $columna): void
+    {
+        $fk = self::foranea($tabla, $columna);
+        if ($fk === null) {
+            return;
+        }
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            Schema::table($tabla, fn (Blueprint $t) => $t->dropForeign($fk['name'] ?: [$columna]));
+
+            return;
+        }
+        self::editarEsquemaSqlite($tabla, function (string $sql) use ($tabla, $columna): string {
+            $nuevo = preg_replace('/,\s*foreign key\s*\(\s*"?'.preg_quote($columna, '/').'"?\s*\)\s*references\s*"?\w+"?\s*\(\s*"?\w+"?\s*\)(\s+on (?:delete|update)\s+(?:cascade|restrict|set null|set default|no action))*/i', '', $sql, 1, $n);
+            if ($n !== 1) {
+                throw new RuntimeException("No se encontró la llave foránea de {$tabla}.{$columna} en SQLite.");
+            }
+
+            return $nuevo;
+        });
+    }
+
     /** @return array{name: ?string, columns: list<string>, foreign_table: string, on_delete: ?string}|null */
     private static function foranea(string $tabla, string $columna): ?array
     {

@@ -28,6 +28,8 @@ use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\Vacantes\AdministradorVacantes;
+use App\Support\BaseDatos\CatalogoChecks;
+use App\Support\BaseDatos\Restricciones;
 use App\Support\CorreoPlataforma;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\Tenant;
@@ -175,6 +177,10 @@ class CandidatosFase2Test extends TestCase
 
     public function test_la_migracion_mapea_las_etapas_viejas_y_es_idempotente(): void
     {
+        // Datos de antes de las etapas actuales: en ese momento la base no tenía los CHECK de etapa
+        // (llegan después, docs/tecnico/integridad-bd.md); se quitan aquí y vuelven al final
+        Restricciones::quitarChecks('candidatos', ['etapa']);
+        Restricciones::quitarChecks('postulaciones', ['etapa']);
         $chef = $this->crearUsuario($this->empresa, 'Supervisor', $this->centro);
         $this->responsable($this->cocina, $chef);
         $mapa = ['aprobado_rh' => 'canalizado', 'entrevista' => 'canalizado', 'seleccionado' => 'elegido', 'cartera' => 'considerar', 'descartado' => 'rechazado',
@@ -244,6 +250,9 @@ class CandidatosFase2Test extends TestCase
         $this->assertSame('revision', DB::table('candidato_eventos')->where('candidato_id', $ids['revision'][0])->value('etapa_nueva'));
         $conRh->up();
         $this->assertSame('con_rh', DB::table('candidatos')->where('id', $ids['entrevista_rh'][0])->value('etapa'));
+        // Ya con las etapas vigentes, los CHECK se vuelven a poner sin problema
+        Restricciones::agregarChecks('candidatos', ['etapa' => CatalogoChecks::definiciones()['candidatos']['etapa']]);
+        Restricciones::agregarChecks('postulaciones', ['etapa' => CatalogoChecks::definiciones()['postulaciones']['etapa']]);
     }
 
     // ------------------------------------------------------------------ Flujo completo
