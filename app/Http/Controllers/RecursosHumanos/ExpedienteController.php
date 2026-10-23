@@ -90,7 +90,7 @@ class ExpedienteController extends Controller
             $postulacion = null;
             if ($actor->can('candidatos.ver')) {
                 $ficha = Candidato::where('colaborador_id', $c->id)->orderByDesc('id')->first(['id', 'nombre_completo', 'origen', 'llegada_en', 'created_at']);
-                $postulacion = Postulacion::where('colaborador_id', $c->id)->with(['evaluaciones.evaluador:id,name', 'vacantePublicada:id,titulo', 'departamento:id,nombre'])
+                $postulacion = Postulacion::where('colaborador_id', $c->id)->with(['evaluaciones.evaluador:id,name', 'evaluaciones.titular:id,name', 'vacantePublicada:id,titulo', 'departamento:id,nombre'])
                     ->orderByDesc('id')->first();
             }
 

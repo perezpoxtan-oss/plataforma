@@ -19,7 +19,7 @@ class CandidatoEvento extends Model
         'autocaptura' => 'Llenó su solicitud', 'autocaptura_revisada' => 'Solicitud revisada', 'contratado' => 'Contratado',
         'evaluacion_rh' => 'Evaluación de RR. HH.', 'canalizado' => 'Canalizado al departamento', 'reprogramado' => 'Entrevista reprogramada',
         'evaluacion_departamento' => 'Evaluación del departamento', 'evaluacion_corregida' => 'Evaluación corregida', 'llegada_entrevista' => 'Llegó a su entrevista',
-        'correo_candidato' => 'Correo al candidato',
+        'correo_candidato' => 'Correo al candidato', 'solicitud_editada' => 'Solicitud editada',
         // Proceso anterior (historial)
         'enviado_departamento' => 'Aviso al departamento', 'sin_responsable' => 'Departamento sin responsable',
     ];

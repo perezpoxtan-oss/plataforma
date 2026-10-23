@@ -313,9 +313,10 @@ class PersonasTest extends TestCase
         Route::get('/proveedores/{proveedor}', fn () => 'ficha')->middleware('web')->name('proveedores.show');
         app('router')->getRoutes()->refreshNameLookups();
 
-        $this->actingAs($this->admin)->post('/personas', $datos)->assertRedirect(route('proveedores.show', $maya->id));
+        // QA PRV-07: regresa a la pestaña «Personal»
+        $this->actingAs($this->admin)->post('/personas', $datos)->assertRedirect(route('proveedores.show', ['proveedor' => $maya->id, 'tab' => 'personal']));
         $p = $this->buscarPersona('Laura Méndez Ríos');
-        $this->actingAs($this->admin)->put("/personas/{$p->id}", $datos + ['nombre_completo' => 'X'])->assertRedirect(route('proveedores.show', $maya->id));
+        $this->actingAs($this->admin)->put("/personas/{$p->id}", $datos + ['nombre_completo' => 'X'])->assertRedirect(route('proveedores.show', ['proveedor' => $maya->id, 'tab' => 'personal']));
 
         // Sin proveedor válido (visitante) o sin la bandera: al padrón
         $this->actingAs($this->admin)->put("/personas/{$p->id}", array_merge($datos, ['tipo' => 'visitante']))->assertRedirect(route('personas.index').'#persona-'.$p->id);

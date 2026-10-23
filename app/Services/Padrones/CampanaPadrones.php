@@ -72,14 +72,14 @@ class CampanaPadrones
         $altas = app(AltasPorVerificar::class);
         $d = $altas->definicion($padron);
         $titulo = $altas->titulo($padron, $registro);
-        $a = $d['genero'] === 'f' ? 'a' : 'o';
+        // QA VER-09: concuerda con «alta» (femenino), sea persona, vehículo o empresa
         [$tipo, $encabezado, $texto, $url] = match ($resultado) {
-            'rechazada' => ['alta_rechazada', "Tu alta «{$titulo}» fue rechazad{$a}",
+            'rechazada' => ['alta_rechazada', "Tu alta «{$titulo}» fue rechazada",
                 'Motivo: '.($registro->getAttribute('motivo_rechazo') ?: '—').'. Ya no se puede usar en la caseta; revisa los datos o pregunta a tu supervisor.', null],
             'unida' => ['alta_unida', "Tu alta «{$titulo}» ya existía",
                 'Se unió con «'.($destino ? $altas->titulo($padron, $destino) : '—').'»: lo que registraste pasó a ese registro. La próxima vez búscalo con ese nombre.',
                 $destino ? route($d['ruta']).'#'.$d['ancla'].$destino->getKey() : null],
-            default => ['alta_verificada', "Tu alta «{$titulo}» quedó verificad{$a}", 'Ya es un registro normal del '.$d['padron'].'.',
+            default => ['alta_verificada', "Tu alta «{$titulo}» quedó verificada", 'Ya es un registro normal del '.$d['padron'].'.',
                 route($d['ruta']).'#'.$d['ancla'].$registro->getKey()],
         };
 
