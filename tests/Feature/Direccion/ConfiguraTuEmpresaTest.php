@@ -76,12 +76,17 @@ class ConfiguraTuEmpresaTest extends TestCase
 
         $this->actingAs($admin)->from('/')->put('/configura-tu-empresa', ['visible' => 0])->assertRedirect('/')
             ->assertSessionHas('ok', fn ($m) => str_contains($m, 'Configuración'));
+        // Inicio muestra el aviso verde con «Ir a Configuración» y ya no la tarjeta
+        $this->actingAs($admin)->get('/')->assertSee('Ocultamos «Configura tu empresa» de Inicio', false)
+            ->assertSee('Ir a Configuración')->assertSee(route('configuracion.index').'#configura-tu-empresa', false)
+            ->assertDontSee('id="configura-tu-empresa"', false);
         $this->actingAs($admin)->get('/')->assertDontSee('Configura tu empresa');
         $this->assertSame(1, Auditoria::where('evento', 'configuracion.configura_tu_empresa')->count());
 
         $this->actingAs($admin)->get('/configuracion')->assertOk()->assertSee('Configura tu empresa')->assertSee('Mostrar en Inicio')->assertSee('no se ve');
         $this->actingAs($admin)->put('/configura-tu-empresa', ['visible' => 1])->assertRedirect(route('panel'));
-        $this->actingAs($admin)->get('/')->assertSee('Configura tu empresa');
+        $this->actingAs($admin)->get('/')->assertSee('Listo: «Configura tu empresa» ya se ve en Inicio.', false)
+            ->assertSee('id="configura-tu-empresa"', false);
         $this->actingAs($admin)->get('/configuracion')->assertSee('Ocultar de Inicio');
     }
 

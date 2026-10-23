@@ -81,6 +81,8 @@ jobs:
           php artisan migrate --force
           # Ninguna tabla debe quedar en un motor distinto de InnoDB
           php -r '$p=new PDO("mysql:host=127.0.0.1;dbname=plataforma_ci","ci","ci"); $r=$p->query("SELECT table_name, engine FROM information_schema.tables WHERE table_schema=\"plataforma_ci\" AND engine<>\"InnoDB\"")->fetchAll(PDO::FETCH_ASSOC); if($r){print_r($r); exit(1);} echo "Todas las tablas en InnoDB\n";'
+          # Respaldo -> restauracion con columnas generadas (paquete de traslado y respaldos)
+          php .github/scripts/respaldo-mariadb.php
 
       - name: Pruebas
         run: php artisan test --log-junit junit.xml

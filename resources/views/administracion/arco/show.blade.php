@@ -84,19 +84,28 @@
                         <div class="col-sm-2"><button type="submit" class="btn btn-outline-primary w-100" style="min-height:44px;border-radius:10px;">Buscar</button></div>
                     </form>
 
-                    @php $hay = collect($coincidencias)->flatten(1)->isNotEmpty(); @endphp
+                    @php
+                        $hay = collect($coincidencias)->flatten(1)->isNotEmpty();
+                        $marcados = (array) session('arco_marcados', []);
+                    @endphp
                     @if (! $hay)
                         <p class="small text-muted mb-0">No encontramos registros con esos datos. Prueba con el nombre como lo escribió la caseta o con el folio de su identificación. Si de verdad no hay datos, respóndele que no tenemos información suya.</p>
+                        @if ($s->archivo)
+                            <a href="{{ route('arco.descargar', $s->id) }}" class="btn btn-outline-secondary mt-3" style="min-height:44px;border-radius:10px;"><i class="bi bi-file-earmark-zip me-1" aria-hidden="true"></i>Descargar el archivo</a>
+                        @endif
                     @else
                         <form method="POST" id="form-seleccion" class="coincidencias-arco">
                             @csrf
+                            @foreach ($criterios as $campoCriterio => $valorCriterio)
+                                <input type="hidden" name="criterios[{{ $campoCriterio }}]" value="{{ $valorCriterio }}">
+                            @endforeach
                             @foreach ($tipos as $tipo => $nombreTipo)
                                 @continue (($coincidencias[$tipo] ?? []) === [])
                                 <fieldset>
                                     <legend>{{ $nombreTipo }} ({{ count($coincidencias[$tipo]) }})</legend>
                                     @foreach ($coincidencias[$tipo] as $c)
                                         <label class="fila-check mb-1">
-                                            <input type="checkbox" name="seleccion[{{ $tipo }}][]" value="{{ $c['id'] }}">
+                                            <input type="checkbox" name="seleccion[{{ $tipo }}][]" value="{{ $c['id'] }}" @checked(in_array((string) $c['id'], array_map('strval', (array) ($marcados[$tipo] ?? [])), true))>
                                             <span class="small"><strong>{{ $c['titulo'] }}</strong> · {{ $c['detalle'] }}
                                                 @if ($c['url'])<a href="{{ $c['url'] }}" target="_blank" rel="noopener" class="ms-1">Abrir ficha (rectificar)</a>@endif</span>
                                         </label>

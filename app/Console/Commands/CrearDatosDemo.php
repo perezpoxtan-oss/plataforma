@@ -260,6 +260,7 @@ class CrearDatosDemo extends Command
         $paso('reservasNivelesDemo', fn () => $this->reservasNivelesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         // Mejoras informes (ADR-0017): semanas anteriores para que Tendencias tenga con qué comparar
         $paso('informesDemo', fn () => $this->informesDemo($empresa, $sedes));
+        $paso('departamentoSinUsoDemo', fn () => $this->departamentoSinUsoDemo());
         // Fin Mejoras informes
         // Privacidad (docs/tecnico/privacidad.md): versión 1 del aviso y una solicitud ARCO por atender
         $paso('privacidadDemo', fn () => $this->privacidadDemo($empresa));
@@ -3240,6 +3241,21 @@ class CrearDatosDemo extends Command
      *
      * @param  Collection<string, Sede>  $sedes
      */
+    /**
+     * «Compras (duplicado)» es para practicar «Eliminar definitivamente»: debe
+     * quedar sin uso. Los datos demo anteriores le repartían visitas de la
+     * bitácora (informesDemo); aquí se pasan a «Mantenimiento». Idempotente.
+     */
+    private function departamentoSinUsoDemo(): void
+    {
+        $duplicado = Departamento::where('nombre', 'Compras (duplicado)')->value('id');
+        $destino = Departamento::where('nombre', 'Mantenimiento')->value('id') ?? Departamento::where('nombre', '!=', 'Compras (duplicado)')->value('id');
+        if ($duplicado === null || $destino === null) {
+            return;
+        }
+        Acceso::where('departamento_id', $duplicado)->update(['departamento_id' => $destino]);
+    }
+
     private function informesDemo(Empresa $empresa, $sedes): void
     {
         // Ya se hizo si hay visitas terminadas en esas semanas (la demo de Recepción solo deja una de hace un año)
@@ -3251,7 +3267,8 @@ class CrearDatosDemo extends Command
         $agentes = [User::where('username', 'agente.demo')->value('id'), User::where('username', 'agente2.demo')->value('id')];
         $nombres = ['MARTHA RUIZ CEN', 'JORGE PECH BALAM', 'ANA LILIA MAY', 'LUIS ALBERTO CHAN', 'ROSA ISELA UC', 'PEDRO KÚ DZUL', 'CARMEN SOSA LIRA', 'DIEGO TUN CAAMAL'];
         $tipos = ['colaborador', 'colaborador', 'visitante', 'proveedor', 'huesped', 'contratista'];
-        $deptos = Departamento::pluck('id')->all();
+        // Sin los catálogos «de prueba» de borradoDemo: deben quedar sin uso para poder eliminarlos definitivamente
+        $deptos = Departamento::where('nombre', '!=', 'Compras (duplicado)')->pluck('id')->all();
         $numero = (int) Novedad::max('numero');
         $utc = fn (CarbonImmutable $c) => $c->utc()->format('Y-m-d H:i:s');
         $accesos = [];

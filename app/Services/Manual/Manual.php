@@ -25,7 +25,9 @@ use League\CommonMark\Renderer\HtmlRenderer;
  * Las páginas son los archivos docs/usuario/<slug>.md con un encabezado
  * (front matter) que dice su título, sección, orden, resumen y los módulos
  * del catálogo a los que pertenece. Un usuario ve una página si puede «ver»
- * alguno de esos módulos (o si la página es general: `modulos: []`).
+ * alguno de esos módulos (o si la página es general: `modulos: []`). Una
+ * entrada también puede ser la acción exacta (`reservas.configurar`) cuando
+ * la pantalla que explica la página no se abre solo con «ver».
  *
  * El Markdown se convierte a HTML en el servidor con league/commonmark sin
  * HTML crudo (todo se escapa). Solo se conservan los enlaces entre páginas
@@ -142,7 +144,7 @@ class Manual
             return true;
         }
         foreach ($pagina->modulos as $modulo) {
-            if ($usuario->can($modulo.'.ver')) {
+            if ($usuario->can(str_contains($modulo, '.') ? $modulo : $modulo.'.ver')) {
                 return true;
             }
         }
@@ -173,9 +175,9 @@ class Manual
      */
     public function paginaDeModulo(string $clave, User $usuario): ?PaginaManual
     {
-        $candidatas = array_filter($this->paginas(), fn (PaginaManual $p) => in_array($clave, $p->modulos, true));
-        usort($candidatas, fn (PaginaManual $a, PaginaManual $b) => [array_search($clave, $a->modulos, true), $a->orden, $a->slug]
-            <=> [array_search($clave, $b->modulos, true), $b->orden, $b->slug]);
+        $candidatas = array_filter($this->paginas(), fn (PaginaManual $p) => in_array($clave, $p->clavesDeModulo(), true));
+        usort($candidatas, fn (PaginaManual $a, PaginaManual $b) => [array_search($clave, $a->clavesDeModulo(), true), $a->orden, $a->slug]
+            <=> [array_search($clave, $b->clavesDeModulo(), true), $b->orden, $b->slug]);
 
         foreach ($candidatas as $pagina) {
             if ($this->puedeVer($usuario, $pagina)) {
@@ -428,8 +430,8 @@ class Manual
         }
 
         $modulos = [];
-        if (! preg_match('/^\[([a-z0-9_,\s]*)\]\s*(#.*)?$/', $valores['modulos'], $lista)) {
-            $errores[] = '«modulos» debe ser una lista: [clave, otra_clave] o [].';
+        if (! preg_match('/^\[([a-z0-9_.,\s]*)\]\s*(#.*)?$/', $valores['modulos'], $lista)) {
+            $errores[] = '«modulos» debe ser una lista: [clave, otra_clave.accion] o [].';
         } else {
             $modulos = array_values(array_filter(array_map('trim', explode(',', $lista[1])), fn ($v) => $v !== ''));
         }

@@ -1,6 +1,6 @@
 ---
 titulo: Importar desde Excel
-modulos: [colaboradores, visitantes, proveedores, vehiculos, espacios]
+modulos: [colaboradores.importar, visitantes.importar, proveedores.importar, vehiculos.importar, espacios.importar]
 seccion: Primeros pasos
 orden: 45
 resumen: Cargar de una vez colaboradores, personas, empresas externas, vehículos o zonas y edificios desde un archivo de Excel, revisando antes cómo quedará cada fila.

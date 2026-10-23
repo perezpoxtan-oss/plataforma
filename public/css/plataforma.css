@@ -597,6 +597,10 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .pantalla-proveedores button.badge-sedes:hover { background: #dcfce7; }
 .pantalla-proveedores .btn-ficha { background: #f8fafc; border: 1px solid var(--borde); color: var(--texto); border-radius: 10px; min-height: 44px; padding: 0 0.7rem; display: inline-flex; align-items: center; font-size: 0.82rem; font-weight: 700; text-decoration: none; cursor: pointer; font-family: inherit; }
 .pantalla-proveedores .btn-ficha:hover { border-color: #10b981; color: #047857; background: #ecfdf5; }
+/* Fichas con muchas acciones (Empresas): los botones bajan de renglón en vez de salirse de la tarjeta */
+.ficha-footer-acciones { gap: 0.4rem; flex-wrap: wrap; }
+.ficha-footer-acciones .etiqueta-estado { white-space: nowrap; }
+.ficha-footer-acciones > .d-flex { flex-wrap: wrap; justify-content: flex-end; gap: 0.4rem !important; margin-left: auto; }
 .pantalla-proveedores .ficha-footer { gap: 0.4rem; flex-wrap: wrap; }
 .pantalla-proveedores .ficha-footer .etiqueta-estado { padding: 0.45rem 0.7rem; white-space: nowrap; }
 .pantalla-proveedores .ficha-footer .d-flex { gap: 0.4rem !important; margin-left: auto; }

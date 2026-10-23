@@ -54,7 +54,7 @@ Usa el demo (`php artisan plataforma:demo`), contraseña `Demo1234!`. Usuarios: 
    ---
    ```
 
-   `modulos` son las claves del catálogo: la página se muestra a quien puede **ver** alguno. `[]` = para todos.
+   `modulos` son las claves del catálogo: la página se muestra a quien puede **ver** alguno. `[]` = para todos. Si la pantalla pide otra acción para abrirse, escribe la acción exacta (`[reservas.configurar]`, `[colaboradores.importar]`): así nadie ve en el manual una pantalla que le diría «No tienes permiso».
 3. Las capturas van en `docs/usuario/img/<carpeta>/` y se citan como `![Descripción](img/<carpeta>/<archivo>.png)`. Tómalas con usuarios y empresa de ejemplo, sin la franja de ambiente.
 4. Los enlaces entre páginas se escriben `[Préstamo de llaves](prestamo-llaves.md)`. Los de internet no se publican.
 5. Corre `php artisan test --filter=ManualTest`. Falla si: falta el encabezado, un módulo no existe, una imagen no está, un enlace apunta a una página que no existe, un módulo con pantalla no tiene página, o la página tiene datos prohibidos (dominios, usuarios de prueba, «migración»…).
