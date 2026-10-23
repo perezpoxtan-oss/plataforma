@@ -68,7 +68,7 @@ Si tu empresa lo configuró (**Estructura → Configuración → Caseta y activo
 |---|---|---|
 | Verde | Está en tiempo. | Nadie. |
 | **Ámbar** | Pasó las horas del recordatorio: «pide que la regresen». | La caseta de esa sede, en la **campana** y en **Mis pendientes → Llaves fuera de tiempo**. |
-| **Rojo** | Pasó las horas límite: «pasó del límite». | Además, el jefe de seguridad de la sede. |
+| **Rojo** | Pasó las horas límite: «pasó del límite». | Además, el jefe de seguridad de la sede. Si la llave ya estaba en rojo la primera vez que se revisa, llegan los dos avisos: a la caseta y al jefe. |
 
 ![Llave fuera de tiempo](img/prestamo-llaves/semaforo.png)
 

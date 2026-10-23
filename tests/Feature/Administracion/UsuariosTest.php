@@ -159,7 +159,7 @@ class UsuariosTest extends TestCase
         $this->assertDatabaseHas('auditoria', ['evento' => 'usuarios.desactivado', 'auditable_id' => $usuario->id]);
 
         auth()->logout();
-        $this->post('/login', ['username' => 'agente.x', 'password' => 'Clave1234'])->assertSessionHas('acceso', 'credenciales');
+        $this->post('/login', ['username' => 'agente.x', 'password' => 'Clave1234'])->assertSessionHas('acceso', 'inactiva');
 
         $this->actingAs($this->admin)->patch("/usuarios/{$usuario->id}/estado", ['activo' => '1'])->assertSessionHas('ok');
         auth()->logout();

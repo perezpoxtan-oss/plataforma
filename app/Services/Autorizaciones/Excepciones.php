@@ -121,9 +121,13 @@ class Excepciones
         return $texto;
     }
 
+    /** ¿La última autorización por excepción avisó a algún responsable? (para no decir «Avisamos…» si no hay a quién) */
+    public bool $seAviso = false;
+
     /** Aviso por campana al responsable (o su delegado) de que pasó por excepción. */
     private function avisarResponsables(User $actor, Acceso $acceso, ?Autorizacion $solicitud, string $texto): void
     {
+        $this->seAviso = false;
         if ($acceso->departamento_id === null) {
             return;
         }
@@ -140,6 +144,7 @@ class Excepciones
             'url' => $solicitud !== null ? route('autorizaciones.show', $solicitud->id) : null,
             'referencia_tipo' => 'acceso', 'referencia_id' => $acceso->id,
         ]);
+        $this->seAviso = true;
     }
 
     private function solicitudPendiente(Acceso $acceso): ?Autorizacion

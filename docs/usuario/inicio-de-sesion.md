@@ -91,7 +91,8 @@ Por seguridad, la sesión se cierra sola después de **20 minutos sin usarla**.
 | **Datos de acceso incorrectos.** | El usuario o la contraseña no coinciden. | Revisa mayúsculas y minúsculas con el ojo y vuelve a intentar. |
 | **Demasiados intentos fallidos. Esta cuenta está bloqueada temporalmente…** | Se escribió mal la contraseña 5 veces seguidas. | Espera los minutos que indica o pide a tu administrador o jefe de seguridad que **desbloquee** tu cuenta. Quien administra usuarios recibe un aviso en su campana y tú un correo; si no fuiste tú, cambia tu contraseña en cuanto entres. |
 | **Sesión finalizada por seguridad.** | Pasaron 20 minutos sin usar la plataforma. | Vuelve a entrar. |
-| **Tu cuenta no está activa. Consulta a tu administrador.** | Tu usuario fue dado de baja. | Habla con tu administrador. |
+| **Tu cuenta no está activa. Consulta a tu administrador.** | Tu usuario fue dado de baja (sale al escribir tu contraseña correcta; con una contraseña equivocada sale «Datos de acceso incorrectos.»). | Habla con tu administrador. |
+| **Entraste con un código de respaldo; ya no sirve otra vez. Te quedan N.** (en Inicio) | Entraste con uno de tus códigos de respaldo. | Nada; si te quedan 3 o menos, crea códigos nuevos en **Mi cuenta → Verificación en dos pasos**. |
 | **El código no es correcto. Escribe el que se ve ahora en tu app…** | El código ya cambió, es de otra cuenta de la app o ya lo usaste. | Escribe el código que se ve ahora (cada código sirve una sola vez). Revisa que la hora de tu teléfono sea automática. |
 | **Demasiados códigos equivocados. Espera 15 minutos…** | Se escribió mal el código 5 veces. | Espera 15 minutos y vuelve a entrar. Si perdiste tu teléfono, usa un código de respaldo o pide a tu administrador que restablezca tu verificación. |
 | **Pasó mucho tiempo sin escribir el código. Vuelve a entrar.** | Pasaron más de 10 minutos desde la contraseña. | Vuelve a escribir tu usuario y contraseña. |

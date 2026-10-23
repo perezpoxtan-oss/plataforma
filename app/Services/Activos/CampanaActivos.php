@@ -171,7 +171,7 @@ class CampanaActivos
 
     /**
      * Equipos de turno que debían regresar: a la caseta (ámbar) o al
-     * supervisor que da de baja equipos (rojo). Una sola vez por nivel.
+     * supervisor, quien además edita el padrón de Equipos (rojo). Una sola vez por nivel.
      *
      * @return int usuarios avisados
      */
@@ -184,7 +184,8 @@ class CampanaActivos
         $r->loadMissing('colaborador:id,nombre,apellido_paterno,apellido_materno', 'sede');
         $usuarios = $this->conPermiso((int) $r->empresa_id, 'responsivas.editar', (int) $r->sede_id);
         if ($nivel === 'rojo') {
-            $supervisores = $usuarios->intersect($this->conPermiso((int) $r->empresa_id, 'equipos.eliminar', (int) $r->sede_id))->values();
+            // Supervisor (y jefes): quien además puede editar el padrón de Equipos; la caseta (Agente) solo lo consulta
+            $supervisores = $usuarios->intersect($this->conPermiso((int) $r->empresa_id, 'equipos.editar', (int) $r->sede_id))->values();
             $usuarios = $supervisores->isNotEmpty() ? $supervisores : $usuarios;
         }
 

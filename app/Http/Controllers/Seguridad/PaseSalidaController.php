@@ -441,7 +441,9 @@ class PaseSalidaController extends Controller
             'sedesDestino' => Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'direccion', 'colonia', 'ciudad', 'telefono'])
                 ->map(fn ($s) => ['id' => $s->id, 'nombre' => $s->nombre, 'direccion' => $direccion($s), 'telefono' => $s->telefono]),
             'proveedores' => Proveedor::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'direccion', 'telefono']),
-            'solicitanteFijo' => $this->solicitanteFijo(),
+            'solicitanteFijo' => $fijo = $this->solicitanteFijo(),
+            // Rol Solicitante sin colaborador vinculado: se le dice desde que abre el formulario (no puede elegir a nadie más)
+            'sinVinculo' => $fijo === null && request()->user() !== null && $this->pases->soloASuNombre(request()->user()),
             // Solo si algún paso depende del valor se pide el valor de cada artículo (por omisión, el formulario de siempre)
             'pideValor' => $this->pases->circuito()->usaValor(),
         ];

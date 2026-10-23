@@ -163,6 +163,33 @@ class CandidatosYAutorizacionesTest extends TestCase
 
     // ------------------------------------------------------------------ Caseta → RR. HH.
 
+    /** Casillas «Suplente» del diálogo «Elegir responsables» de un departamento, en orden: [renglón => marcada]. */
+    private function casillasSuplente(string $html, Departamento $d): array
+    {
+        $desde = strpos($html, 'value="depto-'.$d->id.'"');
+        $this->assertNotFalse($desde);
+        $tramo = substr($html, $desde, strpos($html, 'dialogo-acciones', $desde) - $desde);
+        preg_match_all('/<input type="checkbox" name="responsables\[(\d+)\]\[es_suplente\]" value="1"( checked(="checked")?)?/', $tramo, $m);
+
+        return array_combine(array_map('intval', $m[1]), array_map(fn ($c) => $c !== '', $m[2]));
+    }
+
+    public function test_elegir_responsables_propone_titular_en_el_primer_renglon_vacio(): void
+    {
+        $this->responsable($this->seguridad, $this->jefe);
+        $html = $this->actingAs($this->rh)->get('/autorizaciones/responsables')->assertOk()->getContent();
+        // Sin responsables: el primero es el titular (sin «Suplente»), el siguiente propone suplente
+        $this->assertSame([0 => false, 1 => true], $this->casillasSuplente($html, $this->cocina));
+        // Con titular: el renglón nuevo propone suplente
+        $this->assertSame([0 => false, 1 => true], $this->casillasSuplente($html, $this->seguridad));
+
+        // Guardar sin tocar la casilla deja al primero como titular
+        $this->actingAs($this->rh)->put("/autorizaciones/responsables/{$this->cocina->id}", ['_dialogo' => 'depto-'.$this->cocina->id,
+            'responsables' => [['user_id' => $this->jefe->id, 'sede_id' => $this->centro->id, 'es_suplente' => '0'], ['user_id' => '', 'sede_id' => '', 'es_suplente' => '0']]])
+            ->assertSessionHasNoErrors();
+        $this->assertFalse((bool) $this->enEmpresa(fn () => DepartamentoResponsable::where('departamento_id', $this->cocina->id)->sole()->es_suplente));
+    }
+
     public function test_la_caseta_registra_un_candidato_con_fotos_y_rh_recibe_el_aviso_y_el_correo(): void
     {
         Mail::fake();

@@ -66,6 +66,20 @@ Bajo «## [Sin publicar]»:
   - Manual: `reservas-de-areas.md`, `reservas-aprobar.md`, `reservas-departamentos.md`, `reservas-configuracion.md` (con capturas). Curso: lección 60. Pruebas en `ReservasDeAreasTest`.
 
 ### Corregido
+- **Cuentas, permisos, Inicio y caseta (registro de pruebas).**
+  - **Nuevo Ingreso se cerraba sin aviso** si se tocaba registrar justo después de escribir el nombre: la consulta «¿Es alguno de estos?» al salir del campo gastaba el mensaje de error. Ahora ninguna consulta en segundo plano de las pantallas (parecidos, sugerencias, Mis pendientes, latido) gasta los avisos de la sesión (`ConservarAvisos`); la ventana vuelve a abrir con «Revisa los datos: …» y lo capturado.
+  - **Pases de salida: el recordatorio de firmas no salía** (carga perezosa del destino con varios pases) y el paso quedaba marcado como recordado; ahora sale y se marca solo después de enviarlo.
+  - **Recepción de RR. HH.: Dirección veía «Que pase» y «Que espere»** y al tocarlos llegaba a «No encontramos lo que buscas». Esos botones solo aparecen a quien puede darlos (edita candidatos).
+  - **Cuenta dada de baja**: con su contraseña correcta ahora dice «Tu cuenta no está activa. Consulta a tu administrador.» (como dice el manual); con una contraseña equivocada sigue «Datos de acceso incorrectos.» y no revela si la cuenta existe.
+  - **Elegir responsables**: el primer renglón vacío ya no viene marcado «Suplente» cuando el departamento no tiene titular.
+  - **Inicio no mostraba avisos** (por ejemplo «Entraste con un código de respaldo; … Te quedan 9.»).
+  - **Firmas del voucher de baja** (Gafetes, Llaves, Equipos, Responsivas): con «Firma digital» y sin firmar ahora aparece «Falta la firma de Seguridad: firma en el recuadro o elige «Firma física».» bajo el recuadro (antes solo se ponía rojo).
+  - **Llaves fuera de tiempo y equipos de turno sin regresar**: si ya estaban en rojo la primera vez, la caseta también recibe su aviso; el rojo de los equipos de turno llega al supervisor (y jefes), como dice Configuración.
+  - **Mis pendientes**: «Entrevistas por evaluar · próxima:» ya no queda vacío cuando la primera entrevista no tiene cita.
+  - **Páginas de error**: el botón dice siempre «Ir al inicio» (una dirección que no existe decía «Volver a la plataforma»).
+  - **Solicitante sin colaborador vinculado**: Nuevo Pase le dice desde que lo abre (y al guardar) «Tu usuario no está vinculado a un colaborador…», en lugar de «Falta elegir a la persona».
+  - **Autorizar por excepción** ya no dice «Avisamos al responsable del departamento.» cuando el departamento no tiene responsable.
+  - Sin migraciones. Pruebas en `AccesosTest`, `MejorasIncidentesTest`, `CandidatosFase1Test`, `CandidatosFase2Test`, `CandidatosYAutorizacionesTest`, `InicioSesionTest`, `DosPasosTest`, `MejorasPadronesTest`, `MejorasActivosTest`, `PlantillaSolicitudesTest`, `ProveedoresEsperanAlDepartamentoTest` y `PendientesDireccionTest`. Manual (`inicio-de-sesion.md`, `recepcion-y-autorizaciones.md`, `prestamo-llaves.md`, `responsivas.md`, `pases-salida.md`, `gafetes.md`, `equipos.md`) y documentos técnicos actualizados.
 - **Reservas y Rutas: hallazgos del registro de pruebas** (sin migraciones). Pruebas en `ReservasOrdenDeEventoTest`, `ReservasEditarEliminarTest` y `RutasTest`. Ver `docs/tecnico/reservas.md`.
   - **Guardar sin cambios una reserva confirmada ya no quita servicios dados de baja.** Si un servicio ya pedido (p. ej. «Proyector y pantalla») se daba de baja en el catálogo, al modificar la reserva se quitaba en silencio y el departamento recibía «Ya no se necesita la orden de servicio». Ahora lo ya pedido se conserva tal como se pidió (solo deja de ofrecerse en reservas nuevas): el formulario lo muestra marcado con «Dado de baja: se conserva en esta reserva…», y guardar sin cambios no pide aprobaciones ni avisa a nadie. Lo mismo con un tipo de uso dado de baja que la reserva ya tenía.
   - **Al rechazar, las demás aprobaciones se ven como «Ya no aplica»** en la ficha (sin botones), en lugar de desaparecer del bloque «Aprobaciones». También al cancelar.

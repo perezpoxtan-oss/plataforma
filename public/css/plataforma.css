@@ -1289,6 +1289,7 @@ html.modo-sol .aviso-pendiente .icono, html.modo-sol .aviso-pendiente .boton { c
 .firma-limpiar:hover { color: #b91c1c; }
 .firma.falta .firma-lienzo { border-color: #ef4444; background: #fef2f2; }
 .firma.falta .firma-guia { color: #b91c1c; }
+.firma-falta-texto { color: #b91c1c; font-size: 0.875rem; font-weight: 600; margin: 0.35rem 0 0; }
 /* Fin Firma autógrafa */
 /* ==========================================================================
    Bitácora de accesos — "Control de Accesos" (colores de SEGCAT: rojo de
