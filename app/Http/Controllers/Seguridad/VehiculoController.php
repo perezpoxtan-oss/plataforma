@@ -293,7 +293,7 @@ class VehiculoController extends Controller
     private function regresar(Request $request, Vehiculo $vehiculo): RedirectResponse
     {
         if ($request->input('volver') === 'proveedor' && $vehiculo->proveedor_id !== null && Route::has('proveedores.show')) {
-            return redirect()->route('proveedores.show', $vehiculo->proveedor_id);
+            return redirect()->route('proveedores.show', ['proveedor' => $vehiculo->proveedor_id, 'tab' => 'flotilla']);
         }
 
         return redirect()->to(route('vehiculos.index').'#vehiculo-'.$vehiculo->id);

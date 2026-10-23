@@ -47,6 +47,8 @@ Quien entra a la bolsa de trabajo de tu empresa (ver [Vacantes](vacantes.md)) no
 
 **Qué debes ver:** la campana «Nueva postulación por internet: …» con la nota de solicitud incompleta; en la ficha, el botón **Enviar enlace por correo** para mandárselo otra vez.
 
+**Si ya tenía ficha** (mismo teléfono o CURP): no se crea otra. Se le suma la postulación en su misma ficha y en su **Historial** aparece «Se volvió a postular por internet a «…»». Por seguridad, lo que se escribe en internet **nunca cambia los datos de una ficha que ya existía** (nombre, correo, domicilio, firma): si escribió un nombre o correo distinto, el historial lo dice y la campana avisa «Ojo: escribió un nombre o correo distinto al de su ficha». Confírmalo con la persona y, si cambió algo, corrígelo con **Editar solicitud** o mándale el enlace para llenarla. Si le falta la solicitud completa, el enlace le llega solo al correo que ya tenía su ficha.
+
 ![Postulación corta en el celular](img/vacantes/empleos-postular-movil.png) ![Ficha con solicitud incompleta](img/recepcion-y-candidatos/candidato-solicitud-incompleta.png)
 
 ## Cómo la revisa Recursos Humanos
@@ -64,7 +66,7 @@ Quien entra a la bolsa de trabajo de tu empresa (ver [Vacantes](vacantes.md)) no
 
 ![Editar solicitud](img/solicitud-empleo/editar-solicitud.png)
 
-**Qué debes ver:** la tarjeta actualizada. Si algo está mal escrito, el aviso sale dentro de la ventana y la sección con el error se abre sola.
+**Qué debes ver:** la tarjeta actualizada y, en el **Historial** de la ficha, el renglón **Solicitud editada** con las partes que cambiaste (por ejemplo «domicilio») y, si firmó, «El candidato firmó en pantalla». Si algo está mal escrito, el aviso sale dentro de la ventana y la sección con el error se abre sola.
 
 ## Cómo imprimirla para el expediente
 

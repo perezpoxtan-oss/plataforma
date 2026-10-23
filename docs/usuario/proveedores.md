@@ -87,6 +87,8 @@ La ventana dice «Se registra para *tu sede*». Si otra sede ya tenía registrad
 
 **Si trabajas en una sola sede** no se abre ninguna ventana: el botón de sedes dice **Quitar de mi sede** o **Agregar a mi sede**. Tócalo y confirma con **Aceptar**; las demás sedes se quedan como están.
 
+Al quitarla de tu sede, la empresa **deja de aparecer en tu lista** (solo ves las que operan en tu sede). Justo después, arriba de la lista sale «… ya no aparece en tu lista porque no opera en …» con el botón **Agregar a mi sede** para regresarla. Más adelante también puedes volver a agregarla registrándola con el mismo nombre en **Registrar empresa**: no se crea otra, se le agrega tu sede.
+
 ![Quitar de mi sede](img/proveedores/16-una-sede-un-toque.png)
 
 ![Sedes donde opera](img/proveedores/05-sedes.png)
@@ -119,7 +121,7 @@ La ventana dice «Se registra para *tu sede*». Si otra sede ya tenía registrad
 
 ![Ficha: personal](img/proveedores/06-ficha-personal.png)
 
-**Qué debes ver:** al guardar o al cerrar regresas a la ficha, con el registro nuevo en la lista.
+**Qué debes ver:** al guardar o al cerrar regresas a la ficha, en la misma pestaña (**Personal** o **Flotilla**), con el registro nuevo en la lista.
 
 ![Ficha: flotilla](img/proveedores/06-ficha-flotilla.png)
 
