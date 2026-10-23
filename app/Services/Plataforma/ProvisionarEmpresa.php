@@ -7,6 +7,7 @@ use App\Models\Modulo;
 use App\Models\Rol;
 use App\Models\RolPermiso;
 use App\Models\Rubro;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -29,7 +30,8 @@ class ProvisionarEmpresa
                 $consulta->where(fn ($q) => $q->whereIn('clave', $modulos)
                     ->orWhereIn('padre_id', Modulo::whereIn('clave', $modulos)->select('id')));
             }
-            $empresa->modulos()->syncWithoutDetaching($consulta->pluck('id')->all());
+            $autor = ['creado_por' => Auth::id(), 'actualizado_por' => Auth::id()];
+            $empresa->modulos()->syncWithoutDetaching($consulta->pluck('id')->mapWithKeys(fn ($id) => [$id => $autor])->all());
 
             foreach (Rol::plantillas()->with('permisos')->get() as $plantilla) {
                 $this->copiarPlantilla($plantilla, $empresa->id);

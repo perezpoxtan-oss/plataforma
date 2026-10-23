@@ -75,6 +75,10 @@ El esquema tiene dos columnas generadas (`storedAs`), que sostienen reglas de un
 - **Respaldos anteriores** que sí traen la columna: `ImportadorSql` detecta en el `CREATE TABLE` una columna generada (`GENERATED ALWAYS` / `… STORED|VIRTUAL|PERSISTENT`), consulta la tabla recién creada y quita esa columna y su valor de cada renglón de sus `INSERT` (respetando textos con comas y paréntesis).
 - Si se agrega otra columna generada, no hay que tocar el volcado; la prueba `test_las_columnas_generadas_no_se_vuelcan_y_la_base_restaurada_las_recalcula` lista las del esquema y avisa para revisarla. La CI repite el ciclo respaldo → importación en MariaDB (`.github/scripts/respaldo-mariadb.php`).
 
+### CHECK y llaves restrict
+
+Desde el mantenimiento de la base (`integridad-bd.md`) el esquema tiene CHECK en los estados, etapas y categorías y llaves foráneas `restrict` en las tablas con historia. No cambia nada del volcado ni de la importación: `SHOW CREATE TABLE` (MariaDB) y `sqlite_master` (SQLite) ya traen los CHECK y la acción de cada llave, y la importación corre con la revisión de llaves apagada (`SET FOREIGN_KEY_CHECKS=0` / `PRAGMA foreign_keys=OFF`), así que el orden de las tablas no importa. Los CHECK sí se revisan al importar cada renglón: un respaldo de la misma versión siempre cumple. Un respaldo **anterior** a estas migraciones se importa con su propio esquema (sin CHECK) y el siguiente despliegue normaliza y agrega los CHECK. Pruebas: `IntegridadBaseDatosTest::test_respaldo_y_restauracion_conservan_los_check_y_las_llaves_restrict` (SQLite) y `.github/scripts/respaldo-mariadb.php` (MariaDB: la base restaurada rechaza un estado inválido y el borrado de una novedad con notas).
+
 Prueba de punta a punta: `tests/Feature/Direccion/TrasladoTest::test_genera_el_paquete_y_lo_restaura_en_base_y_storage_vacios` (genera con datos y archivos de ejemplo → restaura en otra base SQLite vacía y otro storage → mismos conteos y archivos, incluido un texto con `;`, saltos, comillas, `\` y `--`).
 
 ## Exportar una empresa (portabilidad)

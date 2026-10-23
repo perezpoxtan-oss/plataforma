@@ -18,7 +18,7 @@ Réplica de `modules/transporte/bitacora_*` de SEGCAT (`bitacora_transporte.php`
 | Tabla | Columnas | Notas |
 |---|---|---|
 | `movimientos_transporte` | `empresa_id`, `sede_id`, `ruta_id`, `ruta_horario_id`, `tipo_movimiento` (`llegada`/`salida`), `estatus` (`a_tiempo`/`retraso`/`no_llego`), `fecha` (día **local de la sede**), `vehiculo_id`, `chofer_id` (personas), `cantidad_pax`, `monto`, `justificacion`, `paradero_id` (destino del taxi), `firma_guardia`, `firma_taxista` (rutas en el disco privado), `observaciones`, `lote` (uuid de los taxis capturados juntos), `editado_por/en`, `anulado`, `anulado_por/en`, `autorizado_por/en`, autoría y timestamps | Índices `(empresa_id, sede_id, fecha)`, `(empresa_id, fecha, estatus)`, `lote`. Nunca se borra. |
-| `movimiento_transporte_pasajeros` | `id`, `movimiento_transporte_id`, `colaborador_id` | Colaboradores del taxi. Sin llave única compuesta para que la unión de duplicados (`AdministradorColaboradores::REFERENCIAS`) solo cambie `colaborador_id`. |
+| `movimiento_transporte_pasajeros` | `id`, `empresa_id`, `movimiento_transporte_id`, `colaborador_id` | Colaboradores del taxi. `empresa_id` (obligatoria, llave restrict, índice `mov_transporte_pasajero_empresa_idx`) se toma del movimiento al guardar; modelo pivote `MovimientoTransportePasajero` con filtro de empresa (migración `2026_11_09_000300_empresa_en_pasajeros_de_transporte`, ver `integridad-bd.md`). Sin llave única compuesta para que la unión de duplicados (`AdministradorColaboradores::REFERENCIAS`) solo cambie `colaborador_id`. |
 
 `created_at` (UTC) es la hora del registro y se muestra con `@fecha`. `fecha` se guarda como `AAAA-MM-DD` (mutador del modelo) para que los filtros por día funcionen igual en MySQL y SQLite.
 

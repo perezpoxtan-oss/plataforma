@@ -23,6 +23,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -166,7 +167,8 @@ class EmpresaController extends Controller
                 $activo = (int) $modulo->area_id === (int) $direccion || (in_array((int) $modulo->id, $elegidos, true) && $padreActivo);
                 DB::table('empresa_modulos')->updateOrInsert(
                     ['empresa_id' => $empresa->id, 'modulo_id' => $modulo->id],
-                    ['activo' => $activo, 'updated_at' => now()],
+                    fn (bool $existe) => ['activo' => $activo, 'updated_at' => now(), 'actualizado_por' => Auth::id()]
+                        + ($existe ? [] : ['created_at' => now(), 'creado_por' => Auth::id()]),
                 );
                 if ($activo) {
                     $activos[] = (int) $modulo->id;

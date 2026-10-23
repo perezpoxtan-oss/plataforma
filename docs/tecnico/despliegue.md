@@ -90,7 +90,7 @@ Para cambiar la configuración después, basta con subir otro `env_qa.txt`: se c
 
 ## Respaldos de la base
 
-`desplegar.sh` respalda la base antes de cada migración (`plataforma:respaldar --motivo=antes-de-actualizar`) y hace el respaldo diario (`--si-toca`, después de las 3:00 hora de Cancún) en cada corrida del cron. No hace falta otro cron. Los archivos quedan en `$APP/shared/storage/app/private/respaldos` (permisos 600) y se conservan 14 días. Ver `docs/tecnico/configuracion.md`. En la misma corrida, `plataforma:traslado --si-toca` termina los paquetes de traslado y exportaciones que quedaron a medias y arranca el semanal si está encendido (ver `docs/tecnico/traslado.md`).
+`desplegar.sh` respalda la base antes de cada migración (`plataforma:respaldar --motivo=antes-de-actualizar`) y hace el respaldo diario (`--si-toca`, después de las 3:00 hora de Cancún) en cada corrida del cron. No hace falta otro cron. Los archivos quedan en `$APP/shared/storage/app/private/respaldos` (permisos 600) y se conservan 14 días. Ver `docs/tecnico/configuracion.md`. En la misma corrida, `plataforma:traslado --si-toca` termina los paquetes de traslado y exportaciones que quedaron a medias y arranca el semanal si está encendido (ver `docs/tecnico/traslado.md`). Después de las 4:00, `plataforma:revisar-coherencia --si-toca --reparar` (una vez al día, en proceso) corrige desde su fuente los datos que la base guarda dos veces y lo anota en la auditoría (ver `docs/tecnico/integridad-bd.md`).
 
 ## QA: datos demo al día
 

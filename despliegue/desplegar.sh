@@ -496,6 +496,12 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudieron recordar las aprobaciones de reservas que tardan (revisa despliegue.log)"
 fi
 # --- Fin Reservas de áreas ---
+# --- Mantenimiento de la base: coherencia de los datos que se guardan dos veces (resumen de rutas, etapa del candidato, empresa de los pasajeros), una vez al día después de las 4:00 (después del respaldo); corrige desde la fuente y lo anota en la auditoría ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:revisar-coherencia'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:revisar-coherencia --si-toca --reparar >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudo revisar la coherencia de la base (revisa despliegue.log)"
+fi
+# --- Fin Mantenimiento de la base ---
 
 # --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
 if [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ] && grep -Eq "EscribeAqui|tu-correo@" "$HOME/qa_inicial.txt"; then

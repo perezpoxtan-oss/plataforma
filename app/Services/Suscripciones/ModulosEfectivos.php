@@ -8,6 +8,7 @@ use App\Models\Modulo;
 use App\Models\Suscripcion;
 use App\Services\Permisos\Autorizador;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -83,9 +84,10 @@ class ModulosEfectivos
                 $activo = in_array((int) $modulo->id, $efectivos, true);
                 $existe = DB::table('empresa_modulos')->where('empresa_id', $empresaId)->where('modulo_id', $modulo->id);
                 if ($existe->exists()) {
-                    $existe->update(['activo' => $activo, 'updated_at' => now()]);
+                    $existe->update(['activo' => $activo, 'updated_at' => now(), 'actualizado_por' => Auth::id()]);
                 } elseif ($activo) {
-                    DB::table('empresa_modulos')->insert(['empresa_id' => $empresaId, 'modulo_id' => $modulo->id, 'activo' => true, 'created_at' => now(), 'updated_at' => now()]);
+                    DB::table('empresa_modulos')->insert(['empresa_id' => $empresaId, 'modulo_id' => $modulo->id, 'activo' => true, 'created_at' => now(), 'updated_at' => now(),
+                        'creado_por' => Auth::id(), 'actualizado_por' => Auth::id()]);
                 }
             }
         });

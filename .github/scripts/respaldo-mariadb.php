@@ -83,6 +83,24 @@ if ((int) $destino->table('prueba_gen')->where('id', 1)->value('llave_en_uso') !
 }
 echo "Respaldo con formato anterior importado en MariaDB.\n";
 
+// Mantenimiento de la base (docs/tecnico/integridad-bd.md): la base restaurada conserva los CHECK y las llaves restrict
+$contar = fn (string $base, string $sql) => (int) $root->query(str_replace('{base}', $base, $sql))->fetchColumn();
+$checks = "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema = '{base}' AND constraint_type = 'CHECK' AND constraint_name LIKE 'chk\\_%'";
+$restrict = "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema = '{base}' AND delete_rule = 'RESTRICT'";
+$origen = env('DB_DATABASE');
+if ($contar($origen, $checks) < 15 || $contar('plataforma_ci_destino', $checks) !== $contar($origen, $checks)) {
+    falla('la base restaurada no tiene los mismos CHECK ('.$contar('plataforma_ci_destino', $checks).' de '.$contar($origen, $checks).')');
+}
+if ($contar('plataforma_ci_destino', $restrict) !== $contar($origen, $restrict) || $contar($origen, $restrict) < 95) {
+    falla('la base restaurada no tiene las mismas llaves restrict');
+}
+try {
+    $destino->table('prestamos_llaves')->where('id', 2)->update(['estado' => 'inventado']);
+    falla('la base restaurada aceptó un estado fuera de catálogo');
+} catch (Illuminate\Database\QueryException) {
+}
+echo 'Base restaurada con '.$contar('plataforma_ci_destino', $checks).' CHECK y '.$contar('plataforma_ci_destino', $restrict)." llaves restrict.\n";
+
 @unlink($respaldo['ruta']);
 DB::table('prestamos_llaves')->delete();
 DB::table('equipos_responsiva')->delete();

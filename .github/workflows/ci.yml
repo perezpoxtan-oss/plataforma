@@ -92,6 +92,19 @@ jobs:
           # Respaldo -> restauracion con columnas generadas (paquete de traslado y respaldos)
           php .github/scripts/respaldo-mariadb.php
 
+      - name: Integridad de la base en MariaDB (CHECK, llaves restrict, coherencia)
+        # La misma prueba de la suite (que corre en SQLite) contra MariaDB: la base
+        # rechaza estados fuera de catálogo y borrados de historia. Las partes que
+        # revierten migraciones se omiten aquí (las cubre el paso de migraciones).
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: plataforma_ci
+          DB_USERNAME: ci
+          DB_PASSWORD: ci
+        run: php artisan test tests/Feature/Nucleo/IntegridadBaseDatosTest.php
+
       - name: Pruebas
         env:
           # Los avisos de deprecacion (p. ej. de una version nueva de PHP) se anotan en
