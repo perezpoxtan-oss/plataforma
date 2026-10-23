@@ -18,7 +18,7 @@ resumen: Todos los ajustes de tu empresa ordenados por secciones (General, Caset
 - Los ajustes de la empresa los cambia quien tiene el permiso **editar** de Configuración con alcance de **toda la empresa** (normalmente el administrador). Con alcance de una sede solo se consultan.
 - Algunas tarjetas piden además el permiso de su módulo: los días de Lost & Found (**Configurar** de Lost & Found), el aviso de privacidad y los plazos de candidatos (**Configurar** de Candidatos), la bolsa de trabajo (**Configurar** de Vacantes), las esperas (**Configurar** de Autorizaciones departamentales), la impresión desde padrones (**Configurar** de Etiquetas QR) y el circuito de pases (**Configurar** de Pases de salida). Si no tienes ese permiso, la tarjeta no aparece.
 - **Privacidad** (conservación de datos, aviso de privacidad y solicitudes ARCO) la ve quien tiene el permiso **Datos personales** de Configuración con alcance de toda la empresa (normalmente el administrador).
-- **Plataforma** (correo de la plataforma, respaldos y enlaces a Identidad y Catálogo comercial) solo la ve el Super Administrador.
+- **Plataforma** (correo de la plataforma, respaldos, versión de PHP del servidor y enlaces a Identidad y Catálogo comercial) solo la ve el Super Administrador.
 
 ## Cómo moverte por las secciones
 
@@ -215,9 +215,28 @@ Aquí cuidas los datos personales de quien visita tus sedes, publicas tu aviso d
 
 ## Plataforma (Super Administrador)
 
-Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logotipo y colores), **Catálogo comercial → Ajustes** (moneda, IVA, página pública y suscripciones: días de prueba, días de gracia, descuento anual y avisos de vencimiento), **Catálogo comercial → Clientes** y **Empresas** (módulos contratados). Debajo están el correo de la plataforma y los respaldos.
+Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logotipo y colores), **Catálogo comercial → Ajustes** (moneda, IVA, página pública y suscripciones: días de prueba, días de gracia, descuento anual y avisos de vencimiento), **Catálogo comercial → Clientes** y **Empresas** (módulos contratados). Debajo están la versión de PHP del servidor, el correo de la plataforma y los respaldos.
 
 ![Sección Plataforma](img/configuracion/plataforma.png)
+
+## Cómo revisar la versión de PHP del servidor (Super Administrador)
+
+PHP es el programa del servidor que hace funcionar la plataforma. Cuando sale una falla de seguridad, tu proveedor de hospedaje publica una versión corregida; aquí ves si ya la tienes.
+
+1. Entra a **Estructura → Configuración**.
+2. En el índice toca **Plataforma**.
+3. Busca la tarjeta **Versión de PHP del servidor**.
+
+![Versión de PHP del servidor](img/configuracion/version-php.png)
+
+**Qué debes ver:**
+
+- **Páginas (web):** la versión exacta con la que se abren las pantallas (por ejemplo «PHP 8.4.27»).
+- **Tareas programadas:** la versión con la que corren los recordatorios, respaldos e instalaciones automáticas. Si dice «Sin dato todavía», aparece cuando la instalación automática del servidor anota su versión.
+- Junto a cada versión, **Al día** (verde) o **Requiere actualización** (rojo). Con rojo, abajo sale: «Corrige la falla de seguridad PHP2Shell (CVE-2026-109618 y CVE-2026-109619). Pide a tu proveedor de hospedaje la versión corregida.».
+- **Aceleración (OPcache):** «Activa» hace que las pantallas abran más rápido. **Memoria máxima** y **Tiempo máximo por página:** los límites que da el hospedaje.
+
+Las versiones corregidas son **8.5.12**, **8.4.27**, **8.3.36** y **8.2.35** o posteriores de su misma serie. La 8.1 y anteriores ya no reciben correcciones: siempre dicen **Requiere actualización**.
 
 ## Cómo configurar el correo de la plataforma (Super Administrador)
 
@@ -264,6 +283,8 @@ Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logo
 | Este ajuste es de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa. | Tu rol no puede cambiar a quién se exige la verificación en dos pasos. | Pídelo a tu administrador. |
 | «Fotos de la persona (caseta)» va de 7 a 3650 días. (o el de otro tipo) | Los días están fuera del rango permitido. | Escribe un número dentro del rango que dice el mensaje. |
 | Es el mismo texto de la versión N: cambia algo para publicar una nueva. | El aviso no cambió. | Si no hay cambios, no hace falta publicar. |
+| Una versión dice **Requiere actualización** (rojo). | El servidor tiene una versión de PHP con la falla PHP2Shell o una serie que ya no recibe correcciones. | Pide a tu proveedor de hospedaje la versión corregida (8.5.12, 8.4.27, 8.3.36, 8.2.35 o posterior). Cuando la cambie, vuelve a abrir Configuración: debe decir **Al día**. |
+| **Tareas programadas** dice «Sin dato todavía». | La instalación automática aún no anota su versión de PHP. | Espera a la siguiente instalación; si sigue igual, pide a tu proveedor de hospedaje que revise las tareas programadas. |
 | No veo la sección **Privacidad**. | Tu rol no tiene el permiso **Datos personales** de Configuración con alcance de toda la empresa. | Pídelo a tu administrador. |
 
 ## Preguntas frecuentes
@@ -279,6 +300,10 @@ Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logo
 **¿Los días de Lost & Found se pueden poner por sede?** No; aplican a todas las sedes de la empresa.
 
 **¿Si enciendo la conservación, se puede deshacer?** No: lo que se quita ya no regresa. Por eso, antes de encenderla, revisa los días y el recuadro de «hoy se quitarían». Si la apagas, ya no se quita nada más.
+
+**¿Por qué las páginas y las tareas programadas pueden tener versiones distintas?** El hospedaje elige la versión de PHP de las páginas y la de las tareas programadas por separado. Las dos deben decir **Al día**.
+
+**¿Quién más ve la versión de PHP?** Nadie: solo el Super Administrador, en esta tarjeta.
 
 **¿Puedo restaurar un respaldo yo mismo desde esta pantalla?** No. Descarga el archivo y entrégaselo a tu proveedor de hospedaje o a tu administrador de base de datos para que lo importe.
 

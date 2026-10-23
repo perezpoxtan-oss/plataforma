@@ -330,9 +330,10 @@
                             <li><a href="{{ route('catalogo-comercial.index', ['pestana' => 'clientes']) }}">Catálogo comercial → Clientes</a>: plan, sedes, usuarios y excepciones de cada cliente.</li>
                         @endif
                         <li><a href="{{ route('empresas.index') }}">Empresas</a>: módulos contratados de cada empresa (botón de la cuadrícula).</li>
-                        <li>Correo de la plataforma y respaldos: aquí abajo.</li>
+                        <li>Versión de PHP del servidor, correo de la plataforma y respaldos: aquí abajo.</li>
                     </ul>
                 </div>
+                @include('administracion.configuracion._version-php', ['php' => $php])
             </div>
             {{-- ================= Correo saliente (plataforma) ================= --}}
             <section class="tarjeta p-4" aria-labelledby="t-correo">
