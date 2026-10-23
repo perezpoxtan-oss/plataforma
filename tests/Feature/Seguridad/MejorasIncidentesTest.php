@@ -406,7 +406,7 @@ class MejorasIncidentesTest extends PruebaNovedades
             ['nombre' => 'Gerencia', 'tipo' => 'usuarios', 'usuarios' => [$gerente->id], 'obligatorio' => 1],
         ];
         $this->actingAs($this->admin)->put('/pases-salida/circuito', ['pasos' => $pasos, 'rechazo' => 'inicio', 'espera' => $espera])->assertSessionHasNoErrors();
-        $colaborador = $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => '1007', 'nombre' => 'Mariana', 'apellido_paterno' => 'López', 'sede_id' => $this->centro->id, 'activo' => true]));
+        $colaborador = $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => (string) (1007 + Colaborador::count()), 'nombre' => 'Mariana', 'apellido_paterno' => 'López', 'sede_id' => $this->centro->id, 'activo' => true]));
         $this->actingAs($this->admin)->post('/pases-salida', [
             'sede_id' => $this->centro->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador->id, 'destino_tipo' => 'sede', 'sede_destino_id' => $this->playa->id,
             'fecha_salida_programada' => now()->format('Y-m-d'), 'fecha_tentativa_regreso' => now()->addDays(7)->format('Y-m-d'),
@@ -470,6 +470,48 @@ class MejorasIncidentesTest extends PruebaNovedades
         $this->assertNull($this->avisos($director, 'pase_firma_recordatorio')->sole()->acciones);
         $this->entrar($this->admin)->get("/pases-salida/{$pase->id}")->assertSee('Esperando firma desde hace 1 min');
         $this->assertSame(PaseSalidaAprobacion::PENDIENTE, $this->enEmpresa(fn () => app(CircuitoPasesSalida::class)->actual($pase->fresh(['aprobaciones']))->estado));
+    }
+
+    public function test_el_recordatorio_sale_con_varios_pases_a_otra_sede_y_solo_se_marca_al_enviarse(): void
+    {
+        $director = $this->crearUsuario($this->empresa, 'Director');
+        $gerente = $this->crearUsuario($this->empresa, 'Director');
+        // Dos pases a otra sede: con varios pases el modo estricto detecta cargas perezosas (sedeDestino)
+        $primero = $this->pase($director, $gerente, ['recordar' => '4', 'recordar_unidad' => 'horas', 'escalar' => '1', 'escalar_unidad' => 'dias']);
+        $segundo = $this->pase($director, $gerente, ['recordar' => '4', 'recordar_unidad' => 'horas', 'escalar' => '1', 'escalar_unidad' => 'dias']);
+        $this->travel(5)->hours();
+
+        $this->artisan('plataforma:escalar-pases')->expectsOutputToContain('Recordatorios enviados: 2. Escalamientos: 0.')->assertSuccessful();
+        $avisos = $this->avisos($director, 'pase_firma_recordatorio');
+        $this->assertCount(2, $avisos);
+        $this->assertStringContainsString('→ '.$this->playa->nombre, $avisos->first()->texto);
+        foreach ([$primero, $segundo] as $pase) {
+            $this->assertNotNull($this->enEmpresa(fn () => app(CircuitoPasesSalida::class)->actual($pase->fresh(['aprobaciones']))->recordatorio_en));
+        }
+    }
+
+    public function test_el_recordatorio_sin_a_quien_avisar_no_queda_marcado(): void
+    {
+        $director = $this->crearUsuario($this->empresa, 'Director');
+        $gerente = $this->crearUsuario($this->empresa, 'Director');
+        $pase = $this->pase($director, $gerente, ['recordar' => '4', 'recordar_unidad' => 'horas']);
+        $this->travel(5)->hours();
+        $this->enEmpresa(function () use ($pase) {
+            $paso = app(CircuitoPasesSalida::class)->actual($pase->fresh(['aprobaciones']));
+            $hecho = app(EsperaPasesSalida::class)->recordar($pase->fresh(), $paso, 5);
+            $this->assertTrue($hecho);
+            $this->assertNotNull($paso->fresh()->recordatorio_en);
+        });
+        // Un pase cuyo paso no tiene firmantes (todos inactivos) no se marca y se intenta otra vez después
+        $otro = $this->pase($director, $gerente, ['recordar' => '4', 'recordar_unidad' => 'horas']);
+        User::whereKey($director->id)->update(['activo' => false]);
+        User::where('empresa_id', $this->empresa->id)->update(['activo' => false]);
+        $this->travel(5)->hours();
+        $this->enEmpresa(function () use ($otro) {
+            $paso = app(CircuitoPasesSalida::class)->actual($otro->fresh(['aprobaciones']));
+            $this->assertFalse(app(EsperaPasesSalida::class)->recordar($otro->fresh(), $paso, 5));
+            $this->assertNull($paso->fresh()->recordatorio_en);
+        });
     }
 
     public function test_tiempos_de_espera_invalidos_se_explican(): void

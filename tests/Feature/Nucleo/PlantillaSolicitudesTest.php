@@ -197,6 +197,15 @@ class PlantillaSolicitudesTest extends TestCase
 
         $this->actingAs($usuario)->post('/pases-salida', $this->datosPase($alguien))
             ->assertSessionHasErrors(['colaborador_id' => 'Tu usuario no está vinculado a un colaborador: pide a tu administrador que lo vincule en Usuarios para poder solicitar pases.']);
+        // Sin elegir a nadie (no puede buscar colaboradores) recibe el mismo aviso, no «Solicitante no válido»
+        $this->actingAs($usuario)->post('/pases-salida', ['colaborador_id' => ''] + $this->datosPase($alguien))
+            ->assertSessionHasErrors(['colaborador_id' => 'Tu usuario no está vinculado a un colaborador: pide a tu administrador que lo vincule en Usuarios para poder solicitar pases.']);
+        // Y lo ve en el formulario desde que lo abre
+        $this->actingAs($usuario)->get('/pases-salida')->assertOk()
+            ->assertSee('Tu usuario no está vinculado a un colaborador: pide a tu administrador que lo vincule en Usuarios para poder solicitar pases.');
+        // Ya vinculado, el aviso desaparece
+        $usuario->forceFill(['colaborador_id' => $alguien->id])->save();
+        $this->actingAs($usuario)->get('/pases-salida')->assertOk()->assertDontSee('Tu usuario no está vinculado a un colaborador');
     }
 
     // ---------------------------------------------------- Jefe de departamento

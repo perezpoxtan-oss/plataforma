@@ -777,3 +777,7 @@ Route::post('/contratar', [PlanesController::class, 'guardar'])->middleware('thr
 // Reservada para avisos de pago de una pasarela en línea: APAGADA (404) mientras config('comercial.webhooks_habilitados') sea falso
 Route::post('/pagos/webhook/{pasarela}', PagoWebhookController::class)->where('pasarela', '[a-z0-9_]{2,30}')->middleware('throttle:60,1')->name('pagos.webhook');
 // Fin Público: página de planes
+
+// Dirección que no existe: el 404 pasa por la sesión para saber si hay alguien dentro
+// y ofrecer «Ir al inicio», igual que un registro que no existe dentro de una pantalla
+Route::fallback(fn () => abort(404));

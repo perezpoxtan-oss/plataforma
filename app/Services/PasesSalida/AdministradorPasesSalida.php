@@ -1341,6 +1341,10 @@ class AdministradorPasesSalida
      */
     private function validar(User $actor, array $entrada): array
     {
+        // Rol Solicitante sin colaborador vinculado: el aviso claro va primero (aunque no haya elegido a nadie)
+        if ($this->soloASuNombre($actor) && ($actor->getAttributes()['colaborador_id'] ?? null) === null) {
+            throw ValidationException::withMessages(['colaborador_id' => 'Tu usuario no está vinculado a un colaborador: pide a tu administrador que lo vincule en Usuarios para poder solicitar pases.']);
+        }
         // Renglones vacíos (sin "Equipo") se ignoran, como en SEGCAT
         $articulos = collect(is_array($entrada['articulos'] ?? null) ? $entrada['articulos'] : [])
             ->filter(fn ($a) => is_array($a) && trim((string) ($a['equipo'] ?? '')) !== '')

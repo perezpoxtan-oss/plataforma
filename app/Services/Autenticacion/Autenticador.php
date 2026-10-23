@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Hash;
  *
  * Reglas (iguales a SEGCAT):
  *  - Solo cuentas activas de empresas activas (o el Super Administrador).
+ *  - Una cuenta dada de baja con su contraseña correcta recibe «Tu cuenta no
+ *    está activa»; con la contraseña incorrecta responde igual que una cuenta
+ *    que no existe (no revela qué cuentas existen).
  *  - N intentos fallidos seguidos bloquean la cuenta M minutos.
  *  - Un acceso correcto reinicia el contador.
  *  - Al bloquear una cuenta real se avisa (campana y correo) a quien
@@ -38,7 +41,7 @@ class Autenticador
             ->first();
 
         if ($usuario === null) {
-            return $this->falloSinCuenta($identificador, $contrasena);
+            return $this->falloSinCuenta($identificador, $contrasena, $this->inactiva($identificador));
         }
 
         if ($usuario->estaBloqueado()) {
@@ -72,7 +75,7 @@ class Autenticador
      * una cuenta real, incluido el bloqueo tras los mismos intentos, para que
      * el mensaje "cuenta bloqueada" no revele qué cuentas existen.
      */
-    private function falloSinCuenta(string $identificador, string $contrasena): ResultadoAcceso
+    private function falloSinCuenta(string $identificador, string $contrasena, ?User $inactiva = null): ResultadoAcceso
     {
         $llave = 'acceso-cuenta:'.hash('sha256', mb_strtolower($identificador));
         $maximo = (int) config('plataforma.sesion.max_intentos');
@@ -83,10 +86,14 @@ class Autenticador
             return ResultadoAcceso::bloqueado((int) ceil(($hasta - now()->getTimestamp()) / 60));
         }
 
-        // Hash falso con el mismo costo que los reales: el tiempo de respuesta no
-        // revela si la cuenta existe
+        // Cuenta dada de baja: con su contraseña correcta se le dice que no está activa.
+        // Una sola comprobación de contraseña en cualquier caso (el tiempo de respuesta
+        // no revela si la cuenta existe); hash falso con el mismo costo que los reales
         $coste = max(4, min(31, (int) config('hashing.bcrypt.rounds', 12)));
-        Hash::check($contrasena, sprintf('$2y$%02d$', $coste).str_repeat('a', 53));
+        $correcta = Hash::check($contrasena, $inactiva?->password ?: sprintf('$2y$%02d$', $coste).str_repeat('a', 53));
+        if ($inactiva !== null && $correcta) {
+            return ResultadoAcceso::inactiva();
+        }
 
         // Igual que en una cuenta real: el contador no se reinicia solo con el tiempo
         // (aquí se conserva un día) y al bloquear vuelve a cero
@@ -101,6 +108,15 @@ class Autenticador
         }
 
         return ResultadoAcceso::credenciales();
+    }
+
+    /** Cuenta dada de baja con ese usuario o correo (solo si no hay una activa). */
+    private function inactiva(string $identificador): ?User
+    {
+        return User::query()
+            ->where(fn ($q) => $q->where('email', $identificador)->orWhere('username', $identificador))
+            ->where('activo', false)
+            ->first();
     }
 
     private function registrarFallo(User $usuario, ?string $ip): ResultadoAcceso
