@@ -76,6 +76,8 @@ class ConfiguraTuEmpresaTest extends TestCase
 
         $this->actingAs($admin)->from('/')->put('/configura-tu-empresa', ['visible' => 0])->assertRedirect('/')
             ->assertSessionHas('ok', fn ($m) => str_contains($m, 'Configuración'));
+        // Inicio muestra el aviso verde una vez; después ya no aparece nada de «Configura tu empresa»
+        $this->actingAs($admin)->get('/')->assertSee('Ocultamos «Configura tu empresa» de Inicio.');
         $this->actingAs($admin)->get('/')->assertDontSee('Configura tu empresa');
         $this->assertSame(1, Auditoria::where('evento', 'configuracion.configura_tu_empresa')->count());
 

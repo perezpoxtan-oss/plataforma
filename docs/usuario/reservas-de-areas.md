@@ -114,6 +114,10 @@ En la ficha de la reserva ves sus **Datos** (con **Solicitado por** y su departa
 
 **Qué debes ver:** si cambiaste el área, el día, la hora, las personas, el montaje, los minutos de montaje o desmontaje o los servicios (también sus notas), se vuelve a pedir la aprobación **solo de lo que cambió** (por ejemplo, si cambias la nota del coffee break, solo ese departamento aprueba de nuevo). Si solo cambiaste el nombre o las notas para quien aprueba, sigue confirmada.
 
+Si guardas **sin cambiar nada**, el aviso dice «Cambios guardados: la reserva sigue confirmada.» y nadie recibe avisos nuevos.
+
+Si un servicio que pediste se **dio de baja** después en el catálogo, sigue marcado en tu reserva con la nota «Dado de baja: se conserva en esta reserva». Se queda tal como lo pediste mientras no lo desmarques; si lo desmarcas, ya no podrás volver a pedirlo.
+
 Solo se modifica antes de que empiece.
 
 ## Cómo cancelar una reserva

@@ -36,7 +36,7 @@ resumen: Dar el visto bueno a una reserva como responsable del área o de los se
 
 ![Rechazar o pedir un cambio](img/reservas/dialogo-rechazar.png)
 
-**Qué debes ver:** el aviso verde con el resultado. Quien reservó recibe tu motivo en su campana.
+**Qué debes ver:** el aviso verde con el resultado. Quien reservó recibe tu motivo en su campana. Si elegiste **No se puede**, en el bloque **Aprobaciones** de la ficha tu parte queda **Rechazada** y las que seguían esperando (por ejemplo, la del área o la de Cocina) quedan como **Ya no aplica**, sin botones.
 
 ## Cómo ajustar el costo de un evento
 

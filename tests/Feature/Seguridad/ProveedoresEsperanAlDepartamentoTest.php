@@ -201,7 +201,7 @@ class ProveedoresEsperanAlDepartamentoTest extends TestCase
         $this->assertSame('pendiente', $this->ultimo()->estado);
 
         $this->excepcion($acceso, 'sin_responsable', 'Lo citó el gerente')
-            ->assertSessionHas('ok', 'Autorizado por excepción — LUIS CHI ya puede ingresar (El departamento no tiene responsable en esta sede: Lo citó el gerente). Avisamos al responsable del departamento.');
+            ->assertSessionHas('ok', 'Autorizado por excepción — LUIS CHI ya puede ingresar (El departamento no tiene responsable en esta sede: Lo citó el gerente).'); // sin responsable: no se dice «Avisamos al responsable…»
         $acceso->refresh();
         $this->assertSame(['en_sitio', Acceso::POR_EXCEPCION, $this->supervisor->id, 'El departamento no tiene responsable en esta sede: Lo citó el gerente'],
             [$acceso->estado, $acceso->autorizacion, $acceso->autorizado_por, $acceso->motivo_excepcion]);

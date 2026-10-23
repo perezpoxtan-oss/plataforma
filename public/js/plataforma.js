@@ -2879,7 +2879,7 @@ document.addEventListener('click', function (e) {
             e.preventDefault();
         });
         ['pointerup', 'pointercancel'].forEach(function (ev) {
-            lienzo.addEventListener(ev, function () { if (dibujando) { dibujando = false; exportar(); caja.classList.remove('falta'); } });
+            lienzo.addEventListener(ev, function () { if (dibujando) { dibujando = false; exportar(); marcarFalta(caja, false); } });
         });
 
         caja.limpiarFirma = function () {
@@ -2910,15 +2910,23 @@ document.addEventListener('click', function (e) {
         if (!faltan.length) { return; }
         e.preventDefault();
         e.stopImmediatePropagation();
-        faltan.forEach(function (v) { v.closest('[data-firma]').classList.add('falta'); });
+        faltan.forEach(function (v) { marcarFalta(v.closest('[data-firma]'), true); });
         faltan[0].closest('[data-firma]').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, true);
 
     // Al cerrar el diálogo que la contiene, la firma se borra
     document.addEventListener('close', function (e) {
         if (!(e.target instanceof HTMLDialogElement)) { return; }
-        e.target.querySelectorAll('[data-firma]').forEach(function (caja) { preparar(caja); caja.limpiarFirma(); caja.classList.remove('falta'); });
+        e.target.querySelectorAll('[data-firma]').forEach(function (caja) { preparar(caja); caja.limpiarFirma(); marcarFalta(caja, false); });
     }, true);
+
+    // Recuadro en rojo y, si la pantalla lo da, el texto de qué falta (componentes.firma, parámetro «falta»)
+    function marcarFalta(caja, si) {
+        if (!caja) { return; }
+        caja.classList.toggle('falta', si);
+        var texto = caja.querySelector('[data-firma-falta]');
+        if (texto) { texto.hidden = !si; }
+    }
 
     window.Firma = { preparar: preparar };
 })();

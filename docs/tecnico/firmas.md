@@ -9,7 +9,7 @@ Las usan Responsivas, Préstamo de llaves, Lost & Found, Pases de salida, Bitác
 ```
 
 - **Captura:** se firma con el dedo, un lápiz o el mouse (pointer events). Al soltar, la imagen pasa al campo oculto como JPEG con fondo blanco; pesa pocos kilobytes. Al enviar, viaja como archivo (ver «Envío como archivo»).
-- **Firma obligatoria:** si está vacía, el formulario no se envía y el recuadro se pone en rojo.
+- **Firma obligatoria:** si está vacía, el formulario no se envía y el recuadro se pone en rojo. Con el parámetro opcional `falta` (texto), además aparece ese mensaje bajo el recuadro (`[data-firma-falta]`, `role=alert`); lo usan las firmas del voucher de baja («Falta la firma de Seguridad: firma en el recuadro o elige «Firma física».»). Sin el parámetro todo queda igual (Accidentes no lo usa).
 - **Limpiar:** el botón **Limpiar firma** borra el recuadro.
 - **Al cerrar el `<dialog>`** que contiene la firma, se borra.
 - **Recuadros que aparecen después** (filas dinámicas): se preparan solos al tocarlos, o con `window.Firma.preparar(caja)`.

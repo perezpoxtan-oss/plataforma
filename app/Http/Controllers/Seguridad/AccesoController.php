@@ -152,9 +152,11 @@ class AccesoController extends Controller
         Gate::authorize('accesos.aprobar');
 
         return $this->mover($request, $acceso, 'accesos.aprobar', function (Acceso $a) use ($request) {
-            $motivo = app(Excepciones::class)->autorizar($request->user(), $a, $request->input('motivo_excepcion'), $request->input('detalle_excepcion'));
+            $excepciones = app(Excepciones::class);
+            $motivo = $excepciones->autorizar($request->user(), $a, $request->input('motivo_excepcion'), $request->input('detalle_excepcion'));
 
-            return "Autorizado por excepción — {$a->nombre} ya puede ingresar ({$motivo}).".($a->departamento_id ? ' Avisamos al responsable del departamento.' : '');
+            // Solo si de verdad se avisó a alguien (un departamento sin responsable no tiene a quién)
+            return "Autorizado por excepción — {$a->nombre} ya puede ingresar ({$motivo}).".($excepciones->seAviso ? ' Avisamos al responsable del departamento.' : '');
         }, 'pendientes');
     }
 

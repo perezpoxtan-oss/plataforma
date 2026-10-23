@@ -473,7 +473,13 @@ class AdministradorResponsivas
                     if ($regreso === null || $regreso['nivel'] === null) {
                         continue;
                     }
-                    $n += app(CampanaActivos::class)->turnoSinRegresar($r, $regreso['nivel'], $regreso['equipos'], $regreso['debia']) > 0 ? 1 : 0;
+                    // La caseta siempre se entera (aunque ya haya pasado directo a rojo); en rojo, además, el supervisor
+                    $campana = app(CampanaActivos::class);
+                    $avisados = $campana->turnoSinRegresar($r, 'ambar', $regreso['equipos'], $regreso['debia']);
+                    if ($regreso['nivel'] === 'rojo') {
+                        $avisados += $campana->turnoSinRegresar($r, 'rojo', $regreso['equipos'], $regreso['debia']);
+                    }
+                    $n += $avisados > 0 ? 1 : 0;
                 }
 
                 return $n;

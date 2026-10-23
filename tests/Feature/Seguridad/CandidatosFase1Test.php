@@ -376,7 +376,15 @@ class CandidatosFase1Test extends TestCase
         $this->caseta()->assertSessionHas('ok');
         $a = $this->enEmpresa(fn () => Autorizacion::sole());
         $this->assertNotContains($director->id, $a->avisados, 'El «Que pase» lo da Recursos Humanos');
-        $this->actingAs($director)->get('/rh/recepcion')->assertOk();
+        // Ve el panel con la fila, pero sin «Que pase», «Que espere» ni «Atender»
+        $this->actingAs($director)->get('/rh/recepcion')->assertOk()->assertSee('Karla Pérez Uc')
+            ->assertDontSee('Que pase</button>', false)->assertDontSee('Que espere / No puede pasar')->assertDontSee('Atender</button>', false);
+        $lista = $this->actingAs($director)->getJson('/rh/recepcion/datos')->assertOk()->json('html');
+        $this->assertStringContainsString('Karla Pérez Uc', $lista);
+        $this->assertStringNotContainsString('autorizaciones/'.$a->id.'/responder', $lista);
+        // RR. HH. sí los ve
+        $this->actingAs($this->rh)->get('/rh/recepcion')->assertSee('Que espere / No puede pasar');
+        // Y si lo intenta por la dirección no cambia nada (fuera de su alcance)
         $this->assertContains($this->actingAs($director)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase'])->status(), [403, 404]);
         $this->assertSame('pendiente', $a->fresh()->estado);
     }

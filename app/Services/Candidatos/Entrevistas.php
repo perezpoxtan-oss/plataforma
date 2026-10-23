@@ -132,7 +132,9 @@ class Entrevistas
     {
         return $this->limitar(Postulacion::query(), $usuario)->where('postulaciones.etapa', 'canalizado')
             ->whereIn('postulaciones.entrevistador_id', $this->titularesDe($usuario))
-            ->orderByRaw('CASE WHEN postulaciones.cita_ahora = 1 THEN 0 ELSE 1 END')->orderBy('postulaciones.cita_en')->orderBy('postulaciones.id');
+            ->orderByRaw('CASE WHEN postulaciones.cita_ahora = 1 THEN 0 ELSE 1 END')
+            // Las que no tienen cita, al final (en MySQL los nulos van primero)
+            ->orderByRaw('CASE WHEN postulaciones.cita_en IS NULL THEN 1 ELSE 0 END')->orderBy('postulaciones.cita_en')->orderBy('postulaciones.id');
     }
 
     /**

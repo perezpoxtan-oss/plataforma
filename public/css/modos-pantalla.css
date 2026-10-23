@@ -1492,3 +1492,4 @@ html.modo-noche .btn-accion-lector.principal { background: #198754; border-color
 html.modo-sol .recibir-llave-escaneo, html.modo-sol .reloj-llave, html.modo-sol .reloj-turno, html.modo-sol .acuse-casilla, html.modo-sol .acciones-lector-estado, html.modo-sol .btn-accion-lector { background: #fff; color: #000; border: 2px solid #000; }
 html.modo-sol .btn-accion-lector.principal { background: #000; color: #fff; }
 /* Fin Mejoras activos */
+html.modo-noche .firma-falta-texto { color: #fca5a5; }

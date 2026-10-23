@@ -60,7 +60,7 @@ Un selector "Empresa de trabajo" (`EmpresaDeTrabajo`, sesión `empresa_activa_id
 | Jefe de departamento | 45 | `pases_salida` ver/aprobar/imprimir (sede) y crear (propios); `autorizaciones` ver/responder (sede); `vacantes` ver (sede) y crear (propios); `procedimientos.ver` (sede) |
 | Supervisor | 50 | Seguridad y Reportes sin eliminar; su sede |
 | Agente | 60 | **Operación**: ver, crear, editar, imprimir y firmar. **Padrones**: solo ver. Su sede |
-| Solicitante | 70 | `pases_salida` ver y crear (propios); `procedimientos.ver` (sede) |
+| Solicitante | 70 | `pases_salida` ver y crear (propios); `procedimientos.ver` (sede); `reservas` ver, crear, imprimir (propios, ver [reservas.md](reservas.md)) |
 
 - Padrones u Operación se decide por el **menú** del módulo (`modulos.menu_id`, o el de su padre en submódulos), no por nombres: `RolesPlantillaSeeder::esPadron()`. Por eso `MenuSeeder` corre antes que `RolesPlantillaSeeder` en `DatabaseSeeder`.
 - **Importar desde Excel** (`importar`, en `colaboradores`, `visitantes`, `proveedores`, `vehiculos` y `espacios`): cada plantilla la recibe donde tiene `crear`, con el mismo alcance (`RolesPlantillaSeeder::importarComoCrear`); para bases existentes, la migración `2026_11_03_000200_accion_importar_en_padrones` hace lo mismo con los roles que ya existen (su `down()` la quita). Ver `docs/tecnico/importacion.md`.
@@ -89,6 +89,7 @@ SEGCAT tiene "Asistente de Seguridad - Apoyo de Gestión Local" en el nivel 40, 
 
 Personal fuera de la caseta que solo levanta solicitudes (Solicitante) y su jefe, que las aprueba (Jefe de departamento). Reglas en `RolesPlantillaSeeder::SOLICITUDES` (`reglaSolicitudes()`), más sus renglones en `PROCEDIMIENTOS`.
 
+- **Sin colaborador vinculado** (`AdministradorPasesSalida::soloASuNombre()` y `users.colaborador_id` nulo): el formulario de Nuevo Pase lo dice al abrirse (`formulario.sinVinculo`) y al guardar el servidor responde primero «Tu usuario no está vinculado a un colaborador: pide a tu administrador que lo vincule en Usuarios para poder solicitar pases.», antes de cualquier otra validación.
 - **Propios solo donde el servicio filtra por `creado_por`.** Revisado contra `app/Services`: `AdministradorPasesSalida::limitar()` y `CircuitoPasesSalida::tienePermisoEnSede()` sí; `AdministradorProcedimientos::limitar()` también, pero con «propios» solo vería los procedimientos que escribió, así que `procedimientos.ver` va con alcance de sede (lo publicado de su sede; el acuse sigue `pendientesDe()`). `AdministradorVacantes::limitar()` no filtra por propios: el Jefe ve por sede y quien crea sin `vacantes.editar` ve además sus borradores (`creado_por`). `Autorizaciones` no usa alcance propios (decide por `DepartamentoResponsable`), por eso no se da al Solicitante. No hay módulo de visitas pre-registradas.
 - **Solo a su nombre:** quien no tiene `colaboradores.ver` ni `colaboradores.provisional` solo registra pases cuyo solicitante es el colaborador vinculado a su usuario (`AdministradorPasesSalida::soloASuNombre()`); el formulario lo trae ya elegido (`PaseSalidaController::solicitanteFijo()`).
 - **Quién firma:** el paso «Jefe de Departamento» del circuito (departamento = `solicitante`) lo firma quien tiene `pases_salida.aprobar` en la sede de origen y cuyo colaborador vinculado es del departamento del solicitante (`CircuitoPasesSalida::cumpleRegla()`).

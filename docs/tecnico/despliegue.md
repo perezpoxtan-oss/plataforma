@@ -119,6 +119,42 @@ Revisados en la auditoría del 2026-10-06 (`docs/seguridad/auditoria-2026-10-06-
 - **Regreso automático.** Al regresar a la versión anterior también se restauran sus archivos públicos (`.htaccess`, css, js).
 - **`.env`.** Se escribe con permisos `600` desde el inicio y se conservan solo los 3 respaldos más recientes (`.env.respaldo.*`).
 
+## Versión de PHP (8.4 y 8.5)
+
+La plataforma funciona en **PHP 8.4.1 o mayor**; está probada en **8.4 y 8.5**. La CI corre la suite completa (incluido migrar → revertir → migrar en MariaDB) en las dos versiones, y falla si el código propio produce avisos de deprecación (`.github/scripts/revisar-deprecaciones.php`; los de librerías salen como aviso con el nombre del paquete). El paquete y `composer.lock` se arman con la versión más baja en uso (8.4) para que nunca entre una librería que no corra en Producción; se pasan a 8.5 cuando QA y Producción ya estén en 8.5.
+
+> **Por qué cambiar.** El hospedaje recomienda pasar a 8.5 por la falla «PHP2Shell» (CVE-2026-109618 y CVE-2026-109619, según su aviso). Están corregidas en **8.5.12, 8.4.27, 8.3.36 y 8.2.35**: lo importante es estar en una de esas versiones o una posterior de su rama. Confirma el número exacto en <https://www.php.net/ChangeLog-8.php>. Seguir en 8.4 con 8.4.27+ también queda corregido; 8.5 da más tiempo de soporte.
+
+### Qué PHP usa cada parte
+
+| Parte | Dónde se elige | Nota |
+|---|---|---|
+| Sitio web (lo que ven los usuarios) | cPanel → **MultiPHP Manager** (por dominio) o **Select PHP Version** (CloudLinux; suele aplicar a toda la cuenta) | MultiPHP guarda la versión en un bloque `# php -- BEGIN cPanel-generated handler` del `.htaccess` del subdominio. `desplegar.sh` **conserva ese bloque** en cada instalación (antes lo borraba al copiar el `.htaccess` de la versión). |
+| Cron (`desplegar.sh`: migraciones, cachés, tareas programadas) | El script la busca solo | 1) `~/.php_cli_path` si existe y es 8.4.1+; 2) la misma versión que el bloque de MultiPHP del sitio (`ea-php85` → `/opt/alt/php85/usr/bin/php` o `/opt/cpanel/ea-php85/root/usr/bin/php`); 3) 8.4, luego 8.5, luego `/usr/local/bin/php`. La versión usada sale en `despliegue_<amb>_estado.txt` («PHP del cron») y en `despliegue.log` al instalar. |
+
+Si existe `~/.php_cli_path`, **fija** la versión del cron: al cambiar de versión, edita la ruta o borra el archivo para que el script la detecte.
+
+### Pasos para el dueño: primero QA, luego Producción
+
+1. **Antes de empezar:** confirma que el PR que habilitó 8.5 está en `develop` (QA) y que la CI salió verde en «Pruebas (PHP 8.5 + MariaDB 11.4)». Para Producción, que ya viaja en una versión `vX.Y.Z` instalada.
+2. **QA a 8.5.** En cPanel → **MultiPHP Manager**, marca solo `qa.vdcp.com.mx` y elige **PHP 8.5** (en Neubox puede aparecer como `ea-php85` o `alt-php85`) → *Apply*. Si solo existe **Select PHP Version** (CloudLinux), ten en cuenta que cambia toda la cuenta (QA y Producción a la vez): hazlo en un horario tranquilo y sigue igual los pasos de verificación en ambos sitios.
+3. **Extensiones y ajustes de 8.5.** Las extensiones y los valores de `php.ini` se guardan **por versión**: en **Select PHP Version → Extensions** (o *MultiPHP INI Editor*) revisa que en 8.5 estén activas `bcmath, ctype, curl, dom, exif, fileinfo, gd, intl, mbstring, pdo_mysql, sodium, xml, zip` (y `opcache`), y copia los valores que tenías en 8.4 (`memory_limit`, `upload_max_filesize`, `post_max_size`, `max_execution_time`).
+4. **Verificar QA** (10 minutos):
+   - `https://qa.vdcp.com.mx/up` responde «OK» y puedes iniciar sesión con un usuario demo; recorre 3 o 4 pantallas (Accesos, Pases de salida, Reservas, una impresión con QR) y sube una foto.
+   - Espera la siguiente corrida del cron (5 min) y abre `despliegue_qa_estado.txt` en el Administrador de archivos: debe decir `OK` y «PHP del cron: 8.5.x». Si dice 8.4, edita o borra `~/.php_cli_path`.
+   - En `~/apps/plataforma-qa/shared/storage/logs/` no deben aparecer errores nuevos.
+   - Deja QA así uno o dos días de uso normal.
+5. **Producción a 8.5.** Igual que el paso 2, ahora con `app.vdcp.com.mx`, y repite los pasos 3 y 4 (`despliegue_prod_estado.txt`). Hazlo fuera del horario de mayor uso.
+
+### Regresar a 8.4 si algo falla
+
+1. cPanel → **MultiPHP Manager** (o **Select PHP Version**) → elige de nuevo **PHP 8.4** para el sitio afectado → *Apply*. El cambio es inmediato; no hay que reinstalar nada: el mismo código y la misma base funcionan en 8.4 y 8.5.
+2. Si escribiste `~/.php_cli_path` con la ruta de 8.5, regrésala a `/opt/alt/php84/usr/bin/php` (o bórrala).
+3. Comprueba `/up`, inicia sesión y revisa en el siguiente `despliegue_<amb>_estado.txt` que diga «PHP del cron: 8.4.x».
+4. Avisa qué pantalla falló (y la hora) para revisar `storage/logs/` y corregirlo antes de volver a intentar.
+
+Con 8.4, asegúrate de estar en **8.4.27 o mayor** (corrección de PHP2Shell); si el hospedaje aún no la ofrece, pídela a soporte de Neubox.
+
 ## Velocidad
 
 Para saber dónde se va el tiempo de una pantalla lenta (espera del hospedaje, arranque, base de datos o código), ver [velocidad.md](velocidad.md): el Super Administrador lo ve en F12 → Network → Timing y las visitas lentas quedan en `shared/storage/logs/lentas-AAAA-MM-DD.log`.

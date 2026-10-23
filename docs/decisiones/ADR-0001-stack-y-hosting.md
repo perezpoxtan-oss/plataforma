@@ -9,7 +9,7 @@ El sistema actual (SEGCAT) es PHP sin framework. Se migra en modo espejo, con AP
 ## Decisión
 - Laravel 13 sobre PHP 8.4.
 - Código fuera de la carpeta pública: `/home/vdcpcomm/apps/plataforma-prod`; el subdominio `app.vdcp.com.mx` solo contiene los archivos públicos y su `index.php` apunta al proyecto. La ruta pública se lee de `.public_path` en `bootstrap/app.php`.
-- PHP de línea de comandos: `/opt/alt/php84/usr/bin/php` (`/usr/bin/php` es php-cgi).
+- PHP de línea de comandos: `/opt/alt/php84/usr/bin/php` (`/usr/bin/php` es php-cgi). Actualización 2026-10-22: compatible con PHP 8.5; `desplegar.sh` usa la versión que cPanel asigna al sitio (ver `docs/tecnico/despliegue.md`, «Versión de PHP»).
 - El hosting deshabilita `proc_open`, `escapeshellarg`, `symlink` y otras; los comandos de cron usan `-d disable_functions=`.
 - Todas las tablas en InnoDB (`DB_ENGINE`, por defecto `InnoDB`): el MariaDB del hosting crea MyISAM si no se indica.
 - Cron mínimo recomendado: cada 5 minutos. Las tareas programadas se ejecutan dentro del proceso (sin depender de `proc_open`).

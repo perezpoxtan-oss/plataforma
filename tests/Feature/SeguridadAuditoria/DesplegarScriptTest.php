@@ -262,11 +262,68 @@ class DesplegarScriptTest extends TestCase
         $this->assertStringContainsString("readlink('".$this->home.'/apps/plataforma-qa/actual', $this->leer('qa.vdcp.com.mx/index.php'));
     }
 
+    public function test_conserva_la_version_de_php_que_cpanel_asigna_al_sitio(): void
+    {
+        // PHP 8.5: MultiPHP Manager escribe la versión en el .htaccess del sitio;
+        // antes cada instalación lo reemplazaba y el sitio volvía a la versión por omisión
+        $bloque = "# php -- BEGIN cPanel-generated handler, do not edit\n# Set the “ea-php85” package as the default “PHP” programming language.\n<IfModule mime_module>\n  AddHandler application/x-httpd-ea-php85 .php .php8 .phtml\n</IfModule>\n# php -- END cPanel-generated handler, do not edit";
+        $this->escribir('qa.vdcp.com.mx/.htaccess', "# viejo\n\n".$bloque."\n", 0644);
+        $this->publicar('qa', 801, $this->paquete('nueva'));
+        $this->escribir('env_qa.txt', $this->envQa());
+        $this->desplegar('qa');
+
+        $this->publicar('qa', 802, $this->paquete('otra'));
+        $this->desplegar('qa');
+
+        $htaccess = $this->leer('qa.vdcp.com.mx/.htaccess');
+        $this->assertSame('qa-802', trim($this->leer('apps/plataforma-qa/.release_actual')));
+        $this->assertStringContainsString('# otra', $htaccess);
+        $this->assertStringNotContainsString('# viejo', $htaccess);
+        $this->assertStringContainsString($bloque, $htaccess);
+        $this->assertSame(1, substr_count($htaccess, 'BEGIN cPanel-generated handler'));
+    }
+
+    public function test_php_de_linea_de_comandos_sigue_la_version_del_sitio(): void
+    {
+        // Sin .php_cli_path válido: misma versión que el sitio (ea-php85); sin bloque de cPanel, 8.4
+        $this->escribir('.php_cli_path', $this->home.'/no-existe/php');
+        $this->phpFalso('raiz/opt/alt/php84/usr/bin/php', 'alt-php84');
+        $this->phpFalso('raiz/opt/cpanel/ea-php85/root/usr/bin/php', 'ea-php85');
+        $extra = ['PLATAFORMA_RAIZ_PHP' => $this->home.'/raiz'];
+
+        $this->publicar('qa', 901, $this->paquete());
+        $this->escribir('env_qa.txt', $this->envQa());
+        $this->desplegar('qa', extra: $extra);
+        $this->assertSame("alt-php84\n", array_unique(file($this->home.'/php_usado.log'))[0]);
+
+        unlink($this->home.'/php_usado.log');
+        file_put_contents($this->home.'/qa.vdcp.com.mx/.htaccess', "\n# php -- BEGIN cPanel-generated handler, do not edit\nAddHandler application/x-httpd-ea-php85 .php\n# php -- END cPanel-generated handler, do not edit\n", FILE_APPEND);
+        $this->publicar('qa', 902, $this->paquete());
+        $this->desplegar('qa', extra: $extra);
+
+        $this->assertSame('qa-902', trim($this->leer('apps/plataforma-qa/.release_actual')));
+        $this->assertSame(["ea-php85\n"], array_values(array_unique(file($this->home.'/php_usado.log'))));
+    }
+
+    public function test_sin_php_8_4_no_instala(): void
+    {
+        // PHP que no es 8.4.1+ (p. ej. 8.3) no sirve: las librerías piden 8.4.1
+        $this->escribir('bin/php83', "#!/bin/bash\nexit 1\n", 0700);
+        $this->escribir('.php_cli_path', $this->home.'/bin/php83');
+        $this->publicar('qa', 903, $this->paquete());
+        $this->escribir('env_qa.txt', $this->envQa());
+
+        $this->desplegar('qa', extra: ['PLATAFORMA_RAIZ_PHP' => $this->home.'/raiz']);
+
+        $this->assertFileDoesNotExist($this->home.'/apps/plataforma-qa/.release_actual');
+        $this->assertStringContainsString('No se encontro PHP 8.4.1+', $this->leer('despliegue_qa_estado.txt'));
+    }
+
     // ---------------------------------------------------------------- auxiliares
 
-    private function desplegar(string $ambiente, ?string $urlSitio = null): string
+    private function desplegar(string $ambiente, ?string $urlSitio = null, array $extra = []): string
     {
-        $env = [
+        $env = $extra + [
             'HOME' => $this->home,
             'PATH' => $this->home.'/bin:'.getenv('PATH'),
             'PLATAFORMA_API' => 'file://'.$this->home.'/api',
@@ -279,6 +336,15 @@ class DesplegarScriptTest extends TestCase
         proc_close($proceso);
 
         return $salida;
+    }
+
+    /**
+     * PHP de línea de comandos simulado en una ruta del servidor: anota su nombre
+     * cuando corre artisan y se comporta como bin/php.
+     */
+    private function phpFalso(string $ruta, string $nombre): void
+    {
+        $this->escribir($ruta, "#!/bin/bash\ncase \" \$* \" in *' artisan '*) echo ".escapeshellarg($nombre)." >> \"\$HOME/php_usado.log\" ;; esac\nexec \"\$HOME/bin/php\" \"\$@\"\n", 0700);
     }
 
     /**
