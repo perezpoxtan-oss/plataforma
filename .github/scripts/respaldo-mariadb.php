@@ -89,7 +89,7 @@ echo "Respaldo con formato anterior importado en MariaDB.\n";
 // Mantenimiento de la base (docs/tecnico/integridad-bd.md): la base restaurada conserva los CHECK y las llaves restrict
 $contar = fn (string $base, string $sql) => (int) $root->query(str_replace('{base}', $base, $sql))->fetchColumn();
 $checks = "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema = '{base}' AND constraint_type = 'CHECK' AND constraint_name LIKE 'chk\\_%'";
-$restrict = "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema = '{base}' AND delete_rule = 'RESTRICT'";
+$restrict = "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema = '{base}' AND delete_rule IN ('RESTRICT', 'NO ACTION')";
 $origen = env('DB_DATABASE');
 if ($contar($origen, $checks) < 15 || $contar('plataforma_ci_destino', $checks) !== $contar($origen, $checks)) {
     falla('la base restaurada no tiene los mismos CHECK ('.$contar('plataforma_ci_destino', $checks).' de '.$contar($origen, $checks).')');

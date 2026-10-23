@@ -39,8 +39,17 @@ final class Restricciones
     public static function accionAlBorrar(string $tabla, string $columna): ?string
     {
         $fk = self::foranea($tabla, $columna);
+        if ($fk === null) {
+            return null;
+        }
+        $accion = self::normalizarAccion((string) $fk['on_delete']);
+        // InnoDB trata RESTRICT y NO ACTION igual (revisa al instante) y MariaDB
+        // informa «ON DELETE RESTRICT» como NO ACTION en information_schema
+        if ($accion === 'no action' && in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            return 'restrict';
+        }
 
-        return $fk === null ? null : self::normalizarAccion((string) $fk['on_delete']);
+        return $accion;
     }
 
     /**
