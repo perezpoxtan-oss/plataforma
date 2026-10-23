@@ -76,7 +76,7 @@ Bajo «## [Sin publicar]»:
   - **Firmas del voucher de baja** (Gafetes, Llaves, Equipos, Responsivas): con «Firma digital» y sin firmar ahora aparece «Falta la firma de Seguridad: firma en el recuadro o elige «Firma física».» bajo el recuadro (antes solo se ponía rojo).
   - **Llaves fuera de tiempo y equipos de turno sin regresar**: si ya estaban en rojo la primera vez, la caseta también recibe su aviso; el rojo de los equipos de turno llega al supervisor (y jefes), como dice Configuración.
   - **Mis pendientes**: «Entrevistas por evaluar · próxima:» ya no queda vacío cuando la primera entrevista no tiene cita.
-  - **Dirección que no existe**: el error 404 ofrece «Ir al inicio» con la sesión abierta, igual que dentro de las pantallas.
+  - **Páginas de error**: el botón dice siempre «Ir al inicio» (una dirección que no existe decía «Volver a la plataforma»).
   - **Solicitante sin colaborador vinculado**: Nuevo Pase le dice desde que lo abre (y al guardar) «Tu usuario no está vinculado a un colaborador…», en lugar de «Falta elegir a la persona».
   - **Autorizar por excepción** ya no dice «Avisamos al responsable del departamento.» cuando el departamento no tiene responsable.
   - Sin migraciones. Pruebas en `AccesosTest`, `MejorasIncidentesTest`, `CandidatosFase1Test`, `CandidatosFase2Test`, `CandidatosYAutorizacionesTest`, `InicioSesionTest`, `DosPasosTest`, `MejorasPadronesTest`, `MejorasActivosTest`, `PlantillaSolicitudesTest`, `ProveedoresEsperanAlDepartamentoTest` y `PendientesDireccionTest`. Manual (`inicio-de-sesion.md`, `recepcion-y-autorizaciones.md`, `prestamo-llaves.md`, `responsivas.md`, `pases-salida.md`, `gafetes.md`, `equipos.md`) y documentos técnicos actualizados.

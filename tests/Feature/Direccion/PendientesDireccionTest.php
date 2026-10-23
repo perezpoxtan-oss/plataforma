@@ -15,7 +15,6 @@ use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
 use Tests\TestCase;
@@ -72,19 +71,13 @@ class PendientesDireccionTest extends TestCase
         $this->actingAs($agente)->get('/una-pagina-que-no-existe')->assertNotFound()->assertSee('No encontramos lo que buscas');
     }
 
-    public function test_una_direccion_que_no_existe_pasa_por_la_sesion_y_ofrece_ir_al_inicio(): void
+    public function test_las_paginas_de_error_ofrecen_ir_al_inicio_con_y_sin_sesion(): void
     {
-        // La ruta de respaldo (dentro del grupo web) lee la sesión: con alguien dentro, «Ir al inicio»
-        $ruta = app('router')->getRoutes()->match(Request::create('/algo-que-no-existe'));
-        $this->assertTrue($ruta->isFallback);
-        $this->assertContains('web', $ruta->gatherMiddleware());
+        // Una dirección que no existe se pinta antes de leer la sesión: el botón dice lo mismo que dentro de las pantallas
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
-        $agente->forceFill(['username' => 'agente404', 'password' => 'Secreta123!'])->save();
-        $this->post('/login', ['username' => 'agente404', 'password' => 'Secreta123!'])->assertRedirect();
-        $this->get('/algo-que-no-existe')->assertNotFound()->assertSee('No encontramos lo que buscas')->assertSee('Ir al inicio')->assertDontSee('Volver a la plataforma');
-        // Sin sesión, sigue llevando a la pantalla de acceso
+        $this->actingAs($agente)->get('/algo-que-no-existe')->assertNotFound()->assertSee('Ir al inicio')->assertDontSee('Volver a la plataforma');
         $this->post('/logout');
-        $this->get('/algo-que-no-existe')->assertNotFound()->assertSee('Volver a la plataforma');
+        $this->get('/algo-que-no-existe')->assertNotFound()->assertSee('Ir al inicio')->assertDontSee('Volver a la plataforma');
     }
 
     // ------------------------------------------------------ Bitácora de auditoría
