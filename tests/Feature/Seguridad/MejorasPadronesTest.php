@@ -446,7 +446,8 @@ class MejorasPadronesTest extends TestCase
         $this->assertEqualsCanonicalizing([$this->centro->id, $this->playa->id], $this->enEmpresa(fn () => $lav->sedes()->pluck('sedes.id')->all()));
         $this->actingAs($soloCen)->get('/proveedores')->assertSee('Lavandería Industrial del Sur')->assertDontSee('ya no aparece en tu lista');
 
-        // Fuera de su sede solo se puede AGREGAR su sede: sin pedirla, o pidiendo otra sede, no existe
+        // Fuera de su sede: solo la que él quitó y solo para AGREGAR su sede; cualquier otra por su número no existe
+        $this->actingAs($soloCen)->put("/proveedores/{$otra->id}/sedes", ['sedes' => [$this->centro->id]])->assertNotFound();
         $this->actingAs($soloCen)->put("/proveedores/{$otra->id}/sedes", ['_volver' => 'lista'])->assertNotFound();
         $this->actingAs($soloCen)->put("/proveedores/{$otra->id}/sedes", ['sedes' => [$this->playa->id]])->assertNotFound();
         $this->assertSame([$this->playa->id], $this->enEmpresa(fn () => $otra->sedes()->pluck('sedes.id')->all()));

@@ -33,6 +33,9 @@ class ProveedorController extends Controller
 {
     public const PESTANAS = ['resumen', 'personal', 'flotilla'];
 
+    /** Sesión: empresas que el usuario quitó de su sede y puede volver a agregar (QA PRV-05). */
+    private const QUITADAS = 'proveedores_quitados_de_mi_sede';
+
     /**
      * Presentación de cada categoría, con los textos e íconos de SEGCAT:
      * clave => [ícono, clase de la insignia, insignia, píldora del filtro, opción del formulario].
@@ -217,6 +220,8 @@ class ProveedorController extends Controller
         $destino = $sigueVisible ? $this->volver($request, $modelo) : redirect()->route('proveedores.index');
         if (! $sigueVisible && count($quitada) === 1) {
             $destino->with('volver_a_agregar', ['id' => $modelo->id, 'nombre' => $modelo->nombre, 'sede_id' => $quitada[0]]);
+            // Solo la que él mismo quitó en esta sesión se puede volver a agregar por su número (no se adivinan otras)
+            $request->session()->put(self::QUITADAS, array_values(array_unique([...(array) $request->session()->get(self::QUITADAS, []), (int) $modelo->id])));
         }
 
         return $destino->with('ok', "Sedes de «{$modelo->nombre}» actualizadas.");
@@ -351,14 +356,18 @@ class ProveedorController extends Controller
      * De otra empresa o fuera de las sedes del usuario: 404.
      */
     /**
-     * Empresa que no opera en ninguna sede del usuario: solo se le puede agregar
-     * una de sus sedes (alcance de sede). Activa y no rechazada; si no, 404.
+     * Empresa que ya no opera en ninguna sede del usuario porque él la quitó de
+     * la suya en esta sesión: solo se le puede volver a agregar una de sus
+     * sedes (alcance de sede). Activa y no rechazada; cualquier otra, 404 (por
+     * su número no se llega a empresas de otras sedes; para esas está
+     * «Registrar empresa» con el mismo nombre).
      */
     private function paraAgregarAMiSede(Request $request, int $id): Proveedor
     {
         $mias = $this->proveedores->sedes($request->user(), 'proveedores.editar');
         $pedidas = array_map('intval', (array) $request->input('sedes', []));
-        $modelo = $mias === null || array_intersect($mias, $pedidas) === [] ? null : Proveedor::find($id);
+        $quitadas = array_map('intval', (array) $request->session()->get(self::QUITADAS, []));
+        $modelo = $mias === null || array_intersect($mias, $pedidas) === [] || ! in_array($id, $quitadas, true) ? null : Proveedor::find($id);
         abort_if($modelo === null || ! $modelo->activo || $modelo->estaRechazado(), 404);
 
         return $modelo;
