@@ -35,6 +35,8 @@ Cómo se cambia (`Restricciones::cambiarAccionAlBorrar`):
 - **SQLite** (pruebas y desarrollo): se edita el texto del `CREATE TABLE` en `sqlite_master` con `writable_schema` y `schema_version + 1`, el procedimiento que SQLite documenta para cambios que no tocan los datos en disco. No reconstruye la tabla, así que funciona dentro de la transacción de cada prueba aunque haya filas hijas. Al final revisa `quick_check`.
 - Idempotente: si una corrida se corta entre quitar y volver a crear una llave, la siguiente la crea.
 
+**Migraciones futuras (SQLite).** Para agregar o quitar una llave foránea en una tabla que tiene hijos con llave `restrict` (accesos, novedades, pases, reservas…), usa `Restricciones::agregarForanea()` / `quitarForanea()` en lugar de `$table->foreign()` / `dropForeign()`: en SQLite Laravel reconstruye la tabla y su `DROP TABLE` interno falla si hay filas hijas (antes, con cascade, las borraba en silencio). En MariaDB hacen lo mismo que Laravel. Ejemplo: `2026_11_07_000100_orden_de_evento_en_reservas`. Columnas sin llave (`add`/`drop column`) no reconstruyen la tabla.
+
 ### Inventario (antes → después)
 
 Total cascade antes: 217 · pasan a restrict: 95 · se quedan en cascade: 122
