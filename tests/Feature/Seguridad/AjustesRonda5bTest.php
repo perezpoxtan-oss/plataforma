@@ -169,7 +169,7 @@ class AjustesRonda5bTest extends TestCase
 
         // Al guardar regresa a la ficha con la persona en su personal
         $this->actingAs($this->admin)->post('/personas', $this->datosPersona(['tipo' => 'contratista', 'proveedor_id' => $maya->id, 'volver' => 'proveedor']))
-            ->assertRedirect(route('proveedores.show', $maya->id));
+            ->assertRedirect(route('proveedores.show', ['proveedor' => $maya->id, 'tab' => 'personal']));
 
         $html = $this->actingAs($this->admin)->get("/vehiculos?nuevo=1&proveedor={$maya->id}")->assertOk()->getContent();
         $this->assertStringContainsString('data-al-cerrar-ir="'.e(route('proveedores.show', ['proveedor' => $maya->id, 'tab' => 'flotilla'])).'"', $html);

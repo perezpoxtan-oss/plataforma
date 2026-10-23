@@ -30,6 +30,24 @@
             $unaSedePropia = ! $puede['todasLasSedes'] && $sedesAsignables->count() === 1 ? $sedesAsignables->first() : null;
         @endphp
 
+        {{-- QA PRV-05: al quitarla de su sede deja de verse en la lista; aquí se puede volver a agregar --}}
+        @php
+            $reAgregar = session('volver_a_agregar');
+            $sedeReAgregar = is_array($reAgregar) ? $sedesAsignables->firstWhere('id', (int) ($reAgregar['sede_id'] ?? 0)) : null;
+        @endphp
+        @if ($sedeReAgregar)
+            <div class="siguiente-paso mb-3" role="group" aria-label="Volver a agregar">
+                <span class="siguiente-paso-texto"><i class="bi bi-info-circle" aria-hidden="true"></i> «{{ $reAgregar['nombre'] }}» ya no aparece en tu lista porque no opera en {{ $sedeReAgregar->nombre }}.</span>
+                <form action="{{ route('proveedores.sedes', (int) $reAgregar['id']) }}" method="POST" class="d-inline m-0">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="_volver" value="lista">
+                    <input type="hidden" name="sedes[]" value="{{ $sedeReAgregar->id }}">
+                    <button type="submit" class="btn-siguiente-paso"><i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Agregar a mi sede</button>
+                </form>
+            </div>
+        @endif
+
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-truck text-success" aria-hidden="true"></i></div>
@@ -108,7 +126,7 @@
                                     {{-- Mejoras padrones: con una sola sede, agregar o quitar de tu sede es un solo toque (sin ventana aparte) --}}
                                     @php $enMiSede = $p->todas_las_sedes || $p->sedes->contains('id', $unaSedePropia->id); @endphp
                                     <form action="{{ route('proveedores.sedes', $p->id) }}" method="POST" class="d-inline m-0"
-                                          data-confirmar="{{ $enMiSede ? '¿Quitar «'.$p->nombre.'» de '.$unaSedePropia->nombre.'? Ya no se podrá elegir en tu caseta.' : '¿Agregar «'.$p->nombre.'» a '.$unaSedePropia->nombre.'?' }}">
+                                          data-confirmar="{{ $enMiSede ? '¿Quitar «'.$p->nombre.'» de '.$unaSedePropia->nombre.'? Ya no se podrá elegir en tu caseta y dejará de aparecer en tu lista.' : '¿Agregar «'.$p->nombre.'» a '.$unaSedePropia->nombre.'?' }}">
                                         @csrf
                                         @method('PUT')
                                         <input type="hidden" name="_volver" value="lista">

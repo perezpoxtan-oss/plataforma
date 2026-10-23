@@ -15,11 +15,13 @@ use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Models\TipoGafete;
 use App\Models\User;
+use App\Models\Vehiculo;
 use App\Models\VoucherReposicion;
 use App\Models\ZonaEstacionamiento;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Lector\ImpresionDesdePadron;
 use App\Services\Padrones\AltasPorVerificar;
+use App\Services\Padrones\CampanaPadrones;
 use App\Services\Rutas\AdministradorRutas;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\Tenant;
@@ -151,6 +153,22 @@ class MejorasPadronesTest extends TestCase
 
         $this->assertStringContainsString('María Pech', (string) $this->avisos($this->agente, 'alta_unida')[0]->texto);
         $this->assertSame('Tu alta «Pedro Uc» quedó verificada', $this->avisos($this->agente, 'alta_verificada')[0]->titulo);
+
+        // QA VER-09: también un vehículo dice «quedó verificada» / «fue rechazada» (concuerda con «alta»)
+        [$auto, $falso] = $this->enEmpresa(function () {
+            $auto = Vehiculo::create(['placas' => 'XTR901C', 'tipo' => 'sedan', 'marca' => 'VW', 'color' => 'ROJO', 'propiedad' => 'particular']);
+            $falso = Vehiculo::create(['placas' => 'FAL001A', 'tipo' => 'sedan', 'marca' => 'VW', 'color' => 'AZUL', 'propiedad' => 'particular']);
+            foreach ([$auto, $falso] as $v) {
+                $v->forceFill(['creado_por' => $this->agente->id])->save();
+                app(AltasPorVerificar::class)->registrarAlta($this->agente, 'vehiculos', $v, 'accesos');
+            }
+
+            return [$auto, $falso];
+        });
+        $this->actingAs($this->jefe)->put(route('vehiculos.aceptar', $auto->id), [])->assertRedirect();
+        $this->assertSame('Tu alta «XTR901C» quedó verificada', collect($this->avisos($this->agente, 'alta_verificada'))->last()->titulo);
+        $this->enEmpresa(fn () => app(CampanaPadrones::class)->resultado('vehiculos', $falso, 'rechazada', $this->jefe));
+        $this->assertSame('Tu alta «FAL001A» fue rechazada', collect($this->avisos($this->agente, 'alta_rechazada'))->last()->titulo);
     }
 
     public function test_colaborador_por_verificar_va_a_la_campana_y_a_mis_pendientes_de_recursos_humanos(): void
@@ -226,6 +244,32 @@ class MejorasPadronesTest extends TestCase
         // El filtro de categoría solo aplica a visitantes y el motivo va plegado en «Más datos»
         $this->actingAs($this->admin)->get('/personas')->assertSee('data-solo-con-tipo="visitante" hidden', false)
             ->assertSee('Motivo habitual de sus visitas')->assertSee('data-mas-datos', false)->assertSee('-- Otra empresa (escríbela abajo) --');
+    }
+
+    public function test_la_empresa_escrita_se_liga_a_la_exacta_y_si_hay_varias_parecidas_pide_elegir(): void
+    {
+        // QA PER-04: con «Abarrotes del Caribe» y «Abarrotes del Caribe S.A. de C.V.» gana la que coincide exacto
+        [$exacta, $conSa] = $this->enEmpresa(fn () => [
+            Proveedor::create(['nombre' => 'Abarrotes del Caribe', 'categoria' => 'proveedor', 'todas_las_sedes' => true]),
+            Proveedor::create(['nombre' => 'Abarrotes del Caribe S.A. de C.V.', 'categoria' => 'proveedor', 'todas_las_sedes' => true]),
+        ]);
+        $this->actingAs($this->admin)->post('/personas', [
+            'tipo' => 'proveedor', 'nombre_completo' => 'Prueba Ligada Uno', 'empresa_procedencia' => 'abarrotes del caribe', 'tipo_identificacion' => 'ine', '_dialogo' => 'crear',
+        ])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post('/personas', [
+            'tipo' => 'proveedor', 'nombre_completo' => 'Prueba Ligada Dos', 'empresa_procedencia' => 'ABARROTES DEL CARIBE, S.A. DE C.V.', 'tipo_identificacion' => 'ine', '_dialogo' => 'crear',
+        ])->assertSessionHasNoErrors();
+        // Sin coincidencia exacta y con dos que empatan sin «S.A. de C.V.»: no adivina, pide elegir
+        $this->actingAs($this->admin)->post('/personas', [
+            'tipo' => 'proveedor', 'nombre_completo' => 'Prueba Ligada Tres', 'empresa_procedencia' => 'Abarrotes del Caribe S de RL', 'tipo_identificacion' => 'ine', '_dialogo' => 'crear',
+        ])->assertSessionHasErrors(['empresa_procedencia' => 'Hay varias empresas registradas con ese nombre («Abarrotes del Caribe», «Abarrotes del Caribe S.A. de C.V.»). Elige la correcta en «Empresa que representa».']);
+
+        $this->enEmpresa(function () use ($exacta, $conSa) {
+            $this->assertSame($exacta->id, Persona::where('nombre_completo', 'Prueba Ligada Uno')->value('proveedor_id'));
+            $this->assertSame($conSa->id, Persona::where('nombre_completo', 'Prueba Ligada Dos')->value('proveedor_id'));
+            $this->assertFalse(Persona::where('nombre_completo', 'Prueba Ligada Tres')->exists());
+            $this->assertSame(2, Proveedor::count(), 'No se crean empresas repetidas');
+        });
     }
 
     // ------------------------------------------- Bajas con voucher y reactivación
@@ -381,5 +425,38 @@ class MejorasPadronesTest extends TestCase
         $soloCen = $this->crearUsuario($this->empresa, 'Supervisor', $this->centro);
         $this->enEmpresa(fn () => $p->forceFill(['activo' => true])->save());
         $this->actingAs($soloCen)->get('/proveedores')->assertSee('Quitar de mi sede');
+    }
+
+    public function test_quitar_de_mi_sede_deja_volver_a_agregarla(): void
+    {
+        // QA PRV-05: al quitarla deja de verse en la lista; el aviso ofrece «Agregar a mi sede»
+        $soloCen = $this->crearUsuario($this->empresa, 'Supervisor', $this->centro);
+        [$lav, $otra] = $this->enEmpresa(function () {
+            $lav = Proveedor::create(['nombre' => 'Lavandería Industrial del Sur', 'categoria' => 'proveedor', 'todas_las_sedes' => false]);
+            $lav->sedes()->sync([$this->centro->id, $this->playa->id]);
+            $otra = Proveedor::create(['nombre' => 'Hielo Playa', 'categoria' => 'proveedor', 'todas_las_sedes' => false]);
+            $otra->sedes()->sync([$this->playa->id]);
+
+            return [$lav, $otra];
+        });
+
+        $this->actingAs($soloCen)->put("/proveedores/{$lav->id}/sedes", ['_volver' => 'lista'])
+            ->assertRedirect('/proveedores')->assertSessionHas('ok', 'Sedes de «Lavandería Industrial del Sur» actualizadas.');
+        $this->assertSame([$this->playa->id], $this->enEmpresa(fn () => $lav->sedes()->pluck('sedes.id')->all()), 'Las demás sedes se quedan');
+        $lista = $this->actingAs($soloCen)->get('/proveedores');
+        $lista->assertSee('ya no aparece en tu lista')->assertSee(route('proveedores.sedes', $lav->id), false)->assertSee('Agregar a mi sede');
+
+        $this->actingAs($soloCen)->put("/proveedores/{$lav->id}/sedes", ['_volver' => 'lista', 'sedes' => [$this->centro->id]])->assertSessionHas('ok');
+        $this->assertEqualsCanonicalizing([$this->centro->id, $this->playa->id], $this->enEmpresa(fn () => $lav->sedes()->pluck('sedes.id')->all()));
+        $this->actingAs($soloCen)->get('/proveedores')->assertSee('Lavandería Industrial del Sur')->assertDontSee('ya no aparece en tu lista');
+
+        // Fuera de su sede: solo la que él quitó y solo para AGREGAR su sede; cualquier otra por su número no existe
+        $this->actingAs($soloCen)->put("/proveedores/{$otra->id}/sedes", ['sedes' => [$this->centro->id]])->assertNotFound();
+        $this->actingAs($soloCen)->put("/proveedores/{$otra->id}/sedes", ['_volver' => 'lista'])->assertNotFound();
+        $this->actingAs($soloCen)->put("/proveedores/{$otra->id}/sedes", ['sedes' => [$this->playa->id]])->assertNotFound();
+        $this->assertSame([$this->playa->id], $this->enEmpresa(fn () => $otra->sedes()->pluck('sedes.id')->all()));
+        // Dada de baja tampoco
+        $this->enEmpresa(fn () => $otra->forceFill(['activo' => false])->save());
+        $this->actingAs($soloCen)->put("/proveedores/{$otra->id}/sedes", ['sedes' => [$this->centro->id]])->assertNotFound();
     }
 }

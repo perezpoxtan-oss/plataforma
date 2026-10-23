@@ -39,7 +39,7 @@ resumen: Registrar antes de que lleguen a visitantes, personal de proveedores y 
 5. Si es **Proveedor** o **Contratista**, elige en **Empresa que representa** su empresa. La lista cambia según el tipo:
    - *Contratista*: solo aparecen las empresas registradas como contratistas.
    - *Proveedor*: aparecen proveedores, transporte, agencias y taxis.
-   - Si la empresa no aparece, deja **-- Otra empresa (escríbela abajo) --** y escribe su nombre en **¿De qué empresa viene?**. Si lo que escribes es una empresa que **sí** está en el directorio (aunque cambien mayúsculas, acentos o «S.A. de C.V.»), al guardar la persona queda ligada a su ficha sola: así no se crean empresas repetidas.
+   - Si la empresa no aparece, deja **-- Otra empresa (escríbela abajo) --** y escribe su nombre en **¿De qué empresa viene?**. Si lo que escribes es una empresa que **sí** está en el directorio (aunque cambien mayúsculas, acentos o «S.A. de C.V.»), al guardar la persona queda ligada a su ficha sola: así no se crean empresas repetidas. Si hay una que se llama **exactamente** igual, se liga a esa; si hay **varias** que solo se parecen (por ejemplo «Abarrotes del Caribe» y «Abarrotes del Caribe S.A. de C.V.») y ninguna es exacta, sale «Hay varias empresas registradas con ese nombre (…). Elige la correcta en «Empresa que representa».»: elígela de la lista.
 6. En **Identificación** elige el documento (INE, Pasaporte, Licencia de conducir, CURP, Cédula profesional, Credencial IMSS u Otra) y escribe el **Folio / Número**. Puedes escribirlo con espacios o guiones: se quitan solos.
 7. **Teléfono** (opcional): de 10 a 15 dígitos. Puedes escribir espacios, guiones o paréntesis.
 8. Si quieres anotar el motivo habitual de sus visitas, abre **Más datos** y escríbelo en **Motivo habitual de sus visitas** (opcional; por ejemplo «Mantenimiento de elevadores»). El motivo de **cada** visita lo captura la caseta en la Bitácora de accesos.
@@ -68,7 +68,7 @@ No tienes que esperar a guardar para saber si la persona ya existe:
 
 ![Desde la ficha de la empresa externa](img/personas/16-desde-empresa-externa.png)
 
-**Qué debes ver:** al guardar **o al cerrar** la ventana regresas a la ficha de la empresa, con la persona en su personal.
+**Qué debes ver:** al guardar **o al cerrar** la ventana regresas a la ficha de la empresa, en la pestaña **Personal**, con la persona en la lista.
 
 ## Cómo cargar muchas personas desde Excel
 
@@ -126,6 +126,7 @@ Los mensajes aparecen dentro de la misma ventana, arriba, en rojo. Lo que ya esc
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
 | El nombre completo es obligatorio. | Dejaste vacío el nombre. | Escribe nombre y apellidos. |
+| Hay varias empresas registradas con ese nombre (…). Elige la correcta en «Empresa que representa». | Lo que escribiste se parece a varias empresas del directorio y ninguna se llama exactamente igual. | Elige la empresa en la lista **Empresa que representa** (o escribe su nombre exacto). |
 | El folio debe tener de 4 a 30 letras o números (los espacios y guiones se quitan solos). | El folio es muy corto, muy largo o tiene signos. | Revisa el folio en la identificación. |
 | El teléfono debe tener de 10 a 15 dígitos. | Faltan o sobran números. | Escribe el teléfono con lada (10 dígitos). |
 | Ya existe otra persona registrada en esta empresa con ese folio de identificación: «…». | Ese folio ya es de otra persona. | Búscala en la lista; si está de baja, reactívala. |
