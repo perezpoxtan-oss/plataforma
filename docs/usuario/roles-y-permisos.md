@@ -40,7 +40,7 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 
 | | Solicitante | Jefe de departamento |
 |---|---|---|
-| **Pases de salida** | Pide pases **a su nombre** y ve solo los que él pidió. | Pide pases a su nombre; ve los pases de su sede; **aprueba y firma** el paso «Jefe de Departamento» de los pases de su gente; imprime la hoja del pase. |
+| **Pases de salida** | Pide pases **a su nombre** y ve solo los que él pidió. | Pide pases a su nombre; ve los pases de su sede; **aprueba y firma** el paso «Jefe del departamento del solicitante» de los pases de su gente (si es el responsable del departamento); imprime la hoja del pase. |
 | **Autorizaciones departamentales** | — | Ve y **responde** las visitas de los departamentos donde es responsable, en su sede. |
 | **Candidatos** | — | Con el permiso **Evaluar**: **entrevista, califica y elige** a los candidatos que Recursos Humanos le canaliza, en su pantalla **Entrevistar**. No ve la lista de candidatos ni sus datos personales. |
 | **Vacantes** | — | Ve las vacantes publicadas de su sede y **pide** vacantes nuevas: quedan en **Borrador** hasta que Recursos Humanos las revisa y las publica. |
@@ -48,7 +48,7 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 | **Mis pendientes y Manual** | Sí. | Sí. |
 | **No puede** | Aprobar, operar la caseta (accesos, llaves, salidas), ver el directorio de colaboradores ni pedir pases a nombre de otra persona. | Operar la caseta, registrar salidas o regresos de pases, editar o publicar vacantes, ni elegir responsables de departamento. |
 
-**¿Cómo sabe la plataforma de qué departamento es el jefe?** Por el **colaborador vinculado a su usuario**: el paso «Jefe de Departamento» de un pase lo firma quien tiene este rol en la sede de origen y pertenece al mismo departamento que quien pide el pase. Si nadie de ese departamento puede firmar, firma cualquier persona con «Aprobar» en esa sede, para que el pase no se atore.
+**¿Cómo sabe la plataforma de qué departamento es el jefe?** Por **Estructura → Departamentos**: el paso «Jefe del departamento del solicitante» de un pase lo firma el **responsable** del departamento de quien pide el pase, en la sede de origen (si no hay, su **suplente**). Si el departamento no tiene responsable, lo firma quien tiene «Aprobar» y su **colaborador vinculado** es de ese departamento; si tampoco hay, cualquier persona con «Aprobar» en esa sede, para que el pase no se atore.
 
 ## Cómo asignar los roles Solicitante y Jefe de departamento
 
@@ -58,8 +58,8 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 4. En **Rol en el Sistema** elige **Solicitante** o **Jefe de departamento**.
 5. En **Sede** elige la sede donde trabaja.
 6. Escribe **Usuario**, **Correo** y **Contraseña** (si es nueva la cuenta) y toca **Registrar Usuario** (o **Guardar Cambios** si la editaste).
-7. Solo para el jefe que responde visitas o candidatos: entra a **Recursos Humanos → Autorizaciones → Responsables por departamento**, toca **Elegir responsables** en su departamento, agrégalo con su sede y toca **Guardar responsables**.
-8. Solo si el circuito de pases de tu empresa es distinto al de siempre: en **Estructura → Configuración → Pases de salida → Configurar circuito**, revisa que haya un paso con **Cualquier usuario con permiso «Aprobar» en la sede de origen** y **Del mismo departamento que el solicitante (jefe del departamento)**. El circuito de siempre ya lo trae como primer paso («Jefe de Departamento»).
+7. Para que el jefe firme los pases de su gente, responda visitas o entreviste candidatos: entra a **Recursos Humanos → Autorizaciones → Responsables por departamento**, toca **Elegir responsables** en su departamento, agrégalo con su sede y toca **Guardar responsables**.
+8. Solo si el circuito de pases de tu empresa es distinto al de siempre: en **Estructura → Configuración → Pases de salida → Configurar circuito**, revisa que haya un paso con **El jefe del departamento del solicitante**; si no lo tiene, toca **Agregar el paso del jefe del departamento**. El circuito de siempre ya lo trae como primer paso.
 
 ![Matriz de permisos](img/roles/3-matriz.png)
 

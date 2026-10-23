@@ -63,6 +63,16 @@ Causas encontradas y corrección:
 - `resources/views/layouts/app.blade.php`: barra superior (PC), cabecera y barra inferior (celular), menú lateral, pie y aviso de sesión.
 - `public/css/plataforma.css`: hoja de estilos central (los modos Sol y Noche van en `modos-pantalla.css`); colores como variables (`--color-primario`, `--color-acento`) que llegan de *Identidad de la plataforma*.
 
+## Barra superior sin desplazamiento a los lados
+
+La barra superior (PC, 992 px o más) nunca empuja la página a los lados, ni con el chip «Empresa de trabajo» del Super Administrador (`componentes/empresa-de-trabajo.blade.php`). Bloque «Encabezado sin salirse del borde» de `plataforma.css`:
+
+- El nombre y el rol del bloque de usuario se recortan con «…» (`max-width` + `text-overflow`) y el chip se encoge (mínimo 7.5rem, con «…»); los demás botones de la derecha no se encogen. El menú no se encoge (los botones nunca se enciman).
+- Con el chip (`.barra-pc:has(.chip-empresa-trabajo)`): se muestra solo el símbolo de la marca, como en el celular, y el espacio entre botones es menor.
+- Hasta 1499 px: menos relleno y espacio entre botones. Hasta 1299 px: letra del menú un poco menor. Hasta 1199 px: sin texto de la marca ni nombre del usuario (queda la inicial, que sigue abriendo Mi cuenta) y, si aun así no cabe, los botones de la derecha bajan a un segundo renglón.
+- `.tabla-scroll` lleva `position: relative` para que los textos solo para lectores de pantalla (`visually-hidden`) de sus encabezados no ensanchen la página en el celular (pasaba en Catálogo comercial a 390 px).
+- Verificado sin desplazamiento horizontal ni botones encimados a 992, 1100, 1199, 1200, 1250, 1280, 1300, 1366, 1440, 1500, 1920 y 390 px, con Super Administrador y con un administrador de empresa, en Inicio, Empresas, Configuración, Usuarios y Catálogo comercial (y Proveedores, Rutas, Reservas y Etiquetas, que traen el selector «Empresa de trabajo»).
+
 ## Modos de pantalla: Normal, Sol y Noche (QA M-03)
 
 El botón junto al nombre del usuario (en celular, junto al avatar y en *Menú → Pantalla*) recorre **Normal → Sol → Noche → Normal**. Ícono, `title` y `aria-label` indican el modo actual (`bi-sun`, `bi-brightness-high-fill`, `bi-moon-stars-fill`), p. ej. "Modo de pantalla: Sol".

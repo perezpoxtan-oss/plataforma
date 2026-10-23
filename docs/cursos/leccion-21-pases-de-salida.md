@@ -8,9 +8,9 @@ Un pase de salida es el permiso para que un equipo **salga** de la sede. Primero
 
 ## Práctica (en QA, con los datos demo)
 
-1. **`jefe.demo`**: en **Inicio** ves «1 pase de salida espera tu aprobación». Toca **Ir a mi bandeja** y abre `PS-000001` (proyector). Revisa la pestaña **Artículos** y toca **Aprobar**: firma en el recuadro, marca **Guardar mi firma** y toca **Aprobar y firmar**. Mira cómo la línea de pasos dice que ahora le toca a **Contraloría**.
-2. **`director.demo`** (Contraloría): abre `PS-000001` desde **Mi bandeja** y apruébalo. Como es un **Préstamo**, el circuito demo no pide Gerencia: el pase queda **Aprobado, listo para salir**.
-3. **`admin.demo`**: abre `PS-000002` (venta de refrigeradores): te toca **Gerencia**. Pruébalo con **Usar mi firma guardada**. Luego abre **Configuración → Pases de salida → Configurar circuito** y lee cómo está armado (Jefe de Seguridad → Contraloría → Gerencia, esta última solo en Venta, Traspaso Definitivo y Consignación).
+1. **`jefedepto.demo`** (jefa de Recepción): en **Inicio** ves «1 pase de salida espera tu aprobación». Toca **Ir a mi bandeja** y abre `PS-000001` (proyector de Mariana López, de Recepción). El primer paso es **Jefe del departamento del solicitante**: te toca porque eres la responsable de Recepción en **Estructura → Departamentos**. Revisa la pestaña **Artículos** y toca **Aprobar**: firma en el recuadro, marca **Guardar mi firma** y toca **Aprobar y firmar**. Mira cómo la línea de pasos dice que ahora le toca al **Jefe de Seguridad**.
+2. **`jefe.demo`** (Jefe de Seguridad) y luego **`director.demo`** (Contraloría): abran `PS-000001` desde **Mi bandeja** y apruébenlo. Como es un **Préstamo**, el circuito demo no pide Gerencia: el pase queda **Aprobado, listo para salir**.
+3. **`admin.demo`**: abre `PS-000002` (venta de refrigeradores): te toca **Gerencia**. Pruébalo con **Usar mi firma guardada**. Luego abre **Configuración → Pases de salida → Configurar circuito** y lee cómo está armado (Jefe del departamento del solicitante → Jefe de Seguridad → Contraloría → Gerencia, esta última solo en Venta, Traspaso Definitivo y Consignación).
 4. **`agente.demo`**: abre `PS-000001` y toca **Registrar Salida**. Marca el proyector (o escanéalo si es del padrón), escribe quién se lo lleva, que firme, y firma tú como Seguridad. Intenta guardar sin marcar el artículo: el sistema no te deja.
 5. **`agente2.demo`** (Playa): en **Mi bandeja** aparece `PS-000001`: toca **Confirmar llegada a esta sede**. Después, **Autorizar salida de regreso**. (La píldora **Llegan a mi sede** le muestra lo que viene; ver la [lección 41](leccion-41-pases-firmas-valor-rechazo-y-campana.md).)
 6. **`agente.demo`**: abre `PS-000010` (radios con regreso parcial) y toca **Registrar Regreso**: deja 1 de 2 y escribe un comentario. El pase sigue en **Regreso parcial**. Vuelve a registrar el que falta: queda **Regresado / Cerrado**.
@@ -22,6 +22,7 @@ Un pase de salida es el permiso para que un equipo **salga** de la sede. Primero
 ## Para recordar
 
 - Los pasos van **en orden**; nadie aprueba su propio pase ni firma dos pasos del mismo pase.
+- El primer paso, **Jefe del departamento del solicitante**, lo firma el responsable del departamento de quien pide el pase (si no hay, su suplente), según **Estructura → Departamentos**.
 - **Rechazar** pide un motivo y regresa el pase al solicitante; **cancelar** solo se puede antes de que se apruebe.
 - **Aprobar** pide el permiso «Aprobar»; la caseta, «Firmar». La sede destino confirma la llegada y autoriza la salida de regreso.
 - Para la **salida** se verifica **cada** artículo. En el **regreso** se puede registrar una parte.

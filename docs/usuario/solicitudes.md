@@ -16,7 +16,7 @@ resumen: Guía para el personal de cualquier departamento (rol Solicitante) y pa
 
 - Tu cuenta debe tener el rol **Solicitante** (pides y ves lo tuyo) o **Jefe de departamento** (además apruebas lo de tu departamento). Si no ves **Pases de salida** en el menú **Operación**, pide a tu administrador que revise tu rol.
 - Tu cuenta debe estar **vinculada a tu ficha de colaborador**, con tu departamento correcto. Si no lo está, al pedir un pase verás un aviso; tu administrador lo arregla en [Usuarios](usuarios.md).
-- Para responder visitas y recibir candidatos, Recursos Humanos o tu administrador debe registrarte como **responsable** de tu departamento. Para entrevistar candidatos tu rol necesita además el permiso **Evaluar** (el rol Jefe de departamento ya lo trae).
+- Para firmar los pases de tu gente, responder visitas y recibir candidatos, Recursos Humanos o tu administrador debe registrarte como **responsable** de tu departamento. Para entrevistar candidatos tu rol necesita además el permiso **Evaluar** (el rol Jefe de departamento ya lo trae).
 
 ## Cómo pedir un pase de salida
 
@@ -54,7 +54,8 @@ resumen: Guía para el personal de cualquier departamento (rol Solicitante) y pa
 
 **Qué debes ver:** el pase pasa al siguiente paso del circuito (por ejemplo, Contraloría) y desaparece de tus pendientes.
 
-- Te tocan los pases de las personas de **tu departamento** que salen de **tu sede**. Los de otros departamentos los firma su propio jefe.
+- Te tocan los pases de las personas de **tu departamento** que salen de **tu sede**, en el primer paso: **Jefe del departamento del solicitante**. Los de otros departamentos los firma su propio jefe.
+- Si tu departamento no tiene titular que pueda firmar, firma el **suplente**. Si activas **No molestar**, también puede firmar la persona en quien delegaste.
 - No puedes aprobar un pase que pediste tú: lo firma otra persona del circuito.
 
 ## Cómo responder una visita (Jefe de departamento)
@@ -114,7 +115,7 @@ Todo el detalle, paso a paso, está en [Entrevistar y elegir](entrevistar-y-eleg
 
 **¿Puedo pedir un pase desde el celular?** Sí, todo funciona igual.
 
-**Mi jefe está de vacaciones, ¿se atora mi pase?** El pase espera su firma. Avisa a tu administrador: puede dar a otra persona de tu departamento el rol de Jefe de departamento. Si en tu departamento nadie puede aprobar, el paso lo firma cualquier persona con permiso de aprobar en tu sede.
+**Mi jefe está de vacaciones, ¿se atora mi pase?** Si tu jefe activó **No molestar**, firma la persona en quien delegó. Si no, avisa a tu administrador: puede registrar un **suplente** del departamento en **Estructura → Departamentos**. Si tu departamento no tiene responsable ni suplente, firma quien tenga permiso de aprobar en tu departamento y, si tampoco hay, cualquier persona con ese permiso en tu sede.
 
 **¿Puedo publicar yo la vacante?** No. La revisa y la publica Recursos Humanos.
 
