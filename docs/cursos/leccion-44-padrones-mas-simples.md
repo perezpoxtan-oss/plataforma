@@ -71,6 +71,13 @@ Comprueba: con `supervisor.demo` no aparece el botón (puede editar, pero no dar
 
 Comprueba: con `director.demo` no aparece **¿Quién ocupa?** (solo consulta).
 
+## Práctica 8 · Empresas: la correcta y de regreso a tu sede (admin.demo y supervisor.demo)
+
+1. En **Padrón de personas → Registrar Persona** elige *Proveedor*, deja **-- Otra empresa (escríbela abajo) --** y escribe «abarrotes del caribe». Guarda: la persona queda en el personal de **Abarrotes del Caribe** (la que se llama igual), no en la de «S.A. de C.V.».
+2. Escribe ahora «Abarrotes del Caribe S de RL»: como se parece a las dos y ninguna es exacta, te pide elegirla en **Empresa que representa**.
+3. En la ficha de una empresa, pestaña **Personal**, toca **Agregar persona** y guarda: regresas a la misma pestaña **Personal** (igual con **Flotilla**).
+4. Como **supervisor.demo**, en **Empresas externas** toca **Quitar de mi sede** en una empresa y acepta: deja de verse en tu lista y arriba sale **Agregar a mi sede** para regresarla. Tócalo.
+
 ## Repaso
 
 - Una sola palabra para la baja en toda la plataforma; nada se borra.

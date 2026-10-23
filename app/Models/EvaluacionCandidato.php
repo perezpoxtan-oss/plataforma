@@ -64,6 +64,20 @@ class EvaluacionCandidato extends Model
         return $this->belongsTo(User::class, 'evaluador_id');
     }
 
+    /** Entrevistador titular cuando se evaluó por su delegación (null = la evaluó él). */
+    public function titular(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'por_delegacion_de');
+    }
+
+    /** «Ana Administradora (por delegación de Diego Director)». */
+    public function quienEvaluo(): string
+    {
+        $nombre = $this->evaluador?->name ?? '—';
+
+        return $this->por_delegacion_de !== null ? $nombre.' (por delegación de '.($this->titular?->name ?? 'otra persona').')' : $nombre;
+    }
+
     public function sede(): BelongsTo
     {
         return $this->belongsTo(Sede::class)->withTrashed();

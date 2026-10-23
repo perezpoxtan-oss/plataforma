@@ -66,6 +66,13 @@ Bajo «## [Sin publicar]»:
   - Manual: `reservas-de-areas.md`, `reservas-aprobar.md`, `reservas-departamentos.md`, `reservas-configuracion.md` (con capturas). Curso: lección 60. Pruebas en `ReservasDeAreasTest`.
 
 ### Corregido
+- **Corrección de seguridad en la bolsa de trabajo por internet.** Una postulación enviada sin sesión ya no modifica ningún dato de una ficha de candidato que ya existía: se suma la postulación y Recursos Humanos ve en el historial lo que se escribió distinto, para confirmarlo con la persona. La respuesta al postularse es la misma para todos. Ver `docs/tecnico/candidatos.md`, «Una ficha por persona». Pruebas en `VacantesTest` y `CandidatosFase1Test`.
+- **Persona ligada a la empresa equivocada.** Al escribir la empresa a mano (alta o importación de personas), gana la que se llama exactamente igual; si varias se parecen y ninguna es exacta, se pide elegirla. Antes «abarrotes del caribe» podía quedar en «Abarrotes del Caribe S.A. de C.V.». Ver `docs/tecnico/mejoras-padrones.md` §4.
+- **«Quitar de mi sede» sin regreso.** Al quitar una empresa externa de su sede deja de verse en la lista; ahora aparece **Agregar a mi sede** para regresarla (solo agregar). Ver `docs/tecnico/mejoras-padrones.md`.
+- **Agregar persona o vehículo desde la ficha de la empresa** regresa a la pestaña **Personal** o **Flotilla** al guardar (antes, a Resumen).
+- **Evaluación por delegación** queda anotada («por delegación de …») en la evaluación, el historial, el expediente y el aviso a RR. HH. Migración `2026_11_08_000100_evaluacion_por_delegacion` (columna `evaluaciones_candidato.por_delegacion_de`, con `down()`).
+- **«Editar solicitud»** anota en el historial del candidato qué partes cambiaron (sin valores) y si firmó en pantalla.
+- **Aviso «Tu alta «…» quedó verificada / fue rechazada»** concuerda con «alta» también en vehículos.
 - **Cuentas, permisos, Inicio y caseta (registro de pruebas).**
   - **Nuevo Ingreso se cerraba sin aviso** si se tocaba registrar justo después de escribir el nombre: la consulta «¿Es alguno de estos?» al salir del campo gastaba el mensaje de error. Ahora ninguna consulta en segundo plano de las pantallas (parecidos, sugerencias, Mis pendientes, latido) gasta los avisos de la sesión (`ConservarAvisos`); la ventana vuelve a abrir con «Revisa los datos: …» y lo capturado.
   - **Pases de salida: el recordatorio de firmas no salía** (carga perezosa del destino con varios pases) y el paso quedaba marcado como recordado; ahora sale y se marca solo después de enviarlo.

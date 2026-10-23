@@ -477,6 +477,8 @@ class ImportacionTest extends TestCase
     {
         $this->enEmpresa(fn () => Persona::create(['tipo' => 'visitante', 'nombre_completo' => 'Carlos Mena', 'tipo_identificacion' => 'ine', 'folio_identificacion' => 'INE123456']));
         $this->enEmpresa(fn () => Proveedor::create(['nombre' => 'Limpieza Total', 'categoria' => 'contratista']));
+        // QA PER-04: otra parecida (con «S.A. de C.V.») no le gana a la que coincide exacto
+        $this->enEmpresa(fn () => Proveedor::create(['nombre' => 'Limpieza Total S.A. de C.V.', 'categoria' => 'contratista']));
         $csv = "Tipo,Nombre completo,Empresa que representa,Tipo de identificación,Folio de identificación,Teléfono,Categoría\n"
             ."Visitante,Carlos Mena Uc,,INE,ine-123456,9981234567,\n"
             ."contratista,Pedro Tun,limpieza total,Pasaporte,G1234567,,\n"

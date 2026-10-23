@@ -42,6 +42,7 @@ Comprueba: la tarjeta de la caseta pasó sola a **Gente en Sitio** con «RR. HH.
 2. Ábrela: en **Postulaciones** verás sus visitas a la caseta; en el **Historial**, «Volvió a la caseta: Entrevista».
 3. Abre la ficha de **Silvia Mena Couoh**: en **Postulaciones → Anteriores** está la que quedó en cartera.
 4. Toca **Nuevo candidato** y escribe el teléfono de Silvia (cópialo de su ficha): aparece el aviso amarillo con **Abrir su ficha**.
+5. En una ventana privada abre la bolsa de trabajo y postúlate a una vacante con el teléfono de Silvia, **otro nombre** y **otro correo**. Sale el mismo «¡Listo! Recibimos tu postulación» de siempre. De regreso en su ficha: el nombre y el correo **no cambiaron**; el **Historial** dice «Se volvió a postular por internet…» y anota lo que se escribió distinto. Lo que llega por internet nunca cambia una ficha que ya existía.
 
 ## Práctica 4 · Atender y el QR (rh.demo)
 

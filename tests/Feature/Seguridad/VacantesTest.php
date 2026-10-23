@@ -437,6 +437,55 @@ class VacantesTest extends TestCase
         $this->actingAs($this->rh)->get('/vacantes')->assertSee('1</strong> candidato', false);
     }
 
+    public function test_un_envio_publico_con_un_telefono_existente_no_cambia_la_ficha_ni_revela_que_existia(): void
+    {
+        // QA BOL-04 (seguridad): conocer el teléfono de un candidato no permite cambiarle nombre ni correo
+        Mail::fake();
+        app(CorreoPlataforma::class)->guardar(['host' => 'mail.ejemplo.com', 'puerto' => 587, 'cifrado' => 'tls', 'usuario' => 'a@ejemplo.com',
+            'remitente_correo' => 'avisos@ejemplo.com', 'remitente_nombre' => 'Avisos'], 'x');
+        $v = $this->vacante('publicada', ['titulo' => 'Camarista'], null, [$this->centro->id]);
+        $slug = $this->encenderBolsa();
+        $this->post("/empleos/{$slug}/{$v->codigo}/postular", ['nombre_completo' => 'Daniela Mex Pech', 'telefono' => '9981230001',
+            'correo' => 'daniela@correo.mx', 'acepta_privacidad' => '1'])->assertRedirect("/empleos/{$slug}/gracias");
+        $paginaNueva = (string) $this->get("/empleos/{$slug}/gracias")->getContent();
+        $c = $this->enEmpresa(fn () => Candidato::sole());
+        $c->forceFill(['solicitud_corta' => false, 'calle_numero' => 'Calle 20'])->save();
+        $privacidad = $c->fresh()->privacidad_aceptada_en;
+        Mail::assertSent(AvisoSolicitudCandidato::class, 1);
+
+        // Otra persona escribe el mismo teléfono con otro nombre y otro correo
+        $this->travel(5)->minutes();
+        $this->post("/empleos/{$slug}/{$v->codigo}/postular", ['nombre_completo' => 'Dani Repetida', 'telefono' => '998 123 0001',
+            'correo' => 'otra@example.com', 'acepta_privacidad' => '1'])->assertRedirect("/empleos/{$slug}/gracias");
+        $paginaRepetida = (string) $this->get("/empleos/{$slug}/gracias")->getContent();
+        // La respuesta es la misma que la de alguien nuevo (no deja saber que el teléfono ya existía)
+        $this->assertSame(strip_tags($paginaNueva), strip_tags($paginaRepetida));
+
+        $this->assertSame(1, $this->enEmpresa(fn () => Candidato::count()));
+        $c->refresh();
+        $this->assertSame(['Daniela Mex Pech', 'daniela@correo.mx', 'Calle 20', false], [$c->nombre_completo, $c->correo, $c->calle_numero, $c->solicitud_corta]);
+        $this->assertTrue($privacidad->equalTo($c->privacidad_aceptada_en), 'El aviso aceptado de la ficha no cambia');
+        // Ningún correo a la dirección escrita
+        Mail::assertNotSent(AvisoSolicitudCandidato::class, fn ($m) => $m->hasTo('otra@example.com'));
+        // RR. HH. ve en el historial lo que escribió distinto
+        $evento = $this->enEmpresa(fn () => $c->eventos()->where('comentario', 'like', 'Se volvió a postular por internet a «Camarista»%')->sole());
+        $this->assertStringContainsString('no se aplicaron a su ficha', $evento->comentario);
+        $this->assertStringContainsString('otra@example.com', $evento->comentario);
+        $this->actingAs($this->rh)->get('/candidatos?q=Daniela')->assertOk()->assertSee('Daniela Mex Pech');
+        $aviso = $this->enEmpresa(fn () => Notificacion::where('tipo', 'candidato_postulacion')->where('user_id', $this->rh->id)->latest('id')->first());
+        $this->assertStringContainsString('Daniela Mex Pech', $aviso->titulo);
+        $this->assertStringContainsString('distinto al de su ficha', $aviso->texto);
+        auth()->logout();
+
+        // Si la ficha sigue con la solicitud incompleta, el enlace va SOLO al correo que ya tenía
+        $c->forceFill(['solicitud_corta' => true])->save();
+        $this->post("/empleos/{$slug}/{$v->codigo}/postular", ['nombre_completo' => 'Dani Repetida', 'telefono' => '9981230001',
+            'correo' => 'otra@example.com', 'acepta_privacidad' => '1'])->assertRedirect("/empleos/{$slug}/gracias");
+        Mail::assertSent(AvisoSolicitudCandidato::class, fn ($m) => $m->hasTo('daniela@correo.mx'));
+        Mail::assertNotSent(AvisoSolicitudCandidato::class, fn ($m) => $m->hasTo('otra@example.com'));
+        $this->assertSame('Daniela Mex Pech', $c->fresh()->nombre_completo);
+    }
+
     public function test_sin_correo_configurado_la_postulacion_corta_no_manda_enlace_y_lo_dice(): void
     {
         $v = $this->vacante('publicada', ['titulo' => 'Cocinero'], null, [$this->centro->id]);
