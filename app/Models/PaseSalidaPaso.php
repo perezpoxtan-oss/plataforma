@@ -12,6 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * Paso del circuito de aprobación de pases de salida de una empresa
  * (Configuración → Pases de salida). Se aprueban en orden.
  *
+ *  - tipo "jefe_departamento": el jefe del departamento del solicitante: sus
+ *    responsables de Departamentos (titular; si no hay, suplente), ver
+ *    CircuitoPasesSalida::jefesDelDepartamento(); departamento siempre "solicitante";
  *  - tipo "permiso":  cualquier usuario con "Aprobar" de Pases de salida en la sede de origen;
  *  - tipo "rol":      los usuarios con ese rol;
  *  - tipo "usuarios": solo los usuarios elegidos.
@@ -26,7 +29,10 @@ class PaseSalidaPaso extends Model
 
     protected $table = 'pases_salida_pasos';
 
+    public const JEFE_DEPARTAMENTO = 'jefe_departamento';
+
     public const TIPOS = [
+        self::JEFE_DEPARTAMENTO => 'El jefe del departamento del solicitante',
         'permiso' => 'Cualquier usuario con permiso «Aprobar» en la sede de origen',
         'rol' => 'Los usuarios con un rol',
         'usuarios' => 'Usuarios específicos',

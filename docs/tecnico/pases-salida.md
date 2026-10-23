@@ -24,7 +24,7 @@ Réplica de `modules/pases_salida` de SEGCAT (§4.27 del inventario funcional), 
 
 **`pases_salida_articulos`**: `cantidad`, `equipo`, `marca`, `modelo`, `serie`, `descripcion`, `equipo_id` (padrón de Equipos), `valor_unitario` (decimal 12,2, opcional: el `costo` del equipo del padrón si lo tiene; si no, lo que capturó el solicitante), `verificado_salida_en`, `verificado_con_lector`, `cantidad_regresada`.
 
-**`pases_salida_pasos`** (circuito de la empresa): `orden`, `nombre`, `tipo` (`permiso` · `rol` · `usuarios`), `rol_id`, `departamento` (`cualquiera` · `solicitante` · `especifico`) + `departamento_id`, `obligatorio`, `motivos` (JSON; vacío = todos), `valor_minimo` / `valor_maximo` (decimal 14,2; null = sin condición), `activo`. **`pases_salida_paso_usuarios`**: los usuarios de un paso "usuarios específicos".
+**`pases_salida_pasos`** (circuito de la empresa): `orden`, `nombre`, `tipo` (`jefe_departamento` · `permiso` · `rol` · `usuarios`; texto de 20, sin migración), `rol_id`, `departamento` (`cualquiera` · `solicitante` · `especifico`) + `departamento_id`, `obligatorio`, `motivos` (JSON; vacío = todos), `valor_minimo` / `valor_maximo` (decimal 14,2; null = sin condición), `activo`. **`pases_salida_paso_usuarios`**: los usuarios de un paso "usuarios específicos".
 
 **`pases_salida_aprobaciones`** (copia del circuito en cada pase): `ronda`, `orden`, `paso_id`, `nombre`, `tipo`, `rol_id`, `departamento_id` (ya resuelto: el del solicitante o el fijo), `usuarios` (JSON), `obligatorio`, `valor_minimo` / `valor_maximo` (copia de la condición), `estado` (`pendiente` · `aprobado` · `omitido` · `rechazado`), `resuelto_por`, `resuelto_en`, `comentario`, `firma_id`, `conservada_de_ronda` (al retomar: la firma viene de esa ronda; mismo `firma_id`). Única por `(pase, ronda, orden)`.
 
@@ -53,8 +53,24 @@ salio (venta / traspaso definitivo)        = cerrado ("Salió — Cerrado")
 - **Quién firma un paso** (`CircuitoPasesSalida::motivoNoPuede()`):
   1. «Aprobar» de Pases de salida con alcance en la sede de **origen** (y "propios" solo en los suyos);
   2. no es el solicitante (usuario ligado a ese colaborador);
-  3. cumple la regla del paso (rol / usuario / departamento). Si **nadie** la cumple, firma cualquiera con «Aprobar» en la sede (el pase no se atora);
+  3. cumple la regla del paso (jefe del departamento / rol / usuario / departamento). Si **nadie** la cumple, firma cualquiera con «Aprobar» en la sede (el pase no se atora);
   4. no firmó otro paso de la misma ronda, salvo que nadie más pueda.
+
+## Paso «Jefe del departamento del solicitante» (`jefe_departamento`)
+
+Decisión del dueño (2026-10-23): el circuito predeterminado y el de los datos de ejemplo **empiezan** con este paso. Antes el primer paso predeterminado era «Jefe de Departamento» = `permiso` + departamento `solicitante` (cualquiera con «Aprobar» cuyo colaborador fuera del departamento del solicitante); ahora lo resuelven los responsables de **Estructura → Departamentos**, igual que las autorizaciones de visitas.
+
+- Al instanciar, la aprobación guarda `tipo = jefe_departamento` y `departamento_id` = el del colaborador solicitante (null si no tiene). Al guardar el circuito, el tipo fuerza `departamento = solicitante` (el selector de departamento se oculta en la pantalla).
+- **Resolución** (`CircuitoPasesSalida::jefesDelDepartamento()`, en el momento de firmar, como los demás tipos; se recuerda por petición). Siempre dentro de los candidatos: activos, con «Aprobar» en la sede de **origen** y sin el solicitante.
+  1. `titular`: `DepartamentoResponsable` no suplente del departamento con `sede_id` nulo o igual a la sede de origen (`Autorizaciones::responsablesDe()`, solo usuarios activos), más el **delegado** de cada uno con `Delegacion::activas()` («No molestar»);
+  2. `suplente`: si ningún titular puede firmar (no hay, sin «Aprobar», inactivo o es el solicitante), los suplentes y sus delegados;
+  3. `departamento`: sin responsables que puedan firmar, quien tenga «Aprobar» y su colaborador vinculado sea de ese departamento (la regla anterior del paso, para no dejar sin firmante a quien no ha registrado responsables);
+  4. `sede`: nadie de lo anterior (o solicitante sin departamento) → `reglaSinFirmantes()` verdadero y aplica la regla general: cualquiera con «Aprobar» en la sede. No se salta el paso: el pase nunca queda sin firmante ni se aprueba solo.
+- Ficha: debajo de «Le toca firmar ahora» se dice quién («Firma: …», «…firma su suplente: …», «…firma quien tenga «Aprobar» en él: …»). `PaseSalidaAprobacion::quienFirma()` = «Jefe del departamento de {departamento}».
+- Mis pendientes («Firmas de pases de salida»), la campana «Te toca firmar», el correo, el recordatorio y el escalamiento usan `aprobadores()` / `puedeAprobar()`, así que funcionan igual que en los demás pasos (el escalamiento avisa a quien firma el siguiente paso o, si es el último, a quien configura los pases en la sede).
+- **Empresas existentes**: las que no han guardado un circuito usan el predeterminado y ya empiezan con este paso. Las que tienen circuito propio **no cambian** (no hay migración de datos): la pantalla del circuito muestra «Tu circuito no tiene el paso del jefe del departamento.» con **Agregar el paso del jefe del departamento** (`POST /pases-salida/circuito/paso-jefe`, `CircuitoPasesSalida::agregarPasoJefe()`, mismo permiso que guardar: «Configurar» con alcance de empresa). Lo inserta como paso 1 (obligatorio, todos los motivos) y recorre los demás sin tocarlos; error si ya lo tiene, si el circuito es el predeterminado o si ya hay 8 pasos. Auditoría `pases_salida.circuito_actualizado`.
+- **Pases en curso**: conservan su copia (`pases_salida_aprobaciones`); el paso nuevo solo aplica a los pases nuevos y a los reenviados.
+- **Retomar**: «Jefe de Departamento» (nombre anterior) y «Jefe del departamento del solicitante» se reconocen como el mismo paso entre rondas (`claveDePaso()`).
 - **Pasos de caseta** (`pases_salida.firmar`, sede de origen salvo recepción y salida de regreso, que firma la sede **destino**): verifican artículos (siempre) y guardan las firmas que el movimiento pide en ESE pase (`PaseSalida::modoFirma()`): `dos` (omisión) = la de la persona que entrega o se lleva el equipo y la de Seguridad (usuario en sesión); `seguridad` = solo la de Seguridad (nombre de la persona opcional); `ninguna` = sin firmas (quedan usuario, hora, IP y artículos verificados en la bitácora, con `detalle.firmas`). Botones: **Registrar Salida**, **Confirmar llegada a esta sede**, **Autorizar salida de regreso**, **Registrar Regreso** (solo cambió el texto; el flujo es el mismo).
   - Salida: cada artículo marcado o escaneado (lector universal, tipo `equipo`); `verificado_con_lector` solo para los del padrón.
   - Recepción y salida de regreso: si falta marcar algo, el comentario es obligatorio.
@@ -88,11 +104,13 @@ Nombres unificados: lo que se captura es **programado** («Salida programada», 
 
 `CrearDatosDemo::pasesSalidaDemo()` mueve el reloj (`Carbon::setTestNow`, restaurado en `finally`) a cada momento de los pases 6–14: se crean y aprueban el día anterior a su salida programada; salen ese día (el 11, un día después, para mostrar la nota) a horas de oficina; llegan, salen de regreso y regresan horas o días después. Nunca salida y regreso en el mismo minuto; solo el 12 (taller) está vencido. Nuevos: 13 (recorrido completo a otra sede) y 14 (aprobado con el regreso programado ya pasado: la caseta pide la nueva fecha). Los pases 1–5 (pendientes, rechazado, cancelado, aprobado) se crean en el momento actual.
 
+El circuito demo es: 1. **Jefe del departamento del solicitante** → 2. Jefe de Seguridad (rol) → 3. Contraloría (`director.demo`) → 4. Gerencia (rol Administrador; venta, traspaso definitivo y consignación). Antes de armar los pases se asegura que `jefedepto.demo` sea responsable de Recepción en Centro (`rolesSolicitudesDemo()`), así el pase 1 (Recepción) espera a `jefedepto.demo` y los pases de `solicitante.demo` también. En los pases de departamentos que todavía no tienen responsable al crearse el demo, el paso 1 lo firma alguien de ese departamento con «Aprobar» o, si no hay, `admin.demo` (regla general). En un demo ya creado, `pasoJefePasesDemo()` agrega el paso con `agregarPasoJefe()` si falta (solo la empresa demo; los pases en curso no cambian).
+
 ## Circuito de aprobación (Configuración → Pases de salida)
 
 - Pantalla `/pases-salida/circuito` (`pases_salida.configurar`). Solo la cambia quien tiene «Configurar» con **alcance de empresa** (como los Avisos); con alcance de sede se consulta. Enlace desde la lista (botón **Circuito**) y desde la sección "Pases de salida" de `/configuracion`.
 - Máximo 8 pasos; cada motivo necesita al menos un paso obligatorio. Guardar reemplaza el circuito; **los pases en curso conservan su copia**; los nuevos y los reenviados usan el vigente.
-- **Restablecer**: borra la configuración y vuelve a la cadena de SEGCAT: Jefe de Departamento (del departamento del solicitante), Contraloría y Gerencia.
+- **Restablecer**: borra la configuración y vuelve al circuito predeterminado: Jefe del departamento del solicitante (`jefe_departamento`), Contraloría y Gerencia.
 - Auditoría: `pases_salida.circuito_actualizado` / `pases_salida.circuito_restablecido` con el resumen antes y después.
 
 ## Condición de valor, firmas en caseta y rechazo (ADR-0012)

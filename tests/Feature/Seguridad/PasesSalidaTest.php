@@ -223,7 +223,7 @@ class PasesSalidaTest extends TestCase
             ->assertSee('id="pase-'.$pase->id.'"', false)->assertSee('PS-000001')->assertSee('Mariana López')
             ->assertSee('Préstamo · 2 artículos')->assertSee('05/10/2026')->assertSee('Pendiente de Aprobación')
             ->assertSee('Ver / Aprobar')->assertSee('Sede CEN')->assertSee('Sede PLA')->assertSee('Creado por')
-            ->assertSee('aria-label="Avance del pase"', false)->assertSee('Espera la firma de: Jefe de Departamento (paso 1 de 3)')
+            ->assertSee('aria-label="Avance del pase"', false)->assertSee('Espera la firma de: Jefe del departamento del solicitante (paso 1 de 3)')
             ->assertSee('Espera tu firma');
     }
 
@@ -240,7 +240,7 @@ class PasesSalidaTest extends TestCase
         $this->assertSame(['Blvd. Kukulcán km 9', '998 123 4567', '2026-10-12'], [$pase->destino_direccion, $pase->destino_telefono, $pase->fecha_tentativa_regreso->format('Y-m-d')]);
         $this->assertSame(['1x Laptop Lenovo L14 · Serie: ABC123', '2x Radio Motorola'], $pase->articulos->map->resumen()->all());
         // Sin configuración: la cadena de SEGCAT
-        $this->assertSame(['Jefe de Departamento', 'Contraloría', 'Gerencia'], $pase->aprobaciones->pluck('nombre')->all());
+        $this->assertSame(['Jefe del departamento del solicitante', 'Contraloría', 'Gerencia'], $pase->aprobaciones->pluck('nombre')->all());
         $this->assertSame(['pendiente'], $pase->aprobaciones->pluck('estado')->unique()->values()->all());
         $this->assertSame(['creado'], $pase->bitacora->pluck('evento')->all());
         $this->assertSame('127.0.0.1', $pase->bitacora->first()->ip);
@@ -569,7 +569,7 @@ class PasesSalidaTest extends TestCase
     public function test_configurar_el_circuito_por_empresa(): void
     {
         $this->actingAs($this->admin)->get('/pases-salida/circuito')->assertOk()->assertSee('Circuito de aprobación')
-            ->assertSee('Jefe de Departamento → Contraloría → Gerencia')->assertSee('Guardar circuito');
+            ->assertSee('Jefe del departamento del solicitante → Contraloría → Gerencia')->assertSee('Guardar circuito');
         $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Pases de salida')->assertSee('Configurar circuito')
             ->assertSee('Pases de salida: avisar a quien debe aprobar el siguiente paso');
 
@@ -878,7 +878,7 @@ class PasesSalidaTest extends TestCase
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
 
         $pase = $this->crearPase([], $agente);
-        Mail::assertSent(AvisoPaseSalida::class, fn ($m) => $m->tipo === 'por_aprobar' && $m->paso === 'Jefe de Departamento'
+        Mail::assertSent(AvisoPaseSalida::class, fn ($m) => $m->tipo === 'por_aprobar' && $m->paso === 'Jefe del departamento del solicitante'
             && $m->hasTo($this->admin->email) && $m->hasTo($this->director->email) && ! $m->hasTo($agente->email));
 
         $this->aprobarTodo($pase);
@@ -988,14 +988,14 @@ class PasesSalidaTest extends TestCase
 
         $this->actingAs($this->admin)->get('/pases-salida/'.$pase->id)->assertOk()
             ->assertSee('PS-000001')->assertSee('Resumen')->assertSee('Artículos')->assertSee('Firmas y bitácora')
-            ->assertSee('Jefe de Departamento')->assertSee('Contraloría')->assertSee('Gerencia')->assertSee('Le toca firmar ahora')
-            ->assertSee('«Visto»', false)->assertSee('Aprobó: Jefe de Departamento (paso 1 de 3)')->assertSee('IP 127.0.0.1')
+            ->assertSee('Jefe del departamento del solicitante')->assertSee('Contraloría')->assertSee('Gerencia')->assertSee('Le toca firmar ahora')
+            ->assertSee('«Visto»', false)->assertSee('Aprobó: Jefe del departamento del solicitante (paso 1 de 3)')->assertSee('IP 127.0.0.1')
             ->assertSee(route('pases-salida.firma', [$pase->id, $this->recargar($pase)->firmas->first()->id]))
             ->assertSee('Imprimir Pase')->assertDontSee('onclick');
 
         $hoja = $this->actingAs($this->admin)->get('/pases-salida/'.$pase->id.'/imprimir')->assertOk()
             ->assertSee('Pase de Salida PS-000001')->assertSee('<svg', false)->assertSee(route('pases-salida.verificar', $pase->codigo_verificacion))
-            ->assertSee('1. Jefe de Departamento')->assertSee(mb_strtoupper($this->admin->name))->assertSee('Salida física')->assertSee('Regreso a origen')
+            ->assertSee('1. Jefe del departamento del solicitante')->assertSee(mb_strtoupper($this->admin->name))->assertSee('Salida física')->assertSee('Regreso a origen')
             ->assertSee('Laptop')->assertSee('ABC123')->assertSee('Sí, espera regreso');
 
         // Verificación del QR: con sesión, solo folio y estado
@@ -1072,15 +1072,33 @@ class PasesSalidaTest extends TestCase
         $pases = $this->enEmpresa(fn () => PaseSalida::orderBy('id')->get(), $demo);
         $this->assertCount(14, $pases);
         $this->assertEqualsCanonicalizing(array_keys(PaseSalida::ESTADOS), $pases->pluck('estado')->unique()->values()->all());
-        $this->assertSame(3, $this->enEmpresa(fn () => PaseSalidaPaso::count(), $demo));
+        // Circuito demo: empieza con el jefe del departamento del solicitante (decisión del dueño)
+        $this->assertSame([PaseSalidaPaso::JEFE_DEPARTAMENTO, 'rol', 'usuarios', 'rol'],
+            $this->enEmpresa(fn () => PaseSalidaPaso::orderBy('orden')->pluck('tipo')->all(), $demo));
         // Los pases de ejemplo piden dos firmas en caseta; solo «Devolución» tiene una excepción para probar
         $this->assertTrue($pases->every(fn (PaseSalida $p) => collect($p->firmas_caseta)->every(fn ($modo) => $modo === 'dos')));
         $this->assertSame(['salida' => 'seguridad', 'recepcion' => 'dos', 'salida_regreso' => 'dos', 'regreso' => 'ninguna'],
             $this->enEmpresa(fn () => app(CircuitoPasesSalida::class)->firmasCasetaPara('devolucion'), $demo));
 
-        // Aprobaciones pendientes para jefe.demo y admin.demo
-        foreach (['jefe.demo', 'admin.demo'] as $usuario) {
+        // El pase 1 (Recepción) espera a la jefa de Recepción; la venta, a Gerencia
+        $primero = $pases->first();
+        $this->assertSame(CircuitoPasesSalida::NOMBRE_PASO_JEFE, $this->enEmpresa(fn () => app(CircuitoPasesSalida::class)->actual($primero)?->nombre, $demo));
+        $this->assertSame(['jefedepto.demo'], $this->enEmpresa(fn () => app(CircuitoPasesSalida::class)
+            ->aprobadores($primero, app(CircuitoPasesSalida::class)->actual($primero))->pluck('username')->all(), $demo));
+        // Los pases ya aprobados los firmó primero alguien en el paso del jefe del departamento
+        $this->assertTrue($this->enEmpresa(fn () => $pases->where('estado', '!=', PaseSalida::PENDIENTE)->where('estado', '!=', PaseSalida::CANCELADO)
+            ->every(fn (PaseSalida $p) => $p->aprobaciones()->where('orden', 1)->where('tipo', PaseSalidaPaso::JEFE_DEPARTAMENTO)->whereNotNull('resuelto_por')->exists()), $demo));
+
+        // Aprobaciones pendientes para jefedepto.demo y admin.demo
+        foreach (['jefedepto.demo', 'admin.demo'] as $usuario) {
             $this->actingAs(User::where('username', $usuario)->firstOrFail())->get('/')->assertSee('pase de salida espera tu aprobación');
         }
+
+        // Demo ya creado con el circuito anterior (sin el paso del jefe): al completarlo se agrega como paso 1
+        $this->enEmpresa(fn () => PaseSalidaPaso::where('tipo', PaseSalidaPaso::JEFE_DEPARTAMENTO)->delete(), $demo);
+        $this->artisan('plataforma:demo', ['--password' => 'Prueba123!'])->assertSuccessful();
+        $this->assertSame([CircuitoPasesSalida::NOMBRE_PASO_JEFE, 'Jefe de Seguridad', 'Contraloría', 'Gerencia'],
+            $this->enEmpresa(fn () => PaseSalidaPaso::orderBy('orden')->pluck('nombre')->all(), $demo));
+        $this->assertCount(14, $this->enEmpresa(fn () => PaseSalida::all(), $demo));
     }
 }

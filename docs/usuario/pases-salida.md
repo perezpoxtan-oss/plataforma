@@ -47,7 +47,22 @@ resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y 
 
 ![Nuevo pase de salida](img/pases-salida/nuevo-pase.png)
 
-**Qué debes ver:** el pase aparece como **Pendiente de Aprobación** y quien firma el primer paso recibe un aviso en la **campana** (y por correo). Cada apartado (1, 2, 3) se puede cerrar tocando su título; si falta algo, se abre solo.
+**Qué debes ver:** el pase aparece como **Pendiente de Aprobación** y quien firma el primer paso recibe un aviso en la **campana** (y por correo). Normalmente el primer paso es **Jefe del departamento del solicitante**: lo firma el jefe de tu departamento. Cada apartado (1, 2, 3) se puede cerrar tocando su título; si falta algo, se abre solo.
+
+## Quién firma el paso «Jefe del departamento del solicitante»
+
+El circuito de aprobación empieza con este paso. Lo firma el **jefe del departamento** de la persona que pide el pase, en la sede de donde sale el equipo:
+
+1. El **responsable** de ese departamento en **Estructura → Departamentos** (el mismo que autoriza las visitas a su departamento). Si activó **No molestar**, también puede firmar la persona en quien delegó.
+2. Si el departamento no tiene responsable que pueda firmar (o el pase es del propio jefe), firma su **suplente**.
+3. Si el departamento no tiene responsable ni suplente, firma quien tenga permiso **Aprobar** de Pases de salida y sea de ese departamento.
+4. Si tampoco hay nadie, lo puede firmar cualquiera con permiso **Aprobar** en la sede, para que el pase no se quede atorado.
+
+Quien firma necesita el permiso **Aprobar** de Pases de salida en la sede (el rol **Jefe de departamento** ya lo trae). En la ficha del pase, debajo de «Le toca firmar ahora», ves quién puede firmarlo.
+
+![El jefe del departamento firma primero](img/pases-salida/jefe-departamento.png)
+
+**Qué debes ver:** el jefe del departamento recibe el aviso **Te toca firmar el pase PS-…** en la **campana** y el pase aparece en su **Mis pendientes → Firmas de pases de salida**. Al aprobarlo, el pase pasa al siguiente paso del circuito. Si tarda y tu empresa puso tiempos en **Firmas que tardan**, el recordatorio y el aviso al siguiente nivel funcionan igual que en los demás pasos.
 
 ## Cómo aprobar o rechazar un pase
 
@@ -164,13 +179,24 @@ Un pase no puede salir con un regreso que «ya debió ocurrir». Si al tocar **R
 ## Cómo configurar quién aprueba (administrador)
 
 1. Toca **Circuito** en la lista (o **Estructura → Configuración → Pases de salida**).
-2. Para cada paso escribe su **nombre** (por ejemplo «Contraloría») y elige **quién firma**: cualquiera con permiso Aprobar, los usuarios de un **rol**, o **usuarios específicos**.
+2. Para cada paso escribe su **nombre** (por ejemplo «Contraloría») y elige **quién firma**: **el jefe del departamento del solicitante**, cualquiera con permiso Aprobar, los usuarios de un **rol**, o **usuarios específicos**.
 3. Indica si es **obligatorio** y a qué **motivos** aplica. Usa las flechas para el orden.
 4. Toca **Guardar circuito**.
 
 **Qué debes ver:** los pases nuevos siguen el circuito nuevo; los que ya están en curso conservan sus pasos.
 
-Si no cambias nada, todo funciona como siempre: Jefe de Departamento, Contraloría y Gerencia; dos firmas en cada movimiento de caseta; y el rechazo empieza desde el primer paso.
+Si no cambias nada, se usa el circuito original: **Jefe del departamento del solicitante**, Contraloría y Gerencia; dos firmas en cada movimiento de caseta; y el rechazo empieza desde el primer paso.
+
+### Si tu circuito no tiene el paso del jefe del departamento
+
+Si tu empresa ya tenía su propio circuito, no cambia solo. Arriba de los pasos verás «**Tu circuito no tiene el paso del jefe del departamento.**»:
+
+1. Toca **Agregar el paso del jefe del departamento**.
+2. Revisa el orden de los pasos y, si quieres ajustarlo, toca **Guardar circuito**.
+
+![Agregar el paso del jefe del departamento](img/pases-salida/circuito-paso-jefe.png)
+
+**Qué debes ver:** «Agregamos el paso «Jefe del departamento del solicitante» al inicio del circuito…». Los pases nuevos (y los que se reenvíen) empiezan con ese paso; los que ya están en curso no cambian.
 
 **Para regresar a lo original:** toca **Restablecer la configuración original** al final de la pantalla y confirma. Verás «Se restableció la configuración original…»: vuelven los tres pasos, las dos firmas en caseta y el rechazo desde el primer paso. Los pases que ya están en curso no cambian.
 
@@ -234,6 +260,8 @@ Si no cambias nada, todo funciona como siempre: Jefe de Departamento, Contralor�
 | «Marca o escanea cada artículo que sale: faltan …» | No verificaste todos los artículos. | Escanea o marca los que faltan. |
 | «Escribe el nombre de quien se lleva el equipo.» | Falta quién recibe. | Escribe su nombre y pide su firma. |
 | Recuadro amarillo «Espera la firma de …» | No te toca firmar este paso. | Espera a que firme la persona indicada. |
+| «Este paso lo firma: Jefe del departamento de …» | El paso es del jefe del departamento del solicitante y tú no eres su responsable (ni su suplente). | Lo firma el responsable del departamento. Si el responsable está mal, pide a tu administrador que lo corrija en **Estructura → Departamentos**. |
+| «El circuito ya tiene 8 pasos (el máximo): quita uno antes de agregar el del jefe del departamento.» | No caben más pasos. | Quita un paso, toca **Guardar circuito** y vuelve a tocar **Agregar el paso del jefe del departamento**. |
 | «El aviso al siguiente nivel debe ir después del recordatorio (más horas o días).» | En **Firmas que tardan** el segundo tiempo es menor o igual al primero. | Escribe un tiempo mayor en **Avisar al siguiente nivel**. |
 | «En «Recordar a quien debe firmar» el máximo es 30 días.» | El tiempo es demasiado largo. | Escribe 30 días o menos. |
 | «En el paso «…», escribe el valor en pesos (solo números, por ejemplo 50000).» | La condición de valor tiene letras. | Escribe solo la cantidad. |
@@ -244,6 +272,7 @@ Si no cambias nada, todo funciona como siempre: Jefe de Departamento, Contralor�
 ## Preguntas frecuentes
 
 - **¿Cómo sé qué pases me tocan?** Abre **Mis pendientes** o la píldora **Pendientes de mi firma**.
+- **Soy jefe de departamento y no me llegan los pases de mi gente, ¿por qué?** Revisa en **Estructura → Departamentos** que seas el responsable de tu departamento en tu sede, que tu rol tenga **Aprobar** de Pases de salida y que el colaborador que pide el pase tenga ese departamento en su ficha.
 - **¿Qué diferencia hay entre «Programado» y «Real»?** Lo programado es lo que se escribió al pedir el pase (**Salida programada**, **Regreso programado**). Lo real es la fecha y la hora que registró la caseta en cada momento (**Sale de …**, **Llega a …**, **Sale de regreso de …**, **Regresa a …**).
 - **¿Qué pasa si el equipo no regresa a tiempo?** El pase se marca **Vencido — Debió Regresar** y cada mañana llega un recordatorio a la **campana** (y por correo, si está encendido) de quien lo pidió y de quien aprueba en la sede. Al registrar el regreso, el aviso queda leído.
 - **¿Por qué en este pase la caseta no pidió mi firma?** Tu empresa configuró ese movimiento con **Solo Seguridad** o **Sin firma**. Lo ves en el **Resumen** del pase.
@@ -256,3 +285,4 @@ Si no cambias nada, todo funciona como siempre: Jefe de Departamento, Contralor�
 - [Menús, Mis pendientes y modos de pantalla](menus.md)
 - [Equipos de seguridad](equipos.md)
 - [Bitácora de accesos](accesos.md)
+- [Departamentos y puestos](departamentos-y-puestos.md)

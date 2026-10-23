@@ -7,6 +7,7 @@ use App\Models\Colaborador;
 use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\PaseSalida;
+use App\Models\PaseSalidaPaso;
 use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Models\User;
@@ -500,6 +501,8 @@ class PaseSalidaController extends Controller
             'rondasAnteriores' => $pase->aprobaciones->where('ronda', '<', $pase->ronda)->groupBy('ronda'),
             'actual' => $actual,
             'sinFirmantes' => $actual !== null && $circuito->reglaSinFirmantes($pase, $actual),
+            // Paso «Jefe del departamento del solicitante»: quién lo firma hoy (titular, suplente o respaldo)
+            'jefeActual' => $actual !== null && $actual->tipo === PaseSalidaPaso::JEFE_DEPARTAMENTO ? $circuito->jefesDelDepartamento($pase, $actual) : null,
             'paso' => $paso,
             'puede' => [
                 'aprobar' => $puedeAprobar,

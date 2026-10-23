@@ -219,11 +219,11 @@ class PlantillaSolicitudesTest extends TestCase
         $jefeMantenimiento = $this->usuarioDe('Jefe de departamento', $this->colaborador('2006', 'Héctor', $this->mantenimiento));
         $jefaPlaya = $this->usuarioDe('Jefe de departamento', $this->colaborador('2007', 'Paola', $this->recepcion, $this->playa), $this->playa);
 
-        // Circuito de siempre: 1. Jefe de Departamento (del solicitante) → Contraloría → Gerencia
+        // Circuito predeterminado: 1. Jefe del departamento del solicitante (Recepción sin responsable registrado: firma quien tenga «Aprobar» de ese departamento) → Contraloría → Gerencia
         $this->actingAs($solicitante)->post('/pases-salida', $this->datosPase($sofia))->assertSessionHasNoErrors();
         $pase = $this->ultimoPase();
         $paso = $this->enEmpresa(fn () => app(CircuitoPasesSalida::class)->actual($pase));
-        $this->assertSame('Jefe de Departamento', $paso->nombre);
+        $this->assertSame('Jefe del departamento del solicitante', $paso->nombre);
 
         // Solo la jefa de Recepción de Centro lo tiene en «Mis pendientes»
         $this->assertSame(1, collect(app(MisPendientes::class)->para($jefa)['items'])->firstWhere('clave', 'pases_salida')['total'] ?? 0);

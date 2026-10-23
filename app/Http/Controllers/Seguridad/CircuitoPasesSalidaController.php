@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Seguridad;
 
 use App\Http\Controllers\Controller;
 use App\Models\Departamento;
+use App\Models\PaseSalidaPaso;
 use App\Models\Rol;
 use App\Models\User;
 use App\Services\PasesSalida\CircuitoPasesSalida;
@@ -46,6 +47,8 @@ class CircuitoPasesSalidaController extends Controller
             'sinEmpresa' => false,
             'pasos' => $this->circuito->pasos(),
             'configurado' => $this->circuito->configurado(),
+            // Circuito propio sin el paso del jefe: se ofrece agregarlo (no se cambia solo)
+            'ofrecerPasoJefe' => PaseSalidaPaso::where('activo', true)->exists() && ! $this->circuito->tienePasoJefe(),
             'resumen' => $this->circuito->resumen(),
             'firmasCaseta' => $this->circuito->firmasCaseta(),
             'rechazo' => $this->circuito->rechazo(),
@@ -75,7 +78,25 @@ class CircuitoPasesSalidaController extends Controller
         $empresaId = $this->autorizarEdicion($request);
         $this->tenant->conEmpresa($empresaId, fn () => $this->circuito->restablecer($request->user()));
 
-        return redirect()->route('pases-salida.circuito')->with('ok', 'Se restableció la configuración original: Jefe de Departamento, Contraloría y Gerencia, con dos firmas en cada movimiento de caseta y el rechazo desde el primer paso.');
+        return redirect()->route('pases-salida.circuito')->with('ok', 'Se restableció la configuración original: Jefe del departamento del solicitante, Contraloría y Gerencia, con dos firmas en cada movimiento de caseta y el rechazo desde el primer paso.');
+    }
+
+    /**
+     * «Agregar el paso del jefe del departamento»: para empresas con circuito
+     * propio (el predeterminado ya lo trae). Solo con aviso y a petición: el
+     * circuito configurado nunca cambia solo.
+     */
+    public function agregarPasoJefe(Request $request): RedirectResponse
+    {
+        $empresaId = $this->autorizarEdicion($request);
+
+        try {
+            $this->tenant->conEmpresa($empresaId, fn () => $this->circuito->agregarPasoJefe($request->user()));
+        } catch (ValidationException $e) {
+            return redirect()->route('pases-salida.circuito')->withErrors($e->errors());
+        }
+
+        return redirect()->route('pases-salida.circuito')->with('ok', 'Agregamos el paso «'.CircuitoPasesSalida::NOMBRE_PASO_JEFE.'» al inicio del circuito. Los pases nuevos (y los que se reenvíen) empezarán con él; los que ya están en curso no cambian. Revisa abajo el orden y toca «Guardar circuito» si quieres ajustarlo.');
     }
 
     private function autorizarEdicion(Request $request): int

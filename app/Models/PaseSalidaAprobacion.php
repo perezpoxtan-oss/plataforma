@@ -105,6 +105,9 @@ class PaseSalidaAprobacion extends Model
     /** Quién debe firmar este paso, en palabras. */
     public function quienFirma(): string
     {
+        if ($this->tipo === PaseSalidaPaso::JEFE_DEPARTAMENTO) {
+            return 'Jefe del departamento'.($this->departamento ? ' de '.$this->departamento->nombre : ' del solicitante');
+        }
         $base = match ($this->tipo) {
             'rol' => 'Rol «'.($this->rol?->nombre ?? '—').'»',
             'usuarios' => self::nombresUsuarios($this->usuarios ?? []) ?: 'Usuarios asignados',

@@ -71,7 +71,7 @@ Comprueba: en **Mis pendientes** de los agentes aparece **Pendientes de turno si
 
 1. Abre **Operación → Caseta → Pases de salida**: cada pase que espera firma dice «Esperando firma desde hace …».
 2. Con `admin.demo` abre **Circuito**, baja a **Firmas que tardan**, escribe **4 horas** en «Recordar a quien debe firmar» y **1 día** en «Avisar al siguiente nivel». Guarda.
-3. Ahora el reloj se pinta en verde, ámbar desde las 4 horas (le llega a quien firma «Recordatorio: el pase … espera tu firma») y rojo desde el día (a quien firma el siguiente paso le llega «Firma atrasada: pase …»; si era el último, a quien configura los pases). En el reloj se lee «Se avisó a: …».
+3. Ahora el reloj se pinta en verde, ámbar desde las 4 horas (le llega a quien firma «Recordatorio: el pase … espera tu firma»; en `PS-000001`, a `jefedepto.demo`, jefa del departamento del solicitante) y rojo desde el día (a quien firma el siguiente paso le llega «Firma atrasada: pase …»; si era el último, a quien configura los pases). En el reloj se lee «Se avisó a: …».
 4. Deja los dos campos vacíos para volver a lo de siempre.
 
 ## Para recordar
