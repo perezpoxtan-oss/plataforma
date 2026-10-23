@@ -29,6 +29,7 @@
                     <option value="{{ $clave }}" @selected($tipo === $clave)>{{ $texto }}</option>
                 @endforeach
             </select>
+            <p class="campo-ayuda mt-1" data-si-tipo="jefe_departamento" @if ($tipo !== 'jefe_departamento') hidden @endif>Firma el responsable del departamento del solicitante (Estructura → Departamentos); si no tiene, su suplente. Necesita «Aprobar» de Pases de salida en la sede.</p>
             <div data-si-tipo="rol" @if ($tipo !== 'rol') hidden @endif>
                 <label class="campo-etiqueta" for="paso_{{ $i }}_rol">Rol</label>
                 <select id="paso_{{ $i }}_rol" name="pasos[{{ $i }}][rol_id]" class="campo" @disabled($tipo !== 'rol')>
@@ -48,13 +49,14 @@
             </div>
         </div>
         <div class="col-md-6">
+            <div data-no-si-tipo="jefe_departamento" @if ($tipo === 'jefe_departamento') hidden @endif>
             <label class="campo-etiqueta" for="paso_{{ $i }}_depto">Departamento de quien firma</label>
-            <select id="paso_{{ $i }}_depto" name="pasos[{{ $i }}][departamento]" class="campo" data-paso-departamento>
+            <select id="paso_{{ $i }}_depto" name="pasos[{{ $i }}][departamento]" class="campo" data-paso-departamento @disabled($tipo === 'jefe_departamento')>
                 @foreach (\App\Models\PaseSalidaPaso::DEPARTAMENTOS as $clave => $texto)
                     <option value="{{ $clave }}" @selected($depto === $clave)>{{ $texto }}</option>
                 @endforeach
             </select>
-            <div data-si-departamento="especifico" @if ($depto !== 'especifico') hidden @endif>
+            <div data-si-departamento="especifico" @if ($depto !== 'especifico' || $tipo === 'jefe_departamento') hidden @endif>
                 <label class="campo-etiqueta" for="paso_{{ $i }}_depto_id">Departamento</label>
                 <select id="paso_{{ $i }}_depto_id" name="pasos[{{ $i }}][departamento_id]" class="campo" @disabled($depto !== 'especifico')>
                     <option value="">-- Seleccionar --</option>
@@ -62,6 +64,7 @@
                         <option value="{{ $d->id }}" @selected((string) ($f['departamento_id'] ?? '') === (string) $d->id)>{{ $d->nombre }}</option>
                     @endforeach
                 </select>
+            </div>
             </div>
             <label class="opcion-guardar-firma">
                 <input type="hidden" name="pasos[{{ $i }}][obligatorio]" value="0">

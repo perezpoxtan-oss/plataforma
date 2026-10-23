@@ -147,6 +147,13 @@
                             <span class="texto-traza d-block">{{ $textoA }} por {{ $a->resolvio->name }} · @fecha($a->resuelto_en){{ $a->conservada_de_ronda ? ' · firma conservada del envío anterior' : '' }}</span>
                         @elseif ($esActual)
                             <span class="texto-traza d-block text-primary fw-bold">Le toca firmar ahora{{ $sinFirmantes ? ' · nadie cumple la regla: firma cualquiera con permiso «Aprobar» de la sede' : '' }}</span>
+                            @if (($jefeActual ?? null) && $jefeActual['como'] !== 'sede')
+                                <span class="texto-traza d-block">{{ match ($jefeActual['como']) {
+                                    'titular' => 'Firma: ',
+                                    'suplente' => 'El departamento no tiene titular que pueda firmar; firma su suplente: ',
+                                    default => 'El departamento no tiene responsable en Departamentos; firma quien tenga «Aprobar» en él: ',
+                                } }}{{ $jefeActual['usuarios']->pluck('name')->join(', ', ' o ') }}</span>
+                            @endif
                         @endif
                         @if ($a->comentario)<span class="comentario-pase">«{{ $a->comentario }}»</span>@endif
                     </div>

@@ -2,7 +2,9 @@
 
 namespace App\Services\PasesSalida;
 
+use App\Models\Delegacion;
 use App\Models\Departamento;
+use App\Models\DepartamentoResponsable;
 use App\Models\Empresa;
 use App\Models\PaseSalida;
 use App\Models\PaseSalidaAprobacion;
@@ -24,9 +26,19 @@ use Illuminate\Validation\ValidationException;
  *
  * Configuración por empresa (Configuración → Pases de salida, permiso
  * "pases_salida.configurar" con alcance de empresa): pasos ordenados, cada uno
- * definido por un rol, usuarios específicos o "quien tenga Aprobar", con o sin
- * filtro de departamento, obligatorio u opcional, para todos los motivos o
- * solo algunos. Sin configuración se usa la cadena de SEGCAT.
+ * definido por el jefe del departamento del solicitante, un rol, usuarios
+ * específicos o "quien tenga Aprobar", con o sin filtro de departamento,
+ * obligatorio u opcional, para todos los motivos o solo algunos. Sin
+ * configuración se usa el circuito predeterminado (PREDETERMINADO).
+ *
+ * Paso "Jefe del departamento del solicitante" (tipo jefe_departamento,
+ * decisión del dueño 2026-10-23): lo firman los responsables de
+ * Estructura → Departamentos del departamento del colaborador solicitante en
+ * la sede de origen (titular; si no hay, sus suplentes; con su delegado de
+ * «No molestar», como las autorizaciones de visitas). Si ninguno puede
+ * firmar, quien tenga "Aprobar" y sea de ese departamento (la regla anterior
+ * del paso «Jefe de Departamento»); si tampoco, la regla general: cualquiera
+ * con "Aprobar" en la sede. Ver jefesDelDepartamento().
  *
  * Quién firma un paso (puedeAprobar):
  *  1. tiene "pases_salida.aprobar" con alcance en la sede de ORIGEN;
@@ -51,12 +63,21 @@ class CircuitoPasesSalida
 {
     public const MAX_PASOS = 8;
 
+    /** Nombre del paso del jefe del departamento (predeterminado y «Agregar el paso…»). */
+    public const NOMBRE_PASO_JEFE = 'Jefe del departamento del solicitante';
+
+    /** Nombre del mismo paso en el circuito anterior (para «Retomar» entre rondas). */
+    public const NOMBRE_PASO_JEFE_ANTERIOR = 'Jefe de Departamento';
+
     /**
-     * Cadena de SEGCAT (pases_salida_modal_aprobar.php): Jefe de Departamento,
-     * Contraloría y Gerencia, obligatorios y para todos los motivos.
+     * Circuito predeterminado (cadena de SEGCAT, pases_salida_modal_aprobar.php):
+     * Jefe del departamento del solicitante, Contraloría y Gerencia,
+     * obligatorios y para todos los motivos. El primer paso lo resuelven los
+     * responsables de Departamentos (decisión del dueño 2026-10-23; antes era
+     * «quien tenga Aprobar del mismo departamento», que queda como respaldo).
      */
     public const PREDETERMINADO = [
-        ['nombre' => 'Jefe de Departamento', 'tipo' => 'permiso', 'departamento' => 'solicitante'],
+        ['nombre' => self::NOMBRE_PASO_JEFE, 'tipo' => PaseSalidaPaso::JEFE_DEPARTAMENTO, 'departamento' => 'solicitante'],
         ['nombre' => 'Contraloría', 'tipo' => 'permiso', 'departamento' => 'cualquiera'],
         ['nombre' => 'Gerencia', 'tipo' => 'permiso', 'departamento' => 'cualquiera'],
     ];
@@ -80,6 +101,15 @@ class CircuitoPasesSalida
 
     /** @var array<string, Collection<int, User>> usuarios con "aprobar" por sede */
     private array $candidatos = [];
+
+    /** @var array<string, array<string, array{0: Collection<int, int>, 1: Collection<int, int>}>> responsables por departamento y sede */
+    private array $responsables = [];
+
+    /** @var Collection<int, DepartamentoResponsable>|null responsables activos de la empresa (una lectura por petición) */
+    private ?Collection $responsablesEmpresa = null;
+
+    /** @var Collection<int, Collection<int, int>>|null delegados activos por usuario que delega */
+    private ?Collection $delegacionesActivas = null;
 
     public function __construct(
         private readonly Autorizador $autorizador,
@@ -179,7 +209,8 @@ class CircuitoPasesSalida
         $limpios = [];
         foreach ($datos['pasos'] as $i => $p) {
             $tipo = $p['tipo'];
-            $departamento = $p['departamento'] ?? 'cualquiera';
+            // El jefe del departamento siempre es el del departamento del solicitante
+            $departamento = $tipo === PaseSalidaPaso::JEFE_DEPARTAMENTO ? 'solicitante' : ($p['departamento'] ?? 'cualquiera');
             if ($tipo === 'rol' && ! in_array((int) $p['rol_id'], $roles, true)) {
                 throw ValidationException::withMessages(["pasos.{$i}.rol_id" => 'Elige un rol activo de la empresa.']);
             }
@@ -268,6 +299,41 @@ class CircuitoPasesSalida
             $this->auditoria->auditar($actor, 'pases_salida.circuito_restablecido', $primero ?? $this->empresa(), $antes,
                 ['pasos' => $this->resumen(), 'ajustes' => $this->resumenAjustes()]);
         }
+    }
+
+    /** ¿El circuito vigente ya tiene el paso del jefe del departamento del solicitante? */
+    public function tienePasoJefe(): bool
+    {
+        return $this->pasos()->contains(fn (PaseSalidaPaso $p) => $p->tipo === PaseSalidaPaso::JEFE_DEPARTAMENTO);
+    }
+
+    /**
+     * «Agregar el paso del jefe del departamento» (empresas con circuito
+     * propio): lo pone como paso 1, obligatorio y para todos los motivos, y
+     * recorre los demás sin cambiarlos. Las empresas sin circuito propio ya lo
+     * tienen (predeterminado). Los pases en curso conservan su copia.
+     */
+    public function agregarPasoJefe(User $actor): void
+    {
+        if (! PaseSalidaPaso::where('activo', true)->exists()) {
+            throw ValidationException::withMessages(['pasos' => 'Tu circuito es el predeterminado: ya empieza con el paso «'.self::NOMBRE_PASO_JEFE.'».']);
+        }
+        if ($this->tienePasoJefe()) {
+            throw ValidationException::withMessages(['pasos' => 'El circuito ya tiene el paso «'.self::NOMBRE_PASO_JEFE.'».']);
+        }
+        if (PaseSalidaPaso::where('activo', true)->count() >= self::MAX_PASOS) {
+            throw ValidationException::withMessages(['pasos' => 'El circuito ya tiene '.self::MAX_PASOS.' pasos (el máximo): quita uno antes de agregar el del jefe del departamento.']);
+        }
+
+        $antes = $this->resumen();
+        DB::transaction(function () {
+            // De atrás hacia adelante, sin chocar con ningún índice de orden
+            PaseSalidaPaso::orderByDesc('orden')->get()->each(fn (PaseSalidaPaso $p) => $p->forceFill(['orden' => $p->orden + 1])->save());
+            PaseSalidaPaso::create(['orden' => 1, 'nombre' => self::NOMBRE_PASO_JEFE, 'tipo' => PaseSalidaPaso::JEFE_DEPARTAMENTO,
+                'departamento' => 'solicitante', 'obligatorio' => true, 'motivos' => null]);
+        });
+        $primero = PaseSalidaPaso::orderBy('orden')->first();
+        $this->auditoria->auditar($actor, 'pases_salida.circuito_actualizado', $primero, ['pasos' => $antes], ['pasos' => $this->resumen()]);
     }
 
     // --------------------------------------------- Firmas en caseta y rechazo
@@ -527,6 +593,9 @@ class CircuitoPasesSalida
 
     public function quienFirma(PaseSalidaPaso $p): string
     {
+        if ($p->tipo === PaseSalidaPaso::JEFE_DEPARTAMENTO) {
+            return 'el jefe del departamento del solicitante (responsable en Departamentos; si no hay, su suplente)';
+        }
         $quien = match ($p->tipo) {
             'rol' => 'rol «'.($p->rol?->nombre ?? '—').'»',
             'usuarios' => $p->usuarios->pluck('name')->implode(', ') ?: 'usuarios específicos',
@@ -601,10 +670,16 @@ class CircuitoPasesSalida
         return ['aplican' => $orden, 'pendientes' => $pendientes, 'conservadas' => $conservadas];
     }
 
-    /** El mismo paso entre rondas: por su nombre (el circuito se guarda de nuevo con otros ids). */
+    /**
+     * El mismo paso entre rondas: por su nombre (el circuito se guarda de nuevo
+     * con otros ids). «Jefe de Departamento» (nombre anterior) y «Jefe del
+     * departamento del solicitante» son el mismo paso.
+     */
     private static function claveDePaso(string $nombre): string
     {
-        return mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $nombre)), 'UTF-8');
+        $clave = mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $nombre)), 'UTF-8');
+
+        return $clave === mb_strtolower(self::NOMBRE_PASO_JEFE_ANTERIOR, 'UTF-8') ? mb_strtolower(self::NOMBRE_PASO_JEFE, 'UTF-8') : $clave;
     }
 
     /**
@@ -640,7 +715,7 @@ class CircuitoPasesSalida
     public function aprobadores(PaseSalida $pase, PaseSalidaAprobacion $aprobacion): Collection
     {
         $candidatos = $this->candidatos($pase);
-        $porRegla = $candidatos->filter(fn (User $u) => $this->cumpleRegla($u, $aprobacion))->values();
+        $porRegla = $this->porRegla($pase, $aprobacion);
 
         return $porRegla->isNotEmpty() ? $porRegla : $candidatos;
     }
@@ -648,7 +723,89 @@ class CircuitoPasesSalida
     /** ¿Alguien cumple la regla del paso? Si no, firma cualquiera con "Aprobar" en la sede. */
     public function reglaSinFirmantes(PaseSalida $pase, PaseSalidaAprobacion $aprobacion): bool
     {
-        return $this->candidatos($pase)->filter(fn (User $u) => $this->cumpleRegla($u, $aprobacion))->isEmpty();
+        return $this->porRegla($pase, $aprobacion)->isEmpty();
+    }
+
+    /**
+     * Quién firma un paso «Jefe del departamento del solicitante», en orden:
+     *  1. titular: los responsables (no suplentes) del departamento del
+     *     solicitante en la sede de origen (o en todas sus sedes), y el
+     *     delegado de cada uno si tiene «No molestar» activo;
+     *  2. suplente: si no hay titular que pueda firmar, los suplentes (y sus delegados);
+     *  3. departamento: si no hay responsables que puedan firmar, quien tenga
+     *     "Aprobar" y su colaborador sea de ese departamento (regla anterior);
+     *  4. sede: nadie de lo anterior → regla general del circuito (cualquiera
+     *     con "Aprobar" en la sede; reglaSinFirmantes() es verdadero).
+     * Siempre entre los candidatos: "Aprobar" en la sede de origen, activos y
+     * sin el solicitante (si la jefa pide un pase a su nombre, firma su suplente).
+     *
+     * @return array{como: string, usuarios: Collection<int, User>} como: titular | suplente | departamento | sede
+     */
+    public function jefesDelDepartamento(PaseSalida $pase, PaseSalidaAprobacion $aprobacion): array
+    {
+        $candidatos = $this->candidatos($pase);
+        $departamentoId = $aprobacion->departamento_id !== null ? (int) $aprobacion->departamento_id : null;
+        if ($departamentoId !== null) {
+            foreach ($this->responsablesPorNivel($pase, $departamentoId) as $como => [$ids, $delegados]) {
+                $usuarios = $candidatos->filter(fn (User $u) => $ids->contains((int) $u->id) || $delegados->contains((int) $u->id))
+                    ->sortBy(fn (User $u) => $ids->contains((int) $u->id) ? 0 : 1)->values();
+                if ($usuarios->isNotEmpty()) {
+                    return ['como' => $como, 'usuarios' => $usuarios];
+                }
+            }
+            $delDepartamento = $candidatos->filter(fn (User $u) => (int) $u->colaborador?->departamento_id === $departamentoId)->values();
+            if ($delDepartamento->isNotEmpty()) {
+                return ['como' => 'departamento', 'usuarios' => $delDepartamento];
+            }
+        }
+
+        return ['como' => 'sede', 'usuarios' => collect()];
+    }
+
+    /**
+     * Ids de titulares y de suplentes del departamento en la sede de origen, con
+     * los delegados activos de cada nivel (se recuerdan durante la petición).
+     *
+     * @return array{titular: array{0: Collection<int, int>, 1: Collection<int, int>}, suplente: array{0: Collection<int, int>, 1: Collection<int, int>}}
+     */
+    private function responsablesPorNivel(PaseSalida $pase, int $departamentoId): array
+    {
+        $sede = $pase->sede_id !== null ? (int) $pase->sede_id : null;
+
+        return $this->responsables[$pase->empresa_id.'-'.$departamentoId.'-'.$sede] ??= (function () use ($departamentoId, $sede) {
+            // Una sola lectura de responsables y de delegaciones activas por petición (Mis pendientes revisa muchos pases)
+            $this->responsablesEmpresa ??= DepartamentoResponsable::query()
+                ->join('users', 'users.id', '=', 'departamento_responsables.user_id')->where('users.activo', true)
+                ->orderBy('departamento_responsables.es_suplente')->orderBy('departamento_responsables.id')
+                ->get(['departamento_responsables.id', 'departamento_responsables.departamento_id', 'departamento_responsables.user_id',
+                    'departamento_responsables.sede_id', 'departamento_responsables.es_suplente']);
+            $this->delegacionesActivas ??= Delegacion::activas()->get(['user_id', 'delegado_id'])
+                ->groupBy(fn ($d) => (int) $d->user_id)->map(fn ($g) => $g->pluck('delegado_id')->map(fn ($id) => (int) $id));
+            $responsables = $this->responsablesEmpresa->filter(fn ($r) => (int) $r->departamento_id === $departamentoId
+                && ($r->sede_id === null || ($sede !== null && (int) $r->sede_id === $sede)));
+            $niveles = [];
+            foreach (['titular' => false, 'suplente' => true] as $como => $suplente) {
+                $ids = $responsables->filter(fn ($r) => (bool) $r->es_suplente === $suplente)->pluck('user_id')->map(fn ($id) => (int) $id)->unique()->values();
+                $delegados = $ids->flatMap(fn (int $id) => $this->delegacionesActivas->get($id, collect()))->unique()->values();
+                $niveles[$como] = [$ids, $delegados];
+            }
+
+            return $niveles;
+        })();
+    }
+
+    /**
+     * Quienes cumplen la regla del paso (vacío = nadie: firma cualquiera con "Aprobar").
+     *
+     * @return Collection<int, User>
+     */
+    private function porRegla(PaseSalida $pase, PaseSalidaAprobacion $aprobacion): Collection
+    {
+        if ($aprobacion->tipo === PaseSalidaPaso::JEFE_DEPARTAMENTO) {
+            return $this->jefesDelDepartamento($pase, $aprobacion)['usuarios'];
+        }
+
+        return $this->candidatos($pase)->filter(fn (User $u) => $this->cumpleRegla($u, $aprobacion))->values();
     }
 
     public function puedeAprobar(User $actor, PaseSalida $pase, ?PaseSalidaAprobacion $aprobacion = null): bool

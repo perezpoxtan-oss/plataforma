@@ -74,7 +74,7 @@ Convenciones:
 
 | Ajuste | Dónde se guarda | Pantalla | Quién | Por omisión |
 |---|---|---|---|---|
-| Circuito de aprobación (pasos, roles, motivos, valor) | `pases_salida_pasos` | Pases de salida → Circuito (resumen y botón «Configurar circuito» en Configuración) | `pases_salida.configurar` | Jefe de Departamento → Contraloría → Gerencia |
+| Circuito de aprobación (pasos, roles, motivos, valor) | `pases_salida_pasos` | Pases de salida → Circuito (resumen y botón «Configurar circuito» en Configuración) | `pases_salida.configurar` | Jefe del departamento del solicitante → Contraloría → Gerencia |
 | Firmas en caseta, rechazo, tiempos de espera | pref. `pases_salida.*` | ídem | ídem | dos firmas; empezar desde el primer paso; sin tiempos |
 | Avisos de pases | pref. `avisos.*` | Configuración → Pases de salida | `configuracion.editar` empresa | encendidos |
 

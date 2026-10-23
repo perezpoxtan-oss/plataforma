@@ -409,6 +409,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/pases-salida/circuito', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'edit'])->name('pases-salida.circuito');
     Route::put('/pases-salida/circuito', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'update'])->name('pases-salida.circuito.update');
     Route::delete('/pases-salida/circuito', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'destroy'])->name('pases-salida.circuito.destroy');
+    Route::post('/pases-salida/circuito/paso-jefe', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'agregarPasoJefe'])->name('pases-salida.circuito.paso-jefe');
     Route::get('/pases-salida/mi-firma', [PaseSalidaController::class, 'miFirma'])->name('pases-salida.mi-firma');
     Route::delete('/pases-salida/mi-firma', [PaseSalidaController::class, 'borrarMiFirma'])->name('pases-salida.mi-firma.destroy');
     Route::get('/pases-salida/verificar/{codigo}', [PaseSalidaController::class, 'verificar'])->where('codigo', '[A-Za-z0-9]{8,32}')->middleware('throttle:60,1')->name('pases-salida.verificar');
