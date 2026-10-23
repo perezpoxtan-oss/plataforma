@@ -99,8 +99,9 @@ class RecepcionController extends Controller
             'ver' => $actor->can('candidatos.ver'),
             'kiosco' => $actor->can('candidatos.editar') || $actor->can('accesos.crear'),
             'configurar' => $actor->can('candidatos.configurar'),
-            // «Que pase»: quien atiende Recepción de RR. HH. (cada solicitud lo revisa otra vez por su sede)
-            'responder' => $actor->can('candidatos.editar') || $actor->can('recepcion_rh.ver'),
+            // «Que pase»: solo quien atiende Recepción de RR. HH. (edita candidatos; cada solicitud lo revisa otra vez por su sede).
+            // Ver el panel (Dirección) no basta: es la misma regla que Autorizaciones::sedesRecepcion
+            'responder' => $actor->can('candidatos.editar'),
         ];
     }
 

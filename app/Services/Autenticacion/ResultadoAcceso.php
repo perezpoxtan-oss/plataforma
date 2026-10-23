@@ -15,6 +15,9 @@ final class ResultadoAcceso
 
     public const BLOQUEADO = 'bloqueado';
 
+    /** Cuenta dada de baja con la contraseña correcta (con la incorrecta responde como «credenciales»). */
+    public const INACTIVA = 'inactiva';
+
     private function __construct(
         public readonly string $estado,
         public readonly ?User $usuario = null,
@@ -34,6 +37,11 @@ final class ResultadoAcceso
     public static function bloqueado(int $minutos): self
     {
         return new self(self::BLOQUEADO, minutos: max(1, $minutos));
+    }
+
+    public static function inactiva(): self
+    {
+        return new self(self::INACTIVA);
     }
 
     public function exitoso(): bool

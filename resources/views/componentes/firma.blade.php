@@ -3,7 +3,8 @@
     imagen en el campo oculto `nombre`; el servidor la guarda con
     App\Services\Firmas\Firmas. Ver docs/tecnico/firmas.md.
 
-    Parámetros: id (único), nombre (name del campo), etiqueta, requerido (bool), ayuda (opcional)
+    Parámetros: id (único), nombre (name del campo), etiqueta, requerido (bool), ayuda (opcional),
+    falta (opcional: texto que se muestra si se envía sin firmar cuando la firma es obligatoria)
 --}}
 <div class="firma" data-firma>
     <div class="d-flex justify-content-between align-items-end gap-2">
@@ -15,6 +16,9 @@
         <span class="firma-guia" data-firma-guia aria-hidden="true">Firme aquí</span>
     </div>
     <input type="hidden" name="{{ $nombre }}" value="" data-firma-valor @if ($requerido ?? false) data-firma-requerida @endif>
+    @isset($falta)
+        <p class="firma-falta-texto" role="alert" data-firma-falta hidden>{{ $falta }}</p>
+    @endisset
     @isset($ayuda)
         <p class="campo-ayuda">{{ $ayuda }}</p>
     @endisset
