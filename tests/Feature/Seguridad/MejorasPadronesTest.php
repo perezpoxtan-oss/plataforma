@@ -234,6 +234,10 @@ class MejorasPadronesTest extends TestCase
     {
         $g = $this->gafete();
         $this->actingAs($this->admin)->get('/gafetes')->assertSee('name="firma_modo"', false)->assertSee('Se le cobra al colaborador')->assertDontSee('CXC');
+        // Si se elige «Firma digital» y no se firma, el navegador detiene el envío y muestra qué falta (antes solo pintaba el recuadro en rojo)
+        $this->actingAs($this->admin)->get('/gafetes')
+            ->assertSee('<p class="firma-falta-texto" role="alert" data-firma-falta hidden>Falta la firma de Seguridad: firma en el recuadro o elige «Firma física».</p>', false)
+            ->assertSee('Falta la firma del responsable: que firme en el recuadro o elige «Firma física».');
 
         // Firma digital: sin la firma de Seguridad no se da de baja
         $this->actingAs($this->admin)->post("/gafetes/{$g->id}/baja", ['motivo' => 'danado', 'firma_modo' => 'digital'])->assertSessionHasErrors('firma_seguridad');

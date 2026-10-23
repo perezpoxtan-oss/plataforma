@@ -99,9 +99,26 @@ class InicioSesionTest extends TestCase
         $usuario = $this->agente();
         $usuario->forceFill(['activo' => false])->save();
 
+        // Cuenta dada de baja con su contraseña correcta: «Tu cuenta no está activa» (como dice el manual)
         $this->post('/login', ['username' => 'agente1', 'password' => 'Secreta123!'])
-            ->assertSessionHas('acceso', 'credenciales');
+            ->assertRedirect('/login')->assertSessionHas('acceso', 'inactiva');
         $this->assertGuest();
+        $this->get('/login')->assertSee('Tu cuenta no está activa. Consulta a tu administrador.');
+        $this->post('/login', ['username' => 'agente@ejemplo.mx', 'password' => 'Secreta123!'])->assertSessionHas('acceso', 'inactiva');
+        $this->assertGuest();
+
+        // Con la contraseña incorrecta no revela que la cuenta existe: igual que un usuario inventado
+        $this->post('/login', ['username' => 'agente1', 'password' => 'otra-cosa'])->assertSessionHas('acceso', 'credenciales');
+        $this->post('/login', ['username' => 'nadie.existe', 'password' => 'otra-cosa'])->assertSessionHas('acceso', 'credenciales');
+        $this->assertGuest();
+        // Y los intentos fallidos la bloquean igual que a una cuenta que no existe (sin probar la contraseña)
+        for ($i = 0; $i < (int) config('plataforma.sesion.max_intentos'); $i++) {
+            $this->post('/login', ['username' => 'agente1', 'password' => 'mala-'.$i]);
+            RateLimiter::clear('acceso-ip:127.0.0.1');
+        }
+        $this->post('/login', ['username' => 'agente1', 'password' => 'Secreta123!'])->assertSessionHas('acceso', 'bloqueado');
+        $this->assertGuest();
+        $this->travel((int) config('plataforma.sesion.minutos_bloqueo') + 1)->minutes();
 
         $usuario->forceFill(['activo' => true])->save();
         $this->empresa->forceFill(['activo' => false])->save();

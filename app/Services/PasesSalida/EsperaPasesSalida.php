@@ -140,7 +140,9 @@ class EsperaPasesSalida
             if ($espera['recordar'] === null && $espera['escalar'] === null) {
                 return $cuenta;
             }
-            $pases = PaseSalida::with(['aprobaciones.rol:id,nombre', 'aprobaciones.departamento:id,nombre', 'sede:id,nombre', 'solicitante:id,nombre,apellido_paterno,apellido_materno,departamento_id'])
+            $pases = PaseSalida::with(['aprobaciones.rol:id,nombre', 'aprobaciones.departamento:id,nombre', 'sede:id,nombre', 'solicitante:id,nombre,apellido_paterno,apellido_materno,departamento_id',
+                // El texto del recordatorio dice a dónde va el pase (sin cargas perezosas en modo estricto)
+                'sedeDestino:id,nombre', 'proveedor:id,nombre', 'colaboradorDestino:id,nombre,apellido_paterno,apellido_materno'])
                 ->where('estado', PaseSalida::PENDIENTE)->orderBy('id')->limit(500)->get();
             foreach ($pases as $pase) {
                 $aprobacion = $this->circuito->actual($pase);
@@ -163,15 +165,18 @@ class EsperaPasesSalida
     /** Nivel 1: se recuerda a quien puede firmar el paso. */
     public function recordar(PaseSalida $pase, PaseSalidaAprobacion $aprobacion, int $horas): bool
     {
-        $aprobacion->forceFill(['recordatorio_en' => now()])->saveQuietly();
         $usuarios = $this->circuito->aprobadores($pase, $aprobacion);
         if ($usuarios->isEmpty()) {
+            // Sin a quién avisar no se marca: se intenta otra vez en la siguiente revisión
             return false;
         }
+        $pase->loadMissing(['solicitante', 'sedeDestino', 'proveedor', 'colaboradorDestino']);
         $titulo = "Recordatorio: el pase {$pase->folio} espera tu firma";
         $texto = "{$aprobacion->nombre} · lleva ".$this->duracion($horas * 60).' esperando · '.$pase->etiquetaMotivo().' · '
             .($pase->solicitante?->nombreCompleto() ?? 'sin solicitante').' → '.$pase->nombreDestino();
         $this->avisar($pase, $usuarios, 'pase_firma_recordatorio', $titulo, $texto, (int) $aprobacion->id);
+        // Se marca solo después de enviarlo: si algo falla antes, el recordatorio sale en la siguiente revisión
+        $aprobacion->forceFill(['recordatorio_en' => now()])->saveQuietly();
         $this->anotar($pase, 'Recordatorio: el paso «'.$aprobacion->nombre.'» lleva '.$this->duracion($horas * 60).' esperando firma', $usuarios);
         $this->auditar($pase, 'pases_salida.recordatorio', ['paso' => $aprobacion->nombre, 'horas' => $horas, 'avisados' => $usuarios->pluck('id')->all()]);
 

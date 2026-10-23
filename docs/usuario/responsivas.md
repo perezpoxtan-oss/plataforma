@@ -25,7 +25,7 @@ resumen: Entregar equipo de seguridad a un colaborador con su firma y recibirlo 
 
 **Qué debes ver:** cada ficha con el folio, **A cargo de** (el colaborador), los equipos con su número de serie (S/N) y si son **Turno** (se devuelven al terminar) o **Fijo** (asignación fija), quién los entregó y cuándo. Usa **Buscar** para un folio, colaborador o número de serie.
 
-Si tu empresa configuró la **hora de regreso de los equipos de Turno**, la ficha dice **Debe regresar a las …**. Si ya pasó la hora, dice **Debía regresar a las …** y la ficha se pone **ámbar**; si pasa más tiempo, **roja**. A la caseta (y después al supervisor) les llega el aviso en la **campana** y en **Mis pendientes → Equipos de turno sin regresar**.
+Si tu empresa configuró la **hora de regreso de los equipos de Turno**, la ficha dice **Debe regresar a las …**. Si ya pasó la hora, dice **Debía regresar a las …** y la ficha se pone **ámbar**; si pasa más tiempo, **roja**. A la caseta (y después al supervisor) les llega el aviso en la **campana** y en **Mis pendientes → Equipos de turno sin regresar**. Si ya estaba en rojo cuando se revisó, llegan los dos avisos: a la caseta y al supervisor.
 
 ![Equipos de turno con hora de regreso](img/responsivas/turno.png)
 

@@ -84,7 +84,13 @@
                 $lista = $responsables[$d->id] ?? collect();
                 $reabrir = old('_dialogo') === 'depto-'.$d->id;
                 $filas = $reabrir ? array_values((array) old('responsables', [])) : $lista->map(fn ($r) => ['user_id' => $r->user_id, 'sede_id' => $r->sede_id, 'es_suplente' => $r->es_suplente])->all();
-                $filas = array_pad($filas, max(count($filas) + 1, 2), ['user_id' => '', 'sede_id' => '', 'es_suplente' => true]);
+                // Renglones vacíos: si aún no hay titular, el primero vacío es el titular («El primero es el titular»); los demás, suplentes
+                $hayTitular = collect($filas)->contains(fn ($f) => ($f['user_id'] ?? '') !== '' && ! filter_var($f['es_suplente'] ?? false, FILTER_VALIDATE_BOOL));
+                $objetivo = max(count($filas) + 1, 2);
+                while (count($filas) < $objetivo) {
+                    $filas[] = ['user_id' => '', 'sede_id' => '', 'es_suplente' => $hayTitular];
+                    $hayTitular = true;
+                }
                 $sedesDepto = $d->todas_las_sedes ? $sedes : $d->sedes;
             @endphp
             <div class="ficha-card" id="depto-{{ $d->id }}">

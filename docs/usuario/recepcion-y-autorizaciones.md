@@ -145,7 +145,7 @@ Todo lo que tiene que ver con quién responde y qué espera está en una sola pa
    - En **Recordar a los (minutos)** escribe a los cuántos minutos se vuelve a avisar a quien debe responder (campana y correo). Desde ese minuto la espera se pinta en **ámbar**. De fábrica, 10.
    - En **Avisar al suplente y al jefe a los (minutos)** escribe a los cuántos minutos, si nadie ha contestado, se avisa a los suplentes del departamento (o a quien los cubre) y al Jefe de seguridad de la sede; si la persona espera a Recursos Humanos, al resto del equipo de RR. HH. y al Jefe de seguridad. Desde ese minuto la espera se pinta en **rojo**. De fábrica, 20. Debe ser mayor que el recordatorio; ambos admiten hasta 240 minutos.
    - Toca **Guardar esperas**.
-2. En cada departamento toca **Elegir responsables**: agrega el **Usuario**, la **Sede** (todas o una) y marca si es **suplente**.
+2. En cada departamento toca **Elegir responsables**: agrega el **Usuario**, la **Sede** (todas o una) y marca si es **suplente**. Si el departamento aún no tiene titular, el primer renglón vacío viene **sin** marcar «Suplente» (es el titular) y los siguientes vienen marcados.
 3. Toca **Guardar responsables**.
 
 ![Responsables por departamento](img/recepcion-y-candidatos/autorizaciones-responsables.png)
@@ -222,7 +222,7 @@ Aquí solo quedan el aviso de privacidad y el kiosco. Lo que espera en la caseta
 
 **¿Cómo llega un candidato al departamento?** Recursos Humanos lo entrevista primero y, si le sirve, lo **canaliza** al departamento con una cita: el jefe lo entrevista y decide en su pantalla **Entrevistar** (ver [Candidatos](candidatos.md)).
 
-**¿Quién ve el panel de Recepción?** Recursos Humanos y, si tiene el permiso, Dirección (solo el panel y los tiempos, no los CV). El «Que pase» solo lo dan quienes pueden editar candidatos (Recursos Humanos): a Dirección no le llega ese aviso.
+**¿Quién ve el panel de Recepción?** Recursos Humanos y, si tiene el permiso, Dirección (solo el panel y los tiempos, no los CV). El «Que pase» solo lo dan quienes pueden editar candidatos (Recursos Humanos): a Dirección no le llega ese aviso y en su panel no aparecen los botones **Que pase**, **Que espere / No puede pasar** ni **Atender**.
 
 ## Relacionado
 

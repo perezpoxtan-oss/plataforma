@@ -259,6 +259,19 @@ class AccesosTest extends TestCase
         $this->assertFalse($this->libre($g1));
     }
 
+    public function test_la_consulta_de_parecidos_no_se_lleva_el_aviso_de_error_del_nuevo_ingreso(): void
+    {
+        // Se toca registrar justo después de escribir el nombre: la consulta «¿Es alguno de estos?»
+        // llega entre el envío y la recarga; el aviso debe seguir para la pantalla
+        $this->registrar(['tipo' => 'proveedor', 'nombre' => 'Jesús Balam'])->assertRedirect();
+        $this->actingAs($this->admin)->getJson('/altas-por-verificar/parecidos?padron=proveedores&origen=accesos&nombre=Jesus')->assertOk();
+        $this->actingAs($this->admin)->get('/', ['X-Requested-With' => 'XMLHttpRequest', 'Accept' => 'text/html']);
+        $this->actingAs($this->admin)->get('/accesos')->assertOk()
+            ->assertSee('Revisa los datos:')->assertSee('Indica quién citó al proveedor/contratista (Host).')->assertSee('value="Jesús Balam"', false);
+        // La pantalla sí lo consume: al recargar ya no sale
+        $this->actingAs($this->admin)->get('/accesos')->assertOk()->assertDontSee('Indica quién citó al proveedor/contratista (Host).');
+    }
+
     public function test_proveedor_nace_pendiente_necesita_host_y_se_autoriza(): void
     {
         $this->registrar(['tipo' => 'proveedor', 'nombre' => 'Jesús Balam'])
