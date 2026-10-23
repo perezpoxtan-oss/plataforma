@@ -371,14 +371,22 @@ class SolicitudesArco
 
     // ------------------------------------------------------------- Ayudas
 
+    /**
+     * Folio único por empresa: «ARCO-AAAA-NNNN» en la empresa y
+     * «ARCO-P-AAAA-NNNN» en las de la página de la plataforma. El contador de
+     * la plataforma cuenta todas las «ARCO-P» (también las ya canalizadas), así
+     * que al canalizar la solicitud conserva el folio que la persona conoce sin
+     * chocar con los de la empresa. Se toma el número mayor + 1 (no el conteo).
+     */
     private function folio(?int $empresaId): string
     {
-        $anio = now()->format('Y');
-        $n = SolicitudArco::query()->withoutGlobalScope(EmpresaScope::class)
-            ->when($empresaId, fn ($q) => $q->where('empresa_id', $empresaId), fn ($q) => $q->whereNull('empresa_id'))
-            ->where('folio', 'like', 'ARCO-'.$anio.'-%')->count() + 1;
+        $prefijo = ($empresaId === null ? 'ARCO-P-' : 'ARCO-').now()->format('Y').'-';
+        $mayor = SolicitudArco::query()->withoutGlobalScope(EmpresaScope::class)
+            ->when($empresaId, fn ($q) => $q->where('empresa_id', $empresaId))
+            ->where('folio', 'like', $prefijo.'%')->pluck('folio')
+            ->map(fn ($f) => (int) substr($f, strlen($prefijo)))->max() ?? 0;
 
-        return 'ARCO-'.$anio.'-'.str_pad((string) $n, 4, '0', STR_PAD_LEFT);
+        return $prefijo.str_pad((string) ($mayor + 1), 4, '0', STR_PAD_LEFT);
     }
 
     private function exigirAbierta(SolicitudArco $s): void

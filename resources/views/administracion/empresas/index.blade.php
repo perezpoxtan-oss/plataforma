@@ -107,7 +107,7 @@
                         <div class="small text-muted mt-1"><i class="bi bi-infinity me-1" aria-hidden="true"></i>Sin suscripción: sin límites ni vencimiento</div>
                     @endif
                 @endif
-                <div class="ficha-footer">
+                <div class="ficha-footer ficha-footer-acciones">
                     <span class="etiqueta-estado {{ $emp->activo ? 'activo' : 'inactivo' }}">{{ $emp->activo ? 'ACTIVA' : 'DE BAJA' }}</span>
                     <div class="d-flex gap-2">
                         @include('componentes.ver-historial', ['registro' => \App\Models\Empresa::class, 'id' => $emp->id, 'nombre' => $emp->nombre_comercial])

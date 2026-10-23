@@ -1,6 +1,6 @@
 ---
 titulo: Respaldos y traslado a otro servidor
-modulos: [configuracion, empresas]
+modulos: [empresas.exportar]
 seccion: Estructura
 orden: 52
 resumen: Un solo archivo con la base de datos y todas las fotos, documentos y firmas para mudar la plataforma, revisarlo sin restaurar y exportar los datos de una empresa.
