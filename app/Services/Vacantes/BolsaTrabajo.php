@@ -14,6 +14,7 @@ use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\DocumentosCandidato;
 use App\Services\Candidatos\Kiosco;
 use App\Services\Candidatos\Postulaciones;
+use App\Services\Firmas\Firmas;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Recepcion\Destinatarios;
@@ -160,21 +161,33 @@ class BolsaTrabajo
             throw ValidationException::withMessages($errorSede);
         }
 
-        // Una ficha por persona: mismo teléfono o CURP = su ficha de siempre (se actualiza con lo que acaba de firmar)
+        $firma = is_string($entrada['firma'] ?? null) ? $entrada['firma'] : null;
+        if (! app(Firmas::class)->viene($firma)) {
+            throw ValidationException::withMessages(['firma' => 'Falta tu firma: firma en el recuadro con el dedo antes de enviar.']);
+        }
+
+        // Una ficha por persona: mismo teléfono o CURP = su ficha de siempre. Seguridad (BOL-04): un envío
+        // sin sesión NUNCA cambia los datos de una ficha que ya existía (nombre, correo, domicilio, firma,
+        // aviso aceptado): solo se le suma la postulación y RR. HH. ve en el historial lo que escribió distinto.
         $existente = $this->candidatos->buscarFicha(null, $d['telefono'] ?? null, $d['curp'] ?? null);
         $postulaciones = app(Postulaciones::class);
         $siguioAbierta = false;
+        $distintos = $existente === null ? null : $this->datosDistintos($existente, $d);
 
-        $candidato = DB::transaction(function () use ($vacante, $d, $sedeId, $ip, $entrada, $cv, $existente, $postulaciones, &$siguioAbierta) {
-            $datos = $this->candidatos->soloCv($d);
-            unset($datos['departamento_id'], $datos['puesto_id'], $datos['vacante']);
-            $candidato = $existente ?? new Candidato(['sede_id' => $sedeId, 'origen' => 'web', 'llegada_en' => now()]);
-            // A una ficha que ya existía solo se le actualiza lo que escribió ahora (lo que dejó vacío no borra lo anterior)
-            $candidato->fill($existente === null ? $datos : array_filter($datos, fn ($v) => $v !== null && $v !== []));
-            $candidato->forceFill(['autocaptura_pendiente' => true, 'autocaptura_en' => now(), 'llegada_en' => now()]);
-            $this->candidatos->aceptarPrivacidad($candidato, $ip, 'web');
-            $this->candidatos->firmar($candidato, is_string($entrada['firma'] ?? null) ? $entrada['firma'] : null, 'web', null, true);
-            $candidato->save();
+        $candidato = DB::transaction(function () use ($vacante, $d, $sedeId, $ip, $firma, $cv, $existente, $postulaciones, &$siguioAbierta) {
+            if ($existente === null) {
+                $datos = $this->candidatos->soloCv($d);
+                unset($datos['departamento_id'], $datos['puesto_id'], $datos['vacante']);
+                $candidato = new Candidato(['sede_id' => $sedeId, 'origen' => 'web', 'llegada_en' => now()]);
+                $candidato->fill($datos);
+                $candidato->forceFill(['autocaptura_pendiente' => true, 'autocaptura_en' => now(), 'llegada_en' => now()]);
+                $this->candidatos->aceptarPrivacidad($candidato, $ip, 'web');
+                $this->candidatos->firmar($candidato, $firma, 'web', null, true);
+                $candidato->save();
+            } else {
+                $candidato = $existente;
+                $candidato->forceFill(['llegada_en' => now()])->save();
+            }
 
             $aVacante = ['sede_id' => $sedeId, 'vacante_id' => $vacante->id, 'departamento_id' => $vacante->departamento_id, 'puesto_id' => $vacante->puesto_id,
                 'vacante' => mb_substr($vacante->titulo, 0, 150)];
@@ -200,13 +213,14 @@ class BolsaTrabajo
             $existente === null => 'Se postuló por internet a «'.$vacante->titulo.'».',
             $siguioAbierta => 'Se volvió a postular por internet a «'.$vacante->titulo.'» (ya tenía un proceso abierto: sigue en el mismo).',
             default => 'Se volvió a postular por internet a «'.$vacante->titulo.'»: nueva postulación en su misma ficha.',
-        }, null);
+        }.($existente === null ? '' : ' '.$this->notaSinCambios($distintos, true)), null);
         Auditoria::create([
             'empresa_id' => $empresa->id, 'user_id' => null, 'evento' => 'candidatos.postulacion',
             'auditable_type' => Candidato::class, 'auditable_id' => $candidato->id, 'antes' => null,
-            'despues' => ['origen' => 'web', 'vacante_id' => $vacante->id, 'sede_id' => $sedeId, 'ficha_existente' => $existente !== null], 'ip' => mb_substr($ip, 0, 45),
+            'despues' => ['origen' => 'web', 'vacante_id' => $vacante->id, 'sede_id' => $sedeId, 'ficha_existente' => $existente !== null]
+                + ($distintos ? ['datos_no_aplicados' => array_keys($distintos)] : []), 'ip' => mb_substr($ip, 0, 45),
         ]);
-        $this->avisarRh($candidato, $vacante);
+        $this->avisarRh($candidato, $vacante, false, (bool) $distintos);
 
         return $candidato;
     }
@@ -256,17 +270,23 @@ class BolsaTrabajo
         $d['nombre_completo'] = Entrada::texto($d['nombre_completo']);
         $d['correo'] = mb_strtolower(trim((string) $d['correo']));
 
+        // Seguridad (BOL-04): igual que la solicitud completa, una ficha que ya existía no se toca
         $existente = $this->candidatos->buscarFicha(null, $d['telefono'], null);
         $postulaciones = app(Postulaciones::class);
         $siguioAbierta = false;
+        $distintos = $existente === null ? null : $this->datosDistintos($existente, $d);
 
         $candidato = DB::transaction(function () use ($vacante, $d, $sedeId, $ip, $cv, $existente, $postulaciones, &$siguioAbierta) {
-            $candidato = $existente ?? new Candidato(['sede_id' => $sedeId, 'origen' => 'web', 'llegada_en' => now()]);
-            $candidato->fill(['nombre_completo' => $d['nombre_completo'], 'telefono' => $d['telefono'], 'correo' => $d['correo'], 'medio_vacante' => 'bolsa_web']);
-            // Una ficha que ya tenía su solicitud completa no se marca incompleta
-            $candidato->forceFill(['llegada_en' => now(), 'solicitud_corta' => $existente === null || (bool) $existente->solicitud_corta]);
-            $this->candidatos->aceptarPrivacidad($candidato, $ip, 'web');
-            $candidato->save();
+            if ($existente === null) {
+                $candidato = new Candidato(['sede_id' => $sedeId, 'origen' => 'web', 'llegada_en' => now()]);
+                $candidato->fill(['nombre_completo' => $d['nombre_completo'], 'telefono' => $d['telefono'], 'correo' => $d['correo'], 'medio_vacante' => 'bolsa_web']);
+                $candidato->forceFill(['llegada_en' => now(), 'solicitud_corta' => true]);
+                $this->candidatos->aceptarPrivacidad($candidato, $ip, 'web');
+                $candidato->save();
+            } else {
+                $candidato = $existente;
+                $candidato->forceFill(['llegada_en' => now()])->save();
+            }
 
             $aVacante = ['sede_id' => $sedeId, 'vacante_id' => $vacante->id, 'departamento_id' => $vacante->departamento_id, 'puesto_id' => $vacante->puesto_id,
                 'vacante' => mb_substr($vacante->titulo, 0, 150)];
@@ -291,17 +311,19 @@ class BolsaTrabajo
             $existente === null => 'Se postuló por internet a «'.$vacante->titulo.'» con la solicitud corta (falta la solicitud completa).',
             $siguioAbierta => 'Se volvió a postular por internet a «'.$vacante->titulo.'» (ya tenía un proceso abierto: sigue en el mismo).',
             default => 'Se volvió a postular por internet a «'.$vacante->titulo.'»: nueva postulación en su misma ficha.',
-        }, null);
+        }.($existente === null ? '' : ' '.$this->notaSinCambios($distintos, false)), null);
         Auditoria::create([
             'empresa_id' => $empresa->id, 'user_id' => null, 'evento' => 'candidatos.postulacion',
             'auditable_type' => Candidato::class, 'auditable_id' => $candidato->id, 'antes' => null,
-            'despues' => ['origen' => 'web', 'corta' => true, 'vacante_id' => $vacante->id, 'sede_id' => $sedeId, 'ficha_existente' => $existente !== null], 'ip' => mb_substr($ip, 0, 45),
+            'despues' => ['origen' => 'web', 'corta' => true, 'vacante_id' => $vacante->id, 'sede_id' => $sedeId, 'ficha_existente' => $existente !== null]
+                + ($distintos ? ['datos_no_aplicados' => array_keys($distintos)] : []), 'ip' => mb_substr($ip, 0, 45),
         ]);
-        // El enlace para completar su solicitud le llega por correo (si la plataforma tiene correo configurado)
+        // El enlace para completar su solicitud le llega por correo (si la plataforma tiene correo configurado).
+        // A una ficha que ya existía se le manda SIEMPRE al correo que ya tenía, nunca al que se escribió ahora.
         if ($candidato->solicitud_corta) {
             app(Kiosco::class)->enviarEnlacePorCorreo(null, $candidato, $empresa);
         }
-        $this->avisarRh($candidato, $vacante, $candidato->solicitud_corta);
+        $this->avisarRh($candidato, $vacante, (bool) $candidato->solicitud_corta, (bool) $distintos);
 
         return $candidato;
     }
@@ -320,15 +342,51 @@ class BolsaTrabajo
         return (int) $elegida;
     }
 
+    /**
+     * Datos que se escribieron en el envío público y no coinciden con la ficha
+     * que ya existía (solo nombre y correo, los que identifican a la persona).
+     *
+     * @param  array<string, mixed>  $d
+     * @return array<string, string>
+     */
+    private function datosDistintos(Candidato $ficha, array $d): array
+    {
+        $comparar = fn (?string $v) => mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', Str::ascii((string) $v))));
+        $distintos = [];
+        foreach (['nombre_completo' => 'nombre', 'correo' => 'correo'] as $campo => $etiqueta) {
+            $nuevo = is_string($d[$campo] ?? null) ? trim($d[$campo]) : '';
+            if ($nuevo !== '' && $comparar($nuevo) !== $comparar($ficha->getAttribute($campo))) {
+                $distintos[$etiqueta] = mb_substr($nuevo, 0, 120);
+            }
+        }
+
+        return $distintos;
+    }
+
+    /** Renglón del historial: el envío no cambió la ficha (y qué escribió distinto). */
+    private function notaSinCambios(?array $distintos, bool $completa): string
+    {
+        $nota = $completa
+            ? 'Los datos de la solicitud que envió no se aplicaron a su ficha (un envío por internet no cambia una ficha existente): si cambiaron, actualízalos con «Editar solicitud» o mándale el enlace para llenarla.'
+            : 'Los datos que escribió no se aplicaron a su ficha (un envío por internet no cambia una ficha existente).';
+        if ($distintos) {
+            $nota .= ' Escribió distinto: '.implode(', ', array_map(fn ($k, $v) => $k.' «'.$v.'»', array_keys($distintos), $distintos))
+                .'. Confírmalo con la persona antes de usarlo.';
+        }
+
+        return $nota;
+    }
+
     /** Campana y correo a quien atiende candidatos en esa sede. Sin datos sensibles. */
-    private function avisarRh(Candidato $candidato, Vacante $vacante, bool $corta = false): void
+    private function avisarRh(Candidato $candidato, Vacante $vacante, bool $corta = false, bool $datosDistintos = false): void
     {
         $candidato->loadMissing('sede:id,nombre');
         $rh = $this->destinatarios->conPermiso((int) $candidato->empresa_id, 'candidatos.editar', (int) $candidato->sede_id);
         $titulo = 'Nueva postulación por internet: '.$candidato->nombre_completo;
         $texto = 'Vacante: '.$vacante->titulo.'. Sede: '.$candidato->sede?->nombre.'. '.($corta
             ? 'Solicitud incompleta: le mandamos el enlace para completarla; también puedes dárselo desde su ficha.'
-            : 'Revisa su solicitud y márcala como revisada.');
+            : 'Revisa su solicitud y márcala como revisada.')
+            .($datosDistintos ? ' Ojo: escribió un nombre o correo distinto al de su ficha; revisa su historial.' : '');
         $this->notificaciones->avisar((int) $candidato->empresa_id, $rh->pluck('id'), 'candidato_postulacion', [
             'titulo' => $titulo, 'texto' => $texto, 'url' => route('candidatos.show', $candidato->id),
             'referencia_tipo' => 'candidato', 'referencia_id' => $candidato->id,

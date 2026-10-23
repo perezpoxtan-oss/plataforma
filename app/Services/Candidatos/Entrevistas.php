@@ -246,7 +246,9 @@ class Entrevistas
             'entrevista_en' => $d['entrevista_en'], 'criterios' => $d['criterios'], 'promedio' => $d['promedio'], 'comentario' => $d['comentario'],
             'resultado' => $d['resultado'], 'numero' => max(1, (int) $p->numero_entrevista),
         ]);
-        $e->forceFill(['empresa_id' => $p->empresa_id, 'creado_por' => $actor->id, 'actualizado_por' => $actor->id])->save();
+        // QA ENT-08: si evalúa por la delegación del entrevistador asignado, queda anotado a nombre de quién
+        $titular = $tipo === 'departamento' && $p->entrevistador_id !== null && (int) $p->entrevistador_id !== (int) $actor->id ? (int) $p->entrevistador_id : null;
+        $e->forceFill(['empresa_id' => $p->empresa_id, 'por_delegacion_de' => $titular, 'creado_por' => $actor->id, 'actualizado_por' => $actor->id])->save();
 
         return $e;
     }
@@ -334,7 +336,7 @@ class Entrevistas
         $this->notificaciones->resolver(self::REFERENCIA, $p->id);
         $ficha = $p->candidato;
         app(AdministradorCandidatos::class)->evento($ficha, 'evaluacion_departamento', 'canalizado', $segunda ? null : $p->etapa,
-            'Evaluación del departamento ('.$e->numero.'.ª entrevista) por '.$actor->name.': promedio '.$e->promedioTexto().' · '.$e->etiquetaResultado().'.'
+            'Evaluación del departamento ('.$e->numero.'.ª entrevista) por '.$e->quienEvaluo().': promedio '.$e->promedioTexto().' · '.$e->etiquetaResultado().'.'
             .($e->comentario ? ' «'.$e->comentario.'»' : '').($segunda ? ' Sigue con el departamento ('.$p->numeroTexto().' entrevista): falta ponerle fecha.' : ''), $actor);
         $this->auditoria->auditar($actor, 'candidatos.evaluado_departamento', $e, ['etapa' => 'canalizado'], $this->foto($e) + ['etapa' => $p->etapa]);
 
@@ -357,9 +359,9 @@ class Entrevistas
             $elegir => 'Elegido por el departamento: '.$ficha->nombre_completo,
             default => 'El departamento evaluó a '.$ficha->nombre_completo,
         };
-        $texto = trim(($p->departamento?->nombre ? $p->departamento->nombre.' · ' : '').$actor->name.': '.$e->etiquetaResultado()
+        $texto = trim(($p->departamento?->nombre ? $p->departamento->nombre.' · ' : '').$e->quienEvaluo().': '.$e->etiquetaResultado()
             .' (promedio '.$e->promedioTexto().').'.($e->comentario ? ' «'.$e->comentario.'»' : '')
-            .($segunda ? ' Sigue con '.$actor->name.' ('.$p->numeroTexto().' entrevista): usa «Reprogramar» para ponerle fecha.' : ''));
+            .($segunda ? ' Sigue con '.($e->titular?->name ?? $actor->name).' ('.$p->numeroTexto().' entrevista): usa «Reprogramar» para ponerle fecha.' : ''));
         $this->avisarRh($p, $actor, $titulo, $texto);
     }
 

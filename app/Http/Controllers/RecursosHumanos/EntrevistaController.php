@@ -70,7 +70,7 @@ class EntrevistaController extends Controller
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $postulacion, $empresaId) {
             $p = $this->buscar($actor, $postulacion);
             $p->load(['candidato', 'vacantePublicada:id,titulo,jefe_ve_cv,plazas', 'puesto:id,nombre', 'departamento:id,nombre', 'sede:id,nombre',
-                'entrevistador:id,name', 'evaluaciones.evaluador:id,name']);
+                'entrevistador:id,name', 'evaluaciones.evaluador:id,name', 'evaluaciones.titular:id,name']);
             $c = $p->candidato;
             $ultima = $p->evaluaciones->where('tipo', 'departamento')->last();
             $corregible = $this->entrevistas->puedeCorregir($actor, $p, $ultima);

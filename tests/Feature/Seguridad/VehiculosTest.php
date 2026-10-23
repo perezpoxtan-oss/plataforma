@@ -320,11 +320,12 @@ class VehiculosTest extends TestCase
             app('router')->getRoutes()->refreshNameLookups();
             $datos['placas'] = 'XYZ987';
         }
-        $this->actingAs($this->admin)->post('/vehiculos', $datos)->assertRedirect(route('proveedores.show', $taxis->id));
+        // QA PRV-08: regresa a la pestaña «Flotilla»
+        $this->actingAs($this->admin)->post('/vehiculos', $datos)->assertRedirect(route('proveedores.show', ['proveedor' => $taxis->id, 'tab' => 'flotilla']));
 
         // Al editar también; sin proveedor (auto propio) vuelve al padrón
         $v = $this->buscarPlacas('ABC123A');
-        $this->actingAs($this->admin)->put("/vehiculos/{$v->id}", array_merge($datos, ['placas' => 'ABC123A']))->assertRedirect(route('proveedores.show', $taxis->id));
+        $this->actingAs($this->admin)->put("/vehiculos/{$v->id}", array_merge($datos, ['placas' => 'ABC123A']))->assertRedirect(route('proveedores.show', ['proveedor' => $taxis->id, 'tab' => 'flotilla']));
         $this->actingAs($this->admin)->post('/vehiculos', $this->datos(['placas' => 'PROPIO1', 'volver' => 'proveedor']))->assertRedirect(route('vehiculos.index').'#vehiculo-'.$this->buscarPlacas('PROPIO1')->id);
     }
 

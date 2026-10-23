@@ -193,6 +193,17 @@ class CandidatosFase1Test extends TestCase
         $this->assertSame(1, $this->enEmpresa(fn () => Candidato::count()));
         $this->assertSame(1, $this->enEmpresa(fn () => Postulacion::count()));
         $this->assertTrue($this->enEmpresa(fn () => $c->eventos()->where('comentario', 'like', 'Se volvió a postular por internet%')->exists()));
+        // QA BOL-04: la solicitud completa enviada sin sesión tampoco cambia los datos ni la firma de la ficha
+        $firmaAntes = $c->fresh()->firma_ruta;
+        $this->enEmpresa(fn () => app(BolsaTrabajo::class)->postular($this->empresa->refresh(), $vacante->fresh('sedes'), [
+            'nombre' => 'Otra', 'apellido_paterno' => 'Persona', 'apellido_materno' => 'Distinta', 'telefono' => '9981234567', 'sede_id' => $this->centro->id,
+            'correo' => 'otra@example.com', 'calle_numero' => 'Calle Falsa 1',
+            'referencias' => [['nombre' => 'Martha Chablé', 'telefono' => '9981112233'], ['nombre' => 'Rosa Uc', 'telefono' => '9984445566']],
+            'acepta_privacidad' => '1', 'declaracion' => '1', 'firma' => $this->firmaImagen(),
+        ], null, '10.0.0.9'));
+        $c->refresh();
+        $this->assertSame(['Karla Pérez Uc', null, null, $firmaAntes], [$c->nombre_completo, $c->correo, $c->calle_numero, $c->firma_ruta]);
+        $this->assertTrue($this->enEmpresa(fn () => $c->eventos()->where('comentario', 'like', '%no se aplicaron a su ficha%otra@example.com%')->exists()));
 
         // «Nuevo candidato» de RR. HH.: aviso en vivo con «Abrir su ficha»
         $this->actingAs($this->rh)->getJson('/candidatos/duplicado?campo=telefono&valor=998-123-4567')->assertOk()

@@ -106,7 +106,8 @@ class EmpleosController extends Controller
         $e = $this->empresaOFallar($empresa);
         // Robot (llenó el campo trampa): se le contesta igual que a una persona, sin guardar nada
         if (trim(Entrada::texto($request->input(self::TRAMPA))) !== '') {
-            return redirect()->route('empleos.gracias', $e->bolsa_slug)->with('postulacion_enviada', true);
+            return redirect()->route('empleos.gracias', $e->bolsa_slug)->with('postulacion_enviada', true)
+                ->with('enlace_enviado', app(CorreoPlataforma::class)->configurado());
         }
         $request->validate([
             'cv' => ['nullable', 'file', 'max:5120', 'mimes:pdf,jpg,jpeg,png'],
@@ -117,7 +118,7 @@ class EmpleosController extends Controller
         ]);
 
         // Postulación corta (ADR-0010): nombre, teléfono, correo, sede y CV opcional; la solicitud completa se pide después
-        $candidato = $this->tenant->conEmpresa($e->id, function () use ($request, $e, $vacante) {
+        $this->tenant->conEmpresa($e->id, function () use ($request, $e, $vacante) {
             $v = $this->bolsa->vacantePublica($e, $vacante);
             abort_if($v === null, 404);
 
@@ -125,8 +126,9 @@ class EmpleosController extends Controller
                 $request->file('cv'), (string) $request->ip());
         });
 
+        // La respuesta es la misma para todos (seguridad): no deja saber si el teléfono ya tenía ficha
         return redirect()->route('empleos.gracias', $e->bolsa_slug)->with('postulacion_enviada', true)
-            ->with('enlace_enviado', $candidato->solicitud_corta && app(CorreoPlataforma::class)->configurado());
+            ->with('enlace_enviado', app(CorreoPlataforma::class)->configurado());
     }
 
     public function gracias(string $empresa): Response|RedirectResponse

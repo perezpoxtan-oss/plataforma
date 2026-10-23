@@ -58,7 +58,7 @@
                             @foreach ($postulacion->evaluaciones as $e)
                                 <li class="hecho">
                                     <i class="bi bi-star-fill" aria-hidden="true"></i>
-                                    <span>{{ EvaluacionCandidato::TIPOS[$e->tipo] ?? $e->tipo }}{{ $e->numero > 1 ? ' (entrevista '.$e->numero.')' : '' }} · {{ number_format((float) $e->promedio, 1) }} de 5 · {{ $e->etiquetaResultado() }}{{ $e->evaluador ? ' · '.$e->evaluador->name : '' }}</span>
+                                    <span>{{ EvaluacionCandidato::TIPOS[$e->tipo] ?? $e->tipo }}{{ $e->numero > 1 ? ' (entrevista '.$e->numero.')' : '' }} · {{ number_format((float) $e->promedio, 1) }} de 5 · {{ $e->etiquetaResultado() }}{{ $e->evaluador ? ' · '.$e->quienEvaluo() : '' }}</span>
                                     <small>@fecha($e->created_at, 'd/m/Y')</small>
                                 </li>
                             @endforeach

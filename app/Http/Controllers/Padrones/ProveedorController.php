@@ -199,16 +199,25 @@ class ProveedorController extends Controller
         Gate::authorize('proveedores.editar');
         $empresaId = $this->empresaDeTrabajo($request);
 
-        [$modelo, $sigueVisible] = $this->tenant->conEmpresa($empresaId, function () use ($request, $proveedor) {
-            $modelo = $this->buscarVisible($request->user(), $proveedor);
-            abort_unless($this->proveedores->esPropioSiAplica($request->user(), $modelo, 'proveedores.editar'), 403, 'Con alcance «Solo los propios» solo modificas los proveedores que tú diste de alta.');
-            $this->proveedores->actualizarSedes($request->user(), $modelo, $request);
+        [$modelo, $sigueVisible, $quitada] = $this->tenant->conEmpresa($empresaId, function () use ($request, $proveedor) {
+            $actor = $request->user();
+            // QA PRV-05: una empresa que ya no opera en su sede (la acaba de quitar) se puede volver a
+            // agregar a su sede, igual que al registrarla con el mismo nombre; solo agregar, nada más
+            $modelo = $this->proveedores->consulta($actor)->find($proveedor) ?? $this->paraAgregarAMiSede($request, $proveedor);
+            abort_unless($this->proveedores->esPropioSiAplica($actor, $modelo, 'proveedores.editar'), 403, 'Con alcance «Solo los propios» solo modificas los proveedores que tú diste de alta.');
+            $mias = $this->proveedores->sedes($actor, 'proveedores.editar');
+            $antes = $mias === null ? [] : array_values(array_intersect($mias, $modelo->todas_las_sedes ? $mias : $modelo->sedes()->pluck('sedes.id')->map(fn ($id) => (int) $id)->all()));
+            $this->proveedores->actualizarSedes($actor, $modelo, $request);
+            $despues = $mias === null ? [] : ($modelo->todas_las_sedes ? $mias : array_values(array_intersect($mias, $modelo->sedes()->pluck('sedes.id')->map(fn ($id) => (int) $id)->all())));
 
-            return [$modelo, $this->proveedores->consulta($request->user())->whereKey($modelo->id)->exists()];
+            return [$modelo, $this->proveedores->consulta($actor)->whereKey($modelo->id)->exists(), array_values(array_diff($antes, $despues))];
         });
 
-        // Si quitó su propia sede ya no puede ver la ficha: regresa a la lista
+        // Si quitó su propia sede ya no puede ver la ficha: regresa a la lista con el botón para volver a agregarla
         $destino = $sigueVisible ? $this->volver($request, $modelo) : redirect()->route('proveedores.index');
+        if (! $sigueVisible && count($quitada) === 1) {
+            $destino->with('volver_a_agregar', ['id' => $modelo->id, 'nombre' => $modelo->nombre, 'sede_id' => $quitada[0]]);
+        }
 
         return $destino->with('ok', "Sedes de «{$modelo->nombre}» actualizadas.");
     }
@@ -341,6 +350,20 @@ class ProveedorController extends Controller
     /**
      * De otra empresa o fuera de las sedes del usuario: 404.
      */
+    /**
+     * Empresa que no opera en ninguna sede del usuario: solo se le puede agregar
+     * una de sus sedes (alcance de sede). Activa y no rechazada; si no, 404.
+     */
+    private function paraAgregarAMiSede(Request $request, int $id): Proveedor
+    {
+        $mias = $this->proveedores->sedes($request->user(), 'proveedores.editar');
+        $pedidas = array_map('intval', (array) $request->input('sedes', []));
+        $modelo = $mias === null || array_intersect($mias, $pedidas) === [] ? null : Proveedor::find($id);
+        abort_if($modelo === null || ! $modelo->activo || $modelo->estaRechazado(), 404);
+
+        return $modelo;
+    }
+
     private function buscarVisible(User $actor, int $id): Proveedor
     {
         $modelo = $this->proveedores->consulta($actor)->find($id);

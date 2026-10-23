@@ -112,6 +112,24 @@ class SolicitudEmpleoTest extends TestCase
 
     // ------------------------------------------------------------------ Captura
 
+    public function test_editar_la_solicitud_y_firmar_queda_en_el_historial(): void
+    {
+        // QA SOL-05: «Editar solicitud» anota en el historial qué partes cambiaron (sin valores) y la firma en pantalla
+        $c = $this->candidato();
+        $this->actingAs($this->rh)->put("/candidatos/{$c->id}", $this->solicitud())->assertSessionHas('ok');
+        $this->actingAs($this->rh)->put("/candidatos/{$c->id}", $this->solicitud(['calle_numero' => 'Calle 45 #120', 'declaracion' => '1', 'firma' => $this->firma()]))
+            ->assertSessionHas('ok');
+        $ultimo = $this->enEmpresa(fn () => $c->eventos()->where('evento', 'solicitud_editada')->latest('id')->first());
+        $this->assertSame('Recursos Humanos editó la solicitud de empleo: domicilio. El candidato firmó en pantalla.', $ultimo->comentario);
+        $this->assertSame($this->rh->id, $ultimo->user_id);
+        $this->assertStringNotContainsString('Calle 45', $ultimo->comentario, 'Sin el domicilio en el historial');
+        // Guardar sin cambios no agrega renglones
+        $antes = $this->enEmpresa(fn () => $c->eventos()->count());
+        $this->actingAs($this->rh)->put("/candidatos/{$c->id}", $this->solicitud(['calle_numero' => 'Calle 45 #120']))->assertSessionHas('ok');
+        $this->assertSame($antes, $this->enEmpresa(fn () => $c->eventos()->count()));
+        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertOk()->assertSee('Solicitud editada');
+    }
+
     public function test_rh_captura_la_solicitud_completa_y_se_normaliza(): void
     {
         $c = $this->candidato();

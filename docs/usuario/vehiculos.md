@@ -59,7 +59,7 @@ resumen: Registrar los vehículos que entran a la empresa e imprimir su calcoman
 
 ### Registrar un vehículo de una empresa externa
 
-En **Padrones → Empresas externas → Ficha → Flotilla** toca **Agregar vehículo**. La ventana dice «Registrando unidad de …», la categoría ya dice **De una empresa** y la empresa ya viene puesta, con candado: solo falta el número económico y los datos del vehículo. Al guardar o al cerrar regresas a la ficha de la empresa.
+En **Padrones → Empresas externas → Ficha → Flotilla** toca **Agregar vehículo**. La ventana dice «Registrando unidad de …», la categoría ya dice **De una empresa** y la empresa ya viene puesta, con candado: solo falta el número económico y los datos del vehículo. Al guardar o al cerrar regresas a la ficha de la empresa, en la pestaña **Flotilla**.
 
 ## Cómo cargar muchos vehículos desde Excel
 

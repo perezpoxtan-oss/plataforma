@@ -280,7 +280,7 @@ class PersonaController extends Controller
     private function volver(Request $request, Persona $persona): RedirectResponse
     {
         if ($request->input('volver') === 'proveedor' && $persona->proveedor_id !== null && Route::has('proveedores.show')) {
-            return redirect()->route('proveedores.show', $persona->proveedor_id);
+            return redirect()->route('proveedores.show', ['proveedor' => $persona->proveedor_id, 'tab' => 'personal']);
         }
 
         return redirect()->to(route('personas.index').'#persona-'.$persona->id);

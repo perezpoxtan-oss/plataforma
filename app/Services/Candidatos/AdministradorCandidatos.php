@@ -347,10 +347,57 @@ class AdministradorCandidatos
         // Recursos Humanos completó la solicitud de una postulación corta por internet (ADR-0010)
         $candidato->solicitud_corta = false;
         $candidato->save();
+        $cambios = array_keys($candidato->getChanges());
         app(Postulaciones::class)->desdeFicha($candidato); // A qué aplica: lo manda la postulación activa
         $this->auditoria->auditar($actor, 'candidatos.actualizado', $candidato, $antes, $this->foto($candidato));
+        // QA SOL-05: el historial anota que se editó la solicitud (qué partes, sin valores) y si firmó en pantalla
+        $partes = $this->partesCambiadas($cambios);
+        $firmo = in_array('firma_ruta', $cambios, true);
+        if ($partes !== [] || $firmo) {
+            $this->evento($candidato, 'solicitud_editada', null, null, trim(($partes !== [] ? 'Recursos Humanos editó la solicitud de empleo: '.implode(', ', $partes).'.' : '')
+                .($firmo ? ' El candidato firmó en pantalla.' : '')), $actor);
+        }
 
         return $candidato;
+    }
+
+    /**
+     * Partes de la solicitud que cambiaron (para el historial: sin valores).
+     *
+     * @param  list<string>  $campos
+     * @return list<string>
+     */
+    private function partesCambiadas(array $campos): array
+    {
+        $grupos = [
+            'nombre' => ['nombre_completo', 'nombre', 'apellido_paterno', 'apellido_materno'],
+            'teléfono o correo' => ['telefono', 'telefono_fijo', 'correo'],
+            'domicilio' => ['calle_numero', 'colonia', 'codigo_postal', 'municipio', 'estado_domicilio', 'tiempo_residencia', 'ciudad'],
+            'datos oficiales' => ['curp', 'rfc', 'nss', 'licencia_tipo', 'licencia_vigencia'],
+            'datos personales' => ['fecha_nacimiento', 'sexo', 'lugar_nacimiento', 'nacionalidad', 'estado_civil', 'dependientes'],
+            'contacto de emergencia' => ['emergencia_nombre', 'emergencia_parentesco', 'emergencia_telefono'],
+            'escolaridad, experiencia y referencias' => ['escolaridad', 'experiencia', 'habilidades', 'idiomas', 'referencias', 'referencias_laborales'],
+            'vacante' => ['vacante', 'vacante_id', 'departamento_id', 'puesto_id'],
+            'notas de RR. HH.' => ['notas_rh'],
+        ];
+        $ignorar = ['updated_at', 'actualizado_por', 'autocaptura_pendiente', 'solicitud_corta', 'firma_ruta', 'firma_en', 'firma_medio', 'firma_capturada_por',
+            'declaracion_aceptada_en', 'privacidad_aceptada_en', 'privacidad_ip', 'privacidad_version', 'privacidad_medio', 'aviso_privacidad_id'];
+        $partes = [];
+        foreach ($campos as $campo) {
+            if (in_array($campo, $ignorar, true)) {
+                continue;
+            }
+            $grupo = 'otros datos';
+            foreach ($grupos as $nombre => $lista) {
+                if (in_array($campo, $lista, true)) {
+                    $grupo = $nombre;
+                    break;
+                }
+            }
+            $partes[$grupo] = true;
+        }
+
+        return array_keys($partes);
     }
 
     /**
