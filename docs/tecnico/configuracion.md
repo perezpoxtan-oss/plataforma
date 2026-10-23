@@ -113,3 +113,19 @@ Ajustes de caseta y activos (`_caseta.blade.php` con `$tarjeta`, `PUT /configura
 
 - **Cuentas y seguridad → Verificación en dos pasos** (`PUT /configuracion/dos-pasos`, `configuracion.editar` empresa; restablecible `dos_pasos`): a quién se exige. Ver [dos-pasos.md](dos-pasos.md).
 - **Privacidad** (`#sec-privacidad`, acción `configuracion.datos_personales` con alcance de empresa): conservación de datos (`PUT /configuracion/privacidad`), aviso con versiones (`POST /configuracion/privacidad/aviso`) y enlace a la bandeja ARCO. Ver [privacidad.md](privacidad.md).
+
+## Versión de PHP del servidor (`App\Services\Plataforma\VersionPhp`)
+
+Tarjeta **Versión de PHP del servidor** (`#cfg-php`, parcial `_version-php.blade.php`) dentro de **Plataforma**: solo el Super Administrador. El controlador calcula los datos solo si `es_superadmin` (para nadie más se llama al servicio) y nada sale en cabeceras HTTP (`CabecerasSeguridad` ya quita `X-Powered-By`).
+
+| Dato | De dónde sale |
+|---|---|
+| Páginas (web) | `PHP_VERSION` del proceso que atiende la página. |
+| Tareas programadas | Línea `PHP del cron:` que `desplegar.sh` escribe en `$HOME/despliegue_<amb>_estado.txt`. Solo se muestra el número de versión (nunca la ruta del ejecutable). Si el archivo no existe, no se puede leer o dice «sin detectar»: «Sin dato todavía». |
+| Estado | `VersionPhp::evaluar()`: **Al día** si la versión es ≥ la mínima de su rama; **Requiere actualización** (rojo) si es menor o si la rama es anterior a la más baja de la lista (sin soporte, p. ej. 8.1). Una rama más nueva que todas las de la lista cuenta como al día. Si web o cron requieren actualización sale el aviso de `config('plataforma.php.aviso')`. |
+| Aceleración (OPcache) | `opcache_get_status(false)['opcache_enabled']`. |
+| Memoria máxima / Tiempo máximo por página | `ini_get('memory_limit')` y `ini_get('max_execution_time')` (−1 o 0 = «Sin límite»). |
+
+- **Versiones mínimas en un solo lugar:** `config/plataforma.php` → `php.minimas` (`8.5 ⇒ 8.5.12`, `8.4 ⇒ 8.4.27`, `8.3 ⇒ 8.3.36`, `8.2 ⇒ 8.2.35`, corrección de PHP2Shell, CVE-2026-109618 y CVE-2026-109619) y el texto en `php.aviso`. Cuando salga otra corrección se cambian ahí; no hay migraciones.
+- **Archivo de estado:** `PLATAFORMA_ESTADO_DESPLIEGUE` (opcional) o, si no está, se deduce de la carpeta de la aplicación: `…/apps/plataforma-qa/releases/<versión>` ⇒ `…/despliegue_qa_estado.txt`; `plataforma-produccion` ⇒ `despliegue_prod_estado.txt`. Fuera del servidor (equipo de desarrollo) no hay archivo.
+- **Pruebas:** `tests/Feature/Administracion/VersionPhpTest.php` (solo el Super Administrador la ve; nadie más la calcula ni sale en cabeceras; cálculo para 8.5/8.4/8.3/8.2 antes y después de la corrección, 8.1 y 7.4 sin soporte, rama más nueva y texto sin versión, inyectando la versión con `new VersionPhp('8.4.20')`; lectura del archivo de estado y deducción de su ruta).

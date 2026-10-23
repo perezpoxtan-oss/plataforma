@@ -39,4 +39,23 @@ return [
         'lento_ms' => (int) env('PLATAFORMA_LENTO_MS', 1500),
     ],
 
+    /*
+    | Versión de PHP del servidor (Configuración → Plataforma, solo Super
+    | Administrador; App\Services\Plataforma\VersionPhp). Versión mínima por
+    | rama para considerarla «Al día»; una rama anterior a la más baja de la
+    | lista ya no tiene soporte y siempre pide actualizar. Cuando salga una
+    | corrección nueva, cambia aquí las versiones y el aviso.
+    */
+    'php' => [
+        'minimas' => [
+            '8.5' => '8.5.12',
+            '8.4' => '8.4.27',
+            '8.3' => '8.3.36',
+            '8.2' => '8.2.35',
+        ],
+        'aviso' => 'Corrige la falla de seguridad PHP2Shell (CVE-2026-109618 y CVE-2026-109619). Pide a tu proveedor de hospedaje la versión corregida.',
+        // Archivo de estado del despliegue con la línea «PHP del cron:»; vacío = se deduce de la carpeta de la aplicación
+        'estado_despliegue' => env('PLATAFORMA_ESTADO_DESPLIEGUE'),
+    ],
+
 ];

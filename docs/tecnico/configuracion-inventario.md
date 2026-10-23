@@ -121,6 +121,7 @@ Sección **Configuración → Reservas de áreas** (al final del índice). Ver [
 |---|---|---|---|
 | Correo SMTP (servidor, puerto, cifrado, usuario, contraseña cifrada, remitente) | `configuracion_plataforma` clave `correo` | Configuración → Plataforma → Correo de la plataforma | sin configurar |
 | Respaldos de la base | archivos en `storage/app/private/respaldos` | Configuración → Plataforma → Respaldos (bloque a cargo de otro equipo) | diario después de las 3:00, 14 días |
+| Versión de PHP del servidor (solo consulta) | `PHP_VERSION`, archivo de estado del despliegue; mínimas en `config/plataforma.php` (`php.minimas`) | Configuración → Plataforma → Versión de PHP del servidor | 8.5.12 / 8.4.27 / 8.3.36 / 8.2.35 |
 | Identidad (nombre, logos, colores) | `configuracion_plataforma` (Identidad) | Estructura → Plataforma → Identidad (enlace en Plataforma) | «Plataforma», azul #2563eb |
 | Catálogo comercial: moneda, IVA, página pública, textos, correos de solicitudes, texto legal | `configuracion_plataforma` clave `comercial` | Catálogo comercial → Ajustes (enlace en Plataforma) | MXN, 16 %, sin publicar |
 | Suscripciones: prueba gratis, días de prueba, días de gracia, descuento anual, avisos antes de vencer, contacto | ídem (`prueba_habilitada`, `dias_prueba`, `dias_gracia`, `descuento_anual_porcentaje`, `avisos_dias_antes`, `contacto_suscripciones`) | Catálogo comercial → Ajustes (enlace) | sí, 14, 15, 10 %, 7 y 1 |
@@ -143,6 +144,7 @@ No se cambian desde la plataforma; las administra quien instala.
 | `PLATAFORMA_INACTIVIDAD_MINUTOS` | Cierre de sesión por inactividad | 20 | Sí, ocasionalmente (ver «Pendiente») |
 | `PLATAFORMA_HOSTS`, `PLATAFORMA_VERIFICAR_HOST` | Dominios aceptados | el de `APP_URL` | Solo al agregar un dominio |
 | `COMERCIAL_PASARELA`, `COMERCIAL_WEBHOOKS` | Pasarela de pagos | manual / apagado | Al conectar pagos en línea |
+| `PLATAFORMA_ESTADO_DESPLIEGUE` | Archivo de estado del despliegue con «PHP del cron» (Configuración → Plataforma → Versión de PHP) | se deduce de la carpeta de la aplicación | No |
 | `APP_MOVIL_PAQUETE`, `APP_MOVIL_HUELLAS_SHA256` | App de Android (App Links) | `mx.smartcentinel.app` / vacío | Al publicar la app |
 | Zona horaria del servidor (`config/app.php`) | Se guarda todo en UTC; cada empresa y sede muestra su hora | UTC | No (la de la empresa se cambia en Empresas) |
 

@@ -17,6 +17,7 @@ use App\Services\Novedades\AjustesNovedades;
 use App\Services\Novedades\ArchivoLostFound;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Services\Plataforma\VersionPhp;
 use App\Services\Privacidad\ConservacionDatos;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\Respaldos\Respaldos;
@@ -78,6 +79,8 @@ class ConfiguracionController extends Controller
             'correoListo' => $this->correo->configurado(),
             'cifrados' => CorreoPlataforma::CIFRADOS,
             'respaldos' => $actor->es_superadmin ? $this->respaldos->listar() : collect(),
+            // Versión de PHP del servidor: solo el Super Administrador (nunca se calcula para nadie más)
+            'php' => $actor->es_superadmin ? app(VersionPhp::class)->datos() : null,
             'empresa' => $empresaId === null ? null : Empresa::find($empresaId),
             'avisos' => Empresa::AVISOS,
             'puedeEditar' => $this->editaEmpresa($actor),

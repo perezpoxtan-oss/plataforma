@@ -53,7 +53,7 @@ Cada empresa nueva nace con **todos** los módulos. Si una empresa no usa alguno
 
 **Qué debes ver:** «Módulos de «…» actualizados: tiene N módulos…». Lo que quitaste deja de verse en el menú, en la Matriz de permisos y en el Manual de sus usuarios; sus datos y permisos se conservan por si lo vuelves a activar.
 
-**¿En qué empresa estoy?** Arriba, junto a **Mis pendientes**, el Super Administrador ve siempre el nombre de su **empresa de trabajo** (o **Plantillas de la plataforma**). Se cambia con el selector **Empresa de trabajo** de las pantallas de Estructura.
+**¿En qué empresa estoy?** Arriba, junto a **Mis pendientes**, el Super Administrador ve siempre el nombre de su **empresa de trabajo** (o **Plantillas de la plataforma**). Si el nombre es largo o la pantalla es angosta, se recorta con «…»: pasa el puntero encima para verlo completo. Se cambia con el selector **Empresa de trabajo** de las pantallas de Estructura.
 
 ## Cómo registrar una sede
 
