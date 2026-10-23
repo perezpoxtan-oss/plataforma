@@ -213,7 +213,7 @@ class PasesSalidaMejorasTest extends TestCase
         $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertDontSee('Firmas en caseta ·');
 
         $pase = $this->crearPase();
-        $this->assertSame(['Jefe de Departamento', 'Contraloría', 'Gerencia'], $pase->aprobaciones->pluck('nombre')->all());
+        $this->assertSame(['Jefe del departamento del solicitante', 'Contraloría', 'Gerencia'], $pase->aprobaciones->pluck('nombre')->all());
         $this->assertSame(['salida' => 'dos', 'recepcion' => 'dos', 'salida_regreso' => 'dos', 'regreso' => 'dos'], $pase->firmas_caseta);
         $this->assertNull($pase->valorTotal());
         $this->assertNull($this->enEmpresa(fn () => Empresa::find($this->empresa->id)->preferencias['pases_salida'] ?? null));
@@ -225,7 +225,7 @@ class PasesSalidaMejorasTest extends TestCase
         $pase = $this->recargar($pase);
         $this->assertSame(2, $pase->ronda);
         $this->assertSame(['pendiente'], $pase->aprobaciones->where('ronda', 2)->pluck('estado')->unique()->values()->all());
-        $this->assertSame('Jefe de Departamento', $this->actual($pase)->nombre);
+        $this->assertSame('Jefe del departamento del solicitante', $this->actual($pase)->nombre);
         $this->aprobarTodo($pase);
 
         // Cada movimiento de caseta pide las dos firmas, con los mismos mensajes
@@ -457,7 +457,7 @@ class PasesSalidaMejorasTest extends TestCase
         $this->rechazar($tercero);
         $this->actingAs($this->admin)->put("/pases-salida/{$tercero->id}", $this->datos($con(1000)))->assertSessionHasNoErrors();
         $this->assertSame(['pendiente', 'pendiente', 'pendiente'], $this->recargar($tercero)->aprobaciones->where('ronda', 2)->pluck('estado')->values()->all());
-        $this->assertSame('Jefe de Departamento', $this->actual($tercero)->nombre);
+        $this->assertSame('Jefe del departamento del solicitante', $this->actual($tercero)->nombre);
     }
 
     // -------------------------------------------------------- D. Campana
@@ -473,7 +473,7 @@ class PasesSalidaMejorasTest extends TestCase
         // 1. «Te toca firmar» a quien puede firmar el paso, con botón que abre la ficha
         $aviso = $this->notificaciones($this->director, 'pase_por_firmar')->first();
         $this->assertSame('Te toca firmar el pase PS-000001', $aviso->titulo);
-        $this->assertStringContainsString('Jefe de Departamento (paso 1 de 3)', $aviso->texto);
+        $this->assertStringContainsString('Jefe del departamento del solicitante (paso 1 de 3)', $aviso->texto);
         $this->assertCount(0, $this->notificaciones($agente, 'pase_por_firmar'));
         $this->actingAs($this->director)->getJson('/notificaciones/resumen')->assertOk()
             ->assertJsonPath('lista.0.titulo', 'Te toca firmar el pase PS-000001')

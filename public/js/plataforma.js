@@ -6415,8 +6415,14 @@ document.addEventListener('click', function (e) {
             c.hidden = !ver;
             c.querySelectorAll('input, select').forEach(function (x) { x.disabled = !ver; });
         });
+        // El jefe del departamento siempre es el del solicitante: no se elige departamento
+        paso.querySelectorAll('[data-no-si-tipo]').forEach(function (c) {
+            var ver = !tipo || c.getAttribute('data-no-si-tipo') !== tipo.value;
+            c.hidden = !ver;
+            if (depto) { depto.disabled = !ver; }
+        });
         paso.querySelectorAll('[data-si-departamento]').forEach(function (c) {
-            var ver = depto && c.getAttribute('data-si-departamento') === depto.value;
+            var ver = depto && !depto.disabled && c.getAttribute('data-si-departamento') === depto.value;
             c.hidden = !ver;
             c.querySelectorAll('input, select').forEach(function (x) { x.disabled = !ver; });
         });

@@ -34,14 +34,26 @@
             <p class="mb-2"><strong>Cómo funciona:</strong> los pasos se firman <strong>en orden</strong>; el siguiente se abre cuando el anterior aprueba. Si alguien rechaza, el pase regresa al solicitante para corregirlo.</p>
             <ul class="small mb-0">
                 <li>Quien aprueba necesita el permiso <strong>«Aprobar»</strong> de Pases de salida en la sede de donde sale el equipo.</li>
+                <li><strong>El jefe del departamento del solicitante</strong> es el responsable de ese departamento en <strong>Estructura → Departamentos</strong> (si no tiene, su suplente; si delegó con «No molestar», también su delegado). Si el departamento no tiene responsable, firma quien tenga «Aprobar» en ese departamento.</li>
                 <li>El solicitante nunca aprueba su propio pase, y una persona no firma dos pasos del mismo pase (salvo que nadie más pueda).</li>
                 <li>Si nadie cumple la regla de un paso, lo puede firmar cualquiera con «Aprobar» en la sede (así ningún pase se queda atorado).</li>
                 <li>Los cambios aplican a los pases nuevos y a los que se reenvíen; los que ya están en curso conservan sus pasos y sus firmas en caseta.</li>
             </ul>
             @unless ($configurado)
-                <p class="small text-primary mt-2 mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> Hoy se usa la cadena original: <strong>Jefe de Departamento → Contraloría → Gerencia</strong>.</p>
+                <p class="small text-primary mt-2 mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> Hoy se usa la cadena original: <strong>Jefe del departamento del solicitante → Contraloría → Gerencia</strong>.</p>
             @endunless
         </div>
+
+        @if ($puedeEditar && ($ofrecerPasoJefe ?? false))
+            <div class="tarjeta p-3 mb-3 aviso-paso-jefe">
+                <p class="mb-2"><i class="bi bi-person-badge me-1 text-primary" aria-hidden="true"></i><strong>Tu circuito no tiene el paso del jefe del departamento.</strong> El circuito predeterminado ahora empieza con «Jefe del departamento del solicitante». Tu circuito no se cambió: si quieres, agrégalo como primer paso (los pases en curso no cambian).</p>
+                <form action="{{ route('pases-salida.circuito.paso-jefe') }}" method="POST" class="m-0">
+                    @csrf
+                    <button type="submit" class="btn-agregar-articulo"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar el paso del jefe del departamento</button>
+                </form>
+            </div>
+        @endif
+        @error('pasos')<div class="alert alert-danger small">{{ $message }}</div>@enderror
 
         @unless ($puedeEditar)
             <div class="alert alert-warning small"><i class="bi bi-lock me-1" aria-hidden="true"></i>Solo consulta: el circuito es de toda la empresa y lo cambia quien tiene «Configurar» de Pases de salida con alcance de empresa.</div>
@@ -174,7 +186,7 @@
         </form>
 
         @if ($puedeEditar && $configurado)
-            <form action="{{ route('pases-salida.circuito.destroy') }}" method="POST" class="mt-3" data-confirmar="¿Volver a la configuración original (Jefe de Departamento, Contraloría y Gerencia), con dos firmas en cada movimiento de caseta y el rechazo desde el primer paso?">
+            <form action="{{ route('pases-salida.circuito.destroy') }}" method="POST" class="mt-3" data-confirmar="¿Volver a la configuración original (Jefe del departamento del solicitante, Contraloría y Gerencia), con dos firmas en cada movimiento de caseta y el rechazo desde el primer paso?">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn-enlace-pase"><i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Restablecer la configuración original</button>

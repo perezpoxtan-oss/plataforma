@@ -31,6 +31,7 @@ use App\Models\MovimientoTransporte;
 use App\Models\Notificacion;
 use App\Models\Novedad;
 use App\Models\PaseSalida;
+use App\Models\PaseSalidaPaso;
 use App\Models\Persona;
 use App\Models\Plan;
 use App\Models\Postulacion;
@@ -76,6 +77,7 @@ use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Novedades\ArchivoLostFound;
 use App\Services\Novedades\Formatos\RecorridoPc;
 use App\Services\PasesSalida\AdministradorPasesSalida;
+use App\Services\PasesSalida\CircuitoPasesSalida;
 use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
@@ -252,6 +254,7 @@ class CrearDatosDemo extends Command
         $paso('ronda8Demo', fn () => $this->ronda8Demo(User::where('username', 'agente.demo')->firstOrFail()));
         $paso('vacantesDemo', fn () => $this->vacantesDemo($sedes, User::where('username', 'rh.demo')->firstOrFail()));
         $paso('rolesSolicitudesDemo', fn () => $this->rolesSolicitudesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
+        $paso('pasoJefePasesDemo', fn () => $this->pasoJefePasesDemo(User::where('username', 'admin.demo')->firstOrFail()));
         $paso('postulacionesDemo', fn () => $this->postulacionesDemo($sedes, User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('entrevistasDemo', fn () => $this->entrevistasDemo($empresa, $sedes, User::where('username', 'rh.demo')->firstOrFail(), User::where('username', 'jefedepto.demo')->firstOrFail()));
         // Reservas de áreas (docs/tecnico/reservas.md): salón de eventos, sala de juntas, servicios con departamento y reservas en distintos estados
@@ -747,6 +750,27 @@ class CrearDatosDemo extends Command
         $jefa = User::where('username', 'jefedepto.demo')->first();
         if ($jefa !== null && ! DepartamentoResponsable::where('departamento_id', $recepcion->id)->where('user_id', $jefa->id)->exists()) {
             DepartamentoResponsable::create(['departamento_id' => $recepcion->id, 'user_id' => $jefa->id, 'es_suplente' => false, 'sede_id' => $sedes['CEN']->id]);
+        }
+    }
+
+    /**
+     * Demo ya creado (con pases): si su circuito de pases todavía no tiene el
+     * paso «Jefe del departamento del solicitante», se agrega como paso 1 (así
+     * jefedepto.demo firma primero los pases de Recepción). Solo la empresa
+     * demo; los pases en curso conservan su copia del circuito.
+     */
+    private function pasoJefePasesDemo(User $admin): void
+    {
+        $circuito = app(CircuitoPasesSalida::class);
+        if (! PaseSalidaPaso::where('activo', true)->exists() || $circuito->tienePasoJefe()) {
+            return;
+        }
+        $previo = auth()->user();
+        try {
+            auth()->setUser($admin);
+            $circuito->agregarPasoJefe($admin);
+        } finally {
+            $previo !== null ? auth()->setUser($previo) : auth()->forgetGuards();
         }
     }
 
@@ -1408,10 +1432,12 @@ class CrearDatosDemo extends Command
 
     /**
      * Pases de salida de ejemplo, solo la primera vez: el circuito de
-     * aprobación de la empresa demo (1. Jefe de Seguridad → rol "Jefe de
-     * seguridad", 2. Contraloría → director.demo, 3. Gerencia → rol
-     * "Administrador", solo en venta, traspaso definitivo y consignación) y un
-     * pase en cada estado: pendiente en el paso 1 (bandeja de jefe.demo),
+     * aprobación de la empresa demo (1. Jefe del departamento del solicitante
+     * → responsable de su departamento en Departamentos, p. ej. jefedepto.demo
+     * para Recepción; 2. Jefe de Seguridad → rol "Jefe de seguridad",
+     * 3. Contraloría → director.demo, 4. Gerencia → rol "Administrador", solo
+     * en venta, traspaso definitivo y consignación) y un pase en cada estado:
+     * pendiente en el paso 1 (bandeja de jefedepto.demo),
      * pendiente en Gerencia (bandeja de admin.demo), rechazado, cancelado,
      * aprobado, salió cerrado, en camino a la otra sede, en destino, en
      * tránsito de regreso, regreso parcial, regresado, uno vencido, uno con el
@@ -1442,7 +1468,11 @@ class CrearDatosDemo extends Command
         try {
             auth()->setUser($admin);
             $rol = fn (string $nombre) => Rol::where('empresa_id', $admin->empresa_id)->where('nombre', $nombre)->value('id');
+            // La jefa de Recepción (jefedepto.demo) queda como responsable de Recepción antes de armar los
+            // pases: el paso 1 «Jefe del departamento del solicitante» de los pases de Recepción es suyo.
+            $this->rolesSolicitudesDemo($sedes, $admin);
             $pases->circuito()->guardar($admin, ['pasos' => [
+                ['nombre' => CircuitoPasesSalida::NOMBRE_PASO_JEFE, 'tipo' => PaseSalidaPaso::JEFE_DEPARTAMENTO, 'departamento' => 'solicitante', 'obligatorio' => 1],
                 ['nombre' => 'Jefe de Seguridad', 'tipo' => 'rol', 'rol_id' => $rol('Jefe de seguridad'), 'departamento' => 'cualquiera', 'obligatorio' => 1],
                 ['nombre' => 'Contraloría', 'tipo' => 'usuarios', 'usuarios' => [$director->id], 'departamento' => 'cualquiera', 'obligatorio' => 1],
                 ['nombre' => 'Gerencia', 'tipo' => 'rol', 'rol_id' => $rol('Administrador'), 'departamento' => 'cualquiera', 'obligatorio' => 1,
@@ -1461,19 +1491,30 @@ class CrearDatosDemo extends Command
             $hoy = now('America/Cancun');
             $dia = fn (int $dias) => $hoy->copy()->addDays($dias)->format('Y-m-d');
             $radio = Equipo::where('numero_serie', '752TSFQ505')->first();
-            $aprobadores = [$jefe, $director, $admin];
+            // Quién firma cada paso en los datos de ejemplo; el del jefe del departamento lo resuelve el circuito
+            $porPaso = ['Jefe de Seguridad' => $jefe, 'Contraloría' => $director, 'Gerencia' => $admin];
             $semilla = 0;
             $firma = function () use (&$semilla) {
                 return $this->firmaDemo(++$semilla);
             };
-            $aprobar = function (PaseSalida $pase, int $cuantos) use ($pases, $aprobadores, $firma) {
+            $aprobar = function (PaseSalida $pase, int $cuantos) use ($pases, $porPaso, $firma, $admin) {
                 for ($k = 0; $k < $cuantos; $k++) {
                     $pase->refresh()->load('aprobaciones');
                     $actual = $pases->circuito()->actual($pase);
                     if ($actual === null) {
                         return;
                     }
-                    $quien = $aprobadores[$actual->orden - 1] ?? end($aprobadores);
+                    $circuito = $pases->circuito();
+                    $quien = $porPaso[$actual->nombre] ?? null;
+                    if ($quien === null || ! $circuito->puedeAprobar($quien, $pase, $actual)) {
+                        // Paso del jefe del departamento: su responsable (o suplente); en los departamentos de
+                        // ejemplo sin responsable todavía, alguien de ese departamento o, si no, la administradora
+                        $jefes = $circuito->jefesDelDepartamento($pase, $actual);
+                        $opciones = $circuito->aprobadores($pase, $actual)->filter(fn (User $u) => $circuito->puedeAprobar($u, $pase, $actual))->values();
+                        $quien = in_array($jefes['como'], ['titular', 'suplente', 'departamento'], true) && $opciones->isNotEmpty()
+                            ? $opciones->first()
+                            : ($circuito->puedeAprobar($admin, $pase, $actual) ? $admin : ($opciones->first() ?? $quien ?? $admin));
+                    }
                     auth()->setUser($quien);
                     $pases->aprobar($quien, $pase, ['aprobacion_id' => $actual->id, 'firma_modo' => 'nueva', 'firma' => $firma(),
                         'comentario' => $k === 0 ? 'Revisado, adelante.' : null]);
@@ -1495,7 +1536,7 @@ class CrearDatosDemo extends Command
                 return $pases->crear($autor, $datos + ['articulos' => $articulos]);
             };
 
-            // 1. Pendiente en el paso 1: espera a jefe.demo
+            // 1. Pendiente en el paso 1 (Jefe del departamento del solicitante): espera a jefedepto.demo, jefa de Recepción
             $crear($agente, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1007'), 'destino_tipo' => 'sede', 'sede_destino_id' => $sedes['PLA']->id,
                 'fecha_salida_programada' => $dia(1), 'fecha_tentativa_regreso' => $dia(8)],
                 [['cantidad' => 1, 'equipo' => 'Proyector', 'marca' => 'EPSON', 'modelo' => 'PowerLite X49', 'serie' => 'X49-55821', 'descripcion' => 'Con cable HDMI y control remoto, para el evento de capacitación']]);
@@ -1505,13 +1546,13 @@ class CrearDatosDemo extends Command
                 'proveedor_id' => $proveedor('Abarrotes del Caribe') ?? $proveedor('Constructora Maya'),
                 'destino_direccion' => 'Av. Andrés Quintana Roo 45, Cancún', 'destino_telefono' => '9988841020', 'fecha_salida_programada' => $dia(0)],
                 [['cantidad' => 4, 'equipo' => 'Refrigerador exhibidor', 'marca' => 'IMBERA', 'modelo' => 'VR-17', 'descripcion' => 'Usados, de la tienda del lobby']]);
-            $aprobar($venta, 2);
+            $aprobar($venta, 3);
 
             // 3. Rechazado en Contraloría: devuelto al solicitante
             $rechazado = $crear($admin, ['sede_id' => $sedes['PLA']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1011'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
                 'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(0), 'fecha_tentativa_regreso' => $dia(12)],
                 [['cantidad' => 1, 'equipo' => 'Podadora', 'marca' => 'HONDA', 'modelo' => 'HRX217', 'serie' => 'HRX-20981', 'descripcion' => 'No arranca']]);
-            $aprobar($rechazado, 1);
+            $aprobar($rechazado, 2);
             auth()->setUser($director);
             $pases->rechazar($director, $rechazado->refresh(), ['motivo_rechazo' => 'Falta la cotización del proveedor: adjúntala y reenvía.']);
 
@@ -1526,7 +1567,7 @@ class CrearDatosDemo extends Command
             $listo = $crear($admin, ['sede_id' => $sedes['PLA']->id, 'motivo' => 'reparacion', 'colaborador_id' => $colaborador('1011'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
                 'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(0), 'fecha_tentativa_regreso' => $dia(10)],
                 [['cantidad' => 1, 'equipo' => 'Taladro rotomartillo', 'marca' => 'DEWALT', 'modelo' => 'DCD996', 'serie' => 'DW-778120', 'descripcion' => 'No gira el mandril']]);
-            $aprobar($listo, 2);
+            $aprobar($listo, 3);
 
             // Del 6 en adelante: cada movimiento ocurre en su día y a una hora razonable (el reloj
             // de la plataforma «viaja» a ese momento), para que lo real sea coherente con lo
@@ -1544,7 +1585,7 @@ class CrearDatosDemo extends Command
                 'fecha_salida_programada' => $dia(-2)],
                 [['cantidad' => 1, 'equipo' => 'Lavadora industrial', 'marca' => 'SPEED QUEEN', 'modelo' => 'SC40', 'serie' => 'SQ-40-1187', 'descripcion' => 'Pasa a la lavandería de Playa']]);
             $en(-3, '12:40');
-            $aprobar($traspaso, 3);
+            $aprobar($traspaso, 4);
             $en(-2, '09:40');
             $paso($traspaso, $agente, 'GUADALUPE CHAN EK');
 
@@ -1556,7 +1597,7 @@ class CrearDatosDemo extends Command
                 [$radio ? ['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505', 'equipo_id' => $radio->id, 'descripcion' => 'Con cargador']
                     : ['cantidad' => 1, 'equipo' => 'Radio de Comunicación', 'marca' => 'MOTOROLA', 'modelo' => 'DEP 450', 'serie' => '752TSFQ505']]);
             $haceHoras(24);
-            $aprobar($enCamino, 2);
+            $aprobar($enCamino, 3);
             $haceHoras(2);
             $paso($enCamino, $agente, 'ROBERTO HERNÁNDEZ CRUZ');
 
@@ -1566,7 +1607,7 @@ class CrearDatosDemo extends Command
                 'fecha_salida_programada' => $dia(-4), 'fecha_tentativa_regreso' => $dia(3)],
                 [['cantidad' => 2, 'equipo' => 'Aspiradora', 'marca' => 'KÄRCHER', 'modelo' => 'NT 30/1', 'descripcion' => 'Apoyo por la limpieza profunda de Centro']]);
             $en(-5, '12:00');
-            $aprobar($enDestino, 2);
+            $aprobar($enDestino, 3);
             $en(-4, '09:30');
             $paso($enDestino, $admin, 'DANIELA CANUL MAY');
             $en(-4, '10:45');
@@ -1578,7 +1619,7 @@ class CrearDatosDemo extends Command
                 'fecha_salida_programada' => $dia(-6), 'fecha_tentativa_regreso' => $dia(1)],
                 [['cantidad' => 1, 'equipo' => 'Carpa plegable 3x3', 'marca' => 'TRUPER', 'descripcion' => 'Color blanco, con bolsa'], ['cantidad' => 6, 'equipo' => 'Silla plegable', 'descripcion' => 'Negras']]);
             $en(-7, '11:30');
-            $aprobar($transito, 3);
+            $aprobar($transito, 4);
             $en(-6, '08:45');
             $paso($transito, $agente, 'MARIANA LÓPEZ PECH');
             $en(-6, '10:05');
@@ -1592,7 +1633,7 @@ class CrearDatosDemo extends Command
                 'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'fecha_salida_programada' => $dia(-3), 'fecha_tentativa_regreso' => $dia(4)],
                 [['cantidad' => 4, 'equipo' => 'Radio portátil', 'marca' => 'KENWOOD', 'modelo' => 'TK-3402', 'descripcion' => 'Para la obra de la alberca']]);
             $en(-4, '11:10');
-            $aprobar($parcial, 2);
+            $aprobar($parcial, 3);
             $en(-3, '10:20');
             $paso($parcial, $agente, 'CARLOS PÉREZ GÓMEZ');
             $parcial->refresh()->load('articulos');
@@ -1606,7 +1647,7 @@ class CrearDatosDemo extends Command
                 'fecha_salida_programada' => $dia(-9), 'fecha_tentativa_regreso' => $dia(-2)],
                 [['cantidad' => 1, 'equipo' => 'Laptop', 'marca' => 'LENOVO', 'modelo' => 'L14', 'serie' => 'ABC123LATCAT', 'descripcion' => 'Bajo resguardo de Sistemas, para home office']]);
             $en(-10, '16:30');
-            $aprobar($regresado, 2);
+            $aprobar($regresado, 3);
             $en(-8, '08:30');
             $paso($regresado, $agente, 'ROBERTO HERNÁNDEZ CRUZ');
             $en(-3, '18:05');
@@ -1618,7 +1659,7 @@ class CrearDatosDemo extends Command
                 'destino_direccion' => 'Calle 20 Sur 110, Cancún', 'destino_telefono' => '9981234567', 'fecha_salida_programada' => $dia(-10), 'fecha_tentativa_regreso' => $dia(-3)],
                 [['cantidad' => 1, 'equipo' => 'Puerta corrediza de cristal', 'marca' => 'MITEL', 'modelo' => '989484', 'descripcion' => 'Riel dañado; la reparan en el taller del proveedor']]);
             $en(-11, '13:20');
-            $aprobar($vencido, 2);
+            $aprobar($vencido, 3);
             $en(-10, '11:15');
             $paso($vencido, $agente, 'CARLOS PÉREZ GÓMEZ');
 
@@ -1628,7 +1669,7 @@ class CrearDatosDemo extends Command
                 'fecha_salida_programada' => $dia(-8), 'fecha_tentativa_regreso' => $dia(-5)],
                 [['cantidad' => 2, 'equipo' => 'Bocina amplificada', 'marca' => 'JBL', 'modelo' => 'EON 712', 'descripcion' => 'Para el evento en el jardín de Playa']]);
             $en(-9, '17:45');
-            $aprobar($completo, 2);
+            $aprobar($completo, 3);
             $en(-8, '09:10');
             $paso($completo, $agente, 'MARIANA LÓPEZ PECH');
             $en(-8, '10:25');
@@ -1646,7 +1687,7 @@ class CrearDatosDemo extends Command
                 'fecha_salida_programada' => $dia(-5), 'fecha_tentativa_regreso' => $dia(-1)],
                 [['cantidad' => 1, 'equipo' => 'Desbrozadora', 'marca' => 'STIHL', 'modelo' => 'FS 55', 'serie' => 'ST-55-3310', 'descripcion' => 'Cambio de cabezal']]);
             $en(-6, '12:15');
-            $aprobar($atrasado, 2);
+            $aprobar($atrasado, 3);
         } finally {
             Carbon::setTestNow($relojPrevio);
             $previo ? auth()->setUser($previo) : auth()->forgetUser();

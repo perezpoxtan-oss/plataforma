@@ -13,7 +13,7 @@ Aprenderás:
 
 ## Antes de empezar
 
-Usa la empresa de práctica con `admin.demo` (Administrador), `jefe.demo` y `director.demo` (aprobadores), `agente.demo` (caseta de Centro), `agente2.demo` (caseta de Playa), `supervisor.demo` y `solicitante.demo`.
+Usa la empresa de práctica con `admin.demo` (Administrador), `jefedepto.demo` (jefa de Recepción), `jefe.demo` y `director.demo` (aprobadores), `agente.demo` (caseta de Centro), `agente2.demo` (caseta de Playa), `supervisor.demo` y `solicitante.demo`.
 
 La empresa de práctica conserva el circuito de ejemplo con **dos firmas en cada movimiento** de caseta. Solo el motivo **Devolución** (ningún pase de ejemplo lo usa) tiene una excepción para practicar: **Registrar Salida** pide solo la firma de Seguridad y **Registrar Regreso** no pide firmas.
 
@@ -28,7 +28,7 @@ Comprueba: en la campana de `agente2.demo` el aviso «Un pase viene a tu sede» 
 ## Práctica 2 · Firmas en caseta (admin.demo y agente.demo)
 
 1. Con `admin.demo` abre **Circuito** y baja a **Firmas en caseta**. Abre **Excepciones por motivo (avanzado)** y mira el renglón **Devolución**.
-2. Con `agente.demo` crea un **Nuevo Pase** con motivo **Devolución** hacia un proveedor. Con `jefe.demo` y `director.demo` apruébalo.
+2. Con `solicitante.demo` crea un **Nuevo Pase** con motivo **Devolución** hacia un proveedor. Apruébalo con `jefedepto.demo` (jefa de su departamento), `jefe.demo` y `director.demo`.
 3. Con `agente.demo` toca **Registrar Salida**: la ventana dice «En este pase, este movimiento solo pide la firma de Seguridad.» Marca los artículos y guarda.
 4. Con `admin.demo` cambia **Registrar Salida** de **Devolución** a **Dos firmas** y guarda. Vuelve al pase de la práctica: **conserva** lo que tenía al enviarse.
 5. Registra el regreso: «Este movimiento no pide firmas». Imprime el pase: la hoja dice «Sin firma: se registra en la plataforma» y quién lo registró.
@@ -39,17 +39,17 @@ Comprueba: en la campana de `agente2.demo` el aviso «Un pase viene a tu sede» 
 2. Con `solicitante.demo` crea un préstamo de una laptop de **$60,000** (en **Valor por pieza $**): el circuito incluye Gerencia.
 3. Crea otro de **$8,000**: Gerencia no aparece. Crea un tercero sin valor: Gerencia **sí** aparece (si no se sabe el valor, se pide).
 
-## Práctica 4 · Rechazo que retoma (admin.demo, jefe.demo y director.demo)
+## Práctica 4 · Rechazo que retoma (admin.demo, jefedepto.demo, jefe.demo y director.demo)
 
 1. Con `admin.demo`, en **Al corregir y reenviar un pase rechazado**, elige **Retomar desde el paso que rechazó** y guarda.
-2. Con `solicitante.demo` crea un pase. `jefe.demo` lo aprueba; `director.demo` lo **rechaza** con un motivo.
+2. Con `solicitante.demo` crea un pase. `jefedepto.demo` y `jefe.demo` lo aprueban; `director.demo` lo **rechaza** con un motivo.
 3. `solicitante.demo` ve en la campana «Tu pase … fue rechazado» con el motivo. Corrige y reenvía.
-4. El pase vuelve a **Contraloría**; el paso del jefe dice «firma conservada del envío anterior».
+4. El pase vuelve a **Contraloría**; los pasos del jefe del departamento y del Jefe de Seguridad dicen «firma conservada del envío anterior».
 5. Regresa la opción a **Empezar desde el primer paso** (la de siempre).
 
 ## Práctica 5 · Campana y vencidos (supervisor.demo)
 
-1. Con `jefe.demo`, abre la campana: «Te toca firmar el pase …» con el botón **Abrir pase**. Cuando otra persona firma ese paso, el aviso queda leído y sin botón.
+1. Crea un pase con `solicitante.demo`. Con `jefedepto.demo`, abre la campana: «Te toca firmar el pase …» con el botón **Abrir pase**; el pase también está en **Mis pendientes → Firmas de pases de salida**. Cuando otra persona firma ese paso, el aviso queda leído y sin botón.
 2. `PS-000012` está vencido: cada mañana llega «Pase PS-000012 vencido — debió regresar el …» a quien lo pidió y a quien aprueba en Centro (también a `supervisor.demo` si tiene «Aprobar»). Al registrar el regreso, el aviso queda leído.
 
 ## Para recordar
