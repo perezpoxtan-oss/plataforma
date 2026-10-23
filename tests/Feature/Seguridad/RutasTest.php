@@ -251,7 +251,10 @@ class RutasTest extends TestCase
         $this->assertSame('', $h->fin());
         $this->assertFalse($h->cruzaMedianoche());
 
-        $this->actingAs($this->admin)->get(route('rutas.sede', ['sede' => $this->centro->id, 'tab' => 'salidas']))->assertOk()->assertSee('15:10');
+        $html = $this->actingAs($this->admin)->get(route('rutas.sede', ['sede' => $this->centro->id, 'tab' => 'salidas']))->assertOk()->assertSee('15:10')->getContent();
+        // El renglón del horario muestra solo la hora de salida, sin guion colgando
+        $this->assertStringNotContainsString('15:10–', $html);
+        $this->assertMatchesRegularExpression('/<strong>L-D<\/strong> 15:10\s/', $html);
         $this->actingAs($this->admin)->get(route('rutas.semana', ['sede' => $this->centro->id]))->assertOk()->assertSee('15:10');
         $this->actingAs($this->admin)->get(route('rutas.itinerario', ['ruta' => $h->ruta_id]))->assertOk()->assertSee('sin hora de fin');
 

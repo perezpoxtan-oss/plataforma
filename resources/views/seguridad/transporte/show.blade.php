@@ -24,7 +24,7 @@
             <div><dt>Fecha (sede)</dt><dd>{{ $m->fecha->format('d/m/Y') }} · @fecha($m->created_at, 'h:i A')</dd></div>
             <div><dt>Movimiento</dt><dd>{{ $m->etiquetaTipo() }} {{ $llegada ? '(A la Sede)' : '(Hacia Paraderos)' }}</dd></div>
             <div><dt>Ruta</dt><dd>{{ $m->ruta?->nombre ?? '—' }}</dd></div>
-            <div><dt>Horario programado</dt><dd>@if ($m->horario){{ $m->horario->nombre }} · {{ $m->horario->inicio() }}–{{ $m->horario->fin() }} · {{ $m->horario->patronDias() }}@else — @endif</dd></div>
+            <div><dt>Horario programado</dt><dd>@if ($m->horario){{ $m->horario->nombre }} · {{ $m->horario->inicio() }}@if ($m->horario->fin() !== '')–{{ $m->horario->fin() }}@endif · {{ $m->horario->patronDias() }}@else — @endif</dd></div>
             <div><dt>Transportista de la ruta</dt><dd>{{ $m->ruta?->proveedor?->nombre ?? '—' }}</dd></div>
             <div><dt>Estatus</dt><dd>{{ $m->etiquetaEstatus() }}</dd></div>
             <div><dt>Unidad</dt><dd>{{ $m->etiquetaUnidad() }}@if ($m->vehiculo) · {{ $m->vehiculo->placas }}{{ $m->vehiculo->numero_economico ? ' · Eco. '.$m->vehiculo->numero_economico : '' }}{{ trim($m->vehiculo->marca.' '.$m->vehiculo->modelo) !== '' ? ' · '.trim($m->vehiculo->marca.' '.$m->vehiculo->modelo) : '' }}@endif</dd></div>

@@ -194,7 +194,8 @@ class AdministradorReservas
             'area' => (int) $r->reserva_area_id, 'inicio' => $r->inicio?->toIso8601String(), 'fin' => $r->fin?->toIso8601String(),
             'titulo' => $r->titulo, 'tipo_uso' => $r->tipo_uso_id, 'montaje' => $r->montaje_id, 'asistentes' => (int) $r->asistentes,
             'para_cliente' => (bool) $r->para_cliente, 'cliente' => trim($r->cliente_nombre.' '.$r->cliente_empresa) ?: null, 'tarifa' => $r->tarifa,
-            'servicios' => $r->items->map(fn ($i) => $i->nombre.' × '.$i->cantidadTexto().($i->notas ? ' ('.$i->notas.')' : ''))->join(', '), 'notas' => $r->notas,
+            // En orden fijo: el formulario puede mandar los mismos servicios en otro orden
+            'servicios' => $r->items->sortBy(fn ($i) => mb_strtolower($i->nombre).'|'.$i->departamento_id)->map(fn ($i) => $i->nombre.' × '.$i->cantidadTexto().($i->notas ? ' ('.$i->notas.')' : ''))->join(', '), 'notas' => $r->notas,
             'total' => number_format((float) $r->total, 2, '.', ''),
             'departamento' => $r->departamento_solicitante_id, 'excepcion_aforo' => $r->excede_aforo ? $r->motivo_excepcion_aforo : null,
             'dia_completo' => (bool) $r->dia_completo, 'montaje_minutos' => $r->montaje_minutos, 'desmontaje_minutos' => $r->desmontaje_minutos,
@@ -287,7 +288,7 @@ class AdministradorReservas
             }
         }
 
-        $items = $this->items($datos, $paraCliente, $asistentes, Cotizador::horasCobradas($inicio, $fin));
+        $items = $this->items($datos, $paraCliente, $asistentes, Cotizador::horasCobradas($inicio, $fin), $actual);
 
         $ajustes = $this->ajustes->de((int) $area->empresa_id);
         $tarifa = isset($datos['tarifa']) && array_key_exists($datos['tarifa'], ReservaArea::TARIFAS) ? (string) $datos['tarifa'] : null;
@@ -379,18 +380,36 @@ class AdministradorReservas
      * servicio_id). Sin cantidad se sugiere: por persona = las personas; por
      * hora = las horas; por pieza o evento = 1.
      *
+     * Un servicio dado de baja en el catálogo ya no se ofrece para reservas
+     * nuevas, pero lo que una reserva YA pidió se conserva al modificarla
+     * (mismo nombre, departamento y costo con que se pidió): guardar sin
+     * cambios no quita nada ni vuelve a pedir aprobaciones.
+     *
      * @param  array<string, mixed>  $datos
      * @return list<array<string, mixed>>
      */
-    private function items(array $datos, bool $paraCliente, int $asistentes, int $horas): array
+    private function items(array $datos, bool $paraCliente, int $asistentes, int $horas, ?Reserva $actual = null): array
     {
         $pedidos = collect((array) ($datos['servicios'] ?? []))
             ->filter(fn ($f) => is_array($f) && (filter_var($f['usar'] ?? false, FILTER_VALIDATE_BOOLEAN) || (float) ($f['cantidad'] ?? 0) > 0));
         $catalogo = ReservaServicio::where('activo', true)->whereIn('id', $pedidos->keys()->map(fn ($k) => (int) $k))->get()->keyBy('id');
+        $yaPedidos = $actual === null ? collect() : $actual->items()->whereNotNull('servicio_id')->get()->keyBy('servicio_id');
         $items = [];
         foreach ($pedidos as $id => $fila) {
             $servicio = $catalogo[(int) $id] ?? null;
             if ($servicio === null) {
+                $previo = $yaPedidos[(int) $id] ?? null;
+                if ($previo === null) {
+                    continue;
+                }
+                // Dado de baja después de pedirlo: se conserva tal como se pidió
+                $cantidad = (float) ($fila['cantidad'] ?? 0) > 0 ? min(100000, round((float) $fila['cantidad'], 2)) : (float) $previo->cantidad;
+                $items[] = [
+                    'servicio_id' => $previo->servicio_id, 'departamento_id' => $previo->departamento_id, 'nombre' => $previo->nombre, 'unidad' => $previo->unidad,
+                    'cantidad' => $cantidad, 'costo_unitario' => $paraCliente ? (float) $previo->costo_unitario : 0.0,
+                    'notas' => mb_substr(trim((string) ($fila['notas'] ?? '')), 0, 255) ?: null,
+                ];
+
                 continue;
             }
             $cantidad = (float) ($fila['cantidad'] ?? 0) > 0 ? min(100000, round((float) $fila['cantidad'], 2))

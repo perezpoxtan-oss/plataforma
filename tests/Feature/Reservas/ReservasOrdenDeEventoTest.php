@@ -7,9 +7,11 @@ use App\Models\Departamento;
 use App\Models\DepartamentoResponsable;
 use App\Models\Empresa;
 use App\Models\Espacio;
+use App\Models\Notificacion;
 use App\Models\Reserva;
 use App\Models\ReservaAprobacion;
 use App\Models\ReservaArea;
+use App\Models\ReservaEvento;
 use App\Models\ReservaMontaje;
 use App\Models\ReservaOrden;
 use App\Models\ReservaServicio;
@@ -373,6 +375,105 @@ class ReservasOrdenDeEventoTest extends TestCase
         // Un «otro servicio» con departamento de otra empresa no se acepta
         $this->reservar($this->rita, ['hora_inicio' => '15:00', 'hora_fin' => '16:00', 'otros' => [['departamento_id' => $this->ajena->id, 'nombre' => 'Algo']]])
             ->assertSessionHasErrors('otros');
+    }
+
+    public function test_guardar_sin_cambios_conserva_un_servicio_dado_de_baja_y_no_avisa_a_nadie(): void
+    {
+        // Confirmada con Coffee break (Cocina) y Proyector (Sistemas)
+        $this->reservar($this->rita, ['servicios' => [
+            $this->servicios['coffee'] => ['usar' => '1', 'cantidad' => '20', 'notas' => 'Agua'],
+            $this->servicios['proyector'] => ['usar' => '1', 'cantidad' => '1'],
+        ]])->assertSessionHasNoErrors();
+        $r = $this->ultima();
+        $this->aprobar($this->julieta, $this->aprobacion($r, 'area'));
+        $this->aprobar($this->sergio, $this->aprobacion($r, 'departamento:'.$this->cocina->id));
+        $this->aprobar($this->julia, $this->aprobacion($r, 'departamento:'.$this->sistemas->id));
+        $this->assertSame(Reserva::CONFIRMADA, $this->ultima()->estado);
+
+        // Después se da de baja el proyector en el catálogo
+        $this->enEmpresa(function () {
+            $this->actingAs($this->admin);
+            app(CatalogosReservas::class)->cambiarEstado($this->admin, ReservaServicio::findOrFail($this->servicios['proyector']), false);
+        });
+        auth()->forgetGuards();
+
+        // Ya no se ofrece para reservas nuevas, pero la reserva que lo pidió lo sigue mostrando marcado
+        $this->actingAs($this->rita)->get('/reservas/nueva')->assertOk()->assertDontSee('name="servicios['.$this->servicios['proyector'].'][usar]"', false);
+        $this->actingAs($this->rita)->get("/reservas/{$r->id}/editar")->assertOk()
+            ->assertSee('name="servicios['.$this->servicios['proyector'].'][usar]" value="1" checked', false)
+            ->assertSee('Dado de baja: se conserva en esta reserva');
+
+        // Guardar sin cambios (lo que manda el formulario): nada se quita ni se vuelve a pedir
+        $avisos = $this->enEmpresa(fn () => Notificacion::count());
+        $this->flushSession();
+        $this->actingAs($this->rita)->put("/reservas/{$r->id}", ['reserva_area_id' => $this->salon->id, 'fecha' => self::JUEVES, 'hora_inicio' => '10:00', 'hora_fin' => '12:00',
+            'titulo' => 'Capacitación de inducción', 'asistentes' => 20, 'para_cliente' => '0', 'montaje_minutos' => 60, 'desmontaje_minutos' => 30,
+            'servicios' => [
+                $this->servicios['coffee'] => ['usar' => '1', 'cantidad' => '20', 'notas' => 'Agua'],
+                $this->servicios['proyector'] => ['usar' => '1', 'cantidad' => '1', 'notas' => ''],
+            ],
+        ])->assertSessionHasNoErrors()->assertSessionHas('ok', 'Cambios guardados: la reserva sigue confirmada.');
+        $r = $this->ultima();
+        $this->assertSame(Reserva::CONFIRMADA, $r->estado);
+        $this->assertNotNull($r->items->firstWhere('servicio_id', $this->servicios['proyector']));
+        $this->assertSame(ReservaOrden::PENDIENTE, $r->ordenes->firstWhere('departamento_id', $this->sistemas->id)->estado);
+        $this->assertSame($avisos, $this->enEmpresa(fn () => Notificacion::count()), 'Guardar sin cambios no avisa a nadie');
+        $this->assertSame('Modificada por '.$this->rita->name.' (sin cambios)', $this->enEmpresa(fn () => ReservaEvento::where('reserva_id', $r->id)->where('evento', 'modificada')->latest('id')->value('titulo')));
+
+        // Desmarcarlo sí lo quita (y ya no se puede volver a pedir)
+        $this->flushSession();
+        $this->actingAs($this->rita)->put("/reservas/{$r->id}", ['reserva_area_id' => $this->salon->id, 'fecha' => self::JUEVES, 'hora_inicio' => '10:00', 'hora_fin' => '12:00',
+            'titulo' => 'Capacitación de inducción', 'asistentes' => 20, 'para_cliente' => '0',
+            'servicios' => [$this->servicios['coffee'] => ['usar' => '1', 'cantidad' => '20', 'notas' => 'Agua']],
+        ])->assertSessionHasNoErrors();
+        $this->assertNull($this->ultima()->items->firstWhere('servicio_id', $this->servicios['proyector']));
+        $this->flushSession();
+        $this->actingAs($this->rita)->put("/reservas/{$r->id}", ['reserva_area_id' => $this->salon->id, 'fecha' => self::JUEVES, 'hora_inicio' => '10:00', 'hora_fin' => '12:00',
+            'titulo' => 'Capacitación de inducción', 'asistentes' => 20, 'para_cliente' => '0',
+            'servicios' => [$this->servicios['coffee'] => ['usar' => '1', 'cantidad' => '20', 'notas' => 'Agua'], $this->servicios['proyector'] => ['usar' => '1']],
+        ])->assertSessionHasNoErrors();
+        $this->assertNull($this->ultima()->items->firstWhere('servicio_id', $this->servicios['proyector']));
+    }
+
+    public function test_al_rechazar_las_demas_aprobaciones_se_ven_como_ya_no_aplica(): void
+    {
+        $this->reservar($this->rita, ['servicios' => [
+            $this->servicios['coffee'] => ['usar' => '1'], $this->servicios['proyector'] => ['usar' => '1'],
+        ]])->assertSessionHasNoErrors();
+        $r = $this->ultima();
+        // Una modificación previa deja una aprobación reemplazada (no debe mostrarse)
+        $this->flushSession();
+        $this->actingAs($this->rita)->put("/reservas/{$r->id}", ['reserva_area_id' => $this->salon->id, 'fecha' => self::JUEVES, 'hora_inicio' => '10:00', 'hora_fin' => '12:00',
+            'titulo' => 'Capacitación de inducción', 'asistentes' => 20, 'para_cliente' => '0',
+            'servicios' => [$this->servicios['coffee'] => ['usar' => '1', 'notas' => 'Agua'], $this->servicios['proyector'] => ['usar' => '1']],
+        ])->assertSessionHasNoErrors();
+        $this->travel(1)->minutes();
+
+        $sistemas = $this->aprobacion($r, 'departamento:'.$this->sistemas->id);
+        $this->flushSession();
+        $this->actingAs($this->julia)->post("/reservas/aprobaciones/{$sistemas->id}/responder", ['respuesta' => 'rechazar', 'comentario' => ''])
+            ->assertSessionHasErrors(['comentario' => 'Escribe el motivo del rechazo.']);
+        $this->flushSession();
+        $this->actingAs($this->julia)->post("/reservas/aprobaciones/{$sistemas->id}/responder", ['respuesta' => 'rechazar', 'comentario' => 'No hay proyector disponible'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame(Reserva::RECHAZADA, $this->ultima()->estado);
+
+        $html = $this->actingAs($this->rita)->get("/reservas/{$r->id}")->assertOk()->getContent();
+        $bloque = (string) str($html)->after('id="t-aprobaciones"')->before('t-historial');
+        $this->assertSame(1, substr_count($bloque, 'Rechazada'));
+        // Área y Cocina siguen visibles como «Ya no aplica» (una vez cada una) y sin botones
+        $this->assertSame(2, substr_count($bloque, 'Ya no aplica'));
+        $this->assertStringContainsString('Responsable del área', $bloque);
+        $this->assertStringContainsString('Cocina', $bloque);
+        $this->assertStringNotContainsString('Aprobar</button>', $this->actingAs($this->sergio)->get("/reservas/{$r->id}")->getContent());
+
+        // Una reserva viva no muestra las aprobaciones reemplazadas
+        $this->reservar($this->rita, ['hora_inicio' => '15:00', 'hora_fin' => '16:00', 'servicios' => [$this->servicios['coffee'] => ['usar' => '1']]])->assertSessionHasNoErrors();
+        $viva = $this->ultima();
+        $this->flushSession();
+        $this->actingAs($this->rita)->put("/reservas/{$viva->id}", ['reserva_area_id' => $this->salon->id, 'fecha' => self::JUEVES, 'hora_inicio' => '15:00', 'hora_fin' => '16:00',
+            'titulo' => 'Capacitación de inducción', 'asistentes' => 20, 'para_cliente' => '0', 'servicios' => []])->assertSessionHasNoErrors();
+        $this->actingAs($this->rita)->get("/reservas/{$viva->id}")->assertOk()->assertDontSee('Ya no aplica');
     }
 
     public function test_el_departamento_que_hace_el_montaje_recibe_la_orden_del_tipo_de_montaje(): void

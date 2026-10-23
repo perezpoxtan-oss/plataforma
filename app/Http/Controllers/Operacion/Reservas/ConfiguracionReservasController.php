@@ -239,12 +239,21 @@ class ConfiguracionReservasController extends Controller
         $this->catalogos->guardarArea($request->user(), $area, $request->except('foto'), $request->file('foto'));
         $copiadas = $request->boolean('copiar_interiores') ? $this->catalogos->copiarAInteriores($request->user(), $area->refresh()) : 0;
 
+        // «Reservar esta área» solo si de verdad se ofrece: una quitada (o una zona
+        // que se reserva por sus espacios interiores) no aparece en Nueva reserva.
+        $area->loadMissing('espacio');
+        $seOfrece = $area->reservable && ! $area->porInteriores() && (bool) $area->espacio?->activo;
+        $siguientes = $seOfrece
+            ? [['Reservar esta área', route('reservas.create', ['area' => $area->id]), 'bi-calendar-plus'],
+                ['Volver a la configuración', route('reservas.configuracion'), 'bi-arrow-left']]
+            : (! $area->reservable
+                ? [['Ver áreas quitadas para reactivarla', self::urlVer([], 'areas', 'areas'), 'bi-eye']]
+                : [['Volver a la configuración', route('reservas.configuracion'), 'bi-arrow-left']]);
+
         return redirect()->route('reservas.configuracion.area', $area->id)
-            ->with('ok', 'Configuración del área guardada.'.($copiadas > 0 ? " También se copió a sus {$copiadas} espacios interiores." : ''))
-            ->with('siguientes', [
-                ['Reservar esta área', route('reservas.create', ['area' => $area->id]), 'bi-calendar-plus'],
-                ['Volver a la configuración', route('reservas.configuracion'), 'bi-arrow-left'],
-            ]);
+            ->with('ok', 'Configuración del área guardada.'.($copiadas > 0 ? " También se copió a sus {$copiadas} espacios interiores." : '')
+                .(! $area->reservable ? ' Sigue quitada de reservas: no se ofrece hasta que la reactives.' : ''))
+            ->with('siguientes', $siguientes);
     }
 
     public function estadoArea(Request $request, int $area): RedirectResponse

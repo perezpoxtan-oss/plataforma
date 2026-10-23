@@ -116,6 +116,15 @@ Reserva igual a la hoja (quien reserva):
 
 Comprueba: después de aprobar, cada departamento (también Steward, por el tipo de montaje) tiene su orden en **Órdenes de servicio**.
 
+## Práctica 10 · Lo ya pedido se conserva y lo que ya no aplica se ve (Administrador, quien reserva y quien aprueba)
+
+1. Con la reserva confirmada de la práctica 9, el Administrador da de baja **Proyector** en **Servicios y requerimientos**.
+2. Quien reservó abre la reserva, toca **Modificar** y busca **Proyector**: sigue marcado, con la nota «Dado de baja: se conserva en esta reserva». En **Nueva reserva** ya no aparece.
+3. Sin cambiar nada toca **Guardar reserva**: «Cambios guardados: la reserva sigue confirmada.». Nadie recibe avisos nuevos y la orden de Capacitación sigue igual.
+4. Haz otra reserva con **Coffee break** y **Proyector** (reactívalo antes). Como responsable de Capacitación toca **Rechazar → No se puede**, escribe «No hay proyector disponible» y **Rechazar**. En **Aprobaciones** tu parte dice **Rechazada** y las del área y Cocina **Ya no aplica**, sin botones.
+5. Como Administrador, en **Configuración** toca el bote de basura de un área con reservas próximas y lee el mensaje (termina con «El espacio sigue en Zonas y edificios.»); toca **Cancelar**.
+6. Edita un área **quitada** (con **Mostrar quitadas**) y guarda: el aviso dice que sigue quitada y ofrece **Ver áreas quitadas para reactivarla**, no **Reservar esta área**.
+
 ## Para recordar
 
 - Una zona se reserva **completa** o **por sus espacios interiores**; si ambas existen, una ocupa a la otra en ese horario.
@@ -125,5 +134,5 @@ Comprueba: después de aprobar, cada departamento (también Steward, por el tipo
 - La reserva es una **orden de evento**: quién la pide y de qué departamento, personas contra el aforo (con excepción y motivo), horario o día completo, montaje antes y desmontaje después, y lo que prepara cada departamento.
 
 - Lo de cada quien llega a su campana y a Mis pendientes: nadie tiene que buscar.
-- Modificar solo vuelve a pedir lo que cambió.
+- Modificar solo vuelve a pedir lo que cambió; guardar sin cambios no avisa a nadie y no quita servicios ya pedidos aunque se hayan dado de baja.
 - «Listo» lo marca cada departamento; quien reservó ve el avance.
