@@ -4,6 +4,7 @@ namespace Tests\Feature\Seguridad;
 
 use App\Models\Empresa;
 use App\Models\Modulo;
+use App\Models\ModuloAccion;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Manual\Manual;
@@ -280,6 +281,36 @@ class ManualTest extends TestCase
         $this->assertSame('accesos', $manual->paginaDeModulo('accesos', $agente)?->slug);
     }
 
+    public function test_una_pagina_con_accion_exacta_solo_la_ve_quien_puede_esa_accion(): void
+    {
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $admin = $this->crearUsuario($this->empresa, 'Administrador', $this->centro);
+        $this->assertTrue($agente->can('accesos.ver'));
+        $this->assertFalse($agente->can('accesos.aprobar'));
+
+        $manual = $this->manualDePrueba([
+            'bitacora' => $this->encabezado('Bitácora', 'accesos')."# Bitácora\n",
+            'aprobar-accesos' => $this->encabezado('Aprobar accesos', 'accesos.aprobar')."# Aprobar accesos\n",
+        ]);
+        $deAgente = collect($manual->indice($agente))->flatten()->map(fn ($p) => $p->slug)->all();
+        $this->assertContains('bitacora', $deAgente);
+        $this->assertNotContains('aprobar-accesos', $deAgente);
+        $this->actingAs($agente)->get('/manual/aprobar-accesos')->assertNotFound();
+        $this->assertContains('aprobar-accesos', collect($manual->indice($admin))->flatten()->map(fn ($p) => $p->slug)->all());
+        // «?» de la pantalla: la página del módulo sigue encontrándose por su clave
+        $this->assertSame('bitacora', $manual->paginaDeModulo('accesos', $agente)?->slug);
+    }
+
+    public function test_el_agente_no_ve_paginas_de_pantallas_que_le_dan_permiso_denegado(): void
+    {
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $visibles = collect(app(Manual::class)->indice($agente))->flatten()->map(fn ($p) => $p->slug)->all();
+
+        foreach (['reservas-configuracion', 'importar-desde-excel', 'eliminar-definitivamente', 'privacidad-y-arco', 'configura-tu-empresa', 'respaldos-y-traslado'] as $slug) {
+            $this->assertNotContains($slug, $visibles, "El agente no debe ver «{$slug}»");
+        }
+    }
+
     // ------------------------------------------------------------------ reglas del manual real (docs/usuario)
 
     public function test_cada_pagina_tiene_encabezado_valido_con_modulos_del_catalogo(): void
@@ -294,8 +325,11 @@ class ManualTest extends TestCase
                 $fallas[] = "{$slug}.md: {$error}";
             }
             foreach ($encabezado['modulos'] ?? [] as $modulo) {
-                if (! in_array($modulo, $claves, true)) {
+                [$clave, $accion] = array_pad(explode('.', $modulo, 2), 2, null);
+                if (! in_array($clave, $claves, true)) {
                     $fallas[] = "{$slug}.md: el módulo «{$modulo}» no existe en el catálogo";
+                } elseif ($accion !== null && ! ModuloAccion::whereHas('modulo', fn ($q) => $q->where('clave', $clave))->whereHas('accion', fn ($q) => $q->where('clave', $accion))->exists()) {
+                    $fallas[] = "{$slug}.md: la acción «{$modulo}» no existe en el catálogo";
                 }
             }
         }
@@ -308,7 +342,7 @@ class ManualTest extends TestCase
     public function test_todo_modulo_con_pantalla_tiene_su_pagina_del_manual(): void
     {
         $manual = new Manual;
-        $cubiertos = collect($manual->paginas())->flatMap(fn ($p) => $p->modulos)->all();
+        $cubiertos = collect($manual->paginas())->flatMap(fn ($p) => $p->clavesDeModulo())->all();
 
         $faltan = Modulo::whereNotNull('ruta')->where('activo', true)->pluck('clave')
             ->reject(fn ($clave) => in_array($clave, $cubiertos, true) || in_array($clave, self::SIN_PAGINA_PROPIA, true))

@@ -53,7 +53,7 @@ class ManualController extends Controller
         // Manual dinámico: si la empresa le dio otro nombre a la bitácora («Incidentes»), la página lo dice
         $ajustes = app(AjustesNovedades::class);
         $empresaId = $ajustes->empresaActual();
-        $nombreBitacora = in_array('novedades', $encontrada->modulos, true) && $ajustes->nombrePropio($empresaId) ? $ajustes->nombreMenu($empresaId) : null;
+        $nombreBitacora = in_array('novedades', $encontrada->clavesDeModulo(), true) && $ajustes->nombrePropio($empresaId) ? $ajustes->nombreMenu($empresaId) : null;
 
         return view('manual.ver', [
             'pagina' => $encontrada,
