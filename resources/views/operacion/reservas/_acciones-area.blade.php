@@ -11,7 +11,7 @@
     $conInteriores = $a->porInteriores() ? ' y sus espacios interiores' : '';
     $confirmar = match (true) {
         $resumen['proximas'] > 0 => '«'.$a->nombre().'»'.$conInteriores.' '.($resumen['proximas'] === 1 ? 'tiene 1 reserva próxima' : 'tiene '.$resumen['proximas'].' reservas próximas')
-            .', así que todavía no se puede eliminar de reservas: primero cancélalas o reprográmalas. ¿Continuar para ver el aviso?',
+            .', así que todavía no se puede eliminar de reservas: primero cancélalas o reprográmalas. El espacio sigue en Zonas y edificios. ¿Continuar para ver el aviso?',
         $resumen['historial'] => '¿Eliminar «'.$a->nombre().'»'.$conInteriores.' de reservas? Ya tiene reservas pasadas: dejará de verse y de ofrecerse, pero guardamos su historial y su configuración (la ves con «Mostrar quitadas» y la puedes reactivar). El espacio sigue en Zonas y edificios.',
         default => '¿Eliminar «'.$a->nombre().'»'.$conInteriores.' de reservas? Nunca se ha reservado: se borra su configuración (aforo, montajes, horario, tarifas y foto). El espacio sigue en Zonas y edificios.',
     };
