@@ -126,10 +126,10 @@
         <div class="d-grid gap-3 align-content-start">
             <section class="res-tarjeta" id="aprobaciones" aria-labelledby="t-aprobaciones">
                 <h3 id="t-aprobaciones">Aprobaciones</h3>
-                @if ($vigentes->isEmpty())
+                @if ($mostrar->isEmpty())
                     <p class="res-meta m-0"><i class="bi bi-lightning-charge" aria-hidden="true"></i> Confirmación inmediata: esta reserva no necesitó aprobación.</p>
                 @endif
-                @foreach ($vigentes as $a)
+                @foreach ($mostrar as $a)
                     <div class="res-aprobacion">
                         <div>
                             <div class="fw-semibold">{{ $a->tipo === 'area' ? 'Responsable del área' : $a->departamento?->nombre }}</div>

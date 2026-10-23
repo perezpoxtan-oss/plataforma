@@ -21,7 +21,7 @@
    - Guarda. Revisa que la ruta muestra **L-V** y **S-D**.
 3. Intenta crear otra llegada llamada `ruta 4 - av. talleres`: el sistema avisa que ya existe en esta sede.
 4. **Clona** la RUTA 2 - KABAH: aparece «RUTA 2 - KABAH (COPIA)». Edítala y cambia la hora.
-5. En **Salidas**, mira la **RUTA 3 - NOCTURNA KABAH**: sale 23:20 y llega 00:30 **+1** (día siguiente).
+5. En **Salidas**, mira la **RUTA 3 - NOCTURNA KABAH**: sale 23:20 y llega 00:30 **+1** (día siguiente). Una salida sin hora de llegada muestra solo su hora de salida (por ejemplo «L-D 15:10»).
 6. **Suspende** la copia y luego **reactívala**.
 7. En **Paraderos**, crea `Plaza Hollywood`; renombra `AV. TALLERES` a `AV. TALLERES (OXXO)` y abre el itinerario de la Ruta 4: ya sale con el nombre nuevo.
 8. Toca **Hoja del día**, elige el próximo domingo y compara con hoy: solo salen los horarios de ese día.

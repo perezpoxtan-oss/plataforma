@@ -198,6 +198,7 @@
                                 <label class="res-item-check">
                                     <input type="checkbox" name="servicios[{{ $s->id }}][usar]" value="1" @checked($marcado($s->id)) data-res-usar>
                                     <span>{{ $s->nombre }}
+                                        @if (! $s->activo)<span class="res-meta" data-res-baja>· Dado de baja: se conserva en esta reserva; si lo desmarcas ya no podrás volver a pedirlo</span>@endif
                                         <span class="res-meta">· {{ \App\Models\ReservaServicio::UNIDADES[$s->unidad][0] }}@if ($s->costo !== null)<span data-res-solo-cliente @if (! $paraCliente) hidden @endif> · {{ \App\Services\Reservas\Cotizador::dinero($s->costo, $ajustes['moneda']) }}</span>@endif</span>
                                     </span>
                                 </label>
