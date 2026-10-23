@@ -87,7 +87,7 @@ resumen: Cargar de una vez colaboradores, personas, empresas externas, vehículo
 | Departamento, Puesto, Turno | El nombre tal como aparece en **Recursos Humanos**. |
 | CURP, RFC, NSS, Fecha de nacimiento, Estado de nacimiento, Nacionalidad, Correo personal, Dirección completa | Solo si tu rol ve datos personales. Fecha como día/mes/año (31/12/1990). |
 
-**Padrón de personas:** Tipo \* (Visitante, Proveedor o Contratista), Nombre completo \*, Empresa que representa (se liga sola si ya está en Empresas externas), Tipo de identificación (INE, Pasaporte, Licencia de conducir…), Folio de identificación, Teléfono, Categoría (solo visitantes: General, Prospecto de RR. HH. o Familiar) y Motivo de la visita.
+**Padrón de personas:** Tipo \* (Visitante, Proveedor o Contratista), Nombre completo \*, Empresa que representa (se liga sola si ya está en Empresas externas; si hay varias parecidas y ninguna se llama exactamente igual, el renglón marca el error para que escribas el nombre exacto), Tipo de identificación (INE, Pasaporte, Licencia de conducir…), Folio de identificación, Teléfono, Categoría (solo visitantes: General, Prospecto de RR. HH. o Familiar) y Motivo de la visita.
 
 **Empresas externas:** Razón social o nombre comercial \*, Categoría \* (Proveedor de insumos / alimentos, Transporte de personal, Contratista, Taxi…), RFC, Teléfono, Dirección y Sedes donde opera («Todas» o los nombres de las sedes separados por coma).
 

@@ -128,7 +128,7 @@
                         <ul class="rutas-fila-horarios" aria-label="Horarios">
                             @foreach ($r->horarios as $h)
                                 <li title="{{ $h->nombre }} · {{ $h->textoDias() }}">
-                                    <strong>{{ $h->patronDias() }}</strong> {{ $h->inicio() }}–{{ $h->fin() }}@if ($h->cruzaMedianoche())<span class="rutas-dia-siguiente" title="Llega al día siguiente">+1</span>@endif
+                                    <strong>{{ $h->patronDias() }}</strong> {{ $h->inicio() }}@if ($h->fin() !== '')–{{ $h->fin() }}@if ($h->cruzaMedianoche())<span class="rutas-dia-siguiente" title="Llega al día siguiente">+1</span>@endif @endif
                                     @if ($r->horarios->count() > 1)<span class="rutas-horario-nombre">· {{ $h->nombre }}</span>@endif
                                 </li>
                             @endforeach

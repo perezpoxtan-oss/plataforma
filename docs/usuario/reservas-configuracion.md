@@ -55,14 +55,14 @@ En cada ficha de área, arriba a la derecha, hay tres botones de ícono (los mis
 
 ![Configuración de una zona](img/reservas/area-interiores.png)
 
-**Qué debes ver:** «Configuración del área guardada.» con el botón **Reservar esta área**.
+**Qué debes ver:** «Configuración del área guardada.» con el botón **Reservar esta área**, que abre **Nueva reserva** con esa área ya elegida. Si el área está **quitada** de reservas, el aviso dice «Sigue quitada de reservas: no se ofrece hasta que la reactives.» y en lugar de **Reservar esta área** ofrece **Ver áreas quitadas para reactivarla**.
 
 ## Cómo eliminar un área de reservas
 
 Úsalo cuando ya no quieres ofrecer un área ni tenerla a la vista. **Nunca** se borra de Zonas y edificios: ahí sigue existiendo.
 
 1. En la ficha del área toca **Eliminar de reservas** (bote de basura).
-2. Lee el mensaje: te dice exactamente qué va a pasar con esa área. Toca **Aceptar** para continuar.
+2. Lee el mensaje: te dice exactamente qué va a pasar con esa área y te recuerda que el espacio sigue en Zonas y edificios. Toca **Aceptar** para continuar (o **Cancelar** para no cambiar nada).
 3. Según sus reservas:
    - **Nunca se ha reservado**: se borra su configuración de reserva (aforo, montajes, horario, tarifas y foto) y la ficha desaparece.
    - **Solo tiene reservas que ya pasaron**: deja de ofrecerse y **deja de verse**, pero guardamos su historial y su configuración. La puedes ver con **Mostrar quitadas** (ver abajo).

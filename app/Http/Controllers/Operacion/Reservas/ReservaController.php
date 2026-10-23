@@ -427,7 +427,11 @@ class ReservaController extends Controller
         ];
         $departamentos = Departamento::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
         $deptoMontaje = $ajustes['departamento_montaje_id'] !== null && $departamentos->contains('id', $ajustes['departamento_montaje_id']) ? $ajustes['departamento_montaje_id'] : null;
-        $servicios = ReservaServicio::with('departamento:id,nombre')->where('activo', true)->orderBy('orden')->orderBy('nombre')->get();
+        // Los dados de baja ya no se ofrecen, salvo los que esta reserva ya pidió (se conservan)
+        $yaPedidos = $reserva?->items->whereNotNull('servicio_id')->pluck('servicio_id')->map(fn ($id) => (int) $id)->all() ?? [];
+        $servicios = ReservaServicio::with('departamento:id,nombre')
+            ->where(fn ($q) => $q->where('activo', true)->orWhereIn('id', $yaPedidos))
+            ->orderBy('orden')->orderBy('nombre')->get();
         $otros = collect(old('otros', $valores['otros']))->filter(fn ($f) => is_array($f))->values();
 
         return view('operacion.reservas.formulario', [
@@ -452,7 +456,9 @@ class ReservaController extends Controller
                     'foto' => $a->foto ? route('reservas.foto', $a->id) : null,
                 ];
             })->values(),
-            'tipos' => ReservaTipoUso::where('activo', true)->orderBy('orden')->orderBy('nombre')->get(['id', 'nombre']),
+            // El tipo de uso que la reserva ya tiene se conserva aunque se haya dado de baja
+            'tipos' => ReservaTipoUso::where(fn ($q) => $q->where('activo', true)->when($reserva?->tipo_uso_id, fn ($q, $id) => $q->orWhere('id', $id)))
+                ->orderBy('orden')->orderBy('nombre')->get(['id', 'nombre']),
             'servicios' => $servicios,
             'grupos' => $this->gruposPorDepartamento($servicios, $departamentos, $deptoMontaje, $otros),
             'departamentos' => $departamentos,
@@ -550,9 +556,10 @@ class ReservaController extends Controller
 
         $espera = app(EsperaReservas::class);
         $umbrales = $espera->umbrales((int) $reserva->empresa_id);
+        $mostrar = self::aprobacionesParaMostrar($reserva, $vigentes);
 
         return view('operacion.reservas.show', [
-            'reserva' => $reserva, 'vigentes' => $vigentes, 'responder' => $responder->pluck('id')->all(),
+            'reserva' => $reserva, 'vigentes' => $vigentes, 'mostrar' => $mostrar, 'responder' => $responder->pluck('id')->all(),
             'relojes' => $vigentes->mapWithKeys(fn ($a) => [$a->id => $espera->reloj($a, $umbrales)])->all(),
             'ordenes' => $ordenes, 'atiende' => $atiende, 'textos' => $this->reservas->textos(),
             'zona' => $this->disponibilidad->zona($reserva->area),
@@ -563,8 +570,37 @@ class ReservaController extends Controller
                 'costo' => $this->reservas->puedeAjustarCosto($actor, $reserva), 'imprimir' => $this->puedeImprimir($actor, $reserva),
                 'historial' => $actor->can('auditoria.ver'),
             ],
-            'designados' => $vigentes->mapWithKeys(fn ($a) => [$a->id => User::whereIn('id', $this->responsables->designados($a, $reserva))->pluck('name')->join(', ', ' y ')])->all(),
+            'designados' => $mostrar->mapWithKeys(fn ($a) => [$a->id => User::whereIn('id', $this->responsables->designados($a, $reserva))->pluck('name')->join(', ', ' y ')])->all(),
         ]);
+    }
+
+    /**
+     * Aprobaciones del bloque «Aprobaciones» de la ficha: las vigentes y, si la
+     * reserva se rechazó o se canceló, también las que quedaron pendientes en
+     * ese momento (se muestran «Ya no aplica», sin botones) para que no
+     * desaparezcan. Las reemplazadas por una modificación no se muestran.
+     *
+     * @param  Collection<int, ReservaAprobacion>  $vigentes
+     * @return Collection<int, ReservaAprobacion>
+     */
+    public static function aprobacionesParaMostrar(Reserva $reserva, Collection $vigentes): Collection
+    {
+        $desde = match ($reserva->estado) {
+            Reserva::RECHAZADA => $vigentes->where('estado', ReservaAprobacion::RECHAZADA)->max('respondida_en'),
+            Reserva::CANCELADA => $reserva->cancelada_en,
+            default => null,
+        };
+        if ($desde === null) {
+            return $vigentes;
+        }
+        $claves = $vigentes->map(fn ($a) => $a->clave())->all();
+        $yaNoAplican = $reserva->aprobaciones
+            ->filter(fn (ReservaAprobacion $a) => ! $a->vigente && $a->estado === ReservaAprobacion::CANCELADA
+                && $a->updated_at !== null && $a->updated_at->greaterThanOrEqualTo($desde->copy()->subSeconds(5))
+                && ! in_array($a->clave(), $claves, true))
+            ->sortByDesc('id')->unique(fn ($a) => $a->clave());
+
+        return $vigentes->concat($yaNoAplican)->sortBy(fn ($a) => ($a->tipo === 'area' ? '0' : '1').'|'.$a->id)->values();
     }
 
     /** La reserva de la empresa de trabajo (otra empresa o sin empresa elegida: 404). */

@@ -142,6 +142,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
+| Falta la firma de Seguridad: firma en el recuadro o elige «Firma física». | Elegiste **Firma digital** y no firmaste (el recuadro se pone rojo). | Firma en el recuadro o cambia a **Firma física**. |
+| Falta la firma del responsable: que firme en el recuadro o elige «Firma física». | Hay responsable y no firmó. | Que firme o cambia a **Firma física**. |
 | Elige la sede donde se usarán los gafetes. | No elegiste sede. | Elige la sede. |
 | Escribe el nombre del tipo nuevo (por ejemplo: Capital Humano). | Elegiste «+ Nuevo tipo...» sin escribir el nombre. | Escribe el nombre del tipo. |
 | La cantidad debe ser de 1 a 50. | Pediste más de 50 o cero. | Genera varios lotes de máximo 50. |

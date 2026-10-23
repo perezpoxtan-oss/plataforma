@@ -544,7 +544,7 @@ class CuentaTest extends TestCase
 
         // Ya no entra
         auth()->logout();
-        $this->post('/login', ['username' => 'agente1', 'password' => 'Secreta123!'])->assertSessionHas('acceso', 'credenciales');
+        $this->post('/login', ['username' => 'agente1', 'password' => 'Secreta123!'])->assertSessionHas('acceso', 'inactiva'); // «Tu cuenta no está activa»
 
         // El reingreso del colaborador NO reactiva la cuenta sola; se hace en Usuarios y se limpia la marca
         $this->actingAs($this->admin)->patch("/colaboradores/{$colaborador->id}/estado", ['activo' => 1])->assertSessionHas('ok');

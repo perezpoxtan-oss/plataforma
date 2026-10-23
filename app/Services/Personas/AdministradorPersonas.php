@@ -221,22 +221,37 @@ class AdministradorPersonas
     }
 
     /**
-     * Empresa activa del directorio cuyo nombre es el escrito (sin importar
-     * mayúsculas, acentos, signos ni «S.A. de C.V.») y que corresponde al tipo.
+     * Empresa activa del directorio cuyo nombre es el escrito y que corresponde
+     * al tipo. QA PER-04: primero la coincidencia EXACTA (sin mayúsculas,
+     * acentos ni signos); si no hay, la que coincide sin «S.A. de C.V.» y
+     * similares, solo si es una. Si hay varias que empatan, no se adivina:
+     * se pide elegirla de la lista.
      */
     private function proveedorPorNombre(string $nombre, string $tipo): ?int
     {
         $altas = app(AltasPorVerificar::class);
-        if (mb_strlen($altas->claveNombre($nombre)) < 3) {
+        $clave = $altas->claveNombre($nombre);
+        if (mb_strlen($clave) < 3) {
             return null;
         }
-        foreach ($altas->parecidos('proveedores', ['nombre' => $nombre], null, null, 3) as $r) {
+        $empatan = [];
+        foreach ($altas->parecidos('proveedores', ['nombre' => $nombre], null, null, 20) as $r) {
             $proveedor = Proveedor::find($r['id']);
             if ($proveedor !== null && $proveedor->activo && ! $proveedor->estaRechazado()
                 && in_array($proveedor->categoria, self::categoriasPara($tipo), true)
                 && $altas->mismaEmpresa($nombre, $proveedor->nombre)) {
-                return (int) $proveedor->id;
+                $empatan[] = $proveedor;
             }
+        }
+        $exactas = array_values(array_filter($empatan, fn (Proveedor $p) => $altas->claveNombre($p->nombre) === $clave));
+        $elegibles = $exactas !== [] ? $exactas : $empatan;
+        if (count($elegibles) === 1) {
+            return (int) $elegibles[0]->id;
+        }
+        if (count($elegibles) > 1) {
+            $nombres = array_map(fn (Proveedor $p) => '«'.$p->nombre.'»', array_slice($elegibles, 0, 3));
+            throw ValidationException::withMessages(['empresa_procedencia' => 'Hay varias empresas registradas con ese nombre ('.implode(', ', $nombres)
+                .'). Elige la correcta en «Empresa que representa».']);
         }
 
         return null;

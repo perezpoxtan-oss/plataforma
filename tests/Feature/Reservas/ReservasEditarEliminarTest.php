@@ -150,7 +150,10 @@ class ReservasEditarEliminarTest extends TestCase
         $this->flushSession();
         $this->actingAs($this->admin)->get(route('reservas.configuracion.area', $sala->id))->assertOk()->assertSee('Sala 101');
         $this->put(route('reservas.configuracion.area.guardar', $sala->id), ['aforo_maximo' => 14])
-            ->assertRedirect(route('reservas.configuracion.area', $sala->id))->assertSessionHas('ok');
+            ->assertRedirect(route('reservas.configuracion.area', $sala->id))->assertSessionHas('ok')
+            ->assertSessionHas('siguientes', fn ($s) => $s[0][0] === 'Reservar esta área' && $s[0][1] === route('reservas.create', ['area' => $sala->id]));
+        // …y el enlace abre Nueva reserva con el área ya elegida
+        $this->get(route('reservas.create', ['area' => $sala->id]))->assertOk()->assertSee('value="'.$sala->id.'" selected', false);
         $this->assertSame(14, $sala->refresh()->aforo_maximo);
     }
 
@@ -166,8 +169,16 @@ class ReservasEditarEliminarTest extends TestCase
         $this->config()
             ->assertSee('¿Eliminar «Sala 101» de reservas? Nunca se ha reservado: se borra su configuración')
             ->assertSee('¿Eliminar «Sala 102» de reservas? Ya tiene reservas pasadas: dejará de verse y de ofrecerse, pero guardamos su historial')
-            ->assertSee('«Sala 103» tiene 1 reserva próxima, así que todavía no se puede eliminar de reservas');
+            ->assertSee('«Sala 103» tiene 1 reserva próxima, así que todavía no se puede eliminar de reservas: primero cancélalas o reprográmalas. El espacio sigue en Zonas y edificios.');
         $this->assertNotNull($nueva->refresh());
+        // Las tres confirmaciones dicen que el espacio sigue en Zonas y edificios
+        $html = $this->config()->getContent();
+        preg_match_all('/data-confirmar="([^"]*)"/', $html, $m);
+        $areas = array_values(array_filter($m[1], fn ($t) => str_contains($t, 'Sala 10')));
+        $this->assertCount(3, $areas);
+        foreach ($areas as $texto) {
+            $this->assertStringContainsString('El espacio sigue en Zonas y edificios.', html_entity_decode($texto));
+        }
     }
 
     // ------------------------------------------------------------ Áreas: reglas
@@ -216,6 +227,10 @@ class ReservasEditarEliminarTest extends TestCase
         // Editar una quitada avisa que no se ofrece; reactivarla la vuelve a mostrar
         $this->flushSession();
         $this->actingAs($this->admin)->get(route('reservas.configuracion.area', $sala->id))->assertOk()->assertSee('Esta área está quitada de reservas');
+        // Guardarla no ofrece «Reservar esta área» (no aparece en Nueva reserva): ofrece verla para reactivarla
+        $this->put(route('reservas.configuracion.area.guardar', $sala->id), ['aforo_maximo' => 9])
+            ->assertSessionHas('ok', fn ($t) => str_contains($t, 'Sigue quitada de reservas: no se ofrece hasta que la reactives.'))
+            ->assertSessionHas('siguientes', fn ($s) => count($s) === 1 && $s[0][0] === 'Ver áreas quitadas para reactivarla' && str_contains($s[0][1], 'ver%5B0%5D=areas'));
         $this->patch(route('reservas.configuracion.area.estado', $sala->id), ['reservable' => 1])->assertSessionHas('ok');
         $this->assertTrue($sala->refresh()->reservable);
         $this->config()->assertSee('id="config-area-'.$sala->id.'"', false)->assertDontSee('data-ver-ocultas="areas"', false);

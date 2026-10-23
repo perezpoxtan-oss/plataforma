@@ -336,7 +336,8 @@ class AdministradorPrestamosLlaves
     /**
      * Recordatorios en la campana de las llaves que pasaron sus horas
      * (comando plataforma:activos-pendientes, en proceso desde desplegar.sh).
-     * Cada préstamo avisa una vez en ámbar (a la caseta) y una en rojo (al jefe).
+     * Cada préstamo avisa una vez en ámbar (a la caseta) y una en rojo (al jefe);
+     * si ya estaba en rojo la primera vez, salen los dos.
      *
      * @return int préstamos recordados
      */
@@ -356,8 +357,12 @@ class AdministradorPrestamosLlaves
                         continue;
                     }
                     $campana = app(CampanaActivos::class);
-                    // Si ya pasó directo a rojo, el ámbar no se manda
-                    $avisados = $nivel === 'rojo' ? $campana->llaveFuera($p, 'rojo', $horas) : $campana->llaveFuera($p, 'ambar', $horas);
+                    // La caseta siempre se entera (aunque ya haya pasado directo a rojo); en rojo, además, el jefe.
+                    // Cada nivel sale una sola vez
+                    $avisados = $campana->llaveFuera($p, 'ambar', $horas);
+                    if ($nivel === 'rojo') {
+                        $avisados += $campana->llaveFuera($p, 'rojo', $horas);
+                    }
                     $n += $avisados > 0 ? 1 : 0;
                 }
 

@@ -20,10 +20,12 @@
     </div>
     <p class="campo-ayuda" data-firma-ayuda-fisica>Al generar el voucher se imprime la hoja: Seguridad y el responsable firman a mano. Las copias son para Seguridad, Recepción y Administración; el colaborador no recibe copia.</p>
     <div class="firmas-digitales" data-firmas-digitales hidden>
-        @include('componentes.firma', ['id' => $id.'_firma_seguridad', 'nombre' => 'firma_seguridad', 'etiqueta' => 'Firma de Seguridad (quien registra)', 'requerido' => false, 'ayuda' => null])
+        @include('componentes.firma', ['id' => $id.'_firma_seguridad', 'nombre' => 'firma_seguridad', 'etiqueta' => 'Firma de Seguridad (quien registra)', 'requerido' => false, 'ayuda' => null,
+            'falta' => 'Falta la firma de Seguridad: firma en el recuadro o elige «Firma física».'])
         @if ($errors->has('firma_seguridad'))<p class="text-danger small">{{ $errors->first('firma_seguridad') }}</p>@endif
         <div data-firma-responsable-caja>
-            @include('componentes.firma', ['id' => $id.'_firma_responsable', 'nombre' => 'firma_responsable', 'etiqueta' => 'Firma del responsable (colaborador)', 'requerido' => false, 'ayuda' => null])
+            @include('componentes.firma', ['id' => $id.'_firma_responsable', 'nombre' => 'firma_responsable', 'etiqueta' => 'Firma del responsable (colaborador)', 'requerido' => false, 'ayuda' => null,
+                'falta' => 'Falta la firma del responsable: que firme en el recuadro o elige «Firma física».'])
             @if ($errors->has('firma_responsable'))<p class="text-danger small">{{ $errors->first('firma_responsable') }}</p>@endif
         </div>
     </div>

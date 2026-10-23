@@ -45,7 +45,7 @@ La exportación de empresa ya excluye columnas `*secret` y `*recovery_codes` (`E
 - Pendiente vence a los **10 minutos** (`MINUTOS_PENDIENTE`).
 - **5 intentos** por cuenta cada 15 minutos (`RateLimiter` `dos-pasos:{id}`), además de `throttle:10,1` por equipo. Al agotarlos se olvida la cuenta pendiente; volver a poner la contraseña no da más intentos.
 - Cada fallo se audita: `cuenta.dos_pasos_fallido` (origen con IP recortada).
-- Un código de respaldo se consume (`cuenta.dos_pasos_respaldo_usado`) y se avisa cuántos quedan.
+- Un código de respaldo se consume (`cuenta.dos_pasos_respaldo_usado`) y se avisa cuántos quedan (aviso `aviso` en la sesión; Inicio, `panel.index`, incluye `administracion.partes.avisos` para pintarlo).
 
 **Recordar este dispositivo 30 días.** Cookie `recordar_dos_pasos_{id}` (HttpOnly, SameSite=Lax, cifrada por `EncryptCookies`) con `id|expira|firma`, donde la firma es HMAC-SHA256 (llave `APP_KEY`) de id, expiración, `two_factor_confirmado_en` y el hash de la contraseña. Deja de valer al vencer, al desactivar/restablecer/volver a activar la verificación y al **cambiar la contraseña**.
 

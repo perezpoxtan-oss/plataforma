@@ -141,7 +141,7 @@ class CandidatoController extends Controller
             // Postulaciones: la activa (la que refleja la ficha) y las anteriores
             $postulaciones = app(Postulaciones::class);
             $activa = $postulaciones->activa($c)?->load(['vacantePublicada:id,titulo,estado,departamento_id', 'accesos:id,postulacion_id,entrada_at,viene_a',
-                'evaluaciones.evaluador:id,name', 'entrevistador:id,name', 'canalizadoPor:id,name', 'departamento:id,nombre', 'decisionPor:id,name']);
+                'evaluaciones.evaluador:id,name', 'evaluaciones.titular:id,name', 'entrevistador:id,name', 'canalizadoPor:id,name', 'departamento:id,nombre', 'decisionPor:id,name']);
             $anteriores = $postulaciones->anteriores($c, $activa);
             // Fase 2: evaluaciones, canalizar (entrevistador y cita) y criterios
             $entrevistas = app(Entrevistas::class);

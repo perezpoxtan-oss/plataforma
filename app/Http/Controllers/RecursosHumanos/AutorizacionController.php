@@ -278,7 +278,8 @@ class AutorizacionController extends Controller
     {
         $u = $request->user();
 
-        return $u->can('autorizaciones.responder') || $u->can('candidatos.editar') || $u->can('recepcion_rh.ver');
+        // Ver el panel de Recepción de RR. HH. no da el «Que pase» (lo da quien edita candidatos)
+        return $u->can('autorizaciones.responder') || $u->can('candidatos.editar');
     }
 
     private function buscar($actor, int $id): Autorizacion

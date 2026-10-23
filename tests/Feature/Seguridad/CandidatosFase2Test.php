@@ -521,6 +521,11 @@ class CandidatosFase2Test extends TestCase
         $this->evaluarDepartamento($otroJefe, $p->id, 'considerar', 'Bien, pero sin experiencia en noche')->assertSessionHas('ok');
         $e = $this->enEmpresa(fn () => EvaluacionCandidato::where('tipo', 'departamento')->sole());
         $this->assertSame($otroJefe->id, $e->evaluador_id);
+        // QA ENT-08: queda anotado que evaluó por delegación (evaluación, historial y aviso a RR. HH.)
+        $this->assertSame($this->jefa->id, $e->por_delegacion_de);
+        $this->assertTrue($this->enEmpresa(fn () => $c->eventos()->where('comentario', 'like', '%por '.$otroJefe->name.' (por delegación de '.$this->jefa->name.')%')->exists()));
+        $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('texto', 'like', '%(por delegación de '.$this->jefa->name.')%')->exists()));
+        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertOk()->assertSee('(por delegación de '.$this->jefa->name.')');
         $this->assertSame('evaluado', $p->fresh()->etapa);
         // Quien evaluó puede corregirla unos minutos y después volver a verla (solo lectura)
         $this->actingAs($otroJefe)->get("/entrevistas/{$p->id}")->assertOk()->assertSee('Corregir tu evaluación');
@@ -621,6 +626,29 @@ class CandidatosFase2Test extends TestCase
     }
 
     // ------------------------------------------------------------------ Mis pendientes y llegada
+
+    public function test_entrevistas_por_evaluar_sin_cita_no_dejan_proxima_vacia(): void
+    {
+        // Solo una sin cita: no dice «próxima:»
+        $a = $this->candidato('Ana Sin Cita');
+        $this->hastaCanalizado($a);
+        // Postulación canalizada sin fecha de cita (como las que vienen de antes)
+        $this->enEmpresa(fn () => Postulacion::whereKey($this->postulacion($a)->id)->update(['cita_en' => null, 'cita_ahora' => false]));
+        Cache::flush();
+        $jefa = collect(app(MisPendientes::class)->para($this->jefa)['items'])->keyBy('clave');
+        $this->assertSame('Entrevistas por evaluar', $jefa['entrevistas']['titulo']);
+
+        // Con otra que sí tiene cita: muestra esa fecha aunque la sin cita sea anterior
+        $b = $this->candidato('Beto Con Cita');
+        $cita = now()->addHours(3);
+        $this->hastaCanalizado($b, null, $cita)->assertSessionHasNoErrors();
+        Cache::flush();
+        app()->forgetInstance(MisPendientes::class);
+        $jefa = collect(app(MisPendientes::class)->para($this->jefa)['items'])->keyBy('clave');
+        $this->assertSame(2, $jefa['entrevistas']['total']);
+        $this->assertMatchesRegularExpression('#^Entrevistas por evaluar · próxima: \d{2}/\d{2}/\d{4} \d{2}:\d{2}$#u', $jefa['entrevistas']['titulo']);
+        $this->actingAs($this->jefa)->get('/')->assertOk()->assertDontSee('próxima: <', false);
+    }
 
     public function test_mis_pendientes_de_rh_y_del_entrevistador(): void
     {

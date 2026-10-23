@@ -58,6 +58,7 @@ estado() {
     echo "Ultima revision: $(ahora)"
     echo "Version actual:  $(cat "$APP/.release_actual" 2>/dev/null || echo 'ninguna')"
     echo "Resultado:       $1"
+    echo "PHP del cron:    ${PHP_CLI_VERSION:-sin detectar}"
     echo
     echo "Detalle en: $LOG"
   } > "$ESTADO"
@@ -72,11 +73,24 @@ fallo() {
 permisos_publicos() {
   [ -d "$PUB" ] && chmod -R go+rX "$PUB" 2>/dev/null
 }
+# cPanel (MultiPHP Manager) guarda la version de PHP del sitio en un bloque al
+# final de su .htaccess. Al copiar el .htaccess de la version ese bloque se
+# conserva; sin el, el sitio regresaria a la version de PHP por omision.
+INICIO_MANEJADOR='# php -- BEGIN cPanel-generated handler'
+FIN_MANEJADOR='# php -- END cPanel-generated handler'
+manejador_cpanel() {
+  sed -n "/^$INICIO_MANEJADOR/,/^$FIN_MANEJADOR/p" "$PUB/.htaccess" 2>/dev/null
+}
 # Copia los archivos publicos de una version ($1) al subdominio y escribe el
 # index.php que apunta a la version activa (se usa al instalar y al regresar)
 publicar() {
   mkdir -p "$PUB"
+  local MANEJADOR
+  MANEJADOR="$(manejador_cpanel)"
   cp -a "$1/public/." "$PUB/"
+  if [ -n "$MANEJADOR" ] && ! grep -q "^$INICIO_MANEJADOR" "$PUB/.htaccess" 2>/dev/null; then
+    printf '\n%s\n' "$MANEJADOR" >> "$PUB/.htaccess"
+  fi
   rm -f "$PUB/index.html" "$PUB/default.html"
   cat > "$PUB/index.php" <<PHPEOF
 <?php
@@ -137,13 +151,31 @@ echo $$ > "$CANDADO/pid"
 trap '[ "$(cat "$CANDADO/pid" 2>/dev/null)" = "$$" ] && rm -rf "$CANDADO"' EXIT
 
 # --- PHP de linea de comandos ---------------------------------------------------
-PHP="$(cat "$HOME/.php_cli_path" 2>/dev/null)"
-if [ ! -x "$PHP" ]; then
-  for c in /opt/alt/php84/usr/bin/php /opt/cpanel/ea-php84/root/usr/bin/php /usr/local/bin/php; do
-    if [ -x "$c" ] && "$c" -v 2>/dev/null | head -1 | grep -Eq "PHP 8\.[3-9].*\(cli\)"; then PHP="$c"; break; fi
+# Minimo 8.4.1 (lo piden las librerias de composer.lock); probado en 8.4 y 8.5.
+# Orden de busqueda:
+#  1. $HOME/.php_cli_path, si existe y es PHP 8.4.1+ de linea de comandos (fija la ruta);
+#  2. la misma version que cPanel asigno al sitio (bloque de MultiPHP en su .htaccess,
+#     p. ej. ea-php85 o alt-php85), en /opt/alt y /opt/cpanel;
+#  3. PHP 8.4, luego 8.5, luego /usr/local/bin/php.
+# PLATAFORMA_RAIZ_PHP solo se usa para probar el script fuera del servidor.
+php_valido() {
+  [ -n "$1" ] && [ -x "$1" ] && "$1" -r 'exit(PHP_SAPI === "cli" && PHP_VERSION_ID >= 80401 ? 0 : 1);' >/dev/null 2>&1
+}
+RAIZ_PHP="${PLATAFORMA_RAIZ_PHP:-}"
+PHP="$(head -1 "$HOME/.php_cli_path" 2>/dev/null | tr -d '\r')"
+if ! php_valido "$PHP"; then
+  [ -n "$PHP" ] && log "ADVERTENCIA: .php_cli_path ($PHP) no es PHP 8.4.1+ de linea de comandos; se busca otro"
+  PHP=""
+  VERSION_WEB="$(manejador_cpanel | grep -oE '(ea|alt)-php[0-9]{2}' | head -1 | grep -oE '[0-9]{2}$')"
+  for v in $VERSION_WEB 84 85; do
+    for c in "$RAIZ_PHP/opt/alt/php$v/usr/bin/php" "$RAIZ_PHP/opt/cpanel/ea-php$v/root/usr/bin/php"; do
+      php_valido "$c" && { PHP="$c"; break 2; }
+    done
   done
+  [ -n "$PHP" ] || { php_valido "$RAIZ_PHP/usr/local/bin/php" && PHP="$RAIZ_PHP/usr/local/bin/php"; }
 fi
-[ -x "$PHP" ] || fallo "No se encontro PHP 8.3+ de linea de comandos"
+[ -n "$PHP" ] && PHP_CLI_VERSION="$("$PHP" -r 'echo PHP_VERSION;' 2>/dev/null) ($PHP)"
+[ -n "$PHP" ] || fallo "No se encontro PHP 8.4.1+ de linea de comandos (escribe la ruta en .php_cli_path, p. ej. /opt/alt/php85/usr/bin/php)"
 P=("$PHP" -d disable_functions= -d memory_limit=-1)
 
 # --- Archivos de configuracion subidos por el usuario ---------------------------
@@ -270,7 +302,7 @@ fi
 
 # --- Instalar la version nueva ---------------------------------------------------
 if [ "$NOMBRE" != "$ACTUAL" ] || [ -n "${ENV_NUEVO:-}" ]; then
-  log "=== Instalando $NOMBRE (antes: ${ACTUAL:-ninguna}) ==="
+  log "=== Instalando $NOMBRE (antes: ${ACTUAL:-ninguna}) con PHP $PHP_CLI_VERSION ==="
   REL="$APP/releases/$NOMBRE"
 
   if [ "$NOMBRE" != "$ACTUAL" ]; then
