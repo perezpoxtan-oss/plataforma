@@ -1,6 +1,6 @@
 ---
 titulo: Configura tu empresa
-modulos: [configuracion]
+modulos: [configuracion.editar]
 seccion: Primeros pasos
 orden: 42
 resumen: La guía de Inicio con los pasos para dejar lista una empresa nueva; cada paso se marca solo cuando ya está hecho.

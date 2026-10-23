@@ -127,6 +127,21 @@ class CatalogoComercialTest extends TestCase
             ->assertSee('Este plan se contrata desde')->assertHeader('Cache-Control', 'no-store, private');
     }
 
+    public function test_contratar_respeta_el_plan_que_manda_la_calculadora(): void
+    {
+        $this->publicar();
+        $esencial = $this->plan('esencial');
+        $profesional = $this->plan('profesional');
+
+        // La calculadora envía plan_id (antes se ignoraba y salía el plan destacado)
+        $this->get("/contratar?plan_id={$esencial->id}&sedes=1&periodicidad=mensual")->assertOk()
+            ->assertSee('name="plan_id" value="'.$esencial->id.'" checked', false)
+            ->assertDontSee('name="plan_id" value="'.$profesional->id.'" checked', false);
+        // Los enlaces de las tarjetas siguen usando «plan» (id o nombre corto)
+        $this->get('/contratar?plan=esencial')->assertOk()
+            ->assertSee('name="plan_id" value="'.$esencial->id.'" checked', false);
+    }
+
     public function test_en_la_app_movil_la_raiz_lleva_al_acceso_aunque_este_publicada(): void
     {
         $this->publicar();

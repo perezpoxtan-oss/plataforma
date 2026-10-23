@@ -93,9 +93,13 @@ class SolicitudesArcoController extends Controller
     {
         $actor = $this->exigirPermiso($request);
         $s = $this->buscar($actor, $solicitud);
-        $this->solicitudes->exportar($actor, $s, (array) $request->input('seleccion', []));
+        $seleccion = (array) $request->input('seleccion', []);
+        $this->solicitudes->exportar($actor, $s, $seleccion);
 
-        return redirect()->route('arco.show', $s->id)->with('ok', 'Listo: el archivo con los datos está listo. Descárgalo y entrégalo a la persona; después escribe tu respuesta.');
+        // Regresa con la misma búsqueda y lo marcado: el botón «Descargar el archivo» queda a la vista
+        return redirect()->route('arco.show', [$s->id] + $this->criteriosDe($request))
+            ->with('ok', 'Listo: el archivo con los datos está listo. Descárgalo y entrégalo a la persona; después escribe tu respuesta.')
+            ->with('arco_marcados', $seleccion);
     }
 
     public function descargar(Request $request, int $solicitud): StreamedResponse
@@ -115,7 +119,7 @@ class SolicitudesArcoController extends Controller
         $request->validate(['confirmar' => ['accepted']], ['confirmar.accepted' => 'Marca «Entiendo que no se puede deshacer» para eliminar los datos.']);
         $h = $this->solicitudes->eliminar($actor, $s, (array) $request->input('seleccion', []));
 
-        return redirect()->route('arco.show', $s->id)->with('ok', sprintf('Datos eliminados: %d del padrón, %d registros de la bitácora y %d candidato(s)%s. Ahora escribe tu respuesta a la persona.',
+        return redirect()->route('arco.show', [$s->id] + $this->criteriosDe($request))->with('ok', sprintf('Datos eliminados: %d del padrón, %d registros de la bitácora y %d candidato(s)%s. Ahora escribe tu respuesta a la persona.',
             $h['persona'], $h['acceso'], $h['candidato'], $h['omitidos'] > 0 ? ' ('.$h['omitidos'].' contratado(s) no se eliminaron: ya son colaboradores)' : ''));
     }
 
@@ -152,6 +156,24 @@ class SolicitudesArcoController extends Controller
     }
 
     /** La solicitud solo si es de la empresa de trabajo (o, para el Super Administrador, cualquiera). 404 si no. */
+    /**
+     * Criterios de búsqueda que viajan ocultos en el formulario de selección.
+     *
+     * @return array<string, string>
+     */
+    private function criteriosDe(Request $request): array
+    {
+        $criterios = [];
+        foreach (['nombre' => 150, 'correo' => 150, 'telefono' => 20, 'folio' => 50] as $campo => $largo) {
+            $valor = $request->input('criterios.'.$campo);
+            if ($request->has('criterios.'.$campo) && (is_string($valor) || $valor === null)) {
+                $criterios[$campo] = mb_substr((string) $valor, 0, $largo); // vacío = lo dejó en blanco
+            }
+        }
+
+        return $criterios;
+    }
+
     private function buscar(User $actor, int $id): SolicitudArco
     {
         $q = SolicitudArco::query()->withoutGlobalScope(EmpresaScope::class);

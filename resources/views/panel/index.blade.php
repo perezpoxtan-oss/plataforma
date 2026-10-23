@@ -4,7 +4,7 @@
 
 @section('contenido')
 <div class="container p-0" style="max-width: 1200px;">
-    {{-- Avisos que llegan a Inicio (p. ej. «Entraste con un código de respaldo…» al entrar) --}}
+    {{-- Avisos que llegan a Inicio («Entraste con un código de respaldo…», «Ya terminé», «Mostrar en Inicio»…) --}}
     @include('administracion.partes.avisos')
     {{-- Mejoras estructura (ADR-0016): Inicio = lo que espera tu respuesta, igual que «Mis pendientes» --}}
     <div class="tarjeta p-4 mb-2">

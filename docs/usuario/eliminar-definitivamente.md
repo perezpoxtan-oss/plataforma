@@ -1,6 +1,6 @@
 ---
 titulo: Eliminar definitivamente
-modulos: [departamentos, puestos, turnos, sedes, espacios, colaboradores, roles, proveedores, visitantes, vehiculos, llaves, gafetes, equipos, equipos_pc, estacionamientos, rutas]
+modulos: [departamentos.borrar, puestos.borrar, turnos.borrar, sedes.borrar, espacios.borrar, colaboradores.borrar, roles.borrar, proveedores.borrar, visitantes.borrar, vehiculos.borrar, llaves.borrar, gafetes.borrar, equipos.borrar, equipos_pc.borrar, estacionamientos.borrar, rutas.borrar]
 seccion: Primeros pasos
 orden: 40
 resumen: Borrar para siempre algo capturado por error que nadie ha usado.

@@ -20,6 +20,13 @@ class ImportadorSql
     public function __construct(private readonly int $bloque = 1048576) {}
 
     /**
+     * Tablas con columnas generadas vistas en el respaldo: tabla => columnas.
+     *
+     * @var array<string, list<string>>
+     */
+    private array $generadas = [];
+
+    /**
      * @param  callable(int): void|null  $avance  recibe cuántas sentencias van
      */
     public function importar(string $rutaGz, Connection $conexion, ?callable $avance = null): int
@@ -28,6 +35,8 @@ class ImportadorSql
         if ($gz === false) {
             throw new RuntimeException('No se pudo abrir el respaldo de la base.');
         }
+        $this->generadas = [];
+        $this->pendientesDeRevisar = [];
         $diagonal = in_array($conexion->getDriverName(), ['mysql', 'mariadb'], true);
         $sentencias = 0;
         $pendiente = '';
@@ -76,7 +85,7 @@ class ImportadorSql
                         if ($c === ';') {
                             $sentencia = trim(substr($pendiente, $inicio, $i - $inicio));
                             if ($sentencia !== '') {
-                                $conexion->unprepared($sentencia);
+                                $conexion->unprepared($this->sinColumnasGeneradas($sentencia, $conexion, $diagonal));
                                 $sentencias++;
                                 if ($avance !== null && $sentencias % 50 === 0) {
                                     $avance($sentencias);
@@ -135,10 +144,117 @@ class ImportadorSql
         }
         $resto = trim(substr($pendiente, $inicio));
         if ($resto !== '' && ! str_starts_with($resto, '--')) {
-            $conexion->unprepared($resto);
+            $conexion->unprepared($this->sinColumnasGeneradas($resto, $conexion, $diagonal));
             $sentencias++;
         }
 
         return $sentencias;
+    }
+
+    /**
+     * Respaldos hechos antes de omitir las columnas generadas traen su valor en
+     * el INSERT (p. ej. prestamos_llaves.llave_en_uso) y la base lo rechaza.
+     * Al pasar el CREATE TABLE se anotan esas columnas (consultando la tabla
+     * recién creada) y a sus INSERT se les quita la columna y su valor: la
+     * base la recalcula. Los respaldos nuevos ya no las traen.
+     */
+    private function sinColumnasGeneradas(string $sentencia, Connection $conexion, bool $diagonal): string
+    {
+        if (preg_match('/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"]?([^`"\s(]+)[`"]?/i', $sentencia, $m)) {
+            unset($this->generadas[$m[1]]);
+            if (preg_match('/\bGENERATED\s+ALWAYS\b|\)\s*(?:STORED|VIRTUAL|PERSISTENT)\b/i', $sentencia)) {
+                $this->pendientesDeRevisar[$m[1]] = true;
+            }
+
+            return $sentencia;
+        }
+        if (! preg_match('/^INSERT\s+INTO\s+([`"])(.+?)\1\s*\(/i', $sentencia, $m)) {
+            return $sentencia;
+        }
+        $tabla = $m[2];
+        if (isset($this->pendientesDeRevisar[$tabla])) {
+            unset($this->pendientesDeRevisar[$tabla]);
+            $generadas = array_values(array_map(fn (array $c) => $c['name'], array_filter(
+                $conexion->getSchemaBuilder()->getColumns($tabla), fn (array $c) => ! empty($c['generation']),
+            )));
+            if ($generadas !== []) {
+                $this->generadas[$tabla] = $generadas;
+            }
+        }
+        if (! isset($this->generadas[$tabla])) {
+            return $sentencia;
+        }
+
+        return $this->quitarColumnas($sentencia, strlen($m[0]), $m[1], $this->generadas[$tabla], $diagonal);
+    }
+
+    /** @var array<string, true> */
+    private array $pendientesDeRevisar = [];
+
+    /**
+     * @param  int  $desde  posición justo después del «(» de la lista de columnas
+     * @param  list<string>  $quitar
+     */
+    private function quitarColumnas(string $sql, int $desde, string $comilla, array $quitar, bool $diagonal): string
+    {
+        $cierre = strpos($sql, ')', $desde);
+        $columnas = array_map(fn ($c) => trim(trim($c), $comilla), explode(',', substr($sql, $desde, $cierre - $desde)));
+        $indices = array_keys(array_filter($columnas, fn ($c) => in_array($c, $quitar, true)));
+        if ($indices === [] || ! preg_match('/\G\s*VALUES\s*/i', $sql, $v, 0, $cierre + 1)) {
+            return $sql;
+        }
+        $conservar = fn (array $lista) => array_values(array_diff_key($lista, array_flip($indices)));
+        $cabeza = substr($sql, 0, $desde - 1).'('.implode(', ', array_map(fn ($c) => $comilla.$c.$comilla, $conservar($columnas))).') VALUES'."\n";
+
+        $tuplas = [];
+        $i = $cierre + 1 + strlen($v[0]);
+        $largo = strlen($sql);
+        while ($i < $largo) {
+            $i += strspn($sql, " \t\r\n,", $i);
+            if ($i >= $largo || $sql[$i] !== '(') {
+                break;
+            }
+            $i++;
+            $valores = [];
+            $actual = '';
+            while ($i < $largo) {
+                $c = $sql[$i];
+                if ($c === "'" || $c === '"') {
+                    // Texto entre comillas: se copia completo
+                    $j = $i + 1;
+                    while ($j < $largo) {
+                        if ($diagonal && $sql[$j] === '\\') {
+                            $j += 2;
+
+                            continue;
+                        }
+                        if ($sql[$j] === $c) {
+                            if (($sql[$j + 1] ?? '') === $c) {
+                                $j += 2;
+
+                                continue;
+                            }
+                            break;
+                        }
+                        $j++;
+                    }
+                    $actual .= substr($sql, $i, $j - $i + 1);
+                    $i = $j + 1;
+                } elseif ($c === ',' || $c === ')') {
+                    $valores[] = trim($actual);
+                    $actual = '';
+                    $i++;
+                    if ($c === ')') {
+                        break;
+                    }
+                } else {
+                    $actual .= $c;
+                    $i++;
+                }
+            }
+            $tuplas[] = '('.implode(', ', $conservar($valores)).')';
+        }
+
+        return $cabeza.implode(",\n", $tuplas);
     }
 }

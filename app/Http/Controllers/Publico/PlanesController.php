@@ -166,14 +166,15 @@ class PlanesController extends Controller
     }
 
     /**
-     * Lo elegido en la dirección (?plan=ID|slug&sedes=N&paquetes[]=ID&periodicidad=anual&codigo=X), calculado por el servidor.
+     * Lo elegido en la dirección (?plan=ID|slug o ?plan_id=ID&sedes=N&paquetes[]=ID&periodicidad=anual&codigo=X), calculado por el servidor.
      *
      * @param  array<string, mixed>  $datos
      * @return array{0: ?Plan, 1: mixed, 2: array<string, mixed>, 3: ?Promocion, 4: ?string, 5: string}
      */
     private function eleccion(Request $request, array $datos): array
     {
-        $planTexto = mb_substr(Entrada::texto($request->query('plan')), 0, 60);
+        // La calculadora envía «plan_id» (mismo campo que el formulario); los enlaces de las tarjetas, «plan»
+        $planTexto = mb_substr(Entrada::texto($request->query('plan') ?? $request->query('plan_id')), 0, 60);
         $plan = $datos['planes']->first(fn ($p) => (string) $p->id === $planTexto || $p->slug === $planTexto)
             ?? $datos['planes']->firstWhere('destacado', true) ?? $datos['planes']->first();
         $sedes = max(1, min(999, (int) Entrada::texto($request->query('sedes'), '1')));

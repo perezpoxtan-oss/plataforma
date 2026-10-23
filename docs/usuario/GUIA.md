@@ -14,6 +14,7 @@ El manual vive en `docs/usuario/*.md` (una página por pantalla/módulo) y la pl
    ---
    ```
    `modulos: []` = página general visible para todos (inicio de sesión, menús, mis pendientes…).
+   Si la pantalla que explica la página no se abre solo con «ver», escribe la acción exacta: `modulos: [reservas.configurar]` o `[colaboradores.importar, visitantes.importar]`. Así nadie ve en el manual una pantalla que le diría «No tienes permiso».
 2. `# Título` y un párrafo «**¿Para qué sirve?**» de 2–3 renglones.
 3. «**Antes de empezar**»: qué permiso o dato se necesita (en palabras: «necesitas que tu rol pueda registrar accesos; si no ves el botón, pide a tu administrador…»).
 4. Una sección `## Cómo …` por tarea (registrar, buscar, editar, dar de baja, imprimir…). Cada una:

@@ -1,6 +1,6 @@
 ---
 titulo: Privacidad y solicitudes ARCO
-modulos: [configuracion]
+modulos: [configuracion.datos_personales]
 seccion: Estructura
 orden: 55
 resumen: Atender las solicitudes de las personas sobre sus datos (acceso, rectificación, cancelación u oposición), cuidar cuántos días se conservan sus datos y publicar tu aviso de privacidad.
@@ -22,7 +22,7 @@ resumen: Atender las solicitudes de las personas sobre sus datos (acceso, rectif
 
 ![Formulario público de derechos ARCO](img/privacidad/formulario-publico.png)
 
-**Qué debes ver:** en **Solicitudes ARCO** (desde Mis pendientes, la campana o **Estructura → Configuración → Privacidad → Abrir solicitudes ARCO**) cada solicitud con su folio (por ejemplo `ARCO-2026-0001`), qué pide y un **reloj**: verde mientras hay tiempo, **ámbar** cuando faltan pocos días (5 hábiles, o lo que elijas en Configuración) y **rojo** cuando vence hoy o ya venció.
+**Qué debes ver:** en **Solicitudes ARCO** (desde Mis pendientes, la campana o **Estructura → Configuración → Privacidad → Abrir solicitudes ARCO**) cada solicitud con su folio (por ejemplo `ARCO-2026-0001`; las que llegaron desde la página de la plataforma empiezan con `ARCO-P-` y conservan ese folio cuando te las canalizan), qué pide y un **reloj**: verde mientras hay tiempo, **ámbar** cuando faltan pocos días (5 hábiles, o lo que elijas en Configuración) y **rojo** cuando vence hoy o ya venció.
 
 ![Bandeja de solicitudes ARCO](img/privacidad/bandeja.png)
 
@@ -33,7 +33,7 @@ resumen: Atender las solicitudes de las personas sobre sus datos (acceso, rectif
 3. En **1. Busca lo que la plataforma tiene de la persona**, revisa el nombre, correo y teléfono (ya vienen llenos) y, si lo tienes, escribe el **folio de su identificación**. Toca **Buscar**.
 4. Aparecen los registros encontrados, agrupados: **Padrón de personas**, **Bitácora de accesos**, **Candidatos** y **Colaboradores**. **Marca solo los que sí son de esa persona** (puede haber personas con el mismo nombre).
 5. Según lo que pidió:
-   - **Acceso:** toca **Exportar datos**. Se prepara un archivo con sus registros, fotos y documentos. Toca **Descargar el archivo** y entrégaselo por el medio que acordaron.
+   - **Acceso:** toca **Exportar datos**. Se prepara un archivo con sus registros, fotos y documentos. La pantalla regresa con la misma búsqueda y lo que marcaste. Toca **Descargar el archivo** y entrégaselo por el medio que acordaron (el botón sigue ahí aunque después busques con otros datos).
    - **Rectificación:** toca **Abrir ficha (rectificar)** junto al registro y corrige ahí los datos.
    - **Cancelación u Oposición:** marca **Entiendo que eliminar no se puede deshacer** y toca **Eliminar definitivamente**.
 6. En **3. Responde a la persona** escribe qué hiciste y toca **Atender**. Si la solicitud no procede (por ejemplo, no se pudo confirmar su identidad), explica el motivo y toca **Rechazar**.
