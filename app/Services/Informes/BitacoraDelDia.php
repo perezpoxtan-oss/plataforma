@@ -11,6 +11,7 @@ use App\Models\PrestamoLlave;
 use App\Models\RecorridoPc;
 use App\Models\User;
 use App\Services\Novedades\AjustesNovedades;
+use App\Support\Terminos;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Throwable;
@@ -134,12 +135,12 @@ class BitacoraDelDia
         $eventos = [];
         $movimientos = ['entrada' => 'Entrada', 'salida_temporal' => 'Salida temporal', 'regreso' => 'Regreso'];
         foreach ($this->delDia($base, 'accesos.entrada_at')->orderBy('accesos.entrada_at')->limit(self::MAX_POR_TIPO)->get($columnas) as $a) {
-            $texto = (Acceso::TIPOS[$a->tipo] ?? $a->tipo).': '.$a->nombre.($a->empresa_procedencia ? ' ('.$a->empresa_procedencia.')' : '')
+            $texto = (Terminos::actual()->etiquetasTipo()[$a->tipo] ?? $a->tipo).': '.$a->nombre.($a->empresa_procedencia ? ' ('.$a->empresa_procedencia.')' : '')
                 .((int) $a->num_acompanantes > 0 ? ' con '.$a->num_acompanantes.' acompañante'.((int) $a->num_acompanantes === 1 ? '' : 's') : '');
             $eventos[] = $this->evento('accesos', $a->entrada_at, $movimientos[$a->movimiento] ?? 'Entrada', $texto, $a->sede?->nombre);
         }
         foreach ($this->delDia($base->where('accesos.movimiento', 'entrada'), 'accesos.salida_at')->orderBy('accesos.salida_at')->limit(self::MAX_POR_TIPO)->get($columnas) as $a) {
-            $eventos[] = $this->evento('accesos', $a->salida_at, 'Salida', (Acceso::TIPOS[$a->tipo] ?? $a->tipo).': '.$a->nombre, $a->sede?->nombre, null, 1);
+            $eventos[] = $this->evento('accesos', $a->salida_at, 'Salida', (Terminos::actual()->etiquetasTipo()[$a->tipo] ?? $a->tipo).': '.$a->nombre, $a->sede?->nombre, null, 1);
         }
 
         return $eventos;

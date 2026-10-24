@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Services\Novedades\AjustesNovedades;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -192,7 +193,7 @@ class Tendencias
         }
         $duracion = [];
         foreach ($minutos as $tipo => $lista) {
-            $duracion[Acceso::TIPOS[$tipo] ?? $tipo] = round(array_sum($lista) / count($lista));
+            $duracion[Terminos::actual()->etiquetasTipo()[$tipo] ?? $tipo] = round(array_sum($lista) / count($lista));
         }
         arsort($duracion);
         $deptos = Indicadores::por((clone $periodo)->join('departamentos', 'departamentos.id', '=', 'accesos.departamento_id'), 'departamentos.nombre', [], 10);
@@ -201,7 +202,7 @@ class Tendencias
             'cifras' => [$cifra, ['En sitio ahora', $enSitio, null, ''], ['Departamento más visitado', $deptos === [] ? '—' : (string) array_key_first($deptos), null, 'texto']],
             'series' => [$serie, ['Ingresos por hora del día', array_map(fn ($h) => str_pad((string) $h, 2, '0', STR_PAD_LEFT), range(0, 23)), $horas, null]],
             'desgloses' => [
-                ['Por tipo de acceso', Indicadores::por($periodo, 'accesos.tipo', Acceso::TIPOS), ''],
+                ['Por tipo de acceso', Indicadores::por($periodo, 'accesos.tipo', Terminos::actual()->etiquetasTipo()), ''],
                 ['Medio de llegada', Indicadores::por($periodo, 'accesos.modo_arribo', Acceso::MODOS, null, 'No especificado'), ''],
                 ['Duración promedio de la visita', $duracion, 'min'],
                 ['Departamentos más visitados', $deptos, ''],

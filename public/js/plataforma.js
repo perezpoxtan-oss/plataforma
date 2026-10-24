@@ -3553,7 +3553,7 @@ document.addEventListener('click', function (e) {
             datos.forEach(function (r) {
                 var card = elemento('div', 'resultado-salida' + (r.fuera_temporal ? ' fuera' : ''));
                 var nombre = elemento('div', 'resultado-salida-nombre', r.nombre);
-                if (r.habitacion) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'badge-hab', 'Hab. ' + r.habitacion)); }
+                if (r.habitacion) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'badge-hab', (r.etiqueta_espacio || 'Hab.') + ' ' + r.habitacion)); }
                 if (r.fuera_temporal) { nombre.appendChild(document.createTextNode(' ')); nombre.appendChild(elemento('span', 'estado-acceso fuera mini', 'Fuera')); }
                 card.appendChild(nombre);
                 // Ronda 8 (AC-05): se encontró por un acompañante
@@ -3654,7 +3654,7 @@ document.addEventListener('click', function (e) {
         tarjeta.appendChild(cabeza);
         var datos = elemento('div', 'ficha-acceso-datos');
         if (r.sede) { datos.appendChild(elemento('div', '', 'Sede: ' + r.sede)); }
-        if (r.habitacion) { datos.appendChild(elemento('div', '', 'Habitación: ' + r.habitacion)); }
+        if (r.habitacion) { datos.appendChild(elemento('div', '', (r.nombre_espacio || 'Habitación') + ': ' + r.habitacion)); }
         if (r.gafete) { datos.appendChild(elemento('div', '', 'Gafete: ' + r.gafete)); }
         if (r.placas) { datos.appendChild(elemento('div', '', 'Vehículo: ' + r.placas + (r.zona ? ' · ' + r.zona + (r.zona_descarga ? ' (descarga)' : '') : ''))); }
         if (r.coincide_acompanante) { datos.appendChild(elemento('div', 'pista-acompanante', 'Coincide con ' + r.coincide_acompanante + ', acompañante de ' + r.nombre)); }

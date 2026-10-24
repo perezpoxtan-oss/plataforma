@@ -53,7 +53,7 @@
     @endif
 </div>
 <div data-condicion data-solo-motivo="departamento">
-    <label class="campo-etiqueta" for="ingreso_depto_visita">¿A qué departamento va? *</label>
+    <label class="campo-etiqueta" for="ingreso_depto_visita">{{ ($giro ?? \App\Support\Terminos::actual())->esResidencial() ? '¿A qué área de la administración va?' : '¿A qué departamento va?' }} *</label>
     <select id="ingreso_depto_visita" name="departamento_id" class="campo" data-depto-recepcion>
         <option value="">-- Seleccionar --</option>
         @foreach ($departamentos as $dep)

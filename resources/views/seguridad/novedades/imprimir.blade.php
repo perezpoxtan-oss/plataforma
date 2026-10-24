@@ -78,6 +78,7 @@
 
             @case('accidente')
                 @php $h = $n->accidenteHuesped; $c = $n->accidenteColaborador; $m = $n->accidenteDictamen; $g = $n->accidenteGuardavidas; $rh = $n->accidenteIncapacidad; @endphp
+                {{-- Giros: el formato de Accidente no se toca (la sustitución de palabras se apaga aquí) --}}{!! \App\Support\Terminos::SIN_SUSTITUIR !!}
                 <section>
                     <h3>1. Seguridad: Formato de Afectado — {{ $h ? 'Huésped / Cliente' : ($c ? 'Colaborador Interno' : 'Sin seleccionar') }}</h3>
                     @if ($h)
@@ -167,6 +168,7 @@
                         @endforeach
                     </div>
                 </section>
+                {!! \App\Support\Terminos::SUSTITUIR !!}
                 @break
 
             @case('habitacion')

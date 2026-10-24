@@ -361,6 +361,9 @@ class ConsultaAccesos
             'tipo_etiqueta' => $a->etiquetaTipo(),
             'sede' => $a->sede?->nombre,
             'habitacion' => $a->habitacion,
+            // Giros: «Hab. 204» en hoteles; «Depto. 101» o «Casa 12» en condominios y fraccionamientos
+            'etiqueta_espacio' => $a->terminos()->abreviaturaEspacio($a->tipo),
+            'nombre_espacio' => $a->tipo === 'huesped' ? 'Habitación' : $a->terminos()->espacio(),
             'placas' => $a->placas,
             'zona' => $a->zona?->nombre,
             'zona_descarga' => $a->zona?->esDescarga() ?? false,

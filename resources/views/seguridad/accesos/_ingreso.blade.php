@@ -8,6 +8,8 @@
 --}}
 @use('App\Models\Acceso')
 @php
+    // Giros (docs/tecnico/giros.md): qué tipos y motivos se ofrecen y cómo se llaman
+    $giro = $terminos ?? \App\Support\Terminos::actual();
     $trasError = old('_dialogo') === 'ingreso';
     $sig = is_array($siguiente) ? $siguiente : null;
     $previo = fn (string $campo, $defecto = '') => $trasError ? old($campo, $defecto) : $defecto;
@@ -93,7 +95,7 @@
                 <fieldset class="tipos-persona">
                     <legend class="campo-etiqueta">Tipo de Persona</legend>
                     <div class="opciones-tipo">
-                        @foreach (Acceso::OPCIONES_TIPO as $clave => $texto)
+                        @foreach ($giro->opcionesTipo() as $clave => $texto)
                             <label class="opcion-tipo tipo-{{ $clave }}">
                                 <input type="radio" name="tipo" value="{{ $clave }}" @checked($tipoElegido === $clave) @if ($clave === 'colaborador') data-por-defecto @endif data-acceso-tipo>
                                 <i class="bi {{ Acceso::ICONOS_TIPO[$clave] }}" aria-hidden="true"></i>
@@ -188,17 +190,37 @@
                 {{-- Personal externo: motivo y a quién visita --}}
                 <div class="bloque-perfil" data-condicion data-solo-tipos="visitante">
                     <span class="campo-etiqueta">Motivo de la Visita</span>
+                    @if (! $giro->esResidencial())
                     <div class="modo-toggle tres">
                         <label class="modo-opt"><input type="radio" name="motivo_visita" value="rh" @checked($previo('motivo_visita', 'rh') === 'rh') data-por-defecto data-acceso-motivo><i class="bi bi-person-vcard" aria-hidden="true"></i><span>Recursos Humanos</span></label>
                         <label class="modo-opt"><input type="radio" name="motivo_visita" value="colaborador" @checked($previo('motivo_visita') === 'colaborador') data-acceso-motivo><i class="bi bi-people-fill" aria-hidden="true"></i><span>Visita a Colaborador</span></label>
                         {{-- Recepción (ADR-0007) --}}<label class="modo-opt"><input type="radio" name="motivo_visita" value="departamento" @checked($previo('motivo_visita') === 'departamento') data-acceso-motivo><i class="bi bi-diagram-2-fill" aria-hidden="true"></i><span>Visita a Departamento</span></label>
                     </div>
+                    @else
+                    {{-- Giros: en condominios y fraccionamientos la visita es a un residente (o a la administración); sin Recursos Humanos --}}
+                    <div class="modo-toggle">
+                        @foreach ($giro->motivos() as $claveMotivo => $textoMotivo)
+                            <label class="modo-opt"><input type="radio" name="motivo_visita" value="{{ $claveMotivo }}" @checked($previo('motivo_visita', $giro->motivoPorDefecto()) === $claveMotivo) @if ($loop->first) data-por-defecto @endif data-acceso-motivo><i class="bi {{ $claveMotivo === 'colaborador' ? 'bi-house-heart' : 'bi-diagram-2-fill' }}" aria-hidden="true"></i><span>{{ $textoMotivo }}</span></label>
+                        @endforeach
+                    </div>
+                    @endif
                     <div data-condicion data-solo-motivo="colaborador" data-sugerir="colaborador" data-visita-colaborador>
                         @include('componentes.lector', ['id' => 'ingreso_visita', 'etiqueta' => '¿A quién visita?', 'tipos' => 'colaborador', 'nombre' => 'visita_colaborador_id',
                             'valor' => $previo('visita_colaborador_id'), 'elegido' => $previos['visita_colaborador_id'] ?? null])
                         <div class="acceso-sugerencias" data-sugerencias hidden></div>
                     </div>
                     @include('rh.recepcion._ingreso-acceso', ['previo' => $previo, 'departamentos' => $departamentos]){{-- Recepción: candidato y visita a departamento (ADR-0007) --}}
+                    @if ($giro->visitaLlevaEspacio())
+                        {{-- Giros: a qué departamento o casa va (sugerencias del árbol de Zonas y edificios, como la habitación del huésped) --}}
+                        <label class="campo-etiqueta" for="ingreso_espacio_visita">¿A qué {{ mb_strtolower($giro->espacio()) }} va? <span class="text-lowercase fw-normal">(opcional)</span></label>
+                        <input type="text" id="ingreso_espacio_visita" name="habitacion" class="campo text-uppercase campo-corto" maxlength="20" value="{{ $previo('habitacion') }}"
+                               placeholder="Ej: 101" list="lista_espacios_visita" autocomplete="off">
+                        <datalist id="lista_espacios_visita">
+                            @foreach ($espaciosVisita ?? [] as $esp)
+                                <option value="{{ mb_substr($esp->nombre, 0, 20) }}">{{ $sedesAlta->count() > 1 ? ($sedesAlta->firstWhere('id', $esp->sede_id)?->nombre ?? '') : '' }}</option>
+                            @endforeach
+                        </datalist>
+                    @endif
                 </div>
 
                 {{-- Proveedor / contratista --}}
@@ -215,7 +237,7 @@
                         <div class="acceso-sugerencias" data-sugerencias hidden></div>
                     </div>
                     {{-- «¿A qué departamento viene?»: su responsable autoriza el ingreso (obligatorio si la empresa lo pide para el tipo) --}}
-                    <label class="campo-etiqueta" for="ingreso_departamento">¿A qué departamento viene?@foreach ($esperanDepto as $t)<span data-etiqueta-tipo="{{ $t }}"> *</span>@endforeach</label>
+                    <label class="campo-etiqueta" for="ingreso_departamento">{{ $giro->esResidencial() ? '¿A qué área de la administración viene?' : '¿A qué departamento viene?' }}@foreach ($esperanDepto as $t)<span data-etiqueta-tipo="{{ $t }}"> *</span>@endforeach</label>
                     <select id="ingreso_departamento" name="departamento_id" class="campo" data-departamento-sede>
                         <option value="">-- Seleccionar --</option>
                         @foreach ($departamentos as $dep)
@@ -305,10 +327,12 @@
                             <option value="{{ $z['id'] }}" data-sede="{{ $z['sede_id'] }}" @selected((string) $previo('zona_estacionamiento_id') === (string) $z['id'])>{{ $z['texto'] }}</option>
                         @endforeach
                     </select>
+                    @if ($giro->ofreceTipo('huesped'))
                     <div data-condicion data-solo-tipos="huesped">
                         <label class="campo-etiqueta" for="ingreso_conductor">Conductor <span class="text-lowercase fw-normal">(opcional — solo si NO maneja el propio huésped, ej. taxi/Uber)</span></label>
                         <input type="text" id="ingreso_conductor" name="conductor" class="campo text-uppercase" maxlength="150" value="{{ $previo('conductor') }}" placeholder="Nombre de quien maneja la unidad">
                     </div>
+                    @endif
                 </div>
 
                 {{-- Acompañantes --}}
@@ -330,7 +354,8 @@
                     </template>
                 </div>
 
-                {{-- Huésped: datos de recepción (opcionales) --}}
+                {{-- Huésped: datos de recepción (opcionales). Giros: solo en hoteles --}}
+                @if ($giro->ofreceTipo('huesped'))
                 <div class="bloque-perfil" data-condicion data-solo-tipos="huesped">
                     <details class="mas-detalles" @if ($previo('habitacion') || $previo('numero_reserva') || $previo('empresa_procedencia') || $reservaElegida === '0') open @endif>
                         <summary class="campo-etiqueta">Más detalles <span class="text-lowercase fw-normal">(opcional)</span></summary>
@@ -367,6 +392,7 @@
                         </div>
                     </details>
                 </div>
+                @endif
 
                 @include('rh.recepcion._ingreso-fotos'){{-- Recepción: fotos de evidencia (ADR-0007) --}}
 

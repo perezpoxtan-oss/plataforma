@@ -39,7 +39,28 @@ resumen: Los datos de tu empresa (razón social, RFC, zona horaria, logo) y sus 
 
 ![Alta de empresas](img/empresas/5-alta-empresas.png)
 
-**Qué debes ver:** «Empresa «…» creada con sus módulos y roles base. Ahora registra sus sedes.» El rubro decide cómo se llaman las cosas (por ejemplo «Habitación» en un hotel, «Oficina» en un corporativo o «Casa» en un fraccionamiento).
+**Qué debes ver:** «Empresa «…» creada con sus módulos y roles base. Ahora registra sus sedes.» El rubro decide cómo se llaman las cosas en toda la plataforma y en este manual (ver abajo «Cómo cambia la plataforma según el rubro»).
+
+## Cómo cambia la plataforma según el rubro
+
+El **Rubro** (giro) de la empresa decide qué tipos de persona se registran en la **Bitácora de accesos** y cómo se llaman las cosas en pantallas, avisos, correos, impresiones y en este manual:
+
+<!-- sin cambiar -->
+| Rubro | Quién visita | Quién vive o trabaja ahí | Lugares | Tipos en Nuevo Ingreso |
+|---|---|---|---|---|
+| **Hotel** | Huésped (con número de cuarto, reserva y tour) | Colaborador | Habitaciones | Como siempre |
+| **Corporativo / industria** | Visitante | Colaborador | Oficinas | Colaborador, Visitante, Proveedor, Contratista y Emergencia |
+| **Condominio** | Visita (a qué departamento va) | Residente | Departamentos | Residente, Visita, Servicio / Proveedor, Contratista y Emergencia |
+| **Fraccionamiento** | Visita (a qué casa va) | Residente | Casas | Residente, Visita, Servicio / Proveedor, Contratista y Emergencia |
+
+<!-- fin sin cambiar -->
+
+Además, fuera de los hoteles el módulo de objetos perdidos se llama **Objetos olvidados**, y la lista sugerida de servicios de Reservas (la de un hotel) no se ofrece: cada empresa da de alta los suyos.
+
+1. Para cambiar el rubro de una empresa, el Super Administrador entra a **Estructura → Empresas**, toca el lápiz de la empresa, elige otro **Rubro** y toca **Guardar**.
+2. Los registros de antes no se pierden: si la Bitácora de accesos ya tenía un tipo que el rubro nuevo no usa, se sigue viendo con su nombre de siempre.
+
+**Qué debes ver:** al entrar con un usuario de esa empresa, el menú y las pantallas usan las palabras del rubro (por ejemplo **Residentes** en lugar del padrón de personal en un condominio).
 
 ## Cómo elegir los módulos de una empresa (Super Administrador)
 

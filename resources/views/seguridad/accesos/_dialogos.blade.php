@@ -18,7 +18,9 @@
         $otraVez = $reabrir($idDialogo);
         $esZona = $clase === 'zona';
         $esSalida = $clase === 'salida';
-        $tituloInicial = ['zona' => 'Cambiar Zona', 'salida' => 'Salida a Tour', 'regreso' => 'Regreso de Tour'][$clase];
+        // Giros: el «tour» es de los huéspedes; en otros giros la salida es «temporal»
+        $conTour = ($terminos ?? \App\Support\Terminos::actual())->ofreceTipo('huesped');
+        $tituloInicial = ['zona' => 'Cambiar Zona', 'salida' => $conTour ? 'Salida a Tour' : 'Salida Temporal', 'regreso' => $conTour ? 'Regreso de Tour' : 'Regreso'][$clase];
         $icono = ['zona' => 'bi-p-square-fill text-primary', 'salida' => 'bi-signpost-split text-warning', 'regreso' => 'bi-arrow-return-left text-success'][$clase];
     @endphp
     <dialog id="{{ $idDialogo }}" class="dialogo dialogo-acceso" aria-labelledby="titulo-{{ $idDialogo }}" @if ($otraVez) data-abrir-al-cargar @endif>

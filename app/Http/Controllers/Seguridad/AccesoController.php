@@ -7,6 +7,7 @@ use App\Models\Acceso;
 use App\Models\AcompananteAcceso;
 use App\Models\Departamento;
 use App\Models\Empresa;
+use App\Models\Espacio;
 use App\Models\Persona;
 use App\Models\Sede;
 use App\Services\Accesos\ConsultaAccesos;
@@ -21,6 +22,7 @@ use App\Support\Csv;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -81,8 +83,17 @@ class AccesoController extends Controller
             $sedesEdicion = $actor->can('accesos.editar') ? $this->consulta->sedesParaElegir($actor, 'accesos.editar') : collect();
             $sedesVer = $this->consulta->sedes($actor, 'accesos.ver');
 
+            // Giros (docs/tecnico/giros.md): tipos, motivos y palabras de la empresa
+            $terminos = Terminos::deEmpresaId($empresaId);
+
             return view('seguridad.accesos.index', [
                 'sinEmpresa' => false,
+                'terminos' => $terminos,
+                // Condominio / fraccionamiento: a qué departamento o casa va la visita (los del árbol de Zonas y edificios)
+                'espaciosVisita' => $puedeCrear && $terminos->visitaLlevaEspacio()
+                    ? Espacio::where('nivel', Espacio::AREA_ESPECIFICA)->where('activo', true)->whereIn('sede_id', $sedesAlta->pluck('id'))
+                        ->orderBy('nombre')->limit(2000)->get(['id', 'sede_id', 'nombre'])
+                    : collect(),
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'pestana' => $pestana,
                 'filtros' => $filtros,
@@ -313,12 +324,15 @@ class AccesoController extends Controller
                 'registradoPor:id,name', 'autorizadoPor:id,name', 'salidaPor:id,name', 'vehiculo:id,marca,modelo,color'])
             ->limit(10000)->get());
 
-        return response()->streamDownload(function () use ($filas, $hora) {
+        $terminos = Terminos::deEmpresaId($empresaId);
+
+        return response()->streamDownload(function () use ($filas, $hora, $terminos) {
             $salida = fopen('php://output', 'w');
             fwrite($salida, "\xEF\xBB\xBF");
-            Csv::fila($salida, ['Folio', 'Sede', 'Tipo', 'Movimiento', 'Nombre', 'Empresa / Procedencia', 'Gafete', 'Placas', 'Vehículo', 'Zona',
+            // Giros: «Habitación» se llama como el área específica del giro (Departamento, Casa, Oficina)
+            Csv::fila($salida, array_map(fn (string $t) => $terminos->texto($t), ['Folio', 'Sede', 'Tipo', 'Movimiento', 'Nombre', 'Empresa / Procedencia', 'Gafete', 'Placas', 'Vehículo', 'Zona',
                 'Conductor', 'Visita a / Host', 'Departamento', 'Habitación', 'Pase', 'ID custodiada', 'Acompañantes',
-                'Entrada', 'Autorizado', 'Salida', 'Registró', 'Autorizó', 'Dio salida']);
+                'Entrada', 'Autorizado', 'Salida', 'Registró', 'Autorizó', 'Dio salida']));
             foreach ($filas as $a) {
                 Csv::fila($salida, [
                     $a->id, $a->sede?->nombre, $a->etiquetaTipo(), Acceso::MOVIMIENTOS[$a->movimiento] ?? $a->movimiento, $a->nombre,

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\DemosPorGiro;
 use App\Models\Acceso;
 use App\Models\AccidenteFirma;
 use App\Models\AcompananteAcceso;
@@ -114,6 +115,8 @@ use Illuminate\Support\Str;
  */
 class CrearDatosDemo extends Command
 {
+    use DemosPorGiro;
+
     public const EMPRESA = 'Hotel Demo';
 
     /** Ambientes donde se permite crear el demo */
@@ -272,10 +275,15 @@ class CrearDatosDemo extends Command
         // Suscripciones: clientes de ejemplo en distintos estados (empresas aparte; Hotel Demo sigue sin suscripción)
         $paso('suscripcionesDemo', fn () => $this->suscripcionesDemo());
 
+        // Giros (docs/tecnico/giros.md): Corporativo Demo y Condominio Demo, empresas aparte (Hotel Demo no cambia)
+        $this->demosPorGiro($provisionar, $tenant, $contrasena, $hashExistente, $fallas);
+
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
         }
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
+        $this->info('Demos por giro: '.self::EMPRESA_CORPORATIVO.' ('.implode(', ', array_keys(self::USUARIOS_CORPORATIVO)).') y '
+            .self::EMPRESA_CONDOMINIO.' ('.implode(', ', array_keys(self::USUARIOS_CONDOMINIO)).').');
 
         return self::SUCCESS;
     }

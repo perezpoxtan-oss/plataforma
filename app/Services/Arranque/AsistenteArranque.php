@@ -13,6 +13,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -134,7 +135,8 @@ class AsistenteArranque
                 ],
                 [
                     'clave' => 'zonas', 'icono' => 'bi-grid-3x3-gap', 'titulo' => 'Zonas y edificios',
-                    'texto' => 'Captura tus zonas, pisos y habitaciones (u oficinas), o impórtalos desde Excel.',
+                    'texto' => ($t = Terminos::para($empresa))->esHotel() ? 'Captura tus zonas, pisos y habitaciones (u oficinas), o impórtalos desde Excel.'
+                        : 'Captura tus zonas, pisos y '.mb_strtolower($t->espacios()).', o impórtalos desde Excel.', // Giros
                     'hecho' => Espacio::where('nivel', Espacio::EDIFICIO)->exists(),
                     'enlaces' => array_filter([
                         'Importar zonas' => $enlace('espacios.importar', 'importaciones.create', ['tipo' => 'zonas']),

@@ -84,6 +84,17 @@ Para cambiar la configuración después, basta con subir otro `env_qa.txt`: se c
 | `agente.demo` | Agente | Centro |
 | `agente2.demo` | Agente | Playa |
 
+Además crea dos empresas de otros giros para probar cómo se adapta la plataforma (ver `docs/tecnico/giros.md`). Sus cuentas usan la misma contraseña:
+
+| Usuario | Empresa (giro) | Rol | Sede |
+|---|---|---|---|
+| `corp.admin.demo` | Corporativo Demo (corporativo) | Administrador | Todas |
+| `corp.jefe.demo` | Corporativo Demo (corporativo) | Jefe de seguridad | Todas |
+| `corp.agente.demo` | Corporativo Demo (corporativo) | Agente | Torre Reforma |
+| `condo.admin.demo` | Condominio Demo (condominio) | Administrador | Todas |
+| `condo.jefe.demo` | Condominio Demo (condominio) | Jefe de seguridad | Todas |
+| `condo.agente.demo` | Condominio Demo (condominio) | Agente | Residencial Norte |
+
 ## Probar el script fuera del servidor
 
 `PLATAFORMA_API` y `PLATAFORMA_URL` sustituyen a GitHub y al sitio, para ensayarlo con un servidor simulado. Así se probaron la primera instalación, la actualización, la versión defectuosa con regreso automático y la corrida sin cambios.

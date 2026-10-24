@@ -18,6 +18,7 @@ use App\Services\Novedades\ArchivoLostFound;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Support\GraficaSvg;
 use App\Support\HoraLocal;
+use App\Support\Terminos;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Throwable;
@@ -223,10 +224,10 @@ class Tablero
     private function detalleEnSitio(User $actor, ?array $sedes): array
     {
         $base = $this->enSitio($actor, $sedes);
-        $porTipo = Indicadores::por($base, 'accesos.tipo', Acceso::TIPOS);
+        $porTipo = Indicadores::por($base, 'accesos.tipo', Terminos::actual()->etiquetasTipo());
         $filas = (clone $base)->with('sede:id,nombre')->orderBy('accesos.entrada_at')->limit(self::MAX_FILAS)
             ->get(['accesos.id', 'accesos.sede_id', 'tipo', 'nombre', 'empresa_procedencia', 'entrada_at'])
-            ->map(fn (Acceso $a) => [$this->hora->formatear($a->entrada_at, 'd/m H:i'), Acceso::TIPOS[$a->tipo] ?? $a->tipo, $a->nombre, $a->empresa_procedencia ?: '—', $a->sede?->nombre ?? '—'])->all();
+            ->map(fn (Acceso $a) => [$this->hora->formatear($a->entrada_at, 'd/m H:i'), Terminos::actual()->etiquetasTipo()[$a->tipo] ?? $a->tipo, $a->nombre, $a->empresa_procedencia ?: '—', $a->sede?->nombre ?? '—'])->all();
 
         return [
             'grafica' => GraficaSvg::barras($porTipo, 'Personas en sitio por tipo de acceso'),

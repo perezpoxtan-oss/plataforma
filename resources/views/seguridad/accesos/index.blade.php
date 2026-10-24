@@ -74,7 +74,7 @@
             </div>
             <select name="tipo" class="filtro-select" aria-label="Filtrar por tipo de persona" data-filtro-accesos-tipo>
                 <option value="">Todos los tipos</option>
-                @foreach (\App\Models\Acceso::TIPOS as $clave => $etiqueta)
+                @foreach (($terminos ?? \App\Support\Terminos::actual())->tiposAcceso() as $clave => $etiqueta){{-- Giros: solo los tipos del giro --}}
                     <option value="{{ $clave }}" @selected(($filtros['tipo'] ?? '') === $clave)>{{ $etiqueta }}</option>
                 @endforeach
             </select>

@@ -88,3 +88,7 @@ El sistema anterior no tenía ayuda dentro de la aplicación: los instructivos e
 - Las capturas usan usuarios y empresa de ejemplo (sin dominios, usuarios de prueba ni la franja de ambiente).
 
 > Mejoras de 2026-10 (roles sin números, asistente de permisos, configuración por módulo, avisos por persona, historial y varias sedes): ver [estructura-mejoras.md](estructura-mejoras.md) y [ADR-0016](../decisiones/ADR-0016-mejoras-de-estructura.md).
+
+## Manual por giro
+
+Cada empresa ve el manual con las palabras de su giro (Visitante, Residente, Oficina, Departamento, Objetos olvidados…) y sin lo que no aplica a su giro. `Manual::segunGiro()` resuelve los bloques `<!-- solo: hotel -->` … `<!-- fin -->` (también con varios giros separados por comas) y `Terminos` sustituye las palabras en el HTML, en el índice de apartados y en el texto que se busca. Los `id` de los apartados no cambian entre giros. La caché lleva el giro en la clave. Detalle en `docs/tecnico/giros.md`, «Manual por giro»; reglas de redacción en `docs/usuario/GUIA.md`.
