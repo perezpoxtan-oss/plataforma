@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * Ruta de transporte de personal (SEGCAT: cat_rutas_transporte): llegada a
  * la sede o salida de la sede, con su turno, su empresa transportista y uno
- * o más horarios. hora_inicio, hora_fin y dias son un resumen de los horarios.
+ * o más horarios. hora_inicio, hora_fin y dias son un resumen de los horarios
+ * que solo calcula resumenDeHorarios().
  */
 class Ruta extends Model
 {
@@ -67,6 +68,76 @@ class Ruta extends Model
     public function esLlegada(): bool
     {
         return $this->sentido === 'llegada';
+    }
+
+    // ------------------------------------------------------------ Resumen (un solo valor verdad)
+
+    /**
+     * ÚNICO lugar donde se calcula el resumen de la ruta (hora_inicio,
+     * hora_fin, dias) a partir de sus horarios: el horario más temprano y la
+     * unión de días en el orden de la semana. Lo usan el guardado
+     * (AdministradorRutas) y la revisión de coherencia
+     * (plataforma:revisar-coherencia). Ver docs/tecnico/integridad-bd.md.
+     *
+     * @param  iterable<RutaHorario|array<string, mixed>>  $horarios
+     * @return array{hora_inicio: ?string, hora_fin: ?string, dias: ?string}
+     */
+    public static function resumenDeHorarios(iterable $horarios): array
+    {
+        $lista = collect($horarios)->map(fn ($h) => $h instanceof RutaHorario
+            ? ['hora_inicio' => $h->getRawOriginal('hora_inicio') ?? $h->hora_inicio, 'hora_fin' => $h->getRawOriginal('hora_fin') ?? $h->hora_fin, 'dias' => $h->dias]
+            : $h)->values();
+        if ($lista->isEmpty()) {
+            return ['hora_inicio' => null, 'hora_fin' => null, 'dias' => null];
+        }
+        $primero = $lista->sortBy(fn ($h) => self::hora($h['hora_inicio']))->first();
+        $dias = $lista->flatMap(fn ($h) => self::separarDias(is_array($h['dias']) ? implode(',', $h['dias']) : $h['dias']))->unique()->all();
+
+        return [
+            'hora_inicio' => self::hora($primero['hora_inicio']),
+            'hora_fin' => self::hora($primero['hora_fin']),
+            'dias' => implode(',', array_values(array_intersect(array_keys(self::DIAS), $dias))),
+        ];
+    }
+
+    /** Mismo formato para comparar lo guardado con lo calculado («6:00» = «06:00:00»). */
+    public static function normalizarResumen(array $resumen): array
+    {
+        return [
+            'hora_inicio' => self::hora($resumen['hora_inicio'] ?? null),
+            'hora_fin' => self::hora($resumen['hora_fin'] ?? null),
+            'dias' => ($resumen['dias'] ?? null) === null ? null : implode(',', self::separarDias($resumen['dias'])),
+        ];
+    }
+
+    /**
+     * Vuelve a calcular el resumen desde los horarios guardados y lo guarda si
+     * cambió. true = había diferencia.
+     */
+    public function recalcularResumen(): bool
+    {
+        $esperado = self::resumenDeHorarios($this->horarios()->get());
+        $actual = ['hora_inicio' => $this->getRawOriginal('hora_inicio'), 'hora_fin' => $this->getRawOriginal('hora_fin'), 'dias' => $this->getRawOriginal('dias')];
+        if (self::normalizarResumen($actual) === self::normalizarResumen($esperado)) {
+            return false;
+        }
+        $this->forceFill($esperado)->save();
+
+        return true;
+    }
+
+    /** «6:00», «06:00» o «06:00:00» → «06:00:00»; vacío → null. */
+    private static function hora(mixed $valor): ?string
+    {
+        $texto = trim((string) $valor);
+        if ($texto === '') {
+            return null;
+        }
+        if (! preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?/', $texto, $m)) {
+            return $texto;
+        }
+
+        return sprintf('%02d:%02d:%02d', (int) $m[1], (int) $m[2], (int) ($m[3] ?? 0));
     }
 
     // ------------------------------------------------------------ Días (texto)

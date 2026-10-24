@@ -47,6 +47,8 @@ Usuarios no se incluyó a propósito: casi todo usuario ya actuó (creó, editó
 6. **Referencias sin llave foránea** declaradas por el módulo (`extras`) y **polimórficas**: vouchers (`vouchers_reposicion.origen_tipo` + `origen_id`, tipos de `VoucherReposicion::ORIGENES`).
 7. **Reglas propias** (`verificar`): la única sede de la empresa no se borra; un rol pasa por `AdministradorRoles::exigirPuedeAdministrarRol($actor, $rol, 'roles.borrar')` (nivel, propios, alcance).
 
+Desde el mantenimiento de la base (`integridad-bd.md`) las llaves de las tablas con historia hacia sus padres directos (acceso, novedad, pase, reserva, sede, zona, departamento…) son `restrict`. No cambia este flujo: esas filas ya contaban como dependencia (punto 2) y la base, además, rechazaría el borrado (punto 4 de «Borrado»).
+
 La bitácora de **auditoría no cuenta** como dependencia (es polimórfica y todo registro tiene su alta ahí); al contrario, recibe la copia.
 
 Mensaje (nombres de `BorradoSeguro::ETIQUETAS`, en singular o plural): «Tiene 3 préstamos de llave y 1 voucher: no se puede eliminar; puedes darla de baja.»

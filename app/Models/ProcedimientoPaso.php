@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
+use App\Models\Concerns\RegistraAutor;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class ProcedimientoPaso extends Model
 {
-    use PerteneceAEmpresa;
+    use PerteneceAEmpresa, RegistraAutor;
 
     protected $table = 'procedimiento_pasos';
 

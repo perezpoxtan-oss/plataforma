@@ -108,7 +108,9 @@ class MovimientoTransporte extends Model
 
     public function pasajeros(): BelongsToMany
     {
+        // Pivote con empresa_id propia (se toma del movimiento): docs/tecnico/integridad-bd.md
         return $this->belongsToMany(Colaborador::class, 'movimiento_transporte_pasajeros', 'movimiento_transporte_id', 'colaborador_id')
+            ->using(MovimientoTransportePasajero::class)
             ->orderBy('colaboradores.nombre')->orderBy('colaboradores.apellido_paterno');
     }
 

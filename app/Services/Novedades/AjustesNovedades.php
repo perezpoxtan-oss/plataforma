@@ -7,6 +7,7 @@ use App\Models\Modulo;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
 use App\Support\Tenancy\EmpresaDeTrabajo;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -172,7 +173,7 @@ class AjustesNovedades
             if ($modulo !== null) {
                 // Solo en la empresa que tiene el módulo contratado (sin contrato no hay menú que nombrar)
                 DB::table('empresa_modulos')->where('empresa_id', $empresa->id)->where('modulo_id', $modulo)
-                    ->update(['nombre_visible' => $nombre, 'updated_at' => now()]);
+                    ->update(['nombre_visible' => $nombre, 'updated_at' => now(), 'actualizado_por' => Auth::id()]);
             }
             $fresca = Empresa::query()->lockForUpdate()->find($empresa->id);
             $preferencias = is_array($fresca?->preferencias) ? $fresca->preferencias : [];

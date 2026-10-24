@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Empresa;
 use App\Models\Menu;
 use App\Models\Modulo;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
@@ -90,7 +91,7 @@ final class NombresMenu
         DB::transaction(function () use ($empresa, $cambios) {
             foreach ($cambios as $id => $nombre) {
                 DB::table('empresa_modulos')->where('empresa_id', $empresa->id)->where('modulo_id', $id)
-                    ->update(['nombre_visible' => $nombre, 'updated_at' => now()]);
+                    ->update(['nombre_visible' => $nombre, 'updated_at' => now(), 'actualizado_por' => Auth::id()]);
             }
         });
 
@@ -102,6 +103,6 @@ final class NombresMenu
     {
         $ids = collect(self::de($empresa))->flatten(1)->pluck('id')->all();
         DB::table('empresa_modulos')->where('empresa_id', $empresa->id)->whereIn('modulo_id', $ids)
-            ->update(['nombre_visible' => null, 'updated_at' => now()]);
+            ->update(['nombre_visible' => null, 'updated_at' => now(), 'actualizado_por' => Auth::id()]);
     }
 }

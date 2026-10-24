@@ -241,7 +241,7 @@ class AdministradorRutas
      */
     private function guardar(User $actor, Sede $sede, Ruta $ruta, array $horarios): void
     {
-        $ruta->fill($this->resumen($horarios))->save();
+        $ruta->fill(Ruta::resumenDeHorarios($horarios))->save();
 
         $existentes = $ruta->horarios()->get()->keyBy('id');
         $conservar = [];
@@ -272,24 +272,9 @@ class AdministradorRutas
             RutaParada::whereIn('ruta_horario_id', $quitar)->delete();
             RutaHorario::whereIn('id', $quitar)->delete();
         }
-    }
 
-    /**
-     * Resumen de la ruta: el horario más temprano y la unión de días.
-     *
-     * @param  list<array<string, mixed>>  $horarios
-     * @return array{hora_inicio: string, hora_fin: string, dias: string}
-     */
-    private function resumen(array $horarios): array
-    {
-        $primero = collect($horarios)->sortBy('hora_inicio')->first();
-        $dias = collect($horarios)->flatMap(fn ($h) => Ruta::separarDias($h['dias']))->unique()->all();
-
-        return [
-            'hora_inicio' => $primero['hora_inicio'],
-            'hora_fin' => $primero['hora_fin'],
-            'dias' => implode(',', array_values(array_intersect(array_keys(Ruta::DIAS), $dias))),
-        ];
+        // Un solo valor verdad: el resumen se confirma contra los horarios ya guardados
+        $ruta->recalcularResumen();
     }
 
     // ------------------------------------------------------------ Validación

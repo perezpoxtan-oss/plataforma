@@ -186,7 +186,7 @@ class LectorAuditoria
         'dos_pasos_restablecida' => 'Verificación en dos pasos restablecida',
         // Privacidad (docs/tecnico/privacidad.md)
         'aviso_publicado' => 'Versión nueva del aviso de privacidad', 'conservacion' => 'Cambio de días de conservación',
-        'conservacion_aplicada' => 'Datos quitados por conservación', 'arco_recibida' => 'Solicitud ARCO recibida',
+        'conservacion_aplicada' => 'Datos quitados por conservación', 'coherencia_reparada' => 'Dato corregido desde su fuente (revisión de coherencia)', 'arco_recibida' => 'Solicitud ARCO recibida',
         'arco_verificada' => 'Solicitud ARCO verificada', 'arco_exportado' => 'Datos exportados (ARCO)', 'arco_descargado' => 'Descarga de datos (ARCO)',
         'arco_eliminado' => 'Datos eliminados (ARCO)', 'arco_atendida' => 'Solicitud ARCO atendida', 'arco_rechazada' => 'Solicitud ARCO rechazada',
         'arco_canalizada' => 'Solicitud ARCO canalizada',
