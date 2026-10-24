@@ -106,6 +106,10 @@ Ver los apartados «Dar salida a la vista» y «Mensajes» más abajo: el campo 
 - **Acompañantes**: hasta 15; filas sin ningún dato se omiten; `num_acompanantes` = el mayor entre el número capturado y las filas.
 - **Guardar y capturar siguiente** (`siguiente=1`): regresa con la sesión `siguiente` (sede, tipo y aviso) y el diálogo se reabre listo.
 
+## Tipos según el giro de la empresa
+
+Los tipos que se ofrecen y su nombre dependen del giro (`App\Support\Terminos`, ver `docs/tecnico/giros.md`): el hotel conserva los seis tipos de siempre; un corporativo no ofrece Huésped y llama «Visitante» a la visita; un condominio o fraccionamiento ofrece Residente (`colaborador`), Visita (`visitante`, con «Visita a Residente» o «Visita a Administración» y el departamento o casa en `habitacion`), Servicio (`proveedor`), Contratista y Emergencia. Las claves y el CHECK de `accesos.tipo` no cambian; `RegistroAccesos` rechaza en el servidor un tipo o motivo que el giro no ofrece. Los registros de antes conservan su nombre.
+
 ## Gafete "EN SITIO" (cambio en `App\Models\Gafete`)
 
 `disponibleParaAsignar()` = activo **y** no `prestados()`. El scope `prestados()` es un gafete con un acceso `pendiente` o `en_sitio`, o con un acompañante sin salida (aunque esté fuera temporalmente) de un acceso abierto. `disponibles()` = activos y no prestados. Corrige dos fallas de SEGCAT: el gafete de un acompañante que ya había salido seguía "ocupado" y el de un proveedor pendiente se podía prestar a otro.

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
+use App\Support\Terminos;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -256,9 +257,25 @@ class Acceso extends Model
 
     // ------------------------------------------------------------------ Ayudas
 
+    /** Nombre del tipo según el giro de su empresa (Giros: «Visitante», «Residente»…; en hotel, el de siempre). */
     public function etiquetaTipo(): string
     {
-        return self::TIPOS[$this->tipo] ?? $this->tipo;
+        return $this->terminos()->etiquetaTipo($this->tipo);
+    }
+
+    /** Palabras del giro de la empresa del registro (docs/tecnico/giros.md). */
+    public function terminos(): Terminos
+    {
+        // Consultas que no traen empresa_id (listas con columnas elegidas): la empresa activa
+        $empresaId = $this->getAttributes()['empresa_id'] ?? null;
+
+        return $empresaId === null ? Terminos::actual() : Terminos::deEmpresaId((int) $empresaId);
+    }
+
+    /** Motivo de la visita con el texto del giro («Visita a Residente» en condominios). */
+    public function etiquetaMotivo(): string
+    {
+        return $this->terminos()->etiquetaMotivo($this->motivo_visita);
     }
 
     public function llevaGafete(): bool

@@ -105,6 +105,7 @@ Por omisión, cada sección de Configuración muestra **solo lo activo**: las á
 
 Los responsables de cada departamento son los de **Recursos Humanos → Departamentos → Responsables**.
 
+<!-- solo: hotel -->
 ## Cómo cargar la lista sugerida para hoteles
 
 Si tu empresa es un hotel, puedes llenar el catálogo de una vez con los servicios de una **orden de evento**, sin costo:
@@ -127,6 +128,7 @@ Si tu empresa es un hotel, puedes llenar el catálogo de una vez con los servici
 
 **Qué debes ver:** el aviso verde «Se agregaron N servicios y M montajes sugeridos, sin costo.». Para ofrecer un montaje nuevo, márcalo en cada área con su aforo (**Editar** el área).
 
+<!-- fin -->
 ## Cómo elegir quién aprueba, los tiempos y el IVA
 
 1. En **Quién aprueba, tiempos e IVA** (o en **Estructura → Configuración → Reservas de áreas**, es el mismo formulario):
@@ -174,7 +176,9 @@ En la pestaña **Informes** elige las fechas y la sede: **Ocupación por área**
 
 **¿Cuál es la diferencia entre Dar de baja y Eliminar en los catálogos?** Dar de baja lo oculta y se puede reactivar; Eliminar lo borra para siempre y solo se puede si nunca se usó.
 
+<!-- solo: hotel -->
 **¿La lista sugerida se carga sola?** No. Solo cuando tocas el botón; si eliminas algo de la lista, no vuelve a aparecer a menos que lo toques otra vez.
+<!-- fin -->
 
 **¿Qué pasa si nadie es responsable?** Aprueba quien tenga permiso de **aprobar** reservas en esa sede.
 

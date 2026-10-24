@@ -117,11 +117,16 @@
                 @include('operacion.reservas._ver-ocultas', ['seccion' => 'servicios', 'ancla' => 'cat-servicios', 'n' => $ocultas['servicios'], 'texto' => 'dados de baja'])
             </div>
             <p class="text-muted small">Lo que se puede pedir con una reserva. El <strong>departamento</strong> lo aprueba (si lo marcas) y recibe su orden de servicio al confirmarse. Sus responsables son los de <strong>Departamentos → Responsables</strong>. Al reservar, los servicios se muestran agrupados por su departamento, como en una orden de evento.</p>
-            <form method="POST" action="{{ route('reservas.configuracion.sugeridos') }}" class="mb-2"
+@if (\App\Support\Terminos::actual()->esHotel())
+                        <form method="POST" action="{{ route('reservas.configuracion.sugeridos') }}" class="mb-2"
                   data-confirmar="¿Cargar la lista sugerida para hoteles? Agrega, sin costo, los servicios de una orden de evento (Steward, Alimentos y bebidas, Cocina, Mantenimiento, Áreas públicas, Animación, Capacitación y Sistemas) y los montajes Tipo U, Escuela, Auditorio y Banquete que falten. No duplica lo que ya tienes ni crea departamentos.">
                 @csrf
                 <button type="submit" class="btn-secundario-rh"><i class="bi bi-list-check me-1" aria-hidden="true"></i>Cargar servicios sugeridos de hotel</button>
             </form>
+            @else
+            {{-- Giros: la lista sugerida de hotel no aplica; cada empresa da de alta sus servicios --}}
+            <p class="campo-ayuda mb-2"><i class="bi bi-info-circle" aria-hidden="true"></i> Da de alta los servicios que ofreces con <strong>Nuevo servicio</strong> (por ejemplo: limpieza del salón, asador, mobiliario, proyector).</p>
+            @endif
             <div class="fichas-grid mt-2">
                 <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevo-servicios">
                     <i class="bi bi-plus-circle-fill" aria-hidden="true"></i>

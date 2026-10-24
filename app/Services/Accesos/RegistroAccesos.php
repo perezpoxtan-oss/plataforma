@@ -9,6 +9,7 @@ use App\Models\Departamento;
 use App\Models\Gafete;
 use App\Models\Persona;
 use App\Models\Proveedor;
+use App\Models\Sede;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\ZonaEstacionamiento;
@@ -18,6 +19,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Services\Personas\AdministradorPersonas;
 use App\Services\Recepcion\RecepcionEnCaseta;
 use App\Services\Vehiculos\AdministradorVehiculos;
+use App\Support\Terminos;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -74,6 +76,12 @@ class RegistroAccesos
             throw ValidationException::withMessages(['sede_id' => 'Elige una sede activa de la lista: esa sede no existe, está desactivada o no está a tu cargo.']);
         }
 
+        // ---------- Giros: solo los tipos y motivos que se usan en el giro de la empresa (docs/tecnico/giros.md) ----------
+        $terminos = Terminos::deEmpresaId((int) Sede::whereKey($sedeId)->value('empresa_id'));
+        if (! $terminos->ofreceTipo($tipo)) {
+            throw ValidationException::withMessages(['tipo' => 'Ese tipo de persona no se registra en esta empresa. Elige uno de la lista.']);
+        }
+
         // ---------- Titular ----------
         $colaborador = null;
         $nombre = $this->texto($d['nombre'] ?? null);
@@ -102,7 +110,10 @@ class RegistroAccesos
                     : 'El host elegido no existe, está dado de baja o no pertenece a esta sede.';
             }
         }
-        $motivo = $tipo === 'visitante' ? ($d['motivo_visita'] ?? 'rh') : null;
+        $motivo = $tipo === 'visitante' ? ($d['motivo_visita'] ?? $terminos->motivoPorDefecto()) : null;
+        if ($motivo !== null && ! array_key_exists($motivo, $terminos->motivos())) {
+            $errores['motivo_visita'] = 'Elige el motivo de la visita de la lista.';
+        }
         $visita = null;
         if ($motivo === 'colaborador') {
             $visita = $this->colaboradorEnSede($d['visita_colaborador_id'] ?? null, $sedeId);
@@ -218,7 +229,7 @@ class RegistroAccesos
 
         $estado = in_array($tipo, Acceso::CON_AUTORIZACION, true) || $recepcion['esperar'] ? 'pendiente' : 'en_sitio'; // Recepción: visita que espera al departamento
 
-        $acceso = DB::transaction(function () use ($actor, $d, $tipo, $sedeId, $nombre, $colaborador, $host, $visita, $motivo, $departamentoId,
+        $acceso = DB::transaction(function () use ($terminos, $actor, $d, $tipo, $sedeId, $nombre, $colaborador, $host, $visita, $motivo, $departamentoId,
             $placas, $modo, $tipoVehiculo, $zonaId, $conductor, $gafete, $acompanantes, $personaId, $personaRepetida, $estado) {
             // Gafetes: se revisan otra vez con el registro bloqueado (dos casetas a la vez)
             foreach (array_filter([$gafete, ...array_column($acompanantes, 'gafete')]) as $g) {
@@ -276,7 +287,8 @@ class RegistroAccesos
                 'numero_reserva' => $reserva ? $this->mayusculas($d['numero_reserva'] ?? null) : null,
                 // Con reserva, el pase siempre es Estancia (regla de SEGCAT)
                 'tipo_pase' => $tipo === 'huesped' ? ($reserva ? 'estancia' : ($d['tipo_pase'] ?? 'daypass')) : null,
-                'habitacion' => $tipo === 'huesped' ? $this->mayusculas($d['habitacion'] ?? null) : null,
+                // Huésped: su habitación; en condominios y fraccionamientos, el departamento o la casa a la que va la visita
+                'habitacion' => $tipo === 'huesped' || ($tipo === 'visitante' && $terminos->visitaLlevaEspacio()) ? $this->mayusculas($d['habitacion'] ?? null) : null,
                 'tipo_visita' => in_array($tipo, Acceso::CON_AUTORIZACION, true) ? ($d['tipo_visita'] ?? 'cortesia') : null,
                 'departamento_id' => $departamentoId,
                 'area_trabajo' => in_array($tipo, Acceso::CON_AUTORIZACION, true) ? $this->mayusculas($d['area_trabajo'] ?? null) : null,

@@ -3,6 +3,7 @@
 namespace App\Services\Manual;
 
 use App\Models\User;
+use App\Support\Terminos;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use League\CommonMark\Environment\Environment;
@@ -51,7 +52,12 @@ class Manual
     public const EXCLUIDOS = ['GUIA'];
 
     /** Cambia si cambia la forma de convertir (invalida la caché). */
-    private const VERSION = 1;
+    private const VERSION = 2;
+
+    /** Giros: renglones que marcan una parte que no se sustituye (`<!-- sin cambiar -->` … `<!-- fin sin cambiar -->`). */
+    private const SIN_CAMBIAR = '§TERMINOS-NO§';
+
+    private const FIN_SIN_CAMBIAR = '§TERMINOS-SI§';
 
     private const SLUG = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/';
 
@@ -196,8 +202,7 @@ class Manual
     public function contenido(PaginaManual $pagina, User $usuario): array
     {
         $ruta = $this->archivos()[$pagina->slug];
-        $clave = 'manual.pagina.'.md5(self::VERSION.'|'.$ruta.'|'.@filemtime($ruta).'|'.@filesize($ruta));
-        $convertida = Cache::rememberForever($clave, fn () => $this->convertir((string) file_get_contents($ruta)));
+        $convertida = $this->convertida($ruta);
 
         // Enlaces a otras páginas: solo si existen y el usuario puede verlas; si no, texto simple
         $html = preg_replace_callback('#<a href="manual:([a-z0-9-]+)(\#[^"]*)?"([^>]*)>(.*?)</a>#s', function (array $m) use ($usuario) {
@@ -211,7 +216,8 @@ class Manual
 
         $html = preg_replace_callback('#src="manual-img:([a-z0-9-]+)/([A-Za-z0-9._-]+)"#', fn (array $m) => 'src="'.e(route('manual.imagen', [$m[1], $m[2]])).'"', (string) $html);
 
-        return ['html' => (string) $html, 'apartados' => $convertida['apartados']];
+        // Giros: el manual dice las palabras de la empresa (las anclas se quedan como están)
+        return ['html' => $this->terminos()->html((string) $html), 'apartados' => $this->apartadosConTerminos($convertida['apartados'])];
     }
 
     // Mejoras estructura (ADR-0016): buscar en el contenido y ayuda directa al apartado
@@ -227,9 +233,8 @@ class Manual
         if ($ruta === null) {
             return [];
         }
-        $clave = 'manual.pagina.'.md5(self::VERSION.'|'.$ruta.'|'.@filemtime($ruta).'|'.@filesize($ruta));
 
-        return Cache::rememberForever($clave, fn () => $this->convertir((string) file_get_contents($ruta)))['apartados'];
+        return $this->convertida($ruta)['apartados'];
     }
 
     /**
@@ -263,15 +268,19 @@ class Manual
         if ($ruta === null) {
             return [];
         }
-        $clave = 'manual.texto.'.md5(self::VERSION.'|'.$ruta.'|'.@filemtime($ruta).'|'.@filesize($ruta));
+        $terminos = $this->terminos();
+        $clave = 'manual.texto.'.md5(self::VERSION.'|'.$terminos->giro.'|'.$ruta.'|'.@filemtime($ruta).'|'.@filesize($ruta));
 
-        return Cache::rememberForever($clave, function () use ($ruta, $pagina) {
-            $texto = preg_replace('/\A---\r?\n.*?\r?\n---\r?\n/s', '', (string) file_get_contents($ruta)) ?? '';
+        return Cache::rememberForever($clave, function () use ($ruta, $pagina, $terminos) {
+            $texto = preg_replace('/\A---\r?\n.*?\r?\n---\r?\n/s', '', self::segunGiro((string) file_get_contents($ruta), $terminos->giro)) ?? '';
             $apartados = $this->apartados($pagina);
             $partes = [['id' => null, 'titulo' => null, 'texto' => '']];
             $n = 0;
             $enCodigo = false;
             foreach (preg_split('/\r?\n/', $texto) ?: [] as $linea) {
+                if (in_array(trim($linea), [self::SIN_CAMBIAR, self::FIN_SIN_CAMBIAR], true)) {
+                    continue;
+                }
                 if (str_starts_with(ltrim($linea), '```')) {
                     $enCodigo = ! $enCodigo;
 
@@ -286,7 +295,8 @@ class Manual
                 $partes[count($partes) - 1]['texto'] .= ' '.$this->sinMarcas($linea);
             }
 
-            return array_values(array_map(fn ($p) => ['id' => $p['id'], 'titulo' => $p['titulo'], 'texto' => trim(preg_replace('/\s+/', ' ', $p['texto']) ?? '')], $partes));
+            return array_values(array_map(fn ($p) => ['id' => $p['id'], 'titulo' => $p['titulo'] === null ? null : $terminos->texto($p['titulo']),
+                'texto' => $terminos->texto(trim(preg_replace('/\s+/', ' ', $p['texto']) ?? ''))], $partes));
         });
     }
 
@@ -321,8 +331,9 @@ class Manual
                 continue;
             }
             $partes = $this->textoPorApartado($pagina);
-            $enTitulo = $contiene(Str::lower(Str::ascii($pagina->titulo.' '.$pagina->resumen)));
-            $todo = Str::lower(Str::ascii($pagina->titulo.' '.$pagina->resumen.' '.implode(' ', array_map(fn ($p) => ($p['titulo'] ?? '').' '.$p['texto'], $partes))));
+            $cabeza = $this->terminos()->texto($pagina->titulo.' '.$pagina->resumen); // Giros: se busca con las palabras de la empresa
+            $enTitulo = $contiene(Str::lower(Str::ascii($cabeza)));
+            $todo = Str::lower(Str::ascii($cabeza.' '.implode(' ', array_map(fn ($p) => ($p['titulo'] ?? '').' '.$p['texto'], $partes))));
             if (! $enTitulo && ! $contiene($todo)) {
                 continue;
             }
@@ -339,7 +350,7 @@ class Manual
                 'pagina' => $pagina,
                 'apartado' => $enTitulo && $elegido === null ? null : $elegido['id'] ?? null,
                 'titulo_apartado' => $elegido['titulo'] ?? null,
-                'fragmento' => $elegido === null ? $pagina->resumen : $this->fragmento($elegido['texto'], $palabras[0]),
+                'fragmento' => $elegido === null ? $this->terminos()->texto($pagina->resumen) : $this->fragmento($elegido['texto'], $palabras[0]),
                 'peso' => $enTitulo ? 0 : 1,
             ];
         }
@@ -371,6 +382,64 @@ class Manual
         return preg_match('/^\s*:?-{3,}/', $linea) ? '' : $linea;
     }
     // Fin Mejoras estructura
+
+    // Giros (docs/tecnico/giros.md)
+
+    /** Palabras de la empresa activa (Huésped / Visitante / Visita…). */
+    private function terminos(): Terminos
+    {
+        return Terminos::actual();
+    }
+
+    /**
+     * HTML convertido de una página para el giro de la empresa activa (en caché
+     * por archivo y giro). Los ids de los apartados salen del texto de la
+     * página y son los mismos en todos los giros.
+     *
+     * @return array{html: string, apartados: list<array{id: string, texto: string}>}
+     */
+    private function convertida(string $ruta): array
+    {
+        $giro = $this->terminos()->giro;
+        $clave = 'manual.pagina.'.md5(self::VERSION.'|'.$giro.'|'.$ruta.'|'.@filemtime($ruta).'|'.@filesize($ruta));
+
+        return Cache::rememberForever($clave, fn () => $this->convertir(self::segunGiro((string) file_get_contents($ruta), $giro)));
+    }
+
+    /**
+     * @param  list<array{id: string, texto: string}>  $apartados
+     * @return list<array{id: string, texto: string}>
+     */
+    private function apartadosConTerminos(array $apartados): array
+    {
+        $terminos = $this->terminos();
+
+        return array_map(fn (array $a) => ['id' => $a['id'], 'texto' => $terminos->texto($a['texto'])], $apartados);
+    }
+
+    /**
+     * Partes de una página que solo aplican a algunos giros:
+     *
+     *     <!-- solo: hotel -->
+     *     …texto que solo ven los hoteles…
+     *     <!-- fin -->
+     *
+     * (también `<!-- solo: corporativo, condominio, fraccionamiento -->`). Las
+     * marcas se quitan siempre; el contenido se queda solo si el giro está en la lista.
+     */
+    public static function segunGiro(string $texto, string $giro): string
+    {
+        $texto = str_replace("\r\n", "\n", $texto);
+        // Partes que dicen las palabras de todos los giros (p. ej. una tabla que compara giros): no se sustituyen
+        $texto = (string) preg_replace(['/^<!--\s*sin cambiar\s*-->[ \t]*$/m', '/^<!--\s*fin sin cambiar\s*-->[ \t]*$/m'], ["\n".self::SIN_CAMBIAR."\n\n", "\n".self::FIN_SIN_CAMBIAR."\n\n"], $texto);
+
+        return (string) preg_replace_callback('/^<!--\s*solo:\s*([a-z,\s]+?)\s*-->[ \t]*\n(.*?)^<!--\s*fin\s*-->[ \t]*(?:\n|\z)/ms', function (array $m) use ($giro) {
+            $giros = array_map('trim', explode(',', $m[1]));
+
+            return in_array($giro, $giros, true) ? $m[2] : '';
+        }, $texto);
+    }
+    // Fin Giros
 
     /**
      * Ruta real de una imagen del manual, solo si está dentro de docs/usuario/img
@@ -519,7 +588,10 @@ class Manual
             }
         }
 
-        return ['html' => (string) (new HtmlRenderer($entorno))->renderDocument($documento), 'apartados' => $apartados];
+        $html = (string) (new HtmlRenderer($entorno))->renderDocument($documento);
+        $html = str_replace(['<p>'.self::SIN_CAMBIAR.'</p>', '<p>'.self::FIN_SIN_CAMBIAR.'</p>'], [Terminos::SIN_SUSTITUIR, Terminos::SUSTITUIR], $html);
+
+        return ['html' => $html, 'apartados' => $apartados];
     }
 
     private function textoDe(Node $nodo): string

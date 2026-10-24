@@ -2,17 +2,23 @@
 
 namespace App\Providers;
 
+use App\Models\Empresa;
+use App\Models\Rubro;
 use App\Models\User;
 use App\Services\Permisos\Autorizador;
 use App\Support\HoraLocal;
 use App\Support\Identidad;
 use App\Support\Menu\ConstructorMenu;
+use App\Support\RegistroTerminos;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
@@ -28,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(Identidad::class);
         $this->app->scoped(ConstructorMenu::class);
         $this->app->scoped(HoraLocal::class);
+        // Términos por giro (Terminos::deEmpresaId): una consulta por empresa y petición
+        $this->app->scoped(RegistroTerminos::class);
     }
 
     public function boot(): void
@@ -38,6 +46,31 @@ class AppServiceProvider extends ServiceProvider
         DB::prohibitDestructiveCommands($this->app->isProduction());
 
         $this->limitadoresPublicos();
+
+        // Giros: los correos y avisos dicen las palabras del giro de la empresa activa (en hotel no cambia nada)
+        Event::listen(MessageSending::class, function (MessageSending $evento): void {
+            $terminos = Terminos::actual();
+            if ($terminos->esHotel()) {
+                return;
+            }
+            $mensaje = $evento->message;
+            if (is_string($mensaje->getSubject())) {
+                $mensaje->subject($terminos->texto($mensaje->getSubject()));
+            }
+            $html = $mensaje->getHtmlBody();
+            if ($html !== null) {
+                $mensaje->html($terminos->html(is_string($html) ? $html : (string) stream_get_contents($html)));
+            }
+            $texto = $mensaje->getTextBody();
+            if ($texto !== null) {
+                $mensaje->text($terminos->texto(is_string($texto) ? $texto : (string) stream_get_contents($texto)));
+            }
+        });
+
+        // Giros: al cambiar el rubro de una empresa (o su terminología) se recalculan sus términos
+        foreach ([Empresa::class, Rubro::class] as $modelo) {
+            $modelo::saved(fn () => app(RegistroTerminos::class)->olvidar());
+        }
 
         // Fechas en la hora local de quien las ve: @fecha($registro->created_at) o @fecha($valor, 'H:i')
         Blade::directive('fecha', fn (string $expresion) => "<?php echo e(app(\\App\\Support\\HoraLocal::class)->formatear({$expresion})); ?>");

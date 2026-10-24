@@ -18,6 +18,7 @@ use App\Services\Reservas\CatalogosReservas;
 use App\Services\Reservas\NivelesReservas;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -324,6 +325,8 @@ class ConfiguracionReservasController extends Controller
     public function sugeridosHotel(Request $request): RedirectResponse
     {
         $this->exigirEmpresa($request);
+        // Giros: la lista sugerida es la orden de evento de un hotel; los demás giros dan de alta sus propios servicios
+        abort_unless(Terminos::deEmpresaId($this->tenant->empresaId())->esHotel(), 404);
         $r = $this->catalogos->cargarSugeridosHotel($request->user());
         $volver = route('reservas.configuracion').'#cat-servicios';
         if ($r['servicios'] === 0 && $r['montajes'] === 0) {

@@ -46,7 +46,8 @@
          data-acceso-ficha data-tipo="{{ $a->tipo }}" data-sede="{{ $a->sede_id }}" data-texto="{{ \App\Services\Accesos\ConsultaAccesos::textoBusqueda($a) }}"
          @if ($modo === 'pendientes' && $espera !== null) data-espera-desde="{{ $espera['desde'] }}" data-espera-ambar="{{ ($umbrales ?? [10, 20])[0] }}" data-espera-roja="{{ ($umbrales ?? [10, 20])[1] }}" @endif>
     <div class="ficha-acceso-cabeza">
-        <span class="badge-acceso tipo-{{ $a->tipo }}">{{ mb_strtoupper($a->etiquetaTipo()) }}</span>
+        {{-- Giros: un tipo que el giro ya no ofrece (registro de antes) conserva su nombre --}}
+        <span class="badge-acceso tipo-{{ $a->tipo }}">@if (! $a->terminos()->ofreceTipo($a->tipo))<!--terminos:no-->{{ mb_strtoupper($a->etiquetaTipo()) }}<!--terminos:si-->@else{{ mb_strtoupper($a->etiquetaTipo()) }}@endif</span>
         <span class="estado-acceso {{ $clasePastilla }}" data-estado-pastilla>{{ $pastilla }} <i class="bi {{ $iconoPastilla }} ms-1" aria-hidden="true"></i></span>
     </div>
     @if ($detalle !== null)
@@ -58,7 +59,7 @@
         <p class="ficha-acceso-detalle"><span class="gafete-mini">Gafete: {{ $a->gafeteVisible() }}</span></p>
     @endif
 
-    <h3 class="ficha-acceso-nombre">{{ $a->nombre }}@if ($a->habitacion) <span class="badge-hab">Hab. {{ $a->habitacion }}</span>@endif</h3>
+    <h3 class="ficha-acceso-nombre">{{ $a->nombre }}@if ($a->habitacion) <span class="badge-hab">{{ $a->terminos()->abreviaturaEspacio($a->tipo) }} {{ $a->habitacion }}</span>@endif</h3>
     {{-- Ronda 8 (AC-05): si lo buscado es un acompañante, se avisa de quién viene acompañando (el filtro en vivo las muestra u oculta) --}}
     @php $coincide = \App\Services\Accesos\ConsultaAccesos::acompananteQueCoincide($a, is_string(request('q')) ? request('q') : null); @endphp
     @foreach ($a->acompanantes as $ac)
@@ -99,7 +100,7 @@
                 <div><strong>Visitando a:</strong> <span class="dato-destacado">{{ $a->persona_visita }}</span></div>
             @endif
             @if ($a->motivo_visita)
-                <div><strong>Motivo:</strong> {{ \App\Models\Acceso::MOTIVOS[$a->motivo_visita] ?? $a->motivo_visita }}</div>
+                <div><strong>Motivo:</strong> {{ $a->etiquetaMotivo() }}</div>
             @endif
             @if ($a->tipo === 'huesped' && $a->tiene_reserva !== null)
                 <div><strong>Reserva:</strong> {{ $a->tiene_reserva ? 'Sí'.($a->numero_reserva ? ' — #'.$a->numero_reserva : '') : 'No' }}</div>

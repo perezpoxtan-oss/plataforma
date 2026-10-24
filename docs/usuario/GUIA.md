@@ -33,3 +33,14 @@ El manual vive en `docs/usuario/*.md` (una página por pantalla/módulo) y la pl
 - No describas cómo está hecho por dentro; solo cómo se usa.
 - Las capturas existentes en `docs/usuario/img/` se pueden reutilizar; revisa que no muestren barras de dirección, dominios, nombres de usuario de prueba visibles en grande ni datos reales. Si una captura muestra «agente.demo» u otro usuario de prueba en el encabezado, vuelve a tomarla con un usuario de ejemplo (crea en tu base local usuarios con nombres genéricos, p. ej. «Ana López — Agente») o recórtala.
 - Si una página antigua mezcla notas de pruebas, rondas, «Qué se corrigió respecto a …», IDs de casos de QA o fechas de entrega: elimínalo.
+- **Giros:** el manual se adapta solo al giro de cada empresa: «huésped», «habitación», «colaborador» (en condominios) y «Lost & Found» se cambian por las palabras del giro. Escribe la página como para un hotel. Si un párrafo, paso o apartado solo aplica a algunos giros, enciérralo en renglones propios:
+  ```
+  <!-- solo: hotel -->
+  - **Huésped:** …
+  <!-- fin -->
+  <!-- solo: condominio, fraccionamiento -->
+  - **Visita:** …
+  <!-- fin -->
+  ```
+  Giros: `hotel`, `corporativo`, `condominio`, `fraccionamiento`. No cambies el texto de un título `##` según el giro (su ancla debe ser la misma para todos).
+  Si un texto debe decir las palabras de todos los giros (por ejemplo, una tabla que los compara), enciérralo entre `<!-- sin cambiar -->` y `<!-- fin sin cambiar -->`: ahí no se sustituye nada.

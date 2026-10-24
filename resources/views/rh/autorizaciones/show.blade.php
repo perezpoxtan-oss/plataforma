@@ -58,7 +58,7 @@
             @endif
         @elseif ($a->tipo === 'visita' && $acc)
             <dl class="cv-datos mt-3">
-                <dt>Motivo</dt><dd>{{ \App\Models\Acceso::MOTIVOS[$acc->motivo_visita] ?? '—' }}</dd>
+                <dt>Motivo</dt><dd>{{ $acc->motivo_visita ? $acc->etiquetaMotivo() : '—' }}</dd>
                 <dt>Visita a</dt><dd>{{ $acc->persona_visita ?? $a->departamento?->nombre }}</dd>
                 <dt>Viene de</dt><dd>{{ $acc->empresa_procedencia ?? '—' }}</dd>
                 <dt>Llegó a caseta</dt><dd>@fecha($acc->entrada_at)</dd>

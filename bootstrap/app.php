@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AplicarTerminos;
 use App\Http\Middleware\CabecerasSeguridad;
 use App\Http\Middleware\ConservarAvisos;
 use App\Http\Middleware\ControlarInactividad;
@@ -35,6 +36,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
             FirmasComoArchivo::class,
             ControlarInactividad::class,
             EstablecerEmpresa::class,
+            // Giros: las páginas dicen las palabras del giro de la empresa (Visitante, Residente, Oficina…)
+            AplicarTerminos::class,
             ExigirCambioContrasena::class,
             // Verificación en dos pasos obligatoria (Super Administrador o política de la empresa): primero activarla
             ExigirDosPasos::class,

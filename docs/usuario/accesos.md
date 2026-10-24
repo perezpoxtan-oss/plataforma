@@ -7,7 +7,15 @@ resumen: Registrar quién entra y sale de la sede, dar salida con el gafete, ver
 ---
 # Bitácora de accesos
 
+<!-- solo: hotel -->
 **¿Para qué sirve?** Es la pantalla principal de la caseta. Aquí registras a **todas las personas que entran** a la sede (colaboradores, huéspedes, visitas, proveedores, contratistas y servicios de emergencia), ves **quién sigue dentro** y registras su **salida**.
+<!-- fin -->
+<!-- solo: corporativo -->
+**¿Para qué sirve?** Es la pantalla principal de la caseta. Aquí registras a **todas las personas que entran** a la sede (colaboradores, visitantes, proveedores, contratistas y servicios de emergencia), ves **quién sigue dentro** y registras su **salida**.
+<!-- fin -->
+<!-- solo: condominio, fraccionamiento -->
+**¿Para qué sirve?** Es la pantalla principal de la caseta. Aquí registras a **todas las personas que entran** a la sede (residentes, sus visitas, servicios como limpieza o proveedores, contratistas y servicios de emergencia), ves **quién sigue dentro** y registras su **salida**.
+<!-- fin -->
 
 **Antes de empezar:** necesitas que tu rol pueda **ver** y **crear** en Accesos. Si no ves el botón rojo **Nuevo Ingreso**, pide a tu administrador que revise tu rol. Para autorizar proveedores y contratistas (o dejarlos pasar **por excepción**) se necesita además el permiso **Aprobar** (normalmente supervisores y jefes de seguridad).
 
@@ -23,7 +31,12 @@ resumen: Registrar quién entra y sale de la sede, dar salida con el gafete, ver
 | **Gente en Sitio** | Todos los que están dentro ahora. |
 | **Historial Finalizados** | Los que ya salieron, con filtro de fechas. |
 
+<!-- solo: hotel, corporativo -->
 ![Gente en sitio](img/accesos/gente-en-sitio.png)
+<!-- fin -->
+<!-- solo: condominio, fraccionamiento -->
+![Gente en sitio: una visita con su departamento y un residente](img/accesos/gente-en-sitio-condominio.png)
+<!-- fin -->
 
 **Qué debes ver:** una tarjeta por persona con su tipo (color), nombre, sede, **gafete** (o **S/G** si no lleva), motivo, identificación que dejó, cómo llegó y a qué hora entró y quién la registró.
 
@@ -40,7 +53,15 @@ Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo,
 
 1. Toca **Nuevo Ingreso**. Se abre **Registro Inteligente de Ingreso**.
 2. Revisa la **Sede**. Si solo trabajas en una, ya viene elegida.
+<!-- solo: hotel -->
 3. Toca el **Tipo de Persona**: Colaborador, Huésped, Personal Externo / Visita, Proveedor, Contratista (Obra) o Servicio de Emergencia. La ventana solo pide lo que hace falta para ese tipo.
+<!-- fin -->
+<!-- solo: corporativo -->
+3. Toca el **Tipo de Persona**: Colaborador, Visitante, Proveedor, Contratista (Obra) o Servicio de Emergencia. La ventana solo pide lo que hace falta para ese tipo.
+<!-- fin -->
+<!-- solo: condominio, fraccionamiento -->
+3. Toca el **Tipo de Persona**: Residente, Visita, Servicio / Proveedor, Contratista (Obra) o Servicio de Emergencia. La ventana solo pide lo que hace falta para ese tipo.
+<!-- fin -->
 4. Llena los datos (ver abajo por tipo).
 5. Elige la **Forma de Llegada**: **A Pie** o **Vehículo Propio / Moto**. Con vehículo, escribe o escanea las **placas** y, si aplica, elige la zona de estacionamiento.
 6. Si llega con más personas, usa **+** en **Acompañantes** y llena una fila por persona.
@@ -49,7 +70,15 @@ Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo,
    - **Registrar · queda pendiente de autorización**: la persona espera en caseta (proveedores y contratistas, visitas a un departamento con responsable, o quien viene a Recursos Humanos si tu empresa pide que RR. HH. dé el paso) y aparece en **Pendientes de Autorización**.
    Si viene más gente detrás, toca **Guardar y capturar siguiente**: guarda y deja la ventana lista con la misma sede y tipo.
 
+<!-- solo: hotel -->
 ![Registro Inteligente de Ingreso](img/accesos/nuevo-ingreso.png)
+<!-- fin -->
+<!-- solo: corporativo -->
+![Registro Inteligente de Ingreso con Visitante](img/accesos/nuevo-ingreso-corporativo.png)
+<!-- fin -->
+<!-- solo: condominio, fraccionamiento -->
+![Visita a un residente con el departamento al que va](img/accesos/nuevo-ingreso-condominio.png)
+<!-- fin -->
 ![El botón dice que el registro queda pendiente](img/accesos/nuevo-ingreso-pendiente.png)
 
 **Qué debes ver:** la ventana se cierra (o se limpia, si elegiste capturar siguiente) y arriba sale el mensaje verde con el **siguiente paso**: «Registrado y en sitio: … ¿Otro ingreso? Toca Nuevo Ingreso», «Registrado: … espera la autorización de Julieta Ramos (Mantenimiento). Ya se avisó; esta tarjeta cambia sola con su respuesta», «… espera a Recursos Humanos», «… queda pendiente. Mantenimiento no tiene responsable en esta sede: confirma con el host y toca Autorizar por excepción» o, si tu empresa no pide la autorización del departamento para ese tipo, «… queda pendiente de autorización. Confirma con el host (…) y toca Confirmar Autorización».
@@ -59,15 +88,23 @@ Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo,
 Lo que pide cada tipo:
 
 - **Colaborador:** escanea su gafete de empleado o escribe su nombre o número y elígelo. No lleva gafete de visita. Si no aparece, toca **¿No aparece? Darlo de alta provisional**: se registra y Recursos Humanos lo valida después.
+<!-- solo: hotel, corporativo -->
 - **Personal Externo / Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**. Si el motivo es **Recursos Humanos**, elige además **¿A qué viene?** (ver abajo «Cómo registrar a quien viene a Recursos Humanos»).
+<!-- fin -->
+<!-- solo: condominio, fraccionamiento -->
+- **Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**: **Visita a Residente** (elige a quién visita y escribe o elige de la lista **¿A qué departamento va?**, o «¿A qué casa va?» en fraccionamientos) o **Visita a Administración** (elige el área; si tu empresa lo pide, espera su autorización).
+<!-- fin -->
 - **Proveedor y Contratista (Obra):** además, la **Empresa / Procedencia**, **Host — ¿Quién lo citó?** (obligatorio) y **¿A qué departamento viene?** (obligatorio si tu empresa pide la autorización del departamento; el asterisco te lo indica). Quedan en **Pendientes de Autorización**: el responsable de ese departamento recibe el aviso y autoriza o rechaza (ver abajo «Cómo autorizar a un proveedor o contratista»).
-- **Huésped:** nombre, número de habitación y si tiene reserva. No lleva gafete.
+<!-- solo: hotel -->
+- **Huésped:** nombre y, en **Más detalles**, **Número de Habitación** y **¿Tiene Reserva?** (con su **Número de Reserva**). No lleva gafete.
+<!-- fin -->
 - **Servicio de Emergencia:** solo lo mínimo para no hacer esperar: unidad, tipo de emergencia y observaciones.
 
 ![Ingreso de un proveedor](img/accesos/nuevo-ingreso-proveedor.png)
 
 Si escribes a mano un nombre que ya existe en el Padrón de personas, al guardar sale el aviso rojo «Ya existe una persona registrada con este nombre…»: toca **Sí, es la misma** para usar su registro, o **No, es alguien distinto** para crear otra persona.
 
+<!-- solo: hotel, corporativo -->
 ## Cómo registrar a quien viene a Recursos Humanos
 
 La caseta solo anota **a qué viene** la persona y avisa. Recursos Humanos decide si pasa y se encarga de lo demás (su solicitud, su puesto y su departamento).
@@ -105,6 +142,7 @@ En la tarjeta verás, por ejemplo, **Candidato · Entrevista** o **Candidato · 
 
 > Si Recursos Humanos avisa por teléfono que puede pasar, el supervisor usa **Confirmar Autorización** en la tarjeta, como con cualquier visita.
 
+<!-- fin -->
 ## Qué pasa mientras alguien espera: reloj, color y escalamiento
 
 Todo lo que espera tiene **reloj, color y suplente**. No tienes que vigilar nada: la plataforma avisa sola.
@@ -168,7 +206,10 @@ La forma más rápida es con el campo que está **siempre a la vista**, arriba d
 
 ![Dar salida con el campo a la vista](img/accesos/dar-salida.png)
 
-También puedes dar salida desde la tarjeta: toca **Registrar Salida** (en huéspedes, **Salida Final**) y confirma. Y sigue existiendo el camino anterior: dentro de **Nuevo Ingreso** toca **Dar Salida** y busca a la persona.
+También puedes dar salida desde la tarjeta: toca **Registrar Salida** y confirma. Y sigue existiendo el camino anterior: dentro de **Nuevo Ingreso** toca **Dar Salida** y busca a la persona.
+<!-- solo: hotel -->
+En huéspedes el botón de la tarjeta dice **Salida Final**.
+<!-- fin -->
 
 **Qué debes ver:** la persona pasa a **Historial Finalizados** con la pastilla **FINALIZADO**. Sus acompañantes salen con ella, su gafete queda libre y su lugar de estacionamiento se libera. **Recoge el gafete y devuelve la identificación.**
 
@@ -176,7 +217,12 @@ Un acompañante puede salir antes con el botón **Salida** de su renglón.
 
 ## Cómo registrar una salida temporal o a tour
 
+<!-- solo: hotel -->
 1. En huéspedes toca **Salida a Tour**; en proveedores y contratistas autorizados, **Salida Temporal**.
+<!-- fin -->
+<!-- solo: corporativo, condominio, fraccionamiento -->
+1. En proveedores y contratistas autorizados toca **Salida Temporal** (por ejemplo, cuando salen por material).
+<!-- fin -->
 2. Si quieres, anota placas, marca y conductor. Guarda.
 3. Cuando regrese, toca **Registrar Regreso**.
 
@@ -235,9 +281,11 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 
 - **¿Por qué el proveedor no aparece en Gente en Sitio?** Está en **Pendientes de Autorización** hasta que lo autorice su departamento (o tu supervisor por excepción).
 - **El jefe del departamento me autorizó por teléfono, ¿qué hago?** Pide a tu supervisor que toque **Autorizar por excepción** con el motivo «El responsable autorizó por teléfono». Así queda anotado quién y por qué.
+<!-- solo: hotel, corporativo -->
 - **Alguien dice que tiene cita, pero es su primera vez.** Elige **Ya tiene cita** de todos modos: si no se encuentra su ficha, Recursos Humanos lo recibe como «Busca empleo» y queda anotado.
 - **¿Y si viene a entregar papeles o a firmar?** También es **Ya tiene cita**: la plataforma sabe en qué paso va y le dice a Recursos Humanos si viene a su entrevista, a entregar documentos o a firmar.
 - **¿Tengo que preguntarle el puesto o el departamento?** No. Solo a qué viene y, si busca empleo, a qué vacante (si la sabe). Lo demás lo pone Recursos Humanos.
+<!-- fin -->
 - **El colaborador no está en la lista.** Usa **¿No aparece? Darlo de alta provisional**; Recursos Humanos lo valida después.
 - **Me equivoqué de zona.** Usa **Cambiar Zona**.
 - **¿Cómo sé quién registró a alguien?** En la tarjeta, junto a la hora de ingreso, dice «por …».

@@ -144,7 +144,10 @@
                         'recorrido_pc' => 'recorrido-pc', 'lost_found' => 'lost-found', 'robo' => 'robo', 'mantenimiento_pc' => 'mantenimiento-pc'] as $clave => $vista)
                         @continue (! in_array($clave, $categorias, true))
                         <fieldset class="formato-novedad" data-formato="{{ $clave }}" @if ($categoriaActual !== $clave) hidden disabled @endif>
+                            {{-- Giros: el formato de Accidente no se toca; la sustitución de palabras no entra en él --}}
+                            @if ($clave === 'accidente'){!! \App\Support\Terminos::SIN_SUSTITUIR !!}@endif
                             @include('seguridad.novedades.formatos.'.$vista)
+                            @if ($clave === 'accidente'){!! \App\Support\Terminos::SUSTITUIR !!}@endif
                         </fieldset>
                     @endforeach
                 </div>
