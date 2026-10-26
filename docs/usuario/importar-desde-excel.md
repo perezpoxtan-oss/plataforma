@@ -84,7 +84,7 @@ resumen: Cargar de una vez colaboradores, personas, empresas externas, vehículo
 | Nombre(s) \*, Apellido paterno \*, Apellido materno | Como en su identificación. |
 | Teléfono | De 10 a 15 dígitos (los espacios y guiones se quitan solos). |
 | Sede | El nombre o el código de la sede, como en **Estructura → Sedes**. |
-| Departamento, Puesto, Turno | El nombre tal como aparece en **Recursos Humanos**. |
+| Departamento, Puesto, Turno | El nombre tal como aparece en **Estructura → Departamentos**, **Puestos** y **Turnos**. |
 | CURP, RFC, NSS, Fecha de nacimiento, Estado de nacimiento, Nacionalidad, Correo personal, Dirección completa | Solo si tu rol ve datos personales. Fecha como día/mes/año (31/12/1990). |
 
 **Padrón de personas:** Tipo \* (Visitante, Proveedor o Contratista), Nombre completo \*, Empresa que representa (se liga sola si ya está en Empresas externas; si hay varias parecidas y ninguna se llama exactamente igual, el renglón marca el error para que escribas el nombre exacto), Tipo de identificación (INE, Pasaporte, Licencia de conducir…), Folio de identificación, Teléfono, Categoría (solo visitantes: General, Prospecto de RR. HH. o Familiar) y Motivo de la visita.

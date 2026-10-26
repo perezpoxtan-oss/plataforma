@@ -152,7 +152,7 @@ Todo lo que tiene que ver con quién responde y qué espera está en una sola pa
 
 **Qué debes ver:** «Esperas guardadas: la caseta ya aplica lo que elegiste.» y «Responsables de … guardados.» Solo aparecen usuarios con permiso para **Responder** autorizaciones; si falta alguien, dale ese permiso en [Roles y permisos](roles-y-permisos.md). El responsable también es quien sale primero en **¿Quién lo entrevista?** cuando Recursos Humanos canaliza a un candidato a su departamento (para eso necesita además el permiso **Evaluar** de *Candidatos*). En **Departamentos**, la tarjeta de un departamento sin responsable lo avisa con el enlace **Nombrar responsable**.
 
-Cada recordatorio y cada escalamiento quedan en la Bitácora de auditoría y en el detalle de la autorización («Recordatorio enviado …», «Escalado … a …»). Quien responde las autorizaciones de un departamento ve **Autorizaciones** en el menú **Recursos Humanos** (además de la campana y Mis pendientes).
+Cada recordatorio y cada escalamiento quedan en la Bitácora de auditoría y en el detalle de la autorización («Recordatorio enviado …», «Escalado … a …»). Quien responde las autorizaciones de un departamento (o configura quién autoriza) ve **Autorizaciones** en el menú **Estructura** (además de la campana y Mis pendientes).
 
 ## Cómo ver los tiempos de espera
 

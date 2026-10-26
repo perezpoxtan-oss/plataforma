@@ -205,6 +205,37 @@ class DependenciasModulosTest extends TestCase
         $this->assertDatabaseHas('empresa_modulos', ['empresa_id' => $empresaId, 'modulo_id' => $robo->id, 'activo' => true, 'solo_lectura' => false]);
     }
 
+    /**
+     * Revisión independiente de la Etapa 1: el módulo en solo lectura no se
+     * puede escribir con un POST directo (sin pasar por los botones), y la
+     * empresa en solo consulta tampoco.
+     */
+    public function test_un_post_directo_no_escribe_en_un_modulo_en_solo_lectura_ni_en_solo_consulta(): void
+    {
+        $s = $this->cliente('profesional');
+        $admin = User::where('empresa_id', $s->empresa_id)->firstOrFail();
+        $admin->forceFill(['debe_cambiar_contrasena' => false])->save();
+        app(Aprovisionamiento::class)->cambiarPlan($s->fresh(), Plan::where('slug', 'esencial')->first(), 1, [], 'mensual', $this->sa, 'Bajó de plan');
+        app(Autorizador::class)->olvidar();
+        $this->assertTrue(app(Autorizador::class)->moduloEnSoloLectura((int) $s->empresa_id, 'novedades'));
+
+        $novedades = DB::table('novedades')->count();
+        $equipos = DB::table('equipos_pc')->count();
+        $this->actingAs($admin)->post('/novedades', ['tipo' => 'general', 'descripcion' => 'Prueba directa'])->assertForbidden();
+        $this->actingAs($admin)->post('/equipos-pc', ['nombre' => 'Extintor 1'])->assertForbidden();
+        $this->assertSame($novedades, DB::table('novedades')->count());
+        $this->assertSame($equipos, DB::table('equipos_pc')->count());
+        // Consultar sí
+        $this->actingAs($admin)->get('/novedades')->assertOk();
+
+        // Solo consulta: el POST directo a un módulo contratado tampoco guarda
+        app(Aprovisionamiento::class)->suspender($s->fresh(), $this->sa, 'Falta de pago');
+        $usuarios = User::count();
+        $this->actingAs($admin)->post('/usuarios', ['name' => 'Nuevo', 'username' => 'nuevo.directo', 'email' => 'nuevo@ejemplo.com.mx'])
+            ->assertRedirect()->assertSessionHas('error');
+        $this->assertSame($usuarios, User::count());
+    }
+
     public function test_en_solo_consulta_se_ocultan_las_acciones_de_alta_y_queda_pedir_la_renovacion(): void
     {
         $s = $this->cliente('esencial');

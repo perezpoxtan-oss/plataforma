@@ -399,6 +399,33 @@ class ManualTest extends TestCase
         $this->assertSame([], $fallas, implode("\n", $fallas));
     }
 
+    /**
+     * Etapa 1 (C-01): Colaboradores, Departamentos, Puestos, Turnos y
+     * Autorizaciones están en el menú Estructura. Ninguna página del manual
+     * debe mandar a buscarlos en Recursos Humanos.
+     */
+    public function test_el_manual_no_manda_a_buscar_la_organizacion_base_en_recursos_humanos(): void
+    {
+        $manual = new Manual;
+        $fallas = [];
+        $viejos = [
+            '/Recursos Humanos\*{0,2}\s*(→|->|›)\s*\*{0,2}(Colaboradores|Departamentos|Puestos|Turnos|Autorizaciones)/u',
+            '/\*\*Autorizaciones\*\* en el menú \*\*Recursos Humanos\*\*/u',
+            '/Departamento, Puesto, Turno \| El nombre tal como aparece en \*\*Recursos Humanos\*\*/u',
+        ];
+
+        foreach ($manual->archivos() as $slug => $ruta) {
+            $texto = (string) file_get_contents($ruta);
+            foreach ($viejos as $patron) {
+                if (preg_match($patron, $texto, $m) === 1) {
+                    $fallas[] = "{$slug}.md: «{$m[0]}»";
+                }
+            }
+        }
+
+        $this->assertSame([], $fallas, implode("\n", $fallas));
+    }
+
     public function test_la_regla_de_actualizar_el_manual_esta_en_las_convenciones(): void
     {
         $this->assertStringContainsString('docs/usuario/GUIA.md', (string) file_get_contents(base_path('CLAUDE.md')));
