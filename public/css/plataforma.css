@@ -4771,7 +4771,7 @@ html.modo-sol .estado-eq-no_regreso, html.modo-sol .estado-gafete.no-regreso, ht
 /* C-15: casillas al dar salida */
 .devolucion-salida { border: 1px solid var(--borde); border-radius: 10px; padding: 0.6rem 0.75rem; margin: 0.25rem 0 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; }
 .casilla-devolucion { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.92rem; min-height: 36px; cursor: pointer; }
-.casilla-devolucion input { width: 20px; height: 20px; }
+.casilla-devolucion input { width: 20px; height: 20px; min-width: 20px; flex: 0 0 20px; margin: 0; }
 .texto-devuelta.no-devuelta { color: #9a3412; }
 /* C-17: préstamo fuera de las reglas de la llave */
 .aviso-excepcion-llave { background: #fffbeb; border: 1px solid #f59e0b; color: #78350f; border-radius: 10px; padding: 0.75rem; margin: 0.75rem 0; font-size: 0.9rem; font-weight: 600; }
@@ -4793,3 +4793,13 @@ html.modo-noche .aviso-bloqueo-baja { background: rgba(239,68,68,0.12); color: #
 html.modo-noche .insignia-restringido { background: rgba(239,68,68,0.12); color: #fca5a5; border-color: #7f1d1d; }
 .aviso-padron-acceso { background: #fffbeb; border: 1px solid #f59e0b; color: #78350f; border-radius: 8px; padding: 0.35rem 0.6rem; font-size: 0.82rem; font-weight: 700; margin-top: 0.4rem; }
 html.modo-noche .aviso-padron-acceso { background: rgba(245,158,11,0.12); color: #fde68a; border-color: #b45309; }
+/* Etapa 2 · «Antes de dar de baja»: botones de la página (no es un diálogo) */
+.pantalla-antes-de-baja .dialogo-acciones { position: static; margin-top: 0; padding: 0; border-top: none; background: transparent; }
+.pantalla-antes-de-baja form .casilla-devolucion + .dialogo-acciones, .pantalla-antes-de-baja form select + .dialogo-acciones, .pantalla-antes-de-baja form .campo-ayuda + .dialogo-acciones { margin-top: 1rem; }
+.pantalla-antes-de-baja .btn-cancelar { display: inline-flex; align-items: center; justify-content: center; flex: 1; padding: 0.9rem; border-radius: 12px; font-weight: 600; text-decoration: none; min-height: 44px; }
+.pantalla-antes-de-baja .d-flex > .btn-cancelar { flex: 0 1 auto; padding: 0.7rem 1.4rem; }
+/* Etapa 2: con «Restringir acceso» o «Antes de dar de baja» la fila de íconos de la ficha puede crecer: en el celular baja de renglón en vez de salirse */
+@media (max-width: 480px) {
+    .ficha-footer { flex-wrap: wrap; row-gap: 0.5rem; }
+    .ficha-footer > .d-flex.gap-2 { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+}

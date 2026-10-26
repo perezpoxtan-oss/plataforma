@@ -2,7 +2,7 @@
 titulo: Antes de dar de baja
 modulos: [colaboradores.eliminar, visitantes.eliminar, vehiculos.eliminar, proveedores.eliminar, llaves.eliminar, equipos.eliminar, sedes.eliminar, estacionamientos.eliminar, departamentos.eliminar, puestos.eliminar, turnos.eliminar, espacios.eliminar]
 seccion: Padrones
-orden: 95
+orden: 990
 resumen: La revisión que aparece al dar de baja algo que todavía tiene cosas vigentes (llaves prestadas, equipos a su cargo, gente en sitio).
 ---
 
