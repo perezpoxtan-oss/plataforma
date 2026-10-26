@@ -4,10 +4,13 @@ namespace App\Services\Usuarios;
 
 use App\Models\Rol;
 use App\Models\Sede;
+use App\Models\SolicitudCuenta;
 use App\Models\User;
 use App\Models\UsuarioRol;
 use App\Services\Cuenta\AvisosCuenta;
 use App\Services\Cuenta\RecuperacionContrasena;
+use App\Services\Cuenta\SolicitudesCuenta;
+use App\Services\DosPasos\VerificacionDosPasos;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -105,6 +108,8 @@ class AdministradorUsuarios
         if (! $enlace) {
             $this->roles->auditar($actor, 'usuarios.actualizado', $usuario, null, ['contrasena' => 'cambiada', 'debe_cambiar_contrasena' => true]);
         }
+        // C-36: la petición «Pedir a mi administrador» de esa cuenta queda atendida
+        app(SolicitudesCuenta::class)->atendidas($usuario, SolicitudCuenta::CONTRASENA, $actor);
 
         return $enviado;
     }
@@ -239,6 +244,28 @@ class AdministradorUsuarios
                 ->join('acciones as a', 'a.id', '=', 'ma.accion_id')
                 ->whereColumn('ur.user_id', 'users.id')->where('r.activo', true)
                 ->where('m.clave', 'pases_salida')->where('a.clave', 'crear')->where('rp.alcance', Alcance::Propios->value));
+    }
+
+    /**
+     * C-36 (DD-21): ¿el rol administra algo? (los mismos permisos que la
+     * política de dos pasos llama «administradores»). Las cuentas de un rol
+     * que no administra nada —las de caseta— pueden no tener correo: se
+     * recuperan con «Pedir a mi administrador».
+     */
+    public static function rolAdministrativo(Rol $rol): bool
+    {
+        $claves = array_map(fn (string $p) => explode('.', $p, 2), VerificacionDosPasos::PERMISOS_ADMINISTRADOR);
+
+        return DB::table('rol_permisos as rp')
+            ->join('modulo_acciones as ma', 'ma.id', '=', 'rp.modulo_accion_id')
+            ->join('acciones as a', 'a.id', '=', 'ma.accion_id')
+            ->join('modulos as m', 'm.id', '=', 'ma.modulo_id')
+            ->where('rp.rol_id', $rol->id)
+            ->where(function ($q) use ($claves) {
+                foreach ($claves as [$modulo, $accion]) {
+                    $q->orWhere(fn ($w) => $w->where('m.clave', $modulo)->where('a.clave', $accion));
+                }
+            })->exists();
     }
 
     public function exigirPuedeAdministrar(User $actor, User $usuario, string $permiso): void

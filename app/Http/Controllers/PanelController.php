@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\Arranque\AsistenteArranque;
+use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\Novedades\AjustesNovedades;
 use App\Services\PasesSalida\AdministradorPasesSalida;
+use App\Services\Plataforma\SuperAdministradores;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -26,7 +29,7 @@ class PanelController extends Controller
         'altas' => ['1 alta por verificar', '%d altas por verificar', 'La caseta registró desde Operación algo que no estaba en el padrón. Acéptalo, recházalo o únelo con el registro correcto.', 'Revisar ahora'],
         'candidatos' => ['1 asunto de candidatos te espera', '%d asuntos de candidatos te esperan', 'Personas que esperan a Recursos Humanos y candidatos en cada etapa. Toca la etapa para ir directo.', 'Ir a candidatos'],
         'entrevistas' => ['1 entrevista espera tu evaluación', '%d entrevistas esperan tu evaluación', 'Recursos Humanos te canalizó candidatos: entrevístalos, califícalos y elige.', 'Entrevistar'],
-        'cuentas' => ['1 cuenta por revisar', '%d cuentas por revisar', 'Cuentas bloqueadas, desactivadas por una baja o que piden pases sin colaborador vinculado.', 'Revisar cuentas'],
+        'cuentas' => ['1 cuenta por revisar', '%d cuentas por revisar', 'Cuentas bloqueadas, desactivadas por una baja, que piden pases sin colaborador vinculado o que te piden ayuda para entrar.', 'Revisar cuentas'],
         // Mejoras Incidentes (ADR-0013)
         'novedades_mias' => ['1 ticket canalizado a ti', '%d tickets canalizados a ti', 'Te toca darles seguimiento en la Bitácora de novedades. Quien los levantó se entera cuando los cierras.', 'Atender'],
         'novedades_turno' => ['1 pendiente de turno sin dueño', '%d pendientes de turno sin dueño', 'Tickets que el turno anterior dejó pendientes y nadie ha tomado. Ábrelos y atiéndelos o canalízalos.', 'Atender'],
@@ -65,9 +68,35 @@ class PanelController extends Controller
             }
         }
 
+        // C-36 (DD-21, E-14): el Super Administrador ve si falta el segundo y las peticiones de los otros
+        if ($actor->es_superadmin) {
+            $pendientes = array_merge($this->pendientesDePlataforma($actor), $pendientes);
+        }
+
         // «Configura tu empresa» (docs/tecnico/configura-tu-empresa.md): solo empresa nueva o casi vacía
         $asistente = app(AsistenteArranque::class)->tarjeta($actor, $empresaId);
 
         return view('panel.index', ['pendientes' => $pendientes, 'asistente' => $asistente]);
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function pendientesDePlataforma(User $actor): array
+    {
+        $lista = [];
+        $url = route('configuracion.index').'#cfg-superadmins';
+        $super = app(SuperAdministradores::class);
+        if ($super->faltan()) {
+            $lista[] = ['clave' => 'superadmins', 'titulo' => 'Falta el segundo Super Administrador', 'icono' => 'bi-shield-exclamation', 'total' => $super->activos(),
+                'url' => $url, 'nivel' => 'roja', 'boton' => 'Agregar',
+                'texto' => 'Solo hay un Super Administrador activo. Si pierde su teléfono y sus códigos de respaldo, nadie podría devolverle el acceso. Da de alta a otra persona de confianza.'];
+        }
+        $peticiones = app(SolicitudesCuenta::class)->porAtender($actor, null)->count();
+        if ($peticiones > 0) {
+            $lista[] = ['clave' => 'cuentas_superadmin', 'titulo' => 'Super Administradores que piden ayuda', 'icono' => 'bi-person-exclamation', 'total' => $peticiones,
+                'url' => $url, 'nivel' => null, 'boton' => 'Atender',
+                'texto' => 'Otro Super Administrador perdió su teléfono o su contraseña. Confirma con él que fue quien lo pidió y restablécelo.'];
+        }
+
+        return $lista;
     }
 }

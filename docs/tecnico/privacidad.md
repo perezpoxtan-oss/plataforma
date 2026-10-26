@@ -1,6 +1,8 @@
 # Privacidad: conservación, solicitudes ARCO y aviso con versiones
 
-Etapa 3 aprobada por el dueño (LFPDPPP). Los textos legales que trae la plataforma son **borrador para el abogado**.
+Etapa 3 aprobada por el dueño (LFPDPPP). Ampliada con **C-37** (2026-10-26, X-01, E-09): ARCO y conservación alcanzan **todas** las tablas con datos personales (inventario con prueba) y el aviso se edita en un solo lugar.
+
+> **Textos legales: BORRADORES PARA EL ABOGADO.** Todo texto legal de la plataforma (el aviso de privacidad original, las respuestas sugeridas y los párrafos de la sección «Borradores legales» de abajo) es un borrador que debe revisar el abogado del cliente. Por decisión del dueño, esto se marca **aquí, en la documentación técnica, y no en pantalla**: el aviso original ya no lleva la marca «Borrador — validar con su abogado»; la pantalla solo avisa que tiene **datos por completar** entre corchetes (`AjustesRecepcion::MARCA_POR_COMPLETAR`).
 
 ## Permiso
 
@@ -43,6 +45,36 @@ Ajustes por empresa en `empresas.preferencias.privacidad` (Configuración → Pr
 
 Configuración muestra «hoy se quitarían…» (conteos con los días guardados) para que el administrador sepa qué confirma al encenderla.
 
+### C-37: plazos para los demás módulos
+
+Migración `2026_11_10_003710_privacidad_en_todos_los_modulos`: `datos_eliminados_en` (timestamp nulo) en `lost_found_reportes_perdida`, `lost_found_entregas`, `novedades`, `reservas` y `movimientos_transporte`, y `preferencias.privacidad.plazos_ampliados = false` en las empresas que ya existían. `down()` quita la marca y las columnas.
+
+| Clave | Qué se quita (el registro se conserva, con `datos_eliminados_en`) | Desde | Original | Rango |
+|---|---|---|---|---|
+| `lost_found_dias` | Reporte de pérdida: nombre, teléfono, correo (y el nombre en la descripción). Entrega: nombre, identificación, correo, firma (archivo), `persona_id` | `created_at` | 365 | 30–3650 |
+| `incidentes_dias` | Tickets **resueltos** (`cerrado_en`) con involucrados, testigos, sospechoso o accidente de huésped: `involucrados`, nombre y declaración de testigos, descripción del sospechoso; si es accidente de huésped, `DatosDePersona::anonimizarAccidente()` (abajo). **Nunca** los accidentes de colaborador (relación laboral). La descripción del hecho se conserva | `cerrado_en` | 1825 | 365–3650 |
+| `reservas_dias` | Nombre, empresa, correo y teléfono del cliente (y su nombre en título, notas e indicaciones) | `fin` | 1825 | 365–3650 |
+| `transporte_dias` | Firma del taxista (archivo y columna). La del guardia es personal de la empresa | `fecha` | 1825 | 365–3650 |
+
+`ConservacionDatos::QUITA` lista lo que se cuenta y se quita; `vencidos()` arma las consultas; `aplicar()` salta los plazos de `AMPLIADOS` si la empresa no los confirmó (`ajustes()['ampliados']`, `plazos_ampliados` en preferencias, `true` si no existe la clave = empresas nuevas). Guardar la tarjeta con los plazos nuevos los confirma. Un formulario sin esos campos (anterior) los conserva (`nullable`). La auditoría `privacidad.conservacion_aplicada` guarda los conteos de cada clave.
+
+## Inventario de datos personales (`InventarioDatosPersonales`)
+
+`App\Services\Privacidad\InventarioDatosPersonales::TABLAS` registra **cada tabla con datos personales**: su trato (`arco`, `referencia`, `laboral`, `cuenta`, `plataforma`, `empresa`, `sin_datos`), el tipo de `DatosDePersona` que la alcanza, sus columnas personales y cómo se conserva (clave de `ConservacionDatos::DIAS` o el motivo). `PATRON` reconoce por su nombre las columnas que suelen guardar datos de una persona (nombre, teléfono, correo, CURP, RFC, NSS, firma, foto, identificación, domicilio, edad, sexo, médico, hospital, diagnóstico, placas, testigos, huésped, cliente, conductor/chofer…).
+
+`tests/Feature/Nucleo/InventarioDatosPersonalesTest.php` **falla** si una tabla (o una columna nueva de una tabla registrada) cumple el patrón y no está en el inventario, y revisa que el inventario sea coherente (tablas y columnas que existen, tipos ARCO y plazos que existen, cada tipo de ARCO con su tabla, y que Lost & Found, Novedades, Accidentes, Reservas y Transporte los alcance ARCO). Al agregar una tabla con datos personales: decide su trato, agrégala a `DatosDePersona` si es `arco` y a `ConservacionDatos` si necesita plazo, y regístrala.
+
+| Trato | Tablas |
+|---|---|
+| ARCO (directo) | personas, accesos, candidatos, colaboradores (solo consulta), lost_found_reportes_perdida, lost_found_entregas, novedades, accidente_huespedes, reservas, movimientos_transporte |
+| ARCO por referencia | acompanantes_acceso, vehiculos, candidato_documentos, novedad_testigos, novedad_notas, robo_detalles, accidente_dictamenes, accidente_guardavidas, accidente_firmas |
+| Personal de la empresa (relación laboral) | vacantes, valores_vista_*, accidente_colaboradores, movimiento_transporte_pasajeros, pases_salida*, procedimiento_*, firmas_usuarios, responsivas, vouchers_reposicion, importaciones |
+| Cuentas y seguridad | users, sessions, password_reset_tokens, auditoria, jobs, failed_jobs |
+| Plataforma | solicitudes_arco, solicitudes_compra |
+| Empresa | empresas, sedes, proveedores |
+
+Fuera del patrón y fuera del alcance de ARCO: `notificaciones` (títulos y textos de avisos internos, que pueden nombrar a una persona; son transitorios) y el texto libre de las novedades que **no** menciona el nombre exacto que se buscó.
+
 ## 2. Solicitudes ARCO (`SolicitudesArco`, `DatosDePersona`)
 
 **Público (sin sesión, `Publico\PrivacidadController`):**
@@ -65,10 +97,16 @@ Enlaces al aviso/formulario: kiosco y solicitud de empleo (`_cv.blade.php`, `$ar
 **Bandeja (`/solicitudes-arco`, `SolicitudesArcoController`):** filtros Abiertas / Respondidas / Todas (+ «De la página de la plataforma» para el Super Administrador). La solicitud ajena responde 404.
 
 **Atender (`/solicitudes-arco/{id}`):**
-1. Buscar (`DatosDePersona::buscar`, dentro de la empresa): padrón de personas (nombre, teléfono, folio de identificación), bitácora de accesos externos (nombre o persona encontrada, no anonimizados), candidatos (nombre, correo, teléfono) y colaboradores (cada palabra del nombre en nombre/apellidos; **solo consulta y rectificación**). Máx. 100 por tipo. Quien atiende marca lo que sí es de la persona.
+1. Buscar (`DatosDePersona::buscar`, dentro de la empresa): padrón de personas (nombre, teléfono, folio de identificación), bitácora de accesos externos (nombre o persona encontrada, no anonimizados), candidatos (nombre, correo, teléfono) y colaboradores (cada palabra del nombre en nombre/apellidos; **solo consulta y rectificación**). **C-37:** Lost & Found — reportes de pérdida (nombre, correo, teléfono) y entregas (nombre, correo, persona del padrón encontrada); **novedades** cuyo texto la menciona (involucrados, quién reporta, descripción, cómo sucedió, resolución, testigos, sospechoso de robo, notas; solo por nombre); **accidentes** de huésped por su nombre (con datos médicos) y de los colaboradores encontrados (solo consulta); **reservas** (cliente: nombre o título, correo, teléfono); **transporte** (conductor = persona del padrón encontrada, u observaciones/justificación con su nombre). El teléfono se compara sin espacios, guiones, paréntesis ni «+» (últimos 10 dígitos). Máx. 100 por tipo. Quien atiende marca lo que sí es de la persona.
 2. **Exportar datos** (`POST …/exportar`): ZIP con `ZipPorPartes` (el escritor de la exportación de empresa) en `storage/app/private/privacidad/arco/{empresa}/`: `datos/*.json` y `datos/*.csv` (con `Csv`, protección contra fórmulas; sin columnas sensibles) de lo marcado (+ acompañantes, postulaciones y documentos del candidato) y `archivos/` (fotos, documentos, firmas). **Descargar** (`GET …/descargar`, auditado).
 3. **Rectificar:** enlace a la ficha (Personas, Candidatos, Colaboradores).
-4. **Eliminar definitivamente** (`POST …/eliminar`, casilla de confirmación): bitácora anonimizada con «Datos eliminados por solicitud ARCO»; padrón anónimo y de baja (y sus registros de bitácora); ficha de candidato borrada con documentos y firma (contratados se omiten). Colaboradores nunca.
+4. **Eliminar definitivamente** (`POST …/eliminar`, casilla de confirmación): bitácora anonimizada con «Datos eliminados por solicitud ARCO»; padrón anónimo y de baja (y sus registros de bitácora); ficha de candidato borrada con documentos y firma (contratados se omiten). Colaboradores nunca (`DatosDePersona::SOLO_CONSULTA`). **C-37** (el nombre buscado viaja en `criterios[nombre]` y se quita de los textos libres con `DatosDePersona::sinNombre()`, sin distinguir mayúsculas):
+   - Lost & Found: `anonimizarReportePerdida()` y `anonimizarEntrega()` (borra la firma del disco privado).
+   - Novedad: `quitarNombreDeNovedad()` (texto del ticket, testigos con ese nombre —nombre y declaración—, sospechoso, notas).
+   - Accidente de huésped: `anonimizarAccidente()` — `accidente_huespedes` (nombre = texto; habitación, agencia, check-in/out, país, sexo, edad, relato, motivo de asistencia y detalles de testigos en nulo), `accidente_dictamenes` (**datos médicos**: heridas, zonas, auxilios, atención, diagnóstico, hospital, traslado, médico, observaciones en nulo), `accidente_guardavidas` (lesiones del huésped en nulo; el nombre del guardavidas se queda), firma `afectado` (archivo y fila), `novedades.involucrados` nulo y `datos_eliminados_en`. Se conservan fecha, lugar y casillas (estadísticas). **No cambia el formulario de Accidentes.** Un accidente de colaborador se cuenta en `omitidos`.
+   - Reserva: `anonimizarReserva()` (cliente; nombre en título, notas, indicaciones y eventos). La reserva, su estado y sus importes se conservan.
+   - Transporte: `anonimizarTransporte()` (nombre en observaciones y justificación; firma del taxista si la persona era el conductor).
+   - El mensaje enumera lo tratado por módulo; la auditoría `privacidad.arco_eliminado` guarda los conteos por tipo.
 5. **Responder** (`POST …/responder`): **Atender** o **Rechazar** con texto (10–5,000).
 
 **Folios** (únicos por empresa, índice `solicitudes_arco_empresa_folio_unico` de la migración `2026_11_08_000100_folio_unico_de_solicitudes_arco`): `ARCO-AAAA-NNNN` en la empresa y `ARCO-P-AAAA-NNNN` en las de la página de la plataforma; el número es el mayor del prefijo + 1 (no el conteo). Al canalizar se conserva el folio (la persona ya lo recibió por correo) y no choca con los de la empresa; el contador `ARCO-P` cuenta también las ya canalizadas. La migración renumera los repetidos que ya existían (se queda con su folio la más antigua).
@@ -77,10 +115,27 @@ Enlaces al aviso/formulario: kiosco y solicitud de empleo (`_cv.blade.php`, `$ar
 
 ## 3. Aviso de privacidad con versiones (`AvisosPrivacidad`)
 
-- **Empresa:** el texto sigue en `preferencias.recepcion.aviso_privacidad` (lo leen kiosco, solicitud de empleo y bolsa). `vigente($empresa)` devuelve la última versión y, si el texto cambió por otro camino o no hay ninguna, crea la siguiente. Publicar desde **Configuración → Privacidad** (`POST /configuracion/privacidad/aviso`) guarda el texto y crea la versión con autor (`privacidad.aviso_publicado`); un texto igual no crea versión. Guardar otro texto en **Recepción → Ajustes** también crea versión con autor (`registrarCambio`). Historial y «Ver texto» (`GET /configuracion/privacidad/aviso/{version}`).
+- **Empresa:** el texto sigue en `preferencias.recepcion.aviso_privacidad` (lo leen kiosco, solicitud de empleo y bolsa). `vigente($empresa)` devuelve la última versión y, si el texto cambió por otro camino o no hay ninguna, crea la siguiente. Publicar desde **Configuración → Privacidad** (`POST /configuracion/privacidad/aviso`) guarda el texto y crea la versión con autor (`privacidad.aviso_publicado`); un texto igual no crea versión. Historial y «Ver texto» (`GET /configuracion/privacidad/aviso/{version}`).
+- **Un solo lugar (C-37, E-09):** Recepción → Ajustes ya **no** edita el texto: muestra «versión N» (el mismo número de Privacidad, de `AvisosPrivacidad::vigente()`) con el enlace «Editar en Configuración → Privacidad» (si el rol tiene `configuracion.datos_personales`). `AjustesRecepcion::guardar()` ignora `aviso_privacidad` aunque llegue; la parte «privacidad» de ese formulario es el kiosco. Antes Recepción mostraba la huella (`c79528b1f8`) y Privacidad «versión 1»: eran dos números del mismo texto. `registrarCambio()` queda sin uso desde Recepción.
+- **Texto original:** `AjustesRecepcion::PRIVACIDAD_BORRADOR` ya no empieza con «Borrador — validar con su abogado» (los textos legales se marcan como borrador aquí, no en pantalla). Las empresas que seguían con el texto original reciben la siguiente versión automáticamente la primera vez que se consulta (cambió la huella); quien ya aceptó conserva la versión que aceptó. `esBorrador()`/`porCompletar()` reconocen `[NOMBRE DE LA EMPRESA]` (y la marca anterior).
 - **Plataforma:** el aviso de la página pública (Catálogo comercial → Ajustes). Su versión (empresa nula) se crea sola al primer uso o cuando cambia el texto.
 - **Qué versión aceptó cada persona:** `AdministradorCandidatos::aceptarPrivacidad()` (kiosco, RR. HH., bolsa de trabajo) guarda `candidatos.aviso_privacidad_id` además de la huella de siempre; la solicitud de compra de la landing guarda `solicitudes_compra.aviso_privacidad_id`. La ficha del candidato muestra «versión N». La caseta no muestra ni hace aceptar un aviso hoy: no aplica.
+
+## Borradores legales (para revisión del abogado)
+
+> **BORRADOR PARA EL ABOGADO — no está en pantalla.** Propuesta de párrafos para el aviso de privacidad integral de un cliente, ahora que la plataforma trata datos de más módulos (C-37). El abogado decide si los usa, cómo y con qué consentimiento (los datos de salud son **sensibles**: LFPDPPP art. 9, consentimiento expreso y por escrito). Lo entre corchetes lo completa el cliente.
+
+1. **Huéspedes y visitantes.** «[NOMBRE DE LA EMPRESA] trata tu nombre, identificación, fotografía, placas y datos de tu visita para controlar el acceso y la seguridad de sus instalaciones. Los conservamos [365] días después de tu salida.»
+2. **Objetos perdidos.** «Si reportas un objeto perdido o recibes uno que encontramos, tratamos tu nombre, teléfono, correo, identificación y firma para devolvértelo. Los conservamos [365] días.»
+3. **Incidentes y accidentes (datos sensibles).** «Si sufres un accidente o participas en un incidente en nuestras instalaciones, tratamos tus datos de identificación y, con tu consentimiento expreso, los datos de salud necesarios para atenderte (lesiones, atención médica, hospital y médico tratante). Los conservamos [5 años] después de cerrar el caso, por [MOTIVO LEGAL: responsabilidad civil, aseguradora…].» → **El abogado debe definir cómo y dónde se recaba el consentimiento expreso** (hoy el formulario de Accidentes no lo pide y, por decisión del dueño, no se modifica).
+4. **Reservas y eventos.** «Si reservas un área o un evento, tratamos tu nombre, empresa, correo y teléfono para confirmarlo y cobrarlo. Los conservamos [5 años] por obligaciones fiscales.»
+5. **Transporte.** «Si conduces un taxi contratado por nosotros, tratamos tu nombre, placas y firma del vale. Los conservamos [5 años].»
+6. **Derechos ARCO.** «Puedes ejercer tus derechos de acceso, rectificación, cancelación u oposición en [DIRECCIÓN DE LA PÁGINA DEL AVISO] o en [CORREO]. Respondemos en un máximo de 20 días hábiles.»
+
+Plazos sugeridos = valores originales de `ConservacionDatos::DIAS`; el abogado puede pedir otros y el cliente los cambia en Configuración → Privacidad.
 
 ## Pruebas
 
 `tests/Feature/Seguridad/PrivacidadArcoTest.php`: conservación con viaje en el tiempo (30, 91 y 366 días; registros abiertos y colaboradores), nada se borra con la tarea apagada, empresas existentes apagadas y nuevas encendidas, configuración y permisos; ARCO de punta a punta (formulario, correo, confirmación, plazo de 20 días hábiles, campana y Mis pendientes, búsqueda solo en la empresa, ZIP, descarga, eliminación, respuesta, auditoría sin datos personales); plazos (ámbar, recordatorio único, vencida al Super Administrador) y verificación en persona; plataforma y canalización con campo trampa; versiones del aviso (empresa y plataforma) y la versión aceptada por el candidato.
+
+`tests/Feature/Seguridad/PrivacidadTodosLosModulosTest.php` (C-37): un huésped con objeto en Lost & Found (reporte y entrega con firma), accidente capturado con su formulario (dictamen médico, anexo del guardavidas y firma del afectado), reserva y viaje en transporte — buscar (nombre, solo correo, solo teléfono), exportar (con firmas y datos médicos; sin la firma del guardia) y eliminar todo; vuelve a buscar sin resultados; informes, expediente y auditoría vinculados; conductor del taxi (firma) y accidente de colaborador (solo consulta); conservación de los cuatro plazos nuevos, sin aplicar hasta confirmarlos. `tests/Feature/Nucleo/InventarioDatosPersonalesTest.php`: inventario completo y coherente.

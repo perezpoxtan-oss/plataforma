@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
 class PreferenciasAvisos
 {
     /** Avisos de la propia cuenta que no se pueden silenciar (seguridad). */
-    public const NO_SILENCIABLES = ['cuenta_contrasena', 'cuenta_dos_pasos'];
+    public const NO_SILENCIABLES = ['cuenta_contrasena', 'cuenta_dos_pasos', 'plataforma_superadmin'];
 
     /** Tipo de la campana => [módulo para agrupar, qué avisa, permisos de quien lo recibe]. */
     public const CAMPANA = [
@@ -52,6 +52,7 @@ class PreferenciasAvisos
         'pase_llega' => ['Pases de salida', 'Un pase de salida viene a tu sede', ['pases_salida.ver']],
         'cuenta_bloqueada' => ['Cuentas y seguridad', 'Una cuenta se bloqueó por intentos fallidos', ['usuarios.editar', 'usuarios.desbloquear']],
         'cuenta_desactivada' => ['Cuentas y seguridad', 'Una cuenta se dio de baja junto con su colaborador', ['usuarios.editar']],
+        'cuenta_solicitud' => ['Cuentas y seguridad', 'Alguien pide que restablezcas su contraseña o su verificación en dos pasos', ['usuarios.editar', 'usuarios.desbloquear']],
         // Privacidad (docs/tecnico/privacidad.md)
         'arco_solicitud' => ['Privacidad', 'Llegó una solicitud ARCO (acceso, rectificación, cancelación u oposición)', ['configuracion.datos_personales']],
         'arco_plazo' => ['Privacidad', 'Una solicitud ARCO está por vencer o venció', ['configuracion.datos_personales']],

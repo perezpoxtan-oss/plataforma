@@ -16,9 +16,9 @@ resumen: Todos los ajustes de tu empresa ordenados por secciones (General, Caset
 
 - Para ver la pantalla tu rol debe poder consultar *Configuración*. Si tu rol solo consulta, verás los valores pero no los botones **Guardar** ni **Restablecer valor original**.
 - Los ajustes de la empresa los cambia quien tiene el permiso **editar** de Configuración con alcance de **toda la empresa** (normalmente el administrador). Con alcance de una sede solo se consultan.
-- Algunas tarjetas piden además el permiso de su módulo: los días de Lost & Found (**Configurar** de Lost & Found), el aviso de privacidad y los plazos de candidatos (**Configurar** de Candidatos), la bolsa de trabajo (**Configurar** de Vacantes), las esperas (**Configurar** de Autorizaciones departamentales), la impresión desde padrones (**Configurar** de Etiquetas QR) y el circuito de pases (**Configurar** de Pases de salida). Si no tienes ese permiso, la tarjeta no aparece.
+- Algunas tarjetas piden además el permiso de su módulo: los días de Lost & Found (**Configurar** de Lost & Found), el kiosco y los plazos de candidatos (**Configurar** de Candidatos), la bolsa de trabajo (**Configurar** de Vacantes), las esperas (**Configurar** de Autorizaciones departamentales), la impresión desde padrones (**Configurar** de Etiquetas QR) y el circuito de pases (**Configurar** de Pases de salida). Si no tienes ese permiso, la tarjeta no aparece.
 - **Privacidad** (conservación de datos, aviso de privacidad y solicitudes ARCO) la ve quien tiene el permiso **Datos personales** de Configuración con alcance de toda la empresa (normalmente el administrador).
-- **Plataforma** (correo de la plataforma, respaldos, versión de PHP del servidor y enlaces a Identidad y Catálogo comercial) solo la ve el Super Administrador.
+- **Plataforma** (Super Administradores, correo de la plataforma, respaldos, versión de PHP del servidor y enlaces a Identidad y Catálogo comercial) solo la ve el Super Administrador.
 
 ## Cómo moverte por las secciones
 
@@ -188,15 +188,19 @@ La tarjeta dice tras cuántos minutos sin actividad se cierra la sesión (valor 
 
 ## Privacidad
 
-Aquí cuidas los datos personales de quien visita tus sedes, publicas tu aviso de privacidad y llegas a las solicitudes ARCO. El detalle está en [Privacidad y solicitudes ARCO](privacidad-y-arco.md).
+Aquí cuidas los datos personales de quien visita tus sedes, publicas tu aviso de privacidad y llegas a las solicitudes ARCO. El aviso de privacidad **solo se edita aquí** (Recepción solo muestra su versión). El detalle está en [Privacidad y solicitudes ARCO](privacidad-y-arco.md).
 
 ### Cómo elegir cuántos días se conservan los datos personales
 1. En **Privacidad → Conservación de datos personales** escribe los días para:
    - **Fotos de la persona (caseta)** — valor original: 90 días.
    - **Fotos de la identificación (caseta)** — valor original: 90 días.
    - **Datos de visitantes externos en registros cerrados** (visita, huésped, proveedor, contratista) — valor original: 365 días.
+   - **Lost & Found: quien reportó una pérdida o recibió un objeto** (nombre, teléfono, correo, identificación y firma) — valor original: 365 días.
+   - **Novedades y accidentes cerrados** (involucrados, testigos, descripción del sospechoso, huésped accidentado y sus datos médicos) — valor original: 1825 días (5 años).
+   - **Reservas terminadas: datos del cliente** — valor original: 1825 días.
+   - **Transporte: firma del taxista en los vales** — valor original: 1825 días.
 2. Revisa el recuadro gris: dice cuántas fotos y registros se quitarían **hoy** con esos días.
-3. Marca **Quitar automáticamente los datos que pasaron sus días** para encender la tarea. Si tu empresa ya existía antes de esta función, viene **apagada**: nada se quita hasta que tú la enciendas.
+3. Marca **Quitar automáticamente los datos que pasaron sus días** para encender la tarea. Si tu empresa ya existía antes de esta función, viene **apagada**: nada se quita hasta que tú la enciendas. Los plazos de Lost & Found, novedades y accidentes, reservas y transporte son nuevos: si tu empresa ya existía, un aviso amarillo te lo dice y **se aplican hasta que guardes esta tarjeta**.
 4. Toca **Guardar** y confirma con **Aceptar**.
 
 ![Conservación de datos personales](img/configuracion/privacidad-conservacion.png)
@@ -204,10 +208,11 @@ Aquí cuidas los datos personales de quien visita tus sedes, publicas tu aviso d
 **Qué debes ver:** «Listo: la conservación quedó encendida…». Cada noche se quitan los datos que pasaron sus días: **el registro de la bitácora se queda** (fecha, sede, gafete, quién lo registró), pero sin foto, identificación ni datos de la persona; en lugar del nombre dice «Datos eliminados por conservación». El resumen queda en la [Bitácora de auditoría](auditoria.md).
 
 - Los **candidatos no contratados** tienen su propio plazo (se borran a los 12 meses sin movimiento, con aviso 15 días antes); se cambia en **Candidatos → Documentos y plazos**, con el botón de la misma tarjeta.
-- Los registros de **colaboradores** y de **unidades de emergencia** conservan sus datos; solo pierden las fotos al pasar sus días.
+- Los registros de **colaboradores** y de **unidades de emergencia** conservan sus datos; solo pierden las fotos al pasar sus días. Los **accidentes de trabajo** de tus colaboradores tampoco se tocan.
+- En todos los casos el registro se queda (el ticket, la reserva, el vale): solo se quitan los datos de la persona.
 
 ### Cómo publicar una versión nueva del aviso de privacidad
-1. En **Privacidad → Aviso de privacidad** revisa el texto. Si dice «Borrador — validar con su abogado», pide a tu abogado el texto definitivo.
+1. En **Privacidad → Aviso de privacidad** revisa el texto. Si un aviso amarillo dice que tiene **datos por completar** entre corchetes, pide a tu abogado el texto definitivo.
 2. Escribe o pega el texto nuevo.
 3. Toca **Guardar como versión nueva**.
 
@@ -218,6 +223,30 @@ Aquí cuidas los datos personales de quien visita tus sedes, publicas tu aviso d
 Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logotipo y colores), **Catálogo comercial → Ajustes** (moneda, IVA, página pública y suscripciones: días de prueba, días de gracia, descuento anual y avisos de vencimiento), **Catálogo comercial → Clientes** y **Empresas** (módulos contratados). Debajo están la versión de PHP del servidor, el correo de la plataforma y los respaldos.
 
 ![Sección Plataforma](img/configuracion/plataforma.png)
+
+## Cómo dar de alta y cuidar a los Super Administradores (Super Administrador)
+
+Debe haber **al menos dos Super Administradores activos**: si uno pierde su teléfono y sus códigos de respaldo, el otro le devuelve el acceso desde aquí, sin entrar al servidor. Mientras haya uno solo, **Inicio** lo avisa en rojo («Falta el segundo Super Administrador»).
+
+1. En **Plataforma → Super Administradores** toca **Agregar Super Administrador**.
+2. Escribe **Nombre completo**, **Usuario** y **Correo** (obligatorio para el Super Administrador).
+3. Si la plataforma tiene correo, deja **Contraseña temporal** vacía y le llega un enlace de bienvenida; si no, escribe una contraseña temporal y dásela en persona.
+4. Escribe **Tu contraseña** y toca **Guardar**.
+
+**Qué debes ver:** «Listo: «…» ya es Super Administrador…». Al entrar, la persona cambia su contraseña y activa su verificación en dos pasos.
+
+### Cuando otro Super Administrador perdió su teléfono o su contraseña
+
+Su petición te llega a la **campana**, a **Inicio** («Super Administradores que piden ayuda») y a esta tarjeta.
+
+1. Confirma con la persona que fue ella quien lo pidió.
+2. En su renglón toca **Restablecer o dar de baja**.
+3. Para el teléfono: escribe **Tu contraseña** y toca **Quitar sus dos pasos**. Para la contraseña: escribe una **Contraseña temporal** (o déjala vacía si la plataforma tiene correo) y **Tu contraseña**, y toca **Guardar**.
+
+**Qué debes ver:** «Quitamos la verificación en dos pasos de «…»…» o «Contraseña de «…» restablecida…». Los demás Super Administradores reciben un aviso y todo queda en la [Bitácora de auditoría](auditoria.md).
+
+- **Dar de baja** a un Super Administrador solo se puede si quedan **al menos dos** activos; si no, la tarjeta dice «No se puede: quedaría menos de dos Super Administradores activos.»
+- Tu propia cuenta se cambia en [Mi cuenta](mi-cuenta.md).
 
 ## Cómo revisar la versión de PHP del servidor (Super Administrador)
 
@@ -285,6 +314,8 @@ Las versiones corregidas son **8.5.12**, **8.4.27**, **8.3.36** y **8.2.35** o p
 | Es el mismo texto de la versión N: cambia algo para publicar una nueva. | El aviso no cambió. | Si no hay cambios, no hace falta publicar. |
 | Una versión dice **Requiere actualización** (rojo). | El servidor tiene una versión de PHP con la falla PHP2Shell o una serie que ya no recibe correcciones. | Pide a tu proveedor de hospedaje la versión corregida (8.5.12, 8.4.27, 8.3.36, 8.2.35 o posterior). Cuando la cambie, vuelve a abrir Configuración: debe decir **Al día**. |
 | **Tareas programadas** dice «Sin dato todavía». | La instalación automática aún no anota su versión de PHP. | Espera a la siguiente instalación; si sigue igual, pide a tu proveedor de hospedaje que revise las tareas programadas. |
+| **Debe haber al menos dos Super Administradores activos…** | Darías de baja al penúltimo Super Administrador. | Da de alta otro antes de dar de baja a este. |
+| **Tu contraseña no es correcta.** (Super Administradores) | Cada cambio pide tu propia contraseña. | Escribe la contraseña con la que entras. |
 | No veo la sección **Privacidad**. | Tu rol no tiene el permiso **Datos personales** de Configuración con alcance de toda la empresa. | Pídelo a tu administrador. |
 
 ## Preguntas frecuentes

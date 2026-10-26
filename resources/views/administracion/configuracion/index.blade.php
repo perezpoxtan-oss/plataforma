@@ -330,9 +330,11 @@
                             <li><a href="{{ route('catalogo-comercial.index', ['pestana' => 'clientes']) }}">Catálogo comercial → Clientes</a>: plan, sedes, usuarios y excepciones de cada cliente.</li>
                         @endif
                         <li><a href="{{ route('empresas.index') }}">Empresas</a>: módulos contratados de cada empresa (botón de la cuadrícula).</li>
-                        <li>Versión de PHP del servidor, correo de la plataforma y respaldos: aquí abajo.</li>
+                        <li>Super Administradores, versión de PHP del servidor, correo de la plataforma y respaldos: aquí abajo.</li>
                     </ul>
                 </div>
+                {{-- C-36 (DD-21, E-14): dos Super Administradores como mínimo; uno restablece al otro sin terminal --}}
+                @include('administracion.configuracion._superadmins', ['sa' => $superadmins])
                 @include('administracion.configuracion._version-php', ['php' => $php])
             </div>
             {{-- ================= Correo saliente (plataforma) ================= --}}

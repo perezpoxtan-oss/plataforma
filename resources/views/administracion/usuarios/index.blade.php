@@ -46,6 +46,28 @@
         </div>
 
         {{-- Cuentas por revisar (criterio 1): bloqueadas hoy y desactivadas por baja en los últimos 7 días --}}
+        {{-- C-36: «Pedir a mi administrador» (contraseña o dos pasos). Atenderla es restablecer desde su ficha; se cierra sola --}}
+        @if ($solicitudesCuenta->isNotEmpty())
+            <div class="alert alert-warning aviso mb-4" role="status" id="solicitudesCuenta">
+                <i class="bi bi-person-exclamation" aria-hidden="true"></i>
+                <div class="flex-grow-1">
+                    <strong>Piden ayuda con su cuenta ({{ $solicitudesCuenta->count() }}):</strong>
+                    <ul class="mb-1 ps-3">
+                        @foreach ($solicitudesCuenta as $sc)
+                            <li class="mb-1">{{ $sc->usuario?->name }} pide {{ $sc->etiquetaTipo() }} · {{ \Illuminate\Support\Str::lcfirst(app(\App\Services\Notificaciones\CentroNotificaciones::class)->hace($sc->created_at)) }}
+                                <form action="{{ route('solicitudes-cuenta.rechazar', $sc->id) }}" method="POST" class="d-inline" data-confirmar="¿Rechazar la petición de {{ $sc->usuario?->name }}? Le avisaremos.">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-link btn-sm p-0 ms-2 align-baseline">Rechazar</button>
+                                </form>
+                            </li>
+                        @endforeach
+                    </ul>
+                    <span class="d-block small">Confirma <strong>en persona</strong> que fue quien lo pidió. Después usa la <strong>llave</strong> de su ficha (contraseña temporal que cambiará al entrar) o el <strong>teléfono</strong> (quitar sus dos pasos): la petición se cierra sola.</span>
+                </div>
+            </div>
+        @endif
+
         @if ($porRevisar->isNotEmpty())
             <div class="alert alert-warning aviso mb-4" role="status" id="cuentasPorRevisar">
                 <i class="bi bi-person-lock" aria-hidden="true"></i>
@@ -94,7 +116,7 @@
 
                         <div class="ficha-meta">
                             <div><i class="bi bi-shield-lock text-danger" aria-hidden="true"></i> <strong>Rol:</strong> {{ $asignacion?->nombre ?? 'Sin rol' }}</div>
-                            <div class="text-muted small"><i class="bi bi-envelope" aria-hidden="true"></i> {{ $u->email }}</div>
+                            <div class="text-muted small"><i class="bi bi-envelope" aria-hidden="true"></i> {{ $u->email ?? 'Sin correo: recupera su cuenta contigo' }}</div>
                             @if ($u->colaborador)
                                 <div class="{{ $u->colaborador->activo ? 'text-success' : 'text-danger' }}" style="font-size: 0.75rem;">
                                     <i class="bi bi-link-45deg" aria-hidden="true"></i> Vinculado a Colaborador {{ $u->colaborador->activo ? '(activo)' : '(¡dado de baja! revisar)' }}
@@ -294,8 +316,10 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="campo-etiqueta" for="{{ $modo }}_correo">Correo</label>
-                                <input type="email" id="{{ $modo }}_correo" name="email" class="campo" maxlength="150" value="{{ $valor('email') }}" required
+                                <input type="email" id="{{ $modo }}_correo" name="email" class="campo" maxlength="150" value="{{ $valor('email') }}"
                                        data-duplicado="{{ route('usuarios.duplicado') }}" data-duplicado-min="5" data-duplicado-aviso="{{ $modo }}_aviso_correo">
+                                {{-- C-36 (DD-21): opcional en las cuentas de caseta; quien administra lo necesita --}}
+                                <p class="campo-ayuda">Opcional en cuentas de caseta: sin correo, la persona recupera su cuenta pidiéndotelo a ti.</p>
                             </div>
                             @unless ($esNuevo)
                                 <div class="col-md-4">
@@ -368,7 +392,7 @@
                     <form action="{{ $restableciendoId ? route('usuarios.restablecer', $restableciendoId) : '' }}" method="POST" autocomplete="off" data-formulario-editable data-form-restablecer>
                         @csrf
                         <input type="hidden" name="_dialogo" value="{{ $restableciendoId ? 'restablecer-'.$restableciendoId : '' }}" data-campo-dialogo>
-                        <p class="mb-3">Cuenta: <strong data-restablecer-nombre>{{ $nombreRestablecer }}</strong>. Su contraseña actual dejará de servir y sus sesiones abiertas se cerrarán.</p>
+                        <p class="mb-3">Cuenta: <strong data-restablecer-nombre>{{ $nombreRestablecer }}</strong>. Su contraseña actual dejará de servir y sus sesiones abiertas se cerrarán. Si la cuenta no tiene correo, escribe una contraseña.</p>
                         <fieldset class="mb-3">
                             <legend class="campo-etiqueta">¿Cómo?</legend>
                             @if ($correoListo)

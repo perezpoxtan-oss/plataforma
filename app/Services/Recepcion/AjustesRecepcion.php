@@ -5,7 +5,6 @@ namespace App\Services\Recepcion;
 use App\Models\Empresa;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
-use App\Services\Privacidad\AvisosPrivacidad;
 use App\Support\Entrada;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -13,7 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Ajustes de Recepción por empresa (empresas.preferencias['recepcion']):
- *  - aviso de privacidad que el candidato acepta antes de guardar su CV;
+ *  - aviso de privacidad que el candidato acepta antes de guardar su CV (su
+ *    texto se edita solo en Configuración → Privacidad, con versiones);
  *  - quién espera la autorización del responsable del departamento: visita,
  *    proveedor y contratista (ESPERAN_DEPARTAMENTO). Sin el dato = sí; a las
  *    empresas que ya existían la migración les dejó guardado su valor de
@@ -37,10 +37,19 @@ use Illuminate\Validation\ValidationException;
  */
 class AjustesRecepcion
 {
+    /**
+     * Marca que llevaba el texto original hasta C-37. Los textos legales son
+     * borradores para el abogado: eso se dice en la documentación técnica
+     * (docs/tecnico/privacidad.md), no en pantalla. Se sigue reconociendo en
+     * los textos que la guardaron.
+     */
     public const MARCA_BORRADOR = 'Borrador — validar con su abogado';
 
-    public const PRIVACIDAD_BORRADOR = self::MARCA_BORRADOR.".\n\n"
-        .'[NOMBRE DE LA EMPRESA], con domicilio en [DOMICILIO], usará los datos personales que nos compartes en esta solicitud '
+    /** Dato por completar del texto original: mientras siga, el aviso no está listo. */
+    public const MARCA_POR_COMPLETAR = '[NOMBRE DE LA EMPRESA]';
+
+    public const PRIVACIDAD_BORRADOR = self::MARCA_POR_COMPLETAR
+        .', con domicilio en [DOMICILIO], usará los datos personales que nos compartes en esta solicitud '
         .'(datos de contacto, escolaridad, experiencia laboral, referencias, documentos y fotografía) para evaluar tu candidatura '
         ."a un puesto de trabajo y, si así lo decides, conservarlos en nuestra cartera de candidatos.\n\n"
         ."Puedes ejercer tus derechos de acceso, rectificación, cancelación u oposición (ARCO) escribiendo a [CORREO DE CONTACTO].\n\n"
@@ -82,9 +91,15 @@ class AjustesRecepcion
         return hash('sha256', $this->textoPrivacidad($empresa));
     }
 
+    /** ¿El aviso todavía es el texto original con datos por completar? */
     public function esBorrador(Empresa $empresa): bool
     {
-        return str_contains($this->textoPrivacidad($empresa), self::MARCA_BORRADOR);
+        return self::porCompletar($this->textoPrivacidad($empresa));
+    }
+
+    public static function porCompletar(string $texto): bool
+    {
+        return str_contains($texto, self::MARCA_POR_COMPLETAR) || str_contains($texto, self::MARCA_BORRADOR);
     }
 
     /**
@@ -196,7 +211,8 @@ class AjustesRecepcion
      */
     /**
      * Guarda las partes que vienen en $partes (cada formulario manda solo la
-     * suya; ADR-0010): privacidad (aviso y kiosco; por compatibilidad también
+     * suya; ADR-0010): privacidad (kiosco; el texto del aviso se edita solo en
+     * Configuración → Privacidad desde C-37/E-09; por compatibilidad también
      * el paso de RR. HH. y los criterios si vienen), criterios (Candidatos →
      * Criterios de entrevista), esperas (Responsables por departamento:
      * autorización de visitas y «Que pase» de RR. HH.) y escalamiento (minutos).
@@ -233,8 +249,7 @@ class AjustesRecepcion
         $antes = $this->datos($empresa);
         $nuevos = $antes;
         if ($privacidad) {
-            $texto = trim(str_replace("\r\n", "\n", (string) ($d['aviso_privacidad'] ?? '')));
-            $nuevos['aviso_privacidad'] = $texto === '' ? null : $texto;
+            // C-37 (E-09): el aviso de privacidad ya no se edita aquí; vive solo en Configuración → Privacidad
             $nuevos['kiosco_horas'] = (int) ($d['kiosco_horas'] ?? self::HORAS_KIOSCO);
             $nuevos['kiosco_usos'] = (int) ($d['kiosco_usos'] ?? self::USOS_KIOSCO);
         }
@@ -270,9 +285,5 @@ class AjustesRecepcion
             'escalar_minutos' => (int) ($x['escalar_minutos'] ?? PanelRecepcion::ESPERA_ROJA),
         ];
         $this->auditoria->auditar($actor, 'candidatos.configurado', $empresa, $resumen($antes), $resumen($nuevos));
-        // Privacidad (docs/tecnico/privacidad.md): un texto distinto del aviso queda como versión nueva, con su autor
-        if ($privacidad && ($antes['aviso_privacidad'] ?? null) !== ($nuevos['aviso_privacidad'] ?? null)) {
-            app(AvisosPrivacidad::class)->registrarCambio($actor, $empresa);
-        }
     }
 }

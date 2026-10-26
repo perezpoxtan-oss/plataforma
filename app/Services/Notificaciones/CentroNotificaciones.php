@@ -51,6 +51,9 @@ class CentroNotificaciones
         'cuenta_contrasena' => ['bi-key-fill', 'exito'],
         'cuenta_bloqueada' => ['bi-lock-fill', 'alerta'],
         'cuenta_desactivada' => ['bi-person-x-fill', 'alerta'],
+        // C-36: «Pedir a mi administrador» y cambios entre Super Administradores
+        'cuenta_solicitud' => ['bi-person-exclamation', 'alerta'],
+        'plataforma_superadmin' => ['bi-shield-lock-fill', 'alerta'],
         // Verificación en dos pasos (docs/tecnico/dos-pasos.md): avisos a la propia cuenta
         'cuenta_dos_pasos' => ['bi-shield-lock-fill', 'alerta'],
         // Privacidad (docs/tecnico/privacidad.md): solicitudes ARCO y conservación de datos

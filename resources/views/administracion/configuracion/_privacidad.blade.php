@@ -10,7 +10,10 @@
 {{-- Conservación --}}
 <div class="tarjeta p-4" id="cfg-conservacion">
     <h3 class="h6 fw-bold"><i class="bi bi-hourglass-split me-2 text-primary" aria-hidden="true"></i>Conservación de datos personales</h3>
-    <p class="small text-muted">Cuántos días se guardan los datos personales de quien visita tus sedes. Al pasar esos días, la revisión de cada noche los quita: <strong>el registro de la bitácora se conserva</strong> (fecha, sede, gafete, quién lo registró) pero sin foto, identificación ni datos de la persona; en su lugar dice «Datos eliminados por conservación».</p>
+    <p class="small text-muted">Cuántos días se guardan los datos personales de quien visita tus sedes, reporta o recoge un objeto, sufre un accidente, reserva un área o maneja un taxi. Al pasar esos días, la revisión de cada noche los quita: <strong>el registro se conserva</strong> (fecha, sede, quién lo registró) pero sin foto, identificación, firma, datos médicos ni datos de la persona; en su lugar dice «Datos eliminados por conservación». Los datos de tu personal no se quitan.</p>
+    @unless ($a['ampliados'])
+        <div class="alert alert-warning small py-2"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Los plazos de <strong>Lost &amp; Found, novedades y accidentes, reservas y transporte</strong> son nuevos: se aplicarán cuando revises los días y guardes esta tarjeta.</div>
+    @endunless
 
     <form action="{{ route('privacidad.conservacion') }}" method="POST"
           data-confirmar="{{ $a['activa'] ? '¿Guardar los días de conservación? Lo que pase de los días nuevos se quitará en la revisión de esta noche.' : 'Si marcaste «Quitar automáticamente…», esta noche se quitarán los datos que ya pasaron sus días y no se puede deshacer. ¿Guardar?' }}">
@@ -43,7 +46,8 @@
         </div>
 
         <div class="alert alert-secondary small py-2 mt-3 mb-2">
-            <i class="bi bi-info-circle me-1" aria-hidden="true"></i>Con los días guardados, hoy se quitarían: <strong>{{ $p['pendientes']['fotos_persona'] }}</strong> foto(s) de personas, <strong>{{ $p['pendientes']['fotos_identificacion'] }}</strong> de identificaciones y los datos de <strong>{{ $p['pendientes']['visitantes'] }}</strong> registro(s) de visitantes.
+            <i class="bi bi-info-circle me-1" aria-hidden="true"></i>Con los días guardados, hoy se quitarían: <strong>{{ $p['pendientes']['fotos_persona'] }}</strong> foto(s) de personas, <strong>{{ $p['pendientes']['fotos_identificacion'] }}</strong> de identificaciones, los datos de <strong>{{ $p['pendientes']['visitantes'] }}</strong> registro(s) de visitantes,
+            <strong>{{ $p['pendientes']['lost_found'] }}</strong> de Lost &amp; Found, <strong>{{ $p['pendientes']['incidentes'] }}</strong> ticket(s) cerrados, <strong>{{ $p['pendientes']['reservas'] }}</strong> reserva(s) y <strong>{{ $p['pendientes']['transporte'] }}</strong> firma(s) de taxistas.
             @if (is_array($p['ultima']) && ! empty($p['ultima']['en']))
                 Última revisión: @fecha(\Illuminate\Support\Carbon::parse($p['ultima']['en']), 'd/m/Y H:i').
             @endif
@@ -60,8 +64,8 @@
             Es la que aceptan en el kiosco, la solicitud de empleo y la bolsa de trabajo; cada persona queda con la versión que aceptó.</p>
     @endif
     <p class="small mb-2">Página pública del aviso (con el formulario de derechos ARCO): <a href="{{ $p['url_publica'] }}" target="_blank" rel="noopener">{{ $p['url_publica'] }}</a></p>
-    @if (str_contains($p['texto'], \App\Services\Recepcion\AjustesRecepcion::MARCA_BORRADOR))
-        <div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>El texto es el <strong>borrador</strong> que trae la plataforma: pide a tu abogado que lo revise y complete los datos entre corchetes.</div>
+    @if (\App\Services\Recepcion\AjustesRecepcion::porCompletar($p['texto']))
+        <div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>El aviso tiene <strong>datos por completar</strong> entre corchetes (nombre, domicilio, correo de contacto): pide a tu abogado que lo revise y publícalo aquí.</div>
     @endif
     <form action="{{ route('privacidad.aviso.publicar') }}" method="POST">
         @csrf

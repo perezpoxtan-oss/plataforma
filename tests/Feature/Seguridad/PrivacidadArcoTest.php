@@ -492,8 +492,14 @@ class PrivacidadArcoTest extends TestCase
         $this->assertStringContainsString('Hotel Uno usará', app(AjustesRecepcion::class)->textoPrivacidad($this->empresa));
         $this->assertTrue(Auditoria::where('evento', 'privacidad.aviso_publicado')->exists());
 
-        // Recepción → Ajustes (el mismo texto) también crea versión, con su autor
-        $this->actingAs($this->admin)->put(route('recepcion.ajustes.guardar'), ['aviso_privacidad' => 'Tercera versión del aviso.', 'kiosco_horas' => 2, 'kiosco_usos' => 3])->assertRedirect();
+        // C-37 (E-09): Recepción → Ajustes ya no edita el texto (aunque llegue) y muestra el mismo número de versión
+        $this->actingAs($this->admin)->put(route('recepcion.ajustes.guardar'), ['aviso_privacidad' => 'Texto desde Recepción.', 'kiosco_horas' => 2, 'kiosco_usos' => 3])->assertRedirect();
+        $this->assertSame(2, $avisos->vigente($this->empresa->refresh())->numero);
+        $this->assertStringNotContainsString('Texto desde Recepción.', app(AjustesRecepcion::class)->textoPrivacidad($this->empresa));
+        $this->assertSame(2, app(AjustesRecepcion::class)->horasKiosco($this->empresa)); // el kiosco sí se guarda
+        $this->actingAs($this->admin)->get(route('recepcion.ajustes'))->assertOk()->assertSee('versión 2')->assertSee('Editar en Configuración → Privacidad')
+            ->assertDontSee('name="aviso_privacidad"', false);
+        $this->actingAs($this->admin)->post('/configuracion/privacidad/aviso', ['texto' => 'Tercera versión del aviso.'])->assertRedirect();
         $v3 = $avisos->vigente($this->empresa->refresh());
         $this->assertSame(3, $v3->numero);
         $this->assertSame($this->admin->id, $v3->publicado_por);

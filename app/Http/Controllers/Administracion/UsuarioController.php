@@ -7,14 +7,17 @@ use App\Models\Colaborador;
 use App\Models\Empresa;
 use App\Models\Rol;
 use App\Models\Sede;
+use App\Models\SolicitudCuenta;
 use App\Models\User;
 use App\Rules\ContrasenaSegura;
 use App\Services\Cuenta\RecuperacionContrasena;
+use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\DosPasos\VerificacionDosPasos;
 use App\Services\Permisos\Autorizador;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Services\Usuarios\HomonimosUsuarios;
 use App\Support\Tenancy\EmpresaDeTrabajo;
+use App\Support\Tenancy\EmpresaScope;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -92,8 +95,12 @@ class UsuarioController extends Controller
                 ->orWhere(fn ($v) => AdministradorUsuarios::sinVinculoQuePidePases($v)))
             ->orderBy('users.name')->get(['users.id', 'users.name', 'users.bloqueado_hasta', 'users.desactivado_por_baja_en', 'users.colaborador_id', 'users.activo']);
 
+        // C-36: peticiones de «Pedir a mi administrador» que este usuario puede atender
+        $solicitudesCuenta = app(SolicitudesCuenta::class)->porAtender($actor, $empresaId);
+
         return view('administracion.usuarios.index', [
             'sinEmpresa' => false,
+            'solicitudesCuenta' => $solicitudesCuenta,
             'usuarios' => $usuarios,
             'sedes' => $sedes->keyBy('id'),
             'roles' => $roles,
@@ -180,8 +187,42 @@ class UsuarioController extends Controller
     private function modoEnlace(Request $request): bool
     {
         $modo = $request->input('contrasena_modo') ?? ($request->filled('password') ? 'manual' : 'enlace');
+        // Sin correo en la cuenta (caseta) no hay a dónde mandar el enlace: se escribe una contraseña temporal
+        $correo = $request->routeIs('usuarios.restablecer') ? (string) ($request->route('usuario')?->email ?? '') : (string) $request->input('email', '');
 
-        return $modo === 'enlace' && $this->recuperacion->correoConfigurado();
+        return $modo === 'enlace' && $this->recuperacion->correoConfigurado() && filter_var($correo, FILTER_VALIDATE_EMAIL) !== false;
+    }
+
+    /** C-36 (DD-21): solo los roles que administran algo exigen correo. */
+    private function correoObligatorio(Request $request, int $empresaId): bool
+    {
+        $rol = is_numeric($request->input('rol_id')) ? Rol::where('empresa_id', $empresaId)->find((int) $request->input('rol_id')) : null;
+
+        return $rol === null || AdministradorUsuarios::rolAdministrativo($rol);
+    }
+
+    /**
+     * C-36: «Rechazar» una petición de «Pedir a mi administrador» (por
+     * ejemplo, no fue la persona). Atenderla es restablecer la contraseña o
+     * los dos pasos desde su ficha: eso la cierra sola.
+     */
+    public function rechazarSolicitud(Request $request, int $solicitud): RedirectResponse
+    {
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+        $s = SolicitudCuenta::query()->withoutGlobalScope(EmpresaScope::class)->where('empresa_id', $empresaId)->findOrFail($solicitud);
+        $usuario = User::where('empresa_id', $empresaId)->findOrFail($s->user_id);
+        Gate::authorize(SolicitudesCuenta::PERMISOS[$s->tipo] ?? 'usuarios.editar');
+        $this->exigirVisible($request, $usuario);
+        $datos = $request->validate(['motivo' => ['nullable', 'string', 'max:255']]);
+
+        try {
+            app(SolicitudesCuenta::class)->rechazar($request->user(), $s, $datos['motivo'] ?? null);
+        } catch (AuthorizationException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('usuarios.index')->with('ok', "Rechazaste la petición de «{$usuario->name}». Le avisamos; si la necesita, te buscará en persona.");
     }
 
     public function update(Request $request, User $usuario): RedirectResponse
@@ -322,7 +363,8 @@ class UsuarioController extends Controller
             'numero_colaborador' => ['nullable', 'string', 'max:30', Rule::unique('users', 'numero_colaborador')->where('empresa_id', $empresaId)->ignore($usuario?->id)],
             'colaborador_id' => ['nullable', 'integer'],
             'username' => ['required', 'string', 'max:60', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')->ignore($usuario?->id)],
-            'email' => ['required', 'email:rfc', 'max:150', Rule::unique('users', 'email')->ignore($usuario?->id)],
+            // C-36 (DD-21): el correo es opcional en las cuentas de caseta (rol sin permisos de administración)
+            'email' => [$this->correoObligatorio($request, $empresaId) ? 'required' : 'nullable', 'email:rfc', 'max:150', Rule::unique('users', 'email')->ignore($usuario?->id)],
             'password' => [$usuario === null && ! $sinContrasena ? 'required' : 'nullable', 'string', Password::min(8)->letters()->numbers(),
                 new ContrasenaSegura((string) $request->input('username'), (string) $request->input('email'))],
             'rol_id' => ['required', 'integer'],
@@ -335,6 +377,7 @@ class UsuarioController extends Controller
             'email.unique' => 'Ya existe otro usuario registrado con ese correo.',
             'numero_colaborador.unique' => 'Ya existe otro usuario registrado con ese número de colaborador.',
             'username.regex' => 'El nombre de usuario solo puede tener letras, números, punto, guion y guion bajo (sin espacios).',
+            'email.required' => 'Escribe el correo: este rol administra la plataforma y lo necesita para recuperar su cuenta y recibir avisos. Solo las cuentas de caseta pueden ir sin correo.',
         ], [
             'name' => 'nombre completo',
             'numero_colaborador' => 'número de colaborador',
@@ -406,7 +449,7 @@ class UsuarioController extends Controller
     }
 
     /**
-     * @return array{name: string, username: string, numero_colaborador: ?string, colaborador_id: ?int, email: string, password: ?string}
+     * @return array{name: string, username: string, numero_colaborador: ?string, colaborador_id: ?int, email: ?string, password: ?string}
      */
     private function campos(array $datos): array
     {
@@ -415,7 +458,7 @@ class UsuarioController extends Controller
             'username' => trim($datos['username']),
             'numero_colaborador' => isset($datos['numero_colaborador']) && trim($datos['numero_colaborador']) !== '' ? trim($datos['numero_colaborador']) : null,
             'colaborador_id' => $datos['colaborador_id'] ?? null,
-            'email' => mb_strtolower(trim($datos['email'])),
+            'email' => isset($datos['email']) && trim((string) $datos['email']) !== '' ? mb_strtolower(trim($datos['email'])) : null,
             'password' => $datos['password'] ?? null,
         ];
     }

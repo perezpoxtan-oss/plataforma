@@ -234,8 +234,9 @@ class CuentaTest extends TestCase
     public function test_la_pantalla_de_acceso_enlaza_a_olvide_mi_contrasena_y_sin_smtp_lo_dice(): void
     {
         $this->get('/login')->assertOk()->assertSee('Olvidé mi contraseña')->assertSee('href="'.url('/olvide-contrasena').'"', false);
+        // C-36: sin correo de la plataforma ofrece «Pedir a mi administrador» (no el enlace por correo)
         $this->get('/olvide-contrasena')->assertOk()
-            ->assertSee('no tiene correo configurado')->assertDontSee('name="cuenta"', false);
+            ->assertSee('no tiene correo configurado')->assertDontSee('action="'.route('contrasena.solicitar').'"', false)->assertSee('Pedir a mi administrador');
         // Sin correo no se envía nada ni se revela nada
         $this->post('/olvide-contrasena', ['cuenta' => 'agente1'])->assertRedirect('/olvide-contrasena')->assertSessionHas('enviado');
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'agente@ejemplo.mx']);

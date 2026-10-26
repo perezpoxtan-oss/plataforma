@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\SolicitudCuenta;
 use App\Models\User;
+use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\DosPasos\VerificacionDosPasos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -68,6 +70,24 @@ class DosPasosController extends Controller
         }
 
         return $respuesta;
+    }
+
+    /**
+     * C-36 (E-14): perdió su teléfono y sus códigos de respaldo. Como ya
+     * escribió su contraseña, la petición queda a su nombre en «Cuentas por
+     * revisar» de su administrador (o de los otros Super Administradores, sin
+     * terminal). No entra hasta que se la restablezcan.
+     */
+    public function pedirAyuda(Request $request): RedirectResponse
+    {
+        $usuario = $this->pendiente($request);
+        if ($usuario === null) {
+            return redirect()->route('login')->with('acceso', 'dos_pasos_vencido');
+        }
+        app(SolicitudesCuenta::class)->pedir($usuario, SolicitudCuenta::DOS_PASOS, $request->ip());
+        $request->session()->forget(self::PENDIENTE);
+
+        return redirect()->route('login')->with('acceso', $usuario->es_superadmin ? 'dos_pasos_pedido_superadmin' : 'dos_pasos_pedido');
     }
 
     /** «Volver a entrar»: olvida la cuenta pendiente. */

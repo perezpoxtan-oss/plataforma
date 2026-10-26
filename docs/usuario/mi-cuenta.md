@@ -59,7 +59,8 @@ Con la verificación en dos pasos, al entrar te pedimos tu contraseña **y** un 
 ## Cómo entrar si perdí o cambié mi teléfono
 
 - **Con tus códigos de respaldo:** en la pantalla del código escribe uno de ellos (por ejemplo `ABCD-EF23`) en vez del código de la app. Cada uno sirve **una sola vez**. Ya dentro, entra a **Mi cuenta** y vuelve a activar la verificación con tu teléfono nuevo (primero quítala o pide que la restablezcan).
-- **Sin códigos de respaldo:** pide a tu administrador que **restablezca tu verificación en dos pasos** desde **Usuarios**. Te llega un aviso; entras solo con tu contraseña y la activas otra vez con tu teléfono nuevo.
+- **Sin códigos de respaldo:** escribe tu usuario y tu contraseña y, en la pantalla del código, toca **¿No tienes tu teléfono?** → **Perdí mi teléfono: pedir ayuda**. Tu petición llega a los pendientes de tu administrador; búscalo en persona. Cuando la restablezca, entras solo con tu contraseña y la activas otra vez con tu teléfono nuevo.
+- **Si eres Super Administrador:** el mismo botón avisa a los **otros Super Administradores**, que te la restablecen desde **Configuración → Plataforma → Super Administradores**. No hace falta entrar al servidor.
 
 ## Cómo crear códigos de respaldo nuevos
 

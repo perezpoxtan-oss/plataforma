@@ -1,12 +1,12 @@
 # Lección 52 · Verificación en dos pasos
 
-**Duración:** 25 minutos · **Para:** todas las personas (prácticas 1 a 4), Administrador del cliente (prácticas 5 y 6) y Super Administrador (práctica 7).
+**Duración:** 25 minutos · **Para:** todas las personas (prácticas 1 a 4), Administrador del cliente (prácticas 5 y 6) y Super Administrador (prácticas 7 y 8).
 
 Aprenderás:
 
 1. A activar la verificación en dos pasos con tu teléfono y a guardar tus códigos de respaldo.
 2. A entrar con el código y a usar «Recordar este dispositivo».
-3. Qué hacer si pierdes o cambias tu teléfono.
+3. Qué hacer si pierdes o cambias tu teléfono (también siendo Super Administrador, sin terminal).
 4. A exigirla en tu empresa y a restablecerla a quien perdió su teléfono.
 
 ## Antes de empezar
@@ -69,10 +69,21 @@ Comprueba: «Listo: quitamos la verificación en dos pasos de …». La persona 
 
 1. Entra con la cuenta de Super Administrador sin la verificación activa.
 
-Comprueba: te lleva a activarla antes de cualquier otra pantalla y, ya activa, no te deja quitarla. Si un Super Administrador pierde su teléfono y sus códigos, quien administra el servidor la restablece con `php artisan plataforma:dos-pasos <usuario>`.
+Comprueba: te lleva a activarla antes de cualquier otra pantalla y, ya activa, no te deja quitarla.
+
+## Práctica 8 · «Perdí mi teléfono» sin terminal (todas las personas y Super Administrador)
+
+1. Con una cuenta que tenga la verificación activa, escribe usuario y contraseña. En la pantalla del código toca **¿No tienes tu teléfono?** → **Perdí mi teléfono: pedir ayuda**.
+2. Entra como el **Administrador**: la petición está en la campana, en **Mis pendientes → Cuentas por revisar** y arriba de **Usuarios** («Piden ayuda con su cuenta»). Toca el **teléfono** de su ficha.
+3. Como **Super Administrador**: en **Configuración → Plataforma → Super Administradores** da de alta a un segundo Super Administrador (Inicio avisa en rojo mientras haya uno solo). Repite el paso 1 con la cuenta del segundo y, desde la tuya, toca **Restablecer o dar de baja → Quitar sus dos pasos** escribiendo tu contraseña.
+4. Intenta **Dar de baja** al segundo Super Administrador.
+
+Comprueba: la petición desaparece sola al restablecer; la persona entra con su contraseña y activa su teléfono nuevo. En el paso 4 la tarjeta dice «No se puede: quedaría menos de dos Super Administradores activos». Nada de esto necesita entrar al servidor.
 
 ## Repaso
 
 - ¿Qué pasa si escribes un código que ya usaste? *No sirve: cada código vale una sola vez.*
 - ¿Dónde marcas «Recordar este dispositivo»? *Solo en tu equipo personal, nunca en la caseta.*
 - ¿Quién puede restablecer la verificación de otra persona? *Quien puede desbloquear usuarios, con su mismo alcance.*
+- ¿Y la de un Super Administrador? *Otro Super Administrador, desde Configuración → Plataforma; por eso debe haber al menos dos.*
+- ¿Una cuenta de caseta sin correo cómo recupera su contraseña? *Con «Olvidé mi contraseña → Pedir a mi administrador»; el administrador le da una temporal y la persona la cambia al entrar.*

@@ -55,7 +55,7 @@ Si tienes encendidos los avisos por correo en [Configuración](configuracion.md)
 
 **Qué debes ver:** al tocar **Que pase y lo atiendo**, «Listo: … ya puede pasar. La caseta ya lo ve. Queda contigo («Con RR. HH.») …» y la tarjeta de la caseta cambia sola.
 
-Botones de arriba: **Modo kiosco** (pantalla para la tableta de la sala de espera), **Tiempos de espera**, **Candidatos** y **Ajustes** (aviso de privacidad y kiosco; desde ahí llegas a **Responsables por departamento y esperas** y a **Criterios de entrevista**).
+Botones de arriba: **Modo kiosco** (pantalla para la tableta de la sala de espera), **Tiempos de espera**, **Candidatos** y **Ajustes** (kiosco y versión del aviso de privacidad; desde ahí llegas a **Responsables por departamento y esperas** y a **Criterios de entrevista**).
 
 ![Recepción en el celular](img/recepcion-y-candidatos/movil-recepcion.png)
 
@@ -165,10 +165,10 @@ Cada recordatorio y cada escalamiento quedan en la Bitácora de auditoría y en 
 
 ## Cómo cambiar los ajustes de Recepción
 
-Aquí solo quedan el aviso de privacidad y el kiosco. Lo que espera en la caseta (autorización de visitas, «Que pase», recordatorio y escalamiento) está en **Responsables por departamento**, y los criterios de entrevista en **Candidatos → Criterios de entrevista** (ver [Candidatos](candidatos.md)).
+Aquí queda el kiosco. El **aviso de privacidad** que acepta el candidato se ve aquí (con su número de versión), pero **se edita en un solo lugar**: **Configuración → Privacidad** (ver [Configuración](configuracion.md)). Lo que espera en la caseta (autorización de visitas, «Que pase», recordatorio y escalamiento) está en **Responsables por departamento**, y los criterios de entrevista en **Candidatos → Criterios de entrevista** (ver [Candidatos](candidatos.md)).
 
 1. En Recepción toca **Ajustes** (también están en [Configuración](configuracion.md)).
-2. Escribe el **Texto del aviso de privacidad**. El texto que trae la plataforma es un borrador: pide a tu abogado que lo revise.
+2. Revisa la **versión del aviso de privacidad** vigente. Para cambiar su texto, toca **Editar en Configuración → Privacidad** (si tu rol puede).
 3. Ajusta **El enlace del kiosco dura (horas)** y **Veces que se puede enviar**.
 4. Toca **Guardar ajustes de Recepción**.
 

@@ -39,6 +39,16 @@ Si activaste la verificación en dos pasos (o tu empresa la exige), después de 
 
 **Qué debes ver:** la pantalla de **Inicio**. Si no tienes tu teléfono, escribe en **Código** uno de tus **códigos de respaldo** (ver [Mi cuenta](mi-cuenta.md)). Si entras con uno, la plataforma te dice cuántos te quedan.
 
+### Si perdiste tu teléfono y tus códigos de respaldo
+
+1. Escribe tu usuario y tu contraseña como siempre.
+2. En la pantalla del código toca **¿No tienes tu teléfono?** y luego **Perdí mi teléfono: pedir ayuda**.
+3. Busca en persona a tu administrador con una identificación.
+
+**Qué debes ver:** el aviso **«Tu administrador ya tiene tu petición en sus pendientes…»**. Cuando tu administrador quite tu verificación, entra con tu contraseña y actívala con tu teléfono nuevo.
+
+Si eres **Super Administrador**, la petición llega a los **otros Super Administradores** (por eso la plataforma pide que haya al menos dos). No hace falta entrar al servidor.
+
 - Si tu cuenta **necesita** la verificación y aún no la activas, al entrar te lleva a **Mi cuenta → Verificación en dos pasos** para activarla. El Super Administrador siempre la necesita.
 - Tienes **10 minutos** para escribir el código después de la contraseña; si pasan, vuelve a entrar.
 - Después de **5 códigos equivocados**, espera **15 minutos** para intentar de nuevo.
@@ -46,7 +56,9 @@ Si activaste la verificación en dos pasos (o tu empresa la exige), después de 
 
 ## Cómo recuperar mi contraseña (Olvidé mi contraseña)
 
-No necesitas pedírsela a nadie: la plataforma te manda un enlace a tu correo para crear una nueva.
+Tienes dos caminos. El primero no depende de nadie; el segundo sirve si tu cuenta no tiene correo (por ejemplo, las cuentas de caseta) o si el correo no te llega.
+
+### Con el enlace a tu correo
 
 1. En la pantalla para entrar toca **Olvidé mi contraseña** (debajo de **Autenticar Ingreso**).
 2. Escribe tu **usuario o tu correo** y toca **Enviarme el enlace**.
@@ -57,8 +69,17 @@ No necesitas pedírsela a nadie: la plataforma te manda un enlace a tu correo pa
 **Qué debes ver:** después de pedir el enlace siempre aparece el mismo mensaje: «Si la cuenta existe y tiene correo, te enviamos un enlace…». Es a propósito: así nadie puede averiguar qué usuarios existen. Si el correo no llega en unos minutos, revisa que escribiste bien tu usuario o tu correo y vuelve a pedirlo.
 
 - Se pueden pedir hasta **3 enlaces por hora** para la misma cuenta; el más reciente es el que sirve.
-- Si tu plataforma **no tiene correo configurado**, la pantalla te lo dice: pide a tu administrador que te restablezca la contraseña desde **Usuarios**.
 - Al guardar la contraseña nueva se cierran tus sesiones abiertas en otros equipos y la cuenta se desbloquea si estaba bloqueada.
+
+### Pidiéndoselo a tu administrador (sin correo)
+
+1. Toca **Olvidé mi contraseña**.
+2. Toca **¿No tienes correo en tu cuenta o no te llega?** (si tu plataforma no envía correos, esta parte ya aparece abierta como **Pedir a mi administrador**).
+3. Escribe tu **usuario** y toca **Pedir a mi administrador**.
+4. Busca en persona a tu administrador con una identificación. Él te da una **contraseña temporal**.
+5. Entra con ella: la plataforma te pide crear tu propia contraseña en ese momento. Nadie más la conocerá.
+
+**Qué debes ver:** el aviso **«Listo: si la cuenta existe, tu administrador ya tiene tu petición en sus pendientes…»**. Tu administrador la ve en **Mis pendientes → Cuentas por revisar**.
 
 ## Cómo salir
 
@@ -96,8 +117,9 @@ Por seguridad, la sesión se cierra sola después de **20 minutos sin usarla**.
 | **El código no es correcto. Escribe el que se ve ahora en tu app…** | El código ya cambió, es de otra cuenta de la app o ya lo usaste. | Escribe el código que se ve ahora (cada código sirve una sola vez). Revisa que la hora de tu teléfono sea automática. |
 | **Demasiados códigos equivocados. Espera 15 minutos…** | Se escribió mal el código 5 veces. | Espera 15 minutos y vuelve a entrar. Si perdiste tu teléfono, usa un código de respaldo o pide a tu administrador que restablezca tu verificación. |
 | **Pasó mucho tiempo sin escribir el código. Vuelve a entrar.** | Pasaron más de 10 minutos desde la contraseña. | Vuelve a escribir tu usuario y contraseña. |
-| Perdí mi teléfono y no tengo códigos de respaldo | — | Pide a tu administrador que **restablezca tu verificación en dos pasos** en **Usuarios**; después la activas con tu teléfono nuevo. |
-| Olvidé mi contraseña | — | Toca **Olvidé mi contraseña** y sigue los pasos de arriba. Si tu plataforma no tiene correo configurado, pide a tu administrador que la restablezca. |
+| Perdí mi teléfono y no tengo códigos de respaldo | — | En la pantalla del código toca **Perdí mi teléfono: pedir ayuda** y busca a tu administrador; después activas la verificación con tu teléfono nuevo. |
+| Olvidé mi contraseña | — | Toca **Olvidé mi contraseña**. Si tu cuenta no tiene correo o no te llega, usa **Pedir a mi administrador**. |
+| **Tu administrador ya tiene tu petición en sus pendientes…** | Tu petición llegó a quien administra tu cuenta. | Búscalo en persona con una identificación. |
 | **El enlace ya no sirve (venció o ya se usó). Pide uno nuevo aquí.** | Pasaron más de 60 minutos (24 horas si era el correo de bienvenida) o ya lo usaste. | Pide otro enlace con **Olvidé mi contraseña**. |
 | Al entrar me manda a **Mi cuenta** con «Crea tu propia contraseña para continuar». | Entraste con una contraseña que escribió tu administrador. | Cámbiala ahí mismo; después ya puedes usar todo. Ver [Mi cuenta](mi-cuenta.md). |
 | **Tu cuenta no está activa** y acabo de causar baja o reingresar. | Al dar de baja a un colaborador su cuenta se da de baja sola. | Pide a tu administrador que la reactive en **Usuarios**. |
@@ -107,6 +129,7 @@ Por seguridad, la sesión se cierra sola después de **20 minutos sin usarla**.
 ## Preguntas frecuentes
 
 - **¿Puedo entrar con mi correo?** Sí, en el mismo campo de usuario.
+- **Mi cuenta de caseta no tiene correo, ¿cómo recupero mi contraseña?** Con **Olvidé mi contraseña → Pedir a mi administrador**. Te dará una contraseña temporal y la cambiarás por una tuya al entrar.
 - **¿Cómo cambio mi contraseña si sí la recuerdo?** Toca tu nombre arriba a la derecha: se abre [Mi cuenta](mi-cuenta.md).
 - **Me llegó un correo de bienvenida, ¿qué hago?** Toca **Crear mi contraseña**, escríbela dos veces y entra con ella. El enlace vale 24 horas; si venció, usa **Olvidé mi contraseña**.
 - **¿Puedo entrar desde dos equipos a la vez?** Sí, pero cierra la sesión en el que ya no uses.

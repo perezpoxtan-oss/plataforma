@@ -9,6 +9,7 @@ use App\Models\Empresa;
 use App\Models\Novedad;
 use App\Models\Postulacion;
 use App\Models\SolicitudArco;
+use App\Models\SolicitudCuenta;
 use App\Models\User;
 use App\Services\Activos\PendientesActivos;
 use App\Services\Autorizaciones\Autorizaciones;
@@ -188,7 +189,10 @@ class MisPendientes
                 ->where(fn ($q) => $q->where('users.bloqueado_hasta', '>', now())
                     ->orWhere(fn ($b) => $b->where('users.activo', false)->where('users.desactivado_por_baja_en', '>=', now()->subDays(7)))
                     // Mejoras estructura (ADR-0016): quien pide pases a su nombre y no tiene colaborador vinculado
-                    ->orWhere(fn ($v) => AdministradorUsuarios::sinVinculoQuePidePases($v)))
+                    ->orWhere(fn ($v) => AdministradorUsuarios::sinVinculoQuePidePases($v))
+                    // C-36: quien pide ayuda con su cuenta («Pedir a mi administrador»), en la misma consulta
+                    ->orWhereExists(fn ($p) => $p->from('solicitudes_cuenta')->whereColumn('solicitudes_cuenta.user_id', 'users.id')
+                        ->where('solicitudes_cuenta.estado', SolicitudCuenta::PENDIENTE)))
                 ->count();
             $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $cuentas, route('usuarios.index', ['revisar' => 1]));
         }
