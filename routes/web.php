@@ -18,6 +18,7 @@ use App\Http\Controllers\Administracion\UsuarioController;
 use App\Http\Controllers\Auth\DosPasosController;
 use App\Http\Controllers\Auth\RecuperacionController;
 use App\Http\Controllers\Auth\SesionController;
+use App\Http\Controllers\BajasController;
 use App\Http\Controllers\Cuenta\DosPasosController as CuentaDosPasosController;
 use App\Http\Controllers\Cuenta\MiCuentaController;
 use App\Http\Controllers\Cuenta\MiSuscripcionController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\Informes\TendenciasController;
 use App\Http\Controllers\LectorController;
 use App\Http\Controllers\ModuloPendienteController;
 use App\Http\Controllers\Operacion\PrestamoLlaveController;
+use App\Http\Controllers\Operacion\ReceptorController;
 use App\Http\Controllers\Operacion\ResponsivaController;
 use App\Http\Controllers\Organizacion\ColaboradorController;
 use App\Http\Controllers\Organizacion\DepartamentoController;
@@ -36,6 +38,7 @@ use App\Http\Controllers\Organizacion\EspacioController;
 use App\Http\Controllers\Organizacion\PuestoController;
 use App\Http\Controllers\Organizacion\TurnoController;
 use App\Http\Controllers\Padrones\ProveedorController;
+use App\Http\Controllers\Padrones\RestriccionController;
 use App\Http\Controllers\Padrones\RutaController;
 use App\Http\Controllers\PanelController;
 use App\Http\Controllers\Publico\EmpleosController;
@@ -207,6 +210,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/personas/rapido', [PersonaController::class, 'rapido'])->name('personas.rapido');
     Route::put('/personas/{persona}', [PersonaController::class, 'update'])->whereNumber('persona')->name('personas.update');
     Route::patch('/personas/{persona}/estado', [PersonaController::class, 'estado'])->whereNumber('persona')->name('personas.estado');
+    // C-13: «Restringir acceso» separado de «Dar de baja» (personas, vehículos y empresas externas)
+    Route::patch('/restriccion/{padron}/{id}', [RestriccionController::class, 'guardar'])->whereIn('padron', ['personas', 'vehiculos', 'proveedores'])->whereNumber('id')->name('restriccion.guardar');
     // Padrones: Vehículos (y la búsqueda y el registro rápido que usarán Accesos y Estacionamientos)
     Route::get('/vehiculos', [VehiculoController::class, 'index'])->name('vehiculos.index');
     Route::post('/vehiculos', [VehiculoController::class, 'store'])->name('vehiculos.store');
@@ -313,6 +318,7 @@ Route::middleware('auth')->group(function () {
     Route::match(['get', 'post'], '/gafetes/imprimir', [GafeteController::class, 'imprimir'])->name('gafetes.imprimir');
     Route::put('/gafetes/{gafete}', [GafeteController::class, 'update'])->whereNumber('gafete')->name('gafetes.update');
     Route::post('/gafetes/{gafete}/baja', [GafeteController::class, 'baja'])->whereNumber('gafete')->name('gafetes.baja');
+    Route::patch('/gafetes/{gafete}/recibir', [GafeteController::class, 'recibir'])->whereNumber('gafete')->name('gafetes.recibir');
     Route::patch('/gafetes/{gafete}/reactivar', [GafeteController::class, 'reactivar'])->whereNumber('gafete')->name('gafetes.reactivar');
     Route::get('/vouchers', [VoucherController::class, 'index'])->name('vouchers.index');
     Route::get('/vouchers/{voucher}/imprimir', [VoucherController::class, 'imprimir'])->whereNumber('voucher')->name('vouchers.imprimir');
@@ -330,7 +336,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/estacionamientos/{zona}', [EstacionamientoController::class, 'update'])->whereNumber('zona')->name('estacionamientos.update');
     Route::patch('/estacionamientos/{zona}/estado', [EstacionamientoController::class, 'estado'])->whereNumber('zona')->name('estacionamientos.estado');
     // Mejoras padrones (ADR-0015): dar salida desde la zona a un vehículo que salió sin registrarla
-    Route::patch('/estacionamientos/{zona}/salida/{acceso}', [EstacionamientoController::class, 'salida'])->whereNumber(['zona', 'acceso'])->name('estacionamientos.salida');
+    // C-21: «Liberar lugar» (antes «Dar salida», que cerraba la visita de la persona)
+    Route::patch('/estacionamientos/{zona}/liberar/{acceso}', [EstacionamientoController::class, 'liberar'])->whereNumber(['zona', 'acceso'])->name('estacionamientos.liberar');
     // Fin Padrones: Equipos de seguridad y Estacionamientos
     // Padrones: Rutas de transporte (fichas por sede, pestañas Llegadas / Salidas / Paraderos, hoja del día e itinerario)
     Route::get('/rutas', [RutaController::class, 'index'])->name('rutas.index');
@@ -367,10 +374,13 @@ Route::middleware('auth')->group(function () {
     // Fin Padrones: Bitácora de accesos
     // Padrones: Préstamo de llaves y Responsivas (menú Operación; ver docs/tecnico/prestamo-llaves.md y responsivas.md)
     Route::get('/prestamo-llaves', [PrestamoLlaveController::class, 'index'])->name('prestamo_llaves.index');
+    // C-16: selector «¿A quién se le entrega?» (personas y empresas externas)
+    Route::get('/receptores/buscar', [ReceptorController::class, 'buscar'])->middleware('throttle:120,1')->name('receptores.buscar');
     Route::post('/prestamo-llaves', [PrestamoLlaveController::class, 'store'])->name('prestamo_llaves.store');
     Route::get('/prestamo-llaves/exportar', [PrestamoLlaveController::class, 'exportar'])->name('prestamo_llaves.exportar');
     Route::get('/prestamo-llaves/llaves/{llave}/historial', [PrestamoLlaveController::class, 'historial'])->whereNumber('llave')->name('prestamo_llaves.historial');
     Route::patch('/prestamo-llaves/{prestamo}/recibir', [PrestamoLlaveController::class, 'recibir'])->whereNumber('prestamo')->name('prestamo_llaves.recibir');
+    Route::patch('/prestamo-llaves/{prestamo}/no-regreso', [PrestamoLlaveController::class, 'noRegreso'])->whereNumber('prestamo')->name('prestamo_llaves.no-regreso');
     Route::patch('/prestamo-llaves/{prestamo}/anular', [PrestamoLlaveController::class, 'anular'])->whereNumber('prestamo')->name('prestamo_llaves.anular');
     Route::patch('/prestamo-llaves/{prestamo}/reactivar', [PrestamoLlaveController::class, 'reactivar'])->whereNumber('prestamo')->name('prestamo_llaves.reactivar');
     Route::get('/responsivas', [ResponsivaController::class, 'index'])->name('responsivas.index');
@@ -467,6 +477,9 @@ Route::middleware('auth')->group(function () {
     });
     // Fin Padrones: Recorridos de Protección Civil
     // Padrones: Eliminar definitivamente (borrado físico controlado de catálogos y padrones; ver docs/tecnico/borrado.md)
+    // C-20: «Antes de dar de baja» (pantalla común; la baja la sigue haciendo la ruta …/estado de cada padrón)
+    Route::get('/antes-de-dar-de-baja/{tipo}/{id}', [BajasController::class, 'revisar'])->where('tipo', '[a-z_]+')->whereNumber('id')->name('bajas.revisar');
+    Route::post('/antes-de-dar-de-baja/{tipo}/{id}/no-regreso', [BajasController::class, 'noRegreso'])->where('tipo', '[a-z_]+')->whereNumber('id')->name('bajas.no-regreso');
     Route::controller('App\Http\Controllers\BorradoController')->group(function () {
         // {registro}: clave de App\Services\Borrado\RegistroBorrado (una desconocida responde 404)
         Route::get('/borrar/{registro}/{id}', 'revisar')->where('registro', '[a-z_]+')->whereNumber('id')->name('borrar.revisar');

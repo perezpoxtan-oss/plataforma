@@ -335,13 +335,15 @@ class AccesosTest extends TestCase
         $this->registrar(['tipo' => 'emergencia'])->assertSessionHas('ok', 'Registrado y en sitio: UNIDAD DE EMERGENCIA. ¿Otro ingreso? Toca Nuevo Ingreso.');
     }
 
-    public function test_una_empresa_vetada_no_puede_ingresar(): void
+    public function test_una_empresa_restringida_no_puede_ingresar(): void
     {
-        $this->enEmpresa(fn () => Proveedor::create(['nombre' => 'Fletes Rápidos', 'categoria' => 'transportadora', 'activo' => false]));
+        // C-13 (DD-07): el veto es «Restringir acceso»; «de baja» solo pide reactivarla (ver EtapaDosCasetaTest)
+        $this->enEmpresa(fn () => Proveedor::create(['nombre' => 'Fletes Rápidos', 'categoria' => 'transportadora'])
+            ->forceFill(['restringido_en' => now(), 'restringido_motivo' => 'Robo de mercancía'])->save());
         $host = $this->colaborador('2001');
 
         $this->registrar(['tipo' => 'proveedor', 'nombre' => 'Chofer', 'empresa_procedencia' => 'fletes   rápidos', 'host_colaborador_id' => $host->id])
-            ->assertSessionHasErrors(['empresa_procedencia' => 'La empresa «Fletes Rápidos» está dada de baja (vetada) en Proveedores: no puede ingresar.']);
+            ->assertSessionHasErrors(['empresa_procedencia' => 'La empresa «Fletes Rápidos» no puede ingresar: Acceso restringido (sin fecha de fin): Robo de mercancía. Llama a tu supervisor.']);
         $this->assertSame(0, $this->enEmpresa(fn () => Acceso::count()));
     }
 

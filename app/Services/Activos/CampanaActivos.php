@@ -152,7 +152,7 @@ class CampanaActivos
 
         return count($this->centro->avisar((int) $p->empresa_id, $usuarios, 'llave_fuera', [
             'titulo' => 'Llave '.($p->llave?->nomenclatura ?? '').' fuera desde hace '.self::textoHoras($horas),
-            'texto' => 'La tiene '.($p->colaborador?->nombreCompleto() ?? '—').' desde las '.$this->enSede($p->sede, $p->prestado_en)
+            'texto' => 'La tiene '.$p->nombreReceptor().' desde las '.$this->enSede($p->sede, $p->prestado_en)
                 .' ('.($p->sede?->nombre ?? '').'). '.($nivel === 'rojo' ? 'Sigue sin regresar: dale seguimiento.' : 'Pide que la regresen o recíbela en caseta.'),
             'url' => route('prestamo_llaves.index').'#prestamo-'.$p->id,
             'referencia_tipo' => $referencia,
@@ -191,7 +191,7 @@ class CampanaActivos
 
         return count($this->centro->avisar((int) $r->empresa_id, $usuarios, 'equipo_turno', [
             'titulo' => "Responsiva {$r->folio}: ".($equipos === 1 ? '1 equipo de turno sin regresar' : "{$equipos} equipos de turno sin regresar"),
-            'texto' => ($r->colaborador?->nombreCompleto() ?? '—').' debía regresarlos a las '.$this->enSede($r->sede, $debia)
+            'texto' => $r->nombreReceptor().' debía regresarlos a las '.$this->enSede($r->sede, $debia)
                 .' ('.($r->sede?->nombre ?? '').'). '.($nivel === 'rojo' ? 'Siguen sin regresar: dale seguimiento.' : 'Pídeselos o recíbelos en la responsiva.'),
             'url' => route('responsivas.index').'#responsiva-'.$r->id,
             'referencia_tipo' => $referencia,

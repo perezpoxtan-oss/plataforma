@@ -191,7 +191,7 @@ class BitacoraDelDia
             ->with(['sede:id,nombre', 'llave:id,nomenclatura,descripcion', 'colaborador:id,nombre,apellido_paterno,apellido_materno']),
             $actor, 'llaves', $sedes, 'prestamos_llaves.sede_id', 'prestamos_llaves.creado_por');
         $columnas = ['prestamos_llaves.id', 'prestamos_llaves.sede_id', 'llave_id', 'colaborador_id', 'prestado_en', 'devuelto_en'];
-        $texto = fn (PrestamoLlave $p) => ($p->llave?->nomenclatura ?? 'Llave').($p->llave?->descripcion ? ' ('.$p->llave->descripcion.')' : '').' · '.($p->colaborador?->nombreCompleto() ?? '—');
+        $texto = fn (PrestamoLlave $p) => ($p->llave?->nomenclatura ?? 'Llave').($p->llave?->descripcion ? ' ('.$p->llave->descripcion.')' : '').' · '.$p->nombreReceptor();
         $eventos = [];
         foreach ($this->delDia($base, 'prestamos_llaves.prestado_en')->orderBy('prestamos_llaves.prestado_en')->limit(self::MAX_POR_TIPO)->get($columnas) as $p) {
             $eventos[] = $this->evento('llaves', $p->prestado_en, 'Préstamo', $texto($p), $p->sede?->nombre);

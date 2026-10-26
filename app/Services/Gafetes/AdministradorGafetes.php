@@ -8,11 +8,13 @@ use App\Models\Sede;
 use App\Models\TipoGafete;
 use App\Models\User;
 use App\Models\VoucherReposicion;
+use App\Services\Activos\CustodiaActivos;
 use App\Services\Inventarios\Vouchers;
 use App\Services\Lector\Identificacion;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
+use App\Support\EstadoActivo;
 use App\Support\Lector\Etiqueta;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -294,14 +296,33 @@ class AdministradorGafetes
         if (! $gafete->activo) {
             throw ValidationException::withMessages(['motivo' => "El gafete {$gafete->nomenclatura} ya está dado de baja."]);
         }
+        // C-14: un gafete EN SITIO no se da de baja aquí (se le da salida en la Bitácora de accesos)
+        app(CustodiaActivos::class)->exigirBajaPermitida($gafete);
 
         $datos = $this->vouchers->validar($entrada);
         $gafete->loadMissing('tipo:id,nombre');
 
-        return $this->vouchers->darDeBaja($actor, $gafete, 'gafete', $gafete->nomenclatura, $datos, function () use ($actor, $gafete) {
+        $voucher = $this->vouchers->darDeBaja($actor, $gafete, 'gafete', $gafete->nomenclatura, $datos, function () use ($actor, $gafete) {
             $gafete->forceFill(['activo' => false, 'actualizado_por' => $actor->id])->save();
             $this->auditoria->auditar($actor, 'gafetes.desactivado', $gafete, ['activo' => true], ['activo' => false]);
         }, $gafete->tipo?->nombre);
+        app(CustodiaActivos::class)->resolverNoRegreso($gafete, 'gafete');
+
+        return $voucher;
+    }
+
+    /**
+     * C-15: «Recibir» un gafete marcado «No regresó» que apareció (lo
+     * devolvieron después): vuelve a DISPONIBLE.
+     */
+    public function recibir(User $actor, Gafete $gafete): void
+    {
+        if (! $gafete->noRegreso()) {
+            throw ValidationException::withMessages(['gafete' => "El gafete {$gafete->nomenclatura} no está marcado «No regresó»."]);
+        }
+        $gafete->forceFill(['estado' => EstadoActivo::DISPONIBLE, 'actualizado_por' => $actor->id])->save();
+        $this->auditoria->auditar($actor, 'gafetes.recibido', $gafete, ['estado' => EstadoActivo::NO_REGRESO], ['estado' => EstadoActivo::DISPONIBLE]);
+        app(CustodiaActivos::class)->resolverNoRegreso($gafete, 'gafete');
     }
 
     /**

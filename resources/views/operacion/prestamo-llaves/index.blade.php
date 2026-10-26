@@ -61,7 +61,7 @@
 
         <div class="pestanas-prestamo" role="tablist" aria-label="Préstamos">
             <button type="button" role="tab" class="activa" aria-selected="true" data-pestana-prestamos="uso">
-                Llaves en Uso (<span data-conteo-en-uso>{{ $enUso->count() }}</span>)
+                Llaves en Uso (<span data-conteo-en-uso>{{ $enUso->count() + $noRegresaron->count() }}</span>)
             </button>
             <button type="button" role="tab" aria-selected="false" data-pestana-prestamos="historial">Historial de Entregas</button>
         </div>
@@ -84,9 +84,17 @@
 
         {{-- ===== Llaves en Uso ===== --}}
         <div class="fichas-grid fichas-prestamo" data-vista-prestamos="uso">
-            <div class="estado-vacio-prestamo" data-vacio-en-uso @if ($enUso->isNotEmpty()) hidden @endif>
+            <div class="estado-vacio-prestamo" data-vacio-en-uso @if ($enUso->isNotEmpty() || $noRegresaron->isNotEmpty()) hidden @endif>
                 <i class="bi bi-check2-circle" aria-hidden="true"></i> Todas las llaves están en caseta.
             </div>
+            @foreach ($noRegresaron as $p)
+                @include('operacion.prestamo-llaves._ficha', [
+                    'p' => $p,
+                    'puedeRecibir' => $puede['recibir'] && ($recibibles === null || in_array($p->id, $recibibles, true)),
+                    'puedeAnular' => false,
+                    'semaforoPrestamo' => null,
+                ])
+            @endforeach
             @foreach ($enUso as $p)
                 @include('operacion.prestamo-llaves._ficha', [
                     'p' => $p,
@@ -101,7 +109,7 @@
         <div class="fichas-grid fichas-prestamo" data-vista-prestamos="historial" hidden>
             @forelse ($historial as $p)
                 @php
-                    $nombre = $p->colaborador?->nombreCompleto() ?? '—';
+                    $nombre = $p->nombreReceptor();
                     $texto = mb_strtolower(implode(' ', array_filter([$nombre, $p->colaborador?->num_empleado, $p->llave?->nomenclatura, $p->llave?->descripcion, $p->sede?->nombre])));
                     $reactivable = $p->anulado && $puede['anular'] && ($anulables === null || in_array($p->id, $anulables, true));
                 @endphp
@@ -110,6 +118,8 @@
                         <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                             @if ($p->anulado)
                                 <span class="badge-prestamo anulada"><i class="bi bi-slash-circle me-1" aria-hidden="true"></i>ANULADO</span>
+                            @elseif ($p->estado === \App\Models\PrestamoLlave::NO_REGRESO)
+                                <span class="badge-prestamo no-regreso"><i class="bi bi-exclamation-octagon-fill me-1" aria-hidden="true"></i>NO REGRESÓ</span>
                             @else
                                 <span class="badge-prestamo dentro"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>EN CASETA</span>
                             @endif
@@ -185,9 +195,9 @@
                                 'ayuda' => 'Escanea el QR del llavero, acerca su etiqueta NFC o escribe su nombre (por ejemplo HDC-101).'])
                         </div>
 
-                        @include('componentes.lector', ['id' => 'prestamo_colaborador', 'etiqueta' => 'Colaborador Solicitante (Buscar, QR o NFC)',
-                            'tipos' => 'colaborador', 'nombre' => 'colaborador_id', 'requerido' => true,
-                            'ayuda' => 'Escanea su gafete o escribe su número de nómina o su nombre.'])
+                        {{-- C-16: también a una persona del padrón (técnico de un proveedor, contratista) o a una empresa externa --}}
+                        @include('componentes.receptor', ['id' => 'prestamo_colaborador', 'prefijo' => 'receptor', 'etiqueta' => 'Solicitante (¿a quién se le presta?)',
+                            'requerido' => true, 'ayuda' => 'Escanea su gafete o escribe su número de nómina o su nombre.'])
 
                         <hr class="separador-prestamo">
 
@@ -205,6 +215,14 @@
                                 <input type="text" id="prestamo_folio" name="folio_garantia" class="campo" maxlength="80" placeholder="Ej. Depto Ama de Llaves" value="{{ old('folio_garantia') }}" data-folio-garantia>
                                 <p class="campo-ayuda mt-0" data-ayuda-folio-gafete>Con «Gafete interno» se llena solo con el número del gafete que escaneaste.</p>
                             </div>
+                        </div>
+
+                        {{-- C-17 (DD-09): la llave no cumple sus reglas → aviso y motivo; queda en el préstamo y en la auditoría --}}
+                        <div class="aviso-excepcion-llave" data-excepcion-llave role="alert" hidden>
+                            <p class="mb-2"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i><span data-excepcion-texto></span></p>
+                            <label class="campo-etiqueta" for="prestamo_excepcion">Prestar de todos modos: motivo</label>
+                            <textarea id="prestamo_excepcion" name="excepcion_motivo" class="campo" rows="2" maxlength="250" disabled
+                                      placeholder="Ej: lo autorizó el gerente de turno por teléfono"></textarea>
                         </div>
 
                         <div class="dialogo-acciones">

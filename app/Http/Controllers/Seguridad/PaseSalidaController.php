@@ -229,6 +229,12 @@ class PaseSalidaController extends Controller
         $mensaje = $paso === 'aprobacion'
             ? "Aprobación registrada en el pase {$modelo->folio}.".($estado === PaseSalida::APROBADO ? ' El pase quedó «Aprobado, listo para salir».' : ' Se avisó al siguiente aprobador.')
             : "Listo: {$modelo->folio} ahora está «{$modelo->insignia(false)[0]}».";
+        // C-18: equipos del padrón que no regresaron al cerrar con faltantes: el siguiente paso es su voucher
+        $noRegresaron = $this->pases->equiposNoRegresaron;
+        if ($noRegresaron !== []) {
+            $mensaje .= ' '.(count($noRegresaron) === 1 ? 'El equipo '.$noRegresaron[0].' quedó' : 'Los equipos '.implode(', ', $noRegresaron).' quedaron')
+                .' «No regresó»: '.($request->user()->can('equipos.eliminar') ? 'dalo de baja con su voucher en Equipos de seguridad.' : 'se avisó a tu supervisor para darlo de baja con voucher.');
+        }
 
         return redirect()->route('pases-salida.show', $modelo->id)->with('ok', $mensaje);
     }

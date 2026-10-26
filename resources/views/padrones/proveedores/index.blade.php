@@ -143,6 +143,9 @@
                                     <span class="badge-sedes"><i class="bi bi-signpost-split" aria-hidden="true"></i> {{ $etiquetaSedes }}</span>
                                 @endif
                             </div>
+                            @if ($p->restringido())
+                                <p class="insignia-restringido"><i class="bi bi-shield-fill-x me-1" aria-hidden="true"></i>{{ $p->textoRestriccion() }}</p>
+                            @endif
                             @if ($p->actualizado_por_nombre && $p->updated_at?->ne($p->created_at))
                                 <div class="texto-traza mt-1"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $p->actualizado_por_nombre }} · @fecha($p->updated_at)</div>
                             @elseif ($p->creado_por_nombre)
@@ -152,7 +155,7 @@
                     </div>
 
                     <div class="ficha-footer">
-                        <span class="etiqueta-estado {{ $p->activo ? 'activo' : 'inactivo' }}">{{ $p->activo ? 'ACTIVA' : 'DE BAJA' }}</span>
+                        <span class="etiqueta-estado {{ $p->restringido() ? 'inactivo' : ($p->activo ? 'activo' : 'inactivo') }}">{{ $p->restringido() ? 'RESTRINGIDA' : ($p->activo ? 'ACTIVA' : 'DE BAJA') }}</span>
                         <div class="d-flex gap-2">
                             @include('padrones.altas-por-verificar._boton', ['registro' => $p])
                             <a href="{{ route('proveedores.show', $p->id) }}" class="btn-ficha" aria-label="Ficha de {{ $p->nombre }}"><i class="bi bi-person-lines-fill me-1" aria-hidden="true"></i>Ficha</a>
@@ -164,9 +167,10 @@
                                     <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                 </button>
                             @endif
+                            @include('componentes.restriccion-ficha', ['registro' => $p, 'padron' => 'proveedores', 'nombre' => $p->nombre, 'puede' => $desactivable && $p->activo])
                             @if ($desactivable)
                                 <form action="{{ route('proveedores.estado', $p->id) }}" method="POST" class="m-0"
-                                      data-confirmar="{{ $p->activo ? '¿Dar de baja «'.$p->nombre.'»? Ya no se podrá elegir en la caseta ni en los pases; podrás reactivarla después con un clic.' : '¿Reactivar «'.$p->nombre.'»?' }}">
+                                      data-confirmar="{{ $p->activo ? '¿Dar de baja «'.$p->nombre.'»? Úsalo si ya no trabaja con ustedes (si vuelve, la caseta ofrece reactivarla). Para impedirle la entrada usa «Restringir acceso». Podrás reactivarla después con un clic.' : '¿Reactivar «'.$p->nombre.'»?' }}">
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="activo" value="{{ $p->activo ? 0 : 1 }}">
@@ -285,4 +289,5 @@
         @include('padrones.altas-por-verificar._dialogo', ['altas' => $altas])
     @endif
 </div>
+@include('componentes.restringir-acceso')
 @endsection

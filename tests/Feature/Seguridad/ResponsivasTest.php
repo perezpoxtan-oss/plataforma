@@ -18,6 +18,7 @@ use App\Services\Equipos\AdministradorEquipos;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
 use Tests\TestCase;
 
@@ -170,7 +171,7 @@ class ResponsivasTest extends TestCase
         $this->assertSame(['CENRES-000001', 1, Responsiva::EN_CAMPO, $this->centro->id, $c->id, $this->admin->id],
             [$r->folio, $r->numero, $r->estado, $r->sede_id, $r->colaborador_id, $r->entregado_por]);
         $this->assertSame(['prestado', 'asignado'], $r->equipos->pluck('modalidad')->all());
-        $this->assertSame(['asignado', 'asignado'], [$this->estado($radio), $this->estado($chaleco)]);
+        $this->assertSame(['en_uso', 'asignado'], [$this->estado($radio), $this->estado($chaleco)]);
 
         // La firma va al disco privado, nunca a public/
         $this->assertStringStartsWith('firmas/'.$this->empresa->id.'/responsivas/', $r->firma_ruta);
@@ -239,13 +240,16 @@ class ResponsivasTest extends TestCase
         $this->actingAs($this->admin)->post('/responsivas', $this->datos($c, [$radio]))
             ->assertSessionHasErrors(['equipos' => 'El equipo RAD-1 sigue en la responsiva CENRES-000001 sin recibir.']);
 
-        // Aunque lo hayan dado de baja y reactivado mientras estaba en campo
+        // C-14: el catálogo ya no lo da de baja mientras está en campo (manda a Responsivas)
         $equipos = app(AdministradorEquipos::class);
-        $this->enEmpresa(function () use ($equipos, $radio) {
-            $modelo = Equipo::findOrFail($radio->id);
-            $equipos->darDeBaja($this->admin, $modelo, ['motivo' => 'extraviado', 'descripcion' => 'Se perdió', 'aplica_cobro' => false]);
-            $equipos->reactivar($this->admin, $modelo);
-        });
+        try {
+            $this->enEmpresa(fn () => $equipos->darDeBaja($this->admin, Equipo::findOrFail($radio->id), ['motivo' => 'extraviado', 'descripcion' => 'Se perdió', 'aplica_cobro' => false]));
+            $this->fail('El catálogo dio de baja un equipo EN USO.');
+        } catch (ValidationException $e) {
+            $this->assertStringContainsString('recíbelo en Responsivas', $e->errors()['motivo'][0]);
+        }
+        // Y si en datos de antes se dio de baja y se reactivó en campo, sigue sin poder entrar en otra responsiva
+        $this->enEmpresa(fn () => Equipo::whereKey($radio->id)->update(['estado' => 'disponible']));
         $this->actingAs($this->admin)->post('/responsivas', $this->datos($c, [$radio]))
             ->assertSessionHasErrors(['equipos' => 'El equipo RAD-1 sigue en la responsiva CENRES-000001 sin recibir.']);
         $this->assertSame(1, $this->enEmpresa(fn () => EquipoResponsiva::where('equipo_id', $radio->id)->count()));
@@ -283,8 +287,8 @@ class ResponsivasTest extends TestCase
         $radio = $this->equipo('RAD-1');
         $perdido = $this->equipo('LT-1');
         $r = $this->crearLote($this->admin, $c, [$radio, $perdido]);
-        $this->enEmpresa(fn () => app(AdministradorEquipos::class)->darDeBaja($this->admin, Equipo::findOrFail($perdido->id),
-            ['motivo' => 'extraviado', 'descripcion' => 'Se perdió en el rondín', 'aplica_cobro' => false]));
+        // Datos de antes de C-14 (el catálogo ya no lo permite): se dio de baja mientras estaba en campo
+        $this->enEmpresa(fn () => Equipo::whereKey($perdido->id)->update(['estado' => 'baja']));
 
         $this->actingAs($this->admin)->patch("/responsivas/{$r->id}/recibir")
             ->assertSessionHas('ok', 'Responsiva CENRES-000001 recibida: 1 equipo vuelve a DISPONIBLE. 1 ya estaba(n) dado(s) de baja y se quedan así.');

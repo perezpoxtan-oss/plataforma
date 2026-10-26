@@ -4738,3 +4738,58 @@ html.modo-noche .lista-arco > li, html.modo-noche .coincidencias-arco fieldset {
 .estado-php.requiere { background: #fee2e2; color: #b91c1c; }
 .aviso-php { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 12px; padding: 0.75rem 1rem; font-size: 0.85rem; font-weight: 600; }
 @media (max-width: 575.98px) { .datos-php .fila-php { grid-template-columns: 1fr; gap: 0.15rem; } }
+
+/* ==========================================================================
+   Etapa 2 · Bajas y ciclo de vida de los activos (C-14 a C-21)
+   ========================================================================== */
+/* C-14: estados únicos (EN USO, FUERA, NO REGRESÓ) */
+.estado-eq-en_uso { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+.estado-eq-fuera { background: #e0f2fe; color: #075985; border-color: #bae6fd; }
+.estado-eq-no_regreso, .estado-gafete.no-regreso { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+.badge-prestamo.no-regreso { background: #ea580c; color: #fff; }
+.ficha-prestamo.no-regreso { border-left: 4px solid #ea580c; }
+.btn-no-regreso { min-height: 44px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;
+    background: #fff; border: 1px solid #ea580c; color: #c2410c; padding: 0 0.75rem; }
+.btn-no-regreso:hover { background: #ea580c; color: #fff; }
+.custodia-activo { font-size: 0.82rem; margin: 0.35rem 0 0; color: var(--texto); }
+.custodia-activo a { font-weight: 700; }
+html.modo-noche .estado-eq-en_uso { background: rgba(234,179,8,0.14); color: #fde047; border-color: rgba(234,179,8,0.4); }
+html.modo-noche .estado-eq-fuera { background: rgba(14,165,233,0.14); color: #7dd3fc; border-color: rgba(14,165,233,0.4); }
+html.modo-noche .estado-eq-no_regreso, html.modo-noche .estado-gafete.no-regreso { background: rgba(234,88,12,0.16); color: #fdba74; border-color: rgba(234,88,12,0.4); }
+html.modo-noche .btn-no-regreso { background: transparent; color: #fdba74; }
+html.modo-sol .estado-eq-no_regreso, html.modo-sol .estado-gafete.no-regreso, html.modo-sol .badge-prestamo.no-regreso { background: #000; color: #fff; }
+.etiqueta-estado.no-regreso { background: #ffedd5; color: #9a3412; }
+/* C-16: ¿a quién se le entrega? */
+.receptor { margin-bottom: 0.75rem; }
+.receptor-tipos { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.25rem 0 0.6rem; }
+.receptor-tipo { display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid var(--borde); border-radius: 999px; padding: 0.35rem 0.8rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; min-height: 40px; }
+.receptor-tipo input { accent-color: var(--primario, #0d6efd); }
+.receptor-tipo:has(input:checked) { border-color: var(--primario, #0d6efd); background: color-mix(in srgb, var(--primario, #0d6efd) 10%, transparent); }
+.opcion-receptor { display: block; width: 100%; text-align: left; background: var(--fondo-tarjeta, #fff); border: 1px solid var(--borde); border-radius: 8px; padding: 0.5rem 0.75rem; margin-top: 0.35rem; cursor: pointer; color: var(--texto); font-family: inherit; }
+.opcion-receptor:hover { border-color: var(--primario, #0d6efd); }
+.opcion-receptor.restringido { opacity: 0.65; cursor: not-allowed; border-color: #fca5a5; }
+/* C-15: casillas al dar salida */
+.devolucion-salida { border: 1px solid var(--borde); border-radius: 10px; padding: 0.6rem 0.75rem; margin: 0.25rem 0 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.casilla-devolucion { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.92rem; min-height: 36px; cursor: pointer; }
+.casilla-devolucion input { width: 20px; height: 20px; }
+.texto-devuelta.no-devuelta { color: #9a3412; }
+/* C-17: préstamo fuera de las reglas de la llave */
+.aviso-excepcion-llave { background: #fffbeb; border: 1px solid #f59e0b; color: #78350f; border-radius: 10px; padding: 0.75rem; margin: 0.75rem 0; font-size: 0.9rem; font-weight: 600; }
+html.modo-noche .aviso-excepcion-llave { background: rgba(245,158,11,0.12); color: #fde68a; border-color: #b45309; }
+.prestamo-excepcion { font-size: 0.8rem; color: #92400e; background: #fffbeb; border-radius: 6px; padding: 4px 8px; margin-top: 6px; }
+/* C-20: Antes de dar de baja */
+.lista-antes-de-baja { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.renglon-baja { border-left: 4px solid var(--borde); padding: 0.4rem 0 0.4rem 0.75rem; }
+.renglon-baja-titulo { display: flex; gap: 0.5rem; align-items: baseline; }
+.renglon-baja.nivel-bloquea { border-color: #dc2626; } .renglon-baja.nivel-bloquea .bi { color: #dc2626; }
+.renglon-baja.nivel-pendiente { border-color: #ea580c; } .renglon-baja.nivel-pendiente .bi { color: #ea580c; }
+.renglon-baja.nivel-aviso { border-color: #0284c7; } .renglon-baja.nivel-aviso .bi { color: #0284c7; }
+.renglon-baja-efecto { margin: 0.2rem 0 0; font-size: 0.88rem; color: var(--texto-suave); }
+.renglon-baja-ejemplos { margin: 0.3rem 0 0; padding-left: 1.2rem; font-size: 0.88rem; }
+.aviso-bloqueo-baja { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 0.75rem 1rem; font-weight: 600; }
+html.modo-noche .aviso-bloqueo-baja { background: rgba(239,68,68,0.12); color: #fca5a5; border-color: #7f1d1d; }
+/* C-13: acceso restringido */
+.insignia-restringido { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 8px; padding: 0.35rem 0.6rem; font-size: 0.8rem; font-weight: 700; margin: 0.4rem 0; }
+html.modo-noche .insignia-restringido { background: rgba(239,68,68,0.12); color: #fca5a5; border-color: #7f1d1d; }
+.aviso-padron-acceso { background: #fffbeb; border: 1px solid #f59e0b; color: #78350f; border-radius: 8px; padding: 0.35rem 0.6rem; font-size: 0.82rem; font-weight: 700; margin-top: 0.4rem; }
+html.modo-noche .aviso-padron-acceso { background: rgba(245,158,11,0.12); color: #fde68a; border-color: #b45309; }

@@ -141,7 +141,7 @@ class Acceso extends Model
         'gafete_id', 'gafete_texto', 'modo_arribo', 'vehiculo_id', 'placas', 'zona_estacionamiento_id',
         'conductor', 'num_acompanantes', 'tiene_reserva', 'numero_reserva', 'tipo_pase', 'habitacion',
         'tipo_visita', 'departamento_id', 'viene_a', 'area_trabajo', 'actividad', 'tipo_emergencia', 'observaciones',
-        'entrada_at',
+        'entrada_at', 'aviso_padron',
     ];
 
     protected function casts(): array
@@ -149,6 +149,7 @@ class Acceso extends Model
         return [
             'entrada_at' => 'datetime', 'autorizado_at' => 'datetime', 'salida_at' => 'datetime',
             'tiene_reserva' => 'boolean', 'num_acompanantes' => 'integer',
+            'gafete_no_regreso' => 'boolean', 'identificacion_devuelta' => 'boolean',
         ];
     }
 

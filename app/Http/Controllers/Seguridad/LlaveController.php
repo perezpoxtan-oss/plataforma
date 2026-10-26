@@ -12,11 +12,13 @@ use App\Models\Llave;
 use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\User;
+use App\Services\Activos\CustodiaActivos;
 use App\Services\Lector\ImpresionDesdePadron;
 use App\Services\Llaves\AdministradorLlaves;
 use App\Services\Vouchers\RecuperacionVouchers;
 use App\Support\Csv;
 use App\Support\HoraLocal;
+use App\Support\Receptor;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
@@ -97,6 +99,8 @@ class LlaveController extends Controller
                 'imprimibles' => $this->llaves->idsEnAlcance($actor, 'llaves.imprimir'),
                 'costos' => $actor->can('llaves.eliminar') ? $this->llaves->costosSugeridos() : [],
                 // Para volver a mostrar al responsable elegido si el formulario regresa con errores
+                // C-16: lo elegido en el selector de responsable antes de que el formulario regresara con errores
+                'responsableBaja' => Receptor::anterior('responsable'),
                 'responsableAnterior' => old('colaborador_id') ? Colaborador::whereKey((int) old('colaborador_id'))->first(['id', 'num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno']) : null,
                 'puede' => [
                     'crear' => $puedeCrear && $crearSedes !== [],
@@ -108,6 +112,9 @@ class LlaveController extends Controller
                 // Mejoras padrones (ADR-0015): motivo y enlace del voucher de las llaves de baja
                 'vouchersBaja' => app(RecuperacionVouchers::class)->ultimosPorOrigen('llave', $lista->where('activo', false)->pluck('id')),
                 'puedeVerVouchers' => $actor->can('vouchers.ver'),
+                // C-14: a quién proponer en el voucher (quien la tenía al no regresar, o su responsable permanente)
+                'propuestas' => $actor->can('llaves.eliminar') ? $lista->filter(fn (Llave $l) => $l->activo && ($l->noRegreso() || $l->colaborador_id !== null))
+                    ->mapWithKeys(fn (Llave $l) => [$l->id => app(CustodiaActivos::class)->responsablePropuesto($l)])->all() : [],
             ]);
         });
     }
@@ -341,7 +348,7 @@ class LlaveController extends Controller
             'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno',
             'horarios', 'espacios:id,nombre,nivel,padre_id', 'espacios.padre:id,nombre', 'grupos:id,nombre',
             // Préstamo de llaves: insignia "EN USO" y "Usada por" (ver docs/tecnico/prestamo-llaves.md)
-            'prestamoAbierto:id,llave_id,colaborador_id,prestado_en', 'prestamoAbierto.colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno',
+            'prestamoAbierto:id,llave_id,colaborador_id,receptor_tipo,receptor_id,prestado_en', 'prestamoAbierto.colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno',
         ])->withExists(['prestamoAbierto as en_uso']);
     }
 

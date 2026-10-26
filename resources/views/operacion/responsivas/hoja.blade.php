@@ -5,7 +5,7 @@
 --}}
 @php
     $version = fn (string $archivo) => asset($archivo).'?v='.(@filemtime(public_path($archivo)) ?: '1');
-    $nombre = $responsiva->colaborador?->nombreCompleto() ?? '—';
+    $nombre = $responsiva->nombreReceptor();
 @endphp
 <!DOCTYPE html>
 <html lang="es">

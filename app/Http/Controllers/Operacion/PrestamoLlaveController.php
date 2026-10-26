@@ -14,6 +14,7 @@ use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
 use App\Support\AjustesCaseta;
 use App\Support\Csv;
 use App\Support\Entrada;
+use App\Support\EstadoActivo;
 use App\Support\HoraLocal;
 use App\Support\Lector\Etiqueta;
 use App\Support\Tenancy\EmpresaDeTrabajo;
@@ -64,10 +65,15 @@ class PrestamoLlaveController extends Controller
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $prestar) {
             $enUso = $this->consulta($actor, 'prestamo_llaves.ver')->vigentes()
                 ->orderByDesc('prestamos_llaves.prestado_en')->orderByDesc('prestamos_llaves.id')->get();
+            // C-14: las que no regresaron siguen a la vista (con «Recibir») mientras la llave no se dé de baja
+            $noRegresaron = $this->consulta($actor, 'prestamo_llaves.ver')->where('prestamos_llaves.estado', PrestamoLlave::NO_REGRESO)
+                ->where('prestamos_llaves.anulado', false)->whereHas('llave', fn ($q) => $q->where('estado', EstadoActivo::NO_REGRESO))
+                ->orderByDesc('prestamos_llaves.prestado_en')->get();
             $historial = $this->consulta($actor, 'prestamo_llaves.ver')
-                ->where(fn ($q) => $q->where('prestamos_llaves.estado', PrestamoLlave::DEVUELTA)->orWhere('prestamos_llaves.anulado', true))
+                ->where(fn ($q) => $q->whereIn('prestamos_llaves.estado', [PrestamoLlave::DEVUELTA, PrestamoLlave::NO_REGRESO])->orWhere('prestamos_llaves.anulado', true))
+                ->whereNotIn('prestamos_llaves.id', $noRegresaron->pluck('id'))
                 ->orderByDesc('prestamos_llaves.prestado_en')->orderByDesc('prestamos_llaves.id')->limit(self::HISTORIAL)->get();
-            $todos = $enUso->concat($historial);
+            $todos = $enUso->concat($noRegresaron)->concat($historial);
 
             // ADR-0014: semáforo de llaves fuera (Configuración → Caseta y activos; apagado por omisión)
             $ajustes = AjustesCaseta::de($empresaId);
@@ -81,19 +87,20 @@ class PrestamoLlaveController extends Controller
                 'sinEmpresa' => false,
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'enUso' => $enUso,
+                'noRegresaron' => $noRegresaron,
                 'historial' => $historial,
                 'sedesFiltro' => $todos->pluck('sede')->filter()->unique('id')->sortBy('nombre')->values(),
                 'sedesPrestar' => $sedesPrestar,
                 'sedeSugerida' => $this->sedeSugerida($actor, $sedesPrestar),
                 // Para avisar en el diálogo si la llave escaneada ya está fuera
                 'llavesFuera' => $enUso->pluck('llave_id')->map(fn ($id) => (int) $id)->values(),
-                'recibibles' => $this->prestamos->idsEnAlcance($actor, 'prestamo_llaves.editar', $enUso),
+                'recibibles' => $this->prestamos->idsEnAlcance($actor, 'prestamo_llaves.editar', $enUso->concat($noRegresaron)),
                 'anulables' => $this->prestamos->idsEnAlcance($actor, 'prestamo_llaves.eliminar', $todos),
                 'hoy' => Carbon::now(app(HoraLocal::class)->zona())->format('Y-m-d'),
                 'semaforo' => $semaforo,
                 // ADR-0014: «Prestar» desde el lector (QR de una llave en caseta): el diálogo abre con la llave elegida
                 'llavePrestar' => $prestar !== null && $puedePrestar
-                    ? Llave::where('activo', true)->whereIn('sede_id', $sedesPrestar->pluck('id'))->whereNotIn('id', $enUso->pluck('llave_id'))->find($prestar)
+                    ? Llave::enCaseta()->whereIn('sede_id', $sedesPrestar->pluck('id'))->whereNotIn('id', $enUso->pluck('llave_id'))->find($prestar)
                     : null,
                 'puede' => [
                     'prestar' => $puedePrestar && $sedesPrestar->isNotEmpty(),
@@ -125,7 +132,7 @@ class PrestamoLlaveController extends Controller
         }
 
         $prestamo->load(['llave:id,nomenclatura,descripcion', 'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno', 'entrego:id,name', 'sede:id,nombre']);
-        $mensaje = "Llave «{$prestamo->llave->nomenclatura}» entregada a {$prestamo->colaborador->nombreCompleto()}.";
+        $mensaje = "Llave «{$prestamo->llave->nomenclatura}» entregada a {$prestamo->nombreReceptor()}.";
 
         if ($request->expectsJson()) {
             $html = $this->tenant->conEmpresa($empresaId, fn () => view('operacion.prestamo-llaves._ficha', [
@@ -151,6 +158,29 @@ class PrestamoLlaveController extends Controller
     }
 
     /**
+     * C-14: «No regresó». Quien puede dar de baja llaves pasa directo a la
+     * baja con voucher (con quien la tenía como responsable propuesto); si
+     * no, su supervisor lo ve en la campana con el botón «Dar de baja».
+     */
+    public function noRegreso(Request $request, int $prestamo): RedirectResponse
+    {
+        Gate::authorize('prestamo_llaves.editar');
+        $puedeBaja = false;
+        $modelo = $this->accion($request, $prestamo, 'prestamo_llaves.editar', function (PrestamoLlave $p) use ($request, &$puedeBaja) {
+            $puedeBaja = $this->prestamos->noRegreso($request->user(), $p);
+        });
+        $llave = $modelo->llave?->nomenclatura;
+
+        if ($puedeBaja) {
+            return redirect()->to(route('llaves.index', ['baja' => $modelo->llave_id]).'#llave-'.$modelo->llave_id)
+                ->with('aviso', "La llave «{$llave}» quedó como «No regresó». Si no aparece, dala de baja aquí: el voucher ya propone a quien la tenía.");
+        }
+
+        return redirect()->route('prestamo_llaves.index')
+            ->with('aviso', "La llave «{$llave}» quedó como «No regresó» y ya no se puede prestar. Se avisó a tu supervisor para que la dé de baja; si aparece, recíbela con «Recibir».");
+    }
+
+    /**
      * ADR-0014: «Escanea la llave que te devuelven» en la pantalla principal
      * (como «Dar salida» de accesos): QR, NFC, lector USB o la nomenclatura.
      * Encuentra el préstamo vigente de esa llave dentro del alcance y lo recibe.
@@ -173,6 +203,13 @@ class PrestamoLlaveController extends Controller
             $vigentes = $this->prestamos->limitar(PrestamoLlave::query(), $actor, 'prestamo_llaves.editar')->vigentes()
                 ->whereIn('prestamos_llaves.llave_id', $llaves)->with('llave:id,nomenclatura', 'colaborador:id,nombre,apellido_paterno,apellido_materno')->get();
             if ($vigentes->isEmpty()) {
+                // C-14: una llave marcada «No regresó» que apareció
+                $vigentes = $this->prestamos->limitar(PrestamoLlave::query(), $actor, 'prestamo_llaves.editar')
+                    ->where('prestamos_llaves.estado', PrestamoLlave::NO_REGRESO)->where('prestamos_llaves.anulado', false)
+                    ->whereIn('prestamos_llaves.llave_id', Llave::whereIn('id', $llaves)->where('estado', EstadoActivo::NO_REGRESO)->pluck('id'))
+                    ->with('llave:id,nomenclatura', 'colaborador:id,nombre,apellido_paterno,apellido_materno')->latest('prestamos_llaves.prestado_en')->limit(1)->get();
+            }
+            if ($vigentes->isEmpty()) {
                 $fuera = PrestamoLlave::vigentes()->whereIn('llave_id', $llaves)->exists();
                 throw ValidationException::withMessages(['lectura' => $fuera
                     ? 'Esa llave está prestada en una sede donde no puedes recibir llaves.'
@@ -187,7 +224,7 @@ class PrestamoLlaveController extends Controller
             return $p;
         });
 
-        return redirect()->route('prestamo_llaves.index')->with('ok', "Llave «{$prestamo->llave?->nomenclatura}» recibida de {$prestamo->colaborador?->nombreCompleto()}. "
+        return redirect()->route('prestamo_llaves.index')->with('ok', "Llave «{$prestamo->llave?->nomenclatura}» recibida de {$prestamo->nombreReceptor()}. "
             .($prestamo->tipo_garantia === 'ninguna' ? 'No dejó identificación en garantía.' : 'Devuelve su garantía: '.$prestamo->textoGarantia().'.').' Escanea la siguiente si hay más.');
     }
 
@@ -267,7 +304,7 @@ class PrestamoLlaveController extends Controller
             foreach ($filas as $p) {
                 Csv::fila($salida, [
                     $p->folio(), $p->sede?->nombre, $p->llave?->nomenclatura, $p->llave?->descripcion, $p->colaborador?->num_empleado,
-                    $p->colaborador?->nombreCompleto(), $p->etiquetaGarantia(), $p->folio_garantia, $hora->formatear($p->prestado_en), $p->entrego?->name,
+                    $p->nombreReceptor(), $p->etiquetaGarantia(), $p->folio_garantia, $hora->formatear($p->prestado_en), $p->entrego?->name,
                     $p->devuelto_en ? $hora->formatear($p->devuelto_en) : 'PENDIENTE', $p->recibio?->name ?? ($p->devuelto_en ? '' : 'PENDIENTE'),
                     $p->etiquetaEstado(), $p->anulo?->name, $hora->formatear($p->anulado_en),
                 ]);

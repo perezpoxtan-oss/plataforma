@@ -5,6 +5,7 @@ use App\Support\BaseDatos\CatalogoChecks;
 use App\Support\BaseDatos\Restricciones;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Mantenimiento de la base (docs/tecnico/integridad-bd.md, «CHECK»): la base
@@ -33,6 +34,9 @@ return new class extends Migration
         foreach (CatalogoChecks::definiciones() as $tabla => $columnas) {
             $poner = [];
             foreach ($columnas as $columna => $valores) {
+                if (! Schema::hasColumn($tabla, $columna)) {
+                    continue; // la crea una migración posterior (C-14 agrega su propio CHECK)
+                }
                 $malos = Restricciones::fueraDeCatalogo($tabla, $columna, $valores);
                 if ($malos > 0) {
                     $omitidos["{$tabla}.{$columna}"] = $malos;

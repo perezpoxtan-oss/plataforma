@@ -21,6 +21,8 @@
         @if ($a->tipo === 'visita' && $acc)
             @if ($acc->persona_visita)<span><i class="bi bi-person" aria-hidden="true"></i> Visita a {{ $acc->persona_visita }}</span>@endif
             @if ($acc->empresa_procedencia)<span><i class="bi bi-building" aria-hidden="true"></i> {{ $acc->empresa_procedencia }}</span>@endif
+            {{-- C-13: lo que debe saber quien autoriza (empresa nueva, parecida a una restringida, no opera en la sede) --}}
+            @if ($acc->aviso_padron)<span class="aviso-padron-acceso"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> {{ $acc->aviso_padron }}</span>@endif
         @elseif ($c)
             <span><i class="bi bi-briefcase" aria-hidden="true"></i> {{ $c->puestoVisible() ?? 'Puesto sin definir' }}</span>
             @if ($c->escolaridadMaxima())<span><i class="bi bi-mortarboard" aria-hidden="true"></i> {{ $c->escolaridadMaxima() }}</span>@endif

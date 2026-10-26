@@ -7,7 +7,7 @@
 --}}
 @php
     $version = fn (string $archivo) => asset($archivo).'?v='.(@filemtime(public_path($archivo)) ?: '1');
-    $responsable = $voucher->colaborador ? $voucher->colaborador->nombreCompleto().' (Núm. '.$voucher->colaborador->num_empleado.')' : 'No especificado';
+    $responsable = $voucher->colaborador ? $voucher->colaborador->nombreCompleto().' (Núm. '.$voucher->colaborador->num_empleado.')' : ($voucher->nombreResponsable() ?? 'No especificado');
     $motivo = \App\Models\VoucherReposicion::MOTIVOS[$voucher->motivo] ?? $voucher->motivo;
 @endphp
 <!DOCTYPE html>
@@ -90,7 +90,7 @@
                     </div>
                     <div>
                         <div class="firma-espacio">@if ($voucher->firma_responsable)<img src="{{ route('vouchers.firma', [$voucher->id, 'responsable']) }}" alt="Firma del responsable" class="firma-impresa">@endif</div>
-                        <div class="firma-linea">Responsable{{ $voucher->colaborador ? ': '.$voucher->colaborador->nombreCompleto() : '' }}</div>
+                        <div class="firma-linea">Responsable{{ $voucher->nombreResponsable() ? ': '.$voucher->nombreResponsable() : '' }}</div>
                     </div>
                     <div><div class="firma-espacio"></div><div class="firma-linea">Recibe ({{ \Illuminate\Support\Str::after($copia, 'Copia ') }})</div></div>
                 </div>

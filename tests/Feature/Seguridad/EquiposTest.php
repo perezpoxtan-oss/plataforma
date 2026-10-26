@@ -406,8 +406,8 @@ class EquiposTest extends TestCase
         $demo = Empresa::where('nombre_comercial', CrearDatosDemo::EMPRESA)->firstOrFail();
         $equipos = $this->enEmpresa(fn () => Equipo::all(), $demo);
         $this->assertCount(12, $equipos);
-        // 3 siguen en resguardos demo de Responsivas (ASIGNADO); Ronda 8: uno ya regresó (devolución parcial)
-        $this->assertSame(['asignado' => 3, 'baja' => 1, 'disponible' => 7, 'en_mantenimiento' => 1], $equipos->countBy('estado')->sortKeys()->all());
+        // 3 siguen en resguardos demo de Responsivas (C-14: 2 de Turno = EN USO, 1 Fijo = ASIGNADO); Ronda 8: uno ya regresó (devolución parcial)
+        $this->assertSame(['asignado' => 1, 'baja' => 1, 'disponible' => 6, 'en_mantenimiento' => 1, 'en_uso' => 2, 'fuera' => 1], $equipos->countBy('estado')->sortKeys()->all());
         $this->assertSame(1, $this->enEmpresa(fn () => VoucherReposicion::where('origen_tipo', 'equipo')->count(), $demo));
         $zonas = $this->enEmpresa(fn () => ZonaEstacionamiento::all(), $demo);
         // Ronda 6 (ES-02): más «Patio de Maniobras», zona de descarga con capacidad de 4

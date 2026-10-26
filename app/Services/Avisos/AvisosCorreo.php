@@ -195,7 +195,7 @@ class AvisosCorreo
                 VoucherReposicion::MOTIVOS[$voucher->motivo] ?? $voucher->motivo,
                 (float) $voucher->monto,
                 $voucher->sede?->nombre,
-                $voucher->colaborador ? $voucher->colaborador->nombreCompleto().' (Núm. '.$voucher->colaborador->num_empleado.')' : null,
+                $voucher->colaborador ? $voucher->colaborador->nombreCompleto().' (Núm. '.$voucher->colaborador->num_empleado.')' : $voucher->nombreResponsable(),
                 $firma,
                 $registro->name,
                 $fecha,

@@ -169,6 +169,8 @@ class RegistroAccesos
             $zonaId = ZonaEstacionamiento::where('activo', true)->where('sede_id', $sedeId)->whereKey((int) $d['zona_estacionamiento_id'])->value('id');
             if ($zonaId === null) {
                 $errores['zona_estacionamiento_id'] = 'Elige una zona activa de esta sede (o déjalo «Sin asignar»).';
+            } elseif (($d['zona_llena'] ?? null) !== 'si' && ($llena = app(MovimientosAccesos::class)->zonaLlena((int) $zonaId)) !== null) {
+                $errores['zona_llena'] = $llena; // C-21: «Zona llena, ¿enviar de todos modos?»
             }
         }
         $conductor = $tipo === 'huesped' && $placas !== '' ? $this->mayusculas($d['conductor'] ?? null) : null;
@@ -215,6 +217,9 @@ class RegistroAccesos
             throw ValidationException::withMessages($errores);
         }
 
+        // ---------- C-13 (DD-07): acceso restringido y lo dado de baja, revisado al GUARDAR ----------
+        $avisoPadron = $this->revisarPadrones($tipo, $d, $nombre, $acompanantes, $sedeId, $placas);
+
         // ---------- Padrón de personas: "¿Es la misma persona?" ----------
         $personaId = null;
         $personaRepetida = null;
@@ -227,11 +232,26 @@ class RegistroAccesos
                 if ($elegida === null) {
                     throw ValidationException::withMessages(['nombre' => 'La persona elegida ya no está activa en el Padrón de personas. Escribe su nombre de nuevo.']);
                 }
+                if ($elegida->restringido()) {
+                    throw ValidationException::withMessages(['nombre' => "«{$elegida->nombre_completo}» no puede ingresar: {$elegida->textoRestriccion()}. Llama a tu supervisor."]);
+                }
                 $personaId = $elegida->id;
                 $nombre = $elegida->nombre_completo;
             } elseif (($d['persona_decision'] ?? null) !== 'distinta') {
                 $personaRepetida = Persona::where('activo', true)->where('tipo', $tipo)
                     ->whereRaw('LOWER(nombre_completo) = ?', [mb_strtolower((string) $nombre)])->orderBy('id')->first();
+                // C-13: si ya existía pero está dada de baja, la caseta la reactiva (antes se creaba otra igual)
+                if ($personaRepetida === null) {
+                    $deBaja = Persona::where('activo', false)->whereNull('fusionado_en_id')->where('verificacion', '!=', Persona::RECHAZADO)->where('tipo', $tipo)
+                        ->whereRaw('LOWER(nombre_completo) = ?', [mb_strtolower((string) $nombre)])->orderBy('id')->first();
+                    if ($deBaja !== null && ($d['persona_decision'] ?? null) !== 'misma') {
+                        throw ValidationException::withMessages(['persona_repetida' => '«'.$deBaja->nombre_completo.'» está dada de baja en el Padrón de personas. ¿Es la misma? Si es la misma, se reactiva al guardar.']);
+                    }
+                    $personaRepetida = $deBaja;
+                }
+                if ($personaRepetida !== null && $personaRepetida->restringido() && ($d['persona_decision'] ?? null) === 'misma') {
+                    throw ValidationException::withMessages(['nombre' => "«{$personaRepetida->nombre_completo}» no puede ingresar: {$personaRepetida->textoRestriccion()}. Llama a tu supervisor."]);
+                }
                 if ($personaRepetida !== null && ($d['persona_decision'] ?? null) !== 'misma') {
                     $empresa = $personaRepetida->empresaQueRepresenta();
                     throw ValidationException::withMessages(['persona_repetida' => 'Ya existe una persona registrada con este nombre: «'.$personaRepetida->nombre_completo.'»'
@@ -243,7 +263,7 @@ class RegistroAccesos
         $estado = in_array($tipo, Acceso::CON_AUTORIZACION, true) || $recepcion['esperar'] ? 'pendiente' : 'en_sitio'; // Recepción: visita que espera al departamento
 
         $acceso = DB::transaction(function () use ($terminos, $actor, $d, $tipo, $sedeId, $nombre, $colaborador, $host, $visita, $personaVisita, $motivo, $departamentoId,
-            $placas, $modo, $tipoVehiculo, $zonaId, $conductor, $gafete, $acompanantes, $personaId, $personaRepetida, $estado) {
+            $placas, $modo, $tipoVehiculo, $zonaId, $conductor, $gafete, $acompanantes, $personaId, $personaRepetida, $estado, $avisoPadron) {
             // Gafetes: se revisan otra vez con el registro bloqueado (dos casetas a la vez)
             foreach (array_filter([$gafete, ...array_column($acompanantes, 'gafete')]) as $g) {
                 Gafete::whereKey($g->id)->lockForUpdate()->first();
@@ -253,9 +273,13 @@ class RegistroAccesos
             }
 
             // Empresa externa: proveedor/contratista (procedencia) o agencia del huésped
-            [$proveedorId, $procedencia] = $this->empresaExterna($actor, $tipo, $d, $sedeId);
+            [$proveedorId, $procedencia, $avisoEmpresa] = $this->empresaExterna($actor, $tipo, $d, $sedeId);
+            $avisoPadron = implode(' · ', array_filter([$avisoPadron, $avisoEmpresa]));
 
             if (in_array($tipo, Acceso::AL_PADRON, true) && $personaId === null) {
+                if ($personaRepetida !== null && ! $personaRepetida->activo) {
+                    app(AdministradorPersonas::class)->cambiarEstado($actor, $personaRepetida, true); // C-13: «Reactivar» desde la caseta
+                }
                 $personaId = $personaRepetida?->id ?? $this->nuevaPersona($actor, $tipo, (string) $nombre, $proveedorId, $procedencia, $sedeId);
             }
 
@@ -308,6 +332,7 @@ class RegistroAccesos
                 'actividad' => in_array($tipo, Acceso::CON_AUTORIZACION, true) ? $this->texto($d['actividad'] ?? null) : null,
                 'tipo_emergencia' => $tipo === 'emergencia' ? ($d['tipo_emergencia'] ?? null) : null,
                 'observaciones' => $tipo === 'emergencia' ? $this->texto($d['observaciones'] ?? null, false) : null,
+                'aviso_padron' => $avisoPadron !== '' ? mb_substr($avisoPadron, 0, 255) : null,
                 'entrada_at' => now(),
             ]);
 
@@ -348,6 +373,9 @@ class RegistroAccesos
             'nombre' => ['nullable', 'string', 'max:150'],
             'persona_id' => ['nullable', 'integer'],
             'persona_decision' => ['nullable', Rule::in(['misma', 'distinta'])],
+            'restriccion_decision' => ['nullable', Rule::in(['misma', 'distinta'])],
+            'reactivar_decision' => ['nullable', Rule::in(['si'])],
+            'zona_llena' => ['nullable', Rule::in(['si'])],
             'colaborador_id' => ['nullable', 'integer'],
             'host_colaborador_id' => ['nullable', 'integer'],
             'visita_colaborador_id' => ['nullable', 'integer'],
@@ -433,6 +461,9 @@ class RegistroAccesos
         if (! $gafete->activo) {
             return [null, "El gafete {$gafete->nomenclatura} está dado de baja."];
         }
+        if ($gafete->noRegreso()) {
+            return [null, "El gafete {$gafete->nomenclatura} está marcado «No regresó». Si ya lo devolvieron, recíbelo en Gafetes; si no, elige otro."];
+        }
         if (! $gafete->disponibleParaAsignar()) {
             return [null, "El gafete {$gafete->nomenclatura} ya está en uso (EN SITIO). Pide que lo devuelvan o elige otro."];
         }
@@ -442,38 +473,39 @@ class RegistroAccesos
 
     /**
      * Proveedor/contratista: su empresa; huésped: la agencia vinculada. Se busca
-     * por nombre antes de crearla (SEGCAT: upsertEmpresaExt). Una empresa dada de
-     * baja (vetada) no puede ingresar como proveedor o contratista.
+     * por nombre antes de crearla (SEGCAT: upsertEmpresaExt).
+     *
+     * C-13 (DD-07): una empresa con el acceso restringido no puede ingresar
+     * como proveedor o contratista; una dada de baja (ya no se usaba) se
+     * reactiva si la caseta lo confirma. El tercer valor es lo que verá quien
+     * autoriza: «Empresa nueva, pendiente de verificar», «Parecida a una
+     * restringida» o «No está dada de alta en esta sede» (B-16).
      *
      * @param  array<string, mixed>  $d
-     * @return array{0: ?int, 1: ?string}
+     * @return array{0: ?int, 1: ?string, 2: ?string}
      */
     private function empresaExterna(User $actor, string $tipo, array $d, int $sedeId): array
     {
         $esProveedor = in_array($tipo, Acceso::CON_AUTORIZACION, true);
         if (! $esProveedor && $tipo !== 'huesped') {
-            return [null, null];
+            return [null, null, null];
         }
-        $idElegido = $esProveedor ? ($d['proveedor_id'] ?? null) : ($d['agencia_id'] ?? null);
-        $texto = AdministradorProveedores::normalizarNombre($d['empresa_procedencia'] ?? null);
-
-        $proveedor = $idElegido ? Proveedor::find((int) $idElegido) : null;
-        if ($proveedor === null && $texto !== '') {
-            $proveedor = $this->proveedores->buscarPorNombre($texto);
+        [$proveedor, $texto] = $this->proveedorCapturado($tipo, $d);
+        if ($proveedor !== null && $esProveedor && $proveedor->restringido()) {
+            throw ValidationException::withMessages(['empresa_procedencia' => "La empresa «{$proveedor->nombre}» no puede ingresar: {$proveedor->textoRestriccion()}. Llama a tu supervisor."]);
         }
-        // Altas por verificar: unida a otra = la correcta; rechazada = no se usa
-        $proveedor = $proveedor === null ? null : app(AltasPorVerificar::class)->paraOperacion('proveedores', $proveedor, 'empresa_procedencia');
         if ($proveedor !== null && ! $proveedor->activo) {
-            if ($esProveedor) {
-                throw ValidationException::withMessages(['empresa_procedencia' => "La empresa «{$proveedor->nombre}» está dada de baja (vetada) en Proveedores: no puede ingresar."]);
+            if (! $esProveedor) {
+                return [null, mb_strtoupper($proveedor->nombre), null];
             }
-
-            return [null, mb_strtoupper($proveedor->nombre)];
+            // Revisado antes (revisarPadrones): la caseta confirmó «Sí, reactivar»
+            app(AdministradorProveedores::class)->cambiarEstado($actor, $proveedor, true);
         }
         if ($proveedor === null && $texto === '') {
-            return [null, null];
+            return [null, null, null];
         }
 
+        $aviso = null;
         if ($proveedor === null) {
             $categoria = match ($tipo) {
                 'contratista' => 'contratista',
@@ -484,9 +516,108 @@ class RegistroAccesos
             $proveedor->sedes()->sync([$sedeId]);
             $this->auditoria->auditar($actor, 'proveedores.creado', $proveedor, null, $this->proveedores->foto($proveedor));
             app(AltasPorVerificar::class)->registrarAlta($actor, 'proveedores', $proveedor, 'accesos', $sedeId);
+            $aviso = $esProveedor ? 'Empresa nueva, pendiente de verificar' : null;
+        } elseif ($esProveedor && ! $proveedor->todas_las_sedes && ! $proveedor->sedes()->whereKey($sedeId)->exists()) {
+            $aviso = 'La empresa no está dada de alta en esta sede';
         }
 
-        return [$proveedor->id, mb_strtoupper($proveedor->nombre)];
+        return [$proveedor->id, mb_strtoupper($proveedor->nombre), $aviso];
+    }
+
+    /**
+     * La empresa elegida o escrita (unida a otra = la correcta; rechazada = no se usa).
+     *
+     * @param  array<string, mixed>  $d
+     * @return array{0: ?Proveedor, 1: string}
+     */
+    private function proveedorCapturado(string $tipo, array $d): array
+    {
+        $esProveedor = in_array($tipo, Acceso::CON_AUTORIZACION, true);
+        $idElegido = $esProveedor ? ($d['proveedor_id'] ?? null) : ($d['agencia_id'] ?? null);
+        $texto = AdministradorProveedores::normalizarNombre($d['empresa_procedencia'] ?? null);
+        $proveedor = $idElegido ? Proveedor::find((int) $idElegido) : null;
+        if ($proveedor === null && $texto !== '') {
+            $proveedor = $this->proveedores->buscarPorNombre($texto);
+        }
+
+        return [$proveedor === null ? null : app(AltasPorVerificar::class)->paraOperacion('proveedores', $proveedor, 'empresa_procedencia'), $texto];
+    }
+
+    /**
+     * C-13 (DD-07, B-02, B-10): antes de guardar.
+     *  - Persona, acompañante o empresa parecida a una restringida: se detiene
+     *    con «¿Es la misma?»; si es la misma no pasa, si es otra sigue y quien
+     *    autoriza lo ve («Parecida a una restringida»).
+     *  - Empresa o vehículo dado de baja, o vehículo de un colaborador dado de
+     *    baja: «¿Reactivar y continuar?».
+     *  - Vehículo restringido: no pasa.
+     *
+     * @param  array<string, mixed>  $d
+     * @param  list<array{nombre: ?string}>  $acompanantes
+     */
+    private function revisarPadrones(string $tipo, array $d, ?string $nombre, array $acompanantes, int $sedeId, string $placas): ?string
+    {
+        $revision = app(RevisionPadrones::class);
+        $decision = $d['restriccion_decision'] ?? null;
+        $avisos = [];
+
+        // Personas (titular y acompañantes con nombre) parecidas a una restringida
+        if (in_array($tipo, Acceso::AL_PADRON, true) || $acompanantes !== []) {
+            $nombres = array_filter([in_array($tipo, Acceso::AL_PADRON, true) && empty($d['persona_id']) ? $nombre : null, ...array_column($acompanantes, 'nombre')]);
+            foreach ($nombres as $quien) {
+                $restringida = $revision->personaRestringida($quien);
+                if ($restringida === null) {
+                    continue;
+                }
+                if ($decision === 'misma') {
+                    throw ValidationException::withMessages(['nombre' => "«{$restringida->nombre_completo}» no puede ingresar: {$restringida->textoRestriccion()}. Llama a tu supervisor."]);
+                }
+                if ($decision !== 'distinta') {
+                    throw ValidationException::withMessages(['parecido_restringido' => RevisionPadrones::mensajeParecido('«'.mb_strtoupper($quien).'»', $restringida->nombre_completo, $restringida->textoRestriccion())]);
+                }
+                $avisos[] = 'Parecida a una persona restringida («'.$restringida->nombre_completo.'»)';
+            }
+        }
+
+        // Empresa externa
+        if (in_array($tipo, Acceso::CON_AUTORIZACION, true)) {
+            [$proveedor, $texto] = $this->proveedorCapturado($tipo, $d);
+            if ($proveedor === null && $texto !== '') {
+                $restringida = $revision->proveedorRestringido($texto);
+                if ($restringida !== null && $decision === 'misma') {
+                    throw ValidationException::withMessages(['empresa_procedencia' => "La empresa «{$restringida->nombre}» no puede ingresar: {$restringida->textoRestriccion()}. Llama a tu supervisor."]);
+                }
+                if ($restringida !== null && $decision !== 'distinta') {
+                    throw ValidationException::withMessages(['parecido_restringido' => RevisionPadrones::mensajeParecido('La empresa «'.$texto.'»', $restringida->nombre, $restringida->textoRestriccion())]);
+                }
+                if ($restringida !== null) {
+                    $avisos[] = 'Parecida a una empresa restringida («'.$restringida->nombre.'»)';
+                }
+            }
+            if ($proveedor !== null && ! $proveedor->activo && ! $proveedor->restringido() && ($d['reactivar_decision'] ?? null) !== 'si') {
+                throw ValidationException::withMessages(['reactivar' => "La empresa «{$proveedor->nombre}» está dada de baja en Empresas externas (ya no se usaba). ¿Volvió a trabajar con ustedes? Si continúas, se reactiva."]);
+            }
+        }
+
+        // Vehículo
+        if ($placas !== '') {
+            $vehiculo = $this->vehiculos->conPlacas($placas);
+            $vehiculo = $vehiculo === null ? null : app(AltasPorVerificar::class)->paraOperacion('vehiculos', $vehiculo, 'placas');
+            if ($vehiculo !== null && $vehiculo->restringido()) {
+                throw ValidationException::withMessages(['placas' => "El vehículo {$vehiculo->placas} no puede ingresar: {$vehiculo->textoRestriccion()}. Llama a tu supervisor."]);
+            }
+            $duenoDeBaja = $vehiculo?->colaborador_id !== null && ! (bool) $vehiculo->colaborador?->activo;
+            if ($vehiculo !== null && (! $vehiculo->activo || $duenoDeBaja) && ($d['reactivar_decision'] ?? null) !== 'si') {
+                throw ValidationException::withMessages(['reactivar' => ! $vehiculo->activo
+                    ? "El vehículo {$vehiculo->placas} está dado de baja en el Padrón vehicular. ¿Es el mismo y vuelve a entrar? Si continúas, se reactiva."
+                    : "El vehículo {$vehiculo->placas} es de un colaborador dado de baja ({$vehiculo->colaborador?->nombreCompleto()}). ¿Lo dejas pasar?"]);
+            }
+            if ($duenoDeBaja) {
+                $avisos[] = 'Vehículo de un colaborador dado de baja';
+            }
+        }
+
+        return $avisos === [] ? null : implode(' · ', $avisos);
     }
 
     private function nuevaPersona(User $actor, string $tipo, string $nombre, ?int $proveedorId, ?string $procedencia, ?int $sedeId = null): int
@@ -522,6 +653,9 @@ class RegistroAccesos
         if ($existente !== null) {
             // Altas por verificar: unido a otro = el correcto; rechazado = no se usa
             $existente = app(AltasPorVerificar::class)->paraOperacion('vehiculos', $existente, 'placas');
+            if (! $existente->activo && ! $existente->restringido()) {
+                $this->vehiculos->cambiarEstado($actor, $existente, true); // C-13: «Reactivar» confirmado en la caseta
+            }
             $faltantes = array_filter($datos, fn ($v, $campo) => $existente->{$campo} === null || $existente->{$campo} === '', ARRAY_FILTER_USE_BOTH);
             if ($faltantes !== []) {
                 $antes = $this->vehiculos->foto($existente);

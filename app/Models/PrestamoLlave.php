@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
+use App\Support\Receptor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * bitacora_llaves): quién se la llevó, qué identificación dejó en garantía,
  * quién la entregó y quién la recibió de vuelta.
  *
- * Estados: en_uso → devuelta. "anulado" marca una captura equivocada (llave o
+ * Estados: en_uso → devuelta, o en_uso → no_regreso → devuelta (apareció). "anulado" marca una captura equivocada (llave o
  * colaborador equivocado por las prisas): no se borra, pero deja de contar y
  * la llave vuelve a estar disponible. Se puede reactivar si la llave no se
  * volvió a prestar mientras tanto.
@@ -27,6 +28,9 @@ class PrestamoLlave extends Model
     public const EN_USO = 'en_uso';
 
     public const DEVUELTA = 'devuelta';
+
+    /** C-14: la llave no regresó (la caseta lo marca; se recibe si aparece o se da de baja con voucher). */
+    public const NO_REGRESO = 'no_regreso';
 
     /** clave => texto en pantalla (SEGCAT: tipo_id_garantia, en mayúsculas) */
     public const GARANTIAS = [
@@ -48,7 +52,7 @@ class PrestamoLlave extends Model
 
     protected $attributes = ['estado' => self::EN_USO, 'anulado' => false];
 
-    protected $fillable = ['empresa_id', 'sede_id', 'llave_id', 'colaborador_id', 'tipo_garantia', 'folio_garantia'];
+    protected $fillable = ['empresa_id', 'sede_id', 'llave_id', 'colaborador_id', 'receptor_tipo', 'receptor_id', 'tipo_garantia', 'folio_garantia', 'excepcion_motivo'];
 
     protected function casts(): array
     {
@@ -73,6 +77,28 @@ class PrestamoLlave extends Model
     public function colaborador(): BelongsTo
     {
         return $this->belongsTo(Colaborador::class);
+    }
+
+    /**
+     * C-16: quien recibió (colaborador, persona del padrón o empresa
+     * externa). Los registros de antes solo tienen colaborador.
+     */
+    public function receptor(): ?Model
+    {
+        // Con consultas que traen solo algunas columnas, se usa el colaborador (como antes)
+        $tipo = $this->attributes['receptor_tipo'] ?? Receptor::COLABORADOR;
+        $id = $this->attributes['receptor_id'] ?? ($this->attributes['colaborador_id'] ?? null);
+        if ($tipo === Receptor::COLABORADOR && $this->relationLoaded('colaborador') && (int) $this->colaborador?->id === (int) $id) {
+            return $this->colaborador;
+        }
+
+        return Receptor::cargar($tipo, $id === null ? null : (int) $id);
+    }
+
+    /** «Juan Pérez», «Juan Pérez (Elevadores del Sur)» o «Elevadores del Sur». */
+    public function nombreReceptor(): string
+    {
+        return Receptor::nombreDe($this->receptor());
     }
 
     public function entrego(): BelongsTo
@@ -124,6 +150,7 @@ class PrestamoLlave extends Model
         return match (true) {
             $this->anulado => 'ANULADO',
             $this->estado === self::EN_USO => 'EN USO',
+            $this->estado === self::NO_REGRESO => 'NO REGRESÓ',
             default => 'DEVUELTA',
         };
     }

@@ -180,9 +180,12 @@ class AccesoController extends Controller
         Gate::authorize('accesos.editar');
 
         return $this->mover($request, $acceso, 'accesos.editar', function (Acceso $a) use ($request) {
-            $this->movimientos->salida($request->user(), $a);
+            // C-15: «¿Devolvió el gafete?» y «Le devolví su identificación» (ya marcadas en el diálogo)
+            $noRegresaron = $this->movimientos->salida($request->user(), $a, $request->only(['gafetes_revisados', 'devolvio', 'identificacion_revisada', 'identificacion_devuelta']));
 
-            return "Salida de {$a->nombre} registrada correctamente.";
+            return "Salida de {$a->nombre} registrada correctamente."
+                .($noRegresaron === [] ? '' : ' '.(count($noRegresaron) === 1 ? 'El gafete '.$noRegresaron[0].' quedó' : 'Los gafetes '.implode(', ', $noRegresaron).' quedaron')
+                    .' como «No regresó» y ya no se prestará; se avisó a tu supervisor para darlo de baja con voucher. Si lo devuelven, recíbelo en Gafetes.');
         });
     }
 
@@ -191,7 +194,7 @@ class AccesoController extends Controller
         Gate::authorize('accesos.editar');
 
         return $this->mover($request, $acceso, 'accesos.editar', function (Acceso $a) use ($request) {
-            $this->movimientos->cambiarZona($request->user(), $a, $request->input('zona_estacionamiento_id'));
+            $this->movimientos->cambiarZona($request->user(), $a, $request->input('zona_estacionamiento_id'), $request->input('zona_llena') === 'si');
 
             return 'Zona de estacionamiento actualizada.';
         });

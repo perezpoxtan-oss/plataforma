@@ -7,11 +7,13 @@ use App\Models\Sede;
 use App\Models\TipoEquipo;
 use App\Models\User;
 use App\Models\VoucherReposicion;
+use App\Services\Activos\CustodiaActivos;
 use App\Services\Inventarios\Vouchers;
 use App\Services\Lector\Identificacion;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
+use App\Support\EstadoActivo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
@@ -154,12 +156,20 @@ class AdministradorEquipos
      * Baja con voucher de reposición (Extraviado | Dañado | Robado). El
      * voucher lo emite el servicio común, en la misma transacción.
      *
+     * C-14: desde el catálogo no se da de baja un equipo EN USO, ASIGNADO o
+     * FUERA (el mensaje manda a Responsivas o a Pases de salida). Esos módulos
+     * lo dan de baja ellos mismos ($desdeSuModulo): «Faltante» de una
+     * responsiva o «Cerrar con faltantes» de un pase.
+     *
      * @param  array<string, mixed>  $entrada
      */
-    public function darDeBaja(User $actor, Equipo $equipo, array $entrada): VoucherReposicion
+    public function darDeBaja(User $actor, Equipo $equipo, array $entrada, bool $desdeSuModulo = false): VoucherReposicion
     {
         if ($equipo->estado === 'baja') {
             throw ValidationException::withMessages(['motivo' => 'Este equipo ya está dado de baja.']);
+        }
+        if (! $desdeSuModulo) {
+            app(CustodiaActivos::class)->exigirBajaPermitida($equipo);
         }
         $datos = $this->vouchers->validar($entrada);
         $equipo->loadMissing('tipo:id,nombre');
@@ -170,6 +180,7 @@ class AdministradorEquipos
             $this->referenciaCosto($equipo));
 
         $this->auditoria->auditar($actor, 'equipos.desactivado', $equipo, $antes, $this->foto($equipo) + ['voucher' => $voucher->folio]);
+        app(CustodiaActivos::class)->resolverNoRegreso($equipo, 'equipo');
 
         return $voucher;
     }
@@ -188,19 +199,23 @@ class AdministradorEquipos
     }
 
     /**
-     * Punto de enganche para Responsivas (aún no migrado): al prestar un
-     * equipo queda ASIGNADO y al devolverlo vuelve a DISPONIBLE. Solo cambia
-     * equipos disponibles o asignados (uno en mantenimiento o de baja no se presta).
+     * Responsivas: al entregar un equipo DISPONIBLE queda EN USO (Turno) o
+     * ASIGNADO (Fijo) (C-14); al recibirlo vuelve a DISPONIBLE (también si
+     * estaba NO REGRESÓ y apareció). Uno en mantenimiento, fuera o de baja no se entrega.
      */
-    public function asignarPorResponsiva(User $actor, Equipo $equipo, bool $asignado): void
+    public function asignarPorResponsiva(User $actor, Equipo $equipo, bool $asignado, string $modalidad = 'asignado'): void
     {
-        $esperado = $asignado ? 'disponible' : 'asignado';
-        if ($equipo->estado !== $esperado) {
-            throw ValidationException::withMessages(['equipo' => "El equipo {$equipo->numero_serie} no está ".mb_strtolower(Equipo::ESTADOS[$esperado]).'.']);
+        $esperados = $asignado ? [EstadoActivo::DISPONIBLE] : [...EstadoActivo::EN_RESGUARDO, EstadoActivo::NO_REGRESO];
+        if (! in_array($equipo->estado, $esperados, true)) {
+            throw ValidationException::withMessages(['equipo' => "El equipo {$equipo->numero_serie} no está ".($asignado ? 'disponible' : 'en una responsiva').' (está '.EstadoActivo::texto($equipo->estado).').']);
         }
-        $nuevo = $asignado ? 'asignado' : 'disponible';
+        $antes = $equipo->estado;
+        $nuevo = $asignado ? ($modalidad === 'prestado' ? EstadoActivo::EN_USO : EstadoActivo::ASIGNADO) : EstadoActivo::DISPONIBLE;
         $equipo->forceFill(['estado' => $nuevo])->save();
-        $this->auditoria->auditar($actor, $asignado ? 'equipos.asignado' : 'equipos.devuelto', $equipo, ['estado' => $esperado], ['estado' => $nuevo]);
+        $this->auditoria->auditar($actor, $asignado ? 'equipos.asignado' : 'equipos.devuelto', $equipo, ['estado' => $antes], ['estado' => $nuevo]);
+        if ($antes === EstadoActivo::NO_REGRESO) {
+            app(CustodiaActivos::class)->resolverNoRegreso($equipo, 'equipo');
+        }
     }
 
     /**
@@ -209,11 +224,12 @@ class AdministradorEquipos
      */
     public function recibirDanadoDeResponsiva(User $actor, Equipo $equipo): void
     {
-        if ($equipo->estado !== 'asignado') {
-            throw ValidationException::withMessages(['equipo' => "El equipo {$equipo->numero_serie} no está asignado."]);
+        if (! in_array($equipo->estado, [...EstadoActivo::EN_RESGUARDO, EstadoActivo::NO_REGRESO], true)) {
+            throw ValidationException::withMessages(['equipo' => "El equipo {$equipo->numero_serie} no está en una responsiva."]);
         }
+        $antes = $equipo->estado;
         $equipo->forceFill(['estado' => 'en_mantenimiento'])->save();
-        $this->auditoria->auditar($actor, 'equipos.devuelto', $equipo, ['estado' => 'asignado'], ['estado' => 'en_mantenimiento']);
+        $this->auditoria->auditar($actor, 'equipos.devuelto', $equipo, ['estado' => $antes], ['estado' => 'en_mantenimiento']);
     }
 
     // --------------------------------------------------------------- Validación

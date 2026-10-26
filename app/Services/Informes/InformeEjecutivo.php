@@ -207,7 +207,7 @@ class InformeEjecutivo
         $total = $this->limitar(Llave::query()->where('llaves.activo', true), $actor, $permiso, $sedes, 'llaves.sede_id')->count();
         $filas = (clone $prestamos)->with(['llave:id,nomenclatura,descripcion', 'colaborador:id,nombre,apellido_paterno,apellido_materno'])
             ->orderBy('prestamos_llaves.prestado_en')->limit(self::MAX_FILAS)->get(['prestamos_llaves.id', 'llave_id', 'colaborador_id', 'prestado_en'])
-            ->map(fn (PrestamoLlave $p) => [$p->llave?->nomenclatura ?? '—', $p->llave?->descripcion ?? '—', $p->colaborador?->nombreCompleto() ?? '—', $this->hora->formatear($p->prestado_en, 'd/m/Y H:i')])->all();
+            ->map(fn (PrestamoLlave $p) => [$p->llave?->nomenclatura ?? '—', $p->llave?->descripcion ?? '—', $p->nombreReceptor(), $this->hora->formatear($p->prestado_en, 'd/m/Y H:i')])->all();
 
         return [$this->ficha('Llaves en uso (de '.number_format($total).')', number_format($enUso), [
             'nivel' => 'destacada',
@@ -220,7 +220,7 @@ class InformeEjecutivo
     {
         $q = $this->limitar(Equipo::query()->where('equipos.estado', '!=', 'baja'), $actor, $permiso, $sedes, 'equipos.sede_id', 'equipos.creado_por');
         $porEstado = Indicadores::por($q, 'equipos.estado', Equipo::ESTADOS);
-        $asignados = $porEstado[Equipo::ESTADOS['asignado']] ?? 0;
+        $asignados = ($porEstado[Equipo::ESTADOS['asignado']] ?? 0) + ($porEstado[Equipo::ESTADOS['en_uso']] ?? 0);
         $filas = (clone $q)->with('tipo:id,nombre')->orderBy('equipos.estado')->limit(self::MAX_FILAS)->get(['equipos.id', 'tipo_equipo_id', 'marca', 'modelo', 'numero_serie', 'estado'])
             ->map(fn (Equipo $e) => [$e->tipo?->nombre ?? '—', trim(($e->marca ?? '').' '.($e->modelo ?? '')) ?: '—', $e->numero_serie ?: '—', Equipo::ESTADOS[$e->estado] ?? $e->estado])->all();
 

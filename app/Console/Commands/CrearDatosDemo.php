@@ -108,6 +108,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Empresa ficticia con dos sedes y un usuario por cada rol, para probar en QA
@@ -1395,8 +1396,17 @@ class CrearDatosDemo extends Command
                         continue;
                     }
                     auth()->setUser($actor);
-                    $p = $prestamos->prestar($actor, ['sede_id' => $sedes[$sede]->id, 'llave_id' => $llaveId, 'colaborador_id' => $colaboradorId,
-                        'tipo_garantia' => $garantia, 'folio_garantia' => $folio]);
+                    $datos = ['sede_id' => $sedes[$sede]->id, 'llave_id' => $llaveId, 'colaborador_id' => $colaboradorId,
+                        'tipo_garantia' => $garantia, 'folio_garantia' => $folio];
+                    try {
+                        $p = $prestamos->prestar($actor, $datos);
+                    } catch (ValidationException $e) {
+                        // C-17: a la hora en que corre la demo la llave puede estar fuera de su horario: se presta con motivo
+                        if (! isset($e->errors()['excepcion_motivo'])) {
+                            throw $e;
+                        }
+                        $p = $prestamos->prestar($actor, $datos + ['excepcion_motivo' => 'Préstamo de ejemplo']);
+                    }
                     $p->forceFill(['prestado_en' => now()->subMinutes($hace)])->save();
                     if ($despues === 'recibir') {
                         $prestamos->recibir($actor, $p);
@@ -1565,7 +1575,8 @@ class CrearDatosDemo extends Command
             $pases->rechazar($director, $rechazado->refresh(), ['motivo_rechazo' => 'Falta la cotización del proveedor: adjúntala y reenvía.']);
 
             // 4. Cancelado por quien lo registró
-            $cancelado = $crear($agente, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1009'), 'destino_tipo' => 'colaborador', 'colaborador_destino_id' => $colaborador('1009'),
+            // C-18: «un colaborador se lo lleva» ya no es un pase (es una responsiva): la escalera iba a un contratista
+            $cancelado = $crear($agente, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1009'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
                 'fecha_salida_programada' => $dia(0), 'fecha_tentativa_regreso' => $dia(2)],
                 [['cantidad' => 1, 'equipo' => 'Escalera de aluminio', 'marca' => 'CUPRUM', 'descripcion' => '6 peldaños']]);
             auth()->setUser($agente);
@@ -1649,11 +1660,11 @@ class CrearDatosDemo extends Command
             $paso($parcial, $agente, 'CARLOS PÉREZ GÓMEZ', ['regresa' => [$parcial->articulos->first()->id => 2],
                 'comentario' => 'El proveedor regresa los otros 2 el viernes.']);
 
-            // 11. Regresado y cerrado (laptop bajo resguardo de un colaborador): salió un día después de lo programado
+            // 11. Regresado y cerrado (laptop prestada a un proveedor): salió un día después de lo programado
             $en(-10, '12:00');
-            $regresado = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'colaborador', 'colaborador_destino_id' => $colaborador('1005'),
+            $regresado = $crear($admin, ['sede_id' => $sedes['CEN']->id, 'motivo' => 'prestamo', 'colaborador_id' => $colaborador('1006'), 'destino_tipo' => 'proveedor', 'proveedor_id' => $proveedor('Constructora Maya'),
                 'fecha_salida_programada' => $dia(-9), 'fecha_tentativa_regreso' => $dia(-2)],
-                [['cantidad' => 1, 'equipo' => 'Laptop', 'marca' => 'LENOVO', 'modelo' => 'L14', 'serie' => 'ABC123LATCAT', 'descripcion' => 'Bajo resguardo de Sistemas, para home office']]);
+                [['cantidad' => 1, 'equipo' => 'Laptop', 'marca' => 'LENOVO', 'modelo' => 'L14', 'serie' => 'ABC123LATCAT', 'descripcion' => 'Préstamo al proveedor para levantar la obra']]);
             $en(-10, '16:30');
             $aprobar($regresado, 3);
             $en(-8, '08:30');

@@ -61,6 +61,9 @@
                 <dt>Motivo</dt><dd>{{ $acc->motivo_visita ? $acc->etiquetaMotivo() : '—' }}</dd>
                 <dt>Visita a</dt><dd>{{ $acc->persona_visita ?? $a->departamento?->nombre }}</dd>
                 <dt>Viene de</dt><dd>{{ $acc->empresa_procedencia ?? '—' }}</dd>
+                @if ($acc->aviso_padron)
+                    <dt>Atención</dt><dd><span class="aviso-padron-acceso"><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> {{ $acc->aviso_padron }}</span></dd>
+                @endif
                 <dt>Llegó a caseta</dt><dd>@fecha($acc->entrada_at)</dd>
             </dl>
         @elseif ($c)

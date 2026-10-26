@@ -257,7 +257,7 @@ class Tablero
         $filas = (clone $base)->with(['llave:id,nomenclatura,descripcion', 'colaborador:id,nombre,apellido_paterno,apellido_materno', 'sede:id,nombre'])
             ->orderBy('prestamos_llaves.prestado_en')->limit(self::MAX_FILAS)
             ->get(['prestamos_llaves.id', 'llave_id', 'colaborador_id', 'prestamos_llaves.sede_id', 'prestado_en'])
-            ->map(fn (PrestamoLlave $p) => [$p->llave?->nomenclatura ?? '—', $p->llave?->descripcion ?? '—', $p->colaborador?->nombreCompleto() ?? '—', $this->hora->formatear($p->prestado_en, 'd/m/Y H:i'), $p->sede?->nombre ?? '—'])->all();
+            ->map(fn (PrestamoLlave $p) => [$p->llave?->nomenclatura ?? '—', $p->llave?->descripcion ?? '—', $p->nombreReceptor(), $this->hora->formatear($p->prestado_en, 'd/m/Y H:i'), $p->sede?->nombre ?? '—'])->all();
 
         return [
             'grafica' => GraficaSvg::barras(['En uso' => $enUso, 'Disponibles' => max(0, $total - $enUso)], 'Llaves en uso y disponibles'),
@@ -401,9 +401,14 @@ class Tablero
 
     private function resumenEquipos(User $actor, ?array $sedes): array
     {
-        $c = Indicadores::conteos($this->equipos($actor, $sedes), ['asignados' => "equipos.estado = 'asignado'", 'total' => '1 = 1']);
+        // C-14 / C-18: a cargo de alguien (EN USO o ASIGNADO) y, aparte, los que están FUERA en un pase o no regresaron
+        $c = Indicadores::conteos($this->equipos($actor, $sedes), [
+            'asignados' => "equipos.estado IN ('asignado', 'en_uso')", 'fuera' => "equipos.estado = 'fuera'", 'no_regreso' => "equipos.estado = 'no_regreso'", 'total' => '1 = 1',
+        ]);
+        $extra = array_filter([$c['fuera'] > 0 ? number_format($c['fuera']).' fuera en pases' : null, $c['no_regreso'] > 0 ? number_format($c['no_regreso']).' no regresaron' : null]);
 
-        return ['valor' => number_format($c['asignados']).' / '.number_format($c['total']), 'nota' => 'Asignados del total (sin bajas)', 'enlace' => route('equipos.index')];
+        return ['valor' => number_format($c['asignados']).' / '.number_format($c['total']), 'nota' => 'A cargo de alguien, del total (sin bajas)'.($extra ? ' · '.implode(' · ', $extra) : ''),
+            'nivel' => $c['no_regreso'] > 0 ? 'alerta' : null, 'enlace' => route('equipos.index')];
     }
 
     private function detalleEquipos(User $actor, ?array $sedes): array

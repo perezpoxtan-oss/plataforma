@@ -101,7 +101,7 @@
                         <div><span>Origen:</span> <strong>{{ $v->etiquetaOrigen() }}</strong></div>
                         <div><span>Motivo:</span> <strong>{{ \App\Models\VoucherReposicion::MOTIVOS[$v->motivo] ?? $v->motivo }}</strong></div>
                         <div><span>Sede:</span> <strong>{{ $v->sede?->nombre ?? '—' }}</strong></div>
-                        <div><span>Responsable:</span> <strong>{{ $v->colaborador ? $v->colaborador->nombreCompleto() : 'No especificado' }}</strong></div>
+                        <div><span>Responsable:</span> <strong>{{ $v->nombreResponsable() ?? 'No especificado' }}</strong></div>
                         @if ($v->aplica_cobro)
                             <div><span>Monto:</span> <strong class="voucher-monto">${{ number_format((float) $v->monto, 2) }}</strong></div>
                         @endif

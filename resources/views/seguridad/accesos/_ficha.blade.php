@@ -70,6 +70,10 @@
     @if ($a->empresa_procedencia)
         <div class="ficha-acceso-empresa"><i class="bi bi-building me-1" aria-hidden="true"></i>{{ $a->empresa_procedencia }}</div>
     @endif
+    @if ($a->aviso_padron && $modo !== 'historial')
+        {{-- C-13: empresa nueva, parecida a una restringida o que no opera en esta sede --}}
+        <div class="aviso-padron-acceso"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>{{ $a->aviso_padron }}</div>
+    @endif
     @if ($variasSedes)
         <div class="ficha-acceso-sede"><i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ $a->sede?->nombre }}</div>
     @endif
@@ -91,7 +95,15 @@
                 <div><strong>Acompañantes:</strong> {{ $a->num_acompanantes }}</div>
             @endif
             @if ($a->movimiento === 'entrada')
-                <div class="texto-devuelta"><i class="bi bi-check2-all me-1" aria-hidden="true"></i>ID Devuelta por: {{ $a->salidaPor?->name ?? '—' }}</div>
+                {{-- C-15: lo que confirmó la caseta al dar salida --}}
+                @if ($a->identificacion_devuelta === false)
+                    <div class="texto-devuelta no-devuelta"><i class="bi bi-person-vcard me-1" aria-hidden="true"></i>ID quedó en caseta (no se le devolvió) · {{ $a->salidaPor?->name ?? '—' }}</div>
+                @else
+                    <div class="texto-devuelta"><i class="bi bi-check2-all me-1" aria-hidden="true"></i>ID Devuelta por: {{ $a->salidaPor?->name ?? '—' }}</div>
+                @endif
+                @if ($a->gafete_no_regreso || $a->acompanantes->contains('gafete_no_regreso', true))
+                    <div class="texto-devuelta no-devuelta"><i class="bi bi-exclamation-octagon me-1" aria-hidden="true"></i>No devolvió: {{ collect([$a->gafete_no_regreso ? $a->gafete_texto : null])->merge($a->acompanantes->where('gafete_no_regreso', true)->pluck('gafete_texto'))->filter()->join(', ') }}</div>
+                @endif
             @endif
         </div>
     @else
@@ -258,11 +270,17 @@
                             data-url="{{ route('accesos.salida-temporal', $a->id) }}" data-nombre="{{ $a->nombre }}"
                             data-titulo="{{ $a->textoSalidaTemporal() }}"><i class="bi bi-signpost-split me-1" aria-hidden="true"></i>{{ $a->textoSalidaTemporal() }}</button>
                 @endif
-                <form action="{{ route('accesos.salida', $a->id) }}" method="POST" class="m-0 {{ $a->admiteSalidaTemporal() ? 'mitad' : 'w-100' }}" data-confirmar="{{ $confirmarSalida }}">
-                    @csrf
-                    @method('PATCH')
-                    <button type="submit" class="btn-accion-acceso salida"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>{{ $a->tipo === 'huesped' ? 'Salida Final' : 'Registrar Salida' }}</button>
-                </form>
+                @if ($pedir !== '')
+                    {{-- C-15: con gafete o identificación en custodia, el mismo diálogo de «Dar salida» con sus casillas ya marcadas --}}
+                    <button type="button" class="btn-accion-acceso salida {{ $a->admiteSalidaTemporal() ? 'mitad' : 'w-100' }}" title="{{ $confirmarSalida }}"
+                            data-dar-salida="{{ json_encode(app(\App\Services\Accesos\ConsultaAccesos::class)->resumen($a)) }}"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>{{ $a->tipo === 'huesped' ? 'Salida Final' : 'Registrar Salida' }}</button>
+                @else
+                    <form action="{{ route('accesos.salida', $a->id) }}" method="POST" class="m-0 {{ $a->admiteSalidaTemporal() ? 'mitad' : 'w-100' }}" data-confirmar="{{ $confirmarSalida }}">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="btn-accion-acceso salida"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>{{ $a->tipo === 'huesped' ? 'Salida Final' : 'Registrar Salida' }}</button>
+                    </form>
+                @endif
             @endif
         </div>
     @endif

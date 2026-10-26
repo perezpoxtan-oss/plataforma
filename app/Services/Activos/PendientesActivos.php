@@ -15,6 +15,7 @@ use App\Services\Transporte\BitacoraTransporte;
 use App\Support\AjustesCaseta;
 use App\Support\RelojVoBo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Renglones de «Mis pendientes» de Transporte, Procedimientos, Préstamo de
@@ -70,6 +71,24 @@ class PendientesActivos
                 ->map(fn (Responsiva $r) => $servicio->regresoTurno($r, $ajustes)['nivel'] ?? null)->filter();
             $items[] = $this->item('equipos_turno', 'Equipos de turno sin regresar', 'bi-broadcast-pin', $niveles->count(), route('responsivas.index'),
                 $niveles->contains('rojo') ? 'roja' : ($niveles->isNotEmpty() ? 'ambar' : null));
+        }
+
+        // C-14 / C-15 / C-20: llaves, gafetes y equipos que no regresaron (esperan recibirse o su baja con voucher)
+        $tablas = array_filter(['llaves' => 'llaves.eliminar', 'gafetes' => 'gafetes.eliminar', 'equipos' => 'equipos.eliminar'], fn (string $p) => $actor->can($p));
+        if ($tablas !== []) {
+            $autorizador = app(Autorizador::class);
+            $partes = [];
+            $valores = [];
+            foreach ($tablas as $tabla => $permiso) {
+                $sedes = $actor->es_superadmin ? null : $autorizador->sedesPermitidas($actor, $permiso);
+                $partes[] = "(select count(*) from {$tabla} where empresa_id = ? and estado = 'no_regreso'".($sedes === null ? '' : ($sedes === [] ? ' and 1 = 0' : ' and sede_id in ('.implode(',', array_fill(0, count($sedes), '?')).')')).") as {$tabla}";
+                $valores = [...$valores, $empresaId, ...($sedes ?? [])];
+            }
+            $fila = (array) DB::selectOne('select '.implode(', ', $partes), $valores);
+            $total = array_sum(array_map('intval', $fila));
+            $primera = collect($fila)->filter(fn ($n) => (int) $n > 0)->keys()->first() ?? array_key_first($tablas);
+            $items[] = $this->item('activos_no_regreso', 'Llaves, gafetes o equipos que no regresaron', 'bi-exclamation-octagon', $total,
+                route($primera.'.index'), 'roja');
         }
 
         return $items;

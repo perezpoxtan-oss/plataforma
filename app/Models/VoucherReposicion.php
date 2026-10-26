@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
+use App\Support\Receptor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -49,7 +50,7 @@ class VoucherReposicion extends Model
 
     protected $fillable = [
         'empresa_id', 'sede_id', 'folio', 'origen_tipo', 'origen_id', 'origen_descripcion', 'motivo',
-        'descripcion', 'aplica_cobro', 'monto', 'colaborador_id',
+        'descripcion', 'aplica_cobro', 'monto', 'colaborador_id', 'responsable_tipo', 'responsable_id',
         'firma_modo', 'firma_seguridad', 'firma_responsable', 'firmado_papel_en', 'firmado_papel_por', 'hoja_firmada',
     ];
 
@@ -103,6 +104,27 @@ class VoucherReposicion extends Model
     public function colaborador(): BelongsTo
     {
         return $this->belongsTo(Colaborador::class);
+    }
+
+    /** C-16: responsable del cobro (colaborador, persona del padrón o empresa externa). */
+    public function responsable(): ?Model
+    {
+        $colaborador = $this->attributes['colaborador_id'] ?? null;
+        $tipo = $this->attributes['responsable_tipo'] ?? ($colaborador ? Receptor::COLABORADOR : null);
+        $id = $this->attributes['responsable_id'] ?? $colaborador;
+        if ($tipo === Receptor::COLABORADOR && $this->relationLoaded('colaborador') && (int) $this->colaborador?->id === (int) $id) {
+            return $this->colaborador;
+        }
+
+        return Receptor::cargar($tipo, $id === null ? null : (int) $id);
+    }
+
+    /** «Juan Pérez», «Juan Pérez (Elevadores del Sur)», «Elevadores del Sur» o null sin responsable. */
+    public function nombreResponsable(): ?string
+    {
+        $r = $this->responsable();
+
+        return $r === null ? null : Receptor::nombreDe($r);
     }
 
     /** Lo que se dio de baja (llave, gafete o equipo), si su módulo ya existe. */

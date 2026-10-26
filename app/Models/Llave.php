@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
+use App\Models\Concerns\TieneEstadoActivo;
 use App\Models\Concerns\TieneIdentificador;
 use App\Support\HoraLocal;
 use App\Support\Lector\Identificable;
@@ -29,7 +30,7 @@ use Illuminate\Support\Carbon;
  */
 class Llave extends Model implements Identificable
 {
-    use PerteneceAEmpresa, RegistraAutor, TieneIdentificador;
+    use PerteneceAEmpresa, RegistraAutor, TieneEstadoActivo, TieneIdentificador;
 
     /** Se encuentra también tecleando o escaneando su nomenclatura. */
     protected string $columnaLegible = 'nomenclatura';
@@ -65,7 +66,7 @@ class Llave extends Model implements Identificable
     /** Días antes de la caducidad en que se avisa "Vence pronto" (SEGCAT: 30). */
     public const DIAS_AVISO_CADUCIDAD = 30;
 
-    protected $attributes = ['activo' => true, 'tipo_dispositivo' => 'metalica', 'alcance' => 'global'];
+    protected $attributes = ['activo' => true, 'estado' => 'disponible', 'tipo_dispositivo' => 'metalica', 'alcance' => 'global'];
 
     protected $fillable = [
         'empresa_id', 'sede_id', 'departamento_id', 'puesto_id', 'colaborador_id', 'nomenclatura', 'descripcion',

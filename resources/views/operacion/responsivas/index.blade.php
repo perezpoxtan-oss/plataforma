@@ -67,7 +67,7 @@
                 @forelse ($lotes as $r)
                     @php
                         $activa = $r->enCampo();
-                        $nombre = $r->colaborador?->nombreCompleto() ?? '—';
+                        $nombre = $r->nombreReceptor();
                         $texto = mb_strtolower(implode(' ', array_filter([$r->folio, $nombre, $r->colaborador?->num_empleado, $r->sede?->nombre,
                             $r->equipos->map(fn ($f) => ($f->equipo?->numero_serie ?? '').' '.($f->equipo?->tipo?->nombre ?? ''))->join(' ')])));
                         $recibible = $activa && $puede['recibir'] && ($recibibles === null || in_array($r->id, $recibibles, true));
@@ -209,7 +209,7 @@
                         <input type="hidden" name="_dialogo" value="{{ $filaRecibir ? 'recibir-'.$reabrirRecibir->id.'-'.$filaRecibir->id : '' }}" data-campo-dialogo data-prefijo-dialogo="recibir-">
                         <div class="resumen-recibir-equipo">
                             <div class="fw-bold" data-recibir-equipo-nombre>{{ $filaRecibir ? trim(($filaRecibir->equipo?->tipo?->nombre ?? 'Equipo').' · S/N '.$filaRecibir->equipo?->numero_serie) : '' }}</div>
-                            <div class="small text-muted">Responsiva <span data-recibir-folio>{{ $reabrirRecibir?->folio }}</span> · A cargo de: <span data-recibir-resguardante>{{ $reabrirRecibir?->colaborador?->nombreCompleto() }}</span></div>
+                            <div class="small text-muted">Responsiva <span data-recibir-folio>{{ $reabrirRecibir?->folio }}</span> · A cargo de: <span data-recibir-resguardante>{{ $reabrirRecibir?->nombreReceptor() }}</span></div>
                         </div>
 
                         <span class="campo-etiqueta">¿Cómo regresa el equipo?</span>
@@ -243,7 +243,7 @@
                                 </div>
                                 <label class="casilla-cobro-eq" for="recibir_cobro">
                                     <input type="checkbox" id="recibir_cobro" name="aplica_cobro" value="1" data-muestra-si-marcado="#cajaCobroRecibir" @checked($filaRecibir && old('aplica_cobro'))>
-                                    Se le cobra al colaborador
+                                    Se le cobra al responsable
                                 </label>
                                 <div id="cajaCobroRecibir" class="caja-cobro-eq" hidden>
                                     <label class="campo-etiqueta" for="recibir_monto">Monto</label>
@@ -296,9 +296,9 @@
                             </div>
                         </div>
 
-                        @include('componentes.lector', ['id' => 'resguardo_colaborador', 'etiqueta' => 'Colaborador (Responsable)',
-                            'tipos' => 'colaborador', 'nombre' => 'colaborador_id', 'requerido' => true, 'valor' => $trasError ? old('colaborador_id') : null,
-                            'elegido' => $colaboradorAnterior ? $colaboradorAnterior->nombreCompleto().' · Núm. '.$colaboradorAnterior->num_empleado : null,
+                        {{-- C-16: a cargo de un colaborador, de una persona del padrón (p. ej. el técnico de un proveedor) o de una empresa externa --}}
+                        @include('componentes.receptor', ['id' => 'resguardo_colaborador', 'prefijo' => 'receptor', 'etiqueta' => 'Responsable (¿quién se lo lleva?)',
+                            'requerido' => true, 'valor' => $trasError ? ($receptorAnterior ?? null) : null,
                             'ayuda' => 'Escanea su gafete o escribe su número de nómina o su nombre.'])
 
                         <div class="caja-equipos-lote">

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Organizacion\Concerns\CatalogoDeEmpresa;
 use App\Models\Departamento;
 use App\Models\Sede;
+use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Support\Entrada;
@@ -120,7 +121,12 @@ class DepartamentoController extends Controller
         [$modelo, $empresaId] = $this->buscar($request, $departamento);
 
         $activo = $request->boolean('activo');
+        // C-20: «Antes de dar de baja» si algo vigente lo usa
+        $revision = $activo ? null : $this->tenant->conEmpresa($empresaId, fn () => app(AntesDeDarDeBaja::class)->exigirRevisado('departamentos', $modelo, $request));
         $this->tenant->conEmpresa($empresaId, fn () => $modelo->forceFill(['activo' => $activo])->save());
+        if ($revision !== null && $revision['items'] !== []) {
+            $this->tenant->conEmpresa($empresaId, fn () => app(AntesDeDarDeBaja::class)->aplicar('departamentos', $modelo, $revision, $request->all(), $request->user()));
+        }
         $this->auditoria->auditar($request->user(), $activo ? 'departamentos.reactivado' : 'departamentos.desactivado', $modelo, ['activo' => ! $activo], ['activo' => $activo]);
 
         return redirect()->route('departamentos.index')->with($activo ? 'ok' : 'aviso', $activo

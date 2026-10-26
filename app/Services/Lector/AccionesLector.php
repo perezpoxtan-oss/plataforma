@@ -67,7 +67,7 @@ class AccionesLector
             }
 
             return $base + ['icono' => 'bi-key-fill', 'tipo' => 'Llave prestada',
-                'estado' => 'La tiene '.($prestamo->colaborador?->nombreCompleto() ?? '—').' desde el '.app(HoraLocal::class)->formatear($prestamo->prestado_en, 'd/m H:i')
+                'estado' => 'La tiene '.$prestamo->nombreReceptor().' desde el '.app(HoraLocal::class)->formatear($prestamo->prestado_en, 'd/m H:i')
                     .'. Garantía: '.$prestamo->textoGarantia().'.',
                 'acciones' => [[
                     'etiqueta' => 'Recibir', 'icono' => 'bi-box-arrow-in-down', 'metodo' => 'PATCH', 'principal' => true,
@@ -103,7 +103,7 @@ class AccionesLector
         }
 
         return $base + ['icono' => 'bi-box-seam', 'tipo' => 'Equipo en responsiva',
-            'estado' => 'Está a cargo de '.($responsiva->colaborador?->nombreCompleto() ?? '—').' en la responsiva '.$responsiva->folio.' ('.$fila->etiquetaModalidad().').',
+            'estado' => 'Está a cargo de '.$responsiva->nombreReceptor().' en la responsiva '.$responsiva->folio.' ('.$fila->etiquetaModalidad().').',
             'acciones' => [
                 ['etiqueta' => 'Recibir (OK)', 'icono' => 'bi-box-arrow-in-down-left', 'metodo' => 'PATCH', 'principal' => true,
                     'url' => route('responsivas.recibir', $responsiva->id), 'campos' => ['equipos[]' => (string) $fila->id],

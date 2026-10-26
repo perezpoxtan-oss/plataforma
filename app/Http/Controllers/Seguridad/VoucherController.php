@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Seguridad;
 
 use App\Http\Controllers\Controller;
 use App\Models\Empresa;
+use App\Models\Persona;
+use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Models\VoucherReposicion;
 use App\Services\Firmas\Firmas;
@@ -293,7 +295,12 @@ class VoucherController extends Controller
                     ->orWhere('vouchers_reposicion.descripcion', 'like', $comodin)
                     ->orWhereHas('colaborador', fn ($c) => $c->where(fn ($n) => $n->where('nombre', 'like', $comodin)
                         ->orWhere('apellido_paterno', 'like', $comodin)->orWhere('apellido_materno', 'like', $comodin)
-                        ->orWhere('num_empleado', 'like', $comodin))));
+                        ->orWhere('num_empleado', 'like', $comodin)))
+                    // C-16: responsable persona del padrón o empresa externa
+                    ->orWhere(fn ($r) => $r->where('vouchers_reposicion.responsable_tipo', 'persona')
+                        ->whereIn('vouchers_reposicion.responsable_id', Persona::where('nombre_completo', 'like', $comodin)->select('id')))
+                    ->orWhere(fn ($r) => $r->where('vouchers_reposicion.responsable_tipo', 'proveedor')
+                        ->whereIn('vouchers_reposicion.responsable_id', Proveedor::where('nombre', 'like', $comodin)->select('id'))));
             });
     }
 }

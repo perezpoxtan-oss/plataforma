@@ -24,7 +24,7 @@ class AcompananteAcceso extends Model
 
     protected function casts(): array
     {
-        return ['salida_at' => 'datetime', 'salida_temporal_at' => 'datetime', 'regreso_temporal_at' => 'datetime'];
+        return ['salida_at' => 'datetime', 'salida_temporal_at' => 'datetime', 'regreso_temporal_at' => 'datetime', 'gafete_no_regreso' => 'boolean'];
     }
 
     public function acceso(): BelongsTo

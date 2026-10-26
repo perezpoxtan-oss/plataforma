@@ -111,6 +111,9 @@
                             @if ($v->colaborador)
                                 <div class="texto-asociado"><i class="bi bi-person-vcard me-1" aria-hidden="true"></i><strong>Colaborador:</strong> {{ $v->colaborador->nombreCompleto() }}@if ($v->colaborador->num_empleado) · #{{ $v->colaborador->num_empleado }}@endif</div>
                             @endif
+                            @if ($v->restringido())
+                                <p class="insignia-restringido"><i class="bi bi-shield-fill-x me-1" aria-hidden="true"></i>{{ $v->textoRestriccion() }}</p>
+                            @endif
                             @if ($v->actualizado_por_nombre && $v->updated_at?->ne($v->created_at))
                                 <div class="texto-traza mt-1"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $v->actualizado_por_nombre }} · @fecha($v->updated_at)</div>
                             @elseif ($v->creado_por_nombre)
@@ -139,6 +142,7 @@
                                     <i class="bi bi-pencil-square" aria-hidden="true"></i>
                                 </button>
                             @endif
+                            @include('componentes.restriccion-ficha', ['registro' => $v, 'padron' => 'vehiculos', 'nombre' => $v->placas, 'puede' => $desactivable && $v->activo])
                             @if ($desactivable)
                                 <form action="{{ route('vehiculos.estado', $v->id) }}" method="POST" class="m-0"
                                       data-confirmar="{{ $v->activo ? '¿Dar de baja este vehículo? Podrás reactivarlo con un clic.' : '¿Reactivar este vehículo?' }}">
@@ -311,4 +315,5 @@
         @include('padrones.altas-por-verificar._dialogo', ['altas' => $altas])
     @endif
 </div>
+@include('componentes.restringir-acceso')
 @endsection

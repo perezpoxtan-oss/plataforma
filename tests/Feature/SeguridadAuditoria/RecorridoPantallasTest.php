@@ -289,6 +289,13 @@ class RecorridoPantallasTest extends TestCase
             ])),
             'rutas.itinerario' => array_map(fn ($id) => ['ruta' => $id], $ids([$primero(Ruta::class)])),
             'prestamo_llaves.historial' => array_map(fn ($id) => ['llave' => $id], $ids([$primero(Llave::class)])),
+            // C-20: la revisión «Antes de dar de baja» de un colaborador, una llave, un equipo y una sede
+            'bajas.revisar' => array_merge(
+                array_map(fn ($id) => ['tipo' => 'colaboradores', 'id' => $id], $ids([$primero(Colaborador::class)])),
+                array_map(fn ($id) => ['tipo' => 'llaves', 'id' => $id], $ids([$primero(Llave::class)])),
+                array_map(fn ($id) => ['tipo' => 'equipos', 'id' => $id], $ids([$primero(Equipo::class)])),
+                array_map(fn ($id) => ['tipo' => 'sedes', 'id' => $id], $ids([$primero(Sede::class)])),
+            ),
             'vouchers.imprimir' => array_map(fn ($id) => ['voucher' => $id], $ids([$primero(VoucherReposicion::class)])),
             'responsivas.firma', 'responsivas.hoja' => array_map(fn ($id) => ['responsiva' => $id], $ids([$primero(Responsiva::class)])),
             'novedades.imprimir', 'novedades.acuse', 'novedades.mostrar' => array_map(fn ($id) => ['novedad' => $id], $ids(
