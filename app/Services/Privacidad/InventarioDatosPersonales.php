@@ -30,7 +30,7 @@ namespace App\Services\Privacidad;
 final class InventarioDatosPersonales
 {
     /** Nombres de columna que suelen guardar datos de una persona. */
-    public const PATRON = '/^(name|email|ip|ip_address|user_agent|payload)$|(^|_)(nombre|nombres|apellido|apellidos|telefono|correo|curp|rfc|nss|firma|foto|identificacion|domicilio|direccion|nacimiento|edad|sexo|medico|hospital|diagnostico|placas|declaracion|involucrados|huesped|cliente|conductor|chofer|pasajeros?|testigos?|sospechoso|emergencia|habitacion|reporta|reportado|atiende|recibe|visita|autor|contacto|referencias|familiares|explicacion|pais|agencia)(_|$)/';
+    public const PATRON = '/^(name|email|ip|ip_address|user_agent|payload)$|(^|_)(nombre|nombres|apellido|apellidos|telefono|correo|curp|rfc|nss|firma|foto|identificacion|domicilio|direccion|nacimiento|edad|sexo|medico|hospital|diagnostico|placas|declaracion|involucrados|huesped|cliente|conductor|chofer|pasajeros?|testigos?|sospechoso|emergencia|habitacion|reporta|reportado|atiende|recibe|visita|autor|contacto|referencias|familiares|explicacion|pais|agencia|observados|incapacidad)(_|$)/';
 
     /** Tablas del sistema que no se revisan. */
     public const SISTEMA = ['migrations', 'sqlite_sequence', 'cache', 'cache_locks'];
@@ -63,6 +63,8 @@ final class InventarioDatosPersonales
         'novedad_testigos' => ['trato' => 'referencia', 'tipo' => 'novedad', 'columnas' => ['nombre', 'declaracion'], 'conservacion' => 'incidentes_dias'],
         'novedad_notas' => ['trato' => 'referencia', 'tipo' => 'novedad', 'columnas' => ['autor_nombre'],
             'conservacion' => 'El autor es personal de la empresa; si el texto menciona a la persona, ARCO quita su nombre.'],
+        // Revisión de la Etapa 3b: «¿Quién o quiénes fueron observados?» del Reporte General guarda nombres de personas
+        'novedad_reportes_generales' => ['trato' => 'referencia', 'tipo' => 'novedad', 'columnas' => ['observados'], 'conservacion' => 'incidentes_dias'],
         'robo_detalles' => ['trato' => 'referencia', 'tipo' => 'novedad', 'columnas' => ['hay_sospechoso', 'descripcion_sospechoso'], 'conservacion' => 'incidentes_dias'],
         'valores_vista_detalles' => ['trato' => 'laboral', 'columnas' => ['num_habitacion', 'quien_reporta', 'depto_reporta', 'puesto_reporta', 'actividad_reporta', 'quien_atiende', 'depto_atiende', 'puesto_atiende', 'cliente_llega'],
             'conservacion' => 'Quién reporta y quién atiende es personal de la empresa; la habitación sola no identifica al huésped.'],
@@ -75,6 +77,7 @@ final class InventarioDatosPersonales
         'accidente_guardavidas' => ['trato' => 'referencia', 'tipo' => 'accidente', 'columnas' => ['nombre', 'acudio_servicio_medico'],
             'conservacion' => 'incidentes_dias (se quitan las lesiones del huésped; el nombre es del guardavidas, personal de la empresa).'],
         'accidente_firmas' => ['trato' => 'referencia', 'tipo' => 'accidente', 'columnas' => [], 'conservacion' => 'incidentes_dias (la firma del afectado).'],
+        'accidente_incapacidades' => ['trato' => 'laboral', 'columnas' => ['dias_incapacidad'], 'conservacion' => self::LABORAL.' Dato de salud: ARCO lo exporta con el accidente.'],
         'accidente_colaboradores' => ['trato' => 'laboral', 'columnas' => ['explicacion_causas'], 'conservacion' => self::LABORAL.' ARCO lo muestra para consultarlo.'],
 
         // ------------------------------------------------ Reservas y transporte

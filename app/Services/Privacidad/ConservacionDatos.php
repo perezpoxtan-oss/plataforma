@@ -12,6 +12,7 @@ use App\Models\LostFoundEntrega;
 use App\Models\LostFoundReportePerdida;
 use App\Models\MovimientoTransporte;
 use App\Models\Novedad;
+use App\Models\NovedadReporteGeneral;
 use App\Models\NovedadTestigo;
 use App\Models\Reserva;
 use App\Models\RoboDetalle;
@@ -210,6 +211,7 @@ class ConservacionDatos
                 ->where(fn ($q) => $q->whereNotNull('involucrados')
                     ->orWhereIn('id', AccidenteHuesped::query()->select('novedad_id'))
                     ->orWhereIn('id', NovedadTestigo::query()->select('novedad_id'))
+                    ->orWhereIn('id', NovedadReporteGeneral::query()->whereNotNull('observados')->select('novedad_id'))
                     ->orWhereIn('id', RoboDetalle::query()->whereNotNull('descripcion_sospechoso')->select('novedad_id')))],
             'reservas' => [Reserva::query()->whereNull('datos_eliminados_en')->where('fin', '<=', $limite)
                 ->where(fn ($q) => $q->whereNotNull('cliente_nombre')->orWhereNotNull('cliente_correo')->orWhereNotNull('cliente_telefono'))],

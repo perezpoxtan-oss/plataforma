@@ -15,6 +15,7 @@ use App\Models\LostFoundEntrega;
 use App\Models\LostFoundReportePerdida;
 use App\Models\MovimientoTransporte;
 use App\Models\Novedad;
+use App\Models\NovedadReporteGeneral;
 use App\Models\NovedadTestigo;
 use App\Models\Persona;
 use App\Models\Proveedor;
@@ -23,6 +24,7 @@ use App\Models\Ruta;
 use App\Models\SolicitudArco;
 use App\Models\Turno;
 use App\Services\Privacidad\ConservacionDatos;
+use App\Services\Privacidad\InventarioDatosPersonales;
 use App\Services\Privacidad\SolicitudesArco;
 use App\Services\Reservas\CatalogosReservas;
 use App\Services\Rutas\AdministradorRutas;
@@ -351,5 +353,43 @@ class PrivacidadTodosLosModulosTest extends PruebaNovedades
         $this->assertSame(2, $aplicada->despues['lost_found']);
         // Una segunda corrida no vuelve a tocar nada
         $this->assertSame(0, array_sum(array_intersect_key(app(ConservacionDatos::class)->pendientes($this->empresa->refresh()), ['lost_found' => 1, 'incidentes' => 1, 'reservas' => 1, 'transporte' => 1])));
+    }
+
+    /**
+     * Revisión 3b: «¿Quién o quiénes fueron observados?» del Reporte General
+     * guarda nombres de personas. ARCO lo encuentra, lo exporta y quita el
+     * nombre; la conservación lo vacía; el inventario lo registra.
+     */
+    public function test_los_observados_del_reporte_general_los_alcanzan_arco_y_la_conservacion(): void
+    {
+        $n = $this->novedad(['categoria' => 'incidente_general', 'area_id' => $this->piso->id]);
+        $this->guardarExpediente($n, ['ig_observados' => self::NOMBRE.' y un acompañante', 'ig_actividad' => 'Rondín', 'ig_motivo' => 'Revisión'])->assertSessionHasNoErrors();
+        $this->assertSame(mb_strtoupper(self::NOMBRE).' Y UN ACOMPAÑANTE', $this->enEmpresa(fn () => NovedadReporteGeneral::where('novedad_id', $n->id)->value('observados')));
+        $this->assertSame(['observados'], InventarioDatosPersonales::TABLAS['novedad_reportes_generales']['columnas']);
+
+        $s = $this->solicitud();
+        $encontrado = app(SolicitudesArco::class)->buscarDatos($s, ['nombre' => self::NOMBRE]);
+        $this->assertSame([$n->id], array_column($encontrado['novedad'], 'id'));
+
+        $this->actingAs($this->admin)->post(route('arco.exportar', $s->id), ['seleccion' => ['novedad' => [$n->id]], 'criterios' => ['nombre' => self::NOMBRE]])->assertSessionHas('ok');
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open(Storage::disk('local')->path($s->refresh()->archivo)) === true);
+        $this->assertStringContainsStringIgnoringCase('Valdivia', (string) $zip->getFromName('datos/novedades_reporte_general.json'));
+        $zip->close();
+
+        app(SolicitudesArco::class)->eliminar($this->admin, $s, ['novedad' => [$n->id]], self::NOMBRE);
+        $observados = (string) $this->enEmpresa(fn () => NovedadReporteGeneral::where('novedad_id', $n->id)->value('observados'));
+        $this->assertStringNotContainsStringIgnoringCase('Valdivia', $observados);
+        $this->assertStringContainsString('ACOMPAÑANTE', $observados);
+
+        // Conservación: un ticket cerrado solo con observados también se trata
+        $otro = $this->novedad(['categoria' => 'incidente_general', 'area_id' => $this->piso->id]);
+        $this->guardarExpediente($otro, ['ig_observados' => 'Marta Observada'])->assertSessionHasNoErrors();
+        $this->enEmpresa(fn () => Novedad::whereKey($otro->id)->update(['estatus' => Novedad::RESUELTO, 'cerrado_en' => now(), 'resolucion' => 'Atendido.']));
+        $this->travel(6 * 365)->days();
+        $this->assertSame(1, app(ConservacionDatos::class)->pendientes($this->empresa->refresh())['incidentes']);
+        $this->artisan('plataforma:privacidad')->assertSuccessful();
+        $this->assertNull($this->enEmpresa(fn () => NovedadReporteGeneral::where('novedad_id', $otro->id)->value('observados')));
+        $this->assertNotNull($this->enEmpresa(fn () => Novedad::findOrFail($otro->id)->datos_eliminados_en));
     }
 }

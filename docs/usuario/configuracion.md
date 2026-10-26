@@ -196,7 +196,7 @@ Aquí cuidas los datos personales de quien visita tus sedes, publicas tu aviso d
    - **Fotos de la identificación (caseta)** — valor original: 90 días.
    - **Datos de visitantes externos en registros cerrados** (visita, huésped, proveedor, contratista) — valor original: 365 días.
    - **Lost & Found: quien reportó una pérdida o recibió un objeto** (nombre, teléfono, correo, identificación y firma) — valor original: 365 días.
-   - **Novedades y accidentes cerrados** (involucrados, testigos, descripción del sospechoso, huésped accidentado y sus datos médicos) — valor original: 1825 días (5 años).
+   - **Novedades y accidentes cerrados** (involucrados, testigos, personas observadas, descripción del sospechoso, huésped accidentado y sus datos médicos) — valor original: 1825 días (5 años).
    - **Reservas terminadas: datos del cliente** — valor original: 1825 días.
    - **Transporte: firma del taxista en los vales** — valor original: 1825 días.
 2. Revisa el recuadro gris: dice cuántas fotos y registros se quitarían **hoy** con esos días.
@@ -247,6 +247,7 @@ Su petición te llega a la **campana**, a **Inicio** («Super Administradores qu
 
 - **Dar de baja** a un Super Administrador solo se puede si quedan **al menos dos** activos; si no, la tarjeta dice «No se puede: quedaría menos de dos Super Administradores activos.»
 - Tu propia cuenta se cambia en [Mi cuenta](mi-cuenta.md).
+- Si escribes mal **Tu contraseña** 5 veces, la tarjeta dice «Escribiste mal tu contraseña demasiadas veces. Espera … minuto(s)…»: espera 15 minutos y vuelve a intentarlo. Así nadie puede adivinarla si deja tu sesión abierta.
 
 ## Cómo revisar la versión de PHP del servidor (Super Administrador)
 

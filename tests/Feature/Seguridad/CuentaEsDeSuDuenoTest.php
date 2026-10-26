@@ -337,4 +337,31 @@ class CuentaEsDeSuDuenoTest extends TestCase
         $this->assertSame(SolicitudCuenta::ATENDIDA, $s->refresh()->estado);
         $this->assertTrue(Auditoria::where('evento', 'plataforma.superadmin_contrasena')->where('auditable_id', $sa2->id)->exists());
     }
+
+    /** Revisión 3b: con una sesión robada no se puede adivinar la contraseña que confirma las acciones entre Super Administradores. */
+    public function test_la_contrasena_que_confirma_se_bloquea_tras_cinco_errores(): void
+    {
+        $sa1 = $this->crearSuperadmin();
+        $sa1->forceFill(['password' => 'Super-Uno-2026'])->save();
+        $sa2 = $this->crearSuperadmin();
+        $sa2->forceFill(['password' => 'Super-Dos-2026'])->save();
+        $this->crearSuperadmin();
+
+        for ($i = 0; $i < SuperAdministradores::INTENTOS_CONTRASENA; $i++) {
+            $this->actingAs($sa1)->patch(route('superadmins.estado', $sa2->id), ['activo' => 0, 'contrasena_actual' => 'mala-'.$i])
+                ->assertSessionHasErrors(['contrasena_actual' => 'Tu contraseña no es correcta.']);
+        }
+        // Ya con la correcta tampoco: espera
+        $this->actingAs($sa1)->patch(route('superadmins.estado', $sa2->id), ['activo' => 0, 'contrasena_actual' => 'Super-Uno-2026'])
+            ->assertSessionHasErrors('contrasena_actual');
+        $this->assertTrue($sa2->refresh()->activo);
+        $this->actingAs($sa1)->post(route('superadmins.contrasena', $sa2->id), ['password' => 'Temporal-Dos-77', 'contrasena_actual' => 'Super-Uno-2026'])
+            ->assertSessionHasErrors('contrasena_actual');
+        $this->assertFalse((bool) $sa2->refresh()->debe_cambiar_contrasena);
+
+        // Pasada la espera, la correcta sí sirve
+        $this->travel(SuperAdministradores::ESPERA_CONTRASENA + 1)->seconds();
+        $this->actingAs($sa1)->patch(route('superadmins.estado', $sa2->id), ['activo' => 0, 'contrasena_actual' => 'Super-Uno-2026'])->assertSessionHas('ok');
+        $this->assertFalse($sa2->refresh()->activo);
+    }
 }

@@ -48,7 +48,7 @@ resumen: Atender las solicitudes de las personas sobre sus datos (acceso, rectif
 - La ficha del **candidato** se borra con sus documentos (si ya fue contratado, no: ya es colaborador).
 - **Lost & Found:** el reporte de pérdida y la entrega se conservan, sin su nombre, teléfono, correo, identificación ni firma.
 - **Accidentes de huésped:** el ticket se conserva (fecha, lugar), sin sus datos (nombre, habitación, edad, país…), **sin los datos médicos** (diagnóstico, hospital, médico, lesiones) y sin su firma. El formulario del accidente no cambia.
-- **Novedades:** su nombre se quita de la descripción, de los involucrados, de las notas y de los testigos.
+- **Novedades:** su nombre se quita de la descripción, de los involucrados, de las notas, de los testigos y de «¿Quién o quiénes fueron observados?» del Reporte General.
 - **Reservas:** la reserva sigue en pie, sin el nombre, la empresa, el correo ni el teléfono del cliente.
 - **Transporte:** su nombre sale de las observaciones y, si manejó el taxi, se borra su firma.
 - Los **colaboradores** y sus **accidentes de trabajo** no se eliminan desde aquí (la relación laboral obliga a conservar sus datos); solo se rectifican en su ficha o en el ticket.

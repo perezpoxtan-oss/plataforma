@@ -8,6 +8,7 @@ use App\Models\AccidenteDictamen;
 use App\Models\AccidenteFirma;
 use App\Models\AccidenteGuardavidas;
 use App\Models\AccidenteHuesped;
+use App\Models\AccidenteIncapacidad;
 use App\Models\AcompananteAcceso;
 use App\Models\Candidato;
 use App\Models\CandidatoDocumento;
@@ -18,6 +19,7 @@ use App\Models\MovimientoTransporte;
 use App\Models\MovimientoTransportePasajero;
 use App\Models\Novedad;
 use App\Models\NovedadNota;
+use App\Models\NovedadReporteGeneral;
 use App\Models\NovedadTestigo;
 use App\Models\Persona;
 use App\Models\Postulacion;
@@ -240,6 +242,7 @@ class DatosDePersona
             ->merge(NovedadTestigo::where('nombre', 'like', $like)->pluck('novedad_id'))
             ->merge(RoboDetalle::where('descripcion_sospechoso', 'like', $like)->pluck('novedad_id'))
             ->merge(NovedadNota::where('texto', 'like', $like)->pluck('novedad_id'))
+            ->merge(NovedadReporteGeneral::where('observados', 'like', $like)->pluck('novedad_id'))
             ->unique()->sortDesc()->take(self::MAX_POR_TIPO);
         if ($ids->isEmpty()) {
             return [];
@@ -411,6 +414,7 @@ class DatosDePersona
             $r['novedades'] = $filas(Novedad::class, 'id', $ids);
             $r['novedades_testigos'] = $filas(NovedadTestigo::class, 'novedad_id', $ids);
             $r['novedades_robo'] = $filas(RoboDetalle::class, 'novedad_id', $ids);
+            $r['novedades_reporte_general'] = $filas(NovedadReporteGeneral::class, 'novedad_id', $ids);
         }
         if ($ids = $seleccion['accidente'] ?? []) {
             $r['accidentes'] = $filas(Novedad::class, 'id', $ids);
@@ -418,6 +422,7 @@ class DatosDePersona
             $r['accidentes_colaborador'] = $filas(AccidenteColaborador::class, 'novedad_id', $ids);
             $r['accidentes_datos_medicos'] = $filas(AccidenteDictamen::class, 'novedad_id', $ids);
             $r['accidentes_guardavidas'] = $filas(AccidenteGuardavidas::class, 'novedad_id', $ids);
+            $r['accidentes_incapacidad'] = $filas(AccidenteIncapacidad::class, 'novedad_id', $ids);
             $r['accidentes_firmas'] = AccidenteFirma::whereIn('novedad_id', $ids)->where('rol', 'afectado')->get()->map(fn ($m) => $quitar($m->getAttributes()))->all();
         }
         if ($ids = $seleccion['reserva'] ?? []) {
@@ -554,6 +559,9 @@ class DatosDePersona
         foreach (RoboDetalle::where('novedad_id', $n->id)->get() as $r) {
             RoboDetalle::whereKey($r->id)->update(['descripcion_sospechoso' => self::sinNombre($r->descripcion_sospechoso, $nombre, $texto), 'updated_at' => $r->updated_at]);
         }
+        foreach (NovedadReporteGeneral::where('novedad_id', $n->id)->whereNotNull('observados')->get() as $g) {
+            NovedadReporteGeneral::whereKey($g->id)->update(['observados' => mb_substr((string) self::sinNombre($g->observados, $nombre, $texto), 0, 255), 'updated_at' => $g->updated_at]);
+        }
         foreach (NovedadNota::where('novedad_id', $n->id)->where('texto', 'like', $like)->get() as $nota) {
             NovedadNota::whereKey($nota->id)->update(['texto' => (string) self::sinNombre($nota->texto, $nombre, $texto), 'updated_at' => $nota->updated_at]);
         }
@@ -597,6 +605,7 @@ class DatosDePersona
             NovedadTestigo::whereKey($t->id)->update(['nombre' => mb_substr($texto, 0, 150), 'declaracion' => null, 'updated_at' => $t->updated_at]);
         }
         RoboDetalle::where('novedad_id', $n->id)->whereNotNull('descripcion_sospechoso')->update(['descripcion_sospechoso' => null]);
+        NovedadReporteGeneral::where('novedad_id', $n->id)->whereNotNull('observados')->update(['observados' => null]);
         Novedad::whereKey($n->id)->update(['involucrados' => null, 'datos_eliminados_en' => now(), 'updated_at' => $n->updated_at]);
     }
 

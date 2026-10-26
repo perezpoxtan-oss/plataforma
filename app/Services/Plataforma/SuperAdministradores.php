@@ -13,6 +13,7 @@ use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -39,6 +40,11 @@ class SuperAdministradores
     public const MINIMO = 2;
 
     public const TIPO_AVISO = 'plataforma_superadmin';
+
+    /** Intentos con la contraseña equivocada antes de esperar (por cuenta), y la espera en segundos. */
+    public const INTENTOS_CONTRASENA = 5;
+
+    public const ESPERA_CONTRASENA = 15 * 60;
 
     public function __construct(
         private readonly AdministradorRoles $auditoria,
@@ -177,11 +183,22 @@ class SuperAdministradores
         }
     }
 
+    /**
+     * La contraseña del actor confirma la acción. Con una sesión robada no se
+     * puede adivinar: tras INTENTOS_CONTRASENA errores se espera 15 minutos.
+     */
     private function exigirContrasena(User $actor, string $contrasena): void
     {
+        $llave = 'superadmin-confirmar:'.$actor->id;
+        if (RateLimiter::tooManyAttempts($llave, self::INTENTOS_CONTRASENA)) {
+            $minutos = (int) ceil(RateLimiter::availableIn($llave) / 60);
+            throw ValidationException::withMessages(['contrasena_actual' => "Escribiste mal tu contraseña demasiadas veces. Espera {$minutos} minuto(s) e inténtalo de nuevo."]);
+        }
         if (! Hash::check($contrasena, (string) $actor->password)) {
+            RateLimiter::hit($llave, self::ESPERA_CONTRASENA);
             throw ValidationException::withMessages(['contrasena_actual' => 'Tu contraseña no es correcta.']);
         }
+        RateLimiter::clear($llave);
     }
 
     /** Campana de los demás Super Administradores activos (también de la cuenta afectada si sigue activa). */
