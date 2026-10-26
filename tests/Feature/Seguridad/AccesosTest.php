@@ -92,6 +92,11 @@ class AccesosTest extends TestCase
      */
     private function registrar(array $datos, ?User $actor = null): TestResponse
     {
+        // C-04: ningún motivo viene marcado; estas pruebas usan el de antes (Recursos Humanos)
+        if (($datos['tipo'] ?? null) === 'visitante') {
+            $datos += ['motivo_visita' => 'rh'];
+        }
+
         return $this->actingAs($actor ?? $this->admin)->post('/accesos', $datos + ['sede_id' => $this->centro->id, '_dialogo' => 'ingreso']);
     }
 
@@ -390,7 +395,7 @@ class AccesosTest extends TestCase
 
         // El diálogo se vuelve a abrir con la pregunta y sus dos respuestas
         $this->actingAs($this->admin)->from('/accesos')->followingRedirects()
-            ->post('/accesos', ['tipo' => 'visitante', 'nombre' => 'Laura Méndez Ríos', 'sede_id' => $this->centro->id, '_dialogo' => 'ingreso'])
+            ->post('/accesos', ['tipo' => 'visitante', 'motivo_visita' => 'rh', 'nombre' => 'Laura Méndez Ríos', 'sede_id' => $this->centro->id, '_dialogo' => 'ingreso'])
             ->assertSee('data-abrir-al-cargar', false)->assertSee('Sí, es la misma')->assertSee('No, es alguien distinto')
             ->assertSee('name="persona_decision" value="misma"', false);
 

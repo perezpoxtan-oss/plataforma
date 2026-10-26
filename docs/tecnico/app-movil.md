@@ -256,3 +256,14 @@ Requiere una **Mac con Xcode** y cuenta de **Apple Developer** (pago anual). En 
 - `tests/Feature/Nucleo/AppMovilPwaTest.php`: `assetlinks.json` 404 sin huella (o con huellas inválidas) y JSON correcto con huellas normalizadas, sin cookies; `nfc-app.js` solo con el user-agent de la app, sin `defer` y antes de `plataforma.js`; `NDEFReader` de la app ejecutado con Node y el plugin simulado (lectura con la forma de Web NFC, apertura solo de direcciones propias, NFC apagado / sin NFC, `write()` rechaza); manifest con su tipo, íconos con sus medidas, nombre y color de Identidad, sin cookies; service worker en la raíz con `no-cache`, `Service-Worker-Allowed`, versión sustituida, solo GET y sin guardar pantallas, sin cookies aun con sesión; «Sin conexión» sin sesión; CSP sin cambios; cabeceras HTML con manifest, ícono y `pwa.js` sin JS en línea; dentro de la app no se ofrecen los avisos del navegador; la app no cambia el cierre por inactividad.
 - Navegador (Playwright): ver «Verificado en navegador» y «NFC en la app → Verificado aquí».
 - La app de Android no se compila en la integración continua (requiere el SDK de Android).
+
+## Lista de salida a Producción (plan de correcciones C-46)
+
+Antes de publicar la app y de abrir Producción:
+
+1. Compilar con `SERVIDOR=produccion` (o `"servidor": "produccion"` en `movil/app.config.json`): hoy la app nace apuntando a QA.
+2. Encender los **App Links** con la huella de la llave de firma (`assetlinks.json`, ver «App Links»).
+3. **Correo de la plataforma configurado** en Producción (Configuración → Plataforma): sin él no salen «Olvidé mi contraseña», las bienvenidas ni los avisos (C-36).
+4. **Tareas «en proceso» y cron comprobados en el hospedaje real**: suscripciones, escalamientos y recordatorios corren con `--si-toca` desde el cron de `desplegar.sh` y, si el cron no corre, al refrescar las pantallas (`escalarSiToca`). Revisar en el archivo de estado que el cron corre y con qué PHP.
+5. **Prueba en un teléfono real** con la app compilada contra Producción: entrar, leer un gafete por NFC, registrar un acceso y dar salida.
+6. iOS queda como alcance aparte (ver «iOS (después)»).

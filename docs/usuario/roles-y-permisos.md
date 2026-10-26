@@ -52,13 +52,13 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 
 ## Cómo asignar los roles Solicitante y Jefe de departamento
 
-1. Revisa que la persona exista en **Recursos Humanos → Colaboradores** con su **departamento** correcto. Para el jefe, el departamento que va a aprobar.
+1. Revisa que la persona exista en **Estructura → Colaboradores** con su **departamento** correcto. Para el jefe, el departamento que va a aprobar.
 2. Entra a **Estructura → Usuarios** y toca la tarjeta **Nuevo Usuario** (o el **lápiz** de su cuenta si ya tiene una).
 3. En **Núm. Colaborador** escribe su número o su nombre y elígelo de la lista: debe aparecer en verde **Vinculado a Colaboradores**. Sin este vínculo el Solicitante no puede pedir pases y el jefe no aparece como firmante de su departamento.
 4. En **Rol en el Sistema** elige **Solicitante** o **Jefe de departamento**.
 5. En **Sede** elige la sede donde trabaja.
 6. Escribe **Usuario**, **Correo** y **Contraseña** (si es nueva la cuenta) y toca **Registrar Usuario** (o **Guardar Cambios** si la editaste).
-7. Para que el jefe firme los pases de su gente, responda visitas o entreviste candidatos: entra a **Recursos Humanos → Autorizaciones → Responsables por departamento**, toca **Elegir responsables** en su departamento, agrégalo con su sede y toca **Guardar responsables**.
+7. Para que el jefe firme los pases de su gente, responda visitas o entreviste candidatos: entra a **Estructura → Autorizaciones → Responsables por departamento**, toca **Elegir responsables** en su departamento, agrégalo con su sede y toca **Guardar responsables**.
 8. Solo si el circuito de pases de tu empresa es distinto al de siempre: en **Estructura → Configuración → Pases de salida → Configurar circuito**, revisa que haya un paso con **El jefe del departamento del solicitante**; si no lo tiene, toca **Agregar el paso del jefe del departamento**. El circuito de siempre ya lo trae como primer paso.
 
 ![Matriz de permisos](img/roles/3-matriz.png)

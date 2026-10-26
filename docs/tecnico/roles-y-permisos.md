@@ -8,11 +8,13 @@ Los módulos se agrupan en tres áreas. Así aparecen en la Matriz de permisos y
 
 | Área | Módulos | Por qué |
 |---|---|---|
-| **Dirección** | Empresas, Sedes, Zonas y áreas, Departamentos, Puestos, Turnos, Usuarios, Roles, Matriz de permisos, Configuración, Auditoría (+ Identidad, solo plataforma) | La estructura de la empresa y su gobierno. Es la base que toda empresa tiene, contrate lo que contrate |
-| **Recursos Humanos** | Colaboradores | El personal. Con el tiempo: vacaciones, incidencias, expedientes |
+| **Dirección** | Empresas, Sedes, Zonas y áreas, **Colaboradores (directorio)**, Departamentos, Puestos, Turnos, **Autorizaciones departamentales**, Usuarios, Roles, Matriz de permisos, Configuración, Auditoría (+ Identidad y Catálogo comercial, solo plataforma) | La estructura de la empresa y su gobierno. Es la base que toda empresa tiene, contrate lo que contrate (menú **Estructura**; Organización base, plan de correcciones C-01) |
+| **Recursos Humanos** | Recepción de RR. HH., Candidatos (y entrevistas), Vacantes; el expediente y los datos personales del colaborador (acción `colaboradores.datos_personales`, que solo vale con Candidatos contratado: `DependenciasModulos::ACCIONES_CON_MODULO`) | El proceso de talento |
 | **Seguridad** | Padrones, Operación y sus reportes (Tablero, Informe ejecutivo, Tendencias, Bitácora del día) | La operación de seguridad |
 
-- Departamentos, Puestos y Turnos se quedan en **Dirección** y no en Recursos Humanos: Seguridad los necesita aunque la empresa no contrate RH.
+- Colaboradores (directorio), Departamentos, Puestos, Turnos y Autorizaciones están en **Dirección** (ADR-0004, actualización Etapa 1): la caseta los necesita en todos los planes. El rol base Recursos Humanos los sigue administrando (`RolesPlantillaSeeder::PERSONAL_EN_ESTRUCTURA`).
+- **Módulo en solo lectura** (`empresa_modulos.solo_lectura`, el plan ya no lo trae): `Autorizador` solo deja las acciones `ver`, `exportar` e `imprimir`. **Suscripción en solo consulta:** lo mismo para toda la empresa, salvo `empresas.editar` (pedir la renovación); el middleware `SoloConsulta` sigue siendo la regla para los envíos.
+- **403 «No viene en tu plan»:** el `Gate::before` anota con `App\Support\NoVieneEnTuPlan::anotar()` si la última negación fue por el plan (módulo no contratado, acción ligada a otro módulo o módulo en solo lectura); `errors/403.blade.php` lo muestra con «Ver mi suscripción». Sin anotación, es el mensaje del rol.
 - El **menú** conserva las secciones de SEGCAT (Estructura, Padrones, Operación) y suma **Recursos Humanos**.
 - La migración `2026_10_06_000400` reacomoda las áreas de las bases existentes: Organización + Administración pasan a Dirección, y Reportes pasa a Seguridad.
 

@@ -110,9 +110,22 @@ class RegistroAccesos
                     : 'El host elegido no existe, está dado de baja o no pertenece a esta sede.';
             }
         }
-        $motivo = $tipo === 'visitante' ? ($d['motivo_visita'] ?? $terminos->motivoPorDefecto()) : null;
-        if ($motivo !== null && ! array_key_exists($motivo, $terminos->motivos())) {
+        // Motivos según el giro y lo contratado; ninguno viene marcado de fábrica (C-04, DD-23)
+        $motivosVisita = app(MotivosVisita::class);
+        $empresaSede = (int) Sede::whereKey($sedeId)->value('empresa_id');
+        $motivo = $tipo === 'visitante' ? ($d['motivo_visita'] ?? $motivosVisita->porOmision($empresaSede)) : null;
+        if ($tipo === 'visitante' && $motivo === null) {
+            $errores['motivo_visita'] = 'Elige el motivo de la visita.';
+        } elseif ($motivo !== null && ! array_key_exists($motivo, $motivosVisita->para($empresaSede))) {
             $errores['motivo_visita'] = 'Elige el motivo de la visita de la lista.';
+        }
+        // Visita general: ¿a quién o a qué viene? · Visita a huésped: ¿a quién visita? (texto; la habitación es opcional)
+        $personaVisita = null;
+        if (in_array($motivo, ['general', 'huesped'], true)) {
+            $personaVisita = $this->mayusculas($d['persona_visita'] ?? null);
+            if ($personaVisita === null) {
+                $errores['persona_visita'] = $motivo === 'huesped' ? 'Escribe a qué huésped visita.' : 'Escribe a quién o a qué viene.';
+            }
         }
         $visita = null;
         if ($motivo === 'colaborador') {
@@ -229,7 +242,7 @@ class RegistroAccesos
 
         $estado = in_array($tipo, Acceso::CON_AUTORIZACION, true) || $recepcion['esperar'] ? 'pendiente' : 'en_sitio'; // Recepción: visita que espera al departamento
 
-        $acceso = DB::transaction(function () use ($terminos, $actor, $d, $tipo, $sedeId, $nombre, $colaborador, $host, $visita, $motivo, $departamentoId,
+        $acceso = DB::transaction(function () use ($terminos, $actor, $d, $tipo, $sedeId, $nombre, $colaborador, $host, $visita, $personaVisita, $motivo, $departamentoId,
             $placas, $modo, $tipoVehiculo, $zonaId, $conductor, $gafete, $acompanantes, $personaId, $personaRepetida, $estado) {
             // Gafetes: se revisan otra vez con el registro bloqueado (dos casetas a la vez)
             foreach (array_filter([$gafete, ...array_column($acompanantes, 'gafete')]) as $g) {
@@ -272,7 +285,7 @@ class RegistroAccesos
                 'empresa_procedencia' => $procedencia,
                 'motivo_visita' => $motivo,
                 'visita_colaborador_id' => $visita?->id,
-                'persona_visita' => $visita ? mb_strtoupper($visita->nombreCompleto()) : null,
+                'persona_visita' => $visita ? mb_strtoupper($visita->nombreCompleto()) : $personaVisita,
                 'host_colaborador_id' => $host?->id,
                 'identificacion' => in_array($tipo, Acceso::AL_PADRON, true) ? ($d['identificacion'] ?? 'ine') : null,
                 'gafete_id' => $gafete?->id,
@@ -288,7 +301,7 @@ class RegistroAccesos
                 // Con reserva, el pase siempre es Estancia (regla de SEGCAT)
                 'tipo_pase' => $tipo === 'huesped' ? ($reserva ? 'estancia' : ($d['tipo_pase'] ?? 'daypass')) : null,
                 // Huésped: su habitación; en condominios y fraccionamientos, el departamento o la casa a la que va la visita
-                'habitacion' => $tipo === 'huesped' || ($tipo === 'visitante' && $terminos->visitaLlevaEspacio()) ? $this->mayusculas($d['habitacion'] ?? null) : null,
+                'habitacion' => $tipo === 'huesped' || ($tipo === 'visitante' && ($terminos->visitaLlevaEspacio() || $motivo === 'huesped')) ? $this->mayusculas($d['habitacion'] ?? null) : null,
                 'tipo_visita' => in_array($tipo, Acceso::CON_AUTORIZACION, true) ? ($d['tipo_visita'] ?? 'cortesia') : null,
                 'departamento_id' => $departamentoId,
                 'area_trabajo' => in_array($tipo, Acceso::CON_AUTORIZACION, true) ? $this->mayusculas($d['area_trabajo'] ?? null) : null,
@@ -338,6 +351,7 @@ class RegistroAccesos
             'colaborador_id' => ['nullable', 'integer'],
             'host_colaborador_id' => ['nullable', 'integer'],
             'visita_colaborador_id' => ['nullable', 'integer'],
+            'persona_visita' => ['nullable', 'string', 'max:150'],
             'motivo_visita' => ['nullable', Rule::in(array_keys(Acceso::MOTIVOS))],
             'identificacion' => ['nullable', Rule::in(array_keys(Acceso::IDENTIFICACIONES))],
             'empresa_procedencia' => ['nullable', 'string', 'max:150'],

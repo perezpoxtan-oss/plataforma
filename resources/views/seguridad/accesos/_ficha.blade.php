@@ -97,7 +97,7 @@
     @else
         <div class="ficha-acceso-datos">
             @if ($a->persona_visita)
-                <div><strong>Visitando a:</strong> <span class="dato-destacado">{{ $a->persona_visita }}</span></div>
+                <div><strong>{{ $a->motivo_visita === 'general' ? 'Viene a:' : 'Visitando a:' }}</strong> <span class="dato-destacado">{{ $a->persona_visita }}</span>@if ($a->motivo_visita === 'huesped' && $a->habitacion) · Habitación {{ $a->habitacion }}@endif</div>
             @endif
             @if ($a->motivo_visita)
                 <div><strong>Motivo:</strong> {{ $a->etiquetaMotivo() }}</div>

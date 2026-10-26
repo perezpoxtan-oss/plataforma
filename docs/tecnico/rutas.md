@@ -95,3 +95,7 @@ Auditoría: `rutas.creado`, `rutas.actualizado`, `rutas.desactivado`, `rutas.rea
 ## Mejoras padrones (ADR-0015)
 
 Ver [mejoras-padrones.md](mejoras-padrones.md): «Dar de baja» en lugar de «Suspender» / «Desactivar», horarios plegables, paraderos equivalentes sin duplicarse (`paraderoEquivalente`).
+
+## Turno opcional (C-06)
+
+`rutas.turno_id` admite vacío (migración `2026_11_10_000300`; `down()` asigna el primer turno de la empresa a las rutas sin turno, o se detiene con un mensaje si la empresa no tiene ninguno). El turno es informativo (hoja del día e itinerario); el formulario lo muestra como «(opcional)» y lo oculta si la sede no usa turnos ni la ruta tenía uno.

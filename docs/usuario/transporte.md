@@ -103,7 +103,8 @@ En **Mis pendientes**, el renglón **Vales de taxi por autorizar** también se p
 | «Elige el estatus del servicio: A tiempo, Con retraso o No llegó (uso de taxis).» | Falta el estatus. | Toca una de las tres opciones. |
 | «Falta la firma del guardia: firma en el recuadro antes de guardar.» | No firmaste. | Firma en el recuadro y guarda. |
 | «Falta el destino (paradero).» | El taxi no tiene destino. | Escribe o elige el paradero. |
-| «Debe quedar al menos un colaborador registrado.» | El taxi no tiene pasajeros. | Escanea al menos un gafete. |
+| «Debe quedar al menos un pasajero registrado.» | El taxi no tiene pasajeros. | Escanea al menos un gafete o escribe cuántos van. |
+| «Taxi N: agrega al menos un pasajero … o escribe cuántos van.» | El vale no tiene pasajeros ni cantidad. | Escanea su gafete, búscalo, dalo de alta provisional o abre **¿No puedes registrar a los pasajeros?** y escribe cuántos van. |
 | ««…» ya va en el Taxi 1.» | Pusiste a la misma persona en dos taxis. | Quítala de uno. |
 | «Este vale ya tiene el Vo.Bo. de autorización: ya no se puede editar.» | El vale ya se autorizó. | Pide a quien lo autorizó que lo revise. |
 | «En un servicio normal solo se puede corregir entre A TIEMPO y RETRASO…» | Querías cambiar a taxis desde editar. | Anula el registro y captura los taxis. |

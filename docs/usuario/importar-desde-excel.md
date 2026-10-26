@@ -21,7 +21,7 @@ resumen: Cargar de una vez colaboradores, personas, empresas externas, vehículo
 
 | Lista | Dónde está el botón **Importar** | Con qué se reconoce si ya existe |
 |---|---|---|
-| Colaboradores | **Recursos Humanos → Colaboradores** | Número de empleado |
+| Colaboradores | **Estructura → Colaboradores** | Número de empleado |
 | Padrón de personas | **Padrones → Padrón de personas** | Folio de identificación (o el nombre completo si no lo trae) |
 | Empresas externas | **Padrones → Empresas externas** | Razón social o nombre comercial |
 | Padrón vehicular | **Padrones → Padrón vehicular** | Placas |
@@ -29,7 +29,7 @@ resumen: Cargar de una vez colaboradores, personas, empresas externas, vehículo
 
 ## Cómo descargar la plantilla
 
-1. Entra a la lista que vas a llenar, por ejemplo **Recursos Humanos → Colaboradores**.
+1. Entra a la lista que vas a llenar, por ejemplo **Estructura → Colaboradores**.
 2. Toca **Importar** (arriba, junto al buscador).
 
 ![Botón Importar en la lista](img/importar-desde-excel/00-boton.png)

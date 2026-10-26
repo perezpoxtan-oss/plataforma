@@ -30,3 +30,7 @@ El catálogo heredado tenía cuatro áreas (Organización, Seguridad, Reportes, 
 ## Actualización 2026-10-06
 
 A petición del responsable del proyecto (observación D-04 de QA), **Departamentos, Puestos y Turnos pasan a Recursos Humanos**: área en la Matriz de permisos y menú «Recursos Humanos → Catálogos del personal». Los permisos que ya tenía cada rol no cambian (Seguridad sigue usando esos catálogos en sus listas); el rol base Recursos Humanos los administra con alcance de empresa. Migración `2026_10_11_000100_catalogos_de_personal_en_recursos_humanos`.
+
+## Actualización 2026-10-26 (plan de correcciones, Etapa 1 · C-01)
+
+Decisión del dueño (DD-01, DD-02): se regresa a la decisión original y se amplía. **Colaboradores (directorio), Departamentos, Puestos, Turnos y Autorizaciones departamentales** (Responsables y «No molestar») pasan a **Dirección**, al menú **Estructura → Organización** y al producto «Estructura y usuarios»: vienen en **todos los planes**, porque la caseta (accesos, préstamos, responsivas, pases, rutas) no funciona sin ellos. **Recursos Humanos** se queda con Recepción, Candidatos, entrevistas, Vacantes y el **expediente**: la acción `colaboradores.datos_personales` solo vale con Candidatos contratado. Los permisos de cada rol no cambian; el rol base Recursos Humanos los sigue administrando. Migración `2026_11_10_000200_organizacion_base_y_paquetes_coherentes` (con `down()`).

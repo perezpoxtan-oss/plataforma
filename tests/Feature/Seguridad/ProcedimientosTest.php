@@ -417,13 +417,14 @@ class ProcedimientosTest extends TestCase
         // Servicio nuevo en cada consulta (el personal se guarda por petición)
         $obligados = fn (Procedimiento $p) => $this->enEmpresa(fn () => app(AdministradorProcedimientos::class)->obligados($this->recargar($p)->vigente)->pluck('id')->sort()->values()->all());
 
-        // Todas las sedes y todo el personal (con colaborador, activo y con «Ver»)
+        // Todas las sedes y todas las cuentas activas con «Ver» (C-07: también las que no tienen ficha de colaborador)
+        $sinFicha = [$this->admin->id, $this->director->id, $this->jefe->id, $sinColaborador->id];
         $todos = $this->publicado();
-        $this->assertEqualsCanonicalizing([$this->supervisor->id, $this->agente->id, $this->agentePlaya->id, $recepcionista->id, $corporativo->id], $obligados($todos));
+        $this->assertEqualsCanonicalizing([$this->supervisor->id, $this->agente->id, $this->agentePlaya->id, $recepcionista->id, $corporativo->id, ...$sinFicha], $obligados($todos));
 
-        // Solo Centro: el corporativo (sin sede) y Playa no
+        // Solo Centro: el corporativo (sin sede) y Playa no; las cuentas sin ficha, por las sedes de su rol
         $centro = $this->publicado(['clave' => 'PRO-C', 'aplica' => 'sedes', 'sedes' => [$this->centro->id]]);
-        $this->assertEqualsCanonicalizing([$this->supervisor->id, $this->agente->id, $recepcionista->id], $obligados($centro));
+        $this->assertEqualsCanonicalizing([$this->supervisor->id, $this->agente->id, $recepcionista->id, ...$sinFicha], $obligados($centro));
 
         // Departamento Seguridad O puesto Agente de Seguridad
         $seguridad = $this->publicado(['clave' => 'PRO-S', 'departamentos' => [$this->seguridad]]);
@@ -440,7 +441,8 @@ class ProcedimientosTest extends TestCase
         $this->acusar($seguridad, $this->agente)->assertSessionHasNoErrors();
         $this->actingAs($this->jefe)->get("/procedimientos/{$seguridad->id}?pestana=acuses")->assertOk()->assertSee('1 de 3 · 33%');
         $this->get("/procedimientos/{$seguridad->id}?pestana=acuses&sede={$this->playa->id}")->assertOk()->assertSee('0 de 1 · 0%');
-        $this->assertNotContains($sinColaborador->id, $obligados($todos));
+        // Sin ficha: no entra cuando el procedimiento se limita a departamentos o puestos
+        $this->assertNotContains($sinColaborador->id, $obligados($seguridad));
         $this->assertNotContains($inactivo->id, $obligados($todos));
     }
 

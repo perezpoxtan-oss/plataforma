@@ -81,7 +81,7 @@ Las pruebas gratis **no se activan solas** (así se evitan abusos).
 1. En la ficha, en **Plan, sedes y forma de pago**, elige el **Plan**, las **Sedes contratadas**, la **Forma de pago** (Mensual o Anual) y los **Paquetes al mes**.
 2. Escribe el **Motivo** y toca **Guardar**.
 
-**Qué debes ver:** «Plan guardado…». El precio se recalcula con los precios de hoy y los módulos del cliente cambian al momento. Lo que deja de incluir **solo se oculta**: su información se conserva y regresa si se vuelve a contratar. La fecha de vencimiento no cambia.
+**Qué debes ver:** «Plan guardado…». El precio se recalcula con los precios de hoy y los módulos del cliente cambian al momento. Lo que deja de incluir queda en **solo consulta** (su equipo lo ve, exporta e imprime, pero no registra) y su administrador recibe el aviso «Algunos módulos quedaron en solo consulta». Regresa al momento si se vuelve a contratar. Las excepciones del cliente se conservan. La fecha de vencimiento no cambia.
 
 ## Cómo hacer una excepción
 
@@ -93,6 +93,10 @@ Para dar a un cliente algo distinto a su plan sin cambiarlo:
 4. Escribe el **Motivo** (por ejemplo, lo que acordaste con el cliente) y toca **Guardar**.
 
 **Qué debes ver:** «Excepción guardada: +5 usuarios activos.» Queda en la lista con quién la hizo y cuándo. Para quitarla toca el círculo rojo (**Dar de baja**): se conserva en el historial.
+
+- Un **módulo agregado** se lleva lo que necesita (por ejemplo, Bitácora de transporte trae Rutas).
+- No se puede **quitar** un módulo que otro módulo activo necesita: «No se puede quitar Rutas de transporte: lo necesita Bitácora de transporte…».
+- Los módulos de un cliente con suscripción **solo** se cambian aquí (con su plan y sus excepciones). En **Empresas → Módulos** se ven en solo consulta.
 
 ## Cómo dejar a un cliente en solo consulta (y regresarlo)
 
@@ -133,7 +137,9 @@ Cada aviso sale una sola vez por vencimiento.
 | Esta solicitud no es de prueba gratis: márcala como pagada para activarla. | Intentaste aprobar como prueba una solicitud normal. | Cambia su estado a **Pagada**. |
 | Su vigencia terminó el …: registra el pago para reactivarla. | El cliente ya pasó su gracia. | Usa **Recibir pago**. |
 | Escribe el motivo de la excepción… | Falta el motivo. | Escribe qué se acordó. |
-| Los módulos de Dirección (empresa, sedes, usuarios, roles…) siempre se quedan. | Intentaste quitar un módulo básico. | Elige otro módulo. |
+| Los módulos de Dirección (empresa, sedes, usuarios, roles, colaboradores, departamentos…) siempre se quedan. | Intentaste quitar un módulo básico. | Elige otro módulo. |
+| No se puede quitar …: lo necesita … | Otro módulo activo del cliente depende de ese. | Quita primero el módulo que lo necesita, o deja los dos. |
+| «… tiene suscripción: sus módulos los fijan su plan y sus excepciones.» | Intentaste cambiar sus módulos en **Empresas → Módulos**. | Hazlo con una excepción en su ficha de cliente. |
 | Esa promoción solo aplica a … / ya venció / ya se agotó. | La promoción no sirve para ese cliente. | Elige otra o edita la promoción. |
 | No se puede sumar al plan elegido: … | Un paquete no se vende con ese plan. | Quita el paquete o cambia de plan. |
 | El historial dice «el correo de bienvenida no salió». | El correo de la plataforma no está configurado o el correo es incorrecto. | Configura el correo en **Configuración** y, en **Usuarios** de esa empresa, usa **Restablecer contraseña**. |

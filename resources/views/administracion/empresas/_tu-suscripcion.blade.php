@@ -55,6 +55,15 @@
                         <label class="campo-etiqueta" for="ms-sedes">¿Cuántas sedes?</label>
                         <input type="number" id="ms-sedes" name="sedes" class="campo" min="1" max="999" required value="{{ old('sedes', $s->sedes_contratadas) }}">
                     </div>
+                    {{-- C-05: el giro de la empresa (define sus palabras); si cambia, la plataforma lo revisa contigo --}}
+                    <div class="col-md-6">
+                        <label class="campo-etiqueta" for="ms-giro">Giro de tu empresa</label>
+                        <select id="ms-giro" name="rubro_id" class="campo">
+                            @foreach (\App\Models\Rubro::where('activo', true)->orderBy('id')->get(['id', 'nombre']) as $rubro)
+                                <option value="{{ $rubro->id }}" @selected((string) old('rubro_id', $s->empresa?->rubro_id) === (string) $rubro->id)>{{ $rubro->nombre }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="col-md-6">
                         <label class="campo-etiqueta" for="ms-periodicidad">Forma de pago</label>
                         <select id="ms-periodicidad" name="periodicidad" class="campo">

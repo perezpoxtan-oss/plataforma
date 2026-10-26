@@ -15,7 +15,7 @@ resumen: Panel de quién espera a Recursos Humanos, «Que pase» a quien llega a
 ## Antes de empezar
 
 - **Recepción:** necesitas poder consultar *Recepción de RR. HH.* (normalmente Recursos Humanos). Para decir **Que pase** necesitas poder consultar *Recepción de RR. HH.* o editar *Candidatos* en esa sede.
-- **Responder autorizaciones:** necesitas el permiso **Responder** de *Autorizaciones departamentales* y ser **responsable** (o suplente) del departamento. Las autorizaciones no están en el menú: llegan por la **campana** y por **Mis pendientes**.
+- **Responder autorizaciones:** necesitas el permiso **Responder** de *Autorizaciones departamentales* y ser **responsable** (o suplente) del departamento. Las autorizaciones llegan por la **campana** y por **Mis pendientes**; también las encuentras en **Estructura → Autorizaciones** (si respondes las de algún departamento o configuras quién autoriza). Vienen en todos los planes.
 - **Ajustes, responsables por departamento y esperas:** necesitas el permiso **Configurar** con alcance de empresa.
 
 ## Cómo usar la campana
@@ -137,7 +137,7 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 
 ## Cómo elegir los responsables por departamento y qué espera en la caseta
 
-Todo lo que tiene que ver con quién responde y qué espera está en una sola pantalla: **Responsables por departamento**. Llegas a ella desde **Recursos Humanos → Departamentos** (botón **Responsables**), desde **Recepción → Ajustes** o desde **Autorizaciones**.
+Todo lo que tiene que ver con quién responde y qué espera está en una sola pantalla: **Responsables por departamento**. Llegas a ella desde **Estructura → Departamentos** (botón **Responsables**), desde **Recepción → Ajustes** o desde **Autorizaciones**.
 
 1. En **Qué espera en la caseta**:
    - En **Esperan la autorización del responsable del departamento**, marca quién espera: **Visita**, **Proveedor** y **Contratista** (de fábrica, las tres). Marcada: la caseta elige a qué departamento viene la persona y, si ese departamento tiene responsable en la sede, queda «Esperando autorización» hasta que él responda; si no tiene responsable, la visita entra como siempre y el proveedor o contratista lo pasa el supervisor con **Autorizar por excepción**. **Proveedor** o **Contratista** sin marcar: se confirman con quien los citó (el Host) y **Confirmar Autorización**, como antes.
@@ -208,7 +208,7 @@ Aquí solo quedan el aviso de privacidad y el kiosco. Lo que espera en la caseta
 
 ## Preguntas frecuentes
 
-**¿Dónde quedaron las Autorizaciones en el menú?** Ya no están en el menú: te llegan por la campana y por **Mis pendientes**.
+**¿Dónde quedaron las Autorizaciones en el menú?** En **Estructura → Autorizaciones** (vienen en todos los planes), si configuras quién autoriza o respondes las de algún departamento. También te llegan por la campana y por **Mis pendientes**.
 
 **¿Qué pasa si nadie responde?** La plataforma recuerda a quien debe responder y después avisa a los suplentes y al Jefe de seguridad de la sede (ver «Cómo elegir los responsables por departamento y qué espera en la caseta»). Mientras tanto la persona sigue esperando en la caseta, y el supervisor puede usar **Confirmar Autorización** si el responsable (o Recursos Humanos) avisa por teléfono; en un proveedor o contratista, **Autorizar por excepción** con su motivo.
 

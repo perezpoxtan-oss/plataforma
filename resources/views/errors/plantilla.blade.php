@@ -26,6 +26,9 @@
         <p class="error-codigo">Error {{ $codigo }}</p>
         <h1 class="h4 fw-bold mb-2">{{ $titulo }}</h1>
         <p class="text-muted mb-4">{{ $mensaje }}</p>
+        @if (! empty($urlExtra))
+            <a href="{{ $urlExtra }}" class="acceso-boton d-inline-flex align-items-center justify-content-center gap-2 text-decoration-none mb-2"><i class="bi bi-receipt" aria-hidden="true"></i> {{ $botonExtra ?? 'Ver mi suscripción' }}</a>
+        @endif
         @switch($accion)
             @case('acceso')
                 <a href="{{ url('/login') }}" class="acceso-boton d-inline-flex align-items-center justify-content-center gap-2 text-decoration-none"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Volver a entrar</a>

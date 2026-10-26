@@ -51,6 +51,11 @@
                     <dt class="col-sm-4">Correo</dt><dd class="col-sm-8"><a href="mailto:{{ $s->correo }}">{{ $s->correo }}</a></dd>
                     <dt class="col-sm-4">Teléfono</dt><dd class="col-sm-8">@if ($s->telefono)<a href="tel:{{ preg_replace('/[^0-9+]/', '', $s->telefono) }}">{{ $s->telefono }}</a>@else Sin dato @endif</dd>
                     <dt class="col-sm-4">Sedes</dt><dd class="col-sm-8">{{ $s->sedes }}</dd>
+                    {{-- C-05: giro que eligió al contratar (la empresa nace con él) --}}
+                    <dt class="col-sm-4">Giro</dt><dd class="col-sm-8">{{ $s->rubro?->nombre ?? 'Sin indicar (nace como hotel)' }}
+                        @if ($s->empresa_id && $s->rubro_id && (int) $s->rubro_id !== (int) \App\Models\Empresa::whereKey($s->empresa_id)->value('rubro_id'))
+                            <span class="text-warning-emphasis d-block small">Es distinto al giro actual de la empresa: revísalo con el cliente y cámbialo en Empresas si corresponde.</span>
+                        @endif</dd>
                     <dt class="col-sm-4">Forma de pago</dt><dd class="col-sm-8">{{ $s->periodicidad === 'anual' ? 'Anual' : 'Mensual' }}</dd>
                     @if ($s->codigo_promocion)<dt class="col-sm-4">Código</dt><dd class="col-sm-8"><code>{{ $s->codigo_promocion }}</code></dd>@endif
                     <dt class="col-sm-4">Aviso de privacidad</dt><dd class="col-sm-8">{{ $s->acepta_privacidad ? 'Aceptado' : 'No' }}@if ($s->privacidad_aceptada_en) (@fecha($s->privacidad_aceptada_en))@endif</dd>

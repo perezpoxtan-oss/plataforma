@@ -324,16 +324,19 @@
                            placeholder="Ej: RUTA 1 - CANCÚN CENTRO" value="{{ $valor('nombre') }}">
 
                     <div class="campo-grupo">
+                        {{-- C-06: el turno es opcional (informativo); si la sede no usa turnos, el campo no aparece --}}
+                        @if ($turnos->where('elegible', true)->isNotEmpty() || $valor('turno_id') !== '')
                         <div class="flex-fill">
-                            <label class="campo-etiqueta" for="{{ $modo }}_ru_turno">Turno Operativo</label>
-                            <select id="{{ $modo }}_ru_turno" name="turno_id" class="campo" required>
-                                <option value="">-- Seleccionar Turno --</option>
+                            <label class="campo-etiqueta" for="{{ $modo }}_ru_turno">Turno Operativo <span class="text-lowercase fw-normal">(opcional)</span></label>
+                            <select id="{{ $modo }}_ru_turno" name="turno_id" class="campo">
+                                <option value="">-- Sin turno --</option>
                                 @foreach ($turnos as $t)
                                     @continue ($esNuevo && ! $t->elegible)
                                     <option value="{{ $t->id }}" @selected($valor('turno_id') === (string) $t->id) @unless ($t->elegible) hidden @endunless>{{ $t->nombre }} ({{ $t->inicio() }} - {{ $t->fin() }}){{ $t->elegible ? '' : ' (ya no disponible)' }}</option>
                                 @endforeach
                             </select>
                         </div>
+                        @endif
                         <div class="flex-fill">
                             <label class="campo-etiqueta" for="{{ $modo }}_ru_proveedor">Empresa Transportista</label>
                             <select id="{{ $modo }}_ru_proveedor" name="proveedor_id" class="campo rutas-transportista" required>
@@ -345,10 +348,9 @@
                             </select>
                         </div>
                     </div>
-                    @if ($turnos->where('elegible', true)->isEmpty() || $proveedores->where('elegible', true)->isEmpty())
+                    @if ($proveedores->where('elegible', true)->isEmpty())
                         <p class="campo-ayuda rutas-ayuda"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
-                            @if ($turnos->where('elegible', true)->isEmpty()) No hay turnos activos que se usen en esta sede (Estructura → Turnos). @endif
-                            @if ($proveedores->where('elegible', true)->isEmpty()) No hay proveedores activos que operen en esta sede (Padrones → Proveedores). @endif
+                            No hay empresas transportistas activas que operen en esta sede: dalas de alta en <strong>Padrones → Empresas externas</strong>.
                         </p>
                     @endif
 

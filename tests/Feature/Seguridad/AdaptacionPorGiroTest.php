@@ -173,10 +173,13 @@ class AdaptacionPorGiroTest extends TestCase
         $this->registrar($admin, $sede, ['tipo' => 'visitante', 'nombre' => 'Daniel Romero', 'motivo_visita' => 'rh'])->assertSessionHasErrors('motivo_visita');
         $this->registrar($admin, $sede, ['tipo' => 'huesped', 'nombre' => 'Daniel Romero'])->assertSessionHasErrors('tipo');
 
+        // C-04: ningún motivo viene marcado
         $this->registrar($admin, $sede, ['tipo' => 'visitante', 'nombre' => 'Daniel Romero', 'visita_colaborador_id' => $residente->id, 'habitacion' => '101'])
+            ->assertSessionHasErrors(['motivo_visita' => 'Elige el motivo de la visita.']);
+        $this->registrar($admin, $sede, ['tipo' => 'visitante', 'nombre' => 'Daniel Romero', 'motivo_visita' => 'colaborador', 'visita_colaborador_id' => $residente->id, 'habitacion' => '101'])
             ->assertSessionHasNoErrors();
         $acceso = $this->ultimo($empresa);
-        $this->assertSame('colaborador', $acceso->motivo_visita, 'Sin motivo, la visita es a un residente');
+        $this->assertSame('colaborador', $acceso->motivo_visita);
         $this->assertSame('101', $acceso->habitacion);
         $this->assertSame('Visita', $acceso->etiquetaTipo());
 

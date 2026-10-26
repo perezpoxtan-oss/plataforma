@@ -104,7 +104,7 @@ En los formatos largos cada apartado se abre o se cierra tocando su título; si 
 - Al **empezar el siguiente turno** de la sede, la campana le avisa otra vez a su dueño o, si no tiene, a todo el personal de Seguridad de la sede.
 - Si ese turno **termina** y el ticket sigue pendiente, se avisa al jefe de seguridad de la sede.
 
-Si tu empresa no tiene turnos registrados (Recursos Humanos → Turnos), el aviso al personal llega en el momento en que lo dejas pendiente.
+Si tu empresa no tiene turnos registrados (Estructura → Turnos), el aviso al personal llega en el momento en que lo dejas pendiente.
 
 ## Avisos en la campana
 

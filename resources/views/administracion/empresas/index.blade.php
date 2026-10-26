@@ -148,14 +148,20 @@
     @if ($esSuperadmin)
         @php $sinPantalla = \App\Http\Controllers\Administracion\PermisoController::sinPantalla(); @endphp
         @foreach ($empresas as $emp)
-            @php $activos = $contratados[$emp->id] ?? []; @endphp
+            @php $activos = $contratados[$emp->id] ?? []; $conSuscripcion = $suscripciones->get($emp->id); @endphp
             <dialog id="dialogoModulos{{ $emp->id }}" class="dialogo ancho" aria-labelledby="titulo-modulos-{{ $emp->id }}">
                 <div class="dialogo-cabecera">
                     <h2 id="titulo-modulos-{{ $emp->id }}"><i class="bi bi-grid-3x3-gap me-2 text-primary" aria-hidden="true"></i>Módulos de «{{ $emp->nombre_comercial }}»</h2>
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                 </div>
                 <div class="dialogo-cuerpo">
-                    <p class="small text-muted">Marca lo que la empresa usa. Lo que quites deja de verse en el menú, en la Matriz de permisos y en el Manual de sus usuarios; sus datos y permisos se conservan por si lo vuelves a activar.</p>
+                    @if ($conSuscripcion)
+                        {{-- DD-05: con suscripción, los módulos los fijan su plan y sus excepciones (solo consulta aquí) --}}
+                        <div class="alert alert-info small"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Esta empresa tiene suscripción: sus módulos los fijan su plan y sus excepciones.
+                            <a href="{{ route('catalogo-comercial.clientes.show', $conSuscripcion->id) }}">Cambiar por excepción en su ficha de cliente</a>.</div>
+                    @else
+                        <p class="small text-muted">Marca lo que la empresa usa. Lo que quites deja de verse en el menú, en la Matriz de permisos y en el Manual de sus usuarios; sus datos y permisos se conservan por si lo vuelves a activar. Si un módulo necesita otro (por ejemplo, la Bitácora de transporte necesita Rutas), se agrega solo y te avisamos.</p>
+                    @endif
                     <form action="{{ route('empresas.modulos', $emp->id) }}" method="POST" data-confirmar="¿Guardar los módulos de «{{ $emp->nombre_comercial }}»? Sus usuarios lo verán al recargar la pantalla.">
                         @csrf
                         @method('PUT')
@@ -164,15 +170,17 @@
                                 <legend class="small fw-bold">{{ $grupo['area'] }}@if ($grupo['siempre']) <span class="text-muted fw-normal">(siempre incluidos)</span>@endif</legend>
                                 @foreach ($grupo['modulos'] as $m)
                                     <label class="fila-check {{ $m->padre_id ? 'ms-4' : '' }}">
-                                        <input type="checkbox" name="modulos[]" value="{{ $m->id }}" @checked($grupo['siempre'] || in_array($m->id, $activos, true)) @disabled($grupo['siempre'])>
+                                        <input type="checkbox" name="modulos[]" value="{{ $m->id }}" @checked($grupo['siempre'] || in_array($m->id, $activos, true)) @disabled($grupo['siempre'] || $conSuscripcion)>
                                         {{ $m->nombre }}@if (in_array($m->clave, $sinPantalla, true)) <span class="etiqueta-proximamente">Próximamente</span>@endif
                                     </label>
                                 @endforeach
                             </fieldset>
                         @endforeach
                         <div class="dialogo-acciones">
-                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-azul">Guardar</button>
+                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>{{ $conSuscripcion ? 'Cerrar' : 'Cancelar' }}</button>
+                            @unless ($conSuscripcion)
+                                <button type="submit" class="btn-azul">Guardar</button>
+                            @endunless
                         </div>
                     </form>
                 </div>

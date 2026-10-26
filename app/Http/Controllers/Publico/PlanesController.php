@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Publico;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
 use App\Models\Promocion;
+use App\Models\Rubro;
 use App\Services\Comercial\AjustesComerciales;
 use App\Services\Comercial\CatalogoPublico;
 use App\Support\Entrada;
@@ -67,6 +68,8 @@ class PlanesController extends Controller
             'promocion' => $promocion,
             'errorCodigo' => $errorCodigo,
             'prueba' => $prueba,
+            // C-05: giros para elegir (hotel, corporativo, condominio, fraccionamiento)
+            'rubros' => Rubro::where('activo', true)->orderBy('id')->get(['id', 'clave', 'nombre']),
         ], conFormulario: true);
     }
 
@@ -85,6 +88,8 @@ class PlanesController extends Controller
             'telefono' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+()\s-]{7,20}$/'],
             'sedes' => ['required', 'integer', 'min:1', 'max:999'],
             'plan_id' => ['nullable', 'integer', 'min:1'],
+            // C-05 / DD-04: el giro (cuatro opciones); la empresa nace con sus palabras
+            'rubro_id' => ['required', 'integer', Rule::exists('rubros', 'id')->where('activo', true)],
             'paquetes' => ['nullable', 'array', 'max:20'],
             'paquetes.*' => ['integer', 'min:1'],
             'mensaje' => ['nullable', 'string', 'max:1000'],
@@ -94,6 +99,8 @@ class PlanesController extends Controller
             'codigo_promocion' => ['nullable', 'string', 'max:40'],
         ], [
             'tipo.in' => 'La prueba gratis no está disponible por ahora: envía tu solicitud para contratar.',
+            'rubro_id.required' => 'Elige el giro de tu empresa.',
+            'rubro_id.exists' => 'Elige el giro de tu empresa de la lista.',
             'nombre.required' => 'Escribe tu nombre.',
             'nombre.min' => 'Escribe tu nombre completo.',
             'correo.required' => 'Escribe tu correo para poder contestarte.',
@@ -116,6 +123,7 @@ class PlanesController extends Controller
             'sedes' => (int) $datos['sedes'],
             'mensaje' => $limpio($datos['mensaje'] ?? null),
             'plan_id' => isset($datos['plan_id']) ? (int) $datos['plan_id'] : null,
+            'rubro_id' => isset($datos['rubro_id']) ? (int) $datos['rubro_id'] : null,
             'paquetes' => array_values(array_unique(array_map('intval', $datos['paquetes'] ?? []))),
             'tipo' => $datos['tipo'] ?? 'compra',
             'periodicidad' => $datos['periodicidad'] ?? 'mensual',

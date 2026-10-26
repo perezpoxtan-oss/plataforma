@@ -8,6 +8,7 @@ use App\Models\Notificacion;
 use App\Models\Paquete;
 use App\Models\Plan;
 use App\Models\Producto;
+use App\Models\Rubro;
 use App\Models\SolicitudCompra;
 use App\Models\Suscripcion;
 use App\Models\User;
@@ -66,6 +67,7 @@ class CatalogoComercialTest extends TestCase
     private function solicitud(array $extra = []): array
     {
         return array_merge([
+            'rubro_id' => Rubro::where('clave', 'hotel')->value('id'),
             'nombre' => 'Juan Pérez',
             'empresa' => 'Hotel Centro',
             'correo' => 'juan@ejemplo.com.mx',
@@ -84,7 +86,7 @@ class CatalogoComercialTest extends TestCase
     {
         $this->assertSame(count(CatalogoComercialSeeder::PRODUCTOS), Producto::count());
         $this->assertSame(['esencial', 'profesional', 'corporativo'], Plan::orderBy('orden')->pluck('slug')->all());
-        $this->assertSame(3, Paquete::count());
+        $this->assertSame(4, Paquete::count()); // RR. HH., Reservas y eventos, puesta en marcha y kit lector
         $this->assertFalse(app(AjustesComerciales::class)->landingPublicada());
         $this->assertTrue($this->plan('profesional')->destacado);
         $this->assertTrue($this->plan('corporativo')->cotizar);
@@ -385,9 +387,10 @@ class CatalogoComercialTest extends TestCase
     public function test_alta_edicion_baja_y_orden_de_planes_paquetes_y_productos(): void
     {
         $this->actingAs($this->sa)->post('/catalogo-comercial/productos', ['clave' => 'kiosco', 'nombre' => 'Kiosco', 'modulos' => ['candidatos']])
-            ->assertRedirect()->assertSessionHas('ok');
+            ->assertRedirect()->assertSessionHas('ok', fn ($m) => str_contains($m, 'Se agregó Vacantes porque Candidatos lo necesita.'));
         $producto = Producto::where('clave', 'kiosco')->firstOrFail();
-        $this->assertSame(['candidatos'], $producto->modulos()->pluck('clave')->all());
+        // Lista de dependencias (C-02): el producto se lleva lo que su módulo necesita
+        $this->assertSame(['candidatos', 'vacantes'], $producto->modulos()->orderBy('clave')->pluck('clave')->all());
         // Un módulo de plataforma no se vende
         $this->actingAs($this->sa)->post('/catalogo-comercial/productos', ['clave' => 'x', 'nombre' => 'X', 'modulos' => ['identidad']])->assertSessionHasErrors('modulos.0');
 

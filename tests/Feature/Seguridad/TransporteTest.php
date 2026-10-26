@@ -366,7 +366,7 @@ class TransporteTest extends TestCase
         $this->enEmpresa(fn () => $this->colabs[2]->forceFill(['activo' => false])->save());
         $this->actingAs($this->admin)->post('/transporte', $this->taxis([], [['placas' => 'TX1', 'chofer' => 'Uno', 'monto' => '100', 'destino' => 'Centro',
             'pasajeros' => [$ajeno->id, $this->colabs[2]->id], 'firma' => $this->firma()]]))
-            ->assertSessionHasErrors(['taxis.0.pasajeros' => 'Taxi 1: agrega al menos un colaborador transportado (escanea su gafete o escribe su número de empleado).']);
+            ->assertSessionHasErrors(['taxis.0.pasajeros' => 'Taxi 1: agrega al menos un pasajero (escanea su gafete, escribe su número de empleado o dalo de alta), o escribe cuántos van.']);
 
         $this->assertSame(0, $this->contar());
         $this->assertSame([], Storage::disk('local')->allFiles());
@@ -538,7 +538,7 @@ class TransporteTest extends TestCase
         $this->actingAs($this->admin)->put("/transporte/{$vale->id}", ['monto' => '300', 'destino' => 'Nuevo destino', 'pasajeros' => [$this->colabs[2]->id]])
             ->assertSessionHasErrors(['justificacion' => 'El costo ($300.00) supera el tope de la ruta ($250.00). Debes anotar la justificación.']);
         $this->actingAs($this->admin)->put("/transporte/{$vale->id}", ['monto' => '0', 'destino' => '', 'pasajeros' => []])
-            ->assertSessionHasErrors(['monto' => 'El costo del servicio debe ser mayor a cero.', 'destino' => 'Falta el destino (paradero).', 'pasajeros' => 'Debe quedar al menos un colaborador registrado.']);
+            ->assertSessionHasErrors(['monto' => 'El costo del servicio debe ser mayor a cero.', 'destino' => 'Falta el destino (paradero).', 'pasajeros' => 'Debe quedar al menos un pasajero registrado.']);
         $this->actingAs($this->admin)->put("/transporte/{$vale->id}", ['monto' => '300', 'justificacion' => 'Tráfico.', 'destino' => 'nuevo destino', 'pasajeros' => [$this->colabs[2]->id, $this->colabs[0]->id]])
             ->assertSessionHasNoErrors();
         $vale = $this->enEmpresa(fn () => MovimientoTransporte::with('pasajeros', 'paradero')->find($vale->id));

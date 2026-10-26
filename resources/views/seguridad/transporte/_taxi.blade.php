@@ -97,6 +97,13 @@
                 <span class="chip-pasajero" data-id="{{ $id }}">{{ $pasajerosAnteriores[$id] }}<input type="hidden" name="{{ $n }}[pasajeros][]" value="{{ $id }}"><button type="button" data-quitar-pasajero aria-label="Quitar a {{ $pasajerosAnteriores[$id] }}">×</button></span>
             @endforeach
         </div>
+        {{-- C-06: si no se pueden registrar uno por uno, basta con cuántos van --}}
+        <details class="mas-detalles" @if (! empty($t['cantidad_pasajeros'])) open @endif>
+            <summary class="campo-etiqueta">¿No puedes registrar a los pasajeros?</summary>
+            <label class="campo-etiqueta mt-2" for="taxi_{{ $i }}_cantidad">¿Cuántos pasajeros van?</label>
+            <input type="number" id="taxi_{{ $i }}_cantidad" name="{{ $n }}[cantidad_pasajeros]" class="campo campo-corto" min="1" max="99" inputmode="numeric" value="{{ $t['cantidad_pasajeros'] ?? '' }}">
+            <p class="campo-ayuda mt-0">Solo si no los registraste arriba. El vale queda con la cantidad, sin nombres.</p>
+        </details>
     </div>
 
     @if ($conFirmas)

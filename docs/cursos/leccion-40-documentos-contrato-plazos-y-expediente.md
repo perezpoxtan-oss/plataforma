@@ -73,7 +73,7 @@ Comprueba: la ficha de Hugo ya no dice «Se borra el …» y sale del filtro **P
 
 ## Práctica 7 · Expediente del colaborador (Recursos Humanos y Supervisor)
 
-1. En **Recursos Humanos → Colaboradores** busca a **Ramón Ek Balam** y toca el icono de **carpeta** (**Expediente**).
+1. En **Estructura → Colaboradores** busca a **Ramón Ek Balam** y toca el icono de **carpeta** (**Expediente**).
 2. Revisa **Datos del colaborador**, **Documentos de contratación** (escaneados y en papel, con el contrato), **Su paso por Candidatos** y los resúmenes de accesos, llaves, pases, resguardos y procedimientos.
 3. Abre el INE escaneado desde el expediente.
 4. Entra como **Supervisor** y abre el mismo expediente.

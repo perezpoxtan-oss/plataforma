@@ -12,6 +12,14 @@
 
 @section('contenido')
     @include('administracion.partes.avisos')
+    @if ($problemasCatalogo !== [])
+        {{-- Lista de dependencias (C-02): lo que se vende debe funcionar --}}
+        <div class="alert alert-warning aviso mb-3" role="status"><i class="bi bi-diagram-3-fill" aria-hidden="true"></i>
+            <div><strong>Hay planes que no funcionan como están:</strong>
+                <ul class="mb-0 small">@foreach ($problemasCatalogo as $problema)<li>{{ $problema }}</li>@endforeach</ul>
+                <span class="small">Agrega a cada plan o paquete el producto que trae lo que falta.</span></div>
+        </div>
+    @endif
 
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
         <div class="encabezado-pantalla m-0">
