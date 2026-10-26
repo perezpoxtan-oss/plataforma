@@ -120,5 +120,5 @@ Al tocar **Contratar** en la ficha, el colaborador nuevo ya lleva su CURP, RFC, 
 
 - [Candidatos](candidatos.md)
 - [Vacantes](vacantes.md)
-- [Recepción y autorizaciones](recepcion-y-autorizaciones.md)
+- [Recepción de RR. HH.](recepcion-y-autorizaciones.md)
 - [Colaboradores](colaboradores.md)

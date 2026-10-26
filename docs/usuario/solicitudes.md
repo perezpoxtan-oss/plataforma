@@ -66,7 +66,7 @@ resumen: Guía para el personal de cualquier departamento (rol Solicitante) y pa
 
 ![Autorizaciones por responder](img/recepcion-y-candidatos/autorizaciones-bandeja-jefe.png)
 
-**Qué debes ver:** la caseta ve tu respuesta al momento. Si vas a ausentarte, delega tus autorizaciones como se explica en [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
+**Qué debes ver:** la caseta ve tu respuesta al momento. Si vas a ausentarte, delega tus autorizaciones como se explica en [Autorizaciones](autorizaciones.md).
 
 ## Cómo entrevistar a un candidato (Jefe de departamento)
 
@@ -124,7 +124,7 @@ Todo el detalle, paso a paso, está en [Entrevistar y elegir](entrevistar-y-eleg
 ## Relacionado
 
 - [Pases de salida](pases-salida.md)
-- [Recepción y autorizaciones](recepcion-y-autorizaciones.md)
+- [Autorizaciones](autorizaciones.md)
 - [Entrevistar y elegir](entrevistar-y-elegir.md)
 - [Vacantes](vacantes.md)
 - [Menús, Mis pendientes y modos de pantalla](menus.md)

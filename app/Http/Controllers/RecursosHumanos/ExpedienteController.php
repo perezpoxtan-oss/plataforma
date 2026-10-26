@@ -50,7 +50,7 @@ class ExpedienteController extends Controller
     public const MOVIMIENTOS = [
         'colaboradores.creado' => ['Alta', 'bi-person-plus'],
         'colaboradores.provisional' => ['Registro rápido en la caseta (por verificar)', 'bi-hourglass-split'],
-        'colaboradores.validado' => ['Verificado por Recursos Humanos', 'bi-patch-check'],
+        'colaboradores.validado' => ['Verificado (alta provisional)', 'bi-patch-check'],
         'colaboradores.fusionado' => ['Unido con su registro correcto (era un duplicado)', 'bi-people'],
         'colaboradores.desactivado' => ['Baja', 'bi-slash-circle'],
         'colaboradores.reactivado' => ['Reingreso', 'bi-arrow-counterclockwise'],

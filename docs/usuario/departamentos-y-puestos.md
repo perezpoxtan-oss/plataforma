@@ -32,7 +32,7 @@ resumen: Catálogos de áreas (departamentos) y rangos (puestos) que se eligen a
 
 ### Nombrar al responsable del departamento
 
-Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **Sin responsable: sus visitas entran sin autorización y nadie entrevista a sus candidatos**. Toca **Nombrar responsable** (o el botón **Responsables** de arriba) para abrir **Responsables por departamento** y elegir al titular y a sus suplentes; ahí mismo se configura qué espera en la caseta (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)). Necesitas el permiso **Configurar** de *Autorizaciones*.
+Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **Sin responsable: sus visitas entran sin autorización y nadie entrevista a sus candidatos**. Toca **Nombrar responsable** (o el botón **Responsables** de arriba) para abrir **Responsables por departamento** y elegir al titular y a sus suplentes; ahí mismo se configura qué espera en la caseta (ver [Autorizaciones](autorizaciones.md)). Necesitas el permiso **Configurar** de *Autorizaciones*.
 
 ![Departamento sin responsable](img/departamentos/8-sin-responsable.png)
 
@@ -114,4 +114,4 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 - [Colaboradores](colaboradores.md)
 - [Turnos](turnos.md)
-- [Recepción y autorizaciones](recepcion-y-autorizaciones.md)
+- [Autorizaciones](autorizaciones.md)

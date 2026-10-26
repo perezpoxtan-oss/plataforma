@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Colaboradores\ColaboradorParecido;
+use App\Support\DependenciasModulos;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -71,6 +72,7 @@ class ColaboradorController extends Controller
 
             return view('organizacion.colaboradores.index', [
                 'sinEmpresa' => false,
+                'quienVerifica' => DependenciasModulos::quienVerificaAltas(),
                 'colaboradores' => $lista,
                 'sedesFiltro' => $permitidasVer === null ? $sedesActivas : $sedesActivas->whereIn('id', $permitidasVer)->values(),
                 'departamentosFiltro' => Departamento::where(fn ($q) => $q->where('activo', true)

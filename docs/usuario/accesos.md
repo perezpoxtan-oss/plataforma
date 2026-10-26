@@ -87,7 +87,7 @@ Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo,
 
 Lo que pide cada tipo:
 
-- **Colaborador:** escanea su gafete de empleado o escribe su nombre o número y elígelo. No lleva gafete de visita. Si no aparece, toca **¿No aparece? Darlo de alta provisional**: se registra y Recursos Humanos lo valida después.
+- **Colaborador:** escanea su gafete de empleado o escribe su nombre o número y elígelo. No lleva gafete de visita. Si no aparece, toca **¿No aparece? Darlo de alta provisional**: se registra y después lo verifica Recursos Humanos (si tu plan no lo incluye, el administrador).
 <!-- solo: hotel, corporativo -->
 - **Personal Externo / Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**. **Ningún motivo viene marcado**: elige siempre uno (tu empresa puede dejar uno marcado en Configuración).
   - **Visita general:** escribe **¿A quién o a qué viene?** (por ejemplo «Mensajería» o «Entrega de documentos»).
@@ -165,7 +165,7 @@ Todo lo que espera tiene **reloj, color y suplente**. No tienes que vigilar nada
 
 **Qué debes ver:** el renglón pasa de verde a ámbar y a rojo, y, cuando se escaló, la caja de abajo dice «Se escaló a: Sergio Díaz y Julia Torres».
 
-> Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Confirmar Autorización** en la tarjeta de la visita; en la de un proveedor o contratista, **Autorizar por excepción**. Los minutos se cambian en **Estructura → Autorizaciones → Responsables por departamento** (con Recursos Humanos, también en **Recursos Humanos → Recepción → Ajustes**) (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)).
+> Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Confirmar Autorización** en la tarjeta de la visita; en la de un proveedor o contratista, **Autorizar por excepción**. Los minutos se cambian en **Estructura → Autorizaciones → Responsables por departamento** (con Recursos Humanos, también en **Recursos Humanos → Recepción → Ajustes**) (ver [Autorizaciones](autorizaciones.md)).
 
 ## Cómo autorizar a un proveedor o contratista
 
@@ -193,7 +193,7 @@ Solo quien tiene el permiso **Aprobar** (supervisor o Jefe de seguridad). Siempr
 
 ### Si tu empresa no pide la autorización del departamento
 
-Si en tu empresa la casilla **Proveedor** o **Contratista** no está marcada (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)), funciona como antes:
+Si en tu empresa la casilla **Proveedor** o **Contratista** no está marcada (ver [Autorizaciones](autorizaciones.md)), funciona como antes:
 
 1. Abre la pestaña **Pendientes de Autorización**.
 2. Confirma con quien lo citó (el Host) que lo espera.
@@ -322,7 +322,7 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 - **¿Y si viene a entregar papeles o a firmar?** También es **Ya tiene cita**: la plataforma sabe en qué paso va y le dice a Recursos Humanos si viene a su entrevista, a entregar documentos o a firmar.
 - **¿Tengo que preguntarle el puesto o el departamento?** No. Solo a qué viene y, si busca empleo, a qué vacante (si la sabe). Lo demás lo pone Recursos Humanos.
 <!-- fin -->
-- **El colaborador no está en la lista.** Usa **¿No aparece? Darlo de alta provisional**; Recursos Humanos lo valida después.
+- **El colaborador no está en la lista.** Usa **¿No aparece? Darlo de alta provisional**; después lo verifica Recursos Humanos (si tu plan no lo incluye, el administrador).
 - **¿Por qué no viene marcado ningún motivo?** Para que cada visita quede con su motivo real. Si casi todas tus visitas son del mismo tipo, tu administrador puede dejar uno marcado en **Estructura → Configuración → Caseta y accesos → Motivo de la visita**.
 - **No veo el motivo Recursos Humanos.** Tu plan no incluye Recursos Humanos: usa **Visita general** o **Visita a Departamento**.
 - **Me equivoqué de zona.** Usa **Cambiar Zona**.
@@ -338,4 +338,5 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 - [Bitácora de novedades](novedades.md)
 - [Gafetes](gafetes.md)
 - [Padrón de personas](personas.md)
-- [Recepción y autorizaciones](recepcion-y-autorizaciones.md)
+- [Autorizaciones](autorizaciones.md)
+- [Recepción de RR. HH.](recepcion-y-autorizaciones.md)

@@ -233,7 +233,9 @@ class MisPendientes
         }
         // Fin Mejoras activos
         // Reservas de áreas (docs/tecnico/reservas.md): por aprobar, órdenes de servicio y cambios pedidos
-        if ($actor->can('reservas.ver') || $actor->can('reservas.crear') || DepartamentoResponsable::where('user_id', $actor->id)->exists()) {
+        // Revisión Etapa 1 (A-5): sin el complemento «Reservas y eventos» no se le muestran ni a los responsables de departamento
+        if (app(Autorizador::class)->moduloActivo($empresaId, 'reservas')
+            && ($actor->can('reservas.ver') || $actor->can('reservas.crear') || DepartamentoResponsable::where('user_id', $actor->id)->exists())) {
             foreach (app(PendientesReservas::class)->para($actor, $empresaId) as $pendiente) {
                 $items[] = $pendiente;
             }

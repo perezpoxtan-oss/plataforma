@@ -3,7 +3,7 @@ titulo: Colaboradores
 modulos: [colaboradores]
 seccion: Estructura
 orden: 10
-resumen: Directorio del personal de la empresa, sus sedes, lo que registra la caseta y su verificación por Recursos Humanos.
+resumen: Directorio del personal de la empresa, sus sedes, lo que registra la caseta y su verificación.
 ---
 
 # Colaboradores
@@ -112,7 +112,7 @@ Cada colaborador tiene su propio **código QR** y puede tener una **etiqueta NFC
 **Qué debes ver:** «Etiqueta … asignada. Ya se puede leer con el lector.» Si esa tarjeta ya es de otra cosa (otro colaborador, una llave, un vehículo…), el aviso te dice de cuál y no se asigna.
 
 - Quien solo consulta colaboradores ve el QR, pero no el apartado para asignar la etiqueta.
-- Los registrados en la caseta (**POR VERIFICAR**) reciben su etiqueta hasta que Recursos Humanos los verifica.
+- Los registrados en la caseta (**POR VERIFICAR**) reciben su etiqueta hasta que se verifican.
 
 ## Cómo registrar a un colaborador desde la caseta (queda por verificar)
 
@@ -125,9 +125,11 @@ Si en la caseta necesitas registrar a alguien que **no aparece** al buscarlo:
 
 ![Registro rápido en la caseta](img/colaboradores/9-caseta-alta-provisional.png)
 
-**Qué debes ver:** la persona queda marcada **POR VERIFICAR** y ya la puedes usar. Recursos Humanos la revisará después; cuando la verifique (o la una con su registro) te llega el resultado a la **campana**.
+**Qué debes ver:** la persona queda marcada **POR VERIFICAR** y ya la puedes usar. Recursos Humanos (o, si tu plan no lo incluye, el administrador) la revisará después; cuando la verifique (o la una con su registro) te llega el resultado a la **campana**.
 
-## Cómo verificar lo que registró la caseta (Recursos Humanos)
+## Cómo verificar lo que registró la caseta (Recursos Humanos o administrador)
+
+Lo verifica Recursos Humanos si tu plan lo incluye; si no, el administrador de tu empresa.
 
 1. Te llega a la **campana** «Alta por verificar: …» con el botón **Verificar**. También aparece en **Inicio** («N colaboradores por verificar») y en **Mis pendientes** («Colaboradores por verificar»). Tócalo y llegas a la lista filtrada. Dentro de Colaboradores también verás el aviso.
 2. Elige **Por verificar** en el filtro.
@@ -189,7 +191,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | No veo la pestaña **Expediente** en la ficha. | Tu rol no tiene el permiso **Datos personales**. | Pídelo a tu administrador si lo necesitas. |
 | Este colaborador ya no está pendiente de verificar. | Otra persona ya lo verificó o lo unió. | Recarga la página. |
 | Elige un colaborador activo y ya validado. | Al unir elegiste uno inválido. | Elige el colaborador correcto. |
-| No veo el apartado **Asignar etiqueta NFC / RFID**. | Tu rol solo consulta colaboradores, o el colaborador está **POR VERIFICAR**. | Pide a Recursos Humanos que lo verifique, o el permiso de editar a tu administrador. |
+| No veo el apartado **Asignar etiqueta NFC / RFID**. | Tu rol solo consulta colaboradores, o el colaborador está **POR VERIFICAR**. | Pide a quien verifica (Recursos Humanos o el administrador) que lo verifique, o el permiso de editar a tu administrador. |
 | No veo los datos legales. | Tu rol no tiene el permiso **Datos personales**. | Pídelo a tu administrador si lo necesitas. |
 
 ## Preguntas frecuentes

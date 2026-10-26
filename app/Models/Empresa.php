@@ -30,7 +30,7 @@ class Empresa extends Model
 
     /** Avisos por correo y su valor si la empresa no lo ha cambiado. */
     public const AVISOS = [
-        'alta_provisional' => ['Avisar a Recursos Humanos cuando la caseta registre un alta provisional de colaborador', true],
+        'alta_provisional' => ['Avisar a quien verifica cuando la caseta registre un alta provisional de colaborador', true],
         // Bitácora de transporte (SEGCAT: configuracion_correo.destinatarios_vouchers)
         'vale_taxi' => ['Enviar cada vale de taxi de la Bitácora de transporte (para su autorización)', true],
         // Pases de salida (circuito de aprobación)

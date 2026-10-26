@@ -313,7 +313,8 @@ Las versiones corregidas son **8.5.12**, **8.4.27**, **8.3.36** y **8.2.35** o p
 ## Relacionado
 
 - [Empresas y sedes](empresas-y-sedes.md)
-- [Recepción y autorizaciones](recepcion-y-autorizaciones.md)
+- [Recepción de RR. HH.](recepcion-y-autorizaciones.md)
+- [Autorizaciones](autorizaciones.md)
 - [Vacantes](vacantes.md)
 - [Lost & Found y robo](lost-found-y-robo.md)
 - [Bitácora de transporte](transporte.md)
