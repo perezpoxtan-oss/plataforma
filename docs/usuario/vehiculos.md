@@ -100,6 +100,17 @@ En **Padrones → Empresas externas → Ficha → Flotilla** toca **Agregar veh�
 
 **Qué debes ver:** la tarjeta marcada **DE BAJA**. Nunca se borra: las bitácoras dependen del vehículo.
 
+## Cómo restringir el acceso a un vehículo
+
+«Dar de baja» es para lo que **ya no se usa**. Si lo que quieres es que **no pueda entrar** (por ejemplo, por un robo o una falta), usa **Restringir acceso**: sigue en el padrón con su historial, pero la caseta no lo puede registrar.
+
+1. En la ficha toca el **escudo rojo** (Restringir acceso). Se abre **Restringir acceso: …**.
+2. Escribe el **Motivo** (lo verá la caseta), por ejemplo «choque en el estacionamiento; solo con autorización de Gerencia».
+3. Si es por un tiempo, elige **Hasta**; si lo dejas vacío, queda restringido hasta que se quite.
+4. Toca **Restringir acceso**.
+
+**Qué debes ver:** «Acceso restringido: la caseta no lo podrá registrar (tampoco con un nombre parecido sin confirmar que es otro). Lo quitas con «Quitar restricción».» y en la ficha la insignia «Acceso restringido hasta el …: …». Para quitarla, toca el **escudo verde** (Quitar restricción) y confirma.
+
 ## Lo que ve el agente de caseta
 
 El agente consulta y busca vehículos, pero no ve **Registrar Vehículo** ni los botones de editar o dar de baja.

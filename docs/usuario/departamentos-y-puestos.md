@@ -73,6 +73,8 @@ Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **S
 
 **Qué debes ver:** la ficha en gris con **DE BAJA**. No se borra el historial. Un puesto ligado a un departamento dado de baja conserva esa liga: se ve tachada en su ficha.
 
+> Si tiene cosas vigentes (colaboradores, responsables, llaves o vacantes), antes de confirmar se abre [Antes de dar de baja](antes-de-dar-de-baja.md) con la lista y lo que pasará con cada una.
+
 ## En el celular
 
 ![Celular](img/departamentos/5-celular.png)

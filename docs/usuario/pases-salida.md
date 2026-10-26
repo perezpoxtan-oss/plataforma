@@ -39,10 +39,10 @@ resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y 
 
 1. Toca **Nuevo Pase**. Si trabajas en una sola sede, la **Sede de Origen** ya viene elegida. Si tu rol es **Solicitante** o **Jefe de departamento**, tu nombre ya viene como **Solicitante** (solo puedes pedir pases a tu nombre).
 2. En **1. Motivo y Solicitante**: elige el **motivo** (la ventana te dice si el equipo debe regresar). Escanea el gafete del solicitante o escribe su nombre y elígelo. Si no aparece, toca **Nuevo Colaborador**.
-3. En **2. Enviar A**: elige otra sede, un proveedor (si no está, **Nuevo Proveedor**) o un colaborador que se lo lleva. Escribe la **Salida programada** (el día en que planeas que salga) y, si el equipo regresa, el **Regreso programado** (el día en que debe volver). El regreso programado no puede ser antes de la salida programada.
+3. En **2. Enviar A**: elige otra sede o un proveedor (si no está, **Nuevo Proveedor**). Si el equipo se le entrega a una persona para que lo use (por ejemplo, un radio para su turno), no es un pase: hazlo con una [responsiva](responsivas.md). Escribe la **Salida programada** (el día en que planeas que salga) y, si el equipo regresa, el **Regreso programado** (el día en que debe volver). El regreso programado no puede ser antes de la salida programada.
 
    ![Salida programada y Regreso programado](img/pases-salida/fechas-programadas.png)
-4. En **3. Artículos que Salen**: escanea la etiqueta del equipo del padrón (se llena solo) o escribe cantidad, equipo, marca, modelo, serie y descripción. Si tu empresa pide aprobaciones según el valor, verás también **Valor por pieza $ (opcional)**: escríbelo si lo conoces (los equipos del padrón con costo registrado ya traen su valor). Si lo dejas vacío, el pase pedirá todas las aprobaciones.
+4. En **3. Artículos que Salen**: escanea la etiqueta del equipo del padrón (se llena solo; solo salen equipos **DISPONIBLES** de la sede de origen y cada uno una vez) o escribe cantidad, equipo, marca, modelo, serie y descripción. Si tu empresa pide aprobaciones según el valor, verás también **Valor por pieza $ (opcional)**: escríbelo si lo conoces (los equipos del padrón con costo registrado ya traen su valor). Si lo dejas vacío, el pase pedirá todas las aprobaciones.
 5. Toca **Guardar y Enviar a Aprobación** (o **Registrar y capturar siguiente** si harás otro).
 
 ![Nuevo pase de salida](img/pases-salida/nuevo-pase.png)
@@ -143,6 +143,8 @@ Tu empresa puede pedir menos firmas en algún movimiento. La ventana te lo dice:
 ![Caseta: registrar la salida](img/pases-salida/caseta-salida.png)
 
 **Qué debes ver:** la línea de pasos avanza y el **Recorrido del pase** muestra la fecha y la hora reales. Si faltan artículos en el regreso, queda **Regreso parcial** y sigue esperando lo demás.
+
+Los equipos del padrón cambian solos de estado: al salir quedan **FUERA** en [Equipos de seguridad](equipos.md) y al regresar vuelven a **DISPONIBLE**. Si cierras el pase con faltantes, los equipos que no volvieron quedan **NO REGRESÓ** y el mensaje te dice cuáles, para darlos de baja con su voucher.
 
 ### Si el regreso programado ya pasó al dar salida
 
@@ -248,6 +250,10 @@ Si tu empresa ya tenía su propio circuito, no cambia solo. Arriba de los pasos 
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
 | «Elige al solicitante: escanea su gafete, busca su nombre o regístralo con «Nuevo Colaborador».» | Falta el solicitante. | Escanea su gafete o búscalo. |
+| «El equipo … no está DISPONIBLE (está ASIGNADO). Primero recíbelo en Responsivas.» | Alguien tiene ese equipo con una responsiva. | Recíbelo en Responsivas y vuelve a intentarlo. |
+| «El equipo … no está DISPONIBLE (está DE BAJA). Solo sale un equipo disponible.» | El equipo está de baja, en mantenimiento, fuera o no regresó. | Quítalo del pase o elige otro. |
+| «El equipo … ya está en el pase …, que sigue abierto.» / «… está dos veces en el pase.» | Ese equipo ya va en otro pase o lo agregaste dos veces. | Quítalo de este pase. |
+| «El equipo … es de otra sede: solo salen equipos de ….» | El equipo pertenece a otra sede. | Pide el pase desde su sede. |
 | «Solo puedes solicitar pases de salida a tu nombre.» | Tu rol pide pases solo para ti. | Deja tu nombre en **Solicitante**; si el pase es de otra persona, que lo pida ella o la caseta. |
 | «Tu usuario no está vinculado a un colaborador: pide a tu administrador que lo vincule en Usuarios para poder solicitar pases.» (sale en rojo al abrir **Nuevo Pase** y al intentar guardar) | Tu cuenta no está ligada a tu ficha de colaborador. | Pide a tu administrador que la vincule en [Usuarios](usuarios.md). |
 | «Agrega al menos un artículo que salga en el pase.» | No hay artículos. | Escanea o escribe al menos uno. |

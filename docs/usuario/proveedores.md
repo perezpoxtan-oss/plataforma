@@ -103,6 +103,17 @@ Al quitarla de tu sede, la empresa **deja de aparecer en tu lista** (solo ves la
 
 **Qué debes ver:** «Empresa externa «…» dada de baja: ya no se puede elegir en la caseta ni en los pases. Puedes reactivarla con el mismo botón cuando quieras.» No se borra nada: su personal, su flotilla y su historial se conservan.
 
+## Cómo restringir el acceso a una empresa
+
+«Dar de baja» es para lo que **ya no se usa**. Si lo que quieres es que **no pueda entrar** (por ejemplo, por un robo o una falta), usa **Restringir acceso**: sigue en el padrón con su historial, pero la caseta no lo puede registrar.
+
+1. En la ficha toca el **escudo rojo** (Restringir acceso). Se abre **Restringir acceso: …**.
+2. Escribe el **Motivo** (lo verá la caseta), por ejemplo «incumplió las reglas de seguridad en obra».
+3. Si es por un tiempo, elige **Hasta**; si lo dejas vacío, queda restringido hasta que se quite.
+4. Toca **Restringir acceso**.
+
+**Qué debes ver:** «Acceso restringido: la caseta no lo podrá registrar (tampoco con un nombre parecido sin confirmar que es otro). Lo quitas con «Quitar restricción».» y en la ficha la insignia «Acceso restringido hasta el …: …». Para quitarla, toca el **escudo verde** (Quitar restricción) y confirma.
+
 ## Cómo usar la ficha de la empresa
 
 1. Toca **Ficha** en la tarjeta. Se abre la **Ficha de empresa externa** con tres pestañas:
@@ -150,7 +161,7 @@ Los mensajes aparecen en rojo dentro de la misma ventana; lo que escribiste se c
 
 **¿Qué categoría elijo?** La que describe a qué viene: *Contratista* para obras y mantenimiento; *Transporte de personal* para camiones de colaboradores; *Proveedor (Insumos / Alimentos)* para entregas, etc. La categoría decide en qué listas aparece (por ejemplo, el personal de un contratista se registra como *Contratista*).
 
-**¿Qué significa «De baja»?** Que la empresa ya no se puede usar en la caseta ni en los pases (antes se le decía «vetada»). Se puede reactivar cuando quieras; nada se borra.
+**¿Qué diferencia hay entre «De baja» y «Restringida»?** **De baja** es una empresa con la que ya no se trabaja: si vuelve a llegar, la caseta puede reactivarla. **Restringida** es una empresa que **no puede entrar** (antes se le decía «vetada»): la caseta no la registra, ni siquiera escrita con un nombre parecido, sin confirmar que es otra. Las empresas que estaban «de baja» por un veto quedaron como **Restringidas**.
 
 **¿Qué son las tarjetas con «Pendiente de verificar»?** Empresas que la caseta registró al momento. Alguien con permiso debe revisarlas con el botón **Verificar**. Ver [Altas por verificar](altas-por-verificar.md).
 

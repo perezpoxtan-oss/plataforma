@@ -24,7 +24,8 @@ resumen: Inventario de los gafetes de plástico que se prestan en caseta, con su
 - El **Tipo** (Visitante, Proveedor, Contratista o los que agregue tu empresa) y la **Sede**.
 - El **código interno** (lo que lleva el QR) y, si tiene chip, su **NFC / RFID**.
 - Quién lo creó o lo editó y cuándo.
-- Abajo, el estado: **DISPONIBLE** (verde: se puede prestar), **EN USO** (azul: alguien lo tiene ahora en la Bitácora de accesos) o **DE BAJA** con su motivo (rojo, por ejemplo **DE BAJA · EXTRAVIADO**) y el folio de su voucher, que te lleva a [Vouchers de reposición](vouchers.md).
+- Si alguien lo tiene, «EN USO por …» con su nombre; si no, «Último préstamo: …» con quién lo tuvo, cuándo y en qué sede.
+- Abajo, el estado: **DISPONIBLE** (verde: se puede prestar), **EN USO** (azul: alguien lo tiene ahora en la Bitácora de accesos), **NO REGRESÓ** (naranja: la persona salió sin devolverlo) o **DE BAJA** con su motivo (rojo, por ejemplo **DE BAJA · EXTRAVIADO**) y el folio de su voucher, que te lleva a [Vouchers de reposición](vouchers.md).
 
 ## Cómo encontrar un gafete
 
@@ -99,9 +100,9 @@ Para imprimir uno solo, toca el botón de la **impresora** en su ficha.
 1. Toca la **X roja** (Dar de baja) de la ficha. Se abre **Dar de Baja: …**.
 2. Elige el **Motivo**: Extraviado, Dañado o Robado.
 3. Escribe **¿Cómo pasó?** (ayuda a decidir si se cobra).
-4. Si se le va a cobrar a alguien, marca **Se le cobra al colaborador**:
+4. Si se le va a cobrar a alguien, marca **Se le cobra al responsable**:
    - **Monto:** se sugiere el último cobrado por ese tipo de gafete; puedes cambiarlo.
-   - **Colaborador Responsable:** escribe su número de empleado (aparece solo, sin Enter) o escanea su credencial.
+   - **Responsable (a quién se le cobra):** elige **Colaborador** (número de empleado o credencial), **Persona externa** o **Empresa externa** y búscalo. Si el gafete **no regresó**, ya viene propuesta la última persona que lo tuvo.
 5. En **Firmas del voucher** elige **Firma física** (se imprime y se firma a mano) o **Firma digital** (firman en la pantalla Seguridad y, si hay responsable, también él), igual que en Llaves y Equipos.
 6. Toca **Dar de baja**.
 
@@ -110,6 +111,15 @@ Para imprimir uno solo, toca el botón de la **impresora** en su ficha.
 **Qué debes ver:** el gafete **DE BAJA** con su motivo y arriba el folio del voucher con el botón **Imprimir voucher**. Todos los vouchers quedan en [Vouchers de reposición](vouchers.md).
 
 ![Gafetes de baja con su motivo y su voucher](img/gafetes/de-baja-con-voucher.png)
+
+Si el gafete está **EN USO** (alguien en sitio lo tiene), no se da de baja desde aquí: se abre [Antes de dar de baja](antes-de-dar-de-baja.md) con quién lo tiene. Lo normal es darle salida en la Bitácora de accesos y quitar la marca **Devolvió el gafete**.
+
+## Si el gafete no regresó
+
+Cuando en la caseta se da salida a alguien y se quita la marca **Devolvió el gafete**, el gafete queda **NO REGRESÓ**: no se puede volver a prestar y tu supervisor recibe un aviso en la campana.
+
+- Si después lo devuelven, toca **Recibir** en su ficha: vuelve a **DISPONIBLE**.
+- Si ya no aparecerá, toca **Dar de baja**: el voucher propone a la última persona que lo tuvo.
 
 ## Cómo reactivar un gafete
 

@@ -15,7 +15,7 @@ resumen: Consultar, reimprimir y dar seguimiento a los comprobantes de llaves, g
 
 1. Entra a **Operación → Caseta → Vouchers de reposición** (justo debajo de **Préstamo de llaves**).
 2. Cada tarjeta tiene el **folio** (por ejemplo `VR-2610-48213`) y si es **CON COBRO** (rojo) o **SIN COBRO** (verde).
-3. Debajo: el artículo dado de baja, su **Origen** (Llave, Gafete o Equipo), **Motivo**, **Sede**, **Responsable**, el **Monto** (si hay cobro), **¿Cómo pasó?**, quién lo generó y cuándo.
+3. Debajo: el artículo dado de baja, su **Origen** (Llave, Gafete o Equipo), **Motivo**, **Sede**, **Responsable** (un colaborador, una persona externa con su empresa entre paréntesis, o una empresa externa), el **Monto** (si hay cobro), **¿Cómo pasó?**, quién lo generó y cuándo.
 
 ![Vouchers de reposición](img/vouchers/lista.png)
 
@@ -40,7 +40,7 @@ resumen: Consultar, reimprimir y dar seguimiento a los comprobantes de llaves, g
 
 ![Voucher de tres copias](img/vouchers/voucher.png)
 
-**Qué debes ver:** las firmas digitales ya salen impresas; si faltan, quedan las líneas para firmar a mano. El colaborador responsable firma, pero **no recibe copia**.
+**Qué debes ver:** las firmas digitales ya salen impresas; si faltan, quedan las líneas para firmar a mano. El responsable firma, pero **no recibe copia**.
 
 ## Cómo registrar la firma en papel
 
@@ -90,7 +90,7 @@ resumen: Consultar, reimprimir y dar seguimiento a los comprobantes de llaves, g
 ## Preguntas frecuentes
 
 - **¿Cómo se crea un voucher?** Al dar de baja una llave, gafete o equipo como perdido, dañado o robado, desde su propia pantalla.
-- **¿Quién recibe las copias por correo?** Si el voucher es con cobro, las listas que el administrador puso en **Estructura → Configuración → Avisos por correo**. El colaborador no recibe correo.
+- **¿Quién recibe las copias por correo?** Si el voucher es con cobro, las listas que el administrador puso en **Estructura → Configuración → Avisos por correo**. El responsable no recibe correo.
 - **¿Puedo borrar un voucher?** No. Si el artículo aparece, márcalo como **Recuperado** (o reactívalo desde su ficha: es lo mismo).
 - **¿Qué pasa con el cobro si el artículo aparece?** Se cancela; si ya se cobró, queda **Reembolso pendiente** hasta que marques **Reembolso entregado**.
 

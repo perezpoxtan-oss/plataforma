@@ -198,3 +198,5 @@ Donde SEGCAT tenía "escáner / QR / NFC" se usa `componentes.lector`: gafete as
 - **«Dar Salida»** (`GET /accesos/en-sitio`): ya buscaba acompañantes; ahora cada resultado trae `coincide_acompanante` y la tarjeta lo avisa igual.
 - No se agregaron salidas temporales nuevas (las de acompañantes de proveedor y contratista ya existían).
 - Pruebas: `AjustesRonda8Test::test_ac05_*`.
+
+> **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).

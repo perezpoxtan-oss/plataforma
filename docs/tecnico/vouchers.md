@@ -160,3 +160,5 @@ SEGCAT no tenía forma de registrar que el artículo apareció: se reactivaba y 
 ## Mejoras padrones (ADR-0015)
 
 Ver [mejoras-padrones.md](mejoras-padrones.md): «Reactivar» en la ficha = «Recuperado» (`RecuperacionVouchers::desdeFicha`), `?recuperar=` abre el diálogo, último voucher por artículo para la ficha (`ultimosPorOrigen`), «Se le cobra al colaborador».
+
+> **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).

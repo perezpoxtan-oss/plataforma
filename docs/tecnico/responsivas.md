@@ -120,3 +120,5 @@ El lector necesita `equipos.ver` (tipo `equipo`) y `colaboradores.ver`; la lista
 - Hora de regreso de los equipos «Turno», semáforo y avisos (horas por empresa; apagado por omisión), Mis pendientes «Equipos de turno sin regresar».
 
 Detalle: [caseta-y-activos.md](caseta-y-activos.md).
+
+> **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).

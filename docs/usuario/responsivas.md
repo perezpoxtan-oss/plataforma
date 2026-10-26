@@ -3,11 +3,11 @@ titulo: Responsivas
 modulos: [responsivas]
 seccion: Operación
 orden: 80
-resumen: Entregar equipo de seguridad a un colaborador con su firma y recibirlo de vuelta.
+resumen: Entregar equipo de seguridad a un colaborador o a un externo con su firma y recibirlo de vuelta.
 ---
 # Responsivas
 
-**¿Para qué sirve?** Aquí la caseta entrega **equipo de seguridad** (radios, lámparas, detectores, chalecos…) a un colaborador, **con su firma**, y lo recibe de vuelta. Cada entrega es una **responsiva** con su **folio**, por ejemplo `CENRES-000002`, y puede llevar uno o varios equipos.
+**¿Para qué sirve?** Aquí la caseta entrega **equipo de seguridad** (radios, lámparas, detectores, chalecos…) a un colaborador o a una persona o empresa externa, **con su firma**, y lo recibe de vuelta. Cada entrega es una **responsiva** con su **folio**, por ejemplo `CENRES-000002`, y puede llevar uno o varios equipos.
 
 **Antes de empezar:** para entregar necesitas que tu rol pueda **crear** y **firmar** en Responsivas; para recibir, **editar**. Los equipos se dan de alta antes en [Equipos de seguridad](equipos.md). Si no ves **Nueva responsiva**, pide a tu administrador que revise tu rol.
 
@@ -33,7 +33,10 @@ Si tu empresa configuró la **hora de regreso de los equipos de Turno**, la fich
 
 1. Toca **Nueva responsiva**.
 2. Revisa la **Sede de Origen**.
-3. En **Colaborador (Responsable)** escanea su gafete o escribe su número de nómina o nombre.
+3. En **Responsable (¿quién se lo lleva?)** elige:
+   - **Colaborador:** escanea su gafete o escribe su número de nómina o nombre.
+   - **Persona externa:** por ejemplo, el técnico de un contratista. Escribe su nombre y elígelo del Padrón de personas.
+   - **Empresa externa:** cuando el equipo se le entrega a la empresa (por ejemplo, para una obra).
 4. En **Equipos que se entregan** escanea el QR o la etiqueta de cada equipo: se agrega solo. También puedes tocar **Añadir Equipo** y elegirlo (solo salen los **DISPONIBLES** de la sede).
 5. En cada equipo elige **Turno** o **Fijo**. Con el bote de basura quitas una fila.
 6. Pide al colaborador que **firme en el recuadro**. Si se equivoca, toca **Limpiar firma**.
@@ -41,7 +44,7 @@ Si tu empresa configuró la **hora de regreso de los equipos de Turno**, la fich
 
 ![Nueva responsiva](img/responsivas/nuevo-resguardo.png)
 
-**Qué debes ver:** el aviso verde con el **folio** y la ficha nueva en **Equipos en Campo**. Cada equipo queda **ASIGNADO** y su ficha en el inventario dice **A cargo de** quién está.
+**Qué debes ver:** el aviso verde con el **folio** y la ficha nueva en **Equipos en Campo**. Cada equipo queda **EN USO** (si es por **Turno**) o **ASIGNADO** (si es **Fijo**) y su ficha en el inventario dice **A cargo de** quién está.
 
 ## Cómo recibir el equipo de vuelta
 
@@ -93,7 +96,8 @@ Hay **un solo botón**, **Recibir**, para todo: regresen todos los equipos o sol
 | «El equipo … no está DISPONIBLE (está …)» | El equipo está en mantenimiento, de baja o prestado. | Usa otro equipo. |
 | «El equipo … sigue en la responsiva … sin recibir.» | Otro colaborador lo tiene. | Recíbelo primero en esa responsiva. |
 | «El equipo … es de otra sede…» | El equipo no es de la sede elegida. | Cambia la sede o el equipo. |
-| «Escanea el gafete o busca al colaborador responsable.» | Falta el colaborador. | Escanea su gafete. |
+| «Escanea el gafete o busca al colaborador responsable.» | Falta el responsable. | Escanea su gafete o busca a la persona o empresa externa. |
+| «… tiene el acceso restringido: no se le puede entregar nada. Llama a tu supervisor.» | La persona o empresa externa tiene prohibido el acceso. | No le entregues el equipo. |
 | «Un mismo equipo está en dos filas. Quita la fila repetida.» | Escaneaste dos veces el mismo. | Quita una fila. |
 | «Marca al menos un equipo que regresa.» | Tocaste **Recibir marcados (OK)** sin marcar ninguno. | Marca los que te entregan. |
 | «Uno de los equipos marcados ya se había recibido…» | Alguien más lo recibió mientras tanto. | Recarga la pantalla y revisa. |

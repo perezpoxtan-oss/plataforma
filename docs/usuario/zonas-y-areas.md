@@ -160,6 +160,8 @@ Se mueve con todo lo que tiene dentro (sus áreas y elementos). Sus llaves, equi
 1. Toca el **círculo rojo** (Dar de baja). Se desactiva el espacio **y todo lo que tiene dentro**: si lo das de baja en un piso, se desactivan sus habitaciones. El historial se conserva.
 2. Para reactivar usa la **flecha circular**. Primero reactiva lo de arriba: no puedes reactivar una habitación si su piso sigue inactivo.
 
+> Si tiene cosas vigentes (reservas futuras o llaves que lo abren), antes de confirmar se abre [Antes de dar de baja](antes-de-dar-de-baja.md) con la lista y lo que pasará con cada una.
+
 ## En el celular
 
 ![Celular](img/espacios/5-celular.png)

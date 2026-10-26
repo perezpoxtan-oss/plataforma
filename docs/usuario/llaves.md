@@ -28,6 +28,7 @@ resumen: Inventario de llaves, tarjetas y accesos de cada sede, con lo que abren
 - El color de la barra indica el tipo: **verde** electrónica, **rojo** metálica, **morado** biométrica, **ámbar** clave.
 - **Sede**, **Abre** (los lugares), departamento, ID externo y **Horarios** (sin horarios dice «24 horas (todos)»).
 - **Caduca:** verde si está vigente, ámbar si **vence pronto** (30 días o menos) y rojo si ya está **VENCIDA**.
+- Si está prestada: «EN USO por: … · desde …». Si no regresó, la etiqueta **NO REGRESÓ** y quién la tenía.
 
 ## Cómo encontrar una llave
 
@@ -101,9 +102,9 @@ Al dar de baja se genera un **voucher de reposición** con folio. La llave no se
 1. Toca el **círculo rojo** (Dar de baja) en la ficha. Se abre **Dar de Baja: …**.
 2. Elige el **Motivo**: Extraviado, Dañado o Robado.
 3. Cuenta **¿Cómo pasó?** (ayuda a decidir si aplica cobro).
-4. Si se le cobrará a alguien, marca **Se le cobra al colaborador**:
+4. Si se le cobrará a alguien, marca **Se le cobra al responsable**:
    - **Monto:** si la llave tiene costo fijo, ya viene puesto; si es variable, viene sugerido y puedes ajustarlo.
-   - **Colaborador responsable:** escanea su gafete o escribe su número de empleado. No hace falta Enter: aparece solo.
+   - **Responsable (a quién se le cobra):** elige **Colaborador** (escanea su gafete o escribe su número de empleado), **Persona externa** o **Empresa externa**. Si la llave no regresó o tiene responsable permanente, ya viene propuesto.
 5. En **Firmas del voucher** elige:
    - **Firma física (imprimir y firmar a mano):** después imprimes el voucher y firman a mano.
    - **Firma digital (en la pantalla):** firman en la pantalla Seguridad (quien registra) y, si hay responsable, también él.
@@ -112,6 +113,8 @@ Al dar de baja se genera un **voucher de reposición** con folio. La llave no se
 ![Dar de baja con voucher](img/llaves/04-baja.png)
 
 **Qué debes ver:** el aviso con el **folio** del voucher (`VR-…`) y la ficha en **DE BAJA** con su motivo (por ejemplo **DE BAJA · EXTRAVIADO**) y el enlace **Ver su voucher VR-…**. Las copias del voucher son para Seguridad, Recepción y Administración; si hay cobro, se envían por correo a las listas de [Configuración](configuracion.md). El seguimiento del voucher está en [Vouchers de reposición](vouchers.md).
+
+Si la llave está **prestada**, el botón **Dar de baja** te lleva a [Antes de dar de baja](antes-de-dar-de-baja.md): ahí ves a quién se le prestó. Si ya no regresará, al continuar queda **NO REGRESÓ** y se abre esta misma ventana con esa persona propuesta.
 
 ## Cómo reactivar una llave
 
@@ -182,7 +185,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | Completa el horario …: nombre, hora de inicio y hora de fin (o quítalo). | Un horario está incompleto. | Llénalo o quítalo con la X. |
 | Revisa las horas del horario …: se escriben como HH:MM (24 horas). | La hora está mal escrita. | Escribe por ejemplo `07:00`. |
 | El costo de reposición debe ser una cantidad (por ejemplo 350 o 350.50). | Escribiste letras en el costo. | Escribe solo la cantidad. |
-| Indica el monto a cobrar. / Elige al responsable al que se le cobrará. | Marcaste *Se le cobra al colaborador* sin monto o sin responsable. | Complétalos o desmarca la casilla. |
+| Indica el monto a cobrar. / Elige al responsable al que se le cobrará. | Marcaste *Se le cobra al responsable* sin monto o sin responsable. | Complétalos o desmarca la casilla. |
 | Falta la firma de Seguridad: firma en el recuadro o elige «Firma física». | Elegiste firma digital y no firmaste. | Firma o cambia a firma física. |
 | Marca al menos una llave para imprimir sus etiquetas. | Tocaste **Imprimir Etiquetas** sin marcar llaves. | Marca las casillas. |
 | No veo **Nueva Llave**. | Tu rol solo consulta. | Pide el permiso a tu administrador. |

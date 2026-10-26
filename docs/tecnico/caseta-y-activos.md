@@ -87,3 +87,5 @@ Mis pendientes se calcula en cada pantalla: `PendientesActivos` suma 1 consulta 
 
 
 `routes/web.php` (bloque «Mejoras activos»), `CentroNotificaciones::TIPOS`, `MisPendientes` (renglones y conservar el color propio cuando hay colores de Candidatos), `LectorAuditoria::ACCIONES` (`caseta`), `Empresa::AVISOS` (`procedimiento_revision`), `configuracion/index.blade.php` (include), `despliegue/desplegar.sh`, `plataforma.js` (un mensaje de Responsivas), CSS al final.
+
+> **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).

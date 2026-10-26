@@ -167,3 +167,5 @@ Decisión del dueño: las ocho categorías heredadas se funden en dos. Claves en
 - **Lista:** píldoras `data-grupo="particulares" | "empresas"` (`AdministradorVehiculos::GRUPOS`); insignia `bg-huesped` / `bg-renta`.
 - **Formularios:** alta y edición, registro rápido (`_registro-rapido`, ahora con número económico) y «Verificar Alta Pendiente» usan `OPCIONES_PROPIEDAD`; el diálogo de verificación dispara `change` en `propiedad` al llenarse para mostrar los campos de empresa.
 - Quitados: `GRUPOS_PROPIEDAD` (agrupación en `optgroup`) y `PROPIEDAD_POR_CATEGORIA`.
+
+> **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).

@@ -120,3 +120,5 @@ Con miles de habitaciones, los lugares de los diálogos «Nueva Llave» y «Edit
 - **Con error de validación** (`_dialogo` = `crear` o `editar-{id}`), ese diálogo trae los lugares ya armados con lo marcado (`old()`), como antes; el otro diálogo los sigue pidiendo al abrir.
 - Medido con 3,000 habitaciones: `/llaves` 3,006 KB → 199 KB (≈0.7 s → 0.16 s de servidor); la lista de cada diálogo ~1.1 MB, solo cuando se abre. Pruebas en `LlavesTest` («Lugares bajo demanda») y `AjustesRonda5Test` (cascada).
 
+
+> **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).
