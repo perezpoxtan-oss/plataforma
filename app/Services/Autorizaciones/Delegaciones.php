@@ -216,6 +216,23 @@ class Delegaciones
         if ($cruce) {
             throw ValidationException::withMessages(['desde' => 'Ya hay una delegación en esas fechas: cancélala antes de crear otra.']);
         }
+        // C-12 (revisión): sin bucles. Si en esas fechas el delegado ya le delega a quien delega (directa o en cadena), nadie atendería
+        $enFechas = Delegacion::whereNull('cancelada_en')->where('desde', '<', $hasta)->where('hasta', '>', $desde)->get(['user_id', 'delegado_id'])
+            ->groupBy(fn ($x) => (int) $x->user_id)->map(fn ($g) => $g->pluck('delegado_id')->map(fn ($id) => (int) $id)->all());
+        $pendientes = [$delegado];
+        $vistos = [$delegado => true];
+        while ($pendientes !== []) {
+            foreach ($enFechas->get(array_pop($pendientes), []) as $siguiente) {
+                if ($siguiente === $titular) {
+                    throw ValidationException::withMessages(['delegado_id' => User::find($delegado)?->name.' ya delega sus aprobaciones '
+                        .($titular === $actor->id ? 'en ti' : 'en esa persona').' en esas fechas (directamente o a través de otra persona): elige a alguien más.']);
+                }
+                if (! isset($vistos[$siguiente])) {
+                    $vistos[$siguiente] = true;
+                    $pendientes[] = $siguiente;
+                }
+            }
+        }
 
         $delegacion = Delegacion::create(['user_id' => $titular, 'delegado_id' => $delegado, 'desde' => $desde, 'hasta' => $hasta,
             'motivo' => isset($d['motivo']) ? trim($d['motivo']) : null]);

@@ -2,7 +2,6 @@
 
 namespace App\Services\Reservas;
 
-use App\Models\Delegacion;
 use App\Models\Empresa;
 use App\Models\Reserva;
 use App\Models\ReservaAprobacion;
@@ -99,7 +98,8 @@ class PendientesReservas
             // Quienes le delegaron a este usuario («No molestar»): solo se consulta si hace falta
             $meDelegaron = null;
             $delegaron = function () use (&$meDelegaron, $actor): array {
-                return $meDelegaron ??= Delegacion::activas()->where('delegado_id', $actor->id)->pluck('user_id')->map(fn ($id) => (int) $id)->all();
+                // C-12: directa o en cadena, si puedo atender reservas por ellos
+                return $meDelegaron ??= $this->responsables->delegadoAtiende($actor) ? $this->responsables->cadena()->titularesDe((int) $actor->id) : [];
             };
             $yo = (int) $actor->id;
             $deDepto = function (int $depto, int $sede) use ($responsables, $generales, $cobertura): array {
@@ -109,7 +109,8 @@ class PendientesReservas
                 return $ids !== [] ? $ids : $generales;
             };
             // C-12 «No molestar»: mientras delego, lo que me toca como designado le llega a mi delegado (no a mis pendientes)
-            $delego = Delegacion::activas()->where('user_id', $yo)->whereHas('delegado', fn ($q) => $q->where('activo', true))->exists();
+            $cadena = $this->responsables->cadena();
+            $delego = $cadena->destino($yo, fn (User $d) => $this->responsables->delegadoAtiende($d)) !== $yo;
             $mios = fn (array $designados) => (! $delego && in_array($yo, $designados, true)) || ($designados !== [] && array_intersect($designados, $delegaron()) !== []);
 
             $leTocan = $aprobaciones->filter(function ($a) use ($deDepto, $mios, $ajustes, $yo) {

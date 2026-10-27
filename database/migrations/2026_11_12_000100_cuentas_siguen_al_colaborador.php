@@ -21,6 +21,8 @@ return new class extends Migration
     {
         $filas = DB::table('users')->join('colaboradores', 'colaboradores.id', '=', 'users.colaborador_id')
             ->whereNotNull('users.colaborador_id')
+            // Solo cuentas de la misma empresa que su colaborador; un Super Administrador nunca se renombra desde una empresa
+            ->whereColumn('users.empresa_id', 'colaboradores.empresa_id')->where('users.es_superadmin', false)
             ->get(['users.id', 'users.empresa_id', 'users.name', 'users.numero_colaborador',
                 'colaboradores.nombre', 'colaboradores.apellido_paterno', 'colaboradores.apellido_materno', 'colaboradores.num_empleado']);
 

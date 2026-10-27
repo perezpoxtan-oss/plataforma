@@ -99,6 +99,8 @@ Si apruebas visitas, pases de salida, reservas o entrevistas y vas a estar fuera
 - Lo que te toque aprobar **y esa persona también pueda aprobar** le llega a ella: los avisos, la campana, el correo y sus **Mis pendientes**. Tus **Mis pendientes** ya no lo cuentan.
 - Si esa persona no puede aprobar algo tuyo (por ejemplo, no entra a tu sede o no aprueba pases), eso te sigue llegando a ti.
 - Tú todavía puedes responder si entras.
+- Si la persona que te cubre también sale y delega en alguien más, lo tuyo le llega a esa otra persona (siempre que pueda aprobarlo). Si alguien de esa cadena es dado de baja o su delegación termina, lo tuyo regresa al anterior.
+- No se pueden delegar dos personas una a la otra en las mismas fechas: nadie atendería.
 
 **Cuando regreses:** toca **Cancelar** en tu delegación. Todo vuelve a llegarte a ti.
 
@@ -165,6 +167,8 @@ Con los avisos activos, tu computadora te muestra un aviso (en la esquina de la 
 | **No puedes delegar en ti mismo…** / **Elige a un usuario activo que pueda aprobar visitas, pases, reservas o entrevistas.** | Elegiste a alguien que no puede cubrirte. | Elige a otra persona de la lista. |
 | **La delegación ya habría terminado: elige una fecha futura.** / **«Hasta» debe ser después de «Desde».** | La fecha está mal. | Corrige **¿Hasta cuándo?**. |
 | **Ya hay una delegación en esas fechas: cancélala antes de crear otra.** | Ya delegaste en esas fechas. | Cancela la anterior y guarda la nueva. |
+| **… ya delega sus aprobaciones en ti en esas fechas (directamente o a través de otra persona): elige a alguien más.** | Esa persona te dejó sus aprobaciones a ti. | Elige a otra persona que te cubra. |
+| **Demasiados intentos.** (página de espera) | Guardaste o cancelaste muchas veces en un minuto. | Espera un minuto y vuelve a intentarlo. |
 | Activé los avisos pero no me llega ninguno | Cerraste todas las pestañas de la plataforma, tu sesión terminó por inactividad o la computadora está en modo «No molestar» / «Concentración». | Deja una pestaña de la plataforma abierta, vuelve a entrar si tu sesión terminó y revisa que tu computadora permita notificaciones del navegador. |
 
 ## Preguntas frecuentes

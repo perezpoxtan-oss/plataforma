@@ -335,7 +335,8 @@ class AdministradorColaboradores
      */
     public function sincronizarCuenta(?User $actor, Colaborador $colaborador, ?int $sedeAntes): void
     {
-        foreach (User::where('colaborador_id', $colaborador->id)->where('empresa_id', $colaborador->empresa_id)->get() as $cuenta) {
+        // Nunca un Super Administrador: su nombre no se cambia desde una empresa
+        foreach (User::where('colaborador_id', $colaborador->id)->where('empresa_id', $colaborador->empresa_id)->where('es_superadmin', false)->get() as $cuenta) {
             $nuevo = ['name' => mb_substr($colaborador->nombreCompleto(), 0, 255)];
             $numero = $colaborador->num_empleado;
             if ($numero !== null && $numero !== '' && ! User::where('empresa_id', $colaborador->empresa_id)->where('numero_colaborador', $numero)->whereKeyNot($cuenta->id)->exists()) {

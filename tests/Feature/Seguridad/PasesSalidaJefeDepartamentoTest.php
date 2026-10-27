@@ -415,4 +415,23 @@ class PasesSalidaJefeDepartamentoTest extends TestCase
         // Ella todavía puede firmar si entra
         $this->assertTrue($this->puede($this->jefa, $pase));
     }
+
+    /** Revisión Etapa 3a · C-12 en cadena: la jefa delega en su suplente y él en un tercero; el aviso y Mis pendientes llegan al tercero. */
+    public function test_c12_delegacion_en_cadena_llega_al_ultimo_que_puede_firmar(): void
+    {
+        $this->responsable($this->jefa);
+        $tercero = $this->usuarioDe('Jefe de departamento', $this->colaborador('2007', 'Tomás', $this->mantenimiento));
+        $this->enEmpresa(function () use ($tercero) {
+            Delegacion::create(['user_id' => $this->jefa->id, 'delegado_id' => $this->suplente->id, 'desde' => now()->subHour(), 'hasta' => now()->addDays(2)]);
+            Delegacion::create(['user_id' => $this->suplente->id, 'delegado_id' => $tercero->id, 'desde' => now()->subHour(), 'hasta' => now()->addDays(2)]);
+        });
+        $pase = $this->crearPase();
+        $avisos = fn (User $u) => $this->enEmpresa(fn () => Notificacion::where('user_id', $u->id)->where('tipo', 'pase_por_firmar')->count());
+        $this->assertSame([0, 0, 1], [$avisos($this->jefa), $avisos($this->suplente), $avisos($tercero)]);
+        $this->app->forgetScopedInstances();
+        $total = fn (User $u) => collect(app()->build(MisPendientes::class)->para($u)['items'])->firstWhere('clave', 'pases_salida')['total'] ?? 0;
+        $this->assertSame([0, 0, 1], [$total($this->jefa), $total($this->suplente), $total($tercero)]);
+        $this->assertTrue($this->puede($tercero, $pase));
+        $this->assertTrue($this->puede($this->jefa, $pase), 'La titular todavía puede firmar si entra');
+    }
 }

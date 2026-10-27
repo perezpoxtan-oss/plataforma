@@ -114,7 +114,7 @@ resumen: Cargar de una vez colaboradores, personas, empresas externas, vehículo
 
 ## Preguntas frecuentes
 
-**La caseta ya registró a alguien de mi plantilla sin número, ¿se duplica?** No. Si una fila tiene el mismo nombre que un alta de la caseta por verificar, la vista previa la marca **Ya existe** con «alta de la caseta por verificar: al actualizar se une con ella y queda verificada». Elige actualizar lo que ya existe: el alta toma el número de tu archivo y queda verificada.
+**La caseta ya registró a alguien de mi plantilla sin número, ¿se duplica?** No. Si una fila tiene el mismo nombre que un alta de la caseta por verificar, la vista previa la marca **Ya existe** con «alta de la caseta por verificar: al actualizar se une con ella y queda verificada». Elige actualizar lo que ya existe: el alta toma el número de tu archivo y queda verificada. Solo pasa si no hay duda: si hay otra persona con el mismo nombre o el alta de la caseta es de otra sede que la de tu fila, se da de alta como nueva y el alta de la caseta queda en **Altas por verificar** para que la unas a mano con **Aprobar · es el mismo**.
 
 **¿Se guarda algo cuando reviso el archivo?** No. La vista previa solo te muestra cómo quedaría cada fila. Se guarda cuando tocas **Guardar**.
 

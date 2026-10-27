@@ -15,8 +15,8 @@ use App\Models\User;
 use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Activos\PendientesActivos;
 use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Autorizaciones\CadenaDelegaciones;
 use App\Services\Autorizaciones\Cobertura;
-use App\Services\Autorizaciones\Delegaciones;
 use App\Services\Autorizaciones\Escalamiento;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Entrevistas;
@@ -115,8 +115,11 @@ class MisPendientes
         if ($actor->can('autorizaciones.responder') && $autorizaciones->departamentosQueAtiende($actor) !== []) {
             $porResponder = $autorizaciones->pendientesPara($actor);
             // C-12 «No molestar»: lo que mi delegado puede responder no me espera a mí
-            if ($porResponder->isNotEmpty() && ($delegado = $this->delegadoDe($actor)) !== null) {
-                $porResponder = $porResponder->reject(fn ($a) => $autorizaciones->puedeResponder($delegado, $a));
+            // (directa o en cadena: basta con que alguien de mi cadena pueda responderla)
+            $cadena = $autorizaciones->cadena()->cadena((int) $actor->id);
+            if ($porResponder->isNotEmpty() && $cadena !== []) {
+                $porResponder = $porResponder->reject(fn ($a) => collect($cadena)
+                    ->contains(fn (int $id) => $autorizaciones->puedeResponder($autorizaciones->cadena()->usuario($id), $a)));
             }
             $items[] = $this->item('autorizaciones', 'Autorizaciones por responder', 'bi-patch-check',
                 $porResponder->count(), route('autorizaciones.index'));
@@ -155,7 +158,7 @@ class MisPendientes
             $pases = app(AdministradorPasesSalida::class);
             $porFirmar = $pases->idsPorFirmar($actor);
             // C-12 «No molestar»: las aprobaciones que mi delegado puede firmar no me esperan a mí
-            if ($porFirmar !== [] && ($delegado = $this->delegadoDe($actor)) !== null && $delegado->can('pases_salida.aprobar')) {
+            if ($porFirmar !== [] && ($delegado = $this->delegadoDe($actor, 'pases_salida.aprobar')) !== null) {
                 $deEl = array_intersect($pases->idsPorAprobar($actor), $pases->idsPorAprobar($delegado));
                 $porFirmar = array_values(array_diff($porFirmar, $deEl));
             }
@@ -216,7 +219,7 @@ class MisPendientes
             $pendientes = $entrevistas->pendientes($actor)->get(['postulaciones.id', 'postulaciones.cita_en', 'postulaciones.cita_ahora', 'postulaciones.entrevistador_id']);
             // C-12 «No molestar»: las mías las atiende mi delegado (si puede entrevistar)
             if ($pendientes->contains(fn ($p) => (int) $p->entrevistador_id === (int) $actor->id)
-                && ($delegado = $this->delegadoDe($actor)) !== null && $delegado->can('candidatos.evaluar')) {
+                && $this->delegadoDe($actor, 'candidatos.evaluar') !== null) {
                 $pendientes = $pendientes->reject(fn ($p) => (int) $p->entrevistador_id === (int) $actor->id)->values();
             }
             $entrevista = $pendientes->isNotEmpty()
@@ -314,19 +317,19 @@ class MisPendientes
         return ['total' => array_sum(array_column($items, 'total')), 'items' => $items] + ($items === [] ? [] : ['vista' => self::vista($items)]);
     }
 
-    /** C-12: delegado activo de quien entra («No molestar»), si tiene uno. */
-    private function delegadoDe(User $actor): ?User
+    /**
+     * C-12: a quién le llega lo que yo apruebo con ese permiso: el último de mi
+     * cadena de delegaciones (A→B→C) que lo tenga; null si me queda a mí.
+     */
+    private function delegadoDe(User $actor, string $permiso): ?User
     {
-        if (! array_key_exists($actor->id, $this->delegados)) {
-            $d = app(Delegaciones::class)->activaDe($actor);
-            $this->delegados[$actor->id] = $d === null ? null : User::find($d->delegado_id);
-        }
+        $this->cadena ??= app(Autorizaciones::class)->cadena();
+        $destino = $this->cadena->destino((int) $actor->id, fn (User $d) => $d->can($permiso));
 
-        return $this->delegados[$actor->id];
+        return $destino === (int) $actor->id ? null : $this->cadena->usuario($destino);
     }
 
-    /** @var array<int, ?User> */
-    private array $delegados = [];
+    private ?CadenaDelegaciones $cadena = null;
 
     // Mejoras estructura (ADR-0016): lo que se pinta, sin renglones en cero y con candidatos en un solo renglón
 

@@ -2,7 +2,6 @@
 
 namespace App\Services\PasesSalida;
 
-use App\Models\Delegacion;
 use App\Models\Departamento;
 use App\Models\DepartamentoResponsable;
 use App\Models\Empresa;
@@ -11,6 +10,7 @@ use App\Models\PaseSalidaAprobacion;
 use App\Models\PaseSalidaPaso;
 use App\Models\Rol;
 use App\Models\User;
+use App\Services\Autorizaciones\CadenaDelegaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -108,8 +108,13 @@ class CircuitoPasesSalida
     /** @var Collection<int, DepartamentoResponsable>|null responsables activos de la empresa (una lectura por petición) */
     private ?Collection $responsablesEmpresa = null;
 
-    /** @var Collection<int, Collection<int, int>>|null delegados activos por usuario que delega */
-    private ?Collection $delegacionesActivas = null;
+    /** C-12: delegaciones activas, directas o en cadena (una lectura por petición). */
+    private ?CadenaDelegaciones $cadena = null;
+
+    private function cadena(): CadenaDelegaciones
+    {
+        return $this->cadena ??= new CadenaDelegaciones;
+    }
 
     public function __construct(
         private readonly Autorizador $autorizador,
@@ -731,10 +736,10 @@ class CircuitoPasesSalida
     {
         $usuarios = $this->aprobadores($pase, $aprobacion);
         $ids = $usuarios->pluck('id')->map(fn ($id) => (int) $id);
-        $delegan = Delegacion::activas()->whereIn('user_id', $ids)->get(['user_id', 'delegado_id'])
-            ->filter(fn ($d) => $ids->contains((int) $d->delegado_id))->pluck('user_id')->map(fn ($id) => (int) $id);
+        $cadena = $this->cadena();
 
-        return $usuarios->reject(fn (User $u) => $delegan->contains((int) $u->id))->values();
+        // Directa o en cadena (A→B→C): no se avisa a quien tiene en su cadena a alguien que sí puede firmar
+        return $usuarios->reject(fn (User $u) => $ids->intersect($cadena->cadena((int) $u->id))->isNotEmpty())->values();
     }
 
     /** ¿Alguien cumple la regla del paso? Si no, firma cualquiera con "Aprobar" en la sede. */
@@ -796,14 +801,13 @@ class CircuitoPasesSalida
                 ->orderBy('departamento_responsables.es_suplente')->orderBy('departamento_responsables.id')
                 ->get(['departamento_responsables.id', 'departamento_responsables.departamento_id', 'departamento_responsables.user_id',
                     'departamento_responsables.sede_id', 'departamento_responsables.es_suplente']);
-            $this->delegacionesActivas ??= Delegacion::activas()->get(['user_id', 'delegado_id'])
-                ->groupBy(fn ($d) => (int) $d->user_id)->map(fn ($g) => $g->pluck('delegado_id')->map(fn ($id) => (int) $id));
+            $cadena = $this->cadena();
             $responsables = $this->responsablesEmpresa->filter(fn ($r) => (int) $r->departamento_id === $departamentoId
                 && ($r->sede_id === null || ($sede !== null && (int) $r->sede_id === $sede)));
             $niveles = [];
             foreach (['titular' => false, 'suplente' => true] as $como => $suplente) {
                 $ids = $responsables->filter(fn ($r) => (bool) $r->es_suplente === $suplente)->pluck('user_id')->map(fn ($id) => (int) $id)->unique()->values();
-                $delegados = $ids->flatMap(fn (int $id) => $this->delegacionesActivas->get($id, collect()))->unique()->values();
+                $delegados = $ids->flatMap(fn (int $id) => $cadena->cadena($id))->unique()->values(); // C-12: directa o en cadena
                 $niveles[$como] = [$ids, $delegados];
             }
 

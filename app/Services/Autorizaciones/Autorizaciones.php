@@ -6,7 +6,6 @@ use App\Mail\AvisoRecepcion;
 use App\Models\Acceso;
 use App\Models\Autorizacion;
 use App\Models\Candidato;
-use App\Models\Delegacion;
 use App\Models\DepartamentoResponsable;
 use App\Models\User;
 use App\Services\Avisos\AvisosCorreo;
@@ -94,6 +93,14 @@ class Autorizaciones
 
     private ?Cobertura $cobertura = null;
 
+    /** C-12: delegaciones en cadena (una lectura por instancia). */
+    public function cadena(): CadenaDelegaciones
+    {
+        return $this->cadena ??= new CadenaDelegaciones;
+    }
+
+    private ?CadenaDelegaciones $cadena = null;
+
     /**
      * A quién avisar: cada responsable, o su delegado si tiene una delegación
      * activa Y el delegado puede responder en esa sede (C-12: si no puede, el
@@ -104,10 +111,14 @@ class Autorizaciones
     public function aQuienAvisar(int $departamentoId, int $sedeId): Collection
     {
         $usuarios = $this->responsablesDe($departamentoId, $sedeId)->pluck('usuario');
-        $delegaciones = Delegacion::activas()->with('delegado:id,name,email,activo,empresa_id,es_superadmin')->whereIn('user_id', $usuarios->pluck('id'))->orderByDesc('id')->get()->unique('user_id')->keyBy('user_id');
+        $cadena = $this->cadena();
 
-        return $usuarios->map(fn (User $u) => ($d = $delegaciones[$u->id] ?? null) && $this->cobertura()->puedeResponderEn($d->delegado, $sedeId) ? $d->delegado : $u)
-            ->unique('id')->values();
+        // En cadena (A→B→C): al último que pueda responder en esa sede; si nadie, al responsable
+        return $usuarios->map(function (User $u) use ($cadena, $sedeId) {
+            $destino = $cadena->destino((int) $u->id, fn (User $d) => $this->cobertura()->puedeResponderEn($d, $sedeId));
+
+            return $destino === (int) $u->id ? $u : $cadena->usuario($destino);
+        })->unique('id')->values();
     }
 
     /**
@@ -129,7 +140,7 @@ class Autorizaciones
 
         // Delegado activo de un responsable, si él mismo puede responder en esa sede (A-04: nada de avisos que dan 404)
         return $this->cobertura()->puedeResponderEn($usuario, (int) $a->sede_id)
-            && Delegacion::activas()->where('delegado_id', $usuario->id)->whereIn('user_id', $responsables)->exists();
+            && $responsables->map(fn ($id) => (int) $id)->intersect($this->cadena()->titularesDe((int) $usuario->id))->isNotEmpty();
     }
 
     /**
@@ -251,7 +262,7 @@ class Autorizaciones
      */
     public function departamentosQueAtiende(User $usuario): array
     {
-        $delegan = Delegacion::activas()->where('delegado_id', $usuario->id)->pluck('user_id');
+        $delegan = collect($this->cadena()->titularesDe((int) $usuario->id)); // directa o en cadena
         // C-08 / A-04: solo las sedes a las que el usuario puede entrar para responder
         $alcance = $this->cobertura()->puedeResponderEn($usuario, null) ? $this->cobertura()->sedesDe($usuario) : [];
         $pares = [];
