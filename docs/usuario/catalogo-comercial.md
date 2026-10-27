@@ -117,6 +117,10 @@ Cuando alguien envía el formulario **Contratar**, te llega un aviso a la **camp
 
 ![Lista de solicitudes](img/catalogo-comercial/solicitudes.png)
 
+## Qué te espera en Mis pendientes
+
+Como Super Administrador, **Mis pendientes** e **Inicio** te muestran, elijas o no una empresa de trabajo: **Solicitudes por atender**, **Pruebas por aprobar**, **Clientes por revisar** y **Clientes en gracia**, cada uno con cuánto lleva esperando. A las 24 horas llega un recordatorio a todos los Super Administradores y a las 72 un aviso que no se puede silenciar. Al atender, revisar o aprobar, el aviso de la campana se apaga aunque tengas una empresa de trabajo elegida.
+
 ## Si algo sale mal
 
 | Mensaje o síntoma | Qué significa | Qué hacer |

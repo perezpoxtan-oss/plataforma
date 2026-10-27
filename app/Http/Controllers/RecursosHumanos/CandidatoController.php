@@ -80,7 +80,7 @@ class CandidatoController extends Controller
                 $filtros['caducar'] => $todas(),
                 default => clone $base,
             }, $filtros)
-                ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'registradoPor:id,name', 'editadoPor:id,name', 'vacantePublicada:id,titulo,estado'])
+                ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'registradoPor:id,name', 'editadoPor:id,name', 'vacantePublicada:id,titulo,estado', 'postulacionActiva'])
                 ->orderByRaw("CASE WHEN etapa IN ('".implode("','", Candidato::ABIERTAS)."') THEN 0 ELSE 1 END")
                 ->orderByDesc('id')->paginate(24)->withQueryString();
             $sedes = $this->candidatos->sedesParaElegir($actor, 'candidatos.ver');
@@ -107,6 +107,7 @@ class CandidatoController extends Controller
                     'configurar' => $actor->can('candidatos.configurar'), // Fase 3: Documentos y plazos
                 ],
                 'archivadas' => $archivadas, // Fase 3
+                'empresaPlazos' => Empresa::find($empresaId), // C-23 (E-07): «lleva N días» en cada tarjeta
                 'porCaducar' => $porCaducar, // Fase 3
             ]);
         });

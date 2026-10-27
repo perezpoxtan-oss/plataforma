@@ -368,7 +368,8 @@ class MenusReorganizadosTest extends TestCase
         // Recursos Humanos (candidatos, fases 1 y 2): sus renglones en cero; el botón existe pero oculto
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
         // C-27: los colaboradores por verificar van en el renglón único «Altas por verificar»
-        $this->assertSame(['total' => 0, 'claves' => ['altas', 'recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos']],
+        // C-23 (E-07): «Candidatos sin atender» de días anteriores, junto a «Esperando en Recepción»
+        $this->assertSame(['total' => 0, 'claves' => ['altas', 'recepcion', 'sin_atender', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos']],
             ['total' => app(MisPendientes::class)->para($rh)['total'], 'claves' => array_column(app(MisPendientes::class)->para($rh)['items'], 'clave')]);
         $this->assertMatchesRegularExpression('/data-mis-pendientes\s+hidden/', $this->actingAs($rh)->get('/')->assertOk()->getContent());
 
@@ -401,7 +402,8 @@ class MenusReorganizadosTest extends TestCase
         $agente = User::where('username', 'agente.demo')->firstOrFail();
         $pendientes = collect(app(MisPendientes::class)->para($agente)['items'])->keyBy('clave');
         // Mejoras Incidentes: la demo tiene un ticket canalizado al agente y uno pendiente de turno sin dueño
-        $this->assertSame(['pases_salida', 'procedimientos', 'novedades_mias', 'novedades_turno'], $pendientes->keys()->all());
+        // Etapa 4: el semáforo de llaves viene encendido de fábrica (DD-10) y Lost & Found vencidos entra a Mis pendientes (C-24)
+        $this->assertSame(['pases_salida', 'procedimientos', 'novedades_mias', 'novedades_turno', 'llaves_fuera', 'lost_found'], $pendientes->keys()->all());
         $this->assertGreaterThan(0, $pendientes['procedimientos']['total']);
         $this->assertSame(route('procedimientos.por-leer'), $pendientes['procedimientos']['url']);
         $this->assertSame(route('pases-salida.pendientes'), $pendientes['pases_salida']['url']);
@@ -427,6 +429,8 @@ class MenusReorganizadosTest extends TestCase
         // Etapa 3 (C-08, C-12, C-27) suma fijas por petición, no por renglón: las visitas que esperan al supervisor
         // (1), los departamentos sin quien autorice (responsables, departamentos y sedes, y el permiso de cada
         // responsable, que se recuerda en la petición), Reservas con la misma regla de cobertura y «No molestar» (1)
-        $this->assertLessThan(92, count(DB::getQueryLog()));
+        // Etapa 4 (C-22 a C-26) suma una consulta por cada reloj que le aplica a la persona (lo que espera de ese módulo,
+        // memorizado en la petición), más la zona de las sedes para la permanencia: unas 28 fijas, nunca una por renglón
+        $this->assertLessThan(125, count(DB::getQueryLog()));
     }
 }

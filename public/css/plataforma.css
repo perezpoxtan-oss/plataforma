@@ -4812,3 +4812,26 @@ html.modo-noche .aviso-padron-acceso { background: rgba(245,158,11,0.12); color:
 /* Revisión Etapa 3a: cobertura por función (visitas y pases) */
 .cobertura-funcion { font-size: 0.78rem; color: var(--texto-suave, #475569); margin-top: 0.2rem; }
 .cobertura-funcion i { margin-right: 0.25rem; }
+/* Etapa 4 (C-22 a C-25): reloj y suplente */
+.vobo.rechazado { background: #fee2e2; color: #991b1b; }
+.rechazar-vale > summary { list-style: none; }
+.rechazar-vale > summary::-webkit-details-marker { display: none; }
+.btn-rechazar-vale { display: inline-flex; align-items: center; border-radius: 10px; padding: 0 1rem; min-height: 44px; font-size: 0.85rem; font-weight: 700; cursor: pointer; border: 1px solid #dc2626; background: #fff; color: #b91c1c; font-family: inherit; }
+.btn-rechazar-vale:hover { background: #fef2f2; }
+.filtros-rapidos-accesos { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.aviso-padron-acceso.espera-ambar { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+.aviso-padron-acceso.espera-roja { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+.noche-caseta .aviso-sin-permiso { width: 100%; }
+.pastilla-reloj { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.72rem; font-weight: 700; border-radius: 999px; padding: 0.15rem 0.55rem; background: #e2e8f0; color: #334155; }
+.pastilla-reloj.nivel-ambar { background: #fef3c7; color: #92400e; }
+.pastilla-reloj.nivel-roja { background: #fee2e2; color: #991b1b; }
+.tabla-relojes { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
+.tabla-relojes th, .tabla-relojes td { padding: 0.4rem 0.35rem; border-bottom: 1px solid #e2e8f0; vertical-align: top; text-align: left; }
+.tabla-relojes .campo { min-width: 0; }
+.tabla-relojes .campo-horas-caseta { width: 5rem; }
+@media (max-width: 640px) {
+    .tabla-relojes thead { display: none; }
+    .tabla-relojes tr { display: block; border-bottom: 1px solid #e2e8f0; padding: 0.5rem 0; }
+    .tabla-relojes td { display: block; border: 0; padding: 0.2rem 0; }
+    .tabla-relojes td[data-etiqueta]::before { content: attr(data-etiqueta); display: block; font-size: 0.72rem; color: #64748b; font-weight: 700; }
+}

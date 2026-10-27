@@ -94,6 +94,9 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
                 @if ($m->autorizado())
                     <span class="vobo autorizado"><i class="bi bi-patch-check-fill me-1" aria-hidden="true"></i>Vo.Bo.: {{ $m->autorizador?->name ?? '—' }} · @fecha($m->autorizado_en)</span>
+                @elseif ($m->rechazado_en)
+                    {{-- C-24 (D-08): Vo.Bo. rechazado, con su motivo --}}
+                    <span class="vobo rechazado"><i class="bi bi-x-octagon-fill me-1" aria-hidden="true"></i>Vo.Bo. rechazado · @fecha($m->rechazado_en) · {{ $m->motivo_rechazo }}</span>
                 @elseif (! $m->anulado)
                     <span class="vobo pendiente"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Pendiente de Vo.Bo.</span>
                     {{-- Cuánto lleva esperando el Vo.Bo. (normal < 24 h, amarillo 24–72 h, rojo > 72 h) --}}
@@ -103,8 +106,18 @@
                               data-confirmar="¿Dar el Vo.Bo. a este vale de ${{ number_format((float) $m->monto, 2) }}? Después ya no se podrá editar.">
                             @csrf
                             @method('PATCH')
-                            <button type="submit" class="btn-autorizar"><i class="bi bi-patch-check me-1" aria-hidden="true"></i>Autorizar (Vo.Bo.)</button>
+                            <button type="submit" class="btn-autorizar"><i class="bi bi-patch-check me-1" aria-hidden="true"></i>Aprobar (Vo.Bo.)</button>
                         </form>
+                        <details class="rechazar-vale w-100">
+                            <summary class="btn-rechazar-vale"><i class="bi bi-x-octagon me-1" aria-hidden="true"></i>Rechazar</summary>
+                            <form action="{{ route('transporte.rechazar', $m->id) }}" method="POST" class="m-0 mt-2">
+                                @csrf
+                                @method('PATCH')
+                                <label class="campo-etiqueta" for="motivo_rechazo_{{ $m->id }}">Motivo *</label>
+                                <input type="text" id="motivo_rechazo_{{ $m->id }}" name="motivo_rechazo" class="campo" maxlength="255" required placeholder="Ej: la unidad sí llegó, el monto no corresponde">
+                                <button type="submit" class="btn-rechazar-vale mt-2">Rechazar</button>
+                            </form>
+                        </details>
                     @endif
                 @endif
             </div>

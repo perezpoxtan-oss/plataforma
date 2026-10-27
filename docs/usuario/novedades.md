@@ -104,7 +104,7 @@ En los formatos largos cada apartado se abre o se cierra tocando su título; si 
 - Al **empezar el siguiente turno** de la sede, la campana le avisa otra vez a su dueño o, si no tiene, a todo el personal de Seguridad de la sede.
 - Si ese turno **termina** y el ticket sigue pendiente, se avisa al jefe de seguridad de la sede.
 
-Si tu empresa no tiene turnos registrados (Estructura → Turnos), el aviso al personal llega en el momento en que lo dejas pendiente.
+Si tu sede no tiene turnos registrados (Estructura → Turnos), el aviso al personal llega en el momento en que lo dejas pendiente y, si **en 8 horas** sigue pendiente, se avisa al jefe de seguridad de la sede. El expediente te dice cuál de los dos casos aplica.
 
 ## Avisos en la campana
 
@@ -113,6 +113,8 @@ Si tu empresa no tiene turnos registrados (Estructura → Turnos), el aviso al p
 - **Te canalizaron el ticket #…**: toca **Atender** para abrir el expediente. También aparece en **Mis pendientes → Tickets canalizados a mí**.
 - **Pendiente de turno: ticket #…**: un ticket que se dejó para tu turno.
 - **Ticket #… resuelto**: el caso que levantaste (o que tenías canalizado) se cerró; el aviso dice la resolución.
+
+**Reloj del ticket canalizado:** el renglón **Tickets canalizados a mí** cambia de color según cuánto lleva contigo. A las horas de su categoría se te recuerda (de fábrica: **Accidente 2 h**, **Robo 4 h**, las demás **24 h**) y al triple pasa al jefe de seguridad de la sede. Si lo canalizan a otra persona, su reloj empieza de nuevo. Las horas se cambian en **Configuración → (tu bitácora) → Reloj de los tickets canalizados**. El Accidente que se abre solo desde un Siniestro con lesionados queda canalizado a quien tenía el siniestro (o a quien lo documentó), así que no se queda sin dueño. Un hallazgo de un recorrido de Protección Civil que nadie toma aparece en **Mis pendientes → Hallazgos de recorrido sin atender**.
 
 ## Cómo cerrar o reabrir un caso
 

@@ -876,6 +876,8 @@ class AccesosTest extends TestCase
         \DB::disableQueryLog();
         // 61: el encabezado suma una consulta fija (Mis pendientes → «Solicitudes ARCO por atender» del Administrador); las tarjetas siguen sin consultas propias
         // 62: C-08 revisa una vez por petición el permiso «Responder» de cada responsable (la caseta anticipa a quién espera)
-        $this->assertLessThan(62, $consultas, "La pantalla hizo {$consultas} consultas.");
+        // 85: Etapa 4 suma consultas fijas en el encabezado (Mis pendientes: una por reloj que aplica al administrador) y la empresa
+        // una vez para el reloj de permanencia de todas las tarjetas; las tarjetas siguen sin consultas propias
+        $this->assertLessThan(85, $consultas, "La pantalla hizo {$consultas} consultas.");
     }
 }

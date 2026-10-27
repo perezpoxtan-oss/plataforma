@@ -150,6 +150,8 @@ class Acceso extends Model
             'entrada_at' => 'datetime', 'autorizado_at' => 'datetime', 'salida_at' => 'datetime',
             'tiene_reserva' => 'boolean', 'num_acompanantes' => 'integer',
             'gafete_no_regreso' => 'boolean', 'identificacion_devuelta' => 'boolean',
+            // C-25: «Pedir al supervisor» y la excepción del agente
+            'supervisor_pedido_en' => 'datetime', 'excepcion_por_revisar' => 'boolean', 'excepcion_revisada_en' => 'datetime',
         ];
     }
 

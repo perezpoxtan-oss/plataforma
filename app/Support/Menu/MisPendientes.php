@@ -31,8 +31,10 @@ use App\Services\Privacidad\ConservacionDatos;
 use App\Services\Privacidad\SolicitudesArco;
 use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Services\Recepcion\PanelRecepcion;
+use App\Services\Relojes\MotorRelojes;
 use App\Services\Reservas\PendientesReservas;
 use App\Services\Usuarios\AdministradorUsuarios;
+use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\EmpresaScope;
 use App\Support\Tenancy\Tenant;
@@ -82,13 +84,20 @@ class MisPendientes
     public function para(User $actor, bool $reciente = true): array
     {
         $empresaId = $this->empresa->id($actor);
-        if ($empresaId === null) {
+        if ($empresaId === null && ! $actor->es_superadmin) {
             return ['total' => 0, 'items' => []];
         }
-        $llave = "mis-pendientes:{$actor->id}:{$empresaId}";
+        $llave = "mis-pendientes:{$actor->id}:".($empresaId ?? 'plataforma');
 
-        if (! $reciente && $actor->can('candidatos.editar')) {
-            app(PlazosCandidatos::class)->correrSiToca($empresaId);
+        // C-22: el motor «Reloj y suplente» corre en proceso con la consulta de la campana (candado de un minuto por empresa)
+        if (! $reciente) {
+            $motor = app(MotorRelojes::class);
+            if ($empresaId !== null) {
+                $motor->correrSiToca($empresaId);
+            }
+            if ($actor->es_superadmin) {
+                $motor->correrSiToca(null);
+            }
         }
         if (isset($this->memoria[$llave])) {
             return $this->memoria[$llave];
@@ -97,7 +106,9 @@ class MisPendientes
             return $this->memoria[$llave] = $guardado;
         }
 
-        $resultado = $this->tenant->conEmpresa($empresaId, fn () => $this->calcular($actor, $empresaId));
+        $resultado = $empresaId === null
+            ? $this->tenant->conEmpresa(null, fn () => $this->plataforma($actor, []))
+            : $this->tenant->conEmpresa($empresaId, fn () => $this->calcular($actor, $empresaId));
         Cache::put($llave, $resultado, self::SEGUNDOS_CACHE);
 
         return $this->memoria[$llave] = $resultado;
@@ -128,7 +139,8 @@ class MisPendientes
         // C-08 / DD-11: visitas que esperan al supervisor porque su departamento no tiene quien autorice en la sede
         if ($actor->can('accesos.aprobar')) {
             $esperan = app(ConsultaAccesos::class)->limitar(Acceso::query(), $actor, 'accesos.aprobar')
-                ->where('accesos.estado', 'pendiente')->where('accesos.autorizacion', Acceso::SIN_RESPONSABLE)
+                ->where('accesos.estado', 'pendiente')
+                ->where(fn ($q) => $q->where('accesos.autorizacion', Acceso::SIN_RESPONSABLE)->orWhereNotNull('accesos.supervisor_pedido_en'))
                 ->toBase()->selectRaw('COUNT(*) AS total, MIN(accesos.entrada_at) AS desde')->first();
             if (($total = (int) ($esperan->total ?? 0)) > 0) {
                 $empresa = Empresa::find($empresaId);
@@ -203,6 +215,13 @@ class MisPendientes
             $suyos = fn () => app(AdministradorCandidatos::class)->limitar(Candidato::query(), $actor, 'candidatos.editar');
             $items[] = $this->item('recepcion', 'Esperando en Recepción', 'bi-person-check',
                 app(PanelRecepcion::class)->porAtender($actor), $actor->can('recepcion_rh.ver') ? route('recepcion.index') : route('candidatos.index'));
+            // C-23 (E-07): «Por atender» y «Con RR. HH.» de días anteriores (los de hoy van en «Esperando en Recepción»)
+            $inicioHoy = now()->setTimezone(app(HoraLocal::class)->zona())->startOfDay()->utc();
+            $items[] = $this->item('sin_atender', 'Candidatos sin atender', 'bi-person-exclamation',
+                Postulacion::whereIn('etapa', PlazosCandidatos::ETAPAS_RH)->whereNull('archivada_en')->whereIn('candidato_id', $suyos()->select('candidatos.id'))
+                    ->where(fn ($q) => $q->where('etapa', 'con_rh')->orWhereHas('candidato', fn ($c) => $c->where(fn ($x) => $x->where('llegada_en', '<', $inicioHoy)
+                        ->orWhere(fn ($y) => $y->whereNull('llegada_en')->where('created_at', '<', $inicioHoy)))))->count(),
+                route('candidatos.index', ['etapa' => 'registrado']));
             $items[] = $this->item('solicitudes', 'Solicitudes por revisar', 'bi-phone',
                 $suyos()->where('autocaptura_pendiente', true)->count(), route('candidatos.index', ['revisar' => 1]));
             $items[] = $this->item('por_entrevistar', 'Por entrevistar (RR. HH.)', 'bi-chat-square-text',
@@ -304,6 +323,27 @@ class MisPendientes
         }
         // Fin Reservas de áreas
 
+        // C-22 a C-26: renglones nuevos de lo que espera (vacantes, pases vencidos, Lost & Found, caseta, vouchers…)
+        // y el color del motor en los renglones que ya existían
+        $motor = app(MotorRelojes::class);
+        $activos = $motor->relojesDe($empresaId);
+        foreach ($activos as $reloj) {
+            if (($renglon = $reloj->renglon($actor, $empresaId)) !== null) {
+                $items[] = $renglon;
+            }
+        }
+        $colores = ['altas' => 'altas', 'cuentas' => 'cuentas', 'novedades_mias' => 'novedades_canalizadas', 'procedimientos_aprobar' => 'procedimientos_aprobar'];
+        foreach ($items as &$item) {
+            if (isset($colores[$item['clave']]) && $item['total'] > 0 && ($item['nivel'] ?? null) === null && isset($activos[$colores[$item['clave']]])) {
+                $item['nivel'] = $motor->reloj($colores[$item['clave']])->nivelPara($actor, $empresaId);
+            }
+        }
+        unset($item);
+        // C-08 / C-25: «Esperan tu autorización en caseta» también cuenta lo que la caseta le pidió al supervisor
+        if ($actor->es_superadmin) {
+            $items = $this->plataforma($actor, $items)['items'];
+        }
+
         // Fase 3: color por plazo, solo si algún renglón de candidatos tiene pendientes
         $conPendientes = array_filter($items, fn ($i) => $i['total'] > 0 && in_array($i['clave'], PlazosCandidatos::RENGLONES, true));
         if ($conPendientes !== []) {
@@ -313,6 +353,26 @@ class MisPendientes
             }
             unset($item);
         }
+
+        return ['total' => array_sum(array_column($items, 'total')), 'items' => $items] + ($items === [] ? [] : ['vista' => self::vista($items)]);
+    }
+
+    /**
+     * C-26 (E-05): lo que espera al Super Administrador (con o sin empresa de
+     * trabajo): solicitudes, pruebas por aprobar, clientes por revisar y en gracia.
+     *
+     * @param  list<array<string, mixed>>  $items
+     * @return array{total: int, items: list<array<string, mixed>>, vista?: list<array<string, mixed>>}
+     */
+    private function plataforma(User $actor, array $items): array
+    {
+        $this->tenant->conEmpresa(null, function () use ($actor, &$items) {
+            foreach (app(MotorRelojes::class)->relojesDe(null) as $reloj) {
+                if (($renglon = $reloj->renglon($actor, null)) !== null) {
+                    $items[] = $renglon;
+                }
+            }
+        });
 
         return ['total' => array_sum(array_column($items, 'total')), 'items' => $items] + ($items === [] ? [] : ['vista' => self::vista($items)]);
     }
@@ -334,7 +394,7 @@ class MisPendientes
     // Mejoras estructura (ADR-0016): lo que se pinta, sin renglones en cero y con candidatos en un solo renglón
 
     /** Renglones de Recursos Humanos que se agrupan en «Candidatos». */
-    public const GRUPO_CANDIDATOS = ['recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos'];
+    public const GRUPO_CANDIDATOS = ['recepcion', 'sin_atender', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos'];
 
     /**
      * @param  list<array<string, mixed>>  $items

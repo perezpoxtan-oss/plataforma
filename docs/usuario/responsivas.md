@@ -67,6 +67,8 @@ Hay **un solo botón**, **Recibir**, para todo: regresen todos los equipos o sol
 
 ![Recibir un equipo dañado o faltante](img/responsivas/recibir-equipo.png)
 
+Si tu rol no puede dar de baja con voucher y eliges **Faltante**, la pantalla te dice «Ya le avisamos a tu supervisor para que reciba este equipo faltante.»: a quien da de baja equipos en tu sede le llega el aviso y lo ve en **Mis pendientes → Equipos faltantes por recibir** hasta que lo reciba.
+
 **Tip:** también puedes **escanear el QR del equipo** con la cámara del celular, fuera de esta pantalla: si está en una responsiva, te ofrece **Recibir (OK)** de inmediato (ver [Etiquetas QR](etiquetas-qr.md)).
 
 ## Cómo ver la firma e imprimir la hoja

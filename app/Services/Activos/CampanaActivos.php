@@ -60,6 +60,20 @@ class CampanaActivos
         ]);
     }
 
+    /** C-24 (D-08, regla 1): el guardia que registró el vale se entera de si se aprobó o se rechazó. */
+    public function resultadoVale(MovimientoTransporte $vale, User $quien, bool $aprobado, ?string $motivo): void
+    {
+        if ($vale->creado_por === null || (int) $vale->creado_por === (int) $quien->id) {
+            return;
+        }
+        $this->centro->avisar((int) $vale->empresa_id, [(int) $vale->creado_por], 'vale_resultado', [
+            'titulo' => 'Vale de taxi '.$vale->folio().($aprobado ? ' aprobado' : ' rechazado'),
+            'texto' => ($aprobado ? 'Le dio el Vo.Bo. ' : 'Lo rechazó ').$quien->name.($motivo ? '. Motivo: '.$motivo : '').'.',
+            'url' => route('transporte.show', $vale->id),
+            'referencia_tipo' => 'transporte_vale_resultado', 'referencia_id' => (int) $vale->id,
+        ]);
+    }
+
     /** Autorizado o anulado: ya no espera el Vo.Bo. */
     public function resolverVale(MovimientoTransporte $vale): void
     {

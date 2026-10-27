@@ -47,7 +47,7 @@ class EquipoResponsiva extends Model
 
     protected function casts(): array
     {
-        return ['devuelto_en' => 'datetime'];
+        return ['devuelto_en' => 'datetime', 'faltante_reportado_en' => 'datetime'];
     }
 
     public function recibio(): BelongsTo

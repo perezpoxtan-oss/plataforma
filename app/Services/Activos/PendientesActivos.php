@@ -41,7 +41,7 @@ class PendientesActivos
         if ($actor->can('transporte.aprobar') && $actor->can('transporte.ver')) {
             $fila = app(BitacoraTransporte::class)->limitar(MovimientoTransporte::query(), $actor, 'transporte.aprobar')
                 ->where('movimientos_transporte.estatus', 'no_llego')->where('movimientos_transporte.anulado', false)
-                ->whereNull('movimientos_transporte.autorizado_en')->toBase()
+                ->whereNull('movimientos_transporte.autorizado_en')->whereNull('movimientos_transporte.rechazado_en')->toBase()
                 ->selectRaw('COUNT(*) as total, MIN(movimientos_transporte.fecha) as desde, MIN(movimientos_transporte.created_at) as esperando_desde')->first();
             $total = (int) ($fila->total ?? 0);
             $desde = $total > 0 && $fila->desde ? substr((string) $fila->desde, 0, 10) : null;
