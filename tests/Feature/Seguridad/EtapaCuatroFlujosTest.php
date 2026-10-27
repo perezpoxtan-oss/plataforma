@@ -37,7 +37,7 @@ use Tests\TestCase;
 
 /**
  * Etapa 4 · C-22 a C-26 · Cada flujo nuevo con tiempo simulado y sus vínculos:
- * caseta de noche (Pedir al supervisor, aprobación del agente, revisión),
+ * caseta de noche (Canalizar al supervisor, aprobación del agente, revisión),
  * permanencia y salida temporal, vacantes y candidatos, vale de taxi,
  * faltante de responsiva, pendiente de turno sin turnos, Super
  * Administrador, «no se silencia lo que no está en Mis pendientes», Inicio y
@@ -156,8 +156,8 @@ class EtapaCuatroFlujosTest extends TestCase
         Carbon::setTestNow(now()->startOfMinute());
         $a = $this->pendienteEnCaseta('Pipa de gas');
 
-        // La tarjeta del agente ofrece «Pedir al supervisor» (un toque, sin pasos en el flujo normal)
-        $this->actingAs($this->agente)->get('/accesos?pestana=pendientes')->assertOk()->assertSee('Pedir al supervisor')->assertDontSee('Aprobar por excepción');
+        // La tarjeta del agente ofrece «Canalizar al supervisor» (un toque, sin pasos en el flujo normal)
+        $this->actingAs($this->agente)->get('/accesos?pestana=pendientes')->assertOk()->assertSee('Canalizar al supervisor')->assertDontSee('Pedir al supervisor')->assertDontSee('Aprobar por excepción');
         $this->actingAs($this->agente)->post(route('accesos.pedir-supervisor', $a->id))->assertSessionHas('ok');
         $this->actingAs($this->agente)->post(route('accesos.pedir-supervisor', $a->id))->assertSessionHas('error'); // una sola vez
         $this->assertSame(1, $this->avisos($this->supervisor, 'excepcion_pedida'));

@@ -167,19 +167,21 @@ Todo lo que espera tiene **reloj, color y suplente**. No tienes que vigilar nada
 
 > Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Confirmar Autorización** en la tarjeta de la visita; en la de un proveedor o contratista, **Autorizar por excepción**. Los minutos se cambian en **Estructura → Autorizaciones → Responsables por departamento** (con Recursos Humanos, también en **Recursos Humanos → Recepción → Ajustes**) (ver [Autorizaciones](autorizaciones.md)).
 
-## Cómo pedir al supervisor que autorice (caseta de noche)
+## Cómo canalizar al supervisor para que autorice (caseta de noche)
 
 Si eres agente, no puedes **Confirmar Autorización**. Cuando alguien espera y no puede esperar más (la pipa de gas, el técnico de urgencia), pídeselo al supervisor desde la tarjeta:
 
 1. Abre la pestaña **Pendientes de Autorización**.
-2. En la tarjeta de la persona, toca **Pedir al supervisor**.
+2. En la tarjeta de la persona, toca **Canalizar al supervisor**.
 3. Al supervisor de tu sede le llega el aviso a la campana y a **Mis pendientes → Esperan tu autorización en caseta**, con su reloj.
 
-![Pedir al supervisor y Aprobar por excepción](img/accesos/pedir-supervisor.png)
+![Canalizar al supervisor](img/accesos/canalizar-supervisor.png)
 
-**Qué debes ver:** el mensaje «Le avisamos al supervisor…» y, en la tarjeta, «Se pidió al supervisor a las …». Si no responde en los minutos de la caseta, pasa al **jefe de seguridad** y a ti te llega «Nadie ha respondido: … Ya avisamos a …».
+**Qué debes ver:** el mensaje «Le avisamos al supervisor…» y, en la tarjeta, «Se canalizó al supervisor a las …». Si no responde en los minutos de la caseta, pasa al **jefe de seguridad** y a ti te llega «Nadie ha respondido: … Ya avisamos a …».
 
 **Si tu empresa lo permite** (**Configuración → Caseta y accesos → Noche sin supervisor**) y nadie respondió a tiempo, en la tarjeta aparece **Aprobar por excepción**:
+
+![Aprobar por excepción](img/accesos/aprobar-por-excepcion.png)
 
 1. Toca **Aprobar por excepción**.
 2. Escribe el **Motivo** (por ejemplo «Fuga de gas, la pipa no puede esperar»).
@@ -195,7 +197,7 @@ Si eres agente, no puedes **Confirmar Autorización**. Cuando alguien espera y n
 
 ![Rebasaron su tiempo](img/accesos/rebasaron-su-tiempo.png)
 
-**Qué debes ver:** las visitas con más de 4 horas, los proveedores y contratistas con más de 8, los huéspedes con daypass después de la hora de cierre y quien salió temporalmente hace más de 2 horas (los tiempos los elige tu empresa). Cada tarjeta dice «Rebasó su tiempo: lleva …» en ámbar y, al doble, en rojo. Al supervisor le llega un aviso y, al doble, al jefe de seguridad. Úsalo al cambiar de turno: si ya salió, dale salida; si no, búscalo.
+**Qué debes ver:** las visitas con más de 4 horas, los proveedores y contratistas con más de 8, los huéspedes con daypass después de la hora de cierre y quien salió temporalmente hace más de 2 horas (los tiempos los elige tu empresa). Cada tarjeta dice «Rebasó su tiempo: lleva …» en ámbar y, al doble, en rojo. Al supervisor le llega un aviso y, al doble, al jefe de seguridad; también los ve en **Mis pendientes → Rebasaron su tiempo en sitio** y **Mis pendientes → Salidas temporales sin regresar**. Úsalo al cambiar de turno: si ya salió, dale salida; si no, búscalo.
 
 ## Cuando el departamento no tiene quien autorice en la sede
 

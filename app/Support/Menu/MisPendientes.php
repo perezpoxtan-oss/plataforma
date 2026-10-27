@@ -42,6 +42,8 @@ use Illuminate\Container\Attributes\Scoped;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
+use function Illuminate\Support\defer;
+
 /**
  * «Mis pendientes» del encabezado (junto a la campana): lo que el usuario
  * puede resolver él mismo, con su número y su enlace. Usa los mismos
@@ -90,13 +92,15 @@ class MisPendientes
         $llave = "mis-pendientes:{$actor->id}:".($empresaId ?? 'plataforma');
 
         // C-22: el motor «Reloj y suplente» corre en proceso con la consulta de la campana (candado de un minuto por empresa)
+        // Revisión Etapa 4: corre DESPUÉS de mandar la respuesta (defer), así la campana no espera al motor;
+        // el candado de un minuto por empresa sigue evitando que corra en cada consulta
         if (! $reciente) {
-            $motor = app(MotorRelojes::class);
-            if ($empresaId !== null) {
-                $motor->correrSiToca($empresaId);
-            }
-            if ($actor->es_superadmin) {
-                $motor->correrSiToca(null);
+            foreach (array_unique(array_filter([$empresaId ?? false, $actor->es_superadmin ? 'plataforma' : false], fn ($v) => $v !== false)) as $quien) {
+                $id = $quien === 'plataforma' ? null : (int) $quien;
+                if (MotorRelojes::yaCorrio($id)) {
+                    continue; // corrió hace menos de un minuto: ni siquiera se agenda
+                }
+                defer(fn () => $this->tenant->conEmpresa($id, fn () => app(MotorRelojes::class)->correrSiToca($id)), 'relojes:'.($id ?? 'plataforma'));
             }
         }
         if (isset($this->memoria[$llave])) {
@@ -120,6 +124,10 @@ class MisPendientes
     private function calcular(User $actor, int $empresaId): array
     {
         $items = [];
+        // La empresa ya viene cargada con el usuario (EstablecerEmpresa): los relojes no la vuelven a leer
+        if ((int) $actor->empresa_id === $empresaId && $actor->relationLoaded('empresa') && $actor->empresa !== null) {
+            app(MotorRelojes::class)->recordarEmpresa($actor->empresa);
+        }
 
         // Autorizaciones: solo responsables o delegados de algún departamento
         $autorizaciones = app(Autorizaciones::class);
@@ -142,8 +150,15 @@ class MisPendientes
                 ->where('accesos.estado', 'pendiente')
                 ->where(fn ($q) => $q->where('accesos.autorizacion', Acceso::SIN_RESPONSABLE)->orWhereNotNull('accesos.supervisor_pedido_en'))
                 ->toBase()->selectRaw('COUNT(*) AS total, MIN(accesos.entrada_at) AS desde')->first();
+            // Revisión Etapa 4: con delegaciones de por medio, la misma regla que el aviso del motor (CadenaDelegaciones::destino())
+            $cadena = $autorizaciones->cadena();
+            if ((int) ($esperan->total ?? 0) > 0 && $cadena->mapa() !== [] && (isset($cadena->mapa()[(int) $actor->id]) || $cadena->titularesDe((int) $actor->id) !== [])) {
+                $mias = app(MotorRelojes::class)->reloj('caseta_supervisor')->esperasDe($actor, $empresaId);
+                $esperan = (object) ['total' => $mias->count(), 'desde' => $mias->min(fn ($e) => $e->desde->getTimestamp())];
+                $esperan->desde = $esperan->desde === null ? null : Carbon::createFromTimestamp($esperan->desde, 'UTC')->format('Y-m-d H:i:s');
+            }
             if (($total = (int) ($esperan->total ?? 0)) > 0) {
-                $empresa = Empresa::find($empresaId);
+                $empresa = app(MotorRelojes::class)->empresa($empresaId); // una lectura por petición
                 [$ambar, $roja] = app(Escalamiento::class)->umbrales($empresa);
                 $minutos = $esperan->desde ? (int) max(0, now()->diffInMinutes(Carbon::parse($esperan->desde, 'UTC'))) : 0;
                 $items[] = ['nivel' => $minutos >= $roja ? 'roja' : ($minutos >= $ambar ? 'ambar' : null)]
@@ -279,7 +294,7 @@ class MisPendientes
             $abiertas = SolicitudArco::query()->withoutGlobalScope(EmpresaScope::class)->where('empresa_id', $empresaId)
                 ->whereIn('estado', [SolicitudArco::POR_VERIFICAR, SolicitudArco::PENDIENTE])->get(['id', 'estado', 'vence_en']);
             if ($abiertas->isNotEmpty()) {
-                $empresa = Empresa::find($empresaId);
+                $empresa = app(MotorRelojes::class)->empresa($empresaId); // una lectura por petición
                 $recordar = $empresa ? app(ConservacionDatos::class)->ajustes($empresa)['arco_recordar_dias'] : ConservacionDatos::RECORDAR_ARCO;
                 $niveles = $abiertas->map(fn ($x) => SolicitudesArco::nivel($x, $recordar))->filter();
                 $nivel = $niveles->contains('roja') ? 'roja' : ($niveles->contains('ambar') ? 'ambar' : null);

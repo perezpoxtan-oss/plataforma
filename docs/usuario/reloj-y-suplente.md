@@ -44,7 +44,7 @@ Algunas cosas tienen su propio reloj:
 
 Tu administrador puede elegir un **rol** distinto para cada cosa en Configuración.
 
-Si delegaste tus aprobaciones (**Mi cuenta → Delegar mis aprobaciones**), el recordatorio y el aviso de suplente le llegan a la persona en quien delegaste, siempre que pueda atenderlo; si ella también delegó, a la última de la cadena que pueda.
+Si delegaste tus aprobaciones (**Mi cuenta → Delegar mis aprobaciones**), el recordatorio y el aviso de suplente le llegan a la persona en quien delegaste, siempre que pueda atenderlo; si ella también delegó, a la última de la cadena que pueda. Lo mismo pasa en **Mis pendientes**: mientras dure tu delegación, esos renglones los ve quien te cubre y no tú.
 
 **Qué debes ver:** a cada quien le llega **un solo** recordatorio y **un solo** aviso de suplente por cada asunto, aunque tenga varias pantallas abiertas.
 

@@ -245,19 +245,55 @@ abstract class Reloj
      */
     public function esperasDe(User $actor, ?int $empresaId): Collection
     {
-        $this->memoEsperas[$empresaId ?? 0] ??= $this->esperas($empresaId);
+        $todas = $this->todasLasEsperas($empresaId);
+        if ($empresaId === null || $todas->isEmpty()) {
+            return $todas->filter(fn (Espera $e) => $this->leToca($actor, $e))->values();
+        }
 
-        return $this->memoEsperas[$empresaId ?? 0]->filter(fn (Espera $e) => $this->leToca($actor, $e))->values();
+        // C-12 (Etapa 3), la misma regla que los avisos del motor (MotorRelojes::conDelegacion):
+        // lo de cada titular le toca al último de su cadena que puede atenderlo (CadenaDelegaciones::destino())
+        $motor = app(MotorRelojes::class);
+        $cadena = $motor->cadena();
+        $id = (int) $actor->id;
+        $titulares = $cadena->mapa() === [] ? [] : $cadena->titularesDe($id);
+        if (! isset($cadena->mapa()[$id]) && $titulares === []) {
+            return $todas->filter(fn (Espera $e) => $this->leToca($actor, $e))->values();
+        }
+        $usuarios = array_map(fn (int $t) => $motor->titular($t), $titulares);
+
+        return $todas->filter(function (Espera $e) use ($actor, $cadena, $id, $usuarios) {
+            $puede = fn (User $d) => $this->puedeAtender($d, $e);
+            if ($this->leToca($actor, $e) && $cadena->destino($id, $puede) === $id) {
+                return true;
+            }
+            foreach ($usuarios as $t) {
+                if ($t !== null && $this->leToca($t, $e) && $cadena->destino((int) $t->id, $puede) === $id) {
+                    return true;
+                }
+            }
+
+            return false;
+        })->values();
     }
 
-    /** Color del que más lleva esperando de lo que le toca (para los renglones que ya existían). */
+    /** @return Collection<int, Espera> lo que espera en la empresa, memorizado en la petición */
+    private function todasLasEsperas(?int $empresaId): Collection
+    {
+        return $this->memoEsperas[$empresaId ?? 0] ??= $this->esperas($empresaId);
+    }
+
+    /**
+     * Color del que más lleva esperando de lo que le toca (para los renglones que ya existían, que
+     * cuentan por permiso: el color sale del mismo conjunto que su número).
+     */
     public function nivelPara(User $actor, ?int $empresaId): ?string
     {
         if (! $this->puedeVer($actor)) {
             return null;
         }
         $motor = app(MotorRelojes::class);
-        $niveles = $this->esperasDe($actor, $empresaId)->map(fn (Espera $e) => $motor->nivel($this->clave(), $e->desde, $empresaId, $e))->filter();
+        $niveles = $this->todasLasEsperas($empresaId)->filter(fn (Espera $e) => $this->leToca($actor, $e))
+            ->map(fn (Espera $e) => $motor->nivel($this->clave(), $e->desde, $empresaId, $e))->filter();
 
         return $niveles->contains('roja') ? 'roja' : ($niveles->contains('ambar') ? 'ambar' : null);
     }

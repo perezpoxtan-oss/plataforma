@@ -5,7 +5,7 @@
 Aprenderás:
 
 1. A leer el reloj y el color de lo que espera.
-2. A pedirle al supervisor desde la caseta y qué pasa si nadie responde.
+2. A canalizar al supervisor desde la caseta y qué pasa si nadie responde.
 3. A encontrar a quien rebasó su tiempo en sitio.
 4. A atender lo que espera en Recursos Humanos sin que se pierda de un día a otro.
 5. A ajustar las horas y a quién pasa cada cosa.
@@ -32,7 +32,7 @@ Comprueba: el mensaje dice «Reloj y suplente guardado». Toca **Restablecer val
 ## Práctica 2 · La caseta de noche (Agente y Supervisor)
 
 1. Como **agente**, registra un proveedor que espera autorización y abre la pestaña **Pendientes de Autorización**.
-2. En su tarjeta toca **Pedir al supervisor**.
+2. En su tarjeta toca **Canalizar al supervisor**.
 3. Como **supervisor**, mira la campana y **Mis pendientes → Esperan tu autorización en caseta**. No respondas.
 4. Espera los minutos de la caseta (o pide a tu instructor que los baje a 1 y 2).
 

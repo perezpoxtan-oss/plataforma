@@ -176,7 +176,7 @@ class AccesoController extends Controller
         }, 'pendientes');
     }
 
-    /** C-25: «Pedir al supervisor» desde la tarjeta pendiente (un toque). */
+    /** C-25: «Canalizar al supervisor» desde la tarjeta pendiente (un toque). */
     public function pedirSupervisor(Request $request, int $acceso): RedirectResponse
     {
         Gate::authorize('accesos.crear');

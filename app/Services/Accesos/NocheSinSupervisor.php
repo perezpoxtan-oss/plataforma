@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\DB;
  * La caseta de noche (C-25, B-05, DD-13): el agente no tiene «Confirmar
  * Autorización» ni «Autorizar por excepción», y a veces no hay supervisor.
  *
- *  1. «Pedir al supervisor» (un toque en la tarjeta pendiente): el aviso
+ *  1. «Canalizar al supervisor» (un toque en la tarjeta pendiente): el aviso
  *     llega a la campana y a Mis pendientes del supervisor de la sede, con
  *     reloj; si no responde, pasa al jefe de seguridad (PedidoAlSupervisor).
  *  2. Si nadie responde a tiempo y la empresa lo encendió
@@ -61,7 +61,7 @@ class NocheSinSupervisor
         }
         if (Acceso::whereKey($a->id)->where('estado', 'pendiente')->whereNull('supervisor_pedido_en')
             ->update(['supervisor_pedido_en' => now(), 'actualizado_por' => $actor->id, 'updated_at' => now()]) === 0) {
-            throw new MovimientoNoPermitido('Ya se le pidió al supervisor. Su reloj sigue corriendo en la tarjeta.');
+            throw new MovimientoNoPermitido('Ya se canalizó al supervisor. Su reloj sigue corriendo en la tarjeta.');
         }
         $a->loadMissing('sede:id,nombre');
         $supervisores = $this->destinatarios->conPermiso((int) $a->empresa_id, 'accesos.aprobar', (int) $a->sede_id)
@@ -94,7 +94,7 @@ class NocheSinSupervisor
 
         // Primero el tiempo (sin consultar); solo si no ha pasado, si el motor ya lo escaló
         return $desde->lte(now()->subMinutes(app(AjustesRecepcion::class)->escalarMinutos($empresa)))
-            || app(MotorRelojes::class)->escalado('caseta_supervisor', PedidoAlSupervisor::REFERENCIA, (int) $a->id);
+            || app(MotorRelojes::class)->escalado('caseta_supervisor', PedidoAlSupervisor::REFERENCIA, (int) $a->id, (int) $a->empresa_id);
     }
 
     /** Minutos que faltan para que el agente pueda aprobar (para el texto de la tarjeta). */
@@ -125,10 +125,30 @@ class NocheSinSupervisor
         if (! $tieneFoto && ! $a->foto_persona) {
             throw new MovimientoNoPermitido('Toma la foto de la persona: sin foto no se puede aprobar por excepción.');
         }
-        $ruta = $tieneFoto ? app(DocumentosCandidato::class)->guardarFoto((int) $a->empresa_id, $foto, 'foto_persona') : null;
+        $documentos = app(DocumentosCandidato::class);
+        $ruta = $tieneFoto ? $documentos->guardarFoto((int) $a->empresa_id, $foto, 'foto_persona') : null;
         $texto = 'Agente sin supervisor: '.$motivo;
+        $anterior = $a->foto_persona;
 
-        $solicitud = DB::transaction(function () use ($actor, $a, $texto, $ruta) {
+        try {
+            $solicitud = $this->aprobarEnTransaccion($actor, $a, $texto, $ruta);
+        } catch (\Throwable $e) {
+            $documentos->borrar($ruta); // la foto nueva no se queda suelta si no procedió
+            throw $e;
+        }
+        // Revisión Etapa 4: la foto que reemplazó a la del registro no queda suelta (ARCO y la conservación ya no la alcanzarían)
+        if ($ruta !== null && $anterior !== null && $anterior !== $ruta) {
+            $documentos->borrar($anterior);
+        }
+
+        $this->despuesDeAprobar($actor, $a, $motivo, $texto, $tieneFoto, $solicitud);
+
+        return $motivo;
+    }
+
+    private function aprobarEnTransaccion(User $actor, Acceso $a, string $texto, ?string $ruta): ?Autorizacion
+    {
+        return DB::transaction(function () use ($actor, $a, $texto, $ruta) {
             $ahora = now();
             $hecho = Acceso::whereKey($a->id)->where('estado', 'pendiente')->update(array_filter([
                 'estado' => 'en_sitio', 'autorizacion' => Acceso::POR_EXCEPCION, 'motivo_excepcion' => mb_substr($texto, 0, 300),
@@ -144,7 +164,10 @@ class NocheSinSupervisor
 
             return $solicitud;
         });
+    }
 
+    private function despuesDeAprobar(User $actor, Acceso $a, string $motivo, string $texto, bool $tieneFoto, ?Autorizacion $solicitud): void
+    {
         $this->centro->resolver(PedidoAlSupervisor::REFERENCIA, (int) $a->id);
         if ($solicitud !== null) {
             $this->centro->resolver('autorizacion', (int) $solicitud->id);
@@ -164,8 +187,6 @@ class NocheSinSupervisor
             'referencia_tipo' => ExcepcionesPorRevisar::REFERENCIA, 'referencia_id' => (int) $a->id,
             'acciones' => [['etiqueta' => 'Atender', 'url' => route('accesos.revisar-excepcion', $a->id), 'campos' => ['_method' => 'PATCH'], 'estilo' => 'aceptar']],
         ]);
-
-        return $motivo;
     }
 
     /** «Atender»: el supervisor revisó la excepción del agente. */

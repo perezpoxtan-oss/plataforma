@@ -1,6 +1,6 @@
 {{--
     C-25 (B-05, DD-13): la caseta de noche, solo en una tarjeta PENDIENTE y para quien
-    no puede autorizar (agente). «Pedir al supervisor» es un toque; si nadie responde a
+    no puede autorizar (agente). «Canalizar al supervisor» es un toque; si nadie responde a
     tiempo y la empresa lo permite, «Aprobar por excepción» con motivo y foto.
     $a: Acceso pendiente.
 --}}
@@ -14,10 +14,10 @@
     @if ($noche->puedePedir($a))
         <form action="{{ route('accesos.pedir-supervisor', $a->id) }}" method="POST" class="m-0 w-100">
             @csrf
-            <button type="submit" class="btn-accion-acceso temporal"><i class="bi bi-megaphone me-1" aria-hidden="true"></i>Pedir al supervisor</button>
+            <button type="submit" class="btn-accion-acceso temporal"><i class="bi bi-megaphone me-1" aria-hidden="true"></i>Canalizar al supervisor</button>
         </form>
     @elseif ($a->supervisor_pedido_en)
-        <p class="aviso-sin-permiso m-0"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Se pidió al supervisor @fecha($a->supervisor_pedido_en, 'H:i'). Si no responde, pasa al jefe de seguridad.
+        <p class="aviso-sin-permiso m-0"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Se canalizó al supervisor @fecha($a->supervisor_pedido_en, 'H:i'). Si no responde, pasa al jefe de seguridad.
             @if ($permitido && ! $agenteAprueba && ($faltan = $noche->minutosParaAprobar($a, $empresaNoche)) !== null) Si nadie responde en {{ max(1, $faltan) }} min, podrás aprobarlo por excepción.@endif
         </p>
     @endif

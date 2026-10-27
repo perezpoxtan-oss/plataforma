@@ -14,11 +14,11 @@ El inventario de «lo que espera» (grupo E, §2) encontró 26 asuntos que esper
 4. **Valores de fábrica** de DD-10 en «Reloj y suplente» (las horas del antiguo «Reloj del visto bueno»); por módulo, en Avanzado: horas, rol al que pasa y apagado. Las firmas de pases sin horas propias usan las generales.
 5. **Regla de silencio:** un aviso que espera una acción y no tiene renglón en Mis pendientes no se puede silenciar; el aviso al suplente nunca.
 6. **Renglones nuevos** en Mis pendientes e Inicio para lo que solo vivía en la campana (vacantes, pases vencidos, Lost & Found, Super Administrador, suscripción, excepciones de la caseta, permanencia, vouchers, equipos en mantenimiento, faltantes, hallazgos).
-7. **Caseta de noche:** «Pedir al supervisor» en la tarjeta pendiente; aprobación del agente solo si la empresa la enciende y nadie respondió, con motivo y foto, aviso inmediato y revisión.
+7. **Caseta de noche:** «Canalizar al supervisor» en la tarjeta pendiente; aprobación del agente solo si la empresa la enciende y nadie respondió, con motivo y foto, aviso inmediato y revisión.
 
 ## Consecuencias
 
 - Más avisos: mitigado con valores moderados, una sola vez por nivel, el arranque sin avalancha y el interruptor general.
 - Mis pendientes hace una consulta más por reloj que aplica a la persona (memorizada por petición).
-- Verbos: «Pedir al supervisor» es el texto del plan (C-25); el vale de taxi pasa de «Autorizar (Vo.Bo.)» a **Aprobar (Vo.Bo.)** y **Rechazar** (D-08). «Atender» para revisar la excepción.
+- Verbos: «Canalizar al supervisor» (C-25; el plan decía «Pedir al supervisor», que no está entre los diez verbos: se usa «Canalizar», que sí está); el vale de taxi pasa de «Autorizar (Vo.Bo.)» a **Aprobar (Vo.Bo.)** y **Rechazar** (D-08). «Atender» para revisar la excepción.
 - La operación programada de DD-17 (rutas sin registro, órdenes antes del montaje, recargas y frecuencia de revisión) va en un PR encadenado sobre este motor.

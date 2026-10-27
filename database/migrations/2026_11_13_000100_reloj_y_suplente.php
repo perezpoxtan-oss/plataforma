@@ -75,9 +75,18 @@ return new class extends Migration
             $table->string('faltante_nota', 500)->nullable();
         });
 
-        // Lo que ya espera arranca su reloj desde que se creó o se canalizó (sin avisos de golpe: el motor
-        // solo avisa lo que pase del umbral desde hoy, ver MotorRelojes::correrEmpresa)
-        DB::table('vacantes')->where('estado', 'borrador')->whereNotNull('creado_por')->update(['propuesta_en' => DB::raw('created_at'), 'propuesta_por' => DB::raw('creado_por')]);
+        $this->rellenar();
+    }
+
+    /**
+     * Lo que ya espera arranca su reloj desde que se creó o se canalizó (sin avisos de golpe: el motor
+     * solo avisa lo que pase del umbral desde hoy, ver MotorRelojes::correrEmpresa).
+     */
+    public function rellenar(): void
+    {
+        // Solo los borradores que pidió un jefe (los que tuvieron su aviso «vacante_propuesta»), no los propios de RR. HH.
+        $pedidas = DB::table('notificaciones')->where('tipo', 'vacante_propuesta')->where('referencia_tipo', 'vacante')->select('referencia_id');
+        DB::table('vacantes')->where('estado', 'borrador')->whereNotNull('creado_por')->whereIn('id', $pedidas)->update(['propuesta_en' => DB::raw('created_at'), 'propuesta_por' => DB::raw('creado_por')]);
         DB::table('novedades')->whereNotNull('asignado_a')->where('estatus', '!=', 'resuelto')->update(['canalizado_en' => DB::raw('updated_at')]);
     }
 
