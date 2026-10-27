@@ -4426,7 +4426,7 @@ document.addEventListener('click', function (e) {
             var fichas = vista.querySelectorAll('[data-novedad]');
             fichas.forEach(function (ficha) {
                 var ok = (f.texto === '' || (ficha.dataset.texto || '').indexOf(f.texto) !== -1)
-                    && (f.categoria === '' || ficha.dataset.cat === f.categoria)
+                    && (f.categoria === '' || ficha.dataset.cat === f.categoria || ficha.dataset.grupo === f.categoria)
                     && (f.sede === '' || ficha.dataset.sede === f.sede);
                 ficha.hidden = !ok;
                 if (ok) { visibles++; }

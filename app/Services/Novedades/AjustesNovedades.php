@@ -5,9 +5,13 @@ namespace App\Services\Novedades;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Modulo;
+use App\Models\Novedad;
+use App\Models\NovedadNota;
+use App\Models\RecorridoPc;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
 use App\Support\Tenancy\EmpresaDeTrabajo;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -44,11 +48,12 @@ class AjustesNovedades
     private const MEMORIA = 'ajustes_novedades.nombre.';
 
     public const CATEGORIAS_HALLAZGO = [
-        'proteccion_civil' => 'Siniestro Protección Civil (como siempre)',
-        'mantenimiento_pc' => 'Mantenimiento de equipo PC',
+        // C-29 (DD-17): el hallazgo de un recorrido es mantenimiento, no un siniestro (no infla Tablero ni Tendencias)
+        'mantenimiento_pc' => 'Mantenimiento de equipo PC (recomendado)',
+        'proteccion_civil' => 'Siniestro Protección Civil',
     ];
 
-    public const CATEGORIA_HALLAZGO_OMISION = 'proteccion_civil';
+    public const CATEGORIA_HALLAZGO_OMISION = 'mantenimiento_pc';
 
     public function __construct(private readonly AdministradorRoles $auditoria) {}
 
@@ -282,5 +287,50 @@ class AjustesNovedades
         if ($antes !== $despues) {
             $this->auditoria->auditar($actor, 'novedades.configurado', $empresa, $antes, $despues);
         }
+    }
+
+    // ------------------------------------------- C-29: reclasificar lo de antes
+
+    /**
+     * Tickets que abrió un recorrido como «Siniestro Protección Civil» y que
+     * nadie documentó como siniestro real (sin detalle, servicios, equipos ni
+     * daños): son los que se pueden pasar a «Mantenimiento de equipo PC».
+     *
+     * @return Builder<Novedad>
+     */
+    public function hallazgosComoSiniestro(): Builder
+    {
+        return Novedad::query()->where('novedades.categoria', 'proteccion_civil')
+            ->whereIn('novedades.id', RecorridoPc::query()->whereNotNull('novedad_id')->select('novedad_id'))
+            ->whereDoesntHave('siniestro')->whereDoesntHave('siniestroServicios')->whereDoesntHave('siniestroEquipos')->whereDoesntHave('siniestroDanos');
+    }
+
+    /**
+     * «Pasar los hallazgos anteriores a Mantenimiento de equipo PC» (opcional,
+     * desde Configuración). Deja una nota en cada ticket y una sola entrada
+     * en la auditoría con los folios, para poder revisarlo o deshacerlo.
+     *
+     * @return int tickets reclasificados
+     */
+    public function reclasificarHallazgos(User $actor, Empresa $empresa): int
+    {
+        $tickets = $this->hallazgosComoSiniestro()->where('novedades.empresa_id', $empresa->id)->get(['novedades.id', 'numero']);
+        if ($tickets->isEmpty()) {
+            return 0;
+        }
+        DB::transaction(function () use ($tickets, $actor, $empresa) {
+            Novedad::whereIn('id', $tickets->pluck('id'))->where('categoria', 'proteccion_civil')
+                ->update(['categoria' => 'mantenimiento_pc', 'actualizado_por' => $actor->id, 'updated_at' => now()]);
+            foreach ($tickets as $t) {
+                NovedadNota::create([
+                    'empresa_id' => $empresa->id, 'novedad_id' => $t->id, 'tipo' => 'sistema', 'autor_nombre' => mb_substr($actor->name, 0, 150),
+                    'texto' => 'Se reclasificó de «Siniestro Protección Civil» a «Mantenimiento de equipo PC»: lo abrió un recorrido y no se documentó como siniestro.',
+                ]);
+            }
+        });
+        $this->auditoria->auditar($actor, 'novedades.hallazgos_reclasificados', $empresa, ['categoria' => 'proteccion_civil'],
+            ['categoria' => 'mantenimiento_pc', 'tickets' => $tickets->map(fn (Novedad $t) => $t->folio())->all()]);
+
+        return $tickets->count();
     }
 }

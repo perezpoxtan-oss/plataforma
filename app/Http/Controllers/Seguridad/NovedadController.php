@@ -227,7 +227,7 @@ class NovedadController extends Controller
         $empresaId = $this->empresaDeTrabajo($request);
         $filtros = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
-            'categoria' => ['nullable', 'in:'.implode(',', array_keys(Novedad::CATEGORIAS))],
+            'categoria' => ['nullable', 'in:'.implode(',', [...array_keys(Novedad::CATEGORIAS), Novedad::GRUPO_PC])],
             'sede' => ['nullable', 'integer'],
             'pestana' => ['nullable', 'in:abiertas,resueltas'],
         ]);
@@ -236,7 +236,8 @@ class NovedadController extends Controller
             $lista = $this->novedades->limitar(Novedad::query(), $request->user(), 'exportar')
                 ->with(['sede:id,nombre', 'area:id,nombre,nivel,padre_id', 'area.padre:id,nombre', 'areaEspecifica:id,nombre',
                     'creador:id,name', 'editor:id,name', 'asignado:id,name', 'cerrador:id,name', 'articulos:id,novedad_id,folio'])
-                ->when(isset($filtros['categoria']), fn ($q) => $q->where('categoria', $filtros['categoria']))
+                ->when(isset($filtros['categoria']), fn ($q) => $filtros['categoria'] === Novedad::GRUPO_PC
+                    ? $q->whereIn('categoria', array_keys(Novedad::SUBTIPOS_PC)) : $q->where('categoria', $filtros['categoria'])) // C-29: «Protección Civil» con subtipos
                 ->when(isset($filtros['sede']), fn ($q) => $q->where('sede_id', (int) $filtros['sede']))
                 ->when(($filtros['pestana'] ?? null) === 'abiertas', fn ($q) => $q->where('estatus', '!=', Novedad::RESUELTO))
                 ->when(($filtros['pestana'] ?? null) === 'resueltas', fn ($q) => $q->where('estatus', Novedad::RESUELTO))

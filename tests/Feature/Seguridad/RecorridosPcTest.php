@@ -324,7 +324,7 @@ class RecorridosPcTest extends TestCase
         $this->punto($r, $ext, ['manometro', 'precinto'], 'Manómetro en zona roja')->assertSessionHas('aviso');
         $r = $this->fresco($r);
         $ticket = $this->enEmpresa(fn () => Novedad::with('notas')->findOrFail($r->novedad_id));
-        $this->assertSame('proteccion_civil', $ticket->categoria);
+        $this->assertSame('mantenimiento_pc', $ticket->categoria); // C-29 (DD-17): ya no cuenta como siniestro
         $this->assertSame('VER DETALLE EN RECORRIDO PC '.$r->folio(), $ticket->ubicacion);
         $this->assertStringContainsString('EXT-01 (Extintor): Falla en Manómetro, Precinto. Obs: Manómetro en zona roja', $ticket->descripcion);
         $this->assertSame($this->centro->id, $ticket->sede_id);
@@ -373,8 +373,15 @@ class RecorridosPcTest extends TestCase
         $r = $this->recorrido($brigadista);
 
         $this->punto($r, $ext, [], null, $brigadista)->assertSessionHasNoErrors();
-        $this->punto($r, $ext, ['manguera'], null, $brigadista)->assertSessionHasErrors('observaciones');
-        $this->assertSame(1, $this->fresco($r)->revisiones->count()); // el punto con falla no se guardó sin su ticket
+        // C-29 (D-06): el punto con falla se guarda igual y la plataforma abre el ticket
+        $this->punto($r, $ext, ['manguera'], null, $brigadista)->assertSessionHasNoErrors()->assertSessionHas('aviso');
+        $r = $this->fresco($r);
+        $this->assertSame(2, $r->revisiones->count());
+        $ticket = $this->enEmpresa(fn () => Novedad::with('notas')->findOrFail($r->novedad_id));
+        $this->assertSame('mantenimiento_pc', $ticket->categoria);
+        $this->assertStringContainsString('Ticket abierto por la plataforma', $ticket->notas->first()->texto);
+        $this->assertSame(mb_strtoupper($brigadista->name), $ticket->reportado_por);
+        $this->assertTrue(Auditoria::where('evento', 'novedades.creado')->where('auditable_id', $ticket->id)->exists());
     }
 
     public function test_transiciones_prohibidas_y_validaciones_del_recorrido(): void

@@ -74,6 +74,18 @@ class Novedad extends Model
      */
     public const CATEGORIAS_AUTOMATICAS = ['recorrido_pc' => 'Recorrido Protección Civil (histórico — ya no se crean aquí)', 'mantenimiento_pc' => 'Mantenimiento de equipo PC'];
 
+    /**
+     * C-29 (D-06): un solo filtro «Protección Civil» con su subtipo (en la
+     * lista, el Excel y los informes). Clave del grupo => subtipos.
+     */
+    public const GRUPO_PC = 'pc';
+
+    public const SUBTIPOS_PC = [
+        'proteccion_civil' => 'Siniestro',
+        'mantenimiento_pc' => 'Mantenimiento de equipo',
+        'recorrido_pc' => 'Recorridos de antes (inspección)',
+    ];
+
     public const ABIERTO = 'abierto';
 
     public const PENDIENTE_TURNO = 'pendiente_turno';

@@ -22,8 +22,13 @@
             $categoriasFiltro = $soloLostFound
                 ? ['lost_found' => 'Lost & Found (Objetos Perdidos)']
                 : ['incidente_general' => 'Reporte General', 'accidente' => 'Accidente / Lesión', 'habitacion' => 'Valores a la Vista',
-                    'proteccion_civil' => 'Siniestro Protección Civil', 'recorrido_pc' => 'Recorridos PC (Inspección)',
-                    'lost_found' => 'Lost & Found (Objetos Perdidos)', 'robo' => 'Robo', 'mantenimiento_pc' => 'Mantenimiento de equipo PC', 'sin_clasificar' => 'Sin Clasificar'];
+                    'lost_found' => 'Lost & Found (Objetos Perdidos)', 'robo' => 'Robo', 'sin_clasificar' => 'Sin Clasificar'];
+            // C-32 (D-17): Valores a la Vista es de hotel; en otros giros solo se filtra si ya hay tickets de antes
+            if (! \App\Support\Terminos::actual()->esHotel() && ! $abiertas->concat($resueltas)->contains('categoria', 'habitacion')) {
+                unset($categoriasFiltro['habitacion']);
+            }
+            // C-29 (D-06): un solo filtro «Protección Civil» con su subtipo (siniestro, mantenimiento de equipo y recorridos de antes)
+            $grupoPc = $soloLostFound ? [] : \App\Models\Novedad::SUBTIPOS_PC;
             $hace = app(\App\Services\Notificaciones\CentroNotificaciones::class);
             $turnosNov = app(\App\Services\Novedades\TurnosNovedades::class);
         @endphp
@@ -73,6 +78,14 @@
                 @foreach ($categoriasFiltro as $clave => $texto)
                     <option value="{{ $clave }}">{{ $texto }}</option>
                 @endforeach
+                @if ($grupoPc)
+                    <optgroup label="Protección Civil">
+                        <option value="{{ \App\Models\Novedad::GRUPO_PC }}">Protección Civil (todos)</option>
+                        @foreach ($grupoPc as $clave => $texto)
+                            <option value="{{ $clave }}">{{ $texto }}</option>
+                        @endforeach
+                    </optgroup>
+                @endif
             </select>
             @if ($variasSedes)
                 <select class="filtro-select" aria-label="Filtrar por sede" data-filtro-novedades="sede">
@@ -102,7 +115,7 @@
                         $area = $n->textoArea();
                     @endphp
                     <article class="ficha-novedad {{ $abierta ? 'abierta' : 'resuelta' }}" id="novedad-{{ $n->id }}" data-novedad
-                             data-cat="{{ $n->categoria }}" data-sede="{{ $n->sede_id }}"
+                             data-cat="{{ $n->categoria }}" @if (isset(\App\Models\Novedad::SUBTIPOS_PC[$n->categoria])) data-grupo="{{ \App\Models\Novedad::GRUPO_PC }}" @endif data-sede="{{ $n->sede_id }}"
                              data-texto="{{ \App\Http\Controllers\Seguridad\NovedadController::textoBusqueda($n) }}">
                         <div>
                             <div class="d-flex justify-content-between align-items-center gap-2 mb-2">

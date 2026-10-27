@@ -429,6 +429,25 @@ class ConfiguracionController extends Controller
 
         return redirect()->to(route('configuracion.index').'#novedades')->with('ok', 'Ajustes de '.app(AjustesNovedades::class)->bitacoraConArticulo($empresaId).' guardados.');
     }
+
+    /**
+     * C-29 (D-06): pasar a «Mantenimiento de equipo PC» los hallazgos de
+     * recorrido que se abrieron como siniestro y nadie documentó como tal.
+     * Opcional y de toda la empresa (mismo permiso que los ajustes).
+     */
+    public function reclasificarHallazgos(Request $request): RedirectResponse
+    {
+        Gate::authorize('configuracion.editar');
+        abort_unless($this->editaEmpresa($request->user()), 403, 'Estos ajustes son de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa.');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        $total = $this->tenant->conEmpresa($empresaId, fn () => app(AjustesNovedades::class)->reclasificarHallazgos($request->user(), Empresa::findOrFail($empresaId)));
+
+        return redirect()->to(route('configuracion.index').'#novedades')->with('ok', $total === 0
+            ? 'No hay hallazgos anteriores que reclasificar.'
+            : ($total === 1 ? '1 hallazgo anterior pasó' : $total.' hallazgos anteriores pasaron').' a «Mantenimiento de equipo PC». Cada ticket tiene una nota que lo explica.');
+    }
     // Fin Mejoras Incidentes
 
     // --------------------------------------------------------- Correo (plataforma)

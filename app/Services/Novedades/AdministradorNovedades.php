@@ -642,6 +642,40 @@ class AdministradorNovedades
     }
 
     /**
+     * C-29 (D-06): ticket que abre la plataforma por su cuenta cuando quien
+     * hizo el trabajo no puede crear tickets en esa sede (por ejemplo, el
+     * hallazgo de un recorrido de Protección Civil). El trabajo no se pierde:
+     * el ticket nace con quien lo encontró como «reportado por» y una nota que
+     * explica por qué lo abrió la plataforma. Solo para categorías que abre la
+     * plataforma (las automáticas) o las que se eligen al despachar.
+     *
+     * @param  array{sede_id: int, categoria: string, reportado_por: string, ubicacion: string, descripcion: string, area_id?: ?int, ocurrio_en?: mixed}  $datos
+     */
+    public function abrirPorLaPlataforma(User $actor, array $datos, string $motivo): Novedad
+    {
+        $categoria = $datos['categoria'];
+        if (! isset(Novedad::CATEGORIAS_AUTOMATICAS[$categoria]) && ! in_array($categoria, Novedad::CATEGORIAS_ELEGIBLES, true)) {
+            throw ValidationException::withMessages(['categoria' => 'Categoría no válida para un ticket automático.']);
+        }
+        $novedad = new Novedad([
+            'sede_id' => (int) $datos['sede_id'], 'categoria' => $categoria,
+            'reportado_por' => mb_strtoupper(mb_substr($datos['reportado_por'], 0, 150)),
+            'ubicacion' => mb_strtoupper(mb_substr($datos['ubicacion'], 0, 255)),
+            'descripcion' => $datos['descripcion'],
+            'area_id' => $datos['area_id'] ?? null,
+            'ocurrio_en' => $datos['ocurrio_en'] ?? now(),
+        ]);
+        DB::transaction(function () use ($novedad) {
+            $novedad->numero = $this->siguienteNumero();
+            $novedad->save();
+        });
+        $this->anotar($novedad, $actor, $motivo, 'sistema');
+        $this->auditoria->auditar($actor, 'novedades.creado', $novedad, null, $this->foto($novedad) + ['abierto_por' => 'plataforma']);
+
+        return $novedad;
+    }
+
+    /**
      * Siniestro con lesionados: abre (una sola vez) un ticket de Accidente
      * ligado, para documentar a cada persona lesionada.
      */

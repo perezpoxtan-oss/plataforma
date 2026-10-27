@@ -41,7 +41,7 @@
                 <option value="{{ $clave }}" @selected(($trasErrorNov ? old('categoria_hallazgo_pc') : $categoriaActual) === $clave)>{{ $texto }}</option>
             @endforeach
         </select>
-        <p class="campo-ayuda mt-0">«Mantenimiento de equipo PC» evita que un extintor despresurizado parezca una emergencia real. Los tickets que ya existen no cambian. <span class="valor-original">Valor original: Siniestro Protección Civil.</span></p>
+        <p class="campo-ayuda mt-0">«Mantenimiento de equipo PC» evita que un extintor despresurizado parezca una emergencia real en el Tablero y en Tendencias. Elige «Siniestro Protección Civil» solo si tu empresa quiere tratar cada falla como emergencia. <span class="valor-original">Valor original: Mantenimiento de equipo PC.</span></p>
         {{-- C-24 (D-04): reloj de los tickets canalizados por categoría --}}
         @php $horasReloj = $ajustesNov->relojHoras($empresa); @endphp
         <fieldset class="mt-3">
@@ -76,7 +76,20 @@
             <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar ajustes de la bitácora</button>
         @endif
     </form>
-    {{-- Configuración por secciones: «Restablecer valor original» (Novedades y Siniestro Protección Civil) --}}
+    {{-- C-29 (D-06): reclasificación opcional de los hallazgos que se abrieron como siniestro (en Avanzado) --}}
+    @php $hallazgosSiniestro = $puedeEditar ? $ajustesNov->hallazgosComoSiniestro()->where('novedades.empresa_id', $empresa->id)->count() : 0; @endphp
+    @if ($hallazgosSiniestro > 0)
+        <details class="mt-3">
+            <summary class="small fw-bold">Avanzado: hallazgos anteriores registrados como siniestro ({{ $hallazgosSiniestro }})</summary>
+            <p class="small mt-2 mb-2">{{ $hallazgosSiniestro === 1 ? 'Hay 1 ticket que abrió' : 'Hay '.$hallazgosSiniestro.' tickets que abrió' }} un recorrido como «Siniestro Protección Civil» y nadie lo documentó como siniestro. Puedes pasarlos a «Mantenimiento de equipo PC» para que no cuenten como emergencias. Cada ticket queda con una nota que lo explica.</p>
+            <form action="{{ route('configuracion.novedades.reclasificar') }}" method="POST" class="m-0" data-confirmar="¿Pasar {{ $hallazgosSiniestro }} {{ $hallazgosSiniestro === 1 ? 'ticket' : 'tickets' }} a «Mantenimiento de equipo PC»?">
+                @csrf
+                @method('PUT')
+                <button type="submit" class="btn-azul" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar como Mantenimiento de equipo PC</button>
+            </form>
+        </details>
+    @endif
+    {{-- Configuración por secciones: «Restablecer valor original» (Novedades y Mantenimiento de equipo PC) --}}
     @if ($puedeEditar && ($ajustesNov->nombrePropio($empresa->id) || $categoriaActual !== \App\Services\Novedades\AjustesNovedades::CATEGORIA_HALLAZGO_OMISION || $horasReloj !== \App\Services\Novedades\AjustesNovedades::RELOJ_HORAS))
         @include('administracion.configuracion._restablecer', ['ajuste' => 'novedades', 'que' => 'el nombre del módulo, la categoría del hallazgo y el reloj de los tickets'])
     @endif
