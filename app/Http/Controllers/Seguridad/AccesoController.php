@@ -372,10 +372,16 @@ class AccesoController extends Controller
         }
         if ($autorizacion === Acceso::SIN_RESPONSABLE) {
             $depto = $acceso->departamento?->nombre ?? 'El departamento';
+            // C-08 / DD-11: la visita espera al supervisor o al jefe de seguridad de la sede
+            if (! in_array($acceso->tipo, Acceso::CON_AUTORIZACION, true)) {
+                return "Registrado: {$acceso->nombre} queda pendiente. {$depto} no tiene quien autorice en esta sede: ".($puedeAprobar
+                    ? 'confírmalo con quien lo recibe y toca Confirmar Autorización.'
+                    : 'ya se avisó a tu supervisor; aquí verás cuándo puede pasar.');
+            }
 
-            return "Registrado: {$acceso->nombre} queda pendiente. {$depto} no tiene responsable en esta sede: ".($puedeAprobar
+            return "Registrado: {$acceso->nombre} queda pendiente. {$depto} no tiene quien autorice en esta sede: ".($puedeAprobar
                 ? 'confirma con el host y toca Autorizar por excepción.'
-                : 'confirma con el host; tu supervisor lo autoriza por excepción.');
+                : 'confirma con el host; tu supervisor lo autoriza por excepción (ya se le avisó).');
         }
         if ($autorizacion === 'esperando') {
             $depto = $acceso->departamento?->nombre;
@@ -417,6 +423,8 @@ class AccesoController extends Controller
         return [
             'rh_espera_en' => $rhEsperaEn,
             'visitas_esperan' => $visitasEsperan,
+            // C-08 / DD-11: sin quien autorice en la sede, ¿espera al supervisor?
+            'sin_cobertura_espera' => $visitasEsperan && $empresa !== null && $ajustes->sinCoberturaEsperaSupervisor($empresa),
             'departamentos' => $visitasEsperan ? $autorizaciones->departamentosConResponsable() : [],
             // Proveedor y contratista: ¿esperan al departamento? («¿A qué departamento viene?» obligatorio)
             'esperan_departamento' => collect(Acceso::CON_AUTORIZACION)->filter(fn ($t) => $empresa !== null && $ajustes->esperaAlDepartamento($empresa, $t))->values()->all(),

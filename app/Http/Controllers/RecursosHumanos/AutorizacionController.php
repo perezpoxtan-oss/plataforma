@@ -12,6 +12,7 @@ use App\Models\Empresa;
 use App\Models\Sede;
 use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Autorizaciones\Cobertura;
 use App\Services\Autorizaciones\Delegaciones;
 use App\Services\Autorizaciones\Escalamiento;
 use App\Services\Candidatos\CambioNoPermitido;
@@ -21,6 +22,7 @@ use App\Services\Recepcion\AjustesRecepcion;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -72,7 +74,8 @@ class AutorizacionController extends Controller
                 'historial' => $historial,
                 'estado' => $estado,
                 'delegaciones' => $misDelegaciones,
-                'usuarios' => $actor->can('autorizaciones.responder') ? $this->delegaciones->candidatosAResponsable($empresaId) : collect(),
+                'usuarios' => $actor->can('autorizaciones.configurar') ? $this->delegaciones->candidatosADelegado($empresaId) : collect(),
+                'miDelegacion' => $this->delegaciones->activaDe($actor), // C-12
                 'esResponsable' => DepartamentoResponsable::where('user_id', $actor->id)->exists(),
                 // Candidatos fase 2: las entrevistas que Recursos Humanos le canalizó (pantalla Entrevistar)
                 'entrevistas' => $actor->can('candidatos.evaluar') ? app(Entrevistas::class)->pendientes($actor)->count() : null,
@@ -172,8 +175,13 @@ class AutorizacionController extends Controller
 
         return $this->tenant->conEmpresa($empresaId, fn () => view('rh.autorizaciones.responsables', [
             'departamentos' => Departamento::with(['sedes:sedes.id,nombre'])->where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'todas_las_sedes']),
-            'responsables' => DepartamentoResponsable::with(['usuario:id,name', 'sede:id,nombre'])->orderBy('es_suplente')->orderBy('id')->get()->groupBy('departamento_id'),
-            'usuarios' => $this->delegaciones->candidatosAResponsable($empresaId),
+            // C-08: las filas con su cuenta (para marcar «cuenta dada de baja», «sin permiso», «no puede entrar a…»)
+            'responsables' => ($cobertura = app(Cobertura::class))->filas()->load('sede:id,nombre')->groupBy('departamento_id'),
+            'cobertura' => $cobertura,
+            'sinCobertura' => $cobertura->sedesSinCobertura(),
+            'usuarios' => $usuarios = $this->delegaciones->candidatosAResponsable($empresaId),
+            // A-04: a qué sedes puede entrar cada candidato (el diálogo solo ofrece esas)
+            'alcances' => $usuarios->mapWithKeys(fn ($u) => [$u->id => $cobertura->sedesDe($u)])->all(),
             'sedes' => Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
             'empresa' => Empresa::findOrFail($empresaId),
             'requiere' => app(AjustesRecepcion::class)->visitasRequierenAutorizacion(Empresa::findOrFail($empresaId)),
@@ -205,11 +213,12 @@ class AutorizacionController extends Controller
     public function delegar(Request $request): RedirectResponse
     {
         Gate::authorize('autorizaciones.responder');
+        // C-12: la pantalla ofrece la propia delegación en Mi cuenta; esta ruta se conserva (quien configura delega por otra persona)
         $empresaId = $this->empresaDeTrabajo($request);
         $configura = $request->user()->can('autorizaciones.configurar');
         $d = $this->tenant->conEmpresa($empresaId, fn () => $this->delegaciones->crear($request->user(), $empresaId, $request->except(['_token', '_dialogo']), $configura));
 
-        return redirect()->route('autorizaciones.index')->with('ok', "Delegación guardada: mientras esté activa, los avisos de {$d->usuario?->name} le llegan a {$d->delegado?->name}.");
+        return redirect()->route('autorizaciones.index')->with('ok', "Delegación guardada: mientras esté activa, lo que le toque aprobar a {$d->usuario?->name} le llega a {$d->delegado?->name}.");
     }
 
     public function cancelarDelegacion(Request $request, int $delegacion): RedirectResponse
@@ -285,6 +294,12 @@ class AutorizacionController extends Controller
     private function buscar($actor, int $id): Autorizacion
     {
         $a = $this->autorizaciones->limitar(Autorizacion::query(), $actor)->with($this->autorizaciones->relaciones())->find($id);
+        if ($a === null && ($fuera = Autorizacion::with('sede:id,nombre')->find($id)) !== null
+            && in_array((int) $actor->id, array_map('intval', [...(array) ($fuera->avisados ?? []), ...(array) ($fuera->escalado_a ?? [])]), true)) {
+            // A-04: le llegó el aviso, pero la solicitud es de una sede a la que su cuenta no entra: explicación en vez de 404
+            throw new HttpResponseException(redirect()->route($actor->can('autorizaciones.ver') ? 'autorizaciones.index' : 'panel')
+                ->with('error', 'Esta solicitud es de '.($fuera->sede?->nombre ?? 'otra sede').' y tu cuenta no puede responder ahí. Ya se avisó a quien sí puede; si crees que te toca, pide a tu administrador que revise tus sedes.'));
+        }
         abort_if($a === null, 404);
 
         return $a;

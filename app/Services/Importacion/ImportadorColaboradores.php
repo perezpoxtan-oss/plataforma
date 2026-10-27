@@ -85,12 +85,28 @@ class ImportadorColaboradores extends Importador
     {
         $clave = $this->clave($fila);
 
-        return $clave === null ? null : Colaborador::where('num_empleado', $clave)->first();
+        $porNumero = $clave === null ? null : Colaborador::where('num_empleado', $clave)->first();
+        if ($porNumero !== null) {
+            return $porNumero;
+        }
+        // C-27 (A-11): la caseta pudo darlo de alta sin número: se propone «Unir con el alta de la caseta» en vez de duplicarlo
+        $nombre = $this->valor($fila, 'nombre');
+        $paterno = $this->valor($fila, 'apellido_paterno');
+        if ($nombre === null || $paterno === null) {
+            return null;
+        }
+        $provisional = collect($this->colaboradores->parecidos($nombre, $paterno, $this->valor($fila, 'apellido_materno')))->firstWhere('provisional', true);
+
+        return $provisional === null ? null : Colaborador::whereKey($provisional['id'])->where('provisional', true)->whereNull('fusionado_en_id')->first();
     }
 
     public function describir(Model $registro): string
     {
         /** @var Colaborador $registro */
+        if ($registro->provisional && $registro->fusionado_en_id === null && $registro->activo) {
+            return $registro->nombreCompleto().' (alta de la caseta por verificar: al actualizar se une con ella y queda verificada)';
+        }
+
         return $registro->nombreCompleto().($registro->activo ? '' : ' (dado de baja)');
     }
 
@@ -113,7 +129,13 @@ class ImportadorColaboradores extends Importador
 
         [$datos, $errores] = $this->datos($actor, $fila, false);
 
-        return $this->guardarOReportar($errores, fn () => $this->colaboradores->actualizar($actor, $empresaId, $existente, $this->peticion($this->encima($actual, $datos))));
+        $guardado = $this->guardarOReportar($errores, fn () => $this->colaboradores->actualizar($actor, $empresaId, $existente, $this->peticion($this->encima($actual, $datos))));
+        // C-27: unir con el alta de la caseta = la plantilla la completa y la verifica
+        if ($existente->provisional && $existente->fusionado_en_id === null && $existente->activo && ! empty($existente->num_empleado)) {
+            $this->colaboradores->verificarDesdeImportacion($actor, $existente);
+        }
+
+        return $guardado;
     }
 
     /**

@@ -22,6 +22,7 @@ use App\Services\Permisos\Autorizador;
 use App\Services\Reservas\AjustesReservas;
 use App\Services\Reservas\CatalogosReservas;
 use App\Services\Reservas\EsperaReservas;
+use App\Services\Reservas\ResponsablesReservas;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
@@ -703,6 +704,29 @@ class ReservasDeAreasTest extends TestCase
         $this->assertSame(0, $this->notificaciones($this->sergio, 'reserva_por_aprobar'));
         $this->assertSame(2, $this->notificaciones($this->julia, 'reserva_por_aprobar')); // la de Sistemas y, delegada, la de Cocina
         $this->responder($this->julia, $this->aprobacion($r, 'departamento:'.$this->cocina->id), 'aprobar')->assertSessionHasNoErrors();
+    }
+
+    /** Etapa 3 · C-12 («No molestar» en Mis pendientes) y C-08 (la misma regla de cobertura). */
+    public function test_c12_mis_pendientes_respeta_la_delegacion_y_c08_la_cobertura(): void
+    {
+        $this->enEmpresa(fn () => Delegacion::create(['user_id' => $this->sergio->id, 'delegado_id' => $this->julia->id,
+            'desde' => now()->subHour(), 'hasta' => now()->addDays(2), 'motivo' => 'Vacaciones']));
+        $this->reservaConServicios();
+        $total = function (User $u): int {
+            $this->flushSession();
+            $this->app->forgetScopedInstances();
+
+            return $this->enEmpresa(fn () => collect(app(MisPendientes::class)->para($u->fresh())['items'])->firstWhere('clave', 'reservas_aprobar')['total'] ?? 0);
+        };
+        $this->assertSame(0, $total($this->sergio), 'Quien delegó no ve lo suyo en Mis pendientes');
+        $this->assertSame(2, $total($this->julia));
+
+        // C-08: un responsable dado de baja ya no cuenta; la orden de Cocina pasa a los responsables generales
+        $this->sergio->forceFill(['activo' => false])->save();
+        $this->app->forgetScopedInstances();
+        $quien = $this->enEmpresa(fn () => app(ResponsablesReservas::class)->delDepartamento($this->cocina->id, $this->centro->id, $this->empresa->id)->pluck('id')->all());
+        $this->assertNotContains($this->sergio->id, $quien);
+        $this->assertNotEmpty($quien);
     }
 
     // ---------------------------------------------------- Pantallas e informes

@@ -12,6 +12,7 @@ use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Models\User;
 use App\Models\Vehiculo;
+use App\Services\Autorizaciones\Cobertura;
 use App\Support\Tenancy\Tenant;
 use App\Support\Terminos;
 use Illuminate\Support\Facades\DB;
@@ -117,8 +118,10 @@ class AsistenteArranque
                 ],
                 [
                     'clave' => 'departamentos', 'icono' => 'bi-diagram-2', 'titulo' => 'Departamentos y responsables',
-                    'texto' => 'Crea tus departamentos y nombra a su responsable: él autoriza las visitas y los pases de su gente.',
-                    'hecho' => Departamento::where('activo', true)->exists() && DepartamentoResponsable::query()->exists(),
+                    // C-08: hecho solo si cada departamento tiene quien autorice en cada sede (misma regla que la caseta)
+                    'texto' => 'Crea tus departamentos y nombra a su responsable: él autoriza las visitas y los pases de su gente.'
+                        .(($faltan = app(Cobertura::class)->sinCobertura()) !== [] && DepartamentoResponsable::query()->exists() ? ' Sin quien autorice en '.Cobertura::frase($faltan).'.' : ''),
+                    'hecho' => Departamento::where('activo', true)->exists() && DepartamentoResponsable::query()->exists() && $faltan === [],
                     'enlaces' => array_filter(['Ir a Departamentos' => $enlace('departamentos.ver', 'departamentos.index')]),
                 ],
                 [

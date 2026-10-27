@@ -419,6 +419,8 @@ class UsuarioController extends Controller
 
         $datos['colaborador_id'] = $id;
         $datos['numero_colaborador'] = $colaborador->num_empleado;
+        // C-11 (DD-22): manda el colaborador; el nombre de la cuenta es el suyo (en pantalla, solo lectura)
+        $datos['name'] = $colaborador->nombreCompleto();
 
         return $datos;
     }

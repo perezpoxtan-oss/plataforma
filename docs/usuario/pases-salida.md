@@ -53,7 +53,7 @@ resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y 
 
 El circuito de aprobación empieza con este paso. Lo firma el **jefe del departamento** de la persona que pide el pase, en la sede de donde sale el equipo:
 
-1. El **responsable** de ese departamento en **Estructura → Departamentos** (el mismo que autoriza las visitas a su departamento). Si activó **No molestar**, también puede firmar la persona en quien delegó.
+1. El **responsable** de ese departamento en **Estructura → Departamentos** (el mismo que autoriza las visitas a su departamento). Si delegó sus aprobaciones en **Mi cuenta** («No molestar»), el aviso y Mis pendientes le llegan a la persona en quien delegó, que también puede firmar.
 2. Si el departamento no tiene responsable que pueda firmar (o el pase es del propio jefe), firma su **suplente**.
 3. Si el departamento no tiene responsable ni suplente, firma quien tenga permiso **Aprobar** de Pases de salida y sea de ese departamento.
 4. Si tampoco hay nadie, lo puede firmar cualquiera con permiso **Aprobar** en la sede, para que el pase no se quede atorado.

@@ -40,6 +40,10 @@
             <div class="acciones-encabezado-pases">
                 @if ($bandeja)
                     <a href="{{ route('pases-salida.index') }}" class="btn-secundario-pase"><i class="bi bi-grid me-1" aria-hidden="true"></i>Todos los pases</a>
+                    @can('pases_salida.aprobar')
+                        {{-- C-12: acceso directo a «Delegar mis aprobaciones» (Mi cuenta) --}}
+                        <a href="{{ route('mi-cuenta.index') }}#delegar" class="btn-secundario-pase"><i class="bi bi-moon-stars me-1" aria-hidden="true"></i>Delegar mis aprobaciones</a>
+                    @endcan
                 @else
                     <a href="{{ route('pases-salida.pendientes') }}" class="btn-secundario-pase {{ $misFirmas > 0 ? 'con-pendientes' : '' }}">
                         <i class="bi bi-pen me-1" aria-hidden="true"></i>Mi bandeja <span class="conteo-pill">{{ $misFirmas }}</span>

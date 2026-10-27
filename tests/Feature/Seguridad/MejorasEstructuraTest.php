@@ -281,9 +281,10 @@ class MejorasEstructuraTest extends TestCase
         $this->app->forgetScopedInstances();
 
         $vista = app(MisPendientes::class)->para($rh)['vista'];
-        $this->assertSame(['colaboradores_por_verificar'], array_column($vista, 'clave'));
+        // C-27: una sola bandeja «Altas por verificar» (con la pestaña Colaboradores)
+        $this->assertSame(['altas'], array_column($vista, 'clave'));
 
-        $this->actingAs($rh)->get('/')->assertOk()->assertSee('Colaboradores por verificar')->assertSee('1 colaborador por verificar')
+        $this->actingAs($rh)->get('/')->assertOk()->assertSee('Altas por verificar · Colaboradores')->assertSee('1 alta por verificar')
             ->assertDontSee('Solicitudes por revisar')->assertDontSee('Consola de Monitoreo Central');
         $this->assertSame([], app()->build(MisPendientes::class)->para($this->crearUsuario($this->empresa, 'Agente', $this->centro))['vista'] ?? []);
     }

@@ -172,9 +172,10 @@ class Entrevistas
         if ($titular === null) {
             return collect();
         }
-        $d = Delegacion::activas()->with('delegado:id,name,email,activo')->where('user_id', $titular->id)->orderByDesc('id')->first();
+        $d = Delegacion::activas()->with('delegado:id,name,email,activo,empresa_id,es_superadmin')->where('user_id', $titular->id)->orderByDesc('id')->first();
 
-        return collect([$d?->delegado?->activo ? $d->delegado : $titular]);
+        // C-12: el delegado recibe el aviso solo si puede entrevistar; si no, se queda con el titular
+        return collect([$d?->delegado?->activo && $d->delegado->can('candidatos.evaluar') ? $d->delegado : $titular]);
     }
 
     // --------------------------------------------------------------- Evaluaciones

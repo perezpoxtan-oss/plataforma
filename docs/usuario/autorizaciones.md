@@ -3,7 +3,7 @@ titulo: Autorizaciones
 modulos: [autorizaciones]
 seccion: Estructura
 orden: 45
-resumen: Quién autoriza las visitas, proveedores y contratistas que vienen a un departamento, cómo responder, delegar con «No molestar» y qué espera la caseta.
+resumen: Quién autoriza las visitas, proveedores y contratistas que vienen a un departamento, cómo responder, qué pasa si no hay quien autorice, delegar tus aprobaciones y qué espera la caseta.
 ---
 
 # Autorizaciones
@@ -33,7 +33,7 @@ Si tienes encendidos los avisos por correo en [Configuración](configuracion.md)
 ### Visitas, proveedores y contratistas que vienen a un departamento
 
 1. La caseta registra la visita con el motivo **Visita a Departamento** (o **Visita a Colaborador**), o al proveedor o contratista con **¿A qué departamento viene?**.
-2. Si la empresa lo pide y el departamento tiene responsable, la tarjeta de la caseta queda **PENDIENTE** con «Espera a: (tu nombre) (departamento) · minutos» y a ti te llega el aviso (también a los suplentes del departamento).
+2. Si la empresa lo pide y el departamento tiene **quien autorice en esa sede**, la tarjeta de la caseta queda **PENDIENTE** con «Espera a: (tu nombre) (departamento) · minutos» y a ti te llega el aviso (también a los suplentes del departamento).
 3. Toca **Autorizar ingreso** o **Rechazar** (en la campana, en **Mis pendientes**, en **Autorizaciones** o en el botón del correo).
 4. La tarjeta de la caseta **cambia sola**: autorizado, la persona pasa a «Gente en Sitio» con «Autorizado por (departamento)»; rechazado, queda **FINALIZADO** con «No autorizado por (departamento): no ingresó» en el historial (hay que devolverle su identificación).
 5. Si no contestas, la plataforma te lo **recuerda** a los minutos que configuró tu empresa (de fábrica, 10) con otro aviso en la campana y por correo. Si sigue sin respuesta (de fábrica, a los 20), **escala**: avisa a los suplentes del departamento (o a quien los cubre por «No molestar») y al Jefe de seguridad de la sede, y la caseta ve «Se escaló a: …». Cada aviso se manda una sola vez.
@@ -68,31 +68,45 @@ El correo trae los mismos botones. Al tocarlo se abre la plataforma: **inicia se
 
 ## Cómo delegar tus autorizaciones («No molestar»)
 
-1. En **Autorizaciones** toca **No molestar / delegar**.
-2. En **¿En quién delegas?** elige a otra persona (no puedes elegirte a ti mismo).
-3. Escribe **Desde** y **Hasta** (fecha y hora) y, si quieres, el **Motivo (opcional)** (por ejemplo «Vacaciones»).
-4. Toca **Guardar delegación**.
+«No molestar» ahora se llama **Delegar mis aprobaciones** y vive en **[Mi cuenta](mi-cuenta.md#cómo-delegar-mis-aprobaciones-no-molestar)**: ahí eliges a quién y hasta cuándo, y cubre tus visitas, pases de salida, reservas y entrevistas.
+
+1. En **Autorizaciones** toca **Delegar mis aprobaciones** (te lleva a Mi cuenta).
+2. Sigue los pasos de [Mi cuenta](mi-cuenta.md#cómo-delegar-mis-aprobaciones-no-molestar).
+
+**Qué debes ver:** mientras dure, arriba de **Autorizaciones** dice «Delegaste tus aprobaciones a … hasta …». Tus avisos, tu campana y tus **Mis pendientes** le llegan a esa persona; tú todavía puedes responder si entras.
+
+Si configuras quién autoriza, el botón **Delegar por otra persona** sirve cuando alguien no puede hacerlo en su Mi cuenta (por ejemplo, salió de vacaciones sin dejarlo): eliges **¿Quién delega?**, **¿En quién delegas?**, **Desde** y **Hasta**, y tocas **Guardar delegación**. Cada delegación activa o programada se puede **Cancelar** en la lista **Delegaciones**.
 
 ![Delegar autorizaciones](img/recepcion-y-candidatos/autorizaciones-delegar.png)
 
-**Qué debes ver:** «Delegación guardada: mientras esté activa, los avisos de … le llegan a ….» La delegación también cubre tus **entrevistas** de candidatos: las nuevas le llegan a quien te cubre y esa persona puede evaluarlas. Cuando regreses, toca **Cancelar** en tu delegación: «Delegación cancelada: los avisos vuelven a llegarle al responsable.»
+## Cómo saber si un departamento tiene quien autorice
+
+Un departamento **tiene quien autorice** en una sede solo si al menos uno de sus responsables cumple las cuatro cosas: su cuenta está **activa**, su rol tiene el permiso **Responder**, su cuenta **entra a esa sede** y está nombrado para esa sede (o para todas). La caseta, esta pantalla, **Departamentos**, **Inicio** y **Configuración** usan la misma regla.
+
+1. Abre **Responsables por departamento**.
+2. Junto a cada persona que no cuenta verás por qué: **(cuenta dada de baja)**, **(sin permiso para responder)**, **(no puede entrar a …)** o **(solo responde en …)**.
+3. Si falta en alguna sede, el departamento dice «**Sin quien autorice en** (sede)».
+4. Toca **Elegir responsables** y nombra a alguien que entre a esa sede.
+
+**Qué debes ver:** el aviso «Sin quien autorice en …» desaparece. Si una baja o un cambio de rol deja a un departamento sin quien autorice, te llega a la **campana** «Sin quien autorice en (departamento) (sede)» con el botón **Nombrar responsable**, y lo ves en **Mis pendientes** e **Inicio** hasta que lo resuelvas.
 
 ## Cómo elegir los responsables por departamento y qué espera en la caseta
 
 Todo lo que tiene que ver con quién responde y qué espera está en una sola pantalla: **Responsables por departamento**. Llegas a ella desde **Estructura → Departamentos** (botón **Responsables**), desde **Recepción → Ajustes** o desde **Autorizaciones**.
 
 1. En **Qué espera en la caseta**:
-   - En **Esperan la autorización del responsable del departamento**, marca quién espera: **Visita**, **Proveedor** y **Contratista** (de fábrica, las tres). Marcada: la caseta elige a qué departamento viene la persona y, si ese departamento tiene responsable en la sede, queda «Esperando autorización» hasta que él responda; si no tiene responsable, la visita entra como siempre y el proveedor o contratista lo pasa el supervisor con **Autorizar por excepción**. **Proveedor** o **Contratista** sin marcar: se confirman con quien los citó (el Host) y **Confirmar Autorización**, como antes.
+   - En **Esperan la autorización del responsable del departamento**, marca quién espera: **Visita**, **Proveedor** y **Contratista** (de fábrica, las tres). Marcada: la caseta elige a qué departamento viene la persona y, si ese departamento tiene quien autorice en la sede, queda «Esperando autorización» hasta que él responda. **Proveedor** o **Contratista** sin marcar: se confirman con quien los citó (el Host) y **Confirmar Autorización**, como antes.
+   - En **Si el departamento no tiene quien autorice en la sede, la visita…** elige **Espera al supervisor o al jefe de seguridad de la sede** (valor original) o **La visita pasa sin esperar**. Con la primera, la visita queda pendiente, al supervisor y al jefe de seguridad de esa sede les llega el aviso a la campana y a **Mis pendientes**, y la tarjeta muestra cuánto lleva esperando. El proveedor o contratista sin quien autorice siempre espera: lo pasa el supervisor con **Autorizar por excepción**.
    - Enciende o apaga **La caseta espera a que RR. HH. diga «Que pase»**. Encendido: quien viene a Recursos Humanos espera en caseta tu respuesta. Apagado: pasa directo y solo te llega el aviso.
    - En **Recordar a los (minutos)** escribe a los cuántos minutos se vuelve a avisar a quien debe responder (campana y correo). Desde ese minuto la espera se pinta en **ámbar**. De fábrica, 10.
    - En **Avisar al suplente y al jefe a los (minutos)** escribe a los cuántos minutos, si nadie ha contestado, se avisa a los suplentes del departamento (o a quien los cubre) y al Jefe de seguridad de la sede; si la persona espera a Recursos Humanos, al resto del equipo de RR. HH. y al Jefe de seguridad. Desde ese minuto la espera se pinta en **rojo**. De fábrica, 20. Debe ser mayor que el recordatorio; ambos admiten hasta 240 minutos.
    - Toca **Guardar esperas**.
-2. En cada departamento toca **Elegir responsables**: agrega el **Usuario**, la **Sede** (todas o una) y marca si es **suplente**. Si el departamento aún no tiene titular, el primer renglón vacío viene **sin** marcar «Suplente» (es el titular) y los siguientes vienen marcados.
+2. En cada departamento toca **Elegir responsables**: agrega el **Usuario**, la **Sede** y marca si es **suplente**. La lista de sedes solo ofrece las sedes a las que entra la cuenta de esa persona; **Todas sus sedes** solo aparece si su cuenta entra a todas. Si el departamento aún no tiene titular, el primer renglón vacío viene **sin** marcar «Suplente» (es el titular) y los siguientes vienen marcados.
 3. Toca **Guardar responsables**.
 
 ![Responsables por departamento](img/recepcion-y-candidatos/autorizaciones-responsables.png)
 
-**Qué debes ver:** «Esperas guardadas: la caseta ya aplica lo que elegiste.» y «Responsables de … guardados.» Solo aparecen usuarios con permiso para **Responder** autorizaciones; si falta alguien, dale ese permiso en [Roles y permisos](roles-y-permisos.md). El responsable también es quien sale primero en **¿Quién lo entrevista?** cuando Recursos Humanos canaliza a un candidato a su departamento (para eso necesita además el permiso **Evaluar** de *Candidatos*). En **Departamentos**, la tarjeta de un departamento sin responsable lo avisa con el enlace **Nombrar responsable**.
+**Qué debes ver:** «Esperas guardadas: la caseta ya aplica lo que elegiste.» y «Responsables de … guardados.» Solo aparecen usuarios con permiso para **Responder** autorizaciones; si falta alguien, dale ese permiso en [Roles y permisos](roles-y-permisos.md). El responsable también es quien sale primero en **¿Quién lo entrevista?** cuando Recursos Humanos canaliza a un candidato a su departamento (para eso necesita además el permiso **Evaluar** de *Candidatos*). En **Departamentos**, la tarjeta de un departamento sin quien autorice lo avisa con el enlace **Nombrar responsable**.
 
 Cada recordatorio y cada escalamiento quedan en la Bitácora de auditoría y en el detalle de la autorización («Recordatorio enviado …», «Escalado … a …»). Quien responde las autorizaciones de un departamento (o configura quién autoriza) ve **Autorizaciones** en el menú **Estructura** (además de la campana y Mis pendientes).
 
@@ -109,8 +123,11 @@ Cada recordatorio y cada escalamiento quedan en la Bitácora de auditoría y en 
 | Ese usuario ya está en la lista. / Máximo 10 responsables por departamento. | Repetiste un responsable o pasaste el límite. | Revisa la lista. |
 | El enlace del correo ya venció o fue alterado. Abre la solicitud desde la plataforma. | El botón del correo pasó de 24 horas. | Responde desde la campana o **Autorizaciones**. |
 | No hubo cambios que guardar. | Guardaste sin cambiar nada. | Cambia algo o sal de la pantalla. |
-| La visita no queda «esperando autorización». | El departamento no tiene responsable o la opción está apagada. | Revisa **Responsables por departamento**. |
-| El proveedor o contratista dice «Sin responsable en …: se autoriza por excepción». | Su departamento no tiene responsable en esa sede. | Nombra responsable en **Responsables por departamento**; mientras, el supervisor lo pasa con **Autorizar por excepción**. |
+| La visita no queda «esperando autorización». | La opción está apagada, o el departamento no tiene quien autorice y elegiste «La visita pasa sin esperar». | Revisa **Responsables por departamento**. |
+| La tarjeta dice «Sin quien autorice en …: espera al supervisor o al jefe de seguridad». | Nadie del departamento puede responder en esa sede. | El supervisor lo confirma con **Confirmar Autorización**; nombra a alguien en **Responsables por departamento**. |
+| El proveedor o contratista dice «Sin quien autorice en …: el supervisor lo autoriza por excepción». | Su departamento no tiene quien autorice en esa sede. | Nombra responsable en **Responsables por departamento**; mientras, el supervisor lo pasa con **Autorizar por excepción**. |
+| … solo puede responder en …: elige esa sede en lugar de «Todas sus sedes». | La cuenta de esa persona no entra a todas las sedes. | Elige una de sus sedes o a otra persona. |
+| Esta solicitud es de … y tu cuenta no puede responder ahí. | Te llegó un aviso de una sede a la que tu cuenta no entra. | Ya se avisó a quien sí puede; si crees que te toca, pide a tu administrador que revise tus sedes. |
 | El proveedor o contratista no pide departamento y dice «Confirma con el host». | La casilla **Proveedor** o **Contratista** está sin marcar. | Márcala en **Qué espera en la caseta** si quieres que espere al departamento. |
 | «El aviso al suplente y al jefe debe ir después del recordatorio.» | Pusiste el segundo tiempo igual o menor que el primero. | Escribe en el segundo campo un número mayor. |
 | Me llegó «Nadie ha respondido: … lleva … min en caseta» y no soy el responsable. | Eres suplente, cubres a alguien por «No molestar» o eres Jefe de seguridad de esa sede: se te escaló la espera. | Si puedes responder, toca el botón; si no, confirma en la caseta con **Confirmar Autorización** cuando te lo autoricen. |
@@ -123,7 +140,9 @@ Cada recordatorio y cada escalamiento quedan en la Bitácora de auditoría y en 
 
 **¿Me entero si la caseta deja pasar a un proveedor sin mi respuesta?** Sí: te llega a la campana «Pasó por excepción: …» con el motivo y quién lo autorizó.
 
-**Mi empresa no tiene Recursos Humanos, ¿me sirve esta página?** Sí. Las autorizaciones de departamentos, los responsables y «No molestar» vienen en todos los planes.
+**Mi empresa no tiene Recursos Humanos, ¿me sirve esta página?** Sí. Las autorizaciones de departamentos, los responsables y «Delegar mis aprobaciones» vienen en todos los planes.
+
+**¿Por qué la visita espera si el departamento sí tiene responsable?** Porque ese responsable no puede responder en esa sede (su cuenta está dada de baja, no tiene el permiso **Responder** o no entra a esa sede). Revisa la marca junto a su nombre en **Responsables por departamento**.
 
 ## Relacionado
 
@@ -132,3 +151,4 @@ Cada recordatorio y cada escalamiento quedan en la Bitácora de auditoría y en 
 - [Departamentos y puestos](departamentos-y-puestos.md)
 - [Entrevistar y elegir](entrevistar-y-elegir.md)
 - [Configuración](configuracion.md)
+- [Mi cuenta](mi-cuenta.md)

@@ -54,11 +54,12 @@ Junto a la campana hay un botón amarillo **Mis pendientes** con un número: es 
 
 1. Toca **Mis pendientes**. Se abre la lista **Lo que espera tu respuesta**.
 2. Revisa los renglones. Solo aparecen los que tienen algo pendiente:
-   - **Colaboradores por verificar** (Recursos Humanos o, si tu plan no lo incluye, el administrador): colaboradores que la caseta registró y aún no estaban en el directorio. Ver [Colaboradores](colaboradores.md).
-   - **Autorizaciones por responder:** visitas a tu departamento.
+   - **Esperan tu autorización en caseta** (supervisor o jefe de seguridad): visitas a un departamento que no tiene quien autorice en tu sede. Cambia a ámbar y rojo con el tiempo. Ver [Bitácora de accesos](accesos.md).
+   - **Sin quien autorice** (quien nombra responsables): departamentos que se quedaron sin quien autorice en alguna sede por una baja o un cambio de rol. Ver [Autorizaciones](autorizaciones.md).
+   - **Autorizaciones por responder:** visitas a tu departamento. Si delegaste tus aprobaciones en [Mi cuenta](mi-cuenta.md), lo que tu delegado puede responder ya no aparece aquí (le aparece a él).
    - **Firmas de pases de salida:** pases que esperan tu firma.
    - **Procedimientos por aprobar** y **Procedimientos por leer:** los que esperan tu aprobación y los que te faltan leer y firmar «Leí y entendí».
-   - **Altas por verificar:** lo que la caseta registró y tú revisas. Si es de un solo padrón, el renglón dice cuál («Altas por verificar · Vehículos»); si son varios, debajo aparece cada padrón con su número y su enlace.
+   - **Altas por verificar:** personas, vehículos, empresas y colaboradores que la caseta registró y tú revisas (los colaboradores, Recursos Humanos o, si tu plan no lo incluye, el administrador). Si es de una sola pestaña, el renglón dice cuál («Altas por verificar · Vehículos»); si son varias, debajo aparece cada una con su número y su enlace. Ver [Altas por verificar](altas-por-verificar.md).
    - **Candidatos** (Recursos Humanos): un solo renglón con el total y, debajo, cada etapa con su número: **Esperando en Recepción**, **Solicitudes por revisar**, **Por entrevistar (RR. HH.)**, **Evaluaciones del departamento** y **Elegidos por contratar**. Ver [Candidatos](candidatos.md).
    - **Entrevistas por evaluar:** candidatos que Recursos Humanos te canalizó, con la próxima cita. Ver [Entrevistar y elegir](entrevistar-y-elegir.md).
    - **Tickets canalizados a mí** y **Pendientes de turno sin dueño** (personal de Seguridad): los tickets de la bitácora que te toca atender. Ver [Bitácora de novedades](novedades.md).

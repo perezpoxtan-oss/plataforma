@@ -1132,7 +1132,7 @@ class AdministradorPasesSalida
         if ($aprobacion === null) {
             return;
         }
-        $aprobadores = $this->circuito->aprobadores($pase, $aprobacion);
+        $aprobadores = $this->circuito->aQuienAvisar($pase, $aprobacion); // C-12: respeta «No molestar»
         $correos = $aprobadores->pluck('email')->filter()->values()->all();
         $this->avisos->paseSalida($pase->empresa_id, 'pase_salida_aprobacion', $correos, $this->mensaje($pase, 'por_aprobar', $aprobacion->nombre, null));
         $this->campana->porFirmar($pase, $aprobacion, $aprobadores, $this->circuito->rondaActual($pase)->count());

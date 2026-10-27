@@ -110,6 +110,7 @@ class Excepciones
             return $solicitud;
         });
 
+        $this->notificaciones->resolver('acceso', (int) $acceso->id); // C-08: el aviso al supervisor pierde su botón
         $this->auditoria->auditar($actor, 'accesos.autorizado_excepcion', $acceso, ['estado' => 'pendiente'],
             ['estado' => 'en_sitio', 'por' => 'excepcion', 'motivo' => $texto, 'departamento_id' => $acceso->departamento_id]);
         if ($solicitud !== null) {

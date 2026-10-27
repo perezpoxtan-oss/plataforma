@@ -125,6 +125,31 @@ class AjustesRecepcion
         return $clave !== null && (bool) ($this->datos($empresa)[$clave] ?? true);
     }
 
+    /**
+     * DD-11 (C-08): una visita, proveedor o contratista va a un departamento
+     * que NO tiene quien autorice en esa sede. «supervisor» (valor original):
+     * espera al supervisor o al jefe de seguridad de la sede, con reloj;
+     * «directo»: la visita pasa sin esperar, como antes (el proveedor y el
+     * contratista siempre esperan: los pasa la caseta por excepción).
+     */
+    public const SIN_COBERTURA = [
+        'supervisor' => 'Espera al supervisor o al jefe de seguridad de la sede',
+        'directo' => 'La visita pasa sin esperar',
+    ];
+
+    public function sinCobertura(Empresa $empresa): string
+    {
+        $valor = $this->datos($empresa)['sin_cobertura'] ?? 'supervisor';
+
+        return array_key_exists($valor, self::SIN_COBERTURA) ? $valor : 'supervisor';
+    }
+
+    /** ¿La visita a un departamento sin quien autorice espera al supervisor? (DD-11; por omisión, sí) */
+    public function sinCoberturaEsperaSupervisor(Empresa $empresa): bool
+    {
+        return $this->sinCobertura($empresa) === 'supervisor';
+    }
+
     /** ¿La caseta espera a que RR. HH. diga «Que pase»? (por omisión, sí) */
     public function rhAutorizaPaso(Empresa $empresa): bool
     {
@@ -235,6 +260,7 @@ class AjustesRecepcion
             'kiosco_horas' => ['nullable', 'integer', 'min:1', 'max:24'],
             'kiosco_usos' => ['nullable', 'integer', 'min:1', 'max:10'],
             'rh_autoriza_paso' => ['nullable', 'boolean'],
+            'sin_cobertura' => ['nullable', 'in:'.implode(',', array_keys(self::SIN_COBERTURA))],
             'recordar_minutos' => [$escalamiento ? 'required' : 'nullable', 'integer', 'min:1', 'max:'.$maximo],
             'escalar_minutos' => [$escalamiento ? 'required' : 'nullable', 'integer', 'min:2', 'max:'.$maximo, 'gt:recordar_minutos'],
         ], [
@@ -244,6 +270,7 @@ class AjustesRecepcion
             'recordar_minutos.*' => "«Recordar a los … minutos» va de 1 a {$maximo}.",
             'escalar_minutos.gt' => 'El aviso al suplente y al jefe debe ir después del recordatorio.',
             'escalar_minutos.*' => "«Avisar al suplente y al jefe a los … minutos» va de 2 a {$maximo}.",
+            'sin_cobertura.*' => 'Elige qué pasa cuando el departamento no tiene quien autorice.',
         ])->validate();
 
         $antes = $this->datos($empresa);
@@ -266,6 +293,9 @@ class AjustesRecepcion
                 $nuevos[$clave] = (bool) ($d[$clave] ?? false);
             }
         }
+        if ($esperas && array_key_exists('sin_cobertura', $d) && $d['sin_cobertura'] !== null) {
+            $nuevos['sin_cobertura'] = $d['sin_cobertura'];
+        }
         if ($escalamiento) {
             $nuevos['recordar_minutos'] = (int) $d['recordar_minutos'];
             $nuevos['escalar_minutos'] = (int) $d['escalar_minutos'];
@@ -280,6 +310,7 @@ class AjustesRecepcion
             'kiosco_horas' => (int) ($x['kiosco_horas'] ?? self::HORAS_KIOSCO),
             'kiosco_usos' => (int) ($x['kiosco_usos'] ?? self::USOS_KIOSCO),
             'rh_autoriza_paso' => (bool) ($x['rh_autoriza_paso'] ?? true),
+            'sin_cobertura' => $x['sin_cobertura'] ?? 'supervisor',
             'criterios' => is_array($x['criterios'] ?? null) ? $x['criterios'] : self::CRITERIOS_DEFECTO,
             'recordar_minutos' => (int) ($x['recordar_minutos'] ?? PanelRecepcion::ESPERA_AMBAR),
             'escalar_minutos' => (int) ($x['escalar_minutos'] ?? PanelRecepcion::ESPERA_ROJA),

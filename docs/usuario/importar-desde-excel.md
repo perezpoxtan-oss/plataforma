@@ -21,7 +21,7 @@ resumen: Cargar de una vez colaboradores, personas, empresas externas, vehículo
 
 | Lista | Dónde está el botón **Importar** | Con qué se reconoce si ya existe |
 |---|---|---|
-| Colaboradores | **Estructura → Colaboradores** | Número de empleado |
+| Colaboradores | **Estructura → Colaboradores** | Número de empleado (o el nombre completo de un alta de la caseta por verificar) |
 | Padrón de personas | **Padrones → Padrón de personas** | Folio de identificación (o el nombre completo si no lo trae) |
 | Empresas externas | **Padrones → Empresas externas** | Razón social o nombre comercial |
 | Padrón vehicular | **Padrones → Padrón vehicular** | Placas |
@@ -113,6 +113,8 @@ resumen: Cargar de una vez colaboradores, personas, empresas externas, vehículo
 | «Tu suscripción está suspendida; tienes acceso de solo consulta…» | La plataforma está en solo consulta. | Puedes descargar plantillas y ver resultados, pero no importar; contacta a quien te vende la plataforma. |
 
 ## Preguntas frecuentes
+
+**La caseta ya registró a alguien de mi plantilla sin número, ¿se duplica?** No. Si una fila tiene el mismo nombre que un alta de la caseta por verificar, la vista previa la marca **Ya existe** con «alta de la caseta por verificar: al actualizar se une con ella y queda verificada». Elige actualizar lo que ya existe: el alta toma el número de tu archivo y queda verificada.
 
 **¿Se guarda algo cuando reviso el archivo?** No. La vista previa solo te muestra cómo quedaría cada fila. Se guarda cuando tocas **Guardar**.
 

@@ -108,12 +108,14 @@
                         <h3 class="h6 fw-bold"><i class="bi bi-hourglass-split me-2 text-primary" aria-hidden="true"></i>Quién espera autorización del departamento</h3>
                         <ul class="small mb-2">
                             @foreach ($e['tipos'] as [$tipo, $espera])
-                                <li>{{ $tipo }}: <strong>{{ $espera ? 'espera la autorización' : 'pasa sin esperar' }}</strong></li>
+                                <li>{{ $tipo }}: <strong>{{ $espera ? 'espera la autorización si el departamento tiene quien autorice en la sede' : 'pasa sin esperar' }}</strong></li>
                             @endforeach
+                            {{-- C-08 (A-03) y DD-11 --}}
+                            <li>Sin quien autorice en la sede: <strong>{{ mb_strtolower($e['sinCobertura']) }}</strong>@if ($e['faltan'] > 0) · <span class="text-danger">hoy {{ $e['faltan'] === 1 ? '1 departamento no tiene' : $e['faltan'].' departamentos no tienen' }}</span>@endif</li>
                             <li>Quien viene con Recursos Humanos: <strong>{{ $e['rh'] ? 'la caseta espera el «Que pase»' : 'pasa sin esperar' }}</strong></li>
                             <li>Recordar a los <strong>{{ $e['recordar'] }} min</strong> y avisar al suplente y al jefe a los <strong>{{ $e['escalar'] }} min</strong></li>
                         </ul>
-                        <p class="small text-muted mb-2"><span class="valor-original">Valor original: todos esperan la autorización; recordar a los {{ \App\Services\Recepcion\PanelRecepcion::ESPERA_AMBAR }} min y avisar a los {{ \App\Services\Recepcion\PanelRecepcion::ESPERA_ROJA }} min.</span> Quién autoriza en cada departamento y sus suplentes también se eligen ahí.</p>
+                        <p class="small text-muted mb-2"><span class="valor-original">Valor original: todos esperan la autorización (sin quien autorice, esperan al supervisor); recordar a los {{ \App\Services\Recepcion\PanelRecepcion::ESPERA_AMBAR }} min y avisar a los {{ \App\Services\Recepcion\PanelRecepcion::ESPERA_ROJA }} min.</span> Quién autoriza en cada departamento y sus suplentes también se eligen ahí.</p>
                         <a href="{{ $e['url'] }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Responsables por departamento</a>
                     </div>
                 @endisset

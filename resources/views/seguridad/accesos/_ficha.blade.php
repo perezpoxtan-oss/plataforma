@@ -245,12 +245,14 @@
     @elseif ($modo === 'pendientes' && $puede['aprobar'])
         <div class="ficha-acceso-acciones">
             <form action="{{ route('accesos.autorizar', $a->id) }}" method="POST" class="m-0 w-100"
-                  data-confirmar="{{ in_array($a->autorizacion, ['esperando', 'espera'], true) ? ($a->motivo_visita === 'rh' ? '¿Recursos Humanos ya autorizó (por teléfono o en persona)? Al confirmar, la persona podrá ingresar.' : '¿El responsable del departamento ya autorizó (por teléfono o en persona)? Al confirmar, la persona podrá ingresar.') : '¿El Host confirmó la autorización de este acceso? Al confirmar, la persona podrá ingresar.' }}">
+                  data-confirmar="{{ $a->autorizacion === \App\Models\Acceso::SIN_RESPONSABLE ? 'Su departamento no tiene quien autorice en esta sede. ¿Ya lo confirmaste con quien lo recibe? Al confirmar, la persona podrá ingresar.' : (in_array($a->autorizacion, ['esperando', 'espera'], true) ? ($a->motivo_visita === 'rh' ? '¿Recursos Humanos ya autorizó (por teléfono o en persona)? Al confirmar, la persona podrá ingresar.' : '¿El responsable del departamento ya autorizó (por teléfono o en persona)? Al confirmar, la persona podrá ingresar.') : '¿El Host confirmó la autorización de este acceso? Al confirmar, la persona podrá ingresar.') }}">
                 @csrf
                 @method('PATCH')
                 <button type="submit" class="btn-accion-acceso autorizar"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Confirmar Autorización</button>
             </form>
         </div>
+    @elseif ($modo === 'pendientes' && $a->autorizacion === \App\Models\Acceso::SIN_RESPONSABLE){{-- C-08 / DD-11 --}}
+        <p class="aviso-sin-permiso"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Su departamento no tiene quien autorice en esta sede: espera a tu supervisor o al jefe de seguridad (ya se les avisó).</p>
     @elseif ($modo === 'pendientes' && ! in_array($a->autorizacion, ['esperando', 'espera'], true)){{-- Recepción: la visita espera al departamento (o a RR. HH.), no al host --}}
         <p class="aviso-sin-permiso"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Espera a que el Host autorice; tu supervisor confirma la autorización en el sistema.</p>
     @elseif ($modo === 'en_sitio' && $puede['editar'])

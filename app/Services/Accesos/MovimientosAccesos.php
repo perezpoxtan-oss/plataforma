@@ -11,6 +11,7 @@ use App\Models\ZonaEstacionamiento;
 use App\Services\Activos\CustodiaActivos;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Estacionamientos\OcupacionEstacionamientos;
+use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Support\EstadoActivo;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +54,7 @@ class MovimientosAccesos
 
         $this->auditoria->auditar($actor, 'accesos.autorizado', $acceso, ['estado' => 'pendiente'], ['estado' => 'en_sitio']);
         app(Autorizaciones::class)->resueltaEnCaseta($actor, $acceso); // Recepción: la visita que esperaba al departamento (ADR-0007)
+        app(CentroNotificaciones::class)->resolver('acceso', (int) $acceso->id); // C-08: el aviso al supervisor pierde su botón
     }
 
     /**

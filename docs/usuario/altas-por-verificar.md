@@ -1,9 +1,9 @@
 ---
 titulo: Altas por verificar
-modulos: [vehiculos, proveedores, visitantes]
+modulos: [vehiculos.editar, proveedores.editar, visitantes.editar, colaboradores.aprobar]
 seccion: Padrones
 orden: 110
-resumen: Lo que la caseta registra al momento en los padrones se usa de inmediato y después alguien lo revisa: lo acepta, lo une con el correcto o lo rechaza.
+resumen: Una sola bandeja para lo que la caseta registra al momento (personas, vehículos, empresas y colaboradores): se usa de inmediato y después alguien lo revisa: es correcto, es el mismo o se rechaza.
 ---
 
 # Altas por verificar
@@ -11,17 +11,18 @@ resumen: Lo que la caseta registra al momento en los padrones se usa de inmediat
 **¿Para qué sirve?** En la caseta a veces llega **un auto, una persona o una empresa que no está en el padrón**. El guardia no puede detener la operación, pero si cada quien registra a su manera, el padrón se llena de repetidos («ABC-123-A» y «ABC123A», «Laura Méndez Ríos» y «LAURA MENDEZ RIOS»). Por eso:
 
 1. Antes de registrar algo nuevo, la plataforma pregunta **«¿Es alguno de estos?»** y muestra lo parecido que ya existe.
-2. Si no es ninguno, **se registra y se usa de inmediato**, pero queda **pendiente de verificar**.
-3. Quien administra el padrón lo **revisa**: lo acepta, lo une con el registro correcto o lo rechaza.
+2. Si no es ninguno, **se registra y se usa de inmediato**, pero queda **por verificar**.
+3. Quien administra el padrón lo **revisa** en una sola bandeja, **Padrones → Altas por verificar**: **es correcto**, **es el mismo** que otro registro o se **rechaza**.
 
-Aplica al [Padrón vehicular](vehiculos.md), a [Empresas externas](proveedores.md) y al [Padrón de personas](personas.md). Los colaboradores siguen el mismo camino con las mismas palabras: la caseta los registra en **Registro Rápido de Colaborador**, quedan **POR VERIFICAR** y Recursos Humanos los **verifica** o los une con su registro (ver [Colaboradores](colaboradores.md)).
+Aplica al [Padrón de personas](personas.md), al [Padrón vehicular](vehiculos.md), a [Empresas externas](proveedores.md) y a [Colaboradores](colaboradores.md): la bandeja tiene una pestaña para cada uno y los mismos tres caminos.
 
 ![Aviso en Inicio](img/altas-por-verificar/01-inicio-aviso-altas-por-verificar.png)
 
 ## Antes de empezar
 
 - **Para registrar desde la caseta** basta con poder trabajar en la pantalla de origen (por ejemplo la Bitácora de accesos). No necesitas poder editar los padrones.
-- **Para verificar** necesitas poder **editar** ese padrón (por ejemplo el administrador, o el jefe de seguridad en sus sedes). Solo verás las altas de tus sedes.
+- **Para verificar** necesitas poder **editar** ese padrón (por ejemplo el administrador, o el jefe de seguridad en sus sedes). Solo verás las altas de tus sedes y las pestañas de los padrones que puedes verificar.
+- **Los colaboradores** los verifica Recursos Humanos si tu plan lo incluye; si no, el administrador (permiso **Aprobar** de Colaboradores).
 - Si tú mismo registras algo y puedes editar ese padrón, ya nace verificado.
 
 ## Cómo registrar algo nuevo desde la caseta
@@ -41,7 +42,7 @@ Lo nuevo se registra desde tu pantalla de trabajo:
 
 ![Placas parecidas](img/altas-por-verificar/15-accesos-es-alguno-de-estos-placas.png)
 
-En las ventanas de registro rápido (por ejemplo **Registro Rápido de Persona** o **Nueva Empresa Externa**) verás el aviso «Lo que registres aquí se usa **de inmediato** y queda **pendiente de verificar** hasta que quien administra el padrón lo revise.». Al tocar **Registrar**, si hay algo parecido, la ventana pregunta primero **¿Es alguno de estos?**:
+En las ventanas de registro rápido (por ejemplo **Registro Rápido de Persona** o **Nueva Empresa Externa**) verás el aviso «Lo que registres aquí se usa **de inmediato** y queda **por verificar**: la verifica quien administra el padrón.». Al tocar **Registrar**, si hay algo parecido, la ventana pregunta primero **¿Es alguno de estos?**:
 
 - Toca el que corresponde para **usarlo**: la ventana se cierra y queda elegido.
 - Si no es ninguno, toca **No es ninguno: registrarlo como nuevo**. La ventana te pregunta una vez más: «¿Seguro que no es ninguno de los N parecidos? Se creará un registro nuevo pendiente de verificar».
@@ -50,16 +51,17 @@ En las ventanas de registro rápido (por ejemplo **Registro Rápido de Persona**
 
 ![¿Es alguno de estos?](img/altas-por-verificar/17-alta-rapida-persona-parecidos.png)
 
-**Qué debes ver:** el registro elegido en tu formulario. En los padrones aparece con la insignia **Pendiente de verificar**; lo puedes usar normalmente.
+**Qué debes ver:** el registro elegido en tu formulario. En los padrones aparece con la insignia **Por verificar**; lo puedes usar normalmente.
 
 ![El agente consulta el padrón](img/altas-por-verificar/13-agente-ve-padron-sin-verificar.png)
 
 ## Cómo encontrar lo que falta verificar
 
-1. En cuanto la caseta registra algo nuevo te llega a la **campana** (arriba a la derecha) «Alta por verificar: …», con el botón **Verificar** que te lleva directo a la ficha. También aparece en **Inicio** (la tarjeta **«N altas por verificar»**, con un botón por padrón) y en **Mis pendientes**.
+1. En cuanto la caseta registra algo nuevo te llega a la **campana** (arriba a la derecha) «Alta por verificar: …», con el botón **Verificar** que te lleva directo a la ficha. También aparece en **Inicio** (la tarjeta **«N altas por verificar»**, con un botón por pestaña), en **Mis pendientes** y en el menú **Padrones → Altas por verificar**.
 
    ![Alta por verificar en la campana](img/altas-por-verificar/30-campana-alta-por-verificar.png)
-2. Toca el botón del padrón. Llegas al padrón con la píldora **Pendientes de verificar** encendida: solo se ven las fichas por revisar. Tócala otra vez para ver todas.
+2. Toca el botón (o abre **Padrones → Altas por verificar**). Llegas a la bandeja con sus pestañas **Personas**, **Vehículos**, **Empresas** y **Colaboradores**, cada una con su número. Cada ficha dice quién la registró, cuándo y hace cuánto.
+3. Si prefieres revisar desde el padrón, la píldora **Por verificar** del padrón muestra solo lo que falta.
 
 ![Vehículos pendientes](img/altas-por-verificar/02-vehiculos-pendientes-de-verificar.png)
 
@@ -74,25 +76,25 @@ En las ventanas de registro rápido (por ejemplo **Registro Rápido de Persona**
 
 1. Revisa los datos y corrige lo que haga falta (por ejemplo el modelo que la caseta no capturó).
    - En un vehículo **De una empresa** (por ejemplo un taxi o una unidad de transporte) completa la **Empresa propietaria** y el **Número económico**: son obligatorios. Si es de una persona, cambia **¿De quién es?** a **Particular**.
-2. Toca **Aceptar y verificar**.
+2. Toca **Aprobar**.
 
 ![Es correcto](img/altas-por-verificar/03-verificar-vehiculo-es-correcto.png)
 
 **Qué debes ver:** ««XTR901C» quedó verificado en el padrón. Gracias por revisarlo.» Queda como un registro normal. Quien lo registró en la caseta recibe en su campana «Tu alta «XTR901C» quedó verificada».
 
-### Ya existía
+### Es el mismo
 
 1. Elige el registro correcto en **¿Es alguno de estos?**, o búscalo en **¿No está en la lista? Búscalo en el padrón** (escribe al menos 2 letras).
-2. Toca **Unir con el elegido**.
+2. Toca **Aprobar · es el mismo**.
 
-![Ya existía](img/altas-por-verificar/04-verificar-vehiculo-ya-existia.png)
+![Es el mismo](img/altas-por-verificar/04-verificar-vehiculo-ya-existia.png)
 
 **Qué debes ver:** ««…» se unió con «…»: todo lo registrado pasó al registro correcto.» Los accesos, movimientos de transporte, entregas, personal o flotilla del alta pasan al registro correcto. Quien la registró recibe en su campana «Tu alta «…» ya existía» con el nombre correcto, para usarlo la próxima vez.
 
 ### Rechazar
 
 1. Escribe el **Motivo del rechazo** (mínimo 5 letras), por ejemplo «Las placas no existen». Así la caseta sabe qué corregir.
-2. Toca **Rechazar alta**.
+2. Toca **Rechazar**.
 
 ![Rechazar](img/altas-por-verificar/05-verificar-vehiculo-rechazar.png)
 
@@ -112,6 +114,18 @@ Funciona igual. En empresas externas reconoce el mismo nombre con o sin «S.A. d
 
 ![Es correcto (persona)](img/altas-por-verificar/10-verificar-persona-es-correcto.png)
 
+### Colaboradores
+
+En la pestaña **Colaboradores** cada ficha trae tres botones:
+
+1. **Es correcto:** revisa y corrige los datos, asigna su **Núm. Empleado** y toca **Aprobar**. Desde ese momento es un colaborador normal.
+2. **Es el mismo:** elige el **Colaborador correcto** y toca **Aprobar · es el mismo**. Todo lo que la caseta registró con esa alta pasa a ese colaborador (y, si tenía cuenta, su cuenta toma su nombre y su número).
+3. **Rechazar:** escribe el **Motivo del rechazo** (mínimo 5 letras) y toca **Rechazar**. El alta queda dada de baja, la caseta ya no la puede usar y quien la registró recibe en su campana «Tu alta «…» se rechazó» con el motivo.
+
+**Qué debes ver:** regresas a la bandeja con el mensaje verde y el número de la pestaña baja en uno.
+
+> Si importas tu plantilla de personal desde Excel y una fila tiene el mismo nombre que un alta de la caseta, la vista previa dice «alta de la caseta por verificar: al actualizar se une con ella y queda verificada». Elige **actualizar** lo que ya existe y no se duplica (ver [Importar desde Excel](importar-desde-excel.md)).
+
 ## En el celular y en los modos Noche y Sol
 
 ![Inicio en el celular](img/altas-por-verificar/19-movil-inicio.png) ![Verificar en el celular](img/altas-por-verificar/21-movil-verificar-ya-existia.png)
@@ -123,6 +137,8 @@ Funciona igual. En empresas externas reconoce el mismo nombre con o sin «S.A. d
 ## Si algo sale mal
 
 Los mensajes salen en rojo dentro de la ventana.
+
+Si no ves **Altas por verificar** en el menú **Padrones**, tu rol no puede verificar ningún padrón ni colaboradores: pídelo a tu administrador.
 
 ![Error dentro de la ventana](img/altas-por-verificar/26-error-en-dialogo.png)
 

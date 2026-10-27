@@ -91,8 +91,10 @@ class Escalamiento
                 $nombres = ($avisar[$aut->departamento_id.'-'.$aut->sede_id] ?? collect())->pluck('name')->join(', ', ' y ');
                 $depto = $aut->departamento?->nombre ?? $a->departamento?->nombre;
                 $texto = 'Espera a: '.($nombres !== '' ? $nombres : 'el responsable').($depto ? ' ('.$depto.')' : '');
-            } elseif (in_array($a->tipo, Acceso::CON_AUTORIZACION, true) && $a->autorizacion === Acceso::SIN_RESPONSABLE) {
-                $texto = 'Sin responsable en '.($a->departamento?->nombre ?? 'el departamento').': se autoriza por excepción';
+            } elseif ($a->autorizacion === Acceso::SIN_RESPONSABLE) {
+                // C-08 / DD-11: nadie del departamento puede responder en esta sede
+                $texto = 'Sin quien autorice en '.($a->departamento?->nombre ?? 'el departamento').': '
+                    .(in_array($a->tipo, Acceso::CON_AUTORIZACION, true) ? 'el supervisor lo autoriza por excepción' : 'espera al supervisor o al jefe de seguridad');
             } elseif (in_array($a->tipo, Acceso::CON_AUTORIZACION, true)) {
                 $nombres = $a->host?->nombreCompleto() ?? '';
                 $texto = 'Confirma con el host: '.($nombres !== '' ? $nombres : '—');

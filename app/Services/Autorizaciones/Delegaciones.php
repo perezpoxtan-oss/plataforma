@@ -19,7 +19,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Responsables por departamento y delegaciones («No molestar»).
+ * Responsables por departamento y delegaciones («Delegar mis aprobaciones»,
+ * antes «No molestar»; C-12: vive en Mi cuenta).
  *
  *  - Responsables: Recursos Humanos o Dirección (autorizaciones.configurar)
  *    eligen el titular y los suplentes de cada departamento, para todas sus
@@ -51,13 +52,66 @@ class Delegaciones
     }
 
     /**
+     * C-12 · «Delegar mis aprobaciones»: lo que se delega, permiso => qué es.
+     * Delega quien puede aprobar al menos una de estas cosas, y en quien
+     * pueda aprobar al menos una. Cada módulo solo le pasa al delegado lo que
+     * él puede aprobar; lo demás le sigue llegando al titular.
+     */
+    public const APROBACIONES = [
+        'autorizaciones.responder' => 'visitas',
+        'pases_salida.aprobar' => 'pases de salida',
+        'reservas.aprobar' => 'reservas',
+        'candidatos.evaluar' => 'entrevistas',
+    ];
+
+    /** ¿Aprueba algo que se pueda delegar? */
+    public function puedeDelegar(User $usuario): bool
+    {
+        return $this->queAprueba($usuario) !== [];
+    }
+
+    /**
+     * Lo que este usuario aprueba («visitas», «pases de salida»…).
+     *
+     * @return list<string>
+     */
+    public function queAprueba(User $usuario): array
+    {
+        return array_values(array_filter(self::APROBACIONES, fn ($que, $permiso) => $usuario->can($permiso), ARRAY_FILTER_USE_BOTH));
+    }
+
+    /**
+     * En quién se puede delegar: usuarios activos de la empresa que aprueban algo.
+     *
+     * @return Collection<int, User>
+     */
+    public function candidatosADelegado(int $empresaId): Collection
+    {
+        $ids = collect();
+        foreach (array_keys(self::APROBACIONES) as $permiso) {
+            $ids = $ids->merge($this->destinatarios->conPermisoEnAlgunaSede($empresaId, $permiso)->pluck('id'));
+        }
+
+        return User::whereIn('id', $ids->unique()->all())->where('activo', true)->orderBy('name')->get();
+    }
+
+    /** Su delegación activa hoy (a un delegado activo), si la tiene. */
+    public function activaDe(User $usuario): ?Delegacion
+    {
+        return Delegacion::activas()->with('delegado:id,name,activo')->where('user_id', $usuario->id)->orderByDesc('id')->get()
+            ->first(fn (Delegacion $d) => (bool) $d->delegado?->activo);
+    }
+
+    /**
      * Guarda los responsables de un departamento (reemplaza la lista).
      *
      * @param  array<int, mixed>  $filas  [{user_id, sede_id, es_suplente}]
      */
     public function guardarResponsables(User $actor, int $empresaId, Departamento $departamento, array $filas): void
     {
-        $validos = $this->candidatosAResponsable($empresaId)->pluck('id')->all();
+        $candidatos = $this->candidatosAResponsable($empresaId)->keyBy('id');
+        $validos = $candidatos->keys()->map(fn ($id) => (int) $id)->all();
+        $cobertura = app(Cobertura::class);
         $sedesDepto = $departamento->todas_las_sedes ? Sede::where('activo', true)->pluck('id')->all() : $departamento->sedes()->pluck('sedes.id')->all();
         $limpias = [];
         foreach (array_values($filas) as $i => $f) {
@@ -71,6 +125,15 @@ class Delegaciones
             $sedeId = empty($f['sede_id']) ? null : (int) $f['sede_id'];
             if ($sedeId !== null && ! in_array($sedeId, $sedesDepto, true)) {
                 throw ValidationException::withMessages(["responsables.$i.sede_id" => 'Elige una sede donde exista este departamento.']);
+            }
+            // A-04: solo las sedes a las que esa cuenta puede entrar para responder; «Todas» solo con alcance de empresa
+            $alcance = $cobertura->sedesDe($candidatos[$userId]);
+            if ($alcance !== null && $sedeId === null) {
+                throw ValidationException::withMessages(["responsables.$i.sede_id" => $candidatos[$userId]->name.' solo puede responder en '
+                    .Sede::whereIn('id', $alcance)->orderBy('nombre')->pluck('nombre')->join(', ', ' y ').': elige esa sede en lugar de «Todas sus sedes».']);
+            }
+            if ($alcance !== null && ! in_array($sedeId, array_map('intval', $alcance), true)) {
+                throw ValidationException::withMessages(["responsables.$i.sede_id" => $candidatos[$userId]->name.' no puede entrar a esa sede: elige una de sus sedes o a otra persona.']);
             }
             if (isset($limpias[$userId])) {
                 throw ValidationException::withMessages(["responsables.$i.user_id" => 'Ese usuario ya está en la lista.']);
@@ -89,6 +152,7 @@ class Delegaciones
             }
         });
         $this->auditoria->auditar($actor, 'autorizaciones.responsables', $departamento, ['responsables' => $antes], ['responsables' => $this->resumen($departamento->id)]);
+        Cobertura::revisarDespues($empresaId); // C-08: el aviso «Sin quien autorice» se resuelve al nombrar
     }
 
     /** @return list<string> */
@@ -117,10 +181,14 @@ class Delegaciones
             '*.integer' => 'Elige una opción de la lista.',
         ])->validate();
 
-        $validos = $this->candidatosAResponsable($empresaId)->pluck('id')->all();
+        // C-12: se delega en quien pueda aprobar al menos una cosa (visitas, pases, reservas o entrevistas)
+        $validos = $this->candidatosADelegado($empresaId)->pluck('id')->map(fn ($id) => (int) $id)->all();
         $titular = $paraOtros && ! empty($d['user_id']) ? (int) $d['user_id'] : $actor->id;
         if ($titular !== $actor->id && ! in_array($titular, $validos, true)) {
             throw ValidationException::withMessages(['user_id' => 'Elige un responsable activo de la lista.']);
+        }
+        if ($titular === $actor->id && ! $this->puedeDelegar($actor)) {
+            throw ValidationException::withMessages(['delegado_id' => 'No apruebas visitas, pases, reservas ni entrevistas: no tienes nada que delegar.']);
         }
         $delegado = (int) $d['delegado_id'];
         // Ronda 8: nadie delega en sí mismo (se revisa antes que la lista para dar el mensaje claro)
@@ -130,7 +198,7 @@ class Delegaciones
                 : 'No puedes delegar en la misma persona que delega: elige a otra.']);
         }
         if (! in_array($delegado, $validos, true)) {
-            throw ValidationException::withMessages(['delegado_id' => 'Elige a un usuario activo que pueda responder autorizaciones.']);
+            throw ValidationException::withMessages(['delegado_id' => 'Elige a un usuario activo que pueda aprobar visitas, pases, reservas o entrevistas.']);
         }
         $zona = $this->hora->zona();
         $desde = Carbon::createFromFormat('Y-m-d\TH:i', $d['desde'], $zona)->utc();
@@ -154,9 +222,10 @@ class Delegaciones
         $delegacion->load('usuario:id,name', 'delegado:id,name');
         $this->auditoria->auditar($actor, 'autorizaciones.delegacion_creada', $delegacion, null, $this->foto($delegacion));
         $this->notificaciones->avisar($empresaId, [$delegado], 'delegacion', [
-            'titulo' => $delegacion->usuario?->name.' te delegó sus autorizaciones',
-            'texto' => 'Del '.$this->hora->formatear($desde).' al '.$this->hora->formatear($hasta).'. Los avisos de su departamento te llegarán a ti.',
-            'url' => route('autorizaciones.index'),
+            'titulo' => $delegacion->usuario?->name.' te delegó sus aprobaciones',
+            'texto' => 'Del '.$this->hora->formatear($desde).' al '.$this->hora->formatear($hasta).'. Lo que le toque aprobar y tú también puedas (visitas, pases, reservas o entrevistas) te llegará a ti.',
+            'url' => route('panel'),
+            'referencia_tipo' => 'delegacion', 'referencia_id' => $delegacion->id,
         ]);
 
         return $delegacion;
@@ -170,6 +239,7 @@ class Delegaciones
         $antes = $this->foto($delegacion);
         $delegacion->forceFill(['cancelada_en' => now(), 'cancelada_por' => $actor->id])->save();
         $this->auditoria->auditar($actor, 'autorizaciones.delegacion_cancelada', $delegacion, $antes, $this->foto($delegacion));
+        $this->notificaciones->resolver('delegacion', (int) $delegacion->id);
     }
 
     /** @return array<string, mixed> */

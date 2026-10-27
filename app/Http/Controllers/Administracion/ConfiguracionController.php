@@ -8,6 +8,7 @@ use App\Models\ConfiguracionPlataforma;
 use App\Models\Empresa;
 use App\Models\LostFoundUmbral;
 use App\Models\User;
+use App\Services\Autorizaciones\Cobertura;
 use App\Services\Candidatos\DocumentosParaContratar;
 use App\Services\Candidatos\PlazosCandidatos;
 use App\Services\Cuenta\SolicitudesCuenta;
@@ -133,6 +134,9 @@ class ConfiguracionController extends Controller
                 'rh' => $recepcion->rhAutorizaPaso($empresa),
                 'recordar' => $recepcion->recordarMinutos($empresa), 'escalar' => $recepcion->escalarMinutos($empresa),
                 'url' => route('autorizaciones.responsables'),
+                // C-08 (A-03) y DD-11: la verdad de hoy y qué pasa sin quien autorice
+                'sinCobertura' => AjustesRecepcion::SIN_COBERTURA[$recepcion->sinCobertura($empresa)],
+                'faltan' => $this->tenant->conEmpresa($empresa->id, fn () => collect(app(Cobertura::class)->sinCobertura())->pluck('departamento_id')->unique()->count()),
             ];
         }
         if ($actor->can('candidatos.configurar')) {

@@ -720,6 +720,23 @@ class CircuitoPasesSalida
         return $porRegla->isNotEmpty() ? $porRegla : $candidatos;
     }
 
+    /**
+     * C-12 «No molestar»: a quién se AVISA de un paso. Quien delegó sus
+     * aprobaciones y tiene a su delegado entre los que pueden firmar no
+     * recibe el aviso (le llega a su delegado); sigue pudiendo firmar si entra.
+     *
+     * @return Collection<int, User>
+     */
+    public function aQuienAvisar(PaseSalida $pase, PaseSalidaAprobacion $aprobacion): Collection
+    {
+        $usuarios = $this->aprobadores($pase, $aprobacion);
+        $ids = $usuarios->pluck('id')->map(fn ($id) => (int) $id);
+        $delegan = Delegacion::activas()->whereIn('user_id', $ids)->get(['user_id', 'delegado_id'])
+            ->filter(fn ($d) => $ids->contains((int) $d->delegado_id))->pluck('user_id')->map(fn ($id) => (int) $id);
+
+        return $usuarios->reject(fn (User $u) => $delegan->contains((int) $u->id))->values();
+    }
+
     /** ¿Alguien cumple la regla del paso? Si no, firma cualquiera con "Aprobar" en la sede. */
     public function reglaSinFirmantes(PaseSalida $pase, PaseSalidaAprobacion $aprobacion): bool
     {

@@ -1020,7 +1020,11 @@ document.addEventListener('click', function (e) {
         var oculto = form.querySelector('[data-campo-colaborador]');
         var aviso = form.querySelector('[data-colab-vinculo]');
         if (aviso && oculto) { aviso.hidden = oculto.value === ''; }
+        // C-11 (DD-22): con vínculo, el nombre lo manda Colaboradores (solo lectura)
+        var nombre = form.querySelector('[data-nombre-cuenta]');
+        if (nombre && oculto) { nombre.readOnly = oculto.value !== ''; }
     }
+    window.mostrarVinculoColaborador = mostrarVinculo;
 
     function cerrarResultados(caja, campo) {
         if (!caja) { return; }
@@ -1036,6 +1040,9 @@ document.addEventListener('click', function (e) {
         if (oculto) { oculto.value = String(c.id); }
         var nombre = document.getElementById(campo.dataset.destinoNombre);
         if (nombre) { nombre.value = c.nombre_completo; }
+        // C-11: se sugiere la sede del colaborador (si aún no se eligió una)
+        var sede = form.querySelector('[name="sede_id"]');
+        if (sede && sede.value === '' && c.sede_id && sede.querySelector('option[value="' + c.sede_id + '"]')) { sede.value = String(c.sede_id); sede.dispatchEvent(new Event('change', { bubbles: true })); }
         cerrarResultados(document.getElementById(campo.getAttribute('aria-controls')), campo);
         mostrarVinculo(form);
     }
@@ -3025,7 +3032,10 @@ document.addEventListener('click', function (e) {
         } else if (motivo === 'colaborador') {
             depto = form.dataset.visitaDepartamento || '';
         }
-        return !!depto && Object.prototype.hasOwnProperty.call(deptos, depto) && enSede(deptos[depto], sede);
+        if (!depto) { return false; }
+        // C-08 / DD-11: sin quien autorice en la sede, también espera (al supervisor o al jefe de seguridad)
+        if (d.dataset.sinCoberturaEspera === '1') { return true; }
+        return Object.prototype.hasOwnProperty.call(deptos, depto) && enSede(deptos[depto], sede);
     }
 
     function actualizarBotonRegistrar(form) {
@@ -6217,6 +6227,7 @@ document.addEventListener('click', function (e) {
         if (nombre) { nombre.value = c.nombre_completo; }
         var aviso = form.querySelector('[data-colab-vinculo]');
         if (aviso) { aviso.hidden = false; }
+        if (window.mostrarVinculoColaborador) { window.mostrarVinculoColaborador(form); }
     }
 
     function pintarUsuarios(caja, datos) {
@@ -10079,3 +10090,43 @@ document.addEventListener('click', function (e) {
     window.Receptor = { poner: poner };
 })();
 /* Fin Receptor general */
+
+/* Etapa 3 (C-08, A-04): en Responsables por departamento, la sede solo ofrece las sedes a las que entra la cuenta elegida */
+(function () {
+    'use strict';
+
+    function acotar(usuario) {
+        var fila = usuario.closest('.fila-cv');
+        var sede = fila && fila.querySelector('[data-responsable-sede]');
+        if (!sede) { return; }
+        var op = usuario.options[usuario.selectedIndex];
+        var alcance = op && op.dataset.sedes ? op.dataset.sedes : 'todas';
+        var permitidas = alcance === 'todas' ? null : alcance.split(',');
+        Array.prototype.forEach.call(sede.options, function (o) {
+            o.disabled = permitidas !== null && (o.value === '' || permitidas.indexOf(o.value) === -1);
+        });
+        if (sede.options[sede.selectedIndex] && sede.options[sede.selectedIndex].disabled) {
+            var primera = Array.prototype.find.call(sede.options, function (o) { return !o.disabled; });
+            sede.value = primera ? primera.value : '';
+        }
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target.matches && e.target.matches('[data-responsable-usuario]')) { acotar(e.target); }
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-responsable-usuario]').forEach(acotar);
+    });
+})();
+/* Fin Etapa 3 (C-08) */
+
+/* Etapa 3 (C-11): al abrir «Editar Usuario» con colaborador vinculado, el nombre queda en solo lectura */
+(function () {
+    'use strict';
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-accion="editar-registro"]');
+        var d = b && b.dataset.dialogo ? document.getElementById(b.dataset.dialogo) : null;
+        if (!d || !window.mostrarVinculoColaborador) { return; }
+        setTimeout(function () { d.querySelectorAll('form').forEach(function (f) { if (f.querySelector('[data-campo-colaborador]')) { window.mostrarVinculoColaborador(f); } }); }, 0);
+    });
+})();

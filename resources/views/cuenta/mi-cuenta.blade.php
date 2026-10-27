@@ -77,6 +77,71 @@
         </div>
     </div>
 
+    {{-- C-12: «Delegar mis aprobaciones» («No molestar»): a quién y hasta cuándo --}}
+    @if ($delegar)
+        @php
+            $reabrirDel = old('_dialogo') === 'delegar-mi-cuenta';
+            $zonaDel = app(\App\Support\HoraLocal::class);
+            $activaDel = $delegar['vigentes']->first(fn ($d) => $d->estado() === 'activa');
+        @endphp
+        <section class="tarjeta p-4 mt-4" id="delegar" aria-labelledby="t-delegar">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+                <h2 id="t-delegar" class="h5 fw-bold m-0"><i class="bi bi-moon-stars me-2 text-primary" aria-hidden="true"></i>Delegar mis aprobaciones</h2>
+                <span class="estado-dos-pasos {{ $activaDel ? 'activa' : 'inactiva' }}"><i class="bi {{ $activaDel ? 'bi-moon-stars-fill' : 'bi-bell' }}" aria-hidden="true"></i>{{ $activaDel ? 'No molestar' : 'Recibes tus avisos' }}</span>
+            </div>
+            <p class="small text-muted mb-3">Si vas a estar fuera, elige a quién le llegan tus aprobaciones ({{ implode(', ', $delegar['que']) }}) y hasta cuándo. Mientras dure, tus avisos, tu campana y tus pendientes le llegan a esa persona; tú todavía puedes responder si entras.</p>
+            @foreach ($delegar['vigentes'] as $dv)
+                <div class="fila-delegacion estado-{{ $dv->estado() }} mb-2">
+                    <div class="flex-grow-1 min-w-0">
+                        <strong>{{ $dv->estado() === 'activa' ? 'Hoy tus aprobaciones van a' : 'Programada para' }} {{ $dv->delegado?->name }}</strong>
+                        <span class="d-block small">Del @fecha($dv->desde) al @fecha($dv->hasta){{ $dv->motivo ? ' · '.$dv->motivo : '' }}</span>
+                    </div>
+                    <form action="{{ route('mi-cuenta.delegar.cancelar', $dv->id) }}" method="POST" class="m-0" data-confirmar="¿Cancelar la delegación? Lo que te toque aprobar volverá a llegarte a ti.">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="btn-secundario-rh">Cancelar</button>
+                    </form>
+                </div>
+            @endforeach
+            <form action="{{ route('mi-cuenta.delegar') }}" method="POST" autocomplete="off" class="m-0">
+                @csrf
+                <input type="hidden" name="_dialogo" value="delegar-mi-cuenta">
+                @if ($reabrirDel && $errors->any())
+                    <div class="alert alert-danger small py-2 px-3" role="alert"><ul class="mb-0 ps-3">@foreach ($errors->all() as $m)<li>{{ $m }}</li>@endforeach</ul></div>
+                @endif
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="campo-etiqueta" for="del_mc_delegado">¿A quién? *</label>
+                        <select id="del_mc_delegado" name="delegado_id" class="campo" required data-select-buscable="Escribe un nombre…">
+                            <option value="">-- Elegir --</option>
+                            @foreach ($delegar['candidatos'] as $u)
+                                <option value="{{ $u->id }}" @selected($reabrirDel && (string) old('delegado_id') === (string) $u->id)>{{ $u->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="campo-etiqueta" for="del_mc_hasta">¿Hasta cuándo? *</label>
+                        <input type="datetime-local" id="del_mc_hasta" name="hasta" class="campo" required value="{{ $reabrirDel ? old('hasta') : $zonaDel->formatear(now()->addDay(), 'Y-m-d\TH:i') }}">
+                    </div>
+                </div>
+                <details class="mt-2">
+                    <summary class="small">Avanzado: empezar después y motivo</summary>
+                    <div class="row g-2 mt-1">
+                        <div class="col-md-6">
+                            <label class="campo-etiqueta" for="del_mc_desde">Desde <span class="text-lowercase fw-normal">(si lo dejas vacío, desde ahora)</span></label>
+                            <input type="datetime-local" id="del_mc_desde" name="desde" class="campo" value="{{ $reabrirDel ? old('desde') : '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="campo-etiqueta" for="del_mc_motivo">Motivo <span class="text-lowercase fw-normal">(opcional)</span></label>
+                            <input type="text" id="del_mc_motivo" name="motivo" class="campo" maxlength="255" value="{{ $reabrirDel ? old('motivo') : '' }}" placeholder="Ej. Vacaciones, junta fuera">
+                        </div>
+                    </div>
+                </details>
+                <button type="submit" class="btn-azul mt-3">Guardar</button>
+            </form>
+        </section>
+    @endif
+
     {{-- Verificación en dos pasos (docs/tecnico/dos-pasos.md) --}}
     <section class="tarjeta p-4 mt-4" id="dos-pasos" aria-labelledby="t-dos-pasos">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">

@@ -811,7 +811,7 @@ class AltasPorVerificar
         };
         $estado = match (true) {
             ! $registro->activo => 'Dado de baja',
-            $registro->estaPendiente() => 'Pendiente de verificar',
+            $registro->estaPendiente() => 'Por verificar',
             default => null,
         };
 

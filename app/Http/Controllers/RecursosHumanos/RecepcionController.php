@@ -240,7 +240,7 @@ class RecepcionController extends Controller
             // C-37 (E-09): el aviso ya no se edita aquí (Configuración → Privacidad); esta parte es el kiosco
             'privacidad' => $privacidad && $request->hasAny(['kiosco_horas', 'kiosco_usos', 'aviso_privacidad']),
             'criterios' => $privacidad && $request->has('criterios'),
-            'esperas' => ($privacidad || $autorizaciones) && $request->hasAny(['visitas_requieren_autorizacion', 'proveedores_requieren_autorizacion', 'contratistas_requieren_autorizacion', 'rh_autoriza_paso']),
+            'esperas' => ($privacidad || $autorizaciones) && $request->hasAny(['visitas_requieren_autorizacion', 'proveedores_requieren_autorizacion', 'contratistas_requieren_autorizacion', 'rh_autoriza_paso', 'sin_cobertura']),
             'escalamiento' => ($privacidad || $autorizaciones) && $request->has('recordar_minutos'),
         ]));
         if ($partes === []) {
@@ -248,7 +248,7 @@ class RecepcionController extends Controller
         }
 
         app(AjustesRecepcion::class)->guardar($actor, Empresa::findOrFail($empresaId),
-            $request->only(['aviso_privacidad', 'visitas_requieren_autorizacion', 'proveedores_requieren_autorizacion', 'contratistas_requieren_autorizacion', 'kiosco_horas', 'kiosco_usos', 'rh_autoriza_paso', 'criterios', 'recordar_minutos', 'escalar_minutos']),
+            $request->only(['aviso_privacidad', 'visitas_requieren_autorizacion', 'proveedores_requieren_autorizacion', 'contratistas_requieren_autorizacion', 'kiosco_horas', 'kiosco_usos', 'rh_autoriza_paso', 'criterios', 'recordar_minutos', 'escalar_minutos', 'sin_cobertura']),
             $partes);
 
         return back()->with('ok', match (true) {

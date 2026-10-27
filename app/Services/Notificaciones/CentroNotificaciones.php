@@ -26,7 +26,7 @@ class CentroNotificaciones
      * Tipos que esperan una respuesta inmediata (autorizaciones de visita,
      * recepción y escalamiento): el aviso del navegador no se cierra solo.
      */
-    public const URGENTES = ['autorizacion_visita', 'autorizacion_candidato', 'autorizacion_recepcion', 'autorizacion_escalada'];
+    public const URGENTES = ['autorizacion_visita', 'autorizacion_candidato', 'autorizacion_recepcion', 'autorizacion_escalada', 'acceso_sin_cobertura'];
 
     /** Tipos de notificación => [icono, nivel]. */
     public const TIPOS = [
@@ -39,6 +39,11 @@ class CentroNotificaciones
         'autorizacion_escalada' => ['bi-alarm-fill', 'alerta'],
         'autorizacion_excepcion' => ['bi-shield-exclamation', 'alerta'],
         'delegacion' => ['bi-person-gear', 'info'],
+        // Etapa 3 (C-08): departamento sin quien autorice y visita que espera al supervisor de la sede
+        'cobertura_perdida' => ['bi-person-exclamation', 'alerta'],
+        'acceso_sin_cobertura' => ['bi-hourglass-split', 'alerta'],
+        // C-11: el colaborador cambió de sede y su cuenta no entra a la nueva
+        'cuenta_sede' => ['bi-geo-alt-fill', 'alerta'],
         // Candidatos, fase 2
         'entrevista_asignada' => ['bi-calendar-event', 'alerta'],
         'entrevista_cambio' => ['bi-calendar-x', 'info'],

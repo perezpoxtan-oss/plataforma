@@ -260,7 +260,7 @@ class RegistroAccesos
             }
         }
 
-        $estado = in_array($tipo, Acceso::CON_AUTORIZACION, true) || $recepcion['esperar'] ? 'pendiente' : 'en_sitio'; // Recepción: visita que espera al departamento
+        $estado = in_array($tipo, Acceso::CON_AUTORIZACION, true) || $recepcion['esperar'] || $recepcion['sin_responsable'] ? 'pendiente' : 'en_sitio'; // Recepción: visita que espera al departamento
 
         $acceso = DB::transaction(function () use ($terminos, $actor, $d, $tipo, $sedeId, $nombre, $colaborador, $host, $visita, $personaVisita, $motivo, $departamentoId,
             $placas, $modo, $tipoVehiculo, $zonaId, $conductor, $gafete, $acompanantes, $personaId, $personaRepetida, $estado, $avisoPadron) {

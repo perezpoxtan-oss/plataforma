@@ -44,7 +44,7 @@ Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo,
 
 | Pastilla | Qué significa | El renglón de abajo dice, por ejemplo |
 |---|---|---|
-| **PENDIENTE** (ámbar) | Todavía no puede pasar: espera a alguien. | «Espera a: Julieta Ramos (Mantenimiento) · 12 min», «Espera a: Recursos Humanos · 4 min», «RR. HH. pide que espere», «Sin responsable en Mantenimiento: se autoriza por excepción», «Confirma con el host: Carlos Pérez». |
+| **PENDIENTE** (ámbar) | Todavía no puede pasar: espera a alguien. | «Espera a: Julieta Ramos (Mantenimiento) · 12 min», «Espera a: Recursos Humanos · 4 min», «RR. HH. pide que espere», «Sin quien autorice en Recepción: espera al supervisor o al jefe de seguridad», «Sin quien autorice en Mantenimiento: el supervisor lo autoriza por excepción», «Confirma con el host: Carlos Pérez». |
 | **EN SITIO** (rojo) | Está dentro. | «Autorizado por Mantenimiento», «RR. HH. dijo que pase», «Autorizado por excepción (Urgencia operativa, Sergio Díaz)». |
 | **FUERA** (ámbar) | Salió un rato y va a regresar. | «Fuera en tour», «Fuera temporal». |
 | **FINALIZADO** (gris) | Ya salió, o no ingresó. | «Regreso de tour», «Salida temporal», «No autorizado por Seguridad: no ingresó». |
@@ -81,7 +81,7 @@ Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo,
 <!-- fin -->
 ![El botón dice que el registro queda pendiente](img/accesos/nuevo-ingreso-pendiente.png)
 
-**Qué debes ver:** la ventana se cierra (o se limpia, si elegiste capturar siguiente) y arriba sale el mensaje verde con el **siguiente paso**: «Registrado y en sitio: … ¿Otro ingreso? Toca Nuevo Ingreso», «Registrado: … espera la autorización de Julieta Ramos (Mantenimiento). Ya se avisó; esta tarjeta cambia sola con su respuesta», «… espera a Recursos Humanos», «… queda pendiente. Mantenimiento no tiene responsable en esta sede: confirma con el host y toca Autorizar por excepción» o, si tu empresa no pide la autorización del departamento para ese tipo, «… queda pendiente de autorización. Confirma con el host (…) y toca Confirmar Autorización».
+**Qué debes ver:** la ventana se cierra (o se limpia, si elegiste capturar siguiente) y arriba sale el mensaje verde con el **siguiente paso**: «Registrado y en sitio: … ¿Otro ingreso? Toca Nuevo Ingreso», «Registrado: … espera la autorización de Julieta Ramos (Mantenimiento). Ya se avisó; esta tarjeta cambia sola con su respuesta», «… espera a Recursos Humanos», «… queda pendiente. Mantenimiento no tiene quien autorice en esta sede: confirma con el host y toca Autorizar por excepción», «… Recepción no tiene quien autorice en esta sede: ya se avisó a tu supervisor…» o, si tu empresa no pide la autorización del departamento para ese tipo, «… queda pendiente de autorización. Confirma con el host (…) y toca Confirmar Autorización».
 
 ![Mensaje con el siguiente paso](img/accesos/mensaje-registrado-pendiente.png)
 
@@ -157,7 +157,7 @@ Todo lo que espera tiene **reloj, color y suplente**. No tienes que vigilar nada
 1. En **Pendientes de Autorización**, el renglón bajo la pastilla dice **a quién espera** y **cuántos minutos lleva**; el reloj avanza solo.
 2. El color cambia con el tiempo de espera que configuró tu empresa (de fábrica, 10 y 20 minutos): **verde** al principio, **ámbar** cuando ya tardó y **rojo** cuando nadie ha contestado.
 3. En ámbar, la plataforma **vuelve a avisar** a quien debe responder (campana y correo).
-4. En rojo, **escala**: avisa a los suplentes del departamento (o a quien los cubre por «No molestar») y al Jefe de seguridad de la sede; si la persona espera a Recursos Humanos, al resto del equipo de RR. HH. y al Jefe de seguridad. La tarjeta agrega **«Se escaló a: …»** y a ti te llega el aviso a la campana.
+4. En rojo, **escala**: avisa a los suplentes del departamento (o a quien los cubre porque delegó sus aprobaciones) y al Jefe de seguridad de la sede; si la persona espera a Recursos Humanos, al resto del equipo de RR. HH. y al Jefe de seguridad. La tarjeta agrega **«Se escaló a: …»** y a ti te llega el aviso a la campana.
 5. Cada aviso se manda **una sola vez**; todo queda en la Bitácora de auditoría y en el historial de la autorización.
 
 ![Pendientes con reloj y color](img/accesos/pendientes.png)
@@ -166,6 +166,16 @@ Todo lo que espera tiene **reloj, color y suplente**. No tienes que vigilar nada
 **Qué debes ver:** el renglón pasa de verde a ámbar y a rojo, y, cuando se escaló, la caja de abajo dice «Se escaló a: Sergio Díaz y Julia Torres».
 
 > Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Confirmar Autorización** en la tarjeta de la visita; en la de un proveedor o contratista, **Autorizar por excepción**. Los minutos se cambian en **Estructura → Autorizaciones → Responsables por departamento** (con Recursos Humanos, también en **Recursos Humanos → Recepción → Ajustes**) (ver [Autorizaciones](autorizaciones.md)).
+
+## Cuando el departamento no tiene quien autorice en la sede
+
+Si la visita va a un departamento que **no tiene quien autorice en tu sede** (nadie nombrado, su cuenta está dada de baja, no tiene el permiso o no entra a esta sede), tu forma de registrar no cambia: los mismos datos y el mismo botón. Lo que cambia es lo que pasa al guardar:
+
+1. La tarjeta queda **PENDIENTE** con «Sin quien autorice en (departamento): espera al supervisor o al jefe de seguridad» y el reloj corriendo.
+2. Al supervisor y al jefe de seguridad de la sede les llega el aviso «Espera tu autorización: …» a la **campana** y a **Mis pendientes** («Esperan tu autorización en caseta»).
+3. Quien puede autorizar confirma con quien recibe a la persona y toca **Confirmar Autorización**. Si tú no puedes, la tarjeta dice «espera a tu supervisor o al jefe de seguridad (ya se les avisó)».
+
+**Qué debes ver:** al guardar, «Registrado: … queda pendiente. Recepción no tiene quien autorice en esta sede: ya se avisó a tu supervisor…». Si tu empresa eligió **La visita pasa sin esperar** (ver [Autorizaciones](autorizaciones.md)), la visita entra directo, como antes.
 
 ## Cómo autorizar a un proveedor o contratista
 

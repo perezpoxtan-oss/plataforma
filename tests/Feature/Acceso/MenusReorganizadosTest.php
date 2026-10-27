@@ -91,7 +91,7 @@ class MenusReorganizadosTest extends TestCase
             'Reservas' => ['reservas'],
         ], $menu['operacion']);
         $this->assertSame([
-            'Personas y vehículos' => ['proveedores', 'visitantes', 'vehiculos'],
+            'Personas y vehículos' => ['proveedores', 'visitantes', 'vehiculos', 'altas_por_verificar'], // C-27: bandeja única
             'Inventarios' => ['llaves', 'gafetes', 'equipos', 'equipos_pc'],
             'Instalaciones' => ['estacionamientos', 'rutas'],
             'Herramientas' => ['etiquetas_qr'],
@@ -367,8 +367,8 @@ class MenusReorganizadosTest extends TestCase
 
         // Recursos Humanos (candidatos, fases 1 y 2): sus renglones en cero; el botón existe pero oculto
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
-        // Mejoras estructura y padrones: los colaboradores por verificar también están en Mis pendientes (primer renglón)
-        $this->assertSame(['total' => 0, 'claves' => ['colaboradores_por_verificar', 'recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos']],
+        // C-27: los colaboradores por verificar van en el renglón único «Altas por verificar»
+        $this->assertSame(['total' => 0, 'claves' => ['altas', 'recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos']],
             ['total' => app(MisPendientes::class)->para($rh)['total'], 'claves' => array_column(app(MisPendientes::class)->para($rh)['items'], 'clave')]);
         $this->assertMatchesRegularExpression('/data-mis-pendientes\s+hidden/', $this->actingAs($rh)->get('/')->assertOk()->getContent());
 
@@ -424,6 +424,9 @@ class MenusReorganizadosTest extends TestCase
         // y delegaciones activas, una vez por petición, sin importar cuántos pases o departamentos)
         // Etapa 1 suma 5 fijas por petición (no por renglón): columna de solo lectura (2 de esquema en SQLite), módulos
         // activos (acciones que se venden con otro módulo) y si la suscripción está en solo consulta (2)
-        $this->assertLessThan(80, count(DB::getQueryLog()));
+        // Etapa 3 (C-08, C-12, C-27) suma fijas por petición, no por renglón: las visitas que esperan al supervisor
+        // (1), los departamentos sin quien autorice (responsables, departamentos y sedes, y el permiso de cada
+        // responsable, que se recuerda en la petición), Reservas con la misma regla de cobertura y «No molestar» (1)
+        $this->assertLessThan(92, count(DB::getQueryLog()));
     }
 }

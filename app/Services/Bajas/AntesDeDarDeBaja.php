@@ -26,6 +26,7 @@ use App\Models\Vehiculo;
 use App\Models\ZonaEstacionamiento;
 use App\Services\Activos\CampanaActivos;
 use App\Services\Activos\CustodiaActivos;
+use App\Services\Autorizaciones\Cobertura;
 use App\Services\Borrado\RegistroBorrado;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
@@ -150,9 +151,13 @@ class AntesDeDarDeBaja
         if ($revision['reemplazo'] !== []) {
             $reemplazo = $request->input('reemplazo_id');
             // Revisión Etapa 2 (R2-01): users no tiene el scope de tenant; el reemplazo es de la misma empresa
-            $valido = is_numeric($reemplazo) && User::where('empresa_id', $registro->getAttribute('empresa_id'))->where('activo', true)->whereKey((int) $reemplazo)
-                ->where(fn ($q) => $q->whereNull('colaborador_id')->orWhere('colaborador_id', '!=', $registro->getKey()))->exists();
-            if (! $valido) {
+            $candidato = is_numeric($reemplazo) ? User::where('empresa_id', $registro->getAttribute('empresa_id'))->where('activo', true)->whereKey((int) $reemplazo)
+                ->where(fn ($q) => $q->whereNull('colaborador_id')->orWhere('colaborador_id', '!=', $registro->getKey()))->first() : null;
+            // C-08: el reemplazo debe poder responder (permiso «Responder»); si no, el departamento seguiría sin quien autorice
+            if ($candidato !== null && ! app(Cobertura::class)->puedeResponderEn($candidato, null)) {
+                throw ValidationException::withMessages(['reemplazo_id' => $candidato->name.' no tiene permiso para responder autorizaciones: elige a alguien que sí pueda.']);
+            }
+            if ($candidato === null) {
                 throw ValidationException::withMessages(['reemplazo_id' => 'Es el único responsable de '.collect($revision['reemplazo'])->pluck('nombre')->join(', ', ' y ')
                     .': elige quién lo reemplaza para que las autorizaciones no se queden sin respuesta.']);
             }
@@ -208,12 +213,19 @@ class AntesDeDarDeBaja
                 if ($revision['reemplazo'] !== [] && is_numeric($entrada['reemplazo_id'] ?? null)) {
                     $cuentas = User::where('colaborador_id', $registro->getKey())->pluck('id');
                     $n = 0;
+                    $reemplazo = User::find((int) $entrada['reemplazo_id']);
+                    $alcance = $reemplazo === null ? [] : app(Cobertura::class)->sedesDe($reemplazo);
                     foreach (DepartamentoResponsable::whereIn('user_id', $cuentas)->get() as $fila) {
-                        $existe = DepartamentoResponsable::where('departamento_id', $fila->departamento_id)->where('user_id', (int) $entrada['reemplazo_id'])
-                            ->where('sede_id', $fila->sede_id)->exists();
-                        $existe ? $fila->delete() : $fila->forceFill(['user_id' => (int) $entrada['reemplazo_id']])->save();
+                        // A-04: «todas sus sedes» solo para quien entra a todas; si no, una fila por cada sede suya
+                        $sedes = $fila->sede_id === null && $alcance !== null ? array_map('intval', $alcance) : [$fila->sede_id];
+                        foreach ($sedes as $sede) {
+                            DepartamentoResponsable::firstOrCreate(['departamento_id' => $fila->departamento_id, 'user_id' => (int) $entrada['reemplazo_id'], 'sede_id' => $sede],
+                                ['es_suplente' => $fila->es_suplente]);
+                        }
+                        $fila->delete();
                         $n++;
                     }
+                    app(Cobertura::class)->olvidar();
                     if ($n > 0) {
                         $nombre = User::whereKey((int) $entrada['reemplazo_id'])->value('name');
                         $this->auditoria->auditar($actor, 'autorizaciones.responsables', $registro, null, ['reemplazo' => $nombre, 'responsabilidades' => $n]);
@@ -546,20 +558,26 @@ class AntesDeDarDeBaja
      */
     private function responsableUnicoDe(Colaborador $c): array
     {
-        $cuentas = User::where('colaborador_id', $c->id)->pluck('id');
+        $cuentas = User::where('colaborador_id', $c->id)->pluck('id')->map(fn ($id) => (int) $id);
         if ($cuentas->isEmpty()) {
             return [];
         }
+        // C-08: «único» con la misma regla de cobertura que la caseta (los demás deben poder responder en esa sede)
+        $cobertura = app(Cobertura::class);
+        $mapa = $cobertura->mapa();
+        $filas = $cobertura->filas();
         $resultado = [];
-        foreach (DepartamentoResponsable::with('departamento:id,nombre,activo')->whereIn('user_id', $cuentas)->get() as $fila) {
-            if ($fila->departamento === null || ! $fila->departamento->activo) {
-                continue;
+        foreach ($filas->filter(fn ($f) => $cuentas->contains((int) $f->user_id)) as $fila) {
+            $depto = (int) $fila->departamento_id;
+            if (! isset($mapa[$depto])) {
+                continue; // departamento dado de baja
             }
-            $otros = DepartamentoResponsable::where('departamento_id', $fila->departamento_id)->whereNotIn('user_id', $cuentas)
-                ->where(fn ($q) => $q->whereNull('sede_id')->orWhere('sede_id', $fila->sede_id))
-                ->whereHas('usuario', fn ($u) => $u->where('activo', true))->exists();
-            if (! $otros) {
-                $resultado[$fila->departamento_id] = ['id' => (int) $fila->departamento_id, 'nombre' => $fila->departamento->nombre];
+            $sedes = $fila->sede_id !== null ? [(int) $fila->sede_id] : array_keys($mapa[$depto]['sedes']);
+            foreach ($sedes as $sede) {
+                $otros = $filas->contains(fn ($o) => (int) $o->departamento_id === $depto && ! $cuentas->contains((int) $o->user_id) && $cobertura->cubre($o, (int) $sede));
+                if (! $otros) {
+                    $resultado[$depto] = ['id' => $depto, 'nombre' => $mapa[$depto]['nombre']];
+                }
             }
         }
 

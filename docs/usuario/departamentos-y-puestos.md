@@ -32,7 +32,7 @@ resumen: Catálogos de áreas (departamentos) y rangos (puestos) que se eligen a
 
 ### Nombrar al responsable del departamento
 
-Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **Sin responsable: sus visitas entran sin autorización y nadie entrevista a sus candidatos**. Toca **Nombrar responsable** (o el botón **Responsables** de arriba) para abrir **Responsables por departamento** y elegir al titular y a sus suplentes; ahí mismo se configura qué espera en la caseta (ver [Autorizaciones](autorizaciones.md)). Necesitas el permiso **Configurar** de *Autorizaciones*.
+Un departamento recién creado no tiene quien autorice: su tarjeta lo avisa con **Sin quien autorice en** (las sedes donde falta) y qué pasa con sus visitas (de fábrica, **esperan al supervisor o al jefe de seguridad**). La tarjeta usa la misma regla que la caseta: no basta con nombrar a alguien; su cuenta debe estar activa, tener el permiso **Responder** y entrar a esa sede. Toca **Nombrar responsable** (o el botón **Responsables** de arriba) para abrir **Responsables por departamento** y elegir al titular y a sus suplentes; ahí mismo se configura qué espera en la caseta (ver [Autorizaciones](autorizaciones.md)). Necesitas el permiso **Configurar** de *Autorizaciones*.
 
 ![Departamento sin responsable](img/departamentos/8-sin-responsable.png)
 
@@ -104,7 +104,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 **¿Cuál es la diferencia entre puesto y departamento?** El **puesto** es el rango (Agente, Supervisor, Camarista); el **departamento** es el área (Seguridad, Ama de Llaves). La pantalla de Puestos lo recuerda debajo del título.
 
-**No me deja nombrar al responsable de un departamento.** Se necesita el permiso **Configurar** de **Autorizaciones departamentales** en la Matriz de permisos; la tarjeta «Sin responsable» te lo dice si no lo tienes.
+**No me deja nombrar al responsable de un departamento.** Se necesita el permiso **Configurar** de **Autorizaciones departamentales** en la Matriz de permisos; la tarjeta «Sin quien autorice» te lo dice si no lo tienes.
 
 **¿Dos departamentos pueden llamarse igual?** No dentro de la misma empresa.
 

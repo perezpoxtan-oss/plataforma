@@ -256,11 +256,11 @@
                                     <input type="hidden" name="colaborador_id" value="{{ $valor('colaborador_id') }}" data-campo-colaborador>
                                     <div class="buscador-colab-resultados" id="{{ $modo }}_colab_resultados" role="listbox" hidden></div>
                                 </div>
-                                <p class="campo-ayuda text-success" data-colab-vinculo hidden><i class="bi bi-link-45deg" aria-hidden="true"></i> Vinculado a Colaboradores. Si cambias el número, se quita el vínculo.</p>
+                                <p class="campo-ayuda text-success" data-colab-vinculo hidden><i class="bi bi-link-45deg" aria-hidden="true"></i> Vinculado a Colaboradores: el nombre y el número los manda su ficha @can('colaboradores.editar') (<a href="{{ route('colaboradores.index') }}">cambiar en Colaboradores</a>) @endcan. Si cambias el número, se quita el vínculo.</p>
                             </div>
                             <div class="col-md-6">
                                 <label class="campo-etiqueta" for="{{ $modo }}_nombre">Nombre Completo</label>
-                                <input type="text" id="{{ $modo }}_nombre" name="name" class="campo" maxlength="150" value="{{ $valor('name') }}" required
+                                <input type="text" id="{{ $modo }}_nombre" name="name" class="campo" maxlength="150" value="{{ $valor('name') }}" required data-nombre-cuenta
                                        data-duplicado="{{ route('usuarios.duplicado') }}" data-duplicado-min="3" data-duplicado-con="colaborador_id" data-duplicado-aviso="{{ $modo }}_aviso_nombre" data-duplicado-usuarios>
                             </div>
                         </div>

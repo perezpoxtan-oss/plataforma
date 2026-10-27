@@ -7,7 +7,7 @@
 @if ($registro->estaPendiente())
     <div class="linea-verificacion">
         <span class="insignia-verificacion pendiente" data-insignia-verificacion="pendiente">
-            <i class="bi bi-hourglass-split" aria-hidden="true"></i> Pendiente de verificar
+            <i class="bi bi-hourglass-split" aria-hidden="true"></i> Por verificar
         </span>
     </div>
 @elseif ($registro->estaRechazado())

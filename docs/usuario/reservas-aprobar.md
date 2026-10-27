@@ -61,7 +61,7 @@ Solo con permiso de **aprobar** reservas y en reservas **para un cliente**.
 
 **¿Qué pasa si no respondo?** A las horas que fija tu empresa (por omisión 4) se te recuerda y se avisa a tu suplente; a las 24 h se avisa al responsable general de reservas, que puede responder por ti.
 
-**¿Me voy de vacaciones?** Usa **«No molestar»** en Mi cuenta para delegar: los avisos le llegan a tu delegado y él puede aprobar.
+**¿Me voy de vacaciones?** Usa **Delegar mis aprobaciones** («No molestar») en [Mi cuenta](mi-cuenta.md): los avisos y Mis pendientes le llegan a tu delegado y él puede aprobar.
 
 **Si la persona modifica la reserva, ¿apruebo todo otra vez?** Solo si cambió lo tuyo. Lo que no cambió conserva tu aprobación.
 

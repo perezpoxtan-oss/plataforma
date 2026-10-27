@@ -165,7 +165,7 @@ class EsperaPasesSalida
     /** Nivel 1: se recuerda a quien puede firmar el paso. */
     public function recordar(PaseSalida $pase, PaseSalidaAprobacion $aprobacion, int $horas): bool
     {
-        $usuarios = $this->circuito->aprobadores($pase, $aprobacion);
+        $usuarios = $this->circuito->aQuienAvisar($pase, $aprobacion); // C-12: respeta «No molestar»
         if ($usuarios->isEmpty()) {
             // Sin a quién avisar no se marca: se intenta otra vez en la siguiente revisión
             return false;

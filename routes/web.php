@@ -112,6 +112,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/mi-cuenta/contrasena', [MiCuentaController::class, 'contrasena'])->middleware('throttle:10,1')->name('mi-cuenta.contrasena');
     // Mejoras estructura (ADR-0016): cada persona silencia los avisos que no quiere recibir
     Route::put('/mi-cuenta/avisos', [MiCuentaController::class, 'avisos'])->name('mi-cuenta.avisos');
+    // C-12: «Delegar mis aprobaciones» (visitas, pases, reservas, entrevistas)
+    Route::post('/mi-cuenta/delegar', [MiCuentaController::class, 'delegar'])->middleware('throttle:20,1')->name('mi-cuenta.delegar');
+    Route::patch('/mi-cuenta/delegar/{delegacion}/cancelar', [MiCuentaController::class, 'cancelarDelegacion'])->whereNumber('delegacion')->name('mi-cuenta.delegar.cancelar');
     // Verificación en dos pasos (docs/tecnico/dos-pasos.md): activar, códigos de respaldo y quitarla (la propia cuenta, sin permiso)
     Route::get('/mi-cuenta/dos-pasos', [CuentaDosPasosController::class, 'mostrar'])->name('mi-cuenta.dos-pasos');
     Route::post('/mi-cuenta/dos-pasos', [CuentaDosPasosController::class, 'activar'])->middleware('throttle:dos-pasos-cuenta')->name('mi-cuenta.dos-pasos.activar');
@@ -206,6 +209,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/colaboradores/{colaborador}/estado', [ColaboradorController::class, 'estado'])->whereNumber('colaborador')->name('colaboradores.estado');
     Route::put('/colaboradores/{colaborador}/validar', [ColaboradorController::class, 'validar'])->whereNumber('colaborador')->name('colaboradores.validar');
     Route::put('/colaboradores/{colaborador}/fusionar', [ColaboradorController::class, 'fusionar'])->whereNumber('colaborador')->name('colaboradores.fusionar');
+    Route::put('/colaboradores/{colaborador}/rechazar', [ColaboradorController::class, 'rechazar'])->whereNumber('colaborador')->name('colaboradores.rechazar'); // C-27
     Route::put('/colaboradores/{colaborador}/sedes', [ColaboradorController::class, 'sedes'])->whereNumber('colaborador')->name('colaboradores.sedes');
     Route::get('/colaboradores/{colaborador}/datos-personales', [ColaboradorController::class, 'datosPersonales'])->whereNumber('colaborador')->name('colaboradores.datos-personales');
 
@@ -531,6 +535,8 @@ Route::middleware('auth')->group(function () {
     // Fin Padrones: Ajustes QA 4
     // Padrones: Altas por verificar (vehículos, empresas externas y personas registrados desde Operación; ver docs/tecnico/altas-por-verificar.md)
     Route::controller('App\Http\Controllers\Padrones\AltaPorVerificarController')->group(function () {
+        // C-27: una sola bandeja con pestañas Personas, Vehículos, Empresas y Colaboradores
+        Route::get('/altas-por-verificar', 'index')->name('altas_por_verificar.index');
         Route::get('/altas-por-verificar/parecidos', 'parecidos')->middleware('throttle:120,1')->name('altas_por_verificar.parecidos');
         Route::put('/vehiculos/{vehiculo}/aceptar', 'aceptarVehiculo')->whereNumber('vehiculo')->name('vehiculos.aceptar');
         Route::put('/vehiculos/{vehiculo}/rechazar', 'rechazarVehiculo')->whereNumber('vehiculo')->name('vehiculos.rechazar');
