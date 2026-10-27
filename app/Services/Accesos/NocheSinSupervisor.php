@@ -189,6 +189,24 @@ class NocheSinSupervisor
         ]);
     }
 
+    /**
+     * Revisión Etapa 4 (regla 1): la caseta que canalizó al supervisor se entera
+     * de su respuesta (autorizado o por excepción), como cuando responde el departamento.
+     */
+    public function avisarResultado(User $actor, Acceso $a, string $resultado): void
+    {
+        $caseta = $a->creado_por !== null ? (int) $a->creado_por : null;
+        if ($a->supervisor_pedido_en === null || $caseta === null || $caseta === (int) $actor->id) {
+            return;
+        }
+        $this->centro->resolver(PedidoAlSupervisor::REFERENCIA, (int) $a->id);
+        $this->centro->avisar((int) $a->empresa_id, [$caseta], 'autorizacion_respuesta', [
+            'titulo' => $resultado.': '.$a->nombre,
+            'texto' => 'Respondió '.$actor->name.'. Ya puede ingresar.',
+            'url' => route('accesos.index').'#acceso-'.$a->id,
+        ]);
+    }
+
     /** «Atender»: el supervisor revisó la excepción del agente. */
     public function revisar(User $actor, Acceso $a): void
     {
