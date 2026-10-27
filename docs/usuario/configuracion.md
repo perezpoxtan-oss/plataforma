@@ -240,8 +240,9 @@ Debe haber **al menos dos Super Administradores activos**: si uno pierde su tel�
 Su petición te llega a la **campana**, a **Inicio** («Super Administradores que piden ayuda») y a esta tarjeta.
 
 1. Confirma con la persona que fue ella quien lo pidió.
-2. En su renglón toca **Restablecer o dar de baja**.
-3. Para el teléfono: escribe **Tu contraseña** y toca **Quitar sus dos pasos**. Para la contraseña: escribe una **Contraseña temporal** (o déjala vacía si la plataforma tiene correo) y **Tu contraseña**, y toca **Guardar**.
+2. Si no fue esa persona, toca **Rechazar** junto a su nombre en el recuadro **Piden ayuda**; le avisamos y ahí termina.
+3. Si sí fue, en su renglón toca **Restablecer o dar de baja**.
+4. Para el teléfono: escribe **Tu contraseña** y toca **Quitar sus dos pasos**. Para la contraseña: escribe una **Contraseña temporal** (o déjala vacía si la plataforma tiene correo) y **Tu contraseña**, y toca **Guardar**.
 
 **Qué debes ver:** «Quitamos la verificación en dos pasos de «…»…» o «Contraseña de «…» restablecida…». Los demás Super Administradores reciben un aviso y todo queda en la [Bitácora de auditoría](auditoria.md).
 

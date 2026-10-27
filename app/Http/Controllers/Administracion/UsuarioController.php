@@ -87,12 +87,7 @@ class UsuarioController extends Controller
             ->get(['id', 'nombre', 'nivel_jerarquia']);
 
         // Cuentas por revisar (criterio 1): bloqueadas hoy y desactivadas por baja en los últimos 7 días
-        $porRevisar = ! $actor->can('usuarios.editar') ? collect() : $this->administrador
-            ->limitarAlcance($this->visibles($actor, $empresaId), $actor, 'usuarios.editar')
-            ->where(fn ($q) => $q->where('users.bloqueado_hasta', '>', now())
-                ->orWhere(fn ($b) => $b->where('users.activo', false)->where('users.desactivado_por_baja_en', '>=', now()->subDays(7)))
-                // Mejoras estructura (ADR-0016): piden pases a su nombre y no tienen colaborador vinculado
-                ->orWhere(fn ($v) => AdministradorUsuarios::sinVinculoQuePidePases($v)))
+        $porRevisar = ! $actor->can('usuarios.editar') ? collect() : $this->administrador->consultaPorRevisar($actor, $empresaId)
             ->orderBy('users.name')->get(['users.id', 'users.name', 'users.bloqueado_hasta', 'users.desactivado_por_baja_en', 'users.colaborador_id', 'users.activo']);
 
         // C-36: peticiones de «Pedir a mi administrador» que este usuario puede atender
@@ -101,6 +96,8 @@ class UsuarioController extends Controller
         return view('administracion.usuarios.index', [
             'sinEmpresa' => false,
             'solicitudesCuenta' => $solicitudesCuenta,
+            // C-36 (A-06): cuentas de un rol que administra y que no tienen correo
+            'sinCorreo' => $actor->can('usuarios.editar') ? AdministradorUsuarios::administrativasSinCorreo($empresaId) : collect(),
             'usuarios' => $usuarios,
             'sedes' => $sedes->keyBy('id'),
             'roles' => $roles,

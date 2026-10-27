@@ -70,6 +70,12 @@ class RecuperacionContrasena
         if ($usuario === null || (! $usuario->es_superadmin && ($usuario->empresa_id === null || ! $usuario->empresa?->activo))) {
             return false;
         }
+        // A-09: 3 por hora por CUENTA, la escriban por su usuario o por su correo
+        $porCuenta = 'recuperacion-cuenta-usuario:'.$usuario->id;
+        if (RateLimiter::tooManyAttempts($porCuenta, self::POR_CUENTA_HORA)) {
+            return false;
+        }
+        RateLimiter::hit($porCuenta, 3600);
 
         $enviado = $this->enviarEnlace($usuario, self::RESTABLECER, null);
         $this->auditoria->auditar($usuario, 'usuarios.recuperacion_solicitada', $usuario, null, [

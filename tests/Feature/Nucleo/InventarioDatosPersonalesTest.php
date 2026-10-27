@@ -55,6 +55,15 @@ class InventarioDatosPersonalesTest extends TestCase
             }
         }
 
+        // A-07: las que guardan datos personales con columnas que el patrón no reconoce
+        foreach (InventarioDatosPersonales::SIN_PATRON as $tabla) {
+            if (! isset(InventarioDatosPersonales::TABLAS[$tabla])) {
+                $faltan[] = $tabla.' (datos personales sin patrón)';
+            }
+        }
+        $this->assertSame('cuenta', InventarioDatosPersonales::TABLAS['notificaciones']['trato'] ?? null);
+        $this->assertContains('origen', InventarioDatosPersonales::TABLAS['solicitudes_cuenta']['columnas'] ?? []);
+
         $this->assertSame([], $faltan, "Tablas o columnas con datos personales sin registrar en App\\Services\\Privacidad\\InventarioDatosPersonales::TABLAS.\n"
             .'Decide si las alcanza ARCO (y agrégalas a DatosDePersona), si son de personal de la empresa, de una cuenta o no son datos personales, y regístralas con su plazo de conservación.');
     }

@@ -15,10 +15,19 @@
     @if ($sa['solicitudes']->isNotEmpty())
         <div class="alert alert-warning small py-2" role="status">
             <i class="bi bi-person-exclamation me-1" aria-hidden="true"></i><strong>Piden ayuda:</strong>
-            @foreach ($sa['solicitudes'] as $sc)
-                {{ $sc->usuario?->name }} ({{ $sc->etiquetaTipo() }}){{ $loop->last ? '.' : ',' }}
-            @endforeach
-            Confirma con la persona que fue quien lo pidió y usa su botón aquí abajo.
+            <ul class="mb-1 ps-3">
+                @foreach ($sa['solicitudes'] as $sc)
+                    <li>{{ $sc->usuario?->name }} pide {{ $sc->etiquetaTipo() }}
+                        {{-- A-08: si no fue esa persona, se rechaza --}}
+                        <form action="{{ route('superadmins.solicitudes.rechazar', $sc->id) }}" method="POST" class="d-inline" data-confirmar="¿Rechazar la petición de {{ $sc->usuario?->name }}? Le avisaremos.">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="btn btn-link btn-sm p-0 ms-2 align-baseline">Rechazar</button>
+                        </form>
+                    </li>
+                @endforeach
+            </ul>
+            Confirma con la persona que fue quien lo pidió y usa su botón aquí abajo. Si no fue ella, toca «Rechazar».
         </div>
     @endif
 

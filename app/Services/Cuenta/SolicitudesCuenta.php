@@ -14,6 +14,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Timebox;
 
 use function Illuminate\Support\defer;
 
@@ -43,6 +44,9 @@ class SolicitudesCuenta
 
     public const POR_CUENTA_HORA = 3;
 
+    /** Tiempo mínimo de la respuesta de «Pedir a mi administrador» (exista o no la cuenta). */
+    public const MICROSEGUNDOS_MINIMOS = 400_000;
+
     /** Permiso con el que se atiende cada tipo (el mismo de la acción en Usuarios). */
     public const PERMISOS = [SolicitudCuenta::CONTRASENA => 'usuarios.editar', SolicitudCuenta::DOS_PASOS => 'usuarios.desbloquear'];
 
@@ -53,29 +57,51 @@ class SolicitudesCuenta
     ) {}
 
     /**
-     * Desde «Olvidé mi contraseña» (sin sesión): usuario o correo. Devuelve
-     * la solicitud o null; la pantalla no lo muestra.
+     * Desde «Olvidé mi contraseña» (sin sesión): usuario o correo. No dice
+     * nada a la pantalla (respuesta uniforme) y tarda lo mismo exista o no
+     * la cuenta (A-04): la búsqueda es una sola consulta igual en los dos
+     * casos, el trabajo de crear la petición y avisar se hace después de
+     * responder (defer) y todo queda dentro de un tiempo mínimo fijo
+     * (Timebox, como el inicio de sesión de Laravel).
+     *
+     * Límite (A-09): POR_CUENTA_HORA por hora y por CUENTA, la escriban por
+     * su usuario o por su correo; además, por texto escrito (cuenta que no
+     * existe) y throttle:5,1 por equipo en la ruta.
      */
-    public function pedirPorIdentificador(string $identificador, string $tipo, ?string $ip): ?SolicitudCuenta
+    public function pedirPorIdentificador(string $identificador, string $tipo, ?string $ip): void
     {
-        $identificador = trim($identificador);
-        if ($identificador === '' || ! isset(SolicitudCuenta::TIPOS[$tipo])) {
-            return null;
-        }
-        $llave = 'solicitud-cuenta:'.hash('sha256', mb_strtolower($identificador));
-        if (RateLimiter::tooManyAttempts($llave, self::POR_CUENTA_HORA)) {
-            return null;
-        }
-        RateLimiter::hit($llave, 3600);
+        app(Timebox::class)->call(function () use ($identificador, $tipo, $ip) {
+            $identificador = trim($identificador);
+            if ($identificador === '' || ! isset(SolicitudCuenta::TIPOS[$tipo])) {
+                return;
+            }
+            $porTexto = 'solicitud-cuenta:'.hash('sha256', mb_strtolower($identificador));
+            if (RateLimiter::tooManyAttempts($porTexto, self::POR_CUENTA_HORA)) {
+                return;
+            }
+            RateLimiter::hit($porTexto, 3600);
 
-        $usuario = User::query()->with('empresa')
-            ->where(fn ($q) => $q->where('email', $identificador)->orWhere('username', $identificador))
-            ->where('activo', true)->first();
-        if ($usuario === null || (! $usuario->es_superadmin && ($usuario->empresa_id === null || ! $usuario->empresa?->activo))) {
-            return null;
-        }
+            // Una sola consulta, igual exista o no (sin cargar relaciones aparte)
+            $usuario = User::query()->leftJoin('empresas', 'empresas.id', '=', 'users.empresa_id')
+                ->where(fn ($q) => $q->where('users.email', $identificador)->orWhere('users.username', $identificador))
+                ->where('users.activo', true)->select('users.*', 'empresas.activo as empresa_activa')->first();
+            if ($usuario === null || (! $usuario->es_superadmin && ($usuario->empresa_id === null || ! $usuario->empresa_activa))) {
+                return;
+            }
+            $porCuenta = self::llaveDeCuenta($usuario->id);
+            if (RateLimiter::tooManyAttempts($porCuenta, self::POR_CUENTA_HORA)) {
+                return;
+            }
+            RateLimiter::hit($porCuenta, 3600);
+            $id = $usuario->id;
+            defer(fn () => $this->pedir(User::findOrFail($id), $tipo, $ip));
+        }, self::MICROSEGUNDOS_MINIMOS);
+    }
 
-        return $this->pedir($usuario, $tipo, $ip);
+    /** Llave del límite por cuenta (la misma para el usuario y para el correo). */
+    public static function llaveDeCuenta(int $userId): string
+    {
+        return 'solicitud-cuenta-usuario:'.$userId;
     }
 
     /** La persona ya escribió su contraseña (pantalla del código) o está identificada: crea o reutiliza la abierta. */
@@ -129,8 +155,13 @@ class SolicitudesCuenta
         $motivo = trim((string) $motivo) === '' ? null : mb_substr(trim((string) $motivo), 0, 255);
         $this->cerrar($s, $actor, SolicitudCuenta::RECHAZADA, $motivo);
         $texto = 'Tu administrador no atendió tu petición para '.$s->etiquetaTipo().($motivo ? ': '.$motivo : '.').' Si la necesitas, búscalo en persona.';
+        $aviso = ['titulo' => 'Tu petición sobre tu cuenta no se atendió', 'texto' => $texto, 'url' => route('mi-cuenta.index')];
         if ($usuario->empresa_id !== null) {
-            $this->campana->avisar((int) $usuario->empresa_id, [$usuario->id], 'cuenta_dos_pasos', ['titulo' => 'Tu petición sobre tu cuenta no se atendió', 'texto' => $texto, 'url' => route('mi-cuenta.index')]);
+            $this->campana->avisar((int) $usuario->empresa_id, [$usuario->id], 'cuenta_dos_pasos', $aviso);
+        } else {
+            // A-08: la de un Super Administrador la rechaza otro Super Administrador
+            $aviso['texto'] = str_replace('Tu administrador', 'Otro Super Administrador', $texto);
+            $this->campana->avisarPlataforma([$usuario->id], 'plataforma_superadmin', $aviso);
         }
     }
 

@@ -17,6 +17,7 @@ use App\Services\Permisos\Autorizador;
 use App\Services\Suscripciones\Limites;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -233,6 +234,25 @@ class AdministradorUsuarios
      * @param  Builder<User>  $consulta
      * @return Builder<User>
      */
+    /**
+     * «Cuentas por revisar» de quien edita usuarios (criterio 1), la MISMA
+     * consulta para la lista de Usuarios y para Mis pendientes (A-03): las
+     * que ve (`usuarios.ver`) y puede editar (`usuarios.editar`), bloqueadas
+     * ahora, dadas de baja junto con su colaborador en los últimos 7 días o
+     * que piden pases sin colaborador vinculado. Las peticiones de «Pedir a
+     * mi administrador» se cuentan aparte con SolicitudesCuenta::porAtender().
+     */
+    public function consultaPorRevisar(User $actor, int $empresaId): Builder
+    {
+        $visibles = $this->limitarAlcance(User::query()->where('users.empresa_id', $empresaId)->where('users.es_superadmin', false), $actor, 'usuarios.ver');
+
+        return $this->limitarAlcance($visibles, $actor, 'usuarios.editar')
+            ->where(fn ($q) => $q->where('users.bloqueado_hasta', '>', now())
+                ->orWhere(fn ($b) => $b->where('users.activo', false)->where('users.desactivado_por_baja_en', '>=', now()->subDays(7)))
+                // Mejoras estructura (ADR-0016): piden pases a su nombre y no tienen colaborador vinculado
+                ->orWhere(fn ($v) => self::sinVinculoQuePidePases($v)));
+    }
+
     public static function sinVinculoQuePidePases(Builder $consulta): Builder
     {
         return $consulta->where('users.activo', true)->whereNull('users.colaborador_id')
@@ -266,6 +286,39 @@ class AdministradorUsuarios
                     $q->orWhere(fn ($w) => $w->where('m.clave', $modulo)->where('a.clave', $accion));
                 }
             })->exists();
+    }
+
+    /**
+     * A-06: cuentas activas sin correo cuyo rol ya administra algo (por
+     * ejemplo, porque después de crearlas se le dieron permisos de
+     * administración). Sin correo no pueden recuperar su cuenta solas ni
+     * reciben avisos: la Matriz y Usuarios lo avisan. $rol limita a un rol.
+     *
+     * @return Collection<int, User>
+     */
+    public static function administrativasSinCorreo(int $empresaId, ?Rol $rol = null): Collection
+    {
+        $claves = array_map(fn (string $p) => explode('.', $p, 2), VerificacionDosPasos::PERMISOS_ADMINISTRADOR);
+        $roles = DB::table('rol_permisos as rp')
+            ->join('roles as r', 'r.id', '=', 'rp.rol_id')
+            ->join('modulo_acciones as ma', 'ma.id', '=', 'rp.modulo_accion_id')
+            ->join('acciones as a', 'a.id', '=', 'ma.accion_id')
+            ->join('modulos as m', 'm.id', '=', 'ma.modulo_id')
+            ->where('r.empresa_id', $empresaId)
+            ->when($rol !== null, fn ($q) => $q->where('r.id', $rol->id))
+            ->where(function ($q) use ($claves) {
+                foreach ($claves as [$modulo, $accion]) {
+                    $q->orWhere(fn ($w) => $w->where('m.clave', $modulo)->where('a.clave', $accion));
+                }
+            })->distinct()->pluck('r.id');
+        if ($roles->isEmpty()) {
+            return collect();
+        }
+
+        return User::query()->where('empresa_id', $empresaId)->where('activo', true)->where('es_superadmin', false)
+            ->where(fn ($q) => $q->whereNull('email')->orWhere('email', ''))
+            ->whereIn('id', DB::table('usuario_roles')->whereIn('rol_id', $roles)->select('user_id'))
+            ->orderBy('name')->get(['id', 'name', 'username']);
     }
 
     public function exigirPuedeAdministrar(User $actor, User $usuario, string $permiso): void

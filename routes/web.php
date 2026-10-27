@@ -147,6 +147,8 @@ Route::middleware('auth')->group(function () {
         Route::patch('/{cuenta}/estado', 'estado')->whereNumber('cuenta')->name('estado');
         Route::post('/{cuenta}/contrasena', 'contrasena')->whereNumber('cuenta')->name('contrasena');
         Route::post('/{cuenta}/dos-pasos', 'dosPasos')->whereNumber('cuenta')->name('dos-pasos');
+        // A-08: rechazar la petición de ayuda de otro Super Administrador
+        Route::patch('/solicitudes/{solicitud}/rechazar', 'rechazarSolicitud')->whereNumber('solicitud')->name('solicitudes.rechazar');
     });
     // C-36: «Rechazar» una petición de «Pedir a mi administrador» (atenderla es restablecer la contraseña o los dos pasos)
     Route::patch('/solicitudes-cuenta/{solicitud}/rechazar', [UsuarioController::class, 'rechazarSolicitud'])->whereNumber('solicitud')->name('solicitudes-cuenta.rechazar');

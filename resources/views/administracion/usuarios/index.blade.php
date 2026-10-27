@@ -68,6 +68,17 @@
             </div>
         @endif
 
+        {{-- C-36 (A-06): su rol administra la plataforma, pero no tienen correo --}}
+        @if ($sinCorreo->isNotEmpty())
+            <div class="alert alert-warning aviso mb-4" role="status" id="administrativasSinCorreo">
+                <i class="bi bi-envelope-exclamation" aria-hidden="true"></i>
+                <div>
+                    <strong>Administran sin correo ({{ $sinCorreo->count() }}):</strong> {{ $sinCorreo->pluck('name')->join(', ') }}.
+                    <span class="d-block small">Su rol ahora administra la plataforma. Escríbeles un correo con el lápiz de su ficha para que puedan recuperar su cuenta y recibir avisos.</span>
+                </div>
+            </div>
+        @endif
+
         @if ($porRevisar->isNotEmpty())
             <div class="alert alert-warning aviso mb-4" role="status" id="cuentasPorRevisar">
                 <i class="bi bi-person-lock" aria-hidden="true"></i>

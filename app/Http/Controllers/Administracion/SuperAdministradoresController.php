@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\Administracion;
 
 use App\Http\Controllers\Controller;
+use App\Models\SolicitudCuenta;
 use App\Models\User;
+use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\Plataforma\SuperAdministradores;
+use App\Support\Tenancy\EmpresaScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -58,6 +62,21 @@ class SuperAdministradoresController extends Controller
         $this->super->restablecerDosPasos($request->user(), $usuario, (string) $request->input('contrasena_actual', ''));
 
         return $this->volver()->with('ok', "Quitamos la verificación en dos pasos de «{$usuario->name}» y cerramos sus sesiones. Al entrar la activará con su teléfono nuevo.");
+    }
+
+    /** A-08: «Rechazar» la petición de ayuda de otro Super Administrador (por ejemplo, no fue esa persona). */
+    public function rechazarSolicitud(Request $request, int $solicitud): RedirectResponse
+    {
+        $this->soloSuperadmin($request);
+        $s = SolicitudCuenta::query()->withoutGlobalScope(EmpresaScope::class)->whereNull('empresa_id')->findOrFail($solicitud);
+        $datos = $request->validate(['motivo' => ['nullable', 'string', 'max:255']]);
+        try {
+            app(SolicitudesCuenta::class)->rechazar($request->user(), $s, $datos['motivo'] ?? null);
+        } catch (AuthorizationException $e) {
+            return $this->volver()->with('error', $e->getMessage());
+        }
+
+        return $this->volver()->with('ok', 'Rechazaste la petición. Le avisamos; si la necesita, te buscará en persona.');
     }
 
     private function soloSuperadmin(Request $request): void

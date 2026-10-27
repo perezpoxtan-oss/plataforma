@@ -5,18 +5,25 @@ namespace Tests\Feature\Seguridad;
 use App\Http\Controllers\Auth\RecuperacionController;
 use App\Models\Auditoria;
 use App\Models\Empresa;
+use App\Models\Modulo;
+use App\Models\ModuloAccion;
 use App\Models\Notificacion;
 use App\Models\Rol;
+use App\Models\RolPermiso;
 use App\Models\Sede;
 use App\Models\SolicitudCuenta;
 use App\Models\User;
+use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\DosPasos\Totp;
 use App\Services\DosPasos\VerificacionDosPasos;
+use App\Services\Permisos\Alcance;
 use App\Services\Plataforma\SuperAdministradores;
+use App\Services\Usuarios\AdministradorUsuarios;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\EmpresaScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -363,5 +370,152 @@ class CuentaEsDeSuDuenoTest extends TestCase
         $this->travel(SuperAdministradores::ESPERA_CONTRASENA + 1)->seconds();
         $this->actingAs($sa1)->patch(route('superadmins.estado', $sa2->id), ['activo' => 0, 'contrasena_actual' => 'Super-Uno-2026'])->assertSessionHas('ok');
         $this->assertFalse($sa2->refresh()->activo);
+    }
+
+    // ----------------------------------------------- Observaciones de la revisión (A-03 a A-09)
+
+    /** Rol propio con solo esas acciones de Usuarios (alcance empresa). */
+    private function rolConUsuarios(string $nombre, array $acciones, int $nivel): Rol
+    {
+        $rol = Rol::create(['empresa_id' => $this->empresa->id, 'nombre' => $nombre, 'nivel_jerarquia' => $nivel]);
+        $modulo = Modulo::where('clave', 'usuarios')->firstOrFail();
+        foreach ($modulo->moduloAcciones()->with('accion')->get() as $ma) {
+            if (in_array($ma->accion->clave, $acciones, true)) {
+                RolPermiso::create(['rol_id' => $rol->id, 'modulo_accion_id' => $ma->id, 'alcance' => Alcance::Empresa]);
+            }
+        }
+
+        return $rol;
+    }
+
+    private function cuentasEnPendientes(User $quien): int
+    {
+        Cache::flush();
+        app()->forgetScopedInstances();
+
+        return (int) (collect(app()->build(MisPendientes::class)->para($quien)['items'])->firstWhere('clave', 'cuentas')['total'] ?? 0);
+    }
+
+    public function test_el_numero_de_cuentas_por_revisar_coincide_con_lo_que_cada_quien_puede_atender(): void
+    {
+        $guardia = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $guardia->forceFill(['username' => 'guardia.a03', 'email' => null, 'password' => 'Clave-Guardia-33'])->save();
+        $this->activarDosPasos($guardia);
+        $otro = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $otro->forceFill(['username' => 'guardia.b03', 'email' => null])->save();
+        $otro->forceFill(['bloqueado_hasta' => now()->addMinutes(30)])->save();
+        // Una petición de contraseña y otra de dos pasos
+        $this->post('/olvide-contrasena/administrador', ['cuenta' => 'guardia.a03']);
+        $this->entrar('guardia.a03', 'Clave-Guardia-33');
+        $this->post('/login/verificacion/perdi-mi-telefono');
+        $this->salir();
+        $this->assertSame(2, $this->solicitudes()->where('estado', SolicitudCuenta::PENDIENTE)->count());
+
+        $editor = $this->crearUsuario($this->empresa);
+        $this->darRol($editor, $this->rolConUsuarios('Edita usuarios', ['ver', 'editar'], 20)->nombre);
+        $desbloquea = $this->crearUsuario($this->empresa);
+        $this->darRol($desbloquea, $this->rolConUsuarios('Desbloquea usuarios', ['ver', 'desbloquear'], 20)->nombre);
+
+        foreach ([[$this->admin, 1, 2], [$editor, 1, 1], [$desbloquea, 0, 1]] as [$quien, $cuentas, $peticiones]) {
+            $r = $this->actingAs($quien)->get('/usuarios')->assertOk();
+            $this->assertSame($cuentas, $r->viewData('porRevisar')->count(), $quien->name);
+            $this->assertSame($peticiones, $r->viewData('solicitudesCuenta')->count(), $quien->name);
+            // Mis pendientes cuenta exactamente los renglones que esa persona ve y puede atender
+            $this->assertSame($cuentas + $peticiones, $this->cuentasEnPendientes($quien), $quien->name);
+        }
+        // Quien solo puede editar no ve la de dos pasos (exige «Desbloquear»)
+        $this->actingAs($editor)->get('/usuarios')->assertSee('restablecer su contraseña')->assertDontSee('restablecer su verificación en dos pasos');
+    }
+
+    public function test_pedir_a_mi_administrador_tarda_lo_mismo_exista_o_no_la_cuenta(): void
+    {
+        $guardia = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $guardia->forceFill(['username' => 'guardia.a04', 'email' => null])->save();
+
+        $tiempos = [];
+        foreach (['no.existe.a04' => 0, 'guardia.a04' => 1] as $cuenta => $esperadas) {
+            RateLimiter::clear('acceso-ip:127.0.0.1');
+            $inicio = microtime(true);
+            $this->post('/olvide-contrasena/administrador', ['cuenta' => $cuenta])->assertSessionHas('pedido');
+            $tiempos[$cuenta] = microtime(true) - $inicio;
+            $this->assertSame($esperadas, $this->solicitudes()->count());
+        }
+        // Las dos respuestas duran al menos el tiempo fijo y casi lo mismo (el trabajo de avisar va después de responder)
+        foreach ($tiempos as $cuenta => $t) {
+            $this->assertGreaterThanOrEqual(SolicitudesCuenta::MICROSEGUNDOS_MINIMOS / 1e6, $t, $cuenta);
+        }
+        $this->assertLessThan(0.15, abs($tiempos['guardia.a04'] - $tiempos['no.existe.a04']));
+    }
+
+    public function test_el_limite_es_de_tres_por_hora_por_cuenta_con_usuario_o_correo(): void
+    {
+        $guardia = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $guardia->forceFill(['username' => 'guardia.a09', 'email' => 'guardia.a09@ejemplo.mx'])->save();
+        $limite = SolicitudesCuenta::llaveDeCuenta($guardia->id);
+
+        foreach (['guardia.a09', 'guardia.a09@ejemplo.mx', 'guardia.a09', 'guardia.a09@ejemplo.mx', 'guardia.a09'] as $cuenta) {
+            RateLimiter::clear('acceso-ip:127.0.0.1');
+            $this->withoutMiddleware(ThrottleRequests::class)
+                ->post('/olvide-contrasena/administrador', ['cuenta' => $cuenta])->assertSessionHas('pedido');
+        }
+        // Cinco intentos alternando usuario y correo: la cuenta solo cuenta 3 (no 6)
+        $this->assertSame(SolicitudesCuenta::POR_CUENTA_HORA, RateLimiter::attempts($limite));
+        $this->assertTrue(RateLimiter::tooManyAttempts($limite, SolicitudesCuenta::POR_CUENTA_HORA));
+        // Igual en «Olvidé mi contraseña» (enlace por correo)
+        $this->assertSame(0, RateLimiter::attempts('recuperacion-cuenta-usuario:'.$guardia->id)); // sin correo de la plataforma no cuenta
+    }
+
+    public function test_mi_cuenta_sin_correo_dice_como_recuperarla(): void
+    {
+        $guardia = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $guardia->forceFill(['email' => null])->save();
+        $this->actingAs($guardia)->get('/mi-cuenta')->assertOk()
+            ->assertSee('Sin correo: si olvidas tu contraseña, pide ayuda a tu administrador.')
+            ->assertDontSee('Aquí llegan los enlaces para recuperar tu contraseña');
+        $this->actingAs($this->admin)->get('/mi-cuenta')->assertOk()->assertSee('admin@ejemplo.mx')->assertSee('Aquí llegan los enlaces para recuperar tu contraseña');
+    }
+
+    public function test_si_un_rol_pasa_a_administrar_se_avisa_que_cuentas_no_tienen_correo(): void
+    {
+        $rol = $this->rolConUsuarios('Caseta norte', ['ver'], 40);
+        $guardia = $this->crearUsuario($this->empresa);
+        $guardia->forceFill(['name' => 'Pedro Sin Correo', 'email' => null])->save();
+        $this->darRol($guardia, 'Caseta norte');
+        $this->actingAs($this->admin)->get('/usuarios')->assertDontSee('Administran sin correo');
+
+        // Se le da «Editar» de Usuarios: el rol ahora administra
+        $editar = ModuloAccion::whereHas('modulo', fn ($q) => $q->where('clave', 'usuarios'))->whereHas('accion', fn ($q) => $q->where('clave', 'editar'))->firstOrFail();
+        RolPermiso::create(['rol_id' => $rol->id, 'modulo_accion_id' => $editar->id, 'alcance' => Alcance::Empresa]);
+        $this->assertSame(['Pedro Sin Correo'], AdministradorUsuarios::administrativasSinCorreo($this->empresa->id, $rol)->pluck('name')->all());
+        $this->actingAs($this->admin)->get('/usuarios')->assertSee('Administran sin correo (1)')->assertSee('Pedro Sin Correo');
+
+        // La Matriz avisa al guardar los permisos de ese rol
+        $this->actingAs($this->admin)->put('/permisos/'.$rol->id, ['permisos' => ['usuarios' => ['acciones' => ['ver', 'editar'], 'alcance' => 'empresa']]])
+            ->assertSessionHas('aviso', fn ($m) => str_contains($m, 'Pedro Sin Correo') && str_contains($m, 'no tienen correo'));
+    }
+
+    public function test_un_super_administrador_rechaza_la_peticion_de_otro(): void
+    {
+        $sa1 = $this->crearSuperadmin();
+        $this->activarDosPasos($sa1);
+        $sa2 = $this->crearSuperadmin();
+        $sa2->forceFill(['username' => 'sa.a08'])->save();
+        $this->post('/olvide-contrasena/administrador', ['cuenta' => 'sa.a08']);
+        $s = $this->solicitudes()->firstOrFail();
+
+        $this->actingAs($sa1)->get('/configuracion')->assertSee(route('superadmins.solicitudes.rechazar', $s->id), false);
+        $this->actingAs($this->admin)->patch(route('superadmins.solicitudes.rechazar', $s->id))->assertForbidden();
+        $this->actingAs($sa2)->patch(route('superadmins.solicitudes.rechazar', $s->id))->assertSessionHas('error'); // la propia no
+        $this->actingAs($sa1)->patch(route('superadmins.solicitudes.rechazar', $s->id), ['motivo' => 'No fue la persona'])->assertSessionHas('ok');
+        $this->assertSame(SolicitudCuenta::RECHAZADA, $s->refresh()->estado);
+        $this->assertTrue(Notificacion::withoutGlobalScopes()->where('user_id', $sa2->id)->where('titulo', 'Tu petición sobre tu cuenta no se atendió')->exists());
+        $this->assertTrue(Auditoria::where('evento', 'usuarios.solicitud_cuenta_rechazada')->where('user_id', $sa1->id)->exists());
+        // Una petición de empresa no se rechaza por esta ruta
+        $guardia = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
+        $guardia->forceFill(['username' => 'guardia.a08'])->save();
+        $this->salir();
+        $this->post('/olvide-contrasena/administrador', ['cuenta' => 'guardia.a08']);
+        $deEmpresa = $this->solicitudes()->whereNotNull('empresa_id')->firstOrFail();
+        $this->actingAs($sa1)->patch(route('superadmins.solicitudes.rechazar', $deEmpresa->id))->assertNotFound();
     }
 }

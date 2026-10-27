@@ -18,6 +18,8 @@ resumen: Ver tus datos de acceso, cambiar tu contraseña sin depender de nadie, 
 
 **Qué debes ver:** la pantalla **Mi cuenta** con las tarjetas **Mis datos** y **Cambiar mi contraseña** y, debajo, **Verificación en dos pasos**.
 
+Si tu cuenta no tiene correo (por ejemplo, una cuenta de caseta), en **Correo** dice **«Sin correo: si olvidas tu contraseña, pide ayuda a tu administrador.»** Ver [Entrar y salir de la plataforma](inicio-de-sesion.md).
+
 ## Cómo cambiar mi contraseña
 
 1. En **Cambiar mi contraseña** escribe tu **Contraseña actual**.

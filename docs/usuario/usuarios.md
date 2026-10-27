@@ -130,6 +130,7 @@ Quien no tiene correo (o no le llega) toca **Olvidé mi contraseña → Pedir a 
 
 **Qué debes ver:** al restablecer, la petición desaparece sola del recuadro y de **Mis pendientes**. Todo queda en la [Bitácora de auditoría](auditoria.md).
 
+- El número de **Mis pendientes → Cuentas por revisar** es exactamente lo que tú puedes atender en esta pantalla.
 - Solo ves las peticiones de las cuentas que puedes administrar (tu alcance y de nivel inferior al tuyo). Las contraseñas las atiende quien puede editar usuarios; los dos pasos, quien puede restablecer la verificación (ver abajo).
 
 ## Cómo dar de baja o reactivar una cuenta
@@ -226,6 +227,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 **¿Qué son las «Cuentas por revisar»?** Las bloqueadas por intentos fallidos, las dadas de baja junto con su colaborador en los últimos 7 días, las que piden pases de salida a su nombre (Solicitante, Jefe de departamento) **sin colaborador vinculado** (así no pueden pedir pases ni firmar los de su departamento; vincúlalas con el **lápiz** de su ficha) y las personas que **te piden ayuda** para recuperar su contraseña o su verificación en dos pasos. Aparecen en **Mis pendientes** y arriba de la lista.
 
 **¿Una cuenta de caseta puede ir sin correo?** Sí. Solo las cuentas que administran (usuarios, roles, permisos o configuración) necesitan correo. Sin correo, la persona recupera su cuenta pidiéndotelo a ti.
+
+**¿Qué es el aviso «Administran sin correo»?** Aparece arriba de la lista cuando a un rol se le dieron permisos de administración y algunas de sus cuentas no tienen correo (también lo avisa **Roles y permisos** al guardar). Toca el **lápiz** de cada ficha y escribe su correo: así pueden recuperar su cuenta y recibir avisos.
 
 **¿Una cuenta puede trabajar en dos sedes sin ver toda la empresa?** Sí: elige su sede y marca las demás en **¿También atiende otras sedes?**. Su ficha dice, por ejemplo, «Hotel Centro + Hotel Playa». Si tú solo administras una de esas sedes, al editarla las otras se conservan.
 

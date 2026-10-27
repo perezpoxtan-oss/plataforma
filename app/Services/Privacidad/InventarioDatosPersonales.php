@@ -32,6 +32,9 @@ final class InventarioDatosPersonales
     /** Nombres de columna que suelen guardar datos de una persona. */
     public const PATRON = '/^(name|email|ip|ip_address|user_agent|payload)$|(^|_)(nombre|nombres|apellido|apellidos|telefono|correo|curp|rfc|nss|firma|foto|identificacion|domicilio|direccion|nacimiento|edad|sexo|medico|hospital|diagnostico|placas|declaracion|involucrados|huesped|cliente|conductor|chofer|pasajeros?|testigos?|sospechoso|emergencia|habitacion|reporta|reportado|atiende|recibe|visita|autor|contacto|referencias|familiares|explicacion|pais|agencia|observados|incapacidad)(_|$)/';
 
+    /** Tablas con datos personales que PATRON no reconoce por el nombre de sus columnas (A-07): deben estar registradas. */
+    public const SIN_PATRON = ['notificaciones', 'solicitudes_cuenta'];
+
     /** Tablas del sistema que no se revisan. */
     public const SISTEMA = ['migrations', 'sqlite_sequence', 'cache', 'cache_locks'];
 
@@ -107,6 +110,11 @@ final class InventarioDatosPersonales
         'auditoria' => ['trato' => 'cuenta', 'columnas' => ['ip'], 'conservacion' => 'Bitácora de auditoría: evidencia de seguridad; guarda la red, no datos de visitantes.'],
         'jobs' => ['trato' => 'cuenta', 'columnas' => ['payload'], 'conservacion' => 'Tareas en cola: se borran al terminar.'],
         'failed_jobs' => ['trato' => 'cuenta', 'columnas' => ['payload'], 'conservacion' => 'Tareas fallidas: se revisan y se borran.'],
+        // A-07: no los reconoce PATRON por su nombre, pero guardan datos de personas
+        'notificaciones' => ['trato' => 'cuenta', 'columnas' => ['titulo', 'texto'],
+            'conservacion' => 'Avisos internos de la campana para las cuentas de la empresa. Su título o texto puede nombrar a una persona (por ejemplo, la visita que espera autorización). Son del personal que los recibe; ARCO no los busca y no se borran solos (pendiente para el abogado, ver privacidad.md).'],
+        'solicitudes_cuenta' => ['trato' => 'cuenta', 'columnas' => ['origen'],
+            'conservacion' => 'Peticiones «Pedir a mi administrador»: guardan la red recortada desde donde se pidió (sin el último bloque). Historial de seguridad de la cuenta; se borran con la cuenta.'],
 
         // ------------------------------------------------ Plataforma
         'solicitudes_arco' => ['trato' => 'plataforma', 'columnas' => ['nombre', 'correo', 'telefono', 'ip'], 'conservacion' => 'Evidencia de que se atendió el derecho ARCO.'],

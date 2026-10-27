@@ -85,6 +85,7 @@ Sin acciones nuevas: Mi cuenta es de su dueño (criterio 6); restablecer usa `us
 | PATCH | `/configuracion/superadmins/{id}/estado` | `superadmins.estado` | Super Administrador + su contraseña; mínimo dos activos |
 | POST | `/configuracion/superadmins/{id}/contrasena` | `superadmins.contrasena` | Super Administrador + su contraseña (no la propia) |
 | POST | `/configuracion/superadmins/{id}/dos-pasos` | `superadmins.dos-pasos` | Super Administrador + su contraseña (no la propia) |
+| PATCH | `/configuracion/superadmins/solicitudes/{id}/rechazar` | `superadmins.solicitudes.rechazar` | Super Administrador (no la propia); A-08 |
 
 Auditoría nueva: `plataforma.superadmin_creado`, `plataforma.superadmin_dado_de_baja`, `plataforma.superadmin_reactivado`, `plataforma.superadmin_contrasena`.
 
