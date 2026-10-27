@@ -86,6 +86,11 @@ class MotorRelojes
         Relojes\VouchersPendientes::class,
         Relojes\FaltantesPorRecibir::class,
         Relojes\HallazgosDeRecorrido::class,
+        // DD-17: operación programada (rutas, órdenes de servicio, recargas y frecuencia de revisión)
+        Relojes\RutasSinRegistro::class,
+        Relojes\OrdenesDeServicio::class,
+        Relojes\RecargasDeEquiposPc::class,
+        Relojes\RevisionesDeEquiposPc::class,
     ];
 
     public const TIPO_RECORDATORIO = 'reloj_recordatorio';

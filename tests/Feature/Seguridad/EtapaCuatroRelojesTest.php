@@ -129,7 +129,7 @@ class EtapaCuatroRelojesTest extends TestCase
         $recordatorios = Notificacion::query()->withoutGlobalScopes()->where('tipo', MotorRelojes::TIPO_RECORDATORIO)->count();
         $this->assertGreaterThan(0, $recordatorios);
         $this->assertSame([], Notificacion::query()->withoutGlobalScopes()->where('tipo', MotorRelojes::TIPO_ESCALADO)
-            ->whereNotIn('referencia_tipo', ['acceso', 'acceso_excepcion', 'acceso_permanencia', 'acceso_salida_temporal', 'lost_found_vencidos', 'candidato', 'pase_salida_vencido', 'novedad_canalizada'])->pluck('referencia_tipo')->all(),
+            ->whereNotIn('referencia_tipo', ['acceso', 'acceso_excepcion', 'acceso_permanencia', 'acceso_salida_temporal', 'lost_found_vencidos', 'candidato', 'pase_salida_vencido', 'novedad_canalizada', 'ruta_sin_registro', 'reserva_orden', 'equipo_pc_recarga', 'equipo_pc_revision'])->pluck('referencia_tipo')->all(),
             'A las 25 h solo pasa al suplente lo que tiene minutos u horas propias');
 
         // Pasado el suplente (72 h de fábrica): a los 4 días (la gracia de un cliente dura pocos días) y a los 11 (candidatos al doble de su plazo)
@@ -158,8 +158,8 @@ class EtapaCuatroRelojesTest extends TestCase
             $this->assertTrue($conQuien->isNotEmpty(), "El reloj «{$clave}» no encontró a quién pasarlo");
         }
 
-        // Cada asunto, a lo mucho un aviso al suplente por persona
-        $porAsunto = Notificacion::query()->withoutGlobalScopes()->where('tipo', MotorRelojes::TIPO_ESCALADO)
+        // Cada asunto, a lo mucho un aviso al suplente por persona (la ruta sin registro es un asunto nuevo cada día)
+        $porAsunto = Notificacion::query()->withoutGlobalScopes()->where('tipo', MotorRelojes::TIPO_ESCALADO)->where('referencia_tipo', '!=', 'ruta_sin_registro')
             ->get(['user_id', 'referencia_tipo', 'referencia_id'])->groupBy(fn ($n) => $n->user_id.':'.$n->referencia_tipo.':'.$n->referencia_id);
         $this->assertSame([], $porAsunto->filter(fn ($g) => $g->count() > 1)->keys()->all());
     }

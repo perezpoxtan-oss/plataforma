@@ -193,6 +193,10 @@
                 @if ($verNovedades)
                     @include('seguridad.novedades._config', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
                 @endif
+                {{-- DD-17: frecuencia de revisión de los equipos de Protección Civil --}}
+                @if ($mostrarAvisos && $tiene('equipos_pc'))
+                    @include('administracion.configuracion._equipos-pc', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
+                @endif
                 {{-- Lost & Found: días de resguardo (empresa) --}}
                 @if ($lostFound)
                     <div class="tarjeta p-4 config-lost-found" id="lost-found">

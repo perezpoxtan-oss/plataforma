@@ -114,6 +114,18 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 
 **Qué debes ver:** «Ajustes de la Bitácora de incidentes guardados.» (o con el nombre que elegiste). El nombre nuevo aparece en el menú, en el botón de abajo del celular, en los títulos, en los avisos, en los informes, en Inicio y en el manual. Los tickets, los permisos y las direcciones no cambian.
 
+### Cómo cambiar cada cuándo se revisan los equipos de Protección Civil
+
+Si un equipo pasa estos días sin aparecer en un recorrido, se avisa a quien administra los equipos en su sede y, una semana después, a quien los administra en toda la empresa.
+
+1. Baja a **Equipos de Protección Civil: frecuencia de revisión** y abre **Avanzado: días por tipo de equipo**.
+2. Escribe los días de cada tipo. **0 = sin frecuencia** (no avisa). Valor original: **extintores cada 30 días; lo demás, sin frecuencia**.
+3. Toca **Guardar**.
+
+![Frecuencia de revisión de los equipos](img/configuracion/equipos-pc-frecuencia.png)
+
+**Qué debes ver:** «Frecuencia de revisión de los equipos guardada.» Para regresar a la de fábrica toca **Restablecer valor original**.
+
 ### Cómo cambiar los días de resguardo de Lost & Found
 
 Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cuántos días puede estar guardado antes de que el semáforo lo marque: **amarillo** al pasar el 70 % de sus días y **rojo (vencido)** al llegar a sus días.

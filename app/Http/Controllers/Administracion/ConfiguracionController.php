@@ -23,6 +23,7 @@ use App\Services\Plataforma\SuperAdministradores;
 use App\Services\Plataforma\VersionPhp;
 use App\Services\Privacidad\ConservacionDatos;
 use App\Services\Recepcion\AjustesRecepcion;
+use App\Services\RecorridosPc\AjustesEquiposPc;
 use App\Services\Relojes\AjustesRelojes;
 use App\Services\Respaldos\Respaldos;
 use App\Support\AjustesCaseta;
@@ -205,6 +206,7 @@ class ConfiguracionController extends Controller
         // C-25: permanencia en sitio y la noche sin supervisor
         'permanencia' => ['el tiempo de permanencia volvió', 'cfg-permanencia'],
         'noche' => ['la aprobación por excepción del agente volvió', 'cfg-noche'],
+        'equipos_pc' => ['la frecuencia de revisión de los equipos volvió', 'cfg-equipos-pc'],
         'menu' => ['los nombres del menú volvieron', 'cfg-menu'],
         'novedades' => ['el nombre de la bitácora, la categoría del hallazgo y el reloj de los tickets volvieron', 'novedades'],
         'lost_found' => ['los días de resguardo de Lost & Found volvieron', 'lost-found'],
@@ -243,6 +245,7 @@ class ConfiguracionController extends Controller
             'lost_found' => $this->tenant->conEmpresa($empresaId, fn () => $this->lostFound->guardarUmbrales($actor, ['dias' => LostFoundUmbral::POR_OMISION])),
             'auditoria', 'avisos' => $this->restablecerPreferencias($actor, $empresa, $ajuste === 'auditoria' ? ['auditoria_sede'] : ['avisos', 'avisos_modulos']),
             'dos_pasos' => $this->restablecerPreferencias($actor, $empresa, ['dos_pasos']),
+            'equipos_pc' => $this->restablecerPreferencias($actor, $empresa, [AjustesEquiposPc::CLAVE]),
         };
 
         [$texto, $ancla] = self::RESTABLECIBLES[$ajuste];
@@ -360,6 +363,22 @@ class ConfiguracionController extends Controller
      * Días de resguardo por clasificación (SEGCAT: lf_config_umbrales.php).
      * Son de toda la empresa: hace falta «lost_found.configurar» con alcance de empresa.
      */
+    /** DD-17: frecuencia de revisión de los equipos de Protección Civil por tipo (empresa). */
+    public function equiposPc(Request $request): RedirectResponse
+    {
+        Gate::authorize('configuracion.editar');
+        abort_unless($this->editaEmpresa($request->user()), 403, 'Estos ajustes son de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa.');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+        $empresa = Empresa::findOrFail($empresaId);
+        $ajustes = app(AjustesEquiposPc::class);
+        $antes = $ajustes->frecuencias($empresa);
+        $ajustes->guardar($empresa, $request->only('frecuencia_dias'));
+        $this->auditoria->auditar($request->user(), 'configuracion.equipos_pc', $empresa, $antes, $ajustes->frecuencias($empresa->refresh()));
+
+        return redirect()->to(route('configuracion.index').'#cfg-equipos-pc')->with('ok', 'Frecuencia de revisión de los equipos guardada.');
+    }
+
     public function lostFound(Request $request): RedirectResponse
     {
         Gate::authorize('lost_found.configurar');
