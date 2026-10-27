@@ -73,3 +73,5 @@ interface OcupacionEstacionamientos
 ## Mejoras padrones (ADR-0015)
 
 Ver [mejoras-padrones.md](mejoras-padrones.md): «¿Quién ocupa?» y «Dar salida» desde la zona (`estacionamientos.salida`, misma salida de la Bitácora de accesos); menú «Estacionamientos y zonas de descarga».
+
+> **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).

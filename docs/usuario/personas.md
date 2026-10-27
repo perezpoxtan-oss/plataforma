@@ -98,6 +98,17 @@ No tienes que esperar a guardar para saber si la persona ya existe:
 
 **Qué debes ver:** la ficha cambia a **DE BAJA**. Ya no aparece al buscarla en la caseta, pero **no se borra**: su historial de entradas se conserva.
 
+## Cómo restringir el acceso a una persona
+
+«Dar de baja» es para lo que **ya no se usa**. Si lo que quieres es que **no pueda entrar** (por ejemplo, por un robo o una falta), usa **Restringir acceso**: sigue en el padrón con su historial, pero la caseta no lo puede registrar.
+
+1. En la ficha toca el **escudo rojo** (Restringir acceso). Se abre **Restringir acceso: …**.
+2. Escribe el **Motivo** (lo verá la caseta), por ejemplo «robo de material el 12/10».
+3. Si es por un tiempo, elige **Hasta**; si lo dejas vacío, queda restringido hasta que se quite.
+4. Toca **Restringir acceso**.
+
+**Qué debes ver:** «Acceso restringido: la caseta no lo podrá registrar (tampoco con un nombre parecido sin confirmar que es otro). Lo quitas con «Quitar restricción».» y en la ficha la insignia «Acceso restringido hasta el …: …». Para quitarla, toca el **escudo verde** (Quitar restricción) y confirma.
+
 ## Cómo unir dos fichas de la misma persona
 
 A veces la misma persona quedó registrada dos veces (por ejemplo «Ana López Uc» y «Ana Lopez»). Si las dos ya están verificadas, puedes unirlas:

@@ -294,7 +294,7 @@ class Autorizaciones
     public function relaciones(): array
     {
         return ['sede:id,nombre', 'departamento:id,nombre', 'respondidaPor:id,name', 'registradoPor:id,name',
-            'acceso:id,sede_id,nombre,tipo,motivo_visita,viene_a,persona_visita,empresa_procedencia,entrada_at,estado,autorizacion,foto_persona,creado_por',
+            'acceso:id,sede_id,nombre,tipo,motivo_visita,viene_a,persona_visita,empresa_procedencia,aviso_padron,entrada_at,estado,autorizacion,foto_persona,creado_por',
             'candidato:id,sede_id,nombre_completo,etapa,puesto_id,vacante,escolaridad,experiencia,habilidades,idiomas,disponibilidad,llegada_en,departamento_id',
             'candidato.puesto:id,nombre'];
     }

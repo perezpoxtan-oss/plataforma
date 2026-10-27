@@ -7,6 +7,7 @@ use App\Http\Controllers\Organizacion\Concerns\CatalogoDeEmpresa;
 use App\Models\Empresa;
 use App\Models\Sede;
 use App\Models\Turno;
+use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Support\Entrada;
@@ -176,7 +177,12 @@ class TurnoController extends Controller
         [$modelo, $empresaId] = $this->buscar($request, $turno);
 
         $activo = $request->boolean('activo');
+        // C-20: «Antes de dar de baja» si algo vigente lo usa
+        $revision = $activo ? null : $this->tenant->conEmpresa($empresaId, fn () => app(AntesDeDarDeBaja::class)->exigirRevisado('turnos', $modelo, $request));
         $this->tenant->conEmpresa($empresaId, fn () => $modelo->forceFill(['activo' => $activo])->save());
+        if ($revision !== null && $revision['items'] !== []) {
+            $this->tenant->conEmpresa($empresaId, fn () => app(AntesDeDarDeBaja::class)->aplicar('turnos', $modelo, $revision, $request->all(), $request->user()));
+        }
         $this->auditoria->auditar($request->user(), $activo ? 'turnos.reactivado' : 'turnos.desactivado', $modelo, ['activo' => ! $activo], ['activo' => $activo]);
 
         return redirect()->route('turnos.index')->with($activo ? 'ok' : 'aviso', $activo

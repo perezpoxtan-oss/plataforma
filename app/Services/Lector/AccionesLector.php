@@ -67,12 +67,28 @@ class AccionesLector
             }
 
             return $base + ['icono' => 'bi-key-fill', 'tipo' => 'Llave prestada',
-                'estado' => 'La tiene '.($prestamo->colaborador?->nombreCompleto() ?? '—').' desde el '.app(HoraLocal::class)->formatear($prestamo->prestado_en, 'd/m H:i')
+                'estado' => 'La tiene '.$prestamo->nombreReceptor().' desde el '.app(HoraLocal::class)->formatear($prestamo->prestado_en, 'd/m H:i')
                     .'. Garantía: '.$prestamo->textoGarantia().'.',
                 'acciones' => [[
                     'etiqueta' => 'Recibir', 'icono' => 'bi-box-arrow-in-down', 'metodo' => 'PATCH', 'principal' => true,
                     'url' => route('prestamo_llaves.recibir', $prestamo->id),
                     'nota' => $prestamo->tipo_garantia === 'ninguna' ? null : 'Después, devuelve su garantía: '.$prestamo->textoGarantia().'.',
+                ]]];
+        }
+        // Revisión Etapa 2 (R2-02): una llave «No regresó» no está en caseta; si apareció, se recibe
+        if ($llave->activo && $llave->noRegreso()) {
+            $ultimo = PrestamoLlave::where('llave_id', $llave->id)->where('estado', PrestamoLlave::NO_REGRESO)->where('anulado', false)
+                ->latest('prestado_en')->first();
+            if ($ultimo === null || ! $this->enAlcance($actor, 'prestamo_llaves.editar', $ultimo)) {
+                return null;
+            }
+
+            return $base + ['icono' => 'bi-exclamation-octagon', 'tipo' => 'Llave que no regresó',
+                'estado' => 'No regresó: la tenía '.$ultimo->nombreReceptor().' desde el '.app(HoraLocal::class)->formatear($ultimo->prestado_en, 'd/m H:i').'. Si apareció, recíbela.',
+                'acciones' => [[
+                    'etiqueta' => 'Recibir', 'icono' => 'bi-box-arrow-in-down', 'metodo' => 'PATCH', 'principal' => true,
+                    'url' => route('prestamo_llaves.recibir', $ultimo->id),
+                    'nota' => $ultimo->tipo_garantia === 'ninguna' ? null : 'Después, devuelve su garantía: '.$ultimo->textoGarantia().'.',
                 ]]];
         }
         if (! $llave->activo || ! $actor->can('prestamo_llaves.crear')
@@ -103,7 +119,7 @@ class AccionesLector
         }
 
         return $base + ['icono' => 'bi-box-seam', 'tipo' => 'Equipo en responsiva',
-            'estado' => 'Está a cargo de '.($responsiva->colaborador?->nombreCompleto() ?? '—').' en la responsiva '.$responsiva->folio.' ('.$fila->etiquetaModalidad().').',
+            'estado' => 'Está a cargo de '.$responsiva->nombreReceptor().' en la responsiva '.$responsiva->folio.' ('.$fila->etiquetaModalidad().').',
             'acciones' => [
                 ['etiqueta' => 'Recibir (OK)', 'icono' => 'bi-box-arrow-in-down-left', 'metodo' => 'PATCH', 'principal' => true,
                     'url' => route('responsivas.recibir', $responsiva->id), 'campos' => ['equipos[]' => (string) $fila->id],

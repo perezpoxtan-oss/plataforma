@@ -101,9 +101,12 @@
             <label class="campo-etiqueta" for="ps_destino_tipo">Tipo de Destino</label>
             <select id="ps_destino_tipo" name="destino_tipo" class="campo" required>
                 @foreach (\App\Models\PaseSalida::DESTINOS as $clave => $texto)
+                    {{-- C-18: «Un colaborador se lo lleva» ya no se ofrece (es una responsiva); solo al corregir un pase que lo traía --}}
+                    @continue ($clave === 'colaborador' && $previo('destino_tipo', 'sede') !== 'colaborador')
                     <option value="{{ $clave }}" @selected($previo('destino_tipo', 'sede') === $clave) @if ($clave === 'sede') data-por-defecto @endif>{{ $texto }}</option>
                 @endforeach
             </select>
+            <p class="campo-ayuda mt-0"><i class="bi bi-info-circle" aria-hidden="true"></i> ¿Un colaborador se lleva el equipo a su resguardo? Eso se hace en <strong>Operación → Responsivas</strong>, con su firma.</p>
 
             <div data-mostrar-si='{"destino_tipo":["sede"]}'>
                 <label class="campo-etiqueta" for="ps_sede_destino">Sede Destino</label>

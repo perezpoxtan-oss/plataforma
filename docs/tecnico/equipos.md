@@ -98,3 +98,5 @@ El «Ver QR» propio (`dialogoQrEquipo`) se reemplazó por el diálogo común «
 ## Mejoras padrones (ADR-0015)
 
 Ver [mejoras-padrones.md](mejoras-padrones.md): estado «DE BAJA» con motivo y enlace al voucher, «Ver responsiva», firma digital en la baja, «Guardar», reactivación por el voucher.
+
+> **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).

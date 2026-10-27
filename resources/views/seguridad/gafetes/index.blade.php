@@ -125,6 +125,20 @@
                         @if ($g->etiqueta_nfc)
                             <p class="gafete-codigo"><i class="bi bi-broadcast-pin" aria-hidden="true"></i> NFC / RFID: {{ $g->etiqueta_nfc }}</p>
                         @endif
+                        {{-- C-14 / C-15: con quién está ahora y su último préstamo --}}
+                        @if (isset($custodia['en_uso'][$g->id]))
+                            <p class="custodia-activo"><i class="bi bi-person-fill" aria-hidden="true"></i> EN USO por <strong>{{ $custodia['en_uso'][$g->id] }}</strong> (Bitácora de accesos)</p>
+                        @elseif (isset($custodia['ultimo'][$g->id]))
+                            @php $ultimoG = $custodia['ultimo'][$g->id]; @endphp
+                            <p class="custodia-activo"><i class="bi bi-clock-history" aria-hidden="true"></i> Último préstamo: {{ $ultimoG['nombre'] }}@if ($ultimoG['cuando']) · @fecha($ultimoG['cuando'], 'd/m/Y H:i')@endif{{ $ultimoG['sede'] ? ' · '.$ultimoG['sede'] : '' }}</p>
+                        @endif
+                        @if ($g->noRegreso() && $puedeRecibir)
+                            <form action="{{ route('gafetes.recibir', $g->id) }}" method="POST" class="m-0 mt-1" data-confirmar="¿Ya devolvieron el gafete {{ $g->nomenclatura }}? Vuelve a estar DISPONIBLE.">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="btn-no-regreso"><i class="bi bi-box-arrow-in-down me-1" aria-hidden="true"></i>Recibir</button>
+                            </form>
+                        @endif
                         @if ($g->actualizado_por_nombre && $g->updated_at?->ne($g->created_at))
                             <div class="texto-traza mt-1"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $g->actualizado_por_nombre }} · @fecha($g->updated_at)</div>
                         @elseif ($g->creado_por_nombre)
@@ -137,6 +151,8 @@
                         @php $voucherG = $g->activo ? null : ($vouchersBaja[$g->id] ?? null); @endphp
                         @if ($g->activo && in_array($g->id, $prestados, true))
                             <span class="estado-gafete en-uso" title="Prestado ahora en la Bitácora de accesos">EN USO</span>
+                        @elseif ($g->noRegreso())
+                            <span class="estado-gafete no-regreso" title="Salió sin devolverlo">NO REGRESÓ</span>
                         @elseif ($g->activo)
                             <span class="estado-gafete disponible">DISPONIBLE</span>
                         @else
@@ -167,7 +183,8 @@
                                 @if ($g->activo)
                                     <button type="button" class="btn-icono eliminar" title="Dar de baja (extraviado, dañado o robado)" aria-label="Dar de baja el gafete {{ $g->nomenclatura }}"
                                             data-accion="editar-registro" data-dialogo="dialogoBajaGafete" data-titulo-registro="{{ $g->nomenclatura }}"
-                                            data-url="{{ route('gafetes.baja', $g->id) }}" data-id="{{ $g->id }}"
+                                            data-url="{{ route('gafetes.baja', $g->id) }}" data-id="{{ $g->id }}" data-baja-auto="{{ $g->id }}"
+                                            @isset($propuestas[$g->id]) data-responsable="{{ json_encode($propuestas[$g->id]) }}" @endisset
                                             data-valores="{{ json_encode(['motivo' => 'extraviado', 'descripcion' => '', 'aplica_cobro' => false, 'monto' => $costos[$g->tipo_gafete_id] ?? '']) }}">
                                         <i class="bi bi-x-circle" aria-hidden="true"></i>
                                     </button>
@@ -343,7 +360,7 @@
 
                         <label class="casilla-cobro" for="ga_baja_cobro">
                             <input type="checkbox" id="ga_baja_cobro" name="aplica_cobro" value="1" @checked($cobro) data-muestra-si-marcado="#cajaCobroGafete">
-                            Se le cobra al colaborador
+                            Se le cobra al responsable
                         </label>
 
                         <div id="cajaCobroGafete" class="caja-cobro" @unless ($cobro) hidden @endunless>
@@ -352,8 +369,9 @@
                                 <span class="grupo-monto-simbolo" aria-hidden="true">$</span>
                                 <input type="number" id="ga_baja_monto" name="monto" class="grupo-monto-input" step="0.01" min="0" max="999999.99" inputmode="decimal" value="{{ $trasError ? old('monto') : '' }}" data-requerido-si-marcado>
                             </div>
-                            @include('componentes.lector', ['id' => 'ga_baja_responsable', 'etiqueta' => 'Colaborador Responsable', 'tipos' => 'colaborador',
-                                'nombre' => 'colaborador_id', 'valor' => $trasError ? old('colaborador_id') : '', 'elegido' => $trasError ? $responsableAnterior : null,
+                            {{-- C-16: el cobro puede ir a la persona que lo tenía, a su empresa externa o a un colaborador --}}
+                            @include('componentes.receptor', ['id' => 'ga_baja_responsable', 'prefijo' => 'responsable', 'etiqueta' => 'Responsable (a quién se le cobra)',
+                                'valor' => $trasError ? ($responsableBaja ?? null) : null,
                                 'ayuda' => 'Escribe su número de empleado (aparece solo, sin Enter) o escanea / acerca su credencial.'])
                         </div>
 

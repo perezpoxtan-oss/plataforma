@@ -9,11 +9,13 @@ use App\Models\Gafete;
 use App\Models\Sede;
 use App\Models\User;
 use App\Models\VoucherReposicion;
+use App\Services\Activos\CustodiaActivos;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Inventarios\Vouchers;
 use App\Services\Lector\ImpresionDesdePadron;
 use App\Services\Vouchers\RecuperacionVouchers;
 use App\Support\Identidad;
+use App\Support\Receptor;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
@@ -87,11 +89,18 @@ class GafeteController extends Controller
                 'desactivables' => $this->gafetes->idsEnAlcance($actor, 'gafetes.eliminar'),
                 'imprimibles' => $this->gafetes->idsEnAlcance($actor, 'gafetes.imprimir'),
                 'costos' => $costos,
+                // C-16: lo elegido en el selector de responsable antes de que el formulario regresara con errores
+                'responsableBaja' => Receptor::anterior('responsable'),
                 'responsableAnterior' => $this->responsableAnterior($request),
                 'voucherGenerado' => $puede['voucher'] ? session('voucher_generado') : null,
                 'puede' => $puede,
                 // Mejoras padrones (ADR-0015): «En uso» (prestado ahora en caseta) y el voucher de los dados de baja
                 'prestados' => Gafete::query()->prestados()->pluck('gafetes.id')->map(fn ($id) => (int) $id)->all(),
+                // C-14 / C-15: con quién está y su último préstamo; el voucher propone a quien lo tuvo
+                'custodia' => $custodia = app(CustodiaActivos::class)->gafetesEnLista($lista->pluck('id')->map(fn ($id) => (int) $id)->all()),
+                'propuestas' => $puede['estado'] ? $lista->filter(fn (Gafete $g) => $g->noRegreso())
+                    ->mapWithKeys(fn (Gafete $g) => [$g->id => app(CustodiaActivos::class)->responsablePropuesto($g)])->all() : [],
+                'puedeRecibir' => $actor->can('gafetes.editar') || $actor->can('accesos.editar'),
                 'vouchersBaja' => app(RecuperacionVouchers::class)->ultimosPorOrigen('gafete', $lista->where('activo', false)->pluck('id')),
                 'puedeVerVouchers' => $actor->can('vouchers.ver'),
             ]);
@@ -151,6 +160,25 @@ class GafeteController extends Controller
         return redirect()->to(route('gafetes.index').'#gafete-'.$modelo->id)
             ->with('aviso', "Gafete {$modelo->nomenclatura} dado de baja. Se generó el voucher {$voucher->folio}".($voucher->aplica_cobro ? ' con cobro de $'.number_format((float) $voucher->monto, 2).'.' : ' sin cobro.').' Puedes reactivarlo con un clic si aparece.')
             ->with('voucher_generado', ['id' => $voucher->id, 'folio' => $voucher->folio]);
+    }
+
+    /**
+     * C-15: «Recibir» un gafete que quedó «No regresó» y lo devolvieron
+     * después. Lo puede hacer quien edita gafetes o quien atiende la Bitácora de accesos.
+     */
+    public function recibir(Request $request, int $gafete): RedirectResponse
+    {
+        abort_unless($request->user()->can('gafetes.editar') || $request->user()->can('accesos.editar'), 403);
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $gafete) {
+            $modelo = $this->buscarEnAlcance($request->user(), $gafete, 'gafetes.ver');
+            $this->gafetes->recibir($request->user(), $modelo);
+
+            return $modelo;
+        });
+
+        return redirect()->to(route('gafetes.index').'#gafete-'.$modelo->id)->with('ok', "Gafete {$modelo->nomenclatura} recibido: vuelve a estar DISPONIBLE para prestarse en caseta.");
     }
 
     public function reactivar(Request $request, int $gafete): RedirectResponse

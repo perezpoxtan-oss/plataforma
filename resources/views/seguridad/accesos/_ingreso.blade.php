@@ -19,7 +19,11 @@
     $reservaElegida = (string) $previo('tiene_reserva', '1');
     $acompanantesPrevios = $trasError ? array_values((array) old('acompanantes', [])) : [];
     $repetida = $trasError && $errors->has('persona_repetida');
-    $otrosErrores = collect($errors->getMessages())->except('persona_repetida')->flatten();
+    // C-13: parecido a algo restringido («¿Es la misma?») y lo dado de baja («¿Reactivar y continuar?»)
+    $parecidoRestringido = $trasError && $errors->has('parecido_restringido');
+    $reactivar = $trasError && $errors->has('reactivar');
+    $zonaLlena = $trasError && $errors->has('zona_llena'); // C-21
+    $otrosErrores = collect($errors->getMessages())->except(['persona_repetida', 'parecido_restringido', 'reactivar', 'zona_llena'])->flatten();
 @endphp
 @php
     // Botón honesto: el texto del botón anticipa si el registro nace pendiente (el servidor decide al guardar)
@@ -70,6 +74,31 @@
 
                 @if ($sig && ! $trasError)
                     <div class="alert alert-success small py-2 px-3" role="status"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>{{ $sig['mensaje'] ?? 'Ingreso registrado.' }} Captura el siguiente.</div>
+                @endif
+                {{-- C-13: decisiones que se conservan si el registro vuelve con otro aviso --}}
+                @if ($trasError && old('restriccion_decision'))<input type="hidden" name="restriccion_decision" value="{{ old('restriccion_decision') }}">@endif
+                @if ($trasError && old('reactivar_decision'))<input type="hidden" name="reactivar_decision" value="{{ old('reactivar_decision') }}">@endif
+                @if ($parecidoRestringido)
+                    <div class="alert alert-danger caja-persona-repetida" role="alert">
+                        <p class="mb-2"><i class="bi bi-shield-fill-x me-1" aria-hidden="true"></i>{{ $errors->first('parecido_restringido') }}</p>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="submit" name="restriccion_decision" value="misma" class="btn-decision misma">Sí, es la misma</button>
+                            <button type="submit" name="restriccion_decision" value="distinta" class="btn-decision distinta">No, es otra</button>
+                        </div>
+                        <p class="small mb-0 mt-2">Si es otra, el registro sigue y quien autoriza verá que se parece a una restringida.</p>
+                    </div>
+                @endif
+                @if ($reactivar)
+                    <div class="alert alert-warning caja-persona-repetida" role="alert">
+                        <p class="mb-2"><i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>{{ $errors->first('reactivar') }}</p>
+                        <button type="submit" name="reactivar_decision" value="si" class="btn-decision misma">Reactivar y continuar</button>
+                    </div>
+                @endif
+                @if ($zonaLlena)
+                    <div class="alert alert-warning caja-persona-repetida" role="alert">
+                        <p class="mb-2"><i class="bi bi-p-square-fill me-1" aria-hidden="true"></i>{{ $errors->first('zona_llena') }}</p>
+                        <button type="submit" name="zona_llena" value="si" class="btn-decision misma">Enviar de todos modos</button>
+                    </div>
                 @endif
                 @if ($trasError && $otrosErrores->isNotEmpty())
                     <div class="alert alert-danger small py-2 px-3" role="alert">

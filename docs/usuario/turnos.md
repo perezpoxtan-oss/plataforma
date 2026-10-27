@@ -62,6 +62,8 @@ resumen: Los horarios fijos de la empresa (Matutino, Vespertino, Nocturno…) y 
 2. **Dar de baja** (círculo rojo): confirma con **Aceptar**. El turno no se borra y su tarjeta dice **DE BAJA**.
 3. **Reactivar** (flecha circular): lo vuelve a activar.
 
+> Si tiene cosas vigentes (colaboradores o rutas que lo usan), antes de confirmar se abre [Antes de dar de baja](antes-de-dar-de-baja.md) con la lista y lo que pasará con cada una.
+
 ## En el celular y en los modos Noche y Sol
 
 ![Celular](img/turnos/4-celular.png)

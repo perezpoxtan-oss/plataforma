@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use App\Services\Permisos\Autorizador;
+use App\Support\Tenancy\Tenant;
+
 /**
  * Lista única de «este módulo necesita este otro» (plan de correcciones,
  * C-02). Vive en el código y no en la base: se versiona con el sistema y la
@@ -66,6 +69,22 @@ final class DependenciasModulos
     public const ACCIONES_CON_MODULO = [
         'colaboradores.datos_personales' => 'candidatos',
     ];
+
+    /**
+     * Revisión Etapa 1 (A-3): las altas provisionales de colaboradores que hace
+     * la caseta las verifica Recursos Humanos solo si la empresa lo contrató
+     * (Candidatos, como el expediente); si no, el administrador.
+     */
+    public const VERIFICA_ALTAS_CON = 'candidatos';
+
+    /** «Recursos Humanos» o «el administrador», según lo contratado por la empresa de trabajo. */
+    public static function quienVerificaAltas(?int $empresaId = null): string
+    {
+        $empresaId ??= app(Tenant::class)->empresaId();
+
+        return $empresaId !== null && app(Autorizador::class)->moduloActivo((int) $empresaId, self::VERIFICA_ALTAS_CON)
+            ? 'Recursos Humanos' : 'el administrador';
+    }
 
     /**
      * Lo que necesita un módulo (directo).

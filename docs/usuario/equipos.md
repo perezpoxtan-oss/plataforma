@@ -23,7 +23,10 @@ resumen: Inventario del equipo de guardia (radios, lámparas, chalecos…), con 
 | Estado | Qué quiere decir |
 |---|---|
 | **DISPONIBLE** (verde) | Está en la caseta, listo para prestarse. |
-| **ASIGNADO** (amarillo) | Lo tiene un colaborador. Lo pone [Responsivas](responsivas.md); la ficha dice **A cargo de** quién y trae el enlace **Ver responsiva**. |
+| **EN USO** (azul) | Se entregó por turno con una [responsiva](responsivas.md) y regresa al terminar. La ficha dice **A cargo de** quién y trae **Ver responsiva**. |
+| **ASIGNADO** (amarillo) | Se entregó fijo con una [responsiva](responsivas.md): se queda con la persona hasta que lo devuelva. |
+| **FUERA** (gris) | Salió de la sede con un [pase de salida](pases-salida.md) y aún no regresa. |
+| **NO REGRESÓ** (naranja) | Quien lo tenía no lo devolvió (por ejemplo, se dio de baja). Si aparece, recíbelo en Responsivas; si no, dalo de baja. |
 | **EN MANTENIMIENTO** (morado) | En reparación o revisión: no se presta. |
 | **DE BAJA** (rojo) | Se dio de baja con un voucher. La ficha dice el motivo (por ejemplo **DE BAJA · ROBADO**) y trae **Ver su voucher VR-…**. |
 
@@ -61,7 +64,7 @@ resumen: Inventario del equipo de guardia (radios, lámparas, chalecos…), con 
 
 1. Toca el **lápiz** (Editar) de la ficha. Se abre **Editar Equipo**.
 2. Corrige lo que necesites.
-3. En **Estado actual** puedes cambiar entre **DISPONIBLE** y **EN MANTENIMIENTO**. Debajo se explica qué puedes hacer según el estado: si está ASIGNADO o de BAJA, el estado se muestra pero no se cambia aquí.
+3. En **Estado actual** puedes cambiar entre **DISPONIBLE** y **EN MANTENIMIENTO**. Debajo se explica qué puedes hacer según el estado: si está EN USO, ASIGNADO, FUERA, NO REGRESÓ o de BAJA, el estado se muestra pero no se cambia aquí.
 4. Toca **Guardar**.
 
 ![Editar equipo](img/equipos/03-editar.png)
@@ -87,15 +90,31 @@ Cuando un equipo se pierde, se daña o lo roban:
 1. Toca el botón rojo **Dar de baja** de la ficha. Se abre **Dar de Baja: …**.
 2. Elige el **Motivo**: Extraviado, Dañado o Robado.
 3. Escribe **¿Cómo pasó?** (ayuda a decidir si se cobra).
-4. Si se le cobra a alguien, marca **Se le cobra al colaborador**:
+4. Si se le cobra a alguien, marca **Se le cobra al responsable**:
    - **Monto:** viene con el costo del equipo; puedes ajustarlo.
-   - **Colaborador responsable:** escanea su gafete, acerca su tarjeta o escribe su número de empleado (aparece solo, sin Enter).
+   - **Responsable (a quién se le cobra):** elige **Colaborador** (escanea su gafete, acerca su tarjeta o escribe su número de empleado), **Persona externa** o **Empresa externa**. Si el equipo no regresó, ya viene propuesto quien lo tenía.
 5. En **Firmas del voucher** elige **Firma física** o **Firma digital** (firman en la pantalla Seguridad y, si hay responsable, también él), igual que en Llaves y Gafetes.
 6. Toca **Dar de baja**.
 
 ![Baja con voucher](img/equipos/04-baja.png)
 
 **Qué debes ver:** «Equipo … dado de baja con el voucher VR-…». El equipo queda **DE BAJA** con su motivo.
+
+## Si el equipo no regresó de un pase
+
+Cuando un pase de salida se cierra con faltantes, el equipo queda **NO REGRESÓ** y su ficha dice «No regresó del pase …». El voucher de baja propone como responsable a quien **pidió el pase**.
+
+- Si el equipo aparece, toca **Recibir** en su ficha y confirma: vuelve a **DISPONIBLE**. El pase también lo refleja: suma lo que regresó y su bitácora dice «Recibido después del cierre por (tu nombre), (fecha)». Si ya tenía voucher, márcalo **Recuperado** en [Vouchers de reposición](vouchers.md).
+- Si no aparecerá, toca **Dar de baja**.
+
+## Si el equipo está apartado para un pase
+
+Mientras un pase que lo lleva está **Pendiente de Aprobación** o **Aprobado, listo para salir**, la ficha dice **Apartado para el pase …**. El equipo sigue **DISPONIBLE**, pero:
+
+- Al entregarlo en una responsiva o darlo de baja, la plataforma avisa «El equipo … está apartado para el pase …» y pide el motivo (**Entregar de todos modos** / **Dar de baja de todos modos**). Queda registrado.
+- Si se entrega o se da de baja, el pase ya no puede salir con él hasta que vuelva a estar disponible: la caseta ve el aviso al registrar la salida.
+
+Si el equipo está **EN USO**, **ASIGNADO** o **FUERA**, alguien lo tiene: **Dar de baja** te lleva a [Antes de dar de baja](antes-de-dar-de-baja.md), donde ves a cargo de quién está. Lo normal es recibirlo en Responsivas (o marcarlo **Faltante** ahí) o esperar su regreso en Pases de salida.
 
 ## Cómo reactivar un equipo que apareció
 
@@ -140,9 +159,9 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 ## Preguntas frecuentes
 
-**¿Cómo paso un equipo a ASIGNADO?** Con una [responsiva](responsivas.md): al firmarla, el equipo queda a cargo del colaborador.
+**¿Cómo paso un equipo a ASIGNADO o EN USO?** Con una [responsiva](responsivas.md): si es por turno queda **EN USO**; si es fija, **ASIGNADO**. Puede quedar a cargo de un colaborador, de una persona externa o de una empresa externa.
 
-**¿Por qué no puedo cambiar el estado al editar?** Porque está ASIGNADO o de BAJA. El cuadro bajo **Estado actual** te dice qué hacer.
+**¿Por qué no puedo cambiar el estado al editar?** Porque está EN USO, ASIGNADO, FUERA, NO REGRESÓ o de BAJA. El cuadro bajo **Estado actual** te dice qué hacer.
 
 **¿Qué pasa con el voucher si el equipo aparece?** Se conserva como historial; en [Vouchers de reposición](vouchers.md) se puede marcar como recuperado.
 

@@ -62,7 +62,8 @@
 
         <div class="pildoras-tipo" role="group" aria-label="Filtrar por estado">
             <button type="button" class="btn-pill-tipo active" data-filtro-estado-equipo="" aria-pressed="true">Cualquier estado <span class="conteo-pill">{{ $equipos->count() }}</span></button>
-            @foreach (['disponible' => 'Disponible', 'asignado' => 'Asignado', 'en_mantenimiento' => 'En Mantenimiento', 'baja' => 'De baja'] as $clave => $texto)
+            @foreach (['disponible' => 'Disponible', 'en_uso' => 'En uso', 'asignado' => 'Asignado', 'fuera' => 'Fuera', 'en_mantenimiento' => 'En Mantenimiento', 'no_regreso' => 'No regresó', 'baja' => 'De baja'] as $clave => $texto)
+                @continue (in_array($clave, ['en_uso', 'fuera', 'no_regreso'], true) && empty($conteo[$clave]))
                 <button type="button" class="btn-pill-tipo" data-filtro-estado-equipo="{{ $clave }}" aria-pressed="false">{{ $texto }} <span class="conteo-pill">{{ $conteo[$clave] ?? 0 }}</span></button>
             @endforeach
         </div>
@@ -112,14 +113,38 @@
                         @if ($e->observaciones)
                             <div class="eq-observaciones"><i class="bi bi-chat-left-text me-1" aria-hidden="true"></i>{{ $e->observaciones }}</div>
                         @endif
-                        @if ($e->resguardoActual?->responsiva?->colaborador)
+                        @if ($e->resguardoActual?->responsiva)
                             {{-- Responsivas: quién lo tiene ahora --}}
-                            <div class="eq-resguardo"><i class="bi bi-person-badge me-1" aria-hidden="true"></i>A cargo de: <strong>{{ $e->resguardoActual->responsiva->colaborador->nombreCompleto() }}</strong> · {{ $e->resguardoActual->etiquetaModalidad() }} · {{ $e->resguardoActual->responsiva->folio }}
+                            <div class="eq-resguardo"><i class="bi bi-person-badge me-1" aria-hidden="true"></i>A cargo de: <strong>{{ $e->resguardoActual->responsiva->nombreReceptor() }}</strong> · {{ $e->resguardoActual->etiquetaModalidad() }} · {{ $e->resguardoActual->responsiva->folio }}
                                 {{-- Mejoras padrones: directo a su responsiva --}}
                                 @if ($puedeVerResponsivas)
                                     <a href="{{ route('responsivas.index') }}#responsiva-{{ $e->resguardoActual->responsiva->id }}" class="enlace-voucher-baja ms-1"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Ver responsiva</a>
                                 @endif
                             </div>
+                        @endif
+                        @if (isset($pasesFuera[$e->id]))
+                            {{-- C-14: salió en un pase de salida y no ha regresado --}}
+                            <div class="eq-resguardo"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>{{ $e->estado === 'no_regreso' ? 'No regresó del pase' : 'Fuera en el pase' }} <strong>{{ $pasesFuera[$e->id]->folio }}</strong>
+                                @if ($puedeVerPases)
+                                    <a href="{{ route('pases-salida.show', $pasesFuera[$e->id]->id) }}" class="enlace-voucher-baja ms-1"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Ver pase</a>
+                                @endif
+                            </div>
+                        @endif
+                        @if (isset($apartados[$e->id]))
+                            {{-- Revisión Etapa 2 (A-2): va en un pase que aún no sale --}}
+                            <div class="eq-resguardo eq-apartado"><i class="bi bi-bookmark-fill me-1" aria-hidden="true"></i>Apartado para el pase <strong>{{ $apartados[$e->id]->folio }}</strong> ({{ $apartados[$e->id]->insignia(false)[0] }})
+                                @if ($puedeVerPases)
+                                    <a href="{{ route('pases-salida.show', $apartados[$e->id]->id) }}" class="enlace-voucher-baja ms-1"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Ver pase</a>
+                                @endif
+                            </div>
+                        @endif
+                        @if ($e->estado === 'no_regreso' && ! $e->resguardoActual && $editable)
+                            {{-- Revisión Etapa 2 (A-1): apareció el equipo que no regresó de un pase --}}
+                            <form action="{{ route('equipos.recibir', $e->id) }}" method="POST" class="m-0 mt-1" data-confirmar="¿Ya regresó el equipo {{ $e->numero_serie }}? Vuelve a estar DISPONIBLE.">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="btn-no-regreso"><i class="bi bi-box-arrow-in-down me-1" aria-hidden="true"></i>Recibir</button>
+                            </form>
                         @endif
                         @if ($voucherE && $puedeVerVouchers)
                             <a href="{{ route('vouchers.index', ['q' => $voucherE->folio]) }}#voucher-{{ $voucherE->id }}" class="enlace-voucher-baja"><i class="bi bi-receipt" aria-hidden="true"></i> Ver su voucher {{ $voucherE->folio }}</a>
@@ -154,10 +179,14 @@
                                     @method('PATCH')
                                     <button type="submit" class="btn-icono reactivar" title="Reactivar (se encontró / se recuperó)" aria-label="Reactivar {{ $e->numero_serie }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
                                 </form>
+                            @elseif ($desactivable && in_array($e->estado, \App\Support\EstadoActivo::EN_CUSTODIA, true))
+                                {{-- C-14 / C-20: a cargo de alguien o fuera → primero «Antes de dar de baja» --}}
+                                <a href="{{ route('bajas.revisar', ['tipo' => 'equipos', 'id' => $e->id]) }}" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja {{ $e->numero_serie }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></a>
                             @elseif ($desactivable)
                                 <button type="button" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja {{ $e->numero_serie }}"
                                         data-accion="editar-registro" data-dialogo="dialogoBajaEquipo" data-baja-nombre="{{ $nombre }}"
-                                        data-url="{{ route('equipos.baja', $e->id) }}" data-id="{{ $e->id }}"
+                                        data-url="{{ route('equipos.baja', $e->id) }}" data-id="{{ $e->id }}" data-baja-auto="{{ $e->id }}"
+                                        @isset($propuestas[$e->id]) data-responsable="{{ json_encode($propuestas[$e->id]) }}" @endisset
                                         data-valores="{{ json_encode(['motivo' => 'extraviado', 'descripcion' => '', 'aplica_cobro' => false, 'monto' => app(\App\Services\Equipos\AdministradorEquipos::class)->costoSugerido($e, $costosVoucher)]) }}">
                                     <i class="bi bi-slash-circle" aria-hidden="true"></i>
                                 </button>
@@ -325,7 +354,7 @@
 
                         <label class="casilla-cobro-eq" for="baja_eq_cobro">
                             <input type="checkbox" id="baja_eq_cobro" name="aplica_cobro" value="1" data-muestra-si-marcado="#cajaCobroEquipo" @checked($bajaEquipo && old('aplica_cobro'))>
-                            Se le cobra al colaborador
+                            Se le cobra al responsable
                         </label>
 
                         <div id="cajaCobroEquipo" class="caja-cobro-eq" hidden>
@@ -335,13 +364,23 @@
                                 <input type="number" step="0.01" min="0" max="999999.99" inputmode="decimal" id="baja_eq_monto" name="monto" class="campo grupo-monto-campo" placeholder="0.00"
                                        value="{{ $bajaEquipo ? old('monto') : '' }}" data-requerido-si-marcado="#baja_eq_cobro">
                             </div>
-                            @include('componentes.lector', ['id' => 'baja_eq_responsable', 'etiqueta' => 'Colaborador responsable', 'tipos' => 'colaborador',
-                                'nombre' => 'colaborador_id', 'valor' => $bajaEquipo ? old('colaborador_id') : '', 'elegido' => $bajaResponsable,
+                            {{-- C-16: el cobro puede ir a un colaborador, a una persona del padrón o a una empresa externa --}}
+                            @include('componentes.receptor', ['id' => 'baja_eq_responsable', 'prefijo' => 'responsable', 'etiqueta' => 'Responsable (a quién se le cobra)',
+                                'valor' => $bajaEquipo ? ($responsableBaja ?? null) : null,
                                 'ayuda' => 'Escanea su gafete o acerca su tarjeta; también puedes escribir su número de empleado o su nombre: aparece solo, sin Enter.'])
                         </div>
 
                         {{-- Mejoras padrones: misma baja que Llaves y Gafetes (firma física o digital) --}}
                         @include('seguridad.vouchers._firmas-baja', ['id' => 'baja_equipo'])
+
+                        @if ($errors->has('motivo_apartado'))
+                            {{-- Revisión Etapa 2 (A-2): el equipo va en un pase que aún no sale --}}
+                            <div class="aviso-excepcion-llave" role="alert">
+                                <p class="mb-2"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>{{ $errors->first('motivo_apartado') }}</p>
+                                <label class="campo-etiqueta" for="baja_eq_motivo_apartado">Dar de baja de todos modos: motivo</label>
+                                <textarea id="baja_eq_motivo_apartado" name="motivo_apartado" class="campo" rows="2" maxlength="250" required placeholder="Ej: se dañó antes de salir; el pase se cancelará">{{ old('motivo_apartado') }}</textarea>
+                            </div>
+                        @endif
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>

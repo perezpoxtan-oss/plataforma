@@ -87,7 +87,7 @@ Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo,
 
 Lo que pide cada tipo:
 
-- **Colaborador:** escanea su gafete de empleado o escribe su nombre o número y elígelo. No lleva gafete de visita. Si no aparece, toca **¿No aparece? Darlo de alta provisional**: se registra y Recursos Humanos lo valida después.
+- **Colaborador:** escanea su gafete de empleado o escribe su nombre o número y elígelo. No lleva gafete de visita. Si no aparece, toca **¿No aparece? Darlo de alta provisional**: se registra y después lo verifica Recursos Humanos (si tu plan no lo incluye, el administrador).
 <!-- solo: hotel, corporativo -->
 - **Personal Externo / Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**. **Ningún motivo viene marcado**: elige siempre uno (tu empresa puede dejar uno marcado en Configuración).
   - **Visita general:** escribe **¿A quién o a qué viene?** (por ejemplo «Mensajería» o «Entrega de documentos»).
@@ -165,7 +165,7 @@ Todo lo que espera tiene **reloj, color y suplente**. No tienes que vigilar nada
 
 **Qué debes ver:** el renglón pasa de verde a ámbar y a rojo, y, cuando se escaló, la caja de abajo dice «Se escaló a: Sergio Díaz y Julia Torres».
 
-> Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Confirmar Autorización** en la tarjeta de la visita; en la de un proveedor o contratista, **Autorizar por excepción**. Los minutos se cambian en **Estructura → Autorizaciones → Responsables por departamento** (con Recursos Humanos, también en **Recursos Humanos → Recepción → Ajustes**) (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)).
+> Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Confirmar Autorización** en la tarjeta de la visita; en la de un proveedor o contratista, **Autorizar por excepción**. Los minutos se cambian en **Estructura → Autorizaciones → Responsables por departamento** (con Recursos Humanos, también en **Recursos Humanos → Recepción → Ajustes**) (ver [Autorizaciones](autorizaciones.md)).
 
 ## Cómo autorizar a un proveedor o contratista
 
@@ -193,7 +193,7 @@ Solo quien tiene el permiso **Aprobar** (supervisor o Jefe de seguridad). Siempr
 
 ### Si tu empresa no pide la autorización del departamento
 
-Si en tu empresa la casilla **Proveedor** o **Contratista** no está marcada (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)), funciona como antes:
+Si en tu empresa la casilla **Proveedor** o **Contratista** no está marcada (ver [Autorizaciones](autorizaciones.md)), funciona como antes:
 
 1. Abre la pestaña **Pendientes de Autorización**.
 2. Confirma con quien lo citó (el Host) que lo espera.
@@ -218,7 +218,16 @@ También puedes dar salida desde la tarjeta: toca **Registrar Salida** y confirm
 En huéspedes el botón de la tarjeta dice **Salida Final**.
 <!-- fin -->
 
-**Qué debes ver:** la persona pasa a **Historial Finalizados** con la pastilla **FINALIZADO**. Sus acompañantes salen con ella, su gafete queda libre y su lugar de estacionamiento se libera. **Recoge el gafete y devuelve la identificación.**
+**Qué debes ver:** la persona pasa a **Historial Finalizados** con la pastilla **FINALIZADO**. Sus acompañantes salen con ella, su gafete queda libre y su lugar de estacionamiento se libera.
+
+### Gafete e identificación al dar salida
+
+Si la persona traía gafete o dejó su identificación, la confirmación de **Dar salida** trae casillas **ya marcadas**:
+
+- **Devolvió el gafete …** (una por cada gafete, también los de sus acompañantes).
+- **Le devolví su identificación.**
+
+Si todo está en orden, solo confirmas: es igual de rápido que antes. Si el gafete **no** lo devolvió, **quita la marca**: la salida se registra igual, el gafete queda **NO REGRESÓ** (ya no se puede volver a entregar) y le llega un aviso a tu supervisor para que levante el voucher de reposición. En el historial la tarjeta dice «Gafete no devuelto» o «Identificación no devuelta».
 
 Un acompañante puede salir antes con el botón **Salida** de su renglón.
 
@@ -233,6 +242,8 @@ Un acompañante puede salir antes con el botón **Salida** de su renglón.
 2. Si quieres, anota placas, marca y conductor. Guarda.
 3. Cuando regrese, toca **Registrar Regreso**.
 
+Si se va con su vehículo y no volverá a ocupar el mismo lugar, marca **Libera su lugar de estacionamiento (el auto se va)**: el cajón queda libre para otro.
+
 **Qué debes ver:** mientras está fuera, la pastilla dice **FUERA** con el detalle «Fuera en tour» o «Fuera temporal», y su gafete sigue reservado. En el historial, la pastilla **FINALIZADO** lleva el detalle «Salida a tour», «Salida temporal», «Regreso de tour» o «Regreso».
 
 ## Cómo cambiar la zona de estacionamiento
@@ -240,7 +251,18 @@ Un acompañante puede salir antes con el botón **Salida** de su renglón.
 1. En una persona con vehículo toca **Cambiar Zona**.
 2. Elige otra zona de la sede, o **Sin asignar (liberar)**. Guarda.
 
+Si la zona elegida ya está llena, la plataforma te avisa «La zona … está llena». Si de todos modos lo mandas ahí (por ejemplo, porque sabes que alguien acaba de salir), marca **Enviar aunque esté llena** (al cambiar zona) o toca **Enviar de todos modos** (en el ingreso).
+
 **Qué debes ver:** la tarjeta muestra la zona nueva en **Enviado a**.
+
+## Si la persona o la empresa tiene el acceso restringido
+
+Al registrar un ingreso, la plataforma revisa el Padrón de personas, el Padrón de vehículos y Proveedores:
+
+- **Acceso restringido:** si la persona, el vehículo o la empresa tiene el acceso restringido, no se puede registrar. El mensaje dice el motivo y hasta cuándo.
+- **Nombre parecido:** si la empresa se escribe distinto a una restringida (por ejemplo, «Elevadores Sur» y «Elevadores del Sur S.A.»), sale la pregunta **¿Es la misma?**. Si contestas **Sí, es la misma**, no puede pasar. Si contestas **No, es otra**, puede pasar y la tarjeta queda marcada para que tu supervisor lo vea.
+- **Dada de baja:** si la persona, el vehículo o la empresa estaban dados de baja (ya no se usaban), sale **Reactivar y continuar**: tócalo y el registro vuelve a estar activo.
+- **Empresa nueva:** si la empresa no existe todavía, la tarjeta dice «Empresa nueva, pendiente de verificar» para que la revisen después.
 
 ## Cómo buscar y exportar el historial
 
@@ -273,7 +295,11 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 | «Este acceso espera la autorización del departamento. Si no puede esperar, toca «Autorizar por excepción» y elige el motivo.» | El proveedor o contratista espera a su departamento. | Espera la respuesta o usa **Autorizar por excepción**. |
 | «Elige el motivo de la excepción.» / «Con «Otro» escribe el motivo de la excepción.» | Falta el motivo o su detalle. | Elige un motivo; con **Otro**, escribe cuál. |
 | «Ese motivo no aplica a este acceso: elige uno de la lista.» | Por ejemplo, el departamento sí tiene responsable o aún no pasa el tiempo de espera. | Elige otro motivo de la lista. |
-| «La empresa «…» está dada de baja (vetada) en Proveedores: no puede ingresar.» | La empresa externa tiene prohibido el acceso. | No lo dejes pasar; avisa a tu supervisor. |
+| «La empresa «…» no puede ingresar: Acceso restringido …» (o la persona, o el vehículo) | Tiene prohibido el acceso. | No lo dejes pasar; avisa a tu supervisor. |
+| Sale **¿Es la misma?** | La empresa se parece a una con acceso restringido. | Pregunta y contesta; si es la misma, no puede pasar. |
+| Sale **Reactivar y continuar** | La persona, el vehículo o la empresa estaba dado de baja. | Tócalo si es correcto que vuelva. |
+| «La zona … está llena.» | Ya no hay lugares en esa zona. | Elige otra o marca **Enviar de todos modos**. |
+| Quité la marca **Devolvió el gafete** | El gafete quedó **NO REGRESÓ** y tu supervisor recibió un aviso. | Si después aparece, recíbelo en **Gafetes**. |
 | «El colaborador elegido no existe, está dado de baja o no pertenece a esta sede.» | El colaborador no trabaja en esa sede. | Revisa la sede o usa el alta provisional. |
 | «Las placas solo llevan letras y números (de 2 a 20).» | Las placas tienen símbolos o están incompletas. | Escríbelas sin guiones ni espacios. |
 | «Este acceso ya no está pendiente de autorización (alguien más lo atendió).» | Otro compañero ya lo autorizó. | Revisa **Gente en Sitio**. |
@@ -296,7 +322,7 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 - **¿Y si viene a entregar papeles o a firmar?** También es **Ya tiene cita**: la plataforma sabe en qué paso va y le dice a Recursos Humanos si viene a su entrevista, a entregar documentos o a firmar.
 - **¿Tengo que preguntarle el puesto o el departamento?** No. Solo a qué viene y, si busca empleo, a qué vacante (si la sabe). Lo demás lo pone Recursos Humanos.
 <!-- fin -->
-- **El colaborador no está en la lista.** Usa **¿No aparece? Darlo de alta provisional**; Recursos Humanos lo valida después.
+- **El colaborador no está en la lista.** Usa **¿No aparece? Darlo de alta provisional**; después lo verifica Recursos Humanos (si tu plan no lo incluye, el administrador).
 - **¿Por qué no viene marcado ningún motivo?** Para que cada visita quede con su motivo real. Si casi todas tus visitas son del mismo tipo, tu administrador puede dejar uno marcado en **Estructura → Configuración → Caseta y accesos → Motivo de la visita**.
 - **No veo el motivo Recursos Humanos.** Tu plan no incluye Recursos Humanos: usa **Visita general** o **Visita a Departamento**.
 - **Me equivoqué de zona.** Usa **Cambiar Zona**.
@@ -312,4 +338,5 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 - [Bitácora de novedades](novedades.md)
 - [Gafetes](gafetes.md)
 - [Padrón de personas](personas.md)
-- [Recepción y autorizaciones](recepcion-y-autorizaciones.md)
+- [Autorizaciones](autorizaciones.md)
+- [Recepción de RR. HH.](recepcion-y-autorizaciones.md)

@@ -111,7 +111,7 @@
                                         </div>
                                     @endif
 
-                                    {{-- Mejoras padrones: ocupación desfasada (salió sin registrar salida): se le da salida desde aquí --}}
+                                    {{-- C-21: quién ocupa y «Liberar lugar» (la persona sigue en sitio; su salida se da en la Bitácora) --}}
                                     @php $vehiculosZona = $enZona[$z->id] ?? collect(); @endphp
                                     @if ($vehiculosZona->isNotEmpty())
                                         <details class="vehiculos-zona mt-2">
@@ -120,16 +120,19 @@
                                                 @foreach ($vehiculosZona as $va)
                                                     <li>
                                                         <span><strong>{{ $va->placas }}</strong> · {{ $va->nombre }} · desde @fecha($va->entrada_at, 'd/m H:i')</span>
-                                                        <form action="{{ route('estacionamientos.salida', [$z->id, $va->id]) }}" method="POST" class="m-0"
-                                                              data-confirmar="¿Dar salida a {{ $va->placas }} ({{ $va->nombre }})? Úsalo solo si el vehículo ya salió: se registra su salida en la Bitácora de accesos con la hora de ahora.">
-                                                            @csrf
-                                                            @method('PATCH')
-                                                            <button type="submit" class="btn-dar-salida-zona"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Dar salida</button>
-                                                        </form>
+                                                        <span class="d-flex gap-2 align-items-center flex-wrap">
+                                                            <a href="{{ route('accesos.index', ['salida' => $va->placas ?: $va->nombre]) }}" class="enlace-voucher-baja" title="Ver su tarjeta en la Bitácora de accesos">Su tarjeta</a>
+                                                            <form action="{{ route('estacionamientos.liberar', [$z->id, $va->id]) }}" method="POST" class="m-0"
+                                                                  data-confirmar="¿Liberar el lugar de {{ $va->placas }}? {{ $va->nombre }} sigue en sitio; solo deja de ocupar «{{ $z->nombre }}».">
+                                                                @csrf
+                                                                @method('PATCH')
+                                                                <button type="submit" class="btn-dar-salida-zona"><i class="bi bi-p-square me-1" aria-hidden="true"></i>Liberar lugar</button>
+                                                            </form>
+                                                        </span>
                                                     </li>
                                                 @endforeach
                                             </ul>
-                                            <p class="campo-ayuda m-0">Si un vehículo ya se fue y la caseta no registró su salida, dásela aquí para que el lugar se libere.</p>
+                                            <p class="campo-ayuda m-0">Si el vehículo ya se fue, libera su lugar. Si la persona también se fue, dale salida desde su tarjeta en la Bitácora (ahí se confirma si devolvió el gafete).</p>
                                         </details>
                                     @endif
 

@@ -10,6 +10,7 @@ use App\Models\ZonaEstacionamiento;
 use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Accesos\MovimientoNoPermitido;
 use App\Services\Accesos\MovimientosAccesos;
+use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Estacionamientos\AdministradorEstacionamientos;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -114,7 +115,12 @@ class EstacionamientoController extends Controller
 
         $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $zona, $activo) {
             $modelo = $this->buscarEnAlcance($request->user(), $zona, 'estacionamientos.eliminar');
+            // C-20: «Antes de dar de baja» si algo vigente depende de él
+            $revision = $activo ? null : app(AntesDeDarDeBaja::class)->exigirRevisado('estacionamientos', $modelo, $request);
             $this->zonas->cambiarEstado($request->user(), $modelo, $activo);
+            if ($revision !== null && $revision['items'] !== []) {
+                app(AntesDeDarDeBaja::class)->aplicar('estacionamientos', $modelo, $revision, $request->all(), $request->user());
+            }
 
             return $modelo;
         });
@@ -136,13 +142,13 @@ class EstacionamientoController extends Controller
      * Una zona de otra empresa o fuera del alcance del permiso responde 404.
      */
     /**
-     * Mejoras padrones (ADR-0015): un vehículo salió sin que la caseta
-     * registrara su salida y la zona lo sigue contando. Desde la tarjeta de
-     * la zona se le da salida igual que en la Bitácora de accesos (mismas
-     * reglas y misma auditoría «accesos.salida»): se necesita poder ver la
-     * zona y dar salida en Accesos (accesos.editar) en esa sede.
+     * C-21 (B-04): «Liberar lugar». En la tarjeta de la zona ya no se da
+     * salida a la persona (eso cerraba su visita y liberaba sus gafetes): solo
+     * se libera el lugar del vehículo, como «Cambiar zona → Sin asignar». La
+     * persona sigue en sitio; el mensaje lleva a su tarjeta en la Bitácora por
+     * si de verdad ya se fue. Se necesita ver la zona y editar accesos en esa sede.
      */
-    public function salida(Request $request, int $zona, int $acceso): RedirectResponse
+    public function liberar(Request $request, int $zona, int $acceso): RedirectResponse
     {
         Gate::authorize('estacionamientos.ver');
         Gate::authorize('accesos.editar');
@@ -154,7 +160,7 @@ class EstacionamientoController extends Controller
                 $registro = app(ConsultaAccesos::class)->limitar(Acceso::query(), $request->user(), 'accesos.editar')
                     ->where('zona_estacionamiento_id', $modelo->id)->find($acceso);
                 abort_if($registro === null, 404);
-                app(MovimientosAccesos::class)->salida($request->user(), $registro);
+                app(MovimientosAccesos::class)->cambiarZona($request->user(), $registro, null);
 
                 return [$modelo, $registro];
             });
@@ -163,7 +169,8 @@ class EstacionamientoController extends Controller
         }
 
         return redirect()->to(route('estacionamientos.index').'#zona-'.$modelo->id)
-            ->with('ok', "Salida de {$registro->placas} registrada: ya no ocupa lugar en «{$modelo->nombre}».");
+            ->with('ok', "Lugar liberado: {$registro->placas} ya no ocupa «{$modelo->nombre}». {$registro->nombre} sigue en sitio; si ya se fue, dale salida en la Bitácora de accesos.")
+            ->with('siguientes', [['Ir a su tarjeta en la Bitácora', route('accesos.index', ['salida' => $registro->placas ?: $registro->nombre]), 'bi-box-arrow-right']]);
     }
 
     private function buscarEnAlcance(User $actor, int $id, string $permiso): ZonaEstacionamiento

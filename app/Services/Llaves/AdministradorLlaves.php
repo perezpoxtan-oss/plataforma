@@ -11,6 +11,7 @@ use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\User;
 use App\Models\VoucherReposicion;
+use App\Services\Activos\CustodiaActivos;
 use App\Services\Inventarios\Vouchers;
 use App\Services\Lector\Identificacion;
 use App\Services\Permisos\AdministradorRoles;
@@ -160,6 +161,8 @@ class AdministradorLlaves
         if (! $llave->activo) {
             throw ValidationException::withMessages(['motivo' => "La llave {$llave->nomenclatura} ya está dada de baja."]);
         }
+        // C-14: una llave prestada no se da de baja aquí (se recibe o se marca «No regresó» en Préstamo de llaves)
+        app(CustodiaActivos::class)->exigirBajaPermitida($llave);
 
         // Ronda 5 (LL-05): con costo fijo el monto no se captura; con costo variable sí
         if ($llave->costoFijo() !== null && filter_var($entrada['aplica_cobro'] ?? false, FILTER_VALIDATE_BOOL)) {
@@ -174,6 +177,7 @@ class AdministradorLlaves
         $this->auditoria->auditar($actor, 'llaves.desactivado', $llave, ['activo' => true], [
             'activo' => false, 'voucher' => $voucher->folio, 'motivo' => $voucher->motivo,
         ]);
+        app(CustodiaActivos::class)->resolverNoRegreso($llave, 'llave');
 
         return $voucher;
     }

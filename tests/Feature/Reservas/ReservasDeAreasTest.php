@@ -27,6 +27,7 @@ use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
 use Tests\TestCase;
@@ -362,6 +363,25 @@ class ReservasDeAreasTest extends TestCase
     }
 
     // ------------------------------------------------------------ Aprobaciones
+
+    /** Revisión Etapa 1 (A-5): sin el complemento «Reservas y eventos», Mis pendientes no le muestra Reservas al responsable de un departamento. */
+    public function test_sin_el_complemento_de_reservas_mis_pendientes_no_las_muestra(): void
+    {
+        $this->reservaConServicios(['servicios' => [$this->servicios['coffee'] => ['cantidad' => 20]]]);
+        $pendientes = function (): ?array {
+            $this->flushSession();
+            app()->forgetInstance(MisPendientes::class);
+            app(Autorizador::class)->olvidar();
+
+            return $this->enEmpresa(fn () => collect(app(MisPendientes::class)->para($this->sergio->fresh())['items'])->firstWhere('clave', 'reservas_aprobar'));
+        };
+        $this->assertSame(1, $pendientes()['total']);
+
+        DB::table('empresa_modulos')->where('empresa_id', $this->empresa->id)
+            ->where('modulo_id', DB::table('modulos')->where('clave', 'reservas')->value('id'))->update(['activo' => false]);
+        Cache::flush();
+        $this->assertNull($pendientes());
+    }
 
     public function test_aprobaciones_en_paralelo_del_area_y_de_cada_departamento(): void
     {

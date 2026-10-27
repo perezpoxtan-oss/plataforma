@@ -47,7 +47,7 @@ final class InventarioDatosPersonales
         // ------------------------------------------------ Caseta y padrones
         'personas' => ['trato' => 'arco', 'tipo' => 'persona', 'columnas' => ['nombre_completo', 'tipo_identificacion', 'folio_identificacion', 'telefono', 'motivo_visita'],
             'conservacion' => 'Padrón vigente: la ficha se conserva mientras la persona siga visitando; ARCO la deja anónima y de baja.'],
-        'accesos' => ['trato' => 'arco', 'tipo' => 'acceso', 'columnas' => ['nombre', 'motivo_visita', 'visita_colaborador_id', 'persona_visita', 'identificacion', 'placas', 'conductor', 'habitacion', 'tipo_visita', 'tipo_emergencia', 'foto_persona', 'foto_identificacion'],
+        'accesos' => ['trato' => 'arco', 'tipo' => 'acceso', 'columnas' => ['nombre', 'motivo_visita', 'visita_colaborador_id', 'persona_visita', 'identificacion', 'identificacion_devuelta', 'placas', 'conductor', 'habitacion', 'tipo_visita', 'tipo_emergencia', 'foto_persona', 'foto_identificacion'],
             'conservacion' => 'visitantes_dias'],
         'acompanantes_acceso' => ['trato' => 'referencia', 'tipo' => 'acceso', 'columnas' => ['nombre', 'identificacion'], 'conservacion' => 'visitantes_dias'],
         'vehiculos' => ['trato' => 'referencia', 'tipo' => 'acceso', 'columnas' => ['placas'],
@@ -98,8 +98,14 @@ final class InventarioDatosPersonales
         'procedimiento_eventos' => ['trato' => 'laboral', 'columnas' => ['usuario_nombre', 'ip'], 'conservacion' => self::LABORAL],
         'procedimiento_versiones' => ['trato' => 'laboral', 'columnas' => ['aprobador_nombre', 'firma_ruta'], 'conservacion' => self::LABORAL],
         'firmas_usuarios' => ['trato' => 'laboral', 'columnas' => ['firma_ruta'], 'conservacion' => self::LABORAL],
-        'responsivas' => ['trato' => 'laboral', 'columnas' => ['firma_ruta'], 'conservacion' => self::LABORAL],
-        'vouchers_reposicion' => ['trato' => 'laboral', 'columnas' => ['firma_modo', 'firma_seguridad', 'firma_responsable'], 'conservacion' => self::LABORAL],
+        // Etapa 2 (C-16): el receptor o el responsable también puede ser una persona del Padrón o su empresa externa
+        // (receptor_tipo/_id, responsable_tipo/_id). ARCO los encuentra por ese id; si es un colaborador, es relación laboral.
+        'prestamos_llaves' => ['trato' => 'arco', 'tipo' => 'prestamo_llave', 'columnas' => ['folio_garantia', 'receptor_tipo', 'receptor_id'],
+            'conservacion' => 'Se conserva como comprobante del préstamo; para una persona externa, ARCO quita la garantía (su nombre se quita en el Padrón). Colaboradores: '.self::LABORAL],
+        'responsivas' => ['trato' => 'arco', 'tipo' => 'responsiva', 'columnas' => ['firma_ruta', 'receptor_tipo', 'receptor_id'],
+            'conservacion' => 'Se conserva como comprobante del resguardo; para una persona externa, ARCO borra su firma (su nombre se quita en el Padrón). Colaboradores: '.self::LABORAL],
+        'vouchers_reposicion' => ['trato' => 'arco', 'tipo' => 'voucher', 'columnas' => ['firma_modo', 'firma_seguridad', 'firma_responsable', 'responsable_tipo', 'responsable_id'],
+            'conservacion' => 'Se conserva como comprobante del cobro; para una persona externa, ARCO borra su firma y quita su nombre de «¿Cómo pasó?». Colaboradores: '.self::LABORAL],
         'importaciones' => ['trato' => 'laboral', 'columnas' => ['archivo_nombre'],
             'conservacion' => 'Archivo de importación de colaboradores y padrones: se conserva para revisar lo importado; lo importado vive en su padrón, que sí alcanza ARCO.'],
 

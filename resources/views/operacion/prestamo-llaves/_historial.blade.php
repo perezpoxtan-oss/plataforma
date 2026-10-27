@@ -18,7 +18,7 @@
                 @php $clase = $h->anulado ? 'anulado' : ($h->estado === \App\Models\PrestamoLlave::EN_USO ? 'fuera' : 'dentro'); @endphp
                 <li class="linea-tiempo-item {{ $clase }}">
                     <div class="fw-bold">
-                        <i class="bi bi-person-fill me-1 text-secondary" aria-hidden="true"></i>{{ $h->colaborador?->nombreCompleto() ?? '—' }}
+                        <i class="bi bi-person-fill me-1 text-secondary" aria-hidden="true"></i>{{ $h->nombreReceptor() }}
                         @if ($h->colaborador?->num_empleado)<span class="chip-nomina">#{{ $h->colaborador->num_empleado }}</span>@endif
                         @if ($h->anulado)<span class="badge-prestamo anulada ms-1">ANULADO</span>@endif
                     </div>

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
+use App\Support\Receptor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -27,7 +28,7 @@ class Responsiva extends Model
 
     protected $attributes = ['estado' => self::EN_CAMPO];
 
-    protected $fillable = ['empresa_id', 'sede_id', 'colaborador_id'];
+    protected $fillable = ['empresa_id', 'sede_id', 'colaborador_id', 'receptor_tipo', 'receptor_id'];
 
     /** La ruta de la firma nunca sale en JSON ni en la auditoría. */
     protected $hidden = ['firma_ruta'];
@@ -45,6 +46,28 @@ class Responsiva extends Model
     public function colaborador(): BelongsTo
     {
         return $this->belongsTo(Colaborador::class);
+    }
+
+    /**
+     * C-16: quien recibió (colaborador, persona del padrón o empresa
+     * externa). Los registros de antes solo tienen colaborador.
+     */
+    public function receptor(): ?Model
+    {
+        // Con consultas que traen solo algunas columnas, se usa el colaborador (como antes)
+        $tipo = $this->attributes['receptor_tipo'] ?? Receptor::COLABORADOR;
+        $id = $this->attributes['receptor_id'] ?? ($this->attributes['colaborador_id'] ?? null);
+        if ($tipo === Receptor::COLABORADOR && $this->relationLoaded('colaborador') && (int) $this->colaborador?->id === (int) $id) {
+            return $this->colaborador;
+        }
+
+        return Receptor::cargar($tipo, $id === null ? null : (int) $id);
+    }
+
+    /** «Juan Pérez», «Juan Pérez (Elevadores del Sur)» o «Elevadores del Sur». */
+    public function nombreReceptor(): string
+    {
+        return Receptor::nombreDe($this->receptor());
     }
 
     public function equipos(): HasMany

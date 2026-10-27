@@ -74,6 +74,9 @@ class PreferenciasAvisos
         'procedimiento_publicado' => ['Procedimientos', 'Se publicó un procedimiento que debes leer y firmar', ['procedimientos.ver']],
         'llave_fuera' => ['Préstamo de llaves', 'Una llave prestada lleva demasiado tiempo fuera', ['prestamo_llaves.editar']],
         'equipo_turno' => ['Responsivas', 'Equipos de turno que no regresaron a su hora', ['responsivas.editar']],
+        // Etapa 2 (C-14, C-15, C-20)
+        'activo_no_regreso' => ['Caseta y activos', 'Una llave, un gafete o un equipo no regresó: recíbelo o dalo de baja', ['llaves.eliminar', 'gafetes.eliminar', 'equipos.eliminar']],
+        'baja_con_pendientes' => ['Caseta y activos', 'Se dio de baja a alguien o algo que tenía cosas pendientes', ['llaves.eliminar', 'gafetes.eliminar', 'equipos.eliminar', 'colaboradores.eliminar']],
         // Mejoras padrones (ADR-0015)
         'alta_por_verificar' => ['Padrones: altas por verificar', 'La caseta registró un alta que debes verificar', ['vehiculos.editar', 'proveedores.editar', 'visitantes.editar', 'colaboradores.aprobar']],
         'alta_verificada' => ['Padrones: altas por verificar', 'Se verificó un alta que registraste', ['accesos.crear']],

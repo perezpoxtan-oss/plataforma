@@ -24,7 +24,7 @@
                         <small class="fw-bold text-muted">{{ $h->responsiva?->folio }} · @fecha($h->responsiva?->entregado_en, 'd/m/Y')</small>
                     </div>
                     <div class="small">
-                        <strong>Resguardó:</strong> {{ $h->responsiva?->colaborador?->nombreCompleto() ?? '—' }} ({{ $h->etiquetaModalidad() }})<br>
+                        <strong>Resguardó:</strong> {{ $h->responsiva?->nombreReceptor() ?? '—' }} ({{ $h->etiquetaModalidad() }})<br>
                         <strong>Entregó:</strong> {{ $h->responsiva?->entrego?->name ?? '—' }} (@fecha($h->responsiva?->entregado_en, 'H:i'))<br>
                         @unless ($abierto)
                             <strong>Recibido:</strong> @fecha($h->devuelto_en) ({{ $h->responsiva?->recibio?->name ?? '—' }})

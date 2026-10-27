@@ -21,9 +21,9 @@
     @if ($llaves !== null)
         <div class="col-lg-6">
             <section class="tarjeta p-4 h-100" aria-labelledby="t-llaves">
-                <h2 id="t-llaves" class="h6 fw-bold"><i class="bi bi-key-fill me-2 text-secondary" aria-hidden="true"></i>Llaves en uso ({{ $llaves->count() }})</h2>
+                <h2 id="t-llaves" class="h6 fw-bold"><i class="bi bi-key-fill me-2 text-secondary" aria-hidden="true"></i>Llaves a su cargo ({{ $llaves->count() }})</h2>
                 @forelse ($llaves as $p)
-                    <div class="small py-1 border-bottom"><strong>{{ $p->llave?->nomenclatura }}</strong> {{ $p->llave?->descripcion }} · {{ $p->sede?->nombre }} · desde @fecha($p->created_at)</div>
+                    <div class="small py-1 border-bottom">@if ($p->estado === \App\Models\PrestamoLlave::NO_REGRESO)<span class="etiqueta-estado no-regreso me-1">NO REGRESÓ</span>@endif<strong>{{ $p->llave?->nomenclatura }}</strong> {{ $p->llave?->descripcion }} · {{ $p->sede?->nombre }} · desde @fecha($p->created_at)</div>
                 @empty
                     <p class="small text-muted m-0">No tiene llaves prestadas.</p>
                 @endforelse
@@ -41,6 +41,18 @@
                     <p class="small text-muted m-0">No tiene equipos en resguardo.</p>
                 @endforelse
                 <p class="texto-traza mt-2 mb-0"><a href="{{ route('responsivas.index') }}">Ver Responsivas</a></p>
+            </section>
+        </div>
+    @endif
+    @if (! empty($noRegresaron))
+        {{-- Revisión Etapa 2 (A-5): lo que no regresó (equipos y gafetes) --}}
+        <div class="col-md-6">
+            <section class="tarjeta p-4 h-100" aria-labelledby="t-no-regresaron">
+                <h2 id="t-no-regresaron" class="h6 fw-bold"><i class="bi bi-exclamation-octagon me-2 text-danger" aria-hidden="true"></i>No regresaron ({{ count($noRegresaron) }})</h2>
+                @foreach ($noRegresaron as $n)
+                    <div class="small py-1 border-bottom"><span class="etiqueta-estado no-regreso me-1">NO REGRESÓ</span>@if ($n['url'])<a href="{{ $n['url'] }}">{{ $n['texto'] }}</a>@else{{ $n['texto'] }}@endif</div>
+                @endforeach
+                <p class="texto-traza mt-2 mb-0">Si aparecen, se reciben en su módulo; si no, se dan de baja con voucher a su nombre.</p>
             </section>
         </div>
     @endif

@@ -2459,6 +2459,9 @@ document.addEventListener('click', function (e) {
     /* ---------- Editar equipo y abrir la baja (después del llenado genérico) ---------- */
     var ESTADOS_FIJOS = {
         asignado: 'ASIGNADO — lo cambia Responsivas cuando se devuelva el equipo.',
+        en_uso: 'EN USO — lo cambia Responsivas cuando se devuelva el equipo.',
+        fuera: 'FUERA — lo cambia Pases de salida cuando regrese.',
+        no_regreso: 'NO REGRESÓ — recíbelo si aparece o dalo de baja con voucher.',
         baja: 'BAJA/PERDIDO — para volver a usarlo, oprime «Reactivar» en su ficha.'
     };
 
@@ -3638,6 +3641,47 @@ document.addEventListener('click', function (e) {
         return pedir;
     }
 
+    /* C-15: «Devolvió el gafete» y «Le devolví su identificación» ya marcadas (no agregan clics).
+       Desmarcar la del gafete lo deja «No regresó» y avisa al supervisor. */
+    function casillasDevolucion(form, r) {
+        var caja = form.querySelector('[data-salida-devolucion]');
+        if (!caja) { return; }
+        caja.textContent = '';
+        if (r.fuera_temporal) { caja.hidden = true; return; }
+        var gafetes = [];
+        if (r.gafete && r.gafete_id) { gafetes.push({ id: r.gafete_id, texto: r.gafete + (r.acompanantes && r.acompanantes.length ? ' (' + r.nombre + ')' : '') }); }
+        (r.acompanantes || []).forEach(function (a) { if (a.gafete && a.gafete_id) { gafetes.push({ id: a.gafete_id, texto: a.gafete + ' (' + a.nombre + ')' }); } });
+        var casilla = function (nombre, valor, texto) {
+            var l = document.createElement('label');
+            l.className = 'casilla-devolucion';
+            var c = document.createElement('input');
+            c.type = 'checkbox';
+            c.name = nombre;
+            c.value = valor;
+            c.checked = true;
+            l.appendChild(c);
+            l.appendChild(document.createTextNode(' ' + texto));
+            caja.appendChild(l);
+        };
+        var oculto = function (nombre) {
+            var h = document.createElement('input');
+            h.type = 'hidden';
+            h.name = nombre;
+            h.value = '1';
+            caja.appendChild(h);
+        };
+        if (gafetes.length) {
+            oculto('gafetes_revisados');
+            gafetes.forEach(function (g) { casilla('devolvio[]', g.id, 'Devolvió el gafete ' + g.texto); });
+        }
+        if (r.identificacion) {
+            oculto('identificacion_revisada');
+            casilla('identificacion_devuelta', '1', 'Le devolví su identificación (' + r.identificacion + ')');
+        }
+        if (gafetes.length) { caja.appendChild(elemento('p', 'campo-ayuda mb-0', 'Si no devolvió el gafete, desmárcalo: queda «No regresó» y se avisa a tu supervisor.')); }
+        caja.hidden = !gafetes.length && !r.identificacion;
+    }
+
     function abrirDarSalida(r) {
         var d = document.getElementById('dialogoDarSalida');
         if (!d) { return; }
@@ -3664,6 +3708,7 @@ document.addEventListener('click', function (e) {
         tarjeta.appendChild(datos);
         var pedir = textoPedir(r);
         if (pedir.length && !r.fuera_temporal) { tarjeta.appendChild(elemento('p', 'resultado-salida-pedir', 'Pide de vuelta: ' + pedir.join(', ') + '.')); }
+        casillasDevolucion(form, r);
         if (r.fuera_temporal) { tarjeta.appendChild(elemento('p', 'text-muted small mb-0', 'Está fuera (' + (r.tipo === 'huesped' ? 'tour' : 'salida temporal') + '). Al registrar su regreso vuelve a En sitio.')); }
         form.action = r.url_salida || '';
         boton.hidden = !!r.fuera_temporal;
@@ -3677,6 +3722,16 @@ document.addEventListener('click', function (e) {
         if (typeof d.showModal === 'function' && !d.open) { d.showModal(); }
         setTimeout(function () { (r.fuera_temporal ? regreso : boton).focus(); }, 60);
     }
+
+    // C-15: «Registrar Salida» de la tarjeta abre el mismo diálogo cuando hay gafete o identificación que confirmar
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-dar-salida]');
+        if (!b) { return; }
+        var r = null;
+        try { r = JSON.parse(b.getAttribute('data-dar-salida')); } catch (x) { return; }
+        e.preventDefault();
+        abrirDarSalida(r);
+    });
 
     document.addEventListener('click', function (e) {
         var regreso = e.target.closest('[data-salida-regreso]');
@@ -3952,7 +4007,35 @@ document.addEventListener('click', function (e) {
         }
     });
 
+    function mostrarExcepcion(form, texto) {
+        var caja = form.querySelector('[data-excepcion-llave]');
+        if (!caja) { return; }
+        caja.hidden = false;
+        caja.querySelector('[data-excepcion-texto]').textContent = texto;
+        var motivo = caja.querySelector('textarea');
+        motivo.disabled = false;
+        motivo.required = true;
+        motivo.focus();
+    }
+
+    function ocultarExcepcion(form) {
+        var caja = form.querySelector('[data-excepcion-llave]');
+        if (!caja) { return; }
+        caja.hidden = true;
+        var motivo = caja.querySelector('textarea');
+        motivo.value = '';
+        motivo.required = false;
+        motivo.disabled = true;
+    }
+
+    document.addEventListener('lector:elegido', function (e) {
+        var form = e.target.closest && e.target.closest('[data-form-prestamo]');
+        if (form) { ocultarExcepcion(form); }
+    });
+
     function limpiarParaSiguiente(form) {
+        ocultarExcepcion(form);
+        form.querySelectorAll('[data-receptor]').forEach(function (c) { if (window.Receptor) { window.Receptor.poner(c, null); } });
         ['llave_id', 'colaborador_id'].forEach(function (n) {
             var caja = cajaLector(form, n);
             if (caja && window.Lector) { window.Lector.limpiar(caja); }
@@ -3994,7 +4077,10 @@ document.addEventListener('click', function (e) {
 
         var faltan = [];
         if (!form.querySelector('[name="llave_id"]').value) { faltan.push('Escanea o busca la llave a prestar.'); }
-        if (!form.querySelector('[name="colaborador_id"]').value) { faltan.push('Escanea el gafete o busca al colaborador que se lleva la llave.'); }
+        // C-16: o una persona del padrón o empresa externa (receptor_id)
+        var colab = form.querySelector('[name="colaborador_id"]');
+        var externo = form.querySelector('[name="receptor_id"]');
+        if (!(colab && !colab.disabled && colab.value) && !(externo && !externo.disabled && externo.value)) { faltan.push('Escanea el gafete o busca al colaborador que se lleva la llave.'); }
         if (faltan.length) { mensajes(errores, faltan, false); return; }
         mensajes(errores, [], true);
 
@@ -4029,7 +4115,14 @@ document.addEventListener('click', function (e) {
                     return;
                 }
                 var lista = [];
+                // C-17: la llave no cumple sus reglas (vencida, fuera de horario, otro puesto…): aviso en amarillo y motivo
+                var excepcion = (res.datos.errores || {}).excepcion_motivo;
+                if (excepcion) {
+                    mostrarExcepcion(form, excepcion[0]);
+                    delete res.datos.errores.excepcion_motivo;
+                }
                 Object.keys(res.datos.errores || {}).forEach(function (k) { lista = lista.concat(res.datos.errores[k]); });
+                if (!lista.length && excepcion) { mensajes(errores, [], true); return; }
                 if (!lista.length) {
                     lista.push(res.estado === 419 ? 'La sesión expiró. Recarga la página e intenta de nuevo.'
                         : (res.estado === 403 ? 'No tienes permiso para prestar llaves.' : (res.datos.mensaje || 'No se pudo completar la operación. Intenta de nuevo.')));
@@ -8035,7 +8128,10 @@ document.addEventListener('click', function (e) {
     var EXPLICACION_ESTADO = {
         disponible: 'Está DISPONIBLE: puedes ponerlo «En mantenimiento». Para prestarlo o asignarlo usa Responsivas; para darlo de baja, el botón «Dar de baja» de su ficha.',
         en_mantenimiento: 'Está EN MANTENIMIENTO: solo puedes cambiarlo a «Disponible» (cuando regrese del servicio) o dejarlo «En mantenimiento». Mientras tanto no se puede prestar.',
-        asignado: 'Está ASIGNADO a un colaborador por Responsivas: el estado cambia solo cuando lo devuelvan. Lo demás (marca, modelo, serie…) sí se puede corregir.'
+        asignado: 'Está ASIGNADO por Responsivas: el estado cambia solo cuando lo devuelvan. Lo demás (marca, modelo, serie…) sí se puede corregir.',
+        en_uso: 'Está EN USO en una responsiva de turno: el estado cambia solo cuando lo devuelvan. Lo demás (marca, modelo, serie…) sí se puede corregir.',
+        fuera: 'Está FUERA en un pase de salida: vuelve a DISPONIBLE cuando la caseta registre su regreso. Lo demás sí se puede corregir.',
+        no_regreso: 'NO REGRESÓ: si aparece, recíbelo en su responsiva o en su pase; si no, dalo de baja con voucher desde su ficha.'
     };
 
     document.addEventListener('click', function (e) {
@@ -8054,7 +8150,7 @@ document.addEventListener('click', function (e) {
         nota.hidden = !texto;
         // En ASIGNADO y BAJA la explicación sustituye al texto corto de solo lectura
         var fijo = d.querySelector('[data-estado-fijo]');
-        if (fijo && (valores.estado === 'baja' || valores.estado === 'asignado')) { fijo.hidden = true; }
+        if (fijo && ['baja', 'asignado', 'en_uso', 'fuera', 'no_regreso'].indexOf(valores.estado) !== -1) { fijo.hidden = true; }
     });
 
     /* ---------- 6. Etiquetas QR: marcar todas, conteo e imprimir (LL-06) ---------- */
@@ -9821,3 +9917,165 @@ document.addEventListener('click', function (e) {
     });
 })();
 /* Fin Mejoras informes */
+/* ==========================================================================
+   Etapa 2 · Receptor general (C-16): ¿a quién se le entrega o a quién se
+   carga? Colaborador (lector de siempre), persona del padrón o empresa
+   externa (componentes.receptor). Las bajas con «quien lo tenía» lo traen
+   propuesto (data-responsable en el botón que abre el diálogo).
+   ========================================================================== */
+(function () {
+    'use strict';
+
+    var esperas = new WeakMap();
+
+    function partes(caja) {
+        return {
+            tipo: caja.querySelector('[data-receptor-tipo]'),
+            id: caja.querySelector('[data-receptor-id]'),
+            colab: caja.querySelector('[data-receptor-panel="colaborador"]'),
+            externo: caja.querySelector('[data-receptor-panel="externo"]'),
+            buscar: caja.querySelector('[data-receptor-buscar]'),
+            resultados: caja.querySelector('[data-receptor-resultados]'),
+            elegido: caja.querySelector('[data-receptor-elegido]'),
+            titulo: caja.querySelector('[data-receptor-titulo]'),
+            lector: caja.querySelector('[data-receptor-panel="colaborador"] [data-lector]')
+        };
+    }
+
+    function mostrarTipo(caja, tipo) {
+        var p = partes(caja);
+        var externo = tipo !== 'colaborador';
+        p.tipo.value = tipo;
+        p.colab.hidden = externo;
+        p.externo.hidden = !externo;
+        // El colaborador elegido no viaja si se eligió a alguien externo (y al revés)
+        caja.querySelectorAll('[data-receptor-panel="colaborador"] [data-lector-id]').forEach(function (c) { c.disabled = externo; });
+        p.id.disabled = !externo;
+        caja.querySelectorAll('[data-receptor-opcion]').forEach(function (r) { r.checked = r.value === tipo; });
+        var ayudaP = caja.querySelector('[data-receptor-ayuda-persona]');
+        var ayudaE = caja.querySelector('[data-receptor-ayuda-proveedor]');
+        if (ayudaP) { ayudaP.hidden = tipo !== 'persona'; }
+        if (ayudaE) { ayudaE.hidden = tipo !== 'proveedor'; }
+    }
+
+    function limpiarExterno(caja) {
+        var p = partes(caja);
+        p.id.value = '';
+        p.elegido.hidden = true;
+        p.titulo.textContent = '';
+        p.buscar.hidden = false;
+        p.buscar.value = '';
+        p.resultados.textContent = '';
+    }
+
+    function poner(caja, r) {
+        var p = partes(caja);
+        if (!r || !r.tipo) {
+            limpiarExterno(caja);
+            if (p.lector && window.Lector) { window.Lector.limpiar(p.lector); }
+            mostrarTipo(caja, 'colaborador');
+            return;
+        }
+        mostrarTipo(caja, r.tipo);
+        if (r.tipo === 'colaborador') {
+            limpiarExterno(caja);
+            if (p.lector && window.Lector) { window.Lector.elegir(p.lector, { id: r.id, titulo: r.titulo, activo: true }); }
+            return;
+        }
+        p.id.value = r.id;
+        p.titulo.textContent = r.titulo;
+        p.elegido.hidden = false;
+        p.buscar.hidden = true;
+        p.resultados.textContent = '';
+    }
+
+    function pintar(caja, lista, vacio) {
+        var cont = partes(caja).resultados;
+        cont.textContent = '';
+        if (!lista.length) {
+            var n = document.createElement('p');
+            n.className = 'campo-ayuda';
+            n.textContent = vacio;
+            cont.appendChild(n);
+            return;
+        }
+        lista.forEach(function (r) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'opcion-receptor' + (r.restringido ? ' restringido' : '');
+            b.disabled = !!r.restringido;
+            var t = document.createElement('strong');
+            t.className = 'd-block';
+            t.textContent = r.titulo;
+            b.appendChild(t);
+            if (r.detalle) {
+                var d = document.createElement('small');
+                d.className = 'd-block';
+                d.textContent = r.detalle;
+                b.appendChild(d);
+            }
+            b.addEventListener('click', function () { poner(caja, { tipo: partes(caja).tipo.value, id: r.id, titulo: r.nombre || r.titulo }); });
+            cont.appendChild(b);
+        });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-receptor-opcion]')) { return; }
+        var caja = e.target.closest('[data-receptor]');
+        limpiarExterno(caja);
+        mostrarTipo(caja, e.target.value);
+        var p = partes(caja);
+        if (e.target.value !== 'colaborador') { p.buscar.focus(); }
+    });
+
+    document.addEventListener('input', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-receptor-buscar]')) { return; }
+        var caja = e.target.closest('[data-receptor]');
+        var texto = e.target.value.trim();
+        clearTimeout(esperas.get(caja));
+        if (texto.length < 2) { partes(caja).resultados.textContent = ''; return; }
+        esperas.set(caja, setTimeout(function () {
+            var url = caja.getAttribute('data-url') + '?tipo=' + encodeURIComponent(partes(caja).tipo.value) + '&q=' + encodeURIComponent(texto);
+            fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
+                .then(function (r) { pintar(caja, r.resultados || [], 'Sin coincidencias activas con ese texto.'); })
+                .catch(function () { pintar(caja, [], 'No se pudo buscar en este momento.'); });
+        }, 300));
+    });
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-receptor-limpiar]');
+        if (!b) { return; }
+        var caja = b.closest('[data-receptor]');
+        limpiarExterno(caja);
+        partes(caja).buscar.focus();
+    });
+
+    // El botón que abre una baja propone a quien lo tenía (data-responsable) o deja el selector vacío
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-accion="baja-llave"], [data-accion="editar-registro"], [data-responsable]');
+        if (!b) { return; }
+        var id = b.dataset.dialogo || (b.dataset.accion === 'baja-llave' ? 'dialogoBajaLlave' : null);
+        var d = id && document.getElementById(id);
+        if (!d) { return; }
+        var propuesta = null;
+        try { propuesta = b.dataset.responsable ? JSON.parse(b.dataset.responsable) : null; } catch (x) { propuesta = null; }
+        setTimeout(function () { d.querySelectorAll('[data-receptor]').forEach(function (caja) { poner(caja, propuesta); }); }, 0);
+    });
+
+    document.addEventListener('close', function (e) {
+        if (!(e.target instanceof HTMLDialogElement)) { return; }
+        e.target.querySelectorAll('[data-receptor]').forEach(function (caja) { poner(caja, null); });
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-receptor]').forEach(function (caja) { mostrarTipo(caja, partes(caja).tipo.value || 'colaborador'); });
+        // «No regresó» → «Dar de baja»: la ficha abre su baja sola (?baja={id})
+        var m = /[?&]baja=(\d+)/.exec(location.search);
+        var boton = m && document.querySelector('[data-baja-auto="' + m[1] + '"]');
+        if (boton) { setTimeout(function () { boton.click(); }, 50); }
+    });
+
+    window.Receptor = { poner: poner };
+})();
+/* Fin Receptor general */

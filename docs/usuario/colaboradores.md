@@ -3,7 +3,7 @@ titulo: Colaboradores
 modulos: [colaboradores]
 seccion: Estructura
 orden: 10
-resumen: Directorio del personal de la empresa, sus sedes, lo que registra la caseta y su verificación por Recursos Humanos.
+resumen: Directorio del personal de la empresa, sus sedes, lo que registra la caseta y su verificación.
 ---
 
 # Colaboradores
@@ -94,6 +94,8 @@ Si alguien trabaja en más de una sede (por ejemplo un agente que cubre turnos e
 
 **Qué debes ver:** la ficha **DE BAJA**. Ya no aparece al buscarlo desde otros módulos. No se borra a nadie: su historial en bitácoras, pases y responsivas se conserva.
 
+> Si tiene cosas vigentes (llaves prestadas, equipos a su cargo, vehículos, está en sitio o es el único responsable de un departamento), antes de confirmar se abre [Antes de dar de baja](antes-de-dar-de-baja.md) con la lista y lo que pasará con cada una.
+
 **Si tiene cuenta de usuario:** al darlo de baja **su cuenta se da de baja sola** (ya no puede entrar y se le cierra la sesión). El mensaje lo dice: «También se dio de baja su cuenta de usuario «@…»; puedes reactivarla en Usuarios.» Quien administra usuarios de esa sede recibe el aviso en su campana. Al **reingresarlo**, la cuenta **no** se reactiva sola: el mensaje te lo recuerda («Su cuenta de usuario sigue dada de baja: reactívala en Usuarios si la necesita») y se hace desde [Usuarios](usuarios.md) con la **flecha circular** de su ficha.
 
 ## Cómo ver el código QR y asignar el gafete o tarjeta NFC / RFID
@@ -110,7 +112,7 @@ Cada colaborador tiene su propio **código QR** y puede tener una **etiqueta NFC
 **Qué debes ver:** «Etiqueta … asignada. Ya se puede leer con el lector.» Si esa tarjeta ya es de otra cosa (otro colaborador, una llave, un vehículo…), el aviso te dice de cuál y no se asigna.
 
 - Quien solo consulta colaboradores ve el QR, pero no el apartado para asignar la etiqueta.
-- Los registrados en la caseta (**POR VERIFICAR**) reciben su etiqueta hasta que Recursos Humanos los verifica.
+- Los registrados en la caseta (**POR VERIFICAR**) reciben su etiqueta hasta que se verifican.
 
 ## Cómo registrar a un colaborador desde la caseta (queda por verificar)
 
@@ -123,9 +125,11 @@ Si en la caseta necesitas registrar a alguien que **no aparece** al buscarlo:
 
 ![Registro rápido en la caseta](img/colaboradores/9-caseta-alta-provisional.png)
 
-**Qué debes ver:** la persona queda marcada **POR VERIFICAR** y ya la puedes usar. Recursos Humanos la revisará después; cuando la verifique (o la una con su registro) te llega el resultado a la **campana**.
+**Qué debes ver:** la persona queda marcada **POR VERIFICAR** y ya la puedes usar. Recursos Humanos (o, si tu plan no lo incluye, el administrador) la revisará después; cuando la verifique (o la una con su registro) te llega el resultado a la **campana**.
 
-## Cómo verificar lo que registró la caseta (Recursos Humanos)
+## Cómo verificar lo que registró la caseta (Recursos Humanos o administrador)
+
+Lo verifica Recursos Humanos si tu plan lo incluye; si no, el administrador de tu empresa.
 
 1. Te llega a la **campana** «Alta por verificar: …» con el botón **Verificar**. También aparece en **Inicio** («N colaboradores por verificar») y en **Mis pendientes** («Colaboradores por verificar»). Tócalo y llegas a la lista filtrada. Dentro de Colaboradores también verás el aviso.
 2. Elige **Por verificar** en el filtro.
@@ -147,7 +151,7 @@ La ficha reúne en una sola pantalla lo que la plataforma sabe de la persona, or
 
 1. En **Estructura → Colaboradores**, busca al colaborador y toca el icono de **carpeta** (**Ficha**) de su renglón. También llegas desde su ficha de candidato, en **Documentos** (se abre directo en la pestaña **Expediente**).
 2. Arriba ves su nombre y, debajo, las pestañas. Toca la que necesites (en el celular puedes deslizar la barra de pestañas; con el teclado usa las **flechas** izquierda y derecha):
-   - **Datos:** estado, número de empleado, sede, departamento, puesto, **turno**, teléfono, fecha de alta y cuenta de usuario, más sus **llaves en uso**, **resguardos en campo** y **procedimientos por leer**.
+   - **Datos:** estado, número de empleado, sede, departamento, puesto, **turno**, teléfono, fecha de alta y cuenta de usuario, más sus **llaves a su cargo** (también las que **NO REGRESÓ**), **resguardos en campo**, lo que **no regresó** (equipos de sus responsivas o de pases que pidió, y gafetes) y **procedimientos por leer**.
    - **Expediente:** sus **datos legales y de contacto** (CURP, RFC, NSS, nacimiento, nacionalidad, correo y dirección) y sus **documentos de contratación** (los que entregó como candidato, escaneados o recibidos en papel).
    - **Código y etiqueta:** su **código QR**, la dirección del código y su **etiqueta NFC / RFID**. El botón **Código e identificación** abre la misma ventana que el ícono de QR de la lista (ahí se asigna la etiqueta si tu rol puede editar colaboradores); al lado está **Imprimir credencial**.
    - **Historial:** **movimientos del registro** (alta, verificación, ediciones, bajas, reingresos, cambios de sedes y de etiqueta, con quién y cuándo), **su paso por Candidatos** (vacante, entrevistas y calificaciones, fecha de contratación y de firma del contrato), sus **accesos recientes** y sus **pases de salida**.
@@ -187,7 +191,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | No veo la pestaña **Expediente** en la ficha. | Tu rol no tiene el permiso **Datos personales**. | Pídelo a tu administrador si lo necesitas. |
 | Este colaborador ya no está pendiente de verificar. | Otra persona ya lo verificó o lo unió. | Recarga la página. |
 | Elige un colaborador activo y ya validado. | Al unir elegiste uno inválido. | Elige el colaborador correcto. |
-| No veo el apartado **Asignar etiqueta NFC / RFID**. | Tu rol solo consulta colaboradores, o el colaborador está **POR VERIFICAR**. | Pide a Recursos Humanos que lo verifique, o el permiso de editar a tu administrador. |
+| No veo el apartado **Asignar etiqueta NFC / RFID**. | Tu rol solo consulta colaboradores, o el colaborador está **POR VERIFICAR**. | Pide a quien verifica (Recursos Humanos o el administrador) que lo verifique, o el permiso de editar a tu administrador. |
 | No veo los datos legales. | Tu rol no tiene el permiso **Datos personales**. | Pídelo a tu administrador si lo necesitas. |
 
 ## Preguntas frecuentes

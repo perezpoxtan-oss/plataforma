@@ -67,7 +67,7 @@
                 @forelse ($lotes as $r)
                     @php
                         $activa = $r->enCampo();
-                        $nombre = $r->colaborador?->nombreCompleto() ?? '—';
+                        $nombre = $r->nombreReceptor();
                         $texto = mb_strtolower(implode(' ', array_filter([$r->folio, $nombre, $r->colaborador?->num_empleado, $r->sede?->nombre,
                             $r->equipos->map(fn ($f) => ($f->equipo?->numero_serie ?? '').' '.($f->equipo?->tipo?->nombre ?? ''))->join(' ')])));
                         $recibible = $activa && $puede['recibir'] && ($recibibles === null || in_array($r->id, $recibibles, true));
@@ -209,7 +209,7 @@
                         <input type="hidden" name="_dialogo" value="{{ $filaRecibir ? 'recibir-'.$reabrirRecibir->id.'-'.$filaRecibir->id : '' }}" data-campo-dialogo data-prefijo-dialogo="recibir-">
                         <div class="resumen-recibir-equipo">
                             <div class="fw-bold" data-recibir-equipo-nombre>{{ $filaRecibir ? trim(($filaRecibir->equipo?->tipo?->nombre ?? 'Equipo').' · S/N '.$filaRecibir->equipo?->numero_serie) : '' }}</div>
-                            <div class="small text-muted">Responsiva <span data-recibir-folio>{{ $reabrirRecibir?->folio }}</span> · A cargo de: <span data-recibir-resguardante>{{ $reabrirRecibir?->colaborador?->nombreCompleto() }}</span></div>
+                            <div class="small text-muted">Responsiva <span data-recibir-folio>{{ $reabrirRecibir?->folio }}</span> · A cargo de: <span data-recibir-resguardante>{{ $reabrirRecibir?->nombreReceptor() }}</span></div>
                         </div>
 
                         <span class="campo-etiqueta">¿Cómo regresa el equipo?</span>
@@ -243,7 +243,7 @@
                                 </div>
                                 <label class="casilla-cobro-eq" for="recibir_cobro">
                                     <input type="checkbox" id="recibir_cobro" name="aplica_cobro" value="1" data-muestra-si-marcado="#cajaCobroRecibir" @checked($filaRecibir && old('aplica_cobro'))>
-                                    Se le cobra al colaborador
+                                    Se le cobra al responsable
                                 </label>
                                 <div id="cajaCobroRecibir" class="caja-cobro-eq" hidden>
                                     <label class="campo-etiqueta" for="recibir_monto">Monto</label>
@@ -296,9 +296,9 @@
                             </div>
                         </div>
 
-                        @include('componentes.lector', ['id' => 'resguardo_colaborador', 'etiqueta' => 'Colaborador (Responsable)',
-                            'tipos' => 'colaborador', 'nombre' => 'colaborador_id', 'requerido' => true, 'valor' => $trasError ? old('colaborador_id') : null,
-                            'elegido' => $colaboradorAnterior ? $colaboradorAnterior->nombreCompleto().' · Núm. '.$colaboradorAnterior->num_empleado : null,
+                        {{-- C-16: a cargo de un colaborador, de una persona del padrón (p. ej. el técnico de un proveedor) o de una empresa externa --}}
+                        @include('componentes.receptor', ['id' => 'resguardo_colaborador', 'prefijo' => 'receptor', 'etiqueta' => 'Responsable (¿quién se lo lleva?)',
+                            'requerido' => true, 'valor' => $trasError ? ($receptorAnterior ?? null) : null,
                             'ayuda' => 'Escanea su gafete o escribe su número de nómina o su nombre.'])
 
                         <div class="caja-equipos-lote">
@@ -315,6 +315,15 @@
                             </div>
                             <p class="campo-ayuda mt-2 mb-0 sin-equipos-sede" data-sin-equipos hidden>No hay equipos DISPONIBLES en esta sede.</p>
                         </div>
+
+                        @if ($errors->has('motivo_apartado'))
+                            {{-- Revisión Etapa 2 (A-2): el equipo va en un pase que aún no sale --}}
+                            <div class="aviso-excepcion-llave" role="alert">
+                                <p class="mb-2"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>{{ $errors->first('motivo_apartado') }}</p>
+                                <label class="campo-etiqueta" for="resguardo_motivo_apartado">Entregar de todos modos: motivo</label>
+                                <textarea id="resguardo_motivo_apartado" name="motivo_apartado" class="campo" rows="2" maxlength="250" required placeholder="Ej: el pase se va a cancelar; el radio se necesita hoy en el turno">{{ old('motivo_apartado') }}</textarea>
+                            </div>
+                        @endif
 
                         @include('componentes.firma', ['id' => 'firma_resguardo', 'nombre' => 'firma', 'etiqueta' => 'Firma Digital del Colaborador', 'requerido' => true,
                             'ayuda' => 'El colaborador firma con el dedo, un lápiz o el mouse. Con su firma acepta la responsabilidad de los equipos.'])

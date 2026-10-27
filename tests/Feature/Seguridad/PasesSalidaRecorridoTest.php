@@ -229,10 +229,11 @@ class PasesSalidaRecorridoTest extends TestCase
             ->assertDontSee('Regresa a Sede CEN')->assertDontSee('Espera regreso a');
     }
 
-    public function test_regreso_parcial_de_un_colaborador_dice_cuantos_y_cuando(): void
+    public function test_regreso_parcial_de_un_proveedor_dice_cuantos_y_cuando(): void
     {
         $this->a('2026-10-04 10:00');
-        $pase = $this->crearPase(['destino_tipo' => 'colaborador', 'sede_destino_id' => null, 'colaborador_destino_id' => $this->otroColaborador->id]);
+        // C-18: «un colaborador se lo lleva» ya es una responsiva; el regreso parcial se prueba con un proveedor
+        $pase = $this->crearPase(['destino_tipo' => 'proveedor', 'sede_destino_id' => null, 'proveedor_id' => $this->proveedor->id]);
         $this->aprobarTodo($pase);
         $this->a('2026-10-05 09:00');
         $this->paso($pase)->assertSessionHasNoErrors();

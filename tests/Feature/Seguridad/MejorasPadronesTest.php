@@ -277,7 +277,7 @@ class MejorasPadronesTest extends TestCase
     public function test_baja_de_gafete_con_firma_digital_y_reactivar_cancela_su_voucher(): void
     {
         $g = $this->gafete();
-        $this->actingAs($this->admin)->get('/gafetes')->assertSee('name="firma_modo"', false)->assertSee('Se le cobra al colaborador')->assertDontSee('CXC');
+        $this->actingAs($this->admin)->get('/gafetes')->assertSee('name="firma_modo"', false)->assertSee('Se le cobra al responsable')->assertDontSee('CXC');
         // Si se elige «Firma digital» y no se firma, el navegador detiene el envío y muestra qué falta (antes solo pintaba el recuadro en rojo)
         $this->actingAs($this->admin)->get('/gafetes')
             ->assertSee('<p class="firma-falta-texto" role="alert" data-firma-falta hidden>Falta la firma de Seguridad: firma en el recuadro o elige «Firma física».</p>', false)
@@ -317,25 +317,28 @@ class MejorasPadronesTest extends TestCase
 
     // -------------------------------------------------- Estacionamientos
 
-    public function test_dar_salida_desde_la_zona_corrige_la_ocupacion(): void
+    public function test_liberar_lugar_desde_la_zona_corrige_la_ocupacion_sin_cerrar_la_visita(): void
     {
         $zona = $this->enEmpresa(fn () => ZonaEstacionamiento::create(['sede_id' => $this->centro->id, 'nombre' => 'Huéspedes', 'tipo' => 'estacionamiento', 'cupo_total' => 10]));
         $acceso = $this->enEmpresa(fn () => Acceso::create(['sede_id' => $this->centro->id, 'tipo' => 'visitante', 'nombre' => 'Juan Pérez', 'placas' => 'ABC123A',
             'zona_estacionamiento_id' => $zona->id, 'entrada_at' => now()]));
 
         $this->actingAs($this->agente)->get('/estacionamientos')->assertSee('1 / 10 espacios')->assertSee('¿Quién ocupa? (1)')
-            ->assertSee(route('estacionamientos.salida', [$zona->id, $acceso->id]), false)->assertSee('Estacionamientos y zonas de descarga');
-        // Quien no da salida en Accesos no ve ni usa el botón
+            ->assertSee(route('estacionamientos.liberar', [$zona->id, $acceso->id]), false)->assertSee('Liberar lugar')->assertDontSee('>Dar salida<', false)
+            ->assertSee('Estacionamientos y zonas de descarga');
+        // Quien no edita Accesos no ve ni usa el botón
         $director = $this->crearUsuario($this->empresa, 'Director');
         $this->actingAs($director)->get('/estacionamientos')->assertDontSee('¿Quién ocupa?');
-        $this->actingAs($director)->patch(route('estacionamientos.salida', [$zona->id, $acceso->id]))->assertForbidden();
+        $this->actingAs($director)->patch(route('estacionamientos.liberar', [$zona->id, $acceso->id]))->assertForbidden();
 
-        $this->actingAs($this->agente)->patch(route('estacionamientos.salida', [$zona->id, $acceso->id]))->assertSessionHas('ok');
-        $this->assertSame('finalizado', $this->enEmpresa(fn () => $acceso->fresh()->estado));
-        $this->assertDatabaseHas('auditoria', ['evento' => 'accesos.salida', 'auditable_id' => $acceso->id]);
+        // C-21 (B-04): libera el lugar; la persona SIGUE en sitio (antes se le daba salida y se liberaban sus gafetes)
+        $this->actingAs($this->agente)->patch(route('estacionamientos.liberar', [$zona->id, $acceso->id]))->assertSessionHas('ok')->assertSessionHas('siguientes');
+        $this->assertSame(['en_sitio', null], $this->enEmpresa(fn () => [$acceso->fresh()->estado, $acceso->fresh()->zona_estacionamiento_id]));
+        $this->assertDatabaseHas('auditoria', ['evento' => 'accesos.zona_cambiada', 'auditable_id' => $acceso->id]);
+        $this->assertDatabaseMissing('auditoria', ['evento' => 'accesos.salida', 'auditable_id' => $acceso->id]);
         $this->actingAs($this->agente)->get('/estacionamientos')->assertSee('0 / 10 espacios');
-        // Dos veces no
-        $this->actingAs($this->agente)->patch(route('estacionamientos.salida', [$zona->id, $acceso->id]))->assertSessionHas('error');
+        // Dos veces no: ya no está en la zona
+        $this->actingAs($this->agente)->patch(route('estacionamientos.liberar', [$zona->id, $acceso->id]))->assertNotFound();
     }
 
     // ------------------------------------------- Un solo camino de impresión

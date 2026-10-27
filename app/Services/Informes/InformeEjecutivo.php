@@ -19,6 +19,7 @@ use App\Models\Vehiculo;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Services\Vacantes\AdministradorVacantes;
+use App\Support\EstadoActivo;
 use App\Support\GraficaSvg;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\Tenant;
@@ -205,13 +206,15 @@ class InformeEjecutivo
         $prestamos = $this->limitar(PrestamoLlave::query()->vigentes(), $actor, $permiso, $sedes, 'prestamos_llaves.sede_id', 'prestamos_llaves.creado_por');
         $enUso = (clone $prestamos)->count();
         $total = $this->limitar(Llave::query()->where('llaves.activo', true), $actor, $permiso, $sedes, 'llaves.sede_id')->count();
+        // Revisión Etapa 2 (R2-03): las que no regresaron no están disponibles
+        $noRegreso = $this->limitar(Llave::query()->where('llaves.activo', true)->where('llaves.estado', EstadoActivo::NO_REGRESO), $actor, $permiso, $sedes, 'llaves.sede_id')->count();
         $filas = (clone $prestamos)->with(['llave:id,nomenclatura,descripcion', 'colaborador:id,nombre,apellido_paterno,apellido_materno'])
             ->orderBy('prestamos_llaves.prestado_en')->limit(self::MAX_FILAS)->get(['prestamos_llaves.id', 'llave_id', 'colaborador_id', 'prestado_en'])
-            ->map(fn (PrestamoLlave $p) => [$p->llave?->nomenclatura ?? '—', $p->llave?->descripcion ?? '—', $p->colaborador?->nombreCompleto() ?? '—', $this->hora->formatear($p->prestado_en, 'd/m/Y H:i')])->all();
+            ->map(fn (PrestamoLlave $p) => [$p->llave?->nomenclatura ?? '—', $p->llave?->descripcion ?? '—', $p->nombreReceptor(), $this->hora->formatear($p->prestado_en, 'd/m/Y H:i')])->all();
 
         return [$this->ficha('Llaves en uso (de '.number_format($total).')', number_format($enUso), [
             'nivel' => 'destacada',
-            'grafica' => GraficaSvg::barras(['En uso' => $enUso, 'Disponibles' => max(0, $total - $enUso)], 'Llaves en uso y disponibles'),
+            'grafica' => GraficaSvg::barras(['En uso' => $enUso] + ($noRegreso > 0 ? ['No regresaron' => $noRegreso] : []) + ['Disponibles' => max(0, $total - $enUso - $noRegreso)], 'Llaves en uso y disponibles'),
             'columnas' => ['Llave', 'Descripción', 'La tiene', 'Desde'], 'filas' => $filas, 'enlace' => route('prestamo_llaves.index'),
         ])];
     }
@@ -220,7 +223,7 @@ class InformeEjecutivo
     {
         $q = $this->limitar(Equipo::query()->where('equipos.estado', '!=', 'baja'), $actor, $permiso, $sedes, 'equipos.sede_id', 'equipos.creado_por');
         $porEstado = Indicadores::por($q, 'equipos.estado', Equipo::ESTADOS);
-        $asignados = $porEstado[Equipo::ESTADOS['asignado']] ?? 0;
+        $asignados = ($porEstado[Equipo::ESTADOS['asignado']] ?? 0) + ($porEstado[Equipo::ESTADOS['en_uso']] ?? 0);
         $filas = (clone $q)->with('tipo:id,nombre')->orderBy('equipos.estado')->limit(self::MAX_FILAS)->get(['equipos.id', 'tipo_equipo_id', 'marca', 'modelo', 'numero_serie', 'estado'])
             ->map(fn (Equipo $e) => [$e->tipo?->nombre ?? '—', trim(($e->marca ?? '').' '.($e->modelo ?? '')) ?: '—', $e->numero_serie ?: '—', Equipo::ESTADOS[$e->estado] ?? $e->estado])->all();
 
@@ -265,9 +268,12 @@ class InformeEjecutivo
         $fuera = $base()->whereIn('pases_salida.estado', PaseSalida::FUERA)->count();
         $vencidos = $this->pases->filtrar($base(), 'vencidos')->count();
         $porMotivo = Indicadores::por($periodo, 'pases_salida.motivo', PaseSalida::MOTIVOS);
-        $filas = (clone $periodo)->with('solicitante:id,nombre,apellido_paterno,apellido_materno')->orderByDesc('pases_salida.created_at')->limit(self::MAX_FILAS)
-            ->get(['pases_salida.id', 'pases_salida.sede_id', 'folio', 'motivo', 'estado', 'colaborador_id', 'pases_salida.created_at', 'fecha_tentativa_regreso', 'requiere_regreso'])
-            ->map(fn (PaseSalida $p) => [$p->folio, $p->etiquetaMotivo(), PaseSalida::ESTADOS[$p->estado][0] ?? $p->estado, $p->solicitante?->nombreCompleto() ?? '—',
+        // Revisión Etapa 2: un pase cerrado con faltantes dice cuántos faltan o que ya se recibió todo después del cierre
+        $filas = (clone $periodo)->with('solicitante:id,nombre,apellido_paterno,apellido_materno')
+            ->withSum('articulos as total_articulos', 'cantidad')->withSum('articulos as total_regresados', 'cantidad_regresada')
+            ->orderByDesc('pases_salida.created_at')->limit(self::MAX_FILAS)
+            ->get(['pases_salida.id', 'pases_salida.sede_id', 'folio', 'motivo', 'estado', 'colaborador_id', 'pases_salida.created_at', 'fecha_tentativa_regreso', 'requiere_regreso', 'cerrado_con_faltantes'])
+            ->map(fn (PaseSalida $p) => [$p->folio, $p->etiquetaMotivo(), $this->estatusPase($p), $p->solicitante?->nombreCompleto() ?? '—',
                 $this->hora->formatear($p->created_at, 'd/m/Y'), $p->fecha_tentativa_regreso ? $p->fecha_tentativa_regreso->format('d/m/Y').($this->pases->vencido($p) ? ' (VENCIDO)' : '') : '—'])->all();
 
         return [
@@ -279,6 +285,16 @@ class InformeEjecutivo
             $this->ficha('Fuera de la propiedad ahora', number_format($fuera), ['enlace' => route('pases-salida.index', ['filtro' => 'fuera'])]),
             $this->ficha('Vencidos sin regresar', number_format($vencidos), ['nivel' => $vencidos > 0 ? 'alerta' : 'positiva', 'enlace' => route('pases-salida.index', ['filtro' => 'vencidos'])]),
         ];
+    }
+
+    private function estatusPase(PaseSalida $p): string
+    {
+        if ($p->estado !== PaseSalida::REGRESADO || ! $p->cerrado_con_faltantes) {
+            return PaseSalida::ESTADOS[$p->estado][0] ?? $p->estado;
+        }
+        $faltan = (int) $p->getAttribute('total_articulos') - (int) $p->getAttribute('total_regresados');
+
+        return $faltan > 0 ? "Cerrado con faltantes (faltan {$faltan})" : 'Cerrado con faltantes · lo que faltaba se recibió después';
     }
 
     // --------------------------------------------------------------- Transporte

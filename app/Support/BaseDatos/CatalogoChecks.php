@@ -5,6 +5,7 @@ namespace App\Support\BaseDatos;
 use App\Models\Acceso;
 use App\Models\Autorizacion;
 use App\Models\Candidato;
+use App\Models\Equipo;
 use App\Models\LostFoundArticulo;
 use App\Models\MovimientoTransporte;
 use App\Models\Novedad;
@@ -14,6 +15,7 @@ use App\Models\RecorridoPc;
 use App\Models\Reserva;
 use App\Models\Responsiva;
 use App\Models\SolicitudArco;
+use App\Support\EstadoActivo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -54,6 +56,26 @@ final class CatalogoChecks
             'responsivas' => ['estado' => [Responsiva::EN_CAMPO, Responsiva::DEVUELTA]],
             'solicitudes_arco' => ['estado' => array_keys(SolicitudArco::ESTADOS)],
         ];
+    }
+
+    /**
+     * Todos los CHECK vigentes: los de la Etapa 1 (definiciones(), que usa tal
+     * cual la migración 2026_11_09_000600 ya instalada) más los de la Etapa 2
+     * (C-14), que pone su propia migración 2026_11_11_000100 porque sus
+     * columnas aún no existen en 000600. Revisión Etapa 2, A-8.
+     *
+     * @return array<string, array<string, list<string>>>
+     */
+    public static function todas(): array
+    {
+        $todas = self::definiciones();
+        $todas['equipos'] = ['estado' => array_keys(Equipo::ESTADOS)];
+        $todas['gafetes'] = ['estado' => EstadoActivo::GUARDADOS_LLAVE_GAFETE];
+        $todas['llaves'] = ['estado' => EstadoActivo::GUARDADOS_LLAVE_GAFETE];
+        $todas['prestamos_llaves'] = ['estado' => [PrestamoLlave::EN_USO, PrestamoLlave::DEVUELTA, PrestamoLlave::NO_REGRESO]];
+        ksort($todas);
+
+        return $todas;
     }
 
     /**

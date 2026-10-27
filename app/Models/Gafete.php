@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
+use App\Models\Concerns\TieneEstadoActivo;
 use App\Models\Concerns\TieneIdentificador;
 use App\Support\Lector\Identificable;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,17 +16,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * imprime en "doble vista" con su QR y se da de baja con voucher si se
  * pierde, se daña o lo roban.
  *
- * Estado "EN SITIO": lo da la Bitácora de accesos (el gafete prestado a
- * alguien que sigue dentro o espera autorización). Ver disponibleParaAsignar().
+ * Estado "EN SITIO" (EN USO en la máquina única, C-14): lo da la Bitácora
+ * de accesos (el gafete prestado a alguien que sigue dentro o espera
+ * autorización). NO REGRESÓ (C-15): la persona salió sin devolverlo; no se
+ * presta hasta que se reciba o se dé de baja. Ver disponibleParaAsignar().
  */
 class Gafete extends Model implements Identificable
 {
-    use PerteneceAEmpresa, RegistraAutor, TieneIdentificador;
+    use PerteneceAEmpresa, RegistraAutor, TieneEstadoActivo, TieneIdentificador;
 
     /** Se encuentra también tecleando o escaneando la nomenclatura impresa. */
     protected string $columnaLegible = 'nomenclatura';
 
-    protected $attributes = ['activo' => true];
+    protected $attributes = ['activo' => true, 'estado' => 'disponible'];
 
     protected $fillable = ['empresa_id', 'sede_id', 'tipo_gafete_id', 'nomenclatura', 'consecutivo', 'etiqueta_nfc', 'activo'];
 
@@ -53,7 +56,7 @@ class Gafete extends Model implements Identificable
      */
     public function disponibleParaAsignar(): bool
     {
-        return (bool) $this->activo && ! static::query()->whereKey($this->getKey())->prestados()->exists();
+        return (bool) $this->activo && ! $this->noRegreso() && ! static::query()->whereKey($this->getKey())->prestados()->exists();
     }
 
     /**
@@ -80,7 +83,7 @@ class Gafete extends Model implements Identificable
      */
     public function scopeDisponibles(Builder $consulta): void
     {
-        $consulta->where('gafetes.activo', true)->whereNot(fn ($q) => $q->prestados());
+        $consulta->where('gafetes.activo', true)->where('gafetes.estado', '!=', 'no_regreso')->whereNot(fn ($q) => $q->prestados());
     }
 
     public static function tipoLector(): string

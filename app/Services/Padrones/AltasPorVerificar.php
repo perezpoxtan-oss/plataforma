@@ -13,6 +13,7 @@ use App\Services\Permisos\Autorizador;
 use App\Services\Personas\AdministradorPersonas;
 use App\Services\Vehiculos\AdministradorVehiculos;
 use App\Support\HoraLocal;
+use App\Support\Receptor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -104,6 +105,9 @@ class AltasPorVerificar
             ['candidatos', 'persona_id'], // Recepción de candidatos (ADR-0007)
         ],
     ];
+
+    /** C-16: padrón => tipo de receptor (préstamos, responsivas y vouchers a su nombre). */
+    private const TIPO_RECEPTOR = ['personas' => Receptor::PERSONA, 'proveedores' => Receptor::PROVEEDOR];
 
     /** Lo que se puede corregir al aceptar, por padrón. */
     public const CAMPOS_AL_ACEPTAR = [
@@ -417,6 +421,9 @@ class AltasPorVerificar
             foreach (self::REFERENCIAS[$padron] as [$tabla, $columna]) {
                 $movidos["{$tabla}.{$columna}"] = DB::table($tabla)->where($columna, $provisional->id)->update([$columna => $destino->id]);
             }
+            if (isset(self::TIPO_RECEPTOR[$padron])) {
+                $movidos += Receptor::moverReferencias(self::TIPO_RECEPTOR[$padron], (int) $provisional->id, (int) $destino->id); // C-16
+            }
             // Empresa externa: el correcto también opera en las sedes del provisional
             if ($padron === 'proveedores' && ! $destino->todas_las_sedes) {
                 $destino->sedes()->syncWithoutDetaching($provisional->sedes()->pluck('sedes.id')->all());
@@ -471,6 +478,9 @@ class AltasPorVerificar
             $movidos = [];
             foreach (self::REFERENCIAS[$padron] as [$tabla, $columna]) {
                 $movidos["{$tabla}.{$columna}"] = DB::table($tabla)->where($columna, $duplicado->id)->update([$columna => $destino->id]);
+            }
+            if (isset(self::TIPO_RECEPTOR[$padron])) {
+                $movidos += Receptor::moverReferencias(self::TIPO_RECEPTOR[$padron], (int) $duplicado->id, (int) $destino->id); // C-16
             }
             if ($padron === 'proveedores' && ! $destino->todas_las_sedes) {
                 $destino->sedes()->syncWithoutDetaching($duplicado->sedes()->pluck('sedes.id')->all());

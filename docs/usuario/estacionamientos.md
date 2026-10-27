@@ -70,16 +70,16 @@ Para encontrar una zona escribe en **Buscar zona o sede...**, elige una sede en 
 
 **Qué debes ver:** «Zona «…» actualizada correctamente.»
 
-## Cómo corregir la ocupación (un vehículo salió sin registrar su salida)
+## Cómo liberar un lugar (el auto se fue, la persona sigue dentro)
 
-Si un vehículo ya se fue pero la caseta no le dio salida, la zona lo sigue contando. Puedes corregirlo aquí mismo, sin buscarlo en la bitácora:
+Si un vehículo ya se fue pero la persona sigue en sitio (por ejemplo, la dejaron y el auto se retiró), la zona lo sigue contando. Puedes liberar el lugar aquí mismo:
 
 1. En la tarjeta de la zona toca **¿Quién ocupa? (n)**. Se despliegan las placas, el nombre y desde qué hora está.
    ![¿Quién ocupa?](img/estacionamientos/11-quien-ocupa.png)
 
-2. En el vehículo que ya salió toca **Dar salida** y confirma con **Aceptar** («Úsalo solo si el vehículo ya salió: se registra su salida en la Bitácora de accesos con la hora de ahora.»).
+2. En el vehículo que ya salió toca **Liberar lugar** y confirma con **Aceptar** («¿Liberar el lugar de …? … sigue en sitio; solo deja de ocupar «…».»).
 
-**Qué debes ver:** «Salida de ABC123A registrada: ya no ocupa lugar en «…».» y la ocupación baja un lugar. Es la misma salida de la [Bitácora de accesos](accesos.md) (queda en su historial y en Auditoría).
+**Qué debes ver:** «Lugar liberado: ABC123A ya no ocupa «…». … sigue en sitio; si ya se fue, dale salida en la Bitácora de accesos.» con el botón **Ir a su tarjeta en la Bitácora**. La ocupación baja un lugar. Aquí **no** se da salida a la persona: eso se hace siempre en la [Bitácora de accesos](accesos.md), donde se revisa que devuelva su gafete.
 
 > Para ver **¿Quién ocupa?** necesitas poder dar salida en la Bitácora de accesos en esa sede (como la caseta).
 
@@ -90,9 +90,13 @@ Si un vehículo ya se fue pero la caseta no le dio salida, la zona lo sigue cont
 
 **Qué debes ver:** «Zona «…» dada de baja: ya no se podrá asignar en Accesos, pero puedes reactivarla cuando quieras.»
 
+Si la zona todavía tiene autos dentro, se abre [Antes de dar de baja](antes-de-dar-de-baja.md) y no se puede dar de baja hasta liberar esos lugares o cambiarlos de zona.
+
+Si la zona se llena, la caseta ve «La zona … está llena» al asignarla y puede enviar el auto de todos modos (queda anotado).
+
 ## Lo que ve el agente de caseta
 
-El agente consulta los cupos de su sede, sin botones para crear, editar o dar de baja zonas. Sí puede usar **¿Quién ocupa?** y **Dar salida**, porque da salidas en la caseta.
+El agente consulta los cupos de su sede, sin botones para crear, editar o dar de baja zonas. Sí puede usar **¿Quién ocupa?** y **Liberar lugar**, porque atiende la caseta.
 
 ![Vista del agente](img/estacionamientos/10-agente.png)
 

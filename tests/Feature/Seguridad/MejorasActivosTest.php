@@ -607,7 +607,7 @@ class MejorasActivosTest extends TestCase
             ->assertSessionHas('ok', "Responsiva {$r->folio}: 2 equipos vuelven a DISPONIBLE. Falta 1 equipo por regresar.");
         $this->assertSame(Responsiva::EN_CAMPO, $this->enEmpresa(fn () => Responsiva::find($r->id))->estado);
         $this->assertSame('disponible', $this->enEmpresa(fn () => Equipo::find($f1->equipo_id))->estado);
-        $this->assertSame('asignado', $this->enEmpresa(fn () => Equipo::find($f3->equipo_id))->estado);
+        $this->assertSame('en_uso', $this->enEmpresa(fn () => Equipo::find($f3->equipo_id))->estado);
 
         $this->actingAs($this->admin)->patch("/responsivas/{$r->id}/recibir", ['equipos' => [$f1->id]])
             ->assertSessionHasErrors(['equipos' => 'Uno de los equipos marcados ya se había recibido. Revisa la responsiva e intenta de nuevo.']);

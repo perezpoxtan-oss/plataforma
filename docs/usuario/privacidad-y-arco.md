@@ -31,7 +31,7 @@ resumen: Atender las solicitudes de las personas sobre sus datos (acceso, rectif
 1. En **Solicitudes ARCO** toca **Atender** en la solicitud.
 2. Lee **Quién la pide** y **Lo que pide**.
 3. En **1. Busca lo que la plataforma tiene de la persona**, revisa el nombre, correo y teléfono (ya vienen llenos) y, si lo tienes, escribe el **folio de su identificación**. Toca **Buscar**. Deja su **nombre completo**: con él se encuentran también los tickets, accidentes y observaciones que la mencionan.
-4. Aparecen los registros encontrados, agrupados: **Padrón de personas**, **Bitácora de accesos**, **Candidatos**, **Colaboradores**, **Lost & Found: reportes de pérdida**, **Lost & Found: entregas**, **Novedades que la mencionan**, **Accidentes (con datos médicos)**, **Reservas** y **Bitácora de transporte**. **Marca solo los que sí son de esa persona** (puede haber personas con el mismo nombre).
+4. Aparecen los registros encontrados, agrupados: **Padrón de personas**, **Bitácora de accesos**, **Candidatos**, **Colaboradores**, **Lost & Found: reportes de pérdida**, **Lost & Found: entregas**, **Novedades que la mencionan**, **Accidentes (con datos médicos)**, **Reservas**, **Bitácora de transporte**, **Préstamos de llaves a su nombre**, **Responsivas a su nombre** y **Vouchers a su cargo** (cuando se le prestó, entregó o cobró algo como persona externa o a nombre de su empresa). **Marca solo los que sí son de esa persona** (puede haber personas con el mismo nombre).
 5. Según lo que pidió:
    - **Acceso:** toca **Exportar datos**. Se prepara un archivo con sus registros, fotos y documentos. La pantalla regresa con la misma búsqueda y lo que marcaste. Toca **Descargar el archivo** y entrégaselo por el medio que acordaron (el botón sigue ahí aunque después busques con otros datos).
    - **Rectificación:** toca **Abrir ficha (rectificar)** junto al registro y corrige ahí los datos.
@@ -93,7 +93,8 @@ Se hace en **Estructura → Configuración → Privacidad**. Los pasos están en
 
 - **¿Cuánto tiempo tengo para responder?** 20 días hábiles desde que la persona confirma su correo (o desde que tú la das por verificada). El reloj de cada solicitud te dice cuántos faltan; cuando quedan pocos te llega un recordatorio, y si vence, también se avisa al Super Administrador.
 - **¿Qué incluye el archivo de «Exportar datos»?** Los registros que marcaste (en archivos que se abren en Excel), y las fotos, firmas y documentos ligados a ellos, incluidos los datos médicos de un accidente. Solo lo de tu empresa.
-- **¿Busca en todos los módulos?** Sí: padrón, caseta, candidatos, colaboradores, Lost & Found, novedades, accidentes, reservas y transporte.
+- **¿Busca en todos los módulos?** Sí: padrón, caseta, candidatos, colaboradores, Lost & Found, novedades, accidentes, reservas, transporte, y los préstamos de llaves, responsivas y vouchers a su nombre o al de su empresa.
+- **¿Qué pasa con sus préstamos, responsivas y vouchers al eliminar?** Se conservan como comprobante, pero se quitan el número de su identificación en garantía, su firma y su nombre del texto del voucher.
 - **¿La persona ve lo que hice?** Le llega por correo tu respuesta. Lo demás queda solo en la plataforma.
 - **¿Puedo deshacer una eliminación?** No. Por eso pide confirmación y por eso conviene exportar antes si la persona también pidió acceso.
 - **¿Se guarda quién atendió cada solicitud?** Sí, en la solicitud y en la Bitácora de auditoría (sin el nombre ni el correo de la persona).

@@ -130,7 +130,7 @@ class RevisionCoherencia
     private function fueraDeCatalogo(): array
     {
         $r = [];
-        foreach (CatalogoChecks::definiciones() as $tabla => $columnas) {
+        foreach (CatalogoChecks::todas() as $tabla => $columnas) {
             foreach ($columnas as $columna => $valores) {
                 $n = Restricciones::fueraDeCatalogo($tabla, $columna, $valores);
                 if ($n > 0) {

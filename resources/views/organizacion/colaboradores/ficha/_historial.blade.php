@@ -14,7 +14,7 @@
                 <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $autores[$c->actualizado_por] }} · @fecha($c->updated_at)</div>
             @endif
             @if ($c->validado_en)
-                <div class="texto-traza"><i class="bi bi-patch-check" aria-hidden="true"></i> Validado por Recursos Humanos{{ isset($autores[$c->validado_por]) ? ' ('.$autores[$c->validado_por].')' : '' }} · @fecha($c->validado_en)</div>
+                <div class="texto-traza"><i class="bi bi-patch-check" aria-hidden="true"></i> Verificado{{ isset($autores[$c->validado_por]) ? ' por '.$autores[$c->validado_por] : '' }} · @fecha($c->validado_en)</div>
             @endif
             @if ($c->fusionado_en_id && $c->fusionadoEn)
                 <div class="texto-traza"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Era un duplicado: se unió con #{{ $c->fusionadoEn->num_empleado }} {{ $c->fusionadoEn->nombreCompleto() }}.</div>

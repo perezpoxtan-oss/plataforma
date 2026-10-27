@@ -32,7 +32,7 @@ resumen: Catálogos de áreas (departamentos) y rangos (puestos) que se eligen a
 
 ### Nombrar al responsable del departamento
 
-Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **Sin responsable: sus visitas entran sin autorización y nadie entrevista a sus candidatos**. Toca **Nombrar responsable** (o el botón **Responsables** de arriba) para abrir **Responsables por departamento** y elegir al titular y a sus suplentes; ahí mismo se configura qué espera en la caseta (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)). Necesitas el permiso **Configurar** de *Autorizaciones*.
+Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **Sin responsable: sus visitas entran sin autorización y nadie entrevista a sus candidatos**. Toca **Nombrar responsable** (o el botón **Responsables** de arriba) para abrir **Responsables por departamento** y elegir al titular y a sus suplentes; ahí mismo se configura qué espera en la caseta (ver [Autorizaciones](autorizaciones.md)). Necesitas el permiso **Configurar** de *Autorizaciones*.
 
 ![Departamento sin responsable](img/departamentos/8-sin-responsable.png)
 
@@ -73,6 +73,8 @@ Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **S
 
 **Qué debes ver:** la ficha en gris con **DE BAJA**. No se borra el historial. Un puesto ligado a un departamento dado de baja conserva esa liga: se ve tachada en su ficha.
 
+> Si tiene cosas vigentes (colaboradores, responsables, llaves o vacantes), antes de confirmar se abre [Antes de dar de baja](antes-de-dar-de-baja.md) con la lista y lo que pasará con cada una.
+
 ## En el celular
 
 ![Celular](img/departamentos/5-celular.png)
@@ -112,4 +114,4 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 - [Colaboradores](colaboradores.md)
 - [Turnos](turnos.md)
-- [Recepción y autorizaciones](recepcion-y-autorizaciones.md)
+- [Autorizaciones](autorizaciones.md)

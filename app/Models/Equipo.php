@@ -22,15 +22,22 @@ class Equipo extends Model implements Identificable
     /** Se encuentra también tecleando o escaneando el número de serie. */
     protected string $columnaLegible = 'numero_serie';
 
-    /** clave => texto en pantalla (los de SEGCAT) */
+    /**
+     * clave => texto en pantalla. Los de SEGCAT más los de la máquina de
+     * estados única (C-14, App\Support\EstadoActivo): EN USO (responsiva de
+     * Turno), FUERA (salió en un pase) y NO REGRESÓ.
+     */
     public const ESTADOS = [
         'disponible' => 'DISPONIBLE',
+        'en_uso' => 'EN USO',
         'asignado' => 'ASIGNADO',
+        'fuera' => 'FUERA',
         'en_mantenimiento' => 'EN MANTENIMIENTO',
+        'no_regreso' => 'NO REGRESÓ',
         'baja' => 'DE BAJA',
     ];
 
-    /** Estados que se eligen al editar. "asignado" lo pone Responsivas y "baja" el botón de baja con voucher. */
+    /** Estados que se eligen al editar. EN USO y ASIGNADO los pone Responsivas, FUERA Pases de salida y BAJA el botón de baja con voucher. */
     public const ESTADOS_EDITABLES = ['disponible', 'en_mantenimiento'];
 
     protected $attributes = ['estado' => 'disponible'];

@@ -123,11 +123,15 @@
                         <div class="d-flex justify-content-between align-items-start gap-2">
                             <span class="badge-tipo-llave tipo-{{ $l->tipo_dispositivo }}">{{ $l->etiquetaTipo() }}</span>
                             <div class="d-flex align-items-center gap-2">
-                                @if ($l->enUso())
-                                    <span class="etiqueta-estado en-uso">EN USO</span>
-                                @endif
+                                {{-- Revisión Etapa 2 (A-6): un solo estado en la ficha --}}
                                 @php $voucherL = $l->activo ? null : ($vouchersBaja[$l->id] ?? null); @endphp
-                                <span class="etiqueta-estado {{ $l->activo ? 'activo' : 'inactivo' }}">{{ $l->activo ? 'ACTIVA' : 'DE BAJA' }}{{ $voucherL ? ' · '.mb_strtoupper(\App\Models\VoucherReposicion::MOTIVOS[$voucherL->motivo] ?? $voucherL->motivo) : '' }}</span>
+                                @if ($l->activo && $l->enUso())
+                                    <span class="etiqueta-estado en-uso">EN USO</span>
+                                @elseif ($l->noRegreso())
+                                    <span class="etiqueta-estado no-regreso">NO REGRESÓ</span>
+                                @else
+                                    <span class="etiqueta-estado {{ $l->activo ? 'activo' : 'inactivo' }}">{{ $l->activo ? 'ACTIVA' : 'DE BAJA' }}{{ $voucherL ? ' · '.mb_strtoupper(\App\Models\VoucherReposicion::MOTIVOS[$voucherL->motivo] ?? $voucherL->motivo) : '' }}</span>
+                                @endif
                                 @if ($imprimible)
                                     <label class="chk-llave" title="Marcar para imprimir su etiqueta">
                                         <input type="checkbox" name="llaves[]" value="{{ $l->id }}" form="formEtiquetasLlaves" data-chk-llave>
@@ -143,8 +147,10 @@
                             <p class="llave-responsable"><i class="bi bi-person-check-fill" aria-hidden="true"></i> Responsable: {{ $responsable }}</p>
                         @endif
                         {{-- Préstamo de llaves: quién la tiene ahora y su historial --}}
-                        @if ($l->enUso() && $l->prestamoAbierto?->colaborador)
-                            <p class="llave-usada-por"><i class="bi bi-key-fill" aria-hidden="true"></i> Usada por: {{ $l->prestamoAbierto->colaborador->nombreCompleto() }} · desde @fecha($l->prestamoAbierto->prestado_en, 'd/m H:i')</p>
+                        @if ($l->enUso() && $l->prestamoAbierto)
+                            <p class="llave-usada-por"><i class="bi bi-key-fill" aria-hidden="true"></i> EN USO por: {{ $l->prestamoAbierto->nombreReceptor() }} · desde @fecha($l->prestamoAbierto->prestado_en, 'd/m H:i') (Préstamo de llaves)</p>
+                        @elseif ($l->noRegreso())
+                            <p class="llave-usada-por"><i class="bi bi-exclamation-octagon-fill" aria-hidden="true"></i> No regresó{{ isset($propuestas[$l->id]) ? ': la tenía '.$propuestas[$l->id]['titulo'] : '' }}. Si aparece, recíbela en Préstamo de llaves; si no, dala de baja.</p>
                         @endif
                         {{-- Mejoras padrones: el préstamo no se hace aquí; el enlace lo dice --}}
                         @can('prestamo_llaves.ver')
@@ -211,11 +217,15 @@
                                 <a href="{{ route('llaves.imprimir', ['llaves' => [$l->id]]) }}" target="_blank" rel="noopener" class="btn-icono imprimir-qr" title="Imprimir su etiqueta" aria-label="Imprimir la etiqueta de {{ $l->nomenclatura }}"><i class="bi bi-printer" aria-hidden="true"></i></a>
                             @endif
                             @if ($desactivable)
-                                @if ($l->activo)
+                                @if ($l->activo && $l->enUso())
+                                    {{-- C-14 / C-20: prestada → primero «Antes de dar de baja» (recibirla o marcarla «No regresó») --}}
+                                    <a href="{{ route('bajas.revisar', ['tipo' => 'llaves', 'id' => $l->id]) }}" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja {{ $l->nomenclatura }}"><i class="bi bi-slash-circle" aria-hidden="true"></i></a>
+                                @elseif ($l->activo)
                                     <button type="button" class="btn-icono eliminar" title="Dar de baja" aria-label="Dar de baja {{ $l->nomenclatura }}"
                                             data-accion="baja-llave" data-url="{{ route('llaves.baja', $l->id) }}" data-id="{{ $l->id }}"
                                             data-nombre="{{ $l->nomenclatura }}" data-tipo="{{ $l->tipo_dispositivo }}" data-tipo-texto="{{ $l->etiquetaTipo() }}"
-                                            data-costo-fijo="{{ $l->costoFijo() }}" data-costo-propio="{{ $l->costo_reposicion }}">
+                                            data-costo-fijo="{{ $l->costoFijo() }}" data-costo-propio="{{ $l->costo_reposicion }}"
+                                            data-baja-auto="{{ $l->id }}" @isset($propuestas[$l->id]) data-responsable="{{ json_encode($propuestas[$l->id]) }}" @endisset>
                                         <i class="bi bi-slash-circle" aria-hidden="true"></i>
                                     </button>
                                 @else
@@ -290,7 +300,7 @@
 
                         <label class="opcion-cobro">
                             <input type="checkbox" name="aplica_cobro" value="1" data-cobro-llave @checked(old('aplica_cobro'))>
-                            Se le cobra al colaborador
+                            Se le cobra al responsable
                         </label>
 
                         <div class="caja-cobro" data-caja-cobro-llave @unless (old('aplica_cobro')) hidden @endunless>
@@ -299,10 +309,9 @@
                                 <span class="grupo-monto-simbolo" aria-hidden="true">$</span>
                                 <input type="number" step="0.01" min="0" max="999999.99" id="baja_monto" name="monto" class="campo grupo-monto-campo" inputmode="decimal" value="{{ old('monto') }}" data-monto-llave>
                             </div>
-                            @include('componentes.lector', ['id' => 'baja_responsable', 'etiqueta' => 'Colaborador responsable',
-                                'tipos' => 'colaborador', 'nombre' => 'colaborador_id', 'valor' => old('colaborador_id'),
-                                'elegido' => $responsableAnterior ? $responsableAnterior->nombreCompleto().' · Núm. '.$responsableAnterior->num_empleado : null,
-                                'ayuda' => 'Escanea su gafete o escribe su número de empleado.'])
+                            {{-- C-16: el cobro puede ir a un colaborador, a una persona del padrón o a una empresa externa --}}
+                            @include('componentes.receptor', ['id' => 'baja_responsable', 'prefijo' => 'responsable', 'etiqueta' => 'Responsable (a quién se le cobra)',
+                                'valor' => $responsableBaja ?? null, 'ayuda' => 'Escanea su gafete o escribe su número de empleado.'])
                         </div>
 
                         @include('seguridad.vouchers._firmas-baja', ['id' => 'baja_llave'])

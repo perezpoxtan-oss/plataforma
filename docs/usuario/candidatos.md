@@ -322,7 +322,7 @@ Los mensajes salen en rojo dentro de la ventana o arriba de la ficha.
 ## Relacionado
 
 - [Entrevistar y elegir](entrevistar-y-elegir.md)
-- [Recepción y autorizaciones](recepcion-y-autorizaciones.md)
+- [Recepción de RR. HH.](recepcion-y-autorizaciones.md)
 - [Solicitud de empleo](solicitud-empleo.md)
 - [Vacantes](vacantes.md)
 - [Colaboradores](colaboradores.md)

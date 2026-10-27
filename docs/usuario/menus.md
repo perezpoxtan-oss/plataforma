@@ -33,7 +33,7 @@ Los menús y sus grupos:
 
 ![Menú Padrones abierto](img/menus/menu-padrones.png)
 
-> **Mis entrevistas** (menú **Recursos Humanos**) y **Autorizaciones** (menú **Estructura**) aparecen solo a quien las usa (quien entrevista candidatos, y quien configura o responde las autorizaciones de su departamento), para que no tengas que esperar a un aviso para llegar a ellas. Ver [Entrevistar y elegir](entrevistar-y-elegir.md) y [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
+> **Mis entrevistas** (menú **Recursos Humanos**) y **Autorizaciones** (menú **Estructura**) aparecen solo a quien las usa (quien entrevista candidatos, y quien configura o responde las autorizaciones de su departamento), para que no tengas que esperar a un aviso para llegar a ellas. Ver [Entrevistar y elegir](entrevistar-y-elegir.md) y [Autorizaciones](autorizaciones.md).
 
 ![Menú Recursos Humanos de un jefe de departamento](img/recepcion-y-candidatos/menu-recursos-humanos-jefe.png)
 
@@ -54,7 +54,7 @@ Junto a la campana hay un botón amarillo **Mis pendientes** con un número: es 
 
 1. Toca **Mis pendientes**. Se abre la lista **Lo que espera tu respuesta**.
 2. Revisa los renglones. Solo aparecen los que tienen algo pendiente:
-   - **Colaboradores por verificar** (Recursos Humanos): colaboradores que la caseta registró y aún no estaban en el directorio. Ver [Colaboradores](colaboradores.md).
+   - **Colaboradores por verificar** (Recursos Humanos o, si tu plan no lo incluye, el administrador): colaboradores que la caseta registró y aún no estaban en el directorio. Ver [Colaboradores](colaboradores.md).
    - **Autorizaciones por responder:** visitas a tu departamento.
    - **Firmas de pases de salida:** pases que esperan tu firma.
    - **Procedimientos por aprobar** y **Procedimientos por leer:** los que esperan tu aprobación y los que te faltan leer y firmar «Leí y entendí».

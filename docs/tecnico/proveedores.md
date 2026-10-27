@@ -92,3 +92,5 @@ La razón social usa el mecanismo único (`data-duplicado` → `GET /proveedores
 ## Mejoras padrones (ADR-0015)
 
 Ver [mejoras-padrones.md](mejoras-padrones.md): «Ficha de empresa externa», «DE BAJA» (antes «BAJA / VETADA»), «Quitar / Agregar a mi sede» de un toque con alcance de una sede, siguiente paso «Agregar su personal / flotilla».
+
+> **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).

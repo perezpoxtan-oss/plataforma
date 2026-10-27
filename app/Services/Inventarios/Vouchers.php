@@ -2,12 +2,12 @@
 
 namespace App\Services\Inventarios;
 
-use App\Models\Colaborador;
 use App\Models\User;
 use App\Models\VoucherReposicion;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
+use App\Support\Receptor;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -45,18 +45,20 @@ class Vouchers
 
     /**
      * Reglas comunes del formulario de baja (motivo, ¿cómo pasó?, cobro,
-     * monto y responsable). El responsable debe ser de la empresa.
+     * monto y responsable). El responsable (C-16) puede ser un colaborador,
+     * una persona del padrón o una empresa externa de la empresa
+     * (responsable_tipo + responsable_id; colaborador_id sigue funcionando).
      *
-     * @return array{motivo: string, descripcion: ?string, aplica_cobro: bool, monto: string, colaborador_id: ?int}
+     * @return array{motivo: string, descripcion: ?string, aplica_cobro: bool, monto: string, colaborador_id: ?int, responsable_tipo: ?string, responsable_id: ?int}
      */
     public function validar(array $entrada): array
     {
+        $responsable = Receptor::deEntrada($entrada, 'responsable');
         $datos = Validator::make($entrada, [
             'motivo' => ['required', Rule::in(array_keys(VoucherReposicion::MOTIVOS))],
             'descripcion' => ['nullable', 'string', 'max:1000'],
             'aplica_cobro' => ['nullable', 'boolean'],
             'monto' => ['nullable', 'required_if_accepted:aplica_cobro', 'numeric', 'min:0', 'max:999999.99'],
-            'colaborador_id' => ['nullable', 'integer', 'required_if_accepted:aplica_cobro'],
             'firma_modo' => ['nullable', Rule::in(array_keys(self::FIRMA_MODOS))],
             'firma_seguridad' => ['nullable', 'string', 'max:500000'],
             'firma_responsable' => ['nullable', 'string', 'max:500000'],
@@ -64,13 +66,21 @@ class Vouchers
             'firma_modo.in' => 'Elige cómo se firmará el voucher: digital o física.',
             'motivo.required' => 'Indica el motivo de la baja.',
             'monto.required_if_accepted' => 'Indica el monto a cobrar.',
-            'colaborador_id.required_if_accepted' => 'Elige al responsable al que se le cobrará.',
-        ])->validate();
+        ])->after(function ($v) use ($entrada, $responsable) {
+            if (filter_var($entrada['aplica_cobro'] ?? false, FILTER_VALIDATE_BOOLEAN) && $responsable === null) {
+                $v->errors()->add('colaborador_id', 'Elige al responsable al que se le cobrará.');
+            }
+        })->validate();
 
         $cobro = (bool) ($datos['aplica_cobro'] ?? false);
-        $colaboradorId = isset($datos['colaborador_id']) ? (int) $datos['colaborador_id'] : null;
-        if ($colaboradorId !== null && ! Colaborador::whereKey($colaboradorId)->exists()) {
-            throw ValidationException::withMessages(['colaborador_id' => 'El responsable no pertenece a esta empresa.']);
+        $colaboradorId = null;
+        if ($responsable !== null) {
+            [$tipo, $id] = $responsable;
+            $clase = Receptor::CLASES[$tipo];
+            if (! $clase::whereKey($id)->exists()) {
+                throw ValidationException::withMessages(['colaborador_id' => 'El responsable no pertenece a esta empresa.']);
+            }
+            $colaboradorId = $tipo === Receptor::COLABORADOR ? $id : null;
         }
 
         // Firma digital: firma quien registra (Seguridad) y, si hay responsable, también él
@@ -79,7 +89,7 @@ class Vouchers
             if (! $this->firmas->viene($datos['firma_seguridad'] ?? null)) {
                 throw ValidationException::withMessages(['firma_seguridad' => 'Falta la firma de Seguridad: firma en el recuadro o elige «Firma física».']);
             }
-            if ($colaboradorId !== null && ! $this->firmas->viene($datos['firma_responsable'] ?? null)) {
+            if ($responsable !== null && ! $this->firmas->viene($datos['firma_responsable'] ?? null)) {
                 throw ValidationException::withMessages(['firma_responsable' => 'Falta la firma del responsable: que firme en el recuadro o elige «Firma física».']);
             }
         }
@@ -90,9 +100,11 @@ class Vouchers
             'aplica_cobro' => $cobro,
             'monto' => $cobro ? number_format((float) $datos['monto'], 2, '.', '') : '0.00',
             'colaborador_id' => $colaboradorId,
+            'responsable_tipo' => $responsable[0] ?? null,
+            'responsable_id' => $responsable[1] ?? null,
             'firma_modo' => $modo,
             'firma_seguridad' => $modo === 'digital' ? $datos['firma_seguridad'] : null,
-            'firma_responsable' => $modo === 'digital' && $colaboradorId !== null ? $datos['firma_responsable'] : null,
+            'firma_responsable' => $modo === 'digital' && $responsable !== null ? $datos['firma_responsable'] : null,
         ];
     }
 
@@ -152,7 +164,7 @@ class Vouchers
             }
 
             $this->roles->auditar($actor, 'vouchers.creado', $voucher, null, $voucher->only([
-                'folio', 'origen_tipo', 'origen_id', 'origen_descripcion', 'motivo', 'aplica_cobro', 'monto', 'colaborador_id', 'firma_modo',
+                'folio', 'origen_tipo', 'origen_id', 'origen_descripcion', 'motivo', 'aplica_cobro', 'monto', 'colaborador_id', 'responsable_tipo', 'responsable_id', 'firma_modo',
             ]));
 
             return $voucher;

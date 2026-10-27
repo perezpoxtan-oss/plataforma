@@ -37,7 +37,7 @@
         </div>
         <div class="dialogo-cuerpo">
             @if ($provisionalRapido)
-                <div class="alert alert-warning py-2 px-3 small"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Úsalo solo si la persona <strong>no aparece</strong> al buscarla. Podrás usarla de inmediato; queda <strong>por verificar</strong> y Recursos Humanos la verifica.</div>
+                <div class="alert alert-warning py-2 px-3 small"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Úsalo solo si la persona <strong>no aparece</strong> al buscarla. Podrás usarla de inmediato; queda <strong>por verificar</strong> y {{ \App\Support\DependenciasModulos::quienVerificaAltas() }} la verifica.</div>
             @else
                 <div class="alert alert-secondary py-2 px-3 small"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Estos son los datos esenciales. Para más detalle (CURP, RFC, fecha de nacimiento...), complétalo después desde el módulo de Colaboradores.</div>
             @endif

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Empresa;
 use App\Models\Sede;
 use App\Models\User;
+use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -113,8 +114,13 @@ class SedeController extends Controller
         if ($activo && ! $modelo->activo) {
             app(Limites::class)->exigirSede($empresaId);
         }
+        // C-20: una sede con gente en sitio no se da de baja; lo demás se avisa
+        $revision = $activo ? null : $this->tenant->conEmpresa($empresaId, fn () => app(AntesDeDarDeBaja::class)->exigirRevisado('sedes', $modelo, $request));
         $this->tenant->conEmpresa($empresaId, fn () => $modelo->forceFill(['activo' => $activo])->save());
         $this->auditoria->auditar($request->user(), $activo ? 'sedes.reactivada' : 'sedes.desactivada', $modelo, ['activo' => ! $activo], ['activo' => $activo]);
+        if ($revision !== null && $revision['items'] !== []) {
+            $this->tenant->conEmpresa($empresaId, fn () => app(AntesDeDarDeBaja::class)->aplicar('sedes', $modelo, $revision, $request->all(), $request->user()));
+        }
 
         return redirect()->route('sedes.index')->with($activo ? 'ok' : 'aviso', $activo
             ? "«{$modelo->nombre}» reactivada."

@@ -4,11 +4,15 @@ namespace App\Services\Accesos;
 
 use App\Models\Acceso;
 use App\Models\AcompananteAcceso;
+use App\Models\Gafete;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\ZonaEstacionamiento;
+use App\Services\Activos\CustodiaActivos;
 use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Estacionamientos\OcupacionEstacionamientos;
 use App\Services\Permisos\AdministradorRoles;
+use App\Support\EstadoActivo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -53,9 +57,19 @@ class MovimientosAccesos
 
     /**
      * En sitio → Finalizado. Los acompañantes que seguían dentro salen con él
-     * (sus gafetes quedan libres) y, si estaba fuera en tour, el tour se cierra.
+     * y, si estaba fuera en tour, el tour se cierra.
+     *
+     * C-15 (DD-08): «Devolvió el gafete» y «Le devolví su identificación»
+     * vienen marcadas. Con `gafetes_revisados`, el gafete que no venga en
+     * `devolvio[]` queda NO REGRESÓ (no se vuelve a prestar), se avisa a quien
+     * da de baja gafetes en esa sede y el voucher propone a la persona y su
+     * empresa. Sin esos campos (otras pantallas, la app de antes) se da por
+     * devuelto, como siempre.
+     *
+     * @param  array<string, mixed>  $opciones  gafetes_revisados, devolvio[], identificacion_revisada, identificacion_devuelta
+     * @return list<string> gafetes que no regresaron
      */
-    public function salida(User $actor, Acceso $acceso): void
+    public function salida(User $actor, Acceso $acceso, array $opciones = []): array
     {
         if ($acceso->estado === 'pendiente') {
             throw new MovimientoNoPermitido('Este acceso sigue pendiente de autorización: confírmalo antes de registrar su salida.');
@@ -63,8 +77,12 @@ class MovimientosAccesos
         if ($acceso->movimiento !== 'entrada') {
             throw new MovimientoNoPermitido('Para cerrar una salida temporal registra su regreso.');
         }
+        $revisados = filter_var($opciones['gafetes_revisados'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $devolvio = array_map('intval', array_filter((array) ($opciones['devolvio'] ?? []), 'is_numeric'));
+        $idRevisada = filter_var($opciones['identificacion_revisada'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $idDevuelta = $idRevisada ? filter_var($opciones['identificacion_devuelta'] ?? false, FILTER_VALIDATE_BOOLEAN) : null;
 
-        $acompanantes = DB::transaction(function () use ($actor, $acceso) {
+        [$acompanantes, $noRegresaron] = DB::transaction(function () use ($actor, $acceso, $revisados, $devolvio, $idDevuelta) {
             $ahora = now();
             $cambio = Acceso::whereKey($acceso->id)->where('estado', 'en_sitio')
                 ->update(['estado' => 'finalizado', 'salida_at' => $ahora, 'salida_por' => $actor->id, 'actualizado_por' => $actor->id, 'updated_at' => $ahora]);
@@ -75,18 +93,56 @@ class MovimientosAccesos
             Acceso::where('acceso_origen_id', $acceso->id)->where('movimiento', 'salida_temporal')->where('estado', 'en_sitio')
                 ->update(['estado' => 'finalizado', 'salida_at' => $ahora, 'salida_por' => $actor->id, 'updated_at' => $ahora]);
 
-            return AcompananteAcceso::where('acceso_id', $acceso->id)->whereNull('salida_at')
+            // C-15: los gafetes que no devolvieron quedan NO REGRESÓ
+            $noRegresaron = [];
+            $dentro = AcompananteAcceso::where('acceso_id', $acceso->id)->whereNull('salida_at')->get(['id', 'gafete_id']);
+            if ($revisados) {
+                if ($acceso->gafete_id !== null && ! in_array((int) $acceso->gafete_id, $devolvio, true)) {
+                    Acceso::whereKey($acceso->id)->update(['gafete_no_regreso' => true]);
+                    $noRegresaron[] = (int) $acceso->gafete_id;
+                }
+                foreach ($dentro as $ac) {
+                    if ($ac->gafete_id !== null && ! in_array((int) $ac->gafete_id, $devolvio, true)) {
+                        AcompananteAcceso::whereKey($ac->id)->update(['gafete_no_regreso' => true]);
+                        $noRegresaron[] = (int) $ac->gafete_id;
+                    }
+                }
+                foreach ($noRegresaron as $gafeteId) {
+                    $gafete = Gafete::whereKey($gafeteId)->lockForUpdate()->first();
+                    if ($gafete !== null && $gafete->activo) {
+                        $gafete->forceFill(['estado' => EstadoActivo::NO_REGRESO, 'actualizado_por' => $actor->id])->save();
+                    }
+                }
+            }
+            if ($idDevuelta !== null && $acceso->identificacion !== null) {
+                Acceso::whereKey($acceso->id)->update(['identificacion_devuelta' => $idDevuelta]);
+            }
+
+            $acompanantes = AcompananteAcceso::where('acceso_id', $acceso->id)->whereNull('salida_at')
                 ->update(['salida_at' => $ahora, 'salida_por' => $actor->id, 'actualizado_por' => $actor->id, 'updated_at' => $ahora]);
+
+            return [$acompanantes, $noRegresaron];
         });
 
-        $this->auditoria->auditar($actor, 'accesos.salida', $acceso, ['estado' => 'en_sitio'],
-            ['estado' => 'finalizado', 'gafete' => $acceso->gafete_texto, 'acompanantes_con_salida' => $acompanantes]);
+        $gafetes = Gafete::whereIn('id', $noRegresaron)->get();
+        $this->auditoria->auditar($actor, 'accesos.salida', $acceso, ['estado' => 'en_sitio'], array_filter(
+            ['estado' => 'finalizado', 'gafete' => $acceso->gafete_texto, 'acompanantes_con_salida' => $acompanantes,
+                'gafetes_no_regresaron' => $gafetes->pluck('nomenclatura')->all() ?: null, 'identificacion_devuelta' => $idDevuelta],
+            fn ($v) => $v !== null));
+        foreach ($gafetes as $gafete) {
+            $this->auditoria->auditar($actor, 'gafetes.no_regreso', $gafete, ['estado' => EstadoActivo::DISPONIBLE], ['estado' => EstadoActivo::NO_REGRESO, 'acceso' => $acceso->id]);
+            $quien = $acceso->nombre.($acceso->empresa_procedencia ? ' ('.$acceso->empresa_procedencia.')' : '');
+            app(CustodiaActivos::class)->avisarNoRegreso($gafete, 'gafete', 'gafete '.$gafete->nomenclatura,
+                "Salió {$quien} y no lo devolvió; registró la salida {$actor->name}.", $actor);
+        }
+
+        return $gafetes->pluck('nomenclatura')->all();
     }
 
     /**
      * Cambia (o libera) la zona de estacionamiento de un vehículo que sigue en sitio.
      */
-    public function cambiarZona(User $actor, Acceso $acceso, mixed $zonaId): void
+    public function cambiarZona(User $actor, Acceso $acceso, mixed $zonaId, bool $aunqueEsteLlena = false): void
     {
         if ($acceso->estado !== 'en_sitio' || $acceso->movimiento !== 'entrada') {
             throw new MovimientoNoPermitido('Solo se cambia la zona de un vehículo que sigue en sitio.');
@@ -101,11 +157,30 @@ class MovimientosAccesos
             if ($nueva === null) {
                 throw ValidationException::withMessages(['zona_estacionamiento_id' => 'Elige una zona activa de la sede del acceso (o «Sin asignar» para liberar).']);
             }
+            // C-21: «Zona llena, ¿enviar de todos modos?»
+            if (! $aunqueEsteLlena && (int) $nueva !== (int) $acceso->zona_estacionamiento_id && ($llena = $this->zonaLlena((int) $nueva)) !== null) {
+                throw ValidationException::withMessages(['zona_llena' => $llena]);
+            }
         }
 
         $antes = $acceso->zona_estacionamiento_id;
         $acceso->forceFill(['zona_estacionamiento_id' => $nueva])->save();
         $this->auditoria->auditar($actor, 'accesos.zona_cambiada', $acceso, ['zona_estacionamiento_id' => $antes], ['zona_estacionamiento_id' => $nueva]);
+    }
+
+    /**
+     * C-21 (B-15): «La zona «Sótano 1» está llena (8/8). ¿La envías de todos
+     * modos?», o null si tiene lugar (o no tiene cupo, como una zona de descarga sin capacidad).
+     */
+    public function zonaLlena(int $zonaId): ?string
+    {
+        $zona = ZonaEstacionamiento::find($zonaId);
+        if ($zona === null || ! $zona->tieneCupo()) {
+            return null;
+        }
+        $ocupados = (int) (app(OcupacionEstacionamientos::class)->ocupados([$zona->id])[$zona->id] ?? 0);
+
+        return $zona->estaLlena($ocupados) ? "La zona «{$zona->nombre}» está llena ({$ocupados}/{$zona->cupo_total}). ¿La envías de todos modos?" : null;
     }
 
     /**
@@ -141,6 +216,10 @@ class MovimientosAccesos
         });
 
         $this->auditoria->auditar($actor, 'accesos.salida_temporal', $acceso, null, ['salida_temporal_id' => $salida->id, 'placas' => $salida->placas, 'conductor' => $salida->conductor]);
+        // C-21: «¿Libera su lugar?» (el auto se fue con él)
+        if (filter_var($entrada['libera_lugar'] ?? false, FILTER_VALIDATE_BOOLEAN) && $acceso->zona_estacionamiento_id !== null) {
+            $this->cambiarZona($actor, $acceso->refresh(), null);
+        }
 
         return $salida;
     }

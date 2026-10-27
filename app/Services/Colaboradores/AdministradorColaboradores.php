@@ -14,6 +14,7 @@ use App\Services\Padrones\CampanaPadrones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
+use App\Support\Receptor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -274,6 +275,7 @@ class AdministradorColaboradores
             foreach (self::REFERENCIAS_ADICIONALES as [$tabla, $columna]) {
                 $movidos["{$tabla}.{$columna}"] = DB::table($tabla)->where($columna, $provisional->id)->update([$columna => $destino->id]);
             }
+            $movidos += Receptor::moverReferencias(Receptor::COLABORADOR, (int) $provisional->id, (int) $destino->id); // C-16
             $provisional->forceFill(['activo' => false, 'fusionado_en_id' => $destino->id])->save();
 
             return $movidos;

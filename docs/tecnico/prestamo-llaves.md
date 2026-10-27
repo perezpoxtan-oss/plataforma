@@ -106,3 +106,5 @@ El lector necesita además `llaves.ver` (tipo `llave`) y `colaboradores.ver` (ti
 - `?prestar={llave}` abre «Prestar Llave» con la llave elegida (desde el lector).
 
 Detalle: [caseta-y-activos.md](caseta-y-activos.md).
+
+> **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).

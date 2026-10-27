@@ -8,8 +8,10 @@ use App\Models\Departamento;
 use App\Models\Sede;
 use App\Models\Turno;
 use App\Models\User;
+use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Colaboradores\ColaboradorParecido;
+use App\Support\DependenciasModulos;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -70,6 +72,7 @@ class ColaboradorController extends Controller
 
             return view('organizacion.colaboradores.index', [
                 'sinEmpresa' => false,
+                'quienVerifica' => DependenciasModulos::quienVerificaAltas(),
                 'colaboradores' => $lista,
                 'sedesFiltro' => $permitidasVer === null ? $sedesActivas : $sedesActivas->whereIn('id', $permitidasVer)->values(),
                 'departamentosFiltro' => Departamento::where(fn ($q) => $q->where('activo', true)
@@ -141,16 +144,23 @@ class ColaboradorController extends Controller
         $activo = $request->boolean('activo');
 
         $cuenta = null;
-        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $colaborador, $activo, &$cuenta) {
+        $hecho = [];
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $colaborador, $activo, &$cuenta, &$hecho) {
             $modelo = $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.eliminar');
+            // C-20 (DD-06): llaves, equipos, pases, vehículos, responsabilidades… «Antes de dar de baja»
+            $revision = $activo ? null : app(AntesDeDarDeBaja::class)->exigirRevisado('colaboradores', $modelo, $request);
             $cuenta = $this->colaboradores->cambiarEstado($request->user(), $modelo, $activo);
+            if ($revision !== null && app(AntesDeDarDeBaja::class)->hayPendientes($revision)) {
+                $hecho = app(AntesDeDarDeBaja::class)->aplicar('colaboradores', $modelo, $revision, $request->all(), $request->user());
+            }
 
             return $modelo;
         });
 
         return redirect()->route('colaboradores.index')->with($activo ? 'ok' : 'aviso', $activo
             ? "Colaborador «{$modelo->nombreCompleto()}» reingresado.".($modelo->usuarioDesactivadoPorBaja() ? ' Su cuenta de usuario sigue dada de baja: reactívala en Usuarios si la necesita.' : '')
-            : "Colaborador «{$modelo->nombreCompleto()}» dado de baja.".($cuenta ? " También se dio de baja su cuenta de usuario «@{$cuenta->username}»; puedes reactivarla en Usuarios." : '').' Puedes reactivarlo con el mismo botón cuando quieras.');
+            : "Colaborador «{$modelo->nombreCompleto()}» dado de baja.".($cuenta ? " También se dio de baja su cuenta de usuario «@{$cuenta->username}»; puedes reactivarla en Usuarios." : '')
+                .($hecho !== [] ? ' Además: '.implode('; ', $hecho).'.' : '').' Puedes reactivarlo con el mismo botón cuando quieras.');
     }
 
     public function sedes(Request $request, int $colaborador): RedirectResponse

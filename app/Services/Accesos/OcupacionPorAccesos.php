@@ -7,7 +7,7 @@ use App\Services\Estacionamientos\OcupacionEstacionamientos;
 
 /**
  * Ocupación de cada zona de estacionamiento: vehículos que siguen "EN SITIO"
- * con esa zona en la Bitácora de accesos (SEGCAT la contaba en vivo y nunca la
+ * (o pendientes de autorización, C-21) con esa zona en la Bitácora de accesos (SEGCAT la contaba en vivo y nunca la
  * guardaba aparte, así la salida libera el espacio sin pasos extra).
  *
  * Se registra en App\Providers\AccesosServiceProvider. Una sola consulta para
@@ -23,7 +23,8 @@ class OcupacionPorAccesos implements OcupacionEstacionamientos
 
         return Acceso::query()
             ->whereIn('zona_estacionamiento_id', $zonaIds)
-            ->where('estado', 'en_sitio')
+            // C-21 (B-15): también quien espera autorización con su vehículo ya ocupa su lugar
+            ->whereIn('estado', Acceso::ESTADOS_ABIERTOS)
             ->groupBy('zona_estacionamiento_id')
             ->selectRaw('zona_estacionamiento_id, COUNT(*) as total')
             ->pluck('total', 'zona_estacionamiento_id')

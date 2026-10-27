@@ -8,6 +8,7 @@ use App\Models\Espacio;
 use App\Models\GrupoEspacio;
 use App\Models\Sede;
 use App\Models\TipoEspacio;
+use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Padrones\AvisoDuplicado;
 use App\Services\Permisos\Autorizador;
@@ -224,8 +225,13 @@ class EspacioController extends Controller
         [$nodo, $empresaId] = $this->buscar($request, $espacio);
         Gate::authorize('espacios.eliminar', $nodo); // Seguridad (AZ-04): alcance sobre el registro ("solo los propios")
         $activo = $request->boolean('activo');
+        // C-20: «Antes de dar de baja» si tiene reservas futuras o llaves que la abren
+        $revision = $activo ? null : $this->tenant->conEmpresa($empresaId, fn () => app(AntesDeDarDeBaja::class)->exigirRevisado('espacios', $nodo, $request));
 
         $afectados = $this->tenant->conEmpresa($empresaId, fn () => $this->administrador->cambiarEstado($request->user(), $nodo, $activo));
+        if ($revision !== null && $revision['items'] !== []) {
+            $this->tenant->conEmpresa($empresaId, fn () => app(AntesDeDarDeBaja::class)->aplicar('espacios', $nodo, $revision, $request->all(), $request->user()));
+        }
         $extra = $afectados > 1 ? ' junto con '.($afectados - 1).' espacio(s) que dependen de él' : '';
 
         return $this->volver($nodo->padre, $nodo->sede_id)->with($activo ? 'ok' : 'aviso', $activo

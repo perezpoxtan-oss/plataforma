@@ -8,6 +8,7 @@ use App\Models\Empresa;
 use App\Models\Proveedor;
 use App\Models\User;
 use App\Models\Vehiculo;
+use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Lector\ImpresionDesdePadron;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Padrones\HayParecidos;
@@ -129,7 +130,12 @@ class VehiculoController extends Controller
 
         $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $vehiculo, $activo) {
             $modelo = $this->buscarEnAlcance($request->user(), $vehiculo, 'vehiculos.eliminar');
+            // C-20: «Antes de dar de baja» si algo vigente depende de él
+            $revision = $activo ? null : app(AntesDeDarDeBaja::class)->exigirRevisado('vehiculos', $modelo, $request);
             $this->vehiculos->cambiarEstado($request->user(), $modelo, $activo);
+            if ($revision !== null && $revision['items'] !== []) {
+                app(AntesDeDarDeBaja::class)->aplicar('vehiculos', $modelo, $revision, $request->all(), $request->user());
+            }
 
             return $modelo;
         });

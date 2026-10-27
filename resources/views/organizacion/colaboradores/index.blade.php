@@ -92,7 +92,7 @@
                 <button type="button" class="ficha-card ficha-create ficha-provisional" data-abrir-dialogo="dialogoRegistroRapidoColaborador">
                     <i class="bi bi-person-plus" aria-hidden="true"></i>
                     <span class="h6 fw-bold m-0 mt-2 titulo-crear">Registro rápido</span>
-                    <span class="small text-muted mt-1">Para alguien que aún no aparece: queda por verificar y Recursos Humanos lo verifica.</span>
+                    <span class="small text-muted mt-1">Para alguien que aún no aparece: queda por verificar y {{ $quienVerifica }} lo verifica.</span>
                 </button>
             @endif
 
@@ -145,11 +145,11 @@
                                 </div>
                             @endif
                             @if ($pendiente)
-                                <div class="small mt-1 texto-provisional"><i class="bi bi-shield-exclamation" aria-hidden="true"></i> Registrado en la caseta: Recursos Humanos debe verificarlo.</div>
+                                <div class="small mt-1 texto-provisional"><i class="bi bi-shield-exclamation" aria-hidden="true"></i> Registrado en la caseta: {{ $quienVerifica }} debe verificarlo.</div>
                             @elseif ($c->fusionado_en_id && $c->fusionadoEn)
                                 <div class="small mt-1 text-muted"><i class="bi bi-arrow-left-right" aria-hidden="true"></i> Era un duplicado: se unió con #{{ $c->fusionadoEn->num_empleado }} {{ $c->fusionadoEn->nombreCompleto() }}.</div>
                             @elseif ($c->validado_en)
-                                <div class="texto-traza mt-1"><i class="bi bi-patch-check" aria-hidden="true"></i> Validado por Recursos Humanos · @fecha($c->validado_en)</div>
+                                <div class="texto-traza mt-1"><i class="bi bi-patch-check" aria-hidden="true"></i> Verificado · @fecha($c->validado_en)</div>
                             @endif
                             @if ($c->creado_por_nombre)
                                 <div class="texto-traza mt-1"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $c->creado_por_nombre }} · @fecha($c->created_at)</div>

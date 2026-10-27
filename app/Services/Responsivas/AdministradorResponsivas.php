@@ -2,6 +2,7 @@
 
 namespace App\Services\Responsivas;
 
+use App\Models\Colaborador;
 use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EquipoResponsiva;
@@ -10,6 +11,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\VoucherReposicion;
 use App\Services\Activos\CampanaActivos;
+use App\Services\Activos\CustodiaActivos;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
@@ -17,6 +19,8 @@ use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
 use App\Support\AjustesCaseta;
+use App\Support\EstadoActivo;
+use App\Support\Receptor;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -140,17 +144,26 @@ class AdministradorResponsivas
         if ($sede === null) {
             throw ValidationException::withMessages(['sede_id' => 'Elige una de tus sedes activas.']);
         }
-        $colaborador = $this->prestamos->colaboradorValido((int) $datos['colaborador_id'], $sede);
+        // C-16: el resguardo puede quedar a cargo de un colaborador, una persona del padrón o una empresa externa
+        [$tipoReceptor, $receptor] = $this->prestamos->receptorValido($entrada, $sede, 'Escanea el gafete o busca al colaborador responsable.');
+        $colaborador = $receptor instanceof Colaborador ? $receptor : null;
         $filas = $this->filasValidas($datos);
         $this->equiposDisponibles(array_keys($filas), $sede);
+        // Revisión Etapa 2 (A-2): un equipo apartado para un pase que aún no sale se entrega solo con motivo
+        $apartados = [];
+        foreach (Equipo::whereIn('id', array_keys($filas))->get() as $equipo) {
+            if (($pase = app(CustodiaActivos::class)->exigirMotivoSiApartado($equipo, $entrada['motivo_apartado'] ?? null, 'entregar')) !== null) {
+                $apartados[$equipo->numero_serie] = $pase->folio;
+            }
+        }
 
         // La firma se guarda al final de las validaciones; si algo falla después, se borra
         $firma = $this->firmas->guardar($datos['firma'] ?? null, 'responsivas', 'firma', 'la firma del colaborador');
 
         try {
-            $responsiva = DB::transaction(function () use ($actor, $sede, $colaborador, $filas, $firma) {
+            $responsiva = DB::transaction(function () use ($actor, $sede, $colaborador, $filas, $firma, $tipoReceptor, $receptor) {
                 $numero = (int) Responsiva::query()->lockForUpdate()->max('numero') + 1;
-                $responsiva = new Responsiva(['sede_id' => $sede->id, 'colaborador_id' => $colaborador->id]);
+                $responsiva = new Responsiva(['sede_id' => $sede->id, 'colaborador_id' => $colaborador?->id, 'receptor_tipo' => $tipoReceptor, 'receptor_id' => $receptor->getKey()]);
                 $responsiva->forceFill([
                     'numero' => $numero,
                     'folio' => Responsiva::folioPara($sede, $numero),
@@ -163,7 +176,7 @@ class AdministradorResponsivas
                 foreach ($filas as $equipoId => $modalidad) {
                     // Bloquea el equipo y revisa otra vez su estado dentro de la transacción
                     $equipo = Equipo::whereKey($equipoId)->lockForUpdate()->firstOrFail();
-                    $this->equipos->asignarPorResponsiva($actor, $equipo, true);
+                    $this->equipos->asignarPorResponsiva($actor, $equipo, true, $modalidad);
                     $responsiva->equipos()->create(['equipo_id' => $equipoId, 'modalidad' => $modalidad]);
                 }
 
@@ -177,7 +190,8 @@ class AdministradorResponsivas
             throw $e;
         }
 
-        $this->auditoria->auditar($actor, 'responsivas.creado', $responsiva, null, $this->foto($responsiva));
+        $this->auditoria->auditar($actor, 'responsivas.creado', $responsiva, null, $this->foto($responsiva)
+            + ($apartados !== [] ? ['apartados' => $apartados, 'motivo_apartado' => mb_substr(trim((string) $entrada['motivo_apartado']), 0, 250)] : []));
 
         return $responsiva;
     }
@@ -218,7 +232,7 @@ class AdministradorResponsivas
             foreach ($pendientes as $fila) {
                 $equipo = Equipo::whereKey($fila->equipo_id)->lockForUpdate()->first();
                 $estado = 'ok';
-                if ($equipo !== null && $equipo->estado === 'asignado') {
+                if ($equipo !== null && in_array($equipo->estado, [...EstadoActivo::EN_RESGUARDO, EstadoActivo::NO_REGRESO], true)) {
                     $this->equipos->asignarPorResponsiva($actor, $equipo, false);
                     $regresaron++;
                 } elseif ($equipo !== null && $equipo->estado === 'baja') {
@@ -298,8 +312,9 @@ class AdministradorResponsivas
                 $voucher = $this->equipos->darDeBaja($actor, $equipo, [
                     'motivo' => in_array($entrada['motivo'] ?? null, $motivos, true) ? $entrada['motivo'] : $motivos[0],
                     'descripcion' => 'Responsiva '.$responsiva->folio.': '.$nota,
-                    'colaborador_id' => ! empty($entrada['aplica_cobro']) ? $responsiva->colaborador_id : null,
-                ] + array_intersect_key($entrada, array_flip(['aplica_cobro', 'monto', 'firma_modo', 'firma_seguridad', 'firma_responsable'])));
+                    'responsable_tipo' => ! empty($entrada['aplica_cobro']) ? ($responsiva->receptor_tipo ?? 'colaborador') : null,
+                    'responsable_id' => ! empty($entrada['aplica_cobro']) ? ($responsiva->receptor_id ?? $responsiva->colaborador_id) : null,
+                ] + array_intersect_key($entrada, array_flip(['aplica_cobro', 'monto', 'firma_modo', 'firma_seguridad', 'firma_responsable'])), desdeSuModulo: true);
             } elseif ($estado === 'danado') {
                 $this->equipos->recibirDanadoDeResponsiva($actor, $equipo);
             } else {
@@ -336,11 +351,11 @@ class AdministradorResponsivas
      */
     private function validar(array $entrada): array
     {
-        $entrada = array_intersect_key($entrada, array_flip(['sede_id', 'colaborador_id', 'equipos', 'modalidades', 'firma']));
+        $receptor = Receptor::deEntrada($entrada);
+        $entrada = array_intersect_key($entrada, array_flip(['sede_id', 'equipos', 'modalidades', 'firma']));
 
         return Validator::make($entrada, [
             'sede_id' => ['required', 'integer'],
-            'colaborador_id' => ['required', 'integer'],
             'equipos' => ['required', 'array', 'min:1', 'max:'.self::MAX_EQUIPOS],
             'equipos.*' => ['nullable', 'integer'],
             'modalidades' => ['nullable', 'array', 'max:'.self::MAX_EQUIPOS],
@@ -348,14 +363,16 @@ class AdministradorResponsivas
             'firma' => ['nullable', 'string'],
         ], [
             'sede_id.required' => 'Elige la sede de origen.',
-            'colaborador_id.required' => 'Escanea el gafete o busca al colaborador responsable.',
-            'colaborador_id.integer' => 'Escanea el gafete o busca al colaborador responsable.',
             'equipos.required' => 'Agrega al menos 1 equipo a la responsiva.',
             'equipos.min' => 'Agrega al menos 1 equipo a la responsiva.',
             'equipos.max' => 'Una responsiva admite hasta '.self::MAX_EQUIPOS.' equipos.',
             'equipos.*.integer' => 'Seleccione un equipo en todas las filas agregadas.',
             'modalidades.*.in' => 'Elige «Turno» o «Fijo» en cada equipo.',
-        ])->validate();
+        ])->after(function ($v) use ($receptor) {
+            if ($receptor === null) {
+                $v->errors()->add('colaborador_id', 'Escanea el gafete o busca al colaborador responsable.');
+            }
+        })->validate();
     }
 
     /**
@@ -501,7 +518,7 @@ class AdministradorResponsivas
         return EquipoResponsiva::query()
             // Seguridad (AZ-04): con $actor, solo las responsivas dentro de su alcance ("solo los propios")
             ->when($actor !== null, fn ($q) => $q->whereHas('responsiva', fn ($r) => $this->limitar($r, $actor, 'responsivas.ver')))
-            ->with(['responsiva:id,folio,colaborador_id,entregado_en,entregado_por,recibido_por,devuelto_en',
+            ->with(['responsiva:id,folio,colaborador_id,receptor_tipo,receptor_id,entregado_en,entregado_por,recibido_por,devuelto_en',
                 'responsiva.colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno', 'responsiva.entrego:id,name', 'responsiva.recibio:id,name'])
             ->where('equipo_id', $equipo->id)->orderByDesc('id')->limit(self::HISTORIAL_EQUIPO)->get();
     }

@@ -220,3 +220,5 @@ Criterio 3, como las autorizaciones de la caseta (`App\Services\Autorizaciones\E
 
 - **Regla 4 (verbos):** los botones de caseta de la sede destino se llaman **Confirmar llegada a esta sede** y **Autorizar salida de regreso** por indicación del dueño del proyecto (crítica de uso, octubre de 2026), para que el agente de la sede destino entienda qué hace. Solo cambió el texto.
 - **Regla 3 (reloj, color y suplente):** resuelta en ADR-0013 (ver «Firmas que tardan»). El color y los avisos dependen de las horas que configure la empresa; sin ellas solo se ve el reloj (decisión del dueño: por omisión nada cambia).
+
+> **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).

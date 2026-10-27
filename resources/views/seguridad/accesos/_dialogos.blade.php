@@ -56,6 +56,10 @@
                             <option value="{{ $z['id'] }}" data-sede="{{ $z['sede_id'] }}" @selected($otraVez && (string) old('zona_estacionamiento_id') === (string) $z['id'])>{{ $z['texto'] }}</option>
                         @endforeach
                     </select>
+                    @if ($otraVez && $errors->has('zona_llena'))
+                        {{-- C-21: «Zona llena, ¿enviar de todos modos?» --}}
+                        <label class="casilla-devolucion mt-2"><input type="checkbox" name="zona_llena" value="si"> Enviar aunque esté llena</label>
+                    @endif
                 @else
                     @unless ($esSalida)
                         <label class="campo-etiqueta" for="{{ $idDialogo }}_conductor">Conductor de Regreso <span class="text-lowercase fw-normal">(opcional — si no lo llenas, se usa el nombre del titular)</span></label>
@@ -69,6 +73,8 @@
                     <label class="campo-etiqueta" for="{{ $idDialogo }}_marca">Marca</label>
                     <input type="text" id="{{ $idDialogo }}_marca" name="marca" class="campo text-uppercase" maxlength="50" data-vehiculo-campo="marca" value="{{ $otraVez ? old('marca') : '' }}">
                     @if ($esSalida)
+                        {{-- C-21: si el auto se va con él, su lugar queda libre --}}
+                        <label class="casilla-devolucion mt-2"><input type="checkbox" name="libera_lugar" value="1" @checked($otraVez && old('libera_lugar'))> Libera su lugar de estacionamiento (el auto se va)</label>
                         <label class="campo-etiqueta" for="{{ $idDialogo }}_conductor">Conductor <span class="text-lowercase fw-normal">(opcional — si no lo llenas, se usa el nombre del titular)</span></label>
                         <input type="text" id="{{ $idDialogo }}_conductor" name="conductor" class="campo text-uppercase" maxlength="150" placeholder="Nombre de quien conduce" value="{{ $otraVez ? old('conductor') : '' }}">
                     @endif
@@ -100,6 +106,8 @@
         <form method="POST" action="" data-salida-form class="m-0">
             @csrf
             @method('PATCH')
+            {{-- C-15: casillas ya marcadas «Devolvió el gafete …» y «Le devolví su identificación» (las llena plataforma.js) --}}
+            <fieldset class="devolucion-salida" data-salida-devolucion hidden></fieldset>
             <div class="dialogo-acciones">
                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                 <button type="button" class="btn-ambar-acceso" data-salida-regreso hidden>Registrar regreso</button>

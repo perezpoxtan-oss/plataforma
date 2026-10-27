@@ -102,6 +102,9 @@
                         </div>
                         @include('padrones.altas-por-verificar._insignia', ['registro' => $p, 'femenino' => true])
                         <h2 class="persona-nombre">{{ $p->nombre_completo }}</h2>
+                        @if ($p->restringido())
+                            <p class="insignia-restringido"><i class="bi bi-shield-fill-x me-1" aria-hidden="true"></i>{{ $p->textoRestriccion() }}</p>
+                        @endif
 
                         <div class="ficha-meta persona-meta">
                             @if ($empresaDe)
@@ -143,6 +146,7 @@
                             <span></span>
                         @endif
                         @include('padrones.altas-por-verificar._boton', ['registro' => $p])
+                        @include('componentes.restriccion-ficha', ['registro' => $p, 'padron' => 'personas', 'nombre' => $p->nombre_completo, 'puede' => $desactivable && $p->activo])
                         @if ($unible)
                             <button type="button" class="btn-icono unir-duplicado" title="Unir con otra ficha (es la misma persona)" aria-label="Unir a {{ $p->nombre_completo }} con otra ficha"
                                     data-unir-duplicado="{{ json_encode(['id' => $p->id, 'titulo' => $p->nombre_completo, 'url' => route('personas.unir-duplicado', $p->id), 'parecidos' => route('altas_por_verificar.parecidos', ['padron' => 'personas', 'de' => $p->id])], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}">
@@ -315,4 +319,5 @@
         @include('padrones.altas-por-verificar._unir-duplicado', ['padron' => 'personas'])
     @endif
 </div>
+@include('componentes.restringir-acceso')
 @endsection

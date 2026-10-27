@@ -100,6 +100,8 @@ Cada empresa nueva nace con **todos** los módulos. Si una empresa no usa alguno
 2. **Dar de baja** (círculo rojo): confirma con **Aceptar** («¿Dar de baja «…»? Ya no aparecerá para nuevas capturas; su historial se conserva. Podrás reactivarla con el mismo botón.»). La sede deja de aparecer para nuevas capturas, pero su historial se conserva: ««…» dada de baja: ya no aparecerá para nuevas capturas. Su historial se conserva. Puedes reactivarla con el mismo botón.» Su ficha dice **DE BAJA**.
 3. **Reactivar** (flecha circular): confirma con **Aceptar** y la sede vuelve a estar **ACTIVO**.
 
+> Si tiene cosas vigentes (gente en sitio, llaves prestadas, colaboradores o cuentas que solo trabajan ahí; con gente en sitio no se puede hasta darles salida), antes de confirmar se abre [Antes de dar de baja](antes-de-dar-de-baja.md) con la lista y lo que pasará con cada una.
+
 ## Cómo dar de baja o reactivar una empresa (Super Administrador)
 
 1. Entra a **Estructura → Empresas**.

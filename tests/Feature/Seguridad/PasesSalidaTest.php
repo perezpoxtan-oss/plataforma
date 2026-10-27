@@ -251,8 +251,9 @@ class PasesSalidaTest extends TestCase
         $sedeDos = $this->crearSede($dos, 'UNO');
         $adminDos = $this->crearUsuario($dos, 'Administrador');
         $colabDos = $this->colaborador('1', 'Ana', 'Dos', $sedeDos, $dos);
+        $provPropio = $this->enEmpresa(fn () => Proveedor::create(['nombre' => 'Taller Dos', 'categoria' => 'proveedor']), $dos);
         $this->actingAs($adminDos)->post('/pases-salida', $this->datos(['sede_id' => $sedeDos->id, 'colaborador_id' => $colabDos->id,
-            'destino_tipo' => 'colaborador', 'sede_destino_id' => null, 'colaborador_destino_id' => $colabDos->id]))->assertSessionHasNoErrors();
+            'destino_tipo' => 'proveedor', 'sede_destino_id' => null, 'proveedor_id' => $provPropio->id]))->assertSessionHasNoErrors();
         $this->assertSame('PS-000001', $this->enEmpresa(fn () => PaseSalida::firstOrFail()->folio, $dos));
     }
 
@@ -284,7 +285,8 @@ class PasesSalidaTest extends TestCase
             [['sede_destino_id' => $this->centro->id], 'sede_destino_id', 'La sede de destino no puede ser la misma que la sede de origen: elige una distinta.'],
             [['sede_destino_id' => null], 'sede_destino_id', 'Elige la sede destino.'],
             [['destino_tipo' => 'proveedor'], 'proveedor_id', 'Elige el proveedor destino (o regístralo con «Nuevo Proveedor»).'],
-            [['destino_tipo' => 'colaborador'], 'colaborador_destino_id', 'Elige el colaborador que se lleva el equipo.'],
+            // C-18: el resguardo personal es una responsiva
+            [['destino_tipo' => 'colaborador', 'colaborador_destino_id' => $this->otroColaborador->id], 'destino_tipo', 'Para que un colaborador se lleve un equipo a su resguardo usa Responsivas (Operación → Responsivas): ahí queda a su cargo con su firma.'],
             [['fecha_tentativa_regreso' => '2026-10-01'], 'fecha_tentativa_regreso', 'El regreso programado no puede ser antes de la salida programada.'],
             [['destino_telefono' => 'abc'], 'destino_telefono', 'Revisa el teléfono: solo números (7 a 20), con "+" si es de otro país.'],
             [['motivo' => 'regalo'], 'motivo', 'Motivo de salida no válido.'],
@@ -326,7 +328,7 @@ class PasesSalidaTest extends TestCase
         $this->actingAs($this->admin)->post('/pases-salida', $this->datos(['colaborador_id' => $colabDos->id]))->assertSessionHasErrors('colaborador_id');
         $this->actingAs($this->admin)->post('/pases-salida', $this->datos(['sede_destino_id' => $sedeDos->id]))->assertSessionHasErrors('sede_destino_id');
         $this->actingAs($this->admin)->post('/pases-salida', $this->datos(['destino_tipo' => 'proveedor', 'proveedor_id' => $provDos->id]))->assertSessionHasErrors('proveedor_id');
-        $this->actingAs($this->admin)->post('/pases-salida', $this->datos(['destino_tipo' => 'colaborador', 'colaborador_destino_id' => $colabDos->id]))->assertSessionHasErrors('colaborador_destino_id');
+        $this->actingAs($this->admin)->post('/pases-salida', $this->datos(['destino_tipo' => 'colaborador', 'colaborador_destino_id' => $colabDos->id]))->assertSessionHasErrors('destino_tipo');
 
         $pase = $this->crearPase(['articulos' => [['cantidad' => 1, 'equipo' => 'Radio', 'serie' => 'R-1', 'equipo_id' => $equipoDos->id]]]);
         $this->assertNull($pase->articulos->first()->equipo_id);
@@ -392,7 +394,8 @@ class PasesSalidaTest extends TestCase
 
     public function test_hacia_proveedor_o_colaborador_solo_salida_y_regreso(): void
     {
-        foreach ([['destino_tipo' => 'proveedor', 'proveedor_id' => $this->proveedor->id], ['destino_tipo' => 'colaborador', 'colaborador_destino_id' => $this->otroColaborador->id]] as $destino) {
+        // C-18: el destino «un colaborador se lo lleva» ya no se ofrece (es una responsiva)
+        foreach ([['destino_tipo' => 'proveedor', 'proveedor_id' => $this->proveedor->id]] as $destino) {
             $pase = $this->crearPase($destino + ['sede_destino_id' => null]);
             $this->assertSame(['salida', 'regreso'], $pase->pasosFisicos());
             $this->aprobarTodo($pase);

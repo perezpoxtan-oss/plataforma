@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\User;
+use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Padrones\AvisoDuplicado;
 use App\Services\Padrones\HayParecidos;
@@ -116,7 +117,12 @@ class PersonaController extends Controller
 
         $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $persona, $activo) {
             $modelo = $this->buscarEnAlcance($request->user(), $persona, 'visitantes.eliminar');
+            // C-20: «Antes de dar de baja» si algo vigente depende de él
+            $revision = $activo ? null : app(AntesDeDarDeBaja::class)->exigirRevisado('personas', $modelo, $request);
             $this->personas->cambiarEstado($request->user(), $modelo, $activo);
+            if ($revision !== null && $revision['items'] !== []) {
+                app(AntesDeDarDeBaja::class)->aplicar('personas', $modelo, $revision, $request->all(), $request->user());
+            }
 
             return $modelo;
         });

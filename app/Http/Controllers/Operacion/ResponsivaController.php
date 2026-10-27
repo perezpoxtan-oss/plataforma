@@ -14,6 +14,7 @@ use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Firmas\Firmas;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Support\AjustesCaseta;
+use App\Support\Receptor;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Builder;
@@ -87,6 +88,8 @@ class ResponsivaController extends Controller
                     ->orderBy('numero_serie')->get(['id', 'sede_id', 'tipo_equipo_id', 'marca', 'modelo', 'numero_serie']),
                 'recibibles' => $this->responsivas->idsEnAlcance($actor, 'responsivas.editar', $enCampo),
                 'imprimibles' => $this->responsivas->idsEnAlcance($actor, 'responsivas.imprimir', $todas),
+                // C-16: lo elegido en el selector de responsable antes de que el formulario regresara con errores
+                'receptorAnterior' => Receptor::anterior('receptor'),
                 'colaboradorAnterior' => old('colaborador_id') ? Colaborador::whereKey((int) old('colaborador_id'))->first(['id', 'num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno']) : null,
                 'puede' => [
                     'crear' => $puedeCrear && $sedesCrear->isNotEmpty(),

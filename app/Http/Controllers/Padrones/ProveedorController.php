@@ -7,6 +7,7 @@ use App\Models\Empresa;
 use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Models\User;
+use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Padrones\AdministradorProveedores;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Padrones\HayParecidos;
@@ -239,7 +240,12 @@ class ProveedorController extends Controller
         $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $proveedor, $activo) {
             $modelo = $this->buscarVisible($request->user(), $proveedor);
             $this->exigirExclusivo($request->user(), $modelo, 'proveedores.eliminar');
+            // C-20: «Antes de dar de baja» si algo vigente depende de él
+            $revision = $activo ? null : app(AntesDeDarDeBaja::class)->exigirRevisado('proveedores', $modelo, $request);
             $this->proveedores->cambiarEstado($request->user(), $modelo, $activo);
+            if ($revision !== null && $revision['items'] !== []) {
+                app(AntesDeDarDeBaja::class)->aplicar('proveedores', $modelo, $revision, $request->all(), $request->user());
+            }
 
             return $modelo;
         });

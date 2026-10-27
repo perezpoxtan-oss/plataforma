@@ -83,6 +83,9 @@ class CentroNotificaciones
         'procedimiento_publicado' => ['bi-book', 'info'],
         'llave_fuera' => ['bi-key-fill', 'alerta'],
         'equipo_turno' => ['bi-broadcast-pin', 'alerta'],
+        // Etapa 2 (C-14, C-15, C-20): lo que no regresó y lo que quedó pendiente al dar de baja
+        'activo_no_regreso' => ['bi-exclamation-octagon-fill', 'alerta'],
+        'baja_con_pendientes' => ['bi-person-dash-fill', 'alerta'],
         // Fin Mejoras activos
         // Mejoras padrones (ADR-0015): altas por verificar y su resultado a quien la registró
         'alta_por_verificar' => ['bi-patch-question-fill', 'alerta'],

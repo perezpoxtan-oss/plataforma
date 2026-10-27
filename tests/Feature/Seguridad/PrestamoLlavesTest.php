@@ -475,7 +475,7 @@ class PrestamoLlavesTest extends TestCase
         $this->prestamo($fuera, $this->colaborador('1007', $this->centro));
 
         $pagina = $this->actingAs($this->admin)->get('/llaves')->assertOk()
-            ->assertSee('Usada por: Persona Num1007')->assertSee('Prestar o ver sus préstamos')
+            ->assertSee('EN USO por: Persona Num1007')->assertSee('Prestar o ver sus préstamos')
             ->assertSee(route('prestamo_llaves.index').'#historial-llave-'.$fuera->id, false)->getContent();
         $this->assertSame(1, substr_count($pagina, 'etiqueta-estado en-uso'));
         $this->enEmpresa(function () use ($fuera) {
