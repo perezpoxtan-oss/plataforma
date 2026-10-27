@@ -78,7 +78,7 @@ Lo que tiene hora fija y no una petición: el reloj cuenta desde la hora en que 
 | Reloj | Espera | Recordatorio → suplente | Responsables → suplente |
 |---|---|---|---|
 | `RutasSinRegistro` (`ruta_sin_registro`, id del horario) | Horario de hoy que opera hoy, sin movimiento no anulado en la fecha local de la sede, entre 15 min y 6 h después de su hora de caseta | al minuto 15 → +60 min | `transporte.crear` y `transporte.aprobar` de la sede → `transporte.aprobar` de toda la empresa |
-| `OrdenesDeServicio` (`reserva_orden`) | Orden pendiente de una reserva confirmada que no ha terminado | 24 h antes del montaje → al empezar el montaje | `ResponsablesReservas::delDepartamento` → `generales` |
+| `OrdenesDeServicio` (`reserva_orden`) | Orden pendiente de una reserva confirmada que no ha terminado | 24 h antes del montaje → al empezar el montaje | `ResponsablesReservas::delDepartamento` → `generales` que puedan marcarla «Listo» (D-01: atienden el departamento o configuran Reservas en la sede; si no, quien configura Reservas en la empresa). Quien la recibe la ve en «Órdenes de servicio por atender» o en «Te lo pasaron» |
 | `RecargasDeEquiposPc` (`equipo_pc_recarga`) | `equipos_pc.proxima_recarga` a 15 días o menos | 15 días antes → el día que vence | `equipos_pc.editar` de la sede → de toda la empresa |
 | `RevisionesDeEquiposPc` (`equipo_pc_revision`) | Equipo activo cuya última revisión de recorrido (o su alta) pasó la frecuencia de su tipo | al vencer → +7 días | igual |
 

@@ -15,6 +15,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Services\RecorridosPc\AjustesEquiposPc;
 use App\Services\Relojes\MotorRelojes;
+use App\Services\Relojes\Reloj;
 use App\Services\Transporte\BitacoraTransporte;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\Tenant;
@@ -149,6 +150,15 @@ class EtapaCuatroOperacionProgramadaTest extends TestCase
         $this->correr();
         $this->assertSame($recordatorios, $this->avisos('reserva_orden', $orden->id)[0]);
         $this->assertGreaterThan(0, $this->avisos('reserva_orden', $orden->id)[1], 'Al empezar el montaje pasa al responsable general');
+        // D-01: quien lo recibe puede marcarla «Listo» y la tiene en Mis pendientes
+        $suplentes = Notificacion::query()->withoutGlobalScopes()->where('tipo', MotorRelojes::TIPO_ESCALADO)->where('referencia_tipo', 'reserva_orden')
+            ->where('referencia_id', $orden->id)->pluck('user_id');
+        foreach ($suplentes as $id) {
+            $u = User::findOrFail($id);
+            $renglones = collect(['reservas_ordenes', 'ordenes_servicio'.Reloj::SUFIJO_SUPLENTE])
+                ->map(fn ($c) => $this->renglon($u, $c)['total'] ?? 0)->sum();
+            $this->assertGreaterThan(0, $renglones, "{$u->name} recibió la orden y no la ve en Mis pendientes");
+        }
 
         $this->enHotel(fn () => $orden->forceFill(['estado' => ReservaOrden::LISTA])->save());
         $this->correr();
