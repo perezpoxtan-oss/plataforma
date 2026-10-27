@@ -58,6 +58,7 @@ class MotorRelojes
         Relojes\ProcedimientosPorAprobar::class,
         Relojes\ProcedimientosPorLeer::class,
         Relojes\TicketsCanalizados::class,
+        Relojes\TicketsDeDepartamento::class, // Etapa 5 (C-28)
         Relojes\CuentasPorRevisar::class,
         // C-26: Super Administrador
         Relojes\SolicitudesDeCompra::class,

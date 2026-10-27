@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Permisos\Autorizador;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Database\Seeders\MenuSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -110,7 +111,7 @@ class ConstructorMenu
                 ];
             }
 
-            if (in_array($menu->clave, ['recursos_humanos', 'estructura', 'padrones'], true)) {
+            if (in_array($menu->clave, ['recursos_humanos', 'estructura', 'padrones', 'operacion'], true)) {
                 $secciones = $this->conPantallasPersonales($usuario, $secciones, $menu->clave);
             }
             if ($secciones === []) {
@@ -161,9 +162,21 @@ class ConstructorMenu
             && collect(['visitantes.editar', 'vehiculos.editar', 'proveedores.editar', 'colaboradores.aprobar'])->contains(fn ($p) => $this->autorizador->puede($usuario, $p))) {
             $extras[] = ['clave' => 'altas_por_verificar', 'nombre' => 'Altas por verificar', 'icono' => 'bi-patch-question', 'color' => 'warning', 'ruta' => 'altas_por_verificar.index'];
         }
+        // C-10 (DD-14): «Residentes» en Padrones, solo en condominio y fraccionamiento (permisos del directorio)
+        if ($menu === 'padrones' && Route::has('residentes.index') && $empresaId !== null && $this->autorizador->puede($usuario, 'colaboradores.ver')
+            && Terminos::deEmpresaId((int) $empresaId)->esResidencial()) {
+            array_unshift($extras, ['clave' => 'residentes', 'nombre' => 'Residentes', 'icono' => 'bi-house-heart', 'color' => 'success', 'ruta' => 'residentes.index']);
+        }
+        // C-28 (DD-15): «Tickets de mi departamento» para quien responde por un departamento (Mantenimiento, RR. HH.…)
+        if ($menu === 'operacion' && Route::has('novedades.departamento.index') && $empresaId !== null && $this->autorizador->puede($usuario, 'autorizaciones.responder')
+            && $this->autorizador->moduloActivo((int) $empresaId, 'novedades')
+            && $tenant->conEmpresa((int) $empresaId, fn () => app(Autorizaciones::class)->departamentosQueAtiende($usuario) !== [])) {
+            $extras[] = ['clave' => 'novedades_departamento', 'nombre' => 'Tickets de mi departamento', 'icono' => 'bi-diagram-2', 'color' => 'danger', 'ruta' => 'novedades.departamento.index'];
+        }
         $seccion = match ($menu) {
             'estructura' => MenuSeeder::SECCION_ORGANIZACION,
             'padrones' => self::SECCION_PADRONES,
+            'operacion' => 'Incidentes',
             default => self::SECCION_PERSONAL,
         };
         foreach ($extras as $item) {

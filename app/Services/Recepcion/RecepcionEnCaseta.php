@@ -8,6 +8,7 @@ use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\User;
 use App\Models\Vacante;
+use App\Services\Accesos\AQuienViene;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\DocumentosCandidato;
@@ -56,10 +57,10 @@ class RecepcionEnCaseta
      * @param  array<string, string>  $errores  se agregan aquí los mensajes
      * @return array{candidato: bool, viene_a: ?string, vacante_datos: array<string, mixed>, departamento_id: ?int, esperar: bool, esperar_rh: bool, sin_responsable: bool, fotos: array<string, UploadedFile>}
      */
-    public function preparar(string $tipo, ?string $motivo, array $entrada, int $sedeId, ?Colaborador $visita, array &$errores): array
+    public function preparar(string $tipo, ?string $motivo, array $entrada, int $sedeId, ?Colaborador $visita, array &$errores, bool $conLlamada = false, ?Colaborador $host = null): array
     {
         $r = ['candidato' => false, 'viene_a' => null, 'vacante_datos' => [], 'departamento_id' => null, 'esperar' => false, 'esperar_rh' => false,
-            'sin_responsable' => false, 'fotos' => []];
+            'sin_responsable' => false, 'fotos' => [], 'persona' => null, 'cuenta' => null, 'avisar_visitado' => null];
 
         foreach (['foto_persona', 'foto_identificacion'] as $campo) {
             $archivo = $entrada[$campo] ?? null;
@@ -69,7 +70,18 @@ class RecepcionEnCaseta
                 $errores[$campo] = 'No se pudo recibir la foto. Tómala de nuevo.';
             }
         }
+        // C-09: la caseta ya llamó al residente o a la habitación (constancia en el registro): no espera a nadie más
+        if ($conLlamada) {
+            return $r;
+        }
         if (in_array($tipo, Acceso::CON_AUTORIZACION, true)) {
+            // C-09 (DD-12): quien lo citó y tiene cuenta autoriza; su departamento es el suplente
+            if (($cuenta = AQuienViene::cuentaDe($host)) !== null) {
+                $departamento = $this->departamento($entrada['departamento_id'] ?? null, $sedeId);
+
+                return ['departamento_id' => $departamento?->id, 'esperar' => true, 'persona' => $host, 'cuenta' => $cuenta] + $r;
+            }
+
             return $this->proveedor($tipo, $entrada, $sedeId, $r, $errores);
         }
         if ($tipo !== 'visitante') {
@@ -115,6 +127,14 @@ class RecepcionEnCaseta
         }
 
         $empresa = Empresa::find(app(Tenant::class)->empresaId());
+        // C-09 (DD-12): la persona citada con cuenta autoriza (su departamento es el suplente); si la empresa no pide autorización, solo se le avisa
+        if ($motivo === 'colaborador' && ($cuenta = AQuienViene::cuentaDe($visita)) !== null) {
+            if ($empresa !== null && $this->ajustes->visitasRequierenAutorizacion($empresa)) {
+                return ['esperar' => true, 'persona' => $visita, 'cuenta' => $cuenta] + $r;
+            }
+
+            return ['avisar_visitado' => $cuenta] + $r;
+        }
         if ($r['departamento_id'] === null || $empresa === null || ! $this->ajustes->visitasRequierenAutorizacion($empresa)) {
             return $r;
         }
@@ -162,8 +182,13 @@ class RecepcionEnCaseta
         }
         if ($r['esperar_rh']) {
             $this->autorizaciones->solicitarRecepcion($actor, $acceso, $candidato);
+        } elseif ($r['esperar'] && ($r['persona'] ?? null) !== null) {
+            $this->autorizaciones->solicitarVisita($actor, $acceso, $r['departamento_id'] === null ? null : (int) $r['departamento_id'], $r['persona']);
         } elseif ($r['esperar']) {
             $this->autorizaciones->solicitarVisita($actor, $acceso, (int) $r['departamento_id']);
+        }
+        if (($r['avisar_visitado'] ?? null) !== null) {
+            $this->autorizaciones->avisarVisitado($actor, $acceso, $r['avisar_visitado']);
         }
         if (! $r['esperar'] && ! $r['esperar_rh'] && $r['sin_responsable']) {
             // C-08 / DD-11: nadie del departamento puede responder en esta sede → avisa al supervisor o jefe de seguridad

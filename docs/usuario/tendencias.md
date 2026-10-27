@@ -46,7 +46,7 @@ Lo que trae cada sección:
 
 | Sección | Qué compara |
 |---|---|
-| **Accesos** | Ingresos, gente en sitio ahora, departamento más visitado, por tipo, medio de llegada, duración promedio de la visita y por hora del día. |
+| **Accesos** | Ingresos, gente en sitio ahora, departamento más visitado (en condominios y fraccionamientos, la vivienda más visitada), por tipo, medio de llegada, duración promedio de la visita y por hora del día. |
 | **Novedades** | Tickets abiertos, tiempo promedio de cierre, por estatus y categoría, concentración por zona y carga por guardia. |
 | **Robo** | Casos, valor estimado y seguimiento (sospechoso, parte a la policía, canalizados). |
 | **Lost & Found** | Objetos encontrados, reportes de pérdida, tasa de recuperación, por estatus y tipo de valor. |

@@ -102,6 +102,11 @@ class CatalogosReservas
             if ($departamento !== null && ! Departamento::whereKey($departamento)->exists()) {
                 throw ValidationException::withMessages(['departamento_id' => 'Elige un departamento de la empresa.']);
             }
+            // C-34 (D-10): un departamento dado de baja ya no recibe órdenes (el que ya tenía el servicio se conserva)
+            if ($departamento !== null && $departamento !== (int) ($registro?->getAttribute('departamento_id') ?? 0)
+                && ! Departamento::whereKey($departamento)->where('activo', true)->exists()) {
+                throw ValidationException::withMessages(['departamento_id' => 'Ese departamento está dado de baja: elige uno activo.']);
+            }
             $costo = ($datos['costo'] ?? '') === '' || $datos['costo'] === null ? null : round((float) $datos['costo'], 2);
             if ($costo !== null && ($costo < 0 || $costo > 9999999)) {
                 throw ValidationException::withMessages(['costo' => 'El costo no es válido.']);

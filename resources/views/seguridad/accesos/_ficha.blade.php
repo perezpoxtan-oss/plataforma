@@ -23,12 +23,13 @@
             $a->autorizacion === 'espera' && $conRh => 'RR. HH. pide que espere',
             $a->autorizacion === 'espera' => 'Le pidieron que espere',
             $espera !== null => $espera['texto'],
-            in_array($a->tipo, \App\Models\Acceso::CON_AUTORIZACION, true) => 'Confirma con el host: '.($host ?: '—'),
+            in_array($a->tipo, \App\Models\Acceso::CON_AUTORIZACION, true) => 'Confirma con quien lo citó: '.($host ?: ($a->departamento?->nombre ?? '—')),
             default => 'Espera autorización',
         }],
         $modo === 'en_sitio' && $fuera => ['FUERA', 'fuera', 'bi-signpost-split', $a->tipo === 'huesped' ? 'Fuera en tour' : 'Fuera temporal'],
         $modo === 'en_sitio' => ['EN SITIO', 'en-sitio', 'bi-record-circle', match (true) {
             $a->autorizacion === \App\Models\Acceso::POR_EXCEPCION => 'Autorizado por excepción ('.($a->motivo_excepcion ?: 'sin motivo').', '.($a->autorizadoPor?->name ?? '—').')',
+            $a->autorizacion === \App\Models\Acceso::POR_LLAMADA => 'Autorizó por teléfono (llamó '.($a->autorizadoPor?->name ?? '—').')', // C-09
             $a->autorizacion === 'autorizada' && $conRh => 'RR. HH. dijo que pase',
             $a->autorizacion === 'autorizada' && $a->departamento !== null => 'Autorizado por '.$a->departamento->nombre,
             default => null,
@@ -37,6 +38,8 @@
             $a->movimiento === 'regreso' => $a->tipo === 'huesped' ? 'Regreso de tour' : 'Regreso',
             $a->movimiento === 'salida_temporal' => $a->tipo === 'huesped' ? 'Salida a tour' : 'Salida temporal',
             $a->autorizacion === 'rechazada' => 'No autorizado por '.$quienNego.': no ingresó',
+            $a->autorizacion === \App\Models\Acceso::LLAMADA_NO => 'Se llamó y no autorizó: no ingresó ('.($a->salidaPor?->name ?? '—').')', // C-09
+            $a->autorizacion === \App\Models\Acceso::POR_LLAMADA => 'Autorizó por teléfono (llamó '.($a->autorizadoPor?->name ?? '—').')',
             $a->autorizacion === \App\Models\Acceso::POR_EXCEPCION => 'Autorizado por excepción ('.($a->motivo_excepcion ?: 'sin motivo').', '.($a->autorizadoPor?->name ?? '—').')',
             default => null,
         }],
@@ -59,7 +62,8 @@
         <p class="ficha-acceso-detalle"><span class="gafete-mini">Gafete: {{ $a->gafeteVisible() }}</span></p>
     @endif
 
-    <h3 class="ficha-acceso-nombre">{{ $a->nombre }}@if ($a->habitacion) <span class="badge-hab">{{ $a->terminos()->abreviaturaEspacio($a->tipo) }} {{ $a->habitacion }}</span>@endif</h3>
+    {{-- C-30: la habitación o vivienda que no está en el catálogo se marca «sin catálogo» --}}
+    <h3 class="ficha-acceso-nombre">{{ $a->nombre }}@if ($a->habitacion) <span class="badge-hab" @if (! $a->espacio_id) title="Sin catálogo: no está en Zonas y edificios" @endif>{{ $a->terminos()->abreviaturaEspacio($a->tipo) }} {{ $a->habitacion }}@if (! $a->espacio_id) <i class="bi bi-question-circle" aria-hidden="true"></i>@endif</span>@endif</h3>
     {{-- Ronda 8 (AC-05): si lo buscado es un acompañante, se avisa de quién viene acompañando (el filtro en vivo las muestra u oculta) --}}
     @php $coincide = \App\Services\Accesos\ConsultaAccesos::acompananteQueCoincide($a, is_string(request('q')) ? request('q') : null); @endphp
     @foreach ($a->acompanantes as $ac)
@@ -113,7 +117,7 @@
     @else
         <div class="ficha-acceso-datos">
             @if ($a->persona_visita)
-                <div><strong>{{ $a->motivo_visita === 'general' ? 'Viene a:' : 'Visitando a:' }}</strong> <span class="dato-destacado">{{ $a->persona_visita }}</span>@if ($a->motivo_visita === 'huesped' && $a->habitacion) · Habitación {{ $a->habitacion }}@endif</div>
+                <div><strong>{{ $a->motivo_visita === 'general' ? 'Viene a:' : (in_array($a->tipo, \App\Models\Acceso::CON_AUTORIZACION, true) ? 'Viene con:' : 'Visitando a:') }}</strong> <span class="dato-destacado">{{ $a->persona_visita }}</span>@if ($a->motivo_visita === 'huesped' && $a->habitacion) · Habitación {{ $a->habitacion }}@endif</div>
             @endif
             @if ($a->motivo_visita)
                 <div><strong>Motivo:</strong> {{ $a->etiquetaMotivo() }}</div>
@@ -142,8 +146,9 @@
             @if ($a->observaciones)
                 <div><strong>Observaciones:</strong> {{ $a->observaciones }}</div>
             @endif
-            @if (in_array($a->tipo, \App\Models\Acceso::CON_AUTORIZACION, true))
-                <div><strong>Host (citó):</strong> <span class="dato-destacado">{{ $host ?: '—' }}</span></div>
+            @if (in_array($a->tipo, \App\Models\Acceso::CON_AUTORIZACION, true) && ! $a->persona_visita)
+                {{-- C-09: «a quién viene» (antes «Host (citó)») --}}
+                <div><strong>Viene con:</strong> <span class="dato-destacado">{{ $host ?: ($a->departamento?->nombre ?? '—') }}</span></div>
             @endif
             @if ($idCustodiada)
                 <div><strong>ID en Caseta:</strong> {{ $idCustodiada }}</div>

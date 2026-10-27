@@ -40,7 +40,10 @@ final class Terminos
     public const RESIDENCIALES = [self::CONDOMINIO, self::FRACCIONAMIENTO];
 
     /** Género de las palabras que se sustituyen (para cuidar el artículo: «la habitación» → «el departamento»). */
-    private const FEMENINAS = ['visita', 'oficina', 'casa', 'habitación', 'habitacion', 'suite', 'residencia', 'villa', 'unidad'];
+    private const FEMENINAS = ['visita', 'oficina', 'casa', 'habitación', 'habitacion', 'suite', 'residencia', 'villa', 'unidad', 'vivienda'];
+
+    /** Palabras que no cambian en plural («el personal» / «el personal»). */
+    private const SIN_PLURAL = ['personal'];
 
     /** Marcas que apagan la sustitución en un pedazo de HTML (p. ej. el formato de Accidente, que no se toca). */
     public const SIN_SUSTITUIR = '<!--terminos:no-->';
@@ -135,15 +138,39 @@ final class Terminos
         return $this->esHotel() ? 'Huéspedes' : Etiquetas::plural($this->visitante());
     }
 
-    /** Quien vive o trabaja en la sede: Colaborador o Residente. */
+    /**
+     * Quien trabaja en la sede: Colaborador, o «Personal» en condominio y
+     * fraccionamiento (C-10: el residente ya no es el colaborador; es un tipo
+     * de persona con vivienda, ver residente()).
+     */
     public function colaborador(): string
     {
-        return $this->esHotel() ? 'Colaborador' : ($this->terminologia['colaborador'] ?? ($this->esResidencial() ? 'Residente' : 'Colaborador'));
+        $palabra = $this->esHotel() ? 'Colaborador' : ($this->terminologia['colaborador'] ?? ($this->esResidencial() ? 'Personal' : 'Colaborador'));
+
+        // Datos de antes de C-10: «Residente» ya no nombra al personal
+        return $this->esResidencial() && mb_strtolower($palabra) === 'residente' ? 'Personal' : $palabra;
     }
 
     public function colaboradores(): string
     {
-        return Etiquetas::plural($this->colaborador());
+        return self::plural($this->colaborador());
+    }
+
+    /** C-10: quien vive en la sede (solo giros residenciales). */
+    public function residente(): string
+    {
+        return 'Residente';
+    }
+
+    public function residentes(): string
+    {
+        return 'Residentes';
+    }
+
+    /** Plural que respeta las palabras sin plural («Personal»). */
+    public static function plural(string $palabra): string
+    {
+        return in_array(mb_strtolower($palabra), self::SIN_PLURAL, true) ? $palabra : Etiquetas::plural($palabra);
     }
 
     /** Nivel «área específica» del árbol: Habitación, Oficina, Departamento, Casa. */
@@ -166,6 +193,7 @@ final class Terminos
 
         return match (mb_strtolower($this->espacio())) {
             'departamento' => 'Depto.',
+            'vivienda' => 'Viv.',
             'habitación', 'habitacion' => 'Hab.',
             default => $this->espacio(),
         };
@@ -185,7 +213,8 @@ final class Terminos
         }
 
         return [
-            'colaborador' => $this->colaborador(),
+            // C-10: en residenciales entran residentes y personal con el mismo tipo
+            'colaborador' => $this->esResidencial() ? 'Residente o personal' : $this->colaborador(),
             'visitante' => $this->visitante(),
             'proveedor' => $this->esResidencial() ? 'Servicio' : 'Proveedor',
             'contratista' => 'Contratista',
@@ -205,7 +234,7 @@ final class Terminos
         }
 
         return [
-            'colaborador' => $this->colaborador(),
+            'colaborador' => $this->esResidencial() ? 'Residente o personal' : $this->colaborador(),
             'visitante' => $this->visitante(),
             'proveedor' => $this->esResidencial() ? 'Servicio / Proveedor' : 'Proveedor',
             'contratista' => 'Contratista (Obra)',
@@ -243,10 +272,19 @@ final class Terminos
     public function motivos(): array
     {
         if ($this->esResidencial()) {
-            return ['colaborador' => 'Visita a '.$this->colaborador(), 'departamento' => 'Visita a Administración'];
+            return ['colaborador' => 'Visita a residente', 'departamento' => 'Visita a Administración'];
         }
 
         return Acceso::MOTIVOS;
+    }
+
+    /**
+     * C-09 (DD-12): texto del botón que junta «Visita a colaborador» y «Visita a
+     * departamento» en un solo motivo con «¿A quién viene?» (persona o área).
+     */
+    public function motivoAQuien(): string
+    {
+        return $this->esResidencial() ? 'Visita' : 'Visita a persona o área';
     }
 
     public function motivoPorDefecto(): string
@@ -367,6 +405,14 @@ final class Terminos
         $reglas[] = $this->reglaPalabra(['personal externo'], $visitante, false);
         $reglas[] = $this->reglaPalabra(['habitación', 'habitaciones', 'habitacion'], $this->espacio(), true);
         if ($this->colaborador() !== 'Colaborador') {
+            // Frases con artículo que no se dicen con «Personal» (C-10)
+            if (in_array(mb_strtolower($this->colaborador()), self::SIN_PLURAL, true)) {
+                foreach (['un colaborador' => 'alguien del personal', 'Un colaborador' => 'Alguien del personal', 'una colaboradora' => 'alguien del personal',
+                    'al colaborador' => 'al personal', 'del colaborador' => 'del personal', 'el colaborador' => 'el personal', 'El colaborador' => 'El personal',
+                    'Nuevo Colaborador' => 'Nuevo personal', 'Nuevo colaborador' => 'Nuevo personal', 'Colaborador que Ingresa' => 'Persona que ingresa'] as $frase => $cambio) {
+                    $reglas[] = ['/(?<![\p{L}\p{N}])'.preg_quote($frase, '/').'(?![\p{L}\p{N}])/u', $cambio];
+                }
+            }
             $reglas[] = $this->reglaPalabra(['colaborador', 'colaboradores', 'colaboradora', 'colaboradoras'], $this->colaborador(), false);
         }
 
@@ -391,12 +437,25 @@ final class Terminos
             $palabra = $m[3];
             $base = mb_strtolower($palabra);
             $plural = in_array($base, ['huéspedes', 'huespedes', 'habitaciones', 'colaboradores', 'colaboradoras'], true);
-            $texto = $plural ? Etiquetas::plural($nueva) : $nueva;
+            $texto = $plural ? self::plural($nueva) : $nueva;
             $texto = $this->comoOriginal($palabra, $texto);
 
             $articulo = $m[1] ?? '';
             if ($articulo === '') {
                 return $texto;
+            }
+            // «los colaboradores» → «el personal» (palabra sin plural: el artículo va en singular)
+            if ($plural && in_array(mb_strtolower($nueva), self::SIN_PLURAL, true)) {
+                $singular = ['los' => 'el', 'las' => 'la', 'unos' => 'el', 'unas' => 'el', 'estos' => 'este', 'estas' => 'este', 'esos' => 'ese', 'esas' => 'ese',
+                    'nuevos' => 'nuevo', 'nuevas' => 'nuevo', 'del' => 'del', 'al' => 'al'];
+                $bajo = mb_strtolower($articulo);
+                if (isset($singular[$bajo])) {
+                    $nuevo = $singular[$bajo];
+                    $articulo = mb_strtoupper($articulo) === $articulo && mb_strlen($articulo) > 1 ? mb_strtoupper($nuevo)
+                        : (mb_strtoupper(mb_substr($articulo, 0, 1)) === mb_substr($articulo, 0, 1) ? mb_strtoupper(mb_substr($nuevo, 0, 1)).mb_substr($nuevo, 1) : $nuevo);
+
+                    return $articulo.$m[2].$texto;
+                }
             }
 
             return $this->ajustarArticulo($articulo, $destinoFemenino).$m[2].$texto;

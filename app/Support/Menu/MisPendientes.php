@@ -3,6 +3,7 @@
 namespace App\Support\Menu;
 
 use App\Models\Acceso;
+use App\Models\Autorizacion;
 use App\Models\Candidato;
 use App\Models\Colaborador;
 use App\Models\DepartamentoResponsable;
@@ -131,7 +132,10 @@ class MisPendientes
 
         // Autorizaciones: solo responsables o delegados de algún departamento
         $autorizaciones = app(Autorizaciones::class);
-        if ($actor->can('autorizaciones.responder') && $autorizaciones->departamentosQueAtiende($actor) !== []) {
+        // C-09: también la persona citada con cuenta (sus visitas la esperan a ella)
+        $propias = ($actor->getAttributes()['colaborador_id'] ?? null) !== null
+            && Autorizacion::where('estado', 'pendiente')->where('tipo', 'visita')->where('colaborador_id', (int) $actor->colaborador_id)->exists();
+        if ($propias || ($actor->can('autorizaciones.responder') && $autorizaciones->departamentosQueAtiende($actor) !== [])) {
             $porResponder = $autorizaciones->pendientesPara($actor);
             // C-12 «No molestar»: lo que mi delegado puede responder no me espera a mí
             // (directa o en cadena: basta con que alguien de mi cadena pueda responderla)
@@ -141,7 +145,8 @@ class MisPendientes
                     ->contains(fn (int $id) => $autorizaciones->puedeResponder($autorizaciones->cadena()->usuario($id), $a)));
             }
             $items[] = $this->item('autorizaciones', 'Autorizaciones por responder', 'bi-patch-check',
-                $porResponder->count(), route('autorizaciones.index'));
+                $porResponder->count(), $actor->can('autorizaciones.ver') || $porResponder->isEmpty()
+                    ? route('autorizaciones.index') : route('autorizaciones.show', $porResponder->first()->id)); // C-09: la persona citada va directo a su visita
         }
 
         // C-08 / DD-11: visitas que esperan al supervisor porque su departamento no tiene quien autorice en la sede

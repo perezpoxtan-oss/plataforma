@@ -137,7 +137,7 @@ class InformeEjecutivo
 
     private function colaboradores(User $actor, ?array $sedes, string $permiso): array
     {
-        $q = Colaborador::query()->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id');
+        $q = Colaborador::query()->personal()->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id'); // C-10: sin residentes
         $permitidas = $this->alcance->sedes($actor, self::PERMISO, $permiso, $sedes);
         $q = $permitidas === null ? $q : $q->enSedes($permitidas);
         $q = $this->limitar($q, $actor, $permiso, $sedes, null, 'colaboradores.creado_por');

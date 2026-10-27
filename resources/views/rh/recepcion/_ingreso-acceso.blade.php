@@ -52,13 +52,4 @@
         @endcan
     @endif
 </div>
-<div data-condicion data-solo-motivo="departamento">
-    <label class="campo-etiqueta" for="ingreso_depto_visita">{{ ($giro ?? \App\Support\Terminos::actual())->esResidencial() ? '¿A qué área de la administración va?' : '¿A qué departamento va?' }} *</label>
-    <select id="ingreso_depto_visita" name="departamento_id" class="campo" data-depto-recepcion>
-        <option value="">-- Seleccionar --</option>
-        @foreach ($departamentos as $dep)
-            <option value="{{ $dep->id }}" data-todas="{{ $dep->todas_las_sedes ? 1 : 0 }}" data-sedes="{{ $dep->sedes->pluck('id')->join(',') }}" @selected((string) $previo('departamento_id') === (string) $dep->id)>{{ $dep->nombre }}</option>
-        @endforeach
-    </select>
-    <p class="campo-ayuda"><i class="bi bi-info-circle" aria-hidden="true"></i> Si la empresa pide autorización, la visita queda <strong>Esperando autorización</strong> hasta que el responsable conteste (aquí verás su respuesta).</p>
-</div>
+{{-- C-09: «Visita a departamento» se eligió en «¿A quién viene?» (seguridad/accesos/_a-quien) --}}

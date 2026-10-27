@@ -28,6 +28,8 @@ Algunas cosas tienen su propio reloj:
 |---|---|---|
 | Visita, proveedor o candidato en caseta | Los minutos de la caseta | Los minutos de la caseta (al jefe de seguridad) |
 | Ticket canalizado | Accidente 2 h · Robo 4 h · lo demás 24 h | Al triple (al jefe de seguridad de la sede) |
+| Ticket canalizado a un departamento | Las mismas horas por categoría (a quien responde por el departamento) | Al triple (al jefe de seguridad de la sede) |
+| Visita que espera a la persona citada | Los minutos de la caseta | Al responsable de su departamento y al jefe de seguridad |
 | Persona en sitio | Visita 4 h · proveedor 8 h · daypass hasta el cierre | Al doble (al jefe de seguridad) |
 | Salida temporal | 2 h | 4 h |
 | Candidatos | El plazo de cada etapa | Al doble del plazo |

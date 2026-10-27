@@ -94,6 +94,9 @@ Además crea dos empresas de otros giros para probar cómo se adapta la platafor
 | `condo.admin.demo` | Condominio Demo (condominio) | Administrador | Todas |
 | `condo.jefe.demo` | Condominio Demo (condominio) | Jefe de seguridad | Todas |
 | `condo.agente.demo` | Condominio Demo (condominio) | Agente | Residencial Norte |
+| `frac.admin.demo` | Fraccionamiento Demo (fraccionamiento) | Administrador (responsable de Mantenimiento y Administración) | Todas |
+| `frac.jefe.demo` | Fraccionamiento Demo (fraccionamiento) | Jefe de seguridad | Todas |
+| `frac.agente.demo` | Fraccionamiento Demo (fraccionamiento) | Agente | Las Lomas |
 
 ## Probar el script fuera del servidor
 

@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\ZonaEstacionamiento;
 use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\Espacios\Lugares;
 use App\Services\Estacionamientos\OcupacionEstacionamientos;
 use App\Services\Padrones\AdministradorProveedores;
 use App\Services\Permisos\Alcance;
@@ -23,6 +24,7 @@ use App\Services\Vehiculos\AdministradorVehiculos;
 use App\Support\HoraLocal;
 use App\Support\Lector\Etiqueta;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -105,7 +107,7 @@ class ConsultaAccesos
      */
     private function relaciones(bool $abiertos): array
     {
-        $colaborador = 'id,num_empleado,nombre,apellido_paterno,apellido_materno';
+        $colaborador = 'id,tipo,espacio_id,num_empleado,nombre,apellido_paterno,apellido_materno';
 
         return [
             'sede:id,nombre', 'colaborador:'.$colaborador, 'host:'.$colaborador, 'visitaColaborador:'.$colaborador,
@@ -145,7 +147,7 @@ class ConsultaAccesos
         return $this->filtrar($this->limitar(Acceso::query(), $actor, 'accesos.ver'), $filtros)
             ->where('accesos.estado', 'pendiente')
             // La solicitud pendiente (a quién espera y si ya se escaló) viene cargada: la tarjeta no consulta
-            ->with([...$this->relaciones(true), 'autorizacionDepartamento.departamento:id,nombre'])
+            ->with([...$this->relaciones(true), 'autorizacionDepartamento.departamento:id,nombre', 'autorizacionDepartamento.colaborador:id,nombre,apellido_paterno,apellido_materno'])
             ->orderBy('accesos.entrada_at')->orderBy('accesos.id')
             ->get();
     }
@@ -468,12 +470,14 @@ class ConsultaAccesos
      *
      * @return list<array<string, mixed>>
      */
-    public function sugerencias(User $actor, string $que, string $texto, ?int $sede, ?string $tipoPersona): array
+    public function sugerencias(User $actor, string $que, string $texto, ?int $sede, ?string $tipoPersona, string $contexto = 'visita', string $niveles = 'todos'): array
     {
         $sedes = $this->sedes($actor, 'accesos.crear');
         $enSede = $sede !== null && ($sedes === null || in_array($sede, $sedes, true)) ? [$sede] : $sedes;
 
         return match ($que) {
+            'destino' => $this->conCuentaYTelefono(app(AQuienViene::class)->sugerencias($texto, $enSede, $contexto, Terminos::actual())),
+            'lugar' => app(Lugares::class)->buscar($texto, $enSede, $niveles === 'especificos' ? Lugares::ESPECIFICOS : Lugares::TODOS, 8)->all(),
             'colaborador' => app(AdministradorColaboradores::class)->buscar($texto, $enSede, false)['resultados'],
             // Primero las personas del tipo que se registra
             'persona' => collect(app(AdministradorPersonas::class)->buscar($texto))
@@ -482,6 +486,32 @@ class ConsultaAccesos
             'proveedor' => app(AdministradorProveedores::class)->buscar($texto, $enSede),
             default => [],
         };
+    }
+
+    /**
+     * C-09: si la persona tiene cuenta (autoriza ella) y el teléfono del residente
+     * (la caseta le llama). Una consulta por cada dato, no por renglón.
+     *
+     * @param  list<array<string, mixed>>  $items
+     * @return list<array<string, mixed>>
+     */
+    private function conCuentaYTelefono(array $items): array
+    {
+        $ids = collect($items)->filter(fn ($i) => str_starts_with((string) $i['clave'], 'c:'))->map(fn ($i) => (int) substr($i['clave'], 2))->values();
+        $conCuenta = $ids->isEmpty() ? collect() : User::whereIn('colaborador_id', $ids)->where('activo', true)->pluck('colaborador_id')->map(fn ($id) => (int) $id);
+        $telefonos = $ids->isEmpty() ? collect() : Colaborador::whereIn('id', $ids)->where('tipo', Colaborador::RESIDENTE)->pluck('telefono', 'id');
+        $viviendas = collect($items)->filter(fn ($i) => str_starts_with((string) $i['clave'], 'e:'))->map(fn ($i) => (int) substr($i['clave'], 2))->values();
+        $telVivienda = $viviendas->isEmpty() ? collect() : Colaborador::residentes()->where('activo', true)->whereIn('espacio_id', $viviendas)
+            ->whereNotNull('telefono')->orderBy('id')->get(['espacio_id', 'telefono'])->groupBy('espacio_id')->map(fn ($g) => $g->pluck('telefono')->join(' · '));
+
+        return array_map(function (array $i) use ($conCuenta, $telefonos, $telVivienda) {
+            $id = (int) substr((string) $i['clave'], 2);
+
+            return $i + [
+                'cuenta' => str_starts_with((string) $i['clave'], 'c:') && ! ($i['llamar'] ?? false) && $conCuenta->contains($id),
+                'telefono' => str_starts_with((string) $i['clave'], 'c:') ? ($telefonos[$id] ?? null) : (str_starts_with((string) $i['clave'], 'e:') ? ($telVivienda[$id] ?? null) : null),
+            ];
+        }, $items);
     }
 
     /**
@@ -509,6 +539,10 @@ class ConsultaAccesos
     public function previos(array $anterior): array
     {
         $previos = [];
+        // C-09: lo elegido en «¿A quién viene?»
+        if (! empty($anterior['a_quien']) && ($titulo = app(AQuienViene::class)->titulo((string) $anterior['a_quien'], Terminos::actual())) !== null) {
+            $previos['a_quien'] = mb_strtoupper($titulo);
+        }
         foreach (['colaborador_id', 'host_colaborador_id', 'visita_colaborador_id'] as $campo) {
             if (! empty($anterior[$campo]) && ($c = Colaborador::find((int) $anterior[$campo])) !== null) {
                 $previos[$campo] = $c->nombreCompleto().($c->num_empleado ? ' · Núm. '.$c->num_empleado : '');

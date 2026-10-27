@@ -132,6 +132,11 @@ class CentroNotificaciones
         'reserva_cancelada' => ['bi-calendar-x', 'info'],
         'reserva_orden' => ['bi-clipboard-check', 'alerta'],
         'reserva_orden_lista' => ['bi-check2-all', 'exito'],
+        // Etapa 5 (C-09): «¿A quién viene?» avisa al visitado; (C-28) tickets canalizados a un departamento; (C-34) orden sin quien la atienda
+        'visita_llego' => ['bi-person-walking', 'info'],
+        'novedad_departamento' => ['bi-diagram-2-fill', 'alerta'],
+        'novedad_departamento_atendida' => ['bi-check2-circle', 'exito'],
+        'reserva_orden_sin_quien' => ['bi-person-exclamation', 'alerta'],
     ];
 
     public function __construct(private readonly HoraLocal $hora) {}

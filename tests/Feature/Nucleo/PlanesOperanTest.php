@@ -176,7 +176,8 @@ class PlanesOperanTest extends TestCase
         // La caseta no propone «Recursos Humanos» sin RR. HH. y nada viene marcado
         $motivos = app(MotivosVisita::class)->para((int) $s->empresa_id);
         $this->assertArrayNotHasKey('rh', $motivos);
-        $this->assertSame(['general', 'huesped', 'colaborador', 'departamento'], array_keys($motivos));
+        // C-09: «Visita a colaborador» y «Visita a departamento» son un solo motivo («Visita a persona o área»)
+        $this->assertSame(['general', 'huesped', 'colaborador'], array_keys($motivos));
         $this->assertNull(app(MotivosVisita::class)->porOmision((int) $s->empresa_id));
         $this->actingAs($admin)->post('/accesos', ['tipo' => 'visitante', 'nombre' => 'Sin Motivo', 'sede_id' => Sede::withoutGlobalScopes()->where('empresa_id', $s->empresa_id)->value('id'), '_dialogo' => 'ingreso'])
             ->assertSessionHasErrors(['motivo_visita' => 'Elige el motivo de la visita.']);
@@ -257,15 +258,18 @@ class PlanesOperanTest extends TestCase
     {
         $motivos = app(MotivosVisita::class);
         $hotel = Empresa::where('nombre_comercial', 'Hotel Demo')->firstOrFail();
-        $this->assertSame(['general', 'huesped', 'colaborador', 'departamento', 'rh'], array_keys($motivos->para($hotel->id)));
+        // C-09: un solo motivo para persona o área
+        $this->assertSame(['general', 'huesped', 'colaborador', 'rh'], array_keys($motivos->para($hotel->id)));
         $corp = Empresa::whereHas('rubro', fn ($q) => $q->where('clave', 'corporativo'))->firstOrFail();
-        $this->assertSame(['colaborador', 'departamento', 'general', 'rh'], array_keys($motivos->para($corp->id)));
+        $this->assertSame(['colaborador', 'general', 'rh'], array_keys($motivos->para($corp->id)));
+        $this->assertSame('Visita a persona o área', $motivos->para($corp->id)['colaborador']);
         $condo = Empresa::whereHas('rubro', fn ($q) => $q->where('clave', 'condominio'))->firstOrFail();
-        $this->assertSame(['colaborador', 'departamento'], array_keys($motivos->para($condo->id)));
-        $this->assertSame('Visita a Residente', $motivos->para($condo->id)['colaborador']);
+        $this->assertSame(['colaborador'], array_keys($motivos->para($condo->id)));
+        $this->assertSame('Visita', $motivos->para($condo->id)['colaborador']);
+        $this->assertSame('colaborador', $motivos->porOmision($condo->id), 'Con un solo motivo, viene marcado');
         $fracc = $this->crearEmpresa('Fraccionamiento Las Palmas');
         $fracc->forceFill(['rubro_id' => Rubro::where('clave', 'fraccionamiento')->value('id')])->save();
-        $this->assertSame(['colaborador', 'departamento'], array_keys($motivos->para($fracc->id)));
+        $this->assertSame(['colaborador'], array_keys($motivos->para($fracc->id)));
 
         // Hotel: «Visita a huésped» con su habitación; se puede apagar
         $admin = $this->cuenta('admin.demo');

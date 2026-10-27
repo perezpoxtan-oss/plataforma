@@ -12,7 +12,7 @@ resumen: La estructura física de cada sede (zonas, pisos, habitaciones, áreas 
 
 **Zona / Edificio → Piso → Habitación → Áreas de la habitación → Elementos**
 
-Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Departamento o Casa. La palabra **área** se usa solo para las partes de una habitación (Baño, Terraza, Recámara…). Estos lugares se usan en otras pantallas: lo que abre cada [llave](llaves.md), la ubicación de los [equipos de Protección Civil](equipos-pc.md) y los recorridos.
+Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Vivienda o Casa. La palabra **área** se usa solo para las partes de una habitación (Baño, Terraza, Recámara…). Estos lugares se usan en otras pantallas: lo que abre cada [llave](llaves.md), la ubicación de los [equipos de Protección Civil](equipos-pc.md), los recorridos, la habitación o vivienda y el área de trabajo en la [Bitácora de accesos](accesos.md), el lugar de un incidente en [Novedades](novedades.md) y la vivienda de cada [residente](residentes.md): ahí se eligen de una lista con sugerencias en lugar de escribirse.
 
 Cada sede tiene su propia pantalla: primero eliges la sede con su tarjeta y ahí ves solo sus zonas, edificios y secciones, sin mezclarse con las de otras sedes.
 

@@ -37,9 +37,10 @@ resumen: Levantar un ticket por cada incidente, documentarlo en su expediente y 
 3. Elige la **Categoría** (la más cercana; se puede corregir al atender).
 4. En **¿Quién reporta?** escribe el nombre, **escanea su gafete**, o toca **Fui yo quien lo observó**.
 5. Si ya sabes quién lo atiende, elige **¿A quién se canaliza?** (solo personal de Seguridad de la sede). Esa persona recibe el aviso en su **campana** y en **Mis pendientes** («Tickets canalizados a mí»).
-6. Elige el **Área General** (edificio y piso) y escribe la **ubicación específica** (por ejemplo «Piso 2, cerca del elevador»).
-7. Revisa **¿Cuándo sucedió?** (ya trae la hora actual) y escribe **¿Qué sucedió?**.
-8. Toca **Despachar Ticket**.
+6. Si le toca a otra área (Mantenimiento, Ama de llaves, Recursos Humanos…), elige además **O a un departamento**. Quien responde por ese departamento en la sede recibe el aviso y ve **solo ese ticket** (ver abajo «Cuando te canalizan un ticket a tu departamento»).
+7. En **¿Dónde pasó?** escribe y elige el lugar de la lista (zona, piso o habitación de Zonas y edificios). Si quieres, agrega el **Detalle del lugar** (por ejemplo «cerca del elevador»). Si el lugar no está en la lista, deja lo que escribiste.
+8. Revisa **¿Cuándo sucedió?** (ya trae la hora actual) y escribe **¿Qué sucedió?**.
+9. Toca **Despachar Ticket**.
 
 ![Generar Ticket Rápido](img/novedades/nuevo-ticket.png)
 
@@ -116,6 +117,23 @@ Si tu sede no tiene turnos registrados (Estructura → Turnos), el aviso al pers
 
 **Reloj del ticket canalizado:** el renglón **Tickets canalizados a mí** cambia de color según cuánto lleva contigo. A las horas de su categoría se te recuerda (de fábrica: **Accidente 2 h**, **Robo 4 h**, las demás **24 h**) y al triple pasa al jefe de seguridad de la sede. Si lo canalizan a otra persona, su reloj empieza de nuevo. Las horas se cambian en **Configuración → (tu bitácora) → Reloj de los tickets canalizados**. El Accidente que se abre solo desde un Siniestro con lesionados queda canalizado a quien tenía el siniestro (o a quien lo documentó), así que no se queda sin dueño. Un hallazgo de un recorrido de Protección Civil que nadie toma aparece en **Mis pendientes → Hallazgos de recorrido sin atender**.
 
+## Cuando te canalizan un ticket a tu departamento
+
+Si respondes por un departamento (Mantenimiento, Recursos Humanos…), Seguridad te puede canalizar un incidente. No necesitas ver toda la bitácora: solo ves los tickets de tu departamento.
+
+1. Te llega el aviso **Ticket #… para (tu departamento)** a la **campana** y aparece en **Mis pendientes → Tickets de tu departamento**. También está en **Operación → Incidentes → Tickets de mi departamento**.
+2. Ábrelo: ves dónde y cuándo pasó, qué sucedió y el **Minuto a Minuto**.
+3. Si quieres dejar constancia de un avance, escribe en **Agregar nota** y toca **Guardar nota**. Seguridad la ve en el expediente.
+4. Cuando hayas hecho tu parte, escribe (si quieres) **¿Qué se hizo?** y toca **Atender**.
+
+![Tickets de mi departamento](img/novedades/tickets-departamento.png)
+
+**Qué debes ver:** el mensaje verde «Listo: atendiste tu parte del ticket #…». El ticket dice **ATENDIDO**, a Seguridad le llega el aviso y en el expediente aparece «(departamento) atendió su parte».
+
+**Reloj:** el ticket de tu departamento usa las mismas horas por categoría que los tickets canalizados. A esas horas se te recuerda y al triple pasa al jefe de seguridad de la sede.
+
+**Accidente de un colaborador:** si en tu sede hay un departamento de Recursos Humanos con responsable, el Accidente de un colaborador se le canaliza solo para que le dé seguimiento. El formato del Accidente no cambia.
+
 ## Cómo cerrar o reabrir un caso
 
 1. En **Estatus** elige **Resuelto y Cerrado (Documentación Completa)**.
@@ -144,7 +162,7 @@ Si tu sede no tiene turnos registrados (Estructura → Turnos), el aviso al pers
 |---|---|---|
 | «Elige la clasificación del ticket (Categoría)…» | Falta la categoría. | Elige la más cercana. |
 | «Escribe quién reporta (o toca «Fui yo quien lo observó»).» | Falta quién reporta. | Escribe el nombre o toca el botón. |
-| «Escribe la ubicación específica (por ejemplo: Piso 2, cerca del elevador).» | Falta el lugar. | Escríbelo. |
+| «Elige el lugar de la lista o escribe dónde pasó (por ejemplo: Piso 2, cerca del elevador).» | Falta el lugar. | Elígelo en «¿Dónde pasó?» o escríbelo. |
 | «Este caso ya está Resuelto. Para editarlo usa «Reabrir Caso para Editar» y escribe el motivo.» | El caso está cerrado. | Reábrelo con el motivo. |
 | «Escribe el motivo antes de continuar: un caso resuelto no se puede reabrir sin justificación.» | Falta el motivo de reapertura. | Explica por qué se reabre. |
 | No deja marcar Resuelto | Falta **Estatus Final / Resolución**. | Escribe cómo se concluyó. |

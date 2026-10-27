@@ -76,7 +76,7 @@ class NovedadesTest extends PruebaNovedades
         $this->actingAs($this->admin)->post('/novedades', $this->datos(['reportado_por' => '', 'ubicacion' => ' ', 'descripcion' => '']))
             ->assertSessionHasErrors([
                 'reportado_por' => 'Escribe quién reporta (o toca «Fui yo quien lo observó»).',
-                'ubicacion' => 'Escribe la ubicación específica (por ejemplo: Piso 2, cerca del elevador).',
+                'ubicacion' => 'Elige el lugar de la lista o escribe dónde pasó (por ejemplo: Piso 2, cerca del elevador).',
                 'descripcion' => 'Describe qué sucedió.',
             ]);
         $this->actingAs($this->admin)->post('/novedades', $this->datos(['ocurrio_en' => now()->addDays(2)->format('Y-m-d\TH:i')]))

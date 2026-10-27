@@ -125,7 +125,7 @@ class Tablero
     /** @return Builder<Colaborador> */
     private function colaboradores(User $actor, ?array $sedes): Builder
     {
-        $q = Colaborador::query()->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id');
+        $q = Colaborador::query()->personal()->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id'); // C-10: sin residentes
         $permitidas = $this->alcance->sedes($actor, self::PERMISO, 'colaboradores.ver', $sedes);
         if ($permitidas === []) {
             return $q->whereRaw('1 = 0');

@@ -276,15 +276,16 @@ class CrearDatosDemo extends Command
         // Suscripciones: clientes de ejemplo en distintos estados (empresas aparte; Hotel Demo sigue sin suscripción)
         $paso('suscripcionesDemo', fn () => $this->suscripcionesDemo());
 
-        // Giros (docs/tecnico/giros.md): Corporativo Demo y Condominio Demo, empresas aparte (Hotel Demo no cambia)
+        // Giros (docs/tecnico/giros.md): Corporativo Demo, Condominio Demo y Fraccionamiento Demo (Etapa 5), empresas aparte (Hotel Demo no cambia)
         $this->demosPorGiro($provisionar, $tenant, $contrasena, $hashExistente, $fallas);
 
         if ($fallas !== []) {
             $this->warn('Partes del demo sin completar: '.implode(', ', $fallas).'.');
         }
         $this->info('Empresa demo lista: '.self::EMPRESA.' con '.count(self::USUARIOS).' usuarios ('.implode(', ', array_keys(self::USUARIOS)).').');
-        $this->info('Demos por giro: '.self::EMPRESA_CORPORATIVO.' ('.implode(', ', array_keys(self::USUARIOS_CORPORATIVO)).') y '
-            .self::EMPRESA_CONDOMINIO.' ('.implode(', ', array_keys(self::USUARIOS_CONDOMINIO)).').');
+        $this->info('Demos por giro: '.self::EMPRESA_CORPORATIVO.' ('.implode(', ', array_keys(self::USUARIOS_CORPORATIVO)).'), '
+            .self::EMPRESA_CONDOMINIO.' ('.implode(', ', array_keys(self::USUARIOS_CONDOMINIO)).') y '
+            .self::EMPRESA_FRACCIONAMIENTO.' ('.implode(', ', array_keys(self::USUARIOS_FRACCIONAMIENTO)).').');
 
         return self::SUCCESS;
     }

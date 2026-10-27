@@ -107,6 +107,12 @@ class Novedad extends Model
             if ($n->isDirty('asignado_a')) {
                 $n->canalizado_en = $n->asignado_a !== null ? now() : null;
             }
+            // C-28: el reloj del departamento empieza cuando se canaliza (o cambia de departamento)
+            if ($n->isDirty('departamento_id')) {
+                $n->departamento_en = $n->departamento_id !== null ? now() : null;
+                $n->departamento_atendido_en = null;
+                $n->departamento_atendido_por = null;
+            }
         });
     }
 
@@ -117,6 +123,7 @@ class Novedad extends Model
             'area_especifica_id' => 'integer', 'asignado_a' => 'integer', 'creado_por' => 'integer',
             'pendiente_turno_en' => 'datetime', 'turno_avisado_en' => 'datetime', 'turno_escalado_en' => 'datetime',
             'canalizado_en' => 'datetime',
+            'departamento_id' => 'integer', 'departamento_en' => 'datetime', 'departamento_atendido_en' => 'datetime',
         ];
     }
 
@@ -125,6 +132,17 @@ class Novedad extends Model
     public function sede(): BelongsTo
     {
         return $this->belongsTo(Sede::class)->withTrashed();
+    }
+
+    /** C-28: el departamento al que se canalizó (Mantenimiento, RR. HH.…). */
+    public function departamento(): BelongsTo
+    {
+        return $this->belongsTo(Departamento::class);
+    }
+
+    public function departamentoAtendidoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'departamento_atendido_por');
     }
 
     public function asignado(): BelongsTo
