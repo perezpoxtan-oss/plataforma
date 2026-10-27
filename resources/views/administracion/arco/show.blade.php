@@ -112,7 +112,7 @@
                                     @endforeach
                                 </fieldset>
                             @endforeach
-                            <p class="small text-muted">Marca lo que sí es de la persona. Para <strong>rectificar</strong>, abre su ficha y corrige ahí.</p>
+                            <p class="small text-muted">Marca lo que sí es de la persona. Para <strong>rectificar</strong>, abre su ficha y corrige ahí. Busca también por su nombre completo: así se encuentran los tickets, accidentes y observaciones que la mencionan.</p>
 
                             <h2 class="h6 fw-bold mt-3"><i class="bi bi-file-earmark-zip me-2 text-primary" aria-hidden="true"></i>2. Entrega o elimina</h2>
                             <div class="d-flex flex-wrap gap-2 align-items-center">
@@ -122,7 +122,7 @@
                                 @endif
                             </div>
                             <div class="alert alert-danger small mt-3 mb-0">
-                                <label class="fila-check mb-2"><input type="checkbox" name="confirmar" value="1"><span>Entiendo que <strong>eliminar no se puede deshacer</strong>: los registros de la bitácora se conservan con «{{ \App\Services\Privacidad\SolicitudesArco::TEXTO_ELIMINADO }}», la ficha del padrón queda anónima y la del candidato se borra con sus documentos. Los colaboradores no se eliminan.</span></label>
+                                <label class="fila-check mb-2"><input type="checkbox" name="confirmar" value="1"><span>Entiendo que <strong>eliminar no se puede deshacer</strong>: los registros (bitácoras, objetos perdidos, tickets, accidentes, reservas, transporte) se conservan con «{{ \App\Services\Privacidad\SolicitudesArco::TEXTO_ELIMINADO }}» en lugar de los datos de la persona, sin sus firmas ni sus datos médicos; su nombre se quita de los textos; la ficha del padrón queda anónima y la del candidato se borra con sus documentos. Los colaboradores y sus accidentes no se eliminan.</span></label>
                                 <button type="submit" formaction="{{ route('arco.eliminar', $s->id) }}" class="btn btn-danger" style="min-height:44px;border-radius:10px;"><i class="bi bi-trash me-1" aria-hidden="true"></i>Eliminar definitivamente</button>
                             </div>
                         </form>

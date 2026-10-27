@@ -113,9 +113,9 @@ class MatrizDeRutasTest extends TestCase
         foreach ($this->rutasConSesion() as $ruta) {
             $nombre = (string) $ruta->getName();
             // Sin registro en la ruta: parámetros que no son de la empresa (módulo, respaldo de la plataforma)
-            // Catálogo comercial: sus registros son de la plataforma, no de una empresa (el administrador de cualquier empresa recibe 403)
+            // Catálogo comercial y Super Administradores (C-36): sus registros son de la plataforma, no de una empresa (el administrador de cualquier empresa recibe 403)
             if ($ruta->parameterNames() === [] || in_array($nombre, ['modulos.pendiente', 'configuracion.respaldos.descargar', 'manual.ver', 'manual.imagen'], true)
-                || str_starts_with($nombre, 'catalogo-comercial.')) {
+                || str_starts_with($nombre, 'catalogo-comercial.') || str_starts_with($nombre, 'superadmins.')) {
                 continue;
             }
             $real = $this->uri($ruta);

@@ -192,6 +192,11 @@ class LectorAuditoria
         'arco_verificada' => 'Solicitud ARCO verificada', 'arco_exportado' => 'Datos exportados (ARCO)', 'arco_descargado' => 'Descarga de datos (ARCO)',
         'arco_eliminado' => 'Datos eliminados (ARCO)', 'arco_atendida' => 'Solicitud ARCO atendida', 'arco_rechazada' => 'Solicitud ARCO rechazada',
         'arco_canalizada' => 'Solicitud ARCO canalizada',
+        // C-36: «Pedir a mi administrador» y Super Administradores
+        'solicitud_cuenta' => 'Pidió ayuda a su administrador (contraseña o dos pasos)', 'solicitud_cuenta_atendida' => 'Petición de ayuda con la cuenta atendida',
+        'solicitud_cuenta_rechazada' => 'Petición de ayuda con la cuenta rechazada', 'superadmin_creado' => 'Alta de Super Administrador',
+        'superadmin_dado_de_baja' => 'Baja de Super Administrador', 'superadmin_reactivado' => 'Super Administrador reactivado',
+        'superadmin_contrasena' => 'Contraseña de Super Administrador restablecida',
     ];
 
     /**

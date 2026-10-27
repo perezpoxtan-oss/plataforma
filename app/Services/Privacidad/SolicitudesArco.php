@@ -185,17 +185,21 @@ class SolicitudesArco
 
     /**
      * @param  array<string, list<int>>  $seleccion
-     * @return array{persona: int, acceso: int, candidato: int, omitidos: int}
+     * @param  ?string  $nombre  nombre con el que se buscó: se quita de los textos libres (novedades, notas, observaciones)
+     * @return array<string, int>
      */
-    public function eliminar(User $actor, SolicitudArco $s, array $seleccion): array
+    public function eliminar(User $actor, SolicitudArco $s, array $seleccion, ?string $nombre = null): array
     {
         $this->exigirAbierta($s);
         $seleccion = $this->limpiarSeleccion($seleccion);
-        unset($seleccion['colaborador']);
-        if (array_sum(array_map('count', $seleccion)) === 0) {
-            throw ValidationException::withMessages(['seleccion' => 'Marca al menos un registro del padrón, la bitácora o candidatos.']);
+        foreach (DatosDePersona::SOLO_CONSULTA as $tipo) {
+            unset($seleccion[$tipo]);
         }
-        $hecho = $this->tenant->conEmpresa($s->empresa_id, fn () => $this->datos->eliminar($seleccion, self::TEXTO_ELIMINADO));
+        if (array_sum(array_map('count', $seleccion)) === 0) {
+            throw ValidationException::withMessages(['seleccion' => 'Marca al menos un registro que no sea de un colaborador (los colaboradores se rectifican en su ficha).']);
+        }
+        $nombre = mb_strlen(trim((string) $nombre)) >= 5 ? trim((string) $nombre) : null;
+        $hecho = $this->tenant->conEmpresa($s->empresa_id, fn () => $this->datos->eliminar($seleccion, self::TEXTO_ELIMINADO, $nombre));
         $this->actualizar($s, [], $actor, 'eliminado', $hecho);
 
         return $hecho;

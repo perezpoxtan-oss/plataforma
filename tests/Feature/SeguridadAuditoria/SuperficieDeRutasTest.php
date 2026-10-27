@@ -33,13 +33,14 @@ class SuperficieDeRutasTest extends TestCase
         // Página pública de planes (Catálogo comercial): 404 mientras no esté publicada, límite de peticiones, campo trampa;
         // la ruta de avisos de pago está reservada y apagada (404)
         // Plataforma instalable (app-movil.md): manifest, service worker, «Sin conexión» y App Links (assetlinks.json), sin sesión ni datos de nadie
-        // Verificación en dos pasos (dos-pasos.md): el código después de la contraseña, solo con una cuenta pendiente en la sesión, límite por equipo y por cuenta
+        // Verificación en dos pasos (dos-pasos.md): el código después de la contraseña, solo con una cuenta pendiente en la sesión, límite por equipo y por cuenta;
+        // «Perdí mi teléfono» (C-36) también exige la cuenta pendiente. «Pedir a mi administrador» (C-36): respuesta uniforme, límite por equipo y por cuenta
         // Privacidad (privacidad.md): aviso de cada empresa por su código, formulario ARCO con campo trampa y límites, confirmación con enlace de un solo uso
         $this->assertSame(['GET /.well-known/assetlinks.json', 'GET /aviso-de-privacidad', 'GET /contratar', 'GET /contratar/gracias', 'GET /empleos/{empresa}', 'GET /empleos/{empresa}/gracias', 'GET /empleos/{empresa}/{vacante}', 'GET /empleos/{empresa}/{vacante}/postular',
             'GET /k', 'GET /k/{token}', 'GET /login', 'GET /login/verificacion', 'GET /manifest.webmanifest', 'GET /olvide-contrasena', 'GET /planes',
             'GET /privacidad/solicitud', 'GET /privacidad/verificar/{token}', 'GET /privacidad/{codigo}', 'GET /privacidad/{codigo}/solicitud',
             'GET /restablecer-contrasena/{token}', 'GET /sesion/expirada', 'GET /sin-conexion', 'GET /sw.js', 'GET /up',
-            'POST /contratar', 'POST /empleos/{empresa}/{vacante}/postular', 'POST /k', 'POST /k/{token}', 'POST /login', 'POST /login/verificacion', 'POST /login/verificacion/cancelar', 'POST /olvide-contrasena', 'POST /pagos/webhook/{pasarela}',
+            'POST /contratar', 'POST /empleos/{empresa}/{vacante}/postular', 'POST /k', 'POST /k/{token}', 'POST /login', 'POST /login/verificacion', 'POST /login/verificacion/cancelar', 'POST /login/verificacion/perdi-mi-telefono', 'POST /olvide-contrasena', 'POST /olvide-contrasena/administrador', 'POST /pagos/webhook/{pasarela}',
             'POST /privacidad/solicitud', 'POST /privacidad/verificar/{token}', 'POST /privacidad/{codigo}/solicitud', 'POST /restablecer-contrasena',
             'POST /sesion/expirada'], $abiertas);
     }

@@ -788,9 +788,11 @@ class CandidatosFase2Test extends TestCase
         $this->assertSame(AjustesRecepcion::CRITERIOS_DEFECTO, app(AjustesRecepcion::class)->criterios($this->empresa->refresh()));
         $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertSee('Servicio al cliente')->assertSee('Presentación');
         // Guardar solo los criterios no toca el aviso de privacidad ni el kiosco
+        // (C-37, E-09: el texto del aviso ya no se guarda desde Recepción; se edita en Configuración → Privacidad)
+        $aviso = app(AjustesRecepcion::class)->textoPrivacidad($this->empresa->refresh());
         $this->actingAs($this->rh)->put('/rh/recepcion/ajustes', ['aviso_privacidad' => 'Aviso de prueba.', 'kiosco_horas' => 5])->assertSessionHas('ok');
         $guardar(['Inglés'])->assertSessionHas('ok');
-        $this->assertSame([5, 'Aviso de prueba.'], [app(AjustesRecepcion::class)->horasKiosco($this->empresa->refresh()), app(AjustesRecepcion::class)->textoPrivacidad($this->empresa->refresh())]);
+        $this->assertSame([5, $aviso], [app(AjustesRecepcion::class)->horasKiosco($this->empresa->refresh()), app(AjustesRecepcion::class)->textoPrivacidad($this->empresa->refresh())]);
         // Quien solo consulta no guarda
         $this->actingAs($this->jefa)->put('/rh/recepcion/ajustes', ['aviso_privacidad' => 'x', 'criterios' => ['Uno']])->assertForbidden();
         $this->actingAs($this->jefa)->put('/rh/recepcion/ajustes', ['criterios' => ['Uno']])->assertForbidden();

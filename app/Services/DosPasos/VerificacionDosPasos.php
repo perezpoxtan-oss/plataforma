@@ -5,8 +5,10 @@ namespace App\Services\DosPasos;
 use App\Mail\AvisoGeneral;
 use App\Models\Auditoria;
 use App\Models\Empresa;
+use App\Models\SolicitudCuenta;
 use App\Models\User;
 use App\Services\Cuenta\AvisosCuenta;
+use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
@@ -206,6 +208,22 @@ class VerificacionDosPasos
         $this->auditoria->auditar($actor, 'usuarios.dos_pasos_restablecida', $usuario, ['dos_pasos' => 'activa'], ['dos_pasos' => 'restablecida', 'avisado' => true]);
         $this->avisarPropio($usuario, 'Restablecieron tu verificación en dos pasos',
             $actor->name.' quitó la verificación de tu cuenta (por ejemplo, porque cambiaste de teléfono). Al entrar, actívala de nuevo en Mi cuenta. Si no lo pediste, avisa a tu administrador.', true);
+        // C-36: la petición «Perdí mi teléfono» de esa cuenta queda atendida
+        app(SolicitudesCuenta::class)->atendidas($usuario, SolicitudCuenta::DOS_PASOS, $actor);
+    }
+
+    /**
+     * Otro Super Administrador quita los dos pasos de un Super Administrador
+     * que perdió su teléfono y sus códigos (C-36, E-14: sin terminal). Lo
+     * valida Plataforma\SuperAdministradores; se audita y se avisa por correo.
+     */
+    public function restablecerSuperadmin(User $actor, User $cuenta): void
+    {
+        $this->limpiar($cuenta, $actor);
+        AvisosCuenta::cerrarSesiones($cuenta);
+        $this->auditoria->auditar($actor, 'usuarios.dos_pasos_restablecida', $cuenta, ['dos_pasos' => 'activa'], ['dos_pasos' => 'restablecida', 'origen' => 'otro_superadmin', 'avisado' => true]);
+        $this->avisarPropio($cuenta, 'Restablecieron tu verificación en dos pasos',
+            $actor->name.' quitó la verificación de tu cuenta de Super Administrador. Al entrar, actívala de nuevo con tu teléfono. Si no lo pediste, avisa a los demás Super Administradores.', true);
     }
 
     /** Uso de consola (plataforma:dos-pasos): quita la verificación de cualquier cuenta, también del Super Administrador. */

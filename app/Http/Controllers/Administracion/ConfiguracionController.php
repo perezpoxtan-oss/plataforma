@@ -10,6 +10,7 @@ use App\Models\LostFoundUmbral;
 use App\Models\User;
 use App\Services\Candidatos\DocumentosParaContratar;
 use App\Services\Candidatos\PlazosCandidatos;
+use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\DosPasos\VerificacionDosPasos;
 use App\Services\Lector\ImpresionDesdePadron;
 use App\Services\Lector\PlantillasEtiquetas;
@@ -17,6 +18,7 @@ use App\Services\Novedades\AjustesNovedades;
 use App\Services\Novedades\ArchivoLostFound;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Services\Plataforma\SuperAdministradores;
 use App\Services\Plataforma\VersionPhp;
 use App\Services\Privacidad\ConservacionDatos;
 use App\Services\Recepcion\AjustesRecepcion;
@@ -81,6 +83,14 @@ class ConfiguracionController extends Controller
             'respaldos' => $actor->es_superadmin ? $this->respaldos->listar() : collect(),
             // Versión de PHP del servidor: solo el Super Administrador (nunca se calcula para nadie más)
             'php' => $actor->es_superadmin ? app(VersionPhp::class)->datos() : null,
+            // C-36: Super Administradores (dos como mínimo) y sus peticiones de ayuda
+            'superadmins' => $actor->es_superadmin ? [
+                'lista' => app(SuperAdministradores::class)->todos(),
+                'activos' => app(SuperAdministradores::class)->activos(),
+                'faltan' => app(SuperAdministradores::class)->faltan(),
+                'solicitudes' => app(SolicitudesCuenta::class)->porAtender($actor, null),
+                'correoListo' => $this->correo->configurado(),
+            ] : null,
             'empresa' => $empresaId === null ? null : Empresa::find($empresaId),
             'avisos' => Empresa::AVISOS,
             'puedeEditar' => $this->editaEmpresa($actor),

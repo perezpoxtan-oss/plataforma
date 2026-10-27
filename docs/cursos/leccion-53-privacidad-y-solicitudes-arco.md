@@ -10,7 +10,7 @@ Aprenderás:
 
 ## Antes de empezar
 
-Usa la cuenta del **Administrador** de la empresa de prueba (necesita el permiso **Datos personales** de Configuración). Ten a la mano un correo propio para recibir los avisos. Recuerda: los textos legales de la plataforma son un **borrador** que debe revisar el abogado.
+Usa la cuenta del **Administrador** de la empresa de prueba (necesita el permiso **Datos personales** de Configuración). Ten a la mano un correo propio para recibir los avisos. Recuerda: el aviso de privacidad que trae la plataforma tiene datos por completar entre corchetes; complétalo con el abogado.
 
 ## Lo que hay que saber
 
@@ -56,6 +56,15 @@ Comprueba: en la plataforma, la **campana** y **Mis pendientes → Solicitudes A
 
 Comprueba: el ZIP trae `datos/` y las fotos; tras eliminar, el registro de la bitácora dice «Datos eliminados por solicitud ARCO»; la persona recibe tu respuesta por correo y la solicitud pasa a **Respondidas**. En la Bitácora de auditoría están todos los pasos, sin su nombre ni su correo.
 
+## Práctica 5b · Un huésped con datos en varios módulos
+
+1. Con el nombre de un huésped de prueba, registra: un **reporte de pérdida** en Lost & Found, un **accidente de huésped** (con diagnóstico y hospital), una **reserva** a su nombre como cliente y un vale de **transporte** que lo mencione en las observaciones.
+2. Crea una solicitud ARCO de **Cancelación** a su nombre y apruébala.
+3. Busca con su **nombre completo**: deben aparecer **Lost & Found**, **Accidentes (con datos médicos)**, **Novedades que la mencionan**, **Reservas** y **Bitácora de transporte**.
+4. Marca todo → **Exportar datos** → **Eliminar definitivamente**.
+
+Comprueba: el mensaje dice cuántos registros se trataron de cada módulo; el accidente sigue en la bitácora de novedades pero sin su nombre ni sus datos médicos; la reserva sigue confirmada sin los datos del cliente; al buscar otra vez ya no aparece nada.
+
 ## Práctica 6 · Canalizar (Super Administrador)
 
 1. Desde la página pública de planes, en el pie, abre **Derechos ARCO sobre tus datos personales** y envía una solicitud.
@@ -67,4 +76,6 @@ Comprueba: la solicitud aparece en la bandeja de esa empresa y su administrador 
 
 - ¿Cuándo empieza el plazo de 20 días hábiles? *Cuando la persona confirma su correo (o cuando confirmas su identidad en persona y tocas Aprobar).*
 - ¿Qué colores tiene el reloj? *Verde, ámbar cuando faltan pocos días y rojo cuando vence; vencida, también se avisa al Super Administrador.*
-- ¿Se pueden eliminar los datos de un colaborador desde una solicitud ARCO? *No: se rectifican en su ficha; la relación laboral obliga a conservarlos.*
+- ¿Se pueden eliminar los datos de un colaborador desde una solicitud ARCO? *No: se rectifican en su ficha; la relación laboral obliga a conservarlos (tampoco sus accidentes de trabajo).*
+- ¿Dónde se edita el aviso de privacidad? *Solo en Configuración → Privacidad; Recepción muestra su versión.*
+- ¿Qué módulos alcanza ARCO? *Padrón, caseta, candidatos, colaboradores (consulta), Lost & Found, novedades, accidentes, reservas y transporte.*

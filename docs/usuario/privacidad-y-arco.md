@@ -7,11 +7,11 @@ resumen: Atender las solicitudes de las personas sobre sus datos (acceso, rectif
 ---
 # Privacidad y solicitudes ARCO
 
-**¿Para qué sirve?** Para cumplir con la ley de protección de datos personales: las personas (visitas, candidatos, proveedores) pueden pedir **Acceso** (saber qué datos tienes de ellas), **Rectificación** (corregirlos), **Cancelación** (que los borres) u **Oposición** (que dejes de usarlos para algo). Aquí recibes esas solicitudes con su plazo legal, encuentras sus datos, se los entregas o los eliminas, y les respondes. También eliges cuántos días se conservan los datos y publicas tu aviso de privacidad.
+**¿Para qué sirve?** Para cumplir con la ley de protección de datos personales: las personas (visitas, huéspedes, candidatos, proveedores, clientes de una reserva) pueden pedir **Acceso** (saber qué datos tienes de ellas), **Rectificación** (corregirlos), **Cancelación** (que los borres) u **Oposición** (que dejes de usarlos para algo). Aquí recibes esas solicitudes con su plazo legal, encuentras sus datos, se los entregas o los eliminas, y les respondes. También eliges cuántos días se conservan los datos y publicas tu aviso de privacidad.
 
 **Antes de empezar:** necesitas que tu rol tenga el permiso **Datos personales** de Configuración con alcance de **toda la empresa** (normalmente el administrador). Si no ves **Solicitudes ARCO** ni la sección **Privacidad** en Configuración, pide a tu administrador ese permiso.
 
-> Los textos legales que trae la plataforma (aviso de privacidad) son un **borrador**: pide a tu abogado que los revise y complete.
+> El aviso de privacidad que trae la plataforma tiene datos entre corchetes por completar (nombre, domicilio y correo de contacto de tu empresa): complétalo con tu abogado antes de usarlo.
 
 ## Cómo llegan las solicitudes
 
@@ -30,8 +30,8 @@ resumen: Atender las solicitudes de las personas sobre sus datos (acceso, rectif
 
 1. En **Solicitudes ARCO** toca **Atender** en la solicitud.
 2. Lee **Quién la pide** y **Lo que pide**.
-3. En **1. Busca lo que la plataforma tiene de la persona**, revisa el nombre, correo y teléfono (ya vienen llenos) y, si lo tienes, escribe el **folio de su identificación**. Toca **Buscar**.
-4. Aparecen los registros encontrados, agrupados: **Padrón de personas**, **Bitácora de accesos**, **Candidatos** y **Colaboradores**. **Marca solo los que sí son de esa persona** (puede haber personas con el mismo nombre).
+3. En **1. Busca lo que la plataforma tiene de la persona**, revisa el nombre, correo y teléfono (ya vienen llenos) y, si lo tienes, escribe el **folio de su identificación**. Toca **Buscar**. Deja su **nombre completo**: con él se encuentran también los tickets, accidentes y observaciones que la mencionan.
+4. Aparecen los registros encontrados, agrupados: **Padrón de personas**, **Bitácora de accesos**, **Candidatos**, **Colaboradores**, **Lost & Found: reportes de pérdida**, **Lost & Found: entregas**, **Novedades que la mencionan**, **Accidentes (con datos médicos)**, **Reservas** y **Bitácora de transporte**. **Marca solo los que sí son de esa persona** (puede haber personas con el mismo nombre).
 5. Según lo que pidió:
    - **Acceso:** toca **Exportar datos**. Se prepara un archivo con sus registros, fotos y documentos. La pantalla regresa con la misma búsqueda y lo que marcaste. Toca **Descargar el archivo** y entrégaselo por el medio que acordaron (el botón sigue ahí aunque después busques con otros datos).
    - **Rectificación:** toca **Abrir ficha (rectificar)** junto al registro y corrige ahí los datos.
@@ -46,7 +46,13 @@ resumen: Atender las solicitudes de las personas sobre sus datos (acceso, rectif
 - Los registros de la **bitácora** se conservan (fecha, sede, gafete, quién los registró) pero sin foto, identificación ni datos de la persona; en lugar del nombre dicen «Datos eliminados por solicitud ARCO».
 - La ficha del **padrón de personas** queda anónima y dada de baja.
 - La ficha del **candidato** se borra con sus documentos (si ya fue contratado, no: ya es colaborador).
-- Los **colaboradores** no se eliminan desde aquí (la relación laboral obliga a conservar sus datos); solo se rectifican en su ficha.
+- **Lost & Found:** el reporte de pérdida y la entrega se conservan, sin su nombre, teléfono, correo, identificación ni firma.
+- **Accidentes de huésped:** el ticket se conserva (fecha, lugar), sin sus datos (nombre, habitación, edad, país…), **sin los datos médicos** (diagnóstico, hospital, médico, lesiones) y sin su firma. El formulario del accidente no cambia.
+- **Novedades:** su nombre se quita de la descripción, de los involucrados, de las notas, de los testigos y de «¿Quién o quiénes fueron observados?» del Reporte General.
+- **Reservas:** la reserva sigue en pie, sin el nombre, la empresa, el correo ni el teléfono del cliente.
+- **Transporte:** su nombre sale de las observaciones y, si manejó el taxi, se borra su firma.
+- Los **colaboradores** y sus **accidentes de trabajo** no se eliminan desde aquí (la relación laboral obliga a conservar sus datos); solo se rectifican en su ficha o en el ticket.
+- El mensaje te dice cuántos registros se trataron de cada módulo.
 
 ## Cómo dar por verificada una solicitud sin correo confirmado
 
@@ -86,7 +92,8 @@ Se hace en **Estructura → Configuración → Privacidad**. Los pasos están en
 ## Preguntas frecuentes
 
 - **¿Cuánto tiempo tengo para responder?** 20 días hábiles desde que la persona confirma su correo (o desde que tú la das por verificada). El reloj de cada solicitud te dice cuántos faltan; cuando quedan pocos te llega un recordatorio, y si vence, también se avisa al Super Administrador.
-- **¿Qué incluye el archivo de «Exportar datos»?** Los registros que marcaste (en archivos que se abren en Excel), y las fotos y documentos ligados a ellos. Solo lo de tu empresa.
+- **¿Qué incluye el archivo de «Exportar datos»?** Los registros que marcaste (en archivos que se abren en Excel), y las fotos, firmas y documentos ligados a ellos, incluidos los datos médicos de un accidente. Solo lo de tu empresa.
+- **¿Busca en todos los módulos?** Sí: padrón, caseta, candidatos, colaboradores, Lost & Found, novedades, accidentes, reservas y transporte.
 - **¿La persona ve lo que hice?** Le llega por correo tu respuesta. Lo demás queda solo en la plataforma.
 - **¿Puedo deshacer una eliminación?** No. Por eso pide confirmación y por eso conviene exportar antes si la persona también pidió acceso.
 - **¿Se guarda quién atendió cada solicitud?** Sí, en la solicitud y en la Bitácora de auditoría (sin el nombre ni el correo de la persona).
@@ -98,3 +105,7 @@ Se hace en **Estructura → Configuración → Privacidad**. Los pasos están en
 - [Personas](personas.md)
 - [Candidatos](candidatos.md)
 - [Bitácora de accesos](accesos.md)
+- [Lost & Found y robo](lost-found-y-robo.md)
+- [Bitácora de novedades](novedades.md)
+- [Reservas de áreas](reservas-de-areas.md)
+- [Bitácora de transporte](transporte.md)

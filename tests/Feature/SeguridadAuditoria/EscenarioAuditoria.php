@@ -188,6 +188,13 @@ trait EscenarioAuditoria
         if ($ruta === 'restriccion.guardar') {
             return $parametro === 'padron' ? 'personas' : $this->consulta('personas', $sede)->orderBy('personas.id')->value('personas.id');
         }
+        // C-36: Super Administradores (de la plataforma) y peticiones «Pedir a mi administrador» (puede no haber ninguna: 404)
+        if (str_starts_with($ruta, 'superadmins.')) {
+            return DB::table('users')->where('es_superadmin', true)->orderBy('id')->value('id') ?? 1;
+        }
+        if ($ruta === 'solicitudes-cuenta.rechazar') {
+            return $this->consulta('solicitudes_cuenta', $sede)->orderBy('solicitudes_cuenta.id')->value('solicitudes_cuenta.id') ?? 999999;
+        }
 
         switch ($parametro) {
             case 'empresa':

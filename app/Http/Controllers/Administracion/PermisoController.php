@@ -13,6 +13,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Services\Permisos\PerfilesDeRol;
+use App\Services\Usuarios\AdministradorUsuarios;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
@@ -172,7 +173,7 @@ class PermisoController extends Controller
             return redirect()->route('permisos.index', ['rol' => $rol->id])->with('error', $e->getMessage());
         }
 
-        return redirect()->route('permisos.index', ['rol' => $rol->id, 'avanzado' => 1])->with('ok', "Permisos de «{$rol->nombre}» actualizados: ya aplican a todas las personas con ese rol. Revisa arriba los menús que verán.");
+        return $this->avisarSinCorreo(redirect()->route('permisos.index', ['rol' => $rol->id, 'avanzado' => 1])->with('ok', "Permisos de «{$rol->nombre}» actualizados: ya aplican a todas las personas con ese rol. Revisa arriba los menús que verán."), $rol);
     }
 
     /**
@@ -205,10 +206,25 @@ class PermisoController extends Controller
             return redirect()->route('permisos.index', ['rol' => $rol->id])->with('error', $e->getMessage());
         }
 
-        return redirect()->route('permisos.index', ['rol' => $rol->id])->with('ok', "«{$rol->nombre}» ahora tiene los permisos de «{$origen->nombre}»"
+        return $this->avisarSinCorreo(redirect()->route('permisos.index', ['rol' => $rol->id])->with('ok', "«{$rol->nombre}» ahora tiene los permisos de «{$origen->nombre}»"
             .($copia['omitidos'] > 0 ? " (sin {$copia['omitidos']} que tú no tienes)" : '')
             .($copia['conservados'] > 0 ? "; se conservaron {$copia['conservados']} que solo alguien de mayor nivel puede quitar" : '')
-            .'. Revisa abajo los menús que verá; si algo cambia, ajústalo en «Avanzado».');
+            .'. Revisa abajo los menús que verá; si algo cambia, ajústalo en «Avanzado».'), $rol);
+    }
+
+    /**
+     * C-36 (A-06): si el rol ahora administra algo y tiene cuentas sin correo,
+     * se avisa cuáles (sin correo no recuperan su cuenta solas ni reciben avisos).
+     */
+    private function avisarSinCorreo(RedirectResponse $respuesta, Rol $rol): RedirectResponse
+    {
+        $sinCorreo = AdministradorUsuarios::administrativasSinCorreo((int) $rol->empresa_id, $rol);
+        if ($sinCorreo->isEmpty()) {
+            return $respuesta;
+        }
+
+        return $respuesta->with('aviso', "«{$rol->nombre}» ahora administra la plataforma y estas cuentas de ese rol no tienen correo: "
+            .$sinCorreo->pluck('name')->join(', ').'. Escríbeles un correo en Usuarios para que puedan recuperar su cuenta y recibir avisos.');
     }
 
     /**
