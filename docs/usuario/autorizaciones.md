@@ -88,6 +88,8 @@ Un departamento **tiene quien autorice** en una sede solo si al menos uno de sus
 3. Si falta en alguna sede, el departamento dice «**Sin quien autorice en** (sede)».
 4. Toca **Elegir responsables** y nombra a alguien que entre a esa sede.
 
+![Departamentos sin quien autorice](img/recepcion-y-candidatos/responsables-sin-quien-autorice.png)
+
 **Qué debes ver:** el aviso «Sin quien autorice en …» desaparece. Si una baja o un cambio de rol deja a un departamento sin quien autorice, te llega a la **campana** «Sin quien autorice en (departamento) (sede)» con el botón **Nombrar responsable**, y lo ves en **Mis pendientes** e **Inicio** hasta que lo resuelvas.
 
 ## Cómo elegir los responsables por departamento y qué espera en la caseta

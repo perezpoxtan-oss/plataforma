@@ -439,17 +439,17 @@ class AltasPorVerificarTest extends TestCase
         $this->pendiente($this->persona('Pedro Canul'));
 
         $this->actingAs($this->admin)->get('/')->assertOk()->assertSee('3 altas por verificar')
-            ->assertSee('Vehículos')->assertSee('Personas')->assertDontSee(route('proveedores.index', ['verificacion' => 'pendiente']), false)
-            ->assertSee(route('vehiculos.index', ['verificacion' => 'pendiente']), false);
+            ->assertSee('Vehículos')->assertSee('Personas')->assertDontSee(route('altas_por_verificar.index', ['pestana' => 'proveedores']), false)
+            ->assertSee(route('altas_por_verificar.index', ['pestana' => 'vehiculos']), false); // C-27: una sola bandeja
         $this->actingAs($this->agente)->get('/')->assertOk()->assertDontSee('altas por verificar');
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
         $this->actingAs($rh)->get('/')->assertOk()->assertDontSee('altas por verificar');
 
         $this->actingAs($this->admin)->get('/vehiculos?verificacion=pendiente')->assertOk()
-            ->assertSee('Pendientes de verificar')->assertSee('data-encender', false)
+            ->assertSee('Por verificar')->assertSee('data-encender', false)
             ->assertSee('id="dialogoVerificarAlta"', false)->assertSee('data-verificar-alta', false);
         // El agente ve la insignia, pero no verifica
-        $this->actingAs($this->agente)->get('/vehiculos')->assertOk()->assertSee('Pendiente de verificar')
+        $this->actingAs($this->agente)->get('/vehiculos')->assertOk()->assertSee('Por verificar')
             ->assertDontSee('data-filtro-verificacion', false)->assertDontSee('dialogoVerificarAlta')->assertDontSee('data-verificar-alta', false);
     }
 
@@ -457,7 +457,7 @@ class AltasPorVerificarTest extends TestCase
     {
         $this->actingAs($this->agente)->get('/accesos')->assertOk()
             ->assertSee('id="dialogoRegistroRapidoPersona"', false)->assertSee('data-alta-sugerencias', false)
-            ->assertSee('name="origen" value="accesos"', false)->assertSee('pendiente de verificar')
+            ->assertSee('name="origen" value="accesos"', false)->assertSee('por verificar')
             // Las placas siguen leyéndose con el lector universal
             ->assertSee('id="ingreso_placas"', false);
         $this->actingAs($this->agente)->get('/pases-salida')->assertOk()

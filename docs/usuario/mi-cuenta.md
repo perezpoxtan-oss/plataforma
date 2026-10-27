@@ -90,6 +90,8 @@ Si apruebas visitas, pases de salida, reservas o entrevistas y vas a estar fuera
 4. Si quieres que empiece después o anotar el motivo, abre **Avanzado: empezar después y motivo**.
 5. Toca **Guardar**.
 
+![Delegar mis aprobaciones](img/mi-cuenta/delegar-mis-aprobaciones.png)
+
 **Qué debes ver:** «Listo: mientras esté activa, lo que te toque aprobar le llega a …». Arriba de la tarjeta dice **No molestar** y «Hoy tus aprobaciones van a …». A esa persona le llega un aviso en la campana.
 
 **Qué pasa mientras dura:**

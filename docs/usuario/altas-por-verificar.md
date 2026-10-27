@@ -61,6 +61,8 @@ En las ventanas de registro rápido (por ejemplo **Registro Rápido de Persona**
 
    ![Alta por verificar en la campana](img/altas-por-verificar/30-campana-alta-por-verificar.png)
 2. Toca el botón (o abre **Padrones → Altas por verificar**). Llegas a la bandeja con sus pestañas **Personas**, **Vehículos**, **Empresas** y **Colaboradores**, cada una con su número. Cada ficha dice quién la registró, cuándo y hace cuánto.
+![La bandeja Altas por verificar](img/altas-por-verificar/40-bandeja-unica.png)
+
 3. Si prefieres revisar desde el padrón, la píldora **Por verificar** del padrón muestra solo lo que falta.
 
 ![Vehículos pendientes](img/altas-por-verificar/02-vehiculos-pendientes-de-verificar.png)
