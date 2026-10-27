@@ -113,7 +113,7 @@ Route::middleware('auth')->group(function () {
     // Mejoras estructura (ADR-0016): cada persona silencia los avisos que no quiere recibir
     Route::put('/mi-cuenta/avisos', [MiCuentaController::class, 'avisos'])->name('mi-cuenta.avisos');
     // C-12: «Delegar mis aprobaciones» (visitas, pases, reservas, entrevistas)
-    Route::post('/mi-cuenta/delegar', [MiCuentaController::class, 'delegar'])->middleware('throttle:20,1')->name('mi-cuenta.delegar');
+    Route::post('/mi-cuenta/delegar', [MiCuentaController::class, 'delegar'])->name('mi-cuenta.delegar');
     Route::patch('/mi-cuenta/delegar/{delegacion}/cancelar', [MiCuentaController::class, 'cancelarDelegacion'])->whereNumber('delegacion')->name('mi-cuenta.delegar.cancelar');
     // Verificación en dos pasos (docs/tecnico/dos-pasos.md): activar, códigos de respaldo y quitarla (la propia cuenta, sin permiso)
     Route::get('/mi-cuenta/dos-pasos', [CuentaDosPasosController::class, 'mostrar'])->name('mi-cuenta.dos-pasos');

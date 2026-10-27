@@ -143,7 +143,7 @@ class ColaboradoresProvisionalesTest extends TestCase
         $jorge = $this->enEmpresa(fn () => Colaborador::where('nombre', 'Jorge')->firstOrFail());
         $this->nuevo(['num_empleado' => '2000', 'nombre' => 'Ya', 'apellido_paterno' => 'Existe']);
 
-        $this->actingAs($this->rh)->get('/colaboradores')->assertSee('alta de la caseta por verificar', false)->assertSee('Guardar y verificar');
+        $this->actingAs($this->rh)->get('/colaboradores')->assertSee('alta de la caseta por verificar', false)->assertSee('Aprobar')->assertSee('Rechazar'); // C-27
 
         $datos = ['nombre' => 'Jorge Luis', 'apellido_paterno' => 'Méndez', 'apellido_materno' => 'Tun', 'sede_id' => $this->centro->id, '_dialogo' => "validar-{$jorge->id}"];
         $this->actingAs($this->rh)->put("/colaboradores/{$jorge->id}/validar", $datos)->assertSessionHasErrors('num_empleado');
