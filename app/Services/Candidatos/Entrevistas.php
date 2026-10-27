@@ -79,7 +79,7 @@ class Entrevistas
     /** C-12: delegaciones directas o en cadena (una lectura por instancia). */
     private function cadena(): CadenaDelegaciones
     {
-        return $this->cadena ??= new CadenaDelegaciones;
+        return $this->cadena ??= app(CadenaDelegaciones::class); // una sola cadena por petición (revisión Etapa 4, D-04)
     }
 
     private ?CadenaDelegaciones $cadena = null;

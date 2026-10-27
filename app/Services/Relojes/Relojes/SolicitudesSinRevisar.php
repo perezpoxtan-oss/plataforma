@@ -31,4 +31,10 @@ class SolicitudesSinRevisar extends RelojDeCandidatos
             ->map(fn (Candidato $c) => new Espera('candidato', (int) $c->id, $c->autocaptura_en ?? $c->updated_at ?? now(), 'Solicitud sin revisar: '.$c->nombre_completo,
                 route('candidatos.show', $c->id), $c->sede_id !== null ? (int) $c->sede_id : null))->values();
     }
+
+    /** D-01: el renglón de Mis pendientes que ya existía y lo cuenta. */
+    public function renglonPropio(): ?string
+    {
+        return 'solicitudes';
+    }
 }

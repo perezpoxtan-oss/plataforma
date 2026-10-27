@@ -102,14 +102,28 @@ class PendientesActivos
      */
     public function procedimientosPorAprobar(User $actor): int
     {
+        return count($this->versionesPorAprobar($actor));
+    }
+
+    /**
+     * Las versiones en revisión que esta persona puede aprobar (D-02: el mismo
+     * conjunto para el renglón, el color y el recordatorio del motor).
+     *
+     * @return list<int>
+     */
+    public function versionesPorAprobar(User $actor): array
+    {
+        if (! $actor->can('procedimientos.aprobar')) {
+            return [];
+        }
         $servicio = app(AdministradorProcedimientos::class);
         $deEmpresa = $actor->es_superadmin || app(Autorizador::class)->sedesPermitidas($actor, 'procedimientos.aprobar') === null;
 
         return $servicio->limitar(Procedimiento::query(), $actor, 'procedimientos.aprobar')
             ->where('procedimientos.estado_trabajo', Procedimiento::EN_REVISION)
             ->with($deEmpresa ? ['trabajo'] : ['trabajo.aplicaciones'])->get()
-            ->filter(fn (Procedimiento $p) => $servicio->motivoNoAprueba($actor, $p, $p->trabajo) === null)
-            ->count();
+            ->filter(fn (Procedimiento $p) => $p->trabajo !== null && $servicio->motivoNoAprueba($actor, $p, $p->trabajo) === null)
+            ->map(fn (Procedimiento $p) => (int) $p->trabajo->id)->values()->all();
     }
 
     /**

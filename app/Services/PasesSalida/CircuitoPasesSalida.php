@@ -114,7 +114,7 @@ class CircuitoPasesSalida
 
     private function cadena(): CadenaDelegaciones
     {
-        return $this->cadena ??= new CadenaDelegaciones;
+        return $this->cadena ??= app(CadenaDelegaciones::class); // una sola cadena por petición (revisión Etapa 4, D-04)
     }
 
     public function __construct(

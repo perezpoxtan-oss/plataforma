@@ -7,8 +7,10 @@ use App\Models\User;
 use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\Recepcion\Destinatarios;
 use App\Services\Relojes\Espera;
+use App\Services\Relojes\PendientesPorPersona;
 use App\Services\Relojes\Reloj;
 use App\Support\Tenancy\EmpresaScope;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Support\Collection;
 
 /**
@@ -71,5 +73,42 @@ class CuentasPorRevisar extends Reloj
     public function puedeVer(User $actor): bool
     {
         return $actor->can('usuarios.editar') || $actor->can('usuarios.desbloquear');
+    }
+
+    /** D-01: el renglón de Mis pendientes que ya existía y lo cuenta. */
+    public function renglonPropio(): ?string
+    {
+        return 'cuentas';
+    }
+
+    /**
+     * D-02: le toca (y lo puede atender) si está en lo que esta persona puede
+     * revisar en Usuarios con su alcance: el mismo conjunto que su renglón de Mis pendientes
+     * (PendientesPorPersona), así el número, el color, el recordatorio y la
+     * delegación siguen una sola regla.
+     */
+    public function leToca(User $actor, Espera $e): bool
+    {
+        return isset($this->llavesDe($actor)[$e->llave()]);
+    }
+
+    public function puedeAtender(User $actor, Espera $e): bool
+    {
+        return $this->leToca($actor, $e);
+    }
+
+    /** @var array<int, array<string, int>> */
+    private array $llaves = [];
+
+    /** @return array<string, int> */
+    private function llavesDe(User $actor): array
+    {
+        return $this->llaves[(int) $actor->id] ??= array_flip(app(PendientesPorPersona::class)->cuentas($actor, (int) app(Tenant::class)->empresaId())['llaves']);
+    }
+
+    public function olvidar(): void
+    {
+        parent::olvidar();
+        $this->llaves = [];
     }
 }

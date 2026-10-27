@@ -118,4 +118,10 @@ class PedidoAlSupervisor extends Reloj
     {
         return ['Nadie ha respondido: '.$e->datos['nombre'].' lleva '.MotorRelojes::duracion($minutos).' en caseta', 'El supervisor no ha contestado. Autorízalo en la bitácora o llama a la caseta.'];
     }
+
+    /** D-01: el renglón de Mis pendientes que ya existía y lo cuenta. */
+    public function renglonPropio(): ?string
+    {
+        return 'esperan_supervisor';
+    }
 }

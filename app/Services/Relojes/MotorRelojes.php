@@ -215,6 +215,8 @@ class MotorRelojes
                 $cuenta['recordatorios'] += $hecho[0];
                 $cuenta['escalamientos'] += $hecho[1];
             }
+            // D-01: a quién pasó cada asunto, para el renglón de Mis pendientes del suplente
+            $this->guardarEscalados($empresaId);
 
             return $cuenta;
         });
@@ -318,7 +320,9 @@ class MotorRelojes
 
     private function recordar(Reloj $reloj, Espera $e, ?int $empresaId, int $minutos): bool
     {
-        $usuarios = $this->conDelegacion($reloj, $e, $empresaId, $reloj->responsables($e, $empresaId));
+        // D-01/D-02: solo a quien puede atenderlo (la misma regla que su renglón de Mis pendientes)
+        $usuarios = $this->conDelegacion($reloj, $e, $empresaId,
+            $reloj->responsables($e, $empresaId)->filter(fn (User $u) => $reloj->puedeAtender($u, $e)));
         if ($usuarios->isEmpty()) {
             return false;
         }
@@ -332,7 +336,8 @@ class MotorRelojes
     private function escalar(Reloj $reloj, Espera $e, ?int $empresaId, int $minutos, ?int $rolId, RelojEspera $fila): bool
     {
         $responsables = $reloj->responsables($e, $empresaId);
-        $suplentes = $this->conDelegacion($reloj, $e, $empresaId, $reloj->suplentes($e, $empresaId, $responsables, $rolId));
+        // D-01: solo quien puede atenderlo (si los suplentes del reloj no pueden, los de fábrica que sí)
+        $suplentes = $this->conDelegacion($reloj, $e, $empresaId, $reloj->suplentesQuePuedenAtender($e, $empresaId, $responsables, $rolId));
         $fila->forceFill(['escalado_a' => $suplentes->pluck('id')->map(fn ($id) => (int) $id)->values()->all()])->save();
         $this->auditar($empresaId, 'relojes.suplente', $reloj, $e, $minutos, $suplentes);
         if ($suplentes->isEmpty()) {
@@ -383,6 +388,90 @@ class MotorRelojes
 
     /** @var array<int, ?User> */
     private array $titulares = [];
+
+    public const CACHE_ESCALADOS = 'relojes:escalados:';
+
+    /** @var array<int, array<string, array<string, list<int>>>> */
+    private array $escalados = [];
+
+    /**
+     * D-01: a quién pasó cada asunto que sigue en la memoria del motor
+     * (relojes_esperas.escalado_a), por reloj y llave. Lo guarda el motor al
+     * terminar cada corrida; si no está en caché, una consulta.
+     *
+     * @return array<string, array<string, list<int>>>
+     */
+    public function escaladosDe(?int $empresaId): array
+    {
+        $k = $empresaId ?? 0;
+        if (isset($this->escalados[$k])) {
+            return $this->escalados[$k];
+        }
+        $guardado = Cache::get(self::CACHE_ESCALADOS.($empresaId ?? 'plataforma'));
+
+        return $this->escalados[$k] = is_array($guardado) ? $guardado : $this->guardarEscalados($empresaId);
+    }
+
+    /** @return array<string, array<string, list<int>>> */
+    private function guardarEscalados(?int $empresaId): array
+    {
+        $mapa = [];
+        RelojEspera::query()->whereNotNull('escalado_a')->where('reloj', '!=', self::ARRANQUE)
+            ->where(fn ($q) => $empresaId === null ? $q->whereNull('empresa_id') : $q->where('empresa_id', $empresaId))
+            ->get(['reloj', 'referencia_tipo', 'referencia_id', 'escalado_a'])
+            ->each(function (RelojEspera $r) use (&$mapa) {
+                $ids = array_values(array_map('intval', (array) $r->escalado_a));
+                if ($ids !== []) {
+                    $mapa[$r->reloj][$r->referencia_tipo.':'.$r->referencia_id] = $ids;
+                }
+            });
+        Cache::put(self::CACHE_ESCALADOS.($empresaId ?? 'plataforma'), $mapa, now()->addDay());
+
+        return $this->escalados[$empresaId ?? 0] = $mapa;
+    }
+
+    /**
+     * D-02: las llaves que le tocan a esta persona con la regla de delegación
+     * de la Etapa 3 (CadenaDelegaciones::destino), a partir del conjunto que
+     * cada quien puede atender ($llavesDe). Sin delegaciones de por medio,
+     * su propio conjunto tal cual (sin consultas extra).
+     *
+     * @param  callable(User): list<string>  $llavesDe
+     * @return list<string>
+     */
+    public function conCadenaLlaves(User $actor, callable $llavesDe): array
+    {
+        $cadena = $this->cadena();
+        $id = (int) $actor->id;
+        $mapa = $cadena->mapa();
+        $titulares = $mapa === [] ? [] : $cadena->titularesDe($id);
+        $propias = $llavesDe($actor);
+        if (! isset($mapa[$id]) && $titulares === []) {
+            return $propias;
+        }
+        $memo = [$id => array_flip($propias)];
+        $de = function (User $u) use (&$memo, $llavesDe): array {
+            return $memo[(int) $u->id] ??= array_flip($llavesDe($u));
+        };
+        $resultado = [];
+        foreach ($propias as $llave) {
+            if ($cadena->destino($id, fn (User $d) => isset($de($d)[$llave])) === $id) {
+                $resultado[$llave] = true;
+            }
+        }
+        foreach ($titulares as $t) {
+            if (($titular = $this->titular($t)) === null) {
+                continue;
+            }
+            foreach (array_keys($de($titular)) as $llave) {
+                if ($cadena->destino($t, fn (User $d) => isset($de($d)[$llave])) === $id) {
+                    $resultado[$llave] = true;
+                }
+            }
+        }
+
+        return array_keys($resultado);
+    }
 
     /** Un titular que delega (activo), leído una sola vez por petición. */
     public function titular(int $id): ?User

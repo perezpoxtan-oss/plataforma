@@ -52,4 +52,10 @@ class ValesDeTaxi extends Reloj
     {
         return $this->conPermiso($empresaId, 'transporte.aprobar', $e->sedeId);
     }
+
+    /** D-01: el renglón de Mis pendientes que ya existía y lo cuenta. */
+    public function renglonPropio(): ?string
+    {
+        return 'vales_taxi';
+    }
 }

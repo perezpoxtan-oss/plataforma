@@ -8,15 +8,16 @@ use App\Models\Postulacion;
 use App\Models\User;
 use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\PlazosCandidatos;
+use App\Services\Recepcion\Destinatarios;
 use App\Services\Relojes\Espera;
 use App\Services\Relojes\Reloj;
 use Illuminate\Support\Collection;
 
 /**
  * Entrevista por evaluar (renglón 5; C-23): el recordatorio al entrevistador
- * (o su delegado) lo manda PlazosCandidatos; al doble del plazo pasa a los
- * suplentes del departamento y a quien la canalizó en Recursos Humanos, que
- * puede reprogramarla o canalizarla a otra persona.
+ * (o su delegado) lo manda PlazosCandidatos; al doble del plazo pasa a quien
+ * la canalizó en Recursos Humanos, que puede reprogramarla o canalizarla a otra
+ * persona (D-01: los suplentes del departamento solo si pueden atenderla).
  */
 class EntrevistasPorEvaluar extends Reloj
 {
@@ -32,7 +33,7 @@ class EntrevistasPorEvaluar extends Reloj
 
     public function suplenteOmision(): string
     {
-        return 'los suplentes del departamento y quien la canalizó en Recursos Humanos';
+        return 'quien la canalizó en Recursos Humanos (puede volver a canalizarla); los suplentes del departamento solo si pueden atenderla';
     }
 
     public function modulos(): array
@@ -68,7 +69,7 @@ class EntrevistasPorEvaluar extends Reloj
             ->filter(fn (Postulacion $p) => $p->candidato !== null && ($p->cita_ahora ? $p->canalizado_en : $p->cita_en)?->lte(now()))
             ->map(fn (Postulacion $p) => new Espera(Entrevistas::REFERENCIA, (int) $p->id, $p->cita_ahora ? $p->canalizado_en : $p->cita_en,
                 'Entrevista sin evaluar: '.$p->candidato->nombre_completo, route('entrevistas.show', $p->id), $p->sede_id !== null ? (int) $p->sede_id : null,
-                ['entrevistador' => (int) $p->entrevistador_id, 'departamento' => $p->departamento_id, 'canalizo' => $p->canalizado_por]))->values();
+                ['entrevistador' => (int) $p->entrevistador_id, 'departamento' => $p->departamento_id, 'canalizo' => $p->canalizado_por, 'candidato' => (int) $p->candidato_id]))->values();
     }
 
     public function responsables(Espera $e, ?int $empresaId): Collection
@@ -91,5 +92,40 @@ class EntrevistasPorEvaluar extends Reloj
         $usuarios = $ids->isEmpty() ? collect() : User::where('activo', true)->whereIn('id', $ids)->get();
 
         return $usuarios->isNotEmpty() ? $usuarios : parent::suplentes($e, $empresaId, $responsables, null);
+    }
+
+    /** D-01: el renglón de Mis pendientes que ya existía y lo cuenta. */
+    public function renglonPropio(): ?string
+    {
+        return 'entrevistas';
+    }
+
+    /** Le toca a quien entrevista (su renglón «Entrevistas por evaluar»; la delegación la aplica el motor). */
+    public function leToca(User $actor, Espera $e): bool
+    {
+        return (int) $actor->id === $e->datos['entrevistador'] && app(Destinatarios::class)->alcanza($actor, 'candidatos.evaluar', $e->sedeId);
+    }
+
+    /**
+     * D-01: la atiende quien puede evaluarla (el entrevistador o quien la recibe
+     * por delegación, con candidatos.evaluar en la sede) o quien puede volver a
+     * canalizarla o marcar «No se presentó» (Recursos Humanos: candidatos.editar
+     * en la sede). Un suplente del departamento que no la entrevista no.
+     */
+    public function puedeAtender(User $actor, Espera $e): bool
+    {
+        $destinatarios = app(Destinatarios::class);
+        if ($destinatarios->alcanza($actor, 'candidatos.editar', $e->sedeId)) {
+            return true;
+        }
+
+        return $destinatarios->alcanza($actor, 'candidatos.evaluar', $e->sedeId)
+            && in_array($e->datos['entrevistador'], app(Entrevistas::class)->titularesDe($actor), true);
+    }
+
+    /** Recursos Humanos la atiende desde la ficha del candidato. */
+    public function urlSuplente(Espera $e): string
+    {
+        return isset($e->datos['candidato']) ? route('candidatos.show', $e->datos['candidato']) : $e->url;
     }
 }

@@ -39,13 +39,15 @@ Algunas cosas tienen su propio reloj:
 
 - De fábrica, quien puede resolverlo en **toda la empresa** (por ejemplo, quien verifica altas en todas las sedes).
 - En la caseta, los tickets, la permanencia y los pases vencidos: el **jefe de seguridad de la sede**.
-- En las entrevistas: los suplentes del departamento y quien la canalizó en Recursos Humanos.
+- En las entrevistas: quien la canalizó en Recursos Humanos (puede volver a canalizarla o marcar «No se presentó»); un suplente del departamento solo si también puede hacerlo.
 - En lo que tiene hora fija: una **ruta sin registro** (15 minutos después de su hora; una hora después, quien da el Vo.Bo. en toda la empresa), una **orden de servicio** (un día antes del montaje; al empezar el montaje, el responsable general de Reservas), la **recarga** de un equipo de Protección Civil (15 días antes; al vencer, quien los administra en toda la empresa) y su **revisión** (al pasar los días de su tipo; una semana después, igual).
 - Si no hay nadie más, le llega a las mismas personas con un aviso que ya no se puede silenciar.
 
 Tu administrador puede elegir un **rol** distinto para cada cosa en Configuración.
 
-Si delegaste tus aprobaciones (**Mi cuenta → Delegar mis aprobaciones**), el recordatorio y el aviso de suplente le llegan a la persona en quien delegaste, siempre que pueda atenderlo; si ella también delegó, a la última de la cadena que pueda. Lo mismo pasa en **Mis pendientes**: mientras dure tu delegación, esos renglones los ve quien te cubre y no tú.
+El suplente siempre es alguien que **puede atenderlo** (no solo verlo): por ejemplo, una entrevista atrasada pasa a Recursos Humanos, que puede volver a canalizarla o marcar «No se presentó», y un ticket canalizado pasa a quien puede reasignarlo en esa sede. Lo que te pasaron aparece en tu **Mis pendientes**: en su renglón de siempre o en **«Te lo pasaron: …»**, con su color rojo, hasta que se atienda.
+
+Si delegaste tus aprobaciones (**Mi cuenta → Delegar mis aprobaciones**), el recordatorio y el aviso de suplente le llegan a la persona en quien delegaste, siempre que pueda atenderlo; si ella también delegó, a la última de la cadena que pueda. Lo mismo pasa en **Mis pendientes**: mientras dure tu delegación, esos renglones los ve quien te cubre y no tú. También **Altas por verificar**, **Cuentas por revisar** y **Procedimientos por aprobar**: el número que ves es justo lo que puedes atender, y coincide con los recordatorios que te llegan.
 
 **Qué debes ver:** a cada quien le llega **un solo** recordatorio y **un solo** aviso de suplente por cada asunto, aunque tenga varias pantallas abiertas.
 
