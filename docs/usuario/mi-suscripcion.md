@@ -28,7 +28,7 @@ resumen: Ver tu plan, tus sedes y usuarios incluidos, cuándo vence, y pedir ren
 
 1. En **Tu suscripción** abre **Ampliar o renovar mi plan**.
 2. En **¿Qué necesitas?** elige **Renovar mi plan** (o **Contratar mi plan** si estás en prueba) o **Ampliar o cambiar de plan**.
-3. Elige el **Plan**, **¿Cuántas sedes?**, la **Forma de pago** (Mensual o Anual, con descuento) y los **Paquetes**.
+3. Elige el **Plan**, **¿Cuántas sedes?**, el **Giro de tu empresa**, la **Forma de pago** (Mensual o Anual, con descuento) y los **Paquetes** (por ejemplo **Recursos Humanos y candidatos** o **Reservas y eventos**). Si el giro que eliges es distinto al actual, lo revisamos contigo antes de cambiarlo.
 4. Si tienes un código de promoción, escríbelo en **Avanzado**.
 5. Toca **Guardar solicitud**.
 
@@ -43,6 +43,12 @@ resumen: Ver tu plan, tus sedes y usuarios incluidos, cuándo vence, y pedir ren
 
 ![Solo consulta](img/suscripciones/solo-consulta.png)
 
+## Qué pasa si cambias a un plan menor
+
+1. Lo que tu plan nuevo ya no incluye queda en **solo consulta**: tu equipo puede **ver, exportar e imprimir** lo que ya estaba, pero no registrar nada nuevo en esos módulos.
+2. Te llega un aviso a la campana y por correo: «Algunos módulos quedaron en solo consulta» con la lista.
+3. Si vuelves a contratarlo (plan mayor o complemento), todo vuelve a funcionar al momento. Tu información nunca se borra.
+
 ## Si algo sale mal
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
@@ -51,6 +57,7 @@ resumen: Ver tu plan, tus sedes y usuarios incluidos, cuándo vence, y pedir ren
 | Tu plan incluye 30 usuarios activos y ya tienes 30… | Llegaste al número de usuarios contratados. | Da de baja a quien ya no use la plataforma o pide ampliar tu plan. |
 | Franja roja «tienes acceso de solo consulta» y no puedes guardar nada. | Terminó la gracia sin pago (o la suscripción se suspendió). | Pide la renovación en **Tu suscripción** o comunícate con el contacto que dice la franja. |
 | Esa promoción ya venció / no existe. | El código no sirve. | Revisa el código o envía la solicitud sin él. |
+| «Esto no viene en tu plan (…)» al abrir una pantalla | Ese módulo no está en tu plan. | Toca **Ver mi suscripción** y pide el plan o el complemento que lo trae. |
 
 ## Preguntas frecuentes
 
@@ -59,6 +66,8 @@ resumen: Ver tu plan, tus sedes y usuarios incluidos, cuándo vence, y pedir ren
 **¿Cuentan los usuarios dados de baja?** No. Solo cuentan los usuarios **activos**.
 
 **¿Puedo pedir la renovación aunque esté en solo consulta?** Sí: **Ampliar o renovar mi plan** funciona siempre.
+
+**¿Qué trae cada plan?** Todos traen la estructura de tu empresa: sedes, zonas, usuarios y roles, y el directorio de **colaboradores**, **departamentos**, **puestos**, **turnos** y **quién autoriza**. **Esencial** suma la caseta y los padrones; **Profesional**, además, incidentes, Protección Civil, procedimientos e informes; **Corporativo**, además, Recursos Humanos. **Reservas y eventos** es un complemento para cualquier plan.
 
 **¿Qué es el pago anual?** Pagas los 12 meses juntos con un descuento. Se elige en **Forma de pago**.
 

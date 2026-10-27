@@ -10,6 +10,7 @@ use App\Models\Paquete;
 use App\Models\Plan;
 use App\Models\Promocion;
 use App\Models\Rol;
+use App\Models\Rubro;
 use App\Models\Sede;
 use App\Models\SolicitudCompra;
 use App\Models\Suscripcion;
@@ -191,7 +192,7 @@ class SuscripcionesTest extends TestCase
         Mail::fake();
         app(AjustesComerciales::class)->guardar(['landing_publicada' => true]);
         $this->get('/contratar?prueba=1&plan=profesional')->assertOk()->assertSee('Probar gratis 14 días')->assertSee('Solicitar mi prueba gratis');
-        $this->post('/contratar', [
+        $this->post('/contratar', ['rubro_id' => Rubro::where('clave', 'hotel')->value('id'),
             'tipo' => 'prueba', 'nombre' => 'Mario Ruiz', 'empresa' => 'Plaza Norte', 'correo' => 'mario@ejemplo.com.mx', 'sedes' => 1,
             'plan_id' => $this->plan('profesional')->id, 'periodicidad' => 'mensual', 'acepta_privacidad' => '1',
         ])->assertRedirect('/contratar/gracias');
@@ -223,7 +224,7 @@ class SuscripcionesTest extends TestCase
         app(AjustesComerciales::class)->guardar(['prueba_habilitada' => false]);
         // (el controlador quedó guardado en la ruta con los ajustes de antes: en producción cada petición es nueva)
         app('router')->getRoutes()->getByName('planes.guardar')->flushController();
-        $this->post('/contratar', ['tipo' => 'prueba', 'nombre' => 'Otra Persona', 'correo' => 'otra@ejemplo.com.mx', 'sedes' => 1,
+        $this->post('/contratar', ['rubro_id' => Rubro::where('clave', 'hotel')->value('id'), 'tipo' => 'prueba', 'nombre' => 'Otra Persona', 'correo' => 'otra@ejemplo.com.mx', 'sedes' => 1,
             'plan_id' => $this->plan('profesional')->id, 'acepta_privacidad' => '1'])->assertSessionHasErrors('tipo');
     }
 
@@ -530,9 +531,9 @@ class SuscripcionesTest extends TestCase
         app(AjustesComerciales::class)->guardar(['landing_publicada' => true]);
         $this->get('/contratar?plan=esencial&sedes=1&codigo=bien15')->assertOk()->assertSee('Código aplicado: Bienvenida')->assertSee('$877.54');
         $this->get('/contratar?plan=esencial&sedes=1&codigo=vieja')->assertOk()->assertSee('Esa promoción ya venció.');
-        $this->post('/contratar', ['nombre' => 'Ana Ruiz', 'correo' => 'ana@ejemplo.com.mx', 'sedes' => 1, 'plan_id' => $esencial->id,
+        $this->post('/contratar', ['rubro_id' => Rubro::where('clave', 'hotel')->value('id'), 'nombre' => 'Ana Ruiz', 'correo' => 'ana@ejemplo.com.mx', 'sedes' => 1, 'plan_id' => $esencial->id,
             'periodicidad' => 'mensual', 'codigo_promocion' => 'vieja', 'acepta_privacidad' => '1'])->assertSessionHasErrors(['codigo_promocion' => 'Esa promoción ya venció.']);
-        $this->post('/contratar', ['nombre' => 'Ana Ruiz', 'correo' => 'ana@ejemplo.com.mx', 'sedes' => 1, 'plan_id' => $esencial->id,
+        $this->post('/contratar', ['rubro_id' => Rubro::where('clave', 'hotel')->value('id'), 'nombre' => 'Ana Ruiz', 'correo' => 'ana@ejemplo.com.mx', 'sedes' => 1, 'plan_id' => $esencial->id,
             'periodicidad' => 'mensual', 'codigo_promocion' => 'bien15', 'acepta_privacidad' => '1'])->assertRedirect('/contratar/gracias');
         $sol = SolicitudCompra::where('correo', 'ana@ejemplo.com.mx')->firstOrFail();
         $this->assertSame('BIEN15', $sol->codigo_promocion);
@@ -589,7 +590,7 @@ class SuscripcionesTest extends TestCase
             ->assertSee('al mes pagando el año')->assertSee('Probar gratis 14 días');
         // Profesional 3 sedes anual: 1,490 × 3 = 4,470 al mes; −15 % = 3,799.50; × 12 = 45,594 + IVA
         $this->get('/contratar?plan=profesional&sedes=3&periodicidad=anual')->assertOk()->assertSee('Total')->assertSee('$52,889.04');
-        $this->post('/contratar', ['nombre' => 'Ana Ruiz', 'correo' => 'ana@ejemplo.com.mx', 'sedes' => 3, 'plan_id' => $this->plan('profesional')->id,
+        $this->post('/contratar', ['rubro_id' => Rubro::where('clave', 'hotel')->value('id'), 'nombre' => 'Ana Ruiz', 'correo' => 'ana@ejemplo.com.mx', 'sedes' => 3, 'plan_id' => $this->plan('profesional')->id,
             'periodicidad' => 'anual', 'acepta_privacidad' => '1'])->assertRedirect('/contratar/gracias');
         $s = SolicitudCompra::firstOrFail();
         $this->assertSame('anual', $s->periodicidad);

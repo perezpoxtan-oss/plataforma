@@ -97,14 +97,13 @@ class MenusReorganizadosTest extends TestCase
             'Herramientas' => ['etiquetas_qr'],
         ], $menu['padrones']);
         $this->assertSame([
-            'Personal' => ['colaboradores'],
             // Vacantes: lección 36 · «Mis entrevistas» (ADR-0010): para quien tiene candidatos.evaluar, sin módulo propio
             'Recepción y candidatos' => ['vacantes', 'recepcion_rh', 'candidatos', 'entrevistas'],
-            'Catálogos' => ['departamentos', 'puestos', 'turnos'],
         ], $menu['recursos_humanos']);
-        // Identidad de la plataforma es solo del superadministrador
+        // Identidad de la plataforma es solo del superadministrador · Organización en todos los planes (C-01)
         $this->assertSame([
             'Empresa' => ['empresas', 'sedes', 'espacios'],
+            'Organización' => ['colaboradores', 'departamentos', 'puestos', 'turnos', 'autorizaciones'],
             'Accesos y permisos' => ['usuarios', 'roles', 'permisos'],
             'Sistema' => ['configuracion', 'auditoria'],
         ], $menu['estructura']);
@@ -143,7 +142,8 @@ class MenusReorganizadosTest extends TestCase
         $menu = $this->estructura($agente);
 
         $this->assertSame(['operacion', 'padrones'], array_slice(array_keys($menu), 0, 2));
-        $this->assertArrayNotHasKey('estructura', $menu);
+        // C-01: el directorio (para sus altas provisionales) está en Estructura → Organización; nada más de Estructura
+        $this->assertSame(['Organización' => ['colaboradores']], $menu['estructura']);
         $this->assertArrayNotHasKey('informes', $menu);
         $this->assertContains('vouchers', $menu['operacion']['Caseta']);
 
@@ -167,8 +167,9 @@ class MenusReorganizadosTest extends TestCase
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
         $menu = $this->estructura($rh);
 
-        $this->assertSame(['Personal', 'Recepción y candidatos', 'Catálogos'], array_keys($menu['recursos_humanos']));
-        $this->assertArrayNotHasKey('autorizaciones', $this->items($rh));
+        $this->assertSame(['Recepción y candidatos'], array_keys($menu['recursos_humanos']));
+        // C-01: el personal y sus catálogos están en Estructura → Organización; RR. HH. configura quién autoriza, así que ve Autorizaciones ahí
+        $this->assertSame(['colaboradores', 'departamentos', 'puestos', 'turnos', 'autorizaciones'], $menu['estructura']['Organización']);
         $this->assertNull(Modulo::where('clave', 'autorizaciones')->value('menu_id'));
         $this->actingAs($rh)->get('/autorizaciones')->assertOk();
     }
@@ -181,9 +182,9 @@ class MenusReorganizadosTest extends TestCase
         // Informes (ADR-0017): el Jefe de seguridad consulta los informes de su sede
         $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'informes', 'estructura'], array_keys($menu));
         // Lección 36: la caseta consulta las vacantes publicadas de su sede; ADR-0010: entrevista a quien RR. HH. le canaliza
-        $this->assertSame(['Personal' => ['colaboradores'], 'Recepción y candidatos' => ['vacantes', 'entrevistas']], $menu['recursos_humanos']);
-        // Decisión del dueño (mapa de procesos): consulta la Bitácora de auditoría de su sede
-        $this->assertSame(['Accesos y permisos' => ['usuarios'], 'Sistema' => ['auditoria']], $menu['estructura']);
+        $this->assertSame(['Recepción y candidatos' => ['vacantes', 'entrevistas']], $menu['recursos_humanos']);
+        // Decisión del dueño (mapa de procesos): consulta la Bitácora de auditoría de su sede · C-01: el directorio en Organización
+        $this->assertSame(['Organización' => ['colaboradores'], 'Accesos y permisos' => ['usuarios'], 'Sistema' => ['auditoria']], $menu['estructura']);
     }
 
     public function test_informes_aparece_solo_con_las_pantallas_que_existen(): void
@@ -208,6 +209,9 @@ class MenusReorganizadosTest extends TestCase
 
     public function test_la_migracion_reacomoda_una_instalacion_existente_y_se_puede_repetir(): void
     {
+        // Etapa 1 (C-01): la foto de hoy es la de una instalación nueva; las migraciones de antes arman el menú de antes
+        $hoy = $this->acomodo();
+        $this->menuDeAntesDeLaEtapa1();
         // Mapa de procesos: Vouchers de reposición pasa después a la Caseta (su propia migración)
         $actual = $this->acomodo();
         $vouchersEnCaseta = require database_path('migrations/2026_10_29_000320_vouchers_en_la_caseta.php');
@@ -262,6 +266,30 @@ class MenusReorganizadosTest extends TestCase
         // El MenuSeeder después de la migración no mueve nada
         $this->seed(MenuSeeder::class);
         $this->assertSame($actual, $this->acomodo());
+
+        // Y la migración de la Etapa 1 deja el menú como en una instalación nueva
+        $etapa1 = require database_path('migrations/2026_11_10_000200_organizacion_base_y_paquetes_coherentes.php');
+        $etapa1->up();
+        $this->assertSame($hoy, $this->acomodo());
+    }
+
+    /** Menú de antes de la Etapa 1: Colaboradores y sus catálogos en Recursos Humanos (MenuSeeder de esa versión). */
+    private function menuDeAntesDeLaEtapa1(): void
+    {
+        $antes = [
+            'recursos_humanos' => ['Personal' => ['colaboradores'], 'Recepción y candidatos' => ['vacantes', 'recepcion_rh', 'candidatos'], 'Catálogos' => ['departamentos', 'puestos', 'turnos']],
+            'estructura' => ['Empresa' => ['empresas', 'sedes', 'espacios'], 'Accesos y permisos' => ['usuarios', 'roles', 'permisos'],
+                'Sistema' => ['configuracion', 'auditoria'], 'Plataforma' => ['identidad', 'catalogo_comercial']],
+        ];
+        foreach ($antes as $menu => $secciones) {
+            $menuId = Menu::where('clave', $menu)->value('id');
+            $orden = 0;
+            foreach ($secciones as $seccion => $claves) {
+                foreach ($claves as $clave) {
+                    Modulo::where('clave', $clave)->update(['menu_id' => $menuId, 'seccion_menu' => $seccion, 'orden_menu' => ++$orden]);
+                }
+            }
+        }
     }
 
     // ------------------------------------------------------------ Mis pendientes
@@ -288,14 +316,15 @@ class MenusReorganizadosTest extends TestCase
         $this->autorizacionPendientePara($jefe);
         $items = $this->items($jefe);
         $this->assertSame(['Autorizaciones', route('autorizaciones.index')], [$items['autorizaciones']['nombre'], $items['autorizaciones']['url']]);
-        $this->assertSame(['vacantes', 'entrevistas', 'autorizaciones'], $this->estructura($jefe)['recursos_humanos']['Recepción y candidatos']);
+        $this->assertSame(['vacantes', 'entrevistas'], $this->estructura($jefe)['recursos_humanos']['Recepción y candidatos']);
+        $this->assertContains('autorizaciones', $this->estructura($jefe)['estructura']['Organización']); // C-01
         $html = $this->actingAs($jefe)->get('/entrevistas')->assertOk()->getContent();
         $this->assertStringContainsString('Mis entrevistas', $html);
         $this->assertStringContainsString(route('autorizaciones.index'), $html);
 
-        // Recursos Humanos responde «Que pase» desde Recepción, no desde Autorizaciones: no se le agrega al menú
+        // Recursos Humanos configura quién autoriza: la ve en Estructura → Organización (C-01)
         $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
-        $this->assertArrayNotHasKey('autorizaciones', $this->items($rh));
+        $this->assertArrayHasKey('autorizaciones', $this->items($rh));
         $this->assertArrayHasKey('entrevistas', $this->items($rh));
 
         // Sin el permiso de evaluar ni responder: nada
@@ -393,6 +422,8 @@ class MenusReorganizadosTest extends TestCase
         // responsables de los departamentos involucrados, delegaciones hacia el usuario y cambios pedidos)
         // El paso «Jefe del departamento del solicitante» de Pases de salida suma 2 fijas (responsables de la empresa
         // y delegaciones activas, una vez por petición, sin importar cuántos pases o departamentos)
-        $this->assertLessThan(75, count(DB::getQueryLog()));
+        // Etapa 1 suma 5 fijas por petición (no por renglón): columna de solo lectura (2 de esquema en SQLite), módulos
+        // activos (acciones que se venden con otro módulo) y si la suscripción está en solo consulta (2)
+        $this->assertLessThan(80, count(DB::getQueryLog()));
     }
 }

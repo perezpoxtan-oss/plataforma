@@ -104,7 +104,7 @@ class CatalogoSeeder extends Seeder
     {
         return [
             // Dirección: la estructura de la empresa y su gobierno. Es la base que
-            // toda empresa tiene, contrate o no los demás módulos.
+            // toda empresa tiene, contrate o no los demás módulos (menú «Estructura»).
             'direccion' => ['Dirección', 'bi-building-gear', [
                 // «exportar»: todos los datos de la empresa en un archivo (portabilidad; ver docs/tecnico/traslado.md)
                 'empresas' => ['Empresas', 'bi-building', ['exportar']],
@@ -117,6 +117,14 @@ class CatalogoSeeder extends Seeder
                 // «datos_personales»: Privacidad y solicitudes ARCO (conservación, versiones del aviso, bandeja; docs/tecnico/privacidad.md)
                 'configuracion' => ['Configuración', 'bi-sliders', ['configurar', 'datos_personales'], [], ['ver', 'editar']],
                 'auditoria' => ['Bitácora de auditoría', 'bi-clipboard-data', ['exportar'], [], ['ver']],
+                // Organización base en todos los planes (plan de correcciones C-01, ADR-0004): el directorio
+                // de colaboradores, sus catálogos y quién autoriza. "aprobar" = validar las altas provisionales
+                // que hace la caseta; "provisional" = darlas de alta. El expediente y los datos personales son de RR. HH.
+                'colaboradores' => ['Colaboradores', 'bi-people', ['exportar', 'datos_personales', 'aprobar', 'provisional', 'importar']],
+                'departamentos' => ['Departamentos', 'bi-diagram-2', []],
+                'puestos' => ['Puestos', 'bi-person-badge', []],
+                'turnos' => ['Turnos', 'bi-clock', []],
+                'autorizaciones' => ['Autorizaciones departamentales', 'bi-patch-check', [], [], ['ver', 'responder', 'configurar']],
                 'identidad' => ['Identidad de la plataforma', 'bi-palette', [], [], ['ver', 'editar'], Modulo::TIPO_PLATAFORMA],
                 // Catálogo comercial: productos, planes, paquetes y la página pública de planes (solo Super Administrador)
                 'catalogo_comercial' => ['Catálogo comercial', 'bi-shop', [], [], ['ver', 'editar'], Modulo::TIPO_PLATAFORMA],
@@ -124,19 +132,15 @@ class CatalogoSeeder extends Seeder
                 // los módulos que el usuario puede ver); por eso no se contrata ni sale en la matriz de permisos
                 'manual' => ['Manual', 'bi-question-circle', [], [], ['ver'], Modulo::TIPO_PLATAFORMA],
             ]],
-            // Recursos Humanos: el personal y sus catálogos (departamentos, puestos
-            // y turnos). "aprobar" = validar las altas provisionales que hace la
-            // caseta; "provisional" = darlas de alta.
+            // Recursos Humanos: recepción de candidatos, vacantes, entrevistas y el
+            // expediente del colaborador (datos personales: la acción
+            // «colaboradores.datos_personales» se vende con Candidatos, ver
+            // App\Support\DependenciasModulos::ACCIONES_CON_MODULO).
             'recursos_humanos' => ['Recursos Humanos', 'bi-people-fill', [
-                'colaboradores' => ['Colaboradores', 'bi-people', ['exportar', 'datos_personales', 'aprobar', 'provisional', 'importar']],
-                'departamentos' => ['Departamentos', 'bi-diagram-2', []],
-                'puestos' => ['Puestos', 'bi-person-badge', []],
-                'turnos' => ['Turnos', 'bi-clock', []],
                 // Recepción de candidatos y autorizaciones departamentales (ADR-0007)
                 'recepcion_rh' => ['Recepción de RR. HH.', 'bi-person-check', [], [], ['ver']],
                 // «evaluar» (fase 2): entrevistar, evaluar y elegir a los candidatos que RR. HH. le canaliza
                 'candidatos' => ['Candidatos', 'bi-person-workspace', ['exportar', 'contratar', 'configurar', 'evaluar']],
-                'autorizaciones' => ['Autorizaciones departamentales', 'bi-patch-check', [], [], ['ver', 'responder', 'configurar']],
                 // Bolsa de trabajo (lección 36): «configurar» = bolsa pública por internet
                 'vacantes' => ['Vacantes', 'bi-megaphone', ['configurar']],
             ]],

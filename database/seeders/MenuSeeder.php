@@ -7,12 +7,16 @@ use App\Models\Modulo;
 use Illuminate\Database\Seeder;
 
 /**
- * Menu principal: Operación, Padrones, Recursos Humanos, Informes y Estructura.
+ * Menu principal: Operación, Padrones, Recursos Humanos, Informes y Estructura
+ * (Estructura → Organización: Colaboradores, Departamentos, Puestos y Turnos, C-01).
  * Solo crea lo que falta y solo acomoda modulos que aun no tienen menu:
  * lo que se cambie despues desde la interfaz se respeta.
  */
 class MenuSeeder extends Seeder
 {
+    /** Sección del menú Estructura con el directorio y los catálogos del personal (C-01). */
+    public const SECCION_ORGANIZACION = 'Organización';
+
     /**
      * menu => [nombre, icono, orden_movil, secciones[seccion => [modulo => color | [color, nombre en el menú]]]]
      *
@@ -60,15 +64,10 @@ class MenuSeeder extends Seeder
                     'etiquetas_qr' => 'dark',
                 ],
             ]],
+            // Recursos Humanos: vacantes, recepción, candidatos y entrevistas (el directorio y sus catálogos van en Estructura, C-01)
             'recursos_humanos' => ['Recursos Humanos', 'bi-people-fill', 3, [
-                'Personal' => [
-                    'colaboradores' => 'success',
-                ],
                 'Recepción y candidatos' => [
                     'vacantes' => 'warning', 'recepcion_rh' => 'primary', 'candidatos' => 'success',
-                ],
-                'Catálogos' => [
-                    'departamentos' => 'warning', 'puestos' => 'info', 'turnos' => 'secondary',
                 ],
             ]],
             // Sin pantallas todavía: el menú se oculta solo mientras ningún módulo tenga ruta
@@ -80,6 +79,10 @@ class MenuSeeder extends Seeder
             'estructura' => ['Estructura', 'bi-building-gear', 5, [
                 'Empresa' => [
                     'empresas' => 'primary', 'sedes' => 'success', 'espacios' => 'danger',
+                ],
+                // Organización base en todos los planes (C-01): directorio, catálogos del personal y quién autoriza
+                self::SECCION_ORGANIZACION => [
+                    'colaboradores' => 'success', 'departamentos' => 'warning', 'puestos' => 'info', 'turnos' => 'secondary',
                 ],
                 'Accesos y permisos' => [
                     'usuarios' => 'danger', 'roles' => 'indigo', 'permisos' => 'warning',

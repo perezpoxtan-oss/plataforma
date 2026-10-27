@@ -17,7 +17,7 @@ Usa la cuenta del **Administrador** de la empresa de ejemplo en el ambiente de p
 
 ## Práctica 1 · La plantilla
 
-1. **Recursos Humanos → Colaboradores** → **Importar**.
+1. **Estructura → Colaboradores** → **Importar**.
 2. Toca **Qué va en cada columna** y léelo.
 3. Toca **Descargar plantilla** y ábrela en Excel.
 

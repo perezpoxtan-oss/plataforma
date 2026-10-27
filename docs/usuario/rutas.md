@@ -17,7 +17,7 @@ resumen: Configurar las rutas del transporte de personal de cada sede, con sus h
 - Para ver la pantalla tu rol debe poder consultar *Rutas de transporte*. Si no aparece en el menú, pide el permiso a tu administrador.
 - Para crear, editar, clonar o dar de baja rutas necesitas esos permisos. Si no ves **Nueva Llegada**, tu rol solo consulta e imprime.
 - Antes de capturar una ruta deben existir:
-  - el **turno** en [Turnos](turnos.md), marcado para esa sede;
+  - si quieres ligar la ruta a un turno (opcional), el **turno** en [Turnos](turnos.md), marcado para esa sede;
   - la **empresa transportista** en [Empresas externas](proveedores.md), activa y operando en esa sede.
 
 ## Cómo elegir la sede
@@ -38,7 +38,7 @@ Cada ruta muestra su horario, turno, transportista, cuántos paraderos tiene, el
 1. En la pestaña **Llegadas** toca **Nueva Llegada** (o en **Salidas**, **Nueva Salida**). Se abre **Nueva ruta y sus horarios**.
 2. Revisa el **Sentido de la Ruta**: **Llegada a la Sede** o **Salida de la Sede**.
 3. Escribe el **Nombre de la Ruta / Trayecto** (por ejemplo `RUTA 1 - REGIÓN 94`). Se guarda en mayúsculas.
-4. Elige el **Turno Operativo** y la **Empresa Transportista**.
+4. Elige la **Empresa Transportista** y, si quieres, el **Turno Operativo** (es opcional; si tu sede no usa turnos, el campo no aparece).
 5. **Costo Máximo por Taxi (opcional):** si un vale de taxi de esta ruta pasa de ese monto, la caseta tendrá que justificarlo. Déjalo vacío si no hay tope.
 6. Llena el **Horario 1**:
    - **Nombre del Horario (opcional)**, por ejemplo «Lunes a viernes».
@@ -109,7 +109,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que capturaste se conserva. 
 | Escribe el nombre de la ruta (por ejemplo: RUTA 1 - CENTRO). | El nombre está vacío. | Escribe el nombre. |
 | Ya existe una ruta de llegada (o salida) llamada «…» en esta sede. | Ese nombre ya se usa en ese sentido. | Usa otro nombre o edita la existente. |
 | … (dada de baja): reactívala o usa otro nombre. | La ruta existe pero está dada de baja. | Reactívala con la flecha circular. |
-| Elige el turno de la ruta. / Elige la empresa transportista. | Falta el turno o la transportista. | Elige uno de la lista. |
+| Elige la empresa transportista. | Falta la transportista. | Elige una de la lista. Si no hay ninguna, dala de alta en **Padrones → Empresas externas**. |
 | El turno elegido no existe, está desactivado o no se usa en esta sede. Elige otro de la lista. | El turno no aplica a la sede. | Márcalo para la sede en [Turnos](turnos.md) o elige otro. |
 | La empresa transportista no existe, está dada de baja o no opera en esta sede. Elige otra de la lista. | La transportista no opera en la sede. | Agrégale la sede en [Empresas externas](proveedores.md). |
 | Horario 1: falta la hora de llegada a destino. | En una ruta de **Llegada** falta la hora en que llega a la sede. | Escríbela (en las de Salida es opcional). |

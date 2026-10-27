@@ -289,8 +289,7 @@ class RutasTest extends TestCase
                 'nombre' => 'Escribe el nombre de la ruta (por ejemplo: RUTA 1 - CENTRO).',
                 'sentido' => 'Elige si la ruta es de llegada o de salida.',
                 'costo_maximo_taxi' => 'El costo máximo por taxi no puede ser negativo.',
-                'turno_id' => 'Elige el turno de la ruta.',
-            ]);
+            ])->assertSessionDoesntHaveErrors('turno_id'); // C-06: el turno es opcional
 
         $this->assertSame(0, $this->rutaEn(fn () => Ruta::count()));
         $this->assertSame(0, $this->rutaEn(fn () => Paradero::count()));
@@ -323,7 +322,7 @@ class RutasTest extends TestCase
 
         foreach ([$soloPlaya, $inactivo, $turnoAjeno] as $t) {
             $this->actingAs($this->admin)->post('/rutas', $this->datos(['turno_id' => $t->id]))
-                ->assertSessionHasErrors(['turno_id' => 'El turno elegido no existe, está desactivado o no se usa en esta sede. Elige otro de la lista.']);
+                ->assertSessionHasErrors(['turno_id' => 'El turno elegido no existe, está desactivado o no se usa en esta sede. Elige otro de la lista (o déjalo sin turno).']);
         }
         foreach ([$proveedorAjeno, $vetado, $deLaPlaya] as $p) {
             $this->actingAs($this->admin)->post('/rutas', $this->datos(['proveedor_id' => $p->id]))

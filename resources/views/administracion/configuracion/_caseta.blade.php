@@ -3,7 +3,7 @@
     en su sección (Configuración por secciones). Sin configurar, todo funciona
     como el diseño original. Cada tarjeta manda solo sus campos (_tarjeta) y el
     resto se conserva. Variables: $empresa, $puedeEditar, $tarjeta
-    (transporte | llaves | responsivas | procedimientos | vobo).
+    (transporte | llaves | responsivas | procedimientos | vobo | motivos).
 --}}
 @php
     $ajustes = \App\Support\AjustesCaseta::de($empresa);
@@ -17,6 +17,7 @@
         'responsivas' => ['bi-pen', 'Responsivas: equipos de «Turno»', 'los equipos de «Turno»'],
         'procedimientos' => ['bi-book', 'Procedimientos: acuse «Leí y entendí» y recordatorio', 'los ajustes de Procedimientos'],
         'vobo' => ['bi-clock-history', 'Reloj del visto bueno', 'el reloj del visto bueno'],
+        'motivos' => ['bi-signpost-2', 'Motivo de la visita', 'los motivos de la visita'],
     ];
     [$icono, $titulo, $que] = $titulos[$tarjeta];
     $distinto = collect(\App\Support\AjustesCaseta::GRUPOS[$tarjeta])->contains(fn ($c) => $ajustes[$c] !== $omision[$c]);
@@ -87,6 +88,30 @@
                 </div>
             </div>
             <p class="campo-ayuda mt-0">El color siempre va con su texto («más de 1 día», «más de 3 días»…). <span class="valor-original">Valor original: 24 y 72 horas.</span></p>
+        @elseif ($tarjeta === 'motivos')
+            @php
+                $motivosEmpresa = app(\App\Services\Accesos\MotivosVisita::class)->para((int) $empresa->id);
+                $esHotel = \App\Support\Terminos::deEmpresaId((int) $empresa->id)->esHotel();
+            @endphp
+            <label class="campo-etiqueta" for="cfg_motivo_visita_omision">Motivo que viene marcado al registrar una visita</label>
+            <select id="cfg_motivo_visita_omision" name="motivo_visita_omision" class="campo" @disabled(! $puedeEditar)>
+                @foreach (\App\Support\AjustesCaseta::MOTIVOS_OMISION as $clave => $texto)
+                    @continue ($clave !== '' && ! array_key_exists($clave, $motivosEmpresa) && $valor('motivo_visita_omision') !== $clave)
+                    <option value="{{ $clave }}" @selected($valor('motivo_visita_omision') === $clave)>{{ $clave === '' ? $texto : ($motivosEmpresa[$clave] ?? $texto) }}</option>
+                @endforeach
+            </select>
+            <p class="campo-ayuda mt-0">Si marcas uno, el guardia lo puede cambiar en cada registro. «Recursos Humanos» solo aparece si tu plan incluye Candidatos. <span class="valor-original">Valor original: ninguno.</span></p>
+            @if ($esHotel)
+                <label class="campo-etiqueta" for="cfg_visita_a_huesped">«Visita a huésped»</label>
+                <select id="cfg_visita_a_huesped" name="visita_a_huesped" class="campo" @disabled(! $puedeEditar)>
+                    @foreach (\App\Support\AjustesCaseta::VISITA_A_HUESPED as $clave => $texto)
+                        <option value="{{ $clave }}" @selected($valor('visita_a_huesped') === $clave)>{{ $texto }}</option>
+                    @endforeach
+                </select>
+                <p class="campo-ayuda mt-0">Para quien viene a ver a un huésped: la caseta anota a quién visita y su habitación, y llama antes de dejarlo pasar. <span class="valor-original">Valor original: sí.</span></p>
+            @else
+                <input type="hidden" name="visita_a_huesped" value="{{ $valor('visita_a_huesped') }}">
+            @endif
         @endif
         @foreach (\App\Support\AjustesCaseta::GRUPOS[$tarjeta] as $campo)
             @error($campo)<p class="text-danger small mb-1">{{ $message }}</p>@enderror

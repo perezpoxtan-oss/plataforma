@@ -68,7 +68,14 @@ Migración `2026_10_31_000300_crear_suscripciones` (InnoDB, auditoría `creado_p
 
 ### Módulos efectivos (`ModulosEfectivos`)
 
-`módulos de los productos del plan + de los productos de sus paquetes + excepciones «módulo agregado» − excepciones «módulo quitado»`, más **siempre** los del área Dirección y los submódulos de cada módulo incluido. Se escriben en `empresa_modulos` con `activo = 0/1` **sin borrar filas** (lo apagado solo se oculta; datos y permisos se conservan). Los módulos de Dirección no se pueden quitar. Ojo: en una empresa con suscripción, cambiar a mano «Módulos contratados» en Empresas se sobrescribe en el siguiente cambio de plan o excepción: usar Excepciones.
+`módulos de los productos del plan + de los productos de sus paquetes + excepciones «módulo agregado» − excepciones «módulo quitado»`, más **siempre** los del área Dirección y los submódulos de cada módulo incluido. Se escriben en `empresa_modulos` con `activo = 0/1` **sin borrar filas** (lo apagado solo se oculta; datos y permisos se conservan). Los módulos de Dirección no se pueden quitar.
+
+- **Lista de dependencias (C-02):** `detalle()` completa lo que necesitan los módulos incluidos (`App\Support\DependenciasModulos`) y lo reporta en `agregados` (queda en el historial). Lo indispensable gana aunque haya una excepción «módulo quitado»; por eso `agregarExcepcion()` no deja quitar un módulo que otro activo necesita.
+- **Solo el plan y sus excepciones (DD-05, A-09):** con suscripción, «Módulos contratados» de Empresas es de solo consulta (el `PUT` responde con el aviso y no cambia nada). La migración `2026_11_10_000200` convirtió en excepciones lo que se había cambiado ahí a mano antes.
+
+### Al bajar de plan (DD-05)
+
+`sincronizar()` deja `activo = 0` y **`solo_lectura = 1`** en cada módulo que estaba activo (o ya en solo lectura) y el cálculo ya no trae, salvo que lo quite una excepción «módulo quitado» (ese se apaga del todo). El motor de permisos solo deja ver, exportar e imprimir; el menú y el manual lo siguen mostrando. Los administradores reciben «Algunos módulos quedaron en solo consulta» (campana y correo, `AvisosSuscripcion::alCliente`). Al volver a contratarlo, `activo = 1` y `solo_lectura = 0`. Las excepciones nunca se borran al cambiar de plan.
 
 ## Límites (`Limites`)
 

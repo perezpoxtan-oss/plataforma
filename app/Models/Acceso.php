@@ -86,7 +86,9 @@ class Acceso extends Model
     /** Identificación que se queda en caseta (SEGCAT: ID Custodiada). */
     public const IDENTIFICACIONES = ['ine' => 'INE / IFE', 'licencia' => 'Licencia Conducir', 'pasaporte' => 'Pasaporte'];
 
-    public const MOTIVOS = ['rh' => 'Recursos Humanos', 'colaborador' => 'Visita a Colaborador', 'departamento' => 'Visita a Departamento']; // «departamento»: Recepción (ADR-0007)
+    // «departamento»: Recepción (ADR-0007). «general» y «huesped»: C-04 / DD-23 (cuáles ofrece cada empresa: App\Services\Accesos\MotivosVisita)
+    public const MOTIVOS = ['rh' => 'Recursos Humanos', 'colaborador' => 'Visita a Colaborador', 'departamento' => 'Visita a Departamento',
+        'general' => 'Visita general', 'huesped' => 'Visita a huésped'];
 
     /**
      * Recursos Humanos: ¿a qué viene? La caseta ve TRES opciones

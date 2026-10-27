@@ -60,9 +60,9 @@ class ImportadorColaboradores extends Importador
             new Columna('apellido_materno', 'Apellido materno', false, 'López'),
             new Columna('telefono', 'Teléfono', false, '9981234567', 'De 10 a 15 dígitos; los espacios y guiones se quitan solos.'),
             new Columna('sede', 'Sede', false, 'Sede Centro', 'Nombre o código de la sede, como aparece en Estructura → Sedes.', campos: ['sede_id']),
-            new Columna('departamento', 'Departamento', false, 'Recepción', 'Como aparece en Recursos Humanos → Departamentos y que aplique en esa sede.', campos: ['departamento_id']),
-            new Columna('puesto', 'Puesto', false, 'Recepcionista', 'Como aparece en Recursos Humanos → Puestos.', campos: ['puesto_id']),
-            new Columna('turno', 'Turno', false, '', 'Nombre del turno, como aparece en Recursos Humanos → Turnos.', campos: ['turno_id']),
+            new Columna('departamento', 'Departamento', false, 'Recepción', 'Como aparece en Estructura → Departamentos y que aplique en esa sede.', campos: ['departamento_id']),
+            new Columna('puesto', 'Puesto', false, 'Recepcionista', 'Como aparece en Estructura → Puestos.', campos: ['puesto_id']),
+            new Columna('turno', 'Turno', false, '', 'Nombre del turno, como aparece en Estructura → Turnos.', campos: ['turno_id']),
             new Columna('curp', 'CURP', false, 'PELJ900101HQRRPN09', '18 caracteres.', true),
             new Columna('rfc', 'RFC', false, 'PELJ900101AB1', '12 o 13 caracteres.', true),
             new Columna('nss', 'NSS', false, '12345678901', '11 dígitos.', true, ['numero de seguro social', 'imss']),
@@ -136,13 +136,13 @@ class ImportadorColaboradores extends Importador
             'apellido_materno' => $this->valor($fila, 'apellido_materno'),
             'telefono' => $this->valor($fila, 'telefono'),
             'sede_id' => $resolver('sede', fn () => $this->sede($this->valor($fila, 'sede'))?->id),
-            'departamento_id' => $resolver('departamento', fn () => $this->porNombre(Departamento::class, $this->valor($fila, 'departamento'), 'departamento', 'el departamento', 'Recursos Humanos → Departamentos')),
-            'puesto_id' => $resolver('puesto', fn () => $this->porNombre(Puesto::class, $this->valor($fila, 'puesto'), 'puesto', 'el puesto', 'Recursos Humanos → Puestos')),
+            'departamento_id' => $resolver('departamento', fn () => $this->porNombre(Departamento::class, $this->valor($fila, 'departamento'), 'departamento', 'el departamento', 'Estructura → Departamentos')),
+            'puesto_id' => $resolver('puesto', fn () => $this->porNombre(Puesto::class, $this->valor($fila, 'puesto'), 'puesto', 'el puesto', 'Estructura → Puestos')),
         ];
         // El turno solo se toca si la fila lo trae (al actualizar, vacío = conserva el actual)
         $turno = $this->valor($fila, 'turno');
         if ($turno !== null || $alta) {
-            $datos['turno_id'] = $resolver('turno', fn () => $this->porNombre(Turno::class, $turno, 'turno', 'el turno', 'Recursos Humanos → Turnos'));
+            $datos['turno_id'] = $resolver('turno', fn () => $this->porNombre(Turno::class, $turno, 'turno', 'el turno', 'Estructura → Turnos'));
         }
 
         // Datos personales: solo con permiso; si no lo tiene, esas columnas se ignoran

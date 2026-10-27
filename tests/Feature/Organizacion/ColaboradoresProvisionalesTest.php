@@ -68,18 +68,21 @@ class ColaboradoresProvisionalesTest extends TestCase
         $this->assertSame(['direccion', 'recursos_humanos', 'seguridad', 'servicios'], Area::orderBy('orden')->pluck('clave')->all());
 
         $area = fn (string $modulo) => Modulo::with('area')->where('clave', $modulo)->firstOrFail()->area->clave;
-        foreach (['empresas', 'sedes', 'espacios', 'usuarios', 'roles', 'permisos'] as $m) {
+        foreach (['empresas', 'sedes', 'espacios', 'usuarios', 'roles', 'permisos', 'autorizaciones'] as $m) {
             $this->assertSame('direccion', $area($m), $m);
         }
+        // Organización base en todos los planes (C-01): Dirección, menú Estructura
         foreach (['colaboradores', 'departamentos', 'puestos', 'turnos'] as $m) {
+            $this->assertSame('direccion', $area($m), $m);
+            $this->assertSame('estructura', Modulo::with('menu')->where('clave', $m)->firstOrFail()->menu->clave, $m);
+        }
+        foreach (['recepcion_rh', 'candidatos', 'vacantes'] as $m) {
             $this->assertSame('recursos_humanos', $area($m), $m);
-            $this->assertSame('recursos_humanos', Modulo::with('menu')->where('clave', $m)->firstOrFail()->menu->clave, $m);
         }
         foreach (['accesos', 'llaves', 'novedades', 'dashboard', 'informe_ejecutivo'] as $m) {
             $this->assertSame('seguridad', $area($m), $m);
         }
 
-        $this->assertSame('recursos_humanos', Modulo::with('menu')->where('clave', 'colaboradores')->firstOrFail()->menu->clave);
         // Lección 35: orden aprobado de los menús
         $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'informes', 'estructura'], Menu::orderBy('orden')->pluck('clave')->all());
 

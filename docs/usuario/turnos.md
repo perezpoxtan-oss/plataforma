@@ -1,14 +1,14 @@
 ---
 titulo: Turnos
 modulos: [turnos]
-seccion: Recursos Humanos
+seccion: Estructura
 orden: 70
 resumen: Los horarios fijos de la empresa (Matutino, Vespertino, Nocturno…) y las sedes que usan cada uno.
 ---
 
 # Turnos
 
-**¿Para qué sirve?** Los turnos son los **horarios fijos** de la empresa: Matutino, Vespertino, Nocturno… Se usan en otras pantallas, por ejemplo en [Rutas de transporte](rutas.md) (cada ruta lleva su turno) y en [Colaboradores](colaboradores.md) (el turno que trabaja cada persona).
+**¿Para qué sirve?** Los turnos son los **horarios fijos** de la empresa: Matutino, Vespertino, Nocturno… Vienen en todos los planes (menú **Estructura**). Se usan en otras pantallas, por ejemplo en [Rutas de transporte](rutas.md) (cada ruta puede llevar su turno; es opcional) y en [Colaboradores](colaboradores.md) (el turno que trabaja cada persona).
 
 ![Turnos](img/turnos/1-turnos.png)
 
@@ -20,7 +20,7 @@ resumen: Los horarios fijos de la empresa (Matutino, Vespertino, Nocturno…) y 
 
 ## Cómo leer la pantalla
 
-1. Entra a **Recursos Humanos → Turnos**.
+1. Entra a **Estructura → Turnos**.
 2. Cada ficha muestra el **horario** y cuánto dura (por ejemplo «07:00 a 15:00 · 8 h»), el aviso **Termina al día siguiente** si cruza la medianoche, y en qué **sedes** se usa.
 3. Para encontrar un turno usa **Buscar turno...** o **Todas las sedes**.
 

@@ -4,10 +4,10 @@
 
 ## Práctica (en QA, como `admin.demo`)
 
-1. Abre **Recursos Humanos → Departamentos**. Verás los 7 de demo; *Club de Playa* dice "Solo en: Hotel Demo Playa".
+1. Abre **Estructura → Departamentos**. Verás los 7 de demo; *Club de Playa* dice "Solo en: Hotel Demo Playa".
 2. Toca **Nuevo Departamento** y escribe "recepción": te avisa que ya existe. Cámbialo a **Spa**, desmarca *Todas las sedes*, elige *Hotel Demo Playa* y guarda.
 3. Edita *Spa* y vuelve a marcar *Todas las sedes*. La ficha debe decir "Todas las sedes".
-4. Abre **Recursos Humanos → Puestos** y escribe "seguridad" en **Buscar puesto o departamento...**: deben quedar los puestos ligados a *Seguridad*.
+4. Abre **Estructura → Puestos** y escribe "seguridad" en **Buscar puesto o departamento...**: deben quedar los puestos ligados a *Seguridad*.
 5. Crea el puesto **Terapeuta** ligado a *Spa*.
 6. Da de baja *Spa* y edita *Terapeuta* sin tocar nada más: la liga con *Spa* se conserva y aparece tachada.
 

@@ -391,7 +391,7 @@ class MejorasEstructuraTest extends TestCase
     public function test_el_superadmin_elige_los_modulos_de_cada_empresa_y_direccion_siempre_queda(): void
     {
         $sa = $this->crearSuperadmin();
-        $rh = Modulo::where('clave', 'colaboradores')->value('id');
+        $rh = Modulo::where('clave', 'candidatos')->value('id'); // Colaboradores ya es de Dirección (C-01)
         $accesos = Modulo::where('clave', 'accesos')->value('id');
 
         $this->actingAs($this->admin)->put("/empresas/{$this->empresa->id}/modulos", ['modulos' => [$accesos]])->assertForbidden();
@@ -405,8 +405,9 @@ class MejorasEstructuraTest extends TestCase
         $this->assertContains(Modulo::where('clave', 'usuarios')->value('id'), $activos);
         $this->assertTrue(Auditoria::where('evento', 'empresas.modulos_actualizados')->exists());
 
-        $this->actingAs($this->admin)->get('/colaboradores')->assertForbidden();
-        $this->actingAs($this->admin)->get('/')->assertOk()->assertDontSee(url('/colaboradores'), false);
+        $this->assertContains(Modulo::where('clave', 'colaboradores')->value('id'), $activos);
+        $this->actingAs($this->admin)->get('/candidatos')->assertForbidden()->assertSee('Esto no viene en tu plan');
+        $this->actingAs($this->admin)->get('/')->assertOk()->assertDontSee(url('/candidatos'), false);
         // El Super Administrador ve en qué empresa está parado en cualquier pantalla
         $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])->get('/manual')->assertSee('chip-empresa-trabajo', false)->assertSee('Hotel Uno');
     }

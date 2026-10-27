@@ -9,6 +9,7 @@ use App\Services\Permisos\Autorizador;
 use App\Support\HoraLocal;
 use App\Support\Identidad;
 use App\Support\Menu\ConstructorMenu;
+use App\Support\NoVieneEnTuPlan;
 use App\Support\RegistroTerminos;
 use App\Support\Tenancy\Tenant;
 use App\Support\Terminos;
@@ -84,11 +85,17 @@ class AppServiceProvider extends ServiceProvider
 
             $registro = $argumentos[0] ?? null;
 
-            return app(Autorizador::class)->puede(
+            $puede = app(Autorizador::class)->puede(
                 $usuario,
                 $habilidad,
                 $registro instanceof Model ? $registro : null,
             );
+            // C-03: si se negó porque el módulo no está contratado, la página 403 dice «No viene en tu plan»
+            if (! $puede) {
+                NoVieneEnTuPlan::anotar($usuario, $habilidad);
+            }
+
+            return $puede;
         });
 
         // Nombre, colores y logos de la plataforma en todas las vistas

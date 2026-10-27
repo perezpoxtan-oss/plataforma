@@ -106,6 +106,10 @@ Ver los apartados «Dar salida a la vista» y «Mensajes» más abajo: el campo 
 - **Acompañantes**: hasta 15; filas sin ningún dato se omiten; `num_acompanantes` = el mayor entre el número capturado y las filas.
 - **Guardar y capturar siguiente** (`siguiente=1`): regresa con la sesión `siguiente` (sede, tipo y aviso) y el diálogo se reabre listo.
 
+## Motivos de visita (C-04, DD-23)
+
+`App\Services\Accesos\MotivosVisita::para($empresaId)` decide qué motivos ofrece la caseta: hotel = Visita general, Visita a huésped (si `AjustesCaseta` `visita_a_huesped` = si), Visita a colaborador, Visita a departamento y Recursos Humanos; corporativo = colaborador, departamento, general y Recursos Humanos; condominio y fraccionamiento = Visita a Residente y Visita a Administración. **Recursos Humanos** solo si `candidatos` está activo (`Autorizador::moduloActivo`). **Ninguno viene marcado**: `porOmision()` toma `AjustesCaseta` `motivo_visita_omision` ('' de fábrica) si aplica a la empresa. `RegistroAccesos` exige el motivo («Elige el motivo de la visita.») y, para `general` y `huesped`, `persona_visita` («¿A quién o a qué viene?» / «¿A qué huésped visita?»; `habitacion` opcional en `huesped`). `RecepcionEnCaseta::despues()` no crea la ficha de candidato si Candidatos no está activo. Sin migración (`motivo_visita` no tiene CHECK); las claves nuevas están en `Acceso::MOTIVOS`.
+
 ## Tipos según el giro de la empresa
 
 Los tipos que se ofrecen y su nombre dependen del giro (`App\Support\Terminos`, ver `docs/tecnico/giros.md`): el hotel conserva los seis tipos de siempre; un corporativo no ofrece Huésped y llama «Visitante» a la visita; un condominio o fraccionamiento ofrece Residente (`colaborador`), Visita (`visitante`, con «Visita a Residente» o «Visita a Administración» y el departamento o casa en `habitacion`), Servicio (`proveedor`), Contratista y Emergencia. Las claves y el CHECK de `accesos.tipo` no cambian; `RegistroAccesos` rechaza en el servidor un tipo o motivo que el giro no ofrece. Los registros de antes conservan su nombre.

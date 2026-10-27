@@ -46,7 +46,7 @@ resumen: Consultar el manual de procedimientos, leer y firmar «Leí y entendí�
 
 1. Toca **Nuevo Procedimiento**.
 2. En **1. Datos generales** escribe la **clave** (viene una sugerida), elige la **categoría** y escribe el **título** y el **objetivo**.
-3. En **2. A quién aplica** elige **Todas las sedes** o **Sedes elegidas**; si solo aplica a algunos departamentos o puestos, márcalos.
+3. En **2. A quién aplica** elige **Todas las sedes** o **Sedes elegidas**; si solo aplica a algunos departamentos o puestos, márcalos. Lo firman las **cuentas** de esas sedes; las que no tienen ficha de colaborador firman solo los procedimientos que **no** se limitan a departamentos ni puestos (la pestaña **Acuses** te dice cuántas son).
 4. En **3. Pasos** escribe un paso por renglón. Marca **Punto crítico** lo que nunca debe olvidarse. **Agregar paso** pone otro; las flechas cambian el orden.
 5. En **4. Notas y adjuntos** (opcional) agrega teléfonos, aclaraciones o archivos PDF o imágenes.
 6. Toca **Guardar borrador** (para seguir después) o **Guardar y enviar a revisión**.

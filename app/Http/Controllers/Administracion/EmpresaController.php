@@ -16,6 +16,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Services\Suscripciones\Limites;
+use App\Support\DependenciasModulos;
 use App\Support\Entrada;
 use App\Support\ImagenSegura;
 use App\Support\ZonasHorarias;
@@ -154,10 +155,30 @@ class EmpresaController extends Controller
         // Seguridad (AZ-03): otra empresa responde 404 (sin revelar que existe)
         abort_unless($request->user()->es_superadmin || $empresa->id === (int) $request->user()->empresa_id, 404);
         abort_unless($request->user()->es_superadmin, 403);
+        // DD-05: con suscripción, los módulos los fijan solo su plan y sus excepciones (A-09: lo de aquí se perdía al sincronizar)
+        if (($suscripcion = Suscripcion::where('empresa_id', $empresa->id)->first()) !== null) {
+            return redirect()->to(route('empresas.index').'#empresa-'.$empresa->id)->with('error',
+                "«{$empresa->nombre_comercial}» tiene suscripción: sus módulos los fijan su plan y sus excepciones. Cámbialos en su ficha de cliente (Catálogo comercial → Clientes).");
+        }
 
         $elegidos = array_map('intval', (array) $request->validate(['modulos' => ['nullable', 'array'], 'modulos.*' => ['integer']])['modulos'] ?? []);
-        $catalogo = Modulo::query()->where('activo', true)->where('tipo', '!=', Modulo::TIPO_PLATAFORMA)->get(['id', 'clave', 'padre_id', 'area_id']);
+        $catalogo = Modulo::query()->where('activo', true)->where('tipo', '!=', Modulo::TIPO_PLATAFORMA)->get(['id', 'clave', 'padre_id', 'area_id', 'nombre']);
         $direccion = Area::where('clave', 'direccion')->value('id');
+        // Lista de dependencias (C-02): se agrega lo que necesitan los módulos elegidos
+        $porId = $catalogo->keyBy('id');
+        $claves = collect($elegidos)->map(fn ($id) => $porId[$id]->clave ?? null)->filter()->values()->all();
+        $completo = DependenciasModulos::completar($claves, $catalogo->where('area_id', $direccion)->pluck('clave')->all());
+        $porClave = $catalogo->keyBy('clave');
+        foreach (array_keys($completo['agregados']) as $clave) {
+            if (isset($porClave[$clave])) {
+                $elegidos[] = (int) $porClave[$clave]->id;
+                if ($porClave[$clave]->padre_id !== null) {
+                    $elegidos[] = (int) $porClave[$clave]->padre_id;
+                }
+            }
+        }
+        $elegidos = array_values(array_unique($elegidos));
+        $avisoDependencias = DependenciasModulos::texto($completo['agregados'], $catalogo->pluck('nombre', 'clave')->all());
 
         $antes = DB::table('empresa_modulos')->where('empresa_id', $empresa->id)->where('activo', true)->pluck('modulo_id')->map(fn ($id) => (int) $id)->all();
         $activos = [];
@@ -183,7 +204,7 @@ class EmpresaController extends Controller
 
         return redirect()->to(route('empresas.index').'#empresa-'.$empresa->id)->with('ok', "Módulos de «{$empresa->nombre_comercial}» actualizados: tiene ".count($activos).' módulos'
             .($quitados > 0 ? " ({$quitados} quitados: dejan de verse en el menú, la matriz y el manual; sus datos y permisos se conservan)" : '')
-            .'. Revisa sus roles en la Matriz de permisos si hace falta.');
+            .'. '.($avisoDependencias !== '' ? $avisoDependencias.' ' : '').'Revisa sus roles en la Matriz de permisos si hace falta.');
     }
 
     /**

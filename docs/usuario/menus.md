@@ -9,7 +9,7 @@ resumen: Dónde está cada pantalla, qué es «Mis pendientes», la campana y lo
 
 **¿Para qué sirve?** Para encontrar rápido cada pantalla y saber qué está esperando tu respuesta. Los menús están ordenados como se trabaja en el día: primero la operación de caseta, después los padrones, Recursos Humanos, los informes y al final la estructura de la empresa.
 
-**Antes de empezar:** solo ves los menús y pantallas que tu rol permite. Si un menú no tiene nada para ti, no aparece. Si te falta una pantalla que necesitas, pide a tu administrador que revise tu rol.
+**Antes de empezar:** solo ves los menús y pantallas que **tu plan incluye** y que **tu rol permite**. Si un menú no tiene nada para ti, no aparece. Si te falta una pantalla que necesitas y al abrirla dice **Esto no viene en tu plan**, es cosa de la suscripción de tu empresa; si dice **No tienes permiso para ver esto**, pide a tu administrador que revise tu rol.
 
 ## Cómo abrir una pantalla desde el menú (computadora)
 
@@ -27,13 +27,13 @@ Los menús y sus grupos:
 |---|---|
 | **Operación** | **Caseta:** Bitácora de accesos, Préstamo de llaves, Vouchers de reposición, Pases de salida, Bitácora de transporte. **Incidentes:** Novedades, Lost & Found, Robo. **Protección civil:** Recorridos de Protección Civil. **Activos:** Responsivas. **Consulta:** Procedimientos. |
 | **Padrones** | **Personas y vehículos:** Empresas externas, Padrón de personas, Padrón vehicular. **Inventarios:** Catálogo de llaves, Gafetes, Equipos de seguridad, Equipos de Protección Civil. **Instalaciones:** Estacionamientos y zonas de descarga, Rutas de transporte. **Herramientas:** Etiquetas QR. |
-| **Recursos Humanos** | **Personal:** Colaboradores. **Recepción y candidatos:** Vacantes, Recepción de RR. HH., Candidatos, **Mis entrevistas** (si puedes entrevistar candidatos) y **Autorizaciones** (si eres responsable o suplente de algún departamento). **Catálogos:** Departamentos, Puestos, Turnos. |
+| **Recursos Humanos** | **Recepción y candidatos:** Vacantes, Recepción de RR. HH., Candidatos y **Mis entrevistas** (si puedes entrevistar candidatos). Solo si tu plan incluye Recursos Humanos. |
 | **Informes** | **Informes:** Tablero, Bitácora del día, Tendencias, Informe ejecutivo (solo si tu rol puede ver alguno). |
-| **Estructura** | **Empresa:** Empresas, Sedes, Zonas y edificios. **Accesos y permisos:** Usuarios, Roles, Matriz de permisos. **Sistema:** Configuración, Bitácora de auditoría. **Plataforma** (solo Super Administrador): Identidad de la plataforma, Catálogo comercial. |
+| **Estructura** | **Empresa:** Empresas, Sedes, Zonas y edificios. **Organización** (en todos los planes): Colaboradores, Departamentos, Puestos, Turnos y **Autorizaciones** (si configuras quién autoriza o eres responsable o suplente de algún departamento). **Accesos y permisos:** Usuarios, Roles, Matriz de permisos. **Sistema:** Configuración, Bitácora de auditoría. **Plataforma** (solo Super Administrador): Identidad de la plataforma, Catálogo comercial. |
 
 ![Menú Padrones abierto](img/menus/menu-padrones.png)
 
-> **Mis entrevistas** y **Autorizaciones** no dependen de un módulo: aparecen en el menú **Recursos Humanos** solo a quien las usa (quien entrevista candidatos y quien responde las visitas de su departamento), para que no tengas que esperar a un aviso para llegar a ellas. Ver [Entrevistar y elegir](entrevistar-y-elegir.md) y [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
+> **Mis entrevistas** (menú **Recursos Humanos**) y **Autorizaciones** (menú **Estructura**) aparecen solo a quien las usa (quien entrevista candidatos, y quien configura o responde las autorizaciones de su departamento), para que no tengas que esperar a un aviso para llegar a ellas. Ver [Entrevistar y elegir](entrevistar-y-elegir.md) y [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
 
 ![Menú Recursos Humanos de un jefe de departamento](img/recepcion-y-candidatos/menu-recursos-humanos-jefe.png)
 
@@ -116,14 +116,18 @@ Si un tipo de aviso no te sirve, quítalo en [Mi cuenta](mi-cuenta.md) → **Mis
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
-| No aparece un menú | Tu rol no tiene ninguna pantalla de ese menú. | Pide a tu administrador que revise tu rol. |
+| No aparece un menú | Tu plan no lo incluye o tu rol no tiene ninguna pantalla de ese menú. | Pide a tu administrador que lo revise. |
+| «Esto no viene en tu plan (…)» | La pantalla es de un módulo que tu empresa no tiene contratado. No es un problema de tu rol. | Quien administra la empresa lo revisa en **Tu suscripción** (botón **Ver mi suscripción**): cambiar de plan o agregar el complemento. |
+| «Solo consulta: tu plan ya no incluye este módulo» | Tu empresa bajó de plan: lo que ya estaba se puede ver, exportar e imprimir, pero no registrar. | Si lo necesitan, que quien administra la empresa cambie de plan. |
+| «No tienes permiso para ver esto» | Tu rol no tiene esa pantalla. | Pide a tu administrador que revise tu rol en la Matriz de permisos. |
 | No aparece **Mis pendientes** | No tienes nada pendiente (o no te aplica). | Nada; aparece solo cuando hay algo. |
 | La campana no muestra el aviso que esperabas | El aviso es para otra persona o ya lo leíste. | Toca **Ver todas las notificaciones**. |
 | La pantalla se ve muy oscura o en blanco y negro | Está en modo Noche o Sol. | Toca el botón del sol hasta volver a **Normal**. |
 
 ## Preguntas frecuentes
 
-- **¿Dónde quedaron las Autorizaciones departamentales?** No están en el menú: te llegan por la **campana** y por **Mis pendientes**.
+- **¿Dónde quedaron las Autorizaciones departamentales?** Te llegan por la **campana** y por **Mis pendientes**, y están en **Estructura → Autorizaciones** si configuras quién autoriza o respondes las de algún departamento.
+- **¿Dónde quedaron Colaboradores, Departamentos, Puestos y Turnos?** En **Estructura → Organización**: vienen en todos los planes porque la caseta los necesita. Recursos Humanos se queda con Vacantes, Recepción, Candidatos, entrevistas y el expediente.
 - **¿Por qué mi compañero ve otros menús?** Cada rol ve solo lo que le toca.
 - **¿El menú del celular es diferente?** Tiene lo mismo y en el mismo orden; solo se abre con **Menú**.
 - **¿El modo Sol gasta más batería?** No; solo cambia colores.

@@ -48,7 +48,7 @@ resumen: Los productos, planes, paquetes y precios que se ofrecen en la página 
 
 ![Alta de un plan](img/catalogo-comercial/plan-nuevo.png)
 
-**Qué debes ver:** el plan en la lista. Si no encendiste «Mostrar en la página pública», el aviso te lo recuerda y el renglón dice **Oculto**.
+**Qué debes ver:** el plan en la lista. Si no encendiste «Mostrar en la página pública», el aviso te lo recuerda y el renglón dice **Oculto**. Si al plan le falta algo que sus módulos necesitan, sale en rojo «Atención, así no funciona: … necesita …» y arriba del catálogo, **Hay planes que no funcionan como están**: agrega el producto que trae lo que falta.
 
 ## Cómo dar de alta un paquete
 
@@ -79,7 +79,7 @@ resumen: Los productos, planes, paquetes y precios que se ofrecen en la página 
 
 1. Toca la pestaña **Productos** y luego **Nuevo producto** (o el lápiz de uno existente).
 2. Escribe el **Nombre** y la **Clave** (minúsculas, por ejemplo `caseta_accesos`; no se cambia después).
-3. Marca los **Módulos de la plataforma que habilita**.
+3. Marca los **Módulos de la plataforma que habilita**. Si un módulo necesita otro (por ejemplo, Bitácora de transporte necesita Rutas), al guardar se agrega solo y el mensaje dice «Se agregó … porque … lo necesita». Lo de **Estructura** (colaboradores, departamentos, puestos, turnos, autorizaciones…) viene siempre en todos los planes y no hace falta marcarlo.
 4. En **Avanzado** escribe la **Descripción corta** que verá el visitante y el **Ícono**.
 5. Toca **Guardar**.
 
@@ -130,10 +130,15 @@ Cuando alguien envía el formulario **Contratar**, te llega un aviso a la **camp
 | Los visitantes siguen viendo la pantalla de acceso. | La página no está publicada. | En **Ajustes** enciende **Publicar la página de planes** y toca **Guardar**. |
 | No llegan los correos de las solicitudes. | El correo de la plataforma no está configurado. | Configúralo en **Estructura → Configuración**. Las solicitudes siempre llegan a la campana y a esta pantalla. |
 | No tienes permiso para ver esto (error 403). | No eres Super Administrador. | Esta pantalla no es para tu rol. |
+| «Atención, así no funciona: … necesita …» / «Hay planes que no funcionan como están» | Un plan o paquete vende un módulo sin lo que ese módulo necesita. | Agrega al plan el producto que trae lo que falta (o quita el módulo). |
 
 ## Preguntas frecuentes
 
 **¿Qué pasa con una solicitud de prueba gratis?** No se activa sola: en la solicitud aparece el botón **Aprobar prueba gratis**. Ver [Suscripciones de los clientes](suscripciones.md).
+
+**¿Qué trae cada plan de fábrica?** **Esencial:** Estructura y usuarios (con colaboradores, departamentos, puestos, turnos y quién autoriza), Caseta y accesos y Padrones. **Profesional:** lo de Esencial más Incidentes y novedades (con Equipos y Recorridos de Protección Civil y Procedimientos) e Informes. **Corporativo:** lo de Profesional más Recursos Humanos y candidatos. Complementos: **Recursos Humanos y candidatos** (Esencial y Profesional) y **Reservas y eventos** (los tres). La página muestra en cada producto «Incluye: …» con sus módulos reales.
+
+**¿Qué giro tiene un cliente que contrata en línea?** El que elige en **Giro de tu empresa** (Hotel, Corporativo / industria, Condominio o Fraccionamiento); se ve en la solicitud y su empresa nace con las palabras de ese giro.
 
 **¿Se cobra en línea?** Todavía no. La página registra la solicitud y te avisa; tú acuerdas el pago y lo anotas en la solicitud. La plataforma está preparada para conectar un cobro en línea más adelante.
 

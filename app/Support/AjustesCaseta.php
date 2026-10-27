@@ -31,6 +31,10 @@ use Illuminate\Validation\ValidationException;
  *    bueno (vales de taxi y procedimientos en revisión): amarillo desde las
  *    24 h y rojo después de las 72 h (originales; antes constantes de
  *    RelojVoBo). Configuración → General.
+ *  - motivo_visita_omision: motivo de visita que viene marcado en la
+ *    caseta ('' = ninguno, de fábrica; C-04).
+ *  - visita_a_huesped: si el hotel ofrece «Visita a huésped» (si, de
+ *    fábrica; DD-23). Configuración → Caseta y accesos.
  */
 class AjustesCaseta
 {
@@ -49,6 +53,35 @@ class AjustesCaseta
         'casilla_criticos' => 'Solo la casilla, salvo procedimientos con puntos críticos, que piden firma',
     ];
 
+    /**
+     * Motivo de visita que viene marcado en la caseta (C-04, DD-23): de
+     * fábrica ninguno, para que el guardia elija siempre. Si el motivo
+     * elegido no aplica a la empresa (por ejemplo, Recursos Humanos sin el
+     * módulo Candidatos), no se marca ninguno.
+     */
+    public const MOTIVOS_OMISION = [
+        '' => 'Ninguno: la caseta elige el motivo cada vez (recomendado)',
+        'general' => 'Visita general',
+        'huesped' => 'Visita a huésped',
+        'colaborador' => 'Visita a colaborador',
+        'departamento' => 'Visita a departamento',
+        'rh' => 'Recursos Humanos',
+    ];
+
+    /** «Visita a huésped» (hotel): se ofrece de fábrica y se puede apagar (DD-23). */
+    public const VISITA_A_HUESPED = [
+        'si' => 'Sí, ofrecer «Visita a huésped» en la caseta',
+        'no' => 'No, no la ofrezcas',
+    ];
+
+    /** Opciones de los ajustes de texto. */
+    private const OPCIONES = [
+        'transporte_firmas' => self::FIRMAS_TRANSPORTE,
+        'procedimientos_acuse' => self::ACUSES,
+        'motivo_visita_omision' => self::MOTIVOS_OMISION,
+        'visita_a_huesped' => self::VISITA_A_HUESPED,
+    ];
+
     /** Valores por omisión: el comportamiento original. */
     public const OMISION = [
         'transporte_firmas' => 'ambas',
@@ -60,6 +93,8 @@ class AjustesCaseta
         'procedimientos_recordatorio_dias' => 3,
         'vobo_horas_amarillo' => 24,
         'vobo_horas_rojo' => 72,
+        'motivo_visita_omision' => '',
+        'visita_a_huesped' => 'si',
     ];
 
     /** Límites de los números (para validar y para el formulario). */
@@ -90,12 +125,13 @@ class AjustesCaseta
         'responsivas' => ['responsivas_horas_turno', 'responsivas_horas_escalar'],
         'procedimientos' => ['procedimientos_acuse', 'procedimientos_recordatorio_dias'],
         'vobo' => ['vobo_horas_amarillo', 'vobo_horas_rojo'],
+        'motivos' => ['motivo_visita_omision', 'visita_a_huesped'],
     ];
 
     /**
      * Ajustes vigentes de una empresa (sin empresa: los originales).
      *
-     * @return array{transporte_firmas: string, llaves_horas_aviso: int, llaves_horas_escalar: int, responsivas_horas_turno: int, responsivas_horas_escalar: int, procedimientos_acuse: string, procedimientos_recordatorio_dias: int, vobo_horas_amarillo: int, vobo_horas_rojo: int}
+     * @return array{transporte_firmas: string, llaves_horas_aviso: int, llaves_horas_escalar: int, responsivas_horas_turno: int, responsivas_horas_escalar: int, procedimientos_acuse: string, procedimientos_recordatorio_dias: int, vobo_horas_amarillo: int, vobo_horas_rojo: int, motivo_visita_omision: string, visita_a_huesped: string}
      */
     public static function de(Empresa|int|null $empresa): array
     {
@@ -109,7 +145,7 @@ class AjustesCaseta
             if (is_int($omision)) {
                 $ajustes[$clave] = is_numeric($valor) ? max(self::MIN[$clave] ?? 0, min(self::MAX_HORAS[$clave], (int) $valor)) : $omision;
             } else {
-                $opciones = $clave === 'transporte_firmas' ? self::FIRMAS_TRANSPORTE : self::ACUSES;
+                $opciones = self::OPCIONES[$clave];
                 $ajustes[$clave] = is_string($valor) && isset($opciones[$valor]) ? $valor : $omision;
             }
         }
@@ -159,7 +195,7 @@ class AjustesCaseta
                 }
                 $limpio[$clave] = (int) $valor;
             } else {
-                $opciones = $clave === 'transporte_firmas' ? self::FIRMAS_TRANSPORTE : self::ACUSES;
+                $opciones = self::OPCIONES[$clave];
                 if (! is_string($valor) || ! isset($opciones[$valor])) {
                     $errores[$clave] = 'Elige una de las opciones de la lista.';
 

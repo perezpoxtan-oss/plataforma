@@ -88,3 +88,7 @@ Al escribir **Placas** o **Chofer** (servicio normal y cada taxi) la pantalla co
 - **Vo.Bo. en la campana y Mis pendientes** («Vale de taxi por autorizar», «Vales de taxi por autorizar»), resuelto al autorizar o anular.
 
 Detalle: [caseta-y-activos.md](caseta-y-activos.md).
+
+## Vale de taxi solo con la cantidad (C-06)
+
+Cada taxi puede llevar `cantidad_pasajeros` (1 a `MAX_PASAJEROS`) cuando no se registran pasajeros uno por uno: `cantidad_pax` guarda la cantidad y la tabla de pasajeros queda vacía (el vale impreso dice «Sin registrar»). Al corregir un vale así, conserva su cantidad mientras siga sin pasajeros.

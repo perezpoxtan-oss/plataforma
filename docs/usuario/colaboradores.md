@@ -1,7 +1,7 @@
 ---
 titulo: Colaboradores
 modulos: [colaboradores]
-seccion: Recursos Humanos
+seccion: Estructura
 orden: 10
 resumen: Directorio del personal de la empresa, sus sedes, lo que registra la caseta y su verificación por Recursos Humanos.
 ---
@@ -16,13 +16,14 @@ resumen: Directorio del personal de la empresa, sus sedes, lo que registra la ca
 
 - Para ver la pantalla tu rol debe poder consultar *Colaboradores*. Si no aparece en el menú, pide el permiso a tu administrador.
 - Para dar de alta, editar o dar de baja necesitas esos permisos. Si no ves **Nuevo Colaborador**, tu rol solo consulta.
-- Los **datos legales** (CURP, RFC, NSS, nacimiento, nacionalidad, correo personal y dirección) solo los ve y captura quien tiene el permiso **Datos personales**.
+- **Colaboradores viene en todos los planes** (menú **Estructura**), como directorio: nombre, número, foto, sede, departamento, puesto, turno, gafete y altas por verificar. El **expediente** y los **datos legales** vienen con Recursos Humanos.
+- Los **datos legales** (CURP, RFC, NSS, nacimiento, nacionalidad, correo personal y dirección) solo los ve y captura quien tiene el permiso **Datos personales**, y solo si tu plan incluye Recursos Humanos.
 - Si tu rol es de una sede, solo puedes registrar colaboradores en tus sedes.
 - Antes de dar de alta conviene tener listos los [Departamentos y Puestos](departamentos-y-puestos.md) y, si vas a asignar turnos, los [Turnos](turnos.md).
 
 ## Cómo encontrar a un colaborador
 
-1. Entra a **Recursos Humanos → Colaboradores**.
+1. Entra a **Estructura → Colaboradores**.
 2. Escribe en **Buscar empleado, número o puesto...** el nombre, el número de empleado, el puesto o el departamento.
 3. Si quieres, elige en **Todas las sedes** (incluye a quienes la tienen como sede adicional) y en **Todos los departamentos**.
 4. Con **Todos los turnos** ves solo a quienes trabajan en un turno (por ejemplo **Matutino (07:00–15:00)**), o a quienes aún no tienen uno con **Sin turno**. Este filtro aparece cuando la empresa tiene turnos.
@@ -144,7 +145,7 @@ Si en la caseta necesitas registrar a alguien que **no aparece** al buscarlo:
 
 La ficha reúne en una sola pantalla lo que la plataforma sabe de la persona, ordenado en pestañas.
 
-1. En **Recursos Humanos → Colaboradores**, busca al colaborador y toca el icono de **carpeta** (**Ficha**) de su renglón. También llegas desde su ficha de candidato, en **Documentos** (se abre directo en la pestaña **Expediente**).
+1. En **Estructura → Colaboradores**, busca al colaborador y toca el icono de **carpeta** (**Ficha**) de su renglón. También llegas desde su ficha de candidato, en **Documentos** (se abre directo en la pestaña **Expediente**).
 2. Arriba ves su nombre y, debajo, las pestañas. Toca la que necesites (en el celular puedes deslizar la barra de pestañas; con el teclado usa las **flechas** izquierda y derecha):
    - **Datos:** estado, número de empleado, sede, departamento, puesto, **turno**, teléfono, fecha de alta y cuenta de usuario, más sus **llaves en uso**, **resguardos en campo** y **procedimientos por leer**.
    - **Expediente:** sus **datos legales y de contacto** (CURP, RFC, NSS, nacimiento, nacionalidad, correo y dirección) y sus **documentos de contratación** (los que entregó como candidato, escaneados o recibidos en papel).

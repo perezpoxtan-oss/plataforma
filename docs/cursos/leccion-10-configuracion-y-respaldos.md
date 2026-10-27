@@ -11,7 +11,7 @@
    - en la Bitácora de auditoría verifica que quedó registrada la descarga;
    - en **Plataforma → Versión de PHP del servidor** anota la versión de **Páginas (web)** y de **Tareas programadas** y si dicen **Al día** o **Requiere actualización**; si alguna está en rojo, redacta la petición a tu proveedor de hospedaje con el texto del aviso.
 2. **`admin.demo`:** en Configuración deja activo el aviso de altas provisionales.
-3. **`agente.demo`:** en Recursos Humanos → Colaboradores haz un **Alta provisional**.
+3. **`agente.demo`:** en Estructura → Colaboradores haz un **Alta provisional**.
 4. **`rh.demo`** (su cuenta debe tener un correo real para verlo): revisa que llegó el correo "Alta provisional por validar" y usa su botón.
 
 ## Para recordar

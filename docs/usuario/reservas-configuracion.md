@@ -103,7 +103,7 @@ Por omisión, cada sección de Configuración muestra **solo lo activo**: las á
 
 ![Montaje dado de baja con Mostrar dados de baja](img/reservas/catalogos-baja.png)
 
-Los responsables de cada departamento son los de **Recursos Humanos → Departamentos → Responsables**.
+Los responsables de cada departamento son los de **Estructura → Departamentos → Responsables**.
 
 <!-- solo: hotel -->
 ## Cómo cargar la lista sugerida para hoteles

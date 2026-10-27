@@ -23,7 +23,7 @@ use Illuminate\Validation\ValidationException;
 /**
  * Reglas de Rutas de transporte (SEGCAT: ruta_proceso.php y paradero_proceso.php).
  *
- * Todo es POR SEDE: la ruta, su turno (uno que se use en esa sede), su
+ * Todo es POR SEDE: la ruta, su turno (opcional, C-06: uno que se use en esa sede), su
  * transportista (un proveedor activo que opere en esa sede) y sus paraderos
  * (catálogo propio de la sede). El alcance de sede del usuario decide en qué
  * sedes ve, crea, edita o desactiva; con alcance "propios", solo las rutas y
@@ -295,7 +295,7 @@ class AdministradorRutas
         $validados = Validator::make($entrada, [
             'sentido' => ['required', 'string', Rule::in(array_keys(Ruta::SENTIDOS))],
             'nombre' => ['required', 'string', 'max:150'],
-            'turno_id' => ['required', 'integer'],
+            'turno_id' => ['nullable', 'integer'], // C-06: opcional (informativo)
             'proveedor_id' => ['required', 'integer'],
             'costo_maximo_taxi' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
             'horarios' => ['required', 'array', 'max:'.self::MAX_HORARIOS],
@@ -304,8 +304,7 @@ class AdministradorRutas
             'sentido.in' => 'Elige si la ruta es de llegada o de salida.',
             'nombre.required' => 'Escribe el nombre de la ruta (por ejemplo: RUTA 1 - CENTRO).',
             'nombre.max' => 'El nombre de la ruta es muy largo (máximo 150 caracteres).',
-            'turno_id.required' => 'Elige el turno de la ruta.',
-            'turno_id.integer' => 'Elige el turno de la ruta.',
+            'turno_id.integer' => 'Elige el turno de la ruta de la lista (o déjalo sin turno).',
             'proveedor_id.required' => 'Elige la empresa transportista.',
             'proveedor_id.integer' => 'Elige la empresa transportista.',
             'costo_maximo_taxi.numeric' => 'El costo máximo por taxi debe ser un número, por ejemplo 250 o 250.50.',
@@ -322,10 +321,13 @@ class AdministradorRutas
                 ." llamada «{$repetida->nombre}» en esta sede".($repetida->activo ? '.' : ' (dada de baja): reactívala o usa otro nombre.')]);
         }
 
-        $turno = Turno::find((int) $validados['turno_id']);
-        $turnoActual = (int) $actual?->turno_id === (int) $validados['turno_id'];
-        if ($turno === null || (! $turnoActual && (! $turno->activo || ! Turno::whereKey($turno->id)->aplicanEn([$sede->id])->exists()))) {
-            throw ValidationException::withMessages(['turno_id' => 'El turno elegido no existe, está desactivado o no se usa en esta sede. Elige otro de la lista.']);
+        $turno = null;
+        if (! empty($validados['turno_id'])) {
+            $turno = Turno::find((int) $validados['turno_id']);
+            $turnoActual = (int) $actual?->turno_id === (int) $validados['turno_id'];
+            if ($turno === null || (! $turnoActual && (! $turno->activo || ! Turno::whereKey($turno->id)->aplicanEn([$sede->id])->exists()))) {
+                throw ValidationException::withMessages(['turno_id' => 'El turno elegido no existe, está desactivado o no se usa en esta sede. Elige otro de la lista (o déjalo sin turno).']);
+            }
         }
 
         $proveedor = Proveedor::find((int) $validados['proveedor_id']);
@@ -337,7 +339,7 @@ class AdministradorRutas
         $datos = [
             'sentido' => $validados['sentido'],
             'nombre' => $validados['nombre'],
-            'turno_id' => $turno->id,
+            'turno_id' => $turno?->id,
             'proveedor_id' => $proveedor->id,
             'costo_maximo_taxi' => $validados['costo_maximo_taxi'] === null ? null : round((float) $validados['costo_maximo_taxi'], 2),
         ];

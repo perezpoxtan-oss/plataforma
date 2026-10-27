@@ -67,7 +67,8 @@ Además, fuera de los hoteles el módulo de objetos perdidos se llama **Objetos 
 Cada empresa nueva nace con **todos** los módulos. Si una empresa no usa alguno (por ejemplo, un condominio que no usa Recursos Humanos), quítalo:
 
 1. Entra a **Estructura → Empresas** y, en la ficha de la empresa, toca el ícono de **cuadrícula** (Módulos contratados).
-2. Marca los módulos que usa y quita la marca a los demás. Los de **Dirección** (empresa, sedes, usuarios, roles, permisos, configuración, bitácora) siempre se quedan. Los marcados **Próximamente** todavía no tienen pantalla.
+2. Marca los módulos que usa y quita la marca a los demás. Los de **Dirección** (empresa, sedes, usuarios, roles, permisos, configuración, bitácora, colaboradores, departamentos, puestos, turnos y autorizaciones) siempre se quedan. Si marcas un módulo que necesita otro (por ejemplo, la Bitácora de transporte necesita Rutas), se agrega solo y el mensaje te lo dice. Los marcados **Próximamente** todavía no tienen pantalla.
+   - Si la empresa **tiene suscripción**, esta ventana es solo de consulta: sus módulos los fijan su plan y sus excepciones. Toca **Cambiar por excepción en su ficha de cliente**.
 3. Toca **Guardar** y confirma con **Aceptar**.
 
 ![Módulos contratados](img/empresas/6-modulos-contratados.png)

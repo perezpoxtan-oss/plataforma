@@ -39,7 +39,7 @@ class SolicitudCompra extends Model
 
     protected $fillable = [
         'folio', 'tipo', 'periodicidad', 'periodo_subtotal', 'periodo_iva', 'periodo_total', 'descuento', 'codigo_promocion',
-        'promocion_id', 'empresa_id', 'activada_en', 'nombre', 'empresa', 'correo', 'telefono', 'sedes', 'mensaje', 'plan_id',
+        'promocion_id', 'empresa_id', 'activada_en', 'nombre', 'empresa', 'correo', 'telefono', 'sedes', 'mensaje', 'plan_id', 'rubro_id',
         'moneda', 'iva_porcentaje', 'mensual_subtotal', 'mensual_iva', 'mensual_total',
         'unico_subtotal', 'unico_iva', 'unico_total', 'requiere_cotizacion', 'detalle',
         'estado', 'pasarela', 'referencia_pago', 'notas_internas', 'acepta_privacidad', 'privacidad_aceptada_en', 'aviso_privacidad_id', 'ip', 'atendida_en',
@@ -60,6 +60,12 @@ class SolicitudCompra extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    /** Giro que eligió al contratar (C-05); null en las solicitudes de antes. */
+    public function rubro(): BelongsTo
+    {
+        return $this->belongsTo(Rubro::class);
     }
 
     public function empresaCliente(): BelongsTo

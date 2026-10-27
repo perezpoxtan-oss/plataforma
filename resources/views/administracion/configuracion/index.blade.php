@@ -7,13 +7,16 @@
     // con sus avisos por correo (ADR-0016) y, si un ajuste vive en otro módulo, su enlace «Configurar en …».
     // Inventario completo: docs/tecnico/configuracion-inventario.md
     $u = auth()->user();
+    // C-03: solo las secciones y avisos de los módulos que la empresa tiene contratados
+    $autorizador = app(\App\Services\Permisos\Autorizador::class);
+    $tiene = fn (string ...$modulos) => $empresa === null || collect($modulos)->contains(fn ($m) => $autorizador->moduloActivo((int) $empresa->id, $m));
     $mostrarAvisos = $empresa && $verConfiguracion;
     $nombreBitacora = $empresa ? app(\App\Services\Novedades\AjustesNovedades::class)->nombreMenu($empresa->id) : 'Novedades';
     // Grupo de avisos => sección donde se muestra (los que no estén aquí van en «Avisos por correo»)
     $seccionDeGrupo = ['cuentas' => 'sec-cuentas', 'colaboradores' => 'caseta', 'padrones' => 'caseta', 'procedimientos' => 'caseta',
         'novedades' => 'sec-novedades', 'pases_salida' => 'sec-pases', 'transporte' => 'sec-transporte', 'vouchers' => 'sec-activos', 'candidatos' => 'sec-rh', 'reservas' => 'sec-reservas'];
     $gruposEn = fn (string $seccion) => $mostrarAvisos
-        ? array_filter($grupos, fn ($g) => ($seccionDeGrupo[$g] ?? 'sec-avisos') === $seccion, ARRAY_FILTER_USE_KEY) : [];
+        ? array_filter($grupos, fn ($def, $g) => ($seccionDeGrupo[$g] ?? 'sec-avisos') === $seccion && ($def['modulo'] === null || $tiene($def['modulo'])), ARRAY_FILTER_USE_BOTH) : [];
     $verPases = $empresa && $u->can('pases_salida.configurar');
     $verRecepcion = $empresa && $u->can('candidatos.configurar');
     $verBolsa = $empresa && $u->can('vacantes.configurar');
@@ -23,17 +26,17 @@
     $secciones = [
         ['sec-general', 'General', 'bi-sliders', $mostrarAvisos],
         ['caseta', 'Caseta y accesos', 'bi-door-open', $mostrarAvisos || isset($enOtras['esperas']) || isset($enOtras['impresion'])],
-        ['sec-rh', 'Recepción y RR. HH.', 'bi-people', $mostrarAvisos || $verRecepcion || $verBolsa],
-        ['sec-novedades', $nombreBitacora, 'bi-headset', $mostrarAvisos || $lostFound],
-        ['sec-activos', 'Activos', 'bi-key', $mostrarAvisos],
-        ['sec-transporte', 'Transporte', 'bi-taxi-front', $mostrarAvisos],
-        ['sec-pases', 'Pases de salida', 'bi-box-arrow-up-right', $mostrarAvisos || $verPases],
+        ['sec-rh', 'Recepción y RR. HH.', 'bi-people', ($mostrarAvisos || $verRecepcion || $verBolsa) && $tiene('candidatos', 'recepcion_rh', 'vacantes')],
+        ['sec-novedades', $nombreBitacora, 'bi-headset', ($mostrarAvisos || $lostFound) && $tiene('novedades')],
+        ['sec-activos', 'Activos', 'bi-key', $mostrarAvisos && $tiene('llaves', 'prestamo_llaves', 'responsivas', 'vouchers')],
+        ['sec-transporte', 'Transporte', 'bi-taxi-front', $mostrarAvisos && $tiene('transporte')],
+        ['sec-pases', 'Pases de salida', 'bi-box-arrow-up-right', ($mostrarAvisos || $verPases) && $tiene('pases_salida')],
         ['sec-avisos', 'Avisos por correo', 'bi-envelope', $mostrarAvisos],
         ['sec-cuentas', 'Cuentas y seguridad', 'bi-shield-lock', $mostrarAvisos],
         ['sec-privacidad', 'Privacidad', 'bi-person-lock', $privacidad !== null],
         ['sec-plataforma', 'Plataforma', 'bi-hdd-network', $plataforma],
         // Reservas de áreas (docs/tecnico/reservas.md): al final para no mover las demás secciones
-        ['sec-reservas', 'Reservas de áreas', 'bi-calendar-check', $mostrarAvisos || ($empresa && $u->can('reservas.configurar'))],
+        ['sec-reservas', 'Reservas de áreas', 'bi-calendar-check', ($mostrarAvisos || ($empresa && $u->can('reservas.configurar'))) && $tiene('reservas')],
     ];
     $visibles = array_values(array_filter($secciones, fn ($s) => $s[3]));
 @endphp
@@ -122,7 +125,11 @@
                         <a href="{{ $enOtras['impresion']['url'] }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Etiquetas QR → Plantillas</a>
                     </div>
                 @endisset
-                @if ($mostrarAvisos)
+                @if ($mostrarAvisos && $tiene('accesos'))
+                    {{-- C-04: motivo de visita marcado (de fábrica, ninguno) y «Visita a huésped» --}}
+                    @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'motivos'])
+                @endif
+                @if ($mostrarAvisos && $tiene('procedimientos'))
                     @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'procedimientos'])
                 @endif
                 @foreach ($gruposEn('caseta') as $grupo => $def)
@@ -209,8 +216,12 @@
         @if ($secciones[4][3])
             <section class="seccion-config" id="sec-activos" aria-labelledby="t-sec-activos">
                 <h2 id="t-sec-activos" class="titulo-seccion-config"><i class="bi bi-key" aria-hidden="true"></i>Activos</h2>
-                @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'llaves'])
-                @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'responsivas'])
+                @if ($tiene('prestamo_llaves'))
+                    @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'llaves'])
+                @endif
+                @if ($tiene('responsivas'))
+                    @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'responsivas'])
+                @endif
                 @foreach ($gruposEn('sec-activos') as $grupo => $def)
                     @include('administracion.configuracion._avisos-grupo')
                 @endforeach

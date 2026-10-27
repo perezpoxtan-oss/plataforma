@@ -17,7 +17,7 @@ Se puede en: Sedes, Zonas y edificios, Departamentos, Puestos, Turnos, Colaborad
 
 ## Cómo eliminar algo que nadie usa
 
-1. Entra a la pantalla del registro, por ejemplo **Recursos Humanos → Catálogos → Departamentos**.
+1. Entra a la pantalla del registro, por ejemplo **Estructura → Departamentos**.
 2. Toca el **lápiz** (Editar) del registro equivocado.
 3. Al pie de la ventana, debajo de los botones, junto a la pregunta **¿Lo capturaste por error y nadie lo ha usado?**, toca **Eliminar definitivamente** (en rojo).
 

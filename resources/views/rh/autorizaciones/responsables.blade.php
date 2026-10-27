@@ -156,7 +156,7 @@
                 @endif
             </div>
         @empty
-            <div class="tarjeta estado-vacio"><p class="text-muted small m-0">No hay departamentos activos. Créalos en Recursos Humanos → Departamentos.</p></div>
+            <div class="tarjeta estado-vacio"><p class="text-muted small m-0">No hay departamentos activos. Créalos en Estructura → Departamentos.</p></div>
         @endforelse
     </div>
 </div>

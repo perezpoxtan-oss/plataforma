@@ -20,7 +20,7 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `jefe.demo` (Jefe 
 
 1. Abre **Padrones → Empresas externas**, **Gafetes**, **Equipos de seguridad**, **Estacionamientos y zonas de descarga** y **Rutas de transporte**. En todas el botón rojo dice **Dar de baja** y lo dado de baja se lee **DE BAJA**.
 2. Abre **Estructura → Matriz de permisos**: la columna que antes decía «Eliminar» ahora dice **Dar de baja**. Borrar para siempre sigue siendo **Eliminar definitivamente** (solo el Administrador).
-3. En **Recursos Humanos → Catálogos → Puestos** lee bajo el título: «El puesto es el rango; el departamento es el área».
+3. En **Estructura → Puestos** lee bajo el título: «El puesto es el rango; el departamento es el área».
 
 Comprueba: en ninguna pantalla de padrones aparecen «Desactivar», «Suspender», «Vetada» ni «CXC».
 
@@ -35,7 +35,7 @@ Comprueba: el aviso del jefe ya no tiene el botón **Verificar** (se resolvió).
 
 ## Práctica 3 · Colaboradores por verificar (agente.demo y rh.demo)
 
-1. Con `agente.demo`, en **Recursos Humanos → Colaboradores**, toca **Registro rápido**, escribe «Carlos Dzib» y su sede, y toca **Guardar**. Queda **POR VERIFICAR**.
+1. Con `agente.demo`, en **Estructura → Colaboradores**, toca **Registro rápido**, escribe «Carlos Dzib» y su sede, y toca **Guardar**. Queda **POR VERIFICAR**.
 2. Con `rh.demo` mira la campana y **Mis pendientes** → **Colaboradores por verificar**.
 3. Toca **Verificar**, asigna un número y toca **Guardar y verificar**.
 4. Con `agente.demo`: la campana dice «Tu alta «Carlos Dzib» quedó verificada».
