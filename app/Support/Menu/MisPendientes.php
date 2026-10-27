@@ -133,9 +133,11 @@ class MisPendientes
         // Autorizaciones: solo responsables o delegados de algún departamento
         $autorizaciones = app(Autorizaciones::class);
         // C-09: también la persona citada con cuenta (sus visitas la esperan a ella)
-        $propias = ($actor->getAttributes()['colaborador_id'] ?? null) !== null
+        // (la consulta de «propias» solo corre para quien no es responsable de ningún departamento)
+        $responsable = $actor->can('autorizaciones.responder') && $autorizaciones->departamentosQueAtiende($actor) !== [];
+        $propias = ! $responsable && ($actor->getAttributes()['colaborador_id'] ?? null) !== null
             && Autorizacion::where('estado', 'pendiente')->where('tipo', 'visita')->where('colaborador_id', (int) $actor->colaborador_id)->exists();
-        if ($propias || ($actor->can('autorizaciones.responder') && $autorizaciones->departamentosQueAtiende($actor) !== [])) {
+        if ($responsable || $propias) {
             $porResponder = $autorizaciones->pendientesPara($actor);
             // C-12 «No molestar»: lo que mi delegado puede responder no me espera a mí
             // (directa o en cadena: basta con que alguien de mi cadena pueda responderla)
