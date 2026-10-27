@@ -8,6 +8,8 @@ use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\Notificacion;
 use App\Models\PaseSalida;
+use App\Models\PaseSalidaArticulo;
+use App\Models\PaseSalidaBitacora;
 use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Models\TipoEquipo;
@@ -19,6 +21,7 @@ use App\Support\EstadoActivo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
@@ -234,9 +237,21 @@ class EtapaDosPasesTest extends TestCase
         $this->flushSession();
         $this->actingAs($this->admin)->get('/equipos')->assertSee('&quot;id&quot;:'.$this->solicitante->id, false)->assertSee('Recibir');
 
+        // El informe de pases dice cuántos faltan
+        Cache::flush();
+        $this->actingAs($this->admin)->get('/informes/ejecutivo')->assertOk()->assertSee('Cerrado con faltantes (faltan 1)');
+
         // A-1: apareció → Recibir desde su ficha, como una llave
         $this->actingAs($this->admin)->patch("/equipos/{$a->id}/recibir")->assertSessionHasNoErrors()->assertSessionHas('ok');
         $this->assertSame(EstadoActivo::DISPONIBLE, $a->fresh()->estado);
+        // El pase cerrado lo refleja: lo regresado, su bitácora y el informe
+        $this->assertSame(1, $this->enEmpresa(fn () => PaseSalidaArticulo::where('equipo_id', $a->id)->value('cantidad_regresada')));
+        $nota = $this->enEmpresa(fn () => PaseSalidaBitacora::where('pase_salida_id', $pase->id)->where('evento', 'recibido_tarde')->firstOrFail());
+        $this->assertStringStartsWith('Recibido después del cierre por '.$this->admin->name.', 08/10/2026', $nota->titulo);
+        $this->assertStringContainsString('(LT-R1)', $nota->titulo);
+        $this->actingAs($this->admin)->get("/pases-salida/{$pase->id}")->assertOk()->assertSee('Recibido después del cierre por '.$this->admin->name);
+        Cache::flush();
+        $this->actingAs($this->admin)->get('/informes/ejecutivo')->assertOk()->assertSee('Cerrado con faltantes · lo que faltaba se recibió después')->assertDontSee('(faltan 1)');
         $this->assertNull(Notificacion::withoutGlobalScopes()->where('tipo', CustodiaActivos::TIPO_AVISO)->where('titulo', 'No regresó: equipo LT-R1')->first()?->acciones);
         // No se «recibe» lo que no está marcado No regresó
         $this->actingAs($this->admin)->patch("/equipos/{$a->id}/recibir")->assertSessionHasErrors('estado');

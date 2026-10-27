@@ -144,7 +144,7 @@ Tu empresa puede pedir menos firmas en algún movimiento. La ventana te lo dice:
 
 **Qué debes ver:** la línea de pasos avanza y el **Recorrido del pase** muestra la fecha y la hora reales. Si faltan artículos en el regreso, queda **Regreso parcial** y sigue esperando lo demás.
 
-Mientras el pase no sale, sus equipos del padrón quedan **apartados** (su ficha en [Equipos de seguridad](equipos.md) lo dice). Los equipos del padrón cambian solos de estado: al salir quedan **FUERA** en [Equipos de seguridad](equipos.md) y al regresar vuelven a **DISPONIBLE**. Si cierras el pase con faltantes, los equipos que no volvieron quedan **NO REGRESÓ** y el mensaje te dice cuáles, para darlos de baja con su voucher.
+Mientras el pase no sale, sus equipos del padrón quedan **apartados** (su ficha en [Equipos de seguridad](equipos.md) lo dice). Los equipos del padrón cambian solos de estado: al salir quedan **FUERA** en [Equipos de seguridad](equipos.md) y al regresar vuelven a **DISPONIBLE**. Si cierras el pase con faltantes, los equipos que no volvieron quedan **NO REGRESÓ** y el mensaje te dice cuáles, para darlos de baja con su voucher. Si después aparece uno, se recibe desde su ficha en [Equipos de seguridad](equipos.md): el pase suma lo regresado, su bitácora dice «Recibido después del cierre por …, fecha» y el Informe ejecutivo cambia «Cerrado con faltantes (faltan N)» por «lo que faltaba se recibió después».
 
 ### Si el regreso programado ya pasó al dar salida
 

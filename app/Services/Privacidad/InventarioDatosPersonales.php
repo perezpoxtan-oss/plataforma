@@ -98,11 +98,14 @@ final class InventarioDatosPersonales
         'procedimiento_eventos' => ['trato' => 'laboral', 'columnas' => ['usuario_nombre', 'ip'], 'conservacion' => self::LABORAL],
         'procedimiento_versiones' => ['trato' => 'laboral', 'columnas' => ['aprobador_nombre', 'firma_ruta'], 'conservacion' => self::LABORAL],
         'firmas_usuarios' => ['trato' => 'laboral', 'columnas' => ['firma_ruta'], 'conservacion' => self::LABORAL],
-        // Etapa 2 (C-16): el receptor o el responsable también puede ser una persona del Padrón o una empresa externa
-        // (receptor_tipo/_id, responsable_tipo/_id): aquí solo se guarda su id; su nombre y sus datos viven en
-        // el Padrón de personas (ARCO «persona») o en Empresas externas. La firma queda como comprobante del resguardo o del cobro.
-        'responsivas' => ['trato' => 'laboral', 'columnas' => ['firma_ruta'], 'conservacion' => self::LABORAL.' Si la recibió una persona externa, sus datos se consultan y rectifican en el Padrón de personas.'],
-        'vouchers_reposicion' => ['trato' => 'laboral', 'columnas' => ['firma_modo', 'firma_seguridad', 'firma_responsable'], 'conservacion' => self::LABORAL.' Si el responsable es una persona externa, sus datos se consultan y rectifican en el Padrón de personas.'],
+        // Etapa 2 (C-16): el receptor o el responsable también puede ser una persona del Padrón o su empresa externa
+        // (receptor_tipo/_id, responsable_tipo/_id). ARCO los encuentra por ese id; si es un colaborador, es relación laboral.
+        'prestamos_llaves' => ['trato' => 'arco', 'tipo' => 'prestamo_llave', 'columnas' => ['folio_garantia', 'receptor_tipo', 'receptor_id'],
+            'conservacion' => 'Se conserva como comprobante del préstamo; para una persona externa, ARCO quita la garantía (su nombre se quita en el Padrón). Colaboradores: '.self::LABORAL],
+        'responsivas' => ['trato' => 'arco', 'tipo' => 'responsiva', 'columnas' => ['firma_ruta', 'receptor_tipo', 'receptor_id'],
+            'conservacion' => 'Se conserva como comprobante del resguardo; para una persona externa, ARCO borra su firma (su nombre se quita en el Padrón). Colaboradores: '.self::LABORAL],
+        'vouchers_reposicion' => ['trato' => 'arco', 'tipo' => 'voucher', 'columnas' => ['firma_modo', 'firma_seguridad', 'firma_responsable', 'responsable_tipo', 'responsable_id'],
+            'conservacion' => 'Se conserva como comprobante del cobro; para una persona externa, ARCO borra su firma y quita su nombre de «¿Cómo pasó?». Colaboradores: '.self::LABORAL],
         'importaciones' => ['trato' => 'laboral', 'columnas' => ['archivo_nombre'],
             'conservacion' => 'Archivo de importación de colaboradores y padrones: se conserva para revisar lo importado; lo importado vive en su padrón, que sí alcanza ARCO.'],
 

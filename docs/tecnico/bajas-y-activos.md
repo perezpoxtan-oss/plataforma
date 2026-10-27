@@ -86,4 +86,7 @@ Plan de correcciones, **Etapa 2** (C-13 a C-18, C-20 y C-21; decisiones DD-06 a 
 - **A-8:** la migración `2026_11_09_000600` (Etapa 1, ya instalada) queda como en develop. `CatalogoChecks::definiciones()` vuelve a ser la lista de la Etapa 1 y `CatalogoChecks::todas()` agrega los CHECK de la Etapa 2 (que pone `2026_11_11_000100`); la usan `RevisionCoherencia`, `IntegridadBaseDatosTest` y `000200`. No hizo falta una migración nueva: la Etapa 2 ya traía la suya.
 - Inventario de datos personales: `accesos.identificacion_devuelta` registrada; responsivas y vouchers aclaran que, si el receptor es una persona externa, sus datos viven en el Padrón de personas.
 
+- **Recibir después del cierre:** `AdministradorPasesSalida::recibidoDespuesDelCierre` suma 1 a `cantidad_regresada` del artículo y anota el evento `recibido_tarde` en `pases_salida_bitacora` («Recibido después del cierre por …, fecha: equipo (serie)»); el Informe ejecutivo muestra «Cerrado con faltantes (faltan N)» o «… · lo que faltaba se recibió después».
+- **ARCO de personas externas:** `DatosDePersona` busca, exporta y trata `prestamo_llave`, `responsiva` y `voucher` (receptor/responsable persona del Padrón o empresa externa por nombre); ver `docs/tecnico/privacidad.md`.
+
 Pruebas: `EtapaDosPasesTest` (A-1, A-2, A-3), `EtapaDosActivosTest` (A-4, A-5, A-6), `MigracionEtapa2Test` (A-7, A-8).

@@ -268,9 +268,12 @@ class InformeEjecutivo
         $fuera = $base()->whereIn('pases_salida.estado', PaseSalida::FUERA)->count();
         $vencidos = $this->pases->filtrar($base(), 'vencidos')->count();
         $porMotivo = Indicadores::por($periodo, 'pases_salida.motivo', PaseSalida::MOTIVOS);
-        $filas = (clone $periodo)->with('solicitante:id,nombre,apellido_paterno,apellido_materno')->orderByDesc('pases_salida.created_at')->limit(self::MAX_FILAS)
-            ->get(['pases_salida.id', 'pases_salida.sede_id', 'folio', 'motivo', 'estado', 'colaborador_id', 'pases_salida.created_at', 'fecha_tentativa_regreso', 'requiere_regreso'])
-            ->map(fn (PaseSalida $p) => [$p->folio, $p->etiquetaMotivo(), PaseSalida::ESTADOS[$p->estado][0] ?? $p->estado, $p->solicitante?->nombreCompleto() ?? '—',
+        // Revisión Etapa 2: un pase cerrado con faltantes dice cuántos faltan o que ya se recibió todo después del cierre
+        $filas = (clone $periodo)->with('solicitante:id,nombre,apellido_paterno,apellido_materno')
+            ->withSum('articulos as total_articulos', 'cantidad')->withSum('articulos as total_regresados', 'cantidad_regresada')
+            ->orderByDesc('pases_salida.created_at')->limit(self::MAX_FILAS)
+            ->get(['pases_salida.id', 'pases_salida.sede_id', 'folio', 'motivo', 'estado', 'colaborador_id', 'pases_salida.created_at', 'fecha_tentativa_regreso', 'requiere_regreso', 'cerrado_con_faltantes'])
+            ->map(fn (PaseSalida $p) => [$p->folio, $p->etiquetaMotivo(), $this->estatusPase($p), $p->solicitante?->nombreCompleto() ?? '—',
                 $this->hora->formatear($p->created_at, 'd/m/Y'), $p->fecha_tentativa_regreso ? $p->fecha_tentativa_regreso->format('d/m/Y').($this->pases->vencido($p) ? ' (VENCIDO)' : '') : '—'])->all();
 
         return [
@@ -282,6 +285,16 @@ class InformeEjecutivo
             $this->ficha('Fuera de la propiedad ahora', number_format($fuera), ['enlace' => route('pases-salida.index', ['filtro' => 'fuera'])]),
             $this->ficha('Vencidos sin regresar', number_format($vencidos), ['nivel' => $vencidos > 0 ? 'alerta' : 'positiva', 'enlace' => route('pases-salida.index', ['filtro' => 'vencidos'])]),
         ];
+    }
+
+    private function estatusPase(PaseSalida $p): string
+    {
+        if ($p->estado !== PaseSalida::REGRESADO || ! $p->cerrado_con_faltantes) {
+            return PaseSalida::ESTADOS[$p->estado][0] ?? $p->estado;
+        }
+        $faltan = (int) $p->getAttribute('total_articulos') - (int) $p->getAttribute('total_regresados');
+
+        return $faltan > 0 ? "Cerrado con faltantes (faltan {$faltan})" : 'Cerrado con faltantes · lo que faltaba se recibió después';
     }
 
     // --------------------------------------------------------------- Transporte

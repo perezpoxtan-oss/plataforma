@@ -104,7 +104,7 @@ Cuando un equipo se pierde, se daña o lo roban:
 
 Cuando un pase de salida se cierra con faltantes, el equipo queda **NO REGRESÓ** y su ficha dice «No regresó del pase …». El voucher de baja propone como responsable a quien **pidió el pase**.
 
-- Si el equipo aparece, toca **Recibir** en su ficha y confirma: vuelve a **DISPONIBLE**. Si ya tenía voucher, márcalo **Recuperado** en [Vouchers de reposición](vouchers.md).
+- Si el equipo aparece, toca **Recibir** en su ficha y confirma: vuelve a **DISPONIBLE**. El pase también lo refleja: suma lo que regresó y su bitácora dice «Recibido después del cierre por (tu nombre), (fecha)». Si ya tenía voucher, márcalo **Recuperado** en [Vouchers de reposición](vouchers.md).
 - Si no aparecerá, toca **Dar de baja**.
 
 ## Si el equipo está apartado para un pase

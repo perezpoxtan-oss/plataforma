@@ -11,6 +11,7 @@ use App\Models\VoucherReposicion;
 use App\Services\Activos\CustodiaActivos;
 use App\Services\Inventarios\Vouchers;
 use App\Services\Lector\Identificacion;
+use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
@@ -217,8 +218,9 @@ class AdministradorEquipos
         if ($fila !== null) {
             throw ValidationException::withMessages(['estado' => "El equipo {$equipo->numero_serie} sigue en la responsiva {$fila->responsiva?->folio}: recíbelo en Responsivas."]);
         }
-        $pase = app(CustodiaActivos::class)->paseDeEquipo($equipo);
         $equipo->forceFill(['estado' => EstadoActivo::DISPONIBLE])->save();
+        // El pase cerrado lo refleja: suma lo regresado y lo anota en su bitácora
+        $pase = app(AdministradorPasesSalida::class)->recibidoDespuesDelCierre($actor, $equipo);
         $this->auditoria->auditar($actor, 'equipos.recibido', $equipo, ['estado' => EstadoActivo::NO_REGRESO],
             ['estado' => EstadoActivo::DISPONIBLE, 'pase' => $pase?->folio]);
         app(CustodiaActivos::class)->resolverNoRegreso($equipo, 'equipo');

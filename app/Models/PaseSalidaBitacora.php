@@ -34,6 +34,7 @@ class PaseSalidaBitacora extends Model
         'firma' => ['bi-pen', 'neutro'],
         'recordatorio' => ['bi-bell', 'aviso'],
         'regreso_reprogramado' => ['bi-calendar-event', 'aviso'],
+        'recibido_tarde' => ['bi-box-arrow-in-down', 'ok'],
     ];
 
     protected $fillable = ['empresa_id', 'pase_salida_id', 'evento', 'titulo', 'comentario', 'detalle', 'user_id', 'usuario_nombre', 'ip'];

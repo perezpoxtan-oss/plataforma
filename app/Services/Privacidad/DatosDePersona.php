@@ -13,6 +13,7 @@ use App\Models\AcompananteAcceso;
 use App\Models\Candidato;
 use App\Models\CandidatoDocumento;
 use App\Models\Colaborador;
+use App\Models\EquipoResponsiva;
 use App\Models\LostFoundEntrega;
 use App\Models\LostFoundReportePerdida;
 use App\Models\MovimientoTransporte;
@@ -23,14 +24,19 @@ use App\Models\NovedadReporteGeneral;
 use App\Models\NovedadTestigo;
 use App\Models\Persona;
 use App\Models\Postulacion;
+use App\Models\PrestamoLlave;
+use App\Models\Proveedor;
 use App\Models\Reserva;
 use App\Models\ReservaEvento;
+use App\Models\Responsiva;
 use App\Models\RoboDetalle;
+use App\Models\VoucherReposicion;
 use App\Services\Candidatos\DocumentosCandidato;
 use App\Services\Firmas\Firmas;
 use App\Services\Traslado\ExportacionEmpresa;
 use App\Services\Traslado\ZipPorPartes;
 use App\Support\Csv;
+use App\Support\Receptor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +67,11 @@ use Illuminate\Support\Facades\Storage;
  *  - reserva:     reservas a nombre de un cliente.
  *  - transporte:  movimientos donde la persona fue el conductor del taxi (su
  *                 firma) o la mencionan las observaciones.
+ *  - prestamo_llave / responsiva / voucher (Etapa 2): préstamos, responsivas
+ *                 y vouchers donde es el receptor o el responsable del cobro
+ *                 como persona del Padrón (receptor_tipo = persona) o su
+ *                 empresa externa (proveedor). Se conservan como comprobante;
+ *                 «Eliminar» quita la garantía, su firma y su nombre del texto.
  *
  * C-37 (X-01): antes solo alcanzaba los cuatro primeros.
  */
@@ -77,6 +88,10 @@ class DatosDePersona
         'accidente' => 'Accidentes (con datos médicos)',
         'reserva' => 'Reservas',
         'transporte' => 'Bitácora de transporte',
+        // Etapa 2 (C-16): lo que se le entregó o se le cobró como persona externa (o a su empresa)
+        'prestamo_llave' => 'Préstamos de llaves a su nombre',
+        'responsiva' => 'Responsivas a su nombre',
+        'voucher' => 'Vouchers a su cargo',
     ];
 
     /** Tipos que no se eliminan por ARCO: solo se consultan y rectifican en su ficha. */
@@ -188,6 +203,9 @@ class DatosDePersona
         $resultado['accidente'] = $this->buscarAccidentes($porNombre ? $like : null, $idsColaboradores);
         $resultado['reserva'] = $this->buscarReservas($c);
         $resultado['transporte'] = $this->buscarTransporte($porNombre ? $like : null, $idsPersonas);
+        // Etapa 2 (revisión): receptor o responsable externo por id del Padrón o de su empresa
+        $idsEmpresas = $porNombre ? Proveedor::query()->where('nombre', 'like', $like)->orderBy('id')->limit(self::MAX_POR_TIPO)->pluck('id') : collect();
+        [$resultado['prestamo_llave'], $resultado['responsiva'], $resultado['voucher']] = $this->buscarActivos($idsPersonas, $idsEmpresas);
 
         return $resultado;
     }
@@ -319,6 +337,49 @@ class DatosDePersona
             'url' => route('transporte.show', $m->id)])->all();
     }
 
+    /**
+     * Préstamos de llaves, responsivas y vouchers a nombre de la persona del
+     * Padrón o de su empresa externa (receptor_tipo/_id, responsable_tipo/_id).
+     *
+     * @return array{0: list<array>, 1: list<array>, 2: list<array>}
+     */
+    private function buscarActivos(Collection $idsPersonas, Collection $idsEmpresas): array
+    {
+        if ($idsPersonas->isEmpty() && $idsEmpresas->isEmpty()) {
+            return [[], [], []];
+        }
+        $de = function (Builder $q, string $prefijo) use ($idsPersonas, $idsEmpresas): void {
+            $q->where(function (Builder $w) use ($prefijo, $idsPersonas, $idsEmpresas) {
+                $w->whereRaw('1 = 0');
+                if ($idsPersonas->isNotEmpty()) {
+                    $w->orWhere(fn (Builder $o) => $o->where($prefijo.'_tipo', Receptor::PERSONA)->whereIn($prefijo.'_id', $idsPersonas));
+                }
+                if ($idsEmpresas->isNotEmpty()) {
+                    $w->orWhere(fn (Builder $o) => $o->where($prefijo.'_tipo', Receptor::PROVEEDOR)->whereIn($prefijo.'_id', $idsEmpresas));
+                }
+            });
+        };
+        $quien = fn ($m, string $prefijo) => ($m->getAttribute($prefijo.'_tipo') === Receptor::PERSONA ? 'persona' : 'su empresa').' ('.Receptor::nombreDe(Receptor::cargar($m->getAttribute($prefijo.'_tipo'), (int) $m->getAttribute($prefijo.'_id'))).')';
+
+        $prestamos = PrestamoLlave::query()->where(fn (Builder $q) => $de($q, 'receptor'))->with(['llave:id,nomenclatura', 'sede:id,nombre'])
+            ->orderByDesc('id')->limit(self::MAX_POR_TIPO)->get()
+            ->map(fn (PrestamoLlave $p) => ['id' => $p->id, 'titulo' => 'Llave '.($p->llave?->nomenclatura ?? '—'),
+                'detalle' => ($p->sede?->nombre ?? '').' · '.$p->prestado_en?->format('d/m/Y').' · a nombre de '.$quien($p, 'receptor').($p->folio_garantia ? ' · con garantía' : ''),
+                'url' => route('prestamo_llaves.index')])->all();
+        $responsivas = Responsiva::query()->where(fn (Builder $q) => $de($q, 'receptor'))->with('sede:id,nombre')
+            ->orderByDesc('id')->limit(self::MAX_POR_TIPO)->get()
+            ->map(fn (Responsiva $r) => ['id' => $r->id, 'titulo' => 'Responsiva '.$r->folio,
+                'detalle' => ($r->sede?->nombre ?? '').' · '.$r->entregado_en?->format('d/m/Y').' · a nombre de '.$quien($r, 'receptor').' (con su firma)',
+                'url' => route('responsivas.index').'#responsiva-'.$r->id])->all();
+        $vouchers = VoucherReposicion::query()->where(fn (Builder $q) => $de($q, 'responsable'))
+            ->orderByDesc('id')->limit(self::MAX_POR_TIPO)->get()
+            ->map(fn (VoucherReposicion $v) => ['id' => $v->id, 'titulo' => 'Voucher '.$v->folio,
+                'detalle' => $v->origen_descripcion.' · '.$v->created_at?->format('d/m/Y').' · responsable: '.$quien($v, 'responsable'),
+                'url' => route('vouchers.index', ['q' => $v->folio])])->all();
+
+        return [$prestamos, $responsivas, $vouchers];
+    }
+
     /** Teléfono escrito con o sin espacios, guiones o lada: se comparan los últimos dígitos. */
     private static function orTelefono(Builder $q, string $columna, string $telefono): void
     {
@@ -432,6 +493,18 @@ class DatosDePersona
             $r['transporte'] = MovimientoTransporte::whereIn('id', $ids)->get()
                 ->map(fn ($m) => $quitar(array_diff_key($m->getAttributes(), ['firma_guardia' => 1])))->all(); // la del guardia es de otra persona
         }
+        // Etapa 2: préstamos, responsivas y vouchers a su nombre (sin firmas de Seguridad)
+        if ($ids = $seleccion['prestamo_llave'] ?? []) {
+            $r['prestamos_llaves'] = $filas(PrestamoLlave::class, 'id', $ids);
+        }
+        if ($ids = $seleccion['responsiva'] ?? []) {
+            $r['responsivas'] = $filas(Responsiva::class, 'id', $ids);
+            $r['responsivas_equipos'] = $filas(EquipoResponsiva::class, 'responsiva_id', $ids);
+        }
+        if ($ids = $seleccion['voucher'] ?? []) {
+            $r['vouchers'] = VoucherReposicion::whereIn('id', $ids)->get()
+                ->map(fn ($m) => $quitar(array_diff_key($m->getAttributes(), ['firma_seguridad' => 1])))->all();
+        }
 
         return array_filter($r, fn ($lista) => $lista !== []);
     }
@@ -509,6 +582,21 @@ class DatosDePersona
             foreach (Reserva::whereIn('id', $seleccion['reserva'] ?? [])->whereNull('datos_eliminados_en')->get() as $r) {
                 $this->anonimizarReserva($r, $texto, $nombre);
                 $hecho['reserva']++;
+            }
+            // Etapa 2: el préstamo, la responsiva y el voucher se conservan como comprobante; se quitan la garantía, la firma y su nombre del texto
+            foreach (PrestamoLlave::whereIn('id', $seleccion['prestamo_llave'] ?? [])->whereIn('receptor_tipo', [Receptor::PERSONA, Receptor::PROVEEDOR])->get() as $p) {
+                PrestamoLlave::whereKey($p->id)->update(['folio_garantia' => null, 'updated_at' => $p->updated_at]);
+                $hecho['prestamo_llave']++;
+            }
+            foreach (Responsiva::whereIn('id', $seleccion['responsiva'] ?? [])->whereIn('receptor_tipo', [Receptor::PERSONA, Receptor::PROVEEDOR])->get() as $r) {
+                $this->firmas->borrar($r->firma_ruta);
+                Responsiva::whereKey($r->id)->update(['firma_ruta' => '', 'updated_at' => $r->updated_at]);
+                $hecho['responsiva']++;
+            }
+            foreach (VoucherReposicion::whereIn('id', $seleccion['voucher'] ?? [])->whereIn('responsable_tipo', [Receptor::PERSONA, Receptor::PROVEEDOR])->get() as $v) {
+                $this->firmas->borrar($v->firma_responsable);
+                VoucherReposicion::whereKey($v->id)->update(['firma_responsable' => null, 'descripcion' => self::sinNombre($v->descripcion, $nombre, $texto), 'updated_at' => $v->updated_at]);
+                $hecho['voucher']++;
             }
             $choferes = Persona::whereIn('id', $seleccion['persona'] ?? [])->pluck('id');
             foreach (MovimientoTransporte::whereIn('id', $seleccion['transporte'] ?? [])->whereNull('datos_eliminados_en')->get() as $m) {

@@ -9,7 +9,9 @@ use App\Models\AccidenteGuardavidas;
 use App\Models\AccidenteHuesped;
 use App\Models\Auditoria;
 use App\Models\Colaborador;
+use App\Models\Equipo;
 use App\Models\Espacio;
+use App\Models\Llave;
 use App\Models\LostFoundArticulo;
 use App\Models\LostFoundEntrega;
 use App\Models\LostFoundReportePerdida;
@@ -18,12 +20,17 @@ use App\Models\Novedad;
 use App\Models\NovedadReporteGeneral;
 use App\Models\NovedadTestigo;
 use App\Models\Persona;
+use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
 use App\Models\Reserva;
+use App\Models\Responsiva;
 use App\Models\Ruta;
 use App\Models\SolicitudArco;
+use App\Models\TipoEquipo;
 use App\Models\Turno;
+use App\Models\VoucherReposicion;
 use App\Services\Privacidad\ConservacionDatos;
+use App\Services\Privacidad\DatosDePersona;
 use App\Services\Privacidad\InventarioDatosPersonales;
 use App\Services\Privacidad\SolicitudesArco;
 use App\Services\Reservas\CatalogosReservas;
@@ -391,5 +398,84 @@ class PrivacidadTodosLosModulosTest extends PruebaNovedades
         $this->artisan('plataforma:privacidad')->assertSuccessful();
         $this->assertNull($this->enEmpresa(fn () => NovedadReporteGeneral::where('novedad_id', $otro->id)->value('observados')));
         $this->assertNotNull($this->enEmpresa(fn () => Novedad::findOrFail($otro->id)->datos_eliminados_en));
+    }
+
+    private function firmaPng(): string
+    {
+        $img = imagecreatetruecolor(300, 100);
+        imagefill($img, 0, 0, imagecolorallocate($img, 255, 255, 255));
+        imageline($img, 10, 50, 290, 60, imagecolorallocate($img, 0, 0, 0));
+        ob_start();
+        imagejpeg($img, null, 70);
+
+        return 'data:image/jpeg;base64,'.base64_encode((string) ob_get_clean());
+    }
+
+    /** Revisión Etapa 2: ARCO de una persona externa encuentra, exporta y trata sus préstamos, responsivas y vouchers (por id del Padrón o de su empresa). */
+    public function test_arco_de_una_persona_externa_alcanza_prestamos_responsivas_y_vouchers(): void
+    {
+        [$persona, $empresa, $llave, $radio, $chaleco, $lampara] = $this->enEmpresa(function () {
+            $tipo = TipoEquipo::firstOrCreate(['nombre' => 'Radio'])->id;
+
+            return [
+                Persona::create(['tipo' => 'proveedor', 'nombre_completo' => mb_strtoupper(self::NOMBRE)]),
+                Proveedor::create(['nombre' => 'Valdivia Instalaciones', 'categoria' => 'contratista', 'todas_las_sedes' => true]),
+                Llave::create(['sede_id' => $this->centro->id, 'nomenclatura' => 'HDC-ARCO', 'descripcion' => 'Bodega', 'tipo_dispositivo' => 'metalica', 'alcance' => 'global']),
+                Equipo::create(['sede_id' => $this->centro->id, 'tipo_equipo_id' => $tipo, 'numero_serie' => 'RAD-ARCO']),
+                Equipo::create(['sede_id' => $this->centro->id, 'tipo_equipo_id' => $tipo, 'numero_serie' => 'CH-ARCO']),
+                Equipo::create(['sede_id' => $this->centro->id, 'tipo_equipo_id' => $tipo, 'numero_serie' => 'LAM-ARCO']),
+            ];
+        });
+        $this->actingAs($this->admin)->postJson('/prestamo-llaves', ['sede_id' => $this->centro->id, 'llave_id' => $llave->id,
+            'receptor_tipo' => 'persona', 'receptor_id' => $persona->id, 'tipo_garantia' => 'ine', 'folio_garantia' => 'INE-445566'])->assertCreated();
+        $this->actingAs($this->admin)->post('/responsivas', ['sede_id' => $this->centro->id, 'receptor_tipo' => 'persona', 'receptor_id' => $persona->id,
+            'equipos' => [$radio->id], 'modalidades' => ['asignado'], 'firma' => $this->firmaPng()])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post('/responsivas', ['sede_id' => $this->centro->id, 'receptor_tipo' => 'proveedor', 'receptor_id' => $empresa->id,
+            'equipos' => [$lampara->id], 'modalidades' => ['asignado'], 'firma' => $this->firmaPng()])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->post("/equipos/{$chaleco->id}/baja", ['motivo' => 'extraviado', 'descripcion' => 'Lo perdió '.self::NOMBRE.' en la obra',
+            'aplica_cobro' => 1, 'monto' => 300, 'responsable_tipo' => 'persona', 'responsable_id' => $persona->id])->assertSessionHasNoErrors();
+        [$prestamo, $resp, $respEmpresa, $voucher] = $this->enEmpresa(fn () => [
+            PrestamoLlave::firstOrFail(), Responsiva::where('receptor_tipo', 'persona')->firstOrFail(),
+            Responsiva::where('receptor_tipo', 'proveedor')->firstOrFail(), VoucherReposicion::firstOrFail()]);
+        Storage::disk('local')->assertExists($resp->firma_ruta);
+
+        // Buscar: por la persona del Padrón y por su empresa
+        $s = $this->solicitud();
+        $r = $this->actingAs($this->admin)->get(route('arco.show', [$s->id, 'nombre' => self::NOMBRE]))->assertOk()
+            ->assertSee('Préstamos de llaves a su nombre')->assertSee('Responsivas a su nombre')->assertSee('Vouchers a su cargo')
+            ->assertSee('name="seleccion[prestamo_llave][]" value="'.$prestamo->id.'"', false)
+            ->assertSee('name="seleccion[responsiva][]" value="'.$resp->id.'"', false)
+            ->assertSee('name="seleccion[voucher][]" value="'.$voucher->id.'"', false);
+        $this->assertStringNotContainsString('name="seleccion[responsiva][]" value="'.$respEmpresa->id.'"', $r->getContent());
+        $porEmpresa = app(SolicitudesArco::class)->buscarDatos($s, ['nombre' => 'Valdivia Instalaciones']);
+        $this->assertSame([$respEmpresa->id], array_column($porEmpresa['responsiva'], 'id'));
+
+        // Exportar: los tres en el ZIP
+        $seleccion = ['persona' => [$persona->id], 'prestamo_llave' => [$prestamo->id], 'responsiva' => [$resp->id], 'voucher' => [$voucher->id]];
+        $export = $this->enEmpresa(fn () => app(DatosDePersona::class)->exportar($seleccion, 'arco/prueba.zip', 'ARCO-PRUEBA'));
+        $this->assertSame(5, $export['registros']); // persona, préstamo, responsiva, su equipo y voucher
+        $this->assertSame(1, $export['archivos']); // la firma de la persona en su responsiva
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open(Storage::disk('local')->path('arco/prueba.zip')) === true);
+        $nombres = [];
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $nombres[] = $zip->getNameIndex($i);
+        }
+        $todo = implode("\n", array_map(fn ($n) => (string) $zip->getFromName($n), $nombres));
+        $zip->close();
+        $this->assertStringContainsString('INE-445566', $todo);
+        $this->assertStringContainsString($voucher->folio, $todo);
+        $this->assertStringContainsString($resp->folio, $todo);
+
+        // Tratar: se conservan como comprobante, sin garantía, firma ni su nombre
+        $h = app(SolicitudesArco::class)->eliminar($this->admin, $s, $seleccion, self::NOMBRE);
+        $this->assertSame([1, 1, 1, 1], [$h['persona'], $h['prestamo_llave'], $h['responsiva'], $h['voucher']]);
+        $this->enEmpresa(function () use ($prestamo, $resp, $voucher) {
+            $this->assertNull(PrestamoLlave::findOrFail($prestamo->id)->folio_garantia);
+            $this->assertSame('', Responsiva::findOrFail($resp->id)->firma_ruta);
+            Storage::disk('local')->assertMissing($resp->firma_ruta);
+            $this->assertStringNotContainsString(self::NOMBRE, (string) VoucherReposicion::findOrFail($voucher->id)->descripcion);
+            $this->assertSame('persona', VoucherReposicion::findOrFail($voucher->id)->responsable_tipo);
+        });
     }
 }

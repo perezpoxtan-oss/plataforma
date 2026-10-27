@@ -1320,6 +1320,30 @@ class AdministradorPasesSalida
      *
      * @param  array<string, mixed>|null  $detalle
      */
+    /**
+     * Revisión Etapa 2: el equipo del padrón que no regresó apareció y se
+     * recibió desde su ficha con el pase ya cerrado. Suma lo regresado del
+     * artículo y lo anota en la bitácora del pase («Recibido después del
+     * cierre por …, fecha»). Devuelve el pase (null si no venía de uno).
+     */
+    public function recibidoDespuesDelCierre(User $actor, Equipo $equipo): ?PaseSalida
+    {
+        $articulo = PaseSalidaArticulo::with('pase')->where('equipo_id', $equipo->id)
+            ->whereColumn('cantidad_regresada', '<', 'cantidad')
+            ->whereHas('pase', fn ($q) => $q->whereNotNull('salio_en'))
+            ->latest('id')->first();
+        if ($articulo === null || $articulo->pase === null) {
+            return null;
+        }
+        $articulo->forceFill(['cantidad_regresada' => $articulo->cantidad_regresada + 1])->save();
+        $cuando = app(HoraLocal::class)->formatear(now(), 'd/m/Y H:i');
+        $this->anotar($articulo->pase, $actor, 'recibido_tarde',
+            "Recibido después del cierre por {$actor->name}, {$cuando}: {$articulo->equipo} ({$equipo->numero_serie})", null,
+            ['articulo_id' => $articulo->id, 'equipo_id' => $equipo->id]);
+
+        return $articulo->pase;
+    }
+
     private function anotar(PaseSalida $pase, ?User $actor, string $evento, string $titulo, ?string $comentario = null, ?array $detalle = null): PaseSalidaBitacora
     {
         return PaseSalidaBitacora::create([
