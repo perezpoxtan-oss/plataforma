@@ -64,19 +64,21 @@ class NovedadDepartamentoController extends Controller
 
     public function nota(Request $request, int $novedad): RedirectResponse
     {
-        $datos = $request->validate(['nota' => ['required', 'string', 'max:2000']], ['nota.required' => 'Escribe la nota.']);
+        // Primero el registro (404 si no es de tus departamentos) y después la validación: no revela si existe
         $empresaId = $this->empresaDe($request->user());
-        $this->tenant->conEmpresa($empresaId, fn () => $this->departamentos->anotar($request->user(), $this->buscar($request->user(), $novedad), $datos['nota']));
+        $n = $this->tenant->conEmpresa($empresaId, fn () => $this->buscar($request->user(), $novedad));
+        $datos = $request->validate(['nota' => ['required', 'string', 'max:2000']], ['nota.required' => 'Escribe la nota.']);
+        $this->tenant->conEmpresa($empresaId, fn () => $this->departamentos->anotar($request->user(), $n, $datos['nota']));
 
         return redirect()->route('novedades.departamento.show', $novedad)->with('ok', 'Nota guardada en el Minuto a Minuto. Seguridad ya la ve.');
     }
 
     public function atender(Request $request, int $novedad): RedirectResponse
     {
-        $datos = $request->validate(['nota' => ['nullable', 'string', 'max:2000']]);
         $empresaId = $this->empresaDe($request->user());
-        $folio = $this->tenant->conEmpresa($empresaId, function () use ($request, $novedad, $datos) {
-            $n = $this->buscar($request->user(), $novedad);
+        $n = $this->tenant->conEmpresa($empresaId, fn () => $this->buscar($request->user(), $novedad));
+        $datos = $request->validate(['nota' => ['nullable', 'string', 'max:2000']]);
+        $folio = $this->tenant->conEmpresa($empresaId, function () use ($request, $n, $datos) {
             $this->departamentos->atender($request->user(), $n, $datos['nota'] ?? null);
 
             return $n->folio();
