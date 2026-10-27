@@ -181,6 +181,14 @@ trait EscenarioAuditoria
             return $parametro === 'tipo' ? 'planes' : (DB::table($tabla)->orderBy('id')->value('id') ?? 1);
         }
 
+        // Etapa 2: «Antes de dar de baja» de una llave y «Restringir acceso» de una persona del padrón
+        if (in_array($ruta, ['bajas.revisar', 'bajas.no-regreso'], true)) {
+            return $parametro === 'tipo' ? 'llaves' : $this->consulta('llaves', $sede)->orderBy('llaves.id')->value('llaves.id');
+        }
+        if ($ruta === 'restriccion.guardar') {
+            return $parametro === 'padron' ? 'personas' : $this->consulta('personas', $sede)->orderBy('personas.id')->value('personas.id');
+        }
+
         switch ($parametro) {
             case 'empresa':
                 return $this->demo->id;
@@ -269,7 +277,7 @@ trait EscenarioAuditoria
     {
         $parametros = [];
         foreach ($ruta->parameterNames() as $nombre) {
-            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'pantalla', 'registro', 'tipo', 'parte', 'pagina', 'carpeta', 'catalogo'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
+            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'pantalla', 'registro', 'tipo', 'parte', 'pagina', 'carpeta', 'catalogo', 'padron'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
             $valor = match (true) {
                 ! $inexistente || $esTexto => $this->valorParametro((string) $ruta->getName(), $nombre, $sede),
                 $nombre === 'codigo' => 'zzzzzzzzzzzzzzzzzzzzzzzz',
