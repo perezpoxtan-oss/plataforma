@@ -134,7 +134,7 @@ class EtapaTresDelegarTest extends TestCase
         $this->enEmpresa(fn () => Delegacion::create(['user_id' => $this->jefa->id, 'delegado_id' => $this->suplente->id, 'desde' => now()->subHour(), 'hasta' => now()->addDay()]));
         $this->assertSame([$this->suplente->id], $this->enEmpresa(fn () => app(Entrevistas::class)->aQuienAvisar($this->jefa->id)->pluck('id')->all()));
         $solicitante = $this->crearUsuario($this->empresa, 'Solicitante', $this->centro);
-        $this->enEmpresa(fn () => Delegacion::query()->update(['delegado_id' => $solicitante->id]));
+        $this->enEmpresa(fn () => Delegacion::query()->get()->each->update(['delegado_id' => $solicitante->id])); // con el modelo, como la aplicación (la cadena se vuelve a leer)
         $this->assertSame([$this->jefa->id], $this->enEmpresa(fn () => app(Entrevistas::class)->aQuienAvisar($this->jefa->id)->pluck('id')->all()));
     }
 }

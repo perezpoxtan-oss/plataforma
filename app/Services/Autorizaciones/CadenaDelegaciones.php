@@ -39,6 +39,12 @@ class CadenaDelegaciones
     /** @var array<int, list<int>> */
     private array $cadenas = [];
 
+    /** Se vuelve a leer (una delegación se creó, se canceló o terminó en esta misma petición). */
+    public function olvidar(): void
+    {
+        [$this->llave, $this->mapa, $this->usuarios, $this->cadenas] = [null, null, [], []];
+    }
+
     /** @return array<int, int> titular => delegado (activas, con delegado activo; la más reciente gana) */
     public function mapa(): array
     {
