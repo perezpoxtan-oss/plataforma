@@ -33,6 +33,16 @@ class PendientesPorPersona
     /** @var array<string, mixed> */
     private array $memo = [];
 
+    private ?int $peticion = null;
+
+    /** Lo memorizado vale para una petición (en las pruebas la aplicación vive más que una petición). */
+    private function vigente(): void
+    {
+        if ($this->peticion !== ($id = spl_object_id(app('request')))) {
+            [$this->peticion, $this->memo] = [$id, []];
+        }
+    }
+
     public function __construct(private readonly Tenant $tenant) {}
 
     /**
@@ -40,6 +50,8 @@ class PendientesPorPersona
      */
     public function altas(User $u): array
     {
+        $this->vigente();
+
         return $this->memo['altas:'.$this->empresa().':'.$u->id] ??= $this->calcularAltas($u);
     }
 
@@ -48,12 +60,16 @@ class PendientesPorPersona
      */
     public function cuentas(User $u, int $empresaId): array
     {
+        $this->vigente();
+
         return $this->memo['cuentas:'.$empresaId.':'.$u->id] ??= $this->calcularCuentas($u, $empresaId);
     }
 
     /** @return list<string> */
     public function procedimientosPorAprobar(User $u): array
     {
+        $this->vigente();
+
         return $this->memo['procedimientos:'.$this->empresa().':'.$u->id] ??= array_map(fn (int $id) => 'procedimiento_revision:'.$id,
             app(PendientesActivos::class)->versionesPorAprobar($u));
     }

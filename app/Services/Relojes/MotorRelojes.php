@@ -394,6 +394,8 @@ class MotorRelojes
     /** @var array<int, array<string, array<string, list<int>>>> */
     private array $escalados = [];
 
+    private ?int $peticionEscalados = null;
+
     /**
      * D-01: a quién pasó cada asunto que sigue en la memoria del motor
      * (relojes_esperas.escalado_a), por reloj y llave. Lo guarda el motor al
@@ -404,6 +406,9 @@ class MotorRelojes
     public function escaladosDe(?int $empresaId): array
     {
         $k = $empresaId ?? 0;
+        if ($this->peticionEscalados !== ($peticion = spl_object_id(app('request')))) {
+            [$this->peticionEscalados, $this->escalados] = [$peticion, []];
+        }
         if (isset($this->escalados[$k])) {
             return $this->escalados[$k];
         }

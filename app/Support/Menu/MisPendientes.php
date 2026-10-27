@@ -72,6 +72,8 @@ class MisPendientes
     /** @var array<string, array{total: int, items: list<array{clave: string, titulo: string, icono: string, total: int, url: string, nivel: ?string}>}> */
     private array $memoria = [];
 
+    private ?int $peticion = null;
+
     public function __construct(
         private readonly EmpresaDeTrabajo $empresa,
         private readonly Tenant $tenant,
@@ -99,6 +101,10 @@ class MisPendientes
                 }
                 defer(fn () => $this->tenant->conEmpresa($id, fn () => app(MotorRelojes::class)->correrSiToca($id)), 'relojes:'.($id ?? 'plataforma'));
             }
+        }
+        // Lo memorizado vale para una petición (Inicio y el encabezado comparten el cálculo; D-04)
+        if ($this->peticion !== ($peticion = spl_object_id(app('request')))) {
+            [$this->peticion, $this->memoria] = [$peticion, []];
         }
         if (isset($this->memoria[$llave])) {
             return $this->memoria[$llave];
