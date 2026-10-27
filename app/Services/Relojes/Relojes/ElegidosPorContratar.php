@@ -33,4 +33,10 @@ class ElegidosPorContratar extends RelojDeCandidatos
                 'Elegido sin contratar: '.$p->candidato->nombre_completo, route('candidatos.show', $p->candidato_id), $p->sede_id !== null ? (int) $p->sede_id : null))
             ->unique(fn (Espera $e) => $e->llave())->values();
     }
+
+    /** D-01: el renglón de Mis pendientes que ya existía y lo cuenta. */
+    public function renglonPropio(): ?string
+    {
+        return 'elegidos';
+    }
 }

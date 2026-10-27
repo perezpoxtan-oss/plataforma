@@ -6,6 +6,7 @@ use App\Models\Colaborador;
 use App\Models\User;
 use App\Services\Padrones\AltasPorVerificar as Altas;
 use App\Services\Relojes\Espera;
+use App\Services\Relojes\PendientesPorPersona;
 use App\Services\Relojes\Reloj;
 use Illuminate\Support\Collection;
 
@@ -63,5 +64,42 @@ class AltasPorVerificar extends Reloj
     public function puedeVer(User $actor): bool
     {
         return collect(['visitantes.editar', 'vehiculos.editar', 'proveedores.editar', 'colaboradores.aprobar'])->contains(fn ($p) => $actor->can($p));
+    }
+
+    /** D-01: el renglón de Mis pendientes que ya existía y lo cuenta. */
+    public function renglonPropio(): ?string
+    {
+        return 'altas';
+    }
+
+    /**
+     * D-02: le toca (y lo puede atender) si está en lo que esta persona puede
+     * verificar con su alcance: el mismo conjunto que su renglón de Mis pendientes
+     * (PendientesPorPersona), así el número, el color, el recordatorio y la
+     * delegación siguen una sola regla.
+     */
+    public function leToca(User $actor, Espera $e): bool
+    {
+        return isset($this->llavesDe($actor)[$e->llave()]);
+    }
+
+    public function puedeAtender(User $actor, Espera $e): bool
+    {
+        return $this->leToca($actor, $e);
+    }
+
+    /** @var array<int, array<string, int>> */
+    private array $llaves = [];
+
+    /** @return array<string, int> */
+    private function llavesDe(User $actor): array
+    {
+        return $this->llaves[(int) $actor->id] ??= array_flip(app(PendientesPorPersona::class)->altas($actor)['llaves']);
+    }
+
+    public function olvidar(): void
+    {
+        parent::olvidar();
+        $this->llaves = [];
     }
 }

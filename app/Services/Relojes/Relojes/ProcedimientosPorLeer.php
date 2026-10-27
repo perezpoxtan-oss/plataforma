@@ -5,6 +5,7 @@ namespace App\Services\Relojes\Relojes;
 use App\Models\Procedimiento;
 use App\Models\ProcedimientoAcuse;
 use App\Models\ProcedimientoVersion;
+use App\Models\User;
 use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Services\Relojes\Espera;
 use App\Services\Relojes\MotorRelojes;
@@ -77,5 +78,17 @@ class ProcedimientosPorLeer extends Reloj
     public function textoEscalado(Espera $e, int $minutos): array
     {
         return [$e->titulo, 'Se publicó hace '.MotorRelojes::duracion($minutos).' y se les recordó. Revisa en «Acuses» quién falta y habla con ellos o con su jefe.'];
+    }
+
+    /** No tiene renglón propio para quien aprueba (el de «Procedimientos por leer» es el del lector). */
+    public function leToca(User $actor, Espera $e): bool
+    {
+        return false;
+    }
+
+    /** D-01: lo atiende quien aprueba procedimientos (ve los acuses y habla con quien falta). */
+    public function puedeAtender(User $actor, Espera $e): bool
+    {
+        return $actor->can('procedimientos.aprobar');
     }
 }

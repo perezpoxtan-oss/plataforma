@@ -15,6 +15,7 @@ use App\Models\SolicitudCuenta;
 use App\Models\User;
 use App\Models\Vacante;
 use App\Services\Relojes\MotorRelojes;
+use App\Services\Relojes\Reloj;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -162,6 +163,66 @@ class EtapaCuatroRelojesTest extends TestCase
         $porAsunto = Notificacion::query()->withoutGlobalScopes()->where('tipo', MotorRelojes::TIPO_ESCALADO)
             ->get(['user_id', 'referencia_tipo', 'referencia_id'])->groupBy(fn ($n) => $n->user_id.':'.$n->referencia_tipo.':'.$n->referencia_id);
         $this->assertSame([], $porAsunto->filter(fn ($g) => $g->count() > 1)->keys()->all());
+    }
+
+    /**
+     * D-01 (revisión de la Etapa 4): cada «Pasa a ti» llega a alguien que puede
+     * atender ESE asunto (permiso efectivo, no solo verlo) y que lo tiene en su
+     * Mis pendientes: en el renglón del reloj, en su renglón de siempre o en
+     * «Te lo pasaron». Se revisa cada paso al suplente de los 27 relojes con
+     * los datos de demostración y tiempo simulado.
+     */
+    public function test_quien_recibe_pasa_a_ti_puede_atenderlo_y_lo_tiene_en_mis_pendientes(): void
+    {
+        $this->prepararLoQueFalta();
+        $this->crearSuperadmin();
+        $inicio = now()->startOfMinute();
+        $revisados = [];
+        foreach ([0, 25, 96, 24 * 11] as $horas) {
+            Carbon::setTestNow($inicio->copy()->addHours($horas));
+            $desde = (int) Auditoria::query()->withoutGlobalScopes()->max('id');
+            $this->correrTodo();
+            foreach (Auditoria::query()->withoutGlobalScopes()->where('evento', 'relojes.suplente')->where('id', '>', $desde)->get() as $a) {
+                $revisados[$a->antes['reloj']] = ($revisados[$a->antes['reloj']] ?? 0) + $this->revisarPasoAlSuplente($a);
+            }
+        }
+        // Todos los relojes que pasaron algo al suplente se revisaron con al menos una persona
+        $this->assertGreaterThanOrEqual(20, count($revisados));
+        // Los cuatro que la revisión encontró sin renglón para el suplente
+        foreach (['entrevistas', 'novedades_canalizadas', 'procedimientos_leer', 'plataforma_gracia'] as $clave) {
+            $this->assertGreaterThan(0, $revisados[$clave] ?? 0, "«{$clave}» no se revisó");
+        }
+        $this->assertSame([], array_keys(array_filter($revisados, fn ($n) => $n === 0)), 'Relojes que pasaron al suplente sin nadie que pueda atenderlo');
+    }
+
+    private function revisarPasoAlSuplente(Auditoria $a): int
+    {
+        $empresaId = $a->empresa_id !== null ? (int) $a->empresa_id : null;
+        $this->app->forgetScopedInstances();
+        Cache::flush();
+        $motor = app(MotorRelojes::class);
+        $reloj = $motor->reloj($a->antes['reloj']);
+        $espera = app(Tenant::class)->conEmpresa($empresaId, fn () => $reloj->esperas($empresaId)->first(fn ($e) => $e->llave() === $a->antes['referencia']));
+        if ($espera === null) {
+            return 0; // ya se resolvió en la misma corrida
+        }
+        $claves = array_filter([$reloj->renglonDef()[0] ?? null, $reloj->renglonPropio(), $reloj->clave().Reloj::SUFIJO_SUPLENTE]);
+        $n = 0;
+        foreach ($a->despues['avisados'] ?? [] as $id) {
+            $u = User::findOrFail($id);
+            $this->app->forgetScopedInstances();
+            $puede = app(Tenant::class)->conEmpresa($empresaId, fn () => $motor->reloj($a->antes['reloj'])->puedeAtender($u, $espera));
+            $this->assertTrue($puede, "«{$reloj->nombre()}» pasó {$a->antes['referencia']} a {$u->name}, que no puede atenderlo");
+            Cache::flush();
+            $this->app->forgetScopedInstances();
+            $this->actingAs($u);
+            $items = collect(app(MisPendientes::class)->para($u)['items'])->keyBy('clave');
+            $tiene = collect($claves)->contains(fn ($c) => ($items[$c]['total'] ?? 0) > 0);
+            $this->assertTrue($tiene, "«{$reloj->nombre()}» pasó {$a->antes['referencia']} a {$u->name}, que no lo tiene en Mis pendientes (".implode(', ', $claves).')');
+            $n++;
+        }
+
+        return $n;
     }
 
     public function test_con_los_avisos_apagados_el_reloj_sigue_pero_no_avisa(): void

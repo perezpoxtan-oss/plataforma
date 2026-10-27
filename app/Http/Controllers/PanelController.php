@@ -13,6 +13,7 @@ use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\SuperAdministradores;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\Relojes\MotorRelojes;
+use App\Services\Relojes\Reloj;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -60,10 +61,18 @@ class PanelController extends Controller
         $empresaId = $empresa->id($actor);
 
         if ($empresaId !== null || $actor->es_superadmin) {
-            // Siempre el cálculo fresco (instancia propia, sin lo memorizado en esta petición)
+            // D-04: un solo cálculo por petición. Inicio usa el cálculo fresco (sin la caché de la campana) y el
+            // encabezado reutiliza ese mismo resultado (MisPendientes es de alcance de petición)
             $relojes = app(MotorRelojes::class)->relojes();
             $deRelojes = collect($relojes)->mapWithKeys(fn ($r) => [($r->renglonDef()[0] ?? $r->clave()) => $r->textosInicio()])->filter()->all();
-            foreach (app()->build(MisPendientes::class)->para($actor)['vista'] ?? [] as $item) {
+            // D-01: «Te lo pasaron» de los relojes sin renglón propio
+            foreach ($relojes as $r) {
+                if ($r->renglonDef() === null) {
+                    $deRelojes[$r->clave().Reloj::SUFIJO_SUPLENTE] = ['Te pasaron 1 asunto: '.$r->nombre(), 'Te pasaron %d asuntos: '.$r->nombre(),
+                        'Quien debía atenderlo no respondió a tiempo y pasó a ti como suplente.', 'Atender'];
+                }
+            }
+            foreach (app(MisPendientes::class)->para($actor)['vista'] ?? [] as $item) {
                 // C-22 a C-26: los renglones nuevos traen su frase desde su reloj
                 [$uno, $varios, $texto, $boton] = self::TEXTOS[$item['clave']] ?? $deRelojes[$item['clave']] ?? ['', '', '', 'Revisar'];
                 $frase = $item['total'] === 1 ? $uno : sprintf($varios, $item['total']);

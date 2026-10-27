@@ -66,4 +66,10 @@ class ActivosQueNoRegresaron extends Reloj
     {
         return $actor->can('llaves.eliminar') || $actor->can('gafetes.eliminar') || $actor->can('equipos.eliminar');
     }
+
+    /** D-01: el renglón de Mis pendientes que ya existía y lo cuenta. */
+    public function renglonPropio(): ?string
+    {
+        return 'activos_no_regreso';
+    }
 }

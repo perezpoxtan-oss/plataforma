@@ -5,6 +5,7 @@ namespace App\Services\Relojes\Relojes;
 use App\Models\Novedad;
 use App\Models\User;
 use App\Services\Novedades\AjustesNovedades;
+use App\Services\Recepcion\Destinatarios;
 use App\Services\Relojes\Espera;
 use App\Services\Relojes\MotorRelojes;
 use App\Services\Relojes\Reloj;
@@ -103,5 +104,20 @@ class TicketsCanalizados extends Reloj
     public function puedeVer(User $actor): bool
     {
         return $actor->can('novedades.editar');
+    }
+
+    /** D-01: el renglón de Mis pendientes que ya existía y lo cuenta. */
+    public function renglonPropio(): ?string
+    {
+        return 'novedades_mias';
+    }
+
+    /**
+     * D-01: lo atiende quien está canalizado o quien puede reasignar el ticket
+     * en su sede (editar la novedad: canalizarlo a otra persona o cerrarlo).
+     */
+    public function puedeAtender(User $actor, Espera $e): bool
+    {
+        return (int) $actor->id === $e->datos['asignado'] || app(Destinatarios::class)->alcanza($actor, 'novedades.editar', $e->sedeId);
     }
 }
