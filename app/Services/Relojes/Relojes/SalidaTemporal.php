@@ -95,4 +95,18 @@ class SalidaTemporal extends Reloj
     {
         return true;
     }
+
+    /**
+     * Revisión Etapa 4 (regla 1 y DD-10): su recordatorio es «reloj_recordatorio», que se puede
+     * silenciar; sin renglón propio, silenciarlo borraba el único aviso.
+     */
+    public function renglonDef(): ?array
+    {
+        return ['salida_temporal', 'Salidas temporales sin regresar', 'bi-box-arrow-right', route('accesos.index', ['rebasaron' => 1])];
+    }
+
+    public function textosInicio(): ?array
+    {
+        return ['1 persona salió y no ha regresado', '%d personas salieron y no han regresado', 'Salieron por un momento (por material, por ejemplo) y ya pasó su tiempo. Llámales o pregunta en caseta; si ya no regresan, dales salida.', 'Ver en sitio'];
+    }
 }

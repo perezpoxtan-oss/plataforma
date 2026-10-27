@@ -146,7 +146,7 @@ class MotorRelojes
      */
     public function correrSiToca(?int $empresaId): bool
     {
-        if (! Cache::add('relojes:'.($empresaId ?? 'plataforma'), 1, self::SEGUNDOS_CANDADO)) {
+        if (! Cache::add(self::candado($empresaId), 1, self::SEGUNDOS_CANDADO)) {
             return false;
         }
         try {
@@ -163,6 +163,17 @@ class MotorRelojes
         }
 
         return $hecho['recordatorios'] + $hecho['escalamientos'] > 0;
+    }
+
+    /** ¿Corrió hace menos de un minuto en esa empresa (o en la plataforma)? Una lectura de caché, sin consultas. */
+    public static function yaCorrio(?int $empresaId): bool
+    {
+        return Cache::has(self::candado($empresaId));
+    }
+
+    private static function candado(?int $empresaId): string
+    {
+        return 'relojes:'.($empresaId ?? 'plataforma');
     }
 
     /**
@@ -350,7 +361,7 @@ class MotorRelojes
         if ($empresaId === null || $usuarios->isEmpty()) {
             return $usuarios;
         }
-        $cadena = $this->cadena ??= app(Autorizaciones::class)->cadena();
+        $cadena = $this->cadena();
         if ($cadena->mapa() === []) {
             return $usuarios;
         }
@@ -363,6 +374,21 @@ class MotorRelojes
     }
 
     private ?CadenaDelegaciones $cadena = null;
+
+    /** Una sola cadena de delegaciones para el motor y todos sus relojes (una lectura por petición). */
+    public function cadena(): CadenaDelegaciones
+    {
+        return $this->cadena ??= app(Autorizaciones::class)->cadena();
+    }
+
+    /** @var array<int, ?User> */
+    private array $titulares = [];
+
+    /** Un titular que delega (activo), leído una sola vez por petición. */
+    public function titular(int $id): ?User
+    {
+        return array_key_exists($id, $this->titulares) ? $this->titulares[$id] : ($this->titulares[$id] = User::where('activo', true)->find($id));
+    }
 
     /**
      * @param  Collection<int, User>  $usuarios
@@ -483,6 +509,12 @@ class MotorRelojes
         return array_key_exists($empresaId, $this->empresas) ? $this->empresas[$empresaId] : ($this->empresas[$empresaId] = Empresa::find($empresaId));
     }
 
+    /** La empresa que ya trae la petición (sin volver a leerla). */
+    public function recordarEmpresa(Empresa $empresa): void
+    {
+        $this->empresas[(int) $empresa->id] ??= $empresa;
+    }
+
     /** «25 min», «5 h», «2 días 3 h». */
     public static function duracion(int $minutos): string
     {
@@ -490,9 +522,10 @@ class MotorRelojes
     }
 
     /** ¿Ya pasó al suplente este asunto? (para que la caseta sepa si puede aprobar por excepción). */
-    public function escalado(string $clave, string $referenciaTipo, int $referenciaId): bool
+    public function escalado(string $clave, string $referenciaTipo, int $referenciaId, ?int $empresaId): bool
     {
-        return DB::table('relojes_esperas')->where('reloj', $clave)->where('referencia_tipo', $referenciaTipo)
+        return DB::table('relojes_esperas')->where(fn ($q) => $empresaId === null ? $q->whereNull('empresa_id') : $q->where('empresa_id', $empresaId))
+            ->where('reloj', $clave)->where('referencia_tipo', $referenciaTipo)
             ->where('referencia_id', $referenciaId)->whereNotNull('escalado_en')->exists();
     }
 }

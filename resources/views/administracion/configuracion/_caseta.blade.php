@@ -138,7 +138,7 @@
                     <option value="{{ $clave }}" @selected($valor('agente_excepcion') === $clave)>{{ $texto }}</option>
                 @endforeach
             </select>
-            <p class="campo-ayuda mt-0">El agente siempre puede tocar «Pedir al supervisor» en una tarjeta pendiente. Si lo enciendes y nadie responde en los minutos de espera de la caseta, el agente puede aprobar por excepción: motivo y foto obligatorios, aviso inmediato al supervisor y al jefe de seguridad, y el caso queda para revisarlo. <span class="valor-original">Valor original: no.</span></p>
+            <p class="campo-ayuda mt-0">El agente siempre puede tocar «Canalizar al supervisor» en una tarjeta pendiente. Si lo enciendes y nadie responde en los minutos de espera de la caseta, el agente puede aprobar por excepción: motivo y foto obligatorios, aviso inmediato al supervisor y al jefe de seguridad, y el caso queda para revisarlo. <span class="valor-original">Valor original: no.</span></p>
         @endif
         @foreach (\App\Support\AjustesCaseta::GRUPOS[$tarjeta] as $campo)
             @error($campo)<p class="text-danger small mb-1">{{ $message }}</p>@enderror
