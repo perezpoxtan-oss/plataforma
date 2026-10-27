@@ -12,11 +12,13 @@ use App\Models\Novedad;
 use App\Models\PaseSalida;
 use App\Models\PrestamoLlave;
 use App\Models\Proveedor;
+use App\Models\Reserva;
 use App\Models\Ruta;
 use App\Models\User;
 use App\Models\Vacante;
 use App\Models\Vehiculo;
 use App\Services\PasesSalida\AdministradorPasesSalida;
+use App\Services\Reservas\EventosDelDia;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Services\Vacantes\AdministradorVacantes;
 use App\Support\EstadoActivo;
@@ -54,7 +56,7 @@ class InformeEjecutivo
 
     /** Permisos de origen de las fichas (para la huella de la caché). */
     private const ORIGENES = ['colaboradores.ver', 'usuarios.ver', 'vehiculos.ver', 'proveedores.ver', 'prestamo_llaves.ver', 'equipos.ver',
-        'robo.ver', 'pases_salida.ver', 'transporte.ver', 'candidatos.ver', 'vacantes.ver', 'autorizaciones.ver'];
+        'robo.ver', 'pases_salida.ver', 'transporte.ver', 'candidatos.ver', 'vacantes.ver', 'autorizaciones.ver', 'reservas.ver'];
 
     /**
      * Bloques con sus fichas (solo las que la persona puede ver).
@@ -84,6 +86,8 @@ class InformeEjecutivo
             ['Transporte — últimos 30 días', 'bi-bus-front-fill', ['transporte' => 'transporte.ver']],
             ['Candidatos y vacantes', 'bi-person-workspace', ['candidatos' => 'candidatos.ver', 'vacantes' => 'vacantes.ver']],
             ['Autorizaciones — últimos 30 días', 'bi-patch-check-fill', ['autorizaciones' => 'autorizaciones.ver']],
+            // C-31 (X-05): los eventos de Reservas de hoy
+            ['Eventos de hoy', 'bi-calendar-event', ['eventos' => 'reservas.ver']],
         ];
 
         $bloques = [];
@@ -391,6 +395,27 @@ class InformeEjecutivo
             $this->ficha('Tiempo de respuesta', $promedio === null ? '—' : number_format($promedio, 0).' min', ['nota' => 'Promedio de las respondidas']),
             $this->ficha('Escaladas', number_format($c['escaladas']), ['nota' => 'Pasaron al suplente o al jefe', 'nivel' => $c['escaladas'] > 0 ? 'alerta' : 'positiva']),
             $this->ficha('Esperando respuesta', number_format($c['pendientes'])),
+        ];
+    }
+
+    // ------------------------------------------------- C-31: eventos de hoy
+
+    private function eventos(User $actor, ?array $sedes, string $permiso): array
+    {
+        $servicio = app(EventosDelDia::class);
+        $q = $this->limitar($servicio->consulta(), $actor, $permiso, $sedes, 'reservas.sede_id', 'reservas.solicitante_id');
+        $lista = $q->limit(self::MAX_FILAS)->get()->map(fn (Reserva $r) => $servicio->renglon($r));
+        if ($lista->isEmpty()) {
+            return [];
+        }
+
+        return [
+            $this->ficha('Eventos confirmados hoy', number_format($lista->count()), [
+                'nota' => number_format($lista->sum('asistentes')).' personas esperadas',
+                'columnas' => ['Horario', 'Área', 'Evento', 'Personas', 'Sede'],
+                'filas' => $lista->map(fn (array $e) => [$e['horario'], $e['area'], $e['titulo'], (string) $e['asistentes'], $e['sede'] ?? '—'])->all(),
+                'enlace' => route('reservas.calendario'),
+            ]),
         ];
     }
 }

@@ -67,6 +67,21 @@
             </section>
         @endif
 
+        {{-- C-31 (D-12): eventos confirmados de Reservas que ocurren hoy (área, horario y personas). Solo si hay. --}}
+        @if (($eventosHoy ?? collect())->isNotEmpty())
+            <details class="eventos-hoy tarjeta" @if ($eventosHoy->count() <= 3) open @endif>
+                <summary><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>Eventos de hoy ({{ $eventosHoy->count() }})</summary>
+                <ul class="eventos-hoy-lista">
+                    @foreach ($eventosHoy as $ev)
+                        <li>
+                            <strong>{{ $ev['horario'] }}</strong> · {{ $ev['area'] }} · {{ $ev['titulo'] }}
+                            <span class="text-muted">· {{ $ev['asistentes'] }} {{ $ev['asistentes'] === 1 ? 'persona' : 'personas' }}@if ($ev['montaje']) · montaje desde {{ $ev['montaje'] }}@endif @if ($variasSedes) · {{ $ev['sede'] }}@endif</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </details>
+        @endif
+
         {{-- Búsqueda y filtro por tipo: en Gente en Sitio y Pendientes filtran al escribir; en el historial, con Filtrar --}}
         <form method="GET" data-autoenviar action="{{ route('accesos.index') }}" class="filtros-accesos {{ $esHistorial ? 'con-fechas' : '' }}" role="search" data-filtros-accesos="{{ $esHistorial ? 'servidor' : 'vivo' }}">
             <input type="hidden" name="pestana" value="{{ $pestana }}">

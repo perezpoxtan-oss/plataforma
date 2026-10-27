@@ -552,6 +552,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/configuracion/lost-found', [ConfiguracionController::class, 'lostFound'])->name('configuracion.lost_found');
     // Mejoras Incidentes: nombre del menú y categoría del hallazgo de recorrido (Configuración → Bitácora de novedades)
     Route::put('/configuracion/novedades', [ConfiguracionController::class, 'novedades'])->name('configuracion.novedades');
+    Route::put('/configuracion/novedades/procedimientos', [ConfiguracionController::class, 'procedimientosVinculados'])->name('configuracion.novedades.procedimientos');
     Route::put('/configuracion/novedades/reclasificar-hallazgos', [ConfiguracionController::class, 'reclasificarHallazgos'])->name('configuracion.novedades.reclasificar');
     Route::put('/configuracion/equipos-pc', [ConfiguracionController::class, 'equiposPc'])->name('configuracion.equipos_pc'); // DD-17
     // Configuración por secciones: nombres del menú (Avanzado) y «Restablecer valor original» de cada tarjeta

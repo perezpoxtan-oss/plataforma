@@ -76,6 +76,41 @@
             <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar ajustes de la bitácora</button>
         @endif
     </form>
+    {{-- C-31 (D-20): «¿Qué hacer? Ver procedimiento» por categoría y por tipo de equipo (en Avanzado; solo con Procedimientos) --}}
+    @php
+        $vinculosProc = app(\App\Services\Procedimientos\ProcedimientosVinculados::class);
+        $opcionesProc = $vinculosProc->disponible((int) $empresa->id) ? app(\App\Support\Tenancy\Tenant::class)->conEmpresa($empresa->id, fn () => $vinculosProc->opciones()) : collect();
+        $mapaProc = $vinculosProc->mapa($empresa);
+    @endphp
+    @if ($opcionesProc->isNotEmpty())
+        <details class="mt-3" id="novedades-procedimientos" @if ($errors->has('vinculos.*')) open @endif>
+            <summary class="small fw-bold">Avanzado: «¿Qué hacer?» — procedimiento de cada categoría y tipo de equipo @if ($mapaProc) ({{ count($mapaProc) }}) @endif</summary>
+            <p class="small mt-2 mb-2">El ticket de esa categoría y el punto del recorrido de ese equipo muestran «¿Qué hacer? Ver procedimiento» a quien puede ver procedimientos. Solo se ofrecen los publicados.</p>
+            <form action="{{ route('configuracion.novedades.procedimientos') }}" method="POST" class="m-0">
+                @csrf
+                @method('PUT')
+                <div class="row g-2">
+                    @foreach (\App\Services\Procedimientos\ProcedimientosVinculados::claves() as $claveProc => $textoProc)
+                        @if ($loop->first)<div class="col-12 campo-etiqueta mb-0">Categorías del ticket</div>@endif
+                        @if ($claveProc === 'equipo:'.array_key_first(\App\Models\EquipoPc::CATEGORIAS))<div class="col-12 campo-etiqueta mb-0 mt-2">Tipos de equipo de Protección Civil</div>@endif
+                        <div class="col-md-6">
+                            <label class="small" for="proc_{{ str_replace(':', '_', $claveProc) }}">{{ $textoProc }}</label>
+                            <select id="proc_{{ str_replace(':', '_', $claveProc) }}" name="vinculos[{{ $claveProc }}]" class="campo" @disabled(! $puedeEditar)>
+                                <option value="">— Ninguno —</option>
+                                @foreach ($opcionesProc as $op)
+                                    <option value="{{ $op->id }}" @selected(($mapaProc[$claveProc] ?? null) === $op->id)>{{ $op->clave ? $op->clave.' · ' : '' }}{{ $op->titulo }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endforeach
+                </div>
+                @error('vinculos.*')<p class="text-danger small mb-2">{{ $message }}</p>@enderror
+                @if ($puedeEditar)
+                    <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar procedimientos</button>
+                @endif
+            </form>
+        </details>
+    @endif
     {{-- C-29 (D-06): reclasificación opcional de los hallazgos que se abrieron como siniestro (en Avanzado) --}}
     @php $hallazgosSiniestro = $puedeEditar ? $ajustesNov->hallazgosComoSiniestro()->where('novedades.empresa_id', $empresa->id)->count() : 0; @endphp
     @if ($hallazgosSiniestro > 0)

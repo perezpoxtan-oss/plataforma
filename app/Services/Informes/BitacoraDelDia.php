@@ -9,8 +9,10 @@ use App\Models\NovedadNota;
 use App\Models\PaseSalida;
 use App\Models\PrestamoLlave;
 use App\Models\RecorridoPc;
+use App\Models\Reserva;
 use App\Models\User;
 use App\Services\Novedades\AjustesNovedades;
+use App\Services\Reservas\EventosDelDia;
 use App\Support\Terminos;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,6 +41,8 @@ class BitacoraDelDia
         'llaves' => ['Préstamo de llaves', 'bi-key-fill', 'prestamo_llaves.ver'],
         'pases' => ['Pases de salida', 'bi-box-arrow-right', 'pases_salida.ver'],
         'recorridos' => ['Recorridos de Protección Civil', 'bi-fire', 'recorridos_pc.ver'],
+        // C-31 (D-12): los eventos confirmados del día (inicio y fin)
+        'reservas' => ['Eventos de Reservas', 'bi-calendar-event', 'reservas.ver'],
     ];
 
     /** @var array{0: string, 1: string} */
@@ -233,5 +237,23 @@ class BitacoraDelDia
         }
 
         return $eventos;
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function reservas(User $actor, ?array $sedes): array
+    {
+        $eventos = app(EventosDelDia::class);
+        $q = $this->limitar(Reserva::query(), $actor, 'reservas', $sedes, 'reservas.sede_id', 'reservas.solicitante_id')
+            ->where('reservas.estado', Reserva::CONFIRMADA)->with(['sede:id,nombre', 'espacio:id,nombre']);
+        $resultado = [];
+        foreach (['inicio' => ['Inicia evento', 0], 'fin' => ['Termina evento', 1]] as $columna => [$etiqueta, $orden]) {
+            foreach ($this->delDia($q, 'reservas.'.$columna)->orderBy('reservas.'.$columna)->limit(self::MAX_POR_TIPO)->get() as $r) {
+                $e = $eventos->renglon($r);
+                $resultado[] = $this->evento('reservas', $r->{$columna}, $etiqueta, $e['area'].' · '.$e['titulo'].' · '.$e['asistentes'].' '.($e['asistentes'] === 1 ? 'persona' : 'personas')
+                    .($columna === 'inicio' && $e['montaje'] ? ' (montaje desde '.$e['montaje'].')' : ''), $r->sede?->nombre, route('reservas.show', $r->id), $orden);
+            }
+        }
+
+        return $resultado;
     }
 }

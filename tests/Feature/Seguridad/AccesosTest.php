@@ -880,6 +880,7 @@ class AccesosTest extends TestCase
         // 85: Etapa 4 suma consultas fijas en el encabezado (Mis pendientes: una por reloj que aplica al administrador) y la empresa
         // una vez para el reloj de permanencia de todas las tarjetas; las tarjetas siguen sin consultas propias
         // 92: DD-17 suma en el encabezado las rutas del día y los equipos de Protección Civil (fijas por petición)
-        $this->assertLessThan(92, $consultas, "La pantalla hizo {$consultas} consultas.");
+        // 93: Etapa 6 (C-31) suma una consulta fija: los eventos de hoy de Reservas (la tarjeta «Eventos de hoy»)
+        $this->assertLessThan(93, $consultas, "La pantalla hizo {$consultas} consultas.");
     }
 }

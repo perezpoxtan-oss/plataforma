@@ -19,6 +19,7 @@ use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Autorizaciones\Escalamiento;
 use App\Services\Autorizaciones\Excepciones;
 use App\Services\Recepcion\AjustesRecepcion;
+use App\Services\Reservas\EventosDelDia;
 use App\Support\Csv;
 use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
@@ -111,6 +112,8 @@ class AccesoController extends Controller
                 'anticipo' => $puedeCrear ? $this->anticipo($empresaId, $sedesAlta) : ['rh_espera_en' => [], 'visitas_esperan' => false, 'departamentos' => [], 'esperan_departamento' => []],
                 'previos' => $puedeCrear ? $this->consulta->previos(session()->getOldInput()) : [],
                 'siguiente' => session('siguiente'),
+                // C-31 (D-12): los eventos confirmados de hoy en las sedes que ve la caseta (solo si la empresa tiene Reservas)
+                'eventosHoy' => $pestana === 'historial' ? collect() : app(EventosDelDia::class)->deHoy((int) $empresaId, $sedesVer),
                 'puede' => [
                     'crear' => $puedeCrear && $sedesAlta->isNotEmpty(),
                     'editar' => $actor->can('accesos.editar'),

@@ -22,6 +22,7 @@ use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\SuperAdministradores;
 use App\Services\Plataforma\VersionPhp;
 use App\Services\Privacidad\ConservacionDatos;
+use App\Services\Procedimientos\ProcedimientosVinculados;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\RecorridosPc\AjustesEquiposPc;
 use App\Services\Relojes\AjustesRelojes;
@@ -428,6 +429,19 @@ class ConfiguracionController extends Controller
         app(AjustesNovedades::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only(['nombre_opcion', 'nombre_menu', 'categoria_hallazgo_pc', 'reloj_horas', 'departamento_accidentes']));
 
         return redirect()->to(route('configuracion.index').'#novedades')->with('ok', 'Ajustes de '.app(AjustesNovedades::class)->bitacoraConArticulo($empresaId).' guardados.');
+    }
+
+    /** C-31 (D-20): procedimiento de cada categoría y tipo de equipo («¿Qué hacer?»). */
+    public function procedimientosVinculados(Request $request): RedirectResponse
+    {
+        Gate::authorize('configuracion.editar');
+        abort_unless($this->editaEmpresa($request->user()), 403, 'Estos ajustes son de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa.');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        $this->tenant->conEmpresa($empresaId, fn () => app(ProcedimientosVinculados::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only('vinculos')));
+
+        return redirect()->to(route('configuracion.index').'#novedades')->with('ok', 'Procedimientos de «¿Qué hacer?» guardados. Ya aparecen en los tickets y en los recorridos.');
     }
 
     /**
