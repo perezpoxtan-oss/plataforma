@@ -92,7 +92,7 @@ Las tres primeras se ven también en «Avanzado» de Reloj y suplente (se pueden
 
 `App\Services\Accesos\NocheSinSupervisor`:
 
-- `POST /accesos/{id}/pedir-supervisor` (`accesos.crear`, botón «Canalizar al supervisor»; la ruta conserva su nombre): marca `supervisor_pedido_en` y avisa `excepcion_pedida` al supervisor de la sede. Lo toma `PedidoAlSupervisor`.
+- `POST /accesos/{id}/pedir-supervisor` (`accesos.crear`, botón «Canalizar al supervisor»; la ruta conserva su nombre): marca `supervisor_pedido_en` y avisa `excepcion_pedida` al supervisor de la sede. Lo toma `PedidoAlSupervisor`. Cuando el supervisor autoriza (o autoriza por excepción), `NocheSinSupervisor::avisarResultado()` le manda `autorizacion_respuesta` a quien lo canalizó (regla 1).
 - `PATCH /accesos/{id}/excepcion-agente` (`accesos.crear`, multipart): solo si `preferencias.caseta.agente_excepcion = si` y ya pasaron los minutos de escalamiento de la caseta (o el motor ya lo escaló). Motivo obligatorio y foto (o la del registro). Deja el acceso EN SITIO con `autorizacion = excepcion`, `excepcion_por_revisar = 1`, auditoría `accesos.autorizado_excepcion_agente` y aviso `excepcion_agente` (no silenciable) al supervisor y al jefe.
 - `PATCH /accesos/{id}/revisar-excepcion` (`accesos.aprobar`): «Atender».
 - Permanencia (`preferencias.caseta.permanencia_*`, `daypass_cierre_hora`) y salida temporal (`salida_temporal_horas`): reloj en la tarjeta, aviso al supervisor, al doble al jefe, filtro `?rebasaron=1` («Rebasaron su tiempo») y `?excepciones=1`. Cada una tiene su renglón en Mis pendientes («Rebasaron su tiempo en sitio» y «Salidas temporales sin regresar», revisión de la Etapa 4: un recordatorio que se puede silenciar siempre tiene renglón).

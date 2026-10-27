@@ -177,7 +177,7 @@ Si eres agente, no puedes **Confirmar Autorización**. Cuando alguien espera y n
 
 ![Canalizar al supervisor](img/accesos/canalizar-supervisor.png)
 
-**Qué debes ver:** el mensaje «Le avisamos al supervisor…» y, en la tarjeta, «Se canalizó al supervisor a las …». Si no responde en los minutos de la caseta, pasa al **jefe de seguridad** y a ti te llega «Nadie ha respondido: … Ya avisamos a …».
+**Qué debes ver:** el mensaje «Le avisamos al supervisor…» y, en la tarjeta, «Se canalizó al supervisor a las …». Cuando el supervisor lo autoriza, a tu campana llega «Autorizado: …» (o «Autorizado por excepción: …») y la tarjeta pasa a **Gente en Sitio**. Si no responde en los minutos de la caseta, pasa al **jefe de seguridad** y a ti te llega «Nadie ha respondido: … Ya avisamos a …».
 
 **Si tu empresa lo permite** (**Configuración → Caseta y accesos → Noche sin supervisor**) y nadie respondió a tiempo, en la tarjeta aparece **Aprobar por excepción**:
 

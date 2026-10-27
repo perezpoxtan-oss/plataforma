@@ -191,6 +191,38 @@ class RevisionEtapaCuatroTest extends TestCase
         $this->assertSame(1, $this->pendientes($this->jefe)['esperan_supervisor']['total']);
     }
 
+    // ============================================== Regla 1: quien canalizó se entera del resultado
+
+    public function test_el_agente_que_canalizo_se_entera_cuando_el_supervisor_responde(): void
+    {
+        $crear = fn (string $nombre, string $tipo = 'visitante') => $this->enEmpresa(function () use ($nombre, $tipo) {
+            $a = new Acceso(['sede_id' => $this->centro->id, 'tipo' => $tipo, 'nombre' => $nombre, 'modo_arribo' => 'a_pie', 'identificacion' => 'ine']);
+            $a->forceFill(['estado' => 'pendiente', 'movimiento' => 'entrada', 'entrada_at' => now(), 'creado_por' => $this->agente->id])->save();
+
+            return $a;
+        });
+        // Confirmar autorización
+        $a = $crear('ANA GÓMEZ');
+        $this->actingAs($this->agente)->post(route('accesos.pedir-supervisor', $a->id))->assertSessionHas('ok');
+        $this->actingAs($this->supervisor)->patch(route('accesos.autorizar', $a->id))->assertSessionHas('ok');
+        $aviso = Notificacion::query()->withoutGlobalScopes()->where('user_id', $this->agente->id)->where('tipo', 'autorizacion_respuesta')->latest('id')->first();
+        $this->assertNotNull($aviso, 'La caseta que canalizó recibe el resultado');
+        $this->assertStringContainsString('ANA GÓMEZ', $aviso->titulo);
+        $this->assertStringContainsString($this->supervisor->name, $aviso->texto);
+
+        // Por excepción (el supervisor)
+        $b = $crear('LUIS PECH', 'proveedor');
+        $this->enEmpresa(fn () => Acceso::whereKey($b->id)->update(['autorizacion' => Acceso::SIN_RESPONSABLE]));
+        $this->actingAs($this->agente)->post(route('accesos.pedir-supervisor', $b->id))->assertSessionHas('ok');
+        $this->actingAs($this->supervisor)->patch(route('accesos.excepcion', $b->id), ['motivo_excepcion' => 'urgencia', 'detalle_excepcion' => 'Fuga de gas'])->assertSessionHas('ok');
+        $this->assertSame(2, $this->avisos($this->agente, 'autorizacion_respuesta'));
+
+        // Sin canalizar, nada cambia (el agente ve su tarjeta moverse, como siempre)
+        $c = $crear('SIN CANALIZAR');
+        $this->actingAs($this->supervisor)->patch(route('accesos.autorizar', $c->id))->assertSessionHas('ok');
+        $this->assertSame(2, $this->avisos($this->agente, 'autorizacion_respuesta'));
+    }
+
     // ============================================== Campana: motor diferido, sin duplicados ni avalancha
 
     public function test_la_campana_corre_el_motor_despues_de_responder_una_vez_por_minuto_y_sin_duplicar(): void
