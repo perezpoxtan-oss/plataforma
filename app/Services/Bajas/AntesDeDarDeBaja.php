@@ -149,7 +149,8 @@ class AntesDeDarDeBaja
         }
         if ($revision['reemplazo'] !== []) {
             $reemplazo = $request->input('reemplazo_id');
-            $valido = is_numeric($reemplazo) && User::where('activo', true)->whereKey((int) $reemplazo)
+            // Revisión Etapa 2 (R2-01): users no tiene el scope de tenant; el reemplazo es de la misma empresa
+            $valido = is_numeric($reemplazo) && User::where('empresa_id', $registro->getAttribute('empresa_id'))->where('activo', true)->whereKey((int) $reemplazo)
                 ->where(fn ($q) => $q->whereNull('colaborador_id')->orWhere('colaborador_id', '!=', $registro->getKey()))->exists();
             if (! $valido) {
                 throw ValidationException::withMessages(['reemplazo_id' => 'Es el único responsable de '.collect($revision['reemplazo'])->pluck('nombre')->join(', ', ' y ')

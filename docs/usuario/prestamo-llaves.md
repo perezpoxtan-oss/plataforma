@@ -66,7 +66,7 @@ En el [Catálogo de llaves](llaves.md) una llave puede tener **fecha de caducida
 
 ![Llave que no regresó](img/prestamo-llaves/no-regreso.png)
 
-**Qué debes ver:** la ficha queda con la etiqueta naranja **NO REGRESÓ** y la llave ya no se puede prestar. Si después aparece, recíbela como siempre (escaneándola o con **Recibir Llave a Caseta**): vuelve a estar disponible y el aviso se quita.
+**Qué debes ver:** la ficha queda con la etiqueta naranja **NO REGRESÓ** y la llave ya no se puede prestar. Si después aparece, recíbela como siempre (escaneándola o con **Recibir Llave a Caseta**): vuelve a estar disponible y el aviso se quita. Si escaneas su QR o su etiqueta NFC desde cualquier pantalla, la tarjeta dice **No regresó** y te ofrece **Recibir** (nunca «Prestar»).
 
 ## Cómo recibir una llave
 

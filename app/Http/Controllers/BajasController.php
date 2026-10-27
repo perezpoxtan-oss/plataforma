@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -40,7 +41,7 @@ class BajasController extends Controller
         [$modelo, $empresaId] = $this->resolver($request, $tipo, $id);
         $definicion = AntesDeDarDeBaja::TIPOS[$tipo];
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($tipo, $modelo, $definicion) {
+        return $this->tenant->conEmpresa($empresaId, function () use ($tipo, $modelo, $definicion, $empresaId) {
             $revision = $this->bajas->revisar($tipo, $modelo);
             $registro = RegistroBorrado::de($tipo);
 
@@ -54,7 +55,8 @@ class BajasController extends Controller
                 'urlBaja' => $definicion[2] !== null ? route($definicion[2], $modelo->getKey()) : route('bajas.no-regreso', ['tipo' => $tipo, 'id' => $modelo->getKey()]),
                 'volver' => $this->volver($tipo, $modelo),
                 'reemplazos' => $revision['reemplazo'] !== []
-                    ? User::where('activo', true)->where('es_superadmin', false)
+                    // Revisión Etapa 2 (R2-01): users no tiene el scope de tenant; solo cuentas de esta empresa
+                    ? User::where('empresa_id', $empresaId)->where('activo', true)->where('es_superadmin', false)
                         ->where(fn ($q) => $q->whereNull('colaborador_id')->orWhere('colaborador_id', '!=', $modelo->getKey()))
                         ->orderBy('name')->get(['id', 'name'])
                     : collect(),
@@ -73,6 +75,12 @@ class BajasController extends Controller
         [$modelo, $empresaId] = $this->resolver($request, $tipo, $id);
         $this->tenant->conEmpresa($empresaId, function () use ($tipo, $modelo, $request) {
             $revision = $this->bajas->revisar($tipo, $modelo);
+            // Revisión Etapa 2 (R2-04): solo lo que alguien tiene puede quedar «No regresó»
+            if ($revision['items'] === [] || ! collect($revision['items'])->contains(fn ($i) => in_array($i['clave'], ['prestamo', 'custodia'], true))) {
+                throw ValidationException::withMessages(['baja' => $tipo === 'llaves'
+                    ? 'Esta llave no está prestada: dala de baja desde su ficha.'
+                    : 'Este equipo no está a cargo de nadie: dalo de baja desde su ficha.']);
+            }
             $this->bajas->aplicar($tipo, $modelo, $revision, [], $request->user());
         });
         $ruta = $tipo === 'llaves' ? 'llaves.index' : 'equipos.index';

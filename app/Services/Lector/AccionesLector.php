@@ -75,6 +75,22 @@ class AccionesLector
                     'nota' => $prestamo->tipo_garantia === 'ninguna' ? null : 'Después, devuelve su garantía: '.$prestamo->textoGarantia().'.',
                 ]]];
         }
+        // Revisión Etapa 2 (R2-02): una llave «No regresó» no está en caseta; si apareció, se recibe
+        if ($llave->activo && $llave->noRegreso()) {
+            $ultimo = PrestamoLlave::where('llave_id', $llave->id)->where('estado', PrestamoLlave::NO_REGRESO)->where('anulado', false)
+                ->latest('prestado_en')->first();
+            if ($ultimo === null || ! $this->enAlcance($actor, 'prestamo_llaves.editar', $ultimo)) {
+                return null;
+            }
+
+            return $base + ['icono' => 'bi-exclamation-octagon', 'tipo' => 'Llave que no regresó',
+                'estado' => 'No regresó: la tenía '.$ultimo->nombreReceptor().' desde el '.app(HoraLocal::class)->formatear($ultimo->prestado_en, 'd/m H:i').'. Si apareció, recíbela.',
+                'acciones' => [[
+                    'etiqueta' => 'Recibir', 'icono' => 'bi-box-arrow-in-down', 'metodo' => 'PATCH', 'principal' => true,
+                    'url' => route('prestamo_llaves.recibir', $ultimo->id),
+                    'nota' => $ultimo->tipo_garantia === 'ninguna' ? null : 'Después, devuelve su garantía: '.$ultimo->textoGarantia().'.',
+                ]]];
+        }
         if (! $llave->activo || ! $actor->can('prestamo_llaves.crear')
             || ! $this->prestamos->sedesParaPrestar($actor)->contains('id', (int) $llave->sede_id)) {
             return null;
