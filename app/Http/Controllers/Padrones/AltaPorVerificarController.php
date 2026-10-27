@@ -3,20 +3,25 @@
 namespace App\Http\Controllers\Padrones;
 
 use App\Http\Controllers\Controller;
+use App\Models\Colaborador;
 use App\Models\Persona;
 use App\Models\User;
+use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Padrones\AdministradorProveedores;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\Permisos\Autorizador;
 use App\Services\Personas\AdministradorPersonas;
+use App\Support\DependenciasModulos;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\View\View;
 
 /**
  * Altas pendientes de verificar (ADR-0006): sugerencias "¿Es alguno de
@@ -34,6 +39,70 @@ class AltaPorVerificarController extends Controller
         private readonly Tenant $tenant,
         private readonly AltasPorVerificar $altas,
     ) {}
+
+    /** C-27: pestañas de la bandeja única, en este orden. */
+    public const PESTANAS = ['personas' => 'Personas', 'vehiculos' => 'Vehículos', 'proveedores' => 'Empresas', 'colaboradores' => 'Colaboradores'];
+
+    /**
+     * C-27 · «Altas por verificar»: una sola bandeja (Padrones) con pestañas
+     * Personas, Vehículos, Empresas y Colaboradores, y los mismos tres caminos
+     * en todas: Es correcto (Aprobar), Es el mismo (Aprobar · es el mismo) y
+     * Rechazar con motivo y aviso a quien lo registró. Cada pestaña aparece a
+     * quien puede verificar ese padrón (los colaboradores: «Aprobar» de
+     * Colaboradores, que sin RR. HH. tiene el administrador; Etapa 2, A-3).
+     */
+    public function index(Request $request): View
+    {
+        $actor = $request->user();
+        $empresaId = $this->empresa->id($actor);
+        $visibles = array_filter(self::PESTANAS, fn ($n, $clave) => $clave === 'colaboradores'
+            ? $actor->can('colaboradores.aprobar') : $this->altas->puedeVerificar($actor, $clave), ARRAY_FILTER_USE_BOTH);
+        abort_if($visibles === [], 403);
+        if ($empresaId === null) {
+            return view('padrones.altas-por-verificar.index', ['sinEmpresa' => true]);
+        }
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $visibles) {
+            $colaboradores = app(AdministradorColaboradores::class);
+            $conteos = [];
+            foreach (array_keys($visibles) as $clave) {
+                $conteos[$clave] = $clave === 'colaboradores'
+                    ? $this->colaboradoresPorVerificar($actor)->count()
+                    : $this->altas->limitarVerificacion(AltasPorVerificar::PADRONES[$clave]['modelo']::query()->pendientesDeVerificar(), $actor, $clave)->count();
+            }
+            $pedida = Entrada::texto($request->query('pestana'));
+            $pestana = isset($visibles[$pedida]) ? $pedida
+                : (array_key_first(array_filter($conteos, fn ($n) => $n > 0)) ?? array_key_first($visibles));
+
+            $datos = ['sinEmpresa' => false, 'pestanas' => $visibles, 'conteos' => $conteos, 'pestana' => $pestana,
+                'quienVerifica' => DependenciasModulos::quienVerificaAltas()];
+            if ($pestana === 'colaboradores') {
+                $lista = $this->colaboradoresPorVerificar($actor)->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre'])
+                    ->orderBy('colaboradores.created_at')->limit(200)->get();
+
+                return view('padrones.altas-por-verificar.index', $datos + [
+                    'colaboradores' => $lista,
+                    'creadores' => User::whereIn('id', $lista->pluck('creado_por')->filter()->unique()->all())->pluck('name', 'id')->all(),
+                    'validacion' => $colaboradores->catalogos($actor, 'colaboradores.aprobar'),
+                    'validados' => $colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.aprobar')->with('sede:id,nombre')
+                        ->where('colaboradores.provisional', false)->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id')
+                        ->get()->sortBy(fn ($c) => $c->nombreCompleto())->values(),
+                ]);
+            }
+            $modelo = AltasPorVerificar::PADRONES[$pestana]['modelo'];
+            $registros = $this->altas->limitarVerificacion($modelo::query()->pendientesDeVerificar(), $actor, $pestana)
+                ->orderBy((new $modelo)->getTable().'.created_at')->limit(200)->get();
+
+            return view('padrones.altas-por-verificar.index', $datos + ['registros' => $registros, 'altas' => $this->altas->paraLista($pestana, $registros, $actor)]);
+        });
+    }
+
+    /** @return Builder<Colaborador> */
+    private function colaboradoresPorVerificar(User $actor)
+    {
+        return app(AdministradorColaboradores::class)->limitar(Colaborador::query(), $actor, 'colaboradores.aprobar')
+            ->where('colaboradores.provisional', true)->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id');
+    }
 
     /**
      * GET ?padron=vehiculos|proveedores|personas y lo capturado (placas,

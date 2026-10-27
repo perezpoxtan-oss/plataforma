@@ -6,7 +6,6 @@ use App\Mail\AvisoRecepcion;
 use App\Models\Acceso;
 use App\Models\Auditoria;
 use App\Models\Autorizacion;
-use App\Models\Delegacion;
 use App\Models\Empresa;
 use App\Models\User;
 use App\Services\Avisos\AvisosCorreo;
@@ -91,8 +90,10 @@ class Escalamiento
                 $nombres = ($avisar[$aut->departamento_id.'-'.$aut->sede_id] ?? collect())->pluck('name')->join(', ', ' y ');
                 $depto = $aut->departamento?->nombre ?? $a->departamento?->nombre;
                 $texto = 'Espera a: '.($nombres !== '' ? $nombres : 'el responsable').($depto ? ' ('.$depto.')' : '');
-            } elseif (in_array($a->tipo, Acceso::CON_AUTORIZACION, true) && $a->autorizacion === Acceso::SIN_RESPONSABLE) {
-                $texto = 'Sin responsable en '.($a->departamento?->nombre ?? 'el departamento').': se autoriza por excepción';
+            } elseif ($a->autorizacion === Acceso::SIN_RESPONSABLE) {
+                // C-08 / DD-11: nadie del departamento puede responder en esta sede
+                $texto = 'Sin quien autorice en '.($a->departamento?->nombre ?? 'el departamento').': '
+                    .(in_array($a->tipo, Acceso::CON_AUTORIZACION, true) ? 'el supervisor lo autoriza por excepción' : 'espera al supervisor o al jefe de seguridad');
             } elseif (in_array($a->tipo, Acceso::CON_AUTORIZACION, true)) {
                 $nombres = $a->host?->nombreCompleto() ?? '';
                 $texto = 'Confirma con el host: '.($nombres !== '' ? $nombres : '—');
@@ -323,9 +324,14 @@ class Escalamiento
         }
         $suplentes = $this->autorizaciones->responsablesDe((int) $a->departamento_id, (int) $a->sede_id)
             ->filter(fn ($r) => (bool) $r->es_suplente)->pluck('usuario');
-        $delegaciones = Delegacion::activas()->with('delegado:id,name,email,activo')
-            ->whereIn('user_id', $suplentes->pluck('id'))->orderByDesc('id')->get()->unique('user_id')->keyBy('user_id');
-        $usuarios = $suplentes->map(fn (User $u) => ($d = $delegaciones[$u->id] ?? null) && $d->delegado?->activo ? $d->delegado : $u);
+        // C-12 (misma regla que el primer aviso): el suplente que delegó pasa al último de su cadena que pueda responder en la sede
+        $cadena = $this->autorizaciones->cadena();
+        $cobertura = $this->autorizaciones->cobertura();
+        $usuarios = $suplentes->map(function (User $u) use ($cadena, $cobertura, $a) {
+            $destino = $cadena->destino((int) $u->id, fn (User $d) => $cobertura->puedeResponderEn($d, (int) $a->sede_id));
+
+            return $destino === (int) $u->id ? $u : $cadena->usuario($destino);
+        });
         // Completos (los responsables vienen con pocas columnas) para revisar sus permisos
         $ids = $usuarios->concat($jefes)->pluck('id')->map(fn ($id) => (int) $id)->unique()->values();
 

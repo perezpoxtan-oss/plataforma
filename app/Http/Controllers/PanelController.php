@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Empresa;
 use App\Models\User;
 use App\Services\Arranque\AsistenteArranque;
+use App\Services\Autorizaciones\Cobertura;
 use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\Novedades\AjustesNovedades;
 use App\Services\PasesSalida\AdministradorPasesSalida;
+use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\SuperAdministradores;
+use App\Services\Recepcion\AjustesRecepcion;
 use App\Support\Menu\MisPendientes;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -21,12 +25,14 @@ class PanelController extends Controller
      * (mismos nombres, mismo orden): clave => [frase en singular, en plural, explicación, botón].
      */
     public const TEXTOS = [
-        'colaboradores_por_verificar' => ['1 colaborador por verificar', '%d colaboradores por verificar', 'La caseta registró colaboradores que aún no estaban en el directorio. Verifícalos o únelos con su registro correcto.', 'Revisar ahora'],
         'autorizaciones' => ['1 solicitud espera tu autorización', '%d solicitudes esperan tu autorización', 'Una visita de tu departamento espera tu respuesta. Mientras no contestes, la persona sigue esperando.', 'Responder'],
+        // Etapa 3 (C-08 / DD-11)
+        'esperan_supervisor' => ['1 visita espera tu autorización en caseta', '%d visitas esperan tu autorización en caseta', 'Su departamento no tiene quien autorice en la sede. Confírmalo con quien la recibe y autorízala en la bitácora.', 'Ir a la bitácora'],
+        'cobertura' => ['Sin quien autorice en 1 departamento', 'Sin quien autorice en %d departamentos', 'Su responsable ya no puede responder (cuenta dada de baja, sin permiso o sin acceso a la sede). Mientras tanto, sus visitas esperan al supervisor.', 'Nombrar responsable'],
         'pases_salida' => ['1 pase de salida espera tu aprobación', '%d pases de salida esperan tu aprobación', 'Revisa los artículos y firma o rechaza con tus comentarios. El siguiente paso no avanza hasta que firmes.', 'Ir a mi bandeja'],
         'procedimientos_aprobar' => ['1 procedimiento espera tu aprobación', '%d procedimientos esperan tu aprobación', 'Revisa los pasos y apruébalo con tu firma, o recházalo con tus comentarios para que lo corrijan.', 'Revisar'],
         'procedimientos' => ['Tienes 1 procedimiento por leer y firmar', 'Tienes %d procedimientos por leer y firmar', 'Léelos con calma y firma «Leí y entendí». Así sabrás qué hacer en cada situación.', 'Leer ahora'],
-        'altas' => ['1 alta por verificar', '%d altas por verificar', 'La caseta registró desde Operación algo que no estaba en el padrón. Acéptalo, recházalo o únelo con el registro correcto.', 'Revisar ahora'],
+        'altas' => ['1 alta por verificar', '%d altas por verificar', 'La caseta registró personas, vehículos, empresas o colaboradores que no estaban en su padrón. Revisa si es correcto, si es el mismo que otro o recházalo.', 'Revisar ahora'],
         'candidatos' => ['1 asunto de candidatos te espera', '%d asuntos de candidatos te esperan', 'Personas que esperan a Recursos Humanos y candidatos en cada etapa. Toca la etapa para ir directo.', 'Ir a candidatos'],
         'entrevistas' => ['1 entrevista espera tu evaluación', '%d entrevistas esperan tu evaluación', 'Recursos Humanos te canalizó candidatos: entrevístalos, califícalos y elige.', 'Entrevistar'],
         'cuentas' => ['1 cuenta por revisar', '%d cuentas por revisar', 'Cuentas bloqueadas, desactivadas por una baja, que piden pases sin colaborador vinculado o que te piden ayuda para entrar.', 'Revisar cuentas'],
@@ -64,6 +70,9 @@ class PanelController extends Controller
                 }
                 // El texto nombra el módulo como lo llama la empresa («Bitácora de incidentes»)
                 $texto = str_replace('la Bitácora de novedades', app(AjustesNovedades::class)->bitacoraConArticulo($empresaId), $texto);
+                if ($item['clave'] === 'cobertura' && ! empty($item['frase'])) {
+                    $frase = 'Sin quien autorice en '.$item['frase']; // «Sin quien autorice en Recepción (Playa)…»
+                }
                 $pendientes[] = $item + ['texto' => trim(($frase !== '' ? $frase.'. ' : '').$texto), 'boton' => $boton];
             }
         }
@@ -76,7 +85,39 @@ class PanelController extends Controller
         // «Configura tu empresa» (docs/tecnico/configura-tu-empresa.md): solo empresa nueva o casi vacía
         $asistente = app(AsistenteArranque::class)->tarjeta($actor, $empresaId);
 
-        return view('panel.index', ['pendientes' => $pendientes, 'asistente' => $asistente]);
+        return view('panel.index', ['pendientes' => $pendientes, 'asistente' => $asistente,
+            'sinQuienAutorice' => $empresaId === null ? null : $this->sinQuienAutorice($actor, $empresaId, $tenant)]);
+    }
+
+    /**
+     * C-08 (A-03): aviso «Sin quien autorice en…» para quien nombra
+     * responsables: departamentos que nunca tuvieron (o no tienen) quien
+     * autorice en alguna sede. Lo que se PERDIÓ por una baja o un cambio de
+     * rol ya va en Mis pendientes («Sin quien autorice»); aquí va el resto,
+     * solo si la caseta espera autorizaciones de departamento.
+     *
+     * @return array{frase: string, total: int, url: string, espera: bool}|null
+     */
+    private function sinQuienAutorice(User $actor, int $empresaId, Tenant $tenant): ?array
+    {
+        if (! $actor->can('autorizaciones.configurar') || ! app(Autorizador::class)->alcanceDeEmpresa($actor, 'autorizaciones.configurar')) {
+            return null;
+        }
+
+        return $tenant->conEmpresa($empresaId, function () use ($empresaId) {
+            $empresa = Empresa::find($empresaId);
+            $ajustes = app(AjustesRecepcion::class);
+            if ($empresa === null || ! collect(array_keys(AjustesRecepcion::ESPERAN_DEPARTAMENTO))->contains(fn ($t) => $ajustes->esperaAlDepartamento($empresa, $t))) {
+                return null;
+            }
+            $faltan = array_values(array_filter(app(Cobertura::class)->sinCobertura(), fn ($f) => ! $f['perdida']));
+            if ($faltan === []) {
+                return null;
+            }
+
+            return ['frase' => Cobertura::frase($faltan), 'total' => collect($faltan)->pluck('departamento_id')->unique()->count(),
+                'url' => route('autorizaciones.responsables'), 'espera' => $ajustes->sinCoberturaEsperaSupervisor($empresa)];
+        });
     }
 
     /** @return list<array<string, mixed>> */

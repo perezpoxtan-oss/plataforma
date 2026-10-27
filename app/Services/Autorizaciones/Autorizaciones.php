@@ -6,7 +6,6 @@ use App\Mail\AvisoRecepcion;
 use App\Models\Acceso;
 use App\Models\Autorizacion;
 use App\Models\Candidato;
-use App\Models\Delegacion;
 use App\Models\DepartamentoResponsable;
 use App\Models\User;
 use App\Services\Avisos\AvisosCorreo;
@@ -59,17 +58,14 @@ class Autorizaciones
     // ------------------------------------------------------------ Responsables
 
     /**
-     * Responsables (titular y suplentes) de un departamento en una sede.
+     * Responsables (titular y suplentes) que CUBREN el departamento en una
+     * sede (C-08): cuenta activa, permiso «Responder» y alcance en esa sede.
      *
      * @return Collection<int, DepartamentoResponsable>
      */
     public function responsablesDe(int $departamentoId, ?int $sedeId): Collection
     {
-        return DepartamentoResponsable::with('usuario:id,name,email,activo,empresa_id')
-            ->where('departamento_id', $departamentoId)
-            ->where(fn ($q) => $q->whereNull('sede_id')->when($sedeId !== null, fn ($s) => $s->orWhere('sede_id', $sedeId)))
-            ->orderBy('es_suplente')->orderBy('id')->get()
-            ->filter(fn ($r) => $r->usuario?->activo)->values();
+        return $this->cobertura()->responsables($departamentoId, $sedeId);
     }
 
     public function tieneResponsables(int $departamentoId, ?int $sedeId): bool
@@ -78,45 +74,51 @@ class Autorizaciones
     }
 
     /**
-     * Sedes en las que cada departamento tiene responsable activo (titular o
-     * suplente): departamento_id => null (en todas) o lista de sedes. Una sola
-     * consulta, para que el formulario de la caseta anticipe si la visita
-     * esperará autorización.
+     * Sedes en las que cada departamento tiene quien autorice (C-08): para
+     * que el formulario de la caseta anticipe si la visita esperará al
+     * responsable. departamento_id => lista de sedes (null = todas).
      *
      * @return array<int, list<int>|null>
      */
     public function departamentosConResponsable(): array
     {
-        $resultado = [];
-        $filas = DepartamentoResponsable::with('usuario:id,activo')->get(['departamento_id', 'sede_id', 'user_id'])
-            ->filter(fn ($r) => $r->usuario?->activo);
-        foreach ($filas as $r) {
-            $d = (int) $r->departamento_id;
-            if (array_key_exists($d, $resultado) && $resultado[$d] === null) {
-                continue;
-            }
-            if ($r->sede_id === null) {
-                $resultado[$d] = null;
-            } else {
-                $resultado[$d] = array_values(array_unique([...($resultado[$d] ?? []), (int) $r->sede_id]));
-            }
-        }
-
-        return $resultado;
+        return $this->cobertura()->sedesCubiertas();
     }
 
+    /** La regla única de cobertura (se recuerda durante la petición). */
+    public function cobertura(): Cobertura
+    {
+        return $this->cobertura ??= app(Cobertura::class);
+    }
+
+    private ?Cobertura $cobertura = null;
+
+    /** C-12: delegaciones en cadena (una lectura por instancia). */
+    public function cadena(): CadenaDelegaciones
+    {
+        return $this->cadena ??= new CadenaDelegaciones;
+    }
+
+    private ?CadenaDelegaciones $cadena = null;
+
     /**
-     * A quién avisar: cada responsable, o su delegado si tiene una delegación activa.
+     * A quién avisar: cada responsable, o su delegado si tiene una delegación
+     * activa Y el delegado puede responder en esa sede (C-12: si no puede, el
+     * aviso se queda con el responsable).
      *
      * @return Collection<int, User>
      */
     public function aQuienAvisar(int $departamentoId, int $sedeId): Collection
     {
         $usuarios = $this->responsablesDe($departamentoId, $sedeId)->pluck('usuario');
-        $delegaciones = Delegacion::activas()->with('delegado:id,name,email,activo')->whereIn('user_id', $usuarios->pluck('id'))->orderByDesc('id')->get()->unique('user_id')->keyBy('user_id');
+        $cadena = $this->cadena();
 
-        return $usuarios->map(fn (User $u) => ($d = $delegaciones[$u->id] ?? null) && $d->delegado?->activo ? $d->delegado : $u)
-            ->unique('id')->values();
+        // En cadena (A→B→C): al último que pueda responder en esa sede; si nadie, al responsable
+        return $usuarios->map(function (User $u) use ($cadena, $sedeId) {
+            $destino = $cadena->destino((int) $u->id, fn (User $d) => $this->cobertura()->puedeResponderEn($d, $sedeId));
+
+            return $destino === (int) $u->id ? $u : $cadena->usuario($destino);
+        })->unique('id')->values();
     }
 
     /**
@@ -136,7 +138,9 @@ class Autorizaciones
             return true;
         }
 
-        return Delegacion::activas()->where('delegado_id', $usuario->id)->whereIn('user_id', $responsables)->exists();
+        // Delegado activo de un responsable, si él mismo puede responder en esa sede (A-04: nada de avisos que dan 404)
+        return $this->cobertura()->puedeResponderEn($usuario, (int) $a->sede_id)
+            && $responsables->map(fn ($id) => (int) $id)->intersect($this->cadena()->titularesDe((int) $usuario->id))->isNotEmpty();
     }
 
     /**
@@ -258,12 +262,25 @@ class Autorizaciones
      */
     public function departamentosQueAtiende(User $usuario): array
     {
-        $delegan = Delegacion::activas()->where('delegado_id', $usuario->id)->pluck('user_id');
+        $delegan = collect($this->cadena()->titularesDe((int) $usuario->id)); // directa o en cadena
+        // C-08 / A-04: solo las sedes a las que el usuario puede entrar para responder
+        $alcance = $this->cobertura()->puedeResponderEn($usuario, null) ? $this->cobertura()->sedesDe($usuario) : [];
+        $pares = [];
+        foreach (DepartamentoResponsable::with('usuario:id,activo')->whereIn('user_id', $delegan->push($usuario->id)->unique())->get(['departamento_id', 'sede_id', 'user_id']) as $r) {
+            if (! $r->usuario?->activo) {
+                continue;
+            }
+            $departamento = (int) $r->departamento_id;
+            if ($r->sede_id === null) {
+                foreach ($alcance === null ? [null] : $alcance as $sede) {
+                    $pares[] = [$departamento, $sede === null ? null : (int) $sede];
+                }
+            } elseif ($alcance === null || in_array((int) $r->sede_id, array_map('intval', $alcance), true)) {
+                $pares[] = [$departamento, (int) $r->sede_id];
+            }
+        }
 
-        return DepartamentoResponsable::whereIn('user_id', $delegan->push($usuario->id)->unique())
-            ->get(['departamento_id', 'sede_id'])
-            ->map(fn ($r) => [(int) $r->departamento_id, $r->sede_id === null ? null : (int) $r->sede_id])
-            ->unique(fn ($p) => $p[0].'-'.($p[1] ?? 'x'))->values()->all();
+        return collect($pares)->unique(fn ($p) => $p[0].'-'.($p[1] ?? 'x'))->values()->all();
     }
 
     /**
@@ -323,6 +340,50 @@ class Autorizaciones
         $this->avisarResponsables($a, $avisar, 'autorizacion_visita', 'Espera tu autorización: '.$acceso->nombre, $detalle, $actor);
 
         return $a;
+    }
+
+    /**
+     * C-08 / DD-11: la visita (o el proveedor o contratista) va a un
+     * departamento sin quien autorice en esa sede. El acceso ya nació
+     * pendiente («sin responsable»); se avisa al supervisor y al jefe de
+     * seguridad de la sede (campana y Mis pendientes), que lo confirman en la
+     * bitácora. La tarjeta muestra el reloj y el color de la espera.
+     *
+     * @return list<int> avisados
+     */
+    public function avisarSinCobertura(User $actor, Acceso $acceso): array
+    {
+        $avisar = $this->supervisoresDeSede((int) $acceso->empresa_id, (int) $acceso->sede_id)->reject(fn (User $u) => $u->id === $actor->id);
+        if ($avisar->isEmpty()) {
+            return [];
+        }
+        $acceso->loadMissing('departamento:id,nombre', 'sede:id,nombre');
+        $depto = $acceso->departamento?->nombre ?? 'su departamento';
+
+        return $this->notificaciones->avisar((int) $acceso->empresa_id, $avisar->pluck('id'), 'acceso_sin_cobertura', [
+            'titulo' => 'Espera tu autorización: '.$acceso->nombre,
+            'texto' => $acceso->etiquetaTipo().' para '.$depto.', que no tiene quien autorice en '.($acceso->sede?->nombre ?? 'la sede')
+                .'. Confírmalo con quien lo recibe y autorízalo en la bitácora. Registró: '.$actor->name.'.',
+            'url' => route('accesos.index', ['pestana' => 'pendientes']),
+            'referencia_tipo' => 'acceso', 'referencia_id' => $acceso->id,
+            'acciones' => [['etiqueta' => 'Ver en la bitácora', 'abrir' => true]],
+        ]);
+    }
+
+    /**
+     * Supervisor y jefe de seguridad de la sede: quienes pueden autorizar
+     * accesos en ella con el rol «Supervisor» o «Jefe de seguridad»; si la
+     * empresa no usa esos roles, todos los que pueden autorizar accesos ahí.
+     *
+     * @return Collection<int, User>
+     */
+    public function supervisoresDeSede(int $empresaId, int $sedeId): Collection
+    {
+        $aprueban = $this->destinatarios->conPermiso($empresaId, 'accesos.aprobar', $sedeId);
+        $suyos = $aprueban->filter(fn (User $u) => $u->roles()->where('roles.activo', true)
+            ->where(fn ($q) => $q->whereRaw('LOWER(roles.nombre) LIKE ?', ['%supervisor%'])->orWhereRaw('LOWER(roles.nombre) LIKE ?', ['%jefe de seguridad%']))->exists())->values();
+
+        return $suyos->isNotEmpty() ? $suyos : $aprueban->values();
     }
 
     /**

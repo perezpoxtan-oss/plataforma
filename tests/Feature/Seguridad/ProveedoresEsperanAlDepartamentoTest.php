@@ -184,12 +184,12 @@ class ProveedoresEsperanAlDepartamentoTest extends TestCase
 
     public function test_sin_responsable_la_caseta_autoriza_por_excepcion_con_motivo(): void
     {
-        $this->registrar()->assertSessionHas('ok', 'Registrado: LUIS CHI queda pendiente. Mantenimiento no tiene responsable en esta sede: confirma con el host; tu supervisor lo autoriza por excepción.');
+        $this->registrar()->assertSessionHas('ok', 'Registrado: LUIS CHI queda pendiente. Mantenimiento no tiene quien autorice en esta sede: confirma con el host; tu supervisor lo autoriza por excepción (ya se le avisó).');
         $acceso = $this->ultimo();
         $this->assertSame(['pendiente', Acceso::SIN_RESPONSABLE], [$acceso->estado, $acceso->autorizacion]);
         $this->assertNull($this->solicitudDe($acceso));
         $this->actingAs($this->supervisor)->get('/accesos?pestana=pendientes')
-            ->assertSee('Sin responsable en Mantenimiento: se autoriza por excepción')->assertSee('El departamento no tiene responsable en esta sede');
+            ->assertSee('Sin quien autorice en Mantenimiento: el supervisor lo autoriza por excepción')->assertSee('El departamento no tiene responsable en esta sede');
         $this->actingAs($this->agente)->get('/accesos?pestana=pendientes')
             ->assertSee('si no puede esperar, tu supervisor lo autoriza por excepción')->assertDontSee('Autorizar por excepción</summary>', false);
 

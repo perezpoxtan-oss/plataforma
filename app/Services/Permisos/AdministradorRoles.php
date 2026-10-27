@@ -9,6 +9,7 @@ use App\Models\RolPermiso;
 use App\Models\Sede;
 use App\Models\User;
 use App\Models\UsuarioRol;
+use App\Services\Autorizaciones\Cobertura;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -82,6 +83,7 @@ class AdministradorRoles
 
         $this->autorizador->olvidar();
         $this->auditar($actor, 'permisos.rol_actualizado', $rol, $antes, $this->clavesDe($rol));
+        Cobertura::revisarDespues($rol->empresa_id === null ? null : (int) $rol->empresa_id); // C-08: quitar «Responder» deja sin cobertura
     }
 
     /**
@@ -113,6 +115,7 @@ class AdministradorRoles
         $rol->save();
         $this->autorizador->olvidar();
         $this->auditar($actor, 'roles.actualizado', $rol, $antes, $rol->only(array_keys($antes)));
+        Cobertura::revisarDespues($rol->empresa_id === null ? null : (int) $rol->empresa_id); // C-08: rol dado de baja
 
         return $rol;
     }

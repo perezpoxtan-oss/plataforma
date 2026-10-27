@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Organizacion;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Organizacion\Concerns\CatalogoDeEmpresa;
 use App\Models\Departamento;
+use App\Models\Empresa;
 use App\Models\Sede;
+use App\Services\Autorizaciones\Cobertura;
 use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Services\Recepcion\AjustesRecepcion;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -55,7 +58,7 @@ class DepartamentoController extends Controller
             'departamentos' => Departamento::with('sedes:id,nombre')
                 ->withCount(['puestos' => fn ($q) => $q->where('activo', true),
                     // ADR-0010: la tarjeta muestra colaboradores activos y avisa si no hay quien autorice sus visitas
-                    'colaboradores' => fn ($q) => $q->where('activo', true)->whereNull('fusionado_en_id'), 'responsables'])
+                    'colaboradores' => fn ($q) => $q->where('activo', true)->whereNull('fusionado_en_id')])
                 ->when($permitidas !== null, fn ($q) => $q->aplicanEn($permitidas))
                 ->leftJoin('users as uc', 'uc.id', '=', 'departamentos.creado_por')
                 ->leftJoin('users as ua', 'ua.id', '=', 'departamentos.actualizado_por')
@@ -65,6 +68,12 @@ class DepartamentoController extends Controller
             'sedes' => Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),
             'puede' => $this->permisosCatalogo($actor, 'departamentos'),
             'puedeResponsables' => $actor->can('autorizaciones.configurar'),
+            // C-08 (A-03): sedes donde nadie puede autorizar (misma regla que la caseta), y si la visita espera al supervisor
+            'sinCobertura' => ($cobertura = app(Cobertura::class))->sedesSinCobertura(),
+            'funciones' => $cobertura->porFuncion(), // Revisión Etapa 3a: por función (visitas y pases)
+            'sinCoberturaEspera' => ($e = Empresa::find($empresaId)) !== null && app(AjustesRecepcion::class)->visitasRequierenAutorizacion($e)
+                ? app(AjustesRecepcion::class)->sinCoberturaEsperaSupervisor($e) : null,
+            'variasSedesEmpresa' => Sede::where('activo', true)->count() > 1,
         ]));
     }
 

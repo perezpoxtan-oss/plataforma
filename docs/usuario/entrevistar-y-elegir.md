@@ -97,7 +97,7 @@ Si pasan **2 días hábiles** desde la cita (o lo que configure tu empresa) sin 
 
 ## Cuando no estás («No molestar»)
 
-Si sales de vacaciones, delega tus avisos en **Autorizaciones → No molestar / delegar** (ver [Autorizaciones](autorizaciones.md)). Mientras dure la delegación, las entrevistas nuevas le llegan a quien te cubre, y esa persona puede evaluar las tuyas. Su evaluación queda anotada «por delegación de» ti en la ficha del candidato, en su historial y en el aviso que recibe Recursos Humanos.
+Si sales de vacaciones, usa **Delegar mis aprobaciones** en [Mi cuenta](mi-cuenta.md). Mientras dure la delegación, las entrevistas nuevas le llegan a quien te cubre (si puede entrevistar; si no, te siguen llegando a ti), y esa persona puede evaluar las tuyas. Su evaluación queda anotada «por delegación de» ti en la ficha del candidato, en su historial y en el aviso que recibe Recursos Humanos.
 
 ## Si algo sale mal
 

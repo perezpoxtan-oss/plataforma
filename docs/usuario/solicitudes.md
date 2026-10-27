@@ -55,7 +55,7 @@ resumen: Guía para el personal de cualquier departamento (rol Solicitante) y pa
 **Qué debes ver:** el pase pasa al siguiente paso del circuito (por ejemplo, Contraloría) y desaparece de tus pendientes.
 
 - Te tocan los pases de las personas de **tu departamento** que salen de **tu sede**, en el primer paso: **Jefe del departamento del solicitante**. Los de otros departamentos los firma su propio jefe.
-- Si tu departamento no tiene titular que pueda firmar, firma el **suplente**. Si activas **No molestar**, también puede firmar la persona en quien delegaste.
+- Si tu departamento no tiene titular que pueda firmar, firma el **suplente**. Si delegas tus aprobaciones en **Mi cuenta** («No molestar»), el aviso le llega a la persona en quien delegaste y ella también puede firmar.
 - No puedes aprobar un pase que pediste tú: lo firma otra persona del circuito.
 
 ## Cómo responder una visita (Jefe de departamento)
@@ -115,7 +115,7 @@ Todo el detalle, paso a paso, está en [Entrevistar y elegir](entrevistar-y-eleg
 
 **¿Puedo pedir un pase desde el celular?** Sí, todo funciona igual.
 
-**Mi jefe está de vacaciones, ¿se atora mi pase?** Si tu jefe activó **No molestar**, firma la persona en quien delegó. Si no, avisa a tu administrador: puede registrar un **suplente** del departamento en **Estructura → Departamentos**. Si tu departamento no tiene responsable ni suplente, firma quien tenga permiso de aprobar en tu departamento y, si tampoco hay, cualquier persona con ese permiso en tu sede.
+**Mi jefe está de vacaciones, ¿se atora mi pase?** Si tu jefe delegó sus aprobaciones en Mi cuenta («No molestar»), firma la persona en quien delegó. Si no, avisa a tu administrador: puede registrar un **suplente** del departamento en **Estructura → Departamentos**. Si tu departamento no tiene responsable ni suplente, firma quien tenga permiso de aprobar en tu departamento y, si tampoco hay, cualquier persona con ese permiso en tu sede.
 
 **¿Puedo publicar yo la vacante?** No. La revisa y la publica Recursos Humanos.
 

@@ -2,13 +2,12 @@
 
 namespace App\Services\Reservas;
 
-use App\Models\Delegacion;
-use App\Models\DepartamentoResponsable;
 use App\Models\Empresa;
 use App\Models\Reserva;
 use App\Models\ReservaAprobacion;
 use App\Models\ReservaOrden;
 use App\Models\User;
+use App\Services\Autorizaciones\Cobertura;
 use App\Support\RelojVoBo;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -93,21 +92,26 @@ class PendientesReservas
             $ajustes = app(AjustesReservas::class)->de($empresa);
             $generales = array_values(array_unique(array_filter([$ajustes['responsable_id'], $ajustes['suplente_id']])));
             $deptos = $aprobaciones->pluck('departamento_id')->merge($ordenes->pluck('departamento_id'))->filter()->unique()->values();
-            $responsables = $deptos->isEmpty() ? collect() : DepartamentoResponsable::whereIn('departamento_id', $deptos)
-                ->whereHas('usuario', fn ($q) => $q->where('activo', true))->get(['departamento_id', 'user_id', 'sede_id']);
+            // C-08: solo cuentan los responsables que pueden responder en esa sede (la misma regla que la caseta)
+            $cobertura = app(Cobertura::class);
+            $responsables = $deptos->isEmpty() ? collect() : $cobertura->filas()->whereIn('departamento_id', $deptos->all());
             // Quienes le delegaron a este usuario («No molestar»): solo se consulta si hace falta
             $meDelegaron = null;
             $delegaron = function () use (&$meDelegaron, $actor): array {
-                return $meDelegaron ??= Delegacion::activas()->where('delegado_id', $actor->id)->pluck('user_id')->map(fn ($id) => (int) $id)->all();
+                // C-12: directa o en cadena, si puedo atender reservas por ellos
+                return $meDelegaron ??= $this->responsables->delegadoAtiende($actor) ? $this->responsables->cadena()->titularesDe((int) $actor->id) : [];
             };
             $yo = (int) $actor->id;
-            $deDepto = function (int $depto, int $sede) use ($responsables, $generales): array {
-                $ids = $responsables->where('departamento_id', $depto)->filter(fn ($r) => $r->sede_id === null || (int) $r->sede_id === $sede)
+            $deDepto = function (int $depto, int $sede) use ($responsables, $generales, $cobertura): array {
+                $ids = $responsables->where('departamento_id', $depto)->filter(fn ($r) => $cobertura->cubre($r, $sede))
                     ->pluck('user_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
 
                 return $ids !== [] ? $ids : $generales;
             };
-            $mios = fn (array $designados) => in_array($yo, $designados, true) || ($designados !== [] && array_intersect($designados, $delegaron()) !== []);
+            // C-12 «No molestar»: mientras delego, lo que me toca como designado le llega a mi delegado (no a mis pendientes)
+            $cadena = $this->responsables->cadena();
+            $delego = $cadena->destino($yo, fn (User $d) => $this->responsables->delegadoAtiende($d)) !== $yo;
+            $mios = fn (array $designados) => (! $delego && in_array($yo, $designados, true)) || ($designados !== [] && array_intersect($designados, $delegaron()) !== []);
 
             $leTocan = $aprobaciones->filter(function ($a) use ($deDepto, $mios, $ajustes, $yo) {
                 $avisados = array_map('intval', array_merge((array) json_decode((string) $a->avisados, true), (array) json_decode((string) $a->escalado_a, true)));

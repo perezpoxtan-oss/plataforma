@@ -20,6 +20,18 @@
         @include('panel._configura-tu-empresa', ['asistente' => $asistente])
     @endif
 
+    @if (! empty($sinQuienAutorice))
+        {{-- C-08 (A-03): departamentos sin quien autorice en alguna sede --}}
+        <a href="{{ $sinQuienAutorice['url'] }}" class="aviso-pendiente aviso-sin-quien-autorice mt-3">
+            <span class="icono"><i class="bi bi-person-exclamation" aria-hidden="true"></i></span>
+            <span class="flex-grow-1">
+                <strong class="d-block">Sin quien autorice en {{ $sinQuienAutorice['frase'] }}</strong>
+                <span class="small">{{ $sinQuienAutorice['espera'] ? 'Sus visitas esperan al supervisor o al jefe de seguridad de la sede.' : 'Sus visitas pasan sin esperar autorización.' }} Nombra a quien autorice en cada sede.</span>
+            </span>
+            <span class="boton">Nombrar responsable <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+        </a>
+    @endif
+
     @forelse ($pendientes as $p)
         @if (! empty($p['detalle']))
             @include('panel._altas-por-verificar', ['aviso' => $p])

@@ -23,7 +23,11 @@
                     <a href="{{ route('entrevistas.index') }}" class="btn-secundario-rh"><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>Entrevistas ({{ $entrevistas }})</a>
                 @endif
                 @if ($puede['responder'])
-                    <button type="button" class="btn-secundario-rh" data-abrir-dialogo="dialogoDelegar"><i class="bi bi-moon-stars me-1" aria-hidden="true"></i>No molestar / delegar</button>
+                    {{-- C-12: «Delegar mis aprobaciones» vive en Mi cuenta; aquí queda el acceso directo --}}
+                    <a href="{{ route('mi-cuenta.index') }}#delegar" class="btn-secundario-rh"><i class="bi bi-moon-stars me-1" aria-hidden="true"></i>Delegar mis aprobaciones</a>
+                @endif
+                @if ($puede['configurar'])
+                    <button type="button" class="btn-secundario-rh" data-abrir-dialogo="dialogoDelegar"><i class="bi bi-person-gear me-1" aria-hidden="true"></i>Delegar por otra persona</button>
                 @endif
                 @if ($puede['configurar'])
                     <a href="{{ route('autorizaciones.responsables') }}" class="btn-secundario-rh"><i class="bi bi-people me-1" aria-hidden="true"></i>Responsables por departamento</a>
@@ -35,6 +39,12 @@
     @if ($sinEmpresa)
         <div class="tarjeta estado-vacio"><p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong>.</p></div>
     @else
+        @if ($miDelegacion)
+            <div class="alert alert-secondary small py-2 d-flex align-items-center gap-2" role="status">
+                <i class="bi bi-moon-stars" aria-hidden="true"></i>
+                <span>Delegaste tus aprobaciones a <strong>{{ $miDelegacion->delegado?->name }}</strong> hasta el @fecha($miDelegacion->hasta): los avisos le llegan a esa persona. Tú todavía puedes responder. <a href="{{ route('mi-cuenta.index') }}#delegar">Cambiar en Mi cuenta</a></span>
+            </div>
+        @endif
         <section class="mb-4">
             <h2 class="titulo-seccion-rh"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Por responder ({{ $porResponder->count() }})</h2>
             @forelse ($porResponder as $a)
@@ -99,11 +109,11 @@
             <div class="mt-3">{{ $historial->onEachSide(1)->links('pagination::bootstrap-5') }}</div>
         </section>
 
-        @if ($puede['responder'])
+        @if ($puede['configurar'])
             @php $reabrir = old('_dialogo') === 'delegar'; $zona = app(\App\Support\HoraLocal::class); @endphp
             <dialog id="dialogoDelegar" class="dialogo" aria-labelledby="titulo-delegar" @if ($reabrir) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
-                    <h2 id="titulo-delegar"><i class="bi bi-moon-stars me-2 text-warning" aria-hidden="true"></i>No molestar: delegar autorizaciones</h2>
+                    <h2 id="titulo-delegar"><i class="bi bi-person-gear me-2 text-warning" aria-hidden="true"></i>Delegar las aprobaciones de otra persona</h2>
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                 </div>
                 <div class="dialogo-cuerpo">
@@ -113,7 +123,7 @@
                         @if ($reabrir && $errors->any())
                             <div class="alert alert-danger small py-2 px-3" role="alert"><ul class="mb-0 ps-3">@foreach ($errors->all() as $m)<li>{{ $m }}</li>@endforeach</ul></div>
                         @endif
-                        <p class="small text-muted">Mientras estés fuera, los avisos de tu departamento le llegarán a la persona que elijas y ella podrá responder por ti.</p>
+                        <p class="small text-muted">Para cuando alguien no puede hacerlo en su Mi cuenta: mientras dure, lo que le toque aprobar (visitas, pases, reservas, entrevistas) le llega a la persona que elijas.</p>
                         @if ($puede['configurar'])
                             <label class="campo-etiqueta" for="del_titular">¿Quién delega?</label>
                             <select id="del_titular" name="user_id" class="campo">

@@ -30,11 +30,12 @@
     $anticipo = $anticipo ?? ['rh_espera_en' => [], 'visitas_esperan' => false, 'departamentos' => []];
     $esperanDepto = $anticipo['esperan_departamento'] ?? []; // proveedor / contratista que esperan al departamento
     $deptosConResponsable = collect($anticipo['departamentos'])->map(fn ($sedes) => $sedes === null ? 'todas' : implode(',', $sedes))->all();
+    $sinCoberturaEspera = (bool) ($anticipo['sin_cobertura_espera'] ?? false); // C-08 / DD-11
 @endphp
 <dialog id="dialogoIngreso" class="dialogo ancho dialogo-acceso" aria-labelledby="titulo-ingreso" data-dialogo-ingreso
         data-url-buscar="{{ route('accesos.buscar') }}" data-url-gafetes="{{ route('accesos.gafetes') }}" data-url-en-sitio="{{ route('accesos.en-sitio') }}"
         data-rh-espera-en="{{ implode(',', $anticipo['rh_espera_en']) }}" data-visitas-esperan="{{ $anticipo['visitas_esperan'] ? 1 : 0 }}"
-        data-departamentos-con-responsable="{{ json_encode($deptosConResponsable) }}"
+        data-departamentos-con-responsable="{{ json_encode($deptosConResponsable) }}" data-sin-cobertura-espera="{{ $sinCoberturaEspera ? 1 : 0 }}"
         @if ($trasError || $sig) data-abrir-al-cargar @endif>
     <div class="dialogo-cabecera">
         <h2 id="titulo-ingreso">

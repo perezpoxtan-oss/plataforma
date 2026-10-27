@@ -44,7 +44,18 @@
                     </label>
                 @endforeach
             </div>
-            <p class="small text-muted mb-2">La caseta elige a qué departamento viene la persona. Si ese departamento tiene responsable en la sede, la persona queda «Esperando autorización» hasta que él responda (una visita a un colaborador espera al responsable de su departamento). Si no tiene responsable, la visita entra como siempre y el proveedor o contratista lo pasa quien supervisa la caseta con <strong>Autorizar por excepción</strong>. Proveedor o contratista sin marcar: se confirma con el host, como antes.</p>
+            <p class="small text-muted mb-2">La caseta elige a qué departamento viene la persona. Si ese departamento tiene quien autorice en la sede, la persona queda «Esperando autorización» hasta que él responda (una visita a un colaborador espera al responsable de su departamento). Proveedor o contratista sin marcar: se confirma con el host, como antes.</p>
+            {{-- C-08 / DD-11: qué pasa si el departamento no tiene quien autorice en la sede --}}
+            <fieldset class="mb-2">
+                <legend class="campo-etiqueta">Si el departamento no tiene quien autorice en la sede, la visita…</legend>
+                @foreach (\App\Services\Recepcion\AjustesRecepcion::SIN_COBERTURA as $claveSc => $textoSc)
+                    <label class="casilla-concluido d-flex align-items-center gap-2 mb-1">
+                        <input type="radio" name="sin_cobertura" value="{{ $claveSc }}" @checked(old('sin_cobertura', $ajustesRecepcion->sinCobertura($empresa)) === $claveSc) @disabled(! $deEmpresa)>
+                        {{ $textoSc }}@if ($claveSc === 'supervisor') <span class="valor-original">(valor original)</span>@endif
+                    </label>
+                @endforeach
+                <p class="campo-ayuda">El supervisor o el jefe de seguridad recibe el aviso y la autoriza en la bitácora; la tarjeta muestra cuánto lleva esperando. El proveedor o contratista sin quien autorice siempre espera: lo pasa quien supervisa la caseta con <strong>Autorizar por excepción</strong>.</p>
+            </fieldset>
             <input type="hidden" name="rh_autoriza_paso" value="0">
             <label class="casilla-privacidad mt-2">
                 <input type="checkbox" name="rh_autoriza_paso" value="1" @checked(old('rh_autoriza_paso', $ajustesRecepcion->rhAutorizaPaso($empresa))) @disabled(! $deEmpresa)>
@@ -96,12 +107,23 @@
             <div class="ficha-card" id="depto-{{ $d->id }}">
                 <div>
                     <h2 class="ficha-title">{{ $d->nombre }}</h2>
+                    @php $sedesNombre = $sedesDepto->pluck('nombre', 'id')->all(); @endphp
                     @forelse ($lista as $r)
-                        <p class="renglon-cv mb-1"><i class="bi {{ $r->es_suplente ? 'bi-person' : 'bi-person-fill-check' }} me-1" aria-hidden="true"></i><strong>{{ $r->usuario?->name }}</strong>
-                            <span class="texto-traza">{{ $r->es_suplente ? 'Suplente' : 'Titular' }} · {{ $r->sede?->nombre ?? 'Todas sus sedes' }}</span></p>
+                        @php $problema = $cobertura->problema($r, $sedesNombre); @endphp
+                        <p class="renglon-cv mb-1 {{ $problema ? 'responsable-invalido' : '' }}"><i class="bi {{ $problema ? 'bi-person-x' : ($r->es_suplente ? 'bi-person' : 'bi-person-fill-check') }} me-1" aria-hidden="true"></i><strong>{{ $r->usuario?->name }}</strong>
+                            <span class="texto-traza">{{ $r->es_suplente ? 'Suplente' : 'Titular' }} · {{ $r->sede?->nombre ?? 'Todas sus sedes' }}</span>
+                            @if ($problema)
+                                {{-- C-08 (A-03, A-04): por qué esta persona no cuenta como quien autoriza --}}
+                                <span class="etiqueta-problema-responsable">({{ $problema[1] }})</span>
+                            @endif
+                        </p>
                     @empty
-                        <p class="small text-muted">Sin responsable: sus visitas entran sin esperar y, al canalizar un candidato, Recursos Humanos elige quién lo entrevista.</p>
+                        <p class="small text-muted">Sin responsable: al canalizar un candidato, Recursos Humanos elige quién lo entrevista.</p>
                     @endforelse
+                    @include('organizacion.departamentos._funciones', ['funciones' => $funciones[$d->id] ?? [], 'varias' => $sedes->count() > 1])
+                    @if (! empty($sinCobertura[$d->id]))
+                        <p class="aviso-sin-responsable mb-0 mt-1"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Sin quien autorice en {{ implode(', ', $sinCobertura[$d->id]) }}: {{ $ajustesRecepcion->sinCoberturaEsperaSupervisor($empresa) ? 'sus visitas esperan al supervisor o al jefe de seguridad.' : 'sus visitas entran sin autorización.' }}</p>
+                    @endif
                 </div>
                 @if ($deEmpresa)
                     <div class="ficha-footer">
@@ -121,20 +143,21 @@
                                 @if ($reabrir && $errors->any())
                                     <div class="alert alert-danger small py-2 px-3" role="alert"><ul class="mb-0 ps-3">@foreach ($errors->all() as $m)<li>{{ $m }}</li>@endforeach</ul></div>
                                 @endif
-                                <p class="small text-muted">El primero es el titular; marca «Suplente» para quien responde cuando el titular no está. Deja vacío un renglón para quitarlo.</p>
+                                <p class="small text-muted">El primero es el titular; marca «Suplente» para quien responde cuando el titular no está. Deja vacío un renglón para quitarlo. Cada persona solo puede autorizar en las sedes a las que entra su cuenta.</p>
                                 @foreach ($filas as $i => $f)
                                     <div class="fila-cv">
                                         <div class="rejilla-cv">
                                             <label class="campo-etiqueta">Usuario
-                                                <select name="responsables[{{ $i }}][user_id]" class="campo">
+                                                <select name="responsables[{{ $i }}][user_id]" class="campo" data-responsable-usuario>
                                                     <option value="">-- Nadie --</option>
                                                     @foreach ($usuarios as $u)
-                                                        <option value="{{ $u->id }}" @selected((string) ($f['user_id'] ?? '') === (string) $u->id)>{{ $u->name }}</option>
+                                                        {{-- A-04: el diálogo solo ofrece las sedes a las que esta cuenta puede entrar --}}
+                                                        <option value="{{ $u->id }}" data-sedes="{{ ($alcances[$u->id] ?? null) === null ? 'todas' : implode(',', $alcances[$u->id]) }}" @selected((string) ($f['user_id'] ?? '') === (string) $u->id)>{{ $u->name }}</option>
                                                     @endforeach
                                                 </select>
                                             </label>
                                             <label class="campo-etiqueta">Sede
-                                                <select name="responsables[{{ $i }}][sede_id]" class="campo">
+                                                <select name="responsables[{{ $i }}][sede_id]" class="campo" data-responsable-sede>
                                                     <option value="">Todas sus sedes</option>
                                                     @foreach ($sedesDepto as $s)
                                                         <option value="{{ $s->id }}" @selected((string) ($f['sede_id'] ?? '') === (string) $s->id)>{{ $s->nombre }}</option>

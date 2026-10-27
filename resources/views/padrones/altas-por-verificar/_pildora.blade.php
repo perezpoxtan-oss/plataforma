@@ -8,6 +8,6 @@
 @if ($altas['puede'] && $altas['pendientes'] > 0)
     <button type="button" class="btn-pill-tipo btn-pill-verificar" data-filtro-verificacion aria-pressed="false"
             @if (request()->query('verificacion') === 'pendiente') data-encender @endif>
-        <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Pendientes de verificar <span class="conteo-pill">{{ $altas['pendientes'] }}</span>
+        <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Por verificar <span class="conteo-pill">{{ $altas['pendientes'] }}</span>
     </button>
 @endif

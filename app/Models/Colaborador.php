@@ -105,6 +105,28 @@ class Colaborador extends Model implements Identificable
         return User::where('colaborador_id', $this->id)->where('activo', false)->whereNotNull('desactivado_por_baja_en')->exists();
     }
 
+    /** Acentos que no distinguen un nombre de otro (homónimos e importación). */
+    private const SIN_ACENTOS = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u'];
+
+    /**
+     * Revisión Etapa 3a: «nombre + apellido paterno» sin mayúsculas, acentos ni
+     * espacios de más. Se guarda en colaboradores.nombre_normalizado (con
+     * índice) para encontrar homónimos sin recorrer ni recortar la lista.
+     */
+    public static function normalizarNombre(?string $nombre, ?string $paterno): string
+    {
+        $t = fn (?string $x) => mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', strtr((string) $x, self::SIN_ACENTOS))));
+
+        return mb_substr(trim($t($nombre).' '.$t($paterno)), 0, 190);
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Colaborador $c) {
+            $c->nombre_normalizado = self::normalizarNombre($c->nombre, $c->apellido_paterno);
+        });
+    }
+
     public function nombreCompleto(): string
     {
         return trim(preg_replace('/\s+/u', ' ', $this->nombre.' '.$this->apellido_paterno.' '.($this->apellido_materno ?? '')));

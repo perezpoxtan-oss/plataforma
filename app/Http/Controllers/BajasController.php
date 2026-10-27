@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\Autorizaciones\Cobertura;
 use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Borrado\RegistroBorrado;
 use App\Services\Permisos\Autorizador;
@@ -58,7 +59,9 @@ class BajasController extends Controller
                     // Revisión Etapa 2 (R2-01): users no tiene el scope de tenant; solo cuentas de esta empresa
                     ? User::where('empresa_id', $empresaId)->where('activo', true)->where('es_superadmin', false)
                         ->where(fn ($q) => $q->whereNull('colaborador_id')->orWhere('colaborador_id', '!=', $modelo->getKey()))
-                        ->orderBy('name')->get(['id', 'name'])
+                        ->orderBy('name')->get()
+                        // C-08: solo quien puede responder autorizaciones (si no, el departamento seguiría sin quien autorice)
+                        ->filter(fn (User $u) => app(Cobertura::class)->puedeResponderEn($u, null))->values()
                     : collect(),
                 'reemplazoAnterior' => old('reemplazo_id'),
             ]);

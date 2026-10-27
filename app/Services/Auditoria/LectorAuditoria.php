@@ -101,6 +101,8 @@ class LectorAuditoria
         'excepcion_agregada' => 'Alta de excepción', 'excepcion_quitada' => 'Baja de excepción', 'promocion_aplicada' => 'Promoción aplicada',
         // Altas provisionales y verificación de padrones
         'provisional' => 'Alta provisional', 'validado' => 'Validación', 'verificado' => 'Verificación', 'fusionado' => 'Unión de duplicado',
+        // C-11: la cuenta tomó el nombre y el número de su colaborador
+        'sincronizado' => 'Nombre y número tomados de su colaborador',
         // Identificación (QR y etiqueta NFC/RFID) e impresión de etiquetas
         'etiqueta_asignada' => 'Asignación de etiqueta NFC/RFID', 'etiqueta_quitada' => 'Retiro de etiqueta NFC/RFID',
         'impreso' => 'Impresión', 'reimpreso' => 'Reimpresión',

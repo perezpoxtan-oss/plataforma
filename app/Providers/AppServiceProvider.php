@@ -169,6 +169,8 @@ class AppServiceProvider extends ServiceProvider
         ]);
         // Verificación en dos pasos en Mi cuenta: activar, códigos nuevos y quitarla (piden contraseña o código), por cuenta
         RateLimiter::for('dos-pasos-cuenta', fn (Request $r) => Limit::perMinute(10)->by('dos-pasos-cuenta|'.($r->user()?->getAuthIdentifier() ?? $ip($r))));
+        // C-12 «Delegar mis aprobaciones» en Mi cuenta: cada alta avisa al delegado; contador propio por cuenta (no choca con otras rutas)
+        RateLimiter::for('delegar-cuenta', fn (Request $r) => Limit::perMinute(10)->by('delegar-cuenta|'.($r->user()?->getAuthIdentifier() ?? $ip($r))));
         RateLimiter::for('privacidad-confirmar', fn (Request $r) => Limit::perMinute(10)->by('privacidad-confirmar|'.$ip($r)));
     }
 }

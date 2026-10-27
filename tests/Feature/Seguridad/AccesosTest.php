@@ -875,6 +875,7 @@ class AccesosTest extends TestCase
         $consultas = count(\DB::getQueryLog());
         \DB::disableQueryLog();
         // 61: el encabezado suma una consulta fija (Mis pendientes → «Solicitudes ARCO por atender» del Administrador); las tarjetas siguen sin consultas propias
-        $this->assertLessThan(61, $consultas, "La pantalla hizo {$consultas} consultas.");
+        // 62: C-08 revisa una vez por petición el permiso «Responder» de cada responsable (la caseta anticipa a quién espera)
+        $this->assertLessThan(62, $consultas, "La pantalla hizo {$consultas} consultas.");
     }
 }

@@ -31,7 +31,11 @@ class PreferenciasAvisos
         'autorizacion_candidato' => ['Autorizaciones', 'Un candidato espera tu autorización', ['autorizaciones.responder']],
         'autorizacion_escalada' => ['Autorizaciones', 'Una autorización pasó al suplente o al jefe por tardanza', ['autorizaciones.responder', 'accesos.ver']],
         'autorizacion_excepcion' => ['Autorizaciones', 'La caseta dejó pasar por excepción a alguien que esperaba tu autorización', ['autorizaciones.responder']],
-        'delegacion' => ['Autorizaciones', 'Te delegaron las autorizaciones de un departamento', ['autorizaciones.responder']],
+        'delegacion' => ['Autorizaciones', 'Alguien te delegó sus aprobaciones (visitas, pases, reservas o entrevistas)', ['autorizaciones.responder', 'pases_salida.aprobar', 'reservas.aprobar', 'candidatos.evaluar']],
+        'delegacion_terminada' => ['Autorizaciones', 'Tu delegación terminó porque la persona fue dada de baja', ['autorizaciones.responder', 'pases_salida.aprobar', 'reservas.aprobar', 'candidatos.evaluar']],
+        // Etapa 3 (C-08)
+        'cobertura_perdida' => ['Autorizaciones', 'Un departamento se quedó sin quien autorice en una sede', ['autorizaciones.configurar']],
+        'acceso_sin_cobertura' => ['Bitácora de accesos', 'Una visita espera tu autorización porque su departamento no tiene quien autorice en la sede', ['accesos.aprobar']],
         'autorizacion_respuesta' => ['Bitácora de accesos', 'Respondieron una autorización que pidió la caseta', ['accesos.ver']],
         'autorizacion_recepcion' => ['Bitácora de accesos', 'Recursos Humanos dice «Que pase» a quien espera en caseta', ['accesos.ver']],
         'candidato_llegada' => ['Recepción y candidatos', 'Llega un candidato a Recepción', ['candidatos.editar']],
@@ -53,6 +57,7 @@ class PreferenciasAvisos
         'cuenta_bloqueada' => ['Cuentas y seguridad', 'Una cuenta se bloqueó por intentos fallidos', ['usuarios.editar', 'usuarios.desbloquear']],
         'cuenta_desactivada' => ['Cuentas y seguridad', 'Una cuenta se dio de baja junto con su colaborador', ['usuarios.editar']],
         'cuenta_solicitud' => ['Cuentas y seguridad', 'Alguien pide que restablezcas su contraseña o su verificación en dos pasos', ['usuarios.editar', 'usuarios.desbloquear']],
+        'cuenta_sede' => ['Cuentas y seguridad', 'Un colaborador cambió de sede y su cuenta no entra a la nueva', ['usuarios.editar']],
         // Privacidad (docs/tecnico/privacidad.md)
         'arco_solicitud' => ['Privacidad', 'Llegó una solicitud ARCO (acceso, rectificación, cancelación u oposición)', ['configuracion.datos_personales']],
         'arco_plazo' => ['Privacidad', 'Una solicitud ARCO está por vencer o venció', ['configuracion.datos_personales']],

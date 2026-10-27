@@ -8,8 +8,11 @@ use App\Models\Puesto;
 use App\Models\Sede;
 use App\Models\Turno;
 use App\Models\User;
+use App\Services\Autorizaciones\Cobertura;
+use App\Services\Autorizaciones\Delegaciones;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Cuenta\AvisosCuenta;
+use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Padrones\CampanaPadrones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
@@ -239,9 +242,43 @@ class AdministradorColaboradores
         ])->save());
 
         $this->auditoria->auditar($actor, 'colaboradores.validado', $colaborador, $antes, $this->foto($colaborador));
+        $this->sincronizarCuenta($actor, $colaborador, null); // C-11: el número recién asignado pasa a su cuenta
         app(CampanaPadrones::class)->colaboradorResultado($colaborador, 'verificada', $actor);
 
         return $colaborador;
+    }
+
+    /**
+     * C-27: la importación trajo a quien la caseta dio de alta sin número
+     * («Unir con el alta de la caseta»): con su número ya puesto, queda verificada.
+     */
+    public function verificarDesdeImportacion(User $actor, Colaborador $colaborador): void
+    {
+        $colaborador->forceFill(['provisional' => false, 'validado_por' => $actor->id, 'validado_en' => now()])->save();
+        $this->auditoria->auditar($actor, 'colaboradores.validado', $colaborador, ['provisional' => true], ['provisional' => false, 'origen' => 'importación']);
+        app(CampanaPadrones::class)->colaboradorResultado($colaborador, 'verificada', $actor);
+    }
+
+    /**
+     * C-27: «Rechazar» un alta de la caseta (no procede). Sin migración: es una
+     * baja con motivo, auditada, con aviso a quien la registró. Su cuenta, si
+     * tuviera, se da de baja como en cualquier baja (C-11).
+     */
+    public function rechazarProvisional(User $actor, Colaborador $colaborador, mixed $motivo): void
+    {
+        if (! $colaborador->provisional || $colaborador->fusionado_en_id !== null || ! $colaborador->activo) {
+            throw ValidationException::withMessages(['motivo_rechazo' => 'Este colaborador ya no está pendiente de verificar.']);
+        }
+        $motivo = trim((string) preg_replace('/\s+/u', ' ', is_scalar($motivo) ? (string) $motivo : ''));
+        if (mb_strlen($motivo) < 5) {
+            throw ValidationException::withMessages(['motivo_rechazo' => 'Escribe el motivo del rechazo (mínimo 5 letras): así la caseta sabe qué corregir.']);
+        }
+        if (mb_strlen($motivo) > 255) {
+            throw ValidationException::withMessages(['motivo_rechazo' => 'El motivo admite máximo 255 caracteres.']);
+        }
+        $this->cambiarEstado($actor, $colaborador, false);
+        $this->auditoria->auditar($actor, 'colaboradores.rechazado', $colaborador, ['provisional' => true, 'activo' => true], ['activo' => false, 'motivo_rechazo' => $motivo]);
+        app(CampanaPadrones::class)->colaboradorResultado($colaborador, 'rechazada', $actor, null, $motivo);
     }
 
     /**
@@ -285,6 +322,57 @@ class AdministradorColaboradores
             ['provisional' => $provisional->only(['nombre', 'apellido_paterno', 'apellido_materno', 'sede_id'])],
             ['fusionado_en' => $destino->id, 'num_empleado' => $destino->num_empleado, 'referencias' => $movidos]);
         app(CampanaPadrones::class)->colaboradorResultado($provisional, 'unida', $actor, $destino);
+        $this->sincronizarCuenta($actor, $destino, null); // C-11: la cuenta que pasó al correcto toma su nombre y su número
+    }
+
+    /**
+     * C-11 (DD-22): la cuenta vinculada sigue al colaborador. El colaborador
+     * manda en el nombre y el número: si cambian (al editar, verificar, unir
+     * duplicados o importar), la cuenta se actualiza y queda en la bitácora.
+     * Si cambia de sede y su cuenta solo entra a otras sedes, se pregunta en
+     * la campana a quien administra usuarios: «¿Mover su cuenta a …?».
+     * Con la baja del colaborador la cuenta se da de baja (cambiarEstado,
+     * Etapa 2); al reactivarlo la cuenta no se reactiva sola.
+     */
+    public function sincronizarCuenta(?User $actor, Colaborador $colaborador, ?int $sedeAntes): void
+    {
+        // Nunca un Super Administrador: su nombre no se cambia desde una empresa
+        foreach (User::where('colaborador_id', $colaborador->id)->where('empresa_id', $colaborador->empresa_id)->where('es_superadmin', false)->get() as $cuenta) {
+            $nuevo = ['name' => mb_substr($colaborador->nombreCompleto(), 0, 255)];
+            $numero = $colaborador->num_empleado;
+            if ($numero !== null && $numero !== '' && ! User::where('empresa_id', $colaborador->empresa_id)->where('numero_colaborador', $numero)->whereKeyNot($cuenta->id)->exists()) {
+                $nuevo['numero_colaborador'] = $numero;
+            }
+            $antes = array_intersect_key($cuenta->only(['name', 'numero_colaborador']), $nuevo);
+            if ($antes != $nuevo) {
+                $cuenta->forceFill($nuevo + ['actualizado_por' => $actor?->id ?? $cuenta->actualizado_por])->save();
+                if ($actor !== null) {
+                    $this->auditoria->auditar($actor, 'usuarios.sincronizado', $cuenta, $antes, $nuevo + ['colaborador_id' => $colaborador->id]);
+                }
+            }
+            $sede = $colaborador->sede_id === null ? null : (int) $colaborador->sede_id;
+            if ($sede !== null && $sedeAntes !== null && $sede !== $sedeAntes && $cuenta->activo) {
+                $this->preguntarMoverCuenta($cuenta, $colaborador, $sede, $actor);
+            }
+        }
+    }
+
+    private function preguntarMoverCuenta(User $cuenta, Colaborador $colaborador, int $sede, ?User $actor): void
+    {
+        $sedes = DB::table('usuario_roles')->where('user_id', $cuenta->id)->pluck('sede_id');
+        if ($sedes->isEmpty() || $sedes->contains(null) || $sedes->map(fn ($id) => (int) $id)->contains($sede)) {
+            return; // entra a todas sus sedes o ya entra a la nueva
+        }
+        $nombre = Sede::find($sede)?->nombre ?? 'su nueva sede';
+        $avisar = app(CampanaPadrones::class)->conPermiso((int) $colaborador->empresa_id, 'usuarios.editar', $sede)
+            ->reject(fn (int $id) => $id === (int) $cuenta->id);
+        app(CentroNotificaciones::class)->avisar((int) $colaborador->empresa_id, $avisar, 'cuenta_sede', [
+            'titulo' => "¿Mover su cuenta a {$nombre}?",
+            'texto' => $colaborador->nombreCompleto()." cambió de sede a {$nombre}, pero su cuenta «@{$cuenta->username}» solo entra a otras sedes. Revísala en Usuarios."
+                .($actor !== null ? ' Lo cambió: '.$actor->name.'.' : ''),
+            'url' => route('usuarios.index'),
+            'referencia_tipo' => 'cuenta_sede', 'referencia_id' => (int) $cuenta->id,
+        ]);
     }
 
     /**
@@ -294,23 +382,27 @@ class AdministradorColaboradores
      */
     public function parecidos(string $nombre, string $paterno, ?string $materno): array
     {
+        return $this->homonimos($nombre, $paterno, $materno)->take(5)->map(fn (Colaborador $c) => $this->resumen($c))->values()->all();
+    }
+
+    /**
+     * Revisión Etapa 3a: todos los activos con el mismo nombre y apellido
+     * paterno (sin mayúsculas ni acentos), por el índice de
+     * nombre_normalizado y sin tope; el materno se compara si ambos lo tienen.
+     * Con $sedeId, solo los de esa sede (o sin sede).
+     *
+     * @return Collection<int, Colaborador>
+     */
+    public function homonimos(string $nombre, string $paterno, ?string $materno, ?int $sedeId = null): Collection
+    {
         $clave = fn (?string $t) => mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', strtr((string) $t, self::SIN_ACENTOS))));
-        $buscado = $clave($nombre.' '.$paterno);
 
         return Colaborador::query()->where('activo', true)->whereNull('fusionado_en_id')
-            // Primero acota por la inicial del apellido (con o sin acento) y luego compara en PHP sin acentos
-            ->where(function ($q) use ($paterno, $clave) {
-                $inicial = mb_substr($clave($paterno), 0, 1);
-                foreach (array_unique([$inicial, array_search($inicial, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u'], true) ?: $inicial]) as $letra) {
-                    $q->orWhereRaw('LOWER(apellido_paterno) LIKE ?', [$letra.'%']);
-                }
-            })
-            ->limit(200)->get()
-            ->filter(fn (Colaborador $c) => $clave($c->nombre.' '.$c->apellido_paterno) === $buscado
-                && ($materno === null || $c->apellido_materno === null || $clave($c->apellido_materno) === $clave($materno)))
-            ->take(5)
-            ->map(fn (Colaborador $c) => $this->resumen($c))
-            ->values()->all();
+            ->where('nombre_normalizado', Colaborador::normalizarNombre($nombre, $paterno))
+            ->when($sedeId !== null, fn ($q) => $q->where(fn ($s) => $s->whereNull('sede_id')->orWhere('sede_id', $sedeId)))
+            ->orderBy('id')->get()
+            ->filter(fn (Colaborador $c) => $materno === null || $c->apellido_materno === null || $clave($c->apellido_materno) === $clave($materno))
+            ->values();
     }
 
     public function actualizar(User $actor, int $empresaId, Colaborador $colaborador, Request $request): Colaborador
@@ -320,6 +412,7 @@ class AdministradorColaboradores
         $datosAntes = $colaborador->only(Colaborador::DATOS_PERSONALES);
 
         $datos = $this->validar($request, $actor, $empresaId, 'colaboradores.editar', $colaborador, $conDatos, false);
+        $sedeAntes = $colaborador->sede_id === null ? null : (int) $colaborador->sede_id;
 
         DB::transaction(function () use ($colaborador, $datos) {
             $colaborador->fill($datos)->save();
@@ -340,6 +433,7 @@ class AdministradorColaboradores
         }
 
         $this->auditoria->auditar($actor, 'colaboradores.actualizado', $colaborador, $antes, $despues);
+        $this->sincronizarCuenta($actor, $colaborador, $sedeAntes); // C-11
 
         return $colaborador;
     }
@@ -367,6 +461,8 @@ class AdministradorColaboradores
         AvisosCuenta::cerrarSesiones($cuenta);
         $this->auditoria->auditar($actor, 'usuarios.desactivado_por_baja', $cuenta, ['activo' => true], ['activo' => false, 'colaborador_id' => $colaborador->id]);
         app(AvisosCuenta::class)->desactivadaPorBaja($cuenta, $colaborador, $actor);
+        Cobertura::revisarDespues((int) $colaborador->empresa_id); // C-08: baja en cascada
+        Delegaciones::delegadoDadoDeBaja($cuenta, $actor); // Revisión Etapa 3a
 
         return $cuenta;
     }

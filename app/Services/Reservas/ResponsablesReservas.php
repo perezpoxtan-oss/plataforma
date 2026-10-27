@@ -2,12 +2,12 @@
 
 namespace App\Services\Reservas;
 
-use App\Models\Delegacion;
 use App\Models\Reserva;
 use App\Models\ReservaAprobacion;
 use App\Models\ReservaArea;
 use App\Models\User;
 use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Autorizaciones\CadenaDelegaciones;
 use App\Services\Recepcion\Destinatarios;
 use Illuminate\Support\Collection;
 
@@ -203,11 +203,30 @@ class ResponsablesReservas
             return collect();
         }
         $usuarios = User::whereIn('id', $ids)->where('activo', true)->get();
-        $delegaciones = Delegacion::activas()->with('delegado:id,name,email,activo')->whereIn('user_id', $usuarios->pluck('id'))
-            ->orderByDesc('id')->get()->unique('user_id')->keyBy('user_id');
+        $cadena = $this->autorizaciones->cadena();
 
-        return $usuarios->map(fn (User $u) => ($d = $delegaciones[$u->id] ?? null) && $d->delegado?->activo ? $d->delegado : $u)
-            ->unique('id')->values();
+        // C-12: al último de su cadena que pueda atender reservas; si nadie, se queda con el designado
+        return $usuarios->map(function (User $u) use ($cadena) {
+            $destino = $cadena->destino((int) $u->id, fn (User $d) => $this->delegadoAtiende($d));
+
+            return $destino === (int) $u->id ? $u : $cadena->usuario($destino);
+        })->unique('id')->values();
+    }
+
+    /**
+     * C-12: un delegado atiende reservas por su titular solo si él mismo podría
+     * ser designado (responde autorizaciones) o aprueba reservas. Quien solo
+     * aprueba pases o entrevistas no recibe ni aprueba reservas ajenas.
+     */
+    public function cadena(): CadenaDelegaciones
+    {
+        return $this->autorizaciones->cadena();
+    }
+
+    public function delegadoAtiende(User $delegado): bool
+    {
+        return $this->memoria['atiende:'.$delegado->id] ??= $this->autorizaciones->cobertura()->puedeResponderEn($delegado, null)
+            || $delegado->can('reservas.aprobar');
     }
 
     /**
@@ -232,6 +251,10 @@ class ResponsablesReservas
         }
         sort($ids);
 
-        return $this->memoria['delegados:'.implode(',', $ids)] ??= Delegacion::activas()->whereIn('user_id', $ids)->pluck('delegado_id')->map(fn ($id) => (int) $id)->all();
+        $cadena = $this->autorizaciones->cadena();
+
+        // C-12: directa o en cadena, y solo quien puede atender reservas
+        return $this->memoria['delegados:'.implode(',', $ids)] ??= collect($ids)->flatMap(fn (int $id) => $cadena->cadena($id))->unique()
+            ->filter(fn (int $id) => $this->delegadoAtiende($cadena->usuario($id)))->values()->all();
     }
 }

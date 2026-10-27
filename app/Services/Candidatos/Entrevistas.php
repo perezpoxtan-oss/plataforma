@@ -5,7 +5,6 @@ namespace App\Services\Candidatos;
 use App\Mail\AvisoEntrevistaCandidato;
 use App\Mail\AvisoRecepcion;
 use App\Models\Candidato;
-use App\Models\Delegacion;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\EvaluacionCandidato;
@@ -13,6 +12,7 @@ use App\Models\Postulacion;
 use App\Models\User;
 use App\Models\Vacante;
 use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Autorizaciones\CadenaDelegaciones;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
@@ -76,6 +76,14 @@ class Entrevistas
 
     // ---------------------------------------------------------------- Quién evalúa
 
+    /** C-12: delegaciones directas o en cadena (una lectura por instancia). */
+    private function cadena(): CadenaDelegaciones
+    {
+        return $this->cadena ??= new CadenaDelegaciones;
+    }
+
+    private ?CadenaDelegaciones $cadena = null;
+
     /**
      * Usuarios cuyas entrevistas atiende: él y quienes le delegaron (activo).
      *
@@ -84,7 +92,7 @@ class Entrevistas
     public function titularesDe(User $usuario): array
     {
         return array_values(array_unique(array_map('intval', [$usuario->id,
-            ...Delegacion::activas()->where('delegado_id', $usuario->id)->pluck('user_id')->all()])));
+            ...$this->cadena()->titularesDe((int) $usuario->id)]))); // C-12: directa o en cadena
     }
 
     /**
@@ -172,9 +180,11 @@ class Entrevistas
         if ($titular === null) {
             return collect();
         }
-        $d = Delegacion::activas()->with('delegado:id,name,email,activo')->where('user_id', $titular->id)->orderByDesc('id')->first();
+        // C-12: al último de su cadena que pueda entrevistar; si nadie, se queda con el titular
+        $cadena = $this->cadena();
+        $destino = $cadena->destino((int) $titular->id, fn (User $d) => $d->can('candidatos.evaluar'));
 
-        return collect([$d?->delegado?->activo ? $d->delegado : $titular]);
+        return collect([$destino === (int) $titular->id ? $titular : $cadena->usuario($destino)]);
     }
 
     // --------------------------------------------------------------- Evaluaciones

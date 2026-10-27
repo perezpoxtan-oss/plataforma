@@ -3,12 +3,17 @@
 namespace App\Http\Controllers\Cuenta;
 
 use App\Http\Controllers\Controller;
+use App\Models\Delegacion;
 use App\Models\Sede;
+use App\Models\User;
 use App\Models\UsuarioRol;
 use App\Rules\ContrasenaSegura;
+use App\Services\Autorizaciones\Delegaciones;
+use App\Services\Candidatos\CambioNoPermitido;
 use App\Services\Cuenta\CuentaPropia;
 use App\Services\DosPasos\VerificacionDosPasos;
 use App\Services\Notificaciones\PreferenciasAvisos;
+use App\Support\HoraLocal;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -52,6 +57,8 @@ class MiCuentaController extends Controller
             'opcionesAvisos' => $usuario->empresa_id === null ? ['campana' => [], 'correo' => []]
                 : $this->tenant->conEmpresa((int) $usuario->empresa_id, fn () => $this->preferencias->opciones($usuario)),
             'silenciados' => PreferenciasAvisos::silenciados($usuario),
+            // C-12: «Delegar mis aprobaciones» (antes «No molestar» en Autorizaciones)
+            'delegar' => $this->datosDelegar($usuario),
             // Verificación en dos pasos (docs/tecnico/dos-pasos.md)
             'dosPasos' => [
                 'activa' => $usuario->tieneDosPasos(),
@@ -79,6 +86,68 @@ class MiCuentaController extends Controller
         return redirect()->to(route('mi-cuenta.index').'#mis-avisos')->with('ok', $total === 0
             ? 'Listo: recibes todos los avisos. Lo que espera tu respuesta también está siempre en «Mis pendientes».'
             : "Listo: silenciaste {$total} aviso(s). Lo que espera tu respuesta sigue apareciendo en «Mis pendientes».");
+    }
+
+    /**
+     * C-12 · «Delegar mis aprobaciones»: a quién y hasta cuándo. Mientras
+     * esté activa, lo que me toca aprobar (visitas, pases, reservas,
+     * entrevistas) le llega a mi delegado por campana, Mis pendientes y correo.
+     */
+    public function delegar(Request $request): RedirectResponse
+    {
+        $usuario = $request->user();
+        abort_if($usuario->empresa_id === null, 404);
+        $empresaId = (int) $usuario->empresa_id;
+        $delegaciones = app(Delegaciones::class);
+        abort_unless($this->tenant->conEmpresa($empresaId, fn () => $delegaciones->puedeDelegar($usuario)), 403);
+        $entrada = $request->only(['delegado_id', 'hasta', 'motivo']);
+        // «Desde» viene de Avanzado; si no, desde ahora
+        $entrada['desde'] = $request->filled('desde') ? $request->input('desde') : app(HoraLocal::class)->formatear(now(), 'Y-m-d\TH:i');
+
+        $d = $this->tenant->conEmpresa($empresaId, fn () => $delegaciones->crear($usuario, $empresaId, $entrada, false));
+
+        return redirect()->to(route('mi-cuenta.index').'#delegar')->with('ok', "Listo: mientras esté activa, lo que te toque aprobar le llega a {$d->delegado?->name}. Tú puedes cancelarla aquí cuando regreses.");
+    }
+
+    public function cancelarDelegacion(Request $request, int $delegacion): RedirectResponse
+    {
+        $usuario = $request->user();
+        abort_if($usuario->empresa_id === null, 404);
+
+        try {
+            $this->tenant->conEmpresa((int) $usuario->empresa_id, function () use ($usuario, $delegacion) {
+                $d = Delegacion::with('usuario:id,name', 'delegado:id,name')->where('user_id', $usuario->id)->find($delegacion);
+                abort_if($d === null, 404);
+                app(Delegaciones::class)->cancelar($usuario, $d);
+            });
+        } catch (CambioNoPermitido $e) {
+            return redirect()->to(route('mi-cuenta.index').'#delegar')->with('error', $e->getMessage());
+        }
+
+        return redirect()->to(route('mi-cuenta.index').'#delegar')->with('ok', 'Delegación cancelada: lo que te toque aprobar vuelve a llegarte a ti.');
+    }
+
+    /** @return array<string, mixed>|null */
+    private function datosDelegar(User $usuario): ?array
+    {
+        if ($usuario->empresa_id === null) {
+            return null;
+        }
+
+        return $this->tenant->conEmpresa((int) $usuario->empresa_id, function () use ($usuario) {
+            $delegaciones = app(Delegaciones::class);
+            $que = $delegaciones->queAprueba($usuario);
+            if ($que === []) {
+                return null;
+            }
+
+            return [
+                'que' => $que,
+                'candidatos' => $delegaciones->candidatosADelegado((int) $usuario->empresa_id)->reject(fn ($u) => $u->id === $usuario->id)->values(),
+                'vigentes' => Delegacion::with('delegado:id,name')->where('user_id', $usuario->id)->whereNull('cancelada_en')
+                    ->where('hasta', '>=', now())->orderBy('desde')->get(),
+            ];
+        });
     }
 
     public function contrasena(Request $request): RedirectResponse

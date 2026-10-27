@@ -139,7 +139,7 @@ class PendientesDireccionTest extends TestCase
         $this->actingAs($agente)->postJson('/colaboradores/rapido', ['nombre' => 'Jorge', 'apellido_paterno' => 'Méndez', 'sede_id' => $this->centro->id])->assertCreated();
         $this->actingAs($agente)->get('/')->assertDontSee('por verificar');
 
-        $this->actingAs($rh)->get('/')->assertSee('1 colaborador por verificar')->assertSee('registro=provisional', false);
+        $this->actingAs($rh)->get('/')->assertSee('1 alta por verificar')->assertSee('altas-por-verificar?pestana=colaboradores', false); // C-27: una sola bandeja
         $this->assertSame(1, app(Tenant::class)->conEmpresa($this->empresa->id, fn () => Colaborador::where('provisional', true)->count()));
     }
 

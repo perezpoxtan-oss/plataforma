@@ -77,7 +77,7 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 
 | Tarjeta | Qué decides | Valor original | Dónde se cambia |
 |---|---|---|---|
-| **Quién espera autorización del departamento** | Si visitas, proveedores y contratistas esperan la autorización; si la caseta espera el «Que pase» de RR. HH.; a los cuántos minutos se recuerda y se avisa al suplente y al jefe. | Todos esperan; 10 y 20 minutos. | **Configurar en Responsables por departamento** |
+| **Quién espera autorización del departamento** | Si visitas, proveedores y contratistas esperan la autorización; qué pasa si el departamento no tiene quien autorice en la sede (y cuántos departamentos están así hoy); si la caseta espera el «Que pase» de RR. HH.; a los cuántos minutos se recuerda y se avisa al suplente y al jefe. | Todos esperan; sin quien autorice, esperan al supervisor; 10 y 20 minutos. | **Configurar en Responsables por departamento** |
 | **Imprimir etiquetas desde los padrones** | Hoja propia de cada padrón o plantillas de Etiquetas QR. | Hoja propia de cada padrón. | **Configurar en Etiquetas QR → Plantillas** |
 | **Motivo de la visita** | Qué motivo viene marcado al registrar una visita (ninguno, o el que elijas) y, en hoteles, si se ofrece **Visita a huésped**. | Ninguno marcado; «Visita a huésped» sí. | Aquí, con **Guardar** |
 | **Procedimientos: acuse «Leí y entendí» y recordatorio** | Cómo se firma el acuse y **cada cuántos días** se recuerda a quien no ha firmado. | Casilla y firma dibujada; cada 3 días. | Aquí, con **Guardar** |

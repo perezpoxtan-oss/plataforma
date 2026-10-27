@@ -68,8 +68,14 @@
                             </div>
                         @endif
                         <div class="small text-muted"><i class="bi bi-person-badge" aria-hidden="true"></i> {{ $d->puestos_count }} puesto(s) ligado(s) · <i class="bi bi-people" aria-hidden="true"></i> {{ $d->colaboradores_count }} colaborador(es) activo(s)</div>
-                        @if ($d->activo && (int) $d->responsables_count === 0)
-                            <p class="aviso-sin-responsable mb-0"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Sin responsable: sus visitas entran sin autorización y nadie entrevista a sus candidatos.
+                        @if ($d->activo)
+                            @include('organizacion.departamentos._funciones', ['funciones' => $funciones[$d->id] ?? [], 'varias' => $variasSedesEmpresa])
+                        @endif
+                        @php $sedesSin = $d->activo ? ($sinCobertura[$d->id] ?? []) : []; @endphp
+                        @if ($sedesSin !== [])
+                            {{-- C-08 (A-03): misma regla que la caseta (cuenta activa, permiso «Responder» y acceso a la sede) --}}
+                            <p class="aviso-sin-responsable mb-0"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Sin quien autorice{{ $variasSedesEmpresa ? ' en '.implode(', ', $sedesSin) : '' }}:
+                                {{ $sinCoberturaEspera === null ? 'nadie responde sus pases, reservas ni entrevistas.' : ($sinCoberturaEspera ? 'sus visitas esperan al supervisor o al jefe de seguridad.' : 'sus visitas entran sin autorización.') }}
                                 @if ($puedeResponsables)
                                     <a href="{{ route('autorizaciones.responsables', ['desde' => 'departamentos']) }}#depto-{{ $d->id }}">Nombrar responsable</a>
                                 @else

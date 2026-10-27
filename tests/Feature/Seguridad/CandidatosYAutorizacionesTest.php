@@ -676,7 +676,9 @@ class CandidatosYAutorizacionesTest extends TestCase
         $html = $this->actingAs($this->agente)->get('/accesos')->assertOk()
             ->assertSee('data-visitas-esperan="1"', false)->assertSee('data-rh-espera-en="'.$this->centro->id.'"', false)->getContent();
         // Seguridad tiene responsable en todas sus sedes; Cocina no aparece
+        // C-08: el jefe entra a todas las sedes, así que cubre «todas»
         $this->assertStringContainsString('data-departamentos-con-responsable="{&quot;'.$this->seguridad->id.'&quot;:&quot;todas&quot;}"', $html);
+        $this->assertStringContainsString('data-sin-cobertura-espera="1"', $html);
         // Las sugerencias de colaboradores traen su departamento (visita a colaborador)
         $c = $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => '77', 'nombre' => 'Pablo', 'apellido_paterno' => 'Ek', 'sede_id' => $this->centro->id, 'departamento_id' => $this->seguridad->id]));
         $this->actingAs($this->agente)->getJson('/accesos/buscar?que=colaborador&q=pablo&sede='.$this->centro->id)->assertJsonPath('resultados.0.departamento_id', $this->seguridad->id);
@@ -687,7 +689,7 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->actingAs($this->agente)->get('/accesos')->assertSee('data-departamentos-con-responsable="{&quot;'.$this->cocina->id.'&quot;:&quot;'.$this->playa->id.'&quot;}"', false);
     }
 
-    public function test_visita_rechazada_libera_y_cierra_y_sin_ajuste_o_sin_responsable_entra_directo(): void
+    public function test_visita_rechazada_libera_y_cierra_y_sin_ajuste_entra_directo_y_sin_responsable_espera_al_supervisor(): void
     {
         $this->visitasConAutorizacion();
         $this->responsable($this->seguridad, $this->jefe);
@@ -699,9 +701,13 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->assertSame('rechazada', $acceso->autorizacion);
         $this->actingAs($this->agente)->get('/accesos?pestana=historial')->assertSee('FINALIZADO')->assertSee('No autorizado por Seguridad');
 
-        // Departamento sin responsable: entra como siempre
+        // Departamento sin quien autorice (C-08 / DD-11): espera al supervisor o jefe de seguridad de la sede
         $this->registrarEnCaseta(['nombre' => 'Elena Vargas', 'motivo_visita' => 'departamento', 'departamento_id' => $this->cocina->id, 'es_candidato' => null]);
-        $this->assertSame('en_sitio', $this->enEmpresa(fn () => Acceso::where('nombre', 'ELENA VARGAS')->value('estado')));
+        $this->assertSame(['pendiente', Acceso::SIN_RESPONSABLE], $this->enEmpresa(fn () => array_values(Acceso::where('nombre', 'ELENA VARGAS')->first(['estado', 'autorizacion'])->getAttributes())));
+        // Con «La visita pasa sin esperar», entra como antes
+        $this->empresa->refresh()->forceFill(['preferencias' => array_merge($this->empresa->preferencias ?? [], ['recepcion' => ['visitas_requieren_autorizacion' => true, 'sin_cobertura' => 'directo']])])->save();
+        $this->registrarEnCaseta(['nombre' => 'Elsa Vargas', 'motivo_visita' => 'departamento', 'departamento_id' => $this->cocina->id, 'es_candidato' => null]);
+        $this->assertSame('en_sitio', $this->enEmpresa(fn () => Acceso::where('nombre', 'ELSA VARGAS')->value('estado')));
         // Ajuste apagado: entra como siempre
         $this->visitasConAutorizacion(false);
         $this->registrarEnCaseta(['nombre' => 'Óscar Méndez', 'motivo_visita' => 'departamento', 'departamento_id' => $this->seguridad->id, 'es_candidato' => null]);

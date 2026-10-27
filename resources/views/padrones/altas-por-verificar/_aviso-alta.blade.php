@@ -7,6 +7,6 @@
 @if (auth()->user() && ! app(\App\Services\Padrones\AltasPorVerificar::class)->puedeVerificar(auth()->user(), $padron))
     <p class="aviso-alta-pendiente">
         <i class="bi bi-hourglass-split" aria-hidden="true"></i>
-        <span>Lo que registres aquí se usa <strong>de inmediato</strong> y queda <strong>pendiente de verificar</strong> hasta que quien administra el padrón lo revise.</span>
+        <span>Lo que registres aquí se usa <strong>de inmediato</strong> y queda <strong>por verificar</strong>: la verifica quien administra el padrón.</span>
     </p>
 @endif

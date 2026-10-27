@@ -61,7 +61,7 @@ La contraseña es de su dueño: por omisión **la persona la crea** con un enlac
 
 ## Cómo vincular la cuenta con su colaborador
 
-**¿Qué es «vincular»?** Decirle a la plataforma «esta cuenta es de este colaborador». Así no capturas su nombre dos veces y, si Recursos Humanos lo da de baja, su cuenta muestra un aviso para que la revises. No es obligatorio: una cuenta de soporte o de un proveedor puede quedarse sin colaborador.
+**¿Qué es «vincular»?** Decirle a la plataforma «esta cuenta es de este colaborador». Así no capturas su nombre dos veces: **manda su ficha de colaborador**. El nombre y el número de la cuenta se toman de [Colaboradores](colaboradores.md) y se ven en solo lectura; si cambian ahí (o se unen dos registros duplicados), la cuenta se actualiza sola. Si lo dan de baja en Colaboradores, **su cuenta se da de baja sola** (ver «Cómo dar de baja una cuenta»). No es obligatorio: una cuenta de soporte o de un proveedor puede quedarse sin colaborador.
 
 **Ejemplo:** la cuenta de **Daniela Canul May**, colaboradora número **1008**.
 
@@ -76,7 +76,9 @@ La contraseña es de su dueño: por omisión **la persona la crea** con un enlac
 
 ![Sugerencia para vincular](img/usuarios/6-sugerencia-vincular.png)
 
-**Qué debes ver:** en la lista, su ficha dice **Vinculado a Colaborador (activo)**. Si un día dice **Vinculado a Colaborador (¡dado de baja! revisar)**, Recursos Humanos lo dio de baja: revisa si su cuenta también debe darse de baja.
+**Qué debes ver:** en la lista, su ficha dice **Vinculado a Colaborador (activo)**. Al elegirlo, si aún no elegiste sede, se propone **la sede del colaborador**. Al editar la cuenta, **Nombre Completo** queda en solo lectura: para cambiarlo toca **cambiar en Colaboradores**.
+
+Si después le cambian la sede en Colaboradores y su cuenta solo entra a otras sedes, te llega a la **campana** el aviso **«¿Mover su cuenta a …?»**: abre su **lápiz** y elige la sede nueva.
 
 - Si cambias o borras el número a mano, el vínculo se quita. Vuelve a elegirlo de la lista.
 - Solo aparecen colaboradores **activos** de tu empresa (y de tus sedes, si tu rol es de una sede).

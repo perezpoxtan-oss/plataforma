@@ -3,7 +3,7 @@ titulo: Mi cuenta
 modulos: []
 seccion: Primeros pasos
 orden: 25
-resumen: Ver tus datos de acceso, cambiar tu contraseña sin depender de nadie, activar la verificación en dos pasos, elegir qué avisos recibes y activar los avisos del navegador.
+resumen: Ver tus datos de acceso, cambiar tu contraseña sin depender de nadie, activar la verificación en dos pasos, delegar tus aprobaciones («No molestar»), elegir qué avisos recibes y activar los avisos del navegador.
 ---
 # Mi cuenta
 
@@ -80,6 +80,32 @@ Hazlo si ya usaste varios o si crees que alguien los vio.
 
 **Qué debes ver:** «Quitaste la verificación en dos pasos: ya solo se pide tu contraseña…». Si tu empresa la exige para tu cuenta, o eres Super Administrador, en lugar del formulario verás que **no se puede quitar**.
 
+## Cómo delegar mis aprobaciones («No molestar»)
+
+Si apruebas visitas, pases de salida, reservas o entrevistas y vas a estar fuera (vacaciones, junta, día libre), deja a alguien que responda por ti. Solo aparece si apruebas alguna de esas cosas.
+
+1. Abre **Mi cuenta** y baja a **Delegar mis aprobaciones**. (También llegas con **Delegar mis aprobaciones** desde **Autorizaciones** o desde la bandeja de **Pases de salida**.)
+2. En **¿A quién?** elige a la persona que te cubre.
+3. En **¿Hasta cuándo?** elige la fecha y la hora en que regresas.
+4. Si quieres que empiece después o anotar el motivo, abre **Avanzado: empezar después y motivo**.
+5. Toca **Guardar**.
+
+![Delegar mis aprobaciones](img/mi-cuenta/delegar-mis-aprobaciones.png)
+
+**Qué debes ver:** «Listo: mientras esté activa, lo que te toque aprobar le llega a …». Arriba de la tarjeta dice **No molestar** y «Hoy tus aprobaciones van a …». A esa persona le llega un aviso en la campana.
+
+**Qué pasa mientras dura:**
+
+- Lo que te toque aprobar **y esa persona también pueda aprobar** le llega a ella: los avisos, la campana, el correo y sus **Mis pendientes**. Tus **Mis pendientes** ya no lo cuentan.
+- Si esa persona no puede aprobar algo tuyo (por ejemplo, no entra a tu sede o no aprueba pases), eso te sigue llegando a ti.
+- Tú todavía puedes responder si entras.
+- **Delegación en cadena:** si tú delegas en Ana y Ana delega en Luis, lo tuyo le llega a **la última persona de la cadena que pueda aprobarlo** (Luis), aunque tú hayas elegido a Ana. Si alguien de esa cadena termina su delegación, lo tuyo regresa al anterior.
+- Si la persona en quien delegaste **es dada de baja**, tu delegación termina sola y te llega a la campana «Tu delegación a … terminó porque fue dada de baja»: tus aprobaciones regresaron a ti.
+- Cuando la delegación vence o se cancela, el aviso que recibió la otra persona («… te delegó sus aprobaciones») queda marcado **Terminó**.
+- No se pueden delegar dos personas una a la otra en las mismas fechas: nadie atendería.
+
+**Cuando regreses:** toca **Cancelar** en tu delegación. Todo vuelve a llegarte a ti.
+
 ## Cómo elegir qué avisos recibo
 
 1. Abre **Mi cuenta** y baja a **Mis avisos**.
@@ -118,7 +144,8 @@ Con los avisos activos, tu computadora te muestra un aviso (en la esquina de la 
 ## Qué puedo cambiar y qué no
 
 - **Sí:** tu contraseña y tu verificación en dos pasos (activarla, códigos de respaldo nuevos y quitarla si tu empresa no la exige).
-- **No (lo administra quien da de alta usuarios):** tu nombre, tu usuario, tu correo, tu rol y tu sede. Si tu correo está mal o cambió, pide a tu administrador que lo corrija en **Usuarios**; es el correo donde llegan los enlaces para recuperar tu contraseña.
+- **Sí:** a quién delegas tus aprobaciones y hasta cuándo.
+- **No (lo administra quien da de alta usuarios):** tu nombre, tu usuario, tu correo, tu rol y tu sede. Si tu cuenta está vinculada a tu ficha de colaborador, tu nombre y tu número los toma de ahí. Si tu correo está mal o cambió, pide a tu administrador que lo corrija en **Usuarios**; es el correo donde llegan los enlaces para recuperar tu contraseña.
 
 ## Si algo sale mal
 
@@ -139,6 +166,11 @@ Con los avisos activos, tu computadora te muestra un aviso (en la esquina de la 
 | **Los avisos están bloqueados en este navegador…** | Alguna vez elegiste **Bloquear** cuando el navegador preguntó. | Toca el candado junto a la dirección de la plataforma, en **Notificaciones** elige **Permitir** y vuelve a cargar la página. |
 | **En celulares y tabletas estos avisos todavía no están disponibles…** | Tu celular o tableta (iPhone, iPad o Android) no muestra este tipo de aviso desde una página. | Revisa la **campana** y **Mis pendientes**. |
 | **Este navegador no puede mostrar avisos…** | Tu navegador es antiguo o no los permite. | Usa Chrome, Edge o Firefox actualizados. |
+| **No puedes delegar en ti mismo…** / **Elige a un usuario activo que pueda aprobar visitas, pases, reservas o entrevistas.** | Elegiste a alguien que no puede cubrirte. | Elige a otra persona de la lista. |
+| **La delegación ya habría terminado: elige una fecha futura.** / **«Hasta» debe ser después de «Desde».** | La fecha está mal. | Corrige **¿Hasta cuándo?**. |
+| **Ya hay una delegación en esas fechas: cancélala antes de crear otra.** | Ya delegaste en esas fechas. | Cancela la anterior y guarda la nueva. |
+| **… ya delega sus aprobaciones en ti en esas fechas (directamente o a través de otra persona): elige a alguien más.** | Esa persona te dejó sus aprobaciones a ti. | Elige a otra persona que te cubra. |
+| **Demasiados intentos.** (página de espera) | Guardaste o cancelaste muchas veces en un minuto. | Espera un minuto y vuelve a intentarlo. |
 | Activé los avisos pero no me llega ninguno | Cerraste todas las pestañas de la plataforma, tu sesión terminó por inactividad o la computadora está en modo «No molestar» / «Concentración». | Deja una pestaña de la plataforma abierta, vuelve a entrar si tu sesión terminó y revisa que tu computadora permita notificaciones del navegador. |
 
 ## Preguntas frecuentes
@@ -160,3 +192,4 @@ Con los avisos activos, tu computadora te muestra un aviso (en la esquina de la 
 - [Entrar y salir de la plataforma](inicio-de-sesion.md)
 - [Menús, Mis pendientes y modos de pantalla](menus.md)
 - [Usuarios](usuarios.md)
+- [Autorizaciones](autorizaciones.md)

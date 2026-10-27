@@ -112,6 +112,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/mi-cuenta/contrasena', [MiCuentaController::class, 'contrasena'])->middleware('throttle:10,1')->name('mi-cuenta.contrasena');
     // Mejoras estructura (ADR-0016): cada persona silencia los avisos que no quiere recibir
     Route::put('/mi-cuenta/avisos', [MiCuentaController::class, 'avisos'])->name('mi-cuenta.avisos');
+    // C-12: «Delegar mis aprobaciones» (visitas, pases, reservas, entrevistas)
+    Route::post('/mi-cuenta/delegar', [MiCuentaController::class, 'delegar'])->middleware('throttle:delegar-cuenta')->name('mi-cuenta.delegar');
+    Route::patch('/mi-cuenta/delegar/{delegacion}/cancelar', [MiCuentaController::class, 'cancelarDelegacion'])->whereNumber('delegacion')->middleware('throttle:delegar-cuenta')->name('mi-cuenta.delegar.cancelar');
     // Verificación en dos pasos (docs/tecnico/dos-pasos.md): activar, códigos de respaldo y quitarla (la propia cuenta, sin permiso)
     Route::get('/mi-cuenta/dos-pasos', [CuentaDosPasosController::class, 'mostrar'])->name('mi-cuenta.dos-pasos');
     Route::post('/mi-cuenta/dos-pasos', [CuentaDosPasosController::class, 'activar'])->middleware('throttle:dos-pasos-cuenta')->name('mi-cuenta.dos-pasos.activar');
@@ -206,6 +209,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/colaboradores/{colaborador}/estado', [ColaboradorController::class, 'estado'])->whereNumber('colaborador')->name('colaboradores.estado');
     Route::put('/colaboradores/{colaborador}/validar', [ColaboradorController::class, 'validar'])->whereNumber('colaborador')->name('colaboradores.validar');
     Route::put('/colaboradores/{colaborador}/fusionar', [ColaboradorController::class, 'fusionar'])->whereNumber('colaborador')->name('colaboradores.fusionar');
+    Route::put('/colaboradores/{colaborador}/rechazar', [ColaboradorController::class, 'rechazar'])->whereNumber('colaborador')->name('colaboradores.rechazar'); // C-27
     Route::put('/colaboradores/{colaborador}/sedes', [ColaboradorController::class, 'sedes'])->whereNumber('colaborador')->name('colaboradores.sedes');
     Route::get('/colaboradores/{colaborador}/datos-personales', [ColaboradorController::class, 'datosPersonales'])->whereNumber('colaborador')->name('colaboradores.datos-personales');
 
@@ -531,6 +535,8 @@ Route::middleware('auth')->group(function () {
     // Fin Padrones: Ajustes QA 4
     // Padrones: Altas por verificar (vehículos, empresas externas y personas registrados desde Operación; ver docs/tecnico/altas-por-verificar.md)
     Route::controller('App\Http\Controllers\Padrones\AltaPorVerificarController')->group(function () {
+        // C-27: una sola bandeja con pestañas Personas, Vehículos, Empresas y Colaboradores
+        Route::get('/altas-por-verificar', 'index')->name('altas_por_verificar.index');
         Route::get('/altas-por-verificar/parecidos', 'parecidos')->middleware('throttle:120,1')->name('altas_por_verificar.parecidos');
         Route::put('/vehiculos/{vehiculo}/aceptar', 'aceptarVehiculo')->whereNumber('vehiculo')->name('vehiculos.aceptar');
         Route::put('/vehiculos/{vehiculo}/rechazar', 'rechazarVehiculo')->whereNumber('vehiculo')->name('vehiculos.rechazar');
@@ -643,8 +649,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/autorizaciones', 'index')->name('autorizaciones.index');
         Route::get('/autorizaciones/responsables', 'responsables')->name('autorizaciones.responsables');
         Route::put('/autorizaciones/responsables/{departamento}', 'guardarResponsables')->whereNumber('departamento')->name('autorizaciones.responsables.guardar');
-        Route::post('/autorizaciones/delegaciones', 'delegar')->name('autorizaciones.delegar');
-        Route::patch('/autorizaciones/delegaciones/{delegacion}/cancelar', 'cancelarDelegacion')->whereNumber('delegacion')->name('autorizaciones.delegaciones.cancelar');
+        Route::post('/autorizaciones/delegaciones', 'delegar')->middleware('throttle:delegar-cuenta')->name('autorizaciones.delegar'); // Revisión Etapa 3a: mismo limitador que Mi cuenta
+        Route::patch('/autorizaciones/delegaciones/{delegacion}/cancelar', 'cancelarDelegacion')->whereNumber('delegacion')->middleware('throttle:delegar-cuenta')->name('autorizaciones.delegaciones.cancelar');
         Route::get('/autorizaciones/{autorizacion}', 'show')->whereNumber('autorizacion')->name('autorizaciones.show');
         Route::get('/autorizaciones/{autorizacion}/confirmar', 'confirmar')->whereNumber('autorizacion')->name('autorizaciones.confirmar');
         Route::post('/autorizaciones/{autorizacion}/responder', 'responder')->whereNumber('autorizacion')->middleware('throttle:60,1')->name('autorizaciones.responder');

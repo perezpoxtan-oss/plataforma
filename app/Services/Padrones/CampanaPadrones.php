@@ -114,7 +114,7 @@ class CampanaPadrones
     }
 
     /** @param  string  $resultado  verificada | unida */
-    public function colaboradorResultado(Colaborador $colaborador, string $resultado, User $quien, ?Colaborador $destino = null): void
+    public function colaboradorResultado(Colaborador $colaborador, string $resultado, User $quien, ?Colaborador $destino = null, ?string $motivo = null): void
     {
         $this->centro->resolver('alta_colaboradores', (int) $colaborador->id);
         $creador = (int) $colaborador->creado_por;
@@ -123,11 +123,18 @@ class CampanaPadrones
             return;
         }
         $unida = $resultado === 'unida';
-        $this->centro->avisar((int) $colaborador->empresa_id, [$creador], $unida ? 'alta_unida' : 'alta_verificada', [
-            'titulo' => $unida ? 'Tu alta «'.$colaborador->nombreCompleto().'» ya existía' : 'Tu alta «'.$colaborador->nombreCompleto().'» quedó verificada',
-            'texto' => $unida
-                ? 'Recursos Humanos la unió con '.($destino?->nombreCompleto() ?? 'su registro').($destino?->num_empleado ? ' (núm. '.$destino->num_empleado.')' : '').': lo que registraste pasó a ese colaborador.'
-                : 'Recursos Humanos le asignó su número'.($colaborador->num_empleado ? ' ('.$colaborador->num_empleado.')' : '').'; ya es un colaborador normal.',
+        $rechazada = $resultado === 'rechazada'; // C-27: «Rechazar» con motivo y aviso a quien la registró
+        $this->centro->avisar((int) $colaborador->empresa_id, [$creador], $unida ? 'alta_unida' : ($rechazada ? 'alta_rechazada' : 'alta_verificada'), [
+            'titulo' => match (true) {
+                $unida => 'Tu alta «'.$colaborador->nombreCompleto().'» ya existía',
+                $rechazada => 'Tu alta «'.$colaborador->nombreCompleto().'» se rechazó',
+                default => 'Tu alta «'.$colaborador->nombreCompleto().'» quedó verificada',
+            },
+            'texto' => match (true) {
+                $unida => $quien->name.' la unió con '.($destino?->nombreCompleto() ?? 'su registro').($destino?->num_empleado ? ' (núm. '.$destino->num_empleado.')' : '').': lo que registraste pasó a ese colaborador.',
+                $rechazada => $quien->name.' la rechazó'.($motivo ? ': «'.$motivo.'»' : '').'. Ya no se puede usar en la caseta.',
+                default => $quien->name.' la verificó'.($colaborador->num_empleado ? ' con el número '.$colaborador->num_empleado : '').'; ya es un colaborador normal.',
+            },
             'referencia_tipo' => 'alta_colaboradores_resultado',
             'referencia_id' => (int) $colaborador->id,
         ]);

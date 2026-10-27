@@ -23,7 +23,7 @@
         </div>
         <div class="dialogo-cuerpo">
             <div class="resumen-alta">
-                <span class="insignia-verificacion pendiente"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Pendiente de verificar</span>
+                <span class="insignia-verificacion pendiente"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Por verificar</span>
                 <strong class="titulo-alta" data-va-titulo></strong>
                 <small class="d-block" data-va-registro></small>
             </div>
@@ -33,7 +33,7 @@
                 <legend class="campo-etiqueta">¿Qué encontraste?</legend>
                 <div class="modo-toggle tres">
                     <label class="modo-opt"><input type="radio" name="va_camino" value="aceptar" checked data-va-camino><i class="bi bi-check2-circle" aria-hidden="true"></i><span>Es correcto</span></label>
-                    <label class="modo-opt"><input type="radio" name="va_camino" value="unir" data-va-camino><i class="bi bi-union" aria-hidden="true"></i><span>Ya existía</span></label>
+                    <label class="modo-opt"><input type="radio" name="va_camino" value="unir" data-va-camino><i class="bi bi-union" aria-hidden="true"></i><span>Es el mismo</span></label>
                     <label class="modo-opt"><input type="radio" name="va_camino" value="rechazar" data-va-camino><i class="bi bi-x-octagon" aria-hidden="true"></i><span>Rechazar</span></label>
                 </div>
             </fieldset>
@@ -155,11 +155,11 @@
                 @endif
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="btn-verificar-aceptar" data-texto-original="Aceptar y verificar"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Aceptar y verificar</button>
+                    <button type="submit" class="btn-verificar-aceptar" data-texto-original="Aprobar"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Aprobar</button>
                 </div>
             </form>
 
-            {{-- Ya existía: unir con el registro correcto --}}
+            {{-- Es el mismo: unir con el registro correcto (C-27 / DD-20: «Aprobar · es el mismo») --}}
             <form method="POST" autocomplete="off" data-va-form="unir" hidden>
                 @csrf
                 @method('PUT')
@@ -171,7 +171,7 @@
                 <p class="campo-ayuda mt-2"><i class="bi bi-info-circle" aria-hidden="true"></i> Todo lo que la caseta registró con el alta (accesos, movimientos, entregas…) pasa al registro elegido, y el alta queda como «Unida».</p>
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="btn-verificar-unir" data-texto-original="Unir con el elegido"><i class="bi bi-union me-1" aria-hidden="true"></i>Unir con el elegido</button>
+                    <button type="submit" class="btn-verificar-unir" data-texto-original="Aprobar · es el mismo"><i class="bi bi-union me-1" aria-hidden="true"></i>Aprobar · es el mismo</button>
                 </div>
             </form>
 
@@ -185,7 +185,7 @@
                 <p class="campo-ayuda"><i class="bi bi-info-circle" aria-hidden="true"></i> Lo ya registrado con el alta no se borra (queda como historia), pero la caseta ya no la podrá usar.</p>
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="btn-verificar-rechazar" data-texto-original="Rechazar alta"><i class="bi bi-x-octagon me-1" aria-hidden="true"></i>Rechazar alta</button>
+                    <button type="submit" class="btn-verificar-rechazar" data-texto-original="Rechazar"><i class="bi bi-x-octagon me-1" aria-hidden="true"></i>Rechazar</button>
                 </div>
             </form>
         </div>

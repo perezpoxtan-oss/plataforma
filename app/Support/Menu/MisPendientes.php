@@ -2,6 +2,7 @@
 
 namespace App\Support\Menu;
 
+use App\Models\Acceso;
 use App\Models\Candidato;
 use App\Models\Colaborador;
 use App\Models\DepartamentoResponsable;
@@ -11,8 +12,12 @@ use App\Models\Postulacion;
 use App\Models\SolicitudArco;
 use App\Models\SolicitudCuenta;
 use App\Models\User;
+use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Activos\PendientesActivos;
 use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Autorizaciones\CadenaDelegaciones;
+use App\Services\Autorizaciones\Cobertura;
+use App\Services\Autorizaciones\Escalamiento;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\PlazosCandidatos;
@@ -32,6 +37,7 @@ use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\EmpresaScope;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Container\Attributes\Scoped;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -104,27 +110,59 @@ class MisPendientes
     {
         $items = [];
 
-        // Mejoras estructura (ADR-0016): lo que Inicio avisaba y aquí faltaba (criterio 1).
-        // Mejoras padrones (ADR-0015): mismas palabras que las altas de los padrones («por verificar»)
-        if ($actor->can('colaboradores.aprobar')) {
-            $items[] = $this->item('colaboradores_por_verificar', 'Colaboradores por verificar', 'bi-person-exclamation',
-                app(AdministradorColaboradores::class)->limitar(Colaborador::query(), $actor, 'colaboradores.aprobar')
-                    ->where('colaboradores.provisional', true)->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id')->count(),
-                route('colaboradores.index', ['registro' => 'provisional']));
-        }
-        // Fin Mejoras estructura
-
         // Autorizaciones: solo responsables o delegados de algún departamento
         $autorizaciones = app(Autorizaciones::class);
         if ($actor->can('autorizaciones.responder') && $autorizaciones->departamentosQueAtiende($actor) !== []) {
+            $porResponder = $autorizaciones->pendientesPara($actor);
+            // C-12 «No molestar»: lo que mi delegado puede responder no me espera a mí
+            // (directa o en cadena: basta con que alguien de mi cadena pueda responderla)
+            $cadena = $autorizaciones->cadena()->cadena((int) $actor->id);
+            if ($porResponder->isNotEmpty() && $cadena !== []) {
+                $porResponder = $porResponder->reject(fn ($a) => collect($cadena)
+                    ->contains(fn (int $id) => $autorizaciones->puedeResponder($autorizaciones->cadena()->usuario($id), $a)));
+            }
             $items[] = $this->item('autorizaciones', 'Autorizaciones por responder', 'bi-patch-check',
-                $autorizaciones->pendientesPara($actor)->count(), route('autorizaciones.index'));
+                $porResponder->count(), route('autorizaciones.index'));
+        }
+
+        // C-08 / DD-11: visitas que esperan al supervisor porque su departamento no tiene quien autorice en la sede
+        if ($actor->can('accesos.aprobar')) {
+            $esperan = app(ConsultaAccesos::class)->limitar(Acceso::query(), $actor, 'accesos.aprobar')
+                ->where('accesos.estado', 'pendiente')->where('accesos.autorizacion', Acceso::SIN_RESPONSABLE)
+                ->toBase()->selectRaw('COUNT(*) AS total, MIN(accesos.entrada_at) AS desde')->first();
+            if (($total = (int) ($esperan->total ?? 0)) > 0) {
+                $empresa = Empresa::find($empresaId);
+                [$ambar, $roja] = app(Escalamiento::class)->umbrales($empresa);
+                $minutos = $esperan->desde ? (int) max(0, now()->diffInMinutes(Carbon::parse($esperan->desde, 'UTC'))) : 0;
+                $items[] = ['nivel' => $minutos >= $roja ? 'roja' : ($minutos >= $ambar ? 'ambar' : null)]
+                    + $this->item('esperan_supervisor', 'Esperan tu autorización en caseta', 'bi-hourglass-split', $total, route('accesos.index', ['pestana' => 'pendientes']));
+            }
+        }
+
+        // C-08: departamentos que se quedaron sin quien autorice (baja de su responsable, cambio de rol o de sede)
+        $autorizador = app(Autorizador::class);
+        if ($actor->can('autorizaciones.configurar') && $autorizador->alcanceDeEmpresa($actor, 'autorizaciones.configurar')) {
+            $perdidas = app(Cobertura::class)->sinCobertura(soloPerdidas: true);
+            if ($perdidas !== []) {
+                $deptos = collect($perdidas)->groupBy('departamento_id');
+                $items[] = $this->item('cobertura', 'Sin quien autorice', 'bi-person-exclamation', $deptos->count(),
+                    route('autorizaciones.responsables').'#depto-'.$deptos->keys()->first())
+                    + ['detalle' => $deptos->count() > 1 ? $deptos->map(fn ($f, $id) => ['titulo' => $f->first()['departamento'].' ('.$f->pluck('sede')->join(', ').')',
+                        'total' => $f->count(), 'url' => route('autorizaciones.responsables').'#depto-'.$id, 'icono' => 'bi-diagram-2'])->values()->all() : [],
+                        'frase' => Cobertura::frase($perdidas)];
+            }
         }
 
         // Pases de salida: aprobaciones y pasos de caseta que esperan su firma
         if ($actor->can('pases_salida.ver') && ($actor->can('pases_salida.aprobar') || $actor->can('pases_salida.firmar'))) {
-            $items[] = $this->item('pases_salida', 'Firmas de pases de salida', 'bi-pen',
-                count(app(AdministradorPasesSalida::class)->idsPorFirmar($actor)), route('pases-salida.pendientes'));
+            $pases = app(AdministradorPasesSalida::class);
+            $porFirmar = $pases->idsPorFirmar($actor);
+            // C-12 «No molestar»: las aprobaciones que mi delegado puede firmar no me esperan a mí
+            if ($porFirmar !== [] && ($delegado = $this->delegadoDe($actor, 'pases_salida.aprobar')) !== null) {
+                $deEl = array_intersect($pases->idsPorAprobar($actor), $pases->idsPorAprobar($delegado));
+                $porFirmar = array_values(array_diff($porFirmar, $deEl));
+            }
+            $items[] = $this->item('pases_salida', 'Firmas de pases de salida', 'bi-pen', count($porFirmar), route('pases-salida.pendientes'));
         }
 
         // Mejoras estructura (ADR-0016): versiones de procedimientos que esperan la aprobación de quien entra
@@ -141,15 +179,22 @@ class MisPendientes
                 app(AdministradorProcedimientos::class)->pendientesDe($actor)->count(), route('procedimientos.por-leer'));
         }
 
-        // Altas por verificar (ADR-0006): solo quien puede verificar algún padrón
+        // Altas por verificar (ADR-0006) — C-27: una sola bandeja con Personas, Vehículos, Empresas y Colaboradores
         $altas = app(AltasPorVerificar::class);
         $verifica = collect(array_keys(AltasPorVerificar::PADRONES))->contains(fn (string $p) => $altas->puedeVerificar($actor, $p));
-        if ($verifica) {
-            $grupos = $altas->pendientesPorPadron($actor);
+        if ($verifica || $actor->can('colaboradores.aprobar')) {
+            $grupos = array_map(fn ($g) => ['ruta' => route('altas_por_verificar.index', ['pestana' => $g['padron']])] + $g, $verifica ? $altas->pendientesPorPadron($actor) : []);
+            if ($actor->can('colaboradores.aprobar')) {
+                $colaboradores = app(AdministradorColaboradores::class)->limitar(Colaborador::query(), $actor, 'colaboradores.aprobar')
+                    ->where('colaboradores.provisional', true)->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id')->count();
+                if ($colaboradores > 0) {
+                    $grupos[] = ['padron' => 'colaboradores', 'nombre' => 'Colaboradores', 'icono' => 'bi-person-exclamation', 'total' => $colaboradores,
+                        'ruta' => route('altas_por_verificar.index', ['pestana' => 'colaboradores'])];
+                }
+            }
             $items[] = $this->item('altas', count($grupos) === 1 ? 'Altas por verificar · '.$grupos[0]['nombre'] : 'Altas por verificar', 'bi-patch-question',
                 (int) array_sum(array_column($grupos, 'total')),
-                // Un solo padrón: directo a su lista; varios: cada padrón con su enlace (Mejoras estructura)
-                count($grupos) === 1 ? $grupos[0]['ruta'] : ($grupos[0]['ruta'] ?? route('panel')))
+                $grupos[0]['ruta'] ?? route('altas_por_verificar.index'))
                 + ['detalle' => count($grupos) > 1 ? array_map(fn ($g) => ['titulo' => $g['nombre'], 'total' => $g['total'], 'url' => $g['ruta'], 'icono' => $g['icono']], $grupos) : []];
         }
 
@@ -171,7 +216,12 @@ class MisPendientes
         // Quien entrevista (candidatos, fase 2): lo que Recursos Humanos le canalizó, con la cita más próxima
         if ($actor->can('candidatos.evaluar')) {
             $entrevistas = app(Entrevistas::class);
-            $pendientes = $entrevistas->pendientes($actor)->get(['postulaciones.id', 'postulaciones.cita_en', 'postulaciones.cita_ahora']);
+            $pendientes = $entrevistas->pendientes($actor)->get(['postulaciones.id', 'postulaciones.cita_en', 'postulaciones.cita_ahora', 'postulaciones.entrevistador_id']);
+            // C-12 «No molestar»: las mías las atiende mi delegado (si puede entrevistar)
+            if ($pendientes->contains(fn ($p) => (int) $p->entrevistador_id === (int) $actor->id)
+                && $this->delegadoDe($actor, 'candidatos.evaluar') !== null) {
+                $pendientes = $pendientes->reject(fn ($p) => (int) $p->entrevistador_id === (int) $actor->id)->values();
+            }
             $entrevista = $pendientes->isNotEmpty()
                 || Postulacion::where('entrevistador_id', $actor->id)->exists()
                 || DepartamentoResponsable::where('user_id', $actor->id)->exists();
@@ -266,6 +316,20 @@ class MisPendientes
 
         return ['total' => array_sum(array_column($items, 'total')), 'items' => $items] + ($items === [] ? [] : ['vista' => self::vista($items)]);
     }
+
+    /**
+     * C-12: a quién le llega lo que yo apruebo con ese permiso: el último de mi
+     * cadena de delegaciones (A→B→C) que lo tenga; null si me queda a mí.
+     */
+    private function delegadoDe(User $actor, string $permiso): ?User
+    {
+        $this->cadena ??= app(Autorizaciones::class)->cadena();
+        $destino = $this->cadena->destino((int) $actor->id, fn (User $d) => $d->can($permiso));
+
+        return $destino === (int) $actor->id ? null : $this->cadena->usuario($destino);
+    }
+
+    private ?CadenaDelegaciones $cadena = null;
 
     // Mejoras estructura (ADR-0016): lo que se pinta, sin renglones en cero y con candidatos en un solo renglón
 

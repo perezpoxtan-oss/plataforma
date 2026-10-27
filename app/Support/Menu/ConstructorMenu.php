@@ -31,6 +31,9 @@ class ConstructorMenu
     /** Sección del menú Recursos Humanos donde va «Mis entrevistas» («Autorizaciones» va en Estructura → Organización, C-01). */
     public const SECCION_PERSONAL = 'Recepción y candidatos';
 
+    /** C-27: donde va «Altas por verificar» en Padrones. */
+    public const SECCION_PADRONES = 'Personas y vehículos';
+
     /** @var array<int, list<array<string, mixed>>> */
     private array $cache = [];
 
@@ -107,7 +110,7 @@ class ConstructorMenu
                 ];
             }
 
-            if ($menu->clave === 'recursos_humanos' || $menu->clave === 'estructura') {
+            if (in_array($menu->clave, ['recursos_humanos', 'estructura', 'padrones'], true)) {
                 $secciones = $this->conPantallasPersonales($usuario, $secciones, $menu->clave);
             }
             if ($secciones === []) {
@@ -153,7 +156,16 @@ class ConstructorMenu
                 && $tenant->conEmpresa((int) $empresaId, fn () => app(Autorizaciones::class)->departamentosQueAtiende($usuario) !== [])))) {
             $extras[] = ['clave' => 'autorizaciones', 'nombre' => 'Autorizaciones', 'icono' => 'bi-patch-check', 'color' => 'warning', 'ruta' => 'autorizaciones.index'];
         }
-        $seccion = $menu === 'estructura' ? MenuSeeder::SECCION_ORGANIZACION : self::SECCION_PERSONAL;
+        // C-27: una sola entrada «Altas por verificar» en Padrones, para quien verifica algún padrón o los colaboradores
+        if ($menu === 'padrones' && Route::has('altas_por_verificar.index')
+            && collect(['visitantes.editar', 'vehiculos.editar', 'proveedores.editar', 'colaboradores.aprobar'])->contains(fn ($p) => $this->autorizador->puede($usuario, $p))) {
+            $extras[] = ['clave' => 'altas_por_verificar', 'nombre' => 'Altas por verificar', 'icono' => 'bi-patch-question', 'color' => 'warning', 'ruta' => 'altas_por_verificar.index'];
+        }
+        $seccion = match ($menu) {
+            'estructura' => MenuSeeder::SECCION_ORGANIZACION,
+            'padrones' => self::SECCION_PADRONES,
+            default => self::SECCION_PERSONAL,
+        };
         foreach ($extras as $item) {
             $secciones[$seccion][] = $item + [
                 'prefijo' => preg_replace('/\.[^.]+$/', '.', $item['ruta']),

@@ -242,7 +242,7 @@ class ColaboradorController extends Controller
             return $this->colaboradores->validarProvisional($request->user(), $empresaId, $modelo, $request);
         });
 
-        return redirect()->route('colaboradores.index')->with('ok', "«{$modelo->nombreCompleto()}» verificado con el número {$modelo->num_empleado}.");
+        return $this->volver($request)->with('ok', "«{$modelo->nombreCompleto()}» verificado con el número {$modelo->num_empleado}.");
     }
 
     /**
@@ -267,7 +267,33 @@ class ColaboradorController extends Controller
             return [$provisional, $destino];
         });
 
-        return redirect()->route('colaboradores.index')->with('ok', "«{$provisional->nombreCompleto()}» se unió con «{$destino->nombreCompleto()}» (#{$destino->num_empleado}).");
+        return $this->volver($request)->with('ok', "«{$provisional->nombreCompleto()}» se unió con «{$destino->nombreCompleto()}» (#{$destino->num_empleado}).");
+    }
+
+    /**
+     * C-27: «Rechazar» un alta de la caseta (motivo obligatorio; avisa a quien la registró).
+     */
+    public function rechazar(Request $request, int $colaborador): RedirectResponse
+    {
+        Gate::authorize('colaboradores.aprobar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $colaborador) {
+            $modelo = $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.aprobar');
+            $this->colaboradores->rechazarProvisional($request->user(), $modelo, $request->input('motivo_rechazo'));
+
+            return $modelo;
+        });
+
+        return $this->volver($request)->with('ok', "Alta «{$modelo->nombreCompleto()}» rechazada. Avisamos a quien la registró.");
+    }
+
+    /** Después de verificar: a la bandeja «Altas por verificar» si de ahí vino (C-27), o a Colaboradores. */
+    private function volver(Request $request): RedirectResponse
+    {
+        return $request->input('volver') === 'altas'
+            ? redirect()->route('altas_por_verificar.index', ['pestana' => 'colaboradores'])
+            : redirect()->route('colaboradores.index');
     }
 
     /**

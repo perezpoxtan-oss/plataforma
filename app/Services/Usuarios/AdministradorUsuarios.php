@@ -7,6 +7,8 @@ use App\Models\Sede;
 use App\Models\SolicitudCuenta;
 use App\Models\User;
 use App\Models\UsuarioRol;
+use App\Services\Autorizaciones\Cobertura;
+use App\Services\Autorizaciones\Delegaciones;
 use App\Services\Cuenta\AvisosCuenta;
 use App\Services\Cuenta\RecuperacionContrasena;
 use App\Services\Cuenta\SolicitudesCuenta;
@@ -159,6 +161,8 @@ class AdministradorUsuarios
         // La bitácora anota que la contraseña cambió, nunca su valor ni su hash
         $despues = $this->foto($usuario->fresh()) + (! empty($datos['password']) ? ['contrasena' => 'cambiada'] : []);
         $this->roles->auditar($actor, 'usuarios.actualizado', $usuario, $antes, $despues);
+        // C-08: un cambio de rol, de sedes o una baja puede dejar un departamento sin quien autorice
+        Cobertura::revisarDespues((int) $usuario->empresa_id ?: null);
 
         return $usuario;
     }
@@ -177,6 +181,10 @@ class AdministradorUsuarios
         }
 
         $this->roles->auditar($actor, $activo ? 'usuarios.reactivado' : 'usuarios.desactivado', $usuario, ['activo' => ! $activo], ['activo' => $activo]);
+        Cobertura::revisarDespues((int) $usuario->empresa_id ?: null); // C-08
+        if (! $activo) {
+            Delegaciones::delegadoDadoDeBaja($usuario, $actor); // Revisión Etapa 3a
+        }
     }
 
     /**

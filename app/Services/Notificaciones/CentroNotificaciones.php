@@ -2,6 +2,7 @@
 
 namespace App\Services\Notificaciones;
 
+use App\Models\Delegacion;
 use App\Models\Notificacion;
 use App\Models\User;
 use App\Support\HoraLocal;
@@ -26,7 +27,7 @@ class CentroNotificaciones
      * Tipos que esperan una respuesta inmediata (autorizaciones de visita,
      * recepción y escalamiento): el aviso del navegador no se cierra solo.
      */
-    public const URGENTES = ['autorizacion_visita', 'autorizacion_candidato', 'autorizacion_recepcion', 'autorizacion_escalada'];
+    public const URGENTES = ['autorizacion_visita', 'autorizacion_candidato', 'autorizacion_recepcion', 'autorizacion_escalada', 'acceso_sin_cobertura'];
 
     /** Tipos de notificación => [icono, nivel]. */
     public const TIPOS = [
@@ -39,6 +40,12 @@ class CentroNotificaciones
         'autorizacion_escalada' => ['bi-alarm-fill', 'alerta'],
         'autorizacion_excepcion' => ['bi-shield-exclamation', 'alerta'],
         'delegacion' => ['bi-person-gear', 'info'],
+        'delegacion_terminada' => ['bi-person-dash', 'alerta'],
+        // Etapa 3 (C-08): departamento sin quien autorice y visita que espera al supervisor de la sede
+        'cobertura_perdida' => ['bi-person-exclamation', 'alerta'],
+        'acceso_sin_cobertura' => ['bi-hourglass-split', 'alerta'],
+        // C-11: el colaborador cambió de sede y su cuenta no entra a la nueva
+        'cuenta_sede' => ['bi-geo-alt-fill', 'alerta'],
         // Candidatos, fase 2
         'entrevista_asignada' => ['bi-calendar-event', 'alerta'],
         'entrevista_cambio' => ['bi-calendar-x', 'info'],
@@ -191,6 +198,35 @@ class CentroNotificaciones
             ->update(['acciones' => null, 'leida_en' => now(), 'updated_at' => now()]);
     }
 
+    /** Prefijo del aviso «te delegó sus aprobaciones» cuando la delegación ya terminó. */
+    public const DELEGACION_TERMINO = 'Terminó · ';
+
+    /**
+     * Revisión Etapa 3a: el aviso «X te delegó sus aprobaciones» no se queda
+     * vigente cuando la delegación vence o se cancela: queda leído, sin botones
+     * y con «Terminó · » al inicio. Corre en la consulta de la campana (una
+     * consulta si no hay avisos de delegación sin leer).
+     */
+    public function terminarAvisosDeDelegacion(User $usuario): void
+    {
+        $avisos = Notificacion::de($usuario)->where('tipo', 'delegacion')->where('referencia_tipo', 'delegacion')->whereNull('leida_en')->get(['id', 'titulo', 'referencia_id']);
+        if ($avisos->isEmpty()) {
+            return;
+        }
+        $terminadas = Delegacion::query()->withoutGlobalScopes()->whereIn('id', $avisos->pluck('referencia_id'))
+            ->where(fn ($q) => $q->whereNotNull('cancelada_en')->orWhere('hasta', '<', now()))->pluck('id')->map(fn ($id) => (int) $id)->all();
+        foreach ($avisos->filter(fn ($n) => in_array((int) $n->referencia_id, $terminadas, true)) as $n) {
+            self::marcarTerminada($n);
+        }
+    }
+
+    /** Aviso de una delegación que terminó: «Terminó · …», leído y sin botones. */
+    public static function marcarTerminada(Notificacion $n): void
+    {
+        $titulo = str_starts_with((string) $n->titulo, self::DELEGACION_TERMINO) ? $n->titulo : mb_substr(self::DELEGACION_TERMINO.$n->titulo, 0, 150);
+        Notificacion::query()->withoutGlobalScopes()->whereKey($n->id)->update(['titulo' => $titulo, 'acciones' => null, 'leida_en' => now(), 'updated_at' => now()]);
+    }
+
     public function noLeidas(User $usuario): int
     {
         return Notificacion::de($usuario)->noLeidas()->count();
@@ -203,6 +239,8 @@ class CentroNotificaciones
      */
     public function resumen(User $usuario): array
     {
+        $this->terminarAvisosDeDelegacion($usuario);
+
         return [
             'no_leidas' => $this->noLeidas($usuario),
             'lista' => $this->recientes($usuario)->map(fn (Notificacion $n) => $this->paraLista($n))->values()->all(),

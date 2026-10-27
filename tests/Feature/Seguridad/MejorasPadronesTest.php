@@ -181,7 +181,7 @@ class MejorasPadronesTest extends TestCase
 
         $this->assertSame('Alta por verificar: Jorge Méndez', $this->avisos($rh, 'alta_por_verificar')[0]->titulo);
         $pendientes = collect(app(MisPendientes::class)->para($rh)['items'])->keyBy('clave');
-        $this->assertSame(1, $pendientes['colaboradores_por_verificar']['total']);
+        $this->assertSame(1, $pendientes['altas']['total']); // C-27: renglón único con la pestaña Colaboradores
 
         $this->actingAs($rh)->put("/colaboradores/{$jorge->id}/validar", [
             'nombre' => 'Jorge', 'apellido_paterno' => 'Méndez', 'sede_id' => $this->centro->id, 'num_empleado' => '3001', '_dialogo' => "validar-{$jorge->id}",

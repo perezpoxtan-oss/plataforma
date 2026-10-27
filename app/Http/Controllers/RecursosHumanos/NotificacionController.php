@@ -33,6 +33,9 @@ class NotificacionController extends Controller
         $empresaId = $this->empresa->id($actor);
         // Catálogo comercial: el Super Administrador sin empresa de trabajo ve sus avisos de la plataforma
         $ve = $empresaId !== null || $actor->es_superadmin;
+        if ($empresaId !== null) {
+            $this->tenant->conEmpresa($empresaId, fn () => $this->centro->terminarAvisosDeDelegacion($actor)); // Revisión Etapa 3a
+        }
         $lista = ! $ve ? null : $this->tenant->conEmpresa($empresaId, fn () => Notificacion::de($actor)
             ->when($request->query('filtro') === 'no_leidas', fn ($q) => $q->noLeidas())
             ->orderByDesc('id')->paginate(25)->withQueryString());

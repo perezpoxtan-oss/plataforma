@@ -32,8 +32,11 @@ use Illuminate\Http\UploadedFile;
  *    («Esperando autorización» de RR. HH.) y RR. HH. responde Que pase / Que
  *    espere / No puede pasar. La caseta nunca ve etapas ni datos del CV.
  *  - Personal externo → Visita a Departamento (o a un colaborador): si la
- *    empresa lo pide y el departamento tiene responsable, el acceso nace
- *    PENDIENTE («Esperando autorización») y se avisa al responsable.
+ *    empresa lo pide y el departamento tiene quien autorice en la sede
+ *    (C-08: Cobertura), el acceso nace PENDIENTE («Esperando autorización»)
+ *    y se avisa al responsable. Si no tiene (DD-11), también nace pendiente
+ *    y espera al supervisor o al jefe de seguridad de la sede, que reciben
+ *    el aviso; la empresa puede elegir «La visita pasa sin esperar».
  *  - Proveedor y contratista: «¿A qué departamento viene?»; si la empresa lo
  *    pide para ese tipo, espera al responsable igual que una visita (sin
  *    responsable en la sede, la caseta lo pasa con «Autorizar por excepción»).
@@ -112,8 +115,12 @@ class RecepcionEnCaseta
         }
 
         $empresa = Empresa::find(app(Tenant::class)->empresaId());
-        $r['esperar'] = $r['departamento_id'] !== null && $empresa !== null && $this->ajustes->visitasRequierenAutorizacion($empresa)
-            && $this->autorizaciones->tieneResponsables($r['departamento_id'], $sedeId);
+        if ($r['departamento_id'] === null || $empresa === null || ! $this->ajustes->visitasRequierenAutorizacion($empresa)) {
+            return $r;
+        }
+        $r['esperar'] = $this->autorizaciones->tieneResponsables($r['departamento_id'], $sedeId);
+        // C-08 / DD-11: sin quien autorice en esta sede, espera al supervisor o al jefe de seguridad (salvo que la empresa diga «pasa sin esperar»)
+        $r['sin_responsable'] = ! $r['esperar'] && $this->ajustes->sinCoberturaEsperaSupervisor($empresa);
 
         return $r;
     }
@@ -157,6 +164,10 @@ class RecepcionEnCaseta
             $this->autorizaciones->solicitarRecepcion($actor, $acceso, $candidato);
         } elseif ($r['esperar']) {
             $this->autorizaciones->solicitarVisita($actor, $acceso, (int) $r['departamento_id']);
+        }
+        if (! $r['esperar'] && ! $r['esperar_rh'] && $r['sin_responsable']) {
+            // C-08 / DD-11: nadie del departamento puede responder en esta sede → avisa al supervisor o jefe de seguridad
+            $this->autorizaciones->avisarSinCobertura($actor, $acceso->refresh());
         }
     }
 

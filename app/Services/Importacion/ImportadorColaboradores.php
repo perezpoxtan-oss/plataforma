@@ -85,12 +85,40 @@ class ImportadorColaboradores extends Importador
     {
         $clave = $this->clave($fila);
 
-        return $clave === null ? null : Colaborador::where('num_empleado', $clave)->first();
+        $porNumero = $clave === null ? null : Colaborador::where('num_empleado', $clave)->first();
+        if ($porNumero !== null) {
+            return $porNumero;
+        }
+        // C-27 (A-11): la caseta pudo darlo de alta sin número: se propone «Unir con el alta de la caseta» en vez de duplicarlo
+        $nombre = $this->valor($fila, 'nombre');
+        $paterno = $this->valor($fila, 'apellido_paterno');
+        if ($nombre === null || $paterno === null) {
+            return null;
+        }
+        // Solo si no hay duda (revisión Etapa 3a): un único homónimo, que es el alta de la caseta, y de la misma sede si la fila la trae.
+        // Con otro homónimo (verificado o provisional) o de otra sede, puede ser otra persona: se da de alta y se une a mano en «Altas por verificar».
+        // Revisión Etapa 3a: búsqueda indexada por nombre normalizado, sin tope (antes 200 por inicial podía no encontrarlo)
+        $materno = $this->valor($fila, 'apellido_materno');
+        $homonimos = $this->colaboradores->homonimos($nombre, $paterno, $materno);
+        $provisional = $homonimos->count() === 1 && $homonimos->first()->provisional ? $homonimos->first() : null;
+        if ($provisional === null) {
+            return null;
+        }
+        $sede = $this->valor($fila, 'sede') === null ? null : $this->sede($this->valor($fila, 'sede'))?->id;
+        if ($sede !== null && $provisional->sede_id !== null && (int) $provisional->sede_id !== (int) $sede) {
+            return null;
+        }
+
+        return $provisional;
     }
 
     public function describir(Model $registro): string
     {
         /** @var Colaborador $registro */
+        if ($registro->provisional && $registro->fusionado_en_id === null && $registro->activo) {
+            return $registro->nombreCompleto().' (alta de la caseta por verificar: al actualizar se une con ella y queda verificada)';
+        }
+
         return $registro->nombreCompleto().($registro->activo ? '' : ' (dado de baja)');
     }
 
@@ -113,7 +141,13 @@ class ImportadorColaboradores extends Importador
 
         [$datos, $errores] = $this->datos($actor, $fila, false);
 
-        return $this->guardarOReportar($errores, fn () => $this->colaboradores->actualizar($actor, $empresaId, $existente, $this->peticion($this->encima($actual, $datos))));
+        $guardado = $this->guardarOReportar($errores, fn () => $this->colaboradores->actualizar($actor, $empresaId, $existente, $this->peticion($this->encima($actual, $datos))));
+        // C-27: unir con el alta de la caseta = la plantilla la completa y la verifica
+        if ($existente->provisional && $existente->fusionado_en_id === null && $existente->activo && ! empty($existente->num_empleado)) {
+            $this->colaboradores->verificarDesdeImportacion($actor, $existente);
+        }
+
+        return $guardado;
     }
 
     /**

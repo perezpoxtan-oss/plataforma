@@ -131,17 +131,17 @@ Si en la caseta necesitas registrar a alguien que **no aparece** al buscarlo:
 
 Lo verifica Recursos Humanos si tu plan lo incluye; si no, el administrador de tu empresa.
 
-1. Te llega a la **campana** «Alta por verificar: …» con el botón **Verificar**. También aparece en **Inicio** («N colaboradores por verificar») y en **Mis pendientes** («Colaboradores por verificar»). Tócalo y llegas a la lista filtrada. Dentro de Colaboradores también verás el aviso.
-2. Elige **Por verificar** en el filtro.
-3. En cada ficha elige:
-   - **Verificar:** revisa y corrige los datos, asigna su **Núm. Empleado** y toca **Guardar y verificar**. Desde ese momento es un colaborador normal. Verás «… verificado con el número …».
-   - **Es un duplicado:** si la persona ya estaba registrada (por ejemplo «Beto Hernandez» es Roberto Hernández), busca y elige el **Colaborador correcto** y toca **Unir registros**. Todo lo que la caseta registró con esa alta pasa a ese colaborador y el alta queda dada de baja (unida).
+1. Te llega a la **campana** «Alta por verificar: …» con el botón **Verificar**. También aparece en **Inicio** y en **Mis pendientes** («Altas por verificar»), y en el menú **Padrones → Altas por verificar**, pestaña **Colaboradores** (la misma bandeja que personas, vehículos y empresas). Dentro de Colaboradores también verás el aviso, o elige **Por verificar** en el filtro.
+2. En cada ficha elige:
+   - **Es correcto:** revisa y corrige los datos, asigna su **Núm. Empleado** y toca **Aprobar**. Desde ese momento es un colaborador normal. Verás «… verificado con el número …».
+   - **Es el mismo:** si la persona ya estaba registrada (por ejemplo «Beto Hernandez» es Roberto Hernández), busca y elige el **Colaborador correcto** y toca **Aprobar · es el mismo**. Todo lo que la caseta registró con esa alta pasa a ese colaborador y el alta queda dada de baja (unida).
+   - **Rechazar:** si el alta no procede, escribe el **Motivo del rechazo** y toca **Rechazar**. Queda dada de baja y avisamos a quien la registró.
 
 ![Por verificar](img/colaboradores/11-rh-por-validar.png)
 
 ![Verificar](img/colaboradores/12-validar.png)
 
-![Es un duplicado](img/colaboradores/13-es-duplicado.png)
+![Es el mismo](img/colaboradores/13-es-duplicado.png)
 
 **Qué debes ver:** ««Beto Hernandez» validado con el número 2047.» o ««Beto Hernandez» se unió con «Roberto Hernández Cruz» (#1005).»
 
