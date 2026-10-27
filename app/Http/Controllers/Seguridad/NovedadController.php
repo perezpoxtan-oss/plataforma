@@ -67,7 +67,8 @@ class NovedadController extends Controller
         return $this->tenant->conEmpresa($empresaId, function () use ($request, $actor, $empresaId, $mios) {
             $base = fn () => $this->novedades->limitar(Novedad::query(), $actor, 'ver')
                 ->with(['sede:id,nombre,zona_horaria,empresa_id', 'area:id,nombre,nivel,padre_id', 'area.padre:id,nombre', 'areaEspecifica:id,nombre',
-                    'creador:id,name', 'editor:id,name', 'asignado:id,name', 'cerrador:id,name', 'articulos:id,novedad_id,folio'])
+                    'creador:id,name', 'editor:id,name', 'asignado:id,name', 'cerrador:id,name', 'articulos:id,novedad_id,folio',
+                    'reporteGeneral:id,novedad_id,subtipo']) // C-32: «Reporte General · Ruido»
                 ->when($request->routeIs('lost_found.index'), fn ($q) => $q->where('categoria', 'lost_found'));
             $abiertas = $base()->where('estatus', '!=', Novedad::RESUELTO)->when($mios, fn ($q) => $q->where('asignado_a', $actor->id))->orderByDesc('created_at')->get();
             $resueltas = $base()->where('estatus', Novedad::RESUELTO)->orderByDesc('cerrado_en')->orderByDesc('id')->limit(AdministradorNovedades::MAX_RESUELTOS)->get();
@@ -235,7 +236,7 @@ class NovedadController extends Controller
         $lista = $this->tenant->conEmpresa($empresaId, function () use ($request, $filtros) {
             $lista = $this->novedades->limitar(Novedad::query(), $request->user(), 'exportar')
                 ->with(['sede:id,nombre', 'area:id,nombre,nivel,padre_id', 'area.padre:id,nombre', 'areaEspecifica:id,nombre',
-                    'creador:id,name', 'editor:id,name', 'asignado:id,name', 'cerrador:id,name', 'articulos:id,novedad_id,folio'])
+                    'creador:id,name', 'editor:id,name', 'asignado:id,name', 'cerrador:id,name', 'articulos:id,novedad_id,folio', 'reporteGeneral:id,novedad_id,subtipo'])
                 ->when(isset($filtros['categoria']), fn ($q) => $filtros['categoria'] === Novedad::GRUPO_PC
                     ? $q->whereIn('categoria', array_keys(Novedad::SUBTIPOS_PC)) : $q->where('categoria', $filtros['categoria'])) // C-29: «Protección Civil» con subtipos
                 ->when(isset($filtros['sede']), fn ($q) => $q->where('sede_id', (int) $filtros['sede']))
@@ -258,7 +259,7 @@ class NovedadController extends Controller
                 'Fecha de cierre', 'Cerró', 'Creó', 'Último en dar seguimiento', 'Folios Lost & Found']);
             foreach ($lista as $n) {
                 Csv::fila($salida, [
-                    $n->folio(), $hora->formatear($n->created_at), $n->sede?->nombre, $n->etiquetaCategoria(), $n->etiquetaEstatus(),
+                    $n->folio(), $hora->formatear($n->created_at), $n->sede?->nombre, $n->etiquetaConSubtipo(), $n->etiquetaEstatus(),
                     $n->reportado_por, $n->asignado?->name, $n->textoArea(false), $n->areaEspecifica?->nombre, $n->ubicacion,
                     $hora->formatear($n->ocurrio_en), $n->descripcion, $n->como_sucedio, $n->involucrados, $n->resolucion,
                     $hora->formatear($n->cerrado_en), $n->cerrador?->name, $n->creador?->name, $n->editor?->name, $n->articulos->pluck('folio')->join(', '),
@@ -406,7 +407,7 @@ class NovedadController extends Controller
     public static function textoBusqueda(Novedad $n): string
     {
         return mb_strtolower(implode(' ', array_filter([
-            $n->folio(), $n->numero, $n->etiquetaCategoria(), $n->ubicacion, $n->textoArea(), $n->descripcion, $n->reportado_por,
+            $n->folio(), $n->numero, $n->etiquetaConSubtipo(), $n->ubicacion, $n->textoArea(), $n->descripcion, $n->reportado_por,
             $n->asignado?->name, $n->sede?->nombre, $n->creador?->name, $n->articulos->pluck('folio')->join(' '),
         ])));
     }

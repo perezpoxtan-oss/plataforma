@@ -328,6 +328,17 @@ class Novedad extends Model
         return self::CATEGORIAS[$this->categoria] ?? $this->categoria;
     }
 
+    /**
+     * C-32 (D-17): «Reporte General · Ruido» cuando el reporte trae su tipo
+     * (solo si la relación ya está cargada; si no, la categoría sola).
+     */
+    public function etiquetaConSubtipo(): string
+    {
+        $subtipo = $this->categoria === 'incidente_general' && $this->relationLoaded('reporteGeneral') ? $this->reporteGeneral?->subtipo : null;
+
+        return $this->etiquetaCategoria().($subtipo ? ' · '.$subtipo : '');
+    }
+
     public function etiquetaEstatus(): string
     {
         return self::ESTATUS[$this->estatus][1] ?? $this->estatus;

@@ -26,6 +26,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -209,6 +210,10 @@ class AdministradorNovedades
         // Recorrido PC y Mantenimiento de equipo PC solo se conservan en los tickets que ya la traían
         if ($novedad !== null && isset(Novedad::CATEGORIAS_AUTOMATICAS[$novedad->categoria]) && $general) {
             $lista[] = $novedad->categoria;
+        }
+        // C-32 (D-17): «Valores a la Vista» es de hotel; en otros giros solo la conserva un ticket que ya la traía
+        if (! Terminos::actual()->esHotel() && $novedad?->categoria !== 'habitacion') {
+            $lista = array_values(array_diff($lista, ['habitacion']));
         }
 
         return $lista;
@@ -470,6 +475,7 @@ class AdministradorNovedades
             throw ValidationException::withMessages(['resolucion' => 'Para marcar el caso como Resuelto, primero escribe cómo se concluyó en «Estatus Final / Resolución».']);
         }
 
+        $this->revisarReclasificacion($novedad, $v['categoria']);
         $novedad->categoria = $v['categoria'];
         $this->aplicarComunes($novedad, $v);
         $novedad->resolucion = $this->texto($v['resolucion'] ?? null);
@@ -531,6 +537,32 @@ class AdministradorNovedades
         }
 
         return $novedad;
+    }
+
+    /**
+     * C-32 (D-16): un ticket de Lost & Found con objetos en resguardo, o un
+     * robo con su detalle capturado, no cambia de categoría: los objetos (o
+     * el detalle) se quedarían colgando de un ticket que ya no los muestra.
+     */
+    private function revisarReclasificacion(Novedad $novedad, string $nueva): void
+    {
+        if ($novedad->categoria === $nueva) {
+            return;
+        }
+        if ($novedad->categoria === 'lost_found') {
+            $folios = LostFoundArticulo::where('novedad_id', $novedad->id)->where('estatus', LostFoundArticulo::EN_RESGUARDO)->orderBy('id')->pluck('folio');
+            if ($folios->isNotEmpty()) {
+                throw ValidationException::withMessages(['categoria' => 'Este ticket tiene objetos en resguardo ('.$folios->join(', ').'). Primero entrégalos o regístralos en otro ticket de Lost & Found; después cambia la categoría.']);
+            }
+        }
+        if ($novedad->categoria === 'robo') {
+            $detalle = RoboDetalle::where('novedad_id', $novedad->id)->first();
+            $capturado = $detalle !== null && collect($detalle->only(['hora_aproximada', 'lugar_exacto', 'objetos_descripcion', 'valor_estimado', 'descripcion_sospechoso',
+                'folio_policial', 'observaciones', 'articulo_vinculado_id']))->filter(fn ($v) => $v !== null && $v !== '' && $v !== 0)->isNotEmpty();
+            if ($capturado || (bool) ($detalle?->parte_policia)) {
+                throw ValidationException::withMessages(['categoria' => 'Este robo ya tiene su detalle capturado (lugar, objetos, parte a la policía…). No se puede cambiar de categoría sin perderlo: si fue un error, ciérralo con su resolución y abre un ticket nuevo.']);
+            }
+        }
     }
 
     /**

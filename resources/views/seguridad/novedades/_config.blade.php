@@ -72,6 +72,18 @@
         </select>
         @error('departamento_accidentes')<p class="text-danger small mb-2">{{ $message }}</p>@enderror
         <p class="campo-ayuda mt-0">Cuando se registra el Accidente de alguien del personal, su responsable recibe el ticket en «Tickets de mi departamento» para llenar su parte. El formato del accidente no cambia. <span class="valor-original">Valor original: el departamento que se llama Recursos Humanos.</span></p>
+        {{-- C-32 (D-17): subtipos de Reporte General (de fábrica según el giro) --}}
+        @php
+            $subtiposRg = $ajustesNov->subtiposReporteGeneral($empresa);
+            $subtiposPropios = $subtiposRg !== $ajustesNov->subtiposDeFabrica($empresa);
+        @endphp
+        <details class="mt-3" @if ($errors->has('subtipos_reporte_general')) open @endif>
+            <summary class="small fw-bold">Avanzado: tipos de «Reporte General» @if ($subtiposRg) ({{ count($subtiposRg) }}) @endif</summary>
+            <label class="campo-etiqueta mt-2" for="nov_subtipos_rg">Tipos de Reporte General <span class="text-lowercase fw-normal">(uno por renglón; máximo {{ \App\Services\Novedades\AjustesNovedades::MAX_SUBTIPOS }})</span></label>
+            <textarea id="nov_subtipos_rg" name="subtipos_reporte_general" class="campo" rows="5" maxlength="2000" placeholder="Ruido&#10;Mascotas&#10;Fuga de agua" @disabled(! $puedeEditar)>{{ old('subtipos_reporte_general', implode("\n", $subtiposRg)) }}</textarea>
+            @error('subtipos_reporte_general')<p class="text-danger small mb-2">{{ $message }}</p>@enderror
+            <p class="campo-ayuda mt-0">Quien atiende un Reporte General elige uno de estos tipos (es opcional). Déjalo vacío para no preguntar. <span class="valor-original">Valor original: {{ $ajustesNov->subtiposDeFabrica($empresa) ? implode(', ', $ajustesNov->subtiposDeFabrica($empresa)) : 'sin tipos' }}.</span></p>
+        </details>
         @if ($puedeEditar)
             <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar ajustes de la bitácora</button>
         @endif
@@ -125,7 +137,7 @@
         </details>
     @endif
     {{-- Configuración por secciones: «Restablecer valor original» (Novedades y Mantenimiento de equipo PC) --}}
-    @if ($puedeEditar && ($ajustesNov->nombrePropio($empresa->id) || $categoriaActual !== \App\Services\Novedades\AjustesNovedades::CATEGORIA_HALLAZGO_OMISION || $horasReloj !== \App\Services\Novedades\AjustesNovedades::RELOJ_HORAS))
-        @include('administracion.configuracion._restablecer', ['ajuste' => 'novedades', 'que' => 'el nombre del módulo, la categoría del hallazgo y el reloj de los tickets'])
+    @if ($puedeEditar && ($ajustesNov->nombrePropio($empresa->id) || $categoriaActual !== \App\Services\Novedades\AjustesNovedades::CATEGORIA_HALLAZGO_OMISION || $horasReloj !== \App\Services\Novedades\AjustesNovedades::RELOJ_HORAS || $subtiposPropios))
+        @include('administracion.configuracion._restablecer', ['ajuste' => 'novedades', 'que' => 'el nombre del módulo, la categoría del hallazgo, el reloj de los tickets y los tipos de Reporte General'])
     @endif
 </section>

@@ -4,10 +4,14 @@ namespace Tests\Feature\Seguridad;
 
 use App\Models\Auditoria;
 use App\Models\EquipoPc;
+use App\Models\LostFoundArticulo;
 use App\Models\Novedad;
 use App\Models\RecorridoPc;
+use App\Models\RoboDetalle;
+use App\Models\Rubro;
 use App\Models\SiniestroServicio;
 use App\Models\User;
+use App\Support\RegistroTerminos;
 
 /**
  * Etapa 6 · Datos que viajan entre módulos (C-29 Protección Civil). Las
@@ -123,5 +127,88 @@ class EtapaSeisTest extends PruebaNovedades
         // Una segunda vez no hay nada que hacer y la sección desaparece
         $this->actingAs($this->admin)->put('/configuracion/novedades/reclasificar-hallazgos')->assertSessionHas('ok', 'No hay hallazgos anteriores que reclasificar.');
         $this->actingAs($this->admin)->get('/configuracion')->assertDontSee('hallazgos anteriores registrados como siniestro');
+    }
+
+    // ------------------------------------------------------------------ C-32
+
+    private function giro(string $clave): void
+    {
+        $this->empresa->forceFill(['rubro_id' => Rubro::where('clave', $clave)->value('id')])->save();
+        app()->forgetInstance(RegistroTerminos::class);
+    }
+
+    public function test_en_condominio_no_se_ofrece_valores_a_la_vista_y_lost_found_dice_objetos_olvidados(): void
+    {
+        $this->giro('condominio');
+        $lista = $this->actingAs($this->admin)->get('/novedades')->assertOk()->getContent();
+        $this->assertStringNotContainsString('Valores a la Vista', $lista);
+        $this->assertStringContainsString('Objetos olvidados', $lista);
+        $this->assertStringNotContainsString('Objetos olvidados (Objetos Perdidos)', $lista);
+        $this->actingAs($this->admin)->post('/novedades', $this->datos(['categoria' => 'habitacion']))->assertSessionHasErrors('categoria');
+
+        // Un ticket de antes con esa categoría la conserva
+        $viejo = $this->novedad(['categoria' => 'habitacion']);
+        $this->actingAs($this->admin)->get('/novedades?abrir='.$viejo->id)->assertOk()->assertSee('Valores a la Vista');
+
+        // En hotel todo sigue como siempre
+        $this->giro('hotel');
+        $this->actingAs($this->admin)->get('/novedades')->assertOk()->assertSee('Valores a la Vista')->assertSee('Lost &amp; Found (Objetos Perdidos)', false);
+    }
+
+    public function test_subtipos_de_reporte_general_por_giro_y_configurables(): void
+    {
+        $this->giro('condominio');
+        $n = $this->novedad(['categoria' => 'incidente_general', 'descripcion' => 'Música alta en el 302']);
+        $exp = $this->actingAs($this->admin)->get('/novedades?abrir='.$n->id)->assertOk()->getContent();
+        $this->assertStringContainsString('<option value="Ruido"', $exp);
+        $this->assertStringContainsString('<option value="Mascotas"', $exp);
+
+        $this->actingAs($this->admin)->put("/novedades/{$n->id}", $this->expediente($n, ['ig_subtipo' => 'Inventado']))->assertSessionHasErrors('ig_subtipo');
+        $this->actingAs($this->admin)->put("/novedades/{$n->id}", $this->expediente($n, ['ig_subtipo' => 'Ruido']))->assertSessionHasNoErrors();
+        $this->actingAs($this->admin)->get('/novedades')->assertOk()->assertSee('Reporte General · Ruido');
+        $this->assertStringContainsString('Reporte General · Ruido', $this->actingAs($this->admin)->get('/novedades/exportar')->streamedContent());
+
+        // La empresa cambia la lista (Avanzado); el reporte guardado conserva su tipo aunque ya no esté
+        $this->actingAs($this->admin)->put('/configuracion/novedades', ['categoria_hallazgo_pc' => 'mantenimiento_pc', 'subtipos_reporte_general' => " Fiesta \nFiesta\n\nAlberca sucia"])
+            ->assertSessionHasNoErrors();
+        $this->assertSame(['Fiesta', 'Alberca sucia'], $this->empresa->fresh()->preferencias['novedades']['subtipos_reporte_general']);
+        $exp = $this->actingAs($this->admin)->get('/novedades?abrir='.$n->id)->assertOk()->getContent();
+        $this->assertStringContainsString('<option value="Fiesta"', $exp);
+        $this->assertMatchesRegularExpression('/<option value="Ruido" selected>/u', $exp);
+        $this->actingAs($this->admin)->put("/novedades/{$n->id}", $this->expediente($n, ['ig_subtipo' => 'Ruido']))->assertSessionHasNoErrors();
+
+        // En hotel no hay tipos de fábrica: el formato se ve como siempre
+        $this->giro('hotel');
+        $this->actingAs($this->admin)->put('/configuracion/novedades', ['categoria_hallazgo_pc' => 'mantenimiento_pc', 'subtipos_reporte_general' => ''])->assertSessionHasNoErrors();
+        $otro = $this->novedad(['categoria' => 'incidente_general']);
+        $this->actingAs($this->admin)->get('/novedades?abrir='.$otro->id)->assertOk()->assertDontSee('name="ig_subtipo"', false);
+    }
+
+    public function test_no_se_reclasifica_un_ticket_con_objetos_en_resguardo_ni_un_robo_con_detalle(): void
+    {
+        $lf = $this->novedad(['categoria' => 'lost_found']);
+        $articulo = $this->enEmpresa(function () use ($lf) {
+            $a = new LostFoundArticulo(['objeto' => 'CARTERA', 'tipo_valor' => 'OTRO', 'novedad_id' => $lf->id, 'sede_id' => $lf->sede_id]);
+            $a->numero = 1;
+            $a->folio = 'LF-000001';
+            $a->save();
+
+            return $a;
+        });
+        $this->actingAs($this->admin)->put("/novedades/{$lf->id}", $this->expediente($lf, ['categoria' => 'incidente_general']))
+            ->assertSessionHasErrors(['categoria' => 'Este ticket tiene objetos en resguardo (LF-000001). Primero entrégalos o regístralos en otro ticket de Lost & Found; después cambia la categoría.']);
+        $this->assertSame('lost_found', $this->buscar($lf->id)->categoria);
+        // Ya entregado, sí se puede
+        $this->enEmpresa(fn () => LostFoundArticulo::whereKey($articulo->id)->update(['estatus' => 'DEVUELTO']));
+        $this->actingAs($this->admin)->put("/novedades/{$lf->id}", $this->expediente($lf, ['categoria' => 'incidente_general']))->assertSessionHasNoErrors();
+
+        $robo = $this->novedad(['categoria' => 'robo']);
+        $this->enEmpresa(fn () => RoboDetalle::create(['novedad_id' => $robo->id]));
+        // Sin detalle capturado (recién despachado por error) sí se puede corregir
+        $this->actingAs($this->admin)->put("/novedades/{$robo->id}", $this->expediente($robo, ['categoria' => 'incidente_general']))->assertSessionHasNoErrors();
+        $robo2 = $this->novedad(['categoria' => 'robo']);
+        $this->enEmpresa(fn () => RoboDetalle::create(['novedad_id' => $robo2->id, 'lugar_exacto' => 'CAJA FUERTE', 'objetos_descripcion' => 'RELOJ']));
+        $this->actingAs($this->admin)->put("/novedades/{$robo2->id}", $this->expediente($robo2, ['categoria' => 'incidente_general']))->assertSessionHasErrors('categoria');
+        $this->assertSame('robo', $this->buscar($robo2->id)->categoria);
     }
 }

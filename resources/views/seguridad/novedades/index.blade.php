@@ -120,7 +120,7 @@
                         <div>
                             <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                                 <span class="badge-categoria {{ $abierta ? 'abierta' : 'resuelta' }}">
-                                    <i class="bi {{ $abierta ? 'bi-bell-fill' : 'bi-check-circle' }} me-1" aria-hidden="true"></i>{{ $n->etiquetaCategoria() }}
+                                    <i class="bi {{ $abierta ? 'bi-bell-fill' : 'bi-check-circle' }} me-1" aria-hidden="true"></i>{{ $n->etiquetaConSubtipo() }}
                                 </span>
                                 <span class="folio-novedad">{{ $n->folio() }}</span>
                             </div>

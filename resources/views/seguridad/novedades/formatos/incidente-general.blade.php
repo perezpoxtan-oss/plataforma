@@ -4,6 +4,22 @@
     <div id="colIncidenteGeneral" class="accordion-collapse collapse show">
         <div class="accordion-body">
             <p class="text-muted small mb-2"><i class="bi bi-info-circle" aria-hidden="true"></i> Para cuando el guardia observa algo directamente en su área, sin que nadie se lo haya reportado antes.</p>
+            {{-- C-32 (D-17): tipo de reporte de la lista de la empresa (de fábrica según el giro; en hotel no hay) --}}
+            @php
+                $subtiposRg = app(\App\Services\Novedades\AjustesNovedades::class)->subtiposReporteGeneral(\App\Models\Empresa::find($n->empresa_id));
+                if (($v['ig_subtipo'] ?? null) && ! in_array($v['ig_subtipo'], $subtiposRg, true)) {
+                    $subtiposRg[] = $v['ig_subtipo'];
+                }
+            @endphp
+            @if ($subtiposRg)
+                <label class="campo-etiqueta" for="ig_subtipo">Tipo de reporte <span class="text-lowercase fw-normal">(opcional)</span></label>
+                <select id="ig_subtipo" name="ig_subtipo" class="campo">
+                    <option value="">— Sin tipo —</option>
+                    @foreach ($subtiposRg as $sub)
+                        <option value="{{ $sub }}" @selected(($v['ig_subtipo'] ?? null) === $sub)>{{ $sub }}</option>
+                    @endforeach
+                </select>
+            @endif
             <label class="campo-etiqueta" for="ig_observados">¿Quién o quiénes fueron observados?</label>
             <input type="text" id="ig_observados" name="ig_observados" class="campo text-uppercase" maxlength="255" list="novColaboradores" placeholder="Nombre(s) de la(s) persona(s) observada(s)" value="{{ $v['ig_observados'] }}">
             <div class="row">
