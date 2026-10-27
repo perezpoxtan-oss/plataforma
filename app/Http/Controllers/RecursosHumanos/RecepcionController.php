@@ -237,7 +237,8 @@ class RecepcionController extends Controller
         // Cada formulario manda solo su parte (ADR-0010): privacidad y kiosco (Recepción → Ajustes), criterios de
         // entrevista (Candidatos → Criterios de entrevista), esperas y escalamiento (Responsables por departamento)
         $partes = array_keys(array_filter([
-            'privacidad' => $privacidad && $request->has('aviso_privacidad'),
+            // C-37 (E-09): el aviso ya no se edita aquí (Configuración → Privacidad); esta parte es el kiosco
+            'privacidad' => $privacidad && $request->hasAny(['kiosco_horas', 'kiosco_usos', 'aviso_privacidad']),
             'criterios' => $privacidad && $request->has('criterios'),
             'esperas' => ($privacidad || $autorizaciones) && $request->hasAny(['visitas_requieren_autorizacion', 'proveedores_requieren_autorizacion', 'contratistas_requieren_autorizacion', 'rh_autoriza_paso']),
             'escalamiento' => ($privacidad || $autorizaciones) && $request->has('recordar_minutos'),

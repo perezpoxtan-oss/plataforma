@@ -3,9 +3,19 @@
 namespace App\Services\Privacidad;
 
 use App\Models\Acceso;
+use App\Models\AccidenteColaborador;
+use App\Models\AccidenteHuesped;
 use App\Models\Auditoria;
 use App\Models\ConfiguracionPlataforma;
 use App\Models\Empresa;
+use App\Models\LostFoundEntrega;
+use App\Models\LostFoundReportePerdida;
+use App\Models\MovimientoTransporte;
+use App\Models\Novedad;
+use App\Models\NovedadReporteGeneral;
+use App\Models\NovedadTestigo;
+use App\Models\Reserva;
+use App\Models\RoboDetalle;
 use App\Models\SolicitudArco;
 use App\Models\User;
 use App\Services\Candidatos\PlazosCandidatos;
@@ -14,6 +24,8 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Support\Tenancy\EmpresaScope;
 use App\Support\Tenancy\Tenant;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -26,6 +38,13 @@ use Illuminate\Support\Facades\Validator;
  *    en registros de la bitácora ya cerrados (365): el registro se conserva
  *    con «Datos eliminados por conservación» y sin foto, identificación,
  *    placas ni notas.
+ *  - C-37 (X-01), con su marca datos_eliminados_en (el registro se conserva):
+ *    Lost & Found (quien reportó una pérdida o recibió un objeto, con su
+ *    firma; 365), novedades y accidentes cerrados (involucrados, testigos,
+ *    sospechoso, huésped accidentado y sus datos médicos; 1825; nunca los
+ *    accidentes de colaborador), reservas terminadas (datos del cliente; 1825)
+ *    y transporte (firma del taxista; 1825). En las empresas que ya existían
+ *    se aplican cuando el administrador guarda la tarjeta (plazos_ampliados).
  *  - candidatos no contratados: NO se duplica; es el plazo «Borrar» que ya
  *    tienen Candidatos → Documentos y plazos (12 meses, con aviso 15 días
  *    antes y «Conservar 6 meses más»). Aquí solo se muestra con su enlace.
@@ -48,6 +67,20 @@ class ConservacionDatos
         'fotos_persona_dias' => ['Fotos de la persona (caseta)', 90, 7, 3650],
         'fotos_identificacion_dias' => ['Fotos de la identificación (caseta)', 90, 7, 3650],
         'visitantes_dias' => ['Datos de visitantes externos en registros cerrados', 365, 30, 3650],
+        // C-37 (X-01): los demás módulos con datos personales (InventarioDatosPersonales)
+        'lost_found_dias' => ['Lost & Found: quien reportó una pérdida o recibió un objeto', 365, 30, 3650],
+        'incidentes_dias' => ['Novedades y accidentes cerrados: huéspedes, testigos, sospechosos y datos médicos', 1825, 365, 3650],
+        'reservas_dias' => ['Reservas terminadas: datos del cliente', 1825, 365, 3650],
+        'transporte_dias' => ['Transporte: firma del taxista en los vales', 1825, 365, 3650],
+    ];
+
+    /** Plazos que llegaron con C-37: en las empresas que ya existían se aplican cuando el administrador los confirma. */
+    public const AMPLIADOS = ['lost_found_dias', 'incidentes_dias', 'reservas_dias', 'transporte_dias'];
+
+    /** Lo que se cuenta y se quita en cada corrida: clave del resumen => clave de días. */
+    public const QUITA = [
+        'fotos_persona' => 'fotos_persona_dias', 'fotos_identificacion' => 'fotos_identificacion_dias', 'visitantes' => 'visitantes_dias',
+        'lost_found' => 'lost_found_dias', 'incidentes' => 'incidentes_dias', 'reservas' => 'reservas_dias', 'transporte' => 'transporte_dias',
     ];
 
     public const RECORDAR_ARCO = 5;
@@ -76,6 +109,8 @@ class ConservacionDatos
             $r[$clave] = (int) ($p[$clave] ?? $omision);
         }
         $r['arco_recordar_dias'] = (int) ($p['arco_recordar_dias'] ?? self::RECORDAR_ARCO);
+        // Empresas que ya existían: los plazos nuevos no se aplican hasta que se confirmen al guardar
+        $r['ampliados'] = (bool) ($p['plazos_ampliados'] ?? true);
 
         return $r;
     }
@@ -86,14 +121,19 @@ class ConservacionDatos
         $reglas = ['conservacion_activa' => ['nullable', 'boolean'], 'arco_recordar_dias' => ['required', 'integer', 'min:1', 'max:15']];
         $mensajes = ['arco_recordar_dias.*' => '«Recordar cuando falten…» va de 1 a 15 días hábiles.'];
         foreach (self::DIAS as $clave => [$etiqueta, , $min, $max]) {
-            $reglas[$clave] = ['required', 'integer', "min:{$min}", "max:{$max}"];
+            // Los plazos de C-37 son opcionales en la petición (un formulario anterior no los trae: se conservan)
+            $reglas[$clave] = [in_array($clave, self::AMPLIADOS, true) ? 'nullable' : 'required', 'integer', "min:{$min}", "max:{$max}"];
             $mensajes["{$clave}.*"] = "«{$etiqueta}» va de {$min} a {$max} días.";
         }
         $d = Validator::make($entrada, $reglas, $mensajes)->validate();
         $antes = $this->ajustes($empresa);
         $nuevos = ['conservacion_activa' => (bool) ($d['conservacion_activa'] ?? false), 'arco_recordar_dias' => (int) $d['arco_recordar_dias']];
         foreach (array_keys(self::DIAS) as $clave) {
-            $nuevos[$clave] = (int) $d[$clave];
+            $nuevos[$clave] = (int) ($d[$clave] ?? $antes[$clave]);
+        }
+        // Guardar con los plazos nuevos a la vista los confirma
+        if (array_intersect(self::AMPLIADOS, array_keys(array_filter($d, fn ($v) => $v !== null))) !== []) {
+            $nuevos['plazos_ampliados'] = true;
         }
         $preferencias = $empresa->preferencias ?? [];
         $preferencias[self::CLAVE] = array_merge(is_array($preferencias[self::CLAVE] ?? null) ? $preferencias[self::CLAVE] : [], $nuevos);
@@ -134,17 +174,50 @@ class ConservacionDatos
      * Cuánto se quitaría hoy con los días guardados (para que el
      * administrador sepa qué confirma al encender la tarea).
      *
-     * @return array{fotos_persona: int, fotos_identificacion: int, visitantes: int}
+     * @return array<string, int> clave de QUITA => registros
      */
     public function pendientes(Empresa $empresa): array
     {
         $a = $this->ajustes($empresa);
+        $r = [];
+        foreach (self::QUITA as $tipo => $clave) {
+            $r[$tipo] = array_sum(array_map(fn ($q) => $q->count(), $this->vencidos($tipo, (int) $a[$clave])));
+        }
 
-        return [
-            'fotos_persona' => $this->conFoto('foto_persona', $a['fotos_persona_dias'])->count(),
-            'fotos_identificacion' => $this->conFoto('foto_identificacion', $a['fotos_identificacion_dias'])->count(),
-            'visitantes' => $this->visitantesVencidos($a['visitantes_dias'])->count(),
-        ];
+        return $r;
+    }
+
+    /**
+     * Consultas de lo vencido de cada tipo (en la empresa activa).
+     *
+     * @return list<Builder>
+     */
+    private function vencidos(string $tipo, int $dias): array
+    {
+        $limite = now()->subDays($dias);
+
+        return match ($tipo) {
+            'fotos_persona' => [$this->conFoto('foto_persona', $dias)],
+            'fotos_identificacion' => [$this->conFoto('foto_identificacion', $dias)],
+            'visitantes' => [$this->visitantesVencidos($dias)],
+            'lost_found' => [
+                LostFoundReportePerdida::query()->whereNull('datos_eliminados_en')->where('created_at', '<=', $limite),
+                LostFoundEntrega::query()->whereNull('datos_eliminados_en')->where('created_at', '<=', $limite),
+            ],
+            // Tickets cerrados (no los de un accidente de colaborador: relación laboral)
+            'incidentes' => [Novedad::query()->whereNull('datos_eliminados_en')->where('estatus', Novedad::RESUELTO)
+                ->where(fn ($q) => $q->where('cerrado_en', '<=', $limite)->orWhere(fn ($w) => $w->whereNull('cerrado_en')->where('updated_at', '<=', $limite)))
+                ->whereNotIn('id', AccidenteColaborador::query()->select('novedad_id'))
+                ->where(fn ($q) => $q->whereNotNull('involucrados')
+                    ->orWhereIn('id', AccidenteHuesped::query()->select('novedad_id'))
+                    ->orWhereIn('id', NovedadTestigo::query()->select('novedad_id'))
+                    ->orWhereIn('id', NovedadReporteGeneral::query()->whereNotNull('observados')->select('novedad_id'))
+                    ->orWhereIn('id', RoboDetalle::query()->whereNotNull('descripcion_sospechoso')->select('novedad_id')))],
+            'reservas' => [Reserva::query()->whereNull('datos_eliminados_en')->where('fin', '<=', $limite)
+                ->where(fn ($q) => $q->whereNotNull('cliente_nombre')->orWhereNotNull('cliente_correo')->orWhereNotNull('cliente_telefono'))],
+            'transporte' => [MovimientoTransporte::query()->whereNull('datos_eliminados_en')->whereNotNull('firma_taxista')->where('fecha', '<=', $limite->toDateString())],
+            default => [],
+        };
     }
 
     // ------------------------------------------------------- Tarea diaria
@@ -161,11 +234,11 @@ class ConservacionDatos
     }
 
     /**
-     * @return array{empresas: int, fotos_persona: int, fotos_identificacion: int, visitantes: int, arco_recordatorios: int, arco_vencidas: int, pendiente: bool}
+     * @return array<string, int|bool> empresas, una cuenta por cada clave de QUITA, arco_recordatorios, arco_vencidas y pendiente
      */
     public function ejecutar(bool $siToca = false): array
     {
-        $total = ['empresas' => 0, 'fotos_persona' => 0, 'fotos_identificacion' => 0, 'visitantes' => 0, 'arco_recordatorios' => 0, 'arco_vencidas' => 0, 'pendiente' => false];
+        $total = ['empresas' => 0] + array_fill_keys(array_keys(self::QUITA), 0) + ['arco_recordatorios' => 0, 'arco_vencidas' => 0, 'pendiente' => false];
         if ($siToca && ! $this->toca()) {
             return $total;
         }
@@ -178,18 +251,19 @@ class ConservacionDatos
                 continue; // apagada: nada se borra sin la aprobación del administrador
             }
             $hecho = $this->tenant->conEmpresa($empresa->id, fn () => $this->aplicar($ajustes));
-            if ($hecho['fotos_persona'] + $hecho['fotos_identificacion'] + $hecho['visitantes'] === 0) {
+            $cuentas = array_intersect_key($hecho, self::QUITA);
+            if (array_sum($cuentas) === 0) {
                 continue;
             }
             $total['empresas']++;
-            foreach (['fotos_persona', 'fotos_identificacion', 'visitantes'] as $k) {
-                $total[$k] += $hecho[$k];
+            foreach ($cuentas as $k => $n) {
+                $total[$k] += $n;
             }
             $total['pendiente'] = $total['pendiente'] || $hecho['pendiente'];
             Auditoria::create([
                 'empresa_id' => $empresa->id, 'user_id' => null, 'evento' => 'privacidad.conservacion_aplicada',
                 'auditable_type' => Empresa::class, 'auditable_id' => $empresa->id, 'antes' => array_intersect_key($ajustes, self::DIAS),
-                'despues' => ['fotos_persona' => $hecho['fotos_persona'], 'fotos_identificacion' => $hecho['fotos_identificacion'], 'visitantes' => $hecho['visitantes']], 'ip' => null,
+                'despues' => array_filter($cuentas), 'ip' => null,
             ]);
         }
         // Solicitudes que llegaron a la plataforma y nadie ha canalizado
@@ -197,11 +271,13 @@ class ConservacionDatos
         $total['arco_recordatorios'] += $plataforma['recordatorios'];
         $total['arco_vencidas'] += $plataforma['vencidas'];
 
-        if ($total['fotos_persona'] + $total['fotos_identificacion'] + $total['visitantes'] > 0) {
+        if (array_sum(array_intersect_key($total, self::QUITA)) > 0) {
+            $otros = $total['lost_found'] + $total['incidentes'] + $total['reservas'] + $total['transporte'];
             $this->campana->avisarPlataforma(User::where('es_superadmin', true)->where('activo', true)->pluck('id'), 'privacidad_conservacion', [
                 'titulo' => 'Conservación de datos: se quitaron datos vencidos',
-                'texto' => sprintf('En %d empresa(s): %d foto(s) de personas, %d de identificaciones y los datos de %d registro(s) de visitantes. El detalle de cada empresa está en la Bitácora de auditoría.',
-                    $total['empresas'], $total['fotos_persona'], $total['fotos_identificacion'], $total['visitantes']),
+                'texto' => sprintf('En %d empresa(s): %d foto(s) de personas, %d de identificaciones, los datos de %d registro(s) de visitantes%s. El detalle de cada empresa está en la Bitácora de auditoría.',
+                    $total['empresas'], $total['fotos_persona'], $total['fotos_identificacion'], $total['visitantes'],
+                    $otros > 0 ? sprintf(' y %d de Lost & Found, novedades, reservas o transporte', $otros) : ''),
                 'url' => route('auditoria.index'),
             ]);
         }
@@ -213,25 +289,46 @@ class ConservacionDatos
     }
 
     /**
-     * Quita lo vencido de la empresa activa (el tenant ya está puesto).
+     * Quita lo vencido de la empresa activa (el tenant ya está puesto). Los
+     * plazos de C-37 solo si la empresa ya los confirmó.
      *
      * @param  array<string, int|bool>  $a
-     * @return array{fotos_persona: int, fotos_identificacion: int, visitantes: int, pendiente: bool}
+     * @return array<string, int|bool> una cuenta por clave de QUITA y «pendiente»
      */
     private function aplicar(array $a): array
     {
-        $r = ['fotos_persona' => 0, 'fotos_identificacion' => 0, 'visitantes' => 0, 'pendiente' => false];
-        foreach (['visitantes' => null, 'fotos_persona' => 'foto_persona', 'fotos_identificacion' => 'foto_identificacion'] as $tipo => $campo) {
-            $consulta = $campo === null ? $this->visitantesVencidos((int) $a['visitantes_dias']) : $this->conFoto($campo, (int) $a[$tipo.'_dias']);
-            $lote = $consulta->orderBy('id')->limit(self::LOTE)->get();
-            foreach ($lote as $acceso) {
-                $campo === null ? $this->datos->anonimizarAcceso($acceso, self::TEXTO_ELIMINADO) : $this->datos->quitarFoto($acceso, $campo);
-                $r[$tipo]++;
+        $r = array_fill_keys(array_keys(self::QUITA), 0) + ['pendiente' => false];
+        foreach (self::QUITA as $tipo => $clave) {
+            if (in_array($clave, self::AMPLIADOS, true) && ! $a['ampliados']) {
+                continue;
             }
-            $r['pendiente'] = $r['pendiente'] || $lote->count() === self::LOTE;
+            foreach ($this->vencidos($tipo, (int) $a[$clave]) as $consulta) {
+                $lote = $consulta->orderBy('id')->limit(self::LOTE)->get();
+                foreach ($lote as $registro) {
+                    $this->quitar($tipo, $registro);
+                    $r[$tipo]++;
+                }
+                $r['pendiente'] = $r['pendiente'] || $lote->count() === self::LOTE;
+            }
         }
 
         return $r;
+    }
+
+    private function quitar(string $tipo, Model $registro): void
+    {
+        $texto = self::TEXTO_ELIMINADO;
+        match (true) {
+            $tipo === 'visitantes' => $this->datos->anonimizarAcceso($registro, $texto),
+            $tipo === 'fotos_persona' => $this->datos->quitarFoto($registro, 'foto_persona'),
+            $tipo === 'fotos_identificacion' => $this->datos->quitarFoto($registro, 'foto_identificacion'),
+            $registro instanceof LostFoundReportePerdida => $this->datos->anonimizarReportePerdida($registro, $texto),
+            $registro instanceof LostFoundEntrega => $this->datos->anonimizarEntrega($registro, $texto),
+            $registro instanceof Novedad => $this->datos->anonimizarIncidente($registro, $texto),
+            $registro instanceof Reserva => $this->datos->anonimizarReserva($registro, $texto),
+            $registro instanceof MovimientoTransporte => $this->datos->anonimizarTransporte($registro, $texto, '', true),
+            default => null,
+        };
     }
 
     private function conFoto(string $campo, int $dias)

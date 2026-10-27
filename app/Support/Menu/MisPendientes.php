@@ -9,6 +9,7 @@ use App\Models\Empresa;
 use App\Models\Novedad;
 use App\Models\Postulacion;
 use App\Models\SolicitudArco;
+use App\Models\SolicitudCuenta;
 use App\Models\User;
 use App\Services\Activos\PendientesActivos;
 use App\Services\Autorizaciones\Autorizaciones;
@@ -16,6 +17,7 @@ use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\PlazosCandidatos;
 use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
@@ -181,16 +183,26 @@ class MisPendientes
             }
         }
 
-        // Cuentas por revisar (criterio 1): quien edita usuarios, dentro de su alcance
-        if ($actor->can('usuarios.editar')) {
-            $administrador = app(AdministradorUsuarios::class);
-            $cuentas = $administrador->limitarAlcance(User::query()->where('users.empresa_id', $this->empresa->id($actor))->where('users.es_superadmin', false), $actor, 'usuarios.editar')
-                ->where(fn ($q) => $q->where('users.bloqueado_hasta', '>', now())
-                    ->orWhere(fn ($b) => $b->where('users.activo', false)->where('users.desactivado_por_baja_en', '>=', now()->subDays(7)))
-                    // Mejoras estructura (ADR-0016): quien pide pases a su nombre y no tiene colaborador vinculado
-                    ->orWhere(fn ($v) => AdministradorUsuarios::sinVinculoQuePidePases($v)))
-                ->count();
-            $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $cuentas, route('usuarios.index', ['revisar' => 1]));
+        // Cuentas por revisar (criterio 1): el número es el de los renglones que esta persona puede atender en Usuarios (A-03):
+        // las cuentas por revisar (usuarios.editar) más las peticiones de «Pedir a mi administrador» que le tocan
+        // (contraseña con usuarios.editar, dos pasos con usuarios.desbloquear; alcance y jerarquía). Si no hay ninguna
+        // petición abierta en la empresa, no se calcula nada más (una consulta).
+        $editar = $actor->can('usuarios.editar');
+        if ($editar || $actor->can('usuarios.desbloquear')) {
+            $abiertas = SolicitudCuenta::query()->withoutGlobalScope(EmpresaScope::class)->where('empresa_id', $empresaId)
+                ->where('estado', SolicitudCuenta::PENDIENTE)->selectRaw('count(*)');
+            if ($editar) {
+                // Una sola consulta: las cuentas por revisar y si hay peticiones abiertas en la empresa
+                $fila = app(AdministradorUsuarios::class)->consultaPorRevisar($actor, $empresaId)->toBase()
+                    ->selectRaw('count(*) as total')->selectSub($abiertas->toBase(), 'abiertas')->first();
+                [$cuentas, $hay] = [(int) ($fila->total ?? 0), (int) ($fila->abiertas ?? 0) > 0];
+            } else {
+                [$cuentas, $hay] = [0, $abiertas->toBase()->exists()];
+            }
+            $peticiones = $hay ? app(SolicitudesCuenta::class)->porAtender($actor, $empresaId)->count() : 0;
+            if ($editar || $peticiones > 0) {
+                $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $cuentas + $peticiones, route('usuarios.index', ['revisar' => 1]));
+            }
         }
 
         // Privacidad (criterios 1 y 3): solicitudes ARCO abiertas, con el color de su plazo legal

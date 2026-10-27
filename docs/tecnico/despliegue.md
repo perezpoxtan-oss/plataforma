@@ -103,6 +103,17 @@ Además crea dos empresas de otros giros para probar cómo se adapta la platafor
 
 `desplegar.sh` respalda la base antes de cada migración (`plataforma:respaldar --motivo=antes-de-actualizar`) y hace el respaldo diario (`--si-toca`, después de las 3:00 hora de Cancún) en cada corrida del cron. No hace falta otro cron. Los archivos quedan en `$APP/shared/storage/app/private/respaldos` (permisos 600) y se conservan 14 días. Ver `docs/tecnico/configuracion.md`. En la misma corrida, `plataforma:traslado --si-toca` termina los paquetes de traslado y exportaciones que quedaron a medias y arranca el semanal si está encendido (ver `docs/tecnico/traslado.md`). Después de las 4:00, `plataforma:revisar-coherencia --si-toca --reparar` (una vez al día, en proceso) corrige desde su fuente los datos que la base guarda dos veces y lo anota en la auditoría (ver `docs/tecnico/integridad-bd.md`).
 
+## Lista de salida a Producción
+
+Antes de autorizar la primera versión de Producción (y al cambiar de hospedaje), revisa en Producción:
+
+1. **Correo de la plataforma configurado y probado** (Configuración → Plataforma → Correo saliente → «Enviar correo de prueba»). Sin él, «Olvidé mi contraseña» solo ofrece «Pedir a mi administrador» y no salen avisos por correo (C-36).
+2. **Dos Super Administradores activos**, cada uno con su verificación en dos pasos y sus códigos de respaldo guardados fuera de la plataforma. Inicio avisa en rojo mientras haya uno solo (C-36, DD-21). El hospedaje no tiene terminal: la recuperación del Super Administrador depende de esto (ver [dos-pasos.md](dos-pasos.md)).
+3. **Tareas en proceso** comprobadas (privacidad, plazos, escalamientos): la Bitácora de auditoría muestra `privacidad.conservacion_aplicada` o la tarjeta de Privacidad muestra la «Última revisión» del día.
+4. **Respaldo descargado** desde Configuración → Respaldos y guardado también fuera del servidor. Sin terminal, el respaldo se copia con el **administrador de archivos de cPanel** (carpeta `shared/storage/app/private/respaldos`) y se restaura importando el `.sql.gz` con phpMyAdmin.
+5. **Aviso de privacidad** de cada empresa completado por su abogado y publicado en Configuración → Privacidad (los borradores de los textos legales están en [privacidad.md](privacidad.md)).
+6. Prueba en un **teléfono real** (app y navegador).
+
 ## QA: datos demo al día
 
 En QA, cada versión nueva corre `plataforma:demo` una vez, con la contraseña de `qa_inicial` (si ya no está, las cuentas nuevas reciben la contraseña de admin.demo; cada parte del demo se completa por separado y el resultado, con los usuarios nuevos, queda en `despliegue_qa_estado.txt`); la marca de la versión ya completada queda en `$APP/.demo_completado`. El comando:

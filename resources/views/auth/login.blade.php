@@ -58,6 +58,17 @@
                     <i class="bi bi-clock-history me-2" aria-hidden="true"></i> Pasó mucho tiempo sin escribir el código. Vuelve a entrar.
                 </div>
                 @break
+            {{-- C-36: «Perdí mi teléfono y mis códigos» quedó en los pendientes de quien lo atiende --}}
+            @case('dos_pasos_pedido')
+                <div class="alert alert-success acceso-aviso" role="status">
+                    <i class="bi bi-person-check-fill me-2" aria-hidden="true"></i> Tu administrador ya tiene tu petición en sus pendientes. Búscalo en persona: cuando quite tu verificación en dos pasos, entra y actívala con tu teléfono nuevo.
+                </div>
+                @break
+            @case('dos_pasos_pedido_superadmin')
+                <div class="alert alert-success acceso-aviso" role="status">
+                    <i class="bi bi-person-check-fill me-2" aria-hidden="true"></i> Los otros Super Administradores ya tienen tu petición. Cuando uno quite tu verificación en dos pasos, entra y actívala con tu teléfono nuevo.
+                </div>
+                @break
             @case('contrasena_creada')
                 <div class="alert alert-success acceso-aviso" role="status">
                     <i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i> Tu contraseña nueva quedó guardada. Entra con ella.

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\SolicitudCuenta;
 use App\Models\User;
 use App\Rules\ContrasenaSegura;
 use App\Services\Cuenta\RecuperacionContrasena;
+use App\Services\Cuenta\SolicitudesCuenta;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
@@ -20,7 +22,12 @@ class RecuperacionController extends Controller
 {
     public const MENSAJE = 'Si la cuenta existe y tiene correo, te enviamos un enlace para crear tu contraseña nueva. Revisa tu bandeja de entrada (y la de spam).';
 
-    public function __construct(private readonly RecuperacionContrasena $recuperacion) {}
+    public const MENSAJE_ADMINISTRADOR = 'Listo: si la cuenta existe, tu administrador ya tiene tu petición en sus pendientes. Búscalo en persona con una identificación: te dará una contraseña temporal que cambiarás al entrar.';
+
+    public function __construct(
+        private readonly RecuperacionContrasena $recuperacion,
+        private readonly SolicitudesCuenta $solicitudes,
+    ) {}
 
     public function olvide(): View
     {
@@ -34,6 +41,19 @@ class RecuperacionController extends Controller
         $this->recuperacion->solicitar($datos['cuenta'], $request->ip());
 
         return redirect()->route('contrasena.olvide')->with('enviado', self::MENSAJE);
+    }
+
+    /**
+     * C-36 (X-07, DD-21): «Pedir a mi administrador» para quien no tiene correo
+     * (cuentas de caseta) o no lo recibe. Misma respuesta exista o no la cuenta.
+     */
+    public function pedirAdministrador(Request $request): RedirectResponse
+    {
+        $datos = $request->validate(['cuenta' => ['required', 'string', 'max:150']], [], ['cuenta' => 'usuario o correo']);
+
+        $this->solicitudes->pedirPorIdentificador($datos['cuenta'], SolicitudCuenta::CONTRASENA, $request->ip());
+
+        return redirect()->route('contrasena.olvide')->with('pedido', self::MENSAJE_ADMINISTRADOR);
     }
 
     /**

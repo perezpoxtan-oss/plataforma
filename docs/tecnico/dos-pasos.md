@@ -55,7 +55,18 @@ La exportación de empresa ya excluye columnas `*secret` y `*recovery_codes` (`E
 
 Si al entrar la cuenta la necesita y no la tiene, `completarInicio` pone la marca de sesión `dos_pasos.exigir` y lleva a `mi-cuenta.dos-pasos`. `ExigirDosPasos` solo deja abiertas Mi cuenta, la activación, salir, el latido y el resumen de la campana; las peticiones JSON reciben 403. La marca se quita al activarla. (Se decide al entrar, no en cada petición: cambiar la política aplica en el siguiente inicio de sesión.) Una cuenta que la necesita no puede quitarla.
 
-**Restablecer.** Quien tiene `usuarios.desbloquear` (mismo alcance y jerarquía que desbloquear; nunca la propia cuenta ni al Super Administrador) quita la verificación de otra cuenta: se borran clave y códigos, se cierran sus sesiones, se audita `usuarios.dos_pasos_restablecida` y se avisa a la persona por campana y correo (`AvisoGeneral`). Para el Super Administrador: `php artisan plataforma:dos-pasos`.
+**Restablecer.** Quien tiene `usuarios.desbloquear` (mismo alcance y jerarquía que desbloquear; nunca la propia cuenta ni al Super Administrador) quita la verificación de otra cuenta: se borran clave y códigos, se cierran sus sesiones, se audita `usuarios.dos_pasos_restablecida` y se avisa a la persona por campana y correo (`AvisoGeneral`). Si la cuenta tenía una petición «Perdí mi teléfono» abierta, queda atendida (`SolicitudesCuenta::atendidas`).
+
+**«Perdí mi teléfono: pedir ayuda» (C-36, E-14).** En la pantalla del código, `POST /login/verificacion/perdi-mi-telefono` (`throttle:5,1`) solo funciona con la cuenta **pendiente** en la sesión (ya escribió su contraseña): crea una `solicitudes_cuenta` de tipo `dos_pasos` (una abierta por cuenta y tipo), la audita (`usuarios.solicitud_cuenta`), avisa por campana (`cuenta_solicitud`) a quien puede atenderla y olvida la cuenta pendiente (`acceso = dos_pasos_pedido`). Ver [usuarios.md](usuarios.md#pedir-a-mi-administrador-c-36).
+
+**Super Administrador sin terminal (C-36, DD-21, E-14).** El hospedaje no tiene terminal, así que la recuperación del Super Administrador no depende de la consola:
+1. **Códigos de respaldo** (10, de un solo uso), como cualquier cuenta. La tarjeta de Super Administradores muestra cuántos le quedan a cada uno.
+2. **Otro Super Administrador**: la petición «Perdí mi teléfono» de un Super Administrador (`empresa_id` nulo) llega por `avisarPlataforma` a los **otros** Super Administradores activos (Inicio: renglón «Super Administradores que piden ayuda»; Configuración → Plataforma → Super Administradores). Cualquiera de ellos la atiende con `POST /configuracion/superadmins/{id}/dos-pasos`, **escribiendo su propia contraseña**: `Plataforma\SuperAdministradores::restablecerDosPasos` → `VerificacionDosPasos::restablecerSuperadmin` (borra clave y códigos, cierra sesiones, audita `usuarios.dos_pasos_restablecida` con `origen = otro_superadmin`, avisa a la cuenta por correo) y campana `plataforma_superadmin` (no silenciable) a los demás. Nunca sobre la propia cuenta.
+   La contraseña que confirma cada acción de la tarjeta tiene límite: tras **5 errores** por cuenta (`RateLimiter` `superadmin-confirmar:{id}`, `SuperAdministradores::INTENTOS_CONTRASENA`) se espera **15 minutos**, así una sesión robada no sirve para adivinarla.
+3. **Mínimo dos activos** (`SuperAdministradores::MINIMO`): con uno solo, Inicio y la tarjeta lo avisan en rojo; dar de baja a uno que dejaría menos de dos se rechaza (`superadmin`). El alta del segundo se hace en la misma tarjeta (sin consola): correo obligatorio, enlace de bienvenida o contraseña temporal, `debe_cambiar_contrasena` y dos pasos obligatorios al entrar.
+4. La consola (`php artisan plataforma:dos-pasos`) **sigue** sirviendo donde sí hay terminal.
+
+El Super Administrador es la identidad de la plataforma (no un rol de empresa): estas pantallas revisan `es_superadmin`, igual que respaldos y correo de la plataforma.
 
 **Desactivar.** Pide contraseña + código (de la app o de respaldo). Auditoría `cuenta.dos_pasos_desactivada`; borra la cookie de dispositivo.
 
@@ -65,8 +76,19 @@ La app de Android es un WebView de la misma plataforma: el segundo paso es la mi
 
 ## Permisos
 
-Sin acciones nuevas: Mi cuenta es de su dueño (criterio 6); restablecer usa `usuarios.desbloquear`; la política, `configuracion.editar` con alcance de empresa.
+Sin acciones nuevas: Mi cuenta es de su dueño (criterio 6); restablecer usa `usuarios.desbloquear`; la política, `configuracion.editar` con alcance de empresa; Super Administradores, `es_superadmin` (plataforma).
+
+| Método | Ruta | Nombre | Quién |
+|---|---|---|---|
+| POST | `/login/verificacion/perdi-mi-telefono` | `login.dos-pasos.ayuda` | Cuenta pendiente (contraseña ya escrita) |
+| POST | `/configuracion/superadmins` | `superadmins.store` | Super Administrador + su contraseña |
+| PATCH | `/configuracion/superadmins/{id}/estado` | `superadmins.estado` | Super Administrador + su contraseña; mínimo dos activos |
+| POST | `/configuracion/superadmins/{id}/contrasena` | `superadmins.contrasena` | Super Administrador + su contraseña (no la propia) |
+| POST | `/configuracion/superadmins/{id}/dos-pasos` | `superadmins.dos-pasos` | Super Administrador + su contraseña (no la propia) |
+| PATCH | `/configuracion/superadmins/solicitudes/{id}/rechazar` | `superadmins.solicitudes.rechazar` | Super Administrador (no la propia); A-08 |
+
+Auditoría nueva: `plataforma.superadmin_creado`, `plataforma.superadmin_dado_de_baja`, `plataforma.superadmin_reactivado`, `plataforma.superadmin_contrasena`.
 
 ## Pruebas
 
-`tests/Feature/Seguridad/DosPasosTest.php`: vectores RFC 6238, ventana y reutilización; activar con QR/clave y códigos una vez; entrada con código; límite de intentos y auditoría; códigos de respaldo y restablecerlos; recordar dispositivo (firma, 30 días, cambio de contraseña); política por empresa y restablecer valor original; Super Administrador obligatorio y consola; restablecer por el administrador (alcance, otra empresa 404, aviso y correo); desactivar; app móvil.
+`tests/Feature/Seguridad/DosPasosTest.php`: vectores RFC 6238, ventana y reutilización; activar con QR/clave y códigos una vez; entrada con código; límite de intentos y auditoría; códigos de respaldo y restablecerlos; recordar dispositivo (firma, 30 días, cambio de contraseña); política por empresa y restablecer valor original; Super Administrador obligatorio y consola; restablecer por el administrador (alcance, otra empresa 404, aviso y correo); desactivar; app móvil. `tests/Feature/Seguridad/CuentaEsDeSuDuenoTest.php` (C-36): «Perdí mi teléfono» de una cuenta y de un Super Administrador, códigos de respaldo, restablecer por otro Super Administrador (contraseña, propia cuenta, administrador de empresa 403), mínimo dos activos y aviso en Inicio.

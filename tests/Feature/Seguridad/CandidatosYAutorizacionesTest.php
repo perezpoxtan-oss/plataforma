@@ -314,20 +314,28 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->actingAs($this->rh)->post('/candidatos', $this->cv(['sede_id' => $sedeAjena->id, 'acepta_privacidad' => '1']))->assertSessionHasErrors('sede_id');
     }
 
-    public function test_aviso_de_privacidad_configurable_y_la_version_cambia(): void
+    public function test_el_aviso_de_privacidad_se_edita_solo_en_privacidad_y_recepcion_muestra_su_version(): void
     {
+        // C-37 (E-09): un solo lugar para el texto (Configuración → Privacidad) y un solo número de versión
         $antes = app(AjustesRecepcion::class)->versionPrivacidad($this->empresa);
         $this->assertTrue(app(AjustesRecepcion::class)->esBorrador($this->empresa));
         $this->actingAs($this->agente)->put('/rh/recepcion/ajustes', ['aviso_privacidad' => 'X'])->assertForbidden();
         $this->actingAs($this->rh)->put('/rh/recepcion/ajustes', ['aviso_privacidad' => 'Aviso definitivo de Hotel Ébano.', 'kiosco_horas' => 3, 'kiosco_usos' => 2])
             ->assertSessionHas('ok');
         $empresa = $this->empresa->refresh();
+        $this->assertSame($antes, app(AjustesRecepcion::class)->versionPrivacidad($empresa)); // Recepción ya no cambia el texto
+        $this->assertSame(3, app(AjustesRecepcion::class)->horasKiosco($empresa));
+        $this->actingAs($this->rh)->get('/configuracion')->assertForbidden(); // RR. HH. ajusta el kiosco en Recepción → Ajustes
+        $this->actingAs($this->rh)->get('/rh/recepcion/ajustes')->assertOk()->assertSee('versión 1')->assertSee('Se edita en un solo lugar')
+            ->assertSee('datos por completar')->assertDontSee('Borrador — validar');
+
+        // Quien tiene «Datos personales» lo publica en Privacidad; Recepción muestra el mismo número
+        $this->actingAs($this->admin)->post('/configuracion/privacidad/aviso', ['texto' => 'Aviso definitivo de Hotel Ébano.'])->assertRedirect();
+        $empresa = $this->empresa->refresh();
         $this->assertNotSame($antes, app(AjustesRecepcion::class)->versionPrivacidad($empresa));
         $this->assertFalse(app(AjustesRecepcion::class)->esBorrador($empresa));
-        $this->assertSame(3, app(AjustesRecepcion::class)->horasKiosco($empresa));
-        $this->actingAs($this->rh)->get('/configuracion')->assertForbidden(); // RR. HH. lo ajusta en Recepción → Ajustes
-        $this->actingAs($this->rh)->get('/rh/recepcion/ajustes')->assertOk()->assertSee('Aviso definitivo de Hotel Ébano.');
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Recepción de candidatos');
+        $this->actingAs($this->rh)->get('/rh/recepcion/ajustes')->assertOk()->assertSee('versión 2');
+        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Recepción de candidatos')->assertSee('Editar en Configuración → Privacidad');
     }
 
     // ------------------------------------------------------------------ Etapas

@@ -12,6 +12,7 @@ use App\Http\Controllers\Administracion\PrivacidadController;
 use App\Http\Controllers\Administracion\RolController;
 use App\Http\Controllers\Administracion\SedeController;
 use App\Http\Controllers\Administracion\SolicitudesArcoController;
+use App\Http\Controllers\Administracion\SuperAdministradoresController;
 use App\Http\Controllers\Administracion\SuscripcionesController;
 use App\Http\Controllers\Administracion\TrasladoController;
 use App\Http\Controllers\Administracion\UsuarioController;
@@ -71,12 +72,16 @@ Route::middleware('guest')->group(function () {
     // Olvidé mi contraseña (criterio 6): respuesta uniforme, 5 solicitudes por minuto por equipo, enlace firmado
     Route::get('/olvide-contrasena', [RecuperacionController::class, 'olvide'])->name('contrasena.olvide');
     Route::post('/olvide-contrasena', [RecuperacionController::class, 'solicitar'])->middleware('throttle:5,1')->name('contrasena.solicitar');
+    // C-36 (X-07): sin correo, la petición llega a «Cuentas por revisar» de su administrador (respuesta uniforme)
+    Route::post('/olvide-contrasena/administrador', [RecuperacionController::class, 'pedirAdministrador'])->middleware('throttle:5,1')->name('contrasena.administrador');
     Route::get('/restablecer-contrasena/{token}', [RecuperacionController::class, 'restablecer'])->where('token', '[A-Za-z0-9]+')->name('contrasena.restablecer');
     Route::post('/restablecer-contrasena', [RecuperacionController::class, 'guardar'])->middleware('throttle:10,1')->name('contrasena.guardar');
     // Verificación en dos pasos (docs/tecnico/dos-pasos.md): el código después de la contraseña; límite por equipo y por cuenta
     Route::get('/login/verificacion', [DosPasosController::class, 'mostrar'])->name('login.dos-pasos');
     Route::post('/login/verificacion', [DosPasosController::class, 'verificar'])->middleware('throttle:10,1')->name('login.dos-pasos.verificar');
     Route::post('/login/verificacion/cancelar', [DosPasosController::class, 'cancelar'])->name('login.dos-pasos.cancelar');
+    // C-36 (E-14): «Perdí mi teléfono y mis códigos» (ya escribió su contraseña): a su administrador o a otro Super Administrador
+    Route::post('/login/verificacion/perdi-mi-telefono', [DosPasosController::class, 'pedirAyuda'])->middleware('throttle:5,1')->name('login.dos-pasos.ayuda');
 });
 
 // Seguridad: el cierre por inactividad es POST (con token); el GET solo muestra el aviso
@@ -136,6 +141,17 @@ Route::middleware('auth')->group(function () {
     Route::patch('/solicitudes-arco/{solicitud}/canalizar', [SolicitudesArcoController::class, 'canalizar'])->whereNumber('solicitud')->name('arco.canalizar');
     // Cuentas y seguridad: a quién se exige la verificación en dos pasos
     Route::put('/configuracion/dos-pasos', [ConfiguracionController::class, 'dosPasos'])->name('configuracion.dos-pasos');
+    // C-36 (DD-21, E-14): dos Super Administradores como mínimo; uno restablece la contraseña o los dos pasos del otro
+    Route::controller(SuperAdministradoresController::class)->prefix('configuracion/superadmins')->name('superadmins.')->group(function () {
+        Route::post('/', 'store')->name('store');
+        Route::patch('/{cuenta}/estado', 'estado')->whereNumber('cuenta')->name('estado');
+        Route::post('/{cuenta}/contrasena', 'contrasena')->whereNumber('cuenta')->name('contrasena');
+        Route::post('/{cuenta}/dos-pasos', 'dosPasos')->whereNumber('cuenta')->name('dos-pasos');
+        // A-08: rechazar la petición de ayuda de otro Super Administrador
+        Route::patch('/solicitudes/{solicitud}/rechazar', 'rechazarSolicitud')->whereNumber('solicitud')->name('solicitudes.rechazar');
+    });
+    // C-36: «Rechazar» una petición de «Pedir a mi administrador» (atenderla es restablecer la contraseña o los dos pasos)
+    Route::patch('/solicitudes-cuenta/{solicitud}/rechazar', [UsuarioController::class, 'rechazarSolicitud'])->whereNumber('solicitud')->name('solicitudes-cuenta.rechazar');
     // Fin Mejoras estructura
     Route::get('/empresas', [EmpresaController::class, 'index'])->name('empresas.index');
     Route::post('/empresas', [EmpresaController::class, 'store'])->name('empresas.store');

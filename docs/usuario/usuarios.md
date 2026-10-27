@@ -36,6 +36,8 @@ La contraseña es de su dueño: por omisión **la persona la crea** con un enlac
 4. **¿Qué hace y dónde? → Rol en el Sistema:** solo aparecen los roles que tú puedes asignar.
 5. **Sede:** la sede donde trabaja, o **Todas las sedes de la empresa** si debe ver todas. Si trabaja en dos o más sedes (por ejemplo, un supervisor de dos hoteles), elige una y abre **¿También atiende otras sedes?** para marcar las demás: verá esas sedes y no toda la empresa.
 6. **¿Cómo entra?** Escribe el **Usuario** (letras, números, punto, guion y guion bajo; sin espacios) y el **Correo**. Al correo le llegará el enlace para crear su contraseña, así que revisa que esté bien.
+   - El correo es **opcional en las cuentas de caseta** (roles que no administran usuarios, roles, permisos ni la configuración, como el Agente). Sin correo, escribe tú la contraseña inicial; cuando la olvide, la persona te lo pedirá con **Pedir a mi administrador** (ver abajo). Su ficha dice **Sin correo: recupera su cuenta contigo**.
+   - Quien administra (por ejemplo, el Administrador) **sí necesita correo**: lo usa para recuperar su cuenta y recibir avisos.
 7. En **Contraseña** elige cómo la tendrá:
    - **Enviar enlace de bienvenida por correo** (recomendado, viene marcado): la persona recibe el correo **«Bienvenido a … : crea tu contraseña»** con el botón **Crear mi contraseña**. El enlace vale **24 horas**. Nadie más conoce su contraseña.
    - **Escribir la contraseña ahora**: escribe una **Contraseña inicial** (mínimo 8 caracteres, con letras y números) y dísela. Al entrar, la plataforma le pedirá cambiarla antes de usar cualquier pantalla.
@@ -117,6 +119,20 @@ Cuando una persona no recuerda su contraseña, lo primero es que use **Olvidé m
 - Tú nunca ves ni puedes ver la contraseña de nadie; la plataforma solo guarda la contraseña cifrada.
 - Queda en la [Bitácora de auditoría](auditoria.md) quién restableció a quién y cuándo (nunca la contraseña).
 
+## Cómo atender a quien pide ayuda con su cuenta
+
+Quien no tiene correo (o no le llega) toca **Olvidé mi contraseña → Pedir a mi administrador**; quien perdió su teléfono toca **Perdí mi teléfono: pedir ayuda** en la pantalla del código. Su petición te llega a la **campana** («Pide ayuda con su cuenta: …»), a **Mis pendientes → Cuentas por revisar** y arriba de la lista de Usuarios, en el recuadro **Piden ayuda con su cuenta**.
+
+1. Confirma **en persona** que fue quien lo pidió (con una identificación).
+2. Si pidió **restablecer su contraseña**: toca la **llave** de su ficha, elige **Escribir una contraseña** y dísela. Al entrar, la cambiará por una suya.
+3. Si pidió **restablecer su verificación en dos pasos**: toca el **teléfono** de su ficha (ver abajo).
+4. Si no fue la persona o no procede, toca **Rechazar** junto a su nombre en el recuadro. Le avisamos.
+
+**Qué debes ver:** al restablecer, la petición desaparece sola del recuadro y de **Mis pendientes**. Todo queda en la [Bitácora de auditoría](auditoria.md).
+
+- El número de **Mis pendientes → Cuentas por revisar** es exactamente lo que tú puedes atender en esta pantalla.
+- Solo ves las peticiones de las cuentas que puedes administrar (tu alcance y de nivel inferior al tuyo). Las contraseñas las atiende quien puede editar usuarios; los dos pasos, quien puede restablecer la verificación (ver abajo).
+
 ## Cómo dar de baja o reactivar una cuenta
 
 1. Toca el **círculo con raya** (Dar de baja) y confirma con **Aceptar** («¿Dar de baja la cuenta de …? No podrá volver a iniciar sesión hasta que la reactives con el mismo botón.»). La persona ya no puede entrar y, si estaba dentro, se le cierra la sesión. Verás «Usuario dado de baja: …» y su ficha dice **DE BAJA**.
@@ -188,6 +204,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | El campo contraseña debe tener al menos un número. | La contraseña solo tiene letras. | Agrega al menos un número (por ejemplo `Hotel2026`). |
 | El campo contraseña debe tener al menos una letra. | La contraseña solo tiene números. | Agrega al menos una letra. |
 | El campo contraseña debe tener al menos 8 caracteres. | La contraseña es muy corta. | Escribe 8 o más caracteres, con letras y números. |
+| Escribe el correo: este rol administra la plataforma y lo necesita… | El rol elegido administra usuarios, roles, permisos o la configuración. | Escribe su correo. Solo las cuentas de caseta pueden ir sin correo. |
 | El campo correo debe ser un correo electrónico válido. | Al correo le falta la @ o el dominio. | Escribe un correo completo, por ejemplo `juan.perez@hotelcentro.mx`. |
 | «…» no tiene activa la verificación en dos pasos. | Ya se había restablecido o nunca la activó. | No hace falta hacer nada: entra solo con su contraseña. |
 | «…» no está bloqueado; ya puede entrar. | La cuenta ya no estaba bloqueada. | No hace falta hacer nada. |
@@ -207,7 +224,11 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 **¿Por qué dice «Creará su contraseña al entrar»?** Porque la cuenta se creó con enlace de bienvenida y aún no lo usa, o porque alguien le escribió la contraseña y todavía no la cambia.
 
-**¿Qué son las «Cuentas por revisar»?** Las bloqueadas por intentos fallidos, las dadas de baja junto con su colaborador en los últimos 7 días y las que piden pases de salida a su nombre (Solicitante, Jefe de departamento) **sin colaborador vinculado**: así no pueden pedir pases ni firmar los de su departamento. Aparecen en **Mis pendientes** y arriba de la lista; vincúlalas con el **lápiz** de su ficha.
+**¿Qué son las «Cuentas por revisar»?** Las bloqueadas por intentos fallidos, las dadas de baja junto con su colaborador en los últimos 7 días, las que piden pases de salida a su nombre (Solicitante, Jefe de departamento) **sin colaborador vinculado** (así no pueden pedir pases ni firmar los de su departamento; vincúlalas con el **lápiz** de su ficha) y las personas que **te piden ayuda** para recuperar su contraseña o su verificación en dos pasos. Aparecen en **Mis pendientes** y arriba de la lista.
+
+**¿Una cuenta de caseta puede ir sin correo?** Sí. Solo las cuentas que administran (usuarios, roles, permisos o configuración) necesitan correo. Sin correo, la persona recupera su cuenta pidiéndotelo a ti.
+
+**¿Qué es el aviso «Administran sin correo»?** Aparece arriba de la lista cuando a un rol se le dieron permisos de administración y algunas de sus cuentas no tienen correo (también lo avisa **Roles y permisos** al guardar). Toca el **lápiz** de cada ficha y escribe su correo: así pueden recuperar su cuenta y recibir avisos.
 
 **¿Una cuenta puede trabajar en dos sedes sin ver toda la empresa?** Sí: elige su sede y marca las demás en **¿También atiende otras sedes?**. Su ficha dice, por ejemplo, «Hotel Centro + Hotel Playa». Si tú solo administras una de esas sedes, al editarla las otras se conservan.
 

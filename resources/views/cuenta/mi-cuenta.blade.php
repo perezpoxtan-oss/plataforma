@@ -25,7 +25,12 @@
                 <dl class="mi-cuenta-datos">
                     <div><dt>Nombre</dt><dd>{{ $cuenta->name }}</dd></div>
                     <div><dt>Usuario</dt><dd>{{ '@'.$cuenta->username }}</dd></div>
-                    <div><dt>Correo</dt><dd>{{ $cuenta->email }}<small>Aquí llegan los enlaces para recuperar tu contraseña. Para cambiarlo, pide a tu administrador.</small></dd></div>
+                    {{-- C-36 (A-05): una cuenta de caseta puede no tener correo --}}
+                    @if (filled($cuenta->email))
+                        <div><dt>Correo</dt><dd>{{ $cuenta->email }}<small>Aquí llegan los enlaces para recuperar tu contraseña. Para cambiarlo, pide a tu administrador.</small></dd></div>
+                    @else
+                        <div><dt>Correo</dt><dd>Sin correo: si olvidas tu contraseña, pide ayuda a tu administrador.</dd></div>
+                    @endif
                     <div><dt>Rol</dt><dd>{{ $rolNombreCuenta }}</dd></div>
                     @if ($empresaNombre)
                         <div><dt>Empresa</dt><dd>{{ $empresaNombre }}</dd></div>

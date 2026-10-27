@@ -47,7 +47,12 @@
         <details class="acceso-texto mt-3">
             <summary>¿No tienes tu teléfono?</summary>
             <p class="mt-2 mb-1">Escribe en «Código» uno de tus <strong>códigos de respaldo</strong> (8 letras y números, por ejemplo ABCD-EF23). Cada uno sirve una sola vez.</p>
-            <p class="mb-0">Si tampoco los tienes, pide a tu administrador que <strong>restablezca tu verificación en dos pasos</strong>; después la activas con tu teléfono nuevo.</p>
+            <p class="mb-2">Si tampoco los tienes, pide que <strong>restablezcan tu verificación en dos pasos</strong>; después la activas con tu teléfono nuevo.</p>
+            {{-- C-36 (E-14): la petición queda a su nombre en los pendientes de quien la atiende (sin terminal) --}}
+            <form action="{{ route('login.dos-pasos.ayuda') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn btn-outline-secondary w-100" style="min-height:44px;border-radius:10px;"><i class="bi bi-person-raised-hand me-1" aria-hidden="true"></i>Perdí mi teléfono: pedir ayuda</button>
+            </form>
         </details>
 
         <form action="{{ route('login.dos-pasos.cancelar') }}" method="POST" class="acceso-enlace-ayuda">

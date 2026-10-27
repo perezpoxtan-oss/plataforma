@@ -20,7 +20,8 @@ Réplica de `modules/usuarios/usuario_lista.php`, `usuario_modal_editar.php` y `
 - El selector de rol solo muestra los roles **de nivel inferior al del actor**, y el servidor lo vuelve a validar.
 - No se administra la **propia cuenta**, ni a usuarios de nivel igual o superior, ni al Super Administrador.
 - La lista respeta el **alcance** de `usuarios.ver`: toda la empresa, los usuarios asignados a sus sedes, o solo los que el actor dio de alta.
-- Únicos: el usuario y el correo, en toda la plataforma; el número de colaborador, dentro de cada empresa. El número es opcional, para cuentas de soporte.
+- Únicos: el usuario y el correo (cuando lo hay), en toda la plataforma; el número de colaborador, dentro de cada empresa. El número es opcional, para cuentas de soporte.
+- **Correo opcional en cuentas de caseta (C-36, DD-21):** `users.email` es nullable. `UsuarioController::correoObligatorio()` lo exige solo si el rol elegido es administrativo (`AdministradorUsuarios::rolAdministrativo()`: tiene alguno de `VerificacionDosPasos::PERMISOS_ADMINISTRADOR`). Sin correo no hay enlace de bienvenida ni de restablecer (`modoEnlace()` revisa el correo de la cuenta): se escribe una contraseña temporal y `debe_cambiar_contrasena = true`. El Super Administrador siempre tiene correo.
 - Contraseña: mínimo 8 caracteres, con letras y números; máximo 72; no puede ser de las más usadas (`App\Rules\ContrasenaSegura`) ni contener el nombre de usuario o el correo.
 - **Dar de baja** o **cambiar la contraseña** cierra de inmediato las sesiones abiertas de esa persona: se borran de la tabla `sessions`.
 - Auditoría: `usuarios.creado`, `usuarios.actualizado`, `usuarios.desactivado`, `usuarios.reactivado` y `usuarios.desbloqueado`, con el antes y el después (incluidos rol y sede); las claves de evento no cambiaron aunque la pantalla diga «Dar de baja» / «DE BAJA» (criterio 4). Si se cambió la contraseña solo se anota `contrasena: cambiada`; nunca su valor ni su hash.
@@ -40,7 +41,8 @@ Nadie conoce la contraseña de otra persona: ni quien la da de alta ni quien la 
 | `AdministradorUsuarios::restablecer()` | Mismas dos opciones para una cuenta existente (`usuarios.editar`, nivel inferior, dentro del alcance; nunca la propia). La contraseña anterior deja de servir al instante y se cierran sus sesiones. `actualizar()` con contraseña escrita también marca `debe_cambiar_contrasena` |
 | `App\Services\Cuenta\AvisosCuenta` | Avisos de seguridad: `bloqueo()` (campana a quien tiene `usuarios.editar` con alcance a la sede de la cuenta —`usuariosConPermiso()` con `Autorizador::permisosEfectivos`—, correo a ellos y al afectado si el aviso `cuenta_bloqueada` de la empresa está encendido; **uno por bloqueo**, no por intento; IP recortada `187.190.x.x`), `desactivadaPorBaja()` y `contrasenaCambiada()` (a la propia persona). `cerrarSesiones()` es la única forma de borrar filas de `sessions` |
 | `AdministradorColaboradores::cambiarEstado()` | La **baja** del colaborador desactiva su cuenta vinculada (misma empresa, activa, no Super Administrador): `activo = false`, `desactivado_por_baja_en = now()`, sesiones cerradas, auditoría `usuarios.desactivado_por_baja` y campana. El **reingreso no la reactiva**: el mensaje lo recuerda y se hace en Usuarios (`cambiarEstado(true)` limpia la marca) |
-| `MisPendientes` → «Cuentas por revisar» | Para quien tiene `usuarios.editar`, dentro de su alcance: bloqueadas ahora o dadas de baja junto con su colaborador en los últimos 7 días. La lista de Usuarios las muestra arriba (`?revisar=1` solo sirve de enlace) y en la ficha («Desactivada por la baja de su colaborador», «Creará su contraseña al entrar») |
+| `MisPendientes` → «Cuentas por revisar» | Para quien tiene `usuarios.editar`, dentro de su alcance: bloqueadas ahora o dadas de baja junto con su colaborador en los últimos 7 días. La lista de Usuarios las muestra arriba (`?revisar=1` solo sirve de enlace) y en la ficha («Desactivada por la baja de su colaborador», «Creará su contraseña al entrar»). **C-36:** cuenta también las cuentas con una petición «Pedir a mi administrador» abierta (`whereExists` en la misma consulta: sin consultas de más). La lista de Usuarios muestra arriba el recuadro «Piden ayuda con su cuenta» con las que el actor puede atender (`SolicitudesCuenta::porAtender`: permiso del tipo, alcance y jerarquía) |
+| `App\Services\Cuenta\SolicitudesCuenta` + `App\Models\SolicitudCuenta` (C-36) | Ver «Pedir a mi administrador» abajo |
 
 Correos: `App\Mail\BienvenidaUsuario`, `RestablecerContrasena` y `CuentaBloqueada` (vistas `correos/bienvenida`, `restablecer-contrasena`, `cuenta-bloqueada`), enviados con `defer()` por `CorreoPlataforma`; nunca llevan la contraseña ni el correo en la URL (solo token, id y tipo, firmados).
 
@@ -50,8 +52,29 @@ Migración `2026_10_21_000100_cuenta_propia_y_recuperacion`: `users.debe_cambiar
 
 Decisiones:
 - El correo no se cambia desde Mi cuenta: es el canal de recuperación y lo mantiene verificado quien administra usuarios (regla 2: un dato en un solo lugar).
-- Sin SMTP configurado, «Olvidé mi contraseña» no pide nada y el alta solo ofrece escribir la contraseña; el administrador la restablece desde Usuarios.
-- El Super Administrador recupera su contraseña por el mismo camino (sin campana, con auditoría); nadie lo restablece desde Usuarios.
+- Sin SMTP configurado, «Olvidé mi contraseña» ofrece directamente «Pedir a mi administrador» (C-36) y el alta solo ofrece escribir la contraseña.
+- El Super Administrador recupera su contraseña por el mismo camino; nadie lo restablece desde Usuarios: lo hace **otro Super Administrador** en Configuración → Plataforma → Super Administradores (ver [dos-pasos.md](dos-pasos.md)).
+
+### Pedir a mi administrador (C-36)
+
+La recuperación **no depende solo del correo de la plataforma** (X-07):
+
+- `POST /olvide-contrasena/administrador` (`contrasena.administrador`, sin sesión): con el usuario o el correo, crea una `solicitudes_cuenta` de tipo `contrasena`. Respuesta **uniforme** (exista o no la cuenta). Una abierta por cuenta y tipo.
+  - **Mismo tiempo exista o no (A-04):** una sola consulta para buscar la cuenta (con `leftJoin` a empresas, sin cargar relaciones aparte); crear la petición, auditar y avisar se hace **después de responder** (`defer`), y todo va dentro de `Illuminate\Support\Timebox` con un mínimo de `SolicitudesCuenta::MICROSEGUNDOS_MINIMOS` (0.4 s).
+  - **Límites (A-09):** `throttle:5,1` por equipo; 3 por hora por texto escrito; y **3 por hora por cuenta** (`SolicitudesCuenta::llaveDeCuenta()`), la escriban por su usuario o por su correo (antes cada forma contaba aparte: 6). «Olvidé mi contraseña» (enlace por correo) tiene el mismo límite por cuenta (`recuperacion-cuenta-usuario:{id}`).
+- `POST /login/verificacion/perdi-mi-telefono` (tipo `dos_pasos`): solo con la cuenta pendiente en la sesión (ya escribió su contraseña).
+- Campana `cuenta_solicitud` (silenciable; sigue en Mis pendientes) a quien puede atenderla: `usuarios.editar` (contraseña) o `usuarios.desbloquear` (dos pasos), con alcance a la sede de la cuenta y de mayor jerarquía (`SolicitudesCuenta::puedeAtender` = `AdministradorUsuarios::exigirPuedeAdministrar`). Las del Super Administrador (`empresa_id` nulo), a los **otros** Super Administradores.
+- Atenderla es la acción de siempre: restablecer contraseña (`AdministradorUsuarios::restablecer`) o dos pasos (`VerificacionDosPasos::restablecer`/`restablecerSuperadmin`) llaman a `SolicitudesCuenta::atendidas()`, que la cierra, resuelve la campana y audita.
+- «Rechazar»: `PATCH /solicitudes-cuenta/{id}/rechazar` (`solicitudes-cuenta.rechazar`; permiso del tipo, cuenta visible; otra empresa 404), con motivo opcional; avisa a la persona por campana. La de un Super Administrador se rechaza en su tarjeta (A-08): `PATCH /configuracion/superadmins/solicitudes/{id}/rechazar` (`superadmins.solicitudes.rechazar`; solo Super Administradores, nunca la propia, peticiones de empresa 404), aviso `plataforma_superadmin` a la cuenta.
+- **«Cuentas por revisar» = renglones que puede atender (A-03):** `AdministradorUsuarios::consultaPorRevisar()` es la misma consulta para la lista de Usuarios y para Mis pendientes (`usuarios.ver` + `usuarios.editar`). Mis pendientes suma `SolicitudesCuenta::porAtender()->count()` (contraseña con `usuarios.editar`, dos pasos con `usuarios.desbloquear`, alcance y jerarquía), y solo lo calcula si hay alguna petición abierta en la empresa (lo sabe en la misma consulta del conteo de cuentas, sin consultas de más). Quien solo tiene «Desbloquear» ve el renglón cuando tiene peticiones de dos pasos.
+- **Roles que pasan a administrar (A-06):** `AdministradorUsuarios::administrativasSinCorreo()` lista las cuentas activas sin correo de un rol administrativo. Usuarios lo muestra arriba («Administran sin correo») y la Matriz de permisos lo avisa al guardar los permisos de ese rol (o al copiar un perfil).
+- A la persona con correo le llega «Pediste ayuda con tu cuenta» (si no fue ella, se entera).
+- Auditoría: `usuarios.solicitud_cuenta`, `usuarios.solicitud_cuenta_atendida`, `usuarios.solicitud_cuenta_rechazada`.
+- Reloj y suplente: cuando llegue C-22 (Etapa 4) el renglón recibe el reloj; hoy la lista muestra la antigüedad («Hace 2 h»).
+
+Tabla `solicitudes_cuenta` (migración `2026_11_10_003610_cuentas_correo_opcional_y_solicitudes_de_cuenta`): `empresa_id` (nulo = Super Administrador; cascada), `user_id` (cascada), `tipo` (`contrasena`|`dos_pasos`), `estado` (`pendiente`|`atendida`|`rechazada`), `origen` (red recortada), `atendida_en`, `atendida_por`, `motivo_rechazo`, autoría y timestamps. La misma migración hace `users.email` nullable; su `down()` pone a las cuentas sin correo `sin-correo-{id}@cuenta.invalid` (dominio reservado) y vuelve la columna obligatoria; el `up()` siguiente reconoce ese marcador y lo vuelve a nulo.
+
+**Respaldo sin terminal.** La base y los archivos se respaldan desde Configuración → Respaldos (y el paquete de traslado). Si el hospedaje no da terminal, el respaldo descargado se guarda también con el **administrador de archivos de cPanel** (carpeta `shared/storage/app/private/respaldos`) y se puede restaurar importando el `.sql.gz` con la herramienta de base de datos del panel; ver «Lista de salida a Producción» en [despliegue.md](despliegue.md).
 
 Pruebas: `tests/Feature/Seguridad/CuentaTest.php`.
 
@@ -93,9 +116,11 @@ SEGCAT permitía buscar un colaborador para llenar los datos y vincular la cuent
 
 ## Pruebas
 
-`tests/Feature/Administracion/UsuariosTest.php`, `DesbloqueoUsuariosTest.php`, `UsuariosHomonimosTest.php` y `tests/Feature/Seguridad/CuentaTest.php`
+`tests/Feature/Administracion/UsuariosTest.php`, `DesbloqueoUsuariosTest.php`, `UsuariosHomonimosTest.php`, `tests/Feature/Seguridad/CuentaTest.php` y `tests/Feature/Seguridad/CuentaEsDeSuDuenoTest.php` (C-36)
 
 ## Ronda 8: ¿el correo es obligatorio en Nuevo Usuario?
+
+> **Cambió con C-36 (DD-21, 2026-10-26):** el correo es **opcional en las cuentas de caseta** (roles sin permisos de administración), con recuperación por solicitud al administrador. Sigue obligatorio en los roles que administran y en el Super Administrador. Lo de abajo es la decisión anterior.
 
 Se revisó y **se queda obligatorio**: en SEGCAT `usuarios.correo` es `NOT NULL` y los formularios de alta y edición lo pedían (`required`). Además la plataforma lo usa para los avisos por correo (vouchers con cobro, altas por verificar, procedimientos, pases, autorizaciones) y es el medio para recuperar la contraseña («Olvidé mi contraseña», enlace de bienvenida y restablecer desde Usuarios); un usuario sin correo se quedaría sin avisos y sin recuperación. Sigue siendo único en la plataforma.
 

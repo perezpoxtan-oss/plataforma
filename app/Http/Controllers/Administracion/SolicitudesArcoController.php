@@ -117,10 +117,19 @@ class SolicitudesArcoController extends Controller
         $actor = $this->exigirPermiso($request);
         $s = $this->buscar($actor, $solicitud);
         $request->validate(['confirmar' => ['accepted']], ['confirmar.accepted' => 'Marca «Entiendo que no se puede deshacer» para eliminar los datos.']);
-        $h = $this->solicitudes->eliminar($actor, $s, (array) $request->input('seleccion', []));
+        $criterios = $this->criteriosDe($request);
+        $h = $this->solicitudes->eliminar($actor, $s, (array) $request->input('seleccion', []), $criterios['nombre'] ?? null);
+        // C-37: el resumen nombra cada módulo que se trató (Lost & Found, Novedades, Accidentes, Reservas, Transporte…)
+        $partes = [];
+        foreach (DatosDePersona::TIPOS as $tipo => $etiqueta) {
+            if (($h[$tipo] ?? 0) > 0) {
+                $partes[] = $etiqueta.': '.$h[$tipo];
+            }
+        }
 
-        return redirect()->route('arco.show', [$s->id] + $this->criteriosDe($request))->with('ok', sprintf('Datos eliminados: %d del padrón, %d registros de la bitácora y %d candidato(s)%s. Ahora escribe tu respuesta a la persona.',
-            $h['persona'], $h['acceso'], $h['candidato'], $h['omitidos'] > 0 ? ' ('.$h['omitidos'].' contratado(s) no se eliminaron: ya son colaboradores)' : ''));
+        return redirect()->route('arco.show', [$s->id] + $criterios)->with('ok', 'Datos eliminados. '.implode(' · ', $partes).'.'
+            .($h['omitidos'] > 0 ? ' No se eliminaron '.$h['omitidos'].' registro(s) de personal de la empresa (candidatos ya contratados o accidentes de colaborador): se conservan por la relación laboral.' : '')
+            .' Ahora escribe tu respuesta a la persona.');
     }
 
     public function responder(Request $request, int $solicitud): RedirectResponse
