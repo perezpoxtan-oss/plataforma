@@ -63,3 +63,12 @@ Quién llama a `revisarDespues`: `AdministradorUsuarios::actualizar` y `cambiarE
 - Colaboradores: diálogos compartidos `organizacion/colaboradores/_verificar.blade.php` (Aprobar, Aprobar · es el mismo, Rechazar). `PUT /colaboradores/{id}/rechazar` → `AdministradorColaboradores::rechazarProvisional` (baja con motivo, auditoría `colaboradores.rechazado`, aviso `alta_rechazada`). `volver=altas` regresa a la bandeja.
 - Mis pendientes: un solo renglón `altas` con detalle por pestaña (desaparece `colaboradores_por_verificar`). Menú: entrada personal en Padrones (`ConstructorMenu::SECCION_PADRONES`).
 - Importación: `ImportadorColaboradores::existente` reconoce por nombre un alta provisional sin número; al actualizar queda verificada (`verificarDesdeImportacion`).
+
+## Cierre de la revisión independiente (Etapa 3a)
+
+- **Cobertura por función:** `Cobertura::porFuncion()` y `textoFuncion()` (parcial `organizacion/departamentos/_funciones`) muestran por sede «Autoriza visitas: Sí/No · Firma pases: Sí/No (lo firma …)» en Departamentos y Responsables. Pases no cambia quién firma: se replica su regla (responsable activo de esa sede con `pases_salida.aprobar` en la sede; si no, quien aprueba y es colaborador del departamento; si no, cualquiera que apruebe en la sede). Sin el módulo de Pases, solo se dice lo de visitas.
+- **Delegado dado de baja:** `Delegaciones::delegadoDadoDeBaja()` (desde `AdministradorUsuarios::cambiarEstado` y la baja en cascada de `AdministradorColaboradores::cambiarEstado`) cancela sus delegaciones vigentes o programadas, audita y avisa al titular (`delegacion_terminada`).
+- **Aviso de delegación vencido:** `CentroNotificaciones::terminarAvisosDeDelegacion()` corre en la consulta de la campana y en la lista de notificaciones: el aviso `delegacion` de una delegación vencida o cancelada queda leído, sin botones y con «Terminó · ». Cancelar hace lo mismo.
+- **Homónimos por índice:** `colaboradores.nombre_normalizado` (migración `2026_11_12_000200`, índice `empresa_id + nombre_normalizado`, la llena `Colaborador::booted()`). `AdministradorColaboradores::homonimos(nombre, paterno, materno, ?sede)` busca sin tope; `parecidos()` toma los primeros 5. La importación une solo si el único homónimo es el alta de la caseta y es de la misma sede. Columna registrada en `InventarioDatosPersonales`.
+- **Límite:** `autorizaciones.delegar` y su cancelación usan el limitador `delegar-cuenta`, como Mi cuenta.
+- **Cadena A→B→C:** se queda como la dejó la revisión (al último de la cadena que pueda aprobar) y el manual de Mi cuenta lo dice.

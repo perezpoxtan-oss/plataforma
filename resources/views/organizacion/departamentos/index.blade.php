@@ -68,6 +68,9 @@
                             </div>
                         @endif
                         <div class="small text-muted"><i class="bi bi-person-badge" aria-hidden="true"></i> {{ $d->puestos_count }} puesto(s) ligado(s) · <i class="bi bi-people" aria-hidden="true"></i> {{ $d->colaboradores_count }} colaborador(es) activo(s)</div>
+                        @if ($d->activo)
+                            @include('organizacion.departamentos._funciones', ['funciones' => $funciones[$d->id] ?? [], 'varias' => $variasSedesEmpresa])
+                        @endif
                         @php $sedesSin = $d->activo ? ($sinCobertura[$d->id] ?? []) : []; @endphp
                         @if ($sedesSin !== [])
                             {{-- C-08 (A-03): misma regla que la caseta (cuenta activa, permiso «Responder» y acceso a la sede) --}}

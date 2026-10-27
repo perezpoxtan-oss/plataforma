@@ -649,8 +649,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/autorizaciones', 'index')->name('autorizaciones.index');
         Route::get('/autorizaciones/responsables', 'responsables')->name('autorizaciones.responsables');
         Route::put('/autorizaciones/responsables/{departamento}', 'guardarResponsables')->whereNumber('departamento')->name('autorizaciones.responsables.guardar');
-        Route::post('/autorizaciones/delegaciones', 'delegar')->name('autorizaciones.delegar');
-        Route::patch('/autorizaciones/delegaciones/{delegacion}/cancelar', 'cancelarDelegacion')->whereNumber('delegacion')->name('autorizaciones.delegaciones.cancelar');
+        Route::post('/autorizaciones/delegaciones', 'delegar')->middleware('throttle:delegar-cuenta')->name('autorizaciones.delegar'); // Revisión Etapa 3a: mismo limitador que Mi cuenta
+        Route::patch('/autorizaciones/delegaciones/{delegacion}/cancelar', 'cancelarDelegacion')->whereNumber('delegacion')->middleware('throttle:delegar-cuenta')->name('autorizaciones.delegaciones.cancelar');
         Route::get('/autorizaciones/{autorizacion}', 'show')->whereNumber('autorizacion')->name('autorizaciones.show');
         Route::get('/autorizaciones/{autorizacion}/confirmar', 'confirmar')->whereNumber('autorizacion')->name('autorizaciones.confirmar');
         Route::post('/autorizaciones/{autorizacion}/responder', 'responder')->whereNumber('autorizacion')->middleware('throttle:60,1')->name('autorizaciones.responder');

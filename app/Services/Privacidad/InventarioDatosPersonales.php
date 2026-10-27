@@ -57,7 +57,7 @@ final class InventarioDatosPersonales
         'candidatos' => ['trato' => 'arco', 'tipo' => 'candidato', 'columnas' => ['nombre_completo', 'telefono', 'correo', 'fecha_nacimiento', 'referencias', 'nombre', 'apellido_paterno', 'apellido_materno', 'sexo', 'lugar_nacimiento', 'curp', 'rfc', 'nss', 'estado_domicilio', 'telefono_fijo', 'emergencia_nombre', 'emergencia_parentesco', 'emergencia_telefono', 'referencias_laborales', 'tiene_familiares', 'familiares_nombre', 'declaracion_aceptada_en', 'firma_ruta', 'firma_en', 'firma_medio', 'firma_capturada_por'],
             'conservacion' => 'Candidatos → Documentos y plazos (borrar a los 12 meses sin movimiento).'],
         'candidato_documentos' => ['trato' => 'referencia', 'tipo' => 'candidato', 'columnas' => ['nombre_original'], 'conservacion' => 'Con su candidato.'],
-        'colaboradores' => ['trato' => 'arco', 'tipo' => 'colaborador', 'columnas' => ['nombre', 'apellido_paterno', 'apellido_materno', 'telefono', 'fecha_nacimiento', 'lugar_nacimiento', 'curp', 'rfc', 'nss', 'correo_personal', 'direccion_completa'],
+        'colaboradores' => ['trato' => 'arco', 'tipo' => 'colaborador', 'columnas' => ['nombre', 'apellido_paterno', 'apellido_materno', 'nombre_normalizado', 'telefono', 'fecha_nacimiento', 'lugar_nacimiento', 'curp', 'rfc', 'nss', 'correo_personal', 'direccion_completa'],
             'conservacion' => self::LABORAL],
         'vacantes' => ['trato' => 'laboral', 'columnas' => ['contacto_nombre', 'contacto_telefono', 'contacto_correo'], 'conservacion' => self::LABORAL],
 

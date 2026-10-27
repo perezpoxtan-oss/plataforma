@@ -120,6 +120,7 @@
                     @empty
                         <p class="small text-muted">Sin responsable: al canalizar un candidato, Recursos Humanos elige quién lo entrevista.</p>
                     @endforelse
+                    @include('organizacion.departamentos._funciones', ['funciones' => $funciones[$d->id] ?? [], 'varias' => $sedes->count() > 1])
                     @if (! empty($sinCobertura[$d->id]))
                         <p class="aviso-sin-responsable mb-0 mt-1"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Sin quien autorice en {{ implode(', ', $sinCobertura[$d->id]) }}: {{ $ajustesRecepcion->sinCoberturaEsperaSupervisor($empresa) ? 'sus visitas esperan al supervisor o al jefe de seguridad.' : 'sus visitas entran sin autorización.' }}</p>
                     @endif

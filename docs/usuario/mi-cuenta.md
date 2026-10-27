@@ -99,7 +99,9 @@ Si apruebas visitas, pases de salida, reservas o entrevistas y vas a estar fuera
 - Lo que te toque aprobar **y esa persona también pueda aprobar** le llega a ella: los avisos, la campana, el correo y sus **Mis pendientes**. Tus **Mis pendientes** ya no lo cuentan.
 - Si esa persona no puede aprobar algo tuyo (por ejemplo, no entra a tu sede o no aprueba pases), eso te sigue llegando a ti.
 - Tú todavía puedes responder si entras.
-- Si la persona que te cubre también sale y delega en alguien más, lo tuyo le llega a esa otra persona (siempre que pueda aprobarlo). Si alguien de esa cadena es dado de baja o su delegación termina, lo tuyo regresa al anterior.
+- **Delegación en cadena:** si tú delegas en Ana y Ana delega en Luis, lo tuyo le llega a **la última persona de la cadena que pueda aprobarlo** (Luis), aunque tú hayas elegido a Ana. Si alguien de esa cadena termina su delegación, lo tuyo regresa al anterior.
+- Si la persona en quien delegaste **es dada de baja**, tu delegación termina sola y te llega a la campana «Tu delegación a … terminó porque fue dada de baja»: tus aprobaciones regresaron a ti.
+- Cuando la delegación vence o se cancela, el aviso que recibió la otra persona («… te delegó sus aprobaciones») queda marcado **Terminó**.
 - No se pueden delegar dos personas una a la otra en las mismas fechas: nadie atendería.
 
 **Cuando regreses:** toca **Cancelar** en tu delegación. Todo vuelve a llegarte a ti.

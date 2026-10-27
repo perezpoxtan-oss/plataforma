@@ -179,6 +179,7 @@ class AutorizacionController extends Controller
             'responsables' => ($cobertura = app(Cobertura::class))->filas()->load('sede:id,nombre')->groupBy('departamento_id'),
             'cobertura' => $cobertura,
             'sinCobertura' => $cobertura->sedesSinCobertura(),
+            'funciones' => $cobertura->porFuncion(), // Revisión Etapa 3a
             'usuarios' => $usuarios = $this->delegaciones->candidatosAResponsable($empresaId),
             // A-04: a qué sedes puede entrar cada candidato (el diálogo solo ofrece esas)
             'alcances' => $usuarios->mapWithKeys(fn ($u) => [$u->id => $cobertura->sedesDe($u)])->all(),

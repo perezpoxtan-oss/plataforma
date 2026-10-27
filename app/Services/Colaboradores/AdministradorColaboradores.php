@@ -9,6 +9,7 @@ use App\Models\Sede;
 use App\Models\Turno;
 use App\Models\User;
 use App\Services\Autorizaciones\Cobertura;
+use App\Services\Autorizaciones\Delegaciones;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Cuenta\AvisosCuenta;
 use App\Services\Notificaciones\CentroNotificaciones;
@@ -381,23 +382,27 @@ class AdministradorColaboradores
      */
     public function parecidos(string $nombre, string $paterno, ?string $materno): array
     {
+        return $this->homonimos($nombre, $paterno, $materno)->take(5)->map(fn (Colaborador $c) => $this->resumen($c))->values()->all();
+    }
+
+    /**
+     * Revisión Etapa 3a: todos los activos con el mismo nombre y apellido
+     * paterno (sin mayúsculas ni acentos), por el índice de
+     * nombre_normalizado y sin tope; el materno se compara si ambos lo tienen.
+     * Con $sedeId, solo los de esa sede (o sin sede).
+     *
+     * @return Collection<int, Colaborador>
+     */
+    public function homonimos(string $nombre, string $paterno, ?string $materno, ?int $sedeId = null): Collection
+    {
         $clave = fn (?string $t) => mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', strtr((string) $t, self::SIN_ACENTOS))));
-        $buscado = $clave($nombre.' '.$paterno);
 
         return Colaborador::query()->where('activo', true)->whereNull('fusionado_en_id')
-            // Primero acota por la inicial del apellido (con o sin acento) y luego compara en PHP sin acentos
-            ->where(function ($q) use ($paterno, $clave) {
-                $inicial = mb_substr($clave($paterno), 0, 1);
-                foreach (array_unique([$inicial, array_search($inicial, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u'], true) ?: $inicial]) as $letra) {
-                    $q->orWhereRaw('LOWER(apellido_paterno) LIKE ?', [$letra.'%']);
-                }
-            })
-            ->limit(200)->get()
-            ->filter(fn (Colaborador $c) => $clave($c->nombre.' '.$c->apellido_paterno) === $buscado
-                && ($materno === null || $c->apellido_materno === null || $clave($c->apellido_materno) === $clave($materno)))
-            ->take(5)
-            ->map(fn (Colaborador $c) => $this->resumen($c))
-            ->values()->all();
+            ->where('nombre_normalizado', Colaborador::normalizarNombre($nombre, $paterno))
+            ->when($sedeId !== null, fn ($q) => $q->where(fn ($s) => $s->whereNull('sede_id')->orWhere('sede_id', $sedeId)))
+            ->orderBy('id')->get()
+            ->filter(fn (Colaborador $c) => $materno === null || $c->apellido_materno === null || $clave($c->apellido_materno) === $clave($materno))
+            ->values();
     }
 
     public function actualizar(User $actor, int $empresaId, Colaborador $colaborador, Request $request): Colaborador
@@ -457,6 +462,7 @@ class AdministradorColaboradores
         $this->auditoria->auditar($actor, 'usuarios.desactivado_por_baja', $cuenta, ['activo' => true], ['activo' => false, 'colaborador_id' => $colaborador->id]);
         app(AvisosCuenta::class)->desactivadaPorBaja($cuenta, $colaborador, $actor);
         Cobertura::revisarDespues((int) $colaborador->empresa_id); // C-08: baja en cascada
+        Delegaciones::delegadoDadoDeBaja($cuenta, $actor); // Revisión Etapa 3a
 
         return $cuenta;
     }

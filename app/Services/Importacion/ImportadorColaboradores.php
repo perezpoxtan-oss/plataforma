@@ -97,17 +97,19 @@ class ImportadorColaboradores extends Importador
         }
         // Solo si no hay duda (revisión Etapa 3a): un único homónimo, que es el alta de la caseta, y de la misma sede si la fila la trae.
         // Con otro homónimo (verificado o provisional) o de otra sede, puede ser otra persona: se da de alta y se une a mano en «Altas por verificar».
-        $parecidos = collect($this->colaboradores->parecidos($nombre, $paterno, $this->valor($fila, 'apellido_materno')));
-        $provisional = $parecidos->count() === 1 ? $parecidos->firstWhere('provisional', true) : null;
+        // Revisión Etapa 3a: búsqueda indexada por nombre normalizado, sin tope (antes 200 por inicial podía no encontrarlo)
+        $materno = $this->valor($fila, 'apellido_materno');
+        $homonimos = $this->colaboradores->homonimos($nombre, $paterno, $materno);
+        $provisional = $homonimos->count() === 1 && $homonimos->first()->provisional ? $homonimos->first() : null;
         if ($provisional === null) {
             return null;
         }
         $sede = $this->valor($fila, 'sede') === null ? null : $this->sede($this->valor($fila, 'sede'))?->id;
-        if ($sede !== null && $provisional['sede_id'] !== null && (int) $provisional['sede_id'] !== (int) $sede) {
+        if ($sede !== null && $provisional->sede_id !== null && (int) $provisional->sede_id !== (int) $sede) {
             return null;
         }
 
-        return Colaborador::whereKey($provisional['id'])->where('provisional', true)->whereNull('fusionado_en_id')->first();
+        return $provisional;
     }
 
     public function describir(Model $registro): string

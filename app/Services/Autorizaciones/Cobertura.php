@@ -340,6 +340,62 @@ class Cobertura
     }
 
     /**
+     * Revisión Etapa 3a: cobertura por función, para que Departamentos y
+     * Responsables no digan «cubierto» mientras firma otra persona.
+     *  - visitas: la regla de este servicio (responder autorizaciones);
+     *  - pases: quién firma el paso «Jefe del departamento del solicitante»
+     *    con la regla de Pases de salida (no cambia quién firma): un
+     *    responsable activo de esa sede con «Aprobar» de Pases en la sede;
+     *    si no hay, quien tenga «Aprobar» y sea colaborador del departamento;
+     *    si tampoco, cualquiera con «Aprobar» en la sede. null si la empresa
+     *    no tiene Pases de salida.
+     *
+     * @return array<int, array<int, array{sede: string, visitas: bool, pases: ?array{si: bool, quien: string}}>> depto => sede => …
+     */
+    public function porFuncion(): array
+    {
+        return $this->memoria[$this->llave('funciones')] ??= (function () {
+            $empresaId = $this->tenant->empresaId();
+            $conPases = $empresaId !== null && $this->autorizador->moduloActivo((int) $empresaId, 'pases_salida');
+            $aprueban = [];
+            $filas = $this->filas()->groupBy('departamento_id');
+            $r = [];
+            foreach ($this->mapa() as $depto => $d) {
+                foreach ($d['sedes'] as $sede => $s) {
+                    $pases = null;
+                    if ($conPases) {
+                        $aprueban[$sede] ??= User::with('colaborador:id,departamento_id')->where('empresa_id', $empresaId)->where('activo', true)->get()
+                            ->filter(fn (User $u) => $this->destinatarios->alcanza($u, 'pases_salida.aprobar', (int) $sede))->values();
+                        $responsables = $filas->get($depto, collect())->filter(fn ($f) => ($f->sede_id === null || (int) $f->sede_id === (int) $sede) && $f->usuario?->activo)
+                            ->pluck('user_id')->map(fn ($id) => (int) $id);
+                        $firman = $aprueban[$sede]->filter(fn (User $u) => $responsables->contains((int) $u->id));
+                        if ($firman->isNotEmpty()) {
+                            $pases = ['si' => true, 'quien' => $firman->pluck('name')->join(', ', ' y ')];
+                        } else {
+                            $delDepto = $aprueban[$sede]->filter(fn (User $u) => (int) $u->colaborador?->departamento_id === (int) $depto);
+                            $pases = ['si' => false, 'quien' => $delDepto->isNotEmpty() ? $delDepto->pluck('name')->join(', ', ' y ') : 'quien tenga «Aprobar» de Pases en la sede'];
+                        }
+                    }
+                    $r[$depto][$sede] = ['sede' => $s['nombre'], 'visitas' => $s['cubierta'], 'pases' => $pases];
+                }
+            }
+
+            return $r;
+        })();
+    }
+
+    /** «Autoriza visitas: Sí · Firma pases: No (lo firma …)» de un departamento en una sede. */
+    public static function textoFuncion(array $f): string
+    {
+        $t = 'Autoriza visitas: '.($f['visitas'] ? 'Sí' : 'No');
+        if ($f['pases'] !== null) {
+            $t .= ' · Firma pases: '.($f['pases']['si'] ? 'Sí' : 'No (lo firma '.$f['pases']['quien'].')');
+        }
+
+        return $t;
+    }
+
+    /**
      * Todas las filas de responsables de la empresa con su cuenta (una consulta por petición).
      *
      * @return Collection<int, DepartamentoResponsable>

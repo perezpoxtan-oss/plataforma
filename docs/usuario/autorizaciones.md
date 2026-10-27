@@ -86,7 +86,8 @@ Un departamento **tiene quien autorice** en una sede solo si al menos uno de sus
 1. Abre **Responsables por departamento**.
 2. Junto a cada persona que no cuenta verás por qué: **(cuenta dada de baja)**, **(sin permiso para responder)**, **(no puede entrar a …)** o **(solo responde en …)**.
 3. Si falta en alguna sede, el departamento dice «**Sin quien autorice en** (sede)».
-4. Toca **Elegir responsables** y nombra a alguien que entre a esa sede.
+4. Debajo de cada departamento verás qué cubre en cada sede: «**Autoriza visitas:** Sí/No · **Firma pases:** Sí/No (lo firma …)». Los pases de salida tienen su propia regla: los firma el responsable si tiene permiso para aprobar pases en esa sede; si no, alguien del departamento con ese permiso o cualquiera que lo tenga en la sede. Así sabes quién firma aunque no sea el responsable.
+5. Toca **Elegir responsables** y nombra a alguien que entre a esa sede.
 
 ![Departamentos sin quien autorice](img/recepcion-y-candidatos/responsables-sin-quien-autorice.png)
 

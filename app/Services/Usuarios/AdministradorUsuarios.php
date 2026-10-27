@@ -8,6 +8,7 @@ use App\Models\SolicitudCuenta;
 use App\Models\User;
 use App\Models\UsuarioRol;
 use App\Services\Autorizaciones\Cobertura;
+use App\Services\Autorizaciones\Delegaciones;
 use App\Services\Cuenta\AvisosCuenta;
 use App\Services\Cuenta\RecuperacionContrasena;
 use App\Services\Cuenta\SolicitudesCuenta;
@@ -181,6 +182,9 @@ class AdministradorUsuarios
 
         $this->roles->auditar($actor, $activo ? 'usuarios.reactivado' : 'usuarios.desactivado', $usuario, ['activo' => ! $activo], ['activo' => $activo]);
         Cobertura::revisarDespues((int) $usuario->empresa_id ?: null); // C-08
+        if (! $activo) {
+            Delegaciones::delegadoDadoDeBaja($usuario, $actor); // Revisión Etapa 3a
+        }
     }
 
     /**

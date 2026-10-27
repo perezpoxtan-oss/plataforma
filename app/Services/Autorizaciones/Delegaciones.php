@@ -5,6 +5,7 @@ namespace App\Services\Autorizaciones;
 use App\Models\Delegacion;
 use App\Models\Departamento;
 use App\Models\DepartamentoResponsable;
+use App\Models\Notificacion;
 use App\Models\Sede;
 use App\Models\User;
 use App\Services\Candidatos\CambioNoPermitido;
@@ -12,6 +13,7 @@ use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Recepcion\Destinatarios;
 use App\Support\HoraLocal;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -256,7 +258,52 @@ class Delegaciones
         $antes = $this->foto($delegacion);
         $delegacion->forceFill(['cancelada_en' => now(), 'cancelada_por' => $actor->id])->save();
         $this->auditoria->auditar($actor, 'autorizaciones.delegacion_cancelada', $delegacion, $antes, $this->foto($delegacion));
-        $this->notificaciones->resolver('delegacion', (int) $delegacion->id);
+        $this->terminarAviso($delegacion);
+    }
+
+    /** El aviso «te delegó sus aprobaciones» queda «Terminó · …», leído y sin botones. */
+    private function terminarAviso(Delegacion $delegacion): void
+    {
+        foreach (Notificacion::query()->withoutGlobalScopes()->where('tipo', 'delegacion')->where('referencia_tipo', 'delegacion')->where('referencia_id', $delegacion->id)->get(['id', 'titulo']) as $n) {
+            CentroNotificaciones::marcarTerminada($n);
+        }
+    }
+
+    /**
+     * Revisión Etapa 3a: si se da de baja la cuenta de un delegado, sus
+     * delegaciones vigentes o programadas terminan y cada titular recibe en
+     * la campana «Tu delegación a X terminó porque fue dada de baja; tus
+     * aprobaciones regresaron a ti». Lo llaman la baja en Usuarios y la baja
+     * en cascada desde Colaboradores.
+     */
+    public static function delegadoDadoDeBaja(User $cuenta, ?User $actor): void
+    {
+        if ($cuenta->empresa_id === null) {
+            return;
+        }
+        try {
+            app(Tenant::class)->conEmpresa((int) $cuenta->empresa_id, function () use ($cuenta, $actor) {
+                $servicio = app(self::class);
+                foreach (Delegacion::with('usuario:id,name,activo')->where('delegado_id', $cuenta->id)->whereNull('cancelada_en')->where('hasta', '>=', now())->get() as $d) {
+                    $antes = $servicio->foto($d);
+                    $d->forceFill(['cancelada_en' => now(), 'cancelada_por' => $actor?->id])->save();
+                    if ($actor !== null) {
+                        $servicio->auditoria->auditar($actor, 'autorizaciones.delegacion_cancelada', $d, $antes, $servicio->foto($d) + ['motivo' => 'Delegado dado de baja']);
+                    }
+                    $servicio->terminarAviso($d);
+                    if ($d->usuario?->activo) {
+                        $servicio->notificaciones->avisar((int) $cuenta->empresa_id, [(int) $d->user_id], 'delegacion_terminada', [
+                            'titulo' => 'Tu delegación a '.$cuenta->name.' terminó porque fue dada de baja',
+                            'texto' => 'Tus aprobaciones regresaron a ti. Si vas a seguir fuera, elige a otra persona en Mi cuenta.',
+                            'url' => route('mi-cuenta.index').'#delegar',
+                            'referencia_tipo' => 'delegacion', 'referencia_id' => (int) $d->id,
+                        ]);
+                    }
+                }
+            });
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /** @return array<string, mixed> */

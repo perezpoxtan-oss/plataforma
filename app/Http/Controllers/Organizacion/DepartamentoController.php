@@ -69,7 +69,8 @@ class DepartamentoController extends Controller
             'puede' => $this->permisosCatalogo($actor, 'departamentos'),
             'puedeResponsables' => $actor->can('autorizaciones.configurar'),
             // C-08 (A-03): sedes donde nadie puede autorizar (misma regla que la caseta), y si la visita espera al supervisor
-            'sinCobertura' => app(Cobertura::class)->sedesSinCobertura(),
+            'sinCobertura' => ($cobertura = app(Cobertura::class))->sedesSinCobertura(),
+            'funciones' => $cobertura->porFuncion(), // Revisión Etapa 3a: por función (visitas y pases)
             'sinCoberturaEspera' => ($e = Empresa::find($empresaId)) !== null && app(AjustesRecepcion::class)->visitasRequierenAutorizacion($e)
                 ? app(AjustesRecepcion::class)->sinCoberturaEsperaSupervisor($e) : null,
             'variasSedesEmpresa' => Sede::where('activo', true)->count() > 1,

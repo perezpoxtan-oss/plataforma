@@ -32,7 +32,7 @@ resumen: Catálogos de áreas (departamentos) y rangos (puestos) que se eligen a
 
 ### Nombrar al responsable del departamento
 
-Un departamento recién creado no tiene quien autorice: su tarjeta lo avisa con **Sin quien autorice en** (las sedes donde falta) y qué pasa con sus visitas (de fábrica, **esperan al supervisor o al jefe de seguridad**). La tarjeta usa la misma regla que la caseta: no basta con nombrar a alguien; su cuenta debe estar activa, tener el permiso **Responder** y entrar a esa sede. Toca **Nombrar responsable** (o el botón **Responsables** de arriba) para abrir **Responsables por departamento** y elegir al titular y a sus suplentes; ahí mismo se configura qué espera en la caseta (ver [Autorizaciones](autorizaciones.md)). Necesitas el permiso **Configurar** de *Autorizaciones*.
+Un departamento recién creado no tiene quien autorice: su tarjeta lo avisa con **Sin quien autorice en** (las sedes donde falta) y qué pasa con sus visitas (de fábrica, **esperan al supervisor o al jefe de seguridad**). La tarjeta usa la misma regla que la caseta: no basta con nombrar a alguien; su cuenta debe estar activa, tener el permiso **Responder** y entrar a esa sede. Además, cada tarjeta dice por sede qué cubre: «**Autoriza visitas:** Sí/No · **Firma pases:** Sí/No (lo firma …)», porque los pases de salida los puede firmar otra persona (ver [Autorizaciones](autorizaciones.md)). Toca **Nombrar responsable** (o el botón **Responsables** de arriba) para abrir **Responsables por departamento** y elegir al titular y a sus suplentes; ahí mismo se configura qué espera en la caseta (ver [Autorizaciones](autorizaciones.md)). Necesitas el permiso **Configurar** de *Autorizaciones*.
 
 ![Departamento sin responsable](img/departamentos/8-sin-responsable.png)
 

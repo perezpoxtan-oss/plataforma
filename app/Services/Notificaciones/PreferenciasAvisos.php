@@ -32,6 +32,7 @@ class PreferenciasAvisos
         'autorizacion_escalada' => ['Autorizaciones', 'Una autorización pasó al suplente o al jefe por tardanza', ['autorizaciones.responder', 'accesos.ver']],
         'autorizacion_excepcion' => ['Autorizaciones', 'La caseta dejó pasar por excepción a alguien que esperaba tu autorización', ['autorizaciones.responder']],
         'delegacion' => ['Autorizaciones', 'Alguien te delegó sus aprobaciones (visitas, pases, reservas o entrevistas)', ['autorizaciones.responder', 'pases_salida.aprobar', 'reservas.aprobar', 'candidatos.evaluar']],
+        'delegacion_terminada' => ['Autorizaciones', 'Tu delegación terminó porque la persona fue dada de baja', ['autorizaciones.responder', 'pases_salida.aprobar', 'reservas.aprobar', 'candidatos.evaluar']],
         // Etapa 3 (C-08)
         'cobertura_perdida' => ['Autorizaciones', 'Un departamento se quedó sin quien autorice en una sede', ['autorizaciones.configurar']],
         'acceso_sin_cobertura' => ['Bitácora de accesos', 'Una visita espera tu autorización porque su departamento no tiene quien autorice en la sede', ['accesos.aprobar']],
