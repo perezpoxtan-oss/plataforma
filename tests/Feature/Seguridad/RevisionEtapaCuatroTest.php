@@ -20,6 +20,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
@@ -284,13 +285,13 @@ class RevisionEtapaCuatroTest extends TestCase
         $borrador = $this->enEmpresa(fn () => Vacante::where('titulo', 'Borrador de RR. HH.')->firstOrFail());
         $this->assertSame('borrador', $borrador->estado);
         // Como estaban antes de instalar: sin marca
-        \Illuminate\Support\Facades\DB::table('vacantes')->update(['propuesta_en' => null, 'propuesta_por' => null]);
+        DB::table('vacantes')->update(['propuesta_en' => null, 'propuesta_por' => null]);
 
         $migracion = require database_path('migrations/2026_11_13_000100_reloj_y_suplente.php');
         $migracion->rellenar();
 
-        $this->assertNotNull(\Illuminate\Support\Facades\DB::table('vacantes')->where('id', $propuesta->id)->value('propuesta_en'), 'La que pidió el jefe (tuvo su aviso «vacante_propuesta»)');
-        $this->assertNull(\Illuminate\Support\Facades\DB::table('vacantes')->where('id', $borrador->id)->value('propuesta_en'), 'El borrador propio de RR. HH. no espera a nadie');
+        $this->assertNotNull(DB::table('vacantes')->where('id', $propuesta->id)->value('propuesta_en'), 'La que pidió el jefe (tuvo su aviso «vacante_propuesta»)');
+        $this->assertNull(DB::table('vacantes')->where('id', $borrador->id)->value('propuesta_en'), 'El borrador propio de RR. HH. no espera a nadie');
     }
 
     // ============================================== Super Administrador sin cruzar empresas
