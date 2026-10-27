@@ -6,6 +6,7 @@ use App\Models\Paquete;
 use App\Models\Plan;
 use App\Models\Producto;
 use App\Models\Promocion;
+use App\Models\Rubro;
 use App\Models\SolicitudCompra;
 use App\Services\Comercial\Pagos\Pasarelas;
 use App\Services\Comercial\Pagos\ResultadoCobro;
@@ -13,6 +14,7 @@ use App\Services\Privacidad\AvisosPrivacidad;
 use App\Services\Suscripciones\Promociones;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -66,11 +68,15 @@ class CatalogoPublico
         // La calculadora abre con el plan recomendado (o el primero) y una sede
         $inicial = $planes->firstWhere('destacado', true) ?? $planes->first();
 
+        $productos = $this->productos($planes, $paquetes);
+
         return [
             'ajustes' => $this->ajustes->todos(),
             'planes' => $planes,
             'paquetes' => $paquetes,
-            'productos' => $this->productos($planes, $paquetes),
+            'productos' => $productos,
+            // C-05: lo que trae cada producto sale de sus módulos reales (la página no promete lo que el plan no trae)
+            'modulosProducto' => CoherenciaCatalogo::modulosPorProducto($productos),
             'calculadora' => $this->calculadora->datosParaNavegador($planes, $paquetes),
             'eleccionCalculadora' => ['plan_id' => $inicial?->id, 'sedes' => 1, 'paquetes' => [], 'periodicidad' => 'mensual', 'codigo_promocion' => ''],
             'calculoCalculadora' => $this->calculadora->calcular($inicial, 1, collect()),
@@ -113,7 +119,7 @@ class CatalogoPublico
      * Registra la solicitud con su desglose congelado y la entrega a la pasarela activa.
      *
      * @param  array{nombre: string, empresa?: ?string, correo: string, telefono?: ?string, sedes: int, mensaje?: ?string,
-     *     plan_id?: ?int, paquetes?: list<int>, tipo?: string, periodicidad?: string, codigo_promocion?: ?string, empresa_id?: ?int}  $datos
+     *     plan_id?: ?int, paquetes?: list<int>, tipo?: string, periodicidad?: string, codigo_promocion?: ?string, empresa_id?: ?int, rubro_id?: ?int}  $datos
      * @return array{0: SolicitudCompra, 1: ResultadoCobro}
      */
     public function registrar(array $datos, string $ip, bool $conPasarela = true): array
@@ -155,6 +161,9 @@ class CatalogoPublico
             'sedes' => $calculo['sedes'],
             'mensaje' => $datos['mensaje'] ?? null,
             'plan_id' => $plan?->id,
+            // C-05: giro elegido (hotel, corporativo, condominio o fraccionamiento); la empresa nace con él
+            'rubro_id' => ! empty($datos['rubro_id']) && Schema::hasColumn('solicitudes_compra', 'rubro_id')
+                ? Rubro::where('activo', true)->whereKey((int) $datos['rubro_id'])->value('id') : null,
             'moneda' => $calculo['moneda'],
             'iva_porcentaje' => $calculo['iva_porcentaje'],
             'mensual_subtotal' => $peso($calculo['mensual']['subtotal']),

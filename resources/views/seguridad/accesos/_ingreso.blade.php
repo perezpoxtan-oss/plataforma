@@ -190,20 +190,29 @@
                 {{-- Personal externo: motivo y a quién visita --}}
                 <div class="bloque-perfil" data-condicion data-solo-tipos="visitante">
                     <span class="campo-etiqueta">Motivo de la Visita</span>
-                    @if (! $giro->esResidencial())
-                    <div class="modo-toggle tres">
-                        <label class="modo-opt"><input type="radio" name="motivo_visita" value="rh" @checked($previo('motivo_visita', 'rh') === 'rh') data-por-defecto data-acceso-motivo><i class="bi bi-person-vcard" aria-hidden="true"></i><span>Recursos Humanos</span></label>
-                        <label class="modo-opt"><input type="radio" name="motivo_visita" value="colaborador" @checked($previo('motivo_visita') === 'colaborador') data-acceso-motivo><i class="bi bi-people-fill" aria-hidden="true"></i><span>Visita a Colaborador</span></label>
-                        {{-- Recepción (ADR-0007) --}}<label class="modo-opt"><input type="radio" name="motivo_visita" value="departamento" @checked($previo('motivo_visita') === 'departamento') data-acceso-motivo><i class="bi bi-diagram-2-fill" aria-hidden="true"></i><span>Visita a Departamento</span></label>
-                    </div>
-                    @else
-                    {{-- Giros: en condominios y fraccionamientos la visita es a un residente (o a la administración); sin Recursos Humanos --}}
-                    <div class="modo-toggle">
-                        @foreach ($giro->motivos() as $claveMotivo => $textoMotivo)
-                            <label class="modo-opt"><input type="radio" name="motivo_visita" value="{{ $claveMotivo }}" @checked($previo('motivo_visita', $giro->motivoPorDefecto()) === $claveMotivo) @if ($loop->first) data-por-defecto @endif data-acceso-motivo><i class="bi {{ $claveMotivo === 'colaborador' ? 'bi-house-heart' : 'bi-diagram-2-fill' }}" aria-hidden="true"></i><span>{{ $textoMotivo }}</span></label>
+                    {{-- C-04: motivos según el giro y lo contratado; ninguno viene marcado salvo que la empresa elija uno en Configuración --}}
+                    @php
+                        $listaMotivos = $motivosVisita ?? $giro->motivos();
+                        $iconosMotivo = ['rh' => 'bi-person-vcard', 'colaborador' => $giro->esResidencial() ? 'bi-house-heart' : 'bi-people-fill', 'departamento' => 'bi-diagram-2-fill',
+                            'general' => 'bi-person-walking', 'huesped' => 'bi-door-closed'];
+                    @endphp
+                    <div class="modo-toggle motivos-visita">
+                        @foreach ($listaMotivos as $claveMotivo => $textoMotivo)
+                            <label class="modo-opt"><input type="radio" name="motivo_visita" value="{{ $claveMotivo }}" @checked($previo('motivo_visita', $motivoOmision ?? null) === $claveMotivo) @if (($motivoOmision ?? null) === $claveMotivo) data-por-defecto @endif data-acceso-motivo><i class="bi {{ $iconosMotivo[$claveMotivo] ?? 'bi-person' }}" aria-hidden="true"></i><span>{{ $textoMotivo }}</span></label>
                         @endforeach
                     </div>
-                    @endif
+                    {{-- Visita general: ¿a quién o a qué viene? · Visita a huésped: nombre del huésped y su habitación --}}
+                    <div data-condicion data-solo-motivo="general">
+                        <label class="campo-etiqueta" for="ingreso_persona_visita_general">¿A quién o a qué viene? *</label>
+                        <input type="text" id="ingreso_persona_visita_general" name="persona_visita" class="campo text-uppercase" maxlength="150" value="{{ $previo('persona_visita') }}" placeholder="Ej: Mensajería, entrega de documentos, cliente de ventas...">
+                    </div>
+                    <div data-condicion data-solo-motivo="huesped">
+                        <label class="campo-etiqueta" for="ingreso_persona_visita_huesped">¿A qué huésped visita? *</label>
+                        <input type="text" id="ingreso_persona_visita_huesped" name="persona_visita" class="campo text-uppercase" maxlength="150" value="{{ $previo('persona_visita') }}" placeholder="Nombre del huésped">
+                        <label class="campo-etiqueta" for="ingreso_habitacion_huesped">Habitación <span class="text-lowercase fw-normal">(opcional)</span></label>
+                        <input type="text" id="ingreso_habitacion_huesped" name="habitacion" class="campo text-uppercase campo-corto" maxlength="20" value="{{ $previo('habitacion') }}" placeholder="Ej: 101" autocomplete="off">
+                        <p class="campo-ayuda mt-0">Llama a la habitación antes de dejarlo pasar.</p>
+                    </div>
                     <div data-condicion data-solo-motivo="colaborador" data-sugerir="colaborador" data-visita-colaborador>
                         @include('componentes.lector', ['id' => 'ingreso_visita', 'etiqueta' => '¿A quién visita?', 'tipos' => 'colaborador', 'nombre' => 'visita_colaborador_id',
                             'valor' => $previo('visita_colaborador_id'), 'elegido' => $previos['visita_colaborador_id'] ?? null])

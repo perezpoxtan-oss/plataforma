@@ -97,7 +97,7 @@ class RolesPlantillaSeeder extends Seeder
             'Administrador' => [10, 'Administra toda su empresa', fn ($ma) => Alcance::Empresa],
             // Exportar TODOS los datos de la empresa (empresas.exportar) queda solo para el Administrador
             'Director' => [20, 'Consulta y aprueba en toda la empresa', fn ($ma) => in_array($ma->accion->clave, ['ver', 'aprobar', 'exportar', 'imprimir'], true) && $ma->clave() !== 'empresas.exportar' ? Alcance::Empresa : null],
-            'Recursos Humanos' => [25, 'Administra el personal y valida las altas provisionales de la caseta', fn ($ma) => $ma->modulo->area->clave === 'recursos_humanos'
+            'Recursos Humanos' => [25, 'Administra el personal y valida las altas provisionales de la caseta', fn ($ma) => $ma->modulo->area->clave === 'recursos_humanos' || in_array($ma->modulo->clave, self::PERSONAL_EN_ESTRUCTURA, true)
                 ? Alcance::Empresa
                 : (in_array($ma->modulo->clave, self::CONSULTA_RH, true) && $ma->accion->clave === 'ver' ? Alcance::Empresa : null)],
             'Jefe de seguridad' => [30, 'Opera y supervisa seguridad en su sede', fn ($ma) => $deSeguridad($ma) || $provisional($ma)
@@ -117,6 +117,13 @@ class RolesPlantillaSeeder extends Seeder
     // Solicitudes: Solicitante y Jefe de departamento
 
     public const SOLICITANTE = 'Solicitante';
+
+    /**
+     * El directorio y los catálogos del personal pasaron a Dirección (menú
+     * Estructura, C-01) para venir en todos los planes; el rol Recursos
+     * Humanos los sigue administrando como antes.
+     */
+    public const PERSONAL_EN_ESTRUCTURA = ['colaboradores', 'departamentos', 'puestos', 'turnos', 'autorizaciones'];
 
     public const JEFE_DEPARTAMENTO = 'Jefe de departamento';
 

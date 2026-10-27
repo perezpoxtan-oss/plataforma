@@ -11,6 +11,7 @@ use App\Models\Vacante;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\DocumentosCandidato;
+use App\Services\Permisos\Autorizador;
 use App\Services\Vacantes\AdministradorVacantes;
 use App\Support\Entrada;
 use App\Support\Tenancy\Tenant;
@@ -146,7 +147,8 @@ class RecepcionEnCaseta
         }
 
         $candidato = null;
-        if ($r['candidato']) {
+        // C-04: ningún flujo crea registros en un módulo apagado (la ficha de candidato solo con Candidatos contratado)
+        if ($r['candidato'] && app(Autorizador::class)->moduloActivo((int) $acceso->empresa_id, 'candidatos')) {
             $candidato = app(AdministradorCandidatos::class)->desdeAcceso($actor, $acceso,
                 $r['vacante_datos'] + ['viene_a' => $r['viene_a'], 'esperar_rh' => $r['esperar_rh']]);
             $acceso->refresh();

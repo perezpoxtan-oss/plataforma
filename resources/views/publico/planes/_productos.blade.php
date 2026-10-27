@@ -12,6 +12,9 @@
                     <div>
                         <h3>{{ $producto->nombre }}</h3>
                         @if ($producto->descripcion)<p>{{ $producto->descripcion }}</p>@endif
+                        @if (! empty($modulosProducto[$producto->id] ?? []))
+                            <p class="lp-producto-modulos"><strong>Incluye:</strong> {{ implode(', ', $modulosProducto[$producto->id]) }}.</p>
+                        @endif
                     </div>
                 </div>
             @endforeach

@@ -23,7 +23,9 @@ use App\Services\Comercial\Calculadora;
 use App\Services\Comercial\CatalogoPublico;
 use App\Services\Cuenta\RecuperacionContrasena;
 use App\Services\Notificaciones\CentroNotificaciones;
+use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\ProvisionarEmpresa;
+use App\Support\DependenciasModulos;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonInterface;
 use DomainException;
@@ -130,7 +132,9 @@ class Aprovisionamiento
 
     private function activarCliente(SolicitudCompra $s, ?User $actor, bool $prueba): Suscripcion
     {
-        $rubro = Rubro::where('clave', 'hotel')->where('activo', true)->first() ?? Rubro::where('activo', true)->orderBy('id')->firstOrFail();
+        // C-05: el giro que eligió al contratar (las solicitudes de antes no lo tienen: hotel, como siempre)
+        $rubro = ($s->rubro_id ? Rubro::where('activo', true)->find($s->rubro_id) : null)
+            ?? Rubro::where('clave', 'hotel')->where('activo', true)->first() ?? Rubro::where('activo', true)->orderBy('id')->firstOrFail();
         $nombre = trim((string) ($s->empresa ?: $s->nombre));
         $empresa = $this->provisionar->crear($rubro, ['nombre_comercial' => mb_substr($nombre, 0, 150), 'razon_social' => mb_substr($nombre, 0, 200)], []);
         AsistenteArranque::marcarNueva($empresa); // «Configura tu empresa» aparece en su Inicio
@@ -316,6 +320,7 @@ class Aprovisionamiento
         }
         $s->forceFill($cambios)->save();
         $s->forceFill(['estado' => $s->estadoEfectivo(null, $this->ajustes->diasPorVencer())])->save();
+        app(Autorizador::class)->olvidar();
 
         $evento = in_array($antes, [Suscripcion::SOLO_CONSULTA, Suscripcion::CANCELADA], true) ? 'reactivada' : 'pago_registrado';
         $this->historial($s, $evento, $antes, $s->estado,
@@ -332,6 +337,7 @@ class Aprovisionamiento
     {
         $antes = $s->estadoEfectivo(null, $this->ajustes->diasPorVencer());
         $s->forceFill(['suspendida' => true, 'estado' => Suscripcion::SOLO_CONSULTA])->save();
+        app(Autorizador::class)->olvidar(); // solo consulta: los permisos de escritura se ocultan (A-17)
         $this->historial($s, 'suspendida', $antes, Suscripcion::SOLO_CONSULTA, 'Pasó a solo consulta a mano: '.$motivo, ['motivo' => $motivo], $actor);
         $this->auditar($actor, 'suscripciones.suspendida', $s, ['estado' => $antes], ['estado' => Suscripcion::SOLO_CONSULTA, 'motivo' => $motivo]);
         $this->avisos->alCliente($s, 'Tu suscripción pasó a solo consulta',
@@ -349,6 +355,7 @@ class Aprovisionamiento
             throw new DomainException('Su vigencia terminó el '.$s->vence_en->format('d/m/Y').': registra el pago para reactivarla.');
         }
         $s->forceFill(['suspendida' => false, 'estado' => Suscripcion::ACTIVA])->save();
+        app(Autorizador::class)->olvidar();
         $s->forceFill(['estado' => $s->estadoEfectivo(null, $this->ajustes->diasPorVencer())])->save();
         $this->historial($s, 'reactivada', $antes, $s->estado, trim('Reactivada. '.$motivo), ['motivo' => $motivo], $actor);
         $this->auditar($actor, 'suscripciones.reactivada', $s, ['estado' => $antes], ['estado' => $s->estado]);
@@ -378,7 +385,16 @@ class Aprovisionamiento
                 throw new DomainException('Elige el módulo.');
             }
             if ($tipo === 'modulo_quitado' && $modulo->area?->clave === 'direccion') {
-                throw new DomainException('Los módulos de Dirección (empresa, sedes, usuarios, roles…) siempre se quedan.');
+                throw new DomainException('Los módulos de Dirección (empresa, sedes, usuarios, roles, colaboradores, departamentos…) siempre se quedan.');
+            }
+            // Lista de dependencias (C-02): no se quita lo que otro módulo activo necesita
+            if ($tipo === 'modulo_quitado') {
+                $activos = Modulo::whereIn('id', $this->modulos->calcular($s))->pluck('nombre', 'clave');
+                $necesitan = DependenciasModulos::quienesLoNecesitan($modulo->clave, $activos->keys()->all());
+                if ($necesitan !== []) {
+                    throw new DomainException("No se puede quitar {$modulo->nombre}: lo necesita ".collect($necesitan)->map(fn ($c) => $activos[$c])->join(', ', ' y ')
+                        .'. Quita primero ese módulo o deja los dos.');
+                }
             }
             $cantidad = null;
         } else {
@@ -451,6 +467,7 @@ class Aprovisionamiento
         }
         $antes = $s->estado;
         $s->forceFill(['estado' => $efectivo])->save();
+        app(Autorizador::class)->olvidar();
         $texto = match ($efectivo) {
             Suscripcion::POR_VENCER => 'Vence el '.$s->vence_en->format('d/m/Y').'.',
             Suscripcion::EN_GRACIA => 'Venció el '.$s->vence_en->format('d/m/Y').'; periodo de gracia hasta el '.$s->gracia_hasta?->format('d/m/Y').'.',

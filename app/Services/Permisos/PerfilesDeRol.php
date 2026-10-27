@@ -213,7 +213,9 @@ class PerfilesDeRol
                     'nombre' => $nombresEmpresa[$m->id] ?? ($m->clave === 'sedes' ? ($terminologia['sedes'] ?? null) : null) ?? $m->nombre_menu ?? $m->nombre];
             }
             // Pantalla personal de Recursos Humanos (ConstructorMenu::conPantallasPersonales)
-            if ($menu->clave === 'recursos_humanos' && Route::has('entrevistas.index')) {
+            // Solo si la empresa tiene Candidatos (C-03: la vista previa no promete pantallas que responden 403)
+            $conCandidatos = $contratados === null || isset($contratados[Modulo::where('clave', 'candidatos')->value('id')]);
+            if ($menu->clave === 'recursos_humanos' && Route::has('entrevistas.index') && $conCandidatos) {
                 $entradas[] = ['clave' => 'entrevistas', 'menu_clave' => $menu->clave, 'menu' => $menu->nombre, 'icono' => $menu->icono,
                     'seccion' => ConstructorMenu::SECCION_PERSONAL, 'nombre' => 'Mis entrevistas'];
             }

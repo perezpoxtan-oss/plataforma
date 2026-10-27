@@ -46,6 +46,16 @@
                             <label class="lp-etiqueta" for="c-empresa">Empresa</label>
                             <input class="lp-entrada" type="text" id="c-empresa" name="empresa" maxlength="150" autocomplete="organization" value="{{ old('empresa') }}">
                         </div>
+                        {{-- C-05 / DD-04: el giro define las palabras de la plataforma (huésped, residente, visitante…) --}}
+                        <div>
+                            <label class="lp-etiqueta" for="c-giro">Giro de tu empresa *</label>
+                            <select class="lp-entrada" id="c-giro" name="rubro_id" required @error('rubro_id') aria-invalid="true" @enderror>
+                                <option value="">Elige uno</option>
+                                @foreach ($rubros as $rubro)
+                                    <option value="{{ $rubro->id }}" @selected((string) old('rubro_id') === (string) $rubro->id)>{{ $rubro->nombre }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div>
                             <label class="lp-etiqueta" for="c-correo">Correo *</label>
                             <input class="lp-entrada" type="email" id="c-correo" name="correo" maxlength="150" required autocomplete="email" value="{{ old('correo') }}" @error('correo') aria-invalid="true" @enderror>

@@ -11,6 +11,7 @@ use App\Models\Espacio;
 use App\Models\Persona;
 use App\Models\Sede;
 use App\Services\Accesos\ConsultaAccesos;
+use App\Services\Accesos\MotivosVisita;
 use App\Services\Accesos\MovimientoNoPermitido;
 use App\Services\Accesos\MovimientosAccesos;
 use App\Services\Accesos\RegistroAccesos;
@@ -89,6 +90,9 @@ class AccesoController extends Controller
             return view('seguridad.accesos.index', [
                 'sinEmpresa' => false,
                 'terminos' => $terminos,
+                // C-04: motivos según el giro y lo contratado, y el que la empresa marcó (de fábrica, ninguno)
+                'motivosVisita' => app(MotivosVisita::class)->para((int) $empresaId),
+                'motivoOmision' => app(MotivosVisita::class)->porOmision((int) $empresaId),
                 // Condominio / fraccionamiento: a qué departamento o casa va la visita (los del árbol de Zonas y edificios)
                 'espaciosVisita' => $puedeCrear && $terminos->visitaLlevaEspacio()
                     ? Espacio::where('nivel', Espacio::AREA_ESPECIFICA)->where('activo', true)->whereIn('sede_id', $sedesAlta->pluck('id'))

@@ -284,7 +284,7 @@ class AltasPorVerificarTest extends TestCase
 
     public function test_la_bitacora_de_accesos_registra_pendientes_y_respeta_unidos_y_rechazados(): void
     {
-        $this->actingAs($this->agente)->post('/accesos', ['_dialogo' => 'ingreso', 'sede_id' => $this->centro->id, 'tipo' => 'visitante', 'nombre' => 'Pedro Canul Dzib',
+        $this->actingAs($this->agente)->post('/accesos', ['_dialogo' => 'ingreso', 'sede_id' => $this->centro->id, 'tipo' => 'visitante', 'motivo_visita' => 'rh', 'nombre' => 'Pedro Canul Dzib',
             'modo_arribo' => 'auto', 'placas' => 'xtr-901-c', 'marca' => 'kia', 'color' => 'naranja'])->assertSessionHasNoErrors();
 
         [$v, $p] = $this->enEmpresa(fn () => [Vehiculo::firstWhere('placas', 'XTR901C'), Persona::firstWhere('nombre_completo', 'Pedro Canul Dzib')]);
@@ -293,14 +293,14 @@ class AltasPorVerificarTest extends TestCase
 
         // Rechazado: la caseta ya no lo puede usar
         $this->actingAs($this->admin)->put("/vehiculos/{$v->id}/rechazar", ['motivo_rechazo' => 'Placas inventadas'])->assertRedirect();
-        $this->actingAs($this->agente)->post('/accesos', ['_dialogo' => 'ingreso', 'sede_id' => $this->centro->id, 'tipo' => 'visitante', 'nombre' => 'Otra Visita',
+        $this->actingAs($this->agente)->post('/accesos', ['_dialogo' => 'ingreso', 'sede_id' => $this->centro->id, 'tipo' => 'visitante', 'motivo_visita' => 'rh', 'nombre' => 'Otra Visita',
             'modo_arribo' => 'auto', 'placas' => 'XTR901C', 'persona_decision' => 'distinta'])
             ->assertSessionHasErrors(['placas' => '«XTR901C» fue rechazado al verificar el Padrón vehicular (motivo: Placas inventadas). Ya no se puede usar: revisa los datos o avisa a tu supervisor.']);
 
         // Unida con la correcta: se usa la correcta
         $correcta = $this->persona('Pedro Canul');
         $this->actingAs($this->admin)->put("/personas/{$p->id}/unir", ['destino_id' => $correcta->id])->assertRedirect();
-        $this->actingAs($this->agente)->post('/accesos', ['_dialogo' => 'ingreso', 'sede_id' => $this->centro->id, 'tipo' => 'visitante', 'nombre' => 'PEDRO CANUL DZIB', 'persona_id' => $p->id])
+        $this->actingAs($this->agente)->post('/accesos', ['_dialogo' => 'ingreso', 'sede_id' => $this->centro->id, 'tipo' => 'visitante', 'motivo_visita' => 'rh', 'nombre' => 'PEDRO CANUL DZIB', 'persona_id' => $p->id])
             ->assertSessionHasNoErrors();
         $this->assertSame($correcta->id, $this->enEmpresa(fn () => Acceso::orderByDesc('id')->value('persona_id')));
     }
@@ -359,7 +359,7 @@ class AltasPorVerificarTest extends TestCase
     public function test_unir_mueve_todas_las_referencias_al_registro_correcto(): void
     {
         $correcto = $this->vehiculo('ABC-123-A');
-        $this->actingAs($this->agente)->post('/accesos', ['_dialogo' => 'ingreso', 'sede_id' => $this->centro->id, 'tipo' => 'visitante', 'nombre' => 'Pedro Canul',
+        $this->actingAs($this->agente)->post('/accesos', ['_dialogo' => 'ingreso', 'sede_id' => $this->centro->id, 'tipo' => 'visitante', 'motivo_visita' => 'rh', 'nombre' => 'Pedro Canul',
             'modo_arribo' => 'auto', 'placas' => 'ABC-128-A', 'marca' => 'nissan', 'color' => 'blanco'])->assertSessionHasNoErrors();
         $alta = $this->enEmpresa(fn () => Vehiculo::firstWhere('placas', 'ABC128A'));
         $acceso = $this->enEmpresa(fn () => Acceso::orderByDesc('id')->first());

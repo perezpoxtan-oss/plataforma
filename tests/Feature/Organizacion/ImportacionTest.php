@@ -16,6 +16,7 @@ use App\Models\Vehiculo;
 use App\Services\Importacion\AdministradorImportaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
+use App\Services\Permisos\Autorizador;
 use App\Support\Importacion\LectorArchivo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -457,13 +458,15 @@ class ImportacionTest extends TestCase
     {
         DB::table('suscripciones')->insert(['empresa_id' => $this->empresa->id, 'sedes_contratadas' => 2, 'estado' => 'activa', 'suspendida' => true,
             'inicio_en' => now()->subMonth()->toDateString(), 'vence_en' => now()->addMonth()->toDateString(), 'created_at' => now(), 'updated_at' => now()]);
-        $this->actingAs($this->admin)->get('/importar/colaboradores')->assertOk();
+        // A-17: en solo consulta la pantalla de importar ya no se ofrece (la 403 lo explica)
+        $this->actingAs($this->admin)->get('/importar/colaboradores')->assertForbidden()->assertSee('Tu empresa está en solo consulta');
         $this->subir($this->admin, 'colaboradores', $this->csv('a.csv', "Número de empleado,Nombre,Apellido paterno\nE-1,A,B\n"))
             ->assertSessionHas('error', fn ($m) => str_contains($m, 'solo consulta'));
         $this->assertSame(0, Importacion::withoutGlobalScopes()->count());
 
         // Con la suscripción al corriente: una sede que no existe es error de la fila, nunca una sede nueva
         DB::table('suscripciones')->update(['suspendida' => false]);
+        app(Autorizador::class)->olvidar(); // se cambió la base directo, sin pasar por Aprovisionamiento
         $this->flushSession();
         $this->subir($this->admin, 'zonas', $this->csv('z.csv', "Sede,Zona o edificio\nSede Tres,Torre\n"));
         $this->assertSame([2 => 'error'], $this->estados($this->ultima()));

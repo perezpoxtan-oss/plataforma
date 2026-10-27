@@ -34,6 +34,7 @@ class MiSuscripcionController extends Controller
             'plan_id' => ['nullable', 'integer', 'min:1'],
             'sedes' => ['required', 'integer', 'min:1', 'max:999'],
             'periodicidad' => ['required', Rule::in(array_keys(Suscripcion::PERIODICIDADES))],
+            'rubro_id' => ['nullable', 'integer', Rule::exists('rubros', 'id')->where('activo', true)],
             'paquetes' => ['nullable', 'array', 'max:20'],
             'paquetes.*' => ['integer', 'min:1'],
             'codigo_promocion' => ['nullable', 'string', 'max:40'],
@@ -53,6 +54,8 @@ class MiSuscripcionController extends Controller
             'codigo_promocion' => $datos['codigo_promocion'] ?? null,
             'mensaje' => trim((string) ($datos['mensaje'] ?? '')) ?: null,
             'empresa_id' => $empresa->id,
+            // C-05: giro que indica (si es otro, el Super Administrador lo revisa con el cliente; no se cambia solo)
+            'rubro_id' => isset($datos['rubro_id']) ? (int) $datos['rubro_id'] : $empresa->rubro_id,
         ], (string) $request->ip());
 
         return redirect()->to(route('empresas.index').'#tu-suscripcion')->with('ok',

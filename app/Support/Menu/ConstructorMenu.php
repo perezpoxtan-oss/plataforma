@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Permisos\Autorizador;
 use App\Support\Tenancy\Tenant;
+use Database\Seeders\MenuSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -27,7 +28,7 @@ class ConstructorMenu
      */
     private const TERMINOLOGIA = ['sedes' => 'sedes'];
 
-    /** Sección del menú Recursos Humanos donde van «Mis entrevistas» y «Autorizaciones». */
+    /** Sección del menú Recursos Humanos donde va «Mis entrevistas» («Autorizaciones» va en Estructura → Organización, C-01). */
     public const SECCION_PERSONAL = 'Recepción y candidatos';
 
     /** @var array<int, list<array<string, mixed>>> */
@@ -106,8 +107,8 @@ class ConstructorMenu
                 ];
             }
 
-            if ($menu->clave === 'recursos_humanos') {
-                $secciones = $this->conPantallasPersonales($usuario, $secciones);
+            if ($menu->clave === 'recursos_humanos' || $menu->clave === 'estructura') {
+                $secciones = $this->conPantallasPersonales($usuario, $secciones, $menu->clave);
             }
             if ($secciones === []) {
                 continue;
@@ -127,30 +128,34 @@ class ConstructorMenu
     }
 
     /**
-     * Pantallas «personales» de Recursos Humanos que no son un módulo con
-     * menú propio (ADR-0010): «Mis entrevistas» para quien entrevista
-     * (candidatos.evaluar) y «Autorizaciones» para quien responde las de
-     * algún departamento (autorizaciones.responder y es responsable o
-     * delegado). Antes solo se llegaba a ellas por la campana o Mis pendientes.
+     * Pantallas «personales» que no son un módulo con menú propio
+     * (ADR-0010): «Mis entrevistas» en Recursos Humanos para quien entrevista
+     * (candidatos.evaluar) y, desde la Etapa 1 (C-01), «Autorizaciones» en
+     * Estructura → Organización para quien configura quién autoriza o
+     * responde las de algún departamento (responsable o delegado).
      *
      * @param  array<string, list<array<string, mixed>>>  $secciones
      * @return array<string, list<array<string, mixed>>>
      */
-    private function conPantallasPersonales(User $usuario, array $secciones): array
+    private function conPantallasPersonales(User $usuario, array $secciones, string $menu = 'recursos_humanos'): array
     {
         $extras = [];
-        if (Route::has('entrevistas.index') && $this->autorizador->puede($usuario, 'candidatos.evaluar')) {
+        if ($menu === 'recursos_humanos' && Route::has('entrevistas.index') && $this->autorizador->puede($usuario, 'candidatos.evaluar')) {
             $extras[] = ['clave' => 'entrevistas', 'nombre' => 'Mis entrevistas', 'icono' => 'bi-chat-square-text', 'color' => 'indigo', 'ruta' => 'entrevistas.index'];
         }
+        // «Autorizaciones» (bandeja, Responsables por departamento y «No molestar») va en Estructura → Organización
+        // en todos los planes (C-01): para quien configura quién autoriza y para quien responde las de algún departamento.
         // Responsables y delegaciones son de la empresa activa (o la del usuario); el superadministrador fuera de una empresa no aplica
         $tenant = app(Tenant::class);
         $empresaId = $tenant->activo() ? $tenant->empresaId() : $usuario->empresa_id;
-        if (Route::has('autorizaciones.index') && $empresaId !== null && $this->autorizador->puede($usuario, 'autorizaciones.responder')
-            && $tenant->conEmpresa((int) $empresaId, fn () => app(Autorizaciones::class)->departamentosQueAtiende($usuario) !== [])) {
+        if ($menu === 'estructura' && Route::has('autorizaciones.index') && $empresaId !== null && $this->autorizador->puede($usuario, 'autorizaciones.ver')
+            && ($this->autorizador->puede($usuario, 'autorizaciones.configurar') || ($this->autorizador->puede($usuario, 'autorizaciones.responder')
+                && $tenant->conEmpresa((int) $empresaId, fn () => app(Autorizaciones::class)->departamentosQueAtiende($usuario) !== [])))) {
             $extras[] = ['clave' => 'autorizaciones', 'nombre' => 'Autorizaciones', 'icono' => 'bi-patch-check', 'color' => 'warning', 'ruta' => 'autorizaciones.index'];
         }
+        $seccion = $menu === 'estructura' ? MenuSeeder::SECCION_ORGANIZACION : self::SECCION_PERSONAL;
         foreach ($extras as $item) {
-            $secciones[self::SECCION_PERSONAL][] = $item + [
+            $secciones[$seccion][] = $item + [
                 'prefijo' => preg_replace('/\.[^.]+$/', '.', $item['ruta']),
                 'url' => route($item['ruta']),
                 'disponible' => true,

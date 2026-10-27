@@ -14,6 +14,8 @@ resumen: Todos los ajustes de tu empresa ordenados por secciones (General, Caset
 
 ## Antes de empezar
 
+- Solo ves las secciones y los avisos de los módulos que **tu plan incluye** (por ejemplo, sin Recursos Humanos no aparece «Recepción y RR. HH.»).
+
 - Para ver la pantalla tu rol debe poder consultar *Configuración*. Si tu rol solo consulta, verás los valores pero no los botones **Guardar** ni **Restablecer valor original**.
 - Los ajustes de la empresa los cambia quien tiene el permiso **editar** de Configuración con alcance de **toda la empresa** (normalmente el administrador). Con alcance de una sede solo se consultan.
 - Algunas tarjetas piden además el permiso de su módulo: los días de Lost & Found (**Configurar** de Lost & Found), el kiosco y los plazos de candidatos (**Configurar** de Candidatos), la bolsa de trabajo (**Configurar** de Vacantes), las esperas (**Configurar** de Autorizaciones departamentales), la impresión desde padrones (**Configurar** de Etiquetas QR) y el circuito de pases (**Configurar** de Pases de salida). Si no tienes ese permiso, la tarjeta no aparece.
@@ -77,6 +79,7 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 |---|---|---|---|
 | **Quién espera autorización del departamento** | Si visitas, proveedores y contratistas esperan la autorización; si la caseta espera el «Que pase» de RR. HH.; a los cuántos minutos se recuerda y se avisa al suplente y al jefe. | Todos esperan; 10 y 20 minutos. | **Configurar en Responsables por departamento** |
 | **Imprimir etiquetas desde los padrones** | Hoja propia de cada padrón o plantillas de Etiquetas QR. | Hoja propia de cada padrón. | **Configurar en Etiquetas QR → Plantillas** |
+| **Motivo de la visita** | Qué motivo viene marcado al registrar una visita (ninguno, o el que elijas) y, en hoteles, si se ofrece **Visita a huésped**. | Ninguno marcado; «Visita a huésped» sí. | Aquí, con **Guardar** |
 | **Procedimientos: acuse «Leí y entendí» y recordatorio** | Cómo se firma el acuse y **cada cuántos días** se recuerda a quien no ha firmado. | Casilla y firma dibujada; cada 3 días. | Aquí, con **Guardar** |
 | Avisos de **Colaboradores**, **Altas por verificar** y **Procedimientos** | Ver «Avisos por correo». | Encendidos. | Aquí |
 

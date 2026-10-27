@@ -1,7 +1,7 @@
 ---
 titulo: Departamentos y puestos
 modulos: [departamentos, puestos]
-seccion: Recursos Humanos
+seccion: Estructura
 orden: 60
 resumen: Catálogos de áreas (departamentos) y rangos (puestos) que se eligen al dar de alta a un colaborador.
 ---
@@ -15,11 +15,12 @@ resumen: Catálogos de áreas (departamentos) y rangos (puestos) que se eligen a
 ## Antes de empezar
 
 - Para ver estas pantallas tu rol debe poder consultar *Departamentos* y *Puestos*. Si no aparecen en el menú, pide el permiso a tu administrador.
+- Vienen en **todos los planes**, en el menú **Estructura**.
 - Son catálogos de **toda la empresa**: solo los modifica quien tiene alcance de empresa (por ejemplo el administrador). Si tu rol es de una sede, los verás en modo consulta.
 
 ## Cómo crear un departamento
 
-1. Entra a **Recursos Humanos → Departamentos**.
+1. Entra a **Estructura → Departamentos**.
 2. Toca la tarjeta **Nuevo Departamento**. Se abre **Alta Departamento**.
 3. Escribe el **Nombre del Departamento**. Mientras escribes te avisa si ya existe o se parece a otro.
 4. En **Sedes donde aplica** deja **Todas las sedes** (incluye las que abras después) o desmárcala y elige solo algunas (por ejemplo, un *Club de Playa* que solo existe en una sede).
@@ -45,7 +46,7 @@ Un departamento recién creado no tiene responsable: su tarjeta lo avisa con **S
 
 ## Cómo crear un puesto
 
-1. Entra a **Recursos Humanos → Puestos**.
+1. Entra a **Estructura → Puestos**.
 2. Toca la tarjeta **Nuevo Puesto**. Se abre **Alta de Puesto**.
 3. Escribe el **Nombre del Puesto** (también te avisa si ya existe o se parece).
 4. Si quieres, marca los **Departamentos donde aplica**. Si no marcas ninguno, el puesto sirve para cualquier departamento.

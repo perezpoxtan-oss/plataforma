@@ -213,6 +213,11 @@
                     <div class="acuse-barra-texto"><span>Cumplimiento de la versión {{ $vigente->numero }}</span><strong>{{ $acuses['firmaron'] }} de {{ $acuses['deben'] }} · {{ $porcentaje }}%</strong></div>
                     <div class="acuse-barra-fondo"><div class="acuse-barra-avance {{ $porcentaje === 100 ? 'completo' : '' }}" style="width: {{ $porcentaje }}%"></div></div>
                 </div>
+                @if (($acuses['sin_ficha'] ?? 0) > 0)
+                    {{-- C-07: las cuentas sin ficha de colaborador firman los procedimientos que no se limitan a departamentos ni puestos --}}
+                    <p class="small text-muted mb-2"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ $acuses['sin_ficha'] }} {{ $acuses['sin_ficha'] === 1 ? 'cuenta no tiene' : 'cuentas no tienen' }} ficha de colaborador: firman los procedimientos de su sede, pero si eliges departamentos o puestos no las alcanza.
+                        @can('usuarios.ver')<a href="{{ route('usuarios.index') }}">Ir a Usuarios</a>@endcan</p>
+                @endif
                 <form method="GET" data-autoenviar action="{{ route('procedimientos.show', $p->id) }}" class="filtros-acuses">
                     <input type="hidden" name="pestana" value="acuses">
                     @if ($sedesAcuses->count() > 1)
@@ -244,7 +249,7 @@
                         <li class="acuse-fila falta">
                             <span class="acuse-icono" aria-hidden="true"><i class="bi bi-hourglass-split"></i></span>
                             <div class="min-w-0 flex-fill"><strong>{{ $fila['usuario']->name }}</strong>
-                                <span class="d-block small text-muted">{{ $c?->num_empleado ? 'Núm. '.$c->num_empleado.' · ' : '' }}{{ $c?->sede?->nombre ?? 'Corporativo' }}{{ $c?->departamento ? ' · '.$c->departamento->nombre : '' }}{{ $c?->puesto ? ' · '.$c->puesto->nombre : '' }}</span></div>
+                                <span class="d-block small text-muted">{{ $c?->num_empleado ? 'Núm. '.$c->num_empleado.' · ' : '' }}{{ $c ? ($c->sede?->nombre ?? 'Corporativo') : 'Sin ficha de colaborador' }}{{ $c?->departamento ? ' · '.$c->departamento->nombre : '' }}{{ $c?->puesto ? ' · '.$c->puesto->nombre : '' }}</span></div>
                             <span class="estado-seccion pendiente">Falta</span>
                         </li>
                     @endforeach
@@ -261,7 +266,7 @@
                         <li class="acuse-fila firmo">
                             <span class="acuse-icono" aria-hidden="true"><i class="bi bi-check2"></i></span>
                             <div class="min-w-0 flex-fill"><strong>{{ $fila['usuario']->name }}</strong>
-                                <span class="d-block small text-muted">{{ $c?->sede?->nombre ?? 'Corporativo' }}{{ $c?->departamento ? ' · '.$c->departamento->nombre : '' }} · firmó el @fecha($fila['acuse']->leido_en)</span></div>
+                                <span class="d-block small text-muted">{{ $c ? ($c->sede?->nombre ?? 'Corporativo') : 'Sin ficha de colaborador' }}{{ $c?->departamento ? ' · '.$c->departamento->nombre : '' }} · firmó el @fecha($fila['acuse']->leido_en)</span></div>
                             @if ($fila['acuse']->firma_ruta)
                                 <img src="{{ route('procedimientos.acuses.firma', [$p->id, $fila['acuse']->id]) }}" alt="Firma de {{ $fila['usuario']->name }}" class="miniatura-firma" loading="lazy">
                             @else

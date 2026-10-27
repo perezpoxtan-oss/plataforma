@@ -12,6 +12,7 @@ use App\Models\SolicitudCompra;
 use App\Models\Suscripcion;
 use App\Services\Comercial\AjustesComerciales;
 use App\Services\Comercial\CatalogoPublico;
+use App\Services\Comercial\CoherenciaCatalogo;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Suscripciones\Aprovisionamiento;
@@ -83,6 +84,8 @@ class CatalogoComercialController extends Controller
             'pruebasPorAprobar' => SolicitudCompra::where('tipo', 'prueba')->whereNull('activada_en')->whereIn('estado', ['nueva', 'contactada', 'cotizada'])->count(),
             'ajustes' => $this->ajustes->todos(),
             'puedeEditar' => $request->user()->can('catalogo_comercial.editar'),
+            // Lista de dependencias (C-02): planes y paquetes activos que dejan un módulo sin lo que necesita
+            'problemasCatalogo' => app(CoherenciaCatalogo::class)->problemas(soloPublicados: false),
         ] + $clientes->datos($request));
     }
 
@@ -120,6 +123,12 @@ class CatalogoComercialController extends Controller
         $nuevo = ! $registro->exists;
         $datos = $this->validar($request, $tipo, $registro);
         $antes = $nuevo ? null : $this->instantanea($tipo, $registro);
+        // Lista de dependencias (C-02): el producto se lleva lo que sus módulos necesitan
+        $coherencia = app(CoherenciaCatalogo::class);
+        $avisoDependencias = '';
+        if ($tipo === 'productos' && array_key_exists('modulos', $datos)) {
+            ['claves' => $datos['modulos'], 'aviso' => $avisoDependencias] = $coherencia->completarProducto(array_values((array) $datos['modulos']));
+        }
 
         DB::transaction(function () use ($tipo, $registro, $datos, $nuevo, $clase) {
             $relaciones = array_intersect_key($datos, array_flip(['modulos', 'productos', 'planes']));
@@ -150,12 +159,15 @@ class CatalogoComercialController extends Controller
         if ($nuevo) {
             $siguientes[] = ['Dar de alta otro '.$singular, route('catalogo-comercial.crear', $tipo), 'bi-plus-circle'];
         }
-        $aviso = ucfirst($singular)." «{$nombre}» guardado.";
+        $aviso = ucfirst($singular)." «{$nombre}» guardado.".($avisoDependencias !== '' ? ' '.$avisoDependencias : '');
+        // Un plan o paquete que deja una dependencia sin cubrir se guarda, pero con el aviso de qué le falta
+        $faltan = $tipo === 'productos' ? '' : $coherencia->avisoAlGuardar($registro->fresh());
         if ($tipo !== 'productos' && ! $registro->publicado) {
             $aviso .= ' Aún no se ve en la página: marca «Mostrar en la página pública» cuando esté listo.';
         }
 
-        return redirect()->route('catalogo-comercial.index', ['pestana' => $tipo])->with('ok', $aviso)->with('siguientes', $siguientes);
+        return redirect()->route('catalogo-comercial.index', ['pestana' => $tipo])->with('ok', $aviso)->with('siguientes', $siguientes)
+            ->with($faltan !== '' ? 'error' : 'sin_aviso', $faltan);
     }
 
     public function estado(Request $request, string $tipo, int $id): RedirectResponse

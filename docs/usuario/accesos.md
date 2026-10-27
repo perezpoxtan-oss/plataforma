@@ -89,7 +89,14 @@ Lo que pide cada tipo:
 
 - **Colaborador:** escanea su gafete de empleado o escribe su nombre o número y elígelo. No lleva gafete de visita. Si no aparece, toca **¿No aparece? Darlo de alta provisional**: se registra y Recursos Humanos lo valida después.
 <!-- solo: hotel, corporativo -->
-- **Personal Externo / Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**. Si el motivo es **Recursos Humanos**, elige además **¿A qué viene?** (ver abajo «Cómo registrar a quien viene a Recursos Humanos»).
+- **Personal Externo / Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**. **Ningún motivo viene marcado**: elige siempre uno (tu empresa puede dejar uno marcado en Configuración).
+  - **Visita general:** escribe **¿A quién o a qué viene?** (por ejemplo «Mensajería» o «Entrega de documentos»).
+<!-- solo: hotel -->
+  - **Visita a huésped:** escribe **¿A qué huésped visita?** y, si la sabes, la **Habitación**. Llama a la habitación antes de dejarlo pasar.
+<!-- fin -->
+  - **Visita a Colaborador:** busca o escanea a quién visita.
+  - **Visita a Departamento:** elige el departamento; si tiene responsable, espera su autorización.
+  - **Recursos Humanos** (solo si tu plan incluye Recursos Humanos): elige además **¿A qué viene?** (ver abajo «Cómo registrar a quien viene a Recursos Humanos»).
 <!-- fin -->
 <!-- solo: condominio, fraccionamiento -->
 - **Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**: **Visita a Residente** (elige a quién visita y escribe o elige de la lista **¿A qué departamento va?**, o «¿A qué casa va?» en fraccionamientos) o **Visita a Administración** (elige el área; si tu empresa lo pide, espera su autorización).
@@ -158,7 +165,7 @@ Todo lo que espera tiene **reloj, color y suplente**. No tienes que vigilar nada
 
 **Qué debes ver:** el renglón pasa de verde a ámbar y a rojo, y, cuando se escaló, la caja de abajo dice «Se escaló a: Sergio Díaz y Julia Torres».
 
-> Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Confirmar Autorización** en la tarjeta de la visita; en la de un proveedor o contratista, **Autorizar por excepción**. Los minutos se cambian en **Recursos Humanos → Recepción → Ajustes** (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)).
+> Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Confirmar Autorización** en la tarjeta de la visita; en la de un proveedor o contratista, **Autorizar por excepción**. Los minutos se cambian en **Estructura → Autorizaciones → Responsables por departamento** (con Recursos Humanos, también en **Recursos Humanos → Recepción → Ajustes**) (ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md)).
 
 ## Cómo autorizar a un proveedor o contratista
 
@@ -272,6 +279,9 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 | «Este acceso ya no está pendiente de autorización (alguien más lo atendió).» | Otro compañero ya lo autorizó. | Revisa **Gente en Sitio**. |
 | No sale el botón **Confirmar Autorización** | Tu rol no puede aprobar. | Pide a tu supervisor que lo autorice. |
 | «Elige a qué viene de la lista.» | La opción de **¿A qué viene?** no es válida. | Vuelve a elegirla de la lista. |
+| «Elige el motivo de la visita.» | No elegiste el **Motivo de la Visita** (ninguno viene marcado). | Toca el motivo que corresponde. |
+| «Escribe a quién o a qué viene.» / «Escribe a qué huésped visita.» | Elegiste **Visita general** o **Visita a huésped** y falta el dato. | Escríbelo en el campo que aparece debajo del motivo. |
+| «Elige el motivo de la visita de la lista.» | Ese motivo no aplica en tu empresa (por ejemplo, Recursos Humanos sin ese módulo). | Elige otro motivo. |
 | «Elige una vacante publicada de esta sede.» | Esa vacante ya no está publicada o es de otra sede. | Elige otra o **-- No sabe / otra --**. |
 | La tarjeta **PENDIENTE** se pone en rojo | Nadie ha contestado en el tiempo que configuró tu empresa. | La plataforma ya escaló a los suplentes y al Jefe de seguridad (la tarjeta dice «Se escaló a: …»). Si te confirman por teléfono, tu supervisor usa **Confirmar Autorización**. |
 | Escaneo el gafete para dar salida y no sale nadie | Ese gafete no lo tiene nadie en sitio, o la persona está en otra sede. | Busca por nombre o placas; revisa el filtro de sede. |
@@ -287,11 +297,13 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 - **¿Tengo que preguntarle el puesto o el departamento?** No. Solo a qué viene y, si busca empleo, a qué vacante (si la sabe). Lo demás lo pone Recursos Humanos.
 <!-- fin -->
 - **El colaborador no está en la lista.** Usa **¿No aparece? Darlo de alta provisional**; Recursos Humanos lo valida después.
+- **¿Por qué no viene marcado ningún motivo?** Para que cada visita quede con su motivo real. Si casi todas tus visitas son del mismo tipo, tu administrador puede dejar uno marcado en **Estructura → Configuración → Caseta y accesos → Motivo de la visita**.
+- **No veo el motivo Recursos Humanos.** Tu plan no incluye Recursos Humanos: usa **Visita general** o **Visita a Departamento**.
 - **Me equivoqué de zona.** Usa **Cambiar Zona**.
 - **¿Cómo sé quién registró a alguien?** En la tarjeta, junto a la hora de ingreso, dice «por …».
 - **¿Puedo usar la cámara del celular para el gafete?** Sí: toca el botón del código QR junto al campo, tanto al registrar como al dar salida.
 - **¿Por qué el botón de registrar cambia de texto?** Para que sepas qué va a pasar antes de tocarlo: «dejar pasar» o «queda pendiente de autorización».
-- **¿Quién decide los minutos del ámbar y el rojo?** Quien configura Recepción o Autorizaciones en tu empresa, en **Recursos Humanos → Recepción → Ajustes**.
+- **¿Quién decide los minutos del ámbar y el rojo?** Quien configura Autorizaciones en tu empresa, en **Estructura → Autorizaciones → Responsables por departamento** (con Recursos Humanos, también en **Recursos Humanos → Recepción → Ajustes**).
 
 ## Relacionado
 

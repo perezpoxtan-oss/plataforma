@@ -52,9 +52,11 @@ use Illuminate\Validation\ValidationException;
  * siguiente como borrador y la anterior sigue vigente hasta que se aprueba
  * la nueva. «Retirar» deja el procedimiento obsoleto.
  *
- * Acuse «Leí y entendí»: cada usuario activo cuyo colaborador entra en la
- * aplicación de la versión vigente (sedes, departamentos o puestos) la firma
- * una vez; una versión nueva pide firmar otra vez.
+ * Acuse «Leí y entendí» (C-07: la audiencia es el usuario): cada usuario
+ * activo a quien aplica la versión vigente la firma una vez; una versión
+ * nueva pide firmar otra vez. Con ficha de colaborador cuentan su sede,
+ * departamento y puesto; sin ficha, aplica si el procedimiento no se limita
+ * a departamentos ni puestos (por las sedes de su rol).
  *
  * Alcance: con alcance de sede se ven los procedimientos que aplican a todas
  * las sedes o a alguna de las suyas; para editarlos o aprobarlos, la versión
@@ -337,8 +339,9 @@ class AdministradorProcedimientos
     // ===================================================== Personal y acuses
 
     /**
-     * Personal que puede tener que firmar: usuarios activos de la empresa
-     * activa con colaborador activo y permiso de ver Procedimientos.
+     * Personal que puede tener que firmar (C-07: la audiencia es el USUARIO):
+     * usuarios activos de la empresa activa con permiso de ver Procedimientos,
+     * tengan o no ficha de colaborador.
      *
      * @return Collection<int, User>
      */
@@ -347,13 +350,28 @@ class AdministradorProcedimientos
         $empresaId = (int) app(Tenant::class)->empresaId();
 
         return $this->personal[$empresaId] ??= User::where('empresa_id', $empresaId)->where('activo', true)->where('es_superadmin', false)
-            ->whereNotNull('colaborador_id')
-            ->whereHas('colaborador', fn ($c) => $c->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id'))
-            ->with(['colaborador:id,empresa_id,sede_id,departamento_id,puesto_id,num_empleado,nombre,apellido_paterno,apellido_materno',
+            ->with(['colaborador' => fn ($c) => $c->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id')
+                ->select('id', 'empresa_id', 'sede_id', 'departamento_id', 'puesto_id', 'num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno'),
                 'colaborador.sedesAdicionales:sedes.id', 'colaborador.sede:id,nombre', 'colaborador.departamento:id,nombre', 'colaborador.puesto:id,nombre'])
             ->orderBy('name')->get()
             ->filter(fn (User $u) => $this->autorizador->puede($u, 'procedimientos.ver'))
             ->values();
+    }
+
+    /**
+     * Sedes de una persona: las de su ficha de colaborador; sin ficha, las de
+     * su rol para ver Procedimientos (null = todas las de la empresa).
+     *
+     * @return list<int>|null
+     */
+    public function sedesDe(User $usuario): ?array
+    {
+        $colaborador = $usuario->relationLoaded('colaborador') ? $usuario->colaborador : null;
+        if ($colaborador !== null) {
+            return array_values(array_filter([(int) $colaborador->sede_id, ...$colaborador->sedesAdicionales->pluck('id')->map(fn ($id) => (int) $id)->all()]));
+        }
+
+        return $this->autorizador->sedesPermitidas($usuario, 'procedimientos.ver');
     }
 
     /**
@@ -383,6 +401,44 @@ class AdministradorProcedimientos
     }
 
     /**
+     * ¿La versión le aplica a este usuario? (C-07) Con ficha de colaborador,
+     * por su sede, departamento y puesto. Sin ficha, solo si el procedimiento
+     * no se limita a departamentos ni puestos, por las sedes de su rol.
+     */
+    public function aplicaA(ProcedimientoVersion $version, User $usuario): bool
+    {
+        $colaborador = $this->colaboradorDe($usuario);
+        if ($colaborador !== null) {
+            return $this->aplica($version, $colaborador);
+        }
+        if ($version->idsDe('departamento') !== [] || $version->idsDe('puesto') !== []) {
+            return false;
+        }
+        if ($version->aplica_todas_sedes) {
+            return true;
+        }
+        $suyas = $this->sedesDe($usuario);
+
+        return $suyas === null || array_intersect($version->idsDe('sede'), $suyas) !== [];
+    }
+
+    /** Colaborador activo de la cuenta (o null), aunque el usuario se haya leído con pocas columnas. */
+    private function colaboradorDe(User $usuario): ?Colaborador
+    {
+        if ($usuario->relationLoaded('colaborador')) {
+            return $usuario->colaborador;
+        }
+        $id = array_key_exists('colaborador_id', $usuario->getAttributes())
+            ? $usuario->getAttributes()['colaborador_id']
+            : User::whereKey($usuario->id)->value('colaborador_id');
+        $colaborador = $id === null ? null
+            : Colaborador::with('sedesAdicionales:sedes.id')->where('activo', true)->whereNull('fusionado_en_id')->find($id);
+        $usuario->setRelation('colaborador', $colaborador);
+
+        return $colaborador;
+    }
+
+    /**
      * Quiénes deben firmar el acuse de una versión.
      *
      * @return Collection<int, User>
@@ -391,7 +447,13 @@ class AdministradorProcedimientos
     {
         $version->loadMissing('aplicaciones');
 
-        return $this->personal()->filter(fn (User $u) => $this->aplica($version, $u->colaborador))->values();
+        return $this->personal()->filter(fn (User $u) => $this->aplicaA($version, $u))->values();
+    }
+
+    /** Cuentas que pueden ver Procedimientos sin ficha de colaborador (aviso en Acuses, C-07). */
+    public function sinFicha(): int
+    {
+        return $this->personal()->filter(fn (User $u) => $u->colaborador === null)->count();
     }
 
     /**
@@ -401,17 +463,12 @@ class AdministradorProcedimientos
      */
     public function pendientesDe(User $actor): Collection
     {
-        $colaboradorId = $actor->getAttributes()['colaborador_id'] ?? null;
-        if ($colaboradorId === null || ! $actor->can('procedimientos.ver')) {
-            return collect();
-        }
-        $colaborador = Colaborador::with('sedesAdicionales:sedes.id')->where('activo', true)->find($colaboradorId);
-        if ($colaborador === null) {
+        if ($actor->es_superadmin || ! $actor->can('procedimientos.ver')) {
             return collect();
         }
         $publicados = $this->limitar(Procedimiento::query(), $actor)->where('procedimientos.estado', Procedimiento::PUBLICADO)
             ->with(['vigente.aplicaciones', 'categoria'])->get()
-            ->filter(fn (Procedimiento $p) => $p->vigente !== null && $this->aplica($p->vigente, $colaborador));
+            ->filter(fn (Procedimiento $p) => $p->vigente !== null && $this->aplicaA($p->vigente, $actor));
         $firmadas = ProcedimientoAcuse::where('user_id', $actor->id)->whereIn('version_id', $publicados->pluck('vigente.id')->all())
             ->pluck('version_id')->map(fn ($id) => (int) $id)->all();
 
@@ -446,18 +503,20 @@ class AdministradorProcedimientos
      * del actor y con los filtros), con su acuse si ya firmó, más quien firmó
      * sin estar obligado.
      *
-     * @return array{filas: Collection<int, array{usuario: User, acuse: ?ProcedimientoAcuse}>, extra: Collection<int, ProcedimientoAcuse>, firmaron: int, deben: int}
+     * @return array{filas: Collection<int, array{usuario: User, acuse: ?ProcedimientoAcuse}>, extra: Collection<int, ProcedimientoAcuse>, firmaron: int, deben: int, sin_ficha: int}
      */
     public function cumplimiento(User $actor, ProcedimientoVersion $version, ?int $sede = null, ?int $departamento = null): array
     {
         $acuses = $version->acuses()->with('usuario:id,name')->get()->keyBy('user_id');
         $sedes = $actor->es_superadmin ? null : $this->autorizador->sedesPermitidas($actor, $actor->can('procedimientos.editar') ? 'procedimientos.editar' : 'procedimientos.aprobar');
-        $presencia = fn (User $u) => array_filter([(int) $u->colaborador->sede_id, ...$u->colaborador->sedesAdicionales->pluck('id')->map(fn ($id) => (int) $id)->all()]);
+        // Sedes de cada persona (sin ficha: las de su rol; null = todas)
+        $presencia = fn (User $u) => $this->sedesDe($u);
+        $en = fn (?array $suyas, array $buscadas) => $suyas === null || array_intersect($suyas, $buscadas) !== [];
 
         $filas = $this->obligados($version)
-            ->filter(fn (User $u) => $sedes === null || array_intersect($presencia($u), $sedes) !== [])
-            ->filter(fn (User $u) => $sede === null || in_array($sede, $presencia($u), true))
-            ->filter(fn (User $u) => $departamento === null || (int) $u->colaborador->departamento_id === $departamento)
+            ->filter(fn (User $u) => $sedes === null || $en($presencia($u), $sedes))
+            ->filter(fn (User $u) => $sede === null || $en($presencia($u), [$sede]))
+            ->filter(fn (User $u) => $departamento === null || (int) $u->colaborador?->departamento_id === $departamento)
             ->map(fn (User $u) => ['usuario' => $u, 'acuse' => $acuses->get($u->id)])
             ->sortBy(fn ($f) => ($f['acuse'] ? '1' : '0').mb_strtolower($f['usuario']->name))->values();
 
@@ -467,7 +526,7 @@ class AdministradorProcedimientos
             ? $acuses->reject(fn ($a) => in_array($a->user_id, $todos, true))->values()
             : collect();
 
-        return ['filas' => $filas, 'extra' => $extra, 'firmaron' => $filas->whereNotNull('acuse')->count(), 'deben' => $filas->count()];
+        return ['filas' => $filas, 'extra' => $extra, 'firmaron' => $filas->whereNotNull('acuse')->count(), 'deben' => $filas->count(), 'sin_ficha' => $this->sinFicha()];
     }
 
     // ================================================================ Altas

@@ -278,7 +278,7 @@ class BitacoraTransporte
             $m = new MovimientoTransporte([
                 'sede_id' => $d['sede']->id, 'ruta_id' => $ruta->id, 'ruta_horario_id' => $d['horario']->id,
                 'tipo_movimiento' => $d['tipo_movimiento'], 'estatus' => 'no_llego', 'fecha' => $d['fecha'],
-                'vehiculo_id' => $vehiculo->id, 'chofer_id' => $chofer->id, 'cantidad_pax' => count($t['pasajeros']),
+                'vehiculo_id' => $vehiculo->id, 'chofer_id' => $chofer->id, 'cantidad_pax' => $t['cantidad'] ?? count($t['pasajeros']),
                 'monto' => $t['monto'], 'justificacion' => $t['justificacion'], 'paradero_id' => $paradero->id,
                 'firma_guardia' => $firmaGuardia, 'firma_taxista' => $t['firma_ruta'], 'observaciones' => $d['observaciones'], 'lote' => $lote,
             ]);
@@ -505,7 +505,7 @@ class BitacoraTransporte
     }
 
     /**
-     * Cada taxi: placas, chofer, monto > 0, destino, al menos un colaborador,
+     * Cada taxi: placas, chofer, monto > 0, destino, al menos un pasajero (o cuántos van, C-06),
      * justificación si supera el tope y, si se firma en pantalla, la firma del taxista.
      *
      * @param  array<string, list<string>>  $errores
@@ -570,8 +570,10 @@ class BitacoraTransporte
             }
 
             $pasajeros = $this->pasajerosValidos($actor, $t['pasajeros'] ?? [], $sede);
-            if ($pasajeros === []) {
-                $errores[$p.'pasajeros'][] = $et.'agrega al menos un colaborador transportado (escanea su gafete o escribe su número de empleado).';
+            // C-06: sin pasajeros registrados basta con cuántos van
+            $cantidad = is_numeric($t['cantidad_pasajeros'] ?? null) ? (int) $t['cantidad_pasajeros'] : 0;
+            if ($pasajeros === [] && ($cantidad < 1 || $cantidad > self::MAX_PASAJEROS)) {
+                $errores[$p.'pasajeros'][] = $et.'agrega al menos un pasajero (escanea su gafete, escribe su número de empleado o dalo de alta), o escribe cuántos van.';
             } elseif (count($pasajeros) > self::MAX_PASAJEROS) {
                 $errores[$p.'pasajeros'][] = $et.'máximo '.self::MAX_PASAJEROS.' pasajeros por taxi.';
             }
@@ -594,6 +596,7 @@ class BitacoraTransporte
                 'placas' => $placas, 'chofer' => $chofer, 'monto' => $monto, 'tipo' => $tipo,
                 'justificacion' => $justificacion === '' ? null : $justificacion,
                 'destino' => $destino, 'pasajeros' => $pasajeros, 'firma' => $firma,
+                'cantidad' => $pasajeros === [] ? $cantidad : count($pasajeros),
             ] + $this->detallesUnidad($t, $p, $errores, $texto, $et);
         }
 
@@ -673,8 +676,10 @@ class BitacoraTransporte
                 $errores['destino'][] = 'El destino es muy largo (máximo 150 caracteres).';
             }
             $pasajeros = $this->pasajerosValidos($actor, $e['pasajeros'] ?? [], $m->sede);
-            if ($pasajeros === []) {
-                $errores['pasajeros'][] = 'Debe quedar al menos un colaborador registrado.';
+            // C-06: un vale que se guardó solo con la cantidad la conserva si sigue sin pasajeros registrados
+            $cantidad = $pasajeros === [] && $m->pasajeros()->count() === 0 ? (int) $m->cantidad_pax : count($pasajeros);
+            if ($pasajeros === [] && $cantidad < 1) {
+                $errores['pasajeros'][] = 'Debe quedar al menos un pasajero registrado.';
             } elseif (count($pasajeros) > self::MAX_PASAJEROS) {
                 $errores['pasajeros'][] = 'Máximo '.self::MAX_PASAJEROS.' pasajeros por taxi.';
             }
@@ -682,11 +687,11 @@ class BitacoraTransporte
                 throw ValidationException::withMessages($errores);
             }
 
-            DB::transaction(function () use ($actor, $m, $monto, $justificacion, $destino, $pasajeros, $observaciones) {
+            DB::transaction(function () use ($actor, $m, $monto, $justificacion, $destino, $pasajeros, $cantidad, $observaciones) {
                 $paradero = $this->rutas->paraderoParaRuta($actor, $m->sede, $destino);
                 $m->fill([
                     'monto' => $monto, 'justificacion' => $justificacion === '' ? null : $justificacion, 'paradero_id' => $paradero->id,
-                    'cantidad_pax' => count($pasajeros), 'observaciones' => $observaciones === '' ? null : $observaciones,
+                    'cantidad_pax' => $cantidad, 'observaciones' => $observaciones === '' ? null : $observaciones,
                 ])->forceFill(['editado_por' => $actor->id, 'editado_en' => now()])->save();
                 $m->pasajeros()->sync($pasajeros);
             });
