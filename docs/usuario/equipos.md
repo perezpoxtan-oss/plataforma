@@ -100,6 +100,20 @@ Cuando un equipo se pierde, se daña o lo roban:
 
 **Qué debes ver:** «Equipo … dado de baja con el voucher VR-…». El equipo queda **DE BAJA** con su motivo.
 
+## Si el equipo no regresó de un pase
+
+Cuando un pase de salida se cierra con faltantes, el equipo queda **NO REGRESÓ** y su ficha dice «No regresó del pase …». El voucher de baja propone como responsable a quien **pidió el pase**.
+
+- Si el equipo aparece, toca **Recibir** en su ficha y confirma: vuelve a **DISPONIBLE**. Si ya tenía voucher, márcalo **Recuperado** en [Vouchers de reposición](vouchers.md).
+- Si no aparecerá, toca **Dar de baja**.
+
+## Si el equipo está apartado para un pase
+
+Mientras un pase que lo lleva está **Pendiente de Aprobación** o **Aprobado, listo para salir**, la ficha dice **Apartado para el pase …**. El equipo sigue **DISPONIBLE**, pero:
+
+- Al entregarlo en una responsiva o darlo de baja, la plataforma avisa «El equipo … está apartado para el pase …» y pide el motivo (**Entregar de todos modos** / **Dar de baja de todos modos**). Queda registrado.
+- Si se entrega o se da de baja, el pase ya no puede salir con él hasta que vuelva a estar disponible: la caseta ve el aviso al registrar la salida.
+
 Si el equipo está **EN USO**, **ASIGNADO** o **FUERA**, alguien lo tiene: **Dar de baja** te lleva a [Antes de dar de baja](antes-de-dar-de-baja.md), donde ves a cargo de quién está. Lo normal es recibirlo en Responsivas (o marcarlo **Faltante** ahí) o esperar su regreso en Pases de salida.
 
 ## Cómo reactivar un equipo que apareció

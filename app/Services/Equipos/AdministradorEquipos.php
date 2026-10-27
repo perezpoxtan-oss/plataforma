@@ -3,6 +3,7 @@
 namespace App\Services\Equipos;
 
 use App\Models\Equipo;
+use App\Models\EquipoResponsiva;
 use App\Models\Sede;
 use App\Models\TipoEquipo;
 use App\Models\User;
@@ -168,8 +169,11 @@ class AdministradorEquipos
         if ($equipo->estado === 'baja') {
             throw ValidationException::withMessages(['motivo' => 'Este equipo ya está dado de baja.']);
         }
+        $apartado = null;
         if (! $desdeSuModulo) {
             app(CustodiaActivos::class)->exigirBajaPermitida($equipo);
+            // Revisión Etapa 2 (A-2): apartado para un pase que aún no sale → aviso y motivo
+            $apartado = app(CustodiaActivos::class)->exigirMotivoSiApartado($equipo, $entrada['motivo_apartado'] ?? null, 'dar de baja');
         }
         $datos = $this->vouchers->validar($entrada);
         $equipo->loadMissing('tipo:id,nombre');
@@ -179,7 +183,8 @@ class AdministradorEquipos
             fn () => $equipo->forceFill(['estado' => 'baja'])->save(),
             $this->referenciaCosto($equipo));
 
-        $this->auditoria->auditar($actor, 'equipos.desactivado', $equipo, $antes, $this->foto($equipo) + ['voucher' => $voucher->folio]);
+        $this->auditoria->auditar($actor, 'equipos.desactivado', $equipo, $antes, $this->foto($equipo) + ['voucher' => $voucher->folio]
+            + ($apartado !== null ? ['apartado_para' => $apartado->folio, 'motivo_apartado' => mb_substr(trim((string) $entrada['motivo_apartado']), 0, 250)] : []));
         app(CustodiaActivos::class)->resolverNoRegreso($equipo, 'equipo');
 
         return $voucher;
@@ -196,6 +201,27 @@ class AdministradorEquipos
         }
         $equipo->forceFill(['estado' => 'disponible'])->save();
         $this->auditoria->auditar($actor, 'equipos.reactivado', $equipo, ['estado' => 'baja'], ['estado' => 'disponible']);
+    }
+
+    /**
+     * Revisión Etapa 2 (A-1): un equipo que no regresó de un pase ya cerrado
+     * apareció: «Recibir» desde su ficha lo deja DISPONIBLE (como una llave en
+     * Préstamo de llaves). Si sigue en una responsiva, se recibe ahí.
+     */
+    public function recibirNoRegreso(User $actor, Equipo $equipo): void
+    {
+        if ($equipo->estado !== EstadoActivo::NO_REGRESO) {
+            throw ValidationException::withMessages(['estado' => "El equipo {$equipo->numero_serie} no está marcado «No regresó»."]);
+        }
+        $fila = EquipoResponsiva::with('responsiva:id,folio')->where('equipo_id', $equipo->id)->whereNull('devuelto_en')->first();
+        if ($fila !== null) {
+            throw ValidationException::withMessages(['estado' => "El equipo {$equipo->numero_serie} sigue en la responsiva {$fila->responsiva?->folio}: recíbelo en Responsivas."]);
+        }
+        $pase = app(CustodiaActivos::class)->paseDeEquipo($equipo);
+        $equipo->forceFill(['estado' => EstadoActivo::DISPONIBLE])->save();
+        $this->auditoria->auditar($actor, 'equipos.recibido', $equipo, ['estado' => EstadoActivo::NO_REGRESO],
+            ['estado' => EstadoActivo::DISPONIBLE, 'pase' => $pase?->folio]);
+        app(CustodiaActivos::class)->resolverNoRegreso($equipo, 'equipo');
     }
 
     /**

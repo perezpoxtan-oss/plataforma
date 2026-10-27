@@ -345,6 +345,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/equipos/{equipo}', [EquipoController::class, 'update'])->whereNumber('equipo')->name('equipos.update');
     Route::post('/equipos/{equipo}/baja', [EquipoController::class, 'baja'])->whereNumber('equipo')->name('equipos.baja');
     Route::patch('/equipos/{equipo}/reactivar', [EquipoController::class, 'reactivar'])->whereNumber('equipo')->name('equipos.reactivar');
+    Route::patch('/equipos/{equipo}/recibir', [EquipoController::class, 'recibir'])->whereNumber('equipo')->name('equipos.recibir');
     Route::get('/equipos/{equipo}/etiqueta', [EquipoController::class, 'etiqueta'])->whereNumber('equipo')->name('equipos.etiqueta');
     Route::get('/equipos/{equipo}/qr', [EquipoController::class, 'qr'])->whereNumber('equipo')->name('equipos.qr');
     Route::get('/estacionamientos', [EstacionamientoController::class, 'index'])->name('estacionamientos.index');

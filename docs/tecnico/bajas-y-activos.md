@@ -73,3 +73,17 @@ Plan de correcciones, **Etapa 2** (C-13 a C-18, C-20 y C-21; decisiones DD-06 a 
 ## Pruebas
 
 `tests/Feature/Seguridad/EtapaDosActivosTest.php`, `EtapaDosCasetaTest.php`, `EtapaDosPasesTest.php` y `tests/Feature/MigracionEtapa2Test.php` (migrar → revertir → migrar con datos).
+
+## Revisión del PR (A-1 a A-8)
+
+- **A-1:** `AdministradorEquipos::recibirNoRegreso` y `PATCH /equipos/{equipo}/recibir` (`equipos.editar`): un equipo NO REGRESÓ que no está en una responsiva (vino de un pase cerrado) vuelve a DISPONIBLE desde su ficha; auditoría `equipos.recibido` con el folio del pase y el aviso pierde su botón.
+- **A-2:** «apartado» = el equipo va en un pase PENDIENTE o APROBADO (`CustodiaActivos::PASES_POR_SALIR`, `paseApartado`, `apartadosEnLista`). Sigue DISPONIBLE; la ficha dice «Apartado para el pase …». Responsivas y la baja con voucher piden `motivo_apartado` (`exigirMotivoSiApartado`; queda en la auditoría). Al registrar la salida, un equipo del pase que ya no está DISPONIBLE detiene la salida (error en `verificados`).
+- **A-3:** `responsablePropuesto` de un equipo sin responsiva abierta propone al solicitante del último pase del que no regresó.
+- **A-4:** `AdministradorPrestamosLlaves::reactivar` rechaza si la llave ya no está DISPONIBLE (NO REGRESÓ o DE BAJA).
+- **A-5:** el expediente (pestaña Datos) muestra «Llaves a su cargo» (EN USO y NO REGRESÓ) y «No regresaron» (equipos de sus responsivas o de pases que pidió, y gafetes de sus accesos), cada uno con su permiso de módulo.
+- **A-6:** la ficha de la llave muestra un solo estado (EN USO, NO REGRESÓ, ACTIVA o DE BAJA).
+- **A-7:** `down()` de `000200` escribe el responsable externo de cada voucher al final de su «¿Cómo pasó?» (`descripcion`) y lo anota en el registro antes de quitar `responsable_tipo/_id`.
+- **A-8:** la migración `2026_11_09_000600` (Etapa 1, ya instalada) queda como en develop. `CatalogoChecks::definiciones()` vuelve a ser la lista de la Etapa 1 y `CatalogoChecks::todas()` agrega los CHECK de la Etapa 2 (que pone `2026_11_11_000100`); la usan `RevisionCoherencia`, `IntegridadBaseDatosTest` y `000200`. No hizo falta una migración nueva: la Etapa 2 ya traía la suya.
+- Inventario de datos personales: `accesos.identificacion_devuelta` registrada; responsivas y vouchers aclaran que, si el receptor es una persona externa, sus datos viven en el Padrón de personas.
+
+Pruebas: `EtapaDosPasesTest` (A-1, A-2, A-3), `EtapaDosActivosTest` (A-4, A-5, A-6), `MigracionEtapa2Test` (A-7, A-8).

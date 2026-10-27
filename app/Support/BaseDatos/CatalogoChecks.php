@@ -17,7 +17,6 @@ use App\Models\Responsiva;
 use App\Models\SolicitudArco;
 use App\Support\EstadoActivo;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -40,10 +39,6 @@ final class CatalogoChecks
             'accesos' => ['estado' => array_keys(Acceso::ESTADOS)],
             'autorizaciones' => ['estado' => array_keys(Autorizacion::ESTADOS)],
             'candidatos' => ['etapa' => array_keys(Candidato::ETAPAS)],
-            // C-14 (Etapa 2): estados únicos de activos (App\Support\EstadoActivo)
-            'equipos' => ['estado' => array_keys(Equipo::ESTADOS)],
-            'gafetes' => ['estado' => EstadoActivo::GUARDADOS_LLAVE_GAFETE],
-            'llaves' => ['estado' => EstadoActivo::GUARDADOS_LLAVE_GAFETE],
             'postulaciones' => ['etapa' => array_keys(Candidato::ETAPAS)],
             'lost_found_articulos' => ['estatus' => array_keys(LostFoundArticulo::ESTATUS)],
             'movimientos_transporte' => [
@@ -55,12 +50,32 @@ final class CatalogoChecks
                 'estatus' => array_keys(Novedad::ESTATUS),
             ],
             'pases_salida' => ['estado' => array_keys(PaseSalida::ESTADOS)],
-            'prestamos_llaves' => ['estado' => [PrestamoLlave::EN_USO, PrestamoLlave::DEVUELTA, PrestamoLlave::NO_REGRESO]],
+            'prestamos_llaves' => ['estado' => [PrestamoLlave::EN_USO, PrestamoLlave::DEVUELTA]],
             'recorridos_pc' => ['estatus' => array_keys(RecorridoPc::ESTATUS)],
             'reservas' => ['estado' => array_keys(Reserva::ESTADOS)],
             'responsivas' => ['estado' => [Responsiva::EN_CAMPO, Responsiva::DEVUELTA]],
             'solicitudes_arco' => ['estado' => array_keys(SolicitudArco::ESTADOS)],
         ];
+    }
+
+    /**
+     * Todos los CHECK vigentes: los de la Etapa 1 (definiciones(), que usa tal
+     * cual la migración 2026_11_09_000600 ya instalada) más los de la Etapa 2
+     * (C-14), que pone su propia migración 2026_11_11_000100 porque sus
+     * columnas aún no existen en 000600. Revisión Etapa 2, A-8.
+     *
+     * @return array<string, array<string, list<string>>>
+     */
+    public static function todas(): array
+    {
+        $todas = self::definiciones();
+        $todas['equipos'] = ['estado' => array_keys(Equipo::ESTADOS)];
+        $todas['gafetes'] = ['estado' => EstadoActivo::GUARDADOS_LLAVE_GAFETE];
+        $todas['llaves'] = ['estado' => EstadoActivo::GUARDADOS_LLAVE_GAFETE];
+        $todas['prestamos_llaves'] = ['estado' => [PrestamoLlave::EN_USO, PrestamoLlave::DEVUELTA, PrestamoLlave::NO_REGRESO]];
+        ksort($todas);
+
+        return $todas;
     }
 
     /**
@@ -92,9 +107,6 @@ final class CatalogoChecks
         $r = ['normalizados' => [], 'sin_reconocer' => []];
         foreach (self::definiciones() as $tabla => $columnas) {
             foreach ($columnas as $columna => $valores) {
-                if (! Schema::hasColumn($tabla, $columna)) {
-                    continue; // la crea una migración posterior (p. ej. llaves.estado, C-14)
-                }
                 $raros = Restricciones::consultaFuera($tabla, $columna, $valores)
                     ->selectRaw(Restricciones::exacta($columna).' as valor')->distinct()->pluck('valor')->map(fn ($v) => (string) $v)->all();
                 foreach ($raros as $raro) {

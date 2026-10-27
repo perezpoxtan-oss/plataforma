@@ -149,6 +149,7 @@ La pantalla se acomoda al celular: una ficha por renglón y la ventana de prést
 | «Escanea el gafete o busca al colaborador que se lleva la llave.» | Falta el colaborador. | Escanea su gafete o búscalo. |
 | «Elige la identificación que deja en garantía (o «Ninguna»).» | Falta la garantía. | Elige una opción de la lista. |
 | «No se puede reactivar — esa llave ya se volvió a prestar…» | La llave ya tiene otro préstamo. | Deja el préstamo anulado. |
+| «No se puede reactivar — la llave … ahora está NO REGRESÓ (o DE BAJA)…» | Mientras tanto la llave no regresó o se dio de baja. | Si ya regresó, recíbela primero; si no, deja el préstamo anulado. |
 | No veo el botón **⊘** | Tu rol no puede anular. | Pide a tu jefe de seguridad que lo anule. |
 
 ## Preguntas frecuentes

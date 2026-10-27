@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Seguridad;
 
+use App\Models\Auditoria;
 use App\Models\Colaborador;
 use App\Models\Empresa;
 use App\Models\Equipo;
@@ -208,5 +209,65 @@ class EtapaDosPasesTest extends TestCase
         $this->actingAs($this->admin)->post('/pases-salida', $this->datos([$this->equipo('LT-R')], ['destino_tipo' => 'colaborador', 'colaborador_destino_id' => $otro->id, 'proveedor_id' => null]))
             ->assertSessionHasErrors(['destino_tipo' => 'Para que un colaborador se lleve un equipo a su resguardo usa Responsivas (Operación → Responsivas): ahí queda a su cargo con su firma.']);
         $this->actingAs($this->admin)->get('/pases-salida')->assertOk()->assertDontSee('Un Colaborador se lo lleva')->assertSee('Eso se hace en <strong>Operación → Responsivas</strong>', false);
+    }
+
+    // ===================================================== Revisión Etapa 2 (A-1, A-2, A-3)
+
+    /** A-1 y A-3: el equipo que no regresó de un pase cerrado propone al solicitante en su voucher y se puede «Recibir» desde su ficha. */
+    public function test_equipo_que_no_regreso_de_un_pase_propone_al_solicitante_y_se_recibe_desde_su_ficha(): void
+    {
+        $b = $this->equipo('LT-R0');
+        $a = $this->equipo('LT-R1');
+        $pase = $this->crear([$b, $a]);
+        $this->aprobarTodo($pase);
+        $this->travelTo(Carbon::parse('2026-10-05 09:00', 'America/Cancun'));
+        $this->paso($pase)->assertSessionHasNoErrors();
+        $pase = $this->enEmpresa(fn () => PaseSalida::with('articulos')->findOrFail($pase->id));
+        [$art, $artB] = $pase->articulos->sortBy('id')->values()->all();
+        $this->travelTo(Carbon::parse('2026-10-08 12:00', 'America/Cancun'));
+        $this->paso($pase, ['regresa' => [$art->id => 1, $artB->id => 0], 'comentario' => 'La B se quedó con el proveedor', 'cerrar_con_faltantes' => 1])->assertSessionHasNoErrors();
+        $this->assertSame([EstadoActivo::DISPONIBLE, EstadoActivo::NO_REGRESO], [$b->fresh()->estado, $a->fresh()->estado]);
+
+        // A-3: el voucher propone al solicitante del pase
+        $propuesta = $this->enEmpresa(fn () => app(CustodiaActivos::class)->responsablePropuesto($a->fresh()));
+        $this->assertSame(['tipo' => 'colaborador', 'id' => $this->solicitante->id], ['tipo' => $propuesta['tipo'], 'id' => $propuesta['id']]);
+        $this->flushSession();
+        $this->actingAs($this->admin)->get('/equipos')->assertSee('&quot;id&quot;:'.$this->solicitante->id, false)->assertSee('Recibir');
+
+        // A-1: apareció → Recibir desde su ficha, como una llave
+        $this->actingAs($this->admin)->patch("/equipos/{$a->id}/recibir")->assertSessionHasNoErrors()->assertSessionHas('ok');
+        $this->assertSame(EstadoActivo::DISPONIBLE, $a->fresh()->estado);
+        $this->assertNull(Notificacion::withoutGlobalScopes()->where('tipo', CustodiaActivos::TIPO_AVISO)->where('titulo', 'No regresó: equipo LT-R1')->first()?->acciones);
+        // No se «recibe» lo que no está marcado No regresó
+        $this->actingAs($this->admin)->patch("/equipos/{$a->id}/recibir")->assertSessionHasErrors('estado');
+    }
+
+    /** A-2: equipo apartado por un pase que aún no sale: la ficha lo dice, responsiva y baja piden motivo y la salida no lo ignora. */
+    public function test_equipo_apartado_por_un_pase_pide_motivo_y_la_salida_no_lo_ignora(): void
+    {
+        $a = $this->equipo('LT-AP');
+        $pase = $this->crear([$a]);
+        $this->assertSame(EstadoActivo::DISPONIBLE, $a->fresh()->estado);
+        $this->actingAs($this->admin)->get('/equipos')->assertSee('Apartado para el pase')->assertSee($pase->folio);
+
+        // Responsiva: avisa y pide motivo
+        $entrega = ['sede_id' => $this->centro->id, 'colaborador_id' => $this->solicitante->id, 'equipos' => [$a->id], 'modalidades' => ['prestado'], 'firma' => $this->firma(), '_dialogo' => 'nuevo-resguardo'];
+        $this->actingAs($this->admin)->post('/responsivas', $entrega)->assertSessionHasErrors('motivo_apartado');
+        $this->assertSame(EstadoActivo::DISPONIBLE, $a->fresh()->estado);
+        $this->actingAs($this->admin)->from('/responsivas')->followingRedirects()->post('/responsivas', $entrega)->assertSee('Entregar de todos modos: motivo')->assertSee('está apartado para el pase '.$pase->folio);
+        // Baja: avisa y pide motivo
+        $this->actingAs($this->admin)->post("/equipos/{$a->id}/baja", ['motivo' => 'danado'])->assertSessionHasErrors('motivo_apartado');
+        $this->assertSame(EstadoActivo::DISPONIBLE, $a->fresh()->estado);
+
+        // Con motivo se entrega y queda en la auditoría
+        $this->actingAs($this->admin)->post('/responsivas', $entrega + ['motivo_apartado' => 'Se necesita hoy en el turno'])->assertSessionHasNoErrors();
+        $this->assertSame(EstadoActivo::EN_USO, $a->fresh()->estado);
+        $this->assertTrue(Auditoria::where('evento', 'responsivas.creado')->get()->contains(fn ($r) => str_contains(json_encode($r->despues, JSON_UNESCAPED_UNICODE), 'Se necesita hoy en el turno')));
+
+        // La salida del pase ya no lo ignora en silencio
+        $this->aprobarTodo($pase);
+        $this->travelTo(Carbon::parse('2026-10-05 09:00', 'America/Cancun'));
+        $this->paso($pase)->assertSessionHasErrors(['verificados' => 'El equipo LT-AP ya no está DISPONIBLE (está EN USO): no puede salir con este pase. Si regresó, recíbelo primero; si no, cancela el pase y pide uno nuevo sin él.']);
+        $this->assertSame(PaseSalida::APROBADO, $this->enEmpresa(fn () => PaseSalida::findOrFail($pase->id))->estado);
     }
 }

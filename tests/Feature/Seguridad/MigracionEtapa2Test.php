@@ -5,10 +5,13 @@ namespace Tests\Feature\Seguridad;
 use App\Models\Colaborador;
 use App\Models\Empresa;
 use App\Models\Equipo;
+use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Models\TipoEquipo;
 use App\Models\User;
+use App\Support\BaseDatos\CatalogoChecks;
+use App\Support\BaseDatos\Restricciones;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -143,5 +146,37 @@ class MigracionEtapa2Test extends TestCase
         // No tocó nada
         $this->assertTrue(Schema::hasColumn('responsivas', 'receptor_tipo'));
         $this->assertSame('proveedor', DB::table('responsivas')->value('receptor_tipo'));
+    }
+
+    /** Revisión Etapa 2 (A-7): al revertir, el responsable externo de un voucher se conserva en su «¿Cómo pasó?». */
+    public function test_al_revertir_el_voucher_conserva_a_su_responsable_externo(): void
+    {
+        $persona = app(Tenant::class)->conEmpresa($this->empresa->id, fn () => Persona::create(['tipo' => 'visitante', 'nombre_completo' => 'Rosa Pech']));
+        $equipo = app(Tenant::class)->conEmpresa($this->empresa->id, fn () => Equipo::create(['sede_id' => $this->sede->id, 'tipo_equipo_id' => TipoEquipo::firstOrCreate(['nombre' => 'Radio'])->id, 'numero_serie' => 'RAD-7']));
+        $this->actingAs($this->admin)->post("/equipos/{$equipo->id}/baja", ['motivo' => 'extraviado', 'descripcion' => 'Se perdió en la obra',
+            'aplica_cobro' => 1, 'monto' => 500, 'responsable_tipo' => 'persona', 'responsable_id' => $persona->id])->assertSessionHasNoErrors();
+        $this->assertSame('persona', DB::table('vouchers_reposicion')->value('responsable_tipo'));
+
+        $this->revertirTodo();
+        $this->assertSame("Se perdió en la obra\nResponsable del cobro: Rosa Pech (persona externa).", DB::table('vouchers_reposicion')->value('descripcion'));
+        $this->migrarTodo();
+    }
+
+    /** Revisión Etapa 2 (A-8): la migración de la Etapa 1 (000600) no conoce columnas de la Etapa 2: sube y baja sin ellas. */
+    public function test_la_migracion_de_la_etapa_1_no_depende_de_la_etapa_2(): void
+    {
+        $base = CatalogoChecks::definiciones();
+        $this->assertArrayNotHasKey('llaves', $base);
+        $this->assertArrayNotHasKey('gafetes', $base);
+        $this->assertArrayNotHasKey('equipos', $base);
+        $this->assertSame(['en_uso', 'devuelta'], $base['prestamos_llaves']['estado']);
+
+        $this->revertirTodo();
+        $etapa1 = $this->migracion('2026_11_09_000600_check_en_estados_y_categorias');
+        $etapa1->down();
+        $etapa1->up();
+        $this->migrarTodo();
+        $this->assertEqualsCanonicalizing(['disponible', 'no_regreso', 'baja'], Restricciones::valoresDelCheck('llaves', 'estado'));
+        $this->assertEqualsCanonicalizing(['en_uso', 'devuelta', 'no_regreso'], Restricciones::valoresDelCheck('prestamos_llaves', 'estado'));
     }
 }

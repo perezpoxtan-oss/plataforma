@@ -278,7 +278,12 @@ class AdministradorPrestamosLlaves
         try {
             DB::transaction(function () use ($prestamo) {
                 if ($prestamo->estado === PrestamoLlave::EN_USO) {
-                    Llave::whereKey($prestamo->llave_id)->lockForUpdate()->first();
+                    $llave = Llave::whereKey($prestamo->llave_id)->lockForUpdate()->first();
+                    // Revisión Etapa 2 (A-4): si mientras tanto la llave quedó «No regresó» o se dio de baja, el préstamo no vuelve a contar
+                    if ($llave !== null && $llave->estado !== EstadoActivo::DISPONIBLE) {
+                        throw ValidationException::withMessages(['prestamo' => 'No se puede reactivar — la llave '.$llave->nomenclatura.' ahora está '
+                            .EstadoActivo::texto($llave->estado).'. Si ya regresó, recíbela primero.']);
+                    }
                     $otro = PrestamoLlave::vigentes()->where('llave_id', $prestamo->llave_id)->whereKeyNot($prestamo->id)->exists();
                     if ($otro) {
                         throw ValidationException::withMessages(['prestamo' => 'No se puede reactivar — esa llave ya se volvió a prestar en otro registro mientras tanto.']);

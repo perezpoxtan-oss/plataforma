@@ -103,6 +103,8 @@ class EquipoController extends Controller
                 'puedeVerVouchers' => $actor->can('vouchers.ver'),
                 'puedeVerResponsivas' => $actor->can('responsivas.ver'),
                 // C-14: «FUERA en PS-…» (una sola consulta) y a quién proponer en el voucher de lo que no regresó
+                // Revisión Etapa 2 (A-2): apartados para un pase que aún no sale
+                'apartados' => app(CustodiaActivos::class)->apartadosEnLista($lista->where('estado', EstadoActivo::DISPONIBLE)->pluck('id')),
                 'pasesFuera' => PaseSalidaArticulo::query()->with('pase:id,folio')
                     ->whereIn('equipo_id', $lista->whereIn('estado', [EstadoActivo::FUERA, EstadoActivo::NO_REGRESO])->pluck('id'))
                     ->whereColumn('cantidad_regresada', '<', 'cantidad')->whereHas('pase', fn ($q) => $q->whereNotNull('salio_en'))
@@ -168,6 +170,23 @@ class EquipoController extends Controller
     /**
      * Reactivar (se encontró / se recuperó): vuelve a DISPONIBLE; el voucher se conserva.
      */
+    /** Revisión Etapa 2 (A-1): «Recibir» un equipo que no regresó de un pase ya cerrado. */
+    public function recibir(Request $request, int $equipo): RedirectResponse
+    {
+        Gate::authorize('equipos.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
+            $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos.editar');
+            $this->equipos->recibirNoRegreso($request->user(), $modelo);
+
+            return $modelo;
+        });
+
+        return redirect()->to(route('equipos.index').'#equipo-'.$modelo->id)
+            ->with('ok', "Equipo {$modelo->numero_serie} recibido: vuelve a estar DISPONIBLE. Si ya tenía voucher, márcalo «Recuperado» en Vouchers de reposición.");
+    }
+
     public function reactivar(Request $request, int $equipo): RedirectResponse
     {
         Gate::authorize('equipos.eliminar');

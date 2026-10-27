@@ -737,6 +737,13 @@ class AdministradorPasesSalida
                 throw ValidationException::withMessages(['verificados' => $faltan === 1
                     ? 'Marca o escanea cada artículo que sale: falta 1.' : "Marca o escanea cada artículo que sale: faltan {$faltan}."]);
             }
+            // Revisión Etapa 2 (A-2): un equipo del padrón que dejó de estar DISPONIBLE (se entregó o se dio de baja con motivo) no sale en silencio
+            foreach (Equipo::whereIn('id', $articulos->pluck('equipo_id')->filter()->all())->get() as $equipo) {
+                if ($equipo->estado !== EstadoActivo::DISPONIBLE) {
+                    throw ValidationException::withMessages(['verificados' => "El equipo {$equipo->numero_serie} ya no está DISPONIBLE (está "
+                        .EstadoActivo::texto($equipo->estado).'): no puede salir con este pase. Si regresó, recíbelo primero; si no, cancela el pase y pide uno nuevo sin él.']);
+                }
+            }
         } elseif (count($verificados) < $articulos->count() && $comentario === null) {
             throw ValidationException::withMessages(['comentario' => 'Hay artículos sin marcar: anota en el comentario qué falta o qué llegó diferente.']);
         }

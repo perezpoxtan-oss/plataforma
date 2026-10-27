@@ -144,7 +144,7 @@ Tu empresa puede pedir menos firmas en algún movimiento. La ventana te lo dice:
 
 **Qué debes ver:** la línea de pasos avanza y el **Recorrido del pase** muestra la fecha y la hora reales. Si faltan artículos en el regreso, queda **Regreso parcial** y sigue esperando lo demás.
 
-Los equipos del padrón cambian solos de estado: al salir quedan **FUERA** en [Equipos de seguridad](equipos.md) y al regresar vuelven a **DISPONIBLE**. Si cierras el pase con faltantes, los equipos que no volvieron quedan **NO REGRESÓ** y el mensaje te dice cuáles, para darlos de baja con su voucher.
+Mientras el pase no sale, sus equipos del padrón quedan **apartados** (su ficha en [Equipos de seguridad](equipos.md) lo dice). Los equipos del padrón cambian solos de estado: al salir quedan **FUERA** en [Equipos de seguridad](equipos.md) y al regresar vuelven a **DISPONIBLE**. Si cierras el pase con faltantes, los equipos que no volvieron quedan **NO REGRESÓ** y el mensaje te dice cuáles, para darlos de baja con su voucher.
 
 ### Si el regreso programado ya pasó al dar salida
 
@@ -254,6 +254,7 @@ Si tu empresa ya tenía su propio circuito, no cambia solo. Arriba de los pasos 
 | «El equipo … no está DISPONIBLE (está DE BAJA). Solo sale un equipo disponible.» | El equipo está de baja, en mantenimiento, fuera o no regresó. | Quítalo del pase o elige otro. |
 | «El equipo … ya está en el pase …, que sigue abierto.» / «… está dos veces en el pase.» | Ese equipo ya va en otro pase o lo agregaste dos veces. | Quítalo de este pase. |
 | «El equipo … es de otra sede: solo salen equipos de ….» | El equipo pertenece a otra sede. | Pide el pase desde su sede. |
+| Al registrar la salida: «El equipo … ya no está DISPONIBLE (está …): no puede salir con este pase…» | Después de aprobar el pase, el equipo se entregó en una responsiva o se dio de baja (con motivo). | Si regresó, recíbelo primero; si no, cancela el pase y pide uno nuevo sin él. |
 | «Solo puedes solicitar pases de salida a tu nombre.» | Tu rol pide pases solo para ti. | Deja tu nombre en **Solicitante**; si el pase es de otra persona, que lo pida ella o la caseta. |
 | «Tu usuario no está vinculado a un colaborador: pide a tu administrador que lo vincule en Usuarios para poder solicitar pases.» (sale en rojo al abrir **Nuevo Pase** y al intentar guardar) | Tu cuenta no está ligada a tu ficha de colaborador. | Pide a tu administrador que la vincule en [Usuarios](usuarios.md). |
 | «Agrega al menos un artículo que salga en el pase.» | No hay artículos. | Escanea o escribe al menos uno. |

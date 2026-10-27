@@ -460,4 +460,54 @@ class EtapaDosActivosTest extends TestCase
         $this->actingAs($this->admin)->get(route('bajas.revisar', ['tipo' => 'personas', 'id' => $p->id]))->assertSee('Está en sitio o esperando autorización');
         $this->actingAs($this->agente)->get(route('bajas.revisar', ['tipo' => 'personas', 'id' => $p->id]))->assertForbidden();
     }
+
+    // ===================================================== Revisión Etapa 2 (A-4, A-5, A-6)
+
+    /** A-4: reactivar un préstamo anulado revisa el estado actual de la llave (No regresó o de baja). */
+    public function test_reactivar_un_prestamo_anulado_revisa_el_estado_de_la_llave(): void
+    {
+        $l = $this->llave('HDC-201');
+        $c = $this->colaborador('1101');
+        $d = $this->colaborador('1102');
+        $this->prestar($l, ['colaborador_id' => $c->id])->assertCreated();
+        $anulado = $this->enEmpresa(fn () => PrestamoLlave::firstOrFail());
+        $this->actingAs($this->admin)->patch("/prestamo-llaves/{$anulado->id}/anular")->assertSessionHasNoErrors();
+        // Mientras tanto se prestó a otro y no regresó
+        $this->prestar($l, ['colaborador_id' => $d->id])->assertCreated();
+        $segundo = $this->enEmpresa(fn () => PrestamoLlave::whereKeyNot($anulado->id)->firstOrFail());
+        $this->actingAs($this->admin)->patch("/prestamo-llaves/{$segundo->id}/no-regreso");
+        $this->assertSame(EstadoActivo::NO_REGRESO, $l->fresh()->estado);
+
+        $this->actingAs($this->admin)->patch("/prestamo-llaves/{$anulado->id}/reactivar")
+            ->assertSessionHasErrors(['prestamo' => 'No se puede reactivar — la llave HDC-201 ahora está NO REGRESÓ. Si ya regresó, recíbela primero.']);
+        $this->assertTrue((bool) $this->enEmpresa(fn () => $anulado->fresh()->anulado));
+    }
+
+    /** A-5 y A-6: el expediente muestra lo que no regresó y la ficha de la llave tiene un solo estado. */
+    public function test_expediente_muestra_lo_que_no_regreso_y_la_ficha_un_solo_estado(): void
+    {
+        $l = $this->llave('HDC-301');
+        $c = $this->colaborador('1201');
+        $radio = $this->equipo('RAD-301');
+        $this->prestar($l, ['colaborador_id' => $c->id])->assertCreated();
+        $p = $this->enEmpresa(fn () => PrestamoLlave::firstOrFail());
+        $this->actingAs($this->admin)->patch("/prestamo-llaves/{$p->id}/no-regreso");
+        $this->actingAs($this->admin)->post('/responsivas', ['sede_id' => $this->centro->id, 'colaborador_id' => $c->id,
+            'equipos' => [$radio->id], 'modalidades' => ['asignado'], 'firma' => $this->firma()])->assertSessionHasNoErrors();
+        // Se da de baja al colaborador: el equipo queda NO REGRESÓ
+        $this->actingAs($this->admin)->patch("/colaboradores/{$c->id}/estado", ['activo' => 0, 'revisado' => 1])->assertSessionHasNoErrors();
+        $this->assertSame(EstadoActivo::NO_REGRESO, $radio->fresh()->estado);
+
+        // A-5: el expediente lo muestra
+        $this->flushSession();
+        $this->actingAs($this->admin)->get("/colaboradores/{$c->id}/expediente")->assertOk()
+            ->assertSee('Llaves a su cargo (1)')->assertSee('HDC-301')
+            ->assertSee('No regresaron (1)')->assertSee('Equipo RAD-301');
+
+        // A-6: un solo estado en la ficha de la llave
+        $html = $this->actingAs($this->admin)->get('/llaves')->assertOk()->getContent();
+        $ficha = substr($html, (int) strpos($html, 'id="llave-'.$l->id.'"'), 2500);
+        $this->assertStringContainsString('NO REGRESÓ', $ficha);
+        $this->assertStringNotContainsString('>ACTIVA<', $ficha);
+    }
 }

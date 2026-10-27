@@ -8,7 +8,10 @@ use App\Models\Auditoria;
 use App\Models\Candidato;
 use App\Models\CandidatoDocumento;
 use App\Models\Colaborador;
+use App\Models\Equipo;
+use App\Models\EquipoResponsiva;
 use App\Models\PaseSalida;
+use App\Models\PaseSalidaArticulo;
 use App\Models\Postulacion;
 use App\Models\PrestamoLlave;
 use App\Models\Responsiva;
@@ -17,6 +20,7 @@ use App\Services\Candidatos\DocumentosCandidato;
 use App\Services\Candidatos\DocumentosParaContratar;
 use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Procedimientos\AdministradorProcedimientos;
+use App\Support\EstadoActivo;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
@@ -98,9 +102,12 @@ class ExpedienteController extends Controller
             $accesos = $actor->can('accesos.ver')
                 ? Acceso::where('colaborador_id', $c->id)->with('sede:id,nombre')->orderByDesc('entrada_at')->limit(5)->get()
                 : null;
+            // Revisión Etapa 2 (A-5): también las que no regresaron
             $llaves = $actor->can('prestamo_llaves.ver')
-                ? PrestamoLlave::where('colaborador_id', $c->id)->where('estado', PrestamoLlave::EN_USO)->where('anulado', false)->with(['llave:id,nomenclatura,descripcion', 'sede:id,nombre'])->orderByDesc('id')->get()
+                ? PrestamoLlave::where('colaborador_id', $c->id)->whereIn('estado', [PrestamoLlave::EN_USO, PrestamoLlave::NO_REGRESO])->where('anulado', false)
+                    ->with(['llave:id,nomenclatura,descripcion', 'sede:id,nombre'])->orderByDesc('id')->get()
                 : null;
+            $noRegresaron = $this->noRegresaron($actor, $c);
             $pases = $actor->can('pases_salida.ver')
                 ? PaseSalida::where('colaborador_id', $c->id)->with('sede:id,nombre')->orderByDesc('id')->limit(5)->get()
                 : null;
@@ -145,6 +152,7 @@ class ExpedienteController extends Controller
                 'postulacion' => $postulacion,
                 'accesos' => $accesos,
                 'llaves' => $llaves,
+                'noRegresaron' => $noRegresaron,
                 'pases' => $pases,
                 'responsivas' => $responsivas,
                 'procedimientos' => $procedimientos,
@@ -180,5 +188,38 @@ class ExpedienteController extends Controller
         abort_if($empresaId === null, 404);
 
         return $empresaId;
+    }
+
+    /**
+     * Revisión Etapa 2 (A-5): gafetes y equipos que el colaborador no regresó
+     * (los equipos de sus responsivas o de pases que pidió; los gafetes de sus
+     * accesos). Las llaves ya vienen en «Llaves a su cargo». null = no puede ver ninguno.
+     *
+     * @return list<array{texto: string, url: ?string}>|null
+     */
+    private function noRegresaron(User $actor, Colaborador $c): ?array
+    {
+        $verEquipos = $actor->can('equipos.ver');
+        $verGafetes = $actor->can('gafetes.ver') || $actor->can('accesos.ver');
+        if (! $verEquipos && ! $verGafetes) {
+            return null;
+        }
+        $lista = [];
+        if ($verEquipos) {
+            $deResponsivas = EquipoResponsiva::whereNull('devuelto_en')
+                ->whereHas('responsiva', fn ($q) => $q->where('colaborador_id', $c->id))->pluck('equipo_id');
+            $dePases = PaseSalidaArticulo::whereNotNull('equipo_id')->whereColumn('cantidad_regresada', '<', 'cantidad')
+                ->whereHas('pase', fn ($q) => $q->where('colaborador_id', $c->id)->whereNotNull('salio_en'))->pluck('equipo_id');
+            foreach (Equipo::whereIn('id', $deResponsivas->merge($dePases)->unique())->where('estado', EstadoActivo::NO_REGRESO)->orderBy('numero_serie')->get(['id', 'numero_serie']) as $e) {
+                $lista[] = ['texto' => 'Equipo '.$e->numero_serie, 'url' => route('equipos.index').'#equipo-'.$e->id];
+            }
+        }
+        if ($verGafetes) {
+            foreach (Acceso::where('colaborador_id', $c->id)->where('gafete_no_regreso', true)->orderByDesc('id')->limit(20)->get(['id', 'gafete_texto', 'salida_at']) as $a) {
+                $lista[] = ['texto' => 'Gafete '.($a->gafete_texto ?? '—'), 'url' => $actor->can('gafetes.ver') ? route('gafetes.index') : null];
+            }
+        }
+
+        return $lista;
     }
 }

@@ -4,6 +4,7 @@ namespace App\Services\Activos;
 
 use App\Models\Acceso;
 use App\Models\AcompananteAcceso;
+use App\Models\Colaborador;
 use App\Models\Equipo;
 use App\Models\EquipoResponsiva;
 use App\Models\Gafete;
@@ -35,6 +36,9 @@ class CustodiaActivos
     public const TIPO_AVISO = 'activo_no_regreso';
 
     /** origen => [permiso para darlo de baja, ruta de su catálogo, ancla] */
+    /** Pases que todavía no salen: el equipo está «apartado» (A-2). */
+    public const PASES_POR_SALIR = [PaseSalida::PENDIENTE, PaseSalida::APROBADO];
+
     private const CATALOGO = [
         'llave' => ['llaves.eliminar', 'llaves.index', 'llave-'],
         'gafete' => ['gafetes.eliminar', 'gafetes.index', 'gafete-'],
@@ -147,6 +151,57 @@ class CustodiaActivos
     }
 
     /**
+     * Revisión Etapa 2 (A-2): pase PENDIENTE o APROBADO (aún no sale) que lleva
+     * al equipo. El equipo sigue DISPONIBLE, pero está «apartado».
+     */
+    public function paseApartado(Equipo $equipo): ?PaseSalida
+    {
+        return PaseSalidaArticulo::with('pase:id,folio,estado')->where('equipo_id', $equipo->id)
+            ->whereHas('pase', fn ($q) => $q->whereIn('estado', self::PASES_POR_SALIR))
+            ->latest('id')->first()?->pase;
+    }
+
+    /**
+     * Para la lista de Equipos (una consulta): equipo => pase que lo apartó.
+     *
+     * @param  iterable<int>  $ids
+     * @return array<int, PaseSalida>
+     */
+    public function apartadosEnLista(iterable $ids): array
+    {
+        $ids = collect($ids)->values();
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        return PaseSalidaArticulo::with('pase:id,folio,estado')->whereIn('equipo_id', $ids)
+            ->whereHas('pase', fn ($q) => $q->whereIn('estado', self::PASES_POR_SALIR))
+            ->orderBy('id')->get()->mapWithKeys(fn ($a) => [(int) $a->equipo_id => $a->pase])->all();
+    }
+
+    /**
+     * A-2: entregar en responsiva o dar de baja un equipo apartado por un pase
+     * avisa y pide el motivo (campo «motivo_apartado»). Devuelve el pase (si
+     * lo había y se dio motivo) para dejarlo en la auditoría.
+     *
+     * @param  string  $accion  «entregar», «dar de baja»
+     */
+    public function exigirMotivoSiApartado(Equipo $equipo, mixed $motivo, string $accion): ?PaseSalida
+    {
+        $pase = $this->paseApartado($equipo);
+        if ($pase === null) {
+            return null;
+        }
+        $motivo = is_string($motivo) ? trim($motivo) : '';
+        if ($motivo === '') {
+            throw ValidationException::withMessages(['motivo_apartado' => "El equipo {$equipo->numero_serie} está apartado para el pase {$pase->folio} ("
+                .$pase->insignia(false)[0]."). Si de todos modos se va a {$accion}, escribe el motivo: queda registrado y el pase no podrá salir hasta que el equipo vuelva a estar disponible."]);
+        }
+
+        return $pase;
+    }
+
+    /**
      * @return array{estado: string, texto: string, quien: ?string, donde: ?string, url: ?string}
      */
     private function resultado(string $estado, ?string $quien = null, ?string $donde = null, ?string $url = null): array
@@ -204,8 +259,13 @@ class CustodiaActivos
         }
         if ($activo instanceof Equipo) {
             $fila = EquipoResponsiva::with('responsiva')->where('equipo_id', $activo->id)->whereNull('devuelto_en')->latest('id')->first();
+            if ($fila?->responsiva !== null) {
+                return Receptor::propuesta($fila->responsiva->receptor());
+            }
+            // Revisión Etapa 2 (A-3): no regresó de un pase → el solicitante del pase
+            $pase = $this->paseDeEquipo($activo);
 
-            return Receptor::propuesta($fila?->responsiva?->receptor());
+            return Receptor::propuesta($pase !== null ? Colaborador::find($pase->colaborador_id) : null);
         }
 
         return null;

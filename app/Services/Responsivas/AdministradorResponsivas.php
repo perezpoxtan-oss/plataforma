@@ -11,6 +11,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\VoucherReposicion;
 use App\Services\Activos\CampanaActivos;
+use App\Services\Activos\CustodiaActivos;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Firmas\Firmas;
 use App\Services\Permisos\AdministradorRoles;
@@ -148,6 +149,13 @@ class AdministradorResponsivas
         $colaborador = $receptor instanceof Colaborador ? $receptor : null;
         $filas = $this->filasValidas($datos);
         $this->equiposDisponibles(array_keys($filas), $sede);
+        // Revisión Etapa 2 (A-2): un equipo apartado para un pase que aún no sale se entrega solo con motivo
+        $apartados = [];
+        foreach (Equipo::whereIn('id', array_keys($filas))->get() as $equipo) {
+            if (($pase = app(CustodiaActivos::class)->exigirMotivoSiApartado($equipo, $entrada['motivo_apartado'] ?? null, 'entregar')) !== null) {
+                $apartados[$equipo->numero_serie] = $pase->folio;
+            }
+        }
 
         // La firma se guarda al final de las validaciones; si algo falla después, se borra
         $firma = $this->firmas->guardar($datos['firma'] ?? null, 'responsivas', 'firma', 'la firma del colaborador');
@@ -182,7 +190,8 @@ class AdministradorResponsivas
             throw $e;
         }
 
-        $this->auditoria->auditar($actor, 'responsivas.creado', $responsiva, null, $this->foto($responsiva));
+        $this->auditoria->auditar($actor, 'responsivas.creado', $responsiva, null, $this->foto($responsiva)
+            + ($apartados !== [] ? ['apartados' => $apartados, 'motivo_apartado' => mb_substr(trim((string) $entrada['motivo_apartado']), 0, 250)] : []));
 
         return $responsiva;
     }

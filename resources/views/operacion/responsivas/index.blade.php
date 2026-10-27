@@ -316,6 +316,15 @@
                             <p class="campo-ayuda mt-2 mb-0 sin-equipos-sede" data-sin-equipos hidden>No hay equipos DISPONIBLES en esta sede.</p>
                         </div>
 
+                        @if ($errors->has('motivo_apartado'))
+                            {{-- Revisión Etapa 2 (A-2): el equipo va en un pase que aún no sale --}}
+                            <div class="aviso-excepcion-llave" role="alert">
+                                <p class="mb-2"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>{{ $errors->first('motivo_apartado') }}</p>
+                                <label class="campo-etiqueta" for="resguardo_motivo_apartado">Entregar de todos modos: motivo</label>
+                                <textarea id="resguardo_motivo_apartado" name="motivo_apartado" class="campo" rows="2" maxlength="250" required placeholder="Ej: el pase se va a cancelar; el radio se necesita hoy en el turno">{{ old('motivo_apartado') }}</textarea>
+                            </div>
+                        @endif
+
                         @include('componentes.firma', ['id' => 'firma_resguardo', 'nombre' => 'firma', 'etiqueta' => 'Firma Digital del Colaborador', 'requerido' => true,
                             'ayuda' => 'El colaborador firma con el dedo, un lápiz o el mouse. Con su firma acepta la responsabilidad de los equipos.'])
 

@@ -130,6 +130,22 @@
                                 @endif
                             </div>
                         @endif
+                        @if (isset($apartados[$e->id]))
+                            {{-- Revisión Etapa 2 (A-2): va en un pase que aún no sale --}}
+                            <div class="eq-resguardo eq-apartado"><i class="bi bi-bookmark-fill me-1" aria-hidden="true"></i>Apartado para el pase <strong>{{ $apartados[$e->id]->folio }}</strong> ({{ $apartados[$e->id]->insignia(false)[0] }})
+                                @if ($puedeVerPases)
+                                    <a href="{{ route('pases-salida.show', $apartados[$e->id]->id) }}" class="enlace-voucher-baja ms-1"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Ver pase</a>
+                                @endif
+                            </div>
+                        @endif
+                        @if ($e->estado === 'no_regreso' && ! $e->resguardoActual && $editable)
+                            {{-- Revisión Etapa 2 (A-1): apareció el equipo que no regresó de un pase --}}
+                            <form action="{{ route('equipos.recibir', $e->id) }}" method="POST" class="m-0 mt-1" data-confirmar="¿Ya regresó el equipo {{ $e->numero_serie }}? Vuelve a estar DISPONIBLE.">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="btn-no-regreso"><i class="bi bi-box-arrow-in-down me-1" aria-hidden="true"></i>Recibir</button>
+                            </form>
+                        @endif
                         @if ($voucherE && $puedeVerVouchers)
                             <a href="{{ route('vouchers.index', ['q' => $voucherE->folio]) }}#voucher-{{ $voucherE->id }}" class="enlace-voucher-baja"><i class="bi bi-receipt" aria-hidden="true"></i> Ver su voucher {{ $voucherE->folio }}</a>
                         @endif
@@ -356,6 +372,15 @@
 
                         {{-- Mejoras padrones: misma baja que Llaves y Gafetes (firma física o digital) --}}
                         @include('seguridad.vouchers._firmas-baja', ['id' => 'baja_equipo'])
+
+                        @if ($errors->has('motivo_apartado'))
+                            {{-- Revisión Etapa 2 (A-2): el equipo va en un pase que aún no sale --}}
+                            <div class="aviso-excepcion-llave" role="alert">
+                                <p class="mb-2"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>{{ $errors->first('motivo_apartado') }}</p>
+                                <label class="campo-etiqueta" for="baja_eq_motivo_apartado">Dar de baja de todos modos: motivo</label>
+                                <textarea id="baja_eq_motivo_apartado" name="motivo_apartado" class="campo" rows="2" maxlength="250" required placeholder="Ej: se dañó antes de salir; el pase se cancelará">{{ old('motivo_apartado') }}</textarea>
+                            </div>
+                        @endif
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>

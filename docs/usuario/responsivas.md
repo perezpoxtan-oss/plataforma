@@ -97,6 +97,7 @@ Hay **un solo botón**, **Recibir**, para todo: regresen todos los equipos o sol
 | «El equipo … sigue en la responsiva … sin recibir.» | Otro colaborador lo tiene. | Recíbelo primero en esa responsiva. |
 | «El equipo … es de otra sede…» | El equipo no es de la sede elegida. | Cambia la sede o el equipo. |
 | «Escanea el gafete o busca al colaborador responsable.» | Falta el responsable. | Escanea su gafete o busca a la persona o empresa externa. |
+| «El equipo … está apartado para el pase …» | El equipo va en un pase de salida que todavía no sale. | Elige otro equipo o escribe el motivo en **Entregar de todos modos** (el pase no podrá salir con él). |
 | «… tiene el acceso restringido: no se le puede entregar nada. Llama a tu supervisor.» | La persona o empresa externa tiene prohibido el acceso. | No le entregues el equipo. |
 | «Un mismo equipo está en dos filas. Quita la fila repetida.» | Escaneaste dos veces el mismo. | Quita una fila. |
 | «Marca al menos un equipo que regresa.» | Tocaste **Recibir marcados (OK)** sin marcar ninguno. | Marca los que te entregan. |

@@ -23,12 +23,12 @@ resumen: Inventario de llaves, tarjetas y accesos de cada sede, con lo que abren
 
 ## Cómo leer una ficha
 
-- Arriba, el **tipo de dispositivo** y si está **ACTIVA** o en **BAJA**; la casilla sirve para marcarla a imprimir.
+- Arriba, el **tipo de dispositivo** y su estado; la casilla sirve para marcarla a imprimir.
 - El **nombre** de la llave (por ejemplo `HDC-P1-AMA`) y lo que abre.
 - El color de la barra indica el tipo: **verde** electrónica, **rojo** metálica, **morado** biométrica, **ámbar** clave.
 - **Sede**, **Abre** (los lugares), departamento, ID externo y **Horarios** (sin horarios dice «24 horas (todos)»).
 - **Caduca:** verde si está vigente, ámbar si **vence pronto** (30 días o menos) y rojo si ya está **VENCIDA**.
-- Si está prestada: «EN USO por: … · desde …». Si no regresó, la etiqueta **NO REGRESÓ** y quién la tenía.
+- Arriba, un solo estado: **EN USO** (prestada: «EN USO por: … · desde …»), **NO REGRESÓ** (con quién la tenía), **ACTIVA** (en la caseta) o **DE BAJA**.
 
 ## Cómo encontrar una llave
 

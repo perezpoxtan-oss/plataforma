@@ -481,7 +481,7 @@ class CandidatosFase3Test extends TestCase
         $this->actingAs($this->rh)->get("/colaboradores/{$colaborador->id}/expediente/{$papel->id}")->assertNotFound();
 
         // El administrador ve además los resúmenes operativos; el agente (consulta de Colaboradores) no ve los documentos ni la ficha de candidato
-        $this->actingAs($this->admin)->get("/colaboradores/{$colaborador->id}/expediente")->assertOk()->assertSee('Accesos recientes')->assertSee('Llaves en uso')->assertSee('Pases de salida')->assertSee('Resguardos en campo');
+        $this->actingAs($this->admin)->get("/colaboradores/{$colaborador->id}/expediente")->assertOk()->assertSee('Accesos recientes')->assertSee('Llaves a su cargo')->assertSee('Pases de salida')->assertSee('Resguardos en campo');
         // Sin el permiso de datos personales la pestaña Expediente no aparece
         $this->actingAs($this->agente)->get("/colaboradores/{$colaborador->id}/expediente")->assertOk()->assertSee('id="pestana-datos"', false)
             ->assertDontSee('id="pestana-expediente"', false)->assertDontSee('Documentos de contratación')->assertDontSee('Recibido en papel el')->assertDontSee('Su paso por Candidatos');

@@ -449,7 +449,7 @@ class IntegridadBaseDatosTest extends TestCase
 
     public function test_los_check_existen_con_los_valores_de_las_constantes(): void
     {
-        foreach (CatalogoChecks::definiciones() as $tabla => $columnas) {
+        foreach (CatalogoChecks::todas() as $tabla => $columnas) {
             foreach ($columnas as $columna => $valores) {
                 sort($valores);
                 $this->assertSame($valores, Restricciones::valoresDelCheck($tabla, $columna),

@@ -123,13 +123,15 @@
                         <div class="d-flex justify-content-between align-items-start gap-2">
                             <span class="badge-tipo-llave tipo-{{ $l->tipo_dispositivo }}">{{ $l->etiquetaTipo() }}</span>
                             <div class="d-flex align-items-center gap-2">
-                                @if ($l->enUso())
+                                {{-- Revisión Etapa 2 (A-6): un solo estado en la ficha --}}
+                                @php $voucherL = $l->activo ? null : ($vouchersBaja[$l->id] ?? null); @endphp
+                                @if ($l->activo && $l->enUso())
                                     <span class="etiqueta-estado en-uso">EN USO</span>
                                 @elseif ($l->noRegreso())
                                     <span class="etiqueta-estado no-regreso">NO REGRESÓ</span>
+                                @else
+                                    <span class="etiqueta-estado {{ $l->activo ? 'activo' : 'inactivo' }}">{{ $l->activo ? 'ACTIVA' : 'DE BAJA' }}{{ $voucherL ? ' · '.mb_strtoupper(\App\Models\VoucherReposicion::MOTIVOS[$voucherL->motivo] ?? $voucherL->motivo) : '' }}</span>
                                 @endif
-                                @php $voucherL = $l->activo ? null : ($vouchersBaja[$l->id] ?? null); @endphp
-                                <span class="etiqueta-estado {{ $l->activo ? 'activo' : 'inactivo' }}">{{ $l->activo ? 'ACTIVA' : 'DE BAJA' }}{{ $voucherL ? ' · '.mb_strtoupper(\App\Models\VoucherReposicion::MOTIVOS[$voucherL->motivo] ?? $voucherL->motivo) : '' }}</span>
                                 @if ($imprimible)
                                     <label class="chk-llave" title="Marcar para imprimir su etiqueta">
                                         <input type="checkbox" name="llaves[]" value="{{ $l->id }}" form="formEtiquetasLlaves" data-chk-llave>
