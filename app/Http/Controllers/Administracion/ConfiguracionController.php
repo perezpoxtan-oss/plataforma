@@ -357,12 +357,6 @@ class ConfiguracionController extends Controller
         });
     }
 
-    // ------------------------------------------- Lost & Found: días de resguardo
-
-    /**
-     * Días de resguardo por clasificación (SEGCAT: lf_config_umbrales.php).
-     * Son de toda la empresa: hace falta «lost_found.configurar» con alcance de empresa.
-     */
     /** DD-17: frecuencia de revisión de los equipos de Protección Civil por tipo (empresa). */
     public function equiposPc(Request $request): RedirectResponse
     {
@@ -379,6 +373,12 @@ class ConfiguracionController extends Controller
         return redirect()->to(route('configuracion.index').'#cfg-equipos-pc')->with('ok', 'Frecuencia de revisión de los equipos guardada.');
     }
 
+    // ------------------------------------------- Lost & Found: días de resguardo
+
+    /**
+     * Días de resguardo por clasificación (SEGCAT: lf_config_umbrales.php).
+     * Son de toda la empresa: hace falta «lost_found.configurar» con alcance de empresa.
+     */
     public function lostFound(Request $request): RedirectResponse
     {
         Gate::authorize('lost_found.configurar');
