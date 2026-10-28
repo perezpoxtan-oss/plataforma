@@ -101,6 +101,7 @@ resumen: Consultar el manual de procedimientos, leer y firmar «Leí y entendí�
 
 ## Preguntas frecuentes
 
+- **¿Puedo hacer que un ticket o un recorrido muestre su procedimiento?** Sí. Tu administrador lo asocia en **Estructura → Configuración → Bitácora de novedades → Avanzado: «¿Qué hacer?»**. El ticket de esa categoría (por ejemplo Robo) y el punto del recorrido de ese equipo (por ejemplo Extintor) muestran **¿Qué hacer? Ver procedimiento**.
 - **¿Por qué me pide firmar otra vez?** Se publicó una versión nueva; algo cambió.
 - **¿Se puede firmar solo con la casilla?** Sí, si tu empresa lo elige en **Estructura → Configuración → Caseta y activos → Procedimientos** (ver [Configuración](configuracion.md)). Por omisión se pide la firma dibujada. En la pestaña **Acuses**, los que se hicieron solo con la casilla dicen **Casilla** en lugar de mostrar la firma.
 - **¿Cómo me entero de que hay algo por aprobar?** Por la campana, **Mis pendientes** y el correo; ya no hace falta entrar a buscar lo que está **En revisión**.

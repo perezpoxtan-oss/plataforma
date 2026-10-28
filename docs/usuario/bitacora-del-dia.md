@@ -20,7 +20,9 @@ resumen: Todo lo que pasó en un día en una sola línea de tiempo, para revisar
 
 ![Bitácora general del día](img/informes/bitacora.png)
 
-**Qué debes ver:** arriba, cuántos movimientos hubo de cada tipo y el total; abajo, la línea de tiempo con la hora, qué pasó (Entrada, Salida, Ticket abierto, Nota, Ticket cerrado, Préstamo, Devolución, Salió, Regresó…) y el detalle. Los tickets, pases, recorridos y movimientos de transporte se pueden tocar para abrir su ficha.
+**Qué debes ver:** arriba, cuántos movimientos hubo de cada tipo y el total; abajo, la línea de tiempo con la hora, qué pasó (Entrada, Salida, Ticket abierto, Nota, Ticket cerrado, Préstamo, Devolución, Salió, Regresó, Inicia evento, Termina evento…) y el detalle. Los tickets, pases, recorridos, eventos y movimientos de transporte se pueden tocar para abrir su ficha.
+
+Si tu empresa usa **Reservas** y puedes verlas, también salen los **eventos confirmados** del día: «Inicia evento — Salón Maya · Congreso de médicos · 100 personas (montaje desde 09:00)» y «Termina evento». Sirve para entregar el turno sabiendo qué eventos siguen.
 
 ## Cómo imprimirla para entregar el turno
 
