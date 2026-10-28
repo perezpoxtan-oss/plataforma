@@ -3779,8 +3779,51 @@ document.addEventListener('click', function (e) {
             casilla('identificacion_devuelta', '1', 'Le devolví su identificación (' + r.identificacion + ')');
         }
         if (gafetes.length) { caja.appendChild(elemento('p', 'campo-ayuda mb-0', 'Si no devolvió el gafete, desmárcalo: queda «No regresó» y se avisa a tu supervisor.')); }
-        caja.hidden = !gafetes.length && !r.identificacion;
+        // C-19 (DD-18): lo que trajo, con «Sale con lo mismo» ya marcada; desmarcada pide qué notó y se canaliza al supervisor
+        var articulos = r.articulos || [];
+        if (articulos.length) {
+            var bloque = elemento('div', 'articulos-salida', '');
+            bloque.appendChild(elemento('strong', '', 'Trajo:'));
+            var ul = document.createElement('ul');
+            articulos.forEach(function (t) { ul.appendChild(elemento('li', '', t)); });
+            bloque.appendChild(ul);
+            var h = document.createElement('input');
+            h.type = 'hidden'; h.name = 'articulos_revisados'; h.value = '1';
+            bloque.appendChild(h);
+            var l = document.createElement('label');
+            l.className = 'casilla-devolucion';
+            var c = document.createElement('input');
+            c.type = 'checkbox'; c.name = 'sale_con_lo_mismo'; c.value = '1'; c.checked = true; c.setAttribute('data-sale-con-lo-mismo', '');
+            l.appendChild(c);
+            l.appendChild(document.createTextNode(' Sale con lo mismo'));
+            bloque.appendChild(l);
+            var nota = document.createElement('input');
+            nota.type = 'text'; nota.name = 'articulos_nota'; nota.maxLength = 250; nota.className = 'campo nota-articulos mt-1';
+            nota.placeholder = '¿Qué notaste? (ej. lleva una escalera más)'; nota.setAttribute('aria-label', '¿Qué notaste?'); nota.hidden = true;
+            bloque.appendChild(nota);
+            bloque.appendChild(elemento('p', 'campo-ayuda mb-0', 'Si lleva algo de más o le falta algo, desmárcala: se avisa a tu supervisor para que lo revise.'));
+            caja.appendChild(bloque);
+        }
+        if (r.pase && r.pase.id) {
+            var pase = elemento('p', 'small mb-0 mt-1', 'Su empresa tiene el pase de salida ' + r.pase.folio + ' (' + r.pase.motivo + ') aprobado en esta sede. ');
+            if (r.pase.url) {
+                var a = document.createElement('a');
+                a.href = r.pase.url; a.textContent = 'Ver pase'; a.target = '_blank'; a.rel = 'noopener';
+                pase.appendChild(a);
+            }
+            var hp = document.createElement('input');
+            hp.type = 'hidden'; hp.name = 'pase_salida_id'; hp.value = String(r.pase.id);
+            pase.appendChild(hp);
+            caja.appendChild(pase);
+        }
+        caja.hidden = !gafetes.length && !r.identificacion && !articulos.length && !(r.pase && r.pase.id);
     }
+
+    document.addEventListener('change', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-sale-con-lo-mismo]')) { return; }
+        var nota = e.target.closest('.articulos-salida').querySelector('.nota-articulos');
+        if (nota) { nota.hidden = e.target.checked; if (!e.target.checked) { nota.focus(); } }
+    });
 
     function abrirDarSalida(r) {
         var d = document.getElementById('dialogoDarSalida');
@@ -10218,5 +10261,29 @@ document.addEventListener('click', function (e) {
         var d = b && b.dataset.dialogo ? document.getElementById(b.dataset.dialogo) : null;
         if (!d || !window.mostrarVinculoColaborador) { return; }
         setTimeout(function () { d.querySelectorAll('form').forEach(function (f) { if (f.querySelector('[data-campo-colaborador]')) { window.mostrarVinculoColaborador(f); } }); }, 0);
+    });
+})();
+
+/* Etapa 6 (C-19, DD-18): «¿Trae herramienta o equipo?» — agrega renglones hasta el máximo */
+(function () {
+    'use strict';
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-agregar-articulo]');
+        if (!b) { return; }
+        var caja = b.closest('[data-trae-equipo]');
+        var filas = caja && caja.querySelector('[data-filas-articulos]');
+        var plantilla = caja && caja.querySelector('[data-plantilla-articulo]');
+        if (!filas || !plantilla) { return; }
+        var maximo = parseInt(filas.getAttribute('data-maximo'), 10) || 10;
+        var n = filas.querySelectorAll('[data-fila-articulo]').length;
+        if (n >= maximo) { b.hidden = true; return; }
+        var html = plantilla.innerHTML.replace(/__i__/g, String(n));
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html.trim();
+        var fila = tmp.firstElementChild;
+        filas.appendChild(fila);
+        var primero = fila.querySelector('input');
+        if (primero) { primero.focus(); }
+        if (n + 1 >= maximo) { b.hidden = true; }
     });
 })();

@@ -400,6 +400,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/accesos/{acceso}/pedir-supervisor', [AccesoController::class, 'pedirSupervisor'])->whereNumber('acceso')->name('accesos.pedir-supervisor');
     Route::patch('/accesos/{acceso}/excepcion-agente', [AccesoController::class, 'excepcionAgente'])->whereNumber('acceso')->name('accesos.excepcion-agente');
     Route::patch('/accesos/{acceso}/revisar-excepcion', [AccesoController::class, 'revisarExcepcion'])->whereNumber('acceso')->name('accesos.revisar-excepcion');
+    Route::patch('/accesos/{acceso}/revisar-articulos', [AccesoController::class, 'revisarArticulos'])->whereNumber('acceso')->name('accesos.revisar-articulos');
     Route::patch('/accesos/{acceso}/salida', [AccesoController::class, 'salida'])->whereNumber('acceso')->name('accesos.salida');
     Route::patch('/accesos/{acceso}/zona', [AccesoController::class, 'zona'])->whereNumber('acceso')->name('accesos.zona');
     Route::post('/accesos/{acceso}/salida-temporal', [AccesoController::class, 'salidaTemporal'])->whereNumber('acceso')->name('accesos.salida-temporal');

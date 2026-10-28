@@ -161,6 +161,8 @@ class Acceso extends Model
             'gafete_no_regreso' => 'boolean', 'identificacion_devuelta' => 'boolean',
             // C-25: «Canalizar al supervisor» y la excepción del agente
             'supervisor_pedido_en' => 'datetime', 'excepcion_por_revisar' => 'boolean', 'excepcion_revisada_en' => 'datetime',
+            // C-19: lo que traía el proveedor y cómo salió
+            'articulos_por_revisar' => 'boolean', 'articulos_revisado_en' => 'datetime',
         ];
     }
 
@@ -235,6 +237,21 @@ class Acceso extends Model
     {
         return $this->belongsTo(self::class, 'acceso_origen_id');
     }
+
+    /** C-19 (DD-18): equipo o herramienta que trajo (lista corta y opcional). */
+    public function articulos(): HasMany
+    {
+        return $this->hasMany(ArticuloAcceso::class)->orderBy('id');
+    }
+
+    /** C-19: el pase de salida abierto de su empresa que la caseta tuvo a la vista al darle salida. */
+    public function paseSalida(): BelongsTo
+    {
+        return $this->belongsTo(PaseSalida::class);
+    }
+
+    /** C-19: «salió con lo mismo» o «distinto» (canalizado al supervisor). */
+    public const ARTICULOS_SALIDA = ['mismo' => 'Salió con lo mismo', 'distinto' => 'Salió con algo distinto'];
 
     public function acompanantes(): HasMany
     {

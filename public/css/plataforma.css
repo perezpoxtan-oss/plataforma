@@ -4856,3 +4856,12 @@ html.modo-noche .aviso-padron-acceso { background: rgba(245,158,11,0.12); color:
 .eventos-hoy > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 700; list-style: none; }
 .eventos-hoy-lista { list-style: none; margin: 0 0 0.25rem; padding: 0; font-size: 0.9rem; }
 .eventos-hoy-lista li { padding: 0.3rem 0; border-top: 1px solid var(--borde); overflow-wrap: anywhere; }
+.fila-articulo { display: grid; grid-template-columns: minmax(0, 1fr) 72px minmax(0, 0.8fr); gap: 0.4rem; margin-bottom: 0.4rem; }
+.fila-articulo .campo { margin-bottom: 0; }
+.btn-agregar-articulo { background: none; border: 1px dashed var(--borde); border-radius: 10px; min-height: 44px; padding: 0 0.9rem; color: var(--texto-suave); font-weight: 600; }
+.btn-agregar-articulo[hidden] { display: none; }
+.articulos-salida { border: 1px solid var(--borde); border-radius: 10px; padding: 0.6rem 0.75rem; margin-top: 0.5rem; }
+.articulos-salida ul { margin: 0.25rem 0 0.4rem; padding-left: 1.1rem; font-size: 0.9rem; }
+.articulos-salida .nota-articulos[hidden] { display: none; }
+.trae-equipo-ficha { font-size: 0.85rem; }
+@media (max-width: 420px) { .fila-articulo { grid-template-columns: minmax(0, 1fr) 64px; } .fila-articulo input:last-child { grid-column: 1 / -1; } }

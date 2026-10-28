@@ -21,7 +21,7 @@
             $hoy = app(\App\Support\HoraLocal::class)->formatear(now(), 'Y-m-d');
             $variasSedes = $sedesFiltro->count() > 1;
             $esHistorial = $pestana === 'historial';
-            $filtrosActivos = array_filter(\Illuminate\Support\Arr::only($filtros, ['q', 'tipo', 'sede', 'desde', 'hasta', 'rebasaron', 'excepciones']));
+            $filtrosActivos = array_filter(\Illuminate\Support\Arr::only($filtros, ['q', 'tipo', 'sede', 'desde', 'hasta', 'rebasaron', 'excepciones', 'articulos']));
             $base = array_filter(['q' => $filtros['q'] ?? null, 'tipo' => $filtros['tipo'] ?? null, 'sede' => $filtros['sede'] ?? null]);
             // C-25: una sola lectura de los ajustes para el reloj de permanencia de todas las tarjetas
             $empresaCaseta = \App\Models\Empresa::find(app(\App\Support\Tenancy\EmpresaDeTrabajo::class)->id(auth()->user()));
@@ -140,6 +140,9 @@
         @endif
         @if (! empty($filtros['excepciones']))
             <p class="small mb-2"><i class="bi bi-shield-exclamation me-1" aria-hidden="true"></i>Solo las aprobaciones por excepción del agente que esperan revisión (también en «Historial Finalizados»). <a href="{{ route('accesos.index', ['pestana' => $pestana] + $base) }}">Ver todos</a></p>
+        @endif
+        @if (! empty($filtros['articulos'])){{-- C-19 --}}
+            <p class="small mb-2"><i class="bi bi-tools me-1" aria-hidden="true"></i>Solo las salidas con algo distinto de lo que trajeron, que esperan revisión. <a href="{{ route('accesos.index', ['pestana' => $pestana] + $base) }}">Ver todos</a></p>
         @endif
 
         @if ($esHistorial && $lista->total() > 0)

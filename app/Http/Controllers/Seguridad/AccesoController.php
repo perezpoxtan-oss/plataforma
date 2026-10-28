@@ -9,6 +9,7 @@ use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Persona;
 use App\Models\Sede;
+use App\Services\Accesos\ArticulosDelProveedor;
 use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Accesos\MotivosVisita;
 use App\Services\Accesos\MovimientoNoPermitido;
@@ -197,6 +198,18 @@ class AccesoController extends Controller
         }, 'pendientes');
     }
 
+    /** C-19: «Atender» la salida con algo distinto que canalizó la caseta (queda revisada). */
+    public function revisarArticulos(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.aprobar');
+
+        return $this->mover($request, $acceso, 'accesos.aprobar', function (Acceso $a) use ($request) {
+            app(ArticulosDelProveedor::class)->revisar($request->user(), $a);
+
+            return "Listo: la salida de {$a->nombre} quedó revisada.";
+        }, 'historial');
+    }
+
     /** C-25: «Atender» la excepción que aprobó el agente (queda revisada). */
     public function revisarExcepcion(Request $request, int $acceso): RedirectResponse
     {
@@ -216,8 +229,11 @@ class AccesoController extends Controller
         return $this->mover($request, $acceso, 'accesos.editar', function (Acceso $a) use ($request) {
             // C-15: «¿Devolvió el gafete?» y «Le devolví su identificación» (ya marcadas en el diálogo)
             $noRegresaron = $this->movimientos->salida($request->user(), $a, $request->only(['gafetes_revisados', 'devolvio', 'identificacion_revisada', 'identificacion_devuelta']));
+            // C-19 (DD-18): «Sale con lo mismo» y el pase de su empresa; si no salió con lo mismo, se canaliza al supervisor
+            $canalizado = app(ArticulosDelProveedor::class)->alDarSalida($request->user(), $a, $request->only(['articulos_revisados', 'sale_con_lo_mismo', 'articulos_nota', 'pase_salida_id']));
 
             return "Salida de {$a->nombre} registrada correctamente."
+                .($canalizado ? ' No salió con lo mismo que trajo: ya se avisó a tu supervisor para que lo revise.' : '')
                 .($noRegresaron === [] ? '' : ' '.(count($noRegresaron) === 1 ? 'El gafete '.$noRegresaron[0].' quedó' : 'Los gafetes '.implode(', ', $noRegresaron).' quedaron')
                     .' como «No regresó» y ya no se prestará; se avisó a tu supervisor para darlo de baja con voucher. Si lo devuelven, recíbelo en Gafetes.');
         });
@@ -496,6 +512,7 @@ class AccesoController extends Controller
             // C-25: «Rebasaron su tiempo» y las excepciones del agente por revisar
             'rebasaron' => ['nullable', 'boolean'],
             'excepciones' => ['nullable', 'boolean'],
+            'articulos' => ['nullable', 'boolean'], // C-19: salidas con algo distinto por revisar
         ], [
             'desde.date_format' => 'Revisa la fecha «Desde».',
             'hasta.date_format' => 'Revisa la fecha «Hasta».',
