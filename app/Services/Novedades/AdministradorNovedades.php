@@ -627,9 +627,12 @@ class AdministradorNovedades
             'descripcion' => "Lesionado(s) durante siniestro de Protección Civil (ticket {$siniestro->folio()}) — {$detalle->num_lesionados} persona(s) reportada(s).",
             'origen_novedad_id' => $siniestro->id,
         ]);
+        // C-24 (D-04): hereda a quien se canalizó el siniestro (o a quien lo documenta) y lleva su reloj
+        $accidente->asignado_a = $siniestro->asignado_a ?? $actor->id;
         $accidente->numero = $this->siguienteNumero();
         $accidente->save();
         $detalle->forceFill(['accidente_novedad_id' => $accidente->id])->save();
+        app(AvisosNovedades::class)->canalizado($accidente->setRelation('sede', $siniestro->sede), $actor);
 
         $this->anotar($siniestro, $actor, "Se abrió el ticket de Accidente {$accidente->folio()} para documentar a los lesionados.", 'sistema');
         $this->anotar($accidente, $actor, "Ticket abierto automáticamente desde el Siniestro de Protección Civil {$siniestro->folio()}.", 'sistema');

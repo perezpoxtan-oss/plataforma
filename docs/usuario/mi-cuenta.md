@@ -114,7 +114,7 @@ Si apruebas visitas, pases de salida, reservas o entrevistas y vas a estar fuera
 
 ![Mis avisos](img/menus/mis-avisos.png)
 
-**Qué debes ver:** «Listo: silenciaste N aviso(s). Lo que espera tu respuesta sigue apareciendo en «Mis pendientes».» Los avisos de tu propia cuenta (por ejemplo, «tu contraseña cambió») siempre llegan. Si tu empresa apagó un aviso para todos en Configuración, no te llega aunque lo tengas marcado.
+**Qué debes ver:** «Listo: silenciaste N aviso(s). Lo que espera tu respuesta sigue apareciendo en «Mis pendientes».» Los avisos de tu propia cuenta (por ejemplo, «tu contraseña cambió») siempre llegan. Tampoco se pueden silenciar los que dicen **(siempre llega)**: el aviso de algo que tardó y pasó a ti como suplente, la aprobación por excepción del agente y cualquier aviso que espera tu respuesta y no tiene renglón en Mis pendientes (ver [Reloj y suplente](reloj-y-suplente.md)). Si tu empresa apagó un aviso para todos en Configuración, no te llega aunque lo tengas marcado.
 
 ## Cómo activar los avisos en este navegador
 

@@ -118,6 +118,10 @@ class LectorAuditoria
         'ajustes_actualizados' => 'Cambio de firmas en caseta y rechazo',
         'responsables' => 'Cambio de responsables', 'delegacion_creada' => 'Alta de delegación', 'delegacion_cancelada' => 'Cancelación de delegación',
         'recordatorio' => 'Recordatorio por tardanza', 'escalada' => 'Escalamiento al suplente o jefe',
+        // Etapa 4 (C-22, C-25): reloj y suplente, caseta de noche
+        'suplente' => 'Paso al suplente por tardanza', 'relojes' => 'Cambio de «Reloj y suplente»',
+        'supervisor_pedido' => 'Pedido al supervisor desde la caseta', 'autorizado_excepcion_agente' => 'Aprobación por excepción del agente',
+        'excepcion_revisada' => 'Revisión de la excepción del agente',
         // Movimientos (accesos, pases de salida, préstamos y resguardos)
         'salida' => 'Salida', 'salida_acompanante' => 'Salida de acompañante', 'salida_temporal' => 'Salida temporal',
         'salida_temporal_acompanante' => 'Salida temporal de acompañante', 'regreso' => 'Regreso', 'regreso_acompanante' => 'Regreso de acompañante',
@@ -216,6 +220,7 @@ class LectorAuditoria
         'suscripciones' => 'Suscripciones',
         'cuenta' => 'Mi cuenta',
         'privacidad' => 'Privacidad',
+        'relojes' => 'Reloj y suplente',
     ];
 
     /** Qué es cada registro y cómo se llama. */

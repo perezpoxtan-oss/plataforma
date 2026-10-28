@@ -275,12 +275,12 @@ class MejorasActivosTest extends TestCase
 
         $llave = $this->llave('HDC-101');
         $this->prestamo($llave, $this->colaborador('1005'), '-30 hours');
-        $this->actingAs($this->admin)->get('/prestamo-llaves')->assertOk()->assertDontSee('reloj-llave')->assertDontSee('semaforo-');
+        // Etapa 4 (DD-10): el semáforo de llaves viene encendido de fábrica (12 h y 24 h); lo demás sigue como el original
+        $this->actingAs($this->admin)->get('/prestamo-llaves')->assertOk()->assertSee('reloj-llave', false);
         $this->responsiva([$this->equipo('RAD-1')]);
         $this->viajar('2026-10-07 15:00:00');
         $this->actingAs($this->admin)->get('/responsivas')->assertOk()->assertDontSee('reloj-turno')->assertDontSee('Debe regresar');
-        $this->artisan('plataforma:activos-pendientes')->assertSuccessful()->expectsOutputToContain('Llaves fuera de tiempo avisadas: 0. Responsivas con equipos de turno sin regresar avisadas: 0.');
-        $this->assertSame([], $this->avisos($this->agente, 'llave_fuera'));
+        $this->artisan('plataforma:activos-pendientes')->assertSuccessful()->expectsOutputToContain('Llaves fuera de tiempo avisadas: 1. Responsivas con equipos de turno sin regresar avisadas: 0.');
     }
 
     public function test_guardar_ajustes_valida_audita_y_solo_guarda_lo_distinto(): void

@@ -24,13 +24,19 @@ use Illuminate\Support\Facades\Cache;
  *    reabrir casos en la sede (jefe de seguridad) (turno_escalado_en).
  *
  * Un aviso por nivel, nunca repetido. Sin turnos configurados en la sede se
- * avisa al marcarlo y no hay hora límite (no hay de dónde sacarla). Lo corre
+ * avisa al marcarlo y se escala a las HORAS_SIN_TURNOS (C-24, D-05). Lo corre
  * la tarea programada plataforma:novedades-pendientes (en proceso, sin exec)
  * y, por si el cron no corre, la lista de la bitácora al pintarse (a lo mucho
  * una vez por minuto por empresa).
  */
 class TurnosNovedades
 {
+    /**
+     * C-24 (D-05): sin turnos en la sede, el pendiente se escala al jefe de
+     * seguridad tras este plazo fijo (lo que dura un turno de 8 h).
+     */
+    public const HORAS_SIN_TURNOS = 8;
+
     public function __construct(
         private readonly AvisosNovedades $avisos,
         private readonly Tenant $tenant,
@@ -111,10 +117,12 @@ class TurnosNovedades
                     $this->auditar($novedad, 'novedades.turno_avisado', ['turno' => $turno['nombre'] ?? null, 'avisados' => $avisados]);
                     $cuenta['avisos']++;
                 }
-                if ($turno !== null && $novedad->turno_avisado_en !== null && $ahora->greaterThanOrEqualTo($turno['fin'])) {
-                    $avisados = $this->avisos->finDeTurno($novedad, $turno['nombre']);
+                // C-24 (D-05): sin turnos, un plazo fijo desde que se marcó
+                $fin = $turno['fin'] ?? CarbonImmutable::instance($novedad->pendiente_turno_en)->addHours(self::HORAS_SIN_TURNOS);
+                if ($novedad->turno_avisado_en !== null && $ahora->greaterThanOrEqualTo($fin)) {
+                    $avisados = $this->avisos->finDeTurno($novedad, $turno['nombre'] ?? null);
                     $novedad->forceFill(['turno_escalado_en' => now()])->saveQuietly();
-                    $this->auditar($novedad, 'novedades.turno_escalado', ['turno' => $turno['nombre'], 'avisados' => $avisados]);
+                    $this->auditar($novedad, 'novedades.turno_escalado', ['turno' => $turno['nombre'] ?? null, 'avisados' => $avisados] + ($turno === null ? ['plazo_horas' => self::HORAS_SIN_TURNOS] : []));
                     $cuenta['escalamientos']++;
                 }
             }

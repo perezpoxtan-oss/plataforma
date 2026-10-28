@@ -106,6 +106,9 @@ final class InventarioDatosPersonales
             'conservacion' => 'Se conserva como comprobante del resguardo; para una persona externa, ARCO borra su firma (su nombre se quita en el Padrón). Colaboradores: '.self::LABORAL],
         'vouchers_reposicion' => ['trato' => 'arco', 'tipo' => 'voucher', 'columnas' => ['firma_modo', 'firma_seguridad', 'firma_responsable', 'responsable_tipo', 'responsable_id'],
             'conservacion' => 'Se conserva como comprobante del cobro; para una persona externa, ARCO borra su firma y quita su nombre de «¿Cómo pasó?». Colaboradores: '.self::LABORAL],
+        // Etapa 4 (C-24): quién de la caseta reportó un equipo faltante que no podía dar de baja
+        'equipos_responsiva' => ['trato' => 'laboral', 'columnas' => ['faltante_reportado_en', 'faltante_reportado_por', 'faltante_nota'],
+            'conservacion' => 'Cuenta del personal que reportó el faltante y su nota: se conserva con la responsiva. '.self::LABORAL],
         'importaciones' => ['trato' => 'laboral', 'columnas' => ['archivo_nombre'],
             'conservacion' => 'Archivo de importación de colaboradores y padrones: se conserva para revisar lo importado; lo importado vive en su padrón, que sí alcanza ARCO.'],
 

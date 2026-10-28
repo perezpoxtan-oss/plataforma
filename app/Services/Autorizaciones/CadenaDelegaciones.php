@@ -5,6 +5,7 @@ namespace App\Services\Autorizaciones;
 use App\Models\Delegacion;
 use App\Models\User;
 use App\Support\Tenancy\Tenant;
+use Illuminate\Container\Attributes\Scoped;
 
 /**
  * C-12 · «Delegar mis aprobaciones» en cadena (revisión de la Etapa 3a).
@@ -20,8 +21,11 @@ use App\Support\Tenancy\Tenant;
  *    disponible: lo de cada quien se queda con su titular (nada se pierde).
  *    Delegaciones::crear() impide cerrar bucles nuevos.
  *
- * Una lectura de delegaciones por instancia (la empresa la fija el Tenant).
+ * Una lectura de delegaciones por petición: la instancia es de alcance de
+ * petición (#[Scoped], revisión de la Etapa 4) y la comparten todos los
+ * módulos; su memoria se renueva si cambia la empresa o el minuto.
  */
+#[Scoped]
 class CadenaDelegaciones
 {
     private ?string $llave = null;
@@ -34,6 +38,12 @@ class CadenaDelegaciones
 
     /** @var array<int, list<int>> */
     private array $cadenas = [];
+
+    /** Se vuelve a leer (una delegación se creó, se canceló o terminó en esta misma petición). */
+    public function olvidar(): void
+    {
+        [$this->llave, $this->mapa, $this->usuarios, $this->cadenas] = [null, null, [], []];
+    }
 
     /** @return array<int, int> titular => delegado (activas, con delegado activo; la más reciente gana) */
     public function mapa(): array

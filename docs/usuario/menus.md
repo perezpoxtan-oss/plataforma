@@ -75,6 +75,8 @@ Junto a la campana hay un botón amarillo **Mis pendientes** con un número: es 
 
 ![Inicio con lo que espera tu respuesta](img/inicio/inicio-pendientes.png)
 
+**Colores:** cada renglón dice cuántas cosas te esperan; **ámbar** significa que ya pasó la hora del recordatorio y **rojo** que ya pasó a un suplente. Ver [Reloj y suplente](reloj-y-suplente.md).
+
 ## Cómo revisar la campana (avisos)
 
 1. Toca la **campana**. El número rojo dice cuántos avisos no has leído.

@@ -73,7 +73,7 @@ class ConfiguracionSeccionesTest extends TestCase
             $this->assertStringContainsString($enlace, $html);
         }
         // Cada ajuste dice su valor original; sin cambios no hay nada que restablecer
-        $this->assertStringContainsString('Valor original: 24 y 72 horas.', $html);
+        $this->assertStringContainsString('Valor original: 24 y 72 horas, encendido.', $html); // C-22: «Reloj y suplente»
         $this->assertStringContainsString('Valor original: 3 días.', $html);
         $this->assertStringNotContainsString('name="ajuste" value="vobo"', $html);
     }

@@ -14,6 +14,7 @@ use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Accesos\MotivosVisita;
 use App\Services\Accesos\MovimientoNoPermitido;
 use App\Services\Accesos\MovimientosAccesos;
+use App\Services\Accesos\NocheSinSupervisor;
 use App\Services\Accesos\RegistroAccesos;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Autorizaciones\Escalamiento;
@@ -173,6 +174,42 @@ class AccesoController extends Controller
             // Solo si de verdad se avisó a alguien (un departamento sin responsable no tiene a quién)
             return "Autorizado por excepción — {$a->nombre} ya puede ingresar ({$motivo}).".($excepciones->seAviso ? ' Avisamos al responsable del departamento.' : '');
         }, 'pendientes');
+    }
+
+    /** C-25: «Canalizar al supervisor» desde la tarjeta pendiente (un toque). */
+    public function pedirSupervisor(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.crear');
+
+        return $this->mover($request, $acceso, 'accesos.crear', function (Acceso $a) use ($request) {
+            app(NocheSinSupervisor::class)->pedir($request->user(), $a);
+
+            return "Le avisamos al supervisor: {$a->nombre} espera su autorización. Si nadie responde, pasa al jefe de seguridad.";
+        }, 'pendientes');
+    }
+
+    /** C-25 (DD-13): el agente aprueba por excepción si nadie respondió y la empresa lo permite (motivo y foto). */
+    public function excepcionAgente(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.crear');
+
+        return $this->mover($request, $acceso, 'accesos.crear', function (Acceso $a) use ($request) {
+            app(NocheSinSupervisor::class)->aprobarAgente($request->user(), $a, $request->input('motivo_agente'), $request->file('foto_agente'));
+
+            return "Aprobado por excepción — {$a->nombre} ya puede ingresar. Avisamos al supervisor y al jefe de seguridad.";
+        }, 'pendientes');
+    }
+
+    /** C-25: «Atender» la excepción que aprobó el agente (queda revisada). */
+    public function revisarExcepcion(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.aprobar');
+
+        return $this->mover($request, $acceso, 'accesos.aprobar', function (Acceso $a) use ($request) {
+            app(NocheSinSupervisor::class)->revisar($request->user(), $a);
+
+            return "Listo: la excepción de {$a->nombre} quedó revisada.";
+        });
     }
 
     public function salida(Request $request, int $acceso): RedirectResponse
@@ -442,6 +479,9 @@ class AccesoController extends Controller
             'sede' => ['nullable', 'integer'],
             'desde' => ['nullable', 'date_format:Y-m-d'],
             'hasta' => ['nullable', 'date_format:Y-m-d'],
+            // C-25: «Rebasaron su tiempo» y las excepciones del agente por revisar
+            'rebasaron' => ['nullable', 'boolean'],
+            'excepciones' => ['nullable', 'boolean'],
         ], [
             'desde.date_format' => 'Revisa la fecha «Desde».',
             'hasta.date_format' => 'Revisa la fecha «Hasta».',

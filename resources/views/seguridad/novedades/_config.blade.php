@@ -42,12 +42,27 @@
             @endforeach
         </select>
         <p class="campo-ayuda mt-0">«Mantenimiento de equipo PC» evita que un extintor despresurizado parezca una emergencia real. Los tickets que ya existen no cambian. <span class="valor-original">Valor original: Siniestro Protección Civil.</span></p>
+        {{-- C-24 (D-04): reloj de los tickets canalizados por categoría --}}
+        @php $horasReloj = $ajustesNov->relojHoras($empresa); @endphp
+        <fieldset class="mt-3">
+            <legend class="campo-etiqueta">Reloj de los tickets canalizados (horas hasta el recordatorio)</legend>
+            <div class="campo-grupo">
+                @foreach (['accidente' => 'Accidente', 'robo' => 'Robo', 'otras' => 'Las demás categorías'] as $claveReloj => $textoReloj)
+                    <div class="flex-fill">
+                        <label class="campo-etiqueta" for="nov_reloj_{{ $claveReloj }}">{{ $textoReloj }}</label>
+                        <div class="d-flex align-items-center gap-2"><input type="number" id="nov_reloj_{{ $claveReloj }}" name="reloj_horas[{{ $claveReloj }}]" class="campo campo-horas-caseta" min="1" max="{{ \App\Services\Novedades\AjustesNovedades::RELOJ_MAX_HORAS }}" inputmode="numeric" value="{{ old('reloj_horas.'.$claveReloj, $horasReloj[$claveReloj]) }}" @disabled(! $puedeEditar)><span class="small text-muted">h</span></div>
+                        @error('reloj_horas.'.$claveReloj)<p class="text-danger small mb-1">{{ $message }}</p>@enderror
+                    </div>
+                @endforeach
+            </div>
+            <p class="campo-ayuda mt-0">El ticket muestra cuánto lleva con la persona canalizada y cambia de color. A esas horas se le recuerda; al triple pasa al jefe de seguridad de la sede. <span class="valor-original">Valor original: Accidente 2 h, Robo 4 h y las demás 24 h.</span></p>
+        </fieldset>
         @if ($puedeEditar)
             <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar ajustes de la bitácora</button>
         @endif
     </form>
     {{-- Configuración por secciones: «Restablecer valor original» (Novedades y Siniestro Protección Civil) --}}
-    @if ($puedeEditar && ($ajustesNov->nombrePropio($empresa->id) || $categoriaActual !== \App\Services\Novedades\AjustesNovedades::CATEGORIA_HALLAZGO_OMISION))
-        @include('administracion.configuracion._restablecer', ['ajuste' => 'novedades', 'que' => 'el nombre del módulo y la categoría del hallazgo'])
+    @if ($puedeEditar && ($ajustesNov->nombrePropio($empresa->id) || $categoriaActual !== \App\Services\Novedades\AjustesNovedades::CATEGORIA_HALLAZGO_OMISION || $horasReloj !== \App\Services\Novedades\AjustesNovedades::RELOJ_HORAS))
+        @include('administracion.configuracion._restablecer', ['ajuste' => 'novedades', 'que' => 'el nombre del módulo, la categoría del hallazgo y el reloj de los tickets'])
     @endif
 </section>

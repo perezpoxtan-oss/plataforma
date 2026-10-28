@@ -22,8 +22,54 @@ use Illuminate\Support\Str;
  */
 class PreferenciasAvisos
 {
-    /** Avisos de la propia cuenta que no se pueden silenciar (seguridad). */
-    public const NO_SILENCIABLES = ['cuenta_contrasena', 'cuenta_dos_pasos', 'plataforma_superadmin'];
+    /**
+     * Avisos que no se pueden silenciar: los de la propia cuenta (seguridad),
+     * el aviso al suplente de lo que tardó y la aprobación por excepción del
+     * agente (C-22, C-25: llegan a quien quizá no lo tiene en Mis pendientes).
+     */
+    public const NO_SILENCIABLES = ['cuenta_contrasena', 'cuenta_dos_pasos', 'plataforma_superadmin', 'reloj_escalado', 'excepcion_agente'];
+
+    /**
+     * C-22 (DD-10, E-08): avisos que esperan una acción y su renglón de Mis
+     * pendientes. Silenciar uno de estos no borra nada: el asunto sigue en Mis
+     * pendientes. Un aviso de nivel «alerta» que no esté aquí no se puede
+     * silenciar (sería el único lugar donde aparece).
+     */
+    public const RENGLON_DE_TIPO = [
+        'autorizacion_visita' => 'autorizaciones', 'autorizacion_candidato' => 'autorizaciones', 'autorizacion_recepcion' => 'recepcion',
+        'autorizacion_escalada' => 'autorizaciones', 'autorizacion_excepcion' => 'autorizaciones', 'cobertura_perdida' => 'cobertura',
+        'acceso_sin_cobertura' => 'esperan_supervisor', 'excepcion_pedida' => 'esperan_supervisor', 'cuenta_sede' => 'cuentas',
+        'entrevista_asignada' => 'entrevistas', 'entrevista_llegada' => 'entrevistas', 'plazo_candidato' => 'candidatos', 'caducidad_candidato' => 'candidatos',
+        'candidato_postulacion' => 'solicitudes', 'vacante_propuesta' => 'vacantes_propuestas', 'vacante_cubierta' => 'vacantes_cubiertas',
+        'cuenta_bloqueada' => 'cuentas', 'cuenta_desactivada' => 'cuentas', 'cuenta_solicitud' => 'cuentas',
+        'arco_solicitud' => 'arco', 'arco_plazo' => 'arco',
+        'pase_por_firmar' => 'pases_salida', 'pase_rechazado' => 'pases_salida', 'pase_vencido' => 'pases_vencidos',
+        'pase_firma_recordatorio' => 'pases_salida', 'pase_firma_escalada' => 'pases_salida',
+        'novedad_canalizada' => 'novedades_mias', 'novedad_turno' => 'novedades_turno', 'novedad_turno_escalada' => 'novedades_turno',
+        'recorrido_pc_hallazgo' => 'hallazgos_recorrido',
+        'vale_taxi_por_autorizar' => 'vales_taxi', 'procedimiento_revision' => 'procedimientos_aprobar', 'procedimiento_rechazado' => 'procedimientos_aprobar',
+        'llave_fuera' => 'llaves_fuera', 'equipo_turno' => 'equipos_turno', 'activo_no_regreso' => 'activos_no_regreso', 'baja_con_pendientes' => 'activos_no_regreso',
+        'faltante_por_recibir' => 'faltantes_responsivas',
+        'alta_por_verificar' => 'altas', 'alta_rechazada' => 'altas',
+        'solicitud_compra' => 'plataforma_solicitudes', 'cliente_por_revisar' => 'plataforma_clientes', 'suscripcion_aviso' => 'suscripcion',
+        'reserva_por_aprobar' => 'reservas', 'reserva_recordatorio' => 'reservas', 'reserva_escalada' => 'reservas', 'reserva_rechazada' => 'reservas',
+        'reserva_cambio' => 'reservas', 'reserva_orden' => 'reservas',
+        'reloj_recordatorio' => 'el renglón del asunto',
+    ];
+
+    /** Alertas que solo informan (no esperan una respuesta): se pueden silenciar. */
+    public const SOLO_INFORMAN = ['movimiento_sensible', 'delegacion_terminada']; // al terminar la delegación, lo suyo ya vuelve a su Mis pendientes
+
+    /** C-22: ¿este tipo de aviso NO se puede silenciar en «Mi cuenta»? */
+    public static function noSilenciable(string $tipo): bool
+    {
+        if (in_array($tipo, self::NO_SILENCIABLES, true)) {
+            return true;
+        }
+        $nivel = CentroNotificaciones::TIPOS[$tipo][1] ?? 'info';
+
+        return $nivel === 'alerta' && ! array_key_exists($tipo, self::RENGLON_DE_TIPO) && ! in_array($tipo, self::SOLO_INFORMAN, true);
+    }
 
     /** Tipo de la campana => [módulo para agrupar, qué avisa, permisos de quien lo recibe]. */
     public const CAMPANA = [
@@ -36,6 +82,11 @@ class PreferenciasAvisos
         // Etapa 3 (C-08)
         'cobertura_perdida' => ['Autorizaciones', 'Un departamento se quedó sin quien autorice en una sede', ['autorizaciones.configurar']],
         'acceso_sin_cobertura' => ['Bitácora de accesos', 'Una visita espera tu autorización porque su departamento no tiene quien autorice en la sede', ['accesos.aprobar']],
+        // Etapa 4 (C-22, C-25)
+        'excepcion_pedida' => ['Bitácora de accesos', 'La caseta te pide autorizar a alguien que espera', ['accesos.aprobar']],
+        'excepcion_agente' => ['Bitácora de accesos', 'El agente aprobó por excepción porque nadie respondió (siempre llega)', ['accesos.aprobar']],
+        'reloj_recordatorio' => ['Reloj y suplente', 'Recordatorio de algo que lleva tiempo esperando tu respuesta', []],
+        'reloj_escalado' => ['Reloj y suplente', 'Algo tardó y pasó a ti como suplente (siempre llega)', []],
         'autorizacion_respuesta' => ['Bitácora de accesos', 'Respondieron una autorización que pidió la caseta', ['accesos.ver']],
         'autorizacion_recepcion' => ['Bitácora de accesos', 'Recursos Humanos dice «Que pase» a quien espera en caseta', ['accesos.ver']],
         'candidato_llegada' => ['Recepción y candidatos', 'Llega un candidato a Recepción', ['candidatos.editar']],
@@ -46,6 +97,7 @@ class PreferenciasAvisos
         'candidato_postulacion' => ['Recepción y candidatos', 'Alguien se postuló por internet', ['candidatos.editar']],
         'vacante_propuesta' => ['Recepción y candidatos', 'Un jefe propuso una vacante', ['vacantes.editar']],
         'vacante_cubierta' => ['Recepción y candidatos', 'Una vacante quedó cubierta', ['vacantes.editar']],
+        'vacante_resultado' => ['Recepción y candidatos', 'Se publicó, cerró o eliminó una vacante que pediste', ['vacantes.crear']],
         'entrevista_asignada' => ['Mis entrevistas', 'Te canalizaron una entrevista', ['candidatos.evaluar']],
         'entrevista_cambio' => ['Mis entrevistas', 'Cambió o se canceló una entrevista', ['candidatos.evaluar']],
         'entrevista_llegada' => ['Mis entrevistas', 'Llegó el candidato a su entrevista', ['candidatos.evaluar']],
@@ -73,6 +125,8 @@ class PreferenciasAvisos
         'pase_firma_escalada' => ['Pases de salida', 'Una firma de pase de salida tardó y pasó al siguiente nivel', ['pases_salida.aprobar', 'pases_salida.configurar']],
         // Mejoras activos (ADR-0014)
         'vale_taxi_por_autorizar' => ['Bitácora de transporte', 'Un vale de taxi espera tu Vo.Bo.', ['transporte.aprobar']],
+        'vale_resultado' => ['Bitácora de transporte', 'Se aprobó o rechazó un vale de taxi que registraste', ['transporte.crear']],
+        'faltante_por_recibir' => ['Responsivas', 'La caseta reporta un equipo faltante que debes recibir', ['equipos.eliminar']],
         'procedimiento_revision' => ['Procedimientos', 'Un procedimiento se envió a revisión y espera tu aprobación', ['procedimientos.aprobar']],
         'procedimiento_aprobado' => ['Procedimientos', 'Se aprobó un procedimiento que enviaste a revisión', ['procedimientos.editar']],
         'procedimiento_rechazado' => ['Procedimientos', 'Pidieron cambios a un procedimiento que enviaste a revisión', ['procedimientos.editar']],
@@ -126,7 +180,7 @@ class PreferenciasAvisos
     public static function quienesLoReciben(iterable $usuarios, string $tipo): array
     {
         $ids = collect($usuarios)->map(fn ($id) => (int) $id)->filter()->unique()->values();
-        if ($ids->isEmpty() || in_array($tipo, self::NO_SILENCIABLES, true)) {
+        if ($ids->isEmpty() || self::noSilenciable($tipo)) {
             return $ids->all();
         }
 
@@ -210,7 +264,7 @@ class PreferenciasAvisos
             $recibir = array_keys(array_filter((array) ($marcados[$canal] ?? [])));
             $nuevos[$canal] = array_values(array_unique([
                 ...array_diff($antes[$canal], $mostrados),
-                ...array_diff($mostrados, $recibir, self::NO_SILENCIABLES),
+                ...array_values(array_filter(array_diff($mostrados, $recibir), fn ($t) => $canal !== 'campana' || ! self::noSilenciable((string) $t))),
             ]));
         }
         $usuario->forceFill(['preferencias_avisos' => $nuevos['campana'] === [] && $nuevos['correo'] === [] ? null : json_encode($nuevos)])->save();

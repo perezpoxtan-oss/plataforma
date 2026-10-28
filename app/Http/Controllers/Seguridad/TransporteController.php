@@ -200,6 +200,13 @@ class TransporteController extends Controller
             'ok', fn ($m) => 'Vale '.$m->folio().' autorizado (Vo.Bo.). Ya no se puede editar.');
     }
 
+    /** C-24 (D-08): «Rechazar» el Vo.Bo. del vale con motivo; el guardia se entera. */
+    public function rechazar(Request $request, int $movimiento): RedirectResponse
+    {
+        return $this->cambiarEstado($request, $movimiento, 'transporte.aprobar', fn (User $a, MovimientoTransporte $m) => $this->bitacora->rechazar($a, $m, $request->input('motivo_rechazo')),
+            'ok', fn ($m) => 'Vale '.$m->folio().' rechazado. Avisamos a quien lo registró.');
+    }
+
     // --------------------------------------------------------------- Impresos
 
     /**
@@ -505,7 +512,7 @@ class TransporteController extends Controller
             ->when($f['estado'] === 'vigentes', fn ($q) => $q->where('movimientos_transporte.anulado', false))
             ->when($f['estado'] === 'anulados', fn ($q) => $q->where('movimientos_transporte.anulado', true))
             ->when($f['estado'] === 'por_autorizar', fn ($q) => $q->where('movimientos_transporte.estatus', 'no_llego')
-                ->where('movimientos_transporte.anulado', false)->whereNull('movimientos_transporte.autorizado_en'))
+                ->where('movimientos_transporte.anulado', false)->whereNull('movimientos_transporte.autorizado_en')->whereNull('movimientos_transporte.rechazado_en'))
             ->when($f['q'] !== '', function ($q) use ($f) {
                 $comodin = '%'.addcslashes(mb_strtolower($f['q']), '%_\\').'%';
                 $placas = '%'.addcslashes(Vehiculo::normalizarPlacas($f['q']), '%_\\').'%';

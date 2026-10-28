@@ -14,10 +14,12 @@ use App\Services\Activos\CampanaActivos;
 use App\Services\Activos\CustodiaActivos;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Firmas\Firmas;
+use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
+use App\Services\Recepcion\Destinatarios;
 use App\Support\AjustesCaseta;
 use App\Support\EstadoActivo;
 use App\Support\Receptor;
@@ -274,6 +276,32 @@ class AdministradorResponsivas
      * @param  array<string, mixed>  $entrada  estado_recepcion, nota, generar_voucher, motivo, aplica_cobro, monto, firma_modo, firmas
      * @return array{estado: string, voucher: ?VoucherReposicion, cerrado: bool, faltan: int}
      */
+    /**
+     * C-24: el guardia reporta un equipo faltante que no puede dar de baja;
+     * le llega a quien da de baja equipos en la sede (una sola vez por equipo).
+     */
+    private function reportarFaltante(User $actor, Responsiva $responsiva, EquipoResponsiva $fila, ?string $nota): bool
+    {
+        if (EquipoResponsiva::whereKey($fila->id)->whereNull('faltante_reportado_en')->whereNull('devuelto_en')
+            ->update(['faltante_reportado_en' => now(), 'faltante_reportado_por' => $actor->id, 'faltante_nota' => $nota !== null ? mb_substr($nota, 0, 500) : null]) === 0) {
+            return false;
+        }
+        $equipo = Equipo::with('tipo:id,nombre')->find($fila->equipo_id);
+        $usuarios = app(Destinatarios::class)->conPermiso((int) $responsiva->empresa_id, 'equipos.eliminar', (int) $responsiva->sede_id)
+            ->reject(fn (User $u) => $u->id === $actor->id);
+        app(CentroNotificaciones::class)->avisar((int) $responsiva->empresa_id, $usuarios->pluck('id'), 'faltante_por_recibir', [
+            'titulo' => 'Equipo faltante por recibir: '.($equipo?->tipo?->nombre ?? 'equipo').' de la responsiva '.$responsiva->folio,
+            'texto' => $actor->name.' lo reporta faltante y su rol no puede darlo de baja con voucher. '.($nota ? 'Nota: '.$nota.'. ' : '').'Recíbelo como faltante desde Responsivas.',
+            'url' => route('responsivas.index').'#responsiva-'.$responsiva->id,
+            'referencia_tipo' => self::REFERENCIA_FALTANTE, 'referencia_id' => (int) $fila->id,
+            'acciones' => [['etiqueta' => 'Recibir', 'abrir' => true]],
+        ]);
+
+        return true;
+    }
+
+    public const REFERENCIA_FALTANTE = 'responsiva_faltante';
+
     public function recibirEquipo(User $actor, Responsiva $responsiva, EquipoResponsiva $fila, array $entrada, bool $puedeVoucher): array
     {
         if (! $responsiva->enCampo() || $fila->responsiva_id !== $responsiva->id) {
@@ -296,8 +324,10 @@ class AdministradorResponsivas
         $nota = isset($datos['nota']) ? trim((string) $datos['nota']) : null;
         $conVoucher = $estado === 'faltante' || ($estado === 'danado' && (bool) ($datos['generar_voucher'] ?? false));
         if ($conVoucher && ! $puedeVoucher) {
+            // C-24 (GC-09): el faltante que el guardia no puede dar de baja le llega al supervisor (campana y Mis pendientes)
+            $avisado = $estado === 'faltante' && $this->reportarFaltante($actor, $responsiva, $fila, $nota);
             throw ValidationException::withMessages(['generar_voucher' => 'Tu rol no puede dar de baja con voucher. '
-                .($estado === 'faltante' ? 'Pide a un supervisor que reciba este equipo faltante.' : 'Recíbelo como dañado sin voucher (queda EN MANTENIMIENTO).')]);
+                .($estado === 'faltante' ? ($avisado ? 'Ya le avisamos a tu supervisor para que reciba este equipo faltante.' : 'Tu supervisor ya tiene el aviso de este equipo faltante.') : 'Recíbelo como dañado sin voucher (queda EN MANTENIMIENTO).')]);
         }
         $antes = $this->foto($responsiva);
 
@@ -322,6 +352,7 @@ class AdministradorResponsivas
             }
             $fila->forceFill(['devuelto_en' => now(), 'estado_devolucion' => $final, 'nota_devolucion' => $nota,
                 'recibido_por' => $actor->id, 'voucher_id' => $voucher?->id])->save();
+            app(CentroNotificaciones::class)->resolver(self::REFERENCIA_FALTANTE, (int) $fila->id); // C-24: el supervisor ya lo recibió
 
             $faltan = $responsiva->equipos()->whereNull('devuelto_en')->count();
             if ($faltan === 0) {
@@ -475,10 +506,11 @@ class AdministradorResponsivas
      *
      * @return int responsivas recordadas
      */
-    public function recordatoriosTurno(): int
+    public function recordatoriosTurno(?int $soloEmpresa = null): int
     {
         $cuenta = 0;
-        foreach (Empresa::where('activo', true)->get(['id', 'preferencias']) as $empresa) {
+        // C-22: el motor «Reloj y suplente» lo corre por empresa al consultar la campana
+        foreach (Empresa::where('activo', true)->when($soloEmpresa !== null, fn ($q) => $q->whereKey($soloEmpresa))->get(['id', 'preferencias']) as $empresa) {
             $ajustes = AjustesCaseta::de($empresa);
             if ((int) $ajustes['responsivas_horas_turno'] === 0) {
                 continue;

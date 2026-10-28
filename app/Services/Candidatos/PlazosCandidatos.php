@@ -62,7 +62,7 @@ class PlazosCandidatos
     public const REFERENCIA_CADUCIDAD = 'candidato_caducidad';
 
     /** Renglones de Mis pendientes que llevan color por plazo. */
-    public const RENGLONES = ['solicitudes', 'recepcion', 'por_entrevistar', 'elegidos', 'entrevistas'];
+    public const RENGLONES = ['solicitudes', 'recepcion', 'sin_atender', 'por_entrevistar', 'elegidos', 'entrevistas'];
 
     /** Etapas en manos de RR. HH. («Por atender» y «Con RR. HH.», ADR-0010): mismo plazo por_atender_dias. */
     public const ETAPAS_RH = ['registrado', 'con_rh'];
@@ -422,6 +422,8 @@ class PlazosCandidatos
             $nivel($suyos()->where('autocaptura_pendiente', true)->whereNull('archivada_en'), 'autocaptura_en', fn ($x) => now()->subDays($p['solicitud_dias'] * $x), 'solicitudes');
             $ids = fn () => $suyos()->select('candidatos.id');
             $nivel(Postulacion::where('etapa', 'registrado')->whereIn('candidato_id', $ids()), 'updated_at', fn ($x) => now()->subDays($p['por_atender_dias'] * $x), 'recepcion');
+            // C-23 (E-07): «Candidatos sin atender» de cualquier día, con el mismo plazo
+            $nivel(Postulacion::whereIn('etapa', self::ETAPAS_RH)->whereNull('archivada_en')->whereIn('candidato_id', $ids()), 'updated_at', fn ($x) => now()->subDays($p['por_atender_dias'] * $x), 'sin_atender');
             $nivel(Postulacion::whereIn('etapa', Candidato::POR_ENTREVISTAR)->whereIn('candidato_id', $ids()), 'updated_at', fn ($x) => now()->subDays($p['por_atender_dias'] * $x), 'por_entrevistar');
             $nivel(Postulacion::where('etapa', 'elegido')->whereIn('candidato_id', $ids()), 'elegido_en', fn ($x) => now()->subDays($p['documentos_dias'] * $x), 'elegidos');
         }

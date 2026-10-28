@@ -21,8 +21,11 @@
             $hoy = app(\App\Support\HoraLocal::class)->formatear(now(), 'Y-m-d');
             $variasSedes = $sedesFiltro->count() > 1;
             $esHistorial = $pestana === 'historial';
-            $filtrosActivos = array_filter(\Illuminate\Support\Arr::only($filtros, ['q', 'tipo', 'sede', 'desde', 'hasta']));
+            $filtrosActivos = array_filter(\Illuminate\Support\Arr::only($filtros, ['q', 'tipo', 'sede', 'desde', 'hasta', 'rebasaron', 'excepciones']));
             $base = array_filter(['q' => $filtros['q'] ?? null, 'tipo' => $filtros['tipo'] ?? null, 'sede' => $filtros['sede'] ?? null]);
+            // C-25: una sola lectura de los ajustes para el reloj de permanencia de todas las tarjetas
+            $empresaCaseta = \App\Models\Empresa::find(app(\App\Support\Tenancy\EmpresaDeTrabajo::class)->id(auth()->user()));
+            $ajustesCaseta = \App\Support\AjustesCaseta::de($empresaCaseta);
         @endphp
 
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
@@ -105,13 +108,24 @@
             <a href="{{ route('accesos.index', $base) }}" class="accesos-pestana {{ $pestana === 'en_sitio' ? 'activa' : '' }}" @if ($pestana === 'en_sitio') aria-current="page" @endif>
                 Gente en Sitio ({{ $conteos['en_sitio'] }})
             </a>
-            <a href="{{ route('accesos.index', ['pestana' => 'historial'] + $base) }}" class="accesos-pestana {{ $esHistorial ? 'activa' : '' }}" @if ($esHistorial) aria-current="page" @endif>
+            <a href="{{ route('accesos.index', ['pestana' => 'historial'] + $base + (empty($filtros['excepciones']) ? [] : ['excepciones' => 1])) }}" class="accesos-pestana {{ $esHistorial ? 'activa' : '' }}" @if ($esHistorial) aria-current="page" @endif>
                 Historial Finalizados
             </a>
             @if ($esHistorial && $puede['exportar'] && $lista->total() > 0)
                 <a href="{{ route('accesos.exportar', request()->except(['pestana', 'page'])) }}" class="btn-exportar-accesos"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
             @endif
         </nav>
+
+        {{-- C-25: «Rebasaron su tiempo» (para el cambio de turno) y las excepciones del agente por revisar --}}
+        @if ($pestana === 'en_sitio')
+            <nav class="filtros-rapidos-accesos mb-2" aria-label="Filtro rápido de gente en sitio">
+                <a href="{{ route('accesos.index', $base) }}" class="btn-pill-tipo {{ empty($filtros['rebasaron']) && empty($filtros['excepciones']) ? 'active' : '' }}">Todos</a>
+                <a href="{{ route('accesos.index', $base + ['rebasaron' => 1]) }}" class="btn-pill-tipo {{ ! empty($filtros['rebasaron']) ? 'active' : '' }}"><i class="bi bi-clock-history me-1" aria-hidden="true"></i>Rebasaron su tiempo</a>
+            </nav>
+        @endif
+        @if (! empty($filtros['excepciones']))
+            <p class="small mb-2"><i class="bi bi-shield-exclamation me-1" aria-hidden="true"></i>Solo las aprobaciones por excepción del agente que esperan revisión (también en «Historial Finalizados»). <a href="{{ route('accesos.index', ['pestana' => $pestana] + $base) }}">Ver todos</a></p>
+        @endif
 
         @if ($esHistorial && $lista->total() > 0)
             <p class="small text-muted mb-2">{{ number_format($lista->total()) }} registro(s) finalizado(s){{ $filtrosActivos ? ' con esos filtros' : '' }}.</p>

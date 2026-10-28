@@ -486,10 +486,11 @@ class AdministradorPrestamosLlaves
      *
      * @return int préstamos recordados
      */
-    public function recordatorios(): int
+    public function recordatorios(?int $soloEmpresa = null): int
     {
         $cuenta = 0;
-        foreach (Empresa::where('activo', true)->get(['id', 'preferencias']) as $empresa) {
+        // C-22: el motor «Reloj y suplente» lo corre por empresa al consultar la campana
+        foreach (Empresa::where('activo', true)->when($soloEmpresa !== null, fn ($q) => $q->whereKey($soloEmpresa))->get(['id', 'preferencias']) as $empresa) {
             $ajustes = AjustesCaseta::de($empresa);
             if (! self::conSemaforo($ajustes)) {
                 continue;

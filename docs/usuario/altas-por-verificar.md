@@ -65,6 +65,8 @@ En las ventanas de registro rápido (por ejemplo **Registro Rápido de Persona**
 
 3. Si prefieres revisar desde el padrón, la píldora **Por verificar** del padrón muestra solo lo que falta.
 
+**Reloj y suplente:** el renglón de **Mis pendientes** se pone ámbar a las 24 horas (y te llega un recordatorio) y rojo a las 72, cuando pasa a quien verifica ese padrón en toda la empresa (o al administrador). Ver [Reloj y suplente](reloj-y-suplente.md).
+
 ![Vehículos pendientes](img/altas-por-verificar/02-vehiculos-pendientes-de-verificar.png)
 
 **Qué debes ver:** las fichas con el botón amarillo **Verificar**. Además llega un **correo** a quien puede verificar; se puede apagar en [Configuración](configuracion.md) → avisos por correo.

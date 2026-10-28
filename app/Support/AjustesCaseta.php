@@ -16,8 +16,8 @@ use Illuminate\Validation\ValidationException;
  *    taxi (ambas = original; guardia; taxista; ninguna). Lo que no se firma en
  *    pantalla se firma a mano en el vale impreso.
  *  - llaves_horas_aviso / llaves_horas_escalar: semáforo de llaves fuera
- *    (ámbar y recordatorio a la caseta; rojo y aviso a quien anula). 0 = sin
- *    semáforo (original).
+ *    (ámbar y recordatorio a la caseta; rojo y aviso a quien anula). De
+ *    fábrica 12 h y 24 h (C-24, DD-10); 0 = sin semáforo.
  *  - responsivas_horas_turno / responsivas_horas_escalar: hora esperada de
  *    regreso de los equipos «Turno» (horas después de la entrega) y horas
  *    extra para escalar. 0 = sin hora esperada (original).
@@ -35,6 +35,12 @@ use Illuminate\Validation\ValidationException;
  *    caseta ('' = ninguno, de fábrica; C-04).
  *  - visita_a_huesped: si el hotel ofrece «Visita a huésped» (si, de
  *    fábrica; DD-23). Configuración → Caseta y accesos.
+ *  - permanencia_visita_horas / permanencia_proveedor_horas /
+ *    daypass_cierre_hora / salida_temporal_horas (C-25, B-05): reloj de
+ *    permanencia por tipo (visita 4 h, proveedor y contratista 8 h, daypass
+ *    hasta las 22:00 del día) y de la salida temporal (2 h). 0 = apagado.
+ *  - agente_excepcion (C-25, DD-13): el agente puede aprobar por excepción
+ *    si nadie responde, con motivo y foto (no, de fábrica).
  */
 class AjustesCaseta
 {
@@ -74,8 +80,15 @@ class AjustesCaseta
         'no' => 'No, no la ofrezcas',
     ];
 
+    /** C-25 (DD-13): ¿el agente puede aprobar por excepción de noche? */
+    public const AGENTE_EXCEPCION = [
+        'no' => 'No: solo el supervisor o el jefe de seguridad autorizan por excepción',
+        'si' => 'Sí: si nadie responde a tiempo, el agente puede aprobar con motivo y foto (se avisa de inmediato)',
+    ];
+
     /** Opciones de los ajustes de texto. */
     private const OPCIONES = [
+        'agente_excepcion' => self::AGENTE_EXCEPCION,
         'transporte_firmas' => self::FIRMAS_TRANSPORTE,
         'procedimientos_acuse' => self::ACUSES,
         'motivo_visita_omision' => self::MOTIVOS_OMISION,
@@ -85,8 +98,9 @@ class AjustesCaseta
     /** Valores por omisión: el comportamiento original. */
     public const OMISION = [
         'transporte_firmas' => 'ambas',
-        'llaves_horas_aviso' => 0,
-        'llaves_horas_escalar' => 0,
+        // C-24 (DD-10): semáforo de llaves encendido de fábrica, 12 h y 24 h (0 = apagado)
+        'llaves_horas_aviso' => 12,
+        'llaves_horas_escalar' => 24,
         'responsivas_horas_turno' => 0,
         'responsivas_horas_escalar' => 0,
         'procedimientos_acuse' => 'firma',
@@ -95,6 +109,11 @@ class AjustesCaseta
         'vobo_horas_rojo' => 72,
         'motivo_visita_omision' => '',
         'visita_a_huesped' => 'si',
+        'permanencia_visita_horas' => 4,
+        'permanencia_proveedor_horas' => 8,
+        'daypass_cierre_hora' => 22,
+        'salida_temporal_horas' => 2,
+        'agente_excepcion' => 'no',
     ];
 
     /** Límites de los números (para validar y para el formulario). */
@@ -106,6 +125,10 @@ class AjustesCaseta
         'procedimientos_recordatorio_dias' => 30,
         'vobo_horas_amarillo' => 168,
         'vobo_horas_rojo' => 720,
+        'permanencia_visita_horas' => 72,
+        'permanencia_proveedor_horas' => 72,
+        'daypass_cierre_hora' => 23,
+        'salida_temporal_horas' => 24,
     ];
 
     /** Mínimos de los números que no se pueden apagar (los demás admiten 0 = apagado). */
@@ -126,12 +149,14 @@ class AjustesCaseta
         'procedimientos' => ['procedimientos_acuse', 'procedimientos_recordatorio_dias'],
         'vobo' => ['vobo_horas_amarillo', 'vobo_horas_rojo'],
         'motivos' => ['motivo_visita_omision', 'visita_a_huesped'],
+        'permanencia' => ['permanencia_visita_horas', 'permanencia_proveedor_horas', 'daypass_cierre_hora', 'salida_temporal_horas'],
+        'noche' => ['agente_excepcion'],
     ];
 
     /**
      * Ajustes vigentes de una empresa (sin empresa: los originales).
      *
-     * @return array{transporte_firmas: string, llaves_horas_aviso: int, llaves_horas_escalar: int, responsivas_horas_turno: int, responsivas_horas_escalar: int, procedimientos_acuse: string, procedimientos_recordatorio_dias: int, vobo_horas_amarillo: int, vobo_horas_rojo: int, motivo_visita_omision: string, visita_a_huesped: string}
+     * @return array{transporte_firmas: string, llaves_horas_aviso: int, llaves_horas_escalar: int, responsivas_horas_turno: int, responsivas_horas_escalar: int, procedimientos_acuse: string, procedimientos_recordatorio_dias: int, vobo_horas_amarillo: int, vobo_horas_rojo: int, motivo_visita_omision: string, visita_a_huesped: string, permanencia_visita_horas: int, permanencia_proveedor_horas: int, daypass_cierre_hora: int, salida_temporal_horas: int, agente_excepcion: string}
      */
     public static function de(Empresa|int|null $empresa): array
     {
@@ -188,6 +213,7 @@ class AjustesCaseta
                     $errores[$clave] = match ($clave) {
                         'procedimientos_recordatorio_dias' => 'Escribe un número entero de días, de 1 a '.self::MAX_HORAS[$clave].'.',
                         'vobo_horas_amarillo', 'vobo_horas_rojo' => 'Escribe un número entero de horas, de '.$minimo.' a '.self::MAX_HORAS[$clave].'.',
+                        'daypass_cierre_hora' => 'Escribe la hora de cierre del 1 al 23 (0 = apagado).',
                         default => 'Escribe un número entero de horas, de 0 a '.self::MAX_HORAS[$clave].' (0 = apagado).',
                     };
 

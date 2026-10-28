@@ -41,6 +41,8 @@ Los casos de robo **se registran en la [Bitácora de novedades](novedades.md)** 
 
 **Qué debes ver:** si un huésped ya reportó el objeto como perdido, el renglón dice **Reporte de pérdida RP-…** con su nombre.
 
+**Objetos vencidos:** quien firma Lost & Found en la sede los ve en **Mis pendientes → Lost & Found vencidos** y recibe un recordatorio **cada semana** mientras haya vencidos. Si pasan 3 días sin decidir, se avisa a quien configura Lost & Found.
+
 Para abrir un objeto rápido, en **Escanear etiqueta de la bolsa** escanea el QR de su etiqueta o escribe su folio.
 
 ## Cómo entregar o cerrar un objeto

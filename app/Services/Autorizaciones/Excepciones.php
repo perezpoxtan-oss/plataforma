@@ -7,6 +7,7 @@ use App\Models\Autorizacion;
 use App\Models\Empresa;
 use App\Models\User;
 use App\Services\Accesos\MovimientoNoPermitido;
+use App\Services\Accesos\NocheSinSupervisor;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Recepcion\AjustesRecepcion;
@@ -118,6 +119,7 @@ class Excepciones
             $this->auditoria->auditar($actor, 'autorizaciones.respondida', $solicitud, ['estado' => 'pendiente'], ['estado' => 'autorizada', 'medio' => 'caseta', 'excepcion' => $texto]);
         }
         $this->avisarResponsables($actor, $acceso, $solicitud, $texto);
+        app(NocheSinSupervisor::class)->avisarResultado($actor, $acceso, 'Autorizado por excepción'); // C-25: la caseta que lo canalizó se entera
 
         return $texto;
     }
