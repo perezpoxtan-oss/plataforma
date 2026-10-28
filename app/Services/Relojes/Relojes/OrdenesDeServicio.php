@@ -5,6 +5,7 @@ namespace App\Services\Relojes\Relojes;
 use App\Models\Reserva;
 use App\Models\ReservaOrden;
 use App\Models\User;
+use App\Services\Recepcion\Destinatarios;
 use App\Services\Relojes\Espera;
 use App\Services\Relojes\Reloj;
 use App\Services\Reservas\ResponsablesReservas;
@@ -75,10 +76,25 @@ class OrdenesDeServicio extends Reloj
         return app(ResponsablesReservas::class)->delDepartamento($e->datos['departamento'], (int) $e->sedeId, (int) $empresaId);
     }
 
-    /** C-12: el delegado recibe el aviso si también atiende las órdenes de ese departamento en la sede. */
-    public function puedeAtender(User $delegado, Espera $e): bool
+    /** Su renglón de siempre: «Órdenes de servicio por atender» (quien atiende el departamento). */
+    public function leToca(User $actor, Espera $e): bool
     {
-        return $this->responsables($e, $delegado->empresa_id === null ? null : (int) $delegado->empresa_id)->contains('id', $delegado->id);
+        return app(ResponsablesReservas::class)->atiendeDepartamento($actor, $e->datos['departamento'], (int) $e->sedeId, (int) $actor->empresa_id);
+    }
+
+    /**
+     * D-01: la atiende quien puede marcarla «Listo» (la misma regla que la
+     * pantalla de órdenes): quien atiende el departamento (o su delegado) o
+     * quien configura Reservas en esa sede.
+     */
+    public function puedeAtender(User $actor, Espera $e): bool
+    {
+        return $this->leToca($actor, $e) || app(Destinatarios::class)->alcanza($actor, 'reservas.configurar', $e->sedeId);
+    }
+
+    public function renglonPropio(): ?string
+    {
+        return 'reservas_ordenes';
     }
 
     public function suplentes(Espera $e, ?int $empresaId, Collection $responsables, ?int $rolId): Collection

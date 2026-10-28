@@ -125,18 +125,59 @@ abstract class Reloj
                 return $deRol;
             }
         }
+
+        return $this->suplentesDeFabrica($e, $empresaId, $responsables);
+    }
+
+    /**
+     * Los suplentes de fábrica: quien tiene el permiso del asunto en toda la
+     * empresa; si nadie más, quien administra la configuración; si tampoco,
+     * los mismos responsables. Si se pasa $puede, solo quien cumple
+     * (D-01: quien puede atenderlo de verdad).
+     *
+     * @param  Collection<int, User>  $responsables
+     * @param  (callable(User): bool)|null  $puede
+     * @return Collection<int, User>
+     */
+    public function suplentesDeFabrica(Espera $e, ?int $empresaId, Collection $responsables, ?callable $puede = null): Collection
+    {
+        $ya = $responsables->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $puede ??= fn (User $u) => true;
+        if ($empresaId === null) {
+            return User::where('es_superadmin', true)->where('activo', true)->get()->filter($puede)->values();
+        }
         $destinatarios = app(Destinatarios::class);
         if (($permiso = $this->permisoDe($e)) !== null) {
-            $empresa = $destinatarios->conPermiso($empresaId, $permiso, null)->reject(fn (User $u) => in_array((int) $u->id, $ya, true))->values();
+            $empresa = $destinatarios->conPermiso($empresaId, $permiso, null)->reject(fn (User $u) => in_array((int) $u->id, $ya, true))->filter($puede)->values();
             if ($empresa->isNotEmpty()) {
                 return $empresa;
             }
         }
 
-        $administradores = $destinatarios->conPermiso($empresaId, 'configuracion.editar', null)->reject(fn (User $u) => in_array((int) $u->id, $ya, true))->values();
+        $administradores = $destinatarios->conPermiso($empresaId, 'configuracion.editar', null)->reject(fn (User $u) => in_array((int) $u->id, $ya, true))->filter($puede)->values();
 
         // Si nadie más puede atenderlo, el aviso que no se puede silenciar llega a los mismos responsables
-        return $administradores->isNotEmpty() ? $administradores : $responsables->values();
+        return $administradores->isNotEmpty() ? $administradores : $responsables->filter($puede)->values();
+    }
+
+    /**
+     * D-01: a quién pasa de verdad. Los suplentes de este reloj (o el rol
+     * elegido) que PUEDEN atender el asunto (puedeAtender: permiso efectivo
+     * sobre él, no solo verlo). Si ninguno puede, los de fábrica que sí puedan;
+     * si tampoco, los responsables que puedan. Nunca alguien que solo lo vea.
+     *
+     * @param  Collection<int, User>  $responsables
+     * @return Collection<int, User>
+     */
+    public function suplentesQuePuedenAtender(Espera $e, ?int $empresaId, Collection $responsables, ?int $rolId): Collection
+    {
+        $puede = fn (User $u) => $this->puedeAtender($u, $e);
+        $suplentes = $this->suplentes($e, $empresaId, $responsables, $rolId)->unique('id')->filter($puede)->values();
+        if ($suplentes->isNotEmpty()) {
+            return $suplentes;
+        }
+
+        return $this->suplentesDeFabrica($e, $empresaId, $responsables, $puede)->unique('id')->values();
     }
 
     /**
@@ -210,11 +251,17 @@ abstract class Reloj
     public function renglon(User $actor, ?int $empresaId): ?array
     {
         $def = $this->renglonDef();
-        if ($def === null || ! $this->puedeVer($actor)) {
+        if ($def === null) {
+            return null;
+        }
+        // D-01: lo que le pasaron como suplente también es suyo (aunque su rol no vea el módulo completo)
+        $pasadas = $this->pasadasA($actor, $empresaId);
+        if (! $this->puedeVer($actor) && $pasadas->isEmpty()) {
             return null;
         }
         $motor = app(MotorRelojes::class);
-        $mias = $this->esperasDe($actor, $empresaId);
+        $mias = ($this->puedeVer($actor) ? $this->esperasDe($actor, $empresaId) : collect())
+            ->concat($pasadas)->unique(fn (Espera $e) => $e->llave())->values();
         if ($this->cuentaDesdeElRecordatorio()) {
             $mias = $mias->filter(fn (Espera $e) => $motor->nivel($this->clave(), $e->desde, $empresaId, $e) !== null)->values();
         }
@@ -297,6 +344,88 @@ abstract class Reloj
 
         return $niveles->contains('roja') ? 'roja' : ($niveles->contains('ambar') ? 'ambar' : null);
     }
+
+    /**
+     * Color del que más lleva esperando entre estas llaves (los renglones que
+     * ya existían cuentan con su propio conjunto: D-02, mismo número y color).
+     *
+     * @param  list<string>  $llaves
+     */
+    public function nivelDeLlaves(array $llaves, ?int $empresaId): ?string
+    {
+        if ($llaves === []) {
+            return null;
+        }
+        $motor = app(MotorRelojes::class);
+        $llaves = array_flip($llaves);
+        $niveles = $this->todasLasEsperas($empresaId)->filter(fn (Espera $e) => isset($llaves[$e->llave()]))
+            ->map(fn (Espera $e) => $motor->nivel($this->clave(), $e->desde, $empresaId, $e))->filter();
+
+        return $niveles->contains('roja') ? 'roja' : ($niveles->contains('ambar') ? 'ambar' : null);
+    }
+
+    // -------------------------------------------- D-01: lo que pasó al suplente
+
+    /**
+     * Clave del renglón de Mis pendientes que ya existía y cuenta lo de este
+     * reloj (para los relojes sin renglonDef). null = ninguno.
+     */
+    public function renglonPropio(): ?string
+    {
+        return null;
+    }
+
+    /** ¿Lo cuenta ya su renglón propio? (si no, va en «Te lo pasaron a ti»). */
+    public function enSuRenglon(User $actor, Espera $e): bool
+    {
+        return $this->renglonPropio() !== null && $this->leToca($actor, $e);
+    }
+
+    /** Dirección para quien lo recibe como suplente (por omisión, la del asunto). */
+    public function urlSuplente(Espera $e): string
+    {
+        return $e->url;
+    }
+
+    /**
+     * Lo que pasó a esta persona como suplente (relojes_esperas.escalado_a),
+     * sigue esperando y ella puede atender.
+     *
+     * @return Collection<int, Espera>
+     */
+    public function pasadasA(User $actor, ?int $empresaId): Collection
+    {
+        $mapa = app(MotorRelojes::class)->escaladosDe($empresaId)[$this->clave()] ?? [];
+        $id = (int) $actor->id;
+        $llaves = array_flip(array_keys(array_filter($mapa, fn (array $ids) => in_array($id, $ids, true))));
+        if ($llaves === []) {
+            return collect();
+        }
+
+        return $this->todasLasEsperas($empresaId)->filter(fn (Espera $e) => isset($llaves[$e->llave()]) && $this->puedeAtender($actor, $e))->values();
+    }
+
+    /**
+     * D-01: renglón «Te lo pasaron a ti» de los relojes sin renglón propio,
+     * con lo que le pasaron y su renglón de siempre no le cuenta.
+     *
+     * @return array{clave: string, titulo: string, icono: string, total: int, url: string, nivel: ?string}|null
+     */
+    public function renglonSuplente(User $actor, ?int $empresaId): ?array
+    {
+        if ($this->renglonDef() !== null) {
+            return null; // se suma en renglon()
+        }
+        $mias = $this->pasadasA($actor, $empresaId)->reject(fn (Espera $e) => $this->enSuRenglon($actor, $e))->values();
+        if ($mias->isEmpty()) {
+            return null;
+        }
+
+        return ['clave' => $this->clave().self::SUFIJO_SUPLENTE, 'titulo' => 'Te lo pasaron: '.$this->nombre(), 'icono' => 'bi-arrow-return-right',
+            'total' => $mias->count(), 'url' => $this->urlSuplente($mias->first()), 'nivel' => 'roja'];
+    }
+
+    public const SUFIJO_SUPLENTE = '_suplente';
 
     // ------------------------------------------------------------- Ayudas
 
