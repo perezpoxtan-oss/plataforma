@@ -15,7 +15,7 @@ resumen: El panorama de la operación para Dirección, con gráficas, listados y
 
 1. Entra a **Informes → Informes → Informe ejecutivo**.
 2. Arriba ves la empresa, las sedes que incluye y la hora en que se generó.
-3. Recorre los bloques: **Personal y activos**, **Seguridad física**, **Robo — últimos 90 días**, **Pases de salida — últimos 90 días**, **Transporte — últimos 30 días**, **Candidatos y vacantes** y **Autorizaciones — últimos 30 días**.
+3. Recorre los bloques: **Personal y activos**, **Seguridad física**, **Robo — últimos 90 días**, **Pases de salida — últimos 90 días**, **Transporte — últimos 30 días**, **Candidatos y vacantes**, **Autorizaciones — últimos 30 días** y, si tu empresa usa Reservas, **Eventos de hoy** (los eventos confirmados del día con su horario, área y personas esperadas).
 
 ![Informe ejecutivo](img/informes/ejecutivo.png)
 

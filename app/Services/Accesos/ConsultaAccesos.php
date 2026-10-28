@@ -112,6 +112,7 @@ class ConsultaAccesos
         return [
             'sede:id,nombre', 'colaborador:'.$colaborador, 'host:'.$colaborador, 'visitaColaborador:'.$colaborador,
             'proveedor:id,nombre', 'departamento:id,nombre', 'zona:id,nombre,tipo',
+            'articulos:id,acceso_id,articulo,cantidad,serie', // C-19: lo que trae el proveedor
             'registradoPor:id,name', 'autorizadoPor:id,name', 'salidaPor:id,name',
             ...($abiertos ? [
                 'acompanantes' => fn ($q) => $q->whereNull('salida_at'),
@@ -230,6 +231,10 @@ class ConsultaAccesos
         // C-25: las aprobaciones por excepción del agente que esperan revisión
         if (! empty($filtros['excepciones'])) {
             $consulta->where('accesos.excepcion_por_revisar', true)->whereNull('accesos.excepcion_revisada_en');
+        }
+        // C-19: las salidas con algo distinto que esperan la revisión del supervisor
+        if (! empty($filtros['articulos'])) {
+            $consulta->where('accesos.articulos_por_revisar', true)->whereNull('accesos.articulos_revisado_en');
         }
         if (! empty($filtros['tipo'])) {
             $consulta->where('accesos.tipo', $filtros['tipo']);
@@ -408,6 +413,12 @@ class ConsultaAccesos
                 'fuera_temporal' => $ac->estaFueraTemporal(),
                 'url_salida' => route('accesos.acompanantes.salida', $ac->id),
             ])->values()->all(),
+            // C-19 (DD-18): lo que trajo, para compararlo al salir, y el pase aprobado de su empresa
+            'articulos' => ($a->relationLoaded('articulos') ? $a->articulos : $a->articulos()->get())->map(fn ($art) => $art->texto())->values()->all(),
+            'pase' => ($pase = app(ArticulosDelProveedor::class)->paseAbierto($a)) === null ? null : [
+                'id' => $pase->id, 'folio' => $pase->folio, 'motivo' => $pase->etiquetaMotivo(),
+                'url' => auth()->user()?->can('pases_salida.ver') ? route('pases-salida.show', $pase->id) : null,
+            ],
             'url_salida' => route('accesos.salida', $a->id),
             'url_salida_temporal' => route('accesos.salida-temporal', $a->id),
             'url_regreso' => route('accesos.regreso', $a->id),

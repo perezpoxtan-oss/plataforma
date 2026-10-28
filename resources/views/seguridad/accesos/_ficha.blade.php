@@ -14,6 +14,9 @@
     $idCustodiada = \App\Models\Acceso::IDENTIFICACIONES[$a->identificacion] ?? null;
     $pedir = $gafetesPorDevolver->merge($idCustodiada ? ['la identificación ('.$idCustodiada.')'] : [])->join(', ', ' y ');
     $confirmarSalida = '¿Confirmar salida de '.$a->nombre.'?'.($pedir !== '' ? ' Pide de vuelta: '.$pedir.'.' : '');
+    // C-19 (DD-18): lo que trajo; con lista (o un pase de su empresa) la salida usa el diálogo para compararla
+    $traeArticulos = $a->relationLoaded('articulos') ? $a->articulos : collect();
+    $conComparacion = $traeArticulos->isNotEmpty() || ($modo === 'en_sitio' && app(\App\Services\Accesos\ArticulosDelProveedor::class)->paseAbierto($a) !== null);
     // Vocabulario corto de estados (aprobado): cuatro pastillas y el detalle en un renglón chico debajo
     $espera = ($esperas ?? [])[$a->id] ?? null;
     $conRh = $a->motivo_visita === 'rh';
@@ -268,6 +271,22 @@
     @if ($modo === 'pendientes' && ! $puede['aprobar'] && ($puede['crear'] ?? false))
         @include('seguridad.accesos._noche')
     @endif
+    {{-- C-19 (DD-18): lo que trajo y, al salir, cómo salió --}}
+    @if ($traeArticulos->isNotEmpty())
+        <div class="trae-equipo-ficha mt-1"><i class="bi bi-tools me-1" aria-hidden="true"></i>Trae: {{ $traeArticulos->map->texto()->join(', ') }}
+            @if ($a->articulos_salida === 'mismo') · <span class="text-success">salió con lo mismo</span>@elseif ($a->articulos_salida === 'distinto') · <strong class="text-danger">salió con algo distinto{{ $a->articulos_nota ? ': '.$a->articulos_nota : '' }}</strong>@endif
+        </div>
+    @endif
+    @if ($modo !== 'pendientes' && $a->articulos_por_revisar && ! $a->articulos_revisado_en)
+        <div class="aviso-padron-acceso"><i class="bi bi-tools me-1" aria-hidden="true"></i>No salió con lo mismo que trajo: por revisar.</div>
+        @if ($puede['aprobar'])
+            <form action="{{ route('accesos.revisar-articulos', $a->id) }}" method="POST" class="m-0 mt-1">
+                @csrf
+                @method('PATCH')
+                <button type="submit" class="btn-accion-acceso autorizar"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Atender</button>
+            </form>
+        @endif
+    @endif
     {{-- C-25: la excepción que aprobó el agente espera la revisión del supervisor --}}
     @if ($modo !== 'pendientes' && $a->excepcion_por_revisar && ! $a->excepcion_revisada_en)
         <div class="aviso-padron-acceso"><i class="bi bi-shield-exclamation me-1" aria-hidden="true"></i>Aprobado por el agente sin supervisor: por revisar.</div>
@@ -296,7 +315,7 @@
                             data-url="{{ route('accesos.salida-temporal', $a->id) }}" data-nombre="{{ $a->nombre }}"
                             data-titulo="{{ $a->textoSalidaTemporal() }}"><i class="bi bi-signpost-split me-1" aria-hidden="true"></i>{{ $a->textoSalidaTemporal() }}</button>
                 @endif
-                @if ($pedir !== '')
+                @if ($pedir !== '' || $conComparacion)
                     {{-- C-15: con gafete o identificación en custodia, el mismo diálogo de «Dar salida» con sus casillas ya marcadas --}}
                     <button type="button" class="btn-accion-acceso salida {{ $a->admiteSalidaTemporal() ? 'mitad' : 'w-100' }}" title="{{ $confirmarSalida }}"
                             data-dar-salida="{{ json_encode(app(\App\Services\Accesos\ConsultaAccesos::class)->resumen($a)) }}"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>{{ $a->tipo === 'huesped' ? 'Salida Final' : 'Registrar Salida' }}</button>

@@ -38,6 +38,14 @@ resumen: Registrar quién entra y sale de la sede, dar salida con el gafete, ver
 ![Gente en sitio: una visita con su departamento y un residente](img/accesos/gente-en-sitio-condominio.png)
 <!-- fin -->
 
+### Eventos de hoy
+
+Si tu empresa usa **Reservas**, arriba de las tarjetas aparece **Eventos de hoy** con los eventos confirmados del día: horario, salón o área, nombre del evento, cuántas personas se esperan y desde qué hora empieza el montaje. Así sabes antes de que lleguen que vienen, por ejemplo, cien personas al Salón Maya. Si no hay eventos hoy, no aparece nada. Con más de tres eventos se muestra plegado: tócalo para abrirlo.
+
+![Eventos de hoy en la caseta](img/accesos/eventos-de-hoy.png)
+
+**Qué debes ver:** un renglón por evento, como «10:00–16:00 · Salón Maya · Congreso de médicos · 100 personas · montaje desde 09:00».
+
 **Qué debes ver:** una tarjeta por persona con su tipo (color), nombre, sede, **gafete** (o **S/G** si no lleva), motivo, identificación que dejó, cómo llegó y a qué hora entró y quién la registró.
 
 Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo, un renglón chico con el detalle:
@@ -102,6 +110,9 @@ Lo que pide cada tipo:
 - **Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **¿A quién viene?**: escribe el nombre del residente o el número de la vivienda (o casa) y elígelo de la lista; la vivienda sale sola del residente. Llámale y toca **Llamé y autorizó · dejar pasar** (o **No autorizó**). Si la vivienda no está en la lista, deja lo que escribiste: queda marcada «sin catálogo». Si viene a un área de la administración, elige el área: su responsable recibe el aviso.
 <!-- fin -->
 - **Proveedor y Contratista (Obra):** además, la **Empresa / Procedencia** y **¿A quién viene?**: la persona que lo citó o el área (el departamento sale solo de la persona). Quedan en **Pendientes de Autorización**: si la persona tiene cuenta, ella autoriza; si no, el responsable de su departamento (ver abajo «Cómo autorizar a un proveedor o contratista»). En **Más detalles**, el **Área de Trabajo** se elige de la lista de Zonas y edificios (si no está, se queda lo escrito).
+  Si trae herramienta o equipo propio (taladro, escalera, laptop), abre **¿Trae herramienta o equipo? (opcional)** y anota el **artículo**, la **cantidad** y, si la tiene, la **serie** (toca **Otro artículo** para agregar más renglones, hasta 10). Si no trae nada, no abras esa sección: no hay ningún paso de más. Al darle salida compararás lo que lleva (ver «Lo que trae el proveedor al dar salida»).
+
+  ![¿Trae herramienta o equipo?](img/accesos/trae-herramienta.png)
 <!-- solo: condominio, fraccionamiento -->
   Si el servicio viene con un residente (gas, plomero, entrega), elige al residente o su vivienda, llámale y toca **Llamé y autorizó · dejar pasar**.
 <!-- fin -->
@@ -276,6 +287,20 @@ Si todo está en orden, solo confirmas: es igual de rápido que antes. Si el gaf
 
 Un acompañante puede salir antes con el botón **Salida** de su renglón.
 
+### Lo que trae el proveedor al dar salida
+
+Si al entrar se anotó lo que trae un proveedor o contratista, la tarjeta dice **Trae: …** y la confirmación de **Dar salida** muestra la lista con la casilla **Sale con lo mismo** ya marcada.
+
+1. Revisa lo que lleva contra la lista.
+2. Si coincide, confirma: es igual de rápido.
+3. Si lleva algo de más o le falta algo, **quita la marca** de **Sale con lo mismo** y escribe en **¿Qué notaste?** lo que viste (por ejemplo «Lleva también una escalera»). Toca **Dar salida**.
+
+![Sale con lo mismo al dar salida](img/accesos/sale-con-lo-mismo.png)
+
+**Qué debes ver:** si salió con lo mismo, en el historial la tarjeta dice «salió con lo mismo». Si quitaste la marca, el mensaje verde dice «No salió con lo mismo que trajo: ya se avisó a tu supervisor para que lo revise». Al supervisor y al jefe de seguridad les llega el aviso a la campana y a **Mis pendientes → Salidas con algo distinto por revisar**, con su reloj. El supervisor revisa el caso y toca **Atender**.
+
+Si la empresa del proveedor tiene un **pase de salida aprobado** en tu sede (por ejemplo, equipo de la empresa que se lleva a reparar), la confirmación lo dice: «Su empresa tiene el pase de salida PS-… aprobado en esta sede» con **Ver pase**. Al dar salida queda ligado al pase; el pase sigue su paso en **Pases de salida**.
+
 ## Cómo registrar una salida temporal o a tour
 
 <!-- solo: hotel -->
@@ -357,6 +382,9 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 | «Elige una vacante publicada de esta sede.» | Esa vacante ya no está publicada o es de otra sede. | Elige otra o **-- No sabe / otra --**. |
 | La tarjeta **PENDIENTE** se pone en rojo | Nadie ha contestado en el tiempo que configuró tu empresa. | La plataforma ya escaló a los suplentes y al Jefe de seguridad (la tarjeta dice «Se escaló a: …»). Si te confirman por teléfono, tu supervisor usa **Confirmar Autorización**. |
 | Escaneo el gafete para dar salida y no sale nadie | Ese gafete no lo tiene nadie en sitio, o la persona está en otra sede. | Busca por nombre o placas; revisa el filtro de sede. |
+| «La lista de lo que trae admite máximo 10 renglones.» | Anotaste más de 10 artículos. | Junta los que son iguales en un renglón con su cantidad. |
+| «La cantidad debe ser de 1 a 999.» | Escribiste 0 o un número muy grande. | Corrige la cantidad. |
+| «Esta salida ya se había revisado.» | Otro supervisor ya tocó **Atender**. | No hay nada más que hacer. |
 | Al dar salida el botón dice **Registrar regreso** | La persona está fuera en tour o en salida temporal. | Tócalo para registrar su regreso; después podrás dar la salida final. |
 
 ## Preguntas frecuentes
@@ -373,6 +401,8 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 - **No veo el motivo Recursos Humanos.** Tu plan no incluye Recursos Humanos: usa **Visita general** o **Visita a persona o área**.
 - **¿Por qué ya no veo «Visita a Departamento» ni «Host»?** Ahora es un solo campo, **¿A quién viene?**: ahí eliges a la persona o el área, y el departamento sale solo de la persona.
 - **¿Qué pasa si la persona tiene cuenta?** Le llega el aviso y ella autoriza a su visita. Si no contesta a tiempo, el aviso pasa al responsable de su departamento.
+- **¿Tengo que anotar lo que trae cada proveedor?** No. Es opcional: anótalo cuando trae herramienta o equipo propio, para poder distinguir «su taladro» de «nuestro taladro» al salir.
+- **¿Por qué no veo «Eventos de hoy»?** Tu empresa no usa Reservas o hoy no hay eventos confirmados.
 - **Me equivoqué de zona.** Usa **Cambiar Zona**.
 - **¿Cómo sé quién registró a alguien?** En la tarjeta, junto a la hora de ingreso, dice «por …».
 - **¿Puedo usar la cámara del celular para el gafete?** Sí: toca el botón del código QR junto al campo, tanto al registrar como al dar salida.
@@ -384,6 +414,7 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 - [Reloj y suplente](reloj-y-suplente.md)
 - [Préstamo de llaves](prestamo-llaves.md)
 - [Pases de salida](pases-salida.md)
+- [Reservas de áreas](reservas-de-areas.md)
 - [Bitácora de novedades](novedades.md)
 - [Gafetes](gafetes.md)
 - [Padrón de personas](personas.md)

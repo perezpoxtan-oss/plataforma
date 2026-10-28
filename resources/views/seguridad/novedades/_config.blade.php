@@ -41,7 +41,7 @@
                 <option value="{{ $clave }}" @selected(($trasErrorNov ? old('categoria_hallazgo_pc') : $categoriaActual) === $clave)>{{ $texto }}</option>
             @endforeach
         </select>
-        <p class="campo-ayuda mt-0">«Mantenimiento de equipo PC» evita que un extintor despresurizado parezca una emergencia real. Los tickets que ya existen no cambian. <span class="valor-original">Valor original: Siniestro Protección Civil.</span></p>
+        <p class="campo-ayuda mt-0">«Mantenimiento de equipo PC» evita que un extintor despresurizado parezca una emergencia real en el Tablero y en Tendencias. Elige «Siniestro Protección Civil» solo si tu empresa quiere tratar cada falla como emergencia. <span class="valor-original">Valor original: Mantenimiento de equipo PC.</span></p>
         {{-- C-24 (D-04): reloj de los tickets canalizados por categoría --}}
         @php $horasReloj = $ajustesNov->relojHoras($empresa); @endphp
         <fieldset class="mt-3">
@@ -72,12 +72,72 @@
         </select>
         @error('departamento_accidentes')<p class="text-danger small mb-2">{{ $message }}</p>@enderror
         <p class="campo-ayuda mt-0">Cuando se registra el Accidente de alguien del personal, su responsable recibe el ticket en «Tickets de mi departamento» para llenar su parte. El formato del accidente no cambia. <span class="valor-original">Valor original: el departamento que se llama Recursos Humanos.</span></p>
+        {{-- C-32 (D-17): subtipos de Reporte General (de fábrica según el giro) --}}
+        @php
+            $subtiposRg = $ajustesNov->subtiposReporteGeneral($empresa);
+            $subtiposPropios = $subtiposRg !== $ajustesNov->subtiposDeFabrica($empresa);
+        @endphp
+        <details class="mt-3" @if ($errors->has('subtipos_reporte_general')) open @endif>
+            <summary class="small fw-bold">Avanzado: tipos de «Reporte General» @if ($subtiposRg) ({{ count($subtiposRg) }}) @endif</summary>
+            <label class="campo-etiqueta mt-2" for="nov_subtipos_rg">Tipos de Reporte General <span class="text-lowercase fw-normal">(uno por renglón; máximo {{ \App\Services\Novedades\AjustesNovedades::MAX_SUBTIPOS }})</span></label>
+            <textarea id="nov_subtipos_rg" name="subtipos_reporte_general" class="campo" rows="5" maxlength="2000" placeholder="Ruido&#10;Mascotas&#10;Fuga de agua" @disabled(! $puedeEditar)>{{ old('subtipos_reporte_general', implode("\n", $subtiposRg)) }}</textarea>
+            @error('subtipos_reporte_general')<p class="text-danger small mb-2">{{ $message }}</p>@enderror
+            <p class="campo-ayuda mt-0">Quien atiende un Reporte General elige uno de estos tipos (es opcional). Déjalo vacío para no preguntar. <span class="valor-original">Valor original: {{ $ajustesNov->subtiposDeFabrica($empresa) ? implode(', ', $ajustesNov->subtiposDeFabrica($empresa)) : 'sin tipos' }}.</span></p>
+        </details>
         @if ($puedeEditar)
             <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar ajustes de la bitácora</button>
         @endif
     </form>
-    {{-- Configuración por secciones: «Restablecer valor original» (Novedades y Siniestro Protección Civil) --}}
-    @if ($puedeEditar && ($ajustesNov->nombrePropio($empresa->id) || $categoriaActual !== \App\Services\Novedades\AjustesNovedades::CATEGORIA_HALLAZGO_OMISION || $horasReloj !== \App\Services\Novedades\AjustesNovedades::RELOJ_HORAS))
-        @include('administracion.configuracion._restablecer', ['ajuste' => 'novedades', 'que' => 'el nombre del módulo, la categoría del hallazgo y el reloj de los tickets'])
+    {{-- C-31 (D-20): «¿Qué hacer? Ver procedimiento» por categoría y por tipo de equipo (en Avanzado; solo con Procedimientos) --}}
+    @php
+        $vinculosProc = app(\App\Services\Procedimientos\ProcedimientosVinculados::class);
+        $opcionesProc = $vinculosProc->disponible((int) $empresa->id) ? app(\App\Support\Tenancy\Tenant::class)->conEmpresa($empresa->id, fn () => $vinculosProc->opciones()) : collect();
+        $mapaProc = $vinculosProc->mapa($empresa);
+    @endphp
+    @if ($opcionesProc->isNotEmpty())
+        <details class="mt-3" id="novedades-procedimientos" @if ($errors->has('vinculos.*')) open @endif>
+            <summary class="small fw-bold">Avanzado: «¿Qué hacer?» — procedimiento de cada categoría y tipo de equipo @if ($mapaProc) ({{ count($mapaProc) }}) @endif</summary>
+            <p class="small mt-2 mb-2">El ticket de esa categoría y el punto del recorrido de ese equipo muestran «¿Qué hacer? Ver procedimiento» a quien puede ver procedimientos. Solo se ofrecen los publicados.</p>
+            <form action="{{ route('configuracion.novedades.procedimientos') }}" method="POST" class="m-0">
+                @csrf
+                @method('PUT')
+                <div class="row g-2">
+                    @foreach (\App\Services\Procedimientos\ProcedimientosVinculados::claves() as $claveProc => $textoProc)
+                        @if ($loop->first)<div class="col-12 campo-etiqueta mb-0">Categorías del ticket</div>@endif
+                        @if ($claveProc === 'equipo:'.array_key_first(\App\Models\EquipoPc::CATEGORIAS))<div class="col-12 campo-etiqueta mb-0 mt-2">Tipos de equipo de Protección Civil</div>@endif
+                        <div class="col-md-6">
+                            <label class="small" for="proc_{{ str_replace(':', '_', $claveProc) }}">{{ $textoProc }}</label>
+                            <select id="proc_{{ str_replace(':', '_', $claveProc) }}" name="vinculos[{{ $claveProc }}]" class="campo" @disabled(! $puedeEditar)>
+                                <option value="">— Ninguno —</option>
+                                @foreach ($opcionesProc as $op)
+                                    <option value="{{ $op->id }}" @selected(($mapaProc[$claveProc] ?? null) === $op->id)>{{ $op->clave ? $op->clave.' · ' : '' }}{{ $op->titulo }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endforeach
+                </div>
+                @error('vinculos.*')<p class="text-danger small mb-2">{{ $message }}</p>@enderror
+                @if ($puedeEditar)
+                    <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar procedimientos</button>
+                @endif
+            </form>
+        </details>
+    @endif
+    {{-- C-29 (D-06): reclasificación opcional de los hallazgos que se abrieron como siniestro (en Avanzado) --}}
+    @php $hallazgosSiniestro = $puedeEditar ? $ajustesNov->hallazgosComoSiniestro()->where('novedades.empresa_id', $empresa->id)->count() : 0; @endphp
+    @if ($hallazgosSiniestro > 0)
+        <details class="mt-3">
+            <summary class="small fw-bold">Avanzado: hallazgos anteriores registrados como siniestro ({{ $hallazgosSiniestro }})</summary>
+            <p class="small mt-2 mb-2">{{ $hallazgosSiniestro === 1 ? 'Hay 1 ticket que abrió' : 'Hay '.$hallazgosSiniestro.' tickets que abrió' }} un recorrido como «Siniestro Protección Civil» y nadie lo documentó como siniestro. Puedes pasarlos a «Mantenimiento de equipo PC» para que no cuenten como emergencias. Cada ticket queda con una nota que lo explica.</p>
+            <form action="{{ route('configuracion.novedades.reclasificar') }}" method="POST" class="m-0" data-confirmar="¿Pasar {{ $hallazgosSiniestro }} {{ $hallazgosSiniestro === 1 ? 'ticket' : 'tickets' }} a «Mantenimiento de equipo PC»?">
+                @csrf
+                @method('PUT')
+                <button type="submit" class="btn-azul" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar como Mantenimiento de equipo PC</button>
+            </form>
+        </details>
+    @endif
+    {{-- Configuración por secciones: «Restablecer valor original» (Novedades y Mantenimiento de equipo PC) --}}
+    @if ($puedeEditar && ($ajustesNov->nombrePropio($empresa->id) || $categoriaActual !== \App\Services\Novedades\AjustesNovedades::CATEGORIA_HALLAZGO_OMISION || $horasReloj !== \App\Services\Novedades\AjustesNovedades::RELOJ_HORAS || $subtiposPropios))
+        @include('administracion.configuracion._restablecer', ['ajuste' => 'novedades', 'que' => 'el nombre del módulo, la categoría del hallazgo, el reloj de los tickets y los tipos de Reporte General'])
     @endif
 </section>

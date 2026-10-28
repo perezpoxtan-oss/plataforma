@@ -436,6 +436,7 @@ class MenusReorganizadosTest extends TestCase
         // Etapa 5 (C-09, C-28) cabe en el mismo límite: el reloj de «Tickets de tu departamento» suma una consulta y
         // «visitas propias» solo se consulta para quien no es responsable de ningún departamento
         // Revisión Etapa 5: a quien le delegan, una fija más (las personas citadas de sus titulares, C-12)
-        $this->assertLessThan(136, count(DB::getQueryLog()));
+        // Etapa 6 (C-19) suma una consulta: el reloj «Salidas con algo distinto por revisar» (como cada reloj de la Etapa 4)
+        $this->assertLessThan(137, count(DB::getQueryLog()));
     }
 }

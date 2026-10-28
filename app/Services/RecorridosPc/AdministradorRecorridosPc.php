@@ -293,26 +293,35 @@ class AdministradorRecorridosPc
             return;
         }
 
-        // Mejoras Incidentes: la empresa elige si el hallazgo abre «Siniestro Protección Civil» (omisión) o «Mantenimiento de equipo PC»
+        // C-29 (DD-17): por omisión el hallazgo abre «Mantenimiento de equipo PC» (no infla los siniestros); la empresa puede elegir «Siniestro Protección Civil»
         $categoria = app(AjustesNovedades::class)->categoriaHallazgoPc(Empresa::find($recorrido->empresa_id));
         $permitidas = $this->novedades->sedes($actor, 'crear', 'proteccion_civil');
-        if (! $actor->can('novedades.crear') || ($permitidas !== null && ! in_array((int) $recorrido->sede_id, $permitidas, true))) {
-            throw ValidationException::withMessages(['observaciones' => 'Este punto tiene un hallazgo y debe abrir un ticket en '.app(AjustesNovedades::class)->bitacoraConArticulo((int) $recorrido->empresa_id).', pero tu rol no puede crear tickets en esta sede. '
-                .'Pide a tu supervisor el permiso «'.app(AjustesNovedades::class)->bitacora((int) $recorrido->empresa_id).' → Crear».']);
-        }
+        $puedeCrear = $actor->can('novedades.crear') && ($permitidas === null || in_array((int) $recorrido->sede_id, $permitidas, true));
 
         $recorrido->loadMissing('sede', 'espacio');
         $edificio = $recorrido->espacio !== null && $recorrido->espacio->activo ? $recorrido->espacio->id : null;
-        $ticket = $this->novedades->crear($actor, [
-            'sede_id' => $recorrido->sede_id,
-            'categoria' => $categoria,
-            'reportado_por' => mb_substr($actor->name, 0, 150),
-            'ubicacion' => 'Ver detalle en Recorrido PC '.$recorrido->folio(),
-            'descripcion' => "Hallazgo durante Recorrido de Protección Civil {$recorrido->folio()}:\n".$revision->resumenHallazgo(),
-            'area_edificio_id' => $edificio,
-            'ocurrio_en' => CarbonImmutable::now($recorrido->sede?->zonaHoraria() ?? config('app.timezone'))->format('Y-m-d\TH:i'),
-        ], $categoria === 'proteccion_civil' ? null : $categoria);
-        $this->novedades->anotar($ticket, $actor, "Ticket abierto automáticamente desde el Recorrido de Protección Civil {$recorrido->folio()}.", 'sistema');
+        $descripcion = "Hallazgo durante Recorrido de Protección Civil {$recorrido->folio()}:\n".$revision->resumenHallazgo();
+        // C-30 (D-15): el titular es el lugar real del equipo, no «Ver detalle…» (si se conoce)
+        $ubicacion = $revision->ubicacion ?: 'Ver detalle en Recorrido PC '.$recorrido->folio();
+        $ahoraLocal = CarbonImmutable::now($recorrido->sede?->zonaHoraria() ?? config('app.timezone'));
+        if ($puedeCrear) {
+            $ticket = $this->novedades->crear($actor, [
+                'sede_id' => $recorrido->sede_id,
+                'categoria' => $categoria,
+                'reportado_por' => mb_substr($actor->name, 0, 150),
+                'ubicacion' => mb_substr($ubicacion, 0, 255),
+                'descripcion' => $descripcion,
+                'area_edificio_id' => $edificio,
+                'ocurrio_en' => $ahoraLocal->format('Y-m-d\TH:i'),
+            ], $categoria === 'proteccion_civil' ? null : $categoria);
+            $this->novedades->anotar($ticket, $actor, "Ticket abierto automáticamente desde el Recorrido de Protección Civil {$recorrido->folio()}.", 'sistema');
+        } else {
+            // C-29 (D-06): el punto se guarda igual; la plataforma abre el ticket y el aviso llega al jefe (AvisosNovedades::hallazgo)
+            $ticket = $this->novedades->abrirPorLaPlataforma($actor, [
+                'sede_id' => (int) $recorrido->sede_id, 'categoria' => $categoria, 'reportado_por' => $actor->name,
+                'ubicacion' => $ubicacion, 'descripcion' => $descripcion, 'area_id' => $edificio, 'ocurrio_en' => $ahoraLocal->utc(),
+            ], "Ticket abierto por la plataforma desde el Recorrido de Protección Civil {$recorrido->folio()}: quien hizo el recorrido no puede crear tickets en esta sede.");
+        }
 
         $anterior = $recorrido->novedad_id;
         $recorrido->forceFill(['novedad_id' => $ticket->id])->save();

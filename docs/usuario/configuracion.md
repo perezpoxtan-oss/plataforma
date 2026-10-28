@@ -107,7 +107,7 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 1. En la sección de la bitácora, busca la tarjeta **…: nombre y hallazgos**.
 2. En **Nombre del módulo** elige **Novedades (como siempre)** o **Incidentes**.
 3. Si tu empresa usa otro nombre, elige **Otro nombre (escríbelo en Avanzado)**, abre **Avanzado: otro nombre** y escríbelo (máximo 40 letras).
-4. Si quieres, en **Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como** elige **Mantenimiento de equipo PC** (valor original: **Siniestro Protección Civil**).
+4. En **Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como** viene **Mantenimiento de equipo PC (recomendado)**: así un extintor sin presión no cuenta como siniestro. Elige **Siniestro Protección Civil** solo si tu empresa quiere tratar cada falla como emergencia (valor original: **Mantenimiento de equipo PC**).
 5. Toca **Guardar ajustes de la bitácora**.
 
 ![Ajustes de la Bitácora de novedades](img/configuracion/6-bitacora-novedades.png)
@@ -123,6 +123,35 @@ Cuando se registra el Accidente de alguien del personal, el ticket le llega a es
 3. Toca **Guardar ajustes de la bitácora**.
 
 **Qué debes ver:** «Ajustes de la Bitácora de novedades guardados.» Si después le cambias el nombre al departamento, los accidentes le siguen llegando. El accidente de un residente (condominio o fraccionamiento) no se manda a este departamento.
+
+### Cómo elegir los tipos de Reporte General
+
+Quien atiende un **Reporte General** puede elegir su tipo (es opcional). De fábrica, los tipos dependen del giro de tu empresa: en un hotel no hay; en corporativo, por ejemplo, «Acceso no autorizado» u «Objeto sospechoso»; en condominio y fraccionamiento, «Ruido», «Mascotas», «Fuga de agua», «Estacionamiento indebido», «Basura» y «Daño a áreas comunes».
+
+1. En la tarjeta de la bitácora abre **Avanzado: tipos de «Reporte General»**.
+2. Escribe un tipo por renglón (máximo 20). Déjalo vacío para no preguntar el tipo.
+3. Toca **Guardar ajustes de la bitácora**.
+
+**Qué debes ver:** el mensaje de ajustes guardados. Los reportes que ya tienen un tipo lo conservan aunque lo quites de la lista. **Restablecer valor original** regresa los tipos de fábrica de tu giro.
+
+### Cómo mostrar «¿Qué hacer?» con un procedimiento
+
+Solo si tu empresa usa **Procedimientos** y tiene alguno publicado.
+
+1. En la tarjeta de la bitácora abre **Avanzado: «¿Qué hacer?» — procedimiento de cada categoría y tipo de equipo**.
+2. Para cada categoría del ticket (Robo, Reporte General, Lost & Found…) o tipo de equipo de Protección Civil (Extintor, Hidrante…) elige el procedimiento, o **— Ninguno —**.
+3. Toca **Guardar procedimientos**.
+
+**Qué debes ver:** «Procedimientos de «¿Qué hacer?» guardados…». El expediente del ticket de esa categoría y el punto del recorrido de ese equipo muestran **¿Qué hacer? Ver procedimiento «…»** a quien puede ver procedimientos. Si el procedimiento se retira, el enlace desaparece solo. **Accidente / Lesión** no se ofrece: su formato no cambia.
+
+### Cómo pasar los hallazgos anteriores a «Mantenimiento de equipo PC»
+
+Si antes los recorridos abrían sus hallazgos como **Siniestro Protección Civil**, puedes pasarlos a **Mantenimiento de equipo PC** para que no cuenten como emergencias en los informes. Es opcional.
+
+1. En la tarjeta de la bitácora abre **Avanzado: hallazgos anteriores registrados como siniestro (N)**. Si no aparece, no hay ninguno.
+2. Toca **Guardar como Mantenimiento de equipo PC** y confirma.
+
+**Qué debes ver:** «N hallazgos anteriores pasaron a «Mantenimiento de equipo PC»…». Cada ticket queda con una nota que lo explica. Los siniestros que alguien documentó como siniestro real (con su detalle, servicios, equipos o daños) no se tocan.
 
 ### Cómo cambiar cada cuándo se revisan los equipos de Protección Civil
 

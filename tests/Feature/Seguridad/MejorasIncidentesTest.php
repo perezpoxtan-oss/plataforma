@@ -291,11 +291,11 @@ class MejorasIncidentesTest extends PruebaNovedades
         return $this->enEmpresa(fn () => RecorridoPc::findOrFail($r->id));
     }
 
-    public function test_el_hallazgo_de_recorrido_avisa_al_jefe_y_por_omision_sigue_siendo_siniestro(): void
+    public function test_el_hallazgo_de_recorrido_avisa_al_jefe_y_por_omision_es_mantenimiento_de_equipo(): void
     {
         $r = $this->recorridoConFalla();
         $ticket = $this->buscar($r->novedad_id);
-        $this->assertSame('proteccion_civil', $ticket->categoria);
+        $this->assertSame('mantenimiento_pc', $ticket->categoria); // C-29 (DD-17)
 
         $aviso = $this->avisos($this->jefe, 'recorrido_pc_hallazgo')->sole();
         $this->assertSame("Recorrido {$r->folio()} encontró una falla", $aviso->titulo);
@@ -308,7 +308,6 @@ class MejorasIncidentesTest extends PruebaNovedades
 
     public function test_la_empresa_puede_abrir_el_hallazgo_como_mantenimiento_de_equipo_pc(): void
     {
-        $this->actingAs($this->admin)->put('/configuracion/novedades', ['categoria_hallazgo_pc' => 'mantenimiento_pc'])->assertSessionHasNoErrors();
         $r = $this->recorridoConFalla();
         $ticket = $this->buscar($r->novedad_id);
         $this->assertSame('mantenimiento_pc', $ticket->categoria);

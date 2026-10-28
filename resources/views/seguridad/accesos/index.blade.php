@@ -21,7 +21,7 @@
             $hoy = app(\App\Support\HoraLocal::class)->formatear(now(), 'Y-m-d');
             $variasSedes = $sedesFiltro->count() > 1;
             $esHistorial = $pestana === 'historial';
-            $filtrosActivos = array_filter(\Illuminate\Support\Arr::only($filtros, ['q', 'tipo', 'sede', 'desde', 'hasta', 'rebasaron', 'excepciones']));
+            $filtrosActivos = array_filter(\Illuminate\Support\Arr::only($filtros, ['q', 'tipo', 'sede', 'desde', 'hasta', 'rebasaron', 'excepciones', 'articulos']));
             $base = array_filter(['q' => $filtros['q'] ?? null, 'tipo' => $filtros['tipo'] ?? null, 'sede' => $filtros['sede'] ?? null]);
             // C-25: una sola lectura de los ajustes para el reloj de permanencia de todas las tarjetas
             $empresaCaseta = \App\Models\Empresa::find(app(\App\Support\Tenancy\EmpresaDeTrabajo::class)->id(auth()->user()));
@@ -65,6 +65,21 @@
                     'placeholder' => 'Escanea el gafete o escribe nombre, placas o habitación'])
                 <div class="resultados-salida" data-resultados-salida-vista aria-live="polite"></div>
             </section>
+        @endif
+
+        {{-- C-31 (D-12): eventos confirmados de Reservas que ocurren hoy (área, horario y personas). Solo si hay. --}}
+        @if (($eventosHoy ?? collect())->isNotEmpty())
+            <details class="eventos-hoy tarjeta" @if ($eventosHoy->count() <= 3) open @endif>
+                <summary><i class="bi bi-calendar-event me-1" aria-hidden="true"></i>Eventos de hoy ({{ $eventosHoy->count() }})</summary>
+                <ul class="eventos-hoy-lista">
+                    @foreach ($eventosHoy as $ev)
+                        <li>
+                            <strong>{{ $ev['horario'] }}</strong> · {{ $ev['area'] }} · {{ $ev['titulo'] }}
+                            <span class="text-muted">· {{ $ev['asistentes'] }} {{ $ev['asistentes'] === 1 ? 'persona' : 'personas' }}@if ($ev['montaje']) · montaje desde {{ $ev['montaje'] }}@endif @if ($variasSedes) · {{ $ev['sede'] }}@endif</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </details>
         @endif
 
         {{-- Búsqueda y filtro por tipo: en Gente en Sitio y Pendientes filtran al escribir; en el historial, con Filtrar --}}
@@ -125,6 +140,9 @@
         @endif
         @if (! empty($filtros['excepciones']))
             <p class="small mb-2"><i class="bi bi-shield-exclamation me-1" aria-hidden="true"></i>Solo las aprobaciones por excepción del agente que esperan revisión (también en «Historial Finalizados»). <a href="{{ route('accesos.index', ['pestana' => $pestana] + $base) }}">Ver todos</a></p>
+        @endif
+        @if (! empty($filtros['articulos'])){{-- C-19 --}}
+            <p class="small mb-2"><i class="bi bi-tools me-1" aria-hidden="true"></i>Solo las salidas con algo distinto de lo que trajeron, que esperan revisión. <a href="{{ route('accesos.index', ['pestana' => $pestana] + $base) }}">Ver todos</a></p>
         @endif
 
         @if ($esHistorial && $lista->total() > 0)

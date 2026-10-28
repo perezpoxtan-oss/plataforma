@@ -404,6 +404,9 @@ final class Terminos
             'Nombre del huésped' => 'Nombre de quien lo perdió',
             'Nombre del Huésped' => 'Nombre de quien lo perdió',
             'Huésped o persona externa' => 'Persona externa',
+            // C-32 (D-17): una sola etiqueta, sin «Objetos olvidados (Objetos Perdidos)»
+            'Lost &amp; Found (Objetos Perdidos)' => 'Objetos olvidados',
+            'Lost & Found (Objetos Perdidos)' => 'Objetos olvidados',
             'Lost &amp; Found' => 'Objetos olvidados',
             'Lost & Found' => 'Objetos olvidados',
             'Lost and Found' => 'Objetos olvidados',

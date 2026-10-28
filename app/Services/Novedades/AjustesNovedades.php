@@ -5,9 +5,14 @@ namespace App\Services\Novedades;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Modulo;
+use App\Models\Novedad;
+use App\Models\NovedadNota;
+use App\Models\RecorridoPc;
 use App\Models\User;
 use App\Services\Permisos\AdministradorRoles;
 use App\Support\Tenancy\EmpresaDeTrabajo;
+use App\Support\Terminos;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -44,11 +49,25 @@ class AjustesNovedades
     private const MEMORIA = 'ajustes_novedades.nombre.';
 
     public const CATEGORIAS_HALLAZGO = [
-        'proteccion_civil' => 'Siniestro Protección Civil (como siempre)',
-        'mantenimiento_pc' => 'Mantenimiento de equipo PC',
+        // C-29 (DD-17): el hallazgo de un recorrido es mantenimiento, no un siniestro (no infla Tablero ni Tendencias)
+        'mantenimiento_pc' => 'Mantenimiento de equipo PC (recomendado)',
+        'proteccion_civil' => 'Siniestro Protección Civil',
     ];
 
-    public const CATEGORIA_HALLAZGO_OMISION = 'proteccion_civil';
+    public const CATEGORIA_HALLAZGO_OMISION = 'mantenimiento_pc';
+
+    /**
+     * C-32 (D-17): subtipos de «Reporte General» de fábrica según el giro. En
+     * hotel no hay (se ve como siempre); la empresa los cambia en Avanzado.
+     */
+    public const SUBTIPOS_REPORTE_GENERAL = [
+        'hotel' => [],
+        'corporativo' => ['Acceso no autorizado', 'Conducta indebida', 'Daño a instalaciones', 'Objeto sospechoso', 'Falla de servicio'],
+        'condominio' => ['Ruido', 'Mascotas', 'Fuga de agua', 'Estacionamiento indebido', 'Basura', 'Daño a áreas comunes'],
+        'fraccionamiento' => ['Ruido', 'Mascotas', 'Fuga de agua', 'Estacionamiento indebido', 'Basura', 'Daño a áreas comunes'],
+    ];
+
+    public const MAX_SUBTIPOS = 20;
 
     public function __construct(private readonly AdministradorRoles $auditoria) {}
 
@@ -189,6 +208,27 @@ class AjustesNovedades
         return $rrhh?->id === null ? null : (int) $rrhh->id;
     }
 
+    /**
+     * Subtipos de Reporte General de la empresa (los suyos o los de fábrica de su giro).
+     *
+     * @return list<string>
+     */
+    public function subtiposReporteGeneral(?Empresa $empresa): array
+    {
+        $guardados = $empresa?->preferencias['novedades']['subtipos_reporte_general'] ?? null;
+        if (is_array($guardados)) {
+            return array_values(array_filter($guardados, 'is_string'));
+        }
+
+        return self::SUBTIPOS_REPORTE_GENERAL[Terminos::para($empresa)->giro] ?? [];
+    }
+
+    /** @return list<string> */
+    public function subtiposDeFabrica(?Empresa $empresa): array
+    {
+        return self::SUBTIPOS_REPORTE_GENERAL[Terminos::para($empresa)->giro] ?? [];
+    }
+
     public function categoriaHallazgoPc(?Empresa $empresa): string
     {
         $valor = $empresa?->preferencias['novedades']['categoria_hallazgo_pc'] ?? null;
@@ -214,6 +254,7 @@ class AjustesNovedades
             'reloj_horas' => ['nullable', 'array'],
             'departamento_accidentes' => ['nullable', 'integer', 'min:0'],
             'reloj_horas.*' => ['nullable', 'integer', 'min:1', 'max:'.self::RELOJ_MAX_HORAS],
+            'subtipos_reporte_general' => ['nullable', 'string', 'max:2000'], // C-32: uno por renglón
         ], [
             'reloj_horas.*.integer' => 'Escribe las horas del reloj con un número entero, de 1 a '.self::RELOJ_MAX_HORAS.'.',
             'reloj_horas.*.min' => 'Escribe las horas del reloj con un número entero, de 1 a '.self::RELOJ_MAX_HORAS.'.',
@@ -234,7 +275,12 @@ class AjustesNovedades
         }
 
         $antes = ['nombre_menu' => $this->nombreMenu($empresa->id), 'categoria_hallazgo_pc' => $this->categoriaHallazgoPc($empresa), 'reloj_horas' => $this->relojHoras($empresa),
-            'departamento_accidentes' => $this->departamentoAccidentes($empresa)];
+            'departamento_accidentes' => $this->departamentoAccidentes($empresa),
+            'subtipos_reporte_general' => $this->subtiposReporteGeneral($empresa)];
+        // C-32: sin el campo se conservan; iguales a los de fábrica del giro, no se guardan
+        $subtipos = array_key_exists('subtipos_reporte_general', $datos) ? $this->leerSubtipos((string) $datos['subtipos_reporte_general']) : null;
+        $subtiposGuardar = $subtipos === null ? ($empresa->preferencias['novedades']['subtipos_reporte_general'] ?? null)
+            : ($subtipos === $this->subtiposDeFabrica($empresa) ? null : $subtipos);
         // C-24: solo se guardan las horas distintas de fábrica (sin el campo, se conservan)
         $reloj = array_key_exists('reloj_horas', $datos)
             ? array_filter(array_map(fn ($v) => $v === null || $v === '' ? null : (int) $v, array_intersect_key((array) $datos['reloj_horas'], self::RELOJ_HORAS)),
@@ -244,7 +290,7 @@ class AjustesNovedades
         $nombre = $nombre === '' || $nombre === self::NOMBRE_OMISION ? null : $nombre;
         $categoria = $datos['categoria_hallazgo_pc'];
 
-        DB::transaction(function () use ($empresa, $nombre, $categoria, $reloj, $deptoAccidentes) {
+        DB::transaction(function () use ($empresa, $nombre, $categoria, $reloj, $deptoAccidentes, $subtiposGuardar) {
             $modulo = Modulo::where('clave', 'novedades')->value('id');
             if ($modulo !== null) {
                 // Solo en la empresa que tiene el módulo contratado (sin contrato no hay menú que nombrar)
@@ -272,15 +318,87 @@ class AjustesNovedades
             if ($deptoAccidentes !== null) {
                 $preferencias['novedades']['departamento_accidentes'] = $deptoAccidentes;
             }
+            if ($subtiposGuardar === null) {
+                unset($preferencias['novedades']['subtipos_reporte_general']);
+                if (($preferencias['novedades'] ?? null) === []) {
+                    unset($preferencias['novedades']);
+                }
+            } else {
+                $preferencias['novedades']['subtipos_reporte_general'] = $subtiposGuardar;
+            }
             $fresca?->forceFill(['preferencias' => $preferencias === [] ? null : $preferencias])->save();
         });
         $empresa->refresh();
         request()->attributes->remove(self::MEMORIA.$empresa->id);
 
         $despues = ['nombre_menu' => $this->nombreMenu($empresa->id), 'categoria_hallazgo_pc' => $this->categoriaHallazgoPc($empresa), 'reloj_horas' => $this->relojHoras($empresa),
-            'departamento_accidentes' => $this->departamentoAccidentes($empresa)];
+            'departamento_accidentes' => $this->departamentoAccidentes($empresa),
+            'subtipos_reporte_general' => $this->subtiposReporteGeneral($empresa)];
         if ($antes !== $despues) {
             $this->auditoria->auditar($actor, 'novedades.configurado', $empresa, $antes, $despues);
         }
+    }
+
+    /**
+     * «Ruido\nMascotas\n…» → lista limpia, sin repetidos, máximo 20 de 60 letras.
+     *
+     * @return list<string>
+     */
+    private function leerSubtipos(string $texto): array
+    {
+        $lista = [];
+        foreach (preg_split('/\R/u', $texto) ?: [] as $renglon) {
+            $limpio = mb_substr(trim((string) preg_replace('/\s+/u', ' ', strip_tags($renglon))), 0, 60);
+            if ($limpio !== '' && ! in_array(mb_strtolower($limpio), array_map('mb_strtolower', $lista), true)) {
+                $lista[] = $limpio;
+            }
+        }
+
+        return array_slice($lista, 0, self::MAX_SUBTIPOS);
+    }
+
+    // ------------------------------------------- C-29: reclasificar lo de antes
+
+    /**
+     * Tickets que abrió un recorrido como «Siniestro Protección Civil» y que
+     * nadie documentó como siniestro real (sin detalle, servicios, equipos ni
+     * daños): son los que se pueden pasar a «Mantenimiento de equipo PC».
+     *
+     * @return Builder<Novedad>
+     */
+    public function hallazgosComoSiniestro(): Builder
+    {
+        return Novedad::query()->where('novedades.categoria', 'proteccion_civil')
+            ->whereIn('novedades.id', RecorridoPc::query()->whereNotNull('novedad_id')->select('novedad_id'))
+            ->whereDoesntHave('siniestro')->whereDoesntHave('siniestroServicios')->whereDoesntHave('siniestroEquipos')->whereDoesntHave('siniestroDanos');
+    }
+
+    /**
+     * «Pasar los hallazgos anteriores a Mantenimiento de equipo PC» (opcional,
+     * desde Configuración). Deja una nota en cada ticket y una sola entrada
+     * en la auditoría con los folios, para poder revisarlo o deshacerlo.
+     *
+     * @return int tickets reclasificados
+     */
+    public function reclasificarHallazgos(User $actor, Empresa $empresa): int
+    {
+        $tickets = $this->hallazgosComoSiniestro()->where('novedades.empresa_id', $empresa->id)->get(['novedades.id', 'numero']);
+        if ($tickets->isEmpty()) {
+            return 0;
+        }
+        DB::transaction(function () use ($tickets, $actor, $empresa) {
+            Novedad::whereIn('id', $tickets->pluck('id'))->where('categoria', 'proteccion_civil')
+                ->update(['categoria' => 'mantenimiento_pc', 'actualizado_por' => $actor->id, 'updated_at' => now()]);
+            foreach ($tickets as $t) {
+                NovedadNota::create([
+                    'empresa_id' => $empresa->id, 'novedad_id' => $t->id, 'tipo' => 'sistema', 'autor_nombre' => mb_substr($actor->name, 0, 150),
+                    'texto' => 'Se reclasificó de «Siniestro Protección Civil» a «Mantenimiento de equipo PC»: lo abrió un recorrido y no se documentó como siniestro.',
+                ]);
+            }
+        });
+        $this->auditoria->auditar($actor, 'novedades.hallazgos_reclasificados', $empresa, ['categoria' => 'proteccion_civil'],
+            ['categoria' => 'mantenimiento_pc', 'tickets' => $tickets->map(fn (Novedad $t) => $t->folio())->all()]);
+
+        return $tickets->count();
     }
 }

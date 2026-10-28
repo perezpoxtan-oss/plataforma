@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Detalle del Reporte General (SEGCAT: ig_observados, ig_actividad, ig_motivo, acciones_inmediatas).
+ * C-32 (D-17): «subtipo» opcional de la lista de la empresa (AjustesNovedades::subtiposReporteGeneral).
  */
 class NovedadReporteGeneral extends Model
 {
@@ -16,7 +17,7 @@ class NovedadReporteGeneral extends Model
 
     protected $table = 'novedad_reportes_generales';
 
-    protected $fillable = ['empresa_id', 'novedad_id', 'observados', 'actividad', 'motivo', 'acciones_inmediatas'];
+    protected $fillable = ['empresa_id', 'novedad_id', 'subtipo', 'observados', 'actividad', 'motivo', 'acciones_inmediatas'];
 
     public function novedad(): BelongsTo
     {

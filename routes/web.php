@@ -400,6 +400,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/accesos/{acceso}/pedir-supervisor', [AccesoController::class, 'pedirSupervisor'])->whereNumber('acceso')->name('accesos.pedir-supervisor');
     Route::patch('/accesos/{acceso}/excepcion-agente', [AccesoController::class, 'excepcionAgente'])->whereNumber('acceso')->name('accesos.excepcion-agente');
     Route::patch('/accesos/{acceso}/revisar-excepcion', [AccesoController::class, 'revisarExcepcion'])->whereNumber('acceso')->name('accesos.revisar-excepcion');
+    Route::patch('/accesos/{acceso}/revisar-articulos', [AccesoController::class, 'revisarArticulos'])->whereNumber('acceso')->name('accesos.revisar-articulos');
     Route::patch('/accesos/{acceso}/salida', [AccesoController::class, 'salida'])->whereNumber('acceso')->name('accesos.salida');
     Route::patch('/accesos/{acceso}/zona', [AccesoController::class, 'zona'])->whereNumber('acceso')->name('accesos.zona');
     Route::post('/accesos/{acceso}/salida-temporal', [AccesoController::class, 'salidaTemporal'])->whereNumber('acceso')->name('accesos.salida-temporal');
@@ -552,6 +553,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/configuracion/lost-found', [ConfiguracionController::class, 'lostFound'])->name('configuracion.lost_found');
     // Mejoras Incidentes: nombre del menú y categoría del hallazgo de recorrido (Configuración → Bitácora de novedades)
     Route::put('/configuracion/novedades', [ConfiguracionController::class, 'novedades'])->name('configuracion.novedades');
+    Route::put('/configuracion/novedades/procedimientos', [ConfiguracionController::class, 'procedimientosVinculados'])->name('configuracion.novedades.procedimientos');
+    Route::put('/configuracion/novedades/reclasificar-hallazgos', [ConfiguracionController::class, 'reclasificarHallazgos'])->name('configuracion.novedades.reclasificar');
     Route::put('/configuracion/equipos-pc', [ConfiguracionController::class, 'equiposPc'])->name('configuracion.equipos_pc'); // DD-17
     // Configuración por secciones: nombres del menú (Avanzado) y «Restablecer valor original» de cada tarjeta
     Route::put('/configuracion/menu', [ConfiguracionController::class, 'menu'])->name('configuracion.menu');

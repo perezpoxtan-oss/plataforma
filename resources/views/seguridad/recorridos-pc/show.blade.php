@@ -102,6 +102,11 @@
                             @if ($punto['ubicacion'] || $equipo->referencia)
                                 <div class="small"><i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ implode(' · ', array_filter([$punto['ubicacion'], $equipo->referencia])) }}</div>
                             @endif
+                            {{-- C-31 (D-20): el procedimiento que la empresa asoció a este tipo de equipo --}}
+                            @php $procEquipo = app(\App\Services\Procedimientos\ProcedimientosVinculados::class)->para(auth()->user(), \App\Models\Empresa::find($r->empresa_id), 'equipo:'.$equipo->categoria); @endphp
+                            @if ($procEquipo)
+                                <div class="small que-hacer"><i class="bi bi-journal-check me-1" aria-hidden="true"></i>¿Qué hacer? <a href="{{ route('procedimientos.leer', $procEquipo->id) }}" target="_blank" rel="noopener">Ver procedimiento «{{ $procEquipo->titulo }}»</a></div>
+                            @endif
                         </div>
                     </div>
                 @endif

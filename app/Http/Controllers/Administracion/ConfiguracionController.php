@@ -22,6 +22,7 @@ use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\SuperAdministradores;
 use App\Services\Plataforma\VersionPhp;
 use App\Services\Privacidad\ConservacionDatos;
+use App\Services\Procedimientos\ProcedimientosVinculados;
 use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\RecorridosPc\AjustesEquiposPc;
 use App\Services\Relojes\AjustesRelojes;
@@ -241,7 +242,8 @@ class ConfiguracionController extends Controller
             // C-22: «Reloj y suplente» regresa sus horas generales y lo de cada módulo
             'vobo' => [$this->restablecerCaseta($actor, $empresa, AjustesCaseta::GRUPOS['vobo']), $this->restablecerPreferencias($actor, $empresa->refresh(), [AjustesRelojes::CLAVE])],
             'menu' => $this->restablecerMenu($actor, $empresa),
-            'novedades' => app(AjustesNovedades::class)->guardar($actor, $empresa, ['nombre_opcion' => AjustesNovedades::NOMBRE_OMISION, 'categoria_hallazgo_pc' => AjustesNovedades::CATEGORIA_HALLAZGO_OMISION, 'reloj_horas' => []]),
+            'novedades' => app(AjustesNovedades::class)->guardar($actor, $empresa, ['nombre_opcion' => AjustesNovedades::NOMBRE_OMISION, 'categoria_hallazgo_pc' => AjustesNovedades::CATEGORIA_HALLAZGO_OMISION, 'reloj_horas' => [],
+                'subtipos_reporte_general' => implode("\n", app(AjustesNovedades::class)->subtiposDeFabrica($empresa))]),
             'lost_found' => $this->tenant->conEmpresa($empresaId, fn () => $this->lostFound->guardarUmbrales($actor, ['dias' => LostFoundUmbral::POR_OMISION])),
             'auditoria', 'avisos' => $this->restablecerPreferencias($actor, $empresa, $ajuste === 'auditoria' ? ['auditoria_sede'] : ['avisos', 'avisos_modulos']),
             'dos_pasos' => $this->restablecerPreferencias($actor, $empresa, ['dos_pasos']),
@@ -425,9 +427,41 @@ class ConfiguracionController extends Controller
         $empresaId = $this->empresa->id($request->user());
         abort_if($empresaId === null, 404);
 
-        app(AjustesNovedades::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only(['nombre_opcion', 'nombre_menu', 'categoria_hallazgo_pc', 'reloj_horas', 'departamento_accidentes']));
+        app(AjustesNovedades::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only(['nombre_opcion', 'nombre_menu', 'categoria_hallazgo_pc', 'reloj_horas', 'departamento_accidentes', 'subtipos_reporte_general']));
 
         return redirect()->to(route('configuracion.index').'#novedades')->with('ok', 'Ajustes de '.app(AjustesNovedades::class)->bitacoraConArticulo($empresaId).' guardados.');
+    }
+
+    /** C-31 (D-20): procedimiento de cada categoría y tipo de equipo («¿Qué hacer?»). */
+    public function procedimientosVinculados(Request $request): RedirectResponse
+    {
+        Gate::authorize('configuracion.editar');
+        abort_unless($this->editaEmpresa($request->user()), 403, 'Estos ajustes son de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa.');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        $this->tenant->conEmpresa($empresaId, fn () => app(ProcedimientosVinculados::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only('vinculos')));
+
+        return redirect()->to(route('configuracion.index').'#novedades')->with('ok', 'Procedimientos de «¿Qué hacer?» guardados. Ya aparecen en los tickets y en los recorridos.');
+    }
+
+    /**
+     * C-29 (D-06): pasar a «Mantenimiento de equipo PC» los hallazgos de
+     * recorrido que se abrieron como siniestro y nadie documentó como tal.
+     * Opcional y de toda la empresa (mismo permiso que los ajustes).
+     */
+    public function reclasificarHallazgos(Request $request): RedirectResponse
+    {
+        Gate::authorize('configuracion.editar');
+        abort_unless($this->editaEmpresa($request->user()), 403, 'Estos ajustes son de toda la empresa: hace falta el permiso «editar» de Configuración con alcance de empresa.');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        $total = $this->tenant->conEmpresa($empresaId, fn () => app(AjustesNovedades::class)->reclasificarHallazgos($request->user(), Empresa::findOrFail($empresaId)));
+
+        return redirect()->to(route('configuracion.index').'#novedades')->with('ok', $total === 0
+            ? 'No hay hallazgos anteriores que reclasificar.'
+            : ($total === 1 ? '1 hallazgo anterior pasó' : $total.' hallazgos anteriores pasaron').' a «Mantenimiento de equipo PC». Cada ticket tiene una nota que lo explica.');
     }
     // Fin Mejoras Incidentes
 

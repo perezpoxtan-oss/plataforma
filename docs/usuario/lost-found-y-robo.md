@@ -122,6 +122,22 @@ Si tu rol solo trabaja robos (no la Bitácora completa), el expediente se abre a
 
 **Qué debes ver:** las etiquetas del caso (**Abierto**, **Con sospechoso**, **Sin parte a policía**…) y, si se ligó, **Vinculado con el hallazgo LF-…**.
 
+## Cómo revisar la Ficha de Hechos de un robo
+
+La Ficha de Hechos junta todo lo que pasó en la habitación del robo, de 7 días antes a 30 días después de la fecha, para apoyar la investigación. Lo primero que dice es **quién tuvo la llave**.
+
+1. En el expediente del robo, elige la **habitación específica** y guarda.
+2. Toca **Ficha de Hechos (habitación, llaves y más)**.
+3. Revisa **En esta habitación exacta**:
+   - **Préstamo de llave**: cada vez que alguien se llevó una llave que abre esa habitación, con quién la tuvo, desde cuándo y si la devolvió, sigue fuera o no regresó. Dice qué llave era: la de la habitación («abre esta habitación»), la de su piso o su edificio, la de su sección o una **llave maestra**. Si una llave está asignada de forma permanente a alguien, también aparece.
+   - **Acceso**: quién entró ligado a esa habitación (el huésped, quien lo visitó, el proveedor que trabajó ahí), a qué hora entró y salió.
+   - Los tickets, Valores a la Vista y objetos de Lost & Found de siempre.
+4. Abajo, **En esta misma zona** muestra como contexto los proveedores, contratistas y visitas que trabajaron en otras áreas del mismo piso o edificio.
+
+![Ficha de Hechos con préstamos de llave y accesos](img/lost-found-y-robo/ficha-de-hechos.png)
+
+**Qué debes ver:** renglones como «Préstamo de llave · abre esta habitación — Llave HAB-101: la tuvo Rosa Pérez, del 31/10/2026 16:00; la devolvió el 31/10/2026 18:30». Solo ves los préstamos si puedes ver **Préstamo de llaves**, y los accesos si puedes ver la **Bitácora de accesos**. Los accesos que se registraron con la habitación escrita a mano (sin elegirla de la lista) no aparecen.
+
 ## En el celular
 
 ![Lost & Found en el celular](img/lost-found-y-robo/celular.png)
@@ -145,6 +161,9 @@ Si tu rol solo trabaja robos (no la Bitácora completa), el expediente se abre a
 | «Solo se agregan objetos a un ticket de Lost & Found que siga abierto.» | El ticket se cerró o no es de Lost & Found. | Registra el objeto como nuevo. |
 
 ## Preguntas frecuentes
+
+- **¿Por qué la Ficha de Hechos no muestra a un huésped que sí estuvo?** Solo aparecen los accesos en los que la habitación se eligió de la lista al registrar. Pide a la caseta que siempre la elija.
+- **¿Puedo cambiar un robo a otra categoría?** Solo si todavía no tiene su detalle capturado. Si ya lo tiene, ciérralo con su resolución y abre un ticket nuevo.
 
 - **¿Dónde registro un objeto encontrado?** Aquí, con **Registrar objeto encontrado**, o en la [Bitácora de novedades](novedades.md) con un ticket de **Lost & Found** (el ticket rápido ya pide el objeto).
 - **¿Qué pasa cuando un objeto se vence?** Se pone en rojo; tu supervisor decide si se dona, se destruye o se entrega a beneficencia.

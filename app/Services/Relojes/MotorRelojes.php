@@ -69,6 +69,7 @@ class MotorRelojes
         // C-25: caseta
         Relojes\PedidoAlSupervisor::class,
         Relojes\ExcepcionesPorRevisar::class,
+        Relojes\ArticulosPorRevisar::class, // Etapa 6 (C-19): el proveedor salió con algo distinto
         Relojes\Permanencia::class,
         Relojes\SalidaTemporal::class,
         // C-23: Recursos Humanos
