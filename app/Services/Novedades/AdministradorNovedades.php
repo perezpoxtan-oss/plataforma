@@ -13,7 +13,8 @@ use App\Models\Sede;
 use App\Models\SiniestroDetalle;
 use App\Models\User;
 use App\Services\Espacios\Lugares;
-use App\Services\Novedades\Formatos\Accidente;
+use App\Services\Novedades\Accidentes\TurnoDelAccidente;
+use App\Services\Novedades\Formatos\AccidenteConSugerencias;
 use App\Services\Novedades\Formatos\Formato;
 use App\Services\Novedades\Formatos\LostFound;
 use App\Services\Novedades\Formatos\MantenimientoPc;
@@ -51,7 +52,8 @@ class AdministradorNovedades
     /** categoría => formato que la atiende */
     public const FORMATOS = [
         'incidente_general' => ReporteGeneral::class,
-        'accidente' => Accidente::class,
+        // C-33: el mismo formato de Accidente (no cambia) con fecha, hora y lugar sugeridos para un caso nuevo
+        'accidente' => AccidenteConSugerencias::class,
         'habitacion' => ValoresVista::class,
         'proteccion_civil' => Siniestro::class,
         'recorrido_pc' => RecorridoPc::class,
@@ -503,6 +505,7 @@ class AdministradorNovedades
             }
             $novedad->save();
             $formato?->guardar($novedad, $datosFormato, $actor);
+            app(TurnoDelAccidente::class)->completar($novedad); // C-33: el turno sale de la ficha del colaborador (el formato no cambia)
             if ((int) $departamentoAntes !== (int) $novedad->departamento_id && $novedad->departamento_id !== null) {
                 $novedad->loadMissing('departamento:id,nombre');
                 $this->anotar($novedad, $actor, 'Canalizado a '.$novedad->departamento?->nombre.'.', 'sistema');
