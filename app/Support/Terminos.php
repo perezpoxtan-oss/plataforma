@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Acceso;
 use App\Models\Empresa;
+use App\Models\Espacio;
 use App\Support\Espacios\Etiquetas;
 use App\Support\Tenancy\Tenant;
 
@@ -177,6 +178,19 @@ final class Terminos
     public function espacio(): string
     {
         return $this->esHotel() ? 'Habitación' : ($this->terminologia['area_especifica'] ?? 'Área específica');
+    }
+
+    /**
+     * Revisión Etapa 5: cómo se llama UN lugar de ese nivel. En condominio y
+     * fraccionamiento, el área común (alberca, salón) no es «Vivienda».
+     *
+     * @param  Espacio|array<string, mixed>|null  $lugar  el espacio o la fila de Lugares (con «area_comun»)
+     */
+    public function nombreLugar(Espacio|array|null $lugar): string
+    {
+        $comun = is_array($lugar) ? (bool) ($lugar['area_comun'] ?? false) : (bool) $lugar?->esAreaComun();
+
+        return $comun && $this->esResidencial() ? 'Área común' : $this->espacio();
     }
 
     public function espacios(): string

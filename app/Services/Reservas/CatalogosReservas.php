@@ -16,6 +16,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Support\Espacios\Etiquetas;
 use App\Support\ImagenSegura;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -215,6 +216,10 @@ class CatalogosReservas
         $this->ultimosInteriores = 0;
 
         return DB::transaction(function () use ($actor, $espacio, $modo, $interiores) {
+            // Revisión Etapa 5: en condominio y fraccionamiento, lo que se reserva es un área común, no una vivienda
+            if ($espacio->nivel === Espacio::AREA_ESPECIFICA && ! $espacio->esAreaComun() && Terminos::actual()->esResidencial()) {
+                $espacio->forceFill(['uso' => Espacio::USO_AREA_COMUN])->save();
+            }
             $area = ReservaArea::firstWhere('espacio_id', $espacio->id);
             if ($area !== null) {
                 if (! $area->reservable) {

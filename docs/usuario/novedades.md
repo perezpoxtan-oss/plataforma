@@ -132,7 +132,7 @@ Si respondes por un departamento (Mantenimiento, Recursos Humanos…), Seguridad
 
 **Reloj:** el ticket de tu departamento usa las mismas horas por categoría que los tickets canalizados. A esas horas se te recuerda y al triple pasa al jefe de seguridad de la sede.
 
-**Accidente de un colaborador:** si en tu sede hay un departamento de Recursos Humanos con responsable, el Accidente de un colaborador se le canaliza solo para que le dé seguimiento. El formato del Accidente no cambia.
+**Accidente de un colaborador:** se canaliza solo al **departamento que recibe accidentes de personal** (lo eliges en [Configuración](configuracion.md#cómo-elegir-el-departamento-que-recibe-los-accidentes-del-personal); de fábrica, el que se llama Recursos Humanos), si aplica en tu sede y tiene responsable, para que le dé seguimiento. El accidente de un residente no se le manda. El formato del Accidente no cambia.
 
 ## Cómo cerrar o reabrir un caso
 

@@ -54,6 +54,8 @@ Si tienes cuenta en la plataforma y la caseta te elige en **¿A quién viene?**,
 
 Si tu empresa no pide autorización para las visitas, solo te llega el aviso **Llegó tu visita: (nombre)**.
 
+**Si delegaste tus aprobaciones** ([Delegar mis aprobaciones](mi-cuenta.md#cómo-delegar-mis-aprobaciones-no-molestar)), el aviso de tus visitas le llega a la persona en quien delegaste (o a quien ella delegó, si puede responder en esa sede), con el texto «… que viene con (tu nombre) (te delegó sus aprobaciones)». Tú también puedes responderla. Si nadie de tu cadena puede responder en esa sede, te llega a ti. Si no contestan a tiempo, pasa al responsable de tu departamento, como siempre.
+
 ### Cuando la caseta lo deja pasar por excepción
 
 Si el departamento no tiene responsable en esa sede, nadie contestó a tiempo o hubo una urgencia, el supervisor de la caseta puede dejar pasar al proveedor o contratista con **Autorizar por excepción**, siempre con un motivo. Entonces:

@@ -527,7 +527,7 @@ class AdministradorNovedades
             $departamentos->avisar($novedad, $actor);
         }
         if ($novedad->categoria === 'accidente' && ($datosFormato['tipo'] ?? null) === 'COLABORADOR') {
-            $departamentos->accidenteDeColaborador($novedad, $actor);
+            $departamentos->accidenteDeColaborador($novedad, $actor, isset($datosFormato['colaborador']['colaborador_id']) ? (int) $datosFormato['colaborador']['colaborador_id'] : null);
         }
 
         return $novedad;

@@ -8,6 +8,7 @@ use App\Models\AccidenteGuardavidas;
 use App\Models\AccidenteHuesped;
 use App\Models\Candidato;
 use App\Models\Colaborador;
+use App\Models\Espacio;
 use App\Models\LostFoundArticulo;
 use App\Models\LostFoundReportePerdida;
 use App\Models\MovimientoTransporte;
@@ -199,7 +200,10 @@ class Tendencias
         $terminos = Terminos::actual();
         // C-10: en condominio y fraccionamiento se visita una vivienda, no un departamento
         if ($terminos->esResidencial()) {
-            $deptos = Indicadores::por((clone $periodo)->where('accesos.tipo', '!=', 'colaborador')->whereNotNull('accesos.habitacion'), 'accesos.habitacion', [], 10);
+            // Revisión Etapa 5: solo viviendas (la alberca o el salón son áreas comunes)
+            $deptos = Indicadores::por((clone $periodo)->where('accesos.tipo', '!=', 'colaborador')->whereNotNull('accesos.habitacion')
+                ->where(fn ($q) => $q->whereNull('accesos.espacio_id')->orWhereNotIn('accesos.espacio_id', Espacio::query()->where('uso', Espacio::USO_AREA_COMUN)->select('id'))),
+                'accesos.habitacion', [], 10);
             $deptos = collect($deptos)->mapWithKeys(fn ($n, $v) => [$terminos->espacio().' '.$v => $n])->all();
         } else {
             $deptos = Indicadores::por((clone $periodo)->join('departamentos', 'departamentos.id', '=', 'accesos.departamento_id'), 'departamentos.nombre', [], 10);

@@ -61,7 +61,7 @@ La persona citada responde su propia visita sin la bandeja de Autorizaciones: `A
 - Aviso `novedad_departamento` a `Autorizaciones::aQuienAvisar()` (cobertura y delegación de la Etapa 3).
 - **Tickets de mi departamento** (`NovedadDepartamentoController`, rutas `novedades.departamento.*`): lista, detalle de solo lectura, «Agregar nota» (Minuto a Minuto con el nombre del departamento) y **Atender** (avisa `novedad_departamento_atendida` a quien lo levantó y a la persona de Seguridad). Acceso por cobertura, no por permisos de la Bitácora. Menú: Operación → Incidentes, para quien responde por algún departamento.
 - **Reloj:** `TicketsDeDepartamento` (clave `novedades_departamento`) con las horas por categoría de los tickets canalizados; suplente, el jefe de seguridad de la sede. Renglón «Tickets de tu departamento» en Mis pendientes e Inicio.
-- **Accidente de un colaborador:** si en la sede hay un departamento de Recursos Humanos (por nombre: «Recursos Humanos», «RR. HH.», «Capital humano») con quien lo atienda, se le canaliza solo. El formato no cambia.
+- **Accidente de un colaborador:** se canaliza solo al «Departamento que recibe accidentes de personal» (`AjustesNovedades::departamentoAccidentes()`, guardado en `empresas.preferencias['novedades']['departamento_accidentes']`: id, o 0 = ninguno), si aplica en la sede y tiene quien lo atienda. Valor de fábrica (sin guardar): el departamento activo cuyo nombre coincide con `CanalizarDepartamento::PATRON_RRHH`; la migración `2026_11_15_000100_revision_etapa_cinco` lo deja guardado para las empresas que ya existían, así renombrarlo no cambia nada. El accidente de un residente (`colaboradores.tipo = residente`) no se canaliza. El formato no cambia.
 
 ## C-34 · Reservas
 
@@ -70,6 +70,12 @@ La persona citada responde su propia visita sin la bandeja de Autorizaciones: `A
 - Departamento que solicita, servicio del catálogo y «Otro servicio»: solo departamentos **activos** (el que ya tenía se conserva).
 - Orden sin quien la atienda (sin responsable del departamento ni responsable general): se marca y avisa a quien configura (`reserva_orden_sin_quien`, no se silencia). Configuración muestra los servicios sin departamento activo.
 - ARCO encuentra las reservas del residente.
+
+## Revisión independiente (PR #92)
+
+- **Persona citada que delegó (C-12):** `Autorizaciones::destinoDeLaPersonaCitada()` usa `CadenaDelegaciones::destino()` con la misma condición que `aQuienAvisar()` (puede responder en la sede). El delegado responde (`esDelegadoDeLaPersonaCitada()`), la ve en la bandeja y en Mis pendientes (`personasQueLeDelegan()`); la persona citada también puede responder; el suplente sigue siendo su departamento.
+- **Vivienda o área común:** `espacios.uso` (`area_comun` o vacío). `Terminos::nombreLugar()` dice «Área común» en residenciales. Residentes solo ofrece y acepta viviendas (`Lugares::opciones(..., soloViviendas: true)`), Tendencias cuenta solo viviendas y marcar un área como reservable la deja como área común. Zonas y edificios trae la casilla «Es un área común».
+- **Receptor general (C-16):** el residente se elige en la misma opción «colaborador» del componente `componentes.receptor` (`receptor_tipo = colaborador`, `colaborador_id`), que en residenciales se llama «Residente o personal». No hay camino aparte.
 
 ## Demo de fraccionamiento
 

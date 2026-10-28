@@ -114,6 +114,16 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 
 **Qué debes ver:** «Ajustes de la Bitácora de incidentes guardados.» (o con el nombre que elegiste). El nombre nuevo aparece en el menú, en el botón de abajo del celular, en los títulos, en los avisos, en los informes, en Inicio y en el manual. Los tickets, los permisos y las direcciones no cambian.
 
+### Cómo elegir el departamento que recibe los accidentes del personal
+
+Cuando se registra el Accidente de alguien del personal, el ticket le llega a este departamento en **Tickets de mi departamento** para que llene su parte. El formato del accidente no cambia.
+
+1. En la tarjeta **…: nombre y hallazgos**, busca **Departamento que recibe accidentes de personal**.
+2. Elige el departamento (por ejemplo **Recursos Humanos** o **Gente y Cultura**) o **Ninguno (no avisar a un departamento)**. Valor original: **el departamento que se llama Recursos Humanos**.
+3. Toca **Guardar ajustes de la bitácora**.
+
+**Qué debes ver:** «Ajustes de la Bitácora de novedades guardados.» Si después le cambias el nombre al departamento, los accidentes le siguen llegando. El accidente de un residente (condominio o fraccionamiento) no se manda a este departamento.
+
 ### Cómo cambiar cada cuándo se revisan los equipos de Protección Civil
 
 Si un equipo pasa estos días sin aparecer en un recorrido, se avisa a quien administra los equipos en su sede y, una semana después, a quien los administra en toda la empresa.

@@ -284,7 +284,8 @@ class AutorizacionController extends Controller
         $u = $request->user();
 
         // C-09: la persona citada ve su propia visita (cada solicitud se revisa en buscar())
-        return $u->can('autorizaciones.ver') || $u->can('candidatos.editar') || $u->can('recepcion_rh.ver') || $this->tieneColaborador($u);
+        return $u->can('autorizaciones.ver') || $u->can('candidatos.editar') || $u->can('recepcion_rh.ver') || $this->tieneColaborador($u)
+            || $this->autorizaciones->personasQueLeDelegan($u)['personas'] !== []; // revisión Etapa 5: delegado de una persona citada
     }
 
     /** C-09: cuenta ligada a una persona del directorio (puede tener visitas que la esperan). */

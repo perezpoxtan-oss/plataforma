@@ -136,6 +136,10 @@ class Autorizaciones
         if ($this->esLaPersonaCitada($usuario, $a)) {
             return true;
         }
+        // Revisión Etapa 5 (C-12): la persona citada que delegó: su delegado (directo o en cadena) responde, como en los departamentos
+        if ($this->esDelegadoDeLaPersonaCitada($usuario, $a)) {
+            return true;
+        }
         if (! $usuario->can('autorizaciones.responder') || $a->departamento_id === null) {
             return false;
         }
@@ -165,14 +169,19 @@ class Autorizaciones
         $verDepartamentos = $usuario->can('autorizaciones.ver');
         $sedesRecepcion = $this->sedesRecepcion($usuario);
         $propio = $usuario->activo ? ($usuario->getAttributes()['colaborador_id'] ?? null) : null; // C-09: sus propias visitas
-        if (! $verDepartamentos && $sedesRecepcion === [] && $propio === null) {
+        $delegadas = $this->personasQueLeDelegan($usuario); // revisión Etapa 5: las de quien le delegó (en las sedes donde responde)
+        if (! $verDepartamentos && $sedesRecepcion === [] && $propio === null && $delegadas['personas'] === []) {
             return $q->whereRaw('1 = 0');
         }
 
-        return $q->where(function ($w) use ($usuario, $verDepartamentos, $sedesRecepcion, $propio) {
+        return $q->where(function ($w) use ($usuario, $verDepartamentos, $sedesRecepcion, $propio, $delegadas) {
             $w->whereRaw('1 = 0');
             if ($propio !== null) {
                 $w->orWhere('autorizaciones.colaborador_id', (int) $propio);
+            }
+            if ($delegadas['personas'] !== []) {
+                $w->orWhere(fn ($x) => $x->where('autorizaciones.tipo', 'visita')->whereIn('autorizaciones.colaborador_id', $delegadas['personas'])
+                    ->when($delegadas['sedes'] !== null, fn ($y) => $y->whereIn('autorizaciones.sede_id', $delegadas['sedes'] === [] ? [0] : $delegadas['sedes'])));
             }
             // Recepción de RR. HH.: las de sus sedes
             if ($sedesRecepcion !== []) {
@@ -302,15 +311,20 @@ class Autorizaciones
     {
         $propio = $usuario->activo ? ($usuario->getAttributes()['colaborador_id'] ?? null) : null; // C-09: las visitas que vienen con él
         $pares = $usuario->can('autorizaciones.responder') ? $this->departamentosQueAtiende($usuario) : [];
-        if ($pares === [] && $propio === null) {
+        $delegadas = $this->personasQueLeDelegan($usuario); // revisión Etapa 5: y las de quien le delegó
+        if ($pares === [] && $propio === null && $delegadas['personas'] === []) {
             return collect();
         }
 
         return Autorizacion::with($this->relaciones())->where('estado', 'pendiente')
-            ->where(function ($w) use ($pares, $propio) {
+            ->where(function ($w) use ($pares, $propio, $delegadas) {
                 $w->whereRaw('1 = 0');
                 if ($propio !== null) {
                     $w->orWhere(fn ($x) => $x->where('tipo', 'visita')->where('colaborador_id', (int) $propio));
+                }
+                if ($delegadas['personas'] !== []) {
+                    $w->orWhere(fn ($x) => $x->where('tipo', 'visita')->whereIn('colaborador_id', $delegadas['personas'])
+                        ->when($delegadas['sedes'] !== null, fn ($y) => $y->whereIn('sede_id', $delegadas['sedes'] === [] ? [0] : $delegadas['sedes'])));
                 }
                 foreach ($pares as [$departamento, $sede]) {
                     $w->orWhere(fn ($x) => $x->where('departamento_id', $departamento)->when($sede !== null, fn ($y) => $y->where('sede_id', $sede)));
@@ -325,6 +339,58 @@ class Autorizaciones
         $propio = $usuario->getAttributes()['colaborador_id'] ?? null;
 
         return $a->tipo === 'visita' && $a->colaborador_id !== null && $propio !== null && (int) $propio === (int) $a->colaborador_id && (bool) $usuario->activo;
+    }
+
+    /**
+     * Revisión Etapa 5 (C-12): «Delegar mis aprobaciones» es por cuenta. Si la
+     * persona citada delegó, su visita la responde el último de su cadena que
+     * pueda responder en esa sede (la misma regla que aQuienAvisar()); si
+     * nadie de la cadena puede, se queda con ella.
+     */
+    public function destinoDeLaPersonaCitada(User $cuenta, int $sedeId): User
+    {
+        $cadena = $this->cadena();
+        $destino = $cadena->destino((int) $cuenta->id, fn (User $d) => $this->cobertura()->puedeResponderEn($d, $sedeId));
+
+        return $destino === (int) $cuenta->id ? $cuenta : $cadena->usuario($destino);
+    }
+
+    /** ¿Responde por delegación (directa o en cadena) la visita de la persona citada? */
+    public function esDelegadoDeLaPersonaCitada(User $usuario, Autorizacion $a): bool
+    {
+        if ($a->tipo !== 'visita' || $a->colaborador_id === null || ! $usuario->activo) {
+            return false;
+        }
+        $titulares = $this->cadena()->titularesDe((int) $usuario->id);
+        if ($titulares === [] || ! $this->cobertura()->puedeResponderEn($usuario, (int) $a->sede_id)) {
+            return false;
+        }
+
+        return User::whereIn('id', $titulares)->where('activo', true)->where('empresa_id', $a->empresa_id)
+            ->where('colaborador_id', $a->colaborador_id)->exists();
+    }
+
+    /**
+     * Personas citadas (colaborador_id) que le delegaron sus aprobaciones, y
+     * las sedes donde él puede responder (null = todas).
+     *
+     * @return array{personas: list<int>, sedes: list<int>|null}
+     */
+    public function personasQueLeDelegan(User $usuario): array
+    {
+        // Primero lo que no consulta: sin el permiso de responder no puede ser delegado (C-12)
+        if (! $usuario->activo || ! $this->cobertura()->puedeResponderEn($usuario, null)) {
+            return ['personas' => [], 'sedes' => []];
+        }
+        $titulares = $this->cadena()->titularesDe((int) $usuario->id);
+        if ($titulares === []) {
+            return ['personas' => [], 'sedes' => []];
+        }
+        $personas = User::whereIn('id', $titulares)->where('activo', true)->where('empresa_id', $usuario->empresa_id)->whereNotNull('colaborador_id')
+            ->pluck('colaborador_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
+        $sedes = $this->cobertura()->sedesDe($usuario);
+
+        return ['personas' => $personas, 'sedes' => $sedes === null ? null : array_values(array_map('intval', $sedes))];
     }
 
     /** @return array<int|string, mixed> */
@@ -346,8 +412,9 @@ class Autorizaciones
         // C-09 (DD-12): la persona citada con cuenta recibe el aviso; su departamento es el suplente (escalamiento)
         $cuenta = AQuienViene::cuentaDe($persona);
         if ($cuenta !== null) {
-            // Es su visita: le llega a ella (no a un delegado); si no contesta, el reloj la pasa a su departamento
-            $avisar = collect([$cuenta]);
+            // Es su visita: le llega a ella o, si delegó, al último de su cadena que pueda responder (C-12);
+            // si no contesta, el reloj la pasa a su departamento
+            $avisar = collect([$this->destinoDeLaPersonaCitada($cuenta, (int) $acceso->sede_id)]);
         } else {
             $avisar = $departamentoId === null ? collect() : $this->aQuienAvisar($departamentoId, (int) $acceso->sede_id);
         }
@@ -360,7 +427,7 @@ class Autorizaciones
         }
         $a->loadMissing('departamento:id,nombre', 'sede:id,nombre');
         $detalle = trim(match (true) {
-            $cuenta !== null => $acceso->etiquetaTipo().' que viene contigo. '.($acceso->actividad ? 'Actividad: '.$acceso->actividad.'. ' : ''),
+            $cuenta !== null => $acceso->etiquetaTipo().((int) $avisar->first()->id === (int) $cuenta->id ? ' que viene contigo. ' : ' que viene con '.$persona->nombreCompleto().' (te delegó sus aprobaciones). ').($acceso->actividad ? 'Actividad: '.$acceso->actividad.'. ' : ''),
             // Proveedor y contratista: de qué empresa, quién lo citó y a qué viene
             in_array($acceso->tipo, Acceso::CON_AUTORIZACION, true) => $acceso->etiquetaTipo().' para '.$a->departamento?->nombre.'. '
                 .($acceso->host?->nombreCompleto() ? 'Lo citó: '.$acceso->host->nombreCompleto().'. ' : '')

@@ -236,7 +236,7 @@ trait DemosPorGiro
                 $comunes = $espacios->crear($admin, $norte, null, Espacio::EDIFICIO, ['nombre' => 'Áreas comunes'], false);
                 $planta = $espacios->crear($admin, $norte, $comunes, Espacio::AREA, ['nombre' => 'Planta baja'], false);
                 foreach (['Salón de usos múltiples', 'Asador', 'Alberca'] as $area) {
-                    $espacios->crear($admin, $norte, $planta, Espacio::AREA_ESPECIFICA, ['nombre' => $area], false);
+                    $espacios->crear($admin, $norte, $planta, Espacio::AREA_ESPECIFICA, ['nombre' => $area, 'area_comun' => true], false);
                 }
                 $torreB = $espacios->crear($admin, $sedes['SUR'], null, Espacio::EDIFICIO, ['nombre' => 'Torre B', 'codigo' => 'TB'], false);
                 $pisoB = $espacios->crear($admin, $sedes['SUR'], $torreB, Espacio::AREA, ['nombre' => 'Piso 1'], false);
@@ -331,7 +331,7 @@ trait DemosPorGiro
                 $comunes = $espacios->crear($admin, $lomas, null, Espacio::EDIFICIO, ['nombre' => 'Áreas comunes'], false);
                 $club = $espacios->crear($admin, $lomas, $comunes, Espacio::AREA, ['nombre' => 'Club'], false);
                 foreach (['Casa club', 'Alberca', 'Cancha'] as $area) {
-                    $espacios->crear($admin, $lomas, $club, Espacio::AREA_ESPECIFICA, ['nombre' => $area], false);
+                    $espacios->crear($admin, $lomas, $club, Espacio::AREA_ESPECIFICA, ['nombre' => $area, 'area_comun' => true], false);
                 }
             }
             if (! Departamento::exists()) {

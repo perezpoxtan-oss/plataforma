@@ -82,7 +82,7 @@ class AQuienViene
                     'detalle' => 'Huésped en sitio'.($h->habitacion ? ' · Hab. '.$h->habitacion : ''), 'llamar' => true];
             }
             foreach ($this->lugares->buscar($texto, $sedes, Lugares::ESPECIFICOS, 6) as $l) {
-                $resultado[] = ['clave' => 'e:'.$l['id'], 'tipo' => 'lugar', 'titulo' => $t->espacio().' '.$l['nombre'], 'detalle' => $l['ruta'], 'llamar' => true];
+                $resultado[] = ['clave' => 'e:'.$l['id'], 'tipo' => 'lugar', 'titulo' => $t->nombreLugar($l).' '.$l['nombre'], 'detalle' => $l['ruta'], 'llamar' => true];
             }
 
             return $resultado;
@@ -104,7 +104,7 @@ class AQuienViene
         if ($t->esResidencial()) {
             foreach ($this->lugares->buscar($texto, $sedes, Lugares::ESPECIFICOS, 5) as $l) {
                 $quienes = $this->lugares->residentesDe($l['id']);
-                $resultado[] = ['clave' => 'e:'.$l['id'], 'tipo' => 'lugar', 'titulo' => $t->espacio().' '.$l['nombre'],
+                $resultado[] = ['clave' => 'e:'.$l['id'], 'tipo' => 'lugar', 'titulo' => $t->nombreLugar($l).' '.$l['nombre'],
                     'detalle' => $quienes->isEmpty() ? $l['ruta'] : $quienes->map(fn ($r) => $r->nombreCompleto())->join(', '), 'llamar' => true];
             }
         }
@@ -265,7 +265,7 @@ class AQuienViene
         return match ($m[1]) {
             'c' => Colaborador::find((int) $m[2])?->nombreCompleto(),
             'd' => Departamento::whereKey((int) $m[2])->value('nombre'),
-            'e' => ($e = Espacio::find((int) $m[2])) ? $t->espacio().' '.$e->nombre : null,
+            'e' => ($e = Espacio::find((int) $m[2])) ? $t->nombreLugar($e).' '.$e->nombre : null,
             'h' => Acceso::whereKey((int) $m[2])->value('nombre'),
             default => null,
         };

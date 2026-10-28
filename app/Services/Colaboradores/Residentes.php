@@ -79,7 +79,7 @@ class Residentes
             $errores['telefono'] = 'Escribe el teléfono con números (de 7 a 20).';
         }
         $sedes = $this->colaboradores->sedesPermitidas($actor, $permiso);
-        $vivienda = $this->lugares->valido($entrada['espacio_id'] ?? null, $sedes, Lugares::ESPECIFICOS);
+        $vivienda = $this->lugares->valido($entrada['espacio_id'] ?? null, $sedes, Lugares::ESPECIFICOS, soloViviendas: true); // revisión Etapa 5: no un área común
         $esLaActual = $actual !== null && (int) ($entrada['espacio_id'] ?? 0) === (int) $actual->espacio_id;
         if ($vivienda === null && ! $esLaActual) {
             $errores['espacio_id'] = 'Elige su vivienda de la lista (Zonas y edificios de tus sedes).';

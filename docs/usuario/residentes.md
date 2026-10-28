@@ -52,6 +52,7 @@ resumen: Quién vive en cada vivienda o casa del condominio o fraccionamiento, c
 |---|---|---|
 | «Elige su vivienda de la lista…» | No elegiste vivienda o no es de tus sedes. | Elige una de la lista; si no aparece, créala en Zonas y edificios. |
 | «… ya está registrado en esa vivienda.» | Esa persona ya existe en la misma vivienda. | Búscala en la lista; si está de baja, toca **Reactivar**. |
+| La alberca o el salón no aparecen en la lista de viviendas. | Están marcados como **área común** en Zonas y edificios. | Es correcto: a un área común no se le asignan residentes. Si es una vivienda, quita la marca en [Zonas y edificios](zonas-y-areas.md). |
 | La tarjeta dice «Sin vivienda: complétala». | El residente se registró antes sin vivienda. | Toca **Editar** y elige su vivienda. |
 | No veo **Residentes** en el menú. | Tu empresa no es condominio ni fraccionamiento, o tu rol no consulta el directorio. | Pide a tu administrador que revise el giro o tu rol. |
 

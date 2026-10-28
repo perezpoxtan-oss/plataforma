@@ -28,7 +28,7 @@
             </div>
         </div>
         <div class="d-flex gap-2 align-items-center">
-            @include('organizacion.espacios.partes.acciones', ['e' => $nodo, 'dialogo' => 'dialogoEditarHabitacion', 'valores' => $nodo->only(['nombre', 'tipo_espacio_id', 'grupo_espacio_id'])])
+            @include('organizacion.espacios.partes.acciones', ['e' => $nodo, 'dialogo' => 'dialogoEditarHabitacion', 'valores' => $nodo->only(['nombre', 'tipo_espacio_id', 'grupo_espacio_id']) + ['area_comun' => $nodo->esAreaComun()]])
         </div>
     </div>
 

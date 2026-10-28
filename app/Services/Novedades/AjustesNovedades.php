@@ -2,6 +2,7 @@
 
 namespace App\Services\Novedades;
 
+use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Modulo;
 use App\Models\User;
@@ -10,6 +11,7 @@ use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Ajustes de la Bitácora de novedades por empresa (Configuración → Bitácora
@@ -163,6 +165,30 @@ class AjustesNovedades
         return $horas[$categoria] ?? $horas['otras'];
     }
 
+    /**
+     * Revisión Etapa 5 (C-28): «Departamento que recibe accidentes de
+     * personal». El Accidente de un colaborador se canaliza a este
+     * departamento (su formato no cambia). Se guarda en
+     * preferencias['novedades']['departamento_accidentes']: el id, o 0 =
+     * ninguno. Sin guardar (valor de fábrica): el departamento activo cuyo
+     * nombre es el de Recursos Humanos. Devuelve null si no hay.
+     */
+    public function departamentoAccidentes(Empresa|int|null $empresa): ?int
+    {
+        $empresa = is_int($empresa) ? Empresa::find($empresa) : $empresa;
+        if ($empresa === null) {
+            return null;
+        }
+        $guardado = $empresa->preferencias['novedades']['departamento_accidentes'] ?? null;
+        $activos = Departamento::withoutGlobalScopes()->where('empresa_id', $empresa->id)->where('activo', true);
+        if (is_numeric($guardado)) {
+            return (int) $guardado > 0 && (clone $activos)->whereKey((int) $guardado)->exists() ? (int) $guardado : null;
+        }
+        $rrhh = $activos->orderBy('id')->get(['id', 'nombre'])->first(fn (Departamento $d) => preg_match(CanalizarDepartamento::PATRON_RRHH, (string) $d->nombre) === 1);
+
+        return $rrhh?->id === null ? null : (int) $rrhh->id;
+    }
+
     public function categoriaHallazgoPc(?Empresa $empresa): string
     {
         $valor = $empresa?->preferencias['novedades']['categoria_hallazgo_pc'] ?? null;
@@ -186,6 +212,7 @@ class AjustesNovedades
             'nombre_menu' => [$opcion === self::OPCION_OTRO ? 'required' : 'nullable', 'string', 'max:40', 'regex:/^[\pL\pN .&\-]+$/u'],
             'categoria_hallazgo_pc' => ['required', 'in:'.implode(',', array_keys(self::CATEGORIAS_HALLAZGO))],
             'reloj_horas' => ['nullable', 'array'],
+            'departamento_accidentes' => ['nullable', 'integer', 'min:0'],
             'reloj_horas.*' => ['nullable', 'integer', 'min:1', 'max:'.self::RELOJ_MAX_HORAS],
         ], [
             'reloj_horas.*.integer' => 'Escribe las horas del reloj con un número entero, de 1 a '.self::RELOJ_MAX_HORAS.'.',
@@ -197,9 +224,17 @@ class AjustesNovedades
             'nombre_menu.regex' => 'El nombre del menú solo puede llevar letras, números, espacios, punto, guion y «&».',
             'categoria_hallazgo_pc.required' => 'Elige la categoría del ticket que abre un hallazgo de recorrido.',
             'categoria_hallazgo_pc.in' => 'Elige la categoría del ticket que abre un hallazgo de recorrido.',
+            'departamento_accidentes.*' => 'Elige de la lista el departamento que recibe los accidentes del personal.',
         ])->validate();
+        // Revisión Etapa 5: el departamento debe ser activo y de esta empresa (0 = ninguno; sin el campo, se conserva)
+        $deptoAccidentes = array_key_exists('departamento_accidentes', $datos) && $datos['departamento_accidentes'] !== null ? (int) $datos['departamento_accidentes'] : null;
+        if ($deptoAccidentes !== null && $deptoAccidentes > 0
+            && ! Departamento::withoutGlobalScopes()->where('empresa_id', $empresa->id)->where('activo', true)->whereKey($deptoAccidentes)->exists()) {
+            throw ValidationException::withMessages(['departamento_accidentes' => 'Elige de la lista el departamento que recibe los accidentes del personal.']);
+        }
 
-        $antes = ['nombre_menu' => $this->nombreMenu($empresa->id), 'categoria_hallazgo_pc' => $this->categoriaHallazgoPc($empresa), 'reloj_horas' => $this->relojHoras($empresa)];
+        $antes = ['nombre_menu' => $this->nombreMenu($empresa->id), 'categoria_hallazgo_pc' => $this->categoriaHallazgoPc($empresa), 'reloj_horas' => $this->relojHoras($empresa),
+            'departamento_accidentes' => $this->departamentoAccidentes($empresa)];
         // C-24: solo se guardan las horas distintas de fábrica (sin el campo, se conservan)
         $reloj = array_key_exists('reloj_horas', $datos)
             ? array_filter(array_map(fn ($v) => $v === null || $v === '' ? null : (int) $v, array_intersect_key((array) $datos['reloj_horas'], self::RELOJ_HORAS)),
@@ -209,7 +244,7 @@ class AjustesNovedades
         $nombre = $nombre === '' || $nombre === self::NOMBRE_OMISION ? null : $nombre;
         $categoria = $datos['categoria_hallazgo_pc'];
 
-        DB::transaction(function () use ($empresa, $nombre, $categoria, $reloj) {
+        DB::transaction(function () use ($empresa, $nombre, $categoria, $reloj, $deptoAccidentes) {
             $modulo = Modulo::where('clave', 'novedades')->value('id');
             if ($modulo !== null) {
                 // Solo en la empresa que tiene el módulo contratado (sin contrato no hay menú que nombrar)
@@ -234,12 +269,16 @@ class AjustesNovedades
             } else {
                 $preferencias['novedades']['reloj_horas'] = $reloj;
             }
+            if ($deptoAccidentes !== null) {
+                $preferencias['novedades']['departamento_accidentes'] = $deptoAccidentes;
+            }
             $fresca?->forceFill(['preferencias' => $preferencias === [] ? null : $preferencias])->save();
         });
         $empresa->refresh();
         request()->attributes->remove(self::MEMORIA.$empresa->id);
 
-        $despues = ['nombre_menu' => $this->nombreMenu($empresa->id), 'categoria_hallazgo_pc' => $this->categoriaHallazgoPc($empresa), 'reloj_horas' => $this->relojHoras($empresa)];
+        $despues = ['nombre_menu' => $this->nombreMenu($empresa->id), 'categoria_hallazgo_pc' => $this->categoriaHallazgoPc($empresa), 'reloj_horas' => $this->relojHoras($empresa),
+            'departamento_accidentes' => $this->departamentoAccidentes($empresa)];
         if ($antes !== $despues) {
             $this->auditoria->auditar($actor, 'novedades.configurado', $empresa, $antes, $despues);
         }

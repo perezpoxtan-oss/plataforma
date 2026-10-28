@@ -135,8 +135,11 @@ class MisPendientes
         // C-09: también la persona citada con cuenta (sus visitas la esperan a ella)
         // (la consulta de «propias» solo corre para quien no es responsable de ningún departamento)
         $responsable = $actor->can('autorizaciones.responder') && $autorizaciones->departamentosQueAtiende($actor) !== [];
-        $propias = ! $responsable && ($actor->getAttributes()['colaborador_id'] ?? null) !== null
-            && Autorizacion::where('estado', 'pendiente')->where('tipo', 'visita')->where('colaborador_id', (int) $actor->colaborador_id)->exists();
+        // (revisión Etapa 5: también las de las personas citadas que le delegaron, C-12)
+        $personas = $responsable ? [] : array_values(array_filter([($actor->getAttributes()['colaborador_id'] ?? null) === null ? null : (int) $actor->colaborador_id,
+            ...$autorizaciones->personasQueLeDelegan($actor)['personas']]));
+        $propias = $personas !== []
+            && Autorizacion::where('estado', 'pendiente')->where('tipo', 'visita')->whereIn('colaborador_id', $personas)->exists();
         if ($responsable || $propias) {
             $porResponder = $autorizaciones->pendientesPara($actor);
             // C-12 «No molestar»: lo que mi delegado puede responder no me espera a mí

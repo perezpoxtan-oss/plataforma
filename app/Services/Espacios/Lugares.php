@@ -4,6 +4,7 @@ namespace App\Services\Espacios;
 
 use App\Models\Colaborador;
 use App\Models\Espacio;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
@@ -30,13 +31,14 @@ class Lugares
      *
      * @param  list<int>|null  $sedes  null = todas las de la empresa activa
      * @param  list<string>  $niveles
-     * @return Collection<int, array{id: int, sede_id: int, nivel: string, nombre: string, ruta: string}>
+     * @return Collection<int, array{id: int, sede_id: int, nivel: string, nombre: string, area_comun: bool, ruta: string}>
      */
-    public function opciones(?array $sedes, array $niveles = self::ESPECIFICOS, int $limite = 3000): Collection
+    public function opciones(?array $sedes, array $niveles = self::ESPECIFICOS, int $limite = 3000, bool $soloViviendas = false): Collection
     {
         $lugares = Espacio::where('activo', true)->whereIn('nivel', $niveles)
             ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes === [] ? [0] : $sedes))
-            ->orderBy('ruta')->limit($limite)->get(['id', 'sede_id', 'nivel', 'nombre', 'ruta']);
+            ->when($soloViviendas, fn ($q) => $this->viviendas($q))
+            ->orderBy('ruta')->limit($limite)->get(['id', 'sede_id', 'nivel', 'nombre', 'ruta', 'uso']);
 
         return $this->conCamino($lugares)->sortBy('ruta', SORT_NATURAL | SORT_FLAG_CASE)->values();
     }
@@ -46,7 +48,7 @@ class Lugares
      *
      * @param  list<int>|null  $sedes
      * @param  list<string>  $niveles
-     * @return Collection<int, array{id: int, sede_id: int, nivel: string, nombre: string, ruta: string}>
+     * @return Collection<int, array{id: int, sede_id: int, nivel: string, nombre: string, area_comun: bool, ruta: string}>
      */
     public function buscar(string $texto, ?array $sedes, array $niveles = self::TODOS, int $limite = 10): Collection
     {
@@ -60,13 +62,13 @@ class Lugares
             ->where(fn ($q) => $q->whereRaw('LOWER(nombre) LIKE ?', [$comodin])->orWhereRaw('LOWER(codigo) LIKE ?', [$comodin]))
             // Primero lo que empieza igual («10» → 101 antes que 210)
             ->orderByRaw('CASE WHEN LOWER(nombre) LIKE ? THEN 0 ELSE 1 END', [addcslashes(mb_strtolower($texto), '%_\\').'%'])
-            ->orderBy('nombre')->limit($limite)->get(['id', 'sede_id', 'nivel', 'nombre', 'ruta']);
+            ->orderBy('nombre')->limit($limite)->get(['id', 'sede_id', 'nivel', 'nombre', 'ruta', 'uso']);
 
         return $this->conCamino($lugares);
     }
 
     /** Un lugar activo de esas sedes y niveles (o null). */
-    public function valido(mixed $id, ?array $sedes, array $niveles = self::TODOS): ?Espacio
+    public function valido(mixed $id, ?array $sedes, array $niveles = self::TODOS, bool $soloViviendas = false): ?Espacio
     {
         if ($id === null || $id === '' || ! is_numeric($id)) {
             return null;
@@ -74,7 +76,19 @@ class Lugares
 
         return Espacio::where('activo', true)->whereIn('nivel', $niveles)
             ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes === [] ? [0] : $sedes))
+            ->when($soloViviendas, fn ($q) => $this->viviendas($q))
             ->find((int) $id);
+    }
+
+    /**
+     * Revisión Etapa 5: solo viviendas (sin áreas comunes como la alberca o el salón).
+     *
+     * @param  Builder<Espacio>  $q
+     * @return Builder<Espacio>
+     */
+    private function viviendas($q)
+    {
+        return $q->where(fn ($w) => $w->whereNull('uso')->orWhere('uso', '!=', Espacio::USO_AREA_COMUN));
     }
 
     /** Camino legible de un lugar: «Torre A › Piso 1 › 101». */
@@ -112,7 +126,7 @@ class Lugares
 
     /**
      * @param  Collection<int, Espacio>  $lugares
-     * @return Collection<int, array{id: int, sede_id: int, nivel: string, nombre: string, ruta: string}>
+     * @return Collection<int, array{id: int, sede_id: int, nivel: string, nombre: string, area_comun: bool, ruta: string}>
      */
     private function conCamino(Collection $lugares): Collection
     {
@@ -121,6 +135,7 @@ class Lugares
 
         return $lugares->map(fn (Espacio $e) => [
             'id' => (int) $e->id, 'sede_id' => (int) $e->sede_id, 'nivel' => (string) $e->nivel, 'nombre' => (string) $e->nombre,
+            'area_comun' => $e->esAreaComun(), // revisión Etapa 5: no se nombra «Vivienda»
             'ruta' => collect($e->idsAncestros())->map(fn ($id) => $nombres[$id] ?? null)->filter()->push($e->nombre)->join(self::SEPARADOR),
         ])->values();
     }

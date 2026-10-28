@@ -2,6 +2,7 @@
 
 namespace App\Services\Novedades;
 
+use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Novedad;
 use App\Models\User;
@@ -24,12 +25,13 @@ use Illuminate\Validation\ValidationException;
  * Reloj: el de la Etapa 4 (TicketsDeDepartamento en el motor «Reloj y
  * suplente»), con las horas por categoría de los tickets canalizados.
  *
- * Accidente de un colaborador: avisa al departamento de RR. HH. de la sede
- * (si existe y tiene quien lo atienda). El formato de Accidente no cambia.
+ * Accidente de un colaborador: avisa al «Departamento que recibe accidentes
+ * de personal» (Configuración → Bitácora de novedades) en la sede, si tiene
+ * quien lo atienda. El formato de Accidente no cambia.
  */
 class CanalizarDepartamento
 {
-    /** Nombres con los que se reconoce al departamento de Recursos Humanos. */
+    /** Valor de fábrica de «Departamento que recibe accidentes de personal»: el que se llama como Recursos Humanos. */
     public const PATRON_RRHH = '/recursos\s+humanos|rr\.?\s*hh|capital\s+humano|personal y n[oó]mina/iu';
 
     public function __construct(
@@ -89,15 +91,21 @@ class CanalizarDepartamento
 
     /**
      * Accidente de un colaborador: si nadie lo canalizó a un departamento, va
-     * al de RR. HH. de la sede (solo si alguien lo atiende ahí).
+     * al «Departamento que recibe accidentes de personal» de Configuración
+     * (revisión Etapa 5: ya no se reconoce por el nombre), si aplica en la
+     * sede y alguien lo atiende ahí. Un residente (condominio,
+     * fraccionamiento) no es personal: su accidente no va a RR. HH.
      */
-    public function accidenteDeColaborador(Novedad $novedad, User $actor): void
+    public function accidenteDeColaborador(Novedad $novedad, User $actor, ?int $colaboradorId = null): void
     {
         if ($novedad->departamento_id !== null || $novedad->resuelto()) {
             return;
         }
-        $rrhh = Departamento::where('activo', true)->aplicanEn([(int) $novedad->sede_id])->get(['id', 'nombre'])
-            ->first(fn (Departamento $d) => preg_match(self::PATRON_RRHH, (string) $d->nombre) === 1);
+        if ($colaboradorId !== null && Colaborador::whereKey($colaboradorId)->where('tipo', Colaborador::RESIDENTE)->exists()) {
+            return;
+        }
+        $id = app(AjustesNovedades::class)->departamentoAccidentes((int) $novedad->empresa_id);
+        $rrhh = $id === null ? null : Departamento::where('activo', true)->aplicanEn([(int) $novedad->sede_id])->whereKey($id)->first(['id', 'nombre']);
         if ($rrhh === null || ! $this->autorizaciones->tieneResponsables((int) $rrhh->id, (int) $novedad->sede_id)) {
             return;
         }

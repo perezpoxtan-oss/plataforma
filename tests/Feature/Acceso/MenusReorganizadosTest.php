@@ -435,6 +435,7 @@ class MenusReorganizadosTest extends TestCase
         // equipos de Protección Civil (recargas, y equipos con su última revisión): unas 6 fijas, nunca una por renglón
         // Etapa 5 (C-09, C-28) cabe en el mismo límite: el reloj de «Tickets de tu departamento» suma una consulta y
         // «visitas propias» solo se consulta para quien no es responsable de ningún departamento
-        $this->assertLessThan(135, count(DB::getQueryLog()));
+        // Revisión Etapa 5: a quien le delegan, una fija más (las personas citadas de sus titulares, C-12)
+        $this->assertLessThan(136, count(DB::getQueryLog()));
     }
 }

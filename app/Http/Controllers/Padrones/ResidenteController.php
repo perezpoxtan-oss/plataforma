@@ -57,8 +57,8 @@ class ResidenteController extends Controller
                 'terminos' => Terminos::actual(),
                 'residentes' => $lista,
                 'caminos' => $caminos,
-                'viviendasAlta' => $sedesAlta === [] ? collect() : $this->lugares->opciones($sedesAlta),
-                'viviendasEdicion' => $sedesEdicion === [] ? collect() : $this->lugares->opciones($sedesEdicion),
+                'viviendasAlta' => $sedesAlta === [] ? collect() : $this->lugares->opciones($sedesAlta, soloViviendas: true), // sin áreas comunes
+                'viviendasEdicion' => $sedesEdicion === [] ? collect() : $this->lugares->opciones($sedesEdicion, soloViviendas: true),
                 'editables' => $this->colaboradores->idsEnAlcance($actor, 'colaboradores.editar'),
                 'desactivables' => $this->colaboradores->idsEnAlcance($actor, 'colaboradores.eliminar'),
                 'puede' => [

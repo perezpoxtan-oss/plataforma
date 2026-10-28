@@ -34,7 +34,7 @@ Si tu empresa configuró la **hora de regreso de los equipos de Turno**, la fich
 1. Toca **Nueva responsiva**.
 2. Revisa la **Sede de Origen**.
 3. En **Responsable (¿quién se lo lleva?)** elige:
-   - **Colaborador:** escanea su gafete o escribe su número de nómina o nombre.
+   - **Colaborador:** escanea su gafete o escribe su número de nómina o nombre. En condominio y fraccionamiento esta opción se llama **Residente o personal**.
    - **Persona externa:** por ejemplo, el técnico de un contratista. Escribe su nombre y elígelo del Padrón de personas.
    - **Empresa externa:** cuando el equipo se le entrega a la empresa (por ejemplo, para una obra).
 4. En **Equipos que se entregan** escanea el QR o la etiqueta de cada equipo: se agrega solo. También puedes tocar **Añadir Equipo** y elegirlo (solo salen los **DISPONIBLES** de la sede).
