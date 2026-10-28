@@ -28,14 +28,14 @@ Recarga y frecuencia por tipo ya llegaron en la Etapa 4 (DD-17).
 
 - `AdministradorNovedades::categorias()` quita `habitacion` (Valores a la Vista) fuera de hotel, salvo en un ticket que ya la tiene.
 - `Terminos`: «Lost & Found (Objetos Perdidos)» → «Objetos olvidados».
-- Subtipos de Reporte General: columna `novedad_reportes_generales.subtipo` (migración `2026_11_15_000100`); lista en `preferencias.novedades.subtipos_reporte_general` o de fábrica por giro (`AjustesNovedades::SUBTIPOS_REPORTE_GENERAL`). Validación en `Formatos/ReporteGeneral` (la lista o el valor que ya tenía). `Novedad::etiquetaConSubtipo()` en la lista, la búsqueda y el Excel.
+- Subtipos de Reporte General: columna `novedad_reportes_generales.subtipo` (migración `2026_11_16_000100`); lista en `preferencias.novedades.subtipos_reporte_general` o de fábrica por giro (`AjustesNovedades::SUBTIPOS_REPORTE_GENERAL`). Validación en `Formatos/ReporteGeneral` (la lista o el valor que ya tenía). `Novedad::etiquetaConSubtipo()` en la lista, la búsqueda y el Excel.
 - `AdministradorNovedades::revisarReclasificacion()`: no cambia de categoría un ticket `lost_found` con artículos `EN_RESGUARDO` ni un `robo` con detalle capturado.
 
 ## C-33 · Accidentes (el formulario no se toca)
 
 - `Formatos/AccidenteConSugerencias` (mapeado en `AdministradorNovedades::FORMATOS`) hereda de `Formatos/Accidente` y solo cambia `valores()` de un caso sin formato guardado: `h_/c_fecha_accidente`, `h_/c_hora_accidente` (de `ocurrio_en` o `created_at` en la hora de la sede), `h_hab` (habitación de catálogo) y `h_lugar` (ubicación del ticket). La vista y la validación son las de siempre.
 - `Novedades/Accidentes/TurnoDelAccidente::completar()` se llama después de `Formato::guardar()` en `AdministradorNovedades::actualizar()`: si `accidente_colaboradores.turno` quedó vacío y la ficha tiene `turno_id`, guarda el nombre del turno.
-- Pestaña «Accidentes» en la ficha (`ExpedienteController::index`, vista `ficha/_accidentes`): permiso `colaboradores.accidentes` («Ver accidentes»), en `DependenciasModulos::ACCIONES_CON_MODULO` con `novedades`. Plantillas: Administrador y Recursos Humanos (regla general) y Jefe de seguridad (`RolesPlantillaSeeder::ACCIDENTES_JEFE`). Migración `2026_11_15_000200` la otorga a los roles que ya tenían `colaboradores.datos_personales` o `novedades.reabrir`, con el alcance de su `colaboradores.ver`.
+- Pestaña «Accidentes» en la ficha (`ExpedienteController::index`, vista `ficha/_accidentes`): permiso `colaboradores.accidentes` («Ver accidentes»), en `DependenciasModulos::ACCIONES_CON_MODULO` con `novedades`. Plantillas: Administrador y Recursos Humanos (regla general) y Jefe de seguridad (`RolesPlantillaSeeder::ACCIDENTES_JEFE`). Migración `2026_11_16_000200` la otorga a los roles que ya tenían `colaboradores.datos_personales` o `novedades.reabrir`, con el alcance de su `colaboradores.ver`.
 
 Comprobación: `git diff origin/feature/etapa5-caseta-giros -- app/Services/Novedades/Formatos/Accidente.php resources/views/seguridad/novedades/formatos/accidente.blade.php resources/views/seguridad/novedades/formatos/_fila-testigo-accidente.blade.php app/Http/Requests` no muestra cambios.
 
@@ -43,7 +43,7 @@ Comprobación: `git diff origin/feature/etapa5-caseta-giros -- app/Services/Nove
 
 | Pieza | Dónde |
 |---|---|
-| Tabla `accesos_articulos` (artículo, cantidad, serie; se borra con su acceso) | Migración `2026_11_15_000300`, modelo `ArticuloAcceso` (máximo 10) |
+| Tabla `accesos_articulos` (artículo, cantidad, serie; se borra con su acceso) | Migración `2026_11_16_000300`, modelo `ArticuloAcceso` (máximo 10) |
 | Columnas en `accesos`: `articulos_salida` (`mismo`/`distinto`), `articulos_nota`, `articulos_por_revisar`, `articulos_revisado_en/_por`, `pase_salida_id` | misma migración |
 | Captura (solo proveedor y contratista; renglones vacíos se ignoran) | `RegistroAccesos::registrar()`; vista `_ingreso` + `_articulo` |
 | Comparación al salir, canalización y pase | `ArticulosDelProveedor::alDarSalida()` desde `AccesoController::salida`; diálogo de salida (`casillasDevolucion` en `plataforma.js`) con `articulos_revisados`, `sale_con_lo_mismo`, `articulos_nota`, `pase_salida_id` |

@@ -120,7 +120,7 @@ class EtapaSeisAccidentesTest extends PruebaNovedades
 
     public function test_la_migracion_otorga_el_permiso_solo_a_quien_ya_ve_datos_personales_o_reabre_tickets(): void
     {
-        $migracion = require database_path('migrations/2026_11_15_000200_permiso_ver_accidentes_del_colaborador.php');
+        $migracion = require database_path('migrations/2026_11_16_000200_permiso_ver_accidentes_del_colaborador.php');
         $migracion->down();
         $this->assertNull(DB::table('acciones')->where('clave', 'accidentes')->value('id'));
         $migracion->up();
