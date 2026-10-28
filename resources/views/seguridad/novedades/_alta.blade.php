@@ -7,8 +7,6 @@
     $trasError = old('_dialogo') === 'crear';
     $val = fn (string $campo, $porDefecto = '') => $trasError ? old($campo, $porDefecto) : $porDefecto;
     $sedePorDefecto = $sedesAlta->count() === 1 ? (string) $sedesAlta->first()->id : '';
-    $edificios = $catalogos['espacios']->where('nivel', \App\Models\Espacio::EDIFICIO);
-    $pisos = $catalogos['espacios']->where('nivel', \App\Models\Espacio::AREA);
     $reportadoAnterior = $trasError && old('reportado_colaborador_id') ? \App\Models\Colaborador::find((int) old('reportado_colaborador_id')) : null;
 @endphp
 <dialog id="dialogoAltaTicket" class="dialogo dialogo-novedad" aria-labelledby="titulo-alta-ticket" @if ($trasError) data-abrir-al-cargar @endif>
@@ -98,28 +96,28 @@
                     </select>
                 </div>
                 <div class="col-md-6">
-                    <span class="campo-etiqueta">Área General <span class="text-lowercase fw-normal">(edificio y piso)</span></span>
-                    <div class="campo-grupo">
-                        <select name="area_edificio_id" class="campo" aria-label="Edificio" data-nov-depende="sede" data-nov-edificio>
-                            <option value="">-- Edificio --</option>
-                            @foreach ($edificios as $e)
-                                <option value="{{ $e->id }}" data-de="{{ $e->sede_id }}" @selected((string) $val('area_edificio_id') === (string) $e->id)>{{ $e->nombre }}</option>
-                            @endforeach
-                        </select>
-                        <select name="area_piso_id" class="campo" aria-label="Piso" data-nov-depende="edificio">
-                            <option value="">-- Piso --</option>
-                            @foreach ($pisos as $p)
-                                <option value="{{ $p->id }}" data-de="{{ $p->padre_id }}" @selected((string) $val('area_piso_id') === (string) $p->id)>{{ $p->nombre }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    {{-- C-28 (DD-15): también a un departamento (Mantenimiento, RR. HH.…): sus responsables ven solo este ticket y atienden su parte --}}
+                    <label class="campo-etiqueta" for="alta_departamento">O a un departamento <span class="text-lowercase fw-normal">(opcional)</span></label>
+                    <select id="alta_departamento" name="departamento_id" class="campo" data-nov-depende="sede">
+                        <option value="">-- Ninguno --</option>
+                        @foreach ($catalogos['departamentos'] ?? [] as $dep)
+                            <option value="{{ $dep->id }}" data-de="{{ $dep->todas_las_sedes ? 'todas' : $dep->sedes->pluck('id')->join(' ') }}" @selected((string) $val('departamento_id') === (string) $dep->id)>{{ $dep->nombre }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-md-6">
-                    <label class="campo-etiqueta" for="alta_ubicacion">Ubicación específica</label>
-                    <input type="text" id="alta_ubicacion" name="ubicacion" class="campo text-uppercase" maxlength="255" placeholder="Ej: Piso 2, cerca del elevador" required value="{{ $val('ubicacion') }}">
+                    {{-- C-30 (D-15): el lugar se elige del árbol de Zonas y edificios; el detalle escrito es opcional (al menos uno de los dos) --}}
+                    <label class="campo-etiqueta" for="alta_lugar">¿Dónde pasó?</label>
+                    <div class="buscador-acceso" data-sugerir-lugar="todos" data-url-lugares="{{ route('lugares.buscar') }}">
+                        <input type="text" id="alta_lugar" class="campo" maxlength="150" autocomplete="off" placeholder="Busca la zona, el piso o la habitación" value="{{ $val('lugar_texto') }}" name="lugar_texto" data-lugar-texto>
+                        <input type="hidden" name="lugar_id" value="{{ $val('lugar_id') }}" data-lugar-id>
+                        <div class="acceso-sugerencias" data-sugerencias hidden></div>
+                    </div>
+                    <label class="campo-etiqueta" for="alta_ubicacion">Detalle del lugar <span class="text-lowercase fw-normal">(opcional si elegiste el lugar)</span></label>
+                    <input type="text" id="alta_ubicacion" name="ubicacion" class="campo text-uppercase" maxlength="255" placeholder="Ej: cerca del elevador" value="{{ $val('ubicacion') }}">
                 </div>
                 <div class="col-md-6">
                     <label class="campo-etiqueta" for="alta_involucrados">¿Involucra a más personas o áreas? <span class="text-lowercase fw-normal">(opcional, buscar o escribir)</span></label>

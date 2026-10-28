@@ -89,6 +89,27 @@
                                     <option value="{{ $u['id'] }}" @selected((string) $v['asignado_a'] === (string) $u['id'])>{{ $u['nombre'] }}</option>
                                 @endforeach
                             </select>
+                            {{-- C-28 (DD-15): o a un departamento; sus responsables ven solo este ticket y «Atender» marca su parte --}}
+                            @php $deptosSede = collect($catalogos['departamentos'] ?? [])->filter(fn ($d) => $d->todas_las_sedes || $d->sedes->contains('id', $n->sede_id) || (int) $d->id === (int) $n->departamento_id); @endphp
+                            <label class="campo-etiqueta" for="exp_departamento">O a un departamento</label>
+                            <select id="exp_departamento" name="departamento_id" class="campo">
+                                <option value="">-- Ninguno --</option>
+                                @if ($n->departamento && ! $deptosSede->contains('id', $n->departamento_id))
+                                    <option value="{{ $n->departamento_id }}" selected>{{ $n->departamento->nombre }}</option>
+                                @endif
+                                @foreach ($deptosSede as $dep)
+                                    <option value="{{ $dep->id }}" @selected((string) ($v['departamento_id'] ?? '') === (string) $dep->id)>{{ $dep->nombre }}</option>
+                                @endforeach
+                            </select>
+                            @if ($n->departamento_id)
+                                <p class="campo-ayuda mt-0">
+                                    @if ($n->departamento_atendido_en)
+                                        <i class="bi bi-check2-circle text-success" aria-hidden="true"></i> {{ $n->departamento?->nombre }} atendió su parte ({{ $n->departamentoAtendidoPor?->name ?? '—' }}, @fecha($n->departamento_atendido_en)).
+                                    @else
+                                        <i class="bi bi-hourglass-split" aria-hidden="true"></i> Esperando a {{ $n->departamento?->nombre }}.
+                                    @endif
+                                </p>
+                            @endif
                         </div>
                     </div>
                     <div class="row">

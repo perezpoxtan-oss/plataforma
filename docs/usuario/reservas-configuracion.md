@@ -106,6 +106,12 @@ Por omisión, cada sección de Configuración muestra **solo lo activo**: las á
 Los responsables de cada departamento son los de **Estructura → Departamentos → Responsables**.
 
 <!-- solo: hotel -->
+### Servicios sin departamento
+
+Si un servicio activo no tiene departamento (o el suyo se dio de baja), arriba de la lista sale el aviso amarillo «Este servicio no tiene un departamento activo que reciba su orden: …». Toca el lápiz del servicio y elige quién lo atiende: si no, nadie recibe su orden de servicio.
+
+**Orden sin quién la atienda:** si al confirmarse una reserva la orden de un departamento no tiene a quién llegar (el departamento no tiene responsable en la sede y no hay responsable general de reservas), la orden se marca **Sin quién la atienda** en **Órdenes de servicio** y te llega un aviso a la campana que no se puede silenciar. Nombra a su responsable en **Estructura → Autorizaciones → Responsables por departamento**.
+
 ## Cómo cargar la lista sugerida para hoteles
 
 Si tu empresa es un hotel, puedes llenar el catálogo de una vez con los servicios de una **orden de evento**, sin costo:

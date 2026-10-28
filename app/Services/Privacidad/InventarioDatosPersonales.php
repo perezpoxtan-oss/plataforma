@@ -57,8 +57,9 @@ final class InventarioDatosPersonales
         'candidatos' => ['trato' => 'arco', 'tipo' => 'candidato', 'columnas' => ['nombre_completo', 'telefono', 'correo', 'fecha_nacimiento', 'referencias', 'nombre', 'apellido_paterno', 'apellido_materno', 'sexo', 'lugar_nacimiento', 'curp', 'rfc', 'nss', 'estado_domicilio', 'telefono_fijo', 'emergencia_nombre', 'emergencia_parentesco', 'emergencia_telefono', 'referencias_laborales', 'tiene_familiares', 'familiares_nombre', 'declaracion_aceptada_en', 'firma_ruta', 'firma_en', 'firma_medio', 'firma_capturada_por'],
             'conservacion' => 'Candidatos → Documentos y plazos (borrar a los 12 meses sin movimiento).'],
         'candidato_documentos' => ['trato' => 'referencia', 'tipo' => 'candidato', 'columnas' => ['nombre_original'], 'conservacion' => 'Con su candidato.'],
-        'colaboradores' => ['trato' => 'arco', 'tipo' => 'colaborador', 'columnas' => ['nombre', 'apellido_paterno', 'apellido_materno', 'nombre_normalizado', 'telefono', 'fecha_nacimiento', 'lugar_nacimiento', 'curp', 'rfc', 'nss', 'correo_personal', 'direccion_completa'],
-            'conservacion' => self::LABORAL],
+        // C-10: también los residentes (tipo = residente) con su vivienda (espacio_id), que es su domicilio
+        'colaboradores' => ['trato' => 'arco', 'tipo' => 'colaborador', 'columnas' => ['nombre', 'apellido_paterno', 'apellido_materno', 'nombre_normalizado', 'telefono', 'fecha_nacimiento', 'lugar_nacimiento', 'curp', 'rfc', 'nss', 'correo_personal', 'direccion_completa', 'espacio_id'],
+            'conservacion' => self::LABORAL.' Residentes: mientras vivan en la sede; al darlos de baja, ARCO los muestra para rectificar o cancelar.'],
         'vacantes' => ['trato' => 'laboral', 'columnas' => ['contacto_nombre', 'contacto_telefono', 'contacto_correo'], 'conservacion' => self::LABORAL],
 
         // ------------------------------------------------ Novedades, Lost & Found y Accidentes
@@ -84,7 +85,7 @@ final class InventarioDatosPersonales
         'accidente_colaboradores' => ['trato' => 'laboral', 'columnas' => ['explicacion_causas'], 'conservacion' => self::LABORAL.' ARCO lo muestra para consultarlo.'],
 
         // ------------------------------------------------ Reservas y transporte
-        'reservas' => ['trato' => 'arco', 'tipo' => 'reserva', 'columnas' => ['para_cliente', 'cliente_nombre', 'cliente_empresa', 'cliente_correo', 'cliente_telefono'], 'conservacion' => 'reservas_dias'],
+        'reservas' => ['trato' => 'arco', 'tipo' => 'reserva', 'columnas' => ['para_cliente', 'cliente_nombre', 'cliente_empresa', 'cliente_correo', 'cliente_telefono', 'residente_id', 'vivienda_id'], 'conservacion' => 'reservas_dias'], // C-34: el residente que reservó
         'movimientos_transporte' => ['trato' => 'arco', 'tipo' => 'transporte', 'columnas' => ['chofer_id', 'firma_guardia', 'firma_taxista'],
             'conservacion' => 'transporte_dias (firma del taxista; la del guardia es personal de la empresa).'],
         'movimiento_transporte_pasajeros' => ['trato' => 'laboral', 'columnas' => [], 'conservacion' => 'Los pasajeros son colaboradores. '.self::LABORAL],

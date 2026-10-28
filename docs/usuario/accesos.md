@@ -44,10 +44,10 @@ Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo,
 
 | Pastilla | Qué significa | El renglón de abajo dice, por ejemplo |
 |---|---|---|
-| **PENDIENTE** (ámbar) | Todavía no puede pasar: espera a alguien. | «Espera a: Julieta Ramos (Mantenimiento) · 12 min», «Espera a: Recursos Humanos · 4 min», «RR. HH. pide que espere», «Sin quien autorice en Recepción: espera al supervisor o al jefe de seguridad», «Sin quien autorice en Mantenimiento: el supervisor lo autoriza por excepción», «Confirma con el host: Carlos Pérez». |
-| **EN SITIO** (rojo) | Está dentro. | «Autorizado por Mantenimiento», «RR. HH. dijo que pase», «Autorizado por excepción (Urgencia operativa, Sergio Díaz)». |
+| **PENDIENTE** (ámbar) | Todavía no puede pasar: espera a alguien. | «Espera a: Julieta Ramos (Mantenimiento) · 12 min», «Espera a: Recursos Humanos · 4 min», «RR. HH. pide que espere», «Sin quien autorice en Recepción: espera al supervisor o al jefe de seguridad», «Sin quien autorice en Mantenimiento: el supervisor lo autoriza por excepción», «Confirma con quien lo citó: Carlos Pérez», «Espera a: Carlos Pérez (suplente: Finanzas)». |
+| **EN SITIO** (rojo) | Está dentro. | «Autorizado por Mantenimiento», «RR. HH. dijo que pase», «Autorizado por excepción (Urgencia operativa, Sergio Díaz)», «Autorizó por teléfono (llamó Ana López)». |
 | **FUERA** (ámbar) | Salió un rato y va a regresar. | «Fuera en tour», «Fuera temporal». |
-| **FINALIZADO** (gris) | Ya salió, o no ingresó. | «Regreso de tour», «Salida temporal», «No autorizado por Seguridad: no ingresó». |
+| **FINALIZADO** (gris) | Ya salió, o no ingresó. | «Regreso de tour», «Salida temporal», «No autorizado por Seguridad: no ingresó», «Se llamó y no autorizó: no ingresó». |
 
 ## Cómo registrar un ingreso
 
@@ -60,14 +60,15 @@ Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo,
 3. Toca el **Tipo de Persona**: Colaborador, Visitante, Proveedor, Contratista (Obra) o Servicio de Emergencia. La ventana solo pide lo que hace falta para ese tipo.
 <!-- fin -->
 <!-- solo: condominio, fraccionamiento -->
-3. Toca el **Tipo de Persona**: Residente, Visita, Servicio / Proveedor, Contratista (Obra) o Servicio de Emergencia. La ventana solo pide lo que hace falta para ese tipo.
+3. Toca el **Tipo de Persona**: Residente o personal, Visita, Servicio / Proveedor, Contratista (Obra) o Servicio de Emergencia. La ventana solo pide lo que hace falta para ese tipo.
 <!-- fin -->
 4. Llena los datos (ver abajo por tipo).
 5. Elige la **Forma de Llegada**: **A Pie** o **Vehículo Propio / Moto**. Con vehículo, escribe o escanea las **placas** y, si aplica, elige la zona de estacionamiento.
 6. Si llega con más personas, usa **+** en **Acompañantes** y llena una fila por persona.
 7. Toca el botón grande de abajo. **Dice lo que va a pasar** según el tipo y el motivo que elegiste:
    - **Registrar y dejar pasar**: la persona entra de inmediato y aparece en **Gente en Sitio**.
-   - **Registrar · queda pendiente de autorización**: la persona espera en caseta (proveedores y contratistas, visitas a un departamento con responsable, o quien viene a Recursos Humanos si tu empresa pide que RR. HH. dé el paso) y aparece en **Pendientes de Autorización**.
+   - **Registrar · queda pendiente de autorización**: la persona espera en caseta (proveedores y contratistas, visitas a una persona con cuenta o a un departamento con responsable, o quien viene a Recursos Humanos si tu empresa pide que RR. HH. dé el paso) y aparece en **Pendientes de Autorización**.
+   - **Llamé y autorizó · dejar pasar**: viene con un residente, a una vivienda o con un huésped. Llámale antes; al tocarlo queda la constancia de que autorizó por teléfono, con tu nombre y la hora. Si no autorizó, toca **No autorizó**: la persona no entra y también queda la constancia.
    Si viene más gente detrás, toca **Guardar y capturar siguiente**: guarda y deja la ventana lista con la misma sede y tipo.
 
 <!-- solo: hotel -->
@@ -81,7 +82,7 @@ Cada tarjeta lleva arriba a la derecha una **pastilla con su estado** y, debajo,
 <!-- fin -->
 ![El botón dice que el registro queda pendiente](img/accesos/nuevo-ingreso-pendiente.png)
 
-**Qué debes ver:** la ventana se cierra (o se limpia, si elegiste capturar siguiente) y arriba sale el mensaje verde con el **siguiente paso**: «Registrado y en sitio: … ¿Otro ingreso? Toca Nuevo Ingreso», «Registrado: … espera la autorización de Julieta Ramos (Mantenimiento). Ya se avisó; esta tarjeta cambia sola con su respuesta», «… espera a Recursos Humanos», «… queda pendiente. Mantenimiento no tiene quien autorice en esta sede: confirma con el host y toca Autorizar por excepción», «… Recepción no tiene quien autorice en esta sede: ya se avisó a tu supervisor…» o, si tu empresa no pide la autorización del departamento para ese tipo, «… queda pendiente de autorización. Confirma con el host (…) y toca Confirmar Autorización».
+**Qué debes ver:** la ventana se cierra (o se limpia, si elegiste capturar siguiente) y arriba sale el mensaje verde con el **siguiente paso**: «Registrado y en sitio: … ¿Otro ingreso? Toca Nuevo Ingreso», «Registrado: … espera la autorización de Julieta Ramos (Mantenimiento). Ya se avisó; esta tarjeta cambia sola con su respuesta», «… espera a Recursos Humanos», «… queda pendiente. Mantenimiento no tiene quien autorice en esta sede: confirma con quien lo citó y toca Autorizar por excepción», «… Recepción no tiene quien autorice en esta sede: ya se avisó a tu supervisor…» o, si tu empresa no pide la autorización del departamento para ese tipo, «… queda pendiente de autorización. Confirma con quien lo citó (…) y toca Confirmar Autorización». Si llamaste a un residente o a una habitación: «Registrado y en sitio: … Quedó la constancia de que … autorizó por teléfono».
 
 ![Mensaje con el siguiente paso](img/accesos/mensaje-registrado-pendiente.png)
 
@@ -92,18 +93,20 @@ Lo que pide cada tipo:
 - **Personal Externo / Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**. **Ningún motivo viene marcado**: elige siempre uno (tu empresa puede dejar uno marcado en Configuración).
   - **Visita general:** escribe **¿A quién o a qué viene?** (por ejemplo «Mensajería» o «Entrega de documentos»).
 <!-- solo: hotel -->
-  - **Visita a huésped:** escribe **¿A qué huésped visita?** y, si la sabes, la **Habitación**. Llama a la habitación antes de dejarlo pasar.
+  - **Visita a huésped:** en **¿A quién viene?** escribe el nombre del huésped o su habitación y elígelo de la lista (salen los huéspedes en sitio y las habitaciones). Llama a la habitación y toca **Llamé y autorizó · dejar pasar** (o **No autorizó**).
 <!-- fin -->
-  - **Visita a Colaborador:** busca o escanea a quién visita.
-  - **Visita a Departamento:** elige el departamento; si tiene responsable, espera su autorización.
+  - **Visita a persona o área:** en **¿A quién viene?** escribe el nombre de la persona o del área y elígelo de la lista. Si la persona tiene cuenta en la plataforma, le llega el aviso para autorizar (si no contesta, pasa al responsable de su departamento). Si eliges un área, autoriza su responsable.
   - **Recursos Humanos** (solo si tu plan incluye Recursos Humanos): elige además **¿A qué viene?** (ver abajo «Cómo registrar a quien viene a Recursos Humanos»).
 <!-- fin -->
 <!-- solo: condominio, fraccionamiento -->
-- **Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **Motivo de la Visita**: **Visita a Residente** (elige a quién visita y escribe o elige de la lista **¿A qué departamento va?**, o «¿A qué casa va?» en fraccionamientos) o **Visita a Administración** (elige el área; si tu empresa lo pide, espera su autorización).
+- **Visita:** gafete (escanéalo o elígelo; solo salen gafetes **libres**), nombre (elígelo del Padrón de personas o escribe uno nuevo), **ID Custodiada** (la identificación que deja) y **¿A quién viene?**: escribe el nombre del residente o el número de la vivienda (o casa) y elígelo de la lista; la vivienda sale sola del residente. Llámale y toca **Llamé y autorizó · dejar pasar** (o **No autorizó**). Si la vivienda no está en la lista, deja lo que escribiste: queda marcada «sin catálogo». Si viene a un área de la administración, elige el área: su responsable recibe el aviso.
 <!-- fin -->
-- **Proveedor y Contratista (Obra):** además, la **Empresa / Procedencia**, **Host — ¿Quién lo citó?** (obligatorio) y **¿A qué departamento viene?** (obligatorio si tu empresa pide la autorización del departamento; el asterisco te lo indica). Quedan en **Pendientes de Autorización**: el responsable de ese departamento recibe el aviso y autoriza o rechaza (ver abajo «Cómo autorizar a un proveedor o contratista»).
+- **Proveedor y Contratista (Obra):** además, la **Empresa / Procedencia** y **¿A quién viene?**: la persona que lo citó o el área (el departamento sale solo de la persona). Quedan en **Pendientes de Autorización**: si la persona tiene cuenta, ella autoriza; si no, el responsable de su departamento (ver abajo «Cómo autorizar a un proveedor o contratista»). En **Más detalles**, el **Área de Trabajo** se elige de la lista de Zonas y edificios (si no está, se queda lo escrito).
+<!-- solo: condominio, fraccionamiento -->
+  Si el servicio viene con un residente (gas, plomero, entrega), elige al residente o su vivienda, llámale y toca **Llamé y autorizó · dejar pasar**.
+<!-- fin -->
 <!-- solo: hotel -->
-- **Huésped:** nombre y, en **Más detalles**, **Número de Habitación** y **¿Tiene Reserva?** (con su **Número de Reserva**). No lleva gafete.
+- **Huésped:** nombre y, en **Más detalles**, **Número de Habitación** (escribe y elígela de la lista; si no está, se queda lo escrito, marcado «sin catálogo») y **¿Tiene Reserva?** (con su **Número de Reserva**). No lleva gafete.
 <!-- fin -->
 - **Servicio de Emergencia:** solo lo mínimo para no hacer esperar: unidad, tipo de emergencia y observaciones.
 
@@ -201,7 +204,7 @@ Si eres agente, no puedes **Confirmar Autorización**. Cuando alguien espera y n
 
 ## Cuando el departamento no tiene quien autorice en la sede
 
-Si la visita va a un departamento que **no tiene quien autorice en tu sede** (nadie nombrado, su cuenta está dada de baja, no tiene el permiso o no entra a esta sede), tu forma de registrar no cambia: los mismos datos y el mismo botón. Lo que cambia es lo que pasa al guardar:
+Si la visita va a un departamento (o a una persona sin cuenta de un departamento) que **no tiene quien autorice en tu sede** (nadie nombrado, su cuenta está dada de baja, no tiene el permiso o no entra a esta sede), tu forma de registrar no cambia: los mismos datos y el mismo botón. Lo que cambia es lo que pasa al guardar:
 
 1. La tarjeta queda **PENDIENTE** con «Sin quien autorice en (departamento): espera al supervisor o al jefe de seguridad» y el reloj corriendo.
 2. Al supervisor y al jefe de seguridad de la sede les llega el aviso «Espera tu autorización: …» a la **campana** y a **Mis pendientes** («Esperan tu autorización en caseta»).
@@ -211,10 +214,10 @@ Si la visita va a un departamento que **no tiene quien autorice en tu sede** (na
 
 ## Cómo autorizar a un proveedor o contratista
 
-Si tu empresa lo pide (de fábrica, sí), el proveedor o contratista **espera la autorización del responsable del departamento** al que viene, igual que una visita. La caseta no tiene que llamar a nadie.
+El proveedor o contratista **espera la autorización de la persona que lo citó** (si tiene cuenta en la plataforma) o, si tu empresa lo pide (de fábrica, sí), **del responsable del departamento** al que viene. La caseta no tiene que llamar a nadie.
 
-1. Al registrarlo, elige **¿A qué departamento viene?** (el Host se sigue anotando).
-2. Si el departamento tiene responsable en tu sede, le llega el aviso a su **campana** y a su **correo** con **Autorizar ingreso** y **Rechazar**. La tarjeta dice «Espera a: … (departamento)» con su reloj.
+1. Al registrarlo, elige en **¿A quién viene?** a la persona que lo citó o el área.
+2. Le llega el aviso a su **campana** y a su **correo** con **Autorizar ingreso** y **Rechazar**. La tarjeta dice «Espera a: … (suplente: departamento)» o «Espera a: … (departamento)» con su reloj. Si la persona no contesta, el aviso pasa al responsable de su departamento.
 3. Cuando responde, **la tarjeta cambia sola**: pasa a **Gente en Sitio** («Autorizado por …») o al historial («No autorizado por …: no ingresó»; devuélvele su identificación). También te llega el aviso a la campana.
 
 **Qué debes ver:** la tarjeta en **Pendientes de Autorización** con «Espera a: …» y, al responder el departamento, la persona en **Gente en Sitio**.
@@ -238,7 +241,7 @@ Solo quien tiene el permiso **Aprobar** (supervisor o Jefe de seguridad). Siempr
 Si en tu empresa la casilla **Proveedor** o **Contratista** no está marcada (ver [Autorizaciones](autorizaciones.md)), funciona como antes:
 
 1. Abre la pestaña **Pendientes de Autorización**.
-2. Confirma con quien lo citó (el Host) que lo espera.
+2. Confirma con quien lo citó que lo espera.
 3. Toca **Confirmar Autorización** en su tarjeta.
 
 ![Pendientes de autorización](img/accesos/pendientes.png)
@@ -309,7 +312,7 @@ Al registrar un ingreso, la plataforma revisa el Padrón de personas, el Padrón
 ## Cómo buscar y exportar el historial
 
 1. Abre **Historial Finalizados**.
-2. Escribe en el buscador (nombre, gafete, empresa, placas, host o el nombre de un **acompañante**) y elige tipo, sede y fechas **Desde / Hasta**.
+2. Escribe en el buscador (nombre, gafete, empresa, placas, a quién viene o el nombre de un **acompañante**) y elige tipo, sede y fechas **Desde / Hasta**.
 3. Si tienes permiso, toca **Exportar a Excel** para bajar exactamente lo filtrado.
 
 ![Historial](img/accesos/historial.png)
@@ -332,8 +335,9 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 |---|---|---|
 | «El gafete … ya está en uso (EN SITIO). Pide que lo devuelvan o elige otro.» | Ese gafete lo tiene alguien que sigue dentro. | Usa otro gafete o da salida a quien lo tiene. |
 | «El gafete … está dado de baja.» | El gafete ya no se usa. | Elige otro. |
-| «Indica quién citó al proveedor/contratista (Host).» | Falta el Host. | Escribe y elige al colaborador que lo espera. |
-| «Indica a qué departamento viene.» | Tu empresa pide la autorización del departamento y no elegiste uno. | Elige el departamento en **¿A qué departamento viene?**. |
+| «Indica a quién viene: la persona que lo citó o el área.» | No elegiste a nadie en **¿A quién viene?**. | Escribe el nombre de la persona o del área y elígelo de la lista. |
+| «Elige de la lista a quién viene (una persona o un área)…» | Escribiste un nombre pero no lo elegiste de la lista. | Toca el nombre en la lista que aparece debajo; si no sale, prueba con otra palabra. |
+| «Indica a qué departamento viene.» | Tu empresa pide la autorización del departamento y la persona elegida no tiene departamento. | Elige el área en **¿A quién viene?**. |
 | «Este acceso espera la autorización del departamento. Si no puede esperar, toca «Autorizar por excepción» y elige el motivo.» | El proveedor o contratista espera a su departamento. | Espera la respuesta o usa **Autorizar por excepción**. |
 | «Elige el motivo de la excepción.» / «Con «Otro» escribe el motivo de la excepción.» | Falta el motivo o su detalle. | Elige un motivo; con **Otro**, escribe cuál. |
 | «Ese motivo no aplica a este acceso: elige uno de la lista.» | Por ejemplo, el departamento sí tiene responsable o aún no pasa el tiempo de espera. | Elige otro motivo de la lista. |
@@ -366,7 +370,9 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 <!-- fin -->
 - **El colaborador no está en la lista.** Usa **¿No aparece? Darlo de alta provisional**; después lo verifica Recursos Humanos (si tu plan no lo incluye, el administrador).
 - **¿Por qué no viene marcado ningún motivo?** Para que cada visita quede con su motivo real. Si casi todas tus visitas son del mismo tipo, tu administrador puede dejar uno marcado en **Estructura → Configuración → Caseta y accesos → Motivo de la visita**.
-- **No veo el motivo Recursos Humanos.** Tu plan no incluye Recursos Humanos: usa **Visita general** o **Visita a Departamento**.
+- **No veo el motivo Recursos Humanos.** Tu plan no incluye Recursos Humanos: usa **Visita general** o **Visita a persona o área**.
+- **¿Por qué ya no veo «Visita a Departamento» ni «Host»?** Ahora es un solo campo, **¿A quién viene?**: ahí eliges a la persona o el área, y el departamento sale solo de la persona.
+- **¿Qué pasa si la persona tiene cuenta?** Le llega el aviso y ella autoriza a su visita. Si no contesta a tiempo, el aviso pasa al responsable de su departamento.
 - **Me equivoqué de zona.** Usa **Cambiar Zona**.
 - **¿Cómo sé quién registró a alguien?** En la tarjeta, junto a la hora de ingreso, dice «por …».
 - **¿Puedo usar la cámara del celular para el gafete?** Sí: toca el botón del código QR junto al campo, tanto al registrar como al dar salida.

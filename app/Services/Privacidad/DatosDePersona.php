@@ -189,8 +189,12 @@ class DatosDePersona
                 }
             })->orderBy('id')->limit(self::MAX_POR_TIPO)->get();
             foreach ($colaboradores as $c) {
-                $resultado['colaborador'][] = ['id' => $c->id, 'titulo' => $c->nombreCompleto(), 'detalle' => 'Colaborador '.($c->activo ? 'activo' : 'dado de baja').' · se rectifica en su ficha',
-                    'url' => route('colaboradores.index', ['buscar' => $c->nombreCompleto()])];
+                // C-10: el residente se rectifica en Padrones → Residentes
+                $resultado['colaborador'][] = $c->esResidente()
+                    ? ['id' => $c->id, 'titulo' => $c->nombreCompleto(), 'detalle' => 'Residente '.($c->activo ? 'activo' : 'dado de baja').' · se rectifica en Residentes',
+                        'url' => route('residentes.index').'#residente-'.$c->id]
+                    : ['id' => $c->id, 'titulo' => $c->nombreCompleto(), 'detalle' => 'Colaborador '.($c->activo ? 'activo' : 'dado de baja').' · se rectifica en su ficha',
+                        'url' => route('colaboradores.index', ['buscar' => $c->nombreCompleto()])];
             }
             $idsColaboradores = $colaboradores->pluck('id');
         }
@@ -201,7 +205,7 @@ class DatosDePersona
         $resultado['lost_found_entrega'] = $this->buscarEntregas($c, $idsPersonas);
         $resultado['novedad'] = $porNombre ? $this->buscarNovedades($like) : [];
         $resultado['accidente'] = $this->buscarAccidentes($porNombre ? $like : null, $idsColaboradores);
-        $resultado['reserva'] = $this->buscarReservas($c);
+        $resultado['reserva'] = $this->buscarReservas($c + ['residentes' => $idsColaboradores]);
         $resultado['transporte'] = $this->buscarTransporte($porNombre ? $like : null, $idsPersonas);
         // Etapa 2 (revisión): receptor o responsable externo por id del Padrón o de su empresa
         $idsEmpresas = $porNombre ? Proveedor::query()->where('nombre', 'like', $like)->orderBy('id')->limit(self::MAX_POR_TIPO)->pluck('id') : collect();
@@ -307,6 +311,10 @@ class DatosDePersona
             }
             if (strlen($c['telefono']) >= 7) {
                 self::orTelefono($q, 'cliente_telefono', $c['telefono']);
+            }
+            // C-34: las reservas que hizo como residente
+            if (($c['residentes'] ?? collect())->isNotEmpty()) {
+                $q->orWhereIn('residente_id', $c['residentes']);
             }
         })->orderByDesc('id')->limit(self::MAX_POR_TIPO)->get();
 

@@ -25,6 +25,7 @@
                     <div class="d-flex justify-content-between align-items-start gap-2">
                         <h2 class="ficha-title"><a href="{{ route('reservas.show', $r->id) }}" class="text-reset text-decoration-none">{{ $r->titulo }}</a></h2>
                         <span class="etiqueta-estado {{ $tipo === 'lista' ? 'activo' : 'pendiente' }} text-nowrap">{{ $tipo === 'lista' ? 'Listo' : 'Por atender' }}</span>
+                        @if ($o->sin_quien_atienda && $tipo !== 'lista')<span class="etiqueta-estado inactivo text-nowrap" title="El departamento no tiene responsable en la sede">Sin quién la atienda</span>@endif
                     </div>
                     <div class="ficha-subtitulo">{{ $o->departamento?->nombre }} · {{ $r->folioTexto() }}</div>
                     <ul class="list-unstyled small text-muted mt-2 pt-2 border-top m-0">

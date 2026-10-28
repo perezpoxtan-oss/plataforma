@@ -30,6 +30,7 @@ use App\Http\Controllers\Informes\InformeEjecutivoController;
 use App\Http\Controllers\Informes\TableroController;
 use App\Http\Controllers\Informes\TendenciasController;
 use App\Http\Controllers\LectorController;
+use App\Http\Controllers\LugarController;
 use App\Http\Controllers\ModuloPendienteController;
 use App\Http\Controllers\Operacion\PrestamoLlaveController;
 use App\Http\Controllers\Operacion\ReceptorController;
@@ -40,6 +41,7 @@ use App\Http\Controllers\Organizacion\EspacioController;
 use App\Http\Controllers\Organizacion\PuestoController;
 use App\Http\Controllers\Organizacion\TurnoController;
 use App\Http\Controllers\Padrones\ProveedorController;
+use App\Http\Controllers\Padrones\ResidenteController;
 use App\Http\Controllers\Padrones\RestriccionController;
 use App\Http\Controllers\Padrones\RutaController;
 use App\Http\Controllers\PanelController;
@@ -60,6 +62,7 @@ use App\Http\Controllers\Seguridad\EquipoController;
 use App\Http\Controllers\Seguridad\EstacionamientoController;
 use App\Http\Controllers\Seguridad\GafeteController;
 use App\Http\Controllers\Seguridad\LlaveController;
+use App\Http\Controllers\Seguridad\NovedadDepartamentoController;
 use App\Http\Controllers\Seguridad\PaseSalidaController;
 use App\Http\Controllers\Seguridad\PersonaController;
 use App\Http\Controllers\Seguridad\ProcedimientoController;
@@ -201,6 +204,13 @@ Route::middleware('auth')->group(function () {
     Route::put('/turnos/{turno}', [TurnoController::class, 'update'])->whereNumber('turno')->name('turnos.update');
     Route::put('/turnos/{turno}/sedes', [TurnoController::class, 'sedes'])->whereNumber('turno')->name('turnos.sedes');
     Route::patch('/turnos/{turno}/estado', [TurnoController::class, 'estado'])->whereNumber('turno')->name('turnos.estado');
+    // C-30: lugares del árbol de Zonas y edificios para los formularios (caseta, incidentes, reservas)
+    Route::get('/lugares/buscar', [LugarController::class, 'buscar'])->middleware('throttle:120,1,lugares')->name('lugares.buscar');
+    // C-10 (DD-14): Padrones → Residentes, solo en condominio y fraccionamiento (permisos del directorio)
+    Route::get('/residentes', [ResidenteController::class, 'index'])->name('residentes.index');
+    Route::post('/residentes', [ResidenteController::class, 'store'])->name('residentes.store');
+    Route::put('/residentes/{residente}', [ResidenteController::class, 'update'])->whereNumber('residente')->name('residentes.update');
+    Route::patch('/residentes/{residente}/estado', [ResidenteController::class, 'estado'])->whereNumber('residente')->name('residentes.estado');
     // Colaboradores (y el registro rápido y la búsqueda que usan otros módulos)
     Route::get('/colaboradores', [ColaboradorController::class, 'index'])->name('colaboradores.index');
     Route::post('/colaboradores', [ColaboradorController::class, 'store'])->name('colaboradores.store');
@@ -382,7 +392,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/accesos', [AccesoController::class, 'store'])->name('accesos.store');
     Route::get('/accesos/exportar', [AccesoController::class, 'exportar'])->name('accesos.exportar');
     Route::get('/accesos/en-sitio', [AccesoController::class, 'enSitio'])->middleware('throttle:120,1')->name('accesos.en-sitio');
-    Route::get('/accesos/buscar', [AccesoController::class, 'buscar'])->middleware('throttle:240,1')->name('accesos.buscar');
+    Route::get('/accesos/buscar', [AccesoController::class, 'buscar'])->middleware('throttle:240,1,accesos-buscar')->name('accesos.buscar');
     Route::get('/accesos/gafetes', [AccesoController::class, 'gafetes'])->name('accesos.gafetes');
     Route::patch('/accesos/{acceso}/autorizar', [AccesoController::class, 'autorizar'])->whereNumber('acceso')->name('accesos.autorizar');
     Route::patch('/accesos/{acceso}/excepcion', [AccesoController::class, 'excepcion'])->whereNumber('acceso')->name('accesos.excepcion');
@@ -419,6 +429,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/responsivas/{responsiva}/hoja', [ResponsivaController::class, 'hoja'])->whereNumber('responsiva')->name('responsivas.hoja');
     // Fin Padrones: Préstamo de llaves y Responsivas
     // Padrones: Bitácora de Novedades (despacho de tickets con expediente por categoría; Lost & Found trabaja solo sus tickets)
+    // C-28 (DD-15): tickets canalizados a un departamento (la regla es de cobertura: responsables y delegados)
+    Route::controller(NovedadDepartamentoController::class)->group(function () {
+        Route::get('/novedades/departamento', 'index')->name('novedades.departamento.index');
+        Route::get('/novedades/departamento/{novedad}', 'show')->whereNumber('novedad')->name('novedades.departamento.show');
+        Route::post('/novedades/departamento/{novedad}/nota', 'nota')->whereNumber('novedad')->middleware('throttle:60,1')->name('novedades.departamento.nota');
+        Route::post('/novedades/departamento/{novedad}/atender', 'atender')->whereNumber('novedad')->middleware('throttle:60,1')->name('novedades.departamento.atender');
+    });
     Route::controller('App\Http\Controllers\Seguridad\NovedadController')->group(function () {
         Route::get('/novedades', 'index')->name('novedades.index');
         Route::get('/novedades/lost-found', 'index')->name('lost_found.index');

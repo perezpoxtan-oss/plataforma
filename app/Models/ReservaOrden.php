@@ -31,7 +31,7 @@ class ReservaOrden extends Model
 
     protected function casts(): array
     {
-        return ['lista_en' => 'datetime'];
+        return ['lista_en' => 'datetime', 'sin_quien_atienda' => 'boolean'];
     }
 
     public function reserva(): BelongsTo

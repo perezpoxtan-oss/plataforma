@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Operacion\Reservas;
 
 use App\Http\Controllers\Controller;
+use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Espacio;
@@ -24,6 +25,7 @@ use App\Services\Reservas\NivelesReservas;
 use App\Services\Reservas\ResponsablesReservas;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
@@ -407,7 +409,7 @@ class ReservaController extends Controller
             'fecha' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $request->query('fecha')) ? $request->query('fecha') : '',
             'hora_inicio' => '', 'hora_fin' => '', 'titulo' => '', 'tipo_uso_id' => '', 'montaje_id' => '', 'asistentes' => '',
             'para_cliente' => false, 'cliente_nombre' => '', 'cliente_empresa' => '', 'cliente_correo' => '', 'cliente_telefono' => '',
-            'tarifa' => '', 'notas' => '', 'servicios' => [], 'otros' => [],
+            'tarifa' => '', 'notas' => '', 'servicios' => [], 'otros' => [], 'residente_id' => '',
             // Orden de evento: el departamento se propone con el del colaborador del usuario
             'departamento_solicitante_id' => $this->reservas->departamentoDe($actor) ?? '', 'dia_completo' => false,
             'montaje_minutos' => '', 'desmontaje_minutos' => '', 'indicaciones_montaje' => '', 'motivo_excepcion_aforo' => '',
@@ -424,6 +426,7 @@ class ReservaController extends Controller
             'departamento_solicitante_id' => $reserva->departamento_solicitante_id ?? '', 'dia_completo' => (bool) $reserva->dia_completo,
             'montaje_minutos' => $reserva->minutosMontaje(), 'desmontaje_minutos' => $reserva->minutosDesmontaje(),
             'indicaciones_montaje' => $reserva->indicaciones_montaje, 'motivo_excepcion_aforo' => $reserva->motivo_excepcion_aforo,
+            'residente_id' => $reserva->residente_id ?? '',
         ];
         $departamentos = Departamento::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
         $deptoMontaje = $ajustes['departamento_montaje_id'] !== null && $departamentos->contains('id', $ajustes['departamento_montaje_id']) ? $ajustes['departamento_montaje_id'] : null;
@@ -465,6 +468,15 @@ class ReservaController extends Controller
             'deptoMontaje' => $deptoMontaje,
             'otros' => $otros,
             'puedeAjustar' => $actor->can('reservas.aprobar'),
+            // C-34 (D-11): en condominio y fraccionamiento, «¿Para quién?» es un residente con su vivienda
+            'residencial' => ($terminos = Terminos::deEmpresaId($empresaId))->esResidencial(),
+            'terminos' => $terminos,
+            'residentes' => $terminos->esResidencial()
+                ? Colaborador::residentes()->where('activo', true)->whereNull('fusionado_en_id')
+                    ->when($reserva?->residente_id, fn ($q, $id) => $q->orWhere('colaboradores.id', $id))
+                    ->with('vivienda:id,nombre')->orderBy('nombre')->orderBy('apellido_paterno')->limit(3000)
+                    ->get(['id', 'sede_id', 'espacio_id', 'nombre', 'apellido_paterno', 'apellido_materno'])
+                : collect(),
         ]);
     }
 

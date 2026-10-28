@@ -162,7 +162,10 @@ class AutorizacionController extends Controller
                 : redirect()->route('autorizaciones.show', $a->id)->with('ok', $mensaje);
         }
 
-        return redirect()->route('autorizaciones.index')->with('ok', $mensaje);
+        // C-09: quien respondió su propia visita sin ver la bandeja vuelve a la solicitud
+        return $request->user()->can('autorizaciones.ver')
+            ? redirect()->route('autorizaciones.index')->with('ok', $mensaje)
+            : redirect()->route('autorizaciones.show', $a->id)->with('ok', $mensaje);
     }
 
     // ------------------------------------------------- Responsables y ajustes
@@ -262,7 +265,7 @@ class AutorizacionController extends Controller
             $escalamiento->escalarSiToca($empresaId);
             $accesos = app(ConsultaAccesos::class)->limitar(Acceso::query(), $request->user(), 'accesos.ver')
                 ->whereIn('accesos.id', $ids)
-                ->with(['autorizacionDepartamento.departamento:id,nombre', 'departamento:id,nombre', 'host:id,nombre,apellido_paterno,apellido_materno'])
+                ->with(['autorizacionDepartamento.departamento:id,nombre', 'autorizacionDepartamento.colaborador:id,nombre,apellido_paterno,apellido_materno', 'departamento:id,nombre', 'host:id,nombre,apellido_paterno,apellido_materno'])
                 ->get(['accesos.id', 'accesos.estado', 'accesos.autorizacion', 'accesos.tipo', 'accesos.entrada_at', 'accesos.departamento_id', 'accesos.host_colaborador_id', 'accesos.sede_id']);
             $estados = $accesos->mapWithKeys(fn ($a) => [$a->id => $a->estado.'|'.($a->autorizacion ?? '')]);
             // Reloj, color y «Se escaló a» de los que siguen pendientes
@@ -280,7 +283,15 @@ class AutorizacionController extends Controller
     {
         $u = $request->user();
 
-        return $u->can('autorizaciones.ver') || $u->can('candidatos.editar') || $u->can('recepcion_rh.ver');
+        // C-09: la persona citada ve su propia visita (cada solicitud se revisa en buscar())
+        return $u->can('autorizaciones.ver') || $u->can('candidatos.editar') || $u->can('recepcion_rh.ver') || $this->tieneColaborador($u)
+            || $this->autorizaciones->personasQueLeDelegan($u)['personas'] !== []; // revisión Etapa 5: delegado de una persona citada
+    }
+
+    /** C-09: cuenta ligada a una persona del directorio (puede tener visitas que la esperan). */
+    private function tieneColaborador($u): bool
+    {
+        return ($u->getAttributes()['colaborador_id'] ?? null) !== null;
     }
 
     /** Responder: el responsable (autorizaciones.responder) o quien atiende Recepción de RR. HH. Cada solicitud lo revisa otra vez. */
@@ -289,7 +300,7 @@ class AutorizacionController extends Controller
         $u = $request->user();
 
         // Ver el panel de Recepción de RR. HH. no da el «Que pase» (lo da quien edita candidatos)
-        return $u->can('autorizaciones.responder') || $u->can('candidatos.editar');
+        return $u->can('autorizaciones.responder') || $u->can('candidatos.editar') || $this->tieneColaborador($u);
     }
 
     private function buscar($actor, int $id): Autorizacion

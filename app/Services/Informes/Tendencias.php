@@ -8,6 +8,7 @@ use App\Models\AccidenteGuardavidas;
 use App\Models\AccidenteHuesped;
 use App\Models\Candidato;
 use App\Models\Colaborador;
+use App\Models\Espacio;
 use App\Models\LostFoundArticulo;
 use App\Models\LostFoundReportePerdida;
 use App\Models\MovimientoTransporte;
@@ -196,16 +197,27 @@ class Tendencias
             $duracion[Terminos::actual()->etiquetasTipo()[$tipo] ?? $tipo] = round(array_sum($lista) / count($lista));
         }
         arsort($duracion);
-        $deptos = Indicadores::por((clone $periodo)->join('departamentos', 'departamentos.id', '=', 'accesos.departamento_id'), 'departamentos.nombre', [], 10);
+        $terminos = Terminos::actual();
+        // C-10: en condominio y fraccionamiento se visita una vivienda, no un departamento
+        if ($terminos->esResidencial()) {
+            // Revisión Etapa 5: solo viviendas (la alberca o el salón son áreas comunes)
+            $deptos = Indicadores::por((clone $periodo)->where('accesos.tipo', '!=', 'colaborador')->whereNotNull('accesos.habitacion')
+                ->where(fn ($q) => $q->whereNull('accesos.espacio_id')->orWhereNotIn('accesos.espacio_id', Espacio::query()->where('uso', Espacio::USO_AREA_COMUN)->select('id'))),
+                'accesos.habitacion', [], 10);
+            $deptos = collect($deptos)->mapWithKeys(fn ($n, $v) => [$terminos->espacio().' '.$v => $n])->all();
+        } else {
+            $deptos = Indicadores::por((clone $periodo)->join('departamentos', 'departamentos.id', '=', 'accesos.departamento_id'), 'departamentos.nombre', [], 10);
+        }
+        $masVisitado = $terminos->esResidencial() ? Terminos::plural($terminos->espacio()) : 'Departamentos';
 
         return [
-            'cifras' => [$cifra, ['En sitio ahora', $enSitio, null, ''], ['Departamento más visitado', $deptos === [] ? '—' : (string) array_key_first($deptos), null, 'texto']],
+            'cifras' => [$cifra, ['En sitio ahora', $enSitio, null, ''], [($terminos->esResidencial() ? $terminos->espacio() : 'Departamento').' más visitad'.($terminos->esResidencial() && in_array(mb_strtolower($terminos->espacio()), ['vivienda', 'casa'], true) ? 'a' : 'o'), $deptos === [] ? '—' : (string) array_key_first($deptos), null, 'texto']],
             'series' => [$serie, ['Ingresos por hora del día', array_map(fn ($h) => str_pad((string) $h, 2, '0', STR_PAD_LEFT), range(0, 23)), $horas, null]],
             'desgloses' => [
                 ['Por tipo de acceso', Indicadores::por($periodo, 'accesos.tipo', Terminos::actual()->etiquetasTipo()), ''],
                 ['Medio de llegada', Indicadores::por($periodo, 'accesos.modo_arribo', Acceso::MODOS, null, 'No especificado'), ''],
                 ['Duración promedio de la visita', $duracion, 'min'],
-                ['Departamentos más visitados', $deptos, ''],
+                [$masVisitado.' más visitad'.(str_ends_with(mb_strtolower($masVisitado), 'as') ? 'as' : 'os'), $deptos, ''],
             ],
         ];
     }
@@ -347,7 +359,7 @@ class Tendencias
 
     private function calcularColaboradores(User $actor, Periodo $p, ?array $sedes): array
     {
-        $q = Colaborador::query()->whereNull('colaboradores.fusionado_en_id');
+        $q = Colaborador::query()->personal()->whereNull('colaboradores.fusionado_en_id'); // C-10: sin residentes
         $permitidas = $this->alcance->sedes($actor, self::PERMISO, 'colaboradores.ver', $sedes);
         $base = $this->limitar($permitidas === null || $permitidas === [] ? $q : $q->enSedes($permitidas), $actor, 'colaboradores', $sedes, null, 'colaboradores.creado_por');
         [$cifra, $serie] = $this->comparar($base, 'colaboradores.created_at', $p, 'Altas de colaboradores', 'Altas por periodo');

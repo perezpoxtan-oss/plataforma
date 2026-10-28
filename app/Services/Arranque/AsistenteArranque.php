@@ -130,12 +130,23 @@ class AsistenteArranque
                     'hecho' => DB::table('users')->where('empresa_id', $empresa->id)->where('activo', true)->count() > 1,
                     'enlaces' => array_filter(['Ir a Usuarios' => $enlace('usuarios.ver', 'usuarios.index')]),
                 ],
-                [
+                // C-10: en giros residenciales, el personal de la administración y, aparte, los residentes con su vivienda
+                ...(Terminos::para($empresa)->esResidencial() ? [[
+                    'clave' => 'colaboradores', 'icono' => 'bi-people', 'titulo' => 'Personal de la administración',
+                    'texto' => 'Registra a tus guardias, mantenimiento y administración (o impórtalos desde Excel).',
+                    'hecho' => Colaborador::personal()->where('activo', true)->where('provisional', false)->exists(),
+                    'enlaces' => array_filter(['Importar personal' => $importar('colaboradores', 'colaboradores', 'colaboradores.index')]),
+                ], [
+                    'clave' => 'residentes', 'icono' => 'bi-house-heart', 'titulo' => 'Residentes y viviendas',
+                    'texto' => 'Registra quién vive en cada '.mb_strtolower(Terminos::para($empresa)->espacio()).': la caseta les llama para autorizar a sus visitas.',
+                    'hecho' => Colaborador::residentes()->where('activo', true)->whereNotNull('espacio_id')->exists(),
+                    'enlaces' => array_filter(['Ir a Residentes' => $enlace('colaboradores.ver', 'residentes.index')]),
+                ]] : [[
                     'clave' => 'colaboradores', 'icono' => 'bi-people', 'titulo' => 'Importar colaboradores',
                     'texto' => 'Sube tu plantilla de personal desde Excel en un solo paso.',
                     'hecho' => Colaborador::where('activo', true)->where('provisional', false)->exists(),
                     'enlaces' => array_filter(['Importar colaboradores' => $importar('colaboradores', 'colaboradores', 'colaboradores.index')]),
-                ],
+                ]]),
                 [
                     'clave' => 'zonas', 'icono' => 'bi-grid-3x3-gap', 'titulo' => 'Zonas y edificios',
                     'texto' => ($t = Terminos::para($empresa))->esHotel() ? 'Captura tus zonas, pisos y habitaciones (u oficinas), o impórtalos desde Excel.'

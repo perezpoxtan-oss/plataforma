@@ -85,6 +85,9 @@ class LectorAuditoria
         'desbloqueado' => 'Desbloqueo', 'rol_asignado' => 'Asignación de rol',
         'restringido' => 'Acceso restringido', 'restriccion_quitada' => 'Restricción quitada', 'no_regreso' => 'No regresó',
         'excepcion' => 'Préstamo por excepción',
+        // Etapa 5: la llamada de la caseta (C-09) y el departamento que atiende su ticket (C-28)
+        'llamada_autorizo' => 'Autorizó por teléfono', 'llamada_no_autorizo' => 'No autorizó por teléfono',
+        'departamento_atendio' => 'Atendido por el departamento', 'nota_departamento' => 'Nota del departamento',
         'rol_actualizado' => 'Cambio de permisos', 'sedes' => 'Cambio de sedes', 'sedes_actualizadas' => 'Cambio de sedes', 'sede_agregada' => 'Alta de sede',
         'lote' => 'Alta por lote', 'pisos_copiados' => 'Copia de pisos', 'movido' => 'Cambio de lugar', 'seccion_creada' => 'Alta de sección',
         'seccion_asignada' => 'Asignación a sección', 'tipo_creado' => 'Alta de tipo', 'clonado' => 'Copia',

@@ -51,11 +51,12 @@
                         <h2 class="h6 fw-bold m-0 d-flex align-items-center text-nowrap">@if ($puede['borrar'])<input type="checkbox" class="form-check-input me-2" name="espacios[]" value="{{ $h->id }}" form="formEliminarVarias" aria-label="Marcar {{ $h->nombre }}" data-marcar-espacio>@endif<i class="bi bi-door-closed me-1" style="color:#b45309" aria-hidden="true"></i>{{ $h->nombre }}
                             @unless ($h->activo)<span class="etiqueta-inactiva ms-1">INACTIVA</span>@endunless
                         </h2>
-                        @include('organizacion.espacios.partes.acciones', ['e' => $h, 'dialogo' => 'dialogoEditarHabitacion', 'valores' => $h->only(['nombre', 'tipo_espacio_id', 'grupo_espacio_id'])])
+                        @include('organizacion.espacios.partes.acciones', ['e' => $h, 'dialogo' => 'dialogoEditarHabitacion', 'valores' => $h->only(['nombre', 'tipo_espacio_id', 'grupo_espacio_id']) + ['area_comun' => $h->esAreaComun()]])
                     </div>
                     <div class="d-flex flex-wrap gap-1 mt-2">
                         @if ($h->grupo)<span class="chip-seccion"><i class="bi bi-bookmark-fill" aria-hidden="true"></i> {{ $h->grupo->nombre }}</span>@endif
                         @if ($h->tipo)<span class="chip-seccion">{{ $h->tipo->nombre }}</span>@endif
+                        @if ($h->esAreaComun() && \App\Support\Terminos::actual()->esResidencial())<span class="chip-seccion"><i class="bi bi-tree" aria-hidden="true"></i> Área común</span>@endif
                     </div>
                     <div class="small text-muted mt-2"><i class="bi bi-diagram-3" aria-hidden="true"></i> {{ $h->areas_count }} área(s)</div>
                 </div>

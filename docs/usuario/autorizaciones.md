@@ -32,7 +32,7 @@ Si tienes encendidos los avisos por correo en [Configuración](configuracion.md)
 
 ### Visitas, proveedores y contratistas que vienen a un departamento
 
-1. La caseta registra la visita con el motivo **Visita a Departamento** (o **Visita a Colaborador**), o al proveedor o contratista con **¿A qué departamento viene?**.
+1. La caseta registra la visita, el proveedor o el contratista y elige en **¿A quién viene?** la persona o el área. El departamento sale solo de la persona.
 2. Si la empresa lo pide y el departamento tiene **quien autorice en esa sede**, la tarjeta de la caseta queda **PENDIENTE** con «Espera a: (tu nombre) (departamento) · minutos» y a ti te llega el aviso (también a los suplentes del departamento).
 3. Toca **Autorizar ingreso** o **Rechazar** (en la campana, en **Mis pendientes**, en **Autorizaciones** o en el botón del correo).
 4. La tarjeta de la caseta **cambia sola**: autorizado, la persona pasa a «Gente en Sitio» con «Autorizado por (departamento)»; rechazado, queda **FINALIZADO** con «No autorizado por (departamento): no ingresó» en el historial (hay que devolverle su identificación).
@@ -43,6 +43,18 @@ Si tienes encendidos los avisos por correo en [Configuración](configuracion.md)
 > Si el responsable avisa por teléfono, el supervisor puede usar **Confirmar Autorización** en la caseta (en un proveedor o contratista, **Autorizar por excepción** con el motivo «El responsable autorizó por teléfono»): queda anotado «respondida por caseta».
 
 El aviso de un proveedor o contratista dice de qué empresa viene, quién lo citó y a qué viene (por ejemplo «Proveedor para Mantenimiento. Lo citó: Carlos Pérez. Actividad: Recarga de tanque. Viene de: GAS DEL SUR.»).
+
+### Cuando la visita viene contigo
+
+Si tienes cuenta en la plataforma y la caseta te elige en **¿A quién viene?**, **tú autorizas a tu visita** (aunque no tengas la bandeja de Autorizaciones):
+
+1. Te llega a la campana **Te busca en caseta: (nombre)** con **Autorizar ingreso** y **Rechazar**. También aparece en **Mis pendientes → Autorizaciones por responder**.
+2. Toca la respuesta. La caseta lo ve al momento.
+3. Si no contestas a tiempo, el aviso pasa al responsable de tu departamento (tu **suplente**) y al jefe de seguridad de la sede.
+
+Si tu empresa no pide autorización para las visitas, solo te llega el aviso **Llegó tu visita: (nombre)**.
+
+**Si delegaste tus aprobaciones** ([Delegar mis aprobaciones](mi-cuenta.md#cómo-delegar-mis-aprobaciones-no-molestar)), el aviso de tus visitas le llega a la persona en quien delegaste (o a quien ella delegó, si puede responder en esa sede), con el texto «… que viene con (tu nombre) (te delegó sus aprobaciones)». Tú también puedes responderla. Si nadie de tu cadena puede responder en esa sede, te llega a ti. Si no contestan a tiempo, pasa al responsable de tu departamento, como siempre.
 
 ### Cuando la caseta lo deja pasar por excepción
 

@@ -3,7 +3,7 @@
     $ajustesNov = app(\App\Services\Novedades\AjustesNovedades::class);
     $nombreActual = $ajustesNov->nombreMenu($empresa->id);
     $categoriaActual = $ajustesNov->categoriaHallazgoPc($empresa);
-    $trasErrorNov = $errors->hasAny(['nombre_opcion', 'nombre_menu', 'categoria_hallazgo_pc']);
+    $trasErrorNov = $errors->hasAny(['nombre_opcion', 'nombre_menu', 'categoria_hallazgo_pc', 'departamento_accidentes']);
 @endphp
 <section class="tarjeta p-4" id="novedades" aria-labelledby="t-novedades">
     <h3 id="t-novedades" class="h6 fw-bold"><i class="bi bi-headset me-2 text-danger" aria-hidden="true"></i>{{ $ajustesNov->bitacora($empresa->id) }}: nombre y hallazgos</h3>
@@ -57,6 +57,21 @@
             </div>
             <p class="campo-ayuda mt-0">El ticket muestra cuánto lleva con la persona canalizada y cambia de color. A esas horas se le recuerda; al triple pasa al jefe de seguridad de la sede. <span class="valor-original">Valor original: Accidente 2 h, Robo 4 h y las demás 24 h.</span></p>
         </fieldset>
+        {{-- Revisión Etapa 5 (C-28): a quién va el Accidente de un colaborador (antes se reconocía por el nombre del departamento) --}}
+        @php
+            $deptoAccidentes = $ajustesNov->departamentoAccidentes($empresa);
+            $deptosEmpresa = \App\Models\Departamento::withoutGlobalScopes()->where('empresa_id', $empresa->id)->where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+            $deptoElegido = (string) ($trasErrorNov ? old('departamento_accidentes') : ($deptoAccidentes ?? 0));
+        @endphp
+        <label class="campo-etiqueta mt-3" for="nov_departamento_accidentes">Departamento que recibe accidentes de personal</label>
+        <select id="nov_departamento_accidentes" name="departamento_accidentes" class="campo @error('departamento_accidentes') is-invalid @enderror" @disabled(! $puedeEditar)>
+            <option value="0" @selected($deptoElegido === '0')>Ninguno (no avisar a un departamento)</option>
+            @foreach ($deptosEmpresa as $depto)
+                <option value="{{ $depto->id }}" @selected($deptoElegido === (string) $depto->id)>{{ $depto->nombre }}</option>
+            @endforeach
+        </select>
+        @error('departamento_accidentes')<p class="text-danger small mb-2">{{ $message }}</p>@enderror
+        <p class="campo-ayuda mt-0">Cuando se registra el Accidente de alguien del personal, su responsable recibe el ticket en «Tickets de mi departamento» para llenar su parte. El formato del accidente no cambia. <span class="valor-original">Valor original: el departamento que se llama Recursos Humanos.</span></p>
         @if ($puedeEditar)
             <button type="submit" class="btn-azul mt-2" style="min-height:44px;border-radius:10px;padding:0 1.25rem;">Guardar ajustes de la bitácora</button>
         @endif

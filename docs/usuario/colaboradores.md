@@ -19,6 +19,9 @@ resumen: Directorio del personal de la empresa, sus sedes, lo que registra la ca
 - **Colaboradores viene en todos los planes** (menú **Estructura**), como directorio: nombre, número, foto, sede, departamento, puesto, turno, gafete y altas por verificar. El **expediente** y los **datos legales** vienen con Recursos Humanos.
 - Los **datos legales** (CURP, RFC, NSS, nacimiento, nacionalidad, correo personal y dirección) solo los ve y captura quien tiene el permiso **Datos personales**, y solo si tu plan incluye Recursos Humanos.
 - Si tu rol es de una sede, solo puedes registrar colaboradores en tus sedes.
+<!-- solo: condominio, fraccionamiento -->
+- En condominios y fraccionamientos esta pantalla es la del **personal de la administración** (guardias, mantenimiento, oficina). Los **residentes** se registran aparte, con su vivienda, en [Residentes](residentes.md) (**Padrones → Residentes**).
+<!-- fin -->
 - Antes de dar de alta conviene tener listos los [Departamentos y Puestos](departamentos-y-puestos.md) y, si vas a asignar turnos, los [Turnos](turnos.md).
 
 ## Cómo encontrar a un colaborador

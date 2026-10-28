@@ -197,7 +197,7 @@ class EscalamientoAutorizacionesTest extends TestCase
         $host = $this->enEmpresa(fn () => Colaborador::create(['num_empleado' => '501', 'nombre' => 'Carlos', 'apellido_paterno' => 'Hernández', 'sede_id' => $this->centro->id]));
         $this->actingAs($this->agente)->post('/accesos', ['sede_id' => $this->centro->id, 'tipo' => 'proveedor', 'nombre' => 'Luis Chi', 'empresa_procedencia' => 'Gas del Sur',
             'host_colaborador_id' => $host->id, 'modo_arribo' => 'a_pie', 'identificacion' => 'ine'])->assertSessionHas('ok');
-        $this->pendientes()->assertSee('Confirma con el host: Carlos Hernández');
+        $this->pendientes()->assertSee('Confirma con quien lo citó: Carlos Hernández');
     }
 
     // ------------------------------------------------------------------ Escalamiento

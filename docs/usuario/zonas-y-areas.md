@@ -12,7 +12,7 @@ resumen: La estructura física de cada sede (zonas, pisos, habitaciones, áreas 
 
 **Zona / Edificio → Piso → Habitación → Áreas de la habitación → Elementos**
 
-Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Departamento o Casa. La palabra **área** se usa solo para las partes de una habitación (Baño, Terraza, Recámara…). Estos lugares se usan en otras pantallas: lo que abre cada [llave](llaves.md), la ubicación de los [equipos de Protección Civil](equipos-pc.md) y los recorridos.
+Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Vivienda o Casa. La palabra **área** se usa solo para las partes de una habitación (Baño, Terraza, Recámara…). Estos lugares se usan en otras pantallas: lo que abre cada [llave](llaves.md), la ubicación de los [equipos de Protección Civil](equipos-pc.md), los recorridos, la habitación o vivienda y el área de trabajo en la [Bitácora de accesos](accesos.md), el lugar de un incidente en [Novedades](novedades.md) y la vivienda de cada [residente](residentes.md): ahí se eligen de una lista con sugerencias en lugar de escribirse.
 
 Cada sede tiene su propia pantalla: primero eliges la sede con su tarjeta y ahí ves solo sus zonas, edificios y secciones, sin mezclarse con las de otras sedes.
 
@@ -79,6 +79,8 @@ Arriba de cada pantalla está la ruta completa, con el nombre de cada nivel: **Z
    - **Rango numérico:** escribe el **Prefijo** (opcional), **Desde** y **Hasta**. Por ejemplo prefijo `1`, desde 5 hasta 8 → 105, 106, 107, 108. Con **Rellenar con ceros (01, 02…)** quedan 1001, 1002…
    - **Lista de nombres:** un nombre por renglón (o separados por coma), por ejemplo «Suite A, Suite B».
    - Toca **Crear Habitaciones**. Las que ya existen se saltan y te dice cuántas fueron. Máximo 500 por lote.
+
+**En condominio y fraccionamiento: vivienda o área común.** En **Nueva Vivienda** (o Casa) y al editarla aparece la casilla **Es un área común** (alberca, salón, asador). Márcala en lo que no es una vivienda: así no se le llama «Vivienda» en la caseta ni en los informes y no se le pueden asignar [residentes](residentes.md). Lo que marcas como reservable en [Reservas](reservas-configuracion.md) queda como área común solo. La tarjeta muestra la etiqueta **Área común**.
 
 ![Habitaciones](img/espacios/2-habitaciones.png)
 

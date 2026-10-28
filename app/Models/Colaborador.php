@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Route;
 
 /**
  * Persona que trabaja para la empresa (réplica de la tabla colaboradores de
@@ -47,10 +48,17 @@ class Colaborador extends Model implements Identificable
 
     public const NSS = '/^\d{11}$/';
 
-    protected $attributes = ['activo' => true, 'provisional' => false, 'nacionalidad' => 'Mexicana'];
+    /** C-10 (DD-14): tipo de persona del directorio. */
+    public const PERSONAL = 'personal';
+
+    public const RESIDENTE = 'residente';
+
+    public const TIPOS = [self::PERSONAL => 'Personal', self::RESIDENTE => 'Residente'];
+
+    protected $attributes = ['activo' => true, 'provisional' => false, 'nacionalidad' => 'Mexicana', 'tipo' => self::PERSONAL];
 
     protected $fillable = [
-        'empresa_id', 'sede_id', 'departamento_id', 'puesto_id', 'turno_id', 'num_empleado', 'nombre', 'apellido_paterno',
+        'empresa_id', 'tipo', 'sede_id', 'espacio_id', 'departamento_id', 'puesto_id', 'turno_id', 'num_empleado', 'nombre', 'apellido_paterno',
         'apellido_materno', 'telefono', 'fecha_nacimiento', 'lugar_nacimiento', 'nacionalidad', 'curp', 'rfc',
         'nss', 'correo_personal', 'direccion_completa', 'etiqueta_nfc', 'activo',
     ];
@@ -69,6 +77,28 @@ class Colaborador extends Model implements Identificable
     public function sede(): BelongsTo
     {
         return $this->belongsTo(Sede::class);
+    }
+
+    /** C-10: la vivienda del residente (nivel «área específica» del árbol). */
+    public function vivienda(): BelongsTo
+    {
+        return $this->belongsTo(Espacio::class, 'espacio_id');
+    }
+
+    public function esResidente(): bool
+    {
+        return ($this->getAttributes()['tipo'] ?? self::PERSONAL) === self::RESIDENTE;
+    }
+
+    /** Solo el personal (en giros residenciales, sin los residentes). */
+    public function scopePersonal(Builder $consulta): Builder
+    {
+        return $consulta->where('colaboradores.tipo', self::PERSONAL);
+    }
+
+    public function scopeResidentes(Builder $consulta): Builder
+    {
+        return $consulta->where('colaboradores.tipo', self::RESIDENTE);
     }
 
     public function sedesAdicionales(): BelongsToMany
@@ -174,7 +204,9 @@ class Colaborador extends Model implements Identificable
     {
         return [
             'titulo' => $this->nombreCompleto(),
-            'detalle' => 'Núm. '.$this->num_empleado.($this->puesto ? ' · '.$this->puesto->nombre : ''),
+            'detalle' => $this->esResidente()
+                ? 'Residente'.($this->vivienda ? ' · '.$this->vivienda->nombre : '')
+                : 'Núm. '.$this->num_empleado.($this->puesto ? ' · '.$this->puesto->nombre : ''),
             'activo' => (bool) $this->activo && $this->fusionado_en_id === null,
             'sede_id' => $this->sede_id,
             // Bitácora de accesos: el botón «Registrar…» anticipa si la visita a este colaborador esperará a su departamento
@@ -184,6 +216,10 @@ class Colaborador extends Model implements Identificable
 
     public function urlLector(): string
     {
+        if ($this->esResidente() && Route::has('residentes.index')) {
+            return route('residentes.index').'#residente-'.$this->id;
+        }
+
         return route('colaboradores.index').'#colaborador-'.$this->id;
     }
 }

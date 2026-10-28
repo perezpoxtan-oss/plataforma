@@ -58,7 +58,10 @@ class AdaptacionPorGiroTest extends TestCase
 
     private function colaborador(Empresa $empresa, Sede $sede, string $num = '100'): Colaborador
     {
-        return $this->enEmpresa($empresa, fn () => Colaborador::create(['num_empleado' => $num, 'nombre' => 'Alejandra', 'apellido_paterno' => 'Fuentes', 'sede_id' => $sede->id]));
+        // C-10: en giros residenciales es residente; en los demás, personal
+        $tipo = Terminos::para($empresa)->esResidencial() ? Colaborador::RESIDENTE : Colaborador::PERSONAL;
+
+        return $this->enEmpresa($empresa, fn () => Colaborador::create(['tipo' => $tipo, 'num_empleado' => $num, 'nombre' => 'Alejandra', 'apellido_paterno' => 'Fuentes', 'sede_id' => $sede->id]));
     }
 
     private function registrar(User $actor, Sede $sede, array $datos): TestResponse
@@ -87,7 +90,7 @@ class AdaptacionPorGiroTest extends TestCase
         [$empresa, $sede, $admin] = $this->empresaDeGiro('hotel', 'Hotel Ébano');
         $this->actingAs($admin)->get('/accesos')->assertOk()
             ->assertSee('HUÉSPED')->assertSee('PERSONAL EXTERNO / VISITA')->assertSee('Número de Habitación')->assertSee('¿Tiene Reserva?')
-            ->assertSee('Salida a Tour')->assertSee('Visita a Departamento')->assertSee('Recursos Humanos')
+            ->assertSee('Salida a Tour')->assertSee('Visita a persona o área')->assertSee('¿A quién viene?')->assertSee('Recursos Humanos')
             ->assertDontSee('terminos:no', false);
 
         $this->registrar($admin, $sede, ['tipo' => 'huesped', 'nombre' => 'Leticia Vázquez', 'habitacion' => '204', 'tiene_reserva' => '1', 'numero_reserva' => 'R1'])
@@ -158,9 +161,9 @@ class AdaptacionPorGiroTest extends TestCase
         });
 
         $this->actingAs($admin)->get('/accesos')->assertOk()
-            ->assertSee('RESIDENTE')->assertSee('VISITA')->assertSee('SERVICIO / PROVEEDOR')
-            ->assertSee('Visita a Residente')->assertSee('Visita a Administración')->assertSee('¿A qué departamento va?')
-            ->assertSee('<option value="101">', false)
+            ->assertSee('RESIDENTE O PERSONAL')->assertSee('VISITA')->assertSee('SERVICIO / PROVEEDOR')
+            // C-09: un solo motivo («Visita») que viene marcado y un solo campo «¿A quién viene?» (residente, vivienda o área)
+            ->assertSee('¿A quién viene?')->assertSee('Nombre del residente, vivienda o área')->assertDontSee('¿A qué departamento va?')
             ->assertDontSee('HUÉSPED')->assertDontSee('Número de Reserva')->assertDontSee('Salida a Tour')
             ->assertDontSee('value="rh"', false)->assertDontSee('COLABORADOR');
     }
@@ -173,10 +176,8 @@ class AdaptacionPorGiroTest extends TestCase
         $this->registrar($admin, $sede, ['tipo' => 'visitante', 'nombre' => 'Daniel Romero', 'motivo_visita' => 'rh'])->assertSessionHasErrors('motivo_visita');
         $this->registrar($admin, $sede, ['tipo' => 'huesped', 'nombre' => 'Daniel Romero'])->assertSessionHasErrors('tipo');
 
-        // C-04: ningún motivo viene marcado
+        // C-09: en condominio hay un solo motivo («Visita») y viene marcado
         $this->registrar($admin, $sede, ['tipo' => 'visitante', 'nombre' => 'Daniel Romero', 'visita_colaborador_id' => $residente->id, 'habitacion' => '101'])
-            ->assertSessionHasErrors(['motivo_visita' => 'Elige el motivo de la visita.']);
-        $this->registrar($admin, $sede, ['tipo' => 'visitante', 'nombre' => 'Daniel Romero', 'motivo_visita' => 'colaborador', 'visita_colaborador_id' => $residente->id, 'habitacion' => '101'])
             ->assertSessionHasNoErrors();
         $acceso = $this->ultimo($empresa);
         $this->assertSame('colaborador', $acceso->motivo_visita);
@@ -184,7 +185,7 @@ class AdaptacionPorGiroTest extends TestCase
         $this->assertSame('Visita', $acceso->etiquetaTipo());
 
         $this->actingAs($admin)->get('/accesos')->assertOk()
-            ->assertSee('Depto. 101')->assertSee('Visita a Residente')->assertSee('>VISITA<', false)->assertDontSee('Hab. 101');
+            ->assertSee('Viv. 101')->assertSee('Visita a residente')->assertSee('>VISITA<', false)->assertDontSee('Hab. 101');
 
         $this->registrar($admin, $sede, ['tipo' => 'colaborador', 'colaborador_id' => $residente->id])->assertSessionHasNoErrors();
         $this->assertSame('Residente', $this->ultimo($empresa)->etiquetaTipo());
@@ -196,21 +197,23 @@ class AdaptacionPorGiroTest extends TestCase
 
         $inicio = $this->actingAs($admin)->get('/')->assertOk();
         $this->assertStringContainsString('Residentes', $inicio->getContent());
-        $this->actingAs($admin)->get('/colaboradores')->assertOk()->assertSee('Residentes');
+        // C-10: el directorio es del personal; los residentes van en Padrones → Residentes
+        $this->actingAs($admin)->get('/colaboradores')->assertOk()->assertSee('Personal');
+        $this->actingAs($admin)->get('/residentes')->assertOk()->assertSee('Nuevo residente');
         $this->actingAs($admin)->get('/lost-found')->assertOk()->assertSee('Objetos olvidados')->assertDontSee('Lost &amp; Found', false);
 
         // Fraccionamiento: casas
         $frac = Terminos::deRubro('fraccionamiento', Rubro::where('clave', 'fraccionamiento')->value('terminologia'));
         $this->assertSame('Casa 12', $frac->abreviaturaEspacio().' 12');
-        $this->assertSame('La visita llegó a la casa 12 del residente.', $frac->texto('El huésped llegó a la habitación 12 del colaborador.'));
+        $this->assertSame('La visita llegó a la casa 12 del personal.', $frac->texto('El huésped llegó a la habitación 12 del colaborador.'));
     }
 
     public function test_sustitucion_cuida_articulos_mayusculas_y_no_toca_codigo_ni_valores(): void
     {
         $condo = Terminos::deRubro('condominio', Rubro::where('clave', 'condominio')->value('terminologia'));
-        $this->assertSame('Las visitas del departamento 101 y los RESIDENTES', $condo->texto('Los huéspedes de la habitación 101 y los COLABORADORES'));
+        $this->assertSame('Las visitas de la vivienda 101 y el PERSONAL', $condo->texto('Los huéspedes de la habitación 101 y los COLABORADORES'));
         $html = $condo->html('<p title="Un huésped">Colaborador</p><input value="Colaborador" name="colaborador_id"><script>var t="Huésped";</script><textarea>huésped</textarea><!--terminos:no-->Huésped<!--terminos:si-->');
-        $this->assertSame('<p title="Una visita">Residente</p><input value="Colaborador" name="colaborador_id"><script>var t="Huésped";</script><textarea>huésped</textarea><!--terminos:no-->Huésped<!--terminos:si-->', $html);
+        $this->assertSame('<p title="Una visita">Personal</p><input value="Colaborador" name="colaborador_id"><script>var t="Huésped";</script><textarea>huésped</textarea><!--terminos:no-->Huésped<!--terminos:si-->', $html);
     }
 
     public function test_el_formato_de_accidente_no_cambia_en_otros_giros(): void
@@ -310,7 +313,7 @@ class AdaptacionPorGiroTest extends TestCase
         }
         $condo = Empresa::where('nombre_comercial', CrearDatosDemo::EMPRESA_CONDOMINIO)->firstOrFail();
         $this->assertSame('101', $this->enEmpresa($condo, fn () => Acceso::where('tipo', 'visitante')->whereNotNull('habitacion')->orderBy('id')->value('habitacion')));
-        $this->actingAs(User::where('username', 'condo.agente.demo')->firstOrFail())->get('/accesos')->assertOk()->assertSee('Depto. 101')->assertSee('RESIDENTE');
+        $this->actingAs(User::where('username', 'condo.agente.demo')->firstOrFail())->get('/accesos')->assertOk()->assertSee('Viv. 101')->assertSee('RESIDENTE');
         $this->actingAs(User::where('username', 'corp.agente.demo')->firstOrFail())->get('/accesos')->assertOk()->assertSee('VISITANTE')->assertDontSee('HUÉSPED');
     }
 }

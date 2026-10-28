@@ -7,7 +7,6 @@ use App\Models\Acceso;
 use App\Models\AcompananteAcceso;
 use App\Models\Departamento;
 use App\Models\Empresa;
-use App\Models\Espacio;
 use App\Models\Persona;
 use App\Models\Sede;
 use App\Services\Accesos\ConsultaAccesos;
@@ -94,11 +93,6 @@ class AccesoController extends Controller
                 // C-04: motivos según el giro y lo contratado, y el que la empresa marcó (de fábrica, ninguno)
                 'motivosVisita' => app(MotivosVisita::class)->para((int) $empresaId),
                 'motivoOmision' => app(MotivosVisita::class)->porOmision((int) $empresaId),
-                // Condominio / fraccionamiento: a qué departamento o casa va la visita (los del árbol de Zonas y edificios)
-                'espaciosVisita' => $puedeCrear && $terminos->visitaLlevaEspacio()
-                    ? Espacio::where('nivel', Espacio::AREA_ESPECIFICA)->where('activo', true)->whereIn('sede_id', $sedesAlta->pluck('id'))
-                        ->orderBy('nombre')->limit(2000)->get(['id', 'sede_id', 'nombre'])
-                    : collect(),
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'pestana' => $pestana,
                 'filtros' => $filtros,
@@ -320,10 +314,13 @@ class AccesoController extends Controller
     {
         Gate::authorize('accesos.crear');
         $datos = $request->validate([
-            'que' => ['required', Rule::in(['colaborador', 'persona', 'vehiculo', 'proveedor'])],
+            // C-09: «destino» («¿A quién viene?») · C-30: «lugar» (habitación o área de trabajo del catálogo)
+            'que' => ['required', Rule::in(['colaborador', 'persona', 'vehiculo', 'proveedor', 'destino', 'lugar'])],
             'q' => ['nullable', 'string', 'max:100'],
             'sede' => ['nullable', 'integer'],
             'tipo' => ['nullable', Rule::in(array_keys(Persona::TIPOS))],
+            'contexto' => ['nullable', Rule::in(['visita', 'proveedor', 'huesped'])],
+            'niveles' => ['nullable', Rule::in(['todos', 'especificos'])],
         ]);
         $actor = $request->user();
         $empresaId = $this->empresa->id($actor);
@@ -332,6 +329,7 @@ class AccesoController extends Controller
         }
         $resultados = $this->tenant->conEmpresa($empresaId, fn () => $this->consulta->sugerencias(
             $actor, $datos['que'], (string) ($datos['q'] ?? ''), isset($datos['sede']) ? (int) $datos['sede'] : null, $datos['tipo'] ?? null,
+            $datos['contexto'] ?? 'visita', $datos['niveles'] ?? 'todos',
         ));
 
         return response()->json(['resultados' => $resultados]);
@@ -401,6 +399,14 @@ class AccesoController extends Controller
     private function mensajeDeRegistro(Acceso $acceso, bool $puedeAprobar): string
     {
         $autorizacion = $acceso->getAttributes()['autorizacion'] ?? null;
+        // C-09: la caseta llamó al residente o a la habitación
+        $aQuien = $acceso->persona_visita ?: ($acceso->habitacion ? $acceso->terminos()->espacio().' '.$acceso->habitacion : 'quien visita');
+        if ($autorizacion === Acceso::LLAMADA_NO) {
+            return "Quedó la constancia: {$aQuien} no autorizó y {$acceso->nombre} no entra. ¿Otro ingreso? Toca Nuevo Ingreso.";
+        }
+        if ($autorizacion === Acceso::POR_LLAMADA) {
+            return "Registrado y en sitio: {$acceso->nombre}. Quedó la constancia de que {$aQuien} autorizó por teléfono. ¿Otro ingreso? Toca Nuevo Ingreso.";
+        }
         if ($acceso->estado !== 'pendiente') {
             return "Registrado y en sitio: {$acceso->nombre}. ¿Otro ingreso? Toca Nuevo Ingreso.";
         }
@@ -417,8 +423,13 @@ class AccesoController extends Controller
             }
 
             return "Registrado: {$acceso->nombre} queda pendiente. {$depto} no tiene quien autorice en esta sede: ".($puedeAprobar
-                ? 'confirma con el host y toca Autorizar por excepción.'
-                : 'confirma con el host; tu supervisor lo autoriza por excepción (ya se le avisó).');
+                ? 'confirma con quien lo citó y toca Autorizar por excepción.'
+                : 'confirma con quien lo citó; tu supervisor lo autoriza por excepción (ya se le avisó).');
+        }
+        $persona = $autorizacion === 'esperando' ? $acceso->autorizacionDepartamento()->with('colaborador')->first()?->colaborador : null;
+        if ($persona !== null) {
+            // C-09 (DD-12): espera a la persona citada; su departamento es el suplente
+            return "Registrado: {$acceso->nombre} espera la autorización de {$persona->nombreCompleto()}. Ya se le avisó; esta tarjeta cambia sola con su respuesta.";
         }
         if ($autorizacion === 'esperando') {
             $depto = $acceso->departamento?->nombre;
@@ -430,7 +441,7 @@ class AccesoController extends Controller
             return "Registrado: {$acceso->nombre} espera la autorización de {$quien}. Ya se avisó; esta tarjeta cambia sola con su respuesta.";
         }
         $host = $acceso->host?->nombreCompleto();
-        $conHost = 'Confirma con el host'.($host ? " ({$host})" : '');
+        $conHost = 'Confirma con quien lo citó'.($host ? " ({$host})" : '');
 
         return "Registrado: {$acceso->nombre} queda pendiente de autorización. ".($puedeAprobar
             ? "{$conHost} y toca Confirmar Autorización."

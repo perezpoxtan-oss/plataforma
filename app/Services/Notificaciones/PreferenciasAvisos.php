@@ -27,7 +27,8 @@ class PreferenciasAvisos
      * el aviso al suplente de lo que tardó y la aprobación por excepción del
      * agente (C-22, C-25: llegan a quien quizá no lo tiene en Mis pendientes).
      */
-    public const NO_SILENCIABLES = ['cuenta_contrasena', 'cuenta_dos_pasos', 'plataforma_superadmin', 'reloj_escalado', 'excepcion_agente'];
+    public const NO_SILENCIABLES = ['cuenta_contrasena', 'cuenta_dos_pasos', 'plataforma_superadmin', 'reloj_escalado', 'excepcion_agente',
+        'reserva_orden_sin_quien']; // C-34: es el único lugar donde quien configura se entera de que una orden no tiene quien la atienda
 
     /**
      * C-22 (DD-10, E-08): avisos que esperan una acción y su renglón de Mis
@@ -55,6 +56,7 @@ class PreferenciasAvisos
         'reserva_por_aprobar' => 'reservas', 'reserva_recordatorio' => 'reservas', 'reserva_escalada' => 'reservas', 'reserva_rechazada' => 'reservas',
         'reserva_cambio' => 'reservas', 'reserva_orden' => 'reservas',
         'reloj_recordatorio' => 'el renglón del asunto',
+        'novedad_departamento' => 'novedades_departamento', // C-28
     ];
 
     /** Alertas que solo informan (no esperan una respuesta): se pueden silenciar. */
@@ -117,6 +119,10 @@ class PreferenciasAvisos
         MovimientosSensibles::TIPO => ['Cuentas y seguridad', 'Alguien hizo un movimiento sensible (roles, permisos, eliminaciones, exportaciones)', ['auditoria.ver']],
         // Mejoras Incidentes (ADR-0013)
         'novedad_canalizada' => ['Bitácora de novedades', 'Te canalizaron un ticket de la bitácora', ['novedades.editar']],
+        // Etapa 5 (C-28, C-09)
+        'novedad_departamento' => ['Bitácora de novedades', 'Canalizaron un ticket a tu departamento', ['autorizaciones.responder']],
+        'novedad_departamento_atendida' => ['Bitácora de novedades', 'Un departamento atendió su parte de un ticket que canalizaste', ['novedades.editar']],
+        'visita_llego' => ['Bitácora de accesos', 'Llegó a la caseta alguien que viene contigo', []],
         'novedad_resuelta' => ['Bitácora de novedades', 'Se cerró un ticket que levantaste', ['novedades.crear']],
         'novedad_turno' => ['Bitácora de novedades', 'Un ticket «Pendiente de turno» espera a tu turno', ['novedades.editar']],
         'novedad_turno_escalada' => ['Bitácora de novedades', 'Un pendiente de turno terminó sin atenderse', ['novedades.editar']],
@@ -154,6 +160,7 @@ class PreferenciasAvisos
         'reserva_cambio' => ['Reservas de áreas', 'Piden un cambio en tu reserva', ['reservas.crear']],
         'reserva_cancelada' => ['Reservas de áreas', 'Se canceló una reserva que te tocaba aprobar o atender', ['reservas.ver', 'reservas.crear']],
         'reserva_orden' => ['Reservas de áreas', 'Llegó, cambió o se canceló una orden de servicio de tu departamento', ['reservas.ver', 'reservas.crear']],
+        'reserva_orden_sin_quien' => ['Reservas de áreas', 'Una orden de servicio no tiene quien la atienda (siempre llega)', ['reservas.configurar']],
         'reserva_orden_lista' => ['Reservas de áreas', 'Un departamento tiene listo su servicio para una reserva', ['reservas.crear']],
     ];
 

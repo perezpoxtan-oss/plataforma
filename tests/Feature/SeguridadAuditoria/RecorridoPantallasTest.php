@@ -298,6 +298,8 @@ class RecorridoPantallasTest extends TestCase
             ),
             'vouchers.imprimir' => array_map(fn ($id) => ['voucher' => $id], $ids([$primero(VoucherReposicion::class)])),
             'responsivas.firma', 'responsivas.hoja' => array_map(fn ($id) => ['responsiva' => $id], $ids([$primero(Responsiva::class)])),
+            // C-28: el ticket que ve el departamento (sin canalizar, el recorrido recibe 403 o 404, que es lo esperado)
+            'novedades.departamento.show' => array_map(fn ($id) => ['novedad' => $id], $ids([$primero(Novedad::class)])),
             'novedades.imprimir', 'novedades.acuse', 'novedades.mostrar' => array_map(fn ($id) => ['novedad' => $id], $ids(
                 collect(array_keys(Novedad::CATEGORIAS))->map(fn ($cat) => $primero(Novedad::class, fn ($q) => $q->where('categoria', $cat)))->all()
             )),

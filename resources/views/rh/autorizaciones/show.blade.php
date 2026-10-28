@@ -28,7 +28,7 @@
                 <span class="pastilla-estado-aut estado-{{ $a->estado }}">{{ Autorizacion::ESTADOS[$a->estado] }}</span>
                 <h1 class="nombre-candidato">{{ $a->titulo() }}</h1>
                 <div class="datos-candidato">
-                    <span><i class="bi bi-diagram-2" aria-hidden="true"></i> {{ $esRecepcion ? 'Recursos Humanos' : $a->departamento?->nombre }}</span>
+                    <span><i class="bi bi-diagram-2" aria-hidden="true"></i> {{ $esRecepcion ? 'Recursos Humanos' : ($a->colaborador ? $a->colaborador->nombreCompleto().($a->departamento ? ' · '.$a->departamento->nombre : '') : $a->departamento?->nombre) }}</span>
                     <span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ $a->sede?->nombre }}</span>
                     <span><i class="bi bi-stopwatch" aria-hidden="true"></i> {{ $a->pendiente() ? 'Esperando desde hace '.$a->minutosEspera().' min' : 'Respondida en '.$a->minutosEspera().' min' }}</span>
                 </div>
@@ -98,7 +98,7 @@
                 </div>
             </form>
         @elseif ($a->pendiente())
-            <p class="small text-muted mt-3 mb-0"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ $esRecepcion ? 'Responde Recursos Humanos de esa sede.' : 'Responde el responsable del departamento (o su delegado).' }}</p>
+            <p class="small text-muted mt-3 mb-0"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ $esRecepcion ? 'Responde Recursos Humanos de esa sede.' : ($a->colaborador_id ? 'Responde la persona a quien viene; si no contesta, el responsable de su departamento.' : 'Responde el responsable del departamento (o su delegado).') }}</p>
         @endif
     </section>
 </div>

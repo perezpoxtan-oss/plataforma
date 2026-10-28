@@ -12,6 +12,7 @@ use App\Models\RoboDetalle;
 use App\Models\Sede;
 use App\Models\SiniestroDetalle;
 use App\Models\User;
+use App\Services\Espacios\Lugares;
 use App\Services\Novedades\Formatos\Accidente;
 use App\Services\Novedades\Formatos\Formato;
 use App\Services\Novedades\Formatos\LostFound;
@@ -282,16 +283,29 @@ class AdministradorNovedades
         $categoria = $v['categoria'];
 
         $sede = $this->sedeValida($actor, (int) $v['sede_id'], $categoria);
+        // C-30: el lugar del árbol (zona, piso, habitación…) y un detalle opcional
+        $lugar = null;
+        if (! empty($v['lugar_id'])) {
+            $lugar = app(Lugares::class)->valido($v['lugar_id'], [(int) $sede->id]);
+            if ($lugar === null) {
+                throw ValidationException::withMessages(['lugar_id' => 'Elige un lugar de la lista (Zonas y edificios de esa sede).']);
+            }
+        }
+        // Lo escrito en «¿Dónde pasó?» sin elegirlo de la lista se queda como texto (sin catálogo)
+        $detalle = $this->texto($v['ubicacion'] ?? null, true) ?? ($lugar === null ? $this->texto($v['lugar_texto'] ?? null, true) : null);
         $novedad = new Novedad([
             'sede_id' => $sede->id,
             'categoria' => $categoria,
             'reportado_por' => mb_strtoupper($v['reportado_por']),
             'reportado_colaborador_id' => $this->colaboradorValido($v['reportado_colaborador_id'] ?? null),
-            'ubicacion' => mb_strtoupper($v['ubicacion']),
+            'ubicacion' => mb_strtoupper(mb_substr($lugar !== null ? app(Lugares::class)->camino($lugar).($detalle ? ' · '.$detalle : '') : (string) $detalle, 0, 255)),
             'descripcion' => $v['descripcion'],
         ]);
         $novedad->setRelation('sede', $sede);
         $this->aplicarComunes($novedad, $v);
+        if ($lugar !== null) {
+            $this->ubicarEnArbol($novedad, $lugar);
+        }
 
         // Mejoras Incidentes: el objeto encontrado se captura desde el ticket rápido (no queda un ticket a medias)
         $objeto = $categoria === 'lost_found' ? $this->objetoDelAlta($entrada) : null;
@@ -310,6 +324,11 @@ class AdministradorNovedades
 
         $this->auditoria->auditar($actor, 'novedades.creado', $novedad, null, $this->foto($novedad));
         app(AvisosNovedades::class)->canalizado($novedad, $actor);
+        if ($novedad->departamento_id !== null) {
+            $novedad->loadMissing('departamento:id,nombre');
+            $this->anotar($novedad, $actor, 'Canalizado a '.$novedad->departamento?->nombre.'.', 'sistema');
+            app(CanalizarDepartamento::class)->avisar($novedad, $actor); // C-28
+        }
 
         return $novedad;
     }
@@ -440,6 +459,7 @@ class AdministradorNovedades
         $antes = $this->foto($novedad);
         $estatusAntes = $novedad->estatus;
         $asignadoAntes = $novedad->asignado_a;
+        $departamentoAntes = $novedad->departamento_id;
 
         $permitidas = $this->categorias($actor, 'editar', $novedad);
         $v = $this->validarBase($entrada, false);
@@ -465,7 +485,7 @@ class AdministradorNovedades
         $datosFormato = $formato?->validar($entrada, $novedad);
         $nota = $this->texto($v['nueva_nota'] ?? null);
 
-        DB::transaction(function () use ($actor, $novedad, $v, $formato, $datosFormato, $nota, $estatusAntes) {
+        DB::transaction(function () use ($actor, $novedad, $v, $formato, $datosFormato, $nota, $estatusAntes, $departamentoAntes) {
             $novedad->estatus = $v['estatus'];
             if ($v['estatus'] === Novedad::RESUELTO) {
                 $novedad->cerrado_en = now();
@@ -477,6 +497,10 @@ class AdministradorNovedades
             }
             $novedad->save();
             $formato?->guardar($novedad, $datosFormato, $actor);
+            if ((int) $departamentoAntes !== (int) $novedad->departamento_id && $novedad->departamento_id !== null) {
+                $novedad->loadMissing('departamento:id,nombre');
+                $this->anotar($novedad, $actor, 'Canalizado a '.$novedad->departamento?->nombre.'.', 'sistema');
+            }
 
             if ($nota !== null) {
                 $this->anotar($novedad, $actor, $nota);
@@ -497,6 +521,14 @@ class AdministradorNovedades
                 $novedad, $antes, $despues + ($nota !== null ? ['nota' => $nota] : []));
         }
         $this->avisarCambios($actor, $novedad, $estatusAntes, $asignadoAntes);
+        // C-28: el departamento recibe su aviso; un accidente de colaborador avisa a RR. HH. (el formato no cambia)
+        $departamentos = app(CanalizarDepartamento::class);
+        if ((int) $departamentoAntes !== (int) $novedad->departamento_id || $novedad->resuelto()) {
+            $departamentos->avisar($novedad, $actor);
+        }
+        if ($novedad->categoria === 'accidente' && ($datosFormato['tipo'] ?? null) === 'COLABORADOR') {
+            $departamentos->accidenteDeColaborador($novedad, $actor, isset($datosFormato['colaborador']['colaborador_id']) ? (int) $datosFormato['colaborador']['colaborador_id'] : null);
+        }
 
         return $novedad;
     }
@@ -623,7 +655,8 @@ class AdministradorNovedades
         $accidente = new Novedad([
             'sede_id' => $siniestro->sede_id, 'categoria' => 'accidente', 'reportado_por' => mb_strtoupper(mb_substr($actor->name, 0, 150)),
             'area_id' => $siniestro->area_id, 'area_especifica_id' => $siniestro->area_especifica_id, 'ocurrio_en' => $siniestro->ocurrio_en,
-            'ubicacion' => 'VER DETALLE EN SINIESTRO PC '.$siniestro->folio(),
+            // C-30 (D-15): el titular es el lugar real del siniestro, no «Ver detalle…»
+            'ubicacion' => mb_substr(trim((string) $siniestro->ubicacion) !== '' ? (string) $siniestro->ubicacion : 'SINIESTRO PC '.$siniestro->folio(), 0, 255),
             'descripcion' => "Lesionado(s) durante siniestro de Protección Civil (ticket {$siniestro->folio()}) — {$detalle->num_lesionados} persona(s) reportada(s).",
             'origen_novedad_id' => $siniestro->id,
         ]);
@@ -652,6 +685,7 @@ class AdministradorNovedades
         $entrada = array_map(fn ($v) => is_string($v) ? trim((string) preg_replace('/[ \t]+/u', ' ', $v)) : $v, $entrada);
         $reglas = [
             'asignado_a' => ['nullable', 'integer'],
+            'departamento_id' => ['nullable', 'integer'], // C-28: o a un departamento
             'area_edificio_id' => ['nullable', 'integer'],
             'area_piso_id' => ['nullable', 'integer'],
             'involucrados' => ['nullable', 'string', 'max:255'],
@@ -663,7 +697,10 @@ class AdministradorNovedades
             'categoria' => ['required', 'string', 'in:'.implode(',', $categoriasAlta)],
             'reportado_por' => ['required', 'string', 'max:150'],
             'reportado_colaborador_id' => ['nullable', 'integer'],
-            'ubicacion' => ['required', 'string', 'max:255'],
+            // C-30: el lugar sale del árbol; el detalle escrito es opcional (se pide al menos uno de los dos)
+            'lugar_id' => ['nullable', 'integer'],
+            'lugar_texto' => ['nullable', 'string', 'max:150'],
+            'ubicacion' => ['required_without_all:lugar_id,lugar_texto', 'nullable', 'string', 'max:255'],
             'descripcion' => ['required', 'string', 'max:5000'],
         ] : [
             'categoria' => ['required', 'string'],
@@ -679,12 +716,13 @@ class AdministradorNovedades
             'categoria.in' => 'Elige la clasificación del ticket (Categoría). Si aún no estás seguro, elige la más cercana: se puede corregir al atenderlo.',
             'reportado_por.required' => 'Escribe quién reporta (o toca «Fui yo quien lo observó»).',
             'ubicacion.required' => 'Escribe la ubicación específica (por ejemplo: Piso 2, cerca del elevador).',
+            'ubicacion.required_without_all' => 'Elige el lugar de la lista o escribe dónde pasó (por ejemplo: Piso 2, cerca del elevador).',
             'descripcion.required' => 'Describe qué sucedió.',
             'estatus.in' => 'Elige un estatus de la lista.',
             'max' => 'El campo «:attribute» es muy largo (máximo :max caracteres).',
             'date_format' => 'Revisa la fecha y hora de «:attribute».',
         ], [
-            'sede_id' => 'Sede', 'reportado_por' => '¿Quién reporta?', 'asignado_a' => '¿A quién se canaliza?', 'area_edificio_id' => 'Área General (edificio)', 'area_piso_id' => 'Área General (piso)',
+            'sede_id' => 'Sede', 'reportado_por' => '¿Quién reporta?', 'asignado_a' => '¿A quién se canaliza?', 'departamento_id' => 'O a un departamento', 'lugar_id' => 'Lugar', 'area_edificio_id' => 'Área General (edificio)', 'area_piso_id' => 'Área General (piso)',
             'area_especifica_id' => 'Habitación específica', 'ubicacion' => 'Ubicación específica', 'involucrados' => '¿Involucra a más personas o áreas?',
             'ocurrio_en' => '¿Cuándo sucedió?', 'descripcion' => '¿Qué sucedió?', 'como_sucedio' => '¿Cómo sucedió?', 'nueva_nota' => 'Minuto a Minuto',
             'estatus' => 'Estatus Final del Expediente', 'resolucion' => 'Estatus Final / Resolución', 'categoria' => 'Categoría',
@@ -701,6 +739,9 @@ class AdministradorNovedades
         // Un campo que no llegó (p. ej. desde otro proceso) conserva lo que ya tenía el ticket
         if (array_key_exists('asignado_a', $v)) {
             $novedad->asignado_a = $this->asignadoValido($v['asignado_a'], (int) $novedad->sede_id, $novedad->asignado_a);
+        }
+        if (array_key_exists('departamento_id', $v)) {
+            $novedad->departamento_id = app(CanalizarDepartamento::class)->valido($v['departamento_id'], (int) $novedad->sede_id, $novedad->departamento_id);
         }
         if (array_key_exists('area_edificio_id', $v) || array_key_exists('area_piso_id', $v)) {
             $novedad->area_id = $this->areaValida($v['area_edificio_id'] ?? null, $v['area_piso_id'] ?? null, (int) $novedad->sede_id, $novedad->area_id);
@@ -817,6 +858,20 @@ class AdministradorNovedades
         return $id;
     }
 
+    /**
+     * C-30: Área General (piso, o edificio si no hay piso) y habitación
+     * específica a partir del lugar elegido en el árbol.
+     */
+    private function ubicarEnArbol(Novedad $novedad, Espacio $lugar): void
+    {
+        $cadena = Espacio::whereIn('id', [...$lugar->idsAncestros(), $lugar->id])->get(['id', 'nivel'])->keyBy('id');
+        $piso = $cadena->firstWhere('nivel', Espacio::AREA);
+        $edificio = $cadena->firstWhere('nivel', Espacio::EDIFICIO);
+        $novedad->area_id = $piso?->id ?? $edificio?->id;
+        $especifica = $cadena->firstWhere('nivel', Espacio::AREA_ESPECIFICA);
+        $novedad->area_especifica_id = $especifica?->id;
+    }
+
     /** Habitación específica: de la sede y, si hay Área General, dentro de ella. */
     private function habitacionValida(mixed $id, Novedad $novedad): ?int
     {
@@ -891,7 +946,7 @@ class AdministradorNovedades
     public function foto(Novedad $novedad): array
     {
         return $novedad->only([
-            'numero', 'sede_id', 'categoria', 'estatus', 'reportado_por', 'reportado_colaborador_id', 'asignado_a', 'area_id', 'area_especifica_id',
+            'numero', 'sede_id', 'categoria', 'estatus', 'reportado_por', 'reportado_colaborador_id', 'asignado_a', 'departamento_id', 'area_id', 'area_especifica_id',
             'ubicacion', 'involucrados', 'descripcion', 'como_sucedio', 'resolucion',
         ]) + ['ocurrio_en' => $novedad->ocurrio_en?->toIso8601String()];
     }

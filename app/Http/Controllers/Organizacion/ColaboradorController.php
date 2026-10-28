@@ -58,7 +58,7 @@ class ColaboradorController extends Controller
         }
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor) {
-            $lista = $this->colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.ver')
+            $lista = $this->colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.ver')->personal() // C-10: los residentes van en Padrones
                 ->with(['sede:id,nombre', 'sedesAdicionales:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'turno:id,nombre,hora_inicio,hora_fin', 'fusionadoEn:id,num_empleado,nombre,apellido_paterno,apellido_materno'])
                 ->leftJoin('users as uc', 'uc.id', '=', 'colaboradores.creado_por')
                 ->leftJoin('users as ua', 'ua.id', '=', 'colaboradores.actualizado_por')
@@ -360,6 +360,7 @@ class ColaboradorController extends Controller
             $sedes,
             $request->boolean('sin_usuario'),
             $request->filled('usuario') ? (int) $request->query('usuario') : null,
+            true, // C-10: Usuarios y Pases buscan al personal (los residentes están en Padrones → Residentes)
         ));
 
         return response()->json($resultado);
