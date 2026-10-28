@@ -40,6 +40,7 @@ Algunas cosas tienen su propio reloj:
 - De fábrica, quien puede resolverlo en **toda la empresa** (por ejemplo, quien verifica altas en todas las sedes).
 - En la caseta, los tickets, la permanencia y los pases vencidos: el **jefe de seguridad de la sede**.
 - En las entrevistas: quien la canalizó en Recursos Humanos (puede volver a canalizarla o marcar «No se presentó»); un suplente del departamento solo si también puede hacerlo.
+- En lo que tiene hora fija: una **ruta sin registro** (15 minutos después de su hora; una hora después, quien da el Vo.Bo. en toda la empresa), una **orden de servicio** (un día antes del montaje; al empezar el montaje, el responsable general de Reservas), la **recarga** de un equipo de Protección Civil (15 días antes; al vencer, quien los administra en toda la empresa) y su **revisión** (al pasar los días de su tipo; una semana después, igual).
 - Si no hay nadie más, le llega a las mismas personas con un aviso que ya no se puede silenciar.
 
 Tu administrador puede elegir un **rol** distinto para cada cosa en Configuración.

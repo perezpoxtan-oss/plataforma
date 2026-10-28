@@ -64,6 +64,15 @@ En el celular la ventana ocupa toda la pantalla:
 
 **Qué debes ver:** «Equipo … actualizado correctamente.»
 
+## Cuándo te avisa de una revisión o una recarga
+
+- **Revisión a tiempo:** cada tipo de equipo tiene cada cuántos días debe aparecer en un recorrido. De fábrica, los **extintores cada 30 días**; los demás, sin frecuencia. Si un equipo pasa ese tiempo sin revisarse, a quien administra los equipos en la sede le llega «Sin revisar a tiempo» a la campana y a **Mis pendientes** («Equipos de Protección Civil sin revisar a tiempo»). Una semana después pasa a quien los administra en toda la empresa. Se apaga solo en cuanto el equipo aparece en un recorrido.
+- **Próxima recarga:** al registrar o editar un equipo puedes capturar la **Próxima recarga** (fecha). La tarjeta la muestra y, **15 días antes**, llega «Recarga de …» a la campana y a **Mis pendientes** («Equipos de Protección Civil por recargar»). El día que vence pasa a quien los administra en toda la empresa. Al recargarlo, cambia la fecha: el aviso se apaga.
+
+![Próxima recarga en el formulario](img/equipos-pc/13-proxima-recarga.png)
+
+Los días por tipo los cambia el Administrador en **Configuración → (bitácora) → Equipos de Protección Civil: frecuencia de revisión** (0 = sin frecuencia).
+
 ## Cómo ver el QR e imprimir la etiqueta
 
 1. Toca el botón del **código QR** de la tarjeta. Se abre **Código e identificación** con el QR y la dirección (botón **Copiar**). Si puedes editar, también puedes **Asignar etiqueta NFC / RFID**.

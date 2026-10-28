@@ -22,6 +22,10 @@ resumen: Lo que tu departamento debe preparar para cada reserva confirmada y có
 
 **Qué debes ver:** «Marcado como listo…». La ficha queda con la insignia **Listo** y quien reservó y el responsable del área reciben el aviso; cuando todos los departamentos terminan, reciben «Montaje listo».
 
+## Si la orden sigue «Por atender»
+
+Un **día antes del montaje**, si la orden sigue «Por atender», a tu departamento le llega «Mañana: Orden de servicio de …». Si al **empezar el montaje** sigue sin estar lista, el aviso pasa al responsable general de Reservas. Tocar **Listo** apaga los dos.
+
 ## Si la reserva cambia o se cancela
 
 - Si cambian **lo de tu departamento**, la hora o el área, te llega «Cambió la orden de servicio» y la orden vuelve a **Pendiente**.

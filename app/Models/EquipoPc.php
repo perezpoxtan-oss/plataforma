@@ -66,11 +66,11 @@ class EquipoPc extends Model implements Identificable
 
     protected $attributes = ['activo' => true];
 
-    protected $fillable = ['empresa_id', 'sede_id', 'categoria', 'numero_serie', 'espacio_id', 'referencia', 'etiqueta_nfc'];
+    protected $fillable = ['empresa_id', 'sede_id', 'categoria', 'numero_serie', 'espacio_id', 'referencia', 'etiqueta_nfc', 'proxima_recarga'];
 
     protected function casts(): array
     {
-        return ['activo' => 'boolean', 'sede_id' => 'integer', 'espacio_id' => 'integer'];
+        return ['activo' => 'boolean', 'sede_id' => 'integer', 'espacio_id' => 'integer', 'proxima_recarga' => 'date'];
     }
 
     public function sede(): BelongsTo
