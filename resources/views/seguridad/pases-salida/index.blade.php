@@ -45,6 +45,10 @@
                         <a href="{{ route('mi-cuenta.index') }}#delegar" class="btn-secundario-pase"><i class="bi bi-moon-stars me-1" aria-hidden="true"></i>Delegar mis aprobaciones</a>
                     @endcan
                 @else
+                    {{-- C-43 (E-13): «Exportar a Excel» con su permiso (con la búsqueda y la sede puestas) --}}
+                    @can('pases_salida.exportar')
+                        <a href="{{ route('pases-salida.exportar', array_filter(['q' => $texto, 'sede' => $sedeFiltro])) }}" class="btn-secundario-pase"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
+                    @endcan
                     <a href="{{ route('pases-salida.pendientes') }}" class="btn-secundario-pase {{ $misFirmas > 0 ? 'con-pendientes' : '' }}">
                         <i class="bi bi-pen me-1" aria-hidden="true"></i>Mi bandeja <span class="conteo-pill">{{ $misFirmas }}</span>
                     </a>

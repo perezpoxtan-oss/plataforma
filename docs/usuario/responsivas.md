@@ -90,6 +90,15 @@ Si tu rol no puede dar de baja con voucher y eliges **Faltante**, la pantalla te
 
 ![Responsivas en el celular](img/responsivas/celular.png)
 
+## Cómo exportar a Excel
+
+Necesitas que tu rol pueda **Exportar** en *Responsivas* (si no ves el botón, pide a tu administrador que lo agregue a tu rol).
+
+1. Entra a **Operación → Activos → Responsivas**.
+2. Toca **Exportar a Excel**.
+
+**Qué debes ver:** se descarga un archivo de Excel (CSV) con lo que puedes ver en tus sedes.
+
 ## Si algo sale mal
 
 | Mensaje o síntoma | Qué significa | Qué hacer |

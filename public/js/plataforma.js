@@ -5627,12 +5627,30 @@ document.addEventListener('click', function (e) {
         if (typeof dialogo.showModal === 'function' && !dialogo.open) { dialogo.showModal(); }
     }
 
+    /* ---------- Estatus sugerido (C-43, D-21) ----------
+       Cada ruta trae data-estatus («a_tiempo» o «retraso», calculado en el
+       servidor con la hora de la sede, también si cruza la medianoche). Al
+       elegir la ruta se marca ese estatus, salvo que el guardia ya haya
+       elegido uno o la unidad no haya llegado. */
+    function estatusSugerido(form) {
+        if (form.hasAttribute('data-estatus-tocado') || valorRadio(form, 'estatus') === 'no_llego') { return; }
+        var ruta = form.querySelector('[data-ruta-transporte]');
+        var op = ruta && ruta.value ? ruta.selectedOptions[0] : null;
+        var sugerido = op && op.getAttribute('data-estatus');
+        if (!sugerido) { return; }
+        var radio = form.querySelector('input[name="estatus"][value="' + sugerido + '"]');
+        if (radio && !radio.checked) { radio.checked = true; sincronizar(form, false); }
+    }
+
     /* ---------- Eventos ---------- */
     document.addEventListener('change', function (e) {
         var form = e.target.form;
         if (!form || !form.matches('[data-form-transporte]')) { return; }
         var cambioSedeOTipo = e.target.matches('[data-sede-transporte]') || e.target.name === 'tipo_movimiento';
+        // C-43 (D-21): si el guardia eligió el estatus a mano, ya no se le sugiere
+        if (e.target.name === 'estatus') { form.setAttribute('data-estatus-tocado', '1'); }
         if (cambioSedeOTipo || e.target.name === 'estatus' || e.target.matches('[data-ruta-transporte]')) { sincronizar(form, cambioSedeOTipo); }
+        if (cambioSedeOTipo || e.target.matches('[data-ruta-transporte]')) { estatusSugerido(form); }
         if (e.target.matches('[data-autollenar]')) { autollenarUnidad(e.target); }
         if (e.target.matches('[data-autollenar-chofer]')) { autollenarChofer(e.target); }
     });

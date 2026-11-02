@@ -4865,3 +4865,12 @@ html.modo-noche .aviso-padron-acceso { background: rgba(245,158,11,0.12); color:
 .articulos-salida .nota-articulos[hidden] { display: none; }
 .trae-equipo-ficha { font-size: 0.85rem; }
 @media (max-width: 420px) { .fila-articulo { grid-template-columns: minmax(0, 1fr) 64px; } .fila-articulo input:last-child { grid-column: 1 / -1; } }
+
+/* C-43 (GC-14): ficha de llave en el celular — los íconos se acomodan en renglones y conservan 44 px para el dedo */
+.acciones-ficha-llave { flex-wrap: wrap; justify-content: flex-end; }
+.acciones-ficha-llave .btn-icono { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+@media (max-width: 576px) {
+    .ficha-footer:has(.acciones-ficha-llave) { flex-wrap: wrap; gap: 0.5rem; }
+    .ficha-footer:has(.acciones-ficha-llave) .pastilla-alcance { flex: 1 1 100%; }
+    .acciones-ficha-llave { flex: 1 1 100%; justify-content: space-between; }
+}

@@ -33,6 +33,10 @@
                 <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Vouchers de: <strong>{{ $empresaNombre }}</strong></p>
             </div>
         </div>
+        {{-- C-43 (E-13): «Exportar a Excel» con su permiso (con los filtros puestos) --}}
+        @can('vouchers.exportar')
+            <p class="mb-3"><a href="{{ route('vouchers.exportar', request()->query()) }}" class="btn btn-outline-secondary" style="min-height:44px;border-radius:10px;"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a></p>
+        @endcan
 
         <form method="GET" data-autoenviar action="{{ route('vouchers.index') }}" class="filtros-vouchers" role="search" aria-label="Filtrar vouchers">
             <div class="buscador">

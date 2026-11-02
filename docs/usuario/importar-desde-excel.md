@@ -97,6 +97,15 @@ resumen: Cargar de una vez colaboradores, personas, empresas externas, vehículo
 
 **Límites:** hasta **2,000 filas** y **5 MB** por archivo (si tienes más, divídelo). Del libro de Excel se lee solo la **primera hoja**, a partir del renglón 1 con los encabezados; las fórmulas toman el último valor que Excel guardó. Las columnas que no son de la plantilla no se toman en cuenta (la vista previa te dice cuáles).
 
+## Cómo crear los departamentos, puestos y turnos que faltan
+
+Si al revisar un archivo de **colaboradores** hay filas con error porque su departamento, puesto o turno no existe en tus catálogos, arriba aparece **Faltan en tus catálogos** con la lista.
+
+1. Revisa los nombres (si alguno está mal escrito, corrígelo en tu archivo y súbelo otra vez).
+2. Toca **Guardar · crear los que faltan**.
+
+**Qué debes ver:** «Listo: se crearon … Revisamos el archivo otra vez.» y las filas que ya tienen su catálogo pasan a **Nuevas**. Los departamentos se crean para todas las sedes (ajústalos después en **Estructura → Departamentos**) y cada puesto queda ligado a su departamento. Un turno solo se crea si su nombre trae el horario, por ejemplo «Matutino 07:00-15:00»; si no, créalo en **Estructura → Turnos**. Todavía no se guarda ningún colaborador: sigue con el paso 3. Necesitas poder crear en esos catálogos con alcance de toda la empresa.
+
 ## Si algo sale mal
 
 | Mensaje o síntoma | Qué significa | Qué hacer |

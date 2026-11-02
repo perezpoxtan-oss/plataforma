@@ -250,6 +250,15 @@ Si tu empresa ya tenía su propio circuito, no cambia solo. Arriba de los pasos 
 
 ![Pases en el celular](img/pases-salida/celular.png)
 
+## Cómo exportar a Excel
+
+Necesitas que tu rol pueda **Exportar** en *Pases de salida* (si no ves el botón, pide a tu administrador que lo agregue a tu rol).
+
+1. Entra a **Operación → Caseta → Pases de salida**.
+2. Si quieres, busca o elige la sede: el archivo lleva lo que tienes filtrado. Toca **Exportar a Excel**.
+
+**Qué debes ver:** se descarga un archivo de Excel (CSV) con lo que puedes ver en tus sedes.
+
 ## Si algo sale mal
 
 | Mensaje o síntoma | Qué significa | Qué hacer |

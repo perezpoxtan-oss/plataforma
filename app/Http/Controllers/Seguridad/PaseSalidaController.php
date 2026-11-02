@@ -15,7 +15,9 @@ use App\Services\Firmas\Firmas;
 use App\Services\PasesSalida\AdministradorPasesSalida;
 use App\Services\PasesSalida\EsperaPasesSalida;
 use App\Services\Permisos\Autorizador;
+use App\Support\Csv;
 use App\Support\Entrada;
+use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
@@ -149,6 +151,40 @@ class PaseSalidaController extends Controller
      * Ficha del pase: Resumen · Artículos · Firmas y bitácora, con las
      * acciones que el usuario puede hacer ahora.
      */
+    /** C-43 (E-13): «Exportar a Excel» con su permiso (pases_salida.exportar), con la búsqueda y la sede puestas. */
+    public function exportar(Request $request, HoraLocal $hora): StreamedResponse
+    {
+        Gate::authorize('pases_salida.exportar');
+        $actor = $request->user();
+        $empresaId = $this->empresaDeTrabajo($request);
+        $texto = Entrada::texto($request->query('q'));
+        $sede = is_numeric($request->query('sede')) ? (int) $request->query('sede') : null;
+        $pases = $this->tenant->conEmpresa($empresaId, fn () => $this->pases->buscar($this->pases->limitar(PaseSalida::query(), $actor, 'pases_salida.exportar'), $texto)
+            ->when($sede !== null, fn ($q) => $q->where(fn ($s) => $s->where('pases_salida.sede_id', $sede)->orWhere('pases_salida.sede_destino_id', $sede)))
+            ->with(['sede:id,nombre', 'sedeDestino:id,nombre', 'proveedor:id,nombre', 'colaboradorDestino:id,nombre,apellido_paterno,apellido_materno',
+                'solicitante:id,num_empleado,nombre,apellido_paterno,apellido_materno'])->withCount('articulos')
+            ->orderByDesc('pases_salida.id')->limit(20000)->get());
+
+        return $this->descargarCsv('pases-de-salida', ['Folio', 'Sede', 'Motivo', 'Destino', 'Solicitante', 'Estado', 'Salida programada', 'Regreso tentativo', 'Artículos', 'Registrado'],
+            $pases->map(fn (PaseSalida $p) => [$p->folio, $p->sede?->nombre, $p->etiquetaMotivo(), $p->nombreDestino(), $p->solicitante?->nombreCompleto(),
+                PaseSalida::ESTADOS[$p->estado][0] ?? $p->estado, $p->fecha_salida_programada?->format('d/m/Y'), $p->fecha_tentativa_regreso?->format('d/m/Y'),
+                $p->articulos_count, $hora->formatear($p->created_at, 'd/m/Y H:i')]));
+    }
+
+    /** C-43 (E-13): descarga en Excel (CSV con BOM para que Excel lea los acentos). */
+    private function descargarCsv(string $archivo, array $encabezados, iterable $filas): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($encabezados, $filas) {
+            $salida = fopen('php://output', 'w');
+            fwrite($salida, "\xEF\xBB\xBF");
+            Csv::fila($salida, $encabezados);
+            foreach ($filas as $fila) {
+                Csv::fila($salida, $fila);
+            }
+            fclose($salida);
+        }, $archivo.'-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     public function show(Request $request, int $pase): View
     {
         Gate::authorize('pases_salida.ver');

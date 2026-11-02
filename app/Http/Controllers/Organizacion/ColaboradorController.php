@@ -11,8 +11,10 @@ use App\Models\User;
 use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Colaboradores\ColaboradorParecido;
+use App\Support\Csv;
 use App\Support\DependenciasModulos;
 use App\Support\Entrada;
+use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use App\Support\Terminos;
@@ -22,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Colaboradores (réplica de modules/colaboradores de SEGCAT): directorio de
@@ -81,11 +84,14 @@ class ColaboradorController extends Controller
                     : 0,
                 'colaboradores' => $lista,
                 'sedesFiltro' => $permitidasVer === null ? $sedesActivas : $sedesActivas->whereIn('id', $permitidasVer)->values(),
-                'departamentosFiltro' => Departamento::where(fn ($q) => $q->where('activo', true)
+                // C-43 (A-18): los filtros ofrecen solo lo que aplica en las sedes que ve (y lo que ya tiene alguien de su lista)
+                'departamentosFiltro' => Departamento::where(fn ($q) => $q->where(fn ($a) => $a->where('activo', true)
+                    ->when($permitidasVer !== null, fn ($s) => $s->aplicanEn($permitidasVer)))
                     ->orWhereIn('id', $lista->pluck('departamento_id')->filter()->unique()->values()))
                     ->orderBy('nombre')->get(['id', 'nombre']),
                 // Mapa de procesos: filtro por turno (los activos y los que ya tiene alguien)
-                'turnosFiltro' => Turno::where(fn ($q) => $q->where('activo', true)
+                'turnosFiltro' => Turno::where(fn ($q) => $q->where(fn ($a) => $a->where('activo', true)
+                    ->when($permitidasVer !== null, fn ($s) => $s->aplicanEn($permitidasVer)))
                     ->orWhereIn('id', $lista->pluck('turno_id')->filter()->unique()->values()))
                     ->orderBy('hora_inicio')->orderBy('nombre')->get(['id', 'nombre', 'hora_inicio', 'hora_fin']),
                 'alta' => $actor->can('colaboradores.crear') ? $this->colaboradores->catalogos($actor, 'colaboradores.crear', conTurnos: true) : null,
@@ -113,6 +119,38 @@ class ColaboradorController extends Controller
                 ],
             ]);
         });
+    }
+
+    /**
+     * C-43 (E-13): «Exportar a Excel» con su permiso (colaboradores.exportar),
+     * en sus sedes y sin datos personales (CURP, RFC, NSS, nacimiento y
+     * domicilio son de Recursos Humanos y no salen aquí).
+     */
+    public function exportar(Request $request, HoraLocal $hora): StreamedResponse
+    {
+        Gate::authorize('colaboradores.exportar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $lista = $this->tenant->conEmpresa($empresaId, fn () => $this->colaboradores->limitar(Colaborador::query(), $request->user(), 'colaboradores.exportar')->personal()
+            ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'turno:id,nombre'])->orderBy('colaboradores.apellido_paterno')->orderBy('colaboradores.nombre')
+            ->limit(20000)->get());
+
+        return $this->descargarCsv('colaboradores', ['Número', 'Nombre', 'Apellido paterno', 'Apellido materno', 'Sede', 'Departamento', 'Puesto', 'Turno', 'Estatus', 'Alta'],
+            $lista->map(fn (Colaborador $c) => [$c->num_empleado, $c->nombre, $c->apellido_paterno, $c->apellido_materno, $c->sede?->nombre, $c->departamento?->nombre,
+                $c->puesto?->nombre, $c->turno?->nombre, ! $c->activo ? 'DE BAJA' : ($c->provisional ? 'POR VERIFICAR' : 'ACTIVO'), $hora->formatear($c->created_at, 'd/m/Y')]));
+    }
+
+    /** C-43 (E-13): descarga en Excel (CSV con BOM para que Excel lea los acentos). */
+    private function descargarCsv(string $archivo, array $encabezados, iterable $filas): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($encabezados, $filas) {
+            $salida = fopen('php://output', 'w');
+            fwrite($salida, "\xEF\xBB\xBF");
+            Csv::fila($salida, $encabezados);
+            foreach ($filas as $fila) {
+                Csv::fila($salida, $fila);
+            }
+            fclose($salida);
+        }, $archivo.'-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function store(Request $request): RedirectResponse

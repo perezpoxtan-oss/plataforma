@@ -171,6 +171,17 @@ La ficha reúne en una sola pantalla lo que la plataforma sabe de la persona, or
 
 ![Modo Noche](img/colaboradores/7-noche.png)
 
+## Cómo exportar a Excel
+
+Necesitas que tu rol pueda **Exportar** en *Colaboradores* (si no ves el botón, pide a tu administrador que lo agregue a tu rol).
+
+1. Entra a **Estructura → Colaboradores**.
+2. Toca **Exportar a Excel**.
+
+**Qué debes ver:** se descarga un archivo de Excel (CSV) con lo que puedes ver en tus sedes.
+
+Los filtros de **departamento** y **turno** solo ofrecen los que se usan en tus sedes. El archivo no lleva datos personales (CURP, RFC, NSS, nacimiento ni domicilio).
+
 ## Si algo sale mal
 
 Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.

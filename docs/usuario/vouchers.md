@@ -80,6 +80,15 @@ Un voucher con **firma física** que aún no tiene registrada la hoja firmada, o
 
 ![Vouchers en el celular](img/vouchers/celular.png)
 
+## Cómo exportar a Excel
+
+Necesitas que tu rol pueda **Exportar** en *Vouchers de reposición* (si no ves el botón, pide a tu administrador que lo agregue a tu rol).
+
+1. Entra a **Operación → Caseta → Vouchers de reposición**.
+2. Si quieres, pon los filtros: el archivo lleva lo filtrado. Toca **Exportar a Excel**.
+
+**Qué debes ver:** se descarga un archivo de Excel (CSV) con lo que puedes ver en tus sedes.
+
 ## Si algo sale mal
 
 | Mensaje o síntoma | Qué significa | Qué hacer |

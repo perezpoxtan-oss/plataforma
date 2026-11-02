@@ -159,16 +159,14 @@ class BitacoraTransporte
      */
     public function sugerencia(Collection $horarios, CarbonImmutable $ahora): array
     {
-        $minutos = $ahora->hour * 60 + $ahora->minute;
         $mejor = ['llegada' => [null, PHP_INT_MAX], 'salida' => [null, PHP_INT_MAX]];
 
         foreach ($horarios as $h) {
-            if (! $h->aplicaEn($ahora->dayOfWeekIso)) {
+            // C-43 (D-21): el servicio de ayer, de hoy o de mañana (una ruta que cruza la medianoche es del día en que sale)
+            $diferencia = $this->minutosAlMasCercano($h, $ahora);
+            if ($diferencia === null) {
                 continue;
             }
-            [$hh, $mm] = array_map('intval', explode(':', $this->horaDeCaseta($h)));
-            $diferencia = abs($hh * 60 + $mm - $minutos);
-            $diferencia = min($diferencia, 1440 - $diferencia);
             $sentido = $h->ruta->sentido;
             if ($diferencia < $mejor[$sentido][1]) {
                 $mejor[$sentido] = [$h->id, $diferencia];
@@ -180,6 +178,60 @@ class BitacoraTransporte
             'salida' => $mejor['salida'][0],
             'sentido' => $mejor['salida'][1] < $mejor['llegada'][1] ? 'salida' : 'llegada',
         ];
+    }
+
+    /** C-43 (D-21): minutos de tolerancia para sugerir «A tiempo» (después, «Con retraso»). */
+    public const TOLERANCIA_A_TIEMPO = 10;
+
+    /**
+     * C-43 (D-21): cuándo toca la caseta este horario cerca de $ahora (ayer,
+     * hoy o mañana), contando el día de SERVICIO: el día en que la ruta sale.
+     * Una llegada 23:20 → 00:30 de los lunes llega el martes a las 00:30.
+     *
+     * @return list<CarbonImmutable>
+     */
+    public function ocurrencias(RutaHorario $h, CarbonImmutable $ahora): array
+    {
+        $hora = $this->horaDeCaseta($h);
+        if ($hora === '') {
+            return [];
+        }
+        [$hh, $mm] = array_map('intval', explode(':', $hora));
+        $diaSiguiente = $h->cruzaMedianoche() && $h->ruta->sentido === 'llegada';
+        $lista = [];
+        foreach ([-1, 0, 1] as $d) {
+            $servicio = $ahora->startOfDay()->addDays($d);
+            if (! $h->aplicaEn($servicio->dayOfWeekIso)) {
+                continue;
+            }
+            $caseta = $servicio->setTime($hh, $mm);
+            $lista[] = $diaSiguiente ? $caseta->addDay() : $caseta;
+        }
+
+        return $lista;
+    }
+
+    /** Minutos entre $ahora y el servicio más cercano de ese horario (null si no opera cerca). */
+    public function minutosAlMasCercano(RutaHorario $h, CarbonImmutable $ahora): ?int
+    {
+        $ocurrencias = array_filter($this->ocurrencias($h, $ahora), fn (CarbonImmutable $o) => abs($o->diffInMinutes($ahora, false)) <= 720);
+        if ($ocurrencias === []) {
+            return null;
+        }
+
+        return (int) min(array_map(fn (CarbonImmutable $o) => (int) abs($o->diffInMinutes($ahora, false)), $ocurrencias));
+    }
+
+    /**
+     * C-43 (D-21): estatus sugerido al registrar: «a_tiempo» hasta
+     * TOLERANCIA_A_TIEMPO minutos después de la hora de caseta del servicio
+     * más cercano; después, «retraso». El guardia lo puede cambiar.
+     */
+    public function estatusSugerido(RutaHorario $h, CarbonImmutable $ahora): string
+    {
+        $cercana = collect($this->ocurrencias($h, $ahora))->sortBy(fn (CarbonImmutable $o) => abs($o->diffInMinutes($ahora, false)))->first();
+
+        return $cercana !== null && $ahora->gt($cercana->addMinutes(self::TOLERANCIA_A_TIEMPO)) ? 'retraso' : 'a_tiempo';
     }
 
     // -------------------------------------------------------------------- Alta

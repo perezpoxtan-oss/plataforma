@@ -232,6 +232,15 @@
                             </div>
                         @endif
                     </div>
+                    {{-- C-43 (A-16): cambiar el giro pide confirmar con su impacto --}}
+                    @if ($esSuperadmin && ! $esNueva)
+                        @if (session('confirmar_giro'))
+                            <div class="alert alert-warning small py-2 px-3" role="alert"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>{{ session('confirmar_giro') }}</div>
+                            <label class="opcion-todas mb-3"><input type="checkbox" name="confirmar_giro" value="1" required> <span><strong>Sí, cambiar el giro</strong></span></label>
+                        @else
+                            <p class="campo-ayuda mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> Si cambias el giro, antes de guardar te diremos qué cambia y te pediremos confirmarlo.</p>
+                        @endif
+                    @endif
                     @if ($esSuperadmin && $esNueva)
                         <p class="campo-ayuda mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> El giro define las palabras de la operación (Habitación, Oficina, Departamento, Casa…). Al crearla se activan sus módulos y se copian los roles base.</p>
                     @endif

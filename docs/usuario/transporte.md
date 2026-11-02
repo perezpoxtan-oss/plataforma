@@ -26,7 +26,7 @@ resumen: Anotar las llegadas y salidas del transporte de personal y los taxis cu
 1. Toca **Registrar Movimiento**.
 2. Revisa la **Sede** (si atiendes una sola, ya viene elegida).
 3. En **Tipo de Movimiento** elige **LLEGADA** o **SALIDA** (ya viene el más probable por la hora).
-4. En **Estatus del Servicio** elige **SERVICIO NORMAL (A Tiempo)** o **SERVICIO NORMAL (Con Retraso)**.
+4. En **Estatus del Servicio** ya viene sugerido **SERVICIO NORMAL (A Tiempo)** o **SERVICIO NORMAL (Con Retraso)** según la hora de la ruta (a tiempo hasta 10 minutos después). Cámbialo si no es así.
 5. Revisa la **Ruta**: ya viene la más cercana a la hora actual.
 6. Si quieres, escribe placas, chofer y número de pasajeros. Si ya están registrados, aparecen en la lista y se llenan solos los demás datos.
 7. Toca **Guardar Registro Operativo**, o **Guardar y capturar siguiente** si viene otra unidad.
@@ -102,6 +102,8 @@ En **Mis pendientes**, el renglón **Vales de taxi por autorizar** también se p
 ## En el celular
 
 ![Bitácora de transporte en el celular](img/transporte/celular.png)
+
+**Rutas que cruzan la medianoche:** una ruta que sale a las 23:20 y llega a las 00:30 es del día en que sale. Si la de los lunes llega el martes a las 00:30, el martes a esa hora se sugiere esa ruta y, si no se registra, aparece en **Rutas sin registro**.
 
 ## Si algo sale mal
 

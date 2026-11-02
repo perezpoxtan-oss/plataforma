@@ -377,6 +377,10 @@ class TransporteController extends Controller
         $sugerencias = $sedes->mapWithKeys(fn (Sede $s) => [$s->id => $this->bitacora->sugerencia(
             $horarios->filter(fn ($h) => $h->ruta->sede_id === $s->id), $this->bitacora->ahoraEn($s),
         )]);
+        // C-43 (D-21): estatus sugerido de cada ruta a la hora de su sede (también si cruza la medianoche)
+        $sedesPorId = $sedes->keyBy('id');
+        $estatus = $horarios->mapWithKeys(fn ($h) => [$h->id => isset($sedesPorId[$h->ruta->sede_id])
+            ? $this->bitacora->estatusSugerido($h, $this->bitacora->ahoraEn($sedesPorId[$h->ruta->sede_id])) : 'a_tiempo']);
 
         $unidad = fn (Vehiculo $v) => [$v->placas => array_filter([
             'tipo' => $v->tipo === 'autobus' ? 'autobus' : ($v->tipo === 'sedan' || $v->tipo === 'suv' ? $v->tipo : ($v->descripcion_otro === 'VAN / URVAN' ? 'van' : 'otro')),
@@ -401,6 +405,7 @@ class TransporteController extends Controller
             'sedes' => $sedes,
             'horarios' => $horarios,
             'sugerencias' => $sugerencias,
+            'estatusSugeridos' => $estatus,
             // Sugerencias solo para quien puede consultar esos padrones
             'unidades' => $actor->can('vehiculos.ver') ? $vehiculos(false) : collect(),
             'taxis' => $actor->can('vehiculos.ver') ? $vehiculos(true) : collect(),

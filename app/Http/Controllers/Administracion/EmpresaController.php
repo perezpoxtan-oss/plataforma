@@ -120,6 +120,12 @@ class EmpresaController extends Controller
         if (! $actor->es_superadmin) {
             unset($datos['rubro_id']);
         }
+        // C-43 (A-16): cambiar el giro pide confirmar, con lo que cambia
+        if (isset($datos['rubro_id']) && (int) $datos['rubro_id'] !== (int) $empresa->rubro_id && ! $request->boolean('confirmar_giro')) {
+            $impacto = $this->impactoDelGiro($empresa, Rubro::findOrFail((int) $datos['rubro_id']));
+
+            return back()->withInput($request->except(['logo']))->with('error', $impacto)->with('confirmar_giro', $impacto);
+        }
 
         $antes = $empresa->only(self::CAMPOS);
         $empresa->fill(collect($datos)->except(['logo', 'quitar_logo'])->all())->save();
@@ -127,6 +133,17 @@ class EmpresaController extends Controller
         $this->auditoria->auditar($actor, 'empresas.actualizada', $empresa, $antes, $empresa->only(self::CAMPOS));
 
         return redirect()->route('empresas.index')->with('ok', 'Empresa actualizada correctamente.');
+    }
+
+    /** C-43 (A-16): qué cambia al pasar de un giro a otro (para confirmarlo antes). */
+    private function impactoDelGiro(Empresa $empresa, Rubro $nuevo): string
+    {
+        $antes = $empresa->rubro?->nombre ?? 'sin giro';
+
+        return "Vas a cambiar el giro de «{$empresa->nombre_comercial}» de «{$antes}» a «{$nuevo->nombre}». Cambian las palabras de las pantallas, "
+            .'los avisos, los correos, las impresiones y el manual (por ejemplo huésped, habitación o colaborador), los tipos de persona de «Nuevo Ingreso» '
+            .'y lo que es propio de cada giro (Residentes y viviendas en condominio y fraccionamiento; Valores a la Vista solo en hotel). '
+            .'No se borra nada: los registros de antes conservan su tipo. Si estás de acuerdo, marca «Sí, cambiar el giro» y toca Guardar.';
     }
 
     public function estado(Request $request, Empresa $empresa): RedirectResponse

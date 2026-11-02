@@ -58,6 +58,7 @@ El **Giro** de la empresa decide qué tipos de persona se registran en la **Bit�
 Además, fuera de los hoteles el módulo de objetos perdidos se llama **Objetos olvidados**, y la lista sugerida de servicios de Reservas (la de un hotel) no se ofrece: cada empresa da de alta los suyos.
 
 1. Para cambiar el giro de una empresa, el Super Administrador entra a **Estructura → Empresas**, toca el lápiz de la empresa, elige otro **Giro** y toca **Guardar**.
+   La ventana te dice qué cambia (las palabras de pantallas, avisos, correos, impresiones y del manual; los tipos de persona de **Nuevo Ingreso**; lo propio de cada giro). Si estás de acuerdo, marca **Sí, cambiar el giro** y toca **Guardar** otra vez.
 2. Los registros de antes no se pierden: si la Bitácora de accesos ya tenía un tipo que el giro nuevo no usa, se sigue viendo con su nombre de siempre.
 
 **Qué debes ver:** al entrar con un usuario de esa empresa, el menú y las pantallas usan las palabras del giro (por ejemplo **Residentes** en lugar del padrón de personal en un condominio).

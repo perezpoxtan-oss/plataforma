@@ -34,6 +34,10 @@
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Responsivas de: <strong>{{ $empresaNombre }}</strong></p>
                 </div>
             </div>
+            {{-- C-43 (E-13): «Exportar a Excel» con su permiso --}}
+            @can('responsivas.exportar')
+                <a href="{{ route('responsivas.exportar') }}" class="btn btn-outline-secondary" style="min-height:44px;border-radius:10px;"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
+            @endcan
             @if ($puede['crear'])
                 <button type="button" class="btn-nuevo-resguardo" data-abrir-dialogo="dialogoNuevoResguardo">
                     <i class="bi bi-clipboard-plus me-1" aria-hidden="true"></i>Nueva responsiva

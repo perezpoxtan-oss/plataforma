@@ -50,6 +50,10 @@
                 </div>
             </div>
             <div class="barra-filtros justify-content-md-end">
+                {{-- C-43 (E-13): «Exportar a Excel» con su permiso, sin datos personales --}}
+                @can('colaboradores.exportar')
+                    <a href="{{ route('colaboradores.exportar') }}" class="btn btn-outline-secondary" style="min-height:44px;border-radius:10px;"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
+                @endcan
                 @if ($sedesFiltro->count() > 1)
                     <select class="filtro-select" aria-label="Filtrar por sede" data-filtro-colab="sede">
                         <option value="">Todas las sedes</option>
