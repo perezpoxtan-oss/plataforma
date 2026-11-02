@@ -146,5 +146,7 @@ class Identificacion
         'lost_found' => 'el artículo de Lost & Found',
         'equipo_pc' => 'el equipo de Protección Civil',
         'procedimiento' => 'el procedimiento',
+        'persona' => 'la persona',
+        'proveedor' => 'la empresa externa',
     ];
 }

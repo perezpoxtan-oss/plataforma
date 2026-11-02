@@ -4866,6 +4866,22 @@ html.modo-noche .aviso-padron-acceso { background: rgba(245,158,11,0.12); color:
 .trae-equipo-ficha { font-size: 0.85rem; }
 @media (max-width: 420px) { .fila-articulo { grid-template-columns: minmax(0, 1fr) 64px; } .fila-articulo input:last-child { grid-column: 1 / -1; } }
 
+/* Etapa 8 · C-44 y C-45: credencial del colaborador, recepción común y entregas y recepciones */
+.insignia-estado-activo { display: inline-block; margin-left: 0.4rem; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; background: #e5e7eb; color: #374151; }
+.insignia-estado-activo.estado-activo-disponible { background: #dcfce7; color: #166534; }
+.insignia-estado-activo.estado-activo-asignado, .insignia-estado-activo.estado-activo-en-uso { background: #dbeafe; color: #1e40af; }
+.insignia-estado-activo.estado-activo-no-regreso { background: #fee2e2; color: #991b1b; }
+.insignia-estado-activo.estado-activo-baja { background: #f3f4f6; color: #6b7280; }
+.credencial-colaborador .acciones-ficha { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+.recepcion-comun { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.5rem; padding: 0; border: 0; }
+.opcion-recepcion { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 44px; padding: 0.35rem 0.8rem; border: 1px solid var(--borde); border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
+.opcion-recepcion:has(input:checked) { border-color: #059669; background: #ecfdf5; font-weight: 600; }
+.opcion-recepcion.no-regreso:has(input:checked) { border-color: #dc2626; background: #fef2f2; }
+.opcion-recepcion.danado:has(input:checked) { border-color: #d97706; background: #fffbeb; }
+.pantalla-historial-activo .resultado-danado td:nth-child(2), .pantalla-historial-activo .movimiento-no_regreso td:nth-child(2) { color: #b91c1c; }
+.recepcion-plegada { margin-top: 0.35rem; }
+.recepcion-plegada > summary { cursor: pointer; color: var(--texto-suave, #6b7280); }
+.recepcion-plegada .recepcion-comun { margin-top: 0.35rem; }
 /* C-43 (GC-14): ficha de llave en el celular — los íconos se acomodan en renglones y conservan 44 px para el dedo */
 .acciones-ficha-llave { flex-wrap: wrap; justify-content: flex-end; }
 .acciones-ficha-llave .btn-icono { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
@@ -4874,3 +4890,19 @@ html.modo-noche .aviso-padron-acceso { background: rgba(245,158,11,0.12); color:
     .ficha-footer:has(.acciones-ficha-llave) .pastilla-alcance { flex: 1 1 100%; }
     .acciones-ficha-llave { flex: 1 1 100%; justify-content: space-between; }
 }
+
+/* Etapa 8 · C-44: credencial (verificación pública, ficha y lista) */
+.verificacion-credencial { text-align: center; padding: 1rem; border-radius: 14px; }
+.verificacion-credencial.vigente { background: #ecfdf5; border: 2px solid #059669; }
+.verificacion-credencial.no-vigente { background: #fef2f2; border: 2px solid #dc2626; }
+.verificacion-estado { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; }
+.vigente .verificacion-estado { color: #047857; }
+.no-vigente .verificacion-estado { color: #b91c1c; }
+.verificacion-foto { display: block; margin: 0 auto 0.75rem; width: 150px; height: 200px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borde); }
+.foto-credencial { width: 120px; height: 160px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borde); background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 2.5rem; }
+.camara-credencial video, .camara-credencial canvas { width: 240px; max-width: 100%; border-radius: 10px; background: #111; }
+.lista-credenciales .fila-credencial { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.75rem; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--borde); }
+.pastillas-credenciales { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
+.pastillas-credenciales a { padding: 0.3rem 0.75rem; border: 1px solid var(--borde); border-radius: 999px; text-decoration: none; font-size: 0.85rem; min-height: 36px; display: inline-flex; align-items: center; }
+.pastillas-credenciales a.activa { background: #2563eb; border-color: #2563eb; color: #fff; }
+.insignia-estado-activo.estado-activo-vencida { background: #fef3c7; color: #92400e; }

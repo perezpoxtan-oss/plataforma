@@ -24,6 +24,8 @@ class VoucherReposicion extends Model
         'llave' => ['Llave', 'llaves', 'App\Models\Llave'],
         'gafete' => ['Gafete', 'gafetes', 'App\Models\Gafete'],
         'equipo' => ['Equipo de seguridad', 'equipos', 'App\Models\Equipo'],
+        // C-44 (Etapa 8): la credencial del colaborador; sus permisos son los de Colaboradores
+        'credencial' => ['Credencial', 'colaboradores', 'App\Models\Credencial'],
     ];
 
     /** Igual que SEGCAT: Extraviado | Dañado | Robado */

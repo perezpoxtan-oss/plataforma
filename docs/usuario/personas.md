@@ -122,6 +122,18 @@ A veces la misma persona quedó registrada dos veces (por ejemplo «Ana López U
 
 **Qué debes ver:** ««Ana Lopez» se unió con «Ana López Uc»: sus accesos y entregas pasaron al registro correcto y el duplicado quedó fuera de uso (se conserva como historia).» La ficha que se queda toma la identificación o el teléfono que le faltaban. **No se borra nada** y la unión queda en la Bitácora de auditoría; no se puede deshacer desde la pantalla.
 
+## Cómo darle un código QR o una tarjeta a una persona
+
+Si una persona viene seguido (por ejemplo, el técnico de un proveedor), puedes darle un **código QR** impreso o una **tarjeta NFC / RFID**. En la caseta basta con escanearla para encontrarla.
+
+1. Busca a la persona y toca el botón del **código QR** (cuadrito) en su ficha. Se abre **Código e identificación**.
+2. Para imprimir su etiqueta, toca **Imprimir su etiqueta**: se abre **Padrones → Etiquetas QR** ya filtrada con su nombre.
+3. Para asignarle una tarjeta, en **Asignar etiqueta NFC / RFID** acerca la tarjeta al lector (o escribe su número). Se guarda sola.
+
+**Qué debes ver:** el aviso de que la etiqueta quedó asignada. Si la tarjeta ya es de alguien más (otra persona, un colaborador, una llave…), la plataforma te dice de quién es y no la guarda.
+
+> Quien solo consulta el padrón puede ver e imprimir el QR, pero no asignar tarjetas.
+
 ## En el celular
 
 La pantalla se acomoda al celular: los botones son grandes y la ventana de registro ocupa toda la pantalla. También respeta los modos **Sol** (alto contraste) y **Noche**.

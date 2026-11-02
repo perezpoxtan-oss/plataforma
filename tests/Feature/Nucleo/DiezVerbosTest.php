@@ -55,6 +55,9 @@ class DiezVerbosTest extends TestCase
         'Restablecer…' => 'regresa al valor original', 'Omitir paso' => 'circuito de pases (administrador)',
         // Borrado definitivo (distinto de «Dar de baja»; ver docs/usuario/eliminar-definitivamente.md)
         'Eliminar…' => 'borrado definitivo', 'Borrar mi firma guardada' => 'borrado de un archivo propio',
+        // Credencialización (C-44, propuesta aprobada por el dueño el 12 oct; docs/tecnico/credenciales.md): emitir crea la credencial
+        // que RR. HH. imprime; reponer da de baja la vigente y emite otra en un paso (la anterior deja de valer al instante)
+        'Emitir credencial' => 'credencialización (propuesta aprobada)', 'Reponer credencial' => 'credencialización (propuesta aprobada)',
         // Estado del candidato (como «No regresó»)
         'No se presentó' => 'estado del candidato (ADR-0009)',
     ];

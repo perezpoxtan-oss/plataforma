@@ -76,6 +76,8 @@ class AdministradorColaboradores
         ['accesos', 'host_colaborador_id'],
         ['accesos', 'visita_colaborador_id'],
         ['pases_salida', 'colaborador_destino_id'],
+        // C-44 (Etapa 8): la credencial pasa al registro correcto al unir duplicados
+        ['credenciales', 'colaborador_id'],
     ];
 
     private const SIN_ACENTOS = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u'];

@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
 use App\Models\Concerns\RestringibleEnAcceso;
+use App\Models\Concerns\TieneIdentificador;
 use App\Models\Concerns\VerificableEnPadron;
+use App\Support\Lector\Identificable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -14,10 +16,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * Empresa externa: proveedor, contratista, agencia, taxi, transportadora...
  * (SEGCAT: cat_empresas_externas). Opera en todas las sedes o solo en algunas.
+ *
+ * C-44: se identifica con el lector universal (QR o tarjeta NFC/RFID de la
+ * empresa) y también tecleando o escaneando su RFC.
  */
-class Proveedor extends Model
+class Proveedor extends Model implements Identificable
 {
-    use PerteneceAEmpresa, RegistraAutor, RestringibleEnAcceso, VerificableEnPadron;
+    use PerteneceAEmpresa, RegistraAutor, RestringibleEnAcceso, TieneIdentificador, VerificableEnPadron;
+
+    /** Se encuentra también tecleando o escaneando el RFC. */
+    protected string $columnaLegible = 'rfc';
 
     /** clave => etiqueta (SEGCAT: tipo_empresa) */
     public const CATEGORIAS = [
@@ -65,5 +73,30 @@ class Proveedor extends Model
     {
         return $consulta->where(fn ($q) => $q->where('proveedores.todas_las_sedes', true)
             ->orWhereHas('sedes', fn ($s) => $s->whereIn('sedes.id', $sedeIds)));
+    }
+
+    public static function tipoLector(): string
+    {
+        return 'proveedor';
+    }
+
+    public static function permisoLector(): string
+    {
+        return 'proveedores.ver';
+    }
+
+    public function resumenLector(): array
+    {
+        return [
+            'titulo' => $this->nombre,
+            'detalle' => trim('Empresa externa · '.(self::CATEGORIAS[$this->categoria] ?? $this->categoria).($this->rfc ? ' · RFC '.$this->rfc : '')),
+            'activo' => (bool) $this->activo,
+            'sede_id' => null,
+        ];
+    }
+
+    public function urlLector(): string
+    {
+        return route('proveedores.show', $this->id);
     }
 }

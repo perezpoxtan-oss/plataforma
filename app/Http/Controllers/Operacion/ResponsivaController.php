@@ -78,6 +78,8 @@ class ResponsivaController extends Controller
             return view('operacion.responsivas.index', [
                 'sinEmpresa' => false,
                 'turnos' => $turnos,
+                // C-45 (DD-19): la empresa firma a mano en la hoja impresa (no se pide en pantalla)
+                'firmaEnPapel' => $ajustes['responsivas_firma'] === 'papel',
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'enCampo' => $enCampo,
                 'devueltas' => $devueltas,
@@ -158,7 +160,13 @@ class ResponsivaController extends Controller
             $fila = $modelo->equipos()->whereKey($equipo)->first();
             abort_if($fila === null, 404);
 
-            return [$modelo, $this->responsivas->recibirEquipo($request->user(), $modelo, $fila, $request->all(), $request->user()->can('equipos.eliminar'))];
+            // C-45 (DD-19): la recepción común (resultado ok | danado | no_regreso) es la misma que OK / Dañado / Faltante
+            $entrada = $request->all();
+            if (! isset($entrada['estado_recepcion']) && isset($entrada['resultado']) && is_string($entrada['resultado'])) {
+                $entrada['estado_recepcion'] = ['ok' => 'ok', 'danado' => 'danado', 'no_regreso' => 'faltante'][$entrada['resultado']] ?? $entrada['resultado'];
+            }
+
+            return [$modelo, $this->responsivas->recibirEquipo($request->user(), $modelo, $fila, $entrada, $request->user()->can('equipos.eliminar'))];
         });
 
         $texto = 'Equipo '.($r['serie'] ?? '').' recibido ('.mb_strtoupper(EquipoResponsiva::ESTADOS_DEVOLUCION[$r['estado']]).')'

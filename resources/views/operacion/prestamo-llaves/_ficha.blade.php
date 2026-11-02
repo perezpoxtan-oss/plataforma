@@ -68,6 +68,11 @@
                     @csrf
                     @method('PATCH')
                     <button type="submit" class="btn-recibir-llave"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Recibir Llave a Caseta</button>
+                    {{-- C-45 (DD-19): recepción común; OK viene marcado (sin pasos extra). «No regresó» tiene su propio botón --}}
+                    <details class="recepcion-plegada">
+                        <summary class="small">¿Viene dañada?</summary>
+                        @include('componentes.recepcion-activo', ['raId' => 'prestamo_'.$p->id, 'raNoRegreso' => false])
+                    </details>
                 </form>
                 @unless ($noRegreso)
                     {{-- C-14: la llave no regresó (se pierde, se la llevó): queda NO REGRESÓ y no se vuelve a prestar --}}

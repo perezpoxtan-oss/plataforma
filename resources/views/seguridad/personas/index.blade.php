@@ -18,6 +18,8 @@
         </div>
     @else
         @php
+            // C-44: «Imprimir su etiqueta» lleva a Etiquetas QR ya filtrada (mismos permisos que esa pantalla)
+            $puedeEtiquetas = auth()->user()?->can('etiquetas_qr.ver') && array_key_exists('persona', app(\App\Services\Lector\EtiquetasMasivas::class)->tipos(auth()->user()));
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
             // Textos de SEGCAT (visitante_lista.php)
@@ -128,8 +130,13 @@
                             @endif
                         </div>
                     </div>
-                    @if ($desactivable || $editable)
+                    {{-- C-44: su QR y su tarjeta NFC/RFID para el lector universal (también quien solo consulta ve el QR) --}}
                     <div class="persona-pie">
+                        @include('componentes.boton-identificacion', ['identTipo' => 'persona', 'identRegistro' => $p, 'identTitulo' => $p->nombre_completo,
+                            'identDetalle' => $empresaDe ?? '', 'identEditable' => $editable,
+                            'identImprimir' => $puedeEtiquetas ? route('etiquetas.index', ['tipo' => 'persona', 'q' => $p->nombre_completo]) : null,
+                            'identImprimirTexto' => 'Imprimir su etiqueta'])
+                    @if ($desactivable || $editable)
                         @if ($desactivable)
                             <form action="{{ route('personas.estado', $p->id) }}" method="POST" class="m-0"
                                   data-confirmar="{{ $p->activo ? '¿Dar de baja este registro? Podrás reactivarlo con un clic.' : '¿Reactivar este registro?' }}">
@@ -160,8 +167,8 @@
                                 <i class="bi bi-pencil-square me-1" aria-hidden="true"></i> Editar Perfil
                             </button>
                         @endif
-                    </div>
                     @endif
+                    </div>
                 </div>
             @empty
                 @unless ($puede['crear'])
@@ -320,4 +327,5 @@
     @endif
 </div>
 @include('componentes.restringir-acceso')
+@include('componentes.codigo-identificacion')
 @endsection

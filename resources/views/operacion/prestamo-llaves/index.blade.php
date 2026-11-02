@@ -206,6 +206,7 @@
                                 <label class="campo-etiqueta etiqueta-garantia" for="prestamo_garantia"><i class="bi bi-person-vcard me-1" aria-hidden="true"></i>ID Dejada en Garantía</label>
                                 <select id="prestamo_garantia" name="tipo_garantia" class="campo" required>
                                     @foreach (\App\Models\PrestamoLlave::GARANTIAS_OPCIONES as $clave => $texto)
+                                        @continue(($garantiaObligatoria ?? false) && $clave === 'ninguna')
                                         <option value="{{ $clave }}" @selected(old('tipo_garantia', 'gafete_interno') === $clave) @if ($clave === 'gafete_interno') data-por-defecto @endif>{{ $texto }}</option>
                                     @endforeach
                                 </select>

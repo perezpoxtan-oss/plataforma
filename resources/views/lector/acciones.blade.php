@@ -32,6 +32,10 @@
                         @foreach ($accion['campos'] ?? [] as $campo => $valor)
                             <input type="hidden" name="{{ $campo }}" value="{{ $valor }}">
                         @endforeach
+                        {{-- C-45 (DD-19): recepción común OK / Dañado / No regresó (OK marcado) --}}
+                        @if (! empty($accion['recepcion']))
+                            @include('componentes.recepcion-activo', ['raId' => 'lector_'.$loop->index, 'raNoRegreso' => $accion['recepcion']['noRegreso'] ?? true])
+                        @endif
                         <button type="submit" class="{{ $accion['principal'] ? 'btn-accion-lector principal' : 'btn-accion-lector' }}">
                             <i class="bi {{ $accion['icono'] }} me-2" aria-hidden="true"></i>{{ $accion['etiqueta'] }}
                         </button>

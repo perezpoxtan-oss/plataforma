@@ -108,6 +108,10 @@ class LectorAuditoria
         'sincronizado' => 'Nombre y número tomados de su colaborador',
         // Identificación (QR y etiqueta NFC/RFID) e impresión de etiquetas
         'etiqueta_asignada' => 'Asignación de etiqueta NFC/RFID', 'etiqueta_quitada' => 'Retiro de etiqueta NFC/RFID',
+        // C-44 (Etapa 8): credencial del colaborador
+        'credencial_entregada' => 'Credencial: se le dio salida', 'credencial_recibida' => 'Credencial: recibida',
+        'credencial_no_regreso' => 'Credencial: no regresó', 'credencial_baja' => 'Credencial: baja',
+        'credencial_emitida' => 'Credencial: emitida', 'credencial_impresa' => 'Credencial: impresa', 'foto_credencial' => 'Foto de la credencial', 'credenciales' => 'Ajustes de credenciales',
         'impreso' => 'Impresión', 'reimpreso' => 'Reimpresión',
         'plantilla_creada' => 'Alta de plantilla', 'plantilla_actualizada' => 'Edición de plantilla',
         'plantilla_desactivada' => 'Desactivación de plantilla', 'plantilla_reactivada' => 'Reactivación de plantilla',

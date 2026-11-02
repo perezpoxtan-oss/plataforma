@@ -8,6 +8,7 @@ use App\Models\Auditoria;
 use App\Models\Candidato;
 use App\Models\CandidatoDocumento;
 use App\Models\Colaborador;
+use App\Models\Credencial;
 use App\Models\Equipo;
 use App\Models\EquipoResponsiva;
 use App\Models\Novedad;
@@ -20,8 +21,10 @@ use App\Models\User;
 use App\Services\Candidatos\DocumentosCandidato;
 use App\Services\Candidatos\DocumentosParaContratar;
 use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\Credenciales\AdministradorCredenciales;
 use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Procedimientos\AdministradorProcedimientos;
+use App\Support\AjustesCredenciales;
 use App\Support\EstadoActivo;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -150,15 +153,27 @@ class ExpedienteController extends Controller
             $editable = $actor->can('colaboradores.editar')
                 && $this->colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.editar')->whereKey($c->id)->exists();
 
+            // C-44 (Etapa 8): su credencial (la vigente o la última) y si quien entra la maneja
+            $credencial = Credencial::where('colaborador_id', $c->id)->with(['entrego:id,name', 'recibio:id,name'])
+                ->orderByRaw("CASE WHEN estado = 'baja' THEN 1 ELSE 0 END")->orderByDesc('id')->first();
+            $puedeCredencial = $actor->can(AdministradorCredenciales::PERMISO)
+                && $this->colaboradores->limitar(Colaborador::query(), $actor, AdministradorCredenciales::PERMISO)->whereKey($c->id)->exists();
+
             return view('organizacion.colaboradores.expediente', [
+                'credencial' => $credencial,
+                'ajustesCredencial' => AjustesCredenciales::de($c->empresa_id),
+                'puedeCredencial' => $puedeCredencial && ! $pendiente,
                 'c' => $c,
                 'movimientos' => $movimientos,
                 'autores' => $autores,
                 'pendiente' => $pendiente,
                 'identEditable' => $editable && ! $pendiente,
-                'imprimirCredencial' => $actor->can('etiquetas_qr.ver') && $actor->can('colaboradores.editar') && ! $pendiente
+                // C-44: con credencial vigente y su permiso, «Imprimir credencial» es la CR80; si no, la etiqueta QR de siempre
+                'imprimirCredencial' => $puedeCredencial && ! $pendiente && AdministradorCredenciales::esVigente($credencial, $c)
+                    ? route('credenciales.imprimir', ['credenciales' => [$credencial->id]])
+                    : ($actor->can('etiquetas_qr.ver') && $actor->can('colaboradores.editar') && ! $pendiente
                     ? route('etiquetas.index', ['tipo' => 'colaborador', 'q' => $c->num_empleado ?: $c->nombreCompleto()])
-                    : null,
+                    : null),
                 'personales' => $personales,
                 'documentos' => $documentos,
                 'nombres' => app(DocumentosParaContratar::class)->nombres($empresaId),

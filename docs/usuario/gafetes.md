@@ -118,7 +118,8 @@ Si el gafete está **EN USO** (alguien en sitio lo tiene), no se da de baja desd
 
 Cuando en la caseta se da salida a alguien y se quita la marca **Devolvió el gafete**, el gafete queda **NO REGRESÓ**: no se puede volver a prestar y tu supervisor recibe un aviso en la campana.
 
-- Si después lo devuelven, toca **Recibir** en su ficha: vuelve a **DISPONIBLE**.
+- Si después lo devuelven, toca **Recibir** en su ficha: vuelve a **DISPONIBLE**. Si viene dañado, abre **¿Viene dañado?** y marca **Dañado** antes de **Recibir**: el aviso te ofrece darlo de baja.
+- También lo recibes escaneando su QR con la cámara del celular: te ofrece **Recibir**.
 - Si ya no aparecerá, toca **Dar de baja**: el voucher propone a la última persona que lo tuvo.
 
 ## Cómo reactivar un gafete

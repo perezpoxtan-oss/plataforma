@@ -4,6 +4,7 @@ namespace App\Services\Bajas;
 
 use App\Models\Acceso;
 use App\Models\Colaborador;
+use App\Models\Credencial;
 use App\Models\Departamento;
 use App\Models\DepartamentoResponsable;
 use App\Models\Equipo;
@@ -28,6 +29,7 @@ use App\Services\Activos\CampanaActivos;
 use App\Services\Activos\CustodiaActivos;
 use App\Services\Autorizaciones\Cobertura;
 use App\Services\Borrado\RegistroBorrado;
+use App\Services\Credenciales\AdministradorCredenciales;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Support\EstadoActivo;
@@ -243,6 +245,10 @@ class AntesDeDarDeBaja
                         $hecho[] = $vehiculos->count() === 1 ? "su vehículo {$vehiculos->first()->placas} se dio de baja" : $vehiculos->count().' vehículos se dieron de baja';
                     }
                 }
+                // C-44 (Etapa 8): su credencial vigente se da de baja (voucher no: no hubo pérdida)
+                if (app(AdministradorCredenciales::class)->bajaPorColaborador($actor, $registro) !== null) {
+                    $hecho[] = 'su credencial se dio de baja';
+                }
                 // Su credencial con NFC deja de identificarlo
                 if ($registro->getAttribute('etiqueta_nfc') !== null) {
                     $antes = $registro->getAttribute('etiqueta_nfc');
@@ -298,6 +304,10 @@ class AntesDeDarDeBaja
                 fn ($n) => $n === 1 ? 'Tiene 1 visita en espera o en sitio' : "Tiene {$n} visitas en espera o en sitio",
                 'Avísale a la caseta quién las atenderá.', fn (Acceso $a) => [$a->nombre, route('accesos.index')]),
             $c->etiqueta_nfc !== null ? ['clave' => 'nfc', 'nivel' => 'aviso', 'texto' => 'Tiene una etiqueta NFC en su credencial', 'efecto' => 'Se apaga: ya no lo identificará en el lector.', 'ejemplos' => []] : null,
+            // C-44 (Etapa 8): su credencial vigente se da de baja sola
+            $this->item('credencial', 'aviso', Credencial::where('colaborador_id', $c->id)->vigentes()->get(),
+                fn () => 'Tiene su credencial', 'Se da de baja sola: ya no lo identificará. Pídele que la devuelva.',
+                fn (Credencial $cr) => [$cr->folio.' · '.$cr->textoEstado(), route('colaboradores.expediente', $c->id).'#codigo']),
         ];
     }
 

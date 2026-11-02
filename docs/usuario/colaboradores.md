@@ -117,6 +117,32 @@ Cada colaborador tiene su propio **código QR** y puede tener una **etiqueta NFC
 - Quien solo consulta colaboradores ve el QR, pero no el apartado para asignar la etiqueta.
 - Los registrados en la caseta (**POR VERIFICAR**) reciben su etiqueta hasta que se verifican.
 
+## Cómo hacer, imprimir y entregar su credencial
+
+La **credencial** es el plástico del colaborador con su foto y su código QR (el **gafete** es el de las visitas). Cada colaborador tiene **una sola credencial vigente**.
+
+**Antes de empezar:** necesitas el permiso **Colaboradores → Credencial** (de fábrica lo tienen Recursos Humanos y el Administrador).
+
+1. Abre la ficha del colaborador (la **carpeta**) y entra a **Código y etiqueta**. Abajo está **Credencial**.
+2. **Foto:** abre **Tomar foto**. Toca **Usar la cámara**, luego **Tomar la foto**; o elige un archivo (en el celular se abre la cámara). Toca **Guardar foto**. Se recorta sola a tamaño credencial.
+3. Toca **Emitir credencial**. Nace con su folio (CRED-000001) y su vigencia según tu empresa.
+4. Toca **Imprimir credencial**: se abre la hoja con el **frente y el reverso** en tamaño CR80. En la impresora de credenciales elige CR80 y «Tamaño real / 100 %» (o **Guardar como PDF**).
+5. Cuando se la entregues, toca **Dar salida**.
+
+**Qué debes ver:** la credencial en **ASIGNADO**, con su vigencia.
+
+**Recibirla:** toca **Recibir** con **OK** marcado. Queda **DISPONIBLE** con Recursos Humanos (si regresa a trabajar, le das salida a la misma). Si viene **Dañado**, queda **DE BAJA** y su código ya no vale. Si **No regresó**, queda **NO REGRESÓ** y quien maneja credenciales lo ve en la campana y en **Mis pendientes → Credenciales que no regresaron**.
+
+**Reponerla** (se perdió, se dañó, la robaron, venció o cambió su foto): abre **Reponer credencial**, elige por qué y toca **Reponer credencial**. La anterior **deja de valer en ese momento** y se emite otra con folio nuevo; imprímela y dale salida. Si se perdió, se dañó o la robaron se genera su voucher (marca **Con cobro al colaborador** si aplica).
+
+**Darla de baja sin emitir otra:** abre **Dar de baja con voucher**, elige el motivo y toca **Dar de baja**.
+
+**Al dar de baja al colaborador**, su credencial se da de baja sola (la verás en [Antes de dar de baja](antes-de-dar-de-baja.md)). Pídele que la devuelva.
+
+**Cualquiera puede comprobarla:** al escanear su QR con la cámara de cualquier celular aparece **Vigente** (con su foto, su nombre y hasta cuándo vale) o **No vigente**. No muestra ningún otro dato.
+
+**Entregas y recepciones** (debajo de la credencial) muestra todo lo que ha pasado con ella. La lista de todas está en [Credenciales](credenciales.md).
+
 ## Cómo registrar a un colaborador desde la caseta (queda por verificar)
 
 Si en la caseta necesitas registrar a alguien que **no aparece** al buscarlo:
@@ -230,6 +256,8 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 **¿Cómo le doy una cuenta para entrar a la plataforma?** En [Usuarios](usuarios.md), vinculando la cuenta con su ficha de colaborador.
 
 ## Relacionado
+
+- [Entregar y recibir](entregar-y-recibir.md)
 
 - [Departamentos y puestos](departamentos-y-puestos.md)
 - [Turnos](turnos.md)

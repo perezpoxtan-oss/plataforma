@@ -23,6 +23,7 @@ use App\Services\Recepcion\Destinatarios;
 use App\Support\AjustesCaseta;
 use App\Support\EstadoActivo;
 use App\Support\Receptor;
+use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -159,8 +160,12 @@ class AdministradorResponsivas
             }
         }
 
-        // La firma se guarda al final de las validaciones; si algo falla después, se borra
-        $firma = $this->firmas->guardar($datos['firma'] ?? null, 'responsivas', 'firma', 'la firma del colaborador');
+        // La firma se guarda al final de las validaciones; si algo falla después, se borra.
+        // C-45 (DD-19): si la empresa firma a mano en la hoja impresa, no se pide en pantalla ('' = sin firma digital, como tras ARCO)
+        $enPapel = AjustesCaseta::valor(app(EmpresaDeTrabajo::class)->id($actor), 'responsivas_firma') === 'papel';
+        $firma = $enPapel && ! $this->firmas->viene($datos['firma'] ?? null)
+            ? ''
+            : $this->firmas->guardar($datos['firma'] ?? null, 'responsivas', 'firma', 'la firma del colaborador');
 
         try {
             $responsiva = DB::transaction(function () use ($actor, $sede, $colaborador, $filas, $firma, $tipoReceptor, $receptor) {

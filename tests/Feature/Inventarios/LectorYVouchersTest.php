@@ -52,7 +52,8 @@ class LectorYVouchersTest extends TestCase
         $this->actingAs($admin)->getJson('/lector/resolver?entrada=1001&tipos=colaborador')->assertJsonPath('resultados.0.id', $ana->id);
 
         // /e/{codigo} lleva a la pantalla del registro
-        $this->actingAs($admin)->get('/e/'.$ana->codigo_qr)->assertRedirect(route('colaboradores.index').'#colaborador-'.$ana->id);
+        // C-44 (Etapa 8): quien registra ingresos ve «Nuevo ingreso»; la ficha sigue a un toque
+        $this->actingAs($admin)->get('/e/'.$ana->codigo_qr)->assertOk()->assertSee('Solo ver la ficha')->assertSee(route('colaboradores.index').'#colaborador-'.$ana->id, false);
         $this->actingAs($admin)->get('/e/noexiste12345678')->assertNotFound();
     }
 

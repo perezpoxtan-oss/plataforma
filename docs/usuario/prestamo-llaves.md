@@ -81,12 +81,12 @@ En el [Catálogo de llaves](llaves.md) una llave puede tener **fecha de caducida
 **Desde la ficha:**
 
 1. Busca su ficha en **Llaves en Uso** (puedes escribir el nombre, la nómina o la llave en **Buscar**).
-2. Toca **Recibir Llave a Caseta** y confirma.
+2. Toca **Recibir Llave a Caseta** y confirma. Si la llave **viene dañada**, antes abre **¿Viene dañada?** y marca **Dañado**: se recibe igual y, si puedes dar de baja llaves, el aviso te ofrece **Dar de baja la llave**.
 3. **Devuelve la identificación** que dejó en garantía.
 
 **Qué debes ver:** el aviso «Llave … recibida de … Devuelve su garantía: …» y la ficha pasa a **Historial de Entregas** con la hora de regreso y quién la recibió.
 
-También puedes escanear el QR del llavero **con la cámara del celular, fuera de la plataforma**: si la llave está prestada te ofrece **Recibir**, y si está en caseta, **Prestar** (ver [Etiquetas QR](etiquetas-qr.md)).
+También puedes escanear el QR del llavero **con la cámara del celular, fuera de la plataforma**: si la llave está prestada te ofrece **Recibir** (con **OK** marcado, o **Dañado** / **No regresó**), y si está en caseta, **Prestar** (ver [Etiquetas QR](etiquetas-qr.md)).
 
 ## Llaves que llevan mucho tiempo fuera
 
@@ -119,6 +119,10 @@ Al recibir la llave, los avisos se quitan solos. Si tu empresa lo apagó (0 hora
 ![Historial de una llave](img/prestamo-llaves/historial-llave.png)
 
 **Qué debes ver:** si la llave sigue fuera, dice **AÚN EN USO**.
+
+> Todo préstamo, recepción y «No regresó» también queda en **Entregas y recepciones** de la ficha de la llave (botón de las dos flechas en **Padrones → Catálogo de llaves**). Ver [Entregar y recibir](entregar-y-recibir.md).
+>
+> Si tu empresa pide **identificación obligatoria** (Configuración → Activos → Avanzado: garantía de la llave), la opción **Ninguna (Riesgo)** no aparece.
 
 ## Cómo descargar el reporte
 

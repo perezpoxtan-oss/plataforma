@@ -143,3 +143,29 @@ La pantalla de Vouchers y la impresión triple viven en su propio módulo.
 ## Acción más probable al escanear fuera de un formulario (ADR-0014)
 
 `GET /e/{codigo}` consulta `App\Services\Lector\AccionesLector`: con una llave prestada ofrece **Recibir**, con una llave en caseta **Prestar** y con un equipo en una responsiva **Recibir (OK)**, en la vista `lector.acciones` (con «Solo ver la ficha»). Sin acción probable o sin permiso, redirige a `urlLector()` como antes; el gafete en uso sigue yendo directo a «Dar salida». Detalle: [caseta-y-activos.md](caseta-y-activos.md).
+
+## Etapa 8 · C-44: personas y empresas externas
+
+- `Persona` (tipo `persona`, permiso `visitantes.ver`) y `Proveedor` (tipo `proveedor`, permiso `proveedores.ver`) implementan `Identificable` con `TieneIdentificador`. Migración `2026_11_18_000100_personas_y_empresas_externas_en_el_lector`: `codigo_qr` (único, se llena a los existentes) y `etiqueta_nfc` (`unique(empresa_id, etiqueta_nfc)`); `down()` quita índices y columnas.
+- Columna legible: la empresa externa se encuentra por `rfc`. La persona **no** por el folio de su identificación (dato personal enmascarado para quien solo consulta).
+- Sin sede: `resumenLector()['sede_id']` es `null` (el padrón es de toda la empresa).
+- Fichas: botón «Código e identificación» en Personas (visible también para quien solo consulta; asignar tarjeta pide `visitantes.editar`) y en Empresas externas; «Imprimir su etiqueta» lleva a Etiquetas QR filtrada (`etiquetas_qr.ver` + permiso de imprimir del padrón). Etiquetas QR los ofrece solos («Personas externas», «Empresas externas»).
+- Regla única de tarjeta: `Identificacion::NOMBRES` agrega «la persona» y «la empresa externa».
+- Pruebas: `tests/Feature/Seguridad/EtapaOchoLectorTest.php`.
+
+### Acción probable de la caseta (C-44)
+
+`AccionesLector::deCaseta()` para `colaborador`, `vehiculo`, `persona` y `proveedor` (`AccionesLector::DE_CASETA`, tipo → columna de `accesos`):
+
+| Situación | Acción |
+|---|---|
+| Acceso `en_sitio` de entrada con esa columna, en el alcance de `accesos.editar` | **Dar salida** → `accesos.index?salida=<nombre o placas>` (la salida a la vista con la revisión de gafete e identificación de C-15) |
+| Restringido (`RestringibleEnAcceso`) | Aviso con `textoRestriccion()` y sin acción (`aviso => true`: la vista se muestra aunque no haya botones) |
+| Activo, con `accesos.crear` y alguna sede para registrar | **Nuevo ingreso** → `GET /accesos/ingreso/{tipo}/{id}` (`accesos.ingreso-desde-lector`) |
+| Otro caso | Redirige a la ficha, como antes |
+
+`AccesoController::ingresoDesdeLector` no guarda nada: arma la entrada anterior (`withInput`, `_dialogo=ingreso`) y la bitácora reabre el Registro Inteligente de Ingreso como tras un aviso: colaborador (`colaborador_id`, su sede si la atiende), persona (`persona_id`, `nombre`, su tipo y su empresa), empresa externa (`proveedor_id`, `empresa_procedencia`; contratista si su categoría lo es) y vehículo (`modo_arribo=auto`, `vehiculo_id`, `placas` y su dueño: colaborador, empresa o visita). Con una sola sede, se elige sola. Registro de otra empresa o de baja → 404; sin `accesos.crear` → 403. Pruebas: `EtapaOchoAccionesLectorTest`.
+
+### Dar salida con la tarjeta o el QR del padrón (C-44)
+
+`ConsultaAccesos::buscarEnSitio()` (salida a la vista y «Buscar y Dar Salida») también busca, con `padronesLeidos()`, el colaborador, la persona, la empresa externa o el vehículo cuyo `codigo_qr` (dirección `/e/…`) o `etiqueta_nfc` (cualquiera de sus formas) coincide con lo leído, y devuelve sus accesos en sitio. Solo con una sola palabra: un nombre completo se busca como siempre.

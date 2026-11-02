@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\ZonaEstacionamiento;
 use App\Services\Activos\CustodiaActivos;
+use App\Services\Activos\HistorialActivos;
 use App\Services\Autorizaciones\Autorizaciones;
 use App\Services\Estacionamientos\OcupacionEstacionamientos;
 use App\Services\Notificaciones\CentroNotificaciones;
@@ -85,7 +86,7 @@ class MovimientosAccesos
         $idRevisada = filter_var($opciones['identificacion_revisada'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $idDevuelta = $idRevisada ? filter_var($opciones['identificacion_devuelta'] ?? false, FILTER_VALIDATE_BOOLEAN) : null;
 
-        [$acompanantes, $noRegresaron] = DB::transaction(function () use ($actor, $acceso, $revisados, $devolvio, $idDevuelta) {
+        [$acompanantes, $noRegresaron, $devueltos] = DB::transaction(function () use ($actor, $acceso, $revisados, $devolvio, $idDevuelta) {
             $ahora = now();
             $cambio = Acceso::whereKey($acceso->id)->where('estado', 'en_sitio')
                 ->update(['estado' => 'finalizado', 'salida_at' => $ahora, 'salida_por' => $actor->id, 'actualizado_por' => $actor->id, 'updated_at' => $ahora]);
@@ -124,9 +125,13 @@ class MovimientosAccesos
             $acompanantes = AcompananteAcceso::where('acceso_id', $acceso->id)->whereNull('salida_at')
                 ->update(['salida_at' => $ahora, 'salida_por' => $actor->id, 'actualizado_por' => $actor->id, 'updated_at' => $ahora]);
 
-            return [$acompanantes, $noRegresaron];
+            // C-45: los gafetes que sí devolvieron (titular y acompañantes que seguían dentro) se reciben en OK
+            $devueltos = array_values(array_diff(array_map('intval', array_filter([$acceso->gafete_id, ...$dentro->pluck('gafete_id')->all()])), $noRegresaron));
+
+            return [$acompanantes, $noRegresaron, $devueltos];
         });
 
+        app(HistorialActivos::class)->gafetesRecibidos($acceso, $devueltos);
         $gafetes = Gafete::whereIn('id', $noRegresaron)->get();
         $this->auditoria->auditar($actor, 'accesos.salida', $acceso, ['estado' => 'en_sitio'], array_filter(
             ['estado' => 'finalizado', 'gafete' => $acceso->gafete_texto, 'acompanantes_con_salida' => $acompanantes,
@@ -275,6 +280,9 @@ class MovimientosAccesos
         }
         $this->actualizarAcompanante($acompanante, fn ($q) => $q->whereNull('salida_at')->where(fn ($t) => $t->whereNull('salida_temporal_at')->orWhereNotNull('regreso_temporal_at')),
             ['salida_at' => now(), 'salida_por' => $actor->id], 'A este acompañante ya se le dio salida.');
+        if ($acompanante->gafete_id !== null) {
+            app(HistorialActivos::class)->gafetesRecibidos($acompanante->acceso, [(int) $acompanante->gafete_id], $acompanante);
+        }
         $this->auditoria->auditar($actor, 'accesos.salida_acompanante', $acompanante->acceso, null, ['acompanante' => $acompanante->nombreVisible(), 'gafete' => $acompanante->gafete_texto]);
     }
 
