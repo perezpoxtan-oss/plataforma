@@ -66,7 +66,7 @@ class SolicitudesCuenta
      *
      * Límite (A-09): POR_CUENTA_HORA por hora y por CUENTA, la escriban por
      * su usuario o por su correo; además, por texto escrito (cuenta que no
-     * existe) y throttle:5,1 por equipo en la ruta.
+     * existe) y el límite de la ruta (throttle:contrasena.administrador, 5 por minuto por equipo).
      */
     public function pedirPorIdentificador(string $identificador, string $tipo, ?string $ip): void
     {
