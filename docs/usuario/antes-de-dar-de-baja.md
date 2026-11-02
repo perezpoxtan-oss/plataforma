@@ -61,6 +61,7 @@ Una llave prestada, un gafete EN SITIO o un equipo ASIGNADO o FUERA no se da de 
 
 ## Preguntas frecuentes
 
+- **¿Qué pasa con su credencial?** Si tiene una vigente, aparece en azul («Tiene su credencial») y se da de baja sola al confirmar: su código y su tarjeta dejan de identificarlo. Pídele que la devuelva.
 - **¿Por qué no se bloquea la baja de un colaborador con una llave prestada?** Porque a veces la persona ya se fue y no va a volver. La plataforma deja la llave en **NO REGRESÓ** y avisa para cobrarla; así no se pierde el rastro.
 - **¿Puedo deshacer la baja?** Sí, con **Reactivar** en la misma lista. Lo que quedó **NO REGRESÓ** sigue así hasta que lo recibas.
 - **Si la llave aparece después, ¿qué hago?** Recíbela en **Préstamo de llaves** (la tarjeta **NO REGRESÓ** tiene **Recibir**): vuelve a **DISPONIBLE**.

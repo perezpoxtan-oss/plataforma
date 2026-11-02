@@ -39,7 +39,7 @@ Si tu empresa configuró la **hora de regreso de los equipos de Turno**, la fich
    - **Empresa externa:** cuando el equipo se le entrega a la empresa (por ejemplo, para una obra).
 4. En **Equipos que se entregan** escanea el QR o la etiqueta de cada equipo: se agrega solo. También puedes tocar **Añadir Equipo** y elegirlo (solo salen los **DISPONIBLES** de la sede).
 5. En cada equipo elige **Turno** o **Fijo**. Con el bote de basura quitas una fila.
-6. Pide al colaborador que **firme en el recuadro**. Si se equivoca, toca **Limpiar firma**.
+6. Pide al colaborador que **firme en el recuadro**. Si se equivoca, toca **Limpiar firma**. (Si tu empresa eligió **firma a mano en la hoja impresa** en Configuración → Activos, no aparece el recuadro: guarda, imprime la **Hoja** y que la firme ahí.)
 7. Toca **Guardar responsiva**.
 
 ![Nueva responsiva](img/responsivas/nuevo-resguardo.png)

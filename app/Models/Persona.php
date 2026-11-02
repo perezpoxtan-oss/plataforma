@@ -5,17 +5,23 @@ namespace App\Models;
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
 use App\Models\Concerns\RestringibleEnAcceso;
+use App\Models\Concerns\TieneIdentificador;
 use App\Models\Concerns\VerificableEnPadron;
+use App\Support\Lector\Identificable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Persona externa del padrón: visitante, personal de un proveedor o de un
  * contratista (SEGCAT: visitantes_proveedores).
+ *
+ * C-44: se identifica con el lector universal (QR de su pase o tarjeta
+ * NFC/RFID). El folio de su identificación NO se busca con el lector: es un
+ * dato personal y solo lo ve completo quien edita el padrón.
  */
-class Persona extends Model
+class Persona extends Model implements Identificable
 {
-    use PerteneceAEmpresa, RegistraAutor, RestringibleEnAcceso, VerificableEnPadron;
+    use PerteneceAEmpresa, RegistraAutor, RestringibleEnAcceso, TieneIdentificador, VerificableEnPadron;
 
     public const TIPOS = ['visitante' => 'Visitante', 'proveedor' => 'Proveedor', 'contratista' => 'Contratista'];
 
@@ -73,5 +79,32 @@ class Persona extends Model
         $limpio = mb_strtoupper((string) preg_replace('/[\s\-.\/]+/u', '', (string) $folio));
 
         return $limpio === '' ? null : $limpio;
+    }
+
+    public static function tipoLector(): string
+    {
+        return 'persona';
+    }
+
+    public static function permisoLector(): string
+    {
+        return 'visitantes.ver';
+    }
+
+    public function resumenLector(): array
+    {
+        $empresa = $this->empresaQueRepresenta();
+
+        return [
+            'titulo' => $this->nombre_completo,
+            'detalle' => trim((self::TIPOS[$this->tipo] ?? 'Persona externa').($empresa ? ' · '.$empresa : '')),
+            'activo' => (bool) $this->activo,
+            'sede_id' => null,
+        ];
+    }
+
+    public function urlLector(): string
+    {
+        return route('personas.index').'#persona-'.$this->id;
     }
 }

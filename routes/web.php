@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Administracion\AjustesCasetaController;
+use App\Http\Controllers\Administracion\AjustesCredencialesController;
 use App\Http\Controllers\Administracion\AuditoriaController;
 use App\Http\Controllers\Administracion\CatalogoComercialController;
 use App\Http\Controllers\Administracion\ConfiguracionController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\BajasController;
 use App\Http\Controllers\Cuenta\DosPasosController as CuentaDosPasosController;
 use App\Http\Controllers\Cuenta\MiCuentaController;
 use App\Http\Controllers\Cuenta\MiSuscripcionController;
+use App\Http\Controllers\HistorialActivosController;
 use App\Http\Controllers\IdentificacionController;
 use App\Http\Controllers\Informes\BitacoraDelDiaController;
 use App\Http\Controllers\Informes\InformeEjecutivoController;
@@ -50,6 +52,7 @@ use App\Http\Controllers\Publico\PagoWebhookController;
 use App\Http\Controllers\Publico\PlanesController;
 use App\Http\Controllers\Publico\PrivacidadController as PublicoPrivacidadController;
 use App\Http\Controllers\Publico\PwaController;
+use App\Http\Controllers\Publico\VerificarCredencialController;
 use App\Http\Controllers\RecursosHumanos\AutorizacionController;
 use App\Http\Controllers\RecursosHumanos\CandidatoController;
 use App\Http\Controllers\RecursosHumanos\EntrevistaController;
@@ -398,6 +401,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/accesos/en-sitio', [AccesoController::class, 'enSitio'])->middleware('throttle:accesos.en-sitio')->name('accesos.en-sitio');
     Route::get('/accesos/buscar', [AccesoController::class, 'buscar'])->middleware('throttle:accesos.buscar')->name('accesos.buscar');
     Route::get('/accesos/gafetes', [AccesoController::class, 'gafetes'])->name('accesos.gafetes');
+    // C-44 (Etapa 8): «Nuevo ingreso» desde el lector universal con la persona o el vehículo ya elegidos
+    Route::get('/accesos/ingreso/{tipo}/{id}', [AccesoController::class, 'ingresoDesdeLector'])->whereIn('tipo', ['colaborador', 'vehiculo', 'persona', 'proveedor'])->whereNumber('id')->name('accesos.ingreso-desde-lector');
     Route::patch('/accesos/{acceso}/autorizar', [AccesoController::class, 'autorizar'])->whereNumber('acceso')->name('accesos.autorizar');
     Route::patch('/accesos/{acceso}/excepcion', [AccesoController::class, 'excepcion'])->whereNumber('acceso')->name('accesos.excepcion');
     // C-25 (DD-13): la caseta de noche
@@ -614,6 +619,9 @@ Route::middleware('auth')->group(function () {
     // Padrones: Ajustes Ronda 5 (código e identificación de las fichas; firmas de vouchers)
     Route::get('/identificacion/{tipo}/{id}/qr', [IdentificacionController::class, 'qr'])
         ->where('tipo', '[a-z_]+')->whereNumber('id')->name('identificacion.qr');
+    // C-45 (Etapa 8): «Entregas y recepciones» (historial único de llaves, gafetes, equipos y credenciales)
+    Route::get('/activos/{tipo}/{id}/entregas', [HistorialActivosController::class, 'show'])
+        ->whereIn('tipo', HistorialActivosController::TIPOS)->whereNumber('id')->name('activos.historial');
     Route::put('/identificacion/{tipo}/{id}/etiqueta', [IdentificacionController::class, 'etiqueta'])
         ->where('tipo', '[a-z_]+')->whereNumber('id')->middleware('throttle:identificacion.etiqueta')->name('identificacion.etiqueta');
     Route::get('/vouchers/{voucher}/firma/{parte}', [VoucherController::class, 'firma'])
@@ -764,6 +772,19 @@ Route::middleware('auth')->group(function () {
     });
     // Fin Padrones: Candidatos fase 3
 
+    // C-44 (Etapa 8): credencialización desde la ficha del colaborador (ver docs/tecnico/credenciales.md)
+    Route::controller('App\Http\Controllers\RecursosHumanos\CredencialController')->group(function () {
+        Route::post('/colaboradores/{colaborador}/credencial', 'darSalida')->whereNumber('colaborador')->name('credenciales.salida');
+        Route::patch('/credenciales/{credencial}/recibir', 'recibir')->whereNumber('credencial')->name('credenciales.recibir');
+        Route::post('/credenciales/{credencial}/baja', 'baja')->whereNumber('credencial')->name('credenciales.baja');
+        Route::post('/colaboradores/{colaborador}/credencial/emitir', 'emitir')->whereNumber('colaborador')->name('credenciales.emitir');
+        Route::post('/colaboradores/{colaborador}/credencial/foto', 'foto')->whereNumber('colaborador')->middleware('throttle:credenciales.foto')->name('credenciales.foto');
+        Route::post('/credenciales/{credencial}/reponer', 'reponer')->whereNumber('credencial')->name('credenciales.reponer');
+        Route::get('/credenciales', 'index')->name('credenciales.index');
+        Route::get('/credenciales/imprimir', 'hoja')->name('credenciales.imprimir');
+        Route::post('/credenciales/imprimir', 'imprimirSeleccion')->name('credenciales.imprimir-seleccion');
+    });
+
     // Padrones: Manual (ayuda dentro de la plataforma: toda sesión entra; cada página se filtra por los módulos que el usuario puede ver; ver docs/tecnico/manual.md)
     Route::controller('App\Http\Controllers\ManualController')->group(function () {
         Route::get('/manual', 'index')->name('manual.index');
@@ -780,6 +801,8 @@ Route::middleware('auth')->group(function () {
 
     // Mejoras activos (ADR-0014): ajustes de caseta y recibir una llave escaneándola desde la pantalla principal
     Route::put('/configuracion/caseta', [AjustesCasetaController::class, 'update'])->name('configuracion.caseta');
+    // C-44 (Etapa 8): ajustes de credenciales (vigencia, tecnología y reverso)
+    Route::put('/configuracion/credenciales', [AjustesCredencialesController::class, 'update'])->name('configuracion.credenciales');
     // C-22: «Reloj y suplente» (horas generales, avisos y lo de cada módulo en Avanzado)
     Route::put('/configuracion/relojes', [RelojesController::class, 'update'])->name('configuracion.relojes');
     Route::post('/prestamo-llaves/recibir', [PrestamoLlaveController::class, 'recibirEscaneada'])->middleware('throttle:prestamo_llaves.recibir-escaneada')->name('prestamo_llaves.recibir-escaneada');
@@ -838,6 +861,11 @@ Route::controller(PublicoPrivacidadController::class)->group(function () {
     Route::post('/privacidad/{codigo}/solicitud', 'guardar')->where('codigo', '[a-z0-9]{12}')->middleware('throttle:privacidad-enviar')->name('privacidad.empresa.solicitud.guardar');
 });
 // Fin Público: privacidad
+
+// Público: verificación de una credencial (C-44, propuesta de credencialización): el QR impreso abre «Vigente» con foto y
+// nombre o «No vigente», sin datos personales; con sesión iniciada lleva a la acción de la caseta. Límite por IP.
+Route::get('/credencial/{codigo}', [VerificarCredencialController::class, 'show'])
+    ->where('codigo', '[A-Za-z0-9]{8,32}')->middleware('throttle:credenciales.verificar')->name('credenciales.verificar');
 
 // Público: página de planes (SIN sesión; solo si está publicada; ver docs/tecnico/catalogo-comercial.md)
 // Limitadores con nombre (AppServiceProvider): consultar y enviar la solicitud llevan contadores separados por IP

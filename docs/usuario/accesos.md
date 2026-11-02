@@ -126,6 +126,18 @@ Lo que pide cada tipo:
 Si escribes a mano un nombre que ya existe en el Padrón de personas, al guardar sale el aviso rojo «Ya existe una persona registrada con este nombre…»: toca **Sí, es la misma** para usar su registro, o **No, es alguien distinto** para crear otra persona.
 
 <!-- solo: hotel, corporativo -->
+## Cómo registrar un ingreso escaneando su QR o su tarjeta
+
+Si la persona, el colaborador, el vehículo o la empresa ya tienen su **código QR** o su **tarjeta NFC / RFID**, escanéalos con la cámara del celular (fuera de la plataforma) o acércalos al lector:
+
+1. Si **no está en sitio**, la plataforma te ofrece **Nuevo ingreso**. Tócalo.
+2. Se abre el **Registro Inteligente de Ingreso** con sus datos ya elegidos (el colaborador, la persona y su empresa, o el vehículo y su dueño).
+3. Revisa lo que falta (gafete, a quién viene…) y toca el botón de guardar como siempre.
+
+Si **ya está en sitio**, te ofrece **Dar salida**: se abre su tarjeta en la salida a la vista y la confirmas revisando gafete e identificación. Si tiene el **acceso restringido**, solo verás el aviso en rojo con el motivo.
+
+**Qué debes ver:** el registro ya lleno con lo leído. Nada se guarda hasta que tú lo guardes.
+
 ## Cómo registrar a quien viene a Recursos Humanos
 
 La caseta solo anota **a qué viene** la persona y avisa. Recursos Humanos decide si pasa y se encarga de lo demás (su solicitud, su puesto y su departamento).
@@ -263,7 +275,7 @@ Si en tu empresa la casilla **Proveedor** o **Contratista** no está marcada (ve
 
 La forma más rápida es con el campo que está **siempre a la vista**, arriba de las tarjetas:
 
-1. Cuando te devuelvan el gafete, **escanéalo** con la pistola, con la cámara (botón del código QR) o acércalo si es etiqueta NFC; o escribe el **nombre, las placas, el gafete o la habitación**.
+1. Cuando te devuelvan el gafete, **escanéalo** con la pistola, con la cámara (botón del código QR) o acércalo si es etiqueta NFC; o escribe el **nombre, las placas, el gafete o la habitación**. También sirve la **credencial** del colaborador o la **tarjeta o el QR** de la persona, de su empresa o del vehículo.
 2. Aparece la tarjeta de la persona con el botón **Dar salida**. Tócalo y confirma. Si la persona está fuera un rato (tour o salida temporal), el botón dice **Registrar regreso**.
 3. El botón **Dar salida** de arriba (junto a **Nuevo Ingreso**) solo pone el cursor en ese campo; en el celular funciona igual.
 

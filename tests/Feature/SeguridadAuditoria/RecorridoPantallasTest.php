@@ -5,6 +5,7 @@ namespace Tests\Feature\SeguridadAuditoria;
 use App\Console\Commands\CrearDatosDemo;
 use App\Models\AccidenteFirma;
 use App\Models\Colaborador;
+use App\Models\Credencial;
 use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EquipoPc;
@@ -20,6 +21,7 @@ use App\Models\MovimientoTransporte;
 use App\Models\Novedad;
 use App\Models\PaseSalida;
 use App\Models\PaseSalidaFirma;
+use App\Models\Persona;
 use App\Models\Proveedor;
 use App\Models\RecorridoPc;
 use App\Models\Responsiva;
@@ -325,14 +327,21 @@ class RecorridoPantallasTest extends TestCase
                 $primero(RecorridoPc::class), RecorridoPc::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
             ])),
             'modulos.pendiente' => Modulo::query()->where('activo', true)->pluck('clave')->map(fn ($c) => ['clave' => $c])->all(),
-            'lector.ir' => collect([Vehiculo::class, Equipo::class, EquipoPc::class, Llave::class, Gafete::class, Colaborador::class, LostFoundArticulo::class])
+            'lector.ir' => collect([Vehiculo::class, Equipo::class, EquipoPc::class, Llave::class, Gafete::class, Colaborador::class, LostFoundArticulo::class, Persona::class, Proveedor::class])
                 ->map(fn ($m) => $m::withoutGlobalScopes()->where('empresa_id', $e)->value('codigo_qr'))->filter()->map(fn ($c) => ['codigo' => $c])->values()->all(),
+            // Etapa 8 (C-44 y C-45): «Nuevo ingreso» desde el lector y «Entregas y recepciones»
+            'accesos.ingreso-desde-lector' => collect(['colaborador' => Colaborador::class, 'vehiculo' => Vehiculo::class, 'persona' => Persona::class, 'proveedor' => Proveedor::class])
+                ->map(fn ($m, $tipo) => ['tipo' => $tipo, 'id' => $primero($m)])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
+            'credenciales.verificar' => Credencial::withoutGlobalScopes()->where('empresa_id', $e)->whereNotNull('codigo_qr')->limit(3)->pluck('codigo_qr')
+                ->map(fn ($c) => ['codigo' => $c])->all(),
+            'activos.historial' => collect(['llave' => Llave::class, 'gafete' => Gafete::class, 'equipo' => Equipo::class, 'credencial' => Credencial::class])
+                ->map(fn ($m, $tipo) => ['tipo' => $tipo, 'id' => $primero($m)])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
             'configuracion.respaldos.descargar' => [],
             'traslado.descargar' => [], // enlace temporal firmado: se prueba en TrasladoTest
             'empresas.exportaciones' => [['empresa' => $e]],
             // Ronda 5: QR del diálogo "Código e identificación" (cada tipo del lector) y firmas de vouchers
             'identificacion.qr', 'identificacion.etiqueta-duplicado' => collect(['vehiculo' => Vehiculo::class, 'equipo' => Equipo::class, 'equipo_pc' => EquipoPc::class, 'llave' => Llave::class,
-                'gafete' => Gafete::class, 'colaborador' => Colaborador::class, 'lost_found' => LostFoundArticulo::class])
+                'gafete' => Gafete::class, 'colaborador' => Colaborador::class, 'lost_found' => LostFoundArticulo::class, 'persona' => Persona::class, 'proveedor' => Proveedor::class])
                 ->map(fn ($m, $tipo) => ['tipo' => $tipo, 'id' => $primero($m)])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
             'vouchers.firma' => collect(['seguridad', 'responsable', 'hoja'])->map(fn ($p) => ['voucher' => $primero(VoucherReposicion::class), 'parte' => $p])
                 ->filter(fn ($j) => $j['voucher'] !== null)->values()->all(),

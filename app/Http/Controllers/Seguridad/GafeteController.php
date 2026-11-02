@@ -10,6 +10,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\VoucherReposicion;
 use App\Services\Activos\CustodiaActivos;
+use App\Services\Activos\HistorialActivos;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\Inventarios\Vouchers;
 use App\Services\Lector\ImpresionDesdePadron;
@@ -171,12 +172,24 @@ class GafeteController extends Controller
         abort_unless($request->user()->can('gafetes.editar') || $request->user()->can('accesos.editar'), 403);
         $empresaId = $this->empresaDeTrabajo($request);
 
-        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $gafete) {
+        // C-45 (DD-19): recepción común; un gafete que apareció dañado se recibe y se propone su baja
+        $danado = $request->input('resultado') === 'danado';
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $gafete, $danado) {
             $modelo = $this->buscarEnAlcance($request->user(), $gafete, 'gafetes.ver');
-            $this->gafetes->recibir($request->user(), $modelo);
+            $danado
+                ? HistorialActivos::conResultado('danado', fn () => $this->gafetes->recibir($request->user(), $modelo))
+                : $this->gafetes->recibir($request->user(), $modelo);
 
             return $modelo;
         });
+
+        if ($danado) {
+            $puedeBaja = $request->user()->can('gafetes.eliminar');
+
+            return redirect()->to(route('gafetes.index').'#gafete-'.$modelo->id)
+                ->with('ok', "Gafete {$modelo->nomenclatura} recibido dañado.".($puedeBaja ? ' Si ya no sirve, dalo de baja con su voucher.' : ' Avísale a tu supervisor si ya no sirve.'))
+                ->with('siguientes', $puedeBaja ? [['Dar de baja el gafete', route('gafetes.index', ['baja' => $modelo->id]).'#gafete-'.$modelo->id, 'bi-slash-circle']] : []);
+        }
 
         return redirect()->to(route('gafetes.index').'#gafete-'.$modelo->id)->with('ok', "Gafete {$modelo->nomenclatura} recibido: vuelve a estar DISPONIBLE para prestarse en caseta.");
     }

@@ -91,7 +91,10 @@
     <div class="hoja-resguardo-firmas">
         <div class="hoja-resguardo-firma">
             <div class="hoja-resguardo-firma-imagen">
-                <img src="{{ route('responsivas.firma', $responsiva->id) }}" alt="Firma de {{ $nombre }}">
+                {{-- C-45 (DD-19): sin firma digital (se firma a mano en esta hoja) queda el espacio en blanco --}}
+                @if ($responsiva->firma_ruta !== '')
+                    <img src="{{ route('responsivas.firma', $responsiva->id) }}" alt="Firma de {{ $nombre }}">
+                @endif
             </div>
             <div class="hoja-resguardo-linea">FIRMA DE CONFORMIDAD<br><span>{{ $nombre }}</span></div>
         </div>

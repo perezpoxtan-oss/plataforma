@@ -237,6 +237,7 @@
                                     </form>
                                 @endif
                             @endif
+                            @include('componentes.entregas-recepciones', ['erTipo' => 'llave', 'erId' => $l->id, 'erNombre' => $l->nomenclatura])
                             @include('componentes.ver-historial', ['registro' => \App\Models\Llave::class, 'id' => $l->id, 'nombre' => $l->nomenclatura])
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar llave {{ $l->nomenclatura }}"

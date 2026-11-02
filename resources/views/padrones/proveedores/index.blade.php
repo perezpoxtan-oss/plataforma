@@ -19,6 +19,8 @@
         </div>
     @else
         @php
+            // C-44: «Imprimir su etiqueta» lleva a Etiquetas QR ya filtrada (mismos permisos que esa pantalla)
+            $puedeEtiquetas = auth()->user()?->can('etiquetas_qr.ver') && array_key_exists('proveedor', app(\App\Services\Lector\EtiquetasMasivas::class)->tipos(auth()->user()));
             $estilos = \App\Http\Controllers\Padrones\ProveedorController::ESTILOS;
             $dialogo = old('_dialogo');
             $editandoId = is_string($dialogo) && str_starts_with($dialogo, 'editar-') ? (int) substr($dialogo, 7) : null;
@@ -157,6 +159,11 @@
                     <div class="ficha-footer">
                         <span class="etiqueta-estado {{ $p->restringido() ? 'inactivo' : ($p->activo ? 'activo' : 'inactivo') }}">{{ $p->restringido() ? 'RESTRINGIDA' : ($p->activo ? 'ACTIVA' : 'DE BAJA') }}</span>
                         <div class="d-flex gap-2">
+                            {{-- C-44: QR y tarjeta NFC/RFID de la empresa para el lector universal --}}
+                            @include('componentes.boton-identificacion', ['identTipo' => 'proveedor', 'identRegistro' => $p, 'identTitulo' => $p->nombre,
+                                'identDetalle' => $insignia, 'identEditable' => $editable,
+                                'identImprimir' => $puedeEtiquetas ? route('etiquetas.index', ['tipo' => 'proveedor', 'q' => $p->nombre]) : null,
+                                'identImprimirTexto' => 'Imprimir su etiqueta'])
                             @include('padrones.altas-por-verificar._boton', ['registro' => $p])
                             <a href="{{ route('proveedores.show', $p->id) }}" class="btn-ficha" aria-label="Ficha de {{ $p->nombre }}"><i class="bi bi-person-lines-fill me-1" aria-hidden="true"></i>Ficha</a>
                             @include('componentes.ver-historial', ['registro' => \App\Models\Proveedor::class, 'id' => $p->id, 'nombre' => $p->nombre])
@@ -290,4 +297,5 @@
     @endif
 </div>
 @include('componentes.restringir-acceso')
+@include('componentes.codigo-identificacion')
 @endsection

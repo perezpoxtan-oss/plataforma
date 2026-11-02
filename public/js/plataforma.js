@@ -10311,3 +10311,50 @@ document.addEventListener('click', function (e) {
         if (n + 1 >= maximo) { b.hidden = true; }
     });
 })();
+
+/* ==========================================================================
+   Etapa 8 · C-44: foto de la credencial con la cámara (computadora o celular).
+   «Usar la cámara» abre la cámara; «Tomar la foto» la recorta a 3:4 en el
+   lienzo y la deja en foto_camara (data URL). Sin cámara o sin permiso queda
+   el campo de archivo, que en el celular también abre la cámara.
+   ========================================================================== */
+(function () {
+    'use strict';
+    document.addEventListener('click', function (e) {
+        var abrir = e.target.closest('[data-camara-abrir]');
+        var tomar = e.target.closest('[data-camara-tomar]');
+        if (!abrir && !tomar) { return; }
+        var form = (abrir || tomar).closest('[data-camara-credencial]');
+        if (!form) { return; }
+        var video = form.querySelector('[data-camara-video]');
+        var lienzo = form.querySelector('[data-camara-lienzo]');
+        var boton = form.querySelector('[data-camara-tomar]');
+        if (abrir) {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                abrir.textContent = 'Este navegador no abre la cámara: elige un archivo';
+                return;
+            }
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false }).then(function (flujo) {
+                video.srcObject = flujo;
+                video.hidden = false;
+                lienzo.hidden = true;
+                boton.hidden = false;
+                video.play();
+            }).catch(function () {
+                abrir.textContent = 'No se pudo abrir la cámara: elige un archivo';
+            });
+            return;
+        }
+        var ancho = video.videoWidth, alto = video.videoHeight;
+        if (!ancho || !alto) { return; }
+        var recorteAncho = Math.min(ancho, Math.round(alto * 3 / 4));
+        var recorteAlto = Math.min(alto, Math.round(recorteAncho * 4 / 3));
+        var ctx = lienzo.getContext('2d');
+        ctx.drawImage(video, (ancho - recorteAncho) / 2, (alto - recorteAlto) / 2, recorteAncho, recorteAlto, 0, 0, lienzo.width, lienzo.height);
+        form.querySelector('[data-camara-dato]').value = lienzo.toDataURL('image/jpeg', 0.9);
+        if (video.srcObject) { video.srcObject.getTracks().forEach(function (t) { t.stop(); }); }
+        video.hidden = true;
+        lienzo.hidden = false;
+        boton.textContent = 'Foto lista: toca «Guardar foto»';
+    });
+})();

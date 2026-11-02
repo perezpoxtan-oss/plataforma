@@ -24,7 +24,7 @@ resumen: Imprimir de una sola vez las etiquetas QR de llaves, gafetes, equipos, 
 ## Cómo imprimir varias etiquetas
 
 1. Entra a **Padrones → Etiquetas QR**. Se abre la pestaña **Imprimir**.
-2. Arriba toca el **tipo** (por ejemplo **Llaves**). El número junto a cada tipo dice cuántos hay.
+2. Arriba toca el **tipo** (por ejemplo **Llaves**; también hay **Personas externas** y **Empresas externas**). El número junto a cada tipo dice cuántos hay.
 3. Si quieres, escribe en **Nombre, placas, serie, número...**, elige la sede, el estatus (**Solo activos**, **Solo de baja** o **Activos y de baja**) y las fechas **Alta desde** / **hasta**. Los filtros se aplican solos al elegir o al dejar de escribir, igual que en los padrones (el botón **Buscar** queda por si lo prefieres). **Quitar filtros** los limpia.
    La búsqueda revisa todo el padrón: aunque tengas miles de registros, encuentra el que buscas (se muestran hasta 500 por tipo; si son más, acota con la búsqueda o la sede).
 4. Marca las casillas de las etiquetas que quieras, o **Marcar todas**.
@@ -131,6 +131,9 @@ Si escaneas el QR **con la cámara del celular, fuera de la plataforma** (sin ab
 | Una **llave en caseta** | **Prestar**: abre «Prestar Llave» con esa llave ya elegida; solo escaneas el gafete. |
 | Un **equipo en una responsiva** | **Recibir (OK)**, o **Viene dañado o falta: abrir la responsiva**. |
 | Un **gafete en uso** | Te lleva directo a **Dar salida** en la Bitácora de accesos. |
+| Un **colaborador**, un **vehículo**, una **persona** o una **empresa externa** que **está en sitio** | **Dar salida**: abre la Bitácora de accesos con su tarjeta ya buscada; revisas el gafete y la identificación y confirmas. |
+| Un **colaborador**, un **vehículo**, una **persona** o una **empresa externa** que **no está en sitio** | **Nuevo ingreso**: abre el Registro Inteligente de Ingreso con sus datos ya elegidos; revisas y guardas. |
+| Alguien con el **acceso restringido** | Solo el aviso en rojo (con el motivo) y **Solo ver la ficha**. |
 | Cualquier otra cosa | Abre su ficha, como siempre. |
 
 Siempre puedes tocar **Solo ver la ficha**. Si tu rol no puede hacer esa acción (por ejemplo, no recibe llaves en esa sede), se abre la ficha.

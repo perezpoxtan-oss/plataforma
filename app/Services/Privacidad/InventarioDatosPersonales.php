@@ -58,7 +58,7 @@ final class InventarioDatosPersonales
             'conservacion' => 'Candidatos → Documentos y plazos (borrar a los 12 meses sin movimiento).'],
         'candidato_documentos' => ['trato' => 'referencia', 'tipo' => 'candidato', 'columnas' => ['nombre_original'], 'conservacion' => 'Con su candidato.'],
         // C-10: también los residentes (tipo = residente) con su vivienda (espacio_id), que es su domicilio
-        'colaboradores' => ['trato' => 'arco', 'tipo' => 'colaborador', 'columnas' => ['nombre', 'apellido_paterno', 'apellido_materno', 'nombre_normalizado', 'telefono', 'fecha_nacimiento', 'lugar_nacimiento', 'curp', 'rfc', 'nss', 'correo_personal', 'direccion_completa', 'espacio_id'],
+        'colaboradores' => ['trato' => 'arco', 'tipo' => 'colaborador', 'columnas' => ['nombre', 'apellido_paterno', 'apellido_materno', 'nombre_normalizado', 'telefono', 'fecha_nacimiento', 'lugar_nacimiento', 'curp', 'rfc', 'nss', 'correo_personal', 'direccion_completa', 'espacio_id', 'foto_credencial_ruta'],
             'conservacion' => self::LABORAL.' Residentes: mientras vivan en la sede; al darlos de baja, ARCO los muestra para rectificar o cancelar.'],
         'vacantes' => ['trato' => 'laboral', 'columnas' => ['contacto_nombre', 'contacto_telefono', 'contacto_correo'], 'conservacion' => self::LABORAL],
 

@@ -137,6 +137,11 @@
                                 @csrf
                                 @method('PATCH')
                                 <button type="submit" class="btn-no-regreso"><i class="bi bi-box-arrow-in-down me-1" aria-hidden="true"></i>Recibir</button>
+                                {{-- C-45 (DD-19): recepción común; OK viene marcado --}}
+                                <details class="recepcion-plegada">
+                                    <summary class="small">¿Viene dañado?</summary>
+                                    @include('componentes.recepcion-activo', ['raId' => 'gafete_'.$g->id, 'raNoRegreso' => false])
+                                </details>
                             </form>
                         @endif
                         @if ($g->actualizado_por_nombre && $g->updated_at?->ne($g->created_at))
@@ -170,6 +175,7 @@
                             @if ($imprimible)
                                 <a href="{{ route('gafetes.imprimir', ['gafetes' => [$g->id]]) }}" target="_blank" rel="noopener" class="btn-icono imprimir-qr" title="Imprimir este gafete" aria-label="Imprimir el gafete {{ $g->nomenclatura }}"><i class="bi bi-printer" aria-hidden="true"></i></a>
                             @endif
+                            @include('componentes.entregas-recepciones', ['erTipo' => 'gafete', 'erId' => $g->id, 'erNombre' => $g->nomenclatura])
                             @include('componentes.ver-historial', ['registro' => \App\Models\Gafete::class, 'id' => $g->id, 'nombre' => $g->nomenclatura])
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar nomenclatura, tipo y etiqueta" aria-label="Editar gafete {{ $g->nomenclatura }}"

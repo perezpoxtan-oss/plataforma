@@ -54,6 +54,17 @@
                 </div>
             </div>
             <p class="campo-ayuda mt-0">En las horas, <strong>0 = apagado</strong>. Ejemplo: 8 y 12. La ficha de la llave muestra cuánto lleva fuera y cambia de color; el aviso llega a la campana. <span class="valor-original">Valor original: 12 y 24 horas (encendido).</span></p>
+            {{-- C-45 (DD-19): garantía como ajuste por tipo de objeto --}}
+            <details class="mt-2" @if ($valor('llaves_garantia') !== $omision['llaves_garantia']) open @endif>
+                <summary class="small fw-semibold">Avanzado: garantía de la llave</summary>
+                <label class="campo-etiqueta" for="cfg_llaves_garantia">Identificación en garantía al prestar</label>
+                <select id="cfg_llaves_garantia" name="llaves_garantia" class="campo" @disabled(! $puedeEditar)>
+                    @foreach (\App\Support\AjustesCaseta::GARANTIA_LLAVES as $clave => $texto)
+                        <option value="{{ $clave }}" @selected($valor('llaves_garantia') === $clave)>{{ $texto }}</option>
+                    @endforeach
+                </select>
+                <p class="campo-ayuda mt-0"><span class="valor-original">Valor original: la caseta elige y puede ser «Ninguna».</span></p>
+            </details>
         @elseif ($tarjeta === 'responsivas')
             <div class="campo-grupo">
                 <div class="flex-fill">
@@ -66,6 +77,17 @@
                 </div>
             </div>
             <p class="campo-ayuda mt-0">En las horas, <strong>0 = apagado</strong>. Ejemplo: 8 (un turno) y 2. La responsiva muestra «Debe regresar a las…»; si no regresa, se pone en ámbar y avisa a la caseta, y después en rojo y avisa al supervisor. Los equipos «Fijo» no tienen hora de regreso. <span class="valor-original">Valor original: 0 y 0 (sin hora de regreso).</span></p>
+            {{-- C-45 (DD-19): firma como ajuste por tipo de objeto --}}
+            <details class="mt-2" @if ($valor('responsivas_firma') !== $omision['responsivas_firma']) open @endif>
+                <summary class="small fw-semibold">Avanzado: firma de la responsiva</summary>
+                <label class="campo-etiqueta" for="cfg_responsivas_firma">Cómo firma el colaborador</label>
+                <select id="cfg_responsivas_firma" name="responsivas_firma" class="campo" @disabled(! $puedeEditar)>
+                    @foreach (\App\Support\AjustesCaseta::FIRMA_RESPONSIVAS as $clave => $texto)
+                        <option value="{{ $clave }}" @selected($valor('responsivas_firma') === $clave)>{{ $texto }}</option>
+                    @endforeach
+                </select>
+                <p class="campo-ayuda mt-0">Con firma a mano, imprime la hoja de la responsiva y que la firme ahí. <span class="valor-original">Valor original: firma en la pantalla.</span></p>
+            </details>
         @elseif ($tarjeta === 'procedimientos')
             <label class="campo-etiqueta" for="cfg_procedimientos_acuse">Cómo se firma «Leí y entendí»</label>
             <select id="cfg_procedimientos_acuse" name="procedimientos_acuse" class="campo" @disabled(! $puedeEditar)>

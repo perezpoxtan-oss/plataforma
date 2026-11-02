@@ -94,6 +94,7 @@
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                             @php $voucherE = $e->estado === 'baja' ? ($vouchersInfo[$e->id] ?? null) : null; @endphp
                             <span class="badge-estado-eq estado-eq-{{ $e->estado }}"><i class="bi bi-circle-fill me-1" aria-hidden="true"></i>{{ $estados[$e->estado] ?? $e->estado }}{{ $voucherE ? ' · '.mb_strtoupper(\App\Models\VoucherReposicion::MOTIVOS[$voucherE->motivo] ?? $voucherE->motivo) : '' }}</span>
+                            @include('componentes.entregas-recepciones', ['erTipo' => 'equipo', 'erId' => $e->id, 'erNombre' => $e->numero_serie])
                             @include('componentes.ver-historial', ['registro' => \App\Models\Equipo::class, 'id' => $e->id, 'nombre' => $e->numero_serie])
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar equipo {{ $e->numero_serie }}"

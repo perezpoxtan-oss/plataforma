@@ -153,6 +153,8 @@
                 @foreach ($gruposEn('sec-estructura') as $grupo => $def)
                     @include('administracion.configuracion._avisos-grupo')
                 @endforeach
+                {{-- C-44 (Etapa 8): credencialización (vigencia, tecnología y reverso) --}}
+                @include('administracion.configuracion._credenciales', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
             </section>
         @endif
 

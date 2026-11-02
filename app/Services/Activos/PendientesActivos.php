@@ -2,17 +2,22 @@
 
 namespace App\Services\Activos;
 
+use App\Models\Credencial;
 use App\Models\MovimientoTransporte;
 use App\Models\PrestamoLlave;
 use App\Models\Procedimiento;
 use App\Models\Responsiva;
 use App\Models\User;
+use App\Services\Credenciales\AdministradorCredenciales;
 use App\Services\Permisos\Autorizador;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
 use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Services\Transporte\BitacoraTransporte;
 use App\Support\AjustesCaseta;
+use App\Support\AjustesCredenciales;
+use App\Support\EstadoActivo;
+use App\Support\HoraLocal;
 use App\Support\RelojVoBo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -89,6 +94,31 @@ class PendientesActivos
             $primera = collect($fila)->filter(fn ($n) => (int) $n > 0)->keys()->first() ?? array_key_first($tablas);
             $items[] = $this->item('activos_no_regreso', 'Llaves, gafetes o equipos que no regresaron', 'bi-exclamation-octagon', $total,
                 route($primera.'.index'), 'roja');
+        }
+
+        // C-44 (Etapa 8): credenciales que no regresaron (esperan recibirse o su baja con voucher)
+        if ($actor->can(AdministradorCredenciales::PERMISO)) {
+            $sedes = $actor->es_superadmin ? null : app(Autorizador::class)->sedesPermitidas($actor, AdministradorCredenciales::PERMISO);
+            $total = Credencial::query()->withoutGlobalScopes()->where('empresa_id', $empresaId)->where('estado', EstadoActivo::NO_REGRESO)
+                ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))->count();
+            if ($total > 0) {
+                $items[] = $this->item('credenciales_no_regreso', 'Credenciales que no regresaron', 'bi-person-vcard', $total,
+                    route('credenciales.index', ['estado' => 'no_regreso']), 'roja');
+            }
+            // Propuesta de credencialización: por vencer (ámbar) o ya vencidas y aún en uso (rojo), con su reloj
+            $ajustes = AjustesCredenciales::de($empresaId);
+            if ($ajustes['vigencia'] !== 'sin') {
+                $hoy = Carbon::now(app(HoraLocal::class)->zona());
+                $proximas = Credencial::query()->withoutGlobalScopes()->where('empresa_id', $empresaId)
+                    ->whereIn('estado', [EstadoActivo::DISPONIBLE, EstadoActivo::ASIGNADO])->whereNotNull('vence_en')
+                    ->whereDate('vence_en', '<=', $hoy->copy()->addDays($ajustes['aviso_dias'])->toDateString())
+                    ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))->pluck('vence_en');
+                if ($proximas->isNotEmpty()) {
+                    $vencidas = $proximas->filter(fn ($f) => substr((string) $f, 0, 10) < $hoy->toDateString())->count();
+                    $items[] = $this->item('credenciales_por_vencer', $vencidas > 0 ? 'Credenciales vencidas o por vencer' : 'Credenciales por vencer', 'bi-person-vcard',
+                        $proximas->count(), route('credenciales.index', ['estado' => $vencidas > 0 ? 'vencidas' : 'por_vencer']), $vencidas > 0 ? 'roja' : 'ambar');
+                }
+            }
         }
 
         return $items;

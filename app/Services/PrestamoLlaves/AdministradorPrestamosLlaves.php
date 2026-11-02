@@ -16,6 +16,7 @@ use App\Services\Permisos\Autorizador;
 use App\Support\AjustesCaseta;
 use App\Support\EstadoActivo;
 use App\Support\Receptor;
+use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -128,6 +129,10 @@ class AdministradorPrestamosLlaves
     public function prestar(User $actor, array $entrada): PrestamoLlave
     {
         $datos = $this->validar($entrada);
+        // C-45 (DD-19): la empresa puede exigir identificación en garantía (Configuración → Activos)
+        if ($datos['tipo_garantia'] === 'ninguna' && AjustesCaseta::valor(app(EmpresaDeTrabajo::class)->id($actor), 'llaves_garantia') === 'obligatoria') {
+            throw ValidationException::withMessages(['tipo_garantia' => 'Tu empresa pide identificación en garantía para prestar llaves: elige cuál deja.']);
+        }
         $sede = $this->sedeValida($actor, (int) $datos['sede_id']);
         // C-16: se presta a un colaborador, a una persona del padrón (p. ej. el técnico de un proveedor) o a una empresa externa
         [$tipoReceptor, $receptor] = $this->receptorValido($entrada, $sede);
