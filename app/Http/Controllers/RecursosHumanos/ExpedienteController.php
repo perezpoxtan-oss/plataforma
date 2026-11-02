@@ -24,6 +24,7 @@ use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Credenciales\AdministradorCredenciales;
 use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Procedimientos\AdministradorProcedimientos;
+use App\Support\AjustesCredenciales;
 use App\Support\EstadoActivo;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -160,15 +161,19 @@ class ExpedienteController extends Controller
 
             return view('organizacion.colaboradores.expediente', [
                 'credencial' => $credencial,
+                'ajustesCredencial' => AjustesCredenciales::de($c->empresa_id),
                 'puedeCredencial' => $puedeCredencial && ! $pendiente,
                 'c' => $c,
                 'movimientos' => $movimientos,
                 'autores' => $autores,
                 'pendiente' => $pendiente,
                 'identEditable' => $editable && ! $pendiente,
-                'imprimirCredencial' => $actor->can('etiquetas_qr.ver') && $actor->can('colaboradores.editar') && ! $pendiente
+                // C-44: con credencial vigente y su permiso, «Imprimir credencial» es la CR80; si no, la etiqueta QR de siempre
+                'imprimirCredencial' => $puedeCredencial && ! $pendiente && AdministradorCredenciales::esVigente($credencial, $c)
+                    ? route('credenciales.imprimir', ['credenciales' => [$credencial->id]])
+                    : ($actor->can('etiquetas_qr.ver') && $actor->can('colaboradores.editar') && ! $pendiente
                     ? route('etiquetas.index', ['tipo' => 'colaborador', 'q' => $c->num_empleado ?: $c->nombreCompleto()])
-                    : null,
+                    : null),
                 'personales' => $personales,
                 'documentos' => $documentos,
                 'nombres' => app(DocumentosParaContratar::class)->nombres($empresaId),

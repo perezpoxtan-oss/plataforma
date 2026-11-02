@@ -77,9 +77,9 @@ class EtapaOchoCredencialesTest extends TestCase
 
         $c = $this->colaborador();
         $this->actingAs($this->rh)->get(route('colaboradores.expediente', $c->id))->assertOk()
-            ->assertSee('Credencial')->assertSee('Todavía no se le ha dado salida a su credencial.')->assertSee('Dar salida');
+            ->assertSee('Credencial')->assertSee('Todavía no tiene credencial. Toma su foto y emítela.')->assertSee('Emitir credencial')->assertSee('Tomar foto');
         // Quien no la maneja no ve los botones ni la sección vacía
-        $this->actingAs($agente)->get(route('colaboradores.expediente', $c->id))->assertOk()->assertDontSee('Todavía no se le ha dado salida');
+        $this->actingAs($agente)->get(route('colaboradores.expediente', $c->id))->assertOk()->assertDontSee('Todavía no tiene credencial');
         $this->actingAs($agente)->post(route('credenciales.salida', $c->id))->assertForbidden();
     }
 
@@ -101,7 +101,7 @@ class EtapaOchoCredencialesTest extends TestCase
         $this->assertSame([EstadoActivo::ASIGNADO, 'CRED-000001'], [$cred->fresh()->estado, $cred->fresh()->folio]);
         $this->assertSame(1, $this->enEmpresa(fn () => Credencial::count()));
 
-        $this->assertSame(['salida', 'recepcion', 'salida'], $this->enEmpresa(fn () => MovimientoActivo::where('activo_tipo', 'credencial')->orderBy('id')->pluck('accion')->all()));
+        $this->assertSame(['emision', 'salida', 'recepcion', 'salida'], $this->enEmpresa(fn () => MovimientoActivo::where('activo_tipo', 'credencial')->orderBy('id')->pluck('accion')->all()));
         $this->actingAs($this->rh)->get(route('activos.historial', ['credencial', $cred->id]))->assertOk()->assertSee('CRED-000001')->assertSee('Marta Num900');
     }
 
@@ -149,7 +149,7 @@ class EtapaOchoCredencialesTest extends TestCase
         $cred = $this->credencial($c);
         $this->actingAs($this->rh)->patch(route('credenciales.recibir', $cred->id), ['resultado' => 'danado'])->assertSessionHas('ok');
         $this->assertSame([EstadoActivo::BAJA, 'reposicion', null], [$cred->fresh()->estado, $cred->fresh()->baja_motivo, $cred->fresh()->voucher_id]);
-        $this->assertSame(['salida', 'recepcion/danado', 'baja'], $this->enEmpresa(fn () => MovimientoActivo::where('activo_tipo', 'credencial')->orderBy('id')->get()
+        $this->assertSame(['emision', 'salida', 'recepcion/danado', 'baja'], $this->enEmpresa(fn () => MovimientoActivo::where('activo_tipo', 'credencial')->orderBy('id')->get()
             ->map(fn ($m) => $m->accion.($m->resultado && $m->resultado !== 'ok' ? '/'.$m->resultado : ''))->all()));
         $this->actingAs($this->rh)->patch(route('credenciales.recibir', $cred->id), ['resultado' => 'ok'])->assertSessionHasErrors('credencial');
         $this->actingAs($this->rh)->patch(route('credenciales.recibir', $cred->id), ['resultado' => 'otro'])->assertSessionHasErrors('resultado');

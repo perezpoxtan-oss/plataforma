@@ -15,7 +15,9 @@ use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Services\Transporte\BitacoraTransporte;
 use App\Support\AjustesCaseta;
+use App\Support\AjustesCredenciales;
 use App\Support\EstadoActivo;
+use App\Support\HoraLocal;
 use App\Support\RelojVoBo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -101,7 +103,21 @@ class PendientesActivos
                 ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))->count();
             if ($total > 0) {
                 $items[] = $this->item('credenciales_no_regreso', 'Credenciales que no regresaron', 'bi-person-vcard', $total,
-                    route('colaboradores.index'), 'roja');
+                    route('credenciales.index', ['estado' => 'no_regreso']), 'roja');
+            }
+            // Propuesta de credencialización: por vencer (ámbar) o ya vencidas y aún en uso (rojo), con su reloj
+            $ajustes = AjustesCredenciales::de($empresaId);
+            if ($ajustes['vigencia'] !== 'sin') {
+                $hoy = Carbon::now(app(HoraLocal::class)->zona());
+                $proximas = Credencial::query()->withoutGlobalScopes()->where('empresa_id', $empresaId)
+                    ->whereIn('estado', [EstadoActivo::DISPONIBLE, EstadoActivo::ASIGNADO])->whereNotNull('vence_en')
+                    ->whereDate('vence_en', '<=', $hoy->copy()->addDays($ajustes['aviso_dias'])->toDateString())
+                    ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))->pluck('vence_en');
+                if ($proximas->isNotEmpty()) {
+                    $vencidas = $proximas->filter(fn ($f) => substr((string) $f, 0, 10) < $hoy->toDateString())->count();
+                    $items[] = $this->item('credenciales_por_vencer', $vencidas > 0 ? 'Credenciales vencidas o por vencer' : 'Credenciales por vencer', 'bi-person-vcard',
+                        $proximas->count(), route('credenciales.index', ['estado' => $vencidas > 0 ? 'vencidas' : 'por_vencer']), $vencidas > 0 ? 'roja' : 'ambar');
+                }
             }
         }
 

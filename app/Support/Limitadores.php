@@ -46,6 +46,9 @@ final class Limitadores
         'novedades.store' => 60,
         'novedades.coincidencias' => 60,
         'pases-salida.verificar' => 60,
+        // C-44 (Etapa 8): verificación pública de credenciales (sin sesión, por IP) y la foto
+        'credenciales.verificar' => 30,
+        'credenciales.foto' => 20,
         'pases-salida.firmar' => 60,
         'lost_found.umbrales.guardar' => 30,
         'lost_found.articulos.cerrar' => 60,

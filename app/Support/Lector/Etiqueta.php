@@ -39,7 +39,7 @@ final class Etiqueta
     public static function codigoDeUrl(string $valor): ?string
     {
         $valor = trim($valor);
-        if (preg_match('#/(?:e|qr)/([A-Za-z0-9]{8,32})/?(?:[?\#].*)?$#', $valor, $m)) {
+        if (preg_match('#/(?:e|qr|credencial)/([A-Za-z0-9]{8,32})/?(?:[?\#].*)?$#', $valor, $m)) {
             return strtolower($m[1]);
         }
 

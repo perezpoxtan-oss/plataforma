@@ -22,6 +22,7 @@ class MovimientoActivo extends Model
 
     /** Texto de cada acción con los verbos de la plataforma. */
     public const ACCIONES = [
+        'emision' => 'Emitida',
         'salida' => 'Dar salida',
         'recepcion' => 'Recibir',
         'no_regreso' => 'No regresó',

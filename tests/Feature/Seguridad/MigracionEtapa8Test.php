@@ -31,6 +31,7 @@ class MigracionEtapa8Test extends TestCase
         '2026_11_18_000100_personas_y_empresas_externas_en_el_lector',
         '2026_11_18_000200_crear_movimientos_activo',
         '2026_11_18_000300_credenciales_de_colaboradores',
+        '2026_11_18_000400_credenciales_fase_uno',
     ];
 
     private Empresa $empresa;
@@ -70,6 +71,7 @@ class MigracionEtapa8Test extends TestCase
         return [
             'personas' => Schema::getColumnListing('personas'),
             'proveedores' => Schema::getColumnListing('proveedores'),
+            'colaboradores' => Schema::getColumnListing('colaboradores'),
             'movimientos_activo' => Schema::hasTable('movimientos_activo') ? Schema::getColumnListing('movimientos_activo') : null,
             'credenciales' => Schema::hasTable('credenciales') ? Schema::getColumnListing('credenciales') : null,
             'permisos_credencial' => DB::table('rol_permisos as rp')->join('modulo_acciones as ma', 'ma.id', '=', 'rp.modulo_accion_id')
@@ -98,6 +100,7 @@ class MigracionEtapa8Test extends TestCase
         $this->assertFalse(Schema::hasColumn('personas', 'codigo_qr'));
         $this->assertFalse(Schema::hasColumn('proveedores', 'etiqueta_nfc'));
         $this->assertFalse(DB::table('acciones')->where('clave', 'credencial')->exists());
+        $this->assertFalse(Schema::hasColumn('colaboradores', 'foto_credencial_ruta'));
         // Los datos de los padrones siguen ahí
         $this->assertSame('Ana Externa', DB::table('personas')->where('id', $persona->id)->value('nombre_completo'));
 

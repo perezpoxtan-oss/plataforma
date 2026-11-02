@@ -32,17 +32,18 @@ Comprueba: la llave está en caseta, el aviso te dice qué hacer si ya no sirve 
 ## Práctica 3 · La credencial del colaborador
 
 1. Abre la ficha del colaborador → **Código y etiqueta** → **Credencial**.
-2. Toca **Dar salida**. Luego **Recibir** con **OK**.
-3. Vuelve a tocar **Dar salida**.
+2. **Tomar foto** → **Usar la cámara** → **Tomar la foto** → **Guardar foto**.
+3. **Emitir credencial** → **Imprimir credencial** (frente y reverso en CR80) → **Dar salida**.
+4. Con la cámara de un celular sin sesión escanea el QR impreso.
 
-Comprueba: el folio es el mismo (CRED-…) y pasó por ASIGNADO → DISPONIBLE → ASIGNADO.
+Comprueba: la credencial está en ASIGNADO y el celular muestra **Vigente** con la foto y el nombre, sin ningún otro dato.
 
-## Práctica 4 · Credencial perdida
+## Práctica 4 · Reponer una credencial perdida
 
-1. En la credencial abre **Dar de baja con voucher**, elige **Extraviado**, marca **Con cobro al colaborador** y escribe el monto. Toca **Dar de baja**.
-2. Intenta escanear el QR de la credencial perdida.
+1. En la credencial abre **Reponer credencial**, elige **Extraviada**, marca **Con cobro al colaborador** y escribe el monto. Toca **Reponer credencial**.
+2. Vuelve a escanear el QR de la credencial anterior.
 
-Comprueba: se generó el voucher (origen **Credencial**) y el QR viejo ya no abre al colaborador. Imprime la nueva y dale salida.
+Comprueba: se generó el voucher (origen **Credencial**), hay una credencial nueva con otro folio y la anterior dice **No vigente**. Imprime la nueva y dale salida. En **Estructura → Colaboradores → Credenciales** filtra **Vigentes** y **De baja**.
 
 ## Práctica 5 · Garantía y firma por tipo
 

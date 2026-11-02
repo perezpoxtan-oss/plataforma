@@ -4,6 +4,7 @@ namespace App\Services\Lector;
 
 use App\Models\Acceso;
 use App\Models\Colaborador;
+use App\Models\Credencial;
 use App\Models\Equipo;
 use App\Models\EquipoResponsiva;
 use App\Models\Gafete;
@@ -15,6 +16,7 @@ use App\Models\Responsiva;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Services\Accesos\ConsultaAccesos;
+use App\Services\Credenciales\AdministradorCredenciales;
 use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
 use App\Services\Responsivas\AdministradorResponsivas;
@@ -233,7 +235,16 @@ class AccionesLector
             return null;
         }
 
-        return $base + ['estado' => 'No está en sitio.',
+        // Propuesta de credencialización (fase 2): la caseta ve si la credencial que trae ya no vale
+        $aviso = '';
+        if ($registro instanceof Colaborador) {
+            $ultima = Credencial::where('colaborador_id', $registro->id)->latest('id')->first();
+            if ($ultima !== null && ! AdministradorCredenciales::esVigente($ultima, $registro)) {
+                $aviso = ' Su credencial '.$ultima->folio.' ya no es vigente ('.mb_strtolower($ultima->textoEstado()).'): pide otra identificación y avisa a Recursos Humanos.';
+            }
+        }
+
+        return $base + ['estado' => 'No está en sitio.'.$aviso,
             'acciones' => [[
                 'etiqueta' => 'Nuevo ingreso', 'icono' => 'bi-person-plus-fill', 'metodo' => 'GET', 'principal' => true,
                 'url' => route('accesos.ingreso-desde-lector', [$tipo, $registro->getKey()]),

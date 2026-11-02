@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Administracion\AjustesCasetaController;
+use App\Http\Controllers\Administracion\AjustesCredencialesController;
 use App\Http\Controllers\Administracion\AuditoriaController;
 use App\Http\Controllers\Administracion\CatalogoComercialController;
 use App\Http\Controllers\Administracion\ConfiguracionController;
@@ -51,6 +52,7 @@ use App\Http\Controllers\Publico\PagoWebhookController;
 use App\Http\Controllers\Publico\PlanesController;
 use App\Http\Controllers\Publico\PrivacidadController as PublicoPrivacidadController;
 use App\Http\Controllers\Publico\PwaController;
+use App\Http\Controllers\Publico\VerificarCredencialController;
 use App\Http\Controllers\RecursosHumanos\AutorizacionController;
 use App\Http\Controllers\RecursosHumanos\CandidatoController;
 use App\Http\Controllers\RecursosHumanos\EntrevistaController;
@@ -775,6 +777,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/colaboradores/{colaborador}/credencial', 'darSalida')->whereNumber('colaborador')->name('credenciales.salida');
         Route::patch('/credenciales/{credencial}/recibir', 'recibir')->whereNumber('credencial')->name('credenciales.recibir');
         Route::post('/credenciales/{credencial}/baja', 'baja')->whereNumber('credencial')->name('credenciales.baja');
+        Route::post('/colaboradores/{colaborador}/credencial/emitir', 'emitir')->whereNumber('colaborador')->name('credenciales.emitir');
+        Route::post('/colaboradores/{colaborador}/credencial/foto', 'foto')->whereNumber('colaborador')->middleware('throttle:credenciales.foto')->name('credenciales.foto');
+        Route::post('/credenciales/{credencial}/reponer', 'reponer')->whereNumber('credencial')->name('credenciales.reponer');
+        Route::get('/credenciales', 'index')->name('credenciales.index');
+        Route::get('/credenciales/imprimir', 'hoja')->name('credenciales.imprimir');
+        Route::post('/credenciales/imprimir', 'imprimirSeleccion')->name('credenciales.imprimir-seleccion');
     });
 
     // Padrones: Manual (ayuda dentro de la plataforma: toda sesión entra; cada página se filtra por los módulos que el usuario puede ver; ver docs/tecnico/manual.md)
@@ -793,6 +801,8 @@ Route::middleware('auth')->group(function () {
 
     // Mejoras activos (ADR-0014): ajustes de caseta y recibir una llave escaneándola desde la pantalla principal
     Route::put('/configuracion/caseta', [AjustesCasetaController::class, 'update'])->name('configuracion.caseta');
+    // C-44 (Etapa 8): ajustes de credenciales (vigencia, tecnología y reverso)
+    Route::put('/configuracion/credenciales', [AjustesCredencialesController::class, 'update'])->name('configuracion.credenciales');
     // C-22: «Reloj y suplente» (horas generales, avisos y lo de cada módulo en Avanzado)
     Route::put('/configuracion/relojes', [RelojesController::class, 'update'])->name('configuracion.relojes');
     Route::post('/prestamo-llaves/recibir', [PrestamoLlaveController::class, 'recibirEscaneada'])->middleware('throttle:prestamo_llaves.recibir-escaneada')->name('prestamo_llaves.recibir-escaneada');
@@ -851,6 +861,11 @@ Route::controller(PublicoPrivacidadController::class)->group(function () {
     Route::post('/privacidad/{codigo}/solicitud', 'guardar')->where('codigo', '[a-z0-9]{12}')->middleware('throttle:privacidad-enviar')->name('privacidad.empresa.solicitud.guardar');
 });
 // Fin Público: privacidad
+
+// Público: verificación de una credencial (C-44, propuesta de credencialización): el QR impreso abre «Vigente» con foto y
+// nombre o «No vigente», sin datos personales; con sesión iniciada lleva a la acción de la caseta. Límite por IP.
+Route::get('/credencial/{codigo}', [VerificarCredencialController::class, 'show'])
+    ->where('codigo', '[A-Za-z0-9]{8,32}')->middleware('throttle:credenciales.verificar')->name('credenciales.verificar');
 
 // Público: página de planes (SIN sesión; solo si está publicada; ver docs/tecnico/catalogo-comercial.md)
 // Limitadores con nombre (AppServiceProvider): consultar y enviar la solicitud llevan contadores separados por IP

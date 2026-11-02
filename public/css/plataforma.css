@@ -4890,3 +4890,19 @@ html.modo-noche .aviso-padron-acceso { background: rgba(245,158,11,0.12); color:
     .ficha-footer:has(.acciones-ficha-llave) .pastilla-alcance { flex: 1 1 100%; }
     .acciones-ficha-llave { flex: 1 1 100%; justify-content: space-between; }
 }
+
+/* Etapa 8 · C-44: credencial (verificación pública, ficha y lista) */
+.verificacion-credencial { text-align: center; padding: 1rem; border-radius: 14px; }
+.verificacion-credencial.vigente { background: #ecfdf5; border: 2px solid #059669; }
+.verificacion-credencial.no-vigente { background: #fef2f2; border: 2px solid #dc2626; }
+.verificacion-estado { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; }
+.vigente .verificacion-estado { color: #047857; }
+.no-vigente .verificacion-estado { color: #b91c1c; }
+.verificacion-foto { display: block; margin: 0 auto 0.75rem; width: 150px; height: 200px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borde); }
+.foto-credencial { width: 120px; height: 160px; object-fit: cover; border-radius: 10px; border: 1px solid var(--borde); background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 2.5rem; }
+.camara-credencial video, .camara-credencial canvas { width: 240px; max-width: 100%; border-radius: 10px; background: #111; }
+.lista-credenciales .fila-credencial { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.75rem; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--borde); }
+.pastillas-credenciales { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
+.pastillas-credenciales a { padding: 0.3rem 0.75rem; border: 1px solid var(--borde); border-radius: 999px; text-decoration: none; font-size: 0.85rem; min-height: 36px; display: inline-flex; align-items: center; }
+.pastillas-credenciales a.activa { background: #2563eb; border-color: #2563eb; color: #fff; }
+.insignia-estado-activo.estado-activo-vencida { background: #fef3c7; color: #92400e; }

@@ -5,6 +5,7 @@ namespace Tests\Feature\SeguridadAuditoria;
 use App\Console\Commands\CrearDatosDemo;
 use App\Models\AccidenteFirma;
 use App\Models\Colaborador;
+use App\Models\Credencial;
 use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EquipoPc;
@@ -331,7 +332,9 @@ class RecorridoPantallasTest extends TestCase
             // Etapa 8 (C-44 y C-45): «Nuevo ingreso» desde el lector y «Entregas y recepciones»
             'accesos.ingreso-desde-lector' => collect(['colaborador' => Colaborador::class, 'vehiculo' => Vehiculo::class, 'persona' => Persona::class, 'proveedor' => Proveedor::class])
                 ->map(fn ($m, $tipo) => ['tipo' => $tipo, 'id' => $primero($m)])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
-            'activos.historial' => collect(['llave' => Llave::class, 'gafete' => Gafete::class, 'equipo' => Equipo::class])
+            'credenciales.verificar' => Credencial::withoutGlobalScopes()->where('empresa_id', $e)->whereNotNull('codigo_qr')->limit(3)->pluck('codigo_qr')
+                ->map(fn ($c) => ['codigo' => $c])->all(),
+            'activos.historial' => collect(['llave' => Llave::class, 'gafete' => Gafete::class, 'equipo' => Equipo::class, 'credencial' => Credencial::class])
                 ->map(fn ($m, $tipo) => ['tipo' => $tipo, 'id' => $primero($m)])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
             'configuracion.respaldos.descargar' => [],
             'traslado.descargar' => [], // enlace temporal firmado: se prueba en TrasladoTest

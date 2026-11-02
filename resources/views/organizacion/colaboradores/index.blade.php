@@ -51,6 +51,10 @@
             </div>
             <div class="barra-filtros justify-content-md-end">
                 {{-- C-43 (E-13): «Exportar a Excel» con su permiso, sin datos personales --}}
+                {{-- C-44 (Etapa 8): lista de credenciales (vigentes, por vencer, vencidas, sin credencial) --}}
+                @can('colaboradores.credencial')
+                    <a href="{{ route('credenciales.index') }}" class="btn btn-outline-secondary" style="min-height:44px;border-radius:10px;"><i class="bi bi-person-vcard me-1" aria-hidden="true"></i>Credenciales</a>
+                @endcan
                 @can('colaboradores.exportar')
                     <a href="{{ route('colaboradores.exportar') }}" class="btn btn-outline-secondary" style="min-height:44px;border-radius:10px;"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
                 @endcan
