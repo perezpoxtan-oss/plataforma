@@ -400,7 +400,8 @@ class AccesoController extends Controller
     {
         $autorizacion = $acceso->getAttributes()['autorizacion'] ?? null;
         // C-09: la caseta llamó al residente o a la habitación
-        $aQuien = $acceso->persona_visita ?: ($acceso->habitacion ? $acceso->terminos()->espacio().' '.$acceso->habitacion : 'quien visita');
+        // Revisión Etapa 5 (A-4): el área común se nombra «Área común», no «Vivienda»
+        $aQuien = $acceso->persona_visita ?: ($acceso->habitacion ? $acceso->terminos()->nombreLugar($acceso->espacio_id ? $acceso->espacio : null).' '.$acceso->habitacion : 'quien visita');
         if ($autorizacion === Acceso::LLAMADA_NO) {
             return "Quedó la constancia: {$aQuien} no autorizó y {$acceso->nombre} no entra. ¿Otro ingreso? Toca Nuevo Ingreso.";
         }

@@ -172,7 +172,8 @@ class EtapaCincoTest extends TestCase
         $col = fn (int $id) => DB::table('colaboradores')->where('id', $id)->first();
         $this->assertSame(['residente', $v['101']->id], [$col($r101)->tipo, (int) $col($r101)->espacio_id]);
         $this->assertSame(['residente', $v['B-101']->id], [$col($rb101)->tipo, (int) $col($rb101)->espacio_id], 'R-B101 se deduce como B-101');
-        $this->assertSame(['residente', null], [$col($rSin)->tipo, $col($rSin)->espacio_id], 'Sin vivienda que coincida: se queda sin vivienda');
+        // Revisión Etapa 5 (A-2): sin vivienda que coincida no se sabe si vive ahí: Personal por confirmar
+        $this->assertSame(['personal', null, true], [$col($rSin)->tipo, $col($rSin)->espacio_id, (bool) $col($rSin)->tipo_por_confirmar], 'Sin vivienda que coincida: Personal por confirmar');
         $this->assertSame('personal', $col($guardia)->tipo, 'Quien tiene cuenta es personal');
         $this->assertSame('personal', $col($deHotel)->tipo, 'En hotel nada cambia');
         $this->assertSame($r101, (int) DB::table('accesos')->where('id', $proveedor)->value('visita_colaborador_id'), 'El host pasa a «a quién viene» sin perderse');

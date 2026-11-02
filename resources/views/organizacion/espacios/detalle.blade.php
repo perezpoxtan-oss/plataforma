@@ -1,7 +1,8 @@
 @extends('layouts.app')
 
 @php
-    $sing = $etiquetas['area_especifica']['singular'];
+    // Revisión Etapa 5 (A-4): en condominio y fraccionamiento, el área común (alberca, salón) no se titula «Vivienda»
+    $sing = $nodo->esAreaComun() && \App\Support\Terminos::actual()->esResidencial() ? 'Área común' : $etiquetas['area_especifica']['singular'];
     // Al reabrir el diálogo de elemento tras un error, conserva el área elegida
     $reabrirElemento = old('_form') === 'dialogoNuevoElemento';
     $padreElemento = $reabrirElemento ? (int) old('padre_id') : ($areas->first()?->id ?? $nodo->id);

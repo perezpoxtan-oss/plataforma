@@ -15,6 +15,7 @@ use App\Support\DependenciasModulos;
 use App\Support\Entrada;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -73,6 +74,11 @@ class ColaboradorController extends Controller
             return view('organizacion.colaboradores.index', [
                 'sinEmpresa' => false,
                 'quienVerifica' => DependenciasModulos::quienVerificaAltas(),
+                // Revisión Etapa 5 (A-2): en residenciales, quienes la conversión dejó como Personal «por confirmar»
+                'porConfirmarTipo' => $puedeEditar && Terminos::actual()->esResidencial()
+                    ? $this->colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.editar')->personal()
+                        ->where('colaboradores.tipo_por_confirmar', true)->where('colaboradores.activo', true)->count()
+                    : 0,
                 'colaboradores' => $lista,
                 'sedesFiltro' => $permitidasVer === null ? $sedesActivas : $sedesActivas->whereIn('id', $permitidasVer)->values(),
                 'departamentosFiltro' => Departamento::where(fn ($q) => $q->where('activo', true)
@@ -360,7 +366,9 @@ class ColaboradorController extends Controller
             $sedes,
             $request->boolean('sin_usuario'),
             $request->filled('usuario') ? (int) $request->query('usuario') : null,
-            true, // C-10: Usuarios y Pases buscan al personal (los residentes están en Padrones → Residentes)
+            // C-10: Usuarios busca solo al personal (las cuentas son del personal). Revisión Etapa 5 (A-3): Pases de salida
+            // pide «residentes=1» y busca también a los residentes, igual que el lector al escanear y el receptor general
+            ! $request->boolean('residentes'),
         ));
 
         return response()->json($resultado);

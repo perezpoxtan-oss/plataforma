@@ -32,6 +32,14 @@
             </div>
         @endif
 
+        {{-- Revisión Etapa 5 (A-2): personas que la conversión no supo si son residentes --}}
+        @if (($porConfirmarTipo ?? 0) > 0)
+            <div class="alert alert-warning d-flex align-items-center gap-2 aviso mb-3" role="status">
+                <i class="bi bi-person-exclamation" aria-hidden="true"></i>
+                <span>Hay <strong>{{ $porConfirmarTipo }}</strong> {{ $porConfirmarTipo === 1 ? 'persona' : 'personas' }} sin cuenta que {{ $porConfirmarTipo === 1 ? 'puede ser residente' : 'pueden ser residentes' }}. <a href="{{ route('residentes.index') }}#por-confirmar">Confirmar en Residentes</a>.</span>
+            </div>
+        @endif
+
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-person-vcard text-success" aria-hidden="true"></i></div>

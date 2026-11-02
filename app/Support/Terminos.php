@@ -198,11 +198,17 @@ final class Terminos
         return Etiquetas::plural($this->espacio());
     }
 
-    /** Pastilla junto al nombre en la Bitácora de accesos: «Hab. 204», «Depto. 101», «Casa 12». */
-    public function abreviaturaEspacio(?string $tipoAcceso = null): string
+    /**
+     * Pastilla junto al nombre en la Bitácora de accesos: «Hab. 204», «Depto. 101», «Casa 12».
+     * Revisión Etapa 5 (A-4): en residenciales, un área común (alberca, salón) dice «Área común», no «Viv.».
+     */
+    public function abreviaturaEspacio(?string $tipoAcceso = null, ?Espacio $lugar = null): string
     {
         if ($this->esHotel() || $tipoAcceso === 'huesped') {
             return 'Hab.';
+        }
+        if ($lugar !== null && $lugar->esAreaComun() && $this->esResidencial()) {
+            return 'Área común';
         }
 
         return match (mb_strtolower($this->espacio())) {

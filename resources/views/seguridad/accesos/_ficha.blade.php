@@ -63,7 +63,7 @@
     @endif
 
     {{-- C-30: la habitación o vivienda que no está en el catálogo se marca «sin catálogo» --}}
-    <h3 class="ficha-acceso-nombre">{{ $a->nombre }}@if ($a->habitacion) <span class="badge-hab" @if (! $a->espacio_id) title="Sin catálogo: no está en Zonas y edificios" @endif>{{ $a->terminos()->abreviaturaEspacio($a->tipo) }} {{ $a->habitacion }}@if (! $a->espacio_id) <i class="bi bi-question-circle" aria-hidden="true"></i>@endif</span>@endif</h3>
+    <h3 class="ficha-acceso-nombre">{{ $a->nombre }}@if ($a->habitacion) <span class="badge-hab" @if (! $a->espacio_id) title="Sin catálogo: no está en Zonas y edificios" @endif>{{ $a->terminos()->abreviaturaEspacio($a->tipo, $a->espacio_id ? $a->espacio : null) }} {{ $a->habitacion }}@if (! $a->espacio_id) <i class="bi bi-question-circle" aria-hidden="true"></i>@endif</span>@endif</h3>
     {{-- Ronda 8 (AC-05): si lo buscado es un acompañante, se avisa de quién viene acompañando (el filtro en vivo las muestra u oculta) --}}
     @php $coincide = \App\Services\Accesos\ConsultaAccesos::acompananteQueCoincide($a, is_string(request('q')) ? request('q') : null); @endphp
     @foreach ($a->acompanantes as $ac)

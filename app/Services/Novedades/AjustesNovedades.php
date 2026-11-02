@@ -198,8 +198,10 @@ class AjustesNovedades
 
     /**
      * @param  array<string, mixed>  $entrada  nombre_opcion (Novedades | Incidentes | otro), nombre_menu (solo con «otro»; sin opción, como antes), categoria_hallazgo_pc
+     * @param  bool  $departamentoAccidentesDeFabrica  «Restablecer valor original» (revisión Etapa 5, A-6): se borra lo
+     *                                                 guardado y vuelve la regla de fábrica (el departamento de Recursos Humanos)
      */
-    public function guardar(User $actor, Empresa $empresa, array $entrada): void
+    public function guardar(User $actor, Empresa $empresa, array $entrada, bool $departamentoAccidentesDeFabrica = false): void
     {
         $opcion = $entrada['nombre_opcion'] ?? null;
         if (in_array($opcion, self::NOMBRES_SUGERIDOS, true)) {
@@ -244,7 +246,7 @@ class AjustesNovedades
         $nombre = $nombre === '' || $nombre === self::NOMBRE_OMISION ? null : $nombre;
         $categoria = $datos['categoria_hallazgo_pc'];
 
-        DB::transaction(function () use ($empresa, $nombre, $categoria, $reloj, $deptoAccidentes) {
+        DB::transaction(function () use ($empresa, $nombre, $categoria, $reloj, $deptoAccidentes, $departamentoAccidentesDeFabrica) {
             $modulo = Modulo::where('clave', 'novedades')->value('id');
             if ($modulo !== null) {
                 // Solo en la empresa que tiene el módulo contratado (sin contrato no hay menú que nombrar)
@@ -269,7 +271,12 @@ class AjustesNovedades
             } else {
                 $preferencias['novedades']['reloj_horas'] = $reloj;
             }
-            if ($deptoAccidentes !== null) {
+            if ($departamentoAccidentesDeFabrica) {
+                unset($preferencias['novedades']['departamento_accidentes']);
+                if (($preferencias['novedades'] ?? null) === []) {
+                    unset($preferencias['novedades']);
+                }
+            } elseif ($deptoAccidentes !== null) {
                 $preferencias['novedades']['departamento_accidentes'] = $deptoAccidentes;
             }
             $fresca?->forceFill(['preferencias' => $preferencias === [] ? null : $preferencias])->save();

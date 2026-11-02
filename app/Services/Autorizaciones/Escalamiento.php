@@ -79,6 +79,7 @@ class Escalamiento
         $escalados = $escaladosIds === [] ? collect() : User::whereIn('id', array_unique($escaladosIds))->get(['id', 'name'])->keyBy('id');
 
         $resultado = [];
+        $delegados = []; // persona citada y sede => nombre del delegado (o null), una vez por par
         foreach ($pendientes as $a) {
             $aut = $this->autorizacionDe($a);
             $minutos = (int) max(0, $a->entrada_at?->diffInMinutes(now()) ?? 0);
@@ -89,7 +90,10 @@ class Escalamiento
             } elseif ($aut !== null && $aut->tipo === 'visita' && $aut->colaborador_id !== null) {
                 // C-09 (DD-12): espera a la persona citada; su departamento es el suplente
                 $nombres = $aut->colaborador?->nombreCompleto() ?? '';
-                $texto = 'Espera a: '.($nombres !== '' ? $nombres : 'la persona citada').(($depto = $aut->departamento?->nombre) ? ' (suplente: '.$depto.')' : '');
+                // Revisión Etapa 5 (A-5): si delegó, el aviso le llegó a su delegado (la misma regla que al avisar)
+                $delegado = $this->delegadoDeLaPersonaCitada($aut, $delegados);
+                $texto = 'Espera a: '.($nombres !== '' ? $nombres : 'la persona citada').($delegado !== null ? ' (delegó en '.$delegado.')' : '')
+                    .(($depto = $aut->departamento?->nombre) ? ($delegado !== null ? ' · suplente: '.$depto : ' (suplente: '.$depto.')') : '');
             } elseif ($aut !== null && $aut->tipo === 'visita') {
                 $nombres = ($avisar[$aut->departamento_id.'-'.$aut->sede_id] ?? collect())->pluck('name')->join(', ', ' y ');
                 $depto = $aut->departamento?->nombre ?? $a->departamento?->nombre;
@@ -115,6 +119,26 @@ class Escalamiento
         }
 
         return $resultado;
+    }
+
+    /**
+     * Revisión Etapa 5 (A-5): nombre de quien recibió el aviso de la persona
+     * citada cuando ella delegó sus aprobaciones (C-12), o null si le llegó a
+     * ella. Usa la misma regla que solicitarVisita().
+     *
+     * @param  array<string, ?string>  $memoria
+     */
+    private function delegadoDeLaPersonaCitada(Autorizacion $aut, array &$memoria): ?string
+    {
+        $llave = $aut->colaborador_id.'-'.$aut->sede_id;
+        if (! array_key_exists($llave, $memoria)) {
+            // La cuenta de la persona citada (la autorización solo guarda colaborador_id cuando tenía cuenta)
+            $cuenta = User::where('colaborador_id', $aut->colaborador_id)->where('empresa_id', $aut->empresa_id)->where('activo', true)->first();
+            $destino = $cuenta === null ? null : $this->autorizaciones->destinoDeLaPersonaCitada($cuenta, (int) $aut->sede_id);
+            $memoria[$llave] = $destino !== null && (int) $destino->id !== (int) $cuenta->id ? (string) $destino->name : null;
+        }
+
+        return $memoria[$llave];
     }
 
     /**

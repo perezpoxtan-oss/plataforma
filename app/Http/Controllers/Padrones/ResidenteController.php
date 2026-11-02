@@ -59,6 +59,12 @@ class ResidenteController extends Controller
                 'caminos' => $caminos,
                 'viviendasAlta' => $sedesAlta === [] ? collect() : $this->lugares->opciones($sedesAlta, soloViviendas: true), // sin áreas comunes
                 'viviendasEdicion' => $sedesEdicion === [] ? collect() : $this->lugares->opciones($sedesEdicion, soloViviendas: true),
+                // Revisión Etapa 5 (A-2): quienes la conversión dejó como Personal «por confirmar»
+                'porConfirmar' => $actor->can('colaboradores.editar')
+                    ? $this->colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.editar')->personal()->where('colaboradores.tipo_por_confirmar', true)
+                        ->where('colaboradores.activo', true)->with(['sede:id,nombre', 'puesto:id,nombre', 'departamento:id,nombre'])
+                        ->orderBy('colaboradores.nombre')->orderBy('colaboradores.apellido_paterno')->get()
+                    : collect(),
                 'editables' => $this->colaboradores->idsEnAlcance($actor, 'colaboradores.editar'),
                 'desactivables' => $this->colaboradores->idsEnAlcance($actor, 'colaboradores.eliminar'),
                 'puede' => [
@@ -87,6 +93,24 @@ class ResidenteController extends Controller
             $this->buscar($request->user(), $residente, 'colaboradores.editar'), $request->all()));
 
         return redirect()->route('residentes.index')->with('ok', "Residente «{$modelo->nombreCompleto()}» guardado.");
+    }
+
+    /** Revisión Etapa 5 (A-2): «¿Residente o personal?» de quien la conversión no pudo clasificar. */
+    public function confirmar(Request $request, int $colaborador): RedirectResponse
+    {
+        Gate::authorize('colaboradores.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $colaborador) {
+            $modelo = $this->colaboradores->limitar(Colaborador::query(), $request->user(), 'colaboradores.editar')->personal()
+                ->where('colaboradores.tipo_por_confirmar', true)->find($colaborador);
+            abort_if($modelo === null, 404);
+
+            return $this->residentes->confirmarTipo($request->user(), $modelo, $request->all());
+        });
+
+        return redirect()->route('residentes.index')->with('ok', $modelo->esResidente()
+            ? "«{$modelo->nombreCompleto()}» quedó como residente de su vivienda. Ya aparece en «¿A quién viene?» de la caseta."
+            : "«{$modelo->nombreCompleto()}» se queda en Personal (Estructura → Personal).");
     }
 
     public function estado(Request $request, int $residente): RedirectResponse

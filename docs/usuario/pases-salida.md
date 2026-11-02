@@ -39,6 +39,9 @@ resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y 
 
 1. Toca **Nuevo Pase**. Si trabajas en una sola sede, la **Sede de Origen** ya viene elegida. Si tu rol es **Solicitante** o **Jefe de departamento**, tu nombre ya viene como **Solicitante** (solo puedes pedir pases a tu nombre).
 2. En **1. Motivo y Solicitante**: elige el **motivo** (la ventana te dice si el equipo debe regresar). Escanea el gafete del solicitante o escribe su nombre y elígelo. Si no aparece, toca **Nuevo Colaborador**.
+<!-- solo: condominio, fraccionamiento -->
+   En condominio y fraccionamiento el solicitante puede ser un **residente o alguien del personal**: al escribir su nombre, el residente aparece con su vivienda («Residente · 101»).
+<!-- fin -->
 3. En **2. Enviar A**: elige otra sede o un proveedor (si no está, **Nuevo Proveedor**). Si el equipo se le entrega a una persona para que lo use (por ejemplo, un radio para su turno), no es un pase: hazlo con una [responsiva](responsivas.md). Escribe la **Salida programada** (el día en que planeas que salga) y, si el equipo regresa, el **Regreso programado** (el día en que debe volver). El regreso programado no puede ser antes de la salida programada.
 
    ![Salida programada y Regreso programado](img/pases-salida/fechas-programadas.png)

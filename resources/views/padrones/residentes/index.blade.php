@@ -41,6 +41,37 @@
             @endif
         </div>
 
+        {{-- Revisión Etapa 5 (A-2): la conversión no supo si estas personas son residentes; se quedaron en Personal hasta confirmarlo --}}
+        @if ($porConfirmar->isNotEmpty())
+            <section class="tarjeta mb-3" id="por-confirmar" aria-labelledby="titulo-por-confirmar">
+                <h2 class="h6 fw-bold mb-1" id="titulo-por-confirmar"><i class="bi bi-person-exclamation text-warning me-1" aria-hidden="true"></i>Por confirmar: ¿residente o personal? ({{ $porConfirmar->count() }})</h2>
+                <p class="campo-ayuda mt-0">Al pasar a esta versión no se pudo saber si estas personas viven aquí: no tienen cuenta ni una {{ $vivienda }} que coincida con su número. Siguen en Personal. Elige su {{ $vivienda }} si es residente, o «Es personal», y toca Guardar.</p>
+                <ul class="list-unstyled m-0">
+                    @foreach ($porConfirmar as $p)
+                        <li class="d-flex flex-column flex-md-row gap-2 align-items-md-center py-2 border-top">
+                            <div class="flex-fill min-w-0">
+                                <strong>{{ $p->nombreCompleto() }}</strong>
+                                <span class="small text-muted d-block">{{ collect([$p->num_empleado ? 'Núm. '.$p->num_empleado : null, $p->puesto?->nombre, $p->departamento?->nombre, $p->sede?->nombre])->filter()->join(' · ') ?: 'Sin número, puesto ni departamento' }}</span>
+                            </div>
+                            <form method="POST" action="{{ route('residentes.confirmar', $p->id) }}" class="d-flex gap-2 align-items-center">
+                                @csrf
+                                @method('PUT')
+                                <label class="visually-hidden" for="confirmar_{{ $p->id }}">¿Residente o personal? {{ $p->nombreCompleto() }}</label>
+                                <select id="confirmar_{{ $p->id }}" name="como" class="campo m-0" required>
+                                    <option value="">-- Elegir --</option>
+                                    <option value="personal">Es personal (no vive aquí)</option>
+                                    @foreach ($viviendasEdicion->when($p->sede_id !== null, fn ($l) => $l->where('sede_id', $p->sede_id)) as $l)
+                                        <option value="{{ $l['id'] }}">Residente · {{ $l['ruta'] }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="btn-cian">Guardar</button>
+                            </form>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+
         <div class="fichas-grid" data-fichas="residentes">
             @if ($puede['crear'])
                 <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevoResidente">

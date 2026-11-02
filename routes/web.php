@@ -211,6 +211,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/residentes', [ResidenteController::class, 'store'])->name('residentes.store');
     Route::put('/residentes/{residente}', [ResidenteController::class, 'update'])->whereNumber('residente')->name('residentes.update');
     Route::patch('/residentes/{residente}/estado', [ResidenteController::class, 'estado'])->whereNumber('residente')->name('residentes.estado');
+    // Revisión Etapa 5 (A-2): confirmar si es residente o personal (lo que la conversión no supo)
+    Route::put('/residentes/por-confirmar/{colaborador}', [ResidenteController::class, 'confirmar'])->whereNumber('colaborador')->name('residentes.confirmar');
     // Colaboradores (y el registro rápido y la búsqueda que usan otros módulos)
     Route::get('/colaboradores', [ColaboradorController::class, 'index'])->name('colaboradores.index');
     Route::post('/colaboradores', [ColaboradorController::class, 'store'])->name('colaboradores.store');

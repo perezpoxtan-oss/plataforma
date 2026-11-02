@@ -217,7 +217,7 @@ Si la visita va a un departamento (o a una persona sin cuenta de un departamento
 El proveedor o contratista **espera la autorización de la persona que lo citó** (si tiene cuenta en la plataforma) o, si tu empresa lo pide (de fábrica, sí), **del responsable del departamento** al que viene. La caseta no tiene que llamar a nadie.
 
 1. Al registrarlo, elige en **¿A quién viene?** a la persona que lo citó o el área.
-2. Le llega el aviso a su **campana** y a su **correo** con **Autorizar ingreso** y **Rechazar**. La tarjeta dice «Espera a: … (suplente: departamento)» o «Espera a: … (departamento)» con su reloj. Si la persona no contesta, el aviso pasa al responsable de su departamento.
+2. Le llega el aviso a su **campana** y a su **correo** con **Autorizar ingreso** y **Rechazar**. La tarjeta dice «Espera a: … (suplente: departamento)» o «Espera a: … (departamento)» con su reloj. Si la persona delegó sus aprobaciones, el aviso le llega a quien la cubre y la tarjeta lo dice: «Espera a: Carlos Pérez (delegó en Laura Gómez) · suplente: Finanzas». Si la persona no contesta, el aviso pasa al responsable de su departamento.
 3. Cuando responde, **la tarjeta cambia sola**: pasa a **Gente en Sitio** («Autorizado por …») o al historial («No autorizado por …: no ingresó»; devuélvele su identificación). También te llega el aviso a la campana.
 
 **Qué debes ver:** la tarjeta en **Pendientes de Autorización** con «Espera a: …» y, al responder el departamento, la persona en **Gente en Sitio**.

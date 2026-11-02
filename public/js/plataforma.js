@@ -3041,7 +3041,10 @@ document.addEventListener('click', function (e) {
         if (aviso && llamar) {
             var tel = caja.dataset.telefono || '';
             var nombre = (caja.querySelector('[data-a-quien-texto]') || {}).value || '';
-            aviso.textContent = 'Llama a ' + (nombre || 'quien visita') + (tel ? ' (' + tel + ')' : '') + ' antes de dejarlo pasar.';
+            // Revisión Etapa 5 (A-4): un área común (alberca, salón) no es una vivienda: se confirma con la administración
+            aviso.textContent = caja.dataset.areaComun === '1'
+                ? 'Va a ' + (nombre || 'un área común') + ': confirma con la administración antes de dejarlo pasar.'
+                : 'Llama a ' + (nombre || 'quien visita') + (tel ? ' (' + tel + ')' : '') + ' antes de dejarlo pasar.';
         }
     }
 
@@ -3348,6 +3351,7 @@ document.addEventListener('click', function (e) {
         caja.dataset.cuenta = it.cuenta ? '1' : '0';
         caja.dataset.departamento = it.departamento_id ? String(it.departamento_id) : '';
         caja.dataset.telefono = it.telefono || '';
+        caja.dataset.areaComun = it.area_comun ? '1' : '0';
         var form = caja.closest('form');
         mostrarLlamada(caja);
         if (form) { actualizarBotonRegistrar(form); }
@@ -3364,6 +3368,7 @@ document.addEventListener('click', function (e) {
         caja.dataset.cuenta = '0';
         caja.dataset.departamento = '';
         caja.dataset.telefono = '';
+        caja.dataset.areaComun = '0';
         mostrarLlamada(caja);
         if (form) { actualizarBotonRegistrar(form); }
         var envoltura = campo.closest('.buscador-acceso');
@@ -5138,7 +5143,7 @@ document.addEventListener('click', function (e) {
     function buscarColaboradores(form, texto) {
         var url = form.getAttribute('data-url-buscar-colaborador');
         if (!url || !texto) { return Promise.resolve([]); }
-        return fetch(url + '?q=' + encodeURIComponent(texto), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        return fetch(url + (url.indexOf('?') < 0 ? '?' : '&') + 'q=' + encodeURIComponent(texto), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
             .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
             .then(function (d) { return d.resultados || []; });
     }
@@ -5147,7 +5152,8 @@ document.addEventListener('click', function (e) {
         if (!window.Lector || !caja || !c || !c.id) { return; }
         window.Lector.elegir(caja, {
             id: c.id, titulo: c.nombre_completo, activo: true,
-            detalle: (c.num_empleado ? 'Núm. ' + c.num_empleado : 'provisional') + (c.puesto ? ' · ' + c.puesto : ''),
+            // Revisión Etapa 5 (A-3): el residente se reconoce por su vivienda
+            detalle: c.residente ? 'Residente' + (c.vivienda ? ' · ' + c.vivienda : '') : (c.num_empleado ? 'Núm. ' + c.num_empleado : 'provisional') + (c.puesto ? ' · ' + c.puesto : ''),
             departamento: c.departamento || null, puesto: c.puesto || null
         });
     }
@@ -5178,7 +5184,7 @@ document.addEventListener('click', function (e) {
                     b.className = 'lector-opcion';
                     var t = document.createElement('strong'); t.textContent = c.nombre_completo;
                     var d = document.createElement('span');
-                    d.textContent = (c.num_empleado ? 'Núm. ' + c.num_empleado : 'Provisional') + (c.puesto ? ' · ' + c.puesto : '') + (c.departamento ? ' · ' + c.departamento : '') + (c.sede ? ' · ' + c.sede : '');
+                    d.textContent = (c.residente ? 'Residente' + (c.vivienda ? ' · ' + c.vivienda : '') : (c.num_empleado ? 'Núm. ' + c.num_empleado : 'Provisional') + (c.puesto ? ' · ' + c.puesto : '') + (c.departamento ? ' · ' + c.departamento : '')) + (c.sede ? ' · ' + c.sede : '');
                     b.appendChild(t); b.appendChild(d);
                     b.addEventListener('click', function () { elegirColaborador(caja, c); });
                     opciones.appendChild(b);
